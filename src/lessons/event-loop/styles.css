@@ -1,0 +1,138 @@
+.el {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+  gap: 16px;
+  padding: 22px;
+}
+.el-label {
+  display: block;
+  font: 600 10.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+
+.el-code {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  align-self: start;
+}
+.el-code ol { list-style: none; margin: 0; padding: 0; }
+.el-code li {
+  display: flex;
+  gap: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.el-code li code { color: var(--muted); min-width: 0; }
+.el-code li.on { background: rgb(255 209 102 / 0.14); box-shadow: inset 3px 0 0 var(--hi); }
+.el-code li.on code { color: var(--text); }
+.el-ln { flex: none; width: 16px; text-align: right; font: 11px var(--mono); color: var(--faint); }
+
+.el-machine {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: auto;
+  gap: 10px;
+}
+.el-micro,
+.el-macro,
+.el-out { grid-column: 1 / -1; }
+
+.el-box {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: var(--panel-2);
+  min-height: 74px;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.el-box header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 8px; }
+.el-box header b { font-size: 13px; }
+.el-box header span { font-size: 11px; color: var(--faint); }
+.el-box.focus { border-color: var(--hi); box-shadow: 0 0 0 3px rgb(255 209 102 / 0.14); }
+.el-micro header b { color: var(--violet); }
+.el-macro header b { color: var(--info); }
+.el-out header b { color: var(--ok); }
+
+.el-chips { display: flex; flex-direction: column; gap: 5px; min-height: 26px; }
+.el-chips.row { flex-direction: row; flex-wrap: wrap; }
+.el-empty { font-size: 12px; color: var(--faint); align-self: flex-start; }
+.el-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 7px;
+  font: 600 12px var(--mono);
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+  white-space: nowrap;
+}
+.el-chip.stack { align-self: stretch; }
+.el-chip.stack.top { border-color: var(--hi); background: rgb(255 209 102 / 0.16); color: var(--hi); }
+.el-chip.api { border-style: dashed; color: var(--muted); }
+.el-chip.micro { border-color: rgb(167 139 250 / 0.55); background: rgb(167 139 250 / 0.14); color: var(--violet); }
+.el-chip.macro { border-color: rgb(76 201 240 / 0.55); background: rgb(76 201 240 / 0.12); color: var(--info); }
+.el-chip.out { border-color: rgb(61 220 151 / 0.5); background: rgb(61 220 151 / 0.12); color: var(--ok); }
+.el-chip i { font-style: normal; font-size: 10px; color: var(--faint); }
+
+/* blocking demo */
+.el-block { display: flex; flex-direction: column; gap: 22px; padding: 30px 32px; }
+.el-clock { display: flex; flex-direction: column; align-items: center; }
+.el-clock-num { font: 700 64px var(--mono); font-variant-numeric: tabular-nums; color: var(--ok); line-height: 1; }
+.el-track {
+  position: relative;
+  height: 26px;
+  border-radius: 99px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 0 13px;
+}
+.el-dot {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(100% - 26px);
+  height: 18px;
+  pointer-events: none;
+}
+.el-dot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 14px var(--ok);
+}
+.el-block-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.el-gap,
+.el-work {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+}
+.el-gap-num { font: 700 28px var(--mono); color: var(--ok); }
+.el-gap-num[data-bad='1'] { color: var(--bad); }
+.el-note { font-size: 12px; color: var(--faint); }
+.el-bar { height: 12px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 10px; }
+.el-bar span { display: block; height: 100%; width: 0%; background: var(--info); border-radius: inherit; }
+
+@media (max-width: 900px) {
+  .el { grid-template-columns: 1fr; }
+  .el-block-row { grid-template-columns: 1fr; }
+}

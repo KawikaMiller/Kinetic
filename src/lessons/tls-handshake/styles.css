@@ -1,0 +1,297 @@
+.th {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+}
+
+.th-scene {
+  display: grid;
+  grid-template-columns: 250px 1fr 250px;
+  align-items: stretch;
+  min-height: 250px;
+}
+
+.th-party {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1.5px solid var(--cell-line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.3s, box-shadow 0.3s, opacity 0.3s;
+}
+.th-party.locked {
+  border-color: var(--ok);
+  box-shadow: 0 0 26px -8px rgb(61 220 151 / 0.6);
+}
+.th-party.aborted {
+  border-color: var(--bad);
+}
+.th-party.dim {
+  opacity: 0.45;
+}
+.th-party-name {
+  font-weight: 800;
+  font-size: 16px;
+}
+.th-party-sub {
+  font: 500 11px var(--mono);
+  color: var(--faint);
+  margin-top: -6px;
+}
+
+.th-blobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 60px;
+  align-content: flex-start;
+}
+.th-blob {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 3px;
+  border-radius: 99px;
+  background: var(--cell);
+  border: 1px solid var(--cell-line);
+  font-size: 11.5px;
+}
+.th-blob.secret {
+  border-color: rgb(255 93 108 / 0.5);
+  border-style: dashed;
+}
+.th-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  box-shadow: inset 0 -3px 6px rgb(0 0 0 / 0.25);
+  flex: none;
+}
+.th-dot-lg {
+  width: 26px;
+  height: 26px;
+}
+.th-blob-label {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.th-status {
+  margin-top: auto;
+  font-size: 13px;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+}
+.th-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.th-bad {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.th-wire {
+  position: relative;
+  margin: 0 18px;
+}
+.th-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 2px dashed var(--line-2);
+  transition: border-color 0.4s;
+}
+.th-line.locked {
+  border-top: 3px solid var(--ok);
+  filter: drop-shadow(0 0 6px rgb(61 220 151 / 0.5));
+}
+.th-line.dead {
+  border-top-color: rgb(255 93 108 / 0.5);
+}
+.th-eve {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 34px);
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px dashed var(--line-2);
+  background: var(--bg-2);
+}
+.th-mallory {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 28px);
+  transform: translateX(-50%);
+  width: 200px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgb(255 93 108 / 0.08);
+  border: 1.5px solid rgb(255 93 108 / 0.5);
+}
+.th-mallory-name {
+  display: block;
+  font-weight: 800;
+  color: var(--bad);
+  margin-bottom: 6px;
+}
+.th-mallory .th-blobs {
+  min-height: 0;
+}
+/* Mallory sits on the wire, so her paints are dots only (labels on hover). */
+.th-mallory .th-blob {
+  padding: 3px;
+}
+.th-mallory .th-blob-label {
+  display: none;
+}
+.th-lock {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 40px);
+  transform: translateX(-50%);
+  font-size: 20px;
+}
+.th-pill {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font: 700 12px var(--mono);
+  color: #0a0c11;
+  padding: 7px 12px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7);
+  z-index: 2;
+}
+.th-pill.cipher {
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+.th-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.th-panel {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgb(10 12 17 / 0.7);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  min-height: 150px;
+}
+.th-panel h4 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.th-panel p {
+  margin: 0;
+}
+.th-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.th-link {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+  transition: border-color 0.3s, background 0.3s;
+}
+.th-link + .th-link {
+  margin-left: 14px;
+}
+.th-link + .th-link + .th-link {
+  margin-left: 28px;
+}
+.th-link.ok {
+  border-color: var(--ok);
+  background: rgb(61 220 151 / 0.1);
+}
+.th-link.bad {
+  border-color: var(--bad);
+  background: rgb(255 93 108 / 0.12);
+}
+.th-link-icon {
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-weight: 800;
+  color: var(--faint);
+}
+.th-link.ok .th-link-icon {
+  color: var(--ok);
+}
+.th-link.bad .th-link-icon {
+  color: var(--bad);
+}
+.th-link-name {
+  font-weight: 700;
+}
+.th-link-detail {
+  font: 500 11px var(--mono);
+  color: var(--muted);
+}
+.th-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.th-notes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.th-sw {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: none;
+}
+.th-sw-cipher {
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: rgb(167 139 250 / 0.2);
+  color: var(--violet);
+  font-size: 11px;
+}
+.th-cipher {
+  font-family: var(--mono);
+  color: var(--violet);
+}
+
+@media (max-width: 900px) {
+  .th-scene {
+    grid-template-columns: 1fr;
+    gap: 90px;
+  }
+  .th-bottom {
+    grid-template-columns: 1fr;
+  }
+}

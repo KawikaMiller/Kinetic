@@ -1,0 +1,165 @@
+.tu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 18px;
+}
+.tu-scene {
+  width: 100%;
+  height: auto;
+}
+
+.tu-lane {
+  fill: rgb(10 12 17 / 0.55);
+  stroke: var(--line);
+}
+.tu-name {
+  font: 800 16px var(--font);
+  fill: var(--text);
+}
+.tu-tag {
+  font: 600 11px var(--mono);
+}
+.tu-small {
+  font: 600 11px var(--mono);
+  letter-spacing: 0.06em;
+  fill: var(--faint);
+}
+.tu-dim {
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.tu-strong {
+  fill: var(--hi);
+  font-weight: 700;
+}
+
+.tu-cell {
+  stroke-width: 1.5;
+  transition: fill 0.25s, stroke 0.25s;
+}
+.tu-unsent {
+  fill: var(--cell);
+  stroke: var(--cell-line);
+}
+.tu-sent {
+  fill: rgb(76 201 240 / 0.14);
+  stroke: var(--info);
+}
+.tu-acked {
+  fill: rgb(61 220 151 / 0.22);
+  stroke: var(--ok);
+}
+.tu-held {
+  fill: rgb(255 209 102 / 0.22);
+  stroke: var(--hi);
+}
+.tu-got-ok {
+  fill: rgb(61 220 151 / 0.25);
+  stroke: var(--ok);
+}
+.tu-got-hi {
+  fill: rgb(255 209 102 / 0.28);
+  stroke: var(--hi);
+}
+.tu-missing {
+  fill: rgb(255 93 108 / 0.18);
+  stroke: var(--bad);
+  stroke-dasharray: 3 2;
+}
+.tu-num {
+  font: 700 11px var(--mono);
+  fill: var(--text);
+  pointer-events: none;
+}
+.tu-num-sm {
+  font-size: 9px;
+}
+
+.tu-wire {
+  stroke: var(--line-2);
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+}
+.tu-wire-ack {
+  stroke: rgb(61 220 151 / 0.25);
+}
+
+.tu-move {
+  transition: transform var(--dur, 260ms) linear;
+}
+.tu-pkt {
+  fill: var(--info);
+  transition: fill 0.2s, opacity 0.3s;
+}
+.tu-pkt.retx {
+  fill: var(--violet);
+}
+.tu-pkt.lost {
+  fill: var(--info);
+}
+.tu-pkt.dead {
+  fill: var(--bad);
+  opacity: 0.85;
+}
+.tu-pkt-text {
+  font: 800 12px var(--mono);
+  fill: #0a0c11;
+}
+.tu-ack {
+  fill: rgb(61 220 151 / 0.2);
+  stroke: var(--ok);
+}
+.tu-ack-text {
+  font: 700 10px var(--mono);
+  fill: var(--ok);
+}
+
+.tu-badge {
+  stroke-width: 1.2;
+}
+.tu-badge-ok {
+  fill: rgb(61 220 151 / 0.15);
+  stroke: var(--ok);
+}
+.tu-badge-bad {
+  fill: rgb(255 93 108 / 0.15);
+  stroke: var(--bad);
+}
+.tu-badge-hi {
+  fill: rgb(255 209 102 / 0.15);
+  stroke: var(--hi);
+}
+.tu-badge-text {
+  font: 700 11px var(--mono);
+  fill: var(--text);
+}
+
+.tu-cwnd {
+  padding: 8px 12px 10px;
+  border-radius: 12px;
+  background: rgb(10 12 17 / 0.6);
+  border: 1px solid var(--line);
+}
+.tu-cwnd-label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.tu-cwnd-svg {
+  width: 100%;
+  height: 56px;
+  display: block;
+}
+.tu-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.tu-cwnd-line {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}

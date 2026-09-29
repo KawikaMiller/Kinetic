@@ -1,0 +1,89 @@
+.rep {
+  position: relative;
+  min-height: inherit;
+  height: 440px;
+  margin: 0 12px;
+}
+
+.rep-links { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rep-link { stroke: var(--line-2); stroke-width: 2; stroke-dasharray: 5 6; }
+.rep-link.slow { stroke: rgb(255 209 102 / 0.35); stroke-dasharray: 2 7; }
+.rep-link.read { stroke: rgb(167 139 250 / 0.18); stroke-width: 1.5; stroke-dasharray: 1 6; }
+.rep-link-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font: 600 10.5px var(--mono);
+  color: var(--faint);
+  background: var(--bg-2);
+  padding: 1px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.rep-client,
+.rep-node {
+  position: absolute;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  z-index: 1;
+}
+.rep-client {
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 132px;
+  padding: 10px 12px;
+}
+.rep-client-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }
+.rep-client-status { font: 600 12.5px var(--mono); color: var(--text); }
+.rep-client-status.ok { color: var(--ok); }
+.rep-client-status.bad { color: var(--bad); }
+.rep-client-status.wait { color: var(--hi); }
+
+.rep-node {
+  width: 168px;
+  padding: 10px 12px 12px;
+  transition: border-color 0.3s, box-shadow 0.3s, opacity 0.3s;
+}
+.rep-node header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.rep-node header b { font-size: 13px; }
+.rep-node header span { font: 600 10.5px var(--mono); color: var(--muted); text-transform: uppercase; }
+.rep-node.role-leader { border-color: var(--ok); box-shadow: 0 0 24px -8px var(--ok); }
+.rep-node.role-leader header span { color: var(--ok); }
+.rep-node.role-promoted { border-color: var(--ok); box-shadow: 0 0 0 3px rgb(61 220 151 / 0.25), 0 0 28px -6px var(--ok); }
+.rep-node.role-promoted header span { color: var(--ok); }
+.rep-node.role-dead { border-color: var(--bad); opacity: 0.55; filter: grayscale(0.6); }
+.rep-node.role-dead header span { color: var(--bad); }
+.rep-dead { display: block; margin-top: 6px; font: 700 12px var(--mono); color: var(--bad); }
+
+.rep-log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.rep-log li {
+  font: 600 12px var(--mono);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--cell);
+  border: 1px solid var(--cell-line);
+  transition: background 0.4s, border-color 0.4s, color 0.4s;
+}
+.rep-log li:last-child { border-color: var(--line-2); }
+.rep-log li.fresh { background: rgb(255 209 102 / 0.18); border-color: var(--hi); color: var(--hi); }
+
+.rep-pkt {
+  position: absolute;
+  z-index: 2;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font: 700 11px var(--mono);
+  white-space: nowrap;
+  color: #0b0d12;
+  box-shadow: 0 4px 14px -4px currentColor;
+  pointer-events: none;
+}
+.rep-pkt.kind-write { background: var(--hi); }
+.rep-pkt.kind-repl { background: var(--info); }
+.rep-pkt.kind-ack { background: var(--ok); }
+.rep-pkt.kind-read { background: var(--violet); }
+.rep-pkt.kind-resp { background: var(--violet); }
+.rep-pkt.kind-lost { background: var(--bad); }

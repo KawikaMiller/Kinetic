@@ -1,0 +1,109 @@
+.bo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+}
+
+.bo-panel {
+  background: rgb(10 12 17 / 0.72);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+.bo-real { grid-column: 1 / -1; }
+
+.bo-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.bo-sub { font-weight: 400; color: var(--faint); font-size: 12px; }
+
+/* chips that toggle curves */
+.bo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 12px var(--mono);
+  padding: 4px 9px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+}
+.bo-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.bo-chip.off { opacity: 0.35; background: transparent; }
+.bo-chip.off i { background: transparent; border: 1.5px solid var(--c); }
+
+/* chart */
+.bo-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.bo-grid { stroke: var(--line); stroke-width: 1; }
+.bo-tick { fill: var(--faint); font: 11px var(--mono); }
+.bo-axis-label { fill: var(--muted); }
+.bo-marker { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: 0.6; }
+.bo-dot { stroke: var(--bg); stroke-width: 2; filter: drop-shadow(0 0 5px currentColor); }
+.bo-off { font: 600 11.5px var(--mono); }
+
+/* race */
+.bo-race { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 14px; }
+.bo-lane {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+}
+.bo-lane-label { font: 600 12px var(--mono); color: var(--c); grid-row: span 2; }
+.bo-lane-track {
+  height: 12px;
+  border-radius: 99px;
+  background: var(--cell);
+  border: 1px solid var(--cell-line);
+  overflow: hidden;
+}
+.bo-lane-fill {
+  height: 100%;
+  background: var(--c);
+  border-radius: inherit;
+  box-shadow: 0 0 12px var(--c);
+}
+.bo-lane-count { font: 11px var(--mono); color: var(--faint); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bo-lane.finished .bo-lane-count { color: var(--ok); }
+.bo-race-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bo-clock { margin-left: auto; font: 600 14px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* real-world readout */
+.bo-real-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.bo-real-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--cell);
+  border: 1px solid var(--cell-line);
+  border-top: 3px solid var(--c);
+}
+.bo-real-label { font: 600 12px var(--mono); color: var(--c); }
+.bo-real-time { font-weight: 700; font-size: 15px; line-height: 1.25; }
+.bo-real-cell.slow .bo-real-time { color: var(--bad); }
+.bo-real-ops { font: 10.5px var(--mono); color: var(--faint); }
+.bo-real-cell sup { font-size: 0.7em; }
+
+@media (max-width: 900px) {
+  .bo { grid-template-columns: 1fr; }
+}

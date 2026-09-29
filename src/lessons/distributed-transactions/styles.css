@@ -1,0 +1,79 @@
+.dt {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 10px 12px 4px;
+}
+.dt-phase {
+  font: 700 12px var(--mono);
+  fill: var(--hi);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dt-wire {
+  stroke: var(--line-2);
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+}
+.dt-wire-bad {
+  stroke: rgb(255 93 108 / 0.55);
+}
+.dt-bus {
+  fill: rgb(167 139 250 / 0.08);
+  stroke: rgb(167 139 250 / 0.5);
+  stroke-width: 1.5;
+}
+.dt-bus-label {
+  font: 700 11px var(--mono);
+  fill: var(--violet);
+}
+.dt-node {
+  fill: var(--cell);
+  stroke-width: 2;
+  transition: stroke 0.4s;
+}
+.dt-node.crashed {
+  stroke-dasharray: 6 4;
+  fill: rgb(255 93 108 / 0.08);
+}
+.dt-title {
+  font: 700 14px var(--font);
+  fill: var(--text);
+}
+.dt-lock {
+  font-size: 15px;
+  text-anchor: middle;
+}
+.dt-chip {
+  transition: fill 0.4s;
+}
+.dt-chip-text {
+  font: 700 11.5px var(--mono);
+  fill: #0a0c11;
+}
+.dt-detail {
+  font: 600 12px var(--mono);
+  fill: var(--muted);
+}
+.dt-pill {
+  fill: #0e1118;
+  stroke-width: 1.5;
+}
+.dt-pill-text {
+  font: 700 11px var(--mono);
+  text-anchor: middle;
+}
+.dt-stall {
+  fill: rgb(255 93 108 / 0.12);
+  stroke: var(--bad);
+  stroke-width: 1.5;
+}
+.dt-stall-text {
+  font: 700 13px var(--mono);
+  fill: var(--bad);
+  text-anchor: middle;
+}
+.dt-cons {
+  font-size: 13px;
+  white-space: nowrap;
+}

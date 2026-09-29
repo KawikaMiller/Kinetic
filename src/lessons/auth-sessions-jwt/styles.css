@@ -1,0 +1,154 @@
+.aj { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 20px; }
+.aj-scene { width: 100%; height: auto; overflow: visible; }
+.aj-edge { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
+.aj-edge-store { stroke: rgb(167 139 250 / 0.4); }
+.aj-edge-bad { stroke: rgb(255 93 108 / 0.5); }
+
+.aj-node rect {
+  fill: var(--panel);
+  stroke: var(--cell-line);
+  stroke-width: 1.5;
+  transition: stroke 0.25s, fill 0.25s;
+}
+.aj-node text { font: 700 13px var(--font); fill: var(--text); }
+.aj-node.on rect { stroke: var(--info); stroke-width: 2.5; fill: color-mix(in srgb, var(--info) 10%, var(--panel)); }
+.aj-node.store.on rect { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 12%, var(--panel)); }
+.aj-node.bad rect { stroke: var(--bad); fill: rgb(255 93 108 / 0.1); }
+.aj-key rect { fill: var(--bg-2); stroke: rgb(255 209 102 / 0.5); }
+.aj-key text { font: 600 10.5px var(--mono); fill: var(--hi); }
+.aj-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
+.aj-packet-text { font: 700 10.5px var(--mono); fill: #0a0c11; }
+
+.aj-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.aj-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgb(10 12 17 / 0.75);
+  border: 1px solid var(--line);
+  min-height: 108px;
+}
+.aj-panel.dim { opacity: 0.6; }
+.aj-panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.aj-empty { font: 500 12px var(--mono); color: var(--faint); }
+.aj-cookie code { font-size: 13px; }
+.aj-sid { color: var(--violet); font-weight: 700; }
+.aj-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.aj-flags span {
+  font: 600 11px var(--mono);
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: var(--ok);
+  background: rgb(61 220 151 / 0.1);
+  border: 1px solid rgb(61 220 151 / 0.3);
+  cursor: help;
+}
+.aj-rows { display: flex; flex-direction: column; gap: 6px; }
+.aj-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgb(167 139 250 / 0.35);
+  background: rgb(167 139 250 / 0.07);
+  font-size: 13px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.aj-row code { color: var(--violet); font-weight: 700; }
+.aj-row.hit { border-color: var(--violet); background: rgb(167 139 250 / 0.2); box-shadow: 0 0 16px -4px var(--violet); }
+.aj-row.gone { border-color: var(--bad); background: rgb(255 93 108 / 0.08); text-decoration: line-through; }
+.aj-exp { font: 500 11px var(--mono); color: var(--faint); }
+
+.aj-token { font-size: 12px; word-break: break-all; line-height: 1.6; }
+.aj-token .h, .aj-decoded .h { color: var(--violet); }
+.aj-token .p, .aj-decoded .p { color: var(--info); }
+.aj-token .s, .aj-decoded .s { color: var(--hi); }
+.aj-decoded { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.aj-decoded code { word-break: break-all; }
+
+/* scale lanes */
+.aj-scale { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px 20px; }
+.aj-lane {
+  position: relative;
+  padding: 10px 14px 6px;
+  border-radius: 12px;
+  background: rgb(10 12 17 / 0.6);
+  border: 1px solid var(--line);
+}
+.aj-lane-title { font: 700 12px var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.aj-lane-svg { width: 100%; height: auto; display: block; }
+.aj-l { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; transition: stroke 0.3s; }
+.aj-l.on { stroke: var(--info); stroke-dasharray: none; stroke-width: 2.5; }
+.aj-l-store.on { stroke: var(--violet); }
+.aj-l-store.fail { stroke: var(--bad); stroke-dasharray: 3 4; stroke-width: 2.5; }
+.aj-n rect { fill: var(--panel); stroke: var(--cell-line); stroke-width: 1.5; transition: stroke 0.3s, fill 0.3s; }
+.aj-n text { font: 700 12px var(--font); fill: var(--text); }
+.aj-n.on rect { stroke: var(--info); stroke-width: 2.5; }
+.aj-n-store rect { stroke: rgb(167 139 250 / 0.6); }
+.aj-n-store.down rect { stroke: var(--bad); fill: rgb(255 93 108 / 0.12); }
+.aj-n-sub { font: 500 10px var(--mono) !important; fill: var(--muted) !important; }
+.aj-n-store.down .aj-n-sub { fill: var(--bad) !important; font-weight: 700 !important; }
+.aj-verdict {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font: 700 12px var(--mono);
+  padding: 3px 10px;
+  border-radius: 7px;
+  color: var(--muted);
+}
+.aj-verdict.ok { color: var(--ok); background: rgb(61 220 151 / 0.12); }
+.aj-verdict.bad { color: var(--bad); background: rgb(255 93 108 / 0.12); }
+
+/* tamper */
+.aj-tamper { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 18px 20px 22px; }
+.aj-edit, .aj-wire, .aj-check {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgb(10 12 17 / 0.75);
+  border: 1px solid var(--line);
+}
+.aj-check { grid-column: 1 / -1; transition: border-color 0.3s, box-shadow 0.3s; }
+.aj-check.ok { border-color: var(--ok); }
+.aj-check.bad { border-color: var(--bad); box-shadow: 0 0 26px -10px var(--bad); }
+.aj-check.forged { border-color: var(--bad); box-shadow: 0 0 30px -8px var(--bad); }
+.aj-claim { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.aj-claim.dim { opacity: 0.6; }
+.aj-claim code { color: var(--info); }
+.aj-claim input {
+  width: 90px;
+  font: 600 13px var(--mono);
+  color: var(--text);
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+.aj-role { display: flex; gap: 4px; }
+.aj-role button {
+  font: 600 12px var(--mono);
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.aj-role button.on { color: var(--bg); background: var(--hi); border-color: var(--hi); }
+.aj-sigs { display: grid; grid-template-columns: 120px 1fr; gap: 4px 12px; align-items: baseline; font-size: 12px; color: var(--muted); }
+.aj-sigs code { color: var(--hi); font-size: 12px; word-break: break-all; }
+.aj-sigs code .x { color: var(--bad); text-decoration: underline; }
+.aj-big { align-self: flex-start; font: 800 16px var(--mono); padding: 6px 14px; border-radius: 10px; margin-top: 4px; }
+.aj-check.ok .aj-big { color: var(--ok); background: rgb(61 220 151 / 0.12); }
+.aj-check.bad .aj-big, .aj-check.forged .aj-big { color: var(--bad); background: rgb(255 93 108 / 0.12); }
+
+@media (max-width: 800px) {
+  .aj-panels, .aj-tamper { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,187 @@
+.rf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 18px;
+  min-height: inherit;
+  align-items: center;
+}
+
+.rf-svg {
+  width: 100%;
+  max-width: 470px;
+  height: auto;
+  overflow: visible;
+  justify-self: center;
+}
+.rf-orbit {
+  fill: none;
+  stroke: var(--line);
+  stroke-dasharray: 3 7;
+}
+
+.rf-node {
+  cursor: pointer;
+}
+.rf-body {
+  fill: var(--panel);
+  stroke: var(--c);
+  stroke-width: 3;
+  transition: stroke 0.3s, fill 0.3s;
+}
+.rf-node:hover .rf-body {
+  fill: var(--panel-2);
+}
+.rf-body.dead {
+  fill: #1a1216;
+  stroke-dasharray: 5 4;
+}
+.rf-timer {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.rf-beat {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 2;
+}
+.rf-name {
+  fill: var(--text);
+  font: 700 16px var(--mono);
+}
+.rf-term {
+  fill: var(--muted);
+  font: 500 10.5px var(--mono);
+}
+.rf-role {
+  font: 600 11px var(--font);
+}
+.rf-msg {
+  filter: drop-shadow(0 0 4px currentColor);
+}
+.rf-wall line {
+  stroke: var(--bad);
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+.rf-wall text {
+  fill: var(--bad);
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.rf-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.rf-side h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.rf-side h4 span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--faint);
+  margin-left: 6px;
+}
+
+.rf-log-grid {
+  display: grid;
+  grid-template-columns: 44px repeat(var(--cols), 24px);
+  gap: 4px;
+  align-items: center;
+}
+.rf-idx {
+  font: 10px var(--mono);
+  color: var(--faint);
+  text-align: center;
+}
+.rf-row-name {
+  font: 700 12px var(--mono);
+  color: var(--muted);
+}
+.rf-row-name.lead {
+  color: var(--ok);
+}
+.rf-row-name.dead {
+  color: var(--bad);
+  text-decoration: line-through;
+}
+.rf-slot {
+  height: 24px;
+  border-radius: 5px;
+  border: 1px dashed var(--line);
+}
+.rf-entry {
+  display: grid;
+  place-items: center;
+  height: 24px;
+  border-radius: 5px;
+  font: 700 11px var(--mono);
+  color: var(--tc);
+  border: 1.5px dashed var(--tc);
+  background: transparent;
+  transition: background 0.4s, color 0.4s;
+}
+.rf-entry.done {
+  border-style: solid;
+  background: var(--tc);
+  color: #0a0c11;
+}
+
+.rf-events ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  min-height: 150px;
+}
+.rf-events li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--text);
+}
+.rf-events li:not(:first-child) {
+  color: var(--muted);
+}
+.rf-ev-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  transform: translateY(-1px);
+}
+.rf-ev-election { background: var(--hi); }
+.rf-ev-leader,
+.rf-ev-commit { background: var(--ok); }
+.rf-ev-step { background: var(--violet); }
+.rf-ev-crash,
+.rf-ev-partition { background: var(--bad); }
+.rf-ev-client { background: var(--info); }
+
+.rf-hint {
+  font-size: 13px;
+  color: var(--faint);
+  align-self: center;
+}
+
+@media (max-width: 860px) {
+  .rf {
+    grid-template-columns: 1fr;
+  }
+}

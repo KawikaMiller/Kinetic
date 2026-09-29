@@ -1,0 +1,275 @@
+import { motion } from 'motion/react';
+import { useMemo, useState } from 'react';
+import { StageFrame } from '../../components/StageFrame';
+import { Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import type { Frame } from '../../core/types';
+import { usePlayer } from '../../core/usePlayer';
+import { fibFrames, lcsFrames, naiveCalls, type FibFrame, type LcsFrame, type Style } from './dp';
+import './styles.css';
+
+type Problem = 'fib' | 'lcs';
+const PAIRS = [
+  ['ABCBDAB', 'BDCABA'],
+  ['STONE', 'LONGEST'],
+  ['DYNAMIC', 'PROGRAM'],
+] as const;
+
+export function Stage() {
+  const [problem, setProblem] = useState<Problem>('fib');
+  const [style, setStyle] = useState<Style>('topdown');
+  const [n, setN] = useState(7);
+  const [pair, setPair] = useState('0');
+
+  const [a, b] = PAIRS[Number(pair)];
+  const frames = useMemo<Frame[]>(
+    () => (problem === 'fib' ? fibFrames(n, style) : lcsFrames(a, b, style)),
+    [problem, n, style, a, b],
+  );
+  const player = usePlayer(frames, { interval: problem === 'fib' ? 750 : 380 });
+  const ff = problem === 'fib' ? (player.frame as FibFrame) : null;
+  const lf = problem === 'lcs' ? (player.frame as LcsFrame) : null;
+
+  return (
+    <StageFrame
+      player={player}
+      height={470}
+      stats={
+        ff ? (
+          <Stats>
+            <Stat label="Calls" value={ff.calls} color="var(--ok)" sub={style === 'topdown' ? `${ff.hits} cache hits` : 'one per cell'} />
+            <Stat label="Naive calls" value={naiveCalls(n).toLocaleString()} color="var(--bad)" sub={`for fib(${n})`} />
+            <Stat label="fib(n)" value={ff.memo[n] ?? '…'} color="var(--hi)" />
+          </Stats>
+        ) : (
+          <Stats>
+            <Stat label="Cells computed" value={lf!.computed} color="var(--hi)" sub={`of ${a.length * b.length}`} />
+            <Stat label="Cache hits" value={style === 'topdown' ? lf!.hits : '—'} color="var(--info)" />
+            <Stat label="LCS" value={lf!.answer || '…'} color="var(--ok)" />
+          </Stats>
+        )
+      }
+      legend={
+        <Legend
+          items={[
+            { color: 'var(--hi)', label: 'computing now' },
+            { color: 'var(--violet)', label: 'waiting on recursion' },
+            { color: 'var(--info)', label: 'cache hit' },
+            { color: 'var(--ok)', label: problem === 'lcs' ? 'answer path' : 'saved' },
+          ]}
+        />
+      }
+      controls={
+        <Controls>
+          <Segmented
+            label="Problem"
+            value={problem}
+            onChange={setProblem}
+            options={[
+              { value: 'fib', label: 'Fibonacci' },
+              { value: 'lcs', label: 'Longest common subsequence' },
+            ]}
+          />
+          <Segmented
+            label="Approach"
+            value={style}
+            onChange={setStyle}
+            options={[
+              { value: 'topdown', label: 'Top-down (memo)' },
+              { value: 'bottomup', label: 'Bottom-up (table)' },
+            ]}
+          />
+          {problem === 'fib' ? (
+            <Slider label="n" value={n} min={3} max={12} onChange={setN} />
+          ) : (
+            <Segmented
+              label="Strings"
+              value={pair}
+              onChange={setPair}
+              options={PAIRS.map(([x, y], i) => ({ value: String(i), label: `${x} / ${y}` }))}
+            />
+          )}
+        </Controls>
+      }
+    >
+      {ff && <FibView frame={ff} n={n} />}
+      {lf && <LcsView frame={lf} a={a} b={b} />}
+    </StageFrame>
+  );
+}
+
+function FibView({ frame, n }: { frame: FibFrame; n: number }) {
+  return (
+    <div className="dp-fib">
+      <div className="dp-row-label">memo[k] = fib(k)</div>
+      <div className="dp-memo">
+        <svg className="dp-memo-arrows" viewBox={`0 0 ${(n + 1) * 100} 90`} preserveAspectRatio="none" aria-hidden="true">
+          {frame.deps.map((d) => {
+            const k = frame.memo.findIndex((_, i) => frame.state[i] === 'active');
+            if (k < 0) return null;
+            const x1 = (k + 0.5) * 100;
+            const x2 = (d + 0.5) * 100;
+            return (
+              <motion.path
+                key={`${k}-${d}`}
+                d={`M ${x1} 88 C ${x1} ${30 - (k - d) * 12}, ${x2} ${30 - (k - d) * 12}, ${x2} 88`}
+                className="dp-arrow"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              />
+            );
+          })}
+        </svg>
+        <div className="dp-memo-cells" style={{ gridTemplateColumns: `repeat(${n + 1}, 1fr)` }}>
+          {frame.memo.map((v, k) => (
+            <div key={k} className={`dp-mcell st-${frame.state[k]}`} style={{ width: 'auto' }}>
+              <span className="dp-k">{k}</span>
+              <motion.b key={v ?? 'x'} initial={{ scale: v != null ? 1.6 : 1, opacity: v != null ? 0 : 1 }} animate={{ scale: 1, opacity: 1 }}>
+                {v ?? '·'}
+              </motion.b>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="dp-stack">
+        <span className="dp-row-label">call stack</span>
+        {frame.stack.length ? (
+          frame.stack.map((k, i) => (
+            <span key={i} className={`dp-stack-chip ${i === frame.stack.length - 1 ? 'top' : ''}`}>
+              fib({k})
+            </span>
+          ))
+        ) : (
+          <span className="muted">(empty)</span>
+        )}
+      </div>
+      <CallsChart n={n} />
+    </div>
+  );
+}
+
+function CallsChart({ n }: { n: number }) {
+  const MAXN = 30;
+  const W = 600;
+  const H = 150;
+  const ymax = Math.log10(naiveCalls(MAXN));
+  const x = (k: number) => 30 + ((k - 1) / (MAXN - 1)) * (W - 60);
+  const y = (calls: number) => H - 20 - (Math.log10(calls) / ymax) * (H - 40);
+  const naive = Array.from({ length: MAXN }, (_, i) => `${x(i + 1)},${y(naiveCalls(i + 1))}`).join(' ');
+  const memo = Array.from({ length: MAXN }, (_, i) => `${x(i + 1)},${y(Math.max(1, 2 * (i + 1) - 1))}`).join(' ');
+  return (
+    <div className="dp-chart">
+      <div className="dp-row-label">calls needed for fib(n), log scale</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="dp-chart-svg">
+        {[1, 3, 5].map((p) => (
+          <g key={p}>
+            <line x1={30} x2={W - 30} y1={y(10 ** p)} y2={y(10 ** p)} className="dp-grid" />
+            <text x={26} y={y(10 ** p) + 4} textAnchor="end" className="dp-axis">
+              10{p === 1 ? '' : <tspan dy={-6} fontSize={8}>{p}</tspan>}
+            </text>
+          </g>
+        ))}
+        <polyline points={naive} className="dp-line naive" />
+        <polyline points={memo} className="dp-line memo" />
+        <line x1={x(n)} x2={x(n)} y1={10} y2={H - 20} className="dp-marker" />
+        <text x={W - 30} y={y(naiveCalls(MAXN)) + 14} textAnchor="end" className="dp-lbl naive">
+          naive: {naiveCalls(MAXN).toLocaleString()} at n=30
+        </text>
+        <text x={W - 30} y={y(59) - 8} textAnchor="end" className="dp-lbl memo">
+          memoized: 59 at n=30
+        </text>
+        <text x={x(n)} y={H - 5} textAnchor="middle" className="dp-axis">
+          n={n}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+const CS = 40;
+
+function LcsView({ frame, a, b }: { frame: LcsFrame; a: string; b: string }) {
+  const m = a.length;
+  const n = b.length;
+  const cx = (j: number) => (j + 1.5) * CS;
+  const cy = (i: number) => (i + 1.5) * CS;
+  return (
+    <div className="dp-lcs">
+      <div className="dp-grid-wrap" style={{ width: (n + 2) * CS, height: (m + 2) * CS }}>
+        <div className="dp-table" style={{ gridTemplateColumns: `repeat(${n + 2}, ${CS}px)`, gridTemplateRows: `repeat(${m + 2}, ${CS}px)` }}>
+          <div className="dp-h" />
+          <div className="dp-h dim">∅</div>
+          {b.split('').map((ch, j) => (
+            <div key={`b${j}`} className={`dp-h ${frame.cur && frame.cur[1] === j + 1 ? 'on' : ''}`}>
+              {ch}
+            </div>
+          ))}
+          {Array.from({ length: m + 1 }, (_, i) => (
+            <Row key={i} i={i} a={a} frame={frame} n={n} />
+          ))}
+        </div>
+        <svg className="dp-overlay" width={(n + 2) * CS} height={(m + 2) * CS} aria-hidden="true">
+          <defs>
+            <marker id="dp-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--hi)" />
+            </marker>
+            <marker id="dp-head-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--faint)" />
+            </marker>
+          </defs>
+          {frame.cur &&
+            frame.deps.map(([i, j]) => {
+              const chosen = frame.chosen && frame.chosen[0] === i && frame.chosen[1] === j;
+              const [ci, cj] = frame.cur!;
+              // value flows FROM the dependency INTO the current cell
+              const x1 = cx(j);
+              const y1 = cy(i);
+              const x2 = cx(cj);
+              const y2 = cy(ci);
+              return (
+                <line
+                  key={`${i}-${j}`}
+                  x1={x1 + (x2 - x1) * 0.2}
+                  y1={y1 + (y2 - y1) * 0.2}
+                  x2={x1 + (x2 - x1) * 0.72}
+                  y2={y1 + (y2 - y1) * 0.72}
+                  className={`dp-dep ${chosen ? 'chosen' : ''}`}
+                  markerEnd={chosen ? 'url(#dp-head)' : 'url(#dp-head-dim)'}
+                />
+              );
+            })}
+        </svg>
+      </div>
+      <div className="dp-answer">
+        <span className="dp-row-label">answer so far</span>
+        <div className="dp-letters">
+          {frame.answer.split('').map((ch, i) => (
+            <motion.span key={`${i}${ch}`} className="dp-letter" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
+              {ch}
+            </motion.span>
+          ))}
+          {!frame.answer && <span className="muted">(fills in during the walk back)</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ i, a, frame, n }: { i: number; a: string; frame: LcsFrame; n: number }) {
+  return (
+    <>
+      <div className={`dp-h ${i === 0 ? 'dim' : ''} ${frame.cur && frame.cur[0] === i && i > 0 ? 'on' : ''}`}>{i === 0 ? '∅' : a[i - 1]}</div>
+      {Array.from({ length: n + 1 }, (_, j) => {
+        const st = frame.state[i][j];
+        const v = frame.dp[i][j];
+        const isCur = frame.cur && frame.cur[0] === i && frame.cur[1] === j;
+        const isDep = frame.deps.some(([di, dj]) => di === i && dj === j);
+        const isChosen = frame.chosen && frame.chosen[0] === i && frame.chosen[1] === j;
+        return (
+          <div key={j} className={`dp-cell st-${st} ${isCur ? 'cur' : ''} ${isDep ? (isChosen ? 'dep chosen' : 'dep') : ''}`}>
+            {v ?? ''}
+          </div>
+        );
+      })}
+    </>
+  );
+}

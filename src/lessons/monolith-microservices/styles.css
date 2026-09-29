@@ -1,0 +1,65 @@
+.mm-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 14px 10px 6px;
+}
+
+.mm-small { font-size: 14px; }
+
+.mm-edge { stroke: var(--line-2); stroke-width: 2; }
+.mm-edge.net { stroke-dasharray: 5 6; stroke: color-mix(in srgb, var(--info) 45%, var(--line-2)); }
+
+.mm-container rect {
+  fill: rgb(167 139 250 / 0.04);
+  stroke: var(--line-2);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+  transition: stroke 0.3s, fill 0.3s;
+}
+.mm-container text { fill: var(--muted); font: 600 13px var(--mono); }
+.mm-container.deploy rect { stroke: var(--info); fill: rgb(76 201 240 / 0.06); animation: mm-pulse 1s ease-in-out infinite; }
+.mm-container.down rect { stroke: var(--bad); fill: rgb(255 93 108 / 0.06); }
+
+.mm-box rect,
+.mm-box path,
+.mm-box ellipse {
+  fill: var(--cell);
+  stroke: var(--ok);
+  stroke-width: 2;
+  transition: stroke 0.3s, fill 0.3s, opacity 0.3s;
+}
+.mm-box text { fill: var(--text); font: 600 14px var(--font); pointer-events: none; }
+.mm-db text { font: 600 12px var(--mono); fill: var(--muted); }
+.mm-box.client rect { stroke: var(--line-2); }
+
+.mm-box.deploy rect,
+.mm-box.deploy path,
+.mm-box.deploy ellipse {
+  stroke: var(--info);
+  stroke-dasharray: 6 4;
+  fill: color-mix(in srgb, var(--info) 12%, var(--cell));
+  animation: mm-pulse 1s ease-in-out infinite;
+}
+.mm-box.slow rect,
+.mm-box.slow path,
+.mm-box.slow ellipse { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--cell)); }
+.mm-box.down rect,
+.mm-box.down path,
+.mm-box.down ellipse { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 16%, var(--cell)); }
+.mm-box.down text { fill: var(--bad); }
+.mm-x { font-size: 13px !important; }
+
+.mm-box.active rect { stroke-width: 3; filter: drop-shadow(0 0 10px rgb(255 209 102 / 0.5)); }
+.mm-box rect.teamed { stroke: var(--team); stroke-width: 3; }
+
+.mm-packet { filter: drop-shadow(0 0 8px currentColor); }
+
+.mm-note rect { fill: var(--panel-2); stroke: var(--info); stroke-width: 1.5; }
+.mm-note text { fill: var(--info); font: 600 12px var(--mono); }
+
+.mm-teams text { fill: var(--muted); font: 600 12px var(--font); }
+
+@keyframes mm-pulse {
+  50% { opacity: 0.55; }
+}

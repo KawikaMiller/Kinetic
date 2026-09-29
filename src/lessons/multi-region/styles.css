@@ -1,0 +1,44 @@
+.mr-svg { display: block; width: 100%; height: auto; padding: 8px 10px 0; }
+.mr-small { font-size: 14px; }
+
+.mr-land { stroke: var(--line-2); stroke-width: 1; opacity: 0.9; }
+.mr-dot { fill: #2c3448; }
+
+.mr-req { stroke: rgb(76 201 240 / 0.35); stroke-width: 1.5; stroke-dasharray: 3 5; }
+.mr-req-dot { fill: var(--info); filter: drop-shadow(0 0 5px var(--info)); }
+.mr-rep { stroke: rgb(167 139 250 / 0.5); stroke-width: 2; }
+.mr-rep.blocked { stroke: var(--bad); stroke-dasharray: 4 5; opacity: 0.7; }
+.mr-rep-dot { fill: var(--violet); filter: drop-shadow(0 0 5px var(--violet)); }
+.mr-write { fill: var(--hi); filter: drop-shadow(0 0 8px var(--hi)); }
+.mr-conflict { fill: none; stroke: var(--bad); stroke-width: 3; }
+
+.mr-region { cursor: pointer; }
+.mr-region rect { fill: var(--cell); stroke: var(--ok); stroke-width: 2.5; transition: all 0.3s; }
+.mr-region.standby rect { stroke: var(--violet); stroke-dasharray: 4 3; }
+.mr-region.unused rect { stroke: var(--dim); opacity: 0.6; }
+.mr-region.dead rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 22%, var(--cell)); }
+.mr-region:hover rect { filter: drop-shadow(0 0 8px rgb(255 255 255 / 0.25)); }
+.mr-pulse { stroke: var(--ok); stroke-width: 2; }
+.mr-icon { fill: var(--text); font: 700 15px var(--font); pointer-events: none; }
+.mr-region.dead .mr-icon { fill: var(--bad); }
+.mr-rname { fill: var(--text); font: 600 12.5px var(--mono); }
+.mr-rcity { fill: var(--faint); font: 11.5px var(--font); }
+.mr-region.dead .mr-rname { fill: var(--bad); }
+
+.mr-user circle { fill: var(--panel-2); stroke: var(--info); stroke-width: 2; }
+.mr-user.failing circle { stroke: var(--hi); }
+.mr-user.down circle { stroke: var(--bad); }
+.mr-uicon { fill: var(--text); font-size: 13px; pointer-events: none; }
+.mr-uname { fill: var(--muted); font: 600 12px var(--font); }
+.mr-lat { fill: var(--panel); stroke: var(--line-2); }
+.mr-lat-text { fill: var(--info); font: 600 11.5px var(--mono); }
+.mr-user.failing .mr-lat-text { fill: var(--hi); }
+.mr-user.down .mr-lat-text { fill: var(--bad); }
+.mr-user.down .mr-lat { stroke: var(--bad); }
+.mr-resid { fill: var(--bad); font: 600 11.5px var(--font); }
+.mr-resid.ok { fill: var(--ok); }
+
+.mr-phase rect { fill: var(--panel-2); stroke: var(--hi); stroke-width: 1.5; }
+.mr-phase text { fill: var(--hi); font: 600 13px var(--font); }
+.mr-phase.done rect { stroke: var(--ok); }
+.mr-phase.done text { fill: var(--ok); }

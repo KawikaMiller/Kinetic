@@ -1,0 +1,147 @@
+import { motion } from 'motion/react';
+import { useMemo, type ReactNode } from 'react';
+import { StageFrame } from '../../components/StageFrame';
+import { Controls, Legend, Stat, Stats } from '../../components/ui';
+import type { Frame } from '../../core/types';
+import { usePlayer } from '../../core/usePlayer';
+
+type Outcome = 'ok' | 'bad' | 'warn' | null;
+
+interface ScFrame extends Frame {
+  target: number | null;
+  storeDown: boolean;
+  revoked: boolean;
+  sess: Outcome;
+  jwt: Outcome;
+  sessHops: number;
+}
+
+const P = { client: { x: 70, y: 75 }, lb: { x: 220, y: 75 }, store: { x: 720, y: 75 } };
+const SERVERS = [30, 75, 120].map((y) => ({ x: 450, y }));
+
+function build(): ScFrame[] {
+  const base: ScFrame = { target: null, storeDown: false, revoked: false, sess: null, jwt: null, sessHops: 0 };
+  const f = (p: Partial<ScFrame> & { say: ReactNode }): ScFrame => ({ ...base, ...p });
+  return [
+    f({ say: <>Three servers behind a load balancer, <b>same traffic in both lanes</b>. Top: sessions. Bottom: JWTs.</> }),
+    f({ target: 0, sess: 'ok', jwt: 'ok', sessHops: 1, say: <>Request 1 → server A. Sessions: A must ask the <span className="hl violet">shared store</span>. JWT: A checks the signature <b>locally</b>.</> }),
+    f({ target: 1, sess: 'ok', jwt: 'ok', sessHops: 2, say: <>Request 2 → server B. Same again: one extra network hop for sessions, zero for JWT.</> }),
+    f({ target: 2, sess: 'ok', jwt: 'ok', sessHops: 3, say: <>Any server works in both lanes, as long as sessions live in a <b>shared</b> store (not in one server's memory).</> }),
+    f({ target: 0, storeDown: true, sess: 'bad', jwt: 'ok', sessHops: 3, hold: 1.4,
+      say: <>The session store goes down. <span className="hl bad">Every</span> session request fails: everyone is effectively logged out. JWT servers don't notice.</> }),
+    f({ target: 1, revoked: true, sess: 'ok', jwt: 'warn', sessHops: 4, hold: 1.4,
+      say: <>Store's back. Now an admin <b>bans user 42</b>. Sessions: delete the row, the next request is refused instantly. JWT: <span className="hl bad">still accepted</span> until the token expires.</> }),
+    f({ target: null, hold: 2,
+      say: <>Neither wins outright. A common blend: a <span className="hl info">short-lived JWT</span> for speed, plus a <span className="hl violet">stored refresh token</span> you can revoke.</> }),
+  ];
+}
+
+export function Scale({ modePicker }: { modePicker: ReactNode }) {
+  const frames = useMemo(() => build(), []);
+  const player = usePlayer(frames, { interval: 2200 });
+  const f = player.frame;
+  return (
+    <StageFrame
+      player={player}
+      height={420}
+      stats={
+        <Stats>
+          <Stat label="Session store hops" value={f.sessHops} color="var(--violet)" />
+          <Stat label="JWT store hops" value={0} color="var(--info)" />
+        </Stats>
+      }
+      legend={
+        <Legend
+          items={[
+            { color: 'var(--info)', label: 'request path', shape: 'line' },
+            { color: 'var(--violet)', label: 'store lookup', shape: 'line' },
+            { color: 'var(--ok)', label: 'accepted correctly' },
+            { color: 'var(--bad)', label: 'failed / wrongly accepted' },
+          ]}
+        />
+      }
+      controls={<Controls>{modePicker}</Controls>}
+    >
+      <div className="aj-scale">
+        <Lane title="Sessions" sessions f={f} index={player.index} />
+        <Lane title="JWT" f={f} index={player.index} />
+      </div>
+    </StageFrame>
+  );
+}
+
+function Lane({ title, sessions = false, f, index }: { title: string; sessions?: boolean; f: ScFrame; index: number }) {
+  const outcome = sessions ? f.sess : f.jwt;
+  const t = f.target;
+  const down = sessions && f.storeDown;
+  const verdict =
+    outcome === 'ok' ? (f.revoked && sessions ? '401 · banned user refused ✓' : '200 ✓')
+      : outcome === 'bad' ? '500 · store unreachable'
+        : outcome === 'warn' ? '200 · banned user let in ✗'
+          : '';
+  const tone = outcome === 'warn' ? 'bad' : outcome;
+  return (
+    <div className="aj-lane">
+      <span className="aj-lane-title">{title}</span>
+      <svg viewBox="0 0 860 150" className="aj-lane-svg" role="img" aria-label={`${title} lane`}>
+        <line x1={P.client.x} y1={P.client.y} x2={P.lb.x} y2={P.lb.y} className={`aj-l ${t !== null ? 'on' : ''}`} />
+        {SERVERS.map((s, i) => (
+          <line key={i} x1={P.lb.x} y1={P.lb.y} x2={s.x} y2={s.y} className={`aj-l ${t === i ? 'on' : ''}`} />
+        ))}
+        {sessions &&
+          SERVERS.map((s, i) => (
+            <line key={`st${i}`} x1={s.x} y1={s.y} x2={P.store.x} y2={P.store.y} className={`aj-l aj-l-store ${t === i ? (down ? 'fail' : 'on') : ''}`} />
+          ))}
+
+        <g className="aj-n">
+          <rect x={P.client.x - 44} y={P.client.y - 18} width={88} height={36} rx={9} />
+          <text x={P.client.x} y={P.client.y + 4} textAnchor="middle">client</text>
+        </g>
+        <g className="aj-n">
+          <rect x={P.lb.x - 34} y={P.lb.y - 18} width={68} height={36} rx={9} />
+          <text x={P.lb.x} y={P.lb.y + 4} textAnchor="middle">LB</text>
+        </g>
+        {SERVERS.map((s, i) => (
+          <g key={i} className={`aj-n ${t === i ? 'on' : ''}`}>
+            <rect x={s.x - 52} y={s.y - 16} width={104} height={32} rx={9} />
+            <text x={s.x} y={s.y + 4} textAnchor="middle">
+              server {'ABC'[i]} {sessions ? '' : '🔑'}
+            </text>
+          </g>
+        ))}
+        {sessions && (
+          <g className={`aj-n aj-n-store ${down ? 'down' : ''}`}>
+            <rect x={P.store.x - 70} y={P.store.y - 22} width={140} height={44} rx={10} />
+            <text x={P.store.x} y={P.store.y - 1} textAnchor="middle">🗄 session store</text>
+            <text x={P.store.x} y={P.store.y + 14} textAnchor="middle" className="aj-n-sub">
+              {down ? '✗ DOWN' : f.revoked ? 'user 42 rows deleted' : 'shared by all servers'}
+            </text>
+          </g>
+        )}
+        {!sessions && (
+          <text x={P.store.x} y={P.store.y + 4} textAnchor="middle" className="aj-n-sub">
+            no store: each server verifies locally
+          </text>
+        )}
+
+        {t !== null && (
+          <motion.circle
+            key={`${title}-${index}`}
+            r={7}
+            fill="var(--info)"
+            initial={{ cx: P.client.x, cy: P.client.y }}
+            animate={{
+              cx: sessions ? [P.client.x, P.lb.x, SERVERS[t].x, down ? (SERVERS[t].x + P.store.x) / 2 : P.store.x, SERVERS[t].x] : [P.client.x, P.lb.x, SERVERS[t].x],
+              cy: sessions ? [P.client.y, P.lb.y, SERVERS[t].y, down ? (SERVERS[t].y + P.store.y) / 2 : P.store.y, SERVERS[t].y] : [P.client.y, P.lb.y, SERVERS[t].y],
+              fill: sessions ? ['var(--info)', 'var(--info)', 'var(--violet)', down ? 'var(--bad)' : 'var(--violet)', 'var(--violet)'] : ['var(--info)', 'var(--info)', 'var(--info)'],
+            }}
+            transition={{ duration: sessions ? 1.6 : 0.9, ease: 'easeInOut' }}
+          />
+        )}
+      </svg>
+      <motion.span key={`${title}-v-${index}`} className={`aj-verdict ${tone ?? ''}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: verdict ? 1 : 0, scale: 1 }} transition={{ delay: sessions ? 1.5 : 0.9 }}>
+        {verdict}
+      </motion.span>
+    </div>
+  );
+}

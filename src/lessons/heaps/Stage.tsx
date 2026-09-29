@@ -1,0 +1,201 @@
+import { AnimatePresence, motion } from 'motion/react';
+import { useState } from 'react';
+import { StageFrame } from '../../components/StageFrame';
+import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
+import { randInt, shuffle } from '../../core/hooks';
+import { usePlayer } from '../../core/usePlayer';
+import { MAX, extractFrames, heapifyFrames, idle, insertFrames, parent, type HItem, type HeapFrame } from './heap';
+import './styles.css';
+
+const START = [2, 5, 3, 8, 9, 6, 4, 12, 10];
+
+interface Run {
+  items: HItem[];
+  out: HItem[];
+  frames: HeapFrame[];
+  nextId: number;
+}
+
+const initial = (): Run => {
+  const items = START.map((v, i) => ({ id: i + 1, v }));
+  return {
+    items,
+    out: [],
+    nextId: 100,
+    frames: idle(items, [], <>A <b>min-heap</b>: every parent is ≤ its children, so the smallest item is always at the root. Same data, drawn two ways.</>),
+  };
+};
+
+export function Stage() {
+  const [run, setRun] = useState<Run>(initial);
+  const player = usePlayer(run.frames, { interval: 900 });
+  const f = player.frame;
+
+  const insert = () => {
+    const item = { id: run.nextId, v: randInt(1, 30) };
+    const res = insertFrames(run.items, run.out, item);
+    setRun({ ...run, items: res.items, frames: res.frames, nextId: run.nextId + 1 });
+  };
+  const extract = () => {
+    const res = extractFrames(run.items, run.out);
+    setRun({ ...run, items: res.items, out: res.out, frames: res.frames });
+  };
+  const heapify = () => {
+    const n = randInt(9, 13);
+    const vals = shuffle(Array.from({ length: 30 }, (_, i) => i + 1)).slice(0, n);
+    const raw = vals.map((v, i) => ({ id: run.nextId + i, v }));
+    const res = heapifyFrames(raw);
+    setRun({ items: res.items, out: [], frames: res.frames, nextId: run.nextId + n });
+  };
+
+  const full = run.items.length >= MAX;
+  const empty = run.items.length === 0;
+
+  return (
+    <StageFrame
+      player={player}
+      height={470}
+      stats={
+        <Stats>
+          <Stat label="Size" value={f.items.length} sub={`max ${MAX} here`} />
+          <Stat label="Min (root)" value={f.items[0]?.v ?? '—'} color="var(--ok)" />
+          <Stat label="Comparisons" value={f.comparisons} color="var(--hi)" />
+          <Stat label="Swaps" value={f.swaps} color="var(--violet)" />
+        </Stats>
+      }
+      legend={
+        <Legend
+          items={[
+            { color: 'var(--hi)', label: 'comparing' },
+            { color: 'var(--violet)', label: 'just swapped' },
+            { color: 'var(--info)', label: 'new / moved in' },
+            { color: 'var(--ok)', label: 'settled / min' },
+          ]}
+        />
+      }
+      controls={
+        <Controls>
+          <Button variant="primary" onClick={insert} disabled={full}>
+            Insert random task
+          </Button>
+          <Button onClick={extract} disabled={empty}>
+            Extract min
+          </Button>
+          <Button onClick={heapify}>Heapify a random array</Button>
+          <Button onClick={() => setRun(initial())}>Reset</Button>
+        </Controls>
+      }
+    >
+      <div className="hp">
+        <ArrayRow frame={f} />
+        <div className="hp-body">
+          <TreeView frame={f} />
+          <div className="hp-out">
+            <span className="hp-out-title">Run order (extracted)</span>
+            <AnimatePresence initial={false}>
+              {f.out.map((it, i) => (
+                <motion.div key={it.id} className="hp-out-item" layout initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+                  <span>#{f.out.length - i}</span> priority <b>{it.v}</b>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {f.out.length === 0 && <p className="hp-out-empty">Extract to run the most urgent task.</p>}
+          </div>
+        </div>
+      </div>
+    </StageFrame>
+  );
+}
+
+const spring = { type: 'spring', stiffness: 240, damping: 24 } as const;
+
+function toneOf(frame: HeapFrame, i: number) {
+  if (frame.swap && frame.swap.includes(i)) return 'swap';
+  if (frame.hi.includes(i)) return 'hi';
+  if (frame.fresh === i) return 'fresh';
+  if (frame.ok.includes(i)) return 'ok';
+  return '';
+}
+
+function ArrayRow({ frame }: { frame: HeapFrame }) {
+  const parentLink = frame.hi.length === 2 && frame.hi[1] === parent(frame.hi[0]) ? frame.hi : null;
+  return (
+    <div className="hp-arr">
+      <div className="hp-arr-head">
+        <span>array</span>
+        <AnimatePresence mode="wait">
+          {frame.formula && (
+            <motion.span key={String(frame.comparisons)} className="hp-formula" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {frame.formula}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </div>
+      <div className="hp-slots">
+        {Array.from({ length: MAX }, (_, i) => (
+          <div key={i} className={`hp-slot ${i < frame.items.length ? '' : 'empty'} ${parentLink?.includes(i) ? 'linked' : ''}`}>
+            <span>{i}</span>
+          </div>
+        ))}
+        {frame.items.map((it, i) => (
+          <motion.div
+            key={it.id}
+            className={`hp-cell ${toneOf(frame, i)}`}
+            style={{ width: `${100 / MAX}%` }}
+            initial={{ left: `${(i / MAX) * 100}%`, opacity: 0, y: -12 }}
+            animate={{ left: `${(i / MAX) * 100}%`, opacity: 1, y: 0 }}
+            transition={spring}
+          >
+            <b>{it.v}</b>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const TW = 760;
+const TH = 250;
+function nodePos(i: number) {
+  const depth = Math.floor(Math.log2(i + 1));
+  const first = 2 ** depth - 1;
+  const k = i - first;
+  const count = 2 ** depth;
+  return { x: ((k + 0.5) / count) * TW, y: 26 + depth * 68 };
+}
+
+function TreeView({ frame }: { frame: HeapFrame }) {
+  const n = frame.items.length;
+  return (
+    <svg className="hp-tree" viewBox={`0 0 ${TW} ${TH}`} preserveAspectRatio="xMidYMid meet">
+      {Array.from({ length: n }, (_, i) => {
+        if (i === 0) return null;
+        const a = nodePos(parent(i));
+        const b = nodePos(i);
+        const hot = frame.hi.includes(i) && frame.hi.includes(parent(i));
+        return (
+          <g key={`e${i}`}>
+            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className={`hp-edge ${hot ? 'hot' : ''}`} />
+            <text x={(a.x + b.x) / 2 + (b.x < a.x ? -10 : 10)} y={(a.y + b.y) / 2} textAnchor="middle" className="hp-edge-label">
+              {i % 2 ? '2i+1' : '2i+2'}
+            </text>
+          </g>
+        );
+      })}
+      {frame.items.map((it, i) => {
+        const p = nodePos(i);
+        return (
+          <motion.g key={it.id} className={`hp-node ${toneOf(frame, i)}`} initial={{ x: p.x, y: p.y, opacity: 0 }} animate={{ x: p.x, y: p.y, opacity: 1 }} transition={spring}>
+            <circle r={19} />
+            <text y={5} textAnchor="middle" className="hp-node-v">
+              {it.v}
+            </text>
+            <text y={33} textAnchor="middle" className="hp-node-i">
+              [{i}]
+            </text>
+          </motion.g>
+        );
+      })}
+    </svg>
+  );
+}

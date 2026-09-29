@@ -1,0 +1,97 @@
+.lb {
+  display: flex;
+  flex-direction: column;
+  min-height: inherit;
+}
+
+.lb-canvas {
+  position: relative;
+  height: 400px;
+}
+.lb-canvas canvas {
+  display: block;
+}
+.lb-hint {
+  position: absolute;
+  left: 20px;
+  bottom: 8px;
+  font-size: 11.5px;
+  color: var(--faint);
+  pointer-events: none;
+}
+
+.lb-chart {
+  position: relative;
+  margin: 0 16px 14px;
+  padding: 10px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgb(10 12 17 / 0.7);
+}
+.lb-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.lb-chart-head em {
+  font-style: normal;
+  color: var(--faint);
+}
+.lb-chart-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.lb-chart-keys button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 600 11px var(--font);
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.65;
+}
+.lb-chart-keys button.on {
+  opacity: 1;
+  border-color: currentColor;
+}
+.lb-chart-keys i {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+}
+.lb-chart-keys b {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text);
+  min-width: 30px;
+  text-align: right;
+}
+.lb-chart-svg {
+  display: block;
+  width: 100%;
+  height: 90px;
+}
+.lb-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.lb-chart-plot {
+  position: relative;
+}
+.lb-chart-max {
+  position: absolute;
+  left: 0;
+  top: -2px;
+  font: 10px var(--mono);
+  color: var(--faint);
+}

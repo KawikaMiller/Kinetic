@@ -1,0 +1,103 @@
+.so-single {
+  padding: 28px 24px 18px;
+  height: 400px;
+  display: flex;
+}
+
+.so-bars {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  border-bottom: 2px solid var(--line-2);
+}
+.so-bars.compact { height: 130px; flex: none; }
+
+.so-range {
+  position: absolute;
+  top: -10px;
+  bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: rgb(76 201 240 / 0.07);
+  border: 1px dashed rgb(76 201 240 / 0.4);
+  border-bottom: 0;
+  pointer-events: none;
+}
+
+.so-bar {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, #5a6a94, #333d58);
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.2s;
+}
+.compact .so-bar { border-radius: 2px 2px 0 0; }
+.so-bar span {
+  font: 600 10px var(--mono);
+  color: rgb(255 255 255 / 0.85);
+  margin-top: 4px;
+}
+.so-bar.outside { opacity: 0.35; }
+.so-bar.cmp {
+  background: var(--hi);
+  box-shadow: 0 0 16px -2px var(--hi);
+}
+.so-bar.cmp span,
+.so-bar.done span,
+.so-bar.pivot span { color: #111; }
+.so-bar.move {
+  background: var(--violet);
+  box-shadow: 0 0 18px -2px var(--violet);
+}
+.so-bar.pivot {
+  background: var(--info);
+  box-shadow: 0 0 16px -2px var(--info);
+}
+.so-bar.done { background: linear-gradient(180deg, var(--ok), #1f8a5c); }
+.so-bar.lock { box-shadow: 0 0 22px 0 var(--ok); }
+
+.so-race {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: center;
+  min-height: inherit;
+  gap: 12px;
+  padding: 18px;
+}
+.so-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgb(10 12 17 / 0.75);
+  border: 1px solid var(--line);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.so-mini.finished {
+  border-color: color-mix(in srgb, var(--ok) 60%, transparent);
+  box-shadow: 0 0 24px -10px var(--ok);
+}
+.so-mini header { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; }
+.so-mini-big { font: 600 10.5px var(--mono); color: var(--c); white-space: nowrap; }
+.so-rank {
+  margin-left: auto;
+  font: 700 12px var(--mono);
+  color: #04160d;
+  background: var(--ok);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.so-mini footer {
+  display: flex;
+  justify-content: space-between;
+  font: 11.5px var(--mono);
+  color: var(--faint);
+}
+.so-mini footer b { color: var(--text); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .so-race { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

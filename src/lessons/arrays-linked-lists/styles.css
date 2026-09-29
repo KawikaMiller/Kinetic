@@ -1,0 +1,125 @@
+.al {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 24px 24px 28px;
+}
+
+.al-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 10px; }
+.al-title { font-weight: 700; font-size: 15px; }
+.al-title-arr { color: var(--violet); }
+.al-title-lst { color: var(--info); }
+.al-sub { font-size: 12.5px; color: var(--faint); }
+.al-formula {
+  margin-left: auto;
+  font: 600 13px var(--mono);
+  color: var(--hi);
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgb(255 209 102 / 0.1);
+  border: 1px solid rgb(255 209 102 / 0.3);
+}
+
+/* ── Array ── */
+.al-arr {
+  position: relative;
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--cell-line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-2);
+}
+.al-aslot {
+  height: 78px;
+  border-right: 1px solid var(--cell-line);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 6px;
+  transition: background 0.25s;
+}
+.al-aslot:nth-child(10) { border-right: 0; } /* CAP = 10 */
+.al-aslot.is-hi { background: rgb(255 209 102 / 0.08); }
+.al-idx { font: 600 11px var(--mono); color: var(--muted); }
+.al-addr { font: 500 10px var(--mono); color: var(--faint); }
+.al-items { position: absolute; inset: 0; pointer-events: none; }
+.al-item {
+  position: absolute;
+  top: 22px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+}
+.al-item span {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font: 700 15px var(--mono);
+  border-radius: 7px;
+  background: var(--cell);
+  border: 1px solid color-mix(in srgb, var(--violet) 45%, var(--cell-line));
+  transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
+}
+.al-item.is-hi span { background: var(--hi); color: #1a1400; border-color: var(--hi); box-shadow: 0 6px 18px -6px rgb(255 209 102 / 0.7); }
+.al-item.is-ok span { background: var(--ok); color: #04160d; border-color: var(--ok); }
+.al-item.is-bad span { background: var(--bad); color: #1f0508; border-color: var(--bad); }
+
+/* ── Linked list ── */
+.al-lwrap { position: relative; }
+.al-arcs { display: block; overflow: visible; }
+.al-edge { fill: none; stroke: var(--violet); stroke-width: 2; opacity: 0.85; }
+.al-edge.is-hot { stroke: var(--hi); stroke-width: 3; filter: drop-shadow(0 0 4px rgb(255 209 102 / 0.8)); }
+.al-headlabel { font: 700 11px var(--mono); fill: var(--info); }
+.al-headline { stroke: var(--info); stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+.al-mem {
+  display: grid;
+  border: 1px solid var(--cell-line);
+  border-radius: 10px;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.al-mslot {
+  height: 78px;
+  border-right: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 4px 3px;
+}
+.al-mslot:last-child { border-right: 0; }
+.al-mslot .al-addr { text-align: center; font-size: 9px; margin-top: auto; }
+.al-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  border-radius: 7px;
+  background: var(--cell);
+  border: 1px solid color-mix(in srgb, var(--info) 45%, var(--cell-line));
+  transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
+}
+.al-node b { font: 700 14px var(--mono); }
+.al-next { font: 500 9px var(--mono); color: var(--muted); white-space: nowrap; }
+.al-node.is-hi { background: var(--hi); border-color: var(--hi); color: #1a1400; box-shadow: 0 6px 18px -6px rgb(255 209 102 / 0.7); }
+.al-node.is-hi .al-next { color: #4a3b00; }
+.al-node.is-fresh { background: rgb(76 201 240 / 0.18); border-color: var(--info); box-shadow: 0 0 0 3px rgb(76 201 240 / 0.2); }
+.al-node.is-bad { background: var(--bad); border-color: var(--bad); color: #1f0508; }
+.al-node.is-bad .al-next { color: #4a0d14; }
+
+.al-tag {
+  display: inline-block;
+  min-width: 52px;
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+.al-tag-arr { color: var(--violet); }
+.al-tag-lst { color: var(--info); }
+.al-hint { font-size: 13px; color: var(--faint); align-self: center; max-width: 340px; }

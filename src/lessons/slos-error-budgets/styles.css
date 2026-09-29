@@ -1,0 +1,56 @@
+.slo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 16px;
+  padding: 18px;
+  min-height: inherit;
+  align-items: start;
+}
+
+.slo-chart { width: 100%; height: auto; display: block; overflow: visible; }
+.slo-band.ok { fill: rgb(61 220 151 / 0.05); }
+.slo-band.hi { fill: rgb(255 209 102 / 0.06); }
+.slo-band.bad { fill: rgb(255 93 108 / 0.07); }
+.slo-grid { stroke: var(--line); stroke-width: 1; }
+.slo-grid.zero { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.slo-axis { fill: var(--faint); font: 12px var(--mono); }
+.slo-ideal { stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 6 6; }
+.slo-ideal-label { fill: var(--muted); font: 12px var(--font); }
+.slo-line { fill: none; stroke: var(--info); stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 6px rgb(76 201 240 / 0.5)); }
+.slo-dot { fill: var(--text); stroke: var(--info); stroke-width: 3; }
+
+.slo-inc rect { opacity: 0.25; transition: opacity 0.3s; }
+.slo-inc.on rect { opacity: 1; }
+.slo-inc-label { fill: var(--faint); font: 11.5px var(--font); }
+.slo-inc.on .slo-inc-label { fill: var(--muted); }
+.slo-alert { font: 600 12.5px var(--mono); }
+.slo-alert.page { fill: var(--bad); }
+.slo-alert.ticket { fill: var(--hi); }
+
+.slo-side { display: flex; flex-direction: column; gap: 12px; }
+.slo-policy {
+  --c: var(--ok);
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--c);
+  background: color-mix(in srgb, var(--c) 10%, var(--cell));
+  transition: border-color 0.3s, background 0.3s;
+}
+.slo-policy.hi { --c: var(--hi); }
+.slo-policy.bad { --c: var(--bad); }
+.slo-policy span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.slo-policy b { display: block; font-size: 20px; color: var(--c); margin: 2px 0 4px; }
+.slo-policy p { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+.slo-nines { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
+.slo-nines th { text-align: left; color: var(--faint); font-weight: 500; padding: 3px 4px; }
+.slo-nines td { position: relative; padding: 5px 4px; border-top: 1px solid var(--line); cursor: pointer; }
+.slo-nines td:last-child { z-index: 0; }
+.slo-bar { position: absolute; left: 0; top: 4px; bottom: 4px; background: rgb(76 201 240 / 0.14); border-radius: 3px; z-index: -1; }
+.slo-nines tr.on td { color: var(--hi); font-weight: 700; }
+.slo-nines tr.on .slo-bar { background: rgb(255 209 102 / 0.22); }
+.slo-sli { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .slo { grid-template-columns: 1fr; }
+}
