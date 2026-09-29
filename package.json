@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke.mjs",
     "captions": "node scripts/captions.mjs",
-    "shot": "node scripts/shot.mjs"
+    "shot": "node scripts/shot.mjs",
+    "diff": "node scripts/diff.mjs",
+    "check-tokens": "node scripts/check-tokens.mjs"
   },
   "dependencies": {
     "motion": "^13.4.4",

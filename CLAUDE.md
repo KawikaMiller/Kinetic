@@ -39,6 +39,12 @@ loss), say so on screen.
   missing structure. Needs the dev server running (`npm run dev`, pinned to 127.0.0.1:5317
   because another local app owns 5199).
 - Look at the screenshots; "no errors" is not "looks right".
+- Refactors must be pixel-identical unless a change is deliberate:
+  `npm run smoke -- --frames --label=after <ids>` (seeded `Math.random`, reduced motion,
+  step players shot paused at their first/middle/last frame), then
+  `npm run diff -- before-frames after <ids>`. `@live` shots of simulations are
+  timing-dependent and only reported. `npm run captions` should match its baseline too.
+- `npm run check-tokens`: flags raw colour literals and local copies of shared helpers.
 
 ## Gotchas already paid for
 
