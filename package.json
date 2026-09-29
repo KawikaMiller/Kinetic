@@ -2,12 +2,16 @@
   "name": "kinetic",
   "private": true,
   "version": "0.0.0",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke.mjs",
+    "captions": "node scripts/captions.mjs",
+    "shot": "node scripts/shot.mjs"
   },
   "dependencies": {
     "motion": "^13.4.4",
@@ -21,6 +25,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "puppeteer-core": "^25.12.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }

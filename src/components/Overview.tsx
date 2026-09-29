@@ -1,30 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
+import { createPersistedStore, usePersistedStore } from '../core/storage';
 import type { LessonSummary } from '../core/types';
 
-const KEY = 'kinetic:overview-collapsed';
+/** Per-lesson open/closed choice. Absent = follow the default. */
+const openStore = createPersistedStore<Record<string, boolean>>('overview-open', {});
 
-function readCollapsed() {
-  try {
-    return localStorage.getItem(KEY) === '1';
-  } catch {
-    return false;
-  }
-}
+/**
+ * The lesson's executive summary: what it is, where it's used, why it matters.
+ * Open by default on new lessons, collapsed on ones already learned, and the
+ * learner's own toggle wins per lesson.
+ */
+export function Overview({ summary, lessonId, learned }: { summary: LessonSummary; lessonId: string; learned: boolean }) {
+  const choices = usePersistedStore(openStore);
+  // Read "learned" once on arrival so marking a lesson learned doesn't yank the layout.
+  const [defaultOpen] = useState(!learned);
+  const collapsed = !(choices[lessonId] ?? defaultOpen);
 
-/** The lesson's executive summary: what it is, where it's used, why it matters. */
-export function Overview({ summary }: { summary: LessonSummary }) {
-  const [collapsed, setCollapsed] = useState(readCollapsed);
-
-  const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try {
-      localStorage.setItem(KEY, next ? '1' : '0');
-    } catch {
-      /* preference just won't persist */
-    }
-  };
+  const toggle = () => openStore.set({ ...openStore.get(), [lessonId]: collapsed });
 
   return (
     <section className="overview" aria-label="Overview">

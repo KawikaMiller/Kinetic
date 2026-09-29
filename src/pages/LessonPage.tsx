@@ -67,7 +67,7 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
             {done && <span className="done-badge">✓ Learned</span>}
           </motion.header>
 
-          <Overview summary={mod.summary} />
+          <Overview summary={mod.summary} lessonId={topic.id} learned={done} />
 
           <div className="lesson-grid">
             <main className="lesson-main">
