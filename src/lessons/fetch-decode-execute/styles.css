@@ -1,0 +1,34 @@
+.fde { flex-flow: row wrap; align-items: flex-start; gap: 16px 22px; }
+.fde-svg { display: block; flex: 1 1 100%; min-width: 0; max-width: 860px; height: auto; margin: 0 auto; }
+.fde-side { flex: 1 1 100%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fde-side .code-panel code { white-space: pre; }
+.fde-note { margin: 0; font-size: 12.5px; color: var(--faint); }
+.fde-error { color: var(--bad); }
+
+.fde-path { stroke: var(--hi); stroke-width: 2.5; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 60%, transparent)); }
+.fde-path.is-address { stroke-dasharray: 6 4; }
+
+.fde-bits { font: 700 13px var(--mono); fill: var(--muted); letter-spacing: 0.08em; }
+.fde-bits .is-op { fill: var(--hi); }
+.fde-bits .is-reg { fill: var(--violet); }
+.fde-bits .is-addr { fill: var(--info); }
+.fde-bits .is-unused { opacity: 0.45; }
+.fde-bits-key { font: 500 10.5px var(--mono); fill: var(--faint); }
+
+.fde-alu path { fill: var(--panel); stroke: var(--dim); stroke-width: 2; transition: stroke 0.25s, fill 0.25s; }
+.fde-alu.is-on path { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 12%, var(--panel)); }
+.fde-alu-title { font: 700 13px var(--font); fill: var(--text); }
+.fde-alu-sub { font: 500 11px var(--mono); fill: var(--muted); }
+
+.fde-cell { cursor: pointer; }
+.fde-cell rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.5; transition: fill 0.25s, stroke 0.25s; }
+.fde-cell.is-current rect { stroke: var(--info); stroke-width: 3; fill: color-mix(in srgb, var(--info) 12%, var(--cell)); }
+.fde-cell.is-read rect { stroke: var(--hi); stroke-width: 3; }
+.fde-cell.is-wrote rect { stroke: var(--ok); stroke-width: 3; fill: color-mix(in srgb, var(--ok) 18%, var(--cell)); }
+.fde-cell.is-editing rect { stroke: var(--violet); stroke-dasharray: 5 3; stroke-width: 2.5; }
+.fde-cell:focus-visible { outline: none; }
+.fde-cell:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
+.fde-addr { font: 600 11px var(--mono); fill: var(--faint); }
+.fde-value { font: 700 20px var(--mono); fill: var(--text); }
+.fde-asm { font: 500 10px var(--mono); fill: var(--muted); }
+.fde-mem-label { font: 600 11px var(--mono); fill: var(--faint); }
