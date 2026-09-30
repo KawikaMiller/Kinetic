@@ -1,0 +1,25 @@
+.ps { gap: 18px; }
+.ps-chart { width: 100%; height: auto; display: block; }
+.ps-rows { display: flex; flex-direction: column; gap: 10px; padding-top: 22px; }
+.ps-rows .array-strip { margin-bottom: 14px; }
+
+.ps-axis { font: 600 11px var(--mono); fill: var(--faint); }
+.ps-tread { stroke: var(--line-2); stroke-width: 2; }
+.ps-riser { stroke: var(--line-2); stroke-width: 2; transition: stroke 0.25s; }
+.ps-riser.is-hot { stroke: var(--hi); stroke-width: 3; }
+.ps-guide { stroke-width: 1.5; stroke-dasharray: 5 4; }
+.ps-from { stroke: var(--info); }
+.ps-point circle { fill: var(--cell); stroke: var(--line-2); stroke-width: 2; transition: r 0.2s; }
+.ps-point text { font: 600 11px var(--mono); fill: var(--muted); }
+.ps-point.is-from circle { fill: var(--info); stroke: var(--info); }
+.ps-point.is-from text { fill: var(--info); }
+.ps-point.is-to circle { fill: var(--violet); stroke: var(--violet); }
+.ps-point.is-to text { fill: var(--violet); }
+.ps-bracket { stroke: var(--hi); stroke-width: 3; stroke-linecap: round; }
+.ps-bracket-label { font: 700 13px var(--mono); fill: var(--hi); }
+.ps-bar { fill: var(--cell-line); transition: fill 0.25s; }
+.ps-bar.is-hot { fill: var(--hi); }
+.ps-bar-label { font: 600 11px var(--mono); fill: var(--muted); }
+
+.ps-cost { display: flex; flex-direction: column; gap: 10px; }
+.ps-updates { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
