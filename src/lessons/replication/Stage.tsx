@@ -35,7 +35,7 @@ export function Stage() {
   const leaderLen = Math.max(...(Object.values(f.nodes).map((n) => n.log.length)));
 
   return (
-    <StageFrame
+    <StageFrame minWidth={740}
       player={player}
       height={440}
       stats={

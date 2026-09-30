@@ -55,7 +55,7 @@ export function Stage() {
   const tickets = fired.filter(({ a }) => a.kind === 'ticket').length + (backgroundBurn(slo) >= 1 && t > TICKET_WINDOW_DAYS ? 1 : 0);
 
   return (
-    <StageFrame
+    <StageFrame minWidth={490}
       player={player}
       height={440}
       stats={

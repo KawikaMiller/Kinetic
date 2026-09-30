@@ -133,7 +133,7 @@ export function Stage() {
   const nodes: NodeId[] = attacker ? ['browser', 'app', 'auth', 'api', 'attacker'] : ['browser', 'app', 'auth', 'api'];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={880}
       player={player}
       height={520}
       stats={

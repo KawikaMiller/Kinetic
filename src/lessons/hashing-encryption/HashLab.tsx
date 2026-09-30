@@ -65,7 +65,7 @@ export function HashLab({ modePicker }: { modePicker: ReactNode }) {
   }, [a, b, chars, flipped, setCaption]);
 
   return (
-    <StageFrame
+    <StageFrame minWidth={440}
       height={430}
       stats={
         <Stats>

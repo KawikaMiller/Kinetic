@@ -116,7 +116,7 @@ export function Stage() {
   const items = snap?.edge.items ?? [];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={620}
       height={STAGE_HEIGHT}
       stats={
         <Stats>

@@ -34,7 +34,7 @@ export function Stage() {
   const lf = problem === 'lcs' ? (player.frame as LcsFrame) : null;
 
   return (
-    <StageFrame
+    <StageFrame minWidth={590}
       player={player}
       height={470}
       stats={

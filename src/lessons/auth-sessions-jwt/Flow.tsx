@@ -112,7 +112,7 @@ export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker
   const nodes: NodeId[] = kind === 'session' ? ['browser', 'server', 'store'] : ['browser', 'server'];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={760}
       player={player}
       height={420}
       stats={

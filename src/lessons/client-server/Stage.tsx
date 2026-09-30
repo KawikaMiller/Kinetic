@@ -143,7 +143,7 @@ export function Stage() {
         : ['GET /v1/users/{id} → { id, name, email }', 'GET /v2/users/{id} → { id, fullName, email }'];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={880}
       player={player}
       height={480}
       stats={

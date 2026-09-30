@@ -143,7 +143,7 @@ export function Stage() {
   const info = MODE_INFO[mode];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={700}
       height={470}
       stats={
         <Stats>

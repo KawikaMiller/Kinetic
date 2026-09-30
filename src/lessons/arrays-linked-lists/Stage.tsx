@@ -61,7 +61,7 @@ export function Stage() {
   const full = len >= CAP;
 
   return (
-    <StageFrame
+    <StageFrame minWidth={480}
       player={player}
       height={430}
       stats={

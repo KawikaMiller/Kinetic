@@ -25,7 +25,7 @@ export function Stage() {
   const f = player.frame;
 
   return (
-    <StageFrame
+    <StageFrame minWidth={620}
       player={player}
       height={440}
       stats={

@@ -94,7 +94,7 @@ export function Stage() {
   const rho = rate / MU;
 
   return (
-    <StageFrame
+    <StageFrame minWidth={700}
       height={STAGE_HEIGHT}
       stats={
         <Stats>

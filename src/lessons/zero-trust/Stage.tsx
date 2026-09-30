@@ -125,7 +125,7 @@ export function Stage() {
   const reached = f.owned.filter((n) => SERVICES.includes(n)).length;
 
   return (
-    <StageFrame
+    <StageFrame minWidth={900}
       player={player}
       height={520}
       stats={
