@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, duration, humanDuration, latency, pct, plural, superscript } from './format';
+import { bytes, clock, duration, humanDuration, latency, pct, plural, power, superscript } from './format';
 
 describe('superscript', () => {
   it('writes integers in superscript digits, including negatives', () => {
@@ -7,6 +7,8 @@ describe('superscript', () => {
     expect(superscript(23)).toBe('²³');
     expect(superscript(-4)).toBe('⁻⁴');
     expect(superscript(1024)).toBe('¹⁰²⁴');
+    expect(power(10)).toBe('2¹⁰');
+    expect(power(-4, 10)).toBe('10⁻⁴');
   });
 });
 

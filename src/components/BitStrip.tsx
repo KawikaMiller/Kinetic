@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { placeValue, type Bit, type BitGroup } from '../core/bits';
-import { superscript } from '../core/format';
+import { power } from '../core/format';
 import type { Tone } from '../core/tone';
 
 export type { Bit, BitGroup } from '../core/bits';
@@ -12,7 +12,7 @@ export type PlaceLabels = 'value' | 'exponent';
 const compactPlace = (v: number) => (v >= 1024 ? `${v / 1024}K` : String(v));
 
 const placeLabel = (i: number, n: number, mode: PlaceLabels) =>
-  mode === 'exponent' ? `2${superscript(n - 1 - i)}` : compactPlace(placeValue(i, n));
+  mode === 'exponent' ? power(n - 1 - i) : compactPlace(placeValue(i, n));
 
 interface Run {
   from: number;

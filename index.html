@@ -11,6 +11,13 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
+    <!-- The superscripts ⁰ ⁴-⁹ ⁺ ⁻ ⁼ ⁽ ⁾ ⁿ (U+2070-207F) are in no Google subset above, so they
+         fell back to a mismatched system font (2¹⁰ read as "2¹ᵒ"). text= fetches just those glyphs,
+         as extra unicode-range faces of the same two families. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&text=%E2%81%B0%E2%81%B4%E2%81%B5%E2%81%B6%E2%81%B7%E2%81%B8%E2%81%B9%E2%81%BA%E2%81%BB%E2%81%BC%E2%81%BD%E2%81%BE%E2%81%BF&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="root"></div>

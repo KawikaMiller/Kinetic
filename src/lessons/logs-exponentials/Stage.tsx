@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { toBits } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { superscript } from '../../core/format';
+import { power } from '../../core/format';
 import { linearScale, logScale } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { halvingFrames } from './frames';
@@ -24,16 +24,6 @@ const HALVE_MS = 900;
 const CHART = { width: 440, height: 230, left: 44, right: 400, top: 18, bottom: 200 };
 const GRID_CELL = 8;
 const GRID_GAP = 1;
-
-/** base^k with a real <sup>: the mono font's Unicode superscript digits read badly. */
-function Pow({ base = 2, k }: { base?: number; k: number }) {
-  return (
-    <>
-      {base}
-      <sup className="le-sup">{k}</sup>
-    </>
-  );
-}
 
 export function Stage() {
   const [scene, setScene] = useState<Scene>('doubling');
@@ -66,9 +56,9 @@ function DoublingScene({ picker, onHalve }: { picker: ReactNode; onHalve: (n: nu
     const hit = REFERENCES.find((r) => r.k === next);
     setCaption(
       hit ? (
-        <><Pow k={next} /> = <span className="hl">{group(pow2(next))}</span>: {hit.label}.</>
+        <>{power(next)} = <span className="hl">{group(pow2(next))}</span>: {hit.label}.</>
       ) : (
-        <><Pow k={next} /> = <span className="hl">{group(pow2(next))}</span>, about <Pow base={10} k={Math.round(decimalExponent(next))} />.
+        <>{power(next)} = <span className="hl">{group(pow2(next))}</span>, about {power(Math.round(decimalExponent(next)), 10)}.
           Every ten doublings add about three zeros.</>
       ),
       { quiet: true },
@@ -93,8 +83,8 @@ function DoublingScene({ picker, onHalve }: { picker: ReactNode; onHalve: (n: nu
       stats={
         <Stats>
           <Stat label={`2 to the ${k}`} value={group(value)} color="var(--hi)" />
-          <Stat label="≈ decimal" value={<Pow base={10} k={Math.round(decimalExponent(k))} />} sub="every 10 doublings ≈ ×1,000" />
-          <Stat label="Landmark" value={landmark ? <Pow k={landmark.k} /> : '–'} sub={landmark?.label ?? 'none yet'} color="var(--info)" />
+          <Stat label="≈ decimal" value={power(Math.round(decimalExponent(k)), 10)} sub="every 10 doublings ≈ ×1,000" />
+          <Stat label="Landmark" value={landmark ? power(landmark.k) : '–'} sub={landmark?.label ?? 'none yet'} color="var(--info)" />
         </Stats>
       }
       legend={
@@ -111,7 +101,7 @@ function DoublingScene({ picker, onHalve }: { picker: ReactNode; onHalve: (n: nu
           {picker}
           <Slider label="Doublings k" value={k} min={0} max={MAX_DOUBLINGS} onChange={change} />
           <Segmented label="Chart axis" value={axis} onChange={flip} options={[{ value: 'linear', label: 'Linear' }, { value: 'log', label: 'Log' }]} />
-          <Button onClick={() => onHalve(value)}><span>Halve <Pow k={k} /> back to 1 →</span></Button>
+          <Button onClick={() => onHalve(value)}><span>Halve {power(k)} back to 1 →</span></Button>
         </>,
       ]}
     >
@@ -155,7 +145,7 @@ function SquareGrid({ k }: { k: number }) {
         {eachWorth === 1 ? (
           `${group(count)} ${count === 1 ? 'square' : 'squares'}`
         ) : (
-          <>1,024 squares, each worth <Pow k={k - 10} /> = {group(eachWorth)}</>
+          <>1,024 squares, each worth {power(k - 10)} = {group(eachWorth)}</>
         )}
       </p>
     </div>
@@ -181,7 +171,7 @@ function PowerChart({ k, axis }: { k: number; axis: 'linear' | 'log' }) {
       ))}
       {labelled.map((r) => (
         <text key={r.k} x={CHART.right + 4} y={y.map(pow2(r.k)) + 4} className="le-ref-label">
-          2{superscript(r.k)}
+          {power(r.k)}
         </text>
       ))}
       <polyline points={points} className="le-curve" />
@@ -323,7 +313,7 @@ function BitsScene({ picker, n, setN }: { picker: ReactNode; n: number; setN: (v
         <Stats>
           <Stat label="Things" value={group(n)} color="var(--violet)" />
           <Stat label="Bits needed" value={bits} color="var(--hi)" sub="log₂ N, rounded up" />
-          <Stat label="Room for" value={group(pow2(bits))} sub={<><Pow k={bits} /> codes</>} />
+          <Stat label="Room for" value={group(pow2(bits))} sub={<>{power(bits)} codes</>} />
         </Stats>
       }
       legend={
@@ -362,7 +352,7 @@ function BitsScene({ picker, n, setN }: { picker: ReactNode; n: number; setN: (v
         <p className="le-range">
           {bits === 0
             ? '1 thing: nothing to tell apart, so no bits at all.'
-            : <><Pow k={bits - 1} /> = {group(pow2(bits - 1))} &lt; {group(n)} ≤ <Pow k={bits} /> = {group(pow2(bits))}</>}
+            : <>{power(bits - 1)} = {group(pow2(bits - 1))} &lt; {group(n)} ≤ {power(bits)} = {group(pow2(bits))}</>}
         </p>
       </div>
     </StageFrame>

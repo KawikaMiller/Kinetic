@@ -84,6 +84,9 @@ const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 export const superscript = (n: number) =>
   [...String(Math.trunc(n))].map((ch) => (ch === '-' ? '⁻' : SUPERSCRIPT_DIGITS[Number(ch)])).join('');
 
+/** A power as plain text: power(10) → '2¹⁰', power(-4, 10) → '10⁻⁴'. */
+export const power = (k: number, base = 2) => `${base}${superscript(k)}`;
+
 /** Two-digit zero padding: 7 → '07'. */
 export const pad2 = (n: number) => String(n).padStart(2, '0');
 

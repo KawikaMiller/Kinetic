@@ -34,4 +34,3 @@
 .le-error { color: var(--bad); }
 
 /* the superscript in 2<sup>k</sup> */
-.le-sup { font-size: 0.62em; line-height: 0; margin-left: 1px; }
