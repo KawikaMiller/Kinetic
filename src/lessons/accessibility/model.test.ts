@@ -1,0 +1,90 @@
+import { describe, expect, it } from 'vitest';
+import {
+  ALL_FIXED, NONE_FIXED, accessibleName, announce, buildTree, contrastRatio, formatRatio, grade, parseHex, tabOrder,
+} from './model';
+
+describe('contrast (WCAG 2.x)', () => {
+  it('#777 on #fff is 4.48:1, which fails AA for normal text', () => { // allow-color: test name quotes the example
+    const r = contrastRatio('#777', '#fff'); // allow-color: the WCAG worked example
+    expect(r).toBeCloseTo(4.48, 2);
+    expect(formatRatio(r)).toBe('4.48:1');
+    expect(grade(r).aaNormal).toBe(false);
+    expect(grade(r).aaLarge).toBe(true);
+  });
+  it('black on white is the maximum, 21:1; a colour on itself is 1:1', () => {
+    expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 5); // allow-color: extremes
+    expect(contrastRatio('#123456', '#123456')).toBe(1); // allow-color: same colour
+  });
+  it('order of the two colours does not matter', () => {
+    expect(contrastRatio('#fff', '#767676')).toBeCloseTo(contrastRatio('#767676', '#fff'), 10); // allow-color: example pair
+  });
+  it('uses the thresholds 4.5 / 3 for AA and 7 / 4.5 for AAA', () => {
+    expect(grade(4.5)).toEqual({ aaNormal: true, aaLarge: true, aaaNormal: false, aaaLarge: true });
+    expect(grade(7)).toEqual({ aaNormal: true, aaLarge: true, aaaNormal: true, aaaLarge: true });
+    expect(grade(2.99).aaLarge).toBe(false);
+  });
+  it('never displays a failing ratio as if it reached a threshold', () => {
+    expect(formatRatio(4.496)).toBe('4.49:1');
+    expect(formatRatio(6.999)).toBe('6.99:1');
+    expect(formatRatio(2.996)).toBe('2.99:1');
+    expect(formatRatio(4.504)).toBe('4.50:1');
+  });
+  it('parses 3- and 6-digit hex', () => {
+    expect(parseHex('#abc')).toEqual([0xaa, 0xbb, 0xcc]); // allow-color: parser input
+    expect(parseHex('#0a0b0c')).toEqual([10, 11, 12]); // allow-color: parser input
+  });
+});
+
+describe('accessibleName', () => {
+  it('prefers aria-label, then label, then alt, then content, then placeholder', () => {
+    expect(accessibleName({ ariaLabel: 'A', label: 'B', content: 'C' })).toBe('A');
+    expect(accessibleName({ label: 'B', placeholder: 'P' })).toBe('B');
+    expect(accessibleName({ alt: 'Logo' })).toBe('Logo');
+    expect(accessibleName({ content: ' Sign up ' })).toBe('Sign up');
+    expect(accessibleName({ placeholder: 'you@example.com' })).toBe('you@example.com');
+    expect(accessibleName({})).toBe('');
+  });
+});
+
+describe('tab order', () => {
+  it('positive tabindex jumps ahead of the natural order', () => {
+    const order = tabOrder(buildTree(NONE_FIXED, false)).map((n) => n.id);
+    expect(order).toEqual(['news', 'email']); // the div "button" isn't focusable at all
+  });
+  it('fixed: natural DOM order, and the real button is a stop', () => {
+    expect(tabOrder(buildTree(ALL_FIXED, false)).map((n) => n.id)).toEqual(['email', 'news', 'submit']);
+  });
+  it('tabindex -1 is never a Tab stop; ties keep DOM order', () => {
+    const nodes = [
+      { id: 'a', focusable: true, tabindex: 2 },
+      { id: 'b', focusable: true, tabindex: -1 },
+      { id: 'c', focusable: true, tabindex: 1 },
+      { id: 'd', focusable: true, tabindex: 2 },
+      { id: 'e', focusable: true, tabindex: null },
+    ];
+    expect(tabOrder(nodes).map((n) => n.id)).toEqual(['c', 'a', 'd', 'e']);
+  });
+});
+
+describe('the form model', () => {
+  it('broken: every fixable node reports an issue', () => {
+    const issues = buildTree(NONE_FIXED, true).filter((n) => n.issue).map((n) => n.id);
+    expect(issues).toEqual(['logo', 'title', 'email', 'news', 'submit', 'error']);
+  });
+  it('fixed: no issues, and the right roles', () => {
+    const tree = buildTree(ALL_FIXED, true);
+    expect(tree.filter((n) => n.issue)).toEqual([]);
+    expect(Object.fromEntries(tree.map((n) => [n.id, n.role]))).toMatchObject({
+      logo: 'img', title: 'heading', email: 'textbox', submit: 'button', error: 'alert',
+    });
+  });
+  it('announces nodes the way a screen reader would', () => {
+    const tree = buildTree(ALL_FIXED, true);
+    const say = (id: string) => announce(tree.find((n) => n.id === id)!);
+    expect(say('email')).toBe('Email, edit text');
+    expect(say('submit')).toBe('Sign up, button');
+    expect(say('title')).toBe('Create your account, heading level 2');
+    expect(say('error')).toBe('Alert: Please enter your email address.');
+    expect(announce(buildTree(NONE_FIXED, false).find((n) => n.id === 'logo')!)).toBe('unlabelled image');
+  });
+});

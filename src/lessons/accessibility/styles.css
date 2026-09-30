@@ -1,0 +1,78 @@
+/* Form on top, tree full width under it: the tree is wide and its labels must stay >= 8px. */
+.ac-grid { display: flex; flex-direction: column; gap: 16px; }
+.ac-form { max-width: 460px; }
+.ac-sandbox,
+.ac-tree,
+.ac-reader { display: flex; flex-direction: column; gap: 10px; }
+.ac-note,
+.ac-honest { margin: 0; font-size: 12.5px; color: var(--faint); }
+
+/* The sample form (real HTML) */
+.ac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+}
+.ac-brand { display: flex; align-items: center; gap: 10px; }
+.ac-title { margin: 0; font: 800 18px var(--font); color: var(--text); }
+.ac-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
+.ac-field input {
+  font: 500 14px var(--mono);
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: var(--bg);
+  color: var(--text);
+}
+.ac-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.ac-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.ac-attr { font-size: 11px; color: var(--bad); }
+.ac-submit {
+  align-self: flex-start;
+  font: 700 14px var(--font);
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--accent);
+  color: var(--on-fill);
+  cursor: pointer;
+}
+.ac-submit.is-div { user-select: none; }
+.ac-error { margin: 0; font-size: 13px; color: var(--bad); font-weight: 600; }
+.is-reader-focus { outline: 3px solid var(--hi); outline-offset: 3px; }
+
+/* Accessibility tree nodes */
+.ac-node-under { fill: var(--bg-2); }
+.ac-node-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.ac-node.is-tint .ac-node-box { stroke: var(--c); fill: color-mix(in srgb, var(--c) 16%, transparent); }
+.ac-node.is-solid .ac-node-box { fill: var(--c); stroke: var(--c); }
+.ac-node text { text-anchor: middle; pointer-events: none; }
+.ac-node-role { font: 700 13px var(--mono); fill: var(--text); }
+.ac-node-name { font: 500 11.5px var(--mono); fill: var(--muted); }
+.ac-node.is-solid text { fill: var(--on-c); }
+.ac-issues { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+
+/* Contrast */
+.ac-defs { position: absolute; width: 0; height: 0; }
+.ac-contrast { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.ac-preview,
+.ac-colour-only { display: flex; flex-direction: column; gap: 10px; }
+.ac-sample { padding: 16px; border-radius: 10px; }
+.ac-sample-body { margin: 0 0 6px; font-size: 16px; }
+.ac-sample-large { margin: 0; font-size: 24px; font-weight: 700; }
+.ac-verdicts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ac-color { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.ac-color input { width: 44px; height: 32px; padding: 0; border: 1px solid var(--line-2); border-radius: 8px; background: none; cursor: pointer; }
+.ac-color code { font-size: 12px; color: var(--text); }
+.ac-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ac-dot { width: 16px; height: 16px; border-radius: 50%; }
+.ac-status-label { font-size: 12.5px; color: var(--muted); }
+.ac-status-label.is-bad-example { color: var(--bad); }
+
+@media (max-width: 900px) {
+  .ac-contrast { grid-template-columns: minmax(0, 1fr); }
+}
