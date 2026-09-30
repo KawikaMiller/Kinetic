@@ -249,7 +249,7 @@ function EventLog({ events }: { events: RaftEvent[] }) {
       <ul>
         <AnimatePresence initial={false}>
           {events.map((e) => (
-            <motion.li key={`${e.t}-${e.text}`} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+            <motion.li key={e.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <i className={`rf-ev-dot rf-ev-${e.kind}`} />
               {e.text}
             </motion.li>

@@ -84,3 +84,7 @@ loss), say so on screen.
 - motion's `pathLength` breaks with `vector-effect: non-scaling-stroke`.
 - Looping decorative motion (busy ripples, gate rings) goes through `Pulse`, which holds still
   under prefers-reduced-motion. Don't add a global MotionConfig: it would strip teaching motion.
+- Never `outline: none` without a replacement focus style; the global `:focus-visible` ring is the default.
+- React keys must be unique even when two items look identical at the same instant (e.g. two
+  events while a sim is paused): key by a generated id, not by text + timestamp.
+- Anything read from localStorage goes through `createPersistedStore` with a shape guard.

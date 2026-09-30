@@ -1,6 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSetCaption } from './caption';
+import { useRegisterPlayer } from './playerRegistry';
 import type { Frame } from './types';
+
+export type ShortcutAction = 'toggle' | 'forward' | 'back' | 'restart';
+
+/** Where typing happens: no shortcut may fire while focus is here. */
+const TEXT_ENTRY = 'input, select, textarea, [contenteditable]';
+/** Controls that Space activates natively (or via role): Space must press them, not toggle playback. */
+const SPACE_ACTIVATES = 'button, a[href], summary, [role="button"], [role="radio"], [role="checkbox"], [role="switch"], [role="tab"], [role="link"], [role="menuitem"]';
+
+interface KeyLike {
+  key: string;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+}
+interface TargetLike {
+  closest(selector: string): unknown;
+}
+
+/** Which player shortcut a keydown means, or null to leave the key alone. Pure, for testing. */
+export function shortcutFor(e: KeyLike, target: TargetLike | null): ShortcutAction | null {
+  if (e.metaKey || e.ctrlKey || e.altKey) return null;
+  if (target?.closest(TEXT_ENTRY)) return null;
+  switch (e.key) {
+    case ' ':
+      return target?.closest(SPACE_ACTIVATES) ? null : 'toggle';
+    case 'ArrowRight':
+      return 'forward';
+    case 'ArrowLeft':
+      return 'back';
+    case 'r':
+    case 'R':
+      return 'restart';
+    default:
+      return null;
+  }
+}
 
 export interface PlayerOptions {
   /** Base milliseconds per frame at 1× speed. */
@@ -63,27 +100,31 @@ export function usePlayer<F extends Frame>(frames: F[], opts: PlayerOptions = {}
   const last = Math.max(0, frames.length - 1);
   const i = Math.min(index, last);
   const frame = frames[i];
+  // Nothing left to play (a one-frame player, or already on the last frame): never report "playing".
+  const isPlaying = playing && i < last;
+  useRegisterPlayer(keyboard);
 
   useEffect(() => {
     if (frame && frame.say !== undefined) setCaption(frame.say, { quiet: frame.quiet });
   }, [frame, setCaption]);
 
   useEffect(() => {
-    if (!playing || i >= last) return;
+    if (!isPlaying) return;
     const hold = frames[i]?.hold ?? 1;
     const t = setTimeout(() => {
       setIndex(i + 1);
       if (i + 1 >= last) setPlaying(false);
     }, (interval * hold) / speed);
     return () => clearTimeout(t);
-  }, [playing, i, last, interval, speed, frames]);
+  }, [isPlaying, i, last, interval, speed, frames]);
 
   const play = useCallback(() => {
+    if (last === 0) return; // a single frame has nothing to play
     if (i >= last) setIndex(0);
     setPlaying(true);
   }, [i, last]);
   const pause = useCallback(() => setPlaying(false), []);
-  const toggle = useCallback(() => (playing ? pause() : play()), [playing, play, pause]);
+  const toggle = useCallback(() => (isPlaying ? pause() : play()), [isPlaying, play, pause]);
   const seek = useCallback((n: number) => setIndex(Math.max(0, Math.min(last, n))), [last]);
   const step = useCallback(
     (delta: number) => {
@@ -94,8 +135,8 @@ export function usePlayer<F extends Frame>(frames: F[], opts: PlayerOptions = {}
   );
   const restart = useCallback(() => {
     setIndex(0);
-    setPlaying(true);
-  }, []);
+    setPlaying(last > 0);
+  }, [last]);
 
   // Keep the latest handlers reachable from a single long-lived listener.
   const keys = useRef({ toggle, step, restart });
@@ -106,21 +147,21 @@ export function usePlayer<F extends Frame>(frames: F[], opts: PlayerOptions = {}
   useEffect(() => {
     if (!keyboard) return;
     const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement;
-      if (el.closest('input, select, textarea, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === ' ') {
-        e.preventDefault();
+      const target = e.target instanceof Element ? e.target : null;
+      const action = shortcutFor(e, target);
+      if (action === 'toggle') {
+        e.preventDefault(); // keep Space from scrolling the page
         keys.current.toggle();
-      } else if (e.key === 'ArrowRight') keys.current.step(1);
-      else if (e.key === 'ArrowLeft') keys.current.step(-1);
-      else if (e.key === 'r' || e.key === 'R') keys.current.restart();
+      } else if (action === 'forward') keys.current.step(1);
+      else if (action === 'back') keys.current.step(-1);
+      else if (action === 'restart') keys.current.restart();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [keyboard]);
 
   return {
-    frame, index: i, count: frames.length, playing, atEnd: i >= last,
+    frame, index: i, count: frames.length, playing: isPlaying, atEnd: i >= last,
     speed, setSpeed, play, pause, toggle, step, seek, restart, queueNext: setQueued,
   };
 }

@@ -51,6 +51,8 @@ export type Msg = Body & {
 };
 
 export interface RaftEvent {
+  /** Unique per sim, so two identical events at the same instant (e.g. while paused) stay distinct. */
+  id: number;
   t: number;
   text: string;
   kind: 'election' | 'leader' | 'step' | 'commit' | 'crash' | 'client' | 'partition';
@@ -66,6 +68,7 @@ export class Raft {
   /** Nodes cut off from the rest (null = no partition). */
   minority: Set<number> | null = null;
   private nextMsg = 1;
+  private nextEvent = 1;
   private cmdN = 0;
   onEvent: (e: RaftEvent) => void = () => {};
 
@@ -86,7 +89,7 @@ export class Raft {
   }
 
   private emit(kind: RaftEvent['kind'], text: string) {
-    const e = { t: this.now, text, kind };
+    const e = { id: this.nextEvent++, t: this.now, text, kind };
     this.events.push(e);
     if (this.events.length > 40) this.events.shift();
     this.onEvent(e);

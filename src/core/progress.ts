@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { createPersistedStore, usePersistedStore } from './storage';
+import { createPersistedStore, isStringArray, usePersistedStore } from './storage';
 
-const doneStore = createPersistedStore<string[]>('done', []);
+const doneStore = createPersistedStore('done', [], isStringArray);
 
 /** Which lessons the learner has completed, persisted to localStorage. */
 export function useProgress() {

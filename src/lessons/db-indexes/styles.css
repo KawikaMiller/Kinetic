@@ -13,9 +13,11 @@
 .ix-node.walked rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 8%, transparent); }
 .ix-node.hot rect { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 18%, transparent); stroke-width: 2.5; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hi) 55%, transparent)); }
 .ix-node.hot text { fill: var(--text); }
-/* .ix-node .ix-level outranks `.ix-node text` for the "root" label drawn inside the root node */
+/* The "root" label sits inside the root node, so it must outrank both `.ix-node text` and
+   `.ix-node.hot text` (0,2,1): it stays faint even while the root is highlighted. */
 .ix-level,
-.ix-node .ix-level { fill: var(--faint); font: 600 10px var(--font); letter-spacing: 0.08em; text-transform: uppercase; }
+.ix-node .ix-level,
+.ix-node.hot .ix-level { fill: var(--faint); font: 600 10px var(--font); letter-spacing: 0.08em; text-transform: uppercase; }
 
 .ix-key { fill: var(--text); font: 600 11px var(--mono); transition: fill 0.3s; }
 .ix-key.hot { fill: var(--hi); }

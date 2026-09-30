@@ -1,11 +1,13 @@
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ErrorBoundary, StageCrashed } from '../components/ErrorBoundary';
 import { Overview } from '../components/Overview';
 import { Quiz } from '../components/Quiz';
 import { CaptionContext, SetCaptionContext, type CaptionState, type SetCaption } from '../core/caption';
 import { findTopic, tierOf, trackOf } from '../core/curriculum';
 import { BUILT_TOPICS, loadLesson } from '../core/lessons';
+import { PlayerRegistryContext, type RegisterPlayer } from '../core/playerRegistry';
 import { useProgress } from '../core/progress';
 import type { LessonModule, Topic } from '../core/types';
 
@@ -46,6 +48,13 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
     [],
   );
 
+  // Keyboard-bound players register here, so the shortcut hint only shows when the keys work.
+  const [players, setPlayers] = useState(0);
+  const registerPlayer = useCallback<RegisterPlayer>(() => {
+    setPlayers((n) => n + 1);
+    return () => setPlayers((n) => n - 1);
+  }, []);
+
   const pos = BUILT_TOPICS.findIndex((t) => t.id === topic.id);
   const prev = BUILT_TOPICS[pos - 1];
   const next = BUILT_TOPICS[pos + 1];
@@ -75,7 +84,11 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
 
           <div className="lesson-grid">
             <main className="lesson-main">
-              <Stage />
+              <PlayerRegistryContext.Provider value={registerPlayer}>
+                <ErrorBoundary fallback={(error, retry) => <StageCrashed error={error} onRetry={retry} />}>
+                  <Stage />
+                </ErrorBoundary>
+              </PlayerRegistryContext.Provider>
             </main>
             <aside className="lesson-side">
               <Panel title="Try this" icon="☞">
@@ -94,10 +107,12 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
                   ))}
                 </ul>
               </Panel>
-              <p className="kbd-hint">
-                <kbd>Space</kbd> play/pause · <kbd>←</kbd>
-                <kbd>→</kbd> step · <kbd>R</kbd> restart
-              </p>
+              {players > 0 && (
+                <p className="kbd-hint">
+                  <kbd>Space</kbd> play/pause · <kbd>←</kbd>
+                  <kbd>→</kbd> step · <kbd>R</kbd> restart
+                </p>
+              )}
             </aside>
           </div>
 

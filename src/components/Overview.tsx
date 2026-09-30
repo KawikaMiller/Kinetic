@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { createPersistedStore, usePersistedStore } from '../core/storage';
+import { createPersistedStore, isBooleanRecord, usePersistedStore } from '../core/storage';
 import type { LessonSummary } from '../core/types';
 
 /** Per-lesson open/closed choice. Absent = follow the default. */
-const openStore = createPersistedStore<Record<string, boolean>>('overview-open', {});
+const openStore = createPersistedStore('overview-open', {}, isBooleanRecord);
 
 /**
  * The lesson's executive summary: what it is, where it's used, why it matters.

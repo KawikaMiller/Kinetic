@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import App from './App';
+import { AppCrashed, ErrorBoundary } from './components/ErrorBoundary';
 import { assertTokensInSync } from './core/palette';
 import './styles/global.css';
 import './styles/kit.css';
@@ -11,8 +12,10 @@ if (import.meta.env.DEV) assertTokensInSync();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <HashRouter>
-      <App />
-    </HashRouter>
+    <ErrorBoundary fallback={(error) => <AppCrashed error={error} />}>
+      <HashRouter>
+        <App />
+      </HashRouter>
+    </ErrorBoundary>
   </StrictMode>,
 );

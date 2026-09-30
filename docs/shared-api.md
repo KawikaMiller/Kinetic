@@ -226,6 +226,31 @@ setCaption(node, { quiet: true })            // swap text in place, no fade (liv
 // step frames: { say, quiet: true } → the player passes it through
 ```
 
+### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
+Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
+and Space on a focused button, link or `role=radio|button|…` control presses that control instead
+of toggling playback. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
+with the keyboard on registers itself with the lesson page, which shows the shortcut hint only
+then, so lessons do nothing extra. A one-frame player never reports `playing`.
+
+### Persisted state (`storage.ts`)
+```ts
+const store = createPersistedStore('overview-open', {}, isBooleanRecord); // key, fallback, shape guard
+usePersistedStore(store)                                                   // value; re-renders on set
+```
+The shape guard is required: a stored value that fails it (hand-edited, older schema, `null`)
+reads as the fallback instead of crashing a component. Guards provided: `isStringArray`,
+`isBooleanRecord`; `parseStored` is the pure, tested core.
+
+### Error boundaries (`components/ErrorBoundary.tsx`)
+The lesson page wraps every `Stage` in `ErrorBoundary`: a crashing visual shows "This lesson hit an
+error" with a "Reload the lesson" button while the overview, side panels and quiz keep working. The
+app root has a last-resort boundary. Lessons don't add their own.
+
+### Focus
+Every keyboard-focused control gets the shared accent ring from a global `:focus-visible` rule
+(sliders and the scrubber included). Don't set `outline: none` without a replacement focus style.
+
 ---
 
 ## Components (`src/components/`)
