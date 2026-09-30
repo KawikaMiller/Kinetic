@@ -6,6 +6,8 @@
 // one retransmission timer, and Tahoe-style congestion control (slow start,
 // then on timeout: ssthresh = cwnd/2, cwnd = 1, go back to the first unacked).
 
+import { mulberry32 } from '../../core/random';
+
 export const N = 12;
 /** One-way link latency in ticks. */
 export const LATENCY = 6;
@@ -73,17 +75,6 @@ export interface Tick {
   udp: UdpView;
   cwnd: number[];
   events: SimEvent[];
-}
-
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 interface Flight {

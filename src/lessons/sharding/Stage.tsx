@@ -2,11 +2,18 @@ import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { buildFrames, ORDERS, type ShardKey, type Strategy } from './model';
+import { buildFrames, HOT_FACTOR, ORDERS, type ShardKey, type Strategy } from './model';
 import './styles.css';
 
-const SHARD_COLORS = ['#4cc9f0', '#a78bfa', '#3ddc97', '#f7b538', '#ff8c5a'];
+const SHARD_COLORS = ['var(--info)', 'var(--violet)', 'var(--ok)', 'var(--amber)', 'var(--orange)'];
+/** A hot shard also needs a few orders, so one early write doesn't count. */
+const HOT_MIN_ORDERS = 4;
+/** More orders moving than this in a rebalance is a bad sign (half of them). */
+const MANY_MOVED = ORDERS.length / 2;
+/** Order chips glide between shards on this spring. */
+const CHIP_SPRING = { type: 'spring', stiffness: 260, damping: 26 } as const;
 
 export function Stage() {
   const [strategy, setStrategy] = useState<Strategy>('range');
@@ -39,18 +46,18 @@ export function Stage() {
           <Stat
             label="Busiest shard"
             value={`${counts.length ? Math.round((Math.max(...counts) / Math.max(1, avg)) * 100) / 100 : 0}×`}
-            color={Math.max(...counts) > avg * 2 ? 'var(--bad)' : 'var(--ok)'}
+            color={Math.max(...counts) > avg * HOT_FACTOR ? 'var(--bad)' : 'var(--ok)'}
             sub="vs an even share"
           />
           <Stat
             label="Shards asked"
-            value={f.query ? `${f.query.touched.length}/${f.shards.length}` : '–'}
+            value={f.query ? `${f.query.touched.length}/${f.shards.length}` : NA}
             color={f.query ? (f.query.touched.length === 1 ? 'var(--ok)' : 'var(--bad)') : undefined}
             sub={f.query?.label ?? 'no query yet'}
           />
-          <Stat label="Query latency" value={f.query ? `${f.query.latency} ms` : '–'} sub="slowest shard wins" />
+          <Stat label="Query latency" value={f.query ? `${f.query.latency} ms` : NA} sub="slowest shard wins" />
           {f.phase === 'rebalance' && (
-            <Stat label="Orders moved" value={`${f.moved.length}/${ORDERS.length}`} color={f.moved.length > 8 ? 'var(--bad)' : 'var(--ok)'} />
+            <Stat label="Orders moved" value={`${f.moved.length}/${ORDERS.length}`} color={f.moved.length > MANY_MOVED ? 'var(--bad)' : 'var(--ok)'} />
           )}
         </Stats>
       }
@@ -120,7 +127,7 @@ export function Stage() {
 
           <div className="sh-shards" style={{ '--n': f.shards.length } as CSSProperties}>
             {f.shards.map((s, i) => {
-              const hot = counts[i] > avg * 2 && counts[i] >= 4;
+              const hot = counts[i] > avg * HOT_FACTOR && counts[i] >= HOT_MIN_ORDERS;
               const queried = f.query?.touched.includes(i);
               const isNew = f.newShard === i;
               return (
@@ -146,7 +153,7 @@ export function Stage() {
                         key={o.id}
                         layoutId={`o-${o.id}`}
                         className={`sh-chip ${f.moved.includes(o.id) ? 'moved' : ''}`}
-                        transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+                        transition={CHIP_SPRING}
                       >
                         {key === 'time' ? o.time : o.user}
                         <small>{key === 'time' ? o.user : o.time}</small>

@@ -1,9 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { AnimatedValue } from '../../components/AnimatedValue';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { useSetCaption } from '../../core/caption';
-import { shuffle } from '../../core/hooks';
+import { useIntroCaption, useSetCaption } from '../../core/caption';
+import { plural } from '../../core/format';
+import { TOKENS } from '../../core/palette';
+import { shuffle } from '../../core/random';
 import {
   COLORS, ITEMS, RIDS, add, emptyRep, inc, merge, remove, setReg, setValue, valueKey,
   type Kind, type Mode, type Rep, type Rid,
@@ -18,6 +21,14 @@ interface Msg {
   delay: number;
 }
 
+/** A local edit, recorded by the same state update that applied it (so its caption can't go stale). */
+interface LocalEdit {
+  seq: number;
+  r: Rid;
+  wasOnline: boolean;
+  what: ReactNode;
+}
+
 interface World {
   reps: Record<Rid, Rep>;
   online: Record<Rid, boolean>;
@@ -28,15 +39,19 @@ interface World {
   syncing: boolean;
   syncsDone: number;
   preSync: Record<Rid, Rep> | null;
+  lastEdit: LocalEdit | null;
 }
 
 const fresh = (): World => ({
   reps: { A: emptyRep(), B: emptyRep(), C: emptyRep() },
   online: { A: true, B: true, C: true },
-  msgs: [], nextMsg: 1, made: 0, syncing: false, syncsDone: 0, preSync: null,
+  msgs: [], nextMsg: 1, made: 0, syncing: false, syncsDone: 0, preSync: null, lastEdit: null,
 });
 
+/** Horizontal centre of each replica column, as a fraction of the stage width. */
 const X: Record<Rid, number> = { A: 1 / 6, B: 3 / 6, C: 5 / 6 };
+/** The wire runs between the outer replicas' centres. */
+const WIRE_STYLE = { '--cr-wire-left': `${X.A * 100}%`, '--cr-wire-right': `${(1 - X.C) * 100}%` } as CSSProperties;
 const KIND_NAME: Record<Kind, string> = { counter: 'G-Counter', set: 'OR-Set', register: 'LWW-Register' };
 
 function allPairs(): [Rid, Rid][] {
@@ -51,17 +66,26 @@ export function Stage() {
   const [w, setW] = useState<World>(fresh);
   const setCaption = useSetCaption();
 
-  const say = (node: ReactNode) => setCaption(node);
-
   const values = RIDS.map((r) => valueKey(w.reps[r], kind, mode));
   const converged = w.msgs.length === 0 && values.every((v) => v === values[0]);
 
+  useIntroCaption(
+    <>Three replicas of the same G-Counter. Take a replica offline, make edits on both sides of the partition, then
+      reconnect and watch them merge.</>,
+  );
+
+  // Narrate each local edit from the state that applied it, not from this render's closure.
+  const edit = w.lastEdit;
   useEffect(() => {
+    if (!edit) return;
     setCaption(
-      <>Three replicas of the same G-Counter. Take a replica offline, make edits on both sides of the partition, then
-        reconnect and watch them merge.</>,
+      edit.wasOnline ? (
+        <>{edit.r} {edit.what} and sends its state to everyone online.</>
+      ) : (
+        <>{edit.r} is <span className="hl bad">offline</span>: it {edit.what} locally. Nobody else knows yet.</>
+      ),
     );
-  }, [setCaption]);
+  }, [edit, setCaption]);
 
   // Report the outcome once a sync's messages have all landed.
   const reported = useRef(0);
@@ -89,6 +113,7 @@ export function Stage() {
 
   const reset = (k = kind, m = mode) => {
     setW(fresh());
+    reported.current = 0; // the fresh world counts syncs from zero again
     setCaption(
       <>Three replicas of the same {KIND_NAME[k]}, using a {m === 'crdt' ? <b>CRDT merge</b> : <b>naive overwrite</b>}.
         Take a replica offline, edit on both sides, then reconnect.</>,
@@ -99,24 +124,21 @@ export function Stage() {
     setW((prev) => {
       const rep = fn(prev.reps[r]);
       const reps = { ...prev.reps, [r]: rep };
-      const msgs = prev.online[r]
+      const wasOnline = prev.online[r];
+      const msgs = wasOnline
         ? RIDS.filter((x) => x !== r && prev.online[x]).map((to, i) => ({ id: prev.nextMsg + i, from: r, to, snap: rep, delay: 0 }))
         : [];
-      return { ...prev, reps, msgs: [...prev.msgs, ...msgs], nextMsg: prev.nextMsg + msgs.length, made: prev.made + (counts ? 1 : 0) };
+      return {
+        ...prev, reps, msgs: [...prev.msgs, ...msgs], nextMsg: prev.nextMsg + msgs.length, made: prev.made + (counts ? 1 : 0),
+        lastEdit: { seq: (prev.lastEdit?.seq ?? 0) + 1, r, wasOnline, what },
+      };
     });
-    say(
-      w.online[r] ? (
-        <>{r} {what} and sends its state to everyone online.</>
-      ) : (
-        <>{r} is <span className="hl bad">offline</span>: it {what} locally. Nobody else knows yet.</>
-      ),
-    );
   };
 
   const toggleOnline = (r: Rid) => {
     const going = !w.online[r];
     setW((prev) => ({ ...prev, online: { ...prev.online, [r]: going } }));
-    say(
+    setCaption(
       going ? (
         <>{r} is back online. Hit <b>Reconnect &amp; sync</b> to exchange state.</>
       ) : (
@@ -135,7 +157,7 @@ export function Stage() {
         msgs: [...prev.msgs, ...msgs], nextMsg: prev.nextMsg + msgs.length,
       };
     });
-    say(<>Everyone exchanges full state, in a <span className="hl">random order</span>: 6 messages.</>);
+    setCaption(<>Everyone exchanges full state, in a <span className="hl">random order</span>: 6 messages.</>);
   };
 
   const land = (m: Msg) => {
@@ -212,7 +234,7 @@ export function Stage() {
           <Button
             onClick={() => {
               setW((p) => ({ ...p, online: { A: false, B: false, C: false } }));
-              say(<>Full partition: every replica is on its own. Make different edits on each.</>);
+              setCaption(<>Full partition: every replica is on its own. Make different edits on each.</>);
             }}
           >
             Partition all
@@ -235,7 +257,7 @@ export function Stage() {
     >
       <div className="cr">
         <div className="cr-lane" aria-hidden="true">
-          <div className="cr-wire" />
+          <div className="cr-wire" style={WIRE_STYLE} />
           <AnimatePresence>
             {w.msgs.map((m) => (
               <motion.span
@@ -301,9 +323,7 @@ function Replica({
 
       {kind === 'counter' && (
         <>
-          <motion.div key={mode === 'crdt' ? s.vec.A + s.vec.B + s.vec.C : s.n} className="cr-big" initial={{ scale: 1.25 }} animate={{ scale: 1 }}>
-            {mode === 'crdt' ? s.vec.A + s.vec.B + s.vec.C : s.n}
-          </motion.div>
+          <AnimatedValue value={mode === 'crdt' ? s.vec.A + s.vec.B + s.vec.C : s.n} className="cr-big" />
           {mode === 'crdt' ? (
             <div className="cr-vec">
               {(['A', 'B', 'C'] as Rid[]).map((k) => (
@@ -316,9 +336,7 @@ function Replica({
           ) : (
             <div className="cr-note">just one number</div>
           )}
-          <button type="button" className="btn btn-ghost cr-act" onClick={onInc}>
-            +1
-          </button>
+          <Button className="cr-act" onClick={onInc}>+1</Button>
         </>
       )}
 
@@ -349,7 +367,7 @@ function Replica({
             </AnimatePresence>
             {!setValue(s, mode).length && <span className="cr-note">empty set</span>}
           </div>
-          {mode === 'crdt' && <div className="cr-note">{s.removed.length} tombstoned tag{s.removed.length === 1 ? '' : 's'}</div>}
+          {mode === 'crdt' && <div className="cr-note">{plural(s.removed.length, 'tombstoned tag')}</div>}
           <div className="cr-palette">
             {ITEMS.map((e) => (
               <button key={e} type="button" onClick={() => onAdd(e)} title={`add ${e}`}>
@@ -364,7 +382,7 @@ function Replica({
         <>
           <motion.div
             className="cr-swatch"
-            animate={{ backgroundColor: (mode === 'crdt' ? s.reg?.v : s.plain) ?? '#1a1f2d' }}
+            animate={{ backgroundColor: (mode === 'crdt' ? s.reg?.v : s.plain) ?? TOKENS.cell }}
             transition={{ duration: 0.4 }}
           />
           <div className="cr-note">

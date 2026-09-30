@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useReducer, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import {
   FAMILY_COLOR, INITIAL_SERVER, REASON, currentEtag, family, handle, hasBody, rawRequest, rawResponse,
@@ -176,74 +176,70 @@ export function Stage() {
           ]}
         />
       }
-      controls={
+      controls={[
         <>
-          <Controls>
-            <Segmented label="Method" value={draft.method} onChange={(m) => setDraft({ ...draft, method: m })} options={METHODS.map((m) => ({ value: m, label: m }))} />
-            <label className="hb-input">
-              <span>Path</span>
-              <input value={draft.path} onChange={(e) => setDraft({ ...draft, path: e.target.value })} spellCheck={false} />
-            </label>
-            <label className={`hb-input hb-body ${hasBody(draft.method) ? '' : 'off'}`}>
-              <span>JSON body</span>
-              <input
-                value={draft.body}
-                onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-                disabled={!hasBody(draft.method)}
-                spellCheck={false}
-              />
-            </label>
-          </Controls>
-          <Controls>
-            <Segmented
-              label="Authorization"
-              value={draft.auth}
-              onChange={(a) => setDraft({ ...draft, auth: a })}
-              options={[
-                { value: 'none', label: 'none' },
-                { value: 'user', label: 'user token' },
-                { value: 'admin', label: 'admin token' },
-              ]}
+          <Segmented label="Method" value={draft.method} onChange={(m) => setDraft({ ...draft, method: m })} options={METHODS.map((m) => ({ value: m, label: m }))} />
+          <label className="hb-input">
+            <span>Path</span>
+            <input value={draft.path} onChange={(e) => setDraft({ ...draft, path: e.target.value })} spellCheck={false} />
+          </label>
+          <label className={`hb-input hb-body ${hasBody(draft.method) ? '' : 'off'}`}>
+            <span>JSON body</span>
+            <input
+              value={draft.body}
+              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+              disabled={!hasBody(draft.method)}
+              spellCheck={false}
             />
-            <Segmented
-              label="If-None-Match"
-              value={draft.etag ? 'on' : 'off'}
-              onChange={(v) => setDraft({ ...draft, etag: v === 'on' })}
-              options={[
-                { value: 'off', label: 'off' },
-                { value: 'on', label: `${currentEtag(server, 1)} (user 1)` },
-              ]}
-            />
-            <Button variant="primary" onClick={() => send(draft)} className="hb-send">
-              Send
-            </Button>
-            <Button onClick={() => send(draft, 3)}>Send it 3×</Button>
-          </Controls>
-          <Controls>
-            <div className="hb-presets">
-              <span className="hb-presets-label">Scenarios</span>
-              <Button onClick={() => preset({ method: 'GET', path: '/users/1' })}>Read a user</Button>
-              <Button onClick={() => preset({ method: 'POST', path: '/users', body: '{"name":"Grace"}' })}>Create a user</Button>
-              <Button onClick={() => preset({ method: 'GET', path: '/users/99' })}>Missing user</Button>
-              <Button onClick={() => preset({ method: 'GET', path: '/users/1', etag: true })}>Cached copy</Button>
-              <Button onClick={() => preset({ method: 'GET', path: '/admin' })}>Not logged in</Button>
-              <Button onClick={() => preset({ method: 'GET', path: '/admin', auth: 'user' })}>Wrong role</Button>
-              <Button onClick={() => preset({ method: 'GET', path: '/crash' })}>Server bug</Button>
-            </div>
-            <Segmented
-              label="Server"
-              value={server.mode}
-              onChange={(m) => dispatch({ type: 'mode', mode: m })}
-              options={[
-                { value: 'healthy', label: 'Healthy' },
-                { value: 'ratelimited', label: 'Rate limited' },
-                { value: 'overloaded', label: 'Overloaded' },
-              ]}
-            />
-            <Button onClick={() => dispatch({ type: 'reset' })}>Reset data</Button>
-          </Controls>
-        </>
-      }
+          </label>
+        </>,
+        <>
+          <Segmented
+            label="Authorization"
+            value={draft.auth}
+            onChange={(a) => setDraft({ ...draft, auth: a })}
+            options={[
+              { value: 'none', label: 'none' },
+              { value: 'user', label: 'user token' },
+              { value: 'admin', label: 'admin token' },
+            ]}
+          />
+          <Toggle
+            label="If-None-Match"
+            value={draft.etag}
+            onChange={(etag) => setDraft({ ...draft, etag })}
+            off="off"
+            on={`${currentEtag(server, 1)} (user 1)`}
+          />
+          <Button variant="primary" onClick={() => send(draft)} className="hb-send">
+            Send
+          </Button>
+          <Button onClick={() => send(draft, 3)}>Send it 3×</Button>
+        </>,
+        <>
+          <div className="hb-presets">
+            <span className="hb-presets-label">Scenarios</span>
+            <Button onClick={() => preset({ method: 'GET', path: '/users/1' })}>Read a user</Button>
+            <Button onClick={() => preset({ method: 'POST', path: '/users', body: '{"name":"Grace"}' })}>Create a user</Button>
+            <Button onClick={() => preset({ method: 'GET', path: '/users/99' })}>Missing user</Button>
+            <Button onClick={() => preset({ method: 'GET', path: '/users/1', etag: true })}>Cached copy</Button>
+            <Button onClick={() => preset({ method: 'GET', path: '/admin' })}>Not logged in</Button>
+            <Button onClick={() => preset({ method: 'GET', path: '/admin', auth: 'user' })}>Wrong role</Button>
+            <Button onClick={() => preset({ method: 'GET', path: '/crash' })}>Server bug</Button>
+          </div>
+          <Segmented
+            label="Server"
+            value={server.mode}
+            onChange={(m) => dispatch({ type: 'mode', mode: m })}
+            options={[
+              { value: 'healthy', label: 'Healthy' },
+              { value: 'ratelimited', label: 'Rate limited' },
+              { value: 'overloaded', label: 'Overloaded' },
+            ]}
+          />
+          <Button onClick={() => dispatch({ type: 'reset' })}>Reset data</Button>
+        </>,
+      ]}
     >
       <div className="hb">
         <div className="hb-scene">

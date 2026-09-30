@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import { pad2 } from '../../core/format';
+import { fnv1a } from '../../core/hash';
+import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 
 export type Strategy = 'range' | 'hash';
@@ -30,19 +33,12 @@ export interface ShFrame extends Frame {
 const USERS = ['ada', 'tia', 'max', 'bo', 'zed', 'lu', 'rae', 'finn', 'sol', 'hana', 'ivo', 'eve', 'wes', 'kai', 'mo', 'cy'];
 export const ORDERS: Order[] = USERS.map((user, i) => ({
   id: i + 1,
-  time: `09:${String(i + 1).padStart(2, '0')}`,
+  time: `09:${pad2(i + 1)}`,
   user,
 }));
 
-/** FNV-1a: a real (if tiny) hash, so the spread is honest. */
-export function hash(s: string) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h;
-}
+/** A shard counts as hot once it holds this many times an even share. */
+export const HOT_FACTOR = 2;
 
 const TIME_RANGES = ['Jan–Mar', 'Apr–Jun', 'Jul–Sep', 'Oct–Dec'];
 const USER_RANGES = ['a–f', 'g–l', 'm–r', 's–z'];
@@ -63,7 +59,8 @@ function shardDefs(strategy: Strategy, key: ShardKey, n: number, split = -1): Sh
 
 function shardFor(o: Order, strategy: Strategy, key: ShardKey, defs: ShardDef[]): number {
   const k = key === 'time' ? `2026-12-01T${o.time}` : o.user;
-  if (strategy === 'hash') return hash(k) % defs.length;
+  // FNV-1a: a real (if tiny) hash, so the spread is honest.
+  if (strategy === 'hash') return fnv1a(k) % defs.length;
   if (key === 'time') return defs.length - 1; // every order placed today lands in the newest range
   const bounds = defs.map((d) => d.range!.split('–')[1]);
   return bounds.findIndex((b) => o.user[0] <= b[0]);
@@ -74,20 +71,21 @@ const HOT_MS = 45;
 
 function queryLatency(touched: number[], counts: number[]) {
   const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
-  const per = touched.map((i) => (counts[i] > avg * 2 ? HOT_MS : BASE_MS));
+  const per = touched.map((i) => (counts[i] > avg * HOT_FACTOR ? HOT_MS : BASE_MS));
   return Math.max(...per) + (touched.length > 1 ? 2 * touched.length : 0);
 }
 
 export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean): { frames: ShFrame[]; rebalanceAt: number } {
   const defs = shardDefs(strategy, key, 4);
-  const frames: ShFrame[] = [];
   const placed: Record<number, number> = {};
   const keyName = key === 'time' ? 'created_at' : 'user_id';
-  const push = (f: Omit<ShFrame, 'placed'> & { placed?: Record<number, number> }, say: ReactNode) =>
-    frames.push({ ...f, placed: { ...(f.placed ?? placed) }, say });
+  // The incoming order and the running query are on screen for one frame each.
+  const r = createRecorder<ShFrame>(
+    { shards: defs, placed: {}, incoming: null, query: null, moved: [], phase: 'intro' },
+    { transient: { incoming: null, query: null } },
+  );
 
-  push(
-    { shards: defs, incoming: null, query: null, moved: [], phase: 'intro' },
+  r.snap(
     <>
       Orders are split across <b>4 shards</b> by <span className="hl">{strategy === 'range' ? 'range' : 'hash'}</span> of{' '}
       <code>{keyName}</code>. Watch where today's orders land.
@@ -119,7 +117,7 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
         ) : (
           <>Writes spread across the shards. No single machine takes the whole load.</>
         );
-    push({ shards: defs, incoming: o, query: null, moved: [], phase: 'write' }, say);
+    r.snap(say, undefined, { placed: { ...placed }, incoming: o, phase: 'write' });
   });
 
   const counts = defs.map((_, i) => Object.values(placed).filter((s) => s === i).length);
@@ -127,8 +125,7 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
 
   // Query 1: a time-range query.
   const q1 = strategy === 'range' && key === 'time' ? [3] : all;
-  push(
-    { shards: defs, incoming: null, query: { label: 'orders from the last hour', touched: q1, latency: queryLatency(q1, counts) }, moved: [], phase: 'query' },
+  r.snap(
     q1.length === 1 ? (
       <>
         "Orders from the last hour" is a range on the shard key, so the router asks <span className="hl ok">one shard</span>.
@@ -139,13 +136,14 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
         so it must ask <span className="hl bad">every shard</span> and merge the answers: <b>scatter-gather</b>.
       </>
     ),
+    undefined,
+    { query: { label: 'orders from the last hour', touched: q1, latency: queryLatency(q1, counts) }, phase: 'query' },
   );
 
   // Query 2: one user's orders.
   const ada = ORDERS[0];
   const q2 = key === 'user' ? [shardFor(ada, strategy, key, defs)] : all;
-  push(
-    { shards: defs, incoming: null, query: { label: "ada's orders", touched: q2, latency: queryLatency(q2, counts) }, moved: [], phase: 'query' },
+  r.snap(
     q2.length === 1 ? (
       <>
         "ada's orders": the shard key is the user, so it goes to <span className="hl ok">exactly one shard</span>.
@@ -156,10 +154,11 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
         <span className="hl bad">Every shard</span> gets asked.
       </>
     ),
+    undefined,
+    { query: { label: "ada's orders", touched: q2, latency: queryLatency(q2, counts) }, phase: 'query' },
   );
 
-  push(
-    { shards: defs, incoming: null, query: null, moved: [], phase: 'done', hold: 2 },
+  r.snap(
     strategy === 'range' && key === 'time' ? (
       <>
         Range on time: cheap time-range queries, but a <span className="hl bad">hot shard</span> for every write. Try hash,
@@ -172,10 +171,12 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
     ) : (
       <>Range on user: even-ish writes and cheap per-user queries, but time queries hit every shard.</>
     ),
+    2,
+    { phase: 'done' },
   );
 
-  const rebalanceAt = frames.length;
-  if (!addShard) return { frames, rebalanceAt };
+  const rebalanceAt = r.frames.length;
+  if (!addShard) return { frames: r.frames, rebalanceAt };
 
   // Rebalance onto 5 shards.
   const hottest = counts.indexOf(Math.max(...counts));
@@ -197,8 +198,8 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
     const m = placed[o.id];
     before[o.id] = strategy === 'hash' || m <= split ? m : m + 1;
   }
-  push(
-    { shards: defs5, placed: before, incoming: null, query: null, moved: [], phase: 'rebalance', newShard: strategy === 'hash' ? 4 : split + 1 },
+  const newShard = strategy === 'hash' ? 4 : split + 1;
+  r.snap(
     strategy === 'hash' ? (
       <>
         Add a 5th shard. With <code>hash % N</code>, N just changed from 4 to 5…
@@ -208,9 +209,10 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
         Add a 5th shard by <b>splitting the busiest range</b> (S{hottest + 1}) in two.
       </>
     ),
+    undefined,
+    { shards: defs5, placed: before, phase: 'rebalance', newShard },
   );
-  push(
-    { shards: defs5, placed: next, incoming: null, query: null, moved, phase: 'rebalance', hold: 2.5, newShard: strategy === 'hash' ? 4 : split + 1 },
+  r.snap(
     strategy === 'hash' ? (
       <>
         …so <span className="hl bad">{moved.length} of {ORDERS.length}</span> orders have to move. That's why real systems use{' '}
@@ -227,6 +229,8 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
         put.
       </>
     ),
+    2.5,
+    { placed: next, moved },
   );
-  return { frames, rebalanceAt };
+  return { frames: r.frames, rebalanceAt };
 }

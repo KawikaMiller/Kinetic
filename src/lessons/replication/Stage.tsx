@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Flyer } from '../../components/scene';
+import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { LAT, SCENARIOS, WRITE_MS, type Mode, type NodeId, type Pkt, type Place, type Scenario } from './scenarios';
 import './styles.css';
@@ -40,7 +42,7 @@ export function Stage() {
         <Stats>
           <Stat
             label="Write latency"
-            value={f.latency === null ? '–' : `${f.latency} ms`}
+            value={f.latency === null ? NA : `${f.latency} ms`}
             color={f.latency === null ? undefined : f.latency > 20 ? 'var(--bad)' : 'var(--ok)'}
             sub={`async ${WRITE_MS.async} · sync ${WRITE_MS.sync}`}
           />
@@ -177,22 +179,23 @@ export function Stage() {
   );
 }
 
+/** Share of a frame's interval a packet spends in flight (a `dur` of 1 = one frame). */
+const FLIGHT_SHARE = 0.85;
+
 function Packet({ p, speed }: { p: Pkt; speed: number }) {
   const a = POS[p.from];
   const b = POS[p.to];
   const lost = p.kind === 'lost';
-  const end = lost ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : b;
-  const seconds = ((p.dur ?? 1) * INTERVAL * 0.85) / 1000 / speed;
+  const seconds = ((p.dur ?? 1) * INTERVAL * FLIGHT_SHARE) / 1000 / speed;
   return (
-    <motion.span
+    <Flyer
+      from={a}
+      to={lost ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } : b}
       className={`rep-pkt kind-${p.kind}`}
-      style={{ x: '-50%', y: '-50%' }}
-      initial={{ left: `${a.x}%`, top: `${a.y}%`, opacity: 0, scale: 0.6 }}
-      animate={{ left: `${end.x}%`, top: `${end.y}%`, opacity: lost ? [1, 1, 0] : [0, 1, 1, 0], scale: 1 }}
-      exit={{ opacity: 0, scale: 0.6 }}
-      transition={{ duration: seconds, ease: 'easeInOut' }}
+      fade={lost ? 'lost' : 'arrive'}
+      duration={seconds}
     >
       {p.label}
-    </motion.span>
+    </Flyer>
   );
 }

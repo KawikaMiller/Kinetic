@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Flyer } from '../../components/scene';
+import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, type Choice, type Net, type NodeId, type Pkt, type Place } from './scenarios';
 import './styles.css';
@@ -54,7 +56,7 @@ export function Stage() {
             value={f.refusing.length ? f.refusing.join(', ') : 'none'}
             color={f.refusing.length ? 'var(--bad)' : undefined}
           />
-          <Stat label="Write latency" value={f.latency === null ? '–' : `${f.latency} ms`} />
+          <Stat label="Write latency" value={f.latency === null ? NA : `${f.latency} ms`} />
         </Stats>
       }
       legend={
@@ -201,21 +203,24 @@ export function Stage() {
   );
 }
 
+/** Share of a frame's interval a packet spends in flight. */
+const FLIGHT_SHARE = 0.8;
+
 function Packet({ p, speed }: { p: Pkt; speed: number }) {
   const a = POS[p.from];
   const b = POS[p.to];
   const lost = p.kind === 'lost';
+  // A lost message dies where its line crosses the partition wall.
   const end = lost ? { x: WALL_X, y: a.y + ((b.y - a.y) * (WALL_X - a.x)) / (b.x - a.x) } : b;
   return (
-    <motion.span
+    <Flyer
+      from={a}
+      to={end}
       className={`cap-pkt kind-${p.kind}`}
-      style={{ x: '-50%', y: '-50%' }}
-      initial={{ left: `${a.x}%`, top: `${a.y}%`, opacity: 0, scale: 0.6 }}
-      animate={{ left: `${end.x}%`, top: `${end.y}%`, opacity: lost ? [1, 1, 0] : [0, 1, 1, 0], scale: 1 }}
-      exit={{ opacity: 0, scale: 0.6 }}
-      transition={{ duration: (INTERVAL * 0.8) / 1000 / speed, ease: 'easeInOut' }}
+      fade={lost ? 'lost' : 'arrive'}
+      duration={(INTERVAL * FLIGHT_SHARE) / 1000 / speed}
     >
       {p.label}
-    </motion.span>
+    </Flyer>
   );
 }

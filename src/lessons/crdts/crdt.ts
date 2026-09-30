@@ -1,13 +1,16 @@
 // State-based CRDTs (G-Counter, OR-Set, LWW-Register) next to the naive
 // "whatever arrives last overwrites me" merge they replace.
 
+import { TOKENS } from '../../core/palette';
+
 export type Rid = 'A' | 'B' | 'C';
 export const RIDS: Rid[] = ['A', 'B', 'C'];
 export type Kind = 'counter' | 'set' | 'register';
 export type Mode = 'crdt' | 'naive';
 
 export const ITEMS = ['🍎', '🍌', '🍇', '🥝'];
-export const COLORS = ['#4cc9f0', '#ff5d8f', '#3ddc97', '#f7b538'];
+/** Register values. Hex, not var(), because motion interpolates the swatch colour. */
+export const COLORS = [TOKENS.info, TOKENS.pink, TOKENS.ok, TOKENS.amber];
 
 export interface Tagged {
   e: string;

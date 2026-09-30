@@ -3,8 +3,8 @@
 .cr-lane { position: relative; height: 58px; }
 .cr-wire {
   position: absolute;
-  left: 16.67%;
-  right: 16.67%;
+  left: var(--cr-wire-left);
+  right: var(--cr-wire-right);
   top: 38px;
   height: 2px;
   background: repeating-linear-gradient(90deg, var(--line-2) 0 6px, transparent 6px 12px);
