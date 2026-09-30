@@ -33,7 +33,7 @@
   fill: var(--panel-2);
 }
 .rf-body.dead {
-  fill: #1a1216;
+  fill: var(--cell-dead);
   stroke-dasharray: 5 4;
 }
 .rf-timer {

@@ -38,7 +38,11 @@ loss), say so on screen.
 
 - Colours: CSS uses tokens (`var(--hi)`, tints via `color-mix(in srgb, var(--hi) 14%, transparent)`,
   text on solid fills via `var(--on-hi)` etc.). Canvas uses `TOKENS` / `alpha()` from
-  `core/palette.ts`; never a local hex table. New tokens go in `global.css` and `palette.ts` together.
+  `core/palette.ts`; never a local hex table. New tokens go in `global.css` (and `palette.ts` if
+  canvas needs them). A literal that truly can't be a token gets a same-line
+  `allow-color: <reason>` comment.
+- `kit.css` and `components/scene/scene.css` load globally from `main.tsx`: use their classes
+  anywhere, no import needed.
 - Live simulations use `useSimulation` (mutable world + throttled snapshot); canvas drawing goes
   through `core/canvas.ts` and lives in the lesson's `draw.ts`, sim logic in `sim.ts`.
 - SVG actor/packet scenes compose `components/scene` (`SceneNode`, `Packet`, `Pulse`, `TravelDot`,
@@ -56,12 +60,14 @@ loss), say so on screen.
   missing structure. Needs the dev server running (`npm run dev`, pinned to 127.0.0.1:5317
   because another local app owns 5199).
 - Look at the screenshots; "no errors" is not "looks right".
-- Refactors must be pixel-identical unless a change is deliberate:
-  `npm run smoke -- --frames --label=after <ids>` (seeded `Math.random`, reduced motion,
-  step players shot paused at their first/middle/last frame), then
-  `npm run diff -- before-frames after <ids>`. `@live` shots of simulations are
-  timing-dependent and only reported. `npm run captions` should match its baseline too.
-- `npm run check-tokens`: flags raw colour literals and local copies of shared helpers.
+- Refactors must be pixel-identical unless a change is deliberate. Capture a baseline on the
+  untouched tree first (`npm run smoke -- --frames --label=base`: seeded `Math.random`, reduced
+  motion, step players shot paused at their first/middle/last frame), then after the change
+  `npm run smoke -- --frames --label=after <ids>` and `npm run diff -- base after <ids>`.
+  `@live` shots of simulations are timing-dependent and only reported. `npm run captions`
+  should match its baseline too.
+- `npm run check-tokens -- --strict` must pass: no raw colour literals without an
+  `allow-color` reason, no local copies of shared helpers.
 
 ## Gotchas already paid for
 
@@ -71,3 +77,5 @@ loss), say so on screen.
 - Don't read `ref.current` during render (oxlint `react/refs`).
 - For motion SVG attributes you animate, set the start value via `initial`, not as a plain attribute too.
 - motion's `pathLength` breaks with `vector-effect: non-scaling-stroke`.
+- Looping decorative motion (busy ripples, gate rings) goes through `Pulse`, which holds still
+  under prefers-reduced-motion. Don't add a global MotionConfig: it would strip teaching motion.

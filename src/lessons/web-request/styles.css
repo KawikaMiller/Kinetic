@@ -99,7 +99,7 @@
   min-width: 0;
 }
 .wr-seg + .wr-seg {
-  box-shadow: inset 1px 0 0 rgb(0 0 0 / 0.35);
+  box-shadow: inset 1px 0 0 rgb(0 0 0 / 0.35); /* allow-color: neutral inner shadow */
 }
 .wr-fall-legend {
   display: flex;

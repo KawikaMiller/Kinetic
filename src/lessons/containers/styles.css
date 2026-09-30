@@ -116,9 +116,6 @@
 .ct-meter { display: grid; grid-template-columns: 54px 1fr auto; gap: 8px; align-items: center; font-size: 11px; }
 .ct-meter span { font: 600 10.5px var(--mono); text-transform: uppercase; color: var(--faint); }
 .ct-meter b { font: 600 11px var(--mono); color: var(--muted); }
-.ct-meter-bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
-.ct-meter-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ok); }
-.ct-meter-bar i.hot { background: var(--bad); }
 
 @media (max-width: 900px) {
   .ct-stacks,

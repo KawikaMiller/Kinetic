@@ -1,4 +1,3 @@
-.dp-row-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 
 /* ── Fibonacci ── */
 .dp-fib { display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; }
@@ -28,7 +27,7 @@
 .dp-mcell.st-hit b, .dp-mcell.st-hit .dp-k { color: var(--on-info); }
 
 .dp-stack { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 30px; }
-.dp-stack .dp-row-label { margin-right: 6px; }
+.dp-stack > .section-title { margin-right: 6px; }
 .dp-stack-chip { font: 600 12px var(--mono); padding: 3px 8px; border-radius: 6px; background: color-mix(in srgb, var(--violet) 15%, transparent); color: var(--violet); }
 .dp-stack-chip.top { background: var(--hi); color: var(--on-hi); }
 
@@ -79,3 +78,5 @@
 .dp-answer { display: flex; flex-direction: column; gap: 8px; min-width: 180px; }
 .dp-letters { display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
 .dp-letter { display: grid; place-items: center; width: 34px; height: 38px; border-radius: 8px; font: 800 18px var(--mono); background: var(--ok); color: var(--on-ok); }
+
+.dp-chart > .section-title { display: block; }

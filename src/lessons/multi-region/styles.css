@@ -2,7 +2,7 @@
 .mr-small { font-size: 14px; }
 
 .mr-land { stroke: var(--line-2); stroke-width: 1; opacity: 0.9; }
-.mr-dot { fill: #2c3448; }
+.mr-dot { fill: var(--land); }
 
 .mr-req { stroke: color-mix(in srgb, var(--info) 35%, transparent); stroke-width: 1.5; stroke-dasharray: 3 5; }
 .mr-req-dot { fill: var(--info); filter: drop-shadow(0 0 5px var(--info)); }
@@ -17,7 +17,7 @@
 .mr-region.standby rect { stroke: var(--violet); stroke-dasharray: 4 3; }
 .mr-region.unused rect { stroke: var(--dim); opacity: 0.6; }
 .mr-region.dead rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 22%, var(--cell)); }
-.mr-region:hover rect { filter: drop-shadow(0 0 8px rgb(255 255 255 / 0.25)); }
+.mr-region:hover rect { filter: drop-shadow(0 0 8px rgb(255 255 255 / 0.25)); } /* allow-color: neutral hover glow */
 .mr-pulse { stroke: var(--ok); stroke-width: 2; }
 .mr-icon { fill: var(--text); font: 700 15px var(--font); pointer-events: none; }
 .mr-region.dead .mr-icon { fill: var(--bad); }

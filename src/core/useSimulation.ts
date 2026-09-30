@@ -68,7 +68,13 @@ export function useSimulation<W, S>(o: SimulationOptions<W, S>) {
     takeSnapshot();
   }, [takeSnapshot]);
 
+  /**
+   * Re-read `snap` right now, even while paused: call it after an action changes the
+   * world. Skips `onSnapshot`, so the action's own caption isn't replaced by an insight.
+   */
+  const refresh = useCallback(() => setSnap(opts.current.snapshot(world())), [world]);
+
   const togglePause = useCallback(() => setPaused((p) => !p), []);
 
-  return { world, snap, paused, setPaused, togglePause, reset };
+  return { world, snap, paused, setPaused, togglePause, reset, refresh };
 }

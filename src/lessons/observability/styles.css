@@ -55,8 +55,8 @@
 .ob-table tr.slow .p99 { color: var(--hi); font-weight: 700; }
 .ob-table tr.bad .err { color: var(--bad); font-weight: 700; }
 .ob-table tr.found { background: color-mix(in srgb, var(--ok) 10%, transparent); }
-.ob-spark { width: 80px; height: 22px; display: block; }
-.ob-spark-slo { stroke: var(--line-2); stroke-dasharray: 2 3; }
+.ob-spark { overflow: hidden; }
+.ob-spark .sparkline-ref { stroke-dasharray: 2 3; }
 
 .ob-trace-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .ob-trace-actions .btn { padding: 5px 10px; font-size: 12px; }

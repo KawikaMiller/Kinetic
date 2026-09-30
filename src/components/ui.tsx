@@ -33,7 +33,6 @@ export function Slider({
   );
 }
 
-export type { Option } from './options';
 
 /** Pill-style single choice. Good for picking an algorithm, a mode, or a small number. */
 export function Segmented<T extends string | number>({
@@ -90,12 +89,15 @@ export function Toggle({
 
 /** Single-line text or number input with the shared look. Enter does nothing unless you pass onEnter. */
 export function TextField({
-  label, value, onChange, onEnter, sanitize, type = 'text', min, max, width, maxLength, placeholder, disabled, ariaLabel,
+  label, value, onChange, onEnter, onBlur, sanitize, type = 'text', min, max, width, maxLength, placeholder, disabled, ariaLabel,
+  spellCheck, className = '',
 }: {
   label?: string;
   value: string;
   onChange: (v: string) => void;
   onEnter?: () => void;
+  /** When the field loses focus: the place to normalise a half-typed value. */
+  onBlur?: () => void;
   /** Clean the raw input before onChange, e.g. letters only. */
   sanitize?: (raw: string) => string;
   type?: 'text' | 'number';
@@ -106,9 +108,13 @@ export function TextField({
   placeholder?: string;
   disabled?: boolean;
   ariaLabel?: string;
+  /** Off for code-like input (paths, JSON), so the browser doesn't underline it. */
+  spellCheck?: boolean;
+  /** Extra class on the wrapper, for lesson sizing (e.g. a wider body field). */
+  className?: string;
 }) {
   return (
-    <label className="text-field">
+    <label className={`text-field ${className}`}>
       {label && <span>{label}</span>}
       <input
         type={type}
@@ -118,9 +124,11 @@ export function TextField({
         maxLength={maxLength}
         placeholder={placeholder}
         disabled={disabled}
+        spellCheck={spellCheck}
         aria-label={ariaLabel ?? label}
         style={width !== undefined ? { width } : undefined}
         onChange={(e) => onChange(sanitize ? sanitize(e.target.value) : e.target.value)}
+        onBlur={onBlur}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && onEnter) {
             e.preventDefault();
@@ -132,19 +140,40 @@ export function TextField({
   );
 }
 
-/** A label over a tight group of controls: preset buttons, palettes, role pickers. */
-export function ControlGroup({ label, children }: { label?: string; children: ReactNode }) {
+/**
+ * A label over a tight group of controls: preset buttons, palettes, role pickers.
+ * `inline` puts the label to the left of the group instead of above it.
+ */
+export function ControlGroup({
+  label, inline = false, className = '', children,
+}: {
+  label?: string;
+  inline?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="control-group">
+    <div className={`control-group ${inline ? 'is-inline' : ''} ${className}`}>
       {label && <span className="control-group-label">{label}</span>}
       <div className="control-group-items">{children}</div>
     </div>
   );
 }
 
-/** Faint explanatory text inside a controls row. */
-export function Hint({ children }: { children: ReactNode }) {
-  return <span className="hint">{children}</span>;
+/**
+ * Explanatory text inside a controls row: faint by default, `muted` when it matters
+ * more; `block` gives it a line of its own.
+ */
+export function Hint({
+  tone = 'faint', block = false, className = '', children,
+}: {
+  tone?: 'faint' | 'muted';
+  block?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const classes = ['hint', tone === 'muted' && 'is-muted', block && 'is-block', className].filter(Boolean).join(' ');
+  return <span className={classes}>{children}</span>;
 }
 
 /** The ▶ Resume / ❚❚ Pause button every live simulation has. */
@@ -166,15 +195,25 @@ export function Legend({ items }: { items: { color: string; label: ReactNode; sh
   );
 }
 
-/** A big live number: comparisons, hits, requests/sec... */
-export function Stat({ label, value, color, sub }: { label: string; value: ReactNode; color?: string; sub?: ReactNode }) {
+/** A big live number: comparisons, hits, requests/sec... `children` render under it (e.g. a <Bar>). */
+export function Stat({
+  label, value, color, sub, className = '', children,
+}: {
+  label: string;
+  value: ReactNode;
+  color?: string;
+  sub?: ReactNode;
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
-    <div className="stat">
+    <div className={`stat ${className}`}>
       <span className="stat-label">{label}</span>
       <span className="stat-value" style={color ? { color } : undefined}>
         {value}
       </span>
       {sub && <span className="stat-sub">{sub}</span>}
+      {children}
     </div>
   );
 }

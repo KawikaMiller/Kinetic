@@ -83,7 +83,7 @@
   color: var(--bg);
   padding: 6px 12px;
   border-radius: 10px;
-  box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7);
+  box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7); /* allow-color: neutral drop shadow */
 }
 .hb-env-req {
   background: var(--violet);
@@ -276,23 +276,9 @@
 .hb-body input {
   width: 210px;
 }
-.hb-body.off {
-  opacity: 0.45;
-}
-.hb-presets {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
 .hb-presets .btn {
   padding: 6px 11px;
   font-size: 13px;
-}
-.hb-presets-label {
-  font-size: 13px;
-  color: var(--muted);
-  margin-right: 4px;
 }
 
 @media (max-width: 900px) {

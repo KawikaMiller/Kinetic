@@ -1,5 +1,6 @@
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { SPRING } from '../../core/motion';
@@ -228,23 +229,25 @@ function HashPanel({ view }: { view: HashView }): ReactNode {
   );
 }
 
+/** motion's default tween for the load bar (Bar's own default is slower). */
+const LOAD_TRANSITION = {};
+
 function LoadMeter({ load, warn }: { load: number; warn: boolean }) {
-  const max = METER_MAX;
-  const over = load > THRESHOLD;
+  const color = load > THRESHOLD ? 'var(--bad)' : 'var(--ok)';
   return (
-    <div className={`stat ht-meter ${warn ? 'warn' : ''}`}>
-      <span className="stat-label">Load factor</span>
-      <span className="stat-value" style={{ color: over ? 'var(--bad)' : 'var(--ok)' }}>
-        {load.toFixed(2)}
-      </span>
-      <div className="ht-meter-bar">
-        <motion.i
-          initial={false}
-          animate={{ width: `${Math.min(1, load / max) * 100}%` }}
-          style={{ background: over ? 'var(--bad)' : 'var(--ok)' }}
-        />
-        <span className="ht-meter-mark" style={{ left: `${(THRESHOLD / max) * 100}%` }} title="resize threshold 0.75" />
-      </div>
-    </div>
+    <Stat className={`ht-meter ${warn ? 'warn' : ''}`} label="Load factor" value={load.toFixed(2)} color={color}>
+      <Bar
+        className="ht-meter-bar"
+        value={load}
+        max={METER_MAX}
+        color={color}
+        track="var(--line-2)"
+        height={6}
+        transition={LOAD_TRANSITION}
+        marker={THRESHOLD}
+        markOpacity={0.7}
+        markLabel={`resize threshold ${THRESHOLD}`}
+      />
+    </Stat>
   );
 }

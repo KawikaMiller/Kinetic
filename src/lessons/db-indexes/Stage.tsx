@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { bytes } from '../../core/format';
 import { useElementSize } from '../../core/hooks';
 import { pick, randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
@@ -229,10 +230,7 @@ const PAGE_BYTES = 8192;
 const BAR_H = 10;
 const fmt = (n: number) => (n >= 1e9 ? `${n / 1e9} billion` : n >= 1e6 ? `${n / 1e6} million` : n.toLocaleString());
 /** Bytes read for `pages` pages, in whole decimal units (the lesson rounds for readability). */
-const pageBytes = (pages: number) => {
-  const b = pages * PAGE_BYTES;
-  return b >= 1e9 ? `${(b / 1e9).toFixed(0)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(0)} MB` : `${(b / 1e3).toFixed(0)} KB`;
-};
+const pageBytes = (pages: number) => bytes(pages * PAGE_BYTES, { base: 1000, dp: 0 });
 
 function AtScale() {
   const [exp, setExp] = useState(6);

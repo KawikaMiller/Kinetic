@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box } from '../../components/Panel';
-import { SceneNode } from '../../components/scene';
+import { Packet, Pulse, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { pillWidth, pointAlong } from '../../core/geometry';
+import { pointAlong } from '../../core/geometry';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import './styles.css';
@@ -180,7 +180,7 @@ export function Stage() {
 
           {zt && (
             <g className="zt-gate">
-              <motion.circle cx={POS.gate.x} cy={POS.gate.y} fill="none" stroke="var(--hi)" strokeOpacity={0.4} initial={{ r: 62 }} animate={{ r: [62, 72, 62] }} transition={{ duration: 3, repeat: Infinity }} />
+              <Pulse mode="breathe" at={POS.gate} from={62} to={72} color="var(--hi)" opacity={0.4} strokeWidth={1} duration={3} />
               <circle cx={POS.gate.x} cy={POS.gate.y} r={62} />
               <text x={POS.gate.x} y={POS.gate.y - 6} textAnchor="middle" className="zt-gate-title">🛡 Access proxy</text>
               <text x={POS.gate.x} y={POS.gate.y + 10} textAnchor="middle" className="zt-gate-sub">+ policy engine</text>
@@ -255,29 +255,28 @@ const DENY_SHORTFALL = 0.18;
 /** Seconds per hop, plus a little extra to settle. */
 const HOP_SECONDS = 0.7;
 
-/**
- * Kept local rather than the shared <Packet>: it spaces its keyframes evenly across
- * every hop and fades out on the last one, which Packet's travel/hold/fade timing
- * can't express (Phase 2 request filed).
- */
+/** Extra seconds the pill lingers (and fades) after its last hop. */
+const LINGER_SECONDS = 0.5;
+
 function MessagePill({ msg, delay }: { msg: Msg; delay: number }) {
   const pts = msg.path.map((p) => POS[p]);
   const last = pts[pts.length - 1];
   const stop = msg.denied ? pointAlong(last, pts[pts.length - 2], DENY_SHORTFALL) : last;
-  const xs = [...pts.slice(0, -1).map((p) => p.x), stop.x];
-  const ys = [...pts.slice(0, -1).map((p) => p.y), stop.y];
-  const w = pillWidth(msg.label, 6.2, 20);
   const dur = HOP_SECONDS * (pts.length - 1) + 0.3;
   return (
     <>
-      <motion.g
-        initial={{ x: xs[0], y: ys[0], opacity: 0 }}
-        animate={{ x: [...xs, stop.x], y: [...ys, stop.y], opacity: [0, ...xs.slice(1).map(() => 1), 0] }}
-        transition={{ duration: dur + 0.5, delay, ease: 'easeInOut' }}
-      >
-        <rect x={-w / 2} y={-11} width={w} height={22} rx={11} fill={COLOR[msg.kind]} className="scene-packet" />
-        <text x={0} y={4} textAnchor="middle" className="scene-packet-text">{msg.label}</text>
-      </motion.g>
+      <Packet
+        path={pts}
+        stopAt={msg.denied ? 1 - DENY_SHORTFALL : undefined}
+        keyframes="even"
+        label={msg.label}
+        color={COLOR[msg.kind]}
+        duration={dur + LINGER_SECONDS}
+        delay={delay}
+        scaleIn={null}
+        height={22}
+        charW={6.2}
+      />
       {msg.denied && (
         <motion.g initial={{ opacity: 0, scale: 0.3 }} animate={{ opacity: [0, 1, 1], scale: [0.3, 1.2, 1] }} transition={{ delay: delay + dur, duration: 0.4 }} style={{ transformOrigin: `${stop.x}px ${stop.y}px` }}>
           <circle cx={stop.x} cy={stop.y} r={16} className="zt-deny" />

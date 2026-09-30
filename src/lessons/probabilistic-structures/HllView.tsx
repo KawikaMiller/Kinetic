@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { NA } from '../../core/format';
+import { bytes, NA } from '../../core/format';
 import { randInt } from '../../core/random';
 import { bits32, hllAdd, hllBuild, hllEstimate, itemHash } from './sketches';
 
@@ -29,11 +29,8 @@ const BITS_PER_REGISTER = 6;
 /** What an exact set pays per 64-bit id, before any hash-table overhead. */
 const BYTES_PER_ID = 8;
 
-/**
- * Decimal (SI) byte units: 1 KB = 1,000 B. Kept local: core `bytes()` is binary
- * (1 KB = 1,024 B), which would change the numbers this lesson quotes.
- */
-const bytesSI = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : b >= 1e3 ? `${(b / 1e3).toFixed(1)} KB` : `${Math.ceil(b)} B`);
+/** Decimal (SI) byte units, 1 KB = 1,000 B: the numbers this lesson quotes. */
+const bytesSI = (b: number) => bytes(b, { base: 1000 });
 
 const empty = (p: number): Hll => ({ p, regs: new Uint8Array(1 << p), count: 0, last: null, updated: null });
 

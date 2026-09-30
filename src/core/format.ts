@@ -23,17 +23,21 @@ export function pct(ratio: number, dp = 0): string {
   return `${v.toFixed(dp)}%`;
 }
 
-/** Byte counts: '512 B', '1.5 KB', '8.0 MB', '2.1 GB'. */
-export function bytes(n: number): string {
-  if (n < 1024) return `${Math.round(n)} B`;
+/**
+ * Byte counts: '512 B', '1.5 KB', '8.0 MB', '2.1 GB'. Binary (1 KB = 1,024 B) by default;
+ * `base: 1000` for decimal units, `dp` for decimals shown above bytes.
+ */
+export function bytes(n: number, o: { base?: 1000 | 1024; dp?: number } = {}): string {
+  const { base = 1024, dp = 1 } = o;
+  if (n < base) return `${Math.round(n)} B`;
   const units = ['KB', 'MB', 'GB', 'TB'];
-  let v = n / 1024;
+  let v = n / base;
   let u = 0;
-  while (v >= 1024 && u < units.length - 1) {
-    v /= 1024;
+  while (v >= base && u < units.length - 1) {
+    v /= base;
     u++;
   }
-  return `${v.toFixed(1)} ${units[u]}`;
+  return `${v.toFixed(dp)} ${units[u]}`;
 }
 
 /** A multiplier: '3×'. */

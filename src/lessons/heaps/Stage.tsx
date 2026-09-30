@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState, type CSSProperties } from 'react';
+import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
 import { SPRING } from '../../core/motion';
@@ -97,8 +98,7 @@ export function Stage() {
         <ArrayRow frame={f} />
         <div className="hp-body">
           <TreeView frame={f} />
-          <div className="hp-out">
-            <span className="hp-out-title">Run order (extracted)</span>
+          <Tray className="hp-out" label="Run order (extracted)" labelWeight="regular">
             <AnimatePresence initial={false}>
               {f.out.map((it, i) => (
                 <motion.div key={it.id} className="hp-out-item" layout initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
@@ -107,7 +107,7 @@ export function Stage() {
               ))}
             </AnimatePresence>
             {f.out.length === 0 && <p className="hp-out-empty">Extract to run the most urgent task.</p>}
-          </div>
+          </Tray>
         </div>
       </div>
     </StageFrame>

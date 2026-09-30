@@ -273,7 +273,7 @@
   font: 700 11px var(--mono);
   padding: 2px 7px;
   border-radius: 6px;
-  color: #1a0d00;
+  color: var(--on-orange);
   background: var(--orange);
 }
 .he-sig.verified { background: var(--ok); color: var(--on-ok); }

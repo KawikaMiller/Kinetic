@@ -45,7 +45,6 @@ export function Stage() {
   const setCaption = useSetCaption();
   const [speed, setSpeed] = useState(1);
   const [partitioned, setPartitioned] = useState(false);
-  const [view, setView] = useState<ClusterView | null>(null);
 
   useIntroCaption(
     <>
@@ -54,7 +53,7 @@ export function Stage() {
     </>,
   );
 
-  const { world, paused, togglePause } = useSimulation({
+  const { world, snap: view, paused, togglePause, refresh } = useSimulation({
     create: () => {
       const r = new Raft();
       r.onEvent = (e) => {
@@ -70,10 +69,7 @@ export function Stage() {
     step: (r, dt) => r.step(dt * 1000 * speed),
     snapshot: clusterView,
     snapshotEvery: SNAPSHOT_EVERY_S,
-    // Kept in local state (not `snap`) so actions can refresh it instantly, even while paused.
-    onSnapshot: (_, v) => setView(v),
   });
-  const refresh = useCallback(() => setView(clusterView(world())), [world]);
 
   const send = () => {
     if (!world().clientCommand()) setCaption(<>No leader right now, so the client has nobody to talk to. Wait for an election to finish.</>);

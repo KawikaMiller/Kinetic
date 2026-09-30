@@ -4,17 +4,20 @@
 //
 //   npm run captions                 # all lessons
 //   npm run captions -- tcp-udp      # just these
-import { lessonIds, openPage, parseArgs, stepForward, visit } from './lib/browser.mjs';
+import { BASE_URL, lessonIds, openPage, parseArgs, sleep, stepForward } from './lib/browser.mjs';
 
 const MAX_STEPS = 70;
 const FLAG_RUN = 6;
 
 const { positional } = parseArgs();
 const ids = positional.length ? positional : lessonIds();
-const { browser, page } = await openPage();
+// Seeded, with a full reload per lesson, so lessons with random inputs give the same frames every run.
+const { browser, page } = await openPage({ seed: 1 });
 
 for (const id of ids) {
-  await visit(page, `/lesson/${id}`, 900);
+  await page.goto('about:blank');
+  await page.goto(`${BASE_URL}/#/lesson/${id}`, { waitUntil: 'networkidle0' });
+  await sleep(900);
   if (!(await page.$('.tbtn-play'))) continue;
 
   const seen = [];

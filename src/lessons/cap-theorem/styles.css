@@ -84,9 +84,9 @@
   border-radius: 99px;
   font: 700 11px var(--mono);
   white-space: nowrap;
-  color: #0b0d12;
+  color: var(--on-fill);
   pointer-events: none;
-  box-shadow: 0 4px 14px -4px rgb(0 0 0 / 0.6);
+  box-shadow: 0 4px 14px -4px rgb(0 0 0 / 0.6); /* allow-color: neutral drop shadow */
 }
 .cap-pkt.kind-write { background: var(--hi); }
 .cap-pkt.kind-read { background: var(--violet); }

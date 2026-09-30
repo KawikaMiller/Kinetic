@@ -1,8 +1,9 @@
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
+import { Packet } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { pillWidth, pointAlong, type Pt } from '../../core/geometry';
+import type { Pt } from '../../core/geometry';
 import { usePlayer } from '../../core/usePlayer';
 import {
   saga, twoPhaseCommit, type Msg, type NodeId, type Protocol, type SagaCase, type SagaStyle, type Tone, type TwoPcCase,
@@ -212,37 +213,30 @@ const BUS_REST_GAP = 26;
 const DIRECT_SECONDS = 0.9;
 const BUS_SECONDS = 1.3;
 
-/**
- * Kept local rather than the shared <Packet>: this outline pill doesn't scale in
- * and fades in over its whole trip, so Packet's "stay" keyframes don't match frame
- * for frame (Phase 2 request filed).
- */
+const PILL_CLASSES = { pill: 'dt-pill', text: 'dt-pill-text' };
+
 function Pill({ m }: { m: Msg }) {
   const from = edge(m.from, POS[m.to]);
   const to = edge(m.to, POS[m.from]);
-  const w = pillWidth(m.label, 6.9, 18);
-  const color = TONE[m.tone];
-
-  let animate;
-  if (m.viaBus) {
-    const fromTop = { x: POS[m.from].x, y: BUS_Y };
-    const end = { x: POS[m.to].x, y: to.y - BUS_REST_GAP };
-    animate = { x: [from.x, fromTop.x, end.x, end.x], y: [from.y, fromTop.y, BUS_Y, end.y], opacity: [0, 1, 1, 1] };
-  } else {
-    const stop = pointAlong(from, to, STOP_SHORT);
-    animate = { x: stop.x, y: stop.y, opacity: 1 };
-  }
-
+  // Bus messages ride up to the bus, along it, then drop to rest above the receiver.
+  const path = m.viaBus
+    ? [from, { x: POS[m.from].x, y: BUS_Y }, { x: POS[m.to].x, y: BUS_Y }, { x: POS[m.to].x, y: to.y - BUS_REST_GAP }]
+    : [from, to];
   return (
-    <motion.g
-      initial={{ x: from.x, y: from.y, opacity: 0 }}
-      animate={animate}
-      transition={{ duration: m.viaBus ? BUS_SECONDS : DIRECT_SECONDS, ease: 'easeInOut' }}
-    >
-      <rect x={-w / 2} y={-11} width={w} height={22} rx={11} className="dt-pill" style={{ stroke: color }} />
-      <text y={4} className="dt-pill-text" style={{ fill: color }}>
-        {m.label}
-      </text>
-    </motion.g>
+    <Packet
+      path={path}
+      stopAt={m.viaBus ? undefined : STOP_SHORT}
+      arrive="stay"
+      fadeIn={m.viaBus ? 'first-hop' : 'full'}
+      scaleIn={null}
+      variant="outline"
+      classes={PILL_CLASSES}
+      label={m.label}
+      color={TONE[m.tone]}
+      duration={m.viaBus ? BUS_SECONDS : DIRECT_SECONDS}
+      height={22}
+      charW={6.9}
+      pad={18}
+    />
   );
 }

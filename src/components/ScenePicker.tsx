@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { Segmented, type Option } from './ui';
+import type { Option } from './options';
+import { Segmented } from './ui';
 
 /**
  * For lessons split into sub-scenes ("Lane", "Demo"), each with its own StageFrame

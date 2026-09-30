@@ -77,7 +77,7 @@
   border-radius: 99px;
   font: 700 11px var(--mono);
   white-space: nowrap;
-  color: #0b0d12;
+  color: var(--on-fill);
   box-shadow: 0 4px 14px -4px currentColor;
   pointer-events: none;
 }

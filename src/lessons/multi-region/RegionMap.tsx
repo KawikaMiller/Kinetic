@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { Pulse } from '../../components/scene';
 import { CONTINENTS } from './continents';
 import {
   ALL_REGIONS, ALL_USERS, REGION_RTT, REGIONS, RTT, USERS, regionsInUse,
@@ -135,17 +136,7 @@ export function RegionMap({
         return (
           <g key={r} className={`mr-region ${cls}`} onClick={() => onToggleRegion(r)}>
             <title>{isDead ? 'Click to restore' : 'Click to kill this region'}</title>
-            {serving && !isDead && (
-              <motion.circle
-                cx={R.x}
-                cy={R.y}
-                fill="none"
-                className="mr-pulse"
-                initial={{ r: 16, opacity: 0.6 }}
-                animate={{ r: [16, 30], opacity: [0.6, 0] }}
-                transition={{ duration: 1.8, repeat: Infinity }}
-              />
-            )}
+            {serving && !isDead && <Pulse className="mr-pulse" at={R} from={16} to={30} color="var(--ok)" opacity={0.6} duration={1.8} />}
             <rect x={R.x - REGION_HALF} y={R.y - REGION_HALF} width={REGION_HALF * 2} height={REGION_HALF * 2} rx={8} />
             <text x={R.x} y={R.y + 5} textAnchor="middle" className="mr-icon">
               {isDead ? '✕' : '▦'}

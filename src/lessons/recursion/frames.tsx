@@ -164,6 +164,26 @@ export interface TreeFrame extends Frame {
   counts: Record<number, number>;
 }
 
+/** What happens when fib(node.n) returns `v` to its caller. */
+function returnCaption(node: FNode, v: number, nodes: FNode[], values: (number | null)[]): ReactNode {
+  if (node.parent == null) return <><span className="hl ok">fib({node.n})</span> returns {v}.</>;
+  const p = nodes[node.parent].n;
+  if (node.n === p - 1) {
+    return (
+      <>
+        <span className="hl ok">fib({node.n})</span> returns {v} to fib({p}), which still needs fib({p - 2}).
+      </>
+    );
+  }
+  const first = nodes.find((m) => m.parent === node.parent && m.n === p - 1);
+  const a = first ? values[first.id] : null;
+  return (
+    <>
+      <span className="hl ok">fib({node.n})</span> returns {v}, so fib({p}) = {a} + {v} = <b>{(a ?? 0) + v}</b>.
+    </>
+  );
+}
+
 export function fibTree(n0: number) {
   const nodes: FNode[] = [];
   const events: ({ t: 'call'; id: number } | { t: 'ret'; id: number; v: number })[] = [];
@@ -237,6 +257,7 @@ export function fibTree(n0: number) {
       if (node.parent != null) states[node.parent] = 'active';
       frames.push({
         states: states.slice(), values: values.slice(), calls, repeats, current: node.parent, counts: { ...counts },
+        say: returnCaption(node, e.v, nodes, values),
       });
     }
   }

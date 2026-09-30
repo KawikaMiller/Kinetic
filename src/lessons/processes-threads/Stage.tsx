@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
+import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { SHAKE } from '../../core/motion';
@@ -11,6 +12,9 @@ import './styles.css';
 const CHIP_SPRING = { type: 'spring', stiffness: 320, damping: 26 } as const;
 /** Seconds an IPC message takes to cross the kernel bar. */
 const IPC_TRAVEL = 1.1;
+/** The IPC envelope's trip across the kernel bar, in % of its width. */
+const IPC_FROM = { x: 6, y: 0 };
+const IPC_TO = { x: 74, y: 0 };
 
 export function Stage() {
   const [scenario, setScenario] = useState<Scenario>('slicing');
@@ -93,16 +97,19 @@ export function Stage() {
           <span>OS kernel · scheduler · IPC</span>
           <AnimatePresence>
             {f.ipc && (
-              <motion.span
+              <Flyer
                 key={player.index}
+                axis="x"
+                from={IPC_FROM}
+                to={IPC_TO}
                 className="pt-ipc"
-                initial={{ left: '6%', opacity: 0 }}
-                animate={{ left: '74%', opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: IPC_TRAVEL, ease: 'easeInOut' }}
+                fade="in"
+                startScale={null}
+                exitScale={null}
+                duration={IPC_TRAVEL}
               >
                 ✉ {f.ipc.label}
-              </motion.span>
+              </Flyer>
             )}
           </AnimatePresence>
         </div>

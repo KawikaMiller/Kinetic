@@ -70,7 +70,7 @@
   display: grid;
   place-items: center;
   font-size: 9px;
-  box-shadow: inset 0 -3px 6px rgb(0 0 0 / 0.25);
+  box-shadow: inset 0 -3px 6px rgb(0 0 0 / 0.25); /* allow-color: neutral inner shadow */
   flex: none;
 }
 .th-dot-lg {
@@ -174,12 +174,12 @@
   color: var(--bg);
   padding: 7px 12px;
   border-radius: 10px;
-  box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7);
+  box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7); /* allow-color: neutral drop shadow */
   z-index: 2;
 }
 .th-pill.cipher {
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  color: #fff; /* allow-color: white text on paint blobs of any colour */
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.4); /* allow-color: legibility shadow */
 }
 
 .th-bottom {

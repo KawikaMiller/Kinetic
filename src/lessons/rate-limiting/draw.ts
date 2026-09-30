@@ -1,7 +1,7 @@
 // Canvas drawing for the rate-limiter simulation.
 import { bar, box, dot, FONT, rect, text, wire } from '../../core/canvas';
 import type { Pt } from '../../core/geometry';
-import { clamp01, lerp } from '../../core/math';
+import { clamp01, easeInOutQuad, lerp } from '../../core/math';
 import { alpha, TOKENS as C } from '../../core/palette';
 import { TRAVEL_IN, TRAVEL_OUT, WINDOW, type Limiter, type Particle, type World } from './sim';
 
@@ -15,9 +15,6 @@ const PANEL_FILL = alpha(C.cell, 0.9);
 const TOKEN_COLS = 5;
 const TOKEN_GAP = 16;
 const TOKEN_R = 6.5;
-
-/** easeInOutQuad: the particle motion this lesson has always used (core/math's ease is cubic). */
-const easeQuad = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 const glowDot = (ctx: Ctx, x: number, y: number, r: number, color: string) => dot(ctx, x, y, r, color, { glow: DOT.glow });
 
@@ -61,29 +58,28 @@ function particleAt(p: Particle, now: number, L: ReturnType<typeof layout>): (Pt
   if (p.fromBucket) {
     const t = clamp01((now - p.tGate) / TRAVEL_OUT);
     if (t >= 1) return null;
-    return { x: lerp(L.gx + 60, L.ax - 44, easeQuad(t)), y: L.cy, color: C.ok, alpha: 1 };
+    return { x: lerp(L.gx + 60, L.ax - 44, easeInOutQuad(t)), y: L.cy, color: C.ok, alpha: 1 };
   }
   if (p.outcome === null || now < p.tGate) {
     const t = clamp01((now - p.t0) / TRAVEL_IN);
-    return { x: lerp(L.cx + 30, L.gx - 70, easeQuad(t)), y: L.cy + Math.sin(p.id * 1.7) * 18 * (1 - t), color: C.info, alpha: 1 };
+    return { x: lerp(L.cx + 30, L.gx - 70, easeInOutQuad(t)), y: L.cy + Math.sin(p.id * 1.7) * 18 * (1 - t), color: C.info, alpha: 1 };
   }
   const t = clamp01((now - p.tGate) / TRAVEL_OUT);
   if (p.outcome === 'ok') {
     if (t >= 1) return null;
-    return { x: lerp(L.gx - 70, L.ax - 44, easeQuad(t)), y: L.cy, color: C.ok, alpha: 1 };
+    return { x: lerp(L.gx - 70, L.ax - 44, easeInOutQuad(t)), y: L.cy, color: C.ok, alpha: 1 };
   }
   if (p.outcome === 'reject') {
     const fade = t >= 1 ? Math.max(0, 1 - (now - p.tGate - TRAVEL_OUT) / REJECT_FADE) : 1;
     return {
-      x: lerp(L.gx - 70, L.gx + ((p.id % 7) - 3) * 18, easeQuad(t)),
-      y: lerp(L.cy, L.rejectY, easeQuad(t)),
+      x: lerp(L.gx - 70, L.gx + ((p.id % 7) - 3) * 18, easeInOutQuad(t)),
+      y: lerp(L.cy, L.rejectY, easeInOutQuad(t)),
       color: C.bad,
       alpha: fade,
     };
   }
   return null;
 }
-
 
 function labelledBox(ctx: Ctx, x: number, y: number, bw: number, bh: number, color: string, label: string) {
   box(ctx, x, y, bw, bh, { stroke: color });

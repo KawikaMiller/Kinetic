@@ -61,7 +61,7 @@
   color: var(--on-info);
 }
 .rc-frame.tone-active { background: var(--hi); border-color: var(--hi); color: var(--on-hi); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--hi) 80%, transparent); }
-.rc-frame.tone-active .rc-note { color: #4a3b00; }
+.rc-frame.tone-active .rc-note { color: var(--on-hi-muted); }
 .rc-frame.tone-waiting { background: var(--cell); opacity: 0.75; }
 .rc-frame.tone-base { background: color-mix(in srgb, var(--ok) 16%, transparent); border-color: var(--ok); }
 .rc-frame.tone-base .rc-note { color: var(--ok); }

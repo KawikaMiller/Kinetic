@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
+import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { TOKENS } from '../../core/palette';
@@ -50,6 +51,9 @@ const fresh = (): World => ({
 
 /** Horizontal centre of each replica column, as a fraction of the stage width. */
 const X: Record<Rid, number> = { A: 1 / 6, B: 3 / 6, C: 5 / 6 };
+/** A state message's trip between replicas: seconds, and px of lift at the midpoint. */
+const MSG_TRAVEL = 0.9;
+const MSG_ARC = 22;
 /** The wire runs between the outer replicas' centres. */
 const WIRE_STYLE = { '--cr-wire-left': `${X.A * 100}%`, '--cr-wire-right': `${(1 - X.C) * 100}%` } as CSSProperties;
 const KIND_NAME: Record<Kind, string> = { counter: 'G-Counter', set: 'OR-Set', register: 'LWW-Register' };
@@ -247,10 +251,10 @@ export function Stage() {
           </Button>
           <Button onClick={() => reset()}>Reset</Button>
           {kind === 'register' && mode === 'crdt' && (
-            <p className="cr-tiebreak">
+            <Hint tone="muted" block>
               Higher timestamp wins. On a tie, the higher replica id wins (C &gt; B &gt; A), so every replica picks the same
               value: deterministic, but the other write is silently lost.
-            </p>
+            </Hint>
           )}
         </Controls>
       }
@@ -260,18 +264,23 @@ export function Stage() {
           <div className="cr-wire" style={WIRE_STYLE} />
           <AnimatePresence>
             {w.msgs.map((m) => (
-              <motion.span
+              <Flyer
                 key={m.id}
+                axis="x"
+                center
+                from={{ x: X[m.from] * 100, y: 0 }}
+                to={{ x: X[m.to] * 100, y: 0 }}
                 className="cr-msg"
-                style={{ x: '-50%' }}
-                initial={{ left: `${X[m.from] * 100}%`, y: 0, opacity: 0 }}
-                animate={{ left: `${X[m.to] * 100}%`, y: [0, -22, 0], opacity: [0, 1, 1] }}
-                exit={{ opacity: 0, scale: 0.4 }}
-                transition={{ duration: 0.9, delay: m.delay, ease: 'easeInOut' }}
-                onAnimationComplete={() => land(m)}
+                arc={MSG_ARC}
+                fade={[0, 1, 1]}
+                startScale={null}
+                exitScale={0.4}
+                duration={MSG_TRAVEL}
+                delay={m.delay}
+                onArrive={() => land(m)}
               >
                 {m.from}→{m.to}
-              </motion.span>
+              </Flyer>
             ))}
           </AnimatePresence>
         </div>

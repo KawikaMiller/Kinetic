@@ -43,6 +43,12 @@
   --on-bad: #1f0508;
   --on-info: #03202b;
   --on-violet: #150a33;
+  --on-orange: #1a0d00;
+  /* Secondary (dimmer) text on a solid fill */
+  --on-hi-muted: #4a3b00;
+  --on-bad-muted: #4a0d14;
+  /* A crashed / dead node's box: the cell colour warmed toward --bad */
+  --cell-dead: #1a1216;
   --on-fill: var(--bg); /* generic: packets, pills */
 
   --radius: 14px;

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
+import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Stat, Stats, TextField } from '../../components/ui';
 import { clamp } from '../../core/math';
@@ -23,6 +24,9 @@ function pickNew(t: Tree) {
   return freshInt(MIN_KEY, MAX_KEY, have) ?? MIN_KEY;
 }
 
+/** The key a typed value stands for: a whole number clamped to the allowed range. */
+const toKey = (text: string) => clamp(Math.round(Number(text)) || MIN_KEY, MIN_KEY, MAX_KEY);
+
 interface Run {
   tree: Tree;
   frames: BstFrame[];
@@ -33,14 +37,18 @@ export function Stage() {
     const tree = build(START);
     return { tree, frames: idleFrames(tree, <>A binary search tree: every key on a node's <b>left</b> is smaller, every key on its <b>right</b> is bigger. Pick an operation.</>) };
   });
-  const [value, setValue] = useState(() => pickNew(build(START)));
+  // The field keeps exactly what's typed; it's only clamped when used or on blur, so
+  // typing "45" over a cleared field isn't turned into "1", then "145", then 99.
+  const [keyText, setKeyText] = useState(() => String(pickNew(build(START))));
+  const value = toKey(keyText);
+  const setValue = (key: number) => setKeyText(String(key));
   const player = usePlayer(run.frames, { interval: 900 });
   const f = player.frame;
   const t = run.tree;
 
-  const apply = (res: { frames: BstFrame[]; tree: Tree }, next?: number) => {
+  const apply = (res: { frames: BstFrame[]; tree: Tree }, next = value) => {
     setRun(res);
-    if (next != null) setValue(next);
+    setValue(next);
   };
   const insert = () => {
     const res = insertFrames(t, value);
@@ -88,8 +96,9 @@ export function Stage() {
             min={MIN_KEY}
             max={MAX_KEY}
             width={84}
-            value={String(value)}
-            onChange={(s) => setValue(clamp(Number(s) || MIN_KEY, MIN_KEY, MAX_KEY))}
+            value={keyText}
+            onChange={setKeyText}
+            onBlur={() => setValue(value)}
             onEnter={insert}
           />
           <Button variant="primary" onClick={insert}>
@@ -210,8 +219,7 @@ function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => v
           })}
         </AnimatePresence>
       </svg>
-      <div className="bst-out" aria-label="In-order output">
-        <span className="bst-out-label">in-order output</span>
+      <Tray className="bst-out" label="in-order output" labelWeight="regular" ariaLabel="In-order output">
         <AnimatePresence>
           {frame.output.map((k, i) => (
             <motion.span key={`${i}-${k}`} className="bst-chip" initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -220,7 +228,7 @@ function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => v
           ))}
         </AnimatePresence>
         {frame.output.length === 0 && <span className="bst-out-empty">run an in-order walk to fill this</span>}
-      </div>
+      </Tray>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Box } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
+import { useAsyncValue } from '../../core/useAsyncValue';
 import { b64urlJson, hmac, PAYLOAD, SERVER_SECRET, signJwt, verifyJwt, type Jwt } from './jwt';
 import { TokenString } from './JwtParts';
 
@@ -37,7 +38,6 @@ export function Tamper({ modePicker }: { modePicker: ReactNode }) {
   const [role, setRole] = useState<'user' | 'admin'>('user');
   const [sub, setSub] = useState('42');
   const [resign, setResign] = useState<Resign>('keep');
-  const [result, setResult] = useState<Result | null>(null);
   const setCaption = useSetCaption();
 
   const payload = { ...PAYLOAD, sub, role };
@@ -45,15 +45,7 @@ export function Tamper({ modePicker }: { modePicker: ReactNode }) {
   const key = JSON.stringify(payload) + resign;
 
   // Keep showing the last verdict while the next one is computed, so typing doesn't flicker.
-  useEffect(() => {
-    let alive = true;
-    forge(sub, role, resign).then((r) => {
-      if (alive && r) setResult(r);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [sub, role, resign]);
+  const result = useAsyncValue(() => forge(sub, role, resign), key, { keepPrevious: true });
 
   useEffect(() => {
     if (!result) return;

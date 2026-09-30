@@ -1,10 +1,9 @@
 import { motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box } from '../../components/Panel';
-import '../../components/scene/scene.css';
+import { Packet } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { pillWidth } from '../../core/geometry';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import './styles.css';
@@ -404,42 +403,27 @@ function Device({ dev, lit }: { dev: Dev; lit: string[] }) {
 
 /** A "still" pill (same from/to) hovers this far above its anchor while it's being rewritten. */
 const STILL_LIFT = 34;
-/** Keyframe times for a pill that dissolves into a port slot: fade in, travel, fade out. */
-const ABSORB_TIMES = [0, 0.1, 0.75, 1];
+/** Seconds for each kind of trip. */
+const BOUNCE_S = 0.6;
+const ABSORB_S = 1;
+const TRAVEL_S = 0.75;
 
-/**
- * Kept local rather than the shared <Packet>: it has two motions Packet doesn't
- * (a pill bouncing in place while NAT rewrites it, and one dissolving into the port
- * slot it lands in), so Phase 2 request filed.
- */
 function MessagePill({ flight }: { flight: Flight }) {
-  const a = ANCHORS[flight.from];
-  const b = ANCHORS[flight.to];
-  const w = pillWidth(flight.label, 7, 22);
-  const color = KIND_COLOR[flight.kind];
   const still = flight.from === flight.to;
   // Pills dropping into a port slot dissolve into it, so the lit slot stays readable.
   const absorbed = flight.to.startsWith('port-') || flight.to.startsWith('lo');
+  const arrive = still ? 'bounce' : absorbed ? 'absorb' : 'stay';
   return (
-    <motion.g
-      initial={{ x: a.x, y: a.y, opacity: 0, scale: 0.6 }}
-      animate={
-        still
-          ? { x: b.x, y: b.y - STILL_LIFT, opacity: 1, scale: [1, 1.18, 1] }
-          : { x: b.x, y: b.y, opacity: absorbed ? [0, 1, 1, 0] : 1, scale: absorbed ? [0.6, 1, 1, 0.5] : 1 }
-      }
-      transition={{
-        duration: still ? 0.6 : absorbed ? 1 : 0.75,
-        ease: 'easeInOut',
-        opacity: absorbed ? { duration: 1, times: ABSORB_TIMES } : { duration: 0.15 },
-        scale: absorbed ? { duration: 1, times: ABSORB_TIMES } : undefined,
-      }}
-    >
-      <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill={color} className="scene-packet" />
-      <text x={0} y={4} textAnchor="middle" className="scene-packet-text">
-        {flight.label}
-      </text>
-    </motion.g>
+    <Packet
+      path={[ANCHORS[flight.from], ANCHORS[flight.to]]}
+      label={flight.label}
+      color={KIND_COLOR[flight.kind]}
+      arrive={arrive}
+      lift={STILL_LIFT}
+      duration={still ? BOUNCE_S : absorbed ? ABSORB_S : TRAVEL_S}
+      charW={7}
+      pad={22}
+    />
   );
 }
 function HeaderPanel({ frame, index }: { frame: IpFrame; index: number }) {

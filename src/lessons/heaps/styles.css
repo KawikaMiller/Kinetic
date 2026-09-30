@@ -24,7 +24,7 @@
 .hp-slot { height: 58px; border-right: 1px solid var(--cell-line); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px; }
 .hp-slot.last { border-right: 0; }
 .hp-slot span { font: 500 10px var(--mono); color: var(--faint); }
-.hp-slot.empty { background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(255 255 255 / 0.015) 6px 12px); }
+.hp-slot.empty { background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(255 255 255 / 0.015) 6px 12px); } /* allow-color: faint neutral hatching on empty slots */
 .hp-slot.linked { background: color-mix(in srgb, var(--hi) 8%, transparent); }
 .hp-cell { position: absolute; top: 6px; height: 34px; padding: 0 4px; }
 .hp-cell b {
@@ -49,11 +49,11 @@
 .hp-edge-label { font: 500 9px var(--mono); fill: var(--faint); }
 .hp-node circle { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
 .hp-node-v { font: 700 13px var(--mono); fill: var(--text); }
-.hp-node.hi .hp-node-v, .hp-node.ok .hp-node-v, .hp-node.swap .hp-node-v { fill: #10131b; }
+.hp-node.hi .hp-node-v, .hp-node.ok .hp-node-v, .hp-node.swap .hp-node-v { fill: #10131b; } /* allow-color: dark value text on the mixed hi/ok/swap node fills */
 .hp-node-i { font: 500 9px var(--mono); fill: var(--faint); }
 
-.hp-out { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; border: 1px dashed var(--line-2); background: var(--bg-2); min-height: 220px; }
-.hp-out-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+.hp-out { display: flex; flex-direction: column; gap: 6px; padding: 10px; min-height: 220px; }
+.hp-out > .section-title { margin-bottom: 4px; }
 .hp-out-item { font-size: 12.5px; padding: 5px 8px; border-radius: 7px; background: color-mix(in srgb, var(--ok) 10%, transparent); color: var(--muted); }
 .hp-out-item span { font-family: var(--mono); color: var(--faint); margin-right: 4px; }
 .hp-out-item b { color: var(--ok); font-family: var(--mono); }

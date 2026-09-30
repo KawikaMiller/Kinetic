@@ -246,8 +246,7 @@ const perStrategy = <T>(make: (id: StrategyId) => T) =>
   Object.fromEntries(STRATEGIES.map((s) => [s.id, make(s.id)])) as Record<StrategyId, T>;
 
 export function createWorld(strategy: StrategyId, rate: number): World {
-  const insight = createCooldown(INSIGHT_COOLDOWN);
-  insight.fire(-Infinity); // armed from the start: the first insight can fire right away
+  const insight = createCooldown(INSIGHT_COOLDOWN, { armed: true }); // the first insight can fire right away
   return {
     now: 0,
     acc: 0,

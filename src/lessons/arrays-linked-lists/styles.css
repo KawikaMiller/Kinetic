@@ -107,10 +107,10 @@
 .al-node b { font: 700 14px var(--mono); }
 .al-next { font: 500 9px var(--mono); color: var(--muted); white-space: nowrap; }
 .al-node.is-hi { background: var(--hi); border-color: var(--hi); color: var(--on-hi); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--hi) 70%, transparent); }
-.al-node.is-hi .al-next { color: #4a3b00; }
+.al-node.is-hi .al-next { color: var(--on-hi-muted); }
 .al-node.is-fresh { background: color-mix(in srgb, var(--info) 18%, transparent); border-color: var(--info); box-shadow: 0 0 0 3px color-mix(in srgb, var(--info) 20%, transparent); }
 .al-node.is-bad { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
-.al-node.is-bad .al-next { color: #4a0d14; }
+.al-node.is-bad .al-next { color: var(--on-bad-muted); }
 
 .al-tag {
   display: inline-block;

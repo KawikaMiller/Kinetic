@@ -85,7 +85,3 @@ export function useCanvas(draw: (ctx: CanvasRenderingContext2D, w: number, h: nu
 
   return { wrapRef, canvasRef, size, redraw };
 }
-
-// Compatibility re-exports: new code imports these from core/math and core/random.
-export { clamp } from './math';
-export { randInt, shuffle } from './random';

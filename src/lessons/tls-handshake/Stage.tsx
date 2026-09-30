@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
@@ -189,19 +190,25 @@ function PartyPanel({
   );
 }
 
+/** Where each party sits along the wire, in %. */
+const WIRE_X: Record<Party, number> = { client: 0, mallory: 50, server: 100 };
+
 function WirePill({ wire }: { wire: Wire }) {
-  const pos: Record<Party, string> = { client: '0%', mallory: '50%', server: '100%' };
   return (
-    <motion.div
+    <Flyer
+      axis="x"
+      from={{ x: WIRE_X[wire.from], y: 0 }}
+      to={{ x: WIRE_X[wire.to], y: 0 }}
       className={`th-pill ${wire.cipher ? 'cipher' : ''}`}
       style={{ background: wire.color }}
-      initial={{ left: pos[wire.from], opacity: 0, scale: 0.7 }}
-      animate={{ left: pos[wire.to], opacity: 1, scale: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: WIRE_TRAVEL, ease: 'easeInOut', opacity: { duration: 0.2 } }}
+      fade="in"
+      startScale={0.7}
+      exitScale={null}
+      duration={WIRE_TRAVEL}
+      opacityDuration={0.2}
     >
       {wire.cipher ? '🔒 ' : ''}
       {wire.label}
-    </motion.div>
+    </Flyer>
   );
 }

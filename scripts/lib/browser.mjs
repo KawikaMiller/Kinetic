@@ -110,6 +110,9 @@ export async function seekFrame(page, index) {
   await page.evaluate((i) => {
     const scrub = document.querySelector('.scrub');
     if (!scrub) return;
+    // Pause explicitly: seeking to the current frame fires no onChange, so it wouldn't pause.
+    const play = document.querySelector('.tbtn-play');
+    if (play?.title.startsWith('Pause')) play.click();
     const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     setValue.call(scrub, String(i));
     scrub.dispatchEvent(new Event('input', { bubbles: true }));

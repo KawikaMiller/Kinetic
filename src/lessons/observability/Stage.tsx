@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
+import { Sparkline } from '../../components/Sparkline';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
@@ -347,15 +348,23 @@ function ServiceMap({ rows }: { rows: ReturnType<typeof metrics> }) {
   );
 }
 
+const SPARK_PAD = { top: 2, bottom: 1 };
+
 function Spark({ values, color }: { values: number[]; color: string }) {
-  if (values.length < 2) return <svg className="ob-spark" viewBox="0 0 80 22" />;
-  const max = Math.max(SPARK_FLOOR_MS, ...values);
-  const pts = values.map((v, i) => `${(i / (HISTORY - 1)) * 80},${21 - (v / max) * 19}`).join(' ');
   return (
-    <svg className="ob-spark" viewBox="0 0 80 22">
-      <line x1="0" x2="80" y1={21 - (SLOW_P99_MS / max) * 19} y2={21 - (SLOW_P99_MS / max) * 19} className="ob-spark-slo" />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.6" />
-    </svg>
+    <Sparkline
+      className="ob-spark"
+      values={values}
+      width={80}
+      height={22}
+      cap={HISTORY}
+      align="left"
+      minMax={SPARK_FLOOR_MS}
+      pad={SPARK_PAD}
+      refLine={SLOW_P99_MS}
+      color={color}
+      strokeWidth={1.6}
+    />
   );
 }
 

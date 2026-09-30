@@ -1,5 +1,7 @@
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
+import { useArrowMarker } from '../../components/ArrowMarker';
+import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
@@ -8,6 +10,8 @@ import { fibFrames, lcsFrames, memoCalls, naiveCalls, type FibFrame, type LcsFra
 import './styles.css';
 
 type Problem = 'fib' | 'lcs';
+/** Dependency arrowheads: small, with the tip right at the line's end. */
+const ARROW = { size: 6, refX: 9 };
 const PAIRS = [
   ['ABCBDAB', 'BDCABA'],
   ['STONE', 'LONGEST'],
@@ -100,7 +104,7 @@ export function Stage() {
 function FibView({ frame, n }: { frame: FibFrame; n: number }) {
   return (
     <div className="dp-fib">
-      <div className="dp-row-label">memo[k] = fib(k)</div>
+      <SectionTitle weight="regular">memo[k] = fib(k)</SectionTitle>
       <div className="dp-memo">
         <svg className="dp-memo-arrows" viewBox={`0 0 ${(n + 1) * 100} 90`} preserveAspectRatio="none" aria-hidden="true">
           {frame.deps.map((d) => {
@@ -131,7 +135,7 @@ function FibView({ frame, n }: { frame: FibFrame; n: number }) {
         </div>
       </div>
       <div className="dp-stack">
-        <span className="dp-row-label">call stack</span>
+        <SectionTitle weight="regular">call stack</SectionTitle>
         {frame.stack.length ? (
           frame.stack.map((k, i) => (
             <span key={i} className={`dp-stack-chip ${i === frame.stack.length - 1 ? 'top' : ''}`}>
@@ -165,7 +169,7 @@ function CallsChart({ n }: { n: number }) {
   const memo = Array.from({ length: MAXN }, (_, i) => `${x(i + 1)},${y(memoCalls(i + 1))}`).join(' ');
   return (
     <div className="dp-chart">
-      <div className="dp-row-label">calls needed for fib(n), log scale</div>
+      <SectionTitle weight="regular">calls needed for fib(n), log scale</SectionTitle>
       <svg viewBox={`0 0 ${W} ${H}`} className="dp-chart-svg">
         {[1, 3, 5].map((p) => (
           <g key={p}>
@@ -199,6 +203,8 @@ function LcsView({ frame, a, b }: { frame: LcsFrame; a: string; b: string }) {
   const n = b.length;
   const cx = (j: number) => (j + 1.5) * CS;
   const cy = (i: number) => (i + 1.5) * CS;
+  const head = useArrowMarker('var(--hi)', ARROW);
+  const dimHead = useArrowMarker('var(--faint)', ARROW);
   return (
     <div className="dp-lcs">
       <div className="dp-grid-wrap" style={{ width: (n + 2) * CS, height: (m + 2) * CS }}>
@@ -215,14 +221,8 @@ function LcsView({ frame, a, b }: { frame: LcsFrame; a: string; b: string }) {
           ))}
         </div>
         <svg className="dp-overlay" width={(n + 2) * CS} height={(m + 2) * CS} aria-hidden="true">
-          <defs>
-            <marker id="dp-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" fill="var(--hi)" />
-            </marker>
-            <marker id="dp-head-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" fill="var(--faint)" />
-            </marker>
-          </defs>
+          {head.def}
+          {dimHead.def}
           {frame.cur &&
             frame.deps.map(([i, j]) => {
               const chosen = frame.chosen && frame.chosen[0] === i && frame.chosen[1] === j;
@@ -240,14 +240,14 @@ function LcsView({ frame, a, b }: { frame: LcsFrame; a: string; b: string }) {
                   x2={x1 + (x2 - x1) * 0.72}
                   y2={y1 + (y2 - y1) * 0.72}
                   className={`dp-dep ${chosen ? 'chosen' : ''}`}
-                  markerEnd={chosen ? 'url(#dp-head)' : 'url(#dp-head-dim)'}
+                  markerEnd={chosen ? head.url : dimHead.url}
                 />
               );
             })}
         </svg>
       </div>
       <div className="dp-answer">
-        <span className="dp-row-label">answer so far</span>
+        <SectionTitle weight="regular">answer so far</SectionTitle>
         <div className="dp-letters">
           {frame.answer.split('').map((ch, i) => (
             <motion.span key={`${i}${ch}`} className="dp-letter" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>

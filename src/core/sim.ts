@@ -53,9 +53,10 @@ export function travel(from: Pt, to: Pt, t0: number, dur: number, now: number, e
 /**
  * A cooldown for "insight" captions: ready() is true once `seconds` have passed since
  * the last fire(). Only firing re-arms it, so a condition that's false doesn't reset it.
+ * By default it's first ready `seconds` into the run; `armed: true` makes it ready at once.
  */
-export function createCooldown(seconds: number) {
-  let last = 0;
+export function createCooldown(seconds: number, opts: { armed?: boolean } = {}) {
+  let last = opts.armed ? -Infinity : 0;
   return {
     ready: (now: number) => now - last > seconds,
     fire: (now: number) => {

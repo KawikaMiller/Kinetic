@@ -30,13 +30,13 @@
   justify-content: center;
   align-items: flex-start;
   border-radius: 5px 5px 2px 2px;
-  background: linear-gradient(180deg, #5a6a94, #333d58);
+  background: linear-gradient(180deg, #5a6a94, #333d58); /* allow-color: idle bar shading */
   transition: background 0.15s, box-shadow 0.15s, opacity 0.2s;
 }
 .compact .so-bar { border-radius: 2px 2px 0 0; }
 .so-bar span {
   font: 600 10px var(--mono);
-  color: rgb(255 255 255 / 0.85);
+  color: rgb(255 255 255 / 0.85); /* allow-color: neutral label on shaded bars */
   margin-top: 4px;
 }
 .so-bar.outside { opacity: 0.35; }
@@ -46,7 +46,7 @@
 }
 .so-bar.cmp span,
 .so-bar.done span,
-.so-bar.pivot span { color: #111; }
+.so-bar.pivot span { color: #111; } /* allow-color: neutral ink on the pivot bar */
 .so-bar.move {
   background: var(--violet);
   box-shadow: 0 0 18px -2px var(--violet);
@@ -55,7 +55,7 @@
   background: var(--info);
   box-shadow: 0 0 16px -2px var(--info);
 }
-.so-bar.done { background: linear-gradient(180deg, var(--ok), #1f8a5c); }
+.so-bar.done { background: linear-gradient(180deg, var(--ok), #1f8a5c); } /* allow-color: sorted bar shading */
 .so-bar.lock { box-shadow: 0 0 22px 0 var(--ok); }
 
 .so-race {

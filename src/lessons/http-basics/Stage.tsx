@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useReducer, useState, type CSSProperties } from 'react';
+import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, ControlGroup, Legend, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import {
   FAMILY_COLOR, INITIAL_SERVER, REASON, currentEtag, family, handle, hasBody, rawRequest, rawResponse,
@@ -11,6 +12,9 @@ import './styles.css';
 
 type Phase = 'out' | 'server' | 'back' | 'done';
 const DURATION: Record<Phase, number> = { out: 850, server: 750, back: 850, done: 350 };
+/** Ends of the wire the envelopes travel along, in % of its width. */
+const CLIENT_END = { x: 0, y: 0 };
+const SERVER_END = { x: 100, y: 0 };
 
 interface Exchange {
   id: number;
@@ -179,19 +183,15 @@ export function Stage() {
       controls={[
         <>
           <Segmented label="Method" value={draft.method} onChange={(m) => setDraft({ ...draft, method: m })} options={METHODS.map((m) => ({ value: m, label: m }))} />
-          <label className="hb-input">
-            <span>Path</span>
-            <input value={draft.path} onChange={(e) => setDraft({ ...draft, path: e.target.value })} spellCheck={false} />
-          </label>
-          <label className={`hb-input hb-body ${hasBody(draft.method) ? '' : 'off'}`}>
-            <span>JSON body</span>
-            <input
-              value={draft.body}
-              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-              disabled={!hasBody(draft.method)}
-              spellCheck={false}
-            />
-          </label>
+          <TextField className="hb-input" label="Path" value={draft.path} onChange={(path) => setDraft({ ...draft, path })} spellCheck={false} />
+          <TextField
+            className="hb-input hb-body"
+            label="JSON body"
+            value={draft.body}
+            onChange={(body) => setDraft({ ...draft, body })}
+            disabled={!hasBody(draft.method)}
+            spellCheck={false}
+          />
         </>,
         <>
           <Segmented
@@ -217,8 +217,7 @@ export function Stage() {
           <Button onClick={() => send(draft, 3)}>Send it 3×</Button>
         </>,
         <>
-          <div className="hb-presets">
-            <span className="hb-presets-label">Scenarios</span>
+          <ControlGroup inline label="Scenarios" className="hb-presets">
             <Button onClick={() => preset({ method: 'GET', path: '/users/1' })}>Read a user</Button>
             <Button onClick={() => preset({ method: 'POST', path: '/users', body: '{"name":"Grace"}' })}>Create a user</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/users/99' })}>Missing user</Button>
@@ -226,7 +225,7 @@ export function Stage() {
             <Button onClick={() => preset({ method: 'GET', path: '/admin' })}>Not logged in</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/admin', auth: 'user' })}>Wrong role</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/crash' })}>Server bug</Button>
-          </div>
+          </ControlGroup>
           <Segmented
             label="Server"
             value={server.mode}
@@ -267,29 +266,17 @@ export function Stage() {
             <div className="hb-wire-line" />
             <AnimatePresence>
               {ex && ex.phase === 'out' && (
-                <motion.div
-                  key={`q${ex.id}`}
-                  className="hb-env hb-env-req"
-                  initial={{ left: '0%', opacity: 0, scale: 0.7 }}
-                  animate={{ left: '100%', opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.6 }}
-                  transition={{ duration: DURATION.out / 1000, ease: 'easeInOut' }}
-                >
+                <Flyer key={`q${ex.id}`} axis="x" from={CLIENT_END} to={SERVER_END} className="hb-env hb-env-req"
+                  fade="in" startScale={0.7} duration={DURATION.out / 1000}>
                   {ex.req.method} {ex.req.path}
-                </motion.div>
+                </Flyer>
               )}
               {ex && ex.phase === 'back' && (
-                <motion.div
-                  key={`s${ex.id}`}
-                  className="hb-env"
+                <Flyer key={`s${ex.id}`} axis="x" from={SERVER_END} to={CLIENT_END} className="hb-env"
                   style={{ background: FAMILY_COLOR[family(ex.res.status)] }}
-                  initial={{ left: '100%', opacity: 0, scale: 0.7 }}
-                  animate={{ left: '0%', opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.6 }}
-                  transition={{ duration: DURATION.back / 1000, ease: 'easeInOut' }}
-                >
+                  fade="in" startScale={0.7} duration={DURATION.back / 1000}>
                   {ex.res.status} {REASON[ex.res.status]}
-                </motion.div>
+                </Flyer>
               )}
             </AnimatePresence>
             {queue.length > 0 && <span className="hb-queue">+{queue.length} queued</span>}

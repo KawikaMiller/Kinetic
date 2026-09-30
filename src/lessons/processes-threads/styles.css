@@ -74,7 +74,7 @@
   font: 600 12px var(--mono);
   text-transform: none;
   letter-spacing: 0;
-  color: #1a1030;
+  color: var(--on-violet);
   background: var(--violet);
   box-shadow: 0 0 18px -2px var(--violet);
 }

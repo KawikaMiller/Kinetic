@@ -205,24 +205,14 @@
   min-width: 140px;
 }
 .ht-meter-bar {
-  position: relative;
-  height: 6px;
   margin: 4px 0 2px;
-  border-radius: 99px;
-  background: var(--line-2);
 }
-.ht-meter-bar i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-}
-.ht-meter-mark {
-  position: absolute;
+/* This lesson's threshold tick is taller and sits flush at the threshold. */
+.ht-meter-bar .meter-mark {
   top: -4px;
   bottom: -4px;
-  width: 2px;
-  background: var(--text);
-  opacity: 0.7;
+  margin-left: 0;
+  border-radius: 0;
 }
 .ht-meter.warn {
   border-color: var(--bad);

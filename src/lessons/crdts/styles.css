@@ -15,7 +15,7 @@
   padding: 3px 8px;
   border-radius: 99px;
   background: var(--info);
-  color: #041018;
+  color: var(--on-info);
   font: 700 11px var(--mono);
   box-shadow: 0 0 14px color-mix(in srgb, var(--info) 60%, transparent);
   white-space: nowrap;
@@ -101,6 +101,3 @@
   .cr-reps { grid-template-columns: 1fr; }
   .cr-lane { display: none; }
 }
-
-.cr-tiebreak { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--muted); }
-

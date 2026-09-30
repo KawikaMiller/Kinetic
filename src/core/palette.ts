@@ -21,6 +21,7 @@ export const TOKENS = {
   dim: '#3a4152',
   cell: '#1a1f2d',
   cellLine: '#2d3447',
+  cellDead: '#1a1216',
   orange: '#ff8c5a',
   amber: '#f7b538',
   pink: '#ff5d8f',

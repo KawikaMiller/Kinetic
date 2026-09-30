@@ -16,11 +16,11 @@ export const P = {
   cSec: { color: TOKENS.bad, label: 'secret red', secret: true },
   sSec: { color: TOKENS.info, label: 'secret blue', secret: true },
   mSec: { color: TOKENS.violet, label: 'secret violet', secret: true },
-  cMix: { color: '#ff9a5c', label: 'yellow + red', mixed: true },
-  sMix: { color: '#8fd694', label: 'yellow + blue', mixed: true },
-  mMix: { color: '#e0a8d8', label: 'yellow + violet', mixed: true },
-  shared: { color: '#b07a4f', label: 'shared secret', mixed: true },
-  sharedM: { color: '#c46f86', label: 'shared… with Mallory', mixed: true },
+  cMix: { color: '#ff9a5c', label: 'yellow + red', mixed: true }, // allow-color: paint-mix analogy
+  sMix: { color: '#8fd694', label: 'yellow + blue', mixed: true }, // allow-color: paint-mix analogy
+  mMix: { color: '#e0a8d8', label: 'yellow + violet', mixed: true }, // allow-color: paint-mix analogy
+  shared: { color: '#b07a4f', label: 'shared secret', mixed: true }, // allow-color: paint-mix analogy
+  sharedM: { color: '#c46f86', label: 'shared… with Mallory', mixed: true }, // allow-color: paint-mix analogy
 } satisfies Record<string, Paint>;
 
 export type Party = 'client' | 'server' | 'mallory';

@@ -19,8 +19,8 @@ const FRAME_MS = 55;
 const FADE_OVER = 70;
 const MARKER_SPRING = { type: 'spring', stiffness: 500, damping: 34 } as const;
 /** Terrain colours for the legend. Not semantic tokens: walls and mud are this lesson's own materials. */
-const WALL_SWATCH = '#4a5370';
-const MUD_SWATCH = '#6b4a1c';
+const WALL_SWATCH = '#4a5370'; // allow-color: maze wall material (matches .gs-cell.wall)
+const MUD_SWATCH = '#6b4a1c'; // allow-color: mud material (matches .gs-cell.mud)
 
 export function Stage() {
   const [world, setWorld] = useState<World>(() => PRESETS.walls.make());

@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
+import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
@@ -183,22 +184,25 @@ export function Isolation({ picker }: { picker: ReactNode }) {
   );
 }
 
-/**
- * Kept local rather than the shared <Bar>: the leak ticks every 120 ms and this fill
- * tracks it with a 0.15 s tween; Bar's fixed 0.4 s tween would visibly lag.
- */
+/** The leak ticks every 120 ms, so the fill tracks it with a quick tween. */
+const METER_TRANSITION = { duration: 0.15 };
+
 function Meter({ label, value, max, unit }: { label: string; value: number; max: number; unit: string }) {
   const pct = Math.min(100, (value / max) * 100);
   return (
-    <div className="ct-meter">
-      <span>{label}</span>
-      <div className="ct-meter-bar">
-        <motion.i animate={{ width: `${pct}%` }} transition={{ duration: 0.15 }} className={pct > HOT_PCT ? 'hot' : ''} />
-      </div>
-      <b>
-        {Math.round(value)}
-        {unit === '%' ? '%' : ` / ${max} ${unit}`}
-      </b>
-    </div>
+    <Bar
+      className="ct-meter"
+      value={value}
+      max={max}
+      tone={pct > HOT_PCT ? 'bad' : 'ok'}
+      transition={METER_TRANSITION}
+      label={<span>{label}</span>}
+      trailing={
+        <b>
+          {Math.round(value)}
+          {unit === '%' ? '%' : ` / ${max} ${unit}`}
+        </b>
+      }
+    />
   );
 }

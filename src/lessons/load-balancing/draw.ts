@@ -1,6 +1,6 @@
 // Canvas drawing for the load-balancer simulation.
 import { bar, dot, FONT, rect, text, wire } from '../../core/canvas';
-import { lerp } from '../../core/math';
+import { easeInOutQuad, lerp } from '../../core/math';
 import { TOKENS as C } from '../../core/palette';
 import { FAIL_FADE, QUEUE_CAP, QUEUE_WARN, SERVER_COUNT, serverName, TRAVEL_BACK, TRAVEL_IN, TRAVEL_OUT, type World } from './sim';
 import { strategy } from './strategies';
@@ -11,11 +11,7 @@ const BOX = { w: 126, h: 50 };
 const LB_RADIUS = 32;
 const QUEUE_SLOT = 12;
 const DOT_R = 3.5;
-const DEAD_FILL = '#1a1216'; // a dead server's box: the cell colour warmed toward --bad
 const RING = { r: 13, width: 4 };
-
-/** easeInOutQuad: the particle motion this lesson has always used (core/math's ease is cubic). */
-const easeQuad = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 export function layout(w: number, h: number) {
   const sx = w - BOX.w / 2 - 24;
@@ -67,7 +63,7 @@ export function drawScene(ctx: Ctx, width: number, height: number, w: World) {
     const x0 = p.x - BOX.w / 2;
     const y0 = p.y - BOX.h / 2;
     rect(ctx, x0, y0, BOX.w, BOX.h, {
-      fill: srv.alive ? C.cell : DEAD_FILL,
+      fill: srv.alive ? C.cell : C.cellDead,
       stroke: srv.alive ? C.cellLine : C.bad,
       lineWidth: 1.5,
       radius: 9,
@@ -95,7 +91,7 @@ export function drawScene(ctx: Ctx, width: number, height: number, w: World) {
 
   // requests heading to the LB (shared by every strategy)
   for (const p of w.pending) {
-    const t = easeQuad(Math.min(1, (now - p.t0) / TRAVEL_IN));
+    const t = easeInOutQuad(Math.min(1, (now - p.t0) / TRAVEL_IN));
     const c = L.clients[p.spec.client];
     dot(ctx, lerp(c.x + 20, L.lb.x - 30, t), lerp(c.y, L.lb.y, t), DOT_R, C.info);
   }
@@ -105,13 +101,13 @@ export function drawScene(ctx: Ctx, width: number, height: number, w: World) {
     const age = now - r.tPhase;
     if (r.phase === 'toServer') {
       const p = L.servers[r.server];
-      const t = easeQuad(Math.min(1, age / TRAVEL_OUT));
+      const t = easeInOutQuad(Math.min(1, age / TRAVEL_OUT));
       const tx = queueX(r.server, sim.servers[r.server].queue.length);
       dot(ctx, lerp(L.lb.x + 30, tx, t), lerp(L.lb.y, p.y, t), DOT_R, C.info);
     } else if (r.phase === 'back') {
       const p = L.servers[r.server];
       const c = L.clients[r.client];
-      const t = easeQuad(Math.min(1, age / TRAVEL_BACK));
+      const t = easeInOutQuad(Math.min(1, age / TRAVEL_BACK));
       ctx.globalAlpha = 1 - t * 0.6;
       dot(ctx, lerp(p.x - BOX.w / 2, c.x + 20, t), lerp(p.y, c.y, t) - Math.sin(t * Math.PI) * 30, DOT_R, C.ok);
       ctx.globalAlpha = 1;
