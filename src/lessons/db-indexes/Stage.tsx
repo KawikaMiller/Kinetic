@@ -72,6 +72,7 @@ export function Stage() {
 
   return (
     <StageFrame
+      minWidth={620}
       player={player}
       height={H + 150}
       stats={
