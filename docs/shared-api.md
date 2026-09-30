@@ -30,6 +30,7 @@ Phase 0b already converted every lesson-CSS literal that exactly matched a token
 | `--on-hi-muted`, `--on-bad-muted` | `#4a3b00`, `#4a0d14` | secondary (dimmer) text on a solid fill |
 | `--on-fill` | `var(--bg)` | text on packets/pills |
 | `--cell-dead` | `#1a1216` | a crashed/dead node's box (the cell warmed toward `--bad`); `TOKENS.cellDead` on canvas |
+| `--trk-<id>` (14) | see `global.css` | curriculum track colours (`TRACKS[id].color` is `var(--trk-<id>)`; `TOKENS.trkDsa` etc. on canvas). App chrome only (cards, chips, crumbs): lessons keep using the semantic tokens |
 
 Tints: `color-mix(in srgb, var(--hi) 14%, transparent)`.
 Colours: DOM/SVG use `var(--x)`, canvas uses `TOKENS.x` / `alpha()`. A literal that genuinely

@@ -37,6 +37,23 @@
   --sky: #8fb8ff;
   --land: #2a3246;    /* map landmass dots */
 
+  /* Track colours (curriculum.ts TRACKS). With 14 tracks colour is secondary:
+     the glyph and short name carry identity. Spread round the hue wheel. */
+  --trk-dsa: #a78bfa;
+  --trk-hw: #2dd4bf;
+  --trk-math: #a3e635;
+  --trk-lang: #e879f9;
+  --trk-os: #ff8c5a;
+  --trk-net: #4cc9f0;
+  --trk-data: #3ddc97;
+  --trk-arch: #f7b538;
+  --trk-ops: #8fb8ff;
+  --trk-sec: #ff5d8f;
+  --trk-craft: #cbd5e1;
+  --trk-web: #818cf8;
+  --trk-ml: #fde047;
+  --trk-lead: #fca5a5;
+
   /* Ink for text drawn on a solid token fill */
   --on-hi: #1a1400;
   --on-ok: #04160d;
@@ -361,36 +378,101 @@ input[type='range']::-moz-range-thumb {
 .hero-label { fill: var(--text); font: 600 11px var(--mono); }
 .hero-packet { filter: drop-shadow(0 0 6px currentColor); }
 
+/* Track filter: "All" + four labelled family clusters. Sticky on desktop; on
+   narrow screens one non-sticky row that scrolls sideways inside itself. */
 .track-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   margin-bottom: 40px;
   position: sticky;
   top: 61px;
   z-index: 10;
   padding: 12px 0;
-  background: linear-gradient(var(--bg) 70%, transparent);
+  background: linear-gradient(var(--bg) 80%, transparent);
 }
-.track-filter button {
-  --c: var(--accent);
+.tf-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+.tf-family {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tf-chip,
+.tf-family-label {
   font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+.tf-chip {
+  --c: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   font-weight: 600;
-  padding: 7px 14px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--muted);
-  cursor: pointer;
-  transition: all 0.15s;
 }
-.track-filter button i { font-style: normal; color: var(--c); margin-right: 2px; }
-.track-filter button:hover { color: var(--text); border-color: var(--line-2); }
-.track-filter button.on {
+.tf-chip i { font-style: normal; color: var(--c); }
+.tf-chip:hover { color: var(--text); border-color: var(--line-2); }
+.tf-chip[aria-pressed='true'] {
   color: var(--text);
   border-color: var(--c);
   background: color-mix(in srgb, var(--c) 14%, var(--panel));
+}
+.tf-chip.is-empty { opacity: 0.45; }
+.tf-count { font: 500 11px var(--mono); color: var(--faint); }
+.tf-family-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 4px 4px 0;
+}
+.tf-family-label:hover { color: var(--text); }
+.tf-family-label[aria-pressed='true'] { color: var(--accent-2); }
+.tf-chip:focus-visible,
+.tf-family-label:focus-visible,
+.tier-planned-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tier-planned-toggle {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px dashed var(--line-2);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tier-planned-toggle:hover { color: var(--text); border-color: var(--faint); }
+
+@media (max-width: 900px) {
+  .track-filter { position: static; padding: 0; }
+  .tf-scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 4px 0 8px;
+    /* fade the right edge to hint that the row scrolls */
+    mask-image: linear-gradient(90deg, #000 88%, transparent);
+  }
+  .tf-scroll::-webkit-scrollbar { display: none; }
+  .tf-family { flex-wrap: nowrap; padding-left: 14px; border-left: 1px solid var(--line); }
 }
 
 .tiers { display: flex; flex-direction: column; gap: 56px; }

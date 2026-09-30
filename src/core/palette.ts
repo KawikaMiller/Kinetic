@@ -27,6 +27,20 @@ export const TOKENS = {
   pink: '#ff5d8f',
   sky: '#8fb8ff',
   land: '#2a3246',
+  trkDsa: '#a78bfa',
+  trkHw: '#2dd4bf',
+  trkMath: '#a3e635',
+  trkLang: '#e879f9',
+  trkOs: '#ff8c5a',
+  trkNet: '#4cc9f0',
+  trkData: '#3ddc97',
+  trkArch: '#f7b538',
+  trkOps: '#8fb8ff',
+  trkSec: '#ff5d8f',
+  trkCraft: '#cbd5e1',
+  trkWeb: '#818cf8',
+  trkMl: '#fde047',
+  trkLead: '#fca5a5',
 } as const;
 
 export type TokenName = keyof typeof TOKENS;

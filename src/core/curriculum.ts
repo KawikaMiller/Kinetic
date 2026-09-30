@@ -1,4 +1,4 @@
-import type { Tier, Topic, Track, TrackId } from './types';
+import type { Family, Tier, Topic, Track, TrackId } from './types';
 
 export const TIERS: Tier[] = [
   { n: 1, name: 'Foundations', role: 'Intern · Junior', color: 'var(--t1)',
@@ -11,14 +11,30 @@ export const TIERS: Tier[] = [
     blurb: 'Distributed-systems theory and trade-offs that shape whole organisations.' },
 ];
 
+/** Filter groups on the home page, in display order. */
+export const FAMILIES: Family[] = [
+  { id: 'computing', name: 'Computing' },
+  { id: 'systems', name: 'Systems' },
+  { id: 'delivery', name: 'Delivery' },
+  { id: 'product', name: 'Product & people' },
+];
+
+// Declared in family order: Object.values(TRACKS) is the display order.
 export const TRACKS: Record<TrackId, Track> = {
-  dsa: { id: 'dsa', name: 'Data Structures & Algorithms', short: 'DS&A', color: '#a78bfa', glyph: '⟨⟩' },
-  net: { id: 'net', name: 'Networking', short: 'Network', color: '#4cc9f0', glyph: '⇄' },
-  arch: { id: 'arch', name: 'Systems & Architecture', short: 'Systems', color: '#f7b538', glyph: '▦' },
-  data: { id: 'data', name: 'Databases & Storage', short: 'Data', color: '#3ddc97', glyph: '◫' },
-  os: { id: 'os', name: 'OS & Concurrency', short: 'OS', color: '#ff8c5a', glyph: '⚙' },
-  sec: { id: 'sec', name: 'Security', short: 'Security', color: '#ff5d8f', glyph: '⚿' },
-  ops: { id: 'ops', name: 'DevOps & Cloud', short: 'DevOps', color: '#8fb8ff', glyph: '☁' },
+  dsa: { id: 'dsa', family: 'computing', name: 'Data Structures & Algorithms', short: 'DS&A', color: 'var(--trk-dsa)', glyph: '⟨⟩' },
+  hw: { id: 'hw', family: 'computing', name: 'Computer Architecture & Data Representation', short: 'Hardware', color: 'var(--trk-hw)', glyph: '01' },
+  math: { id: 'math', family: 'computing', name: 'Math for CS', short: 'Math', color: 'var(--trk-math)', glyph: '∑' },
+  lang: { id: 'lang', family: 'computing', name: 'Languages, Compilers & Theory', short: 'Languages', color: 'var(--trk-lang)', glyph: 'λ' },
+  os: { id: 'os', family: 'systems', name: 'OS & Concurrency', short: 'OS', color: 'var(--trk-os)', glyph: '⚙' },
+  net: { id: 'net', family: 'systems', name: 'Networking', short: 'Network', color: 'var(--trk-net)', glyph: '⇄' },
+  data: { id: 'data', family: 'systems', name: 'Databases & Storage', short: 'Data', color: 'var(--trk-data)', glyph: '◫' },
+  arch: { id: 'arch', family: 'systems', name: 'Systems & Architecture', short: 'Systems', color: 'var(--trk-arch)', glyph: '▦' },
+  ops: { id: 'ops', family: 'delivery', name: 'DevOps & Cloud', short: 'DevOps', color: 'var(--trk-ops)', glyph: '☁' },
+  sec: { id: 'sec', family: 'delivery', name: 'Security', short: 'Security', color: 'var(--trk-sec)', glyph: '⚿' },
+  craft: { id: 'craft', family: 'delivery', name: 'Software Craft & Practice', short: 'Craft', color: 'var(--trk-craft)', glyph: '✎' },
+  web: { id: 'web', family: 'product', name: 'Web, Graphics & UX', short: 'Web & UX', color: 'var(--trk-web)', glyph: '◧' },
+  ml: { id: 'ml', family: 'product', name: 'ML & AI Systems', short: 'ML & AI', color: 'var(--trk-ml)', glyph: '∿' },
+  lead: { id: 'lead', family: 'product', name: 'Technical Leadership', short: 'Leadership', color: 'var(--trk-lead)', glyph: '⚑' },
 };
 
 /**
@@ -41,6 +57,66 @@ export const TOPICS: Topic[] = [
   { id: 'processes-threads', tier: 1, track: 'os', title: 'Processes vs Threads', tagline: 'Separate houses vs. roommates sharing a kitchen' },
   { id: 'hashing-encryption', tier: 1, track: 'sec', title: 'Hashing vs Encryption', tagline: 'One-way fingerprints vs. locked boxes' },
   { id: 'git-internals', tier: 1, track: 'ops', title: 'How Git Stores History', tagline: 'Commits, trees and blobs under the hood' },
+
+  // Tier 1 second pass (docs/rollout-plan.md §1.3): planned until each lesson is built.
+  { id: 'two-pointers', tier: 1, track: 'dsa', title: 'Two Pointers', tagline: 'Squeeze the array from both ends' },
+  { id: 'sliding-window', tier: 1, track: 'dsa', title: 'Sliding Window', tagline: 'Grow, shrink, never restart' },
+  { id: 'prefix-sums', tier: 1, track: 'dsa', title: 'Prefix Sums & Difference Arrays', tagline: 'Precompute once, answer ranges in O(1)' },
+  { id: 'tree-traversals', tier: 1, track: 'dsa', title: 'Tree Traversals (Pre/In/Post/Level-Order)', tagline: 'Four ways to walk the same tree' },
+  { id: 'graph-representations', tier: 1, track: 'dsa', title: 'Graph Fundamentals & Representations', tagline: 'Same graph, two memory layouts' },
+
+  { id: 'binary-hex', tier: 1, track: 'hw', title: 'Binary, Hex & Number Bases', tagline: 'Everything is bits wearing a costume' },
+  { id: 'twos-complement', tier: 1, track: 'hw', title: "Two's Complement & Integer Overflow", tagline: 'Why 127 + 1 = -128' },
+  { id: 'floating-point', tier: 1, track: 'hw', title: 'Floating Point (IEEE 754)', tagline: "0.1 + 0.2 != 0.3, and here's exactly why" },
+  { id: 'char-encoding', tier: 1, track: 'hw', title: 'Character Encoding: ASCII, Unicode & UTF-8', tagline: 'Why your emoji became Ã©' },
+  { id: 'base64-encodings', tier: 1, track: 'hw', title: 'Base64, URL & Percent Encoding', tagline: 'Binary data dressed as text' },
+  { id: 'logic-gates', tier: 1, track: 'hw', title: 'Boolean Algebra & Logic Gates', tagline: 'How transistors learn to think' },
+  { id: 'fetch-decode-execute', tier: 1, track: 'hw', title: 'How a CPU Runs an Instruction', tagline: 'Fetch, decode, execute, repeat' },
+  { id: 'memory-hierarchy', tier: 1, track: 'hw', title: 'The Memory Hierarchy & Latency Numbers', tagline: 'Registers are seconds, disk is years' },
+
+  { id: 'propositional-logic', tier: 1, track: 'math', title: 'Propositional Logic & Truth Tables', tagline: "If p then q, and why 'if' lies to you" },
+  { id: 'sets-functions', tier: 1, track: 'math', title: 'Sets, Relations & Functions', tagline: 'The vocabulary under every type and table' },
+  { id: 'logs-exponentials', tier: 1, track: 'math', title: 'Logarithms, Exponentials & Orders of Magnitude', tagline: 'Thinking in powers of two' },
+
+  { id: 'value-vs-reference', tier: 1, track: 'lang', title: 'Value vs Reference Semantics', tagline: 'Copy or alias?' },
+  { id: 'closures-scope', tier: 1, track: 'lang', title: 'Scope, Closures & Environments', tagline: 'Functions that remember' },
+  { id: 'oop-fundamentals', tier: 1, track: 'lang', title: 'Objects, Inheritance & Polymorphism', tagline: 'One call, many behaviours' },
+  { id: 'functional-programming', tier: 1, track: 'lang', title: 'Pure Functions, Immutability & Higher-Order Functions', tagline: 'Data in, data out, no surprises' },
+  { id: 'error-handling-models', tier: 1, track: 'lang', title: 'Error Handling: Exceptions vs Result Types', tagline: 'How failure travels' },
+  { id: 'regex-basics', tier: 1, track: 'lang', title: 'Regular Expressions for Everyday Use', tagline: 'Find, match and extract without a loop' },
+
+  { id: 'command-line', tier: 1, track: 'os', title: 'The Shell, Pipes & File Permissions', tagline: 'Small tools, glued with pipes' },
+  { id: 'stack-vs-heap', tier: 1, track: 'os', title: 'Stack vs Heap Memory', tagline: 'Where your variables actually live' },
+
+  { id: 'osi-tcpip-layers', tier: 1, track: 'net', title: 'The OSI & TCP/IP Layer Model', tagline: 'Envelopes inside envelopes' },
+
+  { id: 'er-data-modeling', tier: 1, track: 'data', title: 'Entity-Relationship Data Modeling', tagline: 'Drawing the domain before the tables' },
+  { id: 'data-formats', tier: 1, track: 'data', title: 'Data Formats: JSON, CSV, YAML & Friends', tagline: 'Same data, different ways to lie to you' },
+
+  { id: 'ci-pipelines', tier: 1, track: 'ops', title: 'Continuous Integration Pipelines', tagline: 'Every push gets built, tested and judged' },
+  { id: 'branching-workflows', tier: 1, track: 'ops', title: 'Branching Strategies: Trunk-Based vs GitFlow', tagline: 'Branch lifetime decides merge pain' },
+
+  { id: 'injection-attacks', tier: 1, track: 'sec', title: 'Injection Attacks (SQL & Command Injection)', tagline: 'When data becomes code' },
+  { id: 'security-principles', tier: 1, track: 'sec', title: 'Security Principles: CIA, Defense in Depth & Least Privilege', tagline: 'How to think like a defender' },
+  { id: 'secrets-management', tier: 1, track: 'sec', title: 'Config & Secrets: Keeping Keys Out of Git', tagline: 'The key you committed is already public' },
+  { id: 'cors-same-origin', tier: 1, track: 'sec', title: 'Same-Origin Policy & CORS', tagline: 'The browser is the one saying no' },
+
+  { id: 'debugging-method', tier: 1, track: 'craft', title: 'Systematic Debugging', tagline: 'Hypothesize, bisect, verify, never guess twice' },
+  { id: 'debugger-tools', tier: 1, track: 'craft', title: 'Using a Debugger: Breakpoints, Stepping & Watches', tagline: 'Stop guessing with console.log' },
+  { id: 'test-pyramid', tier: 1, track: 'craft', title: 'Unit, Integration & E2E: The Test Pyramid', tagline: 'Many fast tests at the base, few slow ones on top' },
+  { id: 'static-analysis-linters', tier: 1, track: 'craft', title: 'Linters, Formatters & Static Analysis', tagline: 'Catching bugs before running' },
+  { id: 'code-review', tier: 1, track: 'craft', title: 'Effective Code Review', tagline: 'Review the change, not the person' },
+  { id: 'dependency-management', tier: 1, track: 'craft', title: 'Semantic Versioning, Lockfiles & Dependency Hell', tagline: 'Works on my machine, broken in CI' },
+  { id: 'time-and-timezones', tier: 1, track: 'craft', title: 'Time Zones, UTC & Date Bugs', tagline: 'Falsehoods programmers believe about time' },
+  { id: 'reading-codebases', tier: 1, track: 'craft', title: 'Navigating an Unfamiliar Codebase', tagline: 'Finding your way in a million lines' },
+  { id: 'requirements-user-stories', tier: 1, track: 'craft', title: 'Requirements, User Stories & Acceptance Criteria', tagline: "Knowing what 'done' means" },
+  { id: 'agile-kanban', tier: 1, track: 'craft', title: 'Agile, Scrum & Kanban: How Work Flows', tagline: 'Stop starting, start finishing' },
+
+  { id: 'dom-events', tier: 1, track: 'web', title: 'The DOM & Event Propagation', tagline: 'Capture down, bubble up' },
+  { id: 'css-layout', tier: 1, track: 'web', title: 'The Box Model, Flexbox & Grid', tagline: 'Everything is a box. Where it goes is the hard part' },
+  { id: 'responsive-design', tier: 1, track: 'web', title: 'Responsive Design & Media Queries', tagline: 'One layout, every screen' },
+  { id: 'accessibility', tier: 1, track: 'web', title: 'Accessibility & the Accessibility Tree', tagline: "If a screen reader can't use it, it's broken" },
+  { id: 'browser-storage', tier: 1, track: 'web', title: 'Cookies, localStorage & IndexedDB', tagline: 'Where the browser keeps things' },
 
   // ── Tier 2 · Practitioner ──────────────────────────────────────────
   { id: 'hash-table', tier: 2, track: 'dsa', title: 'Hash Tables', tagline: 'O(1) lookups, collisions and resizing', minutes: 7 },
