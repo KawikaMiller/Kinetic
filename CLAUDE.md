@@ -56,9 +56,14 @@ loss), say so on screen.
 ## Verify before calling anything done
 
 - `npm run build` (type-check + build) and `npm run lint`.
+- `npm test`: Vitest over colocated `*.test.ts` files. Pure logic (`sim.ts`, `model.ts`,
+  frame builders, core utilities) gets a test next to it; correctness claims a lesson makes
+  ("round-trips for every value", "matches real JavaScript") are asserted here, not just eyeballed.
 - `npm run smoke`: loads every lesson in a headless browser and fails on console errors or
-  missing structure. Needs the dev server running (`npm run dev`, pinned to 127.0.0.1:5317
-  because another local app owns 5199).
+  missing structure. Needs the dev server running (`npm run dev`, on 127.0.0.1:5317 by default
+  because another local app owns 5199). A second checkout (e.g. a git worktree) runs side by
+  side with `KINETIC_PORT=5341 npm run dev`, and the scripts follow it with
+  `KINETIC_URL=http://127.0.0.1:5341`.
 - Look at the screenshots; "no errors" is not "looks right".
 - Refactors must be pixel-identical unless a change is deliberate. Capture a baseline on the
   untouched tree first (`npm run smoke -- --frames --label=base`: seeded `Math.random`, reduced

@@ -8,8 +8,10 @@ with short captions instead of walls of text.
 
 ```sh
 npm install
-npm run dev      # http://localhost:5317  (port pinned in vite.config.ts)
+npm run dev      # http://localhost:5317  (KINETIC_PORT=5341 npm run dev for a second checkout)
 npm run build    # type-check + production build into dist/
+npm test         # Vitest unit tests (src/**/*.test.ts)
+npm run smoke    # every lesson in a headless browser (needs the dev server)
 ```
 
 ## Tiers
@@ -22,14 +24,17 @@ npm run build    # type-check + production build into dist/
 | 4    | Strategist   | Staff · Principal |
 
 The full roadmap lives in `src/core/curriculum.ts`. Topics without a lesson folder show as
-"planned" on the home page.
+"planned" on the home page. Topics belong to one of 14 tracks, grouped into four families
+(Computing, Systems, Delivery, Product & people) for the home-page filter; the rollout order
+is in `docs/rollout-plan.md`.
 
 ## Project layout
 
 ```
 src/
   core/
-    curriculum.ts   tiers, tracks and every topic on the roadmap
+    curriculum.ts   tiers, track families, tracks and every topic on the roadmap
+    topicFilter.ts  the home-page filter (all / family / track) and its URL encoding
     lessons.ts      auto-discovers src/lessons/*/index.tsx (lazy-loaded)
     usePlayer.ts    step-through player: play/pause/step/scrub/speed + keyboard
     hooks.ts        useLoop (rAF), useCanvas, useElementSize, small utils
@@ -41,7 +46,7 @@ src/
     ui.tsx          Button, Slider, Segmented, Legend, Stat
     Quiz.tsx        quick-check questions
   lessons/<id>/     one folder per lesson
-  pages/            Home and LessonPage
+  pages/            Home and LessonPage (home/ holds the track filter, tier sections, cards)
   styles/global.css design tokens and shared styles
 ```
 
