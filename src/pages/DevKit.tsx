@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { ArrayStrip, type ArrayCellState } from '../components/ArrayStrip';
 import { BitStrip } from '../components/BitStrip';
+import { CodePanel } from '../components/CodePanel';
 import { HeapObject, heapFieldPort, heapRect, RefArrow, slotPort, VarSlot } from '../components/memory';
 import { Box, SectionTitle } from '../components/Panel';
 import { ResizablePane } from '../components/ResizablePane';
@@ -37,6 +38,9 @@ export function DevKit() {
       </Section>
       <Section title="ResizablePane · drag or use ←/→">
         <ResizeDemo />
+      </Section>
+      <Section title="CodePanel · click a line to toggle a breakpoint (renderLine + onLineClick)">
+        <CodeDemo />
       </Section>
       <Section title="TextArea + core/scale">
         <TextAndScaleDemo />
@@ -222,5 +226,22 @@ function TextAndScaleDemo() {
       <p className="mono">linear ticks: {lin.ticks(5).join(', ')} · log ticks: {lg.ticks(9).map((t) => t.toExponential(0)).join(', ')}</p>
       <p className="mono">log map(1e-5) = {lg.map(1e-5).toFixed(1)}px (midpoint of 300)</p>
     </>
+  );
+}
+
+const DEMO_CODE = ['function total(items) {', '  let sum = 0;', '  for (const x of items) sum += x.price;', '  return sum;', '}'];
+
+function CodeDemo() {
+  const [breakpoints, setBreakpoints] = useState<number[]>([2]);
+  const toggle = (i: number) => setBreakpoints((b) => (b.includes(i) ? b.filter((x) => x !== i) : [...b, i]));
+  return (
+    <CodePanel
+      lines={DEMO_CODE}
+      active={2}
+      onLineClick={toggle}
+      pressed={(i) => breakpoints.includes(i)}
+      lineLabel={(i) => `Line ${i + 1}: ${breakpoints.includes(i) ? 'remove' : 'add'} breakpoint`}
+      renderLine={(line, i) => (breakpoints.includes(i) ? <><span className="devkit-bp">●</span> {line}</> : line)}
+    />
   );
 }

@@ -6,3 +6,6 @@
 /* Range labels sit ~28px above the strip, so leave room for them. */
 .devkit-body > .devkit-labelled { margin-top: 28px; }
 .devkit-body > .resizable { align-self: stretch; }
+
+.devkit-bp { color: var(--bad); }
+

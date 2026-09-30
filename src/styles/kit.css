@@ -221,6 +221,22 @@
   color: var(--text);
   box-shadow: inset 3px 0 0 var(--hi);
 }
+/* Clickable lines: the button takes over the li's layout, so a line looks the same either way. */
+.code-panel.is-clickable li { padding: 0; }
+.code-panel .code-line {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 1px 8px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.code-panel .code-line:hover { background: color-mix(in srgb, var(--hi) 6%, transparent); }
 
 /* Sparkline (components/Sparkline.tsx) */
 .sparkline { display: block; overflow: visible; }
