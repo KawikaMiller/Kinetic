@@ -1,0 +1,88 @@
+.crv { gap: 12px; font-variant-ligatures: none; }
+
+/* ── Review it yourself ────────────────────────────────────────── */
+.crv-pr p { margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
+
+.crv-diff { list-style: none; margin: 0; padding: 6px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); }
+.crv-file { display: block; padding: 6px 12px; font: 600 12px var(--mono); color: var(--muted); border-top: 1px solid var(--line); }
+.crv-diff li:first-child .crv-file { border-top: 0; }
+.crv-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 1px 12px 1px 0;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: 12.5px/1.6 var(--mono);
+  font-variant-ligatures: none; /* after the shorthand, which resets it */
+}
+.crv-line:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
+.crv-line code { flex: 1; min-width: 0; white-space: pre-wrap; font: inherit; }
+.crv-no { width: 2.4em; flex: none; text-align: right; color: var(--faint); }
+.crv-sign { width: 1em; flex: none; color: var(--ok); }
+.crv-line.has-comment { border-left-color: var(--c); background: color-mix(in srgb, var(--c) 9%, transparent); }
+.crv-line.is-selected { border-left-color: var(--hi); background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.crv-line.is-found { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.crv-line.is-missed { border-left-color: var(--bad); background: color-mix(in srgb, var(--bad) 8%, transparent); }
+
+.crv-tag { flex: none; font: 600 10.5px var(--mono); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--c); color: var(--c); }
+.crv-tag.is-found { --c: var(--ok); }
+.crv-tag.is-missed { --c: var(--bad); }
+.crv-tag.is-close { --c: var(--hi); }
+
+.crv-results ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.crv-results li { padding-left: 10px; border-left: 3px solid var(--dim); font-size: 13.5px; }
+.crv-results li.is-found { border-left-color: var(--ok); }
+.crv-results li.is-missed { border-left-color: var(--bad); }
+.crv-results li.is-wrong-severity { border-left-color: var(--hi); }
+.crv-results p { margin: 2px 0 0; color: var(--muted); }
+.crv-key { font: 12px var(--mono); color: var(--faint); }
+
+/* ── Rewrite a comment ─────────────────────────────────────────── */
+.crv-rewrite code { font: 12px var(--mono); text-transform: none; letter-spacing: 0; }
+.crv-harsh {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 3px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  font-size: 14px;
+}
+.crv-options { display: flex; flex-direction: column; gap: 6px; }
+.crv-option {
+  text-align: left;
+  font: 13.5px var(--font);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.crv-option:hover { border-color: var(--faint); }
+.crv-option.is-picked { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.crv-qualities { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font: 12px var(--mono); }
+.crv-qualities .is-yes { color: var(--ok); }
+.crv-qualities .is-no { color: var(--dim); }
+.crv-nudge { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* ── PR size ───────────────────────────────────────────────────── */
+.crv-chart { display: block; width: 100%; height: auto; margin-top: 6px; }
+.crv-axis { stroke: var(--line-2); stroke-width: 1.5; }
+.crv-axis-label { font: 11px var(--mono); fill: var(--faint); }
+.crv-curve { fill: none; stroke-width: 2.5; }
+.crv-curve.is-time,
+.crv-dot.is-time { stroke: var(--info); }
+.crv-curve.is-rate,
+.crv-dot.is-rate { stroke: var(--ok); }
+.crv-dot { fill: var(--panel); stroke-width: 2.5; }
+.crv-now { stroke: var(--hi); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.crv-now-label { font: 600 11px var(--mono); fill: var(--hi); }
+.crv-checklist .control-group { margin: 8px 0 10px; }
+.crv-ready { font: 12px var(--mono); color: var(--muted); }
+.crv-results li.is-linter { border-left-color: var(--dim); }
