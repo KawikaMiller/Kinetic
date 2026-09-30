@@ -1,0 +1,8 @@
+/* Dev-only showcase page (pages/DevKit.tsx). */
+.devkit { display: flex; flex-direction: column; gap: 18px; }
+.devkit h1 { font-size: 28px; }
+.devkit-body { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-top: 12px; }
+.devkit-body > .array-strip { align-self: stretch; }
+/* Range labels sit ~28px above the strip, so leave room for them. */
+.devkit-body > .devkit-labelled { margin-top: 28px; }
+.devkit-body > .resizable { align-self: stretch; }

@@ -1,8 +1,7 @@
-import { motion } from 'motion/react';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
+import { ArrayStrip, type ArrayCellState } from '../../components/ArrayStrip';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
-import { SPRING } from '../../core/motion';
 import { randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, makeArray, missingValue } from './frames';
@@ -33,6 +32,7 @@ export function Stage() {
   const searchFor = (v: number) => setData({ arr, target: v });
 
   const worst = Math.ceil(Math.log2(n + 1));
+  const fontSize = fontSizeFor(n);
 
   return (
     <StageFrame
@@ -64,17 +64,18 @@ export function Stage() {
         </Controls>
       }
     >
-      <div className="bs" style={{ '--n': n, '--fs': `${fontSizeFor(n)}px` } as CSSProperties}>
+      <div className="bs">
         <Row
           title="Linear search"
           tag="O(n)"
           tagColor="var(--bad)"
           arr={arr}
+          fontSize={fontSize}
           onPick={searchFor}
-          cellClass={(i) => {
-            if (lin.idx === null) return '';
-            if (i === lin.idx) return lin.found ? 'found' : 'mid';
-            return i < lin.idx ? 'out' : '';
+          cellState={(i) => {
+            if (lin.idx === null) return 'idle';
+            if (i === lin.idx) return lin.found ? 'done' : 'active';
+            return i < lin.idx ? 'dim' : 'idle';
           }}
           pointer={lin.idx}
           pointerLabel="i"
@@ -84,12 +85,14 @@ export function Stage() {
           tag="O(log n)"
           tagColor="var(--ok)"
           arr={arr}
+          fontSize={fontSize}
           onPick={searchFor}
-          cellClass={(i) => {
-            if (bin.checks === 0) return '';
-            if (i === bin.mid) return bin.found ? 'found' : 'mid';
-            if (bin.done && !bin.found) return 'out';
-            return i < bin.lo || i > bin.hi ? 'out' : 'live';
+          cellState={(i) => {
+            if (bin.checks === 0) return 'idle';
+            if (i === bin.mid) return bin.found ? 'done' : 'active';
+            if (bin.done && !bin.found) return 'dim';
+            // idle cells inside the lo..hi range get ArrayStrip's "still possible" tint
+            return i < bin.lo || i > bin.hi ? 'dim' : 'idle';
           }}
           band={bin.checks === 0 || (bin.done && !bin.found) ? null : [bin.lo, bin.hi]}
           pointer={bin.mid}
@@ -101,21 +104,19 @@ export function Stage() {
 }
 
 function Row({
-  title, tag, tagColor, arr, cellClass, onPick, band, pointer, pointerLabel,
+  title, tag, tagColor, arr, fontSize, cellState, onPick, band, pointer, pointerLabel,
 }: {
   title: string;
   tag: string;
   tagColor: string;
   arr: number[];
-  cellClass: (i: number) => string;
+  fontSize: number;
+  cellState: (i: number) => ArrayCellState;
   onPick: (v: number) => void;
   band?: [number, number] | null;
   pointer: number | null;
   pointerLabel: string;
 }) {
-  const n = arr.length;
-  const pct = (i: number) => `${(i / n) * 100}%`;
-
   return (
     <div className="bs-row">
       <div className="bs-row-head">
@@ -124,36 +125,15 @@ function Row({
           {tag}
         </span>
       </div>
-      <div className="bs-track">
-        {band && (
-          <motion.div
-            className="bs-band"
-            initial={false}
-            animate={{ left: pct(band[0]), width: `${((band[1] - band[0] + 1) / n) * 100}%` }}
-            transition={SPRING.snappy}
-          >
-            <span className="bs-band-lo">lo</span>
-            <span className="bs-band-hi">hi</span>
-          </motion.div>
-        )}
-        <div className="bs-cells">
-          {arr.map((v, i) => (
-            <button key={i} type="button" className={`bs-cell ${cellClass(i)}`} onClick={() => onPick(v)} title={`Search for ${v}`}>
-              {v}
-            </button>
-          ))}
-        </div>
-        {pointer !== null && (
-          <motion.div
-            className="bs-pointer"
-            initial={false}
-            animate={{ left: `${((pointer + 0.5) / n) * 100}%` }}
-            transition={SPRING.snappy}
-          >
-            ▲<span>{pointerLabel}</span>
-          </motion.div>
-        )}
-      </div>
+      <ArrayStrip
+        values={arr}
+        fontSize={fontSize}
+        cellState={cellState}
+        ranges={band ? [{ from: band[0], to: band[1], labels: ['lo', 'hi'] }] : []}
+        pointers={pointer !== null ? [{ i: pointer, label: pointerLabel }] : []}
+        onCellClick={(i) => onPick(arr[i])}
+        cellTitle={(i) => `Search for ${arr[i]}`}
+      />
     </div>
   );
 }

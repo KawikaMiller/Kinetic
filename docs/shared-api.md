@@ -338,9 +338,110 @@ Behaviour notes, for pixel parity:
 
 ---
 
+## Tier 1 kit (rollout plan P1)
+
+Built before Tier 1, each for 2+ Tier 1 lessons. All of them are on the dev-only showcase at
+`#/dev/kit` (`pages/DevKit.tsx`, not in production builds): open it to see and poke each piece.
+Component CSS lives in `kit.css`, so the classes work without importing anything.
+
+### `core/bits.ts`, `BitStrip.tsx` — binary-hex, twos-complement, floating-point, char-encoding, base64-encodings, command-line
+```ts
+toBits(0x2a7f, 16)        // Bit[] MSB first; negatives in two's complement, out-of-range wraps: toBits(-1, 8) → 11111111
+fromBits(bits), fromBitsSigned(bits), flipBit(bits, i), placeValue(i, width)   // width 1..53
+chunkGroups(16, 4, { tone: 'violet', label: (k, from, to) => hexDigit(from, to) })  // nibbles, bytes, 6-bit, rwx
+```
+```tsx
+<BitStrip bits={bits} onToggle={(i) => setBits(flipBit(bits, i))} placeValues
+          groups={chunkGroups(16, 4, { tone: 'violet', label: … })} highlight={[carryAt]} />
+<BitStrip bits={f32} size="sm" groups={[{ from: 0, to: 0, tone: 'bad', label: 'sign' }, …]} />
+<BitStrip bits={utf8} toneOf={(i) => (isPrefix(i) ? 'dim' : 'info')} />          // per-bit tone beats the group's
+<BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
+```
+- Set bits are a solid fill in their tone; clear bits are a dark cell outlined in it. Tone: `toneOf(i, bit)`, else the group's, else `hi`.
+- `placeValues` prints 2^k above each bit, compacted (`32K`); `labelOf` overrides that label.
+- `highlight` rings bits in `highlightTone` (default `info`: binary-hex's carry ripple).
+- It wraps between groups only, never inside one: split a long run (a 23-bit mantissa) into a few groups, labelling only the first.
+- With `onToggle` the bits are `aria-pressed` buttons; without it they're read-only. `size`: `sm` 18px, `md` 24px, `lg` 30px (one step smaller at ≤900px).
+
+### `core/truth.ts`, `TruthTable.tsx` — logic-gates, propositional-logic
+```ts
+truthRows(['p', 'q'])                 // [{p:F,q:F}, {p:F,q:T}, {p:T,q:F}, {p:T,q:T}]; { trueFirst: true } for TT…FF
+truthRowIndex(['A', 'B'], inputs)     // the row matching the current inputs
+```
+```tsx
+<TruthTable vars={['A', 'B']} format="10" trueTone="hi" currentTone="info"          // logic-gates
+            columns={[{ label: 'sum', fn: (r) => r.A !== r.B }, { label: 'carry', fn: (r) => r.A && r.B }]}
+            currentRow={truthRowIndex(['A', 'B'], inputs)} onRowClick={(row) => setInputs(row)} />
+<TruthTable vars={['p', 'q']} columns={[f1, f2]} mismatchRows={diffRows} />       // T/F, true = --ok, current = --hi
+```
+Rows with `onRowClick` are keyboard-focusable buttons (Enter/Space). Outputs are separated from inputs by a rule.
+
+### Memory kit (`components/memory/`) — stack-vs-heap, value-vs-reference, closures-scope, oop-fundamentals
+SVG primitives in scene coordinates, plus the geometry to connect them:
+```tsx
+import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from '../../components/memory';
+
+<VarSlot at={{ x: 10, y: 70 }} name="a" isRef tone="violet" highlight={seesMutation} dead={framePopped} />
+<VarSlot at={{ x: 10, y: 30 }} name="count" value={3} />
+<HeapObject at={user} w={180} title="{ } user" variant="live | collectable | freed"
+            fields={[{ name: 'name', value: '"Ada"' }, { name: 'tags', isRef: true }]} highlight={searching} />
+<RefArrow from={slotPort({ x: 10, y: 70 })} to={heapRect(user, 180, 2)} bend={-12} />
+<RefArrow from={heapFieldPort(user, 180, 1)} to={heapRect(tags, 180, 1)} dangling={freed} />
+```
+- Sizes: `SLOT` (150 × 30, name tag 58) and `HEAP` (title 24, rows 22) are exported, so layout maths and the shapes agree. `heapHeight(n)` and `heapRect(at, w, n)` size a block.
+- `RefArrow` ends on the target box's border facing its source (`rectEdgeToward`), so arrows never poke inside. `bend` bows it to separate two arrows to one box. `dangling` is dashed `--bad`.
+- `collectable` is dim and dashed with a corner tag (unreachable, waiting for GC). `freed` is dashed `--bad` with a "freed" tag. Pass `tag` to override the corner text (e.g. `GC`).
+- Heap blocks fade in and arrows draw themselves in, except under reduced motion, where both appear at once.
+
+### `ArrayStrip.tsx` — two-pointers, sliding-window, prefix-sums, debugging-method; binary-search
+```tsx
+<ArrayStrip values={arr} cellState={(i) => 'idle | active | done | dim | bad'}
+            ranges={[{ from: lo, to: hi, labels: ['lo', 'hi'] }, { from: b0, to: b1, tone: 'violet' }]}
+            pointers={[{ i: l, label: 'L', tone: 'info' }, { i: r, label: 'R', tone: 'violet' }]}
+            onCellClick={(i) => pick(i)} cellTitle={(i) => `Search for ${arr[i]}`}
+            showIndex fontSize={12} cellMax={56} />
+```
+- `active` lifts in `--hi` (checking now), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get the "still possible" tint.
+- Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
+- Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
+- Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
+- Range labels sit about 28px above the strip, so leave that room above it.
+- binary-search runs on it, pixel-identical: 11/11 frames against the pre-migration code, including 8 and 40 cells and a fully ruled-out missing-value search.
+
+### `ResizablePane.tsx` — css-layout, responsive-design
+```tsx
+<ResizablePane min={320} max={1440} value={width} onChange={setWidth} label="Device width" step={10} height={260}>
+  <SamplePage />   {/* real DOM: measure it with getBoundingClientRect */}
+</ResizablePane>
+```
+Drag the handle, or focus it and use ←/→ (`step`, ×5 with Shift), Home and End. It's a `separator`
+with `aria-valuenow`. When the stage is narrower than `value`, the pane is shown at the stage's width
+and the readout says "shown at Npx", so measurements inside stay honest.
+
+### `TextArea` (in `ui.tsx`) — regex-basics, data-formats
+```tsx
+<TextArea label="Test text" value={text} onChange={setText} rows={6} />      // mono by default
+<TextArea label="Notes" value={v} onChange={setV} mono={false} spellCheck />
+```
+The same look and focus ring as `TextField` (same `.text-field` wrapper). Enter inserts a newline.
+Spellcheck is off by default, since this is usually code or data. Highlighting matches inside the
+text (regex-basics) is lesson-local until a second lesson needs it.
+
+### `core/scale.ts` — floating-point, logs-exponentials, memory-hierarchy
+```ts
+const x = linearScale(0, 100, 0, 500);        // x.map(50) → 250, x.invert(250) → 50, x.ticks(5) → [0, 20, …, 100]
+const y = logScale(1e-9, 1e-1, 300, 0);       // y axis, bottom-up; y.ticks(9) → [1e-9, 1e-8, …, 1e-1]
+logScale(1, 1024, 0, 10, 2)                   // base 2
+```
+Linear ticks are "nice" (1, 2 or 5 × 10^k) with float noise rounded off (0.3, not 0.30000000000000004).
+Log ticks are whole powers of the base inside the domain, thinned evenly beyond `count`. A log
+scale needs a positive domain (it throws otherwise) and maps `v <= 0` to `NaN`.
+
+---
+
 ## Not built (deliberately)
 
-- **`SlotStrip`, `TreeSvg`:** the layouts in heaps, trees-bst, arrays-linked-lists and recursion differ in exactly the parts a shared component would have to model. The batch owners advised against extracting them, and I agree.
+- **`TreeSvg`:** the layouts in heaps, trees-bst and recursion differ in exactly the parts a shared component would have to model. It is extracted in rollout plan P2, once Tier 1 brings real second users. (`SlotStrip` shipped as `ArrayStrip` above.)
 - **Multi-state `CodePanel` lines:** requested in Phase 2 and declined; lessons that need more line states keep a small local override.
 - **`CompareRows`:** not built.
 - **Per plan §6:** a scene engine, `DataTable`, `KeyValue`, `EventLog`, `ChipChoice` and `CanvasStage`.

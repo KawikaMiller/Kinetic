@@ -141,6 +141,47 @@ export function TextField({
 }
 
 /**
+ * Multi-line text with the same look as TextField: a regex's test text, a JSON editor.
+ * Monospace by default; Enter inserts a newline (there's no onEnter).
+ */
+export function TextArea({
+  label, value, onChange, onBlur, sanitize, rows = 4, mono = true, placeholder, disabled, ariaLabel, spellCheck = false,
+  className = '',
+}: {
+  label?: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  sanitize?: (raw: string) => string;
+  rows?: number;
+  /** Off for prose. */
+  mono?: boolean;
+  placeholder?: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+  /** Off by default: this is usually code or data. */
+  spellCheck?: boolean;
+  className?: string;
+}) {
+  return (
+    <label className={`text-field ${className}`}>
+      {label && <span>{label}</span>}
+      <textarea
+        className={mono ? undefined : 'is-sans'}
+        value={value}
+        rows={rows}
+        placeholder={placeholder}
+        disabled={disabled}
+        spellCheck={spellCheck}
+        aria-label={ariaLabel ?? label}
+        onChange={(e) => onChange(sanitize ? sanitize(e.target.value) : e.target.value)}
+        onBlur={onBlur}
+      />
+    </label>
+  );
+}
+
+/**
  * A label over a tight group of controls: preset buttons, palettes, role pickers.
  * `inline` puts the label to the left of the group instead of above it.
  */
