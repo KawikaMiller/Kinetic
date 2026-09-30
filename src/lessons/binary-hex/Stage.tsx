@@ -16,8 +16,6 @@ import './styles.css';
 const RIPPLE_MS = 380;
 const INPUT_EXAMPLES = '255, 0xFF, 0b1010, #FF8800'; // allow-color: example inputs, not a colour
 const START_VALUE = 0x2a;
-const SUPERSCRIPT = '⁰¹²³⁴⁵⁶⁷⁸⁹';
-const toSuperscript = (n: number) => [...String(n)].map((d) => SUPERSCRIPT[Number(d)]).join('');
 
 interface Ripple {
   steps: RippleStep[];
@@ -177,8 +175,7 @@ export function Stage() {
           bits={bits}
           onToggle={ripple ? undefined : toggle}
           groups={groups}
-          placeValues={width !== 24}
-          labelOf={width === 24 ? (i) => `2${toSuperscript(width - 1 - i)}` : undefined}
+          placeValues={width === 24 ? 'exponent' : true}
           toneOf={(_, bit) => (bit ? 'hi' : 'dim')}
           highlight={ring === undefined ? [] : [ring]}
           size={width === 8 ? 'lg' : 'md'}

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, duration, humanDuration, latency, pct, plural } from './format';
+import { bytes, clock, duration, humanDuration, latency, pct, plural, superscript } from './format';
+
+describe('superscript', () => {
+  it('writes integers in superscript digits, including negatives', () => {
+    expect(superscript(0)).toBe('⁰');
+    expect(superscript(23)).toBe('²³');
+    expect(superscript(-4)).toBe('⁻⁴');
+    expect(superscript(1024)).toBe('¹⁰²⁴');
+  });
+});
 
 describe('latency and humanDuration', () => {
   it('prints nanosecond-scale times in the right unit', () => {

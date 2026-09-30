@@ -1,11 +1,18 @@
 import type { ReactNode } from 'react';
 import { placeValue, type Bit, type BitGroup } from '../core/bits';
+import { superscript } from '../core/format';
 import type { Tone } from '../core/tone';
 
 export type { Bit, BitGroup } from '../core/bits';
 
+/** How place values are labelled: 'value' (512, 1K, 32K) or 'exponent' (2⁹, 2¹⁰, 2²³, for wide registers). */
+export type PlaceLabels = 'value' | 'exponent';
+
 /** Compact place value for the label above a bit: 512, 1K, 32K. */
 const compactPlace = (v: number) => (v >= 1024 ? `${v / 1024}K` : String(v));
+
+const placeLabel = (i: number, n: number, mode: PlaceLabels) =>
+  mode === 'exponent' ? `2${superscript(n - 1 - i)}` : compactPlace(placeValue(i, n));
 
 interface Run {
   from: number;
@@ -36,8 +43,9 @@ function runsOf(n: number, groups: readonly BitGroup[]): Run[] {
  * - `groups` draw a bracket (with an optional label) under a run of bits and leave
  *   a gap between runs. On narrow screens the strip wraps between groups, never
  *   inside one, so split very long runs (a 23-bit mantissa) into a few groups.
- * - `placeValues` labels each bit with 2^k above it; `labelOf` overrides that
- *   with any label (r/w/x, a bit index).
+ * - `placeValues` labels each bit with its place value above it (`true`/'value': 512, 1K),
+ *   or as a power of two ('exponent': 2¹⁰, 2²³) once values get too wide for the cells,
+ *   roughly past 16 bits; `labelOf` overrides either with any label (r/w/x, a bit index).
  * - With `onToggle` the bits are buttons (aria-pressed); without it they're read-only.
  */
 export function BitStrip({
@@ -47,7 +55,7 @@ export function BitStrip({
   bits: readonly Bit[];
   onToggle?: (i: number) => void;
   groups?: readonly BitGroup[];
-  placeValues?: boolean;
+  placeValues?: boolean | PlaceLabels;
   labelOf?: (i: number) => ReactNode;
   toneOf?: (i: number, bit: Bit) => Tone | undefined;
   /** Bits drawn with a ring, e.g. a carry rippling left. */
@@ -59,14 +67,15 @@ export function BitStrip({
 }) {
   const n = bits.length;
   const ringed = new Set(highlight);
-  const label = (i: number) => labelOf?.(i) ?? (placeValues ? compactPlace(placeValue(i, n)) : null);
-  const hasLabels = placeValues || !!labelOf;
+  const placeMode: PlaceLabels | null = placeValues === true ? 'value' : placeValues || null;
+  const label = (i: number) => labelOf?.(i) ?? (placeMode ? placeLabel(i, n, placeMode) : null);
+  const hasLabels = !!placeMode || !!labelOf;
 
   const renderBit = (i: number, group?: BitGroup) => {
     const bit = bits[i];
     const tone = toneOf?.(i, bit) ?? group?.tone ?? 'hi';
     const cls = `bit tone-${tone} ${bit ? 'is-set' : 'is-clear'} ${ringed.has(i) ? 'is-ringed' : ''}`;
-    const place = placeValues ? ` (${placeValue(i, n)})` : '';
+    const place = placeMode ? ` (${placeValue(i, n)})` : '';
     return (
       <span key={i} className="bit-slot">
         {hasLabels && <span className="bit-label">{label(i)}</span>}

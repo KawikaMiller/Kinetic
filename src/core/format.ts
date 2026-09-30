@@ -78,6 +78,12 @@ export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+
+/** An integer in Unicode superscript digits, for exponents in plain text: 23 → '²³', -4 → '⁻⁴'. */
+export const superscript = (n: number) =>
+  [...String(Math.trunc(n))].map((ch) => (ch === '-' ? '⁻' : SUPERSCRIPT_DIGITS[Number(ch)])).join('');
+
 /** Two-digit zero padding: 7 → '07'. */
 export const pad2 = (n: number) => String(n).padStart(2, '0');
 
