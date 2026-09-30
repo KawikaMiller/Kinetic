@@ -1,0 +1,32 @@
+.bw { gap: 12px; }
+
+.bw-days { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+.bw-days span {
+  text-align: center;
+  padding: 4px 0;
+  border-radius: 6px;
+  font: 600 12px var(--mono);
+  color: var(--faint);
+  background: color-mix(in srgb, var(--dim) 30%, transparent);
+  transition: background 0.25s, color 0.25s;
+}
+.bw-days span.is-past { color: var(--muted); background: color-mix(in srgb, var(--dim) 60%, transparent); }
+.bw-days span.is-today { color: var(--on-hi); background: var(--hi); }
+
+.bw-body { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; align-items: start; margin-top: 8px; }
+.bw-graph { min-height: 150px; }
+
+.bw-badge circle { fill: var(--bad); }
+.bw-badge text { font: 700 10px var(--mono); fill: var(--on-bad); }
+
+.bw-stats { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.bw-stats div { display: flex; flex-direction: column; }
+.bw-stats dt { font: 600 10.5px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+.bw-stats dd { margin: 0; font-size: 13.5px; color: var(--text); }
+.bw-stats div:first-child dd { font: 700 22px var(--mono); color: var(--ok); }
+.bw-stats div.is-bad:first-child dd { color: var(--bad); }
+
+@media (max-width: 900px) {
+  .bw-body { grid-template-columns: minmax(0, 1fr); }
+  .bw-stats { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; }
+}

@@ -1,0 +1,34 @@
+.tpy { gap: 14px; }
+.tpy-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+
+.tpy-shape-svg { display: block; width: 100%; max-width: 360px; height: auto; margin-top: 8px; }
+.tpy-shape-label { font: 12px var(--mono); fill: var(--muted); }
+
+.tpy-bugs ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.tpy-bugs li { display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; }
+.tpy-bugs li span { color: var(--faint); }
+.tpy-bugs li em { flex-basis: 100%; font-style: normal; font: 12px var(--mono); }
+.tpy-bugs li.is-caught em { color: var(--ok); }
+.tpy-bugs li.is-missed em { color: var(--bad); }
+
+.tpy-run { --h: 200px; }
+
+.tpy-scen ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tpy-scen li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+.tpy-scen li.is-right { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 7%, transparent); }
+.tpy-scen li.is-wrong { border-left-color: var(--bad); background: color-mix(in srgb, var(--bad) 7%, transparent); }
+.tpy-scen-text { flex: 1 1 260px; font-size: 13.5px; }
+.tpy-scen-picks { display: flex; gap: 6px; }
+.tpy-scen-why { flex-basis: 100%; font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .tpy-top { grid-template-columns: minmax(0, 1fr); }
+}
