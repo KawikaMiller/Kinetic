@@ -1,11 +1,23 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Slider, Stat, Stats } from '../../components/ui';
-import { useSetCaption } from '../../core/caption';
+import { Button, Controls, Hint, Legend, PauseButton, Slider, Stat, Stats } from '../../components/ui';
+import { useIntroCaption, useSetCaption } from '../../core/caption';
+import { times } from '../../core/format';
 import { useLoop } from '../../core/hooks';
-import { N, nodeName, Raft, type Entry, type Msg, type RaftEvent, type Role } from './sim';
+import { cssVar, type TokenName } from '../../core/palette';
+import { useSimulation } from '../../core/useSimulation';
+import { N, nodeName, Raft, type RaftEvent, type Role } from './sim';
+import {
+  clusterView, CX, CY, deg, motionView, NODE_R, pos, RING, TIMER_R, VIEW_H, VIEW_W,
+  type ClusterView, type MotionView, type NodeView,
+} from './view';
 import './styles.css';
+
+const STAGE_HEIGHT = 470;
+const SNAPSHOT_EVERY_S = 0.1; // roles, terms and logs; the moving parts update every frame
+const BEAT_MS = 500; // how long a leader's heartbeat pulse lasts
+const LOG_COLS = 12;
 
 const ROLE_COLOR: Record<Role | 'dead', string> = {
   follower: 'var(--info)',
@@ -13,8 +25,8 @@ const ROLE_COLOR: Record<Role | 'dead', string> = {
   leader: 'var(--ok)',
   dead: 'var(--bad)',
 };
-const TERM_HUES = ['#4cc9f0', '#a78bfa', '#ffd166', '#ff8c5a', '#3ddc97', '#ff5d8f', '#8fb8ff', '#f7b538'];
-const termColor = (t: number) => TERM_HUES[t % TERM_HUES.length];
+const TERM_HUES: TokenName[] = ['info', 'violet', 'hi', 'orange', 'ok', 'pink', 'sky', 'amber'];
+const termColor = (t: number) => cssVar(TERM_HUES[t % TERM_HUES.length]);
 
 const EVENT_STYLE: Record<RaftEvent['kind'], { cls: string; label: string }> = {
   election: { cls: 'hl', label: 'election' },
@@ -26,99 +38,50 @@ const EVENT_STYLE: Record<RaftEvent['kind'], { cls: string; label: string }> = {
   partition: { cls: 'hl bad', label: 'network' },
 };
 
-// cluster geometry (SVG units)
-const CX = 230;
-const CY = 208;
-const RING = 150;
-const NODE_R = 32;
-const deg = (i: number) => -90 + i * (360 / N);
-const pos = (i: number, r = RING) => {
-  const a = (deg(i) * Math.PI) / 180;
-  return { x: CX + Math.cos(a) * r, y: CY + Math.sin(a) * r };
-};
-
-interface NodeView {
-  id: number;
-  role: Role;
-  term: number;
-  alive: boolean;
-  log: Entry[];
-  commit: number;
-  votes: number;
-  votedFor: number | null;
-  timerLeft: number; // 0..1
-  sinceBeat: number; // ms since last heartbeat broadcast (leaders)
-}
-
-interface View {
-  now: number;
-  nodes: NodeView[];
-  msgs: Msg[];
-  events: RaftEvent[];
-  minority: number[] | null;
-}
-
-function snapshot(r: Raft): View {
-  return {
-    now: r.now,
-    nodes: r.nodes.map((n) => ({
-      id: n.id, role: n.role, term: n.term, alive: n.alive, log: n.log.slice(), commit: n.commit,
-      votes: n.votes.size, votedFor: n.votedFor,
-      timerLeft: Math.max(0, Math.min(1, (n.timeoutAt - r.now) / n.timeoutDur)),
-      sinceBeat: r.now - (n.nextHeartbeat - 800),
-    })),
-    msgs: r.msgs.map((m) => ({ ...m })),
-    events: r.events.slice(-7).reverse(),
-    minority: r.minority ? [...r.minority] : null,
-  };
-}
+const roleColor = (n: { role: Role; alive: boolean }) => (n.alive ? ROLE_COLOR[n.role] : ROLE_COLOR.dead);
+const NO_MOTION: MotionView = { msgs: [], rings: [] };
 
 export function Stage() {
   const setCaption = useSetCaption();
-  const simRef = useRef<Raft | null>(null);
-  const raft = () => (simRef.current ??= new Raft());
-  const [view, setView] = useState<View | null>(null);
   const [speed, setSpeed] = useState(1);
-  const [paused, setPaused] = useState(false);
   const [partitioned, setPartitioned] = useState(false);
+  const [view, setView] = useState<ClusterView | null>(null);
 
-  useEffect(() => {
-    const r = raft();
-    r.onEvent = (e) => {
-      const s = EVENT_STYLE[e.kind];
-      setCaption(
-        <>
-          <span className={s.cls}>{s.label}</span> {e.text}
-        </>,
-      );
-    };
-    setCaption(
-      <>
-        Five servers, no leader yet. Each ring is an <b>election timer</b>: whoever runs out first asks the others for
-        votes.
-      </>,
-    );
-    setView(snapshot(r));
-    // raft() is a stable lazy accessor over a ref
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setCaption]);
+  useIntroCaption(
+    <>
+      Five servers, no leader yet. Each ring is an <b>election timer</b>: whoever runs out first asks the others for
+      votes.
+    </>,
+  );
 
-  useLoop((dt) => {
-    const r = raft();
-    r.step(dt * 1000 * speed);
-    setView(snapshot(r));
-  }, !paused);
+  const { world, paused, togglePause } = useSimulation({
+    create: () => {
+      const r = new Raft();
+      r.onEvent = (e) => {
+        const s = EVENT_STYLE[e.kind];
+        setCaption(
+          <>
+            <span className={s.cls}>{s.label}</span> {e.text}
+          </>,
+        );
+      };
+      return r;
+    },
+    step: (r, dt) => r.step(dt * 1000 * speed),
+    snapshot: clusterView,
+    snapshotEvery: SNAPSHOT_EVERY_S,
+    // Kept in local state (not `snap`) so actions can refresh it instantly, even while paused.
+    onSnapshot: (_, v) => setView(v),
+  });
+  const refresh = useCallback(() => setView(clusterView(world())), [world]);
 
   const send = () => {
-    const r = raft();
-    const n = r.clientCommand();
-    if (!n) setCaption(<>No leader right now, so the client has nobody to talk to. Wait for an election to finish.</>);
-    setView(snapshot(r));
+    if (!world().clientCommand()) setCaption(<>No leader right now, so the client has nobody to talk to. Wait for an election to finish.</>);
+    refresh();
   };
 
   const togglePartition = () => {
-    const r = raft();
-    r.setPartition(!partitioned);
+    world().setPartition(!partitioned);
     setPartitioned(!partitioned);
     if (!partitioned) {
       setCaption(
@@ -128,13 +91,12 @@ export function Stage() {
         </>,
       );
     }
-    setView(snapshot(r));
+    refresh();
   };
 
   const toggleNode = (i: number) => {
-    const r = raft();
-    r.toggleNode(i);
-    setView(snapshot(r));
+    world().toggleNode(i);
+    refresh();
   };
 
   if (!view) return null;
@@ -144,13 +106,13 @@ export function Stage() {
 
   return (
     <StageFrame
-      height={470}
+      height={STAGE_HEIGHT}
       stats={
         <Stats>
           <Stat label="Term" value={maxTerm} color={termColor(maxTerm)} />
           <Stat label="Leader" value={leader ? nodeName(leader.id) : 'none'} color={leader ? 'var(--ok)' : 'var(--bad)'} />
           <Stat label="Committed" value={committed} color="var(--ok)" sub="log entries" />
-          <Stat label="In flight" value={view.msgs.length} sub="messages" />
+          <Stat label="In flight" value={view.msgCount} sub="messages" />
         </Stats>
       }
       legend={
@@ -172,147 +134,141 @@ export function Stage() {
           <Button variant={partitioned ? 'primary' : 'danger'} onClick={togglePartition}>
             {partitioned ? '⛓ Heal network' : '✂ Partition network'}
           </Button>
-          <Slider label="Sim speed" value={speed} min={0.25} max={2} step={0.25} onChange={setSpeed} format={(v) => `${v}×`} />
-          <Button onClick={() => setPaused((p) => !p)}>{paused ? '▶ Resume' : '❚❚ Pause'}</Button>
-          <span className="rf-hint">click a server to crash / restart it</span>
+          <Slider label="Sim speed" value={speed} min={0.25} max={2} step={0.25} onChange={setSpeed} format={times} />
+          <PauseButton paused={paused} onToggle={togglePause} />
+          <Hint>click a server to crash / restart it</Hint>
         </Controls>
       }
     >
       <div className="rf">
-        <Cluster view={view} onNode={toggleNode} />
+        <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="rf-svg">
+          <circle cx={CX} cy={CY} r={RING} className="rf-orbit" />
+          <MotionLayer world={world} running={!paused} view={view} />
+          <PartitionWall minority={view.minority} />
+          {view.nodes.map((n) => (
+            <NodeBody key={n.id} n={n} onClick={() => toggleNode(n.id)} />
+          ))}
+        </svg>
         <div className="rf-side">
           <LogTable nodes={view.nodes} leaderId={leader?.id ?? null} />
-          <div className="rf-events">
-            <h4>Event log</h4>
-            <ul>
-              <AnimatePresence initial={false}>
-                {view.events.map((e) => (
-                  <motion.li
-                    key={`${e.t}-${e.text}`}
-                    layout
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <i className={`rf-ev-dot rf-ev-${e.kind}`} />
-                    {e.text}
-                  </motion.li>
-                ))}
-              </AnimatePresence>
-              {!view.events.length && <li className="muted">Waiting for the first timeout…</li>}
-            </ul>
-          </div>
+          <EventLog events={view.events} />
         </div>
       </div>
     </StageFrame>
   );
 }
 
-function Cluster({ view, onNode }: { view: View; onNode: (i: number) => void }) {
-  const wall = (() => {
-    if (!view.minority) return null;
-    // minority is two adjacent nodes; the wall is a line perpendicular to their midpoint
-    // direction, placed roughly halfway between them and the other three
-    const [a, b] = view.minority;
-    const first = (b - a + N) % N === 1 ? a : b;
-    const mid = ((deg(first) + 180 / N) * Math.PI) / 180;
-    const u = { x: Math.cos(mid), y: Math.sin(mid) };
-    const v = { x: -u.y, y: u.x };
-    const c = { x: CX + u.x * 40, y: CY + u.y * 40 };
-    const half = 200;
-    return {
-      p: { x: c.x + v.x * half, y: c.y + v.y * half },
-      q: { x: c.x - v.x * half, y: c.y - v.y * half },
-      label: { x: c.x + v.x * half * 0.72 + u.x * 18, y: c.y + v.y * half * 0.72 + u.y * 18 + 4 },
-    };
-  })();
+/**
+ * Everything that moves continuously: message dots, election-timer rings and the
+ * leader's heartbeat pulse. Re-renders every frame on its own; also re-reads the sim
+ * whenever the cluster view changes, so actions taken while paused show up.
+ */
+function MotionLayer({ world, running, view }: { world: () => Raft; running: boolean; view: ClusterView }) {
+  const [m, setM] = useState<MotionView>(NO_MOTION);
+  const read = useCallback(() => setM(motionView(world())), [world]);
+  useLoop(read, running);
+  // One extra read on the next frame whenever the cluster view changes: covers the
+  // first frame and actions taken while paused, when the loop isn't running.
+  useEffect(() => {
+    const id = requestAnimationFrame(read);
+    return () => cancelAnimationFrame(id);
+  }, [read, view]);
 
+  const circ = 2 * Math.PI * TIMER_R;
   return (
-    <svg viewBox="0 0 460 420" className="rf-svg">
-      <circle cx={CX} cy={CY} r={RING} className="rf-orbit" />
-
-      {view.msgs.map((m) => {
-        const a = pos(m.from);
-        const b = pos(m.to);
-        const raw = (view.now - m.sentAt) / (m.arriveAt - m.sentAt);
-        const p = m.lost ? Math.min(raw, 0.5) : raw;
-        const x = a.x + (b.x - a.x) * p;
-        const y = a.y + (b.y - a.y) * p;
-        const fading = m.lost && raw > 0.5 ? Math.max(0, 1 - (raw - 0.5) * 2) : 1;
-        const { r } = msgStyle(m);
-        const color = m.lost && raw > 0.5 ? 'var(--bad)' : msgStyle(m).color;
-        return (
-          <circle key={m.id} cx={x} cy={y} r={r} fill={color} opacity={fading} className="rf-msg">
-            {m.type === 'vote' && <title>RequestVote</title>}
-          </circle>
-        );
-      })}
-
-      {wall && (
-        <g className="rf-wall">
-          <line x1={wall.p.x} y1={wall.p.y} x2={wall.q.x} y2={wall.q.y} />
-          <text x={wall.label.x} y={wall.label.y} textAnchor="middle">
-            partition
-          </text>
-        </g>
-      )}
-
-      {view.nodes.map((n) => {
+    <g className="rf-motion">
+      {m.msgs.map((d) => (
+        <circle key={d.id} cx={d.x} cy={d.y} r={d.r} fill={d.color} opacity={d.opacity} className="rf-msg">
+          {d.vote && <title>RequestVote</title>}
+        </circle>
+      ))}
+      {m.rings.map((n) => {
+        if (!n.alive) return null;
         const p = pos(n.id);
-        const color = n.alive ? ROLE_COLOR[n.role] : ROLE_COLOR.dead;
-        const circ = 2 * Math.PI * (NODE_R + 8);
-        const beat = n.role === 'leader' ? Math.max(0, 1 - n.sinceBeat / 500) : 0;
-        return (
-          <g key={n.id} className="rf-node" onClick={() => onNode(n.id)} style={{ '--c': color } as CSSProperties}>
-            {n.alive && n.role !== 'leader' && (
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={NODE_R + 8}
-                className="rf-timer"
-                strokeDasharray={`${circ * n.timerLeft} ${circ}`}
-                transform={`rotate(-90 ${p.x} ${p.y})`}
-              />
-            )}
-            {n.alive && n.role === 'leader' && (
-              <circle cx={p.x} cy={p.y} r={NODE_R + 6 + beat * -4 + (1 - beat) * 10} className="rf-beat" opacity={beat * 0.8} />
-            )}
-            <circle cx={p.x} cy={p.y} r={NODE_R} className={`rf-body ${n.alive ? '' : 'dead'}`} />
-            <text x={p.x} y={p.y - 2} textAnchor="middle" className="rf-name">
-              {n.alive ? nodeName(n.id) : '✕'}
-            </text>
-            <text x={p.x} y={p.y + 14} textAnchor="middle" className="rf-term">
-              term {n.term}
-            </text>
-            <text x={p.x} y={p.y + NODE_R + 24} textAnchor="middle" className="rf-role" style={{ fill: color }}>
-              {n.alive ? (n.role === 'candidate' ? `candidate · ${n.votes}/${N} votes` : n.role) : `${nodeName(n.id)} crashed`}
-            </text>
-          </g>
-        );
+        const style = { '--c': roleColor(n) } as CSSProperties;
+        if (n.role !== 'leader') {
+          return (
+            <circle
+              key={n.id}
+              cx={p.x}
+              cy={p.y}
+              r={TIMER_R}
+              className="rf-timer"
+              style={style}
+              strokeDasharray={`${circ * n.timerLeft} ${circ}`}
+              transform={`rotate(-90 ${p.x} ${p.y})`}
+            />
+          );
+        }
+        const beat = Math.max(0, 1 - n.sinceBeat / BEAT_MS);
+        return <circle key={n.id} cx={p.x} cy={p.y} r={NODE_R + 6 + beat * -4 + (1 - beat) * 10} className="rf-beat" opacity={beat * 0.8} />;
       })}
-    </svg>
+    </g>
   );
 }
 
-function msgStyle(m: Msg): { color: string; r: number } {
-  switch (m.type) {
-    case 'vote':
-      return { color: 'var(--violet)', r: 5 };
-    case 'voteResp':
-      return { color: m.granted ? 'var(--ok)' : 'var(--bad)', r: 4 };
-    case 'append':
-      return m.entries.length ? { color: 'var(--hi)', r: 5.5 } : { color: 'var(--info)', r: 3.5 };
-    case 'appendResp':
-      return { color: m.success ? 'var(--ok)' : 'var(--bad)', r: 2.5 };
-  }
+/** Two adjacent nodes cut off: a dashed wall between them and the other three. */
+function PartitionWall({ minority }: { minority: number[] | null }) {
+  if (!minority) return null;
+  const [a, b] = minority;
+  const first = (b - a + N) % N === 1 ? a : b;
+  const mid = ((deg(first) + 180 / N) * Math.PI) / 180;
+  const u = { x: Math.cos(mid), y: Math.sin(mid) };
+  const v = { x: -u.y, y: u.x };
+  const c = { x: CX + u.x * 40, y: CY + u.y * 40 };
+  const half = 200;
+  return (
+    <g className="rf-wall">
+      <line x1={c.x + v.x * half} y1={c.y + v.y * half} x2={c.x - v.x * half} y2={c.y - v.y * half} />
+      <text x={c.x + v.x * half * 0.72 + u.x * 18} y={c.y + v.y * half * 0.72 + u.y * 18 + 4} textAnchor="middle">
+        partition
+      </text>
+    </g>
+  );
 }
 
-const MAX_COLS = 12;
+function NodeBody({ n, onClick }: { n: NodeView; onClick: () => void }) {
+  const p = pos(n.id);
+  const color = roleColor(n);
+  return (
+    <g className="rf-node" onClick={onClick} style={{ '--c': color } as CSSProperties}>
+      <circle cx={p.x} cy={p.y} r={NODE_R} className={`rf-body ${n.alive ? '' : 'dead'}`} />
+      <text x={p.x} y={p.y - 2} textAnchor="middle" className="rf-name">
+        {n.alive ? nodeName(n.id) : '✕'}
+      </text>
+      <text x={p.x} y={p.y + 14} textAnchor="middle" className="rf-term">
+        term {n.term}
+      </text>
+      <text x={p.x} y={p.y + NODE_R + 24} textAnchor="middle" className="rf-role" style={{ fill: color }}>
+        {n.alive ? (n.role === 'candidate' ? `candidate · ${n.votes}/${N} votes` : n.role) : `${nodeName(n.id)} crashed`}
+      </text>
+    </g>
+  );
+}
+
+function EventLog({ events }: { events: RaftEvent[] }) {
+  return (
+    <div className="rf-events">
+      <h4>Event log</h4>
+      <ul>
+        <AnimatePresence initial={false}>
+          {events.map((e) => (
+            <motion.li key={`${e.t}-${e.text}`} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <i className={`rf-ev-dot rf-ev-${e.kind}`} />
+              {e.text}
+            </motion.li>
+          ))}
+        </AnimatePresence>
+        {!events.length && <li className="muted">Waiting for the first timeout…</li>}
+      </ul>
+    </div>
+  );
+}
 
 function LogTable({ nodes, leaderId }: { nodes: NodeView[]; leaderId: number | null }) {
   const longest = Math.max(1, ...nodes.map((n) => n.log.length));
-  const start = Math.max(0, longest - MAX_COLS);
-  const cols = Array.from({ length: Math.min(MAX_COLS, longest) }, (_, k) => start + k);
+  const start = Math.max(0, longest - LOG_COLS);
+  const cols = Array.from({ length: Math.min(LOG_COLS, longest) }, (_, k) => start + k);
 
   return (
     <div className="rf-logs">
@@ -327,14 +283,14 @@ function LogTable({ nodes, leaderId }: { nodes: NodeView[]; leaderId: number | n
           </span>
         ))}
         {nodes.map((n) => (
-          <Row key={n.id} n={n} cols={cols} isLeader={n.id === leaderId} />
+          <LogRow key={n.id} n={n} cols={cols} isLeader={n.id === leaderId} />
         ))}
       </div>
     </div>
   );
 }
 
-function Row({ n, cols, isLeader }: { n: NodeView; cols: number[]; isLeader: boolean }) {
+function LogRow({ n, cols, isLeader }: { n: NodeView; cols: number[]; isLeader: boolean }) {
   return (
     <>
       <span className={`rf-row-name ${isLeader ? 'lead' : ''} ${n.alive ? '' : 'dead'}`}>

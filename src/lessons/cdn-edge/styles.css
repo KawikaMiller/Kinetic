@@ -67,22 +67,6 @@
   font-family: var(--mono);
   color: var(--muted);
 }
-.cdn-ttl {
-  height: 6px;
-  border-radius: 99px;
-  background: var(--line);
-  overflow: hidden;
-}
-.cdn-ttl i {
-  display: block;
-  height: 100%;
-  background: var(--ok);
-  border-radius: inherit;
-  transition: width 0.25s linear;
-}
-.cdn-ttl i.low {
-  background: var(--hi);
-}
 .cdn-left {
   font-family: var(--mono);
   color: var(--faint);
