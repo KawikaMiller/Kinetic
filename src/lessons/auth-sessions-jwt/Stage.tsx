@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Segmented } from '../../components/ui';
+import { useScenePicker } from '../../components/ScenePicker';
 import { Flow } from './Flow';
 import { Scale } from './Scale';
 import { Tamper } from './Tamper';
@@ -15,8 +14,7 @@ const MODES: { value: Mode; label: string }[] = [
 ];
 
 export function Stage() {
-  const [mode, setMode] = useState<Mode>('session');
-  const picker = <Segmented label="Lane" value={mode} onChange={setMode} options={MODES} />;
+  const [mode, picker] = useScenePicker({ label: 'Lane', options: MODES, initial: 'session' });
   if (mode === 'scale') return <Scale modePicker={picker} />;
   if (mode === 'tamper') return <Tamper modePicker={picker} />;
   return <Flow key={mode} kind={mode} modePicker={picker} />;

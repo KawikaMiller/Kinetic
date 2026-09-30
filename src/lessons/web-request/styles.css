@@ -9,18 +9,10 @@
   width: 100%;
   height: auto;
   overflow: visible;
-}
-
-.wr-zone {
-  font: 600 10px var(--mono);
-  letter-spacing: 0.14em;
-  fill: var(--faint);
+  --packet-fs: 11px;
 }
 
 .wr-edge {
-  stroke: var(--line-2);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 6;
   transition: stroke 0.3s;
 }
 .wr-edge.on {
@@ -53,25 +45,10 @@
   font-size: 12px;
 }
 
-.wr-actor rect:first-child {
-  fill: var(--panel);
-  stroke: var(--cell-line);
-  stroke-width: 1.5;
-  transition: stroke 0.25s, fill 0.25s;
-}
-.wr-actor.on rect:first-child {
-  stroke: var(--c);
-  stroke-width: 2.5;
+/* Active actors glow in the colour of the current phase. */
+.wr-scene .scene-node.on .scene-node-box {
   fill: color-mix(in srgb, var(--c) 12%, var(--panel));
   filter: drop-shadow(0 0 12px color-mix(in srgb, var(--c) 45%, transparent));
-}
-.wr-actor-label {
-  font: 700 13px var(--font);
-  fill: var(--text);
-}
-.wr-actor-sub {
-  font: 500 10px var(--mono);
-  fill: var(--muted);
 }
 
 .wr-urlbar {
@@ -93,19 +70,8 @@
   fill: var(--orange);
 }
 
-.wr-packet {
-  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5));
-}
-.wr-packet-text {
-  font: 700 11px var(--mono);
-  fill: var(--bg);
-}
-
 .wr-fall {
-  padding: 12px 14px;
-  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 70%, transparent);
-  border: 1px solid var(--line);
 }
 .wr-fall-head {
   display: flex;

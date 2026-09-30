@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { Box } from '../../components/Panel';
+import { Packet, Pulse, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import './styles.css';
@@ -14,7 +16,7 @@ const PHASES: { id: Phase; label: string; color: string }[] = [
   { id: 'tcp', label: 'TCP', color: 'var(--info)' },
   { id: 'tls', label: 'TLS', color: 'var(--hi)' },
   { id: 'http', label: 'HTTP', color: 'var(--ok)' },
-  { id: 'render', label: 'Render', color: '#ff8c5a' },
+  { id: 'render', label: 'Render', color: 'var(--orange)' },
 ];
 const phaseColor = (p: Phase) => PHASES.find((x) => x.id === p)!.color;
 
@@ -226,40 +228,16 @@ export function Stage() {
       legend={<Legend items={PHASES.map((p) => ({ color: p.color, label: p.label }))} />}
       controls={
         <Controls>
-          <Segmented
-            label="DNS"
-            value={dnsCached ? 'cached' : 'cold'}
-            onChange={(v) => setDnsCached(v === 'cached')}
-            options={[
-              { value: 'cold', label: 'Cold lookup' },
-              { value: 'cached', label: 'Cached' },
-            ]}
-          />
-          <Segmented
-            label="Connection"
-            value={reuse ? 'reuse' : 'new'}
-            onChange={(v) => setReuse(v === 'reuse')}
-            options={[
-              { value: 'new', label: 'New' },
-              { value: 'reuse', label: 'Reused (keep-alive)' },
-            ]}
-          />
-          <Segmented
-            label="TLS version"
-            value={tls13 ? '13' : '12'}
-            onChange={(v) => setTls13(v === '13')}
-            options={[
-              { value: '12', label: 'TLS 1.2' },
-              { value: '13', label: 'TLS 1.3' },
-            ]}
-          />
+          <Toggle label="DNS" value={dnsCached} onChange={setDnsCached} off="Cold lookup" on="Cached" />
+          <Toggle label="Connection" value={reuse} onChange={setReuse} off="New" on="Reused (keep-alive)" />
+          <Toggle label="TLS version" value={tls13} onChange={setTls13} off="TLS 1.2" on="TLS 1.3" />
         </Controls>
       }
     >
       <div className="wr">
         <svg className="wr-scene" viewBox="0 0 920 320" role="img" aria-label="Network diagram of a web request">
-          <text x={250} y={36} className="wr-zone">① FINDING THE ADDRESS</text>
-          <text x={470} y={300} textAnchor="middle" className="wr-zone">② TALKING TO IT</text>
+          <text x={250} y={36} className="scene-zone">① FINDING THE ADDRESS</text>
+          <text x={470} y={300} textAnchor="middle" className="scene-zone">② TALKING TO IT</text>
 
           {EDGES.map(([a, b]) => (
             <line
@@ -268,7 +246,7 @@ export function Stage() {
               y1={ACTORS[a].y}
               x2={ACTORS[b].x}
               y2={ACTORS[b].y}
-              className={`wr-edge ${active.has(a) && active.has(b) ? 'on' : ''}`}
+              className={`scene-edge wr-edge ${active.has(a) && active.has(b) ? 'on' : ''}`}
             />
           ))}
 
@@ -304,20 +282,10 @@ export function Stage() {
           <BrowserBox frame={f} on={active.has('browser')} color={msg ? phaseColor(msg.phase) : ''} />
 
           {msg && msg.from === msg.to && (
-            <motion.circle
-              key={`busy-${player.index}`}
-              cx={ACTORS[msg.from].x}
-              cy={ACTORS[msg.from].y}
-              fill="none"
-              stroke={phaseColor(msg.phase)}
-              strokeWidth={2}
-              initial={{ r: 30, opacity: 0.9 }}
-              animate={{ r: [30, 80], opacity: [0.9, 0] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            />
+            <Pulse key={`busy-${player.index}`} at={ACTORS[msg.from]} {...BUSY_RIPPLE} color={phaseColor(msg.phase)} />
           )}
 
-          {msg && msg.from !== msg.to && <Packet key={player.index} msg={msg} />}
+          {msg && msg.from !== msg.to && <MessagePill key={player.index} msg={msg} />}
         </svg>
 
         <Waterfall elapsed={f.elapsed} total={total} />
@@ -326,32 +294,26 @@ export function Stage() {
   );
 }
 
+/** "Doing work here" ripple for a step that stays on one actor. */
+const BUSY_RIPPLE = { from: 30, to: 80, duration: 1, opacity: 0.9 } as const;
+/** Waterfall segments grow a touch softer than SPRING.soft. */
+const SEGMENT_SPRING = { type: 'spring', stiffness: 160, damping: 24 } as const;
+
 function ActorBox({ actor, on, color }: { actor: Actor; on: boolean; color: string }) {
   const { x, y, w, h, label, sub } = actor;
-  return (
-    <g className={`wr-actor ${on ? 'on' : ''}`} style={on ? { ['--c' as string]: color } : undefined}>
-      <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx={10} />
-      <text x={x} y={y - 3} textAnchor="middle" className="wr-actor-label">
-        {label}
-      </text>
-      <text x={x} y={y + 13} textAnchor="middle" className="wr-actor-sub">
-        {sub}
-      </text>
-    </g>
-  );
+  return <SceneNode at={{ x, y }} w={w} h={h} title={label} sub={sub} on={on} color={on ? color : undefined} />;
 }
-
 function BrowserBox({ frame, on, color }: { frame: WrFrame; on: boolean; color: string }) {
   const { x, y, w, h } = ACTORS.browser;
   const left = x - w / 2;
   const top = y - h / 2;
   const bars = [0.9, 0.55, 0.75, 0.4];
   return (
-    <g className={`wr-actor wr-browser ${on ? 'on' : ''}`} style={on ? { ['--c' as string]: color } : undefined}>
-      <rect x={left} y={top} width={w} height={h} rx={10} />
-      <circle cx={left + 12} cy={top + 12} r={3} fill="#ff5d6c" />
-      <circle cx={left + 22} cy={top + 12} r={3} fill="#f7b538" />
-      <circle cx={left + 32} cy={top + 12} r={3} fill="#3ddc97" />
+    <g className={`scene-node wr-browser ${on ? 'on' : ''}`} style={on ? { ['--c' as string]: color } : undefined}>
+      <rect x={left} y={top} width={w} height={h} rx={10} className="scene-node-box" />
+      <circle cx={left + 12} cy={top + 12} r={3} fill="var(--bad)" />
+      <circle cx={left + 22} cy={top + 12} r={3} fill="var(--amber)" />
+      <circle cx={left + 32} cy={top + 12} r={3} fill="var(--ok)" />
       <rect x={left + 42} y={top + 5} width={w - 50} height={15} rx={7} className="wr-urlbar" />
       <text x={left + 52} y={top + 16} className="wr-url">
         {frame.tls ? '🔒 ' : ''}example.com
@@ -385,7 +347,7 @@ function BrowserBox({ frame, on, color }: { frame: WrFrame; on: boolean; color: 
         />
       ))}
       {!frame.painted && (
-        <text x={x} y={top + 76} textAnchor="middle" className="wr-actor-sub">
+        <text x={x} y={top + 76} textAnchor="middle" className="scene-node-sub">
           {frame.ip ? 'waiting for page…' : 'where is example.com?'}
         </text>
       )}
@@ -393,42 +355,25 @@ function BrowserBox({ frame, on, color }: { frame: WrFrame; on: boolean; color: 
   );
 }
 
-function Packet({ msg }: { msg: Msg }) {
-  const a = ACTORS[msg.from];
-  const b = ACTORS[msg.to];
-  const w = msg.label.length * 6.6 + 20;
-  const color = phaseColor(msg.phase);
+/** A pill that travels to the next actor and stays there, drawing its route behind it. */
+function MessagePill({ msg }: { msg: Msg }) {
   return (
-    <>
-      <motion.line
-        x1={a.x}
-        y1={a.y}
-        x2={b.x}
-        y2={b.y}
-        stroke={color}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        initial={{ pathLength: 0, opacity: 0.8 }}
-        animate={{ pathLength: 1, opacity: [0.8, 0.8, 0.25] }}
-        transition={{ duration: 0.7, ease: 'easeInOut' }}
-      />
-      <motion.g
-        initial={{ x: a.x, y: a.y, opacity: 0, scale: 0.6 }}
-        animate={{ x: b.x, y: b.y, opacity: 1, scale: 1 }}
-        transition={{ duration: 0.7, ease: 'easeInOut', opacity: { duration: 0.15 } }}
-      >
-        <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill={color} className="wr-packet" />
-        <text x={0} y={4} textAnchor="middle" className="wr-packet-text">
-          {msg.label}
-        </text>
-      </motion.g>
-    </>
+    <Packet
+      path={[ACTORS[msg.from], ACTORS[msg.to]]}
+      label={msg.label}
+      color={phaseColor(msg.phase)}
+      arrive="stay"
+      trail
+      duration={0.7}
+      height={24}
+      charW={6.6}
+      pad={20}
+    />
   );
 }
-
 function Waterfall({ elapsed, total }: { elapsed: Elapsed; total: number }) {
   return (
-    <div className="wr-fall">
+    <Box className="wr-fall">
       <div className="wr-fall-head">
         <span>Waterfall</span>
         <span className="wr-fall-total">
@@ -443,7 +388,7 @@ function Waterfall({ elapsed, total }: { elapsed: Elapsed; total: number }) {
             style={{ background: p.color }}
             initial={false}
             animate={{ width: `${total ? (elapsed[p.id] / total) * 100 : 0}%` }}
-            transition={{ type: 'spring', stiffness: 160, damping: 24 }}
+            transition={SEGMENT_SPRING}
           />
         ))}
       </div>
@@ -455,6 +400,6 @@ function Waterfall({ elapsed, total }: { elapsed: Elapsed; total: number }) {
           </span>
         ))}
       </div>
-    </div>
+    </Box>
   );
 }

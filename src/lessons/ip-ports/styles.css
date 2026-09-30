@@ -9,17 +9,13 @@
   width: 100%;
   height: auto;
   overflow: visible;
+  --packet-fs: 11px;
 }
 
 .ipp-zone {
   fill: color-mix(in srgb, var(--violet) 4%, transparent);
   stroke: var(--line-2);
   stroke-dasharray: 5 6;
-}
-.ipp-zone-label {
-  font: 600 10px var(--mono);
-  letter-spacing: 0.14em;
-  fill: var(--faint);
 }
 
 .ipp-wire {
@@ -86,24 +82,13 @@
   fill: var(--faint);
 }
 
-.ipp-pill {
-  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5));
-}
-.ipp-pill-text {
-  font: 700 11px var(--mono);
-  fill: var(--bg);
-}
-
 .ipp-panels {
   display: grid;
   grid-template-columns: 1.1fr 1.1fr 1fr;
   gap: 12px;
 }
 .ipp-panel {
-  padding: 12px 14px;
-  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 70%, transparent);
-  border: 1px solid var(--line);
   font-size: 13px;
   min-width: 0;
 }
@@ -149,10 +134,10 @@
 .ipp-portval {
   color: var(--info);
 }
-.ipp-note {
+.ipp-panel .ipp-note {
   font-size: 12px;
-  color: var(--faint) !important;
-  margin-top: 6px !important;
+  color: var(--faint);
+  margin-top: 6px;
 }
 .ipp-nat {
   display: flex;

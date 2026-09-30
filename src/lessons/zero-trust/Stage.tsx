@@ -1,7 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { Box } from '../../components/Panel';
+import { SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { pillWidth, pointAlong } from '../../core/geometry';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import './styles.css';
@@ -161,19 +164,19 @@ export function Stage() {
           {!zt && (
             <>
               <rect x={215} y={20} width={735} height={320} rx={20} className="zt-inside" />
-              <text x={935} y={42} textAnchor="end" className="zt-zone">INSIDE THE NETWORK = TRUSTED</text>
+              <text x={935} y={42} textAnchor="end" className="scene-zone">INSIDE THE NETWORK = TRUSTED</text>
               <rect x={196} y={20} width={14} height={320} rx={4} className="zt-wall" />
-              <text x={203} y={352} textAnchor="middle" className="zt-zone">firewall + VPN</text>
+              <text x={203} y={352} textAnchor="middle" className="scene-zone">firewall + VPN</text>
             </>
           )}
-          {zt && <text x={935} y={30} textAnchor="end" className="zt-zone ok">NO TRUSTED NETWORK · VERIFY EVERY REQUEST</text>}
+          {zt && <text x={935} y={30} textAnchor="end" className="scene-zone zt-zone-ok">NO TRUSTED NETWORK · VERIFY EVERY REQUEST</text>}
 
           {/* static links */}
           {zt
-            ? (['bob', 'alice', 'attacker'] as NodeId[]).map((n) => <line key={n} x1={POS[n].x} y1={POS[n].y} x2={POS.gate.x} y2={POS.gate.y} className="zt-edge" />)
-            : (['wiki', 'hr', 'pay'] as NodeId[]).map((s) => <line key={s} x1={POS.bob.x} y1={POS.bob.y} x2={POS[s].x} y2={POS[s].y} className="zt-edge" />)}
-          {zt && (['wiki', 'hr', 'pay'] as NodeId[]).map((s) => <line key={s} x1={POS.gate.x} y1={POS.gate.y} x2={POS[s].x} y2={POS[s].y} className="zt-edge" />)}
-          <line x1={POS.pay.x} y1={POS.pay.y} x2={POS.db.x} y2={POS.db.y} className={`zt-edge ${zt ? 'mtls' : ''}`} />
+            ? (['bob', 'alice', 'attacker'] as NodeId[]).map((n) => <line key={n} x1={POS[n].x} y1={POS[n].y} x2={POS.gate.x} y2={POS.gate.y} className="scene-edge" />)
+            : (['wiki', 'hr', 'pay'] as NodeId[]).map((s) => <line key={s} x1={POS.bob.x} y1={POS.bob.y} x2={POS[s].x} y2={POS[s].y} className="scene-edge" />)}
+          {zt && (['wiki', 'hr', 'pay'] as NodeId[]).map((s) => <line key={s} x1={POS.gate.x} y1={POS.gate.y} x2={POS[s].x} y2={POS[s].y} className="scene-edge" />)}
+          <line x1={POS.pay.x} y1={POS.pay.y} x2={POS.db.x} y2={POS.db.y} className={`scene-edge ${zt ? 'zt-edge-mtls' : ''}`} />
 
           {zt && (
             <g className="zt-gate">
@@ -190,13 +193,13 @@ export function Stage() {
           ))}
 
           {f.msgs.map((m, i) => (
-            <Packet key={`${player.index}-${i}`} msg={m} delay={i * 0.12} />
+            <MessagePill key={`${player.index}-${i}`} msg={m} delay={i * 0.12} />
           ))}
         </svg>
 
-        <div className="zt-log">
+        <Box className="zt-log">
           <span className="zt-log-title">{zt ? 'Policy decision log' : 'Access log'}</span>
-          {!zt && <span className="zt-log-empty">(nothing checks internal requests, so there's nothing to log)</span>}
+          {!zt && <span className="empty-note">(nothing checks internal requests, so there's nothing to log)</span>}
           <AnimatePresence initial={false}>
             {zt &&
               f.log.map((d, i) => (
@@ -215,52 +218,65 @@ export function Stage() {
                 </motion.div>
               ))}
           </AnimatePresence>
-          {zt && !f.log.length && <span className="zt-log-empty">no requests yet</span>}
-        </div>
+          {zt && !f.log.length && <span className="empty-note">no requests yet</span>}
+        </Box>
       </div>
     </StageFrame>
   );
 }
+
+const NODE = { w: 152, h: 50, rx: 11 } as const;
 
 function Node({ id, owned, zt, creds }: { id: NodeId; owned: boolean; zt: boolean; creds: boolean }) {
   const { x, y } = POS[id];
   const [title, sub] = NAME[id]!;
   const isService = SERVICES.includes(id);
   return (
-    <g className={`zt-node ${owned ? 'owned' : ''} ${id === 'attacker' ? 'attacker' : ''}`}>
-      <rect x={x - 76} y={y - 25} width={152} height={50} rx={11} />
-      <text x={x} y={y - 3} textAnchor="middle" className="zt-node-title">{title}</text>
-      <text x={x} y={y + 13} textAnchor="middle" className="zt-node-sub">
-        {owned && id !== 'attacker' ? (id === 'bob' ? 'compromised' : 'breached') : sub}
-      </text>
+    <SceneNode
+      at={POS[id]}
+      {...NODE}
+      title={title}
+      sub={owned && id !== 'attacker' ? (id === 'bob' ? 'compromised' : 'breached') : sub}
+      variant={owned ? 'bad' : 'default'}
+      className={id === 'attacker' ? 'zt-attacker' : undefined}
+    >
       {zt && isService && (
         <text x={x + 64} y={y - 14} textAnchor="middle" className="zt-lock">🔒</text>
       )}
       {creds && (
         <text x={x} y={y + 40} textAnchor="middle" className="zt-creds">🔑 stolen payments password</text>
       )}
-    </g>
+    </SceneNode>
   );
 }
 
-function Packet({ msg, delay }: { msg: Msg; delay: number }) {
+/** Denied packets stop this fraction short of the checkpoint, then burst. */
+const DENY_SHORTFALL = 0.18;
+/** Seconds per hop, plus a little extra to settle. */
+const HOP_SECONDS = 0.7;
+
+/**
+ * Kept local rather than the shared <Packet>: it spaces its keyframes evenly across
+ * every hop and fades out on the last one, which Packet's travel/hold/fade timing
+ * can't express (Phase 2 request filed).
+ */
+function MessagePill({ msg, delay }: { msg: Msg; delay: number }) {
   const pts = msg.path.map((p) => POS[p]);
   const last = pts[pts.length - 1];
-  // Denied packets stop just short of the checkpoint and burst.
-  const stop = msg.denied ? { x: last.x - (last.x - pts[pts.length - 2].x) * 0.18, y: last.y - (last.y - pts[pts.length - 2].y) * 0.18 } : last;
+  const stop = msg.denied ? pointAlong(last, pts[pts.length - 2], DENY_SHORTFALL) : last;
   const xs = [...pts.slice(0, -1).map((p) => p.x), stop.x];
   const ys = [...pts.slice(0, -1).map((p) => p.y), stop.y];
-  const w = msg.label.length * 6.2 + 20;
-  const dur = 0.7 * (pts.length - 1) + 0.3;
+  const w = pillWidth(msg.label, 6.2, 20);
+  const dur = HOP_SECONDS * (pts.length - 1) + 0.3;
   return (
     <>
       <motion.g
         initial={{ x: xs[0], y: ys[0], opacity: 0 }}
-        animate={{ x: [...xs, stop.x], y: [...ys, stop.y], opacity: [0, ...xs.slice(1).map(() => 1), msg.denied ? 0 : 0] }}
+        animate={{ x: [...xs, stop.x], y: [...ys, stop.y], opacity: [0, ...xs.slice(1).map(() => 1), 0] }}
         transition={{ duration: dur + 0.5, delay, ease: 'easeInOut' }}
       >
-        <rect x={-w / 2} y={-11} width={w} height={22} rx={11} fill={COLOR[msg.kind]} className="zt-packet" />
-        <text x={0} y={4} textAnchor="middle" className="zt-packet-text">{msg.label}</text>
+        <rect x={-w / 2} y={-11} width={w} height={22} rx={11} fill={COLOR[msg.kind]} className="scene-packet" />
+        <text x={0} y={4} textAnchor="middle" className="scene-packet-text">{msg.label}</text>
       </motion.g>
       {msg.denied && (
         <motion.g initial={{ opacity: 0, scale: 0.3 }} animate={{ opacity: [0, 1, 1], scale: [0.3, 1.2, 1] }} transition={{ delay: delay + dur, duration: 0.4 }} style={{ transformOrigin: `${stop.x}px ${stop.y}px` }}>

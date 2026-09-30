@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { pillWidth, pointAlong, type Pt } from '../../core/geometry';
 import { usePlayer } from '../../core/usePlayer';
 import {
   saga, twoPhaseCommit, type Msg, type NodeId, type Protocol, type SagaCase, type SagaStyle, type Tone, type TwoPcCase,
@@ -12,7 +13,7 @@ const TONE: Record<Tone, string> = {
   idle: 'var(--cell-line)', work: 'var(--info)', ok: 'var(--ok)', bad: 'var(--bad)', hi: 'var(--hi)', violet: 'var(--violet)', dim: 'var(--dim)',
 };
 
-const POS: Record<NodeId, { x: number; y: number }> = {
+const POS: Record<NodeId, Pt> = {
   client: { x: 130, y: 66 },
   coord: { x: 450, y: 66 },
   client2: { x: 770, y: 66 },
@@ -23,6 +24,11 @@ const POS: Record<NodeId, { x: number; y: number }> = {
 const BUS_Y = 204;
 const W = 210;
 const H = 100;
+/** Customers and the coordinator are shorter boxes: no status chip. */
+const SMALL_NODES: NodeId[] = ['client', 'coord', 'client2'];
+const SMALL_SHRINK = 32;
+const isSmall = (id: NodeId) => SMALL_NODES.includes(id);
+const nodeHeight = (id: NodeId) => (isSmall(id) ? H - SMALL_SHRINK : H);
 
 export function Stage() {
   const [protocol, setProtocol] = useState<Protocol>('2pc');
@@ -141,8 +147,8 @@ export function Stage() {
           const n = f.nodes[id];
           if (n.hidden) return null;
           const p = POS[id];
-          const small = id === 'client' || id === 'coord' || id === 'client2';
-          const h = small ? H - 32 : H;
+          const small = isSmall(id);
+          const h = nodeHeight(id);
           return (
             <g key={id} transform={`translate(${p.x - W / 2}, ${p.y - h / 2})`}>
               <rect width={W} height={h} rx={12} className={`dt-node ${n.crashed ? 'crashed' : ''}`} style={{ stroke: TONE[n.tone] }} />
@@ -191,34 +197,48 @@ export function Stage() {
   );
 }
 
-function edge(id: NodeId, towards: { x: number; y: number }) {
+/** Where a message leaves or enters a node's box: its side if level, otherwise its top or bottom. */
+function edge(id: NodeId, towards: Pt): Pt {
   const p = POS[id];
-  const small = id === 'client' || id === 'coord' || id === 'client2';
-  const h = small ? H - 32 : H;
+  const h = nodeHeight(id);
   if (Math.abs(towards.y - p.y) < 20) return { x: p.x + Math.sign(towards.x - p.x) * (W / 2), y: p.y };
   return { x: p.x, y: p.y + Math.sign(towards.y - p.y) * (h / 2) };
 }
 
+/** Direct messages stop this fraction of the way, so parallel ones don't stack on each other. */
+const STOP_SHORT = 0.7;
+/** Bus messages come to rest this far above the receiving node. */
+const BUS_REST_GAP = 26;
+const DIRECT_SECONDS = 0.9;
+const BUS_SECONDS = 1.3;
+
+/**
+ * Kept local rather than the shared <Packet>: this outline pill doesn't scale in
+ * and fades in over its whole trip, so Packet's "stay" keyframes don't match frame
+ * for frame (Phase 2 request filed).
+ */
 function Pill({ m }: { m: Msg }) {
   const from = edge(m.from, POS[m.to]);
   const to = edge(m.to, POS[m.from]);
-  const w = m.label.length * 6.9 + 18;
+  const w = pillWidth(m.label, 6.9, 18);
   const color = TONE[m.tone];
-  const transition = { duration: 0.9, ease: 'easeInOut' } as const;
 
   let animate;
   if (m.viaBus) {
     const fromTop = { x: POS[m.from].x, y: BUS_Y };
-    const end = { x: POS[m.to].x, y: to.y - 26 };
+    const end = { x: POS[m.to].x, y: to.y - BUS_REST_GAP };
     animate = { x: [from.x, fromTop.x, end.x, end.x], y: [from.y, fromTop.y, BUS_Y, end.y], opacity: [0, 1, 1, 1] };
   } else {
-    // stop short of the target so parallel messages don't stack on top of each other
-    const t = 0.7;
-    animate = { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t, opacity: 1 };
+    const stop = pointAlong(from, to, STOP_SHORT);
+    animate = { x: stop.x, y: stop.y, opacity: 1 };
   }
 
   return (
-    <motion.g initial={{ x: from.x, y: from.y, opacity: 0 }} animate={animate} transition={m.viaBus ? { ...transition, duration: 1.3 } : transition}>
+    <motion.g
+      initial={{ x: from.x, y: from.y, opacity: 0 }}
+      animate={animate}
+      transition={{ duration: m.viaBus ? BUS_SECONDS : DIRECT_SECONDS, ease: 'easeInOut' }}
+    >
       <rect x={-w / 2} y={-11} width={w} height={22} rx={11} className="dt-pill" style={{ stroke: color }} />
       <text y={4} className="dt-pill-text" style={{ fill: color }}>
         {m.label}
@@ -226,4 +246,3 @@ function Pill({ m }: { m: Msg }) {
     </motion.g>
   );
 }
-

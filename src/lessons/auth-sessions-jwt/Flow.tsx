@@ -1,10 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, type ReactNode } from 'react';
+import { Box } from '../../components/Panel';
+import { Packet, Pulse, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { HEADER, PAYLOAD, useSignedJwt } from './jwt';
+import { useAsyncValue } from '../../core/useAsyncValue';
+import { HEADER, PAYLOAD, SERVER_SECRET, signJwt } from './jwt';
+import { TokenString } from './JwtParts';
 
 type Kind = 'req' | 'store' | 'ok' | 'bad';
 type NodeId = 'browser' | 'server' | 'store' | 'attacker';
@@ -101,7 +105,8 @@ function build(kind: 'session' | 'jwt'): AuthFrame[] {
 export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker: ReactNode }) {
   const frames = useMemo(() => build(kind), [kind]);
   const player = usePlayer(frames, { interval: 1700 });
-  const jwt = useSignedJwt(PAYLOAD);
+  // The payload never changes in this lane, so it's signed once.
+  const jwt = useAsyncValue(() => signJwt(PAYLOAD, SERVER_SECRET), 'issued');
   const f = player.frame;
   const active = new Set<NodeId>(f.msg ? [f.msg.from, f.msg.to] : f.busy ? [f.busy] : []);
   const nodes: NodeId[] = kind === 'session' ? ['browser', 'server', 'store'] : ['browser', 'server'];
@@ -151,13 +156,13 @@ export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker
               </motion.g>
             )}
           </AnimatePresence>
-          {f.msg && <Packet key={player.index} msg={f.msg} />}
+          {f.msg && <MessagePill key={player.index} msg={f.msg} />}
         </svg>
 
         <div className="aj-panels">
-          <div className="aj-panel">
+          <Box className="aj-panel">
             <span className="aj-panel-title">Browser is holding</span>
-            {f.holding === 'none' && <span className="aj-empty">nothing yet</span>}
+            {f.holding === 'none' && <span className="empty-note">nothing yet</span>}
             {f.holding === 'cookie' && (
               <motion.div className="aj-cookie" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                 <code>
@@ -171,10 +176,10 @@ export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker
               </motion.div>
             )}
             {f.holding === 'token' && <TokenString jwt={jwt} />}
-          </div>
+          </Box>
 
           {kind === 'session' ? (
-            <div className="aj-panel">
+            <Box className="aj-panel">
               <span className="aj-panel-title">Session store (server side)</span>
               <div className="aj-rows">
                 <AnimatePresence>
@@ -192,14 +197,14 @@ export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {!f.rows.length && <span className="aj-empty">empty</span>}
+                {!f.rows.length && <span className="empty-note">empty</span>}
               </div>
-            </div>
+            </Box>
           ) : (
-            <div className={`aj-panel ${f.token ? '' : 'dim'}`}>
+            <Box className={`aj-panel ${f.token ? '' : 'dim'}`}>
               <span className="aj-panel-title">Decoded token (anyone can do this)</span>
-              {f.token ? <Decoded /> : <span className="aj-empty">no token yet</span>}
-            </div>
+              {f.token ? <Decoded /> : <span className="empty-note">no token yet</span>}
+            </Box>
           )}
         </div>
       </div>
@@ -207,49 +212,44 @@ export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker
   );
 }
 
+const NODE_LABEL: Record<NodeId, string> = { browser: '🌐 Browser', server: '⚙ Server', store: '🗄 Session store', attacker: '🕵 Attacker' };
+/** Node boxes are 160×52 with the label centred; the busy ripple grows from 40 to 90. */
+const NODE = { w: 160, h: 52, rx: 12, titleDy: 5 } as const;
+const BUSY_RIPPLE = { from: 40, to: 90, duration: 1 } as const;
+
 function NodeBox({ id, on, busy }: { id: NodeId; on: boolean; busy: boolean }) {
-  const { x, y } = POS[id];
-  const label = { browser: '🌐 Browser', server: '⚙ Server', store: '🗄 Session store', attacker: '🕵 Attacker' }[id];
   return (
-    <g className={`aj-node ${on ? 'on' : ''} ${id === 'attacker' ? 'bad' : ''} ${id === 'store' ? 'store' : ''}`}>
-      {busy && (
-        <motion.circle cx={x} cy={y} fill="none" stroke="var(--info)" strokeWidth={2} initial={{ r: 40, opacity: 0.8 }} animate={{ r: [40, 90], opacity: [0.8, 0] }} transition={{ duration: 1, repeat: Infinity }} />
-      )}
-      <rect x={x - 80} y={y - 26} width={160} height={52} rx={12} />
-      <text x={x} y={y + 5} textAnchor="middle">
-        {label}
-      </text>
-    </g>
+    <>
+      {busy && <Pulse at={POS[id]} {...BUSY_RIPPLE} />}
+      <SceneNode
+        at={POS[id]}
+        {...NODE}
+        title={NODE_LABEL[id]}
+        on={on}
+        tone={id === 'store' ? 'violet' : undefined}
+        className={id === 'attacker' ? 'aj-attacker' : id === 'store' ? 'aj-store' : undefined}
+      />
+    </>
   );
 }
 
-function Packet({ msg }: { msg: Msg }) {
-  const a = POS[msg.from];
-  const b = POS[msg.to];
-  const w = msg.label.length * 6.3 + 22;
+/** Travel, pause, fade out on arrival so the target stays readable. */
+const PILL_TIMING = { travelEnd: 0.65, fadeStart: 0.82, fadeInEnd: 0.1 } as const;
+
+function MessagePill({ msg }: { msg: Msg }) {
   return (
-    <motion.g
-      initial={{ x: a.x, y: a.y, opacity: 0, scale: 0.6 }}
-      animate={{ x: [a.x, b.x, b.x], y: [a.y, b.y, b.y], opacity: [0, 1, 1, 0], scale: [0.6, 1, 1, 0.4] }}
-      transition={{ duration: 1.3, ease: 'easeInOut', times: [0, 0.65, 0.82, 1], opacity: { times: [0, 0.1, 0.82, 1], duration: 1.3 } }}
-    >
-      <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill={COLOR[msg.kind]} className="aj-packet" />
-      <text x={0} y={4} textAnchor="middle" className="aj-packet-text">
-        {msg.label}
-      </text>
-    </motion.g>
+    <Packet
+      path={[POS[msg.from], POS[msg.to]]}
+      label={msg.label}
+      color={COLOR[msg.kind]}
+      duration={1.3}
+      height={24}
+      charW={6.3}
+      pad={22}
+      timing={PILL_TIMING}
+    />
   );
 }
-
-export function TokenString({ jwt }: { jwt: { header: string; payload: string; signature: string } | null }) {
-  if (!jwt) return <span className="aj-empty">signing…</span>;
-  return (
-    <motion.code className="aj-token" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-      <span className="h">{jwt.header}</span>.<span className="p">{jwt.payload}</span>.<span className="s">{jwt.signature}</span>
-    </motion.code>
-  );
-}
-
 function Decoded() {
   return (
     <div className="aj-decoded">

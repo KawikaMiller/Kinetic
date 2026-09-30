@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { pillWidth } from '../../core/geometry';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, EDGES, LAYOUT, TEAMS, type Arch, type Box, type Hop, type Scenario } from './scenarios';
 import './styles.css';
@@ -10,6 +11,8 @@ const HOP_COLOR: Record<Hop, string> = { call: 'var(--violet)', net: 'var(--info
 const HOP_TIME: Record<Hop, number> = { call: 0.35, net: 0.6, db: 0.45 };
 
 const center = (b: Box) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+/** The scenario note floats centred above the diagram. */
+const NOTE = { cx: 410, y: -32, h: 26, charW: 7.2, pad: 28 } as const;
 
 export function Stage() {
   const [arch, setArch] = useState<Arch>('mono');
@@ -110,8 +113,8 @@ export function Stage() {
 
         {f.note && (
           <g className="mm-note">
-            <rect x={410 - f.note.length * 3.6 - 14} y={-32} width={f.note.length * 7.2 + 28} height={26} rx={13} />
-            <text x={410} y={-15} textAnchor="middle">
+            <rect x={NOTE.cx - pillWidth(f.note, NOTE.charW, NOTE.pad) / 2} y={NOTE.y} width={pillWidth(f.note, NOTE.charW, NOTE.pad)} height={NOTE.h} rx={NOTE.h / 2} />
+            <text x={NOTE.cx} y={NOTE.y + 17} textAnchor="middle">
               {f.note}
             </text>
           </g>

@@ -7,13 +7,10 @@
 .oa-channel { font: 600 10px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; fill: color-mix(in srgb, var(--info) 70%, transparent); }
 .oa-channel.back { fill: color-mix(in srgb, var(--violet) 80%, transparent); }
 
-.oa-node rect { fill: var(--panel); stroke: var(--cell-line); stroke-width: 1.5; transition: stroke 0.25s, fill 0.25s; }
-.oa-node.on rect { stroke: var(--info); stroke-width: 2.5; fill: color-mix(in srgb, var(--info) 10%, var(--panel)); }
-.oa-node.bad rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 8%, transparent); }
-.oa-node.bad.on rect { fill: color-mix(in srgb, var(--bad) 18%, transparent); }
-.oa-node-title { font: 700 13px var(--font); fill: var(--text); }
-.oa-node-sub { font: 500 10px var(--mono); fill: var(--muted); }
-.oa-node-sub.bad { fill: var(--bad); font-weight: 700; }
+/* The attacker's box is always red, and redder while it's acting. */
+.scene-node.oa-attacker .scene-node-box { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 8%, transparent); }
+.scene-node.oa-attacker.on .scene-node-box { fill: color-mix(in srgb, var(--bad) 18%, transparent); }
+.oa-node-alert { fill: var(--bad); font-weight: 700; }
 
 .oa-popup { fill: var(--panel-2); stroke: var(--hi); stroke-width: 1.5; filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.6)); }
 .oa-popup-title { font: 700 12.5px var(--font); fill: var(--text); }
@@ -22,17 +19,12 @@
 .oa-allow { fill: var(--ok); }
 .oa-allow-text { font: 700 10px var(--font); fill: var(--on-ok); }
 
-.oa-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
-.oa-packet-text { font: 700 10.5px var(--mono); fill: var(--bg); }
-
 .oa-url, .oa-hold {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 10px 14px;
-  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 75%, transparent);
-  border: 1px solid var(--line);
 }
 .oa-hold.bad { border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
 .oa-url-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }

@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useMemo, type ReactNode } from 'react';
+import { SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
@@ -18,6 +19,9 @@ interface ScFrame extends Frame {
 
 const P = { client: { x: 70, y: 75 }, lb: { x: 220, y: 75 }, store: { x: 720, y: 75 } };
 const SERVERS = [30, 75, 120].map((y) => ({ x: 450, y }));
+const BOX = { client: { w: 88, h: 36, rx: 9 }, lb: { w: 68, h: 36, rx: 9 }, server: { w: 104, h: 32, rx: 9 }, store: { w: 140, h: 44, rx: 10 } } as const;
+/** Single-line labels sit 4 units below centre. */
+const LABEL_DY = 4;
 
 function build(): ScFrame[] {
   const base: ScFrame = { target: null, storeDown: false, revoked: false, sess: null, jwt: null, sessHops: 0 };
@@ -93,33 +97,25 @@ function Lane({ title, sessions = false, f, index }: { title: string; sessions?:
             <line key={`st${i}`} x1={s.x} y1={s.y} x2={P.store.x} y2={P.store.y} className={`aj-l aj-l-store ${t === i ? (down ? 'fail' : 'on') : ''}`} />
           ))}
 
-        <g className="aj-n">
-          <rect x={P.client.x - 44} y={P.client.y - 18} width={88} height={36} rx={9} />
-          <text x={P.client.x} y={P.client.y + 4} textAnchor="middle">client</text>
-        </g>
-        <g className="aj-n">
-          <rect x={P.lb.x - 34} y={P.lb.y - 18} width={68} height={36} rx={9} />
-          <text x={P.lb.x} y={P.lb.y + 4} textAnchor="middle">LB</text>
-        </g>
+        <SceneNode at={P.client} {...BOX.client} titleDy={LABEL_DY} title="client" />
+        <SceneNode at={P.lb} {...BOX.lb} titleDy={LABEL_DY} title="LB" />
         {SERVERS.map((s, i) => (
-          <g key={i} className={`aj-n ${t === i ? 'on' : ''}`}>
-            <rect x={s.x - 52} y={s.y - 16} width={104} height={32} rx={9} />
-            <text x={s.x} y={s.y + 4} textAnchor="middle">
-              server {'ABC'[i]} {sessions ? '' : '🔑'}
-            </text>
-          </g>
+          <SceneNode key={i} at={s} {...BOX.server} titleDy={LABEL_DY} title={<>server {'ABC'[i]} {sessions ? '' : '🔑'}</>} on={t === i} />
         ))}
         {sessions && (
-          <g className={`aj-n aj-n-store ${down ? 'down' : ''}`}>
-            <rect x={P.store.x - 70} y={P.store.y - 22} width={140} height={44} rx={10} />
-            <text x={P.store.x} y={P.store.y - 1} textAnchor="middle">🗄 session store</text>
-            <text x={P.store.x} y={P.store.y + 14} textAnchor="middle" className="aj-n-sub">
-              {down ? '✗ DOWN' : f.revoked ? 'user 42 rows deleted' : 'shared by all servers'}
-            </text>
-          </g>
+          <SceneNode
+            at={P.store}
+            {...BOX.store}
+            titleDy={-1}
+            subDy={14}
+            title="🗄 session store"
+            sub={down ? '✗ DOWN' : f.revoked ? 'user 42 rows deleted' : 'shared by all servers'}
+            variant={down ? 'bad' : 'default'}
+            className="aj-store-node"
+          />
         )}
         {!sessions && (
-          <text x={P.store.x} y={P.store.y + 4} textAnchor="middle" className="aj-n-sub">
+          <text x={P.store.x} y={P.store.y + 4} textAnchor="middle" className="scene-node-sub">
             no store: each server verifies locally
           </text>
         )}

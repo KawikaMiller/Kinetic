@@ -4,35 +4,22 @@
 .aj-edge-store { stroke: color-mix(in srgb, var(--violet) 40%, transparent); }
 .aj-edge-bad { stroke: color-mix(in srgb, var(--bad) 50%, transparent); }
 
-.aj-node rect {
-  fill: var(--panel);
-  stroke: var(--cell-line);
-  stroke-width: 1.5;
-  transition: stroke 0.25s, fill 0.25s;
-}
-.aj-node text { font: 700 13px var(--font); fill: var(--text); }
-.aj-node.on rect { stroke: var(--info); stroke-width: 2.5; fill: color-mix(in srgb, var(--info) 10%, var(--panel)); }
-.aj-node.store.on rect { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 12%, var(--panel)); }
-.aj-node.bad rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 10%, transparent); }
+/* Scene nodes: the store glows a little more violet; the attacker is always red. */
+.scene-node.aj-store.on .scene-node-box { fill: color-mix(in srgb, var(--violet) 12%, var(--panel)); }
+.scene-node.aj-attacker .scene-node-box { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 10%, transparent); }
 .aj-key rect { fill: var(--bg-2); stroke: color-mix(in srgb, var(--hi) 50%, transparent); }
 .aj-key text { font: 600 10.5px var(--mono); fill: var(--hi); }
-.aj-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
-.aj-packet-text { font: 700 10.5px var(--mono); fill: var(--bg); }
 
 .aj-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .aj-panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 75%, transparent);
-  border: 1px solid var(--line);
   min-height: 108px;
 }
 .aj-panel.dim { opacity: 0.6; }
 .aj-panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-.aj-empty { font: 500 12px var(--mono); color: var(--faint); }
 .aj-cookie code { font-size: 13px; }
 .aj-sid { color: var(--violet); font-weight: 700; }
 .aj-flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -85,13 +72,10 @@
 .aj-l.on { stroke: var(--info); stroke-dasharray: none; stroke-width: 2.5; }
 .aj-l-store.on { stroke: var(--violet); }
 .aj-l-store.fail { stroke: var(--bad); stroke-dasharray: 3 4; stroke-width: 2.5; }
-.aj-n rect { fill: var(--panel); stroke: var(--cell-line); stroke-width: 1.5; transition: stroke 0.3s, fill 0.3s; }
-.aj-n text { font: 700 12px var(--font); fill: var(--text); }
-.aj-n.on rect { stroke: var(--info); stroke-width: 2.5; }
-.aj-n-store rect { stroke: color-mix(in srgb, var(--violet) 60%, transparent); }
-.aj-n-store.down rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 12%, transparent); }
-.aj-n-sub { font: 500 10px var(--mono) !important; fill: var(--muted) !important; }
-.aj-n-store.down .aj-n-sub { fill: var(--bad) !important; font-weight: 700 !important; }
+/* Lane nodes: smaller titles, and an active server only changes its outline. */
+.aj-lane .scene-node-title { font-size: 12px; }
+.aj-lane .scene-node.on .scene-node-box { fill: var(--panel); }
+.aj-lane .scene-node.aj-store-node:not(.is-bad) .scene-node-box { stroke: color-mix(in srgb, var(--violet) 60%, transparent); }
 .aj-verdict {
   position: absolute;
   top: 10px;
@@ -110,10 +94,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 75%, transparent);
-  border: 1px solid var(--line);
 }
 .aj-check { grid-column: 1 / -1; transition: border-color 0.3s, box-shadow 0.3s; }
 .aj-check.ok { border-color: var(--ok); }

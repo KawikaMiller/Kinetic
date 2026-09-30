@@ -1,3 +1,4 @@
+import { cssVar } from '../../core/palette';
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 
@@ -31,10 +32,10 @@ export interface MmFrame extends Frame {
 }
 
 export const TEAMS: Record<TeamId, { name: string; color: string }> = {
-  A: { name: 'Storefront', color: '#4cc9f0' },
-  B: { name: 'Checkout', color: '#a78bfa' },
-  C: { name: 'Payments', color: '#f7b538' },
-  D: { name: 'Accounts', color: '#ff5d8f' },
+  A: { name: 'Storefront', color: cssVar('info') },
+  B: { name: 'Checkout', color: cssVar('violet') },
+  C: { name: 'Payments', color: cssVar('amber') },
+  D: { name: 'Accounts', color: cssVar('pink') },
 };
 
 // ── Layouts (SVG viewBox 820 × 400) ─────────────────────────────────

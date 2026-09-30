@@ -1,7 +1,10 @@
 import { motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { Box } from '../../components/Panel';
+import '../../components/scene/scene.css';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { pillWidth } from '../../core/geometry';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import './styles.css';
@@ -305,12 +308,7 @@ export function Stage() {
               { value: 'localhost', label: 'localhost' },
             ]}
           />
-          <Segmented
-            label="Port"
-            value={String(port)}
-            onChange={(v) => setPort(Number(v))}
-            options={PORT_OPTIONS[dest].map((p) => ({ value: String(p), label: `:${p}` }))}
-          />
+          <Segmented label="Port" value={port} onChange={setPort} options={PORT_OPTIONS[dest].map((p) => ({ value: p, label: `:${p}` }))} />
           <Button variant="primary" onClick={send} className="ipp-send">
             Send packet
           </Button>
@@ -321,8 +319,8 @@ export function Stage() {
       <div className="ipp">
         <svg className="ipp-scene" viewBox="0 0 960 380" role="img" aria-label="Home network, router with NAT, and a server with ports">
           <rect x={18} y={20} width={246} height={324} rx={16} className="ipp-zone" />
-          <text x={34} y={42} className="ipp-zone-label">HOME NETWORK · PRIVATE</text>
-          <text x={560} y={172} textAnchor="middle" className="ipp-zone-label">THE INTERNET</text>
+          <text x={34} y={42} className="scene-zone">HOME NETWORK · PRIVATE</text>
+          <text x={560} y={172} textAnchor="middle" className="scene-zone">THE INTERNET</text>
 
           <line x1={240} y1={96} x2={345} y2={180} className="ipp-wire" />
           <line x1={240} y1={272} x2={345} y2={200} className="ipp-wire" />
@@ -355,13 +353,13 @@ export function Stage() {
             );
           })}
 
-          {f.flight && <Packet key={player.index} flight={f.flight} />}
+          {f.flight && <MessagePill key={player.index} flight={f.flight} />}
         </svg>
 
         <div className="ipp-panels">
           <HeaderPanel frame={f} index={player.index} />
           <NatPanel frame={f} />
-          <div className="ipp-panel ipp-v6">
+          <Box className="ipp-panel ipp-v6">
             <h4>IPv4 vs IPv6</h4>
             <p>
               <b>IPv4</b> is 32 bits (<code>203.0.113.10</code>): about 4.3 billion addresses. Not enough for every device,
@@ -370,7 +368,7 @@ export function Stage() {
             <p>
               <b>IPv6</b> is 128 bits (<code>2001:db8::1</code>): enough for every device to get its own public address.
             </p>
-          </div>
+          </Box>
         </div>
       </div>
     </StageFrame>
@@ -404,10 +402,20 @@ function Device({ dev, lit }: { dev: Dev; lit: string[] }) {
   );
 }
 
-function Packet({ flight }: { flight: Flight }) {
+/** A "still" pill (same from/to) hovers this far above its anchor while it's being rewritten. */
+const STILL_LIFT = 34;
+/** Keyframe times for a pill that dissolves into a port slot: fade in, travel, fade out. */
+const ABSORB_TIMES = [0, 0.1, 0.75, 1];
+
+/**
+ * Kept local rather than the shared <Packet>: it has two motions Packet doesn't
+ * (a pill bouncing in place while NAT rewrites it, and one dissolving into the port
+ * slot it lands in), so Phase 2 request filed.
+ */
+function MessagePill({ flight }: { flight: Flight }) {
   const a = ANCHORS[flight.from];
   const b = ANCHORS[flight.to];
-  const w = flight.label.length * 7 + 22;
+  const w = pillWidth(flight.label, 7, 22);
   const color = KIND_COLOR[flight.kind];
   const still = flight.from === flight.to;
   // Pills dropping into a port slot dissolve into it, so the lit slot stays readable.
@@ -417,24 +425,23 @@ function Packet({ flight }: { flight: Flight }) {
       initial={{ x: a.x, y: a.y, opacity: 0, scale: 0.6 }}
       animate={
         still
-          ? { x: b.x, y: b.y - 34, opacity: 1, scale: [1, 1.18, 1] }
+          ? { x: b.x, y: b.y - STILL_LIFT, opacity: 1, scale: [1, 1.18, 1] }
           : { x: b.x, y: b.y, opacity: absorbed ? [0, 1, 1, 0] : 1, scale: absorbed ? [0.6, 1, 1, 0.5] : 1 }
       }
       transition={{
         duration: still ? 0.6 : absorbed ? 1 : 0.75,
         ease: 'easeInOut',
-        opacity: absorbed ? { duration: 1, times: [0, 0.1, 0.75, 1] } : { duration: 0.15 },
-        scale: absorbed ? { duration: 1, times: [0, 0.1, 0.75, 1] } : undefined,
+        opacity: absorbed ? { duration: 1, times: ABSORB_TIMES } : { duration: 0.15 },
+        scale: absorbed ? { duration: 1, times: ABSORB_TIMES } : undefined,
       }}
     >
-      <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill={color} className="ipp-pill" />
-      <text x={0} y={4} textAnchor="middle" className="ipp-pill-text">
+      <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill={color} className="scene-packet" />
+      <text x={0} y={4} textAnchor="middle" className="scene-packet-text">
         {flight.label}
       </text>
     </motion.g>
   );
 }
-
 function HeaderPanel({ frame, index }: { frame: IpFrame; index: number }) {
   const field = (name: 'src' | 'dst', label: string, e: Endpoint | null): ReactNode => (
     <div className={`ipp-field ${frame.changed === name ? 'changed' : ''}`}>
@@ -456,24 +463,26 @@ function HeaderPanel({ frame, index }: { frame: IpFrame; index: number }) {
     </div>
   );
   return (
-    <div className="ipp-panel">
+    <Box className="ipp-panel">
       <h4>Packet header</h4>
       {field('src', 'SOURCE', frame.src)}
       {field('dst', 'DESTINATION', frame.dst)}
       <p className="ipp-note">IP picks the machine · port picks the program</p>
-    </div>
+    </Box>
   );
 }
 
+const NAT_ROWS_SHOWN = 4;
+
 function NatPanel({ frame }: { frame: IpFrame }) {
   return (
-    <div className="ipp-panel">
+    <Box className="ipp-panel">
       <h4>Router NAT table</h4>
       {frame.nat.length === 0 ? (
         <p className="ipp-note">Empty. It fills in as devices open connections.</p>
       ) : (
         <div className="ipp-nat">
-          {frame.nat.slice(-4).map((r, i, arr) => {
+          {frame.nat.slice(-NAT_ROWS_SHOWN).map((r, i, arr) => {
             const idx = frame.nat.length - arr.length + i;
             return (
               <motion.div
@@ -489,9 +498,9 @@ function NatPanel({ frame }: { frame: IpFrame }) {
               </motion.div>
             );
           })}
-          {frame.nat.length > 4 && <p className="ipp-note">+{frame.nat.length - 4} older</p>}
+          {frame.nat.length > NAT_ROWS_SHOWN && <p className="ipp-note">+{frame.nat.length - NAT_ROWS_SHOWN} older</p>}
         </div>
       )}
-    </div>
+    </Box>
   );
 }

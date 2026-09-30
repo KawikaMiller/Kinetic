@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { Box } from '../../components/Panel';
+import { Packet, Pulse, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import './styles.css';
@@ -157,9 +159,9 @@ export function Stage() {
       }
       controls={
         <Controls>
-          <Segmented label="PKCE" value={pkce ? 'on' : 'off'} onChange={(v) => setPkce(v === 'on')} options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]} />
-          <Segmented label="Attacker on the device" value={attacker ? 'yes' : 'no'} onChange={(v) => setAttacker(v === 'yes')} options={[{ value: 'no', label: 'No' }, { value: 'yes', label: 'Intercepts the code' }]} />
-          <Segmented label="Scope" value={oidc ? 'oidc' : 'oauth'} onChange={(v) => setOidc(v === 'oidc')} options={[{ value: 'oauth', label: 'photos.read' }, { value: 'oidc', label: 'openid + photos.read' }]} />
+          <Toggle label="PKCE" value={pkce} onChange={setPkce} />
+          <Toggle label="Attacker on the device" value={attacker} onChange={setAttacker} off="No" on="Intercepts the code" />
+          <Toggle label="Scope" value={oidc} onChange={setOidc} off="photos.read" on="openid + photos.read" />
         </Controls>
       }
     >
@@ -205,13 +207,13 @@ export function Stage() {
             )}
           </AnimatePresence>
 
-          {f.msg && <Packet key={player.index} msg={f.msg} />}
+          {f.msg && <MessagePill key={player.index} msg={f.msg} />}
         </svg>
 
-        <div className="oa-url">
+        <Box className="oa-url">
           <span className="oa-url-label">URL bar</span>
           <code>{f.url ? <Url url={f.url} /> : <span className="oa-muted">photoprint.app</span>}</code>
-        </div>
+        </Box>
 
         <div className="oa-holds">
           <Holds title="PhotoPrint holds" items={f.app} />
@@ -232,7 +234,7 @@ const CHIP: Record<string, { color: string; note: string }> = {
 
 function Holds({ title, items, bad = false }: { title: string; items: string[]; bad?: boolean }) {
   return (
-    <div className={`oa-hold ${bad ? 'bad' : ''}`}>
+    <Box className={`oa-hold ${bad ? 'bad' : ''}`}>
       <span className="oa-url-label">{title}</span>
       <div className="oa-chips">
         <AnimatePresence>
@@ -252,7 +254,7 @@ function Holds({ title, items, bad = false }: { title: string; items: string[]; 
         </AnimatePresence>
         {!items.length && <span className="oa-muted">nothing</span>}
       </div>
-    </div>
+    </Box>
   );
 }
 
@@ -276,33 +278,41 @@ function Url({ url }: { url: string }) {
   );
 }
 
+/** Node boxes are 184×54; the busy ripple grows from 44 to 92. */
+const NODE = { w: 184, h: 54, rx: 12, subDy: 14 } as const;
+const BUSY_RIPPLE = { from: 44, to: 92 } as const;
+
 function Node({ id, on, busy, extra }: { id: NodeId; on: boolean; busy: boolean; extra?: string }) {
-  const { x, y } = POS[id];
   const [title, sub] = LABEL[id];
   return (
-    <g className={`oa-node ${on ? 'on' : ''} ${id === 'attacker' ? 'bad' : ''}`}>
-      {busy && (
-        <motion.circle cx={x} cy={y} fill="none" stroke="var(--info)" strokeWidth={2} initial={{ r: 44, opacity: 0.8 }} animate={{ r: [44, 92], opacity: [0.8, 0] }} transition={{ duration: 1.1, repeat: Infinity }} />
-      )}
-      <rect x={x - 92} y={y - 27} width={184} height={54} rx={12} />
-      <text x={x} y={y - 3} textAnchor="middle" className="oa-node-title">{title}</text>
-      <text x={x} y={y + 14} textAnchor="middle" className={`oa-node-sub ${extra ? 'bad' : ''}`}>{extra ?? sub}</text>
-    </g>
+    <>
+      {busy && <Pulse at={POS[id]} from={BUSY_RIPPLE.from} to={BUSY_RIPPLE.to} />}
+      <SceneNode
+        at={POS[id]}
+        {...NODE}
+        title={title}
+        sub={extra ? <tspan className="oa-node-alert">{extra}</tspan> : sub}
+        on={on}
+        className={id === 'attacker' ? 'oa-attacker' : undefined}
+      />
+    </>
   );
 }
 
-function Packet({ msg }: { msg: Msg }) {
-  const a = POS[msg.from];
-  const b = POS[msg.to];
-  const w = msg.label.length * 6.2 + 22;
+/** Travel, pause, fade out on arrival so the target stays readable. */
+const PILL_TIMING = { travelEnd: 0.62, fadeStart: 0.82, fadeInEnd: 0.1 } as const;
+
+function MessagePill({ msg }: { msg: Msg }) {
   return (
-    <motion.g
-      initial={{ x: a.x, y: a.y, opacity: 0, scale: 0.6 }}
-      animate={{ x: [a.x, b.x, b.x], y: [a.y, b.y, b.y], opacity: [0, 1, 1, 0], scale: [0.6, 1, 1, 0.4] }}
-      transition={{ duration: 1.4, ease: 'easeInOut', times: [0, 0.62, 0.82, 1], opacity: { times: [0, 0.1, 0.82, 1], duration: 1.4 } }}
-    >
-      <rect x={-w / 2} y={-12} width={w} height={24} rx={12} fill={COLOR[msg.kind]} className="oa-packet" />
-      <text x={0} y={4} textAnchor="middle" className="oa-packet-text">{msg.label}</text>
-    </motion.g>
+    <Packet
+      path={[POS[msg.from], POS[msg.to]]}
+      label={msg.label}
+      color={COLOR[msg.kind]}
+      duration={1.4}
+      height={24}
+      charW={6.2}
+      pad={22}
+      timing={PILL_TIMING}
+    />
   );
 }

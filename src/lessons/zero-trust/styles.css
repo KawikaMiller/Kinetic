@@ -1,31 +1,31 @@
 .zt { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px 20px; }
-.zt-scene { width: 100%; height: auto; overflow: visible; }
-.zt-zone { font: 600 10px var(--mono); letter-spacing: 0.14em; fill: var(--faint); }
-.zt-zone.ok { fill: var(--ok); }
+.zt-scene { width: 100%; height: auto; overflow: visible; --packet-fs: 10px; }
+.zt-zone-ok { fill: var(--ok); }
 .zt-inside { fill: color-mix(in srgb, var(--amber) 4%, transparent); stroke: color-mix(in srgb, var(--amber) 35%, transparent); stroke-width: 1.5; stroke-dasharray: 8 6; }
 .zt-wall {
   fill: var(--orange);
   opacity: 0.85;
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--orange) 50%, transparent));
 }
-.zt-edge { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
-.zt-edge.mtls { stroke: color-mix(in srgb, var(--violet) 60%, transparent); stroke-dasharray: none; }
+.zt-edge-mtls { stroke: color-mix(in srgb, var(--violet) 60%, transparent); stroke-dasharray: none; }
 
 .zt-gate circle:not([stroke-opacity]) { fill: var(--panel-2); stroke: var(--hi); stroke-width: 2; }
 .zt-gate-title { font: 700 12px var(--font); fill: var(--hi); }
 .zt-gate-sub { font: 500 9.5px var(--mono); fill: var(--muted); }
 
-.zt-node rect { fill: var(--panel); stroke: var(--cell-line); stroke-width: 1.5; transition: stroke 0.3s, fill 0.3s; }
-.zt-node.attacker rect { stroke: color-mix(in srgb, var(--bad) 70%, transparent); }
-.zt-node.owned rect { stroke: var(--bad); stroke-width: 2.5; fill: color-mix(in srgb, var(--bad) 15%, transparent); filter: drop-shadow(0 0 12px color-mix(in srgb, var(--bad) 45%, transparent)); }
-.zt-node-title { font: 700 12.5px var(--font); fill: var(--text); }
-.zt-node-sub { font: 500 10px var(--mono); fill: var(--muted); }
-.zt-node.owned .zt-node-sub { fill: var(--bad); font-weight: 700; }
+/* Scene nodes: slightly smaller titles; breached systems glow red. */
+.zt-scene .scene-node-title { font-size: 12.5px; }
+.zt-scene .scene-node-box { transition: stroke 0.3s, fill 0.3s; }
+.zt-scene .scene-node.zt-attacker .scene-node-box { stroke: color-mix(in srgb, var(--bad) 70%, transparent); }
+.zt-scene .scene-node.is-bad .scene-node-box {
+  stroke: var(--bad);
+  stroke-width: 2.5;
+  fill: color-mix(in srgb, var(--bad) 15%, transparent);
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--bad) 45%, transparent));
+}
 .zt-lock { font-size: 13px; }
 .zt-creds { font: 700 10px var(--mono); fill: var(--bad); }
 
-.zt-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
-.zt-packet-text { font: 700 10px var(--mono); fill: var(--bg); }
 .zt-deny { fill: var(--ok); stroke: var(--bg); stroke-width: 2; }
 .zt-deny-x { font: 800 14px var(--font); fill: var(--on-ok); }
 
@@ -34,13 +34,10 @@
   flex-direction: column;
   gap: 5px;
   padding: 10px 14px;
-  border-radius: 12px;
   background: color-mix(in srgb, var(--bg) 75%, transparent);
-  border: 1px solid var(--line);
   min-height: 120px;
 }
 .zt-log-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-.zt-log-empty { font: 500 12px var(--mono); color: var(--faint); }
 .zt-row {
   display: grid;
   grid-template-columns: 56px minmax(150px, auto) 120px 1fr;

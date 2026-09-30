@@ -48,7 +48,7 @@
 .mm-box.down path,
 .mm-box.down ellipse { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 16%, var(--cell)); }
 .mm-box.down text { fill: var(--bad); }
-.mm-x { font-size: 13px !important; }
+.mm-box .mm-x { font-size: 13px; }
 
 .mm-box.active rect { stroke-width: 3; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hi) 50%, transparent)); }
 .mm-box rect.teamed { stroke: var(--team); stroke-width: 3; }
