@@ -7,8 +7,6 @@
 .tt-tape .section-title,
 .tt-side .tray .section-title { flex-basis: 100%; }
 .tt-uses { display: flex; flex-wrap: wrap; gap: 6px; }
-/* motion owns the node group's opacity, so "can't remove this" is a dashed outline instead */
-.tt-tree .tree-node.tt-locked circle { stroke-dasharray: 4 3; }
 .tt-tree .tree-node.tt-locked { cursor: not-allowed; }
 .tt-tree .tree-node.tt-still-waiting circle { stroke: var(--violet); stroke-width: 4; }
 .btn.tt-on { border-color: var(--accent); }

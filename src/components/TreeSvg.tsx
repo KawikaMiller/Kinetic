@@ -32,6 +32,8 @@ export interface TreeGeometry<K extends TreeKey> {
  * - Default nodes are a circle of `radius` with `label(id)` centred in it; pass
  *   `renderNode` to draw something else (a rect, two lines of text) around (0, 0).
  * - `nodeMark` / `edgeMark` highlight with semantic tones; `nodeClass` adds lesson classes.
+ * - `nodeScale` / `nodeOpacity` animate a node's size and fade (e.g. fade what can't be
+ *   picked). motion owns the node group's opacity, so fade through this, not CSS.
  * - Vertical spacing: `levelGap` fixes it; otherwise it fits the depth into
  *   `height - bottomRoom`, capped at `maxLevelGap`.
  * - `hidden(id)` keeps a node (and the edge to it) out of the picture without moving
@@ -40,7 +42,7 @@ export interface TreeGeometry<K extends TreeKey> {
  */
 export function TreeSvg<K extends TreeKey>({
   shape, layout = 'tidy', width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
-  radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, edgeMark, markedEdgeWidth, hidden,
+  radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, nodeOpacity, edgeMark, markedEdgeWidth, hidden,
   enterScale = 0.2, transition = SPRING.soft, onNodeClick, overlay, className = '', ariaLabel,
 }: {
   shape: TreeShape<K>;
@@ -59,6 +61,8 @@ export function TreeSvg<K extends TreeKey>({
   nodeMark?: (id: K) => TreeNodeMark | null | undefined;
   nodeClass?: (id: K) => string;
   nodeScale?: (id: K) => number;
+  /** 0..1, default 1. */
+  nodeOpacity?: (id: K) => number;
   edgeMark?: (parent: K, child: K) => TreeEdgeMark | null | undefined;
   /** Stroke width of marked edges (default 3.5). */
   markedEdgeWidth?: number;
@@ -122,7 +126,7 @@ export function TreeSvg<K extends TreeKey>({
               className={`tree-node ${markClass} ${onNodeClick ? 'is-clickable' : ''} ${nodeClass?.(id) ?? ''}`}
               style={tintStyle}
               initial={{ opacity: 0, scale: enterScale, x, y }}
-              animate={{ opacity: 1, scale: nodeScale?.(id) ?? 1, x, y }}
+              animate={{ opacity: nodeOpacity?.(id) ?? 1, scale: nodeScale?.(id) ?? 1, x, y }}
               exit={{ opacity: 0, scale: enterScale }}
               transition={transition}
               onClick={onNodeClick && (() => onNodeClick(id))}

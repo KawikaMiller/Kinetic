@@ -494,6 +494,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .call-frame.is-running { background: var(--hi); border-color: var(--hi); color: var(--on-hi); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--hi) 80%, transparent); }
 .call-frame.is-running .call-frame-detail { color: var(--on-hi-muted); }
 .call-frame.is-waiting { opacity: 0.75; }
+.call-frame.has-tone:is(.is-idle, .is-waiting) { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
 .call-frame.is-returning { border-color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
 .call-frame.is-returning .call-frame-detail { color: var(--text); }
 .call-frame.is-ok { background: color-mix(in srgb, var(--ok) 16%, transparent); border-color: var(--ok); }

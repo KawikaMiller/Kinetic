@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { SHAKE, SPRING } from '../core/motion';
+import type { Tone } from '../core/tone';
 
 /**
  * What a frame is doing right now:
@@ -20,6 +21,11 @@ export interface CallFrame {
   /** Right-aligned note: arguments, "waiting on …", a returned value. */
   detail?: ReactNode;
   state?: CallFrameState;
+  /**
+   * Accent for an idle or waiting frame, to match the lesson's own colour for it (e.g. violet
+   * "on the stack" nodes in a tree). Running/returning/ok/error keep their state colours.
+   */
+  tone?: Tone;
 }
 
 const POP_EXIT = { opacity: 0, x: 80, transition: { duration: 0.3 } };
@@ -72,7 +78,7 @@ export function CallStackPanel({
                 key={f.id}
                 layout
                 type={clickable ? 'button' : undefined}
-                className={`call-frame is-${f.state ?? 'idle'} ${f.id === selected ? 'is-selected' : ''} ${clickable ? 'is-clickable' : ''}`}
+                className={`call-frame is-${f.state ?? 'idle'} ${f.tone ? `has-tone tone-${f.tone}` : ''} ${f.id === selected ? 'is-selected' : ''} ${clickable ? 'is-clickable' : ''}`}
                 initial={{ opacity: 0, y: -24, scale: 0.9 }}
                 animate={alarm ? { opacity: 1, y: 0, scale: 1, ...SHAKE } : { opacity: 1, y: 0, scale: 1 }}
                 exit={POP_EXIT}
