@@ -13,28 +13,6 @@
   margin-bottom: 8px;
 }
 
-.gi-graph {
-  overflow-x: auto;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  min-height: 260px;
-}
-.gi-svg { display: block; overflow: visible; }
-.gi-edge { fill: none; stroke-width: 2.5; }
-.gi-edge.dead { stroke-dasharray: 4 4; }
-.gi-commit { cursor: pointer; }
-.gi-commit circle { transition: r 0.2s; }
-.gi-commit.sel circle { filter: drop-shadow(0 0 8px var(--hi)); stroke: var(--hi); }
-.gi-hash { font: 700 10px var(--mono); fill: var(--text); pointer-events: none; }
-.gi-msg { font: 10px var(--font); fill: var(--muted); pointer-events: none; }
-.gi-commit.dead .gi-msg { fill: var(--faint); }
-.gi-tag { fill: var(--panel-2); stroke: var(--line-2); }
-.gi-tag.head { fill: color-mix(in srgb, var(--hi) 16%, transparent); stroke: var(--hi); }
-.gi-tag-text { font: 600 11px var(--mono); fill: var(--muted); }
-.gi-tag-text.head { fill: var(--hi); }
-
 .gi-objects {
   padding: 12px;
   border-radius: 12px;

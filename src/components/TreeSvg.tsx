@@ -1,0 +1,146 @@
+import { AnimatePresence, motion, type Transition } from 'motion/react';
+import type { CSSProperties, ReactNode } from 'react';
+import { SPRING } from '../core/motion';
+import type { Tone } from '../core/tone';
+import { layoutTree, treeX, type TreeKey, type TreeLayoutMode, type TreeShape } from '../core/treeLayout';
+
+export type { TreeShape } from '../core/treeLayout';
+
+/** How a node is highlighted: `tint` = coloured ring on a light wash, `solid` = filled. */
+export interface TreeNodeMark {
+  tone: Tone;
+  fill: 'tint' | 'solid';
+  /** Wash strength for `tint`, in % (default 16). */
+  tint?: number;
+}
+
+export interface TreeEdgeMark {
+  tone: Tone;
+  dashed?: boolean;
+}
+
+/** Where things are, for drawing extras (a ghost child, a cursor) over the tree. */
+export interface TreeGeometry<K extends TreeKey> {
+  at: (id: K) => { x: number; y: number } | undefined;
+  levelGap: number;
+}
+
+/**
+ * An SVG tree: lays out `shape`, then draws animated edges and positioned node groups.
+ * Nodes glide when the shape changes, pop in when added and fade out when removed.
+ *
+ * - Default nodes are a circle of `radius` with `label(id)` centred in it; pass
+ *   `renderNode` to draw something else (a rect, two lines of text) around (0, 0).
+ * - `nodeMark` / `edgeMark` highlight with semantic tones; `nodeClass` adds lesson classes.
+ * - Vertical spacing: `levelGap` fixes it; otherwise it fits the depth into
+ *   `height - bottomRoom`, capped at `maxLevelGap`.
+ * - `hidden(id)` keeps a node (and the edge to it) out of the picture without moving
+ *   anything else: the layout always uses the whole shape.
+ * - `overlay` draws between edges and nodes with the tree's geometry.
+ */
+export function TreeSvg<K extends TreeKey>({
+  shape, layout = 'tidy', width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
+  radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, edgeMark, markedEdgeWidth, hidden,
+  enterScale = 0.2, transition = SPRING.soft, onNodeClick, overlay, className = '', ariaLabel,
+}: {
+  shape: TreeShape<K>;
+  layout?: TreeLayoutMode;
+  /** viewBox size; the SVG scales to its CSS box. */
+  width: number;
+  height: number;
+  pad?: number;
+  top?: number;
+  levelGap?: number;
+  maxLevelGap?: number;
+  bottomRoom?: number;
+  radius?: number;
+  label?: (id: K) => ReactNode;
+  renderNode?: (id: K) => ReactNode;
+  nodeMark?: (id: K) => TreeNodeMark | null | undefined;
+  nodeClass?: (id: K) => string;
+  nodeScale?: (id: K) => number;
+  edgeMark?: (parent: K, child: K) => TreeEdgeMark | null | undefined;
+  /** Stroke width of marked edges (default 3.5). */
+  markedEdgeWidth?: number;
+  hidden?: (id: K) => boolean;
+  enterScale?: number;
+  transition?: Transition;
+  onNodeClick?: (id: K) => void;
+  overlay?: (geometry: TreeGeometry<K>) => ReactNode;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  const { place, columns, depth } = layoutTree(shape, layout);
+  const gap = levelGap ?? Math.min(maxLevelGap, (height - bottomRoom) / Math.max(1, depth));
+  const at = (id: K) => {
+    const p = place.get(id);
+    return p && { x: treeX(p.col, columns, width, pad), y: top + p.depth * gap };
+  };
+  const shown = [...place.keys()].filter((id) => !hidden?.(id));
+  const style = markedEdgeWidth === undefined ? undefined : ({ '--tree-marked-w': markedEdgeWidth } as CSSProperties);
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className={`tree-svg ${className}`}
+      preserveAspectRatio="xMidYMid meet"
+      style={style}
+      role={ariaLabel ? 'img' : undefined}
+      aria-label={ariaLabel}
+    >
+      <AnimatePresence>
+        {shown.flatMap((id) =>
+          shape.children(id).map((c) => {
+            if (c == null || hidden?.(c) || !place.has(c)) return null;
+            const a = at(id)!;
+            const b = at(c)!;
+            const mark = edgeMark?.(id, c);
+            const pos = { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+            return (
+              <motion.line
+                key={`${id}-${c}`}
+                className={`tree-edge ${mark ? `is-marked tone-${mark.tone}` : ''} ${mark?.dashed ? 'is-dashed' : ''}`}
+                initial={{ opacity: 0, ...pos }}
+                animate={{ opacity: 1, ...pos }}
+                exit={{ opacity: 0 }}
+                transition={transition}
+              />
+            );
+          }),
+        )}
+      </AnimatePresence>
+      {overlay?.({ at, levelGap: gap })}
+      <AnimatePresence>
+        {shown.map((id) => {
+          const { x, y } = at(id)!;
+          const mark = nodeMark?.(id);
+          const markClass = mark ? `is-${mark.fill} tone-${mark.tone}` : '';
+          const tintStyle = mark?.tint === undefined ? undefined : ({ '--tree-tint': `${mark.tint}%` } as CSSProperties);
+          return (
+            <motion.g
+              key={id}
+              className={`tree-node ${markClass} ${onNodeClick ? 'is-clickable' : ''} ${nodeClass?.(id) ?? ''}`}
+              style={tintStyle}
+              initial={{ opacity: 0, scale: enterScale, x, y }}
+              animate={{ opacity: 1, scale: nodeScale?.(id) ?? 1, x, y }}
+              exit={{ opacity: 0, scale: enterScale }}
+              transition={transition}
+              onClick={onNodeClick && (() => onNodeClick(id))}
+            >
+              {renderNode ? (
+                renderNode(id)
+              ) : (
+                <>
+                  <circle r={radius} />
+                  <text y={5} textAnchor="middle">
+                    {label?.(id) ?? id}
+                  </text>
+                </>
+              )}
+            </motion.g>
+          );
+        })}
+      </AnimatePresence>
+    </svg>
+  );
+}

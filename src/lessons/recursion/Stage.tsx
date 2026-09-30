@@ -1,11 +1,14 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
+import { CallStackPanel, type CallFrame, type CallFrameState } from '../../components/CallStackPanel';
 import { StageFrame } from '../../components/StageFrame';
+import { TreeSvg, type TreeShape } from '../../components/TreeSvg';
 import { Controls, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { SHAKE, SPRING } from '../../core/motion';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { LIMIT, factorialFrames, fibTree, sumFrames, type StackFrame, type TreeFrame } from './frames';
+import {
+  LIMIT, factorialFrames, fibTree, sumFrames, type FNode, type StackFrame, type Tone as StackTone, type TreeFrame,
+} from './frames';
 import './styles.css';
 
 type Mode = 'factorial' | 'sum' | 'fib';
@@ -126,53 +129,54 @@ function Code({ lines, active }: { lines: string[]; active: number | null }) {
   );
 }
 
+const STATE_OF: Record<StackTone, CallFrameState> = {
+  active: 'running',
+  waiting: 'waiting',
+  base: 'ok',
+  returning: 'returning',
+  crash: 'error',
+};
+
 function CallStack({ frame }: { frame: StackFrame }) {
+  // The model keeps the stack outermost-first; the panel takes it top-first.
+  const frames: CallFrame[] = [...frame.stack].reverse().map((f) => ({
+    id: f.id,
+    name: f.label,
+    state: STATE_OF[f.tone],
+    detail: (
+      <>
+        {f.note}
+        {f.tone === 'returning' && frame.ret && (
+          <motion.span key={frame.ret.key} className="rc-ret" initial={{ y: -26, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            ↓ {frame.ret.value}
+          </motion.span>
+        )}
+      </>
+    ),
+  }));
+
   return (
-    <div className={`rc-stackwrap ${frame.crashed ? 'is-crashed' : ''}`}>
-      <div className="rc-stack-head">
-        <span>Call stack</span>
-        <span className="rc-limit">
-          {frame.stack.length}/{LIMIT} frames shown
-        </span>
-      </div>
-      <div className="rc-stack">
-        <AnimatePresence initial={false}>
-          {frame.stack.map((f, i) => (
-            <motion.div
-              key={f.id}
-              layout
-              className={`rc-frame tone-${f.tone}`}
-              initial={{ opacity: 0, y: -24, scale: 0.9 }}
-              animate={frame.crashed ? { opacity: 1, y: 0, scale: 1, ...SHAKE } : { opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 80, transition: { duration: 0.3 } }}
-              transition={SPRING.snappy}
-            >
-              <span className="rc-depth">{i}</span>
-              <b>{f.label}</b>
-              <span className="rc-note">
-                {f.note}
-                {f.tone === 'returning' && frame.ret && (
-                  <motion.span key={frame.ret.key} className="rc-ret" initial={{ y: -26, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-                    ↓ {frame.ret.value}
-                  </motion.span>
-                )}
-              </span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {frame.stack.length === 0 && frame.result != null && (
+    <CallStackPanel
+      frames={frames}
+      meta={`${frame.stack.length}/${LIMIT} frames shown`}
+      alarm={frame.crashed}
+      empty={
+        frame.result != null ? (
           <motion.div className="rc-result" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
             = {frame.result}
           </motion.div>
-        )}
-        {frame.stack.length === 0 && frame.result == null && <p className="rc-empty">empty: nothing running yet</p>}
-      </div>
-      {frame.crashed && (
-        <motion.div className="rc-crash" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
-          RangeError: Maximum call stack size exceeded
-        </motion.div>
-      )}
-    </div>
+        ) : (
+          <p className="rc-empty">empty: nothing running yet</p>
+        )
+      }
+      overlay={
+        frame.crashed && (
+          <motion.div className="rc-crash" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+            RangeError: Maximum call stack size exceeded
+          </motion.div>
+        )
+      }
+    />
   );
 }
 
@@ -184,64 +188,67 @@ const TREE_TOP = 30;
 const TREE_BOTTOM_PAD = 20;
 /** Bouncier than the presets on purpose: each new call pops into the tree. */
 const NODE_POP = { type: 'spring', stiffness: 300, damping: 22 } as const;
+const NODE_ENTER_SCALE = 0.3;
+const ON_STACK_EDGE_W = 3;
+
+/** Each call's child calls, in the order they were made (fib(n-1) then fib(n-2)). */
+function childrenOf(nodes: FNode[]): number[][] {
+  const kids = nodes.map((): number[] => []);
+  for (const nd of nodes) if (nd.parent != null) kids[nd.parent].push(nd.id);
+  return kids;
+}
 /** Width of a "times each call ran" bar per run, in %. */
 const COUNT_BAR_PCT = 12;
 
-function FibTree({ nodes, leaves, frame }: { nodes: ReturnType<typeof fibTree>['nodes']; leaves: number; frame: TreeFrame }) {
+function FibTree({ nodes, leaves, frame }: { nodes: FNode[]; leaves: number; frame: TreeFrame }) {
   const depth = Math.max(...nodes.map((n) => n.depth));
   const W = Math.max(leaves * LEAF_GAP, MIN_TREE_W);
   const H = (depth + 1) * LEVEL_GAP + TREE_BOTTOM_PAD;
-  const px = (x: number) => LEAF_GAP / 2 + x * ((W - LEAF_GAP) / Math.max(1, leaves - 1));
-  const py = (d: number) => TREE_TOP + d * LEVEL_GAP;
+  const kids = useMemo(() => childrenOf(nodes), [nodes]);
+  const shape: TreeShape<number> = { root: 0, children: (id) => kids[id] };
+  const onStack = (id: number) => frame.states[id] === 'active' || frame.states[id] === 'waiting';
   const counts = Object.entries(frame.counts)
     .map(([k, v]) => [Number(k), v] as const)
     .sort((a, b) => b[0] - a[0]);
 
+  const renderNode = (id: number) => {
+    const nd = nodes[id];
+    const s = frame.states[id];
+    const v = frame.values[id];
+    const cls = s === 'active' ? 'active' : s === 'waiting' ? 'waiting' : nd.repeat ? 'repeat' : 'done';
+    return (
+      <>
+        <circle r={22} className={`rc-node ${cls} ${nd.repeat ? 'is-repeat' : ''}`} />
+        <text y={v != null ? -3 : 4} textAnchor="middle" className="rc-nlabel">
+          fib({nd.n})
+        </text>
+        {v != null && (
+          <text y={12} textAnchor="middle" className="rc-nval">
+            ={v}
+          </text>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="rc-treewrap">
-      <svg className="rc-tree" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
-        {nodes.map((nd) => {
-          if (nd.parent == null) return null;
-          const p = nodes[nd.parent];
-          const s = frame.states[nd.id];
-          if (s === 'unseen') return null;
-          return (
-            <line
-              key={`e${nd.id}`}
-              x1={px(p.x)}
-              y1={py(p.depth)}
-              x2={px(nd.x)}
-              y2={py(nd.depth)}
-              className={`rc-edge ${s === 'active' || s === 'waiting' ? 'on-stack' : ''}`}
-            />
-          );
-        })}
-        {nodes.map((nd) => {
-          const s = frame.states[nd.id];
-          if (s === 'unseen') return null;
-          const v = frame.values[nd.id];
-          const cls = s === 'active' ? 'active' : s === 'waiting' ? 'waiting' : nd.repeat ? 'repeat' : 'done';
-          return (
-            <motion.g
-              key={nd.id}
-              initial={{ opacity: 0, scale: 0.3 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={{ originX: `${px(nd.x)}px`, originY: `${py(nd.depth)}px` }}
-              transition={NODE_POP}
-            >
-              <circle cx={px(nd.x)} cy={py(nd.depth)} r={22} className={`rc-node ${cls} ${nd.repeat ? 'is-repeat' : ''}`} />
-              <text x={px(nd.x)} y={py(nd.depth) - (v != null ? 3 : -4)} textAnchor="middle" className="rc-nlabel">
-                fib({nd.n})
-              </text>
-              {v != null && (
-                <text x={px(nd.x)} y={py(nd.depth) + 12} textAnchor="middle" className="rc-nval">
-                  ={v}
-                </text>
-              )}
-            </motion.g>
-          );
-        })}
-      </svg>
+      <TreeSvg
+        shape={shape}
+        layout="tidy"
+        width={W}
+        height={H}
+        pad={LEAF_GAP / 2}
+        top={TREE_TOP}
+        levelGap={LEVEL_GAP}
+        className="rc-tree"
+        renderNode={renderNode}
+        hidden={(id) => frame.states[id] === 'unseen'}
+        edgeMark={(_, child) => (onStack(child) ? { tone: 'violet' } : null)}
+        markedEdgeWidth={ON_STACK_EDGE_W}
+        enterScale={NODE_ENTER_SCALE}
+        transition={NODE_POP}
+      />
       <div className="rc-counts">
         <span className="rc-counts-title">Times each call ran</span>
         {counts.map(([k, c]) => (

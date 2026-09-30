@@ -1,22 +1,5 @@
 .bst { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 16px; }
-.bst-svg { width: 100%; height: 360px; overflow: visible; }
-
-.bst-edge { stroke: var(--line-2); stroke-width: 2; }
-.bst-edge.hot { stroke: var(--violet); stroke-width: 3.5; }
-.bst-edge.succ { stroke: var(--info); stroke-width: 3.5; stroke-dasharray: 6 4; }
-
-.bst-node { cursor: pointer; }
-.bst-node circle { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
-.bst-node text { font: 700 13px var(--mono); fill: var(--text); pointer-events: none; transition: fill 0.25s; }
-.bst-node:hover circle { stroke: var(--faint); }
-.bst-node.path circle { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 16%, transparent); }
-.bst-node.hi circle { fill: var(--hi); stroke: var(--hi); }
-.bst-node.hi text { fill: var(--on-hi); }
-.bst-node.succ circle { stroke: var(--info); fill: color-mix(in srgb, var(--info) 18%, transparent); }
-.bst-node.ok circle { fill: var(--ok); stroke: var(--ok); }
-.bst-node.ok text { fill: var(--on-ok); }
-.bst-node.bad circle { fill: var(--bad); stroke: var(--bad); }
-.bst-node.bad text { fill: var(--on-bad); }
+.bst-svg { width: 100%; height: 360px; }
 
 .bst-ghost line { stroke: var(--bad); stroke-width: 2; stroke-dasharray: 4 4; }
 .bst-ghost circle { fill: color-mix(in srgb, var(--bad) 8%, transparent); stroke: var(--bad); stroke-width: 2; stroke-dasharray: 4 3; }

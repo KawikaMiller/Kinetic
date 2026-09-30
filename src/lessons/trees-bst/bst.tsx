@@ -71,22 +71,6 @@ export function height(t: Tree, id: number | null = t.root): number {
 
 export const size = (t: Tree) => Object.keys(t.nodes).length;
 
-export function layout(t: Tree) {
-  const pos: Record<number, { x: number; d: number }> = {};
-  let i = 0;
-  let depth = 0;
-  const walk = (id: number | null, d: number) => {
-    if (id == null) return;
-    const n = t.nodes[id];
-    walk(n.left, d + 1);
-    pos[id] = { x: i++, d };
-    depth = Math.max(depth, d);
-    walk(n.right, d + 1);
-  };
-  walk(t.root, 0);
-  return { pos, count: i, depth };
-}
-
 function base(t: Tree, extra: Partial<BstFrame> = {}): BstFrame {
   return { tree: t, hi: null, path: [], ok: null, bad: null, succ: [], ghost: null, output: [], comparisons: 0, ...extra };
 }
