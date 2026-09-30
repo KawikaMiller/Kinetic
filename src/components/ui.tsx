@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { Tone } from '../core/tone';
 import type { Option } from './options';
 
 /** Row of lesson-specific controls under the transport bar. */
@@ -215,6 +216,29 @@ export function Hint({
 }) {
   const classes = ['hint', tone === 'muted' && 'is-muted', block && 'is-block', className].filter(Boolean).join(' ');
   return <span className={classes}>{children}</span>;
+}
+
+/**
+ * A chip you can press: one of a row of presets or examples ("#FF8800", "café", "NaN").
+ * `on` marks the one currently loaded.
+ */
+export function ChipButton({
+  tone = 'violet', on = false, size = 'sm', title, onClick, children,
+}: {
+  tone?: Tone;
+  on?: boolean;
+  /** md for word-sized labels next to a text field, sm for dense rows. */
+  size?: 'sm' | 'md';
+  title?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const classes = ['chip', 'chip-button', `tone-${tone}`, size === 'md' && 'is-md', on && 'is-on'].filter(Boolean).join(' ');
+  return (
+    <button type="button" className={classes} aria-pressed={on} title={title} onClick={onClick}>
+      {children}
+    </button>
+  );
 }
 
 /** The ▶ Resume / ❚❚ Pause button every live simulation has. */

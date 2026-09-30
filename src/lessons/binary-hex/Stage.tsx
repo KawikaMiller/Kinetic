@@ -3,7 +3,7 @@ import { AnimatedValue } from '../../components/AnimatedValue';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
+import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { chunkGroups, flipBit, fromBits, placeValue, toBits, type Bit } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { useInterval } from '../../core/useInterval';
@@ -165,9 +165,9 @@ export function Stage() {
         </>,
         <ControlGroup key="presets" label="Where you meet other bases">
           {PRESETS.map((p) => (
-            <button key={p.id} type="button" className={`chip tone-violet bh-preset ${preset?.id === p.id ? 'is-on' : ''}`} onClick={() => choosePreset(p)}>
+            <ChipButton key={p.id} on={preset?.id === p.id} onClick={() => choosePreset(p)}>
               {p.label}
-            </button>
+            </ChipButton>
           ))}
         </ControlGroup>,
       ]}

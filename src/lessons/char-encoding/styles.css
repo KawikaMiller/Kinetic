@@ -1,7 +1,4 @@
 .ce { gap: 14px; }
-.ce-preset { cursor: pointer; font-size: 13px; padding: 4px 10px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
-.ce-preset:hover,
-.ce-preset.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
 .ce-chars { display: flex; flex-wrap: wrap; gap: 8px; }
 .ce-char {
   display: flex;

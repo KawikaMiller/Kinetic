@@ -46,6 +46,38 @@
   border: 1px solid color-mix(in srgb, var(--c, var(--muted)) 40%, transparent);
   white-space: nowrap;
 }
+/* ChipButton (components/ui.tsx): a chip you can press, e.g. a row of presets */
+.chip-button {
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+}
+.chip-button.is-md { font-size: 13px; padding: 4px 10px; }
+.chip-button:hover,
+.chip-button.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+
+/* ConsolePanel (components/ConsolePanel.tsx): what a program printed */
+.console-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font: 500 12.5px var(--mono);
+  min-height: 64px;
+}
+.console-panel-title {
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+.console-panel code { color: var(--ok); }
+/* --c inherits, so only a line that sets its own tone may use it */
+.console-panel code[class*='tone-'] { color: var(--c); }
 
 /* Boxes and panels inside a stage */
 .box {
@@ -487,8 +519,6 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   color: var(--faint);
   margin-bottom: 8px;
 }
-/* Its width must change instantly: the reduced-motion rule would otherwise transition it,
-   and CommitGraph measures the scroller right after a commit is added. */
 .commit-graph-svg { display: block; overflow: visible; }
 .commit-edge { fill: none; stroke-width: 2.5; }
 .commit-edge.is-dead { stroke-dasharray: 4 4; }

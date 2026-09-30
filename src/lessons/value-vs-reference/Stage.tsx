@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CodePanel } from '../../components/CodePanel';
+import { ConsolePanel } from '../../components/ConsolePanel';
 import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from '../../components/memory';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented } from '../../components/ui';
@@ -8,7 +9,7 @@ import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { PRESETS, type VrFrame } from './frames';
 import { fanBend, HEAP_W, layoutScene, SCENE_W, type SceneLayout } from './layout';
-import { shown, unreachable, type Mem } from './model';
+import { shown, unreachable } from './model';
 import './styles.css';
 
 /** Narrowest stage where the scene's smallest text (10px tags) still renders at 8px or more. */
@@ -49,24 +50,11 @@ export function Stage() {
         <div className="vr-side">
           <CodePanel title="JavaScript" lines={preset.code} active={f.line} />
           <span className="chip tone-violet vr-lang">Python &amp; Java: same for objects</span>
-          <Console mem={f.mem} />
+          <ConsolePanel lines={f.mem.out} error={f.mem.error} />
         </div>
         <Scene frame={f} layout={layout} />
       </div>
     </StageFrame>
-  );
-}
-
-function Console({ mem }: { mem: Mem }) {
-  return (
-    <div className="vr-console" aria-label="Console output">
-      <span className="vr-console-title">console</span>
-      {mem.out.length === 0 && !mem.error && <span className="empty-note">nothing printed yet</span>}
-      {mem.out.map((line, i) => (
-        <code key={i}>{line}</code>
-      ))}
-      {mem.error && <code className="vr-console-error">Uncaught {mem.error}</code>}
-    </div>
   );
 }
 

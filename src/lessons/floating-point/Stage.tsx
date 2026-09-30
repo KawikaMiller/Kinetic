@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ControlGroup, Hint, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
+import { Button, ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { flipBit, fromBits, type BitGroup } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import {
@@ -138,9 +138,9 @@ export function Stage() {
         </>,
         <ControlGroup key="specials" label="Special values">
           {SPECIALS.map((s) => (
-            <button key={s.id} type="button" className={`chip tone-info fp-chip ${s.bits === bits ? 'is-on' : ''}`} onClick={() => pickSpecial(s.id)}>
+            <ChipButton key={s.id} tone="info" on={s.bits === bits} onClick={() => pickSpecial(s.id)}>
               {s.label}
-            </button>
+            </ChipButton>
           ))}
         </ControlGroup>,
       ]}

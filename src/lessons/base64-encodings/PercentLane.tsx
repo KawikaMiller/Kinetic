@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { ControlGroup, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
+import { ChipButton, ControlGroup, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { PERCENT_PRESETS, percentEncode, percentTokens, type PercentMode } from './model';
 
@@ -43,9 +43,9 @@ export function PercentLane({ lanePicker }: { lanePicker: ReactNode }) {
         </>,
         <ControlGroup key="presets" label="Try">
           {PERCENT_PRESETS.map((p) => (
-            <button key={p.label} type="button" className={`chip tone-violet b64-preset ${text === p.text ? 'is-on' : ''}`} onClick={() => setText(p.text)}>
+            <ChipButton key={p.label} on={text === p.text} onClick={() => setText(p.text)}>
               {p.label}
-            </button>
+            </ChipButton>
           ))}
         </ControlGroup>,
       ]}

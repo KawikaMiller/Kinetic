@@ -1,7 +1,4 @@
 .b64 { gap: 16px; }
-.b64-preset { cursor: pointer; font-size: 12px; padding: 4px 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
-.b64-preset:hover,
-.b64-preset.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
 .b64-output { display: flex; flex-direction: column; gap: 6px; }
 .b64-string { font: 600 18px var(--mono); color: var(--violet); overflow-wrap: anywhere; }
 .b64-pad { color: var(--dim); }

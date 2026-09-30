@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ControlGroup, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
+import { Button, ChipButton, ControlGroup, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { chunkGroups } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
@@ -96,9 +96,9 @@ export function Base64Lane({ lanePicker }: { lanePicker: ReactNode }) {
         <>
           <ControlGroup label="Try">
             {BASE64_PRESETS.map((p) => (
-              <button key={p.label} type="button" className={`chip tone-violet b64-preset ${text === p.text ? 'is-on' : ''}`} onClick={() => load(p.text)}>
+              <ChipButton key={p.label} on={text === p.text} onClick={() => load(p.text)}>
                 {p.label}
-              </button>
+              </ChipButton>
             ))}
           </ControlGroup>
           <Button variant="danger" onClick={reveal} disabled={!output}>Is this encrypted?</Button>

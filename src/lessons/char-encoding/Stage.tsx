@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
+import { ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import {
@@ -89,9 +89,9 @@ export function Stage() {
         </>,
         <ControlGroup key="presets" label="Try">
           {PRESETS.map((p) => (
-            <button key={p.id} type="button" className={`chip tone-violet ce-preset ${text === p.text ? 'is-on' : ''}`} onClick={() => load(p.text)}>
+            <ChipButton key={p.id} size="md" on={text === p.text} onClick={() => load(p.text)}>
               {p.label}
-            </button>
+            </ChipButton>
           ))}
         </ControlGroup>,
       ]}

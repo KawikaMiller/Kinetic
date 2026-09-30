@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useArrowMarker } from '../../components/ArrowMarker';
 import { CodePanel } from '../../components/CodePanel';
+import { ConsolePanel } from '../../components/ConsolePanel';
 import { HeapObject, RefArrow, heapFieldPort, rectCenter, rectEdgeToward, type Rect } from '../../components/memory';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Hint, Legend, Segmented } from '../../components/ui';
@@ -51,13 +52,7 @@ export function Stage() {
       <div className="cl">
         <div className="cl-side">
           <CodePanel title="JavaScript" lines={preset.code} active={f.line} />
-          <div className="cl-console" aria-label="Console output">
-            <span className="cl-console-title">console</span>
-            {f.world.out.length === 0 && <span className="empty-note">nothing printed yet</span>}
-            {f.world.out.map((line, i) => (
-              <code key={i}>{line}</code>
-            ))}
-          </div>
+          <ConsolePanel lines={f.world.out} />
           <Hint block>Simplified: engines only keep the variables a closure actually uses, and may optimise environments away.</Hint>
         </div>
         <Scene frame={f} height={height} />

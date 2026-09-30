@@ -2,9 +2,6 @@
 .fp-stat .stat-value { font-size: 15px; overflow-wrap: anywhere; }
 .fp-exact { max-width: 360px; }
 .fp-formula { margin: 0; font: 13px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
-.fp-chip { cursor: pointer; font-size: 12px; padding: 4px 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
-.fp-chip:hover,
-.fp-chip.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
 .fp-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
 .fp-lines { display: flex; flex-direction: column; gap: 6px; }
 .fp-line { display: block; overflow: visible; }
