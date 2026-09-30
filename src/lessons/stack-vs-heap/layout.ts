@@ -1,7 +1,7 @@
 // Scene geometry: a stack that grows upward from the bottom-left, and heap
 // blocks scattered on the right (the heap has no order, and the drawing says so).
 import type { Pt } from '../../core/geometry';
-import { SLOT } from '../../components/memory';
+import { SLOT, stackBoxes } from '../../components/memory';
 import { STACK_LIMIT } from './frames';
 import type { StackFrame } from './model';
 
@@ -36,13 +36,9 @@ export interface FrameBox {
 
 /** Stack frames bottom-up in call order; `shown` are the frames to draw (live ones plus ghosts). */
 export function layoutStack(shown: readonly StackFrame[]): FrameBox[] {
-  let bottom = STACK_BOTTOM;
-  return shown.map((frame) => {
-    const h = frameHeight(frame.slots.length);
-    const box = { frame, x: STACK_X, y: bottom - h, h };
-    bottom -= h + FRAME_GAP;
-    return box;
-  });
+  const heights = shown.map((frame) => frameHeight(frame.slots.length));
+  const { tops } = stackBoxes(heights, { start: STACK_BOTTOM, gap: FRAME_GAP, direction: 'up' });
+  return shown.map((frame, i) => ({ frame, x: STACK_X, y: tops[i], h: heights[i] }));
 }
 
 /** Top-left of slot `index` inside a frame box. */

@@ -1,7 +1,7 @@
 // Scene geometry for value-vs-reference: where each scope, name and heap box sits.
 // Computed once per preset from all of its frames, so nothing jumps while stepping.
 import type { Pt } from '../../core/geometry';
-import { heapHeight, SLOT } from '../../components/memory';
+import { heapHeight, SLOT, stackBoxes } from '../../components/memory';
 import type { HeapObj, Mem } from './model';
 
 export const SCENE_W = 680;
@@ -40,29 +40,30 @@ function inOrder<T>(states: readonly Mem[], items: (m: Mem) => readonly T[], key
 
 export function layoutScene(states: readonly Mem[]): SceneLayout {
   const slots = new Map<string, Pt>();
-  const scopes: ScopeBox[] = [];
-  let y = TOP;
-  for (const scope of inOrder(states, (m) => m.scopes, (s) => s.id)) {
-    const names = inOrder(states, (m) => m.bindings.filter((b) => b.scope === scope.id), (b) => b.id);
-    const h = SCOPE_LABEL_H + Math.max(1, names.length) * ROW;
-    names.forEach((b, i) => slots.set(b.id, { x: NAMES_X, y: y + SCOPE_LABEL_H + i * ROW }));
-    scopes.push({ id: scope.id, label: scope.label, y, h });
-    y += h + SCOPE_GAP;
-  }
+  const scopeList = inOrder(states, (m) => m.scopes, (s) => s.id).map((scope) => ({
+    scope,
+    names: inOrder(states, (m) => m.bindings.filter((b) => b.scope === scope.id), (b) => b.id),
+  }));
+  const scopeHeights = scopeList.map(({ names }) => SCOPE_LABEL_H + Math.max(1, names.length) * ROW);
+  const scopeStack = stackBoxes(scopeHeights, { start: TOP, gap: SCOPE_GAP });
+  const scopes: ScopeBox[] = scopeList.map(({ scope, names }, i) => {
+    const y = scopeStack.tops[i];
+    names.forEach((b, row) => slots.set(b.id, { x: NAMES_X, y: y + SCOPE_LABEL_H + row * ROW }));
+    return { id: scope.id, label: scope.label, y, h: scopeHeights[i] };
+  });
 
   // Reserve each object's tallest size, so an array growing on push doesn't shove its neighbours.
   const tallest = new Map<string, number>();
   for (const m of states) for (const o of m.heap) tallest.set(o.id, Math.max(tallest.get(o.id) ?? 0, o.fields.length));
   const heap = new Map<string, Pt>();
-  const columnY: Record<HeapObj['column'], number> = { a: TOP + SCOPE_LABEL_H, b: TOP + SCOPE_LABEL_H };
-  for (const o of inOrder(states, (m) => m.heap, (x) => x.id)) {
-    heap.set(o.id, { x: COLUMN_X[o.column], y: columnY[o.column] });
-    columnY[o.column] += heapHeight(tallest.get(o.id)!) + HEAP_GAP;
-  }
+  const objects = inOrder(states, (m) => m.heap, (x) => x.id);
+  const columnEnds = (Object.keys(COLUMN_X) as HeapObj['column'][]).map((column) => {
+    const inColumn = objects.filter((o) => o.column === column);
+    const stack = stackBoxes(inColumn.map((o) => heapHeight(tallest.get(o.id)!)), { start: TOP + SCOPE_LABEL_H, gap: HEAP_GAP });
+    inColumn.forEach((o, i) => heap.set(o.id, { x: COLUMN_X[column], y: stack.tops[i] }));
+    return stack.end - HEAP_GAP;
+  });
 
-  const height = Math.max(y - SCOPE_GAP, columnY.a - HEAP_GAP, columnY.b - HEAP_GAP) + BOTTOM_PAD;
+  const height = Math.max(scopeStack.end - SCOPE_GAP, ...columnEnds) + BOTTOM_PAD;
   return { scopes, slots, heap, height };
 }
-
-/** Sideways bow for each of `n` arrows into one box, so they don't draw on top of each other. */
-export const fanBend = (index: number, count: number) => (count <= 1 ? 0 : (index - (count - 1) / 2) * 22);

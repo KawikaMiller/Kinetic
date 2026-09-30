@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { ConsolePanel } from '../../components/ConsolePanel';
-import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from '../../components/memory';
+import { HeapObject, RefArrow, VarSlot, fanBend, heapFieldPort, heapRect, slotPort } from '../../components/memory';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented } from '../../components/ui';
 import type { Pt } from '../../core/geometry';
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { PRESETS, type VrFrame } from './frames';
-import { fanBend, HEAP_W, layoutScene, SCENE_W, type SceneLayout } from './layout';
+import { HEAP_W, layoutScene, SCENE_W, type SceneLayout } from './layout';
 import { shown, unreachable } from './model';
 import './styles.css';
 

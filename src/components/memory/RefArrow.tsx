@@ -3,7 +3,7 @@ import type { Pt } from '../../core/geometry';
 import type { Tone } from '../../core/tone';
 import { toneVar } from '../../core/tone';
 import { useArrowMarker } from '../ArrowMarker';
-import { rectEdgeToward, type Rect } from './geometry';
+import { rectCenter, rectEdgeToward, type Rect } from './geometry';
 
 const isRect = (t: Pt | Rect): t is Rect => 'w' in t;
 
@@ -18,41 +18,60 @@ function arrowPath(a: Pt, b: Pt, bend: number): string {
   return `M ${a.x} ${a.y} Q ${cx} ${cy} ${b.x} ${b.y}`;
 }
 
+const center = (t: Pt | Rect): Pt => (isRect(t) ? rectCenter(t) : t);
+
 /**
  * A reference: an arrow from a slot or field (`from`, e.g. `slotPort(at)`) to a
  * point or a box (`to`; a Rect ends on its border facing `from`, e.g. `heapRect(…)`).
+ * `from` may be a box too: the arrow then leaves its border facing `to`, for links
+ * between whole boxes (an environment to its parent).
  *
  * - `dangling` draws it dashed in --bad: it points at a popped frame or freed block.
- * - `bend` bows it sideways to keep two arrows to one box apart.
+ * - `dashed` + `thin` + `color` draw a structural link rather than a reference
+ *   (e.g. a faint dashed "outer" link: `color="var(--faint)" dashed thin`).
+ * - `bend` bows it sideways to keep two arrows to one box apart (see `fanBend`).
  * - It draws itself in when it appears and glides when its target moves, unless
  *   the viewer prefers reduced motion.
  */
 export function RefArrow({
-  from, to, tone = 'violet', dangling = false, bend = 0, className = '',
+  from, to, tone = 'violet', color, dashed = false, thin = false, dangling = false, bend = 0, className = '',
 }: {
-  from: Pt;
+  from: Pt | Rect;
   to: Pt | Rect;
   tone?: Tone;
+  /** Any CSS colour, overriding `tone` (e.g. 'var(--faint)'). */
+  color?: string;
+  dashed?: boolean;
+  thin?: boolean;
   dangling?: boolean;
   bend?: number;
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  const color = toneVar(dangling ? 'bad' : tone);
-  const arrow = useArrowMarker(color, { size: 6, refX: 9 });
-  const end = isRect(to) ? rectEdgeToward(to, from) : to;
-  const d = arrowPath(from, end, bend);
+  const stroke = dangling ? toneVar('bad') : (color ?? toneVar(tone));
+  const arrow = useArrowMarker(stroke, { size: 6, refX: 9 });
+  const start = isRect(from) ? rectEdgeToward(from, center(to)) : from;
+  const end = isRect(to) ? rectEdgeToward(to, isRect(from) ? rectCenter(from) : from) : to;
+  const d = arrowPath(start, end, bend);
+  const broken = dashed || dangling;
+  const classes = ['ref-arrow', dangling && 'is-dangling', dashed && 'is-dashed', thin && 'is-thin', className].filter(Boolean).join(' ');
+  // motion draws `pathLength` by writing its own stroke-dasharray, which would erase the CSS
+  // dashes, so a dashed arrow fades in instead of drawing itself in.
+  const reveal = broken ? { opacity: 0 } : { pathLength: 0 };
+  const shown = broken ? { opacity: 1 } : { pathLength: 1 };
 
   return (
-    <g className={`ref-arrow ${dangling ? 'is-dangling' : ''} ${className}`}>
+    <g className={classes}>
       {arrow.def}
       <motion.path
+        // Remount when it turns dashed (a pointer going dangling), dropping motion's inline dasharray.
+        key={broken ? 'dashed' : 'solid'}
         d={d}
-        stroke={color}
+        stroke={stroke}
         markerEnd={arrow.url}
         // `d` must be in `initial` too, or motion interpolates it from undefined.
-        initial={reduce ? false : { pathLength: 0, d }}
-        animate={{ d, pathLength: 1 }}
+        initial={reduce ? false : { ...reveal, d }}
+        animate={{ d, ...shown }}
         transition={{ duration: reduce ? 0 : 0.35, ease: 'easeOut' }}
       />
     </g>

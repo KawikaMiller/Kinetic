@@ -11,4 +11,3 @@
 
 .cl-scene { width: 100%; height: auto; display: block; }
 
-.cl-outer path { fill: none; stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 5 4; }

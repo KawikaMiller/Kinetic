@@ -2,14 +2,22 @@ import { motion, useReducedMotion } from 'motion/react';
 import type { ReactNode } from 'react';
 import type { Pt } from '../../core/geometry';
 import type { Tone } from '../../core/tone';
-import { HEAP, heapHeight } from './geometry';
+import { HEAP, heapFieldPort, heapHeight, type PortSide } from './geometry';
 
 export interface HeapField {
   name: ReactNode;
   /** A primitive to print, or omit and set `isRef` to draw a dot for an outgoing arrow. */
   value?: ReactNode;
   isRef?: boolean;
+  /** Which edge the reference dot sits on (default right); start the arrow at `heapFieldPort(…, port)`. */
+  port?: PortSide;
 }
+
+/** Where the corner tag ('collectable', 'captured') goes. `above` sits over the box, clear of long titles. */
+export type TagPlacement = 'corner' | 'above';
+const TAG_ABOVE_GAP = 5;
+
+const portCircle = (p: Pt) => ({ cx: p.x, cy: p.y });
 
 export type HeapVariant = 'live' | 'collectable' | 'freed';
 
@@ -23,10 +31,12 @@ const VARIANT_TAG: Record<HeapVariant, string | null> = { live: null, collectabl
  * - `variant`: `live`; `collectable` (unreachable, dim and dashed, awaiting GC);
  *   `freed` (manual memory, dashed in --bad: any arrow into it is a use-after-free).
  * - `highlight` rings it ("this box is being searched", "just mutated").
+ * - The corner tag shares the title row, so the title and tag must fit in `w`; if they
+ *   don't, use `tagPlacement="above"` rather than widening the box.
  * - It fades in when it's allocated, unless the viewer prefers reduced motion.
  */
 export function HeapObject({
-  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, className = '',
+  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, tagPlacement = 'corner', className = '',
 }: {
   at: Pt;
   w: number;
@@ -37,6 +47,7 @@ export function HeapObject({
   highlight?: boolean;
   /** Overrides the variant's corner tag ('collectable', 'freed'). */
   tag?: ReactNode;
+  tagPlacement?: TagPlacement;
   className?: string;
 }) {
   const reduce = useReducedMotion();
@@ -51,7 +62,7 @@ export function HeapObject({
         {title}
       </text>
       {cornerTag != null && (
-        <text className="heap-obj-tag" x={at.x + w - 8} y={at.y + 16} textAnchor="end">
+        <text className="heap-obj-tag" x={at.x + w - 8} y={tagPlacement === 'above' ? at.y - TAG_ABOVE_GAP : at.y + 16} textAnchor="end">
           {cornerTag}
         </text>
       )}
@@ -64,7 +75,7 @@ export function HeapObject({
               {f.name}
             </text>
             {f.isRef ? (
-              <circle className="heap-obj-port" cx={at.x + w - 10} cy={y + HEAP.fieldH / 2} r={3.5} />
+              <circle className="heap-obj-port" {...portCircle(heapFieldPort(at, w, i, f.port))} r={3.5} />
             ) : (
               <text className="heap-obj-value" x={at.x + w - 10} y={y + 15} textAnchor="end">
                 {f.value}

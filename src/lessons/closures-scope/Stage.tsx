@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useArrowMarker } from '../../components/ArrowMarker';
 import { CodePanel } from '../../components/CodePanel';
 import { ConsolePanel } from '../../components/ConsolePanel';
-import { HeapObject, RefArrow, heapFieldPort, rectCenter, rectEdgeToward, type Rect } from '../../components/memory';
+import { HeapObject, RefArrow, heapFieldPort } from '../../components/memory';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Hint, Legend, Segmented } from '../../components/ui';
 import type { Tone } from '../../core/tone';
@@ -61,19 +60,6 @@ export function Stage() {
   );
 }
 
-/** A dashed "outer" link from an environment to its parent. */
-function OuterLink({ from, to }: { from: Rect; to: Rect }) {
-  const arrow = useArrowMarker('var(--faint)', { size: 6, refX: 9 });
-  const a = rectEdgeToward(from, rectCenter(to));
-  const b = rectEdgeToward(to, rectCenter(from));
-  return (
-    <g className="cl-outer">
-      {arrow.def}
-      <path d={`M ${a.x} ${a.y} L ${b.x} ${b.y}`} markerEnd={arrow.url} />
-    </g>
-  );
-}
-
 function Scene({ frame, height }: { frame: ClFrame; height: number }) {
   const { world } = frame;
   const live = reachable(world);
@@ -92,16 +78,16 @@ function Scene({ frame, height }: { frame: ClFrame; height: number }) {
       <text className="scene-zone" x={452} y={24}>functions</text>
 
       {world.envs.map((e) =>
-        e.parent ? <OuterLink key={`outer-${e.id}`} from={envRect(e.id)} to={envRect(e.parent)} /> : null,
+        e.parent ? (
+          <RefArrow key={`outer-${e.id}`} from={envRect(e.id)} to={envRect(e.parent)} color="var(--faint)" dashed thin />
+        ) : null,
       )}
 
       {/* References under the boxes, so they read as links between boxes rather than across them. */}
-      {world.fns.map((fn) => {
-        // Environments sit to the left of functions: leave from the box's left edge, not across it.
-        const at = placeAt(fn.place);
-        const from = { x: at.x, y: heapFieldPort(at, BOX_W, 0).y };
-        return <RefArrow key={`env-${fn.id}`} from={from} to={envRect(fn.env)} />;
-      })}
+      {world.fns.map((fn) => (
+        // Environments sit to the left of functions, so [[Environment]] leaves from the left.
+        <RefArrow key={`env-${fn.id}`} from={heapFieldPort(placeAt(fn.place), BOX_W, 0, 'left')} to={envRect(fn.env)} />
+      ))}
       {world.envs.flatMap((e) =>
         e.vars.map((v, i) => {
           const target = v.value.kind === 'fn' ? v.value.id : null;
@@ -148,7 +134,7 @@ function Scene({ frame, height }: { frame: ClFrame; height: number }) {
           title={fn.label}
           tone="info"
           variant={live.fns.has(fn.id) ? 'live' : 'collectable'}
-          fields={[{ name: '[[Environment]]', value: '←' }]}
+          fields={[{ name: '[[Environment]]', isRef: true, port: 'left' }]}
         />
       ))}
     </svg>

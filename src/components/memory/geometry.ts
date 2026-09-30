@@ -39,8 +39,37 @@ export const heapHeight = (fieldCount: number) => HEAP.titleH + Math.max(1, fiel
 /** The whole HeapObject box: pass it as a RefArrow's `to`. */
 export const heapRect = (at: Pt, w: number, fieldCount: number): Rect => ({ x: at.x, y: at.y, w, h: heapHeight(fieldCount) });
 
-/** Right-edge middle of field row `index`: where a nested reference (obj.inner → other) starts. */
-export const heapFieldPort = (at: Pt, w: number, index: number): Pt => ({
-  x: at.x + w - 10,
+/** Which side of a HeapObject a field's reference leaves from. */
+export type PortSide = 'left' | 'right';
+
+/** Horizontal inset of a right-side port from the box's right edge. */
+const RIGHT_PORT_INSET = 10;
+
+/**
+ * Middle of field row `index`, where a nested reference (obj.inner → other) starts: just
+ * inside the right edge by default, or on the left border for a reference that heads left
+ * (so the arrow doesn't cross its own box). Match the field's `port` side.
+ */
+export const heapFieldPort = (at: Pt, w: number, index: number, side: PortSide = 'right'): Pt => ({
+  x: side === 'left' ? at.x : at.x + w - RIGHT_PORT_INSET,
   y: at.y + HEAP.titleH + index * HEAP.fieldH + HEAP.fieldH / 2,
 });
+
+/** Sideways bow for arrow `index` of `count` arrows into one box, so they don't draw on top of each other. */
+export const fanBend = (index: number, count: number, spread = 22) => (count <= 1 ? 0 : (index - (count - 1) / 2) * spread);
+
+/**
+ * Stack boxes of the given heights with a gap: the top y of each. `down` (default) starts at
+ * `start` and grows downward; `up` treats `start` as the bottom edge and grows upward, like a
+ * call stack. `end` is where the next box would start (the running y after the last gap).
+ */
+export function stackBoxes(heights: readonly number[], o: { start: number; gap: number; direction?: 'down' | 'up' }): { tops: number[]; end: number } {
+  const up = o.direction === 'up';
+  let cursor = o.start;
+  const tops = heights.map((h) => {
+    const top = up ? cursor - h : cursor;
+    cursor = up ? top - o.gap : cursor + h + o.gap;
+    return top;
+  });
+  return { tops, end: cursor };
+}

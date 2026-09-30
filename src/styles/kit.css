@@ -317,7 +317,9 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .heap-obj.is-freed .heap-obj-box { stroke-dasharray: 5 4; }
 .heap-obj.is-freed .heap-obj-tag { fill: var(--bad); }
 .ref-arrow path { fill: none; stroke-width: 2; stroke-linecap: round; }
-.ref-arrow.is-dangling path { stroke-dasharray: 5 4; }
+.ref-arrow.is-dangling path,
+.ref-arrow.is-dashed path { stroke-dasharray: 5 4; }
+.ref-arrow.is-thin path { stroke-width: 1.5; stroke-linecap: butt; }
 
 /* ArrayStrip (components/ArrayStrip.tsx): binary-search's track, generalised */
 .array-strip { position: relative; }
