@@ -611,21 +611,31 @@ Track `web` · *"Where the browser keeps things"*
 
 #### Batch T1-B7 · Security & data design (`sec`, `data`)
 
-**`injection-attacks` · Injection Attacks (SQL & Command Injection)**
+**`injection-attacks` · Injection: Keep Data Out of Code**
 Track `sec` · *"When data becomes code"*
+**Re-scoped (defensive and conceptual).** The first spec used concrete attack payloads, which is the
+wrong way to teach a junior and tripped a safety check. Teach the habit, not the exploit: no attack
+strings, payloads, exfiltration or step-by-step exploitation anywhere in the lesson.
 **Spec.**
-- A login form. As the learner types, the backend's SQL string is built live by concatenation, with the input's characters coloured as **data** until a quote breaks out and turns them into **code**.
-- Payload chips: `' OR '1'='1' --` (the query now matches every user and a simulated login succeeds as admin), `'; DROP TABLE users; --`, and a UNION exfiltration.
-- **Parameterised** mode: the query shows `?` placeholders and the parameters travel separately, so the same payload stays inert text and the login fails.
-- An "escaping" mode shows a clever bypass and why escaping isn't the fix.
-- A second tab, **command injection**: a "ping a host" feature builds `ping <input>`, and `8.8.8.8; cat /etc/passwd` runs a second, simulated command. The fix is an argument array with no shell.
-- A note says identifiers such as ORDER BY columns can't be parameterised, so use an allow-list.
-**Kit.** `CodePanel`, `TextField`, `Segmented`, `ScenePicker`, `SceneNode`/`Packet` (query to the database), `.data-table` (rows returned).
+- **SQL scene:** a query built by string concatenation vs a parameterised query, fed ordinary inputs
+  (the surname O'Brien breaks the concatenated query with a syntax error; a trailing space changes a
+  match). Show the text the database receives, with data coloured differently from code; in the
+  parameterised version data travels separately and can't change the query's structure.
+- **HTML scene:** a comment rendered by concatenating into markup vs set as text, fed "I <3 it",
+  "use <b>bold</b>" and "5 > 3 & 2 < 4": concatenation mis-renders (bold appears, "<3" vanishes),
+  encoding shows exactly what was typed.
+- **Principle panel:** the same pattern anywhere data is pasted into something interpreted (SQL, HTML,
+  shell commands, URLs, logs). The fix is to keep data separate (parameters, argument arrays, APIs) or
+  encode for the context, plus allow-lists for identifiers such as ORDER BY columns. The risk is
+  explained in plain words ("someone could deliberately craft input that changes what it does").
+**Kit.** `CodePanel` (renderLine), `TextField`, `ScenePicker`, `ChipButton` (benign example inputs).
 **AC.**
-- Watch: data characters are `--info`, input that became code `--bad`, parameters `--ok`, and the rows returned `--hi`.
-- Misconception: "escaping or validating input prevents injection".
-- Correctness: the tokeniser classifies the payloads correctly (tests on each chip, including a Unicode quote that shouldn't break out); parameterised mode never changes the query text.
-- Honesty: the stage says "Simulated database and shell; nothing is executed."
+- Watch: data characters are `--info`, text that ended up treated as code `--bad`, parameters `--ok`.
+- Misconception: "escaping or validating input by hand is enough".
+- Correctness: O'Brien breaks the concatenated query but not the parameterised one; a parameterised
+  query keeps the same token structure for any input (property test over random strings); the HTML
+  encoder matches a real DOMParser/textContent round-trip.
+- Honesty: "Simulated database and renderer; nothing is executed."
 
 **`security-principles` · Security Principles: CIA, Defense in Depth & Least Privilege**
 Track `sec` · *"How to think like a defender"*
