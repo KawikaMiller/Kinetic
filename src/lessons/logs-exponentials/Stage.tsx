@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
+import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { chunkGroups, toBits } from '../../core/bits';
@@ -26,9 +27,8 @@ const GRID_CELL = 8;
 const GRID_GAP = 1;
 
 export function Stage() {
-  const [scene, setScene] = useState<Scene>('doubling');
+  const [scene, picker, setScene] = useScenePicker<Scene>({ label: 'Tool', options: SCENES, initial: 'doubling' });
   const [n, setN] = useState(1_000_000);
-  const picker = <Segmented label="Tool" options={SCENES} value={scene} onChange={setScene} />;
   const halveThis = (value: number) => {
     setN(value);
     setScene('halving');
