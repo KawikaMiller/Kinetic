@@ -1,0 +1,134 @@
+.cl-pane .resizable-pane { background: var(--bg-2); border: 1px solid var(--line); }
+.cl-canvas { position: relative; isolation: isolate; height: 100%; padding: 22px; overflow: hidden; }
+.cl-below {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.cl-facts { display: flex; flex-direction: column; gap: 8px; }
+.cl-fact { color: var(--c, var(--text)); font-weight: 700; }
+.cl-honest { margin: 0; font-size: 12px; color: var(--faint); }
+
+/* Box model: the real box, with rings drawn over what was measured */
+.cl-box {
+  border-style: solid;
+  border-color: var(--hi);
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  background-clip: padding-box;
+}
+.cl-content {
+  background: color-mix(in srgb, var(--info) 30%, transparent);
+  color: var(--info);
+  font: 600 12px var(--mono);
+  padding: 14px 0;
+  text-align: center;
+}
+.cl-ring { position: absolute; pointer-events: none; border-radius: 2px; }
+.cl-ring-margin {
+  border: 1px dashed var(--orange);
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--orange) 16%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+  z-index: -1;
+}
+.cl-ring-border { box-shadow: 0 0 0 1px var(--hi); }
+.cl-ring-label {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font: 600 11px var(--mono);
+  color: var(--orange);
+}
+.cl-tag {
+  position: absolute;
+  font: 600 11px var(--mono);
+  color: var(--c);
+  white-space: nowrap;
+}
+
+/* Margin collapse */
+.cl-para {
+  margin-left: 0;
+  margin-right: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--info) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--info) 45%, transparent);
+  font: 600 12px var(--mono);
+  color: var(--info);
+  width: 60%;
+}
+.cl-para:first-child { margin-top: 0; }
+.cl-band {
+  position: absolute;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--c) 28%, transparent) 0 5px,
+    transparent 5px 10px
+  );
+  border: 1px dashed var(--c);
+}
+
+/* Flexbox and grid items */
+.cl-flex,
+.cl-grid {
+  position: relative;
+  z-index: 1;
+  padding: 10px;
+  border: 1px dashed var(--line-2);
+  border-radius: 10px;
+}
+.cl-flex { display: flex; min-height: 120px; }
+.cl-grid { display: grid; }
+.cl-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  min-width: 0;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--info) 55%, transparent);
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  color: var(--info);
+  font: 700 14px var(--mono);
+  cursor: pointer;
+}
+.cl-item small { font: 500 11px var(--mono); color: var(--muted); }
+.cl-item.is-picked { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 20%, transparent); color: var(--hi); }
+.cl-free {
+  position: absolute;
+  z-index: 0;
+  border-radius: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--violet) 26%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+  border: 1px dashed var(--violet);
+  pointer-events: none;
+}
+
+/* Grid lines, numbered like the browser numbers them */
+.cl-gridline { position: absolute; z-index: 2; pointer-events: none; }
+.cl-gridline.is-col { width: 0; border-left: 1px dashed var(--dim); }
+.cl-gridline.is-row { height: 0; border-top: 1px dashed var(--dim); }
+.cl-gridline span {
+  position: absolute;
+  font: 700 11px var(--mono);
+  color: var(--muted);
+  background: var(--bg-2);
+  padding: 0 3px;
+  border-radius: 4px;
+}
+.cl-gridline.is-col span { top: -18px; transform: translateX(-50%); }
+.cl-gridline.is-row span { left: -20px; transform: translateY(-50%); }
+
+@media (max-width: 900px) {
+  .cl-below { grid-template-columns: minmax(0, 1fr); }
+  .cl-canvas { padding: 22px 14px; }
+}
