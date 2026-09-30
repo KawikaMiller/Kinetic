@@ -159,10 +159,10 @@ function resultColor(s: RunStats | null): string {
 
 function finishedCaption(s: RunStats): ReactNode {
   if (s.failed && s.firstFailLayer) {
-    const layer = SPEC[s.firstFailLayer].label.toLowerCase();
+    const layer = s.firstFailLayer === 'e2e' ? 'E2E' : SPEC[s.firstFailLayer].label.toLowerCase();
     return (
       <>
-        <span className="hl bad">Caught</span> by {layer === 'integration' ? 'an' : 'a'} {layer} test, {elapsed(s.firstFailAt ?? 0)} into the run.{' '}
+        <span className="hl bad">Caught</span> by {s.firstFailLayer === 'unit' ? 'a' : 'an'} {layer} test, {elapsed(s.firstFailAt ?? 0)} into the run.{' '}
         {CAUGHT_BY[s.firstFailLayer]}
         {s.flaky > 0 && <> Plus {s.flaky} flaky failure{s.flaky > 1 ? 's' : ''} muddying the signal.</>}
       </>
