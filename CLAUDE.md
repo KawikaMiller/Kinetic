@@ -52,6 +52,11 @@ loss), say so on screen.
 - Lesson CSS class names are global: always prefix them with the lesson's own prefix.
 - Lesson file convention: `frames.tsx` for frame builders with JSX captions, `sim.ts`/`model.ts`
   for pure logic, `draw.ts` for canvas drawing, `Stage.tsx` for React only.
+- Phones (390px) are a first-class target. Wide visuals never shrink below a readable scale and
+  never push the page sideways: give the `StageFrame` a `minWidth` (the narrowest width where the
+  drawing still reads) and on narrower screens the stage scrolls sideways inside itself with an
+  affordance. HTML controls and panels wrap instead (`flex-wrap`), never `nowrap` rows that can
+  outgrow a phone. Don't build per-lesson narrow layouts unless a scroll genuinely doesn't work.
 
 ## Verify before calling anything done
 
@@ -64,6 +69,9 @@ loss), say so on screen.
   because another local app owns 5199). A second checkout (e.g. a git worktree) runs side by
   side with `KINETIC_PORT=5341 npm run dev`, and the scripts follow it with
   `KINETIC_URL=http://127.0.0.1:5341`.
+- `npm run smoke -- --mobile` must pass too: at 390x844 it fails on page overflow, content the
+  stage frame clips, and scene (SVG) text rendered under 8px. Look at the 390px screenshots of
+  anything you touched, and check 768px as well.
 - Look at the screenshots; "no errors" is not "looks right".
 - Refactors must be pixel-identical unless a change is deliberate. Capture a baseline on the
   untouched tree first (`npm run smoke -- --frames --label=base`: seeded `Math.random`, reduced

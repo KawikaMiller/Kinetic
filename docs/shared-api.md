@@ -243,7 +243,13 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <PauseButton paused={paused} onToggle={togglePause} />
 const [scene, picker] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });
 <StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
+<StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
 ```
+- `StageFrame minWidth`: the narrowest width at which the visual stays readable. Below it the stage scrolls
+  sideways *inside itself* (edge fades, a "swipe" hint that hides on scroll or after 5 s, keyboard-focusable)
+  instead of shrinking the drawing; wider screens see no difference. Set it on any stage with a fixed-layout
+  SVG, canvas or absolutely positioned scene. Pick the value with `npm run smoke -- --mobile <id>`: it fails
+  when scene text renders under 8px or the frame clips content. Rough guide: `356 × 8 / smallestTextPx` at 390.
 - A `Toggle` swap changes the option order when the lesson listed "on" first (cdn-edge). That's a deliberate change, so list it.
 - `TextField`: Enter does nothing unless `onEnter` is set. For clamped number fields, keep the raw text in state and clamp in `onBlur` and when the value is used, not on every keystroke (see trees-bst).
 - `TextField` has the shared look (a 14px mono input with an accent focus ring). A lesson `className` can resize it; a disabled field dims to 0.45 as a whole.
