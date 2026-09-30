@@ -58,18 +58,21 @@ export function flipBit(bits: readonly Bit[], i: number): Bit[] {
 export const placeValue = (i: number, width: number) => 2 ** (width - 1 - i);
 
 /**
- * Split `width` bits into consecutive groups of `size` from the MSB end
- * (nibbles, bytes, base64's 6-bit groups, rwx triples). The last group is
- * shorter when `size` doesn't divide `width`.
+ * Split `width` bits into consecutive groups of `size` (nibbles, bytes, base64's 6-bit
+ * groups, rwx triples), left to right. By default the groups start at the MSB end, so the
+ * last group is the short one when `size` doesn't divide `width`. With `align: 'right'` they
+ * start at the LSB end instead, so the short group is the leftmost: how bytes of a number
+ * line up (12 bits → 4 + 8). `index` counts left to right either way.
  */
 export function chunkGroups(
   width: number,
   size: number,
-  o: { tone?: Tone; label?: (index: number, from: number, to: number) => ReactNode } = {},
+  o: { tone?: Tone; label?: (index: number, from: number, to: number) => ReactNode; align?: 'left' | 'right' } = {},
 ): BitGroup[] {
+  const lead = o.align === 'right' ? width % size || size : size;
   const groups: BitGroup[] = [];
-  for (let from = 0, index = 0; from < width; from += size, index++) {
-    const to = Math.min(width, from + size) - 1;
+  for (let from = 0, index = 0; from < width; from += index === 0 ? lead : size, index++) {
+    const to = Math.min(width, from + (index === 0 ? lead : size)) - 1;
     groups.push({ from, to, tone: o.tone, label: o.label?.(index, from, to) });
   }
   return groups;

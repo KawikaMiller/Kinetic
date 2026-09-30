@@ -1,9 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { BitStrip, type BitGroup } from '../../components/BitStrip';
+import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
-import { toBits } from '../../core/bits';
+import { chunkGroups, toBits } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { power } from '../../core/format';
 import { linearScale, logScale } from '../../core/scale';
@@ -278,12 +278,6 @@ function HalvingScene({ picker, n, setN }: { picker: ReactNode; n: number; setN:
 const BIT_PRESETS = [1, 2, 3, 4, 50, 1023, 1024, 1025, 1_000_000];
 
 /** Byte brackets counted from the least significant bit, so a 10-bit number reads 2 + 8, not 8 + 2. */
-function bytesFromRight(width: number): BitGroup[] {
-  const groups: BitGroup[] = [];
-  for (let to = width - 1; to >= 0; to -= 8) groups.unshift({ from: Math.max(0, to - 7), to, tone: 'violet' });
-  return groups;
-}
-
 function BitsScene({ picker, n, setN }: { picker: ReactNode; n: number; setN: (v: number) => void }) {
   const bits = ceilLog2(n);
   const width = Math.max(1, bits);
@@ -343,7 +337,7 @@ function BitsScene({ picker, n, setN }: { picker: ReactNode; n: number; setN: (v
         <SectionTitle hint={`the biggest code, ${group(n - 1)}, in binary`}>The last code</SectionTitle>
         <BitStrip
           bits={toBits(n - 1, width)}
-          groups={width > 8 ? bytesFromRight(width) : []}
+          groups={width > 8 ? chunkGroups(width, 8, { align: 'right', tone: 'violet' }) : []}
           toneOf={(_, bit) => (bit ? 'hi' : 'dim')}
           placeValues={width > 16 ? 'exponent' : true}
           size={width > 24 ? 'sm' : 'md'}

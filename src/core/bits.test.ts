@@ -52,4 +52,20 @@ describe('bits', () => {
     expect(chunkGroups(8, 3).map((g) => [g.from, g.to])).toEqual([[0, 2], [3, 5], [6, 7]]);
     expect(chunkGroups(24, 6, { label: (i) => `#${i}` }).map((g) => g.label)).toEqual(['#0', '#1', '#2', '#3']);
   });
+
+  it('chunks from the LSB end with align right, leaving a short first group', () => {
+    expect(chunkGroups(12, 8, { align: 'right' }).map((g) => [g.from, g.to])).toEqual([[0, 3], [4, 11]]);
+    expect(chunkGroups(16, 8, { align: 'right' }).map((g) => [g.from, g.to])).toEqual([[0, 7], [8, 15]]);
+    expect(chunkGroups(3, 8, { align: 'right' }).map((g) => [g.from, g.to])).toEqual([[0, 2]]);
+    // Every group ends on a whole multiple of `size` counted from the LSB, for every width.
+    for (let width = 1; width <= 53; width++) {
+      const groups = chunkGroups(width, 8, { align: 'right' });
+      expect(groups[0].from).toBe(0);
+      expect(groups[groups.length - 1].to).toBe(width - 1);
+      groups.forEach((g, i) => {
+        expect((width - 1 - g.to) % 8).toBe(0);
+        if (i > 0) expect(g.from).toBe(groups[i - 1].to + 1);
+      });
+    }
+  });
 });
