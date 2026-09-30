@@ -1,21 +1,33 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Slider, Stat, Stats } from '../../components/ui';
-import { useSetCaption } from '../../core/caption';
+import { useIntroCaption, useSetCaption } from '../../core/caption';
+import { SPRING } from '../../core/motion';
+import { useInterval } from '../../core/useInterval';
 import {
   bigWithdrawals, dateOf, fold, SEED, statement,
   type AccountEvent, type EventType, type Projection,
 } from './events';
 import './styles.css';
 
-const TYPE_CLASS: Record<EventType, string> = { AccountOpened: 'open', Deposited: 'dep', Withdrew: 'wd' };
+/** Event colours, via the kit's tone classes. */
+const TYPE_TONE: Record<EventType, string> = { AccountOpened: 'tone-info', Deposited: 'tone-ok', Withdrew: 'tone-bad' };
+
+/** Projections advance one step per tick. */
+const TICK_MS = 150;
+/** Each new event is dated this many days after the previous one, capped at year end. */
+const DAYS_BETWEEN_EVENTS = 5;
+const LAST_DAY = 365;
+const DEPOSIT = 100;
+const WITHDRAW = 70;
+const WITHDRAW_TOO_MUCH = 5000;
 
 const START_PROJECTIONS: Projection[] = [
-  { id: 'balance', name: 'Balance view', color: '#a78bfa', pos: SEED.length, rebuilding: false, delay: 8, wait: 0 },
-  { id: 'statement', name: 'Monthly statement', color: '#4cc9f0', pos: SEED.length, rebuilding: false, delay: 12, wait: 0 },
+  { id: 'balance', name: 'Balance view', color: 'var(--violet)', pos: SEED.length, rebuilding: false, delay: 8, wait: 0 },
+  { id: 'statement', name: 'Monthly statement', color: 'var(--info)', pos: SEED.length, rebuilding: false, delay: 12, wait: 0 },
 ];
-const BIG: Projection = { id: 'big', name: 'Big withdrawals ≥ 100', color: '#ff8c5a', pos: 0, rebuilding: true, delay: 8, wait: 0 };
+const BIG: Projection = { id: 'big', name: 'Big withdrawals ≥ 100', color: 'var(--orange)', pos: 0, rebuilding: true, delay: 8, wait: 0 };
 
 interface Sim {
   events: AccountEvent[];
@@ -35,9 +47,8 @@ export function Stage() {
   // `delay` ticks per event (that's the visible lag); a rebuilding one replays
   // history as fast as it can.
   const behind = projections.some((p) => p.pos < events.length);
-  useEffect(() => {
-    if (!behind) return;
-    const id = setInterval(() => {
+  useInterval(
+    () =>
       setSim((s) => ({
         ...s,
         projections: s.projections.map((p) => {
@@ -46,19 +57,17 @@ export function Stage() {
           if (p.wait + 1 < p.delay) return { ...p, wait: p.wait + 1 };
           return { ...p, pos: p.pos + 1, wait: 0 };
         }),
-      }));
-    }, 150);
-    return () => clearInterval(id);
-  }, [behind]);
+      })),
+    TICK_MS,
+    behind,
+  );
 
-  useEffect(() => {
-    setCaption(
-      <>
-        Nothing is updated in place. Every change is an <span className="hl">event</span> appended to the log, and the balance is
-        computed by <b>replaying</b> them.
-      </>,
-    );
-  }, [setCaption]);
+  useIntroCaption(
+    <>
+      Nothing is updated in place. Every change is an <span className="hl">event</span> appended to the log, and the balance is
+      computed by <b>replaying</b> them.
+    </>,
+  );
 
   const live = fold(events);
   const at = cursor ?? events.length;
@@ -77,7 +86,7 @@ export function Stage() {
       return;
     }
     const last = events[events.length - 1];
-    const e: AccountEvent = { seq: last.seq + 1, type, amount, day: Math.min(365, last.day + 5), v: 2, currency: 'EUR' };
+    const e: AccountEvent = { seq: last.seq + 1, type, amount, day: Math.min(LAST_DAY, last.day + DAYS_BETWEEN_EVENTS), v: 2, currency: 'EUR' };
     setSim((s) => ({ ...s, events: [...s.events, e] }));
     setCursor(null);
     setCaption(
@@ -114,6 +123,7 @@ export function Stage() {
           {e ? ` (${dateOf(e.day).label})` : ''} = balance <b>{money(s.balance)}</b>. Nothing stored this; it's recomputed from the log.
         </>
       ),
+      { quiet: true },
     );
   };
 
@@ -150,12 +160,12 @@ export function Stage() {
       }
       controls={
         <Controls>
-          <Button variant="primary" onClick={() => command('Deposited', 100)}>
-            Deposit €100
+          <Button variant="primary" onClick={() => command('Deposited', DEPOSIT)}>
+            {`Deposit ${money(DEPOSIT)}`}
           </Button>
-          <Button onClick={() => command('Withdrew', 70)}>Withdraw €70</Button>
-          <Button variant="danger" onClick={() => command('Withdrew', 5000)}>
-            Withdraw €5,000
+          <Button onClick={() => command('Withdrew', WITHDRAW)}>{`Withdraw ${money(WITHDRAW)}`}</Button>
+          <Button variant="danger" onClick={() => command('Withdrew', WITHDRAW_TOO_MUCH)}>
+            {`Withdraw ${money(WITHDRAW_TOO_MUCH)}`}
           </Button>
           <Button onClick={addProjection} disabled={hasBig}>
             + New projection
@@ -179,10 +189,10 @@ export function Stage() {
                   <motion.li
                     key={e.seq}
                     layout
-                    className={`es-ev ${TYPE_CLASS[e.type]} ${future ? 'future' : ''}`}
+                    className={`es-ev ${TYPE_TONE[e.type]} ${future ? 'future' : ''}`}
                     initial={{ opacity: 0, x: -24 }}
                     animate={{ opacity: future ? 0.3 : 1, x: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    transition={SPRING.snappy}
                   >
                     <span className="es-seq">#{e.seq}</span>
                     <span className="es-type">{e.type}</span>

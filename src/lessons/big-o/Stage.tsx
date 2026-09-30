@@ -3,6 +3,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
+import { SPRING } from '../../core/motion';
 import { useLoop } from '../../core/hooks';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
@@ -18,6 +19,7 @@ interface TourFrame extends Frame {
 }
 
 const N_MAX = 32;
+const N2_COLOR = COMPLEXITIES.find((c) => c.id === 'n2')!.color;
 
 const TOUR: TourFrame[] = [
   { n: 1, focus: null, scale: 'linear', say: <>At <b>n = 1</b> everything costs about the same. Differences only show up as n grows. Press play.</> },
@@ -36,7 +38,7 @@ export function Stage() {
   const [override, setOverride] = useState<{ n: number; at: number } | null>(null);
   const [scaleOverride, setScaleOverride] = useState<{ scale: Scale; at: number } | null>(null);
   const [hidden, setHidden] = useState<Set<CxId>>(new Set());
-  const [bigN, setBigN] = useState<'3' | '6' | '9'>('6');
+  const [bigN, setBigN] = useState<3 | 6 | 9>(6);
 
   // The tour drives n and scale until the learner grabs a control on this frame.
   const frameScale = TOUR.slice(0, player.index + 1).reduce<Scale>((s, f) => f.scale ?? s, 'linear');
@@ -72,7 +74,7 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="n" value={n} color="var(--text)" />
-          <Stat label="O(n²) ops" value={(n * n).toLocaleString()} color="#ff8c5a" />
+          <Stat label="O(n²) ops" value={(n * n).toLocaleString()} color={N2_COLOR} />
           <Stat label="O(2ⁿ) ops" value={Math.pow(2, n).toLocaleString()} color="var(--bad)" />
         </Stats>
       }
@@ -126,13 +128,13 @@ export function Stage() {
               value={bigN}
               onChange={setBigN}
               options={[
-                { value: '3', label: '1,000' },
-                { value: '6', label: '1 million' },
-                { value: '9', label: '1 billion' },
+                { value: 3, label: '1,000' },
+                { value: 6, label: '1 million' },
+                { value: 9, label: '1 billion' },
               ]}
             />
           </div>
-          <RealWorld n={Math.pow(10, Number(bigN))} hidden={hidden} />
+          <RealWorld n={Math.pow(10, bigN)} hidden={hidden} />
         </div>
       </div>
     </StageFrame>
@@ -185,7 +187,6 @@ function Chart({ n, scale, hidden, focus }: { n: number; scale: Scale; hidden: S
     () => Object.fromEntries(COMPLEXITIES.map((c) => [c.id, curvePath(c.f, scale)])),
     [scale],
   );
-  const spring = { type: 'spring', stiffness: 170, damping: 24 } as const;
   const visible = COMPLEXITIES.filter((c) => !hidden.has(c.id));
   const offChart = visible.filter((c) => scale === 'linear' && c.f(n) > Y_LIN);
 
@@ -235,7 +236,7 @@ function Chart({ n, scale, hidden, focus }: { n: number; scale: Scale; hidden: S
         className="bo-marker"
         initial={false}
         animate={{ x1: xOf(n), x2: xOf(n) }}
-        transition={spring}
+        transition={SPRING.soft}
       />
       {visible
         .filter((c) => !offChart.includes(c))
@@ -247,7 +248,7 @@ function Chart({ n, scale, hidden, focus }: { n: number; scale: Scale; hidden: S
             className="bo-dot"
             initial={false}
             animate={{ cx: xOf(n), cy: yOf(c.f(n), scale), opacity: focus && focus !== c.id ? 0.25 : 1 }}
-            transition={spring}
+            transition={SPRING.soft}
           />
         ))}
       {offChart.map((c, i) => (
@@ -258,7 +259,7 @@ function Chart({ n, scale, hidden, focus }: { n: number; scale: Scale; hidden: S
           textAnchor={n > 24 ? 'end' : 'start'}
           initial={false}
           animate={{ x: xOf(n) + (n > 24 ? -8 : 8), y: PT + 12 + i * 15 }}
-          transition={spring}
+          transition={SPRING.soft}
         >
           ↑ {c.label} = {Math.round(c.f(n)).toLocaleString()}
         </motion.text>

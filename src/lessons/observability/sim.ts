@@ -1,18 +1,25 @@
 // A tiny checkout system that emits all three pillars for every request:
 // logs (with a trace id), metrics (derived from spans) and a trace (spans).
 
+import { randRange } from '../../core/random';
+import { percentile } from '../../core/sim';
+
 export type Svc = 'gateway' | 'orders' | 'inventory' | 'payments' | 'fraud';
 export type Incident = 'healthy' | 'slow' | 'errors';
 
 export const SERVICES: Svc[] = ['gateway', 'orders', 'inventory', 'payments', 'fraud'];
 
 export const SVC_COLOR: Record<Svc, string> = {
-  gateway: '#8fb8ff',
-  orders: '#a78bfa',
-  inventory: '#3ddc97',
-  payments: '#f7b538',
-  fraud: '#ff8c5a',
+  gateway: 'var(--sky)',
+  orders: 'var(--violet)',
+  inventory: 'var(--ok)',
+  payments: 'var(--amber)',
+  fraud: 'var(--orange)',
 };
+
+/** A service is "slow" when its p99 reaches this, and "erroring" at this error rate. */
+export const SLOW_P99_MS = 200;
+export const ERROR_PCT = 5;
 
 export interface Span {
   svc: Svc;
@@ -23,7 +30,8 @@ export interface Span {
 }
 
 export interface LogLine {
-  id: number;
+  /** Unique across requests: '<request id>.<line>'. */
+  id: string;
   trace: string;
   svc: Svc;
   level: 'INFO' | 'WARN' | 'ERROR';
@@ -41,19 +49,17 @@ export interface Req {
   logs: LogLine[];
 }
 
-const r = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
 const hex = () => Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
-let logId = 0;
 
 export function makeRequest(id: number, t: number, incident: Incident): Req {
   const trace = hex();
   const logs: LogLine[] = [];
-  const log = (svc: Svc, level: LogLine['level'], msg: string) => logs.push({ id: logId++, trace, svc, level, msg });
+  const log = (svc: Svc, level: LogLine['level'], msg: string) => logs.push({ id: `${id}.${logs.length}`, trace, svc, level, msg });
 
   const invFails = incident === 'errors' && Math.random() < 0.3;
   const poolStarved = incident === 'slow' && Math.random() < 0.35;
 
-  const inv = invFails ? r(2, 4) : r(6, 12);
+  const inv = invFails ? randRange(2, 4) : randRange(6, 12);
   const invStart = 2;
   const spans: Span[] = [];
   let end: number;
@@ -64,10 +70,10 @@ export function makeRequest(id: number, t: number, incident: Incident): Req {
     end = invStart + inv + 1;
     spans.push({ svc: 'inventory', start: invStart, dur: inv, depth: 2, error: true });
   } else {
-    const wait = poolStarved ? r(300, 900) : 0;
-    const fraud = r(8, 14) + wait;
+    const wait = poolStarved ? randRange(300, 900) : 0;
+    const fraud = randRange(8, 14) + wait;
     const payStart = invStart + inv + 0.5;
-    const pay = fraud + r(4, 8);
+    const pay = fraud + randRange(4, 8);
     spans.push({ svc: 'inventory', start: invStart, dur: inv, depth: 2 });
     spans.push({ svc: 'payments', start: payStart, dur: pay, depth: 2 });
     spans.push({ svc: 'fraud', start: payStart + 1.5, dur: fraud, depth: 3 });
@@ -83,7 +89,7 @@ export function makeRequest(id: number, t: number, incident: Incident): Req {
   spans.unshift({ svc: 'gateway', start: 0, dur: total, depth: 0, error: invFails });
   log('gateway', invFails ? 'ERROR' : 'INFO', `POST /checkout ${invFails ? 500 : 200} ${Math.round(total)}ms`);
 
-  return { id, t, trace, spans, total, error: invFails, slow: total > 200, logs };
+  return { id, t, trace, spans, total, error: invFails, slow: total > SLOW_P99_MS, logs };
 }
 
 export interface SvcMetrics {
@@ -93,8 +99,6 @@ export interface SvcMetrics {
   p50: number;
   p99: number;
 }
-
-const pct = (sorted: number[], p: number) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] : 0);
 
 /** Metrics are just aggregates of the same spans, over a rolling window. */
 export function metrics(reqs: Req[], now: number, window = 12): SvcMetrics[] {
@@ -107,10 +111,10 @@ export function metrics(reqs: Req[], now: number, window = 12): SvcMetrics[] {
       svc,
       rps: spans.length / Math.min(window, Math.max(1, now)),
       errPct: spans.length ? (errs / spans.length) * 100 : 0,
-      p50: pct(durs, 0.5),
-      p99: pct(durs, 0.99),
+      p50: percentile(durs, 0.5),
+      p99: percentile(durs, 0.99),
     };
   });
 }
 
-export const health = (m: SvcMetrics): 'ok' | 'slow' | 'bad' => (m.errPct >= 5 ? 'bad' : m.p99 >= 200 ? 'slow' : 'ok');
+export const health = (m: SvcMetrics): 'ok' | 'slow' | 'bad' => (m.errPct >= ERROR_PCT ? 'bad' : m.p99 >= SLOW_P99_MS ? 'slow' : 'ok');

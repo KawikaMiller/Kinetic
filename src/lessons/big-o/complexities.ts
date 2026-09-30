@@ -22,7 +22,7 @@ export const COMPLEXITIES: Complexity[] = [
     f: (n) => n, log10: (n) => Math.log10(n) },
   { id: 'nlogn', label: 'O(n log n)', color: 'var(--hi)', example: 'merge sort, quicksort',
     f: (n) => n * lg(n), log10: (n) => Math.log10(n) + Math.log10(Math.max(1, lg(n))) },
-  { id: 'n2', label: 'O(n²)', color: '#ff8c5a', example: 'nested loops, bubble sort',
+  { id: 'n2', label: 'O(n²)', color: 'var(--orange)', example: 'nested loops, bubble sort',
     f: (n) => n * n, log10: (n) => 2 * Math.log10(n) },
   { id: 'exp', label: 'O(2ⁿ)', color: 'var(--bad)', example: 'try every subset',
     f: (n) => Math.pow(2, n), log10: (n) => n * Math.LOG10E * Math.LN2 },

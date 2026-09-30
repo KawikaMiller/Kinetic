@@ -1,100 +1,14 @@
 import { motion } from 'motion/react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
+import { buildFrames } from './frames';
 import {
-  alertFor, BACKGROUND, backgroundBurn, badMinutes, budgetMinutes, fmtMinutes, incidentBadMinutes, INCIDENTS, policyFor,
-  SLOS, WINDOW_DAYS, type Policy, type Slo,
+  alertFor, backgroundBurn, badMinutes, budgetMinutes, fmtMinutes, INCIDENTS, MIN_PER_DAY, policyFor, SLOS, TICKET_WINDOW_DAYS,
+  WINDOW_DAYS, type Policy, type Slo,
 } from './model';
 import './styles.css';
-
-interface SloFrame extends Frame {
-  t: number;
-}
-
-const STEP = 0.5; // days per frame
-const fmtBurn = (b: number) => `${b < 10 ? +b.toFixed(1) : Math.round(b).toLocaleString()}×`;
-
-function buildFrames(slo: Slo): SloFrame[] {
-  const budget = budgetMinutes(slo);
-  const frames: SloFrame[] = [];
-  const bgBurn = backgroundBurn(slo);
-  let crossedHalf = false;
-  let crossedZero = false;
-
-  for (let t = 0; t <= WINDOW_DAYS + 1e-9; t += STEP) {
-    const f: SloFrame = { t };
-    const prev = t - STEP;
-    const started = INCIDENTS.filter((i) => i.start > prev && i.start <= t);
-    const remaining = 1 - badMinutes(t) / budget;
-    const notes: ReactNode[] = [];
-
-    if (t === 0) {
-      f.say = (
-        <>
-          SLO <b>{slo}%</b> over {WINDOW_DAYS} days allows <span className="hl">{fmtMinutes(budget)}</span> of failure: your{' '}
-          <b>error budget</b>.{' '}
-          {bgBurn >= 1 && <>Even the normal 0.01% background error rate burns it at <span className="hl bad">{bgBurn.toFixed(1)}×</span>.</>}
-        </>
-      );
-      f.hold = 2;
-    }
-    for (const inc of started) {
-      const a = alertFor(inc, slo);
-      const bad = incidentBadMinutes(inc);
-      notes.push(
-        <span key={inc.id}>
-          <b>{inc.name}</b>: {+(inc.err * 100).toFixed(2)}% failing for {fmtMinutes(inc.durMin)} → burns{' '}
-          <span className="hl bad">{fmtMinutes(bad)}</span> ({((bad / budget) * 100).toFixed(0)}% of budget), burn rate{' '}
-          {fmtBurn((inc.err + BACKGROUND) / (1 - slo / 100))}.{' '}
-          {a.kind === 'page' ? <span className="hl bad">🔔 Page</span> : a.kind === 'ticket' ? <span className="hl">🎫 Ticket</span> : <span className="hl ok">no alert</span>}
-        </span>,
-      );
-    }
-    if (!crossedHalf && remaining <= 0.5) {
-      crossedHalf = true;
-      if (remaining > 0) notes.push(<span key="half"> Half the budget is gone: <b>ship with care</b>.</span>);
-    }
-    if (!crossedZero && remaining <= 0) {
-      crossedZero = true;
-      let at = Math.max(0, prev);
-      while (at < t && badMinutes(at) < budget) at += 1 / 1440; // find the minute it ran out
-      notes.push(
-        <span key="zero">
-          {' '}
-          <span className="hl bad">Budget exhausted</span> on day {Math.floor(at)}. Policy: <b>freeze</b> features, fix reliability.
-        </span>,
-      );
-    }
-    if (notes.length) {
-      f.say = <>{notes}</>;
-      f.hold = 2.5;
-    } else if (t > 0 && frames[frames.length - 1]?.say !== undefined && !INCIDENTS.some((i) => i.start <= t && t < i.start + i.durMin / 1440)) {
-      // First calm frame after an event: replace its caption so it doesn't linger for days.
-      f.say = (
-        <>
-          Quiet stretch, no incidents. Only the background error rate is burning budget ({fmtBurn(bgBurn)}).
-          {remaining > 0 ? <> {Math.round(remaining * 100)}% of the budget left.</> : <> The budget is already spent.</>}
-        </>
-      );
-    }
-    frames.push(f);
-  }
-
-  const last = frames[frames.length - 1];
-  const used = badMinutes(WINDOW_DAYS);
-  last.say = (
-    <>
-      Month over: spent <b>{fmtMinutes(used)}</b> of a {fmtMinutes(budget)} budget (
-      <span className={`hl ${used > budget ? 'bad' : 'ok'}`}>{((used / budget) * 100).toFixed(0)}%</span>). Same incidents, different
-      SLO, completely different month. Try another target.
-    </>
-  );
-  last.hold = 3;
-  return frames;
-}
 
 // Chart geometry
 const W = 600;
@@ -104,13 +18,18 @@ const X1 = W - 14;
 const Y_TOP = 18;
 const Y_BOT = H - 26;
 const MIN_PCT = -100;
+/** Days between samples of the burn-down line. */
+const LINE_STEP_DAYS = 0.02;
+const EPSILON = 1e-9;
+/** Incident bars never get thinner than this, so short outages stay visible. */
+const MIN_BAR_W = 5;
 const x = (day: number) => X0 + (day / WINDOW_DAYS) * (X1 - X0);
 const y = (pct: number) => Y_TOP + ((100 - Math.max(MIN_PCT, pct)) / (100 - MIN_PCT)) * (Y_BOT - Y_TOP);
 
-const POLICY: Record<Policy, { label: string; text: string; cls: string }> = {
-  ship: { label: 'Ship freely', text: 'Budget left: release features at normal speed.', cls: 'ok' },
-  care: { label: 'Ship with care', text: 'Under 50% left: smaller rollouts, extra review.', cls: 'hi' },
-  freeze: { label: 'Feature freeze', text: 'Budget spent: only reliability fixes until it recovers.', cls: 'bad' },
+const POLICY: Record<Policy, { label: string; text: string; tone: string }> = {
+  ship: { label: 'Ship freely', text: 'Budget left: release features at normal speed.', tone: 'tone-ok' },
+  care: { label: 'Ship with care', text: 'Under 50% left: smaller rollouts, extra review.', tone: 'tone-hi' },
+  freeze: { label: 'Feature freeze', text: 'Budget spent: only reliability fixes until it recovers.', tone: 'tone-bad' },
 };
 
 export function Stage() {
@@ -125,7 +44,7 @@ export function Stage() {
 
   const path = useMemo(() => {
     const pts: string[] = [];
-    for (let d = 0; d <= t + 1e-9; d += 0.02) pts.push(`${x(d).toFixed(1)},${y((1 - badMinutes(d) / budget) * 100).toFixed(1)}`);
+    for (let d = 0; d <= t + EPSILON; d += LINE_STEP_DAYS) pts.push(`${x(d).toFixed(1)},${y((1 - badMinutes(d) / budget) * 100).toFixed(1)}`);
     pts.push(`${x(t).toFixed(1)},${y(remainingPct).toFixed(1)}`);
     return `M ${pts.join(' L ')}`;
   }, [t, budget, remainingPct]);
@@ -133,7 +52,7 @@ export function Stage() {
   const alerts = INCIDENTS.map((inc) => ({ inc, a: alertFor(inc, slo) }));
   const fired = alerts.filter(({ inc }) => inc.start <= t);
   const pages = fired.filter(({ a }) => a.kind === 'page').length;
-  const tickets = fired.filter(({ a }) => a.kind === 'ticket').length + (backgroundBurn(slo) >= 1 && t > 3 ? 1 : 0);
+  const tickets = fired.filter(({ a }) => a.kind === 'ticket').length + (backgroundBurn(slo) >= 1 && t > TICKET_WINDOW_DAYS ? 1 : 0);
 
   return (
     <StageFrame
@@ -160,12 +79,7 @@ export function Stage() {
       }
       controls={
         <Controls>
-          <Segmented
-            label="SLO target (30 days)"
-            value={String(slo)}
-            onChange={(v) => setSlo(Number(v) as Slo)}
-            options={SLOS.map((s) => ({ value: String(s), label: `${s}%` }))}
-          />
+          <Segmented label="SLO target (30 days)" value={slo} onChange={setSlo} options={SLOS.map((s) => ({ value: s, label: `${s}%` }))} />
         </Controls>
       }
     >
@@ -207,7 +121,7 @@ export function Stage() {
               <line x1={X0} x2={X1} y1={42} y2={42} className="slo-grid" />
               {alerts.map(({ inc, a }, idx) => {
                 const on = inc.start <= t;
-                const w = Math.max(5, x(inc.start + inc.durMin / 1440) - x(inc.start));
+                const w = Math.max(MIN_BAR_W, x(inc.start + inc.durMin / MIN_PER_DAY) - x(inc.start));
                 return (
                   <g key={inc.id} className={`slo-inc ${on ? 'on' : ''}`}>
                     <rect x={x(inc.start)} y={35} width={w} height={14} rx={3} fill={inc.color} />
@@ -227,7 +141,7 @@ export function Stage() {
         </div>
 
         <aside className="slo-side">
-          <div className={`slo-policy ${policy.cls}`}>
+          <div className={`slo-policy ${policy.tone}`}>
             <span>Release policy</span>
             <motion.b key={policy.label} initial={{ scale: 1.15, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
               {policy.label}

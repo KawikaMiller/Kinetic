@@ -1,14 +1,28 @@
 import { motion } from 'motion/react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { useSetCaption } from '../../core/caption';
-import { health, makeRequest, metrics, SERVICES, SVC_COLOR, type Incident, type Req, type Svc } from './sim';
+import { useIntroCaption, useSetCaption } from '../../core/caption';
+import { useInterval } from '../../core/useInterval';
+import { ERROR_PCT, health, makeRequest, metrics, SERVICES, SLOW_P99_MS, SVC_COLOR, type Incident, type Req, type Svc } from './sim';
 import './styles.css';
 
 const TICK_MS = 400;
+/** Requests kept in memory, and p99 samples kept per service for the sparklines. */
 const KEEP = 160;
 const HISTORY = 30;
+/** How far back 'Slowest recent' / 'Latest error' look, in requests. */
+const TRACE_LOOKBACK = 60;
+/** The unfiltered log view: lines from this many recent requests, newest first, capped. */
+const LOG_REQUESTS = 24;
+const LOG_LINES = 40;
+/** A span doing at least this much work itself (not waiting on children) is outlined. */
+const LONG_SELF_MS = 100;
+/** Sparkline y-axis never shrinks below this, so a healthy service reads as flat. */
+const SPARK_FLOOR_MS = 250;
+/** Metric-series cardinality: label values multiplied. */
+const BASE_SERIES = 5 * 4 * 5; // service × route × status
+const USER_IDS = 1_000_000;
 
 const CULPRITS: Record<Incident, Svc[]> = { healthy: [], slow: ['payments', 'fraud'], errors: ['inventory'] };
 
@@ -57,23 +71,18 @@ export function Stage() {
   const [checks, setChecks] = useState<Checks>(NO_CHECKS);
   const [userIdLabel, setUserIdLabel] = useState(false);
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSim((s) => {
-        const now = s.now + TICK_MS / 1000;
-        const reqs = [...s.reqs, makeRequest((s.reqs.at(-1)?.id ?? 0) + 1, now, incident)].slice(-KEEP);
-        const m = metrics(reqs, now);
-        const history = { ...s.history };
-        for (const row of m) history[row.svc] = [...history[row.svc], row.p99].slice(-HISTORY);
-        return { reqs, now, history };
-      });
-    }, TICK_MS);
-    return () => clearInterval(id);
-  }, [incident]);
+  useInterval(() => {
+    setSim((s) => {
+      const now = s.now + TICK_MS / 1000;
+      const reqs = [...s.reqs, makeRequest((s.reqs.at(-1)?.id ?? 0) + 1, now, incident)].slice(-KEEP);
+      const m = metrics(reqs, now);
+      const history = { ...s.history };
+      for (const row of m) history[row.svc] = [...history[row.svc], row.p99].slice(-HISTORY);
+      return { reqs, now, history };
+    });
+  }, TICK_MS);
 
-  useEffect(() => {
-    setCaption(INTRO[incident]);
-  }, [incident, setCaption]);
+  useIntroCaption(INTRO[incident], [incident]);
 
   const rows = metrics(sim.reqs, sim.now);
   const gateway = rows[0];
@@ -109,7 +118,7 @@ export function Stage() {
   };
 
   const openTrace = (kind: 'slowest' | 'error') => {
-    const recent = sim.reqs.slice(-60);
+    const recent = sim.reqs.slice(-TRACE_LOOKBACK);
     const q = kind === 'slowest'
       ? recent.reduce<Req | null>((a, b) => (!a || b.total > a.total ? b : a), null)
       : [...recent].reverse().find((x) => x.error) ?? null;
@@ -158,9 +167,8 @@ export function Stage() {
 
   const logLines = filterLogs && trace
     ? trace.logs
-    : sim.reqs.slice(-24).flatMap((q) => q.logs).reverse().slice(0, 40);
+    : sim.reqs.slice(-LOG_REQUESTS).flatMap((q) => q.logs).reverse().slice(0, LOG_LINES);
 
-  const series = 5 * 4 * 5;
   const done = Object.values(checks).filter(Boolean).length;
 
   return (
@@ -168,8 +176,8 @@ export function Stage() {
       height={560}
       stats={
         <Stats>
-          <Stat label="Checkout p99" value={`${Math.round(gateway?.p99 ?? 0)} ms`} color={(gateway?.p99 ?? 0) >= 200 ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="Checkout errors" value={`${(gateway?.errPct ?? 0).toFixed(1)}%`} color={(gateway?.errPct ?? 0) >= 5 ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Checkout p99" value={`${Math.round(gateway?.p99 ?? 0)} ms`} color={(gateway?.p99 ?? 0) >= SLOW_P99_MS ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Checkout errors" value={`${(gateway?.errPct ?? 0).toFixed(1)}%`} color={(gateway?.errPct ?? 0) >= ERROR_PCT ? 'var(--bad)' : 'var(--ok)'} />
           <Stat label="Investigation" value={incident === 'healthy' ? '–' : `${done}/3`} color={done === 3 ? 'var(--ok)' : 'var(--hi)'} sub="metrics → trace → logs" />
         </Stats>
       }
@@ -177,8 +185,8 @@ export function Stage() {
         <Legend
           items={[
             { color: 'var(--ok)', label: 'healthy' },
-            { color: 'var(--hi)', label: 'slow (p99 ≥ 200 ms)' },
-            { color: 'var(--bad)', label: 'erroring (≥ 5%)' },
+            { color: 'var(--hi)', label: `slow (p99 ≥ ${SLOW_P99_MS} ms)` },
+            { color: 'var(--bad)', label: `erroring (≥ ${ERROR_PCT}%)` },
             ...SERVICES.map((s) => ({ color: SVC_COLOR[s], label: s, shape: 'dot' as const })),
           ]}
         />
@@ -216,7 +224,7 @@ export function Stage() {
               {userIdLabel && <code className="bad"> × user_id(1,000,000)</code>}
             </p>
             <motion.p key={String(userIdLabel)} className="ob-series" initial={{ scale: 1.2 }} animate={{ scale: 1 }}>
-              {(userIdLabel ? series * 1_000_000 : series).toLocaleString()} series
+              {(userIdLabel ? BASE_SERIES * USER_IDS : BASE_SERIES).toLocaleString()} series
             </motion.p>
             <button type="button" className="ob-link" onClick={() => setUserIdLabel((v) => !v)}>
               {userIdLabel ? 'Remove user_id label' : 'Add a user_id label'}
@@ -341,11 +349,11 @@ function ServiceMap({ rows }: { rows: ReturnType<typeof metrics> }) {
 
 function Spark({ values, color }: { values: number[]; color: string }) {
   if (values.length < 2) return <svg className="ob-spark" viewBox="0 0 80 22" />;
-  const max = Math.max(250, ...values);
+  const max = Math.max(SPARK_FLOOR_MS, ...values);
   const pts = values.map((v, i) => `${(i / (HISTORY - 1)) * 80},${21 - (v / max) * 19}`).join(' ');
   return (
     <svg className="ob-spark" viewBox="0 0 80 22">
-      <line x1="0" x2="80" y1={21 - (200 / max) * 19} y2={21 - (200 / max) * 19} className="ob-spark-slo" />
+      <line x1="0" x2="80" y1={21 - (SLOW_P99_MS / max) * 19} y2={21 - (SLOW_P99_MS / max) * 19} className="ob-spark-slo" />
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.6" />
     </svg>
   );
@@ -368,7 +376,7 @@ function Waterfall({ req }: { req: Req }) {
           </span>
           <div className="ob-wf-track">
             <motion.div
-              className={`ob-wf-bar ${s.error ? 'error' : ''} ${selfTime(req, i) >= 100 ? 'long' : ''}`}
+              className={`ob-wf-bar ${s.error ? 'error' : ''} ${selfTime(req, i) >= LONG_SELF_MS ? 'long' : ''}`}
               style={{ left: `${(s.start / req.total) * 100}%`, background: s.error ? 'var(--bad)' : SVC_COLOR[s.svc] }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(0.8, (s.dur / req.total) * 100)}%` }}

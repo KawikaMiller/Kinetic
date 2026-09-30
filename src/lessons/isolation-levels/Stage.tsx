@@ -12,6 +12,10 @@ import './styles.css';
 
 type IsoFrame = Snapshot & Frame;
 
+/** T1 and T2 colours, via the kit's tone classes. */
+const TONE = { T1: 'tone-info', T2: 'tone-violet' } as const;
+const OP_SPRING = { type: 'spring', stiffness: 300, damping: 24 } as const;
+
 const OUTCOME_ICON: Record<Outcome, string> = { happens: '✗', prevented: '✓', aborted: '⟲' };
 const OUTCOME_TEXT: Record<Outcome, string> = {
   happens: 'anomaly happens',
@@ -75,19 +79,19 @@ export function Stage() {
             ))}
             {(['T1', 'T2'] as const).map((who, r) => (
               <div key={who} className="iso-lane" style={{ gridRow: r + 2 }}>
-                <span className={`iso-tx iso-${who}`}>{who}</span>
+                <span className={`iso-tx ${TONE[who]}`}>{who}</span>
               </div>
             ))}
             <AnimatePresence initial={false}>
               {f.ops.map((op) => (
                 <motion.div
                   key={`${anomaly}-${level}-${op.col}`}
-                  className={`iso-op iso-op-${op.who} ${op.col === f.col ? 'now' : ''}`}
+                  className={`iso-op ${TONE[op.who]} ${op.col === f.col ? 'now' : ''}`}
                   style={{ gridColumn: op.col + 2, gridRow: op.who === 'T1' ? 2 : 3 }}
                   initial={{ opacity: 0, y: op.who === 'T1' ? -10 : 10, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                  transition={OP_SPRING}
                 >
                   <code>{op.sql}</code>
                   {op.result && <span className={`iso-result ${op.tone ?? ''}`}>→ {op.result}</span>}

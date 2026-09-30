@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { PROGRAMS, simulate, TNAME, type ProgramKey, type RcFrame, type Tid } from './sim';
 import './styles.css';
@@ -15,6 +15,12 @@ const PRESETS: Record<Exclude<Interleave, 'custom'>, Tid[]> = {
   sneaky: [0, 0, 1, 1, 0, 1],
 };
 const ALTERNATE: Tid[] = Array.from({ length: 40 }, (_, i) => (i % 2) as Tid);
+/** Each thread increments once, so a correct run ends at 2. */
+const EXPECTED = 2;
+/** T1 and T2 colours, via the kit's tone classes. */
+const TONE = ['tone-info', 'tone-violet'] as const;
+const COUNT_SPRING = { type: 'spring', stiffness: 380, damping: 24 } as const;
+const CHIP_SPRING = { type: 'spring', stiffness: 400, damping: 26 } as const;
 
 export function Stage() {
   const [mode, setMode] = useState<Mode>('race');
@@ -31,7 +37,7 @@ export function Stage() {
   const f = player.frame;
   const progs = PROGRAMS[key];
 
-  const remaining = (t: Tid) => 3 - custom.filter((x) => x === t).length;
+  const remaining = (t: Tid) => PROGRAMS.race[t].length - custom.filter((x) => x === t).length;
   const stepCustom = (t: Tid) => {
     const next = [...custom, t];
     player.queueNext({ play: false, from: next.length });
@@ -58,8 +64,8 @@ export function Stage() {
             </>
           ) : (
             <>
-              <Stat label="count" value={f.count} color={f.event === 'done' ? (f.count === 2 ? 'var(--ok)' : 'var(--bad)') : 'var(--hi)'} />
-              <Stat label="expected" value={2} />
+              <Stat label="count" value={f.count} color={f.event === 'done' ? (f.count === EXPECTED ? 'var(--ok)' : 'var(--bad)') : 'var(--hi)'} />
+              <Stat label="expected" value={EXPECTED} />
             </>
           )}
           <Stat label="steps run" value={f.log.filter((l) => l.kind !== 'wait').length} />
@@ -117,15 +123,7 @@ export function Stage() {
             </>
           )}
           {mode === 'deadlock' && (
-            <Segmented
-              label="Lock order"
-              value={fixed ? 'same' : 'opposite'}
-              onChange={(v) => setFixed(v === 'same')}
-              options={[
-                { value: 'opposite', label: 'Opposite (A→B vs B→A)' },
-                { value: 'same', label: 'Same order (fix)' },
-              ]}
-            />
+            <Toggle label="Lock order" value={fixed} onChange={setFixed} off="Opposite (A→B vs B→A)" on="Same order (fix)" />
           )}
         </Controls>
       }
@@ -145,7 +143,7 @@ export function Stage() {
                     initial={{ y: -22, opacity: 0, scale: 1.4 }}
                     animate={{ y: 0, opacity: 1, scale: 1 }}
                     exit={{ y: 22, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+                    transition={COUNT_SPRING}
                   >
                     {f.count}
                   </motion.b>
@@ -160,7 +158,7 @@ export function Stage() {
                   return (
                     <motion.div
                       key={l}
-                      className={`rc-lock ${owner === null ? 'free' : `held t${owner}`} ${isDeadlock ? 'dl' : ''}`}
+                      className={`rc-lock ${owner === null ? 'free' : `held ${TONE[owner]}`} ${isDeadlock ? 'dl' : ''}`}
                       animate={owner !== null ? { scale: [1, 1.08, 1] } : { scale: 1 }}
                       transition={{ duration: 0.35 }}
                     >
@@ -168,7 +166,7 @@ export function Stage() {
                       <b>{mode === 'mutex' ? 'mutex m' : `lock ${l}`}</b>
                       <span className="rc-lock-owner">{owner === null ? 'free' : `held by ${TNAME[owner]}`}</span>
                       {waiters.map((w) => (
-                        <span key={w} className={`rc-waiter t${w}`}>
+                        <span key={w} className="rc-waiter">
                           ⏳ {TNAME[w]} waiting
                         </span>
                       ))}
@@ -195,10 +193,10 @@ export function Stage() {
             {f.log.map((l, i) => (
               <motion.span
                 key={i}
-                className={`rc-chip t${l.t} ${l.kind}`}
+                className={`rc-chip ${TONE[l.t]} ${l.kind}`}
                 initial={{ opacity: 0, scale: 0.6 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 26 }}
+                transition={CHIP_SPRING}
               >
                 <i>{TNAME[l.t]}</i> {l.text}
               </motion.span>
@@ -214,7 +212,7 @@ function ThreadPanel({ t, f, prog }: { t: Tid; f: RcFrame; prog: string[] }) {
   const waiting = f.waiting[t] !== null && f.locks[f.waiting[t]!] !== t && f.locks[f.waiting[t]!] !== null;
   const finished = f.pc[t] >= prog.length;
   return (
-    <div className={`rc-thread t${t} ${f.active === t ? 'active' : ''} ${waiting ? 'waiting' : ''}`}>
+    <div className={`rc-thread ${TONE[t]} ${f.active === t ? 'active' : ''} ${waiting ? 'waiting' : ''}`}>
       <header>
         <b>{TNAME[t]}</b>
         <span>{finished ? 'finished' : waiting ? 'blocked' : f.active === t ? 'running' : 'ready'}</span>

@@ -17,7 +17,6 @@
 
 .es-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; max-height: 400px; overflow-y: auto; }
 .es-ev {
-  --c: var(--info);
   position: relative;
   display: grid;
   grid-template-columns: 30px 1fr auto auto auto 26px;
@@ -30,8 +29,6 @@
   border-left: 3px solid var(--c);
   font-size: 13px;
 }
-.es-ev.dep { --c: var(--ok); }
-.es-ev.wd { --c: var(--bad); }
 .es-seq { font: 600 11px var(--mono); color: var(--faint); }
 .es-type { font-weight: 600; color: var(--c); }
 .es-amt { font: 600 12px var(--mono); }

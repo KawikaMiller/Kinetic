@@ -29,15 +29,12 @@
 
 .slo-side { display: flex; flex-direction: column; gap: 12px; }
 .slo-policy {
-  --c: var(--ok);
   padding: 14px;
   border-radius: 12px;
   border: 1px solid var(--c);
   background: color-mix(in srgb, var(--c) 10%, var(--cell));
   transition: border-color 0.3s, background 0.3s;
 }
-.slo-policy.hi { --c: var(--hi); }
-.slo-policy.bad { --c: var(--bad); }
 .slo-policy span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .slo-policy b { display: block; font-size: 20px; color: var(--c); margin: 2px 0 4px; }
 .slo-policy p { margin: 0; font-size: 12.5px; color: var(--muted); }
