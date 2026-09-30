@@ -3,7 +3,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ControlGroup, Legend, Segmented, Slider, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { emptySpace, flexCss, lineFor, lineGroups, type Align, type Direction, type FlexSettings, type Justify, type Span } from './model';
-import { px, rectIn, useMeasure, type Rect } from './useMeasure';
+import { px, rectIn, useMeasure, type Rect } from '../../core/useMeasure';
 import { Workbench } from './Workbench';
 
 const ITEM_COUNT = 4;

@@ -13,7 +13,7 @@ import {
   UNIT_SAMPLES, isTooSmall, pickCandidate, slotWidth, type BreakpointId,
 } from './model';
 import { SamplePage } from './SamplePage';
-import { useMeasure } from './useMeasure';
+import { useMeasure } from '../../core/useMeasure';
 import './styles.css';
 
 const CSS_LINES = PAGE_CSS.split('\n');

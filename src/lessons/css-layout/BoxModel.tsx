@@ -3,7 +3,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ControlGroup, Legend, Segmented, Slider, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { boxCss, collapseCss, collapsedMargin, lineFor, type BoxSettings } from './model';
-import { px, rectIn, useMeasure, type Rect } from './useMeasure';
+import { px, rectIn, useMeasure, type Rect } from '../../core/useMeasure';
 import { Workbench } from './Workbench';
 
 const START: BoxSettings = { width: 200, padding: 16, border: 6, margin: 20, boxSizing: 'content-box' };

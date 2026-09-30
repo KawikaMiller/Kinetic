@@ -3,7 +3,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ControlGroup, Legend, Segmented, Slider } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { gridCss, gridLines, lineFor, parseTracks } from './model';
-import { px, rectIn, useMeasure, type Rect } from './useMeasure';
+import { px, rectIn, useMeasure, type Rect } from '../../core/useMeasure';
 import { Workbench } from './Workbench';
 
 const ITEM_COUNT = 6;
