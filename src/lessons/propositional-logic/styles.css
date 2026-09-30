@@ -1,0 +1,20 @@
+.pl { flex-flow: row wrap; align-items: flex-start; gap: 18px 26px; }
+.pl-table { flex: 0 0 auto; font-size: 15px; }
+/* p, q and r are lower-case names: don't let the table's uppercase headers turn them into P, Q, R. */
+.pl-table th { text-transform: none; font-size: 13px; }
+.pl-empty { margin: 30px auto; }
+.pl-col { font-family: var(--mono); text-transform: none; letter-spacing: 0; }
+.pl-js { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.pl-js .code-panel code { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.pl-trace { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; font-size: 14px; }
+.pl-trace code { font: 500 14px var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.pl-trace-label { font: 700 11px var(--mono); color: var(--muted); }
+.pl-skipped { color: var(--faint); text-decoration: line-through; opacity: 0.7; }
+.pl-result { font: 700 13px var(--mono); }
+.pl-result.is-true { color: var(--ok); }
+.pl-result.is-false { color: var(--faint); }
+
+.pl-slot { display: flex; flex-direction: column; gap: 4px; }
+.pl-field.is-active input { border-color: var(--violet); }
+.pl-error { color: var(--bad); max-width: 260px; }

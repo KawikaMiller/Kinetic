@@ -1,0 +1,47 @@
+.sf { flex-flow: row wrap; align-items: flex-start; gap: 18px 24px; }
+.sf-svg { display: block; flex: 1 1 400px; min-width: 0; max-width: 620px; height: auto; touch-action: none; }
+.sf-result { flex: 1 1 220px; display: flex; flex-direction: column; gap: 8px; }
+
+.sf-universe { fill: none; stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
+.sf-universe-label { font: 600 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--faint); }
+.sf-circle { fill: none; stroke-width: 2.5; }
+.sf-set-label { font: 800 18px var(--font); }
+.sf-shade { fill: color-mix(in srgb, var(--hi) 22%, transparent); }
+
+.sf-chip { cursor: grab; }
+.sf-chip.is-dragging { cursor: grabbing; }
+.sf-chip rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.5; transition: fill 0.25s, stroke 0.25s; }
+.sf-chip text { font: 600 12px var(--mono); fill: var(--text); pointer-events: none; user-select: none; }
+.sf-chip.is-in rect { fill: var(--hi); stroke: var(--hi); }
+.sf-chip.is-in text { fill: var(--on-hi); }
+.sf-chip.is-dragging rect { stroke: var(--accent); stroke-width: 2.5; }
+
+.sf-members { margin: 0; font: 600 15px var(--mono); color: var(--hi); overflow-wrap: anywhere; }
+.sf-sql { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+.sf-col-label { font: 600 12px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--faint); }
+.sf-arrow { stroke: var(--info); stroke-width: 2; transition: stroke 0.25s; }
+.sf-arrow.is-bad { stroke: var(--bad); }
+.sf-dot { cursor: pointer; }
+.sf-dot circle { stroke-width: 2.5; transition: fill 0.2s, stroke 0.2s; }
+.sf-dot text { font: 600 13px var(--mono); fill: var(--text); }
+.sf-in circle { fill: color-mix(in srgb, var(--info) 22%, var(--cell)); stroke: var(--info); }
+.sf-in.is-picked circle { fill: var(--hi); stroke: var(--hi); }
+.sf-in.is-missing circle { stroke: var(--bad); stroke-dasharray: 3 3; }
+.sf-out circle { fill: color-mix(in srgb, var(--violet) 22%, var(--cell)); stroke: var(--violet); }
+.sf-out.is-collision circle { stroke: var(--bad); }
+.sf-out.is-unused circle { fill: var(--cell); stroke: var(--dim); }
+.sf-out.is-unused text { fill: var(--muted); }
+.sf-out.is-target circle { stroke-width: 3.5; }
+.sf-dot:focus-visible { outline: none; }
+.sf-dot:focus-visible circle { stroke: var(--accent); stroke-width: 3.5; }
+
+.sf-kind { margin: 0; font: 700 16px var(--font); }
+.sf-kind.is-not-a-function { color: var(--bad); }
+.sf-kind.is-bijective { color: var(--ok); }
+.sf-kind.is-function, .sf-kind.is-injective, .sf-kind.is-surjective { color: var(--hi); }
+.sf-checks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
+.sf-checks .is-ok span { color: var(--ok); }
+.sf-checks .is-no { color: var(--muted); }
+.sf-checks .is-no span { color: var(--bad); }
+.sf-card { margin: 0; font-size: 13px; color: var(--muted); }
