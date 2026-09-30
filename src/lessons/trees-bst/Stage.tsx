@@ -2,13 +2,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
+import { TreeSvg, type TreeEdgeMark, type TreeGeometry, type TreeNodeMark, type TreeShape } from '../../components/TreeSvg';
 import { Button, Controls, Hint, Legend, Stat, Stats, TextField } from '../../components/ui';
 import { clamp } from '../../core/math';
-import { SPRING } from '../../core/motion';
 import { freshInt, shuffle } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import {
-  build, deleteFrames, height, idleFrames, inorderFrames, insertFrames, layout, searchFrames, size,
+  build, deleteFrames, height, idleFrames, inorderFrames, insertFrames, searchFrames, size,
   type BstFrame, type Tree,
 } from './bst';
 import './styles.css';
@@ -142,83 +142,65 @@ const BOTTOM_ROOM = 70;
 const GHOST_DX = 34;
 const GHOST_MAX_DY = 60;
 
+const EMPHASIS_SCALE = 1.15;
+const SUCCESSOR_TINT = 18;
+
 function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => void }) {
-  const { pos, count, depth } = layout(frame.tree);
-  const level = Math.min(MAX_LEVEL_GAP, (H - BOTTOM_ROOM) / Math.max(1, depth));
-  const px = (x: number) => (count <= 1 ? W / 2 : SIDE_PAD + (x * (W - SIDE_PAD * 2)) / (count - 1));
-  const py = (d: number) => TOP + d * level;
-  const nodes = Object.values(frame.tree.nodes);
+  const { nodes, root } = frame.tree;
   const onPath = new Set(frame.path);
   const onSucc = new Set(frame.succ);
+  const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, nodes[id].right] };
 
-  let ghost: { x: number; y: number; px: number; py: number } | null = null;
-  if (frame.ghost && pos[frame.ghost.parent]) {
-    const p = pos[frame.ghost.parent];
-    ghost = {
-      px: px(p.x),
-      py: py(p.d),
-      x: px(p.x) + (frame.ghost.side === 'left' ? -GHOST_DX : GHOST_DX),
-      y: py(p.d) + Math.min(level, GHOST_MAX_DY),
-    };
-  }
+  const nodeMark = (id: number): TreeNodeMark | null => {
+    if (id === frame.bad) return { tone: 'bad', fill: 'solid' };
+    if (id === frame.ok) return { tone: 'ok', fill: 'solid' };
+    if (id === frame.hi) return { tone: 'hi', fill: 'solid' };
+    if (onSucc.has(id)) return { tone: 'info', fill: 'tint', tint: SUCCESSOR_TINT };
+    if (onPath.has(id)) return { tone: 'violet', fill: 'tint' };
+    return null;
+  };
+  const edgeMark = (parent: number, child: number): TreeEdgeMark | null => {
+    if (onSucc.has(child)) return { tone: 'info', dashed: true };
+    if (onPath.has(parent) && onPath.has(child)) return { tone: 'violet' };
+    return null;
+  };
+
+  const ghostAt = frame.ghost;
+  const ghost = ({ at, levelGap }: TreeGeometry<number>) => {
+    const p = ghostAt && at(ghostAt.parent);
+    if (!ghostAt || !p) return null;
+    const x = p.x + (ghostAt.side === 'left' ? -GHOST_DX : GHOST_DX);
+    const y = p.y + Math.min(levelGap, GHOST_MAX_DY);
+    return (
+      <g className="bst-ghost">
+        <line x1={p.x} y1={p.y} x2={x} y2={y} />
+        <circle cx={x} cy={y} r={15} />
+        <text x={x} y={y + 4} textAnchor="middle">
+          null
+        </text>
+      </g>
+    );
+  };
 
   return (
     <div className="bst">
-      <svg viewBox={`0 0 ${W} ${H}`} className="bst-svg" preserveAspectRatio="xMidYMid meet">
-        <AnimatePresence>
-          {nodes.map((n) =>
-            [n.left, n.right].map((c) => {
-              if (c == null || !pos[c]) return null;
-              const a = pos[n.id];
-              const b = pos[c];
-              const hot = onPath.has(n.id) && onPath.has(c);
-              return (
-                <motion.line
-                  key={`${n.id}-${c}`}
-                  className={`bst-edge ${hot ? 'hot' : ''} ${onSucc.has(c) ? 'succ' : ''}`}
-                  initial={{ opacity: 0, x1: px(a.x), y1: py(a.d), x2: px(b.x), y2: py(b.d) }}
-                  animate={{ opacity: 1, x1: px(a.x), y1: py(a.d), x2: px(b.x), y2: py(b.d) }}
-                  exit={{ opacity: 0 }}
-                  transition={SPRING.soft}
-                />
-              );
-            }),
-          )}
-        </AnimatePresence>
-        {ghost && (
-          <g className="bst-ghost">
-            <line x1={ghost.px} y1={ghost.py} x2={ghost.x} y2={ghost.y} />
-            <circle cx={ghost.x} cy={ghost.y} r={15} />
-            <text x={ghost.x} y={ghost.y + 4} textAnchor="middle">
-              null
-            </text>
-          </g>
-        )}
-        <AnimatePresence>
-          {nodes.map((n) => {
-            const p = pos[n.id];
-            if (!p) return null;
-            const cls =
-              n.id === frame.bad ? 'bad' : n.id === frame.ok ? 'ok' : n.id === frame.hi ? 'hi' : onSucc.has(n.id) ? 'succ' : onPath.has(n.id) ? 'path' : '';
-            return (
-              <motion.g
-                key={n.id}
-                className={`bst-node ${cls}`}
-                initial={{ opacity: 0, scale: 0.2, x: px(p.x), y: py(p.d) }}
-                animate={{ opacity: 1, scale: n.id === frame.hi || n.id === frame.ok ? 1.15 : 1, x: px(p.x), y: py(p.d) }}
-                exit={{ opacity: 0, scale: 0.2 }}
-                transition={SPRING.soft}
-                onClick={() => onPick(n.key)}
-              >
-                <circle r={19} />
-                <text y={5} textAnchor="middle">
-                  {n.key}
-                </text>
-              </motion.g>
-            );
-          })}
-        </AnimatePresence>
-      </svg>
+      <TreeSvg
+        shape={shape}
+        layout="inorder"
+        width={W}
+        height={H}
+        pad={SIDE_PAD}
+        top={TOP}
+        maxLevelGap={MAX_LEVEL_GAP}
+        bottomRoom={BOTTOM_ROOM}
+        className="bst-svg"
+        label={(id) => nodes[id].key}
+        nodeMark={nodeMark}
+        edgeMark={edgeMark}
+        nodeScale={(id) => (id === frame.hi || id === frame.ok ? EMPHASIS_SCALE : 1)}
+        onNodeClick={(id) => onPick(nodes[id].key)}
+        overlay={ghost}
+      />
       <Tray className="bst-out" label="in-order output" labelWeight="regular" ariaLabel="In-order output">
         <AnimatePresence>
           {frame.output.map((k, i) => (

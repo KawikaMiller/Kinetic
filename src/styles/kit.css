@@ -398,6 +398,111 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .resizable-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .resizable-readout { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
+/* TreeSvg (components/TreeSvg.tsx): marks use .tone-* via --c; tint strength via --tree-tint.
+   Base node looks are wrapped in :where() so a lesson's renderNode classes always win. */
+.tree-svg { overflow: visible; }
+.tree-edge { stroke: var(--line-2); stroke-width: 2; }
+.tree-edge.is-marked { stroke: var(--c); stroke-width: var(--tree-marked-w, 3.5); }
+.tree-edge.is-dashed { stroke-dasharray: 6 4; }
+:where(.tree-node) circle { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+:where(.tree-node) text { font: 700 13px var(--mono); fill: var(--text); pointer-events: none; transition: fill 0.25s; }
+.tree-node.is-clickable { cursor: pointer; }
+/* :where() keeps hover weaker than the marks below, so a marked node keeps its colour */
+.tree-node.is-clickable:where(:hover) circle { stroke: var(--faint); }
+.tree-node.is-tint circle { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }
+.tree-node.is-solid circle { fill: var(--c); stroke: var(--c); }
+.tree-node.is-solid text { fill: var(--on-c); }
+
+/* CallStackPanel (components/CallStackPanel.tsx) */
+.call-stack { position: relative; }
+.call-stack-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.call-stack-meta { font-family: var(--mono); text-transform: none; letter-spacing: 0; color: var(--faint); }
+.call-stack-box {
+  display: flex;
+  flex-direction: column-reverse; /* is-bottom: outermost call at the bottom, newest on top */
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px dashed var(--line-2);
+  background: var(--bg-2);
+}
+.call-stack-box.is-top { flex-direction: column; }
+.call-stack.is-alarm .call-stack-box { border-color: var(--bad); box-shadow: inset 0 0 40px color-mix(in srgb, var(--bad) 20%, transparent); }
+.call-frame {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: var(--cell);
+  border: 1px solid var(--cell-line);
+  font-size: 13px;
+  transition: background 0.25s, border-color 0.25s, color 0.25s;
+}
+.call-frame.is-clickable { font: inherit; font-size: 13px; color: inherit; text-align: left; cursor: pointer; }
+.call-frame.is-clickable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.call-frame b { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+.call-frame-depth { font: 600 10px var(--mono); color: var(--faint); width: 14px; text-align: right; }
+.call-frame-detail { position: relative; margin-left: auto; color: var(--muted); font-size: 12.5px; text-align: right; }
+.call-frame.is-running { background: var(--hi); border-color: var(--hi); color: var(--on-hi); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--hi) 80%, transparent); }
+.call-frame.is-running .call-frame-detail { color: var(--on-hi-muted); }
+.call-frame.is-waiting { opacity: 0.75; }
+.call-frame.is-returning { border-color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
+.call-frame.is-returning .call-frame-detail { color: var(--text); }
+.call-frame.is-ok { background: color-mix(in srgb, var(--ok) 16%, transparent); border-color: var(--ok); }
+.call-frame.is-ok .call-frame-detail { color: var(--ok); }
+.call-frame.is-error { background: color-mix(in srgb, var(--bad) 20%, transparent); border-color: var(--bad); color: var(--bad); }
+.call-frame.is-selected { border-color: var(--hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hi) 35%, transparent); }
+
+/* CommitGraph (components/CommitGraph.tsx): its own horizontal scroller; the side with
+   hidden graph gets an inner glow so you can tell there's more to swipe to. */
+.commit-graph {
+  --more-glow: color-mix(in srgb, var(--hi) 22%, transparent);
+  overflow-x: auto;
+  padding: 12px; /* must match SCROLL_PAD in CommitGraph.tsx */
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  min-height: 260px;
+  transition: box-shadow 0.2s;
+}
+.commit-graph.has-more-right { box-shadow: inset -22px 0 18px -18px var(--more-glow); }
+.commit-graph.has-more-left { box-shadow: inset 22px 0 18px -18px var(--more-glow); }
+.commit-graph.has-more-left.has-more-right { box-shadow: inset -22px 0 18px -18px var(--more-glow), inset 22px 0 18px -18px var(--more-glow); }
+.commit-graph-title {
+  display: block;
+  font: 600 10.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 8px;
+}
+/* Its width must change instantly: the reduced-motion rule would otherwise transition it,
+   and CommitGraph measures the scroller right after a commit is added. */
+.commit-graph-svg { display: block; overflow: visible; transition-property: none; }
+.commit-edge { fill: none; stroke-width: 2.5; }
+.commit-edge.is-dead { stroke-dasharray: 4 4; }
+.commit-node.is-clickable { cursor: pointer; }
+.commit-node circle { transition: r 0.2s; }
+.commit-node.is-selected circle { filter: drop-shadow(0 0 8px var(--hi)); stroke: var(--hi); }
+.commit-hash { font: 700 10px var(--mono); fill: var(--text); pointer-events: none; }
+.commit-msg { font: 10px var(--font); fill: var(--muted); pointer-events: none; }
+.commit-node.is-dead .commit-msg { fill: var(--faint); }
+.commit-tag { fill: var(--panel-2); stroke: var(--line-2); }
+.commit-tag.is-head { fill: color-mix(in srgb, var(--hi) 16%, transparent); stroke: var(--hi); }
+.commit-tag-text { font: 600 11px var(--mono); fill: var(--muted); }
+.commit-tag-text.is-head { fill: var(--hi); }
+
 @media (max-width: 900px) {
   .stage-pad { padding: 16px; }
   .bit-strip { --bit-w: 20px; --bit-fs: 12px; }

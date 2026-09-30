@@ -468,11 +468,66 @@ Linear ticks are "nice" (1, 2 or 5 × 10^k) with float noise rounded off (0.3, n
 Log ticks are whole powers of the base inside the domain, thinned evenly beyond `count`. A log
 scale needs a positive domain (it throws otherwise) and maps `v <= 0` to `NaN`.
 
+## Tier 1 extractions (rollout plan P2)
+
+### `core/treeLayout.ts`, `TreeSvg.tsx` — tree-traversals, dom-events, accessibility, dependency-management; trees-bst, recursion
+```tsx
+const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, nodes[id].right] }; // null = empty slot
+<TreeSvg shape={shape} layout="inorder" width={900} height={380}            // viewBox; size it with CSS
+         label={(id) => nodes[id].key} onNodeClick={(id) => pick(id)}
+         nodeMark={(id) => (id === hi ? { tone: 'hi', fill: 'solid' } : onPath(id) ? { tone: 'violet', fill: 'tint' } : null)}
+         edgeMark={(parent, child) => (onPath(child) ? { tone: 'violet', dashed: false } : null)}
+         nodeScale={(id) => (id === hi ? 1.15 : 1)}
+         overlay={({ at, levelGap }) => <Ghost at={at(parentId)} />} />
+
+// n-ary / custom nodes: tidy layout, fixed level gap, your own shapes around (0, 0)
+<TreeSvg shape={domShape} layout="tidy" width={640} height={300} levelGap={70}
+         renderNode={(id) => <><rect x={-40} y={-14} width={80} height={28} rx={6} /><text y={4}>{tag(id)}</text></>}
+         hidden={(id) => !revealed.has(id)} />
+```
+- `layoutTree(shape, 'inorder' | 'tidy')` is pure (tested): `inorder` places a binary tree by in-order rank, so a BST reads sorted left to right and a node with only a right child still sits left of it. `tidy` gives leaves consecutive columns in depth-first order and centres each parent between its first and last child: right for DOM, dependency and accessibility trees and for call trees like fib(n). `treeX(col, columns, width, pad)` maps a column to pixels.
+- Vertical spacing: `levelGap` fixes it; otherwise it's `min(maxLevelGap, (height - bottomRoom) / depth)`.
+- Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
+- Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
+- Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.
+- trees-bst (in-order, the null ghost as an `overlay`) runs on it pixel-identically. recursion's fib tree (tidy, custom nodes, `hidden`) does too, except for subpixel antialiasing on a few label glyphs (≤0.03% of the stage), because labels are now placed by the node's transform instead of absolute coordinates.
+- heaps keeps its own tree: nodes sit at array-index positions of a complete binary tree with `2i+1`/`2i+2` edge labels, and they're keyed by item so swaps animate. A third layout mode is worth adding only when a Tier 1 lesson needs it.
+
+### `CallStackPanel.tsx` — tree-traversals, error-handling-models, debugger-tools; recursion
+```tsx
+<CallStackPanel
+  frames={[{ id: 3, name: 'chargeCard(order)', detail: 'throws CardDeclined', state: 'error' },  // TOP FIRST
+           { id: 2, name: 'handleRequest()', state: 'waiting' },
+           { id: 1, name: 'main()', state: 'waiting' }]}
+  meta="3 frames" alarm={crashed} anchor="bottom"
+  selected={frameId} onSelect={setFrameId}                                   // debugger: pick a frame
+  empty={<p className="empty-note">nothing running</p>} overlay={crashed && <CrashBanner />} />
+```
+- `state`: `idle` (default), `running` (solid `--hi`), `waiting` (dimmed), `returning` (`--info`), `ok` (`--ok`: a base case, a `catch` that handled it), `error` (`--bad`: throwing, crashed, unwinding).
+- `frames` is **top first**. `anchor="bottom"` (default) stacks from the bottom up like plates; `anchor="top"` lists from the top like the DevTools pane. `showDepth` numbers frames by depth (0 = outermost).
+- Frames push in from above and pop off to the right (`layout` + `SPRING.snappy`); `alarm` shakes them and turns the box red.
+- `onSelect` makes frames buttons (focus ring included); `selected` highlights one.
+- recursion's stack runs on it, pixel-identical. Its "↓ value" return chip is lesson-local, passed in `detail`.
+
+### `core/commitGraph.ts`, `CommitGraph.tsx` — branching-workflows, secrets-management; git-internals
+```tsx
+<CommitGraph
+  commits={[{ id, lane, parents, short: id.slice(0, 4), message: msg, dead: !reachable.has(id), tone?: 'bad' }]} // oldest first
+  refs={[{ name: 'main', at: tipId, head: true }, { name: 'feature-1', at: otherTip }]}
+  selected={openId} onSelect={setOpenId} title="commit graph · click a commit to open it"
+  overlay={(at) => <ConflictMarker at={at(id)} />} />
+```
+- Commits run left to right in the order given, one row per lane. Edges are straight along a lane and S-curves across lanes. Merge commits (2+ parents) get a thicker ring, `dead` commits fade and dash, and `tone` overrides a commit's ring colour (e.g. the commit that leaked a key). Tags stack above their commit; HEAD's reads "HEAD → name" in `--hi`.
+- It is its own horizontal scroller. When commits are added it scrolls the newest into view (never past the start), and the side with hidden commits gets an inner glow (`has-more-left` / `has-more-right`), so on a phone you can see there's more to swipe to. `follow={false}` turns the auto-scroll off.
+- The drawing is exactly as wide as the commits need (no minimum width), so short histories don't create an empty scroll area.
+- `layoutCommitGraph`, `commitEdgePath`, `shortMessage` and `defaultLaneColor` are pure and tested; `spacing` overrides `DEFAULT_SPACING`.
+- git-internals runs on it, pixel-identical on desktop, and at 390px its graph now starts at the first commit instead of scrolled past the end.
+
 ---
 
 ## Not built (deliberately)
 
-- **`TreeSvg`:** the layouts in heaps, trees-bst and recursion differ in exactly the parts a shared component would have to model. It is extracted in rollout plan P2, once Tier 1 brings real second users. (`SlotStrip` shipped as `ArrayStrip` above.)
+- **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
 - **Multi-state `CodePanel` lines:** requested in Phase 2 and declined; lessons that need more line states keep a small local override.
 - **`CompareRows`:** not built.
 - **Per plan §6:** a scene engine, `DataTable`, `KeyValue`, `EventLog`, `ChipChoice` and `CanvasStage`.
