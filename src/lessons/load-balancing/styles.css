@@ -4,13 +4,6 @@
   min-height: inherit;
 }
 
-.lb-canvas {
-  position: relative;
-  height: 400px;
-}
-.lb-canvas canvas {
-  display: block;
-}
 .lb-hint {
   position: absolute;
   left: 20px;

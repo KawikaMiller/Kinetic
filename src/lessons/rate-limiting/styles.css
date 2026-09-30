@@ -3,13 +3,6 @@
   flex-direction: column;
   min-height: inherit;
 }
-.rl-canvas {
-  position: relative;
-  height: 430px;
-}
-.rl-canvas canvas {
-  display: block;
-}
 
 .rl-compare {
   margin: 0 16px 14px;

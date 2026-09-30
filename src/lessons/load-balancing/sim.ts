@@ -1,13 +1,21 @@
 // A small discrete load-balancer simulation. Several copies run side by side
 // (one per strategy) on identical traffic, so the chart compares them fairly.
+import { expSample, pick, randInt } from '../../core/random';
+import { createCooldown, createSampler, percentile, trimWindow } from '../../core/sim';
+import { STRATEGIES, type StrategyId } from './strategies';
 
-export type StrategyId = 'rr' | 'random' | 'least' | 'p2c' | 'wrr';
+export type { StrategyId } from './strategies';
 
 export const TRAVEL_IN = 0.4; // client → LB (s)
 export const TRAVEL_OUT = 0.35; // LB → server (s)
 export const TRAVEL_BACK = 0.5; // server → client (s)
+export const FAIL_FADE = 0.8; // how long a failed/dropped request stays on screen (s)
 export const HEALTH_DELAY = 1.4; // how long before the LB notices a change (s)
 export const QUEUE_CAP = 12;
+/** A queue this close to full counts as "choking" (drawn red, narrated). */
+export const QUEUE_WARN = QUEUE_CAP - 2;
+const STATS_WINDOW = 10; // latency percentiles over the last 10 s
+const THROUGHPUT_WINDOW = 5;
 
 export interface Spec {
   id: number;
@@ -45,14 +53,14 @@ export class Sim {
   private rr = 0;
   readonly strategy: StrategyId;
 
-  constructor(strategy: StrategyId, speeds: number[]) {
+  constructor(strategy: StrategyId, speeds: readonly number[]) {
     this.strategy = strategy;
     this.servers = speeds.map((speed) => ({
       speed, alive: true, healthy: true, healthAt: null, queue: [], current: null, util: 0, wrr: 0,
     }));
   }
 
-  setSpeeds(speeds: number[]) {
+  setSpeeds(speeds: readonly number[]) {
     this.servers.forEach((s, i) => (s.speed = speeds[i]));
   }
 
@@ -91,12 +99,12 @@ export class Sim {
         return -1;
       }
       case 'random':
-        return pool[Math.floor(Math.random() * pool.length)];
+        return pick(pool);
       case 'least':
         return pool.reduce((best, i) => (this.load(i) < this.load(best) ? i : best), pool[0]);
       case 'p2c': {
-        const a = pool[Math.floor(Math.random() * pool.length)];
-        const b = pool[Math.floor(Math.random() * pool.length)];
+        const a = pick(pool);
+        const b = pick(pool);
         return this.load(a) <= this.load(b) ? a : b;
       }
       case 'wrr': {
@@ -175,17 +183,165 @@ export class Sim {
 
     this.reqs = this.reqs.filter((r) => {
       if (r.phase === 'back') return now - r.tPhase < TRAVEL_BACK;
-      if (r.phase === 'failed' || r.phase === 'dropped') return now - r.tPhase < 0.8;
+      if (r.phase === 'failed' || r.phase === 'dropped') return now - r.tPhase < FAIL_FADE;
       return true;
     });
-    while (this.done.length && now - this.done[0].t > 10) this.done.shift();
+    trimWindow(this.done, now, STATS_WINDOW, (d) => d.t);
   }
 
   /** Rolling stats over the last 10 s. */
   stats(now: number) {
     const lats = this.done.map((d) => d.lat).sort((a, b) => a - b);
-    const q = (p: number) => (lats.length ? lats[Math.min(lats.length - 1, Math.floor(p * lats.length))] : 0);
-    const recent = this.done.filter((d) => now - d.t <= 5).length;
-    return { p50: q(0.5), p99: q(0.99), throughput: recent / 5, failed: this.failed, dropped: this.dropped };
+    const recent = this.done.filter((d) => now - d.t <= THROUGHPUT_WINDOW).length;
+    return {
+      p50: percentile(lats, 0.5),
+      p99: percentile(lats, 0.99),
+      throughput: recent / THROUGHPUT_WINDOW,
+      failed: this.failed,
+      dropped: this.dropped,
+    };
   }
 }
+
+export type SimStats = ReturnType<Sim['stats']>;
+
+/* ─── The lesson's world: shared traffic feeding one sim per strategy ─── */
+
+export const SERVER_COUNT = 5;
+export const CLIENT_COUNT = 3;
+export const HISTORY = 60; // p99 samples at 0.5 s = 30 s
+const SAMPLE_EVERY = 0.5;
+export const SPIKE = { factor: 3, seconds: 4 };
+export const INSIGHT_COOLDOWN = 9;
+const BURSTINESS = { min: 0.4, spread: 1.2 }; // arrivals jitter between 0.4× and 1.6× the rate
+const WORK = { base: 0.1, mean: 0.15 }; // seconds of work per request at 1× speed
+
+export const PRESETS = {
+  equal: { label: 'All equal', speeds: [1, 1, 1, 1, 1] },
+  slow: { label: 'One slow server', speeds: [1, 1, 1, 1, 0.25] },
+  mixed: { label: 'Mixed fleet', speeds: [1.6, 1.2, 1, 0.6, 0.35] },
+} as const;
+export type PresetId = keyof typeof PRESETS;
+
+export const serverName = (i: number) => `api-${i + 1}`;
+
+type Sampler = ReturnType<typeof createSampler<number>>;
+
+/** All mutable sim state; the canvas reads it every frame without re-rendering React. */
+export interface World {
+  now: number;
+  acc: number;
+  nextId: number;
+  spikeUntil: number;
+  prevHealthy: boolean[];
+  pending: { spec: Spec; t0: number }[];
+  sims: Record<StrategyId, Sim>;
+  history: Record<StrategyId, Sampler>;
+  strategy: StrategyId;
+  rate: number;
+  insight: ReturnType<typeof createCooldown>;
+}
+
+const perStrategy = <T>(make: (id: StrategyId) => T) =>
+  Object.fromEntries(STRATEGIES.map((s) => [s.id, make(s.id)])) as Record<StrategyId, T>;
+
+export function createWorld(strategy: StrategyId, rate: number): World {
+  const insight = createCooldown(INSIGHT_COOLDOWN);
+  insight.fire(-Infinity); // armed from the start: the first insight can fire right away
+  return {
+    now: 0,
+    acc: 0,
+    nextId: 1,
+    spikeUntil: -1,
+    prevHealthy: Array(SERVER_COUNT).fill(true),
+    pending: [],
+    sims: perStrategy((id) => new Sim(id, PRESETS.slow.speeds)),
+    history: perStrategy(() => createSampler<number>({ every: SAMPLE_EVERY, cap: HISTORY })),
+    strategy,
+    rate,
+    insight,
+  };
+}
+
+const allSims = (w: World) => Object.values(w.sims);
+
+export interface HealthChange {
+  server: number;
+  healthy: boolean;
+}
+
+/** Advance by dt: new traffic, routing in every sim, chart samples. Returns health-check transitions. */
+export function advance(w: World, dt: number): HealthChange[] {
+  w.now += dt;
+  const now = w.now;
+  const spiking = now < w.spikeUntil;
+
+  // new requests leave the clients
+  w.acc += w.rate * (spiking ? SPIKE.factor : 1) * dt * (BURSTINESS.min + Math.random() * BURSTINESS.spread);
+  while (w.acc >= 1) {
+    w.acc -= 1;
+    const client = randInt(0, CLIENT_COUNT - 1);
+    const spec: Spec = { id: w.nextId++, client, work: WORK.base + expSample(WORK.mean) };
+    w.pending.push({ spec, t0: now });
+  }
+  // ...and reach the LB, where every strategy's sim routes the same request
+  while (w.pending.length && now - w.pending[0].t0 >= TRAVEL_IN) {
+    const { spec } = w.pending.shift()!;
+    for (const sim of allSims(w)) sim.arrive(spec, now);
+  }
+  for (const sim of allSims(w)) sim.step(now, dt);
+
+  // health-check transitions are identical across sims
+  const changes: HealthChange[] = [];
+  w.sims.rr.servers.forEach((srv, i) => {
+    if (srv.healthy === w.prevHealthy[i]) return;
+    w.prevHealthy[i] = srv.healthy;
+    changes.push({ server: i, healthy: srv.healthy });
+  });
+
+  for (const sim of allSims(w)) w.history[sim.strategy].tick(now, () => sim.stats(now).p99);
+  return changes;
+}
+
+export type Insight = { kind: 'lying' | 'choking'; server: number };
+
+/** An insight worth narrating right now, if the cooldown allows one. Firing it re-arms the cooldown. */
+export function takeInsight(w: World): Insight | null {
+  if (!w.insight.ready(w.now)) return null;
+  const sim = w.sims[w.strategy];
+  const choking = sim.servers.findIndex((srv) => srv.alive && srv.queue.length >= QUEUE_WARN);
+  const lying = sim.servers.findIndex((srv) => !srv.alive && srv.healthy);
+  let insight: Insight | null = null;
+  if (lying >= 0 && w.strategy === 'least') insight = { kind: 'lying', server: lying };
+  else if (choking >= 0 && w.strategy !== 'least' && w.strategy !== 'p2c') insight = { kind: 'choking', server: choking };
+  if (insight) w.insight.fire(w.now);
+  return insight;
+}
+
+export function spike(w: World) {
+  w.spikeUntil = w.now + SPIKE.seconds;
+}
+
+/** Kill a live server or revive a dead one, in every sim. Returns whether it's alive now. */
+export function toggleServer(w: World, i: number): boolean {
+  const alive = w.sims.rr.servers[i].alive;
+  for (const sim of allSims(w)) {
+    if (alive) sim.kill(i, w.now);
+    else sim.revive(i, w.now);
+  }
+  return !alive;
+}
+
+export function setFleet(w: World, preset: PresetId) {
+  for (const sim of allSims(w)) sim.setSpeeds(PRESETS[preset].speeds);
+}
+
+/** What React renders: the visible strategy's stats and every strategy's p99 history. */
+export function snapshot(w: World) {
+  return {
+    stats: w.sims[w.strategy].stats(w.now),
+    history: perStrategy((id) => [...w.history[id].values]),
+  };
+}
+
+export type Snapshot = ReturnType<typeof snapshot>;
