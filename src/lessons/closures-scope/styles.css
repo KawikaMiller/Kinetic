@@ -1,0 +1,32 @@
+.cl {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px 22px;
+  align-items: start;
+}
+
+.cl-side { display: flex; flex-direction: column; gap: 12px; }
+
+.cl-console {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font: 500 12.5px var(--mono);
+  min-height: 64px;
+}
+.cl-console-title {
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+.cl-console code { color: var(--ok); }
+
+.cl-scene { width: 100%; height: auto; display: block; }
+
+.cl-outer path { fill: none; stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 5 4; }
