@@ -291,12 +291,14 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .truth-table th,
 .truth-table td { text-align: center; padding: 4px 12px; }
 .truth-table .tt-first-out { border-left: 2px solid var(--line-2); }
+.truth-table th.tt-var { text-transform: none; }
 .truth-table .tt-v.is-true { color: var(--tt-true); font-weight: 700; }
 .truth-table .tt-v.is-false { color: var(--faint); }
 .truth-table tr { transition: background 0.2s; }
 .truth-table tr.is-current { background: color-mix(in srgb, var(--tt-current) 14%, transparent); box-shadow: inset 3px 0 0 var(--tt-current); }
 .truth-table tr.is-mismatch { background: color-mix(in srgb, var(--bad) 14%, transparent); }
-.truth-table tr.is-mismatch td { color: var(--bad); }
+.truth-table tr.is-mismatch td,
+.truth-table tr.is-mismatch .tt-v { color: var(--bad); }
 .truth-table.is-clickable tbody tr { cursor: pointer; }
 .truth-table.is-clickable tbody tr:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
 .truth-table.is-clickable tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

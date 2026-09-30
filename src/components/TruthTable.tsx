@@ -14,7 +14,9 @@ export interface TruthColumn {
  * formula or gate. Input columns are separated from outputs by a rule.
  *
  * - `currentRow` highlights the row matching the circuit's inputs right now
- *   (see `truthRowIndex`); `mismatchRows` marks rows where two formulas disagree.
+ *   (see `truthRowIndex`); `mismatchRows` marks rows where two formulas disagree: the whole
+ *   row turns red, its T/F values included.
+ * - Variable-name headers keep their case (p stays p); output headers use the table style.
  * - `format` prints values as T/F or 1/0. True values take `trueTone`, false ones are dim.
  * - With `onRowClick` each row is a button that sets the inputs to that row.
  */
@@ -65,7 +67,10 @@ export function TruthTable({
       <thead>
         <tr>
           {vars.map((v) => (
-            <th key={v}>{v}</th>
+            // Variable names keep their case: p, q and r must not become P, Q, R.
+            <th key={v} className="tt-var">
+              {v}
+            </th>
           ))}
           {columns.map((c, i) => (
             <th key={i} className={i === 0 ? 'tt-first-out' : undefined}>
