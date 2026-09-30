@@ -1,0 +1,59 @@
+.cors { display: flex; flex-direction: column; gap: 12px; }
+.cors-url input { width: 300px; max-width: 100%; }
+.cors-origin-stat .stat-value { font-size: 14px; }
+
+.cors-grid { display: flex; flex-direction: column; gap: 6px; }
+.cors-grid-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) 150px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  background: color-mix(in srgb, var(--c) 8%, transparent);
+}
+.cors-grid-row code { font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
+.cors-grid-row.tone-dim code { color: var(--muted); }
+.cors-grid-head { border: 0; background: none; padding-block: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+.cors-part { font-weight: 700; font-size: 13px; }
+.cors-match { font: 600 12.5px var(--mono); color: var(--c); }
+.cors-verdict { margin: 0; font-size: 14px; }
+.cors-note,
+.cors-honest { margin: 0; font-size: 12.5px; color: var(--faint); }
+.cors-note { color: var(--muted); }
+
+.cors-scene-box { padding: 6px 10px; }
+.cors-scene { display: block; width: 100%; max-width: 760px; margin: 0 auto; height: auto; }
+.cors-ran { fill: none; stroke: var(--hi); stroke-width: 3; }
+.cors-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.cors-console {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: 12px/1.5 var(--mono);
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 9%, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent);
+  overflow-wrap: anywhere;
+}
+.cors-headers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.cors-header-list { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cors-header-list code {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font: 12px/1.6 var(--mono);
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cors-header-list .is-cors { color: var(--ok); }
+.cors-header-list .is-origin { color: var(--info); }
+
+@media (max-width: 900px) {
+  .cors-grid-row { grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1fr); }
+  .cors-grid-row .cors-match { grid-column: 2 / -1; }
+}
