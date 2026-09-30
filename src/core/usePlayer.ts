@@ -65,7 +65,7 @@ export function usePlayer<F extends Frame>(frames: F[], opts: PlayerOptions = {}
   const frame = frames[i];
 
   useEffect(() => {
-    if (frame && frame.say !== undefined) setCaption(frame.say);
+    if (frame && frame.say !== undefined) setCaption(frame.say, { quiet: frame.quiet });
   }, [frame, setCaption]);
 
   useEffect(() => {

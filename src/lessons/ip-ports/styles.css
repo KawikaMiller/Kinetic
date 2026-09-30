@@ -12,7 +12,7 @@
 }
 
 .ipp-zone {
-  fill: rgb(167 139 250 / 0.04);
+  fill: color-mix(in srgb, var(--violet) 4%, transparent);
   stroke: var(--line-2);
   stroke-dasharray: 5 6;
 }
@@ -64,12 +64,12 @@
   stroke-dasharray: 4 4;
 }
 .ipp-slot.on rect {
-  fill: rgb(61 220 151 / 0.16);
+  fill: color-mix(in srgb, var(--ok) 16%, transparent);
   stroke: var(--ok);
   stroke-width: 2;
 }
 .ipp-slot.bad rect {
-  fill: rgb(255 93 108 / 0.14);
+  fill: color-mix(in srgb, var(--bad) 14%, transparent);
   stroke: var(--bad);
   stroke-width: 2;
 }
@@ -91,7 +91,7 @@
 }
 .ipp-pill-text {
   font: 700 11px var(--mono);
-  fill: #0a0c11;
+  fill: var(--bg);
 }
 
 .ipp-panels {
@@ -102,7 +102,7 @@
 .ipp-panel {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.7);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
   border: 1px solid var(--line);
   font-size: 13px;
   min-width: 0;
@@ -133,8 +133,8 @@
   transition: background 0.3s, border-color 0.3s;
 }
 .ipp-field.changed {
-  background: rgb(255 209 102 / 0.08);
-  border-color: rgb(255 209 102 / 0.35);
+  background: color-mix(in srgb, var(--hi) 8%, transparent);
+  border-color: color-mix(in srgb, var(--hi) 35%, transparent);
 }
 .ipp-field-name {
   font: 600 10px var(--mono);
@@ -170,7 +170,7 @@
   transition: background 0.3s, border-color 0.3s;
 }
 .ipp-nat-row.on {
-  background: rgb(255 209 102 / 0.1);
+  background: color-mix(in srgb, var(--hi) 10%, transparent);
   border-color: var(--hi);
 }
 .ipp-arrow {

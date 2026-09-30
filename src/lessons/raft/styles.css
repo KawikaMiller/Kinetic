@@ -136,7 +136,7 @@
 .rf-entry.done {
   border-style: solid;
   background: var(--tc);
-  color: #0a0c11;
+  color: var(--bg);
 }
 
 .rf-events ul {

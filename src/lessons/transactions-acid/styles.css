@@ -10,7 +10,7 @@
 .tx-flash {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgb(255 93 108 / 0.55), rgb(255 93 108 / 0.1));
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--bad) 55%, transparent), color-mix(in srgb, var(--bad) 10%, transparent));
   pointer-events: none;
   z-index: 3;
 }
@@ -34,9 +34,9 @@
 }
 .tx-letter b { font: 800 24px var(--mono); }
 .tx-letter span { font-size: 13px; font-weight: 600; }
-.tx-letter.ok { color: var(--ok); border-color: var(--ok); background: rgb(61 220 151 / 0.1); }
-.tx-letter.bad { color: var(--bad); border-color: var(--bad); background: rgb(255 93 108 / 0.1); }
-.tx-letter.hint { color: var(--violet); border-color: rgb(167 139 250 / 0.5); border-style: dashed; }
+.tx-letter.ok { color: var(--ok); border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.tx-letter.bad { color: var(--bad); border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.tx-letter.hint { color: var(--violet); border-color: color-mix(in srgb, var(--violet) 50%, transparent); border-style: dashed; }
 
 .tx-grid {
   display: grid;
@@ -47,7 +47,7 @@
 .tx-panel {
   padding: 14px;
   border-radius: 12px;
-  background: rgb(18 22 34 / 0.85);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
   border: 1px solid var(--line);
   min-width: 0;
 }
@@ -83,9 +83,9 @@
 .tx-code li::before { content: counter(line); color: var(--faint); font: 600 11px var(--mono); width: 12px; padding-top: 2px; }
 .tx-code code { white-space: pre; }
 .tx-code li.done { color: var(--text); opacity: 0.55; }
-.tx-code li.now { color: #1a1400; background: var(--hi); border-color: var(--hi); }
-.tx-code li.now::before { color: #1a1400; }
-.tx-code li.cut { border-color: rgb(255 93 108 / 0.5); border-style: dashed; color: var(--bad); flex-wrap: wrap; }
+.tx-code li.now { color: var(--on-hi); background: var(--hi); border-color: var(--hi); }
+.tx-code li.now::before { color: var(--on-hi); }
+.tx-code li.cut { border-color: color-mix(in srgb, var(--bad) 50%, transparent); border-style: dashed; color: var(--bad); flex-wrap: wrap; }
 .tx-code li.cut em { font-style: normal; font: 600 11px var(--mono); margin-left: auto; }
 
 .tx-client {
@@ -99,8 +99,8 @@
   color: var(--muted);
 }
 .tx-client span { font: 600 10.5px var(--font); text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); }
-.tx-client.ok { color: var(--ok); border-color: rgb(61 220 151 / 0.5); border-style: solid; }
-.tx-client.bad { color: var(--bad); border-color: rgb(255 93 108 / 0.5); }
+.tx-client.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); border-style: solid; }
+.tx-client.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
 
 .tx-accounts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .tx-account {
@@ -117,7 +117,7 @@
 }
 .tx-account span { font-size: 12px; color: var(--muted); font-weight: 600; }
 .tx-account b { font: 700 24px var(--mono); display: block; }
-.tx-account.focus { border-color: var(--hi); box-shadow: 0 0 0 3px rgb(255 209 102 / 0.18); }
+.tx-account.focus { border-color: var(--hi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 18%, transparent); }
 
 .tx-total { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
 .tx-total-bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
@@ -134,12 +134,12 @@
   border-radius: 6px;
   font-size: 12px;
   border-left: 3px solid var(--info);
-  background: rgb(76 201 240 / 0.08);
+  background: color-mix(in srgb, var(--info) 8%, transparent);
 }
 .tx-rec.begin { border-left-color: var(--faint); background: var(--cell); }
-.tx-rec.commit { border-left-color: var(--ok); background: rgb(61 220 151 / 0.12); color: var(--ok); }
-.tx-rec.undo { border-left-color: var(--hi); background: rgb(255 209 102 / 0.1); color: var(--hi); }
-.tx-rec.redo { border-left-color: var(--ok); background: rgb(61 220 151 / 0.08); color: var(--ok); }
+.tx-rec.commit { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+.tx-rec.undo { border-left-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); color: var(--hi); }
+.tx-rec.redo { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 8%, transparent); color: var(--ok); }
 .tx-empty { font-size: 13px; color: var(--faint); margin: 0; }
 
 .tx-hint { font-size: 13px; color: var(--faint); align-self: center; }

@@ -26,7 +26,7 @@
   padding: 10px 12px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgb(10 12 17 / 0.7);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
 }
 .lb-chart-head {
   display: flex;

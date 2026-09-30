@@ -2,6 +2,7 @@
 // B gets slower and flakier as it gets overloaded, and keeps working on
 // requests A has already given up on (timeouts don't cancel remote work).
 // That's what turns retries into a storm.
+import { createSampler, percentile } from '../../core/sim';
 
 export type Mode = 'naive' | 'backoff' | 'breaker';
 export type BreakerState = 'closed' | 'open' | 'half';
@@ -227,15 +228,54 @@ export class Sim {
     const errors = recent.filter((d) => d.result === 'error').length;
     const fallbacks = recent.filter((d) => d.result === 'fallback').length;
     const lats = recent.map((d) => d.latency).sort((a, b) => a - b);
-    const p99 = lats.length ? lats[Math.min(lats.length - 1, Math.floor(lats.length * 0.99))] : 0;
     return {
       bLoad: this.bArrivals.filter((t) => t > now - 2).length / 2,
       bConc: this.bConcurrency,
       errorPct: recent.length ? (errors / recent.length) * 100 : 0,
       fallbackPct: recent.length ? (fallbacks / recent.length) * 100 : 0,
-      p99,
+      p99: percentile(lats, 0.99),
       busyThreads: this.threads.filter(Boolean).length,
       breaker: this.breaker,
     };
   }
+}
+
+export type Stats = ReturnType<Sim['stats']>;
+
+/* ─── The lesson's world: the sim plus bursty user traffic and chart history ─── */
+
+export const HISTORY = 60; // chart samples
+const SAMPLE_EVERY = 0.5; // seconds between chart samples
+
+export interface HistoryPoint {
+  bLoad: number;
+  err: number;
+  breaker: BreakerState;
+}
+
+export interface World {
+  sim: Sim;
+  /** Users per second. */
+  rate: number;
+  /** Fractional arrivals carried between frames. */
+  acc: number;
+  history: ReturnType<typeof createSampler<HistoryPoint>>;
+}
+
+export function createWorld(rate: number): World {
+  return { sim: new Sim(), rate, acc: 0, history: createSampler<HistoryPoint>({ every: SAMPLE_EVERY, cap: HISTORY }) };
+}
+
+/** Advance by dt: bursty arrivals at `rate`, the sim itself, then the chart sample. */
+export function advance(w: World, dt: number) {
+  w.acc += w.rate * dt * (0.5 + Math.random());
+  while (w.acc >= 1) {
+    w.acc -= 1;
+    w.sim.arrive();
+  }
+  w.sim.step(dt);
+  w.history.tick(w.sim.now, () => {
+    const st = w.sim.stats();
+    return { bLoad: st.bLoad, err: st.errorPct, breaker: st.breaker };
+  });
 }

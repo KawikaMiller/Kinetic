@@ -32,6 +32,23 @@ caption is still true; otherwise give the frame its own caption.
 Be honest with the learner: if a visual scripts or simplifies something (e.g. a forced packet
 loss), say so on screen.
 
+## Shared kit
+
+`docs/shared-api.md` lists every shared piece with usage. The durable rules:
+
+- Colours: CSS uses tokens (`var(--hi)`, tints via `color-mix(in srgb, var(--hi) 14%, transparent)`,
+  text on solid fills via `var(--on-hi)` etc.). Canvas uses `TOKENS` / `alpha()` from
+  `core/palette.ts`; never a local hex table. New tokens go in `global.css` and `palette.ts` together.
+- Live simulations use `useSimulation` (mutable world + throttled snapshot); canvas drawing goes
+  through `core/canvas.ts` and lives in the lesson's `draw.ts`, sim logic in `sim.ts`.
+- SVG actor/packet scenes compose `components/scene` (`SceneNode`, `Packet`, `Pulse`, `TravelDot`,
+  `Flyer`). Custom shapes stay in the lesson but reuse the scene CSS classes.
+- Formatting, hashing, randomness, maths and motion presets come from `core/format`, `core/hash`,
+  `core/random`, `core/math`, `core/motion`. Don't re-declare `percentile`, `lerp`, FNV, springs.
+- Lesson CSS class names are global: always prefix them with the lesson's own prefix.
+- Lesson file convention: `frames.tsx` for frame builders with JSX captions, `sim.ts`/`model.ts`
+  for pure logic, `draw.ts` for canvas drawing, `Stage.tsx` for React only.
+
 ## Verify before calling anything done
 
 - `npm run build` (type-check + build) and `npm run lint`.

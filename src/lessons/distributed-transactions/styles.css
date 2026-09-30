@@ -16,11 +16,11 @@
   stroke-dasharray: 4 6;
 }
 .dt-wire-bad {
-  stroke: rgb(255 93 108 / 0.55);
+  stroke: color-mix(in srgb, var(--bad) 55%, transparent);
 }
 .dt-bus {
-  fill: rgb(167 139 250 / 0.08);
-  stroke: rgb(167 139 250 / 0.5);
+  fill: color-mix(in srgb, var(--violet) 8%, transparent);
+  stroke: color-mix(in srgb, var(--violet) 50%, transparent);
   stroke-width: 1.5;
 }
 .dt-bus-label {
@@ -34,7 +34,7 @@
 }
 .dt-node.crashed {
   stroke-dasharray: 6 4;
-  fill: rgb(255 93 108 / 0.08);
+  fill: color-mix(in srgb, var(--bad) 8%, transparent);
 }
 .dt-title {
   font: 700 14px var(--font);
@@ -49,14 +49,14 @@
 }
 .dt-chip-text {
   font: 700 11.5px var(--mono);
-  fill: #0a0c11;
+  fill: var(--bg);
 }
 .dt-detail {
   font: 600 12px var(--mono);
   fill: var(--muted);
 }
 .dt-pill {
-  fill: #0e1118;
+  fill: var(--bg-2);
   stroke-width: 1.5;
 }
 .dt-pill-text {
@@ -64,7 +64,7 @@
   text-anchor: middle;
 }
 .dt-stall {
-  fill: rgb(255 93 108 / 0.12);
+  fill: color-mix(in srgb, var(--bad) 12%, transparent);
   stroke: var(--bad);
   stroke-width: 1.5;
 }

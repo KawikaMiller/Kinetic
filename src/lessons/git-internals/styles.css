@@ -31,7 +31,7 @@
 .gi-msg { font: 10px var(--font); fill: var(--muted); pointer-events: none; }
 .gi-commit.dead .gi-msg { fill: var(--faint); }
 .gi-tag { fill: var(--panel-2); stroke: var(--line-2); }
-.gi-tag.head { fill: rgb(255 209 102 / 0.16); stroke: var(--hi); }
+.gi-tag.head { fill: color-mix(in srgb, var(--hi) 16%, transparent); stroke: var(--hi); }
 .gi-tag-text { font: 600 11px var(--mono); fill: var(--muted); }
 .gi-tag-text.head { fill: var(--hi); }
 
@@ -66,12 +66,12 @@
 .gi-obj-row code { font-size: 11.5px; }
 .gi-note { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gi-st { font: 700 10px var(--mono); }
-.gi-obj-row.new { border-color: rgb(255 209 102 / 0.55); background: rgb(255 209 102 / 0.1); }
+.gi-obj-row.new { border-color: color-mix(in srgb, var(--hi) 55%, transparent); background: color-mix(in srgb, var(--hi) 10%, transparent); }
 .gi-obj-row.new .gi-st,
 .gi-obj-row.new code { color: var(--hi); }
 .gi-obj-row.reused { opacity: 0.6; border-style: dashed; }
 .gi-obj-row.reused .gi-st { color: var(--faint); }
-.gi-obj.commit > .gi-obj-row { border-color: var(--info); background: rgb(76 201 240 / 0.1); }
+.gi-obj.commit > .gi-obj-row { border-color: var(--info); background: color-mix(in srgb, var(--info) 10%, transparent); }
 .gi-obj.commit > .gi-obj-row code { color: var(--info); }
 .gi-meta { font: 11px var(--mono); color: var(--faint); margin: 2px 0 2px 8px; }
 .gi-foot { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }

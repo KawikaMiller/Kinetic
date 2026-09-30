@@ -9,15 +9,15 @@
   border: 1px solid var(--line);
   transition: border-color 0.3s, box-shadow 0.3s;
 }
-.lsm-box.hot { border-color: var(--hi); box-shadow: 0 0 0 3px rgb(255 209 102 / 0.15); }
+.lsm-box.hot { border-color: var(--hi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 15%, transparent); }
 .lsm-mem.hit { border-color: var(--ok); }
 .lsm-box header,
 .lsm-level header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .lsm-box header em,
 .lsm-level header em { font-style: normal; font-weight: 400; color: var(--faint); font-size: 12px; }
 .lsm-tag { font: 700 9.5px var(--mono); padding: 2px 6px; border-radius: 5px; letter-spacing: 0.06em; }
-.lsm-tag.ram { background: rgb(167 139 250 / 0.18); color: var(--violet); }
-.lsm-tag.disk { background: rgb(76 201 240 / 0.14); color: var(--info); }
+.lsm-tag.ram { background: color-mix(in srgb, var(--violet) 18%, transparent); color: var(--violet); }
+.lsm-tag.disk { background: color-mix(in srgb, var(--info) 14%, transparent); color: var(--info); }
 
 .lsm-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .lsm-slot { height: 28px; border-radius: 7px; border: 1px dashed var(--line-2); }
@@ -36,8 +36,8 @@
   border: 1px solid var(--cell-line);
   transition: background 0.3s, border-color 0.3s, color 0.3s;
 }
-.lsm-chip.tomb { color: var(--bad); border-color: rgb(255 93 108 / 0.35); }
-.lsm-chip.hot { background: rgb(255 209 102 / 0.2); border-color: var(--hi); color: var(--text); }
+.lsm-chip.tomb { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+.lsm-chip.hot { background: color-mix(in srgb, var(--hi) 20%, transparent); border-color: var(--hi); color: var(--text); }
 .lsm-chip.tomb.hot { color: var(--bad); }
 .lsm-chip.gone { color: var(--bad); text-decoration: line-through; opacity: 0.85; height: 24px; font-size: 11.5px; }
 .lsm-chip.gone small { text-decoration: none; font-size: 9.5px; color: var(--faint); }
@@ -51,17 +51,17 @@
   border: 1.5px solid var(--cell-line);
   transition: border-color 0.3s, box-shadow 0.3s, opacity 0.3s;
 }
-.lsm-file.hot { border-color: var(--hi); box-shadow: 0 0 18px -6px rgb(255 209 102 / 0.7); }
-.lsm-file.compacting { border-color: var(--violet); box-shadow: 0 0 20px -6px rgb(167 139 250 / 0.8); }
+.lsm-file.hot { border-color: var(--hi); box-shadow: 0 0 18px -6px color-mix(in srgb, var(--hi) 70%, transparent); }
+.lsm-file.compacting { border-color: var(--violet); box-shadow: 0 0 20px -6px color-mix(in srgb, var(--violet) 80%, transparent); }
 .lsm-file.skip { border-color: var(--info); opacity: 0.6; }
 .lsm-file.fp { border-color: var(--bad); }
-.lsm-file.hit { border-color: var(--ok); box-shadow: 0 0 18px -6px rgb(61 220 151 / 0.8); }
+.lsm-file.hit { border-color: var(--ok); box-shadow: 0 0 18px -6px color-mix(in srgb, var(--ok) 80%, transparent); }
 .lsm-file.range { opacity: 0.35; }
 .lsm-file-head { display: flex; align-items: center; gap: 6px; font: 700 11px var(--mono); color: var(--muted); margin-bottom: 6px; }
 .lsm-verdict { font-size: 10px; padding: 1px 6px; border-radius: 5px; }
-.lsm-verdict.info { background: rgb(76 201 240 / 0.16); color: var(--info); }
-.lsm-verdict.bad { background: rgb(255 93 108 / 0.16); color: var(--bad); }
-.lsm-verdict.ok { background: rgb(61 220 151 / 0.16); color: var(--ok); }
+.lsm-verdict.info { background: color-mix(in srgb, var(--info) 16%, transparent); color: var(--info); }
+.lsm-verdict.bad { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.lsm-verdict.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
 .lsm-verdict.dim { color: var(--faint); }
 .lsm-entries { display: flex; flex-wrap: wrap; gap: 4px; max-width: 280px; }
 .lsm-entries .lsm-chip { height: 24px; font-size: 11.5px; padding: 0 7px; }
@@ -80,8 +80,8 @@
   gap: 6px;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgb(255 93 108 / 0.3);
-  background: rgb(255 93 108 / 0.06);
+  border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent);
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
   font-size: 12.5px;
 }
 .lsm-vs {

@@ -42,7 +42,7 @@
   stroke: var(--hi);
   stroke-dasharray: none;
   stroke-width: 4;
-  filter: drop-shadow(0 0 6px rgb(255 209 102 / 0.5));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--hi) 50%, transparent));
 }
 .wr-lock-bg {
   fill: var(--panel);
@@ -90,7 +90,7 @@
   fill: var(--line-2);
 }
 .wr-skel-h {
-  fill: #ff8c5a;
+  fill: var(--orange);
 }
 
 .wr-packet {
@@ -98,13 +98,13 @@
 }
 .wr-packet-text {
   font: 700 11px var(--mono);
-  fill: #0a0c11;
+  fill: var(--bg);
 }
 
 .wr-fall {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.7);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
   border: 1px solid var(--line);
 }
 .wr-fall-head {

@@ -19,7 +19,7 @@
 }
 .rc-fib .rc-code { max-width: 440px; }
 .rc-line { padding: 0 14px 0 0; white-space: pre; transition: background 0.2s, color 0.2s; border-left: 3px solid transparent; }
-.rc-line.on { background: rgb(255 209 102 / 0.1); color: var(--text); border-left-color: var(--hi); }
+.rc-line.on { background: color-mix(in srgb, var(--hi) 10%, transparent); color: var(--text); border-left-color: var(--hi); }
 .rc-ln { display: inline-block; width: 30px; text-align: right; margin-right: 12px; color: var(--faint); }
 
 .rc-stackwrap { position: relative; }
@@ -58,17 +58,17 @@
   border-radius: 6px;
   font: 700 12px var(--mono);
   background: var(--info);
-  color: #03202b;
+  color: var(--on-info);
 }
-.rc-frame.tone-active { background: var(--hi); border-color: var(--hi); color: #1a1400; box-shadow: 0 6px 18px -8px rgb(255 209 102 / 0.8); }
+.rc-frame.tone-active { background: var(--hi); border-color: var(--hi); color: var(--on-hi); box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--hi) 80%, transparent); }
 .rc-frame.tone-active .rc-note { color: #4a3b00; }
 .rc-frame.tone-waiting { background: var(--cell); opacity: 0.75; }
-.rc-frame.tone-base { background: rgb(61 220 151 / 0.16); border-color: var(--ok); }
+.rc-frame.tone-base { background: color-mix(in srgb, var(--ok) 16%, transparent); border-color: var(--ok); }
 .rc-frame.tone-base .rc-note { color: var(--ok); }
-.rc-frame.tone-returning { border-color: var(--info); background: rgb(76 201 240 / 0.12); }
+.rc-frame.tone-returning { border-color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
 .rc-frame.tone-returning .rc-note { color: var(--text); }
-.rc-frame.tone-crash { background: rgb(255 93 108 / 0.2); border-color: var(--bad); color: var(--bad); }
-.rc-stackwrap.is-crashed .rc-stack { border-color: var(--bad); box-shadow: inset 0 0 40px rgb(255 93 108 / 0.2); }
+.rc-frame.tone-crash { background: color-mix(in srgb, var(--bad) 20%, transparent); border-color: var(--bad); color: var(--bad); }
+.rc-stackwrap.is-crashed .rc-stack { border-color: var(--bad); box-shadow: inset 0 0 40px color-mix(in srgb, var(--bad) 20%, transparent); }
 .rc-crash {
   position: absolute;
   left: 50%;
@@ -77,9 +77,9 @@
   padding: 10px 16px;
   border-radius: 10px;
   background: var(--bad);
-  color: #1f0508;
+  color: var(--on-bad);
   font: 700 13px var(--mono);
-  box-shadow: 0 10px 40px -10px rgb(255 93 108 / 0.9);
+  box-shadow: 0 10px 40px -10px color-mix(in srgb, var(--bad) 90%, transparent);
   white-space: nowrap;
 }
 .rc-result {
@@ -97,8 +97,8 @@
 .rc-edge.on-stack { stroke: var(--violet); stroke-width: 3; }
 .rc-node { fill: var(--panel); stroke: var(--ok); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
 .rc-node.active { fill: var(--hi); stroke: var(--hi); }
-.rc-node.waiting { fill: rgb(167 139 250 / 0.2); stroke: var(--violet); }
-.rc-node.repeat { fill: rgb(255 93 108 / 0.15); stroke: var(--bad); }
+.rc-node.waiting { fill: color-mix(in srgb, var(--violet) 20%, transparent); stroke: var(--violet); }
+.rc-node.repeat { fill: color-mix(in srgb, var(--bad) 15%, transparent); stroke: var(--bad); }
 .rc-node.active.is-repeat { stroke: var(--bad); stroke-width: 4; }
 .rc-nlabel { font: 600 10px var(--mono); fill: var(--text); pointer-events: none; }
 .rc-nval { font: 700 11px var(--mono); fill: var(--ok); pointer-events: none; }

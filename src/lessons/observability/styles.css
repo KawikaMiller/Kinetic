@@ -9,7 +9,7 @@
 .ob-panel {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.72);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
   border: 1px solid var(--line);
   min-width: 0;
 }
@@ -31,7 +31,7 @@
 
 .ob-checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .ob-checks li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; border: 1px dashed var(--line-2); color: var(--muted); transition: all 0.3s; }
-.ob-checks li.done { border-style: solid; border-color: var(--ok); color: var(--text); background: rgb(61 220 151 / 0.08); }
+.ob-checks li.done { border-style: solid; border-color: var(--ok); color: var(--text); background: color-mix(in srgb, var(--ok) 8%, transparent); }
 .ob-check-n { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font: 700 11px var(--mono); background: var(--panel-2); }
 .ob-checks li.done .ob-check-n { background: var(--ok); color: var(--bg); }
 
@@ -54,7 +54,7 @@
 .ob-table tbody tr:hover { background: var(--panel-2); }
 .ob-table tr.slow .p99 { color: var(--hi); font-weight: 700; }
 .ob-table tr.bad .err { color: var(--bad); font-weight: 700; }
-.ob-table tr.found { background: rgb(61 220 151 / 0.1); }
+.ob-table tr.found { background: color-mix(in srgb, var(--ok) 10%, transparent); }
 .ob-spark { width: 80px; height: 22px; display: block; }
 .ob-spark-slo { stroke: var(--line-2); stroke-dasharray: 2 3; }
 
@@ -66,8 +66,8 @@
 .ob-wf-name { color: var(--muted); white-space: nowrap; }
 .ob-wf-track { position: relative; height: 14px; background: var(--bg-2); border-radius: 4px; }
 .ob-wf-bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
-.ob-wf-bar.long { box-shadow: 0 0 0 2px var(--hi), 0 0 14px rgb(255 209 102 / 0.6); }
-.ob-wf-bar.error { box-shadow: 0 0 12px rgb(255 93 108 / 0.7); }
+.ob-wf-bar.long { box-shadow: 0 0 0 2px var(--hi), 0 0 14px color-mix(in srgb, var(--hi) 60%, transparent); }
+.ob-wf-bar.error { box-shadow: 0 0 12px color-mix(in srgb, var(--bad) 70%, transparent); }
 .ob-wf-ms { text-align: right; color: var(--faint); }
 
 .ob-logs { list-style: none; margin: 0; padding: 0; max-height: 150px; overflow: hidden; font: 12px var(--mono); display: flex; flex-direction: column; gap: 2px; }

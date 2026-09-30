@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { Option } from './options';
 
 /** Row of lesson-specific controls under the transport bar. */
 export function Controls({ children }: { children: ReactNode }) {
@@ -32,13 +33,10 @@ export function Slider({
   );
 }
 
-export interface Option<T extends string> {
-  value: T;
-  label: ReactNode;
-}
+export type { Option } from './options';
 
-/** Pill-style single choice. Good for picking an algorithm or mode. */
-export function Segmented<T extends string>({
+/** Pill-style single choice. Good for picking an algorithm, a mode, or a small number. */
+export function Segmented<T extends string | number>({
   options, value, onChange, label,
 }: {
   options: Option<T>[];
@@ -65,6 +63,93 @@ export function Segmented<T extends string>({
       </div>
     </div>
   );
+}
+
+/** An on/off choice, drawn as a two-option Segmented. The "off" option always comes first. */
+export function Toggle({
+  label, value, onChange, off = 'Off', on = 'On',
+}: {
+  label?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  off?: ReactNode;
+  on?: ReactNode;
+}) {
+  return (
+    <Segmented
+      label={label}
+      value={value ? 'on' : 'off'}
+      onChange={(v) => onChange(v === 'on')}
+      options={[
+        { value: 'off', label: off },
+        { value: 'on', label: on },
+      ]}
+    />
+  );
+}
+
+/** Single-line text or number input with the shared look. Enter does nothing unless you pass onEnter. */
+export function TextField({
+  label, value, onChange, onEnter, sanitize, type = 'text', min, max, width, maxLength, placeholder, disabled, ariaLabel,
+}: {
+  label?: string;
+  value: string;
+  onChange: (v: string) => void;
+  onEnter?: () => void;
+  /** Clean the raw input before onChange, e.g. letters only. */
+  sanitize?: (raw: string) => string;
+  type?: 'text' | 'number';
+  min?: number;
+  max?: number;
+  width?: number | string;
+  maxLength?: number;
+  placeholder?: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+}) {
+  return (
+    <label className="text-field">
+      {label && <span>{label}</span>}
+      <input
+        type={type}
+        value={value}
+        min={min}
+        max={max}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-label={ariaLabel ?? label}
+        style={width !== undefined ? { width } : undefined}
+        onChange={(e) => onChange(sanitize ? sanitize(e.target.value) : e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && onEnter) {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+      />
+    </label>
+  );
+}
+
+/** A label over a tight group of controls: preset buttons, palettes, role pickers. */
+export function ControlGroup({ label, children }: { label?: string; children: ReactNode }) {
+  return (
+    <div className="control-group">
+      {label && <span className="control-group-label">{label}</span>}
+      <div className="control-group-items">{children}</div>
+    </div>
+  );
+}
+
+/** Faint explanatory text inside a controls row. */
+export function Hint({ children }: { children: ReactNode }) {
+  return <span className="hint">{children}</span>;
+}
+
+/** The ▶ Resume / ❚❚ Pause button every live simulation has. */
+export function PauseButton({ paused, onToggle }: { paused: boolean; onToggle: () => void }) {
+  return <Button onClick={onToggle}>{paused ? '▶ Resume' : '❚❚ Pause'}</Button>;
 }
 
 /** Colour key for whatever the stage is drawing. */

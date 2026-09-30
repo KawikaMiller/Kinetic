@@ -11,15 +11,15 @@
 .mm-edge.net { stroke-dasharray: 5 6; stroke: color-mix(in srgb, var(--info) 45%, var(--line-2)); }
 
 .mm-container rect {
-  fill: rgb(167 139 250 / 0.04);
+  fill: color-mix(in srgb, var(--violet) 4%, transparent);
   stroke: var(--line-2);
   stroke-width: 2;
   stroke-dasharray: 8 6;
   transition: stroke 0.3s, fill 0.3s;
 }
 .mm-container text { fill: var(--muted); font: 600 13px var(--mono); }
-.mm-container.deploy rect { stroke: var(--info); fill: rgb(76 201 240 / 0.06); animation: mm-pulse 1s ease-in-out infinite; }
-.mm-container.down rect { stroke: var(--bad); fill: rgb(255 93 108 / 0.06); }
+.mm-container.deploy rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 6%, transparent); animation: mm-pulse 1s ease-in-out infinite; }
+.mm-container.down rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 6%, transparent); }
 
 .mm-box rect,
 .mm-box path,
@@ -50,7 +50,7 @@
 .mm-box.down text { fill: var(--bad); }
 .mm-x { font-size: 13px !important; }
 
-.mm-box.active rect { stroke-width: 3; filter: drop-shadow(0 0 10px rgb(255 209 102 / 0.5)); }
+.mm-box.active rect { stroke-width: 3; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hi) 50%, transparent)); }
 .mm-box rect.teamed { stroke: var(--team); stroke-width: 3; }
 
 .mm-packet { filter: drop-shadow(0 0 8px currentColor); }

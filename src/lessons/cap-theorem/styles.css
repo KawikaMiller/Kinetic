@@ -99,7 +99,7 @@
   align-self: start;
   padding: 14px;
   border-radius: 12px;
-  background: rgb(18 22 34 / 0.85);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
   border: 1px solid var(--line);
 }
 .cap-pacelc h4 { margin: 0 0 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
@@ -116,7 +116,7 @@
   color: var(--muted);
   transition: all 0.25s;
 }
-.cap-cell.on { background: rgb(255 209 102 / 0.14); border-color: var(--hi); color: var(--hi); }
+.cap-cell.on { background: color-mix(in srgb, var(--hi) 14%, transparent); border-color: var(--hi); color: var(--hi); }
 .cap-pacelc p { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 
 @media (max-width: 1000px) {

@@ -1,0 +1,35 @@
+/* Scene kit: actors, links and flying packets in an SVG the lesson owns. */
+
+.scene-node-box {
+  fill: var(--panel);
+  stroke: var(--cell-line);
+  stroke-width: 1.5;
+  transition: stroke 0.25s, fill 0.25s;
+}
+/* is-bad comes before .on on purpose: an active node stays highlighted even when it's down. */
+.scene-node.is-bad .scene-node-box {
+  stroke: var(--bad);
+  fill: color-mix(in srgb, var(--bad) 12%, transparent);
+}
+.scene-node.is-bad .scene-node-sub { fill: var(--bad); font-weight: 700; }
+.scene-node.on .scene-node-box {
+  stroke: var(--c, var(--info));
+  stroke-width: 2.5;
+  fill: color-mix(in srgb, var(--c, var(--info)) 10%, var(--panel));
+}
+.scene-node.is-dim { opacity: 0.45; }
+.scene-node-title { font: 700 13px var(--font); fill: var(--text); }
+.scene-node-sub { font: 500 10px var(--mono); fill: var(--muted); }
+
+/* Dashed link between actors, and small uppercase zone labels */
+.scene-edge { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
+.scene-zone { font: 600 10px var(--mono); letter-spacing: 0.14em; fill: var(--faint); }
+
+/* Message pills */
+.scene-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
+.scene-packet-text { font: 700 var(--packet-fs, 10.5px) var(--mono); fill: var(--on-fill); }
+.scene-packet.is-outline { fill: var(--panel); stroke-width: 1.5; }
+
+/* HTML flyers (%-positioned inside a relatively positioned parent) */
+.flyer { position: absolute; pointer-events: none; }
+.flyer-arc { display: inline-block; }

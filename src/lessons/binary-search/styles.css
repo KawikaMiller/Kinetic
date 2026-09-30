@@ -51,22 +51,22 @@
   transition: background 0.3s, color 0.3s, opacity 0.35s, transform 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .bs-cell:hover { border-color: var(--faint); }
-.bs-cell.live { background: rgb(255 209 102 / 0.1); border-color: rgb(255 209 102 / 0.3); }
+.bs-cell.live { background: color-mix(in srgb, var(--hi) 10%, transparent); border-color: color-mix(in srgb, var(--hi) 30%, transparent); }
 .bs-cell.out { opacity: 0.28; background: var(--dim); border-color: transparent; }
 .bs-cell.mid {
   background: var(--hi);
-  color: #1a1400;
+  color: var(--on-hi);
   border-color: var(--hi);
   transform: translateY(-6px) scale(1.08);
-  box-shadow: 0 8px 22px -6px rgb(255 209 102 / 0.7);
+  box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--hi) 70%, transparent);
   z-index: 1;
 }
 .bs-cell.found {
   background: var(--ok);
-  color: #04160d;
+  color: var(--on-ok);
   border-color: var(--ok);
   transform: translateY(-6px) scale(1.12);
-  box-shadow: 0 0 0 4px rgb(61 220 151 / 0.25), 0 10px 26px -6px rgb(61 220 151 / 0.8);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent), 0 10px 26px -6px color-mix(in srgb, var(--ok) 80%, transparent);
   z-index: 1;
 }
 
@@ -76,7 +76,7 @@
   bottom: 22px;
   border: 2px solid var(--hi);
   border-radius: 10px;
-  background: rgb(255 209 102 / 0.05);
+  background: color-mix(in srgb, var(--hi) 5%, transparent);
   pointer-events: none;
   margin-left: -3px;
   padding-right: 3px;

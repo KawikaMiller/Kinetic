@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } 
 import { Link, useParams } from 'react-router-dom';
 import { Overview } from '../components/Overview';
 import { Quiz } from '../components/Quiz';
-import { CaptionContext, SetCaptionContext, type CaptionState } from '../core/caption';
+import { CaptionContext, SetCaptionContext, type CaptionState, type SetCaption } from '../core/caption';
 import { findTopic, tierOf, trackOf } from '../core/curriculum';
 import { BUILT_TOPICS, loadLesson } from '../core/lessons';
 import { useProgress } from '../core/progress';
@@ -40,7 +40,11 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
   const done = isDone(topic.id);
 
   const [caption, setCaptionState] = useState<CaptionState>({ node: null, version: 0 });
-  const setCaption = useCallback((node: ReactNode) => setCaptionState((c) => ({ node, version: c.version + 1 })), []);
+  // A quiet set swaps the text without bumping `version`, so the caption doesn't re-fade.
+  const setCaption = useCallback<SetCaption>(
+    (node, opts) => setCaptionState((c) => ({ node, version: opts?.quiet ? c.version : c.version + 1 })),
+    [],
+  );
 
   const pos = BUILT_TOPICS.findIndex((t) => t.id === topic.id);
   const prev = BUILT_TOPICS[pos - 1];

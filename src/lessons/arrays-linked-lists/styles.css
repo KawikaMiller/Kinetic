@@ -16,8 +16,8 @@
   color: var(--hi);
   padding: 3px 10px;
   border-radius: 8px;
-  background: rgb(255 209 102 / 0.1);
-  border: 1px solid rgb(255 209 102 / 0.3);
+  background: color-mix(in srgb, var(--hi) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hi) 30%, transparent);
 }
 
 /* ── Array ── */
@@ -40,7 +40,7 @@
   transition: background 0.25s;
 }
 .al-aslot:nth-child(10) { border-right: 0; } /* CAP = 10 */
-.al-aslot.is-hi { background: rgb(255 209 102 / 0.08); }
+.al-aslot.is-hi { background: color-mix(in srgb, var(--hi) 8%, transparent); }
 .al-idx { font: 600 11px var(--mono); color: var(--muted); }
 .al-addr { font: 500 10px var(--mono); color: var(--faint); }
 .al-items { position: absolute; inset: 0; pointer-events: none; }
@@ -63,15 +63,15 @@
   border: 1px solid color-mix(in srgb, var(--violet) 45%, var(--cell-line));
   transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s;
 }
-.al-item.is-hi span { background: var(--hi); color: #1a1400; border-color: var(--hi); box-shadow: 0 6px 18px -6px rgb(255 209 102 / 0.7); }
-.al-item.is-ok span { background: var(--ok); color: #04160d; border-color: var(--ok); }
-.al-item.is-bad span { background: var(--bad); color: #1f0508; border-color: var(--bad); }
+.al-item.is-hi span { background: var(--hi); color: var(--on-hi); border-color: var(--hi); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--hi) 70%, transparent); }
+.al-item.is-ok span { background: var(--ok); color: var(--on-ok); border-color: var(--ok); }
+.al-item.is-bad span { background: var(--bad); color: var(--on-bad); border-color: var(--bad); }
 
 /* ── Linked list ── */
 .al-lwrap { position: relative; }
 .al-arcs { display: block; overflow: visible; }
 .al-edge { fill: none; stroke: var(--violet); stroke-width: 2; opacity: 0.85; }
-.al-edge.is-hot { stroke: var(--hi); stroke-width: 3; filter: drop-shadow(0 0 4px rgb(255 209 102 / 0.8)); }
+.al-edge.is-hot { stroke: var(--hi); stroke-width: 3; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 80%, transparent)); }
 .al-headlabel { font: 700 11px var(--mono); fill: var(--info); }
 .al-headline { stroke: var(--info); stroke-width: 1.5; stroke-dasharray: 3 3; }
 
@@ -106,10 +106,10 @@
 }
 .al-node b { font: 700 14px var(--mono); }
 .al-next { font: 500 9px var(--mono); color: var(--muted); white-space: nowrap; }
-.al-node.is-hi { background: var(--hi); border-color: var(--hi); color: #1a1400; box-shadow: 0 6px 18px -6px rgb(255 209 102 / 0.7); }
+.al-node.is-hi { background: var(--hi); border-color: var(--hi); color: var(--on-hi); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--hi) 70%, transparent); }
 .al-node.is-hi .al-next { color: #4a3b00; }
-.al-node.is-fresh { background: rgb(76 201 240 / 0.18); border-color: var(--info); box-shadow: 0 0 0 3px rgb(76 201 240 / 0.2); }
-.al-node.is-bad { background: var(--bad); border-color: var(--bad); color: #1f0508; }
+.al-node.is-fresh { background: color-mix(in srgb, var(--info) 18%, transparent); border-color: var(--info); box-shadow: 0 0 0 3px color-mix(in srgb, var(--info) 20%, transparent); }
+.al-node.is-bad { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
 .al-node.is-bad .al-next { color: #4a0d14; }
 
 .al-tag {

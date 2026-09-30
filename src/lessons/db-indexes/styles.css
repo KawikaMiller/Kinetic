@@ -10,8 +10,8 @@
 
 .ix-node rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.5; transition: fill 0.3s, stroke 0.3s; }
 .ix-node text { fill: var(--muted); font: 600 11px var(--mono); }
-.ix-node.walked rect { stroke: var(--info); fill: rgb(76 201 240 / 0.08); }
-.ix-node.hot rect { stroke: var(--hi); fill: rgb(255 209 102 / 0.18); stroke-width: 2.5; filter: drop-shadow(0 0 8px rgb(255 209 102 / 0.55)); }
+.ix-node.walked rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 8%, transparent); }
+.ix-node.hot rect { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 18%, transparent); stroke-width: 2.5; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hi) 55%, transparent)); }
 .ix-node.hot text { fill: var(--text); }
 .ix-level { fill: var(--faint) !important; font: 600 10px var(--font) !important; letter-spacing: 0.08em; text-transform: uppercase; }
 
@@ -23,8 +23,8 @@
 .ix-row:hover { fill: var(--hi); }
 
 .ix-page rect { fill: var(--bg-2); stroke: var(--cell-line); stroke-width: 1.5; transition: fill 0.3s, stroke 0.3s; }
-.ix-page.walked rect { stroke: var(--info); fill: rgb(76 201 240 / 0.1); }
-.ix-page.hot rect { stroke: var(--hi); fill: rgb(255 209 102 / 0.2); stroke-width: 2.5; }
+.ix-page.walked rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 10%, transparent); }
+.ix-page.hot rect { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 20%, transparent); stroke-width: 2.5; }
 .ix-page-no { fill: var(--faint); font: 600 9px var(--mono); }
 
 .ix-scale {

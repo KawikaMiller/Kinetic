@@ -17,8 +17,8 @@
   top: -10px;
   bottom: 0;
   border-radius: 8px 8px 0 0;
-  background: rgb(76 201 240 / 0.07);
-  border: 1px dashed rgb(76 201 240 / 0.4);
+  background: color-mix(in srgb, var(--info) 7%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--info) 40%, transparent);
   border-bottom: 0;
   pointer-events: none;
 }
@@ -72,7 +72,7 @@
   gap: 10px;
   padding: 12px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.75);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
   border: 1px solid var(--line);
   transition: border-color 0.3s, box-shadow 0.3s;
 }
@@ -85,7 +85,7 @@
 .so-rank {
   margin-left: auto;
   font: 700 12px var(--mono);
-  color: #04160d;
+  color: var(--on-ok);
   background: var(--ok);
   padding: 2px 7px;
   border-radius: 6px;

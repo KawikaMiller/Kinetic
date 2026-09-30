@@ -11,7 +11,7 @@
   aspect-ratio: 2.3 / 1;
   border-radius: 12px;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 40%, rgb(76 201 240 / 0.05), transparent 70%);
+  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--info) 5%, transparent), transparent 70%);
 }
 .cdn-canvas {
   position: absolute;
@@ -22,7 +22,7 @@
 .cdn-side {
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.7);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
   border: 1px solid var(--line);
   font-size: 13px;
   min-height: 100%;

@@ -30,6 +30,21 @@
   --cell: #1a1f2d;    /* default box fill */
   --cell-line: #2d3447;
 
+  /* Extra categorical hues lessons already used as literals */
+  --orange: #ff8c5a;
+  --amber: #f7b538;   /* same value as --t3, semantic alias */
+  --pink: #ff5d8f;    /* same value as --t4, semantic alias */
+  --sky: #8fb8ff;
+  --land: #2a3246;    /* map landmass dots */
+
+  /* Ink for text drawn on a solid token fill */
+  --on-hi: #1a1400;
+  --on-ok: #04160d;
+  --on-bad: #1f0508;
+  --on-info: #03202b;
+  --on-violet: #150a33;
+  --on-fill: var(--bg); /* generic: packets, pills */
+
   --radius: 14px;
   --radius-sm: 9px;
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -788,6 +803,8 @@ kbd {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* run once, don't loop: an infinite 0.01ms animation is a flicker, not stillness */
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

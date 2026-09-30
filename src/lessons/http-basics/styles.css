@@ -22,13 +22,13 @@
 }
 .hb-node.on {
   border-color: var(--violet);
-  box-shadow: 0 0 24px -6px rgb(167 139 250 / 0.6);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--violet) 60%, transparent);
 }
 .hb-server.mode-ratelimited {
-  border-color: rgb(255 209 102 / 0.5);
+  border-color: color-mix(in srgb, var(--hi) 50%, transparent);
 }
 .hb-server.mode-overloaded {
-  border-color: rgb(255 93 108 / 0.5);
+  border-color: color-mix(in srgb, var(--bad) 50%, transparent);
 }
 .hb-node-title {
   font-weight: 700;
@@ -46,7 +46,7 @@
   font: 600 10px var(--mono);
   padding: 2px 7px;
   border-radius: 6px;
-  background: rgb(255 93 108 / 0.14);
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
   color: var(--bad);
 }
 .hb-client-last {
@@ -57,7 +57,7 @@
 }
 .hb-badge {
   font: 700 12px var(--mono);
-  color: #0a0c11;
+  color: var(--bg);
   padding: 5px 10px;
   border-radius: 8px;
 }
@@ -80,7 +80,7 @@
   transform: translate(-50%, -50%);
   white-space: nowrap;
   font: 700 12px var(--mono);
-  color: #0a0c11;
+  color: var(--bg);
   padding: 6px 12px;
   border-radius: 10px;
   box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7);
@@ -121,7 +121,7 @@
 }
 .hb-users li.touched {
   border-color: var(--violet);
-  background: rgb(167 139 250 / 0.12);
+  background: color-mix(in srgb, var(--violet) 12%, transparent);
 }
 .hb-uid {
   font: 500 12px var(--mono);
@@ -148,7 +148,7 @@
   border-radius: 12px;
   border: 1px solid var(--line);
   border-left: 3px solid var(--c);
-  background: rgb(10 12 17 / 0.75);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
   padding: 10px 14px;
   min-width: 0;
 }
@@ -219,7 +219,7 @@
   border-radius: 0 7px 7px 0;
 }
 .hb-matrix tr.on td {
-  background: rgb(167 139 250 / 0.16);
+  background: color-mix(in srgb, var(--violet) 16%, transparent);
 }
 .hb-matrix .yes {
   color: var(--ok);
@@ -234,7 +234,7 @@
 .hb-log {
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: rgb(10 12 17 / 0.6);
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
   padding: 10px 14px;
   font-size: 13px;
   min-height: 150px;

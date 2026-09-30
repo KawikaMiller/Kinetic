@@ -21,7 +21,7 @@
   border: 1px solid var(--cell-line);
   background: var(--cell);
 }
-.he-machine-out { color: var(--info); border-color: rgb(76 201 240 / 0.4); }
+.he-machine-out { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, transparent); }
 .he-funnel {
   padding: 7px 14px;
   border-radius: 10px;
@@ -70,7 +70,7 @@
   padding: 10px 12px;
   outline: none;
 }
-.he-input input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(124 92 255 / 0.2); }
+.he-input input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
 
 .he-out { display: flex; flex-direction: column; gap: 6px; }
 .he-bits {
@@ -108,7 +108,7 @@
 .he-db,
 .he-attacker {
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.75);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
   border: 1px solid var(--line-2);
   padding: 14px 16px;
   transition: border-color 0.3s, box-shadow 0.3s;
@@ -143,7 +143,7 @@
   border-radius: 6px;
   transition: background 0.3s;
 }
-.he-db-row.cracked { background: rgb(255 93 108 / 0.1); }
+.he-db-row.cracked { background: color-mix(in srgb, var(--bad) 10%, transparent); }
 .he-user { font-weight: 600; }
 .he-stored { font-size: 12px; color: var(--text); word-break: break-all; }
 .he-stored.hash { color: var(--info); }
@@ -158,7 +158,7 @@
 .he-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
 .he-attacker { opacity: 0.45; }
-.he-attacker.on { opacity: 1; border-color: rgb(255 93 108 / 0.5); }
+.he-attacker.on { opacity: 1; border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
 .he-rainbow { display: flex; flex-direction: column; gap: 4px; }
 .he-rainbow-title,
 .he-race-title { font-size: 11px; color: var(--faint); margin-bottom: 4px; }
@@ -173,7 +173,7 @@
   transition: background 0.3s, color 0.3s, opacity 0.3s;
 }
 .he-rainbow-row code { font-size: 11px; }
-.he-rainbow-row.hit { background: rgb(255 93 108 / 0.18); color: var(--bad); font-weight: 700; }
+.he-rainbow-row.hit { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); font-weight: 700; }
 .he-rainbow-row.miss { opacity: 0.35; text-decoration: line-through; }
 .he-miss { font: 700 11px var(--mono); color: var(--ok); margin-top: 4px; }
 
@@ -276,9 +276,9 @@
   padding: 2px 7px;
   border-radius: 6px;
   color: #1a0d00;
-  background: #ff8c5a;
+  background: var(--orange);
 }
-.he-sig.verified { background: var(--ok); color: #04160d; }
+.he-sig.verified { background: var(--ok); color: var(--on-ok); }
 .he-sig.tampered { background: var(--bad); color: #1a0306; }
 
 .he-question {
@@ -299,7 +299,7 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgb(10 12 17 / 0.7);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
   border: 1px solid var(--line);
   font-size: 14px;
   color: var(--muted);
@@ -315,7 +315,7 @@
   transition: border-color 0.25s;
 }
 .he-scn.ok { border-color: var(--ok); }
-.he-scn.bad { border-color: rgb(255 93 108 / 0.6); }
+.he-scn.bad { border-color: color-mix(in srgb, var(--bad) 60%, transparent); }
 .he-scn p { margin: 0 24px 10px 0; font-weight: 600; font-size: 14px; }
 .he-scn-opts { display: flex; flex-wrap: wrap; gap: 5px; }
 .he-scn-opts button {

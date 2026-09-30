@@ -2,22 +2,22 @@
 .zt-scene { width: 100%; height: auto; overflow: visible; }
 .zt-zone { font: 600 10px var(--mono); letter-spacing: 0.14em; fill: var(--faint); }
 .zt-zone.ok { fill: var(--ok); }
-.zt-inside { fill: rgb(247 181 56 / 0.04); stroke: rgb(247 181 56 / 0.35); stroke-width: 1.5; stroke-dasharray: 8 6; }
+.zt-inside { fill: color-mix(in srgb, var(--amber) 4%, transparent); stroke: color-mix(in srgb, var(--amber) 35%, transparent); stroke-width: 1.5; stroke-dasharray: 8 6; }
 .zt-wall {
-  fill: #ff8c5a;
+  fill: var(--orange);
   opacity: 0.85;
-  filter: drop-shadow(0 0 10px rgb(255 140 90 / 0.5));
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--orange) 50%, transparent));
 }
 .zt-edge { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
-.zt-edge.mtls { stroke: rgb(167 139 250 / 0.6); stroke-dasharray: none; }
+.zt-edge.mtls { stroke: color-mix(in srgb, var(--violet) 60%, transparent); stroke-dasharray: none; }
 
 .zt-gate circle:not([stroke-opacity]) { fill: var(--panel-2); stroke: var(--hi); stroke-width: 2; }
 .zt-gate-title { font: 700 12px var(--font); fill: var(--hi); }
 .zt-gate-sub { font: 500 9.5px var(--mono); fill: var(--muted); }
 
 .zt-node rect { fill: var(--panel); stroke: var(--cell-line); stroke-width: 1.5; transition: stroke 0.3s, fill 0.3s; }
-.zt-node.attacker rect { stroke: rgb(255 93 108 / 0.7); }
-.zt-node.owned rect { stroke: var(--bad); stroke-width: 2.5; fill: rgb(255 93 108 / 0.15); filter: drop-shadow(0 0 12px rgb(255 93 108 / 0.45)); }
+.zt-node.attacker rect { stroke: color-mix(in srgb, var(--bad) 70%, transparent); }
+.zt-node.owned rect { stroke: var(--bad); stroke-width: 2.5; fill: color-mix(in srgb, var(--bad) 15%, transparent); filter: drop-shadow(0 0 12px color-mix(in srgb, var(--bad) 45%, transparent)); }
 .zt-node-title { font: 700 12.5px var(--font); fill: var(--text); }
 .zt-node-sub { font: 500 10px var(--mono); fill: var(--muted); }
 .zt-node.owned .zt-node-sub { fill: var(--bad); font-weight: 700; }
@@ -25,9 +25,9 @@
 .zt-creds { font: 700 10px var(--mono); fill: var(--bad); }
 
 .zt-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
-.zt-packet-text { font: 700 10px var(--mono); fill: #0a0c11; }
+.zt-packet-text { font: 700 10px var(--mono); fill: var(--bg); }
 .zt-deny { fill: var(--ok); stroke: var(--bg); stroke-width: 2; }
-.zt-deny-x { font: 800 14px var(--font); fill: #04160d; }
+.zt-deny-x { font: 800 14px var(--font); fill: var(--on-ok); }
 
 .zt-log {
   display: flex;
@@ -35,7 +35,7 @@
   gap: 5px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.75);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
   border: 1px solid var(--line);
   min-height: 120px;
 }
@@ -53,6 +53,6 @@
 .zt-row b { font: 800 11px var(--mono); }
 .zt-row.allow b { color: var(--ok); }
 .zt-row.deny b { color: var(--bad); }
-.zt-row.deny { background: rgb(255 93 108 / 0.06); }
+.zt-row.deny { background: color-mix(in srgb, var(--bad) 6%, transparent); }
 .zt-row code { color: var(--info); font-size: 11.5px; }
 .zt-row i { color: var(--muted); font-style: normal; font-family: var(--mono); font-size: 11px; }

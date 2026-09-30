@@ -5,15 +5,13 @@
   padding: 16px 20px 20px;
 }
 .cs-scene { width: 100%; height: auto; overflow: visible; }
-.cs-zone { font: 600 10px var(--mono); letter-spacing: 0.14em; fill: var(--faint); }
 .cs-boundary {
-  fill: rgb(124 92 255 / 0.03);
+  fill: color-mix(in srgb, var(--accent) 3%, transparent);
   stroke: var(--line-2);
   stroke-dasharray: 6 6;
   transition: x 0.4s, width 0.4s;
 }
-.cs-edge { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
-.cs-edge-db { stroke: rgb(167 139 250 / 0.35); }
+.cs-edge-db { stroke: color-mix(in srgb, var(--violet) 35%, transparent); }
 
 .cs-node rect,
 .cs-node polygon,
@@ -32,32 +30,24 @@
 .cs-db.on rect,
 .cs-db.on ellipse { stroke: var(--violet); stroke-width: 2.5; }
 .cs-db rect { stroke-dasharray: 0 80 52 80 52; }
-.cs-node.down rect { stroke: var(--bad); fill: rgb(255 93 108 / 0.12); }
-.cs-node.down .cs-node-sub { fill: var(--bad); font-weight: 700; }
 .cs-node-label { font: 700 13px var(--font); fill: var(--text); }
 .cs-node-sub { font: 500 10px var(--mono); fill: var(--muted); }
 
 .cs-client-ver { fill: var(--hi); }
 .cs-client-title { font: 700 11.5px var(--font); fill: var(--text); }
 .cs-screen { fill: var(--bg-2) !important; stroke: var(--line) !important; stroke-width: 1 !important; }
-.cs-screen.ok { stroke: rgb(61 220 151 / 0.5) !important; }
-.cs-screen.bad { stroke: var(--bad) !important; fill: rgb(255 93 108 / 0.1) !important; }
+.cs-screen.ok { stroke: color-mix(in srgb, var(--ok) 50%, transparent) !important; }
+.cs-screen.bad { stroke: var(--bad) !important; fill: color-mix(in srgb, var(--bad) 10%, transparent) !important; }
 .cs-screen-text { font: 600 10px var(--mono); fill: var(--muted); }
 .cs-screen-text.ok { fill: var(--ok); }
 .cs-screen-text.bad { fill: var(--bad); }
-
-.cs-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }
-.cs-packet-text { font: 700 10.5px var(--mono); fill: #0a0c11; }
 
 .cs-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .cs-panel {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgb(10 12 17 / 0.75);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
   min-height: 86px;
 }
 .cs-panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }

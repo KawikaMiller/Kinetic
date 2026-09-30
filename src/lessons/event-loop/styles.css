@@ -32,7 +32,7 @@
   transition: background 0.25s, box-shadow 0.25s;
 }
 .el-code li code { color: var(--muted); min-width: 0; }
-.el-code li.on { background: rgb(255 209 102 / 0.14); box-shadow: inset 3px 0 0 var(--hi); }
+.el-code li.on { background: color-mix(in srgb, var(--hi) 14%, transparent); box-shadow: inset 3px 0 0 var(--hi); }
 .el-code li.on code { color: var(--text); }
 .el-ln { flex: none; width: 16px; text-align: right; font: 11px var(--mono); color: var(--faint); }
 
@@ -57,7 +57,7 @@
 .el-box header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 8px; }
 .el-box header b { font-size: 13px; }
 .el-box header span { font-size: 11px; color: var(--faint); }
-.el-box.focus { border-color: var(--hi); box-shadow: 0 0 0 3px rgb(255 209 102 / 0.14); }
+.el-box.focus { border-color: var(--hi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 14%, transparent); }
 .el-micro header b { color: var(--violet); }
 .el-macro header b { color: var(--info); }
 .el-out header b { color: var(--ok); }
@@ -78,11 +78,11 @@
   white-space: nowrap;
 }
 .el-chip.stack { align-self: stretch; }
-.el-chip.stack.top { border-color: var(--hi); background: rgb(255 209 102 / 0.16); color: var(--hi); }
+.el-chip.stack.top { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 16%, transparent); color: var(--hi); }
 .el-chip.api { border-style: dashed; color: var(--muted); }
-.el-chip.micro { border-color: rgb(167 139 250 / 0.55); background: rgb(167 139 250 / 0.14); color: var(--violet); }
-.el-chip.macro { border-color: rgb(76 201 240 / 0.55); background: rgb(76 201 240 / 0.12); color: var(--info); }
-.el-chip.out { border-color: rgb(61 220 151 / 0.5); background: rgb(61 220 151 / 0.12); color: var(--ok); }
+.el-chip.micro { border-color: color-mix(in srgb, var(--violet) 55%, transparent); background: color-mix(in srgb, var(--violet) 14%, transparent); color: var(--violet); }
+.el-chip.macro { border-color: color-mix(in srgb, var(--info) 55%, transparent); background: color-mix(in srgb, var(--info) 12%, transparent); color: var(--info); }
+.el-chip.out { border-color: color-mix(in srgb, var(--ok) 50%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
 .el-chip i { font-style: normal; font-size: 10px; color: var(--faint); }
 
 /* blocking demo */

@@ -48,7 +48,7 @@
 }
 .rc-arrow { width: 12px; font-size: 10px; color: var(--c); }
 .rc-code li.past { opacity: 0.45; }
-.rc-code li.ran { background: rgb(255 209 102 / 0.16); opacity: 1; box-shadow: inset 2px 0 0 var(--hi); }
+.rc-code li.ran { background: color-mix(in srgb, var(--hi) 16%, transparent); opacity: 1; box-shadow: inset 2px 0 0 var(--hi); }
 .rc-code li.next code { color: var(--text); }
 .rc-code code { color: var(--muted); }
 
@@ -89,7 +89,7 @@
 .rc-count span { font: 600 13px var(--mono); color: var(--muted); }
 .rc-count b { font: 700 42px var(--mono); }
 .rc-count.hot { border-color: var(--hi); box-shadow: 0 0 24px -6px var(--hi); }
-.rc-count.lost { border-color: var(--bad); background: rgb(255 93 108 / 0.12); box-shadow: 0 0 28px -4px var(--bad); }
+.rc-count.lost { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); box-shadow: 0 0 28px -4px var(--bad); }
 .rc-count.lost b { color: var(--bad); }
 
 .rc-locks { display: flex; flex-direction: column; gap: 8px; }
@@ -119,8 +119,8 @@
 .rc-cycle {
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgb(255 93 108 / 0.4);
-  background: rgb(255 93 108 / 0.08);
+  border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent);
+  background: color-mix(in srgb, var(--bad) 8%, transparent);
   font: 600 12px var(--mono);
   color: var(--bad);
   line-height: 1.6;
@@ -149,7 +149,7 @@
 .rc-chip.t1 { --c: var(--violet); }
 .rc-chip i { font-style: normal; color: var(--c); }
 .rc-chip.wait { border-style: dashed; border-color: var(--bad); color: var(--bad); background: transparent; }
-.rc-chip.lost { border-color: var(--bad); background: rgb(255 93 108 / 0.18); color: var(--bad); }
+.rc-chip.lost { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
 .rc-chip.lock { background: transparent; }
 
 @media (max-width: 900px) {

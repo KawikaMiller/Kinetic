@@ -25,7 +25,7 @@
   font: 700 12.5px var(--mono);
   padding: 5px 12px;
   border-radius: 8px;
-  color: #1a1400;
+  color: var(--on-hi);
   background: var(--hi);
 }
 
@@ -44,7 +44,7 @@
   padding: 10px;
   min-height: 250px;
   border-radius: 12px;
-  background: rgb(18 22 34 / 0.85);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
   border: 1px solid var(--line);
   border-top: 3px solid var(--c);
   transition: border-color 0.3s, box-shadow 0.3s;
@@ -53,7 +53,7 @@
 .sh-shard header b { font-size: 14px; color: var(--c); }
 .sh-shard header span { font: 600 10.5px var(--mono); color: var(--muted); text-align: right; }
 .sh-shard.hot { border-color: var(--bad); box-shadow: 0 0 28px -8px var(--bad); }
-.sh-shard.queried { border-color: var(--hi); box-shadow: 0 0 0 3px rgb(255 209 102 / 0.2); }
+.sh-shard.queried { border-color: var(--hi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 20%, transparent); }
 .sh-shard.new { border-style: dashed; border-color: var(--violet); }
 
 .sh-load { height: 5px; border-radius: 99px; background: var(--line); overflow: hidden; }
@@ -73,8 +73,8 @@
   color: var(--text);
 }
 .sh-chip small { font-size: 9px; font-weight: 600; color: var(--faint); }
-.sh-chip.incoming { flex-direction: row; gap: 4px; background: var(--hi); color: #1a1400; border-color: var(--hi); padding: 5px 10px; }
-.sh-chip.moved { background: rgb(167 139 250 / 0.18); border-color: var(--violet); color: var(--violet); }
+.sh-chip.incoming { flex-direction: row; gap: 4px; background: var(--hi); color: var(--on-hi); border-color: var(--hi); padding: 5px 10px; }
+.sh-chip.moved { background: color-mix(in srgb, var(--violet) 18%, transparent); border-color: var(--violet); color: var(--violet); }
 
 .sh-tag {
   position: absolute;

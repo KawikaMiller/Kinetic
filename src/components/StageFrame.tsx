@@ -4,6 +4,7 @@ import { useCaption } from '../core/caption';
 import type { Player } from '../core/usePlayer';
 import type { Frame } from '../core/types';
 import { Transport } from './Transport';
+import { Controls } from './ui';
 
 /**
  * Standard lesson layout, top to bottom:
@@ -16,7 +17,8 @@ export function StageFrame<F extends Frame>({
 }: {
   children: ReactNode;
   player?: Player<F>;
-  controls?: ReactNode;
+  /** One <Controls> row, or an array of row contents: each is wrapped in <Controls> and stacked. */
+  controls?: ReactNode | ReactNode[];
   legend?: ReactNode;
   stats?: ReactNode;
   /** Minimum height of the visual area in px. */
@@ -36,7 +38,15 @@ export function StageFrame<F extends Frame>({
       </div>
       <Caption />
       {player && <Transport player={player} />}
-      {controls}
+      {Array.isArray(controls) ? (
+        <div className="controls-stack">
+          {controls.map((row, i) => (
+            <Controls key={i}>{row}</Controls>
+          ))}
+        </div>
+      ) : (
+        controls
+      )}
     </div>
   );
 }

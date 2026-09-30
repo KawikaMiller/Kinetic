@@ -10,7 +10,7 @@
 }
 
 .tu-lane {
-  fill: rgb(10 12 17 / 0.55);
+  fill: color-mix(in srgb, var(--bg) 55%, transparent);
   stroke: var(--line);
 }
 .tu-name {
@@ -43,27 +43,27 @@
   stroke: var(--cell-line);
 }
 .tu-sent {
-  fill: rgb(76 201 240 / 0.14);
+  fill: color-mix(in srgb, var(--info) 14%, transparent);
   stroke: var(--info);
 }
 .tu-acked {
-  fill: rgb(61 220 151 / 0.22);
+  fill: color-mix(in srgb, var(--ok) 22%, transparent);
   stroke: var(--ok);
 }
 .tu-held {
-  fill: rgb(255 209 102 / 0.22);
+  fill: color-mix(in srgb, var(--hi) 22%, transparent);
   stroke: var(--hi);
 }
 .tu-got-ok {
-  fill: rgb(61 220 151 / 0.25);
+  fill: color-mix(in srgb, var(--ok) 25%, transparent);
   stroke: var(--ok);
 }
 .tu-got-hi {
-  fill: rgb(255 209 102 / 0.28);
+  fill: color-mix(in srgb, var(--hi) 28%, transparent);
   stroke: var(--hi);
 }
 .tu-missing {
-  fill: rgb(255 93 108 / 0.18);
+  fill: color-mix(in srgb, var(--bad) 18%, transparent);
   stroke: var(--bad);
   stroke-dasharray: 3 2;
 }
@@ -82,7 +82,7 @@
   stroke-dasharray: 4 6;
 }
 .tu-wire-ack {
-  stroke: rgb(61 220 151 / 0.25);
+  stroke: color-mix(in srgb, var(--ok) 25%, transparent);
 }
 
 .tu-move {
@@ -104,10 +104,10 @@
 }
 .tu-pkt-text {
   font: 800 12px var(--mono);
-  fill: #0a0c11;
+  fill: var(--bg);
 }
 .tu-ack {
-  fill: rgb(61 220 151 / 0.2);
+  fill: color-mix(in srgb, var(--ok) 20%, transparent);
   stroke: var(--ok);
 }
 .tu-ack-text {
@@ -119,15 +119,15 @@
   stroke-width: 1.2;
 }
 .tu-badge-ok {
-  fill: rgb(61 220 151 / 0.15);
+  fill: color-mix(in srgb, var(--ok) 15%, transparent);
   stroke: var(--ok);
 }
 .tu-badge-bad {
-  fill: rgb(255 93 108 / 0.15);
+  fill: color-mix(in srgb, var(--bad) 15%, transparent);
   stroke: var(--bad);
 }
 .tu-badge-hi {
-  fill: rgb(255 209 102 / 0.15);
+  fill: color-mix(in srgb, var(--hi) 15%, transparent);
   stroke: var(--hi);
 }
 .tu-badge-text {
@@ -138,7 +138,7 @@
 .tu-cwnd {
   padding: 8px 12px 10px;
   border-radius: 12px;
-  background: rgb(10 12 17 / 0.6);
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
   border: 1px solid var(--line);
 }
 .tu-cwnd-label {

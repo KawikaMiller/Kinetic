@@ -86,13 +86,6 @@ export function useCanvas(draw: (ctx: CanvasRenderingContext2D, w: number, h: nu
   return { wrapRef, canvasRef, size, redraw };
 }
 
-export const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-export const randInt = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
-export function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// Compatibility re-exports: new code imports these from core/math and core/random.
+export { clamp } from './math';
+export { randInt, shuffle } from './random';

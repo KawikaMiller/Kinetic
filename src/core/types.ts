@@ -73,4 +73,6 @@ export interface Frame {
   say?: ReactNode;
   /** Multiplier on how long autoplay lingers on this frame (default 1). */
   hold?: number;
+  /** Swap this frame's caption in without the fade (fast status updates). */
+  quiet?: boolean;
 }
