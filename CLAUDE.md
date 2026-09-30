@@ -49,6 +49,9 @@ loss), say so on screen.
   `Flyer`). Custom shapes stay in the lesson but reuse the scene CSS classes.
 - Formatting, hashing, randomness, maths and motion presets come from `core/format`, `core/hash`,
   `core/random`, `core/math`, `core/motion`. Don't re-declare `percentile`, `lerp`, FNV, springs.
+- Recurring bits of UI already exist: preset chips are `ChipButton`, a program's printed output is
+  `ConsolePanel`, a learner-typed list is `core/parse` `parseIntegers`, ns/long spans are
+  `latency`/`humanDuration`. Memory scenes lay out with `stackBoxes`/`fanBend`, not local loops.
 - Lesson CSS class names are global: always prefix them with the lesson's own prefix.
 - Lesson file convention: `frames.tsx` for frame builders with JSX captions, `sim.ts`/`model.ts`
   for pure logic, `draw.ts` for canvas drawing, `Stage.tsx` for React only.

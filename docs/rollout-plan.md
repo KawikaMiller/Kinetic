@@ -1203,15 +1203,15 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 
 | Tier | Item | Lessons | Wave | Owner | Status | Notes |
 |---|---|---|---|---|---|---|
-| — | Gate: in-flight `src/` refactor landed | — | — | refactor agent | in progress | P0-P3 wait for this |
-| 1 | P0 tracks, topics, home UX | — | pre | | not started | |
-| 1 | P1 new shared components | — | pre | | not started | |
-| 1 | P2 extractions (`TreeSvg`, `CommitGraph`, `CallStackPanel`) | — | pre | | not started | |
-| 1 | P3 tooling (Vitest, port) | — | pre | | not started | |
-| 1 | T1-B1 Bits & bytes | 5 | 1 | | not started | |
-| 1 | T1-B3 Memory & runtime | 5 | 1 | | not started | |
-| 1 | T1-B5 Algorithm patterns | 5 | 1 | | not started | |
-| 1 | P-follow-up after wave 1 | — | 1→2 | | not started | |
+| — | Gate: in-flight `src/` refactor landed | — | — | refactor agent | done | b5da8c9, QA fixes 74903c4 |
+| 1 | P0 tracks, topics, home UX | — | pre | prep-a | done | merged 93a591d |
+| 1 | P1 new shared components | — | pre | prep-b | done | merged a09519c |
+| 1 | P2 extractions (`TreeSvg`, `CommitGraph`, `CallStackPanel`) | — | pre | extract | done | merged 728be2f |
+| 1 | P3 tooling (Vitest, port) | — | pre | prep-a | done | merged 93a591d |
+| 1 | T1-B1 Bits & bytes | 5 | 1 | t1/b1 | done | merged 5e2fa34 |
+| 1 | T1-B3 Memory & runtime | 5 | 1 | t1/b3 | done | merged e239bdf |
+| 1 | T1-B5 Algorithm patterns | 5 | 1 | t1/b5 | done | merged 6271769 |
+| 1 | P-follow-up after wave 1 | — | 1→2 | kit owner | done | ChipButton, ConsolePanel, parseIntegers, latency/humanDuration, memory layout + ports + link arrows, ArrayStrip range tint, BitStrip exponent labels, CallStackPanel tone, TreeSvg nodeOpacity, narrow-screen scene labels |
 | 1 | T1-B2 Logic & the machine | 5 | 2 | | not started | |
 | 1 | T1-B6 Web platform | 5 | 2 | | not started | |
 | 1 | T1-B8 Shipping code | 5 | 2 | | not started | |

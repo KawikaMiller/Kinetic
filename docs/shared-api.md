@@ -104,7 +104,16 @@ bytes(1536)           // '1.5 KB' (binary); bytes(12000, { base: 1000 }) → '12
 times(3)              // '3×'
 plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 pad2(7), clock(605)   // '07', '10:05'
+latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
+humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
+superscript(23)       // '²³' — exponents in plain text: `2${superscript(k)}`
 ```
+
+### `parse.ts`
+```ts
+parseIntegers('1, 3 ,4  8')   // [1, 3, 4, 8]; commas and/or spaces; null if empty or any value isn't an integer
+```
+For the "type your own array" fields (two-pointers, sliding-window).
 
 ### `math.ts`, `random.ts`, `hash.ts` — patterns 9, 11
 ```ts
@@ -266,6 +275,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <Hint>…or click a number</Hint>                          // tone="muted", block (its own line), className
 <Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
 <PauseButton paused={paused} onToggle={togglePause} />
+<ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 const [scene, picker] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });
 <StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 <StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
@@ -308,6 +318,13 @@ Line states: `idle past now next done cut cached pending`. `solid` gives the now
 (tx-acid); `bar` gives it a tint and a left bar (race, recursion, containers). The CSS is generic,
 so expect to keep a few lesson overrides for exact pixel parity.
 
+### `ConsolePanel.tsx` — value-vs-reference, closures-scope; debugger-tools next
+```tsx
+<ConsolePanel lines={mem.out} error={mem.error} />                      // error prints last as "Uncaught …" in red
+<ConsolePanel lines={['ok', { text: 'deprecated', tone: 'orange' }]} title="output" empty="(silent)" />
+```
+Plain lines are green (`--ok`); a `{ text, tone }` line takes its own tone. Shows `empty` while nothing's printed.
+
 ### `Sparkline.tsx`, `AnimatedValue.tsx`, `ArrowMarker.tsx`
 ```tsx
 <Sparkline values={hist} width={80} height={22} cap={60} align="left" minMax={100}
@@ -345,6 +362,8 @@ import { Flyer, Packet, Pulse, SceneNode, TravelDot } from '../../components/sce
 CSS classes you can reuse on custom shapes: `.scene-edge` (dashed link), `.scene-zone` (uppercase
 zone label), `.scene-node` / `.scene-node-box` / `-title` / `-sub`, `.scene-packet(-text)`.
 Packet text size is `var(--packet-fs, 10.5px)`: set `--packet-fs: 11px` on the svg if yours was 11px.
+`.scene-zone` is 10px on desktop and 11px at ≤900px, where scenes are drawn scaled down to their
+`minWidth` and it would otherwise be the first label under 8px. Don't override it per lesson.
 
 Behaviour notes, for pixel parity:
 - **`SceneNode`**
@@ -389,7 +408,7 @@ chunkGroups(16, 4, { tone: 'violet', label: (k, from, to) => hexDigit(from, to) 
 <BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
 ```
 - Set bits are a solid fill in their tone; clear bits are a dark cell outlined in it. Tone: `toneOf(i, bit)`, else the group's, else `hi`.
-- `placeValues` prints 2^k above each bit, compacted (`32K`); `labelOf` overrides that label.
+- `placeValues` (or `'value'`) prints each bit's place value above it, compacted (`32K`); `placeValues="exponent"` prints it as a power of two (`2²³`), for registers wider than ~16 bits where values stop fitting; `labelOf` overrides either.
 - `highlight` rings bits in `highlightTone` (default `info`: binary-hex's carry ripple).
 - It wraps between groups only, never inside one: split a long run (a 23-bit mantissa) into a few groups, labelling only the first.
 - With `onToggle` the bits are `aria-pressed` buttons; without it they're read-only. `size`: `sm` 18px, `md` 24px, `lg` 30px (one step smaller at ≤900px).
@@ -419,10 +438,22 @@ import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from
 <RefArrow from={slotPort({ x: 10, y: 70 })} to={heapRect(user, 180, 2)} bend={-12} />
 <RefArrow from={heapFieldPort(user, 180, 1)} to={heapRect(tags, 180, 1)} dangling={freed} />
 ```
+```tsx
+// layout helpers
+const { tops, end } = stackBoxes(heights, { start: TOP, gap: 18 });                        // downward
+const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction: 'up' }); // a call stack
+<RefArrow bend={fanBend(i, arrowsIntoThisBox)} … />                                        // spread n arrows into one box
+// a reference that leaves to the left, and a structural link between two whole boxes
+<HeapObject … fields={[{ name: '[[Environment]]', isRef: true, port: 'left' }]} />
+<RefArrow from={heapFieldPort(at, w, 0, 'left')} to={envRect} />
+<RefArrow from={childEnvRect} to={parentEnvRect} color="var(--faint)" dashed thin />
+```
 - Sizes: `SLOT` (150 × 30, name tag 58) and `HEAP` (title 24, rows 22) are exported, so layout maths and the shapes agree. `heapHeight(n)` and `heapRect(at, w, n)` size a block.
-- `RefArrow` ends on the target box's border facing its source (`rectEdgeToward`), so arrows never poke inside. `bend` bows it to separate two arrows to one box. `dangling` is dashed `--bad`.
-- `collectable` is dim and dashed with a corner tag (unreachable, waiting for GC). `freed` is dashed `--bad` with a "freed" tag. Pass `tag` to override the corner text (e.g. `GC`).
-- Heap blocks fade in and arrows draw themselves in, except under reduced motion, where both appear at once.
+- `stackBoxes(heights, { start, gap, direction })` returns each box's top y and the running `end`; `fanBend(i, n, spread = 22)` is the sideways bow for arrow `i` of `n` into one box. Both are pure and tested.
+- `RefArrow` ends on the target box's border facing its source (`rectEdgeToward`), so arrows never poke inside. `from` can be a box too (edge to edge). `bend` bows it; `dangling` is dashed `--bad`; `color` / `dashed` / `thin` draw a non-reference link.
+- A field's `port: 'left'` puts its reference dot on the left border; start the arrow at `heapFieldPort(at, w, i, 'left')`.
+- `collectable` is dim and dashed with a corner tag (unreachable, waiting for GC). `freed` is dashed `--bad` with a "freed" tag. Pass `tag` to override the corner text (e.g. `GC`). The tag shares the title row, so title + tag must fit in `w`; if they don't, use `tagPlacement="above"` rather than widening the box.
+- Heap blocks fade in; solid arrows draw themselves in and dashed ones fade in (motion's `pathLength` draw-in writes its own `stroke-dasharray`, which would erase the dashes). Under reduced motion both appear at once.
 
 ### `ArrayStrip.tsx` — two-pointers, sliding-window, prefix-sums, debugging-method; binary-search
 ```tsx
@@ -432,7 +463,7 @@ import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from
             onCellClick={(i) => pick(i)} cellTitle={(i) => `Search for ${arr[i]}`}
             showIndex fontSize={12} cellMax={56} />
 ```
-- `active` lifts in `--hi` (checking now), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get the "still possible" tint.
+- `active` lifts in `--hi` (checking now), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
 - Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
 - Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
 - Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
@@ -490,6 +521,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
 - Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
 - Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.
+- `nodeScale(id)` and `nodeOpacity(id)` (0..1) animate size and fade. motion owns the node group's opacity, so fade nodes through `nodeOpacity`, not CSS (tree-traversals fades nodes that can't be removed).
 - trees-bst (in-order, the null ghost as an `overlay`) runs on it pixel-identically. recursion's fib tree (tidy, custom nodes, `hidden`) does too, except for subpixel antialiasing on a few label glyphs (≤0.03% of the stage), because labels are now placed by the node's transform instead of absolute coordinates.
 - heaps keeps its own tree: nodes sit at array-index positions of a complete binary tree with `2i+1`/`2i+2` edge labels, and they're keyed by item so swaps animate. A third layout mode is worth adding only when a Tier 1 lesson needs it.
 
@@ -504,6 +536,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
   empty={<p className="empty-note">nothing running</p>} overlay={crashed && <CrashBanner />} />
 ```
 - `state`: `idle` (default), `running` (solid `--hi`), `waiting` (dimmed), `returning` (`--info`), `ok` (`--ok`: a base case, a `catch` that handled it), `error` (`--bad`: throwing, crashed, unwinding).
+- `tone` on a frame accents an `idle` or `waiting` frame in that colour, to match the lesson's own colour for it (tree-traversals: violet, like its "on the stack" nodes). Other states keep their colours.
 - `frames` is **top first**. `anchor="bottom"` (default) stacks from the bottom up like plates; `anchor="top"` lists from the top like the DevTools pane. `showDepth` numbers frames by depth (0 = outermost).
 - Frames push in from above and pop off to the right (`layout` + `SPRING.snappy`); `alarm` shakes them and turns the box red.
 - `onSelect` makes frames buttons (focus ring included); `selected` highlights one.
