@@ -24,6 +24,11 @@
 /* Dashed link between actors, and small uppercase zone labels */
 .scene-edge { stroke: var(--line-2); stroke-width: 1.5; stroke-dasharray: 4 6; }
 .scene-zone { font: 600 10px var(--mono); letter-spacing: 0.14em; fill: var(--faint); }
+/* On narrow screens a scene is drawn scaled down to its StageFrame minWidth, where these
+   10px labels were the first text to drop under 8px. Desktop keeps 10px. */
+@media (max-width: 900px) {
+  .scene-zone { font-size: 11px; }
+}
 
 /* Message pills */
 .scene-packet { filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.5)); }

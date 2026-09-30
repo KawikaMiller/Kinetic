@@ -7,8 +7,6 @@
 }
 .oo.oo-wide { grid-template-columns: minmax(0, 1fr); }
 .oo-scene { width: 100%; height: auto; display: block; }
-/* The scene scales down to ~0.77 at the stage's min width: keep its labels at 8px+ on screen. */
-.oo-scene .scene-zone { font-size: 11px; }
 
 /* Class boxes */
 .oo-class .scene-node-title { font: 700 13px var(--mono); }
