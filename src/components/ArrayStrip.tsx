@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import type { CSSProperties, ReactNode } from 'react';
 import { SPRING } from '../core/motion';
-import type { Tone } from '../core/tone';
+import { toneVar, type Tone } from '../core/tone';
 
 /** Must match `.array-cells { gap }` in kit.css. */
 const CELL_GAP = 3;
@@ -71,6 +71,8 @@ export function ArrayStrip({
 
   const style = {
     '--n': n,
+    // Idle cells inside the first range are tinted with that range's own colour.
+    ...(primary ? { '--range-c': toneVar(primary.tone ?? 'hi') } : {}),
     ...(fontSize ? { '--as-fs': `${fontSize}px` } : {}),
     ...(cellMax ? { maxWidth: n * cellMax + (n - 1) * CELL_GAP } : {}),
   } as CSSProperties;

@@ -304,7 +304,6 @@ function DedupeScene({ picker }: { picker: ReactNode }) {
     >
       <div className="stage-pad tp-center">
         <ArrayStrip
-          className="tp-dedupe"
           values={f.values}
           cellState={cellState}
           ranges={[{ from: 0, to: unique - 1, tone: 'ok', labels: ['unique', null] }]}
