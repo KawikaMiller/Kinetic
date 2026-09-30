@@ -91,7 +91,7 @@ export function ReviewScene({ picker }: { picker: ReactNode }) {
     >
       <div className="crv stage-pad">
         <Box variant="sunken" className="crv-pr">
-          <SectionTitle hint="+18 lines · 2 files">PR #412 · Add paginated order history</SectionTitle>
+          <SectionTitle hint="+18 lines · 2 files">Pull request 412 · Add paginated order history</SectionTitle>
           <p>Adds getOrderHistory() for the new account page. Tested locally.</p>
         </Box>
         <ol className="crv-diff" aria-label="Diff">
