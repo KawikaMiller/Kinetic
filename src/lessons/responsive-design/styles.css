@@ -1,18 +1,14 @@
 /* Stage chrome. The sample site's *responsive* rules live in PAGE_CSS (model.ts),
    so they can be shown on screen; this file only gives it its look. */
 .rd-pane .resizable-pane { background: var(--bg); border: 1px solid var(--line-2); }
-.rd-fit { position: relative; overflow: hidden; }
 .rd-page {
-  transform-origin: top left;
   padding: 14px;
   background: var(--bg-2);
   color: var(--text);
   font-size: 12px;
   position: relative;
 }
-.rd-note,
-.rd-honest { margin: 0; font-size: 12.5px; color: var(--muted); }
-.rd-honest { color: var(--faint); }
+.rd-honest { margin: 0; font-size: 12.5px; color: var(--faint); }
 
 /* The sample café site */
 .rd-header {

@@ -6,7 +6,6 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { bytes, NA } from '../../core/format';
-import { useElementSize } from '../../core/hooks';
 import { linearScale } from '../../core/scale';
 import {
   BREAKPOINTS, CANDIDATES, DEVICES, DEVICE_MAX, DEVICE_MIN, PAGE_CSS, SIZES, blockOfLines, breakpointAt,
@@ -25,7 +24,6 @@ const START_DEVICE = 390;
 interface PageMeasure {
   /** The breakpoint block the browser actually applied, read back from --bp. */
   bp: BreakpointId;
-  height: number;
   cardColumns: number;
   fonts: Record<string, number>;
   taps: { id: string; w: number; h: number }[];
@@ -44,7 +42,6 @@ function measurePage(el: HTMLElement): PageMeasure {
     .map((t) => ({ id: t.dataset.tap!, w: t.offsetWidth, h: t.offsetHeight }));
   return {
     bp,
-    height: el.offsetHeight,
     cardColumns: cards ? getComputedStyle(cards).gridTemplateColumns.split(' ').length : 0,
     fonts,
     taps,
@@ -55,7 +52,6 @@ export function Stage() {
   const [device, setDevice] = useState(START_DEVICE);
   const [dpr, setDpr] = useState(2);
   const [showTaps, setShowTaps] = useState(false);
-  const [fitRef, fit] = useElementSize<HTMLDivElement>();
   const pageRef = useRef<HTMLDivElement>(null);
   const setCaption = useSetCaption();
   const m = useMeasure(pageRef, measurePage);
@@ -81,7 +77,6 @@ export function Stage() {
     setCaption(<>{up ? 'Crossed up' : 'Dropped back'}: <span className="hl">{text[m.bp]}</span></>);
   }, [m, setCaption]);
 
-  const scale = fit.width ? Math.min(1, fit.width / device) : 1;
   const small = new Set(showTaps && m ? m.taps.filter((t) => isTooSmall(t.w, t.h)).map((t) => t.id) : []);
   const tooSmall = m ? m.taps.filter((t) => isTooSmall(t.w, t.h)).length : 0;
   const active = m?.bp ?? breakpointAt(device).id;
@@ -142,15 +137,12 @@ export function Stage() {
       ]}
     >
       <div className="stage-pad rd">
-        <ResizablePane min={DEVICE_MIN} max={DEVICE_MAX} value={device} onChange={setDevice} label="Device width" className="rd-pane">
-          <div ref={fitRef} className="rd-fit" style={{ height: (m?.height ?? 0) * scale }}>
-            <style>{PAGE_CSS}</style>
-            <div ref={pageRef} className="rd-page" style={{ width: device, transform: `scale(${scale})` }}>
-              <SamplePage smallTaps={small} />
-            </div>
+        <ResizablePane min={DEVICE_MIN} max={DEVICE_MAX} value={device} onChange={setDevice} label="Device width" className="rd-pane" scaleToFit>
+          <style>{PAGE_CSS}</style>
+          <div ref={pageRef} className="rd-page">
+            <SamplePage smallTaps={small} />
           </div>
         </ResizablePane>
-        {scale < 1 && <p className="rd-note">Laid out at a true {device}px, then scaled to fit this stage.</p>}
 
         <div className="rd-ruler" aria-label="Breakpoint ruler">
           {BREAKPOINTS.map((b, i) => {
