@@ -1,0 +1,135 @@
+.de-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+.de-sandbox,
+.de-mirror {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* The real, clickable sandbox: each element outlined with its name */
+.de-el {
+  position: relative;
+  border-radius: 10px;
+  transition: outline-color 0.2s, background 0.2s, box-shadow 0.2s;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.de-card,
+.de-section {
+  border: 1px dashed var(--line-2);
+  padding: 30px 14px 14px;
+}
+.de-card::before,
+.de-section::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font: 600 11px var(--mono);
+  color: var(--muted);
+}
+.de-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.de-button {
+  font: 600 13px var(--mono);
+  padding: 10px 14px;
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+  color: var(--text);
+  cursor: pointer;
+}
+.de-span {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px dashed var(--line-2);
+  border-radius: 6px;
+}
+.de-check-row { display: inline-flex; align-items: center; gap: 8px; font: 600 12px var(--mono); color: var(--muted); }
+.de-check { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+
+/* While a click replays, the real elements light up in step with the tree */
+.de-live { outline-color: color-mix(in srgb, var(--c) 55%, transparent); }
+.de-live.is-now {
+  outline-color: var(--c);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--c) 18%, transparent);
+}
+
+/* Mirror tree: rect nodes marked through the kit's is-tint / is-solid + tone classes */
+.de-node-under { fill: var(--bg-2); }
+.de-node-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.de-node.is-tint .de-node-box { stroke: var(--c); fill: color-mix(in srgb, var(--c) 16%, transparent); }
+.de-node.is-solid .de-node-box { fill: var(--c); stroke: var(--c); }
+.de-node.is-editing .de-node-box { stroke-dasharray: 5 3; stroke: var(--text); }
+.de-node text { text-anchor: middle; pointer-events: none; }
+.de-node-tag { font: 700 13px var(--mono); fill: var(--text); }
+.de-node-sub { font: 500 12px var(--mono); fill: var(--muted); }
+.de-node-sub.is-flag { fill: var(--text); }
+.de-node.is-solid text { fill: var(--on-c); }
+
+.de-log { display: flex; flex-direction: column; gap: 6px; }
+
+/* Delegation */
+.de-list-box { display: flex; flex-direction: column; gap: 10px; }
+.de-list-wrap { max-height: 250px; overflow-y: auto; }
+.de-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 6px;
+}
+.de-li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 6px 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+  font: 600 12.5px var(--mono);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.de-li.is-picked,
+.de-li.is-missed {
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+}
+.de-li-label {
+  flex: 1;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.de-li-x {
+  font: 700 12px var(--mono);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.de-li-x:hover { color: var(--bad); border-color: var(--bad); }
+.de-note { margin: 0; font-size: 13px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .de-grid { grid-template-columns: minmax(0, 1fr); }
+}
