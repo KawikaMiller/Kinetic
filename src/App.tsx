@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { BUILT_TOPICS } from './core/lessons';
 import { useProgress } from './core/progress';
 import { Home } from './pages/Home';
 import { LessonPage } from './pages/LessonPage';
+
+// Dev-only component showcase (#/dev/kit). The constant condition drops it from production builds.
+const DevKit = import.meta.env.DEV ? lazy(() => import('./pages/DevKit').then((m) => ({ default: m.DevKit }))) : null;
 
 export default function App() {
   const { pathname } = useLocation();
@@ -33,6 +36,16 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/lesson/:id" element={<LessonPage />} />
+        {DevKit && (
+          <Route
+            path="/dev/kit"
+            element={
+              <Suspense fallback={null}>
+                <DevKit />
+              </Suspense>
+            }
+          />
+        )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
