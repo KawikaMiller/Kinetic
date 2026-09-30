@@ -1,7 +1,7 @@
 .ci { gap: 14px; }
 
 /* ── DAG ───────────────────────────────────────────────────────── */
-.ci-dag { width: 100%; height: auto; overflow: visible; }
+.ci-dag { display: block; width: 100%; height: auto; overflow: visible; }
 .ci-edge { fill: none; stroke: var(--line-2); stroke-width: 1.6; transition: stroke 0.25s, opacity 0.25s; }
 .ci-edge.is-critical { stroke: var(--violet); stroke-width: 2.4; }
 .ci-edge.is-dead { opacity: 0.3; stroke-dasharray: 4 5; }

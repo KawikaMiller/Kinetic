@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useCaption } from '../core/caption';
 import type { Player } from '../core/usePlayer';
 import type { Frame } from '../core/types';
 import { Transport } from './Transport';
 import { Controls } from './ui';
+import { WideRegion } from './WideRegion';
 
 /**
  * Standard lesson layout, top to bottom:
@@ -41,9 +42,9 @@ export function StageFrame<F extends Frame>({
         </div>
       )}
       {minWidth ? (
-        <WideStage style={stageStyle} minWidth={minWidth}>
+        <WideRegion className="stage" style={stageStyle} minWidth={minWidth}>
           {children}
-        </WideStage>
+        </WideRegion>
       ) : (
         <div className="stage" style={stageStyle}>
           {children}
@@ -62,67 +63,6 @@ export function StageFrame<F extends Frame>({
       )}
     </div>
   );
-}
-
-/** How long the "swipe" hint stays up if the learner doesn't scroll first. */
-const SWIPE_HINT_MS = 5000;
-
-/** A stage whose content keeps `minWidth` and scrolls sideways when the screen is narrower. */
-function WideStage({ children, minWidth, style }: { children: ReactNode; minWidth: number; style: CSSProperties }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { overflows, atStart, atEnd } = useScrollEdges(ref);
-  const [hintDismissed, setHintDismissed] = useState(false);
-  useEffect(() => {
-    if (!overflows) return;
-    const t = setTimeout(() => setHintDismissed(true), SWIPE_HINT_MS);
-    return () => clearTimeout(t);
-  }, [overflows]);
-  const edges = overflows ? `${atStart ? '' : ' more-left'}${atEnd ? '' : ' more-right'}` : '';
-  return (
-    <div className="stage-shell">
-      <div
-        ref={ref}
-        className={`stage stage-wide${edges}`}
-        style={style}
-        onScroll={() => setHintDismissed(true)}
-        tabIndex={overflows ? 0 : undefined}
-        aria-label={overflows ? 'Diagram: scroll sideways to see all of it' : undefined}
-      >
-        <div className="stage-content" style={{ minWidth }}>
-          {children}
-        </div>
-      </div>
-      {overflows && !hintDismissed && (
-        <span className="stage-swipe-hint" aria-hidden="true">
-          ⇠ swipe to see the whole diagram ⇢
-        </span>
-      )}
-    </div>
-  );
-}
-
-/** Whether a scroll container overflows sideways, and whether it's scrolled to either end. */
-function useScrollEdges(ref: RefObject<HTMLElement | null>) {
-  const [state, setState] = useState({ overflows: false, atStart: true, atEnd: true });
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      const max = el.scrollWidth - el.clientWidth;
-      const next = { overflows: max > 1, atStart: el.scrollLeft <= 1, atEnd: el.scrollLeft >= max - 1 };
-      setState((s) => (s.overflows === next.overflows && s.atStart === next.atStart && s.atEnd === next.atEnd ? s : next));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    if (el.firstElementChild) ro.observe(el.firstElementChild);
-    el.addEventListener('scroll', measure, { passive: true });
-    return () => {
-      ro.disconnect();
-      el.removeEventListener('scroll', measure);
-    };
-  }, [ref]);
-  return state;
 }
 
 function Caption() {

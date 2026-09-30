@@ -5,6 +5,7 @@ import { ConsolePanel } from '../../components/ConsolePanel';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Button, Hint, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
@@ -23,6 +24,8 @@ const PAD_Y = 44;
 /** Gap between a critical-path job and its violet outline. */
 const HALO = 5;
 const SCENE_W = PAD_X * 2 + COL_GAP * 5;
+/** Narrowest the DAG stays readable: its width inside the old 760px stage on a phone (760 − 2 × 16px padding). */
+const DAG_MIN_WIDTH = 728;
 
 const SHARD_OPTIONS: { value: Shards; label: string }[] = [
   { value: 1, label: '1' },
@@ -57,7 +60,6 @@ export function Stage() {
   return (
     <StageFrame
       player={player}
-      minWidth={760}
       height={520}
       stats={
         <Stats>
@@ -94,7 +96,9 @@ export function Stage() {
       ]}
     >
       <div className="ci stage-pad">
-        <Dag run={run} frame={f} />
+        <WideRegion minWidth={DAG_MIN_WIDTH} label="Pipeline diagram: scroll sideways to see all of it">
+          <Dag run={run} frame={f} />
+        </WideRegion>
         <Gantt run={run} frame={f} />
         <div className="ci-bottom">
           <CodePanel title="pipeline.yml (condensed)" lines={yaml.lines} active={running} gutter="none" className="ci-yaml" />
