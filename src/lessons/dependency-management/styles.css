@@ -1,6 +1,3 @@
-/* Show the real characters: the mono font's ligatures would draw >= as a single symbol. */
-.dm-range, .dm-lock, .dm-tree { font-variant-ligatures: none; }
-
 /* ── Semver ranges ─────────────────────────────────────────────── */
 .dm-range { gap: 16px; }
 .dm-meaning { margin: 0; font-size: 15px; }

@@ -79,6 +79,11 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  /* Show the characters people actually type. JetBrains Mono (and Inter's contextual
+     alternates) would draw >=, ===, => and -> as single joined glyphs, which misleads anyone
+     learning to read code. !important because the `font:` shorthand, used all over lesson
+     CSS, silently resets font-variant-ligatures to normal. Don't re-enable it anywhere. */
+  font-variant-ligatures: none !important;
 }
 
 html,

@@ -1,4 +1,4 @@
-.crv { gap: 12px; font-variant-ligatures: none; }
+.crv { gap: 12px; }
 
 /* ── Review it yourself ────────────────────────────────────────── */
 .crv-pr p { margin: 6px 0 0; font-size: 13.5px; color: var(--muted); }
@@ -19,7 +19,6 @@
   text-align: left;
   cursor: pointer;
   font: 12.5px/1.6 var(--mono);
-  font-variant-ligatures: none; /* after the shorthand, which resets it */
 }
 .crv-line:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
 .crv-line code { flex: 1; min-width: 0; white-space: pre-wrap; font: inherit; }
