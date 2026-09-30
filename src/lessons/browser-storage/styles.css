@@ -1,0 +1,63 @@
+.bst-cabinet {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.bst-drawer { display: flex; flex-direction: column; gap: 8px; }
+.bst-drawer.is-sent { border-color: color-mix(in srgb, var(--hi) 45%, transparent); }
+.bst-facts { margin: 0; padding-left: 16px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.bst-items { display: flex; flex-direction: column; gap: 5px; }
+.bst-item {
+  font-size: 11.5px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  transition: background 0.2s, border-color 0.2s;
+}
+.bst-item.is-marked { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
+.bst-flags { color: var(--faint); }
+.bst-item.is-refused { opacity: 0.55; text-decoration: line-through; }
+.bst-refused { display: block; text-decoration: none; color: var(--bad); font-weight: 700; }
+.bst-swipe { display: none; margin: 0; text-align: center; font-size: 12px; color: var(--faint); }
+
+.bst-lane-box,
+.bst-xss { display: flex; flex-direction: column; gap: 10px; }
+/* safe: when the lane overflows, keep its left edge reachable */
+.bst-lane-scroll { overflow-x: auto; display: flex; justify-content: safe center; }
+.bst-lane { width: 100%; max-width: 620px; min-width: 440px; height: auto; }
+.bst-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font: 600 12.5px var(--mono);
+}
+.bst-header-name { color: var(--muted); }
+.bst-header-value { color: var(--hi); overflow-wrap: anywhere; }
+.bst-verdicts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.bst-stale { margin: 0; font-size: 12.5px; color: var(--muted); }
+.bst-script {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bad) 10%, var(--bg-2));
+  border: 1px dashed var(--bad);
+  color: var(--bad);
+  overflow-wrap: anywhere;
+}
+.bst-honest { margin: 0; font-size: 12.5px; color: var(--faint); }
+
+@media (max-width: 900px) {
+  .bst-cabinet { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* the lane only overflows below its 440px min-width */
+@media (max-width: 560px) {
+  .bst-swipe { display: block; }
+}
