@@ -1,0 +1,10 @@
+.sw {
+  flex-flow: row wrap;
+  align-items: flex-start;
+  gap: 24px;
+  padding-top: 52px;
+}
+.sw-strip { flex: 1 1 340px; min-width: 0; }
+.sw-counts { flex: 0 0 150px; padding: 8px 10px; }
+.sw-counts .data-table td { padding: 3px 8px; }
+.sw-repeat td { color: var(--bad); font-weight: 700; }

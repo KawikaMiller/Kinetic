@@ -1,0 +1,14 @@
+.tt { flex-flow: row wrap; align-items: flex-start; }
+.tt-main { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.tt-side { flex: 0 1 240px; display: flex; flex-direction: column; gap: 12px; }
+.tt-tree { width: 100%; height: auto; }
+.tt-tape,
+.tt-side .tray { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 42px; }
+.tt-tape .section-title,
+.tt-side .tray .section-title { flex-basis: 100%; }
+.tt-uses { display: flex; flex-wrap: wrap; gap: 6px; }
+/* motion owns the node group's opacity, so "can't remove this" is a dashed outline instead */
+.tt-tree .tree-node.tt-locked circle { stroke-dasharray: 4 3; }
+.tt-tree .tree-node.tt-locked { cursor: not-allowed; }
+.tt-tree .tree-node.tt-still-waiting circle { stroke: var(--violet); stroke-width: 4; }
+.btn.tt-on { border-color: var(--accent); }
