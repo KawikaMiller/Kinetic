@@ -1,8 +1,10 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
-import { randInt, useElementSize } from '../../core/hooks';
+import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { useElementSize } from '../../core/hooks';
+import { pick, randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import {
   MAX_INSERTS, allKeys, freshKey, indexFrames, insertFrames, internalSeps, makeDb, rangeFrames, rootSeps, scanFrames,
@@ -48,8 +50,7 @@ export function Stage() {
   const [mode, setMode] = useState<Mode>('index');
   const [run, setRun] = useState<Run>(() => {
     const db = makeDb();
-    const keys = allKeys(db);
-    return { db, frames: indexFrames(db, keys[randInt(0, keys.length - 1)]) };
+    return { db, frames: indexFrames(db, pick(allKeys(db))) };
   });
   const player = usePlayer(run.frames, { interval: 1100 });
   const f = player.frame;
@@ -57,14 +58,12 @@ export function Stage() {
 
   const go = (m: Mode, target?: number) => {
     setMode(m);
-    const keys = allKeys(run.db);
-    setRun(framesFor(m, run.db, target ?? keys[randInt(0, keys.length - 1)]));
+    setRun(framesFor(m, run.db, target ?? pick(allKeys(run.db))));
   };
   const reset = () => {
     const db = makeDb();
-    const keys = allKeys(db);
     player.queueNext({ play: false });
-    setRun({ db, frames: indexFrames(db, keys[randInt(0, keys.length - 1)]) });
+    setRun({ db, frames: indexFrames(db, pick(allKeys(db))) });
     setMode('index');
   };
 
@@ -98,7 +97,7 @@ export function Stage() {
             {mode === 'insert' ? (canInsert ? 'Insert another' : 'Insert limit reached') : mode === 'range' ? 'New range' : 'New target id'}
           </Button>
           <Button onClick={reset}>New table</Button>
-          <span className="ix-hint">…or click any row in a heap page to look it up</span>
+          <Hint>…or click any row in a heap page to look it up</Hint>
         </Controls>
       }
     >
@@ -226,9 +225,12 @@ function TreeView({ f, width, onPick }: { f: IxFrame; width: number; onPick: (k:
 
 const FANOUT = 200;
 const ROWS_PER_PAGE = 100;
+const PAGE_BYTES = 8192;
+const BAR_H = 10;
 const fmt = (n: number) => (n >= 1e9 ? `${n / 1e9} billion` : n >= 1e6 ? `${n / 1e6} million` : n.toLocaleString());
-const bytes = (pages: number) => {
-  const b = pages * 8192;
+/** Bytes read for `pages` pages, in whole decimal units (the lesson rounds for readability). */
+const pageBytes = (pages: number) => {
+  const b = pages * PAGE_BYTES;
   return b >= 1e9 ? `${(b / 1e9).toFixed(0)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(0)} MB` : `${(b / 1e3).toFixed(0)} KB`;
 };
 
@@ -239,22 +241,23 @@ function AtScale() {
   // index depth = ceil(log_fanout(n)); +1 for fetching the row's heap page
   const index = Math.max(1, Math.ceil(Math.log(n) / Math.log(FANOUT))) + 1;
   const maxLog = Math.log10(1e9 / ROWS_PER_PAGE);
-  const bar = (v: number) => `${Math.max(2, (Math.log10(v) / maxLog) * 100)}%`;
+  /** Log-scale bar length in percent, never thinner than 2%. */
+  const barPct = (v: number) => Math.max(2, (Math.log10(v) / maxLog) * 100);
   return (
     <div className="ix-scale">
       <Slider label="At scale: rows in table" value={exp} min={3} max={9} onChange={setExp} format={(e) => fmt(10 ** e)} />
       <div className="ix-bars">
         <div className="ix-bar-row">
           <span>Full scan</span>
-          <div className="ix-bar"><motion.i className="bad" animate={{ width: bar(scan) }} /></div>
+          <Bar value={barPct(scan)} max={100} tone="bad" height={BAR_H} />
           <b className="bad">{scan.toLocaleString()} pages</b>
-          <em>≈ {bytes(scan)} read</em>
+          <em>≈ {pageBytes(scan)} read</em>
         </div>
         <div className="ix-bar-row">
           <span>Index</span>
-          <div className="ix-bar"><motion.i className="ok" animate={{ width: bar(index) }} /></div>
+          <Bar value={barPct(index)} max={100} tone="ok" height={BAR_H} />
           <b className="ok">{index} pages</b>
-          <em>≈ {bytes(index)} read</em>
+          <em>≈ {pageBytes(index)} read</em>
         </div>
       </div>
       <p className="ix-scale-note">8 KB pages, ~{ROWS_PER_PAGE} rows per page, ~{FANOUT} keys per index page (log scale bars).</p>

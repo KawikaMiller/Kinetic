@@ -1,116 +1,22 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
-import type { Frame } from '../../core/types';
+import { pct } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import {
-  HIT_MS, KEYS, MISS_MS, POLICIES, POLICY_NAMES, VICTIM, emojiOf, hitRatio, makeTraffic, simulate,
-  type Phase, type Policy, type Step,
-} from './sim';
+import { buildFrames, type LFrame } from './frames';
+import { HIT_MS, KEYS, MISS_MS, POLICIES, POLICY_NAMES, emojiOf, hitRatio, makeTraffic, simulate, type Phase, type Policy } from './sim';
 import './styles.css';
 
-type LFrame = Frame & Step;
-
 const TRAFFIC = 24;
-const pct = (x: number) => `${Math.round(x * 100)}%`;
-
-function Em({ k }: { k: string }) {
-  return <span className="lru-em">{emojiOf(k)}</span>;
-}
-
-function caption(s: Step, policy: Policy, cap: number, verbose: boolean): ReactNode {
-  const k = s.key!;
-  switch (s.phase) {
-    case 'lookup':
-      return verbose ? (
-        <>
-          Request for <Em k={k} />. First stop: the cache. A <span className="hl info">hash map</span> lookup, O(1).
-        </>
-      ) : (
-        <>
-          <Em k={k} /> requested…
-        </>
-      );
-    case 'hit':
-      return verbose ? (
-        <>
-          <span className="hl ok">Hit!</span> <Em k={k} /> served in ~{HIT_MS}ms.{' '}
-          {policy === 'lru' && 'LRU moves it to the front: most recently used.'}
-          {policy === 'fifo' && "FIFO doesn't reorder: arrival order is all it cares about."}
-          {policy === 'lfu' && 'LFU bumps its use count, so it climbs toward the front.'}
-        </>
-      ) : (
-        <>
-          <span className="hl ok">Hit</span> <Em k={k} /> ~{HIT_MS}ms
-        </>
-      );
-    case 'fetch':
-      return (
-        <>
-          <span className="hl bad">Miss</span>. <Em k={k} /> isn't cached, so it's a slow trip to the database (~
-          {MISS_MS - HIT_MS}ms).
-          {s.victim && verbose && <> Cache is full ({cap}/{cap}). Something has to go.</>}
-        </>
-      );
-    case 'insert': {
-      const where =
-        policy === 'lfu' ? (
-          <>
-            with a use count of 1, which puts it <b>last in line</b>. LFU is harsh on newcomers.
-          </>
-        ) : (
-          <>at the front.</>
-        );
-      return s.evicted ? (
-        <>
-          Evict <Em k={s.evicted} /> ({VICTIM[policy]}), then store <Em k={k} /> {where}
-        </>
-      ) : (
-        <>
-          Store <Em k={k} /> {where}
-        </>
-      );
-    }
-    default:
-      return null;
-  }
-}
-
-function buildFrames(seq: string[], cap: number, policy: Policy): LFrame[] {
-  const steps = simulate(seq, cap, policy);
-  const frames: LFrame[] = steps.map((s) => ({
-    ...s,
-    say: s.phase === 'idle' ? undefined : caption(s, policy, cap, s.n < 3 || (s.phase === 'fetch' && !!s.victim && s.n < 8)),
-    hold: s.phase === 'fetch' ? 1.3 : s.n >= 3 ? 0.75 : 1,
-  }));
-  frames[0].say = (
-    <>
-      A client asks for items. The <span className="hl info">cache</span> holds {cap} of them; everything else lives in a
-      slow <span className="hl bad">database</span>. Press play.
-    </>
-  );
-  const last = steps[steps.length - 1];
-  const ratio = hitRatio(last.hits, last.misses);
-  const avg = last.hits * HIT_MS + last.misses * MISS_MS;
-  frames.push({
-    ...last,
-    phase: 'idle',
-    key: null,
-    hold: 3,
-    say: (
-      <>
-        {POLICY_NAMES[policy]} with room for {cap}: hit ratio <span className="hl ok">{pct(ratio)}</span>, average{' '}
-        <span className="hl">{Math.round(avg / Math.max(1, seq.length))}ms</span> vs. {MISS_MS}ms with no cache at all.
-      </>
-    ),
-  });
-  return frames;
-}
+const SLOT_SPRING = { type: 'spring', stiffness: 380, damping: 30 } as const;
+const TOKEN_SPRING = { type: 'spring', stiffness: 170, damping: 22 } as const;
 
 // Vertical wire positions (px from top of the stage).
 const Y = { client: 52, cache: 206, db: 362 };
 const TOKEN_Y: Record<Phase, number> = { idle: Y.client, lookup: Y.cache, hit: Y.client, fetch: Y.db, insert: Y.cache };
+/** The code and compare panels sit beside the database, their tops just above its box. */
+const PANEL_TOP = Y.db - 44;
 
 export function Stage() {
   const [policy, setPolicy] = useState<Policy>('lru');
@@ -122,22 +28,10 @@ export function Stage() {
   const player = usePlayer(frames, { interval: 750 });
   const f = player.frame;
 
-  // Manual requests append to the traffic and jump straight to them.
-  const pendingSeek = useRef<number | null>(null);
-  const { seek, play } = player;
-  useEffect(() => {
-    const n = pendingSeek.current;
-    if (n === null) return;
-    pendingSeek.current = null;
-    const at = frames.findIndex((fr) => fr.n === n);
-    if (at >= 0) {
-      seek(at);
-      play();
-    }
-  }, [frames, seek, play]);
-
+  // A manual request appends to the traffic and plays from its first frame, which sits
+  // where the old summary frame was (see buildFrames).
   const request = (key: string) => {
-    pendingSeek.current = seq.length;
+    player.queueNext({ play: true, from: frames.length - 1 });
     setSeq([...seq, key]);
   };
 
@@ -255,7 +149,7 @@ export function Stage() {
                       initial={{ opacity: 0, scale: 0.4, x: -40 }}
                       animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotate: 0 }}
                       exit={{ opacity: 0, y: 90, rotate: 18, scale: 0.7, transition: { duration: 0.5 } }}
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      transition={SLOT_SPRING}
                     >
                       <span className="lru-slot-em">{emojiOf(e.key)}</span>
                       <span className="lru-slot-key">{e.key}</span>
@@ -280,9 +174,9 @@ export function Stage() {
           <span className="lru-db-lat">~{MISS_MS - HIT_MS}ms</span>
         </div>
 
-        <CodePanel policy={policy} phase={f.phase} evicting={!!f.evicted || !!f.victim} />
+        <UnderTheHood policy={policy} phase={f.phase} evicting={!!f.evicted || !!f.victim} top={PANEL_TOP} />
 
-        <div className="lru-compare">
+        <div className="lru-compare" style={{ top: PANEL_TOP }}>
           <b>Same traffic, each policy</b>
           {compare.map(({ p, ratio: r }) => (
             <button key={p} type="button" className={p === policy ? 'on' : ''} onClick={() => setPolicy(p)}>
@@ -303,7 +197,7 @@ export function Stage() {
               initial={{ top: Y.client - 20, opacity: 0, scale: 0.5 }}
               animate={{ top: TOKEN_Y[f.phase] - 20, opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.25 } }}
-              transition={{ type: 'spring', stiffness: 170, damping: 22 }}
+              transition={TOKEN_SPRING}
             >
               {emojiOf(f.key)}
             </motion.div>
@@ -354,7 +248,8 @@ function Sparkline({ log }: { log: ('hit' | 'miss')[] }) {
   );
 }
 
-function CodePanel({ policy, phase, evicting }: { policy: Policy; phase: Phase; evicting: boolean }) {
+/** The real implementation's get/put, with the line for the current phase lit. */
+function UnderTheHood({ policy, phase, evicting, top }: { policy: Policy; phase: Phase; evicting: boolean; top: number }) {
   const hitLine = {
     lru: 'if (node) return moveToHead(node)',
     fifo: 'if (node) return node        // no reorder',
@@ -368,7 +263,7 @@ function CodePanel({ policy, phase, evicting }: { policy: Policy; phase: Phase; 
     { code: 'map.set(key, addToHead(value))', on: phase === 'insert' },
   ];
   return (
-    <div className="lru-code">
+    <div className="lru-code" style={{ top }}>
       <div className="lru-code-head">
         Under the hood: <b>hash map</b> + <b>doubly linked list</b> → get & put are both O(1)
       </div>

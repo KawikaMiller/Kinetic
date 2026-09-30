@@ -1,24 +1,5 @@
-// Hashes, a Bloom filter and HyperLogLog, small enough to watch.
-
-export function fnv1a(str: string) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
-
-/** murmur3 finalizer: spreads bits well, good enough for sketches */
-export function fmix32(x: number) {
-  let h = x >>> 0;
-  h ^= h >>> 16;
-  h = Math.imul(h, 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  h ^= h >>> 16;
-  return h >>> 0;
-}
+// A Bloom filter and HyperLogLog, small enough to watch.
+import { fmix32, fnv1a } from '../../core/hash';
 
 // ── Bloom filter ────────────────────────────────────────────────────
 

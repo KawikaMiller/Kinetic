@@ -119,7 +119,7 @@
   padding: 1px 5px;
   border-radius: 99px;
   background: var(--violet);
-  color: #140c2b;
+  color: var(--on-violet);
 }
 .lru-slot.empty { border-style: dashed; background: transparent; }
 .lru-slot.probe { border-color: var(--hi); }
@@ -175,7 +175,6 @@
   position: absolute;
   left: calc(var(--col) + 84px);
   right: 260px;
-  top: 318px;
   padding: 10px 12px;
   border-radius: 11px;
   background: color-mix(in srgb, var(--panel) 90%, transparent);
@@ -190,7 +189,6 @@
 .lru-compare {
   position: absolute;
   right: 20px;
-  top: 318px;
   width: 226px;
   padding: 10px 12px;
   border-radius: 11px;

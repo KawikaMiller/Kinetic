@@ -3,13 +3,18 @@ import { useMemo, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
+import { useAsyncValue } from '../../core/useAsyncValue';
 import { usePlayer } from '../../core/usePlayer';
-import { useAesDemo } from './crypto';
+import { aesRoundTrip } from './crypto';
 
 type Where = 'alice' | 'wire' | 'bob';
-const X: Record<Where, string> = { alice: '14%', wire: '50%', bob: '86%' };
+/** Horizontal positions across the scene, in percent. The wire runs from Alice to Bob. */
+const POS: Record<Where, number> = { alice: 14, wire: 50, bob: 86 };
+const X: Record<Where, string> = { alice: `${POS.alice}%`, wire: `${POS.wire}%`, bob: `${POS.bob}%` };
+/** Left/right insets that span Alice → Bob, for the wire and the question banner. */
+const SPAN = { left: X.alice, right: `${100 - POS.bob}%` };
 const MESSAGE = 'Meet at 6pm';
-const spring = { type: 'spring', stiffness: 120, damping: 20 } as const;
+const CARD_SPRING = { type: 'spring', stiffness: 120, damping: 20 } as const;
 
 /* ─── Shared scene pieces ─────────────────────────────────────────── */
 
@@ -44,7 +49,7 @@ function Item({ icon, label, color, show = true, shake = false }: { icon: string
 
 function Wire({ label }: { label: string }) {
   return (
-    <div className="he-wire">
+    <div className="he-wire" style={SPAN}>
       <span>{label}</span>
     </div>
   );
@@ -52,7 +57,7 @@ function Wire({ label }: { label: string }) {
 
 function Card({ at, locked, text, tone, badge }: { at: Where; locked: boolean; text: string; tone?: 'ok' | 'bad'; badge?: ReactNode }) {
   return (
-    <motion.div className={`he-card ${locked ? 'locked' : ''} ${tone ?? ''}`} initial={false} animate={{ left: X[at] }} transition={spring}>
+    <motion.div className={`he-card ${locked ? 'locked' : ''} ${tone ?? ''}`} initial={false} animate={{ left: X[at] }} transition={CARD_SPRING}>
       <span className="he-card-icon">{locked ? '🔒' : '✉'}</span>
       <code>{text}</code>
       {badge}
@@ -90,7 +95,7 @@ function buildSym(): SymFrame[] {
 export function Symmetric({ modePicker }: { modePicker: ReactNode }) {
   const frames = useMemo(() => buildSym(), []);
   const player = usePlayer(frames, { interval: 1900 });
-  const aes = useAesDemo(MESSAGE);
+  const aes = useAsyncValue(() => aesRoundTrip(MESSAGE), MESSAGE);
   const f = player.frame;
   const cipher = aes ? `${aes.cipherHex.slice(0, 22)}…` : 'encrypting…';
   const keyLabel = aes ? `key ${aes.keyHex.slice(0, 8)}…` : 'key';
@@ -130,7 +135,7 @@ export function Symmetric({ modePicker }: { modePicker: ReactNode }) {
           <Item icon="🔑" label={keyLabel} color="var(--hi)" show={f.keys} />
         </Person>
         {f.question && (
-          <motion.div className="he-question" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <motion.div className="he-question" style={SPAN} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <span>? how did this key get here safely ?</span>
           </motion.div>
         )}

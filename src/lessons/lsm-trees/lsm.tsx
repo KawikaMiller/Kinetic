@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { fnv1a } from '../../core/hash';
+import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 
 export const MEM_CAP = 4;
@@ -49,15 +51,7 @@ export interface LsmFrame extends Frame {
   lastRead: { read: number; skipped: number } | null;
 }
 
-function fnv(str: string) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
-export const bloomBits = (k: string) => [fnv(k) % BLOOM_BITS, fnv(`${k}#salt`) % BLOOM_BITS];
+export const bloomBits = (k: string) => [fnv1a(k) % BLOOM_BITS, fnv1a(`${k}#salt`) % BLOOM_BITS];
 const bloomOf = (entries: Entry[]) => entries.reduce((m, e) => bloomBits(e.k).reduce((mm, b) => mm | (1 << b), m), 0);
 export const bloomMaybe = (t: SST, k: string) => bloomBits(k).every((b) => (t.bloom >> b) & 1);
 
@@ -78,24 +72,16 @@ export function emptyLsm(): Lsm {
   return { wal: [], mem: [], l0: [], l1: [], seq: 0, nextId: 1, userWrites: 0, diskWrites: 0 };
 }
 
+/** A frame showing `s` with nothing highlighted. */
+export function blankState(s: Lsm): Omit<LsmFrame, 'say' | 'hold'> {
+  return { s, hot: null, hotKey: null, probes: {}, bloomCheck: null, memProbe: null, compacting: [], dropped: [], lastRead: null };
+}
+
 function recorder(s0: Lsm) {
-  let f: LsmFrame = {
-    s: s0, hot: null, hotKey: null, probes: {}, bloomCheck: null, memProbe: null, compacting: [], dropped: [], lastRead: null,
-  };
-  const frames: LsmFrame[] = [];
-  return {
-    frames,
-    get: () => f,
-    set(p: Partial<LsmFrame>) {
-      f = { ...f, ...p };
-    },
-    state(p: Partial<Lsm>) {
-      f = { ...f, s: { ...f.s, ...p } };
-    },
-    snap(say?: ReactNode, hold?: number) {
-      frames.push({ ...f, say, hold });
-    },
-  };
+  const r = createRecorder<LsmFrame>(blankState(s0));
+  /** Patch the tree itself (the frame's nested `s`). */
+  const state = (p: Partial<Lsm>) => r.set({ s: { ...r.get().s, ...p } });
+  return { ...r, state };
 }
 
 type Rec = ReturnType<typeof recorder>;

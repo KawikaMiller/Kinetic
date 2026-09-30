@@ -1,10 +1,12 @@
 import { motion } from 'motion/react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { useSetCaption } from '../../core/caption';
+import { useIntroCaption, useSetCaption } from '../../core/caption';
+import { describe } from './describe';
+import { ObjectPanel } from './ObjectPanel';
 import {
-  blobId, branch, byId, checkout, commit, FILES, initialRepo, merge, objectCount, rebase, reachable, rootTreeId, srcTreeId,
+  branch, byId, checkout, commit, FILES, initialRepo, merge, objectCount, rebase, reachable,
   type Commit, type FileName, type Repo, type Result,
 } from './repo';
 import './styles.css';
@@ -13,6 +15,10 @@ const COL = 66;
 const ROW = 96;
 const PAD_X = 44;
 const PAD_Y = 70;
+/** Keeps the graph to four lanes so it fits the stage. */
+const MAX_BRANCHES = 4;
+const COMMIT_SPRING = { type: 'spring', stiffness: 320, damping: 22 } as const;
+const TAG_SPRING = { type: 'spring', stiffness: 260, damping: 24 } as const;
 
 const LANE_COLORS = ['var(--info)', 'var(--violet)', 'var(--t1)', 'var(--t4)', 'var(--t3)'];
 const laneColor = (lane: number) => LANE_COLORS[lane % LANE_COLORS.length];
@@ -25,14 +31,12 @@ export function Stage() {
   const setCaption = useSetCaption();
   const scroller = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setCaption(
-      <>
-        Every circle is a <b>commit</b>: a snapshot of all your files. Branch labels are just <b>pointers</b> to a commit,
-        and <span className="hl">HEAD</span> says which branch you're on. Try Commit, then New branch.
-      </>,
-    );
-  }, [setCaption]);
+  useIntroCaption(
+    <>
+      Every circle is a <b>commit</b>: a snapshot of all your files. Branch labels are just <b>pointers</b> to a commit,
+      and <span className="hl">HEAD</span> says which branch you're on. Try Commit, then New branch.
+    </>,
+  );
 
   const headTip = repo.branches[repo.head];
   const sel = byId(repo, selected && repo.commits.some((c) => c.id === selected) ? selected : headTip);
@@ -92,7 +96,7 @@ export function Stage() {
           <Button variant="primary" onClick={() => apply(commit(repo, file))}>
             + Commit
           </Button>
-          <Button onClick={() => apply(branch(repo))} disabled={Object.keys(repo.branches).length >= 4}>
+          <Button onClick={() => apply(branch(repo))} disabled={Object.keys(repo.branches).length >= MAX_BRANCHES}>
             New branch
           </Button>
           <Segmented
@@ -154,7 +158,7 @@ export function Stage() {
                   className={`gi-commit ${dead ? 'dead' : ''} ${isSel ? 'sel' : ''}`}
                   initial={{ x, y, scale: 0, opacity: 0 }}
                   animate={{ x, y, scale: 1, opacity: dead ? 0.35 : 1 }}
-                  transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+                  transition={COMMIT_SPRING}
                   onClick={() => setSelected(c.id)}
                 >
                   <circle r={isSel ? 17 : 14} fill="var(--panel)" stroke={laneColor(c.lane)} strokeWidth={c.parents.length > 1 ? 4 : 2.5} strokeDasharray={dead ? '4 3' : undefined} />
@@ -180,7 +184,7 @@ export function Stage() {
                   key={name}
                   initial={false}
                   animate={{ x: x - w / 2, y: y - 42 - k * 22 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                  transition={TAG_SPRING}
                 >
                   <rect width={w} height={18} rx={5} className={`gi-tag ${isHead ? 'head' : ''}`} />
                   <text x={w / 2} y={12.5} textAnchor="middle" className={`gi-tag-text ${isHead ? 'head' : ''}`}>
@@ -196,102 +200,4 @@ export function Stage() {
       </div>
     </StageFrame>
   );
-}
-
-function ObjectPanel({ repo, c }: { repo: Repo; c: Commit }) {
-  const parent = c.parents.length ? byId(repo, c.parents[0]) : null;
-  const status = (have: string, had: string | null) => (had === null ? 'new' : have === had ? 'reused' : 'new');
-  const root = rootTreeId(c.files);
-  const src = srcTreeId(c.files);
-  const pRoot = parent ? rootTreeId(parent.files) : null;
-  const pSrc = parent ? srcTreeId(parent.files) : null;
-  const blob = (f: FileName) => blobId(c.files[f]);
-  const pBlob = (f: FileName) => (parent ? blobId(parent.files[f]) : null);
-
-  return (
-    <div className="gi-objects">
-      <span className="gi-label">inside commit {c.id} · vs its parent</span>
-      <Obj kind="commit" id={c.id} st="new" note={c.msg}>
-        <div className="gi-meta">parents: {c.parents.length ? c.parents.map((p) => p).join(', ') : 'none (root commit)'}</div>
-        <Obj kind="tree" id={root} st={status(root, pRoot)} note="/">
-          <Obj kind="blob" id={blob('README.md')} st={status(blob('README.md'), pBlob('README.md'))} note="README.md" />
-          <Obj kind="tree" id={src} st={status(src, pSrc)} note="src/">
-            <Obj kind="blob" id={blob('src/app.js')} st={status(blob('src/app.js'), pBlob('src/app.js'))} note="app.js" />
-            <Obj kind="blob" id={blob('src/util.js')} st={status(blob('src/util.js'), pBlob('src/util.js'))} note="util.js" />
-          </Obj>
-        </Obj>
-      </Obj>
-      <p className="gi-foot">
-        Each object's name <b>is</b> the hash of its content. Unchanged files keep the same hash, so git reuses them
-        instead of storing copies.
-      </p>
-    </div>
-  );
-}
-
-function Obj({ kind, id, st, note, children }: { kind: 'commit' | 'tree' | 'blob'; id: string; st: 'new' | 'reused'; note: string; children?: ReactNode }) {
-  return (
-    <div className={`gi-obj ${kind}`}>
-      <motion.div key={id} className={`gi-obj-row ${st}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
-        <span className="gi-kind">{kind}</span>
-        <code>{id}</code>
-        <span className="gi-note">{note}</span>
-        {kind !== 'commit' && <span className="gi-st">{st === 'new' ? 'NEW' : 'reused'}</span>}
-      </motion.div>
-      {children && <div className="gi-children">{children}</div>}
-    </div>
-  );
-}
-
-function describe(r: Result, before: Repo): ReactNode {
-  const repo = r.repo;
-  const tip = byId(repo, repo.branches[repo.head]);
-  const name = <span className="hl">{repo.head}</span>;
-  switch (r.kind) {
-    case 'commit': {
-      const p = byId(repo, tip.parents[0]);
-      const newTrees = (rootTreeId(tip.files) !== rootTreeId(p.files) ? 1 : 0) + (srcTreeId(tip.files) !== srcTreeId(p.files) ? 1 : 0);
-      return (
-        <>
-          Commit <span className="hl">{tip.id}</span>: only {r.info.split('/').pop()} changed, so git stored{' '}
-          <b>1 new blob</b>, <b>{newTrees} new tree{newTrees === 1 ? '' : 's'}</b> and 1 commit. Everything else is reused by
-          hash. {name} moves forward.
-        </>
-      );
-    }
-    case 'branch':
-      return (
-        <>
-          A branch is just a tiny file holding one commit hash. <span className="hl violet">{r.info}</span> points at the
-          same commit as before, and HEAD now points at {r.info}. No files were copied.
-        </>
-      );
-    case 'checkout':
-      return <>HEAD now points at {name}. Your working files switch to that commit's snapshot.</>;
-    case 'ff':
-      return (
-        <>
-          <span className="hl ok">Fast-forward</span>: {repo.head} was simply behind {r.info}, so git slid the pointer
-          forward. No new commit needed.
-        </>
-      );
-    case 'uptodate':
-      return <>Already up to date: {r.info} is already part of {before.head}'s history.</>;
-    case 'merge':
-      return (
-        <>
-          Merge commit <span className="hl">{tip.id}</span> has <b>two parents</b>: history is kept exactly as it happened.
-          {r.info ? <> Both sides changed <span className="hl bad">{r.info}</span>: a conflict you'd resolve by hand.</> : null}
-        </>
-      );
-    case 'rebase':
-      return (
-        <>
-          Rebase replayed <b>{r.info}</b> commit{r.info === '1' ? '' : 's'} on top of the other branch. Same changes, but new
-          parents mean <b>new hashes</b> (marked ′). The originals are now unreachable (faded) until garbage collection.
-        </>
-      );
-    case 'noop':
-      return <>Nothing to rebase: {repo.head} has no commits of its own.</>;
-  }
 }

@@ -1,4 +1,5 @@
 // A miniature git: content-addressed blobs/trees/commits and movable branch pointers.
+import { hexHash } from '../../core/hash';
 
 export const FILES = ['README.md', 'src/app.js', 'src/util.js'] as const;
 export type FileName = (typeof FILES)[number];
@@ -21,15 +22,8 @@ export interface Repo {
   edits: number;
 }
 
-/** FNV-1a, shown as 7 hex chars like a short git hash. Same content → same hash. */
-export function hash(s: string) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(16).padStart(8, '0').slice(0, 7);
-}
+/** 7 hex chars, like a short git hash. Same content → same hash. */
+const hash = (s: string) => hexHash(s, 7);
 
 export const blobId = (content: string) => hash(`blob ${content}`);
 export function srcTreeId(files: Record<FileName, string>) {

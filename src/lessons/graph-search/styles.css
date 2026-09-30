@@ -46,7 +46,7 @@
   60% { transform: scale(1.12); }
 }
 
-.gs-cell.visited { background-color: rgb(167 139 250 / var(--v)); transition-duration: 0.1s, 0.15s, 0.2s; }
+.gs-cell.visited { background-color: color-mix(in srgb, var(--violet) calc(var(--v) * 100%), transparent); transition-duration: 0.1s, 0.15s, 0.2s; }
 .gs-cell.frontier {
   background-color: color-mix(in srgb, var(--info) 40%, transparent);
   box-shadow: inset 0 0 0 1px var(--info);
@@ -171,7 +171,6 @@
 .gs-score-cost.ok { color: var(--ok); }
 .gs-score-cost.bad { color: var(--bad); }
 
-.gs-presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .gs-hint { font-size: 12.5px; color: var(--faint); align-self: center; }
 
 @media (max-width: 860px) {

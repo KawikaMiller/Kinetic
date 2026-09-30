@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
-import { randInt } from '../../core/hooks';
+import { NA } from '../../core/format';
+import { pick } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import {
-  BLOOM_BITS, KEYS, MEM_CAP, MISSING, compactFrames, diskEntries, liveKeys, readFrames, seeded, writeFrames,
+  BLOOM_BITS, KEYS, MEM_CAP, MISSING, blankState, compactFrames, diskEntries, liveKeys, readFrames, seeded, writeFrames,
   type Entry, type LsmFrame, type SST, type Lsm,
 } from './lsm';
 import './styles.css';
@@ -15,11 +16,11 @@ interface Run {
   frames: LsmFrame[];
 }
 
-const pick = <T,>(xs: T[]) => xs[randInt(0, xs.length - 1)];
+const FILE_SPRING = { type: 'spring', stiffness: 260, damping: 26 } as const;
 
 function idle(s: Lsm): LsmFrame[] {
   return [{
-    s, hot: null, hotKey: null, probes: {}, bloomCheck: null, memProbe: null, compacting: [], dropped: [], lastRead: null,
+    ...blankState(s),
     say: <>Writes go to memory first and are flushed to disk as sorted, immutable files. Try a write, then a read.</>,
   }];
 }
@@ -32,15 +33,17 @@ export function Stage() {
   const player = usePlayer(run.frames, { interval: 1300 });
   const f = player.frame;
   const s = f.s;
+  // Live keys of the tree the next action starts from, and of the frame on screen.
+  const runLive = useMemo(() => liveKeys(run.s), [run.s]);
+  const live = useMemo(() => liveKeys(s).length, [s]);
 
   const write = (del: boolean, overwrite = false) => {
-    const live = liveKeys(run.s);
-    const k = del || overwrite ? pick(live.length ? live : KEYS) : pick(KEYS);
+    const k = del || overwrite ? pick(runLive.length ? runLive : KEYS) : pick(KEYS);
     const { frames, next } = writeFrames(run.s, k, del);
     setRun({ s: next, frames });
   };
   const read = (missing: boolean) => {
-    const k = missing ? pick(MISSING) : pick(liveKeys(run.s).length ? liveKeys(run.s) : KEYS);
+    const k = missing ? pick(MISSING) : pick(runLive.length ? runLive : KEYS);
     setRun({ s: run.s, frames: readFrames(run.s, k) });
   };
   const compact = () => {
@@ -48,7 +51,6 @@ export function Stage() {
     setRun({ s: next, frames });
   };
 
-  const live = liveKeys(s).length;
   const wa = s.userWrites ? s.diskWrites / s.userWrites : 0;
   const sa = live ? diskEntries(s) / live : 0;
 
@@ -63,7 +65,7 @@ export function Stage() {
           <Stat label="Space amp" value={`${sa.toFixed(2)}×`} color="var(--hi)" sub="entries on disk ÷ live keys" />
           <Stat
             label="Last read"
-            value={f.lastRead ? `${f.lastRead.read} read` : '–'}
+            value={f.lastRead ? `${f.lastRead.read} read` : NA}
             color="var(--info)"
             sub={f.lastRead ? `${f.lastRead.skipped} skipped by bloom` : 'files touched'}
           />
@@ -84,7 +86,7 @@ export function Stage() {
         <Controls>
           <Button variant="primary" onClick={() => write(false)}>PUT random key</Button>
           <Button onClick={() => write(false, true)}>Overwrite a key</Button>
-          <Button variant="danger" onClick={() => write(true)} disabled={!liveKeys(run.s).length}>DELETE a key</Button>
+          <Button variant="danger" onClick={() => write(true)} disabled={!runLive.length}>DELETE a key</Button>
           <Button onClick={() => read(false)}>GET existing key</Button>
           <Button onClick={() => read(true)}>GET missing key</Button>
           <Button onClick={compact} disabled={!run.s.l0.length}>Compact now</Button>
@@ -182,7 +184,7 @@ function Level({ name, note, tables, f }: { name: string; note: string; tables: 
                 initial={{ opacity: 0, y: -16, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.35 } }}
-                transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+                transition={FILE_SPRING}
               >
                 <div className="lsm-file-head">
                   SST {t.id}

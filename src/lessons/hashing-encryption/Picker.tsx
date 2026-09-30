@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Stat, Stats } from '../../components/ui';
-import { useSetCaption } from '../../core/caption';
+import { useIntroCaption, useSetCaption } from '../../core/caption';
 
 type Tool = 'hash' | 'slow' | 'sym' | 'asym' | 'sign';
 
@@ -11,7 +11,7 @@ const TOOLS: Record<Tool, { label: string; color: string }> = {
   slow: { label: 'Salted slow hash', color: 'var(--ok)' },
   sym: { label: 'Symmetric encryption', color: 'var(--hi)' },
   asym: { label: 'Asymmetric encryption', color: 'var(--violet)' },
-  sign: { label: 'Digital signature', color: '#ff8c5a' },
+  sign: { label: 'Digital signature', color: 'var(--orange)' },
 };
 
 const SCENARIOS: { q: string; a: Tool; why: string }[] = [
@@ -28,9 +28,7 @@ export function Picker({ modePicker }: { modePicker: ReactNode }) {
   const setCaption = useSetCaption();
   const right = answers.filter((a, i) => a === SCENARIOS[i].a).length;
 
-  useEffect(() => {
-    setCaption(<>Six real jobs. For each one, pick the right tool. Wrong picks tell you what to ask yourself.</>);
-  }, [setCaption]);
+  useIntroCaption(<>Six real jobs. For each one, pick the right tool. Wrong picks tell you what to ask yourself.</>);
 
   const pick = (i: number, t: Tool) => {
     const next = answers.slice();

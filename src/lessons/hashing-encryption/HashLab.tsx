@@ -2,7 +2,10 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
-import { hasSubtle, hexToBits, useSha256 } from './crypto';
+import { hasSubtle, hexToBits, sha256Hex } from '../../core/crypto';
+import { useAsyncValue } from '../../core/useAsyncValue';
+
+const useSha256 = (text: string) => useAsyncValue(() => sha256Hex(text), text);
 
 const PARAGRAPH =
   'It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity.';
@@ -34,6 +37,7 @@ export function HashLab({ modePicker }: { modePicker: ReactNode }) {
   const flipped = bitsA && bitsB ? bitsA.reduce((n, bit, i) => n + (bit !== bitsB[i] ? 1 : 0), 0) : null;
   const chars = charDiff(a, b);
 
+  // Recomputed on every keystroke, so the caption updates in place (quiet) instead of fading each time.
   useEffect(() => {
     if (!hasSubtle()) {
       setCaption(<>This browser blocks Web Crypto here, so digests can't be computed. Open the app over localhost or HTTPS.</>);
@@ -46,6 +50,7 @@ export function HashLab({ modePicker }: { modePicker: ReactNode }) {
           Same input, <span className="hl ok">same digest</span>, every single time. That's what lets you compare hashes to
           check a file or a password.
         </>,
+        { quiet: true },
       );
     } else {
       setCaption(
@@ -54,6 +59,7 @@ export function HashLab({ modePicker }: { modePicker: ReactNode }) {
           <span className="hl bad">{flipped} of 256 bits</span> flipped ({Math.round((flipped / 256) * 100)}%). That's the{' '}
           <b>avalanche effect</b>: similar inputs give unrelated digests.
         </>,
+        { quiet: true },
       );
     }
   }, [a, b, chars, flipped, setCaption]);

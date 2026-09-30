@@ -45,17 +45,6 @@
 .pb-chip { padding: 2px 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); font: 12px var(--mono); color: var(--muted); }
 
 .pb-form { display: flex; gap: 8px; align-items: center; }
-.pb-input {
-  font: 14px var(--mono);
-  padding: 8px 12px;
-  width: 170px;
-  border-radius: 10px;
-  border: 1px solid var(--line-2);
-  background: var(--bg-2);
-  color: var(--text);
-  outline: none;
-}
-.pb-input:focus { border-color: var(--accent); }
 
 /* ── HyperLogLog ───────────────────────────────────────── */
 .hll-view { display: flex; flex-direction: column; gap: 14px; padding: 20px 22px 22px; }

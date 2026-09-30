@@ -3,8 +3,9 @@ import { useMemo, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
+import { useAsyncValue } from '../../core/useAsyncValue';
 import { usePlayer } from '../../core/usePlayer';
-import { useSha256Many } from './crypto';
+import { sha256Many } from './crypto';
 
 type Storage = 'plain' | 'hash' | 'salt';
 type User = 'alice' | 'bob';
@@ -57,7 +58,7 @@ function buildFrames(): PwFrame[] {
 export function Passwords({ modePicker }: { modePicker: ReactNode }) {
   const frames = useMemo(() => buildFrames(), []);
   const player = usePlayer(frames, { interval: 2100 });
-  const hashes = useSha256Many(INPUTS);
+  const hashes = useAsyncValue(() => sha256Many(INPUTS), INPUTS.join('\u0000'));
   const f = player.frame;
 
   const hashOf = (input: string) => {

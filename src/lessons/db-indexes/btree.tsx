@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { randInt, shuffle } from '../../core/hooks';
+import { freshInt, randInt, shuffle } from '../../core/random';
+import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 
 /** Leaves hold up to LEAF_CAP keys; each internal node up to FAN_CAP children. */
@@ -7,6 +8,9 @@ export const LEAF_CAP = 4;
 export const FAN_CAP = 5;
 export const PAGE_ROWS = 4;
 export const MAX_INSERTS = 8;
+/** Ids are 1..MAX_KEY. The table starts with 30 and never passes 38, so a free id always exists. */
+const MAX_KEY = 99;
+const START_ROWS = 30;
 
 /**
  * A 3-level B+tree: root → internal nodes → leaves. Leaves are ordered and
@@ -43,7 +47,7 @@ export interface IxFrame extends Frame {
 
 export function makeDb(): Db {
   const keys = new Set<number>();
-  while (keys.size < 30) keys.add(randInt(1, 99));
+  while (keys.size < START_ROWS) keys.add(randInt(1, MAX_KEY));
   const sorted = [...keys].sort((a, b) => a - b);
   const leaves: number[][] = [];
   for (let i = 0; i < sorted.length; i += 3) leaves.push(sorted.slice(i, i + 3));
@@ -87,26 +91,22 @@ export function locate(tree: Tree, key: number) {
 }
 
 function recorder(db: Db) {
-  let s: IxFrame = {
+  const r = createRecorder<IxFrame>({
     db, hotNode: null, walked: [], hotPage: null, readPages: [], hotKey: null, found: null,
     rangeKeys: [], newKey: null, pointer: null, reads: 0, writes: 0,
-  };
-  const frames: IxFrame[] = [];
+  });
   return {
-    frames,
-    get: () => s,
-    set(p: Partial<IxFrame>) {
-      s = { ...s, ...p };
-    },
+    ...r,
+    /** Read an index page: highlight it, remember it was walked, count the read. */
     readNode(id: string) {
-      s = { ...s, hotNode: id, walked: s.walked.includes(id) ? s.walked : [...s.walked, id], reads: s.reads + 1 };
+      const s = r.get();
+      r.set({ hotNode: id, walked: s.walked.includes(id) ? s.walked : [...s.walked, id], reads: s.reads + 1 });
     },
+    /** Read a heap page: re-reading one already fetched costs nothing. */
     readPage(p: number) {
+      const s = r.get();
       const fresh = !s.readPages.includes(p);
-      s = { ...s, hotPage: p, readPages: fresh ? [...s.readPages, p] : s.readPages, reads: s.reads + (fresh ? 1 : 0) };
-    },
-    snap(say?: ReactNode, hold?: number) {
-      frames.push({ ...s, say, hold });
+      r.set({ hotPage: p, readPages: fresh ? [...s.readPages, p] : s.readPages, reads: s.reads + (fresh ? 1 : 0) });
     },
   };
 }
@@ -275,9 +275,9 @@ export function insertFrames(db: Db, key: number): { frames: IxFrame[]; next: Db
   return { frames: f, next: f[f.length - 1].db };
 }
 
+/** A random id not in the table yet. */
 export function freshKey(db: Db) {
-  const have = new Set(allKeys(db));
-  const free: number[] = [];
-  for (let k = 1; k <= 99; k++) if (!have.has(k)) free.push(k);
-  return free[randInt(0, free.length - 1)];
+  const key = freshInt(1, MAX_KEY, allKeys(db));
+  if (key === null) throw new Error('db-indexes: every id is taken');
+  return key;
 }

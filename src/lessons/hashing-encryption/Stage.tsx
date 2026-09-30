@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Segmented } from '../../components/ui';
+import { useScenePicker } from '../../components/ScenePicker';
 import { HashLab } from './HashLab';
 import { Asymmetric, Symmetric } from './Keys';
 import { Passwords } from './Passwords';
@@ -17,8 +16,7 @@ const MODES: { value: Mode; label: string }[] = [
 ];
 
 export function Stage() {
-  const [mode, setMode] = useState<Mode>('hash');
-  const picker = <Segmented label="Lane" value={mode} onChange={setMode} options={MODES} />;
+  const [mode, picker] = useScenePicker({ label: 'Lane', options: MODES, initial: 'hash' });
 
   // Each lane owns its own StageFrame (and player), so switching remounts cleanly.
   if (mode === 'passwords') return <Passwords modePicker={picker} />;

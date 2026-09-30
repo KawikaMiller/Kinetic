@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { cssVar } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
 import { ORDERS, ORDER_COLS, QUERIES, USERS, USER_COLS, type Mark, type SqlFrame } from './queries';
 import './styles.css';
@@ -13,7 +14,8 @@ const ROW = 30;
 const LINK_W = 60;
 const rowY = (i: number) => TITLE + HEAD + i * ROW + ROW / 2;
 
-const TINTS = ['#a78bfa', '#4cc9f0', '#f7b538', '#3ddc97', '#ff5d8f'];
+/** One colour per GROUP BY bucket. */
+const TINTS = [cssVar('violet'), cssVar('info'), cssVar('amber'), cssVar('ok'), cssVar('pink')];
 
 export function Stage() {
   const [qid, setQid] = useState('where');

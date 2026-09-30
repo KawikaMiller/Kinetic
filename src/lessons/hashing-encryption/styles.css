@@ -25,7 +25,7 @@
 .he-funnel {
   padding: 7px 14px;
   border-radius: 10px;
-  color: #04121a;
+  color: var(--on-info);
   background: var(--info);
   box-shadow: 0 0 20px -4px var(--info);
   animation: he-pulse 2.2s ease-in-out infinite;
@@ -190,8 +190,6 @@
 }
 .he-wire {
   position: absolute;
-  left: 14%;
-  right: 14%;
   top: 70%;
   height: 0;
   border-top: 2px dashed var(--line-2);
@@ -279,12 +277,10 @@
   background: var(--orange);
 }
 .he-sig.verified { background: var(--ok); color: var(--on-ok); }
-.he-sig.tampered { background: var(--bad); color: #1a0306; }
+.he-sig.tampered { background: var(--bad); color: var(--on-bad); }
 
 .he-question {
   position: absolute;
-  left: 14%;
-  right: 14%;
   top: 118px;
   display: flex;
   justify-content: center;
