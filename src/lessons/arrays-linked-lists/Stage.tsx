@@ -2,7 +2,10 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { randInt, useElementSize } from '../../core/hooks';
+import { useArrowMarker } from '../../components/ArrowMarker';
+import { useElementSize } from '../../core/hooks';
+import { SPRING } from '../../core/motion';
+import { freshInt, randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import {
   CAP, COST, SLOTS, arrAddr, buildRun, intro, listAddr,
@@ -12,6 +15,10 @@ import './styles.css';
 
 const START_VALUES = [12, 7, 33, 5, 21];
 const START_SLOTS = [3, 11, 6, 14, 1];
+/** Inserted values are drawn from 1..MAX_VALUE. */
+const MAX_VALUE = 99;
+/** Ids for items created after the starting set, clear of the starting ids. */
+const FIRST_NEW_ID = 100;
 
 function initialModel(): Model {
   return {
@@ -32,7 +39,7 @@ export function Stage() {
   const [where, setWhere] = useState<Where>('front');
   const [run, setRun] = useState<Run>(() => {
     const m = initialModel();
-    return { frames: intro(m), after: m, nextId: 100, op: null };
+    return { frames: intro(m), after: m, nextId: FIRST_NEW_ID, op: null };
   });
   const player = usePlayer(run.frames, { interval: 950 });
   const { arr, list } = player.frame;
@@ -41,14 +48,13 @@ export function Stage() {
   const doOp = (op: Op) => {
     const m = run.after;
     const taken = new Set(m.nodes.map((n) => n.slot));
-    const free = Array.from({ length: SLOTS }, (_, i) => i).filter((s) => !taken.has(s));
-    const res = buildRun(op, where, m, randInt(1, 99), run.nextId, free[randInt(0, free.length - 1)] ?? 0);
+    const res = buildRun(op, where, m, randInt(1, MAX_VALUE), run.nextId, freshInt(0, SLOTS - 1, taken) ?? 0);
     setRun({ frames: res.frames, after: res.after, nextId: run.nextId + 1, op });
   };
 
   const reset = () => {
     const m = initialModel();
-    setRun({ frames: intro(m), after: m, nextId: 100, op: null });
+    setRun({ frames: intro(m), after: m, nextId: FIRST_NEW_ID, op: null });
   };
 
   const cost = run.op ? COST[run.op][where] : null;
@@ -110,8 +116,6 @@ export function Stage() {
   );
 }
 
-const spring = { type: 'spring', stiffness: 260, damping: 26 } as const;
-
 function ArrayStrip({ view }: { view: ArrView }) {
   const items = view.slots.flatMap((it, slot) => (it ? [{ ...it, slot }] : []));
   return (
@@ -129,7 +133,7 @@ function ArrayStrip({ view }: { view: ArrView }) {
       </header>
       <div className="al-arr" style={{ gridTemplateColumns: `repeat(${CAP}, 1fr)` }}>
         {Array.from({ length: CAP }, (_, i) => (
-          <div key={i} className={`al-aslot ${i === view.hi ? 'is-hi' : ''}`}>
+          <div key={i} className={`al-aslot ${i === view.hi ? 'is-hi' : ''} ${i === CAP - 1 ? 'last' : ''}`}>
             <span className="al-idx">[{i}]</span>
             <span className="al-addr">{arrAddr(i)}</span>
           </div>
@@ -146,7 +150,7 @@ function ArrayStrip({ view }: { view: ArrView }) {
                   initial={{ opacity: 0, scale: 0.4, left: `${(it.slot / CAP) * 100}%` }}
                   animate={{ opacity: 1, scale: 1, left: `${(it.slot / CAP) * 100}%` }}
                   exit={{ opacity: 0, scale: 0.4, y: 20 }}
-                  transition={spring}
+                  transition={SPRING.snappy}
                 >
                   <span>{it.v}</span>
                 </motion.div>
@@ -163,6 +167,8 @@ const ARC_H = 104;
 
 function ListStrip({ view }: { view: ListView }) {
   const [ref, size] = useElementSize<HTMLDivElement>();
+  const arrow = useArrowMarker('var(--violet)');
+  const hotArrow = useArrowMarker('var(--hi)');
   const cw = size.width / SLOTS;
   const bySlot = new Map(view.nodes.map((n) => [n.slot, n]));
   const edges = view.nodes.filter((n) => n.next != null && bySlot.has(n.next)).map((n) => [n.slot, n.next!] as [number, number]);
@@ -183,14 +189,8 @@ function ListStrip({ view }: { view: ListView }) {
       </header>
       <div className="al-lwrap" ref={ref}>
         <svg className="al-arcs" width={size.width} height={ARC_H} aria-hidden="true">
-          <defs>
-            <marker id="al-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" fill="var(--violet)" />
-            </marker>
-            <marker id="al-arrow-hot" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" fill="var(--hi)" />
-            </marker>
-          </defs>
+          {arrow.def}
+          {hotArrow.def}
           {cw > 0 &&
             edges.map(([a, b]) => {
               const hot = view.hot && view.hot[0] === a && view.hot[1] === b;
@@ -201,12 +201,12 @@ function ListStrip({ view }: { view: ListView }) {
                   initial={{ opacity: 0, d: arc(a, b) }}
                   animate={{ opacity: 1, d: arc(a, b) }}
                   transition={{ duration: 0.3 }}
-                  markerEnd={hot ? 'url(#al-arrow-hot)' : 'url(#al-arrow)'}
+                  markerEnd={hot ? hotArrow.url : arrow.url}
                 />
               );
             })}
           {cw > 0 && view.head != null && (
-            <motion.g initial={false} animate={{ x: (view.head + 0.5) * cw }} transition={spring}>
+            <motion.g initial={false} animate={{ x: (view.head + 0.5) * cw }} transition={SPRING.snappy}>
               <text x={0} y={12} textAnchor="middle" className="al-headlabel">
                 head
               </text>
@@ -236,7 +236,7 @@ function ListStrip({ view }: { view: ListView }) {
                       initial={{ opacity: 0, scale: 0.4 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.3, y: 16 }}
-                      transition={spring}
+                      transition={SPRING.snappy}
                     >
                       <b>{n.v}</b>
                       <span className="al-next">{n.next == null ? '→ null' : `→ ${listAddr(n.next).slice(2)}`}</span>

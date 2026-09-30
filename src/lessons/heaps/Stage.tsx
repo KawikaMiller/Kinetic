@@ -1,13 +1,20 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
-import { randInt, shuffle } from '../../core/hooks';
+import { SPRING } from '../../core/motion';
+import { randInt, shuffle } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import { MAX, extractFrames, heapifyFrames, idle, insertFrames, parent, type HItem, type HeapFrame } from './heap';
 import './styles.css';
 
 const START = [2, 5, 3, 8, 9, 6, 4, 12, 10];
+/** Inserted and heapified priorities are drawn from 1..MAX_PRIORITY. */
+const MAX_PRIORITY = 30;
+/** Heapify builds an array of this many random items. */
+const HEAPIFY_SIZE = { min: 9, max: 13 };
+/** Ids for items created after the starting set, clear of the START ids. */
+const FIRST_NEW_ID = 100;
 
 interface Run {
   items: HItem[];
@@ -21,7 +28,7 @@ const initial = (): Run => {
   return {
     items,
     out: [],
-    nextId: 100,
+    nextId: FIRST_NEW_ID,
     frames: idle(items, [], <>A <b>min-heap</b>: every parent is ≤ its children, so the smallest item is always at the root. Same data, drawn two ways.</>),
   };
 };
@@ -32,7 +39,7 @@ export function Stage() {
   const f = player.frame;
 
   const insert = () => {
-    const item = { id: run.nextId, v: randInt(1, 30) };
+    const item = { id: run.nextId, v: randInt(1, MAX_PRIORITY) };
     const res = insertFrames(run.items, run.out, item);
     setRun({ ...run, items: res.items, frames: res.frames, nextId: run.nextId + 1 });
   };
@@ -41,8 +48,8 @@ export function Stage() {
     setRun({ ...run, items: res.items, out: res.out, frames: res.frames });
   };
   const heapify = () => {
-    const n = randInt(9, 13);
-    const vals = shuffle(Array.from({ length: 30 }, (_, i) => i + 1)).slice(0, n);
+    const n = randInt(HEAPIFY_SIZE.min, HEAPIFY_SIZE.max);
+    const vals = shuffle(Array.from({ length: MAX_PRIORITY }, (_, i) => i + 1)).slice(0, n);
     const raw = vals.map((v, i) => ({ id: run.nextId + i, v }));
     const res = heapifyFrames(raw);
     setRun({ items: res.items, out: [], frames: res.frames, nextId: run.nextId + n });
@@ -107,8 +114,6 @@ export function Stage() {
   );
 }
 
-const spring = { type: 'spring', stiffness: 240, damping: 24 } as const;
-
 function toneOf(frame: HeapFrame, i: number) {
   if (frame.swap && frame.swap.includes(i)) return 'swap';
   if (frame.hi.includes(i)) return 'hi';
@@ -131,9 +136,9 @@ function ArrayRow({ frame }: { frame: HeapFrame }) {
           )}
         </AnimatePresence>
       </div>
-      <div className="hp-slots">
+      <div className="hp-slots" style={{ '--slots': MAX } as CSSProperties}>
         {Array.from({ length: MAX }, (_, i) => (
-          <div key={i} className={`hp-slot ${i < frame.items.length ? '' : 'empty'} ${parentLink?.includes(i) ? 'linked' : ''}`}>
+          <div key={i} className={`hp-slot ${i < frame.items.length ? '' : 'empty'} ${parentLink?.includes(i) ? 'linked' : ''} ${i === MAX - 1 ? 'last' : ''}`}>
             <span>{i}</span>
           </div>
         ))}
@@ -144,7 +149,7 @@ function ArrayRow({ frame }: { frame: HeapFrame }) {
             style={{ width: `${100 / MAX}%` }}
             initial={{ left: `${(i / MAX) * 100}%`, opacity: 0, y: -12 }}
             animate={{ left: `${(i / MAX) * 100}%`, opacity: 1, y: 0 }}
-            transition={spring}
+            transition={SPRING.snappy}
           >
             <b>{it.v}</b>
           </motion.div>
@@ -185,7 +190,7 @@ function TreeView({ frame }: { frame: HeapFrame }) {
       {frame.items.map((it, i) => {
         const p = nodePos(i);
         return (
-          <motion.g key={it.id} className={`hp-node ${toneOf(frame, i)}`} initial={{ x: p.x, y: p.y, opacity: 0 }} animate={{ x: p.x, y: p.y, opacity: 1 }} transition={spring}>
+          <motion.g key={it.id} className={`hp-node ${toneOf(frame, i)}`} initial={{ x: p.x, y: p.y, opacity: 0 }} animate={{ x: p.x, y: p.y, opacity: 1 }} transition={SPRING.snappy}>
             <circle r={19} />
             <text y={5} textAnchor="middle" className="hp-node-v">
               {it.v}

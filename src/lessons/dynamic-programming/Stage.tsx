@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { fibFrames, lcsFrames, naiveCalls, type FibFrame, type LcsFrame, type Style } from './dp';
+import { fibFrames, lcsFrames, memoCalls, naiveCalls, type FibFrame, type LcsFrame, type Style } from './dp';
 import './styles.css';
 
 type Problem = 'fib' | 'lcs';
@@ -18,9 +18,9 @@ export function Stage() {
   const [problem, setProblem] = useState<Problem>('fib');
   const [style, setStyle] = useState<Style>('topdown');
   const [n, setN] = useState(7);
-  const [pair, setPair] = useState('0');
+  const [pair, setPair] = useState(0);
 
-  const [a, b] = PAIRS[Number(pair)];
+  const [a, b] = PAIRS[pair];
   const frames = useMemo<Frame[]>(
     () => (problem === 'fib' ? fibFrames(n, style) : lcsFrames(a, b, style)),
     [problem, n, style, a, b],
@@ -85,7 +85,7 @@ export function Stage() {
               label="Strings"
               value={pair}
               onChange={setPair}
-              options={PAIRS.map(([x, y], i) => ({ value: String(i), label: `${x} / ${y}` }))}
+              options={PAIRS.map(([x, y], i) => ({ value: i, label: `${x} / ${y}` }))}
             />
           )}
         </Controls>
@@ -121,7 +121,7 @@ function FibView({ frame, n }: { frame: FibFrame; n: number }) {
         </svg>
         <div className="dp-memo-cells" style={{ gridTemplateColumns: `repeat(${n + 1}, 1fr)` }}>
           {frame.memo.map((v, k) => (
-            <div key={k} className={`dp-mcell st-${frame.state[k]}`} style={{ width: 'auto' }}>
+            <div key={k} className={`dp-mcell st-${frame.state[k]}`}>
               <span className="dp-k">{k}</span>
               <motion.b key={v ?? 'x'} initial={{ scale: v != null ? 1.6 : 1, opacity: v != null ? 0 : 1 }} animate={{ scale: 1, opacity: 1 }}>
                 {v ?? '·'}
@@ -147,35 +147,42 @@ function FibView({ frame, n }: { frame: FibFrame; n: number }) {
   );
 }
 
+// "Calls needed" chart geometry (SVG units)
+const CHART_MAX_N = 30;
+const CHART_W = 600;
+const CHART_H = 150;
+const CHART_X_PAD = 30;
+const CHART_Y_PAD = 20;
+
 function CallsChart({ n }: { n: number }) {
-  const MAXN = 30;
-  const W = 600;
-  const H = 150;
+  const W = CHART_W;
+  const H = CHART_H;
+  const MAXN = CHART_MAX_N;
   const ymax = Math.log10(naiveCalls(MAXN));
-  const x = (k: number) => 30 + ((k - 1) / (MAXN - 1)) * (W - 60);
-  const y = (calls: number) => H - 20 - (Math.log10(calls) / ymax) * (H - 40);
+  const x = (k: number) => CHART_X_PAD + ((k - 1) / (MAXN - 1)) * (W - CHART_X_PAD * 2);
+  const y = (calls: number) => H - CHART_Y_PAD - (Math.log10(calls) / ymax) * (H - CHART_Y_PAD * 2);
   const naive = Array.from({ length: MAXN }, (_, i) => `${x(i + 1)},${y(naiveCalls(i + 1))}`).join(' ');
-  const memo = Array.from({ length: MAXN }, (_, i) => `${x(i + 1)},${y(Math.max(1, 2 * (i + 1) - 1))}`).join(' ');
+  const memo = Array.from({ length: MAXN }, (_, i) => `${x(i + 1)},${y(memoCalls(i + 1))}`).join(' ');
   return (
     <div className="dp-chart">
       <div className="dp-row-label">calls needed for fib(n), log scale</div>
       <svg viewBox={`0 0 ${W} ${H}`} className="dp-chart-svg">
         {[1, 3, 5].map((p) => (
           <g key={p}>
-            <line x1={30} x2={W - 30} y1={y(10 ** p)} y2={y(10 ** p)} className="dp-grid" />
-            <text x={26} y={y(10 ** p) + 4} textAnchor="end" className="dp-axis">
+            <line x1={CHART_X_PAD} x2={W - CHART_X_PAD} y1={y(10 ** p)} y2={y(10 ** p)} className="dp-grid" />
+            <text x={CHART_X_PAD - 4} y={y(10 ** p) + 4} textAnchor="end" className="dp-axis">
               10{p === 1 ? '' : <tspan dy={-6} fontSize={8}>{p}</tspan>}
             </text>
           </g>
         ))}
         <polyline points={naive} className="dp-line naive" />
         <polyline points={memo} className="dp-line memo" />
-        <line x1={x(n)} x2={x(n)} y1={10} y2={H - 20} className="dp-marker" />
-        <text x={W - 30} y={y(naiveCalls(MAXN)) + 14} textAnchor="end" className="dp-lbl naive">
-          naive: {naiveCalls(MAXN).toLocaleString()} at n=30
+        <line x1={x(n)} x2={x(n)} y1={10} y2={H - CHART_Y_PAD} className="dp-marker" />
+        <text x={W - CHART_X_PAD} y={y(naiveCalls(MAXN)) + 14} textAnchor="end" className="dp-lbl naive">
+          naive: {naiveCalls(MAXN).toLocaleString()} at n={MAXN}
         </text>
-        <text x={W - 30} y={y(59) - 8} textAnchor="end" className="dp-lbl memo">
-          memoized: 59 at n=30
+        <text x={W - CHART_X_PAD} y={y(memoCalls(MAXN)) - 8} textAnchor="end" className="dp-lbl memo">
+          memoized: {memoCalls(MAXN)} at n={MAXN}
         </text>
         <text x={x(n)} y={H - 5} textAnchor="middle" className="dp-axis">
           n={n}

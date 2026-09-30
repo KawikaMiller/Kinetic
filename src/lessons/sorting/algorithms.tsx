@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { randInt, shuffle } from '../../core/random';
 import type { Frame } from '../../core/types';
 
 export interface Bar {
@@ -22,6 +23,11 @@ export interface SortFrame extends Frame {
   sorted: number[];
   comparisons: number;
   writes: number;
+}
+
+/** A tick of the race view: `t` indexes into every algorithm's own frames. */
+export interface RaceFrame extends Frame {
+  t: number;
 }
 
 export const ALGOS: Record<AlgoId, { name: string; big: string; note: string; writeLabel: string }> = {
@@ -213,23 +219,61 @@ export function buildFrames(items: Bar[], algo: AlgoId): SortFrame[] {
 
 export type Preset = 'random' | 'nearly' | 'reversed' | 'few';
 
+/** "Few unique" squashes the values into this many distinct heights. */
+const FEW_UNIQUE_LEVELS = 4;
+/** "Nearly sorted" does one neighbour swap per this many bars. */
+const NEARLY_SORTED_SWAP_EVERY = 10;
+
 export function makeBars(n: number, preset: Preset): Bar[] {
   let values = Array.from({ length: n }, (_, i) => i + 1);
-  if (preset === 'few') values = values.map((v) => Math.ceil((v / n) * 4) * Math.ceil(n / 4));
-  const shuffle = (a: number[]) => {
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  };
+  if (preset === 'few') {
+    values = values.map((v) => Math.ceil((v / n) * FEW_UNIQUE_LEVELS) * Math.ceil(n / FEW_UNIQUE_LEVELS));
+  }
   if (preset === 'random' || preset === 'few') values = shuffle(values);
   if (preset === 'reversed') values.reverse();
   if (preset === 'nearly') {
-    for (let k = 0; k < Math.max(1, Math.floor(n / 10)); k++) {
-      const i = Math.floor(Math.random() * (n - 1));
+    for (let k = 0; k < Math.max(1, Math.floor(n / NEARLY_SORTED_SWAP_EVERY)); k++) {
+      const i = randInt(0, n - 2);
       [values[i], values[i + 1]] = [values[i + 1], values[i]];
     }
   }
   return values.map((v, id) => ({ id, v }));
+}
+
+/** One tick per step for all five at once; captions announce each finisher. */
+export function buildRaceFrames(race: { id: AlgoId; frames: SortFrame[] }[]): RaceFrame[] {
+  const len = Math.max(...race.map((r) => r.frames.length));
+  const ranked = [...race].sort((a, b) => a.frames.length - b.frames.length);
+  const out: RaceFrame[] = [];
+  for (let t = 0; t < len; t++) {
+    const finishing = ranked.filter((r) => r.frames.length - 1 === t);
+    let say;
+    if (t === 0) say = <>Same input, five algorithms, one step each per tick. Who finishes first?</>;
+    else if (finishing.length) {
+      say = (
+        <>
+          {finishing.map((f) => (
+            <span key={f.id}>
+              <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{ranked.indexOf(f) + 1}</span> with{' '}
+              {f.frames[f.frames.length - 1].comparisons} comparisons.{' '}
+            </span>
+          ))}
+        </>
+      );
+    }
+    out.push({ t, say });
+  }
+  const worst = race.find((r) => r.id === 'selection')!.frames.at(-1)!.comparisons;
+  const best = Math.min(...race.map((r) => r.frames.at(-1)!.comparisons));
+  out[out.length - 1] = {
+    t: len - 1,
+    hold: 2,
+    say: (
+      <>
+        O(n²) sorts compare roughly every pair (<span className="hl bad">{worst}</span> for selection). The best did{' '}
+        <span className="hl ok">{best}</span>. That gap explodes as n grows.
+      </>
+    ),
+  };
+  return out;
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 
 export const CAP = 10; // array capacity
@@ -179,7 +180,7 @@ function runList(op: Op, p: number, nodes0: LNode[], head0: number | null, v: nu
     walk(p);
     states[states.length - 1].note = (
       <>
-        Reached <span className="hl ok">{order[p].v}</span> after {p + 1} {p === 0 ? 'step' : 'steps'}. No shortcut: it has to walk.
+        Reached <span className="hl ok">{order[p].v}</span> after {plural(p + 1, 'step')}. No shortcut: it has to walk.
       </>
     );
   } else if (op === 'insert') {
@@ -281,11 +282,10 @@ export function buildRun(op: Op, where: Where, m: Model, v: number, id: number, 
   last.hold = 2.5;
   const as = a.states[a.states.length - 1].steps;
   const ls = l.states[l.states.length - 1].steps;
-  const plural = (k: number) => `${k} ${k === 1 ? 'step' : 'steps'}`;
   last.say = (
     <>
-      Array: <span className={`hl ${as <= ls ? 'ok' : 'bad'}`}>{plural(as)} · {ac}</span>{' '}
-      List: <span className={`hl ${ls <= as ? 'ok' : 'bad'}`}>{plural(ls)} · {lc}</span>
+      Array: <span className={`hl ${as <= ls ? 'ok' : 'bad'}`}>{plural(as, 'step')} · {ac}</span>{' '}
+      List: <span className={`hl ${ls <= as ? 'ok' : 'bad'}`}>{plural(ls, 'step')} · {lc}</span>
       <br />
       {VERDICT[op][where]}
     </>

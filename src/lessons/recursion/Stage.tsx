@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { SHAKE, SPRING } from '../../core/motion';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
 import { LIMIT, factorialFrames, fibTree, sumFrames, type StackFrame, type TreeFrame } from './frames';
@@ -98,15 +99,7 @@ export function Stage() {
           {mode === 'sum' && <Slider label="List length" value={len} min={0} max={6} onChange={setLen} />}
           {mode === 'fib' && <Slider label="n" value={fibN} min={2} max={7} onChange={setFibN} />}
           {mode !== 'fib' && (
-            <Segmented
-              label="Base case"
-              value={withBase ? 'on' : 'off'}
-              onChange={(v) => setWithBase(v === 'on')}
-              options={[
-                { value: 'on', label: 'Keep it' },
-                { value: 'off', label: 'Remove it 💣' },
-              ]}
-            />
+            <Toggle label="Base case" value={!withBase} onChange={(remove) => setWithBase(!remove)} off="Keep it" on="Remove it 💣" />
           )}
         </Controls>
       }
@@ -150,9 +143,9 @@ function CallStack({ frame }: { frame: StackFrame }) {
               layout
               className={`rc-frame tone-${f.tone}`}
               initial={{ opacity: 0, y: -24, scale: 0.9 }}
-              animate={frame.crashed ? { opacity: 1, y: 0, scale: 1, x: [0, -6, 6, -4, 4, 0] } : { opacity: 1, y: 0, scale: 1 }}
+              animate={frame.crashed ? { opacity: 1, y: 0, scale: 1, ...SHAKE } : { opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, x: 80, transition: { duration: 0.3 } }}
-              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              transition={SPRING.snappy}
             >
               <span className="rc-depth">{i}</span>
               <b>{f.label}</b>
@@ -183,12 +176,23 @@ function CallStack({ frame }: { frame: StackFrame }) {
   );
 }
 
+// Fibonacci tree geometry (SVG units)
+const LEAF_GAP = 64;
+const LEVEL_GAP = 72;
+const MIN_TREE_W = 360;
+const TREE_TOP = 30;
+const TREE_BOTTOM_PAD = 20;
+/** Bouncier than the presets on purpose: each new call pops into the tree. */
+const NODE_POP = { type: 'spring', stiffness: 300, damping: 22 } as const;
+/** Width of a "times each call ran" bar per run, in %. */
+const COUNT_BAR_PCT = 12;
+
 function FibTree({ nodes, leaves, frame }: { nodes: ReturnType<typeof fibTree>['nodes']; leaves: number; frame: TreeFrame }) {
   const depth = Math.max(...nodes.map((n) => n.depth));
-  const W = Math.max(leaves * 64, 360);
-  const H = (depth + 1) * 72 + 20;
-  const px = (x: number) => 32 + x * ((W - 64) / Math.max(1, leaves - 1));
-  const py = (d: number) => 30 + d * 72;
+  const W = Math.max(leaves * LEAF_GAP, MIN_TREE_W);
+  const H = (depth + 1) * LEVEL_GAP + TREE_BOTTOM_PAD;
+  const px = (x: number) => LEAF_GAP / 2 + x * ((W - LEAF_GAP) / Math.max(1, leaves - 1));
+  const py = (d: number) => TREE_TOP + d * LEVEL_GAP;
   const counts = Object.entries(frame.counts)
     .map(([k, v]) => [Number(k), v] as const)
     .sort((a, b) => b[0] - a[0]);
@@ -223,7 +227,7 @@ function FibTree({ nodes, leaves, frame }: { nodes: ReturnType<typeof fibTree>['
               initial={{ opacity: 0, scale: 0.3 }}
               animate={{ opacity: 1, scale: 1 }}
               style={{ originX: `${px(nd.x)}px`, originY: `${py(nd.depth)}px` }}
-              transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+              transition={NODE_POP}
             >
               <circle cx={px(nd.x)} cy={py(nd.depth)} r={22} className={`rc-node ${cls} ${nd.repeat ? 'is-repeat' : ''}`} />
               <text x={px(nd.x)} y={py(nd.depth) - (v != null ? 3 : -4)} textAnchor="middle" className="rc-nlabel">
@@ -243,7 +247,7 @@ function FibTree({ nodes, leaves, frame }: { nodes: ReturnType<typeof fibTree>['
         {counts.map(([k, c]) => (
           <div key={k} className="rc-count">
             <span>fib({k})</span>
-            <i style={{ width: `${Math.min(100, c * 12)}%` }} className={c > 1 && k >= 2 ? 'dup' : ''} />
+            <i style={{ width: `${Math.min(100, c * COUNT_BAR_PCT)}%` }} className={c > 1 && k >= 2 ? 'dup' : ''} />
             <b>{c}×</b>
           </div>
         ))}

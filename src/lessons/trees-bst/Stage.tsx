@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
-import { randInt, shuffle } from '../../core/hooks';
+import { Button, Controls, Hint, Legend, Stat, Stats, TextField } from '../../components/ui';
+import { clamp } from '../../core/math';
+import { SPRING } from '../../core/motion';
+import { freshInt, shuffle } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import {
   build, deleteFrames, height, idleFrames, inorderFrames, insertFrames, layout, searchFrames, size,
@@ -12,12 +14,13 @@ import './styles.css';
 
 const START = [50, 30, 70, 20, 40, 60, 80, 35, 65];
 const SORTED = [5, 12, 20, 28, 35, 43, 51, 60, 72, 88];
+const MIN_KEY = 1;
+const MAX_KEY = 99;
 
+/** A key that isn't in the tree yet, to suggest for the next insert. */
 function pickNew(t: Tree) {
   const have = new Set(Object.values(t.nodes).map((n) => n.key));
-  let v = randInt(1, 99);
-  while (have.has(v)) v = randInt(1, 99);
-  return v;
+  return freshInt(MIN_KEY, MAX_KEY, have) ?? MIN_KEY;
 }
 
 interface Run {
@@ -38,6 +41,10 @@ export function Stage() {
   const apply = (res: { frames: BstFrame[]; tree: Tree }, next?: number) => {
     setRun(res);
     if (next != null) setValue(next);
+  };
+  const insert = () => {
+    const res = insertFrames(t, value);
+    apply(res, pickNew(res.tree));
   };
 
   const preset = (keys: number[], say: ReactNode) => {
@@ -75,17 +82,17 @@ export function Stage() {
       }
       controls={
         <Controls>
-          <label className="bst-field">
-            <span>Key</span>
-            <input
-              type="number"
-              min={1}
-              max={99}
-              value={value}
-              onChange={(e) => setValue(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
-            />
-          </label>
-          <Button variant="primary" onClick={() => { const res = insertFrames(t, value); apply(res, pickNew(res.tree)); }}>
+          <TextField
+            label="Key"
+            type="number"
+            min={MIN_KEY}
+            max={MAX_KEY}
+            width={84}
+            value={String(value)}
+            onChange={(s) => setValue(clamp(Number(s) || MIN_KEY, MIN_KEY, MAX_KEY))}
+            onEnter={insert}
+          />
+          <Button variant="primary" onClick={insert}>
             Insert
           </Button>
           <Button onClick={() => apply(searchFrames(t, value))}>Search</Button>
@@ -105,7 +112,7 @@ export function Stage() {
           >
             Sorted order
           </Button>
-          <span className="bst-hint">Tip: click a node to use its key.</span>
+          <Hint>Tip: click a node to use its key.</Hint>
         </Controls>
       }
     >
@@ -114,23 +121,36 @@ export function Stage() {
   );
 }
 
+// Tree scene geometry (SVG units)
 const W = 900;
 const H = 380;
+const SIDE_PAD = 40;
+const TOP = 34;
+const MAX_LEVEL_GAP = 70;
+/** Room kept under the deepest level for the null ghost and labels. */
+const BOTTOM_ROOM = 70;
+/** Where the dashed "null" ghost child sits relative to its parent. */
+const GHOST_DX = 34;
+const GHOST_MAX_DY = 60;
 
 function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => void }) {
   const { pos, count, depth } = layout(frame.tree);
-  const level = Math.min(70, (H - 70) / Math.max(1, depth));
-  const px = (x: number) => (count <= 1 ? W / 2 : 40 + (x * (W - 80)) / (count - 1));
-  const py = (d: number) => 34 + d * level;
+  const level = Math.min(MAX_LEVEL_GAP, (H - BOTTOM_ROOM) / Math.max(1, depth));
+  const px = (x: number) => (count <= 1 ? W / 2 : SIDE_PAD + (x * (W - SIDE_PAD * 2)) / (count - 1));
+  const py = (d: number) => TOP + d * level;
   const nodes = Object.values(frame.tree.nodes);
-  const spring = { type: 'spring', stiffness: 170, damping: 22 } as const;
   const onPath = new Set(frame.path);
   const onSucc = new Set(frame.succ);
 
   let ghost: { x: number; y: number; px: number; py: number } | null = null;
   if (frame.ghost && pos[frame.ghost.parent]) {
     const p = pos[frame.ghost.parent];
-    ghost = { px: px(p.x), py: py(p.d), x: px(p.x) + (frame.ghost.side === 'left' ? -34 : 34), y: py(p.d) + Math.min(level, 60) };
+    ghost = {
+      px: px(p.x),
+      py: py(p.d),
+      x: px(p.x) + (frame.ghost.side === 'left' ? -GHOST_DX : GHOST_DX),
+      y: py(p.d) + Math.min(level, GHOST_MAX_DY),
+    };
   }
 
   return (
@@ -150,7 +170,7 @@ function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => v
                   initial={{ opacity: 0, x1: px(a.x), y1: py(a.d), x2: px(b.x), y2: py(b.d) }}
                   animate={{ opacity: 1, x1: px(a.x), y1: py(a.d), x2: px(b.x), y2: py(b.d) }}
                   exit={{ opacity: 0 }}
-                  transition={spring}
+                  transition={SPRING.soft}
                 />
               );
             }),
@@ -178,7 +198,7 @@ function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => v
                 initial={{ opacity: 0, scale: 0.2, x: px(p.x), y: py(p.d) }}
                 animate={{ opacity: 1, scale: n.id === frame.hi || n.id === frame.ok ? 1.15 : 1, x: px(p.x), y: py(p.d) }}
                 exit={{ opacity: 0, scale: 0.2 }}
-                transition={spring}
+                transition={SPRING.soft}
                 onClick={() => onPick(n.key)}
               >
                 <circle r={19} />

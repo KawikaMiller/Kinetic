@@ -37,15 +37,3 @@
 .bst-out-empty { font-size: 12.5px; color: var(--faint); }
 .bst-chip { padding: 3px 9px; border-radius: 7px; background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); font: 700 13px var(--mono); }
 
-.bst-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
-.bst-field input {
-  width: 84px;
-  font: 600 15px var(--mono);
-  padding: 7px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--line-2);
-  background: var(--bg-2);
-  color: var(--text);
-}
-.bst-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.bst-hint { font-size: 13px; color: var(--faint); align-self: center; }

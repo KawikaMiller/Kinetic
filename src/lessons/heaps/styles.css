@@ -15,14 +15,14 @@
 .hp-slots {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(15, 1fr);
+  grid-template-columns: repeat(var(--slots), 1fr);
   border: 1px solid var(--cell-line);
   border-radius: 10px;
   background: var(--bg-2);
   overflow: hidden;
 }
 .hp-slot { height: 58px; border-right: 1px solid var(--cell-line); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px; }
-.hp-slot:nth-child(15) { border-right: 0; }
+.hp-slot.last { border-right: 0; }
 .hp-slot span { font: 500 10px var(--mono); color: var(--faint); }
 .hp-slot.empty { background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(255 255 255 / 0.015) 6px 12px); }
 .hp-slot.linked { background: color-mix(in srgb, var(--hi) 8%, transparent); }

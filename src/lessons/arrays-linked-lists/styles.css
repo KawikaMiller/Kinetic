@@ -39,7 +39,7 @@
   padding: 4px 6px;
   transition: background 0.25s;
 }
-.al-aslot:nth-child(10) { border-right: 0; } /* CAP = 10 */
+.al-aslot.last { border-right: 0; }
 .al-aslot.is-hi { background: color-mix(in srgb, var(--hi) 8%, transparent); }
 .al-idx { font: 600 11px var(--mono); color: var(--muted); }
 .al-addr { font: 500 10px var(--mono); color: var(--faint); }

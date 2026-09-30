@@ -4,20 +4,23 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { ALGOS, buildFrames, makeBars, type AlgoId, type Bar, type Preset, type SortFrame } from './algorithms';
+import { ALGOS, buildFrames, buildRaceFrames, makeBars, type AlgoId, type Bar, type Preset, type SortFrame } from './algorithms';
 import './styles.css';
 
 const ALGO_IDS = Object.keys(ALGOS) as AlgoId[];
 type Mode = 'single' | 'race';
 
-interface RaceFrame extends Frame {
-  t: number;
-}
+const INITIAL_BARS = 20;
+/** Base ms per frame: the race has 5× the work per tick, so it steps faster. */
+const SINGLE_STEP_MS = 170;
+const RACE_STEP_MS = 90;
+/** Values are only labelled on bars when there's room. */
+const MAX_LABELLED_BARS = 24;
 
 export function Stage() {
-  const [n, setN] = useState(20);
+  const [n, setN] = useState(INITIAL_BARS);
   const [preset, setPreset] = useState<Preset>('random');
-  const [items, setItems] = useState<Bar[]>(() => makeBars(20, 'random'));
+  const [items, setItems] = useState<Bar[]>(() => makeBars(INITIAL_BARS, 'random'));
   const [algo, setAlgo] = useState<AlgoId>('bubble');
   const [mode, setMode] = useState<Mode>('single');
 
@@ -28,8 +31,9 @@ export function Stage() {
   );
   const raceFrames = useMemo(() => (race ? buildRaceFrames(race) : null), [race]);
 
-  const player = usePlayer<Frame>(raceFrames ?? frames, { interval: raceFrames ? 90 : 170 });
-  const stepMs = (raceFrames ? 90 : 170) / player.speed;
+  const baseStepMs = raceFrames ? RACE_STEP_MS : SINGLE_STEP_MS;
+  const player = usePlayer<Frame>(raceFrames ?? frames, { interval: baseStepMs });
+  const stepMs = baseStepMs / player.speed;
 
   const regen = (size = n, p = preset) => setItems(makeBars(size, p));
   const max = Math.max(...items.map((b) => b.v));
@@ -123,43 +127,6 @@ export function Stage() {
   );
 }
 
-function buildRaceFrames(race: { id: AlgoId; frames: SortFrame[] }[]): RaceFrame[] {
-  const len = Math.max(...race.map((r) => r.frames.length));
-  const ranked = [...race].sort((a, b) => a.frames.length - b.frames.length);
-  const out: RaceFrame[] = [];
-  for (let t = 0; t < len; t++) {
-    const finishing = ranked.filter((r) => r.frames.length - 1 === t);
-    let say;
-    if (t === 0) say = <>Same input, five algorithms, one step each per tick. Who finishes first?</>;
-    else if (finishing.length) {
-      say = (
-        <>
-          {finishing.map((f) => (
-            <span key={f.id}>
-              <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{ranked.indexOf(f) + 1}</span> with{' '}
-              {f.frames[f.frames.length - 1].comparisons} comparisons.{' '}
-            </span>
-          ))}
-        </>
-      );
-    }
-    out.push({ t, say });
-  }
-  const worst = race.find((r) => r.id === 'selection')!.frames.at(-1)!.comparisons;
-  const best = Math.min(...race.map((r) => r.frames.at(-1)!.comparisons));
-  out[out.length - 1] = {
-    t: len - 1,
-    hold: 2,
-    say: (
-      <>
-        O(n²) sorts compare roughly every pair (<span className="hl bad">{worst}</span> for selection). The best did{' '}
-        <span className="hl ok">{best}</span>. That gap explodes as n grows.
-      </>
-    ),
-  };
-  return out;
-}
-
 function barState(f: SortFrame, i: number, sorted: Set<number>) {
   if (f.a === i || f.b === i) {
     if (f.kind === 'compare') return 'cmp';
@@ -197,7 +164,7 @@ function Bars({ frame, n, max, stepMs, compact = false }: { frame: SortFrame; n:
           animate={{ left: `${(i / n) * 100}%` }}
           transition={{ duration, ease: 'easeInOut' }}
         >
-          {!compact && n <= 24 && <span>{bar.v}</span>}
+          {!compact && n <= MAX_LABELLED_BARS && <span>{bar.v}</span>}
         </motion.div>
       ))}
     </div>

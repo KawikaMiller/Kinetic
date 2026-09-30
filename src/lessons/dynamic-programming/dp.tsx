@@ -17,6 +17,9 @@ export interface FibFrame extends Frame {
 }
 
 /** Calls made by naive recursive fib(n): C(n) = C(n-1) + C(n-2) + 1. */
+/** Calls a memoized fib(n) makes: each k in 2..n calls fib(k-1) (a new call) and fib(k-2) (a cache hit). */
+export const memoCalls = (n: number) => Math.max(1, 2 * n - 1);
+
 export function naiveCalls(n: number) {
   let a = 1; // C(0)
   let b = 1; // C(1)

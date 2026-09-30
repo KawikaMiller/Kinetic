@@ -234,17 +234,3 @@
   gap: 8px;
   align-items: center;
 }
-.ht-input {
-  font: 600 14px var(--mono);
-  width: 140px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--line-2);
-  background: var(--bg-2);
-  color: var(--text);
-  outline: none;
-}
-.ht-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-}
