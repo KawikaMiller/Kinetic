@@ -1,0 +1,37 @@
+.tc { flex-direction: row; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+.tc-wheel { flex: none; overflow: visible; }
+.tc-face { fill: var(--bg-2); stroke: var(--line); }
+.tc-ring-unsigned { fill: none; stroke: color-mix(in srgb, var(--violet) 35%, transparent); stroke-width: 1.5; }
+.tc-ring-signed { fill: color-mix(in srgb, var(--info) 5%, transparent); stroke: color-mix(in srgb, var(--info) 35%, transparent); stroke-width: 1.5; }
+.tc-tick { stroke: var(--line-2); stroke-width: 1; }
+.tc-seam { stroke-width: 2.5; stroke-dasharray: 3 3; }
+.tc-seam.signed { stroke: var(--info); }
+.tc-seam.unsigned { stroke: var(--violet); }
+.tc-seam-flash { stroke: var(--bad); stroke-width: 6; stroke-linecap: round; }
+.tc-label { font: 600 11px var(--mono); text-anchor: middle; dominant-baseline: central; }
+.tc-label.unsigned { fill: var(--violet); }
+.tc-label.signed { fill: var(--info); }
+.tc-label.is-now { fill: var(--hi); }
+.tc-pointer { fill: var(--hi); }
+.tc-direction { fill: none; stroke: color-mix(in srgb, var(--hi) 55%, transparent); stroke-width: 2; }
+.tc-center { font: 700 22px var(--mono); text-anchor: middle; }
+.tc-center.unsigned { fill: var(--violet); }
+.tc-center.signed { fill: var(--info); font-size: 18px; }
+.tc-center-cap { font: 500 10px var(--mono); text-anchor: middle; fill: var(--faint); }
+.tc-side { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.tc-langs ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 5px; }
+.tc-date .stat-value { font-size: 14px; }
+.tc-negate { display: flex; flex-direction: column; gap: 8px; }
+
+.tc-add { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.tc-columns { display: flex; flex-direction: column; gap: 8px; }
+.tc-sum-row { display: flex; align-items: center; gap: 10px; }
+.tc-sum-label { width: 104px; font: 600 12px var(--mono); color: var(--muted); text-align: right; }
+.tc-sum-lead { width: 24px; display: grid; place-items: center; }
+.tc-carry-out { font: 700 13px var(--mono); color: var(--faint); }
+.tc-carry-out.is-out { color: var(--bad); }
+.tc-rule { height: 2px; background: var(--line-2); margin-left: 148px; }
+.tc-verdicts { flex: 1 1 260px; display: flex; flex-direction: column; gap: 10px; }
+.tc-verdict p { margin: 6px 0 0; font-size: 13.5px; }
+.tc-verdict-tag { font: 700 11px var(--mono); text-transform: uppercase; color: var(--c); margin-right: 4px; }
+.tc-verdict.is-wrong { border-color: color-mix(in srgb, var(--bad) 45%, transparent); }

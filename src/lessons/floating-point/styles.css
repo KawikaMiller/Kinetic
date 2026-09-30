@@ -1,0 +1,27 @@
+.fp { gap: 14px; }
+.fp-stat .stat-value { font-size: 15px; overflow-wrap: anywhere; }
+.fp-exact { max-width: 360px; }
+.fp-formula { margin: 0; font: 13px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.fp-chip { cursor: pointer; font-size: 12px; padding: 4px 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.fp-chip:hover,
+.fp-chip.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.fp-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.fp-lines { display: flex; flex-direction: column; gap: 6px; }
+.fp-line { display: block; overflow: visible; }
+.fp-line-title { font: 600 10.5px var(--mono); fill: var(--faint); }
+.fp-axis { stroke: var(--line-2); stroke-width: 1.5; }
+.fp-neighbour { fill: var(--dim); stroke: var(--faint); }
+.fp-current { fill: var(--hi); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--hi) 70%, transparent)); }
+.fp-typed { fill: none; stroke: var(--info); stroke-width: 2; stroke-dasharray: 3 2; }
+.fp-typed-label { font: 600 10px var(--mono); fill: var(--info); text-anchor: middle; }
+.fp-gap path { fill: none; stroke: var(--faint); }
+.fp-gap text { font: 600 10px var(--mono); fill: var(--muted); text-anchor: middle; }
+.fp-end { font: 500 10px var(--mono); fill: var(--faint); }
+.fp-end.is-right { text-anchor: end; }
+.fp-tick { font: 600 10px var(--mono); fill: var(--muted); text-anchor: middle; }
+.fp-tick-gap { font: 500 10px var(--mono); fill: var(--faint); text-anchor: middle; }
+.fp-f64 { flex: 1 1 280px; min-width: 0; }
+.fp-table { margin-top: 8px; font-size: 12.5px; }
+.fp-table td:last-child { font: 600 12.5px var(--mono); white-space: nowrap; }
+.fp-false { color: var(--bad); }
+.fp-true { color: var(--ok); }

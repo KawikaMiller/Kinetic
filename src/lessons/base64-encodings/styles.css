@@ -1,0 +1,49 @@
+.b64 { gap: 16px; }
+.b64-preset { cursor: pointer; font-size: 12px; padding: 4px 9px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.b64-preset:hover,
+.b64-preset.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.b64-output { display: flex; flex-direction: column; gap: 6px; }
+.b64-string { font: 600 18px var(--mono); color: var(--violet); overflow-wrap: anywhere; }
+.b64-pad { color: var(--dim); }
+.b64-revealed { margin: 4px 0 0; font-size: 14px; color: var(--bad); }
+.b64-revealed b { color: var(--text); }
+.b64-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.b64-blocks { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.b64-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--cell-line);
+  background: var(--bg-2);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+.b64-block:hover { border-color: var(--faint); }
+.b64-block.is-on { border-color: var(--hi); }
+.b64-more { margin: 0; font-size: 12.5px; color: var(--faint); }
+.b64-alphabet-box { flex: 1 1 280px; min-width: 0; }
+.b64-alphabet { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: 10px; max-width: 360px; }
+.b64-cell { display: flex; flex-direction: column; align-items: center; padding: 3px 0; font: 700 14px var(--mono); }
+.b64-cell small { font: 500 9px var(--mono); color: var(--faint); }
+.b64-cell.is-solid small { color: var(--on-c); }
+.b64-tokens { display: flex; flex-wrap: wrap; gap: 6px; }
+.b64-token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 34px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+}
+.b64-token-in { font-size: 18px; }
+.b64-token-out { font: 600 11px var(--mono); color: var(--faint); }
+.b64-token.is-escaped { border-color: color-mix(in srgb, var(--hi) 55%, transparent); background: color-mix(in srgb, var(--hi) 10%, var(--cell)); }
+.b64-token.is-escaped .b64-token-out { color: var(--hi); }
