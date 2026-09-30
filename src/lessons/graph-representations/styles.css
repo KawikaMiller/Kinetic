@@ -1,0 +1,49 @@
+.gr { flex-flow: row wrap; align-items: flex-start; }
+.gr-main { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.gr-side { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.gr-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px dashed var(--line-2);
+  background: var(--bg-2);
+  touch-action: none;
+  cursor: crosshair;
+}
+.gr-edge { stroke: var(--line-2); stroke-width: 2.5; transition: stroke 0.2s; }
+.gr-edge.is-cycle { stroke: var(--bad); stroke-width: 3.5; }
+.gr-edge.is-hot { stroke: var(--hi); stroke-width: 4; }
+.gr-edge-hit { stroke: transparent; stroke-width: 14; cursor: pointer; }
+.gr-drag { stroke: var(--hi); stroke-width: 2.5; stroke-dasharray: 6 5; pointer-events: none; }
+.gr-weight { font: 700 12px var(--mono); fill: var(--muted); pointer-events: none; }
+.gr-node { cursor: grab; }
+.gr-node circle { fill: color-mix(in srgb, var(--c) 22%, var(--cell)); stroke: var(--c); stroke-width: 2.5; transition: fill 0.2s, stroke 0.2s; }
+.gr-node text { font: 700 14px var(--mono); fill: var(--text); pointer-events: none; }
+.gr-node.is-hot circle { fill: var(--hi); stroke: var(--hi); stroke-width: 4; }
+.gr-node.is-hot text { fill: var(--on-hi); }
+.gr-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+.gr-matrix { width: auto; margin-top: 8px; }
+.gr-matrix th,
+.gr-matrix td { padding: 0; text-align: center; min-width: 26px; height: 24px; }
+.gr-matrix td button {
+  width: 100%;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font: 600 12px var(--mono);
+  cursor: pointer;
+}
+.gr-matrix td.is-set button { color: var(--text); }
+.gr-matrix td button:disabled { cursor: default; }
+.gr-matrix .is-info { background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--info); }
+.gr-matrix td.is-info.is-set button { color: var(--info); }
+
+.gr-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.gr-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 6px; }
+.gr-list li.is-info { background: color-mix(in srgb, var(--info) 14%, transparent); }
+.gr-list-head { font: 700 12px var(--mono); color: var(--text); background: none; border: 0; padding: 2px 4px; cursor: pointer; }
+.gr-arrow { color: var(--faint); font-size: 12px; }
+.btn.gr-on { border-color: var(--accent); }
