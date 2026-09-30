@@ -5,7 +5,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ControlGroup, Hint, Legend, Stat, Stats, TextField } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { dedupeFrames, pairFrames, palindromeFrames, type PairFrame } from './frames';
-import { allPairsCount, isSortedAscending, pairKey, parseNumbers } from './model';
+import { parseIntegers } from '../../core/parse';
+import { allPairsCount, isSortedAscending, pairKey } from './model';
 import { DEDUPE_PRESET, MAX_LENGTH, MAX_TEXT, PALINDROMES, PRESETS } from './presets';
 import './styles.css';
 
@@ -28,7 +29,7 @@ export function Stage() {
 
 /** Validate an edited array: 2…MAX_LENGTH integers of at most two digits. */
 function readArray(text: string): number[] | string {
-  const nums = parseNumbers(text);
+  const nums = parseIntegers(text);
   if (!nums) return 'Use whole numbers separated by commas.';
   if (nums.length < MIN_LENGTH || nums.length > MAX_LENGTH) return `Use ${MIN_LENGTH} to ${MAX_LENGTH} numbers.`;
   if (nums.some((v) => Math.abs(v) > MAX_ABS)) return `Keep numbers between −${MAX_ABS} and ${MAX_ABS}.`;

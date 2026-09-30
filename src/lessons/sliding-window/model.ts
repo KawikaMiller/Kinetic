@@ -126,14 +126,5 @@ export function bruteShortestAtLeast(a: readonly number[], target: number): numb
 
 export { sumOf };
 
-/**
- * Parse "4, 2 12" into integers; null if anything isn't one. Same as two-pointers' copy:
- * a shared core helper is a Phase 2 request (lessons don't import each other).
- */
-export function parseNumbers(text: string): number[] | null {
-  const nums = text.split(/[\s,]+/).filter(Boolean).map(Number);
-  return nums.length && nums.every(Number.isInteger) ? nums : null;
-}
-
 /** Windows brute force looks at: every [i, j] with i <= j. */
 export const allWindows = (n: number) => (n * (n + 1)) / 2;

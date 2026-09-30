@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEVELS, effectiveNs, formatHuman, formatLatency, levelById, ratio } from './model';
+import { LEVELS, effectiveNs, levelById, ratio } from './model';
 
 describe('latency numbers', () => {
   it('every figure sits inside its documented range', () => {
@@ -53,22 +53,5 @@ describe('effective access time', () => {
       expect(t).toBeLessThan(last);
       last = t;
     }
-  });
-});
-
-describe('formatting', () => {
-  it('prints real latencies in the right unit', () => {
-    expect(formatLatency(0.3)).toBe('0.3 ns');
-    expect(formatLatency(100)).toBe('100 ns');
-    expect(formatLatency(50_000)).toBe('50 µs');
-    expect(formatLatency(5_000_000)).toBe('5 ms');
-    expect(formatLatency(150_000_000)).toBe('150 ms');
-  });
-
-  it('prints human time where 1 ns = 1 s', () => {
-    expect(formatHuman(1)).toBe('1 s');
-    expect(formatHuman(100)).toBe('1.7 min');
-    expect(formatHuman(50_000)).toBe('14 hours');
-    expect(formatHuman(150_000_000)).toBe('4.8 years');
   });
 });

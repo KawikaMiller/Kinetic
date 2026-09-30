@@ -9,6 +9,36 @@ export function duration(seconds: number): string {
   return seconds >= 1 ? `${seconds.toFixed(1)}s` : `${Math.round(seconds * 1000)}ms`;
 }
 
+/** Whole numbers from 10 up, one decimal below, dropping a trailing '.0': 42, 4.8, 3. */
+const sig = (v: number) => (v >= 10 ? v.toFixed(0) : v.toFixed(1).replace(/\.0$/, ''));
+
+/** A very short time in nanoseconds, in the right unit: '0.3 ns', '50 µs', '5 ms', '2 s'. */
+export function latency(ns: number): string {
+  if (ns < 1e3) return `${sig(ns)} ns`;
+  if (ns < 1e6) return `${sig(ns / 1e3)} µs`;
+  if (ns < 1e9) return `${sig(ns / 1e6)} ms`;
+  return `${sig(ns / 1e9)} s`;
+}
+
+const MINUTE = 60;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+const YEAR = 365.25 * DAY;
+const HUMAN_UNITS: [limit: number, size: number, one: string, many: string][] = [
+  [MINUTE, 1, 's', 's'],
+  [HOUR, MINUTE, 'min', 'min'],
+  [DAY, HOUR, 'hour', 'hours'],
+  [YEAR, DAY, 'day', 'days'],
+  [Infinity, YEAR, 'year', 'years'],
+];
+
+/** A long span of seconds in the biggest sensible unit: '1 s', '1.7 min', '14 hours', '1 day', '4.8 years'. */
+export function humanDuration(seconds: number): string {
+  const [, size, one, many] = HUMAN_UNITS.find(([limit]) => seconds < limit)!;
+  const text = sig(seconds / size);
+  return `${text} ${text === '1' ? one : many}`;
+}
+
 /** Milliseconds, rounded: '42 ms'. */
 export const ms = (v: number) => `${Math.round(v)} ms`;
 

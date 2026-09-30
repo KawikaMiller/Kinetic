@@ -7,7 +7,8 @@ import { usePlayer } from '../../core/usePlayer';
 import {
   everyWindow, everyWindowOfK, fixedKFrames, shortestFrames, uniqueFrames, type BruteCost, type SwFrame,
 } from './frames';
-import { parseNumbers, spanLength } from './model';
+import { parseIntegers } from '../../core/parse';
+import { spanLength } from './model';
 import { FIXED_PRESET, K_CHOICES, MAX_LENGTH, SHORTEST_PRESET, UNIQUE_PRESETS } from './presets';
 import './styles.css';
 
@@ -29,7 +30,7 @@ export function Stage() {
 
 /** Numbers typed by the learner: 2…MAX_LENGTH integers in range, or an error message. */
 function readNumbers(text: string, min: number): number[] | string {
-  const nums = parseNumbers(text);
+  const nums = parseIntegers(text);
   if (!nums || nums.length < 2 || nums.length > MAX_LENGTH) return `Use 2 to ${MAX_LENGTH} whole numbers.`;
   if (nums.some((v) => v < min || v > MAX_VALUE)) return `Keep numbers between ${min} and ${MAX_VALUE}.`;
   return nums;

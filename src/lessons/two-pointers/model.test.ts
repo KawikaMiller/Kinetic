@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import {
-  bruteForcePairSum, dedupeTrace, isSortedAscending, pairKey, pairsRuledOut, palindromeTrace, parseNumbers, twoPointerPairSum,
+  bruteForcePairSum, dedupeTrace, isSortedAscending, pairKey, pairsRuledOut, palindromeTrace, twoPointerPairSum,
 } from './model';
 import { PRESETS } from './presets';
 
@@ -92,13 +92,5 @@ describe('remove duplicates in place', () => {
       expect(values.slice(0, length)).toEqual([...new Set(arr)]);
       expect(steps.length).toBe(Math.max(0, arr.length - 1));
     }
-  });
-});
-
-describe('parseNumbers', () => {
-  it('reads commas and spaces, rejects non-integers', () => {
-    expect(parseNumbers('1, 3 ,4  8')).toEqual([1, 3, 4, 8]);
-    expect(parseNumbers('1, x')).toBeNull();
-    expect(parseNumbers(' ')).toBeNull();
   });
 });

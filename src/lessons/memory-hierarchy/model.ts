@@ -41,32 +41,5 @@ export const effectiveNs = (hitRate: number, fastNs: number, slowNs: number) => 
 /** How many times slower `a` is than `b`. */
 export const ratio = (a: number, b: number) => a / b;
 
-// ── Formatting ───────────────────────────────────────────────────────
-
-/** Whole numbers from 10 up, one decimal below (dropping a trailing .0). */
-const trim = (v: number) => (v >= 10 ? v.toFixed(0) : v.toFixed(1).replace(/\.0$/, ''));
-
-/** Real time: '0.3 ns', '4 ns', '50 µs', '5 ms', '150 ms'. */
-export function formatLatency(ns: number): string {
-  if (ns < 1_000) return `${trim(ns)} ns`;
-  if (ns < 1_000_000) return `${trim(ns / 1_000)} µs`;
-  if (ns < 1_000_000_000) return `${trim(ns / 1_000_000)} ms`;
-  return `${trim(ns / 1_000_000_000)} s`;
-}
-
-const MINUTE = 60;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-const YEAR = 365.25 * DAY;
-
-/** Human time, where 1 ns becomes 1 s: '1 s', '1.7 min', '14 hours', '58 days', '4.8 years'. */
-export function formatHuman(seconds: number): string {
-  if (seconds < MINUTE) return `${trim(seconds)} s`;
-  if (seconds < HOUR) return `${trim(seconds / MINUTE)} min`;
-  if (seconds < DAY) return `${trim(seconds / HOUR)} hours`;
-  if (seconds < YEAR) return `${trim(seconds / DAY)} days`;
-  return `${trim(seconds / YEAR)} years`;
-}
-
 /** 1 ns of real time becomes 1 s of human time. */
 export const HUMAN_SECONDS_PER_NS = 1;

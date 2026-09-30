@@ -112,10 +112,3 @@ export function dedupeTrace(sorted: readonly number[]): { steps: DedupeStep[]; l
   return { steps, length: slow + 1, values: a };
 }
 
-/** Parse "1, 3, 4" into numbers; null if anything isn't an integer. */
-export function parseNumbers(text: string): number[] | null {
-  const parts = text.split(/[\s,]+/).filter(Boolean);
-  if (!parts.length) return null;
-  const nums = parts.map(Number);
-  return nums.every(Number.isInteger) ? nums : null;
-}

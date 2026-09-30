@@ -1,5 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, duration, pct, plural } from './format';
+import { bytes, clock, duration, humanDuration, latency, pct, plural } from './format';
+
+describe('latency and humanDuration', () => {
+  it('prints nanosecond-scale times in the right unit', () => {
+    expect(latency(0.3)).toBe('0.3 ns');
+    expect(latency(100)).toBe('100 ns');
+    expect(latency(50_000)).toBe('50 µs');
+    expect(latency(5_000_000)).toBe('5 ms');
+    expect(latency(150_000_000)).toBe('150 ms');
+    expect(latency(2e9)).toBe('2 s');
+  });
+
+  it('prints long spans in the biggest sensible unit', () => {
+    expect(humanDuration(1)).toBe('1 s');
+    expect(humanDuration(100)).toBe('1.7 min');
+    expect(humanDuration(50_000)).toBe('14 hours');
+    expect(humanDuration(150_000_000)).toBe('4.8 years');
+  });
+
+  it('uses the singular for exactly one of a unit', () => {
+    expect(humanDuration(3600)).toBe('1 hour');
+    expect(humanDuration(86_400)).toBe('1 day');
+    expect(humanDuration(365.25 * 86_400)).toBe('1 year');
+    expect(humanDuration(2 * 3600)).toBe('2 hours');
+  });
+});
 
 describe('format', () => {
   it('duration switches from ms to seconds at 1s', () => {

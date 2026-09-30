@@ -4,11 +4,11 @@ import { TravelDot } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { bytes, NA, pct, times } from '../../core/format';
+import { bytes, humanDuration, latency, NA, pct, times } from '../../core/format';
 import { useElementSize } from '../../core/hooks';
 import { categorical } from '../../core/palette';
 import { logScale } from '../../core/scale';
-import { HUMAN_SECONDS_PER_NS, LEVELS, effectiveNs, formatHuman, formatLatency, levelById } from './model';
+import { HUMAN_SECONDS_PER_NS, LEVELS, effectiveNs, levelById } from './model';
 import './styles.css';
 
 /** Narrowest stage where the ladder's columns still fit without squashing the track. */
@@ -39,7 +39,7 @@ export function Stage() {
   const [trackRef, { width: trackW }] = useElementSize<HTMLDivElement>();
   useIntroCaption(<>From a register to the other side of the planet, the times differ by <b>almost a billion</b>. The track is a log scale: each tick is 1,000× the last.</>);
 
-  const show = (ns: number) => (scale === 'real' ? formatLatency(ns) : formatHuman(ns * HUMAN_SECONDS_PER_NS));
+  const show = (ns: number) => (scale === 'real' ? latency(ns) : humanDuration(ns * HUMAN_SECONDS_PER_NS));
   const x = logScale(AXIS_MIN_NS, AXIS_MAX_NS, 0, Math.max(1, trackW));
   const trip = (ns: number) => (scale === 'real' ? LOG_TRIP_BASE_S + LOG_TRIP_PER_DECADE_S * Math.log10(ns / LEVELS[0].ns) : ns * HUMAN_SECONDS_PER_NS);
 
@@ -48,7 +48,7 @@ export function Stage() {
     setRace((n) => n + 1);
     setCaption(
       human ? (
-        <>Stretch time so <b>1 ns = 1 second</b>: L1 is a second, RAM is <span className="hl">{formatHuman(SLOW.ns)}</span>, an SSD read is {formatHuman(levelById('nvme').ns)}, a round trip to Europe is <span className="hl bad">{formatHuman(levelById('wan').ns)}</span>. The slow dots barely move.</>
+        <>Stretch time so <b>1 ns = 1 second</b>: L1 is a second, RAM is <span className="hl">{humanDuration(SLOW.ns)}</span>, an SSD read is {humanDuration(levelById('nvme').ns)}, a round trip to Europe is <span className="hl bad">{humanDuration(levelById('wan').ns)}</span>. The slow dots barely move.</>
       ) : (
         <>Back to real time. The dots use a log scale here, otherwise only the top rows would ever move.</>
       ),
