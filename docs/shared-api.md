@@ -70,6 +70,18 @@ One breakpoint: `@media (max-width: 900px)`.
 `kit.css` and the scene kit's `scene.css` are both loaded globally from `main.tsx`, so a lesson can
 use any of these classes (including `scene-*` on its own custom shapes) without importing anything.
 
+### Typography: characters render as typed
+
+- **No ligatures, anywhere.** `global.css` sets `font-variant-ligatures: none !important` on every
+  element, so `>=`, `===`, `=>`, `!=`, `->` and `--` show as the characters people type (JetBrains Mono
+  and Inter's contextual alternates would otherwise join them into single glyphs, e.g. `≥`).
+  `!important` is deliberate: the `font:` shorthand used all over lesson CSS resets ligatures. Don't
+  add lesson-level ligature rules and never re-enable them.
+- **Superscripts are real glyphs.** `index.html` fetches the superscripts `⁰ ⁴-⁹ ⁺ ⁻ ⁼ ⁽ ⁾ ⁿ`
+  (U+2070-207F) from Google Fonts with `text=`, because no regular subset includes them (they used to
+  fall back to a mismatched system font: 2¹⁰ read as "2¹ᵒ"). So Unicode exponents render properly in
+  both fonts, in HTML and SVG text: write `power(10)` / `2³²` rather than hand-rolling `<sup>`.
+
 ---
 
 ## Core utilities (`src/core/`)
@@ -106,13 +118,23 @@ plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
-superscript(23)       // '²³' — exponents in plain text: `2${superscript(k)}`
+superscript(23)       // '²³' — an integer in superscript digits
+power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
 ```
 
 ### `parse.ts`
 ```ts
 parseIntegers('1, 3 ,4  8')   // [1, 3, 4, 8]; commas and/or spaces; null if empty or any value isn't an integer
 ```
+
+### `useMeasure.ts` — css-layout, responsive-design
+```tsx
+const m = useMeasure(ref, (el) => ({ box: rectIn(el.querySelector('.child')!, el), pad: px(getComputedStyle(el), 'paddingLeft') }));
+```
+Measures real layout under `ref` after every render, whenever it or anything inside it resizes, and
+once web fonts have loaded (a late font changes line heights without resizing the container). The
+value only changes when the measurement does, so it can't loop. `rectIn(el, origin)` is an element's
+border box relative to `origin` (0.1px precision); `px(cs, prop)` reads a computed length.
 For the "type your own array" fields (two-pointers, sliding-window).
 
 ### `math.ts`, `random.ts`, `hash.ts` — patterns 9, 11
@@ -276,10 +298,17 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
 <PauseButton paused={paused} onToggle={togglePause} />
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
-const [scene, picker] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });
+const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 <StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 <StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
+<WideRegion minWidth={728} label="Pipeline diagram: scroll sideways to see all of it">
+  <Dag />                                  // or just one wide part of a stage (components/WideRegion)
+</WideRegion>
 ```
+- `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
+  Wrap only the wide part when the rest of the stage is HTML that can reflow: in ci-pipelines only the
+  DAG scrolls on a phone, while the Gantt chart and YAML fit the screen. An SVG directly inside it
+  should be `display: block`, or it picks up a baseline gap.
 - `StageFrame minWidth`: the narrowest width at which the visual stays readable. Below it the stage scrolls
   sideways *inside itself* (edge fades, a "swipe" hint that hides on scroll or after 5 s, keyboard-focusable)
   instead of shrinking the drawing; wider screens see no difference. Set it on any stage with a fixed-layout
@@ -317,6 +346,18 @@ easeOut; `{}` = motion's default tween). Lesson CSS can restyle `.xx-bar .meter-
 Line states: `idle past now next done cut cached pending`. `solid` gives the now-line a `--hi` fill
 (tx-acid); `bar` gives it a tint and a left bar (race, recursion, containers). The CSS is generic,
 so expect to keep a few lesson overrides for exact pixel parity.
+```tsx
+<CodePanel lines={SRC} active={pc}
+           renderLine={(line, i) => highlightTokens(line, i)}        // rich code, e.g. struck-through skipped parts
+           onLineClick={toggleBreakpoint} pressed={(i) => bps.has(i)} // each line a button (debugger-tools)
+           lineLabel={(i) => `Line ${i + 1}: toggle breakpoint`} />
+```
+- `renderLine` replaces a line's code content; `lines` stays the plain text (keys, labels).
+- `onLineClick` turns every line into a button that looks identical to a plain line: Space/Enter,
+  the focus-visible ring, `aria-pressed` from `pressed(i)`, and `lineLabel(i)` as its name (default
+  "Line N: code"). The dev kit showcase (`#/dev/kit`) has a breakpoint demo.
+- Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
+  row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 
 ### `ConsolePanel.tsx` — value-vs-reference, closures-scope; debugger-tools next
 ```tsx
@@ -399,6 +440,7 @@ Component CSS lives in `kit.css`, so the classes work without importing anything
 toBits(0x2a7f, 16)        // Bit[] MSB first; negatives in two's complement, out-of-range wraps: toBits(-1, 8) → 11111111
 fromBits(bits), fromBitsSigned(bits), flipBit(bits, i), placeValue(i, width)   // width 1..53
 chunkGroups(16, 4, { tone: 'violet', label: (k, from, to) => hexDigit(from, to) })  // nibbles, bytes, 6-bit, rwx
+chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, from the LSB: 4 + 8 + 8 (logs-exponentials)
 ```
 ```tsx
 <BitStrip bits={bits} onToggle={(i) => setBits(flipBit(bits, i))} placeValues
@@ -425,6 +467,8 @@ truthRowIndex(['A', 'B'], inputs)     // the row matching the current inputs
 <TruthTable vars={['p', 'q']} columns={[f1, f2]} mismatchRows={diffRows} />       // T/F, true = --ok, current = --hi
 ```
 Rows with `onRowClick` are keyboard-focusable buttons (Enter/Space). Outputs are separated from inputs by a rule.
+Variable-name headers keep their case (`p` stays `p`; output headers use the table's uppercase style).
+A `mismatchRows` row turns red as a whole, its T/F values included.
 
 ### Memory kit (`components/memory/`) — stack-vs-heap, value-vs-reference, closures-scope, oop-fundamentals
 SVG primitives in scene coordinates, plus the geometry to connect them:
@@ -479,6 +523,14 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 Drag the handle, or focus it and use ←/→ (`step`, ×5 with Shift), Home and End. It's a `separator`
 with `aria-valuenow`. When the stage is narrower than `value`, the pane is shown at the stage's width
 and the readout says "shown at Npx", so measurements inside stay honest.
+```tsx
+<ResizablePane min={320} max={1440} value={device} onChange={setDevice} label="Device width" scaleToFit>
+  <div className="rd-page">…</div>   {/* laid out at the true `device` width, then scaled into the pane */}
+</ResizablePane>
+```
+`scaleToFit` keeps the children laid out at the full `value` width (their media and container
+queries see the real width) and scales them into the pane, with the box height following the scaled
+content; the readout then says "laid out at a true Npx, then scaled to fit" (responsive-design).
 
 ### `TextArea` (in `ui.tsx`) — regex-basics, data-formats
 ```tsx
@@ -554,6 +606,12 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - It is its own horizontal scroller. When commits are added it scrolls the newest into view (never past the start), and the side with hidden commits gets an inner glow (`has-more-left` / `has-more-right`), so on a phone you can see there's more to swipe to. `follow={false}` turns the auto-scroll off.
 - The drawing is exactly as wide as the commits need (no minimum width), so short histories don't create an empty scroll area.
 - `layoutCommitGraph`, `commitEdgePath`, `shortMessage` and `defaultLaneColor` are pure and tested; `spacing` overrides `DEFAULT_SPACING`.
+- **Parallel work:** by default each commit gets its own column. Give commits a `column` to share one;
+  `depthColumns(commits)` places each commit one column after its latest parent, so several developers'
+  same-day commits line up (branching-workflows: a 3-developer GitFlow week goes from ~40 columns to ~20).
+- `laneLabel={(lane) => name}` draws a name per lane in its own gutter, pinned to the left edge while the graph scrolls.
+- `messageFit="truncate"` cuts each message to the room before its same-lane neighbour (`fitMessages`), so
+  close commits never overlap. It's opt-in, so git-internals keeps its usual 12-character messages.
 - git-internals runs on it, pixel-identical on desktop, and at 390px its graph now starts at the first commit instead of scrolled past the end.
 
 ---
@@ -563,6 +621,8 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
 - **Multi-state `CodePanel` lines:** requested in Phase 2 and declined; lessons that need more line states keep a small local override.
 - **`CompareRows`:** not built.
+- **`ColorField`:** requested after wave 2 and declined: accessibility's colour input is its only
+  user, so it stays local until a second lesson needs one (extract on the second use).
 - **Per plan §6:** a scene engine, `DataTable`, `KeyValue`, `EventLog`, `ChipChoice` and `CanvasStage`.
 
 Revisit any of these when a second, genuinely similar lesson needs one.

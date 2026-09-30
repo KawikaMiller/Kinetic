@@ -1212,10 +1212,10 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 1 | T1-B3 Memory & runtime | 5 | 1 | t1/b3 | done | merged e239bdf |
 | 1 | T1-B5 Algorithm patterns | 5 | 1 | t1/b5 | done | merged 6271769 |
 | 1 | P-follow-up after wave 1 | — | 1→2 | kit owner | done | ChipButton, ConsolePanel, parseIntegers, latency/humanDuration, memory layout + ports + link arrows, ArrayStrip range tint, BitStrip exponent labels, CallStackPanel tone, TreeSvg nodeOpacity, narrow-screen scene labels |
-| 1 | T1-B2 Logic & the machine | 5 | 2 | | not started | |
-| 1 | T1-B6 Web platform | 5 | 2 | | not started | |
-| 1 | T1-B8 Shipping code | 5 | 2 | | not started | |
-| 1 | P-follow-up after wave 2 | — | 2→3 | | not started | |
+| 1 | T1-B2 Logic & the machine | 5 | 2 | t1/b2 | done | merged ac06981 |
+| 1 | T1-B6 Web platform | 5 | 2 | t1/b6 | done | merged e21ffaf |
+| 1 | T1-B8 Shipping code | 5 | 2 | t1/b8 | done | merged 5c40ed9 |
+| 1 | P-follow-up after wave 2 | — | 2→3 | kit owner | done | ligatures off app-wide, superscript glyphs loaded + power(), core/useMeasure, chunkGroups align right, CodePanel renderLine/onLineClick, CommitGraph columns/depthColumns/lane labels/messageFit, ResizablePane scaleToFit, WideRegion, useScenePicker setScene, TruthTable var case + red mismatch values; ColorField declined (one user) |
 | 1 | T1-B4 Code flow | 4 | 3 | | not started | |
 | 1 | T1-B7 Security & data | 5 | 3 | | not started | |
 | 1 | T1-B9 Everyday tools | 5 | 3 | | not started | |

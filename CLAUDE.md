@@ -51,15 +51,21 @@ loss), say so on screen.
   `core/random`, `core/math`, `core/motion`. Don't re-declare `percentile`, `lerp`, FNV, springs.
 - Recurring bits of UI already exist: preset chips are `ChipButton`, a program's printed output is
   `ConsolePanel`, a learner-typed list is `core/parse` `parseIntegers`, ns/long spans are
-  `latency`/`humanDuration`. Memory scenes lay out with `stackBoxes`/`fanBend`, not local loops.
+  `latency`/`humanDuration`, exponents are `power(k)`. Memory scenes lay out with `stackBoxes`/`fanBend`,
+  not local loops. Real-DOM measurement is `core/useMeasure`. Clickable code lines (breakpoints) are
+  `CodePanel onLineClick`; commit histories with parallel work use `depthColumns` + `laneLabel`.
+- Text renders as typed: ligatures are off app-wide (`>=` never becomes `≥`), and superscripts are
+  real font glyphs. Never re-enable ligatures, and don't hand-roll `<sup>` for exponents.
 - Lesson CSS class names are global: always prefix them with the lesson's own prefix.
 - Lesson file convention: `frames.tsx` for frame builders with JSX captions, `sim.ts`/`model.ts`
   for pure logic, `draw.ts` for canvas drawing, `Stage.tsx` for React only.
 - Phones (390px) are a first-class target. Wide visuals never shrink below a readable scale and
   never push the page sideways: give the `StageFrame` a `minWidth` (the narrowest width where the
   drawing still reads) and on narrower screens the stage scrolls sideways inside itself with an
-  affordance. HTML controls and panels wrap instead (`flex-wrap`), never `nowrap` rows that can
-  outgrow a phone. Don't build per-lesson narrow layouts unless a scroll genuinely doesn't work.
+  affordance. If only part of the stage is wide (a diagram above HTML that can reflow), wrap just
+  that part in `WideRegion` instead, so the rest fits the phone. HTML controls and panels wrap
+  (`flex-wrap`), never `nowrap` rows that can outgrow a phone. Don't build per-lesson narrow layouts
+  unless a scroll genuinely doesn't work.
 
 ## Verify before calling anything done
 
