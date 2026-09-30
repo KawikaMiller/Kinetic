@@ -957,6 +957,8 @@ kbd {
     animation-duration: 0.01ms !important;
     /* run once, don't loop: an infinite 0.01ms animation is a flicker, not stillness */
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    /* none, not a tiny duration: a 0.01ms transition on every property makes size
+       changes land a frame late, which breaks code that measures layout right after */
+    transition: none !important;
   }
 }

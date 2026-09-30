@@ -93,8 +93,8 @@ export function CommitGraph({
     followTo.current = follow && newestP ? SCROLL_PAD * 2 + newestP.x + spacing.padX : null;
   });
   useEffect(() => {
-    // Next frame: the new width may not be laid out yet (e.g. the reduced-motion rule gives
-    // every property a 0.01ms transition), and a scroll past the current end gets clamped.
+    // Next frame: the new width may not be laid out yet, and a scroll past the current end
+    // gets clamped.
     const id = requestAnimationFrame(() => {
       const el = scroller.current;
       const right = followTo.current;

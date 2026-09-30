@@ -489,7 +489,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 }
 /* Its width must change instantly: the reduced-motion rule would otherwise transition it,
    and CommitGraph measures the scroller right after a commit is added. */
-.commit-graph-svg { display: block; overflow: visible; transition-property: none; }
+.commit-graph-svg { display: block; overflow: visible; }
 .commit-edge { fill: none; stroke-width: 2.5; }
 .commit-edge.is-dead { stroke-dasharray: 4 4; }
 .commit-node.is-clickable { cursor: pointer; }
