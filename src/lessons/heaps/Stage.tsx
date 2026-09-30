@@ -60,7 +60,7 @@ export function Stage() {
   const empty = run.items.length === 0;
 
   return (
-    <StageFrame
+    <StageFrame minWidth={810}
       player={player}
       height={470}
       stats={

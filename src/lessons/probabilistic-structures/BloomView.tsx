@@ -94,7 +94,7 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
   const boardH = TOP + rows * (CELL + ROW_GAP);
 
   return (
-    <StageFrame
+    <StageFrame minWidth={470}
       height={380}
       stats={
         <Stats>

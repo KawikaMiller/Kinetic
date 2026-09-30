@@ -45,7 +45,7 @@ export function Scale({ modePicker }: { modePicker: ReactNode }) {
   const player = usePlayer(frames, { interval: 2200 });
   const f = player.frame;
   return (
-    <StageFrame
+    <StageFrame minWidth={760}
       player={player}
       height={420}
       stats={

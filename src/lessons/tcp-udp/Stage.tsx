@@ -38,7 +38,7 @@ export function Stage() {
   const tcpFrozen = scenario === 'video' && !tcp.done && tcp.delivered.length > 0 && (tcp.buffer.length > 0 || f.t - tcp.lastDeliver > 6);
 
   return (
-    <StageFrame
+    <StageFrame minWidth={810}
       player={player}
       height={500}
       style={{ ['--dur' as string]: `${INTERVAL / player.speed}ms` } as CSSProperties}

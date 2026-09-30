@@ -45,7 +45,7 @@ export function Stage() {
   const agree = all.every((v) => v === all[0]) && !all[0].includes('|');
 
   return (
-    <StageFrame
+    <StageFrame minWidth={740}
       player={player}
       height={430}
       stats={

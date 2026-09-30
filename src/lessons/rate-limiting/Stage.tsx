@@ -101,7 +101,7 @@ export function Stage() {
   const sel = rows?.[algo];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={640}
       height={STAGE_HEIGHT}
       stats={
         <Stats>

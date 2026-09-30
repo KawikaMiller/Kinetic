@@ -53,7 +53,7 @@ export function Stage() {
   const ends = policy === 'lfu' ? ['most used', 'least used · evict next'] : policy === 'fifo' ? ['newest', 'oldest · evict next'] : ['most recent', 'least recent · evict next'];
 
   return (
-    <StageFrame
+    <StageFrame minWidth={460}
       player={player}
       height={470}
       stats={

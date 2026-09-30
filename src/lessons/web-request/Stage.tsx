@@ -211,7 +211,7 @@ export function Stage() {
   const active = new Set<ActorId>(msg ? [msg.from, msg.to] : []);
 
   return (
-    <StageFrame
+    <StageFrame minWidth={880}
       player={player}
       height={470}
       stats={
