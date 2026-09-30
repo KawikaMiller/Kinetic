@@ -1,14 +1,19 @@
 import { motion } from 'motion/react';
-import { useState, type CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { HeroGraphic } from '../components/HeroGraphic';
-import { TIERS, TOPICS, TRACKS } from '../core/curriculum';
+import { TIERS, TOPICS } from '../core/curriculum';
 import { BUILT_TOPICS, isBuilt } from '../core/lessons';
 import { useProgress } from '../core/progress';
-import type { Topic, TrackId } from '../core/types';
+import { filterToParams, matchesFilter, parseFilter, type TopicFilter } from '../core/topicFilter';
+import { TierSection } from './home/TierSection';
+import { TrackFilter } from './home/TrackFilter';
 
 export function Home() {
-  const [track, setTrack] = useState<TrackId | 'all'>('all');
+  // The filter lives in the URL so links and back navigation keep it.
+  const [params, setParams] = useSearchParams();
+  const filter = parseFilter(params);
+  const setFilter = (f: TopicFilter) => setParams(filterToParams(f), { replace: true });
+
   const { isDone } = useProgress();
   const next = BUILT_TOPICS.find((t) => !isDone(t.id));
   const doneCount = BUILT_TOPICS.filter((t) => isDone(t.id)).length;
@@ -45,104 +50,22 @@ export function Home() {
         <HeroGraphic />
       </section>
 
-      <div className="track-filter" role="radiogroup" aria-label="Filter by track">
-        <button type="button" className={track === 'all' ? 'on' : ''} onClick={() => setTrack('all')}>
-          All tracks
-        </button>
-        {Object.values(TRACKS).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={track === t.id ? 'on' : ''}
-            style={{ '--c': t.color } as CSSProperties}
-            onClick={() => setTrack(t.id)}
-          >
-            <i>{t.glyph}</i> {t.short}
-          </button>
-        ))}
-      </div>
+      <TrackFilter value={filter} onChange={setFilter} />
 
       <div className="tiers">
         {TIERS.map((tier) => {
-          const topics = TOPICS.filter((t) => t.tier === tier.n && (track === 'all' || t.track === track))
-            // playable first, then planned
-            .sort((a, b) => Number(isBuilt(b.id)) - Number(isBuilt(a.id)));
-          const built = TOPICS.filter((t) => t.tier === tier.n && isBuilt(t.id));
-          const learned = built.filter((t) => isDone(t.id)).length;
+          const inTier = TOPICS.filter((t) => t.tier === tier.n);
           return (
-            <section key={tier.n} className="tier" style={{ '--tier': tier.color } as CSSProperties}>
-              <div className="tier-rail">
-                <span className="tier-num">{tier.n}</span>
-              </div>
-              <div className="tier-body">
-                <header className="tier-head">
-                  <div>
-                    <h2>
-                      {tier.name} <span className="tier-role">{tier.role}</span>
-                    </h2>
-                    <p>{tier.blurb}</p>
-                  </div>
-                  <div className="tier-progress" title={`${learned} of ${built.length} built lessons learned`}>
-                    <div className="bar">
-                      <motion.i
-                        initial={{ width: 0 }}
-                        animate={{ width: built.length ? `${(learned / built.length) * 100}%` : 0 }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                      />
-                    </div>
-                    <span>
-                      {learned}/{built.length}
-                    </span>
-                  </div>
-                </header>
-                {topics.length ? (
-                  <div className="cards">
-                    {topics.map((t, i) => (
-                      <TopicCard key={t.id} topic={t} done={isDone(t.id)} index={i} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted">Nothing in this track at this tier yet.</p>
-                )}
-              </div>
-            </section>
+            <TierSection
+              key={tier.n}
+              tier={tier}
+              topics={inTier.filter((t) => matchesFilter(t, filter))}
+              allBuilt={inTier.filter((t) => isBuilt(t.id))}
+              isDone={isDone}
+            />
           );
         })}
       </div>
     </div>
-  );
-}
-
-function TopicCard({ topic, done, index }: { topic: Topic; done: boolean; index: number }) {
-  const track = TRACKS[topic.track];
-  const built = isBuilt(topic.id);
-  const body = (
-    <>
-      <span className="card-track">
-        <i>{track.glyph}</i> {track.short}
-      </span>
-      <h3>{topic.title}</h3>
-      <p>{topic.tagline}</p>
-      <span className="card-meta">
-        {!built ? 'Planned' : done ? '✓ Learned' : topic.minutes ? `${topic.minutes} min · interactive` : 'Interactive'}
-      </span>
-    </>
-  );
-  const common = {
-    className: `card ${built ? '' : 'planned'} ${done ? 'done' : ''}`,
-    style: { '--c': track.color } as CSSProperties,
-    initial: { opacity: 0, y: 14 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: '-40px' },
-    transition: { delay: Math.min(index, 8) * 0.04 },
-  };
-  return built ? (
-    <motion.div {...common} whileHover={{ y: -4 }}>
-      <Link to={`/lesson/${topic.id}`} className="card-link">
-        {body}
-      </Link>
-    </motion.div>
-  ) : (
-    <motion.div {...common}>{body}</motion.div>
   );
 }

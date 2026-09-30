@@ -1,7 +1,19 @@
 import type { ComponentType, ReactNode } from 'react';
 
 export type TierNumber = 1 | 2 | 3 | 4;
-export type TrackId = 'dsa' | 'net' | 'arch' | 'data' | 'os' | 'sec' | 'ops';
+export type TrackId =
+  | 'dsa' | 'hw' | 'math' | 'lang'
+  | 'os' | 'net' | 'data' | 'arch'
+  | 'ops' | 'sec' | 'craft'
+  | 'web' | 'ml' | 'lead';
+
+/** Tracks are grouped into families so 14 filter chips stay scannable. */
+export type TrackFamily = 'computing' | 'systems' | 'delivery' | 'product';
+
+export interface Family {
+  id: TrackFamily;
+  name: string;
+}
 
 export interface Tier {
   n: TierNumber;
@@ -17,6 +29,7 @@ export interface Track {
   short: string;
   color: string;
   glyph: string;
+  family: TrackFamily;
 }
 
 export interface Topic {
