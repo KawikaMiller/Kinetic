@@ -1,4 +1,5 @@
 import type { GraphCommit, GraphRef } from '../../components/CommitGraph';
+import { depthColumns } from '../../core/commitGraph';
 import { DAYS, flaggedOff, integrationDay, type Merge, type Strategy } from './model';
 
 /** A commit plus the day it happens, so the step player can reveal the week day by day. */
@@ -12,6 +13,8 @@ export interface SideGraph {
   commits: DayCommit[];
   /** Branch refs as they stand at the end of each day (index = day, -1 → before the week). */
   refsAt: (day: number) => GraphRef[];
+  /** Name for each lane's row label: main, develop, then one per developer. */
+  laneLabel: (lane: number) => string | undefined;
 }
 
 const devName = (dev: number) => `dev-${dev + 1}`;
@@ -77,5 +80,11 @@ export function buildGraph(team: number, s: Strategy, merges: readonly Merge[]):
     }
     snapshots.push(refsNow());
   }
-  return { commits, refsAt: (day) => snapshots[Math.max(-1, Math.min(DAYS - 1, day)) + 1] };
+  // Same-day work shares a column, so a week with several developers stays about a screen wide.
+  const columns = depthColumns(commits);
+  for (const c of commits) c.column = columns.get(c.id);
+  const firstDevLane = direct ? Infinity : devLane(0);
+  const laneLabel = (lane: number) =>
+    lane === 0 ? 'main' : s.integrateTo === 'develop' && lane === 1 ? 'develop' : lane >= firstDevLane ? devName(lane - firstDevLane) : undefined;
+  return { commits, refsAt: (day) => snapshots[Math.max(-1, Math.min(DAYS - 1, day)) + 1], laneLabel };
 }

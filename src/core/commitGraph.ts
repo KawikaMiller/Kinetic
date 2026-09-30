@@ -3,6 +3,11 @@ export interface GraphCommitShape {
   id: string;
   lane: number;
   parents: readonly string[];
+  /**
+   * Horizontal slot. Omitted: the commit's position in the list (one column each).
+   * Give it to let parallel work share a column, e.g. from depthColumns().
+   */
+  column?: number;
 }
 
 export interface CommitGraphSpacing {
@@ -26,22 +31,77 @@ export interface CommitGraphLayout {
 }
 
 /**
- * Place commits left to right in the order given (oldest first), one column each,
- * on their lane's row. Pure; the drawing lives in components/CommitGraph.
+ * Place commits left to right (oldest first) on their lane's row: in list order, one
+ * column each, unless a commit gives its own `column`. `gutter` is extra room on the left
+ * (for lane labels). Pure; the drawing lives in components/CommitGraph.
  */
-export function layoutCommitGraph(commits: readonly GraphCommitShape[], s: CommitGraphSpacing = DEFAULT_SPACING): CommitGraphLayout {
-  const column = new Map(commits.map((c, i) => [c.id, i]));
+export function layoutCommitGraph(
+  commits: readonly GraphCommitShape[],
+  s: CommitGraphSpacing = DEFAULT_SPACING,
+  gutter = 0,
+): CommitGraphLayout {
+  const column = new Map(commits.map((c, i) => [c.id, c.column ?? i]));
   const lane = new Map(commits.map((c) => [c.id, c.lane]));
   const maxLane = commits.length ? Math.max(...commits.map((c) => c.lane)) : 0;
+  const maxColumn = commits.length ? Math.max(...column.values()) : 0;
   return {
     at: (id) => {
       const i = column.get(id);
-      return i === undefined ? undefined : { x: s.padX + i * s.col, y: s.padY + lane.get(id)! * s.row };
+      return i === undefined ? undefined : { x: gutter + s.padX + i * s.col, y: s.padY + lane.get(id)! * s.row };
     },
     // Exactly as wide as the commits need: extra width would only make an empty scroll area.
-    width: s.padX * 2 + Math.max(0, commits.length - 1) * s.col,
+    width: gutter + s.padX * 2 + Math.max(0, maxColumn) * s.col,
     height: s.padY + maxLane * s.row + s.bottomRoom,
   };
+}
+
+/**
+ * Columns by history depth: each commit sits one column after its latest parent, so work
+ * done in parallel (several developers the same day) shares a column instead of each commit
+ * taking its own. Parents must come before children in the list.
+ */
+export function depthColumns(commits: readonly GraphCommitShape[]): Map<string, number> {
+  const depth = new Map<string, number>();
+  for (const c of commits) {
+    const parentDepths = c.parents.map((p) => depth.get(p)).filter((d): d is number => d !== undefined);
+    depth.set(c.id, parentDepths.length ? Math.max(...parentDepths) + 1 : 0);
+  }
+  return depth;
+}
+
+/** Approximate width of one character of a commit message (10px Inter). */
+export const MESSAGE_CHAR_W = 5.6;
+
+/**
+ * Messages cut so they don't run into the next commit's message on the same lane:
+ * each gets the room up to its nearest same-lane neighbour. Commits with room keep
+ * the usual shortMessage().
+ */
+export function fitMessages(
+  commits: readonly (GraphCommitShape & { message?: string })[],
+  at: (id: string) => { x: number; y: number } | undefined,
+): Map<string, string> {
+  const byLane = new Map<number, { id: string; x: number }[]>();
+  for (const c of commits) {
+    const p = at(c.id);
+    if (p) byLane.set(c.lane, [...(byLane.get(c.lane) ?? []), { id: c.id, x: p.x }]);
+  }
+  const room = new Map<string, number>();
+  for (const row of byLane.values()) {
+    row.sort((a, b) => a.x - b.x);
+    row.forEach((c, i) => {
+      const gaps = [row[i - 1] && c.x - row[i - 1].x, row[i + 1] && row[i + 1].x - c.x].filter((g): g is number => !!g);
+      room.set(c.id, gaps.length ? Math.min(...gaps) : Infinity);
+    });
+  }
+  const out = new Map<string, string>();
+  for (const c of commits) {
+    if (!c.message) continue;
+    const short = shortMessage(c.message);
+    const fits = Math.floor((room.get(c.id) ?? Infinity) / MESSAGE_CHAR_W);
+    out.set(c.id, short.length <= fits ? short : fits >= 2 ? `${short.slice(0, fits - 1)}…` : '');
+  }
+  return out;
 }
 
 /** Path from a parent to its child: a straight line on one lane, an S-curve across lanes. */

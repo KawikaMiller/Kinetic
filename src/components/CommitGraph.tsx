@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  commitEdgePath, DEFAULT_SPACING, defaultLaneColor, layoutCommitGraph, shortMessage, type CommitGraphSpacing, type GraphCommitShape,
+  commitEdgePath, DEFAULT_SPACING, defaultLaneColor, fitMessages, layoutCommitGraph, shortMessage, type CommitGraphSpacing,
+  type GraphCommitShape,
 } from '../core/commitGraph';
 import { toneVar, type Tone } from '../core/tone';
 
@@ -36,6 +37,9 @@ const TAG_RISE = 42;
 const TAG_STACK = 22;
 /** Scroller padding (must match .commit-graph padding in kit.css). */
 const SCROLL_PAD = 12;
+/** Lane-label gutter: approximate glyph width of .commit-lane-label, plus breathing room. */
+const LABEL_CHAR_W = 6.2;
+const LABEL_PAD = 16;
 
 /**
  * A git commit graph: commits left to right in the order given, one row per lane,
@@ -48,7 +52,7 @@ const SCROLL_PAD = 12;
  */
 export function CommitGraph({
   commits, refs = [], selected, onSelect, laneColor = defaultLaneColor, title, follow = true,
-  spacing = DEFAULT_SPACING, overlay, className = '',
+  spacing = DEFAULT_SPACING, overlay, laneLabel, messageFit = 'none', className = '',
 }: {
   /** Oldest first: left to right. */
   commits: readonly GraphCommit[];
@@ -62,9 +66,23 @@ export function CommitGraph({
   spacing?: CommitGraphSpacing;
   /** Extra drawing over the graph (conflict markers, a leaked-key badge). */
   overlay?: (at: (id: string) => { x: number; y: number } | undefined) => ReactNode;
+  /** A name drawn at the left of each lane (main, develop, dev-1...), in its own gutter. */
+  laneLabel?: (lane: number) => string | undefined;
+  /** 'truncate': cut each message to the room before its same-lane neighbour, so close commits never overlap. */
+  messageFit?: 'none' | 'truncate';
   className?: string;
 }) {
-  const { at, width, height } = layoutCommitGraph(commits, spacing);
+  const lanes = [...new Set(commits.map((c) => c.lane))].sort((a, b) => a - b);
+  const labels = laneLabel
+    ? lanes.flatMap((lane) => {
+        const text = laneLabel(lane);
+        return text ? [{ lane, text }] : [];
+      })
+    : [];
+  const gutter = labels.length ? Math.max(...labels.map((l) => l.text.length)) * LABEL_CHAR_W + LABEL_PAD : 0;
+  const { at, width, height } = layoutCommitGraph(commits, spacing, gutter);
+  const fitted = messageFit === 'truncate' ? fitMessages(commits, at) : null;
+  const laneY = (lane: number) => spacing.padY + lane * spacing.row;
   const scroller = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState({ left: false, right: false });
 
@@ -84,13 +102,11 @@ export function CommitGraph({
     return () => ro.disconnect();
   }, [measure]);
 
-  // Where the newest commit's right edge is, read by the follow effect below. Kept in a ref so
-  // the effect runs only when a commit is added or removed, not on every render.
-  const newest = commits[commits.length - 1];
-  const newestP = newest && at(newest.id);
+  // Where the rightmost commit's right edge is, read by the follow effect below. Kept in a ref
+  // so the effect runs only when a commit is added or removed, not on every render.
   const followTo = useRef<number | null>(null);
   useEffect(() => {
-    followTo.current = follow && newestP ? SCROLL_PAD * 2 + newestP.x + spacing.padX : null;
+    followTo.current = follow && commits.length ? SCROLL_PAD * 2 + width : null;
   });
   useEffect(() => {
     // Next frame: the new width may not be laid out yet, and a scroll past the current end
@@ -116,6 +132,16 @@ export function CommitGraph({
       onScroll={measure}
     >
       {title && <span className="commit-graph-title">{title}</span>}
+      {labels.length > 0 && (
+        // Pinned to the left edge while the graph scrolls, so you always know whose lane is whose.
+        <div className="commit-lane-labels" aria-hidden="true">
+          {labels.map((l) => (
+            <span key={l.lane} className="commit-lane-label" style={{ top: laneY(l.lane) }}>
+              {l.text}
+            </span>
+          ))}
+        </div>
+      )}
       <svg width={width} height={height} className="commit-graph-svg">
         {commits.flatMap((c) =>
           c.parents.map((pid) => {
@@ -159,7 +185,7 @@ export function CommitGraph({
               </text>
               {c.message && (
                 <text y={32} textAnchor="middle" className="commit-msg">
-                  {shortMessage(c.message)}
+                  {fitted ? fitted.get(c.id) : shortMessage(c.message)}
                 </text>
               )}
             </motion.g>

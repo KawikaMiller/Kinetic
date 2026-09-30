@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { commitEdgePath, DEFAULT_SPACING, defaultLaneColor, layoutCommitGraph, shortMessage } from './commitGraph';
+import {
+  commitEdgePath, DEFAULT_SPACING, defaultLaneColor, depthColumns, fitMessages, layoutCommitGraph, MESSAGE_CHAR_W, shortMessage,
+} from './commitGraph';
 
 const commits = [
   { id: 'a', lane: 0, parents: [] },
@@ -44,5 +46,57 @@ describe('labels', () => {
   it('cycles lane colours', () => {
     expect(defaultLaneColor(0)).toBe('var(--info)');
     expect(defaultLaneColor(5)).toBe(defaultLaneColor(0));
+  });
+});
+
+describe('columns and lane gutter', () => {
+  const { col, padX } = DEFAULT_SPACING;
+
+  it('lets commits share a column, and sizes the width to the last column', () => {
+    const shared = [
+      { id: 'a', lane: 0, parents: [], column: 0 },
+      { id: 'b', lane: 1, parents: ['a'], column: 1 },
+      { id: 'c', lane: 2, parents: ['a'], column: 1 },
+    ];
+    const g = layoutCommitGraph(shared);
+    expect(g.at('b')!.x).toBe(g.at('c')!.x);
+    expect(g.width).toBe(padX * 2 + col);
+  });
+
+  it('shifts everything right by the gutter', () => {
+    const plain = layoutCommitGraph(commits);
+    const withGutter = layoutCommitGraph(commits, DEFAULT_SPACING, 40);
+    expect(withGutter.at('d')!.x).toBe(plain.at('d')!.x + 40);
+    expect(withGutter.width).toBe(plain.width + 40);
+  });
+
+  it('puts parallel work in one column by history depth', () => {
+    const day = [
+      { id: 'root', lane: 0, parents: [] },
+      { id: 'x1', lane: 1, parents: ['root'] },
+      { id: 'y1', lane: 2, parents: ['root'] },
+      { id: 'x2', lane: 1, parents: ['x1'] },
+      { id: 'merge', lane: 0, parents: ['root', 'x2', 'y1'] },
+    ];
+    expect(Object.fromEntries(depthColumns(day))).toEqual({ root: 0, x1: 1, y1: 1, x2: 2, merge: 3 });
+  });
+});
+
+describe('fitMessages', () => {
+  it('keeps messages that fit and cuts the ones that would run into a neighbour', () => {
+    const row = [
+      { id: 'a', lane: 0, parents: [], message: 'initial commit' },
+      { id: 'b', lane: 0, parents: ['a'], message: 'fix' },
+    ];
+    const tight = { ...DEFAULT_SPACING, col: 5 * MESSAGE_CHAR_W };
+    const out = fitMessages(row, layoutCommitGraph(row, tight).at);
+    expect(out.get('b')).toBe('fix');
+    expect(out.get('a')).toBe('init…');
+    expect(out.get('a')!.length * MESSAGE_CHAR_W).toBeLessThanOrEqual(tight.col);
+  });
+
+  it('leaves a lone commit its usual shortMessage', () => {
+    const one = [{ id: 'a', lane: 0, parents: [], message: 'a long commit message' }];
+    expect(fitMessages(one, layoutCommitGraph(one).at).get('a')).toBe(shortMessage('a long commit message'));
   });
 });

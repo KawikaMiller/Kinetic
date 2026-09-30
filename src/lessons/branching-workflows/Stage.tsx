@@ -115,6 +115,8 @@ function SidePanel({ side, plan, graph, day, team }: { side: Side; plan: SidePla
           refs={graph.refsAt(day).filter((r) => shownIds.has(r.at))}
           laneColor={laneColorFor(plan)}
           spacing={SPACING}
+          laneLabel={graph.laneLabel}
+          messageFit="truncate"
           className="bw-graph"
           overlay={(at) =>
             commits
