@@ -484,4 +484,4 @@ Format: lesson · steps → actual (expected) · evidence.
 - **768px:** checked by overflow measurement on every scene, but screenshots were only eyeballed for a sample.
 - **Mid-animation states:** only settled frames and end frames were shot. The motion itself under reduced motion was checked for errors and the final state, not for how it feels.
 - **Combinations:** scene options were explored one dimension at a time, not every combination (for example, every error-handling option pair). Random faults in debugging-method were sampled, not exhausted.
-- **Repo-level secret scanning:** the fake `sk_live_EXAMPLE0000DEMO0000KEY` in `secrets-management/model.ts` is shaped like a real Stripe key. Check it against GitHub push protection before pushing.
+- **Repo-level secret scanning:** a fake Stripe-style live key literal in `secrets-management/model.ts` is shaped like a real Stripe key. Check it against GitHub push protection before pushing.
