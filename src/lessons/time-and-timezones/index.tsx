@@ -21,12 +21,12 @@ const lesson: LessonModule = {
     'Open "EU/US gap weeks": the London time of a 09:00 New York meeting changes from 14:00 to 13:00 and back.',
     'In "Schedule a meeting", enter 2026-03-08 and 02:30 in New York: that time doesn\'t exist.',
     'Enter 2026-11-01 and 01:30 in New York: two different moments share that wall-clock time.',
-    'Flip the "new Date(\\"2026-03-08\\")" falsehood: in New York it\'s still the 7th.',
+    'Flip the new Date("2026-03-08") falsehood: in New York it\'s still the 7th.',
   ],
   keyIdeas: [
     'An instant (UTC) is the same everywhere; a wall-clock time needs a zone to mean anything.',
     'A zone is a rulebook, an offset is one page of it: store America/New_York, not -05:00.',
-    'On DST days one local hour doesn\'t exist and another happens twice; days are 23 or 25 hours.',
+    'On DST days one local hour doesn\'t exist and another happens twice; days are usually 23 or 25 hours (Lord Howe Island, with a 30-minute shift, gets 23.5 and 24.5).',
     'Store UTC + zone and convert with Intl or a date library, never by adding hours by hand.',
   ],
   quiz: [
