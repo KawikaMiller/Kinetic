@@ -283,7 +283,7 @@ function Meeting({ picker }: { picker: ReactNode }) {
             </div>
             {cmp.stored.notStored.length > 0 && (
               <div className="tz-store-row is-warn">
-                <b>But which {time}?</b> This stored moment 1. Moment 2 would be <code>{cmp.stored.notStored.join(', ')}</code>. A UTC
+                <b>But which {time}?</b> This stores moment 1. Moment 2 would be <code>{cmp.stored.notStored.join(', ')}</code>. A UTC
                 instant can only pin the moment once someone has picked it, so the booking form has to ask.
               </div>
             )}
