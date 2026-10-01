@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'A breakpoint freezes the program; the call stack and scope show exactly how you got there.',
     'Step over still runs the whole call; it just doesn\'t pause inside it.',
-    'Step into enters a call, step out finishes it and pauses on the line after the call site.',
+    'Step into enters a call; step out finishes the current function and pauses back in the caller.',
     'Conditional breakpoints and logpoints target the one iteration that matters, without editing code.',
   ],
   quiz: [
