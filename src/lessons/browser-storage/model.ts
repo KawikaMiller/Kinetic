@@ -151,6 +151,23 @@ export interface Stolen {
   protectedBy?: string;
 }
 
+/** Entries that are credentials: the auth token and the session cookie. Preferences like theme or lang aren't. */
+const CREDENTIALS = new Set(['authToken', 'session']);
+export const isCredential = (key: string) => CREDENTIALS.has(key);
+
+/** What the XSS run amounts to, for the caption: how much it read, which credentials, what stayed hidden. */
+export function xssSummary(stolen: readonly Stolen[]) {
+  const read = stolen.filter((s) => s.value !== null);
+  return {
+    readCount: read.length,
+    credentials: read.filter((s) => isCredential(s.key)).map((s) => (s.drawer === 'cookies' ? `the ${s.key} cookie` : `${DRAWER_API[s.drawer]}.${s.key}`)),
+    hidden: stolen.filter((s) => s.value === null).map((s) => s.key),
+  };
+}
+
+/** How page script spells each drawer. */
+const DRAWER_API: Record<DrawerId, string> = { cookies: 'document.cookie', local: 'localStorage', session: 'sessionStorage', idb: 'IndexedDB' };
+
 /**
  * What a script injected into the page (XSS) can read from this tab: every
  * localStorage, sessionStorage and IndexedDB entry, and every cookie except HttpOnly ones.

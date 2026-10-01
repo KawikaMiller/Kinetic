@@ -44,7 +44,9 @@
 .bst-verdicts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
 .bst-stale { margin: 0; font-size: 12.5px; color: var(--muted); }
 .bst-script {
-  font-size: 12px;
+  margin: 0;
+  font: 12px/1.5 var(--mono);
+  white-space: pre-wrap;
   padding: 8px 10px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--bad) 10%, var(--bg-2));
