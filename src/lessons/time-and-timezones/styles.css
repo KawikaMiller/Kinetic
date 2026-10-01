@@ -1,0 +1,76 @@
+.tz { gap: 14px; }
+
+/* 48-hour timeline */
+.tz-timeline { display: flex; flex-direction: column; gap: 22px; padding: 16px 0 18px; }
+.tz-row { display: grid; grid-template-columns: 88px repeat(48, minmax(14px, 1fr)); align-items: stretch; }
+.tz-row-label { display: flex; flex-direction: column; justify-content: center; font-size: 12.5px; font-weight: 600; color: var(--c); }
+.tz-row-label small { font: 500 10.5px var(--mono); color: var(--muted); }
+.tz-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+  color: var(--c);
+  font: 600 10px var(--mono);
+}
+.tz-cell.is-midnight { border-left: 2px solid var(--c); }
+.tz-day { position: absolute; top: -15px; left: 2px; font: 500 10px var(--font); font-style: normal; color: var(--muted); white-space: nowrap; }
+.tz-cell.is-after-gap { box-shadow: inset 3px 0 0 var(--bad); }
+.tz-skip { position: absolute; bottom: -15px; left: -30px; font: 600 10px var(--mono); font-style: normal; color: var(--bad); white-space: nowrap; }
+.tz-cell.is-repeated { background: var(--hi); color: var(--on-hi); }
+
+/* Job runs */
+.tz-jobs { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.tz-job { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 5px 10px; border-radius: 8px; font-size: 13px; }
+.tz-job-date { font-weight: 600; min-width: 56px; }
+.tz-job-run { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.tz-utc,
+tr.tz-utc td { color: var(--info); }
+tr.tz-local td:not(:first-child) { color: var(--violet); }
+.tz-job.is-skipped { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.tz-job.is-skipped .tz-job-note { color: var(--bad); font-weight: 600; }
+.tz-job.is-twice { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.tz-job.is-twice .tz-job-note { color: var(--hi); font-weight: 600; }
+
+/* Gap weeks */
+.tz-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.tz-daycell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+}
+.tz-daycell-date { font-size: 11px; color: var(--muted); }
+.tz-daycell-time { font: 600 14px var(--mono); color: var(--violet); }
+.tz-daycell-lead { font: 500 10.5px var(--mono); color: var(--faint); }
+.tz-daycell.is-gap { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, var(--cell)); }
+.tz-daycell.is-gap .tz-daycell-lead { color: var(--hi); }
+
+/* Meeting scheduler */
+.tz-error,
+.tz-warn { margin: 0; padding: 10px 12px; border-radius: 8px; font-size: 13.5px; }
+.tz-error { color: var(--bad); border: 1px solid var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.tz-warn { color: var(--hi); border: 1px solid var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.tz-table-wrap { overflow-x: auto; }
+.tz-store { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
+.tz-store-row { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px 10px; border-radius: 8px; }
+.tz-store-row.is-bad { background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.tz-store-row.is-bad .tz-store-item { color: var(--bad); font-family: var(--mono); font-size: 12.5px; }
+.tz-store-row.is-ok { display: block; background: color-mix(in srgb, var(--ok) 10%, transparent); color: var(--ok); }
+.tz-store-row code { overflow-wrap: anywhere; }
+.tz-store-item { flex-basis: 100%; }
+
+/* Falsehoods */
+.tz-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.tz-card { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.tz-claim { margin: 0; font-size: 16px; font-weight: 600; color: var(--bad); }
+.tz-card.is-open .tz-claim { text-decoration: line-through; }
+.tz-evidence { margin: 0; padding-left: 18px; font-size: 12.5px; }
+.tz-evidence code { color: var(--text); }
+.tz-truth { margin: 0; font-size: 13.5px; color: var(--ok); }
