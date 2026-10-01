@@ -6,6 +6,7 @@ import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../componen
 import { useSetCaption } from '../../core/caption';
 import { SPRING } from '../../core/motion';
 import { usePlayer } from '../../core/usePlayer';
+import { useShake } from '../../core/useShake';
 import { applyOp, type Item, type Op, type OpKind, type Target, type World } from './model';
 import { buildScenario } from './scenario';
 import './styles.css';
@@ -35,12 +36,14 @@ export function Stage() {
   const [stackScope, animateStack] = useAnimate<HTMLDivElement>();
   const [queueScope, animateQueue] = useAnimate<HTMLDivElement>();
 
+  const { allowed: shakeAllowed } = useShake(REFUSE_SHAKE);
+
   const view: World & { op: Op | null } = mode === 'guided' ? player.frame : sandbox;
 
   const shake = (target: Target) => {
     const el = target === 'stack' ? stackScope.current : queueScope.current;
     const animate = target === 'stack' ? animateStack : animateQueue;
-    if (el) animate(el, REFUSE_SHAKE, { duration: 0.4 });
+    if (el && shakeAllowed) animate(el, REFUSE_SHAKE, { duration: 0.4 });
   };
 
   const switchMode = (m: 'guided' | 'sandbox') => {

@@ -5,7 +5,7 @@ import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { SHAKE } from '../../core/motion';
+import { useShake } from '../../core/useShake';
 
 interface Container {
   name: string;
@@ -45,6 +45,7 @@ export function Isolation({ picker }: { picker: ReactNode }) {
   const [hostView, setHostView] = useState(false);
   const [leaking, setLeaking] = useState(false);
   const setCaption = useSetCaption();
+  const { shake } = useShake();
 
   useIntroCaption(
     <>
@@ -151,7 +152,7 @@ export function Isolation({ picker }: { picker: ReactNode }) {
               <motion.div
                 key={c.name}
                 className={`ct-box ${c.status}`}
-                animate={c.status === 'oom' ? SHAKE : { x: 0 }}
+                animate={shake(c.status === 'oom')}
                 transition={{ duration: 0.4 }}
               >
                 <header>

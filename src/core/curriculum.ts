@@ -75,7 +75,7 @@ export const TOPICS: Topic[] = [
   { id: 'memory-hierarchy', tier: 1, track: 'hw', title: 'The Memory Hierarchy & Latency Numbers', tagline: 'Registers are seconds, disk is years' },
 
   { id: 'propositional-logic', tier: 1, track: 'math', title: 'Propositional Logic & Truth Tables', tagline: "If p then q, and why 'if' lies to you" },
-  { id: 'sets-functions', tier: 1, track: 'math', title: 'Sets, Relations & Functions', tagline: 'The vocabulary under every type and table' },
+  { id: 'sets-functions', tier: 1, track: 'math', title: 'Sets & Functions', tagline: 'The vocabulary under every type and table' },
   { id: 'logs-exponentials', tier: 1, track: 'math', title: 'Logarithms, Exponentials & Orders of Magnitude', tagline: 'Thinking in powers of two' },
 
   { id: 'value-vs-reference', tier: 1, track: 'lang', title: 'Value vs Reference Semantics', tagline: 'Copy or alias?' },

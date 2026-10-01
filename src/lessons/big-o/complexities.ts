@@ -1,15 +1,7 @@
-import { superscript } from '../../core/format';
-
-/** Narrow no-break space: there is no superscript comma, so long exponents group like "10³⁰¹ ⁰²⁹". */
-const EXP_GROUP = ' ';
+import { power } from '../../core/format';
 
 /** 10 to a (possibly huge) integer power, with the exponent's digits grouped in threes. */
-export function tenTo(k: number): string {
-  const digits = superscript(k);
-  const groups: string[] = [];
-  for (let end = digits.length; end > 0; end -= 3) groups.unshift(digits.slice(Math.max(0, end - 3), end));
-  return `10${groups.join(EXP_GROUP)}`;
-}
+const tenTo = (k: number) => power(k, 10, { grouped: true });
 
 export type CxId = 'c1' | 'log' | 'n' | 'nlogn' | 'n2' | 'exp';
 
@@ -35,9 +27,9 @@ export const COMPLEXITIES: Complexity[] = [
     f: (n) => lg(n), log10: (n) => Math.log10(Math.max(1, lg(n))) },
   { id: 'n', label: 'O(n)', color: 'var(--violet)', chip: 'violet', example: 'loop over every item',
     f: (n) => n, log10: (n) => Math.log10(n) },
-  { id: 'nlogn', label: 'O(n log n)', color: 'var(--amber)', chip: 'bo-amber', example: 'merge sort, quicksort',
+  { id: 'nlogn', label: 'O(n log n)', color: 'var(--amber)', chip: 'amber', example: 'merge sort, quicksort',
     f: (n) => n * lg(n), log10: (n) => Math.log10(n) + Math.log10(Math.max(1, lg(n))) },
-  { id: 'n2', label: 'O(n²)', color: 'var(--orange)', chip: 'bo-orange', example: 'nested loops, bubble sort',
+  { id: 'n2', label: 'O(n²)', color: 'var(--orange)', chip: 'orange', example: 'nested loops, bubble sort',
     f: (n) => n * n, log10: (n) => 2 * Math.log10(n) },
   { id: 'exp', label: 'O(2ⁿ)', color: 'var(--bad)', chip: 'bad', example: 'try every subset',
     f: (n) => Math.pow(2, n), log10: (n) => n * Math.LOG10E * Math.LN2 },

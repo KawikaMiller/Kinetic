@@ -1,12 +1,7 @@
-import { isValidElement, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
 import { errorFrames } from './frames';
 
-const text = (node: ReactNode) =>
-  isValidElement(node)
-    ? renderToStaticMarkup(node).replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&')
-    : String(node ?? '');
 import { programLines, runPlain, runTraced, type FailAt, type Mode, type Preset } from './model';
 
 const CONFIGS: [Mode, Preset, FailAt][] = [
@@ -72,13 +67,28 @@ describe('error frames', () => {
     }
   });
 
-  it('the stack never loses more than one frame at a time, except at a crash or the closing verdict', () => {
+  it('the stack loses one frame at a time; two only when main finishes as a returned call pops, and the caption says so', () => {
     for (const [mode, preset, fail] of CONFIGS) {
       const frames = errorFrames(programLines(mode, preset, fail), mode, preset, fail);
       frames.forEach((f, i) => {
-        if (i === 0 || f.crash || i === frames.length - 1) return;
-        expect(frames[i - 1].stack.length - f.stack.length).toBeLessThanOrEqual(1);
+        if (i === 0 || f.crash) return;
+        const drop = frames[i - 1].stack.length - f.stack.length;
+        if (drop <= 1) return;
+        expect(drop, `${mode}/${preset}/${fail} frame ${i}`).toBe(2);
+        const gone = frames[i - 1].stack.at(-1)!.fn;
+        expect(text(f.say)).toBe(`${gone}'s frame pops now that it has returned, and main finishes.`);
       });
+    }
+  });
+
+  it('ends on a closing verdict of its own, after the last step keeps its narration', () => {
+    for (const [mode, preset, fail] of CONFIGS) {
+      const frames = errorFrames(programLines(mode, preset, fail), mode, preset, fail);
+      if (frames.at(-1)!.crash) continue;
+      const [last, verdict] = frames.slice(-2);
+      expect(text(last.say)).toMatch(/main finishes\.$/);
+      expect(verdict.stack).toEqual(last.stack);
+      expect(verdict.output).toEqual(last.output);
     }
   });
 

@@ -10,9 +10,7 @@
 //   Scrum pulls a sprint's worth of cards at each planning (every SPRINT_DAYS).
 import { createSampler } from '../../core/sim';
 import { clamp } from '../../core/math';
-import { expSample, mulberry32 } from '../../core/random';
-
-type Rnd = () => number;
+import { expSample, mulberry32, type Rnd } from '../../core/random';
 
 export const WORKERS = 3;
 export const REVIEWERS = 1;

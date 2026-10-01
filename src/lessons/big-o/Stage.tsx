@@ -26,8 +26,8 @@ const TOUR: TourFrame[] = [
   { n: 4, focus: 'c1', say: <><span className="hl ok">O(1)</span> is flat: same cost for 1 item or 1 billion. Think array index.</> },
   { n: 8, focus: 'log', say: <><span className="hl info">O(log n)</span> barely rises. Doubling n adds just <b>one</b> step. Binary search lives here.</> },
   { n: 12, focus: 'n', say: <><span className="hl violet">O(n)</span> is a straight line: look at every item once.</> },
-  { n: 16, focus: 'nlogn', say: <><span className="hl bo-amber">O(n log n)</span> is a bit steeper. The best general-purpose sorts sit here.</> },
-  { n: 20, focus: 'n2', say: <><span className="hl bo-orange">O(n²)</span>: every item vs every other item. It's already shot off the top.</> },
+  { n: 16, focus: 'nlogn', say: <><span className="hl amber">O(n log n)</span> is a bit steeper. The best general-purpose sorts sit here.</> },
+  { n: 20, focus: 'n2', say: <><span className="hl orange">O(n²)</span>: every item vs every other item. It's already shot off the top.</> },
   { n: 24, focus: 'exp', say: <><span className="hl bad">O(2ⁿ)</span>: each extra item <b>doubles</b> the work. n = 24 is already 16 million ops.</> },
   { n: 32, focus: null, scale: 'log', hold: 2, say: <>Log scale squashes the y-axis so all six fit. Even squashed, 2ⁿ is a wall. Now race them →</> },
 ];
@@ -53,7 +53,7 @@ export function Stage() {
     setCaption(
       <>
         At <b>n = {v}</b>: O(n) does <span className="hl violet">{v}</span> ops, O(n²) does{' '}
-        <span className="hl bo-orange">{sq.toLocaleString()}</span>, O(2ⁿ) does{' '}
+        <span className="hl orange">{sq.toLocaleString()}</span>, O(2ⁿ) does{' '}
         <span className="hl bad">{Math.pow(2, v).toLocaleString()}</span>.
       </>,
     );

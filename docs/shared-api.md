@@ -33,6 +33,8 @@ Phase 0b already converted every lesson-CSS literal that exactly matched a token
 | `--trk-<id>` (14) | see `global.css` | curriculum track colours (`TRACKS[id].color` is `var(--trk-<id>)`; `TOKENS.trkDsa` etc. on canvas). App chrome only (cards, chips, crumbs): lessons keep using the semantic tokens |
 
 Tints: `color-mix(in srgb, var(--hi) 14%, transparent)`.
+Caption chips: `<span className="hl">` is `--hi`; add `ok`, `bad`, `info`, `violet`, `amber` or `orange`
+for the others (big-o's curve chips, css-layout's margin).
 Colours: DOM/SVG use `var(--x)`, canvas uses `TOKENS.x` / `alpha()`. A literal that genuinely
 can't be a token (a drawing's own material, a neutral shadow) carries an `allow-color` marker with
 a reason on the same line, and `npm run check-tokens -- --strict` must pass (see CLAUDE.md):
@@ -120,6 +122,7 @@ latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
 superscript(23)       // '²³' — an integer in superscript digits
 power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
+power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in threes, narrow no-break space (big-o); superscript takes it too
 ```
 
 ### `parse.ts`
@@ -149,6 +152,7 @@ For the "type your own array" fields (two-pointers, sliding-window).
 clamp(v, lo, hi), clamp01(t), lerp(a, b, t)
 ease(t), easeInOutQuad(t)                                      // cubic and quadratic ease-in-out
 randInt(lo, hi), randRange(lo, hi), pick(xs), shuffle(xs)      // all take an optional rnd
+type Rnd = () => number                                        // import it, don't redeclare it
 expSample(mean), weightedPick(items, weightFn), mulberry32(seed), freshInt(lo, hi, taken) // null if none free
 fnv1a(s)          // unsigned 32-bit FNV-1a
 fmix32(h)         // murmur3 finaliser
@@ -172,9 +176,20 @@ treeToPixels({ x, depth }, { count, width, pad, top, levelGap })
 ### `motion.ts` — pattern 18
 ```ts
 SPRING.soft (170/24), SPRING.snappy (300/28), SPRING.stiff (450/32)
-SHAKE                       // animate={SHAKE}
+SHAKE                       // the keyframes; in a stage, use useShake() below instead
 enterFromLeft, popIn        // spread: <motion.li {...enterFromLeft} />
 ```
+
+### `useShake.ts` — error-feedback shake
+```ts
+const { shake, allowed } = useShake();          // or useShake(HARDER_KEYFRAMES)
+<motion.g animate={shake(world.crashed)} />     // SHAKE when true, { x: 0 } otherwise
+<motion.div animate={{ opacity: 1, ...shake(alarm) }} />
+if (allowed) animate(el, KEYFRAMES)             // imperative animate() calls
+```
+Holds still under prefers-reduced-motion, even inside a stage's `reducedMotion="never"`: a shake is
+feedback, not teaching motion. Used by `CallStackPanel`'s `alarm`, stack-vs-heap, oop-fundamentals,
+containers, processes-threads, hashing-encryption and stack-queue.
 Map an inline spring to the nearest preset only if it looks the same. Otherwise keep a named local constant.
 
 ### `sim.ts` — pattern 9
@@ -250,9 +265,14 @@ hmacSha256(secret, data, 'hex' | 'b64url'): Promise<string | null>
 const r = createRecorder<MyFrame>({ reads: 0, hot: null }, { transient: { hot: null } });
 r.set({ reads: r.get().reads + 1 });
 r.snap(<>Read the root</>, hold?, patch?);   // set(patch), push { ...state, say, hold }, then reset transient keys
-r.finish(<>Done</>, 2);                       // replace last frame's say/hold
+r.close(<>Done in 3 reads</>, 2);             // push the summary as its own frame (state unchanged)
+r.amendLast(<>Read the root: done</>, 2);     // or: replace the last caption, only if it's a shorter version
 return r.frames;
 ```
+End with `close()` by default: it keeps the last step's narration. `amendLast()` overwrites the last
+caption, so use it only when that caption says less than the summary (a "Prints 5 6." step followed
+by "Prints 5 6. For primitives…"). There's no `finish()` any more: it silently overwrote, which lost
+narration in stack-vs-heap, ci-pipelines, closures-scope, oop-fundamentals and error-handling-models.
 It makes a shallow copy, so clone nested arrays and objects before mutating them. Mandatory for
 db-indexes and lsm-trees, recommended wherever a local push/snap exists, optional for class
 recorders (sorting, heaps) and declarative scripts.
@@ -310,7 +330,7 @@ focus. A new top-level page does the same: `const heading = usePageHeading(title
 The app runs inside `MotionConfig reducedMotion="user"`: motion transforms in the shell (page entrances,
 the quiz shake, card reveals, the home hero) go still for people who ask for reduced motion. Each lesson
 `Stage` is wrapped in `reducedMotion="never"`, because its motion is the teaching; decorative loops inside
-a stage should still go still on their own (`Pulse` does), and so should lesson-made shakes.
+a stage should still go still on their own (`Pulse` does), and so should shakes (`useShake` does).
 
 ### Inline code in lesson text (`InlineText.tsx`, `core/inlineCode.ts`)
 Summary fields, try-this tips, key ideas and every quiz line render `backtick` pairs as inline code, so

@@ -1,6 +1,4 @@
-import { pick, randInt } from '../../core/random';
-
-type Rnd = () => number;
+import { pick, randInt, type Rnd } from '../../core/random';
 
 /** Values are drawn from 1..n×VALUE_SPREAD so a size-n array has room for missing values. */
 const VALUE_SPREAD = 3;

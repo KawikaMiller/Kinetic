@@ -250,6 +250,7 @@ function FibTree({ nodes, leaves, frame }: { nodes: FNode[]; leaves: number; fra
         top={TREE_TOP}
         levelGap={LEVEL_GAP}
         className="rc-tree"
+        ariaLabel="Tree of the calls made so far"
         renderNode={renderNode}
         hidden={(id) => frame.states[id] === 'unseen'}
         edgeMark={(_, child) => (onStack(child) ? { tone: 'violet' } : null)}

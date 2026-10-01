@@ -3,8 +3,8 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
-import { SHAKE } from '../../core/motion';
 import { usePlayer } from '../../core/usePlayer';
+import { useShake } from '../../core/useShake';
 import { colorOf, PROCS, procOf, THREADS } from './model';
 import { SCENARIOS, type Scenario } from './scenarios';
 import './styles.css';
@@ -22,6 +22,7 @@ export function Stage() {
   const frames = useMemo(() => SCENARIOS[scenario](), [scenario]);
   const player = usePlayer(frames, { interval: 1500 });
   const f = player.frame;
+  const { shake } = useShake();
 
   const alive = THREADS.filter((t) => f.states[t.id] !== 'dead' && f.states[t.id] !== 'crash').length;
   const procsAlive = PROCS.filter((p) => !f.procDead[p.id]).length;
@@ -159,7 +160,7 @@ export function Stage() {
                     <motion.div
                       key={t.id}
                       className={`pt-thread ${s} ${f.touching.includes(t.id) ? 'touch' : ''}`}
-                      animate={s === 'crash' ? SHAKE : { x: 0 }}
+                      animate={shake(s === 'crash')}
                       transition={{ duration: 0.4 }}
                     >
                       <span className="pt-thread-name">{t.name}</span>

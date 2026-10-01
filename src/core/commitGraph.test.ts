@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  commitEdgePath, DEFAULT_SPACING, defaultLaneColor, depthColumns, fitMessages, layoutCommitGraph, MESSAGE_CHAR_W, shortMessage,
+  commitEdgePath, DEFAULT_SPACING, defaultLaneColor, depthColumns, fitMessages, layoutCommitGraph, MAX_FITTED_MESSAGE_CHARS,
+  MAX_MESSAGE_CHARS, MESSAGE_CHAR_W, shortMessage,
 } from './commitGraph';
 
 const commits = [
@@ -95,8 +96,23 @@ describe('fitMessages', () => {
     expect(out.get('a')!.length * MESSAGE_CHAR_W).toBeLessThanOrEqual(tight.col);
   });
 
-  it('leaves a lone commit its usual shortMessage', () => {
+  it('gives a message all the room it has, not the 12-character shortMessage cap', () => {
+    const row = [
+      { id: 'a', lane: 0, parents: [], message: 'add payments (reads env)' },
+      { id: 'b', lane: 0, parents: ['a'], message: 'x' },
+    ];
+    const roomy = { ...DEFAULT_SPACING, col: 30 * MESSAGE_CHAR_W };
+    const out = fitMessages(row, layoutCommitGraph(row, roomy).at);
+    expect(out.get('a')).toBe('add payments (reads env)');
+    expect(shortMessage('add payments (reads env)')).toHaveLength(MAX_MESSAGE_CHARS);
+  });
+
+  it('a lone commit keeps its message up to MAX_FITTED_MESSAGE_CHARS', () => {
     const one = [{ id: 'a', lane: 0, parents: [], message: 'a long commit message' }];
-    expect(fitMessages(one, layoutCommitGraph(one).at).get('a')).toBe(shortMessage('a long commit message'));
+    expect(fitMessages(one, layoutCommitGraph(one).at).get('a')).toBe('a long commit message');
+    const long = [{ id: 'a', lane: 0, parents: [], message: 'x'.repeat(40) }];
+    const cut = fitMessages(long, layoutCommitGraph(long).at).get('a')!;
+    expect(cut).toHaveLength(MAX_FITTED_MESSAGE_CHARS);
+    expect(cut.endsWith('…')).toBe(true);
   });
 });

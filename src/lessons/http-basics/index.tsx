@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Reading the browser's Network tab or curl -v output",
     ],
     why: "Almost every piece of software you touch as a junior talks HTTP. Picking the right method and status code makes your API predictable, and reading status codes correctly turns \"it doesn't work\" into a specific, fixable problem.",
-    watch: 'The blue envelope is your request travelling to the server; the reply comes back coloured by status family: green 2xx, violet 3xx, yellow 4xx (your request was wrong), red 5xx (the server broke). The server panel shows its data, and the row a request touched glows violet. Below, the raw HTTP text of both messages, the method matrix (your current method highlighted) and a log of recent responses. The API is simulated in your browser.',
+    watch: 'The blue envelope is your request travelling to the server; the reply comes back coloured by status family: green 2xx, violet 3xx, orange 4xx (your request was wrong), red 5xx (the server broke). The server panel shows its data, and the row a request touched glows violet. Below, the raw HTTP text of both messages, the method matrix (your current method highlighted) and a log of recent responses. The API is simulated in your browser.',
   },
   tryThis: [
     'Run every scenario button and sort the replies by colour: whose fault was each one?',

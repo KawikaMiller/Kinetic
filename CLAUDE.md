@@ -26,6 +26,24 @@ Each `src/lessons/<id>/index.tsx` default-exports a `LessonModule` (see `src/cor
 `tryThis`, `keyIdeas`, `quiz`, `Stage`. Use semantic colour tokens (`--hi`, `--ok`, `--bad`,
 `--info`, `--violet`, `--dim`) so colours mean the same thing in every lesson.
 
+**Colour meanings, tier-wide.** A learner moving between lessons should never have to relearn
+what a colour means:
+
+| Token | Means | Not for |
+|---|---|---|
+| `--bad` | error, failure, removed/lost, or the costly side of a comparison | a plain category (a bit field, an event type, a lane) |
+| `--ok` | success, found, done, the cheap side of a comparison | a plain category |
+| `--hi` | what's happening *now*: the current step, the item being looked at | a status or a category |
+| `--info` | secondary or in-flight: a request travelling, a second pointer | |
+| `--violet` | tertiary or structural: references, groupings, the third role | |
+| `--dim` | ruled out, inactive, not reached | |
+
+Plain categories (the fields of a float, lanes, layers) take the categorical tokens
+(`--orange`, `--amber`, `--pink`, `--sky`, the track colours) or the roles above in their
+structural sense, never `--bad`/`--ok` as decoration. When two kinds of failure must be told
+apart (HTTP 4xx vs 5xx), the second takes `--orange`, not `--hi`. State the mapping in the
+lesson's `watch` text.
+
 Captions: a frame without `say` keeps the previous caption. Only rely on that when the old
 caption is still true; otherwise give the frame its own caption.
 
@@ -118,6 +136,8 @@ it's safe.
 - motion's `pathLength` breaks with `vector-effect: non-scaling-stroke`.
 - Looping decorative motion (busy ripples, gate rings) goes through `Pulse`, which holds still
   under prefers-reduced-motion. Don't add a global MotionConfig: it would strip teaching motion.
+  Error-feedback shakes go through `useShake()` (core/useShake.ts) for the same reason; don't
+  write `animate={x ? SHAKE : …}` or gate on `useReducedMotion` by hand.
 - Never `outline: none` without a replacement focus style; the global `:focus-visible` ring is the default.
 - React keys must be unique even when two items look identical at the same instant (e.g. two
   events while a sim is paused): key by a generated id, not by text + timestamp.

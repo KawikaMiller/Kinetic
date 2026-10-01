@@ -1,5 +1,4 @@
-import { isValidElement, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
 import { traversalFrames } from './frames';
 import { isSortedLabels, reference, removeLeaf, type Order } from './model';
@@ -8,16 +7,6 @@ import { PRESETS } from './presets';
 const ORDERS: Order[] = ['pre', 'in', 'post', 'level'];
 
 /** Caption text with the markup stripped. */
-const text = (node: ReactNode) =>
-  isValidElement(node)
-    ? renderToStaticMarkup(node)
-        .replace(/<[^>]+>/g, '')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&#x27;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-    : String(node ?? '');
 
 const bst = PRESETS.find((x) => x.id === 'bst')!;
 const letters = PRESETS.find((x) => x.id === 'letters')!;

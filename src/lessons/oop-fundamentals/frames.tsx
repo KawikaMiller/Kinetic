@@ -56,12 +56,12 @@ export function dispatchFrames(id: InstanceId, method: Method): DispatchFrame[] 
   if (method === 'area') {
     const result = shortNumber(areaOf(id));
     r.snap(<>Returns <span className="hl ok">{result}</span>.</>, 2, { result });
-    r.finish(<>Returns <span className="hl ok">{result}</span>. One call, and the object&apos;s class decided which code ran: that&apos;s <b>polymorphism</b>, with no if/else on the type.</>, 2);
+    r.amendLast(<>Returns <span className="hl ok">{result}</span>. One call, and the object&apos;s class decided which code ran: that&apos;s <b>polymorphism</b>, with no if/else on the type.</>, 2);
   } else if (method === 'describe') {
     walk('area', <><code>describe()</code> calls <code>this.area()</code>. <code>this</code> is still {id}, so the search starts again from the object, <b>not</b> from Shape.</>);
     const result = describeOf(id);
     r.snap(<>Returns <span className="hl ok">&quot;{result}&quot;</span>.</>, 2, { result: `"${result}"` });
-    r.finish(<>Returns <span className="hl ok">&quot;{result}&quot;</span>. Shape&apos;s code called <b>{cls}</b>&apos;s area(): the base class works with every subclass without knowing any of them.</>, 2);
+    r.amendLast(<>Returns <span className="hl ok">&quot;{result}&quot;</span>. Shape&apos;s code called <b>{cls}</b>&apos;s area(): the base class works with every subclass without knowing any of them.</>, 2);
   } else {
     r.snap(<><code>setWidth</code> changes <code>w</code> on the object.</>, 2, { result: 'undefined' });
   }
@@ -93,7 +93,7 @@ export function squareFrames(): SquareFrame[] {
     { line: 2, w: after.w, h: after.h, area: null, broken: !after.isSquare },
   );
   r.snap(<><code>area()</code> returns <span className="hl bad">{after.area}</span>, not the 25 a 5-wide square should have.</>, 2, { line: 3, area: after.area });
-  r.finish(
+  r.close(
     <>Square inherits a method that breaks its own rule (sides equal). If code that works on any Rect breaks when handed a Square, the <b>is-a</b> relationship was a lie: prefer composition, or make shapes immutable.</>,
     2,
   );

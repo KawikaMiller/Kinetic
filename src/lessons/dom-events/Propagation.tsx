@@ -290,6 +290,7 @@ export function Propagation({ picker }: { picker: ReactNode }) {
               }}
               nodeClass={(id) => (id === editing ? 'de-node is-editing' : 'de-node')}
               onNodeClick={setEditing}
+              nodeAriaLabel={(id) => `Edit the listener on ${TAG[id]}`}
               renderNode={(id) => {
                 const l = listeners[id];
                 const flags = [l.stop && 'stop', l.prevent && 'prevent'].filter(Boolean).join(' · ');

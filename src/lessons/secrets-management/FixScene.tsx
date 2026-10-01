@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { ConfigCode } from './ConfigCode';
-import { graphCommits } from './graph';
+import { GRAPH_SPACING, graphCommits } from './graph';
 import { applyFix, scan, type FixId } from './model';
 
 const FIXES: { value: FixId; label: string }[] = [
@@ -53,7 +53,7 @@ export function FixScene({ picker }: { picker: ReactNode }) {
       controls={[picker, <Segmented key="fix" label="Try a fix" value={fix} onChange={choose} options={FIXES} />]}
     >
       <div className="stage-pad sm">
-        <CommitGraph commits={graphCommits(o.commits, o.keyWorks)} refs={[{ name: 'main', at: o.tip, head: true }]} title="history after the fix" />
+        <CommitGraph commits={graphCommits(o.commits, o.keyWorks)} refs={[{ name: 'main', at: o.tip, head: true }]} title="history after the fix" messageFit="truncate" spacing={GRAPH_SPACING} />
         <div className="sm-pair">
           <ConfigCode title={`config.js at ${head.id} (latest)`} text={head.files['config.js']} keyDead={!o.keyWorks} />
           <Box className="sm-facts">

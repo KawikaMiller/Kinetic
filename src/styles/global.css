@@ -156,6 +156,8 @@ strong {
 .hl.bad { background: rgb(255 93 108 / 0.14); color: var(--bad); }
 .hl.info { background: rgb(76 201 240 / 0.14); color: var(--info); }
 .hl.violet { background: rgb(167 139 250 / 0.14); color: var(--violet); }
+.hl.amber { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber); }
+.hl.orange { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
 
 /* `code` inside lesson text (summary, tips, key ideas, quiz): components/InlineText */
 .inline-code {
