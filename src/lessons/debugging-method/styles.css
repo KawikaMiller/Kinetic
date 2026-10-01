@@ -1,0 +1,63 @@
+.dm-rail { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.dm-rail li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 4px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--faint);
+}
+.dm-rail-dot {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font: 700 11px var(--mono);
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+}
+.dm-rail li.is-done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.dm-rail li.is-done .dm-rail-dot { background: var(--ok); color: var(--on-ok); border-color: var(--ok); }
+.dm-rail li.is-now { color: var(--hi); border-color: var(--hi); }
+.dm-rail li.is-now .dm-rail-dot { border-color: var(--hi); color: var(--hi); }
+
+.dm-svg { display: block; width: 100%; height: auto; }
+.dm-io { font: 600 13px var(--mono); }
+.dm-io.is-ok { fill: var(--ok); }
+.dm-io.is-bad { fill: var(--bad); }
+.dm-probe { cursor: pointer; }
+.dm-probe circle {
+  fill: var(--bg-2);
+  stroke: var(--line-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  transition: fill 0.2s, stroke 0.2s;
+}
+.dm-probe:hover circle,
+.dm-probe:focus-visible circle { stroke: var(--hi); stroke-dasharray: none; }
+.dm-probe:focus-visible { outline: none; }
+.dm-probe:focus-visible circle { stroke-width: 3; }
+.dm-probe-mark { font: 700 13px var(--mono); fill: var(--muted); pointer-events: none; }
+.dm-probe.is-ok circle { fill: var(--ok); stroke: var(--ok); stroke-dasharray: none; }
+.dm-probe.is-bad circle { fill: var(--bad); stroke: var(--bad); stroke-dasharray: none; }
+.dm-probe.is-ok .dm-probe-mark,
+.dm-probe.is-bad .dm-probe-mark { fill: var(--on-fill); }
+.dm-probe.is-wasted circle { opacity: 0.55; }
+/* probes taken before the fix: still true, but history now */
+.dm-probe.is-stale { opacity: 0.35; }
+.dm-probe-value { font: 600 12px var(--mono); fill: var(--text); }
+.dm-probe.is-ok .dm-probe-value { fill: var(--ok); }
+.dm-probe.is-bad .dm-probe-value { fill: var(--bad); }
+
+.dm-trap { display: flex; flex-direction: column; gap: 8px; overflow-x: auto; }
+.dm-trap-both td { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.dm-ok { color: var(--ok); }
+.dm-bad { color: var(--bad); }
+.dm-note { margin: 0; font-size: 12.5px; color: var(--faint); }
+.dm-warn { margin: 0; font-size: 13px; font-weight: 600; color: var(--bad); }
+.dm-bisect { padding-top: 12px; }
+/* the scroller clips vertically too: leave room for the range labels above and the outline at the ends */
+.dm-strip { padding: 30px 8px 4px; }
