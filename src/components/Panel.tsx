@@ -43,20 +43,24 @@ export function SectionTitle({
  * A dashed tray that collects items (outputs, a call stack, extracted values). Shows
  * `empty` (as a faint mono note) when it has no children; pass your own element as a
  * child instead if the empty text needs the lesson's own styling.
+ *
+ * The label flows inline with short content by default; `stack` puts it on its own line
+ * above the content (lists, result rows, a search field).
  */
 export function Tray({
-  label, labelWeight, empty, className = '', ariaLabel, children,
+  label, labelWeight, empty, stack = false, className = '', ariaLabel, children,
 }: {
   label?: ReactNode;
   labelWeight?: TitleWeight;
   empty?: ReactNode;
+  stack?: boolean;
   className?: string;
   ariaLabel?: string;
   children?: ReactNode;
 }) {
   const hasItems = Array.isArray(children) ? children.length > 0 : children != null && children !== false;
   return (
-    <div className={`tray ${className}`} aria-label={ariaLabel}>
+    <div className={`tray ${stack ? 'is-stacked' : ''} ${className}`} aria-label={ariaLabel}>
       {label && <SectionTitle weight={labelWeight}>{label}</SectionTitle>}
       {hasItems ? children : empty && <span className="empty-note">{empty}</span>}
     </div>

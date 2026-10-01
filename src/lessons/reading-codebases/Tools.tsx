@@ -34,7 +34,7 @@ export function Tools({ nav, onAct, onOpenHit }: { nav: NavState; onAct: (s: Ste
 
   return (
     <div className="rc-tools">
-      <Tray className="rc-tray" label={nav.search ? <>Search the repo: {plural(nav.search.hits.length, 'match', 'matches')}</> : 'Search the repo'}>
+      <Tray stack label={nav.search ? <>Search the repo: {plural(nav.search.hits.length, 'match', 'matches')}</> : 'Search the repo'}>
         <div className="rc-search">
           <TextField value={query} onChange={setQuery} onEnter={doSearch} placeholder="e.g. 402" ariaLabel="Search text" spellCheck={false} className="rc-search-field" />
           <Button onClick={doSearch} disabled={!query.trim()}>Search</Button>
@@ -44,7 +44,7 @@ export function Tools({ nav, onAct, onOpenHit }: { nav: NavState; onAct: (s: Ste
           : <span className="empty-note">No matches for "{nav.search.query}".</span>)}
       </Tray>
 
-      <Tray className="rc-tray" label="Symbols on the selected line" empty={line ? 'none this repo defines' : 'select a line first'}>
+      <Tray stack label="Symbols on the selected line" empty={line ? 'none this repo defines' : 'select a line first'}>
         {symbols.length > 0 && symbols.map((s) => (
           <div key={s} className="rc-symbol">
             <code className="rc-symbol-name">{s}</code>
@@ -56,7 +56,7 @@ export function Tools({ nav, onAct, onOpenHit }: { nav: NavState; onAct: (s: Ste
         ))}
       </Tray>
       {nav.refs && (
-        <Tray className="rc-tray" label={<>References to <code>{nav.refs.symbol}</code>: {plural(nav.refs.hits.length, 'line')}</>}>
+        <Tray stack label={<>References to <code>{nav.refs.symbol}</code>: {plural(nav.refs.hits.length, 'line')}</>}>
           {nav.refs.hits.length > 0 && <Hits hits={nav.refs.hits} onOpen={onOpenHit} tone="violet" />}
         </Tray>
       )}
@@ -73,7 +73,7 @@ export function Tools({ nav, onAct, onOpenHit }: { nav: NavState; onAct: (s: Ste
         </AnimatePresence>
       </div>
 
-      <Tray className="rc-tray" label="Breadcrumbs" empty="the files you visit, in order">
+      <Tray stack label="Breadcrumbs" empty="the files you visit, in order">
         {nav.trail.length > 0 && (
           <ol className="rc-trail">
             {nav.trail.map((f, i) => (

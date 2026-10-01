@@ -54,8 +54,6 @@
 
 /* Tools */
 .rc-tools { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-/* Kit Tray puts the label and its content inline; stack them. */
-.rc-tray { display: flex; flex-direction: column; gap: 8px; }
 .rc-search { display: flex; gap: 8px; align-items: center; }
 .rc-search-field { flex: 1; min-width: 0; }
 .rc-hits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow: auto; }

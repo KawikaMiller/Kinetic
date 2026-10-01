@@ -6,8 +6,6 @@
 }
 .rq-left, .rq-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .rq-done { grid-column: 1 / -1; }
-/* Kit Tray puts the label and empty note inline; stack them. */
-.rq-tray { display: flex; flex-direction: column; gap: 8px; }
 
 .rq-orbit { display: block; width: 100%; height: auto; }
 .rq-orbit-path { fill: none; stroke: var(--line-2); stroke-dasharray: 3 6; }

@@ -130,7 +130,7 @@ export function Refine({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <div className="rq-right">
-          <Tray className="rq-tray" label="Acceptance criteria" empty="none yet: ask a question">
+          <Tray stack label="Acceptance criteria" empty="none yet: ask a question">
             {lines.length > 0 && (
               <CodePanel lines={lines} gutter="none" className="rq-gherkin"
                 stateOf={(i) => (newestStart >= 0 && i >= newestStart ? 'now' : 'idle')}
@@ -140,14 +140,14 @@ export function Refine({ picker }: { picker: ReactNode }) {
                 }} />
             )}
           </Tray>
-          <Tray className="rq-tray" label="Out of scope" empty="nothing ruled out yet">
+          <Tray stack label="Out of scope" empty="nothing ruled out yet">
             {scope.length > 0 && (
               <ul className="rq-scope">
                 {scope.map((s) => <motion.li key={s} {...popIn}>{s}</motion.li>)}
               </ul>
             )}
           </Tray>
-          <Tray className="rq-tray" label="Test checklist" empty="tests appear as criteria do">
+          <Tray stack label="Test checklist" empty="tests appear as criteria do">
             {tests.length > 0 && (
               <ul className="rq-tests">
                 {tests.map((t) => <motion.li key={t} {...popIn} className="chip tone-info">☐ {t}</motion.li>)}
