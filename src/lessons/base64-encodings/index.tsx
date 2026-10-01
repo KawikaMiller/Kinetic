@@ -18,7 +18,7 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'Try "Man (3 bytes)", "Ma (2 bytes)" and "M (1 byte)": watch the zero bits and = padding appear.',
-    'Pick "JWT header" and switch the alphabet to base64url: that\'s the familiar eyJ… prefix.',
+    'Pick "JWT header": every JWT starts with that eyJ…, the base64 of {"alg". It happens to need no + / or =, so base64url looks the same. Pick ">>>?" and flip the alphabet to see + become - and the = padding drop.',
     'Press "Is this encrypted?": the text comes straight back, no key needed.',
     'In the URL / percent lane, try "a b&c=d" in both modes: space becomes %20 in a URL part but + in a form.',
     'Encode "café" in the percent lane: é becomes two escapes, %C3%A9, one per UTF-8 byte.',
