@@ -170,6 +170,11 @@ const ARC_HEADROOM = 22;
 const ARC_MIN_LIFT = 16;
 /** Extra height per hop (cycling through 3), so arcs of similar length don't sit on top of each other. */
 const ARC_STAGGER = 9;
+/**
+ * A pointer leaves its node this far right of centre and arrives this far left of it (as a share
+ * of a slot), so a node's incoming and outgoing arcs don't meet in one point.
+ */
+const ARC_PORT = 0.16;
 
 function ListStrip({ view }: { view: ListView }) {
   const [ref, size] = useElementSize<HTMLDivElement>();
@@ -181,11 +186,12 @@ function ListStrip({ view }: { view: ListView }) {
   const hop = new Map(orderOf(view.nodes, view.head).map((n, i) => [n.slot, i]));
 
   const arc = (a: number, b: number) => {
-    const x1 = (a + 0.5) * cw;
-    const x2 = (b + 0.5) * cw;
-    // taller arcs for longer jumps, and staggered by hop, so overlapping pointers fan out instead of stacking
-    const span = ARC_H - ARC_HEADROOM;
-    const byLength = Math.min(span - 2 * ARC_STAGGER, ARC_MIN_LIFT + (Math.abs(b - a) / SLOTS) * span * 1.3);
+    const x1 = (a + 0.5 + ARC_PORT) * cw;
+    const x2 = (b + 0.5 - ARC_PORT) * cw;
+    // Height grows linearly with the jump, never capping, so long arcs keep distinct heights instead of
+    // running together along the top; the stagger by hop splits arcs of similar length.
+    const range = ARC_H - ARC_HEADROOM - ARC_MIN_LIFT - 2 * ARC_STAGGER;
+    const byLength = ARC_MIN_LIFT + (Math.abs(b - a) / (SLOTS - 1)) * range;
     const lift = byLength + ((hop.get(a) ?? 0) % 3) * ARC_STAGGER;
     return `M ${x1} ${ARC_H} C ${x1} ${ARC_H - lift}, ${x2} ${ARC_H - lift}, ${x2} ${ARC_H - 2}`;
   };
