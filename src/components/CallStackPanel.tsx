@@ -37,12 +37,13 @@ const POP_EXIT = { opacity: 0, x: 80, transition: { duration: 0.3 } };
  * - `anchor="bottom"` (default) stacks from the bottom up, like a stack of plates;
  *   `anchor="top"` lists from the top, like the DevTools call-stack pane.
  * - `showDepth` numbers each frame by its depth (0 = the outermost call).
- * - `selected` / `onSelect` make frames clickable (a debugger picking a frame to inspect).
+ * - `selected` / `onSelect` make frames clickable (a debugger picking a frame to inspect);
+ *   `selectedTone` colours the selection ring (default `hi`).
  * - `alarm` turns the whole stack red and shakes it (stack overflow, uncaught throw).
  * - `empty` is shown when there are no frames; `overlay` draws over the stack (a crash banner).
  */
 export function CallStackPanel({
-  frames, title = 'Call stack', meta, anchor = 'bottom', showDepth = true, selected, onSelect, alarm = false,
+  frames, title = 'Call stack', meta, anchor = 'bottom', showDepth = true, selected, selectedTone = 'hi', onSelect, alarm = false,
   empty, overlay, minHeight = 360, className = '',
 }: {
   frames: readonly CallFrame[];
@@ -51,6 +52,7 @@ export function CallStackPanel({
   anchor?: 'bottom' | 'top';
   showDepth?: boolean;
   selected?: CallFrame['id'];
+  selectedTone?: Tone;
   onSelect?: (id: CallFrame['id']) => void;
   alarm?: boolean;
   empty?: ReactNode;
@@ -63,7 +65,7 @@ export function CallStackPanel({
   const depthOf = (row: number) => (anchor === 'bottom' ? row : frames.length - 1 - row);
 
   return (
-    <div className={`call-stack ${alarm ? 'is-alarm' : ''} ${className}`}>
+    <div className={`call-stack ${alarm ? 'is-alarm' : ''} ${className}`} style={{ ['--sel' as string]: `var(--${selectedTone})` }}>
       <div className="call-stack-head">
         <span>{title}</span>
         {meta && <span className="call-stack-meta">{meta}</span>}

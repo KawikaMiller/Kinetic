@@ -276,6 +276,7 @@ function Debugger({ picker }: { picker: ReactNode }) {
               minHeight={0}
               meta={pause ? plural(pause.stack.length, 'frame') : undefined}
               selected={frame?.id}
+              selectedTone="info"
               onSelect={(id) => {
                 setSelectedId(id === pause?.stack[0].id ? null : Number(id));
                 const f = pause?.stack.find((x) => x.id === id);
@@ -284,7 +285,6 @@ function Debugger({ picker }: { picker: ReactNode }) {
                 }
               }}
               empty={<p className="empty-note">{at === null ? 'Program finished.' : 'Not running.'}</p>}
-              className="dbg-stack"
             />
             <ScopePane sections={sections} changed={changed} flashKey={presses} />
             <WatchPane watches={watches} setWatches={setWatches} scope={scope} />

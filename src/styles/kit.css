@@ -528,7 +528,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .call-frame.is-ok { background: color-mix(in srgb, var(--ok) 16%, transparent); border-color: var(--ok); }
 .call-frame.is-ok .call-frame-detail { color: var(--ok); }
 .call-frame.is-error { background: color-mix(in srgb, var(--bad) 20%, transparent); border-color: var(--bad); color: var(--bad); }
-.call-frame.is-selected { border-color: var(--hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hi) 35%, transparent); }
+.call-frame.is-selected { border-color: var(--sel); box-shadow: 0 0 0 2px color-mix(in srgb, var(--sel) 35%, transparent); }
 
 /* CommitGraph (components/CommitGraph.tsx): its own horizontal scroller; the side with
    hidden graph gets an inner glow so you can tell there's more to swipe to. */
