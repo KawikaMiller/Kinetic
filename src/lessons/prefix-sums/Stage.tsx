@@ -143,8 +143,8 @@ function DiffScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--ok)', label: '+ where a range starts' },
-            { color: 'var(--bad)', label: '− just past its end' },
+            { color: 'var(--ok)', label: '+v where a range starts' },
+            { color: 'var(--bad)', label: '−v just past its end' },
             { color: 'var(--hi)', label: 'rebuilding now' },
           ]}
         />
