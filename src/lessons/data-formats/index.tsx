@@ -36,7 +36,7 @@ const lesson: LessonModule = {
         'It breaks on quoted fields holding commas',
         'Nothing: CSV is just values and commas',
         "It's far too slow for files of any size",
-        'It silently drops the header row',
+        'It garbles any field that has accented letters',
       ],
       answer: 0,
       why: '"Smith, Jane" is one field, protected by quotes (and quoted fields can even hold line breaks). split(",") cuts it in two and shifts every column after it.',

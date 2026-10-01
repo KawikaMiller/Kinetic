@@ -33,9 +33,9 @@ const lesson: LessonModule = {
       q: 'Who is responsible for spotting gaps in a requirement?',
       options: [
         'The whole team, engineers included',
-        'Only the product manager who wrote it',
-        'Only QA, once the feature is built',
-        'Nobody: gaps turn up at the demo',
+        'The product manager; engineers just build it',
+        'QA, when they test the finished feature',
+        'The stakeholder who asked for it',
       ],
       answer: 0,
       why: "Engineers know the edge cases (expired links, spam, other sessions). Asking during refinement is far cheaper than QA or the demo finding it after it's built.",
@@ -55,7 +55,7 @@ const lesson: LessonModule = {
       q: "A stakeholder asks for SMS reset in the same story. What's a good response?",
       options: [
         'Note it as out of scope and raise it as its own story',
-        "Quietly add it to the story you're working on",
+        "Quietly fold it into the story you're already working on",
         "Ignore it, since it wasn't in the original ask",
         'Rewrite the whole login page to fit it in',
       ],

@@ -46,7 +46,7 @@ const lesson: LessonModule = {
       options: [
         "02:30 never happens that night, so it's skipped",
         'It runs at 02:30 local time, as usual',
-        'It runs twice, because 02:30 repeats',
+        'It runs twice: 02:30 comes round twice that night',
         'It runs an hour early, at 01:30 instead',
       ],
       answer: 0,
@@ -65,7 +65,7 @@ const lesson: LessonModule = {
     },
     {
       q: 'In JavaScript, new Date("2026-03-08") is…',
-      options: ['Midnight in your local time zone', 'Midnight UTC', 'Noon UTC', 'Invalid'],
+      options: ['Midnight in your local zone', 'Midnight UTC on 8 March', 'Noon UTC, to dodge DST', 'Invalid: it needs a time too'],
       answer: 1,
       why: 'A date-only ISO string parses as UTC. In New York that\'s 19:00 on 7 March. "2026-03-08T00:00" without a Z parses as local time instead.',
     },

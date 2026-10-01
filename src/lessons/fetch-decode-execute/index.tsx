@@ -56,7 +56,7 @@ const lesson: LessonModule = {
       q: 'How does a loop work at this level?',
       options: [
         'A jump sets PC back to an earlier address',
-        'The CPU remembers where each loop began',
+        'The CPU keeps a note of where each loop began',
         'Memory repeats the same instructions',
         'The ALU counts how many loops are left',
       ],

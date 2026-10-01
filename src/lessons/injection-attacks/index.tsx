@@ -44,7 +44,7 @@ const lesson: LessonModule = {
       q: 'Why does "I <3 it" display correctly even when pasted into innerHTML?',
       options: [
         'In HTML, "<" before a digit can\'t start a tag',
-        'Browsers escape user comments automatically',
+        'The browser escapes pasted text automatically',
         'The heart is a built-in HTML entity',
         'innerHTML ignores every angle bracket',
       ],
@@ -56,7 +56,7 @@ const lesson: LessonModule = {
       options: [
         'Check it against a fixed list of allowed column names',
         'Put the column name in a query parameter like any value',
-        'Escape it like a string value',
+        'Escape it the same way you escape string values',
         "It's safe, because it's only a column name",
       ],
       answer: 0,

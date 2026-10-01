@@ -45,7 +45,7 @@ const lesson: LessonModule = {
       q: 'Does adding CORS headers protect your API from being called by other programs?',
       options: [
         'No: only browsers enforce it; curl ignores CORS',
-        "Yes: it blocks every other origin's calls",
+        'Yes: it rejects any call from an unlisted origin',
         'Yes, as long as you avoid the * wildcard',
         'Only for POST, PUT and DELETE requests',
       ],
@@ -55,10 +55,10 @@ const lesson: LessonModule = {
     {
       q: 'Which request triggers a preflight?',
       options: [
-        'GET with an Accept header',
-        'POST with Content-Type: application/x-www-form-urlencoded',
+        'GET with an Accept: text/html header',
+        'POST with Content-Type: multipart/form-data',
         'POST with Content-Type: application/json',
-        'HEAD with no custom headers',
+        'HEAD with just the default headers',
       ],
       answer: 2,
       why: 'Only three content types count as simple (form-urlencoded, multipart/form-data, text/plain). A JSON body makes the request non-simple, so the browser asks with OPTIONS first.',

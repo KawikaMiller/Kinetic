@@ -34,7 +34,7 @@ const lesson: LessonModule = {
       q: 'ESLint and TypeScript both pass with zero errors. What does that tell you?',
       options: [
         'No rule or type errors, but logic bugs can remain',
-        'The code is correct and does what it should',
+        'The code is correct and does what it was meant to',
         'The test suite is guaranteed to pass too',
         'The code is formatted in the house style',
       ],

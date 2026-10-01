@@ -54,7 +54,7 @@ const lesson: LessonModule = {
     {
       q: "A PR changes 1,400 lines across 30 files. What's the best reviewer move?",
       options: [
-        'Ask for it to be split into smaller PRs',
+        'Ask the author to split it up',
         "Approve it: it's too big to read",
         'Skim it quickly and then approve',
         'Review only the first few files',

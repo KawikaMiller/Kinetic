@@ -43,8 +43,8 @@ const lesson: LessonModule = {
     {
       q: 'Why does infinite recursion crash with a stack overflow?',
       options: [
-        'Every call adds a frame to a fixed-size stack',
-        'The heap runs out of room for objects',
+        'Each call adds a frame, and that space is fixed',
+        'The heap runs out of room for all those objects',
         'The garbage collector halts the program',
         "JavaScript doesn't allow recursion at all",
       ],
