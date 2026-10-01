@@ -66,38 +66,8 @@ export function wouldStage(paths: string[], tracked: ReadonlySet<string>, gitign
 }
 
 // ── Secret scanning ──────────────────────────────────────────────────────────
-
-export interface Rule {
-  id: string;
-  name: string;
-  re: RegExp;
-}
-
-/** Patterns like the ones pre-commit scanners use. Real scanners have hundreds, plus entropy checks. */
-export const RULES: Rule[] = [
-  { id: 'stripe', name: 'Stripe-style secret key', re: /\b[rs]k_(?:live|test)_[A-Za-z0-9]{16,}\b/g },
-  { id: 'aws', name: 'AWS access key id', re: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g },
-  { id: 'github', name: 'GitHub token', re: /\bgh[pousr]_[A-Za-z0-9]{36}\b/g },
-  { id: 'private-key', name: 'Private key', re: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g },
-  { id: 'assignment', name: 'Hard-coded secret', re: /\b(?:password|secret|api[_-]?key|token)\s*[:=]\s*["'][^"'\s]{8,}["']/gi },
-];
-
-export interface Finding {
-  rule: string;
-  line: number;
-  match: string;
-}
-
-/** Every rule hit in `text`, with its 1-based line number. */
-export function scan(text: string): Finding[] {
-  const out: Finding[] = [];
-  text.split('\n').forEach((lineText, i) => {
-    for (const r of RULES) {
-      for (const m of lineText.matchAll(r.re)) out.push({ rule: r.id, line: i + 1, match: m[0] });
-    }
-  });
-  return out;
-}
+// The scanner is shared with the repo-wide secret-shape test, so it lives in core.
+export { RULES, scan, type Finding, type Rule } from '../../core/secretScan';
 
 // ── The story ────────────────────────────────────────────────────────────────
 
