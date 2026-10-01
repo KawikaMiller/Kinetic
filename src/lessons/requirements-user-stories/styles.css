@@ -1,0 +1,99 @@
+.rq-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+}
+.rq-left, .rq-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.rq-done { grid-column: 1 / -1; }
+/* Kit Tray puts the label and empty note inline; stack them. */
+.rq-tray { display: flex; flex-direction: column; gap: 8px; }
+
+.rq-orbit { display: block; width: 100%; height: auto; }
+.rq-orbit-path { fill: none; stroke: var(--line-2); stroke-dasharray: 3 6; }
+.rq-request {
+  fill: color-mix(in srgb, var(--info) 10%, var(--cell));
+  stroke: color-mix(in srgb, var(--info) 55%, transparent);
+  stroke-width: 1.5;
+  transition: stroke 0.3s, fill 0.3s;
+}
+.rq-request.is-done { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 12%, var(--cell)); }
+.rq-request-text { font: 600 16px var(--font); fill: var(--text); }
+
+.rq-bubble { animation: rq-bob 3.2s ease-in-out infinite; }
+@keyframes rq-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.rq-bubble-box { fill: color-mix(in srgb, var(--bad) 16%, var(--bg-2)); stroke: var(--bad); stroke-width: 1.5; }
+.rq-bubble-text { font: 700 16px var(--font); fill: var(--bad); }
+
+.rq-deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.rq-q {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  font: 500 13px var(--font);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--panel-2);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+}
+.rq-q:hover { border-color: var(--faint); }
+.rq-q[aria-pressed='true'] { cursor: default; }
+.rq-q.is-criterion { border-color: color-mix(in srgb, var(--ok) 55%, transparent); background: color-mix(in srgb, var(--ok) 8%, var(--panel-2)); }
+.rq-q.is-scope { border-color: var(--line-2); opacity: 0.75; }
+.rq-q.is-irrelevant { opacity: 0.55; }
+.rq-q.is-last { border-color: var(--hi); box-shadow: 0 0 0 1px var(--hi); }
+.rq-q-tag { font: 600 11px var(--mono); color: var(--muted); }
+.rq-q.is-criterion .rq-q-tag { color: var(--ok); }
+
+.rq-gherkin { font-size: 12px; }
+.rq-kw { color: var(--ok); font-weight: 700; }
+.rq-scope { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--dim); font-size: 13px; }
+.rq-scope li { color: var(--muted); }
+.rq-scope li::marker { color: var(--dim); }
+.rq-tests { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+
+.rq-story { margin: 6px 0 14px; font-size: 15px; }
+.rq-dod { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+.rq-skip { gap: 14px; }
+.rq-timeline { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 12px; }
+.rq-timeline-label { font-size: 13px; color: var(--muted); }
+.rq-track { display: flex; height: 30px; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); overflow: hidden; }
+.rq-seg {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 11px var(--mono);
+  color: var(--on-info);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.rq-seg.is-build { background: var(--info); }
+.rq-seg.is-refine { background: var(--violet); }
+.rq-seg.is-rework { background: var(--bad); border-left: 1px solid var(--bg-2); }
+.rq-surprises { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rq-surprises li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border-left: 3px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 8%, transparent);
+  font-size: 13px;
+}
+.rq-surprises li.is-now { background: color-mix(in srgb, var(--hi) 12%, transparent); border-left-color: var(--hi); }
+.rq-surprise-cost { font: 700 12px var(--mono); color: var(--bad); white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .rq-stage { grid-template-columns: minmax(0, 1fr); }
+  .rq-timeline { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
