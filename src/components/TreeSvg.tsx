@@ -83,7 +83,11 @@ export function TreeSvg<K extends TreeKey>({
     const p = place.get(id);
     return p && { x: treeX(p.col, columns, width, pad), y: top + p.depth * gap };
   };
-  const shown = [...place.keys()].filter((id) => !hidden?.(id));
+  // Reading order (top row first, left to right), so Tab walks the tree the way it's drawn;
+  // layouts record nodes in their own traversal order.
+  const shown = [...place.keys()]
+    .filter((id) => !hidden?.(id))
+    .sort((a, b) => place.get(a)!.depth - place.get(b)!.depth || place.get(a)!.col - place.get(b)!.col);
   const style = markedEdgeWidth === undefined ? undefined : ({ '--tree-marked-w': markedEdgeWidth } as CSSProperties);
 
   return (
