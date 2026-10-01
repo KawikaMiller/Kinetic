@@ -107,7 +107,3 @@
 @media (max-width: 900px) {
   .bo { grid-template-columns: 1fr; }
 }
-
-/* Caption chips in the same colour as their curves (the global .hl set has no amber or orange). */
-.hl.bo-amber { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber); }
-.hl.bo-orange { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }

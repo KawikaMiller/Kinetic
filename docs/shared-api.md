@@ -33,6 +33,8 @@ Phase 0b already converted every lesson-CSS literal that exactly matched a token
 | `--trk-<id>` (14) | see `global.css` | curriculum track colours (`TRACKS[id].color` is `var(--trk-<id>)`; `TOKENS.trkDsa` etc. on canvas). App chrome only (cards, chips, crumbs): lessons keep using the semantic tokens |
 
 Tints: `color-mix(in srgb, var(--hi) 14%, transparent)`.
+Caption chips: `<span className="hl">` is `--hi`; add `ok`, `bad`, `info`, `violet`, `amber` or `orange`
+for the others (big-o's curve chips, css-layout's margin).
 Colours: DOM/SVG use `var(--x)`, canvas uses `TOKENS.x` / `alpha()`. A literal that genuinely
 can't be a token (a drawing's own material, a neutral shadow) carries an `allow-color` marker with
 a reason on the same line, and `npm run check-tokens -- --strict` must pass (see CLAUDE.md):
