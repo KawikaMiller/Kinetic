@@ -47,12 +47,15 @@ export function tokenize(line: string, env: Env, fs: Fs): Token[] {
     }
     let word = '';
     let globbable = false;
+    /** Quotes keep an empty word (""), but an unquoted expansion to nothing vanishes. */
+    let quoted = false;
     while (i < line.length && !/\s/.test(line[i]) && !OPERATORS.some((o) => !o.startsWith('2') && line.startsWith(o, i))) {
       const c = line[i];
       if (c === "'") {
         const end = line.indexOf("'", i + 1);
         if (end < 0) throw new ShellSyntaxError("unexpected end of line: missing closing '");
         word += line.slice(i + 1, end); // single quotes: completely literal
+        quoted = true;
         i = end + 1;
       } else if (c === '"') {
         let j = i + 1;
@@ -69,8 +72,10 @@ export function tokenize(line: string, env: Env, fs: Fs): Token[] {
         }
         if (j >= line.length) throw new ShellSyntaxError('unexpected end of line: missing closing "');
         word += inner;
+        quoted = true;
         i = j + 1;
       } else if (c === '\\') {
+        quoted = true;
         word += line[i + 1] ?? '';
         i += 2;
       } else if (c === '$') {
@@ -83,6 +88,7 @@ export function tokenize(line: string, env: Env, fs: Fs): Token[] {
         i++;
       }
     }
+    if (word === '' && !quoted) continue;
     for (const w of globbable ? glob(word, fs) : [word]) tokens.push({ kind: 'word', value: w });
   }
   return tokens;
@@ -253,5 +259,18 @@ export function runShell(line: string, fsIn: Fs, env: Env): ShellResult {
   return { runs, terminal, fs, written: [...written], error: null };
 }
 
-/** argv as you could type it back: empty or spaced arguments get single quotes. */
-export const showArgv = (argv: readonly string[]) => argv.map((a) => (a === '' || /[\s'"|;&<>$*?]/.test(a) ? `'${a.replaceAll("'", "'\\''")}'` : a)).join(' ');
+const needsQuotes = (a: string) => a === '' || /[\s'"|;&<>$*?]/.test(a);
+const singleQuote = (a: string) => `'${a.replaceAll("'", "'\\''")}'`;
+
+/**
+ * argv back as a command line that re-parses to the same words. A short flag glued to its value
+ * keeps the flag outside the quotes, the way people type it: -d' ' rather than '-d '.
+ */
+export const showArgv = (argv: readonly string[]) =>
+  argv
+    .map((a) => {
+      if (!needsQuotes(a)) return a;
+      const glued = /^(-[A-Za-z])(.+)$/s.exec(a);
+      return glued ? `${glued[1]}${singleQuote(glued[2])}` : singleQuote(a);
+    })
+    .join(' ');

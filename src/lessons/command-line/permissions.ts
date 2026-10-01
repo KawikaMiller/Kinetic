@@ -33,6 +33,17 @@ export const can = (mode: number, who: Who, action: Action) => bitsFromMode(mode
  * Apply a chmod mode argument to `current`: three or four octal digits, or symbolic clauses
  * like "u+x", "go-w", "a=r", "u=rwx,g=rx,o=" (comma-separated). Null if it isn't valid.
  */
+/**
+ * Real chmod accepts these, but they set the setuid, setgid or sticky bits, or use the X and
+ * copy-from forms, none of which this nine-bit model draws: "4755", "u+s", "+t", "g=u", "a+X".
+ * Only meaningful for an argument chmod() rejected.
+ */
+export function isUnmodelledMode(arg: string): boolean {
+  const s = arg.trim();
+  if (/^0*[1-7][0-7]{3}$/.test(s)) return true;
+  return s.split(',').every((clause) => /^[ugoa]*[+\-=]([rwxXst]*|[ugo])$/.test(clause));
+}
+
 export function chmod(arg: string, current: number): number | null {
   const s = arg.trim();
   if (/^0?[0-7]{3}$/.test(s)) return parseInt(s, 8);
