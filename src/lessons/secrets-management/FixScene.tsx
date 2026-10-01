@@ -53,7 +53,7 @@ export function FixScene({ picker }: { picker: ReactNode }) {
       controls={[picker, <Segmented key="fix" label="Try a fix" value={fix} onChange={choose} options={FIXES} />]}
     >
       <div className="stage-pad sm">
-        <CommitGraph commits={graphCommits(o.commits, o.keyWorks)} refs={[{ name: 'main', at: o.tip, head: true }]} title="history after the fix" messageFit="truncate" spacing={GRAPH_SPACING} />
+        <CommitGraph commits={graphCommits(o.commits, o.keyWorks)} refs={[{ name: 'main', at: o.tip, head: true }]} title="history after the fix" messageFit="truncate" spacing={GRAPH_SPACING} className="sm-graph" />
         <div className="sm-pair">
           <ConfigCode title={`config.js at ${head.id} (latest)`} text={head.files['config.js']} keyDead={!o.keyWorks} />
           <Box className="sm-facts">
