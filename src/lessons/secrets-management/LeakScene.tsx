@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { ConfigCode } from './ConfigCode';
-import { graphCommits } from './graph';
+import { GRAPH_SPACING, graphCommits } from './graph';
 import { TIMELINE, leakFrames } from './frames';
 import { LEAK_HISTORY, scan } from './model';
 
@@ -59,7 +59,7 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
             )}
           </Box>
         </div>
-        <CommitGraph commits={graphCommits(commits, true)} refs={[{ name: 'main', at: tip, head: true }]} title={f.pushed ? 'github.com/acme/shop (public)' : 'local repository'} />
+        <CommitGraph commits={graphCommits(commits, true)} refs={[{ name: 'main', at: tip, head: true }]} title={f.pushed ? 'github.com/acme/shop (public)' : 'local repository'} messageFit="truncate" spacing={GRAPH_SPACING} />
         <p className="sm-honest">Scripted timeline with a fake key. Real bots do scan public pushes, typically within minutes.</p>
       </div>
     </StageFrame>

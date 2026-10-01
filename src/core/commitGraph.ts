@@ -72,10 +72,13 @@ export function depthColumns(commits: readonly GraphCommitShape[]): Map<string, 
 /** Approximate width of one character of a commit message (10px Inter). */
 export const MESSAGE_CHAR_W = 5.6;
 
+/** With messageFit="truncate", a commit with nobody beside it still stops at this many characters. */
+export const MAX_FITTED_MESSAGE_CHARS = 28;
+
 /**
- * Messages cut so they don't run into the next commit's message on the same lane:
- * each gets the room up to its nearest same-lane neighbour. Commits with room keep
- * the usual shortMessage().
+ * Messages cut to the room up to their nearest same-lane neighbour, so they don't run
+ * into the next commit's message. Unlike shortMessage() there's no fixed 12-character
+ * cap: a message keeps as much as fits, up to MAX_FITTED_MESSAGE_CHARS.
  */
 export function fitMessages(
   commits: readonly (GraphCommitShape & { message?: string })[],
@@ -97,9 +100,8 @@ export function fitMessages(
   const out = new Map<string, string>();
   for (const c of commits) {
     if (!c.message) continue;
-    const short = shortMessage(c.message);
-    const fits = Math.floor((room.get(c.id) ?? Infinity) / MESSAGE_CHAR_W);
-    out.set(c.id, short.length <= fits ? short : fits >= 2 ? `${short.slice(0, fits - 1)}…` : '');
+    const fits = Math.min(MAX_FITTED_MESSAGE_CHARS, Math.floor((room.get(c.id) ?? Infinity) / MESSAGE_CHAR_W));
+    out.set(c.id, c.message.length <= fits ? c.message : fits >= 2 ? `${c.message.slice(0, fits - 1)}…` : '');
   }
   return out;
 }
