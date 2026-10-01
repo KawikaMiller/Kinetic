@@ -148,7 +148,7 @@ export function palindromeFrames(text: string): PalFrame[] {
     rec.snap(
       <>
         The pointers met in the middle with every pair matching: <span className="hl ok">palindrome</span>, in{' '}
-        {plural(checks.length, 'comparison')} for {text.length} letters.
+        {plural(checks.length, 'comparison')} for {plural(text.length, 'letter')}.
       </>,
       2,
       { done: true },
