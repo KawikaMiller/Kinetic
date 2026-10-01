@@ -1,16 +1,8 @@
-import { isValidElement, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
 import { pipelineFrames } from './frames';
 
 /** Caption text with the markup stripped. */
-const text = (node: ReactNode) =>
-  isValidElement(node)
-    ? renderToStaticMarkup(node)
-        .replace(/<[^>]+>/g, '')
-        .replace(/&#x27;/g, "'")
-        .replace(/&amp;/g, '&')
-    : String(node ?? '');
 
 describe('pipeline captions', () => {
   it('a broken test with fail fast narrates the cancellation, then the summary', () => {

@@ -1,12 +1,7 @@
-import { isValidElement, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
 import { errorFrames } from './frames';
 
-const text = (node: ReactNode) =>
-  isValidElement(node)
-    ? renderToStaticMarkup(node).replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&')
-    : String(node ?? '');
 import { programLines, runPlain, runTraced, type FailAt, type Mode, type Preset } from './model';
 
 const CONFIGS: [Mode, Preset, FailAt][] = [

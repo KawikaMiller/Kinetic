@@ -1,12 +1,9 @@
-import { isValidElement, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
 import { weekFrames } from './frames';
 import { edits, outcome, strategies } from './model';
 
 /** Caption text with the markup stripped. */
-const text = (node: ReactNode) =>
-  isValidElement(node) ? renderToStaticMarkup(node).replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'") : String(node ?? '');
 
 const closing = (flags: boolean) => {
   const e = edits(4, 1);

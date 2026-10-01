@@ -1,14 +1,9 @@
-import { isValidElement, type ReactNode } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
 import { finishedCaption, resultColor, resultLabel } from './captions';
 import { PRESETS, type Bug, type Counts } from './model';
 import { advance, createWorld, snapshot, startRun } from './sim';
 
-const text = (node: ReactNode) =>
-  isValidElement(node)
-    ? renderToStaticMarkup(node).replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
-    : String(node ?? '');
 
 /** Run `runs` suites to completion and return each one's finished stats. */
 function finishedRuns(counts: Counts, bug: Bug | null, runs: number) {
