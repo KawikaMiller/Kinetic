@@ -12,14 +12,17 @@ export interface World {
   running: boolean;
   /** How many runs have been started (each one uses a new seed). */
   runCount: number;
+  /** The bug planted in the code this run tests, if any. */
+  planted: Bug | null;
 }
 
 export function createWorld(): World {
-  return { runs: [], t: 0, running: false, runCount: 0 };
+  return { runs: [], t: 0, running: false, runCount: 0, planted: null };
 }
 
 export function startRun(w: World, counts: Counts, bug: Bug | null): void {
   w.runCount += 1;
+  w.planted = bug;
   w.runs = runSuite(counts, bug, mulberry32(SEED_BASE + w.runCount));
   w.t = 0;
   w.running = w.runs.length > 0;
@@ -44,13 +47,19 @@ export interface RunStats {
   firstFailAt: number | null;
   firstFailLayer: Layer | null;
   flakyByLayer: Record<Layer, number>;
+  planted: Bug | null;
+  /** The run finished, a bug was planted, and no test caught it: it ships. */
+  escaped: boolean;
 }
 
 export function snapshot(w: World): RunStats {
   const done = w.runs.filter((r) => r.end <= w.t);
   const fail = done.find((r) => r.result === 'fail') ?? null;
   const flakyByLayer = Object.fromEntries(LAYERS.map((l) => [l, done.filter((r) => r.layer === l && r.result === 'flake').length])) as Record<Layer, number>;
+  const finished = !w.running && w.runs.length > 0 && done.length === w.runs.length;
   return {
+    planted: w.planted,
+    escaped: finished && w.planted !== null && !fail,
     t: w.t,
     total: w.runs.length,
     done: done.length,
