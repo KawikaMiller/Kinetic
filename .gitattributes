@@ -1,0 +1,13 @@
+# Store text with LF line endings, whatever the OS that wrote it. Agents and editors on
+# Windows otherwise commit a mix of CRLF and LF, which turns small edits into whole-file diffs.
+* text=auto eol=lf
+
+# Binary: never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
