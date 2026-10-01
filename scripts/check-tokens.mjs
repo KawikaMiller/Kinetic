@@ -1,5 +1,6 @@
 // Flag lesson code that bypasses the shared layer: raw colour literals instead of
-// tokens, and local copies of helpers that live in src/core.
+// tokens, and local copies of helpers that live in src/core. The rules themselves are in
+// lib/token-rules.mjs (with tests).
 //
 //   npm run check-tokens                 # all lessons, counts per lesson
 //   npm run check-tokens -- raft sorting # just these
@@ -13,23 +14,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { lessonIds, parseArgs, ROOT } from './lib/browser.mjs';
+import { findHits } from './lib/token-rules.mjs';
 
-const COLOR_RULES = [
-  { name: 'hex colour', re: /#[0-9a-fA-F]{3,8}\b(?![\w-])/g },
-  { name: 'rgb() literal', re: /\brgba?\(\s*\d/g },
-];
-const HELPER_RULES = [
-  { name: 'local canvas palette', re: /const\s+C\s*=\s*\{/g },
-  { name: 'local FNV hash', re: /0x811c9dc5|2166136261/g },
-  { name: 'local seeded RNG', re: /function\s+mulberry32|0x6d2b79f5/g },
-  { name: 'local percentile', re: /function\s+percentile\b/g },
-  { name: 'local lerp/clamp01', re: /(?:const|function)\s+(?:lerp|clamp01)\b/g },
-  { name: 'local roundBox', re: /function\s+roundBox\b/g },
-  { name: 'hand-rolled queued play', re: /\bpendingPlay\b/g },
-  { name: 'inline spring constant', re: /const\s+spring\s*=/g },
-];
-/** `allow-color:` followed by a reason. A bare marker doesn't count. */
-const ALLOW = /allow-color:\s*\S/;
 const EXTENSIONS = new Set(['.ts', '.tsx', '.css']);
 
 const { flags, positional } = parseArgs();
@@ -43,12 +29,6 @@ function filesIn(dir) {
   });
 }
 
-/** Source lines with comments blanked out, keeping line numbers (so documentation can mention a colour). */
-function codeLines(text) {
-  const noBlocks = text.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
-  return noBlocks.split('\n').map((line) => line.replace(/(^|[^:])\/\/.*$/, '$1'));
-}
-
 let total = 0;
 let allowed = 0;
 for (const id of ids) {
@@ -57,19 +37,14 @@ for (const id of ids) {
   for (const file of filesIn(path.join(ROOT, 'src', 'lessons', id))) {
     const raw = fs.readFileSync(file, 'utf8');
     const rawLines = raw.split('\n');
-    codeLines(raw).forEach((line, i) => {
-      const marked = ALLOW.test(rawLines[i]);
-      for (const rule of [...COLOR_RULES, ...HELPER_RULES]) {
-        const hits = line.match(rule.re)?.length ?? 0;
-        if (!hits) continue;
-        if (marked && COLOR_RULES.includes(rule)) {
-          allowed += hits;
-          continue;
-        }
-        counts.set(rule.name, (counts.get(rule.name) ?? 0) + hits);
-        where.push(`  ${path.relative(ROOT, file).replace(/\\/g, '/')}:${i + 1}  ${rule.name}: ${rawLines[i].trim().slice(0, 100)}`);
+    for (const hit of findHits(raw)) {
+      if (hit.allowed) {
+        allowed += hit.count;
+        continue;
       }
-    });
+      counts.set(hit.rule, (counts.get(hit.rule) ?? 0) + hit.count);
+      where.push(`  ${path.relative(ROOT, file).replace(/\\/g, '/')}:${hit.line}  ${hit.rule}: ${rawLines[hit.line - 1].trim().slice(0, 100)}`);
+    }
   }
   const sum = [...counts.values()].reduce((a, b) => a + b, 0);
   total += sum;

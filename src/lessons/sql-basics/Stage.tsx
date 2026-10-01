@@ -12,6 +12,7 @@ const TITLE = 26;
 const HEAD = 30;
 const ROW = 30;
 const LINK_W = 60;
+const ROW_SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const;
 const rowY = (i: number) => TITLE + HEAD + i * ROW + ROW / 2;
 
 /** One colour per GROUP BY bucket. */
@@ -202,7 +203,7 @@ function Result({ f }: { f: SqlFrame }) {
             initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, scaleY: 0.2, transition: { duration: 0.3 } }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            transition={ROW_SPRING}
           >
             {r.cells.map((v, i) => (
               <span key={i} className={v === null ? 'sq-null' : ''}>

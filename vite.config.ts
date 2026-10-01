@@ -23,7 +23,8 @@ export default defineConfig({
     strictPort: true,
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    // dev-script rules (scripts/lib) are tested too, not just app code
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
   },
 })

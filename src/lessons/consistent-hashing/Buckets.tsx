@@ -6,6 +6,8 @@ const W = 440;
 const TOP = 70;
 const DOT_STEP = 13;
 const MIN_COL_H = 160;
+/** Loose and slow, so a key flying to its new bucket reads as a move. */
+const KEY_SPRING = { type: 'spring', stiffness: 90, damping: 16 } as const;
 
 export function Buckets({
   servers, owners, hover, setHover, moved, version,
@@ -54,7 +56,7 @@ export function Buckets({
             r={hover === k.i ? 6 : 4.5}
             initial={false}
             animate={{ cx: p.x, cy: p.y }}
-            transition={{ type: 'spring', stiffness: 90, damping: 16, delay: isMoved ? (k.i % 20) * 0.02 : 0 }}
+            transition={{ ...KEY_SPRING, delay: isMoved ? (k.i % 20) * 0.02 : 0 }}
             className={`ch-key ${isMoved ? `moved v${version % 2}` : ''}`}
             style={{ fill: SERVER_COLORS[owners[k.i]] }}
             onMouseEnter={() => setHover(k.i)}

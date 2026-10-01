@@ -3,6 +3,7 @@ import { KEYS, SERVER_COLORS } from './model';
 
 /** The bar track spans this many fair shares, so the fair-share mark sits at 1/FAIR_SPAN. */
 const FAIR_SPAN = 2.5;
+const BAR_SPRING = { type: 'spring', stiffness: 180, damping: 22 } as const;
 
 /** Keys-per-server bars (click to remove a server) and the hovered-key inspector. */
 export function SidePanel({
@@ -30,7 +31,7 @@ export function SidePanel({
                 style={{ background: SERVER_COLORS[s] }}
                 initial={false}
                 animate={{ width: `${Math.min(100, (counts[i] / (fair * FAIR_SPAN)) * 100)}%` }}
-                transition={{ type: 'spring', stiffness: 180, damping: 22 }}
+                transition={BAR_SPRING}
               />
               <span className="ch-fair" style={{ left: `${100 / FAIR_SPAN}%` }} />
             </span>
