@@ -40,7 +40,12 @@ export function describe(r: Result, before: Repo): ReactNode {
       return (
         <>
           Merge commit <span className="hl">{tip.id}</span> has <b>two parents</b>: history is kept exactly as it happened.
-          {r.info ? <> Both sides changed <span className="hl bad">{r.info}</span>: a conflict you'd resolve by hand.</> : null}
+          {r.conflicts.length > 0 && (
+            <>
+              {' '}
+              {conflictNote(r.conflicts)}
+            </>
+          )}
         </>
       );
     case 'rebase':
@@ -48,9 +53,23 @@ export function describe(r: Result, before: Repo): ReactNode {
         <>
           Rebase replayed <b>{r.info}</b> commit{r.info === '1' ? '' : 's'} on top of the other branch. Same changes, but new
           parents mean <b>new hashes</b> (marked ′). The originals are now unreachable (faded) until garbage collection.
+          {r.conflicts.length > 0 && (
+            <>
+              {' '}
+              {conflictNote(r.conflicts)} A real rebase pauses on that commit until you do.
+            </>
+          )}
         </>
       );
     case 'noop':
       return <>Nothing to rebase: {repo.head} has no commits of its own.</>;
   }
+}
+
+function conflictNote(files: string[]): ReactNode {
+  return (
+    <>
+      Both sides changed <span className="hl bad">{files.join(', ')}</span>: a conflict you'd resolve by hand.
+    </>
+  );
 }

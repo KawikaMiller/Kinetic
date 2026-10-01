@@ -148,8 +148,9 @@
 
 .pt-thread.running { border-color: var(--ok); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 25%, transparent); }
 .pt-thread.running .pt-thread-state { color: var(--ok); }
-.pt-thread.blocked { border-color: var(--bad); border-style: dashed; }
-.pt-thread.blocked .pt-thread-state { color: var(--bad); }
+/* Waiting for I/O is normal, not an error: dashed and faint, never the crash red. */
+.pt-thread.blocked { border-color: var(--faint); border-style: dashed; }
+.pt-thread.blocked .pt-thread-state { color: var(--muted); }
 .pt-thread.crash { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, transparent); }
 .pt-thread.crash .pt-thread-state { color: var(--bad); }
 .pt-thread.dead { opacity: 0.35; }

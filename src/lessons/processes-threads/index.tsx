@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Reading top or Task Manager: why one app shows many processes and threads",
     ],
     why: "Every program you write runs as a process with at least one thread. Knowing the difference explains crashes, memory usage, why some bugs only show up under concurrency, and how a server handles many users at once.",
-    watch: "The two cores at the top show which thread is running right now; a striped ⇄ core is mid context switch. Blue is the Browser process, violet is Music. Each thread has its own small stack; the heap is shared inside a process. Red means crashed, grey means dead, and a chip sliding through the kernel bar is a message between processes (IPC).",
+    watch: "The two cores at the top show which thread is running right now; a striped ⇄ core is mid context switch. Blue is the Browser process, violet is Music. A green outline marks a thread that's running, and a dashed faint one a thread that's waiting (blocked on I/O, which is normal). Each thread has its own small stack; the heap is shared inside a process. Red means crashed, grey means dead, and a chip sliding through the kernel bar is a message between processes (IPC). The scenarios are scripted and slowed down.",
   },
   tryThis: [
     'Play "Time slicing" and count the context switches: two cores, five threads.',

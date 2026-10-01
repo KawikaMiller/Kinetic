@@ -86,7 +86,7 @@
   box-shadow: 0 6px 20px -6px rgb(0 0 0 / 0.7); /* allow-color: neutral drop shadow */
 }
 .hb-env-req {
-  background: var(--violet);
+  background: var(--info);
 }
 .hb-queue {
   position: absolute;
@@ -153,7 +153,7 @@
   min-width: 0;
 }
 .hb-raw-box:first-child {
-  --c: var(--violet);
+  --c: var(--info);
 }
 .hb-raw-label {
   display: block;
@@ -180,7 +180,7 @@
   font-weight: 700;
 }
 .hb-raw-box:first-child pre::first-line {
-  color: var(--violet);
+  color: var(--info);
   font-weight: 700;
 }
 

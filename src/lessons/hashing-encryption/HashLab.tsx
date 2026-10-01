@@ -4,26 +4,12 @@ import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { hasSubtle, hexToBits, sha256Hex } from '../../core/crypto';
 import { useAsyncValue } from '../../core/useAsyncValue';
+import { bitsFlipped, charDiff, tweakOneChar } from './hashModel';
 
 const useSha256 = (text: string) => useAsyncValue(() => sha256Hex(text), text);
 
 const PARAGRAPH =
   'It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity.';
-
-function tweakOneChar(s: string) {
-  if (!s) return 'a';
-  const i = Math.floor(s.length / 2);
-  const c = s[i];
-  const swapped = c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase();
-  const next = swapped !== c ? swapped : c === 'x' ? 'y' : 'x';
-  return s.slice(0, i) + next + s.slice(i + 1);
-}
-
-const charDiff = (a: string, b: string) => {
-  let n = Math.abs(a.length - b.length);
-  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) n++;
-  return n;
-};
 
 export function HashLab({ modePicker }: { modePicker: ReactNode }) {
   const [a, setA] = useState('hello world');
@@ -34,7 +20,7 @@ export function HashLab({ modePicker }: { modePicker: ReactNode }) {
 
   const bitsA = ha ? hexToBits(ha) : null;
   const bitsB = hb ? hexToBits(hb) : null;
-  const flipped = bitsA && bitsB ? bitsA.reduce((n, bit, i) => n + (bit !== bitsB[i] ? 1 : 0), 0) : null;
+  const flipped = bitsA && bitsB ? bitsFlipped(bitsA, bitsB) : null;
   const chars = charDiff(a, b);
 
   // Recomputed on every keystroke, so the caption updates in place (quiet) instead of fading each time.
@@ -82,7 +68,7 @@ export function HashLab({ modePicker }: { modePicker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--info)', label: 'bit = 1' },
+            { color: 'var(--hi)', label: 'bit = 1' },
             { color: 'var(--cell)', label: 'bit = 0' },
             { color: 'var(--bad)', label: 'differs from A' },
           ]}

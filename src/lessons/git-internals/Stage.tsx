@@ -105,7 +105,14 @@ export function Stage() {
       }
     >
       <div className="gi">
-        <CommitGraph commits={graph} refs={refs} selected={sel.id} onSelect={setSelected} title="commit graph · click a commit to open it" />
+        <CommitGraph
+          commits={graph}
+          refs={refs}
+          selected={sel.id}
+          onSelect={setSelected}
+          messageFit="truncate"
+          title="commit graph · click a commit to open it"
+        />
         <ObjectPanel repo={repo} c={sel} />
       </div>
     </StageFrame>

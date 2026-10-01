@@ -86,7 +86,7 @@
   border: 1px solid var(--cell-line);
   transition: background 0.35s var(--d), border-color 0.35s var(--d), transform 0.35s var(--d);
 }
-.he-bit.on { background: var(--info); border-color: transparent; }
+.he-bit.on { background: var(--hi); border-color: transparent; }
 .he-bit.diff { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
 .he-bit.on.diff { background: var(--bad); }
 .he-hex {
@@ -159,10 +159,10 @@
 
 .he-attacker { opacity: 0.45; }
 .he-attacker.on { opacity: 1; border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
-.he-rainbow { display: flex; flex-direction: column; gap: 4px; }
-.he-rainbow-title,
+.he-lookup { display: flex; flex-direction: column; gap: 4px; }
+.he-lookup-title,
 .he-race-title { font-size: 11px; color: var(--faint); margin-bottom: 4px; }
-.he-rainbow-row {
+.he-lookup-row {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -172,12 +172,13 @@
   color: var(--muted);
   transition: background 0.3s, color 0.3s, opacity 0.3s;
 }
-.he-rainbow-row code { font-size: 11px; }
-.he-rainbow-row.hit { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); font-weight: 700; }
-.he-rainbow-row.miss { opacity: 0.35; text-decoration: line-through; }
+.he-lookup-row code { font-size: 11px; }
+.he-lookup-row.hit { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); font-weight: 700; }
+.he-lookup-row.miss { opacity: 0.35; text-decoration: line-through; }
 .he-miss { font: 700 11px var(--mono); color: var(--ok); margin-top: 4px; }
 
 .he-race { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.he-race-scale { font-size: 11px; color: var(--faint); }
 .he-racebar { display: grid; grid-template-columns: 1fr; gap: 3px; font-size: 12px; }
 .he-racebar-track { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .he-racebar-track i { display: block; height: 100%; border-radius: inherit; }
@@ -248,7 +249,6 @@
 .he-card {
   position: absolute;
   top: calc(70% - 22px);
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -314,19 +314,9 @@
 .he-scn.bad { border-color: color-mix(in srgb, var(--bad) 60%, transparent); }
 .he-scn p { margin: 0 24px 10px 0; font-weight: 600; font-size: 14px; }
 .he-scn-opts { display: flex; flex-wrap: wrap; gap: 5px; }
-.he-scn-opts button {
-  font: 600 11.5px var(--font);
-  padding: 4px 9px;
-  border-radius: 7px;
-  border: 1px solid var(--line-2);
-  background: var(--bg-2);
-  color: var(--muted);
-  cursor: pointer;
-}
-.he-scn-opts button:hover:not(:disabled) { color: var(--text); border-color: var(--c); }
-.he-scn-opts button.on { color: var(--bg); background: var(--c); border-color: var(--c); }
-.he-scn.bad .he-scn-opts button.on { background: var(--bad); border-color: var(--bad); }
-.he-scn-opts button:disabled { opacity: 0.35; cursor: default; }
+/* Unpicked options are neutral (no colour hints at the answer); picked ones take the verdict tone. */
+.he-scn-opts .chip-button:not(.is-on) { --c: var(--muted); }
+.he-scn-opts .he-scn-locked { opacity: 0.35; cursor: default; }
 .he-scn-done { position: absolute; top: 10px; right: 12px; color: var(--ok); font-weight: 800; font-size: 18px; }
 
 @media (max-width: 800px) {

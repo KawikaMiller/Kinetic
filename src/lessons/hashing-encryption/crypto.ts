@@ -24,3 +24,34 @@ export async function aesRoundTrip(message: string): Promise<AesDemo | null> {
   const raw = await crypto.subtle.exportKey('raw', key);
   return { keyHex: toHex(raw), ivHex: toHex(iv), cipherHex: toHex(cipher), decrypted: new TextDecoder().decode(plain) };
 }
+
+export interface AsymDemo {
+  /** RSA-OAEP (2048-bit, SHA-256) ciphertext of the message under the public key. */
+  cipherHex: string;
+  /** What the private key decrypts it back to. */
+  decrypted: string;
+  /** ECDSA P-256 signature over the release text. */
+  sigHex: string;
+  /** The signature checks out against the release text it was made for. */
+  valid: boolean;
+  /** The same signature checked against the tampered text. */
+  tamperedValid: boolean;
+}
+
+/** Genuine asymmetric encryption and signing with fresh key pairs (null without Web Crypto). */
+export async function asymDemo(message: string, release: string, tampered: string): Promise<AsymDemo | null> {
+  if (!hasSubtle()) return null;
+  const rsa = await crypto.subtle.generateKey(
+    { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+    false,
+    ['encrypt', 'decrypt'],
+  );
+  const cipher = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, rsa.publicKey, enc.encode(message));
+  const plain = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, rsa.privateKey, cipher);
+  const ec = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
+  const alg = { name: 'ECDSA', hash: 'SHA-256' };
+  const sig = await crypto.subtle.sign(alg, ec.privateKey, enc.encode(release));
+  const valid = await crypto.subtle.verify(alg, ec.publicKey, sig, enc.encode(release));
+  const tamperedValid = await crypto.subtle.verify(alg, ec.publicKey, sig, enc.encode(tampered));
+  return { cipherHex: toHex(cipher), decrypted: new TextDecoder().decode(plain), sigHex: toHex(sig), valid, tamperedValid };
+}
