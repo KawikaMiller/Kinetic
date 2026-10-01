@@ -602,6 +602,34 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .commit-tag-text { font: 600 11px var(--mono); fill: var(--muted); }
 .commit-tag-text.is-head { fill: var(--hi); }
 
+/* ─── CellGrid / ByteGrid ─────────────────────────────────────────── */
+/* Natural size (one drawing unit = 1px), shrinking to fit narrow screens but never growing. */
+.cellgrid { display: block; max-width: 100%; height: auto; overflow: visible; }
+.cellgrid-label { font: 500 10px var(--mono); fill: var(--muted); }
+.cellgrid-suffix { font: 500 10px var(--mono); fill: var(--muted); white-space: pre; }
+.cellgrid-cell rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1; transition: fill 0.25s, stroke 0.25s; }
+.cellgrid-cell text { font-family: var(--mono); font-weight: 600; fill: var(--text); pointer-events: none; }
+.cellgrid-cell.is-solid rect { fill: var(--c); stroke: var(--c); }
+.cellgrid-cell.is-solid text { fill: var(--on-c); }
+.cellgrid-cell.is-tint rect { fill: color-mix(in srgb, var(--c) var(--cell-tint, 18%), var(--cell)); stroke: var(--c); }
+.cellgrid-cell.is-outline rect { stroke: var(--c); stroke-width: 1.5; }
+.cellgrid-cell.is-none rect { fill: transparent; stroke: transparent; }
+.cellgrid-cell.is-none text { fill: var(--muted); font-weight: 500; }
+.cellgrid-cell.is-tint:not([class*='tone-']) rect,
+.cellgrid-cell.is-outline:not([class*='tone-']) rect { stroke: var(--line-2); }
+.cellgrid.is-clickable .cellgrid-cell { cursor: pointer; }
+.cellgrid.is-clickable .cellgrid-cell:where(:hover) rect { stroke: var(--faint); }
+.cellgrid-cell:focus-visible { outline: none; }
+.cellgrid-cell:focus-visible rect { stroke: var(--text); stroke-width: 2.5; }
+.cellgrid-ring { fill: none; stroke: var(--c); stroke-width: 2; pointer-events: none; }
+.cellgrid-hitarea { fill: transparent; cursor: pointer; }
+.cellgrid-hitarea:focus-visible { outline: none; }
+.cellgrid-cursor { fill: none; stroke: transparent; stroke-width: 2; pointer-events: none; }
+.cellgrid-hitarea:focus-visible ~ .cellgrid-cursor { stroke: var(--text); }
+.bytegrid-fields { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.bytegrid-field { display: inline-flex; align-items: center; gap: 6px; }
+.bytegrid-field i { width: 10px; height: 10px; border-radius: 3px; border: 2px solid var(--c); }
+
 @media (max-width: 900px) {
   .stage-pad { padding: 16px; }
   .bit-strip { --bit-w: 20px; --bit-fs: 12px; }

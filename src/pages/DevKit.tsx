@@ -1,9 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { ArrayStrip, type ArrayCellState } from '../components/ArrayStrip';
 import { BitStrip } from '../components/BitStrip';
 import { CodePanel } from '../components/CodePanel';
 import { HeapObject, heapFieldPort, heapRect, RefArrow, slotPort, VarSlot } from '../components/memory';
-import { Box, SectionTitle } from '../components/Panel';
 import { ResizablePane } from '../components/ResizablePane';
 import { TruthTable } from '../components/TruthTable';
 import { Button, TextArea } from '../components/ui';
@@ -12,6 +11,8 @@ import { chunkGroups, flipBit, fromBits, toBits, type Bit } from '../core/bits';
 import { linearScale, logScale } from '../core/scale';
 import { truthRowIndex } from '../core/truth';
 import './DevKit.css';
+import { DevKitSection as Section } from './DevKitSection';
+import { DevKitTier2 } from './DevKitTier2';
 
 /**
  * Dev-only showcase of the Tier 1 shared components (#/dev/kit). Not linked from
@@ -49,18 +50,11 @@ export function DevKit() {
       <Section title="TextArea + core/scale">
         <TextAndScaleDemo />
       </Section>
+      <DevKitTier2 />
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Box className="devkit-section">
-      <SectionTitle>{title}</SectionTitle>
-      <div className="devkit-body">{children}</div>
-    </Box>
-  );
-}
 
 function RegisterDemo() {
   const [bits, setBits] = useState<Bit[]>(() => toBits(0x2a7f, 16));
