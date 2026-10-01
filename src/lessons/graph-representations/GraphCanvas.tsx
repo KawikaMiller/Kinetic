@@ -7,7 +7,7 @@ const R = 20;
 /** A press that moves less than this is a click, not a drag. */
 const DRAG_SLOP = 6;
 /** New nodes can't be dropped this close to an existing one. */
-const MIN_GAP = 2 * R + 8;
+export const MIN_GAP = 2 * R + 8;
 const ARROW_GAP = 3;
 
 export type Selection = { kind: 'node'; id: number } | { kind: 'edge'; u: number; v: number } | null;

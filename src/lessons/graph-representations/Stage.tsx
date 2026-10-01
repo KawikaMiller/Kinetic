@@ -5,16 +5,18 @@ import { Button, ControlGroup, Legend, Segmented, Stat, Stats, Toggle } from '..
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { categorical } from '../../core/palette';
-import { GraphCanvas, type Selection } from './GraphCanvas';
+import { GraphCanvas, MIN_GAP, type Selection } from './GraphCanvas';
 import {
-  addEdge, addNode, degrees, hasEdge, MAX_NODES, memory, neighbours, properties, removeEdge, removeNode, setDirected, type Graph,
+  addEdge, addNode, degrees, freeSpot, hasEdge, MAX_NODES, memory, neighbours, properties, removeEdge, removeNode, setDirected, type Graph,
 } from './model';
-import { PRESETS, WEIGHTS, type PresetId } from './presets';
+import { PRESETS, VIEW_H, VIEW_W, WEIGHTS, type PresetId } from './presets';
 import { ListView, MatrixView } from './Tables';
 import './styles.css';
 
 /** Node labels stay readable (8px+) on phones down to this stage width. */
 const MIN_STAGE_WIDTH = 560;
+/** Keyboard-placed nodes start on a roomy grid, falling back to the tightest legal gap. */
+const KEYBOARD_NODE_GAP = 2 * MIN_GAP;
 
 type ColourBy = 'components' | 'sides';
 
@@ -47,6 +49,8 @@ export function Stage() {
     colourBy === 'sides' && props.bipartite ? categorical(props.bipartite.get(id) ?? 0) : categorical(componentIndex.get(id) ?? 0);
   const cycle = new Set((props.cycle ?? []).map(([u, v]) => `${u}-${v}`));
 
+  const selectionExists =
+    selection?.kind === 'node' ? graph.nodes.some((n) => n.id === selection.id) : selection?.kind === 'edge' && hasEdge(graph, selection.u, selection.v);
   const selectedNode = selection?.kind === 'node' ? selection.id : graph.nodes[0]?.id;
   const deg = selectedNode === undefined ? 0 : neighbours(graph, selectedNode).length;
   const mem = memory(graph);
@@ -92,9 +96,27 @@ export function Stage() {
     }
   };
 
+  const placeNode = (p: { x: number; y: number }) => {
+    if (graph.nodes.length >= MAX_NODES) return say(<>That's the {MAX_NODES}-node limit for this editor.</>);
+    const next = addNode(graph, p.x, p.y);
+    update(next, <>Added node {next.nodes[next.nodes.length - 1].label}: a new row and column in the matrix, one new head in the list.</>);
+  };
+  /** The keyboard way to add a node: the first free spot in the drawing. */
+  const addNodeAnywhere = () => {
+    const spot = freeSpot(graph, VIEW_W, VIEW_H, KEYBOARD_NODE_GAP) ?? freeSpot(graph, VIEW_W, VIEW_H, MIN_GAP);
+    if (!spot) return say(<>No room left in the drawing. Delete a node first.</>);
+    placeNode(spot);
+  };
+
   const deleteSelected = () => {
+    if (!selectionExists) return;
     if (selection?.kind === 'node') update(removeNode(graph, selection.id), <>Removed {label(selection.id)} and every edge touching it.</>);
     else if (selection?.kind === 'edge') update(removeEdge(graph, selection.u, selection.v), <>Removed the edge.</>);
+    setSelection(null);
+  };
+
+  const clear = () => {
+    update({ ...graph, nodes: [], edges: [] }, <>Empty graph. Click empty space (or press Add a node) to add nodes.</>);
     setSelection(null);
   };
 
@@ -107,9 +129,14 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="Nodes · edges" value={`${graph.nodes.length} · ${graph.edges.length}`} color="var(--text)" sub={`max ${MAX_NODES} nodes`} />
-          <Stat label="Matrix memory" value={mem.matrixCells} color="var(--violet)" sub="V² cells, always" />
-          <Stat label="List memory" value={mem.listEntries} color="var(--info)" sub={graph.directed ? 'V + E entries' : 'V + 2E entries'} />
-          <Stat label="Neighbours of one node" value={`${graph.nodes.length} vs ${deg}`} color="var(--hi)" sub="matrix row vs list" />
+          <Stat label="Matrix memory" value={mem.matrixCells} sub="V² cells, always" />
+          <Stat label="List memory" value={mem.listEntries} sub={graph.directed ? 'V + E entries' : 'V + 2E entries'} />
+          <Stat
+            label={selectedNode === undefined ? 'Neighbours of one node' : `Neighbours of ${label(selectedNode)}`}
+            value={`${graph.nodes.length} vs ${deg}`}
+            color="var(--hi)"
+            sub="matrix row vs list"
+          />
         </Stats>
       }
       legend={
@@ -145,10 +172,13 @@ export function Stage() {
               { value: 'sides', label: 'Two-colouring' },
             ]}
           />
-          <Button onClick={deleteSelected} disabled={!selection}>
+          <Button onClick={addNodeAnywhere} disabled={graph.nodes.length >= MAX_NODES}>
+            Add a node
+          </Button>
+          <Button onClick={deleteSelected} disabled={!selectionExists}>
             Delete selected
           </Button>
-          <Button onClick={() => update({ ...graph, nodes: [], edges: [] }, <>Empty graph. Click to add nodes.</>)}>Clear</Button>
+          <Button onClick={clear}>Clear</Button>
         </>,
       ]}
     >
@@ -159,16 +189,13 @@ export function Stage() {
             selection={selection}
             colourOf={colourOf}
             cycle={cycle}
-            onAddNode={(p) => {
-              if (graph.nodes.length >= MAX_NODES) return say(<>That's the {MAX_NODES}-node limit for this editor.</>);
-              const next = addNode(graph, p.x, p.y);
-              update(next, <>Added node {next.nodes[next.nodes.length - 1].label}: a new row and column in the matrix, one new head in the list.</>);
-            }}
+            onAddNode={placeNode}
             onAddEdge={toggleEdge}
             onSelect={select}
           />
           <div className="gr-badges">
-            {badge(plural(props.components.length, 'component'), 'dim')}
+            {/* Neutral, not dim: it's information, not a pass or fail. */}
+            <span className="chip">{plural(props.components.length, 'component')}</span>
             {badge(props.cycle ? 'has a cycle' : 'no cycle', props.cycle ? 'bad' : 'ok')}
             {props.isDag !== null && badge(props.isDag ? 'DAG' : 'not a DAG', props.isDag ? 'ok' : 'bad')}
             {props.isTree !== null && badge(props.isTree ? 'a tree' : 'not a tree', props.isTree ? 'ok' : 'dim')}
