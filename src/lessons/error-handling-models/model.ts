@@ -155,6 +155,13 @@ export function instrument(lines: readonly string[]): string {
     .join('\n');
 }
 
+// Runtime code execution, deliberately: runPlain and runTraced run the program with
+// `new Function` so the trace on screen is what JavaScript really does, not a hand-drawn
+// guess. That's only acceptable because `lines` is built solely from this lesson's fixed
+// templates (programLines picks among them from three Segmented choices); no learner input
+// ever reaches it, and none must. It also needs 'unsafe-eval', so a strict Content Security
+// Policy would break this lesson. See CLAUDE.md, "Runtime code execution".
+
 /** Run the program's plain text (no hooks): what it prints, and whether it crashes. */
 export function runPlain(lines: readonly string[]): { output: string[]; crash: string | null } {
   const output: string[] = [];

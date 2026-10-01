@@ -32,6 +32,14 @@ caption is still true; otherwise give the frame its own caption.
 Be honest with the learner: if a visual scripts or simplifies something (e.g. a forced packet
 loss), say so on screen.
 
+**Runtime code execution** (`new Function`, `eval`) is allowed only to run fixed,
+lesson-authored program text, as error-handling-models does to make its trace real. Never
+pass it anything derived from user input: a learner-typed expression gets a hand-written
+evaluator over a documented safe subset (as debugger-tools does), not `eval`. Tests may run
+on-screen snippets as real JS freely. Note that runtime execution needs `'unsafe-eval'`, so a
+strict Content Security Policy would break those lessons; comment every call site saying why
+it's safe.
+
 ## Shared kit
 
 `docs/shared-api.md` lists every shared piece with usage. The durable rules:
