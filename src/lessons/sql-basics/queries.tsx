@@ -1,62 +1,7 @@
+// Frame builders for each query: they step the shared tables (data.ts) through SQL's
+// logical execution order, with a caption per milestone.
 import type { ReactNode } from 'react';
-import type { Frame } from '../../core/types';
-
-export interface User {
-  id: number;
-  name: string;
-  city: string;
-}
-export interface Order {
-  id: number;
-  userId: number;
-  item: string;
-  total: number;
-}
-
-export const USERS: User[] = [
-  { id: 1, name: 'Ada', city: 'London' },
-  { id: 2, name: 'Linus', city: 'Helsinki' },
-  { id: 3, name: 'Grace', city: 'New York' },
-  { id: 4, name: 'Alan', city: 'London' },
-  { id: 5, name: 'Margaret', city: 'Boston' },
-];
-
-export const ORDERS: Order[] = [
-  { id: 101, userId: 1, item: 'Keyboard', total: 80 },
-  { id: 102, userId: 3, item: 'Monitor', total: 220 },
-  { id: 103, userId: 1, item: 'Mouse', total: 25 },
-  { id: 104, userId: 4, item: 'Laptop', total: 1200 },
-  { id: 105, userId: 3, item: 'Cable', total: 10 },
-  { id: 106, userId: 1, item: 'Webcam', total: 60 },
-];
-
-export const USER_COLS = ['id', 'name', 'city'] as const;
-export const ORDER_COLS = ['id', 'user_id', 'item', 'total'] as const;
-
-export type Step = 'FROM' | 'JOIN' | 'WHERE' | 'GROUP BY' | 'SELECT' | 'ORDER BY';
-/** scan = being read now, match = kept, out = filtered away / no match */
-export type Mark = 'scan' | 'match' | 'out';
-
-export interface ResultRow {
-  key: string;
-  cells: (string | number | null)[];
-  /** group colour index while GROUP BY is bucketing */
-  tint?: number;
-}
-
-export interface SqlFrame extends Frame {
-  step: Step | null;
-  done: Step[];
-  users: Record<number, Mark>;
-  orders: Record<number, Mark>;
-  dimUserCols: string[];
-  dimOrderCols: string[];
-  links: { u: number; o: number }[];
-  resultCols: string[];
-  result: ResultRow[];
-  examined: number;
-}
-
+import { ORDERS, USERS, type Mark, type ResultRow, type SqlFrame, type Step } from './data';
 export interface Query {
   id: string;
   label: string;
@@ -247,25 +192,33 @@ function groupBy(): SqlFrame[] {
     mine.forEach((o) => {
       b.order(o.id, 'match');
       b.link(u.id, o.id);
-      b.push({ key: `j${u.id}-${o.id}`, cells: [u.name, o.item] });
+      b.push({ key: `j${u.id}-${o.id}`, cells: [u.name, o.item], userId: u.id });
     });
     b.snap(i === 0 ? <>…JOIN orders, exactly like the JOIN query: one row per matching order.</> : undefined, 0.6);
     b.user(u.id, mine.length ? 'match' : 'out');
   });
   b.enter('GROUP BY');
-  const names = [...new Set(b.get().result.map((r) => String(r.cells[0])))];
-  b.set({ result: b.get().result.map((r) => ({ ...r, tint: names.indexOf(String(r.cells[0])) })).sort(byName) });
-  b.snap(<><b>GROUP BY name</b> puts rows with the same name into one bucket (same colour).</>, 1.3);
-  const groups = names
-    .map((n) => ({ key: `g-${n}`, cells: [n, b.get().result.filter((r) => r.cells[0] === n).length], tint: names.indexOf(n) }))
-    .sort(byName);
+  // Group on the user's id (names aren't guaranteed unique), in the order rows arrived.
+  const ids = [...new Set(b.get().result.map((r) => r.userId!))];
+  b.set({ result: b.get().result.map((r) => ({ ...r, tint: ids.indexOf(r.userId!) })) });
+  b.snap(<><b>GROUP BY users.id</b> puts each user's rows into one bucket (same colour).</>, 1.3);
+  const groups = ids.map((id, i) => ({
+    key: `g-${id}`,
+    cells: [USERS.find((u) => u.id === id)!.name, b.get().result.filter((r) => r.userId === id).length],
+    userId: id,
+    tint: i,
+  }));
   b.set({ result: groups, resultCols: ['name', 'orders'] });
   b.snap(<>…then each bucket collapses to <span className="hl">one row</span>, and <b>COUNT</b> counts the rows inside it.</>, 1.4);
   b.enter('SELECT');
   b.set({ dimUserCols: ['id', 'city'], dimOrderCols: ['user_id', 'item', 'total'] });
-  b.snap(<><b>SELECT</b> returns the name and its count.</>);
+  b.snap(<><b>SELECT</b> returns each user's name and their count.</>);
   b.enter(null);
-  b.snap(<>{b.get().result.length} groups. After GROUP BY you can only SELECT the grouped column or aggregates like COUNT, SUM and AVG.</>, 2.2);
+  b.snap(
+    <>{b.get().result.length} groups. After GROUP BY you can only SELECT the grouped columns or aggregates like COUNT,
+      SUM and AVG. There's no ORDER BY, so the groups can come back in any order.</>,
+    2.2,
+  );
   return b.frames;
 }
 
@@ -305,7 +258,7 @@ export const QUERIES: Query[] = [
     id: 'group', label: 'GROUP BY', usesOrders: true, steps: ['FROM', 'JOIN', 'GROUP BY', 'SELECT'],
     sql: [
       kw('SELECT users.name, COUNT(*) AS orders', 'SELECT'), kw('FROM users', 'FROM'),
-      kw('JOIN orders ON orders.user_id = users.id', 'JOIN'), kw('GROUP BY users.name', 'GROUP BY'),
+      kw('JOIN orders ON orders.user_id = users.id', 'JOIN'), kw('GROUP BY users.id, users.name', 'GROUP BY'),
     ],
     build: groupBy,
   },

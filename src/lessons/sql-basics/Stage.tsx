@@ -4,7 +4,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { cssVar } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
-import { ORDERS, ORDER_COLS, QUERIES, USERS, USER_COLS, type Mark, type SqlFrame } from './queries';
+import { ORDERS, ORDER_COLS, USERS, USER_COLS, type Mark, type SqlFrame } from './data';
+import { QUERIES } from './queries';
 import './styles.css';
 
 // Fixed geometry so the join lines can be drawn between table rows.
