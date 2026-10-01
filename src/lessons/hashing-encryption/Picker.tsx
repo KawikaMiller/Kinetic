@@ -24,7 +24,7 @@ export function Picker({ modePicker }: { modePicker: ReactNode }) {
         </>
       ) : (
         <>
-          <span className="hl bad">✗ Not {TOOLS[t].toLowerCase()}.</span> Ask: do you need the data <b>back</b>? Who holds the key?
+          <span className="hl bad">✗ Not {TOOLS[t][0].toLowerCase() + TOOLS[t].slice(1)}.</span> Ask: do you need the data <b>back</b>? Who holds the key?
         </>
       ),
     );
