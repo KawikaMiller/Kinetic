@@ -14,12 +14,12 @@ const lesson: LessonModule = {
       "The classic interview question: \"what happens when you type a URL and hit Enter?\"",
     ],
     why: "Every web and backend engineer builds on top of this chain. Knowing it tells you that latency usually comes from round trips rather than bandwidth, and which fix actually helps: caching, reusing connections, or moving servers closer.",
-    watch: "The top half is finding the address (DNS); the bottom half is talking to the server. Each pill is one message. The browser-to-server link turns solid blue once TCP connects, then yellow with a 🔒 once TLS is up. The waterfall at the bottom shows where the time went.",
+    watch: "The top half is finding the address (DNS); the bottom half is talking to the server. Each pill is one message, coloured by phase: violet DNS, blue TCP, yellow TLS, green HTTP, orange render. The browser-to-server link turns solid blue once TCP connects, then yellow with a 🔒 once TLS is up. The waterfall at the bottom shows where the time went (the timings are illustrative).",
   },
   tryThis: [
     'Press play and follow the packets. Top half is finding the address, bottom half is talking to it.',
     'Flip DNS to "Cached" and watch the whole top half of the trip disappear.',
-    'Set Connection to "Reused": no TCP or TLS handshake at all.',
+    'Set Connection to "Reused": no DNS lookup, no TCP or TLS handshake at all.',
     'Compare TLS 1.2 vs 1.3 and watch the yellow slice of the waterfall.',
   ],
   keyIdeas: [
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
       q: 'What does DNS actually give the browser?',
       options: ['The HTML page', 'An IP address for the domain', 'An encryption key', 'A TCP connection'],
       answer: 1,
-      why: 'DNS maps a human name (example.com) to a machine address (93.184.216.34). Everything else comes after.',
+      why: 'DNS maps a human name (example.com) to a machine address (an IP like 203.0.113.10). Everything else comes after.',
     },
     {
       q: 'Which happens first on a brand-new HTTPS connection?',
