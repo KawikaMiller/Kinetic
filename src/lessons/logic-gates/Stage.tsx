@@ -185,6 +185,10 @@ export function Stage() {
                     className="lg-dot"
                   />
                 ))}
+            {/* Inputs first: DOM order is Tab order, and it should follow the drawing left to right. */}
+            {circuit.inputs.map((name) => (
+              <InputSwitch key={name} name={name} at={layout.at[name]} on={values[name]} onFlip={() => flip(name)} />
+            ))}
             {circuit.gates.map((g) => (
               <GateShape
                 key={g.id}
@@ -196,9 +200,6 @@ export function Stage() {
                 selected={selectedGate?.id === g.id}
                 onSelect={() => setSelected(selectedGate?.id === g.id ? null : g.id)}
               />
-            ))}
-            {circuit.inputs.map((name) => (
-              <InputSwitch key={name} name={name} at={layout.at[name]} on={values[name]} onFlip={() => flip(name)} />
             ))}
             {circuit.outputs.map((o, i) => (
               <g key={o.label} className={`lg-lamp ${signals[o.from] ? 'is-on' : ''}`}>
