@@ -169,6 +169,12 @@ describe('the safe expression evaluator', () => {
     expect(evaluate('items[9].price', scope)).toMatchObject({ error: "TypeError: Cannot read properties of undefined (reading 'price')" });
   });
 
+  it('calls real globals unsupported, never "not defined"', () => {
+    for (const name of ['Object', 'Array', 'JSON', 'Math', 'console', 'window', 'globalThis', 'toString']) {
+      expect(evaluate(name, scope), name).toMatchObject({ ok: false, unsupported: true });
+    }
+  });
+
   it('refuses everything outside the subset instead of running it', () => {
     for (const src of [
       'alert(1)', 'items.map(x => x)', 'total = 0', 'i++', 'total += 1', 'new Date()', 'Math.round(total)', 'typeof total',

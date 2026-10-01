@@ -140,8 +140,9 @@ export type Scope = readonly Vars[];
 
 function lookup(name: string, scope: Scope): Value {
   for (const vars of scope) if (Object.hasOwn(vars, name)) return vars[name];
-  // Globals, and names a real console would find inherited on the global object (constructor, toString…).
-  if (name === 'Math' || name === 'console' || name === 'window' || name === 'globalThis' || name in {}) throw new Unsupported(`"${name}"`);
+  // Names a real console would find (Object, JSON, Math, window, inherited toString…) exist, so they're
+  // "not supported" here rather than a ReferenceError that a real console would never show.
+  if (name === 'window' || name in globalThis || name in {}) throw new Unsupported(`"${name}"`);
   throw new EvalError(`ReferenceError: ${name} is not defined`);
 }
 
