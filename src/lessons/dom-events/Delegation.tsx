@@ -110,8 +110,11 @@ export function Delegation({ picker }: { picker: ReactNode }) {
     }
   }, [last, setCaption]);
 
-  const add = (n: number) =>
-    setItems((prev) => [...prev, ...Array.from({ length: n }, () => nextId.current++)]);
+  const add = (n: number) => {
+    // Take the ids outside the updater: StrictMode runs updaters twice, which skipped numbers.
+    const ids = Array.from({ length: n }, () => nextId.current++);
+    setItems((prev) => [...prev, ...ids]);
+  };
 
   return (
     <StageFrame
