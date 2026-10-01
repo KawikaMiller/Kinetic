@@ -2,88 +2,19 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useReducer, useState, type CSSProperties } from 'react';
 import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ControlGroup, Legend, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
+import { Button, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
+import { INITIAL_EXCHANGE, exchangeReducer, nextAdvanceMs, PHASE_MS } from './exchange';
+import { explain } from './explain';
 import {
-  FAMILY_COLOR, INITIAL_SERVER, REASON, currentEtag, family, handle, hasBody, rawRequest, rawResponse,
-  type Auth, type Family, type Method, type Mode, type Req, type Res, type ServerState,
+  FAMILY_COLOR, METHODS, METHOD_PROPERTIES, REASON, REQUEST_COLOR, STALE_ETAG, currentEtag, family, hasBody,
+  rawRequest, rawResponse, type Auth, type Family, type Method, type Req,
 } from './server';
 import './styles.css';
 
-type Phase = 'out' | 'server' | 'back' | 'done';
-const DURATION: Record<Phase, number> = { out: 850, server: 750, back: 850, done: 350 };
 /** Ends of the wire the envelopes travel along, in % of its width. */
 const CLIENT_END = { x: 0, y: 0 };
 const SERVER_END = { x: 100, y: 0 };
-
-interface Exchange {
-  id: number;
-  req: Req;
-  res: Res;
-  after: ServerState;
-  phase: Phase;
-}
-
-interface LogItem {
-  id: number;
-  label: string;
-  status: number;
-}
-
-interface State {
-  server: ServerState;
-  ex: Exchange | null;
-  queue: Req[];
-  log: LogItem[];
-  n: number;
-}
-
-type Action = { type: 'send'; reqs: Req[] } | { type: 'advance' } | { type: 'mode'; mode: Mode } | { type: 'reset' };
-
-function start(s: State, req: Req): State {
-  const { res, after } = handle(req, s.server);
-  return { ...s, ex: { id: s.n + 1, req, res, after, phase: 'out' }, n: s.n + 1 };
-}
-
-function reducer(s: State, a: Action): State {
-  switch (a.type) {
-    case 'send': {
-      const queue = [...s.queue, ...a.reqs];
-      if (s.ex && s.ex.phase !== 'done') return { ...s, queue };
-      const [next, ...rest] = queue;
-      return start({ ...s, queue: rest }, next);
-    }
-    case 'advance': {
-      const ex = s.ex;
-      if (!ex) return s;
-      if (ex.phase === 'out') return { ...s, server: ex.after, ex: { ...ex, phase: 'server' } };
-      if (ex.phase === 'server') return { ...s, ex: { ...ex, phase: 'back' } };
-      if (ex.phase === 'back') {
-        const log = [...s.log, { id: ex.id, label: `${ex.req.method} ${ex.req.path}`, status: ex.res.status }].slice(-6);
-        return { ...s, ex: { ...ex, phase: 'done' }, log };
-      }
-      if (!s.queue.length) return s;
-      const [next, ...rest] = s.queue;
-      return start({ ...s, queue: rest }, next);
-    }
-    case 'mode':
-      return { ...s, server: { ...s.server, mode: a.mode } };
-    case 'reset':
-      return { ...INITIAL_STATE, server: { ...INITIAL_SERVER, mode: s.server.mode } };
-  }
-}
-
-const INITIAL_STATE: State = { server: INITIAL_SERVER, ex: null, queue: [], log: [], n: 0 };
-
-const METHODS: Method[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-// Per RFC 9110: safe = read-only; idempotent = repeating it leaves the server in the same state.
-const MATRIX: Record<Method, { safe: boolean; idem: boolean | 'maybe' }> = {
-  GET: { safe: true, idem: true },
-  POST: { safe: false, idem: false },
-  PUT: { safe: false, idem: true },
-  PATCH: { safe: false, idem: 'maybe' },
-  DELETE: { safe: false, idem: true },
-};
 
 const FAMILIES: { f: Family; label: string }[] = [
   { f: '2xx', label: 'success' },
@@ -92,34 +23,34 @@ const FAMILIES: { f: Family; label: string }[] = [
   { f: '5xx', label: 'server error' },
 ];
 
+/** What the client sends as If-None-Match for user 1. */
+type CacheCopy = 'none' | 'current' | 'stale';
+
 interface Draft {
   method: Method;
   path: string;
   auth: Auth;
-  etag: boolean;
+  cache: CacheCopy;
   body: string;
 }
 
 export function Stage() {
   const setCaption = useSetCaption();
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-  const [draft, setDraft] = useState<Draft>({ method: 'GET', path: '/users/1', auth: 'none', etag: false, body: '{"name":"Grace"}' });
+  const [state, dispatch] = useReducer(exchangeReducer, INITIAL_EXCHANGE);
+  const [draft, setDraft] = useState<Draft>({ method: 'GET', path: '/users/1', auth: 'none', cache: 'none', body: '{"name":"Grace"}' });
   const { server, ex, queue, log } = state;
 
-  const toReq = (d: Draft): Req => ({
-    method: d.method,
-    path: d.path,
-    auth: d.auth,
-    etag: d.etag ? currentEtag(server, 1) : null,
-    body: d.body,
-  });
+  const etagFor = (c: CacheCopy) => (c === 'current' ? currentEtag(server, 1) : c === 'stale' ? STALE_ETAG : null);
+  const toReq = (d: Draft): Req => ({ method: d.method, path: d.path, auth: d.auth, etag: etagFor(d.cache), body: d.body });
 
-  // Walk the exchange through its phases.
+  // Walk the exchange through its phases. Keyed on the delay, not the queue length, so
+  // clicking Send repeatedly mid-flight queues requests without restarting the timer.
+  const delay = nextAdvanceMs(state);
   useEffect(() => {
-    if (!ex || (ex.phase === 'done' && !queue.length)) return;
-    const t = setTimeout(() => dispatch({ type: 'advance' }), DURATION[ex.phase]);
+    if (delay === null) return;
+    const t = setTimeout(() => dispatch({ type: 'advance' }), delay);
     return () => clearTimeout(t);
-  }, [ex, queue.length]);
+  }, [ex, delay]);
 
   // Narrate it.
   useEffect(() => {
@@ -130,7 +61,7 @@ export function Stage() {
     if (ex.phase === 'out') {
       setCaption(
         <>
-          Sending <span className="hl violet">{ex.req.method} {ex.req.path}</span>: a <b>method</b> (what to do) plus a{' '}
+          Sending <span className="hl info">{ex.req.method} {ex.req.path}</span>: a <b>method</b> (what to do) plus a{' '}
           <b>path</b> (to what).
         </>,
       );
@@ -140,7 +71,7 @@ export function Stage() {
           <span className="hl" style={{ color: FAMILY_COLOR[family(ex.res.status)] }}>
             {ex.res.status} {REASON[ex.res.status]}
           </span>{' '}
-          {ex.res.explain}
+          {explain(ex.res.outcome)}
         </>,
       );
     }
@@ -151,7 +82,7 @@ export function Stage() {
     dispatch({ type: 'send', reqs: Array.from({ length: times }, () => toReq(d)) });
   };
 
-  const preset = (p: Partial<Draft>) => send({ ...draft, auth: 'none', etag: false, ...p });
+  const preset = (p: Partial<Draft>) => send({ ...draft, auth: 'none', cache: 'none', ...p });
 
   const busy = !!ex && ex.phase !== 'done';
   const shownRes = ex && (ex.phase === 'back' || ex.phase === 'done') ? ex.res : null;
@@ -163,19 +94,19 @@ export function Stage() {
       height={540}
       stats={
         <Stats>
-          <Stat label="Requests" value={state.n} color="var(--violet)" />
+          <Stat label="Requests" value={state.n} color={REQUEST_COLOR} />
           <Stat
             label="Last status"
             value={log.length ? log[log.length - 1].status : '·'}
             color={log.length ? FAMILY_COLOR[family(log[log.length - 1].status)] : undefined}
           />
-          <Stat label="Users on server" value={users.length} color="var(--info)" />
+          <Stat label="Users on server" value={users.length} />
         </Stats>
       }
       legend={
         <Legend
           items={[
-            { color: 'var(--violet)', label: 'request' },
+            { color: REQUEST_COLOR, label: 'request' },
             ...FAMILIES.map((x) => ({ color: FAMILY_COLOR[x.f], label: `${x.f} ${x.label}` })),
           ]}
         />
@@ -204,12 +135,15 @@ export function Stage() {
               { value: 'admin', label: 'admin token' },
             ]}
           />
-          <Toggle
-            label="If-None-Match"
-            value={draft.etag}
-            onChange={(etag) => setDraft({ ...draft, etag })}
-            off="off"
-            on={`${currentEtag(server, 1)} (user 1)`}
+          <Segmented
+            label="If-None-Match (user 1)"
+            value={draft.cache}
+            onChange={(cache) => setDraft({ ...draft, cache })}
+            options={[
+              { value: 'none', label: 'off' },
+              { value: 'current', label: `current ${currentEtag(server, 1)}` },
+              { value: 'stale', label: `stale ${STALE_ETAG}` },
+            ]}
           />
           <Button variant="primary" onClick={() => send(draft)} className="hb-send">
             Send
@@ -221,7 +155,7 @@ export function Stage() {
             <Button onClick={() => preset({ method: 'GET', path: '/users/1' })}>Read a user</Button>
             <Button onClick={() => preset({ method: 'POST', path: '/users', body: '{"name":"Grace"}' })}>Create a user</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/users/99' })}>Missing user</Button>
-            <Button onClick={() => preset({ method: 'GET', path: '/users/1', etag: true })}>Cached copy</Button>
+            <Button onClick={() => preset({ method: 'GET', path: '/users/1', cache: 'current' })}>Cached copy</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/admin' })}>Not logged in</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/admin', auth: 'user' })}>Wrong role</Button>
             <Button onClick={() => preset({ method: 'GET', path: '/crash' })}>Server bug</Button>
@@ -267,14 +201,14 @@ export function Stage() {
             <AnimatePresence>
               {ex && ex.phase === 'out' && (
                 <Flyer key={`q${ex.id}`} axis="x" from={CLIENT_END} to={SERVER_END} className="hb-env hb-env-req"
-                  fade="in" startScale={0.7} duration={DURATION.out / 1000}>
+                  fade="in" startScale={0.7} duration={PHASE_MS.out / 1000}>
                   {ex.req.method} {ex.req.path}
                 </Flyer>
               )}
               {ex && ex.phase === 'back' && (
                 <Flyer key={`s${ex.id}`} axis="x" from={SERVER_END} to={CLIENT_END} className="hb-env"
                   style={{ background: FAMILY_COLOR[family(ex.res.status)] }}
-                  fade="in" startScale={0.7} duration={DURATION.back / 1000}>
+                  fade="in" startScale={0.7} duration={PHASE_MS.back / 1000}>
                   {ex.res.status} {REASON[ex.res.status]}
                 </Flyer>
               )}
@@ -332,14 +266,14 @@ export function Stage() {
             </thead>
             <tbody>
               {METHODS.map((m) => {
-                const row = MATRIX[m];
+                const row = METHOD_PROPERTIES[m];
                 const on = (ex ? ex.req.method : draft.method) === m;
                 return (
                   <tr key={m} className={on ? 'on' : ''}>
                     <td>{m}</td>
                     <td className={row.safe ? 'yes' : 'no'}>{row.safe ? '✓' : '✗'}</td>
-                    <td className={row.idem === true ? 'yes' : row.idem === 'maybe' ? 'maybe' : 'no'}>
-                      {row.idem === true ? '✓' : row.idem === 'maybe' ? 'not guaranteed' : '✗'}
+                    <td className={row.idempotent === true ? 'yes' : row.idempotent === 'maybe' ? 'maybe' : 'no'}>
+                      {row.idempotent === true ? '✓' : row.idempotent === 'maybe' ? 'not guaranteed' : '✗'}
                     </td>
                   </tr>
                 );
@@ -364,6 +298,10 @@ export function Stage() {
             </AnimatePresence>
           </div>
         </div>
+        <Hint block>
+          Simulated API running in your browser; nothing is sent over the network. To keep the demo short it lets anyone
+          PUT, PATCH or DELETE users. A real API would check the token on every write, not just on /admin.
+        </Hint>
       </div>
     </StageFrame>
   );
