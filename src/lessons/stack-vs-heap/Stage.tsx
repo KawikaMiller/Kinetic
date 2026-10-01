@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { HeapObject, RefArrow, VarSlot, heapRect, slotPort, slotValueRect } from '../../components/memory';
@@ -97,6 +97,8 @@ function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
   const { world } = frame;
   const ghosts = ghostFrames(world);
   const boxes = layoutStack(world.stack.filter((s) => !s.popped || ghosts.has(s.id)));
+  // The crash shake is error feedback, not teaching motion: hold still under reduced motion.
+  const reduceMotion = useReducedMotion();
   const top = topFrame(world);
   const gc = collectable(world);
   const lost = leaked(world);
@@ -114,7 +116,7 @@ function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
         </g>
       )}
 
-      <motion.g animate={world.crashed ? SHAKE : { x: 0 }}>
+      <motion.g animate={world.crashed && !reduceMotion ? SHAKE : { x: 0 }}>
         {boxes.map((box) => (
           <FrameView key={box.frame.id} box={box} running={box.frame.id === top?.id && !world.crashed} crashed={world.crashed} world={world} />
         ))}
