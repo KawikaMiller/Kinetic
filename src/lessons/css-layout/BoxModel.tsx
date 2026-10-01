@@ -2,7 +2,7 @@ import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { ControlGroup, Legend, Segmented, Slider, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { boxCss, collapseCss, collapsedMargin, lineFor, type BoxSettings } from './model';
+import { borderBoxWidth, boxCss, collapseCss, collapsedMargin, lineFor, type BoxSettings } from './model';
 import { px, rectIn, useMeasure, type Rect } from '../../core/useMeasure';
 import { Workbench } from './Workbench';
 
@@ -82,7 +82,12 @@ export function BoxModel({ picker }: { picker: ReactNode }) {
     set('boxSizing', 'box-sizing')(on ? 'border-box' : 'content-box');
     setCaption(
       on ? (
-        <><code>border-box</code>: <code>width</code> now includes padding and border, so the content shrinks to fit and the total stays {s.width}px.</>
+        borderBoxWidth(s) > s.width ? (
+          <><code>border-box</code>: <code>width</code> includes padding and border, but those alone are {borderBoxWidth(s)}px, more than the{' '}
+            {s.width}px width. The content can&apos;t shrink below 0, so the box is {borderBoxWidth(s)}px wide.</>
+        ) : (
+          <><code>border-box</code>: <code>width</code> now includes padding and border, so the content shrinks to fit and the total stays {s.width}px.</>
+        )
       ) : (
         <><code>content-box</code> (the default): <code>width</code> is the content only. Padding and border are added on top.</>
       ),

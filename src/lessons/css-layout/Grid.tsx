@@ -8,9 +8,10 @@ import { Workbench } from './Workbench';
 
 const ITEM_COUNT = 6;
 const TEMPLATES = [
-  { id: 'thirds', css: 'repeat(3, 1fr)', note: 'three equal columns: 1fr is "one share of the leftover space"' },
-  { id: 'sidebar', css: '200px 1fr', note: 'a fixed 200px sidebar, and the rest for the main column' },
-  { id: 'auto', css: 'repeat(auto-fill, minmax(120px, 1fr))', note: 'as many 120px+ columns as fit: drag the width and watch columns appear' },
+  { id: 'thirds', css: 'repeat(3, 1fr)', explicit: 3, note: 'three equal columns: 1fr is "one share of the leftover space"' },
+  { id: 'sidebar', css: '200px 1fr', explicit: 2, note: 'a fixed 200px sidebar, and the rest for the main column' },
+  /** explicit: null, because auto-fill's count depends on the width. */
+  { id: 'auto', css: 'repeat(auto-fill, minmax(120px, 1fr))', explicit: null, note: 'as many 120px+ columns as fit: drag the width and watch columns appear' },
 ] as const;
 type TemplateId = (typeof TEMPLATES)[number]['id'];
 
@@ -90,6 +91,14 @@ export function Grid({ picker }: { picker: ReactNode }) {
             onChange={(n) => {
               setSpans((prev) => prev.map((x, i) => (i === picked ? n : x)));
               setChanged(`.item-${picked + 1}`);
+              setCaption(
+                t.explicit !== null && n > t.explicit ? (
+                  <>Item {picked + 1} spans {n} columns, but <code>{t.css}</code> only defines {t.explicit}. The browser adds an{' '}
+                    <b>implicit</b> column to make room, sized by <code>grid-auto-columns</code> (auto, so only as wide as it needs).</>
+                ) : (
+                  <>Item {picked + 1} spans {n === 1 ? '1 column' : `${n} columns`}: the items after it flow into the next free cells.</>
+                ),
+              );
             }}
             options={[1, 2, 3].map((n) => ({ value: n, label: `${n} col${n > 1 ? 's' : ''}` }))}
           />

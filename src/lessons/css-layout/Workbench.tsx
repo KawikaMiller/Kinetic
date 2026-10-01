@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { Box, SectionTitle } from '../../components/Panel';
 import { ResizablePane } from '../../components/ResizablePane';
+import { WideRegion } from '../../components/WideRegion';
+
+/** The resize handle hangs 9px past the pane's right edge; keep room for it. */
+const HANDLE_ROOM = 12;
 
 export interface Fact {
   label: string;
@@ -25,9 +29,13 @@ export function Workbench({
 }) {
   return (
     <div className="stage-pad cl">
-      <ResizablePane min={min} max={max} value={width} onChange={onWidth} label="Container width" height={height} className="cl-pane">
-        {children}
-      </ResizablePane>
+      {/* The container keeps its real width on a phone and scrolls sideways, so the measured
+          numbers (free space, track sizes, labels) are the ones for the width the controls show. */}
+      <WideRegion minWidth={width + HANDLE_ROOM} label="Layout sandbox: scroll sideways to see all of it">
+        <ResizablePane min={min} max={max} value={width} onChange={onWidth} label="Container width" height={height} className="cl-pane">
+          {children}
+        </ResizablePane>
+      </WideRegion>
       <div className="cl-below">
         <CodePanel title="Generated CSS" lines={css} active={activeLine} gutter="none" className="cl-code" />
         <Box className="cl-facts">
