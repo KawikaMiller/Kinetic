@@ -126,8 +126,23 @@ export function exactDecimal(x: number): string {
   return negative ? `-${digits}` : digits;
 }
 
-/** The stored value to 20 significant digits (toPrecision rounds the exact value correctly, but drops the sign of −0). */
-export const storedDigits = (x: number) => (Object.is(x, -0) ? '-0' : Number.isFinite(x) ? x.toPrecision(20) : String(x));
+/**
+ * The stored value to 20 significant digits (toPrecision rounds the exact value correctly).
+ * Zero is shown as "0" or "-0": toPrecision drops the sign of −0 and pads +0 with 19 zeros.
+ */
+export const storedDigits = (x: number) => {
+  if (x === 0) return Object.is(x, -0) ? '-0' : '0';
+  return Number.isFinite(x) ? x.toPrecision(20) : String(x);
+};
+
+/** What storing x as float32 did to it: kept exactly, rounded, or ran out of range. */
+export function storeOutcome(x: number): 'exact' | 'rounded' | 'overflow' | 'underflow' {
+  const stored = f32FromBits(f32Bits(x));
+  if (Object.is(stored, x) || (Number.isNaN(x) && Number.isNaN(stored))) return 'exact';
+  if (Number.isFinite(x) && !Number.isFinite(stored)) return 'overflow';
+  if (x !== 0 && stored === 0) return 'underflow';
+  return 'rounded';
+}
 
 export interface Special {
   id: string;
@@ -154,10 +169,13 @@ export function float64Facts() {
   const b = 0.2;
   const sum = a + b;
   const cents = 10 + 20;
+  const big = 1000.1 + 1000.2;
   return [
     { code: '0.1 + 0.2', result: String(sum) },
     { code: '0.1 + 0.2 === 0.3', result: String(sum === 0.3) },
     { code: 'Math.abs((0.1 + 0.2) - 0.3) < Number.EPSILON', result: String(Math.abs(sum - 0.3) < Number.EPSILON) },
+    // EPSILON is the gap at 1.0; bigger numbers have bigger gaps, so a fixed EPSILON check fails there.
+    { code: 'Math.abs((1000.1 + 1000.2) - 2000.3) < Number.EPSILON   // EPSILON only fits numbers near 1', result: String(Math.abs(big - 2000.3) < Number.EPSILON) },
     { code: '(10 + 20) / 100 === 0.3   // work in whole cents', result: String(cents / 100 === 0.3) },
     // eslint-disable-next-line use-isnan -- this comparison is the lesson: it's always false
     { code: 'NaN === NaN', result: String(Number.NaN === Number.NaN) },
