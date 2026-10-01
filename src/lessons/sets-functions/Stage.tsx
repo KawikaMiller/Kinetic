@@ -9,8 +9,8 @@ import type { Pt } from '../../core/geometry';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { MAP, VENN, chipWidth, columnY, membershipAt, placeElements, vennCircles, type Circle } from './layout';
 import {
-  MAPPINGS, OP_INFO, SET_PRESETS, applyOp, cardinalityLimits, classify, inResult, moveElement, parseMembers, toggleArrow, universe,
-  type Arrow, type Classification, type MappingPreset, type Op, type SetName,
+  MAPPINGS, OP_INFO, SET_PRESETS, applyOp, cardinalityLimits, classify, inResult, mappingChecks, moveElement, parseMembers, toggleArrow, universe,
+  type Arrow, type CheckState, type Classification, type MappingPreset, type Op, type SetName,
 } from './model';
 import './styles.css';
 
@@ -63,7 +63,16 @@ function SetsScene({ picker }: { picker: ReactNode }) {
 
   const toggleThree = (on: boolean) => {
     setThree(on);
-    if (!on && OP_INFO[op].needsC) setOp('union');
+    const dropsOp = !on && OP_INFO[op].needsC;
+    if (dropsOp) setOp('union');
+    setCaption(
+      on ? (
+        <>A third set, C, joins as an orange circle. Three circles cut the box into 8 regions: every mix of in or out of
+          A, B and C.</>
+      ) : (
+        <>Back to two sets, A and B: 4 regions.{dropsOp && <> That operation needs C, so the shading switched to A ∪ B.</>}</>
+      ),
+    );
   };
 
   const toSvg = (e: PointerEvent): Pt => {
@@ -246,6 +255,7 @@ function FunctionsScene({ picker }: { picker: ReactNode }) {
 
   const { domain, codomain } = preset;
   const cls = classify(domain.length, codomain.length, arrows);
+  const checks = mappingChecks(cls);
   const limits = cardinalityLimits(domain.length, codomain.length);
   const multi = new Set(cls.multi);
   const collide = new Set(cls.collisions);
@@ -379,11 +389,12 @@ function FunctionsScene({ picker }: { picker: ReactNode }) {
           <SectionTitle>Classification</SectionTitle>
           <p className={`sf-kind is-${cls.kind}`}>{KIND_LABEL[cls.kind]}</p>
           <ul className="sf-checks">
-            <Check ok={cls.missing.length === 0} label="every input has an output (total)" />
-            <Check ok={cls.multi.length === 0} label="no input has two outputs" />
-            <Check ok={cls.injective} label="no two inputs share an output (injective)" />
-            <Check ok={cls.surjective} label="every output is used (surjective)" />
+            <Check state={checks.total} label="every input has an output (total)" />
+            <Check state={checks.single} label="no input has two outputs" />
+            <Check state={checks.injective} label="no two inputs share an output (injective)" />
+            <Check state={checks.surjective} label="every output is used (surjective)" />
           </ul>
+          {!cls.isFunction && <p className="sf-card">– : needs a function first.</p>}
           <p className="sf-card">
             |{preset.domainLabel}| = {domain.length}, |{preset.codomainLabel}| = {codomain.length}.{' '}
             {!limits.injectionPossible
@@ -398,10 +409,14 @@ function FunctionsScene({ picker }: { picker: ReactNode }) {
   );
 }
 
-function Check({ ok, label }: { ok: boolean; label: string }) {
+const CHECK_MARK = { ok: '✓', no: '✗', na: '–' } as const;
+const CHECK_SR = { ok: 'yes', no: 'no', na: 'not applicable' } as const;
+
+function Check({ state, label }: { state: CheckState; label: string }) {
   return (
-    <li className={ok ? 'is-ok' : 'is-no'}>
-      <span aria-hidden="true">{ok ? '✓' : '✗'}</span> {label}
+    <li className={`is-${state}`}>
+      <span aria-hidden="true">{CHECK_MARK[state]}</span> {label}
+      <span className="sf-sr">: {CHECK_SR[state]}</span>
     </li>
   );
 }

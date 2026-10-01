@@ -114,6 +114,20 @@ export function classify(domainSize: number, codomainSize: number, arrows: reado
   return { kind, isFunction, missing, multi, collisions, unused, injective, surjective };
 }
 
+export type CheckState = 'ok' | 'no' | 'na';
+
+/** The four rule checks shown beside a mapping. Injective and surjective are properties of a function, so
+ *  they are not applicable ('na') until the mapping is one, rather than failed. */
+export function mappingChecks(c: Classification): Record<'total' | 'single' | 'injective' | 'surjective', CheckState> {
+  const mark = (ok: boolean): CheckState => (ok ? 'ok' : 'no');
+  return {
+    total: mark(c.missing.length === 0),
+    single: mark(c.multi.length === 0),
+    injective: c.isFunction ? mark(c.injective) : 'na',
+    surjective: c.isFunction ? mark(c.surjective) : 'na',
+  };
+}
+
 /** Toggle one arrow on or off. */
 export function toggleArrow(arrows: readonly Arrow[], a: Arrow): Arrow[] {
   const has = arrows.some((x) => x.from === a.from && x.to === a.to);
