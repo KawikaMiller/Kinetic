@@ -38,7 +38,7 @@ const lesson: LessonModule = {
         'A full compressed copy of the repository',
       ],
       answer: 0,
-      why: 'Unchanged files keep their hashes and are reused. Only the changed blob, its parent trees and the commit are new; git stores snapshots, not diffs.',
+      why: 'Unchanged files keep their hashes and are reused. Only the changed blob, its parent trees and the commit are new; git stores snapshots, not diffs. (Later, git gc may delta-compress similar objects inside a packfile, but that is storage compression: each commit still names a full snapshot.)',
     },
     {
       q: 'What is a git branch, physically?',

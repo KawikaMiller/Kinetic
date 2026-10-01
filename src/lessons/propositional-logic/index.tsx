@@ -45,7 +45,7 @@ const lesson: LessonModule = {
       q: 'Which formula always means the same as p → q?',
       options: ['q → p', '¬p → ¬q', '¬q → ¬p', 'p ∧ q'],
       answer: 2,
-      why: "The contrapositive ¬q → ¬p agrees with p → q on every row. The other two options are the converse and the inverse, which don't.",
+      why: "The contrapositive ¬q → ¬p agrees with p → q on every row. q → p is the converse and ¬p → ¬q the inverse, and neither does; p ∧ q is false whenever p is, where p → q is true.",
     },
     {
       q: 'When p is false, what is p → q?',
