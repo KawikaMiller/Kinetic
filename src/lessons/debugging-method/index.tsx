@@ -45,7 +45,7 @@ const lesson: LessonModule = {
       q: 'git bisect over 16 commits (first good, last bad). At most how many commits do you test?',
       options: ['16', '8', '4', '1'],
       answer: 2,
-      why: 'Each test halves the candidates: 15 → 7 → 3 → 1. That is ceil(log₂ 15) = 4.',
+      why: 'Each test halves the candidates, and in the worst case you keep the bigger half: 15 → 8 → 4 → 2 → 1. That is ceil(log₂ 15) = 4 tests.',
     },
     {
       q: 'You change two things, and the bug is gone. What is the problem?',
