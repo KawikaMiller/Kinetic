@@ -42,6 +42,12 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
   const reduceMotion = useReducedMotion();
   useIntroCaption(<>The balance is a <b>private field</b> (<code>#balance</code>). The only way in is through the public methods. Try each button.</>);
 
+  const reset = () => {
+    setState({ balance: 0, error: null });
+    setLast(null);
+    setCaption(<>A fresh account: <code>#balance</code> is back to 0, and the only way in is still through the public methods.</>);
+  };
+
   const run = (def: ActionDef) => {
     const next = applyAccount(state, def.action);
     setState(next);
@@ -84,7 +90,7 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
               {def.label}
             </Button>
           ))}
-          <Button onClick={() => { setState({ balance: 0, error: null }); setLast(null); }}>Reset</Button>
+          <Button onClick={reset}>Reset</Button>
         </>,
       ]}
     >

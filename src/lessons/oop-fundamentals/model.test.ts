@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACCOUNT_CODE, CLASS_CODE, CLASSES, INSTANCES, PRIVATE_ACCESS_ERROR, affectedByBaseChange, applyAccount, areaOf, describeOf,
-  lineOf, resolve, squareAfterSetWidth, type AccountAction, type ClassName, type Method,
+  lineOf, ownProperties, resolve, squareAfterSetWidth, type AccountAction, type ClassName, type Method,
 } from './model';
 
 type Ctor = new (...args: number[]) => Record<string, unknown>;
@@ -35,6 +35,10 @@ describe('method dispatch matches the real prototype chain', () => {
     it(`${inst.create}.area() and describe() give the real results`, () => {
       expect(areaOf(inst.id)).toBeCloseTo(obj.area() as number, 12);
       expect(describeOf(inst.id)).toBe(obj.describe());
+    });
+    it(`${inst.create} shows every own property the constructor really sets`, () => {
+      const real = Object.entries(obj).map(([k, v]): [string, string] => [k, typeof v === 'string' ? `'${v}'` : String(v)]);
+      expect(Object.fromEntries(ownProperties(inst.id))).toEqual(Object.fromEntries(real));
     });
   }
 

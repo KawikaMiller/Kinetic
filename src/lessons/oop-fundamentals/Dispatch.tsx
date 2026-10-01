@@ -1,18 +1,21 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
-import { HeapObject, RefArrow, heapFieldPort } from '../../components/memory';
+import { HeapObject, RefArrow, heapFieldPort, heapHeight } from '../../components/memory';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { ClassTree } from './ClassTree';
 import { TREE_W, classRect } from './treeLayout';
 import { dispatchFrames } from './frames';
-import { CLASS_CODE, INSTANCES, instance, type ClassName, type InstanceId, type Method } from './model';
+import { CLASS_CODE, INSTANCES, instance, ownProperties, type ClassName, type InstanceId, type Method } from './model';
 import { OOP_MIN_WIDTH } from './shared';
 
-const INSTANCE_AT = { x: 16, y: 300 };
 const INSTANCE_W = 170;
 const SCENE_H = 400;
+const SCENE_BOTTOM_PAD = 8;
+/** Tallest object box: its title, every own property and the [[Prototype]] row. */
+const MAX_INSTANCE_H = heapHeight(Math.max(...INSTANCES.map((i) => ownProperties(i.id).length)) + 1);
+const INSTANCE_AT = { x: 16, y: SCENE_H - SCENE_BOTTOM_PAD - MAX_INSTANCE_H };
 
 const METHODS: { value: Method; label: string }[] = [
   { value: 'area', label: 'area()' },
@@ -30,7 +33,7 @@ export function Dispatch({ picker }: { picker: ReactNode }) {
   const inst = instance(id);
 
   const mark = (c: ClassName) => (c === f.found ? { tone: 'ok' as const } : c === f.searching ? { tone: 'hi' as const } : null);
-  const fields = [...inst.fields.map(([name, v]) => ({ name, value: String(v) })), { name: '[[Prototype]]', isRef: true }];
+  const fields = [...ownProperties(id).map(([name, value]) => ({ name, value })), { name: '[[Prototype]]', isRef: true }];
 
   return (
     <StageFrame
