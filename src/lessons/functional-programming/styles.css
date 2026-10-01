@@ -1,0 +1,106 @@
+/* ── Pipeline belt ─────────────────────────────────────────────── */
+.fp-belt { position: relative; }
+.fp-col-head {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--faint);
+}
+.fp-col-head code { font: 600 12.5px var(--mono); color: var(--muted); }
+.fp-col-head.is-on code { color: var(--hi); }
+.fp-gate {
+  position: absolute;
+  top: 40px;
+  bottom: 0;
+  width: 2px;
+  background: repeating-linear-gradient(var(--line-2) 0 6px, transparent 6px 11px);
+  transition: background 0.2s;
+}
+.fp-gate.is-on { background: repeating-linear-gradient(var(--hi) 0 6px, transparent 6px 11px); }
+.fp-gate-count {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  translate: -50% 0;
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  text-align: center;
+  font: 700 11px var(--mono);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  color: var(--muted);
+}
+.fp-gate.is-on .fp-gate-count { border-color: var(--hi); color: var(--hi); }
+.fp-bin {
+  position: absolute;
+  border: 1px dashed color-mix(in srgb, var(--violet) 40%, transparent);
+  border-radius: 12px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, border-color 0.3s;
+}
+.fp-bin.is-on { background: color-mix(in srgb, var(--violet) 8%, transparent); border-color: var(--violet); }
+.fp-bin-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.fp-bin-value { font: 700 20px var(--mono); color: var(--violet); }
+
+.fp-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--cell);
+  border: 1px solid var(--cell-line);
+  font: 500 12px var(--mono);
+  transition: background 0.25s, border-color 0.25s, opacity 0.25s, color 0.25s;
+}
+.fp-card-label { flex: 1; white-space: nowrap; }
+.fp-card.is-current { background: var(--hi); border-color: var(--hi); color: var(--on-hi); z-index: 1; }
+.fp-card.is-current .chip { color: var(--on-hi); border-color: color-mix(in srgb, var(--on-hi) 40%, transparent); background: none; }
+.fp-card.is-kept { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.fp-card.is-dropped { opacity: 0.35; text-decoration: line-through; }
+.fp-card.is-reduced { border-color: var(--violet); background: color-mix(in srgb, var(--violet) 12%, transparent); }
+
+.fp-code { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.fp-note { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* ── Purity ────────────────────────────────────────────────────── */
+.fp-purity { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.fp-machines { display: flex; flex-direction: column; gap: 12px; }
+.fp-machine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fp-machine-in { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.fp-hidden {
+  font: 600 11px var(--mono);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--violet);
+  color: var(--violet);
+}
+.fp-arrow { color: var(--faint); }
+.fp-machine-name { font: 600 13px var(--mono); padding: 6px 10px; border-radius: 8px; background: var(--cell); border: 1px solid var(--cell-line); }
+.fp-machine-out { font: 700 18px var(--mono); }
+.fp-machine-out.is-ok { color: var(--ok); }
+.fp-machine-out.is-bad { color: var(--bad); }
+.fp-log { display: flex; flex-direction: column; gap: 4px; min-height: 60px; }
+.fp-log-note { color: var(--bad); font-weight: 700; }
+
+/* ── Mutation ──────────────────────────────────────────────────── */
+.fp-mutation { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.fp-consumers { display: flex; flex-direction: column; gap: 12px; }
+.fp-consumer { display: flex; flex-direction: column; gap: 10px; transition: border-color 0.3s; }
+.fp-consumer.is-bad { border-color: var(--bad); }
+.fp-consumer.is-ok { border-color: var(--ok); }
+.fp-verdict { font-size: 13px; font-weight: 600; }
+.fp-verdict.is-bad { color: var(--bad); }
+.fp-verdict.is-ok { color: var(--ok); }
+.fp-same { align-self: flex-start; white-space: normal; }
