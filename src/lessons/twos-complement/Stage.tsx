@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -25,6 +25,24 @@ const hex32 = (v: number) => `0x${unsigned32(v).toString(16).toUpperCase().padSt
 
 /** Shortest turn from byte `from` to byte `to` on the 256-step wheel. */
 const shortestDelta = (from: number, to: number) => ((((to - from) % BYTE) + BYTE + BYTE / 2) % BYTE) - BYTE / 2;
+
+/** What adding x + y in 8 bits means for each reading. */
+function pairCaption(x: number, y: number): ReactNode {
+  const s = addBytes(x, y);
+  if (s.signedOverflow) {
+    return (
+      <>{x} + {y} = {s.trueSigned}, but 8 signed bits say <span className="hl bad">{s.resultSigned}</span>: both inputs have the same
+        sign and the result's sign flipped. That's the overflow flag.</>
+    );
+  }
+  if (s.unsignedWraps) {
+    return (
+      <>A carry fell off the top, so unsigned is wrong ({s.resultUnsigned}), but signed {x} + {y} ={' '}
+        <span className="hl ok">{s.resultSigned}</span> is right. Same bits, different verdicts.</>
+    );
+  }
+  return <>{x} + {y} = <span className="hl ok">{s.resultSigned}</span>: no carry out and no sign flip, so both readings are right.</>;
+}
 
 export function Stage() {
   const [mode, setMode] = useState<Mode>('wheel');
@@ -136,23 +154,24 @@ export function Stage() {
   const setPair = (x: number, y: number) => {
     setA(x);
     setB(y);
-    const s = addBytes(x, y);
+    setCaption(pairCaption(x, y), { quiet: true });
+  };
+
+  // Each mode gets its own caption, so the wheel's "press +1" never lingers over the adder.
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setNegate(null);
     setCaption(
-      s.signedOverflow ? (
-        <>{x} + {y} = {s.trueSigned}, but 8 signed bits say <span className="hl bad">{s.resultSigned}</span>: both inputs have the same
-          sign and the result's sign flipped. That's the overflow flag.</>
-      ) : s.unsignedWraps ? (
-        <>A carry fell off the top, so unsigned is wrong ({s.resultUnsigned}), but signed {x} + {y} ={' '}
-          <span className="hl ok">{s.resultSigned}</span> is right. Same bits, different verdicts.</>
+      m === 'add' ? (
+        <>Two bytes added column by column, carries in blue. {pairCaption(a, b)}</>
       ) : (
-        <>{x} + {y} = <span className="hl ok">{s.resultSigned}</span>: no carry out and no sign flip, so both readings are right.</>
+        <>Back to the wheel: {byte} unsigned, {wrap8(byte)} signed. Press +1 to turn it past 127.</>
       ),
-      { quiet: true },
     );
   };
 
   const modeSwitch = (
-    <Segmented label="Mode" value={mode} onChange={setMode} options={[{ value: 'wheel', label: 'Turn the wheel' }, { value: 'add', label: 'Add two numbers' }]} />
+    <Segmented label="Mode" value={mode} onChange={switchMode} options={[{ value: 'wheel', label: 'Turn the wheel' }, { value: 'add', label: 'Add two numbers' }]} />
   );
 
   if (mode === 'add') {
