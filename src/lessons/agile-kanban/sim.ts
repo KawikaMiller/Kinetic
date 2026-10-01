@@ -301,7 +301,8 @@ export interface Stats {
 
 /**
  * Start the trailing stats over from now (the board itself carries on). Used when the WIP limit
- * changes, so cycle time and Little's law describe the new limit, not a blend with the old one.
+ * changes, so the window stops mixing in days run under the old limit. Cards already in flight
+ * still finish inside the new window, so the stats settle over a few days rather than at once.
  */
 export function restartStats(w: World): void {
   w.flightSamples = [{ t: w.t, integral: w.flightIntegral }];

@@ -141,7 +141,7 @@ describe('blocked cards', () => {
 });
 
 describe('changing the WIP limit mid-run', () => {
-  it('restarts the trailing stats, so they only cover the new limit', () => {
+  it('restarts the trailing window from the moment the limit changes', () => {
     const w = createWorld({ seed: 7, wipLimit: 99 });
     for (let d = 0; d < 60; d += 0.05) advance(w, 0.05);
     expect(stats(w).span).toBeGreaterThan(30);

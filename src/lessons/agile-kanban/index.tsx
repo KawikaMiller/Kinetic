@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Deciding whether to start a new ticket or help finish one that\'s stuck',
     ],
     why: 'From your first week you\'ll work on a board, estimate tickets and get asked "when will it be done?". Knowing why teams limit WIP, and that juggling five tickets makes each one slower, helps you stop starting and start finishing, and gives you a real answer instead of a guess.',
-    watch: 'The top half is the board. Cards being worked on are yellow (with a progress line), blocked cards are red and say "wait", finished cards are green, and waiting cards are plain. In Kanban, violet dashed outlines in the In progress column are the empty WIP-limit slots, and the violet count shows cards / limit. The bottom half is the cumulative flow diagram: stacked bands for Done (green), Review (pink), In progress (violet) and Backlog (blue). The white vertical bar at the right edge is the current WIP (band thickness) and the white horizontal line is the approximate cycle time (the gap between starting and finishing). In Scrum, violet-outlined backlog cards are committed to the current sprint, and dashed vertical lines mark each sprint review with how many cards it demoed. The stats compare average WIP ÷ throughput with the measured cycle time (Little\'s law), and show lead time: from request to done.',
+    watch: 'The top half is the board. Cards being worked on are yellow (with a progress line), blocked cards are red and say "wait", finished cards are green, and waiting cards are plain. In Kanban, violet dashed outlines in the In progress column are the empty WIP-limit slots, and the violet count shows cards / limit. The bottom half is the cumulative flow diagram: stacked bands for Done (green), Review (orange), In progress (violet) and Backlog (blue). The white vertical bar at the right edge is the current WIP (band thickness) and the white horizontal line is the approximate cycle time (the gap between starting and finishing). In Scrum, violet-outlined backlog cards are committed to the current sprint, and dashed vertical lines mark each sprint review with how many cards it demoed. The stats compare average WIP ÷ throughput with the measured cycle time (Little\'s law), and show lead time: from request to done.',
   },
   tryThis: [
     'Drag the WIP limit to "no limit" and watch cycle time and the In progress band balloon while throughput falls.',
@@ -33,13 +33,13 @@ const lesson: LessonModule = {
     {
       q: 'Your team finishes about 2 cards a day. You start twice as many cards at once. What happens, in the long run?',
       options: [
-        'Same throughput, but each card takes about 2× longer',
+        'No more finished per day, and every card takes longer',
         'Twice as many cards get finished every day',
         'Each card gets finished faster than before',
-        'Nothing changes in throughput or speed',
+        'Nothing changes in throughput or in speed',
       ],
       answer: 0,
-      why: "Capacity limits throughput, so starting more doesn't finish more; more WIP just means more cards waiting (Little's law), and context switching often lowers throughput too.",
+      why: "Capacity limits throughput, so starting more doesn't finish more: it stays the same or drops (context switching), as the sim shows. With twice the WIP and no more output, Little's law says each card takes at least twice as long.",
     },
     {
       q: "A board averages 6 cards in progress and finishes 2 cards per day. By Little's law, the average cycle time is about…",

@@ -78,13 +78,18 @@ export function Stage() {
   const { wrapRef, canvasRef, redraw } = useCanvas((ctx, w, h) => drawScene(ctx, w, h, world()));
   useLoop(redraw, !paused);
 
-  // The slider changes the limit live; the trailing stats restart so they only cover the new limit.
+  // The slider changes the limit live; the trailing stats restart from today (cards already in
+  // flight still finish under them, so they take a few days to settle).
   const changeLimit = (v: number) => {
     setLimit(v);
     const w = world();
     w.wipLimit = toLimit(v);
     restartStats(w);
-    setCaption(<>WIP limit now {v >= NO_LIMIT ? 'off' : v}. The stats start over from today, so they only measure the new limit.</>, { quiet: true });
+    setCaption(
+      <>WIP limit now {v >= NO_LIMIT ? 'off' : v}. The stats start over from today, but cards already on the board still have to
+        finish, so give them a few days to settle on the new limit.</>,
+      { quiet: true },
+    );
   };
   useEffect(() => {
     world().arrivalRate = rate;

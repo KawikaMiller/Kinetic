@@ -22,8 +22,8 @@ const CFD_LABEL_W = 92;
 const DONE_SHOWN = 12;
 
 /** One hue per column, shared by the board headers and the CFD bands (categorical). */
-// Review is pink, not amber: amber read as the yellow of a card being worked on.
-export const COLUMN_COLOR: Record<Stage, string> = { backlog: C.info, dev: C.violet, review: C.pink, done: C.ok };
+// Review is orange: amber read as the yellow of a card being worked on, and pink as the red of "blocked".
+export const COLUMN_COLOR: Record<Stage, string> = { backlog: C.info, dev: C.violet, review: C.orange, done: C.ok };
 /** Room kept clear at the right of the axis for the "sprints: 10 days" label. */
 const SPRINT_LABEL_ROOM = 120;
 const COLUMNS: { stage: Stage; label: string }[] = [
@@ -155,8 +155,9 @@ function drawCfd(ctx: Ctx, x: number, y: number, fullW: number, h: number, world
     ctx.setLineDash([]);
   }
 
-  // Now: WIP is the vertical thickness of the started-but-not-done bands...
-  const now = samples[samples.length - 1];
+  // Now: WIP is the vertical thickness of the started-but-not-done bands. Read the live counts,
+  // not the last half-day sample, so the label never lags the board above it.
+  const now = { t: world.t, ...world.counts };
   const nx = px(now.t);
   const yDone = py(now.done);
   const yStarted = py(now.started);
