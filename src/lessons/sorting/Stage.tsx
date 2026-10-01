@@ -1,13 +1,13 @@
 import { motion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { ALGOS, buildFrames, buildRaceFrames, makeBars, type AlgoId, type Bar, type Preset, type SortFrame } from './algorithms';
+import { buildFrames, buildRaceFrames } from './algorithms';
+import { ALGO_IDS, ALGOS, makeBars, racePlaces, raceSteps, type AlgoId, type Bar, type Preset, type SortFrame } from './model';
 import './styles.css';
 
-const ALGO_IDS = Object.keys(ALGOS) as AlgoId[];
 type Mode = 'single' | 'race';
 
 const INITIAL_BARS = 20;
@@ -26,7 +26,7 @@ export function Stage() {
 
   const frames = useMemo(() => buildFrames(items, algo), [items, algo]);
   const race = useMemo(
-    () => (mode === 'race' ? ALGO_IDS.map((id) => ({ id, frames: buildFrames(items, id) })) : null),
+    () => (mode === 'race' ? ALGO_IDS.map((id) => ({ id, frames: raceSteps(buildFrames(items, id)) })) : null),
     [items, mode],
   );
   const raceFrames = useMemo(() => (race ? buildRaceFrames(race) : null), [race]);
@@ -113,6 +113,15 @@ export function Stage() {
             }}
           />
           <Button onClick={() => regen()}>Shuffle</Button>
+          {mode === 'race' && (
+            <Hint block>One tick is one comparison or one write for every algorithm; the narration doesn't cost ticks.</Hint>
+          )}
+          {mode === 'single' && algo === 'merge' && (
+            <Hint block>
+              Drawn as an in-place merge so every bar stays visible. A real merge copies into an O(n) buffer; Writes counts
+              those copies.
+            </Hint>
+          )}
         </Controls>
       }
     >
@@ -172,13 +181,13 @@ function Bars({ frame, n, max, stepMs, compact = false }: { frame: SortFrame; n:
 }
 
 function Race({ race, t, n, max, stepMs }: { race: { id: AlgoId; frames: SortFrame[] }[]; t: number; n: number; max: number; stepMs: number }) {
-  const ranked = [...race].sort((a, b) => a.frames.length - b.frames.length);
+  const places = racePlaces(race.map((r) => r.frames.length));
   return (
     <div className="so-race">
-      {race.map((r) => {
+      {race.map((r, k) => {
         const f = r.frames[Math.min(t, r.frames.length - 1)];
         const finished = t >= r.frames.length - 1;
-        const rank = ranked.findIndex((x) => x.frames.length === r.frames.length) + 1;
+        const rank = places[k];
         const info = ALGOS[r.id];
         return (
           <div key={r.id} className={`so-mini ${finished ? 'finished' : ''}`} style={{ '--c': info.big === 'O(n²)' ? 'var(--bad)' : 'var(--ok)' } as CSSProperties}>

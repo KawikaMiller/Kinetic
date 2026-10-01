@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Knowing what your language's sort() does, and whether it's stable",
     ],
     why: "You'll rarely write a sort in production, but sorting is where divide-and-conquer, best vs. worst case, stability, and in-place vs. extra memory all become visible. Those ideas come back everywhere, and sorting is an interview staple.",
-    watch: "Each bar is a value; its height is its size. Yellow bars are being compared, violet ones are moving, blue is the pivot or current minimum, and green is locked in its final place. Watch the counters, then try Race all 5 with the Nearly sorted input.",
+    watch: "Each bar is a value; its height is its size. Yellow bars are being compared, violet ones are moving, blue is the pivot or current minimum, and green is locked in its final place. A dashed blue box marks the part being worked on (insertion's sorted hand, merge's halves, quick's partition) and bars outside it are dimmed. Watch the counters, then try Race all 5 with the Nearly sorted input.",
   },
   tryThis: [
     'Watch bubble sort push the biggest bar to the right on every pass.',
