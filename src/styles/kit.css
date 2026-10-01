@@ -479,6 +479,9 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 :where(.tree-node) circle { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
 :where(.tree-node) text { font: 700 13px var(--mono); fill: var(--text); pointer-events: none; transition: fill 0.25s; }
 .tree-node.is-clickable { cursor: pointer; }
+/* Keyboard focus on a node button: an accent ring on its shape instead of a box outline. */
+.tree-node.is-clickable:focus-visible { outline: none; }
+.tree-node.is-clickable:focus-visible > :first-child { stroke: var(--accent); stroke-width: 3.5; }
 /* :where() keeps hover weaker than the marks below, so a marked node keeps its colour */
 .tree-node.is-clickable:where(:hover) circle { stroke: var(--faint); }
 .tree-node.is-tint circle { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }

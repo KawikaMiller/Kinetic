@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, type Transition } from 'motion/react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { SPRING } from '../core/motion';
 import type { Tone } from '../core/tone';
 import { layoutTree, treeX, type TreeKey, type TreeLayoutMode, type TreeShape } from '../core/treeLayout';
@@ -43,7 +43,7 @@ export interface TreeGeometry<K extends TreeKey> {
 export function TreeSvg<K extends TreeKey>({
   shape, layout = 'tidy', width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
   radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, nodeOpacity, edgeMark, markedEdgeWidth, hidden,
-  enterScale = 0.2, transition = SPRING.soft, onNodeClick, overlay, className = '', ariaLabel,
+  enterScale = 0.2, transition = SPRING.soft, onNodeClick, nodeAriaLabel, overlay, className = '', ariaLabel,
 }: {
   shape: TreeShape<K>;
   layout?: TreeLayoutMode;
@@ -69,7 +69,10 @@ export function TreeSvg<K extends TreeKey>({
   hidden?: (id: K) => boolean;
   enterScale?: number;
   transition?: Transition;
+  /** Makes nodes buttons: clickable, and focusable with Tab and pressable with Enter/Space. */
   onNodeClick?: (id: K) => void;
+  /** Screen-reader name of a clickable node (default: its label, or its id). */
+  nodeAriaLabel?: (id: K) => string;
   overlay?: (geometry: TreeGeometry<K>) => ReactNode;
   className?: string;
   ariaLabel?: string;
@@ -89,7 +92,8 @@ export function TreeSvg<K extends TreeKey>({
       className={`tree-svg ${className}`}
       preserveAspectRatio="xMidYMid meet"
       style={style}
-      role={ariaLabel ? 'img' : undefined}
+      // A drawing of buttons is a group (an img would hide them from assistive tech).
+      role={onNodeClick ? 'group' : ariaLabel ? 'img' : undefined}
       aria-label={ariaLabel}
     >
       <AnimatePresence>
@@ -129,7 +133,7 @@ export function TreeSvg<K extends TreeKey>({
               animate={{ opacity: nodeOpacity?.(id) ?? 1, scale: nodeScale?.(id) ?? 1, x, y }}
               exit={{ opacity: 0, scale: enterScale }}
               transition={transition}
-              onClick={onNodeClick && (() => onNodeClick(id))}
+              {...(onNodeClick && nodeButtonProps(id, () => onNodeClick(id), nodeAriaLabel?.(id) ?? textLabel(label?.(id), id)))}
             >
               {renderNode ? (
                 renderNode(id)
@@ -147,4 +151,25 @@ export function TreeSvg<K extends TreeKey>({
       </AnimatePresence>
     </svg>
   );
+}
+
+/** A node's accessible name when the lesson didn't give one: its text label, else its id. */
+function textLabel(label: ReactNode, id: TreeKey): string {
+  return typeof label === 'string' || typeof label === 'number' ? String(label) : String(id);
+}
+
+/** Button semantics for a clickable SVG node: in the tab order, Enter and Space press it. */
+function nodeButtonProps(id: TreeKey, press: () => void, name: string) {
+  return {
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': name,
+    'data-node': String(id),
+    onClick: press,
+    onKeyDown: (e: KeyboardEvent<SVGGElement>) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      press();
+    },
+  };
 }
