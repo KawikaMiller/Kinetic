@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, MotionConfig } from 'motion/react';
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ErrorBoundary, StageCrashed } from '../components/ErrorBoundary';
@@ -90,7 +90,10 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
             <main className="lesson-main">
               <PlayerRegistryContext.Provider value={registerPlayer}>
                 <ErrorBoundary fallback={(error, retry) => <StageCrashed error={error} onRetry={retry} />}>
-                  <Stage />
+                  {/* The stage's motion is the lesson itself, so it keeps playing under reduced motion. */}
+                  <MotionConfig reducedMotion="never">
+                    <Stage />
+                  </MotionConfig>
                 </ErrorBoundary>
               </PlayerRegistryContext.Provider>
             </main>

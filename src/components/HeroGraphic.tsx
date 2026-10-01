@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 
 // A little living system diagram: requests flow client → LB → servers → DB.
 const NODES = [
@@ -27,6 +27,8 @@ const ROUTES = [
 const pos = (id: string) => NODES.find((n) => n.id === id)!;
 
 export function HeroGraphic() {
+  // Decorative loops: under reduced motion the packets rest at their start and the rings don't pulse.
+  const still = useReducedMotion();
   return (
     <motion.svg
       className="hero-graphic"
@@ -54,7 +56,7 @@ export function HeroGraphic() {
             className="hero-packet"
             fill={r % 2 ? '#4cc9f0' : '#ffd166'}
             initial={{ cx: xs[0], cy: ys[0] }}
-            animate={{ cx: xs, cy: ys }}
+            animate={still ? undefined : { cx: xs, cy: ys }}
             transition={{ duration: 4.2, repeat: Infinity, delay: r * 1.05, ease: 'linear' }}
           />
         );
@@ -62,15 +64,17 @@ export function HeroGraphic() {
 
       {NODES.map((n, i) => (
         <g key={n.id}>
-          <motion.circle
-            cx={n.x}
-            cy={n.y}
-            fill="none"
-            stroke={n.color}
-            initial={{ r: 24, strokeOpacity: 0.35 }}
-            animate={{ r: [24, 34], strokeOpacity: [0.35, 0] }}
-            transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.3 }}
-          />
+          {!still && (
+            <motion.circle
+              cx={n.x}
+              cy={n.y}
+              fill="none"
+              stroke={n.color}
+              initial={{ r: 24, strokeOpacity: 0.35 }}
+              animate={{ r: [24, 34], strokeOpacity: [0.35, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.3 }}
+            />
+          )}
           <circle cx={n.x} cy={n.y} r={24} className="hero-node" stroke={n.color} />
           <text x={n.x} y={n.y + 4} textAnchor="middle" className="hero-label">
             {n.label}
