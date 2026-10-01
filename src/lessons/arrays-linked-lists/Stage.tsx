@@ -7,10 +7,8 @@ import { useElementSize } from '../../core/hooks';
 import { SPRING } from '../../core/motion';
 import { freshInt, randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
-import {
-  CAP, COST, SLOTS, arrAddr, buildRun, intro, listAddr,
-  type AlFrame, type ArrView, type ListView, type Model, type Op, type Where,
-} from './model';
+import { buildRun, intro, type AlFrame, type ArrView, type ListView } from './frames';
+import { CAP, COST, SLOTS, arrAddr, listAddr, orderOf, type Model, type Op, type Where } from './model';
 import './styles.css';
 
 const START_VALUES = [12, 7, 33, 5, 21];
@@ -33,13 +31,15 @@ interface Run {
   after: Model;
   nextId: number;
   op: Op | null;
+  /** Where the last operation really happened (with 1-2 items "end" can be the front). */
+  where: Where;
 }
 
 export function Stage() {
   const [where, setWhere] = useState<Where>('front');
   const [run, setRun] = useState<Run>(() => {
     const m = initialModel();
-    return { frames: intro(m), after: m, nextId: FIRST_NEW_ID, op: null };
+    return { frames: intro(m), after: m, nextId: FIRST_NEW_ID, op: null, where: 'front' };
   });
   const player = usePlayer(run.frames, { interval: 950 });
   const { arr, list } = player.frame;
@@ -49,15 +49,15 @@ export function Stage() {
     const m = run.after;
     const taken = new Set(m.nodes.map((n) => n.slot));
     const res = buildRun(op, where, m, randInt(1, MAX_VALUE), run.nextId, freshInt(0, SLOTS - 1, taken) ?? 0);
-    setRun({ frames: res.frames, after: res.after, nextId: run.nextId + 1, op });
+    setRun({ frames: res.frames, after: res.after, nextId: run.nextId + 1, op, where: res.where });
   };
 
   const reset = () => {
     const m = initialModel();
-    setRun({ frames: intro(m), after: m, nextId: FIRST_NEW_ID, op: null });
+    setRun({ frames: intro(m), after: m, nextId: FIRST_NEW_ID, op: null, where: 'front' });
   };
 
-  const cost = run.op ? COST[run.op][where] : null;
+  const cost = run.op ? COST[run.op][run.where] : null;
   const full = len >= CAP;
 
   return (
@@ -164,6 +164,12 @@ function ArrayStrip({ view }: { view: ArrView }) {
 }
 
 const ARC_H = 104;
+/** Room above the tallest arc for the "head" label. */
+const ARC_HEADROOM = 22;
+/** Lowest an arc may be; longer jumps rise higher than this. */
+const ARC_MIN_LIFT = 16;
+/** Extra height per hop (cycling through 3), so arcs of similar length don't sit on top of each other. */
+const ARC_STAGGER = 9;
 
 function ListStrip({ view }: { view: ListView }) {
   const [ref, size] = useElementSize<HTMLDivElement>();
@@ -172,12 +178,15 @@ function ListStrip({ view }: { view: ListView }) {
   const cw = size.width / SLOTS;
   const bySlot = new Map(view.nodes.map((n) => [n.slot, n]));
   const edges = view.nodes.filter((n) => n.next != null && bySlot.has(n.next)).map((n) => [n.slot, n.next!] as [number, number]);
+  const hop = new Map(orderOf(view.nodes, view.head).map((n, i) => [n.slot, i]));
 
   const arc = (a: number, b: number) => {
     const x1 = (a + 0.5) * cw;
     const x2 = (b + 0.5) * cw;
-    // taller arcs for longer jumps, so overlapping pointers fan out instead of stacking
-    const lift = Math.min(ARC_H - 22, 16 + (Math.abs(b - a) / SLOTS) * (ARC_H - 22) * 1.3);
+    // taller arcs for longer jumps, and staggered by hop, so overlapping pointers fan out instead of stacking
+    const span = ARC_H - ARC_HEADROOM;
+    const byLength = Math.min(span - 2 * ARC_STAGGER, ARC_MIN_LIFT + (Math.abs(b - a) / SLOTS) * span * 1.3);
+    const lift = byLength + ((hop.get(a) ?? 0) % 3) * ARC_STAGGER;
     return `M ${x1} ${ARC_H} C ${x1} ${ARC_H - lift}, ${x2} ${ARC_H - lift}, ${x2} ${ARC_H - 2}`;
   };
 
