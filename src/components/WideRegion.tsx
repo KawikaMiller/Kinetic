@@ -22,6 +22,7 @@ export interface Gutter {
  */
 export function WideRegion({
   children, minWidth, gutter, className = '', style, label = 'Diagram: scroll sideways to see all of it',
+  hint = 'swipe to see the whole diagram',
 }: {
   children: ReactNode;
   minWidth: number;
@@ -31,6 +32,8 @@ export function WideRegion({
   style?: CSSProperties;
   /** Accessible name while it overflows. */
   label?: string;
+  /** The one-time hint's wording, for content that isn't a diagram (a table, a code listing). */
+  hint?: string;
 }) {
   const padding = gutter
     ? { paddingTop: gutter.top, paddingBottom: gutter.bottom, paddingLeft: gutter.x, paddingRight: gutter.x }
@@ -60,7 +63,7 @@ export function WideRegion({
       </div>
       {overflows && !hintDismissed && (
         <span className="stage-swipe-hint" aria-hidden="true">
-          ⇠ swipe to see the whole diagram ⇢
+          ⇠ {hint} ⇢
         </span>
       )}
     </div>

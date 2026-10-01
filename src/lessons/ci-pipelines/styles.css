@@ -34,9 +34,9 @@
 /* ── YAML, artifacts, log ──────────────────────────────────────── */
 .ci-bottom { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ci-yaml code { font-size: 11.5px; }
-/* On a phone, wrapping YAML loses its indentation (the meaning): keep lines whole, scroll sideways. */
+/* On a phone, wrapping YAML loses its indentation (the meaning): keep lines whole; the
+   WideRegion around the panel scrolls sideways, with fades and a hint. */
 @media (max-width: 600px) {
-  .ci-yaml ol { overflow-x: auto; }
   .ci-yaml li { width: max-content; min-width: 100%; }
   .ci-yaml code { white-space: pre; }
 }

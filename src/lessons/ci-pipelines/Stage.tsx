@@ -15,6 +15,8 @@ import { pipelineYaml } from './yaml';
 import './styles.css';
 
 const STEP_MS = 650;
+/** Widest pipeline.yml line at 11.5px mono, plus the panel's padding: below this the listing scrolls instead of wrapping. */
+const YAML_MIN_WIDTH = 540;
 const NODE_W = 112;
 const NODE_H = 46;
 const COL_GAP = 150;
@@ -101,7 +103,9 @@ export function Stage() {
         </WideRegion>
         <Gantt run={run} frame={f} />
         <div className="ci-bottom">
-          <CodePanel title="pipeline.yml (condensed)" lines={yaml.lines} active={running} gutter="none" className="ci-yaml" />
+          <WideRegion minWidth={YAML_MIN_WIDTH} label="pipeline.yml: scroll sideways to read whole lines" hint="swipe to read whole lines">
+            <CodePanel title="pipeline.yml (condensed)" lines={yaml.lines} active={running} gutter="none" className="ci-yaml" />
+          </WideRegion>
           <div className="ci-side">
             <Artifacts frame={f} run={run} />
             {showLog && (
