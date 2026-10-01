@@ -1,0 +1,243 @@
+// The watch / console / condition evaluator. No eval: a tiny parser for a documented subset of
+// JavaScript expressions, evaluated with JavaScript's own operators so the answers are real.
+//
+// Supported: numbers, 'strings' and "strings", true false null undefined, variable names,
+// a.b and a[expr] (including .length), unary ! and -, * / % + -, < <= > >=, === !== == !=,
+// && || ??, and parentheses. Anything else (calls, assignment, ++, =>, `templates`, new...)
+// is reported as "not supported here" and never runs.
+import type { Value, Vars } from './program';
+
+export const SUPPORTED = 'names, numbers, strings, a.b, a[i], .length, + - * / %, comparisons, && || ?? !, ( )';
+
+export class Unsupported extends Error {}
+/** A real JavaScript error the expression would throw (ReferenceError, TypeError). */
+export class EvalError extends Error {}
+
+type Tok =
+  | { t: 'num'; v: number }
+  | { t: 'str'; v: string }
+  | { t: 'name'; v: string }
+  | { t: 'op'; v: string };
+
+const OPS = ['===', '!==', '??', '&&', '||', '==', '!=', '<=', '>=', '<', '>', '+', '-', '*', '/', '%', '!', '.', '[', ']', '(', ')'];
+const LITERALS: Record<string, Value> = { true: true, false: false, null: null, undefined: undefined };
+const RESERVED = new Set(['new', 'typeof', 'delete', 'void', 'function', 'class', 'this', 'await', 'yield', 'import', 'in', 'instanceof']);
+
+function lex(src: string): Tok[] {
+  const toks: Tok[] = [];
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (/\s/.test(c)) {
+      i++;
+      continue;
+    }
+    const num = /^(\d+\.?\d*|\.\d+)(e[+-]?\d+)?/i.exec(src.slice(i));
+    if (num) {
+      toks.push({ t: 'num', v: Number(num[0]) });
+      i += num[0].length;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      const end = src.indexOf(c, i + 1);
+      if (end < 0) throw new Unsupported('unterminated string');
+      const body = src.slice(i + 1, end);
+      if (body.includes('\\')) throw new Unsupported('escapes in strings');
+      toks.push({ t: 'str', v: body });
+      i = end + 1;
+      continue;
+    }
+    const name = /^[A-Za-z_$][\w$]*/.exec(src.slice(i));
+    if (name) {
+      if (RESERVED.has(name[0])) throw new Unsupported(`"${name[0]}"`);
+      toks.push({ t: 'name', v: name[0] });
+      i += name[0].length;
+      continue;
+    }
+    // Reject the operators we don't run before the shorter ones they start with match.
+    const bad = ['=>', '++', '--', '**', '+=', '-=', '*=', '/=', '?.', '`', '=', '?', ',', '{', '}', ';', '&', '|', '^', '~', '<<', '>>'].find(
+      (o) => src.startsWith(o, i) && !OPS.some((ok) => ok.length >= o.length && src.startsWith(ok, i)),
+    );
+    if (bad) throw new Unsupported(`"${bad}"`);
+    const op = OPS.find((o) => src.startsWith(o, i));
+    if (!op) throw new Unsupported(`"${c}"`);
+    toks.push({ t: 'op', v: op });
+    i += op.length;
+  }
+  return toks;
+}
+
+type Node =
+  | { k: 'lit'; v: Value }
+  | { k: 'name'; v: string }
+  | { k: 'member'; obj: Node; prop: Node | string }
+  | { k: 'unary'; op: string; arg: Node }
+  | { k: 'binary'; op: string; l: Node; r: Node };
+
+/** Binding power of each binary operator, as in JavaScript's precedence table. */
+const BP: Record<string, number> = {
+  '??': 1, '||': 2, '&&': 3,
+  '===': 6, '!==': 6, '==': 6, '!=': 6,
+  '<': 7, '<=': 7, '>': 7, '>=': 7,
+  '+': 9, '-': 9, '*': 10, '/': 10, '%': 10,
+};
+
+export function parseExpr(src: string): Node {
+  const toks = lex(src);
+  if (toks.length === 0) throw new Unsupported('an empty expression');
+  let p = 0;
+  const peek = () => toks[p];
+  const isOp = (v: string) => peek()?.t === 'op' && peek().v === v;
+  const expect = (v: string) => {
+    if (!isOp(v)) throw new Unsupported(`expected "${v}"`);
+    p++;
+  };
+
+  const primary = (): Node => {
+    const tok = toks[p++];
+    if (!tok) throw new Unsupported('an unfinished expression');
+    let node: Node;
+    if (tok.t === 'num' || tok.t === 'str') node = { k: 'lit', v: tok.v };
+    else if (tok.t === 'name') node = tok.v in LITERALS ? { k: 'lit', v: LITERALS[tok.v] } : { k: 'name', v: tok.v };
+    else if (tok.v === '(') {
+      node = expr(0);
+      expect(')');
+    } else if (tok.v === '!' || tok.v === '-' || tok.v === '+') return { k: 'unary', op: tok.v, arg: unaryOperand() };
+    else throw new Unsupported(`"${tok.v}" here`);
+    for (;;) {
+      if (isOp('.')) {
+        p++;
+        const prop = toks[p++];
+        if (prop?.t !== 'name') throw new Unsupported('a property name after "."');
+        node = { k: 'member', obj: node, prop: prop.v };
+      } else if (isOp('[')) {
+        p++;
+        node = { k: 'member', obj: node, prop: expr(0) };
+        expect(']');
+      } else if (isOp('(')) throw new Unsupported('function calls');
+      else return node;
+    }
+  };
+  const unaryOperand = (): Node => primary();
+
+  const expr = (minBp: number): Node => {
+    let left = primary();
+    for (;;) {
+      const tok = peek();
+      if (!tok || tok.t !== 'op' || !(tok.v in BP) || BP[tok.v] <= minBp) return left;
+      p++;
+      left = { k: 'binary', op: tok.v, l: left, r: expr(BP[tok.v]) };
+    }
+  };
+
+  const tree = expr(0);
+  if (p < toks.length) throw new Unsupported(`"${toks[p].t === 'op' || toks[p].t === 'name' ? toks[p].v : 'more'}" after the expression`);
+  return tree;
+}
+
+/** Name lookup, innermost scope first (block, then local, then script). */
+export type Scope = readonly Vars[];
+
+function lookup(name: string, scope: Scope): Value {
+  for (const vars of scope) if (Object.prototype.hasOwnProperty.call(vars, name)) return vars[name];
+  if (name === 'Math' || name === 'console' || name === 'window' || name === 'globalThis') throw new Unsupported(`"${name}"`);
+  throw new EvalError(`ReferenceError: ${name} is not defined`);
+}
+
+function run(n: Node, scope: Scope): Value {
+  switch (n.k) {
+    case 'lit':
+      return n.v;
+    case 'name':
+      return lookup(n.v, scope);
+    case 'member': {
+      const obj = run(n.obj, scope);
+      const key = typeof n.prop === 'string' ? n.prop : run(n.prop, scope);
+      if (obj === null || obj === undefined) throw new EvalError(`TypeError: Cannot read properties of ${obj} (reading '${String(key)}')`);
+      if (typeof key !== 'string' && typeof key !== 'number') throw new Unsupported('that kind of property key');
+      if (typeof obj === 'string') return key === 'length' ? obj.length : typeof key === 'number' ? obj[key] : undefined;
+      if (typeof obj !== 'object') return undefined;
+      if (Array.isArray(obj) && key === 'length') return obj.length;
+      // Own data only: no prototype methods, so nothing callable ever comes back.
+      return Object.prototype.hasOwnProperty.call(obj, key) ? (obj as Record<string, Value>)[key] : undefined;
+    }
+    case 'unary': {
+      const v = run(n.arg, scope);
+      if (n.op === '!') return !v;
+      if (typeof v === 'object' && v !== null) throw new Unsupported('arithmetic on objects');
+      return n.op === '-' ? -(v as number) : +(v as number);
+    }
+    case 'binary': {
+      if (n.op === '&&') return run(n.l, scope) && run(n.r, scope);
+      if (n.op === '||') return run(n.l, scope) || run(n.r, scope);
+      if (n.op === '??') return run(n.l, scope) ?? run(n.r, scope);
+      const l = run(n.l, scope);
+      const r = run(n.r, scope);
+      if (n.op === '===') return l === r;
+      if (n.op === '!==') return l !== r;
+      if ((typeof l === 'object' && l !== null) || (typeof r === 'object' && r !== null)) throw new Unsupported('operators on objects');
+      const a = l as number;
+      const b = r as number;
+      switch (n.op) {
+        case '==': return a == b; // eslint-disable-line eqeqeq
+        case '!=': return a != b; // eslint-disable-line eqeqeq
+        case '<': return a < b;
+        case '<=': return a <= b;
+        case '>': return a > b;
+        case '>=': return a >= b;
+        case '+': return (a as unknown as string) + (b as unknown as string);
+        case '-': return a - b;
+        case '*': return a * b;
+        case '/': return a / b;
+        default: return a % b;
+      }
+    }
+  }
+}
+
+export type EvalResult = { ok: true; value: Value } | { ok: false; error: string; unsupported: boolean };
+
+export function evaluate(src: string, scope: Scope): EvalResult {
+  try {
+    return { ok: true, value: run(parseExpr(src), scope) };
+  } catch (e) {
+    if (e instanceof Unsupported) return { ok: false, error: `not supported here: ${e.message}`, unsupported: true };
+    if (e instanceof EvalError) return { ok: false, error: e.message, unsupported: false };
+    throw e;
+  }
+}
+
+/** A value as the DevTools console previews it. Strings are quoted unless `bare`. */
+export function preview(v: Value, bare = false, depth = 0): string {
+  if (typeof v === 'string') return bare ? v : `'${v}'`;
+  if (v === undefined) return 'undefined';
+  if (v === null || typeof v !== 'object') return String(v);
+  if (depth > 0) return Array.isArray(v) ? `Array(${v.length})` : '{…}';
+  if (Array.isArray(v)) return `(${v.length}) [${v.map((x) => preview(x, false, depth + 1)).join(', ')}]`;
+  return `{${Object.entries(v).map(([k, x]) => `${k}: ${preview(x, false, depth + 1)}`).join(', ')}}`;
+}
+
+/** What console.log / a logpoint prints for a list of values: strings bare, the rest previewed. */
+export const logLine = (values: readonly Value[]) => values.map((v) => preview(v, true)).join(' ');
+
+/** Split a logpoint message on top-level commas: `'total', total` logs two values. */
+export function splitArgs(src: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let start = 0;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (quote) {
+      if (c === quote) quote = null;
+    } else if (c === "'" || c === '"') quote = c;
+    else if (c === '(' || c === '[') depth++;
+    else if (c === ')' || c === ']') depth--;
+    else if (c === ',' && depth === 0) {
+      parts.push(src.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(src.slice(start));
+  return parts.map((s) => s.trim());
+}
