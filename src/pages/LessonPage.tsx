@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ErrorBoundary, StageCrashed } from '../components/ErrorBoundary';
 import { Overview } from '../components/Overview';
 import { Quiz } from '../components/Quiz';
+import { usePageHeading } from '../components/usePageHeading';
 import { CaptionContext, SetCaptionContext, type CaptionState, type SetCaption } from '../core/caption';
 import { findTopic, tierOf, trackOf } from '../core/curriculum';
 import { BUILT_TOPICS, loadLesson } from '../core/lessons';
@@ -59,6 +60,7 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
   const prev = BUILT_TOPICS[pos - 1];
   const next = BUILT_TOPICS[pos + 1];
   const { Stage } = mod;
+  const heading = usePageHeading(topic.title);
 
   return (
     <SetCaptionContext.Provider value={setCaption}>
@@ -75,7 +77,9 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
           </nav>
 
           <motion.header className="lesson-head" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <h1>{topic.title}</h1>
+            <h1 ref={heading} tabIndex={-1}>
+              {topic.title}
+            </h1>
             <p>{topic.tagline}</p>
             {done && <span className="done-badge">✓ Learned</span>}
           </motion.header>
@@ -157,12 +161,15 @@ function Panel({ title, icon, children }: { title: string; icon: string; childre
 
 function Planned({ topic }: { topic: Topic }) {
   const tier = tierOf(topic);
+  const heading = usePageHeading(topic.title);
   return (
     <div className="lesson-empty">
       <p className="eyebrow">
         Tier {tier.n} · {tier.name}
       </p>
-      <h1>{topic.title}</h1>
+      <h1 ref={heading} tabIndex={-1}>
+        {topic.title}
+      </h1>
       <p>This one's on the roadmap but not built yet.</p>
       <Link className="btn btn-primary" to="/">
         Back to all tiers
@@ -172,9 +179,12 @@ function Planned({ topic }: { topic: Topic }) {
 }
 
 function NotFound() {
+  const heading = usePageHeading('No such lesson');
   return (
     <div className="lesson-empty">
-      <h1>No such lesson</h1>
+      <h1 ref={heading} tabIndex={-1}>
+        No such lesson
+      </h1>
       <Link className="btn btn-primary" to="/">
         Back to all tiers
       </Link>

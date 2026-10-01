@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { HeroGraphic } from '../components/HeroGraphic';
+import { usePageHeading } from '../components/usePageHeading';
 import { TIERS, TOPICS } from '../core/curriculum';
 import { BUILT_TOPICS, isBuilt } from '../core/lessons';
 import { useProgress } from '../core/progress';
@@ -17,6 +18,7 @@ export function Home() {
   const { isDone } = useProgress();
   const next = BUILT_TOPICS.find((t) => !isDone(t.id));
   const doneCount = BUILT_TOPICS.filter((t) => isDone(t.id)).length;
+  const heading = usePageHeading(null);
 
   return (
     <div className="home">
@@ -25,7 +27,7 @@ export function Home() {
           <motion.p className="eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             Software engineering, animated
           </motion.p>
-          <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <motion.h1 ref={heading} tabIndex={-1} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
             Stop reading walls of text.
             <br />
             <span className="grad">Watch it move.</span>

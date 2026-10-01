@@ -7,6 +7,7 @@ import { Box, SectionTitle } from '../components/Panel';
 import { ResizablePane } from '../components/ResizablePane';
 import { TruthTable } from '../components/TruthTable';
 import { Button, TextArea } from '../components/ui';
+import { usePageHeading } from '../components/usePageHeading';
 import { chunkGroups, flipBit, fromBits, toBits, type Bit } from '../core/bits';
 import { linearScale, logScale } from '../core/scale';
 import { truthRowIndex } from '../core/truth';
@@ -17,9 +18,12 @@ import './DevKit.css';
  * the app and not included in production builds (see App.tsx).
  */
 export function DevKit() {
+  const heading = usePageHeading('Shared kit showcase');
   return (
     <div className="lesson devkit">
-      <h1>Shared kit showcase</h1>
+      <h1 ref={heading} tabIndex={-1}>
+        Shared kit showcase
+      </h1>
       <p className="muted">Dev only. Each block drives one shared component with realistic lesson data.</p>
       <Section title="BitStrip · 16-bit register with nibble brackets">
         <RegisterDemo />
