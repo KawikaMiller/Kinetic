@@ -15,7 +15,8 @@ const BAR_H = 5;
 /** Room for a lane's two label lines, even when its squares fit on one row. */
 const MIN_LANE_H = 32;
 
-export const LAYER_COLOR: Record<Layer, string> = { unit: C.ok, integration: C.info, e2e: C.violet };
+/** Categorical, matching Stage's LAYER_VAR. */
+export const LAYER_COLOR: Record<Layer, string> = { unit: C.sky, integration: C.info, e2e: C.violet };
 
 function columns(w: number) {
   return Math.max(10, Math.floor((w - LABEL_W - PAD * 2) / (CELL + GAP)));

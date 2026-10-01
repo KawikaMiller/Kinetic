@@ -1,6 +1,6 @@
 import { captionText as text } from '../../core/testing/captions';
 import { describe, expect, it } from 'vitest';
-import { finishedCaption, resultColor, resultLabel } from './captions';
+import { emptySuiteCaption, finishedCaption, resultColor, resultLabel } from './captions';
 import { PRESETS, type Bug, type Counts } from './model';
 import { advance, createWorld, snapshot, startRun } from './sim';
 
@@ -48,6 +48,20 @@ describe('finished caption', () => {
       expect(s.escaped).toBe(false);
       const caption = text(finishedCaption(s));
       expect(s.flaky ? caption.includes('nothing is broken') : caption.startsWith('All green')).toBe(true);
+    }
+  });
+
+  it('an empty suite with a planted bug says the bug shipped', () => {
+    for (const bug of ['logic', 'wiring', 'browser'] as const) expect(text(emptySuiteCaption(bug))).toMatch(/bug shipped/);
+    expect(text(emptySuiteCaption(null))).toContain('no tests to run');
+    expect(text(emptySuiteCaption(null))).not.toContain('shipped');
+  });
+
+  it('names where flaky failures came from without "1 of them"', () => {
+    for (const s of finishedRuns(PRESETS.find((p) => p.id === 'cone')!.counts, null, 40).filter((r) => r.flaky)) {
+      const caption = text(finishedCaption(s));
+      expect(caption).not.toMatch(/1 of them/);
+      if (s.flakyByLayer.e2e === s.flaky) expect(caption).toMatch(s.flaky === 1 ? /from an E2E test/ : /all from E2E tests/);
     }
   });
 });

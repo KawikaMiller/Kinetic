@@ -10,7 +10,7 @@ import { SPRING } from '../../core/motion';
 import { useSimulation } from '../../core/useSimulation';
 import { drawRun, laneHeight } from './draw';
 import { BUGS, catches, LAYERS, pGreen, PRESETS, shapeOf, SPEC, suiteSeconds, type Bug, type Counts, type Layer } from './model';
-import { finishedCaption, resultColor, resultLabel } from './captions';
+import { emptySuiteCaption, finishedCaption, layerName, resultColor, resultLabel } from './captions';
 import { Scenarios } from './Scenarios';
 import { advance, createWorld, snapshot, startRun, type RunStats, type World } from './sim';
 import './styles.css';
@@ -20,7 +20,8 @@ const SHAPE_BAR_H = 26;
 const SHAPE_LABEL_W = 140;
 const CANVAS_REF_W = 640;
 const BUG_OPTIONS: { value: Bug | 'none'; label: string }[] = [{ value: 'none', label: 'None' }, ...BUGS.map((b) => ({ value: b.id, label: b.label }))];
-const LAYER_VAR: Record<Layer, string> = { unit: 'var(--ok)', integration: 'var(--info)', e2e: 'var(--violet)' };
+/** Layers are plain categories, so they take categorical hues: green stays free to mean "caught" and "right". */
+const LAYER_VAR: Record<Layer, string> = { unit: 'var(--sky)', integration: 'var(--info)', e2e: 'var(--violet)' };
 
 export function Stage() {
   const [counts, setCounts] = useState<Counts>(PRESETS[0].counts);
@@ -64,8 +65,13 @@ export function Stage() {
 
   const setLayer = (l: Layer, v: number) => setCounts((c) => ({ ...c, [l]: v }));
   const run = () => {
-    startRun(world(), counts, bug === 'none' ? null : bug);
+    const planted = bug === 'none' ? null : bug;
+    startRun(world(), counts, planted);
     refresh();
+    if (!world().runs.length) {
+      setCaption(emptySuiteCaption(planted));
+      return;
+    }
     setCaption(
       <>
         Running {counts.unit + counts.integration + counts.e2e} tests: unit first, then integration, then E2E. The suite would
@@ -89,7 +95,7 @@ export function Stage() {
       legend={
         <Legend
           items={[
-            { color: 'var(--ok)', label: 'unit passed' },
+            { color: 'var(--sky)', label: 'unit passed' },
             { color: 'var(--info)', label: 'integration passed' },
             { color: 'var(--violet)', label: 'E2E passed' },
             { color: 'var(--hi)', label: 'flaky failure' },
@@ -176,7 +182,7 @@ function BugsPanel({ counts }: { counts: Counts }) {
           return (
             <li key={b.id} className={ok ? 'is-caught' : 'is-missed'}>
               <b>{b.label}</b> <span>({b.example})</span>
-              <em>{ok ? `caught by ${SPEC[b.layer].label.toLowerCase()} tests` : `slips through: no ${SPEC[b.layer].label.toLowerCase()} tests`}</em>
+              <em>{ok ? `caught by ${layerName(b.layer)} tests` : `slips through: no ${layerName(b.layer)} tests`}</em>
             </li>
           );
         })}

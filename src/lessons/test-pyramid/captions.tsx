@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { duration, humanDuration } from '../../core/format';
-import { BUGS, SPEC, type Layer } from './model';
+import { BUGS, SPEC, type Bug, type Layer } from './model';
 import type { RunStats } from './sim';
 
 const CAUGHT_BY: Record<Layer, string> = {
@@ -12,8 +12,26 @@ const CAUGHT_BY: Record<Layer, string> = {
 /** Suite time for captions: '10ms' early on, '17 min' later. */
 const elapsed = (seconds: number) => (seconds < 60 ? duration(seconds) : humanDuration(seconds));
 
-const layerName = (l: Layer) => (l === 'e2e' ? 'E2E' : SPEC[l].label.toLowerCase());
+export const layerName = (l: Layer) => (l === 'e2e' ? 'E2E' : SPEC[l].label.toLowerCase());
 const flakyNote = (n: number) => `${n} flaky failure${n > 1 ? 's' : ''}`;
+/** Where the flaky failures came from, when E2E tests account for any of them. */
+const flakyFrom = (flaky: number, e2e: number) => {
+  if (!e2e) return '';
+  if (e2e === flaky) return flaky === 1 ? ', from an E2E test' : ', all from E2E tests';
+  return `, ${e2e} of them from E2E tests`;
+};
+
+/** Caption for pressing Run with every layer at 0: nothing runs, so nothing can fail. */
+export function emptySuiteCaption(planted: Bug | null): ReactNode {
+  const bug = BUGS.find((b) => b.id === planted);
+  if (!bug) return <>There are no tests to run. An empty suite never goes red, and it proves nothing.</>;
+  return (
+    <>
+      There are no tests to run, so <span className="hl bad">the {bug.label.toLowerCase()} shipped</span> ({bug.example}). An empty
+      suite never goes red: green only means the tests you have passed.
+    </>
+  );
+}
 
 /** The "Last run" stat's text. */
 export function resultLabel(s: RunStats | null): string {
@@ -61,7 +79,7 @@ export function finishedCaption(s: RunStats): ReactNode {
     return (
       <>
         <span className="hl">Red, but nothing is broken</span>: {flakyNote(s.flaky)}
-        {e2e ? `, ${e2e} of them E2E` : ''}. Someone presses "re-run" and learns to ignore red builds. That's the real cost of flaky tests.
+        {flakyFrom(s.flaky, e2e)}. Someone presses "re-run" and learns to ignore red builds. That's the real cost of flaky tests.
       </>
     );
   }
