@@ -14,12 +14,12 @@ const lesson: LessonModule = {
       "Signing software releases, JWTs and API webhooks",
     ],
     why: "Mixing these up causes real breaches: passwords stored encrypted (so reversible) or hashed with a fast unsalted hash, card numbers \"hashed\" that then can't be charged. Every engineer touches this on day one of any login, API or storage feature.",
-    watch: "Five lanes along the bottom. In ① each 8×32 grid is a 256-bit digest: blue squares are 1-bits and red ones differ from input A. In ② the users table turns red when it's cracked; violet text is a salt and blue is a hash. In ③ and ④ yellow is the shared secret key, blue the public key, violet the private key, and the message card goes green when it's readable. ⑤ is a quiz of real scenarios.",
+    watch: "Five lanes along the bottom. In ① each 8×32 grid is a 256-bit digest: yellow squares are 1-bits and red ones differ from input A. In ② the users table turns red when it's cracked; violet text is a salt and blue is a hash. In ③ and ④ yellow is the shared secret key, blue the public key, violet the private key, and the message card goes green when it's readable. In ③ and ④ the ciphertexts and signature checks are computed for real in your browser. ⑤ is a quiz of real scenarios.",
   },
   tryThis: [
     "In ① Hashing, type in box B one letter at a time and watch about half the bits flip on every keystroke.",
     "Hit \"Hash a whole paragraph\": 170 characters in, still exactly 256 bits out.",
-    "Play ② Passwords and watch the rainbow table crack both users, until salts arrive.",
+    "Play ② Passwords and watch a precomputed lookup table crack both users, until salts arrive.",
     "In ⑤ Which one?, get all six right, then explain the credit card one out loud.",
   ],
   keyIdeas: [
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
       q: 'Why add a unique salt to each password before hashing?',
       options: ['It makes the hash reversible', 'Identical passwords get different hashes, so precomputed tables fail', 'It encrypts the password', 'It makes hashing faster'],
       answer: 1,
-      why: 'Salts defeat rainbow tables and stop one cracked hash revealing every user with the same password.',
+      why: 'Salts defeat precomputed tables (lookup and rainbow tables) and stop one cracked hash revealing every user with the same password.',
     },
     {
       q: 'You must charge a stored credit card again next month. You should…',
