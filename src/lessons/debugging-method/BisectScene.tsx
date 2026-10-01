@@ -12,6 +12,8 @@ import { bisectDone, COMMIT_COUNT, commitHash, markCommit, nextCommit, START_BIS
 const OPTIMAL_STEPS = Math.ceil(Math.log2(COMMIT_COUNT - 1));
 /** Below this the 16 hash cells overlap, so narrow screens swipe instead. */
 const MIN_STRIP_WIDTH = 720;
+/** Room for the range labels above the cells and the range outline at the ends. */
+const STRIP_GUTTER = { top: 30, bottom: 4, x: 8 };
 const HASHES = Array.from({ length: COMMIT_COUNT }, (_, i) => commitHash(i));
 const START_LOG = [
   '$ git bisect start',
@@ -139,7 +141,7 @@ export function BisectScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="dm stage-pad dm-bisect">
-        <WideRegion minWidth={MIN_STRIP_WIDTH} className="dm-strip" label="Commit history: scroll sideways to see every commit">
+        <WideRegion minWidth={MIN_STRIP_WIDTH} gutter={STRIP_GUTTER} label="Commit history: scroll sideways to see every commit">
           <ArrayStrip
             values={HASHES}
             fontSize={11}
