@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
-import { ALGOS, racePlaces, type AlgoId, type Bar, type Kind, type SortFrame } from './model';
+import { ALGOS, racePlaces, raceVerdict, type AlgoId, type Bar, type Kind, type RaceVerdict, type SortFrame } from './model';
 
 /** A tick of the race view: `t` indexes into every algorithm's own race timeline. */
 export interface RaceFrame extends Frame {
@@ -189,6 +189,31 @@ export function buildFrames(items: Bar[], algo: AlgoId): SortFrame[] {
   return r.frames;
 }
 
+const names = (ids: readonly AlgoId[]) => new Intl.ListFormat('en', { type: 'conjunction' }).format(ids.map((id) => ALGOS[id].name));
+
+/** The race's closing line, built from what the numbers show on this input. */
+function verdictSay(v: RaceVerdict): ReactNode {
+  const n = v.bestIds.length;
+  return (
+    <>
+      Selection compared every pair: <span className="hl bad">{v.everyPair}</span>, whatever the input.{' '}
+      {v.bestIsQuadratic ? (
+        <>
+          {names(v.bestIds)} did only <span className="hl ok">{v.best}</span>: O(n²) is {n > 1 ? 'their' : 'its'} worst case, and this
+          input is close to {n > 1 ? 'their' : 'its'} best.{' '}
+        </>
+      ) : (
+        <>
+          The best, {names(v.bestIds)}, did <span className="hl ok">{v.best}</span>. That gap explodes as n grows.{' '}
+        </>
+      )}
+      {v.alsoEveryPair.length > 0 && <>{names(v.alsoEveryPair)} also compared every pair: this input is the worst case for {v.alsoEveryPair.length > 1 ? 'them' : 'it'}. </>}
+      {v.quickNearWorst !== null && !v.alsoEveryPair.includes('quick') && <>Quick did {v.quickNearWorst}, close to that. </>}
+      {v.quickNearWorst !== null && <>Quick picks the last bar as its pivot, so input already in order, either way round, is its worst case.</>}
+    </>
+  );
+}
+
 /**
  * One tick per unit of work for all five at once (pass in each algorithm's raceSteps),
  * so they're ranked by comparisons + writes; captions announce each finisher.
@@ -196,39 +221,26 @@ export function buildFrames(items: Bar[], algo: AlgoId): SortFrame[] {
 export function buildRaceFrames(race: { id: AlgoId; frames: SortFrame[] }[]): RaceFrame[] {
   const len = Math.max(...race.map((r) => r.frames.length));
   const places = racePlaces(race.map((r) => r.frames.length));
+  const finishersAt = (t: number) => race.map((r, k) => ({ ...r, place: places[k] })).filter((r) => r.frames.length - 1 === t);
+  const announce = (t: number) =>
+    finishersAt(t).map((f) => {
+      const last = f.frames[f.frames.length - 1];
+      return (
+        <span key={f.id}>
+          <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{f.place}</span> with {last.comparisons}{' '}
+          comparisons and {last.writes} {ALGOS[f.id].writeLabel.toLowerCase()}.{' '}
+        </span>
+      );
+    });
   const out: RaceFrame[] = [];
-  for (let t = 0; t < len; t++) {
-    const finishing = race.map((r, k) => ({ ...r, place: places[k] })).filter((r) => r.frames.length - 1 === t);
+  for (let t = 0; t < len - 1; t++) {
     let say;
     if (t === 0) say = <>Same input, five algorithms, one comparison or write each per tick. Who finishes first?</>;
-    else if (finishing.length) {
-      say = (
-        <>
-          {finishing.map((f) => {
-            const last = f.frames[f.frames.length - 1];
-            return (
-              <span key={f.id}>
-                <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{f.place}</span> with {last.comparisons}{' '}
-                comparisons and {last.writes} {ALGOS[f.id].writeLabel.toLowerCase()}.{' '}
-              </span>
-            );
-          })}
-        </>
-      );
-    }
+    else if (finishersAt(t).length) say = <>{announce(t)}</>;
     out.push({ t, say });
   }
-  const worst = race.find((r) => r.id === 'selection')!.frames.at(-1)!.comparisons;
-  const best = Math.min(...race.map((r) => r.frames.at(-1)!.comparisons));
-  out[out.length - 1] = {
-    t: len - 1,
-    hold: 2,
-    say: (
-      <>
-        O(n²) sorts compare roughly every pair (<span className="hl bad">{worst}</span> for selection). The best did{' '}
-        <span className="hl ok">{best}</span>. That gap explodes as n grows.
-      </>
-    ),
-  };
+  const verdict = raceVerdict(Object.fromEntries(race.map((r) => [r.id, r.frames.at(-1)!.comparisons])) as Record<AlgoId, number>);
+  // The last finisher's announcement and the verdict share the final frame.
+  out.push({ t: len - 1, hold: 2, say: <>{announce(len - 1)}{verdictSay(verdict)}</> });
   return out;
 }

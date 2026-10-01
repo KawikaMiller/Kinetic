@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
+import { captionText } from '../../core/testing/captions';
 import { buildFrames, buildRaceFrames } from './algorithms';
-import { ALGO_IDS, isWorkFrame, makeBars, racePlaces, raceSteps, type AlgoId, type Bar, type Preset } from './model';
+import { ALGO_IDS, ALGOS, isWorkFrame, makeBars, racePlaces, raceSteps, type AlgoId, type Bar, type Preset } from './model';
 
 const PRESETS: Preset[] = ['random', 'nearly', 'reversed', 'few'];
 const RUNS_PER_PRESET = 60;
@@ -145,6 +146,31 @@ describe('the race', () => {
           }
         }
         expect(buildRaceFrames(race)).toHaveLength(Math.max(...race.map((r) => r.frames.length)));
+      }
+    }
+  });
+
+  it('closes with a verdict that is true on every input', () => {
+    const rnd = mulberry32(15);
+    for (const preset of PRESETS) {
+      for (const n of [8, 20, 40, 48]) {
+        const race = ALGO_IDS.map((id) => ({ id, frames: raceSteps(buildFrames(makeBars(n, preset, rnd), id)) }));
+        const count = Object.fromEntries(race.map((r) => [r.id, r.frames.at(-1)!.comparisons])) as Record<AlgoId, number>;
+        const best = Math.min(...Object.values(count));
+        const say = captionText(buildRaceFrames(race).at(-1)!.say);
+        expect(count.selection).toBe((n * (n - 1)) / 2);
+        expect(say).toContain(`Selection compared every pair: ${count.selection}`);
+        expect(say).toMatch(new RegExp(`did (only )?${best}\\b`));
+        // "The best" is only said of an O(n log n) winner; an O(n²) winner is called out as near its best case.
+        const winners = ALGO_IDS.filter((id) => count[id] === best);
+        if (say.includes('The best')) expect(winners.every((id) => ALGOS[id].big !== 'O(n²)')).toBe(true);
+        else expect(say).toMatch(/close to (its|their) best/);
+        for (const id of ALGO_IDS) {
+          if (id !== 'selection' && count[id] >= count.selection) expect(say).toMatch(new RegExp(`${ALGOS[id].name}.*also compared every pair`));
+        }
+        // The last finisher is still announced.
+        const lastId = race.reduce((a, b) => (b.frames.length > a.frames.length ? b : a)).id;
+        expect(say).toContain(`${ALGOS[lastId].name} finishes`);
       }
     }
   });

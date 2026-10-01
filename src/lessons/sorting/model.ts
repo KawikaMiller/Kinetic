@@ -72,3 +72,36 @@ export function raceSteps(frames: readonly SortFrame[]): SortFrame[] {
 export function racePlaces(lengths: readonly number[]): number[] {
   return lengths.map((len) => lengths.filter((other) => other < len).length + 1);
 }
+
+/** Quick counts as "near its worst case" from this share of selection's every-pair count. */
+const NEAR_WORST_SHARE = 0.75;
+
+export interface RaceVerdict {
+  /** Selection's count: it always compares every pair, n(n−1)/2. */
+  everyPair: number;
+  /** The fewest comparisons, and every algorithm that tied for it. */
+  best: number;
+  bestIds: AlgoId[];
+  /** True when the winner is itself O(n²): this input sits near its best case. */
+  bestIsQuadratic: boolean;
+  /** Other algorithms that also compared every pair on this input. */
+  alsoEveryPair: AlgoId[];
+  /** Quick's count when ordered input drove it near its worst case, else null. */
+  quickNearWorst: number | null;
+}
+
+/** What the race's numbers actually show, so the closing caption only claims what's true. */
+export function raceVerdict(comparisons: Record<AlgoId, number>): RaceVerdict {
+  const everyPair = comparisons.selection;
+  const best = Math.min(...ALGO_IDS.map((id) => comparisons[id]));
+  const bestIds = ALGO_IDS.filter((id) => comparisons[id] === best);
+  const quick = comparisons.quick;
+  return {
+    everyPair,
+    best,
+    bestIds,
+    bestIsQuadratic: bestIds.every((id) => ALGOS[id].big === 'O(n²)'),
+    alsoEveryPair: ALGO_IDS.filter((id) => id !== 'selection' && comparisons[id] >= everyPair),
+    quickNearWorst: quick >= NEAR_WORST_SHARE * everyPair ? quick : null,
+  };
+}
