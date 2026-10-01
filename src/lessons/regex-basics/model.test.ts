@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ACCESS_LOG, PRESETS, analyze, captureNames, highlightSegments, replacePreview, runRegex, tokenRanges, tokenize } from './model';
+import { ACCESS_LOG } from '../../core/fixtures/accessLog';
+import { PRESETS, analyze, captureNames, highlightSegments, replacePreview, runRegex, tokenRanges, tokenize } from './model';
 
 describe('runRegex uses the real engine', () => {
   it('matches exactly what matchAll finds, for every preset', () => {

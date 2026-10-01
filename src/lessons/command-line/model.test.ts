@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { ACCESS_LOG } from '../../core/fixtures/accessLog';
 import { runCommand } from './commands';
-import { ACCESS_LOG, ENV, INITIAL_FS } from './fixture';
+import { ENV, INITIAL_FS } from './fixture';
 import { ACTIONS, CLASSES, bitName, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
 import { SHELL_PRESETS } from './presets';
 import { glob, parse, runShell, showArgv, tokenize } from './shell';
