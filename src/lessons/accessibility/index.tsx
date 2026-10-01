@@ -28,6 +28,7 @@ const lesson: LessonModule = {
     'Every control needs a role and an accessible name; screen readers read the accessibility tree, not the pixels.',
     'Keep the tab order following the page: positive tabindex values break it.',
     'Contrast ≥ 4.5:1 for body text, and never use colour as the only signal.',
+    'Put a role="status" region on the page early, empty, then change its text; one inserted already full may never be read out.',
   ],
   quiz: [
     {

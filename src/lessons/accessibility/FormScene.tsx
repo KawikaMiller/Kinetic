@@ -186,7 +186,13 @@ export function FormScene({ picker }: { picker: ReactNode }) {
                 ) : (
                   <p className="ac-error">Please enter your email address.</p>
                 ))}
-              {signedUp && (fixes.live ? <p role="status" className="ac-done">{SIGNED_UP}</p> : <p className="ac-done">{SIGNED_UP}</p>)}
+              {/* A live region must already be on the page, empty, before its text changes; one inserted already
+                  full often goes unannounced. So with the fix on it's always mounted and only its text changes. */}
+              {fixes.live ? (
+                <p role="status" className="ac-done">{signedUp ? SIGNED_UP : ''}</p>
+              ) : (
+                signedUp && <p className="ac-done">{SIGNED_UP}</p>
+              )}
             </form>
             <p className="ac-note">
               Clicking works for everyone with a mouse. The problems show up for keyboard and screen-reader users. (The{' '}

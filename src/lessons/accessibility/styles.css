@@ -44,6 +44,8 @@
 .ac-submit.is-div { user-select: none; }
 .ac-error { margin: 0; font-size: 13px; color: var(--bad); font-weight: 600; }
 .ac-done { margin: 0; font-size: 13px; color: var(--ok); font-weight: 600; }
+/* The empty live region stays in the accessibility tree but out of the flex flow, so it adds no gap. */
+.ac-done:empty { position: absolute; }
 .is-reader-focus { outline: 3px solid var(--hi); outline-offset: 3px; }
 
 /* Accessibility tree nodes */
