@@ -31,25 +31,40 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'const cfg = { debug: false }; cfg.debug = true; What happens?',
-      options: ['TypeError: cfg is const', 'cfg.debug becomes true', 'Nothing: the change is ignored', 'cfg is copied, then changed'],
+      options: [
+        'TypeError: cfg is const',
+        'cfg.debug becomes true',
+        'Nothing: the change is ignored',
+        'cfg is copied, then changed',
+      ],
       answer: 1,
       why: 'const only stops cfg being pointed at a different object. The object itself can still be changed; use Object.freeze to prevent that.',
     },
     {
       q: 'function f(p) { p.n = 2; p = { n: 3 }; } const a = { n: 1 }; f(a); What is a.n?',
-      options: ['1', '2', '3', 'undefined'],
+      options: ["It's 1", "It's 2", "It's 3", 'It throws'],
       answer: 1,
-      why: 'p starts as a copy of the reference, so p.n = 2 changes a\'s object. Reassigning p afterwards only re-points p; a still refers to the object with n = 2.',
+      why: "p starts as a copy of the reference, so p.n = 2 changes a's object. Reassigning p afterwards only re-points p; a still refers to the object with n = 2, so it isn't 3.",
     },
     {
       q: 'const a = { tags: [] }; const b = { ...a }; b.tags.push("x"); What is a.tags.length?',
-      options: ['0', '1', 'It throws', 'It depends on the browser'],
+      options: [
+        '0: b got its own copy of tags',
+        '1: both share the same tags array',
+        'It throws, because a is const',
+        'It depends on the JS engine',
+      ],
       answer: 1,
-      why: 'Spread makes a new outer object, but its tags field still holds a reference to the same array, so both a and b see the push.',
+      why: 'Spread makes a new outer object, but its tags field still holds a reference to the same array, so both a and b see the push. The copy is shallow.',
     },
     {
       q: 'Why is { n: 1 } === { n: 1 } false?',
-      options: ['=== compares objects by identity, and these are two different objects', 'Objects are compared by their keys only', 'Because n is a number', "It's actually true"],
+      options: [
+        '=== checks identity, and these are two objects',
+        '=== compares the keys but not their values',
+        'Number values are never compared exactly',
+        "It isn't: the expression is actually true",
+      ],
       answer: 0,
       why: 'For objects, === asks "are these the same object?", not "do they look the same?". Compare contents yourself, or with a deep-equality helper.',
     },

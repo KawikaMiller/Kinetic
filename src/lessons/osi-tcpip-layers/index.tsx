@@ -32,19 +32,24 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'A packet crosses a router on its way to a web server. What does the router read?',
-      options: ['The HTTP request, to route by URL', 'The IP header (and the frame it arrived in)', 'The TCP port only', 'Nothing: it forwards blindly'],
-      answer: 1,
+      options: [
+        'The IP header (and the frame it arrived in)',
+        'The HTTP request, to route by URL',
+        'The TCP port, to pick the right app',
+        'Nothing: it forwards every packet blindly',
+      ],
+      answer: 0,
       why: 'Routers strip the Ethernet frame, read the IP destination, decrement TTL and build a new frame. TCP and HTTP stay sealed.',
     },
     {
       q: 'Which statement about the OSI model is true?',
       options: [
-        'The internet is built exactly on OSI\'s 7 layers',
-        'It\'s a teaching model; the internet runs on TCP/IP, whose layers cover OSI\'s',
-        'OSI replaced TCP/IP in the 1990s',
-        'OSI has 4 layers',
+        "It's a teaching model; the internet uses TCP/IP",
+        "The internet is built on OSI's exact 7 layers",
+        'OSI replaced TCP/IP during the 1990s',
+        'OSI has 4 layers, the same as TCP/IP',
       ],
-      answer: 1,
+      answer: 0,
       why: 'TCP/IP\'s Application layer covers OSI 7-5 and its Link layer covers OSI 2-1. People still use OSI numbers as shorthand ("layer 7").',
     },
     {
@@ -55,9 +60,14 @@ const lesson: LessonModule = {
     },
     {
       q: '"Connection refused" on port 80. Which layer do you start with?',
-      options: ['Link: check the cable', 'Transport: nothing is listening on that port', 'Application: the page is missing', 'Internet: no route to the host'],
-      answer: 1,
-      why: 'The host answered, so the link and IP worked; TCP reset the connection because no process listens on port 80.',
+      options: [
+        'Transport: nothing is listening on that port',
+        'Link: check the cable and the switch',
+        'Application: the page itself is missing',
+        "Internet: there's no route to the host",
+      ],
+      answer: 0,
+      why: 'The host answered, so the link and IP worked; TCP reset the connection because no process listens on port 80. A missing page would be an HTTP 404, not a refusal.',
     },
   ],
 };

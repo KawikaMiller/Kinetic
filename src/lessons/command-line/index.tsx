@@ -32,27 +32,42 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: '"cmd 2>&1 > out.txt" and "cmd > out.txt 2>&1" do the same thing. True?',
-      options: ['True, order doesn\'t matter', 'False: in the first, errors still go to the terminal', 'False: the first deletes out.txt', 'True, but the second is faster'],
-      answer: 1,
-      why: '2>&1 copies wherever stdout points right now. In the first, stdout still points at the terminal when 2>&1 runs, so errors go there; then stdout moves to the file.',
+      options: [
+        'False: the first still shows errors on screen',
+        "True: the order of redirects doesn't matter",
+        'False: the first one deletes out.txt instead',
+        'True, but the second one runs a bit faster',
+      ],
+      answer: 0,
+      why: '2>&1 copies wherever stdout points right now. In the first, stdout still points at the terminal when 2>&1 runs, so errors go there; then stdout moves to the file. Order matters.',
     },
     {
       q: 'grep finds no matching lines. What is its exit code?',
-      options: ['0', '1', '2', '127'],
+      options: ['Exit code 0', 'Exit code 1', 'Exit code 2', 'Exit code 127'],
       answer: 1,
       why: 'grep exits 0 when something matched, 1 when nothing did, and 2 on an error such as a missing file. So "grep x f || echo none" prints "none".',
     },
     {
       q: 'What does "chmod 640 notes.txt" allow?',
-      options: ['Everyone can read', 'Owner reads and writes, group reads, others nothing', 'Owner reads, group writes', 'Only the owner can execute'],
-      answer: 1,
-      why: '6 = 4+2 = rw- for the owner, 4 = r-- for the group, 0 = --- for everyone else.',
+      options: [
+        'Owner reads/writes, group reads, others none',
+        'Owner, group and others can all read it',
+        'Owner reads only, and group can write',
+        'Only the owner can run it as a program',
+      ],
+      answer: 0,
+      why: '6 = 4+2 = rw- for the owner, 4 = r-- for the group, 0 = --- for everyone else. Nobody gets execute.',
     },
     {
       q: 'Why does "cat a.log | sort | uniq -c" usually come with sort first?',
-      options: ['uniq only collapses adjacent duplicates', 'uniq can\'t read from a pipe', 'sort makes it faster', 'It doesn\'t need it'],
+      options: [
+        'uniq only collapses adjacent duplicates',
+        "uniq can't read its input from a pipe",
+        'Sorting first makes uniq run faster',
+        "It doesn't need it: uniq sorts itself",
+      ],
       answer: 0,
-      why: 'uniq compares each line with the one before it, so equal lines must be next to each other first.',
+      why: 'uniq compares each line with the one before it, so equal lines must be next to each other first. It reads pipes fine and never sorts.',
     },
   ],
 };

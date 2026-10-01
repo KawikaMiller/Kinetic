@@ -32,15 +32,25 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'On the text <b>hi</b>, what does <.*> match?',
-      options: ['<b>', '<b>hi</b>, the whole thing', 'hi', 'Nothing'],
-      answer: 1,
+      options: [
+        '<b>hi</b>, up to the last >',
+        '<b>, up to the first >',
+        'hi, the text between the tags',
+        "Nothing, since . can't match <",
+      ],
+      answer: 0,
       why: '.* is greedy: it runs to the end, then gives back characters only until a > can match, so it stops at the LAST >. Use <.*?> to stop at the first.',
     },
     {
       q: 'Why does file.txt match the text "file-txt"?',
-      options: ['Regexes ignore punctuation', 'An unescaped . means any character', 'The - is optional', 'It doesn\'t'],
-      answer: 1,
-      why: '. matches any character (except a line break). Escape it as \\. to mean a literal dot.',
+      options: [
+        'An unescaped . means any character',
+        'Regexes ignore punctuation by default',
+        'A - and a . count as the same symbol',
+        "It doesn't: the dot must match a dot",
+      ],
+      answer: 0,
+      why: '. matches any character (except a line break), so it matches the - too. Escape it as \\. to mean a literal dot.',
     },
     {
       q: '^error matches nothing in a multi-line log, even though line 3 starts with "error". What\'s the fix?',
@@ -49,10 +59,15 @@ const lesson: LessonModule = {
       why: 'Without m, ^ means the start of the whole text. With m, it matches at the start of every line.',
     },
     {
-      q: 'What\'s the right way to pull every link out of an HTML page?',
-      options: ['A careful regex', 'An HTML parser (e.g. DOMParser)', 'split("<a")', 'A regex with the s flag'],
-      answer: 1,
-      why: 'HTML nests, has quoting rules and optional parts a regex can\'t track reliably. A parser understands the structure.',
+      q: "What's the right way to pull every link out of an HTML page?",
+      options: [
+        'An HTML parser (e.g. DOMParser)',
+        'A careful regex for <a> tags',
+        'Splitting the text on "<a"',
+        'A regex with the s flag on',
+      ],
+      answer: 0,
+      why: "HTML nests, has quoting rules and optional parts a regex can't track reliably, however careful. A parser understands the structure.",
     },
   ],
 };
