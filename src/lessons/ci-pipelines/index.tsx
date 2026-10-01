@@ -34,7 +34,7 @@ const lesson: LessonModule = {
       q: 'Jobs take 90 s, 20 s, 60 s and 120 s, and the pipeline runs them as install → (lint | build → tests). What decides how long you wait?',
       options: [
         'The longest dependency chain: 270 s',
-        'The sum of all four jobs: 290 s',
+        'The sum of all four job times: 290 s',
         'The single slowest job: 120 s',
         'How many jobs the pipeline has',
       ],
@@ -46,7 +46,7 @@ const lesson: LessonModule = {
       options: [
         'It runs, then rolls back',
         "It's blocked and never runs",
-        'It runs if lint passed',
+        'It runs anyway if lint passed',
         'It runs in a sandbox',
       ],
       answer: 1,

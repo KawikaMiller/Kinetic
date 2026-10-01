@@ -55,13 +55,13 @@ const lesson: LessonModule = {
     {
       q: 'What does a formatter like Prettier change?',
       options: [
-        'Only layout and whitespace, never behaviour',
+        "How it's written, never what it does",
         'Logic bugs that it spots while reformatting',
         'Unused variables and imports it removes',
         'Type errors it can fix automatically',
       ],
       answer: 0,
-      why: "It reprints the same code in a consistent style. The tokens, and so the meaning, stay the same; removing unused code is a linter's job.",
+      why: "It reprints the same code in a consistent style: layout, line wrapping, quotes, semicolons. Some tokens change spelling, but the meaning never does; removing unused code is a linter's job.",
     },
   ],
 };

@@ -56,7 +56,7 @@ const lesson: LessonModule = {
       options: [
         'Check it against a fixed list of allowed column names',
         'Put the column name in a query parameter like any value',
-        'Escape the column name before using it',
+        'Escape it like a string value',
         "It's safe, because it's only a column name",
       ],
       answer: 0,

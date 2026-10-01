@@ -42,15 +42,15 @@ const lesson: LessonModule = {
       why: "0.95 × 1 + 0.05 × 100 = 5.95 ns. It's a weighted average, not the midpoint (50 ns): the rare misses still dominate, which is why raising the hit rate matters so much.",
     },
     {
-      q: 'Which is usually slower?',
+      q: 'Which is usually slowest?',
       options: [
         'A round trip to another server in the same datacenter',
         'One seek on a spinning hard disk',
-        'They take the same time',
+        'One read from main memory (RAM)',
         'Reading L3 cache',
       ],
       answer: 1,
-      why: 'A datacenter round trip is around 0.5 ms, while an HDD seek is a few milliseconds. The network inside a datacenter can beat a local spinning disk.',
+      why: 'An HDD seek takes a few milliseconds. A datacenter round trip is around 0.5 ms, RAM about 100 ns and L3 cache about 20 ns. The network inside a datacenter can beat a local spinning disk.',
     },
   ],
 };

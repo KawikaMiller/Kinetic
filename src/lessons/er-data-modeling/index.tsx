@@ -36,7 +36,7 @@ const lesson: LessonModule = {
         'A join table with student_id and course_id',
         'A course_ids list column on students',
         'A student_id column on the courses table',
-        'Either of those two columns would work',
+        'The course_ids list or the student_id column',
       ],
       answer: 0,
       why: "Any single foreign key column can point at only one row, and a list column can't be joined or constrained properly. A many-to-many relationship needs a table of pairs, one row per enrolment.",

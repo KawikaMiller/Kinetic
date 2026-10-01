@@ -52,7 +52,7 @@ const lesson: LessonModule = {
       q: 'You go from 1,024 items to 1,025. How many more bits do their IDs need?',
       options: ['No more bits', 'One more bit', 'Ten more bits', 'A whole extra byte'],
       answer: 1,
-      why: '1,024 = 2¹⁰ fits in 10 bits exactly; 1,025 needs an 11th. Storage may round that up to a whole byte, but the number of bits needed is one more.',
+      why: '2¹⁰ = 1,024, so 10 bits give exactly 1,024 IDs (0 to 1,023). The 1,025th ID needs an 11th bit. Storage may round that up to a whole byte, but the number of bits needed is one more.',
     },
   ],
 };

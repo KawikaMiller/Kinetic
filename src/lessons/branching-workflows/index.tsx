@@ -52,7 +52,7 @@ const lesson: LessonModule = {
       why: "Every day a branch stays open, more of main changes underneath it without seeing your work. The overlaps all surface at once when it finally merges; git itself doesn't slow down.",
     },
     {
-      q: 'How can a half-finished feature merge into main without users seeing it?',
+      q: 'How can a half-finished feature merge into main, still built and tested, without users seeing it?',
       options: [
         "Put it behind a feature flag that's off",
         'Comment the unfinished code out first',
@@ -60,7 +60,7 @@ const lesson: LessonModule = {
         'Squash its commits so the feature is hidden',
       ],
       answer: 0,
-      why: "A feature flag ships the code dark. It's integrated and tested with everything else, and you switch it on when it's ready. Squashing only tidies history; the code still runs.",
+      why: "A feature flag ships the code dark. It's integrated and tested with everything else, and you switch it on when it's ready. Commenting it out hides it too, but then it's never built or tested, so it isn't really integrated. Squashing only tidies history; the code still runs.",
     },
   ],
 };

@@ -32,7 +32,7 @@ const lesson: LessonModule = {
     {
       q: "You notice you pushed an API key to a public repo ten minutes ago. What's the first thing to do?",
       options: [
-        'Rotate the key: revoke it and issue a new one',
+        'Rotate it: revoke it, issue a new one',
         'Delete the line and push a new commit',
         'Add the file to .gitignore and push',
         'Make the repository private right away',
@@ -45,7 +45,7 @@ const lesson: LessonModule = {
       options: [
         'Nothing: it stays tracked and committed',
         'Git deletes it from the repository',
-        'Git removes it from history entirely',
+        'Git removes it from the history entirely',
         'It becomes read-only for everyone',
       ],
       answer: 0,
@@ -55,7 +55,7 @@ const lesson: LessonModule = {
       q: 'Which of these is a secret, rather than config?',
       options: [
         'The port the server listens on',
-        'The log level',
+        'How verbose the logs are',
         'The key that signs login tokens',
         "The payment API's base URL",
       ],

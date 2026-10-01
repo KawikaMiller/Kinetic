@@ -31,7 +31,7 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'What stops a recursive function from calling itself forever?',
-      options: ['The call stack', 'The base case', 'The return statement', 'The compiler'],
+      options: ['The call stack', 'The base case', 'Any return statement', 'The compiler'],
       answer: 1,
       why: "The base case answers directly without recursing, so the calls stop there and the stack can unwind. The call stack doesn't stop it; it overflows.",
     },

@@ -53,10 +53,10 @@ const lesson: LessonModule = {
       why: '. matches any character (except a line break), so it matches the - too. Escape it as \\. to mean a literal dot.',
     },
     {
-      q: '^error matches nothing in a multi-line log, even though line 3 starts with "error". What\'s the fix?',
+      q: '^error matches nothing in a multi-line log, even though line 3 starts with "error". How do you match only the lines that start with it?',
       options: ['Add the g flag', 'Add the m flag', 'Use $error', 'Remove the ^'],
       answer: 1,
-      why: 'Without m, ^ means the start of the whole text. With m, it matches at the start of every line.',
+      why: 'Without m, ^ means the start of the whole text. With m, it matches at the start of every line. Removing the ^ finds line 3 too, but also "error" in the middle of any line.',
     },
     {
       q: "What's the right way to pull every link out of an HTML page?",

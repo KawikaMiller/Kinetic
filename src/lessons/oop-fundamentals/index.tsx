@@ -44,7 +44,7 @@ const lesson: LessonModule = {
     {
       q: 'What does polymorphism replace?',
       options: [
-        'if (shape.type === …) checks all over the code',
+        'if (shape.type === …) checks everywhere',
         'Loops that walk over every shape in a list',
         "Variables that hold each shape's own data",
         "Private fields that hide a class's state",
@@ -53,9 +53,9 @@ const lesson: LessonModule = {
       why: 'Each class implements the method its own way, so callers just call it. No switch on the type is needed, and adding a new shape means adding a class, not editing every if/else.',
     },
     {
-      q: 'Square extends Rect, and Rect has setWidth(w). What happens after sq.setWidth(5)?',
+      q: 'Square extends Rect, and Rect has setWidth(w). What happens after sq = new Square(2) and sq.setWidth(5)?',
       options: [
-        'Only the width changes: the square is now 5 × 2',
+        'Only the width changes: sq is now 5 × 2',
         'Both sides become 5, as a square should',
         "It throws: a square can't set its width",
         'Nothing: Square blocks the call silently',

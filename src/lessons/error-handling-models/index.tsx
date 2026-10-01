@@ -55,13 +55,13 @@ const lesson: LessonModule = {
     {
       q: 'What does a result type (Ok/Err) change compared with exceptions?',
       options: [
-        'Failures are returned, and callers must pass them on',
+        'Failures come back as values to check',
         'Errors can no longer happen in that code',
         'finally blocks run twice, once per result',
         'The call stack is no longer needed at all',
       ],
       answer: 0,
-      why: "Nothing jumps: each level returns the Err explicitly. Errors still happen; they're just values now. It is clear and hard to ignore, but more verbose.",
+      why: "Nothing jumps: each caller gets the Err back as a value and decides what to do with it. Errors still happen; they're just values now. The failure path is visible in the code, though plain JavaScript won't force anyone to check res.ok, and it's more verbose.",
     },
   ],
 };
