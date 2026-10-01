@@ -30,27 +30,32 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: 'An attacker phishes an employee\'s password. Which layer is designed to stop them logging in?',
-      options: ['The firewall', 'Multi-factor authentication', 'Disk encryption', 'Input validation'],
-      answer: 1,
-      why: 'The login itself looks like normal traffic, so the firewall lets it through. MFA needs something the attacker doesn\'t have, like the employee\'s phone.',
+      q: "An attacker phishes an employee's password. Which layer is designed to stop them logging in?",
+      options: [
+        'Multi-factor authentication',
+        'The company firewall',
+        'Full-disk encryption',
+        'Server-side input validation',
+      ],
+      answer: 0,
+      why: "The login itself looks like normal traffic, so the firewall lets it through and input validation sees a valid form. MFA needs something the attacker doesn't have, like the employee's phone.",
     },
     {
       q: 'Why give a background service only the permissions its job needs?',
       options: [
-        'It makes the service run faster',
-        'If its credentials leak, the attacker can only do what the service could',
-        'Cloud providers require it',
-        'It removes the need for authentication',
+        'A leaked key can then do only what that service does',
+        'Fewer permissions make the service run faster',
+        'Every cloud provider requires it for services',
+        'It removes the need for any authentication',
       ],
-      answer: 1,
-      why: 'Least privilege caps the blast radius of a compromise: a stolen key for an "invoice-mailer" shouldn\'t be able to delete payment data.',
+      answer: 0,
+      why: 'Least privilege caps the blast radius of a compromise: a stolen key for an "invoice-mailer" shouldn\'t be able to delete payment data. It doesn\'t replace authentication; it limits the damage when that fails.',
     },
     {
       q: 'A flood of traffic takes the site offline, but no data is stolen. Which CIA property was violated?',
       options: ['Confidentiality', 'Integrity', 'Availability', 'None of them'],
       answer: 2,
-      why: 'Availability means the system is there when it\'s needed. Denial-of-service attacks target it directly.',
+      why: "Availability means the system is there when it's needed. Denial-of-service attacks target it directly.",
     },
   ],
 };
