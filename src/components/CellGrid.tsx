@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { gridGeometry, gridKeyTarget, type Cell } from '../core/grid';
 import { alpha, TOKENS } from '../core/palette';
+import { paintImage } from './canvasImage';
 import type { Tone } from '../core/tone';
 
 export interface GridCellSpec {
@@ -208,22 +209,14 @@ function useCanvasCells(
   const specs = enabled ? Array.from({ length: rows * cols }, (_, i) => cell(Math.floor(i / cols), i % cols)) : null;
   const key = specs ? JSON.stringify(specs.map((sp) => [sp.tone, sp.fill, sp.intensity])) : '';
   return useMemo(() => {
-    if (!specs || typeof document === 'undefined') return null;
-    const scale = 2; // crisp on high-DPI screens
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil((geo.width - geo.x0) * scale);
-    canvas.height = Math.ceil((geo.height - geo.y0) * scale);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    ctx.scale(scale, scale);
-    specs.forEach((sp, i) => {
-      const r = Math.floor(i / cols);
-      const c = i % cols;
-      const { x, y } = geo.at(r, c);
-      ctx.fillStyle = canvasFill(sp);
-      ctx.fillRect(x - geo.x0, y - geo.y0, geo.cell, geo.cell);
-    });
-    return canvas.toDataURL();
+    if (!specs) return null;
+    return paintImage(geo.width - geo.x0, geo.height - geo.y0, (ctx) =>
+      specs.forEach((sp, i) => {
+        const { x, y } = geo.at(Math.floor(i / cols), i % cols);
+        ctx.fillStyle = canvasFill(sp);
+        ctx.fillRect(x - geo.x0, y - geo.y0, geo.cell, geo.cell);
+      }),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures every spec that affects the pixels
   }, [key, rows, cols, geo.width, geo.height]);
 }

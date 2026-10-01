@@ -9,3 +9,5 @@
 
 .devkit-bp { color: var(--bad); }
 
+.devkit-plots { display: flex; flex-wrap: wrap; gap: 16px; align-self: stretch; }
+.devkit-plots > .plot2d { flex: 0 1 356px; }

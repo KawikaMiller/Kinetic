@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ByteGrid } from '../components/ByteGrid';
 import { CellGrid } from '../components/CellGrid';
+import { Arrow, Bars, Curve, Heat, HLine, Plot2D, Points, Polygon, VLine, type Point } from '../components/Plot2D';
 import { SectionTitle } from '../components/Panel';
 import { TreeSvg } from '../components/TreeSvg';
 import { Button } from '../components/ui';
 import { createDisjointSet } from '../core/disjointSet';
 import { sieve } from '../core/numberTheory';
-import { mulberry32 } from '../core/random';
+import { barsFromHistogram } from '../core/plot';
+import { mulberry32, randInt } from '../core/random';
+import { mean } from '../core/sim';
+import { collisionProbability, histogram } from '../core/stats';
 import { DevKitSection as Section } from './DevKitSection';
 
 /** Dev-only demos of the Tier 2 shared kit, rendered at the bottom of DevKit (#/dev/kit). */
@@ -25,6 +29,19 @@ export function DevKitTier2() {
       </Section>
       <Section title="TreeSvg forest · union-find sets merging">
         <ForestDemo />
+      </Section>
+      <Section title="Plot2D · Curve, VLine, HLine, Bars (birthday paradox; two dice)">
+        <div className="devkit-plots">
+          <BirthdayPlot />
+          <DicePlot />
+        </div>
+      </Section>
+      <Section title="Plot2D · log y axis; drag the vectors or the centroids (or focus one, then arrow keys)">
+        <div className="devkit-plots">
+          <LogPlot />
+          <VectorPlot />
+          <RegionsPlot />
+        </div>
       </Section>
     </>
   );
@@ -144,5 +161,87 @@ function ForestDemo() {
         <Button onClick={() => setSteps(0)}>Reset</Button> {dsu.count} sets
       </p>
     </div>
+  );
+}
+
+function BirthdayPlot() {
+  return (
+    <Plot2D x={{ domain: [1, 80], label: 'people in the room' }} y={{ domain: [0, 1], label: 'P(shared birthday)' }} ariaLabel="Birthday collision probability">
+      <HLine at={0.5} label="50%" tone="dim" />
+      <VLine at={23} label="n = 23" />
+      <Curve fn={(n) => collisionProbability(Math.round(n), 365).p} tone="info" />
+    </Plot2D>
+  );
+}
+
+function DicePlot() {
+  const sums = useMemo(() => {
+    const rnd = mulberry32(3);
+    return Array.from({ length: 1000 }, () => randInt(1, 6, rnd) + randInt(1, 6, rnd));
+  }, []);
+  const bars = barsFromHistogram(histogram(sums, { bins: 11, min: 1.5, max: 12.5 }));
+  const avg = mean(sums);
+  return (
+    <Plot2D x={{ domain: [1.5, 12.5], label: 'sum of two dice', ticks: 11 }} y={{ domain: [0, 200], label: 'rolls' }} ariaLabel="Histogram of 1,000 two-dice sums">
+      <Bars bars={bars} tone="violet" />
+      <VLine at={avg} label={`mean ${avg.toFixed(2)}`} tone="hi" />
+    </Plot2D>
+  );
+}
+
+function LogPlot() {
+  // Trial division needs about √N steps: for d digits, 10^(d/2). At 10⁹ steps a second:
+  const seconds = (digits: number) => 10 ** (digits / 2) / 1e9;
+  return (
+    <Plot2D x={{ domain: [1, 60], label: 'digits in N' }} y={{ domain: [1e-9, 1e21], log: true, label: 'seconds', ticks: 6 }} ariaLabel="Trial division time on a log axis">
+      <HLine at={3.15e7} label="1 year" tone="dim" />
+      <Curve fn={(d) => (d <= 30 ? seconds(d) : NaN)} tone="info" />
+      <Curve fn={(d) => (d >= 30 ? seconds(d) : NaN)} tone="info" dashed />
+    </Plot2D>
+  );
+}
+
+function VectorPlot() {
+  const [v, setV] = useState<Point[]>([[3, 1], [1, 2]]);
+  const [a, b] = v;
+  const sum: Point = [a[0] + b[0], a[1] + b[1]];
+  return (
+    <Plot2D x={{ domain: [-1, 5] }} y={{ domain: [-1, 4] }} ariaLabel="Vector addition">
+      <Polygon points={[[0, 0], a, sum, b]} tone="violet" dashed />
+      <Arrow to={sum} tone="hi" label="a + b" />
+      <Arrow to={a} tone="info" label="a" />
+      <Arrow to={b} tone="ok" label="b" />
+      <Points
+        data={[{ x: a[0], y: a[1], tone: 'info' }, { x: b[0], y: b[1], tone: 'ok' }]}
+        onDrag={(i, p) => setV((old) => old.map((q, k) => (k === i ? p : q)))}
+        pointLabel={(i) => (i ? 'vector b' : 'vector a')}
+      />
+    </Plot2D>
+  );
+}
+
+function RegionsPlot() {
+  const [c, setC] = useState<Point[]>([[0.3, 0.35], [0.7, 0.65]]);
+  const data = useMemo(() => {
+    const rnd = mulberry32(11);
+    return Array.from({ length: 40 }, (_, i) => {
+      const blob = i % 2;
+      const cx = blob ? 0.7 : 0.3;
+      return { x: cx + (rnd() - 0.5) * 0.45, y: cx + (rnd() - 0.5) * 0.45, tone: blob ? ('violet' as const) : ('info' as const), hollow: i >= 30 };
+    });
+  }, []);
+  const nearest = useCallback((x: number, y: number) => (Math.hypot(x - c[0][0], y - c[0][1]) <= Math.hypot(x - c[1][0], y - c[1][1]) ? 0 : 1), [c]);
+  const region = useCallback((x: number, y: number) => ({ tone: nearest(x, y) ? ('violet' as const) : ('info' as const), intensity: 0.3 }), [nearest]);
+  return (
+    <Plot2D x={{ domain: [0, 1], label: 'feature 1' }} y={{ domain: [0, 1], label: 'feature 2' }} ariaLabel="Nearest-centroid regions">
+      <Heat fn={region} resolution={48} />
+      <Points data={data} r={3.5} />
+      <Points
+        data={c.map(([x, y], i) => ({ x, y, tone: i ? 'violet' : 'info' }))}
+        r={6}
+        onDrag={(i, p) => setC((old) => old.map((q, k) => (k === i ? p : q)))}
+        pointLabel={(i) => `centroid ${i ? 'B' : 'A'}`}
+      />
+    </Plot2D>
   );
 }
