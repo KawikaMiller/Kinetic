@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { recoverRoute } from './route.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const BASE_URL = process.env.KINETIC_URL ?? 'http://127.0.0.1:5317';
@@ -93,7 +94,14 @@ export async function openPage({ width = 1440, height = 1000, seed, reducedMotio
 
 /** Navigate to a hash route and let animations settle. */
 export async function visit(page, route, settleMs = 1000) {
-  await page.goto(`${BASE_URL}/#${route}`, { waitUntil: 'networkidle0' });
+  const { route: target, rewritten } = recoverRoute(route);
+  if (rewritten) {
+    console.warn(
+      `[kinetic] route "${route}" looks rewritten by Git Bash; using "${target}". ` +
+        'Set MSYS_NO_PATHCONV=1 (or run from PowerShell) so routes pass through untouched.',
+    );
+  }
+  await page.goto(`${BASE_URL}/#${target}`, { waitUntil: 'networkidle0' });
   await sleep(settleMs);
 }
 

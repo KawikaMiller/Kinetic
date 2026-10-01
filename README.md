@@ -10,9 +10,13 @@ with short captions instead of walls of text.
 npm install
 npm run dev      # http://localhost:5317  (KINETIC_PORT=5341 npm run dev for a second checkout)
 npm run build    # type-check + production build into dist/
-npm test         # Vitest unit tests (src/**/*.test.ts)
+npm test         # Vitest unit tests (src/**/*.test.ts and the dev scripts' rules)
 npm run smoke    # every lesson in a headless browser (needs the dev server)
+npm run shot -- /lesson/sorting s --press=Tab,Space   # screenshot one route, optionally after key presses
 ```
+
+On Windows Git Bash, run the scripts with `MSYS_NO_PATHCONV=1`; otherwise Git Bash rewrites
+`/lesson/x` into a Windows path (the scripts warn and recover when they notice).
 
 ## Tiers
 

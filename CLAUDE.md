@@ -89,7 +89,16 @@ loss), say so on screen.
   `@live` shots of simulations are timing-dependent and only reported. `npm run captions`
   should match its baseline too.
 - `npm run check-tokens -- --strict` must pass: no raw colour literals without an
-  `allow-color` reason, no local copies of shared helpers.
+  `allow-color` reason, no local copies of shared helpers, no anonymous inline springs
+  (`transition={{ type: 'spring', … }}`: use a `SPRING` preset or a named constant).
+- Check builds and type-checks by **exit code**, never by grepping the output for "error"
+  (a lesson is literally called error-handling-models), and don't pipe a command into
+  `Select-Object -First` before reading `$LASTEXITCODE`: cutting the pipe loses the code.
+- Keyboard: drive real key presses with `npm run shot -- <route> <name> --press=Tab,Tab,Space`
+  (`--press-on=<selector>` focuses something first; modifiers join with `+`, e.g. `Shift+Tab`).
+  It prints the element that ends up focused, so a focus-order check needs no throwaway script.
+- In Git Bash, set `MSYS_NO_PATHCONV=1`: it rewrites `/lesson/x` into a Windows path. The
+  scripts warn and recover the route when they spot it, but don't rely on that.
 
 ## Gotchas already paid for
 
