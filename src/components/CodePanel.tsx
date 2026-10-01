@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { SectionTitle } from './Panel';
 
-export type LineState = 'idle' | 'past' | 'now' | 'next' | 'done' | 'cut' | 'cached' | 'pending';
+/** `bad`: the line that threw or is wrong, tinted --bad with a left bar. */
+export type LineState = 'idle' | 'past' | 'now' | 'next' | 'done' | 'cut' | 'cached' | 'pending' | 'bad';
 
 /**
  * Source code with per-line state: the line running now, lines already run, lines skipped...
@@ -9,11 +10,13 @@ export type LineState = 'idle' | 'past' | 'now' | 'next' | 'done' | 'cut' | 'cac
  *
  * - `renderLine` draws a line's code yourself, e.g. to strike through the parts a
  *   short-circuit never evaluates; `lines` stays the plain text (used for keys and labels).
+ * - `marker(i)` fills a narrow slot left of the line number, like a debugger's breakpoint
+ *   gutter; return null for an empty slot. The slot is there for every line once you pass it.
  * - `onLineClick` makes every line a button (keyboard-operable, focus-visible), e.g. to
  *   toggle a breakpoint; `pressed(i)` reports toggle state to assistive tech.
  */
 export function CodePanel({
-  title, lines, stateOf, active, gutter = 'number', nowStyle = 'bar', trailing, renderLine, onLineClick, pressed,
+  title, lines, stateOf, active, gutter = 'number', nowStyle = 'bar', trailing, renderLine, marker, onLineClick, pressed,
   lineLabel, className = '',
 }: {
   title?: ReactNode;
@@ -27,6 +30,8 @@ export function CodePanel({
   trailing?: (i: number) => ReactNode;
   /** The line's code as rich content instead of the plain string. */
   renderLine?: (line: string, i: number) => ReactNode;
+  /** Content of the marker slot left of the line number (a breakpoint dot), or null. */
+  marker?: (i: number) => ReactNode;
   onLineClick?: (i: number) => void;
   /** Toggle state of a clickable line (aria-pressed), e.g. "has a breakpoint". */
   pressed?: (i: number) => boolean;
@@ -44,6 +49,7 @@ export function CodePanel({
           const s = state(i);
           const content = (
             <>
+              {marker && <span className="marker">{marker(i)}</span>}
               {gutter !== 'none' && (
                 <span className="gutter">{gutter === 'number' ? i + 1 : s === 'now' ? '▶' : ''}</span>
               )}

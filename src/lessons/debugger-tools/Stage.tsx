@@ -248,12 +248,7 @@ function Debugger({ picker }: { picker: ReactNode }) {
               lines={SOURCE}
               stateOf={stateOf}
               nowStyle="bar"
-              renderLine={(line, i) => (
-                <>
-                  {PAUSABLE.has(i) && <BreakpointDot kind={bpAt.get(i)?.kind ?? null} />}
-                  {line || ' '}
-                </>
-              )}
+              marker={(i) => (PAUSABLE.has(i) ? <BreakpointDot kind={bpAt.get(i)?.kind ?? null} /> : null)}
               trailing={inline}
               onLineClick={toggle}
               pressed={(i) => bpAt.has(i)}

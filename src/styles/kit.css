@@ -207,6 +207,7 @@
   color: var(--muted);
   transition: background 0.2s, color 0.2s;
 }
+.code-panel .marker { width: 12px; flex: none; display: grid; place-items: center; }
 .code-panel .gutter { width: 1.6em; flex: none; text-align: right; color: var(--faint); }
 .code-panel code { flex: 1; white-space: pre-wrap; }
 .code-panel .trail { color: var(--faint); font-style: italic; }
@@ -216,6 +217,11 @@
 .code-panel li.is-cut { opacity: 0.4; text-decoration: line-through; }
 .code-panel li.is-pending { opacity: 0.55; }
 .code-panel li.is-next { color: var(--text); }
+.code-panel li.is-bad {
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--text);
+  box-shadow: inset 3px 0 0 var(--bad);
+}
 .code-panel.now-solid li.is-now { background: var(--hi); color: var(--on-hi); }
 .code-panel.now-solid li.is-now .gutter { color: var(--on-hi); }
 .code-panel.now-bar li.is-now {

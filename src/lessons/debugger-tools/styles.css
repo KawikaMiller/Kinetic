@@ -5,16 +5,11 @@
 .dbg-buttons { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
 .dbg-faint { color: var(--faint); font-weight: 400; }
 
-/* Source: breakpoint markers sit left of the line number, like the DevTools gutter. */
+/* Source: breakpoint markers fill CodePanel's marker slot, like the DevTools gutter. */
 .dbg-source .code-panel ol { font-size: 12px; }
-.dbg-source .code-panel .code-line { position: relative; padding-left: 22px; }
 .dbg-dot {
-  position: absolute;
-  left: 5px;
-  top: 50%;
   width: 12px;
   height: 12px;
-  margin-top: -6px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -82,7 +77,8 @@
 @media (max-width: 600px) {
   /* Inline values and breakpoint notes drop to their own row so the code keeps its width. */
   .dbg-source .code-panel .code-line { flex-wrap: wrap; row-gap: 0; }
-  .dbg-source .code-panel .trail { flex-basis: 100%; padding-left: calc(1.6em + 10px); }
+  /* indent under the code: marker 12px + gap, gutter 1.6em + gap */
+  .dbg-source .code-panel .trail { flex-basis: 100%; padding-left: calc(12px + 1.6em + 20px); }
   .dbg-source .code-panel .trail:empty { display: none; }
 }
 .dbg-what { display: none; }
