@@ -38,6 +38,15 @@ describe('shortcutFor', () => {
     expect(shortcutFor(key('ArrowRight'), target('button'))).toBe('forward');
   });
 
+  it('leaves the arrows to radio groups, tabs and sliders so they can move their selection', () => {
+    for (const role of ['[role="radio"]', '[role="radiogroup"]', '[role="tab"]', '[role="slider"]']) {
+      expect(shortcutFor(key('ArrowRight'), target(role))).toBeNull();
+      expect(shortcutFor(key('ArrowLeft'), target(role))).toBeNull();
+    }
+    // R still restarts from a focused radio
+    expect(shortcutFor(key('r'), target('[role="radio"]'))).toBe('restart');
+  });
+
   it('ignores keys with a modifier held', () => {
     expect(shortcutFor(key('r', { ctrlKey: true }), body)).toBeNull();
     expect(shortcutFor(key(' ', { metaKey: true }), body)).toBeNull();

@@ -9,6 +9,8 @@ export type ShortcutAction = 'toggle' | 'forward' | 'back' | 'restart';
 const TEXT_ENTRY = 'input, select, textarea, [contenteditable]';
 /** Controls that Space activates natively (or via role): Space must press them, not toggle playback. */
 const SPACE_ACTIVATES = 'button, a[href], summary, [role="button"], [role="radio"], [role="checkbox"], [role="switch"], [role="tab"], [role="link"], [role="menuitem"]';
+/** Widgets where ←/→ move a selection (radio groups, tab lists, sliders): they own the arrows. */
+const ARROWS_MOVE_SELECTION = '[role="radiogroup"], [role="radio"], [role="tablist"], [role="tab"], [role="slider"], [role="listbox"], [role="menu"]';
 
 interface KeyLike {
   key: string;
@@ -28,9 +30,9 @@ export function shortcutFor(e: KeyLike, target: TargetLike | null): ShortcutActi
     case ' ':
       return target?.closest(SPACE_ACTIVATES) ? null : 'toggle';
     case 'ArrowRight':
-      return 'forward';
+      return target?.closest(ARROWS_MOVE_SELECTION) ? null : 'forward';
     case 'ArrowLeft':
-      return 'back';
+      return target?.closest(ARROWS_MOVE_SELECTION) ? null : 'back';
     case 'r':
     case 'R':
       return 'restart';
