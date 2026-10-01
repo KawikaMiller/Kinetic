@@ -1,5 +1,6 @@
 // Captions for model.ts's timeline: one frame per leg, plus the opening and the summary.
 import type { ReactNode } from 'react';
+import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { SERVER_IP, timeline, type LegId, type Opts, type WrStep } from './model';
 
@@ -39,12 +40,20 @@ const CAPTION: Record<LegId, (o: Opts) => ReactNode> = {
   render: () => <>Browser parses HTML, fetches CSS & JS, lays out and <b>paints</b>.</>,
 };
 
+/** The first frame: what the browser already knows about example.com before it sends anything. */
+function openingSay(opts: Opts): ReactNode {
+  const typed = <>You type <span className="hl">example.com</span> and hit Enter.</>;
+  if (opts.reuse) return <>{typed} The browser still has an open, encrypted connection to it from the last page.</>;
+  if (opts.dnsCached) return <>{typed} The browser looked it up a moment ago, so it already has the address cached.</>;
+  return <>{typed} The browser has no idea where that is yet.</>;
+}
+
 export function buildFrames(opts: Opts): { frames: WrFrame[]; total: number } {
   const { steps, total, setup } = timeline(opts);
   const frames: WrFrame[] = steps.map((s) =>
     s.leg
       ? { ...s, say: CAPTION[s.leg.id](opts), hold: s.leg.from === s.leg.to ? 1.2 : 1 }
-      : { ...s, say: <>You type <span className="hl">example.com</span> and hit Enter. The browser has no idea where that is yet.</> },
+      : { ...s, say: openingSay(opts) },
   );
   const end = steps.at(-1)!;
   frames.push({
@@ -53,7 +62,7 @@ export function buildFrames(opts: Opts): { frames: WrFrame[]; total: number } {
     hold: 2,
     say: (
       <>
-        Page up in <span className="hl ok">{end.ms} ms</span> (illustrative timings) over <b>{end.rtts}</b> round trips.{' '}
+        Page up in <span className="hl ok">{end.ms} ms</span> (illustrative timings) over <b>{plural(end.rtts, 'round trip')}</b>.{' '}
         {setup > 0 ? (
           <>
             <span className="hl bad">{setup} ms</span> of that was setup before we even asked for the page.

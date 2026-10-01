@@ -54,7 +54,10 @@ describe.each(POSSIBLE)('%#', (o) => {
     const text = renderToStaticMarkup(frames.at(-1)!.say as ReactElement);
     expect(text).toContain(`${total} ms`);
     expect(text).toContain('illustrative');
-    expect(text).toContain(`<b>${end.rtts}</b> round trips`);
+    expect(text).toContain(`<b>${end.rtts} round trip${end.rtts === 1 ? '' : 's'}</b>`);
+    // The opening line matches what the browser already has.
+    const opening = renderToStaticMarkup(frames[0].say as ReactElement);
+    expect(opening.includes('no idea where')).toBe(!o.reuse && !o.dnsCached);
     if (setup) expect(text).toContain(`${setup} ms`);
     for (const f of frames) expect(f.say).toBeTruthy();
   });
