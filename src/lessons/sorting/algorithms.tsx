@@ -1,43 +1,11 @@
 import type { ReactNode } from 'react';
-import { randInt, shuffle } from '../../core/random';
 import type { Frame } from '../../core/types';
+import { ALGOS, racePlaces, type AlgoId, type Bar, type Kind, type SortFrame } from './model';
 
-export interface Bar {
-  id: number;
-  v: number;
-}
-
-export type AlgoId = 'bubble' | 'insertion' | 'selection' | 'merge' | 'quick';
-export type Kind = 'start' | 'compare' | 'swap' | 'write' | 'mark' | 'done';
-
-export interface SortFrame extends Frame {
-  order: Bar[];
-  kind: Kind;
-  /** Positions being compared / moved this frame. */
-  a: number | null;
-  b: number | null;
-  /** Pivot (quick) or current minimum (selection). */
-  pivot: number | null;
-  /** Active sub-range for divide-and-conquer algorithms. */
-  range: [number, number] | null;
-  sorted: number[];
-  comparisons: number;
-  writes: number;
-}
-
-/** A tick of the race view: `t` indexes into every algorithm's own frames. */
+/** A tick of the race view: `t` indexes into every algorithm's own race timeline. */
 export interface RaceFrame extends Frame {
   t: number;
 }
-
-export const ALGOS: Record<AlgoId, { name: string; big: string; note: string; writeLabel: string }> = {
-  bubble: { name: 'Bubble', big: 'O(n²)', note: 'best O(n) if already sorted', writeLabel: 'Swaps' },
-  insertion: { name: 'Insertion', big: 'O(n²)', note: 'O(n) on nearly-sorted data', writeLabel: 'Swaps' },
-  selection: { name: 'Selection', big: 'O(n²)', note: 'always n²/2 comparisons', writeLabel: 'Swaps' },
-  merge: { name: 'Merge', big: 'O(n log n)', note: 'guaranteed, uses O(n) extra memory', writeLabel: 'Writes' },
-  quick: { name: 'Quick', big: 'O(n log n)', note: 'average; O(n²) worst case', writeLabel: 'Swaps' },
-};
-
 type Say = ReactNode | undefined;
 
 class Recorder {
@@ -71,6 +39,12 @@ class Recorder {
     [this.arr[i], this.arr[j]] = [this.arr[j], this.arr[i]];
     this.writes++;
     this.snap('swap', i, j, say);
+  }
+
+  /** One item written to its place in a merge's output; records a frame. */
+  write(i: number) {
+    this.writes++;
+    this.snap('write', i, null);
   }
 }
 
@@ -139,27 +113,25 @@ function merge(r: Recorder) {
     sortRange(lo, mid);
     sortRange(mid + 1, hi);
     r.range = [lo, hi];
-    // In-place merge by rotation: same comparisons as a textbook merge,
-    // and every bar keeps a definite position so the motion is readable.
+    // Drawn as an in-place merge (by rotation) so every bar keeps a definite position:
+    // same comparisons as a textbook merge, and one write per item placed, as a real
+    // merge into its O(n) buffer would make. The stage says so.
     let i = lo;
     let j = mid + 1;
     let firstSay: Say = <>Merge two sorted halves ({mid - lo + 1} + {hi - mid}): repeatedly take the smaller front item.</>;
-    let placed = 0;
     while (i < j && j <= hi) {
       const leftBigger = r.greater(i, j, firstSay);
       firstSay = undefined;
-      r.writes++;
-      placed++;
       if (leftBigger) {
         const [moved] = r.arr.splice(j, 1);
         r.arr.splice(i, 0, moved);
-        r.snap('write', i, null);
         j++;
       }
+      r.write(i);
       i++;
     }
-    // A real merge still copies the leftovers from whichever half remains.
-    r.writes += hi - lo + 1 - placed;
+    // Whichever half is left over is already in order: a real merge still copies it.
+    for (let k = i; k <= hi; k++) r.write(k);
   };
   sortRange(0, r.arr.length - 1);
 }
@@ -217,47 +189,30 @@ export function buildFrames(items: Bar[], algo: AlgoId): SortFrame[] {
   return r.frames;
 }
 
-export type Preset = 'random' | 'nearly' | 'reversed' | 'few';
-
-/** "Few unique" squashes the values into this many distinct heights. */
-const FEW_UNIQUE_LEVELS = 4;
-/** "Nearly sorted" does one neighbour swap per this many bars. */
-const NEARLY_SORTED_SWAP_EVERY = 10;
-
-export function makeBars(n: number, preset: Preset): Bar[] {
-  let values = Array.from({ length: n }, (_, i) => i + 1);
-  if (preset === 'few') {
-    values = values.map((v) => Math.ceil((v / n) * FEW_UNIQUE_LEVELS) * Math.ceil(n / FEW_UNIQUE_LEVELS));
-  }
-  if (preset === 'random' || preset === 'few') values = shuffle(values);
-  if (preset === 'reversed') values.reverse();
-  if (preset === 'nearly') {
-    for (let k = 0; k < Math.max(1, Math.floor(n / NEARLY_SORTED_SWAP_EVERY)); k++) {
-      const i = randInt(0, n - 2);
-      [values[i], values[i + 1]] = [values[i + 1], values[i]];
-    }
-  }
-  return values.map((v, id) => ({ id, v }));
-}
-
-/** One tick per step for all five at once; captions announce each finisher. */
+/**
+ * One tick per unit of work for all five at once (pass in each algorithm's raceSteps),
+ * so they're ranked by comparisons + writes; captions announce each finisher.
+ */
 export function buildRaceFrames(race: { id: AlgoId; frames: SortFrame[] }[]): RaceFrame[] {
   const len = Math.max(...race.map((r) => r.frames.length));
-  const ranked = [...race].sort((a, b) => a.frames.length - b.frames.length);
+  const places = racePlaces(race.map((r) => r.frames.length));
   const out: RaceFrame[] = [];
   for (let t = 0; t < len; t++) {
-    const finishing = ranked.filter((r) => r.frames.length - 1 === t);
+    const finishing = race.map((r, k) => ({ ...r, place: places[k] })).filter((r) => r.frames.length - 1 === t);
     let say;
-    if (t === 0) say = <>Same input, five algorithms, one step each per tick. Who finishes first?</>;
+    if (t === 0) say = <>Same input, five algorithms, one comparison or write each per tick. Who finishes first?</>;
     else if (finishing.length) {
       say = (
         <>
-          {finishing.map((f) => (
-            <span key={f.id}>
-              <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{ranked.indexOf(f) + 1}</span> with{' '}
-              {f.frames[f.frames.length - 1].comparisons} comparisons.{' '}
-            </span>
-          ))}
+          {finishing.map((f) => {
+            const last = f.frames[f.frames.length - 1];
+            return (
+              <span key={f.id}>
+                <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{f.place}</span> with {last.comparisons}{' '}
+                comparisons and {last.writes} {ALGOS[f.id].writeLabel.toLowerCase()}.{' '}
+              </span>
+            );
+          })}
         </>
       );
     }

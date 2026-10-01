@@ -6,13 +6,21 @@ import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../componen
 import { useSetCaption } from '../../core/caption';
 import { SPRING } from '../../core/motion';
 import { usePlayer } from '../../core/usePlayer';
-import { buildScenario, type Item, type Op, type OpKind, type Target, type World } from './scenario';
+import { applyOp, type Item, type Op, type OpKind, type Target, type World } from './model';
+import { buildScenario } from './scenario';
 import './styles.css';
 
 /** Room in each structure before the sandbox refuses more. */
 const CAP = 7;
-/** Sandbox item ids start here, clear of the scenario's ids; labels count from 1. */
+/** Sandbox item ids start here, clear of the scenario's ids. */
 const FIRST_SANDBOX_ID = 100;
+
+interface Sandbox extends World {
+  op: Op | null;
+  nextId: number;
+  /** How many items each structure has had, so stack frames and print jobs number separately. */
+  made: Record<Target, number>;
+}
 /** A harder "No!" than the shared SHAKE: the whole structure refuses. */
 const REFUSE_SHAKE = { x: [0, -10, 10, -6, 6, 0] };
 
@@ -21,8 +29,8 @@ export function Stage() {
   const [mode, setMode] = useState<'guided' | 'sandbox'>('guided');
   const player = usePlayer(frames, { interval: 1700, keyboard: mode === 'guided' });
   const setCaption = useSetCaption();
-  const [sandbox, setSandbox] = useState<World & { op: Op | null; nextId: number }>({
-    stack: [], queue: [], op: null, nextId: FIRST_SANDBOX_ID,
+  const [sandbox, setSandbox] = useState<Sandbox>({
+    stack: [], queue: [], op: null, nextId: FIRST_SANDBOX_ID, made: { stack: 0, queue: 0 },
   });
   const [stackScope, animateStack] = useAnimate<HTMLDivElement>();
   const [queueScope, animateQueue] = useAnimate<HTMLDivElement>();
@@ -48,43 +56,19 @@ export function Stage() {
 
   const act = (target: Target, kind: OpKind) => {
     const s = sandbox;
-    const list = target === 'stack' ? s.stack : s.queue;
     const adding = kind === 'push' || kind === 'enqueue';
-    if (adding && list.length >= CAP) {
+    const n = s.made[target] + 1;
+    const fresh = adding ? { id: s.nextId, label: target === 'stack' ? `frame ${n}` : `job ${n}` } : undefined;
+    const { world, outcome, item } = applyOp(s, target, kind, fresh, CAP);
+
+    if (outcome !== 'ok' || !item) {
       shake(target);
-      setCaption(<><span className="hl bad">{target === 'stack' ? 'Stack overflow!' : 'Queue full!'}</span> This one has room for {CAP}. Real ones grow, but memory isn't infinite.</>);
+      setCaption(refusal(target, kind, outcome));
       return;
     }
-    if (!adding && !list.length) {
-      shake(target);
-      setCaption(<><span className="hl bad">{target === 'stack' ? 'Stack underflow!' : 'Queue is empty!'}</span> Nothing to {kind}. Real code must check for this.</>);
-      return;
-    }
-    const top = target === 'stack' ? list[list.length - 1] : list[0];
-    if (kind === 'peek') {
-      setSandbox({ ...s, op: { target, kind, item: top } });
-      setCaption(<><span className="hl">peek</span> → <b>{top.label}</b>. Looked, didn't remove. O(1).</>);
-      return;
-    }
-    if (adding) {
-      const n = s.nextId - FIRST_SANDBOX_ID + 1;
-      const item = { id: s.nextId, label: target === 'stack' ? `frame ${n}` : `job ${n}` };
-      const next = target === 'stack' ? { stack: [...s.stack, item] } : { queue: [...s.queue, item] };
-      setSandbox({ ...s, ...next, op: { target, kind, item }, nextId: s.nextId + 1 });
-      setCaption(
-        target === 'stack'
-          ? <><span className="hl ok">push</span> {item.label} onto the <b>top</b>. O(1).</>
-          : <><span className="hl ok">enqueue</span> {item.label} at the <b>back</b>. O(1).</>,
-      );
-      return;
-    }
-    const next = target === 'stack' ? { stack: s.stack.slice(0, -1) } : { queue: s.queue.slice(1) };
-    setSandbox({ ...s, ...next, op: { target, kind, item: top } });
-    setCaption(
-      target === 'stack'
-        ? <><span className="hl bad">pop</span> {top.label} off the <b>top</b>: the newest thing leaves first.</>
-        : <><span className="hl bad">dequeue</span> {top.label} from the <b>front</b>: the oldest thing leaves first.</>,
-    );
+    const made = adding ? { ...s.made, [target]: n } : s.made;
+    setSandbox({ ...world, op: { target, kind, item }, nextId: adding ? s.nextId + 1 : s.nextId, made });
+    setCaption(done(target, kind, item));
   };
 
   const op = view.op;
@@ -214,6 +198,54 @@ export function Stage() {
         </Box>
       </div>
     </StageFrame>
+  );
+}
+
+/** Caption for a refused operation. Underflow is a removal from an empty stack; peeking just finds nothing. */
+function refusal(target: Target, kind: OpKind, outcome: 'full' | 'empty' | 'ok') {
+  if (outcome === 'full') {
+    return (
+      <>
+        <span className="hl bad">{target === 'stack' ? 'Stack overflow!' : 'Queue full!'}</span> This one has room for {CAP}.
+        Real ones grow, but memory isn't infinite.
+      </>
+    );
+  }
+  if (kind === 'peek') {
+    return (
+      <>
+        <span className="hl bad">{target === 'stack' ? 'The stack is empty.' : 'The queue is empty.'}</span> There's
+        nothing to peek at.
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="hl bad">{target === 'stack' ? 'Stack underflow!' : 'Queue is empty!'}</span> Nothing to {kind}.
+      Real code must check for this.
+    </>
+  );
+}
+
+/** Caption for an operation that went through. */
+function done(target: Target, kind: OpKind, item: Item) {
+  if (kind === 'peek') {
+    return (
+      <>
+        <span className="hl">peek</span> → <b>{item.label}</b>. Looked, didn't remove. O(1).
+      </>
+    );
+  }
+  if (kind === 'push') return <><span className="hl ok">push</span> {item.label} onto the <b>top</b>. O(1).</>;
+  if (kind === 'enqueue') return <><span className="hl ok">enqueue</span> {item.label} at the <b>back</b>. O(1).</>;
+  return target === 'stack' ? (
+    <>
+      <span className="hl bad">pop</span> {item.label} off the <b>top</b>: the newest thing leaves first.
+    </>
+  ) : (
+    <>
+      <span className="hl bad">dequeue</span> {item.label} from the <b>front</b>: the oldest thing leaves first.
+    </>
   );
 }
 

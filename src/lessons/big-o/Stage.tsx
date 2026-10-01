@@ -1,13 +1,13 @@
 import { motion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { SPRING } from '../../core/motion';
 import { useLoop } from '../../core/hooks';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { COMPLEXITIES, fmtOps, fmtTime, type CxId } from './complexities';
+import { COMPLEXITIES, complexity, fmtOpsCount, fmtTime, type CxId } from './complexities';
 import './styles.css';
 
 type Scale = 'linear' | 'log';
@@ -19,15 +19,15 @@ interface TourFrame extends Frame {
 }
 
 const N_MAX = 32;
-const N2_COLOR = COMPLEXITIES.find((c) => c.id === 'n2')!.color;
+const N2 = complexity('n2');
 
 const TOUR: TourFrame[] = [
   { n: 1, focus: null, scale: 'linear', say: <>At <b>n = 1</b> everything costs about the same. Differences only show up as n grows. Press play.</> },
   { n: 4, focus: 'c1', say: <><span className="hl ok">O(1)</span> is flat: same cost for 1 item or 1 billion. Think array index.</> },
   { n: 8, focus: 'log', say: <><span className="hl info">O(log n)</span> barely rises. Doubling n adds just <b>one</b> step. Binary search lives here.</> },
   { n: 12, focus: 'n', say: <><span className="hl violet">O(n)</span> is a straight line: look at every item once.</> },
-  { n: 16, focus: 'nlogn', say: <><span className="hl">O(n log n)</span> is a bit steeper. The best general-purpose sorts sit here.</> },
-  { n: 20, focus: 'n2', say: <><span className="hl bad">O(n²)</span>: every item vs every other item. It's already shot off the top.</> },
+  { n: 16, focus: 'nlogn', say: <><span className="hl bo-amber">O(n log n)</span> is a bit steeper. The best general-purpose sorts sit here.</> },
+  { n: 20, focus: 'n2', say: <><span className="hl bo-orange">O(n²)</span>: every item vs every other item. It's already shot off the top.</> },
   { n: 24, focus: 'exp', say: <><span className="hl bad">O(2ⁿ)</span>: each extra item <b>doubles</b> the work. n = 24 is already 16 million ops.</> },
   { n: 32, focus: null, scale: 'log', hold: 2, say: <>Log scale squashes the y-axis so all six fit. Even squashed, 2ⁿ is a wall. Now race them →</> },
 ];
@@ -53,7 +53,7 @@ export function Stage() {
     setCaption(
       <>
         At <b>n = {v}</b>: O(n) does <span className="hl violet">{v}</span> ops, O(n²) does{' '}
-        <span className="hl bad">{sq.toLocaleString()}</span>, O(2ⁿ) does{' '}
+        <span className="hl bo-orange">{sq.toLocaleString()}</span>, O(2ⁿ) does{' '}
         <span className="hl bad">{Math.pow(2, v).toLocaleString()}</span>.
       </>,
     );
@@ -74,7 +74,7 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="n" value={n} color="var(--text)" />
-          <Stat label="O(n²) ops" value={(n * n).toLocaleString()} color={N2_COLOR} />
+          <Stat label="O(n²) ops" value={(n * n).toLocaleString()} color={N2.color} />
           <Stat label="O(2ⁿ) ops" value={Math.pow(2, n).toLocaleString()} color="var(--bad)" />
         </Stats>
       }
@@ -107,6 +107,10 @@ export function Stage() {
               { value: 'log', label: 'Log' },
             ]}
           />
+          <Hint block>
+            Each curve is drawn with a constant of 1: real code has constants, which Big-O deliberately ignores. The race
+            runs at {RATE} ops/s so you can watch it; a real CPU does billions.
+          </Hint>
         </Controls>
       }
     >
@@ -124,15 +128,18 @@ export function Stage() {
         <div className="bo-panel bo-real">
           <div className="bo-panel-head">
             If 1 operation = 1 µs, and n =
-            <Segmented
-              value={bigN}
-              onChange={setBigN}
-              options={[
-                { value: 3, label: '1,000' },
-                { value: 6, label: '1 million' },
-                { value: 9, label: '1 billion' },
-              ]}
-            />
+            {/* the visible sentence names the choice; give the radio group the same name */}
+            <div role="group" aria-label="Input size n for the 1 µs readout">
+              <Segmented
+                value={bigN}
+                onChange={setBigN}
+                options={[
+                  { value: 3, label: '1,000' },
+                  { value: 6, label: '1 million' },
+                  { value: 9, label: '1 billion' },
+                ]}
+              />
+            </div>
           </div>
           <RealWorld n={Math.pow(10, bigN)} hidden={hidden} />
         </div>
@@ -178,6 +185,9 @@ function curvePath(f: (n: number) => number, scale: Scale) {
   return d;
 }
 
+/** The "n →" axis label sits between the 16 and 24 ticks, clear of the 32 at the end. */
+const AXIS_LABEL_AT = 20;
+
 const LOG_TICKS = [
   [0, '1'], [2, '100'], [4, '10K'], [6, '1M'], [8, '100M'], [10, '10B'],
 ] as const;
@@ -209,7 +219,7 @@ function Chart({ n, scale, hidden, focus }: { n: number; scale: Scale; hidden: S
       {[1, 8, 16, 24, 32].map((v) => (
         <text key={v} x={xOf(v)} y={H - 8} className="bo-tick" textAnchor="middle">{v}</text>
       ))}
-      <text x={W - PR} y={H - 8} className="bo-tick bo-axis-label" textAnchor="end">n →</text>
+      <text x={xOf(AXIS_LABEL_AT)} y={H - 8} className="bo-tick bo-axis-label" textAnchor="middle">n →</text>
 
       {/* curves: redraw on scale change */}
       {visible.map((c) => (
@@ -304,7 +314,7 @@ function Race({ n, hidden }: { n: number; hidden: Set<CxId> }) {
                 <div className="bo-lane-fill" style={{ width: `${(done / ops) * 100}%` }} />
               </div>
               <span className="bo-lane-count">
-                {finished ? `✓ ${fmtSeconds(ops / RATE)}` : elapsed > 0 ? `ETA ${fmtSeconds((ops - done) / RATE)}` : `${ops.toLocaleString()} ops`}
+                {finished ? `✓ ${fmtSeconds(ops / RATE)}` : elapsed > 0 ? `ETA ${fmtSeconds((ops - done) / RATE)}` : `${ops.toLocaleString()} ${ops === 1 ? 'op' : 'ops'}`}
               </span>
             </div>
           );
@@ -347,23 +357,11 @@ function RealWorld({ n, hidden }: { n: number; hidden: Set<CxId> }) {
             transition={{ delay: i * 0.05 }}
           >
             <span className="bo-real-label">{c.label}</span>
-            <span className="bo-real-time"><Pow text={fmtTime(l)} /></span>
-            <span className="bo-real-ops"><Pow text={fmtOps(l)} /> ops</span>
+            <span className="bo-real-time">{fmtTime(l)}</span>
+            <span className="bo-real-ops">{fmtOpsCount(l)}</span>
           </motion.div>
         );
       })}
     </div>
-  );
-}
-
-/** Render "10^1,234" with a real superscript. */
-function Pow({ text }: { text: string }) {
-  const m = text.match(/^(.*)10\^([\d,]+)(.*)$/);
-  if (!m) return <>{text}</>;
-  return (
-    <>
-      {m[1]}10<sup>{m[2]}</sup>
-      {m[3]}
-    </>
   );
 }

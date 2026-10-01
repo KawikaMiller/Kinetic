@@ -1,24 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
-
-export interface Item {
-  id: number;
-  label: string;
-}
-
-export type OpKind = 'push' | 'pop' | 'peek' | 'enqueue' | 'dequeue';
-export type Target = 'stack' | 'queue';
-
-export interface Op {
-  target: Target;
-  kind: OpKind;
-  item?: Item;
-}
-
-export interface World {
-  stack: Item[]; // index 0 = bottom
-  queue: Item[]; // index 0 = front
-}
+import { applyOp, type Op, type OpKind, type Target, type World } from './model';
 
 export interface SqFrame extends Frame, World {
   op: Op | null;
@@ -50,29 +32,26 @@ const SCRIPT: Step[] = [
   { do: 'none', hold: 2, say: <>Stack = <span className="hl violet">LIFO</span> (undo, back button, call stack). Queue = <span className="hl info">FIFO</span> (job queues, BFS, buffers). Both are O(1) at their ends.</> },
 ];
 
+/** Which structure and operation each scripted step performs. */
+const STEP_OP: Record<Exclude<Step['do'], 'none'>, { target: Target; kind: OpKind }> = {
+  push: { target: 'stack', kind: 'push' },
+  pop: { target: 'stack', kind: 'pop' },
+  'peek-stack': { target: 'stack', kind: 'peek' },
+  enqueue: { target: 'queue', kind: 'enqueue' },
+  dequeue: { target: 'queue', kind: 'dequeue' },
+  'peek-queue': { target: 'queue', kind: 'peek' },
+};
+
 export function buildScenario(): SqFrame[] {
   let id = 1;
   let w: World = { stack: [], queue: [] };
   return SCRIPT.map((s) => {
     let op: Op | null = null;
-    if (s.do === 'push') {
-      const item = { id: id++, label: s.label };
-      w = { ...w, stack: [...w.stack, item] };
-      op = { target: 'stack', kind: 'push', item };
-    } else if (s.do === 'enqueue') {
-      const item = { id: id++, label: s.label };
-      w = { ...w, queue: [...w.queue, item] };
-      op = { target: 'queue', kind: 'enqueue', item };
-    } else if (s.do === 'pop') {
-      op = { target: 'stack', kind: 'pop', item: w.stack[w.stack.length - 1] };
-      w = { ...w, stack: w.stack.slice(0, -1) };
-    } else if (s.do === 'dequeue') {
-      op = { target: 'queue', kind: 'dequeue', item: w.queue[0] };
-      w = { ...w, queue: w.queue.slice(1) };
-    } else if (s.do === 'peek-stack') {
-      op = { target: 'stack', kind: 'peek', item: w.stack[w.stack.length - 1] };
-    } else if (s.do === 'peek-queue') {
-      op = { target: 'queue', kind: 'peek', item: w.queue[0] };
+    if (s.do !== 'none') {
+      const { target, kind } = STEP_OP[s.do];
+      const res = applyOp(w, target, kind, 'label' in s ? { id: id++, label: s.label } : undefined);
+      w = res.world;
+      op = { target, kind, item: res.item };
     }
     return { ...w, op, say: s.say, hold: 'hold' in s ? s.hold : undefined };
   });

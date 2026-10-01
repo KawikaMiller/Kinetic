@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Nearly every technical interview",
     ],
     why: "It's the shared vocabulary for performance. Juniors are expected to recognise the common classes, avoid accidental O(n²), and explain trade-offs out loud. Without it you can't predict whether code will survive real data.",
-    watch: "Each coloured curve is one complexity class. Drag n and watch them pull apart: at small n they're bunched together, at large n only the class matters. The race runs every class at the same speed, so any difference in finish time is pure growth rate.",
+    watch: "Each coloured curve is one complexity class, and the chips above the chart show or hide them. Drag n and watch them pull apart: at small n they're bunched together, at large n only the class matters. In the race each lane fills as its class does its work at the same speed, so any difference in finish time is pure growth rate. The cards at the bottom turn the counts into real time at 1 µs per operation.",
   },
   tryThis: [
     'Play the tour, then drag n up to 32 and watch O(n²) and O(2ⁿ) shoot off the chart.',

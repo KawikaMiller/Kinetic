@@ -3,12 +3,11 @@ import { useMemo, useState } from 'react';
 import { CallStackPanel, type CallFrame, type CallFrameState } from '../../components/CallStackPanel';
 import { StageFrame } from '../../components/StageFrame';
 import { TreeSvg, type TreeShape } from '../../components/TreeSvg';
-import { Controls, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Controls, Hint, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import {
-  LIMIT, factorialFrames, fibTree, sumFrames, type FNode, type StackFrame, type Tone as StackTone, type TreeFrame,
-} from './frames';
+import { factorialFrames, fibTree, sumFrames, type StackFrame, type Tone as StackTone, type TreeFrame } from './frames';
+import { LIMIT, type FNode } from './model';
 import './styles.css';
 
 type Mode = 'factorial' | 'sum' | 'fib';
@@ -73,7 +72,7 @@ export function Stage() {
             lf
               ? [
                   { color: 'var(--hi)', label: 'running now' },
-                  { color: 'var(--dim)', label: 'waiting for a callee' },
+                  { color: 'var(--violet)', label: 'waiting for a callee' },
                   { color: 'var(--ok)', label: 'base case' },
                   { color: 'var(--info)', label: 'return value' },
                   { color: 'var(--bad)', label: 'overflow' },
@@ -104,6 +103,12 @@ export function Stage() {
           {mode === 'fib' && <Slider label="n" value={fibN} min={2} max={7} onChange={setFibN} />}
           {mode !== 'fib' && (
             <Toggle label="Base case" value={!withBase} onChange={(remove) => setWithBase(!remove)} off="Keep it" on="Remove it 💣" />
+          )}
+          {mode !== 'fib' && !withBase && (
+            <Hint block>
+              The stack is cut off at {LIMIT} frames so the crash fits on screen. A real JS engine allows roughly 10,000
+              (it varies by engine) before it throws.
+            </Hint>
           )}
         </Controls>
       }
@@ -144,6 +149,8 @@ function CallStack({ frame }: { frame: StackFrame }) {
     id: f.id,
     name: f.label,
     state: STATE_OF[f.tone],
+    // violet for "on the stack, waiting", as in tree-traversals
+    tone: f.tone === 'waiting' ? 'violet' : undefined,
     detail: (
       <>
         {f.note}
