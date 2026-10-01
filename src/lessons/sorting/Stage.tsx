@@ -49,7 +49,7 @@ export function Stage() {
         mode === 'single' ? (
           <Stats>
             <Stat label="Comparisons" value={frame.comparisons} color="var(--hi)" />
-            <Stat label={info.writeLabel} value={frame.writes} color="var(--violet)" />
+            <Stat label="Writes" value={frame.writes} color="var(--violet)" sub={algo === 'merge' ? 'one per item placed' : 'a swap writes 2'} />
             <Stat label="Complexity" value={info.big} color={info.big === 'O(n²)' ? 'var(--bad)' : 'var(--ok)'} sub={info.note} />
           </Stats>
         ) : (
@@ -114,7 +114,10 @@ export function Stage() {
           />
           <Button onClick={() => regen()}>Shuffle</Button>
           {mode === 'race' && (
-            <Hint block>One tick is one comparison or one write for every algorithm; the narration doesn't cost ticks.</Hint>
+            <Hint block>
+              One tick is one comparison or one array write, for every algorithm: a swap writes two slots, so it costs two
+              ticks, and a merge pays one per item it places. The narration doesn't cost ticks.
+            </Hint>
           )}
           {mode === 'single' && algo === 'merge' && (
             <Hint block>
@@ -206,7 +209,7 @@ function Race({ race, t, n, max, stepMs }: { race: { id: AlgoId; frames: SortFra
                 <b>{f.comparisons}</b> cmp
               </span>
               <span>
-                <b>{f.writes}</b> {info.writeLabel.toLowerCase()}
+                <b>{f.writes}</b> writes
               </span>
             </footer>
           </div>

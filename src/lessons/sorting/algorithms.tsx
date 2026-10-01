@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
-import { ALGOS, racePlaces, raceVerdict, type AlgoId, type Bar, type Kind, type RaceVerdict, type SortFrame } from './model';
+import { ALGOS, racePlaces, raceVerdict, SWAP_WRITES, type AlgoId, type Bar, type Kind, type RaceVerdict, type SortFrame } from './model';
 
 /** A tick of the race view: `t` indexes into every algorithm's own race timeline. */
 export interface RaceFrame extends Frame {
@@ -37,7 +37,7 @@ class Recorder {
 
   swap(i: number, j: number, say?: Say) {
     [this.arr[i], this.arr[j]] = [this.arr[j], this.arr[i]];
-    this.writes++;
+    this.writes += SWAP_WRITES;
     this.snap('swap', i, j, say);
   }
 
@@ -179,10 +179,8 @@ export function buildFrames(items: Bar[], algo: AlgoId): SortFrame[] {
     null,
     <>
       Sorted with <span className="hl">{r.comparisons} comparisons</span> and{' '}
-      <span className="hl violet">
-        {r.writes} {ALGOS[algo].writeLabel.toLowerCase()}
-      </span>
-      .
+      <span className="hl violet">{r.writes} writes</span>
+      {algo === 'merge' ? '' : ' (each swap writes two slots)'}.
     </>,
   );
   r.frames[r.frames.length - 1].hold = 2;
@@ -215,8 +213,9 @@ function verdictSay(v: RaceVerdict): ReactNode {
 }
 
 /**
- * One tick per unit of work for all five at once (pass in each algorithm's raceSteps),
- * so they're ranked by comparisons + writes; captions announce each finisher.
+ * One tick per comparison or element write for all five at once (pass in each algorithm's
+ * raceSteps, which holds a swap for two ticks), so they're ranked by comparisons + writes;
+ * captions announce each finisher.
  */
 export function buildRaceFrames(race: { id: AlgoId; frames: SortFrame[] }[]): RaceFrame[] {
   const len = Math.max(...race.map((r) => r.frames.length));
@@ -228,14 +227,14 @@ export function buildRaceFrames(race: { id: AlgoId; frames: SortFrame[] }[]): Ra
       return (
         <span key={f.id}>
           <b>{ALGOS[f.id].name}</b> finishes <span className="hl ok">#{f.place}</span> with {last.comparisons}{' '}
-          comparisons and {last.writes} {ALGOS[f.id].writeLabel.toLowerCase()}.{' '}
+          comparisons and {last.writes} writes.{' '}
         </span>
       );
     });
   const out: RaceFrame[] = [];
   for (let t = 0; t < len - 1; t++) {
     let say;
-    if (t === 0) say = <>Same input, five algorithms, one comparison or write each per tick. Who finishes first?</>;
+    if (t === 0) say = <>Same input, five algorithms. Each tick is one comparison or one write; a swap writes two slots, so it takes two ticks. Who finishes first?</>;
     else if (finishersAt(t).length) say = <>{announce(t)}</>;
     out.push({ t, say });
   }

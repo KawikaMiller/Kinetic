@@ -22,15 +22,22 @@ export interface SortFrame extends Frame {
   range: [number, number] | null;
   sorted: number[];
   comparisons: number;
+  /** Array slots written: a merge placing one item is 1, a swap is SWAP_WRITES. */
   writes: number;
 }
 
-export const ALGOS: Record<AlgoId, { name: string; big: string; note: string; writeLabel: string }> = {
-  bubble: { name: 'Bubble', big: 'O(n²)', note: 'best O(n) if already sorted', writeLabel: 'Swaps' },
-  insertion: { name: 'Insertion', big: 'O(n²)', note: 'O(n) on nearly-sorted data', writeLabel: 'Swaps' },
-  selection: { name: 'Selection', big: 'O(n²)', note: 'always n²/2 comparisons', writeLabel: 'Swaps' },
-  merge: { name: 'Merge', big: 'O(n log n)', note: 'guaranteed, uses O(n) extra memory', writeLabel: 'Writes' },
-  quick: { name: 'Quick', big: 'O(n log n)', note: 'average; O(n²) worst case', writeLabel: 'Swaps' },
+/**
+ * A swap writes two array slots. Every algorithm counts element writes on the same scale,
+ * so swap-based sorts aren't charged half of what a merge pays for moving the same data.
+ */
+export const SWAP_WRITES = 2;
+
+export const ALGOS: Record<AlgoId, { name: string; big: string; note: string }> = {
+  bubble: { name: 'Bubble', big: 'O(n²)', note: 'best O(n) if already sorted' },
+  insertion: { name: 'Insertion', big: 'O(n²)', note: 'O(n) on nearly-sorted data' },
+  selection: { name: 'Selection', big: 'O(n²)', note: 'always n²/2 comparisons' },
+  merge: { name: 'Merge', big: 'O(n log n)', note: 'guaranteed, uses O(n) extra memory' },
+  quick: { name: 'Quick', big: 'O(n log n)', note: 'average; O(n²) worst case' },
 };
 
 export const ALGO_IDS = Object.keys(ALGOS) as AlgoId[];
@@ -56,16 +63,23 @@ export function makeBars(n: number, preset: Preset, rnd: Rnd = Math.random): Bar
   return values.map((v, id) => ({ id, v }));
 }
 
-/** A frame that does one unit of work: a comparison, a swap or a write (not narration). */
+/** A frame that does work: a comparison, a swap or a write (not narration). */
 export const isWorkFrame = (f: SortFrame) => f.kind === 'compare' || f.kind === 'swap' || f.kind === 'write';
 
+/** Race ticks a frame costs: one per comparison or element write, so a swap costs two. */
+export const workTicks = (f: SortFrame) => (f.kind === 'swap' ? SWAP_WRITES : isWorkFrame(f) ? 1 : 0);
+
 /**
- * The race timeline for one algorithm: its start, every unit of work, and its finish.
- * Narration frames (a pass ending, a pivot being chosen) don't cost a tick, so the
- * race is decided by work done, not by how much the lesson has to say.
+ * The race timeline for one algorithm: its start, one tick per comparison or element
+ * write (a swap's frame is held for two ticks), and its finish. Narration frames (a pass
+ * ending, a pivot being chosen) cost nothing, so the race is decided by work done, not by
+ * how much the lesson has to say. Its length is comparisons + writes + 2.
  */
 export function raceSteps(frames: readonly SortFrame[]): SortFrame[] {
-  return frames.filter((f, i) => i === 0 || i === frames.length - 1 || isWorkFrame(f));
+  return frames.flatMap((f, i) => {
+    if (i === 0 || i === frames.length - 1) return [f];
+    return Array.from({ length: workTicks(f) }, () => f);
+  });
 }
 
 /** 1-based finishing places by timeline length; equal lengths share a place. */
