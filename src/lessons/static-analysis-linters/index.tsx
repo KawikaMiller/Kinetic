@@ -1,0 +1,59 @@
+import type { LessonModule } from '../../core/types';
+import { Stage } from './Stage';
+
+const lesson: LessonModule = {
+  Stage,
+  summary: {
+    tldr: 'Formatters, linters, type checkers and tests each catch a different kind of problem before your code runs in production, and none of them catches everything.',
+    what: "A formatter (Prettier) only rewrites whitespace and layout, so the code means the same. A linter (ESLint) matches code against rules for suspicious patterns: unused variables, == instead of ===, a promise nobody awaits. A type checker (TypeScript) proves things about values, like \"this might be null\". Tests run the code and check its behaviour, which is the only way to catch a logic bug like an off-by-one.",
+    analogy: 'Spell check, grammar check, a fact-checker and a test reader each catch a different kind of mistake in an essay. Passing spell check does not make the argument right.',
+    useCases: [
+      'Pre-commit hooks and CI that run Prettier, ESLint and tsc on every change',
+      'Editor squiggles that flag a bug while you type, long before review',
+      'Deciding whether a lint rule is worth an inline // eslint-disable-next-line',
+      'Explaining in review why "it passed lint" is not the same as "it works"',
+    ],
+    why: 'Every team you join will have these tools in CI, and they will flag your code from day one. Knowing what each one can and can\'t catch tells you why a check failed, how to fix it properly, and why you still need tests.',
+    watch: "The code on the left highlights in yellow every line a switched-on tool flags, with the rule name at the end of the line. On the right, each tool layer is a band: green-bordered when it's on, dashed and dimmed when it's off. A problem drops through the layers in order and lands, as a green chip, in the first one that catches it; anything nothing catches lands in the red Production band. The table marks with ✓ which tool can catch which problem, in green where it actually did, with the columns of switched-off tools dimmed. The formatter diff strikes through the old line and shows the new one, with a green chip when the tokens are unchanged. Inside the eqeqeq rule, the violet pattern finds the match highlighted in yellow. These are small toy versions of the tools: the table matches what Prettier, ESLint and tsc --strict really report on this code.",
+  },
+  tryThis: [
+    'Switch on Linter only: three problems still ship, even though the linter "passes".',
+    'Switch on Formatter and open the Formatter diff: only whitespace changed.',
+    'Switch on Type checker: it is the only tool that sees user may be null.',
+    'Turn every layer on, then set Silence eqeqeq on the == line to eslint-disable.',
+    'Find the one problem only Tests can catch.',
+  ],
+  keyIdeas: [
+    'Formatters change layout, never meaning; linters flag suspicious patterns; type checkers prove facts about values.',
+    'Only tests run the code, so only tests catch logic bugs like an off-by-one.',
+    'Each layer catches what the others miss: you want all of them, not one.',
+    'An inline disable comment silences a rule for one line: fine for a real exception, dangerous as a habit.',
+  ],
+  quiz: [
+    {
+      q: 'ESLint and TypeScript both pass with zero errors. What does that tell you?',
+      options: [
+        'The code is correct',
+        'The code has no patterns these rules know about and no type errors, but logic bugs can remain',
+        'The tests will pass',
+        'The code is formatted',
+      ],
+      answer: 1,
+      why: 'Linters and type checkers check patterns and types, not what the code is supposed to do. The off-by-one loop passes both and only a test catches it.',
+    },
+    {
+      q: 'Which tool catches `user.name` when user can be null?',
+      options: ['Prettier', 'ESLint eqeqeq', 'TypeScript with strictNullChecks', 'None of them'],
+      answer: 2,
+      why: 'The type checker knows user is User | null, so it reports TS18047: \'user\' is possibly \'null\'.',
+    },
+    {
+      q: 'What does a formatter like Prettier change?',
+      options: ['Logic bugs', 'Unused variables', 'Only whitespace and layout, never what the code does', 'Type errors'],
+      answer: 2,
+      why: 'It reprints the same code in a consistent style. The tokens, and so the meaning, stay the same.',
+    },
+  ],
+};
+
+export default lesson;
