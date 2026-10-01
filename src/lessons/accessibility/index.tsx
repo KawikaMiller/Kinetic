@@ -53,7 +53,7 @@ const lesson: LessonModule = {
       why: "Text that's only visually nearby isn't connected. Without a label (or aria-label), the input has no accessible name, though it is still announced as an edit field.",
     },
     {
-      q: 'Is grey #777 text on a white background OK for body copy under WCAG AA?',
+      q: 'Is grey #777 text on a white background OK for body copy under WCAG AA?', // allow-color: the WCAG example colour named in prose
       options: [
         "No, it's about 4.48:1, just under 4.5:1",
         "Yes: it's comfortably above 4.5:1",
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'Only if the user zooms the page to 200%',
       ],
       answer: 0,
-      why: 'AA needs 4.5:1 for normal-size text; #777 on white is 4.48:1. It passes for large text (3:1), not body text, and "readable to me" isn\'t the test.',
+      why: 'AA needs 4.5:1 for normal-size text; #777 on white is 4.48:1. It passes for large text (3:1), not body text, and "readable to me" isn\'t the test.', // allow-color: the WCAG example colour named in prose
     },
   ],
 };
