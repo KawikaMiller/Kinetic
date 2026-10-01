@@ -34,5 +34,3 @@
 .tp-pair-cell.is-now { background: var(--hi); border-color: var(--hi); }
 .tp-pair-cell.is-found { background: var(--ok); border-color: var(--ok); }
 .tp-pair-cell.is-missed { background: color-mix(in srgb, var(--bad) 30%, transparent); border: 2px solid var(--bad); opacity: 1; }
-
-/* ArrayStrip tints idle cells in its first range with --hi; this range is the green unique part. */

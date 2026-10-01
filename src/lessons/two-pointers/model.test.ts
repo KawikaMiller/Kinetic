@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import {
-  bruteForcePairSum, dedupeTrace, isSortedAscending, pairKey, pairsRuledOut, palindromeTrace, twoPointerPairSum,
+  bruteForcePairSum, dedupeTrace, isSortedAscending, pairKey, pairsRuledOut, palindromeTrace, readArray, readTarget, twoPointerPairSum,
 } from './model';
 import { PRESETS } from './presets';
 
@@ -92,5 +92,22 @@ describe('remove duplicates in place', () => {
       expect(values.slice(0, length)).toEqual([...new Set(arr)]);
       expect(steps.length).toBe(Math.max(0, arr.length - 1));
     }
+  });
+});
+
+describe('reading what the learner typed', () => {
+  it('takes plain integers only', () => {
+    expect(readArray('1, 2, -3')).toEqual([1, 2, -3]);
+    expect(typeof readArray('1, 0x10')).toBe('string');
+    expect(typeof readArray('1, 1e1')).toBe('string');
+    expect(readTarget(' 7 ')).toBe(7);
+    expect(readTarget('-4')).toBe(-4);
+    for (const bad of ['', '  ', '0x10', '1e1', '3.5', 'ten']) expect(readTarget(bad), bad).toBeNull();
+  });
+});
+
+describe('one-letter words', () => {
+  it('are palindromes with nothing to compare', () => {
+    expect(palindromeTrace('a')).toMatchObject({ checks: [], isPalindrome: true });
   });
 });
