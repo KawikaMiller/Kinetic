@@ -14,14 +14,14 @@ const lesson: LessonModule = {
       'Avoiding bugs where one part of an app sorts an array another part is still reading',
     ],
     why: 'You will read and write .map().filter().reduce() chains in almost every JavaScript codebase, and many real bugs are hidden inputs (globals) or shared arrays changed in place. Knowing which functions are pure and which methods mutate saves you hours of "why did this change?".',
-    watch: "In map · filter · reduce, each card is an order moving right through three stations, drawn as dashed lines with a call counter on each. The card being processed right now is yellow, kept cards are green, cards the filter dropped stay behind dimmed and struck through, and cards reduced into the bin on the right are violet, where the violet total is the accumulator. The line of the chain that is running is highlighted in the code below; the loop beside it is static, for comparison. In Pure functions, the dashed violet chip is a hidden input (the global); an output is green while it matches what it returned before and red when the same input gives a new answer. In Mutation, the leaderboard's cells are green; the entry log's cells turn red when the method reordered them behind its back, and a violet chip says when two names point at one array.",
+    watch: "In map · filter · reduce, each card is an order moving right through three stations, drawn as dashed lines with a call counter on each. The card being processed right now is yellow, kept cards are green, cards the filter dropped stay behind dimmed and struck through, and cards reduced into the bin on the right are violet, where the violet total is the accumulator. The line of the chain that is running is highlighted in the code below; the loop beside it is static, for comparison. In Pure functions, the dashed violet chip is a hidden input (the global); an output is green while it matches what it returned before and red when the same input gives a new answer. In Mutation, the leaderboard's cells are green when they really are highest first and red when a reverse only flipped the entry order; the entry log's cells turn red when the method reordered them behind its back, and a violet chip says when two names point at one array.",
   },
   tryThis: [
     'Press play in map · filter · reduce and watch map finish the whole array before filter starts.',
     'Switch Order of stations to Filter first: same revenue, and the total calls drop from 16 to 14.',
     'In Pure functions, call both, set the global discount to 25%, and call again.',
     'In Mutation, run .sort(), then Reset, pick .toSorted() and run it again.',
-    'Try .reverse() and .toReversed() in Mutation: the same trap, a different method.',
+    'Try .reverse() and .toReversed() in Mutation: only one mutates, and neither one ranks.',
   ],
   keyIdeas: [
     'A pure function depends only on its arguments and changes nothing outside itself.',

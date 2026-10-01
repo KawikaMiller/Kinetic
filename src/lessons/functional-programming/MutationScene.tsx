@@ -31,16 +31,23 @@ export function MutationScene({ picker }: { picker: ReactNode }) {
 
   const run = () => {
     setRan(true);
+    const notRanked = !result.isRanked && (
+      <>
+        {' '}And reversing isn&apos;t ranking: [{result.ranked.join(', ')}] is just the entry order backwards, so the leaderboard
+        is wrong too.
+      </>
+    );
     setCaption(
       result.mutated ? (
         <>
           <code>{METHOD_LABEL[method]}</code> changed <b>scores itself</b> and handed back the same array: the entry log reordered
           without anyone touching it. <span className="hl bad">It does not return a new array.</span>
+          {notRanked}
         </>
       ) : (
         <>
-          <code>{METHOD_LABEL[method]}</code> made a <b>new</b> array. The leaderboard gets its order; the entry log is{' '}
-          <span className="hl ok">untouched</span>.
+          <code>{METHOD_LABEL[method]}</code> made a <b>new</b> array, so the entry log is <span className="hl ok">untouched</span>.
+          {result.isRanked ? <> The leaderboard gets its highest-first order.</> : notRanked}
         </>
       ),
     );
@@ -52,7 +59,7 @@ export function MutationScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--bad)', label: 'changed unexpectedly' },
+            { color: 'var(--bad)', label: 'wrong order (changed behind its back, or not ranked)' },
             { color: 'var(--ok)', label: 'unchanged' },
             { color: 'var(--violet)', label: 'one array, two names' },
           ]}
@@ -79,7 +86,17 @@ export function MutationScene({ picker }: { picker: ReactNode }) {
           <Box className="fp-consumer">
             <SectionTitle hint="shows ranked">Leaderboard</SectionTitle>
             {ran ? (
-              <ArrayStrip values={result.ranked} cellMax={CELL_MAX} ranges={[{ from: 0, to: result.ranked.length - 1, tone: 'ok' }]} />
+              <>
+                <ArrayStrip
+                  values={result.ranked}
+                  cellMax={CELL_MAX}
+                  ranges={result.isRanked ? [{ from: 0, to: result.ranked.length - 1, tone: 'ok' }] : []}
+                  cellState={() => (result.isRanked ? 'idle' : 'bad')}
+                />
+                <span className={`fp-verdict ${result.isRanked ? 'is-ok' : 'is-bad'}`}>
+                  {result.isRanked ? 'highest first' : 'not ranked: the entry order reversed'}
+                </span>
+              </>
             ) : (
               <span className="empty-note">not run yet</span>
             )}

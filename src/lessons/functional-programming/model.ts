@@ -181,7 +181,12 @@ export interface MethodResult {
   sameArray: boolean;
   /** The line changed `scores` itself. */
   mutated: boolean;
+  /** `ranked` really is highest first. Reversing only flips the entry order, which isn't a ranking. */
+  isRanked: boolean;
 }
+
+/** Highest score first, ties allowed. */
+export const isRankedDesc = (xs: readonly number[]) => xs.every((v, i) => i === 0 || xs[i - 1] >= v);
 
 /** Run the method for real on a fresh copy of `scores`. */
 export function applyMethod(method: ArrayMethod, input: readonly number[] = SCORES): MethodResult {
@@ -202,5 +207,6 @@ export function applyMethod(method: ArrayMethod, input: readonly number[] = SCOR
     ranked: [...ranked],
     sameArray: ranked === scores,
     mutated: scores.some((v, i) => v !== input[i]),
+    isRanked: isRankedDesc(ranked),
   };
 }
