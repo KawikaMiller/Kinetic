@@ -91,7 +91,7 @@ export function Stage() {
     setCaption(
       <>
         An injected script ran in this tab and read <span className="hl bad">{plural(readCount, 'entry', 'entries')}</span>
-        {credentials.length > 0 && <>, including the {credentials.length === 1 ? 'credential' : 'credentials'} {credentials.join(' and ')}</>}. {hiddenNote}
+        {credentials.length > 0 && <>, including {credentials.length === 1 ? 'a credential' : 'credentials'}: {credentials.join(' and ')}</>}. {hiddenNote}
       </>,
     );
   };
