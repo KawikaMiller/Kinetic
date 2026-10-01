@@ -1,17 +1,23 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
+
+/**
+ * Native attributes a wrapper forwards to its root element (aria-*, role, id, data-*, events).
+ * Without forwarding, `<Box aria-label="…">` type-checks (TS doesn't check hyphenated JSX props
+ * against the declared ones) and the attribute silently vanishes.
+ */
+type Forwarded<E extends HTMLElement> = Omit<HTMLAttributes<E>, 'children' | 'className'>;
 
 /** A sub-panel inside a stage (kit.css `.box`). Pass className for lesson layout, style for one-off fills. */
 export function Box({
-  variant = 'default', className = '', style, children,
+  variant = 'default', className = '', children, ...rest
 }: {
   variant?: 'default' | 'sunken' | 'raised';
   className?: string;
-  style?: CSSProperties;
   children: ReactNode;
-}) {
+} & Forwarded<HTMLDivElement>) {
   const v = variant === 'default' ? '' : ` box-${variant}`;
   return (
-    <div className={`box${v} ${className}`} style={style}>
+    <div {...rest} className={`box${v} ${className}`}>
       {children}
     </div>
   );
@@ -24,15 +30,15 @@ export type TitleWeight = 'bold' | 'regular';
  * `weight="regular"` is the lighter label style (normal weight, tighter tracking).
  */
 export function SectionTitle({
-  children, hint, weight = 'bold', className = '',
+  children, hint, weight = 'bold', className = '', ...rest
 }: {
   children: ReactNode;
   hint?: ReactNode;
   weight?: TitleWeight;
   className?: string;
-}) {
+} & Forwarded<HTMLSpanElement>) {
   return (
-    <span className={`section-title ${weight === 'regular' ? 'is-regular' : ''} ${className}`}>
+    <span {...rest} className={`section-title ${weight === 'regular' ? 'is-regular' : ''} ${className}`}>
       {children}
       {hint && <span className="hint-inline">{hint}</span>}
     </span>
@@ -48,7 +54,7 @@ export function SectionTitle({
  * above the content (lists, result rows, a search field).
  */
 export function Tray({
-  label, labelWeight, empty, stack = false, className = '', ariaLabel, children,
+  label, labelWeight, empty, stack = false, className = '', ariaLabel, children, ...rest
 }: {
   label?: ReactNode;
   labelWeight?: TitleWeight;
@@ -57,10 +63,10 @@ export function Tray({
   className?: string;
   ariaLabel?: string;
   children?: ReactNode;
-}) {
+} & Forwarded<HTMLDivElement>) {
   const hasItems = Array.isArray(children) ? children.length > 0 : children != null && children !== false;
   return (
-    <div className={`tray ${stack ? 'is-stacked' : ''} ${className}`} aria-label={ariaLabel}>
+    <div {...rest} className={`tray ${stack ? 'is-stacked' : ''} ${className}`} aria-label={ariaLabel ?? rest['aria-label']}>
       {label && <SectionTitle weight={labelWeight}>{label}</SectionTitle>}
       {hasItems ? children : empty && <span className="empty-note">{empty}</span>}
     </div>
