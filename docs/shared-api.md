@@ -250,9 +250,14 @@ hmacSha256(secret, data, 'hex' | 'b64url'): Promise<string | null>
 const r = createRecorder<MyFrame>({ reads: 0, hot: null }, { transient: { hot: null } });
 r.set({ reads: r.get().reads + 1 });
 r.snap(<>Read the root</>, hold?, patch?);   // set(patch), push { ...state, say, hold }, then reset transient keys
-r.finish(<>Done</>, 2);                       // replace last frame's say/hold
+r.close(<>Done in 3 reads</>, 2);             // push the summary as its own frame (state unchanged)
+r.amendLast(<>Read the root: done</>, 2);     // or: replace the last caption, only if it's a shorter version
 return r.frames;
 ```
+End with `close()` by default: it keeps the last step's narration. `amendLast()` overwrites the last
+caption, so use it only when that caption says less than the summary (a "Prints 5 6." step followed
+by "Prints 5 6. For primitives…"). There's no `finish()` any more: it silently overwrote, which lost
+narration in stack-vs-heap, ci-pipelines, closures-scope, oop-fundamentals and error-handling-models.
 It makes a shallow copy, so clone nested arrays and objects before mutating them. Mandatory for
 db-indexes and lsm-trees, recommended wherever a local push/snap exists, optional for class
 recorders (sorting, heaps) and declarative scripts.

@@ -128,8 +128,10 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
     const printed = printedBy.get(i) ?? [];
 
     const stack: StackItem[] = now().stack.map((s) => ({ fn: s.fn, state: 'waiting' }));
+    /** A call whose return the previous frame showed: its frame pops as this step begins. */
+    let popped: Fn | null = null;
     if (popNext) {
-      stack.pop();
+      popped = stack.pop()?.fn ?? null;
       popNext = false;
     }
     const top = stack[stack.length - 1];
@@ -170,7 +172,13 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
       case 'leave': {
         stack.pop();
         say =
-          e.fn === 'main' ? <>main finishes.</> : <>{e.fn} reaches its end without a return statement, so it returns <code>undefined</code>.</>;
+          e.fn !== 'main' ? (
+            <>{e.fn} reaches its end without a return statement, so it returns <code>undefined</code>.</>
+          ) : popped ? (
+            <>{popped}&apos;s frame pops now that it has returned, and main finishes.</>
+          ) : (
+            <>main finishes.</>
+          );
         break;
       }
       case 'throw': {
@@ -228,6 +236,6 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
   });
 
   const hasFinally = events.some((e) => e.kind === 'finally');
-  if (!now().crash) rec.finish(verdict(mode, preset, failAt, now().output, hasFinally), 2);
+  if (!now().crash) rec.close(verdict(mode, preset, failAt, now().output, hasFinally), 2);
   return rec.frames;
 }

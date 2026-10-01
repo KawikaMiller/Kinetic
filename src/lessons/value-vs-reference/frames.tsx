@@ -44,7 +44,7 @@ function tracer() {
       const mutated = o.mutated ?? null;
       r.snap(say, undefined, { line, mem: next, mutated, seen: mutated ? bindingsSeeing(next, mutated) : [], blame: o.blame ?? null });
     },
-    finish: r.finish,
+    amendLast: r.amendLast,
   };
 }
 
@@ -60,7 +60,7 @@ const copyNumber: Preset = {
     const b = evaluate(t.mem(), 'b');
     t.step(2, assign(t.mem(), 'b', prim(Number(b.kind === 'prim' ? b.value : 0) + 1)), <>Changing <code>b</code> only touches b&apos;s box. <code>a</code> is still 5.</>);
     t.step(3, log(t.mem(), 'a', 'b'), <>Prints <span className="hl ok">5 6</span>: copying a primitive copies the value.</>);
-    t.finish(<>Prints <span className="hl ok">5 6</span>. For primitives, <code>=</code> copies the value, so the two variables are independent.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">5 6</span>. For primitives, <code>=</code> copies the value, so the two variables are independent.</>, 2);
     return t.frames;
   },
 };
@@ -77,7 +77,7 @@ const shareObject: Preset = {
     t.step(1, declare(t.mem(), 'b', evaluate(t.mem(), 'a')), <><code>b = a</code> copies the <b>arrow</b>, not the object. Both names point at one box.</>);
     t.step(2, setField(t.mem(), 'b', 'n', prim(6)), <>Mutating through <code>b</code> changes the one shared object, so <span className="hl ok">a and b both see it</span>.</>, { mutated: 'o1' });
     t.step(3, log(t.mem(), 'a.n', 'b.n'), <>Prints <span className="hl ok">6 6</span>.</>);
-    t.finish(<>Prints <span className="hl ok">6 6</span>. For objects, <code>=</code> copies the reference: two names, <b>one object</b>.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">6 6</span>. For objects, <code>=</code> copies the reference: two names, <b>one object</b>.</>, 2);
     return t.frames;
   },
 };
@@ -108,7 +108,7 @@ const passToFunction: Preset = {
     t.step(1, assign(m2, 'p', fresh), <><code>p = {'{…}'}</code> points <b>p</b> at a new object. <code>a</code> still points at the old one.</>);
     t.step(4, popScope(t.mem(), 'reassign'), <>reassign returns. Nothing refers to <code>{'{ n: 99 }'}</code> any more: it&apos;s <b>garbage</b>, faded and waiting for the collector.</>);
     t.step(5, log(t.mem(), 'a.n'), <>Prints <span className="hl ok">6</span>.</>);
-    t.finish(<>Prints <span className="hl ok">6</span>. JS passes a <b>copy of the reference</b> (pass-by-sharing): mutating through it is visible, reassigning it isn&apos;t.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">6</span>. JS passes a <b>copy of the reference</b> (pass-by-sharing): mutating through it is visible, reassigning it isn&apos;t.</>, 2);
     return t.frames;
   },
 };
@@ -137,7 +137,7 @@ const shallowVsDeep: Preset = {
     t.step(3, setField(t.mem(), 's', 'name', prim('Grace')), <>Changing a top-level field of the copy only changes the copy: <span className="hl ok">only s sees it</span>.</>, { mutated: 's' });
     t.step(4, push(t.mem(), 's.tags', prim('code')), <>But the nested array is shared, so pushing through <code>s</code> changes <span className="hl ok">a too</span>. <code>d</code> has its own.</>, { mutated: 'tags' });
     t.step(5, log(t.mem(), 'a.name', 'a.tags.length', 'd.tags.length'), <>Prints <span className="hl ok">Ada 2 1</span>.</>);
-    t.finish(<>Prints <span className="hl ok">Ada 2 1</span>. Spread copies one level; nested objects are still shared. Use <code>structuredClone</code> for a deep copy.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">Ada 2 1</span>. Spread copies one level; nested objects are still shared. Use <code>structuredClone</code> for a deep copy.</>, 2);
     return t.frames;
   },
 };
@@ -154,7 +154,7 @@ const constIsNotFrozen: Preset = {
     t.step(1, setField(t.mem(), 'user', 'n', prim(2)), <>Changing the object is allowed: <span className="hl ok">const doesn&apos;t freeze the object</span>.</>, { mutated: 'o1' });
     t.step(2, log(t.mem(), 'user.n'), <>Prints <span className="hl ok">2</span>.</>);
     t.step(3, assign(t.mem(), 'user', prim(0)), <>Re-pointing <code>user</code> is what&apos;s forbidden: <span className="hl bad">TypeError</span>.</>, { blame: 'global:user' });
-    t.finish(<>Prints 2, then throws <span className="hl bad">TypeError: Assignment to constant variable.</span> const stops rebinding, not mutation. Use <code>Object.freeze</code> for that.</>, 2);
+    t.amendLast(<>Prints 2, then throws <span className="hl bad">TypeError: Assignment to constant variable.</span> const stops rebinding, not mutation. Use <code>Object.freeze</code> for that.</>, 2);
     return t.frames;
   },
 };
@@ -172,7 +172,7 @@ const identity: Preset = {
     t.step(1, declare(m2, 'y', oy, { isConst: true }), <><code>y</code> refers to a <b>different</b> object with the same contents.</>);
     t.step(2, declare(t.mem(), 'z', evaluate(t.mem(), 'x'), { isConst: true }), <><code>z</code> copies x&apos;s arrow: same object.</>);
     t.step(3, log(t.mem(), 'x === y', 'x === z'), <>Prints <span className="hl ok">false true</span>.</>);
-    t.finish(<>Prints <span className="hl ok">false true</span>. <code>===</code> on objects asks &quot;same box?&quot;, not &quot;same contents?&quot;.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">false true</span>. <code>===</code> on objects asks &quot;same box?&quot;, not &quot;same contents?&quot;.</>, 2);
     return t.frames;
   },
 };

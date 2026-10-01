@@ -34,7 +34,7 @@ function tracer(mode: Mode) {
     },
     /** The closing summary, as a frame of its own: replacing the last caption would hide the moment the bug happens. */
     conclude(say: ReactNode) {
-      r.snap(say, SUMMARY_HOLD);
+      r.close(say, SUMMARY_HOLD);
     },
   };
 }

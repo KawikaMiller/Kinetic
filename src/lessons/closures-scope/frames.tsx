@@ -61,7 +61,8 @@ function tracer() {
       step(line, leave(from), say);
       r.set({ world: collect(world()) });
     },
-    finish: r.finish,
+    close: r.close,
+    amendLast: r.amendLast,
   };
 }
 
@@ -114,7 +115,7 @@ const counter: Preset = {
     const a = callCounter(8, 'c1', 1, 3);
     const b = callCounter(8, 'c2', 2, 4);
     t.step(8, print(t.world(), `${a} ${b}`), <>Prints <span className="hl ok">{a} {b}</span>.</>);
-    t.finish(<>Prints <span className="hl ok">{a} {b}</span>. Each counter kept <b>its own</b> environment alive, and each call changed the captured binding, not a copy of it.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">{a} {b}</span>. Each counter kept <b>its own</b> environment alive, and each call changed the captured binding, not a copy of it.</>, 2);
     return t.frames;
   },
 };
@@ -159,7 +160,7 @@ function loopPreset(kind: 'var' | 'let'): Preset {
           dequeue(t.world()),
         );
       }
-      t.finish(
+      t.close(
         kind === 'var' ? (
           <>Prints <span className="hl bad">{printed.join(', ')}</span>: all three callbacks captured the <b>same</b> binding, which reached 3 before they ran.</>
         ) : (
@@ -201,7 +202,7 @@ const shadowing: Preset = {
     t.finishCall(8, <>outer returns.</>);
     const line = `${first.replaceAll("'", '')} ${second.replaceAll("'", '')}`;
     t.step(8, print(t.world(), line), <>Prints <span className="hl ok">{line}</span>.</>);
-    t.finish(<>Prints <span className="hl ok">{line}</span>. A lookup takes the <b>nearest</b> binding, walking outward from where the code is written.</>, 2);
+    t.amendLast(<>Prints <span className="hl ok">{line}</span>. A lookup takes the <b>nearest</b> binding, walking outward from where the code is written.</>, 2);
     return t.frames;
   },
 };
@@ -236,7 +237,7 @@ const staleClosure: Preset = {
     const live = t.walk(3, 'hc', 'count', (v, where) => <><code>count</code> = <span className="hl ok">{v}</span> in <b>{where}</b>: the live binding.</>);
     t.step(3, print(t.world(), `${snap} ${live}`), <>Prints <span className="hl ok">{snap} {live}</span>.</>);
     t.finishCall(7, <>The handler call is done.</>);
-    t.finish(<>Prints <span className="hl ok">{snap} {live}</span>. The closure captured <b>bindings</b>, not values: <code>count</code> is live, but <code>snapshot</code> was frozen when that render ran. That&apos;s a stale closure.</>, 2);
+    t.close(<>Prints <span className="hl ok">{snap} {live}</span>. The closure captured <b>bindings</b>, not values: <code>count</code> is live, but <code>snapshot</code> was frozen when that render ran. That&apos;s a stale closure.</>, 2);
     return t.frames;
   },
 };
