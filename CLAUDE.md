@@ -26,6 +26,24 @@ Each `src/lessons/<id>/index.tsx` default-exports a `LessonModule` (see `src/cor
 `tryThis`, `keyIdeas`, `quiz`, `Stage`. Use semantic colour tokens (`--hi`, `--ok`, `--bad`,
 `--info`, `--violet`, `--dim`) so colours mean the same thing in every lesson.
 
+**Colour meanings, tier-wide.** A learner moving between lessons should never have to relearn
+what a colour means:
+
+| Token | Means | Not for |
+|---|---|---|
+| `--bad` | error, failure, removed/lost, or the costly side of a comparison | a plain category (a bit field, an event type, a lane) |
+| `--ok` | success, found, done, the cheap side of a comparison | a plain category |
+| `--hi` | what's happening *now*: the current step, the item being looked at | a status or a category |
+| `--info` | secondary or in-flight: a request travelling, a second pointer | |
+| `--violet` | tertiary or structural: references, groupings, the third role | |
+| `--dim` | ruled out, inactive, not reached | |
+
+Plain categories (the fields of a float, lanes, layers) take the categorical tokens
+(`--orange`, `--amber`, `--pink`, `--sky`, the track colours) or the roles above in their
+structural sense, never `--bad`/`--ok` as decoration. When two kinds of failure must be told
+apart (HTTP 4xx vs 5xx), the second takes `--orange`, not `--hi`. State the mapping in the
+lesson's `watch` text.
+
 Captions: a frame without `say` keeps the previous caption. Only rely on that when the old
 caption is still true; otherwise give the frame its own caption.
 

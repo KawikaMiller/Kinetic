@@ -15,7 +15,7 @@ import './styles.css';
 const START = 0.1;
 /** Mantissa split into runs so the strip can wrap between them on a phone (only the first is labelled). */
 const GROUPS: BitGroup[] = [
-  { from: 0, to: 0, tone: 'bad', label: 'sign' },
+  { from: 0, to: 0, tone: 'orange', label: 'sign' },
   { from: 1, to: 8, tone: 'info', label: 'exponent (8 bits)' },
   { from: 9, to: 15, tone: 'violet', label: 'mantissa (23 bits)' },
   { from: 16, to: 23, tone: 'violet' },
@@ -122,14 +122,14 @@ export function Stage() {
         <Stats>
           <Stat label="Stored value" value={show(value)} color="var(--hi)" className="fp-stat" />
           <Stat label={exact ? 'Exactly' : 'To 20 digits'} value={shown} className="fp-stat fp-exact" />
-          <Stat label="Sign" value={f.sign} color="var(--bad)" />
+          <Stat label="Sign" value={f.sign} color="var(--orange)" />
           <Stat label="Exponent" value={f.exponent} color="var(--info)" sub={f.kind === 'normal' ? `2^${power(f)}` : f.kind} />
         </Stats>
       }
       legend={
         <Legend
           items={[
-            { color: 'var(--bad)', label: 'sign' },
+            { color: 'var(--orange)', label: 'sign' },
             { color: 'var(--info)', label: 'exponent' },
             { color: 'var(--violet)', label: 'mantissa' },
             { color: 'var(--hi)', label: 'current value', shape: 'dot' },

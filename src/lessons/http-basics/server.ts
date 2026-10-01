@@ -94,7 +94,7 @@ export const family = (status: number): Family => `${Math.floor(status / 100)}xx
 export const FAMILY_COLOR: Record<Family, string> = {
   '2xx': 'var(--ok)',
   '3xx': 'var(--violet)',
-  '4xx': 'var(--hi)',
+  '4xx': 'var(--orange)',
   '5xx': 'var(--bad)',
 };
 

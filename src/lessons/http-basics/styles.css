@@ -25,7 +25,7 @@
   box-shadow: 0 0 24px -6px color-mix(in srgb, var(--violet) 60%, transparent);
 }
 .hb-server.mode-ratelimited {
-  border-color: color-mix(in srgb, var(--hi) 50%, transparent);
+  border-color: color-mix(in srgb, var(--orange) 50%, transparent);
 }
 .hb-server.mode-overloaded {
   border-color: color-mix(in srgb, var(--bad) 50%, transparent);

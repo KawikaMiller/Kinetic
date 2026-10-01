@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Graphics, games and ML, where float32 trades precision for speed and memory',
     ],
     why: 'You will hit a rounding bug in a price, a percentage or a test assertion. Knowing floats are exact binary fractions, not "random noise", tells you when to use integers, when to compare with a tolerance, and why a big number can\'t hold a small increment.',
-    watch: 'The 32 squares are one float32: the red bit is the sign, the blue bits the exponent, the violet bits the mantissa (filled when 1). Click any bit to change it; the formula line underneath rebuilds the value from the three fields. The zoomed-in line shows the current value as a yellow dot among its dim grey neighbours, the only floats nearby, with the gap between them, and a dashed blue ring where the number you typed really was. The zoomed-out line puts the value on a log scale and prints the gap between floats at each power of ten. The table is real float64 JavaScript: green true, red false.',
+    watch: 'The 32 squares are one float32: the orange bit is the sign, the blue bits the exponent, the violet bits the mantissa (filled when 1). Click any bit to change it; the formula line underneath rebuilds the value from the three fields. The zoomed-in line shows the current value as a yellow dot among its dim grey neighbours, the only floats nearby, with the gap between them, and a dashed blue ring where the number you typed really was. The zoomed-out line puts the value on a log scale and prints the gap between floats at each power of ten. The table is real float64 JavaScript: green true, red false.',
   },
   tryThis: [
     'Type 0.1 and press "Store as float32": the dashed ring shows how far it moved.',
