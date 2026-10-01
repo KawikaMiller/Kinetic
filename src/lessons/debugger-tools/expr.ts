@@ -98,7 +98,7 @@ export function parseExpr(src: string): Node {
     if (!tok) throw new Unsupported('an unfinished expression');
     let node: Node;
     if (tok.t === 'num' || tok.t === 'str') node = { k: 'lit', v: tok.v };
-    else if (tok.t === 'name') node = tok.v in LITERALS ? { k: 'lit', v: LITERALS[tok.v] } : { k: 'name', v: tok.v };
+    else if (tok.t === 'name') node = Object.hasOwn(LITERALS, tok.v) ? { k: 'lit', v: LITERALS[tok.v] } : { k: 'name', v: tok.v };
     else if (tok.v === '(') {
       node = expr(0);
       expect(')');
@@ -124,7 +124,7 @@ export function parseExpr(src: string): Node {
     let left = primary();
     for (;;) {
       const tok = peek();
-      if (!tok || tok.t !== 'op' || !(tok.v in BP) || BP[tok.v] <= minBp) return left;
+      if (!tok || tok.t !== 'op' || !Object.hasOwn(BP, tok.v) || BP[tok.v] <= minBp) return left;
       p++;
       left = { k: 'binary', op: tok.v, l: left, r: expr(BP[tok.v]) };
     }
@@ -139,8 +139,9 @@ export function parseExpr(src: string): Node {
 export type Scope = readonly Vars[];
 
 function lookup(name: string, scope: Scope): Value {
-  for (const vars of scope) if (Object.prototype.hasOwnProperty.call(vars, name)) return vars[name];
-  if (name === 'Math' || name === 'console' || name === 'window' || name === 'globalThis') throw new Unsupported(`"${name}"`);
+  for (const vars of scope) if (Object.hasOwn(vars, name)) return vars[name];
+  // Globals, and names a real console would find inherited on the global object (constructor, toString…).
+  if (name === 'Math' || name === 'console' || name === 'window' || name === 'globalThis' || name in {}) throw new Unsupported(`"${name}"`);
   throw new EvalError(`ReferenceError: ${name} is not defined`);
 }
 
@@ -155,11 +156,14 @@ function run(n: Node, scope: Scope): Value {
       const key = typeof n.prop === 'string' ? n.prop : run(n.prop, scope);
       if (obj === null || obj === undefined) throw new EvalError(`TypeError: Cannot read properties of ${obj} (reading '${String(key)}')`);
       if (typeof key !== 'string' && typeof key !== 'number') throw new Unsupported('that kind of property key');
-      if (typeof obj === 'string') return key === 'length' ? obj.length : typeof key === 'number' ? obj[key] : undefined;
-      if (typeof obj !== 'object') return undefined;
+      if (typeof obj === 'string' && key === 'length') return obj.length;
       if (Array.isArray(obj) && key === 'length') return obj.length;
       // Own data only: no prototype methods, so nothing callable ever comes back.
-      return Object.prototype.hasOwnProperty.call(obj, key) ? (obj as Record<string, Value>)[key] : undefined;
+      const boxed: object = Object(obj);
+      if (Object.hasOwn(boxed, key)) return (boxed as Record<string, Value>)[key];
+      // Real JavaScript would find a method, constructor or __proto__ up the prototype chain: say so, don't fake undefined.
+      if (key in boxed) throw new Unsupported(`"${String(key)}": methods and other inherited properties`);
+      return undefined;
     }
     case 'unary': {
       const v = run(n.arg, scope);

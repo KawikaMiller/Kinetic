@@ -175,11 +175,21 @@ describe('the safe expression evaluator', () => {
       '`hi`', 'items?.length', 'a, b', 'i ** 2', 'window', 'items.constructor', 'this', '{}', 'x ? 1 : 2', '',
     ]) {
       const r = evaluate(src, scope);
-      expect(r.ok, src).toBe(src === 'items.constructor'); // an own-property miss is just undefined
+      expect(r.ok, src).toBe(false);
+      expect(r.ok || r.unsupported || r.error.startsWith('ReferenceError'), src).toBe(true);
+    }
+    expect(value('DISCOUNTS.NOPE')).toBeUndefined(); // a genuinely missing property is just undefined
+    expect(evaluate('alert(1)', scope)).toMatchObject({ error: 'not supported here: function calls' });
+  });
+
+  it('never hands back anything inherited: names, members and string members alike', () => {
+    for (const src of ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'items.map', 'items.constructor', 'DISCOUNTS.__proto__', 'code.toUpperCase', 'i.toFixed', 'DISCOUNTS["toString"]']) {
+      const r = evaluate(src, scope);
+      expect(r.ok, src).toBe(false);
       if (!r.ok) expect(r.unsupported || r.error.startsWith('ReferenceError'), src).toBe(true);
     }
-    expect(value('items.constructor')).toBeUndefined();
-    expect(evaluate('alert(1)', scope)).toMatchObject({ error: 'not supported here: function calls' });
+    expect(evaluate('items.map', scope)).toMatchObject({ unsupported: true });
+    expect(value('code[0]')).toBe('S');
   });
 
   it('previews values the way the DevTools console does', () => {
