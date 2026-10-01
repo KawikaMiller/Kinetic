@@ -28,7 +28,7 @@ export const TRACKS: Record<TrackId, Track> = {
   os: { id: 'os', family: 'systems', name: 'OS & Concurrency', short: 'OS', color: 'var(--trk-os)', glyph: '⚙' },
   net: { id: 'net', family: 'systems', name: 'Networking', short: 'Network', color: 'var(--trk-net)', glyph: '⇄' },
   data: { id: 'data', family: 'systems', name: 'Databases & Storage', short: 'Data', color: 'var(--trk-data)', glyph: '◫' },
-  arch: { id: 'arch', family: 'systems', name: 'Systems & Architecture', short: 'Systems', color: 'var(--trk-arch)', glyph: '▦' },
+  arch: { id: 'arch', family: 'systems', name: 'Systems & Architecture', short: 'Architecture', color: 'var(--trk-arch)', glyph: '▦' },
   ops: { id: 'ops', family: 'delivery', name: 'DevOps & Cloud', short: 'DevOps', color: 'var(--trk-ops)', glyph: '☁' },
   sec: { id: 'sec', family: 'delivery', name: 'Security', short: 'Security', color: 'var(--trk-sec)', glyph: '⚿' },
   craft: { id: 'craft', family: 'delivery', name: 'Software Craft & Practice', short: 'Craft', color: 'var(--trk-craft)', glyph: '✎' },
