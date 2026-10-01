@@ -32,27 +32,42 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Two different people map to the same birthday. Is person → birthday still a function?',
-      options: ['No: a function can\'t repeat an output', 'Yes: it just isn\'t one-to-one', 'Only if everyone has a different birthday', 'Only if every date is used'],
+      options: [
+        "No: a function can't repeat an output",
+        "Yes: it just isn't one-to-one",
+        'Only if everyone has a different birthday',
+        'Only if every date is used',
+      ],
       answer: 1,
       why: 'A function only needs each input to have exactly one output. Sharing outputs makes it non-injective, not "not a function".',
     },
     {
-      q: 'Which set operation matches SQL\'s EXCEPT?',
+      q: "Which set operation matches SQL's EXCEPT?",
       options: ['A ∪ B', 'A ∩ B', 'A − B', 'A △ B'],
       answer: 2,
       why: 'A EXCEPT B returns the rows in A that are not in B: the difference A − B.',
     },
     {
       q: 'You hash 10 strings into 8 buckets. What must happen?',
-      options: ['Nothing special', 'At least two strings share a bucket', 'Two buckets stay empty', 'The hash fails'],
-      answer: 1,
-      why: 'Pigeonhole principle: 10 items into 8 holes means some hole gets two. No mapping from 10 to 8 things can be one-to-one.',
+      options: [
+        'At least two strings share a bucket',
+        'Nothing, if the hash function is good',
+        'At least two of the buckets stay empty',
+        'The hash table rejects the extra strings',
+      ],
+      answer: 0,
+      why: 'Pigeonhole principle: 10 items into 8 holes means some hole gets two, however good the hash. No mapping from 10 to 8 things can be one-to-one.',
     },
     {
       q: 'Which mapping has an inverse defined on every output?',
-      options: ['Any function', 'A surjective one only', 'A bijection', 'One with more outputs than inputs'],
+      options: [
+        'Any function at all',
+        'A surjective function',
+        'A bijective function',
+        'One with extra unused outputs',
+      ],
       answer: 2,
-      why: 'Injective is enough to undo the outputs actually used: each leads back to one input. A bijection is also surjective, so every output is used and the inverse is defined everywhere.',
+      why: "Injective is enough to undo the outputs actually used: each leads back to one input. A bijection is also surjective, so every output is used and the inverse is defined everywhere. Surjective alone can send two inputs to one output, so it can't be undone.",
     },
   ],
 };
