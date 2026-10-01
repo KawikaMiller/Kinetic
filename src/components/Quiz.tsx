@@ -1,9 +1,14 @@
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { shuffleOptions } from '../core/quiz';
 import type { QuizQuestion } from '../core/types';
 
-/** Quick-check questions. Calls onComplete once every question is answered correctly. */
-export function Quiz({ questions, onComplete }: { questions: QuizQuestion[]; onComplete: () => void }) {
+/**
+ * Quick-check questions. Calls onComplete once every question is answered correctly.
+ * Options are shuffled once per visit, so the right answer's position carries no hint.
+ */
+export function Quiz({ questions: authored, onComplete }: { questions: QuizQuestion[]; onComplete: () => void }) {
+  const [questions] = useState(() => authored.map((q) => shuffleOptions(q)));
   const [picked, setPicked] = useState<(number | null)[]>(() => questions.map(() => null));
 
   const choose = (qi: number, oi: number) => {
