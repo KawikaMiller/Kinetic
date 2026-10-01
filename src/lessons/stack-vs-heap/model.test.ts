@@ -65,7 +65,9 @@ describe('manual memory', () => {
   it('use-after-free is flagged on the write after free, not before', () => {
     const p = PRESETS.find((x) => x.id === 'uaf')!;
     const frames = p.build();
-    const errorFrames = frames.filter((f) => f.world.error);
+    const first = frames.findIndex((f) => f.world.error);
+    // The bad write is the only step that errors; the summary frame after it shows the same world.
+    const errorFrames = frames.slice(first, -1);
     expect(errorFrames).toHaveLength(1);
     expect(errorFrames[0].line).toBe(p.code.indexOf('  *p = 8;'));
     expect(errorFrames[0].world.error).toMatch(/^use-after-free/);
