@@ -47,9 +47,11 @@ function runsOf(n: number, groups: readonly BitGroup[]): Run[] {
  *   or as a power of two ('exponent': 2¹⁰, 2²³) once values get too wide for the cells,
  *   roughly past 16 bits; `labelOf` overrides either with any label (r/w/x, a bit index).
  * - With `onToggle` the bits are buttons (aria-pressed); without it they're read-only.
+ *   `ariaLabelOf(i)` names each button for assistive tech ("group write", "sign bit");
+ *   the default is "bit i" plus the place value when shown.
  */
 export function BitStrip({
-  bits, onToggle, groups = [], placeValues = false, labelOf, toneOf, highlight = [], highlightTone = 'info',
+  bits, onToggle, groups = [], placeValues = false, labelOf, ariaLabelOf, toneOf, highlight = [], highlightTone = 'info',
   size = 'md', ariaLabel = 'bits', className = '',
 }: {
   bits: readonly Bit[];
@@ -57,6 +59,8 @@ export function BitStrip({
   groups?: readonly BitGroup[];
   placeValues?: boolean | PlaceLabels;
   labelOf?: (i: number) => ReactNode;
+  /** Accessible name of a toggleable bit; `i` counts from the most significant bit. */
+  ariaLabelOf?: (i: number) => string;
   toneOf?: (i: number, bit: Bit) => Tone | undefined;
   /** Bits drawn with a ring, e.g. a carry rippling left. */
   highlight?: readonly number[];
@@ -80,7 +84,7 @@ export function BitStrip({
       <span key={i} className="bit-slot">
         {hasLabels && <span className="bit-label">{label(i)}</span>}
         {onToggle ? (
-          <button type="button" className={cls} aria-pressed={bit === 1} aria-label={`bit ${i}${place}`} onClick={() => onToggle(i)}>
+          <button type="button" className={cls} aria-pressed={bit === 1} aria-label={ariaLabelOf?.(i) ?? `bit ${i}${place}`} onClick={() => onToggle(i)}>
             {bit}
           </button>
         ) : (

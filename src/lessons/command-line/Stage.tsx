@@ -10,7 +10,7 @@ import { plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { ENV, INITIAL_FS, type Fs } from './fixture';
 import { buildFrames, stepsOf } from './frames';
-import { ACTIONS, PEOPLE, PERMISSION_PRESETS, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
+import { ACTIONS, PEOPLE, PERMISSION_PRESETS, bitName, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
 import { BLOCKS, SHELL_PRESETS } from './presets';
 import { runShell, showArgv, type ShellResult, type StageRun } from './shell';
 import './styles.css';
@@ -284,6 +284,7 @@ function Permissions({ picker }: { picker: ReactNode }) {
           onToggle={(i) => { setError(null); setMode(modeFromBits(flipBit(bits, i))); }}
           toneOf={(_, b) => (b ? 'hi' : 'dim')}
           labelOf={(i) => 'rwx'[i % 3]}
+          ariaLabelOf={bitName}
           groups={chunkGroups(9, 3, { tone: 'violet', label: (k) => ['user (owner)', 'group', 'other'][k] })}
           ariaLabel="Permission bits"
         />

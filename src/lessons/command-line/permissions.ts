@@ -8,6 +8,9 @@ export const ACTIONS = ['read', 'write', 'execute'] as const;
 export type Action = (typeof ACTIONS)[number];
 const LETTERS = ['r', 'w', 'x'] as const;
 
+/** Plain name of permission bit i (most significant first): 0 → "user read", 4 → "group write". */
+export const bitName = (i: number) => `${CLASSES[Math.floor(i / 3)]} ${ACTIONS[i % 3]}`;
+
 /** 0o754 → [1,1,1, 1,0,1, 1,0,0], most significant first (user rwx, group rwx, other rwx). */
 export const bitsFromMode = (mode: number): Bit[] => Array.from({ length: 9 }, (_, i) => ((mode >> (8 - i)) & 1) as Bit);
 export const modeFromBits = (bits: readonly Bit[]) => bits.reduce((m: number, b) => (m << 1) | b, 0);

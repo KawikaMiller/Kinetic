@@ -26,6 +26,15 @@ export function f32FromBits(bits: number): number {
 
 export const bitsOf = (u32: number): Bit[] => toBits(u32, 32);
 
+const EXP_BITS = 8;
+
+/** Which field bit i belongs to (most significant first), for assistive tech: "exponent bit 3 of 8". */
+export function bitRole(i: number): string {
+  if (i === 0) return 'sign bit';
+  if (i <= EXP_BITS) return `exponent bit ${i} of ${EXP_BITS}`;
+  return `mantissa bit ${i - EXP_BITS} of ${MANTISSA_BITS}`;
+}
+
 export type Kind = 'zero' | 'subnormal' | 'normal' | 'infinity' | 'nan';
 
 export interface Fields {

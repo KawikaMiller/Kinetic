@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runCommand } from './commands';
 import { ACCESS_LOG, ENV, INITIAL_FS } from './fixture';
-import { ACTIONS, CLASSES, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
+import { ACTIONS, CLASSES, bitName, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
 import { SHELL_PRESETS } from './presets';
 import { glob, parse, runShell, showArgv, tokenize } from './shell';
 
@@ -127,6 +127,16 @@ describe('permissions: octal, symbolic and ls -l agree, for all 512 modes', () =
       CLASSES.forEach((who, k) =>
         ACTIONS.forEach((action, j) => expect(can(mode, who, action)).toBe(ls[1 + k * 3 + j] !== '-')));
     }
+  });
+
+  it('names each bit by class and action, in ls -l order', () => {
+    expect(Array.from({ length: 9 }, (_, i) => bitName(i))).toEqual([
+      'user read', 'user write', 'user execute',
+      'group read', 'group write', 'group execute',
+      'other read', 'other write', 'other execute',
+    ]);
+    // the named bit is the one that flips that letter in ls -l
+    for (let i = 0; i < 9; i++) expect(lsString(1 << (8 - i))[1 + i]).not.toBe('-');
   });
 
   it('spells the classic modes', () => {

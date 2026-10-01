@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, neighbours, SIGN_BIT, SPECIALS, storedDigits, ulp, ulpAt,
+  bitRole, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, neighbours, SIGN_BIT, SPECIALS, storedDigits, ulp, ulpAt,
 } from './model';
 
 const same = (a: number, b: number) => (Number.isNaN(a) ? Number.isNaN(b) : Object.is(a, b));
@@ -33,6 +33,20 @@ describe('bits come from a real float32', () => {
     expect(f32FromBits(0x7f7fffff)).toBe(3.4028234663852886e38);
     expect(f32FromBits(1)).toBe(2 ** -149);
     expect(Number.isNaN(f32FromBits(0x7fc00000))).toBe(true);
+  });
+
+  it('names every bit by the field it belongs to', () => {
+    const roles = Array.from({ length: 32 }, (_, i) => bitRole(i));
+    expect(roles[0]).toBe('sign bit');
+    expect(roles.slice(1, 9)).toEqual(Array.from({ length: 8 }, (_, k) => `exponent bit ${k + 1} of 8`));
+    expect(roles[9]).toBe('mantissa bit 1 of 23');
+    expect(roles[31]).toBe('mantissa bit 23 of 23');
+    // the field a name claims is the field that bit really changes
+    for (let i = 0; i < 32; i++) {
+      const f = fields((1 << (31 - i)) >>> 0);
+      const field = f.sign ? 'sign' : f.exponent ? 'exponent' : 'mantissa';
+      expect(roles[i].startsWith(field)).toBe(true);
+    }
   });
 });
 

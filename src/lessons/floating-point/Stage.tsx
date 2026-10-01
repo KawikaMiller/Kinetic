@@ -6,7 +6,7 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextField,
 import { flipBit, fromBits, type BitGroup } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import {
-  EXP_BIAS, SPECIALS, bitsOf, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, power, significand, storedDigits,
+  EXP_BIAS, SPECIALS, bitRole, bitsOf, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, power, significand, storedDigits,
   type Fields,
 } from './model';
 import { LINES_WIDTH, MagnitudeLine, ZoomLine } from './NumberLines';
@@ -146,7 +146,7 @@ export function Stage() {
       ]}
     >
       <div className="stage-pad fp">
-        <BitStrip bits={bitsOf(bits)} onToggle={toggleBit} groups={GROUPS} size="sm" ariaLabel="float32 bits" />
+        <BitStrip bits={bitsOf(bits)} onToggle={toggleBit} ariaLabelOf={bitRole} groups={GROUPS} size="sm" ariaLabel="float32 bits" />
         <p className="fp-formula">{formula(f, decode(f))}</p>
         <Hint block tone="muted">
           These are float32 bits (1 + 8 + 23). JavaScript numbers are float64 (1 + 11 + 52): the same design with more bits, so the
