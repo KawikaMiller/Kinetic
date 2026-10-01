@@ -4,7 +4,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
-import { buildFrames, makeArray, missingValue } from './frames';
+import { buildFrames } from './frames';
+import { binaryWorstCase, makeArray, missingValue } from './model';
 import './styles.css';
 
 const INITIAL_SIZE = 24;
@@ -31,7 +32,7 @@ export function Stage() {
   };
   const searchFor = (v: number) => setData({ arr, target: v });
 
-  const worst = Math.ceil(Math.log2(n + 1));
+  const worst = binaryWorstCase(n);
   const fontSize = fontSizeFor(n);
 
   return (

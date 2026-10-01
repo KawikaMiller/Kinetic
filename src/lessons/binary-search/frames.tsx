@@ -1,5 +1,6 @@
-import { pick, randInt } from '../../core/random';
+import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
+import { binaryTrace, linearChecks, type BinaryStep } from './model';
 
 export interface BinState {
   lo: number;
@@ -22,44 +23,13 @@ export interface BsFrame extends Frame {
   lin: LinState;
 }
 
-/** Values are drawn from 1..n×VALUE_SPREAD so a size-n array has room for missing values. */
-const VALUE_SPREAD = 3;
-
-/** `n` distinct values, sorted ascending. */
-export function makeArray(n: number) {
-  const set = new Set<number>();
-  while (set.size < n) set.add(randInt(1, n * VALUE_SPREAD));
-  return [...set].sort((a, b) => a - b);
-}
-
-/** A value inside the array's range that isn't in it (or one past the end if there are no gaps). */
-export function missingValue(arr: number[]) {
-  const have = new Set(arr);
-  const gaps: number[] = [];
-  for (let v = arr[0] + 1; v < arr[arr.length - 1]; v++) if (!have.has(v)) gaps.push(v);
-  return gaps.length ? pick(gaps) : arr[arr.length - 1] + 1;
-}
-
 /** One frame per comparison, linear and binary search advancing side by side. */
 export function buildFrames(arr: number[], target: number): BsFrame[] {
   const n = arr.length;
-
-  // Binary search trace: one entry per comparison.
-  const bin: { lo: number; hi: number; mid: number; cmp: number }[] = [];
-  let lo = 0;
-  let hi = n - 1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const cmp = Math.sign(arr[mid] - target);
-    bin.push({ lo, hi, mid, cmp });
-    if (cmp === 0) break;
-    if (cmp < 0) lo = mid + 1;
-    else hi = mid - 1;
-  }
+  const bin = binaryTrace(arr, target);
   const binFound = bin[bin.length - 1]?.cmp === 0;
-
   const linIdx = arr.indexOf(target);
-  const linSteps = linIdx >= 0 ? linIdx + 1 : n;
+  const linSteps = linearChecks(arr, target);
   const total = Math.max(bin.length, linSteps);
 
   const frames: BsFrame[] = [
@@ -95,29 +65,52 @@ export function buildFrames(arr: number[], target: number): BsFrame[] {
 
   const last = frames[frames.length - 1];
   last.hold = 2;
-  last.say =
-    linIdx >= 0 ? (
-      <>
-        Linear: <span className="hl bad">{linSteps} checks</span>. Binary:{' '}
-        <span className="hl ok">{bin.length}</span>. With a million items that gap becomes up to 1,000,000 vs 20.
-      </>
-    ) : (
-      <>
-        {target} isn't in the array. Linear had to look at <span className="hl bad">all {n}</span>; binary proved it
-        in <span className="hl ok">{bin.length}</span>.
-      </>
-    );
+  last.say = linIdx >= 0 ? foundSummary(linSteps, bin.length) : missingSummary(target, n, bin.length);
 
   return frames;
 }
 
-function binaryCaption(arr: number[], target: number, b: { lo: number; hi: number; mid: number; cmp: number }, k: number) {
+/** Final caption when the target is in the array. Colours follow who actually needed fewer checks. */
+function foundSummary(linear: number, binary: number) {
+  const lin = <span className={`hl ${linear < binary ? 'ok' : linear > binary ? 'bad' : ''}`}>{plural(linear, 'check')}</span>;
+  const bin = <span className={`hl ${binary < linear ? 'ok' : binary > linear ? 'bad' : ''}`}>{plural(binary, 'check')}</span>;
+  if (linear < binary) {
+    return (
+      <>
+        Linear: {lin}. Binary: {bin}. Linear got lucky: the target sat near the front. Binary's worst case stays tiny
+        as the array grows; linear's doesn't.
+      </>
+    );
+  }
+  if (linear === binary) {
+    return (
+      <>
+        A tie this time: {lin} each. On a million items linear could need up to 1,000,000 checks, binary at most 20.
+      </>
+    );
+  }
+  return (
+    <>
+      Linear: {lin}. Binary: {bin}. With a million items that gap becomes up to 1,000,000 vs 20.
+    </>
+  );
+}
+
+function missingSummary(target: number, n: number, binary: number) {
+  return (
+    <>
+      {target} isn't in the array. Linear had to look at <span className="hl bad">all {n}</span>; binary proved it in{' '}
+      <span className="hl ok">{binary}</span>.
+    </>
+  );
+}
+
+function binaryCaption(arr: number[], target: number, b: BinaryStep, k: number) {
   const v = arr[b.mid];
   if (b.cmp === 0) {
     return (
       <>
-        Binary checks the middle: <span className="hl ok">{v}</span>. Found it in <b>{k}</b>{' '}
-        {k === 1 ? 'check' : 'checks'}.
+        Binary checks the middle: <span className="hl ok">{v}</span>. Found it in <b>{plural(k, 'check')}</b>.
       </>
     );
   }
