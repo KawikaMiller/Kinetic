@@ -5,7 +5,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Segmented, Toggle } from '../../components/ui';
 import type { CommitGraphSpacing } from '../../core/commitGraph';
-import { categorical } from '../../core/palette';
+import { cssVar, type TokenName } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
 import { conflictsBy, weekFrames, type SidePlan } from './frames';
 import { buildGraph, type SideGraph } from './graph';
@@ -54,7 +54,7 @@ export function Stage() {
       legend={
         <Legend
           items={[
-            { color: categorical(0), label: 'a developer\'s lane', shape: 'dot' },
+            { color: devColour(0), label: 'a developer\'s lane', shape: 'dot' },
             { color: 'var(--bad)', label: 'conflicts to resolve' },
             { color: 'var(--ok)', label: 'merged into main' },
             { color: 'var(--dim)', label: 'behind a feature flag (off)' },
@@ -94,11 +94,18 @@ function DayRuler({ day }: { day: number }) {
   );
 }
 
-/** Lane colours: main and develop neutral, each developer their own categorical colour on both sides. */
+/**
+ * Developer lane colours: categorical, minus the status colours this lesson already uses
+ * (green = merged into main, yellow = today, red = conflicts), so a lane never reads as a status.
+ */
+const DEV_TONES: readonly TokenName[] = ['info', 'violet', 'pink', 'orange', 'sky'];
+const devColour = (i: number) => cssVar(DEV_TONES[i % DEV_TONES.length]);
+
+/** Lane colours: main and develop neutral, each developer their own colour on both sides. */
 function laneColorFor(plan: SidePlan) {
   const direct = plan.strategy.flags && plan.strategy.lifetime === 1;
   const firstDevLane = plan.strategy.integrateTo === 'develop' ? 2 : 1;
-  return (lane: number) => (direct || lane < firstDevLane ? (lane === 0 ? 'var(--muted)' : 'var(--faint)') : categorical(lane - firstDevLane));
+  return (lane: number) => (direct || lane < firstDevLane ? (lane === 0 ? 'var(--muted)' : 'var(--faint)') : devColour(lane - firstDevLane));
 }
 
 function SidePanel({ side, plan, graph, day, team }: { side: Side; plan: SidePlan; graph: SideGraph; day: number; team: number }) {

@@ -69,8 +69,13 @@ export function weekFrames(sides: Record<Side, SidePlan>): WeekFrame[] {
       <>
         Week done: <span className="hl bad">{long.outcome.conflicts}</span> conflicts on the long-lived side vs{' '}
         <span className="hl ok">{trunk.outcome.conflicts}</span> on trunk, and a change waits {long.outcome.leadTime.toFixed(1)} days
-        on average to reach production vs {trunk.outcome.leadTime.toFixed(1)}. Trunk-based still uses branches and review: they just live
-        for hours, not weeks.
+        on average to reach production vs {trunk.outcome.leadTime.toFixed(1)}.{' '}
+        {trunk.strategy.flags ? (
+          <>Trunk-based still uses branches and review: they just live for hours, not weeks.</>
+        ) : (
+          <>Without feature flags, trunk work waits {plural(trunk.strategy.lifetime, 'day')} for a feature to finish before it merges: flags are
+            what let branches shrink to hours.</>
+        )}
       </>
     ),
   });
