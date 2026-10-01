@@ -50,6 +50,16 @@ caption is still true; otherwise give the frame its own caption.
 Be honest with the learner: if a visual scripts or simplifies something (e.g. a forced packet
 loss), say so on screen.
 
+**Security lessons are defensive and payload-free.** Teach the risk and the fix, never the
+exploit: no working attack strings, injection payloads, exfiltration snippets (e.g. code that
+collects storage and sends it somewhere), shell one-liners or step-by-step exploitation, on
+screen or in source. Show the class of bug with ordinary inputs that break things by
+accident (a surname like O'Brien breaking a glued-together query), describe in plain words
+what an attacker *could* reach, and show the fix (parameters, encoding, argument arrays,
+allow-lists, HttpOnly). Everything runs against a simulated system inside the lesson; never
+inject into the real page, eval learner input or make network requests. Example secrets are
+assembled at runtime from parts so nothing in source matches a real credential format.
+
 **Runtime code execution** (`new Function`, `eval`) is allowed only to run fixed,
 lesson-authored program text, as error-handling-models does to make its trace real. Never
 pass it anything derived from user input: a learner-typed expression gets a hand-written
