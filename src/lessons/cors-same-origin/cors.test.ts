@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { corsCheck, isSafelistedHeader, isSimple, send, type ClientRequest, type Method, type ServerConfig } from './cors';
+import { corsCheck, isSafelistedHeader, isSimple, preflightRequestHeaders, send, type ClientRequest, type Method, type ServerConfig } from './cors';
 
 const ORIGIN = 'https://app.example.com';
 const req = (method: Method, headers: Record<string, string> = {}, credentials = false): ClientRequest => ({ method, path: '/orders', headers, credentials });
@@ -82,5 +82,22 @@ describe('sending a request', () => {
       expect(o.readable).toBe(true);
       expect(o.preflighted).toBe(false);
     }
+  });
+});
+
+describe('headers on the wire', () => {
+  const json: ClientRequest = { method: 'DELETE', path: '/api/items/1', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, credentials: true };
+  it('the preflight asks for the method and only the non-safelisted headers', () => {
+    expect(preflightRequestHeaders(json, ORIGIN)).toEqual([
+      ['Origin', ORIGIN], ['Access-Control-Request-Method', 'DELETE'], ['Access-Control-Request-Headers', 'content-type'],
+    ]);
+  });
+  it('a request the browser never sent lists no headers, and curl never sends the browser cookie', () => {
+    const blocked = send(json, { allowOrigin: 'none', allowCredentials: false, preflight: null }, ORIGIN, 'browser');
+    expect(blocked.reachedServer).toBe(false);
+    expect(blocked.requestHeaders).toEqual([]);
+    expect(blocked.preflightRequest).not.toBeNull();
+    const curl = send(json, { allowOrigin: 'none', allowCredentials: false, preflight: null }, ORIGIN, 'curl');
+    expect(curl.requestHeaders.some(([n]) => n === 'Cookie')).toBe(false);
   });
 });
