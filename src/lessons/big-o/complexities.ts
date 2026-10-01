@@ -1,15 +1,7 @@
-import { superscript } from '../../core/format';
-
-/** Narrow no-break space: there is no superscript comma, so long exponents group like "10³⁰¹ ⁰²⁹". */
-const EXP_GROUP = ' ';
+import { power } from '../../core/format';
 
 /** 10 to a (possibly huge) integer power, with the exponent's digits grouped in threes. */
-export function tenTo(k: number): string {
-  const digits = superscript(k);
-  const groups: string[] = [];
-  for (let end = digits.length; end > 0; end -= 3) groups.unshift(digits.slice(Math.max(0, end - 3), end));
-  return `10${groups.join(EXP_GROUP)}`;
-}
+const tenTo = (k: number) => power(k, 10, { grouped: true });
 
 export type CxId = 'c1' | 'log' | 'n' | 'nlogn' | 'n2' | 'exp';
 

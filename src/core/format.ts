@@ -80,12 +80,25 @@ export function plural(n: number, one: string, many = `${one}s`): string {
 
 const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 
+/** Narrow no-break space: there is no superscript comma, so long exponents group like "10³⁰¹ ⁰²⁹". */
+const EXP_GROUP = ' ';
+
+interface SuperscriptOptions {
+  /** Group the digits in threes (for huge exponents): 301029972 → '³⁰¹ ⁰²⁹ ⁹⁷²'. */
+  grouped?: boolean;
+}
+
 /** An integer in Unicode superscript digits, for exponents in plain text: 23 → '²³', -4 → '⁻⁴'. */
-export const superscript = (n: number) =>
-  [...String(Math.trunc(n))].map((ch) => (ch === '-' ? '⁻' : SUPERSCRIPT_DIGITS[Number(ch)])).join('');
+export function superscript(n: number, { grouped = false }: SuperscriptOptions = {}): string {
+  const k = Math.trunc(n);
+  const digits = [...String(Math.abs(k))].map((ch) => SUPERSCRIPT_DIGITS[Number(ch)]).join('');
+  const groups: string[] = [];
+  if (grouped) for (let end = digits.length; end > 0; end -= 3) groups.unshift(digits.slice(Math.max(0, end - 3), end));
+  return `${k < 0 ? '⁻' : ''}${grouped ? groups.join(EXP_GROUP) : digits}`;
+}
 
 /** A power as plain text: power(10) → '2¹⁰', power(-4, 10) → '10⁻⁴'. */
-export const power = (k: number, base = 2) => `${base}${superscript(k)}`;
+export const power = (k: number, base = 2, options?: SuperscriptOptions) => `${base}${superscript(k, options)}`;
 
 /** Two-digit zero padding: 7 → '07'. */
 export const pad2 = (n: number) => String(n).padStart(2, '0');

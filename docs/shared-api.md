@@ -120,6 +120,7 @@ latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
 superscript(23)       // '²³' — an integer in superscript digits
 power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
+power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in threes, narrow no-break space (big-o); superscript takes it too
 ```
 
 ### `parse.ts`

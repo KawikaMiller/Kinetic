@@ -10,6 +10,15 @@ describe('superscript', () => {
     expect(power(10)).toBe('2¹⁰');
     expect(power(-4, 10)).toBe('10⁻⁴');
   });
+
+  it('can group long exponents in threes with a narrow no-break space (there is no superscript comma)', () => {
+    expect(superscript(301_029_972, { grouped: true })).toBe('³⁰¹ ⁰²⁹ ⁹⁷²');
+    expect(superscript(1024, { grouped: true })).toBe('¹ ⁰²⁴');
+    expect(superscript(999, { grouped: true })).toBe('⁹⁹⁹');
+    expect(superscript(-12_345, { grouped: true })).toBe('⁻¹² ³⁴⁵');
+    expect(power(301_029_972, 10, { grouped: true })).toBe('10³⁰¹ ⁰²⁹ ⁹⁷²');
+    expect(power(12, 10, { grouped: true })).toBe('10¹²');
+  });
 });
 
 describe('latency and humanDuration', () => {

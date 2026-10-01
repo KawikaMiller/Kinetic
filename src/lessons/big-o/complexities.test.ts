@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { complexity, COMPLEXITIES, fmtOps, fmtOpsCount, fmtTime, tenTo, type CxId } from './complexities';
+import { complexity, COMPLEXITIES, fmtOps, fmtOpsCount, fmtTime, type CxId } from './complexities';
 
 const ops = (id: CxId, n: number) => complexity(id).f(n);
 
@@ -67,6 +67,5 @@ describe('operation counts as text', () => {
     expect(fmtOpsCount(0)).toBe('1 op');
     expect(fmtOpsCount(Math.log10(20))).toBe('20 ops');
     expect(fmtOpsCount(301_029.9)).toBe('10³⁰¹\u202F⁰²⁹ ops');
-    expect(tenTo(301_029_972)).toBe('10³⁰¹\u202F⁰²⁹\u202F⁹⁷²');
   });
 });
