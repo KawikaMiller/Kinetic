@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  REQUESTS, START_STORAGE, byteLength, cookieHeader, rejected, sendsCookie, xssReads, type Cookie, type Request,
+  REQUESTS, START_STORAGE, byteLength, cookieHeader, rejected, sendsCookie, xssReads, xssSummary, type Cookie, type Request,
 } from './model';
 
 const req = (id: string) => REQUESTS.find((r) => r.id === id)!;
@@ -75,5 +75,18 @@ describe('XSS', () => {
   });
   it('a new tab has its own, empty sessionStorage', () => {
     expect(xssReads(START_STORAGE, 'tab2').some((s) => s.drawer === 'session')).toBe(false);
+  });
+});
+
+describe('the XSS caption facts', () => {
+  it('counts entries, names only real credentials, and knows when nothing was hidden', () => {
+    const start = xssSummary(xssReads(START_STORAGE, 'tab1'));
+    expect(start.credentials).toEqual(['localStorage.authToken']);
+    expect(start.hidden).toEqual(['session']);
+    const open = { ...START_STORAGE, cookies: START_STORAGE.cookies.map((c) => ({ ...c, httpOnly: false })) };
+    const s = xssSummary(xssReads(open, 'tab1'));
+    expect(s.hidden).toEqual([]);
+    expect(s.credentials).toEqual(['the session cookie', 'localStorage.authToken']);
+    expect(s.credentials.join(' ')).not.toMatch(/theme|lang/);
   });
 });

@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS, effectiveNs, levelById, ratio } from './model';
 
+describe('the key idea about steps between levels', () => {
+  it('is 3 to 5× per step inside the chip, then about 500× from RAM to an SSD', () => {
+    const chip = ['reg', 'l1', 'l2', 'l3', 'ram'];
+    for (let i = 1; i < chip.length; i++) {
+      const step = levelById(chip[i]).ns / levelById(chip[i - 1]).ns;
+      expect(step).toBeGreaterThanOrEqual(3);
+      expect(step).toBeLessThanOrEqual(5);
+    }
+    expect(levelById('nvme').ns / levelById('ram').ns).toBe(500);
+  });
+});
+
 describe('latency numbers', () => {
   it('every figure sits inside its documented range', () => {
     for (const l of LEVELS) {

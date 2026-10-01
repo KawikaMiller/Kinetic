@@ -5,7 +5,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ControlGroup, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA } from '../../core/format';
-import { LAYERS, SCENARIOS, depthOf, stoppedBy, type Cia, type LayerId, type Scenario } from './model';
+import { LAYERS, SCENARIOS, depthOf, detected, stoppedBy, type Cia, type LayerId, type Scenario } from './model';
 
 // Scene geometry (SVG units): concentric rings, network outermost.
 const W = 620;
@@ -56,18 +56,25 @@ export function LayersScene({ picker }: { picker: ReactNode }) {
       else next.add(id);
       return next;
     });
+    forget(<>Layers changed. Press <b>Send the attack</b> to run it again.</>);
+  };
+
+  /** Any change invalidates the last run, and its caption with it. */
+  const forget = (note: ReactNode) => {
     setRun(null);
+    setCaption(note, { quiet: true });
   };
 
   const attack = () => {
     const stop = stoppedBy(scenario, enabled);
-    setRun((prev) => ({ n: (prev?.n ?? 0) + 1, scenario, stop, detected: detection }));
+    const seen = detected(scenario, detection);
+    setRun((prev) => ({ n: (prev?.n ?? 0) + 1, scenario, stop, detected: seen }));
     const layer = LAYERS.find((l) => l.id === stop);
     setCaption(
       layer ? (
         <>Stopped at <span className="hl ok">{layer.name}</span>: {scenario.stops[layer.id]}</>
       ) : (
-        <><span className="hl bad">Breach.</span> {scenario.breach} {detection ? 'Logging raised an alert, so at least someone knows.' : 'With detection off, nobody notices.'}</>
+        <><span className="hl bad">Breach.</span> {scenario.breach} {seen ? 'Logging raised an alert, so at least someone knows.' : detection ? 'Nothing reaches the logs: it happened offline, so detection can\'t help.' : 'With detection off, nobody notices.'}</>
       ),
       { quiet: true },
     );
@@ -76,6 +83,8 @@ export function LayersScene({ picker }: { picker: ReactNode }) {
   const stopDepth = run?.stop ? depthOf(run.stop) : null;
   const target = run ? (stopDepth === null ? BREACH_X : ring(stopDepth).x - TOKEN_R - 2) : 0;
   const breached = run !== null && run.stop === null;
+  // An attack that skips the outer layers (a stolen disk) appears at the first one it really meets.
+  const start = run?.scenario.entersAt ? ring(depthOf(run.scenario.entersAt)).x - TOKEN_R : -TOKEN_R;
 
   return (
     <StageFrame
@@ -101,7 +110,7 @@ export function LayersScene({ picker }: { picker: ReactNode }) {
         picker,
         <ControlGroup key="attack" label="Attack">
           {SCENARIOS.map((s) => (
-            <ChipButton key={s.id} tone="bad" size="md" on={s.id === scenarioId} onClick={() => { setScenarioId(s.id); setRun(null); }}>{s.label}</ChipButton>
+            <ChipButton key={s.id} tone="bad" size="md" on={s.id === scenarioId} onClick={() => { setScenarioId(s.id); forget(<><b>{s.label}</b> picked. Press <b>Send the attack</b>.</>); }}>{s.label}</ChipButton>
           ))}
         </ControlGroup>,
         <>
@@ -112,7 +121,7 @@ export function LayersScene({ picker }: { picker: ReactNode }) {
               </ChipButton>
             ))}
           </ControlGroup>
-          <Toggle label="Detection" value={detection} onChange={setDetection} off="off" on="logging + alerts" />
+          <Toggle label="Detection" value={detection} onChange={(v) => { setDetection(v); forget(<>Detection {v ? 'on' : 'off'}. Press <b>Send the attack</b> to run it again.</>); }} off="off" on="logging + alerts" />
           <Button variant="danger" onClick={attack}>Send the attack</Button>
         </>,
       ]}
@@ -152,7 +161,7 @@ export function LayersScene({ picker }: { picker: ReactNode }) {
                 cy={LANE_Y}
                 r={TOKEN_R}
                 className="sp-token"
-                initial={{ cx: -TOKEN_R }}
+                initial={{ cx: start }}
                 animate={{ cx: target }}
                 transition={{ duration: TRAVEL_S, ease: 'easeInOut' }}
               />

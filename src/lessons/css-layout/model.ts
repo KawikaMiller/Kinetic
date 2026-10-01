@@ -86,6 +86,14 @@ export interface BoxSettings {
   boxSizing: BoxSizing;
 }
 
+/**
+ * The border-box width the browser really draws. With border-box, width includes padding and
+ * border, but the content can't go below 0: once 2 × (padding + border) exceeds width, the box grows.
+ */
+export function borderBoxWidth(s: BoxSettings): number {
+  return Math.max(s.width, 2 * (s.padding + s.border));
+}
+
 export function boxCss(s: BoxSettings): string[] {
   return [
     '.box {',

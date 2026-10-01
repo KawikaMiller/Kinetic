@@ -124,7 +124,7 @@ export function CheatSheet() {
         </table>
         <p className="dbg-note">
           Breakpoints: click a line number in DevTools' Sources panel, or the gutter left of the line numbers in VS Code (F9). Right-click it for a
-          conditional breakpoint or a logpoint. Both tools draw breakpoints as red-ish markers, which is why they're red here.
+          conditional breakpoint or a logpoint. VS Code draws breakpoints as red dots, as this page does; Chrome DevTools marks the line number in blue (orange for a conditional breakpoint, pink for a logpoint).
         </p>
       </Box>
       <div className="dbg-compare">

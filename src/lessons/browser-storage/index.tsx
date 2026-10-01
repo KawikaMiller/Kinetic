@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Browsers keep data in four places: cookies, localStorage, sessionStorage and IndexedDB. Only cookies are sent to the server, and only cookies can be hidden from JavaScript.',
-    what: 'Cookies are small strings the browser attaches to matching requests automatically; flags decide when (Secure: https only; SameSite: whether cross-site requests carry them; Domain and Path: which URLs) and whether page scripts can see them (HttpOnly). localStorage keeps strings per site until cleared; sessionStorage is the same but per tab; IndexedDB stores large structured data asynchronously. None of the last three is ever sent to a server on its own, and any script running on the page can read all of them.',
+    what: 'Cookies are small strings the browser attaches to matching requests automatically; flags decide when (Secure: https only; SameSite: whether cross-site requests carry them; Domain and Path: which URLs) and whether page scripts can see them (HttpOnly). localStorage keeps strings per origin until cleared; sessionStorage is the same but per tab; IndexedDB stores large structured data asynchronously. None of the last three is ever sent to a server on its own, and any script running on the page can read all of them.',
     analogy: 'Cookies are a badge clipped to your coat that security reads at every door; localStorage is a locker only you open; sessionStorage is a locker that\'s emptied when you leave the room.',
     useCases: [
       'Keeping someone logged in with an HttpOnly, Secure session cookie',

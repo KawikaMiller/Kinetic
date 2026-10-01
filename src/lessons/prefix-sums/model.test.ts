@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
+import { diffFrames } from './frames';
 import {
-  applyNaively, applyWithDiff, naiveRangeSum, offByOneRangeSum, prefixSums, rangeSum, type RangeUpdate,
+  applyNaively, applyWithDiff, naiveRangeSum, offByOneRangeSum, prefixSums, rangeSum, signedText, type RangeUpdate,
 } from './model';
 import { DIFF_BASE, DIFF_UPDATES, RANGE_PRESET } from './presets';
 
@@ -60,5 +61,20 @@ describe('difference arrays', () => {
       });
       expect(applyWithDiff(base, updates).result).toEqual(applyNaively(base, updates));
     }
+  });
+});
+
+describe('signed amounts', () => {
+  it('always use a real minus sign', () => {
+    expect([signedText(3), signedText(-3), signedText(0), signedText(0, '+0')]).toEqual(['+3', '−3', '0', '+0']);
+  });
+});
+
+describe('difference-array frames', () => {
+  it('mark the range start first and the slot past the end second, whatever the sign', () => {
+    const frames = diffFrames([1, 2, 3, 4, 5], [{ from: 1, to: 3, add: -3 }]);
+    const marked = frames.find((f) => f.marked.length)!;
+    expect(marked.marked).toEqual([1, 4]);
+    expect(marked.diff[1]).toBe(-3); // the start is negative here, and still drawn green by role
   });
 });

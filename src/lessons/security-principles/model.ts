@@ -32,6 +32,10 @@ export interface Scenario {
   /** What's lost if nothing stops it. */
   threatens: Cia[];
   breach: string;
+  /** The first layer the attack actually meets; it skips everything outside it. Default: the network. */
+  entersAt?: LayerId;
+  /** False when the attack never touches a system that logs (a theft, say). Default: true. */
+  logged?: boolean;
 }
 
 export const SCENARIOS: Scenario[] = [
@@ -67,6 +71,8 @@ export const SCENARIOS: Scenario[] = [
     stops: { data: 'The disk is encrypted, so the drive is unreadable without the owner\'s key.' },
     threatens: ['confidentiality'],
     breach: 'Whoever has the laptop reads the data straight off the disk.',
+    entersAt: 'data',
+    logged: false,
   },
   {
     id: 'service',
@@ -102,6 +108,9 @@ export const SCENARIOS: Scenario[] = [
 
 /** The layer that stops `scenario`: the first enabled one in its defeat list, or null (breach). */
 export const stoppedBy = (scenario: Scenario, enabled: ReadonlySet<LayerId>) => scenario.defeatedBy.find((l) => enabled.has(l)) ?? null;
+
+/** Whether anyone finds out about a breach: only if detection is on and the attack went through logged systems. */
+export const detected = (scenario: Scenario, detection: boolean) => detection && scenario.logged !== false;
 
 /** Index of a layer from the outside (0 = network). */
 export const depthOf = (id: LayerId) => LAYERS.findIndex((l) => l.id === id);

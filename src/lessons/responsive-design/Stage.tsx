@@ -128,7 +128,7 @@ export function Stage() {
             value={showTaps}
             onChange={(v) => {
               setShowTaps(v);
-              if (v) setCaption(<>Anything smaller than 44 × 44px is hard to hit with a thumb: those get a <span className="hl bad">red outline</span>.</>);
+              if (v) setCaption(<>Anything smaller than 44 × 44px is hard to hit with a thumb: those get a <span className="hl bad">red outline</span>. (44 is the comfortable target from WCAG AAA and Apple; the AA minimum is 24 × 24.)</>);
             }}
             off="Hide"
             on="Check sizes"
@@ -154,7 +154,8 @@ export function Stage() {
                 className={`rd-ruler-band ${b.id === active ? 'tone-hi is-on' : ''}`}
                 style={{ left: `${x.map(start)}%`, width: `${x.map(end) - x.map(start)}%` }}
               >
-                {b.label}
+                <span className="rd-ruler-long">{b.label}</span>
+                <span className="rd-ruler-short">{b.short}</span>
               </div>
             );
           })}

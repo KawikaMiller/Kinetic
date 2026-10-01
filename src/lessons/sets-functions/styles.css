@@ -44,4 +44,7 @@
 .sf-checks .is-ok span { color: var(--ok); }
 .sf-checks .is-no { color: var(--muted); }
 .sf-checks .is-no span { color: var(--bad); }
+.sf-checks .is-na { color: var(--muted); }
+.sf-checks .is-na span { color: var(--dim); }
+.sf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .sf-card { margin: 0; font-size: 13px; color: var(--muted); }

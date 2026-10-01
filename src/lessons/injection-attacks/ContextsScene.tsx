@@ -91,7 +91,10 @@ export function ContextsScene({ picker }: { picker: ReactNode }) {
           that changes what the query, page or command does. The fix is the same every time: keep data separate from code, or
           encode it for the exact place it goes. Checking for &quot;bad characters&quot; isn&apos;t the fix: real names contain apostrophes.
         </p>
-        <p className="inj-honest">Simulated contexts; the URL is parsed with the browser&apos;s real URL API, nothing is run.</p>
+        <p className="inj-honest">
+          Simulated contexts; nothing is run. The URL is parsed with the browser&apos;s real URL API; the shell row is a simplified
+          model of how a POSIX shell like bash reads a command line (quotes, separators, redirections), checked against bash.
+        </p>
       </div>
     </StageFrame>
   );

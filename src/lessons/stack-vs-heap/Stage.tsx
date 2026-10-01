@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { HeapObject, RefArrow, VarSlot, heapRect, slotPort, slotValueRect } from '../../components/memory';
@@ -93,10 +93,15 @@ function MemoryStats({ world }: { world: World }) {
 const slotText = (v: Value, mode: Mode) =>
   v.kind === 'prim' ? v.text : v.kind === 'null' ? 'NULL' : v.kind === 'unset' ? (mode === 'manual' ? '?' : '…') : undefined;
 
+/** Zone labels sit high enough that the stack-limit line (just under the sixth frame) clears them. */
+const ZONE_LABEL_Y = 14;
+
 function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
   const { world } = frame;
   const ghosts = ghostFrames(world);
   const boxes = layoutStack(world.stack.filter((s) => !s.popped || ghosts.has(s.id)));
+  // The crash shake is error feedback, not teaching motion: hold still under reduced motion.
+  const reduceMotion = useReducedMotion();
   const top = topFrame(world);
   const gc = collectable(world);
   const lost = leaked(world);
@@ -105,8 +110,8 @@ function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
 
   return (
     <svg className="sh-scene" viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} role="img" aria-label="The call stack on the left, the heap on the right">
-      <text className="scene-zone" x={16} y={24}>stack</text>
-      <text className="scene-zone" x={318} y={24}>heap (no particular order)</text>
+      <text className="scene-zone" x={16} y={ZONE_LABEL_Y}>stack</text>
+      <text className="scene-zone" x={318} y={ZONE_LABEL_Y}>heap (no particular order)</text>
       {showLimit && (
         <g className="sh-limit">
           <line x1={10} x2={FRAME_W + 22} y1={STACK_LIMIT_Y} y2={STACK_LIMIT_Y} />
@@ -114,7 +119,7 @@ function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
         </g>
       )}
 
-      <motion.g animate={world.crashed ? SHAKE : { x: 0 }}>
+      <motion.g animate={world.crashed && !reduceMotion ? SHAKE : { x: 0 }}>
         {boxes.map((box) => (
           <FrameView key={box.frame.id} box={box} running={box.frame.id === top?.id && !world.crashed} crashed={world.crashed} world={world} />
         ))}

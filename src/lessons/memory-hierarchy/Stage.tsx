@@ -6,7 +6,6 @@ import { Button, Hint, Legend, Slider, Stat, Stats, Toggle } from '../../compone
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { bytes, humanDuration, latency, NA, pct, times } from '../../core/format';
 import { useElementSize } from '../../core/hooks';
-import { categorical } from '../../core/palette';
 import { logScale } from '../../core/scale';
 import { HUMAN_SECONDS_PER_NS, LEVELS, effectiveNs, levelById } from './model';
 import './styles.css';
@@ -77,7 +76,7 @@ export function Stage() {
         <Legend
           items={[
             { color: 'var(--hi)', label: 'a request travelling', shape: 'dot' },
-            { color: 'var(--info)', label: 'latency (one colour per level)' },
+            { color: 'var(--info)', label: 'latency' },
             { color: 'var(--violet)', label: 'capacity' },
           ]}
         />
@@ -105,7 +104,7 @@ export function Stage() {
           <span className="section-title">typical size</span>
         </div>
 
-        {LEVELS.map((l, i) => {
+        {LEVELS.map((l) => {
           const end = x.map(l.ns);
           return (
             <div key={l.id} className="mh-grid mh-row">
@@ -114,7 +113,8 @@ export function Stage() {
                 <small>{l.note}</small>
               </span>
               <svg className="mh-track" width={trackW} height={TRACK_H} viewBox={`0 0 ${Math.max(1, trackW)} ${TRACK_H}`} aria-hidden="true">
-                <rect className="mh-bar" x={0} y={TRACK_H / 2 - 3} width={Math.max(2, end)} height={6} rx={3} style={{ fill: categorical(i) }} />
+                {/* One colour for every latency bar: red/green/yellow already mean "slow"/"average"/"travelling" here. */}
+                <rect className="mh-bar" x={0} y={TRACK_H / 2 - 3} width={Math.max(2, end)} height={6} rx={3} />
                 {trackW > 0 && (
                   <TravelDot
                     key={`${race}-${scale}`}

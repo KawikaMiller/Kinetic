@@ -23,14 +23,20 @@
 .tc-date .stat-value { font-size: 14px; }
 .tc-negate { display: flex; flex-direction: column; gap: 8px; }
 
-.tc-add { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
-.tc-columns { display: flex; flex-direction: column; gap: 8px; }
-.tc-sum-row { display: flex; align-items: center; gap: 10px; }
-.tc-sum-label { width: 104px; font: 600 12px var(--mono); color: var(--muted); text-align: right; }
-.tc-sum-lead { width: 24px; display: grid; place-items: center; }
+/* The addition rows line up on a label column; the rule under B starts where the bits do. */
+.tc-add { --tc-label-w: 104px; --tc-gap: 10px; --tc-lead-w: 24px; display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.tc-columns { display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
+.tc-sum-row { display: flex; align-items: center; gap: var(--tc-gap); }
+.tc-sum-label { flex: none; width: var(--tc-label-w); font: 600 12px var(--mono); color: var(--muted); text-align: right; }
+.tc-sum-lead { flex: none; width: var(--tc-lead-w); display: grid; place-items: center; }
 .tc-carry-out { font: 700 13px var(--mono); color: var(--faint); }
 .tc-carry-out.is-out { color: var(--bad); }
-.tc-rule { height: 2px; background: var(--line-2); margin-left: 148px; }
+.tc-rule { height: 2px; background: var(--line-2); margin-left: calc(var(--tc-label-w) + var(--tc-lead-w) + 2 * var(--tc-gap)); }
+/* Phones: a narrower label column so all eight bit columns fit. */
+@media (max-width: 480px) {
+  .tc-add { --tc-label-w: 64px; --tc-gap: 6px; --tc-lead-w: 16px; }
+  .tc-sum-label { font-size: 11px; }
+}
 .tc-verdicts { flex: 1 1 260px; display: flex; flex-direction: column; gap: 10px; }
 .tc-verdict p { margin: 6px 0 0; font-size: 13.5px; }
 .tc-verdict-tag { font: 700 11px var(--mono); text-transform: uppercase; color: var(--c); margin-right: 4px; }

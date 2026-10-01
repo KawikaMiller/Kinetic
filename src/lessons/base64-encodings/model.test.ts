@@ -41,8 +41,15 @@ describe('base64 built from the bits equals the built-ins', () => {
     expect(toBlocks(utf8('Man'), 'standard')[0].zeroPadBits).toBe(0);
   });
 
-  it('the JWT header encodes to the familiar eyJ… string', () => {
-    expect(encode(utf8('{"alg":"HS256","typ":"JWT"}'), 'url')).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
+  it('the JWT header encodes to the familiar eyJ… string, the same in both alphabets', () => {
+    const jwt = utf8('{"alg":"HS256","typ":"JWT"}');
+    expect(encode(jwt, 'url')).toBe('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9');
+    expect(encode(jwt, 'standard')).toBe(encode(jwt, 'url')); // no + / or = in it: the try-this says so
+  });
+
+  it('the ">>>?" preset is where base64url visibly differs', () => {
+    expect(encode(utf8('>>>?'), 'standard')).toBe('Pj4+Pw==');
+    expect(encode(utf8('>>>?'), 'url')).toBe('Pj4-Pw');
   });
 
   it('decodes back without any key', () => {

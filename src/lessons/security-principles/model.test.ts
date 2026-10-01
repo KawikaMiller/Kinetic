@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ACTIONS, EVERYTHING, LAYERS, NEEDED, RESOURCES, SCENARIOS, blastRadius, missingNeeds, perm, stoppedBy, type LayerId,
+  ACTIONS, EVERYTHING, LAYERS, NEEDED, RESOURCES, SCENARIOS, blastRadius, detected, missingNeeds, perm, stoppedBy, type LayerId,
 } from './model';
 
 /** Every subset of the layers, as the set of layers left switched on. */
@@ -56,5 +56,18 @@ describe('least privilege', () => {
   it('an empty grant set has no blast radius', () => {
     expect(blastRadius(new Set())).toBe(0);
     expect(EVERYTHING.size).toBe(RESOURCES.length * ACTIONS.length);
+  });
+});
+
+describe('the stolen laptop', () => {
+  const laptop = SCENARIOS.find((s) => s.id === 'laptop')!;
+  it('never reaches the logs, so detection cannot catch it', () => {
+    expect(detected(laptop, true)).toBe(false);
+    expect(detected(SCENARIOS.find((s) => s.id === 'phish')!, true)).toBe(true);
+    expect(detected(SCENARIOS.find((s) => s.id === 'phish')!, false)).toBe(false);
+  });
+  it('enters at the layer that can stop it, skipping network and identity', () => {
+    expect(laptop.entersAt).toBe('data');
+    expect(laptop.defeatedBy).toEqual(['data']);
   });
 });

@@ -40,7 +40,7 @@ const lesson: LessonModule = {
       q: 'Paragraph A has margin-bottom: 20px and paragraph B below it has margin-top: 30px. How big is the gap?',
       options: ['50px', '30px', '20px', '25px'],
       answer: 1,
-      why: 'Adjacent vertical margins collapse to the larger of the two. They only add up when something (padding, a border, a flex or grid parent) separates them.',
+      why: 'Adjacent sibling margins collapse to the larger of the two. They add up only when the paragraphs are flex or grid items (or floated, or inline-block). Padding or a border on a parent stops a different collapse: parent with first or last child.',
     },
     {
       q: 'Three flex items share 300px of free space with flex-grow 1, 1 and 2. How much extra does the third get?',

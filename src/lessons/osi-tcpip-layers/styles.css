@@ -73,4 +73,6 @@
 .osi-card-text { margin: 0; font-weight: 600; font-size: 14px; }
 .osi-card-layers { display: flex; flex-wrap: wrap; gap: 6px; }
 .osi-card-why { margin: 0; font-size: 13px; color: var(--muted); }
-.osi-card.is-right .osi-card-why { color: var(--text); }
+/* Every answered card explains itself at full contrast, wrong answers included. */
+.osi-card.is-right .osi-card-why,
+.osi-card.is-wrong .osi-card-why { color: var(--text); }

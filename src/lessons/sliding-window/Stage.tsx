@@ -3,6 +3,7 @@ import { ArrayStrip, type ArrayCellState, type ArrayRange } from '../../componen
 import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
+import { plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import {
   everyWindow, everyWindowOfK, fixedKFrames, shortestFrames, uniqueFrames, type BruteCost, type SwFrame,
@@ -85,7 +86,9 @@ function FixedScene({ picker }: { picker: ReactNode }) {
   const [k, setK] = useState(3);
   const [draft, setDraft] = useState(FIXED_PRESET.join(', '));
   const [error, setError] = useState<string | null>(null);
-  const frames = useMemo(() => fixedKFrames(values, Math.min(k, values.length)), [values, k]);
+  /** The window can't be wider than the list: k is capped, and the controls say so. */
+  const kUsed = Math.min(k, values.length);
+  const frames = useMemo(() => fixedKFrames(values, kUsed), [values, kUsed]);
   const apply = () => {
     const nums = readNumbers(draft, -MAX_VALUE);
     if (typeof nums === 'string') return setError(nums);
@@ -97,12 +100,13 @@ function FixedScene({ picker }: { picker: ReactNode }) {
       values={values}
       frames={frames}
       valueLabel="Window sum"
-      brute={everyWindowOfK(values.length, Math.min(k, values.length))}
+      brute={everyWindowOfK(values.length, kUsed)}
       bestValue={(f) => (f.best ? values.slice(f.best[0], f.best[1] + 1).reduce((x, y) => x + y, 0) : 0)}
       controls={[
         <>
           {picker}
           <Segmented label="k" value={k} onChange={setK} options={K_CHOICES.map((v) => ({ value: v, label: String(v) }))} />
+          {kUsed < k && <Hint>Only {plural(values.length, 'number')}, so the window uses k = {kUsed}.</Hint>}
         </>,
         <>
           <TextField label="Numbers" value={draft} onChange={setDraft} onEnter={apply} width={260} spellCheck={false} />
@@ -185,7 +189,7 @@ function WindowScene({
           <Stat label={valueLabel} value={f.r >= f.l ? f.value : 0} color="var(--hi)" sub={target !== undefined ? `target ${target}` : undefined} />
           <Stat label={bestLabel} value={f.best ? bestValue(f) : '–'} color="var(--violet)" />
           <Stat label="Moves" value={f.moves} color="var(--ok)" sub={`never more than 2n = ${2 * n}`} />
-          <Stat label="Brute force" value={brute.value} color="var(--bad)" sub={brute.unit} />
+          <Stat label="Brute force" value={brute.value} color="var(--bad)" sub={brute.value === 1 ? brute.unit : `${brute.unit}s`} />
         </Stats>
       }
       legend={

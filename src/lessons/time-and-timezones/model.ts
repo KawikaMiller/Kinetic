@@ -94,7 +94,7 @@ export function transitions(zone: string, from: number, to: number): Transition[
   return out;
 }
 
-/** Real hours between two local midnights: 24 on most days, 23 or 25 on DST days. */
+/** Real hours between two local midnights: 24 on most days, 23 or 25 on DST days (23.5 or 24.5 on Lord Howe Island). */
 export function hoursInDay(year: number, month: number, day: number, zone: string): number {
   const [start] = instantsFor({ year, month, day, hour: 0, minute: 0 }, zone);
   const next = new Date(Date.UTC(year, month - 1, day + 1));
@@ -227,10 +227,16 @@ export function gapWeeks(): GapDay[] {
  * versus the same moment stored as a UTC instant plus the IANA zone it was booked in.
  */
 export function storageComparison(wall: Wall, bookedIn: Zone, servers: readonly Zone[]) {
-  const [instant] = instantsFor(wall, bookedIn);
+  const [instant, ...others] = instantsFor(wall, bookedIn);
   return {
     naive: servers.map((server) => ({ server, instant: instantsFor(wall, server)[0] ?? null })),
-    stored: { utc: instant === undefined ? null : new Date(instant).toISOString(), zone: bookedIn, instant: instant ?? null },
+    stored: {
+      utc: instant === undefined ? null : new Date(instant).toISOString(),
+      zone: bookedIn,
+      instant: instant ?? null,
+      /** A repeated wall time has more than one instant: these are the ones not stored, which the booking must ask about. */
+      notStored: others.map((at) => new Date(at).toISOString()),
+    },
   };
 }
 

@@ -7,7 +7,7 @@ import { flipBit, fromBits, type BitGroup } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import {
   EXP_BIAS, SPECIALS, bitRole, bitsOf, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, power, significand, storedDigits,
-  type Fields,
+  storeOutcome, type Fields,
 } from './model';
 import { LINES_WIDTH, MagnitudeLine, ZoomLine } from './NumberLines';
 import './styles.css';
@@ -75,9 +75,16 @@ export function Stage() {
     const stored = f32FromBits(f32Bits(x));
     setBits(f32Bits(x));
     setTyped(x);
+    const outcome = storeOutcome(x);
     setCaption(
-      stored === x ? (
+      outcome === 'exact' ? (
         <>{draft.trim()} fits exactly: it's a sum of powers of two that float32 can hold.</>
+      ) : outcome === 'overflow' ? (
+        <>{draft.trim()} is bigger than the largest float32 (about 3.4 × 10³⁸), so it <span className="hl bad">overflows</span> to{' '}
+          {show(stored)}. Floats don't wrap like integers: they run out at Infinity.</>
+      ) : outcome === 'underflow' ? (
+        <>{draft.trim()} is smaller than the smallest float32 (about 1.4 × 10⁻⁴⁵), so it <span className="hl bad">underflows</span> to{' '}
+          {show(stored)}.</>
       ) : (
         <>You typed {draft.trim()}; float32 snaps it to the nearest value it can represent, <span className="hl">{storedDigits(stored)}</span>,
           off by {Math.abs(stored - x).toExponential(2)}. Not random: the nearest binary fraction.</>

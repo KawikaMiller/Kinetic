@@ -9,7 +9,7 @@ import { useSetCaption } from '../../core/caption';
 import { randInt } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import { diffFrames } from './frames';
-import { naiveRangeSum, naiveWrites, offByOneRangeSum, prefixSums, queryCosts, rangeSum } from './model';
+import { naiveRangeSum, naiveWrites, offByOneRangeSum, prefixSums, queryCosts, rangeSum, signedText } from './model';
 import { DIFF_BASE, DIFF_UPDATES, DIFF_UPDATES_SHORT, MAX_VALUE, QUERIES, RANDOM_LENGTH, RANGE_PRESET } from './presets';
 import { Staircase } from './Staircase';
 import './styles.css';
@@ -128,8 +128,6 @@ function DiffScene({ picker }: { picker: ReactNode }) {
   const frames = useMemo(() => diffFrames(DIFF_BASE, updates), [updates]);
   const player = usePlayer(frames, { interval: STEP_MS });
   const f = player.frame;
-  const marked = new Set(f.marked);
-  const signed = (v: number | string) => (typeof v !== 'number' || v === 0 ? String(v) : v > 0 ? `+${v}` : `−${-v}`);
 
   return (
     <StageFrame
@@ -162,7 +160,7 @@ function DiffScene({ picker }: { picker: ReactNode }) {
         <ol className="ps-updates">
           {updates.map((u, k) => (
             <li key={k} className={`chip ${k === f.update ? 'tone-hi' : ''}`}>
-              {u.add > 0 ? `+${u.add}` : u.add} to [{u.from}, {u.to}]
+              {signedText(u.add)} to [{u.from}, {u.to}]
             </li>
           ))}
         </ol>
@@ -172,8 +170,9 @@ function DiffScene({ picker }: { picker: ReactNode }) {
           <SectionTitle weight="regular">difference array (n + 1 slots)</SectionTitle>
           <ArrayStrip
             values={f.diff}
-            renderValue={signed}
-            cellState={(i): ArrayCellState => (marked.has(i) ? (f.diff[i] >= 0 ? 'done' : 'bad') : 'idle')}
+            renderValue={(v) => (typeof v === 'number' ? signedText(v) : String(v))}
+            // Colour by role, not by sign: a negative update still starts green and ends red.
+            cellState={(i): ArrayCellState => (i === f.marked[0] ? 'done' : i === f.marked[1] ? 'bad' : 'idle')}
             pointers={f.sweep !== null ? [{ i: f.sweep, label: 'Σ', tone: 'hi', id: 'sweep' }] : []}
             showIndex
             cellMax={48}

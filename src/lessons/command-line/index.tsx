@@ -13,7 +13,7 @@ const lesson: LessonModule = {
       'Capturing a command\'s output and errors in a file for later',
       'Fixing "Permission denied" on scripts and SSH keys with chmod',
     ],
-    why: 'Servers, containers and CI pipelines are all driven from a shell, and most of their failures show up as an exit code, a missing redirect or a permission bit. Reading a pipeline stage by stage, and knowing why `2>&1 > file` still prints errors, turns cryptic one-liners into tools you can trust.',
+    why: 'Servers, containers and CI pipelines are all driven from a shell, and most of their failures show up as an exit code, a missing redirect or a permission bit. Reading a pipeline stage by stage, and knowing why "2>&1 > file" still prints errors, turns cryptic one-liners into tools you can trust.',
     watch: 'Pipes: each command is a card. The output it produces (stdout) shows in blue and errors (stderr) in red; the number on each | is how many lines went down the pipe. The exit chip is green for 0 and red for anything else. Pipelines skipped by && or || turn into dashed, crossed-out cards. Files written by a redirection are tagged violet in the Files list. Permissions: the nine bits are yellow when set and dim when not, grouped user / group / other; the access table shows allowed in green and denied in red.',
   },
   tryThis: [
@@ -31,7 +31,7 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: '`cmd 2>&1 > out.txt` and `cmd > out.txt 2>&1` do the same thing. True?',
+      q: '"cmd 2>&1 > out.txt" and "cmd > out.txt 2>&1" do the same thing. True?',
       options: ['True, order doesn\'t matter', 'False: in the first, errors still go to the terminal', 'False: the first deletes out.txt', 'True, but the second is faster'],
       answer: 1,
       why: '2>&1 copies wherever stdout points right now. In the first, stdout still points at the terminal when 2>&1 runs, so errors go there; then stdout moves to the file.',
@@ -40,16 +40,16 @@ const lesson: LessonModule = {
       q: 'grep finds no matching lines. What is its exit code?',
       options: ['0', '1', '2', '127'],
       answer: 1,
-      why: 'grep exits 0 when something matched, 1 when nothing did, and 2 on an error such as a missing file. So `grep x f || echo none` prints "none".',
+      why: 'grep exits 0 when something matched, 1 when nothing did, and 2 on an error such as a missing file. So "grep x f || echo none" prints "none".',
     },
     {
-      q: 'What does `chmod 640 notes.txt` allow?',
+      q: 'What does "chmod 640 notes.txt" allow?',
       options: ['Everyone can read', 'Owner reads and writes, group reads, others nothing', 'Owner reads, group writes', 'Only the owner can execute'],
       answer: 1,
       why: '6 = 4+2 = rw- for the owner, 4 = r-- for the group, 0 = --- for everyone else.',
     },
     {
-      q: 'Why does `cat a.log | sort | uniq -c` usually come with sort first?',
+      q: 'Why does "cat a.log | sort | uniq -c" usually come with sort first?',
       options: ['uniq only collapses adjacent duplicates', 'uniq can\'t read from a pipe', 'sort makes it faster', 'It doesn\'t need it'],
       answer: 0,
       why: 'uniq compares each line with the one before it, so equal lines must be next to each other first.',

@@ -141,3 +141,16 @@ describe('pitfall cards are computed, not typed', () => {
     expect(get('json-trailing').before.lines[1]).toMatch(/SyntaxError: .+/);
   });
 });
+
+describe('numbers that do not survive JSON.parse', () => {
+  it('flags big integers and Infinity, not ordinary numbers', () => {
+    const parsed = parseJson('[{"id": 9007199254740993, "price": 1e400, "age": 36, "rate": 0.5}]');
+    if (!parsed.ok) throw new Error('should parse');
+    expect(unsafeNumberPaths(parsed.value)).toEqual(new Set(['0.id', '0.price']));
+  });
+  it('the indentation card shows YAML a learner would really write', () => {
+    const card = PITFALLS.find((p) => p.id === 'yaml-indent')!;
+    expect(card.before.lines.slice(0, 2)).toEqual(['address:', 'city: Oslo']);
+    expect(card.before.lines[2]).toContain('address is null');
+  });
+});

@@ -243,7 +243,9 @@ function OverheadPanel({ size, onSize }: { size: SizeId; onSize: (s: SizeId) => 
       <Segmented label="Message size" value={size} onChange={onSize} options={MESSAGE_SIZES.map(({ value, label }) => ({ value, label }))} />
       <div className="osi-overhead-read">
         <span>
-          {plural(o.segments, 'frame')} (up to {MSS} B each) × {PER_FRAME_OVERHEAD} B of headers = <b>{bytes(o.headerBytes, { base: 1000, dp: o.headerBytes < 1000 ? 0 : 1 })}</b>
+          {plural(o.segments, 'frame')} (each carrying up to {MSS} B of data, the MSS) × {PER_FRAME_OVERHEAD} B of headers ={' '}
+          {/* 1024-based, like the size presets above (1 KB = 1,024 B) */}
+          <b>{bytes(o.headerBytes, { dp: o.headerBytes < 1024 ? 0 : 1 })}</b>
           {o.paddingBytes > 0 && <> + {o.paddingBytes} B padding</>}
         </span>
         <Bar value={o.efficiency} max={1} tone={o.efficiency < 0.5 ? 'bad' : 'ok'} height={8}

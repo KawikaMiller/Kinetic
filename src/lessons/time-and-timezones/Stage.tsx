@@ -281,6 +281,12 @@ function Meeting({ picker }: { picker: ReactNode }) {
               <b>UTC instant + zone</b>: <code>{cmp.stored.utc}</code> + <code>{cmp.stored.zone}</code>: one moment for everyone, and you
               still know it was booked as {time} {ZONE_LABEL[zone]} (handy when the zone's rules change).
             </div>
+            {cmp.stored.notStored.length > 0 && (
+              <div className="tz-store-row is-warn">
+                <b>But which {time}?</b> This stored moment 1. Moment 2 would be <code>{cmp.stored.notStored.join(', ')}</code>. A UTC
+                instant can only pin the moment once someone has picked it, so the booking form has to ask.
+              </div>
+            )}
           </Box>
         )}
         <Hint block>{INTL_NOTE}</Hint>

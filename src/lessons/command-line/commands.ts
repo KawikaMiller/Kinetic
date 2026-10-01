@@ -149,12 +149,23 @@ const tail: Command = (args, stdin, fs) => {
   return { stdout: chunks.flatMap((c) => c.lines.slice(Math.max(0, c.lines.length - n))), stderr: errors, exit: errors.length ? 1 : 0 };
 };
 
-/** wc -l: "12" for stdin, "12 access.log" for a named file. */
+/** Bytes on disk: the fixture stores contents without the final newline a real file ends with. */
+const fileBytes = (text: string) => new TextEncoder().encode(text).length + 1;
+
+/**
+ * wc -l: "12" for stdin, "12 access.log" for one named file. With several files GNU wc adds a
+ * "total" line and right-aligns every count to the digit count of the files' combined size.
+ */
 const wc: Command = (args, stdin, fs) => {
   const { rest } = flags(args);
   const { chunks, errors } = inputs('wc', rest, stdin, fs);
-  const stdout = chunks.map((c) => (rest.length ? `${c.lines.length} ${c.name}` : String(c.lines.length)));
-  return { stdout, stderr: errors, exit: errors.length ? 1 : 0 };
+  const exit = errors.length ? 1 : 0;
+  if (rest.length === 0) return { stdout: chunks.map((c) => String(c.lines.length)), stderr: errors, exit };
+  if (rest.length === 1) return { stdout: chunks.map((c) => `${c.lines.length} ${c.name}`), stderr: errors, exit };
+  const width = String(chunks.reduce((n, c) => n + fileBytes(fs[c.name]), 0)).length;
+  const row = (count: number, name: string) => `${String(count).padStart(width)} ${name}`;
+  const total = chunks.reduce((n, c) => n + c.lines.length, 0);
+  return { stdout: [...chunks.map((c) => row(c.lines.length, c.name)), row(total, 'total')], stderr: errors, exit };
 };
 
 const echo: Command = (args) => ok([args.join(' ')]);

@@ -92,8 +92,11 @@ export interface CCopy {
 
 export interface TreeResult {
   copies: CCopy[];
-  /** Dependents whose range can't reach any fixed version: their maintainers must release a change. */
-  stuck: ('A' | 'B')[];
+  /**
+   * Who has to release something before a reinstall can fix it: c-utils itself while no fixed
+   * version exists, otherwise each dependent whose range can't reach a fixed version.
+   */
+  stuck: ('A' | 'B' | 'c-utils')[];
 }
 
 /**
@@ -118,6 +121,7 @@ export function resolveTree(fix: FixMode, bVersion: BVersion): TreeResult {
         ];
 
   const reachesFix = (range: string) => available.some((v) => satisfies(v, range) && !vuln(v));
+  if (!available.some((v) => !vuln(v))) return { copies, stuck: ['c-utils'] };
   const stuck = (['A', 'B'] as const).filter((who) => !reachesFix(who === 'A' ? A_RANGE_ON_C : bRange));
   return { copies, stuck };
 }

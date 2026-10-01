@@ -42,7 +42,7 @@ const lesson: LessonModule = {
       why: 'Linters and type checkers check patterns and types, not what the code is supposed to do. The off-by-one loop passes both and only a test catches it.',
     },
     {
-      q: 'Which tool catches `user.name` when user can be null?',
+      q: 'Which tool catches "user.name" when user can be null?',
       options: ['Prettier', 'ESLint eqeqeq', 'TypeScript with strictNullChecks', 'None of them'],
       answer: 2,
       why: 'The type checker knows user is User | null, so it reports TS18047: \'user\' is possibly \'null\'.',

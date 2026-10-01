@@ -5,14 +5,11 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ControlGroup, Hint, Legend, Stat, Stats, TextField } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { dedupeFrames, pairFrames, palindromeFrames, type PairFrame } from './frames';
-import { parseIntegers } from '../../core/parse';
-import { allPairsCount, isSortedAscending, pairKey } from './model';
-import { DEDUPE_PRESET, MAX_LENGTH, MAX_TEXT, PALINDROMES, PRESETS } from './presets';
+import { allPairsCount, isSortedAscending, pairKey, readArray, readTarget } from './model';
+import { DEDUPE_PRESET, MAX_TEXT, PALINDROMES, PRESETS } from './presets';
 import './styles.css';
 
 const STEP_MS = 1100;
-const MIN_LENGTH = 2;
-const MAX_ABS = 99;
 
 const SCENES = [
   { value: 'pair' as const, label: 'Pair sum' },
@@ -25,15 +22,6 @@ export function Stage() {
   if (scene === 'palindrome') return <PalindromeScene picker={picker} />;
   if (scene === 'dedupe') return <DedupeScene picker={picker} />;
   return <PairScene picker={picker} />;
-}
-
-/** Validate an edited array: 2…MAX_LENGTH integers of at most two digits. */
-function readArray(text: string): number[] | string {
-  const nums = parseIntegers(text);
-  if (!nums) return 'Use whole numbers separated by commas.';
-  if (nums.length < MIN_LENGTH || nums.length > MAX_LENGTH) return `Use ${MIN_LENGTH} to ${MAX_LENGTH} numbers.`;
-  if (nums.some((v) => Math.abs(v) > MAX_ABS)) return `Keep numbers between −${MAX_ABS} and ${MAX_ABS}.`;
-  return nums;
 }
 
 function PairScene({ picker }: { picker: ReactNode }) {
@@ -54,9 +42,9 @@ function PairScene({ picker }: { picker: ReactNode }) {
   };
   const apply = () => {
     const values = readArray(arrText);
-    const target = Number(targetText);
+    const target = readTarget(targetText);
     if (typeof values === 'string') return setError(values);
-    if (!Number.isInteger(target)) return setError('The target must be a whole number.');
+    if (target === null) return setError('The target must be a whole number.');
     load(values, target);
   };
 
@@ -180,8 +168,11 @@ function PalindromeScene({ picker }: { picker: ReactNode }) {
   const player = usePlayer(frames, { interval: STEP_MS });
   const f = player.frame;
   const matched = new Set(f.matched);
+  const [wordError, setWordError] = useState(false);
   const apply = () => {
-    if (draft.length >= MIN_LENGTH) setText(draft);
+    // One letter is a palindrome too: there is simply nothing to compare.
+    setWordError(draft.length === 0);
+    if (draft.length > 0) setText(draft);
   };
 
   const cellState = (i: number): ArrayCellState => {
@@ -229,7 +220,7 @@ function PalindromeScene({ picker }: { picker: ReactNode }) {
             spellCheck={false}
           />
           <Button onClick={apply}>Check</Button>
-          <Hint>letters only, up to {MAX_TEXT}</Hint>
+          <Hint>{wordError ? 'Type at least one letter.' : `letters only, up to ${MAX_TEXT}`}</Hint>
         </>,
       ]}
     >

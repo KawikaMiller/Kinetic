@@ -10,7 +10,7 @@ const lesson: LessonModule = {
     useCases: [
       'Integer types in every language: int8 / int32 / int64, signed vs unsigned',
       'Bugs: counters and IDs that wrap negative, the year-2038 problem, YouTube\'s view counter',
-      'Bit tricks and hashing code that relies on `x | 0` or wrapping multiplication',
+      'Bit tricks and hashing code that rely on "x | 0" or wrapping multiplication',
       'Reading hex dumps where 0xFF might mean 255 or −1 depending on the type',
     ],
     why: 'Overflow bugs are silent: a count goes negative, a loop never ends, a size check passes when it shouldn\'t. Knowing where your integer type ends, and that most languages wrap instead of throwing, is how you spot the bug before production does.',
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'Same bits, two readings: unsigned 0…255, or signed −128…127 where the top bit is worth −128.',
     'Negate = invert every bit, then add 1. −128 has no positive twin in 8 bits.',
-    'Overflow usually wraps silently: 127 + 1 = −128. It doesn\'t throw in C, Java, Go or C#.',
+    'Overflow usually wraps silently: 127 + 1 = −128 in Java, Go and C#, with no error. In C, signed overflow is undefined behaviour: worse, not safer.',
     'Signed overflow: both inputs share a sign and the result\'s sign differs. Unsigned wrap: a carry falls off the top.',
   ],
   quiz: [

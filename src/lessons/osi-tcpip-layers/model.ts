@@ -172,7 +172,7 @@ export const SYMPTOMS: Symptom[] = [
   },
   {
     id: 'route', text: 'Ping says "destination host unreachable"', answer: 'internet',
-    why: 'A router has no route to that IP, so the packet can\'t be delivered: an Internet-layer (IP) problem.',
+    why: 'The last router reached the destination\'s network but got no ARP reply from the host (it\'s down or not there). "Network unreachable" is the no-route case. Either way IP can\'t deliver the packet: an Internet-layer problem.',
   },
 ];
 

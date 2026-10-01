@@ -116,3 +116,22 @@ describe('the lesson scenarios', () => {
     expect(cards['whole-hours'].evidence[1]).toBe('Kathmandu: UTC+05:45');
   });
 });
+
+describe('storing a repeated wall time', () => {
+  it('stores the first moment and names the one it did not store', () => {
+    const c = storageComparison({ year: 2026, month: 11, day: 1, hour: 1, minute: 30 }, 'America/New_York', ['UTC']);
+    expect(c.stored.utc).toBe('2026-11-01T05:30:00.000Z');
+    expect(c.stored.notStored).toEqual(['2026-11-01T06:30:00.000Z']);
+  });
+  it('has nothing left over for an ordinary time', () => {
+    expect(storageComparison({ year: 2026, month: 3, day: 10, hour: 9, minute: 0 }, 'America/New_York', ['UTC']).stored.notStored).toEqual([]);
+  });
+});
+
+describe('day lengths', () => {
+  it('Lord Howe Island has 23.5- and 24.5-hour days', () => {
+    const lengths = new Set<number>();
+    for (let m = 1; m <= 12; m++) for (let d = 1; d <= 28; d++) lengths.add(hoursInDay(2026, m, d, 'Australia/Lord_Howe'));
+    expect([...lengths].sort()).toEqual([23.5, 24, 24.5]);
+  });
+});

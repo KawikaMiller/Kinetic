@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  bitRole, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, neighbours, SIGN_BIT, SPECIALS, storedDigits, ulp, ulpAt,
+  bitRole, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, neighbours, SIGN_BIT, SPECIALS, storedDigits, storeOutcome, ulp, ulpAt,
 } from './model';
 
 const same = (a: number, b: number) => (Number.isNaN(a) ? Number.isNaN(b) : Object.is(a, b));
@@ -64,7 +64,7 @@ describe('exact stored values', () => {
     expect(exactDecimal(2 ** 70)).toBe((2n ** 70n).toString());
     expect(exactDecimal(-0)).toBe('-0');
     expect(storedDigits(-0)).toBe('-0');
-    expect(storedDigits(0)).toBe('0.0000000000000000000');
+    expect(storedDigits(0)).toBe('0');
     const tiny = exactDecimal(2 ** -149);
     expect(tiny.startsWith('0.00000000000000000000000000000000000000000000140129846432481707')).toBe(true);
     expect(Number(tiny)).toBe(2 ** -149);
@@ -110,5 +110,17 @@ describe('float64 panel is computed', () => {
     expect(facts['(10 + 20) / 100 === 0.3']).toBe('true');
     expect(facts['NaN === NaN']).toBe('false');
     expect(facts['1 / -0']).toBe('-Infinity');
+    // The EPSILON check that works near 1 fails for bigger numbers: that's the caveat row.
+    expect(facts['Math.abs((1000.1 + 1000.2) - 2000.3) < Number.EPSILON']).toBe('false');
+  });
+
+  it('classifies what storing a number did to it', () => {
+    expect(storeOutcome(0.5)).toBe('exact');
+    expect(storeOutcome(0.1)).toBe('rounded');
+    expect(storeOutcome(1e39)).toBe('overflow');
+    expect(storeOutcome(-1e39)).toBe('overflow');
+    expect(storeOutcome(1e-50)).toBe('underflow');
+    expect(storeOutcome(Infinity)).toBe('exact');
+    expect(storeOutcome(-0)).toBe('exact');
   });
 });

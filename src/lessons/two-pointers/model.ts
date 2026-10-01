@@ -1,4 +1,6 @@
 // Two-pointer algorithms as pure traces: every comparison is recorded so the stage can replay it.
+import { parseIntegers } from '../../core/parse';
+import { MAX_LENGTH } from './presets';
 
 export type PairMove = 'found' | 'move-r' | 'move-l';
 
@@ -112,3 +114,23 @@ export function dedupeTrace(sorted: readonly number[]): { steps: DedupeStep[]; l
   return { steps, length: slow + 1, values: a };
 }
 
+// ─── Reading the learner's input ────────────────────────────────────────────
+
+const MIN_LENGTH = 2;
+const MAX_ABS = 99;
+
+/** Plain decimal integers only: Number() would also take "", "0x10" or "1e1". */
+const DECIMAL = /^-?\d+$/;
+
+/** Validate an edited array: 2…MAX_LENGTH integers of at most two digits. */
+export function readArray(text: string): number[] | string {
+  const nums = parseIntegers(text);
+  const tokens = text.split(/[\s,]+/).filter(Boolean);
+  if (!nums || !tokens.every((t) => DECIMAL.test(t))) return 'Use whole numbers separated by commas.';
+  if (nums.length < MIN_LENGTH || nums.length > MAX_LENGTH) return `Use ${MIN_LENGTH} to ${MAX_LENGTH} numbers.`;
+  if (nums.some((v) => Math.abs(v) > MAX_ABS)) return `Keep numbers between −${MAX_ABS} and ${MAX_ABS}.`;
+  return nums;
+}
+
+/** The target as typed: null for "", "0x10", "1e1" or anything else that isn't a plain integer. */
+export const readTarget = (text: string): number | null => (DECIMAL.test(text.trim()) ? Number(text.trim()) : null);

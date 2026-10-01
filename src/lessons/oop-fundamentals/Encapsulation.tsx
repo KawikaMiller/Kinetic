@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { StageFrame } from '../../components/StageFrame';
@@ -38,7 +38,15 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
   const [last, setLast] = useState<ActionDef | null>(null);
   const [attempt, setAttempt] = useState(0);
   const setCaption = useSetCaption();
+  // The vault shake is error feedback, not teaching motion: hold still under reduced motion.
+  const reduceMotion = useReducedMotion();
   useIntroCaption(<>The balance is a <b>private field</b> (<code>#balance</code>). The only way in is through the public methods. Try each button.</>);
+
+  const reset = () => {
+    setState({ balance: 0, error: null });
+    setLast(null);
+    setCaption(<>A fresh account: <code>#balance</code> is back to 0, and the only way in is still through the public methods.</>);
+  };
 
   const run = (def: ActionDef) => {
     const next = applyAccount(state, def.action);
@@ -82,7 +90,7 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
               {def.label}
             </Button>
           ))}
-          <Button onClick={() => { setState({ balance: 0, error: null }); setLast(null); }}>Reset</Button>
+          <Button onClick={reset}>Reset</Button>
         </>,
       ]}
     >
@@ -103,7 +111,7 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
             </g>
           ))}
 
-          <motion.g key={attempt} animate={last && !last.door ? SHAKE : { x: 0 }}>
+          <motion.g key={attempt} animate={last && !last.door && !reduceMotion ? SHAKE : { x: 0 }}>
             <rect className={`oo-vault ${last && !last.door ? 'is-bad' : ''}`} x={VAULT.x} y={VAULT.y} width={VAULT.w} height={VAULT.h} rx={10} />
             <text className="oo-vault-label" x={VAULT.x + 14} y={VAULT.y + 22}>🔒 private</text>
             <text className="oo-vault-value" x={VAULT.x + 14} y={VAULT.y + 50}>#balance = {state.balance}</text>

@@ -69,7 +69,8 @@
 .de-node-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
 .de-node.is-tint .de-node-box { stroke: var(--c); fill: color-mix(in srgb, var(--c) 16%, transparent); }
 .de-node.is-solid .de-node-box { fill: var(--c); stroke: var(--c); }
-.de-node.is-editing .de-node-box { stroke-dasharray: 5 3; stroke: var(--text); }
+/* Solid and thick: dashed already means 'cut by stopPropagation'. */
+.de-node.is-editing .de-node-box { stroke: var(--text); stroke-width: 3.5; }
 .de-node text { text-anchor: middle; pointer-events: none; }
 .de-node-tag { font: 700 13px var(--mono); fill: var(--text); }
 .de-node-sub { font: 500 12px var(--mono); fill: var(--muted); }

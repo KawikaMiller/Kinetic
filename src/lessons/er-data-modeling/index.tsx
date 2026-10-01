@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Reading an existing schema: every foreign key is a relationship line',
     ],
     why: 'Getting relationships wrong is expensive later: a list stuffed into one column can\'t be joined, indexed or kept consistent, and fixing it means migrating live data. Five minutes with boxes and lines catches it first.',
-    watch: 'Primary keys are amber with a key; foreign keys are violet with the table they point to; join tables are blue. When you move a foreign key to the wrong side, the line and the column turn red and the problem is spelled out above the tables.',
+    watch: 'Primary keys are amber with a key; foreign keys are violet with the table they point to; join tables are blue. Selecting a relationship outlines its two tables in blue. When you move a foreign key to the wrong side, the line and the column turn red and the problem is spelled out above the tables.',
   },
   tryThis: [
     'In "A shop", select users places orders: the FK user_id lands on orders, NOT NULL because every order needs a user.',
@@ -26,9 +26,8 @@ const lesson: LessonModule = {
   keyIdeas: [
     'Entities become tables; attributes become columns; every table gets a primary key.',
     'One-to-many: the foreign key goes on the many side.',
-    'Many-to-many: a join table with two foreign keys, which together make its key.',
+    'Many-to-many: a join table with two foreign keys (together its key), which is also where facts about the pair (quantity, grade) live.',
     'Optional ("zero allowed") on the one side means the foreign key may be NULL.',
-    'Facts about a pair (quantity, grade) live in the join table.',
   ],
   quiz: [
     {

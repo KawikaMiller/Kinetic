@@ -222,14 +222,7 @@ function Debugger({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <div className="dbg-buttons" role="group" aria-label="Debugger controls">
-            {CONTROLS.map((c) => (
-              <Button key={c.action} variant={c.action === 'resume' ? 'primary' : 'ghost'} title={c.title} onClick={() => act(c.action)} disabled={at === null}>
-                {c.label}
-              </Button>
-            ))}
-            <Button title="Restart: run again from the top" onClick={restart}>⟲ Restart</Button>
-          </div>
+          <DebuggerButtons className="dbg-buttons-wide" act={act} restart={restart} finished={at === null} />
         </>,
         <>
           <Segmented label="Clicking a line adds a" options={TOOLS} value={tool} onChange={setTool} />
@@ -254,6 +247,8 @@ function Debugger({ picker }: { picker: ReactNode }) {
               pressed={(i) => bpAt.has(i)}
               lineLabel={(i) => `Line ${lineNo(i)}: ${bpAt.has(i) ? `remove ${KIND_NAME[bpAt.get(i)!.kind]}` : PAUSABLE.has(i) ? `add ${KIND_NAME[tool]}` : `no code here; adds a ${KIND_NAME[tool]} on the next line that has some`}`}
             />
+            {/* On a phone the controls row is screens away from the code, so the step buttons also sit right here. */}
+            <DebuggerButtons className="dbg-buttons-near" act={act} restart={restart} finished={at === null} />
             <div className="dbg-mission">
               <span>
                 <b>Mission:</b> pause on the line that makes the total wrong, then press the button. Fewer presses is better.
@@ -341,7 +336,22 @@ function describe(action: Action, from: number, m: Move): ReactNode {
     return <>Step over <b>ran</b> {callee}() completely ({plural(m.ranThrough, 'line')} inside it) without stopping, and paused on {where}.{logNote}{errNote}</>;
   }
   if (action === 'out' || (prev && p.stack.length < prev.stack.length)) {
-    return <>{prev?.stack[0].fn}() returned; back in <b>{p.stack[0].fn}</b>, paused on line {lineNo(p.line)}, the line after the call.{logNote}{errNote}</>;
+    const simplified =
+      action === 'out' ? <> (Simplified: DevTools and VS Code first pause back on the call line itself, with its assignment still to finish.)</> : null;
+    return <>{prev?.stack[0].fn}() returned; back in <b>{p.stack[0].fn}</b>, paused on line {lineNo(p.line)}, the line after the call.{simplified}{logNote}{errNote}</>;
   }
   return <>Paused on {where}.{logNote}{errNote}</>;
+}
+
+function DebuggerButtons({ className, act, restart, finished }: { className: string; act: (a: Action) => void; restart: () => void; finished: boolean }) {
+  return (
+    <div className={`dbg-buttons ${className}`} role="group" aria-label="Debugger controls">
+      {CONTROLS.map((c) => (
+        <Button key={c.action} variant={c.action === 'resume' ? 'primary' : 'ghost'} title={c.title} onClick={() => act(c.action)} disabled={finished}>
+          {c.label}
+        </Button>
+      ))}
+      <Button title="Restart: run again from the top" onClick={restart}>⟲ Restart</Button>
+    </div>
+  );
 }

@@ -51,11 +51,17 @@ export const CLASS_CODE = [
 ];
 
 /** The instances the learner can call methods on, and the expressions that create them. */
-export const INSTANCES: { id: InstanceId; cls: ClassName; create: string; fields: [string, number][] }[] = [
-  { id: 'circle', cls: 'Circle', create: 'new Circle(1)', fields: [['r', 1]] },
-  { id: 'rect', cls: 'Rect', create: 'new Rect(2, 3)', fields: [['w', 2], ['h', 3]] },
-  { id: 'square', cls: 'Square', create: 'new Square(2)', fields: [['w', 2], ['h', 2]] },
+export const INSTANCES: { id: InstanceId; cls: ClassName; create: string; name: string; fields: [string, number][] }[] = [
+  { id: 'circle', cls: 'Circle', create: 'new Circle(1)', name: 'circle', fields: [['r', 1]] },
+  { id: 'rect', cls: 'Rect', create: 'new Rect(2, 3)', name: 'rect', fields: [['w', 2], ['h', 3]] },
+  { id: 'square', cls: 'Square', create: 'new Square(2)', name: 'square', fields: [['w', 2], ['h', 2]] },
 ];
+
+/** Every own property the constructor sets, as shown on screen: this.name first, then the numbers. */
+export function ownProperties(id: InstanceId): [string, string][] {
+  const inst = instance(id);
+  return [['name', `'${inst.name}'`], ...inst.fields.map(([n, v]): [string, string] => [n, String(v)])];
+}
 
 export const classDef = (name: ClassName) => CLASSES.find((c) => c.name === name)!;
 export const instance = (id: InstanceId) => INSTANCES.find((i) => i.id === id)!;

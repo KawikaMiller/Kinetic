@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALL_SUSPECTS, bisectComponents, COMMIT_COUNT, commitHash, COMPONENTS, EXPECTED, markCommit, narrow, nextCommit, optimalProbes, OTHER_INPUT,
-  probe, runBisect, runPipeline, sameOrder, START_BISECT, type BisectState,
+  probe, runBisect, runPipeline, sameOrder, showValue, START_BISECT, type BisectState,
 } from './model';
 import { trapRows } from './trap';
 
@@ -102,5 +102,15 @@ describe('the two-changes trap', () => {
   it('the healthy pipeline agrees with itself under sameOrder, and a bug never does', () => {
     expect(sameOrder(runPipeline(null, OTHER_INPUT).at(-1)!, runPipeline(null, OTHER_INPUT).at(-1)!)).toBe(true);
     for (let k = 0; k < N; k++) expect(sameOrder(runPipeline(k).at(-1)!, runPipeline(null).at(-1)!)).toBe(false);
+  });
+});
+
+describe('probe values', () => {
+  it('never show float noise, so a bug in normalize reads as one bug', () => {
+    COMPONENTS.forEach((c, fault) => {
+      runPipeline(fault).forEach((o, i) => expect(showValue(o, i), `${c} broken, after step ${i}`).not.toMatch(/\d\.\d{3,}/));
+    });
+    const normalize = COMPONENTS.indexOf('normalize');
+    expect(showValue(runPipeline(normalize)[normalize], normalize)).toBe('199.9¢ × 3');
   });
 });

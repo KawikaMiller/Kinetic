@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACCESS_LOG } from '../../core/fixtures/accessLog';
 import { runCommand } from './commands';
 import { ENV, INITIAL_FS } from './fixture';
-import { ACTIONS, CLASSES, bitName, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
+import { ACTIONS, CLASSES, bitName, bitsFromMode, can, chmod, isUnmodelledMode, lsString, modeFromBits, octal, symbolic } from './permissions';
 import { SHELL_PRESETS } from './presets';
 import { glob, parse, runShell, showArgv, tokenize } from './shell';
 
@@ -153,12 +153,40 @@ describe('permissions: octal, symbolic and ls -l agree, for all 512 modes', () =
     expect(chmod('u=rwx,g=rx,o=', 0)).toBe(0o750);
     expect(chmod('z+q', 0o644)).toBeNull();
   });
+
+  it('says real-but-unmodelled modes are not modelled, rather than invalid', () => {
+    for (const arg of ['4755', '2755', '1777', 'u+s', 'g+s', '+t', 'a+X', 'g=u', 'u+x,g+s']) {
+      expect(chmod(arg, 0o644), arg).toBeNull();
+      expect(isUnmodelledMode(arg), arg).toBe(true);
+    }
+    for (const arg of ['z+q', '8755', 'rwx', '99', 'u+s+']) expect(isUnmodelledMode(arg), arg).toBe(false);
+  });
 });
 
 describe('showArgv', () => {
   it('quotes arguments so the line could be typed back', () => {
     expect(showArgv(['cut', '-d', ' ', '-f1'])).toBe("cut -d ' ' -f1");
+    expect(showArgv(['cut', '-d ', '-f1'])).toBe("cut -d' ' -f1");
+    expect(tokenize("cut -d' ' -f1", ENV, INITIAL_FS).map((t) => t.value)).toEqual(['cut', '-d ', '-f1']);
     expect(showArgv(['echo', "it's", '$USER'])).toBe("echo 'it'\\''s' '$USER'");
     expect(tokenize(showArgv(['echo', "it's", '$USER', '']), ENV, INITIAL_FS).map((t) => t.value)).toEqual(['echo', "it's", '$USER', '']);
+  });
+});
+
+describe('matching GNU wc and bash on the edge cases', () => {
+  const fs = { 'a.txt': 'a\nb\nc', 'b.txt': Array.from({ length: 12 }, (_, i) => String(i + 1)).join('\n') };
+  it('wc -l with several files adds a total, padded like GNU wc', () => {
+    // real: printf 'a\nb\nc\n' > a.txt; seq 1 12 > b.txt; wc -l a.txt b.txt
+    expect(runCommand(['wc', '-l', 'a.txt', 'b.txt'], [], fs).stdout).toEqual([' 3 a.txt', '12 b.txt', '15 total']);
+    expect(runCommand(['wc', '-l', 'a.txt'], [], fs).stdout).toEqual(['3 a.txt']);
+    const missing = runCommand(['wc', '-l', 'a.txt', 'nope.txt'], [], fs);
+    expect(missing.stdout).toEqual(['3 a.txt', '3 total']);
+    expect(missing.exit).toBe(1);
+  });
+  it('an unset variable outside quotes disappears, as in bash', () => {
+    // real: echo $NOPE end  →  "end";  echo "$NOPE" end  →  " end"
+    expect(tokenize('echo $NOPE end', ENV, INITIAL_FS).map((t) => t.value)).toEqual(['echo', 'end']);
+    expect(tokenize('echo "$NOPE" end', ENV, INITIAL_FS).map((t) => t.value)).toEqual(['echo', '', 'end']);
+    expect(tokenize("echo '' end", ENV, INITIAL_FS).map((t) => t.value)).toEqual(['echo', '', 'end']);
   });
 });

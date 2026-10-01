@@ -41,6 +41,19 @@ export function addNode(g: Graph, x: number, y: number): Graph {
   return { ...g, nodes: [...g.nodes, { id, label, x, y }] };
 }
 
+/**
+ * The first spot, scanning row by row, at least `gap` from every node and `gap / 2` inside the
+ * drawing: where the keyboard "Add a node" button puts it. Null when the drawing is full.
+ */
+export function freeSpot(g: Graph, width: number, height: number, gap: number): { x: number; y: number } | null {
+  for (let y = gap / 2; y <= height - gap / 2; y += gap) {
+    for (let x = gap / 2; x <= width - gap / 2; x += gap) {
+      if (g.nodes.every((n) => Math.hypot(n.x - x, n.y - y) >= gap)) return { x, y };
+    }
+  }
+  return null;
+}
+
 export const removeNode = (g: Graph, id: number): Graph => ({
   ...g,
   nodes: g.nodes.filter((n) => n.id !== id),

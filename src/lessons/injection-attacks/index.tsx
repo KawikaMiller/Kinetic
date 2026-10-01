@@ -44,7 +44,7 @@ const lesson: LessonModule = {
       q: 'Why does "I <3 it" display correctly even when pasted into innerHTML?',
       options: [
         'Browsers escape comments automatically',
-        'In HTML, "<" only starts a tag when a letter (or "/" and a letter) follows it',
+        'In HTML, "<" followed by a digit is just text: markup needs a letter, "/", "!" or "?" after it',
         'The heart is a special entity',
         'innerHTML ignores angle brackets',
       ],

@@ -76,7 +76,7 @@ export function RequestScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Preflight" value={o ? (o.preflighted ? 'yes' : 'no') : NA} color={o?.preflighted ? 'var(--violet)' : undefined} />
-          <Stat label="Reached the server" value={o ? (o.reachedServer ? 'yes' : 'no') : NA} color={o?.reachedServer ? 'var(--hi)' : undefined} sub="and it ran" />
+          <Stat label="Reached the server" value={o ? (o.reachedServer ? 'yes' : 'no') : NA} color={o?.reachedServer ? 'var(--hi)' : undefined} sub={o ? (o.reachedServer ? 'and it ran' : 'so it never ran') : undefined} />
           <Stat label="JavaScript can read it" value={o ? (o.readable ? 'yes' : 'no') : NA} color={o ? (o.readable ? 'var(--ok)' : 'var(--bad)') : undefined} />
         </Stats>
       }
@@ -134,8 +134,9 @@ export function RequestScene({ picker }: { picker: ReactNode }) {
         {o && client === 'browser' && !o.readable && <ConsoleError outcome={o} label={run!.label} />}
         {o && (
           <div className="cors-headers">
-            <HeaderList title="Request headers" headers={o.requestHeaders} />
+            {o.preflightRequest && <HeaderList title="Preflight request (OPTIONS)" headers={o.preflightRequest} />}
             {o.preflightHeaders && <HeaderList title="Preflight response" headers={o.preflightHeaders} empty="(no CORS headers)" />}
+            <HeaderList title="Request headers" headers={o.requestHeaders} empty="(never sent)" />
             {o.reachedServer && <HeaderList title="Response headers" headers={o.responseHeaders} />}
           </div>
         )}

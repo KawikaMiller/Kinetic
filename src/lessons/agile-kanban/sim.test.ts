@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  advance, BLOCK_DAYS, blockCard, createWorld, efficiency, inFlight, inStage, isBlocked, measureLittle, setProcess, sharePerCard, sprintBacklog,
+  advance, BLOCK_DAYS, blockCard, createWorld, efficiency, inFlight, inStage, isBlocked, measureLittle, restartStats, setProcess, sharePerCard, sprintBacklog,
   SPRINT_COMMIT, SPRINT_DAYS, stats, UNLIMITED, WINDOW_DAYS, WORKERS,
 } from './sim';
 
@@ -137,5 +137,18 @@ describe('blocked cards', () => {
     run(w, 1);
     expect(isBlocked(c, w.t)).toBe(false);
     expect(c.devLeft).toBeLessThan(left);
+  });
+});
+
+describe('changing the WIP limit mid-run', () => {
+  it('restarts the trailing stats, so they only cover the new limit', () => {
+    const w = createWorld({ seed: 7, wipLimit: 99 });
+    for (let d = 0; d < 60; d += 0.05) advance(w, 0.05);
+    expect(stats(w).span).toBeGreaterThan(30);
+    w.wipLimit = 1;
+    restartStats(w);
+    expect(stats(w).span).toBe(0);
+    for (let d = 0; d < 5; d += 0.05) advance(w, 0.05);
+    expect(stats(w).span).toBeCloseTo(5, 0);
   });
 });

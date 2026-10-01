@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Back-of-the-envelope estimates in system design interviews',
     ],
     why: 'Almost every performance problem is about waiting for data, not doing arithmetic. Knowing these orders of magnitude lets you guess where time goes before you profile, and it explains why caching, batching and keeping data close pay off so dramatically.',
-    watch: "Each row is one level of the hierarchy. Its coloured bar (a different colour per level) runs along a log-scale track, and each tick on the axis is 1,000 times the one before. A yellow dot travels each row; in Real time the dot's speed is on a log scale so every row moves, and in Human time (1 ns = 1 s) the slow rows barely move at all. The violet bars on the right show typical capacity, also on a log scale. In the cache panel, the red bar is always going to RAM, the green bar is the average with your hit rate, and the blue bar is always hitting L1.",
+    watch: "Each row is one level of the hierarchy. Its blue latency bar runs along a log-scale track, and each tick on the axis is 1,000 times the one before. A yellow dot travels each row; in Real time the dot's speed is on a log scale so every row moves, and in Human time (1 ns = 1 s) the slow rows barely move at all. The violet bars on the right show typical capacity, also on a log scale. In the cache panel, the red bar is always going to RAM, the green bar is the average with your hit rate, and the blue bar is always hitting L1.",
   },
   tryThis: [
     'Switch Time to "Human (1 ns = 1 s)" and read the RAM, SSD and cross-continent rows.',
@@ -23,7 +23,7 @@ const lesson: LessonModule = {
     'Compare the round trip in a datacenter with an HDD seek.',
   ],
   keyIdeas: [
-    'Each level is roughly 10× to 1000× slower than the one above, and much bigger.',
+    'Each level is slower and bigger than the one above: only 3 to 5× per step inside the chip, then a 500× cliff from RAM to an SSD.',
     'RAM is about 100× slower than L1: "in memory" is not the same as "fast".',
     'Average access = hit × fast + (1 − hit) × slow, so hit rate matters most.',
     'A network round trip costs as much as millions of cache reads.',

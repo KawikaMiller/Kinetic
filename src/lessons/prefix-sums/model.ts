@@ -1,5 +1,8 @@
 // Prefix sums and difference arrays, as pure functions the stage and the tests share.
 
+/** A signed amount with a real minus sign, as the captions and cells print it: +3, −3, 0. */
+export const signedText = (v: number, zero = '0') => (v === 0 ? zero : v > 0 ? `+${v}` : `−${-v}`);
+
 /** prefix[0] = 0 and prefix[i + 1] = prefix[i] + a[i]: n + 1 entries for n values. */
 export function prefixSums(a: readonly number[]): number[] {
   const p = [0];

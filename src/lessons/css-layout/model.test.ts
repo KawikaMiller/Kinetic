@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boxCss, collapsedMargin, emptySpace, flexCss, gridCss, gridLines, lineGroups, parseTracks } from './model';
+import { borderBoxWidth, boxCss, collapsedMargin, emptySpace, flexCss, gridCss, gridLines, lineGroups, parseTracks } from './model';
 
 describe('collapsedMargin', () => {
   it('two positive margins: the larger wins (the 20 + 30 = 30 preset)', () => {
@@ -59,5 +59,15 @@ describe('generated CSS', () => {
     expect(flex).toContain('  flex-wrap: wrap;');
     expect(flex).toContain('.item-1 { flex: 2 1 80px; }');
     expect(gridCss({ columns: 'repeat(3, 1fr)', gap: 12, spans: [1, 2, 1] })).toContain('.item-2 { grid-column: span 2; }');
+  });
+});
+
+describe('border-box width', () => {
+  const box = (width: number, padding: number, border: number) => ({ width, padding, border, margin: 0, boxSizing: 'border-box' as const });
+  it('is the width while padding and border fit inside it', () => {
+    expect(borderBoxWidth(box(200, 16, 6))).toBe(200);
+  });
+  it('grows to padding + border once they exceed it (the content stops at 0)', () => {
+    expect(borderBoxWidth(box(80, 40, 20))).toBe(120);
   });
 });

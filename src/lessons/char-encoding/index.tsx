@@ -49,9 +49,9 @@ const lesson: LessonModule = {
     },
     {
       q: 'Two usernames look identical but "a === b" is false. What should you check first?',
-      options: ['Trailing spaces only', 'Unicode normalisation: one may use a combining accent', 'The font', 'Nothing: JavaScript is wrong'],
+      options: ['Upper vs lower case', 'Unicode normalisation: one may use a combining accent', 'The font', 'Nothing: JavaScript is wrong'],
       answer: 1,
-      why: 'é can be U+00E9 or e + U+0301. Normalise both (e.g. to NFC) before comparing.',
+      why: 'é can be U+00E9 or e + U+0301. Normalise both (e.g. to NFC) before comparing. A case difference would be visible, so it can\'t explain two names that look identical.',
     },
   ],
 };

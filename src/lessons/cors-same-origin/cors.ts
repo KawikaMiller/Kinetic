@@ -123,9 +123,22 @@ export interface Outcome {
   /** Could the page's JavaScript read the response? */
   readable: boolean;
   preflighted: boolean;
+  /** The real request's headers; empty when the browser never sent it. */
   requestHeaders: Headers;
+  /** What the browser's OPTIONS request carried: Origin plus Access-Control-Request-*. */
+  preflightRequest: Headers | null;
   preflightHeaders: Headers | null;
   responseHeaders: Headers;
+}
+
+/** The OPTIONS request a browser sends first: it asks permission for the method and the custom headers. */
+export function preflightRequestHeaders(req: ClientRequest, origin: string): Headers {
+  const custom = unsafeHeaderNames(req);
+  return [
+    ['Origin', origin],
+    ['Access-Control-Request-Method', req.method],
+    ...(custom.length ? [['Access-Control-Request-Headers', custom.join(',')] as [string, string]] : []),
+  ];
 }
 
 /** What happens when a page on `origin` sends `req` to the API, from a browser or from curl. */
@@ -133,7 +146,8 @@ export function send(req: ClientRequest, server: ServerConfig, origin: string, c
   const requestHeaders: Headers = [
     ...(client === 'browser' ? [['Origin', origin] as [string, string]] : []),
     ...Object.entries(req.headers),
-    ...(req.credentials ? [['Cookie', 'session=…'] as [string, string]] : []),
+    // Only a browser has the user's cookie jar; curl sends a Cookie only if you pass one by hand.
+    ...(client === 'browser' && req.credentials ? [['Cookie', 'session=…'] as [string, string]] : []),
   ];
   const responseHeaders: Headers = [['Content-Type', 'application/json'], ...corsHeaders(server, origin)];
   const ran: Step = { kind: 'request', ok: true, text: `${req.method} ${req.path} reached the server, and the server ran it.` };
@@ -141,7 +155,7 @@ export function send(req: ClientRequest, server: ServerConfig, origin: string, c
   if (client === 'curl') {
     return {
       steps: [ran, { kind: 'response', ok: true, text: 'curl printed the response: there is no same-origin policy outside a browser.' }],
-      reachedServer: true, readable: true, preflighted: false, requestHeaders, preflightHeaders: null, responseHeaders,
+      reachedServer: true, readable: true, preflighted: false, requestHeaders, preflightRequest: null, preflightHeaders: null, responseHeaders,
     };
   }
 
@@ -154,7 +168,7 @@ export function send(req: ClientRequest, server: ServerConfig, origin: string, c
     steps.push({ kind: 'preflight', ok: pf.check.ok, text: `OPTIONS ${req.path} (preflight): ${pf.check.reason}`, reason: pf.check.ok ? undefined : `Response to preflight request doesn't pass access control check: ${pf.check.reason}` });
     if (!pf.check.ok) {
       steps.push({ kind: 'blocked', ok: false, text: `The browser never sent the ${req.method}. The server didn't run it.` });
-      return { steps, reachedServer: false, readable: false, preflighted, requestHeaders, preflightHeaders, responseHeaders: [] };
+      return { steps, reachedServer: false, readable: false, preflighted, requestHeaders: [], preflightRequest: preflightRequestHeaders(req, origin), preflightHeaders, responseHeaders: [] };
     }
   }
   steps.push(ran);
@@ -164,5 +178,8 @@ export function send(req: ClientRequest, server: ServerConfig, origin: string, c
       ? { kind: 'response', ok: true, text: `The response passed the CORS check: ${check.reason} JavaScript can read it.` }
       : { kind: 'blocked', ok: false, text: `Blocked by CORS policy: ${check.reason} The server already ran the request; the browser only hides the response.`, reason: check.reason },
   );
-  return { steps, reachedServer: true, readable: check.ok, preflighted, requestHeaders, preflightHeaders, responseHeaders };
+  return {
+    steps, reachedServer: true, readable: check.ok, preflighted, requestHeaders,
+    preflightRequest: preflighted ? preflightRequestHeaders(req, origin) : null, preflightHeaders, responseHeaders,
+  };
 }

@@ -22,7 +22,10 @@ const CFD_LABEL_W = 92;
 const DONE_SHOWN = 12;
 
 /** One hue per column, shared by the board headers and the CFD bands (categorical). */
-export const COLUMN_COLOR: Record<Stage, string> = { backlog: C.info, dev: C.violet, review: C.amber, done: C.ok };
+// Review is pink, not amber: amber read as the yellow of a card being worked on.
+export const COLUMN_COLOR: Record<Stage, string> = { backlog: C.info, dev: C.violet, review: C.pink, done: C.ok };
+/** Room kept clear at the right of the axis for the "sprints: 10 days" label. */
+const SPRINT_LABEL_ROOM = 120;
 const COLUMNS: { stage: Stage; label: string }[] = [
   { stage: 'backlog', label: 'Backlog' },
   { stage: 'dev', label: 'In progress' },
@@ -181,7 +184,8 @@ function drawCfd(ctx: Ctx, x: number, y: number, fullW: number, h: number, world
   }
 
   const firstTick = Math.ceil(t0 / 10) * 10;
-  for (let d = firstTick; d <= t1; d += 10) {
+  const tickLimit = x + fullW - (world.process === 'scrum' ? SPRINT_LABEL_ROOM : 0);
+  for (let d = firstTick; d <= t1 && px(d) <= tickLimit; d += 10) {
     text(ctx, `day ${d}`, px(d), y + h + 13, { color: C.faint, font: FONT.mono(10), align: d === 0 ? 'left' : 'center', baseline: 'middle' });
   }
   if (world.process === 'scrum') {

@@ -22,7 +22,6 @@
 .sa-band-items .chip { white-space: normal; }
 
 .sa-matrix-box { display: flex; flex-direction: column; gap: 8px; }
-.sa-matrix-scroll { overflow-x: auto; }
 .sa-matrix td:not(:first-child),
 .sa-matrix th:not(:first-child) { text-align: center; }
 .sa-matrix .is-off { opacity: 0.4; }

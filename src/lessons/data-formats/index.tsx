@@ -46,7 +46,7 @@ const lesson: LessonModule = {
       q: 'In a YAML 1.1 config, what is country: NO?',
       options: ['The string "NO"', 'The boolean false', 'null', 'A syntax error'],
       answer: 1,
-      why: 'YAML 1.1 treats yes/no/on/off (any case) as booleans. Write country: "NO".',
+      why: 'YAML 1.1 treats yes/no/on/off as booleans in lowercase, Capitalised or UPPER case (NO, No, no). Write country: "NO".',
     },
     {
       q: 'The JSON parsed without errors. Is the data valid?',

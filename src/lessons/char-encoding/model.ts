@@ -14,6 +14,16 @@ export const graphemes = (s: string) => [...segmenter.segment(s)].map((g) => g.s
 /** Unicode code points: what [...s] iterates. */
 export const codePoints = (s: string) => [...s].map((c) => c.codePointAt(0)!);
 
+/** Does the text contain a flag: a pair of regional-indicator letters (U+1F1E6..U+1F1FF)? */
+export const hasFlagLetters = (s: string) => /\p{Regional_Indicator}{2}/u.test(s);
+
+const REGIONAL_A = 0x1f1e6;
+/** The plain letters of the first flag in the text: "JP" for 🇯🇵. */
+export function flagLetters(s: string): string {
+  const pair = /\p{Regional_Indicator}{2}/u.exec(s)?.[0] ?? '';
+  return [...pair].map((c) => String.fromCharCode(c.codePointAt(0)! - REGIONAL_A + 65)).join('');
+}
+
 export const utf8 = (s: string) => enc.encode(s);
 
 export const formatCodePoint = (cp: number) => `U+${cp.toString(16).toUpperCase().padStart(4, '0')}`;

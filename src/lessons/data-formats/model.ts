@@ -68,13 +68,18 @@ export function changedPaths(prev: Json | null, next: Json): Set<string> {
   return changed;
 }
 
-/** Numbers JSON can hold but JavaScript can't: integers past 2^53 lose digits in JSON.parse. */
+/**
+ * Numbers JSON can hold but JavaScript can't: integers past 2^53 lose digits in JSON.parse, and
+ * anything past ~1.8e308 (1e400) becomes Infinity, which no format here can write back as a number.
+ */
 export function unsafeNumberPaths(value: Json): Set<string> {
   const out = new Set<string>();
-  for (const [p, v] of leaves(value)) {
-    const n = Number(v);
-    if (/^-?\d+$/.test(v) && !Number.isSafeInteger(n)) out.add(p);
-  }
+  const walk = (v: Json, path: string) => {
+    if (Array.isArray(v)) v.forEach((x, i) => walk(x, join(path, i)));
+    else if (v !== null && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, join(path, k));
+    else if (typeof v === 'number' && (!Number.isFinite(v) || (Number.isInteger(v) && !Number.isSafeInteger(v)))) out.add(path);
+  };
+  walk(value, '');
   return out;
 }
 
@@ -489,10 +494,11 @@ function norwayPitfall(): Pitfall {
 
 function indentPitfall(): Pitfall {
   const nested = toYaml({ address: { city: 'Oslo' } }).map((l) => l.text);
-  const flat = toYaml({ address: null, city: 'Oslo' }).map((l) => l.text);
+  // What a learner actually types: "address:" with nothing after it, which YAML reads as null.
+  const flat = ['address:', 'city: Oslo'];
   return {
     id: 'yaml-indent', format: 'yaml', title: 'Indentation is structure',
-    before: { label: 'city not indented', lines: [...flat, '→ address is empty, city is a separate top-level key'], marked: [1, 2] },
+    before: { label: 'city not indented', lines: [...flat, `→ address is ${resolveYaml11('').type}, city is a separate top-level key`], marked: [1, 2] },
     after: { label: 'city indented under address', lines: [...nested, '→ city belongs to address'], marked: [1, 2] },
     note: 'In YAML, two spaces change what belongs to what, and tabs aren\'t allowed for indentation. A misplaced indent is a different document, not an error.',
   };

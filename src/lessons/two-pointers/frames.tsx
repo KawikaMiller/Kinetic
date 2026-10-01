@@ -87,7 +87,7 @@ export function pairFrames(arr: number[], target: number): PairFrame[] {
       missed ? (
         <>
           L met R: two pointers says <span className="hl bad">no pair</span>, but{' '}
-          <span className="hl ok">
+          <span className="hl bad">
             {arr[missed[0]]} + {arr[missed[1]]} = {target}
           </span>{' '}
           exists. On unsorted data the "ruled out" pairs weren't really impossible.
@@ -192,7 +192,7 @@ export function dedupeFrames(sorted: number[]): DedupeFrame[] {
   }
   rec.snap(
     <>
-      Done: the first <span className="hl ok">{length}</span> cells are the unique values. The rest is leftover:
+      Done: {length === 1 ? 'the first cell holds' : <>the first <span className="hl ok">{length}</span> cells hold</>} the unique values. The rest is leftover:
       in-place algorithms return the new length instead of shrinking the array.
     </>,
     2,

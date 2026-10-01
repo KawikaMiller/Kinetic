@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Deciding what a design review should ask: "what if this layer fails?"',
     ],
     why: 'Most breaches come through one weakness that nothing else caught: a phished password, an over-privileged service, an unencrypted backup. Even as a junior you make these calls daily (what permissions a service gets, whether to log something), and thinking in layers is how you avoid being that one weakness.',
-    watch: 'Five rings surround the customer data, network outermost. Switched-on layers are blue, a switched-off one is grey and dashed, and the layer that stops the attack turns green. The red dot is the attack travelling inward; if nothing stops it, the data box fills red. The dashed outer ring is detection. CIA chips below turn red when that property is violated and green when it was protected. In the least privilege panel, blue cells are granted, green dots mark what the job needs, and compromising the service turns every granted cell red.',
+    watch: 'Five rings surround the customer data, network outermost. Switched-on layers are blue, a switched-off one is grey and dashed, and the layer that stops the attack turns green. The red dot is the attack travelling inward (a stolen laptop starts at the data ring, since it never crosses the network or a login); if nothing stops it, the data box fills red. The dashed outer ring is detection. CIA chips below turn red when that property is violated and green when it was protected. In the least privilege panel, blue cells are granted, green dots mark what the job needs, and compromising the service turns every granted cell red.',
   },
   tryThis: [
     'Send "A phished password", then switch Identity off and send it again: least privilege becomes the last line.',

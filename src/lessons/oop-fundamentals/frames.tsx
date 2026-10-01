@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { areaOf, describeOf, instance, lineOf, resolve, squareAfterSetWidth, type ClassName, type InstanceId, type Method } from './model';
+import { areaOf, describeOf, instance, lineOf, ownProperties, resolve, squareAfterSetWidth, type ClassName, type InstanceId, type Method } from './model';
 
 export interface DispatchFrame extends Frame {
   /** Line of CLASS_CODE being run, if any. */
@@ -46,7 +46,7 @@ export function dispatchFrames(id: InstanceId, method: Method): DispatchFrame[] 
   };
 
   r.snap(<>Calling <code>{id}.{method}()</code>. Which implementation runs?</>, undefined, {});
-  const found = walk(method, <>JavaScript first looks on the object itself. It only holds data ({instance(id).fields.map(([n, v]) => `${n} = ${v}`).join(', ')}), no methods.</>);
+  const found = walk(method, <>JavaScript first looks on the object itself. It only holds data ({ownProperties(id).map(([n, v]) => `${n} = ${v}`).join(', ')}), no methods.</>);
 
   if (!found) {
     const error = `TypeError: ${id}.${method} is not a function`;

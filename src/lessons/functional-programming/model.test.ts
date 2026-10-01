@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addTotal, applyMethod, CHAIN_CODE, FIRST_STATION_LINE, GLOBAL_DISCOUNTS, isPaid, LOOP_CODE, METHOD_CODE, ORDERS, PRICE, priceWithGlobal,
+  addTotal, applyMethod, isRankedDesc, CHAIN_CODE, FIRST_STATION_LINE, GLOBAL_DISCOUNTS, isPaid, LOOP_CODE, METHOD_CODE, ORDERS, PRICE, priceWithGlobal,
   pricePure, PURE_DISCOUNT, PURITY_CODE, SCORES, sumTotals, totalCalls, tracePipeline, type ArrayMethod, type Plan,
 } from './model';
 
@@ -119,6 +119,16 @@ describe('mutation', () => {
       expect(r.sameArray).toBe(false);
       expect(r.scoresAfter).toEqual([...SCORES]);
     }
+  });
+
+  it('only the sorts rank the scores; reversing just flips the entry order', () => {
+    for (const m of ['sort', 'toSorted', 'spreadSort'] as const) expect(applyMethod(m).isRanked, m).toBe(true);
+    for (const m of ['reverse', 'toReversed'] as const) {
+      expect(applyMethod(m).isRanked, m).toBe(false);
+      expect(applyMethod(m).ranked).toEqual([...SCORES].reverse());
+    }
+    expect(isRankedDesc([3, 3, 1])).toBe(true);
+    expect(isRankedDesc([1, 3])).toBe(false);
   });
 
   it('sorting gives the same ranking either way', () => {

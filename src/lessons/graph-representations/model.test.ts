@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import {
-  adjacencyList, adjacencyMatrix, addEdge, components, degrees, findCycle, hasEdge, memory, properties, setDirected,
+  adjacencyList, adjacencyMatrix, addEdge, addNode, components, degrees, findCycle, freeSpot, hasEdge, memory, properties, setDirected,
   twoColouring, type Graph,
 } from './model';
 import { PRESETS } from './presets';
@@ -167,5 +167,20 @@ describe('representations', () => {
     let g: Graph = { directed: false, weighted: false, nodes: [0, 1].map((id) => ({ id, label: String(id), x: 0, y: 0 })), edges: [] };
     g = addEdge(addEdge(addEdge(g, 0, 0), 0, 1), 1, 0);
     expect(g.edges).toHaveLength(1);
+  });
+});
+
+describe('placing a node from the keyboard', () => {
+  const empty: Graph = { directed: false, weighted: false, nodes: [], edges: [] };
+  it('finds a spot clear of every node, and none when the drawing is full', () => {
+    const first = freeSpot(empty, 200, 100, 50)!;
+    expect(first).toEqual({ x: 25, y: 25 });
+    let g = empty;
+    for (let i = 0; i < 8; i++) {
+      const p = freeSpot(g, 200, 100, 50)!;
+      expect(g.nodes.every((n) => Math.hypot(n.x - p.x, n.y - p.y) >= 50)).toBe(true);
+      g = addNode(g, p.x, p.y);
+    }
+    expect(freeSpot(g, 200, 100, 50)).toBeNull();
   });
 });

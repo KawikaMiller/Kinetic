@@ -87,7 +87,7 @@ export function SizeScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint="before you ask for review">Author checklist</SectionTitle>
           <ControlGroup>
             {CHECKLIST.map((item, i) => (
-              <ChipButton key={item} size="md" tone="ok" on={done[i]} onClick={() => toggle(i)}>
+              <ChipButton key={item} size="md" tone={done[i] ? 'ok' : 'dim'} on={done[i]} onClick={() => toggle(i)}>
                 {done[i] ? '✓ ' : ''}
                 {item}
               </ChipButton>

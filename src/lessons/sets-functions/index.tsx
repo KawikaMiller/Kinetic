@@ -5,13 +5,13 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A set is a collection of distinct things; a function maps every input to exactly one output. Together they are the vocabulary under types, tables, maps and hash functions.',
-    what: 'Sets combine by union (in either), intersection (in both), difference (in the first but not the second) and symmetric difference (in exactly one). A function from A to B gives every member of A exactly one arrow into B. It is injective (one-to-one) when no two inputs share an output, surjective (onto) when every output is used, and bijective when it is both, which is what makes it reversible.',
+    what: 'Sets combine by union (in either), intersection (in both), difference (in the first but not the second) and symmetric difference (in exactly one). A function from A to B gives every member of A exactly one arrow into B. It is injective (one-to-one) when no two inputs share an output, surjective (onto) when every output is used, and bijective when it is both: then every output leads back to exactly one input, so the whole mapping can be undone.',
     analogy: 'A cloakroom: every coat gets exactly one ticket (a function). If two coats could share a ticket it wouldn\'t be one-to-one, and you couldn\'t hand the right coat back.',
     useCases: [
       'SQL: UNION, INTERSECT and EXCEPT are set operations; INNER JOIN matches the keys two tables share',
       'Types: a TypeScript union type A | B is the union of the values of A and B',
       'Hash tables and IDs: a hash maps many keys into fewer buckets, so collisions are guaranteed',
-      'Reversible encodings: a mapping can be undone only if it is a bijection',
+      'Reversible encodings: a mapping can be undone only if it is injective (one-to-one); a bijection also uses every output',
     ],
     why: 'Deduplicating lists, merging permission sets, reasoning about which rows a query returns, and understanding why hash collisions and ID clashes happen all use this vocabulary. It is also the language of every type system you will meet.',
     watch: 'Sets pane: each circle is a set (A blue, B violet, C orange) inside a dashed box of everyone. The operation you pick shades its region yellow, and the names inside it turn solid yellow; drag a name into another region to change which sets it belongs to. Functions pane: inputs are blue dots on the left and outputs violet dots on the right, joined by blue arrows. An input you have picked turns yellow. Arrows turn red when a rule is broken: an input with two arrows, or two inputs landing on one output. An input with no arrow gets a red dashed ring, and an output nothing maps to is dimmed.',
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'Union = in either, intersection = in both, difference = in the first only, symmetric difference = in exactly one.',
     'A function gives every input exactly one output; two inputs sharing an output is still fine.',
-    'Injective: no shared outputs. Surjective: every output used. Bijective: both, so it can be reversed.',
+    'Injective: no shared outputs. Surjective: every output used. Bijective: both, so every output leads back to exactly one input.',
     'Pigeonhole: with more inputs than outputs, some outputs must be shared, which is why hashes collide.',
   ],
   quiz: [
@@ -49,10 +49,10 @@ const lesson: LessonModule = {
       why: 'Pigeonhole principle: 10 items into 8 holes means some hole gets two. No mapping from 10 to 8 things can be one-to-one.',
     },
     {
-      q: 'What makes a mapping reversible?',
-      options: ['Being a function', 'Being surjective only', 'Being a bijection', 'Having more outputs than inputs'],
+      q: 'Which mapping has an inverse defined on every output?',
+      options: ['Any function', 'A surjective one only', 'A bijection', 'One with more outputs than inputs'],
       answer: 2,
-      why: 'Only a bijection pairs every input with a unique output and uses every output, so each output leads back to exactly one input.',
+      why: 'Injective is enough to undo the outputs actually used: each leads back to one input. A bijection is also surjective, so every output is used and the inverse is defined everywhere.',
     },
   ],
 };

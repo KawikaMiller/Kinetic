@@ -47,3 +47,10 @@ describe('transitive tree', () => {
     expect(after.stuck).toEqual([]);
   });
 });
+
+describe('before any fix exists', () => {
+  it('it is c-utils, not A or B, that has to ship a release', () => {
+    expect(resolveTree('none', '3.2.0').stuck).toEqual(['c-utils']);
+    expect(resolveTree('none', '3.3.0').stuck).toEqual(['c-utils']);
+  });
+});

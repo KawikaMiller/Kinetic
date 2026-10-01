@@ -25,11 +25,12 @@ const blank = (say: ReactNode): SwFrame => ({ l: 0, r: -1, event: null, index: n
 /** What checking every candidate would cost, for the counters and the closing caption. */
 export interface BruteCost {
   value: number;
+  /** Singular: "window", "addition". */
   unit: string;
 }
-export const everyWindow = (n: number): BruteCost => ({ value: allWindows(n), unit: 'windows' });
+export const everyWindow = (n: number): BruteCost => ({ value: allWindows(n), unit: 'window' });
 /** Fixed size k: only n − k + 1 windows, but each is re-added from scratch. */
-export const everyWindowOfK = (n: number, k: number): BruteCost => ({ value: Math.max(0, n - k + 1) * k, unit: 'additions' });
+export const everyWindowOfK = (n: number, k: number): BruteCost => ({ value: Math.max(0, n - k + 1) * k, unit: 'addition' });
 
 /** The closing frame: the answer, plus the proof that it took at most 2n moves. */
 function closing(last: SwFrame, n: number, brute: BruteCost, answer: ReactNode): SwFrame {
@@ -37,8 +38,8 @@ function closing(last: SwFrame, n: number, brute: BruteCost, answer: ReactNode):
     ...last, event: null, index: null, hold: 2,
     say: (
       <>
-        {answer} {plural(last.moves, 'move')} in total, never more than 2n = {2 * n}; brute force needs {brute.value}{' '}
-        {brute.unit}.
+        {answer} {plural(last.moves, 'move')} in total, never more than 2n = {2 * n}; brute force needs{' '}
+        {plural(brute.value, brute.unit)}.
       </>
     ),
   };
@@ -54,7 +55,7 @@ export function uniqueFrames(s: string): SwFrame[] {
     if (st.event === 'enter') {
       say = repeat ? (
         <>
-          '{c}' enters, but there's already a '{c}' inside: <span className="hl bad">repeat</span>. Shrink from the left.
+          '{c}' enters, but '{c}' is already inside: <span className="hl bad">repeat</span>. Shrink from the left.
         </>
       ) : (
         <>
@@ -136,7 +137,13 @@ export function shortestFrames(a: number[], target: number): SwFrame[] {
       ) : (
         <>
           {a[st.index]} leaves: sum <b>{st.value}</b>.{' '}
-          {enough ? <>Still enough, and shorter. Shrink again.</> : <>Under {target} now, so grow from where r is.</>}
+          {enough ? (
+            <>Still enough, and shorter. Shrink again.</>
+          ) : st.r === a.length - 1 ? (
+            <>Under {target} now, and r is already at the end: nothing is left to grow into.</>
+          ) : (
+            <>Under {target} now, so grow r again.</>
+          )}
         </>
       );
     frames.push(toFrame(st, i + 1, say));

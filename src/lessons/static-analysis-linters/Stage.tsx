@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Legend, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { SPRING } from '../../core/motion';
@@ -25,6 +26,8 @@ const RULE_SHORT: Record<ProblemId, string> = {
 
 /** The inline comment adds a line above SAMPLE line 2, pushing later lines down by one. */
 const COMMENT_AT = 2;
+/** The problem-by-tool table needs this much room for every column to stay readable. */
+const MATRIX_MIN_WIDTH = 520;
 const displayLine = (sampleLine: number, disable: boolean) => (disable && sampleLine >= COMMENT_AT ? sampleLine + 1 : sampleLine);
 
 /** Caption for the current tool setup: what still ships, and why. */
@@ -140,7 +143,8 @@ export function Stage() {
 
         <Box variant="sunken" className="sa-matrix-box">
           <SectionTitle hint="which tool can catch which problem">Problem × tool</SectionTitle>
-          <div className="sa-matrix-scroll">
+          {/* The Tests column carries the lesson's point: on a phone the table scrolls, with a swipe hint and fades. */}
+          <WideRegion minWidth={MATRIX_MIN_WIDTH} label="Problem by tool table: scroll sideways to see every tool">
             <table className="data-table sa-matrix">
               <thead>
                 <tr>
@@ -165,7 +169,7 @@ export function Stage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
         </Box>
 
         <div className="sa-bottom">
@@ -202,12 +206,16 @@ function FormatterDiff({ before, after }: { before: string[]; after: string[] })
   const same = tokens(before).join(' ') === tokens(after).join(' ');
   return (
     <Box variant="sunken" className="sa-diff">
-      <SectionTitle hint="whitespace only">What the formatter changed</SectionTitle>
+      <SectionTitle hint="indentation only, in this simplified formatter">What the formatter changed</SectionTitle>
       <div className="sa-diff-panes">
         <CodePanel title="before" lines={before} stateOf={(i) => (changed(i) ? 'cut' : 'idle')} />
         <CodePanel title="after" lines={after} stateOf={(i) => (changed(i) ? 'done' : 'idle')} />
       </div>
       <span className={`chip ${same ? 'tone-ok' : 'tone-bad'}`}>{same ? 'same tokens: the meaning is unchanged' : 'tokens differ'}</span>
+      <p className="sa-peek-note">
+        Real Prettier also rewraps long lines and normalises quotes (<code>'No orders'</code> becomes <code>"No orders"</code>): the
+        tokens change spelling, but the meaning still doesn&apos;t.
+      </p>
     </Box>
   );
 }

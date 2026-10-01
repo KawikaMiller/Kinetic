@@ -3,6 +3,12 @@
 .dbg-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .dbg-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .dbg-buttons { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
+/* One set of step buttons shows at a time: in the controls row, or under the code on a phone. */
+.dbg-buttons-near { display: none; margin-top: 10px; }
+@media (max-width: 600px) {
+  .dbg-buttons-wide { display: none; }
+  .dbg-buttons-near { display: flex; }
+}
 .dbg-faint { color: var(--faint); font-weight: 400; }
 
 /* Source: breakpoint markers fill CodePanel's marker slot, like the DevTools gutter. */

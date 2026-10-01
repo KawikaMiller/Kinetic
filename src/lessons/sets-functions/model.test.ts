@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  BUCKETS, MAPPINGS, applyOp, bucketOf, cardinalityLimits, classify, inResult, moveElement, parseMembers, toggleArrow, universe,
+  BUCKETS, MAPPINGS, applyOp, bucketOf, cardinalityLimits, classify, mappingChecks, inResult, moveElement, parseMembers, toggleArrow, universe,
   type Arrow, type Membership, type Op,
 } from './model';
 
@@ -125,5 +125,21 @@ describe('presets', () => {
     expect(c.isFunction).toBe(true);
     expect(c.injective).toBe(false);
     h.arrows.forEach((a) => expect(a.to).toBe(bucketOf(h.domain[a.from])));
+  });
+});
+
+describe('the rule checks', () => {
+  it('marks injective and surjective not applicable until the mapping is a function', () => {
+    const missing = mappingChecks(classify(2, 2, [{ from: 0, to: 0 }]));
+    expect(missing).toEqual({ total: 'no', single: 'ok', injective: 'na', surjective: 'na' });
+    const twoArrows = mappingChecks(classify(2, 2, [{ from: 0, to: 0 }, { from: 0, to: 1 }, { from: 1, to: 1 }]));
+    expect(twoArrows.injective).toBe('na');
+    expect(twoArrows.surjective).toBe('na');
+  });
+  it('passes or fails them once it is a function', () => {
+    expect(mappingChecks(classify(2, 2, [{ from: 0, to: 1 }, { from: 1, to: 0 }]))).toEqual({ total: 'ok', single: 'ok', injective: 'ok', surjective: 'ok' });
+    const shared = mappingChecks(classify(2, 2, [{ from: 0, to: 0 }, { from: 1, to: 0 }]));
+    expect(shared.injective).toBe('no');
+    expect(shared.surjective).toBe('no');
   });
 });

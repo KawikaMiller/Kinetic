@@ -1,15 +1,16 @@
 import { motion } from 'motion/react';
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { duration, humanDuration, pct } from '../../core/format';
+import { humanDuration, pct } from '../../core/format';
 import { useCanvas, useLoop } from '../../core/hooks';
 import { SPRING } from '../../core/motion';
 import { useSimulation } from '../../core/useSimulation';
 import { drawRun, laneHeight } from './draw';
 import { BUGS, catches, LAYERS, pGreen, PRESETS, shapeOf, SPEC, suiteSeconds, type Bug, type Counts, type Layer } from './model';
+import { finishedCaption, resultColor, resultLabel } from './captions';
 import { Scenarios } from './Scenarios';
 import { advance, createWorld, snapshot, startRun, type RunStats, type World } from './sim';
 import './styles.css';
@@ -19,11 +20,6 @@ const SHAPE_BAR_H = 26;
 const SHAPE_LABEL_W = 140;
 const CANVAS_REF_W = 640;
 const BUG_OPTIONS: { value: Bug | 'none'; label: string }[] = [{ value: 'none', label: 'None' }, ...BUGS.map((b) => ({ value: b.id, label: b.label }))];
-const CAUGHT_BY: Record<Layer, string> = {
-  unit: 'Fast, and it points at the exact function.',
-  integration: 'It narrows the problem to how two real pieces fit together.',
-  e2e: 'It says checkout broke, not where: the hunt for the cause starts now.',
-};
 const LAYER_VAR: Record<Layer, string> = { unit: 'var(--ok)', integration: 'var(--info)', e2e: 'var(--violet)' };
 
 export function Stage() {
@@ -137,47 +133,8 @@ export function Stage() {
   );
 }
 
-/** Suite time for captions: '10ms' early on, '17 min' later. */
-const elapsed = (seconds: number) => (seconds < 60 ? duration(seconds) : humanDuration(seconds));
-
 function sameCounts(a: Counts, b: Counts) {
   return LAYERS.every((l) => a[l] === b[l]);
-}
-
-function resultLabel(s: RunStats | null): string {
-  if (!s || s.total === 0) return '–';
-  if (s.running) return `${s.done}/${s.total}`;
-  if (s.failed) return 'red: bug';
-  return s.flaky ? `red: ${s.flaky} flaky` : 'green';
-}
-
-function resultColor(s: RunStats | null): string {
-  if (!s || s.total === 0 || s.running) return 'var(--muted)';
-  if (s.failed) return 'var(--bad)';
-  return s.flaky ? 'var(--hi)' : 'var(--ok)';
-}
-
-function finishedCaption(s: RunStats): ReactNode {
-  if (s.failed && s.firstFailLayer) {
-    const layer = s.firstFailLayer === 'e2e' ? 'E2E' : SPEC[s.firstFailLayer].label.toLowerCase();
-    return (
-      <>
-        <span className="hl bad">Caught</span> by {s.firstFailLayer === 'unit' ? 'a' : 'an'} {layer} test, {elapsed(s.firstFailAt ?? 0)} into the run.{' '}
-        {CAUGHT_BY[s.firstFailLayer]}
-        {s.flaky > 0 && <> Plus {s.flaky} flaky failure{s.flaky > 1 ? 's' : ''} muddying the signal.</>}
-      </>
-    );
-  }
-  if (s.flaky) {
-    const e2e = s.flakyByLayer.e2e;
-    return (
-      <>
-        <span className="hl">Red, but nothing is broken</span>: {s.flaky} flaky failure{s.flaky > 1 ? 's' : ''}
-        {e2e ? `, ${e2e} of them E2E` : ''}. Someone presses "re-run" and learns to ignore red builds. That's the real cost of flaky tests.
-      </>
-    );
-  }
-  return <>All green. Rerun a few times: with more E2E tests, green gets rarer even though the code never changes.</>;
 }
 
 function ShapePreview({ counts }: { counts: Counts }) {

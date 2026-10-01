@@ -10,7 +10,7 @@ import { plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { ENV, INITIAL_FS, type Fs } from './fixture';
 import { buildFrames, stepsOf } from './frames';
-import { ACTIONS, PEOPLE, PERMISSION_PRESETS, bitName, bitsFromMode, can, chmod, lsString, modeFromBits, octal, symbolic } from './permissions';
+import { ACTIONS, PEOPLE, PERMISSION_PRESETS, bitName, bitsFromMode, can, chmod, isUnmodelledMode, lsString, modeFromBits, octal, symbolic } from './permissions';
 import { BLOCKS, SHELL_PRESETS } from './presets';
 import { runShell, showArgv, type ShellResult, type StageRun } from './shell';
 import './styles.css';
@@ -55,7 +55,8 @@ function Pipes({ picker }: { picker: ReactNode }) {
   const load = (p: (typeof SHELL_PRESETS)[number]) => {
     setLine(p.line);
     setLoaded(p.id);
-    execute(p.line);
+    // Every preset starts from the original files, so its output never depends on what ran before.
+    execute(p.line, INITIAL_FS);
     setCaption(p.caption);
   };
 
@@ -123,7 +124,7 @@ function Pipes({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="stage-pad cl">
-        <Hint block className="cl-sim">Simulated shell over a sample file.</Hint>
+        <Hint block className="cl-sim">Simulated shell over a sample file. Presets start from the original files.</Hint>
         <div className="cl-runs">
           {result.runs.map((run, p) => (
             <Fragment key={p}>
@@ -178,7 +179,8 @@ function PipeArrow({ count, on }: { count: number | null; on: boolean }) {
   return (
     <span className={`cl-pipe ${on ? 'is-on' : ''}`} aria-hidden="true">
       <span className="cl-pipe-bar">|</span>
-      {count !== null && <span className="cl-pipe-count">{count}</span>}
+      {/* The line count only exists once the left-hand command has run. */}
+      {count !== null && on && <span className="cl-pipe-count">{count}</span>}
     </span>
   );
 }
@@ -234,7 +236,11 @@ function Permissions({ picker }: { picker: ReactNode }) {
   const apply = () => {
     const next = chmod(arg, mode);
     if (next === null) {
-      setError(`chmod: invalid mode: '${arg}'`);
+      setError(
+        isUnmodelledMode(arg)
+          ? `Real chmod accepts '${arg}', but it sets the setuid, setgid or sticky bits (or another form) that this nine-bit model doesn't show.`
+          : `chmod: invalid mode: '${arg}'`,
+      );
       return;
     }
     setError(null);

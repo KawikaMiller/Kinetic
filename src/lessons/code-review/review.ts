@@ -39,6 +39,10 @@ export const DIFF: DiffLine[] = [
   { kind: 'add', text: '});' },
 ];
 
+/** The PR header's numbers, counted from the diff itself. */
+export const ADDED_LINES = DIFF.filter((l) => l.kind === 'add').length;
+export const FILE_COUNT = DIFF.filter((l) => l.kind === 'file').length;
+
 export interface Issue {
   id: string;
   line: number;

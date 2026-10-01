@@ -14,6 +14,8 @@ import {
 
 const STEP_MS = 520;
 const NODE_W = 124;
+/** Room beside the outermost nodes so their boxes stay inside the drawing. */
+const TREE_SIDE_PAD = NODE_W / 2 + 8;
 const NODE_H = 42;
 /** Taller when a third line lists stopPropagation / preventDefault. */
 const NODE_H_FLAGS = 56;
@@ -277,6 +279,7 @@ export function Propagation({ picker }: { picker: ReactNode }) {
               shape={TREE}
               layout="tidy"
               width={460}
+              pad={TREE_SIDE_PAD}
               height={290}
               top={34}
               levelGap={72}

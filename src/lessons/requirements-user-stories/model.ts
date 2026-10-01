@@ -100,12 +100,12 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: 'sso', text: 'What about people who sign in with Google?', ambiguity: 'SSO users?', kind: 'criterion',
-    answer: 'They have no password here. Point them to Google.',
+    answer: 'They have no password here. Point them to Google, by email, so the page still reveals nothing.',
     criterion: {
-      name: 'Google sign-in accounts are sent to Google',
+      name: 'Google sign-in accounts are pointed to Google by email',
       given: 'my account signs in with Google',
       when: 'I request a password reset',
-      then: 'I see "You sign in with Google" and a link to Google\'s account recovery',
+      then: 'I see the same "If an account exists, we\'ve emailed a link" message, and the email says I sign in with Google and links to Google\'s account recovery',
     },
     reworkDays: 1, surprise: 'Support tickets: Google users get reset emails for a password they never had.',
   },
@@ -136,6 +136,12 @@ export const QUESTIONS: Question[] = [
 ];
 
 /** Questions whose answer changes what "done" means. */
+/** When each kind of surprise surfaces, earliest first: the replay plays them in this order. */
+export const SURPRISE_STAGES = ['Demo', 'Review', 'QA', 'Sprint review', 'After release', 'Week 2', 'Support tickets', 'Incident'] as const;
+
+/** The stage a surprise names before its colon ("Demo: ..."), as an index into SURPRISE_STAGES. */
+export const stageOf = (q: { surprise: string }) => SURPRISE_STAGES.findIndex((s) => q.surprise.startsWith(`${s}:`));
+
 export const MATERIAL = QUESTIONS.filter((q) => q.kind !== 'irrelevant');
 export const question = (id: string) => QUESTIONS.find((q) => q.id === id)!;
 
@@ -150,7 +156,8 @@ export const scopeFor = (asked: readonly string[]) =>
   asked.map(question).filter((q) => q.kind === 'scope').map((q) => q.scope!);
 
 /** One test per acceptance criterion: the criterion's scenario name. */
-export const testsFor = (asked: readonly string[]) => criteriaFor(asked).map((c) => `test: ${c.name.toLowerCase()}`);
+/** Test names keep the criterion's casing, so proper nouns (Google, SMS) survive. */
+export const testsFor = (asked: readonly string[]) => criteriaFor(asked).map((c) => `test: ${c.name}`);
 
 /** A criterion as Gherkin lines. */
 export function gherkin(c: Criterion): string[] {

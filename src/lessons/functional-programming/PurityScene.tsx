@@ -53,8 +53,13 @@ export function PurityScene({ picker }: { picker: ReactNode }) {
           priceWithGlobal({PRICE}) returned <span className="hl bad">{impure}</span>, but it returned {first}{' '}
           before: <b>same input, different output</b>. pricePure is still <span className="hl ok">{pure}</span>.
         </>
-      ) : (
+      ) : impure === pure ? (
         <>Both return <span className="hl ok">{pure}</span>. Now change the global discount and call them again.</>
+      ) : (
+        <>
+          priceWithGlobal({PRICE}) returned {impure} and pricePure returned {pure}: the global is already {global}, not{' '}
+          {PURE_DISCOUNT}. Call again after changing it, and only the global one moves.
+        </>
       ),
     );
   };

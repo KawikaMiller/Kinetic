@@ -49,7 +49,7 @@ const lesson: LessonModule = {
       why: 'An if-then only promises something when its premise holds. With a false premise the promise can\'t be broken, so it\'s true: vacuous truth.',
     },
     {
-      q: 'In `user && user.name`, when is user.name never evaluated?',
+      q: 'In "user && user.name", when is user.name never evaluated?',
       options: ['When user is falsy', 'When user.name is empty', 'Never: both sides always run', 'When user is truthy'],
       answer: 0,
       why: '&& stops at the first falsy value, so a missing user short-circuits the expression before user.name can throw.',

@@ -5,7 +5,7 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, Stat, Stats } from '../
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import type { Tone } from '../../core/tone';
-import { DIFF, scoreReview, type Comment, type Score, type Severity, type Verdict } from './review';
+import { ADDED_LINES, DIFF, FILE_COUNT, scoreReview, type Comment, type Score, type Severity, type Verdict } from './review';
 
 const SEVERITIES: { value: Severity; label: string; tone: Tone; hint: string }[] = [
   { value: 'blocking', label: 'Blocking', tone: 'bad', hint: 'must fix before merging' },
@@ -91,7 +91,7 @@ export function ReviewScene({ picker }: { picker: ReactNode }) {
     >
       <div className="crv stage-pad">
         <Box variant="sunken" className="crv-pr">
-          <SectionTitle hint="+18 lines · 2 files">Pull request 412 · Add paginated order history</SectionTitle>
+          <SectionTitle hint={`+${ADDED_LINES} lines · ${FILE_COUNT} files`}>Pull request 412 · Add paginated order history</SectionTitle>
           <p>Adds getOrderHistory() for the new account page. Tested locally.</p>
         </Box>
         <ol className="crv-diff" aria-label="Diff">
