@@ -54,9 +54,16 @@
   border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
 }
 .chip-button.is-md { font-size: 13px; padding: 4px 10px; }
-.chip-button:hover,
-.chip-button.is-on { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
-.chip-button.is-on.is-solid { background: var(--c); color: var(--on-c); }
+/* Hover is a light tint. "On" must read as selected at a glance, and never be mistaken
+   for hover: a stronger tint plus a full-strength 2px edge (border + inset ring). */
+.chip-button:hover { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.chip-button.is-on {
+  background: color-mix(in srgb, var(--c) 28%, transparent);
+  color: var(--c);
+  border-color: var(--c);
+  box-shadow: inset 0 0 0 1px var(--c);
+}
+.chip-button.is-on.is-solid { background: var(--c); color: var(--on-c); box-shadow: none; }
 
 /* ConsolePanel (components/ConsolePanel.tsx): what a program printed */
 .console-panel {
