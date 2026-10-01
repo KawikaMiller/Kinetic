@@ -2,10 +2,11 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { SHAKE } from '../../core/motion';
 import { usePlayer } from '../../core/usePlayer';
-import { colorOf, PROCS, procOf, SCENARIOS, THREADS, type Scenario } from './scenarios';
+import { colorOf, PROCS, procOf, THREADS } from './model';
+import { SCENARIOS, type Scenario } from './scenarios';
 import './styles.css';
 
 /** Thread chips slide onto a core on a firm spring. */
@@ -42,7 +43,8 @@ export function Stage() {
             { color: 'var(--info)', label: 'Browser process' },
             { color: 'var(--violet)', label: 'Music process' },
             { color: 'var(--ok)', label: 'running', shape: 'dot' },
-            { color: 'var(--bad)', label: 'crashed / blocked', shape: 'dot' },
+            { color: 'var(--faint)', label: 'waiting (blocked on I/O)', shape: 'dot' },
+            { color: 'var(--bad)', label: 'crashed', shape: 'dot' },
           ]}
         />
       }
@@ -161,7 +163,7 @@ export function Stage() {
                       transition={{ duration: 0.4 }}
                     >
                       <span className="pt-thread-name">{t.name}</span>
-                      <span className="pt-thread-state">{s === 'crash' ? '💥 crash' : s}</span>
+                      <span className="pt-thread-state">{s === 'crash' ? '💥 crash' : s === 'blocked' ? 'waiting' : s}</span>
                       <span className="pt-stack" aria-label="own stack">
                         <i />
                         <i />
@@ -175,6 +177,10 @@ export function Stage() {
             </motion.div>
           ))}
         </div>
+        <Hint block>
+          Scripted scenarios, slowed right down: a real time slice is a few milliseconds, and which thread runs next
+          depends on priorities and load.
+        </Hint>
       </div>
     </StageFrame>
   );
