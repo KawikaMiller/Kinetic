@@ -2,6 +2,7 @@ import { motion, MotionConfig } from 'motion/react';
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ErrorBoundary, StageCrashed } from '../components/ErrorBoundary';
+import { InlineText } from '../components/InlineText';
 import { Overview } from '../components/Overview';
 import { Quiz } from '../components/Quiz';
 import { usePageHeading } from '../components/usePageHeading';
@@ -101,7 +102,9 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
               <Panel title="Try this" icon="☞">
                 <ul className="try-list">
                   {mod.tryThis.map((t, i) => (
-                    <li key={i}>{t}</li>
+                    <li key={i}>
+                      <InlineText text={t} />
+                    </li>
                   ))}
                 </ul>
               </Panel>
@@ -109,7 +112,7 @@ function LessonView({ topic, mod }: { topic: Topic; mod: LessonModule }) {
                 <ul className="idea-list">
                   {mod.keyIdeas.map((t, i) => (
                     <motion.li key={i} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.08 }}>
-                      {t}
+                      <InlineText text={t} />
                     </motion.li>
                   ))}
                 </ul>

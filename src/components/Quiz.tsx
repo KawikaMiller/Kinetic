@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { shuffleOptions } from '../core/quiz';
 import type { QuizQuestion } from '../core/types';
+import { InlineText } from './InlineText';
 
 /**
  * Quick-check questions. Calls onComplete once every question is answered correctly.
@@ -35,7 +36,9 @@ export function Quiz({ questions: authored, onComplete }: { questions: QuizQuest
           const correct = p === q.answer;
           return (
             <div key={qi} className="quiz-q">
-              <p className="quiz-prompt">{q.q}</p>
+              <p className="quiz-prompt">
+                <InlineText text={q.q} />
+              </p>
               <div className="quiz-options">
                 {q.options.map((opt, oi) => {
                   const state = p === oi ? (correct ? 'right' : 'wrong') : '';
@@ -49,7 +52,7 @@ export function Quiz({ questions: authored, onComplete }: { questions: QuizQuest
                       animate={state === 'wrong' ? { x: [0, -6, 6, -4, 4, 0] } : state === 'right' ? { scale: [1, 1.04, 1] } : {}}
                       transition={{ duration: 0.35 }}
                     >
-                      {opt}
+                      <InlineText text={opt} />
                     </motion.button>
                   );
                 })}
@@ -60,7 +63,13 @@ export function Quiz({ questions: authored, onComplete }: { questions: QuizQuest
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                 >
-                  {correct ? '✓ ' + q.why : 'Not quite. Try another.'}
+                  {correct ? (
+                    <>
+                      ✓ <InlineText text={q.why} />
+                    </>
+                  ) : (
+                    'Not quite. Try another.'
+                  )}
                 </motion.p>
               )}
             </div>
