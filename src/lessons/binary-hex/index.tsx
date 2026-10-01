@@ -32,15 +32,25 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Is 0xFF a different number from 255?',
-      options: ['Yes: hex numbers are a separate type', 'No: it is the same value written in base 16', 'Only on 8-bit machines', 'Yes: 0xFF is negative'],
-      answer: 1,
-      why: 'F is 15, so 0xFF = 15 × 16 + 15 = 255. The base is just how the number is written down.',
+      options: [
+        "No: it's the same value written in base 16",
+        'Yes: hex numbers are their own separate type',
+        'Only on 8-bit machines, where it means −1',
+        'Yes: 0xFF is a negative number in code',
+      ],
+      answer: 0,
+      why: 'F is 15, so 0xFF = 15 × 16 + 15 = 255. The base is just how the number is written down, not a different type or sign.',
     },
     {
       q: 'Why does each hex digit line up with exactly four bits?',
-      options: ['Hex was designed for 4-bit CPUs', 'Because 16 = 2⁴, so four bits have exactly 16 combinations', 'It doesn\'t: hex digits vary in width', 'Because a byte has four parts'],
-      answer: 1,
-      why: 'Four bits give 2⁴ = 16 patterns, one per hex digit 0-F. That is why hex is the handy shorthand for binary.',
+      options: [
+        '16 = 2⁴, so four bits make exactly 16 patterns',
+        'Hex was designed for the early 4-bit CPUs',
+        "It doesn't: hex digits vary in bit width",
+        'Because every byte is split into four parts',
+      ],
+      answer: 0,
+      why: 'Four bits give 2⁴ = 16 patterns, one per hex digit 0-F. That is why hex is the handy shorthand for binary. A byte is two hex digits, not four parts.',
     },
     {
       q: 'What does chmod 755 give the "group"?',
@@ -50,9 +60,9 @@ const lesson: LessonModule = {
     },
     {
       q: 'An 8-bit register holds 255. You add 1. What does it hold?',
-      options: ['256', '0', '255', '-1'],
+      options: ['It holds 256', 'It holds 0', 'It stays at 255', 'It holds −1'],
       answer: 1,
-      why: 'Every bit is 1, so the carry falls off the left end and all eight bits become 0. The register has no ninth bit.',
+      why: "Every bit is 1, so the carry falls off the left end and all eight bits become 0. The register has no ninth bit, so 256 can't fit.",
     },
   ],
 };

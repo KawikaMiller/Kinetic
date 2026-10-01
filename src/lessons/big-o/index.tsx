@@ -33,13 +33,13 @@ const lesson: LessonModule = {
       q: 'A function loops over an array, and inside that loop it loops over the array again. What is its complexity?',
       options: ['O(n)', 'O(2n)', 'O(n²)', 'O(log n)'],
       answer: 2,
-      why: 'n iterations of an n-length inner loop = n × n operations.',
+      why: 'n iterations of an n-length inner loop = n × n operations. O(2n) would be two loops one after the other, not one inside the other.',
     },
     {
       q: 'Which of these is O(n)?',
-      options: ['5n + 1000', 'n² / 100', 'log n', '2ⁿ'],
+      options: ['5n + 1000', 'n²/100 + n', '20 log n + 5', '2ⁿ + 1000'],
       answer: 0,
-      why: 'Constants and lower-order terms are dropped, so 5n + 1000 grows linearly.',
+      why: 'Constants and lower-order terms are dropped, so 5n + 1000 grows linearly. n²/100 looks small, but its n² term still wins once n is large.',
     },
     {
       q: 'An O(2ⁿ) algorithm takes 1 second at n = 30. Roughly how long at n = 31?',

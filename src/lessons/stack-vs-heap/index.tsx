@@ -31,21 +31,36 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'function make() { const o = { a: 1 }; return o; } After make() returns, where is the object?',
-      options: ["Gone: it was on make's stack frame", 'Still on the heap, because the caller holds a reference to it', "Copied onto the caller's frame", 'In a CPU register'],
-      answer: 1,
+      options: [
+        'On the heap: the caller still refers to it',
+        "Gone: it lived in make's stack frame",
+        "Copied onto the caller's stack frame",
+        "In a CPU register until it's used",
+      ],
+      answer: 0,
       why: 'Objects are allocated on the heap, not in the frame. The frame (and the local o) disappear, but the object lives on as long as something can reach it.',
     },
     {
       q: 'Why does infinite recursion crash with a stack overflow?',
-      options: ['The heap runs out of objects', 'Each call pushes a frame, and the stack has a fixed size', 'The garbage collector stops it', 'Recursion is not allowed in JavaScript'],
-      answer: 1,
-      why: 'Every call needs a new frame. Nothing returns, so frames pile up until the fixed-size stack region is full.',
+      options: [
+        'Every call adds a frame to a fixed-size stack',
+        'The heap runs out of room for objects',
+        'The garbage collector halts the program',
+        "JavaScript doesn't allow recursion at all",
+      ],
+      answer: 0,
+      why: "Every call needs a new frame. Nothing returns, so frames pile up until the fixed-size stack region is full. It's the stack, not the heap, that fills.",
     },
     {
       q: 'In C, what is wrong with returning &x where x is a local variable?',
-      options: ['Nothing, it is a common pattern', 'x is copied to the heap automatically', "x lives in the function's frame, which is gone once it returns, so the pointer dangles", 'It leaks memory'],
-      answer: 2,
-      why: 'The frame is released on return, so the address points at memory that the next call can overwrite: undefined behaviour.',
+      options: [
+        "x's frame is gone after return, so it dangles",
+        "Nothing: it's a common, safe pattern",
+        'x gets copied to the heap automatically',
+        'It leaks the memory x was stored in',
+      ],
+      answer: 0,
+      why: 'The frame is released on return, so the address points at memory that the next call can overwrite: undefined behaviour. C never moves locals to the heap for you.',
     },
     {
       q: 'A C function mallocs a buffer, never frees it, and loses the only pointer. What is that called?',

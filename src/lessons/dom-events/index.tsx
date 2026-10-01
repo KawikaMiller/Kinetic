@@ -31,27 +31,32 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: 'A checkbox\'s click listener calls stopPropagation(). What happens to the checkbox?',
-      options: ['It won\'t toggle', 'It still toggles: stopPropagation only stops the event travelling', 'It toggles twice', 'The click is cancelled entirely'],
-      answer: 1,
+      q: "A checkbox's click listener calls stopPropagation(). What happens to the checkbox?",
+      options: [
+        'It still toggles; only propagation stops',
+        "It won't toggle: the click is stopped",
+        'It toggles twice as the event bubbles',
+        'The click and its toggle are both cancelled',
+      ],
+      answer: 0,
       why: 'Toggling is the default action. Only preventDefault() cancels that; stopPropagation() just stops other listeners hearing the event.',
     },
     {
       q: 'The card has a capture listener and the span has a normal one. You click the span. Which runs first?',
-      options: ['The span\'s', 'The card\'s', 'Whichever was added first', 'They run at the same time'],
+      options: ["The span's listener", "The card's listener", 'The one added first', 'Both at the same time'],
       answer: 1,
-      why: 'Capture runs from the root down before the event reaches its target, so the card\'s capture listener fires first.',
+      why: "Capture runs from the root down before the event reaches its target, so the card's capture listener fires first, whatever order they were added in.",
     },
     {
       q: 'Why does a click on an <li> added after page load still work with delegation?',
       options: [
-        'The browser copies listeners to new elements',
-        'The listener lives on the parent <ul>, and the click bubbles up to it',
-        'React re-attaches it',
-        'It doesn\'t work',
+        'The <ul> holds the listener; clicks bubble up to it',
+        'The browser copies listeners onto new elements',
+        'React re-attaches the listener on each render',
+        "It doesn't: new items need their own listener",
       ],
-      answer: 1,
-      why: 'Delegation puts one listener on an ancestor that already exists. Any new child\'s click bubbles up to it, and closest() finds which child it was.',
+      answer: 0,
+      why: "Delegation puts one listener on an ancestor that already exists. Any new child's click bubbles up to it, and closest() finds which child it was. Nothing is copied.",
     },
   ],
 };

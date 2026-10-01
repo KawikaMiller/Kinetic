@@ -31,13 +31,18 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Your request comes back 403 Forbidden. What does that tell you?',
-      options: ['The server crashed', 'You sent no credentials', 'You are authenticated but not allowed to do this', 'The URL does not exist'],
-      answer: 2,
-      why: '403 means the server knows who you are and still refuses. Missing or invalid credentials would be 401.',
+      options: [
+        "You're signed in but not allowed to do this",
+        'You sent no credentials or the wrong ones',
+        'The server hit an error while handling it',
+        "The URL you asked for doesn't exist here",
+      ],
+      answer: 0,
+      why: '403 means the server knows who you are and still refuses. Missing or invalid credentials would be 401, a server error 5xx, a missing URL 404.',
     },
     {
       q: 'A network blip means you are not sure your request reached the server. Which is safest to just retry?',
-      options: ['POST /orders', 'PUT /orders/42', 'Neither', 'Both, always'],
+      options: ['POST /orders', 'PUT /orders/42', 'Neither of them', 'Both, always'],
       answer: 1,
       why: 'PUT is idempotent: sending the same replacement twice leaves the same state. Retrying a POST could create a duplicate order (unless the API uses idempotency keys).',
     },

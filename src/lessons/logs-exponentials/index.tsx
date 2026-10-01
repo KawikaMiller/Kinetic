@@ -32,9 +32,9 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Roughly what is log₂ of one billion?',
-      options: ['About 30', 'About 500 million', 'About 1,000', 'About 9'],
+      options: ['About 30', 'About 9', 'About 1,000', 'About 300'],
       answer: 0,
-      why: '2³⁰ ≈ 1.07 billion, so a billion halves down to 1 in about 30 steps. log n grows far, far slower than n.',
+      why: '2³⁰ ≈ 1.07 billion, so a billion halves down to 1 in about 30 steps. 9 is log₁₀ of a billion: the base matters. log n grows far, far slower than n.',
     },
     {
       q: 'How many bits do you need to give 50 US states different codes?',
@@ -46,13 +46,13 @@ const lesson: LessonModule = {
       q: 'About how big is 2⁴⁰?',
       options: ['A thousand', 'A million', 'A trillion', 'Forty thousand'],
       answer: 2,
-      why: 'Every 10 doublings is about ×1,000: 2¹⁰ ≈ 10³, so 2⁴⁰ ≈ 10¹². It\'s exactly 1,099,511,627,776.',
+      why: "Every 10 doublings is about ×1,000: 2¹⁰ ≈ 10³, so 2⁴⁰ ≈ 10¹². It's exactly 1,099,511,627,776.",
     },
     {
       q: 'You go from 1,024 items to 1,025. How many more bits do their IDs need?',
-      options: ['None', 'One', 'Ten', 'It depends on the language'],
+      options: ['No more bits', 'One more bit', 'Ten more bits', 'A whole extra byte'],
       answer: 1,
-      why: '1,024 = 2¹⁰ fits in 10 bits exactly; 1,025 needs an 11th.',
+      why: '1,024 = 2¹⁰ fits in 10 bits exactly; 1,025 needs an 11th. Storage may round that up to a whole byte, but the number of bits needed is one more.',
     },
   ],
 };

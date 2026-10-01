@@ -33,7 +33,7 @@ const lesson: LessonModule = {
       q: 'Which rewrite of ¬(A ∧ B) is correct?',
       options: ['¬A ∧ ¬B', '¬A ∨ ¬B', 'A ∨ B', '¬(A ∨ B)'],
       answer: 1,
-      why: 'De Morgan\'s law: pushing the NOT inside negates each part and flips AND to OR. ¬A ∧ ¬B is wrong whenever exactly one input is 1.',
+      why: "De Morgan's law: pushing the NOT inside negates each part and flips AND to OR. ¬A ∧ ¬B is wrong whenever exactly one input is 1.",
     },
     {
       q: 'In a half adder, what does A = 1, B = 1 produce?',
@@ -43,9 +43,14 @@ const lesson: LessonModule = {
     },
     {
       q: 'Why is NAND called a universal gate?',
-      options: ['It is the fastest gate', 'Any other gate can be built from NAND gates alone', 'It has the most inputs', 'It never outputs 0'],
-      answer: 1,
-      why: 'NAND(A, A) is NOT A, and NOT and AND made from NANDs give you OR too, so any circuit can be made of NANDs.',
+      options: [
+        'Every other gate can be built from NANDs',
+        'It switches faster than every other gate',
+        'It takes the most inputs of any gate type',
+        "It's the only gate that can output a 1",
+      ],
+      answer: 0,
+      why: "NAND(A, A) is NOT A, and NOT and AND made from NANDs give you OR too, so any circuit can be made of NANDs. It's about what it can build, not speed.",
     },
     {
       q: 'How many rows does the truth table for a 3-input circuit have?',

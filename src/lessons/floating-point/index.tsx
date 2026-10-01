@@ -32,9 +32,14 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Why is 0.1 + 0.2 !== 0.3 in JavaScript?',
-      options: ['Floating point is randomly imprecise', 'Neither 0.1 nor 0.2 is stored exactly; they are the nearest binary fractions', 'JavaScript has a bug in its + operator', 'Only because of float32'],
-      answer: 1,
-      why: 'Each value is rounded to the nearest representable binary fraction. The tiny errors are deterministic, and here they happen to add up to 0.30000000000000004.',
+      options: [
+        '0.1 and 0.2 are stored as the nearest binary fractions',
+        'Floating-point maths is randomly imprecise each run',
+        "JavaScript's + operator has a long-standing bug",
+        'JavaScript stores numbers as float32, not float64',
+      ],
+      answer: 0,
+      why: 'Each value is rounded to the nearest representable binary fraction. The tiny errors are deterministic, not random, and here they add up to 0.30000000000000004 even in float64.',
     },
     {
       q: 'Which of these is stored exactly as a float?',
@@ -44,9 +49,9 @@ const lesson: LessonModule = {
     },
     {
       q: 'What is NaN === NaN?',
-      options: ['true', 'false', 'It throws', 'undefined'],
+      options: ['true', 'false', 'NaN', 'undefined'],
       answer: 1,
-      why: 'IEEE 754 defines NaN as unequal to everything, itself included. Use Number.isNaN to test for it.',
+      why: 'IEEE 754 defines NaN as unequal to everything, itself included, and === always returns a boolean. Use Number.isNaN to test for it.',
     },
     {
       q: 'You add 1 to a float32 holding 16,777,216 (2²⁴). What do you get?',

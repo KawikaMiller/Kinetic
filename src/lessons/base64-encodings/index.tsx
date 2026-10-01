@@ -32,27 +32,37 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'An API key is stored base64-encoded in a config file. Is it protected?',
-      options: ['Yes: it can\'t be read without the key', 'No: base64 is an encoding anyone can reverse', 'Only if it uses base64url', 'Only if it has padding'],
-      answer: 1,
-      why: 'Base64 is reversible by design: atob("…") gives the original instantly. Protect secrets with encryption or a secret manager, not an encoding.',
+      options: [
+        'No: base64 is an encoding anyone can reverse',
+        "Yes: it can't be read without a decoding key",
+        'Only if it uses the base64url alphabet',
+        'Only if the padding characters are kept',
+      ],
+      answer: 0,
+      why: 'Base64 is reversible by design and needs no key: atob("…") gives the original instantly. Protect secrets with encryption or a secret manager, not an encoding.',
     },
     {
       q: 'Why does base64 output grow by about a third?',
-      options: ['It adds a checksum', 'Every 3 bytes (24 bits) become 4 characters of 6 useful bits each', 'It compresses badly', 'It adds a header'],
-      answer: 1,
-      why: 'Each output character carries 6 bits, but takes a whole byte to store: 4 characters for every 3 bytes of input.',
+      options: [
+        '3 bytes become 4 characters of 6 bits each',
+        'It adds a checksum after every few bytes',
+        'It compresses the data, but badly',
+        'It adds a header describing the content',
+      ],
+      answer: 0,
+      why: "Each output character carries 6 bits but takes a whole byte to store: 4 characters for every 3 bytes (24 bits) of input. There's no checksum or header.",
     },
     {
       q: 'Base64 of a 2-byte input ends with…',
-      options: ['"=="', 'a single "="', 'no padding', '"%3D"'],
+      options: ['Two "=" signs', 'One "=" sign', 'No padding at all', 'A "%3D" sequence'],
       answer: 1,
-      why: '16 data bits fill two 6-bit groups and part of a third (padded with 2 zero bits); the missing fourth group is marked with one "=".',
+      why: '16 data bits fill two 6-bit groups and part of a third (padded with 2 zero bits); the missing fourth group is marked with one "=". Two "=" signs is the 1-byte case.',
     },
     {
       q: 'encodeURIComponent("a b") is…',
-      options: ['a+b', 'a%20b', 'a b', 'YSBi'],
+      options: ['a+b', 'a%20b', 'a%2Bb', 'YSBi'],
       answer: 1,
-      why: 'In URL components a space is %20. The + form comes from HTML form encoding (URLSearchParams); YSBi is its base64.',
+      why: 'In URL components a space is %20. The + form comes from HTML form encoding (URLSearchParams), %2B is an encoded plus sign, and YSBi is the base64.',
     },
   ],
 };

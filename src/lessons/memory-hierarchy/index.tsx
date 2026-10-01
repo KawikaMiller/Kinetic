@@ -37,13 +37,18 @@ const lesson: LessonModule = {
     },
     {
       q: 'A cache hits 95% of the time at 1 ns and misses to RAM at 100 ns. What is the average access time?',
-      options: ['1 ns', 'About 6 ns', 'About 50 ns', '100 ns'],
+      options: ['About 1 ns', 'About 6 ns', 'About 50 ns', 'About 100 ns'],
       answer: 1,
-      why: '0.95 × 1 + 0.05 × 100 = 5.95 ns. The rare misses dominate, which is why raising the hit rate matters so much.',
+      why: "0.95 × 1 + 0.05 × 100 = 5.95 ns. It's a weighted average, not the midpoint (50 ns): the rare misses still dominate, which is why raising the hit rate matters so much.",
     },
     {
       q: 'Which is usually slower?',
-      options: ['A round trip to another server in the same datacenter', 'One seek on a spinning hard disk', 'They take the same time', 'Reading L3 cache'],
+      options: [
+        'A round trip to another server in the same datacenter',
+        'One seek on a spinning hard disk',
+        'They take the same time',
+        'Reading L3 cache',
+      ],
       answer: 1,
       why: 'A datacenter round trip is around 0.5 ms, while an HDD seek is a few milliseconds. The network inside a datacenter can beat a local spinning disk.',
     },

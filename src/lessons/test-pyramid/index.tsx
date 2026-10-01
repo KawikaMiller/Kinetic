@@ -32,21 +32,31 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Your team writes mostly E2E tests because "they test what users actually do". What\'s the likely result?',
-      options: ['The best possible coverage', 'A slow suite with flaky failures that people learn to ignore', 'Faster CI, because there are fewer tests', 'No change'],
-      answer: 1,
-      why: 'That\'s the ice-cream cone. E2E tests are valuable, but each one is slow and a little flaky, and the flakiness multiplies across the suite: red builds become noise.',
+      options: [
+        'A slow suite with flaky failures people ignore',
+        'The best coverage you can get from any suite',
+        'Faster CI, because there are fewer tests',
+        'No real change to speed or reliability',
+      ],
+      answer: 0,
+      why: "That's the ice-cream cone. E2E tests are valuable, but each one is slow and a little flaky, and the flakiness multiplies across the suite: red builds become noise.",
     },
     {
       q: 'Each of 50 E2E tests independently flakes 1.5% of the time. Roughly how often is the suite green when nothing is broken?',
-      options: ['98.5%', 'About 75%', 'About 47%', '0%'],
+      options: ['About 98.5%', 'About 75%', 'About 47%', 'About 25%'],
       answer: 2,
-      why: 'P(green) = 0.985⁵⁰ ≈ 0.47. The chances multiply, so less than half of your runs are green on code that works.',
+      why: "P(green) = 0.985⁵⁰ ≈ 0.47. The chances multiply rather than staying at one test's 98.5%, so less than half of your runs are green on code that works.",
     },
     {
       q: 'A function that computes a discount returns the wrong value for a 0.5% rate. Which test should catch it?',
-      options: ['A unit test of that function', 'An E2E checkout test', 'A load test', 'A manual QA pass'],
+      options: [
+        'A unit test of that function',
+        'An end-to-end checkout test',
+        'A load test of the checkout',
+        'A manual QA pass before release',
+      ],
       answer: 0,
-      why: 'It\'s pure logic in one function: a unit test runs in milliseconds and points straight at the culprit.',
+      why: "It's pure logic in one function: a unit test runs in milliseconds and points straight at the culprit. An E2E test might notice, but slowly and without saying where.",
     },
   ],
 };

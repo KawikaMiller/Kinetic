@@ -37,9 +37,14 @@ const lesson: LessonModule = {
     },
     {
       q: 'A customer\'s name shows up as "RenÃ©e". What most likely happened?',
-      options: ['The database corrupted the data', 'UTF-8 bytes were decoded as Windows-1252 / Latin-1', 'The font is missing', 'The name was hashed'],
-      answer: 1,
-      why: 'é is C3 A9 in UTF-8. Read one byte per character in Windows-1252, C3 is Ã and A9 is ©.',
+      options: [
+        'UTF-8 bytes were read as Windows-1252',
+        'The database corrupted the stored bytes',
+        'The font has no glyph for the letter é',
+        'The name was encrypted on its way in',
+      ],
+      answer: 0,
+      why: 'é is C3 A9 in UTF-8. Read one byte per character in Windows-1252, C3 is Ã and A9 is ©. A missing glyph would show a box, not two different letters.',
     },
     {
       q: 'How many UTF-8 bytes does the character 日 take?',
@@ -49,9 +54,14 @@ const lesson: LessonModule = {
     },
     {
       q: 'Two usernames look identical but "a === b" is false. What should you check first?',
-      options: ['Upper vs lower case', 'Unicode normalisation: one may use a combining accent', 'The font', 'Nothing: JavaScript is wrong'],
-      answer: 1,
-      why: 'é can be U+00E9 or e + U+0301. Normalise both (e.g. to NFC) before comparing. A case difference would be visible, so it can\'t explain two names that look identical.',
+      options: [
+        'Unicode normalisation (combining accents)',
+        'Upper vs lower case in one of the names',
+        'The font each name was displayed in',
+        "A bug in JavaScript's === operator",
+      ],
+      answer: 0,
+      why: "é can be U+00E9 or e + U+0301. Normalise both (e.g. to NFC) before comparing. A case difference would be visible, so it can't explain two names that look identical.",
     },
   ],
 };

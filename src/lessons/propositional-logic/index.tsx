@@ -32,25 +32,35 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'p → q is true. Does that mean q → p is true?',
-      options: ['Yes, always', 'No: the converse is a different claim', 'Only when p is true', 'Only in JavaScript'],
-      answer: 1,
-      why: 'Rain → wet streets doesn\'t mean wet streets → rain (a sprinkler wets them too). The table shows rows where one holds and the other doesn\'t.',
+      options: [
+        'No: the converse is a different claim',
+        'Yes: an if-then works in both directions',
+        "Yes: it's just the contrapositive",
+        'Yes: they always share a truth table',
+      ],
+      answer: 0,
+      why: "Rain → wet streets doesn't mean wet streets → rain (a sprinkler wets them too). The contrapositive is ¬q → ¬p, not q → p, and the table shows rows where p → q holds and q → p doesn't.",
     },
     {
       q: 'Which formula always means the same as p → q?',
       options: ['q → p', '¬p → ¬q', '¬q → ¬p', 'p ∧ q'],
       answer: 2,
-      why: 'The contrapositive ¬q → ¬p agrees with p → q on every row. The other two options are the converse and the inverse, which don\'t.',
+      why: "The contrapositive ¬q → ¬p agrees with p → q on every row. The other two options are the converse and the inverse, which don't.",
     },
     {
       q: 'When p is false, what is p → q?',
       options: ['Always true', 'Always false', 'The same as q', 'Undefined'],
       answer: 0,
-      why: 'An if-then only promises something when its premise holds. With a false premise the promise can\'t be broken, so it\'s true: vacuous truth.',
+      why: "An if-then only promises something when its premise holds. With a false premise the promise can't be broken, so it's true: vacuous truth.",
     },
     {
       q: 'In "user && user.name", when is user.name never evaluated?',
-      options: ['When user is falsy', 'When user.name is empty', 'Never: both sides always run', 'When user is truthy'],
+      options: [
+        'When user is falsy',
+        'When user.name is empty',
+        'Never: both sides always run',
+        'When user is truthy',
+      ],
       answer: 0,
       why: '&& stops at the first falsy value, so a missing user short-circuits the expression before user.name can throw.',
     },

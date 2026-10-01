@@ -31,21 +31,36 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'You change one file out of 100 and commit. Roughly what new objects does git store?',
-      options: ['100 new blobs', 'One new blob, the trees above it, and one commit', 'Only a diff of the changed lines', 'A full copy of the repository'],
-      answer: 1,
-      why: 'Unchanged files keep their hashes and are reused. Only the changed blob, its parent trees and the commit are new.',
+      options: [
+        'One new blob, the trees above it, one commit',
+        '100 new blobs, one for every file in the repo',
+        'Only a diff of the lines you changed',
+        'A full compressed copy of the repository',
+      ],
+      answer: 0,
+      why: 'Unchanged files keep their hashes and are reused. Only the changed blob, its parent trees and the commit are new; git stores snapshots, not diffs.',
     },
     {
       q: 'What is a git branch, physically?',
-      options: ['A copy of all the files', 'A pointer to one commit hash', 'A list of diffs', 'A separate repository'],
+      options: [
+        'A full copy of all the files',
+        'A pointer to one commit hash',
+        'A list of diffs from main',
+        'A separate copy of the repository',
+      ],
       answer: 1,
       why: 'A branch is a tiny ref file containing a commit hash. That’s why creating one is instant.',
     },
     {
       q: 'Why do commits get new hashes after a rebase?',
-      options: ['Git adds random salt', 'Their parent changed, and the parent is part of the hashed content', 'The files are compressed differently', 'They don’t; the hashes stay the same'],
-      answer: 1,
-      why: 'A commit’s hash covers its tree, message and parent(s). New parent → new hash, even with identical changes.',
+      options: [
+        'The parent changed, and the parent is part of the hash',
+        'Git mixes a random salt into each new commit',
+        'The files are compressed differently on replay',
+        "They don't; rebasing keeps every hash the same",
+      ],
+      answer: 0,
+      why: "A commit’s hash covers its tree, message and parent(s). New parent → new hash, even with identical changes. There's no random salt: the same content always hashes the same.",
     },
   ],
 };

@@ -32,27 +32,42 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'What\'s wrong with reading CSV using line.split(",")?',
-      options: ['Nothing, CSV is just commas', 'It breaks on quoted fields that contain commas or line breaks', 'It\'s too slow', 'It drops the header'],
-      answer: 1,
-      why: '"Smith, Jane" is one field, protected by quotes. split(",") cuts it in two and shifts every column after it.',
+      options: [
+        'It breaks on quoted fields holding commas',
+        'Nothing: CSV is just values and commas',
+        "It's far too slow for files of any size",
+        'It silently drops the header row',
+      ],
+      answer: 0,
+      why: '"Smith, Jane" is one field, protected by quotes (and quoted fields can even hold line breaks). split(",") cuts it in two and shifts every column after it.',
     },
     {
       q: 'An API returns {"id": 9007199254740993}. What does JSON.parse give you in JavaScript?',
-      options: ['9007199254740993', '9007199254740992', 'An error', 'A BigInt'],
+      options: [
+        'Exactly 9007199254740993',
+        'The float 9007199254740992',
+        'A SyntaxError from JSON.parse',
+        'A BigInt holding the exact id',
+      ],
       answer: 1,
-      why: 'JSON numbers become 64-bit floats, exact only up to 2^53 − 1. The nearest float is …992. Send big ids as strings.',
+      why: 'JSON numbers become 64-bit floats, exact only up to 2^53 − 1. The nearest float is …992, and JSON.parse never makes a BigInt on its own. Send big ids as strings.',
     },
     {
       q: 'In a YAML 1.1 config, what is country: NO?',
-      options: ['The string "NO"', 'The boolean false', 'null', 'A syntax error'],
+      options: ['The string "NO"', 'The boolean false', 'A null value', 'A syntax error'],
       answer: 1,
       why: 'YAML 1.1 treats yes/no/on/off as booleans in lowercase, Capitalised or UPPER case (NO, No, no). Write country: "NO".',
     },
     {
       q: 'The JSON parsed without errors. Is the data valid?',
-      options: ['Yes, parsing checks everything', 'Not necessarily: it may still have the wrong types or missing fields', 'Only if it\'s under 1 MB', 'Only if it has no nulls'],
-      answer: 1,
-      why: '{"age": "thirty"} is perfectly valid JSON. A schema check (types, required fields) is a separate step.',
+      options: [
+        'Not necessarily: types or fields may be wrong',
+        'Yes: JSON.parse checks types and fields',
+        'Only if the file is smaller than 1 MB',
+        "Only if it doesn't contain any nulls",
+      ],
+      answer: 0,
+      why: '{"age": "thirty"} is perfectly valid JSON. JSON.parse only checks syntax; a schema check (types, required fields) is a separate step.',
     },
   ],
 };

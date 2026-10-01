@@ -33,19 +33,19 @@ const lesson: LessonModule = {
       q: 'Binary search requires the input to be…',
       options: ['Unique', 'Sorted', 'Numeric', 'Small'],
       answer: 1,
-      why: 'Sorted order is what tells you which half the target cannot be in.',
+      why: 'Sorted order is what tells you which half the target cannot be in. Duplicates and non-numbers are fine as long as the order is consistent.',
     },
     {
       q: 'Roughly how many checks does binary search need for 1,000,000 items?',
-      options: ['~20', '~1,000', '~500,000', '~1,000,000'],
+      options: ['Roughly 20', 'Roughly 6', 'Roughly 1,000', 'Roughly 500,000'],
       answer: 0,
-      why: '2²⁰ ≈ 1,048,576, so twenty halvings get you down to one item.',
+      why: "2²⁰ ≈ 1,048,576, so twenty halvings get you down to one item. Six is log₁₀ of a million, but each check halves the range, so the log is base 2; half a million is linear search's average.",
     },
     {
       q: 'You double the size of a sorted array. Worst-case binary search gets…',
       options: ['Twice as slow', 'Four times as slow', 'One extra check', 'No slower at all'],
       answer: 2,
-      why: 'Doubling n adds exactly one more halving step: log₂(2n) = log₂(n) + 1.',
+      why: 'Doubling n adds exactly one more halving step: log₂(2n) = log₂(n) + 1. Twice as slow is what linear search would do.',
     },
   ],
 };

@@ -31,21 +31,31 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'After one full pass of bubble sort, what is guaranteed?',
-      options: ['The smallest value is first', 'The largest value is last', 'Half the array is sorted', 'Nothing yet'],
+      options: [
+        'The smallest value is first',
+        'The largest value is last',
+        'Half the array is sorted',
+        'Nothing yet',
+      ],
       answer: 1,
-      why: 'The biggest value wins every comparison it is in, so it gets carried all the way to the end.',
+      why: 'The biggest value wins every comparison it is in, so it gets carried all the way to the end. The smallest only moves one step left per pass.',
     },
     {
       q: 'Which sort does the fewest comparisons on an already nearly-sorted array?',
-      options: ['Selection', 'Insertion', 'Bubble without early exit', 'They all do the same'],
+      options: ['Selection sort', 'Insertion sort', 'Merge sort', 'Quicksort'],
       answer: 1,
-      why: 'Each item only slides a short way, so insertion sort approaches O(n). Selection always scans everything.',
+      why: 'Each item only slides a short way, so insertion sort approaches O(n). Selection always scans the whole unsorted part, and merge and quick still do about n log n work.',
     },
     {
       q: 'Quicksort degrades to O(n²) when…',
-      options: ['The array is random', 'The pivot keeps splitting the range very unevenly', 'There are duplicate values', 'n is even'],
-      answer: 1,
-      why: 'A pivot that is always the min or max (e.g. last element of sorted input) peels off only one item per level.',
+      options: [
+        'Each pivot splits the range very unevenly',
+        'The input is shuffled into a random order',
+        'The array is too big to fit in the CPU cache',
+        'The array has an even number of elements',
+      ],
+      answer: 0,
+      why: "A pivot that is always the min or max (e.g. the last element of sorted input) peels off only one item per level. Random order is actually quicksort's friend.",
     },
   ],
 };

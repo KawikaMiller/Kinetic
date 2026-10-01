@@ -31,26 +31,31 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Why can an array jump straight to item 500?',
-      options: ['It caches every index', 'Items are contiguous, so the address is base + 500 × size', 'It uses binary search', 'Each item stores a pointer to the next'],
-      answer: 1,
-      why: 'Contiguous layout turns "find item i" into one multiplication and one addition.',
+      options: [
+        "Item i's address is base + i × size",
+        'It keeps a cached index of every item',
+        'It binary-searches its memory for item 500',
+        'It follows a pointer from item to item',
+      ],
+      answer: 0,
+      why: 'Contiguous layout turns "find item i" into one multiplication and one addition. Following pointers item to item is how a linked list does it, in O(n).',
     },
     {
       q: 'Inserting at the front of a 1,000-item array costs roughly…',
       options: ['1 step', '10 steps', '1,000 steps', '1,000,000 steps'],
       answer: 2,
-      why: 'Every existing item has to shift one slot to the right to make room: O(n).',
+      why: 'Every existing item has to shift one slot to the right to make room: O(n). One step is what a linked list pays.',
     },
     {
       q: 'Iterating an array is usually much faster than iterating a linked list of the same length because…',
       options: [
-        'Arrays have a better Big-O for iteration',
-        'Linked lists must be sorted first',
-        'Neighbouring array items share CPU cache lines, so the next one is usually already loaded',
-        'Linked lists need locks',
+        'Array items sit together, so the CPU cache preloads them',
+        'Arrays iterate in O(1) while lists take O(n)',
+        'A linked list must be sorted before it can be read',
+        "Each list node must be locked before it's read",
       ],
-      answer: 2,
-      why: 'Both are O(n) to iterate, but the list jumps around memory and misses the cache; the array streams through it.',
+      answer: 0,
+      why: "Both are O(n) to iterate, so it isn't a Big-O difference: the list jumps around memory and misses the cache, while the array streams through it.",
     },
   ],
 };

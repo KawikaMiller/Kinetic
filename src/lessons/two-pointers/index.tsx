@@ -33,13 +33,13 @@ const lesson: LessonModule = {
     {
       q: 'You run the pair-sum two-pointer loop on an unsorted array. What happens?',
       options: [
-        'It still finds any pair, just more slowly',
         'It can report "no pair" even when one exists',
-        'It throws an error',
+        'It still finds any pair, just more slowly',
+        'It throws an error because the input is unsorted',
         'It sorts the array first automatically',
       ],
-      answer: 1,
-      why: 'Moving R left only proves R\'s pairs impossible when every value to its left is smaller. Without sorted order that proof is false, so real answers get skipped.',
+      answer: 0,
+      why: "Moving R left only proves R's pairs impossible when every value to its left is smaller. Without sorted order that proof is false, so real answers get skipped, silently: nothing checks the order or throws.",
     },
     {
       q: 'arr[L] + arr[R] is bigger than the target. Which move is safe?',
@@ -56,13 +56,13 @@ const lesson: LessonModule = {
     {
       q: 'After removing duplicates in place, what does the function return?',
       options: [
-        'A new, shorter array',
-        'The number of unique values k; the first k cells hold them',
-        'Nothing; the array is resized',
-        'The index of the last duplicate',
+        'k, the count of unique values, now in the first k cells',
+        'A new, shorter array holding only the unique values',
+        'Nothing: the array is resized to fit the uniques',
+        'The index where the last duplicate was found',
       ],
-      answer: 1,
-      why: 'In-place algorithms don\'t allocate a new array. They rewrite the front and report how much of it is valid.',
+      answer: 0,
+      why: "In-place algorithms don't allocate a new array. They rewrite the front and report how much of it is valid.",
     },
   ],
 };

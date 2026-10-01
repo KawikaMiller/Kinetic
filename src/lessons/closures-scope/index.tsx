@@ -30,10 +30,15 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: "let x = 1; const f = () => x; x = 2; What does f() return?",
-      options: ['1: the closure copied x when f was created', '2: the closure reads the x binding when it runs', 'undefined', 'It throws'],
-      answer: 1,
-      why: 'A closure captures the binding, not its value at creation time, so it sees the latest assignment.',
+      q: 'let x = 1; const f = () => x; x = 2; What does f() return?',
+      options: [
+        '2: the closure reads x when it runs',
+        '1: the closure copied x when f was created',
+        "undefined: x isn't defined inside f",
+        'It throws: x was reassigned after f',
+      ],
+      answer: 0,
+      why: 'A closure captures the binding, not its value at creation time, so it sees the latest assignment. Nothing is copied when f is created.',
     },
     {
       q: 'for (var i = 0; i < 3; i++) setTimeout(() => console.log(i)); What is printed?',
@@ -43,15 +48,25 @@ const lesson: LessonModule = {
     },
     {
       q: 'makeCounter() returns () => ++count. Why does count survive after makeCounter returns?',
-      options: ['count is a global', 'The returned function keeps a reference to makeCounter\'s environment', 'JavaScript never frees function variables', 'count is copied into the returned function'],
-      answer: 1,
-      why: "The function object holds its creation environment, so that environment stays reachable, and count with it, as long as the function exists.",
+      options: [
+        'The returned function keeps that scope alive',
+        'count is quietly made a global variable',
+        "JavaScript never frees a function's variables",
+        'count is copied into the returned function',
+      ],
+      answer: 0,
+      why: "The function object holds its creation environment, so that environment stays reachable, and count with it, as long as the function exists. It isn't copied: two closures from the same call share one count.",
     },
     {
       q: "let x = 'outer'; function f() { let x = 'inner'; return x; } What does f() return?",
-      options: ["'outer'", "'inner'", "'outer inner'", 'It throws: x is declared twice'],
+      options: [
+        "It returns 'outer'",
+        "It returns 'inner'",
+        "It returns 'outer inner'",
+        'It throws: x is redeclared',
+      ],
       answer: 1,
-      why: "Lookup stops at the nearest binding. f's own x shadows the global one, which is never reached.",
+      why: "Lookup stops at the nearest binding. f's own x shadows the global one, which is never reached. They're in different scopes, so it isn't a redeclaration.",
     },
   ],
 };

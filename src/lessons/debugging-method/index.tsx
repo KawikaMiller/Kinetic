@@ -33,13 +33,13 @@ const lesson: LessonModule = {
     {
       q: 'A total is wrong. What is the most reliable first move?',
       options: [
-        'Read every component carefully until you spot the bug',
-        'Reproduce it, then check the value in the middle of the pipeline',
-        'Rewrite the component you suspect most',
-        'Add try/catch everywhere',
+        'Reproduce it, then check a value midway through',
+        'Read every component until you spot the bug',
+        'Rewrite the component you suspect the most',
+        'Add try/catch around every component',
       ],
-      answer: 1,
-      why: 'Reading until you spot it is slow and unreliable. A reproducible case plus a check in the middle halves the suspects every time.',
+      answer: 0,
+      why: 'Reading until you spot it is slow and unreliable, and rewriting on a hunch can add bugs. A reproducible case plus a check in the middle halves the suspects every time.',
     },
     {
       q: 'git bisect over 16 commits (first good, last bad). At most how many commits do you test?',
@@ -50,12 +50,12 @@ const lesson: LessonModule = {
     {
       q: 'You change two things, and the bug is gone. What is the problem?',
       options: [
-        'Nothing, the bug is fixed',
-        "You don't know which change fixed it, and the other one may have broken something else",
-        'You should have changed three things',
+        "You can't tell which fixed it, or what else broke",
+        "Nothing: the bug is gone, so you're done",
+        'You should have changed three things at once',
         'Bugs always come back after two changes',
       ],
-      answer: 1,
+      answer: 0,
       why: 'The trap table shows it: the real fix plus an unrelated change looks fine on the failing order but breaks another one. Change one thing, then test.',
     },
   ],

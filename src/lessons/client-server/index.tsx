@@ -31,21 +31,36 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Why shouldn’t a mobile app connect straight to the database?',
-      options: ['Databases can’t speak JSON', 'It would expose credentials and bypass the server’s rules', 'Phones are too slow', 'It’s fine if the database is fast'],
-      answer: 1,
-      why: 'The server enforces authentication, permissions and business rules. Anything shipped in an app can be extracted.',
+      options: [
+        'It exposes DB credentials and skips the server’s rules',
+        'Databases can’t send or receive JSON data at all',
+        'Phones are too slow to run database queries',
+        'It’s fine as long as the database is fast enough',
+      ],
+      answer: 0,
+      why: 'The server enforces authentication, permissions and business rules, and anything shipped in an app can be extracted. Speed isn’t the issue: a fast database is still wide open.',
     },
     {
       q: 'What makes it possible for any of three server copies to handle your next request?',
-      options: ['Sticky sessions', 'The servers are stateless; state lives in the database or the request', 'Each server has a full copy of your memory', 'The client picks the server'],
-      answer: 1,
-      why: 'If servers remember nothing between requests, they are interchangeable.',
+      options: [
+        'They’re stateless: state lives in the DB or the request',
+        'Sticky sessions pin each user to one server copy',
+        'Each copy stores your login in its own memory',
+        'The client picks a copy and sends every request there',
+      ],
+      answer: 0,
+      why: 'If servers remember nothing between requests, they are interchangeable. Sticky sessions do the opposite: they tie you to one copy.',
     },
     {
       q: 'You need to rename a JSON field that old mobile apps read. Safest approach?',
-      options: ['Rename it and force-update the app', 'Add the new field and keep the old one (or add a /v2)', 'Rename it on a Friday', 'Let the app crash and fix it later'],
-      answer: 1,
-      why: 'Additive changes and versioning keep existing clients working while new ones move on.',
+      options: [
+        'Add the new field, keep the old one (or add /v2)',
+        'Rename it and force every user to update the app',
+        'Rename it and ship the app update the same day',
+        'Rename it, then fix old apps when they crash',
+      ],
+      answer: 0,
+      why: 'Additive changes and versioning keep existing clients working while new ones move on. Old app versions stay installed for months, so a same-day update still breaks them.',
     },
   ],
 };
