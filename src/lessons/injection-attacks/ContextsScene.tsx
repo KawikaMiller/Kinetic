@@ -10,6 +10,7 @@ const SAMPLES = [
   { id: 'fish', label: 'fish & chips', value: 'fish & chips' },
   { id: 'bold', label: 'use <b>bold</b>', value: 'use <b>bold</b>' },
   { id: 'lines', label: 'Ada ⏎ second line', value: 'Ada\nsecond line' },
+  { id: 'dollar', label: 'Save $5 today', value: 'Save $5 today' },
 ];
 
 export function ContextsScene({ picker }: { picker: ReactNode }) {
@@ -92,8 +93,10 @@ export function ContextsScene({ picker }: { picker: ReactNode }) {
           encode it for the exact place it goes. Checking for &quot;bad characters&quot; isn&apos;t the fix: real names contain apostrophes.
         </p>
         <p className="inj-honest">
-          Simulated contexts; nothing is run. The URL is parsed with the browser&apos;s real URL API; the shell row is a simplified
-          model of how a POSIX shell like bash reads a command line (quotes, separators, redirections), checked against bash.
+          Simulated contexts; nothing is run. The URL is parsed with the browser&apos;s real URL API. The shell row is a simplified
+          model of how bash reads a command line: quotes, separators and redirections, plus the characters that make it rewrite
+          the line first ($…, backticks, ~, globs, {'{a,b}'}, #). Those rewrites are named, not carried out. The cases shown were
+          checked against bash; here-docs, aliases and other shells aren&apos;t modelled.
         </p>
       </div>
     </StageFrame>
