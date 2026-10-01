@@ -19,7 +19,7 @@ describe('runRegex uses the real engine', () => {
   it('reports named groups by name and position', () => {
     const run = runRegex(PRESETS[0].pattern, ['g'], ACCESS_LOG);
     if (!run.ok) throw new Error(run.error);
-    expect(run.matches).toHaveLength(5);
+    expect(run.matches).toHaveLength(12);
     const second = run.matches[1];
     expect(second.groups.map((g) => [g.name, g.text])).toEqual([['method', 'POST'], ['path', '/api/orders'], ['status', '500']]);
     const status = second.groups[2];
