@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { fromBits } from '../../core/bits';
-import { codePoints, counts, decodeAs, encodeCodePoint, graphemes, normalisation, PRESETS, prefixLength, utf8 } from './model';
+import { codePoints, counts, decodeAs, encodeCodePoint, flagLetters, graphemes, hasFlagLetters, normalisation, PRESETS, prefixLength, utf8 } from './model';
+
+describe('flag detection', () => {
+  it('finds a regional-indicator pair, and nothing else', () => {
+    expect(hasFlagLetters(PRESETS.find((p) => p.id === 'flag')!.text)).toBe(true);
+    expect(hasFlagLetters('JP')).toBe(false);
+    expect(hasFlagLetters('café 日本')).toBe(false);
+    expect(hasFlagLetters('\u{1F1EF}')).toBe(false); // a single indicator isn't a flag
+  });
+  it('reads the letters of the flag', () => {
+    expect(flagLetters('\u{1F1EF}\u{1F1F5}')).toBe('JP');
+    expect(flagLetters('vive la \u{1F1EB}\u{1F1F7}!')).toBe('FR');
+  });
+});
 
 describe('é: the classic mojibake', () => {
   it('encodes to C3 A9 and decodes as Windows-1252 to "Ã©"', () => {

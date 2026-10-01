@@ -6,7 +6,7 @@ import { ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextFie
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import {
-  PRESETS, codePoints, counts, decodeAs, encodeCodePoint, formatCodePoint, graphemes, hexByte, normalisation, utf8,
+  PRESETS, codePoints, counts, decodeAs, encodeCodePoint, formatCodePoint, flagLetters, graphemes, hasFlagLetters, hexByte, normalisation, utf8,
   type EncodedCodePoint,
 } from './model';
 import './styles.css';
@@ -47,6 +47,12 @@ export function Stage() {
   const load = (next: string) => {
     setText(next);
     setSelected(0);
+    if (hasFlagLetters(next)) {
+      setCaption(
+        <>A flag is two <b>regional-indicator</b> code points, the letters {[...flagLetters(next)].join(' and ')}. Systems with flag
+          glyphs draw the pair as one flag; Windows has none, so it shows the letters instead. Same code points either way.</>,
+      );
+    }
   };
 
   const switchDecoding = (d: Decoding) => {
