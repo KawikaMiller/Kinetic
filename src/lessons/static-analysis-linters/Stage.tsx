@@ -144,7 +144,7 @@ export function Stage() {
         <Box variant="sunken" className="sa-matrix-box">
           <SectionTitle hint="which tool can catch which problem">Problem × tool</SectionTitle>
           {/* The Tests column carries the lesson's point: on a phone the table scrolls, with a swipe hint and fades. */}
-          <WideRegion minWidth={MATRIX_MIN_WIDTH} label="Problem by tool table: scroll sideways to see every tool">
+          <WideRegion minWidth={MATRIX_MIN_WIDTH} label="Problem by tool table: scroll sideways to see every tool" hint="swipe to see every tool">
             <table className="data-table sa-matrix">
               <thead>
                 <tr>
