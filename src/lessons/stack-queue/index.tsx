@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Buffers between a fast producer and a slow consumer",
     ],
     why: "They're the building blocks behind recursion, task scheduling and messaging systems. Picking the wrong one changes what your program does, not just how fast it runs. You'll meet both again in almost every later lesson.",
-    watch: "The vertical tube is the stack: things enter and leave at the top. The horizontal pipe is the queue: in at the back, out at the front. Follow the guided story first, then switch to Sandbox and push things yourself, including popping an empty one.",
+    watch: "The vertical tube is the stack: things enter and leave at the top. The horizontal pipe is the queue: in at the back, out at the front. Green marks the item just added, yellow the one just peeked at, and a red chip beside each structure shows what was just removed. Follow the guided story first, then switch to Sandbox and push things yourself, including popping an empty one.",
   },
   tryThis: [
     'Play the story. Watch pages leave the stack in reverse order.',
