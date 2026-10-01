@@ -44,6 +44,7 @@ export function Stage() {
     );
   };
 
+  // Every load sets its own caption, so a caption about the previous text (e.g. the flag) never lingers.
   const load = (next: string) => {
     setText(next);
     setSelected(0);
@@ -52,7 +53,14 @@ export function Stage() {
         <>A flag is two <b>regional-indicator</b> code points, the letters {[...flagLetters(next)].join(' and ')}. Systems with flag
           glyphs draw the pair as one flag; Windows has none, so it shows the letters instead. Same code points either way.</>,
       );
+      return;
     }
+    const n = counts(next);
+    setCaption(
+      <>{plural(n.graphemes, 'character')} on screen, {plural(n.codePoints, 'code point')} and {plural(n.utf8Bytes, 'byte')} of UTF-8.
+        Click a character to see its bytes.</>,
+      { quiet: true },
+    );
   };
 
   const switchDecoding = (d: Decoding) => {
