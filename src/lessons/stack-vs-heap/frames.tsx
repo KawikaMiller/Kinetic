@@ -5,6 +5,8 @@ import { allocate, call, emptyWorld, free, NULL, overflow, prim, readThrough, re
 
 /** How many frames the drawn stack holds before it overflows. Real stacks hold thousands. */
 export const STACK_LIMIT = 6;
+/** The summary frame stays up twice as long as a step. */
+const SUMMARY_HOLD = 2;
 
 export interface ShFrame extends Frame {
   line: number | null;
@@ -30,7 +32,10 @@ function tracer(mode: Mode) {
     step(line: number | null, world: World, say: ReactNode) {
       r.snap(say, undefined, { line, world });
     },
-    finish: r.finish,
+    /** The closing summary, as a frame of its own: replacing the last caption would hide the moment the bug happens. */
+    conclude(say: ReactNode) {
+      r.snap(say, SUMMARY_HOLD);
+    },
   };
 }
 
@@ -61,7 +66,7 @@ const outliveFrame: Preset = {
     t.step(2, set(popped, 'pt', point), <><code>makePoint</code> returns: its frame is <b>gone</b>, but the object survives, because <code>pt</code> still refers to it.</>);
     t.step(6, set(t.world(), 'n', prim(42)), <><code>n = 42</code> is a primitive, so it lives in main&apos;s frame.</>);
     t.step(8, ret(t.world()), <><code>main</code> returns. Nothing refers to the point any more: it&apos;s <b>collectable</b>, and the garbage collector will reclaim it.</>);
-    t.finish(<>Locals live and die with their frame; the object lived exactly as long as something could <b>reach</b> it. That&apos;s the managed-memory rule (JavaScript, Java, Python, C#).</>, 2);
+    t.conclude(<>Locals live and die with their frame; the object lived exactly as long as something could <b>reach</b> it. That&apos;s the managed-memory rule (JavaScript, Java, Python, C#).</>);
     return t.frames;
   },
 };
@@ -80,7 +85,7 @@ const stackOverflow: Preset = {
       t.step(n === 0 ? 3 : 1, call(t.world(), `d${n}`, `down(${n})`, [['n', prim(n)]]), n === 0 ? <>The first call pushes a frame.</> : <>Another call, another frame: <b>{n + 1}</b> on the stack and nothing ever returns.</>);
     }
     t.step(1, overflow(t.world()), <>The stack is a fixed-size region. It&apos;s full: <span className="hl bad">RangeError: Maximum call stack size exceeded</span>.</>);
-    t.finish(<><span className="hl bad">Stack overflow.</span> This drawing holds {STACK_LIMIT} frames; a real stack holds thousands, but runaway recursion fills any stack.</>, 2);
+    t.conclude(<><span className="hl bad">Stack overflow.</span> This drawing holds {STACK_LIMIT} frames; a real stack holds thousands, but runaway recursion fills any stack.</>);
     return t.frames;
   },
 };
@@ -101,7 +106,7 @@ const mallocFree: Preset = {
     t.step(3, free(t.world(), 'p'), <><code>free(p)</code> hands the block back. <code>p</code> still holds the old address: it&apos;s now <span className="hl bad">dangling</span>.</>);
     t.step(4, set(t.world(), 'p', NULL), <>Setting <code>p = NULL</code> means nobody can use the freed block by accident.</>);
     t.step(5, ret(t.world()), <>main returns. Every block was freed exactly once: <span className="hl ok">no leak, no dangling pointer</span>.</>);
-    t.finish(<>Allocate, use, free once, forget the address. Every manual-memory bug below is one of those steps going wrong.</>, 2);
+    t.conclude(<>Allocate, use, free once, forget the address. Every manual-memory bug below is one of those steps going wrong.</>);
     return t.frames;
   },
 };
@@ -120,7 +125,7 @@ const danglingLocal: Preset = {
     t.step(1, set(t.world(), 'x', prim(7)), <><code>x = 7</code> lives in <b>bad&apos;s frame</b>, on the stack.</>);
     t.step(5, set(ret(t.world()), 'p', toSlot('bad', 'x')), <><code>bad</code> returns <code>&amp;x</code>, and its frame is popped. <code>p</code> now points into a <span className="hl bad">dead frame</span>.</>);
     t.step(6, readThrough(t.world(), 'p'), <>Reading <code>*p</code> is <span className="hl bad">undefined behaviour</span>: the next call can overwrite that memory at any moment.</>);
-    t.finish(<>It might print 7, or anything else. Never return the address of a local: allocate on the heap, or return the value itself.</>, 2);
+    t.conclude(<>It might print 7, or anything else. Never return the address of a local: allocate on the heap, or return the value itself.</>);
     return t.frames;
   },
 };
@@ -140,7 +145,7 @@ const useAfterFree: Preset = {
     t.step(2, writeThrough(t.world(), 'p', 'value', '7'), <><code>*p = 7</code>: fine.</>);
     t.step(3, free(t.world(), 'p'), <><code>free(p)</code>: the block is returned, but <code>p</code> still holds its address.</>);
     t.step(4, writeThrough(t.world(), 'p', 'value', '8'), <><code>*p = 8</code> still writes, straight into freed memory: a <span className="hl bad">use-after-free</span>. C doesn&apos;t stop you.</>);
-    t.finish(<>That memory may already belong to someone else. Use-after-free bugs corrupt data and are a classic security hole.</>, 2);
+    t.conclude(<>That memory may already belong to someone else. Use-after-free bugs corrupt data and are a classic security hole.</>);
     return t.frames;
   },
 };
@@ -162,7 +167,7 @@ const leak: Preset = {
       t.step(1, set(w1, 'buf', block), <><code>malloc(64)</code>: a new block, and <code>buf</code> is the only pointer to it.</>);
       t.step(3, ret(t.world()), <><code>work</code> returns without <code>free</code>. The only pointer is gone, so the block can never be freed: <span className="hl bad">leak #{i + 1}</span>.</>);
     }
-    t.finish(<><span className="hl bad">3 leaked blocks.</span> A leak in a loop, or in a server that runs for weeks, eats memory until the process dies.</>, 2);
+    t.conclude(<><span className="hl bad">3 leaked blocks.</span> A leak in a loop, or in a server that runs for weeks, eats memory until the process dies.</>);
     return t.frames;
   },
 };

@@ -93,6 +93,9 @@ function MemoryStats({ world }: { world: World }) {
 const slotText = (v: Value, mode: Mode) =>
   v.kind === 'prim' ? v.text : v.kind === 'null' ? 'NULL' : v.kind === 'unset' ? (mode === 'manual' ? '?' : '…') : undefined;
 
+/** Zone labels sit high enough that the stack-limit line (just under the sixth frame) clears them. */
+const ZONE_LABEL_Y = 14;
+
 function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
   const { world } = frame;
   const ghosts = ghostFrames(world);
@@ -107,8 +110,8 @@ function Scene({ frame, showLimit }: { frame: ShFrame; showLimit: boolean }) {
 
   return (
     <svg className="sh-scene" viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} role="img" aria-label="The call stack on the left, the heap on the right">
-      <text className="scene-zone" x={16} y={24}>stack</text>
-      <text className="scene-zone" x={318} y={24}>heap (no particular order)</text>
+      <text className="scene-zone" x={16} y={ZONE_LABEL_Y}>stack</text>
+      <text className="scene-zone" x={318} y={ZONE_LABEL_Y}>heap (no particular order)</text>
       {showLimit && (
         <g className="sh-limit">
           <line x1={10} x2={FRAME_W + 22} y1={STACK_LIMIT_Y} y2={STACK_LIMIT_Y} />

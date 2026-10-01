@@ -96,3 +96,17 @@ describe('manual memory', () => {
 it('every frame points at a real line of its preset', () => {
   for (const p of PRESETS) for (const f of p.build()) if (f.line !== null) expect(f.line).toBeLessThan(p.code.length);
 });
+
+describe('every program ends on its own summary frame', () => {
+  for (const p of PRESETS) {
+    it(`${p.name}: the last step keeps its caption and the summary follows it`, () => {
+      const frames = p.build();
+      const [step, summary] = frames.slice(-2);
+      expect(summary.world).toBe(step.world);
+      expect(summary.line).toBe(step.line);
+      expect(step.say).toBeTruthy();
+      expect(summary.say).not.toBe(step.say);
+      expect(summary.hold).toBe(2);
+    });
+  }
+});
