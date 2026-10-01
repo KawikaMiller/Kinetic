@@ -43,16 +43,26 @@ const lesson: LessonModule = {
       why: 'Below 1.0.0 the MINOR number carries breaking changes, so the caret locks it: ^0.3.1 means >=0.3.1 <0.4.0.',
     },
     {
-      q: 'Your package.json hasn\'t changed, but CI broke after a dependency released a new minor version. What prevents this?',
-      options: ['Using ~ instead of ^ everywhere', 'Committing the lockfile and installing with npm ci', 'Deleting node_modules before every build', 'Pinning Node.js'],
-      answer: 1,
-      why: 'The lockfile pins the exact resolved version (and every transitive one). npm ci installs exactly that, so CI runs the code you tested until you upgrade deliberately.',
+      q: "Your package.json hasn't changed, but CI broke after a dependency released a new patch version. What prevents this?",
+      options: [
+        'Committing the lockfile, installing with npm ci',
+        'Using ~ instead of ^ for every dependency',
+        'Deleting node_modules before every build',
+        'Pinning the Node.js version used in CI',
+      ],
+      answer: 0,
+      why: "The lockfile pins the exact resolved version (and every transitive one). npm ci installs exactly that, so CI runs the code you tested until you upgrade deliberately. ~ still accepts new patches, so it wouldn't help.",
     },
     {
       q: 'A security fix exists only for c-utils 2.x, but a package you use requires c-utils ^1.4.0. What does npm update do for that copy?',
-      options: ['Upgrades it to 2.x', 'Nothing: 2.x is outside its range', 'Removes the package', 'Fails the install'],
-      answer: 1,
-      why: 'npm never installs a version outside the range a package asked for. That package\'s maintainers must widen their range, or you override it knowingly.',
+      options: [
+        'Nothing: 2.x is outside its range',
+        'Upgrades that copy to 2.x for the fix',
+        'Removes the package that needs 1.x',
+        'Fails the install with a version error',
+      ],
+      answer: 0,
+      why: "npm never installs a version outside the range a package asked for, even for a security fix. That package's maintainers must widen their range, or you override it knowingly.",
     },
   ],
 };

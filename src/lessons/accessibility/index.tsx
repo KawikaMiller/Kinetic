@@ -31,27 +31,37 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: 'A <div onclick> is styled to look like a button. What\'s the best fix?',
+      q: "A <div onclick> is styled to look like a button. What's the best fix?",
       options: [
-        'Add role="button" and it\'s done',
-        'Use a real <button>, which is focusable and works with Enter and Space',
-        'Add a hover effect',
-        'Add aria-label="button"',
+        'Use a real <button>, which handles keyboard use',
+        'Add role="button" and it\'s fully fixed',
+        'Add a hover effect so it looks clickable',
+        'Add aria-label="button" to the div',
       ],
-      answer: 1,
-      why: 'ARIA only changes what\'s announced; you would still have to add tabindex and key handlers yourself. A native <button> gives you the role, focus and keyboard activation for free.',
+      answer: 0,
+      why: 'ARIA only changes what\'s announced; with role="button" you would still have to add tabindex and key handlers yourself. A native <button> gives you the role, focus and Enter/Space activation for free.',
     },
     {
       q: 'The word "Email" sits right next to an input, but isn\'t in a <label for>. What does a screen reader announce on the input?',
-      options: ['"Email, edit text"', 'Just "edit text", with no name', 'Nothing at all', 'The page title'],
-      answer: 1,
-      why: 'Text that\'s only visually nearby isn\'t connected. Without a label (or aria-label), the input has no accessible name.',
+      options: [
+        '"Edit text", with no name at all',
+        '"Email, edit text", from the nearby word',
+        "Nothing at all: it's skipped",
+        'The page title, then "edit text"',
+      ],
+      answer: 0,
+      why: "Text that's only visually nearby isn't connected. Without a label (or aria-label), the input has no accessible name, though it is still announced as an edit field.",
     },
     {
-      q: 'Is grey #777 text on a white background OK for body copy under WCAG AA?', // allow-color: the WCAG example colour named in prose
-      options: ['Yes, it\'s 4.5:1', 'No, it\'s about 4.48:1, just under 4.5:1', 'Yes, because it\'s readable to me', 'Only in dark mode'],
-      answer: 1,
-      why: 'AA needs 4.5:1 for normal-size text; #777 on white is 4.48:1. It passes for large text (3:1), not body text.', // allow-color: the WCAG example colour named in prose
+      q: 'Is grey #777 text on a white background OK for body copy under WCAG AA?',
+      options: [
+        "No, it's about 4.48:1, just under 4.5:1",
+        "Yes: it's comfortably above 4.5:1",
+        "Yes, because it's readable to most people",
+        'Only if the user zooms the page to 200%',
+      ],
+      answer: 0,
+      why: 'AA needs 4.5:1 for normal-size text; #777 on white is 4.48:1. It passes for large text (3:1), not body text, and "readable to me" isn\'t the test.',
     },
   ],
 };

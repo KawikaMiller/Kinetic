@@ -33,16 +33,16 @@ const lesson: LessonModule = {
     {
       q: 'Your team finishes about 2 cards a day. You start twice as many cards at once. What happens, in the long run?',
       options: [
-        'Twice as many cards get finished per day',
-        'Throughput stays about the same, and each card takes about twice as long',
-        'Each card finishes faster',
-        'Nothing changes',
+        'Same throughput, but each card takes about 2× longer',
+        'Twice as many cards get finished every day',
+        'Each card gets finished faster than before',
+        'Nothing changes in throughput or speed',
       ],
-      answer: 1,
-      why: 'Capacity limits throughput; more WIP just means more cards waiting (Little\'s law), and context switching often lowers throughput too.',
+      answer: 0,
+      why: "Capacity limits throughput, so starting more doesn't finish more; more WIP just means more cards waiting (Little's law), and context switching often lowers throughput too.",
     },
     {
-      q: 'A board averages 6 cards in progress and finishes 2 cards per day. By Little\'s law, the average cycle time is about…',
+      q: "A board averages 6 cards in progress and finishes 2 cards per day. By Little's law, the average cycle time is about…",
       options: ['12 days', '3 days', '8 days', '0.33 days'],
       answer: 1,
       why: 'Cycle time = WIP ÷ throughput = 6 ÷ 2 = 3 days.',

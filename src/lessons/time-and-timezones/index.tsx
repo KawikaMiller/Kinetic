@@ -32,21 +32,36 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Your app stores appointments as local time "2026-03-10 09:00" with no zone. What\'s the risk?',
-      options: ['None, as long as it\'s ISO formatted', 'Different servers or users read it as different instants', 'It uses too much space', 'Sorting breaks'],
-      answer: 1,
-      why: 'Without a zone it\'s not an instant. A server in London and one in New York turn it into moments 4-5 hours apart. Store UTC plus the IANA zone.',
+      options: [
+        'Servers in other zones read it as other instants',
+        "None, as long as it's in ISO 8601 format",
+        'It takes up too much space in the database',
+        'Sorting by time breaks for every row',
+      ],
+      answer: 0,
+      why: "Without a zone it's not an instant, however well formatted. A server in London and one in New York turn it into moments 4-5 hours apart. Store UTC plus the IANA zone.",
     },
     {
       q: 'A job runs daily at 02:30 America/New_York. What happens on 8 March 2026?',
-      options: ['It runs at 02:30 as usual', 'There is no 02:30 that night, so a naive scheduler skips it', 'It runs twice', 'It runs at 01:30'],
-      answer: 1,
-      why: 'At 2:00 the clocks jump to 3:00, so 02:30 local never happens. Real schedulers vary in how they handle this, which is why jobs are often scheduled in UTC.',
+      options: [
+        "02:30 never happens that night, so it's skipped",
+        'It runs at 02:30 local time, as usual',
+        'It runs twice, because 02:30 repeats',
+        'It runs an hour early, at 01:30 instead',
+      ],
+      answer: 0,
+      why: 'At 2:00 the clocks jump to 3:00, so 02:30 local never happens and a naive scheduler skips the run. Times repeat in the autumn change, not this one. Real schedulers vary, which is why jobs are often scheduled in UTC.',
     },
     {
       q: 'Why store "America/New_York" rather than the offset "-05:00"?',
-      options: ['It\'s shorter', 'The offset changes with DST (and law); the zone name knows all the rules', 'Offsets are deprecated', 'Databases can\'t store offsets'],
-      answer: 1,
-      why: 'New York is -05:00 in winter and -04:00 in summer, and Bogotá is -05:00 all year. Only the zone tells you which offset applies on a future date.',
+      options: [
+        'Offsets change with DST; the zone knows the rules',
+        "It's shorter than writing the offset out",
+        'UTC offsets are deprecated in ISO 8601',
+        "Databases can't store a UTC offset",
+      ],
+      answer: 0,
+      why: 'New York is -05:00 in winter and -04:00 in summer (and laws change), and Bogotá is -05:00 all year. Only the zone tells you which offset applies on a future date.',
     },
     {
       q: 'In JavaScript, new Date("2026-03-08") is…',
