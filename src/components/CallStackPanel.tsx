@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
-import { SHAKE, SPRING } from '../core/motion';
+import { SPRING } from '../core/motion';
 import type { Tone } from '../core/tone';
+import { useShake } from '../core/useShake';
 
 /**
  * What a frame is doing right now:
@@ -63,6 +64,7 @@ export function CallStackPanel({
   // Bottom-anchored stacks render outermost-first in a column-reverse box.
   const rows = anchor === 'bottom' ? [...frames].reverse() : frames;
   const depthOf = (row: number) => (anchor === 'bottom' ? row : frames.length - 1 - row);
+  const { shake } = useShake();
 
   return (
     <div className={`call-stack ${alarm ? 'is-alarm' : ''} ${className}`} style={{ ['--sel' as string]: `var(--${selectedTone})` }}>
@@ -82,7 +84,7 @@ export function CallStackPanel({
                 type={clickable ? 'button' : undefined}
                 className={`call-frame is-${f.state ?? 'idle'} ${f.tone ? `has-tone tone-${f.tone}` : ''} ${f.id === selected ? 'is-selected' : ''} ${clickable ? 'is-clickable' : ''}`}
                 initial={{ opacity: 0, y: -24, scale: 0.9 }}
-                animate={alarm ? { opacity: 1, y: 0, scale: 1, ...SHAKE } : { opacity: 1, y: 0, scale: 1 }}
+                animate={{ opacity: 1, y: 0, scale: 1, ...shake(alarm) }}
                 exit={POP_EXIT}
                 transition={SPRING.snappy}
                 onClick={clickable ? () => onSelect(f.id) : undefined}

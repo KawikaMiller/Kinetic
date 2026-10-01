@@ -4,6 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Controls, Legend, Stat, Stats } from '../../components/ui';
 import { useAsyncValue } from '../../core/useAsyncValue';
 import { usePlayer } from '../../core/usePlayer';
+import { useShake } from '../../core/useShake';
 import { aesRoundTrip, asymDemo } from './crypto';
 import { buildAsym, buildSym } from './keyFrames';
 import { cardPlacement, KEY_SCENE_MIN_WIDTH, MESSAGE, RELEASE, SPAN, TAMPERED, X, type Where } from './keyModel';
@@ -23,6 +24,7 @@ function Person({ name, x, children, glow }: { name: string; x: string; children
 }
 
 function Item({ icon, label, color, show = true, shake = false }: { icon: string; label: string; color: string; show?: boolean; shake?: boolean }) {
+  const { shake: shakeFrames } = useShake();
   return (
     <AnimatePresence>
       {show && (
@@ -30,7 +32,7 @@ function Item({ icon, label, color, show = true, shake = false }: { icon: string
           className="he-item"
           style={{ borderColor: color, color }}
           initial={{ opacity: 0, scale: 0.4, y: -10 }}
-          animate={shake ? { opacity: 1, scale: 1, y: 0, x: [0, -6, 6, -4, 4, 0] } : { opacity: 1, scale: 1, y: 0 }}
+          animate={{ opacity: 1, scale: 1, y: 0, ...shakeFrames(shake) }}
           exit={{ opacity: 0, scale: 0.4 }}
           transition={{ duration: 0.45 }}
         >

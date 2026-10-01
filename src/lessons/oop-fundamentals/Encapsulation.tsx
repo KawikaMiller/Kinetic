@@ -1,10 +1,10 @@
-import { motion, useReducedMotion } from 'motion/react';
+import { motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { SHAKE } from '../../core/motion';
+import { useShake } from '../../core/useShake';
 import { ACCOUNT_CODE, applyAccount, type AccountAction, type AccountState } from './model';
 import { OOP_MIN_WIDTH } from './shared';
 
@@ -38,8 +38,7 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
   const [last, setLast] = useState<ActionDef | null>(null);
   const [attempt, setAttempt] = useState(0);
   const setCaption = useSetCaption();
-  // The vault shake is error feedback, not teaching motion: hold still under reduced motion.
-  const reduceMotion = useReducedMotion();
+  const { shake } = useShake();
   useIntroCaption(<>The balance is a <b>private field</b> (<code>#balance</code>). The only way in is through the public methods. Try each button.</>);
 
   const reset = () => {
@@ -111,7 +110,7 @@ export function Encapsulation({ picker }: { picker: ReactNode }) {
             </g>
           ))}
 
-          <motion.g key={attempt} animate={last && !last.door && !reduceMotion ? SHAKE : { x: 0 }}>
+          <motion.g key={attempt} animate={shake(!!last && !last.door)}>
             <rect className={`oo-vault ${last && !last.door ? 'is-bad' : ''}`} x={VAULT.x} y={VAULT.y} width={VAULT.w} height={VAULT.h} rx={10} />
             <text className="oo-vault-label" x={VAULT.x + 14} y={VAULT.y + 22}>🔒 private</text>
             <text className="oo-vault-value" x={VAULT.x + 14} y={VAULT.y + 50}>#balance = {state.balance}</text>

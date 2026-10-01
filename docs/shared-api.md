@@ -172,9 +172,20 @@ treeToPixels({ x, depth }, { count, width, pad, top, levelGap })
 ### `motion.ts` — pattern 18
 ```ts
 SPRING.soft (170/24), SPRING.snappy (300/28), SPRING.stiff (450/32)
-SHAKE                       // animate={SHAKE}
+SHAKE                       // the keyframes; in a stage, use useShake() below instead
 enterFromLeft, popIn        // spread: <motion.li {...enterFromLeft} />
 ```
+
+### `useShake.ts` — error-feedback shake
+```ts
+const { shake, allowed } = useShake();          // or useShake(HARDER_KEYFRAMES)
+<motion.g animate={shake(world.crashed)} />     // SHAKE when true, { x: 0 } otherwise
+<motion.div animate={{ opacity: 1, ...shake(alarm) }} />
+if (allowed) animate(el, KEYFRAMES)             // imperative animate() calls
+```
+Holds still under prefers-reduced-motion, even inside a stage's `reducedMotion="never"`: a shake is
+feedback, not teaching motion. Used by `CallStackPanel`'s `alarm`, stack-vs-heap, oop-fundamentals,
+containers, processes-threads, hashing-encryption and stack-queue.
 Map an inline spring to the nearest preset only if it looks the same. Otherwise keep a named local constant.
 
 ### `sim.ts` — pattern 9
@@ -315,7 +326,7 @@ focus. A new top-level page does the same: `const heading = usePageHeading(title
 The app runs inside `MotionConfig reducedMotion="user"`: motion transforms in the shell (page entrances,
 the quiz shake, card reveals, the home hero) go still for people who ask for reduced motion. Each lesson
 `Stage` is wrapped in `reducedMotion="never"`, because its motion is the teaching; decorative loops inside
-a stage should still go still on their own (`Pulse` does), and so should lesson-made shakes.
+a stage should still go still on their own (`Pulse` does), and so should shakes (`useShake` does).
 
 ### Inline code in lesson text (`InlineText.tsx`, `core/inlineCode.ts`)
 Summary fields, try-this tips, key ideas and every quiz line render `backtick` pairs as inline code, so
