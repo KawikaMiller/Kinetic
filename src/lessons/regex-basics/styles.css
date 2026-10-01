@@ -79,8 +79,6 @@
 .rx-when-not ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
 .rx-when-not li + li { margin-top: 4px; }
 
-/* Controls. A flag that's on is a solid chip, so on and off read at a glance. */
-.rx-flags .chip-button.is-on { background: var(--info); color: var(--on-info); }
 .rx-pattern { flex: 1 1 260px; }
 .rx-pattern input { width: 100%; }
 .rx-pattern.is-bad input { border-color: var(--bad); color: var(--bad); }

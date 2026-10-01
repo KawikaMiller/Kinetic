@@ -219,23 +219,35 @@ export function Hint({
 }
 
 /**
- * A chip you can press: one of a row of presets or examples ("#FF8800", "café", "NaN").
- * `on` marks the one currently loaded.
+ * A chip you can press: one of a row of presets or examples ("#FF8800", "café", "NaN"),
+ * a toggleable flag, or a small action ("+ grep", "×").
+ *
+ * - Pass `on` for a chip that has a state (the preset currently loaded, a flag that's set):
+ *   it's announced as a toggle (aria-pressed). Leave `on` out for a plain action, which
+ *   must not claim to be pressed or unpressed.
+ * - `onStyle="solid"` fills an on chip with its tone, for picks that must read as an
+ *   answer rather than a hover; the default `tint` matches the hover.
  */
 export function ChipButton({
-  tone = 'violet', on = false, size = 'sm', title, onClick, children,
+  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, className = '', onClick, children,
 }: {
   tone?: Tone;
   on?: boolean;
+  onStyle?: 'tint' | 'solid';
   /** md for word-sized labels next to a text field, sm for dense rows. */
   size?: 'sm' | 'md';
   title?: string;
+  /** Accessible name when the label alone isn't enough (an icon like "×"). */
+  ariaLabel?: string;
+  className?: string;
   onClick: () => void;
   children: ReactNode;
 }) {
-  const classes = ['chip', 'chip-button', `tone-${tone}`, size === 'md' && 'is-md', on && 'is-on'].filter(Boolean).join(' ');
+  const classes = [
+    'chip', 'chip-button', `tone-${tone}`, size === 'md' && 'is-md', on && 'is-on', on && onStyle === 'solid' && 'is-solid', className,
+  ].filter(Boolean).join(' ');
   return (
-    <button type="button" className={classes} aria-pressed={on} title={title} onClick={onClick}>
+    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} title={title} onClick={onClick}>
       {children}
     </button>
   );

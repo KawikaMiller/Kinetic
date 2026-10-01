@@ -100,9 +100,9 @@ export function Stage() {
             className={`rx-pattern ${error ? 'is-bad' : ''}`}
             ariaLabel="Regular expression pattern"
           />
-          <ControlGroup label="Flags" className="rx-flags">
+          <ControlGroup label="Flags">
             {FLAGS.map((f) => (
-              <ChipButton key={f} size="md" tone="info" on={flags.includes(f)} title={FLAG_INFO[f].title} onClick={() => toggleFlag(f)}>
+              <ChipButton key={f} size="md" tone="info" on={flags.includes(f)} onStyle="solid" title={FLAG_INFO[f].title} onClick={() => toggleFlag(f)}>
                 {f}
               </ChipButton>
             ))}

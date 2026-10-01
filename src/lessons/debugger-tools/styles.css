@@ -56,8 +56,6 @@
 .dbg-watch { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .dbg-error { color: var(--bad); }
 .dbg-unsupported { color: var(--orange); }
-.dbg-x { border: 0; background: none; color: var(--faint); font-size: 15px; cursor: pointer; padding: 0 4px; border-radius: 4px; }
-.dbg-x:hover { color: var(--bad); }
 .dbg-add { display: flex; gap: 6px; align-items: flex-end; margin-top: 4px; }
 .dbg-grow { flex: 1; }
 .dbg-grow input,

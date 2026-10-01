@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
-import { Button, TextField } from '../../components/ui';
+import { Button, ChipButton, TextField } from '../../components/ui';
 import type { BreakpointKind } from './debugger';
 import { SUPPORTED, evaluate, preview, type Scope } from './expr';
 import type { Value, Vars } from './program';
@@ -71,9 +71,9 @@ export function WatchPane({ watches, setWatches, scope }: { watches: readonly st
                 <code className={r.unsupported ? 'dbg-unsupported' : 'dbg-error'}>{r.error}</code>
               )}
             </span>
-            <button type="button" className="dbg-x" onClick={() => setWatches(watches.filter((x) => x !== w))} aria-label={`Remove watch ${w}`}>
+            <ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={() => setWatches(watches.filter((x) => x !== w))}>
               ×
-            </button>
+            </ChipButton>
           </div>
         );
       })}

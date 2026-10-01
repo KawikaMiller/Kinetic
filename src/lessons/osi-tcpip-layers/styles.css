@@ -72,7 +72,5 @@
 .osi-card.is-wrong { border-color: var(--bad); }
 .osi-card-text { margin: 0; font-weight: 600; font-size: 14px; }
 .osi-card-layers { display: flex; flex-wrap: wrap; gap: 6px; }
-/* The chosen layer must read as an answer, not a hover: solid fill (kit is-on is a tint). */
-.osi-card-layers .chip-button.is-on { background: var(--c); color: var(--on-c); }
 .osi-card-why { margin: 0; font-size: 13px; color: var(--muted); }
 .osi-card.is-right .osi-card-why { color: var(--text); }

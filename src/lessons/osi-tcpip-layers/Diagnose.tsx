@@ -62,7 +62,7 @@ export function Diagnose({ picker }: { picker: ReactNode }) {
               <p className="osi-card-text">{s.text}</p>
               <div className="osi-card-layers" role="group" aria-label={`Layer for: ${s.text}`}>
                 {LAYERS.map((l) => (
-                  <ChipButton key={l.id} tone={l.tone} on={choice === l.id} onClick={() => place(s.id, l.id)}>
+                  <ChipButton key={l.id} tone={l.tone} on={choice === l.id} onStyle="solid" onClick={() => place(s.id, l.id)}>
                     {l.name}
                   </ChipButton>
                 ))}
