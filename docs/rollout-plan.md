@@ -1232,7 +1232,7 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 1 | T1-B10 Networks & teams | 4 | 3 | t1/b10 | done | merged 527b49e |
 | 1 | Tier 1 close-out kit round | — | 3→QA | kit owner | done | ChipButton onStyle/ariaLabel/aria-pressed only with `on`, Tray stack, WideRegion gutter, CodePanel marker + bad state, BitStrip ariaLabelOf, Box/SectionTitle/Tray forward native attributes, CallStackPanel selectedTone, check-tokens inline-spring rule + tested rules (allow-color marker bug fixed), shot --press + Git Bash route guard, shared ACCESS_LOG fixture, runtime-code-execution rule |
 | 1 | Re-verify the 14 existing T1 lessons against the tier DoD | 14 | 3 | | not started | part of QA sign-off |
-| 1 | **Tier 1 sign-off** | 62 | — | | in review | all 62 built and merged; pending QA sign-off |
+| 1 | **Tier 1 sign-off** | 62 | — | | ✅ done | all 62 built, merged and QA-signed-off (docs/qa-tier1-report.md, docs/qa-tier1-recheck.md); pushed |
 | 2 | Kickoff: validation, spec, TOPICS, prerequisite components | — | pre | | not started | |
 | 2 | Batches T2-B1 … T2-B32 | 158 | 1-8 | | not started | Batches listed at kickoff |
 | 2 | **Tier 2 sign-off** | 174 | — | | not started | |
