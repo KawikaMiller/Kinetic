@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Backtracking searches: sudoku solvers, permutations, maze solving",
     ],
     why: "Recursion is how you think about anything shaped like a tree, and the call stack is how every function call in every language actually works. Knowing it explains stack traces, stack overflows and why deep recursion can crash a program, and it's the doorway to dynamic programming.",
-    watch: "On the left, the highlighted line of code is what's running. On the right is the call stack, newest frame on top: yellow is running now, dimmed frames are waiting on the call above them, green is the base case, and the blue ↓ chip is a return value flowing down to its caller. In the fib tree, violet is the current call stack, green calls have returned, and red calls are repeated work.",
+    watch: "On the left, the highlighted line of code is what's running. On the right is the call stack, newest frame on top: yellow is running now, violet frames are waiting on the call above them, green is the base case, and the blue ↓ chip is a return value flowing down to its caller. In the fib tree, yellow is the call running now, violet is the rest of the call stack, green calls have returned, and red calls are repeated work.",
   },
   tryThis: [
     'Play factorial(4) and watch four frames stack up, then collapse as the answers flow back down.',

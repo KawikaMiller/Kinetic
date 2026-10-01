@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
-
-/** Stack frames shown before a stack overflow (a real JS engine allows ~10,000). */
-export const LIMIT = 11;
+import { fibCallTree, LIMIT, type FNode } from './model';
 
 export type Tone = 'active' | 'waiting' | 'base' | 'returning' | 'crash';
 export interface SFrame {
@@ -75,7 +73,6 @@ function linear(spec: LinearSpec, withBase: boolean, intro: ReactNode): StackFra
     top.note = <>waiting on {spec.label(d + 1)}…</>;
     snap(3, (
       <>
-        {d === 0 ? 'Call ' : ''}
         <span className="hl">{label}</span>
         {withBase ? ' is not the base case, so it' : ' has no base case to stop it, so it'} calls <b>{spec.label(d + 1)}</b> and waits. New frame on the stack.
       </>
@@ -146,14 +143,6 @@ export function sumFrames(list: number[], withBase: boolean) {
 
 // ── Fibonacci tree ─────────────────────────────────────────────────
 
-export interface FNode {
-  id: number;
-  n: number;
-  parent: number | null;
-  depth: number;
-  x: number;
-  repeat: boolean; // this argument was already computed by an earlier call
-}
 export type NodeState = 'unseen' | 'active' | 'waiting' | 'done';
 export interface TreeFrame extends Frame {
   states: NodeState[];
@@ -185,32 +174,7 @@ function returnCaption(node: FNode, v: number, nodes: FNode[], values: (number |
 }
 
 export function fibTree(n0: number) {
-  const nodes: FNode[] = [];
-  const events: ({ t: 'call'; id: number } | { t: 'ret'; id: number; v: number })[] = [];
-  let leaf = 0;
-  const seen = new Set<number>();
-  const walk = (n: number, parent: number | null, depth: number): { id: number; v: number } => {
-    const id = nodes.length;
-    // Base cases are trivially cheap; the waste is recomputing whole subtrees.
-    const node: FNode = { id, n, parent, depth, x: 0, repeat: n >= 2 && seen.has(n) };
-    nodes.push(node);
-    events.push({ t: 'call', id });
-    let v: number;
-    if (n <= 1) {
-      node.x = leaf++;
-      v = n;
-    } else {
-      const a = walk(n - 1, id, depth + 1);
-      const b = walk(n - 2, id, depth + 1);
-      node.x = (nodes[a.id].x + nodes[b.id].x) / 2;
-      v = a.v + b.v;
-    }
-    seen.add(n);
-    events.push({ t: 'ret', id, v });
-    return { id, v };
-  };
-  walk(n0, null, 0);
-
+  const { nodes, events, leaves } = fibCallTree(n0);
   const frames: TreeFrame[] = [];
   const states: NodeState[] = nodes.map(() => 'unseen');
   const values: (number | null)[] = nodes.map(() => null);
@@ -269,5 +233,5 @@ export function fibTree(n0: number) {
       grow roughly 1.6× per extra n: exponential. Remembering answers (dynamic programming) fixes it.
     </>
   );
-  return { nodes, frames, leaves: leaf };
+  return { nodes, frames, leaves };
 }
