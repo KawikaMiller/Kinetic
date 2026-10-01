@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import rolloutPlan from '../../docs/rollout-plan.md?raw';
 import { FAMILIES, TOPICS, TRACKS } from './curriculum';
 import { BUILT_TOPICS } from './lessons';
 import { ALL, filterToParams, matchesFilter, parseFilter, tracksInFamily } from './topicFilter';
@@ -29,6 +30,36 @@ describe('curriculum', () => {
 
   it('registers the full Tier 1 roadmap (docs/rollout-plan.md §1.3)', () => {
     expect(TOPICS.filter((t) => t.tier === 1)).toHaveLength(62);
+  });
+
+  it('registers the full Tier 2 roadmap exactly as docs/rollout-plan.md §3.1.2 lists it', () => {
+    const plan = rolloutPlan.split('\n');
+    const start = plan.findIndex((l) => l.startsWith('#### 3.1.2'));
+    const end = plan.findIndex((l, i) => i > start && l.startsWith('#### '));
+    const planned = plan
+      .slice(start, end)
+      .filter((l) => /^\| `[a-z0-9-]+` \|/.test(l))
+      .map((l) => {
+        const [id, track, title, tagline] = l.split('|').slice(1, 5).map((c) => c.trim());
+        return { id: id.replace(/`/g, ''), track, title, tagline };
+      });
+    expect(planned).toHaveLength(156);
+    const byId = new Map(TOPICS.map((t) => [t.id, t]));
+    for (const p of planned) {
+      const t = byId.get(p.id);
+      expect(t, p.id).toBeDefined();
+      expect({ tier: t?.tier, track: t?.track, title: t?.title, tagline: t?.tagline }, p.id).toEqual({
+        tier: 2, track: p.track, title: p.title, tagline: p.tagline,
+      });
+    }
+    // 156 new + the 16 that already existed
+    expect(TOPICS.filter((t) => t.tier === 2)).toHaveLength(172);
+  });
+
+  it('leaves out the topics the Tier 2 plan merged or moved up', () => {
+    const ids = new Set(TOPICS.map((t) => t.id));
+    expect(ids.has('comparison-sort-lower-bound'), 'merged into linear-time-sorting').toBe(false);
+    expect(ids.has('wifi-shared-medium'), 'moved to Tier 3, registered at its kickoff').toBe(false);
   });
 
   it('has a curriculum entry for every built lesson folder', () => {
