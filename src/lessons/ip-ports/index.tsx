@@ -31,21 +31,36 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'You get "connection refused" from a server you can ping. What is the most likely cause?',
-      options: ['The server is powered off', 'Nothing is listening on that port', 'Your IP address is wrong', 'DNS is broken'],
+      options: [
+        'The server is switched off',
+        'Nothing is listening on that port',
+        'Your own IP address is wrong',
+        'The domain name failed to resolve',
+      ],
       answer: 1,
-      why: 'Ping proves the machine is reachable. "Refused" means the OS got the packet but no program is listening on that port, so it sent back a reset.',
+      why: 'Ping proves the machine is up and reachable, which rules out a dead server or a DNS failure. "Refused" means the OS got the packet but no program is listening on that port, so it sent back a reset.',
     },
     {
       q: 'Your laptop (192.168.1.20) talks to a website. What source address does the website see?',
-      options: ['192.168.1.20', "Your router's public IP", '127.0.0.1', "The website's own IP"],
-      answer: 1,
-      why: '192.168.x.x is a private address. NAT on your router rewrites the source to its public IP before the packet goes out to the internet.',
+      options: [
+        "Your laptop's 192.168.1.20",
+        'The loopback address 127.0.0.1',
+        "Your router's public IP address",
+        "The website's own IP address",
+      ],
+      answer: 2,
+      why: '192.168.x.x is a private address that never crosses the internet. NAT on your router rewrites the source to its public IP before the packet goes out.',
     },
     {
       q: 'A dev server bound to 127.0.0.1:3000 is running on your laptop. Can your phone on the same Wi-Fi reach it?',
-      options: ['Yes, same network', 'Only on port 443', 'No: 127.0.0.1 only accepts connections from the laptop itself', 'Only through NAT'],
-      answer: 2,
-      why: "127.0.0.1 is the loopback address. A server bound only to it accepts connections from the same machine; to share it you'd bind to the laptop's LAN IP (or 0.0.0.0).",
+      options: [
+        'No, 127.0.0.1 accepts only the laptop itself',
+        'Yes, anything on the same Wi-Fi can reach it',
+        'Yes, but only if it listens on port 443',
+        'Yes, as long as the router does NAT for it',
+      ],
+      answer: 0,
+      why: "127.0.0.1 is the loopback address, so being on the same Wi-Fi doesn't help. To share it you'd bind to the laptop's LAN IP (or 0.0.0.0).",
     },
   ],
 };

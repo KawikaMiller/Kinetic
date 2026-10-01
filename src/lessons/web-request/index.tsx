@@ -31,9 +31,14 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'What does DNS actually give the browser?',
-      options: ['The HTML page', 'An IP address for the domain', 'An encryption key', 'A TCP connection'],
-      answer: 1,
-      why: 'DNS maps a human name (example.com) to a machine address (an IP like 203.0.113.10). Everything else comes after.',
+      options: [
+        'An IP address for the domain',
+        'The HTML of the requested page',
+        'A session key for HTTPS',
+        'An open connection to the server',
+      ],
+      answer: 0,
+      why: 'DNS maps a human name (example.com) to a machine address (an IP like 203.0.113.10). The connection and the page both come after.',
     },
     {
       q: 'Which happens first on a brand-new HTTPS connection?',

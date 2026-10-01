@@ -31,21 +31,31 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Which clause does the database logically run first?',
-      options: ['SELECT', 'WHERE', 'FROM', 'ORDER BY'],
-      answer: 2,
-      why: 'FROM (and its JOINs) builds the set of rows first; WHERE filters it, SELECT picks columns, ORDER BY sorts last.',
+      options: ['SELECT', 'FROM', 'WHERE', 'LIMIT'],
+      answer: 1,
+      why: 'FROM (and its JOINs) builds the set of rows first; WHERE filters it, SELECT picks columns, LIMIT trims at the end. SELECT is written first but runs late.',
     },
     {
       q: 'A user has no orders. What happens to them in users LEFT JOIN orders?',
-      options: ['They are dropped', 'They appear once, with NULL for the order columns', 'The query errors', 'They appear once per order in the table'],
-      answer: 1,
-      why: 'LEFT JOIN keeps every row from the left table; missing matches are filled with NULL.',
+      options: [
+        'They appear once, with NULL in the order columns',
+        "They're dropped, since they have nothing to join",
+        'The query fails because a join found no match',
+        'They appear once for every order in the table',
+      ],
+      answer: 0,
+      why: 'LEFT JOIN keeps every row from the left table; missing matches are filled with NULL. Dropping unmatched rows is what an INNER JOIN does.',
     },
     {
       q: 'Why does Ada appear three times after joining users to orders?',
-      options: ['Duplicate rows in users', 'She has three orders, and each match becomes a row', 'JOIN always triples rows', 'A bug in the database'],
-      answer: 1,
-      why: 'A join produces one row per matching pair. That multiplication is why aggregate reports sometimes double-count.',
+      options: [
+        'She has three orders, and each match is a row',
+        'The users table holds three copies of her row',
+        'The database duplicates rows to fill the result',
+        'A JOIN always repeats each row three times',
+      ],
+      answer: 0,
+      why: 'A join produces one row per matching pair, and Ada matches three orders. That multiplication is why aggregate reports sometimes double-count.',
     },
   ],
 };

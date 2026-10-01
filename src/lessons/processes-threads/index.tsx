@@ -31,21 +31,36 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Two threads in the same process can…',
-      options: ["Read each other's heap data directly", 'Never share any data', 'Only talk over the network', 'Run in different address spaces'],
+      options: [
+        "Read each other's heap data directly",
+        'Never share any data without copying it',
+        'Only talk to each other over the network',
+        'Run in two separate address spaces',
+      ],
       answer: 0,
-      why: 'Threads share their process’s address space, including the heap. That’s fast, and it’s exactly why they need locks.',
+      why: 'Threads share their process’s address space, including the heap. That’s fast, and it’s exactly why they need locks; separate address spaces are what processes get.',
     },
     {
       q: 'One thread dereferences a bad pointer and segfaults. What typically happens?',
-      options: ['Only that thread stops', 'The whole process is killed', 'Every process on the machine crashes', 'The OS restarts just that thread'],
+      options: [
+        'Only that thread stops',
+        'The whole process is killed',
+        'Every process on the machine crashes',
+        'The OS restarts just that thread',
+      ],
       answer: 1,
       why: 'The OS kills the whole process: all its threads share memory the bug may have corrupted. Other processes are unaffected.',
     },
     {
       q: 'A machine has 4 cores and 200 threads. How do they all make progress?',
-      options: ['They don’t; only 4 threads ever run', 'The OS time-slices them onto the cores with context switches', 'Each thread gets its own hardware core', 'Threads take turns once per second'],
-      answer: 1,
-      why: 'The scheduler rapidly swaps which thread runs on each core, many times a second, so all of them advance.',
+      options: [
+        'The OS time-slices them across the cores',
+        'They don’t: only 4 of the 200 ever run',
+        'The CPU adds a hardware core per thread',
+        'They take turns, one thread per second',
+      ],
+      answer: 0,
+      why: 'The scheduler rapidly swaps which thread runs on each core with context switches, many times a second, so all of them advance.',
     },
   ],
 };

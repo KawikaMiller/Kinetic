@@ -32,15 +32,20 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'You run an in-order traversal on a tree. When is the output guaranteed to be sorted?',
-      options: ['Always', 'Only when the tree is a binary search tree', 'Only when the tree is balanced', 'Never'],
-      answer: 1,
-      why: 'In-order visits left, node, right. That lists values in order only if everything on the left is smaller and everything on the right is bigger, which is the BST rule.',
+      options: [
+        'Only when the tree is a binary search tree',
+        'Always, for any binary tree at all',
+        'Only when the tree is perfectly balanced',
+        'Only when every node has two children',
+      ],
+      answer: 0,
+      why: "In-order visits left, node, right. That lists values in order only if everything on the left is smaller and everything on the right is bigger, which is the BST rule. Balance and shape don't matter.",
     },
     {
       q: 'Which traversal would you use to delete every folder inside a folder?',
       options: ['Pre-order', 'In-order', 'Post-order', 'Level order'],
       answer: 2,
-      why: 'A folder can only be removed once it\'s empty, so every child has to be handled before its parent.',
+      why: "A folder can only be removed once it's empty, so every child has to be handled before its parent.",
     },
     {
       q: 'Level-order traversal is driven by which data structure?',
@@ -50,9 +55,14 @@ const lesson: LessonModule = {
     },
     {
       q: 'Post-order on the tree for (3 + 4) × 2 gives 3 4 + 2 ×. What does that evaluate to?',
-      options: ['11', '14', '24', 'It needs brackets to evaluate'],
+      options: [
+        'It evaluates to 11',
+        'It evaluates to 14',
+        'It evaluates to 24',
+        "Can't tell without brackets",
+      ],
       answer: 1,
-      why: 'RPN with a stack: push 3, push 4, + gives 7, push 2, × gives 14. No brackets needed.',
+      why: 'RPN with a stack: push 3, push 4, + gives 7, push 2, × gives 14. Post-order already encodes the grouping, so no brackets are needed.',
     },
   ],
 };

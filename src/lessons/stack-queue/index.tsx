@@ -31,21 +31,21 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'You push A, then B, then C onto a stack and pop once. What comes out?',
-      options: ['A', 'B', 'C', 'Nothing, stacks need a peek first'],
+      options: ['A, it went in first', "B, it's in the middle", 'C, it went in last', 'A, B and C, in order'],
       answer: 2,
-      why: 'Last in, first out: C went in last, so it comes out first.',
+      why: 'Last in, first out: C went in last, so it comes out first. A coming out first is how a queue would behave.',
     },
     {
       q: 'Which structure fits "customers served in the order they arrived"?',
-      options: ['Stack', 'Queue', 'Either one', 'Neither'],
+      options: ['A stack', 'A queue', 'A set', 'A tree'],
       answer: 1,
-      why: 'Arrival order = first in, first out = queue.',
+      why: 'Arrival order = first in, first out = queue. A stack would serve the newest customer first.',
     },
     {
       q: 'Ctrl+Z (undo) in a text editor is most naturally modelled as…',
       options: ['A queue of edits', 'A stack of edits', 'A sorted array', 'A hash table'],
       answer: 1,
-      why: 'Undo reverses the most recent edit first. That is LIFO, so a stack.',
+      why: 'Undo reverses the most recent edit first. That is LIFO, so a stack; a queue would undo your oldest edit first.',
     },
   ],
 };

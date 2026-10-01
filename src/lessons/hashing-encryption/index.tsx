@@ -31,19 +31,29 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'Why add a unique salt to each password before hashing?',
-      options: ['It makes the hash reversible', 'Identical passwords get different hashes, so precomputed tables fail', 'It encrypts the password', 'It makes hashing faster'],
-      answer: 1,
-      why: 'Salts defeat precomputed tables (lookup and rainbow tables) and stop one cracked hash revealing every user with the same password.',
+      options: [
+        'Same passwords hash differently, so lookup tables fail',
+        'It makes the hash reversible if you know the salt',
+        'It encrypts the password so only the server can read it',
+        'It speeds up hashing so logins feel instant',
+      ],
+      answer: 0,
+      why: "Salts defeat precomputed lookup tables and stop one cracked hash revealing every user with the same password. The hash is still one-way: knowing the salt doesn't reverse it.",
     },
     {
       q: 'You must charge a stored credit card again next month. You should…',
-      options: ['Hash it with SHA-256', 'Hash it with bcrypt', 'Encrypt it and protect the key', 'Store it in plaintext'],
+      options: [
+        'Hash it with SHA-256 and a salt',
+        'Hash it with bcrypt and a high cost',
+        'Encrypt it and protect the key',
+        'Store it in plaintext in the database',
+      ],
       answer: 2,
-      why: 'You need the original number back, so it has to be reversible: encryption, not hashing.',
+      why: "You need the original number back, so it has to be reversible: encryption, not hashing, however strong the hash. (In practice you'd let a payment provider store it.)",
     },
     {
       q: 'Alice wants to send Bob a secret but they have never shared a key. She uses…',
-      options: ["Bob's public key", "Bob's private key", "Her own private key", "A SHA-256 hash"],
+      options: ["Bob's public key", "Bob's private key", 'Her own private key', 'A SHA-256 hash'],
       answer: 0,
       why: "Anyone can lock with Bob's public key; only Bob's private key can unlock it.",
     },
