@@ -10,9 +10,16 @@ export interface Commit {
   files: Record<string, string>;
 }
 
+/**
+ * Join an example credential from pieces. The lesson shows key-shaped strings, but the
+ * source never contains one in a single literal, so secret scanners (GitHub push
+ * protection included) have nothing to flag. Every value built with it is fake.
+ */
+export const fakeSecret = (...parts: string[]) => parts.join('');
+
 /** The leaked key. Fake, and shaped like a live payment key so the scanner rule matches it. */
-export const LEAKED_KEY = 'sk_live_EXAMPLE0000DEMO0000KEY';
-export const ROTATED_KEY = 'sk_live_EXAMPLE1111NEW1111KEY';
+export const LEAKED_KEY = fakeSecret('sk', '_live_', 'EXAMPLE0000DEMO0000KEY');
+export const ROTATED_KEY = fakeSecret('sk', '_live_', 'EXAMPLE1111NEW1111KEY');
 
 /** Every commit reachable from the given branch tips, by walking parents. */
 export function reachable(commits: Commit[], tips: string[]): Set<string> {

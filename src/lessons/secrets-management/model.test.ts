@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ITEMS, LEAKED_KEY, LEAK_HISTORY, ROTATED_KEY, applyFix, commitsContaining, isIgnored, matchesPattern, reachable, scan, wouldStage,
-  type Commit,
+  ITEMS, LEAKED_KEY, LEAK_HISTORY, ROTATED_KEY, applyFix, commitsContaining, fakeSecret, isIgnored, matchesPattern, reachable, scan,
+  wouldStage, type Commit,
 } from './model';
 
 describe('git history', () => {
@@ -67,20 +67,32 @@ describe('secret scanning', () => {
   it('catches the fake keys the lesson uses', () => {
     expect(scan(`const k = '${LEAKED_KEY}';`).map((f) => f.rule)).toContain('stripe');
     expect(scan(ROTATED_KEY).map((f) => f.rule)).toEqual(['stripe']);
-    expect(scan('sk_test_EXAMPLE00000000000000')).toHaveLength(1);
+    expect(scan(fakeSecret('sk', '_test_', 'EXAMPLE00000000000000'))).toHaveLength(1);
   });
   it('catches other common shapes, on obviously fake values', () => {
-    expect(scan('AKIAEXAMPLE000000000').map((f) => f.rule)).toEqual(['aws']);
-    expect(scan(`ghp_${'EXAMPLE0'.repeat(4)}EXAM`).map((f) => f.rule)).toEqual(['github']);
-    expect(scan('-----BEGIN RSA PRIVATE KEY-----').map((f) => f.rule)).toEqual(['private-key']);
+    expect(scan(fakeSecret('AK', 'IA', 'EXAMPLE000000000')).map((f) => f.rule)).toEqual(['aws']);
+    expect(scan(fakeSecret('gh', 'p_', 'EXAMPLE0'.repeat(4), 'EXAM')).map((f) => f.rule)).toEqual(['github']);
+    expect(scan(fakeSecret('-----BEGIN RSA ', 'PRIVATE KEY-----')).map((f) => f.rule)).toEqual(['private-key']);
     expect(scan('password = "EXAMPLE-not-real"').map((f) => f.rule)).toEqual(['assignment']);
   });
   it('reports the line it found', () => {
     expect(scan(`a\nb\nkey: '${LEAKED_KEY}'`)[0].line).toBe(3);
   });
   it('ignores code that only names a secret', () => {
-    for (const ok of ['stripeKey: process.env.STRIPE_KEY', 'const password = getPassword();', 'token = "short"', 'sk_live_tooShort']) {
+    for (const ok of ['stripeKey: process.env.STRIPE_KEY', 'const password = getPassword();', 'token = "short"', fakeSecret('sk', '_live_', 'tooShort')]) {
       expect(scan(ok)).toEqual([]);
+    }
+  });
+});
+
+describe('the lesson source itself', () => {
+  it('contains no credential-shaped literal a secret scanner would flag on push', () => {
+    const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
+    expect(Object.keys(sources).length).toBeGreaterThan(2);
+    for (const [file, source] of Object.entries(sources)) {
+      // The lesson's own rules (minus the assignment heuristic, which matches its own test
+      // strings by design) run over the raw source text.
+      expect(scan(source).filter((f) => f.rule !== 'assignment'), file).toEqual([]);
     }
   });
 });

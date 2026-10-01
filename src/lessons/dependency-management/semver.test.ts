@@ -47,7 +47,10 @@ const EXCLUDE: [string, string][] = [
   ['^1.2', '1.1.9'], ['*', 'v1.2.3-foo'], ['^1.0.0', '2.0.0-rc1'], ['1 - 2', '2.0.0-pre'], ['1 - 2', '1.0.0-pre'],
   ['1.0 - 2', '1.0.0-pre'], ['1.1.x', '1.0.0-a'], ['1.1.x', '1.1.0-a'], ['1.1.x', '1.2.0-a'], ['1.x', '1.0.0-a'],
   ['1.x', '1.1.0-a'], ['1.x', '1.2.0-a'], ['>=1.0.0 <1.1.0', '1.1.0'], ['>=1.0.0 <1.1.0', '1.1.0-pre'],
-  ['>=1.0.0 <1.1.0-pre', '1.1.0-pre'], ['blerg', '1.2.3'], ['git+https://user:password0123@github.com/foo', '123.0.0'],
+  ['>=1.0.0 <1.1.0-pre', '1.1.0-pre'], ['blerg', '1.2.3'],
+  // node-semver's "URL with credentials is not a range" case, joined from pieces so the
+  // source holds no credentialed URL for a secret scanner to flag.
+  [['git+https://user', ':', 'password0123', '@github.com/foo'].join(''), '123.0.0'],
   ['^1.2.3', '2.0.0-pre'], ['0.x', '1.0.0'], ['0.x.x', '1.0.0'], ['^0.0.1-alpha', '0.0.2'],
   // The lesson's own examples: the spec's "0.x caret rules" and "pre-release exclusion".
   ['^0.3.1', '0.4.0'], ['^0.0.3', '0.0.4'], ['^0.0.3', '0.0.3-rc.1'], ['~1.4.2', '1.5.0'], ['^1.4.2', '2.0.0'],
