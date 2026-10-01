@@ -27,8 +27,9 @@ export function ObjectPanel({ repo, c }: { repo: Repo; c: Commit }) {
         </Obj>
       </Obj>
       <p className="gi-foot">
-        Each object's name <b>is</b> the hash of its content. Unchanged files keep the same hash, so git reuses them
-        instead of storing copies.
+        Each object's name <b>is</b> a hash of its content. Unchanged files keep the same hash, so git reuses them
+        instead of storing copies. (Simplified: these are short toy hashes. Real git uses a 40-character SHA-1, or
+        SHA-256, over a header plus the content, so <code>git hash-object</code> gives different values.)
       </p>
     </div>
   );

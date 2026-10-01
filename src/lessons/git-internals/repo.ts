@@ -1,4 +1,6 @@
 // A miniature git: content-addressed blobs/trees/commits and movable branch pointers.
+// Object names use a short toy hash (core/hash), not git's real SHA-1/SHA-256 over
+// "<type> <size>\0<content>", so they won't match `git hash-object`; the stage says so.
 import { hexHash } from '../../core/hash';
 
 export const FILES = ['README.md', 'src/app.js', 'src/util.js'] as const;
@@ -85,7 +87,16 @@ export function objectCount(repo: Repo) {
 
 const clone = (r: Repo): Repo => ({ ...r, commits: [...r.commits], branches: { ...r.branches }, lanes: { ...r.lanes } });
 
-export type Result = { repo: Repo; kind: 'commit' | 'branch' | 'checkout' | 'ff' | 'merge' | 'uptodate' | 'rebase' | 'noop'; info: string };
+export type Result = {
+  repo: Repo;
+  kind: 'commit' | 'branch' | 'checkout' | 'ff' | 'merge' | 'uptodate' | 'rebase' | 'noop';
+  info: string;
+  /** Files both sides changed: merge and rebase stop for you to resolve these by hand. */
+  conflicts: string[];
+};
+
+/** Placeholder content for a file the learner would have resolved by hand. */
+const resolvedByHand = (f: FileName) => `${f} resolved by hand`;
 
 export function commit(prev: Repo, file: FileName): Result {
   const repo = clone(prev);
@@ -96,7 +107,7 @@ export function commit(prev: Repo, file: FileName): Result {
   const c = makeCommit(repo, files, [tip.id], `edit ${file.split('/').pop()} #${repo.edits}`, repo.lanes[repo.head]);
   repo.commits.push(c);
   repo.branches[repo.head] = c.id;
-  return { repo, kind: 'commit', info: file };
+  return { repo, kind: 'commit', info: file, conflicts: [] };
 }
 
 export function branch(prev: Repo): Result {
@@ -106,11 +117,11 @@ export function branch(prev: Repo): Result {
   repo.lanes[name] = Math.max(...Object.values(repo.lanes)) + 1;
   repo.branches[name] = repo.branches[repo.head];
   repo.head = name;
-  return { repo, kind: 'branch', info: name };
+  return { repo, kind: 'branch', info: name, conflicts: [] };
 }
 
 export function checkout(prev: Repo, name: string): Result {
-  return { repo: { ...clone(prev), head: name }, kind: 'checkout', info: name };
+  return { repo: { ...clone(prev), head: name }, kind: 'checkout', info: name, conflicts: [] };
 }
 
 export function merge(prev: Repo, other: string): Result {
@@ -118,10 +129,10 @@ export function merge(prev: Repo, other: string): Result {
   const ours = repo.branches[repo.head];
   const theirs = repo.branches[other];
   const oursAnc = ancestors(repo, ours);
-  if (oursAnc.has(theirs)) return { repo, kind: 'uptodate', info: other };
+  if (oursAnc.has(theirs)) return { repo, kind: 'uptodate', info: other, conflicts: [] };
   if (ancestors(repo, theirs).has(ours)) {
     repo.branches[repo.head] = theirs;
-    return { repo, kind: 'ff', info: other };
+    return { repo, kind: 'ff', info: other, conflicts: [] };
   }
   // merge base: the most recent commit both branches share
   const common = [...ancestors(repo, theirs)].filter((id) => oursAnc.has(id)).map((id) => byId(repo, id));
@@ -134,16 +145,22 @@ export function merge(prev: Repo, other: string): Result {
     if (t.files[f] === base.files[f]) continue;
     if (o.files[f] === base.files[f]) files[f] = t.files[f];
     else if (o.files[f] !== t.files[f]) {
-      files[f] = `${f} merged by hand`;
+      files[f] = resolvedByHand(f);
       conflicts.push(f);
     }
   }
   const c = makeCommit(repo, files, [ours, theirs], `merge ${other} into ${repo.head}`, repo.lanes[repo.head]);
   repo.commits.push(c);
   repo.branches[repo.head] = c.id;
-  return { repo, kind: 'merge', info: conflicts.join(', ') };
+  return { repo, kind: 'merge', info: other, conflicts };
 }
 
+/**
+ * Replay this branch's own commits on top of `onto`. Each replayed commit re-applies
+ * the files it changed relative to its old parent. If the new base already changed
+ * that file differently, both sides touched it: a conflict git stops on and you
+ * resolve by hand, exactly as with merge (never silently overwriting either side).
+ */
 export function rebase(prev: Repo, onto: string): Result {
   const repo = clone(prev);
   const cur = repo.branches[repo.head];
@@ -151,21 +168,31 @@ export function rebase(prev: Repo, onto: string): Result {
   const targetAnc = ancestors(repo, target);
   if (targetAnc.has(cur)) {
     repo.branches[repo.head] = target;
-    return { repo, kind: 'ff', info: onto };
+    return { repo, kind: 'ff', info: onto, conflicts: [] };
   }
   const mine = [...ancestors(repo, cur)].filter((id) => !targetAnc.has(id)).map((id) => byId(repo, id))
     .filter((c) => c.parents.length === 1)
     .sort((a, b) => a.seq - b.seq);
-  if (!mine.length) return { repo, kind: 'noop', info: onto };
+  if (!mine.length) return { repo, kind: 'noop', info: onto, conflicts: [] };
+  const conflicts = new Set<FileName>();
   let tip = byId(repo, target);
   for (const old of mine) {
     const parent = byId(repo, old.parents[0]);
     const files = { ...tip.files };
-    for (const f of FILES) if (old.files[f] !== parent.files[f]) files[f] = old.files[f];
+    for (const f of FILES) {
+      if (old.files[f] === parent.files[f]) continue; // this commit didn't touch f
+      const baseChangedIt = tip.files[f] !== parent.files[f] && tip.files[f] !== old.files[f];
+      if (baseChangedIt) {
+        files[f] = resolvedByHand(f);
+        conflicts.add(f);
+      } else {
+        files[f] = old.files[f];
+      }
+    }
     const c = makeCommit(repo, files, [tip.id], `${old.msg}′`, repo.lanes[repo.head]);
     repo.commits.push(c);
     tip = c;
   }
   repo.branches[repo.head] = tip.id;
-  return { repo, kind: 'rebase', info: String(mine.length) };
+  return { repo, kind: 'rebase', info: String(mine.length), conflicts: [...conflicts] };
 }

@@ -57,3 +57,10 @@
 @media (max-width: 900px) {
   .gi { grid-template-columns: 1fr; }
 }
+/* Phones: tighter columns and indents so the deepest file names (app.js, util.js) still fit. */
+@media (max-width: 480px) {
+  .gi { padding: 16px 12px; }
+  .gi-objects { padding: 10px 8px; }
+  .gi-children { margin-left: 6px; padding-left: 6px; }
+  .gi-obj-row { grid-template-columns: 30px 56px 1fr auto; gap: 5px; padding: 5px 6px; }
+}
