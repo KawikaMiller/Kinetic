@@ -1,6 +1,6 @@
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { applyNaively, markUpdate, naiveWrites, type RangeUpdate } from './model';
+import { applyNaively, markUpdate, naiveWrites, signedText, type RangeUpdate } from './model';
 
 export interface DiffFrame extends Frame {
   diff: number[];
@@ -12,8 +12,6 @@ export interface DiffFrame extends Frame {
   running: number;
   result: (number | null)[];
 }
-
-const signed = (v: number) => (v >= 0 ? `+${v}` : `−${-v}`);
 
 /** Mark each update (two writes), then rebuild the array in one running-sum pass. */
 export function diffFrames(base: number[], updates: RangeUpdate[]): DiffFrame[] {
@@ -34,8 +32,8 @@ export function diffFrames(base: number[], updates: RangeUpdate[]): DiffFrame[] 
     markUpdate(diff, u);
     rec.snap(
       <>
-        Add <span className="hl">{signed(u.add)}</span> to [{u.from}, {u.to}]: write{' '}
-        <span className="hl ok">{signed(u.add)}</span> at {u.from} and <span className="hl bad">{signed(-u.add)}</span> at{' '}
+        Add <span className="hl">{signedText(u.add)}</span> to [{u.from}, {u.to}]: write{' '}
+        <span className="hl ok">{signedText(u.add)}</span> at {u.from} and <span className="hl bad">{signedText(-u.add)}</span> at{' '}
         {u.to + 1}, just past the end. Two writes, not {u.to - u.from + 1}.
       </>,
       undefined,
@@ -50,7 +48,7 @@ export function diffFrames(base: number[], updates: RangeUpdate[]): DiffFrame[] 
     result[i] = base[i] + running;
     rec.snap(
       <>
-        Running sum of the difference array up to {i}: <b>{running}</b>, so the new value is {base[i]} {signed(running)} ={' '}
+        Running sum of the difference array up to {i}: <b>{running}</b>, so the new value is {base[i]} {signedText(running, '+0')} ={' '}
         <b>{result[i]}</b>.
       </>,
       undefined,
