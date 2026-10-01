@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TOPICS } from './curriculum';
-import { lintLesson, longestTally, TIER_LONGEST_SHARE, type ContentRule } from './lessonContent';
+import { lintLesson, longestTally, SHORT_OPTION_CHARS, TIER_LONGEST_SHARE, type ContentRule } from './lessonContent';
 import type { LessonModule, QuizQuestion } from './types';
 
 /**
@@ -16,7 +16,7 @@ const TIER3 = 'Tier 3 kickoff: existing Tier 3 lessons are retrofitted then';
 const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
 const L3 = 'L-3: correct option still the longest in 3 of 4';
 const L3_EXTENDED = 'L-3, extended by K-2: correct option the longest in 2 of 3 (a majority)';
-const UNTICKETED_COUNTS = 'Found by K-2, needs a ticket: keyIdeas grew to 5 in fb9ebdd';
+const UNTICKETED_COUNTS = 'Found by K-2: keyIdeas grew to 5 in fb9ebdd; the coordinator trims it after t2/leftovers merges';
 
 /**
  * Existing Tier 2 lessons not yet held to the Tier 2 standard (docs/rollout-plan.md §3.1.6).
@@ -144,6 +144,14 @@ describe('lesson-content rules', () => {
     const short = q(['No', 'Unique items only', 'Short arrays only']);
     expect(rulesOf({ ...GOOD, quiz: [long, ...GOOD.quiz.slice(1)] })).toContain('quiz-length');
     expect(rulesOf({ ...GOOD, quiz: [short, ...GOOD.quiz.slice(1)] })).toContain('quiz-length');
+  });
+
+  it(`skip the length ratio when every option is ${SHORT_OPTION_CHARS} characters or fewer`, () => {
+    // 3 vs 10 characters is a 0.3 ratio but no visible tell among symbolic answers.
+    const symbolic = q(['O(n)', 'O(n log n)', 'O(n²) time'], 0);
+    const justOver = q(['O(n)', 'O(n log n) always', 'O(n²) in the worst case'], 0);
+    expect(rulesOf({ ...GOOD, quiz: [symbolic, ...GOOD.quiz.slice(1)] })).not.toContain('quiz-length');
+    expect(rulesOf({ ...GOOD, quiz: [justOver, ...GOOD.quiz.slice(1)] })).toContain('quiz-length');
   });
 
   it('fail when the correct option is strictly the longest in a majority of questions', () => {

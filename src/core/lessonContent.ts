@@ -32,6 +32,13 @@ export const COUNT_LIMITS = {
 /** The correct option's length as a multiple of the mean distractor length must sit in here. */
 export const LENGTH_RATIO = { min: 0.75, max: 1.35 } as const;
 
+/**
+ * The ratio check's floor: when every option is at most this many visible characters
+ * ("O(n)", "V + E", "2xx", "^1.2.0"), a few characters' difference makes a big ratio but
+ * no visible length tell, so the check is skipped for that question.
+ */
+export const SHORT_OPTION_CHARS = 16;
+
 /** Tier-wide ceiling on questions where the correct option is strictly the longest. */
 export const TIER_LONGEST_SHARE = 0.3;
 
@@ -107,8 +114,9 @@ export function lintLesson(lesson: LessonModule, topicIds: ReadonlySet<string>):
     }
     const seen = new Set(q.options.map((o) => o.trim().toLowerCase()));
     if (seen.size !== q.options.length) issues.push({ rule: 'quiz-duplicates', detail: `${n} repeats an option` });
+    const allShort = q.options.every((o) => shown(o) <= SHORT_OPTION_CHARS);
     const ratio = lengthRatio(q);
-    if (ratio < LENGTH_RATIO.min || ratio > LENGTH_RATIO.max) {
+    if (!allShort && (ratio < LENGTH_RATIO.min || ratio > LENGTH_RATIO.max)) {
       issues.push({ rule: 'quiz-length', detail: `${n} correct option is ${ratio.toFixed(2)}× the mean distractor length` });
     }
     if (q.options.some((o) => OF_THE_ABOVE.test(o))) issues.push({ rule: 'quiz-of-the-above', detail: `${n} uses "of the above/these"` });
