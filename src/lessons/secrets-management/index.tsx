@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Responding to "I think I pushed a key": rotate it first, clean up second',
     ],
     why: 'Leaked keys are one of the most common ways companies get breached, and juniors are the ones setting up config and running their first pushes. Knowing that rotation is the fix, and that deleting or ignoring isn\'t, turns a potential incident into a five-minute job.',
-    watch: 'The secret is red wherever it appears, in config.js and on the commits that hold it; a safe reference like process.env.STRIPE_KEY is green, and ordinary commits are blue. Once a key is rotated it turns grey and struck through, and so do the commits holding it, because it\'s dead. In the sorting scene each item turns green in the right place and red in the wrong one.',
+    watch: 'The secret is red wherever it appears, in config.js and on the commits that hold it; a safe reference like process.env.STRIPE_KEY is green, and ordinary commits are blue. The \"HEAD → main\" tag marks the latest commit, the one you have checked out. Once a key is rotated it turns grey and struck through, and so do the commits holding it, because it\'s dead. In the sorting scene each item turns green in the right place and red in the wrong one.',
   },
   tryThis: [
     'Play "The leak" to the end: a scanner bot has the key less than a minute after the push.',
