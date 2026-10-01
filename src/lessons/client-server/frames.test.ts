@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RETRY_DELAYS, script } from './frames';
-import { backoff, ENDPOINTS, isClient, USER_V1, USER_V2, type Scenario } from './model';
+import { backoff, endpointFor, ENDPOINTS, isClient, USER_V1, USER_V2, type Scenario } from './model';
 
 const SCENARIOS: Scenario[] = ['request', 'scale', 'down', 'breaking'];
 const last = (s: Scenario) => script(s).at(-1)!;
@@ -89,5 +89,20 @@ describe('breaking change', () => {
     expect(ENDPOINTS.both.some((e) => e.startsWith('GET /v2/users/{id} → { id, fullName'))).toBe(true);
     const mobileAnswer = fixed.find((f) => f.msg?.to === 'mobile' && f.msg.kind === 'ok')!;
     expect(mobileAnswer.json).toBe(USER_V1);
+  });
+});
+
+describe('contract panel', () => {
+  it('every request lights exactly the contract line it calls', () => {
+    for (const s of SCENARIOS) {
+      for (const f of script(s)) {
+        if (f.msg?.kind !== 'req') continue;
+        const i = endpointFor(f.msg, ENDPOINTS[f.version]);
+        expect(i, `${s}: ${f.msg.label}`).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(ENDPOINTS.both[endpointFor({ label: 'GET /v2/users/42' }, ENDPOINTS.both)]).toMatch(/^GET \/v2\/users/);
+    expect(ENDPOINTS.both[endpointFor({ label: 'GET /users/42' }, ENDPOINTS.both)]).toMatch(/^GET \/users.*name,/);
+    expect(endpointFor({ label: '200 OK + JSON' }, ENDPOINTS.v1)).toBe(-1);
   });
 });

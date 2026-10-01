@@ -34,6 +34,8 @@ export interface Msg {
   kind: Kind;
   /** The request never gets an answer (server down): it stops halfway. */
   fail?: boolean;
+  /** The HTTP call behind a pill whose label doesn't spell it out (a retry). */
+  call?: string;
 }
 
 export interface Screen {
@@ -85,3 +87,9 @@ export const msg = (from: NodeId, to: NodeId, label: string, kind: Kind, fail = 
 
 /** Retry delays a client waits before attempt 2, 3, …: exponential backoff from `base` seconds. */
 export const backoff = (attempts: number, base = 2) => Array.from({ length: attempts }, (_, i) => base * 2 ** i);
+
+/** The contract line a request calls (`GET /v2/users/42` → the /v2/users entry), or -1. */
+export function endpointFor(msg: Pick<Msg, 'label' | 'call'>, endpoints: string[]): number {
+  const path = (msg.call ?? msg.label).replace(/^(GET|curl) /, '').split(' ')[0].replace(/\/\d+$/, '/{id}');
+  return endpoints.findIndex((e) => e.split(' ')[1] === path);
+}

@@ -7,7 +7,7 @@ import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components
 import { midpoint } from '../../core/geometry';
 import { usePlayer } from '../../core/usePlayer';
 import { script } from './frames';
-import { CLIENT_LABEL, CLIENTS, COLOR, ENDPOINTS, POS, type Client, type Msg, type NodeId, type Scenario, type Screen } from './model';
+import { CLIENT_LABEL, CLIENTS, COLOR, ENDPOINTS, endpointFor, POS, type Client, type Msg, type NodeId, type Scenario, type Screen } from './model';
 import './styles.css';
 
 const SCENARIOS: { value: Scenario; label: string }[] = [
@@ -27,6 +27,7 @@ export function Stage() {
   const active = new Set<NodeId>(f.msg ? [f.msg.from, f.msg.to] : []);
 
   const endpoints = ENDPOINTS[f.version];
+  const calling = f.msg?.kind === 'req' ? endpointFor(f.msg, endpoints) : -1;
 
   return (
     <StageFrame minWidth={880}
@@ -107,8 +108,8 @@ export function Stage() {
         <div className="cs-panels">
           <Box className="cs-panel">
             <span className="cs-panel-title">API contract</span>
-            {endpoints.map((e) => (
-              <motion.code key={e} className="cs-endpoint" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}>
+            {endpoints.map((e, i) => (
+              <motion.code key={e} className={`cs-endpoint ${i === calling ? 'on' : ''}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}>
                 {e}
               </motion.code>
             ))}

@@ -40,9 +40,9 @@ export function script(s: Scenario): CsFrame[] {
     push({ down: true, say: <><span className="hl bad">api-1 is down.</span> Clients can't see that. They only see what happens when they call.</> });
     push({ msg: m('mobile', 'api1', 'GET /users/42', 'req', true), say: <>The mobile app sends a request into the void…</> });
     push({ say: <>…and after a few seconds, a <span className="hl bad">timeout</span>. A good client shows a friendly error, not a blank screen.</> }, { mobile: { text: "Can't connect. Retrying…", tone: 'bad' } });
-    push({ msg: m('mobile', 'api1', `retry (after ${first} s)`, 'req', true), say: <>It <b>retries</b>, waiting longer each time (backoff) so a crowd of clients doesn't hammer a recovering server.</> });
+    push({ msg: { ...m('mobile', 'api1', `retry (after ${first} s)`, 'req', true), call: 'GET /users/42' }, say: <>It <b>retries</b>, waiting longer each time (backoff) so a crowd of clients doesn't hammer a recovering server.</> });
     push({ down: false, say: <>The server comes back up.</> });
-    push({ msg: m('mobile', 'api1', `retry (after ${second} s)`, 'req'), say: <>Next retry, after twice the wait…</> });
+    push({ msg: { ...m('mobile', 'api1', `retry (after ${second} s)`, 'req'), call: 'GET /users/42' }, say: <>Next retry, after twice the wait…</> });
     push({ msg: m('api1', 'mobile', '200 OK + JSON', 'ok'), json: USER_V1, say: <><span className="hl ok">Success.</span></> }, { mobile: { text: 'Ada · ada@ex.com', tone: 'ok' } });
     push({ hold: 2, say: <>The network is <b>not</b> reliable. Every client call needs a plan for timeouts, errors and retries.</> });
   }
