@@ -200,6 +200,8 @@ function TreeView({ frame, onPick }: { frame: BstFrame; onPick: (k: number) => v
         edgeMark={edgeMark}
         nodeScale={(id) => (id === frame.hi || id === frame.ok ? EMPHASIS_SCALE : 1)}
         onNodeClick={(id) => onPick(nodes[id].key)}
+        nodeAriaLabel={(id) => `Use key ${nodes[id].key}`}
+        ariaLabel="Binary search tree"
         overlay={ghost}
       />
       <Tray className="bst-out" label="in-order output" labelWeight="regular" ariaLabel="In-order output">

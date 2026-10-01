@@ -114,6 +114,9 @@ export function Stage() {
             className="tt-tree"
             ariaLabel="Binary tree"
             onNodeClick={edit === 'off' ? undefined : clickNode}
+            nodeAriaLabel={(id) =>
+              edit === 'add' ? `Add a child under ${label(id)}` : isLeaf(tree, id) ? `Remove leaf ${label(id)}` : `${label(id)}, not a leaf`
+            }
             nodeMark={(id) => {
               if (id === f.current && !f.rpn) return { tone: 'hi', fill: 'solid' };
               if (emitted.has(id)) return { tone: 'ok', fill: 'solid' };
