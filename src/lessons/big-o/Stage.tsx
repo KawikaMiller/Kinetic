@@ -129,17 +129,16 @@ export function Stage() {
           <div className="bo-panel-head">
             If 1 operation = 1 µs, and n =
             {/* the visible sentence names the choice; give the radio group the same name */}
-            <div role="group" aria-label="Input size n for the 1 µs readout">
-              <Segmented
-                value={bigN}
-                onChange={setBigN}
-                options={[
-                  { value: 3, label: '1,000' },
-                  { value: 6, label: '1 million' },
-                  { value: 9, label: '1 billion' },
-                ]}
-              />
-            </div>
+            <Segmented
+              ariaLabel="Input size n for the 1 µs readout"
+              value={bigN}
+              onChange={setBigN}
+              options={[
+                { value: 3, label: '1,000' },
+                { value: 6, label: '1 million' },
+                { value: 9, label: '1 billion' },
+              ]}
+            />
           </div>
           <RealWorld n={Math.pow(10, bigN)} hidden={hidden} />
         </div>

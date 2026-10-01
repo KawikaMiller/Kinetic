@@ -349,6 +349,7 @@ answer that is always the longest.
 ### Controls (`ui.tsx`, `options.ts`, `ScenePicker.tsx`) — pattern 16
 ```tsx
 <Segmented label="n" value={n} onChange={setN} options={[{ value: 8, label: '8' }]} />  // numbers now allowed
+<Segmented ariaLabel="Input size n" value={n} onChange={setN} options={…} />  // no visible label: names the radiogroup itself
 toOptions(MODES)                                         // [{id,label}] → options (import from components/options)
 <Toggle label="DNS" value={cached} onChange={setCached} off="Cold lookup" on="Cached" />  // off option always first
 <TextField label="Key" value={k} onChange={setK} onEnter={insert} onBlur={normalise}

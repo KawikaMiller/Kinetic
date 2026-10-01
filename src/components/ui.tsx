@@ -47,12 +47,14 @@ export function Slider({
 
 /** Pill-style single choice. Good for picking an algorithm, a mode, or a small number. */
 export function Segmented<T extends string | number>({
-  options, value, onChange, label,
+  options, value, onChange, label, ariaLabel,
 }: {
   options: Option<T>[];
   value: T;
   onChange: (v: T) => void;
   label?: string;
+  /** Names the radio group when the visible label lives elsewhere (e.g. in a sentence around it). */
+  ariaLabel?: string;
 }) {
   const radio = useRadioGroup(
     options.length,
@@ -60,7 +62,7 @@ export function Segmented<T extends string | number>({
     (i) => onChange(options[i].value),
   );
   return (
-    <div className="segmented" role="radiogroup" aria-label={label}>
+    <div className="segmented" role="radiogroup" aria-label={ariaLabel ?? label}>
       {label && <span className="segmented-label">{label}</span>}
       <div className="segmented-track">
         {options.map((o, i) => (
