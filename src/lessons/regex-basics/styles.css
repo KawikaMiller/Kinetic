@@ -1,0 +1,89 @@
+.rx { gap: 14px; }
+
+/* The pattern, piece by piece */
+.rx-tokens {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 4px 12px;
+}
+.rx-token {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+.rx-token:hover,
+.rx-token.is-hovered { border-color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
+.rx-chip {
+  flex: none;
+  min-width: 64px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--cell-line);
+  background: var(--cell);
+  font: 600 13px var(--mono);
+  white-space: pre;
+}
+.rx-token.is-group .rx-chip { border-color: var(--c); color: var(--c); }
+.rx-token.is-hovered .rx-chip { border-color: var(--info); }
+.rx-meaning { font-size: 13px; color: var(--muted); }
+.rx-token.is-unexplained .rx-chip { border-style: dashed; }
+.rx-token.is-unexplained .rx-meaning { font-style: italic; color: var(--faint); }
+.rx-flavour { margin-top: 10px; }
+
+/* Test text with highlights */
+.rx-text {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--cell);
+  font: 500 13px/1.7 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rx-match { background: color-mix(in srgb, var(--hi) 22%, transparent); border-radius: 3px; }
+.rx-group { background: color-mix(in srgb, var(--c) 30%, transparent); box-shadow: inset 0 -2px 0 var(--c); }
+.rx-hover { outline: 2px solid var(--info); outline-offset: 1px; border-radius: 2px; }
+.rx-caret { display: inline-block; width: 2px; height: 1.2em; margin: 0 1px; vertical-align: text-bottom; background: var(--hi); }
+.rx-caret.is-hover { background: var(--info); width: 3px; }
+.rx-replaced { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); border-radius: 3px; }
+.rx-result .section-title + .rx-text + .section-title { margin-top: 12px; display: block; }
+
+/* Groups table */
+.rx-table-wrap { overflow-x: auto; }
+.rx-table th.rx-col,
+.rx-table td.rx-col { color: var(--c); }
+.rx-cell-match { color: var(--hi); white-space: pre; }
+.rx-none { color: var(--faint); font-style: italic; }
+
+.rx-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+  color: var(--bad);
+  font-size: 13.5px;
+}
+.rx-when-not ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+.rx-when-not li + li { margin-top: 4px; }
+
+/* Controls. A flag that's on is a solid chip, so on and off read at a glance. */
+.rx-flags .chip-button.is-on { background: var(--info); color: var(--on-info); }
+.rx-pattern { flex: 1 1 260px; }
+.rx-pattern input { width: 100%; }
+.rx-pattern.is-bad input { border-color: var(--bad); color: var(--bad); }
+.rx-replacement input { width: 220px; }
+.rx-textarea { flex: 1 1 100%; }
+.rx-textarea textarea { width: 100%; }
