@@ -5,7 +5,7 @@ import { TreeSvg, type TreeNodeMark } from '../../components/TreeSvg';
 import { Button, ControlGroup, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import {
-  ALL_FIXED, FIXES, NONE_FIXED, announce, buildTree, tabOrder, type AxNode, type FixId, type Fixes, type NodeId,
+  ALL_FIXED, FIXES, NONE_FIXED, SIGNED_UP, announce, buildTree, tabOrder, type AxNode, type FixId, type Fixes, type NodeId,
 } from './model';
 
 const LOG_LENGTH = 8;
@@ -28,13 +28,15 @@ export function FormScene({ picker }: { picker: ReactNode }) {
   const [fixes, setFixes] = useState<Fixes>(NONE_FIXED);
   const [email, setEmail] = useState('');
   const [errorShown, setErrorShown] = useState(false);
+  const [signedUp, setSignedUp] = useState(false);
+  const [newsletter, setNewsletter] = useState(false);
   const [focused, setFocused] = useState<NodeId | null>(null);
   const [cursor, setCursor] = useState(-1);
   const [log, setLog] = useState<Spoken[]>([]);
   const setCaption = useSetCaption();
   const els = useRef<Partial<Record<NodeId, HTMLElement | null>>>({});
 
-  const tree = buildTree(fixes, errorShown);
+  const tree = buildTree(fixes, { errorShown, signedUp, newsletter });
   const byId = Object.fromEntries(tree.map((n) => [n.id, n])) as Record<NodeId, AxNode>;
   const stops = tabOrder(tree);
   const problems = tree.filter((n) => n.issue);
@@ -63,10 +65,12 @@ export function FormScene({ picker }: { picker: ReactNode }) {
     e?.preventDefault();
     if (email.trim()) {
       setErrorShown(false);
-      speak(fixes.live ? 'Thanks, you are signed up.' : '(the page changed, but nothing was announced)', !fixes.live);
+      setSignedUp(true);
+      speak(fixes.live ? SIGNED_UP : '(the page changed, but nothing was announced)', !fixes.live);
       return;
     }
     setErrorShown(true);
+    setSignedUp(false);
     if (fixes.live) speak('Alert: Please enter your email address.');
     else speak('(silence: the error appeared, but nothing announced it)', true);
   };
@@ -157,7 +161,13 @@ export function FormScene({ picker }: { picker: ReactNode }) {
                 />
               </div>
               <div className="ac-check">
-                <input ref={bind('news')} id="ac-news" type="checkbox" onFocus={onFocus('news')} className={focused === 'news' ? 'is-reader-focus' : undefined} />
+                <input
+                  ref={bind('news')}
+                  id="ac-news"
+                  type="checkbox"
+                  checked={newsletter}
+                  onChange={(e) => setNewsletter(e.target.checked)}
+                  onFocus={onFocus('news')} className={focused === 'news' ? 'is-reader-focus' : undefined} />
                 <label htmlFor="ac-news">Send me the newsletter</label>
                 {!fixes.order && <code className="ac-attr" title="simulated">tabindex="1"</code>}
               </div>
@@ -176,6 +186,7 @@ export function FormScene({ picker }: { picker: ReactNode }) {
                 ) : (
                   <p className="ac-error">Please enter your email address.</p>
                 ))}
+              {signedUp && (fixes.live ? <p role="status" className="ac-done">{SIGNED_UP}</p> : <p className="ac-done">{SIGNED_UP}</p>)}
             </form>
             <p className="ac-note">
               Clicking works for everyone with a mouse. The problems show up for keyboard and screen-reader users. (The{' '}

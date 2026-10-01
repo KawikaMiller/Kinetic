@@ -43,6 +43,7 @@
 }
 .ac-submit.is-div { user-select: none; }
 .ac-error { margin: 0; font-size: 13px; color: var(--bad); font-weight: 600; }
+.ac-done { margin: 0; font-size: 13px; color: var(--ok); font-weight: 600; }
 .is-reader-focus { outline: 3px solid var(--hi); outline-offset: 3px; }
 
 /* Accessibility tree nodes */

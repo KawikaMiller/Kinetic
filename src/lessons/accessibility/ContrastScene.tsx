@@ -8,7 +8,7 @@ import { CVD_MATRICES, contrastRatio, formatRatio, grade, type Vision } from './
 // Colour pairs the learner can load. These are example inputs to the checker, not app colours.
 const PAIRS = [
   { id: 'grey', label: 'Grey on white', fg: '#777777', bg: '#ffffff' }, // allow-color: WCAG example pair
-  { id: 'dark-grey', label: 'Darker grey', fg: '#595959', bg: '#ffffff' }, // allow-color: example pair
+  { id: 'dark-grey', label: 'One step darker', fg: '#767676', bg: '#ffffff' }, // allow-color: example pair (the first grey that passes AA, 4.54:1)
   { id: 'white-yellow', label: 'White on yellow', fg: '#ffffff', bg: '#f5c400' }, // allow-color: example pair
   { id: 'navy', label: 'Navy on cream', fg: '#1b2a4a', bg: '#fdf6e3' }, // allow-color: example pair
 ] as const;
@@ -22,9 +22,10 @@ const STATUS_GREEN = '#7a8f2c'; // allow-color: a real-world confusable red/gree
 const dotStyle = (c: string) => ({ background: c });
 const chipStyle = (c: string) => ({ '--c': c }) as CSSProperties;
 
-const VISION_NOTE: Record<Exclude<Vision, 'normal'>, ReactNode> = {
+const VISION_NOTE: Record<Vision, ReactNode> = {
+  normal: <>Typical vision: the red and green dots are easy to tell apart, which is exactly why a design that relies on them can look fine to its author.</>,
   protanopia: <>With protanopia the red and green dots become <b>hard to tell apart</b>: colour alone can't carry meaning.</>,
-  deuteranopia: <>With deuteranopia (the most common type) the red and green dots become <b>hard to tell apart</b>.</>,
+  deuteranopia: <>With deuteranopia the red and green dots become <b>hard to tell apart</b>. Its milder form, deuteranomaly, is the most common colour-vision difference of all.</>,
   tritanopia: <>Tritanopia mostly confuses blue with green and yellow with violet: this red/green pair happens to stay distinct, which is luck, not design.</>,
 };
 
@@ -106,7 +107,7 @@ export function ContrastScene({ picker }: { picker: ReactNode }) {
           value={vision}
           onChange={(v) => {
             setVision(v);
-            if (v !== 'normal') setCaption(VISION_NOTE[v]);
+            setCaption(VISION_NOTE[v]);
           }}
           options={VISIONS}
         />,

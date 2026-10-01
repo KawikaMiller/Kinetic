@@ -14,14 +14,14 @@ const lesson: LessonModule = {
       'Checking text contrast meets WCAG AA (4.5:1) before shipping a design',
     ],
     why: 'About one in six people has a disability, accessibility is a legal requirement in many countries, and most fixes are free when you write the right HTML to begin with. It\'s also one of the first things a senior reviewer will catch in your pull request.',
-    watch: 'On the left is a real sign-up form; on the right, the accessibility tree our model builds from it, one box per element showing its role and name. The node the screen reader is on is yellow, broken nodes (no role or name, or otherwise wrong) are red, nodes you fixed are green, and non-interactive nodes are grey. The red list under the tree explains each problem, and the reader output below shows what a screen reader would say, with problems in red. In the Contrast scene, passing verdicts are green and failing ones red; the colour-vision options run the whole panel through a filter, and the dots in the red-bordered bad example rely on colour alone.',
+    watch: 'On the left is a real sign-up form; on the right, the accessibility tree our model builds from it, one box per element showing its role and name. The node the screen reader is on is yellow, broken nodes (no role or name, or otherwise wrong) are red, nodes you fixed are green, and non-interactive nodes are grey. The red list under the tree explains each problem, and the reader output below shows what a screen reader would say, with problems in red. In the Contrast scene, passing verdicts are green and failing ones red; the colour-vision options run the whole panel through a filter, and the bad example, labelled in red, has dots that rely on colour alone.',
   },
   tryThis: [
     'Press "Tab ↓" a few times: the newsletter checkbox comes first and the Sign up "button" is never reached.',
     'Click Sign up with an empty email: the error appears, but the reader says nothing. Now fix "Error message" and try again.',
     'Fix the Sign-up button, then focus it and press Enter: a real <button> works from the keyboard.',
     'Fix "Email field" and watch the textbox node gain a name in the tree.',
-    'In Contrast, load "Grey on white", then "Darker grey": one small step darker is the difference between fail and pass.',
+    'In Contrast, load "Grey on white", then "One step darker": #767676 is a single step from #777, and it passes (4.54:1).', // allow-color: the WCAG example colours named in prose
   ],
   keyIdeas: [
     'Use native HTML first: <button>, <label>, <h2>, alt text. The first rule of ARIA is not to need it.',

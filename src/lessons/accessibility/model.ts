@@ -18,7 +18,10 @@ export type Fixes = Record<FixId, boolean>;
 export const NONE_FIXED: Fixes = { button: false, alt: false, label: false, heading: false, order: false, live: false };
 export const ALL_FIXED: Fixes = { button: true, alt: true, label: true, heading: true, order: true, live: true };
 
-export type NodeId = 'form' | 'logo' | 'title' | 'email' | 'news' | 'submit' | 'error';
+export type NodeId = 'form' | 'logo' | 'title' | 'email' | 'news' | 'submit' | 'error' | 'done';
+
+/** The confirmation the form shows after a successful sign-up. */
+export const SIGNED_UP = 'Thanks, you are signed up.';
 
 export interface AxNode {
   id: NodeId;
@@ -54,8 +57,15 @@ export function accessibleName(s: NameSources): string {
   return (s.ariaLabel ?? s.label ?? s.alt ?? s.content ?? s.placeholder ?? '').trim();
 }
 
+/** What the page shows below the button, and the checkbox's live state. */
+export interface FormState {
+  errorShown: boolean;
+  signedUp?: boolean;
+  newsletter?: boolean;
+}
+
 /** The form as the model sees it, in DOM order, for the current fixes. */
-export function buildTree(f: Fixes, errorShown: boolean): AxNode[] {
+export function buildTree(f: Fixes, { errorShown, signedUp = false, newsletter = false }: FormState): AxNode[] {
   const nodes: AxNode[] = [
     { id: 'form', role: 'form', name: accessibleName({ ariaLabel: 'Sign up' }), focusable: false, tabindex: null },
     f.alt
@@ -71,7 +81,7 @@ export function buildTree(f: Fixes, errorShown: boolean): AxNode[] {
       id: 'news',
       role: 'checkbox',
       name: accessibleName({ label: 'Send me the newsletter' }),
-      state: 'not checked',
+      state: newsletter ? 'checked' : 'not checked',
       focusable: true,
       tabindex: f.order ? null : 1,
       issue: f.order ? undefined : 'tabindex="1" makes it the first stop on the whole page',
@@ -86,6 +96,13 @@ export function buildTree(f: Fixes, errorShown: boolean): AxNode[] {
       f.live
         ? { id: 'error', role: 'alert', name: 'Please enter your email address.', focusable: false, tabindex: null, fix: 'live' }
         : { id: 'error', role: 'text', name: 'Please enter your email address.', focusable: false, tabindex: null, issue: 'appears silently: nothing tells a screen reader it showed up', fix: 'live' },
+    );
+  }
+  if (signedUp) {
+    nodes.push(
+      f.live
+        ? { id: 'done', role: 'status', name: SIGNED_UP, focusable: false, tabindex: null, fix: 'live' }
+        : { id: 'done', role: 'text', name: SIGNED_UP, focusable: false, tabindex: null, issue: 'appears silently: nothing tells a screen reader it showed up', fix: 'live' },
     );
   }
   return nodes;
