@@ -1,7 +1,5 @@
-import { randInt, shuffle } from '../../core/random';
+import { randInt, shuffle, type Rnd } from '../../core/random';
 import type { Frame } from '../../core/types';
-
-type Rnd = () => number;
 
 export interface Bar {
   id: number;

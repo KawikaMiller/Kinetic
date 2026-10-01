@@ -149,6 +149,7 @@ For the "type your own array" fields (two-pointers, sliding-window).
 clamp(v, lo, hi), clamp01(t), lerp(a, b, t)
 ease(t), easeInOutQuad(t)                                      // cubic and quadratic ease-in-out
 randInt(lo, hi), randRange(lo, hi), pick(xs), shuffle(xs)      // all take an optional rnd
+type Rnd = () => number                                        // import it, don't redeclare it
 expSample(mean), weightedPick(items, weightFn), mulberry32(seed), freshInt(lo, hi, taken) // null if none free
 fnv1a(s)          // unsigned 32-bit FNV-1a
 fmix32(h)         // murmur3 finaliser

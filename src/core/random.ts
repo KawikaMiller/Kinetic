@@ -1,7 +1,8 @@
 // Randomness helpers. Every function takes an optional `rnd` so a lesson can pass a
 // seeded generator (mulberry32) when the outcome must be reproducible.
 
-type Rnd = () => number;
+/** A source of uniform floats in [0, 1): Math.random, or a seeded mulberry32(seed). */
+export type Rnd = () => number;
 
 /** Integer in [lo, hi], inclusive. */
 export const randInt = (lo: number, hi: number, rnd: Rnd = Math.random) => lo + Math.floor(rnd() * (hi - lo + 1));
