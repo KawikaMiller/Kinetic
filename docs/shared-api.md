@@ -127,6 +127,13 @@ power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip expone
 parseIntegers('1, 3 ,4  8')   // [1, 3, 4, 8]; commas and/or spaces; null if empty or any value isn't an integer
 ```
 
+### `fixtures/` — shared sample data
+```ts
+import { ACCESS_LOG } from '../../core/fixtures/accessLog';  // 12-line Common Log Format, RFC 5737 IPs
+```
+Sample data that two or more lessons use lives here instead of being copied, since lessons can't
+import each other (regex-basics matches `ACCESS_LOG`; command-line greps it as `access.log`).
+
 ### `useMeasure.ts` — css-layout, responsive-design
 ```tsx
 const m = useMeasure(ref, (el) => ({ box: rectIn(el.querySelector('.child')!, el), pad: px(getComputedStyle(el), 'paddingLeft') }));
@@ -298,14 +305,23 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
 <PauseButton paused={paused} onToggle={togglePause} />
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
+<ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
+<ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
 const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 <StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 <StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
 <WideRegion minWidth={728} label="Pipeline diagram: scroll sideways to see all of it">
   <Dag />                                  // or just one wide part of a stage (components/WideRegion)
 </WideRegion>
+<WideRegion minWidth={720} gutter={{ top: 30, bottom: 4, x: 8 }}>  // room for labels drawn outside the children
 ```
+- `ChipButton`: pass `on` only for a chip with a state (the loaded preset, a set flag); it's then a
+  toggle with `aria-pressed`. A chip without `on` is a plain action and must not announce a pressed
+  state. `onStyle="solid"` fills an on chip with its tone (replaces lesson `.is-on` overrides).
 - `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
+  A sideways scroller always clips vertically too (CSS forces `overflow-y` off `visible` once
+  `overflow-x` scrolls), so anything drawn above or below the children (ArrayStrip range labels,
+  pointers, outlines) needs room reserved with `gutter` (debugging-method's bisect strip).
   Wrap only the wide part when the rest of the stage is HTML that can reflow: in ci-pipelines only the
   DAG scrolls on a phone, while the Gantt chart and YAML fit the screen. An SVG directly inside it
   should be `display: block`, or it picks up a baseline gap.
@@ -323,7 +339,12 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
 <Box variant="default | sunken | raised" className="xx-panel">…</Box>
 <SectionTitle hint="last 10 s">Queue</SectionTitle>     // weight="regular" for the lighter label style; className
 <Tray label="Output" labelWeight="regular" empty="nothing yet" ariaLabel="Output">{items}</Tray>
+<Tray stack label="Search the repo">{field}{results}</Tray>   // label on its own line above the content
+<Box role="region" aria-label="Order pipeline" id="pipe">…</Box>  // native attributes are forwarded
 ```
+`Box`, `SectionTitle` and `Tray` forward native attributes (`aria-*`, `role`, `id`, `data-*`, events)
+to their root element. They used to drop them, and TS doesn't catch that (hyphenated JSX props aren't
+checked against declared props); `Panel.test.ts` renders them to prove the attributes arrive.
 `Tray` shows `empty` as a faint mono note. If your empty text needs its own styling, render it as
 a child instead (heaps, trees-bst). A `SectionTitle` is an inline span: inside a block (not flex)
 parent, give it `display: block` in the lesson CSS so its line box matches a div's.
@@ -343,7 +364,8 @@ easeOut; `{}` = motion's default tween). Lesson CSS can restyle `.xx-bar .meter-
            nowStyle="solid | bar" trailing={(i) => status[i]} />
 // or active={3} / active={[2, 3]}
 ```
-Line states: `idle past now next done cut cached pending`. `solid` gives the now-line a `--hi` fill
+Line states: `idle past now next done cut cached pending bad` (`bad`: the line that threw or is
+wrong, a `--bad` tint and left bar). `solid` gives the now-line a `--hi` fill
 (tx-acid); `bar` gives it a tint and a left bar (race, recursion, containers). The CSS is generic,
 so expect to keep a few lesson overrides for exact pixel parity.
 ```tsx
@@ -353,6 +375,9 @@ so expect to keep a few lesson overrides for exact pixel parity.
            lineLabel={(i) => `Line ${i + 1}: toggle breakpoint`} />
 ```
 - `renderLine` replaces a line's code content; `lines` stays the plain text (keys, labels).
+- `marker={(i) => <Dot/> | null}` adds a 12px slot left of the line number for every line, like a
+  debugger's breakpoint gutter (debugger-tools); return null for an empty slot. Don't inject markers
+  into the code with `renderLine`.
 - `onLineClick` turns every line into a button that looks identical to a plain line: Space/Enter,
   the focus-visible ring, `aria-pressed` from `pressed(i)`, and `lineLabel(i)` as its name (default
   "Line N: code"). The dev kit showcase (`#/dev/kit`) has a breakpoint demo.
@@ -448,7 +473,10 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 <BitStrip bits={f32} size="sm" groups={[{ from: 0, to: 0, tone: 'bad', label: 'sign' }, …]} />
 <BitStrip bits={utf8} toneOf={(i) => (isPrefix(i) ? 'dim' : 'info')} />          // per-bit tone beats the group's
 <BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
+<BitStrip bits={perms} onToggle={flip} ariaLabelOf={bitName} />   // screen readers hear "group write", not "bit 4"
 ```
+- Give toggleable bits a meaningful `ariaLabelOf(i)` (i counts from the most significant bit): the
+  default "bit i" says nothing about what the bit does (command-line `bitName`, floating-point `bitRole`).
 - Set bits are a solid fill in their tone; clear bits are a dark cell outlined in it. Tone: `toneOf(i, bit)`, else the group's, else `hi`.
 - `placeValues` (or `'value'`) prints each bit's place value above it, compacted (`32K`); `placeValues="exponent"` prints it as a power of two (`2²³`), for registers wider than ~16 bits where values stop fitting; `labelOf` overrides either.
 - `highlight` rings bits in `highlightTone` (default `info`: binary-hex's carry ripple).
@@ -584,14 +612,15 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
            { id: 2, name: 'handleRequest()', state: 'waiting' },
            { id: 1, name: 'main()', state: 'waiting' }]}
   meta="3 frames" alarm={crashed} anchor="bottom"
-  selected={frameId} onSelect={setFrameId}                                   // debugger: pick a frame
+  selected={frameId} onSelect={setFrameId} selectedTone="info"               // debugger: pick a frame
   empty={<p className="empty-note">nothing running</p>} overlay={crashed && <CrashBanner />} />
 ```
 - `state`: `idle` (default), `running` (solid `--hi`), `waiting` (dimmed), `returning` (`--info`), `ok` (`--ok`: a base case, a `catch` that handled it), `error` (`--bad`: throwing, crashed, unwinding).
 - `tone` on a frame accents an `idle` or `waiting` frame in that colour, to match the lesson's own colour for it (tree-traversals: violet, like its "on the stack" nodes). Other states keep their colours.
 - `frames` is **top first**. `anchor="bottom"` (default) stacks from the bottom up like plates; `anchor="top"` lists from the top like the DevTools pane. `showDepth` numbers frames by depth (0 = outermost).
 - Frames push in from above and pop off to the right (`layout` + `SPRING.snappy`); `alarm` shakes them and turns the box red.
-- `onSelect` makes frames buttons (focus ring included); `selected` highlights one.
+- `onSelect` makes frames buttons (focus ring included); `selected` highlights one with a ring in
+  `selectedTone` (default `hi`; debugger-tools uses `info` so selection doesn't read as "running").
 - recursion's stack runs on it, pixel-identical. Its "↓ value" return chip is lesson-local, passed in `detail`.
 
 ### `core/commitGraph.ts`, `CommitGraph.tsx` — branching-workflows, secrets-management; git-internals

@@ -1226,12 +1226,13 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 1 | T1-B6 Web platform | 5 | 2 | t1/b6 | done | merged e21ffaf |
 | 1 | T1-B8 Shipping code | 5 | 2 | t1/b8 | done | merged 5c40ed9 |
 | 1 | P-follow-up after wave 2 | — | 2→3 | kit owner | done | ligatures off app-wide, superscript glyphs loaded + power(), core/useMeasure, chunkGroups align right, CodePanel renderLine/onLineClick, CommitGraph columns/depthColumns/lane labels/messageFit, ResizablePane scaleToFit, WideRegion, useScenePicker setScene, TruthTable var case + red mismatch values; ColorField declined (one user) |
-| 1 | T1-B4 Code flow | 4 | 3 | | not started | |
-| 1 | T1-B7 Security & data | 5 | 3 | | not started | |
-| 1 | T1-B9 Everyday tools | 5 | 3 | | not started | |
-| 1 | T1-B10 Networks & teams | 4 | 3 | | not started | |
-| 1 | Re-verify the 14 existing T1 lessons against the tier DoD | 14 | 3 | | not started | |
-| 1 | **Tier 1 sign-off** | 62 | — | | not started | |
+| 1 | T1-B4 Code flow | 4 | 3 | t1/b4 | done | merged d5c8b62 |
+| 1 | T1-B7 Security & data | 5 | 3 | t1/b7 | done | merged 19f6ea6; injection-attacks re-scoped to defensive, payload-free teaching (eea720c) |
+| 1 | T1-B9 Everyday tools | 5 | 3 | t1/b9 | done | merged f9b2c36 |
+| 1 | T1-B10 Networks & teams | 4 | 3 | t1/b10 | done | merged 527b49e |
+| 1 | Tier 1 close-out kit round | — | 3→QA | kit owner | done | ChipButton onStyle/ariaLabel/aria-pressed only with `on`, Tray stack, WideRegion gutter, CodePanel marker + bad state, BitStrip ariaLabelOf, Box/SectionTitle/Tray forward native attributes, CallStackPanel selectedTone, check-tokens inline-spring rule + tested rules (allow-color marker bug fixed), shot --press + Git Bash route guard, shared ACCESS_LOG fixture, runtime-code-execution rule |
+| 1 | Re-verify the 14 existing T1 lessons against the tier DoD | 14 | 3 | | not started | part of QA sign-off |
+| 1 | **Tier 1 sign-off** | 62 | — | | in review | all 62 built and merged; pending QA sign-off |
 | 2 | Kickoff: validation, spec, TOPICS, prerequisite components | — | pre | | not started | |
 | 2 | Batches T2-B1 … T2-B32 | 158 | 1-8 | | not started | Batches listed at kickoff |
 | 2 | **Tier 2 sign-off** | 174 | — | | not started | |
