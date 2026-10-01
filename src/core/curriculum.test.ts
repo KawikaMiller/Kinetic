@@ -9,6 +9,11 @@ describe('curriculum', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it('never shows two filter chips with the same label (family names vs track short names)', () => {
+    const labels = [...FAMILIES.map((f) => f.name), ...Object.values(TRACKS).map((t) => t.short)];
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
   it('uses only known tracks, and every track is in a known family', () => {
     for (const t of TOPICS) expect(TRACKS[t.track], t.id).toBeDefined();
     const families = new Set(FAMILIES.map((f) => f.id));

@@ -157,6 +157,16 @@ strong {
 .hl.info { background: rgb(76 201 240 / 0.14); color: var(--info); }
 .hl.violet { background: rgb(167 139 250 / 0.14); color: var(--violet); }
 
+/* `code` inside lesson text (summary, tips, key ideas, quiz): components/InlineText */
+.inline-code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
 /* ─── Top bar ──────────────────────────────────────────────────────── */
 .topbar {
   position: sticky;

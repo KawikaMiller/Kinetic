@@ -1,5 +1,6 @@
 import type { Player } from '../core/usePlayer';
 import type { Frame } from '../core/types';
+import { useRadioGroup } from './useRadioGroup';
 
 const SPEEDS = [0.5, 1, 2, 4];
 
@@ -21,6 +22,7 @@ const ICONS = {
 export function Transport<F extends Frame>({ player }: { player: Player<F> }) {
   const { index, count, playing, speed } = player;
   const pct = count > 1 ? (index / (count - 1)) * 100 : 0;
+  const speedRadio = useRadioGroup(SPEEDS.length, SPEEDS.indexOf(speed), (i) => player.setSpeed(SPEEDS[i]));
 
   return (
     <div className="transport">
@@ -62,9 +64,16 @@ export function Transport<F extends Frame>({ player }: { player: Player<F> }) {
         {index + 1}<span>/{count}</span>
       </span>
 
-      <div className="tspeed" role="radiogroup" aria-label="Speed">
-        {SPEEDS.map((s) => (
-          <button key={s} type="button" className={s === speed ? 'on' : ''} onClick={() => player.setSpeed(s)}>
+      <div className="tspeed" role="radiogroup" aria-label="Playback speed">
+        {SPEEDS.map((s, i) => (
+          <button
+            key={s}
+            type="button"
+            {...speedRadio.itemProps(i)}
+            aria-label={`${s} times speed`}
+            className={s === speed ? 'on' : ''}
+            onClick={() => player.setSpeed(s)}
+          >
             {s}×
           </button>
         ))}

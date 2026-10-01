@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import type { Tone } from '../core/tone';
 import type { Option } from './options';
+import { useRadioGroup } from './useRadioGroup';
 
 /** Row of lesson-specific controls under the transport bar. */
 export function Controls({ children }: { children: ReactNode }) {
@@ -29,7 +30,16 @@ export function Slider({
       <span className="slider-label">
         {label} <b>{format(value)}</b>
       </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      {/* aria-valuetext: announce what the label shows ("no limit", "1.2/day"), not the raw number */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        aria-valuetext={format(value)}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
     </label>
   );
 }
@@ -44,16 +54,20 @@ export function Segmented<T extends string | number>({
   onChange: (v: T) => void;
   label?: string;
 }) {
+  const radio = useRadioGroup(
+    options.length,
+    options.findIndex((o) => o.value === value),
+    (i) => onChange(options[i].value),
+  );
   return (
     <div className="segmented" role="radiogroup" aria-label={label}>
       {label && <span className="segmented-label">{label}</span>}
       <div className="segmented-track">
-        {options.map((o) => (
+        {options.map((o, i) => (
           <button
             key={o.value}
             type="button"
-            role="radio"
-            aria-checked={o.value === value}
+            {...radio.itemProps(i)}
             className={o.value === value ? 'on' : ''}
             onClick={() => onChange(o.value)}
           >

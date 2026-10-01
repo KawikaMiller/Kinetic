@@ -267,7 +267,8 @@ setCaption(node, { quiet: true })            // swap text in place, no fade (liv
 ### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
 Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
 and Space on a focused button, link or `role=radio|button|…` control presses that control instead
-of toggling playback. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
+of toggling playback. ← / → are left to radio groups, tabs and sliders, where they move the
+selection. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
 with the keyboard on registers itself with the lesson page, which shows the shortcut hint only
 then, so lessons do nothing extra. A one-frame player never reports `playing`.
 
@@ -288,6 +289,38 @@ app root has a last-resort boundary. Lessons don't add their own.
 ### Focus
 Every keyboard-focused control gets the shared accent ring from a global `:focus-visible` rule
 (sliders and the scrubber included). Don't set `outline: none` without a replacement focus style.
+Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape.
+
+### Radio groups (`useRadioGroup.ts`, `core/radio.ts`)
+`Segmented` (so `Toggle` and `useScenePicker`) and the player's speed buttons follow the WAI-ARIA radio
+pattern: one tab stop, ← → ↑ ↓ / Home / End move the selection and focus with it, `aria-checked` on every
+option. A hand-rolled single-choice row should use the hook rather than plain buttons:
+```tsx
+const radio = useRadioGroup(options.length, checkedIndex, (i) => select(options[i]));
+options.map((o, i) => <button key={o.id} {...radio.itemProps(i)} onClick={() => select(o)}>{o.label}</button>)
+```
+
+### Page titles and focus (`usePageHeading.ts`, `core/pageTitle.ts`)
+Every page sets `document.title` ("Binary Search · Kinetic") and, after an in-app navigation, focuses its
+`<h1>` so keyboard and screen-reader users land in the new page. The page the app opens on doesn't steal
+focus. A new top-level page does the same: `const heading = usePageHeading(title)` and
+`<h1 ref={heading} tabIndex={-1}>`.
+
+### Reduced motion in the app chrome
+The app runs inside `MotionConfig reducedMotion="user"`: motion transforms in the shell (page entrances,
+the quiz shake, card reveals, the home hero) go still for people who ask for reduced motion. Each lesson
+`Stage` is wrapped in `reducedMotion="never"`, because its motion is the teaching; decorative loops inside
+a stage should still go still on their own (`Pulse` does), and so should lesson-made shakes.
+
+### Inline code in lesson text (`InlineText.tsx`, `core/inlineCode.ts`)
+Summary fields, try-this tips, key ideas and every quiz line render `backtick` pairs as inline code, so
+write "relies on `x | 0`" in a plain string. An unpaired backtick stays literal.
+
+### Quiz (`Quiz.tsx`, `core/quiz.ts`)
+Options are shuffled once per visit (`shuffleOptions`), so author the right answer wherever it reads
+naturally: its position carries no hint. A lesson is learned once every question is answered correctly;
+wrong picks are free. Keep wrong options plausible and of similar length, since the shuffle can't hide an
+answer that is always the longest.
 
 ---
 
@@ -317,7 +350,10 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
 ```
 - `ChipButton`: pass `on` only for a chip with a state (the loaded preset, a set flag); it's then a
   toggle with `aria-pressed`. A chip without `on` is a plain action and must not announce a pressed
-  state. `onStyle="solid"` fills an on chip with its tone (replaces lesson `.is-on` overrides).
+  state. `onStyle="solid"` fills an on chip with its tone (replaces lesson `.is-on` overrides). An
+  outline chip that's on gets a stronger tint and a full 2px edge, so it never looks like a hovered one.
+- `Slider` announces `format(value)` as `aria-valuetext`, so give it a `format` whenever the label
+  shows something other than the raw number ("no limit", "1.2/day").
 - `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
   A sideways scroller always clips vertically too (CSS forces `overflow-y` off `visible` once
   `overflow-x` scrolls), so anything drawn above or below the children (ArrayStrip range labels,
@@ -601,6 +637,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
 - Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
 - Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.
+- `onNodeClick` makes every node a keyboard button (`role="button"`, in the tab order, Enter/Space press it, accent focus ring) and the SVG a `group`. Its accessible name is the node's text label or id; pass `nodeAriaLabel(id)` for a better one ("Remove leaf 35"). Only pass `onNodeClick` while clicking does something, or every node becomes a dead tab stop.
 - `nodeScale(id)` and `nodeOpacity(id)` (0..1) animate size and fade. motion owns the node group's opacity, so fade nodes through `nodeOpacity`, not CSS (tree-traversals fades nodes that can't be removed).
 - trees-bst (in-order, the null ghost as an `overlay`) runs on it pixel-identically. recursion's fib tree (tidy, custom nodes, `hidden`) does too, except for subpixel antialiasing on a few label glyphs (≤0.03% of the stage), because labels are now placed by the node's transform instead of absolute coordinates.
 - heaps keeps its own tree: nodes sit at array-index positions of a complete binary tree with `2i+1`/`2i+2` edge labels, and they're keyed by item so swaps animate. A third layout mode is worth adding only when a Tier 1 lesson needs it.

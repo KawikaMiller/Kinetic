@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { createPersistedStore, isBooleanRecord, usePersistedStore } from '../core/storage';
 import type { LessonSummary } from '../core/types';
+import { InlineText } from './InlineText';
 
 /** Per-lesson open/closed choice. Absent = follow the default. */
 const openStore = createPersistedStore('overview-open', {}, isBooleanRecord);
@@ -23,7 +24,9 @@ export function Overview({ summary, lessonId, learned }: { summary: LessonSummar
     <section className="overview" aria-label="Overview">
       <div className="overview-tldr">
         <span className="overview-kicker">In one line</span>
-        <p>{summary.tldr}</p>
+        <p>
+          <InlineText text={summary.tldr} />
+        </p>
         <button type="button" className="overview-toggle" onClick={toggle} aria-expanded={!collapsed}>
           {collapsed ? 'Show overview ▾' : 'Hide overview ▴'}
         </button>
@@ -43,8 +46,14 @@ export function Overview({ summary, lessonId, learned }: { summary: LessonSummar
                 <h3>
                   <span className="overview-icon">?</span>What it is
                 </h3>
-                <p>{summary.what}</p>
-                {summary.analogy && <p className="overview-analogy">{summary.analogy}</p>}
+                <p>
+                  <InlineText text={summary.what} />
+                </p>
+                {summary.analogy && (
+                  <p className="overview-analogy">
+                    <InlineText text={summary.analogy} />
+                  </p>
+                )}
               </article>
               <article className="overview-card">
                 <h3>
@@ -52,7 +61,9 @@ export function Overview({ summary, lessonId, learned }: { summary: LessonSummar
                 </h3>
                 <ul>
                   {summary.useCases.map((u, i) => (
-                    <li key={i}>{u}</li>
+                    <li key={i}>
+                      <InlineText text={u} />
+                    </li>
                   ))}
                 </ul>
               </article>
@@ -60,12 +71,14 @@ export function Overview({ summary, lessonId, learned }: { summary: LessonSummar
                 <h3>
                   <span className="overview-icon">!</span>Why it matters
                 </h3>
-                <p>{summary.why}</p>
+                <p>
+                  <InlineText text={summary.why} />
+                </p>
               </article>
             </div>
             <p className="overview-watch">
               <span>▶ Reading the visual</span>
-              {summary.watch}
+              <InlineText text={summary.watch} />
             </p>
           </motion.div>
         )}
