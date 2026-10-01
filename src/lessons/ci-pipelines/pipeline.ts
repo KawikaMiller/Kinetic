@@ -23,8 +23,6 @@ export interface Job {
   kind: JobKind;
   deps: string[];
   duration: number;
-  /** Column in the drawing (0 = first stage); jobs in a column are drawn in list order. */
-  stage: number;
   /** Install restored from the dependency cache. */
   cacheHit?: boolean;
 }
@@ -56,18 +54,18 @@ export function buildJobs(o: Pick<PipelineOptions, 'cache' | 'shards' | 'branch'
   const units = unitShardIds(o.shards);
   const shardTime = Math.ceil(DURATION.unitTotal / o.shards) + DURATION.shardOverhead;
   const jobs: Job[] = [
-    { id: 'install', label: 'install', kind: 'install', deps: [], duration: o.cache ? DURATION.installCached : DURATION.installCold, stage: 0, cacheHit: o.cache },
-    { id: 'lint', label: 'lint', kind: 'check', deps: ['install'], duration: DURATION.lint, stage: 1 },
-    { id: 'typecheck', label: 'typecheck', kind: 'check', deps: ['install'], duration: DURATION.typecheck, stage: 1 },
-    { id: 'build', label: 'build', kind: 'build', deps: ['install'], duration: DURATION.build, stage: 1 },
+    { id: 'install', label: 'install', kind: 'install', deps: [], duration: o.cache ? DURATION.installCached : DURATION.installCold, cacheHit: o.cache },
+    { id: 'lint', label: 'lint', kind: 'check', deps: ['install'], duration: DURATION.lint },
+    { id: 'typecheck', label: 'typecheck', kind: 'check', deps: ['install'], duration: DURATION.typecheck },
+    { id: 'build', label: 'build', kind: 'build', deps: ['install'], duration: DURATION.build },
     ...units.map((id, i): Job => ({
-      id, label: o.shards === 1 ? 'unit tests' : `unit ${i + 1}/${o.shards}`, kind: 'test', deps: ['build'], duration: shardTime, stage: 2,
+      id, label: o.shards === 1 ? 'unit tests' : `unit ${i + 1}/${o.shards}`, kind: 'test', deps: ['build'], duration: shardTime,
     })),
-    { id: 'integration', label: 'integration', kind: 'test', deps: ['build'], duration: DURATION.integration, stage: 2 },
-    { id: 'e2e', label: 'e2e', kind: 'test', deps: [...units, 'integration'], duration: DURATION.e2e, stage: 3 },
-    { id: 'package', label: 'package', kind: 'package', deps: ['e2e', 'lint', 'typecheck'], duration: DURATION.package, stage: 4 },
+    { id: 'integration', label: 'integration', kind: 'test', deps: ['build'], duration: DURATION.integration },
+    { id: 'e2e', label: 'e2e', kind: 'test', deps: [...units, 'integration'], duration: DURATION.e2e },
+    { id: 'package', label: 'package', kind: 'package', deps: ['e2e', 'lint', 'typecheck'], duration: DURATION.package },
   ];
-  if (o.branch === 'main') jobs.push({ id: 'deploy', label: 'deploy', kind: 'deploy', deps: ['package'], duration: DURATION.deploy, stage: 5 });
+  if (o.branch === 'main') jobs.push({ id: 'deploy', label: 'deploy', kind: 'deploy', deps: ['package'], duration: DURATION.deploy });
   return jobs;
 }
 

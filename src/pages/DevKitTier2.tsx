@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ByteGrid } from '../components/ByteGrid';
 import { CellGrid } from '../components/CellGrid';
+import { GraphView } from '../components/GraphView';
 import { Arrow, Bars, Curve, Heat, HLine, Plot2D, Points, Polygon, VLine, type Point } from '../components/Plot2D';
 import { SectionTitle } from '../components/Panel';
 import { TreeSvg } from '../components/TreeSvg';
@@ -29,6 +30,15 @@ export function DevKitTier2() {
       </Section>
       <Section title="TreeSvg forest · union-find sets merging">
         <ForestDemo />
+      </Section>
+      <Section title="GraphView · state machine (start arrow, accepting state, self-loop, a⇄b pair); feed it a string">
+        <AutomatonDemo />
+      </Section>
+      <Section title="GraphView · layered top-down with boxes (Tab in, arrows move, Enter marks) and a circle layout">
+        <div className="devkit-plots">
+          <LayeredDemo />
+          <CircleDemo />
+        </div>
       </Section>
       <Section title="Plot2D · Curve, VLine, HLine, Bars (birthday paradox; two dice)">
         <div className="devkit-plots">
@@ -243,5 +253,106 @@ function RegionsPlot() {
         pointLabel={(i) => `centroid ${i ? 'B' : 'A'}`}
       />
     </Plot2D>
+  );
+}
+
+/** Accepts binary strings ending in 01. */
+const DFA = {
+  nodes: [
+    { id: 'q0', label: 'q0', at: { x: 90, y: 90 } },
+    { id: 'q1', label: 'q1', at: { x: 260, y: 170 } },
+    { id: 'q2', label: 'q2', at: { x: 430, y: 90 }, accept: true },
+  ],
+  edges: [
+    { from: 'q0', to: 'q0', label: '1' },
+    { from: 'q0', to: 'q1', label: '0' },
+    { from: 'q1', to: 'q1', label: '0' },
+    { from: 'q1', to: 'q2', label: '1' },
+    { from: 'q2', to: 'q1', label: '0' },
+    { from: 'q2', to: 'q0', label: '1' },
+  ],
+};
+
+function AutomatonDemo() {
+  const input = '1001';
+  const [pos, setPos] = useState(0);
+  const states = [...input].reduce<string[]>((path, ch) => {
+    const from = path[path.length - 1];
+    return [...path, DFA.edges.find((e) => e.from === from && e.label === ch)!.to];
+  }, ['q0']);
+  const here = states[pos];
+  const taken = pos > 0 ? { from: states[pos - 1], to: here, label: input[pos - 1] } : null;
+  return (
+    <div style={{ maxWidth: 500 }}>
+      <GraphView
+        nodes={DFA.nodes}
+        edges={DFA.edges}
+        directed
+        width={500}
+        height={220}
+        startNode="q0"
+        nodeMark={(id) => (id === here ? { tone: pos === input.length ? (DFA.nodes.find((n) => n.id === id)?.accept ? 'ok' : 'bad') : 'hi', fill: 'solid' } : null)}
+        edgeMark={(e) => (taken && e.from === taken.from && e.to === taken.to && e.label === taken.label ? { tone: 'hi', width: 3.5 } : null)}
+        ariaLabel="DFA for strings ending in 01"
+      />
+      <p className="muted">
+        <Button onClick={() => setPos((p) => Math.min(input.length, p + 1))} disabled={pos >= input.length}>
+          Read next symbol
+        </Button>{' '}
+        <Button onClick={() => setPos(0)}>Reset</Button> <span className="mono">{input.slice(0, pos)}<b>{input.slice(pos)}</b></span> · in {here}
+      </p>
+    </div>
+  );
+}
+
+function LayeredDemo() {
+  const tasks = ['parse', 'lex', 'types', 'lint', 'emit', 'bundle', 'test'];
+  const deps: [string, string][] = [['lex', 'parse'], ['parse', 'types'], ['parse', 'lint'], ['types', 'emit'], ['emit', 'bundle'], ['types', 'test'], ['lint', 'test']];
+  const [done, setDone] = useState<string[]>([]);
+  const ready = (t: string) => !done.includes(t) && deps.every(([a, b]) => b !== t || done.includes(a));
+  return (
+    <div style={{ flex: '0 1 356px' }}>
+      <GraphView
+        nodes={tasks.map((t) => ({ id: t, label: t, shape: 'box' }))}
+        edges={deps.map(([from, to]) => ({ from, to }))}
+        directed
+        layout="layered"
+        spacing={{ direction: 'down', layerGap: 70, nodeGap: 100, padMain: 30, padCross: 54 }}
+        box={{ w: 84, h: 34 }}
+        edgeStyle="curve"
+        arrowSize={5}
+        nodeMark={(t) => (done.includes(t) ? { tone: 'ok', fill: 'tint' } : ready(t) ? { tone: 'hi', fill: 'tint' } : null)}
+        onNodeClick={(t) => ready(t) && setDone((d) => [...d, t])}
+        nodeAriaLabel={(t) => `${t}${done.includes(t) ? ', done' : ready(t) ? ', ready: press to run' : ', waiting'}`}
+        ariaLabel="Build tasks"
+      />
+      <p className="muted">
+        run the ready (yellow) tasks in any order · {done.length}/{tasks.length} <Button onClick={() => setDone([])}>Reset</Button>
+      </p>
+    </div>
+  );
+}
+
+function CircleDemo() {
+  const n = 6;
+  const nodes = Array.from({ length: n }, (_, i) => ({ id: i, label: 'ABCDEF'[i] }));
+  const edges = [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [1, 4]].map(([from, to]) => ({ from, to, weight: from + to }));
+  const [picked, setPicked] = useState<number | null>(null);
+  return (
+    <div style={{ flex: '0 1 300px' }}>
+      <GraphView
+        nodes={nodes}
+        edges={edges}
+        layout="circle"
+        width={300}
+        height={260}
+        nodeColor={(id) => (id < 3 ? 'var(--info)' : 'var(--violet)')}
+        edgeMark={(_, i) => (i === picked ? { tone: 'hi', width: 4 } : null)}
+        onEdgeClick={(_, i) => setPicked(i)}
+        onNodeClick={() => setPicked(null)}
+        ariaLabel="Weighted graph on a circle"
+      />
+      <p className="muted">{picked === null ? 'click an edge (or Tab in, arrows, Enter)' : `edge ${'ABCDEF'[edges[picked].from]}—${'ABCDEF'[edges[picked].to]}, weight ${edges[picked].weight}`}</p>
+    </div>
   );
 }
