@@ -8,8 +8,16 @@ export type TreeKey = string | number;
  */
 export interface TreeShape<K extends TreeKey> {
   root: K | null;
+  /**
+   * Forest mode: several trees laid out side by side, in this order (union-find sets, a
+   * Huffman merge in progress). When given, `root` is ignored.
+   */
+  roots?: readonly K[];
   children: (id: K) => readonly (K | null)[];
 }
+
+/** Columns left empty between neighbouring trees of a forest, by default. */
+export const FOREST_GAP = 0.5;
 
 /**
  * - `inorder`: binary trees laid out by in-order rank: the first child's subtree, then
@@ -35,8 +43,17 @@ export interface TreeLayout<K extends TreeKey> {
   depth: number;
 }
 
-/** Lay a tree out on a grid of columns × depth. Pure; map it to pixels with `treeX`. */
-export function layoutTree<K extends TreeKey>(shape: TreeShape<K>, mode: TreeLayoutMode): TreeLayout<K> {
+/**
+ * Lay a tree (or a forest, via `shape.roots`) out on a grid of columns × depth. Pure; map
+ * it to pixels with `treeX`. A forest's trees take consecutive runs of columns with `gap`
+ * columns between neighbours and none at the ends, so one tree lays out exactly as before.
+ */
+export function layoutTree<K extends TreeKey>(
+  shape: TreeShape<K>,
+  mode: TreeLayoutMode,
+  opts: { gap?: number } = {},
+): TreeLayout<K> {
+  const gap = opts.gap ?? FOREST_GAP;
   const place = new Map<K, TreeNodePlace>();
   let next = 0;
   let depth = 0;
@@ -58,10 +75,12 @@ export function layoutTree<K extends TreeKey>(shape: TreeShape<K>, mode: TreeLay
     return col;
   };
 
-  if (shape.root != null) {
-    if (mode === 'inorder') inorder(shape.root, 0);
-    else tidy(shape.root, 0);
-  }
+  const roots = shape.roots ?? (shape.root != null ? [shape.root] : []);
+  roots.forEach((root, i) => {
+    if (i > 0) next += gap;
+    if (mode === 'inorder') inorder(root, 0);
+    else tidy(root, 0);
+  });
   return { place, columns: next, depth };
 }
 

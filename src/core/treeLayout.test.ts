@@ -91,6 +91,40 @@ describe('layoutTree tidy', () => {
   });
 });
 
+describe('layoutTree forest (roots)', () => {
+  // Three union-find style trees: 0 <- 1, 2; 3 alone; 4 <- 5 <- 6.
+  const kids: Record<number, number[]> = { 0: [1, 2], 1: [], 2: [], 3: [], 4: [5], 5: [6], 6: [] };
+  const forest: TreeShape<number> = { root: null, roots: [0, 3, 4], children: (id) => kids[id] };
+
+  for (const mode of ['tidy', 'inorder'] as const) {
+    it(`${mode}: lays the trees side by side without overlapping`, () => {
+      const { place } = layoutTree(forest, mode);
+      const cols = (ids: number[]) => ids.map((id) => place.get(id)!.col);
+      const [a, b, c] = [cols([0, 1, 2]), cols([3]), cols([4, 5, 6])];
+      expect(Math.max(...a)).toBeLessThan(Math.min(...b));
+      expect(Math.max(...b)).toBeLessThan(Math.min(...c));
+      expect(place.size).toBe(7);
+    });
+  }
+
+  it('puts a gap of `gap` columns between trees, none at the ends', () => {
+    const { place, columns } = layoutTree(forest, 'tidy', { gap: 1 });
+    expect(place.get(1)!.col).toBe(0);
+    expect(place.get(3)!.col).toBe(2 + 1); // two leaves, then the gap
+    expect(columns).toBe(3 + 2 + 1); // 3 leaves + 2 gaps
+  });
+
+  it('a single tree lays out exactly as before, with or without roots', () => {
+    const one: TreeShape<number> = { root: 0, children: (id) => kids[id] };
+    const asForest: TreeShape<number> = { root: null, roots: [0], children: (id) => kids[id] };
+    for (const mode of ['tidy', 'inorder'] as const) expect(layoutTree(asForest, mode)).toEqual(layoutTree(one, mode));
+  });
+
+  it('depth is the deepest of any tree', () => {
+    expect(layoutTree(forest, 'tidy').depth).toBe(2);
+  });
+});
+
 describe('treeX', () => {
   it('spreads columns between the pads and centres a single node', () => {
     expect(treeX(0, 5, 900, 40)).toBe(40);
