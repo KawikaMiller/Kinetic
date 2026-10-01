@@ -701,6 +701,122 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
   close commits never overlap. It's opt-in, so git-internals keeps its usual 12-character messages.
 - git-internals runs on it, pixel-identical on desktop, and at 390px its graph now starts at the first commit instead of scrolled past the end.
 
+## Tier 2 kit (rollout plan P0-a)
+
+Built before Tier 2 lessons, each for 2+ of them. All of them are on `#/dev/kit` under "Tier 2 kit"
+(`pages/DevKitTier2.tsx`), checked at 1440 and 390. CSS is in `kit.css`; pure logic lives in
+`src/core/` with Vitest tests next to it.
+
+### `core/numberTheory.ts` — modular-arithmetic, gcd-euclid, primes-factoring, rsa, diffie-hellman, digital-signatures-pki, rolling-hash
+```ts
+mod(-7n, 5n)              // 3n: always non-negative
+modPow(4n, 13n, 497n)     // 445n, square-and-multiply
+gcd(48n, 18n)             // 6n
+egcd(240n, 46n)           // { g: 2n, x: -9n, y: 47n, steps: EuclidStep[] }: 240x + 46y = g; steps = the remainder table
+modInverse(3n, 11n)       // 4n; null when gcd(a, m) ≠ 1
+isProbablePrime(n)        // { prime, certain }: Miller-Rabin, first 13 primes as bases; certain below MR_DETERMINISTIC_BOUND (≈3.3e24)
+sieve(100)                // { isPrime, primes, passes: [{ prime, crossed: number[] }] }: one pass per prime ≤ √n, for animating
+trialFactor(360n)         // { factors: [2n, 2n, 2n, 3n, 3n, 5n], steps }
+toyRsa(61n, 53n, 17n)     // { ok: true, n, phi, e, d } | { ok: false, reason }: textbook RSA, toy sizes only
+```
+- Everything is `bigint` except `sieve` (a `number` limit). Tests check against brute force below 10⁴, Carmichael numbers, Bézout identities and RSA round-trips.
+
+### `core/stats.ts` — combinatorics, birthday-paradox, probability-basics, expected-value, conditional-bayes, shuffle-reservoir, linear-time-sorting, classification-metrics
+```ts
+factorial(20); choose(52, 5)         // bigint, exact
+log2Factorial(n)                     // log₂ n!, for the comparison-sort bound
+variance(xs); stdDev(xs)             // population; { sample: true } divides by n − 1. mean/percentile stay in core/sim
+histogram(xs, { bins: 10, min: 0, max: 1 })   // { edges (bins + 1), counts, outside }: max lands in the last bin
+binomialPmf(n, k, p)
+collisionProbability(23, 365)        // { p: 0.507…, method: 'exact' }: exact product up to COLLISION_EXACT_LIMIT, then 1 − e^(−n(n−1)/2N)
+runningMean(xs)                      // the convergence curve for simulated frequencies
+```
+
+### `core/disjointSet.ts` — union-find, minimum-spanning-trees
+```ts
+const dsu = createDisjointSet(8, { compress: true, byRank: true, trace: true });
+dsu.union(0, 1)           // true if it merged two sets
+dsu.find(5); dsu.connected(2, 3); dsu.count    // count = number of sets
+dsu.parents(); dsu.ranks(); dsu.height()       // snapshots for drawing
+dsu.events                // with trace: find {node, path} · reparent {node, from, to} · union {a, b, merged, root, child} · rank {root, rank}
+```
+- Turn `compress` / `byRank` off to show the naive forest. Draw it with `TreeSvg` forest mode: `roots` = the nodes that are their own parent.
+
+### `TreeSvg` forest mode — union-find, huffman-coding, tries
+`shape.roots?: K[]` (instead of `root`) lays several trees side by side; `forestGap` (default `FOREST_GAP`, 0.5) is the empty columns between them. Additive: every single-root caller is pixel-identical (all six TreeSvg lessons diffed).
+
+### `core/grid.ts`, `CellGrid.tsx` — error-detection-correction, primes-factoring, modular-arithmetic, birthday-paradox, conditional-bayes, cpu-caches, cpu-pipelining, shuffle-reservoir, virtual-memory-paging, file-systems, storage-devices, edit-distance, deployment-strategies, feature-flags
+```tsx
+<CellGrid rows={10} cols={10} size="md"                      // xs 10px · sm 22px · md 34px cells
+          cell={(r, c) => ({ text: n(r, c), tone: 'ok', fill: 'tint', intensity: 0.3 })}   // fill: solid | tint | outline | none
+          rowLabels={…} colLabels={…} highlight={[{ r, c, tone: 'info' }]}
+          onCellClick={(r, c) => pick(r, c)} cellAriaLabel={(r, c) => `${n(r, c)}, crossed out`} cellTitle={…}
+          rowSuffix={{ width: 100, render: (r) => text }} ariaLabel="Numbers 1 to 100" />
+```
+- Natural size (one unit = 1px), shrinking to fit narrow screens. `fill: 'none'` mutes the cell's text (a crossed-out number).
+- With `onCellClick` it's one tab stop: arrows move (no wrap), Home/End go to the row ends, Ctrl+Home/End to the corners, PageUp/Down five rows, Enter/Space press (`gridKeyTarget` in `core/grid`, the WAI-ARIA grid pattern). Reuse `gridKeyTarget` for any HTML grid of buttons, as graph-representations' adjacency matrix does.
+- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API; text isn't drawn) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element.
+
+### `core/bytes.ts`, `ByteGrid.tsx` — endianness, grpc-protobuf, symmetric-ciphers, macs-hmac, packet-capture-debugging, file-systems
+```tsx
+<ByteGrid bytes={frame} perRow={16} offsetBase={0x1000} ascii
+          fields={[{ from: 0, to: 5, tone: 'info', label: 'destination MAC' }, …]}
+          toneOf={(i) => (i === decoding ? 'hi' : undefined)} highlight={[{ i: 12, tone: 'hi' }]}
+          onByteClick={(i) => pick(i)} ariaLabel="Frame bytes" />
+```
+- A CellGrid underneath: hex offsets on the left, tinted fields with a key below, printable ASCII on the right (`printable`), the same keyboard model.
+- `perRow` defaults to 16, or 8 on a phone (`useMediaQuery(PHONE_QUERY)`, ≤600px), so the digits stay readable at 390.
+
+### `core/plot.ts`, `Plot2D.tsx` — birthday-paradox, probability-basics, expected-value, classification-metrics, vectors-similarity, matrices-transformations, gradient-descent, linear-logistic-regression, supervised-learning, decision-trees-ensembles, clustering-kmeans, embeddings, usability-laws, amdahls-law, bezier-interpolation, color-spaces, linear-time-sorting, latency-bandwidth
+```tsx
+<Plot2D x={{ domain: [1, 80], label: 'people' }} y={{ domain: [1e-9, 1e21], log: true, ticks: 6 }}   // format?: (v) => string
+        width={356} height={240} ariaLabel="…">            {/* the defaults fit a phone with 10px ticks */}
+  <Heat fn={region} resolution={48} />                      {/* first: a canvas under the rest; memoise fn */}
+  <Bars bars={barsFromHistogram(histogram(xs, …))} tone="violet" />
+  <Polygon points={[[0, 0], a, sum, b]} tone="violet" dashed />
+  <Curve fn={(x) => p(x)} tone="info" />  <Curve points={pts} dashed />
+  <Segments segments={[{ from, to, tone }]} />
+  <VLine at={23} label="n = 23" />  <HLine at={0.5} label="50%" tone="dim" />
+  <Arrow from={[0, 0]} to={v} label="a" tone="info" />
+  <Points data={[{ x, y, tone, hollow }]} r={4.5} onDrag={(i, [x, y]) => …} pointLabel={(i) => 'centroid A'} />
+</Plot2D>
+```
+- Layers are children in data coordinates, drawn in order; path layers are clipped to the plot box. Custom layers call `usePlot()` (from `components/plotContext`) for `xs`, `ys` and `box`.
+- `Curve fn` is sampled evenly on screen (so log axes too) and breaks where `fn` isn't finite. `Heat fn` returns a 0..1 intensity of `tone` or `{ tone, intensity }` (a region), or pass `grid` (row 0 at the top); memoise `fn`, since it repaints when it changes.
+- Draggable `Points` take pointer drags and are focusable: arrow keys move 4 units (Shift: 20), always clamped to the domain (`nudgePoint`, `clampPoint`).
+- A `dim` rule is a quiet reference line (faint line, muted label). `formatTick` writes 1.5k, 2M, and 10ⁿ on log axes.
+- `paintImage(w, h, draw)` (`components/canvasImage.ts`) is the shared paint-to-data-URL step behind Heat and CellGrid's canvas mode.
+
+### `core/graphLayout.ts`, `GraphView.tsx` — topological-sort, union-find, minimum-spanning-trees, relations-orders, cycle-detection, dfa-nfa, lexing-tokens, deadlocks, garbage-collection, memory-leaks, build-systems, bundlers-code-splitting, coupling-cohesion, test-doubles, dependency-injection, behavioral-patterns, mobile-app-lifecycle, sockets-api, software-licensing; graph-representations, ci-pipelines
+```tsx
+// An editor (graph-representations): fixed positions, one tab stop, click/drag/keyboard editing
+<GraphView nodes={[{ id, label, at: { x, y } }]} edges={[{ from, to, weight }]} directed width={640} height={380}
+           nodeColor={(id) => categorical(component(id))}
+           nodeMark={(id) => (id === sel ? { tone: 'hi', fill: 'solid' } : null)}
+           edgeMark={(e) => (inCycle(e) ? { tone: 'bad', width: 3.5 } : null)}
+           onNodeClick={select} onEdgeClick={(e, i) => select(e)}
+           editable={{ onAddNode: (p) => …, onAddEdge: (from, to) => …, minGap: 48 }} ariaLabel="…" />
+
+// A DAG (ci-pipelines): layered columns, S-curves, your own node drawing
+<GraphView nodes={jobs.map((j) => ({ id: j.id, shape: 'box' }))} edges={deps} directed layout="layered"
+           spacing={{ direction: 'right', layerGap: 150, nodeGap: 64, padMain: 70, padCross: 44 }}
+           box={{ w: 112, h: 46 }} edgeStyle="curve" edgeClass={(e) => (dead(e) ? 'is-dead' : '')}
+           renderNode={(n, at) => <SceneNode at={at} … />} ariaLabel="…" />
+
+// A state machine: start arrow, accepting states, self-loops, labels; a⇄b pairs bend apart by themselves
+<GraphView nodes={[{ id: 'q2', at, accept: true }, …]} edges={[{ from: 'q0', to: 'q0', label: '1' }, …]}
+           directed startNode="q0" width={500} height={220} ariaLabel="…" />
+```
+- `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
+- Natural size, shrinking on narrow screens; stretch it with `width: 100%` in lesson CSS (both migrated lessons do). Big graphs on phones belong in a `WideRegion`, as in ci-pipelines.
+- Node marks use TreeSvg's shape (`{ tone, fill: 'tint' | 'solid', tint? }`); edges take `{ tone, dashed?, width? }` (default 3.5), and the arrowhead follows the tone. `nodeColor` colours only unmarked nodes. Classes: `.graph-node`, `.graph-node-shape`, `.graph-node-label`, `.graph-edge` (+ `is-marked`, `is-dashed`), `.graph-edge-label`.
+- With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop (roving tabindex, starting top-left): arrows move to the nearest node or clickable edge in that direction (`spatialNext`), Home/End jump to the ends, Enter/Space press. `editable`: clicking empty space adds a node (at least `minGap` from the rest), dragging node to node adds an edge, and from the keyboard it's C on a node then Enter on another (Escape cancels). Adding a node from the keyboard stays a lesson button, since only the lesson knows where it goes.
+- Both lessons migrated pixel-identically: smoke frames plus ten driven states (presets, weights, a selected edge, a cycle, two-colouring; feature branch, 1 and 4 shards, a broken test, fail-fast). graph-representations' Tab path to the quiz went from 78 stops to 24 (L-7): the graph and the adjacency matrix are one stop each.
+
+### Smaller pieces
+- `useMediaQuery(query)` and `PHONE_QUERY` (`components/useMediaQuery.ts`): for layout choices CSS can't make (ByteGrid's bytes per row). SSR-safe (`useSyncExternalStore`).
+- `arrowMarkerDef(id, color, size, refX)` (`ArrowMarker.tsx`): one `<marker>` element, for a set of them under one `<defs>`. `useArrowMarker` is built on it.
+
 ---
 
 ## Not built (deliberately)

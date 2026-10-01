@@ -602,6 +602,93 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .commit-tag-text { font: 600 11px var(--mono); fill: var(--muted); }
 .commit-tag-text.is-head { fill: var(--hi); }
 
+/* ─── CellGrid / ByteGrid ─────────────────────────────────────────── */
+/* Natural size (one drawing unit = 1px), shrinking to fit narrow screens but never growing. */
+.cellgrid { display: block; max-width: 100%; height: auto; overflow: visible; }
+.cellgrid-label { font: 500 10px var(--mono); fill: var(--muted); }
+.cellgrid-suffix { font: 500 10px var(--mono); fill: var(--muted); white-space: pre; }
+.cellgrid-cell rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1; transition: fill 0.25s, stroke 0.25s; }
+.cellgrid-cell text { font-family: var(--mono); font-weight: 600; fill: var(--text); pointer-events: none; }
+.cellgrid-cell.is-solid rect { fill: var(--c); stroke: var(--c); }
+.cellgrid-cell.is-solid text { fill: var(--on-c); }
+.cellgrid-cell.is-tint rect { fill: color-mix(in srgb, var(--c) var(--cell-tint, 18%), var(--cell)); stroke: var(--c); }
+.cellgrid-cell.is-outline rect { stroke: var(--c); stroke-width: 1.5; }
+.cellgrid-cell.is-none rect { fill: transparent; stroke: transparent; }
+.cellgrid-cell.is-none text { fill: var(--muted); font-weight: 500; }
+.cellgrid-cell.is-tint:not([class*='tone-']) rect,
+.cellgrid-cell.is-outline:not([class*='tone-']) rect { stroke: var(--line-2); }
+.cellgrid.is-clickable .cellgrid-cell { cursor: pointer; }
+.cellgrid.is-clickable .cellgrid-cell:where(:hover) rect { stroke: var(--faint); }
+.cellgrid-cell:focus-visible { outline: none; }
+.cellgrid-cell:focus-visible rect { stroke: var(--text); stroke-width: 2.5; }
+.cellgrid-ring { fill: none; stroke: var(--c); stroke-width: 2; pointer-events: none; }
+.cellgrid-hitarea { fill: transparent; cursor: pointer; }
+.cellgrid-hitarea:focus-visible { outline: none; }
+.cellgrid-cursor { fill: none; stroke: transparent; stroke-width: 2; pointer-events: none; }
+.cellgrid-hitarea:focus-visible ~ .cellgrid-cursor { stroke: var(--text); }
+.bytegrid-fields { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+.bytegrid-field { display: inline-flex; align-items: center; gap: 6px; }
+.bytegrid-field i { width: 10px; height: 10px; border-radius: 3px; border: 2px solid var(--c); }
+
+/* GraphView. Unmarked nodes take --c from nodeColor (falling back to a neutral line). */
+/* Natural size (one drawing unit = 1px), shrinking on narrow screens; a lesson stretches it with width: 100%. */
+.graph-view { display: block; max-width: 100%; height: auto; overflow: visible; }
+.graph-view.is-editable { touch-action: none; cursor: crosshair; }
+.graph-edge { fill: none; stroke: var(--line-2); stroke-width: 2.5; transition: stroke 0.2s; }
+.graph-edge.is-marked { stroke: var(--c); }
+.graph-edge.is-dashed { stroke-dasharray: 6 5; }
+.graph-edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
+.graph-edge-label { font: 700 12px var(--mono); fill: var(--muted); pointer-events: none; }
+.graph-edge-group:focus-visible { outline: none; }
+.graph-edge-group:focus-visible .graph-edge { stroke: var(--text); }
+.graph-start { stroke: var(--line-2); stroke-width: 2.5; }
+.graph-drag { stroke: var(--hi); stroke-width: 2.5; stroke-dasharray: 6 5; pointer-events: none; }
+.graph-node-shape {
+  fill: color-mix(in srgb, var(--c, var(--line-2)) var(--graph-tint, 22%), var(--cell));
+  stroke: var(--c, var(--line-2));
+  stroke-width: 2.5;
+  transition: fill 0.2s, stroke 0.2s;
+}
+.graph-node-accept { fill: none; stroke: var(--c, var(--line-2)); stroke-width: 2; }
+.graph-node-label { font: 700 14px var(--mono); fill: var(--text); pointer-events: none; }
+.graph-node.is-solid .graph-node-shape { fill: var(--c); stroke: var(--c); stroke-width: 4; }
+.graph-node.is-solid .graph-node-label { fill: var(--on-c); }
+.graph-node.is-solid .graph-node-accept { stroke: var(--on-c); }
+.graph-node-ring { fill: none; stroke: transparent; stroke-width: 2.5; pointer-events: none; }
+.graph-node:focus-visible { outline: none; }
+.graph-node:focus-visible .graph-node-ring,
+.graph-node.is-connecting .graph-node-ring { stroke: var(--text); }
+.graph-node.is-connecting .graph-node-ring { stroke-dasharray: 4 3; }
+.graph-view[role='group'] .graph-node { cursor: pointer; }
+
+/* Plot2D: axes, grid and layers. Layers colour themselves from their tone class (--c). */
+.plot2d { display: block; max-width: 100%; height: auto; overflow: visible; }
+.plot-grid line { stroke: var(--line); stroke-width: 1; }
+.plot-frame { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.plot-tick { font: 500 10px var(--mono); fill: var(--muted); }
+.plot-title { font: 600 11px var(--font); fill: var(--muted); }
+.plot2d .is-dashed, .plot2d .is-dashed line { stroke-dasharray: 5 4; }
+.plot-curve { fill: none; stroke: var(--c); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.plot-segments line { stroke: var(--c); stroke-width: 1.5; }
+.plot-bars rect { fill: color-mix(in srgb, var(--c) 45%, transparent); stroke: var(--c); stroke-width: 1; }
+.plot-rule line { stroke: var(--c); stroke-width: 1.5; }
+/* A dim rule is a quiet reference line (50%, one year): faint line, muted label. */
+.plot-rule.tone-dim line { stroke: var(--faint); }
+.plot-rule.tone-dim text { fill: var(--muted); }
+.plot-rule text, .plot-arrow text { font: 600 10.5px var(--font); fill: var(--c); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.plot-arrow line { stroke: var(--c); stroke-width: 2.25; stroke-linecap: round; }
+.plot-arrow polygon { fill: var(--c); }
+.plot-polygon { fill: color-mix(in srgb, var(--c) 18%, transparent); stroke: var(--c); stroke-width: 1.75; stroke-linejoin: round; }
+.plot-point { fill: var(--c); stroke: var(--bg); stroke-width: 1.5; }
+.plot-point.is-hollow, .plot-point.is-hollow circle:not(.plot-hit) { fill: var(--bg); stroke: var(--c); stroke-width: 2; }
+.plot-point.is-draggable { cursor: grab; touch-action: none; }
+.plot-point.is-draggable:active { cursor: grabbing; }
+.plot-point.is-draggable circle:not(.plot-hit) { fill: var(--c); stroke: var(--bg); stroke-width: 1.5; }
+.plot-point.is-draggable.is-hollow circle:not(.plot-hit) { fill: var(--bg); stroke: var(--c); stroke-width: 2; }
+.plot-point .plot-hit { fill: transparent; stroke: none; }
+.plot-point.is-draggable:focus-visible { outline: none; }
+.plot-point.is-draggable:focus-visible circle:not(.plot-hit) { stroke: var(--text); stroke-width: 2.5; }
+
 @media (max-width: 900px) {
   .stage-pad { padding: 16px; }
   .bit-strip { --bit-w: 20px; --bit-fs: 12px; }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useArrowMarker } from '../../components/ArrowMarker';
 import { CodePanel } from '../../components/CodePanel';
 import { ConsolePanel } from '../../components/ConsolePanel';
+import { GraphView } from '../../components/GraphView';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
@@ -10,7 +10,7 @@ import { Button, Hint, Legend, Segmented, Stat, Stats, Toggle } from '../../comp
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { minSec, pipelineFrames, type JobView, type PipelineFrame } from './frames';
-import type { Branch, Job, PipelineOptions, Run, Shards } from './pipeline';
+import type { Branch, PipelineOptions, Run, Shards } from './pipeline';
 import { pipelineYaml } from './yaml';
 import './styles.css';
 
@@ -122,62 +122,40 @@ export function Stage() {
   );
 }
 
-/** As tall as the busiest column (unit shards + integration). */
-function sceneHeight(jobs: readonly Job[]) {
-  const tallest = Math.max(...jobs.map((j) => jobs.filter((k) => k.stage === j.stage).length));
-  return PAD_Y * 2 + ROW_GAP * (tallest - 1);
-}
-
-/** Columns by stage; the jobs in a column are centred vertically in list order. */
-function place(job: Job, jobs: readonly Job[], height: number) {
-  const column = jobs.filter((j) => j.stage === job.stage);
-  const index = column.indexOf(job);
-  return { x: PAD_X + job.stage * COL_GAP, y: height / 2 + (index - (column.length - 1) / 2) * ROW_GAP };
-}
+/** Columns come from GraphView's layered layout (each job one past its deepest dependency). */
+const SPACING = { direction: 'right', layerGap: COL_GAP, nodeGap: ROW_GAP, padMain: PAD_X, padCross: PAD_Y } as const;
 
 function Dag({ run, frame }: { run: Run; frame: PipelineFrame }) {
-  const arrow = useArrowMarker('var(--line-2)', { size: 6, refX: 9 });
-  const critical = useArrowMarker('var(--violet)', { size: 6, refX: 9 });
   const jobs = run.jobs.map((s) => s.job);
-  const height = sceneHeight(jobs);
-  const at = new Map(jobs.map((j) => [j.id, place(j, jobs, height)]));
+  const scheduled = new Map(run.jobs.map((s) => [s.job.id, s]));
   const onPath = new Set(run.failed ? [] : run.criticalPath);
   const pathEdge = (from: string, to: string) => {
     const i = run.criticalPath.indexOf(to);
     return !run.failed && i > 0 && run.criticalPath[i - 1] === from;
   };
+  const dead = (id: string) => frame.jobs[id].status === 'blocked' || frame.jobs[id].status === 'cancelled';
 
   return (
-    <svg viewBox={`0 0 ${SCENE_W} ${height}`} className="ci-dag" role="img" aria-label="Pipeline jobs and their dependencies">
-      {arrow.def}
-      {critical.def}
-      {jobs.flatMap((j) =>
-        j.deps.map((d) => {
-          const a = at.get(d)!;
-          const b = at.get(j.id)!;
-          const x1 = a.x + NODE_W / 2;
-          const x2 = b.x - NODE_W / 2 - 4;
-          const mid = (x1 + x2) / 2;
-          const hot = pathEdge(d, j.id);
-          const dead = frame.jobs[j.id].status === 'blocked' || frame.jobs[j.id].status === 'cancelled';
-          return (
-            <path
-              key={`${d}-${j.id}`}
-              d={`M ${x1} ${a.y} C ${mid} ${a.y}, ${mid} ${b.y}, ${x2} ${b.y}`}
-              className={`ci-edge ${hot ? 'is-critical' : ''} ${dead ? 'is-dead' : ''}`}
-              markerEnd={hot ? critical.url : arrow.url}
-            />
-          );
-        }),
-      )}
-      {run.jobs.map((s) => {
-        const view = frame.jobs[s.job.id];
+    <GraphView
+      nodes={jobs.map((j) => ({ id: j.id, label: j.label, shape: 'box' }))}
+      edges={jobs.flatMap((j) => j.deps.map((d) => ({ from: d, to: j.id })))}
+      directed
+      layout="layered"
+      spacing={SPACING}
+      width={SCENE_W}
+      box={{ w: NODE_W, h: NODE_H }}
+      edgeStyle="curve"
+      arrowSize={6}
+      arrowGap={4}
+      edgeMark={(e) => (pathEdge(e.from, e.to) ? { tone: 'violet', width: 2.4 } : null)}
+      edgeClass={(e) => (dead(e.to) ? 'is-dead' : '')}
+      renderNode={(n, p) => {
+        const s = scheduled.get(n.id)!;
+        const view = frame.jobs[n.id];
         const look = TONE[view.status];
         const cacheHit = s.job.cacheHit && view.status !== 'pending';
-        const p = at.get(s.job.id)!;
         return (
           <SceneNode
-            key={s.job.id}
             at={p}
             w={NODE_W}
             h={NODE_H}
@@ -187,7 +165,7 @@ function Dag({ run, frame }: { run: Run; frame: PipelineFrame }) {
             on={look.on || !!cacheHit}
             variant={look.variant}
           >
-            {onPath.has(s.job.id) && (
+            {onPath.has(n.id) && (
               <rect className="ci-halo" x={p.x - NODE_W / 2 - HALO} y={p.y - NODE_H / 2 - HALO} width={NODE_W + HALO * 2} height={NODE_H + HALO * 2} rx={13} />
             )}
             {view.status === 'running' && (
@@ -195,8 +173,10 @@ function Dag({ run, frame }: { run: Run; frame: PipelineFrame }) {
             )}
           </SceneNode>
         );
-      })}
-    </svg>
+      }}
+      className="ci-dag"
+      ariaLabel="Pipeline jobs and their dependencies"
+    />
   );
 }
 

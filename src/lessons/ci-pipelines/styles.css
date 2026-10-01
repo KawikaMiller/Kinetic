@@ -1,10 +1,10 @@
 .ci { gap: 14px; }
 
 /* ── DAG ───────────────────────────────────────────────────────── */
-.ci-dag { display: block; width: 100%; height: auto; overflow: visible; }
-.ci-edge { fill: none; stroke: var(--line-2); stroke-width: 1.6; transition: stroke 0.25s, opacity 0.25s; }
-.ci-edge.is-critical { stroke: var(--violet); stroke-width: 2.4; }
-.ci-edge.is-dead { opacity: 0.3; stroke-dasharray: 4 5; }
+/* A GraphView (kit.css), stretched to the stage, with thinner edges; the critical path is an edgeMark. */
+.ci-dag { width: 100%; }
+.ci-dag .graph-edge { stroke-width: 1.6; transition: stroke 0.25s, opacity 0.25s; }
+.ci-dag .graph-edge.is-dead { opacity: 0.3; stroke-dasharray: 4 5; }
 .ci-halo { fill: none; stroke: var(--violet); stroke-width: 1.5; stroke-dasharray: 5 4; }
 
 .ci-progress { fill: var(--hi); }

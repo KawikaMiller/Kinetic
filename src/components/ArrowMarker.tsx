@@ -17,12 +17,14 @@ export function useArrowMarker(
 ): { id: string; url: string; def: ReactElement } {
   const { size = 7, refX = 8 } = o;
   const id = `arrow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
-  const def = (
-    <defs>
-      <marker id={id} viewBox="0 0 10 10" refX={refX} refY="5" markerWidth={size} markerHeight={size} orient="auto-start-reverse">
-        <path d="M0,0 L10,5 L0,10 z" fill={color} />
-      </marker>
-    </defs>
+  return { id, url: `url(#${id})`, def: <defs>{arrowMarkerDef(id, color, size, refX)}</defs> };
+}
+
+/** One arrowhead `<marker>` (for a set of them under one `<defs>`, as GraphView draws per tone). */
+export function arrowMarkerDef(id: string, color: string, size = 7, refX = 8): ReactElement {
+  return (
+    <marker key={id} id={id} viewBox="0 0 10 10" refX={refX} refY="5" markerWidth={size} markerHeight={size} orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill={color} />
+    </marker>
   );
-  return { id, url: `url(#${id})`, def };
 }

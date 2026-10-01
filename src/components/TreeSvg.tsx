@@ -39,14 +39,18 @@ export interface TreeGeometry<K extends TreeKey> {
  * - `hidden(id)` keeps a node (and the edge to it) out of the picture without moving
  *   anything else: the layout always uses the whole shape.
  * - `overlay` draws between edges and nodes with the tree's geometry.
+ * - Forest mode: give `shape.roots` to draw several trees side by side (union-find sets,
+ *   a Huffman merge); `forestGap` is the empty columns between neighbouring trees.
  */
 export function TreeSvg<K extends TreeKey>({
-  shape, layout = 'tidy', width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
+  shape, layout = 'tidy', forestGap, width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
   radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, nodeOpacity, edgeMark, markedEdgeWidth, hidden,
   enterScale = 0.2, transition = SPRING.soft, onNodeClick, nodeAriaLabel, overlay, className = '', ariaLabel,
 }: {
   shape: TreeShape<K>;
   layout?: TreeLayoutMode;
+  /** Forest mode only: empty columns between neighbouring trees (default FOREST_GAP, 0.5). */
+  forestGap?: number;
   /** viewBox size; the SVG scales to its CSS box. */
   width: number;
   height: number;
@@ -77,7 +81,7 @@ export function TreeSvg<K extends TreeKey>({
   className?: string;
   ariaLabel?: string;
 }) {
-  const { place, columns, depth } = layoutTree(shape, layout);
+  const { place, columns, depth } = layoutTree(shape, layout, { gap: forestGap });
   const gap = levelGap ?? Math.min(maxLevelGap, (height - bottomRoom) / Math.max(1, depth));
   const at = (id: K) => {
     const p = place.get(id);
