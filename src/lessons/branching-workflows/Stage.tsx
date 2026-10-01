@@ -97,8 +97,9 @@ function DayRuler({ day }: { day: number }) {
 /**
  * Developer lane colours: categorical, minus the status colours this lesson already uses
  * (green = merged into main, yellow = today, red = conflicts), so a lane never reads as a status.
+ * Not --pink either: it sits a few shades from --bad. trkLang is a fuchsia from the track palette.
  */
-const DEV_TONES: readonly TokenName[] = ['info', 'violet', 'pink', 'orange', 'sky'];
+const DEV_TONES: readonly TokenName[] = ['info', 'violet', 'trkLang', 'orange', 'sky'];
 const devColour = (i: number) => cssVar(DEV_TONES[i % DEV_TONES.length]);
 
 /** Lane colours: main and develop neutral, each developer their own colour on both sides. */
