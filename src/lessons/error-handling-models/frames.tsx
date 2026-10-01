@@ -30,17 +30,28 @@ const abbreviate = (s: string) => (s.length > FRAME_DETAIL_CHARS ? `${s.slice(0,
 
 const errBadge = (message: string) => <span className="hl bad">Error('{message}')</span>;
 
-/** Leave events that directly follow their function's return are shown by the return frame. */
+/** Index of the next event after `i` that isn't a log line. */
+const nextShown = (events: TraceEvent[], i: number) => events.findIndex((x, k) => k > i && x.kind !== 'log');
+
+/**
+ * A function that returns leaves right after its return, or right after its own finally
+ * (`return x` inside `try { } finally { }` runs the finally before the frame pops). That
+ * leave is already shown by the return or finally frame, so it isn't a frame of its own.
+ */
 function mergedLeaves(events: TraceEvent[]): Set<number> {
   const skip = new Set<number>();
   events.forEach((e, i) => {
     if (e.kind !== 'return') return;
-    const j = events.findIndex((x, k) => k > i && x.kind !== 'log');
+    let j = nextShown(events, i);
+    if (events[j]?.kind === 'finally' && (events[j] as { fn: Fn }).fn === e.fn) j = nextShown(events, j);
     const next = events[j];
     if (next?.kind === 'leave' && next.fn === e.fn) skip.add(j);
   });
   return skip;
 }
+
+/** The value expression a `return` line hands back, e.g. "err('bank timeout')" or "res". */
+const returnedExpr = (line: string | undefined) => /return (.*);$/.exec(line?.trim() ?? '')?.[1] ?? '';
 
 /**
  * Which shown event each printed line appears with: the event it directly follows
@@ -68,7 +79,7 @@ function logOwners(events: TraceEvent[], skip: Set<number>): Map<number, string[
   return owners;
 }
 
-function verdict(mode: Mode, preset: Preset, failAt: FailAt, output: string[]): ReactNode {
+function verdict(mode: Mode, preset: Preset, failAt: FailAt, output: string[], hasFinally: boolean): ReactNode {
   const responded = output.at(-1)?.replace('main: responded ', '') ?? '';
   if (mode === 'result') {
     return failAt === 'none' ? (
@@ -77,7 +88,13 @@ function verdict(mode: Mode, preset: Preset, failAt: FailAt, output: string[]): 
       <>No hidden jumps: every level checked the result and passed the <b>Err</b> up by hand. Explicit, but verbose. main responded <code>{responded}</code>.</>
     );
   }
-  if (failAt === 'none') return <>No failure: every frame returned normally, and the finally still ran. main responded <code>{responded}</code>.</>;
+  if (failAt === 'none') {
+    return (
+      <>
+        No failure: every frame returned normally{hasFinally ? ', and the finally still ran' : ''}. main responded <code>{responded}</code>.
+      </>
+    );
+  }
   if (preset === 'swallow') {
     return (
       <>Looks like success: main responded <code>{responded}</code>. But the payment <span className="hl bad">never went through</span> and nobody knows why. Catching everything made it worse.</>
@@ -94,6 +111,8 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
   const now = rec.get;
   let popNext = false;
   const finallyRan = new Set<Fn>();
+  /** Functions that have returned but whose frame waits for their finally to run. */
+  const returning = new Set<Fn>();
 
   rec.snap(
     mode === 'exceptions' ? (
@@ -129,10 +148,20 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
       }
       case 'return': {
         set({ state: 'returning', detail: `returns ${abbreviate(show(e.value))}` });
-        popNext = true;
+        const next = events[nextShown(events, i)];
+        const finallyFirst = next?.kind === 'finally' && next.fn === e.fn;
+        if (finallyFirst) returning.add(e.fn);
+        else popNext = true;
         const isErr = mode === 'result' && typeof e.value === 'object' && e.value !== null && 'ok' in e.value && !e.value.ok;
+        const creates = /^err\(/.test(returnedExpr(lines[e.line]));
         say = isErr ? (
-          <>{e.fn} checks the result: it's an <b>Err</b>, so it returns it upward. Explicit, and repeated at every level.</>
+          creates ? (
+            <>{e.fn} fails, and says so with a value: it returns <code>{returnedExpr(lines[e.line])}</code> instead of throwing.</>
+          ) : (
+            <>{e.fn} checks the result: it's an <b>Err</b>, so it returns it upward. Explicit, and repeated at every level.</>
+          )
+        ) : finallyFirst ? (
+          <>{e.fn} returns <code>{show(e.value)}</code>, but its <b>finally</b> still has to run before the frame can pop.</>
         ) : (
           <>{e.fn} returns <code>{show(e.value)}</code>.</>
         );
@@ -161,8 +190,15 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
       }
       case 'finally': {
         finallyRan.add(e.fn);
-        set({ tone: 'violet', detail: 'finally: cleanup' });
-        say = <>{e.fn}'s <b>finally</b> runs on the way out, whether or not something failed.</>;
+        if (returning.delete(e.fn)) {
+          // It returned first: the value waits until cleanup is done, then the frame pops.
+          set({ tone: 'violet', detail: 'finally, then return' });
+          popNext = true;
+          say = <>{e.fn}'s <b>finally</b> runs first; only then does its return value reach the caller and the frame pop.</>;
+        } else {
+          set({ tone: 'violet', detail: 'finally: cleanup' });
+          say = <>{e.fn}'s <b>finally</b> runs on the way out, whether or not something failed.</>;
+        }
         break;
       }
       case 'catch': {
@@ -191,6 +227,7 @@ export function errorFrames(lines: readonly string[], mode: Mode, preset: Preset
     rec.snap(say, undefined, { stack, line, output: [...now().output, ...printed], ...patch });
   });
 
-  if (!now().crash) rec.finish(verdict(mode, preset, failAt, now().output), 2);
+  const hasFinally = events.some((e) => e.kind === 'finally');
+  if (!now().crash) rec.finish(verdict(mode, preset, failAt, now().output, hasFinally), 2);
   return rec.frames;
 }
