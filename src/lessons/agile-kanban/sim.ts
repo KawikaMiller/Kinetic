@@ -301,6 +301,15 @@ export interface Stats {
   span: number;
 }
 
+/**
+ * Start the trailing stats over from now (the board itself carries on). Used when the WIP limit
+ * changes, so cycle time and Little's law describe the new limit, not a blend with the old one.
+ */
+export function restartStats(w: World): void {
+  w.flightSamples = [{ t: w.t, integral: w.flightIntegral }];
+  w.completions = [];
+}
+
 export function stats(w: World): Stats {
   const first = w.flightSamples[0];
   const span = first ? Math.min(WINDOW_DAYS, w.t - first.t) : 0;

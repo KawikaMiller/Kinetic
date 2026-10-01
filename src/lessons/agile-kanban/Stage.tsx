@@ -8,7 +8,7 @@ import { createCooldown } from '../../core/sim';
 import { useSimulation } from '../../core/useSimulation';
 import { COLUMN_COLOR, drawScene } from './draw';
 import {
-  advance, BLOCK_DAYS, blockCard, createWorld, inFlight, setProcess, SPRINT_COMMIT, SPRINT_DAYS, stats, UNLIMITED, WINDOW_DAYS,
+  advance, BLOCK_DAYS, blockCard, createWorld, inFlight, restartStats, setProcess, SPRINT_COMMIT, SPRINT_DAYS, stats, UNLIMITED, WINDOW_DAYS,
   WORKERS, type Process, type Stats as SimStats, type World,
 } from './sim';
 
@@ -78,9 +78,14 @@ export function Stage() {
   const { wrapRef, canvasRef, redraw } = useCanvas((ctx, w, h) => drawScene(ctx, w, h, world()));
   useLoop(redraw, !paused);
 
-  useEffect(() => {
-    world().wipLimit = toLimit(limit);
-  }, [world, limit]);
+  // The slider changes the limit live; the trailing stats restart so they only cover the new limit.
+  const changeLimit = (v: number) => {
+    setLimit(v);
+    const w = world();
+    w.wipLimit = toLimit(v);
+    restartStats(w);
+    setCaption(<>WIP limit now {v >= NO_LIMIT ? 'off' : v}. The stats start over from today, so they only measure the new limit.</>, { quiet: true });
+  };
   useEffect(() => {
     world().arrivalRate = rate;
   }, [world, rate]);
@@ -138,7 +143,7 @@ export function Stage() {
         <>
           <Segmented label="Process" value={process} onChange={pickProcess} options={PROCESSES} />
           {process === 'kanban' ? (
-            <Slider label="WIP limit (In progress)" value={limit} min={1} max={NO_LIMIT} onChange={setLimit}
+            <Slider label="WIP limit (In progress)" value={limit} min={1} max={NO_LIMIT} onChange={changeLimit}
               format={(v) => (v >= NO_LIMIT ? 'no limit' : String(v))} />
           ) : (
             <Hint>Scrum caps work by sprint scope ({SPRINT_COMMIT} cards per sprint), not a WIP limit.</Hint>
