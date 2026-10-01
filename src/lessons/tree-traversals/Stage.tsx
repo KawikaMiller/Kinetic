@@ -6,7 +6,7 @@ import { TreeSvg, type TreeShape } from '../../components/TreeSvg';
 import { Button, ControlGroup, Hint, Legend, Segmented } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { ORDER_NAMES, traversalFrames } from './frames';
-import { addChild, isLeaf, removeLeaf, type BTree, type Order } from './model';
+import { addChild, isLeaf, newChildLabel, removeLeaf, type BTree, type Order } from './model';
 import { MAX_NODES, NEW_LABELS, PRESETS, type PresetId } from './presets';
 import './styles.css';
 
@@ -49,12 +49,12 @@ export function Stage() {
     setTree(PRESETS.find((p) => p.id === id)!.tree);
   };
   const clickNode = (id: number) => {
-    const used = new Set(Object.values(tree.nodes).map((n) => n.label));
-    const freeLabel = [...NEW_LABELS].find((c) => !used.has(c));
+    // Numbers in a numeric search tree (a key that keeps its order), letters otherwise.
+    const childLabel = newChildLabel(tree, id, NEW_LABELS);
     const next =
       edit === 'add'
-        ? count < MAX_NODES && freeLabel
-          ? addChild(tree, id, freeLabel)?.tree
+        ? count < MAX_NODES && childLabel !== null
+          ? addChild(tree, id, childLabel)?.tree
           : null
         : removeLeaf(tree, id);
     if (!next) return;

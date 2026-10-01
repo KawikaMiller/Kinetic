@@ -54,7 +54,7 @@ const lesson: LessonModule = {
       why: "The lockfile pins the exact resolved version (and every transitive one). npm ci installs exactly that, so CI runs the code you tested until you upgrade deliberately. ~ still accepts new patches, so it wouldn't help.",
     },
     {
-      q: 'A security fix exists only for c-utils 2.x, but a package you use requires c-utils ^1.4.0. What does npm update do for that copy?',
+      q: 'A security fix exists only for c-utils 2.x. A package you use requires c-utils ^1.4.0, and that copy is already the newest 1.x. What does npm update do for it?',
       options: [
         'Nothing: 2.x is outside its range',
         'Upgrades that copy to 2.x for the fix',

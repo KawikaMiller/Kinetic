@@ -44,10 +44,10 @@ const lesson: LessonModule = {
     {
       q: 'A loop runs 10,000 times and goes wrong only when id === 4217. Best tool?',
       options: [
-        'A plain breakpoint and pressing Resume 4,217 times',
-        'A conditional breakpoint: id === 4217',
-        'Step into until you get there',
-        'console.log every id',
+        'A plain breakpoint, then Resume until it shows up',
+        'A conditional breakpoint on the failing id',
+        'Step into each iteration until you reach it',
+        'console.log every id and search the output',
       ],
       answer: 1,
       why: "A conditional breakpoint evaluates its expression each time the line runs and only pauses when it's true.",
@@ -57,7 +57,7 @@ const lesson: LessonModule = {
       options: [
         "Click the caller's frame in the call stack",
         'Step out, losing your place in the callee',
-        'Add console.log in the caller and reload',
+        'Add a console.log in the caller, then reload',
         "You can't while paused in the callee",
       ],
       answer: 0,

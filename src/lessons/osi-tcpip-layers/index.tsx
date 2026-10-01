@@ -63,7 +63,7 @@ const lesson: LessonModule = {
       options: [
         'Transport: nothing is listening on that port',
         'Link: check the cable and the switch',
-        'Application: the page itself is missing',
+        'Application: the page is missing from the server',
         "Internet: there's no route to the host",
       ],
       answer: 0,

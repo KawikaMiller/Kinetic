@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
 import { buildFrames, buildRaceFrames } from './algorithms';
-import { ALGO_IDS, ALGOS, isWorkFrame, makeBars, racePlaces, raceSteps, type AlgoId, type Bar, type Preset } from './model';
+import { ALGO_IDS, ALGOS, isWorkFrame, makeBars, racePlaces, raceSteps, SWAP_WRITES, workTicks, type AlgoId, type Bar, type Preset } from './model';
 
 const PRESETS: Preset[] = ['random', 'nearly', 'reversed', 'few'];
 const RUNS_PER_PRESET = 60;
 
-/** Independent reference implementations that count their own comparisons and writes. */
+/**
+ * Independent reference implementations that count their own comparisons and element
+ * writes: a swap writes two slots, a merge writes one per item it places.
+ */
 function reference(values: number[], algo: AlgoId) {
   const a = values.slice();
   let comparisons = 0;
@@ -18,7 +21,7 @@ function reference(values: number[], algo: AlgoId) {
   };
   const swap = (i: number, j: number) => {
     [a[i], a[j]] = [a[j], a[i]];
-    writes++;
+    writes += 2;
   };
   const n = a.length;
   if (algo === 'bubble') {
@@ -95,8 +98,8 @@ describe('sorting algorithms', () => {
           expect(last.comparisons, `${algo} comparisons`).toBe(ref.comparisons);
           expect(last.writes, `${algo} writes`).toBe(ref.writes);
           expect(last.sorted).toHaveLength(bars.length);
-          // every unit of work is one frame, so the race measures exactly the counters
-          expect(frames.filter(isWorkFrame)).toHaveLength(ref.comparisons + ref.writes);
+          // the race's ticks add up to exactly the counters: one per comparison or element write
+          expect(frames.reduce((sum, f) => sum + workTicks(f), 0)).toBe(ref.comparisons + ref.writes);
         }
       }
     }
@@ -110,8 +113,9 @@ describe('sorting algorithms', () => {
       expect(buildFrames(sorted, 'insertion').at(-1)!.comparisons).toBe(n - 1);
       const reversed = makeBars(n, 'reversed');
       expect(buildFrames(reversed, 'selection').at(-1)!.comparisons).toBe((n * (n - 1)) / 2);
-      expect(buildFrames(reversed, 'insertion').at(-1)!.writes).toBe((n * (n - 1)) / 2);
-      expect(buildFrames(reversed, 'bubble').at(-1)!.writes).toBe((n * (n - 1)) / 2);
+      // reversed input needs n(n−1)/2 swaps, and each swap writes two slots
+      expect(buildFrames(reversed, 'insertion').at(-1)!.writes).toBe(n * (n - 1));
+      expect(buildFrames(reversed, 'bubble').at(-1)!.writes).toBe(n * (n - 1));
     }
   });
 
@@ -171,6 +175,18 @@ describe('the race', () => {
         // The last finisher is still announced.
         const lastId = race.reduce((a, b) => (b.frames.length > a.frames.length ? b : a)).id;
         expect(say).toContain(`${ALGOS[lastId].name} finishes`);
+      }
+    }
+  });
+
+  it('holds every swap for two ticks and every comparison or merge write for one', () => {
+    const rnd = mulberry32(16);
+    for (const id of ALGO_IDS) {
+      const frames = buildFrames(makeBars(24, 'random', rnd), id);
+      const steps = raceSteps(frames);
+      for (const f of frames.slice(1, -1)) {
+        const held = steps.filter((s) => s === f).length;
+        expect(held, `${id} ${f.kind}`).toBe(f.kind === 'swap' ? SWAP_WRITES : isWorkFrame(f) ? 1 : 0);
       }
     }
   });

@@ -46,7 +46,7 @@ const lesson: LessonModule = {
         'They’re stateless: state lives in the DB or the request',
         'Sticky sessions pin each user to one server copy',
         'Each copy stores your login in its own memory',
-        'The client picks a copy and sends every request there',
+        'The client picks one copy and sends every request there',
       ],
       answer: 0,
       why: 'If servers remember nothing between requests, they are interchangeable. Sticky sessions do the opposite: they tie you to one copy.',

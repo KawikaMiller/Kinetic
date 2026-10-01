@@ -59,7 +59,7 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
             )}
           </Box>
         </div>
-        <CommitGraph commits={graphCommits(commits, true)} refs={[{ name: 'main', at: tip, head: true }]} title={f.pushed ? 'github.com/acme/shop (public)' : 'local repository'} messageFit="truncate" spacing={GRAPH_SPACING} />
+        <CommitGraph commits={graphCommits(commits, true)} refs={[{ name: 'main', at: tip, head: true }]} title={f.pushed ? 'github.com/acme/shop (public)' : 'local repository'} messageFit="truncate" spacing={GRAPH_SPACING} className="sm-graph" />
         <p className="sm-honest">Scripted timeline with a fake key. Real bots do scan public pushes, typically within minutes.</p>
       </div>
     </StageFrame>

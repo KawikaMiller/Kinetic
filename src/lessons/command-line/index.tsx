@@ -62,7 +62,7 @@ const lesson: LessonModule = {
       q: 'Why does "cat a.log | sort | uniq -c" usually come with sort first?',
       options: [
         'uniq only collapses adjacent duplicates',
-        "uniq can't read its input from a pipe",
+        "uniq won't read its input straight from a pipe",
         'Sorting first makes uniq run faster',
         "It doesn't need it: uniq sorts itself",
       ],

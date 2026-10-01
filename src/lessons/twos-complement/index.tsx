@@ -45,8 +45,8 @@ const lesson: LessonModule = {
       q: 'The byte 1111 1111 means…',
       options: [
         '255 or −1: it depends on how the code reads it',
-        'Always 255, since every bit is set to 1',
-        'Always −1, since the top bit is set',
+        "255: every bit is set, so it's the maximum",
+        '−1: a set top bit makes any byte negative',
         'Nothing: that byte pattern is invalid',
       ],
       answer: 0,

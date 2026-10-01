@@ -46,8 +46,8 @@ const lesson: LessonModule = {
       options: [
         'Search also matches strings and comments',
         'They never differ: both look for the name',
-        'Find references only searches test files',
-        'Search only looks inside the open file',
+        'Find references follows calls made at runtime',
+        'Search skips names in class definitions',
       ],
       answer: 0,
       why: "In this repo, errors.ts has the string 'PaymentDeclined' as the error's name. Search finds it; references skip it because it's text, not a use of the class.",
