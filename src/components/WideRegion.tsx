@@ -61,10 +61,12 @@ export function WideRegion({
           {children}
         </div>
       </div>
-      {overflows && !hintDismissed && (
-        <span className="stage-swipe-hint" aria-hidden="true">
-          ⇠ {hint} ⇢
-        </span>
+      {/* The hint gets its own row under the scroller so it never covers content. The row
+          stays while the region overflows, so dismissing the hint doesn't shift the page. */}
+      {overflows && (
+        <div className="stage-swipe-row" aria-hidden="true">
+          <span className={`stage-swipe-hint${hintDismissed ? ' is-dismissed' : ''}`}>⇠ {hint} ⇢</span>
+        </div>
       )}
     </div>
   );
