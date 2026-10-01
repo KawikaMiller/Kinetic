@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { evaluateRpn, isLeaf, isOperator, isSortedLabels, reference, traversalEvents, type BTree, type Order } from './model';
+import { evaluateRpn, isLeaf, isOperator, isSortedLabels, labelKind, reference, traversalEvents, type BTree, type Order } from './model';
 import type { PresetId } from './presets';
 
 export interface TtFrame extends Frame {
@@ -45,6 +45,8 @@ function verdict(preset: PresetId | 'custom', order: Order, out: string[]): Reac
     if (order === 'pre') return <><span className="hl ok">{text}</span> is Polish (prefix) notation: operator first, no brackets needed.</>;
     if (order === 'in') return <><span className="hl">{text}</span> reads as 3 + 8 = 11. In-order drops the brackets: infix needs (3 + 4) × 2 to mean 14.</>;
   }
+  // The expression tree mixes numbers and operators on purpose and explains itself above.
+  if (preset !== 'expression' && labelKind(out) === 'mixed') return <><span className="hl">{text}</span>: this tree mixes numbers and letters, and mixed labels can't be compared, so there's no order to check.</>;
   if (order === 'in' && isSortedLabels(out)) return <><span className="hl ok">{text}</span>: sorted, because this is a search tree: everything left of a node is smaller, everything right is bigger.</>;
   if (order === 'in') return <><span className="hl">{text}</span> is <b>not</b> sorted: in-order only gives sorted output on a binary search tree, and this tree isn't one.</>;
   return <>{ORDER_NAMES[order]} output: <span className="hl ok">{text}</span>.</>;

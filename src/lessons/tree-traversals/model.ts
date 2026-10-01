@@ -136,14 +136,71 @@ export function removeLeaf(t: BTree, id: number): BTree | null {
   return { root: t.root, nodes };
 }
 
+const isNumberLabel = (l: string) => l.trim() !== '' && Number.isFinite(Number(l));
+
+/** Whether a tree's labels are all numbers, all text, or a mix of the two. */
+export type LabelKind = 'numeric' | 'text' | 'mixed';
+
+export function labelKind(labels: readonly string[]): LabelKind {
+  const numbers = labels.filter(isNumberLabel).length;
+  if (numbers === labels.length) return 'numeric';
+  return numbers === 0 ? 'text' : 'mixed';
+}
+
 /**
  * Whether labels are in strictly ascending order: numerically when every label is a
- * number, otherwise as text. In-order output is sorted exactly when the tree is a search tree.
+ * number, as text when none is. Mixed labels have no order to be in, so they're never sorted.
+ * In-order output is sorted exactly when the tree is a search tree.
  */
 export function isSortedLabels(labels: readonly string[]): boolean {
-  const numeric = labels.every((l) => l.trim() !== '' && Number.isFinite(Number(l)));
-  const before = (a: string, b: string) => (numeric ? Number(a) < Number(b) : a < b);
+  const kind = labelKind(labels);
+  if (kind === 'mixed') return false;
+  const before = (a: string, b: string) => (kind === 'numeric' ? Number(a) < Number(b) : a < b);
   return labels.every((l, i) => i === 0 || before(labels[i - 1], l));
+}
+
+/** How far an unbounded side of a numeric search tree reaches for a new key. */
+const KEY_STEP = 10;
+
+/**
+ * The label for the child `addChild` would put under `parent` (its first empty side).
+ * In a numeric tree that's a whole-number key that keeps the search-tree order: strictly
+ * between the bounds the path from the root sets for that side. In a text tree it's the
+ * first unused letter. null when the parent is full, or no whole number fits the gap.
+ */
+export function newChildLabel(t: BTree, parent: number, letters: string): string | null {
+  const p = t.nodes[parent];
+  const side = p.left === null ? 'left' : p.right === null ? 'right' : null;
+  if (!side) return null;
+  const labels = Object.values(t.nodes).map((n) => n.label);
+  const used = new Set(labels);
+  if (labelKind(labels) !== 'numeric') return [...letters].find((c) => !used.has(c)) ?? null;
+
+  // Narrow (lo, hi) along the path from the root to the parent, then to the chosen side.
+  let lo = -Infinity;
+  let hi = Infinity;
+  let at = t.root;
+  while (at !== null) {
+    const key = Number(t.nodes[at].label);
+    if (at === parent) {
+      if (side === 'left') hi = key;
+      else lo = key;
+      break;
+    }
+    const goLeft = Number(p.label) < key;
+    if (goLeft) hi = key;
+    else lo = key;
+    at = goLeft ? t.nodes[at].left : t.nodes[at].right;
+  }
+  const from = Number.isFinite(lo) ? lo : hi - KEY_STEP;
+  const to = Number.isFinite(hi) ? hi : lo + KEY_STEP;
+  const mid = Math.floor((from + to) / 2);
+  for (let k = 0; k <= to - from; k++) {
+    for (const candidate of [mid - k, mid + k]) {
+      if (candidate > lo && candidate < hi && !used.has(String(candidate))) return String(candidate);
+    }
+  }
+  return null;
 }
 
 /** Build a BST by inserting keys in order (labels are the keys). */
