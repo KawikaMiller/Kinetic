@@ -145,7 +145,7 @@ function Pipes({ picker }: { picker: ReactNode }) {
         </div>
 
         <div className="cl-bottom">
-          <Box className="cl-terminal" aria-label="Terminal">
+          <Box className="cl-terminal">
             <SectionTitle>Terminal</SectionTitle>
             <pre>
               <span className="cl-prompt">{ENV.USER}@box:~$ </span>
