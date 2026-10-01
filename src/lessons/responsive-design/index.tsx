@@ -27,7 +27,7 @@ const lesson: LessonModule = {
     'Mobile first: base styles for small screens, then media queries add layout at wider breakpoints.',
     'Relative units (%, rem, vw, clamp()) scale smoothly between breakpoints.',
     'srcset + sizes lets the browser pick the smallest image that still looks sharp on this screen.',
-    'Touch targets need to be at least 44 × 44px.',
+    'Aim for 44 × 44px touch targets (WCAG AAA and Apple\'s guideline); WCAG 2.2 AA\'s floor is 24 × 24.',
   ],
   quiz: [
     {

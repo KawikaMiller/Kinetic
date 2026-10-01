@@ -113,6 +113,12 @@
   overflow: hidden;
 }
 .rd-ruler-band.is-on { color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+/* Full band names need room: on a phone the ruler shows the short ones instead of clipping. */
+.rd-ruler-short { display: none; }
+@media (max-width: 600px) {
+  .rd-ruler-long { display: none; }
+  .rd-ruler-short { display: inline; }
+}
 .rd-ruler-mark {
   position: absolute;
   top: -4px;

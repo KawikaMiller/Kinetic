@@ -7,15 +7,17 @@ export type BreakpointId = 'base' | 'md' | 'lg';
 export interface Breakpoint {
   id: BreakpointId;
   label: string;
+  /** Fits a phone-width ruler. */
+  short: string;
   /** Applies at this container width and up. */
   min: number;
 }
 
 /** Mobile-first: the base rules always apply; each block adds on top from its width up. */
 export const BREAKPOINTS: Breakpoint[] = [
-  { id: 'base', label: 'base (mobile first)', min: 0 },
-  { id: 'md', label: '≥ 600px: tablet', min: 600 },
-  { id: 'lg', label: '≥ 960px: desktop', min: 960 },
+  { id: 'base', label: 'base (mobile first)', short: 'base', min: 0 },
+  { id: 'md', label: '≥ 600px: tablet', short: '≥ 600', min: 600 },
+  { id: 'lg', label: '≥ 960px: desktop', short: '≥ 960', min: 960 },
 ];
 
 export const DEVICE_MIN = 320;
@@ -31,7 +33,10 @@ export function breakpointAt(width: number): Breakpoint {
   return [...BREAKPOINTS].reverse().find((b) => width >= b.min) ?? BREAKPOINTS[0];
 }
 
-/** Recommended minimum touch target (WCAG 2.5.5, Apple HIG): 44 × 44 CSS px. */
+/**
+ * The comfortable touch target this lesson checks for: 44 × 44 CSS px, from WCAG 2.5.5 (AAA) and
+ * Apple's HIG. WCAG 2.2 AA's minimum (2.5.8) is smaller, 24 × 24.
+ */
 export const TAP_MIN = 44;
 export const isTooSmall = (w: number, h: number) => w < TAP_MIN || h < TAP_MIN;
 
