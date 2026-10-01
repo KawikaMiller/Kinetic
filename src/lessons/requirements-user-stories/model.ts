@@ -135,13 +135,13 @@ export const QUESTIONS: Question[] = [
   },
 ];
 
-/** Questions whose answer changes what "done" means. */
 /** When each kind of surprise surfaces, earliest first: the replay plays them in this order. */
 export const SURPRISE_STAGES = ['Demo', 'Review', 'QA', 'Sprint review', 'After release', 'Week 2', 'Support tickets', 'Incident'] as const;
 
 /** The stage a surprise names before its colon ("Demo: ..."), as an index into SURPRISE_STAGES. */
 export const stageOf = (q: { surprise: string }) => SURPRISE_STAGES.findIndex((s) => q.surprise.startsWith(`${s}:`));
 
+/** Questions whose answer changes what "done" means. */
 export const MATERIAL = QUESTIONS.filter((q) => q.kind !== 'irrelevant');
 export const question = (id: string) => QUESTIONS.find((q) => q.id === id)!;
 
@@ -155,8 +155,7 @@ export const criteriaFor = (asked: readonly string[]) =>
 export const scopeFor = (asked: readonly string[]) =>
   asked.map(question).filter((q) => q.kind === 'scope').map((q) => q.scope!);
 
-/** One test per acceptance criterion: the criterion's scenario name. */
-/** Test names keep the criterion's casing, so proper nouns (Google, SMS) survive. */
+/** One test per acceptance criterion, named after its scenario in the criterion's own casing, so proper nouns (Google, SMS) survive. */
 export const testsFor = (asked: readonly string[]) => criteriaFor(asked).map((c) => `test: ${c.name}`);
 
 /** A criterion as Gherkin lines. */

@@ -78,10 +78,10 @@ export function runPipeline(fault: Fault, input = INPUT, patch: Partial<Record<C
 const close = (a: number, b: number) => Math.abs(a - b) < 1e-6;
 export const sameOrder = (a: Order, b: Order) => close(a.unit, b.unit) && a.qty === b.qty && close(a.total, b.total) && a.text === b.text;
 
-/** How the value after component i looks on a probe. */
 /** Two decimals at most, so float noise (199.89999999999998) never reads as a second bug. */
 const cents = (v: number) => Math.round(v * 100) / 100;
 
+/** How the value after component i looks on a probe. */
 export function showValue(o: Order, i: number): string {
   if (i === COMPONENTS.length - 1) return o.text;
   if (i < 2) return `${o.unit} × ${o.qty}`;
