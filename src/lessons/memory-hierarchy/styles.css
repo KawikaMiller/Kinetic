@@ -29,7 +29,7 @@
 .mh-name small { font: 500 11px var(--mono); color: var(--faint); }
 
 .mh-track { display: block; overflow: visible; }
-.mh-bar { opacity: 0.85; }
+.mh-bar { fill: var(--info); opacity: 0.85; }
 
 .mh-time { font: 700 12.5px var(--mono); color: var(--text); text-align: right; }
 .mh-size { font: 600 11.5px var(--mono); color: var(--muted); white-space: nowrap; }
