@@ -30,7 +30,16 @@ export function Slider({
       <span className="slider-label">
         {label} <b>{format(value)}</b>
       </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      {/* aria-valuetext: announce what the label shows ("no limit", "1.2/day"), not the raw number */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        aria-valuetext={format(value)}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
     </label>
   );
 }
