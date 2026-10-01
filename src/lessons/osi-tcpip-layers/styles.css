@@ -1,0 +1,78 @@
+.osi-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 14px 16px;
+}
+.osi-scene { display: block; width: 100%; height: auto; }
+
+.osi-device-title { font: 700 13px var(--font); fill: var(--muted); }
+.osi-device-title.is-current { fill: var(--hi); }
+
+.osi-layer-box {
+  fill: color-mix(in srgb, var(--c) 10%, var(--cell));
+  stroke: color-mix(in srgb, var(--c) 55%, transparent);
+  stroke-width: 1.5;
+  transition: stroke 0.25s, fill 0.25s;
+}
+.osi-layer.is-active .osi-layer-box {
+  stroke: var(--hi);
+  stroke-width: 2.5;
+  fill: color-mix(in srgb, var(--hi) 16%, var(--cell));
+}
+.osi-layer-name { font: 600 11px var(--font); fill: var(--text); }
+.osi-osi-rule { stroke: color-mix(in srgb, var(--c) 35%, transparent); stroke-dasharray: 3 3; }
+
+.osi-sealed { fill: none; stroke: var(--line-2); stroke-dasharray: 4 5; }
+.osi-sealed-text { font: 10px var(--mono); fill: var(--faint); }
+
+.osi-wire { stroke: var(--line-2); stroke-width: 2; stroke-dasharray: 4 6; }
+.osi-wire.is-on { stroke: var(--orange); stroke-dasharray: none; }
+
+.osi-env {
+  fill: color-mix(in srgb, var(--c) 9%, var(--bg-2));
+  stroke: color-mix(in srgb, var(--c) 70%, transparent);
+  stroke-width: 1.5;
+  transition: stroke 0.25s, stroke-width 0.25s;
+}
+.osi-env.is-active { stroke: var(--hi); stroke-width: 3; }
+.osi-fcs {
+  fill: color-mix(in srgb, var(--c) 16%, var(--bg-2));
+  stroke: color-mix(in srgb, var(--c) 70%, transparent);
+  stroke-width: 1.5;
+}
+.osi-fcs.is-active { stroke: var(--hi); stroke-width: 3; }
+.osi-env-title { font: 700 11px var(--font); fill: var(--c); }
+.osi-env-fields { font: 10.5px var(--mono); fill: var(--text); white-space: pre; }
+.osi-changed { fill: var(--hi); font-weight: 700; }
+
+.osi-note { margin: 0; font-size: 13px; color: var(--muted); }
+
+.osi-overhead { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; }
+.osi-overhead-read { display: flex; flex-direction: column; gap: 8px; flex: 1 1 280px; font-size: 13px; color: var(--muted); }
+.osi-overhead-read b { color: var(--text); }
+
+.osi-cards {
+  list-style: none;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.osi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+.osi-card.is-right { border-color: var(--ok); }
+.osi-card.is-wrong { border-color: var(--bad); }
+.osi-card-text { margin: 0; font-weight: 600; font-size: 14px; }
+.osi-card-layers { display: flex; flex-wrap: wrap; gap: 6px; }
+/* The chosen layer must read as an answer, not a hover: solid fill (kit is-on is a tint). */
+.osi-card-layers .chip-button.is-on { background: var(--c); color: var(--on-c); }
+.osi-card-why { margin: 0; font-size: 13px; color: var(--muted); }
+.osi-card.is-right .osi-card-why { color: var(--text); }
