@@ -18,6 +18,8 @@ export interface PipelineFrame extends Frame {
 
 /** Progress frames added between events so running bars visibly fill. */
 const TICK_SECONDS = 20;
+/** The closing summary stays up longer than an event. */
+const SUMMARY_HOLD = 3;
 
 /** "5:42" for 342 seconds. */
 export const minSec = (s: number) => `${Math.floor(s / 60)}:${pad2(Math.round(s % 60))}`;
@@ -120,7 +122,8 @@ export function pipelineFrames(o: PipelineOptions): { run: Run; frames: Pipeline
     }
     return { t, jobs, say: last, quiet: true };
   });
-  frames[frames.length - 1].say = summary(run);
-  frames[frames.length - 1].hold = 3;
+  // The summary is a frame of its own: overwriting the last one would hide its event (with fail
+  // fast, the failure and the cancellations happen on the very last frame).
+  frames.push({ ...frames[frames.length - 1], say: summary(run), hold: SUMMARY_HOLD, quiet: false });
   return { run, frames };
 }
