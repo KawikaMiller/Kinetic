@@ -144,6 +144,25 @@ export function storeOutcome(x: number): 'exact' | 'rounded' | 'overflow' | 'und
   return 'rounded';
 }
 
+export type TypedOutcome = ReturnType<typeof storeOutcome> | 'infinity' | 'zero';
+
+/**
+ * What storing the text the learner typed did. Classifies from the text, not only the
+ * parsed number: JavaScript's Number() already turns "1e400" into Infinity and "1e-400"
+ * into 0 (float64 runs out first), which storeOutcome alone would call "exact".
+ */
+export function typedOutcome(text: string): TypedOutcome {
+  const x = Number(text.trim());
+  if (!Number.isFinite(x) && !Number.isNaN(x)) {
+    return /^[+-]?Infinity$/.test(text.trim()) ? 'infinity' : 'overflow'; // Number() only parses this exact spelling
+  }
+  if (x === 0) {
+    const mantissa = text.trim().split(/e/i)[0];
+    return /[1-9]/.test(mantissa.replace(/^[+-]?0x/i, '')) ? 'underflow' : 'zero';
+  }
+  return storeOutcome(x);
+}
+
 export interface Special {
   id: string;
   label: string;

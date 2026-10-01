@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  bitRole, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, neighbours, SIGN_BIT, SPECIALS, storedDigits, storeOutcome, ulp, ulpAt,
+  bitRole, decode, exactDecimal, f32Bits, f32FromBits, fields, float64Facts, neighbours, SIGN_BIT, SPECIALS, storedDigits, storeOutcome, typedOutcome, ulp, ulpAt,
 } from './model';
 
 const same = (a: number, b: number) => (Number.isNaN(a) ? Number.isNaN(b) : Object.is(a, b));
@@ -122,5 +122,25 @@ describe('float64 panel is computed', () => {
     expect(storeOutcome(1e-50)).toBe('underflow');
     expect(storeOutcome(Infinity)).toBe('exact');
     expect(storeOutcome(-0)).toBe('exact');
+  });
+
+  it('classifies typed text, catching what Number() already lost', () => {
+    // Number() makes these ±Infinity or 0 before float32 is involved: still overflow/underflow.
+    expect(typedOutcome('1e400')).toBe('overflow');
+    expect(typedOutcome('-1e400')).toBe('overflow');
+    expect(typedOutcome('1e-400')).toBe('underflow');
+    expect(typedOutcome('-1e-400')).toBe('underflow');
+    // Typed specials are stored as they are, and zero is its own case.
+    expect(typedOutcome('Infinity')).toBe('infinity');
+    expect(typedOutcome('-Infinity')).toBe('infinity');
+    expect(typedOutcome('0')).toBe('zero');
+    expect(typedOutcome('-0')).toBe('zero');
+    expect(typedOutcome('0.000e5')).toBe('zero');
+    expect(typedOutcome('0x0')).toBe('zero');
+    // Ordinary numbers defer to storeOutcome.
+    expect(typedOutcome(' 0.5 ')).toBe('exact');
+    expect(typedOutcome('0.1')).toBe('rounded');
+    expect(typedOutcome('1e39')).toBe('overflow');
+    expect(typedOutcome('1e-50')).toBe('underflow');
   });
 });
