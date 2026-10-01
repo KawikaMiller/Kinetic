@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { evaluateRpn, isOperator, reference, traversalEvents, type BTree, type Order } from './model';
+import { evaluateRpn, isLeaf, isOperator, isSortedLabels, reference, traversalEvents, type BTree, type Order } from './model';
 import type { PresetId } from './presets';
 
 export interface TtFrame extends Frame {
@@ -24,22 +24,29 @@ const RULES: Record<Order, string> = {
   level: 'take nodes off the front of a queue, row by row, and put their children at the back',
 };
 
-function emitCaption(order: Order, label: string): ReactNode {
+function emitCaption(order: Order, label: string, leaf: boolean): ReactNode {
   if (order === 'pre') return <>Arrived at {label}: pre-order writes it down straight away, before its children.</>;
   if (order === 'in') return <>{label}'s left side is finished: write <b>{label}</b>, then go right.</>;
-  if (order === 'post') return <>Both of {label}'s children are finished: write <b>{label}</b> last.</>;
+  if (order === 'post') {
+    return leaf
+      ? <>{label} has no children, so there's nothing to finish first: write <b>{label}</b>.</>
+      : <>Everything below {label} is finished: write <b>{label}</b> last.</>;
+  }
   return <>{label} comes off the front of the queue: write it, then queue its children.</>;
 }
 
-/** What the finished output means, per preset and order. */
+/**
+ * What the finished output means. The in-order verdict comes from the output itself, not
+ * the preset: an edited search tree is still a search tree.
+ */
 function verdict(preset: PresetId | 'custom', order: Order, out: string[]): ReactNode {
   const text = out.join(' ');
   if (preset === 'expression') {
     if (order === 'pre') return <><span className="hl ok">{text}</span> is Polish (prefix) notation: operator first, no brackets needed.</>;
     if (order === 'in') return <><span className="hl">{text}</span> reads as 3 + 8 = 11. In-order drops the brackets: infix needs (3 + 4) × 2 to mean 14.</>;
   }
-  if (order === 'in' && preset === 'bst') return <><span className="hl ok">{text}</span>: sorted, because in a search tree left &lt; node &lt; right.</>;
-  if (order === 'in') return <><span className="hl">{text}</span> is <b>not</b> sorted: in-order only gives sorted output on a binary search tree.</>;
+  if (order === 'in' && isSortedLabels(out)) return <><span className="hl ok">{text}</span>: sorted, because this is a search tree: everything left of a node is smaller, everything right is bigger.</>;
+  if (order === 'in') return <><span className="hl">{text}</span> is <b>not</b> sorted: in-order only gives sorted output on a binary search tree, and this tree isn't one.</>;
   return <>{ORDER_NAMES[order]} output: <span className="hl ok">{text}</span>.</>;
 }
 
@@ -53,7 +60,7 @@ export function traversalFrames(tree: BTree, order: Order, preset: PresetId | 'c
   for (const e of traversalEvents(tree, order)) {
     const n = e.node;
     if (e.kind === 'call') rec.snap(<>visit({label(n)}) goes on the call stack.</>, undefined, { current: n, stack: [...now().stack, n] });
-    else if (e.kind === 'emit') rec.snap(emitCaption(order, label(n)), undefined, { current: n, emitted: [...now().emitted, n] });
+    else if (e.kind === 'emit') rec.snap(emitCaption(order, label(n), isLeaf(tree, n)), undefined, { current: n, emitted: [...now().emitted, n] });
     else if (e.kind === 'return') {
       const stack = now().stack.slice(0, -1);
       const parent = parentOf(n);

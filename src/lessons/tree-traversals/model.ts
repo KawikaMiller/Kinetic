@@ -136,6 +136,16 @@ export function removeLeaf(t: BTree, id: number): BTree | null {
   return { root: t.root, nodes };
 }
 
+/**
+ * Whether labels are in strictly ascending order: numerically when every label is a
+ * number, otherwise as text. In-order output is sorted exactly when the tree is a search tree.
+ */
+export function isSortedLabels(labels: readonly string[]): boolean {
+  const numeric = labels.every((l) => l.trim() !== '' && Number.isFinite(Number(l)));
+  const before = (a: string, b: string) => (numeric ? Number(a) < Number(b) : a < b);
+  return labels.every((l, i) => i === 0 || before(labels[i - 1], l));
+}
+
 /** Build a BST by inserting keys in order (labels are the keys). */
 export function bstFrom(keys: readonly number[]): BTree {
   const t: BTree = { root: null, nodes: {} };
