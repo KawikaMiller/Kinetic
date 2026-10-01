@@ -71,7 +71,7 @@ function Convert({ picker }: { picker: ReactNode }) {
   const rowState = (i: number) => (i > 0 && [...changed].some((p) => p.startsWith(`${i - 1}.`)) ? 'now' : 'idle');
   const isUnsafe = (paths: string[]) => paths.some((p) => unsafe.has(p));
   const render = (lines: Line[]) => (text: string, i: number) =>
-    isUnsafe(lines[i].paths) ? <span className="df-bad" title="precision lost in JSON.parse">{text}</span> : text;
+    isUnsafe(lines[i].paths) ? <span className="df-bad" title="this number didn't survive JSON.parse (precision lost, or too big: Infinity)">{text}</span> : text;
 
   const sizes = { json: byteSize(text), csv: csv ? byteSize(csv.text) : null, yaml: byteSize(yaml.map((l) => l.text).join('\n')), xml: byteSize(xml.map((l) => l.text).join('\n')) };
   const csvRows = csv ? parseCsv(csv.text) : [];
@@ -120,6 +120,7 @@ function Convert({ picker }: { picker: ReactNode }) {
               value={text}
               onChange={(v) => {
                 apply(v);
+                if (loaded !== null) setCaption(<>Your own data now: every pane re-renders from the JSON you type.</>, { quiet: true });
                 setLoaded(null);
               }}
               rows={14}
@@ -133,7 +134,7 @@ function Convert({ picker }: { picker: ReactNode }) {
                   <p className="df-bad-note">Valid JSON, but the schema check fails:</p>
                   {issues.map((iss) => (
                     <code key={iss.path} className="log-row tone-bad">
-                      {iss.path}: {iss.message}
+                      {iss.path || '(the whole document)'}: {iss.message}
                     </code>
                   ))}
                 </div>
