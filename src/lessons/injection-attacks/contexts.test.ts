@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowedSort, contextViews, escapeLogValue, logLines, readParams, shellWords, type ContextId } from './contexts';
+import { allowedSort, contextViews, escapeLogValue, logLines, readParams, type ContextId } from './contexts';
 
 const brokenIn = (text: string) =>
   contextViews(text).filter((c) => c.raw.broken).map((c) => c.id).sort();
@@ -11,12 +11,14 @@ describe('the same text, pasted into five places', () => {
   it('an ordinary word breaks nothing', () => {
     expect(brokenIn('Smith')).toEqual([]);
   });
-  it("O'Brien breaks only the SQL", () => {
-    expect(brokenIn("O'Brien")).toEqual(['sql']);
+  it("O'Brien breaks the SQL and the shell command (both read ' as a quote)", () => {
+    expect(brokenIn("O'Brien")).toEqual(['shell', 'sql']);
   });
   it('a file name with a space breaks the shell command (and the URL)', () => {
-    expect(shellWords('open my report.pdf')).toEqual(['open', 'my', 'report.pdf']);
     expect(brokenIn('my report.pdf')).toContain('shell');
+  });
+  it('fish & chips breaks the shell command: & starts a second command', () => {
+    expect(brokenIn('fish & chips')).toContain('shell');
   });
   it('an ampersand splits a URL parameter in two', () => {
     expect(readParams('https://shop.example/search?q=fish & chips')).toEqual(['"q" = "fish "', '" chips" = ""']);

@@ -2,6 +2,7 @@
 // Each context shows what happens to one piece of text pasted in raw, and kept separate.
 
 import { escapeHtml, visibleText } from './html';
+import { describeShellPaste } from './shell';
 import { concatenated } from './sql';
 
 export type ContextId = 'sql' | 'html' | 'shell' | 'url' | 'log';
@@ -15,9 +16,6 @@ export interface ContextView {
   safe: { code: string; result: string[] };
   fix: string;
 }
-
-/** Split a command line on whitespace, as a shell does for unquoted text. */
-export const shellWords = (cmd: string) => cmd.split(/\s+/).filter(Boolean);
 
 /** The query parameters a server reads back from a URL (keys quoted too, so stray spaces show). */
 export const readParams = (url: string) =>
@@ -33,7 +31,7 @@ const SHOP = 'https://shop.example/search?q=';
 
 export function contextViews(text: string): ContextView[] {
   const sql = concatenated(text);
-  const shellRaw = shellWords(`open ${text}`);
+  const shellRaw = describeShellPaste(text);
   const urlRaw = readParams(SHOP + text);
   const urlSafe = readParams(SHOP + encodeURIComponent(text));
   const logRaw = logLines(`login ok user=${text}`);
@@ -59,7 +57,7 @@ export function contextViews(text: string): ContextView[] {
     {
       id: 'shell',
       name: 'Shell command',
-      raw: { code: 'exec("open " + text)', result: [`arguments: ${JSON.stringify(shellRaw.slice(1))}`], broken: shellRaw.length !== 2 || shellRaw[1] !== text },
+      raw: { code: 'exec("open " + text)', result: shellRaw.lines, broken: shellRaw.broken },
       safe: { code: 'execFile("open", [text])', result: [`arguments: ${JSON.stringify([text])}`] },
       fix: 'An argument list, no shell',
     },
