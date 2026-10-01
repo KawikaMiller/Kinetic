@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CallStackPanel } from '../../components/CallStackPanel';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -33,6 +33,7 @@ export function Stage() {
   const [tree, setTree] = useState<BTree>(PRESETS[0].tree);
   const [order, setOrder] = useState<Order>('pre');
   const [edit, setEdit] = useState<EditMode>('off');
+  const treeRef = useRef<HTMLDivElement>(null);
   const frames = useMemo(() => traversalFrames(tree, order, preset), [tree, order, preset]);
   const player = usePlayer(frames, { interval: STEP_MS });
   const f = player.frame;
@@ -60,6 +61,11 @@ export function Stage() {
     player.queueNext({ play: false }); // an edit rewinds quietly instead of autoplaying
     setPreset('custom');
     setTree(next);
+    if (edit === 'remove') {
+      // The removed node's button is gone; keep keyboard users in the tree by focusing its parent.
+      const parent = Object.keys(tree.nodes).find((k) => tree.nodes[+k].left === id || tree.nodes[+k].right === id);
+      requestAnimationFrame(() => treeRef.current?.querySelector<HTMLElement>(`[data-node="${parent}"]`)?.focus());
+    }
   };
 
   return (
@@ -104,7 +110,7 @@ export function Stage() {
       ]}
     >
       <div className="tt stage-pad">
-        <div className="tt-main">
+        <div className="tt-main" ref={treeRef}>
           <TreeSvg
             shape={shape}
             layout="inorder"
