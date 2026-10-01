@@ -1,7 +1,7 @@
 // Frames for "Skip refinement": the team builds straight from the one-line request
 // and every unasked question turns up later as rework.
 import type { Frame } from '../../core/types';
-import { BUILD_DAYS, MATERIAL, REFINEMENT_DAYS, REQUEST, skipCost } from './model';
+import { BUILD_DAYS, MATERIAL, REFINEMENT_DAYS, REQUEST, skipCost, stageOf } from './model';
 
 export interface SkipFrame extends Frame {
   /** Days spent so far. */
@@ -27,7 +27,8 @@ export function buildSkipFrames(): SkipFrame[] {
   ];
   let days = BUILD_DAYS;
   const found: string[] = [];
-  for (const q of MATERIAL) {
+  // In the order they'd really surface (demo before release before incidents), not question order.
+  for (const q of [...MATERIAL].sort((a, b) => stageOf(a) - stageOf(b))) {
     days += q.reworkDays;
     found.push(q.id);
     frames.push({
