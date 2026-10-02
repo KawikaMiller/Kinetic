@@ -376,6 +376,8 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
 - `Slider` announces `format(value)` as `aria-valuetext`, so give it a `format` whenever the label
   shows something other than the raw number ("no limit", "1.2/day").
 - `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
+  The hint sits in its own row under the scroller, only while it overflows, so it never covers
+  content; the row stays after the hint goes, so nothing shifts.
   A sideways scroller always clips vertically too (CSS forces `overflow-y` off `visible` once
   `overflow-x` scrolls), so anything drawn above or below the children (ArrayStrip range labels,
   pointers, outlines) needs room reserved with `gutter` (debugging-method's bisect strip).
