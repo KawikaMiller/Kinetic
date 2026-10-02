@@ -1,5 +1,5 @@
 // Lesson-specific Web Crypto demos. Hashing, hex and bit helpers come from core/crypto.
-import { enc, hasSubtle, sha256Hex, toHex } from '../../core/crypto';
+import { ecdsaKeyPair, ecdsaSign, ecdsaVerify, enc, hasSubtle, sha256Hex, toHex } from '../../core/crypto';
 
 /** SHA-256 of every input, in order ('' where Web Crypto is unavailable). */
 export async function sha256Many(inputs: string[]): Promise<string[]> {
@@ -48,10 +48,9 @@ export async function asymDemo(message: string, release: string, tampered: strin
   );
   const cipher = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, rsa.publicKey, enc.encode(message));
   const plain = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, rsa.privateKey, cipher);
-  const ec = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
-  const alg = { name: 'ECDSA', hash: 'SHA-256' };
-  const sig = await crypto.subtle.sign(alg, ec.privateKey, enc.encode(release));
-  const valid = await crypto.subtle.verify(alg, ec.publicKey, sig, enc.encode(release));
-  const tamperedValid = await crypto.subtle.verify(alg, ec.publicKey, sig, enc.encode(tampered));
+  const ec = (await ecdsaKeyPair())!;
+  const sig = (await ecdsaSign(ec.privateKey, enc.encode(release)))!;
+  const valid = (await ecdsaVerify(ec.publicKey, sig, enc.encode(release)))!;
+  const tamperedValid = (await ecdsaVerify(ec.publicKey, sig, enc.encode(tampered)))!;
   return { cipherHex: toHex(cipher), decrypted: new TextDecoder().decode(plain), sigHex: toHex(sig), valid, tamperedValid };
 }
