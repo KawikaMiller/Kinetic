@@ -22,7 +22,7 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
  */
 const PENDING_RETROFIT = new Set([
   // T2-R1
-  'hash-table', 'graph-search', 'trees-bst', 'heaps', 'dynamic-programming', 'lru-cache', 'rate-limiting', 'message-queues',
+  'graph-search', 'trees-bst', 'heaps', 'dynamic-programming', 'lru-cache', 'rate-limiting', 'message-queues',
   // T2-R2
   'tcp-udp', 'tls-handshake', 'db-indexes', 'transactions-acid', 'race-conditions', 'event-loop', 'auth-sessions-jwt', 'containers',
 ]);
@@ -38,7 +38,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   'dynamic-programming': { ticket: T2_R1, rules: ['quiz-length', 'quiz-longest'] },
   'event-loop': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'graph-search': { ticket: T2_R1, rules: ['quiz-length'] },
-  'hash-table': { ticket: T2_R1, rules: ['quiz-length', 'quiz-longest'] },
   'heaps': { ticket: T2_R1, rules: ['quiz-length'] },
   'lru-cache': { ticket: T2_R1, rules: ['quiz-length'] },
   'message-queues': { ticket: T2_R1, rules: ['quiz-length', 'quiz-longest'] },

@@ -1,31 +1,6 @@
 import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
-
-export type Table = string[][];
-export type OpKind = 'insert' | 'lookup' | 'delete';
-
-// Keep hashes to 16 bits so the numbers stay readable on screen.
-const MOD = 65536;
-const MULTIPLIER = 31;
-export const MAX_BUCKETS = 16;
-export const MAX_KEYS = 16;
-/** Grow (double the buckets) once keys / buckets goes above this. */
-export const THRESHOLD = 0.75;
-
-/** Running hash after each character (good) or just the length (bad). */
-function hashSteps(key: string, bad: boolean): number[] {
-  if (bad) return [key.length];
-  let h = 0;
-  return [...key].map((c) => (h = (h * MULTIPLIER + c.charCodeAt(0)) % MOD));
-}
-const hashOf = (key: string, bad: boolean) => hashSteps(key, bad).at(-1)!;
-
-/** Put every key in its bucket for a table of `n` buckets. */
-export function build(keys: string[], n: number, bad: boolean): Table {
-  const t: Table = Array.from({ length: n }, () => []);
-  for (const k of keys) t[hashOf(k, bad) % n].push(k);
-  return t;
-}
+import { build, hashSteps, MAX_BUCKETS, MAX_KEYS, needsGrow, THRESHOLD, type OpKind, type Table } from './model';
 
 export interface HashView {
   key: string;
@@ -124,7 +99,7 @@ export function opFrames(table: Table, kind: OpKind, key: string, bad: boolean):
       ),
     });
     const load = (size + 1) / n;
-    if (load > THRESHOLD) {
+    if (needsGrow(size + 1, n)) {
       if (n < MAX_BUCKETS) {
         frames.push({
           ...blank(next), warn: true, probes,

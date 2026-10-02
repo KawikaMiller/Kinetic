@@ -2,11 +2,13 @@ import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
+import { Button, Controls, Hint, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { SPRING } from '../../core/motion';
 import { shuffle } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
-import { blank, build, opFrames, switchHashFrames, THRESHOLD, type HashView, type HtFrame, type OpKind } from './frames';
+import { blank, opFrames, switchHashFrames, type HashView, type HtFrame } from './frames';
+import { build, MOD, MULTIPLIER, THRESHOLD, type OpKind } from './model';
 import './styles.css';
 
 const WORDS = [
@@ -17,6 +19,8 @@ const RANDOM_BATCH = 5;
 const MAX_KEY_LENGTH = 8;
 /** The load-factor meter's full width, so the 0.75 threshold sits well inside it. */
 const METER_MAX = 1.25;
+/** Per bucket, gap included, so a 5-letter key fits; below n × this the bucket row scrolls sideways (16 buckets on a phone). */
+const COLUMN_MIN = 54;
 
 const INITIAL_TABLE = build(['cat', 'owl'], 4, false);
 
@@ -119,6 +123,10 @@ export function Stage() {
           <Button onClick={insertRandom}>Insert {RANDOM_BATCH} random</Button>
           <Toggle label="Hash function" value={bad} onChange={switchHash} off="Good (×31)" on="Bad (length)" />
           <Button onClick={reset}>Reset</Button>
+          <Hint block>
+            Toy hash for readability: h = h×{MULTIPLIER} + character code, kept to {MOD} values. Real tables use stronger,
+            often randomly seeded hashes so nobody can force collisions. Only keys are drawn; each one's value travels with it.
+          </Hint>
         </Controls>
       }
     >
@@ -142,38 +150,40 @@ export function Stage() {
             <div className="ht-hash">{f.hash ? <HashPanel view={f.hash} /> : <span className="ht-hash-empty">hash(key) % buckets → index</span>}</div>
           </div>
 
-          <div className="ht-buckets" style={{ '--n': n } as CSSProperties}>
-            {table.map((chain, b) => (
-              <div key={b} className="ht-col">
-                <motion.div
-                  layout
-                  className={`ht-slot ${f.bucket === b ? 'target' : ''} ${f.bucket === b && f.collide ? 'collide' : ''}`}
-                >
-                  {b}
-                </motion.div>
-                <AnimatePresence mode="popLayout">
-                  {chain.map((k, i) => {
-                    const probe = f.bucket === b && f.probe?.index === i ? (f.probe.hit ? 'hit' : 'probe') : '';
-                    return (
-                      <motion.div
-                        key={k}
-                        layoutId={`k-${k}`}
-                        layout
-                        className={`ht-node ${probe}`}
-                        initial={{ opacity: 0, scale: 0.6 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.4 }}
-                        transition={SPRING.snappy}
-                        title={k}
-                      >
-                        {k}
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-            ))}
-          </div>
+          <WideRegion minWidth={n * COLUMN_MIN} label="Buckets: scroll sideways to see all of them" hint="swipe to see every bucket">
+            <div className="ht-buckets" style={{ '--n': n } as CSSProperties}>
+              {table.map((chain, b) => (
+                <div key={b} className="ht-col">
+                  <motion.div
+                    layout
+                    className={`ht-slot ${f.bucket === b ? 'target' : ''} ${f.bucket === b && f.collide ? 'collide' : ''}`}
+                  >
+                    {b}
+                  </motion.div>
+                  <AnimatePresence mode="popLayout">
+                    {chain.map((k, i) => {
+                      const probe = f.bucket === b && f.probe?.index === i ? (f.probe.hit ? 'hit' : 'probe') : '';
+                      return (
+                        <motion.div
+                          key={k}
+                          layoutId={`k-${k}`}
+                          layout
+                          className={`ht-node ${probe}`}
+                          initial={{ opacity: 0, scale: 0.6 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.4 }}
+                          transition={SPRING.snappy}
+                          title={k}
+                        >
+                          {k}
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          </WideRegion>
         </div>
       </LayoutGroup>
     </StageFrame>
