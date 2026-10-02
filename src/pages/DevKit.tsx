@@ -13,6 +13,7 @@ import { truthRowIndex } from '../core/truth';
 import './DevKit.css';
 import { DevKitSection as Section } from './DevKitSection';
 import { DevKitTier2 } from './DevKitTier2';
+import { DevKitTier2b } from './DevKitTier2b';
 
 /**
  * Dev-only showcase of the Tier 1 shared components (#/dev/kit). Not linked from
@@ -51,6 +52,7 @@ export function DevKit() {
         <TextAndScaleDemo />
       </Section>
       <DevKitTier2 />
+      <DevKitTier2b />
     </div>
   );
 }
