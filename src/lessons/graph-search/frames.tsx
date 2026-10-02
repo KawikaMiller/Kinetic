@@ -44,11 +44,21 @@ const INTRO: Record<Algo, ReactNode> = {
 };
 
 const MILESTONE: Record<Algo, ReactNode> = {
-  bfs: <>See the diamond? Every cell on the edge of the ripple is the <b>same number of steps</b> from the start.</>,
-  dfs: <>See it snake? It commits to one direction and only backtracks when it hits a wall.</>,
+  bfs: (
+    <>
+      Watch the ripple: every frontier cell is <b>d or d+1 steps</b> from the start, never further apart. On open
+      ground its edge is a diamond.
+    </>
+  ),
+  dfs: <>See it snake? It commits to one direction and only backtracks at a dead end.</>,
   dijkstra: <>The wave spreads by <b>cost</b>, not steps. It slows to a crawl in mud and races around it.</>,
   astar: <>The search leans toward the goal. Cells that point the right way get explored first.</>,
 };
+
+/** Without mud every step costs 1, so the cost-wave caption would describe something that isn't on screen. */
+const DIJKSTRA_NO_MUD: ReactNode = (
+  <>No mud on this board, so every step costs 1 and Dijkstra spreads in the same rings as BFS.</>
+);
 
 const hasMud = (grid: Cell[], path: number[]) => path.some((c) => grid[c] === 2);
 
@@ -115,10 +125,11 @@ export function buildFrames(all: Record<Algo, Trace>, algo: Algo, world: World):
     },
   ];
   const milestoneAt = Math.min(MILESTONE_BY, Math.floor(t.visits.length / 3));
+  const milestone = algo === 'dijkstra' && !world.grid.includes(2) ? DIJKSTRA_NO_MUD : MILESTONE[algo];
   t.visits.forEach((cell, k) => {
     frames.push({
       step: k + 1, current: cell, ...t.snaps[k], showPath: false,
-      say: k === milestoneAt ? MILESTONE[algo] : undefined,
+      say: k === milestoneAt ? milestone : undefined,
     });
   });
   const last = frames[frames.length - 1];

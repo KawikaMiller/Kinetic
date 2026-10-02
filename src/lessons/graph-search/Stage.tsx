@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ControlGroup, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, ControlGroup, Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
 import { PRESETS, type PresetId, type World } from './presets';
@@ -164,6 +164,11 @@ export function Stage() {
             ))}
           </ControlGroup>
           <span className="gs-hint">Drag on the grid to paint · drag S / G to move them</span>
+          <Hint block>
+            Moves go 4 ways (no diagonals). Mud is a cost for stepping onto a cell. A* guesses with Manhattan
+            distance (rows plus columns still to go), which never overestimates here since every step costs at least 1.
+            The priority-queue panel hides stale duplicate entries a real heap would still hold until they pop.
+          </Hint>
         </Controls>
       }
     >
