@@ -1,0 +1,40 @@
+.ma-clock-wrap { align-items: center; }
+.ma-clock { width: 260px; max-width: 100%; height: auto; }
+.ma-rim { fill: none; stroke: var(--line-2); stroke-width: 1.5; }
+.ma-tick circle { fill: var(--panel); stroke: var(--line-2); stroke-width: 1.5; }
+.ma-tick text { font: 600 12px var(--mono); fill: var(--muted); }
+.ma-tick.is-walked circle { fill: var(--info); stroke: var(--info); }
+.ma-tick.is-walked text { fill: var(--info); }
+.ma-tick.is-now circle { fill: var(--hi); stroke: var(--hi); filter: drop-shadow(0 0 5px var(--hi)); }
+.ma-tick.is-now text { fill: var(--hi); font-weight: 800; }
+.ma-hand { stroke: var(--hi); stroke-width: 3.5; stroke-linecap: round; }
+.ma-hub { fill: var(--hi); }
+
+.ma-note { text-align: center; }
+.ma-error { color: var(--bad); }
+
+.ma-table { gap: 10px; }
+.ma-picked { margin: 0; font: 600 13px var(--mono); color: var(--muted); }
+.ma-none { color: var(--muted); border: 1px dashed var(--line-2); border-radius: 6px; padding: 1px 7px; }
+
+.ma-neg { gap: 12px; }
+.ma-split, .ma-ring-box { display: flex; flex-direction: column; gap: 8px; }
+.ma-row { margin: 0; font: 600 13.5px var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.ma-row.is-diff { color: var(--orange); }
+.ma-row.is-mod { color: var(--ok); }
+.ma-row.is-bad { color: var(--bad); }
+.ma-why { display: block; font: 500 12px var(--mono); color: var(--muted); margin-top: 2px; }
+.ma-fix { margin: 0; font: 500 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.ma-ring { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.ma-ring li {
+  position: relative;
+  min-width: 46px;
+  padding: 16px 10px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  font: 700 15px var(--mono);
+  text-align: center;
+  color: var(--text);
+}
+.ma-ring li.is-now { background: var(--hi); border-color: var(--hi); color: var(--on-hi); }
+.ma-slot { position: absolute; top: 2px; left: 6px; font: 600 10px var(--mono); opacity: 0.75; }
