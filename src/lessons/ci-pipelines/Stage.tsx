@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { ConsolePanel } from '../../components/ConsolePanel';
+import { GanttLanes, type GanttBar } from '../../components/GanttLanes';
 import { GraphView } from '../../components/GraphView';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SceneNode } from '../../components/scene';
@@ -180,33 +181,35 @@ function Dag({ run, frame }: { run: Run; frame: PipelineFrame }) {
   );
 }
 
+/** Bar colour per job status; pending and blocked jobs draw no bar, only the dashed plan. */
+const BAR_TONE: Partial<Record<JobView['status'], Tone>> = { running: 'hi', passed: 'ok', failed: 'bad', cancelled: 'dim' };
+
 function Gantt({ run, frame }: { run: Run; frame: PipelineFrame }) {
   const span = Math.max(run.wallClock, 1);
   const onPath = new Set(run.failed ? [] : run.criticalPath);
+  const scheduled = run.jobs.filter((s) => s.start !== null);
+  const bars: GanttBar[] = scheduled.map((s) => {
+    const view = frame.jobs[s.job.id];
+    return {
+      id: s.job.id,
+      lane: s.job.id,
+      start: s.start!,
+      end: s.end ?? s.start!,
+      tone: BAR_TONE[view.status],
+      progress: view.status === 'running' ? view.progress : view.status === 'pending' ? 0 : 1,
+      ring: onPath.has(s.job.id) ? 'violet' : undefined,
+    };
+  });
   return (
     <Box variant="sunken" className="ci-gantt">
       <SectionTitle hint="each bar = one job, from start to finish">Wall clock</SectionTitle>
-      <div className="ci-rows">
-        {run.jobs.map((s) => {
-          const view = frame.jobs[s.job.id];
-          const left = ((s.start ?? 0) / span) * 100;
-          const full = s.start === null ? 0 : (((s.end ?? s.start) - s.start) / span) * 100;
-          const shown = view.status === 'running' ? full * view.progress : view.status === 'pending' ? 0 : full;
-          return (
-            <div key={s.job.id} className="ci-row">
-              <span className="ci-row-label">{s.job.label}</span>
-              <div className="ci-track">
-                {s.start !== null && <span className="ci-plan" style={{ left: `${left}%`, width: `${full}%` }} />}
-                <span
-                  className={`ci-bar is-${view.status} ${onPath.has(s.job.id) ? 'is-critical' : ''}`}
-                  style={{ left: `${left}%`, width: `${shown}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-        <div className="ci-now" style={{ left: `calc(var(--ci-label-w) + (100% - var(--ci-label-w)) * ${frame.t / span})` }} />
-      </div>
+      <GanttLanes
+        lanes={run.jobs.map((s) => ({ id: s.job.id, label: s.job.label }))}
+        bars={bars}
+        domain={[0, span]}
+        now={frame.t}
+        ariaLabel="Wall clock: each job from start to finish"
+      />
     </Box>
   );
 }
