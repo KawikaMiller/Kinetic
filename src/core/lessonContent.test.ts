@@ -14,9 +14,6 @@ const T2_R1 = 'T2-R1 retrofit (wave 1)';
 const T2_R2 = 'T2-R2 retrofit (wave 2)';
 const TIER3 = 'Tier 3 kickoff: existing Tier 3 lessons are retrofitted then';
 const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
-const L3 = 'L-3: correct option still the longest in 3 of 4';
-const L3_EXTENDED = 'L-3, extended by K-2: correct option the longest in 2 of 3 (a majority)';
-const UNTICKETED_COUNTS = 'Found by K-2: keyIdeas grew to 5 in fb9ebdd; the coordinator trims it after t2/leftovers merges';
 
 /**
  * Existing Tier 2 lessons not yet held to the Tier 2 standard (docs/rollout-plan.md §3.1.6).
@@ -33,23 +30,7 @@ const PENDING_RETROFIT = new Set([
 const TIERS_AWAITING_KICKOFF = new Set([3, 4]);
 
 const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
-  // Tier 1
-  'accessibility': { ticket: UNTICKETED_COUNTS, rules: ['counts'] },
-  'client-server': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'code-review': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'command-line': { ticket: L3, rules: ['quiz-longest'] },
-  'cors-same-origin': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'data-formats': { ticket: L3, rules: ['quiz-longest'] },
-  'debugger-tools': { ticket: L3, rules: ['quiz-longest'] },
-  'debugging-method': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'fetch-decode-execute': { ticket: L3, rules: ['quiz-longest'] },
-  'functional-programming': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'injection-attacks': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'osi-tcpip-layers': { ticket: L3, rules: ['quiz-longest'] },
-  'requirements-user-stories': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'stack-vs-heap': { ticket: L3, rules: ['quiz-longest'] },
-  'static-analysis-linters': { ticket: L3_EXTENDED, rules: ['quiz-longest'] },
-  'time-and-timezones': { ticket: L3, rules: ['quiz-longest'] },
+  // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2, existing lessons awaiting their retrofit batch
   'auth-sessions-jwt': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'containers': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
