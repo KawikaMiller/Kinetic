@@ -1,0 +1,26 @@
+.v6 { gap: 14px; }
+.v6 .section-title { display: block; }
+.v6-error { color: var(--bad); }
+.v6-canon { font-family: var(--mono); font-size: 0.8em; overflow-wrap: anywhere; }
+.v6-type { font-size: 12px; }
+.v6-text { font: 700 20px/1.4 var(--mono); display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 4px; }
+.v6-slot { display: inline-flex; align-items: baseline; }
+.v6-tok { display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: baseline; transition: max-width 0.5s ease, opacity 0.5s ease; }
+.v6-tok.is-gone { opacity: 0; }
+.v6-group { color: var(--c); display: inline-flex; align-items: baseline; border-radius: 4px; transition: max-width 0.5s ease, opacity 0.5s ease, background 0.3s; }
+.v6-group.is-doomed { background: color-mix(in srgb, var(--dim) 70%, transparent); }
+.v6-zeros { color: var(--faint); background: color-mix(in srgb, var(--dim) 70%, transparent); border-radius: 3px; }
+.v6-sep { color: var(--muted); }
+.v6-dc { color: var(--hi); }
+.v6-rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.v6-rules li.is-current { color: var(--hi); font-weight: 600; }
+.v6-bits .bit-strip { gap: 8px 10px; }
+.v6-nat p, .v6-iid p { margin: 0; font-size: 13px; }
+.v6-iid ol { margin: 0; padding-left: 20px; font: 500 12.5px var(--mono); display: flex; flex-direction: column; gap: 3px; }
+.v6-dns { max-width: 360px; }
+/* A phone can't fit four 16-bit groups of readable bits per row: shrink the bits to colour-only cells,
+   keeping each group's hex label, so the 128 bits wrap as 4 rows of 2 groups. */
+@media (max-width: 600px) {
+  .v6-bits .bit-strip { --bit-w: 7px; --bit-fs: 0px; gap: 6px 10px; }
+  .v6-text { font-size: 15px; }
+}
