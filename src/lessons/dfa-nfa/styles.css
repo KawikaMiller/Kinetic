@@ -1,0 +1,24 @@
+.dn { gap: 12px; }
+.dn-meaning { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.dn-graph { margin: 0 auto; }
+.dn-graph .graph-node-label { font-size: 13px; }
+.dn-graph .graph-edge.is-marked { animation: dn-pulse 0.7s ease-out; }
+@keyframes dn-pulse {
+  0% { stroke-width: 9; }
+  100% { stroke-width: 4; }
+}
+.dn-dfa-graph .graph-node-label { font-size: 12px; }
+.dn-accept-box { fill: none; stroke: var(--c, var(--line-2)); stroke-width: 1.5; pointer-events: none; }
+.dn-tape { display: flex; flex-direction: column; gap: 6px; }
+.dn-verdict { margin: 0; font-size: 13px; line-height: 1.6; }
+.dn-honest { color: var(--faint); }
+.dn-error { color: var(--bad); }
+.dn-subset { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.dn-table { flex: 0 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dn-dfa { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dn-grid { display: block; }
+.dn-editor { display: flex; flex-direction: column; gap: 8px; }
+.dn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; }
+.dn-row.is-unreachable .dn-state { color: var(--muted); }
+.dn-state { font: 700 14px var(--mono); min-width: 28px; }
+.dn-graph .dn-unreachable { opacity: 0.4; }
