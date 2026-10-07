@@ -5,15 +5,15 @@ import { SectionTitle } from '../../components/Panel';
 import { useScenePicker } from '../../components/ScenePicker';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA, humanDuration } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { ACTORS, changeCaption, ladder, lookupFrames, type DnsFrame, type Lowering } from './frames';
 import {
-  LOWERED_TTL, NEW_IP, NEW_NAME, NEW_NAME_IP, OLD_IP, RESOLVERS, TTL_STEPS, cacheKey, createInternet, exampleZone, flipOf, purge,
-  remaining, resolve, setRecord, type Cache, type Internet, type Lookup, type RType, type TtlPlan,
+  LOWERED_TTL, NEW_IP, NEW_NAME, NEW_NAME_IP, OLD_IP, RESOLVERS, TTL_STEPS, ANY_TYPE, cacheKey, createInternet, exampleZone, flipOf, purge,
+  remaining, resolve, setRecord, type Cache, type Internet, type Lookup, type RType, type ServerId, type TtlPlan,
 } from './model';
 import './styles.css';
 
@@ -38,7 +38,21 @@ const QUESTIONS: { name: string; type: RType }[] = [
   { name: 'example.com', type: 'MX' },
   { name: 'shop.example.com', type: 'A' },
   { name: NEW_NAME, type: 'A' },
+  { name: NEW_NAME, type: 'AAAA' },
 ];
+
+type Outage = 'none' | 'ns1' | 'both';
+const OUTAGES: { value: Outage; label: string }[] = [
+  { value: 'none', label: 'Both up' },
+  { value: 'ns1', label: 'ns1 down' },
+  { value: 'both', label: 'Both down' },
+];
+const DOWN: Record<Outage, ServerId[]> = { none: [], ns1: ['ns1'], both: ['ns1', 'ns2'] };
+const OUTAGE_SAYS: Record<Outage, string> = {
+  none: "Both of example.com's name servers answer again.",
+  ns1: 'ns1.example.com stops answering. The zone has a second server, so lookups still work, just slower: the resolver times out on ns1, then asks ns2.',
+  both: "Both of example.com's name servers stop answering. Cached answers keep working until they expire (some resolvers serve stale answers a while longer, RFC 8767); anything else times out and ends in SERVFAIL.",
+};
 const qKey = (q: { name: string; type: RType }) => `${q.name} ${q.type}`;
 const STEP_MS = 1300;
 const WAITS = [60, 600, 3600];
@@ -59,8 +73,8 @@ function ResolveScene({ picker }: { picker: ReactNode }) {
   const player = usePlayer(frames, { interval: STEP_MS });
   const atEnd = !lookup || player.frame.step === lookup.steps.length - 1;
   const shownCache = atEnd ? cache : before;
-  const created = net.zones.auth.records.some((r) => r.name === NEW_NAME);
-  const authDown = net.down.includes('auth');
+  const created = net.zones.ns1.records.some((r) => r.name === NEW_NAME);
+  const outage = (Object.keys(DOWN) as Outage[]).find((o) => DOWN[o].length === net.down.length) ?? 'none';
   const servedKey = lookup && atEnd ? servedFrom(lookup) : null;
 
   const look = () => {
@@ -79,15 +93,15 @@ function ResolveScene({ picker }: { picker: ReactNode }) {
   };
   const create = () => {
     setNet(setRecord(net, NEW_NAME, 'A', NEW_NAME_IP, 3600));
-    idle(<>{NEW_NAME} A {NEW_NAME_IP} now exists on ns1.example.com. Look it up again: does the resolver know yet?</>);
+    idle(<>{NEW_NAME} A {NEW_NAME_IP} now exists on both of example.com's name servers (the provider syncs them within seconds). Look it up again: does the resolver know yet?</>);
   };
   const flush = () => {
     setCache({});
     idle(<>Cache flushed: the next lookup starts from the root again.</>);
   };
-  const toggleAuth = (up: boolean) => {
-    setNet({ ...net, down: up ? [] : ['auth'] });
-    idle(up ? <>ns1.example.com answers again.</> : <>ns1.example.com stops answering. Cached answers keep working until they expire; anything else times out.</>);
+  const changeOutage = (o: Outage) => {
+    setNet({ ...net, down: DOWN[o] });
+    idle(<>{OUTAGE_SAYS[o]}</>);
   };
 
   return (
@@ -115,7 +129,7 @@ function ResolveScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <Button variant="primary" onClick={look}>Look up</Button>
-          <Toggle label="ns1.example.com" value={!authDown} onChange={toggleAuth} off="Down" on="Up" />
+          <Segmented label="example.com name servers" value={outage} onChange={changeOutage} options={OUTAGES} />
         </>,
         <ControlGroup key="q" label="Name">
           {QUESTIONS.map((q) => (
@@ -141,6 +155,7 @@ function ResolveScene({ picker }: { picker: ReactNode }) {
           <CachePanel cache={shownCache} now={now} served={servedKey} />
           <Records created={created} />
         </div>
+        <Hint block>Real zones have at least two name servers (RFC 2182), and the resolver tries each before giving up; this one has two. The .com and root steps are simplified to one server each.</Hint>
         <Hint block>{HONEST}</Hint>
       </div>
     </StageFrame>
@@ -152,7 +167,8 @@ const rcodeColor = (r: Lookup['rcode']) => (r === 'NOERROR' ? 'var(--ok)' : r ==
 /** The cache entry a lookup was answered from, if it was a cache hit. */
 function servedFrom(l: Lookup): string | null {
   const hit = [...l.steps].reverse().find((s) => s.kind === 'cache-hit' || s.kind === 'cache-negative');
-  return hit ? cacheKey(hit.name, l.type) : null;
+  if (!hit) return null;
+  return cacheKey(hit.name, hit.negative === 'NXDOMAIN' ? ANY_TYPE : l.type);
 }
 
 function CachePanel({ cache, now, served }: { cache: Cache; now: number; served: string | null }) {
@@ -167,7 +183,7 @@ function CachePanel({ cache, now, served }: { cache: Cache; now: number; served:
           const tone = e.key === served ? 'hi' : e.kind === 'negative' ? 'bad' : e.kind === 'referral' ? 'violet' : 'info';
           return (
             <li key={e.key} className={e.key === served ? 'is-served' : ''}>
-              <span className="dn-cache-name">{e.name} {e.type}</span>
+              <span className="dn-cache-name">{e.name} {e.type === ANY_TYPE ? '(any type)' : e.type}</span>
               <span className="dn-cache-data">{e.kind === 'referral' ? `→ ${e.data}` : e.data}</span>
               <Bar value={left} max={e.ttl} tone={tone} height={6} trailing={<span className="dn-ttl">{humanDuration(left)}</span>} />
             </li>
@@ -184,21 +200,21 @@ const PURPOSE: Record<RType, string> = {
   CNAME: 'alias: "look up this other name"',
   MX: 'mail server, with priority',
   TXT: 'free text (SPF, site checks)',
-  NS: 'which server is authoritative',
-  SOA: 'zone settings; last field = negative TTL',
+  NS: "the zone's authoritative servers (at least two)",
+  SOA: 'zone settings: refresh/retry/expire (how secondaries sync); last field (MINIMUM) caps the negative TTL',
 };
 
 function Records({ created }: { created: boolean }) {
   const records = [...exampleZone().records.filter((r) => !r.name.startsWith('loop')), ...(created ? [{ name: NEW_NAME, type: 'A' as RType, ttl: 3600, data: NEW_NAME_IP }] : [])];
   return (
     <div className="dn-panel dn-records">
-      <SectionTitle weight="regular" hint="fictional zone">example.com on ns1.example.com</SectionTitle>
+      <SectionTitle weight="regular" hint="fictional zone">example.com on ns1 and ns2</SectionTitle>
       <div className="dn-table-wrap">
         <table className="data-table">
           <thead><tr><th>Name</th><th>Type</th><th>Value</th><th>TTL</th><th>For</th></tr></thead>
           <tbody>
             {records.map((r) => (
-              <tr key={`${r.name}-${r.type}`}>
+              <tr key={`${r.name}-${r.type}-${r.data}`}>
                 <td>{r.name}</td><td>{r.type}</td><td className="dn-value">{r.data}</td><td>{humanDuration(r.ttl)}</td><td className="dn-purpose">{PURPOSE[r.type]}</td>
               </tr>
             ))}
@@ -300,6 +316,7 @@ function ChangeScene({ picker }: { picker: ReactNode }) {
             ))}
           </tbody>
         </table>
+        <Hint block>Your DNS provider's own name servers do sync with each other (usually within seconds, via NOTIFY); that's not what's holding these users. Their resolvers' caches are.</Hint>
         <Hint block>When each resolver first cached the record is illustrative; the flip times are computed from it and the TTL.</Hint>
         <Hint block>{HONEST}</Hint>
       </div>
