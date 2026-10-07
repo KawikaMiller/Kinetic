@@ -10,8 +10,8 @@ import type { ListingLine } from './x86';
  * are marked __attribute__((noinline)) in the C file, so -O1 keeps the calls; that
  * attribute is left out of the C shown on screen.
  *
- * CLOBBER and CLOBBER_SAVED are hand-written (a compiler never leaves a live value in rcx
- * across a call, which is the point), assembled with GNU as 2.42 for their byte offsets.
+ * CLOBBER and CLOBBER_SAVED are hand-written (across a call it cannot see into, a compiler never leaves a live value in rcx; with -fipa-ra it may when it can see the callee leaves rcx alone;
+ * showing the rule is the point), assembled with GNU as 2.42 for their byte offsets.
  */
 
 export interface AsmLine extends ListingLine {

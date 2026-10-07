@@ -9,8 +9,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { callFrames, clobbered } from './frames';
-import { ABI, HONESTY, STACK_TOP, type RunResult, type SceneId, type SceneOptions } from './model';
-import { stackPicture } from './stackLayout';
+import { ABI, alignLabel, HONESTY, STACK_TOP, type RunResult, type SceneId, type SceneOptions } from './model';
+import { stackPicture, whyNoFrame } from './stackLayout';
 import { unwind, walkFramePointers } from './unwind';
 import { hex, signed, type Reg64 } from './x86';
 import './styles.css';
@@ -63,7 +63,7 @@ function SceneView({ scene, picker }: { scene: SceneId; picker: ReactNode }) {
         <Stats>
           <Stat label="Frames" value={s.calls.length} sub={s.calls.map((c) => c.fn).join(' → ')} />
           <Stat label="Stack used" value={`${STACK_TOP - rsp} bytes`} />
-          <Stat label="rsp mod 16" value={rsp % 16} sub={rsp % 16 === 0 ? 'aligned: ready to call' : 'just after a call or push'} />
+          <Stat label="rsp mod 16" value={rsp % 16} sub={alignLabel(rsp)} />
         </Stats>
       }
       legend={
@@ -158,7 +158,7 @@ function Backtrace({ run, k }: { run: RunResult; k: number }) {
   const fp = walkFramePointers(s.cpu, run.fns).frames.join(' ← ');
   const usesFp = run.listing.id !== 'calls-nofp';
   const lines = usesFp
-    ? [real, ...(fp !== real ? [{ text: `following rbp alone gives ${fp}: rbp isn't this function's frame right now (a leaf never sets one up; a prologue or epilogue is half done), so its caller is skipped`, tone: 'orange' as const }] : [])]
-    : [real, { text: `no frame pointers in this build (rbp = ${hex(s.cpu.regs.rbp)}): this came from the unwind tables (.eh_frame), not an rbp chain`, tone: 'orange' as const }];
+    ? [real, ...(fp !== real ? [{ text: `following rbp alone gives ${fp}: rbp isn't this function's frame right now (${whyNoFrame(run, s.cpu.rip)}), so its caller is skipped`, tone: 'orange' as const }] : [])]
+    : [real, { text: `no frame pointers in this build (rbp = ${hex(s.cpu.regs.rbp)}): this came from unwind rules worked out from the listing (what gcc's .eh_frame would record for this code), not an rbp chain`, tone: 'orange' as const }];
   return <ConsolePanel title="backtrace (newest first)" lines={lines} />;
 }

@@ -111,7 +111,7 @@ export function introSay(run: RunResult): ReactNode {
     case 'seven':
       return <>sum7 takes 7 arguments. Only 6 fit in registers (rdi, rsi, rdx, rcx, r8, r9): watch where the 7th goes.</>;
     case 'saved':
-      return <>main keeps one value in rcx and one in rbx, then calls helper. This listing is hand-written to show the rule: a compiler would never leave a value it still needs in rcx across a call.</>;
+      return <>main keeps one value in rcx and one in rbx, then calls helper. This listing is hand-written to show the rule. Across a call to code it can't see, a compiler never leaves a value it still needs in rcx; it only does when it can see the callee won't touch rcx (gcc's -fipa-ra).</>;
     case 'deep':
       return <>depth calls itself, 16 bytes of stack per call. This toy stack holds only {TOY_STACK_BYTES} bytes before its guard page (a real one gets 8 MiB).</>;
   }
