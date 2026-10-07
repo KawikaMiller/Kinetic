@@ -399,12 +399,16 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   border-color: color-mix(in srgb, var(--range-c, var(--hi)) 30%, transparent);
 }
 .array-cell.is-dim { opacity: 0.28; background: var(--dim); border-color: transparent; }
-.array-cell.is-active {
-  background: var(--hi);
-  color: var(--on-hi);
-  border-color: var(--hi);
+/* Lifted cells: active (--hi, being checked), info (a second pointer), violet (a third role). */
+.array-cell.is-active { --c: var(--hi); --on-c: var(--on-hi); }
+.array-cell.is-info { --c: var(--info); --on-c: var(--on-info); }
+.array-cell.is-violet { --c: var(--violet); --on-c: var(--on-violet); }
+.array-cell:is(.is-active, .is-info, .is-violet) {
+  background: var(--c);
+  color: var(--on-c);
+  border-color: var(--c);
   transform: translateY(-6px) scale(1.08);
-  box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--hi) 70%, transparent);
+  box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--c) 70%, transparent);
   z-index: 1;
 }
 .array-cell.is-done {

@@ -614,13 +614,14 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 
 ### `ArrayStrip.tsx` — two-pointers, sliding-window, prefix-sums, debugging-method; binary-search
 ```tsx
-<ArrayStrip values={arr} cellState={(i) => 'idle | active | done | dim | bad'}
+<ArrayStrip values={arr} cellState={(i) => 'idle | active | info | violet | done | dim | bad'}
             ranges={[{ from: lo, to: hi, labels: ['lo', 'hi'] }, { from: b0, to: b1, tone: 'violet' }]}
             pointers={[{ i: l, label: 'L', tone: 'info' }, { i: r, label: 'R', tone: 'violet' }]}
             onCellClick={(i) => pick(i)} cellTitle={(i) => `Search for ${arr[i]}`}
             showIndex fontSize={12} cellMax={56} />
 ```
-- `active` lifts in `--hi` (checking now), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
+- `active` lifts in `--hi` (checking now), `info` / `violet` lift the same way in those colours (a second and third
+  pointer: cycle-detection's slow and fast cells match their S and F markers), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
 - Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
 - Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
 - Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
@@ -686,7 +687,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
 - Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
 - Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.
-- `onNodeClick` makes every node a keyboard button (`role="button"`, in the tab order, Enter/Space press it, accent focus ring) and the SVG a `group`. Its accessible name is the node's text label or id; pass `nodeAriaLabel(id)` for a better one ("Remove leaf 35"). Only pass `onNodeClick` while clicking does something, or every node becomes a dead tab stop.
+- `onNodeClick` makes every node a keyboard button (`role="button"`, Enter/Space press it, accent focus ring) and the SVG a `group`. The tree is **one tab stop** (roving tabindex, starting at the first node in reading order, then staying on the last node used) and the arrow keys follow its structure: Up = parent, Down = leftmost child, Left/Right = the neighbour on the same level (across subtrees, and across trees in a forest), Home/End = first and last node. `treeKeyTarget(key, from, shape, place, visible?)` in `core/treeLayout` is the pure, tested key map; hidden nodes are skipped. A lesson that moves focus itself (tree-traversals after a removal) just calls `.focus()` on `[data-node="id"]`, and that node becomes the tab stop. Its accessible name is the node's text label or id; pass `nodeAriaLabel(id)` for a better one ("Remove leaf 35"). Only pass `onNodeClick` while clicking does something, or every node becomes a dead tab stop.
 - `nodeScale(id)` and `nodeOpacity(id)` (0..1) animate size and fade. motion owns the node group's opacity, so fade nodes through `nodeOpacity`, not CSS (tree-traversals fades nodes that can't be removed).
 - trees-bst (in-order, the null ghost as an `overlay`) runs on it pixel-identically. recursion's fib tree (tidy, custom nodes, `hidden`) does too, except for subpixel antialiasing on a few label glyphs (≤0.03% of the stage), because labels are now placed by the node's transform instead of absolute coordinates.
 - heaps keeps its own tree: nodes sit at array-index positions of a complete binary tree with `2i+1`/`2i+2` edge labels, and they're keyed by item so swaps animate. A third layout mode is worth adding only when a Tier 1 lesson needs it.
@@ -771,7 +772,7 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - Turn `compress` / `byRank` off to show the naive forest. Draw it with `TreeSvg` forest mode: `roots` = the nodes that are their own parent.
 
 ### `TreeSvg` forest mode — union-find, huffman-coding, tries
-`shape.roots?: K[]` (instead of `root`) lays several trees side by side; `forestGap` (default `FOREST_GAP`, 0.5) is the empty columns between them. Additive: every single-root caller is pixel-identical (all six TreeSvg lessons diffed).
+`shape.roots: K[]` (instead of `root`, which is then left out: `{ roots, children }`) lays several trees side by side; `forestGap` (default `FOREST_GAP`, 0.5) is the empty columns between them. Additive: every single-root caller is pixel-identical (all six TreeSvg lessons diffed).
 
 ### `core/grid.ts`, `CellGrid.tsx` — error-detection-correction, primes-factoring, modular-arithmetic, birthday-paradox, conditional-bayes, cpu-caches, cpu-pipelining, shuffle-reservoir, virtual-memory-paging, file-systems, storage-devices, edit-distance, deployment-strategies, feature-flags
 ```tsx

@@ -230,7 +230,11 @@ function ArrayScene({ picker }: { picker: ReactNode }) {
             showIndex
             cellMax={48}
             pointers={pointers}
-            cellState={(i) => (f.start !== null && arr[i] === f.start ? 'done' : i === f.slow || i === f.fast ? 'active' : 'idle')}
+            cellState={(i) => {
+              if (f.start !== null && arr[i] === f.start) return 'done';
+              if (i === f.slow && i === f.fast) return 'active';
+              return i === f.slow ? 'info' : i === f.fast ? 'violet' : 'idle';
+            }}
           />
           <Tray label="The chain i → a[i], from index 0" labelWeight="regular" stack ariaLabel="Chain">
             <p className="cd-chain">
