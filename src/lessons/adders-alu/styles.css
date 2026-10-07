@@ -1,0 +1,75 @@
+.aa { gap: 14px; }
+.aa-gates { flex-flow: row wrap; align-items: flex-start; gap: 18px 26px; }
+.aa-board { flex: 1 1 420px; min-width: 0; }
+.aa-table { flex: 0 0 auto; align-self: center; }
+.aa-svg { display: block; width: 100%; height: auto; }
+.aa-error { color: var(--bad); }
+
+/* Gate circuit, after logic-gates' board. */
+.aa-wire { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke 0.25s; }
+.aa-wire.is-low { stroke: var(--dim); }
+.aa-wire.is-high { stroke: var(--hi); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 70%, transparent)); }
+.aa-dot { filter: drop-shadow(0 0 5px var(--hi)); pointer-events: none; }
+.aa-gate-body { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.aa-gate-back { fill: none; stroke: var(--line-2); stroke-width: 2; }
+.aa-gate.is-on .aa-gate-body { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); }
+.aa-gate.is-on .aa-gate-back { stroke: var(--hi); }
+.aa-gate-type { font: 700 11px var(--mono); fill: var(--muted); pointer-events: none; }
+.aa-gate.is-on .aa-gate-type { fill: var(--text); }
+.aa-input { cursor: pointer; }
+.aa-input circle,
+.aa-lamp circle { fill: var(--cell); stroke: var(--dim); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.aa-input.is-on circle,
+.aa-lamp.is-on circle { fill: var(--hi); stroke: var(--hi); }
+.aa-input:hover circle { stroke: var(--muted); }
+.aa-input:focus-visible { outline: none; }
+.aa-input:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.aa-io-value { font: 700 15px var(--mono); fill: var(--muted); pointer-events: none; }
+.aa-input.is-on .aa-io-value,
+.aa-lamp.is-on .aa-io-value { fill: var(--on-hi); }
+.aa-io-name { font: 700 14px var(--mono); fill: var(--text); }
+
+/* Operand rows */
+.aa-rows { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 10px 12px; align-items: end; justify-content: start; }
+.aa-row-label { font: 700 13px var(--mono); color: var(--muted); padding-bottom: 6px; }
+.aa-row-label.is-op { color: var(--violet); }
+.aa-row-value { font: 600 13px var(--mono); color: var(--text); padding-bottom: 6px; }
+.aa-signed { color: var(--faint); font-weight: 500; }
+.aa-pending { font-size: 12.5px; color: var(--faint); padding-bottom: 6px; }
+
+/* Four-stage adder */
+.aa-box { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; }
+.aa-stage.is-now .aa-box { stroke: var(--info); }
+.aa-box-title { font: 700 14px var(--mono); fill: var(--text); }
+.aa-gp { font: 600 11px var(--mono); fill: var(--muted); }
+.aa-in { font: 600 12px var(--mono); fill: var(--muted); }
+.aa-sum { font: 700 13px var(--mono); fill: var(--muted); }
+.aa-sum.is-high { fill: var(--hi); }
+.aa-sum.is-pending { fill: var(--faint); }
+.aa-carry path { fill: none; stroke-width: 2.5; }
+.aa-carry.is-pending path { stroke: var(--line-2); stroke-dasharray: 4 4; }
+.aa-carry.is-arriving path { stroke: var(--info); stroke-width: 3.5; }
+.aa-carry.is-high path { stroke: var(--hi); }
+.aa-carry.is-low path { stroke: var(--dim); }
+.aa-carry-label { font: 600 11px var(--mono); fill: var(--muted); }
+.aa-carry.is-arriving .aa-carry-label { fill: var(--info); }
+.aa-carry.is-high .aa-carry-label { fill: var(--hi); }
+.aa-unit rect { fill: var(--panel-2); stroke: var(--line-2); stroke-width: 2; }
+.aa-unit.is-done rect { stroke: var(--info); }
+.aa-unit text { font: 600 11.5px var(--mono); fill: var(--muted); }
+
+/* ALU */
+.aa-alu { max-width: 560px; }
+.aa-unit-box rect { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; }
+.aa-unit-box.is-selected rect { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 14%, var(--panel)); }
+.aa-unit-title { font: 700 14px var(--mono); fill: var(--text); }
+.aa-unit-sub { font: 600 11px var(--mono); fill: var(--muted); }
+.aa-path { fill: none; stroke: var(--dim); stroke-width: 2.5; }
+.aa-unit-box.is-selected .aa-path,
+.aa-path.is-out { stroke: var(--violet); }
+.aa-path.is-select { stroke: var(--violet); stroke-dasharray: 4 3; }
+.aa-mux { fill: var(--panel-2); stroke: var(--violet); stroke-width: 2; }
+.aa-mux-label { font: 700 11px var(--mono); fill: var(--muted); writing-mode: vertical-rl; }
+.aa-select-label { font: 600 11px var(--mono); fill: var(--violet); }
+.aa-out { fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); stroke: var(--hi); stroke-width: 2; }
+.aa-out-value { font: 700 17px var(--mono); fill: var(--hi); }
