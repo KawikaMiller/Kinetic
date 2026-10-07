@@ -14,7 +14,7 @@ import { drawRealCanvas } from './draw';
 import { centreVerdict, coverageFrames, DEPTH_NAMES, depthCaption, num, sharedCaption } from './frames';
 import {
   COVERAGE_PRESET, DEPTH_PRESET, GRID_H, GRID_W, SHARED_PRESET, SLIVER_PRESET, SNAP, TINY_PRESET, barycentric, clampVertex,
-  depthAt, drawDepth, inBox, pixelKey, sampleOffsets, sharedEdge, testPoint, wind, type Box, type FillRule, type Tri, type Vertex,
+  depthAt, drawDepth, inBox, isWrong, wrongPixels, pixelKey, sampleOffsets, sharedEdge, testPoint, wind, type Box, type FillRule, type Tri, type Vertex,
 } from './model';
 import './styles.css';
 
@@ -423,12 +423,12 @@ function DepthScene({ picker }: { picker: ReactNode }) {
     setCaption(depthCaption(DEPTH_PRESET, key.split(',').map(Number) as [number, number], z));
   };
 
-  const wrong = pixels.filter((p) => p.shown !== p.nearest).length;
+  const wrong = wrongPixels(pixels);
   const cell = (x: number, y: number): GridCellSpec => {
     const s = pixels[pixelKey(x, y)].shown;
     return s < 0 ? {} : { tone: DEPTH_TONES[s], fill: 'solid' };
   };
-  const wrongRings: GridHighlight[] = pixels.flatMap((p, k) => (p.shown !== p.nearest ? [{ r: Math.floor(k / GRID_W), c: k % GRID_W, tone: 'bad' as Tone }] : []));
+  const wrongRings: GridHighlight[] = pixels.flatMap((p, k) => (isWrong(p) ? [{ r: Math.floor(k / GRID_W), c: k % GRID_W, tone: 'bad' as Tone }] : []));
 
   return (
     <StageFrame
@@ -467,7 +467,7 @@ function DepthScene({ picker }: { picker: ReactNode }) {
         />
         <DepthReadout at={probe} shown={pixels[pixelKey(probe.x, probe.y)].shown} />
       </div>
-      <Hint block tone="muted" className="rz-honest">{HONESTY} Depth is interpolated linearly in screen space, which is right for this flat 2D demo; 3D perspective needs a correction.</Hint>
+      <Hint block tone="muted" className="rz-honest">{HONESTY} Depth is interpolated linearly in screen space, which is right for z-buffer depth even in 3D (it is taken after the perspective divide); textures and colours in 3D need perspective correction.</Hint>
     </StageFrame>
   );
 }
