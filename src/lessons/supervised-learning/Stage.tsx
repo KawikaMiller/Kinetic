@@ -168,7 +168,7 @@ export function Stage() {
           {!fit.ok && <p className="sl-refusal" role="alert">{fit.reason}</p>}
           <Hint block>
             Synthetic data from a known curve plus seeded noise, so we can show the true curve. With real data you never see it. Errors above{' '}
-            {ERROR_CAP.toLocaleString('en-US')} run off the top of the error plot. Real projects often average several splits (cross-validation).
+            {ERROR_CAP.toLocaleString('en-US')} run off the top of the error plot. Ridge adds λ × each coefficient² to the error, except the intercept's. Fits are solved by QR. Real projects often average several splits (cross-validation).
           </Hint>
         </div>
       </div>
