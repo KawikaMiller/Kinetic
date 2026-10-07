@@ -3,7 +3,7 @@ import { captionText as text } from '../../core/testing/captions';
 import { b64url, enc, hmac as coreHmac } from '../../core/crypto';
 import { flowFrames, scaleFrames, TAMPER_STORY } from './frames';
 import {
-  ALG, GUESSED_SECRET, HEADER, LESSON_NOW, LIFETIME_MIN, PAYLOAD, SERVER_SECRET, b64urlJson, clampSub, compact,
+  ALG, GUESSED_SECRET, HEADER, SERVER_KEY_BITS, LESSON_NOW, LIFETIME_MIN, PAYLOAD, SERVER_SECRET, b64urlJson, clampSub, compact,
   constantTimeEqual, decodePart, forge, signJwt, tamperStory, verifyJwt, type Jwt, type Resign,
 } from './jwt';
 import jwtSource from './jwt.ts?raw';
@@ -75,6 +75,23 @@ describe('verify', () => {
     expect(ALG).toBe('HS256');
   });
 
+  it('names a token with no exp as missing-exp, not expired', async () => {
+    const header = b64urlJson(HEADER);
+    const { exp: _drop, ...noExp } = PAYLOAD;
+    const payload = b64urlJson(noExp);
+    const t: Jwt = { header, payload, signature: await refHs256(SERVER_SECRET, `${header}.${payload}`) };
+    expect(_drop).toBe(PAYLOAD.exp);
+    expect(await verifyJwt(t)).toMatchObject({ valid: false, reason: 'missing-exp' });
+  });
+
+  it('decodes strict base64url only: padding, + and / are refused', async () => {
+    const t = await genuine();
+    expect(decodePart(t.header)).toEqual(HEADER);
+    expect(decodePart(`${t.header}=`)).toBeNull();
+    expect(decodePart(t.header.replace(/-/g, '+').replace(/_/g, '/') + '+/')).toBeNull();
+    expect(await verifyJwt({ ...t, header: `${t.header}==` })).toMatchObject({ valid: false, reason: 'malformed' });
+  });
+
   it('rejects a header that is not base64url JSON', async () => {
     const t = await genuine();
     expect(await verifyJwt({ ...t, header: '%%%' })).toMatchObject({ valid: false, reason: 'malformed' });
@@ -116,6 +133,19 @@ describe('the Forge lane', () => {
     expect(GUESSED_SECRET).not.toBe(SERVER_SECRET);
   });
 
+  it('the server key looks like 256 random bits (RFC 7518 §3.2), not a human-chosen phrase', () => {
+    expect(SERVER_SECRET).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(SERVER_SECRET.length * 6).toBeGreaterThanOrEqual(SERVER_KEY_BITS);
+    expect(SERVER_KEY_BITS).toBeGreaterThanOrEqual(256);
+  });
+
+  it('the captions teach the weak-key risk and the fix, payload-free', () => {
+    const guess = text(TAMPER_STORY['guess-rejected']);
+    expect(guess).toContain('one valid token could test guesses offline');
+    expect(guess).toContain('at least 256 random bits');
+    expect(text(TAMPER_STORY['forged-accepted'])).toContain('like private keys, and rotate them');
+  });
+
   it('trims a typed subject by characters, never splitting an emoji', () => {
     expect(clampSub('abcdefgh')).toBe('abcdef');
     expect(clampSub('😀😀😀😀😀😀😀')).toBe('😀😀😀😀😀😀');
@@ -125,6 +155,12 @@ describe('the Forge lane', () => {
 });
 
 describe('the scripted lanes', () => {
+  it('the Bearer step contrasts a script-readable token with an HttpOnly cookie', () => {
+    const bearer = flowFrames('jwt').find((f) => f.msg?.label.includes('Bearer eyJ'))!;
+    expect(text(bearer.say)).toContain('injected script could read it');
+    expect(text(bearer.say)).toContain('HttpOnly');
+  });
+
   it('every frame has its own caption', () => {
     for (const frames of [flowFrames('session'), flowFrames('jwt'), scaleFrames()]) {
       for (const f of frames) expect(text(f.say).length).toBeGreaterThan(0);

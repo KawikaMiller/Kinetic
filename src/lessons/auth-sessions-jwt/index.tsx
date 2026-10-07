@@ -25,8 +25,8 @@ const lesson: LessonModule = {
   keyIdeas: [
     "Sessions: a random ID in a cookie, state on the server. Instant revocation, but every request needs a store lookup.",
     "JWT: signed claims the client carries. No lookup, but can't be revoked before exp without extra machinery.",
-    "A JWT payload is base64, not encrypted: anyone can read it. The signature only stops changes.",
-    "Cookie flags matter: HttpOnly (no JS access), Secure (HTTPS only), SameSite (CSRF protection).",
+    "A JWT payload is base64url, not encrypted: anyone can read it. The signature only stops changes.",
+    "Cookie flags matter: HttpOnly (no JS access), Secure (HTTPS only), SameSite (limits cross-site sending; one CSRF defence).",
   ],
   quiz: [
     {
