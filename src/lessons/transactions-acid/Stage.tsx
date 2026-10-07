@@ -6,7 +6,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { enterFromLeft } from '../../core/motion';
 import { usePlayer } from '../../core/usePlayer';
-import { buildFrames, LETTER_NAMES, PROGRAMS, TOTAL, type Letter, type Mode } from './frames';
+import { buildFrames } from './frames';
+import { LETTER_NAMES, PROGRAMS, TOTAL, type Letter, type Mode } from './model';
 import './styles.css';
 
 export function Stage() {

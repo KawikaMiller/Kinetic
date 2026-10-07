@@ -3,7 +3,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { BAD, buildFrames, GOOD, SLOW_BUILD_SECONDS, type Change } from './frames';
+import { buildFrames } from './frames';
+import { BAD, GOOD, SLOW_BUILD_SECONDS, type Change } from './model';
 
 const LAYER_SPRING = { type: 'spring', stiffness: 300, damping: 24 } as const;
 

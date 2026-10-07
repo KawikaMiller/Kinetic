@@ -2,8 +2,6 @@ import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import { BAD, GOOD, SLOW_BUILD_SECONDS, cacheBuild, type Change, type Instr, type LayerStatus } from './model';
 
-export { BAD, GOOD, SLOW_BUILD_SECONDS, type Change } from './model';
-
 export interface LayerFrame extends Frame {
   statuses: LayerStatus[];
   current: number | null;
