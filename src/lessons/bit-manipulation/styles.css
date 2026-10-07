@@ -3,8 +3,6 @@
 .bm-row-label { font: 600 12px var(--mono); color: var(--muted); text-align: right; white-space: nowrap; }
 .bm-row-label.is-result { color: var(--hi); }
 .bm-row-label.is-mask { color: var(--violet); }
-/* Columns not worked out yet: an empty dashed slot, not a 0. */
-.bm-result .bit-slot:has(.bm-pending-mark) .bit { color: transparent; border-style: dashed; }
 .bm-pending-mark { color: var(--faint); }
 .bm-tick { color: var(--ok); font-weight: 700; }
 .bm-sign { color: var(--orange); font-weight: 700; }

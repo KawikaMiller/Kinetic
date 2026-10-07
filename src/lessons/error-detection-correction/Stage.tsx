@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { BitStrip } from '../../components/BitStrip';
 import { ByteGrid } from '../../components/ByteGrid';
 import { Box, SectionTitle } from '../../components/Panel';
 import { useScenePicker } from '../../components/ScenePicker';
@@ -8,9 +9,8 @@ import { WideRegion } from '../../components/WideRegion';
 import { toBits, type Bit } from '../../core/bits';
 import { hexByte } from '../../core/bytes';
 import { useSetCaption } from '../../core/caption';
-import { cssVar } from '../../core/palette';
+import { toneVar, type Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
-import { FlipRow, type CellLook } from './FlipRow';
 import { crcFrames, hammingCaption, parityCaption, type CrcMode } from './frames';
 import {
   CRC4_BITS, CRC4_GENERATOR, MAX_TEXT, MESSAGE_BITS, PARITY_DATA_BITS, PARITY_POSITIONS, POSITIONS, applyFlips, bytesOf32, checkFails,
@@ -25,10 +25,19 @@ const SCENES = [
   { value: 'crc' as const, label: 'CRC' },
 ];
 
-const DATA = cssVar('info');
-const NEUTRAL = cssVar('muted');
+const DATA_TONE: Tone = 'info';
+/** The overall parity bit belongs to no group: plain grey. */
+const NEUTRAL_TONE: Tone = 'muted';
 /** One categorical colour per Hamming parity group. */
-const GROUP_COLOR: Record<ParityPosition, string> = { 1: cssVar('violet'), 2: cssVar('amber'), 4: cssVar('sky') };
+const GROUP_TONE: Record<ParityPosition, Tone> = { 1: 'violet', 2: 'amber', 4: 'sky' };
+const DATA = toneVar(DATA_TONE);
+const NEUTRAL = toneVar(NEUTRAL_TONE);
+const GROUP_COLOR: Record<ParityPosition, string> = { 1: toneVar(GROUP_TONE[1]), 2: toneVar(GROUP_TONE[2]), 4: toneVar(GROUP_TONE[4]) };
+/**
+ * Bit rows laid into the table's grid so rows line up column for column. Clear bits keep
+ * their colour at full strength, since the colour says which group a bit belongs to.
+ */
+const ROW = { layout: 'cells', clear: 'toned' } as const;
 const HONEST_FLIPS = 'You flip the bits by hand; real channels flip them at random.';
 const STEP_MS = 1300;
 
@@ -58,7 +67,7 @@ function ParityScene({ picker }: { picker: ReactNode }) {
   const sent = withParity(word);
   const received = applyFlips(sent, flips);
   const passes = parityPasses(received);
-  const colorOf = (i: number) => (i === PARITY_DATA_BITS ? GROUP_COLOR[1] : DATA);
+  const toneOf = (i: number): Tone => (i === PARITY_DATA_BITS ? GROUP_TONE[1] : DATA_TONE);
 
   useEffect(() => {
     setCaption(parityCaption(withParity(word), flips), { quiet: true });
@@ -99,20 +108,22 @@ function ParityScene({ picker }: { picker: ReactNode }) {
               <span key={i} className="ed-head">{i === PARITY_DATA_BITS ? 'P' : `d${PARITY_DATA_BITS - 1 - i}`}</span>
             ))}
             <span className="ed-label">sender</span>
-            <FlipRow
+            <BitStrip
+              {...ROW}
               bits={word}
-              look={() => ({ color: DATA })}
-              onFlip={(i) => setWord(flipToggle(word, i))}
-              pressed={(i) => word[i] === 1}
+              toneOf={() => DATA_TONE}
+              onToggle={(i) => setWord(flipToggle(word, i))}
               ariaLabel="sender's word"
               ariaLabelOf={(i) => `sender data bit ${PARITY_DATA_BITS - 1 - i}`}
             />
-            <FlipRow bits={[sent[PARITY_DATA_BITS]]} look={() => ({ color: GROUP_COLOR[1] })} ariaLabel={`parity bit ${sent[PARITY_DATA_BITS]}, computed from the word`} />
+            <BitStrip {...ROW} bits={[sent[PARITY_DATA_BITS]]} toneOf={() => GROUP_TONE[1]} ariaLabel={`parity bit ${sent[PARITY_DATA_BITS]}, computed from the word`} />
             <span className="ed-label">received</span>
-            <FlipRow
+            <BitStrip
+              {...ROW}
               bits={received}
-              look={(i) => ({ color: colorOf(i), state: flips.has(i) ? 'flipped' : undefined })}
-              onFlip={(i) => setFlips(toggleFlip(flips, i))}
+              toneOf={(i) => (flips.has(i) ? 'bad' : toneOf(i))}
+              onToggle={(i) => setFlips(toggleFlip(flips, i))}
+              pressedOf={(i) => flips.has(i)}
               ariaLabel="received bits: flip them in transit"
               ariaLabelOf={(i) => `flip ${i === PARITY_DATA_BITS ? 'the parity bit' : `data bit ${PARITY_DATA_BITS - 1 - i}`} in transit`}
             />
@@ -148,11 +159,12 @@ function HammingScene({ picker }: { picker: ReactNode }) {
     if (!on && flips.has(0)) setFlips(toggleFlip(flips, 0));
   };
 
-  const colorOf = (slot: number) => (slot === 0 ? NEUTRAL : isParityPosition(slot) ? GROUP_COLOR[slot] : DATA);
-  const decodedLook = (slot: number): CellLook => {
-    const color = colorOf(slot);
-    if (slot === decoded.flipped) return { color, state: flips.has(slot) ? 'corrected' : 'miscorrected' };
-    return { color, state: decoded.word[slot] !== sent[slot] ? 'flipped' : undefined };
+  const toneOf = (slot: number): Tone => (slot === 0 ? NEUTRAL_TONE : isParityPosition(slot) ? GROUP_TONE[slot] : DATA_TONE);
+  // A bit's state outranks its group colour: flipped is a failure, corrected a success, miscorrected the second kind of failure.
+  const receivedTone = (slot: number): Tone => (flips.has(slot) ? 'bad' : toneOf(slot));
+  const decodedTone = (slot: number): Tone => {
+    if (slot === decoded.flipped) return flips.has(slot) ? 'ok' : 'orange';
+    return decoded.word[slot] !== sent[slot] ? 'bad' : toneOf(slot);
   };
   const pick = (row: readonly Bit[]) => slots.map((slot) => row[slot]);
 
@@ -201,11 +213,11 @@ function HammingScene({ picker }: { picker: ReactNode }) {
             {data.map((_, k) => (
               <span key={k} className="ed-head">d{k + 1}</span>
             ))}
-            <FlipRow
+            <BitStrip
+              {...ROW}
               bits={data}
-              look={() => ({ color: DATA })}
-              onFlip={(k) => setData(flipToggle(data, k))}
-              pressed={(k) => data[k] === 1}
+              toneOf={() => DATA_TONE}
+              onToggle={(k) => setData(flipToggle(data, k))}
               ariaLabel="data bits d1 to d4"
               ariaLabelOf={(k) => `data bit d${k + 1}`}
             />
@@ -228,14 +240,16 @@ function HammingScene({ picker }: { picker: ReactNode }) {
             <span />
 
             <span className="ed-label">sent</span>
-            <FlipRow bits={pick(sent)} look={(k) => ({ color: colorOf(slots[k]) })} ariaLabel="sent codeword" />
+            <BitStrip {...ROW} bits={pick(sent)} toneOf={(k) => toneOf(slots[k])} ariaLabel="sent codeword" />
             <span />
 
             <span className="ed-label">received</span>
-            <FlipRow
+            <BitStrip
+              {...ROW}
               bits={pick(received)}
-              look={(k) => ({ color: colorOf(slots[k]), state: flips.has(slots[k]) ? 'flipped' : undefined })}
-              onFlip={(k) => setFlips(toggleFlip(flips, slots[k]))}
+              toneOf={(k) => receivedTone(slots[k])}
+              onToggle={(k) => setFlips(toggleFlip(flips, slots[k]))}
+              pressedOf={(k) => flips.has(slots[k])}
               ariaLabel="received codeword: flip bits in transit"
               ariaLabelOf={(k) => `flip position ${slots[k]} (${slots[k] === 0 ? 'overall parity' : roleOf(slots[k])})`}
             />
@@ -256,7 +270,7 @@ function HammingScene({ picker }: { picker: ReactNode }) {
             })}
 
             <span className="ed-label">decoded</span>
-            <FlipRow bits={pick(decoded.word)} look={(k) => decodedLook(slots[k])} ariaLabel="decoded codeword" />
+            <BitStrip {...ROW} bits={pick(decoded.word)} toneOf={(k) => decodedTone(slots[k])} ariaLabel="decoded codeword" />
             <span className="ed-check">{decoded.uncorrectable ? <b className="ed-bad">refused</b> : decoded.flipped === null ? '' : `fixed ${decoded.flipped}`}</span>
           </div>
         </WideRegion>
@@ -294,7 +308,8 @@ function CrcScene({ picker }: { picker: ReactNode }) {
   const codeword = crcCodeword(message);
   const width = f.work.length;
   const inWindow = (i: number) => f.step !== null && i >= f.step.at && i < f.step.at + CRC4_GENERATOR.length;
-  const colorOf = (i: number) => (i < MESSAGE_BITS ? DATA : GROUP_COLOR[1]);
+  const toneOf = (i: number): Tone => (i < MESSAGE_BITS ? DATA_TONE : GROUP_TONE[1]);
+  const windowBits = f.step ? CRC4_GENERATOR.map((_, k) => f.step!.at + k) : [];
   const atEnd = f.step === null && f.done > 0;
   const isRemainder = (i: number) => atEnd && i >= width - CRC4_BITS;
   const remainderBad = mode === 'check' && atEnd && f.work.slice(width - CRC4_BITS).some((b) => b === 1);
@@ -337,11 +352,11 @@ function CrcScene({ picker }: { picker: ReactNode }) {
         <WideRegion minWidth={480} label="Message and codeword: scroll sideways to see all of it">
           <div className="ed-table" style={{ gridTemplateColumns: `auto repeat(${MESSAGE_BITS + CRC4_BITS}, var(--ed-cell-sm))` }}>
             <span className="ed-label">message</span>
-            <FlipRow
+            <BitStrip
+              {...ROW}
               bits={message}
-              look={() => ({ color: DATA })}
-              onFlip={(i) => edit(() => setMessage(flipToggle(message, i)))}
-              pressed={(i) => message[i] === 1}
+              toneOf={() => DATA_TONE}
+              onToggle={(i) => edit(() => setMessage(flipToggle(message, i)))}
               ariaLabel="message bits"
               ariaLabelOf={(i) => `message bit ${i + 1}`}
             />
@@ -349,10 +364,12 @@ function CrcScene({ picker }: { picker: ReactNode }) {
             {mode === 'check' && (
               <>
                 <span className="ed-label">received</span>
-                <FlipRow
+                <BitStrip
+                  {...ROW}
                   bits={applyFlips(codeword, flips)}
-                  look={(i) => ({ color: colorOf(i), state: flips.has(i) ? 'flipped' : undefined })}
-                  onFlip={(i) => edit(() => setFlips(toggleFlip(flips, i)))}
+                  toneOf={(i) => (flips.has(i) ? 'bad' : toneOf(i))}
+                  onToggle={(i) => edit(() => setFlips(toggleFlip(flips, i)))}
+                  pressedOf={(i) => flips.has(i)}
                   ariaLabel="received codeword: flip bits in transit"
                   ariaLabelOf={(i) => `flip ${i < MESSAGE_BITS ? `message bit ${i + 1}` : `CRC bit ${i - MESSAGE_BITS + 1}`} in transit`}
                 />
@@ -363,9 +380,12 @@ function CrcScene({ picker }: { picker: ReactNode }) {
         <WideRegion minWidth={520} label="Long division: scroll sideways to see all of it">
           <div className="ed-table ed-division" style={{ gridTemplateColumns: `auto repeat(${width}, var(--ed-cell-sm))` }}>
             <span className="ed-label">dividing</span>
-            <FlipRow
+            <BitStrip
+              {...ROW}
               bits={f.work}
-              look={(i) => ({ color: isRemainder(i) ? (remainderBad ? 'var(--bad)' : GROUP_COLOR[1]) : 'var(--muted)', state: inWindow(i) ? 'window' : undefined })}
+              toneOf={(i) => (isRemainder(i) ? (remainderBad ? 'bad' : GROUP_TONE[1]) : NEUTRAL_TONE)}
+              highlight={windowBits}
+              highlightTone="hi"
               ariaLabel={`row being divided: ${f.work.join('')}`}
             />
             <span className="ed-label">10011</span>
@@ -374,7 +394,7 @@ function CrcScene({ picker }: { picker: ReactNode }) {
             ))}
             <span className="ed-label">XOR</span>
             {f.step ? (
-              <FlipRow bits={f.step.after} look={(i) => ({ color: inWindow(i) ? 'var(--hi)' : 'var(--dim)' })} ariaLabel={`after XOR: ${f.step.after.join('')}`} />
+              <BitStrip {...ROW} bits={f.step.after} toneOf={(i) => (inWindow(i) ? 'hi' : 'dim')} ariaLabel={`after XOR: ${f.step.after.join('')}`} />
             ) : (
               <span className="ed-span" style={{ gridColumn: `span ${width}` }} />
             )}

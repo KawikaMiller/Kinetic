@@ -103,6 +103,7 @@ smoke, if this table drifts from `global.css`.
 ### `tone.ts`
 ```ts
 type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim'   // semantic roles
+          | 'muted'                                            // plain readable grey: deliberately uncoloured
           | 'orange' | 'amber' | 'pink' | 'sky';               // categorical hues
 TONES                                            // every Tone, e.g. one arrowhead marker per tone
 toneVar('ok')                                    // 'var(--ok)'
@@ -542,6 +543,13 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 <BitStrip bits={utf8} toneOf={(i) => (isPrefix(i) ? 'dim' : 'info')} />          // per-bit tone beats the group's
 <BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
 <BitStrip bits={perms} onToggle={flip} ariaLabelOf={bitName} />   // screen readers hear "group write", not "bit 4"
+<BitStrip bits={out} pending={(i) => i < width - filled} toneOf={…} />  // columns not worked out yet: empty dashed slots
+// A row of a CSS-grid table (error-detection-correction's Hamming table): bits fill the grid's columns
+<div style={{ display: 'grid', gridTemplateColumns: `auto repeat(7, 38px)` }}>
+  <span>received</span>
+  <BitStrip layout="cells" clear="toned" bits={received} toneOf={(i) => (flipped(i) ? 'bad' : groupTone(i))}
+            onToggle={flip} pressedOf={flipped} ariaLabel="received codeword" />
+</div>
 ```
 - Give toggleable bits a meaningful `ariaLabelOf(i)` (i counts from the most significant bit): the
   default "bit i" says nothing about what the bit does (command-line `bitName`, floating-point `bitRole`).
@@ -549,7 +557,16 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 - `placeValues` (or `'value'`) prints each bit's place value above it, compacted (`32K`); `placeValues="exponent"` prints it as a power of two (`2²³`), for registers wider than ~16 bits where values stop fitting; `labelOf` overrides either.
 - `highlight` rings bits in `highlightTone` (default `info`: binary-hex's carry ripple).
 - It wraps between groups only, never inside one: split a long run (a 23-bit mantissa) into a few groups, labelling only the first.
-- With `onToggle` the bits are `aria-pressed` buttons; without it they're read-only. `size`: `sm` 18px, `md` 24px, `lg` 30px (one step smaller at ≤900px).
+- With `onToggle` the bits are `aria-pressed` buttons (pressed = the bit is 1, or `pressedOf(i)`, e.g. "flipped in
+  transit") with **one tab stop**: arrow keys move between bits (wrapping, the radio key map), Home/End jump to the
+  ends, Space/Enter toggles, and the tab stop stays on the last bit used. Without `onToggle` they're read-only.
+- `pending(i)`: a bit not computed yet draws as an empty dashed slot in its tone, whatever its value
+  (bit-manipulation's column-by-column result); a pending button's name ends "not worked out yet".
+- `clear="toned"` draws clear bits with their tone at full strength (edge and digit, 2px edge) instead of the quiet
+  default, for rows where the colour carries meaning on every bit, 0s included (Hamming parity groups).
+- `layout="cells"`: no strip box, groups or labels; the bits become items of the parent's CSS grid (the wrapper is
+  `display: contents`), each filling its column, so table rows line up. Size them from lesson CSS with
+  `--bit-h` / `--bit-fs` on `.bit-strip` (error-detection-correction: 34px / 13px). `size`: `sm` 18px, `md` 24px, `lg` 30px (one step smaller at ≤900px).
 
 ### `core/truth.ts`, `TruthTable.tsx` — logic-gates, propositional-logic
 ```ts

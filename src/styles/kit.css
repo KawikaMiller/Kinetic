@@ -16,6 +16,7 @@
 .tone-pink { --c: var(--pink); --on-c: var(--on-pink); }
 .tone-sky { --c: var(--sky); --on-c: var(--on-sky); }
 .tone-dim { --c: var(--dim); --on-c: var(--text); }
+.tone-muted { --c: var(--muted); --on-c: var(--on-fill); }
 
 /* Cell: the square/box that holds one value (array slots, nodes, chips in a row) */
 .cell {
@@ -277,7 +278,7 @@
   display: grid;
   place-items: center;
   width: var(--bit-w);
-  height: calc(var(--bit-w) * 1.25);
+  height: var(--bit-h, calc(var(--bit-w) * 1.25));
   padding: 0;
   font: 700 var(--bit-fs) var(--mono);
   border-radius: 6px;
@@ -295,6 +296,16 @@
   border-color: var(--c);
   box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--c) 80%, transparent);
 }
+.bit.is-pending {
+  background: var(--cell);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--c) 30%, var(--cell-line));
+}
+.bit-strip.is-toned .bit { border-width: 2px; }
+.bit-strip.is-toned .bit.is-clear { color: var(--c); border-color: var(--c); }
+/* Cells layout: the bits are items of the parent's grid, each filling its column. */
+.bit-strip.is-cells { display: contents; }
+.bit-strip.is-cells .bit { width: auto; }
 .bit.is-ringed { outline: 2px solid var(--ring); outline-offset: 2px; }
 button.bit { cursor: pointer; }
 button.bit:hover { border-color: var(--c); }
