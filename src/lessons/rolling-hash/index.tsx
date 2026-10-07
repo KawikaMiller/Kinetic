@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'A polynomial hash slides in O(1): subtract the leaving term, multiply by the base, add the entering character.',
     'Equal hashes do not mean equal strings: verify every hit, or accept a known false-positive rate.',
-    'Bigger moduli make spurious hits rarer, about 1 in M when hashes spread evenly; a random base makes that a guarantee.',
+    'Bigger moduli make spurious hits rarer, about 1 in M when hashes spread evenly; a random base makes it provable: at most (m − 1)/M per window for a prime M.',
     'Rabin-Karp expects O(n + m) work; its worst case, with a hit at nearly every window to verify, is O(nm).',
   ],
   quiz: [
@@ -59,7 +59,7 @@ const lesson: LessonModule = {
       why: 'There are only 13 possible hash values, so an evenly spread non-matching window lands on the pattern\'s about 1 time in 13. A prime modulus helps spread the values but cannot remove collisions with only 13 buckets, which is why real code uses moduli around 2⁶¹.',
     },
     {
-      q: 'A backup tool cuts files wherever a rolling hash hits 0 mod 64. You insert one byte near the start. What happens?',
+      q: 'A backup tool cuts files wherever a rolling hash hits 0 mod 32, as the Chunking scene does. You insert one byte near the start. What happens?',
       options: [
         'Chunks near the edit change; later cuts move with the content',
         'Every later chunk changes, since all offsets shift by one byte',
