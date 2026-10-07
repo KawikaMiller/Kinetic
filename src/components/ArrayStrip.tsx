@@ -9,8 +9,10 @@ const CELL_GAP = 3;
 /**
  * A cell's role right now. `idle` cells inside a range are tinted as "still possible";
  * `active` lifts in --hi (being checked), `done` lifts in --ok (found), `dim` is ruled out.
+ * `info` and `violet` lift like `active` in those colours, for a second and third pointer
+ * (cycle-detection's slow and fast), so a cell can match its pointer's tone.
  */
-export type ArrayCellState = 'idle' | 'active' | 'done' | 'dim' | 'bad';
+export type ArrayCellState = 'idle' | 'active' | 'info' | 'violet' | 'done' | 'dim' | 'bad';
 
 export interface ArrayPointer {
   i: number;

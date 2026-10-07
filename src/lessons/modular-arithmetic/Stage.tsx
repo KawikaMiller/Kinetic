@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { CANVAS_THRESHOLD, CellGrid } from '../../components/CellGrid';
+import { CellGrid } from '../../components/CellGrid';
 import { Box, SectionTitle } from '../../components/Panel';
 import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
@@ -164,7 +164,6 @@ function TableScene({ picker, n, setN }: SceneProps) {
   const missing = rowsWithoutInverse(table);
   const noInverse = new Set(missing);
   const size = n - 1;
-  const labelled = size * size <= CANVAS_THRESHOLD;
   const natural = String(size).length * LABEL_CHAR_W + 8 + size * CELL_PITCH;
 
   useIntroCaption(tableCaption(table, n), [n]);
@@ -231,7 +230,6 @@ function TableScene({ picker, n, setN }: SceneProps) {
         {picked && <PickedRow table={table} n={n} a={picked.a} />}
         <Hint className="ma-note">
           {LIVE_NOTE} 0 is left out: 0 × anything is 0, so it never has an inverse.
-          {!labelled && ` At ${size} × ${size} the cells are too many to number; hover or click one to read it.`}
         </Hint>
       </div>
     </StageFrame>

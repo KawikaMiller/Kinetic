@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { GraphView, type GraphNode, type Pt } from '../../components/GraphView';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -13,7 +13,7 @@ import { PRESETS, type PresetId } from './presets';
 import './styles.css';
 
 const STEP_MS = 850;
-const BOX = { w: 98, h: 38 };
+const BOX = { w: 98, h: 38, rx: 9 };
 const SPACING = { direction: 'down', layerGap: 82, nodeGap: 112, padMain: 40, padCross: 58 } as const;
 /** Smallest scene text (the 12px badges) stays at 8px+: the graph never shrinks below 2/3 of its natural width. */
 const SMALLEST_TEXT_PX = 12;
@@ -38,8 +38,10 @@ export function Stage() {
   }, [graph]);
 
   // Laid out without the edges that close a cycle, so adding one never rearranges the drawing.
-  const placement = useMemo(() => layeredPositions(layeredLayout(graph.nodes, layoutEdges(graph, preset.graph)), SPACING), [graph, preset]);
-  const graphMinWidth = minWidthForText(placement.width, SMALLEST_TEXT_PX, PHONE_WIDTH);
+  const laidOutBy = useMemo(() => layoutEdges(graph, preset.graph), [graph, preset]);
+  // The graph's natural width, for the width below which it scrolls instead of shrinking.
+  const naturalWidth = useMemo(() => layeredPositions(layeredLayout(graph.nodes, laidOutBy), SPACING).width, [graph.nodes, laidOutBy]);
+  const graphMinWidth = minWidthForText(naturalWidth, SMALLEST_TEXT_PX, PHONE_WIDTH);
   const placed = new Set(f.output);
   const queued = new Set(f.queue);
   const onPath = new Set(f.path);
@@ -73,18 +75,15 @@ export function Stage() {
     requestAnimationFrame(() => graphRef.current?.querySelector<SVGGElement>(`.graph-node[aria-label^="${e.from},"]`)?.focus());
   };
 
-  const renderNode = (n: GraphNode<string>, p: Pt) => {
+  /** The default box plus an in-degree badge on its top-right corner. */
+  const renderNode = (n: GraphNode<string>, p: Pt, base: ReactNode) => {
     const deg = f.indeg?.[n.id];
     const showBadge = deg !== undefined && !placed.has(n.id);
     const bx = p.x + BOX.w / 2 - 4;
     const by = p.y - BOX.h / 2 + 2;
     return (
       <>
-        <rect className="graph-node-ring" x={p.x - BOX.w / 2 - 5} y={p.y - BOX.h / 2 - 5} width={BOX.w + 10} height={BOX.h + 10} rx={13} />
-        <rect className="graph-node-shape" x={p.x - BOX.w / 2} y={p.y - BOX.h / 2} width={BOX.w} height={BOX.h} rx={9} />
-        <text className="graph-node-label ts-label" x={p.x} y={p.y + 5} textAnchor="middle">
-          {n.id}
-        </text>
+        {base}
         {showBadge && (
           <g className="ts-badge">
             <circle cx={bx} cy={by} r={BADGE_R} />
@@ -161,11 +160,12 @@ export function Stage() {
           </p>
           <WideRegion minWidth={graphMinWidth} label="Dependency graph: scroll sideways to see all of it">
             <GraphView
-              nodes={graph.nodes.map((id) => ({ id, shape: 'box', at: placement.at.get(id) }))}
+              nodes={graph.nodes.map((id) => ({ id, shape: 'box' }))}
               edges={graph.edges}
+              layout="layered"
+              layoutEdges={laidOutBy}
+              spacing={SPACING}
               directed
-              width={placement.width}
-              height={placement.height}
               box={BOX}
               arrowGap={4}
               className="ts-graph"
@@ -190,7 +190,7 @@ export function Stage() {
               }}
               edgeAriaLabel={(e) => `Remove arrow ${e.from} to ${e.to}`}
               onEdgeClick={(_, i) => removeEdge(i)}
-              editable={{ onAddNode: () => {}, onAddEdge: addEdge }}
+              editable={{ onAddEdge: addEdge }}
             />
           </WideRegion>
         </div>

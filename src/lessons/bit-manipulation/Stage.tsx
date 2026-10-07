@@ -228,7 +228,8 @@ function OpsScene({ picker }: { picker: ReactNode }) {
           <span className="bm-row-label is-result">{expression(op, n)}</span>
           <BitStrip
             className="bm-result"
-            bits={out.map((bit, i) => (pending(i) ? 0 : bit))}
+            bits={out}
+            pending={pending}
             toneOf={(i, bit) => (pending(i) ? 'dim' : lit(i, bit))}
             labelOf={(i) => (pending(i) ? pendingMark : changed.has(i) ? tick : '')}
             highlight={ring}

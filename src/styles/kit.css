@@ -12,7 +12,11 @@
 .tone-info { --c: var(--info); --on-c: var(--on-info); }
 .tone-violet { --c: var(--violet); --on-c: var(--on-violet); }
 .tone-orange { --c: var(--orange); --on-c: var(--on-orange); }
+.tone-amber { --c: var(--amber); --on-c: var(--on-amber); }
+.tone-pink { --c: var(--pink); --on-c: var(--on-pink); }
+.tone-sky { --c: var(--sky); --on-c: var(--on-sky); }
 .tone-dim { --c: var(--dim); --on-c: var(--text); }
+.tone-muted { --c: var(--muted); --on-c: var(--on-fill); }
 
 /* Cell: the square/box that holds one value (array slots, nodes, chips in a row) */
 .cell {
@@ -276,7 +280,7 @@
   display: grid;
   place-items: center;
   width: var(--bit-w);
-  height: calc(var(--bit-w) * 1.25);
+  height: var(--bit-h, calc(var(--bit-w) * 1.25));
   padding: 0;
   font: 700 var(--bit-fs) var(--mono);
   border-radius: 6px;
@@ -294,6 +298,16 @@
   border-color: var(--c);
   box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--c) 80%, transparent);
 }
+.bit.is-pending {
+  background: var(--cell);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--c) 30%, var(--cell-line));
+}
+.bit-strip.is-toned .bit { border-width: 2px; }
+.bit-strip.is-toned .bit.is-clear { color: var(--c); border-color: var(--c); }
+/* Cells layout: the bits are items of the parent's grid, each filling its column. */
+.bit-strip.is-cells { display: contents; }
+.bit-strip.is-cells .bit { width: auto; }
 .bit.is-ringed { outline: 2px solid var(--ring); outline-offset: 2px; }
 button.bit { cursor: pointer; }
 button.bit:hover { border-color: var(--c); }
@@ -387,12 +401,16 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   border-color: color-mix(in srgb, var(--range-c, var(--hi)) 30%, transparent);
 }
 .array-cell.is-dim { opacity: 0.28; background: var(--dim); border-color: transparent; }
-.array-cell.is-active {
-  background: var(--hi);
-  color: var(--on-hi);
-  border-color: var(--hi);
+/* Lifted cells: active (--hi, being checked), info (a second pointer), violet (a third role). */
+.array-cell.is-active { --c: var(--hi); --on-c: var(--on-hi); }
+.array-cell.is-info { --c: var(--info); --on-c: var(--on-info); }
+.array-cell.is-violet { --c: var(--violet); --on-c: var(--on-violet); }
+.array-cell:is(.is-active, .is-info, .is-violet) {
+  background: var(--c);
+  color: var(--on-c);
+  border-color: var(--c);
   transform: translateY(-6px) scale(1.08);
-  box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--hi) 70%, transparent);
+  box-shadow: 0 8px 22px -6px color-mix(in srgb, var(--c) 70%, transparent);
   z-index: 1;
 }
 .array-cell.is-done {
@@ -623,6 +641,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .cellgrid.is-clickable .cellgrid-cell:where(:hover) rect { stroke: var(--faint); }
 .cellgrid-cell:focus-visible { outline: none; }
 .cellgrid-cell:focus-visible rect { stroke: var(--text); stroke-width: 2.5; }
+.cellgrid-overlay { pointer-events: none; }
 .cellgrid-ring { fill: none; stroke: var(--c); stroke-width: 2; pointer-events: none; }
 .cellgrid-hitarea { fill: transparent; cursor: pointer; }
 .cellgrid-hitarea:focus-visible { outline: none; }
@@ -635,7 +654,8 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 /* GraphView. Unmarked nodes take --c from nodeColor (falling back to a neutral line). */
 /* Natural size (one drawing unit = 1px), shrinking on narrow screens; a lesson stretches it with width: 100%. */
 .graph-view { display: block; max-width: 100%; height: auto; overflow: visible; }
-.graph-view.is-editable { touch-action: none; cursor: crosshair; }
+.graph-view.is-editable { touch-action: none; }
+.graph-view.can-add { cursor: crosshair; }
 .graph-edge { fill: none; stroke: var(--line-2); stroke-width: 2.5; transition: stroke 0.2s; }
 .graph-edge.is-marked { stroke: var(--c); }
 .graph-edge.is-dashed { stroke-dasharray: 6 5; }

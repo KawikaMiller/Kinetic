@@ -103,10 +103,19 @@ smoke, if this table drifts from `global.css`.
 
 ### `tone.ts`
 ```ts
-type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim' | 'orange';
+type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim'   // semantic roles
+          | 'muted'                                            // plain readable grey: deliberately uncoloured
+          | 'orange' | 'amber' | 'pink' | 'sky';               // categorical hues
+TONES                                            // every Tone, e.g. one arrowhead marker per tone
 toneVar('ok')                                    // 'var(--ok)'
 toneFor(errPct, { warn: 20, bad: 50 })           // 'ok' | 'hi' | 'bad'; { invert: true } when higher is better
 ```
+- Every tone has a `.tone-*` class in kit.css (`--c` plus `--on-c` ink: `--on-amber`, `--on-pink`, `--on-sky` are tokens
+  too) and a `TOKENS` entry, so every tone-driven component (BitStrip, CellGrid in both modes, ByteGrid fields,
+  TreeSvg/GraphView marks and arrowheads, ArrayStrip ranges) draws the categorical hues with no extra code.
+- Plain categories (a Hamming parity group, a float field, Euclid's step colours) take `orange`/`amber`/`pink`/`sky`,
+  never `bad`/`ok` as decoration (CLAUDE.md's colour table). Lesson SVG can colour by class too:
+  `className={`tone-${t}`}` plus `fill: var(--c)` in lesson CSS, as gcd-euclid's squares do.
 
 ### `format.ts` — pattern 10
 ```ts
@@ -539,6 +548,23 @@ Behaviour notes, for pixel parity:
   - `onArrive` fires once per mount, only for the trip, not the exit animation.
 - **`Pulse`** is decoration, so with `prefers-reduced-motion` it renders a still ring instead of looping. Teaching motion (packets, flyers, `TravelDot` traffic) always plays.
 
+### Gate circuits (`components/scene/Gates.tsx`, `gateGeometry.ts`) — logic-gates, adders-alu, sequential-logic
+```tsx
+import { GateGlyph, GateInput, GateLamp, GateWire, SWire, TravelDot, wiresOf, wirePoints } from '../../components/scene';
+const wires = wiresOf(circuit, board);        // circuit: { inputs, gates: [{ id, type, inputs }], outputs: [{ label, from }] }
+<svg viewBox="0 0 640 310" className="lg-svg">  {/* board: { at: { A: {x,y}, g1: {x,y} }, outputs: [{x,y}] } */}
+  {wires.map((w) => <SWire key={w.key} from={w.start} to={w.end} state={w.unused ? 'unused' : v[w.from] ? 'high' : 'low'} />)}
+  <TravelDot path={wirePoints(w.start, w.end)} color="var(--hi)" r={4} className="gate-dot" … />
+  {circuit.inputs.map((n) => <GateInput key={n} name={n} at={board.at[n]} on={v[n]} onFlip={() => flip(n)} />)}   {/* DOM order = Tab order */}
+  <GateGlyph type="NAND" at={board.at.g1} on={v.g1} className="lg-gate is-editable" role="button" …>{/* extras, gate coords */}</GateGlyph>
+  <GateLamp label="sum" at={board.outputs[0]} value={v.sum ? 1 : 0} />          {/* '?' for unknown; className for lesson states */}
+  <GateWire d={customPath} state="unknown" />                                   {/* hand-routed feedback loops (SR latch) */}
+</svg>
+```
+- Geometry is pure and tested: `gateBodyPath`, `XOR_BACK_PATH`, `bubbleAt`, `typeLabelX`, `inputPort(t, at, port, count?)`, `outputPort(t, at)`, `sourcePort`, `wiresOf`, `wirePath`, `wirePoints`; constants `IO_R` 18, `BUBBLE_R` 4, `PORT_DY` 11. Types: `GateKind` (AND OR NOT NAND NOR XOR), `GateCircuit`, `GateBoard`, `GateWire`.
+- CSS in scene.css: `.gate-wire` (`is-high` / `is-low` / `is-unused` / `is-unknown`), `.gate`, `.gate-body`, `.gate-back`, `.gate-type` (11px; brightens when the gate is on), `.gate-input`, `.gate-lamp`, `.gate-io-value`, `.gate-io-name` (14px), `.gate-dot`. Lessons tune size and glow on their own svg class (logic-gates: 10.5px type labels, 13px names, glowing wires and lamps; adders-alu: glowing wires; sequential-logic: 12px labels, stored/broken lamp rings).
+- All three lessons migrated: frames and 8 driven states pixel-identical, except sequential-logic's lit NOR label, which now brightens like the other two lessons' (deliberate).
+
 ---
 
 ## Tier 1 kit (rollout plan P1)
@@ -561,6 +587,13 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 <BitStrip bits={utf8} toneOf={(i) => (isPrefix(i) ? 'dim' : 'info')} />          // per-bit tone beats the group's
 <BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
 <BitStrip bits={perms} onToggle={flip} ariaLabelOf={bitName} />   // screen readers hear "group write", not "bit 4"
+<BitStrip bits={out} pending={(i) => i < width - filled} toneOf={…} />  // columns not worked out yet: empty dashed slots
+// A row of a CSS-grid table (error-detection-correction's Hamming table): bits fill the grid's columns
+<div style={{ display: 'grid', gridTemplateColumns: `auto repeat(7, 38px)` }}>
+  <span>received</span>
+  <BitStrip layout="cells" clear="toned" bits={received} toneOf={(i) => (flipped(i) ? 'bad' : groupTone(i))}
+            onToggle={flip} pressedOf={flipped} ariaLabel="received codeword" />
+</div>
 ```
 - Give toggleable bits a meaningful `ariaLabelOf(i)` (i counts from the most significant bit): the
   default "bit i" says nothing about what the bit does (command-line `bitName`, floating-point `bitRole`).
@@ -568,7 +601,16 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 - `placeValues` (or `'value'`) prints each bit's place value above it, compacted (`32K`); `placeValues="exponent"` prints it as a power of two (`2²³`), for registers wider than ~16 bits where values stop fitting; `labelOf` overrides either.
 - `highlight` rings bits in `highlightTone` (default `info`: binary-hex's carry ripple).
 - It wraps between groups only, never inside one: split a long run (a 23-bit mantissa) into a few groups, labelling only the first.
-- With `onToggle` the bits are `aria-pressed` buttons; without it they're read-only. `size`: `sm` 18px, `md` 24px, `lg` 30px (one step smaller at ≤900px).
+- With `onToggle` the bits are `aria-pressed` buttons (pressed = the bit is 1, or `pressedOf(i)`, e.g. "flipped in
+  transit") with **one tab stop**: arrow keys move between bits (wrapping, the radio key map), Home/End jump to the
+  ends, Space/Enter toggles, and the tab stop stays on the last bit used. Without `onToggle` they're read-only.
+- `pending(i)`: a bit not computed yet draws as an empty dashed slot in its tone, whatever its value
+  (bit-manipulation's column-by-column result); a pending button's name ends "not worked out yet".
+- `clear="toned"` draws clear bits with their tone at full strength (edge and digit, 2px edge) instead of the quiet
+  default, for rows where the colour carries meaning on every bit, 0s included (Hamming parity groups).
+- `layout="cells"`: no strip box, groups or labels; the bits become items of the parent's CSS grid (the wrapper is
+  `display: contents`), each filling its column, so table rows line up. Size them from lesson CSS with
+  `--bit-h` / `--bit-fs` on `.bit-strip` (error-detection-correction: 34px / 13px). `size`: `sm` 18px, `md` 24px, `lg` 30px (one step smaller at ≤900px).
 
 ### `core/truth.ts`, `TruthTable.tsx` — logic-gates, propositional-logic
 ```ts
@@ -616,13 +658,14 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 
 ### `ArrayStrip.tsx` — two-pointers, sliding-window, prefix-sums, debugging-method; binary-search
 ```tsx
-<ArrayStrip values={arr} cellState={(i) => 'idle | active | done | dim | bad'}
+<ArrayStrip values={arr} cellState={(i) => 'idle | active | info | violet | done | dim | bad'}
             ranges={[{ from: lo, to: hi, labels: ['lo', 'hi'] }, { from: b0, to: b1, tone: 'violet' }]}
             pointers={[{ i: l, label: 'L', tone: 'info' }, { i: r, label: 'R', tone: 'violet' }]}
             onCellClick={(i) => pick(i)} cellTitle={(i) => `Search for ${arr[i]}`}
             showIndex fontSize={12} cellMax={56} />
 ```
-- `active` lifts in `--hi` (checking now), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
+- `active` lifts in `--hi` (checking now), `info` / `violet` lift the same way in those colours (a second and third
+  pointer: cycle-detection's slow and fast cells match their S and F markers), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
 - Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
 - Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
 - Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
@@ -690,7 +733,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
 - Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
 - Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.
-- `onNodeClick` makes every node a keyboard button (`role="button"`, in the tab order, Enter/Space press it, accent focus ring) and the SVG a `group`. Its accessible name is the node's text label or id; pass `nodeAriaLabel(id)` for a better one ("Remove leaf 35"). Only pass `onNodeClick` while clicking does something, or every node becomes a dead tab stop.
+- `onNodeClick` makes every node a keyboard button (`role="button"`, Enter/Space press it, accent focus ring) and the SVG a `group`. The tree is **one tab stop** (roving tabindex, starting at the first node in reading order, then staying on the last node used) and the arrow keys follow its structure: Up = parent, Down = leftmost child, Left/Right = the neighbour on the same level (across subtrees, and across trees in a forest), Home/End = first and last node. `treeKeyTarget(key, from, shape, place, visible?)` in `core/treeLayout` is the pure, tested key map; hidden nodes are skipped. A lesson that moves focus itself (tree-traversals after a removal) just calls `.focus()` on `[data-node="id"]`, and that node becomes the tab stop. Its accessible name is the node's text label or id; pass `nodeAriaLabel(id)` for a better one ("Remove leaf 35"). Only pass `onNodeClick` while clicking does something, or every node becomes a dead tab stop.
 - `nodeScale(id)` and `nodeOpacity(id)` (0..1) animate size and fade. motion owns the node group's opacity, so fade nodes through `nodeOpacity`, not CSS (tree-traversals fades nodes that can't be removed).
 - trees-bst (in-order, the null ghost as an `overlay`) runs on it pixel-identically. recursion's fib tree (tidy, custom nodes, `hidden`) does too, except for subpixel antialiasing on a few label glyphs (≤0.03% of the stage), because labels are now placed by the node's transform instead of absolute coordinates.
 - heaps keeps its own tree: nodes sit at array-index positions of a complete binary tree with `2i+1`/`2i+2` edge labels, and they're keyed by item so swaps animate. A third layout mode is worth adding only when a Tier 1 lesson needs it.
@@ -776,19 +819,22 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - Turn `compress` / `byRank` off to show the naive forest. Draw it with `TreeSvg` forest mode: `roots` = the nodes that are their own parent.
 
 ### `TreeSvg` forest mode — union-find, huffman-coding, tries
-`shape.roots?: K[]` (instead of `root`) lays several trees side by side; `forestGap` (default `FOREST_GAP`, 0.5) is the empty columns between them. Additive: every single-root caller is pixel-identical (all six TreeSvg lessons diffed).
+`shape.roots: K[]` (instead of `root`, which is then left out: `{ roots, children }`) lays several trees side by side; `forestGap` (default `FOREST_GAP`, 0.5) is the empty columns between them. Additive: every single-root caller is pixel-identical (all six TreeSvg lessons diffed).
 
 ### `core/grid.ts`, `CellGrid.tsx` — error-detection-correction, primes-factoring, modular-arithmetic, birthday-paradox, conditional-bayes, cpu-caches, cpu-pipelining, shuffle-reservoir, virtual-memory-paging, file-systems, storage-devices, edit-distance, deployment-strategies, feature-flags
 ```tsx
-<CellGrid rows={10} cols={10} size="md"                      // xs 10px · sm 22px · md 34px cells
+<CellGrid rows={10} cols={10} size="md"                      // xs 10px · sm 22px · md 34px cells, or { cell: 40, gap?, font? }
           cell={(r, c) => ({ text: n(r, c), tone: 'ok', fill: 'tint', intensity: 0.3 })}   // fill: solid | tint | outline | none
           rowLabels={…} colLabels={…} highlight={[{ r, c, tone: 'info' }]}
           onCellClick={(r, c) => pick(r, c)} cellAriaLabel={(r, c) => `${n(r, c)}, crossed out`} cellTitle={…}
-          rowSuffix={{ width: 100, render: (r) => text }} ariaLabel="Numbers 1 to 100" />
+          rowSuffix={{ width: 100, render: (r) => text }} ariaLabel="Numbers 1 to 100"
+          overlay={({ center }) => <line {...from(center(i, j - 1))} {...to(center(i, j))} markerEnd={…} />} />  // DP arrows
 ```
 - Natural size (one unit = 1px), shrinking to fit narrow screens. `fill: 'none'` mutes the cell's text (a crossed-out number).
 - With `onCellClick` it's one tab stop: arrows move (no wrap), Home/End go to the row ends, Ctrl+Home/End to the corners, PageUp/Down five rows, Enter/Space press (`gridKeyTarget` in `core/grid`, the WAI-ARIA grid pattern). Reuse `gridKeyTarget` for any HTML grid of buttons, as graph-representations' adjacency matrix does.
-- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API; text isn't drawn) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element.
+- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element. Cell text (strings and numbers) is painted too whenever it lands at `MIN_TEXT_PX` (8px) or more on screen (the SVG's rendered scale is measured); below that it's left out, so a lesson whose canvas grid can shrink that far must say so on screen. modular-arithmetic's mod 22–24 tables now show their numbers (its WideRegion keeps them ≥ 9px), so its "too many to number" note is gone. `cellTitle` tooltips are SVG-mode only.
+- `size` takes a custom `{ cell, gap?, font? }` beyond the presets (gap defaults to ~9% of the cell, font to ~38%, none under 16px cells). Pure rules (`resolveSize`, `textReadable`, `canvasFill`, `canvasInk`) live in `components/cellGridPaint.ts`, tested.
+- `overlay(geometry)` draws SVG over the cells and rings, in the grid's coordinates (`at`, `center`, `cell`, `gap`, `width`, `height`), with no pointer events: dependency arrows, a path through the grid. Not migrated yet: dynamic-programming's LCS table (an HTML grid of 40px cells with its own SVG arrow overlay) can now be expressed as `size={{ cell: 40 }}` + `overlay`, but moving it from HTML to SVG isn't pixel-identical, so it's left for that lesson's owner.
 
 ### `core/bytes.ts`, `ByteGrid.tsx` — endianness, grpc-protobuf, symmetric-ciphers, macs-hmac, packet-capture-debugging, file-systems
 ```tsx
@@ -843,6 +889,18 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
            directed startNode="q0" width={500} height={220} ariaLabel="…" />
 ```
 - `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
+- `layoutEdges` (layered only) is the edge set the layout uses; `edges` is still what's drawn. topological-sort lays out by
+  the preset's edges plus any added edge that keeps the graph acyclic, so closing a cycle draws the new arrow without
+  moving a single node.
+- Layered + straight edges: an edge that would cross another node (a back edge closing a cycle) bends round it in a
+  "lane" curve beside the straight line, nearest lane first, alternating sides (`detourBend` / `curveHits` in
+  `core/graphLayout`, tested; `DETOUR_MARGIN` 8px clearance). If no lane within reach clears, it stays straight.
+  S-curve (`edgeStyle="curve"`) and fixed/circle layouts are untouched.
+- `editable.onAddNode` is optional: leave it out for an edges-only editor (topological-sort); clicking empty space then
+  does nothing and the crosshair cursor goes away.
+- `renderNode(node, at, base)`: `base` is the default drawing (focus ring, circle or box, label), so adding a badge or a
+  tag is `<>{base}<Badge/></>` (topological-sort's in-degree badges, cycle-detection's S/F tags) rather than a copy of
+  the ring/shape/label markup. `box={{ w, h, rx }}` sets the box's corner radius (default 10; the ring follows at rx + 4).
 - Natural size, shrinking on narrow screens; stretch it with `width: 100%` in lesson CSS (both migrated lessons do). Big graphs on phones belong in a `WideRegion`, as in ci-pipelines.
 - Node marks use TreeSvg's shape (`{ tone, fill: 'tint' | 'solid', tint? }`); edges take `{ tone, dashed?, width? }` (default 3.5), and the arrowhead follows the tone. `nodeColor` colours only unmarked nodes. Classes: `.graph-node`, `.graph-node-shape`, `.graph-node-label`, `.graph-edge` (+ `is-marked`, `is-dashed`), `.graph-edge-label`.
 - With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop (roving tabindex, starting top-left): arrows move to the nearest node or clickable edge in that direction (`spatialNext`), Home/End jump to the ends, Enter/Space press. `editable`: clicking empty space adds a node (at least `minGap` from the rest), dragging node to node adds an edge, and from the keyboard it's C on a node then Enter on another (Escape cancels). Adding a node from the keyboard stays a lesson button, since only the lesson knows where it goes.

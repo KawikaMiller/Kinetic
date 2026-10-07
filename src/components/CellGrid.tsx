@@ -1,18 +1,11 @@
-import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { gridGeometry, gridKeyTarget, type Cell } from '../core/grid';
-import { alpha, TOKENS } from '../core/palette';
 import { paintImage } from './canvasImage';
+import { canvasFill, canvasInk, DEFAULT_TINT, resolveSize, textReadable, type CellSize, type GridCellSpec, type SizePreset } from './cellGridPaint';
 import type { Tone } from '../core/tone';
 
-export interface GridCellSpec {
-  tone?: Tone;
-  /** solid = filled with the tone; tint = a wash of it with a tone edge; outline = edge only; none = empty. */
-  fill?: 'solid' | 'tint' | 'outline' | 'none';
-  /** Drawn in SVG mode only (cells too small to read in canvas mode). */
-  text?: ReactNode;
-  /** 0..1: how strongly a tint (or a heatmap cell) is washed toward its tone. Default 0.18. */
-  intensity?: number;
-}
+export type { CellSize, GridCellSpec } from './cellGridPaint';
+export { MIN_TEXT_PX } from './cellGridPaint';
 
 export interface GridHighlight {
   r: number;
@@ -22,26 +15,34 @@ export interface GridHighlight {
 
 /** Above this many cells the grid draws them on a canvas (labels and rings stay SVG). */
 export const CANVAS_THRESHOLD = 400;
-
-const SIZES = {
-  xs: { cell: 10, gap: 1, font: 0 },
-  sm: { cell: 22, gap: 2, font: 10 },
-  md: { cell: 34, gap: 3, font: 13 },
-} as const;
+/** Where things are, for drawing an overlay (arrows between cells, a path) in the grid's coordinates. */
+export interface CellGridGeometry {
+  /** Top-left corner of a cell. */
+  at: (r: number, c: number) => { x: number; y: number };
+  /** Centre of a cell. */
+  center: (r: number, c: number) => { x: number; y: number };
+  cell: number;
+  gap: number;
+  /** Whole drawing size, labels included. */
+  width: number;
+  height: number;
+}
 const LABEL_FONT = 10;
 const LABEL_CHAR_W = 6.2;
-const DEFAULT_TINT = 0.18;
 
 /**
  * A row × column grid of cells: a Hamming matrix, a sieve, a heatmap, a 1,000-person crowd.
  * `cell(r, c)` describes each cell with semantic tones. With `onCellClick` the grid is one
  * tab stop and the arrow keys move between cells (Home/End, Ctrl+Home/End, PageUp/Down);
  * Enter or Space presses the focused cell. Up to CANVAS_THRESHOLD cells it's plain SVG;
- * above that the cells are painted on a canvas with the same API, so a big grid stays fast.
+ * above that the cells are painted on a canvas with the same API, so a big grid stays fast,
+ * text included while it's readable (MIN_TEXT_PX on screen).
+ * `size` is a preset or `{ cell, gap?, font? }`; `overlay(geometry)` draws SVG over the cells
+ * in the grid's own coordinates (dependency arrows in a DP table).
  */
 export function CellGrid({
   rows, cols, cell, rowLabels, colLabels, onCellClick, cellTitle, cellAriaLabel, highlight = [], size = 'sm', gap,
-  rowSuffix, ariaLabel, className = '',
+  rowSuffix, overlay, ariaLabel, className = '',
 }: {
   rows: number;
   cols: number;
@@ -55,14 +56,16 @@ export function CellGrid({
   cellAriaLabel?: (r: number, c: number) => string;
   /** Rings drawn over cells (a cursor, a cache set, the cell being computed). */
   highlight?: readonly GridHighlight[];
-  size?: keyof typeof SIZES;
+  size?: SizePreset | CellSize;
   gap?: number;
   /** Extra text after each row (ByteGrid's ASCII column): width in drawing units plus a renderer. */
   rowSuffix?: { width: number; render: (r: number) => ReactNode };
+  /** SVG drawn over the cells (and rings), in the grid's coordinates; it doesn't take pointer events. */
+  overlay?: (geometry: CellGridGeometry) => ReactNode;
   ariaLabel?: string;
   className?: string;
 }) {
-  const s = SIZES[size];
+  const s = resolveSize(size);
   const rowLabelWidth = rowLabels ? maxLabelChars(rowLabels) * LABEL_CHAR_W + 8 : 0;
   const colLabelHeight = colLabels ? LABEL_FONT + 8 : 0;
   const geo = gridGeometry({ rows, cols, cell: s.cell, gap: gap ?? s.gap, rowLabelWidth, colLabelHeight });
@@ -88,7 +91,9 @@ export function CellGrid({
     if (!canvasMode) cellRefs.current.get(to.r * cols + to.c)?.focus();
   };
 
-  const image = useCanvasCells(canvasMode, rows, cols, cell, geo);
+  const scale = useRenderedScale(svg, width, canvasMode);
+  const canvasText = canvasMode && scale !== null && textReadable(s.font, scale);
+  const image = useCanvasCells(canvasMode, rows, cols, cell, geo, canvasText ? s.font : 0);
 
   const onCanvasClick = (e: MouseEvent<SVGRectElement>) => {
     const p = svgPoint(svg.current, e.clientX, e.clientY);
@@ -183,6 +188,22 @@ export function CellGrid({
         <CellRing key={k} at={geo.at(h.r, h.c)} size={s.cell} className={`cellgrid-ring tone-${h.tone}`} />
       ))}
 
+      {overlay && (
+        <g className="cellgrid-overlay">
+          {overlay({
+            at: geo.at,
+            center: (r, c) => {
+              const p = geo.at(r, c);
+              return { x: p.x + s.cell / 2, y: p.y + s.cell / 2 };
+            },
+            cell: s.cell,
+            gap: geo.gap,
+            width,
+            height: geo.height,
+          })}
+        </g>
+      )}
+
       {rowSuffix &&
         Array.from({ length: rows }, (_, r) => (
           <text key={`s${r}`} className="cellgrid-suffix" x={geo.width + 8} y={geo.at(r, 0).y + s.cell / 2 + 3.5}>
@@ -197,37 +218,54 @@ function CellRing({ at, size, className }: { at: { x: number; y: number }; size:
   return <rect className={className} x={at.x - 1.5} y={at.y - 1.5} width={size + 3} height={size + 3} rx={Math.min(5, size / 4)} />;
 }
 
-/** Paints the cells onto a canvas and returns it as an image URL for the SVG (canvas mode only). */
+/** Screen pixels per drawing unit, kept up to date as the SVG resizes (measured only when `enabled`). */
+function useRenderedScale(svg: RefObject<SVGSVGElement | null>, drawingWidth: number, enabled: boolean): number | null {
+  const [scale, setScale] = useState<number | null>(null);
+  useEffect(() => {
+    const el = svg.current;
+    if (!enabled || !el) return;
+    const measure = () => setScale(el.getBoundingClientRect().width / drawingWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [svg, drawingWidth, enabled]);
+  return enabled ? scale : null;
+}
+
+/**
+ * Paints the cells onto a canvas and returns it as an image URL for the SVG (canvas mode
+ * only). With `font` > 0 it also writes each cell's string or number text, as SVG mode does.
+ */
 function useCanvasCells(
   enabled: boolean,
   rows: number,
   cols: number,
   cell: (r: number, c: number) => GridCellSpec,
   geo: ReturnType<typeof gridGeometry>,
+  font: number,
 ): string | null {
   // `cell` is a fresh function every render, so key the drawing on what it returns.
   const specs = enabled ? Array.from({ length: rows * cols }, (_, i) => cell(Math.floor(i / cols), i % cols)) : null;
-  const key = specs ? JSON.stringify(specs.map((sp) => [sp.tone, sp.fill, sp.intensity])) : '';
+  const key = specs ? JSON.stringify(specs.map((sp) => [sp.tone, sp.fill, sp.intensity, font ? textOf(sp.text) : null])) : '';
   return useMemo(() => {
     if (!specs) return null;
-    return paintImage(geo.width - geo.x0, geo.height - geo.y0, (ctx) =>
+    const family = font ? getComputedStyle(document.documentElement).getPropertyValue('--mono').trim() : '';
+    return paintImage(geo.width - geo.x0, geo.height - geo.y0, (ctx) => {
+      ctx.textAlign = 'center';
       specs.forEach((sp, i) => {
         const { x, y } = geo.at(Math.floor(i / cols), i % cols);
         ctx.fillStyle = canvasFill(sp);
         ctx.fillRect(x - geo.x0, y - geo.y0, geo.cell, geo.cell);
-      }),
-    );
+        const text = font ? textOf(sp.text) : null;
+        if (text === null) return;
+        ctx.font = `${sp.fill === 'none' ? 500 : 600} ${font}px ${family}`;
+        ctx.fillStyle = canvasInk(sp);
+        ctx.fillText(text, x - geo.x0 + geo.cell / 2, y - geo.y0 + geo.cell / 2 + font * 0.35);
+      });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures every spec that affects the pixels
-  }, [key, rows, cols, geo.width, geo.height]);
-}
-
-function canvasFill(sp: GridCellSpec): string {
-  if (sp.fill === 'none') return 'transparent';
-  if (!sp.tone) return TOKENS.cell;
-  const tone = TOKENS[sp.tone];
-  if (sp.fill === 'solid') return tone;
-  if (sp.fill === 'outline') return TOKENS.cell;
-  return alpha(tone, sp.intensity ?? DEFAULT_TINT);
+  }, [key, rows, cols, geo.width, geo.height, font]);
 }
 
 const textOf = (node: ReactNode) => (typeof node === 'string' || typeof node === 'number' ? String(node) : null);

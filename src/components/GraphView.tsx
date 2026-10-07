@@ -1,9 +1,9 @@
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import {
-  circlePositions, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type GraphKey, type LayeredSpacing, type NodeBox,
-  type Pt,
+  circlePositions, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type GraphKey, type LayeredSpacing, type LayoutEdge,
+  type NodeBox, type Pt,
 } from '../core/graphLayout';
-import { toneVar, type Tone } from '../core/tone';
+import { TONES, toneVar, type Tone } from '../core/tone';
 import { arrowMarkerDef } from './ArrowMarker';
 import type { TreeNodeMark } from './TreeSvg';
 
@@ -38,10 +38,17 @@ export interface GraphEdgeMark {
   width?: number;
 }
 
-const TONES: readonly Tone[] = ['hi', 'ok', 'bad', 'info', 'violet', 'dim', 'orange'];
 /** The CI pipeline's spacing: columns 150 apart, rows 64 apart. */
 const DEFAULT_SPACING: LayeredSpacing = { direction: 'right', layerGap: 150, nodeGap: 64, padMain: 70, padCross: 44 };
-const DEFAULT_BOX = { w: 112, h: 46 };
+/** A box node's size; `rx` is its corner radius (default 10; the focus ring follows it, 4 wider). */
+export interface GraphBox {
+  w: number;
+  h: number;
+  rx?: number;
+}
+const DEFAULT_BOX: GraphBox = { w: 112, h: 46 };
+const BOX_RX = 10;
+const RING_GAP = 5;
 /** A press that moves less than this is a click, not a drag. */
 const DRAG_SLOP = 6;
 const START_ARROW = 30;
@@ -53,22 +60,28 @@ type Item<K extends GraphKey> = { kind: 'node'; id: K } | { kind: 'edge'; index:
  *
  * - `layout`: `fixed` uses each node's `at`; `layered` places a DAG in layers (longest
  *   path, barycentre ordering; core/graphLayout) with `spacing`; `circle` puts the nodes
- *   round a circle in `width` × `height`.
+ *   round a circle in `width` × `height`. `layoutEdges` lays a layered graph out by a
+ *   different edge set than it draws, so adding an edge (one that closes a cycle) doesn't
+ *   rearrange the drawing.
  * - Edges are straight (trimmed at the target when `directed`), or `edgeStyle="curve"`
- *   for layered S-curves. Self-loops draw above the node; a→b with b→a bends both apart.
+ *   for layered S-curves. In a layered layout a straight edge that would cross a node
+ *   (a back edge closing a cycle) bends round it. Self-loops draw above the node; a→b with b→a bends both apart.
  * - `nodeMark` / `edgeMark` highlight with tones; `nodeColor` gives unmarked nodes a
  *   colour (a component, a side); `nodeClass` / `edgeClass` add lesson classes.
- * - `renderNode(node, at)` draws a node yourself (absolute coordinates), e.g. a SceneNode.
+ * - `renderNode(node, at, base)` draws a node yourself (absolute coordinates), e.g. a
+ *   SceneNode. `base` is the default drawing (focus ring, shape, label), so a lesson that
+ *   only adds a badge or a tag returns `<>{base}{badge}</>` instead of copying it.
  * - With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop: arrow keys
  *   move between nodes (and clickable edges) by position, Home/End jump to the ends,
  *   Enter or Space presses.
- * - `editable`: click empty space to add a node, drag from node to node to add an edge.
+ * - `editable`: click empty space to add a node (only with `onAddNode`), drag from node to
+ *   node to add an edge.
  *   From the keyboard: C on a node starts a connection, Enter on another node makes the
  *   edge, Escape cancels. (Adding a node from the keyboard is the lesson's button, since
  *   only the lesson knows where a new node should go.)
  */
 export function GraphView<K extends GraphKey>({
-  nodes, edges, directed = false, layout = 'fixed', spacing, width, height, radius = 20, box = DEFAULT_BOX, edgeStyle = 'straight',
+  nodes, edges, directed = false, layout = 'fixed', layoutEdges, spacing, width, height, radius = 20, box = DEFAULT_BOX, edgeStyle = 'straight',
   arrowSize = 7, arrowGap = 3, nodeMark, nodeColor, nodeClass, edgeMark, edgeClass, renderNode, startNode, onNodeClick, onEdgeClick,
   nodeAriaLabel, edgeAriaLabel, editable, ariaLabel, className = '',
 }: {
@@ -76,6 +89,8 @@ export function GraphView<K extends GraphKey>({
   edges: readonly GraphEdge<K>[];
   directed?: boolean;
   layout?: 'fixed' | 'layered' | 'circle';
+  /** Layered layout only: the edges to lay out by (default `edges`). */
+  layoutEdges?: readonly LayoutEdge<K>[];
   /** Layered layout spacing (default: columns 150 apart, rows 64 apart, left to right). */
   spacing?: Partial<LayeredSpacing>;
   /** viewBox size. Layered layouts default to their natural size; fixed and circle need it. */
@@ -83,8 +98,8 @@ export function GraphView<K extends GraphKey>({
   height?: number;
   /** Circle nodes' radius. */
   radius?: number;
-  /** Box nodes' size. */
-  box?: { w: number; h: number };
+  /** Box nodes' size and corner radius. */
+  box?: GraphBox;
   edgeStyle?: 'straight' | 'curve';
   arrowSize?: number;
   /** Gap between an arrowhead and the node it points at. */
@@ -95,7 +110,7 @@ export function GraphView<K extends GraphKey>({
   nodeClass?: (id: K) => string;
   edgeMark?: (edge: GraphEdge<K>, index: number) => GraphEdgeMark | null | undefined;
   edgeClass?: (edge: GraphEdge<K>, index: number) => string;
-  renderNode?: (node: GraphNode<K>, at: Pt) => ReactNode;
+  renderNode?: (node: GraphNode<K>, at: Pt, base: ReactNode) => ReactNode;
   /** Draws an incoming start arrow (a state machine's initial state). */
   startNode?: K;
   onNodeClick?: (id: K) => void;
@@ -103,7 +118,8 @@ export function GraphView<K extends GraphKey>({
   nodeAriaLabel?: (id: K) => string;
   edgeAriaLabel?: (edge: GraphEdge<K>, index: number) => string;
   editable?: {
-    onAddNode: (p: Pt) => void;
+    /** Without it, clicking empty space does nothing (edges only). */
+    onAddNode?: (p: Pt) => void;
     onAddEdge: (from: K, to: K) => void;
     /** New nodes can't be dropped closer than this to an existing one (default 2r + 8). */
     minGap?: number;
@@ -125,7 +141,7 @@ export function GraphView<K extends GraphKey>({
   let at: Map<K, Pt>;
   let natural = { width: width ?? 0, height: height ?? 0 };
   if (layout === 'layered') {
-    const placed = layeredPositions(layeredLayout(ids, edges), sp);
+    const placed = layeredPositions(layeredLayout(ids, layoutEdges ?? edges), sp);
     at = placed.at;
     natural = { width: placed.width, height: placed.height };
   } else if (layout === 'circle') {
@@ -139,13 +155,18 @@ export function GraphView<K extends GraphKey>({
   const boxOf = (id: K): NodeBox => ({ shape: byId.get(id)?.shape ?? 'circle', r: radius, w: box.w, h: box.h });
   const pairs = new Set(edges.map((e) => `${e.from}\u0000${e.to}`));
 
+  const detour = layout === 'layered' && edgeStyle === 'straight';
   const routes = edges.map((e) => {
     const a = at.get(e.from);
     const b = at.get(e.to);
     if (!a || !b) return null;
     const parallel = directed && edgeStyle === 'straight' && e.from !== e.to && pairs.has(`${e.to}\u0000${e.from}`);
+    // Layered drawings bend a straight edge round any node it would cross (a back edge).
+    const obstacles = detour
+      ? ids.flatMap((id) => (id === e.from || id === e.to || !at.has(id) ? [] : [{ at: at.get(id)!, box: boxOf(id) }]))
+      : undefined;
     return routeEdge(a, b, boxOf(e.from), boxOf(e.to), {
-      directed, arrowGap, parallel, curve: edgeStyle === 'curve' ? sp.direction : undefined,
+      directed, arrowGap, parallel, curve: edgeStyle === 'curve' ? sp.direction : undefined, obstacles,
     });
   });
 
@@ -243,7 +264,7 @@ export function GraphView<K extends GraphKey>({
     if (hit !== undefined) {
       setDrag({ from: hit, start: p, at: p });
       svgRef.current?.setPointerCapture(e.pointerId);
-    } else setPendingAdd(p);
+    } else if (editable?.onAddNode) setPendingAdd(p);
   };
   const move = (e: PointerEvent<SVGSVGElement>) => {
     if (drag) setDrag({ ...drag, at: toSvg(e) });
@@ -260,7 +281,7 @@ export function GraphView<K extends GraphKey>({
       const q = at.get(n.id);
       return !q || Math.hypot(q.x - p.x, q.y - p.y) >= minGap;
     })) {
-      editable!.onAddNode({ x: Math.round(p.x), y: Math.round(p.y) });
+      editable?.onAddNode?.({ x: Math.round(p.x), y: Math.round(p.y) });
     }
     setPendingAdd(null);
   };
@@ -276,7 +297,7 @@ export function GraphView<K extends GraphKey>({
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       width={W}
-      className={`graph-view ${editable ? 'is-editable' : ''} ${className}`}
+      className={`graph-view ${editable ? 'is-editable' : ''} ${editable?.onAddNode ? 'can-add' : ''} ${className}`}
       role={interactive ? 'group' : 'img'}
       aria-label={ariaLabel}
       {...(editable && { onPointerDown: down, onPointerMove: move, onPointerUp: up })}
@@ -349,7 +370,7 @@ export function GraphView<K extends GraphKey>({
             style={color || mark?.tint !== undefined ? style : undefined}
             {...itemProps(`n:${n.id}`, { kind: 'node', id: n.id }, name)}
           >
-            {renderNode ? renderNode(n, p) : <DefaultNode node={n} at={p} radius={radius} box={box} />}
+            {renderNode ? renderNode(n, p, <DefaultNode node={n} at={p} radius={radius} box={box} />) : <DefaultNode node={n} at={p} radius={radius} box={box} />}
           </g>
         );
       })}
@@ -357,13 +378,21 @@ export function GraphView<K extends GraphKey>({
   );
 }
 
-function DefaultNode<K extends GraphKey>({ node, at, radius, box }: { node: GraphNode<K>; at: Pt; radius: number; box: { w: number; h: number } }) {
+function DefaultNode<K extends GraphKey>({ node, at, radius, box }: { node: GraphNode<K>; at: Pt; radius: number; box: GraphBox }) {
   const label = node.label ?? node.id;
   if (node.shape === 'box') {
+    const rx = box.rx ?? BOX_RX;
     return (
       <>
-        <rect className="graph-node-ring" x={at.x - box.w / 2 - 5} y={at.y - box.h / 2 - 5} width={box.w + 10} height={box.h + 10} rx={14} />
-        <rect className="graph-node-shape" x={at.x - box.w / 2} y={at.y - box.h / 2} width={box.w} height={box.h} rx={10} />
+        <rect
+          className="graph-node-ring"
+          x={at.x - box.w / 2 - RING_GAP}
+          y={at.y - box.h / 2 - RING_GAP}
+          width={box.w + 2 * RING_GAP}
+          height={box.h + 2 * RING_GAP}
+          rx={rx + 4}
+        />
+        <rect className="graph-node-shape" x={at.x - box.w / 2} y={at.y - box.h / 2} width={box.w} height={box.h} rx={rx} />
         <text className="graph-node-label" x={at.x} y={at.y + 5} textAnchor="middle">
           {label}
         </text>
@@ -372,7 +401,7 @@ function DefaultNode<K extends GraphKey>({ node, at, radius, box }: { node: Grap
   }
   return (
     <>
-      <circle className="graph-node-ring" cx={at.x} cy={at.y} r={radius + 5} />
+      <circle className="graph-node-ring" cx={at.x} cy={at.y} r={radius + RING_GAP} />
       <circle className="graph-node-shape" cx={at.x} cy={at.y} r={radius} />
       {node.accept && <circle className="graph-node-accept" cx={at.x} cy={at.y} r={radius - 4} />}
       <text className="graph-node-label" x={at.x} y={at.y + 5} textAnchor="middle">

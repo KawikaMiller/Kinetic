@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  circlePositions, crossings, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type LayoutEdge,
+  DETOUR_MARGIN, circlePositions, crossings, curveHits, detourBend, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type LayoutEdge,
 } from './graphLayout';
 import { mulberry32 } from './random';
 
@@ -161,5 +161,40 @@ describe('spatialNext', () => {
     expect(spatialNext(items, 's', 'Home')).toBe('c');
     expect(spatialNext(items, 'c', 'End')).toBe('far-e');
     expect(spatialNext(items, 'c', 'Enter')).toBeNull();
+  });
+});
+
+describe('detours round nodes', () => {
+  const box = { shape: 'box' as const, r: 0, w: 98, h: 38 };
+  // A back edge from the bottom of a column to its top, with a node in between.
+  const a = { x: 100, y: 300 };
+  const b = { x: 100, y: 0 };
+  const blocker = { at: { x: 100, y: 150 }, box };
+
+  it('spots a straight line through a node and clears a curve that goes round it', () => {
+    expect(curveHits(a, b, [blocker])).toBe(true);
+    const bend = detourBend(a, b, [blocker])!;
+    expect(bend).not.toBeNull();
+    expect(curveHits(a, b, [blocker], bend)).toBe(false);
+    // The nearest lane that clears: its peak (3/4 of the control offset) passes the box's side plus the margin.
+    expect((Math.abs(bend.c1.x - 100) * 3) / 4).toBeGreaterThanOrEqual(49 + DETOUR_MARGIN);
+    expect(bend.c1.x - 100).toBe(bend.c2.x - 100);
+  });
+
+  it('leaves a clear line alone', () => {
+    expect(detourBend(a, b, [{ at: { x: 300, y: 150 }, box }])).toBeNull();
+    expect(detourBend(a, b, [])).toBeNull();
+  });
+
+  it('routes a blocked edge as a curve trimmed at both boxes, and a clear one as a line', () => {
+    const r = routeEdge(a, b, box, box, { directed: true, arrowGap: 4, obstacles: [blocker] });
+    expect(r.kind).toBe('path');
+    const clear = routeEdge(a, b, box, box, { directed: true, arrowGap: 4, obstacles: [] });
+    expect(clear).toMatchObject({ kind: 'line', x2: 100, y2: 19 + 4 });
+  });
+
+  it('stays straight when no bend within reach clears (a wall of nodes)', () => {
+    const wall = Array.from({ length: 21 }, (_, i) => ({ at: { x: 100 + (i - 10) * 30, y: 150 }, box }));
+    expect(detourBend(a, b, wall)).toBeNull();
   });
 });

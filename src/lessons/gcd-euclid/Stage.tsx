@@ -5,6 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextField } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { usePlayer } from '../../core/usePlayer';
+import type { Tone } from '../../core/tone';
 import { extendedFrames, group, inverseCaption, signed, tilingFrames } from './frames';
 import {
   bezoutRows, euclid, isConsecutiveFibonacci, leftover, naiveTrials, pairError, parseValue, tiling, worstSteps, type Run,
@@ -82,7 +83,9 @@ interface SceneProps {
 
 // ── Tiling ───────────────────────────────────────────────────────────
 
-const STEP_TONES = ['orange', 'sky', 'pink'] as const;
+const STEP_TONES: readonly Tone[] = ['orange', 'sky', 'pink'];
+/** Square classes: the step's categorical tone, or --hi for the square being placed now. */
+const squareClass = (tone: Tone, now: boolean) => `ge-sq ${now ? 'tone-hi is-now' : `tone-${tone}`}`;
 
 function TilingScene({ picker, inputs, pair }: SceneProps) {
   const { a, b } = pair;
@@ -177,14 +180,14 @@ function TilingSvg({ a, b, row, placed, finished }: { a: number; b: number; row:
         {runs.map((r, i) => {
           const count = shownCount(r, i);
           if (count === 0) return null;
-          const tone = finished && i === lastRun ? 'is-gcd' : `is-${STEP_TONES[i % STEP_TONES.length]}`;
+          const tone: Tone = finished && i === lastRun ? 'ok' : STEP_TONES[i % STEP_TONES.length];
           const step = (j: number) => (r.axis === 'x' ? { x: r.x + j * r.size, y: r.y } : { x: r.x, y: r.y + j * r.size });
           if (r.count > MAX_DRAWN_SQUARES) {
             const span = count * r.size;
             const w = r.axis === 'x' ? span : r.size;
             const h = r.axis === 'x' ? r.size : span;
             return (
-              <g key={i} className={`ge-sq ${i === current ? 'is-now' : tone}`}>
+              <g key={i} className={squareClass(tone, i === current)}>
                 <rect x={ox + r.x * kx} y={oy + r.y * ky} width={dx(w)} height={dy(h)} />
               </g>
             );
@@ -196,7 +199,7 @@ function TilingSvg({ a, b, row, placed, finished }: { a: number; b: number; row:
                 const isNow = i === current && j === count - 1;
                 const [sw, sh] = [dx(r.size), dy(r.size)];
                 return (
-                  <g key={j} className={`ge-sq ${isNow ? 'is-now' : tone}`}>
+                  <g key={j} className={squareClass(tone, isNow)}>
                     <rect x={ox + p.x * kx} y={oy + p.y * ky} width={sw} height={sh} />
                     {Math.min(sw, sh) >= LABEL_MIN && (
                       <text x={ox + p.x * kx + sw / 2} y={oy + p.y * ky + sh / 2 + 4} textAnchor="middle">{group(r.size)}</text>

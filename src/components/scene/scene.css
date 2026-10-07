@@ -38,3 +38,30 @@
 /* HTML flyers (%-positioned inside a relatively positioned parent) */
 .flyer { position: absolute; pointer-events: none; }
 .flyer-arc { display: inline-block; }
+
+/* Gate circuits (Gates.tsx): wires, gate symbols, input switches and output lamps.
+   Lessons size labels and add glows on their own svg class. */
+.gate-wire { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
+.gate-wire.is-low { stroke: var(--dim); }
+.gate-wire.is-high { stroke: var(--hi); }
+.gate-wire.is-unused { stroke: var(--line); stroke-dasharray: 3 5; }
+.gate-wire.is-unknown { stroke: var(--bad); stroke-dasharray: 4 4; }
+.gate-dot { filter: drop-shadow(0 0 5px var(--hi)); pointer-events: none; }
+.gate-body { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.gate-back { fill: none; stroke: var(--line-2); stroke-width: 2; }
+.gate.is-on .gate-body { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); }
+.gate.is-on .gate-back { stroke: var(--hi); }
+.gate-type { font: 700 11px var(--mono); fill: var(--muted); pointer-events: none; }
+.gate.is-on .gate-type { fill: var(--text); }
+.gate-input { cursor: pointer; }
+.gate-input circle,
+.gate-lamp circle { fill: var(--cell); stroke: var(--dim); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.gate-input.is-on circle,
+.gate-lamp.is-on circle { fill: var(--hi); stroke: var(--hi); }
+.gate-input:hover circle { stroke: var(--muted); }
+.gate-input:focus-visible { outline: none; }
+.gate-input:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.gate-io-value { font: 700 15px var(--mono); fill: var(--muted); pointer-events: none; }
+.gate-input.is-on .gate-io-value,
+.gate-lamp.is-on .gate-io-value { fill: var(--on-hi); }
+.gate-io-name { font: 700 14px var(--mono); fill: var(--text); }
