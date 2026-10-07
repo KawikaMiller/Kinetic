@@ -81,17 +81,19 @@ export const COLLISION_EXACT_LIMIT = 100_000;
 /**
  * The birthday problem: probability that at least two of n items picked uniformly from `space`
  * values collide. Exact product form up to COLLISION_EXACT_LIMIT items, then
- * 1 − e^(−n(n−1)/2d); `method` says which, so the lesson can label it.
+ * 1 − e^(−n(n−1)/2d); `method` says which, so the lesson can label it. Both are worked out
+ * in log space with log1p / expm1, so a huge space keeps its tiny chance (two picks from
+ * 2¹²⁸ values: 2.9 × 10⁻³⁹) instead of rounding to 0.
  */
 export function collisionProbability(n: number, space: number): { p: number; method: 'exact' | 'approx' } {
   if (n <= 1) return { p: 0, method: 'exact' };
   if (n > space) return { p: 1, method: 'exact' };
   if (n <= COLLISION_EXACT_LIMIT) {
-    let noCollision = 1;
-    for (let i = 1; i < n; i++) noCollision *= (space - i) / space;
-    return { p: 1 - noCollision, method: 'exact' };
+    let logNoCollision = 0;
+    for (let i = 1; i < n; i++) logNoCollision += Math.log1p(-i / space);
+    return { p: -Math.expm1(logNoCollision), method: 'exact' };
   }
-  return { p: 1 - Math.exp((-n * (n - 1)) / (2 * space)), method: 'approx' };
+  return { p: -Math.expm1((-n * (n - 1)) / (2 * space)), method: 'approx' };
 }
 
 /** The mean after each value: running[i] = mean(xs[0..i]). The law of large numbers, live. */

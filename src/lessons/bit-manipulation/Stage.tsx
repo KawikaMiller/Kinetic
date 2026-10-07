@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { CodePanel } from '../../components/CodePanel';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -39,14 +39,6 @@ const pendingMark = <span className="bm-pending-mark">·</span>;
 
 export function Stage() {
   const [scene, picker] = useScenePicker({ label: 'Scene', options: SCENES, initial: 'ops' });
-  const shownScene = useRef(scene);
-  // Each scene is its own component, so switching remounts the picker and drops focus to <body>.
-  // Put it back on the picker's chosen option (Phase 2: belongs in useScenePicker).
-  useEffect(() => {
-    if (shownScene.current === scene) return;
-    shownScene.current = scene;
-    if (document.activeElement === document.body) document.querySelector<HTMLElement>('.segmented[aria-label="Scene"] button.on')?.focus();
-  }, [scene]);
   if (scene === 'flags') return <FlagsScene picker={picker} />;
   if (scene === 'tricks') return <TricksScene picker={picker} />;
   return <OpsScene picker={picker} />;

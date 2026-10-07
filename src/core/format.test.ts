@@ -38,6 +38,16 @@ describe('latency and humanDuration', () => {
     expect(humanDuration(150_000_000)).toBe('4.8 years');
   });
 
+  it('writes spans past a million years as a power of ten, never a raw float', () => {
+    const YEAR = 365.25 * 24 * 3600;
+    expect(humanDuration(999_000 * YEAR)).toBe('999000 years');
+    expect(humanDuration(1e6 * YEAR)).toBe('1\u00a0×\u00a010⁶ years');
+    expect(humanDuration(3.24e292 * YEAR)).toBe('3.2\u00a0×\u00a010²⁹² years');
+    expect(humanDuration(9.97e30 * YEAR)).toBe('1\u00a0×\u00a010³¹ years');
+    expect(humanDuration(1e308)).toMatch(/^3\.2\u00a0×\u00a010³⁰⁰ years$/);
+    expect(humanDuration(Infinity)).toBe('∞ years');
+  });
+
   it('uses the singular for exactly one of a unit', () => {
     expect(humanDuration(3600)).toBe('1 hour');
     expect(humanDuration(86_400)).toBe('1 day');

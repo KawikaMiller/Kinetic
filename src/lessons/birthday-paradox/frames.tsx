@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { percentile } from '../../core/sim';
 import { power } from '../../core/format';
+import { collisionProbability } from '../../core/stats';
 import {
-  DAYS, birthdayChance, certainAt, chance, count, dayName, guaranteed, halfPoint, idCollision, pairs, type Run,
+  DAYS, birthdayChance, certainAt, chance, count, dayName, guaranteed, halfPoint, pairs, type Run,
 } from './model';
 
 export function pigeonCaption(pigeons: number, holes: number): ReactNode {
@@ -29,7 +30,7 @@ export function batchCaption(sizes: readonly number[]): ReactNode {
 }
 
 export function idCaption(n: number, bits: number): ReactNode {
-  return <>{count(n)} random {bits}-bit IDs: chance of a repeat {chance(idCollision(n, bits))}. A coin flip comes at about{' '}
+  return <>{count(n)} random {bits}-bit IDs: chance of a repeat {chance(collisionProbability(n, 2 ** bits).p)}. A coin flip comes at about{' '}
     {count(halfPoint(bits))} IDs, roughly √{power(bits)}, not {power(bits)} / 2.</>;
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linearScale, logScale } from './scale';
+import { linearScale, logScale, MIN_TEXT_PX, minWidthForText } from './scale';
 
 describe('linearScale', () => {
   const s = linearScale(0, 100, 20, 520);
@@ -55,5 +55,27 @@ describe('logScale', () => {
     expect(() => logScale(0, 10, 0, 1)).toThrow(RangeError);
     expect(() => logScale(-1, 10, 0, 1)).toThrow(RangeError);
     expect(() => logScale(1, 10, 0, 1, 1)).toThrow(RangeError);
+  });
+});
+
+describe('minWidthForText', () => {
+  it('is the width at which the smallest text renders at exactly the 8px floor, rounded up', () => {
+    expect(minWidthForText(520, 13)).toBe(320);
+    expect(minWidthForText(600, 12)).toBe(400);
+    expect(minWidthForText(601, 12)).toBe(401);
+    for (const [w, font] of [[520, 13], [437, 12], [999, 11], [720, 10]]) {
+      const min = minWidthForText(w, font);
+      expect((font * min) / w).toBeGreaterThanOrEqual(MIN_TEXT_PX);
+      expect((font * (min - 1)) / w).toBeLessThan(MIN_TEXT_PX);
+    }
+  });
+
+  it('matches the hand-rolled width × (8 / 12) on every whole width, so migrations stay pixel-identical', () => {
+    for (let w = 1; w <= 4000; w++) expect(minWidthForText(w, 12), String(w)).toBe(Math.ceil(w * (8 / 12)));
+  });
+
+  it('never goes below the floor', () => {
+    expect(minWidthForText(300, 12, 320)).toBe(320);
+    expect(minWidthForText(900, 12, 320)).toBe(600);
   });
 });

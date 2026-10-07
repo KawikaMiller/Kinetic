@@ -3,6 +3,7 @@
  * Pure: actor lanes, one row per message, wrapped labels and the arrow geometry, all in
  * drawing units, plus the narrowest container width at which its text stays readable.
  */
+import { minWidthForText } from './scale';
 
 export interface SeqActor {
   id: string;
@@ -54,7 +55,7 @@ export interface SeqLayout {
   /** Lifelines run from head bottom to here. */
   lifelineEnd: number;
   rows: SeqRow[];
-  /** Container width below which the label text would render under MIN_TEXT_PX. */
+  /** Container width below which the label text would render under MIN_TEXT_PX (core/scale). */
   minWidth: number;
 }
 
@@ -74,7 +75,6 @@ export const SEQ = {
   /** Lost messages stop this far along their path. */
   LOST_AT: 0.6,
   MIN_GAP: 120,
-  MIN_TEXT_PX: 8,
 } as const;
 
 export const textWidth = (s: string) => s.length * SEQ.CHAR_W;
@@ -196,6 +196,6 @@ export function sequenceLayout(actors: readonly SeqActor[], messages: readonly S
     head,
     lifelineEnd,
     rows,
-    minWidth: Math.ceil((W * SEQ.MIN_TEXT_PX) / SEQ.FONT),
+    minWidth: minWidthForText(W, SEQ.FONT),
   };
 }

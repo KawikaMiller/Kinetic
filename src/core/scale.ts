@@ -84,3 +84,17 @@ export function logScale(d0: number, d1: number, r0: number, r1: number, base = 
     },
   };
 }
+
+/** Smallest scene text a phone may render, in px: `npm run smoke -- --mobile` fails below it. */
+export const MIN_TEXT_PX = 8;
+
+/**
+ * The `minWidth` for a StageFrame or WideRegion holding a drawing `naturalWidth` wide whose
+ * smallest text is `smallestTextPx` at natural size: the narrowest width before that text
+ * shrinks under MIN_TEXT_PX, ⌈width × 8 / smallest⌉. `floor` keeps it at least that wide
+ * (a small drawing still taking a phone's width).
+ *
+ *   <WideRegion minWidth={minWidthForText(W, 13)}>        // 13px edge weights
+ */
+export const minWidthForText = (naturalWidth: number, smallestTextPx: number, floor = 0) =>
+  Math.max(floor, Math.ceil((naturalWidth * MIN_TEXT_PX) / smallestTextPx));

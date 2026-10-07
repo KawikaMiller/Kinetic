@@ -138,7 +138,7 @@ describe('extrapolation', () => {
 
   it('writes huge spans as powers of ten', () => {
     expect(longTime(90)).toBe('1.5 min');
-    expect(longTime(extrapolateSeconds(RSA_2048_DIGITS, 1e7))).toMatch(/^about 10\S+ years$/);
+    expect(longTime(extrapolateSeconds(RSA_2048_DIGITS, 1e7))).toMatch(/^\d(\.\d)?\u00a0×\u00a010\S+ years$/);
   });
 
   it('makes primes with exactly the asked-for digits', () => {
@@ -191,7 +191,7 @@ describe('primality', () => {
     for (const bad of ['', '  ', '-7', '−7', '1.5', '1e400', '1,2', '😀', '<b>7</b>', '0x11', '1', '0', '9'.repeat(41)]) {
       expect('error' in parseCandidate(bad), bad).toBe(true);
     }
-    expect(parseCandidate(' 561 ')).toEqual({ value: 561n });
-    expect(parseCandidate('1,000,003')).toEqual({ value: 1_000_003n });
+    expect(parseCandidate(' 561 ')).toEqual({ ok: true, value: 561n });
+    expect(parseCandidate('1,000,003')).toEqual({ ok: true, value: 1_000_003n });
   });
 });

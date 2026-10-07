@@ -12,6 +12,11 @@ export interface AxisSpec {
   label?: string;
   /** About how many ticks (default 5). */
   ticks?: number;
+  /**
+   * Exactly these ticks instead of the automatic ones (values outside the domain are dropped).
+   * For a log axis over a huge range whose automatic powers land unevenly: [1, 1e25, 1e50, 1e75, 1e100].
+   */
+  tickValues?: readonly number[];
   /** Tick label text (default: formatTick). */
   format?: (v: number) => string;
 }
@@ -38,6 +43,13 @@ export function plotFrame(width: number, height: number, margin: Margin, x: Axis
   const box = { x: margin.left, y: margin.top, width: width - margin.left - margin.right, height: height - margin.top - margin.bottom };
   const scale = (a: AxisSpec, r0: number, r1: number) => (a.log ? logScale : linearScale)(a.domain[0], a.domain[1], r0, r1);
   return { xs: scale(x, box.x, box.x + box.width), ys: scale(y, box.y + box.height, box.y), box };
+}
+
+/** The axis's tick values: `tickValues` inside the domain when given, else the scale's own ticks. */
+export function axisTickValues(a: AxisSpec): number[] {
+  const [lo, hi] = [Math.min(...a.domain), Math.max(...a.domain)];
+  if (a.tickValues) return a.tickValues.filter((v) => v >= lo && v <= hi);
+  return (a.log ? logScale : linearScale)(a.domain[0], a.domain[1], 0, 1).ticks(a.ticks ?? 5);
 }
 
 /** Keep a data point inside both domains. */

@@ -60,6 +60,7 @@ Loaded globally. Colour flows through `--c` / `--on-c`, set by a `.tone-*` class
 | `.tray` | dashed collector panel |
 | `.section-title` (+ `.is-regular`, `> .hint-inline`) | 11px uppercase label: 700 weight / .1em, or regular weight / .08em |
 | `.empty-note`, `.hint` (+ `.is-muted`, `.is-block`), `.focus-ring` | faint mono placeholder; 13px hint; 3px ring in `--c` |
+| `.keep-case` | `text-transform: none` inside an uppercased label (see the `Stat` note) |
 | `.stage-pad` | flex column stage padding 20/22 |
 | `.canvas-wrap` | `position: relative; height: var(--h, 420px)`, canvas `display: block` |
 | `.data-table`, `.log-row` | shared table look; left-bordered tinted log row in `--c` |
@@ -129,6 +130,7 @@ plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
+                      // past a million years a power of ten, never a raw float: '3.2 × 10²⁹² years' (no-break spaces round ×)
 superscript(23)       // '²³' — an integer in superscript digits
 power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
 power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in threes, narrow no-break space (big-o); superscript takes it too
@@ -137,7 +139,26 @@ power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in th
 ### `parse.ts`
 ```ts
 parseIntegers('1, 3 ,4  8')   // [1, 3, 4, 8]; commas and/or spaces; null if empty or any value isn't an integer
+parseInteger(' -7 ')          // -7; one plain decimal integer or null
+
+// One learner-typed field, within bounds, or the sentence to show instead: { ok: true, value } | { ok: false, error }
+parseBoundedInt(text, { min: 0, max: 999 })                       // generic messages: 'Type a whole number.', 'Keep it between 0 and 999.'
+parseBoundedInt(text, { min: 0, max: 255, prefixes: ['hex', 'binary'], underscores: true })   // 202, 0xCA, 0b1100_1010
+parseBoundedInt(text, { min: 0, max: 1e12, thousands: true })     // 1,000,003 (commas only between groups of three)
+parseBoundedInt(text, { min: -10, max: 10, typographicMinus: true })  // −7 reads as -7
+parseBoundedBigInt(text, { min: 0n, max: 2n ** 64n - 1n, prefixes: ['hex'], plainRadix: 16, spaces: true })  // hex-only: '1e400' is 0x1E400
+parseBoundedInt(text, { min: 2, max: 24, messages: {
+  empty: '…', invalid: (typed) => '…', tooSmall: (value, cleaned) => '…', tooBig: (value, cleaned) => '…',
+  negative: 'Primes are positive…',   // optional: any leading minus refused with this, first
+  grouping: 'Commas only between…',   // optional, with thousands: bad comma use refused with this instead of `invalid`
+} })
 ```
+Reads exactly (as a bigint inside), so a long digit run is refused rather than rounded into range, and
+out-of-range input is refused, never clamped or masked. Decimals, exponents (`1e3`), `+5`, `Infinity`
+and markup are always refused; only plain decimal takes a minus. Used by bit-manipulation, endianness
+(hex value, port), gcd-euclid, modular-arithmetic, primes-factoring and minimum-spanning-trees; their
+own wording goes in `messages`. Fields that parse lists (adders-alu) or other bases (binary-hex's octal
+and `#`) keep their own parsers.
 
 ### `fixtures/` — shared sample data
 ```ts
@@ -324,7 +345,11 @@ Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape
 ### Radio groups (`useRadioGroup.ts`, `core/radio.ts`)
 `Segmented` (so `Toggle` and `useScenePicker`) and the player's speed buttons follow the WAI-ARIA radio
 pattern: one tab stop, ← → ↑ ↓ / Home / End move the selection and focus with it, `aria-checked` on every
-option. A hand-rolled single-choice row should use the hook rather than plain buttons:
+option. `useScenePicker` also keeps focus across a scene switch: each scene renders its own copy
+of the picker, so switching unmounts the focused button, and the hook puts focus back on the new picker's
+chosen option (only when the switch was made while something had focus and focus then fell to `<body>`,
+so a scene change never steals focus on load). The same goes for a `setScene` handoff button. Lessons
+need no workaround; `Segmented` takes a `ref` to its radiogroup for this. A hand-rolled single-choice row should use the hook rather than plain buttons:
 ```tsx
 const radio = useRadioGroup(options.length, checkedIndex, (i) => select(options[i]));
 options.map((o, i) => <button key={o.id} {...radio.itemProps(i)} onClick={() => select(o)}>{o.label}</button>)
@@ -367,6 +392,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <ControlGroup label="Presets" inline className="xx-presets">{buttons}</ControlGroup>   // inline: label left of the group
 <Hint>…or click a number</Hint>                          // tone="muted", block (its own line), className
 <Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
+<Stat label={<>Tail <span className="keep-case">μ</span></>} value={3} />   // labels are uppercased by CSS: μ would show as Μ ("M")
 <PauseButton paused={paused} onToggle={togglePause} />
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 <ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
@@ -399,6 +425,7 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
   instead of shrinking the drawing; wider screens see no difference. Set it on any stage with a fixed-layout
   SVG, canvas or absolutely positioned scene. Pick the value with `npm run smoke -- --mobile <id>`: it fails
   when scene text renders under 8px or the frame clips content. Rough guide: `356 × 8 / smallestTextPx` at 390.
+  For a drawing of known natural width, compute it: `minWidthForText(W, 13)` from `core/scale` (below).
 - A `Toggle` swap changes the option order when the lesson listed "on" first (cdn-edge). That's a deliberate change, so list it.
 - `TextField`: Enter does nothing unless `onEnter` is set. For clamped number fields, keep the raw text in state and clamp in `onBlur` and when the value is used, not on every keystroke (see trees-bst).
 - `TextField` has the shared look (a 14px mono input with an accent focus ring). A lesson `className` can resize it; a disabled field dims to 0.45 as a whole.
@@ -677,6 +704,8 @@ text (regex-basics) is lesson-local until a second lesson needs it.
 const x = linearScale(0, 100, 0, 500);        // x.map(50) → 250, x.invert(250) → 50, x.ticks(5) → [0, 20, …, 100]
 const y = logScale(1e-9, 1e-1, 300, 0);       // y axis, bottom-up; y.ticks(9) → [1e-9, 1e-8, …, 1e-1]
 logScale(1, 1024, 0, 10, 2)                   // base 2
+minWidthForText(520, 13)                      // 320: StageFrame/WideRegion minWidth keeping 13px text at the 8px floor (MIN_TEXT_PX)
+minWidthForText(placement.width, 12, 320)     // third argument: never narrower than this
 ```
 Linear ticks are "nice" (1, 2 or 5 × 10^k) with float noise rounded off (0.3, not 0.30000000000000004).
 Log ticks are whole powers of the base inside the domain, thinned evenly beyond `count`. A log
@@ -775,6 +804,7 @@ variance(xs); stdDev(xs)             // population; { sample: true } divides by 
 histogram(xs, { bins: 10, min: 0, max: 1 })   // { edges (bins + 1), counts, outside }: max lands in the last bin
 binomialPmf(n, k, p)
 collisionProbability(23, 365)        // { p: 0.507…, method: 'exact' }: exact product up to COLLISION_EXACT_LIMIT, then 1 − e^(−n(n−1)/2N)
+collisionProbability(2, 2 ** 128).p  // 2.9e-39, not 0: both forms run in log space (log1p / expm1), so huge ID spaces keep tiny chances
 runningMean(xs)                      // the convergence curve for simulated frequencies
 ```
 
@@ -831,6 +861,8 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 </Plot2D>
 ```
 - Layers are children in data coordinates, drawn in order; path layers are clipped to the plot box. Custom layers call `usePlot()` (from `components/plotContext`) for `xs`, `ys` and `box`.
+- `tickValues: [1, 1e25, 1e50, 1e75, 1e100]` on an axis replaces the automatic ticks (values outside the domain are dropped): a log axis over a huge range otherwise strides by an awkward number of decades and can miss the top. `axisTickValues(spec)` in `core/plot` is the tested logic.
+- A range past ~10³⁰⁸ can't be a real log axis (doubles stop at 1.8 × 10³⁰⁸): plot log₁₀ of the value on a linear axis with `format: (v) => power(v, 10)`, as primes-factoring does.
 - `Curve fn` is sampled evenly on screen (so log axes too) and breaks where `fn` isn't finite. `Heat fn` returns a 0..1 intensity of `tone` or `{ tone, intensity }` (a region), or pass `grid` (row 0 at the top); memoise `fn`, since it repaints when it changes.
 - Draggable `Points` take pointer drags and are focusable: arrow keys move 4 units (Shift: 20), always clamped to the domain (`nudgePoint`, `clampPoint`).
 - A `dim` rule is a quiet reference line (faint line, muted label). `formatTick` writes 1.5k, 2M, and 10ⁿ on log axes.

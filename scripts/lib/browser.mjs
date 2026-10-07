@@ -140,3 +140,37 @@ export function outPath(...parts) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   return file;
 }
+
+/** How long waitForCaption waits by default before giving up on a caption that keeps changing. */
+export const CAPTION_SETTLE_MS = 2000;
+
+/**
+ * Page-side: resolves once the caption has stopped cross-fading (one `.caption-text` left, fully
+ * opaque, for two animation frames in a row), or after `timeout` ms. Resolves true when settled.
+ * The caption fades out the old text before the new one fades in, so a script that reads
+ * `.caption-text` straight after a click can get the outgoing caption.
+ */
+function captionSettledInPage(timeout) {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    let stable = 0;
+    const tick = () => {
+      const captions = document.querySelectorAll('.caption-text');
+      const settled = captions.length <= 1 && (!captions[0] || getComputedStyle(captions[0]).opacity === '1');
+      stable = settled ? stable + 1 : 0;
+      if (stable >= 2 || performance.now() - start > timeout) resolve(settled);
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+/** Wait until the stage caption has finished its fade (see captionSettledInPage). */
+export const waitForCaption = (page, timeout = CAPTION_SETTLE_MS) => page.evaluate(captionSettledInPage, timeout);
+
+/**
+ * Give the page `window.kineticCaptionSettled(timeout?)` (a Promise, same rule as waitForCaption),
+ * so an --evalfile drive script can await it between a click and reading the caption.
+ */
+export const exposeCaptionSettled = (page) =>
+  page.evaluate(`window.kineticCaptionSettled = ${captionSettledInPage.toString()};`);

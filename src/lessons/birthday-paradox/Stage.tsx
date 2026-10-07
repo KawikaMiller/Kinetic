@@ -10,12 +10,12 @@ import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { power } from '../../core/format';
 import { barsFromHistogram } from '../../core/plot';
 import { percentile } from '../../core/sim';
-import { histogram } from '../../core/stats';
+import { collisionProbability, histogram } from '../../core/stats';
 import { useInterval } from '../../core/useInterval';
 import { BIRTHDAY_FACTS, batchCaption, collisionCaption, idCaption, pigeonCaption } from './frames';
 import {
   ID_PRESETS, MAX_BITS, MIN_BITS, MONTHS, birthdayChance, cellDay, chance, count, dayName, firstCollision, guaranteed, halfPoint,
-  idCollision, runSizes, spread,
+  runSizes, spread,
 } from './model';
 import './styles.css';
 
@@ -252,7 +252,7 @@ function IdScene({ picker }: { picker: ReactNode }) {
   const [exponent, setExponent] = useState(4.9);
   const setCaption = useSetCaption();
   const n = Math.round(10 ** exponent);
-  const p = idCollision(n, bits);
+  const p = collisionProbability(n, 2 ** bits).p;
   const half = halfPoint(bits);
   // Twice the 50% point's decades shows the whole climb; stretch further if the slider is past it.
   const xMax = Math.min(MAX_EXPONENT, Math.max(MIN_X_DECADES, Math.ceil(2 * Math.log10(half)), Math.ceil(exponent) + 1));
@@ -315,7 +315,7 @@ function IdScene({ picker }: { picker: ReactNode }) {
         >
           <HLine at={0.5} label="50%" tone="dim" />
           <VLine at={Math.log10(half)} tone="dim" />
-          <Curve fn={(e) => idCollision(10 ** e, bits)} tone="violet" />
+          <Curve fn={(e) => collisionProbability(10 ** e, 2 ** bits).p} tone="violet" />
           <VLine at={exponent} label={count(n)} tone="hi" />
         </Plot2D>
         <Box className="bp-pairs">

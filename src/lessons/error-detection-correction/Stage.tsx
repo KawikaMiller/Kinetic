@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { ByteGrid } from '../../components/ByteGrid';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -43,14 +43,6 @@ const STEP_MS = 1300;
 
 export function Stage() {
   const [scene, picker] = useScenePicker({ label: 'Scene', options: SCENES, initial: 'parity' });
-  const shownScene = useRef(scene);
-  // Each scene is its own component, so switching remounts the picker and drops focus to <body>.
-  // Put it back on the picker's chosen option (Phase 2: belongs in useScenePicker).
-  useEffect(() => {
-    if (shownScene.current === scene) return;
-    shownScene.current = scene;
-    if (document.activeElement === document.body) document.querySelector<HTMLElement>('.segmented[aria-label="Scene"] button.on')?.focus();
-  }, [scene]);
   if (scene === 'hamming') return <HammingScene picker={picker} />;
   if (scene === 'crc') return <CrcScene picker={picker} />;
   return <ParityScene picker={picker} />;

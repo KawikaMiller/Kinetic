@@ -69,13 +69,6 @@ export const pairs = (n: number) => (n * (n - 1)) / 2;
 export const MIN_BITS = 16;
 export const MAX_BITS = 128;
 
-/**
- * Chance of a repeat among n random b-bit IDs: 1 − e^(−n(n−1)/2d), d = 2^b. Written with
- * expm1 so tiny chances (10⁻²⁹ for UUIDs) don't round to 0, which core collisionProbability
- * does today for spaces this large (a Phase 2 request).
- */
-export const idCollision = (n: number, bits: number) => -Math.expm1((-n * (n - 1)) / (2 * 2 ** bits));
-
 /** IDs at which a repeat becomes a coin flip: √(2 ln 2 · d) ≈ 1.1774 √d. */
 export const halfPoint = (bits: number) => Math.sqrt(2 * Math.LN2 * 2 ** bits);
 
