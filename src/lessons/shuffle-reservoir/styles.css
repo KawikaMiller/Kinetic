@@ -1,0 +1,27 @@
+.sr-lab, .sr-res { gap: 12px; align-items: center; }
+.sr-lab .sr-strip, .sr-res .sr-strip { width: 100%; }
+.sr-res .section-title { align-self: stretch; display: block; }
+.sr-heat { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 100%; }
+.sr-heat .section-title { display: block; text-align: center; }
+.sr-grid { max-width: 100%; height: auto; }
+.sr-note { display: block; text-align: center; }
+.sr-res .plot2d { max-width: 100%; height: auto; }
+
+.sr-exact { gap: 14px; align-items: center; }
+.sr-table { width: 100%; max-width: 560px; }
+.sr-table td { position: relative; }
+.sr-bar { position: absolute; left: 0; top: 20%; bottom: 20%; background: color-mix(in srgb, var(--info) 22%, transparent); border-radius: 4px; }
+.sr-table td span:not(.sr-bar) { position: relative; }
+.sr-off { color: var(--bad); font-weight: 700; }
+.sr-fy { color: var(--ok); font-weight: 600; }
+.sr-proof { max-width: 560px; width: 100%; }
+.sr-proof p { margin: 6px 0; font: 500 13px var(--font); color: var(--text); }
+.sr-proof ul { margin: 0; padding-left: 18px; font: 500 12.5px var(--mono); color: var(--muted); }
+.sr-paths { max-width: 560px; width: 100%; font: 500 12.5px var(--mono); color: var(--muted); }
+.sr-paths summary { cursor: pointer; font: 600 13px var(--font); color: var(--text); }
+.sr-paths ol { columns: 2; margin: 8px 0 0; }
+.sr-table td { white-space: nowrap; }
+@media (max-width: 600px) {
+  .sr-paths ol { columns: 1; }
+  .sr-table { font-size: 12px; }
+}
