@@ -51,11 +51,9 @@ export function stackPicture(run: RunResult, k: number): StackPicture {
   const lowest = run.guard ? run.guard.from : -Infinity;
   const pointers: MemPointer[] = [];
   const inMap = (a: number) => a >= lowest && a < STACK_TOP + 16;
-  if (rsp === rbp) pointers.push({ addr: rsp, label: 'sp=bp', tone: 'muted' });
-  else {
-    pointers.push({ addr: rsp, label: 'rsp', tone: 'muted' });
-    if (inMap(rbp)) pointers.push({ addr: rbp, label: 'rbp', tone: 'muted' });
-  }
+  // When they're equal (just after mov rbp, rsp) the map stacks both tags on the one row.
+  pointers.push({ addr: rsp, label: 'rsp', tone: 'muted' });
+  if (inMap(rbp)) pointers.push({ addr: rbp, label: 'rbp', tone: 'muted' });
   const chain = live
     .filter((x) => x.role === 'saved-rbp' && x.points !== undefined && x.points >= rsp && x.points < STACK_TOP + 16 && x.points !== 0)
     .map((x) => ({ from: x.addr, to: x.points! }));
