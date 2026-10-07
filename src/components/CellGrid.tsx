@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Keyboard
 import type { Pt } from '../core/geometry';
 import { gridGeometry, gridKeyTarget, type Cell } from '../core/grid';
 import { paintImage } from './canvasImage';
-import { canvasFill, canvasInk, DEFAULT_TINT, textReadable, type CellSize, type GridCellSpec, type SizePreset } from './cellGridPaint';
+import { canvasFill, canvasInk, canvasStroke, cellFill, DEFAULT_TINT, textReadable, type CellSize, type GridCellSpec, type SizePreset } from './cellGridPaint';
 import { cellGridFrame, cellGridLayout, GRID_LABEL, type CellGridGeometry } from './cellGridLayout';
 import type { Tone } from '../core/tone';
 
@@ -142,7 +142,7 @@ function CellGridImpl({
           const c = i % cols;
           const spec = cell(r, c);
           const { x, y } = geo.at(r, c);
-          const fill = spec.fill ?? (spec.intensity !== undefined ? 'tint' : spec.tone ? 'tint' : undefined);
+          const fill = cellFill(spec);
           const isFocus = focus.r === r && focus.c === c;
           return (
             <g
@@ -255,6 +255,13 @@ function useCanvasCells(
         const { x, y } = geo.at(Math.floor(i / cols), i % cols);
         ctx.fillStyle = canvasFill(sp);
         ctx.fillRect(x - geo.x0, y - geo.y0, geo.cell, geo.cell);
+        const edge = canvasStroke(sp);
+        if (edge) {
+          // Inset by half the line width so the edge stays inside the cell (and inside the image).
+          ctx.strokeStyle = edge.color;
+          ctx.lineWidth = edge.width;
+          ctx.strokeRect(x - geo.x0 + edge.width / 2, y - geo.y0 + edge.width / 2, geo.cell - edge.width, geo.cell - edge.width);
+        }
         const text = font ? textOf(sp.text) : null;
         if (text === null) return;
         ctx.font = `${sp.fill === 'none' ? 500 : 600} ${font}px ${family}`;
