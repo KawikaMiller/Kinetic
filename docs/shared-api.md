@@ -1005,6 +1005,20 @@ longestMatch(dfa, input, from)    // { end, state, steps } | null: maximal munch
 ```
 - Draw the machines with `GraphView` state mode. Minimisation is deliberately left out (T3 chomsky-hierarchy). Tests compare the subset DFA with the NFA and with a JS RegExp on every string up to length 10.
 
+### `core/ipv4.ts` — subnetting-cidr, ethernet-arp, dhcp
+```ts
+parseIPv4(' 192.168.1.10 ')       // FieldParse<number>: { ok, value: 0xc0a8010a } or { ok: false, error } with the reason
+parsePrefix('24'); parseCidr('10.0.0.0/8'); parseCidr('10.0.0.1', 24)   // fallback prefix when there's no slash
+ipv4('192.168.1.1')               // a lesson-authored literal → number; throws RangeError on a typo (never learner input)
+ipToString(0xc0a8010a)            // '192.168.1.10'
+maskOf(24); wildcardOf(24); blockSize(24)              // 0xffffff00, 0xff, 256 (/0 handled: no `<< 32`)
+networkOf(a, 24); broadcastOf(a, 24); contains(net, 24, a)   // unsigned throughout
+IPV4_BITS; IPV4_MAX_INPUT         // 32; 40 (text longer than this is refused as far too long)
+```
+- Parsing is strict on purpose: exactly four parts of 0-255, no leading zeros (some tools read `010` as octal), no shorthand like `10.1`, and every refusal says why.
+- Tests compare masks, network, broadcast and membership with a no-bitwise reference at every prefix over thousands of seeded addresses, and round-trip text for every octet value. check-tokens flags a local `parseIPv4`/`ipToString` or `0xffffffff <<` in a lesson.
+- Block-level maths a lesson draws (host range, /31 and /32 semantics, splitting, summarising) stays in subnetting-cidr's model until a second lesson needs it.
+
 ### `core/vec.ts`, `core/fit.ts`, `core/fixtures/datasets.ts` — vectors-similarity, matrices-transformations, gradient-descent, linear-logistic-regression, supervised-learning, classification-metrics, decision-trees-ensembles, clustering-kmeans, embeddings, usability-laws, rasterization, bezier-interpolation
 ```ts
 dot(a, b); norm(a); cosine(a, b) /* NaN for a zero vector */; add; sub; scale(a, k); distance; normalize /* null for zero */
