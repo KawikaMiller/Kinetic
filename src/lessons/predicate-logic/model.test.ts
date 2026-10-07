@@ -138,3 +138,32 @@ describe('editing', () => {
     expect(resize(w, 0, 2)).toEqual({ people: 0, dishes: 2, likes: [] });
   });
 });
+
+describe('SQL comments', () => {
+  /** Build a formula from the logic written in each line's comment, outermost first. */
+  const fromComments = (lines: readonly string[]): Formula => {
+    const tokens = lines.flatMap((l) => {
+      const m = l.match(/--\s*([^:]+):/);
+      return m ? m[1].trim().split(/\s+/) : [];
+    });
+    const build = (ts: string[]): Formula => {
+      if (!ts.length) return atom;
+      const [t, ...rest] = ts;
+      if (t === 'likes') return atom;
+      if (t === '¬likes') return not(atom);
+      const neg = t.startsWith('¬');
+      const core = neg ? t.slice(1) : t;
+      const inner = exists(core.slice(1) as 'x' | 'y', build(rest));
+      return neg ? not(inner) : inner;
+    };
+    return build(tokens);
+  };
+
+  it('compose, line by line, into a formula equivalent to the one the panel names', async () => {
+    const { SQL } = await import('./presets');
+    for (const id of FORMULA_IDS) {
+      const f = fromComments(SQL[id]);
+      for (const w of SMALL) expect(evaluate(f, w), id).toBe(evaluate(FORMULAS[id], w));
+    }
+  });
+});
