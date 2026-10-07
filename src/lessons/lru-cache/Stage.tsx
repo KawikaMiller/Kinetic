@@ -1,11 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { pct } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, type LFrame } from './frames';
-import { HIT_MS, KEYS, MISS_MS, POLICIES, POLICY_NAMES, emojiOf, hitRatio, makeTraffic, simulate, type Phase, type Policy } from './sim';
+import { DB_MS, HIT_MS, KEYS, MISS_MS, POLICIES, POLICY_NAMES, emojiOf, hitRatio, makeTraffic, simulate, type Phase, type Policy } from './sim';
 import './styles.css';
 
 const TRAFFIC = 24;
@@ -17,6 +17,8 @@ const Y = { client: 52, cache: 206, db: 362 };
 const TOKEN_Y: Record<Phase, number> = { idle: Y.client, lookup: Y.cache, hit: Y.client, fetch: Y.db, insert: Y.cache };
 /** The code and compare panels sit beside the database, their tops just above its box. */
 const PANEL_TOP = Y.db - 44;
+/** Room for the wire column, the code panel's widest line and the compare panel side by side (see .lru-code). */
+const STAGE_MIN_WIDTH = 720;
 
 export function Stage() {
   const [policy, setPolicy] = useState<Policy>('lru');
@@ -53,7 +55,7 @@ export function Stage() {
   const ends = policy === 'lfu' ? ['most used', 'least used · evict next'] : policy === 'fifo' ? ['newest', 'oldest · evict next'] : ['most recent', 'least recent · evict next'];
 
   return (
-    <StageFrame minWidth={460}
+    <StageFrame minWidth={STAGE_MIN_WIDTH}
       player={player}
       height={470}
       stats={
@@ -106,6 +108,11 @@ export function Stage() {
               ))}
             </div>
           </div>
+          <Hint block>
+            Toy timings: a hit costs {HIT_MS}ms, a miss {HIT_MS}ms plus a {DB_MS}ms database trip. Traffic is {TRAFFIC} random
+            requests over {KEYS.length} keys, so the hit ratio changes from run to run. LFU breaks ties by recency. Only keys are
+            drawn; values travel with them.
+          </Hint>
         </Controls>
       }
     >

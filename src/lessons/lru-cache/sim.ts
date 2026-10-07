@@ -1,3 +1,5 @@
+import type { Rnd } from '../../core/random';
+
 export type Policy = 'lru' | 'fifo' | 'lfu';
 export const POLICIES: Policy[] = ['lru', 'fifo', 'lfu'];
 export const POLICY_NAMES: Record<Policy, string> = { lru: 'LRU', fifo: 'FIFO', lfu: 'LFU' };
@@ -23,6 +25,8 @@ export const emojiOf = (id: string) => KEYS.find((k) => k.id === id)?.emoji ?? i
 
 export const HIT_MS = 1;
 export const MISS_MS = 101;
+/** The database trip alone: what every request costs with no cache in front. */
+export const DB_MS = MISS_MS - HIT_MS;
 
 export interface Entry {
   key: string;
@@ -40,13 +44,13 @@ export function ordered(cache: Entry[], policy: Policy): Entry[] {
 }
 
 /** Zipf-ish traffic: skew 0 = uniform, skew 1 = a few very hot keys. */
-export function makeTraffic(n: number, skew: number): string[] {
+export function makeTraffic(n: number, skew: number, rnd: Rnd = Math.random): string[] {
   const s = skew * 2;
   const weights = KEYS.map((_, k) => 1 / Math.pow(k + 1, s));
   const total = weights.reduce((a, b) => a + b, 0);
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
-    let r = Math.random() * total;
+    let r = rnd() * total;
     let k = 0;
     while (r > weights[k] && k < KEYS.length - 1) r -= weights[k++];
     out.push(KEYS[k].id);
