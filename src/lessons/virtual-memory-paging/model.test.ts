@@ -150,7 +150,8 @@ describe('access', () => {
         return r.outcome;
       });
       expect(outcomes.slice(-WORKING_SET)).toEqual(Array(WORKING_SET).fill('fault'));
-      expect(usefulShare(m.hits, m.faults)).toBeLessThan(0.001);
+      expect(usefulShare(m)).toBeLessThan(0.001);
+      expect(m.major + m.minor).toBe(m.faults);
       expect(replay(accesses, policy)).toEqual(m);
     }
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { accessFrames, hex4, thrashFrames } from './frames';
 import lesson from './index';
-import { access, ADDRESS_PRESETS, BELADY_REFS, simulate, startMachine, usefulShare, type Policy } from './model';
+import { access, ADDRESS_PRESETS, BELADY_REFS, simulate, startMachine, usefulShare, type Access, type Policy } from './model';
 import { sceneGeometry } from './layout';
 
 const POLICIES: Policy[] = ['fifo', 'clock'];
@@ -45,9 +45,9 @@ describe('thrashFrames', () => {
       const frames = thrashFrames(policy);
       const last = frames.at(-1)!;
       const text = captionText(last.say);
-      expect(text).toContain(`${last.m.faults} faults`);
+      expect(text).toContain(`${last.m.faults} faults (${last.m.major} major, from disk; ${last.m.minor} minor)`);
       expect(text).toContain(`${last.m.hits} hit`);
-      const share = usefulShare(last.m.hits, last.m.faults);
+      const share = usefulShare(last.m);
       expect(share).toBeLessThan(0.01);
     });
   }
@@ -63,5 +63,44 @@ describe('quiz numbers', () => {
     const a = access(startMachine(), { proc: 'A', vaddr: 0xf800, write: true }, 'fifo');
     const b = access(a.m, { proc: 'B', vaddr: 0xf800, write: true }, 'fifo');
     expect(a.paddr).not.toBe(b.paddr);
+  });
+});
+
+describe('the victim caption follows where a clean page can be restored from', () => {
+  it('zero-fill pages are "never written", file or swap pages have a copy on disk; both branches occur', () => {
+    const reads: Access[] = [];
+    for (const proc of ['A', 'B'] as const) for (const vpn of [4, 5, 6, 13, 14, 1, 3, 15]) reads.push({ proc, vaddr: vpn * 0x1000, write: false });
+    let m = startMachine();
+    const seen = { zero: 0, disk: 0 };
+    for (const policy of POLICIES) {
+      m = startMachine();
+      for (const a of [...reads, ...reads]) {
+        const frames = accessFrames(m, a, policy);
+        const r = access(m, a, policy);
+        r.steps.forEach((s, i) => {
+          if (s.kind !== 'victim') return;
+          const text = captionText(frames[i].say);
+          const dirty = s.evicted!.some((o) => m.tables[o.proc][o.vpn].dirty);
+          const zero = s.evicted!.every((o) => m.tables[o.proc][o.vpn].backing === 'zero');
+          expect(text.includes('never written')).toBe(!dirty && zero);
+          expect(text.includes('copy on disk')).toBe(!dirty && !zero);
+          if (!dirty) seen[zero ? 'zero' : 'disk']++;
+        });
+        m = r.m;
+      }
+    }
+    expect(seen.zero).toBeGreaterThan(0);
+    expect(seen.disk).toBeGreaterThan(0);
+  });
+  it('major faults are exactly the loads from swap or the program file', () => {
+    let m = startMachine();
+    for (const p of ADDRESS_PRESETS) {
+      const r = access(m, p.access, 'fifo');
+      const load = r.steps.find((s) => s.kind === 'load');
+      const shared = r.steps.some((s) => s.kind === 'shared');
+      expect(r.m.major - m.major).toBe(load && load.from !== 'zero' ? 1 : 0);
+      expect(r.m.minor - m.minor).toBe((load && load.from === 'zero') || shared ? 1 : 0);
+      m = r.m;
+    }
   });
 });

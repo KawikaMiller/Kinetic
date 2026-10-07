@@ -57,11 +57,11 @@ export function Stage() {
       height={520}
       stats={
         <Stats>
-          <Stat label="Page faults" value={m.faults} color="var(--orange)" />
+          <Stat label="Page faults" value={m.faults} color="var(--orange)" sub={`${m.major} major (disk) · ${m.minor} minor`} />
           <Stat label="Swap writes" value={m.swapWrites} sub={`${m.swapReads} swap reads`} />
           {run.kind === 'thrash' && (
-            <Stat label="Useful work" value={pct(usefulShare(m.hits, m.faults), 2)} sub="illustrative costs">
-              <Bar value={usefulShare(m.hits, m.faults)} max={1} tone="bad" height={6} />
+            <Stat label="Useful work" value={pct(usefulShare(m), 2)} sub="illustrative costs">
+              <Bar value={usefulShare(m)} max={1} tone="bad" height={6} />
             </Stat>
           )}
         </Stats>
@@ -113,7 +113,7 @@ export function Stage() {
           <Scene f={f} g={g} />
         </WideRegion>
         <Hint block>
-          Toy sizes: a real x86-64 process has 2⁴⁸ bytes of virtual address space, 4 KiB pages and a 4-level page table. Disk times are illustrative.
+          Toy sizes: a real x86-64 process gets up to 128 TiB (2⁴⁷ bytes) of user address space, 4 KiB pages and a 4-level (sometimes 5-level) page table. Disk times are illustrative. Real kernels usually free frames ahead of time in the background; here eviction happens inside the fault so you can see it.
           {history.length > 1 && ` RAM carries over between accesses (${history.length} so far); Reset RAM starts clean.`}
         </Hint>
         <TranslatePanel f={f} proc={proc} />
