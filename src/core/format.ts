@@ -32,6 +32,9 @@ const HUMAN_UNITS: [limit: number, size: number, one: string, many: string][] = 
   [Infinity, YEAR, 'year', 'years'],
 ];
 
+/** No-break space: '5.4 × 10²⁹²' never wraps inside the number. */
+const NBSP = '\u00a0';
+
 /** From this many years up, humanDuration writes the years as a power of ten. */
 const SCIENTIFIC_YEARS = 1e6;
 
@@ -43,7 +46,7 @@ function scientific(v: number): string {
     m /= 10;
     k += 1;
   }
-  return `${String(m)} × ${power(k, 10)}`;
+  return `${String(m)}${NBSP}×${NBSP}${power(k, 10)}`;
 }
 
 /**
