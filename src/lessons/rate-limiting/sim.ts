@@ -206,7 +206,7 @@ export function advance(w: World, dt: number): AttackResult | null {
   w.now += dt;
   const now = w.now;
 
-  // background traffic (bursty-ish Poisson) plus anything scheduled
+  // background traffic (arrivals jittered around the rate, not a true Poisson process) plus anything scheduled
   if (now >= w.quietUntil) w.acc += w.rate * dt * (BURSTINESS.min + Math.random() * BURSTINESS.spread);
   while (w.acc >= 1) {
     w.acc -= 1;
