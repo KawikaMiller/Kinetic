@@ -67,7 +67,7 @@ export function ChunkScene({ picker }: { picker: ReactNode }) {
         <Hint block>
           A cut goes after any {CHUNK_WINDOW}-character window whose rolling hash ≡ 0 (mod {String(CHUNK_DIVISOR)}), so where cuts fall depends
           only on nearby content. Deduplicating backup tools such as restic and borg cut files this way, with bigger windows and chunks
-          averaging kilobytes; this short paragraph uses tiny ones so several cuts fit. Computed live.
+          averaging around a megabyte or two; this short paragraph uses tiny ones so several cuts fit. Computed live.
         </Hint>
       </div>
     </StageFrame>

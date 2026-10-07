@@ -8,8 +8,8 @@ import { minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { actionFrames, type Action } from './frames';
 import {
-  buildTrie, depthOf, leafCount, parseList, parseWord, PRESETS, radixShape, ROOT_ID, scanCost, SLOTS_PER_NODE, subtree, totalChars, trieShape,
-  trieSteps,
+  buildTrie, depthOf, leafCount, parseList, parseWord, PRESETS, radixNodeFor, radixShape, ROOT_ID, scanCost, SLOTS_PER_NODE, subtree, totalChars, trieShape,
+  trieLookups,
 } from './model';
 import './styles.css';
 
@@ -81,12 +81,17 @@ export function Stage() {
   const height = TOP + depthOf(shape) * LEVEL_GAP + 2 * NODE_R + 16;
 
   const treeShape: TreeShape<string> = { root: ROOT_ID, children: (id) => shape.get(id)?.children ?? [] };
-  const pathSet = new Set(f.path);
-  const foundSet = new Set(f.found === null ? [] : subtree(trieShape(root), f.found));
+  // In the compressed view a trie position can fall mid-edge: mark the radix node whose edge holds it.
+  const at = (id: string) => (compress ? radixNodeFor(shape, id) ?? id : id);
+  const hot = f.hot === null ? null : at(f.hot);
+  const created = f.created.map(at);
+  const pruned = f.pruned.map(at);
+  const pathSet = new Set(f.path.map(at));
+  const foundSet = new Set(f.found === null ? [] : subtree(shape, at(f.found)));
   const mark = (id: string): TreeNodeMark | null => {
-    if (f.pruned.includes(id)) return { tone: 'bad', fill: 'solid' };
-    if (id === f.hot) return { tone: 'hi', fill: 'solid' };
-    if (f.created.includes(id)) return { tone: 'info', fill: 'solid' };
+    if (pruned.includes(id)) return { tone: 'bad', fill: 'solid' };
+    if (id === hot) return { tone: 'hi', fill: 'solid' };
+    if (created.includes(id)) return { tone: 'info', fill: 'solid' };
     if (pathSet.has(id)) return { tone: 'violet', fill: 'tint', tint: 28 };
     if (foundSet.has(id)) return { tone: 'info', fill: 'tint', tint: 24 };
     return null;
@@ -95,7 +100,7 @@ export function Stage() {
   const opacity = (id: string) => (searching && id !== ROOT_ID && !foundSet.has(id) && !pathSet.has(id) ? DIM_OPACITY : 1);
 
   const lastPrefix = action.kind === 'search' ? action.prefix : null;
-  const cost = lastPrefix === null ? null : { trie: trieSteps(buildTrie(after), lastPrefix), scan: scanCost(after, lastPrefix) };
+  const cost = lastPrefix === null ? null : { trie: trieLookups(buildTrie(after), lastPrefix), scan: scanCost(after, lastPrefix) };
   const chars = totalChars(f.words);
 
   return (
@@ -186,7 +191,7 @@ export function Stage() {
             }}
           />
         </WideRegion>
-        {compress && <Hint block>Compressed view: single-child chains are merged into one edge. Captions still count the plain trie's steps.</Hint>}
+        {compress && <Hint block>Compressed view: single-child chains are merged into one edge. Captions still count the plain trie's steps; a letter that falls inside a merged edge lights that edge's node.</Hint>}
         <div className="tr-panels">
           <Tray stack label={lastPrefix === null ? 'Completions' : `Completions of “${lastPrefix}”`} empty={lastPrefix === null ? 'type a prefix' : 'none'} className="tr-completions">
             {f.completions?.length ? f.completions.map((w) => <span key={w} className="chip tone-info">{w}</span>) : null}
@@ -195,7 +200,7 @@ export function Stage() {
             <SectionTitle>Cost of one prefix lookup</SectionTitle>
             {cost ? (
               <ul className="tr-cost-list">
-                <li><span>Trie: edges followed</span><b>{cost.trie}</b></li>
+                <li><span>Trie: child lookups</span><b>{cost.trie}</b></li>
                 <li><span>List: startsWith calls</span><b>{cost.scan.calls}</b></li>
                 <li><span>List: character checks</span><b>{cost.scan.chars}</b></li>
               </ul>

@@ -115,7 +115,7 @@ export function trieShape(root: TrieNode): Shape {
 
 /**
  * Radix tree: every non-root node with one child and no end mark is merged into its child, so a
- * chain like c-o-n-t-i-n-u-e becomes one edge "ntinue". Node ids stay the full prefix.
+ * chain like t-i-n-u-e under "con" becomes one edge "tinue". Node ids stay the full prefix.
  */
 export function radixShape(root: TrieNode): Shape {
   const shape: Shape = new Map();
@@ -164,6 +164,27 @@ export function trieSteps(root: TrieNode, prefix: string): number {
     cur = next;
   }
   return steps;
+}
+
+/** Child lookups a prefix lookup makes: one per edge followed, plus the one that fails if the path breaks. */
+export function trieLookups(root: TrieNode, prefix: string): number {
+  const followed = trieSteps(root, prefix);
+  return followed < [...prefix].length ? followed + 1 : followed;
+}
+
+/**
+ * The radix node that holds trie position `prefix`: the node itself, or the node whose merged
+ * edge passes through it. Null when no word has that prefix.
+ */
+export function radixNodeFor(shape: Shape, prefix: string): string | null {
+  let id = ROOT_ID;
+  for (;;) {
+    if (id === prefix) return id;
+    const next = shape.get(id)?.children.find((c) => c.startsWith(prefix) || prefix.startsWith(c));
+    if (next === undefined) return null;
+    if (next.startsWith(prefix)) return next;
+    id = next;
+  }
 }
 
 /** Scanning the list with startsWith: one call per word, and the characters each call compares. */

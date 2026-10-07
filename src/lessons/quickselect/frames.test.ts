@@ -29,19 +29,40 @@ describe('selectFrames', () => {
     }
   });
 
-  it('each comparison caption names the value that was compared, and the cell where it now sits', () => {
-    const fr = selectFrames([...PRESETS[0].values], 5, 'last', DEFAULT_SEED, 'median');
+  it('the violet cell holds the value each comparison caption names, for every preset × rule × k; pivot frames mark none', () => {
     let checked = 0;
-    for (const f of fr) {
-      const m = /^(\d+) (≤|>) (\d+):/.exec(text(f));
-      if (!m || f.j === null || f.i === null) continue;
-      checked++;
-      const shownAt = m[2] === '≤' ? f.i - 1 : f.j;
-      expect(f.arr[shownAt]).toBe(Number(m[1]));
-      expect(f.arr[f.pivotAt!]).toBe(Number(m[3]));
+    for (const p of PRESETS) for (const rule of RULES) for (const c of K_CHOICES) {
+      const fr = selectFrames([...p.values], kFor(c.value, p.values.length), rule, DEFAULT_SEED, c.label);
+      for (const f of fr) {
+        const say = text(f);
+        if (say.startsWith('Round')) {
+          expect(f.compared).toBeNull();
+          expect(f.j).toBeNull();
+        }
+        const m = /^(\d+) (≤|>) (\d+):/.exec(say);
+        if (!m) {
+          expect(f.compared).toBeNull();
+          continue;
+        }
+        checked++;
+        expect(f.compared).not.toBeNull();
+        expect(f.arr[f.compared!]).toBe(Number(m[1]));
+        expect(f.arr[f.pivotAt!]).toBe(Number(m[3]));
+      }
     }
-    expect(checked).toBe(fr.filter((f) => f.j !== null && f.say !== undefined && /^\d/.test(text(f))).length);
-    expect(checked).toBeGreaterThan(5);
+    expect(checked).toBeGreaterThan(100);
+  });
+
+  it('the Shuffled repro: on "3 ≤ 44: swap…" the violet cell is the 3', () => {
+    const fr = selectFrames([...PRESETS[0].values], 5, 'last', DEFAULT_SEED, 'median');
+    const f = fr.find((x) => text(x).startsWith('3 ≤ 44: swap'))!;
+    expect(f.arr[f.compared!]).toBe(3);
+  });
+
+  it('a one-value tie gives no recursion explanation', () => {
+    const say = text(selectFrames([42], 0, 'last', DEFAULT_SEED, 'median').at(-1)!);
+    expect(say).toContain('A dead heat: 0 comparisons each.');
+    expect(say).not.toContain('Every extra range');
   });
 
   it('dims exactly what a "never touched again" caption threw away', () => {

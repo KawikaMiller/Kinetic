@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Median filters in image processing, which need many small medians fast',
     ],
     why: 'Sorting to find one order statistic does far more work than you need, and percentiles show up everywhere in monitoring and data work. The pivot lesson matters too: the same bad pivot rule that makes `sorting`\'s quick sort quadratic on sorted input does it here, and random or median-of-three pivots are the standard fix.',
-    watch: 'Cells are the array, with indices above. The box with lo and hi labels is the live range, its idle cells tinted yellow, and the solid yellow cell is the pivot. The blue i marker is where the next small value will go; the violet j marker and violet cell are the value being compared. Faded grey cells have been thrown away and are never touched again. The grey k marker is the index being searched for (markers on the same cell share one label, like i·k), and the green cell is the answer. In the race panel, the yellow bar is quickselect\'s comparisons so far and the violet bar is a full quick sort\'s total with the same pivot rule.',
+    watch: 'Cells are the array, with indices above. The box with lo and hi labels is the live range, its idle cells tinted yellow, and the solid yellow cell is the pivot. The blue i marker is where the next small value will go; the violet j marker is the scan position, and the violet cell is the value just compared, shown where it sits after any swap. Faded grey cells have been thrown away and are never touched again. The grey k marker is the index being searched for (markers on the same cell share one label, like i·k), and the green cell is the answer. In the race panel, the yellow bar is quickselect\'s comparisons so far and the violet bar is a full quick sort\'s total with the same pivot rule.',
   },
   tryThis: [
     'Pick Sorted with Pivot set to Last and play: each round throws away just one value, and the race panel shows the formula.',
@@ -25,7 +25,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'Partition, then keep only the side holding index k: with random pivots that is expected O(n) comparisons, under 4n for the median.',
-    'A bad pivot rule on unlucky input, like the last element on sorted data, degrades to about n²/2 comparisons.',
+    'A bad pivot rule on unlucky input, like the last element on sorted data, degrades to Θ(n²): up to n(n − 1)/2 comparisons when k is the smallest.',
     'When it finishes, everything left of k is no bigger than the answer: the k smallest values come free, unordered.',
     'Median-of-medians picks a pivot guaranteed near the middle, making the worst case O(n), but its constant factor keeps it rare in practice.',
   ],

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt, type Rnd } from '../../core/random';
 import {
-  buildTrie, completions, countNodes, find, insert, parseList, parseWord, PRESETS, radixShape, remove, ROOT_ID, scanCost, subtree, trieShape,
-  trieSteps,
+  buildTrie, completions, countNodes, find, insert, parseList, parseWord, PRESETS, radixNodeFor, radixShape, remove, ROOT_ID, scanCost, subtree,
+  trieLookups, trieShape, trieSteps,
 } from './model';
 
 const reference = (words: readonly string[], p: string) => words.filter((w) => w.startsWith(p)).sort();
@@ -157,5 +157,37 @@ describe('input', () => {
     expect(parseWord(' cat ')).toEqual({ ok: true, word: 'cat' });
     expect(parseWord('').ok).toBe(false);
     expect(parseWord('two words').ok).toBe(false);
+  });
+});
+
+describe('radixNodeFor', () => {
+  it('finds the radix node holding every trie prefix: the node itself, or the one whose edge passes through it', () => {
+    const rnd = mulberry32(65);
+    for (const words of [...PRESETS.map((p) => [...p.words]), ...Array.from({ length: 200 }, () => seededWords(rnd))]) {
+      const root = buildTrie(words);
+      const r = radixShape(root);
+      for (const id of trieShape(root).keys()) {
+        const holder = radixNodeFor(r, id);
+        expect(holder, id).not.toBeNull();
+        expect(holder!.startsWith(id)).toBe(true);
+        // It is the shallowest such node: its parent's id is shorter than the prefix.
+        const parent = [...r.values()].find((n) => n.children.includes(holder!));
+        if (parent) expect(parent.id.length).toBeLessThan(id.length);
+        if (r.has(id)) expect(holder).toBe(id);
+      }
+      expect(radixNodeFor(r, 'zzz')).toBeNull();
+    }
+  });
+  it('maps "conti" to the continue node', () => {
+    expect(radixNodeFor(radixShape(buildTrie(PRESETS[0].words)), 'conti')).toBe('continue');
+  });
+});
+
+describe('trieLookups', () => {
+  it('counts the failed lookup on a miss', () => {
+    const root = buildTrie(PRESETS[0].words);
+    expect(trieLookups(root, 'con')).toBe(3);
+    expect(trieLookups(root, 'cx')).toBe(2);
+    expect(trieLookups(root, '')).toBe(0);
   });
 });

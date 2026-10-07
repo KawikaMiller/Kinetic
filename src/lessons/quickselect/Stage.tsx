@@ -56,7 +56,7 @@ export function Stage() {
     if (f.found === i) return 'done';
     if (i < f.lo || i > f.hi) return 'dim';
     if (i === f.pivotAt) return 'active';
-    if (i === f.j && f.pivotAt !== null && f.j !== f.pivotAt) return 'violet';
+    if (i === f.compared) return 'violet';
     return 'idle';
   };
   const pointers = markers(f.i, f.j !== f.pivotAt ? f.j : null, k);
@@ -82,7 +82,7 @@ export function Stage() {
           items={[
             { color: 'var(--hi)', label: 'pivot / live range' },
             { color: 'var(--info)', label: 'i: next small slot', shape: 'dot' },
-            { color: 'var(--violet)', label: 'j: compared now' },
+            { color: 'var(--violet)', label: 'value just compared (j: scan position)' },
             { color: 'var(--dim)', label: 'thrown away' },
             { color: 'var(--ok)', label: 'answer' },
           ]}
