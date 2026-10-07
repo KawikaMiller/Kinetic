@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
+import { logCheckpoints, runningStats } from '../../core/stats';
 import { captionText as text } from '../../core/testing/captions';
 import { drawCaption, exactLines, retryCaption, variableCaption } from './frames';
 import lesson from './index';
 import {
-  DEFAULT_TABLE, canEqual, checkpoints, draw, drawsFor, exactFractions, exactMoments, expectedAttempts, geometricCap, modes,
-  pairSummary, parseTable, pmfOf, runningStats, type Params, type VarId,
+  DEFAULT_TABLE, canEqual, draw, drawsFor, exactFractions, exactMoments, expectedAttempts, geometricCap, modes,
+  pairSummary, parseTable, pmfOf, type Params, type VarId,
 } from './model';
 
 const base = (patch: Partial<Params> = {}): Params => ({
@@ -117,7 +118,7 @@ describe('sampling', () => {
       expect(p.mean).toBeCloseTo(m, 10);
       expect(p.sd).toBeCloseTo(Math.sqrt(head.reduce((s, x) => s + (x - m) ** 2, 0) / p.n), 9);
     }
-    expect(checkpoints(3)).toEqual([1, 2, 3]);
+    expect(logCheckpoints(3)).toEqual([1, 2, 3]);
   });
 });
 

@@ -102,6 +102,53 @@ export function runningMean(xs: readonly number[]): number[] {
   return xs.map((x, i) => (sum += x) / (i + 1));
 }
 
+/** Below this many samples, logCheckpoints keeps every count. */
+const DENSE_UNTIL = 10;
+
+/**
+ * Sample counts worth plotting on a convergence chart: every count to 10, then about
+ * `perDecade` per decade (10^(1 + e/perDecade), rounded, no repeats), then n itself.
+ * Ascending; empty for n = 0. probability-basics, expected-value.
+ */
+export function logCheckpoints(n: number, perDecade = 40): number[] {
+  const out: number[] = [];
+  for (let k = 1; k <= Math.min(n, DENSE_UNTIL); k++) out.push(k);
+  for (let e = 1; ; e++) {
+    const k = Math.round(DENSE_UNTIL ** (1 + e / perDecade));
+    if (k > n) break;
+    if (k > out[out.length - 1]) out.push(k);
+  }
+  if (n > 0 && out[out.length - 1] !== n) out.push(n);
+  return out;
+}
+
+export interface RunningPoint {
+  /** How many values so far. */
+  n: number;
+  mean: number;
+  /** Population SD of the first n values. */
+  sd: number;
+}
+
+/**
+ * The running mean and population SD of xs (Welford's update, stable for long runs), reported at
+ * each count in `at` (default: logCheckpoints of the length).
+ */
+export function runningStats(xs: readonly number[], at: readonly number[] = logCheckpoints(xs.length)): RunningPoint[] {
+  const marks = new Set(at);
+  const out: RunningPoint[] = [];
+  let mean = 0;
+  let m2 = 0;
+  xs.forEach((x, i) => {
+    const n = i + 1;
+    const d = x - mean;
+    mean += d / n;
+    m2 += d * (x - mean);
+    if (marks.has(n)) out.push({ n, mean, sd: Math.sqrt(m2 / n) });
+  });
+  return out;
+}
+
 /** A binary classifier's four outcome counts. */
 export interface Confusion {
   tp: number;

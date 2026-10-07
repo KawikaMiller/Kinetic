@@ -819,6 +819,9 @@ binomialPmf(n, k, p)
 collisionProbability(23, 365)        // { p: 0.507…, method: 'exact' }: exact product up to COLLISION_EXACT_LIMIT, then 1 − e^(−n(n−1)/2N)
 collisionProbability(2, 2 ** 128).p  // 2.9e-39, not 0: both forms run in log space (log1p / expm1), so huge ID spaces keep tiny chances
 runningMean(xs)                      // the convergence curve for simulated frequencies
+logCheckpoints(n, perDecade = 40)    // counts worth a point on a convergence chart: 1..10, then ~perDecade per decade, then n
+runningStats(xs, at = logCheckpoints(xs.length))   // [{ n, mean, sd }] at those counts: Welford's update, population SD,
+                                     // stable on a huge offset (probability-basics, expected-value)
 ```
 
 ### `core/disjointSet.ts` — union-find, minimum-spanning-trees

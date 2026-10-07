@@ -3,6 +3,7 @@
 // failures, and a flaky test suite.
 import { power } from '../../core/format';
 import { mulberry32, randInt, type Rnd } from '../../core/random';
+import { logCheckpoints } from '../../core/stats';
 
 // ── Sample space ─────────────────────────────────────────────────────
 
@@ -103,24 +104,9 @@ export function rollsFor(seed: number, dice: Dice, count: number): number[] {
   return roll(mulberry32(seed), dice, count);
 }
 
-const PER_DECADE = 40;
-
-/** Roll counts where the convergence line gets a point: every roll to 10, then ~40 per decade. */
-export function checkpoints(n: number): number[] {
-  const out: number[] = [];
-  for (let k = 1; k <= Math.min(n, 10); k++) out.push(k);
-  for (let e = 1; ; e++) {
-    const k = Math.round(10 ** (1 + e / PER_DECADE));
-    if (k > n) break;
-    if (k > out[out.length - 1]) out.push(k);
-  }
-  if (n > 0 && out[out.length - 1] !== n) out.push(n);
-  return out;
-}
-
 /** The event's running frequency at each checkpoint: [rolls, frequency]. */
 export function convergence(rolls: readonly number[], event: ReadonlySet<number>): [number, number][] {
-  const marks = new Set(checkpoints(rolls.length));
+  const marks = new Set(logCheckpoints(rolls.length));
   const out: [number, number][] = [];
   let hits = 0;
   rolls.forEach((o, i) => {
