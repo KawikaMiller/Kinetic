@@ -1,0 +1,29 @@
+.pa { gap: 12px; }
+.pa-top { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.pa-code { flex: 1 1 440px; min-width: 0; }
+.pa-code code { font-size: 12px; }
+.pa-stack { flex: 0 1 220px; min-width: 200px; }
+.pa-tokens { display: flex; flex-direction: column; gap: 6px; }
+.pa-bottom { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.pa-astbox { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pa-side { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.pa-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pa-error { color: var(--bad); }
+.pa-ast, .pa-pt { display: block; width: 100%; height: auto; }
+.pa-ast .tree-node circle { stroke-width: 2.5; transition: fill 0.25s, stroke 0.25s; }
+.pa-ast .tree-node.pa-op circle { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 18%, var(--cell)); }
+.pa-ast .tree-node.pa-num circle { stroke: var(--info); fill: color-mix(in srgb, var(--info) 18%, var(--cell)); }
+.pa-ast .tree-node.is-fresh circle { fill: var(--ok); stroke: var(--ok); }
+.pa-ast .tree-node.is-fresh text { fill: var(--on-ok); }
+.pa-ast .tree-node.is-hot circle { fill: var(--hi); stroke: var(--hi); }
+.pa-ast .tree-node.is-hot text { fill: var(--on-hi); }
+.pa-badge rect { fill: var(--bg); stroke: var(--muted); stroke-width: 1.2; }
+.pa-badge text { font: 700 11px var(--mono); fill: var(--text); }
+.pa-pt .tree-node rect { fill: var(--cell); stroke: var(--line-2); stroke-width: 2; }
+.pa-pt .tree-node text { font-size: 12px; }
+.pa-pt .tree-node.pa-op rect { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 18%, var(--cell)); }
+.pa-pt .tree-node.pa-num rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 18%, var(--cell)); }
+.pa-pt .tree-node.is-dropped rect { stroke: var(--dim); stroke-dasharray: 4 3; fill: none; }
+.pa-pt .tree-node.is-dropped text { fill: var(--muted); }
+.pa-trees { display: flex; flex-flow: row wrap; gap: 16px; }
+.pa-treecol { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
