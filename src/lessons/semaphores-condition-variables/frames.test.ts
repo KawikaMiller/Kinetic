@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { bufferFrames, bugScene, cpuShares } from './frames';
-import type { Config, Mode } from './model';
-import { WINDOW, laneBars } from './view';
+import { firstBadSeed, simulate, type Config, type Mode } from './model';
+import { WINDOW, badSlot, cpuWindow, laneBars } from './view';
 
 const MODES: Mode[] = ['busy', 'semaphore', 'monitor'];
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -91,5 +91,58 @@ describe('timeline bars', () => {
         }
       }
     }
+  });
+});
+
+describe('try-this outcomes, at the settings each one names (stage defaults otherwise: cap 4, seed 1)', () => {
+  const DEFAULTS: Config = { variant: 'monitor', capacity: 4, producers: 1, consumers: 2, itemsEach: 6, produceTicks: 2, consumeTicks: 4, ifBug: false };
+
+  it('#1 Monitor, 3 producers, 1 consumer, produce 0, consume 12: producers sleep on notFull and the CPU idles, on every seed', () => {
+    const c: Config = { ...DEFAULTS, producers: 3, consumers: 1, produceTicks: 0, consumeTicks: 12 };
+    for (let seed = 0; seed < 200; seed++) {
+      const worlds = bufferFrames(c, seed);
+      expect(worlds.some((w) => w.count === c.capacity && (w.queues.notFull ?? []).length > 0)).toBe(true);
+      expect(worlds.at(-1)!.cpu).toContain('idle');
+    }
+  });
+
+  it('#2 Busy-wait, 1 producer, produce 12, consume 0: only consumers spin, and the meter goes red at seed 1 for any consumer count', () => {
+    for (const producers of [1])
+      for (const consumers of [1, 2, 3]) {
+        const c: Config = { ...DEFAULTS, variant: 'busy', producers, consumers, produceTicks: 12, consumeTicks: 0 };
+        const frames = bufferFrames(c, 1);
+        expect(frames.some((w) => cpuWindow(w.cpu).spin > 0.5)).toBe(true);
+        for (const w of frames) if (w.cpu.at(-1) === 'spin' && w.active) expect(w.active.startsWith('C')).toBe(true);
+      }
+  });
+
+  it('#3 if (bug) with 2 consumers: "Find a seed where it breaks" finds a garbage read from the default seed', () => {
+    const c: Config = { ...DEFAULTS, ifBug: true };
+    const seed = firstBadSeed(c, 2);
+    expect(seed).not.toBeNull();
+    expect(simulate(c, seed!).at(-1)!.note).toMatchObject({ kind: 'violation', what: 'garbage' });
+  });
+});
+
+describe('the red slot', () => {
+  it('is only the slot the broken step hit (review repro: if-bug, 1P/2C, cap 4, produce 2 / consume 4, seed 3)', () => {
+    const c: Config = { variant: 'monitor', capacity: 4, producers: 1, consumers: 2, itemsEach: 6, produceTicks: 2, consumeTicks: 4, ifBug: true };
+    const last = bufferFrames(c, 3).at(-1)!;
+    expect(last.note).toMatchObject({ kind: 'violation', what: 'garbage' });
+    expect(badSlot(last, c.capacity)).toBe(last.head);
+    for (const w of bufferFrames(c, 3)) if (w.note.kind !== 'violation' && !(w.note.kind === 'take' && w.note.garbage)) expect(badSlot(w, 4)).toBeNull();
+  });
+
+  it('marks the written slot for an overflow', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const c: Config = { variant: 'monitor', capacity: 1, producers: 2, consumers: 1, itemsEach: 2, produceTicks: 1, consumeTicks: 1, ifBug: true };
+      const frames = bufferFrames(c, seed);
+      const i = frames.findIndex((w) => w.note.kind === 'put' && w.note.overflow);
+      if (i < 0) continue;
+      const put = frames[i].note;
+      if (put.kind === 'put') expect(badSlot(frames[i], 1)).toBe(put.slot);
+      return;
+    }
+    throw new Error('no overflow found in 200 seeds');
   });
 });

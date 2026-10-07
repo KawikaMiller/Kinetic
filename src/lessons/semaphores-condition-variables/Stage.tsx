@@ -12,7 +12,7 @@ import { pct, plural } from '../../core/format';
 import { usePlayer, type Player } from '../../core/usePlayer';
 import { bufferFrames, bugScene, type ScFrame } from './frames';
 import { firstBadSeed, programs, type Config, type Mode, type Thread } from './model';
-import { SHOWN_TONE, WINDOW, cpuWindow, laneBars, shownStatus } from './view';
+import { SHOWN_TONE, WINDOW, badSlot, cpuWindow, laneBars, shownStatus } from './view';
 import './styles.css';
 
 const STEP_MS = 500;
@@ -137,13 +137,13 @@ function Primitives({ f, c }: { f: ScFrame; c: Config }) {
 }
 
 function Buffer({ f, c }: { f: ScFrame; c: Config }) {
-  const garbage = f.note.kind === 'violation' || (f.note.kind === 'take' && f.note.garbage) || (f.note.kind === 'put' && f.note.overflow);
+  const bad = badSlot(f, c.capacity);
   return (
     <div className="scv-buffer">
       <SectionTitle hint={`count ${Math.max(0, f.count)} of ${c.capacity}`}>Buffer</SectionTitle>
       <ArrayStrip
         values={f.slots.map((s) => s ?? '')}
-        cellState={(i) => (garbage && (i === f.head || i === (f.tail - 1 + c.capacity) % c.capacity) ? 'bad' : f.slots[i] ? 'info' : 'idle')}
+        cellState={(i) => (i === bad ? 'bad' : f.slots[i] ? 'info' : 'idle')}
         pointers={
           f.head === f.tail
             ? [{ i: f.head, label: 'head = tail', tone: 'violet', id: 'head' }]
@@ -181,18 +181,21 @@ function Timeline({ frames, player }: { frames: ScFrame[]; player: Player<ScFram
   );
 }
 
-const LEGEND = (
-  <Legend
-    items={[
-      { color: 'var(--hi)', label: 'running', shape: 'square' },
-      { color: 'var(--info)', label: 'ready / woken', shape: 'square' },
-      { color: 'var(--dim)', label: 'asleep or blocked', shape: 'square' },
-      { color: 'var(--muted)', label: 'off the CPU (I/O)', shape: 'square' },
-      { color: 'var(--violet)', label: 'semaphore token', shape: 'dot' },
-      { color: 'var(--bad)', label: 'garbage / stuck', shape: 'square' },
-    ]}
-  />
-);
+/** The colour key; semaphore tokens only exist in the semaphore mode. */
+function legend(c: Config) {
+  return (
+    <Legend
+      items={[
+        { color: 'var(--hi)', label: 'running', shape: 'square' },
+        { color: 'var(--info)', label: 'ready / woken', shape: 'square' },
+        { color: 'var(--dim)', label: 'asleep or blocked', shape: 'square' },
+        { color: 'var(--muted)', label: 'off the CPU (I/O)', shape: 'square' },
+        ...(c.variant === 'semaphore' ? [{ color: 'var(--violet)', label: 'semaphore token', shape: 'dot' as const }] : []),
+        { color: 'var(--bad)', label: 'slot of a garbage read / overflow', shape: 'square' },
+      ]}
+    />
+  );
+}
 
 function CpuStat({ f }: { f: ScFrame }) {
   const { busy, spin } = cpuWindow(f.cpu);
@@ -215,10 +218,12 @@ function BufferScene({ picker }: { picker: ReactNode }) {
   const [seed, setSeed] = useState(1);
   const [search, setSearch] = useState<string | null>(null);
 
-  const config: Config = { variant: mode, capacity, producers, consumers, itemsEach: ITEMS_EACH, produceTicks, consumeTicks, ifBug: mode === 'monitor' && ifBug };
-  // Memoised on the settings' text, since `config` is a fresh object every render.
-  const key = JSON.stringify(config);
-  const frames = useMemo(() => bufferFrames(JSON.parse(key) as Config, seed), [key, seed]);
+  const bug = mode === 'monitor' && ifBug;
+  const config: Config = useMemo(
+    () => ({ variant: mode, capacity, producers, consumers, itemsEach: ITEMS_EACH, produceTicks, consumeTicks, ifBug: bug }),
+    [mode, capacity, producers, consumers, produceTicks, consumeTicks, bug],
+  );
+  const frames = useMemo(() => bufferFrames(config, seed), [config, seed]);
   const player = usePlayer(frames, { interval: STEP_MS });
   const f = player.frame;
   const total = producers * ITEMS_EACH;
@@ -240,7 +245,7 @@ function BufferScene({ picker }: { picker: ReactNode }) {
           <CpuStat f={f} />
         </Stats>
       }
-      legend={LEGEND}
+      legend={legend(config)}
       controls={[
         <>
           {picker}
@@ -320,7 +325,7 @@ function BugScene({ picker }: { picker: ReactNode }) {
           />
         </Stats>
       }
-      legend={LEGEND}
+      legend={legend(config)}
       controls={[
         <>
           {picker}
