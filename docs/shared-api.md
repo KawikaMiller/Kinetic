@@ -257,6 +257,7 @@ enc, hasSubtle(), toHex(buf), b64url(buf), hexToBits(hex)
 sha256Hex(text): Promise<string | null>                     // null without crypto.subtle
 hmacSha256(secret, data, 'hex' | 'b64url'): Promise<string | null>
 ```
+The bytes-level `hmac`, `hotp`/`totp`, `aesBlockEncrypt` and the ECDSA helpers are under "Tier 2 kit (rollout plan P0-b)".
 `useSignedJwt`'s string-key hack becomes
 `useAsyncValue(() => signJwt(payload, secret), JSON.stringify([payload, secret]))`.
 
@@ -819,6 +820,137 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - `useMediaQuery(query)` and `PHONE_QUERY` (`components/useMediaQuery.ts`): for layout choices CSS can't make (ByteGrid's bytes per row). SSR-safe (`useSyncExternalStore`).
 - `arrowMarkerDef(id, color, size, refX)` (`ArrowMarker.tsx`): one `<marker>` element, for a set of them under one `<defs>`. `useArrowMarker` is built on it.
 
+## Tier 2 kit (rollout plan P0-b)
+
+Built before the wave 2-4 lessons that need them. Every visual is on `#/dev/kit` under "Tier 2 kit · P0-b"
+(`pages/DevKitTier2b.tsx`), checked at 1440 and 390. CSS is in `kit.css`; the pure logic sits in a `.ts`
+file with Vitest tests beside it. Motion is CSS transitions, or motion with `useReducedMotion`, so reduced motion stills all of it.
+
+### `core/gantt.ts`, `GanttLanes.tsx` — cpu-scheduling, interrupts-context-switch, async-await-coroutines, http-versions, critical-rendering-path, rendering-strategies, orm-n-plus-one, graphql, timeouts-deadlines, serverless-cold-starts, realtime-transports, core-web-vitals, signals-graceful-shutdown, profiling-flame-graphs; ci-pipelines
+```tsx
+<GanttLanes
+  lanes={[{ id: 'p1', label: 'P1' }, …]}
+  bars={[
+    { id: 'a', lane: 'p1', start: 0, end: 4, tone: 'info', label: 'P1' },          // work (solid)
+    { id: 'w', lane: 'p2', start: 0, end: 4, tone: 'violet', kind: 'wait' },        // hatched: ready, not running
+    { id: 'io', lane: 'p2', start: 7, end: 15, tone: 'violet', kind: 'blocked' },   // dashed: blocked on I/O
+    { id: 'j', lane: 'build', start: 12, end: 40, tone: 'hi', progress: 0.4, ring: 'violet' }, // 40% drawn over a dashed plan; outlined
+  ]}
+  domain={[0, 20]} now={clock} unit=" ms" axis size="md"
+  markers={[{ at: 18, label: 'deadline', tone: 'bad' }]}
+  onBarClick={(id) => …} labelWidth={92} ariaLabel="…"
+/>
+barGeometry(start, end, domain, progress)   // { left, full, shown } in % of the track
+domainFraction(t, domain)                   // clamped to [0, 1]: where the cursor sits
+ganttTicks(domain, count)                   // [{ value, at }] from core/scale
+```
+- Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
+- The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
+- ci-pipelines renders its wall-clock chart through it (it adds only `.ci-gantt .gantt { margin-top: 8px }`). The migration is pixel-identical: its smoke frames plus a driven matrix of 8 option combos × 5 frames × 1440/390, 80/80 unchanged.
+
+### `core/sequenceLayout.ts`, `SequenceDiagram.tsx` — dhcp, ethernet-arp, dns-resolution, diffie-hellman, packet-capture-debugging, http-caching, idempotency-keys, webhooks, mfa-passkeys, csrf-cookies, sockets-api, realtime-transports
+```tsx
+<SequenceDiagram
+  actors={[{ id: 'alice', label: 'Alice', tone: 'info' }, { id: 'eve', label: 'Eve', waiting: true }, { id: 'bob', label: 'Bob' }]}
+  messages={[
+    { id: 'd', from: 'laptop', to: '*', label: 'DHCPDISCOVER' },                 // broadcast: a head on every other lifeline
+    { id: 'a', from: 'server', to: 'laptop', label: 'DHCPACK', lost: true },      // stops partway with a ✕
+    { id: 'r', from: 'laptop', to: '*', label: 'DHCPREQUEST', note: 'after a 4 s timeout' },
+    { id: 's', from: 'laptop', to: 'laptop', label: 'configure the interface' }, // self-message loop
+  ]}
+  step={player.frame.index}           // later messages hidden; the current one is --hi
+  onMessageClick={(id) => …}          // Enter/Space too
+  width={640}                         // spread the lanes (never below the natural width)
+/>
+sequenceLayout(actors, messages, width?)   // { width, height, lanes, head, rows, lifelineEnd, minWidth }
+wrapLabel(label, maxW)                     // one line, or two balanced lines split at a space
+```
+- Labels wrap to two lines before the lanes widen. The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
+- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER").
+- Example addresses in network demos come from the documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32) or RFC 1918 ranges.
+
+### `MemoryMap` (`components/memory/`) — calling-conventions, memory-safety-bugs, endianness, isa-assembly, virtual-memory-paging, linking-loading
+```tsx
+import { MemoryMap, MemoryMapGroup, memCellRect, memPort, memRegionRect, memoryMapLayout, RefArrow } from '../../components/memory';
+
+<MemoryMap
+  regions={[
+    { from: 0x7fe0, to: 0x8010, label: 'greet() frame', tone: 'info' },            // [from, to): `to` is one past the end
+    { from: 0x7ff0, to: 0x7ff8, label: 'canary', tone: 'orange', variant: 'guard' }, // live (default) | freed | guard
+  ]}
+  cells={[{ addr: 0x8008, value: 'return → main+42', tone: 'violet' }]}
+  pointers={[{ addr: 0x7fe0, label: 'rsp', tone: 'hi' }]}
+  unit={8}                 // bytes per row: 1, 8, 4096 (pages)…
+  direction="down"         // down: high addresses on top (default); up: low on top
+  highlight={[0x7ff0]}
+  overlay={(L) => <RefArrow from={memPort(L, 0x600000, 'right')!} to={memPort(L, 0x603000, 'right')!} dangling bend={-40} />}
+/>
+// inside a lesson's own scene, beside VarSlots and HeapObjects:
+const L = memoryMapLayout(props);   // same props → same rows
+<MemoryMapGroup at={at} {...props} />
+<RefArrow from={slotPort(slotAt)} to={memCellRect(L, addr, at)!} />
+```
+- Rows are drawn only where they matter: region ends, cells, pointer targets, and every row of a region up to 12 rows long. A longer empty run collapses into one "⋮" gap row, so a process image from 0x400000 to 0x7ffd… fits. More than 400 rows is refused: use a bigger `unit`.
+- Columns are sized to their content (address digits, the longest value, the longest region label at its nesting depth); `width` stretches the cell column. A 24px link gutter between the cells and the brackets is where arrows between two cells bow (a negative `bend` heads right).
+- A region inside another gets `depth` 1 and its bracket steps inward. A cell is tinted by its innermost region; a cell's own `tone` is stronger. `freed` is hatched with struck values, and `guard` has a heavy border.
+- Ports: `memPort(L, addr, 'left' | 'right', at)`, `memCellRect(L, addr, at)` (a RefArrow `to`), `memRegionRect(L, i, at)`, `rowAt(L, addr)`. `memPort`, `memCellRect` and `rowAt` return null for an address off the map.
+- memory-safety-bugs is payload-free: the overflow demo is a name too long for its buffer, nothing more.
+
+### `core/automata.ts` — dfa-nfa, lexing-tokens; later regex-engines
+```ts
+const dfa: Dfa = { kind: 'dfa', states, alphabet, start: 'r0', accept: ['r0'], delta: { r0: { '0': 'r0', '1': 'r1' }, … } };
+const nfa: Nfa = { kind: 'nfa', …, delta: { s: { [EPSILON]: ['p', 'q'] }, p: { a: ['r'] } } };
+dfaStep(dfa, state, 'a')          // next state, or null: a missing transition means "dies"
+dfaRun(dfa, input)                // { path: (State | null)[], accepted }
+epsilonClosure(nfa, states); nfaStep(nfa, states, 'a'); nfaRun(nfa, input)   // sorted state sets
+accepts(dfaOrNfa, input)
+subsetConstruct(nfa)              // { dfa, rows: SubsetRow[] (discovery order, isNew), members: name → NFA states }
+subsetName(['0', '1'])            // "{0,1}"; "∅" for the empty set (only present when reachable)
+longestMatch(dfa, input, from)    // { end, state, steps } | null: maximal munch; steps counts the char that killed it
+```
+- Draw the machines with `GraphView` state mode. Minimisation is deliberately left out (T3 chomsky-hierarchy). Tests compare the subset DFA with the NFA and with a JS RegExp on every string up to length 10.
+
+### `core/vec.ts`, `core/fit.ts`, `core/fixtures/datasets.ts` — vectors-similarity, matrices-transformations, gradient-descent, linear-logistic-regression, supervised-learning, classification-metrics, decision-trees-ensembles, clustering-kmeans, embeddings, usability-laws, rasterization, bezier-interpolation
+```ts
+dot(a, b); norm(a); cosine(a, b) /* NaN for a zero vector */; add; sub; scale(a, k); distance; normalize /* null for zero */
+matMul(a, b); apply(m, v) /* m·v */; transpose; identity(n); det(m) /* 2×2, 3×3 */; rotation2(rad)
+solve(A, b) /* partial pivoting; null if singular */; inverse(m) /* null if singular */; conditionNumber(m) /* κ₁ */
+
+leastSquares(xs, ys, degree, { lambda })  // { coeffs (constant first), condition, illConditioned } | null; ridge leaves the intercept alone
+polyEval(coeffs, x); sigmoid(z); mse(pred, actual); logLoss(probs, labels)   // probs clamped by LOG_LOSS_EPS
+linearPredict(params, x)                  // params = [b, ...w]
+mseGradient(params, xs, ys); logLossGradient(params, xs, labels); gradientStep(params, grad, rate)
+numericGradient(f, params)                // central differences: the check that a gradient is right
+
+blobs({ seed, centers, n, spread }); moons({ seed, n, noise })   // { x, y, label }[]: Plot2D Points take them as they are
+lineWithNoise({ seed, n, slope, intercept, noise, xRange })     // { x, y }[]
+twoClassScores({ seed, positives, negatives, separation })      // { score ∈ (0,1), label }[], sorted by score
+gaussian(rnd)                                                   // Box–Muller from a mulberry32
+```
+- Every curve an ML lesson draws comes from these numbers. Same seed, same data. Tests cover the hand-computed 3-point fit, closed-form regression, ridge against the explicit inverse, both gradients against finite differences, and gradient descent converging to least squares.
+
+### `ConfusionMatrix.tsx` (+ `core/stats.ts` metrics) — conditional-bayes, classification-metrics, decision-trees-ensembles
+```tsx
+<ConfusionMatrix tp={90} fp={45} fn={10} tn={855} labels={{ positive: 'sick', negative: 'healthy' }}
+                 highlight="fn" share metrics />
+classificationMetrics({ tp, fp, fn, tn })   // { precision, recall, specificity, fpr, accuracy, f1 }: NaN when undefined, never a made-up 0
+confusionAt(examples, threshold)            // counts; score ≥ threshold predicts positive
+CONFUSION_TONE                              // { tp: 'ok', tn: 'ok', fp: 'bad', fn: 'orange' }: reuse it for legends and dots
+```
+- A real `<table>` (rows are the actual class, columns the prediction). Undefined metrics show as `–`. `.sr-only` (in `kit.css`) gives each cell its full name for screen readers. It's the shared visually-hidden class: use it rather than a local one.
+
+### `crypto.ts` additions — mfa-passkeys, macs-hmac, webhooks, symmetric-ciphers, digital-signatures-pki; hashing-encryption
+```ts
+hmac(key: BufferSource, data: BufferSource, { hash: 'SHA-1' | 'SHA-256', out: 'hex' | 'bytes' })
+hotp(key, counter, { digits = 6, hash = 'SHA-1' })      // RFC 4226
+totp(key, unixSeconds, { step = 30, digits, hash })     // RFC 6238: what authenticator apps show
+aesBlockEncrypt(key, block16)                           // one bare AES block = what ECB does to every block
+ecdsaKeyPair(); ecdsaSign(privateKey, data); ecdsaVerify(publicKey, sig, data)   // P-256 / SHA-256; signature = 64 bytes r‖s
+```
+- Everything resolves to null without `crypto.subtle`, like the rest of `crypto.ts`. `hmacSha256` now runs on `hmac`, with unchanged output. hashing-encryption signs through the ECDSA helpers.
+- `aesBlockEncrypt` uses AES-CBC with a zero IV and keeps the first 16 bytes. WebCrypto has no ECB, so that's the only way to get it. It exists to show why ECB leaks patterns, never to encrypt anything.
+- Tests: RFC 4231 and RFC 2202 HMAC, RFC 4226 HOTP, RFC 6238 TOTP (SHA-1 and SHA-256), FIPS-197 C.1 and C.3, and ECDSA with one flipped byte failing in the message and in the signature. Test keys are the published RFC ones; nothing in source has a real credential shape (K-3 scan).
+
 ---
 
 ## Not built (deliberately)
@@ -826,6 +958,9 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
 - **Multi-state `CodePanel` lines:** requested in Phase 2 and declined; lessons that need more line states keep a small local override.
 - **`CompareRows`:** not built.
+- **web-request's waterfall on `GanttLanes`:** it's one stacked bar whose segments grow with
+  motion springs, plus a legend, not lanes on a time axis. Moving it would swap flex for absolute
+  positioning and the spring for a linear transition, so it couldn't be pixel-identical. It stays local.
 - **`ColorField`:** requested after wave 2 and declined: accessibility's colour input is its only
   user, so it stays local until a second lesson needs one (extract on the second use).
 - **Per plan §6:** a scene engine, `DataTable`, `KeyValue`, `EventLog`, `ChipChoice` and `CanvasStage`.
@@ -839,6 +974,8 @@ These differ between runs even on unchanged code, because a motion transition is
 - `db-indexes@2`
 - `replication@3`, `replication@7`
 - every `@live` shot (simulations are timing-dependent)
+- driven shots of a stage with a `WideRegion` at 390: its "swipe" hint times out after 5 s, so a
+  shot taken around then may catch it mid-fade
 
 Motion-lib infinite loops no longer cause flakes: `Pulse` holds still under the reduced motion
 that `smoke --frames` turns on.
