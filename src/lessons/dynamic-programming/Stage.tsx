@@ -3,10 +3,11 @@ import { useMemo, useState } from 'react';
 import { useArrowMarker } from '../../components/ArrowMarker';
 import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { fibFrames, lcsFrames, memoCalls, naiveCalls, type FibFrame, type LcsFrame, type Style } from './dp';
+import { fibFrames, lcsFrames, type FibFrame, type LcsFrame } from './frames';
+import { memoCalls, naiveCalls, type Style } from './model';
 import './styles.css';
 
 type Problem = 'fib' | 'lcs';
@@ -40,7 +41,11 @@ export function Stage() {
       stats={
         ff ? (
           <Stats>
-            <Stat label="Calls" value={ff.calls} color="var(--ok)" sub={style === 'topdown' ? `${ff.hits} cache hits` : 'one per cell'} />
+            {style === 'topdown' ? (
+              <Stat label="Calls" value={ff.calls} color="var(--ok)" sub={`${ff.hits} cache hits`} />
+            ) : (
+              <Stat label="Cells filled" value={ff.calls} color="var(--ok)" sub="no recursion" />
+            )}
             <Stat label="Naive calls" value={naiveCalls(n).toLocaleString()} color="var(--bad)" sub={`for fib(${n})`} />
             <Stat label="fib(n)" value={ff.memo[n] ?? '…'} color="var(--hi)" />
           </Stats>
@@ -92,6 +97,11 @@ export function Stage() {
               options={PAIRS.map(([x, y], i) => ({ value: i, label: `${x} / ${y}` }))}
             />
           )}
+          <Hint block>
+            {problem === 'lcs'
+              ? 'When up and left tie, both the fill and the walk back go up, so you see one longest common subsequence; there can be others of the same length.'
+              : `${style === 'topdown' ? 'Calls counts every call to fib, cache hits included.' : 'Cells filled counts every table entry written, base cases included.'} n stops at 12 here; the chart shows how calls grow up to 30.`}
+          </Hint>
         </Controls>
       }
     >

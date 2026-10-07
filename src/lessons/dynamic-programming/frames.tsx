@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
-
-export type Style = 'topdown' | 'bottomup';
-export type Cell = [number, number];
+import { backStep, blankTable, lcsStep, naiveCalls, type Cell, type Style } from './model';
 
 // ── Fibonacci ──────────────────────────────────────────────────────
 
@@ -14,18 +12,6 @@ export interface FibFrame extends Frame {
   calls: number;
   hits: number;
   stack: number[];
-}
-
-/** Calls made by naive recursive fib(n): C(n) = C(n-1) + C(n-2) + 1. */
-/** Calls a memoized fib(n) makes: each k in 2..n calls fib(k-1) (a new call) and fib(k-2) (a cache hit). */
-export const memoCalls = (n: number) => Math.max(1, 2 * n - 1);
-
-export function naiveCalls(n: number) {
-  let a = 1; // C(0)
-  let b = 1; // C(1)
-  if (n === 0) return 1;
-  for (let k = 2; k <= n; k++) [a, b] = [b, a + b + 1];
-  return b;
 }
 
 export function fibFrames(n: number, style: Style): FibFrame[] {
@@ -97,7 +83,8 @@ export function fibFrames(n: number, style: Style): FibFrame[] {
   }
   snap([], (
     <>
-      fib({n}) = <span className="hl ok">{memo[n]}</span> with <b>{calls}</b> calls{style === 'topdown' ? <> ({hits} cache hits)</> : null}. Naive recursion needs{' '}
+      fib({n}) = <span className="hl ok">{memo[n]}</span>{' '}
+      {style === 'topdown' ? <>with <b>{calls}</b> calls ({hits} cache hits)</> : <>by filling <b>{calls}</b> cells, no calls at all</>}. Naive recursion needs{' '}
       <span className="hl bad">{naiveCalls(n).toLocaleString()}</span>.
     </>
   ), { hold: 2.5 });
@@ -122,7 +109,7 @@ export interface LcsFrame extends Frame {
 export function lcsFrames(a: string, b: string, style: Style): LcsFrame[] {
   const m = a.length;
   const n = b.length;
-  const dp: (number | null)[][] = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => (i === 0 || j === 0 ? 0 : null)));
+  const dp = blankTable(m, n);
   const state: LcsState[][] = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => (i === 0 || j === 0 ? 'base' : 'empty')));
   const frames: LcsFrame[] = [];
   let computed = 0;
@@ -135,17 +122,7 @@ export function lcsFrames(a: string, b: string, style: Style): LcsFrame[] {
       ...extra,
     });
 
-  const solve = (i: number, j: number) => {
-    const match = a[i - 1] === b[j - 1];
-    if (match) {
-      dp[i][j] = dp[i - 1][j - 1]! + 1;
-      return { match, deps: [[i - 1, j - 1]] as Cell[], chosen: [i - 1, j - 1] as Cell };
-    }
-    const up = dp[i - 1][j]!;
-    const lf = dp[i][j - 1]!;
-    dp[i][j] = Math.max(up, lf);
-    return { match, deps: [[i - 1, j], [i, j - 1]] as Cell[], chosen: (up >= lf ? [i - 1, j] : [i, j - 1]) as Cell };
-  };
+  const solve = (i: number, j: number) => lcsStep(dp, a, b, i, j);
   const explain = (i: number, j: number, r: ReturnType<typeof solve>) =>
     r.match ? (
       <>
@@ -221,9 +198,7 @@ export function lcsFrames(a: string, b: string, style: Style): LcsFrame[] {
       j--;
     } else {
       snap({ cur: [i, j], answer, say: <>Walk back: no match, so step toward the neighbour this value came from.</> });
-      const up = dp[i - 1][j] ?? -1;
-      const lf = dp[i][j - 1] ?? -1;
-      if (up >= lf) i--;
+      if (backStep(dp, a, b, i, j) === 'up') i--;
       else j--;
     }
   }

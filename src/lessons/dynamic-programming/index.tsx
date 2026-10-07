@@ -32,10 +32,10 @@ const lesson: LessonModule = {
     {
       q: 'What makes a problem a good fit for dynamic programming?',
       options: [
-        'It can be sorted',
-        'Its subproblems overlap and the best answer is built from best sub-answers',
-        'It uses a graph',
-        'It has no recursion',
+        'Its input can be sorted cheaply before you start',
+        'Subproblems repeat; best parts make the best whole',
+        'Its input is a graph made of connected nodes',
+        'It can be solved without using any recursion',
       ],
       answer: 1,
       why: 'Overlapping subproblems give you something worth caching; optimal substructure lets you build the answer from cached pieces.',
@@ -48,9 +48,20 @@ const lesson: LessonModule = {
     },
     {
       q: 'In the LCS table, what does a cell use when the two letters match?',
-      options: ['The cell above', 'The cell to the left', 'The diagonal cell up-left, plus 1', 'The maximum of the whole row'],
+      options: ['The cell directly above it', 'The cell directly to its left', 'The diagonal up-left, plus 1', 'The largest value in its row'],
       answer: 2,
       why: 'A match extends the best answer for both strings without those letters, which lives diagonally up-left.',
+    },
+    {
+      q: 'On DYNAMIC / PROGRAM, which approach computes fewer LCS cells?',
+      options: [
+        'Bottom-up: it never does wasted work',
+        'Top-down: it skips cells nobody needs',
+        'Both compute every cell in the table',
+        'Neither: they compute the same cells',
+      ],
+      answer: 1,
+      why: 'Bottom-up fills all 49 cells. Top-down only computes the cells the final answer depends on, so it can skip some; on a match it never looks up or left.',
     },
   ],
 };
