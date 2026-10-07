@@ -64,7 +64,7 @@ export function GanttLanes({
   const at = (t: number) => `calc(var(--gantt-label-w) + (100% - var(--gantt-label-w)) * ${domainFraction(t, domain)})`;
 
   return (
-    <div className={`gantt size-${size} ${className}`} style={style} role="group" aria-label={ariaLabel}>
+    <div className={`gantt size-${size} ${markers.length ? 'has-markers' : ''} ${axis ? 'has-axis' : ''} ${className}`} style={style} role="group" aria-label={ariaLabel}>
       {markers.length > 0 && (
         <div className="gantt-row gantt-marker-row" aria-hidden="true">
           <span />
