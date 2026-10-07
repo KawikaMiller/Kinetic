@@ -27,12 +27,11 @@ export function Stage() {
 }
 
 /**
- * Plot sizes whose inner box comes out square (300 or 318 px each way with Plot2D's
- * margins), so right angles look right and the distance ring is a circle.
+ * Both plots are aspect="equal", so right angles look right and the distance ring is a
+ * circle: 350 tall at PLOT_W, which the stages leave room for.
  */
 const PLOT_W = 356;
-const DOT_PLOT_H = 350;
-const DOC_PLOT_H = 350;
+const PLOT_H = 350;
 
 const UNDEFINED = 'undefined';
 
@@ -82,7 +81,7 @@ function DotScene({ picker }: { picker: ReactNode }) {
 
   return (
     <StageFrame
-      height={DOT_PLOT_H + 40}
+      height={PLOT_H + 40}
       stats={
         <Stats>
           <Stat label={<span className="keep-case">a</span>} value={vec(a)} color="var(--info)" sub={`‖a‖ ≈ ${num(r.normA)}`} />
@@ -121,7 +120,7 @@ function DotScene({ picker }: { picker: ReactNode }) {
           x={{ domain: [-extent, extent] }}
           y={{ domain: [-extent, extent] }}
           width={PLOT_W}
-          height={DOT_PLOT_H}
+          aspect="equal"
           className="vs-plot"
           ariaLabel={`a = ${vec(a)}, ${bName} = ${vec(shownB)}, dot product ${num(r.dot)}`}
         >
@@ -132,9 +131,7 @@ function DotScene({ picker }: { picker: ReactNode }) {
           <Arrow to={a} tone="info" label="a" />
           {r.shadow && <ShadowSegment to={r.shadow} />}
           {pinned && (
-            <g className="is-dashed">
-              <Arrow to={pinned} tone="muted" label="b′" />
-            </g>
+            <Arrow to={pinned} tone="muted" label="b′" dashed />
           )}
           <Arrow to={shownB} tone="violet" label={bName} />
           <Points
@@ -220,7 +217,7 @@ function NeighbourScene({ picker }: { picker: ReactNode }) {
 
   return (
     <StageFrame
-      height={DOC_PLOT_H + 40}
+      height={PLOT_H + 40}
       stats={
         <Stats>
           <Stat label="Query q" value={vec(query)} color="var(--hi)" />
@@ -257,7 +254,7 @@ function NeighbourScene({ picker }: { picker: ReactNode }) {
           x={{ domain: [0, DOC_EXTENT], label: '“cat” words' }}
           y={{ domain: [0, DOC_EXTENT], label: '“dog” words' }}
           width={PLOT_W}
-          height={DOC_PLOT_H}
+          aspect="equal"
           className="vs-plot"
           ariaLabel={`12 documents as word-count vectors, query at ${vec(query)}`}
         >

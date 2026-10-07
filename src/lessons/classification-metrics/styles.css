@@ -8,11 +8,3 @@
 .cm-notes p { margin: 0; font: 500 13px var(--font); color: var(--text); }
 .cm-note { display: block; text-align: center; }
 .cm-error { color: var(--bad); }
-
-.cm-threshold { cursor: ew-resize; touch-action: none; }
-.cm-threshold:focus-visible { outline: none; }
-.cm-threshold-hit { fill: transparent; }
-.cm-threshold line { stroke: var(--hi); stroke-width: 2.5; }
-.cm-threshold-grip { fill: var(--hi); stroke: var(--bg); stroke-width: 1.5; }
-.cm-threshold:focus-visible .cm-threshold-grip { stroke: var(--text); stroke-width: 2.5; }
-.cm-threshold:focus-visible line { stroke-width: 3.5; }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
-import { Arrow, Plot2D, Points, Segments } from '../../components/Plot2D';
-import { usePlot } from '../../components/plotContext';
+import { Arrow, Plot2D, PointLabels, Points, Segments } from '../../components/Plot2D';
 import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
@@ -88,6 +87,7 @@ function MapScene({ picker }: { picker: ReactNode }) {
     return byGroup ? GROUP_TONE[g] : 'dim';
   };
   const labelled = new Set([...queryWords, ...topWords]);
+  const wordDots = VOCAB.map((w, i) => ({ x: MAP_POINTS[i][0], y: MAP_POINTS[i][1], tone: toneOf(w.word, w.group) }));
 
   return (
     <StageFrame
@@ -146,9 +146,10 @@ function MapScene({ picker }: { picker: ReactNode }) {
           {at && mode.kind !== 'pair' && <Segments segments={top.map((n) => ({ from: at, to: MAP_POINTS[VOCAB.indexOf(n.word)], tone: 'ok' }))} />}
           {mode.kind === 'pair' && <Segments segments={[{ from: MAP_POINTS[VOCAB.indexOf(PAIR.a)], to: MAP_POINTS[VOCAB.indexOf(PAIR.b)], tone: 'info' }]} />}
           {an && anResult && <Arrow from={MAP_POINTS[VOCAB.indexOf(lookup(an.c)!)]} to={project(MAP, anResult.vector)} tone="violet" />}
-          <Points data={VOCAB.map((w, i) => ({ x: MAP_POINTS[i][0], y: MAP_POINTS[i][1], tone: toneOf(w.word, w.group) }))} r={3.6} />
+          <Points data={wordDots} r={3.6} />
           {at && mode.kind === 'query' && phrase.ok && phrase.known.length > 1 && <Points data={[{ x: at[0], y: at[1], tone: 'hi' }]} r={6} />}
-          <Labels words={VOCAB.map((w, i) => ({ text: w.word, at: MAP_POINTS[i], tone: toneOf(w.word, w.group), show: allLabels || labelled.has(w.word), left: pairMode && w.word === PAIR.b.word }))} />
+          {/* After the query dot, so the words stay readable over it. */}
+          <PointLabels data={wordDots} labels={(i) => (allLabels || labelled.has(VOCAB[i].word) ? { text: VOCAB[i].word, left: pairMode && VOCAB[i].word === PAIR.b.word } : null)} />
         </Plot2D>
         <div className="emb-side">
           <Box>
@@ -162,20 +163,6 @@ function MapScene({ picker }: { picker: ReactNode }) {
         </Hint>
       </div>
     </StageFrame>
-  );
-}
-
-const LABEL_DX = 6;
-
-/** Word labels in data space, drawn after the dots so they stay readable. */
-function Labels({ words }: { words: { text: string; at: Point; tone: Tone; show: boolean; left?: boolean }[] }) {
-  const { xs: sx, ys: sy } = usePlot();
-  return (
-    <g className="emb-labels" aria-hidden="true">
-      {words.filter((w) => w.show).map((w) => (
-        <text key={w.text} className={`emb-label tone-${w.tone}`} x={sx.map(w.at[0]) + (w.left ? -LABEL_DX : LABEL_DX)} y={sy.map(w.at[1]) + 4} textAnchor={w.left ? 'end' : 'start'}>{w.text}</text>
-      ))}
-    </g>
   );
 }
 

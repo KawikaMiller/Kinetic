@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { Heat, Plot2D, Points, type HeatValue } from '../../components/Plot2D';
+import { Heat, Plot2D, PlotCursor, PointerLayer, Points, type HeatValue, type PlotPoint } from '../../components/Plot2D';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented } from '../../components/ui';
 import type { Point } from '../../core/plot';
-import { AddPointCatcher, SampleDots } from './layers';
-import { DOT_R } from './view';
+import { CLASS_TONE, DOT_R } from './view';
 import { DOMAIN, PRESET_IDS, PRESET_LABELS, type Cls, type Dataset, type PresetId, type Sample } from './model';
 
 export const PLOT_W = 356;
@@ -41,18 +40,18 @@ export function DataPlot({ data, region, predict, radius, editor, ariaLabel, chi
   return (
     <Plot2D x={{ domain: DOMAIN.x, label: 'x' }} y={{ domain: DOMAIN.y, label: 'y' }} width={PLOT_W} height={PLOT_H} className="dte-plot" ariaLabel={ariaLabel}>
       <Heat fn={region} resolution={72} />
-      <AddPointCatcher onAdd={editor.add} />
+      <PointerLayer onDown={editor.add} />
       {children}
-      <SampleDots samples={data.val} hollow radius={() => DOT_R} predict={predict} />
-      <SampleDots samples={data.train} radius={radius ?? (() => DOT_R)} predict={predict} />
-      <Points
-        data={[{ x: editor.cursor[0], y: editor.cursor[1], tone: 'muted', hollow: true }]}
-        r={5}
-        onDrag={(_, p) => editor.setCursor(p)}
-        pointLabel={() => 'Add-point cursor'}
-      />
+      <Points data={sampleDots(data.val, predict, () => DOT_R)} hollow />
+      <Points data={sampleDots(data.train, predict, radius ?? (() => DOT_R))} />
+      <PlotCursor at={editor.cursor} onMove={editor.setCursor} label="Add-point cursor" />
     </Plot2D>
   );
+}
+
+/** Samples in their class colour, each with its own radius (AdaBoost's weights), ringed in --bad where the model is wrong. */
+function sampleDots(samples: readonly Sample[], predict: (s: Sample) => Cls, radius: (i: number) => number): PlotPoint[] {
+  return samples.map((s, i) => ({ x: s.x, y: s.y, tone: CLASS_TONE[s.label], r: radius(i), ring: predict(s) !== s.label ? ('bad' as const) : undefined }));
 }
 
 /** Presets plus the add-a-point controls (pointer: click the plot; keyboard: move the cursor, then Add). */

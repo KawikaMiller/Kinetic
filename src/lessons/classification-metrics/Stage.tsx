@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { ConfusionMatrix } from '../../components/ConfusionMatrix';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, HLine, Plot2D, Points, VLine } from '../../components/Plot2D';
-import { usePlot } from '../../components/plotContext';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
@@ -154,7 +153,13 @@ export function Stage() {
             >
               <VLine at={drawnAt(best.threshold)} tone="ok" label="cheapest" />
               <Points data={stripData} r={4} />
-              <ThresholdLine at={t} onMove={moveThreshold} onStep={(dir) => moveThreshold(stepThreshold(examples, t, dir))} />
+              <VLine
+                at={drawnAt(t)}
+                onDrag={(x) => moveThreshold(x, true)}
+                onStep={(dir) => moveThreshold(stepThreshold(examples, t, dir))}
+                ariaLabel="Threshold"
+                valueText={`threshold ${thresholdText(t)}; arrow keys step one example`}
+              />
             </Plot2D>
           </div>
           {showPr ? (
@@ -195,47 +200,5 @@ export function Stage() {
         <Hint className="cm-note">Scores come from a seeded synthetic dataset (seed {seed}), not a trained model. Costs are illustrative.</Hint>
       </div>
     </StageFrame>
-  );
-}
-
-/** The draggable, keyboard-steppable threshold rule: a custom Plot2D layer. */
-function ThresholdLine({ at, onMove, onStep }: { at: number; onMove: (t: number, quiet?: boolean) => void; onStep: (dir: 1 | -1) => void }) {
-  const { xs, box, toData } = usePlot();
-  const dragging = useRef(false);
-  const x = xs.map(drawnAt(at));
-  const move = (e: PointerEvent<SVGGElement>) => {
-    const p = toData(e.clientX, e.clientY);
-    if (p) onMove(p[0], true);
-  };
-  const onKey = (e: KeyboardEvent<SVGGElement>) => {
-    const dir = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
-    if (!dir) return;
-    e.preventDefault();
-    onStep(dir);
-  };
-  return (
-    <g
-      className="cm-threshold"
-      role="slider"
-      tabIndex={0}
-      aria-label="Threshold"
-      aria-valuemin={0}
-      aria-valuemax={1}
-      aria-valuenow={Number(drawnAt(at).toFixed(3))}
-      aria-valuetext={`threshold ${thresholdText(at)}; arrow keys step one example`}
-      onPointerDown={(e) => {
-        dragging.current = true;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        move(e);
-      }}
-      onPointerMove={(e) => dragging.current && move(e)}
-      onPointerUp={() => (dragging.current = false)}
-      onPointerCancel={() => (dragging.current = false)}
-      onKeyDown={onKey}
-    >
-      <rect className="cm-threshold-hit" x={box.x} y={box.y} width={box.width} height={box.height} />
-      <line x1={x} x2={x} y1={box.y} y2={box.y + box.height} />
-      <rect className="cm-threshold-grip" x={x - 4} y={box.y + box.height / 2 - 14} width={8} height={28} rx={4} />
-    </g>
   );
 }

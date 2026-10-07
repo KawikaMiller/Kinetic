@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Curve, HLine, Heat, Plot2D, Points, Polygon, Segments, VLine, type HeatValue } from '../../components/Plot2D';
+import { Curve, HLine, Heat, Plot2D, PointerLayer, Points, Polygon, Segments, VLine, type HeatValue } from '../../components/Plot2D';
 import { usePlot } from '../../components/plotContext';
 import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
@@ -27,34 +27,14 @@ export function Stage() {
   return scene === 'linear' ? <LinearScene picker={picker} /> : <LogisticScene picker={picker} />;
 }
 
-/** With axis titles, 356 × 350 makes the inner box square: residual squares are drawn square. */
 const PLOT_W = 356;
+/**
+ * The square plots are drawn aspect="equal" (residual squares look square), which comes to
+ * 350 tall at PLOT_W; the one-feature plot and the stage use the same height.
+ */
 const PLOT_H = 350;
 /** A click within this many px of a point removes it in remove mode. */
 const HIT_PX = 14;
-
-/** A transparent sheet over the plot box that reports clicks (and optionally moves) in data space. */
-function PointerSheet({ onDown, onMove, cursor }: { onDown?: (p: Point) => void; onMove?: (p: Point) => void; cursor: string }) {
-  const { box, toData } = usePlot();
-  return (
-    <rect
-      className="llr-sheet"
-      style={{ cursor }}
-      x={box.x}
-      y={box.y}
-      width={box.width}
-      height={box.height}
-      onPointerDown={(e) => {
-        const p = toData(e.clientX, e.clientY);
-        if (p) onDown?.(p);
-      }}
-      onPointerMove={(e) => {
-        const p = toData(e.clientX, e.clientY);
-        if (p) onMove?.(p);
-      }}
-    />
-  );
-}
 
 // ── Linear ───────────────────────────────────────────────────────────
 
@@ -183,11 +163,11 @@ function LinearScene({ picker }: { picker: ReactNode }) {
           x={{ domain: LINEAR_DOMAIN, label: 'x' }}
           y={{ domain: LINEAR_DOMAIN, label: 'y' }}
           width={PLOT_W}
-          height={PLOT_H}
+          aspect="equal"
           className="llr-plot"
           ariaLabel={`${points.length} points; ${fit.ok ? `least-squares line ${lineText(fit.b, fit.m)}` : 'no line'}`}
         >
-          {mode === 'add' && <PointerSheet onDown={add} cursor="crosshair" />}
+          {mode === 'add' && <PointerLayer onDown={add} />}
           {fit.ok && <ResidualSquares points={points} b={fit.b} m={fit.m} />}
           {fit.ok && <Segments segments={points.map((p, i) => ({ from: [p.x, p.y], to: [p.x, p.y - fit.residuals[i]], tone: 'orange' }))} />}
           {fit.ok && <Curve fn={(x) => fit.b + fit.m * x} tone="hi" />}
@@ -204,6 +184,7 @@ function LinearScene({ picker }: { picker: ReactNode }) {
                 : undefined
             }
             pointLabel={(i) => `data point ${i + 1}`}
+            roving
           />
           {mode === 'remove' && <RemoveSheet onRemove={removeNear} />}
         </Plot2D>
@@ -236,7 +217,7 @@ function ResidualSquares({ points, b, m }: { points: readonly Pt[]; b: number; m
 
 function RemoveSheet({ onRemove }: { onRemove: (p: Point, pxPerUnit: number) => void }) {
   const { xs } = usePlot();
-  return <PointerSheet onDown={(p) => onRemove(p, Math.abs(xs.map(1) - xs.map(0)))} cursor="pointer" />;
+  return <PointerLayer onDown={(p) => onRemove(p, Math.abs(xs.map(1) - xs.map(0)))} cursor="pointer" />;
 }
 
 // ── Logistic ─────────────────────────────────────────────────────────
@@ -323,9 +304,9 @@ function LogisticScene({ picker }: { picker: ReactNode }) {
         {dims === 1 ? (
           <OneFeaturePlot pts={pts} params={params} threshold={threshold} probe={probe} onProbe={setProbe} />
         ) : (
-          <Plot2D x={{ domain: LOGISTIC_DOMAIN, label: 'feature x₁' }} y={{ domain: LOGISTIC_DOMAIN, label: 'feature x₂' }} width={PLOT_W} height={PLOT_H} className="llr-plot" ariaLabel={`Two classes; p(class 1) at the probe ${num(p, 3)}`}>
+          <Plot2D x={{ domain: LOGISTIC_DOMAIN, label: 'feature x₁' }} y={{ domain: LOGISTIC_DOMAIN, label: 'feature x₂' }} width={PLOT_W} aspect="equal" className="llr-plot" ariaLabel={`Two classes; p(class 1) at the probe ${num(p, 3)}`}>
             <Heat fn={heat} resolution={HEAT_RES} />
-            <PointerSheet onMove={setProbe} cursor="crosshair" />
+            <PointerLayer onMove={setProbe} />
             <Boundary params={params} threshold={threshold} />
             <Points data={pts.map((q) => ({ x: q.x, y: q.y, tone: q.label ? 'violet' : 'info' }))} r={4} />
             <Points data={[{ x: probe[0], y: probe[1], tone: 'hi', hollow: true }]} r={6} onDrag={(_, q) => setProbe(q)} pointLabel={() => 'probability probe'} />
@@ -358,7 +339,7 @@ function OneFeaturePlot({ pts, params, threshold, probe, onProbe }: {
   const p = probability(params, [probe[0]]);
   return (
     <Plot2D x={{ domain: LOGISTIC_DOMAIN, label: 'feature x' }} y={{ domain: [-0.1, 1.1], label: 'p(class 1)', tickValues: [0, 0.25, 0.5, 0.75, 1] }} width={PLOT_W} height={PLOT_H} className="llr-plot" ariaLabel={`One feature; p(class 1) at x = ${num(probe[0], 2)} is ${num(p, 3)}`}>
-      <PointerSheet onMove={(q) => onProbe([q[0], probability(params, [q[0]])])} cursor="crosshair" />
+      <PointerLayer onMove={(q) => onProbe([q[0], probability(params, [q[0]])])} />
       <HLine at={threshold} tone="muted" label={`threshold ${num(threshold, 2)}`} />
       {cut !== null && cut >= LOGISTIC_DOMAIN[0] && cut <= LOGISTIC_DOMAIN[1] && <VLine at={cut} tone="hi" label={`cut x = ${num(cut, 2)}`} />}
       <Curve fn={(x) => probability(params, [x])} tone="hi" />

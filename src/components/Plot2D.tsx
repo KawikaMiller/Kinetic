@@ -1,7 +1,8 @@
-import { useId, useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { alpha, TOKENS } from '../core/palette';
 import {
-  axisTickValues, clampPoint, formatTick, nudgePoint, plotFrame, sampleCurve, sampleHeat, type AxisSpec, type Point,
+  axisTickValues, clampPoint, equalAspectHeight, nudgePoint, PLOT_FONT, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+  type AxisSpec, type Point,
 } from '../core/plot';
 import type { Tone } from '../core/tone';
 import { paintImage } from './canvasImage';
@@ -9,23 +10,26 @@ import { PlotContext, usePlot } from './plotContext';
 
 export type { AxisSpec, Point } from '../core/plot';
 
-const TICK_CHAR_W = 6;
-const FONT = 10;
+const FONT = PLOT_FONT;
 
 /**
  * A 2-D plot on core/scale axes (linear or log), with tick labels, axis titles and a grid.
  * Layers are children, drawn in order, all in data coordinates: Heat (put it first: it's
  * a canvas underneath), Bars, Polygon, Curve, Segments, VLine/HLine, Arrow, Points.
- * The default 356 × 240 fits a phone at 390 with 10 px tick labels. Custom layers read
- * the scales with usePlot() from ./plotContext.
+ * The default 356 × 240 fits a phone at 390 with 10 px tick labels; `aspect="equal"`
+ * picks the height that draws x and y units the same length (a square box for equal
+ * domains). Custom layers read the scales with usePlot() from ./plotContext.
  */
 export function Plot2D({
-  x, y, width = 356, height = 240, grid = true, ariaLabel, className = '', children,
+  x, y, width = 356, height: fixedHeight = 240, aspect, grid = true, ariaLabel, className = '', children,
 }: {
   x: AxisSpec;
   y: AxisSpec;
   width?: number;
+  /** Ignored with aspect="equal". */
   height?: number;
+  /** equal: one unit of x is as long on screen as one of y (the height follows from the width). */
+  aspect?: 'equal';
   grid?: boolean;
   ariaLabel: string;
   className?: string;
@@ -35,13 +39,8 @@ export function Plot2D({
   const clip = useId();
   const xTickLabels = axisTicks(x);
   const yTickLabels = axisTicks(y);
-  const margin = {
-    top: 10,
-    right: 14,
-    bottom: FONT + 12 + (x.label ? FONT + 8 : 0),
-    left: Math.max(24, Math.max(...yTickLabels.map((t) => t.text.length)) * TICK_CHAR_W + 10) + (y.label ? FONT + 8 : 0),
-  };
-  const frame = plotFrame(width, height, margin, x, y);
+  const height = aspect === 'equal' ? equalAspectHeight(width, x, y) : fixedHeight;
+  const frame = plotFrame(width, height, plotMargin(x, y), x, y);
   const { xs, ys, box } = frame;
   const toData = (clientX: number, clientY: number): Point | null => {
     const m = svg.current?.getScreenCTM();
@@ -101,7 +100,7 @@ export function Plot2D({
 
 /** Tick values and labels. */
 function axisTicks(a: AxisSpec) {
-  return axisTickValues(a).map((v) => ({ v, text: a.format ? a.format(v) : formatTick(v, a.log) }));
+  return axisTickValues(a).map((v) => ({ v, text: tickText(a, v) }));
 }
 
 /* ---------- layers ---------- */
@@ -175,19 +174,101 @@ export function Bars({ bars, tone, base }: {
   );
 }
 
-/** A vertical rule at x = at, labelled at the top (a threshold, n, the mean). */
-export function VLine({ at, label, tone, dashed = true }: { at: number; label?: ReactNode; tone?: Tone; dashed?: boolean }) {
+/**
+ * A vertical rule at x = at, labelled at the top (a threshold, n, the mean). With `onDrag`
+ * it's a slider: a solid rule with a grip, dragged by pointer anywhere in the box, and
+ * focusable, where the arrow keys call `onStep(±1)` (or, without onStep, nudge it a few
+ * units through onDrag).
+ */
+export function VLine({ at, label, tone, onDrag, onStep, ariaLabel, valueText, dashed = !onDrag }: {
+  at: number;
+  label?: ReactNode;
+  tone?: Tone;
+  /** Makes the rule draggable: called with the pointer's x in data units, clamped to the domain. */
+  onDrag?: (x: number) => void;
+  /** Keyboard step for a draggable rule: +1 for → and ↑, −1 for ← and ↓ (e.g. to the next data point). */
+  onStep?: (dir: 1 | -1) => void;
+  /** The slider's accessible name (default "Threshold"). */
+  ariaLabel?: string;
+  /** aria-valuetext: what the value means ("threshold 0.62; arrow keys step one example"). */
+  valueText?: string;
+  dashed?: boolean;
+}) {
   const { xs, box } = usePlot();
   const x = xs.map(at);
   const flip = x > box.x + box.width * 0.75;
+  const text = label != null && (
+    <text x={x + (flip ? -4 : 4)} y={box.y + FONT + 2} textAnchor={flip ? 'end' : 'start'}>
+      {label}
+    </text>
+  );
+  if (onDrag) {
+    return (
+      <DraggableRule at={at} x={x} tone={tone} dashed={dashed} onDrag={onDrag} onStep={onStep} ariaLabel={ariaLabel} valueText={valueText}>
+        {text}
+      </DraggableRule>
+    );
+  }
   return (
     <g className={`plot-rule ${toneClass(tone, 'hi')} ${dashed ? 'is-dashed' : ''}`}>
       <line x1={x} x2={x} y1={box.y} y2={box.y + box.height} />
-      {label != null && (
-        <text x={x + (flip ? -4 : 4)} y={box.y + FONT + 2} textAnchor={flip ? 'end' : 'start'}>
-          {label}
-        </text>
-      )}
+      {text}
+    </g>
+  );
+}
+
+const GRIP_W = 8;
+const GRIP_H = 28;
+
+function DraggableRule({ at, x, tone, dashed, onDrag, onStep, ariaLabel = 'Threshold', valueText, children }: {
+  at: number;
+  x: number;
+  tone?: Tone;
+  dashed: boolean;
+  onDrag: (x: number) => void;
+  onStep?: (dir: 1 | -1) => void;
+  ariaLabel?: string;
+  valueText?: string;
+  children: ReactNode;
+}) {
+  const { xs, ys, box, toData } = usePlot();
+  const dragging = useRef(false);
+  const move = (e: PointerEvent<SVGGElement>) => {
+    const p = toData(e.clientX, e.clientY);
+    if (p) onDrag(p[0]);
+  };
+  const onKeyDown = (e: KeyboardEvent<SVGGElement>) => {
+    const dir = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    if (onStep) onStep(dir);
+    else onDrag(nudgePoint([at, ys.domain[0]], dir > 0 ? 'ArrowRight' : 'ArrowLeft', xs, ys, e.shiftKey)![0]);
+  };
+  const [lo, hi] = [Math.min(...xs.domain), Math.max(...xs.domain)];
+  return (
+    <g
+      className={`plot-rule plot-rule-drag ${toneClass(tone, 'hi')} ${dashed ? 'is-dashed' : ''}`}
+      role="slider"
+      tabIndex={0}
+      aria-label={ariaLabel}
+      aria-valuemin={lo}
+      aria-valuemax={hi}
+      aria-valuenow={Number(at.toFixed(3))}
+      aria-valuetext={valueText}
+      onPointerDown={(e) => {
+        dragging.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        move(e);
+      }}
+      onPointerMove={(e) => dragging.current && move(e)}
+      onPointerUp={() => (dragging.current = false)}
+      onPointerCancel={() => (dragging.current = false)}
+      onKeyDown={onKeyDown}
+    >
+      <rect className="plot-hit" x={box.x} y={box.y} width={box.width} height={box.height} />
+      <line x1={x} x2={x} y1={box.y} y2={box.y + box.height} />
+      <rect className="plot-grip" x={x - GRIP_W / 2} y={box.y + box.height / 2 - GRIP_H / 2} width={GRIP_W} height={GRIP_H} rx={GRIP_W / 2} />
+      {children}
     </g>
   );
 }
@@ -211,8 +292,8 @@ export function HLine({ at, label, tone, dashed = true }: { at: number; label?: 
 
 const HEAD = 9;
 
-/** A vector from `from` (default the origin) to `to`, with an arrowhead and an optional label. */
-export function Arrow({ from = [0, 0], to, tone, label }: { from?: Point; to: Point; tone?: Tone; label?: ReactNode }) {
+/** A vector from `from` (default the origin) to `to`, with an arrowhead and an optional label; `dashed` dashes the shaft. */
+export function Arrow({ from = [0, 0], to, tone, label, dashed = false }: { from?: Point; to: Point; tone?: Tone; label?: ReactNode; dashed?: boolean }) {
   const { xs, ys, clip } = usePlot();
   const [x0, y0, x1, y1] = [xs.map(from[0]), ys.map(from[1]), xs.map(to[0]), ys.map(to[1])];
   const len = Math.hypot(x1 - x0, y1 - y0);
@@ -222,7 +303,7 @@ export function Arrow({ from = [0, 0], to, tone, label }: { from?: Point; to: Po
   const [bx, by] = [x1 - ux * head, y1 - uy * head];
   const w = head * 0.5;
   return (
-    <g className={`plot-arrow ${toneClass(tone, 'info')}`} clipPath={`url(#${clip})`}>
+    <g className={`plot-arrow ${toneClass(tone, 'info')} ${dashed ? 'is-dashed' : ''}`} clipPath={`url(#${clip})`}>
       <line x1={x0} y1={y0} x2={bx} y2={by} />
       <polygon points={`${x1},${y1} ${bx - uy * w},${by + ux * w} ${bx + uy * w},${by - ux * w}`} />
       {label != null && (
@@ -251,14 +332,27 @@ export interface PlotPoint {
   y: number;
   tone?: Tone;
   hollow?: boolean;
+  /** This point's radius, overriding the layer's `r` (AdaBoost's sample weights). */
+  r?: number;
+  /** An outline ring around the point in this tone (a misclassified sample in --bad). */
+  ring?: Tone;
 }
 
+/** A point's text label: the text, drawn right of the dot unless `left`. */
+export type PointLabel = string | { text: string; left?: boolean };
+
+/** Space between a point and its ring. */
+const RING_GAP = 2.5;
+
 /**
- * Dots in data space. `hollow` draws held-out (validation) data. With `onDrag` each
- * point is draggable by pointer and focusable: arrow keys nudge it 4 units (Shift: 20),
- * always clamped to the domain.
+ * Dots in data space. `hollow` draws held-out (validation) data; a point's own `r` and
+ * `ring` override the layer's radius and add an outline. `labels(i)` writes text beside
+ * each point (null for none), drawn after all the dots. With `onDrag` each point is
+ * draggable by pointer and focusable: arrow keys nudge it 4 units (Shift: 20), always
+ * clamped to the domain. `roving` makes the layer one tab stop: Page Up/Down (or [ and ])
+ * and Home/End move focus between the points.
  */
-export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel }: {
+export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel, labels, roving = false }: {
   data: readonly PlotPoint[];
   tone?: Tone;
   r?: number;
@@ -266,12 +360,19 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
   onDrag?: (i: number, p: Point) => void;
   /** Screen-reader name of a draggable point (default "point i"). */
   pointLabel?: (i: number) => string;
+  labels?: (i: number) => PointLabel | null;
+  /** Draggable points share one tab stop (for layers with many points). */
+  roving?: boolean;
 }) {
   const { xs, ys, toData } = usePlot();
   const dragging = useRef<number | null>(null);
+  const [current, setCurrent] = useState(0);
+  const refs = useRef(new Map<number, SVGGElement>());
+  const focusIndex = Math.min(current, Math.max(0, data.length - 1));
 
   const onPointerDown = (e: PointerEvent<SVGGElement>, i: number) => {
     dragging.current = i;
+    setCurrent(i);
     e.currentTarget.setPointerCapture(e.pointerId);
     e.currentTarget.focus();
   };
@@ -281,40 +382,133 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
     if (p) onDrag?.(i, p);
   };
   const onKeyDown = (e: KeyboardEvent<SVGGElement>, i: number) => {
+    const to = roving ? rovingPointTarget(e.key, i, data.length) : null;
+    if (to !== null) {
+      e.preventDefault();
+      setCurrent(to);
+      refs.current.get(to)?.focus();
+      return;
+    }
     const p = nudgePoint([data[i].x, data[i].y], e.key, xs, ys, e.shiftKey);
     if (!p) return;
     e.preventDefault();
     onDrag?.(i, p);
   };
+  const keysHint = roving && data.length > 1 ? ' Arrow keys move it; Page Up and Page Down pick another point.' : ' Arrow keys move it.';
 
   return (
     <g className="plot-points">
       {data.map((d, i) => {
         const cx = xs.map(d.x);
         const cy = ys.map(d.y);
+        const pr = d.r ?? r;
         const cls = `plot-point ${toneClass(d.tone ?? tone, 'info')} ${(d.hollow ?? hollow) ? 'is-hollow' : ''}`;
-        if (!onDrag) return <circle key={i} className={cls} cx={cx} cy={cy} r={r} />;
+        const ring = d.ring && <circle className={`plot-ring tone-${d.ring}`} cx={cx} cy={cy} r={pr + RING_GAP} />;
+        if (!onDrag) {
+          const dot = <circle key={i} className={cls} cx={cx} cy={cy} r={pr} />;
+          return ring ? <g key={i}>{ring}{dot}</g> : dot;
+        }
         return (
           <g
             key={i}
+            ref={(el) => {
+              if (el) refs.current.set(i, el);
+              else refs.current.delete(i);
+            }}
             className={`${cls} is-draggable`}
             role="button"
-            tabIndex={0}
+            tabIndex={!roving || i === focusIndex ? 0 : -1}
             aria-roledescription="draggable point"
-            aria-label={`${pointLabel?.(i) ?? `point ${i + 1}`} at ${num(d.x)}, ${num(d.y)}. Arrow keys move it.`}
+            aria-label={`${pointLabel?.(i) ?? `point ${i + 1}`} at ${num(d.x)}, ${num(d.y)}.${keysHint}`}
+            onFocus={roving ? () => setCurrent(i) : undefined}
             onPointerDown={(e) => onPointerDown(e, i)}
             onPointerMove={(e) => onPointerMove(e, i)}
             onPointerUp={() => (dragging.current = null)}
             onPointerCancel={() => (dragging.current = null)}
             onKeyDown={(e) => onKeyDown(e, i)}
           >
-            <circle className="plot-hit" cx={cx} cy={cy} r={Math.max(r + 8, 14)} />
-            <circle cx={cx} cy={cy} r={r + 1.5} />
+            {ring}
+            <circle className="plot-hit" cx={cx} cy={cy} r={Math.max(pr + 8, 14)} />
+            <circle cx={cx} cy={cy} r={pr + 1.5} />
           </g>
+        );
+      })}
+      {labels && <PointLabels data={data} tone={tone} labels={labels} />}
+    </g>
+  );
+}
+
+const LABEL_DX = 6;
+
+/**
+ * Text beside points in data space, in each point's tone (dim points get muted text).
+ * Points' `labels` draws these after its dots; use this layer directly when other layers
+ * must sit between the dots and their labels.
+ */
+export function PointLabels({ data, tone, labels }: { data: readonly PlotPoint[]; tone?: Tone; labels: (i: number) => PointLabel | null }) {
+  const { xs, ys } = usePlot();
+  return (
+    <g className="plot-labels" aria-hidden="true">
+      {data.map((d, i) => {
+        const l = labels(i);
+        if (l == null) return null;
+        const { text, left = false } = typeof l === 'string' ? { text: l } : l;
+        return (
+          <text
+            key={i}
+            className={`plot-label ${toneClass(d.tone ?? tone, 'info')}`}
+            x={xs.map(d.x) + (left ? -LABEL_DX : LABEL_DX)}
+            y={ys.map(d.y) + 4}
+            textAnchor={left ? 'end' : 'start'}
+          >
+            {text}
+          </text>
         );
       })}
     </g>
   );
+}
+
+/**
+ * A transparent sheet over the plotting box that reports the pointer in data space
+ * (clamped to the domain): `onDown` for click-to-add or click-to-drop, `onMove` for a
+ * probe that follows the pointer. Put it under layers that take their own pointer events
+ * (draggable points). It has no keyboard path of its own: pair it with a PlotCursor and a
+ * button, or with draggable points.
+ */
+export function PointerLayer({ onDown, onMove, cursor = 'crosshair' }: {
+  onDown?: (p: Point) => void;
+  onMove?: (p: Point) => void;
+  /** CSS cursor over the box. */
+  cursor?: string;
+}) {
+  const { box, toData } = usePlot();
+  const report = (e: PointerEvent<SVGRectElement>, fn?: (p: Point) => void) => {
+    if (!fn) return;
+    const p = toData(e.clientX, e.clientY);
+    if (p) fn(p);
+  };
+  return (
+    <rect
+      className="plot-pointer"
+      style={{ cursor }}
+      x={box.x}
+      y={box.y}
+      width={box.width}
+      height={box.height}
+      onPointerDown={(e) => report(e, onDown)}
+      onPointerMove={onMove ? (e) => report(e, onMove) : undefined}
+      aria-hidden="true"
+    />
+  );
+}
+
+/**
+ * The keyboard twin of a PointerLayer: a hollow grey point the learner moves with the
+ * arrow keys (or drags), whose position a button then uses ("Add at cursor").
+ */
+export function PlotCursor({ at, onMove, label = 'Cursor' }: { at: Point; onMove: (p: Point) => void; label?: string }) {
+  return <Points data={[{ x: at[0], y: at[1], tone: 'muted', hollow: true }]} r={5} onDrag={(_, p) => onMove(p)} pointLabel={() => label} />;
 }
 
 const num = (v: number) => String(Number(v.toPrecision(3)));

@@ -894,6 +894,16 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
   <Arrow from={[0, 0]} to={v} label="a" tone="info" />
   <Points data={[{ x, y, tone, hollow }]} r={4.5} onDrag={(i, [x, y]) => …} pointLabel={(i) => 'centroid A'} />
 </Plot2D>
+
+<Plot2D x={…} y={…} width={356} aspect="equal" ariaLabel="…">          {/* height follows: x and y units equally long */}
+  <PointerLayer onDown={(p) => add(p)} onMove={setProbe} cursor="crosshair" />   {/* under the draggable layers */}
+  <Points data={[{ x, y, tone, r: 6, ring: 'bad' }]} labels={(i) => words[i]} />   // per-point r / ring; text labels
+  <Points data={many} onDrag={…} roving />                             {/* one tab stop: PageUp/PageDown, [ ], Home/End */}
+  <PointLabels data={dots} labels={(i) => show[i] ? { text, left: true } : null} />   {/* labels as their own later layer */}
+  <PlotCursor at={cursor} onMove={setCursor} label="Add-point cursor" />  {/* keyboard twin of a PointerLayer */}
+  <Arrow to={v} tone="muted" dashed />
+  <VLine at={t} onDrag={(x) => move(x)} onStep={(dir) => step(dir)} ariaLabel="Threshold" valueText="threshold 0.62" />
+</Plot2D>
 ```
 - Layers are children in data coordinates, drawn in order; path layers are clipped to the plot box. Custom layers call `usePlot()` (from `components/plotContext`) for `xs`, `ys` and `box`.
 - `tickValues: [1, 1e25, 1e50, 1e75, 1e100]` on an axis replaces the automatic ticks (values outside the domain are dropped): a log axis over a huge range otherwise strides by an awkward number of decades and can miss the top. `axisTickValues(spec)` in `core/plot` is the tested logic.
@@ -901,6 +911,10 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - `Curve fn` is sampled evenly on screen (so log axes too) and breaks where `fn` isn't finite. `Heat fn` returns a 0..1 intensity of `tone` or `{ tone, intensity }` (a region), or pass `grid` (row 0 at the top); memoise `fn`, since it repaints when it changes.
 - Draggable `Points` take pointer drags and are focusable: arrow keys move 4 units (Shift: 20), always clamped to the domain (`nudgePoint`, `clampPoint`).
 - A `dim` rule is a quiet reference line (faint line, muted label). `formatTick` writes 1.5k, 2M, and 10ⁿ on log axes.
+- `aspect="equal"` sets the height so one unit of x is as long on screen as one of y (a decade on a log axis): equal domains give a square box. `equalAspectHeight(width, x, y)` and `plotMargin(x, y)` in `core/plot` are the tested logic; gradient-descent, linear-logistic-regression, matrices-transformations and vectors-similarity use it instead of a hand-tuned 356 × 350.
+- `PointerLayer` is a transparent sheet over the box reporting the pointer in data space (`onDown` click-to-add or drop, `onMove` a probe); it has no keyboard path, so pair it with `PlotCursor` (a hollow grey draggable point) and a button, or with draggable points. Replaces gradient-descent's DropLayer, linear-logistic-regression's PointerSheet, and decision-trees' and clustering's click catchers.
+- `Points`: a point's own `r` and `ring: Tone` (an outline 2.5 units out; decision-trees' misclassified samples) and `labels(i)` (text beside each point in its tone, dim → muted; `PointLabels` is the same as a separate layer, for when something must sit between the dots and their words, as in embeddings). `roving` makes draggable points one tab stop: Page Up/Down (or `[` `]`) pick the previous/next point, Home/End the ends, arrows still move it (`rovingPointTarget`); linear-logistic-regression's up-to-20 points use it.
+- `Arrow dashed` dashes the shaft. `VLine onDrag` is a slider (`role="slider"`, a grip, pointer drag anywhere in the box; arrows call `onStep(±1)`, or nudge 4 units through `onDrag` without one): classification-metrics' threshold.
 - `paintImage(w, h, draw)` (`components/canvasImage.ts`) is the shared paint-to-data-URL step behind Heat and CellGrid's canvas mode.
 
 ### `core/graphLayout.ts`, `GraphView.tsx` — topological-sort, union-find, minimum-spanning-trees, relations-orders, cycle-detection, dfa-nfa, lexing-tokens, deadlocks, garbage-collection, memory-leaks, build-systems, bundlers-code-splitting, coupling-cohesion, test-doubles, dependency-injection, behavioral-patterns, mobile-app-lifecycle, sockets-api, software-licensing; graph-representations, ci-pipelines
