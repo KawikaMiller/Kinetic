@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSetCaption } from './caption';
 import { useRegisterPlayer } from './playerRegistry';
 import type { Frame } from './types';
@@ -39,6 +39,20 @@ export function shortcutFor(e: KeyLike, target: TargetLike | null): ShortcutActi
     default:
       return null;
   }
+}
+
+/**
+ * For each frame, the index of the frame whose caption it shows: itself when it has a `say`,
+ * else the nearest earlier frame with one (-1: no caption yet, so the intro caption stays).
+ * The player resolves captions through this, so jumping or scrubbing to a frame without `say`
+ * shows exactly what playing up to it would have shown. Pure, for testing.
+ */
+export function captionSources(frames: readonly Frame[]): number[] {
+  let source = -1;
+  return frames.map((f, i) => {
+    if (f.say !== undefined) source = i;
+    return source;
+  });
 }
 
 export interface PlayerOptions {
@@ -106,9 +120,14 @@ export function usePlayer<F extends Frame>(frames: F[], opts: PlayerOptions = {}
   const isPlaying = playing && i < last;
   useRegisterPlayer(keyboard);
 
+  // The caption comes from the last frame at or before `i` that has one, not from wherever the
+  // player was before a jump. Keyed on that source frame, so stepping through frames without
+  // `say` doesn't re-set (and re-fade) the caption, and a caption the stage set itself stays.
+  const sources = useMemo(() => captionSources(frames), [frames]);
+  const captionFrame = frames[sources[i] ?? -1];
   useEffect(() => {
-    if (frame && frame.say !== undefined) setCaption(frame.say, { quiet: frame.quiet });
-  }, [frame, setCaption]);
+    if (captionFrame) setCaption(captionFrame.say, { quiet: captionFrame.quiet });
+  }, [captionFrame, setCaption]);
 
   useEffect(() => {
     if (!isPlaying) return;

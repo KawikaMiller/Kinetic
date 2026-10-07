@@ -314,6 +314,11 @@ useIntroCaption(<>Intro…</>, deps?)          // set on mount and when deps cha
 setCaption(node, { quiet: true })            // swap text in place, no fade (live readouts, per keystroke)
 // step frames: { say, quiet: true } → the player passes it through
 ```
+A frame without `say` shows the caption of the last frame at or before it that has one, however
+the player got there: playing, stepping, jumping or scrubbing (`captionSources(frames)` in
+`usePlayer.ts`, memoized per frames array and unit-tested). Before frame 0..k has any `say`, the
+intro caption stays. The player sets the caption only when that source frame changes, so a caption
+the stage sets itself between frames survives until the next frame with its own `say`.
 
 ### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
 Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
