@@ -1149,6 +1149,7 @@ These differ between runs even on unchanged code, because a motion transition is
 1.5 s after the seek. Treat them as eyeball-only:
 - `db-indexes@2`
 - `replication@3`, `replication@7`
+- `ci-pipelines@0`, `endianness@0`, `minimum-spanning-trees@0` (seen in kit-k4's run)
 - every `@live` shot (simulations are timing-dependent)
 - driven shots of a stage with a `WideRegion` at 390: its "swipe" hint times out after 5 s, so a
   shot taken around then may catch it mid-fade
