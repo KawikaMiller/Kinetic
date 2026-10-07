@@ -25,6 +25,8 @@ export interface MemCell {
   addr: number;
   value: string | number;
   tone?: Tone;
+  /** Ring this cell in its own tone (a page fault in orange), whatever `highlight` says. */
+  ring?: Tone;
 }
 
 export interface MemPointer {
@@ -91,6 +93,10 @@ export const formatAddr = (addr: number, digits: number) => `0x${addr.toString(1
 export function memoryMapLayout(o: {
   regions: readonly MemRegion[];
   cells?: readonly MemCell[];
+  /**
+   * Pointer tags left of the cells. Omit it and the pointer column collapses; pass [] to keep
+   * the column (and the map's width) steady while a pointer comes and goes.
+   */
   pointers?: readonly MemPointer[];
   /** Bytes per row (default 8). */
   unit?: number;
@@ -153,19 +159,22 @@ export function memoryMapLayout(o: {
   const addrDigits = o.addrDigits ?? Math.max(4, maxAddr.toString(16).length);
   const addrW = Math.ceil(16 + (addrDigits + 2) * MEMMAP.ADDR_CHAR);
   const naturalCell = Math.ceil(Math.max(MEMMAP.MIN_CELL_W, ...cells.map((c) => String(c.value).length * MEMMAP.VALUE_CHAR + 16)));
-  const regionW = Math.ceil(
-    Math.max(60, ...o.regions.map((r, i) => 13 + bands[i].depth * MEMMAP.BRACKET_STEP + r.label.length * MEMMAP.LABEL_CHAR + 4)),
-  );
-  const fixed = MEMMAP.POINTER_W + addrW + MEMMAP.LINK_W + regionW;
+  // Unused columns collapse: no pointers prop, no pointer column; no regions, no brackets (nor the lane before them).
+  const regionW = o.regions.length
+    ? Math.ceil(Math.max(60, ...o.regions.map((r, i) => 13 + bands[i].depth * MEMMAP.BRACKET_STEP + r.label.length * MEMMAP.LABEL_CHAR + 4)))
+    : 0;
+  const linkW = o.regions.length ? MEMMAP.LINK_W : 0;
+  const pointerW = o.pointers === undefined ? 0 : MEMMAP.POINTER_W;
+  const fixed = pointerW + addrW + linkW + regionW;
   const cellW = Math.max(naturalCell, (o.width ?? 0) - fixed);
-  const cell = MEMMAP.POINTER_W + addrW;
+  const cell = pointerW + addrW;
   return {
     width: fixed + cellW,
     height: y,
     unit,
     rows,
     bands,
-    cols: { pointer: 0, addr: MEMMAP.POINTER_W, addrW, cell, cellW, link: cell + cellW, region: cell + cellW + MEMMAP.LINK_W, regionW },
+    cols: { pointer: 0, addr: pointerW, addrW, cell, cellW, link: cell + cellW, region: cell + cellW + linkW, regionW },
     addrDigits,
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
 import { BitStrip } from '../../components/BitStrip';
 import { SectionTitle } from '../../components/Panel';
@@ -12,8 +12,6 @@ import { NA } from '../../core/format';
 import { IPV4_BITS, blockSize, contains, ipToString, maskOf, networkOf, parseCidr, parseIPv4 } from '../../core/ipv4';
 import type { FieldParse } from '../../core/parse';
 import type { Tone } from '../../core/tone';
-import { rectIn, useMeasure } from '../../core/useMeasure';
-import { dividerSlots, nearestSlot } from './divider';
 import { addressCaption, equalCaption, handCaption, membershipCaption, teamsCaption, type SplitMode } from './frames';
 import {
   DEFAULT_CIDR, DEFAULT_PARENT, DEFAULT_PROBE, DEFAULT_TEAMS, MAX_FIELD_CHARS, PRESETS, addressBits, allocate, andBits,
@@ -149,72 +147,23 @@ function AddressScene({ picker }: { picker: ReactNode }) {
   );
 }
 
-const DIVIDER_KEYS: Record<string, (p: number) => number> = {
-  ArrowLeft: (p) => p - 1,
-  ArrowDown: (p) => p - 1,
-  ArrowRight: (p) => p + 1,
-  ArrowUp: (p) => p + 1,
-  PageDown: (p) => p - 8,
-  PageUp: (p) => p + 8,
-  Home: () => 0,
-  End: () => IPV4_BITS,
-};
-
-/** The address's 32 bits with a draggable, arrow-key prefix divider laid over the measured strip. */
+/** The address's 32 bits with the prefix divider: drag it, or focus it and use the arrow keys. */
 function PrefixStrip({ addr, prefix, onPrefix }: { addr: number; prefix: number; onPrefix: (p: number) => void }) {
-  const wrap = useRef<HTMLDivElement>(null);
-  const handle = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const rects = useMeasure(wrap, (el) => [...el.querySelectorAll('.bit')].map((b) => rectIn(b, el)));
-  const slots = rects ? dividerSlots(rects) : [];
-  const slot = slots[prefix];
-
-  const pick = (e: PointerEvent<HTMLDivElement>) => {
-    const box = e.currentTarget.getBoundingClientRect();
-    if (slots.length) onPrefix(nearestSlot(slots, e.clientX - box.left, e.clientY - box.top));
-  };
-  const onKey = (e: KeyboardEvent) => {
-    const to = DIVIDER_KEYS[e.key];
-    if (!to) return;
-    e.preventDefault();
-    onPrefix(Math.max(0, Math.min(IPV4_BITS, to(prefix))));
-  };
-
   return (
-    <div
-      ref={wrap}
-      className="sc-strip"
-      onPointerDown={(e) => {
-        dragging.current = true;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        pick(e);
-        handle.current?.focus();
+    <BitStrip
+      bits={addressBits(addr)}
+      groups={octetGroups(addr)}
+      size="sm"
+      toneOf={(i) => (i < prefix ? 'info' : 'violet')}
+      ariaLabel={`${ipToString(addr)} in bits`}
+      divider={{
+        at: prefix,
+        onMove: onPrefix,
+        tag: `/${prefix}`,
+        ariaLabel: 'Prefix divider: network bits on the left, host bits on the right',
+        valueText: (p) => `/${p}: ${p} network bits, ${IPV4_BITS - p} host bits`,
       }}
-      // keep the focus on the handle: a mousedown's default action would move it to <body>
-      onMouseDown={(e) => e.preventDefault()}
-      onPointerMove={(e) => dragging.current && pick(e)}
-      onPointerUp={() => (dragging.current = false)}
-      onPointerCancel={() => (dragging.current = false)}
-    >
-      <BitStrip bits={addressBits(addr)} groups={octetGroups(addr)} size="sm" toneOf={(i) => (i < prefix ? 'info' : 'violet')} ariaLabel={`${ipToString(addr)} in bits`} />
-      {slot && (
-        <div
-          ref={handle}
-          className="sc-divider"
-          role="slider"
-          tabIndex={0}
-          aria-label="Prefix divider: network bits on the left, host bits on the right"
-          aria-valuemin={0}
-          aria-valuemax={IPV4_BITS}
-          aria-valuenow={prefix}
-          aria-valuetext={`/${prefix}: ${prefix} network bits, ${IPV4_BITS - prefix} host bits`}
-          style={{ left: slot.x, top: slot.y - 6, height: slot.h + 12 }}
-          onKeyDown={onKey}
-        >
-          <span className="sc-divider-tag">/{prefix}</span>
-        </div>
-      )}
-    </div>
+    />
   );
 }
 

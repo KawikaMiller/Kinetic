@@ -247,7 +247,7 @@ export function Hint({
  *   answer rather than a hover; the default `tint` matches the hover.
  */
 export function ChipButton({
-  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, className = '', onClick, children,
+  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, disabled = false, className = '', onClick, children,
 }: {
   tone?: Tone;
   on?: boolean;
@@ -257,6 +257,8 @@ export function ChipButton({
   title?: string;
   /** Accessible name when the label alone isn't enough (an icon like "×"). */
   ariaLabel?: string;
+  /** Greyed out and not pressable (a sandbox that's full until Reset). */
+  disabled?: boolean;
   className?: string;
   onClick: () => void;
   children: ReactNode;
@@ -265,7 +267,7 @@ export function ChipButton({
     'chip', 'chip-button', `tone-${tone}`, size === 'md' && 'is-md', on && 'is-on', on && onStyle === 'solid' && 'is-solid', className,
   ].filter(Boolean).join(' ');
   return (
-    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} title={title} onClick={onClick}>
+    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} title={title} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );

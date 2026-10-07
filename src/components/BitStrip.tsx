@@ -1,10 +1,15 @@
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { placeValue, type Bit, type BitGroup } from '../core/bits';
 import { power } from '../core/format';
 import { radioKeyTarget } from '../core/radio';
 import type { Tone } from '../core/tone';
+import { rectIn, useMeasure } from '../core/useMeasure';
+import { dividerKeyTarget, dividerSlots, nearestSlot } from './bitDivider';
 
 export type { Bit, BitGroup } from '../core/bits';
+
+/** How far the divider line reaches above and below the bits, in px. */
+const DIVIDER_OVERHANG = 6;
 
 /** How place values are labelled: 'value' (512, 1K, 32K) or 'exponent' (2⁹, 2¹⁰, 2²³, for wide registers). */
 export type PlaceLabels = 'value' | 'exponent';
@@ -57,10 +62,14 @@ function runsOf(n: number, groups: readonly BitGroup[]): Run[] {
  * - `layout="cells"` drops the strip's own box: the bits become items of the parent's CSS
  *   grid, so several rows of a table line up column for column (error-detection-correction).
  *   Each bit fills its grid column; no groups or labels in this layout.
+ * - `divider: { at, onMove?, tag?, ariaLabel?, valueText? }` draws a line after bit `at - 1`
+ *   (a prefix length), placed over the measured bits so it follows the strip's wrapping. With
+ *   `onMove` it's a slider: drag anywhere on the strip, or arrows / PageUp-PageDown (a byte) /
+ *   Home-End on the focused line (subnetting-cidr's /prefix).
  */
 export function BitStrip({
   bits, onToggle, groups = [], placeValues = false, labelOf, ariaLabelOf, pressedOf, toneOf, pending, highlight = [], highlightTone = 'info',
-  clear = 'quiet', layout = 'strip', size = 'md', ariaLabel = 'bits', className = '',
+  clear = 'quiet', layout = 'strip', size = 'md', divider, ariaLabel = 'bits', className = '',
 }: {
   bits: readonly Bit[];
   onToggle?: (i: number) => void;
@@ -80,6 +89,8 @@ export function BitStrip({
   /** How clear bits draw: `quiet` (faint edge and digit) or `toned` (edge and digit in the tone). */
   clear?: 'quiet' | 'toned';
   layout?: 'strip' | 'cells';
+  /** A line between two bits (strip layout only); with `onMove` it can be dragged and moved by keyboard. */
+  divider?: BitDividerSpec;
   size?: 'sm' | 'md' | 'lg';
   ariaLabel?: string;
   className?: string;
@@ -142,7 +153,7 @@ export function BitStrip({
     );
   }
 
-  return (
+  const strip = (
     <div className={rootClass} role="group" aria-label={ariaLabel} style={ring}>
       {runsOf(n, groups).map((run) => (
         <div key={run.from} className={`bit-group ${run.group?.tone ? `tone-${run.group.tone}` : ''}`}>
@@ -165,6 +176,81 @@ export function BitStrip({
           )}
         </div>
       ))}
+    </div>
+  );
+  return divider ? <BitDivider divider={divider} n={n}>{strip}</BitDivider> : strip;
+}
+
+/** BitStrip's `divider`: a line between two bits (a prefix length, the binary point). */
+export interface BitDividerSpec {
+  /** Slot 0..n: the divider sits after this many bits. */
+  at: number;
+  /** Makes it draggable (pointer anywhere on the strip) and a keyboard slider. */
+  onMove?: (at: number) => void;
+  /** A tag on top of the line ("/24"). */
+  tag?: ReactNode;
+  /** The slider's accessible name. */
+  ariaLabel?: string;
+  /** What a screen reader says for a position ("/24: 24 network bits, 8 host bits"). */
+  valueText?: (at: number) => string;
+}
+
+/**
+ * The strip with its divider laid over the measured bit positions (bitDivider.ts), so it
+ * follows the strip as it wraps on a phone. With `onMove`: drag anywhere on the strip, or
+ * focus the line and use the arrows (one bit), PageUp/PageDown (a byte), Home/End.
+ */
+function BitDivider({ divider, n, children }: { divider: BitDividerSpec; n: number; children: ReactNode }) {
+  const { at, onMove, tag, ariaLabel = 'Divider', valueText } = divider;
+  const wrap = useRef<HTMLDivElement>(null);
+  const handle = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const rects = useMeasure(wrap, (el) => [...el.querySelectorAll('.bit')].map((b) => rectIn(b, el)));
+  const slots = rects ? dividerSlots(rects) : [];
+  const slot = slots[at];
+
+  const pick = (e: PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    if (slots.length) onMove?.(nearestSlot(slots, e.clientX - box.left, e.clientY - box.top));
+  };
+  const onKey = (e: KeyboardEvent) => {
+    const to = dividerKeyTarget(e.key, at, n);
+    if (to === null) return;
+    e.preventDefault();
+    onMove?.(to);
+  };
+  const drag = onMove && {
+    onPointerDown: (e: PointerEvent<HTMLDivElement>) => {
+      dragging.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      pick(e);
+      handle.current?.focus();
+    },
+    // keep the focus on the handle: a mousedown's default action would move it to <body>
+    onMouseDown: (e: MouseEvent) => e.preventDefault(),
+    onPointerMove: (e: PointerEvent<HTMLDivElement>) => dragging.current && pick(e),
+    onPointerUp: () => (dragging.current = false),
+    onPointerCancel: () => (dragging.current = false),
+  };
+
+  return (
+    <div ref={wrap} className={`bit-divided ${onMove ? 'is-movable' : ''}`} {...drag}>
+      {children}
+      {slot && (
+        <div
+          ref={handle}
+          className="bit-divider"
+          style={{ left: slot.x, top: slot.y - DIVIDER_OVERHANG, height: slot.h + 2 * DIVIDER_OVERHANG }}
+          {...(onMove
+            ? {
+                role: 'slider', tabIndex: 0, 'aria-label': ariaLabel, 'aria-valuemin': 0, 'aria-valuemax': n, 'aria-valuenow': at,
+                'aria-valuetext': valueText?.(at), onKeyDown: onKey,
+              }
+            : { 'aria-hidden': true })}
+        >
+          {tag != null && <span className="bit-divider-tag">{tag}</span>}
+        </div>
+      )}
     </div>
   );
 }

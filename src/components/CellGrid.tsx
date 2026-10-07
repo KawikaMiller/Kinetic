@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import type { Pt } from '../core/geometry';
 import { gridGeometry, gridKeyTarget, type Cell } from '../core/grid';
 import { paintImage } from './canvasImage';
-import { canvasFill, canvasInk, DEFAULT_TINT, resolveSize, textReadable, type CellSize, type GridCellSpec, type SizePreset } from './cellGridPaint';
+import { canvasFill, canvasInk, DEFAULT_TINT, textReadable, type CellSize, type GridCellSpec, type SizePreset } from './cellGridPaint';
+import { cellGridFrame, cellGridLayout, GRID_LABEL, type CellGridGeometry } from './cellGridLayout';
 import type { Tone } from '../core/tone';
 
 export type { CellSize, GridCellSpec } from './cellGridPaint';
+export type { CellGridGeometry, CellGridShape } from './cellGridLayout';
 export { MIN_TEXT_PX } from './cellGridPaint';
 
 export interface GridHighlight {
@@ -15,20 +18,7 @@ export interface GridHighlight {
 
 /** Above this many cells the grid draws them on a canvas (labels and rings stay SVG). */
 export const CANVAS_THRESHOLD = 400;
-/** Where things are, for drawing an overlay (arrows between cells, a path) in the grid's coordinates. */
-export interface CellGridGeometry {
-  /** Top-left corner of a cell. */
-  at: (r: number, c: number) => { x: number; y: number };
-  /** Centre of a cell. */
-  center: (r: number, c: number) => { x: number; y: number };
-  cell: number;
-  gap: number;
-  /** Whole drawing size, labels included. */
-  width: number;
-  height: number;
-}
-const LABEL_FONT = 10;
-const LABEL_CHAR_W = 6.2;
+const LABEL_FONT = GRID_LABEL.FONT;
 
 /**
  * A row × column grid of cells: a Hamming matrix, a sieve, a heatmap, a 1,000-person crowd.
@@ -40,10 +30,20 @@ const LABEL_CHAR_W = 6.2;
  * `size` is a preset or `{ cell, gap?, font? }`; `overlay(geometry)` draws SVG over the cells
  * in the grid's own coordinates (dependency arrows in a DP table).
  */
-export function CellGrid({
-  rows, cols, cell, rowLabels, colLabels, onCellClick, cellTitle, cellAriaLabel, highlight = [], size = 'sm', gap,
-  rowSuffix, overlay, ariaLabel, className = '',
-}: {
+export function CellGrid(props: CellGridProps) {
+  return <CellGridImpl {...props} />;
+}
+
+/**
+ * CellGrid as a <g> at `at`, for a grid inside a scene's own SVG (with RefArrows to its
+ * cells): aim them with `cellGridLayout(sameProps, at)`, which places everything where
+ * this draws it. Everything works as in CellGrid, keyboard and canvas mode included.
+ */
+export function CellGridGroup({ at, ...props }: CellGridProps & { at: Pt }) {
+  return <CellGridImpl {...props} at={at} />;
+}
+
+interface CellGridProps {
   rows: number;
   cols: number;
   cell: (r: number, c: number) => GridCellSpec;
@@ -64,16 +64,17 @@ export function CellGrid({
   overlay?: (geometry: CellGridGeometry) => ReactNode;
   ariaLabel?: string;
   className?: string;
-}) {
-  const s = resolveSize(size);
-  const rowLabelWidth = rowLabels ? maxLabelChars(rowLabels) * LABEL_CHAR_W + 8 : 0;
-  const colLabelHeight = colLabels ? LABEL_FONT + 8 : 0;
-  const geo = gridGeometry({ rows, cols, cell: s.cell, gap: gap ?? s.gap, rowLabelWidth, colLabelHeight });
-  const width = geo.width + (rowSuffix ? rowSuffix.width + 8 : 0);
+}
+
+function CellGridImpl({
+  rows, cols, cell, rowLabels, colLabels, onCellClick, cellTitle, cellAriaLabel, highlight = [], size = 'sm', gap,
+  rowSuffix, overlay, ariaLabel, className = '', at,
+}: CellGridProps & { at?: Pt }) {
+  const { size: s, rowLabelWidth, geo, width } = cellGridFrame({ rows, cols, rowLabels, colLabels, size, gap, rowSuffix });
   const canvasMode = rows * cols > CANVAS_THRESHOLD;
   const clickable = !!onCellClick;
   const [focus, setFocus] = useState<Cell>({ r: 0, c: 0 });
-  const svg = useRef<SVGSVGElement>(null);
+  const svg = useRef<SVGSVGElement & SVGGElement>(null);
   const cellRefs = useRef(new Map<number, SVGGElement>());
 
   const labelOf = (r: number, c: number) => cellAriaLabel?.(r, c) ?? textOf(cell(r, c).text) ?? `row ${r + 1}, column ${c + 1}`;
@@ -103,15 +104,8 @@ export function CellGrid({
     onCellClick?.(hit.r, hit.c);
   };
 
-  return (
-    <svg
-      ref={svg}
-      viewBox={`0 0 ${width} ${geo.height}`}
-      width={width}
-      className={`cellgrid ${clickable ? 'is-clickable' : ''} ${className}`}
-      role={clickable ? 'group' : 'img'}
-      aria-label={ariaLabel}
-    >
+  const body = (
+    <>
       {colLabels?.map((label, c) => (
         <text key={`c${c}`} className="cellgrid-label" x={geo.at(0, c).x + s.cell / 2} y={LABEL_FONT} textAnchor="middle">
           {label}
@@ -190,17 +184,7 @@ export function CellGrid({
 
       {overlay && (
         <g className="cellgrid-overlay">
-          {overlay({
-            at: geo.at,
-            center: (r, c) => {
-              const p = geo.at(r, c);
-              return { x: p.x + s.cell / 2, y: p.y + s.cell / 2 };
-            },
-            cell: s.cell,
-            gap: geo.gap,
-            width,
-            height: geo.height,
-          })}
+          {overlay(cellGridLayout({ rows, cols, rowLabels, colLabels, size, gap, rowSuffix }))}
         </g>
       )}
 
@@ -210,6 +194,16 @@ export function CellGrid({
             {rowSuffix.render(r)}
           </text>
         ))}
+    </>
+  );
+  const rootProps = { className: `cellgrid ${clickable ? 'is-clickable' : ''} ${className}`, role: clickable ? 'group' : 'img', 'aria-label': ariaLabel };
+  return at ? (
+    <g ref={svg} transform={`translate(${at.x} ${at.y})`} {...rootProps}>
+      {body}
+    </g>
+  ) : (
+    <svg ref={svg} viewBox={`0 0 ${width} ${geo.height}`} width={width} {...rootProps}>
+      {body}
     </svg>
   );
 }
@@ -219,15 +213,19 @@ function CellRing({ at, size, className }: { at: { x: number; y: number }; size:
 }
 
 /** Screen pixels per drawing unit, kept up to date as the SVG resizes (measured only when `enabled`). */
-function useRenderedScale(svg: RefObject<SVGSVGElement | null>, drawingWidth: number, enabled: boolean): number | null {
+function useRenderedScale(svg: RefObject<SVGGraphicsElement | null>, drawingWidth: number, enabled: boolean): number | null {
   const [scale, setScale] = useState<number | null>(null);
   useEffect(() => {
     const el = svg.current;
     if (!enabled || !el) return;
-    const measure = () => setScale(el.getBoundingClientRect().width / drawingWidth);
+    const measure = () => {
+      if (el instanceof SVGSVGElement) return setScale(el.getBoundingClientRect().width / drawingWidth);
+      const m = el.getScreenCTM();
+      setScale(m ? Math.hypot(m.a, m.b) : null);
+    };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(el);
+    ro.observe(el instanceof SVGSVGElement ? el : (el.ownerSVGElement ?? el));
     return () => ro.disconnect();
   }, [svg, drawingWidth, enabled]);
   return enabled ? scale : null;
@@ -270,12 +268,9 @@ function useCanvasCells(
 
 const textOf = (node: ReactNode) => (typeof node === 'string' || typeof node === 'number' ? String(node) : null);
 
-function maxLabelChars(labels: readonly ReactNode[]): number {
-  return labels.reduce<number>((m, l) => Math.max(m, textOf(l)?.length ?? 2), 0);
-}
 
 /** Client coordinates → the SVG's drawing coordinates. */
-function svgPoint(svg: SVGSVGElement | null, clientX: number, clientY: number) {
+function svgPoint(svg: SVGGraphicsElement | null, clientX: number, clientY: number) {
   const m = svg?.getScreenCTM();
   if (!svg || !m) return null;
   const p = new DOMPoint(clientX, clientY).matrixTransform(m.inverse());

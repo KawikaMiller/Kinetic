@@ -96,8 +96,11 @@ describe('relay agent', () => {
       expect(h.wire!.giaddr).toBe(RELAY_IP);
       expect(h.tone === 'violet' || h.wire!.type === 'DHCPACK').toBe(true);
     }
-    // the laptop's broadcasts are drawn only to the relay: the server is on another subnet
-    expect(scene.steps.filter((s) => s.from === 'laptop').every((s) => s.to === 'relay')).toBe(true);
+    // the laptop's broadcasts reach only the relay: the server is on another subnet
+    for (const s of scene.steps.filter((x) => x.from === 'laptop')) {
+      expect(s.to).toEqual(['relay']);
+      expect(s.broadcast).toBe(true);
+    }
   });
 
   it('offers an address from the pool for the relay\'s subnet', () => {

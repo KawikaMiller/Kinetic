@@ -1,6 +1,7 @@
-import type { CSSProperties } from 'react';
-import { barGeometry, domainFraction, ganttTicks, type Domain } from '../core/gantt';
+import { useRef, type CSSProperties } from 'react';
+import { barGeometry, domainFraction, ganttTicks, spreadLabels, type Domain } from '../core/gantt';
 import type { Tone } from '../core/tone';
+import { useMeasure } from '../core/useMeasure';
 
 export interface GanttLane {
   id: string;
@@ -16,13 +17,20 @@ export interface GanttBar {
   tone?: Tone;
   /** Text inside the bar (best with size="md"). Also its tooltip and accessible name. */
   label?: string;
-  /** work = solid (default), wait = hatched (ready but not running), blocked = dashed outline. */
+  /**
+   * work = solid (default): running. wait = hatched: ready and able to run, but waiting its turn
+   * (a ready queue). blocked = dashed outline: can't run until something else happens (I/O, a
+   * lock, a timer). A thread waiting for a disk read is `blocked`, not `wait`.
+   */
   kind?: 'work' | 'wait' | 'blocked';
   /** 0..1: draw only this share of the bar, over a dashed ghost of the whole planned bar. */
   progress?: number;
   /** An outline in this tone (the critical path, the job being asked about). */
   ring?: Tone;
 }
+
+/** Space kept between neighbouring marker labels, px. */
+const MARKER_LABEL_GAP = 4;
 
 export interface GanttMarker {
   at: number;
@@ -32,14 +40,15 @@ export interface GanttMarker {
 
 /**
  * Horizontal swim lanes on a shared time axis: one row per lane, bars from start to end,
- * an optional `now` cursor and labelled markers (first paint, a deadline). Positions are
+ * an optional `now` cursor and labelled markers (first paint, a deadline; labels of markers
+ * close together are nudged apart, core/gantt spreadLabels). Positions are
  * percentages, so it stretches to its container; on a phone a lesson wraps it in
  * `WideRegion` when bars get too thin to read. Extracted from ci-pipelines' wall-clock
  * chart, which renders through it pixel-identically. Motion is CSS transitions only, so
  * prefers-reduced-motion (global.css) stills it.
  */
 export function GanttLanes({
-  lanes, bars, domain, now, markers = [], unit = '', axis = false, size = 'sm', labelWidth, onBarClick, ariaLabel, className = '',
+  lanes, bars, domain, now, markers = [], unit = '', axis = false, size = 'sm', labelWidth, labelMinPx, onBarClick, ariaLabel, className = '',
 }: {
   lanes: readonly GanttLane[];
   bars: readonly GanttBar[];
@@ -56,21 +65,38 @@ export function GanttLanes({
   size?: 'sm' | 'md';
   /** Lane label column width in px (default 92). */
   labelWidth?: number;
+  /** Bars narrower than this (in px, as drawn) drop their label instead of showing a clipped one; it stays the tooltip and name. */
+  labelMinPx?: number;
   onBarClick?: (id: string) => void;
   ariaLabel?: string;
   className?: string;
 }) {
   const style = labelWidth === undefined ? undefined : ({ '--gantt-label-w': `${labelWidth}px` } as CSSProperties);
   const at = (t: number) => `calc(var(--gantt-label-w) + (100% - var(--gantt-label-w)) * ${domainFraction(t, domain)})`;
+  const root = useRef<HTMLDivElement>(null);
+  // Real widths: the track (for labelMinPx) and each marker label (to keep close markers' labels apart).
+  const measured = useMeasure(root, (el) => ({
+    track: el.querySelector<HTMLElement>('.gantt-track, .gantt-marker-labels')?.clientWidth ?? 0,
+    labels: [...el.querySelectorAll<HTMLElement>('.gantt-marker-label')].map((l) => l.offsetWidth),
+  }));
+  const trackPx = measured?.track ?? 0;
+  const shift = measured && measured.labels.length === markers.length
+    ? spreadLabels(markers.map((m, i) => ({ x: domainFraction(m.at, domain) * trackPx, w: measured.labels[i] })), MARKER_LABEL_GAP)
+    : markers.map(() => 0);
+  const showLabel = (b: GanttBar) => labelMinPx === undefined || !trackPx || (barGeometry(b.start, b.end, domain, b.progress ?? 1).shown / 100) * trackPx >= labelMinPx;
 
   return (
-    <div className={`gantt size-${size} ${markers.length ? 'has-markers' : ''} ${axis ? 'has-axis' : ''} ${className}`} style={style} role="group" aria-label={ariaLabel}>
+    <div ref={root} className={`gantt size-${size} ${markers.length ? 'has-markers' : ''} ${axis ? 'has-axis' : ''} ${className}`} style={style} role="group" aria-label={ariaLabel}>
       {markers.length > 0 && (
         <div className="gantt-row gantt-marker-row" aria-hidden="true">
           <span />
           <div className="gantt-marker-labels">
             {markers.map((m, i) => (
-              <span key={i} className={`gantt-marker-label tone-${m.tone}`} style={{ left: `${domainFraction(m.at, domain) * 100}%` }}>
+              <span
+                key={i}
+                className={`gantt-marker-label tone-${m.tone}`}
+                style={{ left: `${domainFraction(m.at, domain) * 100}%`, ...(shift[i] && ({ '--dx': `${shift[i]}px` } as CSSProperties)) }}
+              >
                 {m.label}
               </span>
             ))}
@@ -84,7 +110,7 @@ export function GanttLanes({
             {bars
               .filter((b) => b.lane === lane.id)
               .map((b) => (
-                <Bar key={b.id} bar={b} domain={domain} onClick={onBarClick} />
+                <Bar key={b.id} bar={b} domain={domain} onClick={onBarClick} showLabel={showLabel(b)} />
               ))}
           </div>
         </div>
@@ -110,7 +136,7 @@ export function GanttLanes({
   );
 }
 
-function Bar({ bar: b, domain, onClick }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void }) {
+function Bar({ bar: b, domain, onClick, showLabel }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean }) {
   const g = barGeometry(b.start, b.end, domain, b.progress ?? 1);
   const classes = ['gantt-bar', b.tone && `tone-${b.tone}`, `is-${b.kind ?? 'work'}`, b.ring && 'is-ring'].filter(Boolean).join(' ');
   const style = {
@@ -118,7 +144,7 @@ function Bar({ bar: b, domain, onClick }: { bar: GanttBar; domain: Domain; onCli
     width: `${g.shown}%`,
     ...(b.ring ? { '--gantt-ring': `var(--${b.ring})` } : {}),
   } as CSSProperties;
-  const content = b.label && <span className="gantt-bar-label">{b.label}</span>;
+  const content = showLabel && b.label && <span className="gantt-bar-label">{b.label}</span>;
   return (
     <>
       {b.progress !== undefined && <span className="gantt-plan" style={{ left: `${g.left}%`, width: `${g.full}%` }} />}

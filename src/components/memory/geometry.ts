@@ -10,7 +10,8 @@ export interface Rect {
 
 /** Default sizes, shared so a lesson's layout maths and the drawn shapes agree. */
 export const SLOT = { w: 150, h: 30, nameW: 58 } as const;
-export const HEAP = { titleH: 24, fieldH: 22 } as const;
+/** titleOnlyH: a box with no fields and `collapseEmpty`, just its title row. */
+export const HEAP = { titleH: 24, fieldH: 22, titleOnlyH: 26 } as const;
 
 export const rectCenter = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
 
@@ -33,11 +34,15 @@ export function slotValueRect(at: Pt, o: { w?: number; h?: number; nameW?: numbe
 /** Centre of a VarSlot's value box: pass it as a RefArrow's `from`. */
 export const slotPort = (at: Pt, o: { w?: number; h?: number; nameW?: number } = {}): Pt => rectCenter(slotValueRect(at, o));
 
-/** Height of a HeapObject with `fieldCount` rows. */
-export const heapHeight = (fieldCount: number) => HEAP.titleH + Math.max(1, fieldCount) * HEAP.fieldH;
+/**
+ * Height of a HeapObject with `fieldCount` rows. With no fields it keeps one empty row (an
+ * empty object `{}`), unless `collapseEmpty`: then it's just the title row.
+ */
+export const heapHeight = (fieldCount: number, collapseEmpty = false) =>
+  fieldCount === 0 && collapseEmpty ? HEAP.titleOnlyH : HEAP.titleH + Math.max(1, fieldCount) * HEAP.fieldH;
 
 /** The whole HeapObject box: pass it as a RefArrow's `to`. */
-export const heapRect = (at: Pt, w: number, fieldCount: number): Rect => ({ x: at.x, y: at.y, w, h: heapHeight(fieldCount) });
+export const heapRect = (at: Pt, w: number, fieldCount: number, collapseEmpty = false): Rect => ({ x: at.x, y: at.y, w, h: heapHeight(fieldCount, collapseEmpty) });
 
 /** Which side of a HeapObject a field's reference leaves from. */
 export type PortSide = 'left' | 'right';

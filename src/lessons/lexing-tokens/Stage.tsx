@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
-import { GraphView, type GraphEdge, type GraphNode, type Pt } from '../../components/GraphView';
+import { GraphView, type GraphEdge, type GraphNode, type LoopSide, type Pt } from '../../components/GraphView';
 import { SectionTitle, Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextField, Toggle } from '../../components/ui';
@@ -35,8 +35,13 @@ const AT: Record<State, Pt> = {
   op: polar(0, 140), plus: polar(30, 140), pp: polar(30, 250), slash: polar(70, 140), cmt: polar(52, 250), str: polar(110, 140), strEnd: polar(110, 250),
 };
 
-const NODES: GraphNode<State>[] = LEXER.states.map((s) => ({ id: s, label: STATE_LABEL[s], at: AT[s], accept: s in ACCEPTS }));
-const EDGES: GraphEdge<State>[] = MOVES.map((m) => ({ from: m.from, to: m.to, label: m.label }));
+/** Self-loops that would sit on an edge into the state go on its free side instead. */
+const LOOP_SIDE: Partial<Record<State, LoopSide>> = { str: 'left', cmt: 'right' };
+/** Labels on S's spokes sit past the middle, out of the crowd round S. */
+const SPOKE_LABEL_AT = 0.62;
+
+const NODES: GraphNode<State>[] = LEXER.states.map((s) => ({ id: s, label: STATE_LABEL[s], at: AT[s], accept: s in ACCEPTS, loopSide: LOOP_SIDE[s] }));
+const EDGES: GraphEdge<State>[] = MOVES.map((m) => ({ from: m.from, to: m.to, label: m.label, ...(m.from === 'S' && { labelAt: SPOKE_LABEL_AT }) }));
 
 export function Stage() {
   const [presetId, setPresetId] = useState<string>(PRESETS[0].id);

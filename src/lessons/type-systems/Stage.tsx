@@ -276,43 +276,42 @@ function InferScene({ picker }: { picker: ReactNode }) {
     >
       <div className="tsy stage-pad">
         <WideRegion minWidth={500} label="Typed AST: scroll sideways to see all of it">
-          <div style={{ maxWidth: AST_W, margin: '0 auto' }}>
-            <TreeSvg
-              shape={{ root: ROOT, children: (id) => (id === ROOT ? [prog.body.id] : children(byId.get(id)!).map((e) => e.id)) }}
-              layout="tidy"
-              width={AST_W}
-              height={AST_H}
-              levelGap={56}
-              top={26}
-              className="tsy-ast"
-              ariaLabel="The program's syntax tree with a type on each node"
-              nodeClass={(id) =>
-                `${id === f.hot ? 'is-hot' : ''} ${conflictNodes.has(id) ? 'is-bad' : ''} ${id === ROOT && done ? 'is-done' : ''}`
-              }
-              renderNode={(id) => {
-                const label = id === ROOT ? rootLabel : nodeLabel(byId.get(id)!);
-                const ty = typeAt(id);
-                const typeText = show(ty);
-                const tone = id === ROOT && done ? 'ok' : conflictNodes.has(id) ? 'bad' : varsOf(ty).length ? 'violet' : 'info';
-                const w = Math.max(34, label.length * 8 + 16);
-                const bw = Math.max(30, typeText.length * 6.6 + 12);
-                return (
-                  <>
-                    <rect x={-w / 2} y={-13} width={w} height={26} rx={7} />
-                    <text y={4.5} textAnchor="middle">
-                      {label}
+          <TreeSvg
+            natural
+            shape={{ root: ROOT, children: (id) => (id === ROOT ? [prog.body.id] : children(byId.get(id)!).map((e) => e.id)) }}
+            layout="tidy"
+            width={AST_W}
+            height={AST_H}
+            levelGap={56}
+            top={26}
+            className="tsy-ast"
+            ariaLabel="The program's syntax tree with a type on each node"
+            nodeClass={(id) =>
+              `${id === f.hot ? 'is-hot' : ''} ${conflictNodes.has(id) ? 'is-bad' : ''} ${id === ROOT && done ? 'is-done' : ''}`
+            }
+            renderNode={(id) => {
+              const label = id === ROOT ? rootLabel : nodeLabel(byId.get(id)!);
+              const ty = typeAt(id);
+              const typeText = show(ty);
+              const tone = id === ROOT && done ? 'ok' : conflictNodes.has(id) ? 'bad' : varsOf(ty).length ? 'violet' : 'info';
+              const w = Math.max(34, label.length * 8 + 16);
+              const bw = Math.max(30, typeText.length * 6.6 + 12);
+              return (
+                <>
+                  <rect x={-w / 2} y={-13} width={w} height={26} rx={7} />
+                  <text y={4.5} textAnchor="middle">
+                    {label}
+                  </text>
+                  <g className={`tsy-badge tone-${tone}`}>
+                    <rect x={-bw / 2} y={16} width={bw} height={17} rx={8.5} />
+                    <text y={28.5} textAnchor="middle">
+                      {typeText}
                     </text>
-                    <g className={`tsy-badge tone-${tone}`}>
-                      <rect x={-bw / 2} y={16} width={bw} height={17} rx={8.5} />
-                      <text y={28.5} textAnchor="middle">
-                        {typeText}
-                      </text>
-                    </g>
-                  </>
-                );
-              }}
-            />
-          </div>
+                  </g>
+                </>
+              );
+            }}
+          />
         </WideRegion>
         <div className="tsy-solve">
           <div className="tsy-col">
@@ -340,7 +339,7 @@ function InferScene({ picker }: { picker: ReactNode }) {
                 <tbody>
                   {substRows.map(([v, t]) => (
                     <tr key={v}>
-                      <th scope="row">{v}</th>
+                      <th scope="row" className="keep-case">{v}</th>
                       <td>
                         <code>{show(t)}</code>
                       </td>

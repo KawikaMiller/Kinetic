@@ -158,16 +158,29 @@ export function layeredPositions<K extends GraphKey>(l: Layering<K>, s: LayeredS
   return s.direction === 'down' ? { at, width: cross, height: main } : { at, width: main, height: cross };
 }
 
-/** Nodes evenly round a circle, the first at the top, clockwise. */
-export function circlePositions<K extends GraphKey>(ids: readonly K[], width: number, height: number, pad: number): Map<K, Pt> {
+/** An ellipse's radii, for a circle layout stretched to fit wide labels. */
+export interface Radii {
+  rx: number;
+  ry: number;
+}
+
+/**
+ * Nodes evenly round a circle centred in width × height, the first at the top, clockwise.
+ * The radius fits the box less `pad`; pass `radii` to place them round an ellipse instead.
+ */
+export function circlePositions<K extends GraphKey>(ids: readonly K[], width: number, height: number, pad: number, radii?: Radii): Map<K, Pt> {
   const r = Math.max(0, Math.min(width, height) / 2 - pad);
+  const { rx, ry } = radii ?? { rx: r, ry: r };
   return new Map(
     ids.map((id, i) => {
       const a = -Math.PI / 2 + (2 * Math.PI * i) / Math.max(1, ids.length);
-      return [id, { x: width / 2 + r * Math.cos(a), y: height / 2 + r * Math.sin(a) }];
+      return [id, { x: width / 2 + rx * Math.cos(a), y: height / 2 + ry * Math.sin(a) }];
     }),
   );
 }
+
+/** Which side of its node a self-loop is drawn on. */
+export type LoopSide = 'top' | 'right' | 'bottom' | 'left';
 
 /* ---------- edge routing ---------- */
 
@@ -271,39 +284,52 @@ export function detourBend(a: Pt, b: Pt, obstacles: readonly Obstacle[]): Bend |
  */
 export function routeEdge(
   a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox,
-  o: { directed: boolean; arrowGap: number; parallel?: boolean; curve?: 'right' | 'down'; obstacles?: readonly Obstacle[] },
+  o: {
+    directed: boolean; arrowGap: number; parallel?: boolean; curve?: 'right' | 'down'; obstacles?: readonly Obstacle[];
+    /** Self-loops only: the side of the node it's drawn on (default top). */
+    loopSide?: LoopSide;
+    /** Where the label sits along the edge, 0 (at a) .. 1 (at b); default the middle. Ignored on self-loops. */
+    labelAt?: number;
+  },
 ): EdgeRoute {
-  if (a === b || (a.x === b.x && a.y === b.y)) return selfLoop(a, nodeA);
+  if (a === b || (a.x === b.x && a.y === b.y)) return selfLoop(a, nodeA, o.loopSide);
+  const t = o.labelAt;
   if (o.curve === 'right') {
     const x1 = a.x + nodeA.w / 2;
     const x2 = b.x - nodeB.w / 2 - o.arrowGap;
     const mid = (x1 + x2) / 2;
-    return { kind: 'path', d: `M ${x1} ${a.y} C ${mid} ${a.y}, ${mid} ${b.y}, ${x2} ${b.y}`, label: { x: mid, y: (a.y + b.y) / 2 - LABEL_LIFT } };
+    const at = t === undefined ? { x: mid, y: (a.y + b.y) / 2 } : cubicAt({ x: x1, y: a.y }, { c1: { x: mid, y: a.y }, c2: { x: mid, y: b.y } }, { x: x2, y: b.y }, t);
+    return { kind: 'path', d: `M ${x1} ${a.y} C ${mid} ${a.y}, ${mid} ${b.y}, ${x2} ${b.y}`, label: { x: at.x, y: at.y - LABEL_LIFT } };
   }
   if (o.curve === 'down') {
     const y1 = a.y + nodeA.h / 2;
     const y2 = b.y - nodeB.h / 2 - o.arrowGap;
     const mid = (y1 + y2) / 2;
-    return { kind: 'path', d: `M ${a.x} ${y1} C ${a.x} ${mid}, ${b.x} ${mid}, ${b.x} ${y2}`, label: { x: (a.x + b.x) / 2 + LABEL_LIFT, y: mid } };
+    const at = t === undefined ? { x: (a.x + b.x) / 2, y: mid } : cubicAt({ x: a.x, y: y1 }, { c1: { x: a.x, y: mid }, c2: { x: b.x, y: mid } }, { x: b.x, y: y2 }, t);
+    return { kind: 'path', d: `M ${a.x} ${y1} C ${a.x} ${mid}, ${b.x} ${mid}, ${b.x} ${y2}`, label: { x: at.x + LABEL_LIFT, y: at.y } };
   }
   const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
   const [ux, uy] = [(b.x - a.x) / len, (b.y - a.y) / len];
   const detour = !o.parallel && o.obstacles ? detourBend(a, b, o.obstacles) : null;
-  if (detour) return laneRoute(a, b, nodeA, nodeB, detour, o.directed ? o.arrowGap : null);
+  if (detour) return laneRoute(a, b, nodeA, nodeB, detour, o.directed ? o.arrowGap : null, t);
   if (!o.parallel) {
     const trim = o.directed ? outlineDistance(nodeB, ux, uy) + o.arrowGap : 0;
-    return {
-      kind: 'line', x1: a.x, y1: a.y, x2: b.x - ux * trim, y2: b.y - uy * trim,
-      label: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - LABEL_LIFT },
-    };
+    const label = t === undefined ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - LABEL_LIFT } : { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t - LABEL_LIFT };
+    return { kind: 'line', x1: a.x, y1: a.y, x2: b.x - ux * trim, y2: b.y - uy * trim, label };
   }
   // Bend to the right of the direction of travel, so a→b and b→a sit on opposite sides.
   const c = { x: (a.x + b.x) / 2 - uy * PARALLEL_BEND * 2, y: (a.y + b.y) / 2 + ux * PARALLEL_BEND * 2 };
-  return bentRoute(a, b, nodeA, nodeB, c, o.directed ? o.arrowGap : null);
+  return bentRoute(a, b, nodeA, nodeB, c, o.directed ? o.arrowGap : null, t);
+}
+
+/** The quadratic Bézier a → (control c) → b at t. */
+function quadAt(a: Pt, c: Pt, b: Pt, t: number): Pt {
+  const u = 1 - t;
+  return { x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y };
 }
 
 /** A parallel edge's curve a → (control c) → b, trimmed at both outlines (and `arrowGap` short of b when directed). */
-function bentRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, c: Pt, arrowGap: number | null): EdgeRoute {
+function bentRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, c: Pt, arrowGap: number | null, labelAt?: number): EdgeRoute {
   const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
   const [nx, ny] = [-(b.y - a.y) / len, (b.x - a.x) / len];
   const toward = (p: Pt, q: Pt, d: number) => {
@@ -321,12 +347,14 @@ function bentRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, c: Pt, arrowGap
     kind: 'path',
     d: `M ${f(start.x)} ${f(start.y)} Q ${f(c.x)} ${f(c.y)} ${f(end.x)} ${f(end.y)}`,
     // The curve's midpoint is halfway between the chord's midpoint and the control point.
-    label: { x: (a.x + b.x) / 4 + c.x / 2 + nx * LABEL_LIFT, y: (a.y + b.y) / 4 + c.y / 2 + ny * LABEL_LIFT },
+    label: labelAt === undefined
+      ? { x: (a.x + b.x) / 4 + c.x / 2 + nx * LABEL_LIFT, y: (a.y + b.y) / 4 + c.y / 2 + ny * LABEL_LIFT }
+      : (({ x, y }) => ({ x: x + nx * LABEL_LIFT, y: y + ny * LABEL_LIFT }))(quadAt(a, c, b, labelAt)),
   };
 }
 
 /** A detour: the cubic a → b through `bend`, trimmed at both outlines along its end tangents. */
-function laneRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, bend: Bend, arrowGap: number | null): EdgeRoute {
+function laneRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, bend: Bend, arrowGap: number | null, labelAt = 0.5): EdgeRoute {
   const trimmed = (p: Pt, toward: Pt, n: NodeBox, extra: number) => {
     const l = Math.hypot(toward.x - p.x, toward.y - p.y) || 1;
     const [ux, uy] = [(toward.x - p.x) / l, (toward.y - p.y) / l];
@@ -335,7 +363,7 @@ function laneRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, bend: Bend, arr
   };
   const start = trimmed(a, bend.c1, nodeA, 0);
   const end = trimmed(b, bend.c2, nodeB, arrowGap ?? 0);
-  const mid = cubicAt(a, bend, b, 0.5);
+  const mid = cubicAt(a, bend, b, labelAt);
   const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
   const [nx, ny] = [-(b.y - a.y) / len, (b.x - a.x) / len];
   const side = Math.sign((bend.c1.x - a.x) * nx + (bend.c1.y - a.y) * ny) || 1;
@@ -347,18 +375,31 @@ function laneRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, bend: Bend, arr
   };
 }
 
-function selfLoop(p: Pt, n: NodeBox): EdgeRoute {
-  const top = n.shape === 'circle' ? n.r : n.h / 2;
-  const half = n.shape === 'circle' ? n.r * 0.6 : Math.min(n.w / 4, 14);
+/** Unit vectors for a loop on each side: `out` points away from the node, `along` runs clockwise round it. */
+const LOOP_FRAME: Record<LoopSide, { out: Pt; along: Pt }> = {
+  top: { out: { x: 0, y: -1 }, along: { x: 1, y: 0 } },
+  right: { out: { x: 1, y: 0 }, along: { x: 0, y: 1 } },
+  bottom: { out: { x: 0, y: 1 }, along: { x: -1, y: 0 } },
+  left: { out: { x: -1, y: 0 }, along: { x: 0, y: -1 } },
+};
+/** A side loop's label sits this much further out, clear of the loop's own width. */
+const SIDE_LABEL_GAP = 10;
+
+function selfLoop(p: Pt, n: NodeBox, side: LoopSide = 'top'): EdgeRoute {
+  const vertical = side === 'top' || side === 'bottom';
+  const top = n.shape === 'circle' ? n.r : vertical ? n.h / 2 : n.w / 2;
+  const half = n.shape === 'circle' ? n.r * 0.6 : Math.min((vertical ? n.w : n.h) / 4, 14);
   const lift = Math.max(top, 16) * 1.9;
   const f = (v: number) => Number(v.toFixed(2));
-  const sx = p.x - half;
-  const ex = p.x + half;
-  const y0 = p.y - top * (n.shape === 'circle' ? 0.8 : 1);
+  const { out, along } = LOOP_FRAME[side];
+  // The point `s` along the node's side and `d` out from its centre.
+  const at = (s: number, d: number) => `${f(p.x + along.x * s + out.x * d)} ${f(p.y + along.y * s + out.y * d)}`;
+  const d0 = top * (n.shape === 'circle' ? 0.8 : 1);
+  const labelOut = d0 + lift * 0.75 + 4 + (vertical ? 0 : SIDE_LABEL_GAP);
   return {
     kind: 'path',
-    d: `M ${f(sx)} ${f(y0)} C ${f(sx - half)} ${f(y0 - lift)}, ${f(ex + half)} ${f(y0 - lift)}, ${f(ex)} ${f(y0 - 2)}`,
-    label: { x: p.x, y: y0 - lift * 0.75 - 4 },
+    d: `M ${at(-half, d0)} C ${at(-2 * half, d0 + lift)}, ${at(2 * half, d0 + lift)}, ${at(half, d0 + 2)}`,
+    label: { x: p.x + out.x * labelOut, y: p.y + out.y * labelOut },
   };
 }
 

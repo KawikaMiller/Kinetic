@@ -2,18 +2,6 @@
 .sc-error { color: var(--bad); }
 .sc-muted { color: var(--muted); }
 
-/* the strip and its divider: the divider is placed over measured bit positions (divider.ts) */
-.sc-strip { position: relative; padding: 18px 8px 4px; touch-action: none; cursor: ew-resize; align-self: flex-start; max-width: 100%; }
-.sc-divider {
-  position: absolute; width: 16px; margin-left: -8px; cursor: ew-resize;
-  display: flex; justify-content: center; border-radius: 4px;
-}
-.sc-divider::before { content: ''; width: 3px; height: 100%; border-radius: 2px; background: var(--hi); box-shadow: 0 0 8px color-mix(in srgb, var(--hi) 60%, transparent); }
-.sc-divider-tag {
-  position: absolute; top: -17px; padding: 0 5px; border-radius: 5px;
-  font: 700 11px/15px var(--mono); color: var(--on-hi); background: var(--hi); white-space: nowrap;
-}
-
 .sc-readouts { max-width: 460px; }
 .sc-readouts th { width: 40%; text-transform: none; letter-spacing: 0; font: 600 12.5px var(--font); }
 

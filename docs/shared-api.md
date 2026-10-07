@@ -60,7 +60,7 @@ Loaded globally. Colour flows through `--c` / `--on-c`, set by a `.tone-*` class
 | `.tray` | dashed collector panel |
 | `.section-title` (+ `.is-regular`, `> .hint-inline`) | 11px uppercase label: 700 weight / .1em, or regular weight / .08em |
 | `.empty-note`, `.hint` (+ `.is-muted`, `.is-block`), `.focus-ring` | faint mono placeholder; 13px hint; 3px ring in `--c` |
-| `.keep-case` | `text-transform: none` inside an uppercased label (see the `Stat` note) |
+| `.keep-case` | `text-transform: none` inside an uppercased label (see the `Stat` note), on the label itself or on a `.data-table th` (Greek type variables) |
 | `.stage-pad` | flex column stage padding 20/22 |
 | `.canvas-wrap` | `position: relative; height: var(--h, 420px)`, canvas `display: block` |
 | `.data-table`, `.log-row` | shared table look; left-bordered tinted log row in `--c` |
@@ -405,6 +405,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 <ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 <ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
+<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
 const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 <StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 <StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
@@ -457,6 +458,7 @@ parent, give it `display: block` in the lesson CSS so its line box matches a div
 ```tsx
 <Bar value={load} max={1} tone="hi" marker={0.75} height={8} label={…} trailing={…} animate />
 <Bar … color={c} track="var(--line-2)" transition={{ duration: 0.15 }} markOpacity={0.7} markLabel="resize threshold" className="xx-bar" />
+<Bar value={t} max={lease} markers={[{ at: t1, label: 'T1', tone: 'violet' }, { at: t2, label: 'T2', tone: 'info' }]} />  // tone ticks, labels under the track
 ```
 It renders `.meter` / `.meter-track` / `.meter-fill` / `.meter-mark`: a track (default `--line`)
 with a radius-99 fill in `--c`. `transition` is the fill's motion transition (default 0.4 s
@@ -595,6 +597,11 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 <BitStrip bits={utf8} toneOf={(i) => (isPrefix(i) ? 'dim' : 'info')} />          // per-bit tone beats the group's
 <BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
 <BitStrip bits={perms} onToggle={flip} ariaLabelOf={bitName} />   // screen readers hear "group write", not "bit 4"
+<BitStrip bits={addr} groups={octets} size="sm"                      // a draggable prefix divider (subnetting-cidr)
+          divider={{ at: prefix, onMove: setPrefix, tag: `/${prefix}`, ariaLabel: 'Prefix divider', valueText: (p) => `/${p}` }} />
+// divider: drawn over the measured bits (components/bitDivider: dividerSlots, nearestSlot, dividerKeyTarget), so it follows
+// the strip's wrapping on a phone. With onMove: drag anywhere on the strip; on the focused line Left/Down and Right/Up move
+// one bit, PageDown/PageUp a byte, Home/End to the ends. Without onMove it's a plain marker. Strip layout only.
 <BitStrip bits={out} pending={(i) => i < width - filled} toneOf={…} />  // columns not worked out yet: empty dashed slots
 // A row of a CSS-grid table (error-detection-correction's Hamming table): bits fill the grid's columns
 <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(7, 38px)` }}>
@@ -654,6 +661,7 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 <RefArrow bend={fanBend(i, arrowsIntoThisBox)} … />                                        // spread n arrows into one box
 // a reference that leaves to the left, and a structural link between two whole boxes
 <HeapObject … fields={[{ name: '[[Environment]]', isRef: true, port: 'left' }]} />
+<HeapObject … fields={[]} collapseEmpty />   // just the title row; size it with heapHeight(0, true) / heapRect(at, w, 0, true). Without it, [] keeps one empty row ({})
 <RefArrow from={heapFieldPort(at, w, 0, 'left')} to={envRect} />
 <RefArrow from={childEnvRect} to={parentEnvRect} color="var(--faint)" dashed thin />
 ```
@@ -739,6 +747,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 ```
 - `layoutTree(shape, 'inorder' | 'tidy')` is pure (tested): `inorder` places a binary tree by in-order rank, so a BST reads sorted left to right and a node with only a right child still sits left of it. `tidy` gives leaves consecutive columns in depth-first order and centres each parent between its first and last child: right for DOM, dependency and accessibility trees and for call trees like fib(n). `treeX(col, columns, width, pad)` maps a column to pixels.
 - Vertical spacing: `levelGap` fixes it; otherwise it's `min(maxLevelGap, (height - bottomRoom) / depth)`.
+- `natural`: the SVG fills its container's width but never grows past its viewBox `width`, centred (a three-node parse tree stays small). Use it instead of wrapping the tree in a `maxWidth` div (grammars-parsing, parsing-ast, type-systems).
 - Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
 - Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
 - Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.
@@ -844,6 +853,7 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element. Cell text (strings and numbers) is painted too whenever it lands at `MIN_TEXT_PX` (8px) or more on screen (the SVG's rendered scale is measured); below that it's left out, so a lesson whose canvas grid can shrink that far must say so on screen. modular-arithmetic's mod 22–24 tables now show their numbers (its WideRegion keeps them ≥ 9px), so its "too many to number" note is gone. `cellTitle` tooltips are SVG-mode only.
 - `size` takes a custom `{ cell, gap?, font? }` beyond the presets (gap defaults to ~9% of the cell, font to ~38%, none under 16px cells). Pure rules (`resolveSize`, `textReadable`, `canvasFill`, `canvasInk`) live in `components/cellGridPaint.ts`, tested.
 - `overlay(geometry)` draws SVG over the cells and rings, in the grid's coordinates (`at`, `center`, `cell`, `gap`, `width`, `height`), with no pointer events: dependency arrows, a path through the grid. Not migrated yet: dynamic-programming's LCS table (an HTML grid of 40px cells with its own SVG arrow overlay) can now be expressed as `size={{ cell: 40 }}` + `overlay`, but moving it from HTML to SVG isn't pixel-identical, so it's left for that lesson's owner.
+- Inside a scene SVG (a grid with RefArrows to its cells): `<CellGridGroup at={{ x, y }} {...props} />` draws it as a `<g>` there, and `cellGridLayout(props, at)` (components/cellGridLayout, pure) returns the same geometry in scene coordinates (`at(r, c)`, `center(r, c)`, `cell`, `gap`, `width`, `height`) to aim arrows with. Keyboard, rings, overlay and canvas mode work the same.
 
 ### `core/bytes.ts`, `ByteGrid.tsx` — endianness, grpc-protobuf, symmetric-ciphers, macs-hmac, packet-capture-debugging, file-systems
 ```tsx
@@ -896,8 +906,14 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 // A state machine: start arrow, accepting states, self-loops, labels; a⇄b pairs bend apart by themselves
 <GraphView nodes={[{ id: 'q2', at, accept: true }, …]} edges={[{ from: 'q0', to: 'q0', label: '1' }, …]}
            directed startNode="q0" width={500} height={220} ariaLabel="…" />
+
+// Per node / per edge extras
+{ id: 'str', at, accept: true, shape: 'box', loopSide: 'left' }   // accept on a box = an inner outline; loopSide: top (default) | right | bottom | left
+{ from: 'S', to: 'int', label: '0-9', labelAt: 0.62 }              // label 0 (at from) .. 1 (at to) along the edge, any route
+<GraphView layout="circle" circleRadii={{ rx: 260, ry: 138 }} … />  // round an ellipse instead of a circle
+circlePositions(ids, width, height, pad, radii?)                    // the same, pure: dfa-nfa places every DFA state up front with it
 ```
-- `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
+- `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top; `circleRadii` makes it an ellipse). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
 - `layoutEdges` (layered only) is the edge set the layout uses; `edges` is still what's drawn. topological-sort lays out by
   the preset's edges plus any added edge that keeps the graph acyclic, so closing a cycle draws the new arrow without
   moving a single node.
@@ -939,11 +955,17 @@ file with Vitest tests beside it. Motion is CSS transitions, or motion with `use
   domain={[0, 20]} now={clock} unit=" ms" axis size="md"
   markers={[{ at: 18, label: 'deadline', tone: 'bad' }]}
   onBarClick={(id) => …} labelWidth={92} ariaLabel="…"
+  labelMinPx={barLabelPx('Big')}                                                    // thinner bars drop their (clipped) label
 />
 barGeometry(start, end, domain, progress)   // { left, full, shown } in % of the track
 domainFraction(t, domain)                   // clamped to [0, 1]: where the cursor sits
 ganttTicks(domain, count)                   // [{ value, at }] from core/scale
+barLabelPx(text)                            // px a bar needs to show `text` unclipped (cpu-scheduling: the longest job name)
+spreadLabels([{ x, w }], gap)               // px shifts that keep centred labels apart; GanttLanes uses it for marker labels
 ```
+- **work vs wait vs blocked:** `work` (solid) is running. `wait` (hatched) is *ready*: it could run right now and is waiting its turn, e.g. in a ready queue. `blocked` (dashed outline) *can't* run until something else happens: I/O, a lock, a timer. A thread waiting for a disk read is `blocked`, not `wait`.
+- Marker labels that would overlap (dhcp's T2 and end on a narrow clock) are nudged apart, measured in the browser; labels that fit don't move.
+- `labelMinPx`: a bar drawn narrower than this drops its label (it stays the tooltip and accessible name) instead of showing a clipped one.
 - Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
 - The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
 - ci-pipelines renders its wall-clock chart through it (it adds only `.ci-gantt .gantt { margin-top: 8px }`). The migration is pixel-identical: its smoke frames plus a driven matrix of 8 option combos × 5 frames × 1440/390, 80/80 unchanged.
@@ -957,16 +979,25 @@ ganttTicks(domain, count)                   // [{ value, at }] from core/scale
     { id: 'a', from: 'server', to: 'laptop', label: 'DHCPACK', lost: true },      // stops partway with a ✕
     { id: 'r', from: 'laptop', to: '*', label: 'DHCPREQUEST', note: 'after a 4 s timeout' },
     { id: 's', from: 'laptop', to: 'laptop', label: 'configure the interface' }, // self-message loop
+    { id: 'p', from: 'laptop', to: ['relay'], broadcast: true, label: 'DHCPDISCOVER' }, // a broadcast only these lifelines hear (dotted)
+    { id: 'f', from: 'server', to: ['a', 'b'], label: 'update' },               // fan-out: plain line, a head on each
   ]}
   step={player.frame.index}           // later messages hidden; the current one is --hi
+  currentStyle="tone"                 // optional: the current message keeps its tone, on a --hi band (dns cache hits stay green)
+  fit="shown"                         // optional: height follows the step instead of reserving room for every message
   onMessageClick={(id) => …}          // Enter/Space too
   width={640}                         // spread the lanes (never below the natural width)
 />
-sequenceLayout(actors, messages, width?)   // { width, height, lanes, head, rows, lifelineEnd, minWidth }
+sequenceLayout(actors, messages, width?, { wrapNotes? })  // { width, height, lanes, head, rows, lifelineEnd, minWidth }
+receivers(actors, message)                 // the actor ids a message reaches ('*' = all but the sender)
+shownExtent(layout, shown)                 // { lifelineEnd, height } for fit="shown"
+pickLayout(roomy, compact, containerPx)    // the roomy/compact choice SequenceDiagram makes
 wrapLabel(label, maxW)                     // one line, or two balanced lines split at a space
 ```
-- Labels wrap to two lines before the lanes widen. The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
-- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER").
+- Labels wrap to two lines before the lanes widen. Notes stay on one line (widening the lanes) while that drawing renders at `ROOMY_MIN_SCALE` (85%) or more of its size in its container; narrower than that (a phone) they wrap to two lines too. SequenceDiagram measures its container and picks; desktop drawings look as they always did.
+- A self-message on the last lifeline gets extra right margin for its label (wrapped to two balanced lines) instead of running off the drawing.
+- The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
+- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER", "Laptop to Relay (broadcast): …").
 - Example addresses in network demos come from the documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32) or RFC 1918 ranges.
 
 ### `MemoryMap` (`components/memory/`) — calling-conventions, memory-safety-bugs, endianness, isa-assembly, virtual-memory-paging, linking-loading
@@ -982,7 +1013,7 @@ import { MemoryMap, MemoryMapGroup, memCellRect, memPort, memRegionRect, memoryM
   pointers={[{ addr: 0x7fe0, label: 'rsp', tone: 'hi' }]}
   unit={8}                 // bytes per row: 1, 8, 4096 (pages)…
   direction="down"         // down: high addresses on top (default); up: low on top
-  highlight={[0x7ff0]}
+  highlight={[0x7ff0]} highlightTone="orange"   // or a cell's own { addr, value, ring: 'bad' }
   overlay={(L) => <RefArrow from={memPort(L, 0x600000, 'right')!} to={memPort(L, 0x603000, 'right')!} dangling bend={-40} />}
 />
 // inside a lesson's own scene, beside VarSlots and HeapObjects:
@@ -992,6 +1023,8 @@ const L = memoryMapLayout(props);   // same props → same rows
 ```
 - Rows are drawn only where they matter: region ends, cells, pointer targets, and every row of a region up to 12 rows long. A longer empty run collapses into one "⋮" gap row, so a process image from 0x400000 to 0x7ffd… fits. More than 400 rows is refused: use a bigger `unit`.
 - Columns are sized to their content (address digits, the longest value, the longest region label at its nesting depth); `width` stretches the cell column. A 24px link gutter between the cells and the brackets is where arrows between two cells bow (a negative `bend` heads right).
+- Unused columns collapse: omit `pointers` and there is no pointer column (pass `[]` to keep it, so the width holds steady while a pointer comes and goes); with no regions there are no brackets and no link gutter (virtual-memory-paging's RAM column: the scene went from 940 to 810 wide and fits a 768 tablet).
+- Rings: `highlight` rings in --hi, or `highlightTone`; a cell's own `ring: Tone` rings it in that tone regardless.
 - A region inside another gets `depth` 1 and its bracket steps inward. A cell is tinted by its innermost region; a cell's own `tone` is stronger. `freed` is hatched with struck values, and `guard` has a heavy border.
 - Ports: `memPort(L, addr, 'left' | 'right', at)`, `memCellRect(L, addr, at)` (a RefArrow `to`), `memRegionRect(L, i, at)`, `rowAt(L, addr)`. `memPort`, `memCellRect` and `rowAt` return null for an address off the map.
 - memory-safety-bugs is payload-free: the overflow demo is a name too long for its buffer, nothing more.

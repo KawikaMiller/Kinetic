@@ -68,6 +68,8 @@
   box-shadow: inset 0 0 0 1px var(--c);
 }
 .chip-button.is-on.is-solid { background: var(--c); color: var(--on-c); box-shadow: none; }
+/* pointer-events: none also keeps hover from tinting it */
+.chip-button:disabled { opacity: 0.45; pointer-events: none; }
 /* Dim chips: --dim is a fill colour, far too dark for text (about 1.8:1 on the panels), so
    their text uses --muted (about 5.7:1); the tint and border stay dim. */
 .chip.tone-dim,
@@ -128,8 +130,8 @@
   margin-left: 6px;
 }
 .empty-note { font: 500 12px var(--mono); color: var(--faint); }
-/* Inside an uppercased label (Stat, section titles): keep these characters as typed, e.g. Greek μ, λ. */
-.keep-case { text-transform: none; }
+/* Inside an uppercased label (Stat, section titles, a .data-table th): keep these characters as typed, e.g. Greek μ, λ. */
+.keep-case, .data-table th.keep-case { text-transform: none; }
 .hint { font-size: 13px; color: var(--faint); align-self: center; }
 .hint.is-muted { color: var(--muted); }
 .hint.is-block { flex-basis: 100%; }
@@ -204,6 +206,10 @@
   overflow: visible;
 }
 .meter-fill { display: block; height: 100%; border-radius: inherit; background: var(--c, var(--info)); }
+/* Bar markers: a tick in its tone, its label under the track */
+.meter.has-mark-labels .meter-track { margin-bottom: 14px; }
+.meter-mark[class*='tone-'] { background: var(--c); }
+.meter-mark-label { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; font-style: normal; }
 .meter-mark {
   position: absolute;
   top: -3px;
@@ -272,6 +278,19 @@
 .bit-strip { --bit-w: 24px; --bit-fs: 13px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 12px; }
 .bit-strip.size-sm { --bit-w: 18px; --bit-fs: 11px; }
 .bit-strip.size-lg { --bit-w: 30px; --bit-fs: 15px; }
+/* BitStrip divider: placed over the measured bit positions (components/bitDivider.ts); the top padding is room for its tag */
+.bit-divided { position: relative; padding: 18px 8px 4px; align-self: flex-start; max-width: 100%; }
+.bit-divided.is-movable { touch-action: none; cursor: ew-resize; }
+.bit-divider {
+  position: absolute; width: 16px; margin-left: -8px;
+  display: flex; justify-content: center; border-radius: 4px;
+}
+.bit-divided.is-movable .bit-divider { cursor: ew-resize; }
+.bit-divider::before { content: ''; width: 3px; height: 100%; border-radius: 2px; background: var(--hi); box-shadow: 0 0 8px color-mix(in srgb, var(--hi) 60%, transparent); }
+.bit-divider-tag {
+  position: absolute; top: -17px; padding: 0 5px; border-radius: 5px;
+  font: 700 11px/15px var(--mono); color: var(--on-hi); background: var(--hi); white-space: nowrap;
+}
 .bit-group { display: flex; flex-direction: column; gap: 5px; }
 .bit-row { display: flex; gap: 3px; }
 .bit-slot { display: flex; flex-direction: column; align-items: center; gap: 3px; }
@@ -498,6 +517,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 /* TreeSvg (components/TreeSvg.tsx): marks use .tone-* via --c; tint strength via --tree-tint.
    Base node looks are wrapped in :where() so a lesson's renderNode classes always win. */
 .tree-svg { overflow: visible; }
+.tree-svg.is-natural { display: block; width: 100%; height: auto; margin: 0 auto; }
 .tree-edge { stroke: var(--line-2); stroke-width: 2; }
 .tree-edge.is-marked { stroke: var(--c); stroke-width: var(--tree-marked-w, 3.5); }
 .tree-edge.is-dashed { stroke-dasharray: 6 4; }
@@ -672,6 +692,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   transition: fill 0.2s, stroke 0.2s;
 }
 .graph-node-accept { fill: none; stroke: var(--c, var(--line-2)); stroke-width: 2; }
+rect.graph-node-accept { stroke-width: 1.5; pointer-events: none; }
 .graph-node-label { font: 700 14px var(--mono); fill: var(--text); pointer-events: none; }
 .graph-node.is-solid .graph-node-shape { fill: var(--c); stroke: var(--c); stroke-width: 4; }
 .graph-node.is-solid .graph-node-label { fill: var(--on-c); }
@@ -744,7 +765,7 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 /* Cursor and marker lines span the lanes only, never the label rows above or below (16px + the 4px gap). */
 .gantt.has-markers > :is(.gantt-now, .gantt-marker) { top: 18px; }
 .gantt.has-axis > :is(.gantt-now, .gantt-marker) { bottom: 18px; }
-.gantt-marker-label { position: absolute; bottom: 0; transform: translateX(-50%); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; }
+.gantt-marker-label { position: absolute; bottom: 0; transform: translateX(calc(-50% + var(--dx, 0px))); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; }
 .gantt-tick { position: absolute; top: 2px; transform: translateX(-50%); font: 500 10px var(--mono); color: var(--muted); white-space: nowrap; }
 .gantt-tick:first-child { transform: none; }
 .gantt-tick:last-child { transform: translateX(-100%); }
@@ -766,6 +787,8 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .seq-msg.is-current .seq-line { stroke-width: 2.5; }
 .seq-note { font: italic 500 11px var(--font); fill: var(--faint); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 .seq-hit { fill: transparent; }
+/* currentStyle="tone": the current message keeps its tone; this band behind its row says "now" */
+.seq-now { fill: color-mix(in srgb, var(--hi) 12%, transparent); stroke: color-mix(in srgb, var(--hi) 55%, transparent); stroke-width: 1.5; }
 .seq-msg.is-clickable { cursor: pointer; }
 .seq-msg.is-clickable:hover .seq-hit { fill: color-mix(in srgb, var(--c, var(--faint)) 8%, transparent); }
 .seq-msg.is-clickable:focus-visible { outline: none; }
@@ -780,7 +803,7 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .memmap-row.is-guard .memmap-cell { stroke: var(--c); stroke-width: 2; }
 .memmap-row.is-freed .memmap-cell { fill: var(--cell); stroke-dasharray: 4 3; }
 .memmap-hatch { stroke: var(--faint); stroke-width: 1.5; opacity: 0.6; }
-.memmap-row.is-highlight .memmap-cell { stroke: var(--hi); stroke-width: 2.5; }
+.memmap-row.is-highlight .memmap-cell { stroke: var(--ring, var(--hi)); stroke-width: 2.5; }
 .memmap-value { font: 600 11.5px var(--mono); fill: var(--text); text-anchor: middle; }
 .memmap-row.is-freed .memmap-value { fill: var(--muted); text-decoration: line-through; }
 .memmap-gap rect { fill: none; stroke: var(--line-2); stroke-dasharray: 3 4; }

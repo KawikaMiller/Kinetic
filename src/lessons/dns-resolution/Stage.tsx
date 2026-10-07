@@ -122,6 +122,7 @@ function ResolveScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--ok)', label: 'answer' },
             { color: 'var(--bad)', label: 'NXDOMAIN' },
             { color: 'var(--orange)', label: 'timeout / SERVFAIL' },
+            { color: 'var(--hi)', label: 'message now', shape: 'square' },
           ]}
         />
       }
@@ -147,7 +148,7 @@ function ResolveScene({ picker }: { picker: ReactNode }) {
     >
       <div className="stage-pad dn">
         {lookup ? (
-          <SequenceDiagram actors={ACTORS} messages={ladder(lookup)} step={player.frame.step} ariaLabel={`Resolving ${lookup.name} ${lookup.type}`} />
+          <SequenceDiagram actors={ACTORS} messages={ladder(lookup)} step={player.frame.step} currentStyle="tone" ariaLabel={`Resolving ${lookup.name} ${lookup.type}`} />
         ) : (
           <p className="dn-empty">Nothing on the wire yet: press Look up.</p>
         )}

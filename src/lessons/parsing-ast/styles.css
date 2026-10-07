@@ -9,7 +9,6 @@
 .pa-side { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .pa-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .pa-error { color: var(--bad); }
-.pa-ast, .pa-pt { display: block; width: 100%; height: auto; }
 .pa-ast .tree-node circle { stroke-width: 2.5; transition: fill 0.25s, stroke 0.25s; }
 .pa-ast .tree-node.pa-op circle { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 18%, var(--cell)); }
 .pa-ast .tree-node.pa-num circle { stroke: var(--info); fill: color-mix(in srgb, var(--info) 18%, var(--cell)); }

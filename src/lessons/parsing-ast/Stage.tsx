@@ -103,8 +103,8 @@ function AstView({
   const roots = [...byId.keys()].filter((id) => visible(id) && !(parent.has(id) && visible(parent.get(id)!))).sort((a, b) => leftmost(byId.get(a)!) - leftmost(byId.get(b)!));
   if (!roots.length) return <p className="empty-note">no AST nodes yet</p>;
   return (
-    <div style={{ maxWidth: AST_W, margin: '0 auto' }}>
     <TreeSvg
+      natural
       shape={{ roots, children: (id) => astChildren(byId.get(id)!).map((c) => c.id).filter(visible) }}
       layout="tidy"
       width={AST_W}
@@ -135,7 +135,6 @@ function AstView({
         );
       }}
     />
-    </div>
   );
 }
 
@@ -312,31 +311,30 @@ function TreesScene({ picker, tokens, controls }: { picker: ReactNode; tokens: T
             <div className="pa-treecol">
               <SectionTitle>Parse tree (one node per call, as this parser walks it)</SectionTitle>
               <WideRegion minWidth={Math.min(ptW, 520)} label="Parse tree: scroll sideways to see all of it">
-                <div style={{ maxWidth: ptW, margin: '0 auto' }}>
-                  <TreeSvg
-                    shape={{ root: r.treeRoot, children: (id) => tree[id].children }}
-                    layout="tidy"
-                    width={ptW}
-                    height={ptH}
-                    levelGap={50}
-                    top={24}
-                    className="pa-pt"
-                    ariaLabel="Full parse tree"
-                    nodeClass={(id) => (tree[id].kept ? (/^[0-9.]+$/.test(tree[id].label) ? 'pa-num' : 'pa-op') : 'is-dropped')}
-                    renderNode={(id) => {
-                      const n = tree[id];
-                      const w = Math.max(28, n.label.length * 8 + 14);
-                      return (
-                        <>
-                          <rect x={-w / 2} y={-13} width={w} height={26} rx={n.isCall ? 5 : 13} />
-                          <text y={4.5} textAnchor="middle">
-                            {n.label}
-                          </text>
-                        </>
-                      );
-                    }}
-                  />
-                </div>
+                <TreeSvg
+                  natural
+                  shape={{ root: r.treeRoot, children: (id) => tree[id].children }}
+                  layout="tidy"
+                  width={ptW}
+                  height={ptH}
+                  levelGap={50}
+                  top={24}
+                  className="pa-pt"
+                  ariaLabel="Full parse tree"
+                  nodeClass={(id) => (tree[id].kept ? (/^[0-9.]+$/.test(tree[id].label) ? 'pa-num' : 'pa-op') : 'is-dropped')}
+                  renderNode={(id) => {
+                    const n = tree[id];
+                    const w = Math.max(28, n.label.length * 8 + 14);
+                    return (
+                      <>
+                        <rect x={-w / 2} y={-13} width={w} height={26} rx={n.isCall ? 5 : 13} />
+                        <text y={4.5} textAnchor="middle">
+                          {n.label}
+                        </text>
+                      </>
+                    );
+                  }}
+                />
               </WideRegion>
             </div>
             <div className="pa-treecol">

@@ -101,3 +101,31 @@ describe('memoryMapLayout', () => {
     expect(() => memoryMapLayout({ regions: [], cells })).toThrow(RangeError);
   });
 });
+
+describe('unused columns collapse', () => {
+  const PAGES = { regions: [], cells: [{ addr: 0, value: 'F0 free' }, { addr: 0x1000, value: 'F1 A:3 heap' }], unit: 0x1000, addrDigits: 4 };
+
+  it('drops the pointer column when pointers is omitted, keeps it for an empty list', () => {
+    const without = memoryMapLayout({ ...FRAME, pointers: undefined });
+    const reserved = memoryMapLayout({ ...FRAME, pointers: [] });
+    expect(reserved.width - without.width).toBe(MEMMAP.POINTER_W);
+    expect(without.cols.addr).toBe(0);
+    expect(reserved.cols.addr).toBe(MEMMAP.POINTER_W);
+    // a pointer coming and going doesn't change a reserved map's width
+    expect(memoryMapLayout(FRAME).width).toBe(reserved.width);
+  });
+
+  it('drops the brackets and the lane before them when there are no regions', () => {
+    const L = memoryMapLayout(PAGES);
+    expect(L.cols.regionW).toBe(0);
+    expect(L.cols.region).toBe(L.cols.link);
+    expect(L.width).toBe(L.cols.addrW + L.cols.cellW);
+    expect(memCellRect(L, 0x1000)).toMatchObject({ x: L.cols.addrW, w: L.cols.cellW });
+  });
+
+  it('leaves a map that uses every column as it was', () => {
+    const L = memoryMapLayout(FRAME);
+    expect(L.cols.addr).toBe(MEMMAP.POINTER_W);
+    expect(L.cols.region).toBe(L.cols.cell + L.cols.cellW + MEMMAP.LINK_W);
+  });
+});
