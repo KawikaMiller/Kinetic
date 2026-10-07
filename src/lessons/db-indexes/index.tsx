@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Diagnosing slow queries with EXPLAIN: seq scan vs index scan',
     ],
     why: 'A missing index is the single most common reason a query that was fast in development takes seconds in production. Mid-level engineers are expected to read a query plan, add the right index, and know that each index makes writes slower and takes space.',
-    watch: 'The tree at the top is the index: root, internal pages, then sorted leaves linked left to right. The boxes at the bottom are the table\'s heap pages on disk. Yellow is the page being read now, blue pages have already been read, green keys are matches, and a violet key is a newly inserted row. The dashed yellow line follows the leaf\'s pointer to the row\'s page. Compare the Page reads counter between Full table scan and Index lookup.',
+    watch: "The tree at the top is the index: root, internal pages, then sorted leaves linked left to right by dashed lines. The boxes at the bottom are the table's heap pages on disk. A yellow outline is the page being read now; blue outlines, edges and leaf links are pages and paths already read. Green ids are matches, and a violet id is the newly inserted row. The dashed yellow line follows the leaf's pointer to the row's page. The Page writes counter turns red once an insert writes. In the At scale panel, the red bar is the full scan and the green bar the index lookup, on a log scale. Compare the Page reads counter between Full table scan and Index lookup.",
   },
   tryThis: [
     'Run Full table scan, then Index lookup on the same table. Compare page reads.',
@@ -30,22 +30,43 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: 'Why can a B+tree over a billion rows be only ~4 levels deep?',
-      options: ['It stores only a sample of rows', 'Each page holds hundreds of keys, so each level multiplies reach by hundreds', 'It compresses the table', 'It keeps everything in RAM'],
+      q: 'Why can a B+tree over a billion rows be only about four levels deep?',
+      options: [
+        'It indexes only a sample of the rows',
+        'Each page holds hundreds of keys',
+        'It compresses the whole table first',
+        'It keeps every level in memory',
+      ],
       answer: 1,
-      why: 'With ~200 keys per page, 4 levels reach 200⁴ = 1.6 billion keys. High fan-out keeps trees shallow.',
+      why: 'With ~200 keys per page, each level multiplies the reach by 200: four levels reach 200⁴ = 1.6 billion keys. Keeping pages in memory makes each read faster, but it does not change how many levels there are.',
     },
     {
       q: 'What does adding an index cost you?',
-      options: ['Nothing, indexes are free', 'Slower writes and extra storage', 'Slower reads on that column', 'It locks the table forever'],
+      options: [
+        'Nothing: indexes are free to keep',
+        'Slower writes and extra disk space',
+        'Slower reads on the indexed column',
+        'A lock on the table while it exists',
+      ],
       answer: 1,
-      why: 'Each INSERT/UPDATE/DELETE must also update every index on the table, and each index is stored on disk.',
+      why: 'Each INSERT, UPDATE and DELETE must also update every index on the table, and each index is stored on disk. Reads on the indexed column get faster, not slower.',
     },
     {
-      q: 'Which query benefits from a B+tree index on created_at but not from a hash index?',
-      options: ['WHERE created_at = \'2026-01-01\'', 'WHERE created_at > now() - interval \'7 days\'', 'Both equally', 'Neither'],
+      q: 'An orders table has an index on created_at. Which query can a B+tree index serve but a hash index cannot?',
+      options: [
+        "WHERE created_at = '2026-01-01'",
+        "WHERE created_at >= '2026-01-01'",
+        "WHERE id = 42 AND status = 'paid'",
+        "WHERE lower(email) = 'a@b.co'",
+      ],
       answer: 1,
-      why: 'Range conditions need sorted order. A B+tree walks its sorted leaves; a hash index can only answer exact matches.',
+      why: 'Range conditions need sorted order: a B+tree walks its sorted leaves, a hash index can only answer exact matches. The equality on created_at suits both kinds of index, and the last two queries do not touch created_at at all.',
+    },
+    {
+      q: "In this lesson's tree, an INSERT lands in a full leaf whose parent has room. How many page writes does the index part cost?",
+      options: ['1', '2', '3', '5'],
+      answer: 2,
+      why: "Both halves of the split leaf, plus the parent that gains a separator: 3. Add the row's own heap page and the INSERT costs 4 writes, which is why every extra index makes writes slower.",
     },
   ],
 };

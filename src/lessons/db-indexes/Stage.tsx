@@ -5,12 +5,14 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { bytes } from '../../core/format';
 import { useElementSize } from '../../core/hooks';
-import { pick, randInt } from '../../core/random';
+import { pick } from '../../core/random';
+import { MIN_TEXT_PX } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
+import { indexFrames, insertFrames, rangeFrames, scanFrames, type IxFrame } from './frames';
 import {
-  MAX_INSERTS, allKeys, freshKey, indexFrames, insertFrames, internalSeps, makeDb, rangeFrames, rootSeps, scanFrames,
-  starts, type Db, type IxFrame, type Mode,
-} from './btree';
+  LEAF_CAP, MAX_INSERTS, SCALE, allKeys, freshKey, indexLookupPages, internalSeps, makeDb, pickRange, rootSeps,
+  scanPages, starts, type Db, type Mode,
+} from './model';
 import './styles.css';
 
 const MODES: { value: Mode; label: string }[] = [
@@ -24,16 +26,30 @@ const H = 330;
 const Y = { root: 18, internal: 92, leaf: 166, page: 262 };
 const NODE_H = 30;
 const PAGE_H = 50;
+/** Leaf keys are sized to their slot: a two-digit mono id needs about this many ems of slot. */
+const KEY_SLOT_EMS = 1.75;
+const KEY_MAX_PX = 11;
+/** Tree padding and the gap between leaves (SVG px). */
+const PAD = 14;
+const GAP = 6;
+/** .ix's horizontal padding. */
+const IX_PAD_X = 24;
+const BASE_MIN_WIDTH = 620;
+
+/**
+ * Narrowest stage where this table's leaf keys stay at the 8px text floor. Inserts add
+ * leaves, so a grown table widens the stage (narrow screens then scroll it sideways)
+ * instead of shrinking its keys.
+ */
+function stageMinWidth(db: Db) {
+  const n = db.tree.leaves.length;
+  const fullest = Math.max(...db.tree.leaves.map((l) => l.length));
+  return Math.max(BASE_MIN_WIDTH, Math.ceil(PAD * 2 + GAP * (n - 1) + n * fullest * KEY_SLOT_EMS * MIN_TEXT_PX + IX_PAD_X));
+}
 
 interface Run {
   db: Db;
   frames: IxFrame[];
-}
-
-function pickRange(db: Db) {
-  const keys = allKeys(db);
-  const i = randInt(0, keys.length - 9);
-  return [keys[i], keys[i + 7]] as const;
 }
 
 function framesFor(mode: Mode, db: Db, target: number): Run {
@@ -72,7 +88,7 @@ export function Stage() {
 
   return (
     <StageFrame
-      minWidth={620}
+      minWidth={stageMinWidth(run.db)}
       player={player}
       height={H + 150}
       stats={
@@ -100,6 +116,12 @@ export function Stage() {
           </Button>
           <Button onClick={reset}>New table</Button>
           <Hint>…or click any row in a heap page to look it up</Hint>
+          <Hint block>
+            A toy table: {allKeys(run.db).length} random ids in heap pages of 4 rows, and an index whose leaves hold at most {LEAF_CAP} keys
+            and internal pages 5 children (real pages hold hundreds, which is why the At scale panel uses ~{SCALE.fanout}). Reads and
+            writes count pages; the write-ahead log, caching and the root splitting are left out (at most {MAX_INSERTS} inserts per
+            table).
+          </Hint>
         </Controls>
       }
     >
@@ -115,8 +137,8 @@ export function Stage() {
 
 function TreeView({ f, width, onPick }: { f: IxFrame; width: number; onPick: (k: number) => void }) {
   const { tree, pages } = f.db;
-  const pad = 14;
-  const gap = 6;
+  const pad = PAD;
+  const gap = GAP;
   const nL = tree.leaves.length;
   const lw = (width - pad * 2 - gap * (nL - 1)) / nL;
   const leafX = (i: number) => pad + i * (lw + gap);
@@ -192,7 +214,7 @@ function TreeView({ f, width, onPick }: { f: IxFrame; width: number; onPick: (k:
           <rect x={leafX(i)} y={Y.leaf} width={lw} height={NODE_H} rx={6} />
           {keys.map((k, c) => (
             <text key={k} x={leafX(i) + ((c + 0.5) * lw) / keys.length} y={Y.leaf + 19} textAnchor="middle" className={`ix-key ${keyCls(k)}`}
-              style={{ fontSize: Math.min(11, lw / (keys.length * 1.75)) }}>
+              style={{ fontSize: Math.min(KEY_MAX_PX, lw / (keys.length * KEY_SLOT_EMS)) }}>
               {k}
             </text>
           ))}
@@ -225,21 +247,17 @@ function TreeView({ f, width, onPick }: { f: IxFrame; width: number; onPick: (k:
   );
 }
 
-const FANOUT = 200;
-const ROWS_PER_PAGE = 100;
-const PAGE_BYTES = 8192;
 const BAR_H = 10;
 const fmt = (n: number) => (n >= 1e9 ? `${n / 1e9} billion` : n >= 1e6 ? `${n / 1e6} million` : n.toLocaleString());
 /** Bytes read for `pages` pages, in whole decimal units (the lesson rounds for readability). */
-const pageBytes = (pages: number) => bytes(pages * PAGE_BYTES, { base: 1000, dp: 0 });
+const pageBytes = (pages: number) => bytes(pages * SCALE.pageBytes, { base: 1000, dp: 0 });
 
 function AtScale() {
   const [exp, setExp] = useState(6);
   const n = 10 ** exp;
-  const scan = Math.ceil(n / ROWS_PER_PAGE);
-  // index depth = ceil(log_fanout(n)); +1 for fetching the row's heap page
-  const index = Math.max(1, Math.ceil(Math.log(n) / Math.log(FANOUT))) + 1;
-  const maxLog = Math.log10(1e9 / ROWS_PER_PAGE);
+  const scan = scanPages(n);
+  const index = indexLookupPages(n);
+  const maxLog = Math.log10(scanPages(1e9));
   /** Log-scale bar length in percent, never thinner than 2%. */
   const barPct = (v: number) => Math.max(2, (Math.log10(v) / maxLog) * 100);
   return (
@@ -259,7 +277,10 @@ function AtScale() {
           <em>≈ {pageBytes(index)} read</em>
         </div>
       </div>
-      <p className="ix-scale-note">8 KB pages, ~{ROWS_PER_PAGE} rows per page, ~{FANOUT} keys per index page (log scale bars).</p>
+      <p className="ix-scale-note">
+        Illustrative sizes: {SCALE.pageBytes / 1024} KB pages, ~{SCALE.rowsPerPage} rows per page, ~{SCALE.fanout} keys per index page;
+        the index figure is its levels plus the row's page (log scale bars).
+      </p>
     </div>
   );
 }

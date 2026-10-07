@@ -21,7 +21,7 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
  */
 const PENDING_RETROFIT = new Set([
   // T2-R2
-  'db-indexes', 'transactions-acid', 'race-conditions', 'event-loop', 'auth-sessions-jwt', 'containers',
+  'transactions-acid', 'race-conditions', 'event-loop', 'auth-sessions-jwt', 'containers',
 ]);
 /** Tiers whose existing lessons are all still awaiting their kickoff retrofit. */
 const TIERS_AWAITING_KICKOFF = new Set([3, 4]);
@@ -31,7 +31,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 2, existing lessons awaiting their retrofit batch
   'auth-sessions-jwt': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'containers': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
-  'db-indexes': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'event-loop': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'race-conditions': { ticket: T2_R2, rules: ['quiz-length'] },
   'transactions-acid': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
