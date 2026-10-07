@@ -397,6 +397,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 <ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 <ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
+<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
 const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 <StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 <StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
@@ -652,6 +653,7 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 <RefArrow bend={fanBend(i, arrowsIntoThisBox)} … />                                        // spread n arrows into one box
 // a reference that leaves to the left, and a structural link between two whole boxes
 <HeapObject … fields={[{ name: '[[Environment]]', isRef: true, port: 'left' }]} />
+<HeapObject … fields={[]} collapseEmpty />   // just the title row; size it with heapHeight(0, true) / heapRect(at, w, 0, true). Without it, [] keeps one empty row ({})
 <RefArrow from={heapFieldPort(at, w, 0, 'left')} to={envRect} />
 <RefArrow from={childEnvRect} to={parentEnvRect} color="var(--faint)" dashed thin />
 ```

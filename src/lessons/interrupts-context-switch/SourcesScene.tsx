@@ -30,7 +30,6 @@ export function SourcesScene({ picker }: { picker: ReactNode }) {
   );
   const full = world.log.length >= SANDBOX_MAX_EVENTS;
   const press = (src: IrqSource) => {
-    if (full) return;
     const next = fire(world, src);
     setWorld(next);
     // One press can bring automatic ticks first: narrate every interrupt it caused.
@@ -57,7 +56,7 @@ export function SourcesScene({ picker }: { picker: ReactNode }) {
         <>
           <ControlGroup label="Fire an interrupt" inline>
             {SOURCES.map((s) => (
-              <ChipButton key={s} tone="info" size="md" onClick={() => press(s)}>
+              <ChipButton key={s} tone="info" size="md" disabled={full} onClick={() => press(s)}>
                 {sourceName(s)}
               </ChipButton>
             ))}

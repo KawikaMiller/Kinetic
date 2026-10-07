@@ -68,6 +68,8 @@
   box-shadow: inset 0 0 0 1px var(--c);
 }
 .chip-button.is-on.is-solid { background: var(--c); color: var(--on-c); box-shadow: none; }
+/* pointer-events: none also keeps hover from tinting it */
+.chip-button:disabled { opacity: 0.45; pointer-events: none; }
 /* Dim chips: --dim is a fill colour, far too dark for text (about 1.8:1 on the panels), so
    their text uses --muted (about 5.7:1); the tint and border stay dim. */
 .chip.tone-dim,

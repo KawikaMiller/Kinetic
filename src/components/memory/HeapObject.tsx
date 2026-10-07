@@ -34,9 +34,10 @@ const VARIANT_TAG: Record<HeapVariant, string | null> = { live: null, collectabl
  * - The corner tag shares the title row, so the title and tag must fit in `w`; if they
  *   don't, use `tagPlacement="above"` rather than widening the box.
  * - It fades in when it's allocated, unless the viewer prefers reduced motion.
+ * - `fields=[]` keeps one empty row (an empty object); `collapseEmpty` makes it a title-only box.
  */
 export function HeapObject({
-  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, tagPlacement = 'corner', className = '',
+  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, tagPlacement = 'corner', collapseEmpty = false, className = '',
 }: {
   at: Pt;
   w: number;
@@ -48,10 +49,12 @@ export function HeapObject({
   /** Overrides the variant's corner tag ('collectable', 'freed'). */
   tag?: ReactNode;
   tagPlacement?: TagPlacement;
+  /** With no fields, draw just the title row (a file object, a lock) instead of one empty row; size it with `heapHeight(0, true)`. */
+  collapseEmpty?: boolean;
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  const h = heapHeight(fields.length);
+  const h = heapHeight(fields.length, collapseEmpty);
   const cornerTag = tag ?? VARIANT_TAG[variant];
   const cls = `heap-obj tone-${variant === 'freed' ? 'bad' : tone} is-${variant} ${highlight ? 'is-highlight' : ''} ${className}`;
 
