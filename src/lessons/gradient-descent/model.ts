@@ -35,7 +35,7 @@ const RAVINE_STEEP = 4;
 
 const TILT = 0.3;
 
-// ── The regression data (shared with linear-logistic-regression's seed and shape) ──
+// ── The regression data: a seeded noisy line, synthetic like every ML lesson's data ──
 
 export const REGRESSION_DATA = lineWithNoise({ seed: 8, n: 40, slope: 1.2, intercept: -0.5, noise: 0.5, xRange: [-1, 2] });
 const RX = REGRESSION_DATA.map((p) => [p.x] as const);
