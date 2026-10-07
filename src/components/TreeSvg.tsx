@@ -39,6 +39,7 @@ export interface TreeGeometry<K extends TreeKey> {
  * - `hidden(id)` keeps a node (and the edge to it) out of the picture without moving
  *   anything else: the layout always uses the whole shape.
  * - `overlay` draws between edges and nodes with the tree's geometry.
+ * - `natural` sizes it to the container but never past its viewBox width (no wrapper div needed).
  * - Forest mode: give `shape.roots` (and no `root`) to draw several trees side by side
  *   (union-find sets, a Huffman merge); `forestGap` is the empty columns between trees.
  * - With `onNodeClick` the nodes are buttons and the tree is one tab stop (starting at the
@@ -49,7 +50,7 @@ export interface TreeGeometry<K extends TreeKey> {
 export function TreeSvg<K extends TreeKey>({
   shape, layout = 'tidy', forestGap, width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
   radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, nodeOpacity, edgeMark, markedEdgeWidth, hidden,
-  enterScale = 0.2, transition = SPRING.soft, onNodeClick, nodeAriaLabel, overlay, className = '', ariaLabel,
+  enterScale = 0.2, transition = SPRING.soft, onNodeClick, nodeAriaLabel, overlay, natural = false, className = '', ariaLabel,
 }: {
   shape: TreeShape<K>;
   layout?: TreeLayoutMode;
@@ -82,6 +83,8 @@ export function TreeSvg<K extends TreeKey>({
   /** Screen-reader name of a clickable node (default: its label, or its id). */
   nodeAriaLabel?: (id: K) => string;
   overlay?: (geometry: TreeGeometry<K>) => ReactNode;
+  /** Fill the container's width but never grow past the viewBox `width`, centred: a three-node tree stays small. */
+  natural?: boolean;
   className?: string;
   ariaLabel?: string;
 }) {
@@ -113,13 +116,15 @@ export function TreeSvg<K extends TreeKey>({
     svgRef.current?.querySelector<SVGGElement>(`[data-node="${CSS.escape(String(to))}"]`)?.focus();
   };
 
-  const style = markedEdgeWidth === undefined ? undefined : ({ '--tree-marked-w': markedEdgeWidth } as CSSProperties);
+  const style = markedEdgeWidth === undefined && !natural
+    ? undefined
+    : ({ ...(markedEdgeWidth !== undefined && { '--tree-marked-w': markedEdgeWidth }), ...(natural && { maxWidth: width }) } as CSSProperties);
 
   return (
     <svg
       ref={svgRef}
       viewBox={`0 0 ${width} ${height}`}
-      className={`tree-svg ${className}`}
+      className={`tree-svg ${natural ? 'is-natural' : ''} ${className}`}
       preserveAspectRatio="xMidYMid meet"
       style={style}
       // A drawing of buttons is a group (an img would hide them from assistive tech).

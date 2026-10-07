@@ -26,8 +26,8 @@ export function ParseTree({
   const label = (n: TNode) => (n.sym === EPS ? EPS : n.text ?? n.sym);
   return (
     // Never drawn bigger than its natural size: a three-node tree shouldn't fill the stage.
-    <div className="gp-tree-wrap" style={{ maxWidth: width }}>
     <TreeSvg
+      natural
       shape={{ root, children: (id) => nodes[id]?.children ?? [] }}
       layout="tidy"
       width={width}
@@ -62,6 +62,5 @@ export function ParseTree({
         );
       }}
     />
-    </div>
   );
 }

@@ -730,6 +730,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 ```
 - `layoutTree(shape, 'inorder' | 'tidy')` is pure (tested): `inorder` places a binary tree by in-order rank, so a BST reads sorted left to right and a node with only a right child still sits left of it. `tidy` gives leaves consecutive columns in depth-first order and centres each parent between its first and last child: right for DOM, dependency and accessibility trees and for call trees like fib(n). `treeX(col, columns, width, pad)` maps a column to pixels.
 - Vertical spacing: `levelGap` fixes it; otherwise it's `min(maxLevelGap, (height - bottomRoom) / depth)`.
+- `natural`: the SVG fills its container's width but never grows past its viewBox `width`, centred (a three-node parse tree stays small). Use it instead of wrapping the tree in a `maxWidth` div (grammars-parsing, parsing-ast, type-systems).
 - Nodes glide with `transition` (default `SPRING.soft`) when the shape changes, pop in from `enterScale` and fade out when removed. `hidden(id)` removes a node and the edge to it without moving anything else (the layout always uses the whole shape), e.g. fib calls not made yet.
 - Default nodes are a circle of `radius` with a centred label. The base node CSS is wrapped in `:where()`, so classes you use inside `renderNode` always win.
 - Marks: `nodeMark` → `{ tone, fill: 'tint' | 'solid', tint?: % }` (tint default 16%), `edgeMark` → `{ tone, dashed? }`, `markedEdgeWidth` (default 3.5). `nodeClass(id)` adds lesson classes.

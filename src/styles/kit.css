@@ -498,6 +498,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 /* TreeSvg (components/TreeSvg.tsx): marks use .tone-* via --c; tint strength via --tree-tint.
    Base node looks are wrapped in :where() so a lesson's renderNode classes always win. */
 .tree-svg { overflow: visible; }
+.tree-svg.is-natural { display: block; width: 100%; height: auto; margin: 0 auto; }
 .tree-edge { stroke: var(--line-2); stroke-width: 2; }
 .tree-edge.is-marked { stroke: var(--c); stroke-width: var(--tree-marked-w, 3.5); }
 .tree-edge.is-dashed { stroke-dasharray: 6 4; }

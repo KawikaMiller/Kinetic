@@ -10,7 +10,6 @@
 .tsy-cov { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .tsy-cov.is-covered { background: var(--ok); }
 .tsy-cov.is-untested { background: var(--dim); box-shadow: 0 0 0 1.5px var(--muted) inset; }
-.tsy-ast { display: block; width: 100%; height: auto; }
 .tsy-ast .tree-node rect { fill: var(--cell); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
 .tsy-ast .tree-node text { font: 700 13px var(--mono); }
 .tsy-ast .tree-node.is-hot > rect { fill: var(--hi); stroke: var(--hi); }
