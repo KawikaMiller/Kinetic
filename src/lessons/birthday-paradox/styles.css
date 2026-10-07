@@ -1,0 +1,25 @@
+.bp-note { display: block; text-align: center; }
+
+.bp-pigeons { gap: 10px; }
+.bp-holes { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.bp-holes li {
+  width: 46px;
+  min-height: 46px;
+  padding: 5px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px;
+}
+.bp-holes li.is-double { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.bp-holes i { width: 14px; height: 14px; border-radius: 50%; background: var(--info); }
+
+.bp-birthdays { gap: 12px; }
+.bp-plots { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
+.bp-plots .plot2d, .bp-ids .plot2d { max-width: 100%; height: auto; }
+
+.bp-ids { gap: 12px; align-items: center; }
+.bp-pairs { align-self: stretch; }
+.bp-pairs p { margin: 6px 0 0; font: 500 13.5px var(--font); color: var(--text); }
