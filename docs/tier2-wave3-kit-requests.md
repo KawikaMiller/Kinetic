@@ -14,3 +14,13 @@
   - `Arrow dashed`: vectors-similarity wraps the arrow in a dashed `<g>`.
 - **core/format `decimal(v, dp)` with a real minus sign:** there are five identical local `num()` copies.
 - **core/vec:** a relative pivot tolerance in `solve`, or QR inside `leastSquares`. A degree-12 fit on 15 points (κ ≈ 1e13) is wrongly reported singular.
+
+## B9 (merged)
+- **sequenceLayout:** leave room for a self-message label on the rightmost lifeline. It overflows the viewBox today; diffie-hellman hides an empty lane as a workaround.
+- **core/format:** `humanDurationLog10(log10Seconds)` for values past what a double holds (diffie-hellman's local `vastDuration`).
+- **core/crypto**
+  - `aesCbcRaw` encrypt/decrypt with no padding (the padding-block trick).
+  - `hexToBytes`: three lessons hand-roll one.
+  - An ECDH helper once a second lesson needs it.
+- **Paint blend:** the equal-part color-mix `blend` is in tls-handshake and diffie-hellman. Second use, so extract it.
+- **SequenceDiagram:** the "current" yellow overrides the message's own tone (also filed in B6), so the last step of a MITM run loses its red.
