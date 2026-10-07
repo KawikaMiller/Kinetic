@@ -1,0 +1,29 @@
+.tsy { gap: 12px; }
+.ts-bad { color: var(--bad); }
+.ts-type { white-space: nowrap; }
+.tsy-axes { display: flex; flex-flow: row wrap; gap: 18px; align-items: flex-start; }
+.tsy-grid { flex: 0 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.tsy-out { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.tsy-when { display: flex; flex-flow: row wrap; gap: 16px; }
+.tsy-col { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.tsy-code code { white-space: pre-wrap; }
+.tsy-cov { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.tsy-cov.is-covered { background: var(--ok); }
+.tsy-cov.is-untested { background: var(--dim); box-shadow: 0 0 0 1.5px var(--muted) inset; }
+.tsy-ast { display: block; width: 100%; height: auto; }
+.tsy-ast .tree-node rect { fill: var(--cell); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.tsy-ast .tree-node text { font: 700 13px var(--mono); }
+.tsy-ast .tree-node.is-hot > rect { fill: var(--hi); stroke: var(--hi); }
+.tsy-ast .tree-node.is-hot > text { fill: var(--on-hi); }
+.tsy-ast .tree-node.is-bad > rect { stroke: var(--bad); }
+.tsy-ast .tree-node.is-done > rect { stroke: var(--ok); }
+.tsy-badge rect { fill: var(--bg); stroke: var(--c); stroke-width: 1.5; }
+.tsy-badge text { font: 700 11px var(--mono); fill: var(--c); }
+.tsy-solve { display: flex; flex-flow: row wrap; gap: 16px; }
+.tsy-constraints { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.tsy-constraints li { padding: 2px 6px; border-radius: 6px; border-left: 3px solid transparent; }
+.tsy-constraints li.is-hot { background: color-mix(in srgb, var(--hi) 16%, transparent); border-left-color: var(--hi); }
+.tsy-constraints li.is-bad { background: color-mix(in srgb, var(--bad) 16%, transparent); border-left-color: var(--bad); }
+.tsy-why { color: var(--muted); font-size: 12px; }
+.tsy-subst { font-size: 13px; }
+.tsy-subst th { text-transform: none; font: 700 14px var(--mono); color: var(--violet); }
