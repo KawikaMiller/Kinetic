@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Deadlocks in databases and services that take multiple locks",
     ],
     why: "Race conditions are some of the nastiest bugs in production: they pass every test, show up only under load, and are almost impossible to reproduce. Mid-level engineers are expected to spot shared mutable state, protect it correctly, and avoid deadlocks by design.",
-    watch: "Blue is T1, violet is T2. The ▶ marks each thread's next line and the yellow row is the step that just ran. Each thread has its own register (tmp); count in the middle is the shared memory, and it flashes red when an update is lost. Padlocks show who holds each lock, and a red cycle message means deadlock. The chip strip at the bottom is the real order things ran in.",
+    watch: "Blue is T1 and violet is T2: their panels, registers, the padlocks they hold and their chips in the strip. The ▶ marks each thread's next line, the yellow row is the step that just ran, and a running thread's label is yellow. count in the middle is the shared memory: it gets a yellow outline while being written and flashes red when an update is lost. A blocked thread gets a dashed red outline and a red label; in a deadlock the locks and the cycle message turn red. The chip strip at the bottom is the real order things ran in, with waits dashed red and lost writes solid red.",
   },
   tryThis: [
     'Play "Alternating": both threads read 0, so the final count is 1, not 2.',
@@ -43,9 +43,20 @@ const lesson: LessonModule = {
     },
     {
       q: 'Why do race conditions often pass tests but fail in production?',
-      options: ['Tests use different hardware', 'The bad interleaving is rare and depends on timing and load', 'Compilers remove locks in tests', 'Production code runs single-threaded'],
+      options: [
+        'Tests run on slower, older hardware',
+        'The bad timing is rare until under load',
+        'Compilers strip out locks in test builds',
+        'Production servers run one thread',
+      ],
       answer: 1,
-      why: 'The buggy ordering needs threads to interleave at exactly the wrong moment, which gets far more likely under real concurrency.',
+      why: 'The buggy ordering needs threads to interleave at exactly the wrong moment, which gets far more likely under real concurrency. Compilers keep locks in every build; the code is the same, only the timing differs.',
+    },
+    {
+      q: 'Two threads each do read, add, write once, unlocked. Of the 20 possible orderings of those six steps, how many lose an update?',
+      options: ['2', '10', '18', '20'],
+      answer: 2,
+      why: 'An update survives only if one thread writes before the other reads: T1 entirely first, or T2 entirely first. Every one of the other 18 orderings has both threads read 0 and write 1.',
     },
   ],
 };

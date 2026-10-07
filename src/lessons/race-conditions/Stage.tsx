@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { PROGRAMS, simulate, TNAME, type ProgramKey, type RcFrame, type Tid } from './sim';
+import { buildFrames, type RcFrame } from './frames';
+import { EXPECTED, PROGRAMS, TNAME, isBlocked, type ProgramKey, type Tid } from './sim';
 import './styles.css';
 
 type Mode = 'race' | 'mutex' | 'deadlock';
@@ -15,8 +16,6 @@ const PRESETS: Record<Exclude<Interleave, 'custom'>, Tid[]> = {
   sneaky: [0, 0, 1, 1, 0, 1],
 };
 const ALTERNATE: Tid[] = Array.from({ length: 40 }, (_, i) => (i % 2) as Tid);
-/** Each thread increments once, so a correct run ends at 2. */
-const EXPECTED = 2;
 /** T1 and T2 colours, via the kit's tone classes. */
 const TONE = ['tone-info', 'tone-violet'] as const;
 const COUNT_SPRING = { type: 'spring', stiffness: 380, damping: 24 } as const;
@@ -30,8 +29,8 @@ export function Stage() {
 
   const key: ProgramKey = mode === 'race' ? 'race' : mode === 'mutex' ? 'mutex' : fixed ? 'ordered' : 'deadlock';
   const frames = useMemo(() => {
-    if (mode === 'race') return simulate('race', interleave === 'custom' ? custom : PRESETS[interleave], true);
-    return simulate(key, ALTERNATE);
+    if (mode === 'race') return buildFrames('race', interleave === 'custom' ? custom : PRESETS[interleave], true);
+    return buildFrames(key, ALTERNATE);
   }, [mode, interleave, custom, key]);
   const player = usePlayer(frames, { interval: 1300 });
   const f = player.frame;
@@ -58,7 +57,7 @@ export function Stage() {
               <Stat label="locks held" value={Object.values(f.locks).filter((o) => o !== null).length} />
               <Stat
                 label="threads blocked"
-                value={([0, 1] as Tid[]).filter((t) => f.waiting[t] !== null && f.locks[f.waiting[t]!] !== null && f.locks[f.waiting[t]!] !== t).length}
+                value={([0, 1] as Tid[]).filter((t) => isBlocked(f, t)).length}
                 color={isDeadlock ? 'var(--bad)' : undefined}
               />
             </>
@@ -125,6 +124,11 @@ export function Stage() {
           {mode === 'deadlock' && (
             <Toggle label="Lock order" value={fixed} onChange={setFixed} off="Opposite (A→B vs B→A)" on="Same order (fix)" />
           )}
+          <Hint block>
+            {mode === 'race'
+              ? 'A scripted scheduler: each line runs as one indivisible step, in the order you pick. Real threads interleave at machine-instruction level, and on multi-core CPUs caching adds more ways to go wrong.'
+              : 'A scripted scheduler: the threads take turns, one line each, and a blocked thread is skipped. This deadlock needs that kind of turn-taking; if one thread ran both locks first it would slip through, which is why the bug is so rare.'}
+          </Hint>
         </Controls>
       }
     >
@@ -175,9 +179,9 @@ export function Stage() {
                 })}
               </div>
             )}
-            {isDeadlock && (
+            {isDeadlock && f.note.kind === 'deadlock' && (
               <motion.div className="rc-cycle" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                T1 ⟶ waits for B ⟶ held by T2 ⟶ waits for A ⟶ held by T1
+                T1 ⟶ waits for {f.note.wants[0]} ⟶ held by T2 ⟶ waits for {f.note.wants[1]} ⟶ held by T1
                 <span>a cycle: nobody can move</span>
               </motion.div>
             )}
@@ -209,7 +213,7 @@ export function Stage() {
 }
 
 function ThreadPanel({ t, f, prog }: { t: Tid; f: RcFrame; prog: string[] }) {
-  const waiting = f.waiting[t] !== null && f.locks[f.waiting[t]!] !== t && f.locks[f.waiting[t]!] !== null;
+  const waiting = isBlocked(f, t);
   const finished = f.pc[t] >= prog.length;
   return (
     <div className={`rc-thread ${TONE[t]} ${f.active === t ? 'active' : ''} ${waiting ? 'waiting' : ''}`}>
