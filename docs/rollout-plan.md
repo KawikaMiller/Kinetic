@@ -6618,11 +6618,11 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B2 Number theory & counting | 5 | 1 | t2/b2 | done | 2026-10-06, merged 04f526c |
 | 2 | T2-B3 Graph algorithms | 5 | 1 | t2/b3 | done | 2026-10-06, merged 94598c0 |
 | 2 | P-follow-up after wave 1 | — | 1→2 | kit owner | done | 2026-10-07: kit1 + kit2 merged (tones, BitStrip/TreeSvg roving keys, CellGrid canvas text + overlay, GraphView layoutEdges/detours, gate drawing, ScenePicker focus, core/parse bounded ints, humanDuration, minWidthForText, shot --settle); 1926 tests, smoke 114/114 desktop + 390px |
-| 2 | T2-R2 retrofit, part 2 | 8 | 2 | t2/r2 | not started | tls-handshake and auth-sessions-jwt get domain review |
-| 2 | T2-B4 Kernel & scheduling | 5 | 2 | t2/b4 | not started | |
-| 2 | T2-B5 Automata, parsing & types | 5 | 2 | t2/b5 | not started | |
-| 2 | T2-B6 Joining a network | 5 | 2 | t2/b6 | not started | |
-| 2 | P-follow-up after wave 2 | — | 2→3 | kit owner | not started | |
+| 2 | T2-R2 retrofit, part 2 | 8 | 2 | t2/r2 | done | 2026-10-07, merged 0133ac1; false claims fixed incl. JWT verify ignoring exp; PENDING_RETROFIT empty. Domain review (Sentry) of tls-handshake + auth-sessions-jwt: 1 MAJOR (weak-HMAC-key lesson backwards) + minors, fixed e4c9bac |
+| 2 | T2-B4 Kernel & scheduling | 5 | 2 | t2/b4 | done | 2026-10-07, merged 0893844. Domain review of syscalls/interrupts/VM: 3 MAJOR (skipped timer ticks x2, open vs openat) + 20 minor, fixed d5af4f1 |
+| 2 | T2-B5 Automata, parsing & types | 5 | 2 | t2/b5 | done | 2026-10-07, merged 643e09a |
+| 2 | T2-B6 Joining a network | 5 | 2 | t2/b6 | done | 2026-10-07, merged e74e0af. Domain review of dns-resolution: 3 MAJOR (propagation, in-zone CNAME, single NS) + 8 minor, fixed acf38e7 |
+| 2 | P-follow-up after wave 2 | — | 2→3 | kit owner | in progress | wave 2 gates on d5af4f1: 2399 tests, check-tokens 0, smoke 129/129 desktop + 390px, captions unchanged (6 known CHECKs), 768px stage shots of all 11 unchecked lessons looked at. Queue: docs/tier2-wave2-kit-requests.md (usePlayer caption-inheritance bug first; core/ipv4 extraction; 6 only-export-components lint warnings in R2 lessons) |
 | 2 | T2-B7 Probability & evaluation | 5 | 3 | t2/b7 | not started | domain review |
 | 2 | T2-B8 Linear algebra & fitting | 5 | 3 | t2/b8 | not started | domain review |
 | 2 | T2-B9 Cryptography | 5 | 3 | t2/b9 | not started | domain review on every lesson |
