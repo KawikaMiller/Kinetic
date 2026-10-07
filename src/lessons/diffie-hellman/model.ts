@@ -3,6 +3,7 @@
 // core/numberTheory. Toy sizes only: real DH uses 2048+ bit primes or elliptic curves.
 import { isProbablePrime, modPow, trialFactor } from '../../core/numberTheory';
 import { parseBoundedBigInt, type FieldParse } from '../../core/parse';
+import { equalMix } from '../../core/paint';
 
 export const DEFAULTS = { p: 23n, g: 5n, a: 6n, b: 15n } as const;
 /** Toy primes stay at five digits, so Eve's brute force finishes instantly. */
@@ -171,18 +172,12 @@ export interface Paint {
 export const paint = (token: string): Paint => ({ color: `var(--${token})`, parts: [token] });
 
 /**
- * Equal parts of every base paint in the inputs: a real CSS blend, folded in sorted order
- * with weights that give each part the same share, so it depends only on the parts and never
- * on the order they were added. That order-independence is what the analogy rests on.
+ * Equal parts of every base paint in the inputs (core/paint equalMix), in sorted order, so it
+ * depends only on the parts and never on the order they were added.
  */
 export function mix(...paints: Paint[]): Paint {
   const parts = paints.flatMap((p) => p.parts).sort();
-  let color = `var(--${parts[0]})`;
-  parts.slice(1).forEach((name, i) => {
-    const sofar = i + 1;
-    color = `color-mix(in oklab, ${color} ${Math.round((sofar / (sofar + 1)) * 100)}%, var(--${name}))`;
-  });
-  return { color, parts };
+  return { color: equalMix(parts.map((name) => `var(--${name})`)), parts };
 }
 
 export const sameMix = (x: Paint, y: Paint) => x.parts.join() === y.parts.join();

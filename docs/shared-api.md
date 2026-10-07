@@ -1121,6 +1121,14 @@ aesCbcRawDecrypt(key, iv, ct)          // the inverse; a tampered ct decrypts to
 - Tests: SP 800-38A F.2.1/F.2.2, a flipped bit garbling its block and flipping the same bit in the next,
   empty input, partial-block refusal; hexToBytes round-trips all 256 bytes through `toHex`.
 
+### `core/paint.ts` — diffie-hellman, tls-handshake
+```ts
+equalMix(['var(--amber)', 'var(--sky)'])   // 'color-mix(in oklab, var(--amber) 50%, var(--sky))'
+```
+- Equal parts of every colour as one real CSS colour (the k-th joins at 1/(k+1)). Pass the colours in a
+  canonical order (the lessons sort their parts first), so the mix depends only on which paints went in.
+  Both lessons' paint-mixing analogies use it; their exact colour strings are unchanged (asserted in their tests).
+
 ---
 
 ## Not built (deliberately)
