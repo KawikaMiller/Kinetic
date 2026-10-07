@@ -2,6 +2,7 @@
 // time extrapolation the plot and captions read, and the three primality checks.
 import { isProbablePrime, modPow, sieve, trialFactor } from '../../core/numberTheory';
 import { humanDuration, latency } from '../../core/format';
+import { parseBoundedBigInt, type FieldParse } from '../../core/parse';
 import type { Rnd } from '../../core/random';
 
 // ── Sieve ────────────────────────────────────────────────────────────
@@ -178,16 +179,17 @@ export function primality(n: bigint): Primality {
   return { fermat: fermatSaysPrime(n), millerRabin, trial, truth };
 }
 
-export type ParsedBig = { value: bigint } | { error: string };
-
 /** A whole number from 2 to 40 digits. */
-export function parseCandidate(text: string): ParsedBig {
-  const t = text.trim().replace(/^(\d{1,3})((,\d{3})+)$/, (m) => m.replace(/,/g, ''));
-  if (!t) return { error: 'Type a whole number.' };
-  if (/^[-−]/.test(t)) return { error: 'Primes are positive: type a whole number from 2 up.' };
-  if (!/^\d+$/.test(t)) return { error: 'Whole numbers only, like 561 (no decimals, exponents, letters or lists).' };
-  if (t.replace(/^0+/, '').length > MAX_DIGITS) return { error: `Keep it to ${MAX_DIGITS} digits.` };
-  const v = BigInt(t);
-  if (v < 2n) return { error: `${v} is neither prime nor composite: try 2 or more.` };
-  return { value: v };
+export function parseCandidate(text: string): FieldParse<bigint> {
+  return parseBoundedBigInt(text, {
+    min: 2n,
+    max: 10n ** BigInt(MAX_DIGITS) - 1n,
+    thousands: true,
+    messages: {
+      negative: 'Primes are positive: type a whole number from 2 up.',
+      invalid: () => 'Whole numbers only, like 561 (no decimals, exponents, letters or lists).',
+      tooSmall: (v) => `${v} is neither prime nor composite: try 2 or more.`,
+      tooBig: () => `Keep it to ${MAX_DIGITS} digits.`,
+    },
+  });
 }

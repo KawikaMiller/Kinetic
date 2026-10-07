@@ -1,5 +1,5 @@
 import { cssVar, type TokenName } from '../../core/palette';
-import { parseInteger } from '../../core/parse';
+import { parseBoundedBigInt, parseBoundedInt, type FieldParse } from '../../core/parse';
 
 /** Register widths: 16 and 32 bits through setUint16/32, 64 through setBigUint64. */
 export type Width = 16 | 32 | 64;
@@ -66,23 +66,25 @@ export const hexValue = (value: bigint, width: Width) => `0x${value.toString(16)
 
 export const address = (j: number) => `0x${(BASE_ADDRESS + j).toString(16).toUpperCase()}`;
 
-export type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
-
 /**
  * A register value typed in hex, with or without 0x; underscores and spaces are ignored
  * (0x1234_5678). Anything that isn't hex, or doesn't fit the width, is refused and the old
  * value stays.
  */
-export function parseHexValue(text: string, width: Width): Parsed<bigint> {
-  const t = text.trim().replace(/[_\s]/g, '');
-  if (!t) return { ok: false, error: 'Type a hex value, like 0x12345678.' };
-  const digits = t.replace(/^0x/i, '');
-  if (!/^[0-9a-f]+$/i.test(digits)) return { ok: false, error: `"${text.trim()}" isn't hex: use 0-9 and A-F, optionally after 0x.` };
-  const value = BigInt(`0x${digits}`);
-  if (!fits(value, width)) {
-    return { ok: false, error: `0x${value.toString(16).toUpperCase()} needs more than ${width} bits (${byteCount(width)} bytes).` };
-  }
-  return { ok: true, value };
+export function parseHexValue(text: string, width: Width): FieldParse<bigint> {
+  return parseBoundedBigInt(text, {
+    min: 0n,
+    max: (1n << BigInt(width)) - 1n,
+    prefixes: ['hex'],
+    plainRadix: 16,
+    underscores: true,
+    spaces: true,
+    messages: {
+      empty: 'Type a hex value, like 0x12345678.',
+      invalid: (typed) => `"${typed}" isn't hex: use 0-9 and A-F, optionally after 0x.`,
+      tooBig: (value) => `0x${value.toString(16).toUpperCase()} needs more than ${width} bits (${byteCount(width)} bytes).`,
+    },
+  });
 }
 
 // ── The machine this page runs on ────────────────────────────────────────
@@ -101,11 +103,10 @@ export function probeHost(): { firstByte: number; little: boolean } {
 export const MAX_PORT = 65535;
 
 /** A port typed in decimal, 0..65535. */
-export function parsePort(text: string): Parsed<number> {
-  const n = parseInteger(text);
-  if (n === null) return { ok: false, error: `"${text.trim()}" isn't a whole number. Ports are typed in decimal, like 443.` };
-  if (n < 0 || n > MAX_PORT) return { ok: false, error: `${n} isn't a port: ports are 16 bits, 0 to ${MAX_PORT}.` };
-  return { ok: true, value: n };
+export function parsePort(text: string): FieldParse<number> {
+  const invalid = (typed: string) => `"${typed}" isn't a whole number. Ports are typed in decimal, like 443.`;
+  const range = (n: number) => `${n} isn't a port: ports are 16 bits, 0 to ${MAX_PORT}.`;
+  return parseBoundedInt(text, { min: 0, max: MAX_PORT, messages: { empty: invalid(''), invalid, tooSmall: range, tooBig: range } });
 }
 
 const swap16 = (v: number) => ((v & 0xff) << 8) | (v >> 8);

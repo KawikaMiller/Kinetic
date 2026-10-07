@@ -77,7 +77,7 @@ export function Stage() {
     if (editing === null) return;
     const r = parseWeight(draft);
     if (!r.ok) {
-      setNote(`${r.why} ${edgeText(editing)} keeps ${graph.edges[editing].w}.`);
+      setNote(`${r.error} ${edgeText(editing)} keeps ${graph.edges[editing].w}.`);
       setDraft(String(graph.edges[editing].w));
       return;
     }

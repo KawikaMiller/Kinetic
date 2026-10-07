@@ -129,7 +129,26 @@ power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in th
 ### `parse.ts`
 ```ts
 parseIntegers('1, 3 ,4  8')   // [1, 3, 4, 8]; commas and/or spaces; null if empty or any value isn't an integer
+parseInteger(' -7 ')          // -7; one plain decimal integer or null
+
+// One learner-typed field, within bounds, or the sentence to show instead: { ok: true, value } | { ok: false, error }
+parseBoundedInt(text, { min: 0, max: 999 })                       // generic messages: 'Type a whole number.', 'Keep it between 0 and 999.'
+parseBoundedInt(text, { min: 0, max: 255, prefixes: ['hex', 'binary'], underscores: true })   // 202, 0xCA, 0b1100_1010
+parseBoundedInt(text, { min: 0, max: 1e12, thousands: true })     // 1,000,003 (commas only between groups of three)
+parseBoundedInt(text, { min: -10, max: 10, typographicMinus: true })  // −7 reads as -7
+parseBoundedBigInt(text, { min: 0n, max: 2n ** 64n - 1n, prefixes: ['hex'], plainRadix: 16, spaces: true })  // hex-only: '1e400' is 0x1E400
+parseBoundedInt(text, { min: 2, max: 24, messages: {
+  empty: '…', invalid: (typed) => '…', tooSmall: (value, cleaned) => '…', tooBig: (value, cleaned) => '…',
+  negative: 'Primes are positive…',   // optional: any leading minus refused with this, first
+  grouping: 'Commas only between…',   // optional, with thousands: bad comma use refused with this instead of `invalid`
+} })
 ```
+Reads exactly (as a bigint inside), so a long digit run is refused rather than rounded into range, and
+out-of-range input is refused, never clamped or masked. Decimals, exponents (`1e3`), `+5`, `Infinity`
+and markup are always refused; only plain decimal takes a minus. Used by bit-manipulation, endianness
+(hex value, port), gcd-euclid, modular-arithmetic, primes-factoring and minimum-spanning-trees; their
+own wording goes in `messages`. Fields that parse lists (adders-alu) or other bases (binary-hex's octal
+and `#`) keep their own parsers.
 
 ### `fixtures/` — shared sample data
 ```ts

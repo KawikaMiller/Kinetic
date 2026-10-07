@@ -111,15 +111,15 @@ describe('negative numbers', () => {
 
 describe('parseWhole', () => {
   it('accepts plain integers and a typographic minus', () => {
-    expect(parseWhole(' 17 ', 0, 100)).toEqual({ value: 17 });
-    expect(parseWhole('−7', -10, 10)).toEqual({ value: -7 });
+    expect(parseWhole(' 17 ', 0, 100)).toEqual({ ok: true, value: 17 });
+    expect(parseWhole('−7', -10, 10)).toEqual({ ok: true, value: -7 });
   });
 
   it('refuses hostile input with a reason', () => {
     for (const bad of ['', '   ', '12345678901234567890123', '1e400', '1.5', '😀', '<b>3</b>', '1,2', '0x10', '+5']) {
       expect('error' in parseWhole(bad, -MAX_ABS, MAX_ABS), bad).toBe(true);
     }
-    expect(parseWhole('1', MIN_MOD, MAX_MOD)).toEqual({ error: 'Keep it between 2 and 24.' });
+    expect(parseWhole('1', MIN_MOD, MAX_MOD)).toEqual({ ok: false, error: 'Keep it between 2 and 24.' });
     expect('error' in parseWhole('-1', MIN_MOD, MAX_MOD)).toBe(true);
     expect('error' in parseWhole('1000001', -MAX_ABS, MAX_ABS)).toBe(true);
   });
