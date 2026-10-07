@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutTree, treeX, type TreeShape } from './treeLayout';
+import { layoutTree, treeKeyTarget, treeX, type TreeShape } from './treeLayout';
 
 /** A BST built from keys, as [left, right] children keyed by value. */
 function bst(keys: number[]): TreeShape<number> {
@@ -94,7 +94,7 @@ describe('layoutTree tidy', () => {
 describe('layoutTree forest (roots)', () => {
   // Three union-find style trees: 0 <- 1, 2; 3 alone; 4 <- 5 <- 6.
   const kids: Record<number, number[]> = { 0: [1, 2], 1: [], 2: [], 3: [], 4: [5], 5: [6], 6: [] };
-  const forest: TreeShape<number> = { root: null, roots: [0, 3, 4], children: (id) => kids[id] };
+  const forest: TreeShape<number> = { roots: [0, 3, 4], children: (id) => kids[id] };
 
   for (const mode of ['tidy', 'inorder'] as const) {
     it(`${mode}: lays the trees side by side without overlapping`, () => {
@@ -116,7 +116,7 @@ describe('layoutTree forest (roots)', () => {
 
   it('a single tree lays out exactly as before, with or without roots', () => {
     const one: TreeShape<number> = { root: 0, children: (id) => kids[id] };
-    const asForest: TreeShape<number> = { root: null, roots: [0], children: (id) => kids[id] };
+    const asForest: TreeShape<number> = { roots: [0], children: (id) => kids[id] };
     for (const mode of ['tidy', 'inorder'] as const) expect(layoutTree(asForest, mode)).toEqual(layoutTree(one, mode));
   });
 
@@ -131,5 +131,51 @@ describe('treeX', () => {
     expect(treeX(4, 5, 900, 40)).toBe(860);
     expect(treeX(2, 5, 900, 40)).toBe(450);
     expect(treeX(0, 1, 900, 40)).toBe(450);
+  });
+});
+
+describe('treeKeyTarget', () => {
+  //        5
+  //      3   8
+  //     1 4    9
+  const tree = bst([5, 3, 8, 1, 4, 9]);
+  const { place } = layoutTree(tree, 'inorder');
+  const go = (key: string, from: number, visible?: (id: number) => boolean) => treeKeyTarget(key, from, tree, place, visible);
+
+  it('Up goes to the parent, Down to the leftmost child', () => {
+    expect(go('ArrowUp', 4)).toBe(3);
+    expect(go('ArrowUp', 5)).toBeNull();
+    expect(go('ArrowDown', 3)).toBe(1);
+    expect(go('ArrowDown', 8)).toBe(9); // a missing left child is skipped
+    expect(go('ArrowDown', 1)).toBeNull();
+  });
+
+  it('Left/Right walk the level, across subtrees, without wrapping', () => {
+    expect(go('ArrowRight', 4)).toBe(9);
+    expect(go('ArrowLeft', 9)).toBe(4);
+    expect(go('ArrowRight', 9)).toBeNull();
+    expect(go('ArrowLeft', 3)).toBeNull();
+  });
+
+  it('Home/End jump to the first and last node in reading order', () => {
+    expect(go('End', 5)).toBe(9);
+    expect(go('Home', 9)).toBe(5);
+    expect(go('Home', 5)).toBeNull();
+    expect(go('Enter', 5)).toBeNull();
+  });
+
+  it('skips hidden nodes', () => {
+    const visible = (id: number) => id !== 4;
+    expect(go('ArrowRight', 1, visible)).toBe(9);
+    expect(go('End', 5, (id) => id !== 9)).toBe(4);
+  });
+
+  it('moves between the trees of a forest on the same level', () => {
+    const kids: Record<number, number[]> = { 0: [1, 2], 1: [], 2: [], 3: [], 4: [5], 5: [] };
+    const forest: TreeShape<number> = { roots: [0, 3, 4], children: (id) => kids[id] };
+    const laid = layoutTree(forest, 'tidy').place;
+    expect(treeKeyTarget('ArrowRight', 0, forest, laid)).toBe(3);
+    expect(treeKeyTarget('ArrowRight', 2, forest, laid)).toBe(5);
+    expect(treeKeyTarget('ArrowUp', 3, forest, laid)).toBeNull();
   });
 });

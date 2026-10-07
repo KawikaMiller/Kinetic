@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, type Transition } from 'motion/react';
-import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { SPRING } from '../core/motion';
 import type { Tone } from '../core/tone';
-import { layoutTree, treeX, type TreeKey, type TreeLayoutMode, type TreeShape } from '../core/treeLayout';
+import { layoutTree, treeKeyTarget, treeX, type TreeKey, type TreeLayoutMode, type TreeShape } from '../core/treeLayout';
 
 export type { TreeShape } from '../core/treeLayout';
 
@@ -39,8 +39,12 @@ export interface TreeGeometry<K extends TreeKey> {
  * - `hidden(id)` keeps a node (and the edge to it) out of the picture without moving
  *   anything else: the layout always uses the whole shape.
  * - `overlay` draws between edges and nodes with the tree's geometry.
- * - Forest mode: give `shape.roots` to draw several trees side by side (union-find sets,
- *   a Huffman merge); `forestGap` is the empty columns between neighbouring trees.
+ * - Forest mode: give `shape.roots` (and no `root`) to draw several trees side by side
+ *   (union-find sets, a Huffman merge); `forestGap` is the empty columns between trees.
+ * - With `onNodeClick` the nodes are buttons and the tree is one tab stop (starting at the
+ *   first node in reading order): arrow keys follow the tree (Up = parent, Down = leftmost
+ *   child, Left/Right = neighbour on the same level), Home/End jump to the first and last
+ *   node, Enter/Space press. `treeKeyTarget` in core/treeLayout is the pure key map.
  */
 export function TreeSvg<K extends TreeKey>({
   shape, layout = 'tidy', forestGap, width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
@@ -73,7 +77,7 @@ export function TreeSvg<K extends TreeKey>({
   hidden?: (id: K) => boolean;
   enterScale?: number;
   transition?: Transition;
-  /** Makes nodes buttons: clickable, and focusable with Tab and pressable with Enter/Space. */
+  /** Makes nodes buttons: clickable, one tab stop for the whole tree, arrow keys move, Enter/Space press. */
   onNodeClick?: (id: K) => void;
   /** Screen-reader name of a clickable node (default: its label, or its id). */
   nodeAriaLabel?: (id: K) => string;
@@ -81,6 +85,8 @@ export function TreeSvg<K extends TreeKey>({
   className?: string;
   ariaLabel?: string;
 }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [focusId, setFocusId] = useState<K | null>(null);
   const { place, columns, depth } = layoutTree(shape, layout, { gap: forestGap });
   const gap = levelGap ?? Math.min(maxLevelGap, (height - bottomRoom) / Math.max(1, depth));
   const at = (id: K) => {
@@ -92,10 +98,26 @@ export function TreeSvg<K extends TreeKey>({
   const shown = [...place.keys()]
     .filter((id) => !hidden?.(id))
     .sort((a, b) => place.get(a)!.depth - place.get(b)!.depth || place.get(a)!.col - place.get(b)!.col);
+  const tabStop = focusId !== null && shown.includes(focusId) ? focusId : shown[0];
+
+  const onNodeKey = (e: KeyboardEvent<SVGGElement>, id: K) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onNodeClick?.(id);
+      return;
+    }
+    const to = treeKeyTarget(e.key, id, shape, place, (n) => !hidden?.(n));
+    if (to === null) return;
+    e.preventDefault();
+    setFocusId(to);
+    svgRef.current?.querySelector<SVGGElement>(`[data-node="${CSS.escape(String(to))}"]`)?.focus();
+  };
+
   const style = markedEdgeWidth === undefined ? undefined : ({ '--tree-marked-w': markedEdgeWidth } as CSSProperties);
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${width} ${height}`}
       className={`tree-svg ${className}`}
       preserveAspectRatio="xMidYMid meet"
@@ -141,7 +163,15 @@ export function TreeSvg<K extends TreeKey>({
               animate={{ opacity: nodeOpacity?.(id) ?? 1, scale: nodeScale?.(id) ?? 1, x, y }}
               exit={{ opacity: 0, scale: enterScale }}
               transition={transition}
-              {...(onNodeClick && nodeButtonProps(id, () => onNodeClick(id), nodeAriaLabel?.(id) ?? textLabel(label?.(id), id)))}
+              {...(onNodeClick && {
+                role: 'button',
+                tabIndex: id === tabStop ? 0 : -1,
+                'aria-label': nodeAriaLabel?.(id) ?? textLabel(label?.(id), id),
+                'data-node': String(id),
+                onClick: () => onNodeClick(id),
+                onFocus: () => setFocusId(id),
+                onKeyDown: (e: KeyboardEvent<SVGGElement>) => onNodeKey(e, id),
+              })}
             >
               {renderNode ? (
                 renderNode(id)
@@ -164,20 +194,4 @@ export function TreeSvg<K extends TreeKey>({
 /** A node's accessible name when the lesson didn't give one: its text label, else its id. */
 function textLabel(label: ReactNode, id: TreeKey): string {
   return typeof label === 'string' || typeof label === 'number' ? String(label) : String(id);
-}
-
-/** Button semantics for a clickable SVG node: in the tab order, Enter and Space press it. */
-function nodeButtonProps(id: TreeKey, press: () => void, name: string) {
-  return {
-    role: 'button',
-    tabIndex: 0,
-    'aria-label': name,
-    'data-node': String(id),
-    onClick: press,
-    onKeyDown: (e: KeyboardEvent<SVGGElement>) => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      e.preventDefault();
-      press();
-    },
-  };
 }

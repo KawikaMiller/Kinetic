@@ -40,7 +40,7 @@ export function Stage() {
   const compare = useMemo(() => COMBOS.map((c) => ({ ...c, t: totals(N, shownOps, c.opts) })), [shownOps]);
 
   const roots = f.parents.flatMap((p, i) => (p === i ? [i] : []));
-  const shape: TreeShape<number> = { root: null, roots, children: (id) => f.parents.flatMap((p, i) => (p === id && i !== id ? [i] : [])) };
+  const shape: TreeShape<number> = { roots, children: (id) => f.parents.flatMap((p, i) => (p === id && i !== id ? [i] : [])) };
   const onPath = new Set(f.path);
   const moved = new Set(f.reparented);
   const linked = new Set(f.linked);

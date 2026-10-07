@@ -6,15 +6,20 @@ export type TreeKey = string | number;
  * children in order; `null` marks an empty slot, so a binary node without a left
  * child is `[null, right]` and still lays out on the correct side.
  */
-export interface TreeShape<K extends TreeKey> {
-  root: K | null;
-  /**
-   * Forest mode: several trees laid out side by side, in this order (union-find sets, a
-   * Huffman merge in progress). When given, `root` is ignored.
-   */
-  roots?: readonly K[];
+export type TreeShape<K extends TreeKey> = {
   children: (id: K) => readonly (K | null)[];
-}
+} & (
+  | { root: K | null; roots?: undefined }
+  | {
+      /** Ignored in forest mode; leave it out. */
+      root?: K | null;
+      /**
+       * Forest mode: several trees laid out side by side, in this order (union-find sets, a
+       * Huffman merge in progress).
+       */
+      roots: readonly K[];
+    }
+);
 
 /** Columns left empty between neighbouring trees of a forest, by default. */
 export const FOREST_GAP = 0.5;
@@ -87,4 +92,58 @@ export function layoutTree<K extends TreeKey>(
 /** Pixel x of a column across `width`, keeping `pad` clear on both sides; one column is centred. */
 export function treeX(col: number, columns: number, width: number, pad: number): number {
   return columns <= 1 ? width / 2 : pad + (col * (width - pad * 2)) / (columns - 1);
+}
+
+/** Every node's parent in the laid-out tree (roots map to null). */
+function parentsOf<K extends TreeKey>(shape: TreeShape<K>, place: ReadonlyMap<K, TreeNodePlace>): Map<K, K | null> {
+  const parent = new Map<K, K | null>();
+  for (const id of place.keys()) if (!parent.has(id)) parent.set(id, null);
+  for (const id of place.keys()) for (const c of shape.children(id)) if (c != null && place.has(c)) parent.set(c, id);
+  return parent;
+}
+
+/**
+ * Where an arrow key moves keyboard focus in a drawn tree, following its structure:
+ * ArrowUp goes to the parent, ArrowDown to the leftmost child, ArrowLeft/Right to the
+ * neighbour on the same level (across subtrees, and across trees in a forest), Home/End to
+ * the first and last node in reading order (top row first, left to right). Only nodes that
+ * pass `visible` are targets. null = not a navigation key, or nowhere to go.
+ */
+export function treeKeyTarget<K extends TreeKey>(
+  key: string,
+  from: K,
+  shape: TreeShape<K>,
+  place: ReadonlyMap<K, TreeNodePlace>,
+  visible: (id: K) => boolean = () => true,
+): K | null {
+  const at = place.get(from);
+  if (!at) return null;
+  const shown = [...place.keys()].filter(visible);
+  const byReading = (a: K, b: K) => place.get(a)!.depth - place.get(b)!.depth || place.get(a)!.col - place.get(b)!.col;
+  const row = shown.filter((id) => place.get(id)!.depth === at.depth).sort(byReading);
+  const k = row.indexOf(from);
+  let to: K | null | undefined = null;
+  switch (key) {
+    case 'ArrowUp':
+      to = parentsOf(shape, place).get(from);
+      break;
+    case 'ArrowDown':
+      to = shape.children(from).filter((c): c is K => c != null && place.has(c) && visible(c)).sort(byReading)[0];
+      break;
+    case 'ArrowLeft':
+      to = k > 0 ? row[k - 1] : null;
+      break;
+    case 'ArrowRight':
+      to = k >= 0 && k < row.length - 1 ? row[k + 1] : null;
+      break;
+    case 'Home':
+      to = shown.sort(byReading)[0];
+      break;
+    case 'End':
+      to = shown.sort(byReading).at(-1);
+      break;
+    default:
+      return null;
+  }
+  return to != null && to !== from && visible(to) ? to : null;
 }
