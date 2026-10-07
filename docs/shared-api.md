@@ -500,6 +500,9 @@ so expect to keep a few lesson overrides for exact pixel parity.
 - `onLineClick` turns every line into a button that looks identical to a plain line: Space/Enter,
   the focus-visible ring, `aria-pressed` from `pressed(i)`, and `lineLabel(i)` as its name (default
   "Line N: code"). The dev kit showcase (`#/dev/kit`) has a breakpoint demo.
+- `roving` makes the clickable lines one tab stop instead of one per line: ↑/↓ move focus (no wrap),
+  Home/End jump to the ends, and re-entering the panel returns to the line last focused
+  (`listKeyTarget` in `core/radio`, tested). isa-assembly's C and assembly panels use it (they had ~23 stops).
 - Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
   row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 
