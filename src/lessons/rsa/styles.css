@@ -1,0 +1,81 @@
+.rsa-toy {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed color-mix(in srgb, var(--bad) 55%, transparent);
+  border-radius: 8px;
+  font: 600 12px var(--font);
+  color: var(--muted);
+}
+.rsa-error { color: var(--bad); }
+.rsa-sub { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.rsa-big { margin: 0; font: 700 18px var(--mono); overflow-wrap: anywhere; }
+.rsa-val, .rsa-table td { font-family: var(--mono); }
+.rsa-table td.tone-hi, .rsa-table td.tone-info, .rsa-table td.tone-violet, .rsa-table td.tone-orange, .rsa-table td.tone-ok,
+.rsa-card .tone-hi, .rsa-card .tone-violet, .rsa-card .tone-bad, .rsa-step-value.tone-info, .rsa-step-value.tone-violet { color: var(--c); }
+
+/* Make a key */
+.rsa-keygen { gap: 12px; }
+.rsa-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.rsa-step {
+  display: grid;
+  grid-template-columns: 90px 1fr auto 20px;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  font: 500 13px var(--font);
+}
+.rsa-step-name { font-family: var(--mono); }
+.rsa-step-formula { color: var(--muted); }
+.rsa-step-value { font: 700 14px var(--mono); }
+.rsa-step-mark { font-weight: 700; }
+.rsa-step.is-ok .rsa-step-mark { color: var(--ok); }
+.rsa-step.is-now { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.rsa-step.is-now .rsa-step-mark { color: var(--hi); }
+.rsa-step.is-bad { border-color: color-mix(in srgb, var(--bad) 70%, transparent); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.rsa-step.is-bad .rsa-step-mark, .rsa-step.is-bad .rsa-step-value { color: var(--bad); }
+.rsa-step.is-pending { display: block; border-style: dashed; color: var(--muted); }
+.rsa-euclid { display: flex; flex-direction: column; gap: 6px; }
+.rsa-table { max-width: 420px; }
+/* Maths names are case-sensitive: m and c, not M and C. */
+.rsa-table th { text-transform: none; }
+@media (max-width: 560px) {
+  .rsa-step { grid-template-columns: 86px 1fr 20px; }
+  .rsa-step-formula { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* Encrypt */
+.rsa-enc { gap: 12px; }
+.rsa-enc-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.rsa-clock { width: 280px; max-width: 100%; height: auto; flex: none; }
+.rsa-clock-ring { fill: none; stroke: var(--line-2); stroke-width: 2; }
+.rsa-clock-tick { fill: var(--muted); }
+.rsa-clock-zero, .rsa-clock-n, .rsa-clock-sub, .rsa-clock-op, .rsa-clock-mark text { text-anchor: middle; font: 600 12px var(--mono); }
+.rsa-clock-zero, .rsa-clock-sub { fill: var(--muted); }
+.rsa-clock-n { fill: var(--text); font-size: 14px; }
+.rsa-clock-op { fill: var(--c); font-size: 13px; }
+.rsa-clock-arrow { fill: none; stroke: var(--c); stroke-width: 2.5; }
+.rsa-clock-mark circle { fill: var(--c); }
+.rsa-clock-mark text { fill: var(--c); font-weight: 700; }
+.rsa-items { flex: 1 1 240px; }
+.rsa-items tr.is-now td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.rsa-items td.is-repeat { color: var(--bad); box-shadow: inset 0 0 0 2px var(--bad); }
+.rsa-pitfalls ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font: 500 13px var(--font); }
+
+/* Sign */
+.rsa-sign { gap: 12px; }
+.rsa-sign-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.rsa-card { flex: 1 1 220px; display: flex; flex-direction: column; gap: 4px; border-color: color-mix(in srgb, var(--c) 60%, transparent); }
+.rsa-card p { margin: 0; font: 500 13px var(--mono); overflow-wrap: anywhere; }
+.rsa-card > b { color: var(--c); }
+.rsa-card .rsa-big { color: var(--c); }
+.rsa-arrow { font: 700 22px var(--font); color: var(--muted); }
+.rsa-roles caption { caption-side: top; text-align: left; font: 600 12px var(--font); color: var(--muted); padding-bottom: 4px; }
+
+/* Key size */
+.rsa-size { gap: 12px; }
+.rsa-factor p { margin: 0; font: 500 13px var(--font); }
+.rsa-factor { display: flex; flex-direction: column; gap: 6px; }
+.rsa-plot { display: flex; justify-content: center; }
+.rsa-plot .plot2d { max-width: 100%; height: auto; }
