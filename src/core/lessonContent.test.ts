@@ -21,7 +21,7 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
  */
 const PENDING_RETROFIT = new Set([
   // T2-R2
-  'auth-sessions-jwt', 'containers',
+  'containers',
 ]);
 /** Tiers whose existing lessons are all still awaiting their kickoff retrofit. */
 const TIERS_AWAITING_KICKOFF = new Set([3, 4]);
@@ -29,7 +29,6 @@ const TIERS_AWAITING_KICKOFF = new Set([3, 4]);
 const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2, existing lessons awaiting their retrofit batch
-  'auth-sessions-jwt': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'containers': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   // Tier 3
   'cap-theorem': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
