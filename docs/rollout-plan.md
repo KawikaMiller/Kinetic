@@ -3046,7 +3046,7 @@ Track `sec` · *"Why ECB mode leaks the picture"* · Builds on: `hashing-encrypt
   - CBC bit-flip propagation (current block garbled, next block flips the same bit) is asserted on decrypt.
   - GCM decrypt of a tampered ciphertext rejects.
   - Without `crypto.subtle` (`hasSubtle()` false), the lesson says so instead of drawing fake noise.
-- Honesty: "Real AES in your browser via WebCrypto. ECB isn't offered by WebCrypto; we build it one block at a time to show why it's banned."
+- Honesty: "Real AES in your browser via WebCrypto. ECB isn't offered by WebCrypto; we build it one block at a time to show why you should never use it (SP 800-38A still lists it; NIST intends to drop it)."
 **Phone.** The four picture lanes become a 2×2 grid at ≤900px. Each lane is 120px, with crisp pixels via `image-rendering: pixelated`. `ByteGrid` uses `perRow={8}` on phones. No stage `minWidth`; the chaining diagram goes in a `WideRegion` (about 560).
 
 **`macs-hmac` · MACs & HMAC**
