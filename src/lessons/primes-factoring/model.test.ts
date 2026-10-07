@@ -6,6 +6,8 @@ import {
   fermatSaysPrime, longTime, parseCandidate, primality, primeWithDigits, sievePlan, startTrial, stepsForDigits,
 } from './model';
 
+const MR_SWEEP_TIMEOUT_MS = 60_000;
+
 const isPrimeRef = (n: number) => {
   if (n < 2) return false;
   for (let d = 2; d * d <= n; d++) if (n % d === 0) return false;
@@ -150,10 +152,13 @@ describe('extrapolation', () => {
 });
 
 describe('primality', () => {
+  // A million bigint Miller-Rabin runs: a few seconds alone, more when the whole suite runs in parallel.
   it('Miller-Rabin agrees with the sieve below 10⁶', () => {
     const { isPrime } = sieve(1_000_000);
-    for (let n = 2; n < 1_000_000; n++) expect(isProbablePrime(BigInt(n)).prime).toBe(isPrime[n]);
-  });
+    const wrong: number[] = [];
+    for (let n = 2; n < 1_000_000; n++) if (isProbablePrime(BigInt(n)).prime !== isPrime[n]) wrong.push(n);
+    expect(wrong).toEqual([]);
+  }, MR_SWEEP_TIMEOUT_MS);
 
   it('Fermat base 2 is fooled by Carmichael numbers; Miller-Rabin and trial division are not', () => {
     for (const c of [561n, 1105n, 1729n]) {
