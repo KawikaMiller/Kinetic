@@ -6,7 +6,8 @@ import {
 
 describe('Linux x86-64 syscall numbers shown on screen', () => {
   it('are pinned', () => {
-    expect(SYSCALL_NR).toEqual({ read: 0, write: 1, open: 2, close: 3, getpid: 39 });
+    expect(SYSCALL_NR).toEqual({ read: 0, write: 1, open: 2, close: 3, getpid: 39, openat: 257 });
+    expect(SORT_KEY.find((i) => i.fn === 'open')!.why).toContain(`openat system call (${SYSCALL_NR.openat})`);
     expect(WRAPPER[1]).toContain(`mov eax, ${SYSCALL_NR.read}`);
     expect(KERNEL_PATH[1]).toContain(`sys_call_table[${SYSCALL_NR.read}]`);
   });

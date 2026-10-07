@@ -5,12 +5,14 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Hint } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { bytes, latency } from '../../core/format';
-import { BUFFER_SIZES, COPY_FILE_BYTES, copyCost, HONESTY, SYSCALL_NS } from './model';
+import { latency } from '../../core/format';
+import { BUFFER_SIZES, COPY_FILE_BYTES, copyCost, HONESTY, MIB, SYSCALL_NS } from './model';
 
 const LOOP = ['while ((n = read(in, buf, BUF)) > 0)', '    write(out, buf, n);'];
 const count = (n: number) => n.toLocaleString('en-US');
-const sizeLabel = (b: number) => (b === 1 ? '1 byte' : bytes(b, { dp: 0 }));
+const KIB = 1024;
+/** Binary units, spelled out: the syscall counts only come out round (1,048,576 / 16) in KiB and MiB. */
+const sizeLabel = (b: number) => (b === 1 ? '1 byte' : b < KIB ? `${b} bytes` : b < MIB ? `${b / KIB} KiB` : `${b / MIB} MiB`);
 
 /** Copying one file with buffers of different sizes: syscall counts and the crossing time, to scale. */
 export function BatchScene({ picker }: { picker: ReactNode }) {
@@ -20,7 +22,7 @@ export function BatchScene({ picker }: { picker: ReactNode }) {
   const last = rows[rows.length - 1];
   useIntroCaption(
     <>
-      Copying a {bytes(COPY_FILE_BYTES, { dp: 0 })} file {sizeLabel(first.b)} at a time takes {count(first.c.syscalls)} system calls; with a {sizeLabel(last.b)} buffer it takes {count(last.c.syscalls)}.
+      Copying a {sizeLabel(COPY_FILE_BYTES)} file {sizeLabel(first.b)} at a time takes {count(first.c.syscalls)} system calls; with a {sizeLabel(last.b)} buffer it takes {count(last.c.syscalls)}.
       Same bytes, same result: only the number of trips into the kernel changes.
     </>,
   );

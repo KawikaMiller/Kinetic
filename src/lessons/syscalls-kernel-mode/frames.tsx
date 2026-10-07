@@ -15,8 +15,8 @@ const READ_SAY: Record<string, ReactNode> = {
   call: <>Your code calls <code>read(3, buf, 4096)</code>. So far it's an ordinary function call into libc: still user mode, ring 3.</>,
   setup: (
     <>
-      The libc wrapper puts the system call number in <code>rax</code> (read is {SYSCALL_NR.read}) and the arguments in <code>rdi</code>, <code>rsi</code>, <code>rdx</code>: fd 3, the buffer's
-      address, 4096.
+      The arguments are already in <code>rdi</code>, <code>rsi</code>, <code>rdx</code> (fd 3, the buffer's address, 4096): the normal calling convention put them there. The wrapper just
+      adds the system call number in <code>rax</code> (read is {SYSCALL_NR.read}).
     </>
   ),
   trap: (
@@ -25,10 +25,14 @@ const READ_SAY: Record<string, ReactNode> = {
       else.
     </>
   ),
-  dispatch: <>The kernel indexes its system call table with <code>rax</code>: entry {SYSCALL_NR.read} is <code>sys_read</code>.</>,
+  dispatch: (
+    <>
+      The kernel uses <code>rax</code> to pick the handler: entry {SYSCALL_NR.read} of its system call table is <code>sys_read</code> (recent kernels compile the table into a switch).
+    </>
+  ),
   vfs: <>sys_read finds the open file behind fd 3, and its data is already in the page cache (RAM), so nothing waits for the disk this time.</>,
   copy: <>copy_to_user copies 4096 bytes into your buffer, after checking that buf really is a user address. Only the kernel can reach across the wall like this.</>,
-  sysret: <>sysret puts the result in <code>rax</code> (4096 bytes read), flips the mode bit back to ring 3 and resumes the wrapper just after <code>syscall</code>.</>,
+  sysret: <>The kernel leaves the result in <code>rax</code> (4096 bytes read); sysret flips back to ring 3 and resumes the wrapper just after <code>syscall</code>.</>,
   return: (
     <>
       read() returns 4096 to your code. The two crossings alone took {latency(crossingNs(READ_STEPS))}, against {latency(COST_NS.call)} for an ordinary function call (illustrative numbers).
