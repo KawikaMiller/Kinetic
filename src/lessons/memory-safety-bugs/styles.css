@@ -1,0 +1,20 @@
+.msb { gap: 12px; }
+.msb .code-panel .trail { font-size: 11.5px; }
+.msb-panels { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-start; }
+.msb-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.msb-col .section-title { display: block; }
+.msb-addrs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.msb-addr.tone-dim { color: var(--muted); border-style: dashed; }
+.msb-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.msb-refusal { color: var(--bad); font-size: 13px; flex-basis: 100%; }
+.msb-strip { display: flex; flex-direction: column; gap: 8px; }
+.msb-strip .section-title { display: block; }
+.msb-report summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.msb-report .console-panel { margin-top: 8px; }
+.msb .console-panel code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msb-scene { display: block; width: 100%; max-width: 520px; height: auto; }
+.msb-scene-note { font-size: 13px; fill: var(--muted); }
+@media (max-width: 600px) {
+  .msb .code-panel li { flex-wrap: wrap; }
+  .msb .code-panel .trail { flex-basis: 100%; padding-left: calc(1.6em + 10px); }
+}
