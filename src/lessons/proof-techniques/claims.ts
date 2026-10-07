@@ -69,7 +69,7 @@ export const CLAIMS: readonly Claim[] = [
       direct: {
         kind: 'stall',
         prefix: ['Suppose n² is even.', 'Then n² = 2k for some integer k.'],
-        why: 'Getting from n² to n means a square root, n = √(2k), and nothing says that is an even integer. Writing "so n = 2j" needs "n² even ⇒ n even", which is the claim itself. The direct route stalls here; try Contrapositive.',
+        why: 'From n² = 2k there is no direct way to n without a lemma such as "a prime that divides n·n divides n" (Euclid’s lemma), and writing "so n = 2j" straight away would assume the claim itself. Without that lemma the direct route stalls here; the contrapositive needs none, so try Contrapositive.',
       },
       contrapositive: {
         kind: 'script',
@@ -117,7 +117,7 @@ export const CLAIMS: readonly Claim[] = [
   {
     id: 'sqrt2',
     label: '√2 is irrational',
-    statement: '√2 is irrational: it is not p/q for any integers p and q.',
+    statement: '√2 is irrational: it is not a/b for any integers a and b.',
     p: '√2 is irrational',
     routes: {
       direct: {
@@ -135,44 +135,44 @@ export const CLAIMS: readonly Claim[] = [
         lines: [
           line(
             'assume',
-            yes('Suppose √2 is rational: √2 = p/q for integers p, q with q ≠ 0, in lowest terms.', 'assumption, the negation of the claim; any fraction can be put in lowest terms by dividing out the gcd'),
+            yes('Suppose √2 is rational: √2 = a/b for integers a, b with b ≠ 0, in lowest terms.', 'assumption, the negation of the claim; any fraction can be put in lowest terms by dividing out the gcd'),
             no('Suppose √2 is irrational.', "assumes what we're proving: a contradiction proof assumes the opposite"),
-            no('Suppose √2 = p/q for some integers p, q.', 'close, but without "in lowest terms" the clash at the end disappears: p and q both even would contradict nothing (and q must not be 0)'),
+            no('Suppose √2 = a/b for some integers a, b.', 'close, but without "in lowest terms" the clash at the end disappears: a and b both even would contradict nothing (and b must not be 0)'),
           ),
           line(
             'step',
-            yes('Then 2 = p²/q², so p² = 2q².', 'algebra: square both sides, then multiply by q²'),
-            no('Then 2 = p/q², so p = 2q².', 'squaring slip: (p/q)² is p²/q²'),
-            no('Then p = 2q.', "doesn't follow: p/q is √2, not 2"),
+            yes('Then 2 = a²/b², so a² = 2b².', 'algebra: square both sides, then multiply by b²'),
+            no('Then 2 = a/b², so a = 2b².', 'squaring slip: (a/b)² is a²/b²'),
+            no('Then a = 2b.', "doesn't follow: a/b is √2, not 2"),
           ),
           line(
             'step',
-            yes('So p² is even, and therefore p is even.', 'p² = 2q² is even; then "n² even ⇒ n even", the previous claim'),
-            no('So p² is even, and therefore p = 2.', "doesn't follow: p² even makes p even, not p = 2"),
-            no('So q² is even, and therefore q is even.', "doesn't follow yet: p² = 2q² says p² is even; it says nothing about q² so far"),
+            yes('So a² is even, and therefore a is even.', 'a² = 2b² is even; then "n² even ⇒ n even", the previous claim'),
+            no('So a² is even, and therefore a = 2.', "doesn't follow: a² even makes a even, not a = 2"),
+            no('So b² is even, and therefore b is even.', "doesn't follow yet: a² = 2b² says a² is even; it says nothing about b² so far"),
           ),
           line(
             'step',
-            yes('Write p = 2r. Then 4r² = 2q², so q² = 2r².', 'substitution and algebra'),
-            no('Write p = 2r. Then 4r² = 2q², so q² = 4r².', 'algebra slip: dividing 4r² = 2q² by 2 gives q² = 2r²'),
-            no('Write p = 2r + 1.', 'that makes p odd, but the line above showed p is even'),
+            yes('Write a = 2c. Then 4c² = 2b², so b² = 2c².', 'substitution and algebra'),
+            no('Write a = 2c. Then 4c² = 2b², so b² = 4c².', 'algebra slip: dividing 4c² = 2b² by 2 gives b² = 2c²'),
+            no('Write a = 2c + 1.', 'that makes a odd, but the line above showed a is even'),
           ),
           line(
             'step',
-            yes('So q² is even, and therefore q is even.', 'the same lemma, "n² even ⇒ n even"'),
-            no('So q is odd.', "doesn't follow: q² = 2r² is even, so q is even"),
-            no('So q² = r².', 'algebra slip: q² = 2r²'),
+            yes('So b² is even, and therefore b is even.', 'the same lemma, "n² even ⇒ n even"'),
+            no('So b is odd.', "doesn't follow: b² = 2c² is even, so b is even"),
+            no('So b² = c².', 'algebra slip: b² = 2c²'),
           ),
           line(
             'clash',
-            yes('p and q are both even, so p/q was not in lowest terms: a contradiction.', 'contradiction with the assumption'),
-            no('p and q are both even, so √2 = 2.', "doesn't follow: dividing p and q by 2 leaves the ratio unchanged"),
+            yes('a and b are both even, so a/b was not in lowest terms: a contradiction.', 'contradiction with the assumption'),
+            no('a and b are both even, so √2 = 2.', "doesn't follow: dividing a and b by 2 leaves the ratio unchanged"),
             no('So √2 is rational after all.', 'backwards: every step came from assuming √2 rational and ended in a clash, so that assumption is what has to go'),
           ),
           line(
             'conclude',
             yes('So the assumption is false: √2 is irrational.', 'proof by contradiction: ¬p → ⊥, so p'),
-            no('So p and q are both even numbers.', "that's an intermediate fact, not the conclusion about √2"),
+            no('So a and b are both even numbers.', "that's an intermediate fact, not the conclusion about √2"),
             no('So √2 is not a number.', "√2 is a real number; what broke is the assumption that it's a ratio of integers"),
           ),
         ],
@@ -195,7 +195,7 @@ export const CLAIMS: readonly Claim[] = [
           line(
             'step',
             yes('To refute "for every n, P(n)", one n where P(n) fails is enough.', '¬∀n P(n) ≡ ∃n ¬P(n)'),
-            no('To refute it, show it fails for most n.', 'one failure is enough; "most" is neither needed nor true here'),
+            no('To refute it, show it fails for most n.', 'one failure is enough; showing it fails for most n is not what refutes a "for every" claim'),
             no('n = 0 to 39 all give primes, so the claim is true.', 'examples never prove a "for every n" claim: 40 passing cases and it still fails'),
           ),
           line(
