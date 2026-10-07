@@ -3,7 +3,8 @@ import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import {
-  bruteNextComparisons, bruteRectRanges, bruteWindowComparisons, largestRectangle, nextGreater, opCounts, slidingMax, type Rect,
+  bruteNextComparisons, bruteNextWorst, bruteRectComparisons, bruteWindowComparisons, comparisonsIn, largestRectangle, nextGreater, opCounts, slidingMax,
+  type Rect,
 } from './model';
 
 export type Scene = 'warmer' | 'window' | 'rect';
@@ -30,6 +31,8 @@ export interface MsFrame extends Frame {
   best: Rect | null;
   pushes: number;
   pops: number;
+  /** Value comparisons the stack (or deque) has made so far. */
+  cmps: number;
   done: boolean;
 }
 
@@ -37,7 +40,7 @@ type Rec = ReturnType<typeof createRecorder<MsFrame>>;
 
 const blank = (n: number): Omit<MsFrame, 'say' | 'hold'> => ({
   scan: null, stack: [], popped: null, answers: new Array(n).fill(undefined), arrow: null, window: null,
-  maxes: new Array(n).fill(undefined), maxAt: null, rect: null, best: null, pushes: 0, pops: 0, done: false,
+  maxes: new Array(n).fill(undefined), maxAt: null, rect: null, best: null, pushes: 0, pops: 0, cmps: 0, done: false,
 });
 
 const recorder = (n: number) => createRecorder<MsFrame>(blank(n), { transient: { popped: null, arrow: null, rect: null } });
@@ -50,7 +53,20 @@ function tally(r: Rec, n: number): ReactNode {
   const { pushes, pops } = r.get();
   return (
     <>
-      {plural(pushes, 'push', 'pushes')} + {plural(pops, 'pop')} = <b>{pushes + pops}</b>, within 2n = {2 * n}: each index is pushed once and popped at most once.
+      {plural(pushes, 'push', 'pushes')} + {plural(pops, 'pop')} = {pushes + pops}, within 2n = {2 * n}: each index is pushed once and popped at most once.
+    </>
+  );
+}
+
+/**
+ * The like-for-like comparison: the stack's value comparisons against brute force's on this
+ * input, then the worst case, so a gentle input never makes brute force look like the better deal.
+ */
+function versus(stack: number, brute: number, n: number, cheapWhy: ReactNode, worst: ReactNode): ReactNode {
+  return (
+    <>
+      Value comparisons: the stack made <b>{stack}</b> (never more than 2n = {2 * n}); brute force makes {brute} here
+      {brute <= stack ? <>, {cheapWhy}</> : null}, and {worst}.
     </>
   );
 }
@@ -91,7 +107,7 @@ export function warmerFrames(v: readonly number[]): MsFrame[] {
           Day {i} ({v[i]}) is warmer than day {j} ({v[j]}), so day {j}'s answer is <b>{plural(i - j, 'day')}</b>. Pop {j}.
         </>,
         undefined,
-        { scan: i, stack: s.stack.slice(0, -1), answers, popped: j, arrow: j, pops: s.pops + 1 },
+        { scan: i, stack: s.stack.slice(0, -1), answers, popped: j, arrow: j, pops: s.pops + 1, cmps: s.cmps + 1 },
       );
       poppedThisDay = true;
     } else {
@@ -108,7 +124,7 @@ export function warmerFrames(v: readonly number[]): MsFrame[] {
           Day {i} ({v[i]}): {why} Push {i}: it waits for a warmer day.
         </>,
         undefined,
-        { scan: i, stack: [...s.stack, i], pushes: s.pushes + 1 },
+        { scan: i, stack: [...s.stack, i], pushes: s.pushes + 1, cmps: s.cmps + op.stop },
       );
       poppedThisDay = false;
     }
@@ -121,8 +137,8 @@ export function warmerFrames(v: readonly number[]): MsFrame[] {
       <>One day only: it's pushed once and never popped, because nothing comes after it. 1 push + 0 pops = 1, within 2n = 2.</>
     ) : (
       <>
-        Done. {tally(r, n)} {left.length === n ? 'No day ever sees a warmer one.' : left.length ? <>{left.length === 1 ? 'Day' : 'Days'} {list(left)} never see a warmer day.</> : 'Every day found a warmer one.'}{' '}
-        Brute force, looking right from every day: {plural(bruteNextComparisons(v), 'comparison')}.
+        Done. {tally(r, n)} {left.length === n ? 'No day ever sees a warmer one.' : left.length ? <>{left.length === 1 ? <>Day {left[0]} never sees</> : <>Days {list(left)} never see</>} a warmer day.</> : 'Every day found a warmer one.'}{' '}
+        {versus(r.get().cmps, bruteNextComparisons(v), n, <>which this input happens to make cheap</>, <>on a run of {n} days that never warms up it makes n(n−1)/2 = {bruteNextWorst(n)}</>)}
       </>
     ),
     2,
@@ -164,7 +180,7 @@ export function windowFrames(v: readonly number[], kWanted: number): MsFrame[] {
           {v[op.by]} at index {op.by} is at least {v[op.i]} at index {op.i}, so {op.i} can never be a window max while {op.by} is in the window. It leaves at the <b>back</b>.
         </>,
         undefined,
-        { scan: op.by, window: [Math.max(0, op.by - k + 1), op.by], stack: s.stack.slice(0, -1), popped: op.i, maxAt: null, pops: s.pops + 1 },
+        { scan: op.by, window: [Math.max(0, op.by - k + 1), op.by], stack: s.stack.slice(0, -1), popped: op.i, maxAt: null, pops: s.pops + 1, cmps: s.cmps + 1 },
       );
     } else if (op.t === 'push') {
       const i = op.i;
@@ -180,7 +196,7 @@ export function windowFrames(v: readonly number[], kWanted: number): MsFrame[] {
             Push index {i} ({v[i]}) at the back. The window {win[0]}–{i} is full: its max is <b>{v[next.i]}</b>, at the front (index {next.i}).
           </>,
           undefined,
-          { scan: i, window: win, stack, maxes: ms, maxAt: next.i, pushes: s.pushes + 1 },
+          { scan: i, window: win, stack, maxes: ms, maxAt: next.i, pushes: s.pushes + 1, cmps: s.cmps + op.stop },
         );
       } else {
         r.snap(
@@ -188,7 +204,7 @@ export function windowFrames(v: readonly number[], kWanted: number): MsFrame[] {
             Push index {i} ({v[i]}) at the back. The window isn't full yet ({i + 1} of {k}).
           </>,
           undefined,
-          { scan: i, window: win, stack, maxAt: null, pushes: s.pushes + 1 },
+          { scan: i, window: win, stack, maxAt: null, pushes: s.pushes + 1, cmps: s.cmps + op.stop },
         );
       }
     }
@@ -199,8 +215,8 @@ export function windowFrames(v: readonly number[], kWanted: number): MsFrame[] {
       <>One value: one window, and its max is the value itself, {v[0]}. 1 push + 0 pops = 1, within 2n = 2.</>
     ) : (
       <>
-        Done: the window maxima are {maxes.join(', ')}. {tally(r, n)} Brute force scans each of the {n - k + 1} windows on its own:{' '}
-        {plural(bruteWindowComparisons(n, k), 'comparison')}.
+        Done: the window maxima are {maxes.join(', ')}. {tally(r, n)}{' '}
+        {versus(r.get().cmps, bruteWindowComparisons(n, k), n, <>cheap only because k is small</>, <>that's (n−k+1)(k−1) on any input: it rescans each of the {n - k + 1} windows, so it grows with n × k</>)}
       </>
     ),
     2,
@@ -221,8 +237,9 @@ export function rectFrames(v: readonly number[]): MsFrame[] {
   }
   r.snap(
     <>
-      The stack holds bars whose heights strictly rise from bottom to top. When a bar no taller arrives, each taller bar is popped and its widest
-      rectangle is worked out: right up to the bar that popped it, left to the bar now under it.
+      The stack holds bars whose heights strictly rise from bottom to top. When a bar no taller arrives, every bar at least as tall is popped, and
+      its rectangle is worked out from the bar now under it to the bar that popped it. A bar popped by an equal one can reach further; the equal bar
+      carries that height on, so the widest one still gets counted.
     </>,
   );
   const { ops, best } = largestRectangle(v);
@@ -241,7 +258,7 @@ export function rectFrames(v: readonly number[]): MsFrame[] {
           {isBest && <> Best so far.</>}
         </>,
         undefined,
-        { scan: at < n ? at : null, stack, popped: i, rect, best: isBest ? rect : s.best, pops: s.pops + 1 },
+        { scan: at < n ? at : null, stack, popped: i, rect, best: isBest ? rect : s.best, pops: s.pops + 1, cmps: s.cmps + 1 },
       );
       poppedNow = true;
     } else {
@@ -256,7 +273,7 @@ export function rectFrames(v: readonly number[]): MsFrame[] {
           Bar {i} ({v[i]}): {why} Push {i}.
         </>,
         undefined,
-        { scan: i, stack: [...s.stack, i], pushes: s.pushes + 1 },
+        { scan: i, stack: [...s.stack, i], pushes: s.pushes + 1, cmps: s.cmps + op.stop },
       );
       poppedNow = false;
     }
@@ -268,7 +285,8 @@ export function rectFrames(v: readonly number[]): MsFrame[] {
       <>One bar: the only rectangle is the bar itself, area {b.area}. 1 push + 1 pop = 2, within 2n = 2.</>
     ) : (
       <>
-        Largest rectangle: area <b>{b.area}</b>, height {b.height} across {span(b)}. {tally(r, n)} Brute force tries all {bruteRectRanges(n)} ranges.
+        Largest rectangle: area <b>{b.area}</b>, height {b.height} across {span(b)}. {tally(r, n)}{' '}
+        {versus(r.get().cmps, bruteRectComparisons(n), n, <>cheap only because there are so few bars</>, <>that's n(n−1)/2 on any input, extending every bar right against a running minimum</>)}
       </>
     ),
     2,
@@ -276,17 +294,21 @@ export function rectFrames(v: readonly number[]): MsFrame[] {
   return r.frames;
 }
 
-/** The counters for the stats row, recomputed from the model. */
-export function totalsFor(scene: Scene, v: readonly number[], kWanted: number): { work: number; brute: number; bruteUnit: string } {
+/** The counters for the stats row, recomputed from the model: pushes + pops, and value comparisons for the stack and for brute force. */
+export function totalsFor(scene: Scene, v: readonly number[], kWanted: number): { work: number; cmps: number; brute: number; bruteNote: string } {
+  const n = v.length;
   if (scene === 'window') {
-    const k = Math.max(1, Math.min(kWanted, v.length));
-    const c = opCounts(slidingMax(v, k).ops);
-    return { work: c.pushes + c.pops, brute: bruteWindowComparisons(v.length, k), bruteUnit: 'comparisons' };
+    const k = Math.max(1, Math.min(kWanted, n));
+    const { ops } = slidingMax(v, k);
+    const c = opCounts(ops);
+    return { work: c.pushes + c.pops, cmps: comparisonsIn(ops), brute: bruteWindowComparisons(n, k), bruteNote: 'comparisons, (n−k+1)(k−1) always' };
   }
   if (scene === 'rect') {
-    const c = opCounts(largestRectangle(v).ops);
-    return { work: c.pushes + c.pops, brute: bruteRectRanges(v.length), bruteUnit: 'ranges' };
+    const { ops } = largestRectangle(v);
+    const c = opCounts(ops);
+    return { work: c.pushes + c.pops, cmps: comparisonsIn(ops), brute: bruteRectComparisons(n), bruteNote: 'comparisons, n(n−1)/2 always' };
   }
-  const c = opCounts(nextGreater(v).ops);
-  return { work: c.pushes + c.pops, brute: bruteNextComparisons(v), bruteUnit: 'comparisons' };
+  const { ops } = nextGreater(v);
+  const c = opCounts(ops);
+  return { work: c.pushes + c.pops, cmps: comparisonsIn(ops), brute: bruteNextComparisons(v), bruteNote: `comparisons here, up to ${bruteNextWorst(n)}` };
 }

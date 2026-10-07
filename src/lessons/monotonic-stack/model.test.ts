@@ -194,13 +194,17 @@ describe('captions', () => {
           const end = lastSay(frames(scene, xs, k));
           const t = totalsFor(scene, xs, k);
           expect(end).toContain(`= ${t.work}, within 2n = ${2 * xs.length}`);
+          if (xs.length > 1) {
+            expect(end).toContain(`the stack made ${t.cmps} (never more than 2n = ${2 * xs.length})`);
+            expect(end).toContain(`brute force makes ${t.brute} here`);
+          }
           expect(t.work).toBeLessThanOrEqual(2 * xs.length);
           if (scene === 'warmer') {
             const stuck = nextGreater(xs).next.flatMap((a, i) => (a === null ? [i] : []));
             if (stuck.length === xs.length) expect(end).toContain('No day ever sees a warmer one');
             else if (stuck.length) expect(end).toContain(`${stuck.length === 1 ? 'Day' : 'Days'} ${stuck.length === 1 ? stuck[0] : ''}`);
             else expect(end).toContain('Every day found a warmer one');
-            expect(end).toContain(`${bruteNextComparisons(xs)} comparison`);
+            expect(end).toContain(`brute force makes ${bruteNextComparisons(xs)} here`);
           } else if (scene === 'window') {
             expect(end).toContain(`maxima are ${bruteWindowMax(xs, Math.min(k, xs.length)).join(', ')}.`);
           } else {
@@ -234,5 +238,147 @@ describe('captions', () => {
         expect(last.pushes + last.pops).toBe(totalsFor(scene, xs, Math.min(3, xs.length)).work);
       }
     }
+  });
+});
+
+/**
+ * Comparison counts, re-derived here with explicit counters (same unit for both sides: one
+ * value-against-value comparison). The stack versions mirror the textbook loops; the brute-force
+ * versions do the obvious scans.
+ */
+function stackNextCmp(xs: readonly number[]): number {
+  const st: number[] = [];
+  let c = 0;
+  xs.forEach((v, i) => {
+    while (st.length) {
+      c++;
+      if (xs[st[st.length - 1]] < v) st.pop();
+      else break;
+    }
+    st.push(i);
+  });
+  return c;
+}
+function dequeMaxCmp(xs: readonly number[], k: number): number {
+  const dq: number[] = [];
+  let c = 0;
+  xs.forEach((v, i) => {
+    while (dq.length && dq[0] <= i - k) dq.shift(); // an index check, not a value comparison
+    while (dq.length) {
+      c++;
+      if (xs[dq[dq.length - 1]] <= v) dq.pop();
+      else break;
+    }
+    dq.push(i);
+  });
+  return c;
+}
+function stackRectCmp(xs: readonly number[]): number {
+  const st: number[] = [];
+  let c = 0;
+  for (let at = 0; at <= xs.length; at++) {
+    const h = at === xs.length ? 0 : xs[at];
+    while (st.length) {
+      c++;
+      if (xs[st[st.length - 1]] >= h) st.pop();
+      else break;
+    }
+    if (at < xs.length) st.push(at);
+  }
+  return c;
+}
+function bruteNextCmp(xs: readonly number[]): number {
+  let c = 0;
+  xs.forEach((v, i) => {
+    for (let j = i + 1; j < xs.length; j++) {
+      c++;
+      if (xs[j] > v) break;
+    }
+  });
+  return c;
+}
+function bruteWindowCmp(xs: readonly number[], k: number): number {
+  let c = 0;
+  for (let s = 0; s + k <= xs.length; s++) {
+    let m = xs[s];
+    for (let j = s + 1; j < s + k; j++) {
+      c++;
+      m = Math.max(m, xs[j]);
+    }
+  }
+  return c;
+}
+function bruteRectCmp(xs: readonly number[]): number {
+  let c = 0;
+  for (let a = 0; a < xs.length; a++) {
+    let low = xs[a];
+    for (let b = a + 1; b < xs.length; b++) {
+      c++;
+      low = Math.min(low, xs[b]);
+    }
+  }
+  return c;
+}
+
+describe('the headline compares like with like', () => {
+  const rnd = mulberry32(77);
+  const arrays = Array.from({ length: 300 }, () => seededArray(rnd));
+
+  it('stack and brute-force counts are both value comparisons, matching independent counters, and the stack never passes 2n', () => {
+    for (const xs of arrays) {
+      const n = xs.length;
+      const w = totalsFor('warmer', xs, 3);
+      expect(w.cmps).toBe(stackNextCmp(xs));
+      expect(w.brute).toBe(bruteNextCmp(xs));
+      expect(w.cmps).toBeLessThanOrEqual(2 * n);
+      const r = totalsFor('rect', xs, 3);
+      expect(r.cmps).toBe(stackRectCmp(xs));
+      expect(r.brute).toBe(bruteRectCmp(xs));
+      expect(r.cmps).toBeLessThanOrEqual(2 * n);
+      for (let k = 1; k <= Math.max(1, n); k++) {
+        const t = totalsFor('window', xs, k);
+        const kk = Math.max(1, Math.min(k, n));
+        expect(t.cmps).toBe(dequeMaxCmp(xs, kk));
+        expect(t.brute).toBe(bruteWindowCmp(xs, kk));
+        expect(t.cmps).toBeLessThanOrEqual(2 * n);
+      }
+    }
+  });
+
+  it('the running counter on the last frame equals the total, in every scene', () => {
+    for (const xs of arrays.slice(0, 100)) {
+      if (!xs.length) continue;
+      for (const scene of ['warmer', 'window', 'rect'] as Scene[]) {
+        expect(frames(scene, xs, 3).at(-1)!.cmps).toBe(totalsFor(scene, xs, 3).cmps);
+      }
+    }
+  });
+
+  it('the stated worst case is real: a run that never warms costs brute force n(n−1)/2, the stack under 2n', () => {
+    for (let n = 2; n <= 12; n++) {
+      const falling = Array.from({ length: n }, (_, i) => 90 - i);
+      expect(bruteNextCmp(falling)).toBe((n * (n - 1)) / 2);
+      expect(captionText(warmerFrames(falling).at(-1)!.say)).toContain(`it makes n(n−1)/2 = ${(n * (n - 1)) / 2}`);
+      expect(stackNextCmp(falling)).toBeLessThan(2 * n);
+    }
+  });
+
+  it('when an input is kind to brute force the caption says so, and only then', () => {
+    for (const xs of arrays.filter((a) => a.length > 1)) {
+      const t = totalsFor('warmer', xs, 3);
+      const end = captionText(warmerFrames(xs).at(-1)!.say);
+      expect(end.includes('which this input happens to make cheap')).toBe(t.brute <= t.cmps);
+      for (const k of K_CHOICES) {
+        const tw = totalsFor('window', xs, k);
+        expect(captionText(windowFrames(xs, k).at(-1)!.say).includes('cheap only because k is small')).toBe(tw.brute <= tw.cmps);
+      }
+      const tr = totalsFor('rect', xs, 3);
+      expect(captionText(rectFrames(xs).at(-1)!.say).includes('cheap only because there are so few bars')).toBe(tr.brute <= tr.cmps);
+    }
+    // A rising run: every day is answered by the next, so both sides make n − 1 comparisons.
+    const rising = [1, 2, 3, 4, 5];
+    expect(totalsFor('warmer', rising, 3)).toMatchObject({ cmps: 4, brute: 4 });
+    // The default week, in matching units: the stack makes 10, brute force 11.
+    expect(totalsFor('warmer', PRESETS.warmer[0].values, 3)).toMatchObject({ cmps: 10, brute: 11 });
   });
 });

@@ -76,8 +76,9 @@ export function Stage() {
       height={340}
       stats={
         <Stats>
-          <Stat label="Pushes + pops" value={f.pushes + f.pops} color="var(--violet)" sub={`of ${totals.work} · never above 2n = ${2 * n}`} />
-          <Stat label="Brute force" value={totals.brute} color="var(--muted)" sub={totals.bruteUnit} />
+          <Stat label="Stack comparisons" value={f.cmps} color="var(--violet)" sub={`of ${totals.cmps} · never above 2n = ${2 * n}`} />
+          <Stat label="Brute force" value={totals.brute} color="var(--muted)" sub={totals.bruteNote} />
+          <Stat label="Pushes + pops" value={f.pushes + f.pops} color="var(--muted)" sub={`of ${totals.work} · each index in and out once`} />
           {scene === 'rect' && <Stat label="Best area" value={f.best?.area ?? '–'} color="var(--ok)" />}
           {scene === 'window' && <Stat label="Window" value={kUsed} color="var(--hi)" sub="k values" />}
         </Stats>
@@ -141,7 +142,7 @@ function legendFor(scene: Scene) {
     { color: 'var(--info)', label: 'just popped' },
   ];
   if (scene === 'warmer') return [...common, { color: 'var(--ok)', label: 'answer arrow', shape: 'line' as const }, { color: 'var(--dim)', label: 'no warmer day' }];
-  if (scene === 'window') return [...common, { color: 'var(--ok)', label: 'window max' }];
+  if (scene === 'window') return [...common, { color: 'var(--ok)', label: "green number: that window's max", shape: 'dot' as const }];
   return [...common, { color: 'var(--ok)', label: 'best rectangle', shape: 'line' as const }];
 }
 

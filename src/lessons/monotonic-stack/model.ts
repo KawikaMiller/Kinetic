@@ -32,7 +32,12 @@ export function parseValues(text: string): FieldResult {
 
 // ── Next greater element (daily temperatures) ─────────────────────────
 
-export type NgOp = { t: 'push'; i: number } | { t: 'pop'; i: number; by: number };
+/**
+ * Value comparisons, the unit brute force is counted in too: every pop (or back-drop) is the
+ * one comparison that triggered it, and `stop` on a push is 1 when a comparison against a
+ * non-empty stack ended the popping, 0 when the stack ran empty.
+ */
+export type NgOp = { t: 'push'; i: number; stop: 0 | 1 } | { t: 'pop'; i: number; by: number };
 
 export interface NextGreater {
   /** Index of the next strictly greater value to the right, or null if there is none. */
@@ -51,8 +56,8 @@ export function nextGreater(values: readonly number[]): NextGreater {
       next[j] = i;
       ops.push({ t: 'pop', i: j, by: i });
     }
+    ops.push({ t: 'push', i, stop: stack.length ? 1 : 0 });
     stack.push(i);
-    ops.push({ t: 'push', i });
   });
   return { next, ops };
 }
@@ -72,7 +77,7 @@ export function bruteNextComparisons(values: readonly number[]): number {
 // ── Sliding-window maximum ────────────────────────────────────────────
 
 export type DqOp =
-  | { t: 'push'; i: number }
+  | { t: 'push'; i: number; stop: 0 | 1 }
   /** Left at the back: a value at least as big arrived, so this one can never be a max again. */
   | { t: 'drop'; i: number; by: number }
   /** Left at the front: it slid out of the window. */
@@ -95,8 +100,8 @@ export function slidingMax(values: readonly number[], k: number): SlidingMax {
   values.forEach((v, i) => {
     while (dq.length && dq[0] <= i - k) ops.push({ t: 'expire', i: dq.shift()!, at: i });
     while (dq.length && values[dq[dq.length - 1]] <= v) ops.push({ t: 'drop', i: dq.pop()!, by: i });
+    ops.push({ t: 'push', i, stop: dq.length ? 1 : 0 });
     dq.push(i);
-    ops.push({ t: 'push', i });
     if (i >= k - 1) {
       maxes.push(values[dq[0]]);
       ops.push({ t: 'max', end: i, i: dq[0] });
@@ -119,7 +124,7 @@ export interface Rect {
 }
 
 export type RectOp =
-  | { t: 'push'; i: number }
+  | { t: 'push'; i: number; stop: 0 | 1 }
   /** Bar `i` is popped when bar `at` (or the end, at = n) is no taller; its rectangle spans left+1 .. at-1. */
   | { t: 'pop'; i: number; at: number; rect: Rect };
 
@@ -147,15 +152,26 @@ export function largestRectangle(values: readonly number[]): LargestRect {
       if (!best || rect.area > best.area) best = rect;
     }
     if (at < values.length) {
+      ops.push({ t: 'push', i: at, stop: stack.length ? 1 : 0 });
       stack.push(at);
-      ops.push({ t: 'push', i: at });
     }
   }
   return { best, ops };
 }
 
-/** Ranges brute force tries: every (from, to) pair, each with its own minimum. */
-export const bruteRectRanges = (n: number) => (n * (n + 1)) / 2;
+/**
+ * Comparisons brute force makes: from each bar, extend right one bar at a time, comparing the
+ * new bar with the running minimum height. That's one comparison per pair, n(n−1)/2, on any input.
+ */
+export const bruteRectComparisons = (n: number) => (n < 2 ? 0 : (n * (n - 1)) / 2);
+
+/** Brute-force next-warmer at its worst, a run that never rises: every day looks at every later day. */
+export const bruteNextWorst = (n: number) => (n < 2 ? 0 : (n * (n - 1)) / 2);
+
+/** The stack's value comparisons in a trace: one per pop or back-drop, plus each push's stopping comparison. */
+export function comparisonsIn(ops: readonly ({ t: string; stop?: 0 | 1 })[]): number {
+  return ops.reduce((c, o) => c + (o.t === 'pop' || o.t === 'drop' ? 1 : o.t === 'push' ? (o.stop ?? 0) : 0), 0);
+}
 
 /** Pushes and pops in a trace. */
 export function opCounts(ops: readonly { t: string }[]): { pushes: number; pops: number } {

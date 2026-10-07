@@ -19,7 +19,7 @@ const lesson: LessonModule = {
   tryThis: [
     'Play A week in Next warmer day: when 72 arrives, it settles two days at once.',
     'Pick Equal days: a day of the same temperature does not pop, because only strictly warmer counts.',
-    'Pick Big pop and watch the last day pop seven days in one step, yet Pushes + pops still stays under 2n.',
+    'Pick Big pop and watch seven days pop while the scan sits on the last day, yet Stack comparisons still stays under 2n.',
     'Switch Problem to Window maximum and try each k on Falling and Rising: one keeps a full deque, the other keeps just one index.',
     'In Largest rectangle, try Classic, then type your own heights in Values and press Apply.',
   ],
