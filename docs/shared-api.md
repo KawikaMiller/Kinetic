@@ -914,6 +914,7 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 ### Smaller pieces
 - `useMediaQuery(query)` and `PHONE_QUERY` (`components/useMediaQuery.ts`): for layout choices CSS can't make (ByteGrid's bytes per row). SSR-safe (`useSyncExternalStore`).
 - `arrowMarkerDef(id, color, size, refX)` (`ArrowMarker.tsx`): one `<marker>` element, for a set of them under one `<defs>`. `useArrowMarker` is built on it.
+- `fakeSecret(...parts)` (`core/fakeSecret.ts`): joins an example credential from pieces so no source line holds a credential-shaped literal (secrets-management, auth-sessions-jwt, and secretScan's own fixtures). Every value built with it is fake; the secretScan test checks the repo for strays.
 
 ## Tier 2 kit (rollout plan P0-b)
 

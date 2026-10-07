@@ -1,6 +1,7 @@
 // A tiny git history with file snapshots, enough to show why deleting a leaked key doesn't
 // remove it, what .gitignore does and doesn't do, and how a secret scanner recognises keys.
-// Every key here is an obviously fake example.
+// Every key here is an obviously fake example, joined from pieces by core/fakeSecret.
+import { fakeSecret } from '../../core/fakeSecret';
 
 export interface Commit {
   id: string;
@@ -10,12 +11,6 @@ export interface Commit {
   files: Record<string, string>;
 }
 
-/**
- * Join an example credential from pieces. The lesson shows key-shaped strings, but the
- * source never contains one in a single literal, so secret scanners (GitHub push
- * protection included) have nothing to flag. Every value built with it is fake.
- */
-export const fakeSecret = (...parts: string[]) => parts.join('');
 
 /** The leaked key. Fake, and shaped like a live payment key so the scanner rule matches it. */
 export const LEAKED_KEY = fakeSecret('sk', '_live_', 'EXAMPLE0000DEMO0000KEY');

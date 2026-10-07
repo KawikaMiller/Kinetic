@@ -1,14 +1,9 @@
 import { b64url, enc, hmacSha256 } from '../../core/crypto';
+import { fakeSecret } from '../../core/fakeSecret';
 
 // Real HS256 JWTs (RFC 7519 compact form, signed per RFC 7515 with HMAC-SHA256 via Web
 // Crypto), so tampering genuinely breaks the signature. Everything runs in the page against
 // a made-up key; nothing is sent anywhere.
-
-/**
- * Join an example secret from pieces, so the source never holds one in a single literal
- * and secret scanners have nothing to flag. Every value built with it is a fake demo key.
- */
-const demoSecret = (...parts: string[]) => parts.join('');
 
 /** The server's signing key. Made up for the lesson. */
 /**
@@ -16,11 +11,11 @@ const demoSecret = (...parts: string[]) => parts.join('');
  * bits, the minimum RFC 7518 §3.2 requires for HS256. A demo value, published in this
  * lesson's source, so never a real key.
  */
-export const SERVER_SECRET = demoSecret('KK5IRNsQ', 'KHmAZYOx', 'IgAqHPis', 'JQi2SWHP', 'wRafs759', 'h_s');
+export const SERVER_SECRET = fakeSecret('KK5IRNsQ', 'KHmAZYOx', 'IgAqHPis', 'JQi2SWHP', 'wRafs759', 'h_s');
 /** Random bytes behind SERVER_SECRET: 43 base64url characters carry 6 bits each, so at least 256. */
 export const SERVER_KEY_BITS = 256;
 /** The key the attacker tries in the Forge lane: a common word, the kind of key that gets guessed. */
-export const GUESSED_SECRET = demoSecret('pass', 'word', '123');
+export const GUESSED_SECRET = fakeSecret('pass', 'word', '123');
 
 /** The one algorithm this server accepts. Pinning it is RFC 8725 §3.1's first rule. */
 export const ALG = 'HS256';

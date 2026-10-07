@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { fakeSecret } from '../../core/fakeSecret';
 import {
-  ITEMS, LEAKED_KEY, LEAK_HISTORY, ROTATED_KEY, applyFix, commitsContaining, fakeSecret, isIgnored, matchesPattern, reachable, scan,
+  ITEMS, LEAKED_KEY, LEAK_HISTORY, ROTATED_KEY, applyFix, commitsContaining, isIgnored, matchesPattern, reachable, scan,
   wouldStage, type Commit,
 } from './model';
 

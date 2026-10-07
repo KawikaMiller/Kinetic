@@ -60,7 +60,7 @@ accident (a surname like O'Brien breaking a glued-together query), describe in p
 what an attacker *could* reach, and show the fix (parameters, encoding, argument arrays,
 allow-lists, HttpOnly). Everything runs against a simulated system inside the lesson; never
 inject into the real page, eval learner input or make network requests. Example secrets are
-assembled at runtime from parts so nothing in source matches a real credential format.
+assembled at runtime from parts (`fakeSecret` from `core/fakeSecret`) so nothing in source matches a real credential format.
 
 **Runtime code execution** (`new Function`, `eval`) is allowed only to run fixed,
 lesson-authored program text, as error-handling-models does to make its trace real. Never
