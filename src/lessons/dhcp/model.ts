@@ -150,9 +150,11 @@ export interface PoolView {
 
 export interface Step {
   id: string;
-  /** For the ladder: sender, receiver ('*' = broadcast) and its label. */
+  /** For the ladder: sender, receiver(s) ('*' = broadcast to every lifeline) and its label. */
   from: string;
-  to: string;
+  to: string | readonly string[];
+  /** A broadcast only the lifelines in `to` hear: the relay scene's laptop shares its link with the relay alone. */
+  broadcast?: boolean;
   label: string;
   note?: string;
   lost?: boolean;
@@ -223,10 +225,10 @@ const values = (ip: string, net: typeof LAN, lease: number): Record<FieldKey, st
 
 /**
  * The client's broadcast DISCOVER. `to` is '*' on a LAN where every lifeline hears it; in the
- * relay scene only the relay is on the laptop's link, so it's drawn to the relay alone.
+ * relay scene only the relay is on the laptop's link, so it's a broadcast that reaches the relay alone.
  */
-const discover = (id = 'discover', to = '*'): Omit<Step, 'config' | 'pools' | 't'> => ({
-  id, from: 'laptop', to, label: 'DHCPDISCOVER', note: `${UNSPECIFIED}:${CLIENT_PORT} → ${BROADCAST}:${SERVER_PORT}`, tone: 'info', event: 'discover',
+const discover = (id = 'discover', to: '*' | readonly string[] = '*'): Omit<Step, 'config' | 'pools' | 't'> => ({
+  id, from: 'laptop', to, ...(to !== '*' && { broadcast: true }), label: 'DHCPDISCOVER', note: `${UNSPECIFIED}:${CLIENT_PORT} → ${BROADCAST}:${SERVER_PORT}`, tone: 'info', event: 'discover',
   wire: { type: 'DHCPDISCOVER', src: { ip: UNSPECIFIED, port: CLIENT_PORT }, dst: { ip: BROADCAST, port: SERVER_PORT } },
 });
 
@@ -345,7 +347,7 @@ export function relayScene(lease = DEFAULT_LEASE_S): Scene {
   });
   const relayEnd = { ip: RELAY_IP, port: SERVER_PORT };
   const serverEnd = { ip: REMOTE_SERVER, port: SERVER_PORT };
-  b.push(discover('discover', 'relay'));
+  b.push(discover('discover', ['relay']));
   b.push(relayed('DHCPDISCOVER', 'relay', 'server', relayEnd, serverEnd));
   const o = offer(pool, LAPTOP_MAC, 0);
   pool = o.pool;
@@ -355,7 +357,7 @@ export function relayScene(lease = DEFAULT_LEASE_S): Scene {
     config: fill(b.get().config, values(addr, REMOTE_LAN, lease), 'offered'),
   });
   b.push({
-    id: 'request', from: 'laptop', to: 'relay', label: `DHCPREQUEST ${addr}`, note: `${UNSPECIFIED}:${CLIENT_PORT} → ${BROADCAST}:${SERVER_PORT}`, tone: 'info', event: 'request',
+    id: 'request', from: 'laptop', to: ['relay'], broadcast: true, label: `DHCPREQUEST ${addr}`, note: `${UNSPECIFIED}:${CLIENT_PORT} → ${BROADCAST}:${SERVER_PORT}`, tone: 'info', event: 'request',
     wire: { type: 'DHCPREQUEST', src: { ip: UNSPECIFIED, port: CLIENT_PORT }, dst: { ip: BROADCAST, port: SERVER_PORT }, addr, server: REMOTE_SERVER },
   });
   b.push(relayed('DHCPREQUEST', 'relay', 'server', relayEnd, serverEnd, addr));

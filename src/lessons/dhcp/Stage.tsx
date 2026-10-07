@@ -50,7 +50,7 @@ const BUILD: Record<Exclude<SceneId, 'lease'>, () => Scene> = {
 };
 
 const ladder = (scene: Scene): SequenceMessage[] =>
-  scene.steps.map((s) => ({ id: s.id, from: s.from, to: s.to, label: s.label, note: s.note, lost: s.lost, tone: s.tone }));
+  scene.steps.map((s) => ({ id: s.id, from: s.from, to: s.to, broadcast: s.broadcast, label: s.label, note: s.note, lost: s.lost, tone: s.tone }));
 
 const LEGEND = (
   <Legend

@@ -766,6 +766,8 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .seq-msg.is-current .seq-line { stroke-width: 2.5; }
 .seq-note { font: italic 500 11px var(--font); fill: var(--faint); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
 .seq-hit { fill: transparent; }
+/* currentStyle="tone": the current message keeps its tone; this band behind its row says "now" */
+.seq-now { fill: color-mix(in srgb, var(--hi) 12%, transparent); stroke: color-mix(in srgb, var(--hi) 55%, transparent); stroke-width: 1.5; }
 .seq-msg.is-clickable { cursor: pointer; }
 .seq-msg.is-clickable:hover .seq-hit { fill: color-mix(in srgb, var(--c, var(--faint)) 8%, transparent); }
 .seq-msg.is-clickable:focus-visible { outline: none; }

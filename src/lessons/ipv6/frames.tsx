@@ -73,12 +73,12 @@ export const SLAAC_ACTORS: SequenceActor[] = [
 
 export const slaacAddresses = (iid: Hextets) => ({ linkLocal: withIid(LINK_LOCAL_PREFIX, iid), global: withIid(PREFIX_HEXTETS, iid) });
 
-/** Short labels so three lifelines fit a phone; the addresses themselves are shown under the ladder. */
+/** Labels and notes wrap to two lines, so three lifelines still fit a phone; the addresses themselves are shown under the ladder. */
 export function slaacMessages(): SequenceMessage[] {
   return [
     { id: 'll', from: 'host', to: 'host', label: 'form link-local address' },
-    { id: 'rs', from: 'host', to: 'router', label: 'Router Solicitation', note: 'to ff02::2', tone: 'info' },
-    { id: 'ra', from: 'router', to: '*', label: 'Router Advertisement', note: `prefix ${EXAMPLE_PREFIX}/64`, tone: 'info' },
+    { id: 'rs', from: 'host', to: 'router', label: 'Router Solicitation', note: 'to ff02::2, all routers', tone: 'info' },
+    { id: 'ra', from: 'router', to: '*', label: 'Router Advertisement', note: `to ff02::1, prefix ${EXAMPLE_PREFIX}/64`, tone: 'info' },
     { id: 'global', from: 'host', to: 'host', label: 'form global address', tone: 'ok' },
   ];
 }

@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
-import { useMemo, type KeyboardEvent } from 'react';
-import { SEQ, sequenceLayout, type SeqActor, type SeqMessage, type SeqRow } from '../core/sequenceLayout';
+import { useMemo, useRef, type KeyboardEvent } from 'react';
+import { useMeasure } from '../core/useMeasure';
+import { SEQ, pickLayout, receivers, sequenceLayout, shownExtent, type SeqActor, type SeqMessage, type SeqRow } from '../core/sequenceLayout';
 import type { Tone } from '../core/tone';
 import { WideRegion } from './WideRegion';
 
@@ -19,14 +20,18 @@ const HEAD = 8;
 /**
  * A ladder (sequence) diagram: actors across the top, a lifeline down from each, one
  * arrow per message in time order. `to: '*'` broadcasts (an arrowhead on every other
- * lifeline); `lost` stops the arrow partway with a ✕; `note` adds a muted line under it.
- * With `step`, only messages up to that index show and the current one is --hi, so a
- * lesson steps through a protocol with its player. Labels wrap to two lines before the
- * lanes widen; on a phone the diagram sits in a WideRegion at the narrowest width that
+ * lifeline); `to: [ids]` reaches just those lifelines, dotted like a broadcast with
+ * `broadcast: true` (a DISCOVER only the relay hears); `lost` stops the arrow partway with
+ * a ✕; `note` adds a muted line (wrapping to two) under it. With `step`, only messages up
+ * to that index show and the current one is --hi (or, with `currentStyle: 'tone'`, keeps
+ * its own tone on a --hi band), so a lesson steps through a protocol with its player;
+ * `fit: 'shown'` lets the height follow the step. Labels wrap to two lines before the
+ * lanes widen; notes stay on one line unless the container is too narrow for that
+ * (pickLayout). On a phone the diagram sits in a WideRegion at the narrowest width that
  * keeps its text at 8px or more. Layout is core/sequenceLayout (pure, tested).
  */
 export function SequenceDiagram({
-  actors, messages, step, onMessageClick, width, ariaLabel = 'Sequence diagram', className = '',
+  actors, messages, step, onMessageClick, width, fit = 'all', currentStyle = 'hi', ariaLabel = 'Sequence diagram', className = '',
 }: {
   actors: readonly SequenceActor[];
   messages: readonly SequenceMessage[];
@@ -35,27 +40,40 @@ export function SequenceDiagram({
   onMessageClick?: (id: string) => void;
   /** Spread the lanes to this drawing width (never below the natural width). */
   width?: number;
+  /** 'all' (default) reserves room for every message; 'shown' sizes the drawing to the messages shown so far. */
+  fit?: 'all' | 'shown';
+  /**
+   * How the current message stands out: 'hi' (default) recolours it --hi; 'tone' keeps its
+   * own tone (a green cache hit stays green) and marks it with a --hi band behind the row.
+   */
+  currentStyle?: 'hi' | 'tone';
   ariaLabel?: string;
   className?: string;
 }) {
-  const layout = useMemo(() => sequenceLayout(actors, messages, width), [actors, messages, width]);
+  const root = useRef<HTMLDivElement>(null);
+  const room = useMeasure(root, (el) => el.clientWidth);
+  const roomy = useMemo(() => sequenceLayout(actors, messages, width, { wrapNotes: false }), [actors, messages, width]);
+  const compact = useMemo(() => sequenceLayout(actors, messages, width), [actors, messages, width]);
+  const layout = pickLayout(roomy, compact, room);
   const reduce = useReducedMotion();
   const shown = step === undefined ? messages.length : Math.min(messages.length, step + 1);
+  const { height, lifelineEnd } = fit === 'shown' ? shownExtent(layout, shown) : layout;
   const label = (m: SequenceMessage) => {
-    const to = m.to === '*' ? 'everyone' : (actors.find((a) => a.id === m.to)?.label ?? m.to);
-    const from = actors.find((a) => a.id === m.from)?.label ?? m.from;
-    return `${from} to ${to}: ${m.label}${m.lost ? ' (lost)' : ''}${m.note ? `, ${m.note}` : ''}`;
+    const name = (id: string) => actors.find((a) => a.id === id)?.label ?? id;
+    const to = m.to === '*' ? 'everyone' : receivers(actors, m).map(name).join(' and ');
+    const how = m.to !== '*' && m.broadcast ? ' (broadcast)' : '';
+    return `${name(m.from)} to ${to}${how}: ${m.label}${m.lost ? ' (lost)' : ''}${m.note ? `, ${m.note}` : ''}`;
   };
 
   return (
-    <div className={`seq ${className}`}>
+    <div ref={root} className={`seq ${className}`}>
       <WideRegion minWidth={layout.minWidth} label={`${ariaLabel}: scroll sideways to see all of it`}>
-        <svg className="seq-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} width={layout.width} role="img" aria-label={ariaLabel}>
+        <svg className="seq-svg" viewBox={`0 0 ${layout.width} ${height}`} width={layout.width} role="img" aria-label={ariaLabel}>
           {actors.map((a) => {
             const x = layout.lanes[a.id];
             return (
               <g key={a.id} className={`seq-actor ${a.tone ? `tone-${a.tone}` : ''} ${a.waiting ? 'is-waiting' : ''}`}>
-                <line className="seq-lifeline" x1={x} x2={x} y1={layout.head.h} y2={layout.lifelineEnd} />
+                <line className="seq-lifeline" x1={x} x2={x} y1={layout.head.h} y2={lifelineEnd} />
                 <rect x={x - layout.head.w / 2} y={layout.head.y} width={layout.head.w} height={layout.head.h} rx={8} />
                 <text x={x} y={layout.head.h / 2 + 4.5}>
                   {a.label}
@@ -66,7 +84,7 @@ export function SequenceDiagram({
           {layout.rows.slice(0, shown).map((r, i) => {
             const m = messages[i];
             const current = step !== undefined && i === step;
-            const tone = current ? 'hi' : m.tone;
+            const tone = current && currentStyle === 'hi' ? 'hi' : m.tone;
             const clickable = !!onMessageClick;
             const onKey = (e: KeyboardEvent) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -85,18 +103,19 @@ export function SequenceDiagram({
                   ? { role: 'button', tabIndex: 0, 'aria-label': label(m), onClick: () => onMessageClick(m.id), onKeyDown: onKey }
                   : {})}
               >
-                {clickable && <rect className="seq-hit" x={0} y={r.labelY - SEQ.LINE_H} width={layout.width} height={rowBottom(r) - r.labelY + SEQ.LINE_H + 4} />}
+                {current && currentStyle === 'tone' && <rect className="seq-now" {...rowBox(r, layout.width)} rx={6} />}
+                {clickable && <rect className="seq-hit" {...rowBox(r, layout.width)} />}
                 <Arrow r={r} />
                 {r.lines.map((line, k) => (
                   <text key={k} className="seq-label" x={r.labelX} y={r.labelY + k * SEQ.LINE_H} textAnchor={r.kind === 'self' ? 'start' : 'middle'}>
                     {line}
                   </text>
                 ))}
-                {r.noteY !== null && (
-                  <text className="seq-note" x={r.labelX} y={r.noteY} textAnchor={r.kind === 'self' ? 'start' : 'middle'}>
-                    {m.note}
+                {r.noteLines.map((line, k) => (
+                  <text key={`n${k}`} className="seq-note" x={r.labelX} y={r.noteY! + k * SEQ.NOTE_H} textAnchor={r.kind === 'self' ? 'start' : 'middle'}>
+                    {line}
                   </text>
-                )}
+                ))}
               </motion.g>
             );
           })}
@@ -111,7 +130,8 @@ export function SequenceDiagram({
   );
 }
 
-const rowBottom = (r: SeqRow) => Math.max(r.y + (r.kind === 'self' ? SEQ.SELF_DROP : 0), r.noteY ?? 0);
+/** The box a row occupies, full width: its click target and the current-message band. */
+const rowBox = (r: SeqRow, width: number) => ({ x: 0, y: r.labelY - SEQ.LINE_H, width, height: r.bottom - r.labelY + SEQ.LINE_H + 4 });
 
 function Arrow({ r }: { r: SeqRow }) {
   const head = (x: number, y: number, dir: 1 | -1, k: number) => (
@@ -126,12 +146,13 @@ function Arrow({ r }: { r: SeqRow }) {
       </>
     );
   }
+  const fan = r.kind === 'broadcast' || r.kind === 'fanout';
   const xs = [r.x1, ...r.heads.map((h) => h.x)];
-  const from = r.kind === 'broadcast' ? Math.min(...xs) : r.x1;
-  const to = r.lostAt ?? (r.kind === 'broadcast' ? Math.max(...xs) : r.x2);
+  const from = fan ? Math.min(...xs) : r.x1;
+  const to = r.lostAt ?? (fan ? Math.max(...xs) : r.x2);
   // stop the line at the arrowhead's base so the tip stays sharp
   const dir = to >= from ? 1 : -1;
-  const end = r.lostAt === null && r.kind !== 'broadcast' ? to - dir * HEAD : to;
+  const end = r.lostAt === null && !fan ? to - dir * HEAD : to;
   return (
     <>
       <line className={`seq-line ${r.kind === 'broadcast' ? 'is-broadcast' : ''}`} x1={from} x2={end} y1={r.y} y2={r.y} />

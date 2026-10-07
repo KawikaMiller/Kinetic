@@ -947,16 +947,25 @@ ganttTicks(domain, count)                   // [{ value, at }] from core/scale
     { id: 'a', from: 'server', to: 'laptop', label: 'DHCPACK', lost: true },      // stops partway with a ✕
     { id: 'r', from: 'laptop', to: '*', label: 'DHCPREQUEST', note: 'after a 4 s timeout' },
     { id: 's', from: 'laptop', to: 'laptop', label: 'configure the interface' }, // self-message loop
+    { id: 'p', from: 'laptop', to: ['relay'], broadcast: true, label: 'DHCPDISCOVER' }, // a broadcast only these lifelines hear (dotted)
+    { id: 'f', from: 'server', to: ['a', 'b'], label: 'update' },               // fan-out: plain line, a head on each
   ]}
   step={player.frame.index}           // later messages hidden; the current one is --hi
+  currentStyle="tone"                 // optional: the current message keeps its tone, on a --hi band (dns cache hits stay green)
+  fit="shown"                         // optional: height follows the step instead of reserving room for every message
   onMessageClick={(id) => …}          // Enter/Space too
   width={640}                         // spread the lanes (never below the natural width)
 />
-sequenceLayout(actors, messages, width?)   // { width, height, lanes, head, rows, lifelineEnd, minWidth }
+sequenceLayout(actors, messages, width?, { wrapNotes? })  // { width, height, lanes, head, rows, lifelineEnd, minWidth }
+receivers(actors, message)                 // the actor ids a message reaches ('*' = all but the sender)
+shownExtent(layout, shown)                 // { lifelineEnd, height } for fit="shown"
+pickLayout(roomy, compact, containerPx)    // the roomy/compact choice SequenceDiagram makes
 wrapLabel(label, maxW)                     // one line, or two balanced lines split at a space
 ```
-- Labels wrap to two lines before the lanes widen. The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
-- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER").
+- Labels wrap to two lines before the lanes widen. Notes stay on one line (widening the lanes) while that drawing renders at `ROOMY_MIN_SCALE` (85%) or more of its size in its container; narrower than that (a phone) they wrap to two lines too. SequenceDiagram measures its container and picks; desktop drawings look as they always did.
+- A self-message on the last lifeline gets extra right margin for its label (wrapped to two balanced lines) instead of running off the drawing.
+- The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
+- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER", "Laptop to Relay (broadcast): …").
 - Example addresses in network demos come from the documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32) or RFC 1918 ranges.
 
 ### `MemoryMap` (`components/memory/`) — calling-conventions, memory-safety-bugs, endianness, isa-assembly, virtual-memory-paging, linking-loading
