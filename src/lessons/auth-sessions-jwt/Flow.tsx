@@ -96,7 +96,7 @@ export function Flow({ kind, modePicker }: { kind: 'session' | 'jwt'; modePicker
                 <div className="aj-flags">
                   <span title="JavaScript can't read it, so XSS can't steal it">HttpOnly</span>
                   <span title="Only sent over HTTPS">Secure</span>
-                  <span title="Not sent on most cross-site requests: CSRF protection">SameSite=Lax</span>
+                  <span title="Limits cross-site sending (Lax still sends on top-level navigations): one CSRF defence, not the whole fix">SameSite=Lax</span>
                 </div>
               </motion.div>
             )}

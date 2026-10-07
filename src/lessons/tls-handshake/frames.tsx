@@ -73,7 +73,7 @@ export function normalFrames(): TlsFrame[] {
     { client: [P.pub], server: [P.pub], notes: [{ text: 'public colour: yellow', color: P.pub.color }] },
   );
   r.snap(
-    <>Each side picks a <b>secret</b> colour and keeps it. These never leave their owner. Not once.</>,
+    <>Each side picks a fresh <b>secret</b> colour for this connection only, and keeps it. These never leave their owner. Not once. (Fresh secrets every time is <b>forward secrecy</b>: a key leaked later can't unlock today's traffic.)</>,
     undefined,
     { client: [P.pub, P.cSec], server: [P.pub, P.sSec] },
   );
@@ -114,7 +114,7 @@ export function normalFrames(): TlsFrame[] {
     </>,
     undefined,
     {
-      wire: { label: 'Certificate + CertificateVerify', from: 'server', to: 'client', color: 'var(--violet)', cipher: true },
+      wire: { label: 'Certificate + CertificateVerify', from: 'server', to: 'client', color: P.shared.color, cipher: true },
       notes: [...notes(), { text: 'certificate (already encrypted)', cipher: true }],
       chain: [
         { name: 'api.example.com', detail: 'issued by Example Intermediate CA', state: 'pending' },
@@ -162,7 +162,8 @@ export function normalFrames(): TlsFrame[] {
   r.snap(
     <>
       Recap: <b>key exchange</b> made a shared secret in public, the <b>certificate chain</b> proved who's on the other end, and{' '}
-      <b>symmetric encryption</b> protects the data. Eve got nothing useful.
+      <b>symmetric encryption</b> protects the data. Eve got no content, though she still sees who is talking (the IP
+      addresses), roughly how much and when.
     </>,
     2.2,
     {
@@ -212,7 +213,7 @@ export function mitmFrames(): TlsFrame[] {
   r.snap(
     <>
       So Mallory needs a certificate for api.example.com. Forwarding the real one won't do: she can't sign the handshake with its
-      private key. No real CA will issue her one, so she <b>signs one herself</b>.
+      private key. A trusted CA won't knowingly issue her one, so she <b>signs one herself</b>.
     </>,
     undefined,
     {
@@ -223,9 +224,9 @@ export function mitmFrames(): TlsFrame[] {
       ],
     },
   );
-  r.snap(<>The name on it looks right…</>, undefined, {
+  r.snap(<>The name on it looks right… but a matching name proves nothing until the chain reaches a CA you trust.</>, undefined, {
     chain: [
-      { name: 'api.example.com', detail: 'issued by Mallory CA', state: 'ok' },
+      { name: 'api.example.com', detail: 'issued by Mallory CA · name matches', state: 'pending' },
       { name: 'Mallory CA', detail: 'in your trust store?', state: 'pending' },
     ],
   });
@@ -234,7 +235,7 @@ export function mitmFrames(): TlsFrame[] {
     undefined,
     {
       chain: [
-        { name: 'api.example.com', detail: 'issued by Mallory CA', state: 'ok' },
+        { name: 'api.example.com', detail: 'issued by Mallory CA · no trusted chain', state: 'bad' },
         { name: 'Mallory CA', detail: 'NOT in your trust store', state: 'bad' },
       ],
     },

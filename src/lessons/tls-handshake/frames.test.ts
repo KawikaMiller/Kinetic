@@ -17,6 +17,16 @@ const PILL_MESSAGE: Record<string, string> = {
   '200 OK · your balance': APP_DATA,
 };
 
+describe('colour meanings', () => {
+  it('violet only ever means a secret paint: no pill wears it', () => {
+    for (const f of [...normal, ...mitm]) if (f.wire) expect(f.wire.color).not.toBe('var(--violet)');
+  });
+
+  it('the recap admits what TLS leaves visible', () => {
+    expect(text(normal.at(-1)!.say)).toContain('IP');
+  });
+});
+
 describe('every frame', () => {
   it('has its own caption', () => {
     for (const f of [...normal, ...mitm]) expect(text(f.say).length).toBeGreaterThan(0);
@@ -87,6 +97,10 @@ describe('the quiz', () => {
 
 describe('the MITM attempt', () => {
   const last: TlsFrame = mitm.at(-1)!;
+
+  it('never marks any link of the forged chain verified (RFC 5280 path validation needs a trust anchor)', () => {
+    for (const f of mitm) for (const l of f.chain ?? []) expect(l.state).not.toBe('ok');
+  });
 
   it('never reaches the server and never sends data', () => {
     for (const f of mitm) {

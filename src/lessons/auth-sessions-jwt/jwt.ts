@@ -11,8 +11,15 @@ import { b64url, enc, hmacSha256 } from '../../core/crypto';
 const demoSecret = (...parts: string[]) => parts.join('');
 
 /** The server's signing key. Made up for the lesson. */
-export const SERVER_SECRET = demoSecret('kinetic-demo-', 'server-secret', '-9f2c1a');
-/** The key the attacker guesses in the Forge lane: a weak, common choice. */
+/**
+ * The server's signing key: 32 random bytes as base64url (43 characters), so 256 random
+ * bits, the minimum RFC 7518 §3.2 requires for HS256. A demo value, published in this
+ * lesson's source, so never a real key.
+ */
+export const SERVER_SECRET = demoSecret('KK5IRNsQ', 'KHmAZYOx', 'IgAqHPis', 'JQi2SWHP', 'wRafs759', 'h_s');
+/** Random bytes behind SERVER_SECRET: 43 base64url characters carry 6 bits each, so at least 256. */
+export const SERVER_KEY_BITS = 256;
+/** The key the attacker tries in the Forge lane: a common word, the kind of key that gets guessed. */
 export const GUESSED_SECRET = demoSecret('pass', 'word', '123');
 
 /** The one algorithm this server accepts. Pinning it is RFC 8725 §3.1's first rule. */
@@ -48,6 +55,8 @@ export async function signJwt(payload: object, secret: string): Promise<Jwt | nu
 /** Decode one base64url JSON part, or null if it isn't one. */
 export function decodePart(part: string): Record<string, unknown> | null {
   try {
+    // strict base64url (RFC 7515 §2): no padding, no '+' or '/'
+    if (!/^[A-Za-z0-9_-]*$/.test(part)) return null;
     const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
     const bytes = Uint8Array.from(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)), (c) => c.charCodeAt(0));
     const value: unknown = JSON.parse(new TextDecoder().decode(bytes));
@@ -65,7 +74,7 @@ export function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export type VerifyReason = 'ok' | 'malformed' | 'wrong-alg' | 'bad-signature' | 'expired';
+export type VerifyReason = 'ok' | 'malformed' | 'wrong-alg' | 'bad-signature' | 'missing-exp' | 'expired';
 
 export interface Verdict {
   valid: boolean;
@@ -87,7 +96,8 @@ export async function verifyJwt(t: Jwt, secret = SERVER_SECRET, now = LESSON_NOW
   if (expected === null || !constantTimeEqual(expected, t.signature)) return { valid: false, reason: 'bad-signature', expected };
   const claims = decodePart(t.payload);
   if (!claims) return { valid: false, reason: 'malformed', expected };
-  if (typeof claims.exp !== 'number' || now >= claims.exp) return { valid: false, reason: 'expired', expected };
+  if (typeof claims.exp !== 'number') return { valid: false, reason: 'missing-exp', expected };
+  if (now >= claims.exp) return { valid: false, reason: 'expired', expected };
   return { valid: true, reason: 'ok', expected };
 }
 

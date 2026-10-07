@@ -39,7 +39,7 @@ export function flowFrames(kind: 'session' | 'jwt'): AuthFrame[] {
 
   push({ say: <>HTTP is <b>stateless</b>: every request arrives as a stranger. After you log in, how does the server know the next request is still you?</> });
   push({ msg: m('browser', 'server', 'POST /login  ada / ••••••', 'req'), say: <>You submit your username and password (over HTTPS, always).</> });
-  push({ busy: 'server', say: <>The server checks the password against its stored <b>salted hash</b>. <span className="hl ok">✓ correct</span>.</> });
+  push({ busy: 'server', say: <>The server checks the password against its stored <b>slow, salted hash</b> (bcrypt, scrypt or Argon2id). <span className="hl ok">✓ correct</span>.</> });
 
   if (kind === 'session') {
     push({ msg: m('server', 'store', `create ${SID.slice(0, 6)}…`, 'store'), rows: [{ sid: SID, user: 'user 42 · Ada', state: 'live' }],
@@ -68,7 +68,7 @@ export function flowFrames(kind: 'session' | 'jwt'): AuthFrame[] {
     push({ msg: m('server', 'browser', '200 + token', 'ok'), holding: 'token', token: true,
       say: <>The whole token goes to the client. The server <b>forgets about it</b>.</> });
     push({ msg: m('browser', 'server', 'GET /orders  Bearer eyJ…', 'req'), token: true,
-      say: <>Each request sends the token back, e.g. in an <code>Authorization: Bearer</code> header.</> });
+      say: <>Each request sends the token back, e.g. in an <code>Authorization: Bearer</code> header. That means page JavaScript holds it, so injected script could read it too; an HttpOnly cookie can't be read by script, though script can still send requests that carry it.</> });
     push({ busy: 'server', token: true,
       say: <>The server recomputes the signature over header.payload with its key. <span className="hl ok">It matches</span> and exp hasn't passed, so it trusts the claims. <b>No lookup.</b></> });
     push({ msg: m('server', 'browser', '200 · your orders', 'ok'), token: true, verdict: 'ok', say: <><span className="hl ok">200 OK</span>.</> });
@@ -119,7 +119,12 @@ export function scaleFrames(): ScFrame[] {
 export const TAMPER_STORY: Record<TamperStory, ReactNode> = {
   genuine: <>This is the genuine token the server issued. Edit the payload like an attacker would: make yourself <span className="hl">admin</span>.</>,
   'resigned-same': <><span className="hl ok">Valid</span>: re-signing the unchanged payload with the real key gives exactly the same signature as the genuine token.</>,
-  'forged-accepted': <><span className="hl bad">Accepted.</span> With the real secret, a forged token is indistinguishable from a real one. Guard signing keys like passwords, and rotate them.</>,
-  'guess-rejected': <><span className="hl bad">Rejected.</span> Re-signing with a guessed key gives a different signature. Only the server's secret produces the right one.</>,
+  'forged-accepted': <><span className="hl bad">Accepted.</span> With the real secret, a forged token is indistinguishable from a real one. Guard signing keys like private keys, and rotate them.</>,
+  'guess-rejected': (
+    <>
+      <span className="hl bad">Rejected</span>: this server's key is long and random. If it were a short or common word, anyone holding
+      one valid token could test guesses offline until one matched. Use at least 256 random bits (RFC 7518 §3.2), and rotate.
+    </>
+  ),
   'edit-rejected': <><span className="hl bad">Rejected.</span> You changed the payload but can't produce a new signature, so the server's recomputed signature doesn't match.</>,
 };

@@ -40,7 +40,7 @@ export function Stage() {
             { color: P.pub.color, label: 'public', shape: 'dot' },
             { color: P.cSec.color, label: 'secret (never sent)', shape: 'dot' },
             { color: P.cMix.color, label: 'mixed (safe to send)', shape: 'dot' },
-            { color: 'var(--violet)', label: 'encrypted', shape: 'dot' },
+            { color: P.shared.color, label: '🔒 encrypted (shared key)', shape: 'dot' },
             { color: 'var(--ok)', label: 'verified' },
             { color: 'var(--bad)', label: 'failed' },
           ]}
