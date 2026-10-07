@@ -8,7 +8,7 @@ import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { ChipButton, Hint, Legend, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
-import { NA } from '../../core/format';
+import { NA, plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { listingFor, stackFrames, uafFrames } from './frames';
 import { ASAN_STACK, ASAN_UAF, CANARY_ABORT, RUST_PANIC } from './listings';
@@ -177,7 +177,8 @@ function StackScene({ picker }: { picker: ReactNode }) {
         <div className="msb-addrs">
           <span className={`chip tone-${addrTone} msb-addr`}>name at {hexAddr(run.layout.frameAddr)}</span>
           <span className={`chip tone-${addrTone} msb-addr`}>returns to {hexAddr(run.layout.returnTo)}</span>
-          <span className="msb-note">{d.aslr ? 'ASLR on: new addresses every run.' : 'ASLR off: the same addresses every run.'} The canary is new every run either way.</span>
+          <span className="msb-note">{d.aslr ? 'ASLR on: new addresses every run.' : 'ASLR off: the same addresses every run.'}
+            {run.hasCanary && ' The canary is new every run either way.'}</span>
           <ChipButton tone="info" size="md" onClick={() => setSeed(seed + 1)}>
             Run again
           </ChipButton>
@@ -185,12 +186,20 @@ function StackScene({ picker }: { picker: ReactNode }) {
         <ConsolePanel title="program output" lines={output} empty="(still copying)" />
         {d.memorySafe && (
           <Hint block>
-            In JavaScript, <code>name = input</code> just makes a {valid.text.length}-character string: there is no fixed-size buffer to run past.
+            Under Rust the Bounds check and Stack canary toggles don&apos;t apply: every index is checked, and rustc adds no stack protector by default. In JavaScript,{' '}
+            <code>name = input</code> just makes a string of {plural([...valid.text].length, 'character')} (Unicode code points): there is no fixed-size buffer to run
+            past.
           </Hint>
         )}
         <Hint block>
-          All defences start off: a build you only get by switching them off on purpose. Today most systems ship with canaries, NX and ASLR on; bounds checking is up to the code.
+          All defences start off: a build you only get by switching them off on purpose. Most Linux distributions build with canaries, NX and ASLR on, and often{' '}
+          <code>_FORTIFY_SOURCE</code>, which turns this <code>strcpy</code> into a checked call that aborts with &quot;buffer overflow detected&quot;.
         </Hint>
+        {d.canary && !d.memorySafe && (
+          <Hint block>
+            A canary only catches an overwrite that runs through it, and only when the function returns: it misses heap overflows and writes that skip past it.
+          </Hint>
+        )}
         <Hint block>{HONESTY_STACK}</Hint>
         <FindingIt report={ASAN_STACK} what={<>strcpy of &quot;Grace Hopper&quot; (13 bytes) into name[8]</>} />
         <WhyItMatters />
