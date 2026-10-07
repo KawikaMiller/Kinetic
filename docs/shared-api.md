@@ -810,6 +810,8 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 </Plot2D>
 ```
 - Layers are children in data coordinates, drawn in order; path layers are clipped to the plot box. Custom layers call `usePlot()` (from `components/plotContext`) for `xs`, `ys` and `box`.
+- `tickValues: [1, 1e25, 1e50, 1e75, 1e100]` on an axis replaces the automatic ticks (values outside the domain are dropped): a log axis over a huge range otherwise strides by an awkward number of decades and can miss the top. `axisTickValues(spec)` in `core/plot` is the tested logic.
+- A range past ~10³⁰⁸ can't be a real log axis (doubles stop at 1.8 × 10³⁰⁸): plot log₁₀ of the value on a linear axis with `format: (v) => power(v, 10)`, as primes-factoring does.
 - `Curve fn` is sampled evenly on screen (so log axes too) and breaks where `fn` isn't finite. `Heat fn` returns a 0..1 intensity of `tone` or `{ tone, intensity }` (a region), or pass `grid` (row 0 at the top); memoise `fn`, since it repaints when it changes.
 - Draggable `Points` take pointer drags and are focusable: arrow keys move 4 units (Shift: 20), always clamped to the domain (`nudgePoint`, `clampPoint`).
 - A `dim` rule is a quiet reference line (faint line, muted label). `formatTick` writes 1.5k, 2M, and 10ⁿ on log axes.
