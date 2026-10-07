@@ -3,19 +3,15 @@
 // time with core/crypto's aesBlockEncrypt, only to show why you should never use it (NIST still approves ECB, but nothing should use it).
 //
 // The lesson works on whole 16-byte blocks with no padding, so the pictures and the tamper
-// demo show the modes themselves. WebCrypto's AES-CBC always applies PKCS#7 padding, so:
-// - cbcEncrypt drops the extra padding block it appends to block-aligned input;
-// - cbcDecrypt appends one block that decrypts to valid padding (we hold the key), so a
-//   tampered ciphertext decrypts to garbage instead of throwing a padding error.
-import { aesBlockEncrypt, hasSubtle } from '../../core/crypto';
+// demo show the modes themselves. CBC is core/crypto's aesCbcRawEncrypt / aesCbcRawDecrypt,
+// which work around WebCrypto's built-in PKCS#7 padding.
+import { AES_BLOCK, aesBlockEncrypt, hasSubtle } from '../../core/crypto';
 
-export const BLOCK = 16;
-/** A full block of PKCS#7 padding: sixteen bytes of 0x10. */
-const PAD_BLOCK = new Uint8Array(BLOCK).fill(BLOCK);
+export const BLOCK = AES_BLOCK;
 
 type Bytes = Uint8Array<ArrayBuffer>;
 
-const importAes = (raw: Bytes, name: 'AES-CBC' | 'AES-CTR' | 'AES-GCM') =>
+const importAes = (raw: Bytes, name: 'AES-CTR' | 'AES-GCM') =>
   crypto.subtle.importKey('raw', raw, { name }, false, ['encrypt', 'decrypt']);
 
 function assertBlocks(data: Uint8Array) {
@@ -41,27 +37,6 @@ export async function ecbEncrypt(key: Bytes, data: Bytes): Promise<Bytes | null>
     out.set(enc, i);
   }
   return out;
-}
-
-/** CBC with no padding: each block is XORed with the previous ciphertext block (the IV for the first). */
-export async function cbcEncrypt(key: Bytes, iv: Bytes, data: Bytes): Promise<Bytes | null> {
-  assertBlocks(data);
-  if (!hasSubtle()) return null;
-  const k = await importAes(key, 'AES-CBC');
-  const out = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, k, data));
-  return out.slice(0, data.length);
-}
-
-export async function cbcDecrypt(key: Bytes, iv: Bytes, ct: Bytes): Promise<Bytes | null> {
-  assertBlocks(ct);
-  if (!hasSubtle()) return null;
-  const last = ct.length >= BLOCK ? ct.slice(ct.length - BLOCK) : iv;
-  const extra = (await aesBlockEncrypt(key, xorBytes(PAD_BLOCK, last)))!;
-  const full = new Uint8Array(ct.length + BLOCK);
-  full.set(ct);
-  full.set(extra, ct.length);
-  const k = await importAes(key, 'AES-CBC');
-  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, k, full));
 }
 
 /** CTR: AES of a counter block makes a keystream, XORed onto the data. Encrypt and decrypt are the same. */

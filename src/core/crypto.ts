@@ -16,6 +16,14 @@ export const toHex = (buf: ArrayBuffer | Uint8Array) =>
 export const b64url = (buf: ArrayBuffer | Uint8Array) =>
   btoa(String.fromCharCode(...asBytes(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
+/** Hex text (either case, even length, nothing else) → bytes; '' → no bytes. Throws RangeError on anything else. */
+export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) throw new RangeError(`not an even-length hex string: "${hex}"`);
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(2 * i, 2 * i + 2), 16);
+  return out;
+}
+
 /** Hex string → array of bits, most significant first. */
 export function hexToBits(hex: string): number[] {
   const bits: number[] = [];
@@ -86,6 +94,45 @@ export async function aesBlockEncrypt(key: BufferSource, block16: Uint8Array<Arr
   const k = await crypto.subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['encrypt']);
   const out = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: new Uint8Array(16) }, k, block16);
   return new Uint8Array(out, 0, 16).slice();
+}
+
+/** The AES block size in bytes. */
+export const AES_BLOCK = 16;
+/** A full block of PKCS#7 padding: sixteen bytes of 0x10. */
+const PAD_BLOCK = new Uint8Array(AES_BLOCK).fill(AES_BLOCK);
+
+function assertAesBlocks(data: Uint8Array) {
+  if (data.length % AES_BLOCK !== 0) throw new RangeError(`expected whole ${AES_BLOCK}-byte blocks, got ${data.length} bytes`);
+}
+
+const importAesCbc = (key: BufferSource) => crypto.subtle.importKey('raw', key, { name: 'AES-CBC' }, false, ['encrypt', 'decrypt']);
+
+/**
+ * AES-CBC with no padding, on whole 16-byte blocks: each block XORed with the previous ciphertext
+ * block (the IV for the first). WebCrypto always adds PKCS#7, which appends a full padding block to
+ * block-aligned input; this drops it. For lessons that show the mode itself, not for real data.
+ */
+export async function aesCbcRawEncrypt(key: BufferSource, iv: Uint8Array<ArrayBuffer>, data: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer> | null> {
+  assertAesBlocks(data);
+  if (!hasSubtle()) return null;
+  const out = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, await importAesCbc(key), data));
+  return out.slice(0, data.length);
+}
+
+/**
+ * The inverse of aesCbcRawEncrypt. WebCrypto checks PKCS#7 padding on decrypt, so this appends one
+ * block that decrypts to a valid padding block (we hold the key: AES(PAD ⊕ last ciphertext block)).
+ * A tampered ciphertext therefore decrypts to garbled bytes, as raw CBC does, instead of throwing.
+ */
+export async function aesCbcRawDecrypt(key: BufferSource, iv: Uint8Array<ArrayBuffer>, ct: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer> | null> {
+  assertAesBlocks(ct);
+  if (!hasSubtle()) return null;
+  const last = ct.length >= AES_BLOCK ? ct.slice(ct.length - AES_BLOCK) : iv;
+  const extra = (await aesBlockEncrypt(key, Uint8Array.from(PAD_BLOCK, (v, i) => v ^ last[i])))!;
+  const full = new Uint8Array(ct.length + AES_BLOCK);
+  full.set(ct);
+  full.set(extra, ct.length);
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, await importAesCbc(key), full));
 }
 
 const ECDSA_ALG = { name: 'ECDSA', hash: 'SHA-256' } as const;

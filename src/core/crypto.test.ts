@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { aesBlockEncrypt, ecdsaKeyPair, ecdsaSign, ecdsaVerify, enc, hmac, hmacSha256, hotp, toHex, totp } from './crypto';
+import {
+  aesBlockEncrypt, aesCbcRawDecrypt, aesCbcRawEncrypt, ecdsaKeyPair, ecdsaSign, ecdsaVerify, enc, hexToBytes, hmac, hmacSha256, hotp, toHex, totp,
+} from './crypto';
 
 const fill = (byte: number, n: number) => new Uint8Array(n).fill(byte);
-const fromHex = (hex: string) => new Uint8Array(hex.match(/../g)!.map((h) => parseInt(h, 16)));
 
 describe('hmac', () => {
   // RFC 4231 §4: HMAC-SHA-256 test cases 1, 2, 3 and 6 (a key longer than the block)
@@ -59,13 +60,13 @@ describe('hotp / totp', () => {
 
 describe('aesBlockEncrypt', () => {
   it('matches FIPS-197 appendix C.1 (AES-128)', async () => {
-    const out = await aesBlockEncrypt(fromHex('000102030405060708090a0b0c0d0e0f'), fromHex('00112233445566778899aabbccddeeff'));
+    const out = await aesBlockEncrypt(hexToBytes('000102030405060708090a0b0c0d0e0f'), hexToBytes('00112233445566778899aabbccddeeff'));
     expect(toHex(out!)).toBe('69c4e0d86a7b0430d8cdb78070b4c55a');
   });
 
   it('matches FIPS-197 appendix C.3 (AES-256)', async () => {
-    const key = fromHex('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f');
-    expect(toHex((await aesBlockEncrypt(key, fromHex('00112233445566778899aabbccddeeff')))!)).toBe('8ea2b7ca516745bfeafc49904b496089');
+    const key = hexToBytes('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f');
+    expect(toHex((await aesBlockEncrypt(key, hexToBytes('00112233445566778899aabbccddeeff')))!)).toBe('8ea2b7ca516745bfeafc49904b496089');
   });
 
   it('is deterministic: equal blocks give equal ciphertext (why ECB leaks)', async () => {
@@ -78,6 +79,46 @@ describe('aesBlockEncrypt', () => {
 
   it('refuses anything but one 16-byte block', async () => {
     await expect(aesBlockEncrypt(fill(0, 16), fill(0, 15))).rejects.toThrow(RangeError);
+  });
+});
+
+describe('hexToBytes', () => {
+  it('reads either case and round-trips through toHex', () => {
+    expect([...hexToBytes('00ff7fA0')]).toEqual([0, 255, 127, 160]);
+    expect(hexToBytes('')).toEqual(new Uint8Array(0));
+    const all = Uint8Array.from({ length: 256 }, (_, i) => i);
+    expect(hexToBytes(toHex(all))).toEqual(all);
+  });
+  it('refuses odd lengths and anything that is not hex, instead of guessing', () => {
+    for (const bad of ['abc', '0g', 'zz', '0x00', '00 11', '-1']) expect(() => hexToBytes(bad), bad).toThrow(RangeError);
+  });
+});
+
+describe('aesCbcRawEncrypt / aesCbcRawDecrypt (no padding)', () => {
+  // NIST SP 800-38A F.2.1 / F.2.2: CBC-AES128.
+  const KEY = hexToBytes('2b7e151628aed2a6abf7158809cf4f3c');
+  const IV = hexToBytes('000102030405060708090a0b0c0d0e0f');
+  const PLAIN = hexToBytes('6bc1bee22e409f96e93d7e117393172a' + 'ae2d8a571e03ac9c9eb76fac45af8e51' + '30c81c46a35ce411e5fbc1191a0a52ef' + 'f69f2445df4f9b17ad2b417be66c3710');
+  const CIPHER = '7649abac8119b246cee98e9b12e9197d' + '5086cb9b507219ee95db113a917678b2' + '73bed6b8e3c1743b7116e69e22229516' + '3ff1caa1681fac09120eca307586e1a7';
+  it('matches SP 800-38A F.2.1 with no padding block, and F.2.2 decrypts it back', async () => {
+    const ct = (await aesCbcRawEncrypt(KEY, IV, PLAIN))!;
+    expect(ct.length).toBe(PLAIN.length);
+    expect(toHex(ct)).toBe(CIPHER);
+    expect(toHex((await aesCbcRawDecrypt(KEY, IV, hexToBytes(CIPHER)))!)).toBe(toHex(PLAIN));
+  });
+  it('decrypts a tampered ciphertext to garbled bytes instead of throwing a padding error', async () => {
+    const bad = hexToBytes(CIPHER);
+    bad[40] ^= 0x01; // block 2
+    const out = (await aesCbcRawDecrypt(KEY, IV, bad))!;
+    expect(out.length).toBe(PLAIN.length);
+    expect(out[40 + 16] ^ PLAIN[40 + 16]).toBe(0x01); // the same bit flips in the next block
+    expect(toHex(out.slice(0, 32))).toBe(toHex(PLAIN.slice(0, 32))); // blocks before are untouched
+  });
+  it('handles an empty message and refuses partial blocks', async () => {
+    expect((await aesCbcRawEncrypt(KEY, IV, new Uint8Array(0)))!.length).toBe(0);
+    expect((await aesCbcRawDecrypt(KEY, IV, new Uint8Array(0)))!.length).toBe(0);
+    await expect(aesCbcRawEncrypt(KEY, IV, new Uint8Array(15))).rejects.toThrow(RangeError);
+    await expect(aesCbcRawDecrypt(KEY, IV, new Uint8Array(17))).rejects.toThrow(RangeError);
   });
 });
 

@@ -1107,6 +1107,20 @@ parseHex('#abc')                // [170, 187, 204]; 3- or 6-digit
 - Tests: the lesson's contrast tests, plus the published figures: white 1, black 0, each primary its own
   coefficient, the 0.03928 knee, and #767676 4.54, #595959 7.00, blue 8.59 and red 4.00 on white.
 
+### `crypto.ts`: `hexToBytes`, raw AES-CBC — symmetric-ciphers, macs-hmac, digital-signatures-pki
+```ts
+hexToBytes('00ff7fa0')                 // Uint8Array [0, 255, 127, 160]; either case; '' → empty; odd length or non-hex throws RangeError
+AES_BLOCK                              // 16
+aesCbcRawEncrypt(key, iv, data)        // CBC on whole blocks, no padding: output is exactly data.length bytes
+aesCbcRawDecrypt(key, iv, ct)          // the inverse; a tampered ct decrypts to garbled bytes, never a padding error
+```
+- WebCrypto's AES-CBC always applies PKCS#7. Encrypt drops the extra padding block it appends to
+  block-aligned input; decrypt appends one block that decrypts to valid padding (AES(PAD ⊕ last block),
+  possible because we hold the key). Both throw RangeError on partial blocks and resolve to null without
+  `crypto.subtle`. For lessons showing the mode itself, never for real data (no padding, no MAC).
+- Tests: SP 800-38A F.2.1/F.2.2, a flipped bit garbling its block and flipping the same bit in the next,
+  empty input, partial-block refusal; hexToBytes round-trips all 256 bytes through `toHex`.
+
 ---
 
 ## Not built (deliberately)

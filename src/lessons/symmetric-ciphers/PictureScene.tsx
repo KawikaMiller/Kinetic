@@ -3,7 +3,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { useAsyncValue } from '../../core/useAsyncValue';
-import { BLOCK, cbcEncrypt, ctrCrypt, ecbEncrypt, gcmEncrypt, randomBytes } from './ciphers';
+import { aesCbcRawEncrypt } from '../../core/crypto';
+import { BLOCK, ctrCrypt, ecbEncrypt, gcmEncrypt, randomBytes } from './ciphers';
 import { cipherColour, paintBytes, plainColour } from './draw';
 import { HONESTY, pictureCaption } from './frames';
 import { BLOCKS_PER_ROW, SIDE, mascot, repeatedBlocks, sameAs, type Mode } from './model';
@@ -17,7 +18,7 @@ const MOVES: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -
 async function encryptAll(key: Bytes): Promise<Record<Mode, Bytes> | null> {
   const [ecb, cbc, ctr, gcm] = await Promise.all([
     ecbEncrypt(key, IMAGE),
-    cbcEncrypt(key, randomBytes(16), IMAGE),
+    aesCbcRawEncrypt(key, randomBytes(16), IMAGE),
     ctrCrypt(key, randomBytes(16), IMAGE),
     gcmEncrypt(key, randomBytes(12), IMAGE),
   ]);

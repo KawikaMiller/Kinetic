@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { cbcDecrypt, cbcEncrypt, ctrCrypt, gcmDecrypt, gcmEncrypt, randomBytes } from './ciphers';
+import { aesCbcRawDecrypt, aesCbcRawEncrypt } from '../../core/crypto';
+import { ctrCrypt, gcmDecrypt, gcmEncrypt, randomBytes } from './ciphers';
 import { bitDistance, chainCaption, pictureCaption, reuseCaption, tamperCaption } from './frames';
 import { TAMPER_DEFAULT_BYTE, TAMPER_TEXT, ascii, changedBytes, readable } from './model';
 
@@ -49,12 +50,12 @@ describe('tamperCaption, from a real tamper run', () => {
     const key = randomBytes(16);
     const iv = randomBytes(16);
     const nonce = randomBytes(12);
-    const cbc = (await cbcEncrypt(key, iv, plain))!;
+    const cbc = (await aesCbcRawEncrypt(key, iv, plain))!;
     const ctr = (await ctrCrypt(key, iv, plain))!;
     const gcm = (await gcmEncrypt(key, nonce, plain))!;
     for (const ct of [cbc, ctr, gcm]) ct[TAMPER_DEFAULT_BYTE] ^= 1;
     const ctrOut = (await ctrCrypt(key, iv, ctr))!;
-    const cbcOut = (await cbcDecrypt(key, iv, cbc))!;
+    const cbcOut = (await aesCbcRawDecrypt(key, iv, cbc))!;
     const r = {
       cbcChanged: changedBytes(plain, cbcOut).length,
       cbcNextBitFlipped: changedBytes(plain, cbcOut).filter((i) => i >= 32).join() === String(TAMPER_DEFAULT_BYTE + 16)

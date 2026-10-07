@@ -5,7 +5,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { useAsyncValue } from '../../core/useAsyncValue';
-import { BLOCK, cbcEncrypt, ctrCrypt, randomBytes, xorBytes } from './ciphers';
+import { aesCbcRawEncrypt } from '../../core/crypto';
+import { BLOCK, ctrCrypt, randomBytes, xorBytes } from './ciphers';
 import { HONESTY, reuseCaption } from './frames';
 import { REUSE_TEXTS, ascii, blockIds } from './model';
 
@@ -21,7 +22,7 @@ interface Pair {
 async function encryptPair(key: Bytes, mode: ReuseMode, reuse: boolean): Promise<Pair | null> {
   const iv1 = randomBytes(16);
   const iv2 = reuse ? iv1 : randomBytes(16);
-  const enc = mode === 'CBC' ? cbcEncrypt : ctrCrypt;
+  const enc = mode === 'CBC' ? aesCbcRawEncrypt : ctrCrypt;
   const [c1, c2] = await Promise.all([enc(key, iv1, M1), enc(key, iv2, M2)]);
   return c1 && c2 ? { c1, c2 } : null;
 }
