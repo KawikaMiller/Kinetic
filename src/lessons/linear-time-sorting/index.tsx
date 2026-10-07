@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A sort that only compares items needs about n log₂ n comparisons on its worst input, but counting sort and radix sort never compare: they use the keys as indices or digits, so they run in linear time when keys have a small range or a fixed number of digits.',
-    what: 'Every comparison sort is a yes/no decision tree: each comparison is a fork and each finished order a leaf. n items have n! orders, so the tree has n! leaves and must be at least ⌈log₂ n!⌉ deep, which grows like n log₂ n. Counting sort dodges this by counting how many items have each key and placing them by position; LSD radix sort runs a stable pass like that once per digit, least significant first.',
+    what: 'Every comparison sort is a yes/no decision tree: each comparison is a fork and each finished order a leaf. n items have n! orders, each needing its own leaf, so the tree has at least n! reachable leaves and must be at least ⌈log₂ n!⌉ deep, which grows like n log₂ n. Counting sort dodges this by counting how many items have each key and placing them by position; LSD radix sort runs a stable pass like that once per digit, least significant first.',
     analogy: 'Sorting post by postcode with pigeonholes: you never compare two letters, you just read one digit and drop the letter in that hole, then gather the holes in order.',
     useCases: [
       'Counting sort for integers with a small known range: ages, exam scores, byte values',
@@ -24,7 +24,7 @@ const lesson: LessonModule = {
     'Type 1000 or -1 into Numbers and press Apply: this demo sorts 0-999, so it refuses them.',
   ],
   keyIdeas: [
-    'A comparison sort is a decision tree with n! leaves, so its worst case needs at least ⌈log₂ n!⌉ comparisons, about n log₂ n.',
+    'A comparison sort is a decision tree with at least n! reachable leaves, so its worst case needs at least ⌈log₂ n!⌉ comparisons, about n log₂ n.',
     'Counting sort uses keys as array indices: n + k work and no comparisons, but one counter for each of the k possible keys.',
     'LSD radix sort runs a stable pass per digit, least significant first; stability is what makes the passes add up.',
     'Bucket sort splits the key range into buckets and sorts each one: about linear when keys are spread evenly, slower when they clump.',
