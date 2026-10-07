@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Knowing why corporate proxies install their own root CA on employee machines',
     ],
     why: "Mid-level engineers configure certificates, terminate TLS at load balancers and debug handshake failures. Understanding what each step protects against tells you which errors are dangerous and which are misconfigurations, and why you must never just disable certificate verification to make an error go away.",
-    watch: "Coloured dots are paints. Yellow is public. Dashed, grey-outlined dots with a 🔒 are secrets that never leave their owner: blue for the client, green for the server, violet for Mallory. A mix is a real blend of the paints in it and is safe to send. Pills on the wire are messages, and a 🔒 pill is encrypted: violet for the certificate, green for Finished, the shared colour for data locked with that key, red for Mallory's forged certificate and the client's alert. The notebook lists everything the eavesdropper saw, with ▒ for ciphertext. In the certificate panel, a green ✓ link is verified, a red ✕ failed and … is still to check. A green wire and green party outlines mean the session is encrypted; a red outline means the connection was aborted, and Mallory sits in a red-outlined box. Switch to MITM to watch Mallory try to impersonate the server.",
+    watch: "Coloured dots are paints. Yellow is public. Dashed, grey-outlined dots with a 🔒 are secrets that never leave their owner: blue for the client, green for the server, violet for Mallory. A mix is a real blend of the paints in it and is safe to send. Pills on the wire are messages, and a 🔒 pill is encrypted: the certificate and the data wear the shared key's colour, Finished is green, and Mallory's forged certificate and the client's alert are red. The legend's 🔒 chip is that shared colour. The notebook lists everything the eavesdropper saw, with a grey ▒ for ciphertext. Violet only ever means Mallory's secret. In the certificate panel, a green ✓ link is verified, a red ✕ failed and … is still to check. A green wire and green party outlines mean the session is encrypted; a red outline means the connection was aborted, and Mallory sits in a red-outlined box. Switch to MITM to watch Mallory try to impersonate the server.",
   },
   tryThis: [
     "Play the normal handshake and compare Eve's notebook with the shared colour at the end. Could she build it?",
@@ -66,7 +66,7 @@ const lesson: LessonModule = {
       q: 'On a first visit (no resumption), how many round trips does TLS 1.3 take before the client can send its request?',
       options: ['None', 'One', 'Two', 'Three'],
       answer: 1,
-      why: "The client's first flight carries its key share, so after the server's one reply it has everything and sends Finished with its request. A full TLS 1.2 handshake took two. Zero round trips is only possible when resuming with a pre-shared key (0-RTT).",
+      why: "The client's first flight carries its key share, so after the server's one reply it has everything and sends Finished with its request. That holds when the server accepts the client's key share; a HelloRetryRequest costs one more. A full TLS 1.2 handshake took two. Zero round trips is only possible when resuming with a pre-shared key (0-RTT).",
     },
   ],
 };

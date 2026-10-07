@@ -277,13 +277,13 @@
   display: grid;
   place-items: center;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--violet) 20%, transparent);
-  color: var(--violet);
+  background: color-mix(in srgb, var(--muted) 20%, transparent);
+  color: var(--muted);
   font-size: 11px;
 }
 .th-cipher {
   font-family: var(--mono);
-  color: var(--violet);
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {
