@@ -10,7 +10,6 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const T2_R1 = 'T2-R1 retrofit (wave 1)';
 const T2_R2 = 'T2-R2 retrofit (wave 2)';
 const TIER3 = 'Tier 3 kickoff: existing Tier 3 lessons are retrofitted then';
 const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
@@ -21,8 +20,6 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
  * Tier 3 and 4 lessons likewise wait for their tier's kickoff. Shrinks as R1 and R2 merge.
  */
 const PENDING_RETROFIT = new Set([
-  // T2-R1
-  'message-queues',
   // T2-R2
   'tcp-udp', 'tls-handshake', 'db-indexes', 'transactions-acid', 'race-conditions', 'event-loop', 'auth-sessions-jwt', 'containers',
 ]);
@@ -36,7 +33,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   'containers': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'db-indexes': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'event-loop': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
-  'message-queues': { ticket: T2_R1, rules: ['quiz-length', 'quiz-longest'] },
   'race-conditions': { ticket: T2_R2, rules: ['quiz-length'] },
   'tcp-udp': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
   'tls-handshake': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },

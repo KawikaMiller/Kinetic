@@ -110,15 +110,16 @@ export class Broker {
     }
   }
 
-  crashOne(): Consumer | null {
+  /** Crash a busy consumer if there is one, else an idle one. Says which message (if any) it dropped. */
+  crashOne(): { consumer: Consumer; msg: Msg | null } | null {
     const alive = this.consumers.filter((c) => c.deadUntil < this.now);
     const busy = alive.filter((c) => c.msg);
     const pool = busy.length ? busy : alive;
     if (!pool.length) return null;
     const c = pick(pool);
+    const m = c.msg;
     c.deadUntil = this.now + RESTART_AFTER;
-    if (c.msg) {
-      const m = c.msg;
+    if (m) {
       // past halfway: the side effect (email sent, row written) already happened
       m.sideEffectDone = m.sideEffectDone || (this.now - c.started) / c.duration > SIDE_EFFECT_AT;
       m.state = 'unacked';
@@ -126,7 +127,7 @@ export class Broker {
       m.redeliverAt = this.now + REDELIVER_AFTER;
       c.msg = null;
     }
-    return c;
+    return { consumer: c, msg: m };
   }
 
   private requeue(m: Msg, front: boolean) {
@@ -227,6 +228,8 @@ export type Stats = ReturnType<Broker['stats']>;
 export const BACKLOG_WARN = 14;
 const SLOW_LANE = 1; // analytics
 const SLOW_LANE_WARN = 10;
+/** "Rising" compares today's depth with the sample this many seconds back. */
+const RISING_LOOKBACK = 2;
 const INSIGHT_COOLDOWN = 12;
 const BURSTINESS = { min: 0.5, spread: 1 }; // arrivals jitter between 0.5× and 1.5× the rate
 
@@ -273,12 +276,19 @@ export function publishPoison(w: World) {
 
 export type Insight = 'backlog' | 'slowSubscriber';
 
+/** Is the queue deeper now than it was RISING_LOOKBACK seconds ago? A draining backlog isn't "rising". */
+export function backlogRising(b: Broker): boolean {
+  const hist = b.depthHistory.values;
+  const back = Math.round(RISING_LOOKBACK / DEPTH_SAMPLE_EVERY);
+  return hist.length > back && b.depth() > hist[hist.length - 1 - back];
+}
+
 /** An insight worth narrating, if the cooldown allows one. Firing it re-arms the cooldown. */
 export function takeInsight(w: World, st: Stats): Insight | null {
   const b = w.broker;
   if (!w.insight.ready(b.now)) return null;
   const insight: Insight | null =
-    b.mode === 'work' && st.depth > BACKLOG_WARN ? 'backlog'
+    b.mode === 'work' && st.depth > BACKLOG_WARN && backlogRising(b) ? 'backlog'
       : b.mode === 'pubsub' && st.laneDepths[SLOW_LANE] > SLOW_LANE_WARN ? 'slowSubscriber'
         : null;
   if (insight) w.insight.fire(b.now);

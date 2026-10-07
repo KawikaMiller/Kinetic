@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, PauseButton, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, PauseButton, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { duration, NA, perSec } from '../../core/format';
 import { useCanvas, useLoop } from '../../core/hooks';
 import { useSimulation } from '../../core/useSimulation';
 import { createMessageView, drawScene } from './draw';
 import {
-  advance, BACKLOG_WARN, createWorld, MAX_ATTEMPTS, publishPoison, SUBSCRIBERS, switchMode, takeInsight,
+  advance, BACKLOG_WARN, createWorld, MAX_ATTEMPTS, publishPoison, REDELIVER_AFTER, SUBSCRIBERS, switchMode, takeInsight,
   type Mode, type SimEvent, type Stats as SimStats, type World,
 } from './sim';
 
@@ -83,10 +83,17 @@ export function Stage() {
   };
 
   const crash = () => {
-    const c = world().broker.crashOne();
-    if (!c) return;
+    const crashed = world().broker.crashOne();
+    if (!crashed) return;
+    const c = crashed.consumer;
     const who = mode === 'pubsub' ? SUBSCRIBERS[c.lane].name : `worker ${c.id}`;
-    setCaption(<><span className="hl bad">{who} crashed</span> mid-message. It never sent an ack, so the broker still owns that message.</>);
+    setCaption(
+      crashed.msg ? (
+        <><span className="hl bad">{who} crashed</span> mid-message. It never sent an ack, so the broker still owns that message.</>
+      ) : (
+        <><span className="hl bad">{who} crashed</span> while idle. Nothing was in flight, so there's nothing to redeliver.</>
+      ),
+    );
   };
 
   const poison = () => {
@@ -136,6 +143,11 @@ export function Stage() {
           <Button variant="danger" onClick={crash}>💥 Crash a consumer</Button>
           <Button onClick={poison}>☠ Poison message</Button>
           <PauseButton paused={paused} onToggle={togglePause} />
+          <Hint block>
+            A simulated broker: work times vary ±30%, a crash past halfway counts as the work already done, a message with
+            no ack after {REDELIVER_AFTER} s is redelivered, and {MAX_ATTEMPTS} failed attempts send it to the dead-letter queue.
+            Failed poison messages go straight back to the head, like RabbitMQ's requeue.
+          </Hint>
         </Controls>
       }
     >
