@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
-import { BATCH_SIZE, DIVERGE_LOSS, DIVERGE_RADIUS, MAX_STEPS, REGRESSION_DATA, SURFACES, zigzagShare, type Run, type W } from './model';
+import { BATCH_SIZE, DIVERGE_LOSS, DIVERGE_RADIUS, GRAD_TOL, MAX_STEPS, REGRESSION_DATA, SURFACES, zigzagShare, type Run, type W } from './model';
 
 /** A number as the readouts show it: rounded, trailing zeros dropped, a real minus sign. */
 export function num(v: number, dp = 3): string {
@@ -23,8 +23,25 @@ export interface DescentFrame extends Frame {
   iter: number;
 }
 
-/** Above this share of direction reversals a run reads as zig-zagging. */
+/** A mini-batch run this close to the lowest loss is jittering around the answer, not still travelling. */
+export const MINIBATCH_NEAR = 0.01;
+
+/** Above this share of steep-axis flips a run reads as zig-zagging. */
 export const ZIGZAG = 0.5;
+
+/** Mean loss over a 10-step window: a stable bounce averages out, a slow blow-up doesn't. */
+const windowMean = (losses: readonly number[], end: number) => {
+  const part = losses.slice(Math.max(0, end - 10), end);
+  return part.reduce((a, b) => a + b, 0) / part.length;
+};
+
+/**
+ * Full-gradient runs only (mini-batch noise wobbles the loss by more than 1%): the last 10
+ * losses average more than 1% above the 10 around halfway, so it is diverging slowly.
+ */
+export const creepingUp = (run: Run) =>
+  run.options.batchSeed === null &&
+  windowMean(run.losses, run.losses.length) > windowMean(run.losses, Math.floor(run.losses.length / 2)) * 1.01;
 
 /** One frame per press of "step": `perPress` gradient steps each, then the verdict. */
 export function descentFrames(run: Run, perPress: number): DescentFrame[] {
@@ -62,26 +79,34 @@ export function verdict(run: Run): ReactNode {
       return <>Converged in {n} steps to <span className="hl ok">{vec(o.at)}</span>, loss {lossText(o.loss)}. {where}{zigzag}</>;
     }
     case 'saddle':
-      return <>Stopped after {n} steps at {vec(o.at)}: the gradient is 0, but it's a <span className="hl">saddle</span>, not a minimum: the surface still curves down in one direction. A run only ends here if no push ever points off the ridge, which is what starting exactly on it does.</>;
+      return <>Stopped after {n} steps at {vec(o.at)}: the gradient is below {GRAD_TOL.toExponential(0)}, but it's a <span className="hl">saddle</span>, not a minimum: the surface still curves down in one direction. Runs end up here when they start on (or within a hair of) the ridge, so the pushes never point off it.</>;
     case 'diverged': {
       const last = run.losses[run.losses.length - 1];
       const why = Number.isFinite(last) && last <= DIVERGE_LOSS
         ? <>the ball got more than {DIVERGE_RADIUS.toLocaleString('en-US')} units from the origin</>
         : <>the loss passed {DIVERGE_LOSS.toLocaleString('en-US')}</>;
       return <>
-        <span className="hl bad">Diverged</span> after {n} steps: {why}, so the run stopped. Each step overshot the valley instead of settling: a
-        bigger learning rate is not a faster one.
+        <span className="hl bad">Diverged</span> after {n} steps: {why}, so the run stopped. The steps overshot instead of settling: a bigger learning
+        rate is not a faster one.
       </>;
     }
     default: {
       const gap = o.loss - s.floor;
+      if (creepingUp(run)) {
+        return <>After {MAX_STEPS} steps the loss is <span className="hl bad">creeping up</span> ({lossText(gap)} above the lowest, higher than halfway through): it's diverging, just slowly.</>;
+      }
       if (run.options.batchSeed !== null && run.surface === 'regression') {
-        return <>After {MAX_STEPS} steps it still jitters around the least-squares answer, {lossText(gap)} above the lowest loss. Each step only sees {BATCH_SIZE} of the {REGRESSION_DATA.length} points, so the noise never settles at a fixed η: cheap steps, noisy path.</>;
+        const noise = <>Each step only sees {BATCH_SIZE} of the {REGRESSION_DATA.length} points, so its path is noisy: cheap steps, noisy path.</>;
+        return gap < MINIBATCH_NEAR
+          ? <>After {MAX_STEPS} steps it jitters around the least-squares answer, {lossText(gap)} above the lowest loss: at a fixed η the noise never settles. {noise}</>
+          : <>After {MAX_STEPS} steps it is still on its way, {lossText(gap)} above the lowest loss. {noise}</>;
       }
       if (zz > 0.9) {
         return <>After {MAX_STEPS} steps it is still bouncing back and forth, {lossText(gap)} above the lowest loss: η is too big for the curvature it found, but not big enough to fly off.</>;
       }
-      return <>Out of steps: after {MAX_STEPS} it is still crawling, {lossText(gap)} above the lowest loss. Each step is tiny, so it would get there, eventually.</>;
+      return s.convex
+        ? <>Out of steps: after {MAX_STEPS} it is still crawling, {lossText(gap)} above the lowest loss. On a convex surface with this small a step, it would get there, eventually.</>
+        : <>Out of steps: after {MAX_STEPS} it is still crawling downhill, {lossText(gap)} above the lowest loss. Which valley it ends in isn't decided yet.</>;
     }
   }
 }

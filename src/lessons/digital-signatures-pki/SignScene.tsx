@@ -119,7 +119,7 @@ export function SignScene({ picker }: { picker: ReactNode }) {
               </tbody>
             </table>
             <p className="dsp-muted">
-              Sign the same note twice: the signature changes every time (ECDSA uses a fresh random number), and both verify. {HONESTY}
+              Sign the same note twice: here the signature changes every time, because ECDSA mixes in a secret random number per signature, and both verify. Reusing that number would expose the private key, which is why RFC 6979 derives it deterministically from the key and the message. {HONESTY}
             </p>
           </>
         )}

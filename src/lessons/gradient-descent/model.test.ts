@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { leastSquares, numericGradient } from '../../core/fit';
 import { mulberry32 } from '../../core/random';
 import {
-  BATCH_SIZE, DEFAULT_START, REGRESSION_BEST, REGRESSION_DATA, SURFACES, SURFACE_IDS, batchGradient, batchSchedule, hessianEigen,
-  lossKeepsRising, presetRate, runDescent, stabilityLimit, zigzagShare, type SurfaceId, type W,
+  BATCH_SIZE, DEFAULT_START, QUADRATIC, REGRESSION_BEST, RIDGE_START, REGRESSION_DATA, SURFACES, SURFACE_IDS, batchGradient, batchSchedule, hessianEigen,
+  lossKeepsRising, presetRate, runDescent, stabilityLimit, steepAxis, zigzagShare, type SurfaceId, type W,
 } from './model';
 
 const rnd = mulberry32(44);
@@ -162,5 +162,43 @@ describe('mini-batches', () => {
     expect(a.steps.slice(0, 20).some((st) => Math.abs(st.grad[0] - full(st.w)[0]) > 1e-3)).toBe(true);
     expect(a.outcome.kind).toBe('budget');
     expect(Math.hypot(a.outcome.at[0] - REGRESSION_BEST[0], a.outcome.at[1] - REGRESSION_BEST[1])).toBeLessThan(0.1);
+  });
+});
+
+describe('review B8: the momentum and saddle stories match the runs', () => {
+  const travel = (r: ReturnType<typeof plain>) => {
+    const axis = steepAxis(SURFACES.ravine, [0, 0]);
+    return r.steps.reduce((s, st) => s + Math.abs((st.next[0] - st.w[0]) * axis[0] + (st.next[1] - st.w[1]) * axis[1]), 0);
+  };
+
+  it('ravine at "Too big": every step flips across the steep axis; β = 0.5 cuts 136 steps to 44 and the side-to-side travel', () => {
+    const eta = presetRate('ravine', 'tooBig');
+    const without = plain('ravine', eta);
+    const withMomentum = plain('ravine', eta, DEFAULT_START.ravine, 0.5);
+    expect(zigzagShare(without)).toBe(1);
+    expect(without.steps.length).toBe(136);
+    expect(withMomentum.steps.length).toBe(44);
+    expect(zigzagShare(withMomentum)).toBeLessThan(zigzagShare(without));
+    expect(travel(withMomentum)).toBeLessThan(travel(without));
+  });
+
+  it('ravine at "Just right": no zig-zag to damp, yet β = 0.8 still cuts the steps: acceleration along the floor', () => {
+    const eta = presetRate('ravine', 'justRight');
+    expect(zigzagShare(plain('ravine', eta))).toBe(0);
+    expect(plain('ravine', eta, DEFAULT_START.ravine, 0.8).steps.length).toBeLessThan(plain('ravine', eta).steps.length / 2);
+  });
+
+  it('the "Start exactly on the ridge" preset reaches the saddle', () => {
+    expect(plain('saddle', presetRate('saddle', 'justRight'), RIDGE_START).outcome.kind).toBe('saddle');
+    expect(RIDGE_START[1]).toBe(0);
+  });
+
+  it('rate presets keep their names only on the quadratic surfaces, where they behave as named', () => {
+    for (const id of SURFACE_IDS.filter((s) => QUADRATIC[s])) {
+      expect(plain(id, presetRate(id, 'divergent')).outcome.kind).toBe('diverged');
+      expect(plain(id, presetRate(id, 'justRight')).outcome.kind).toBe('minimum');
+      expect(plain(id, presetRate(id, 'tooSmall')).outcome.kind).toBe('budget');
+    }
+    expect(QUADRATIC.twoMinima || QUADRATIC.saddle).toBe(false);
   });
 });

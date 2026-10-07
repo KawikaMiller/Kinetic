@@ -3,10 +3,13 @@ import { humanDuration, power, superscript } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import {
-  REAL_E, repeatedCiphertexts, trialDivisionsLog2, trialSeconds, type Item, type Keygen, type KeyStep, type KeyStepId, type RsaKey,
+  GNFS_RECORD_BITS, REAL_E, repeatedCiphertexts, trialDivisionsLog2, trialSeconds, type Item, type Keygen, type KeyStep, type KeyStepId, type RsaKey,
 } from './model';
 
 export const group = (v: bigint | number) => v.toLocaleString('en-US');
+
+/** A duration in words, with tiny ones as "under a microsecond" rather than "0 s". */
+export const timeText = (seconds: number) => (seconds < 1e-6 ? 'under a microsecond' : humanDuration(seconds));
 /** An exponent written as superscript digits: 65¹⁷. */
 export const pow = (base: bigint | number, exp: bigint) => <>{group(base)}{superscript(Number(exp))}</>;
 const lock = '🔒';
@@ -35,12 +38,16 @@ function stepCaption(s: KeyStep, g: Keygen, p: bigint, q: bigint, e: bigint): Re
     n: () => <>n = p × q = {group(p)} × {group(q)} = <span className="hl info">{group(n)}</span>. n is public: half of the public key.</>,
     phi: () => <>φ = (p − 1)(q − 1) = {group(p - 1n)} × {group(q - 1n)} = {group(phi)}. Keep φ secret {lock}: anyone who knows it can
       work out d.</>,
-    'e-range': () => <>e = <span className="hl info">{group(e)}</span> is between 1 and φ, so it can be the public exponent.
-      {e === REAL_E ? ' It\'s the one real keys use, 2¹⁶ + 1.' : ' (Real keys almost always use e = 65537.)'}</>,
+    'e-range': () => (e >= phi
+      ? <>e = <span className="hl info">{group(e)}</span> is bigger than φ = {group(phi)}, and that's fine: it acts exactly like e mod φ ={' '}
+        {group(e % phi)}. Only gcd(e, φ) = 1 is required; keeping e below φ is just a textbook habit.
+        {e === REAL_E ? ' 65537 = 2¹⁶ + 1 is what real keys use (FIPS 186-5 asks for 2¹⁶ < e < 2²⁵⁶).' : ''}</>
+      : <>e = <span className="hl info">{group(e)}</span> is the public exponent: it only has to be bigger than 1 and share no factor with
+        φ. (Real keys almost always use e = 65537 = 2¹⁶ + 1.)</>),
     gcd: () => <>gcd(e, φ) = 1, by Euclid's remainders in the table: e shares no factor with φ, so it has an inverse mod φ.</>,
     d: () => <>Run Euclid backwards: {group(phi)}·x + {group(e)}·y = 1 with y = {group(g.y!)}, so d = {group(g.y!)} mod {group(phi)} ={' '}
       <span className="hl violet">{group(s.value!)}</span>. Check: {group(e)} × {group(s.value!)} = {group(e * s.value!)} ={' '}
-      {group((e * s.value!) / phi)} × {group(phi)} + 1. (Real libraries often use lcm(p − 1, q − 1) instead of φ; either gives a
+      {group((e * s.value!) / phi)} × {group(phi)} + 1. (FIPS 186-5 uses lcm(p − 1, q − 1) instead of φ; either gives a
       working d.)</>,
   };
   return text[s.id]();
@@ -138,6 +145,12 @@ export function factorCaption(k: RsaKey, run: { factors: bigint[]; steps: number
 }
 
 export function sizeCaption(bits: number): ReactNode {
-  return <>A {bits}-bit n needs about {power(trialDivisionsLog2(bits))} trial divisions: {humanDuration(trialSeconds(bits))} at a
+  const trial = <>Trial division alone would need about {power(trialDivisionsLog2(bits))} divisions, {timeText(trialSeconds(bits))} at a
     billion a second (extrapolated).</>;
+  if (bits <= GNFS_RECORD_BITS) {
+    return <>{trial} But that's the slow way: numbers of {bits} bits or less <span className="hl bad">have actually been factored</span>{' '}
+      with the general number field sieve (the public record is {GNFS_RECORD_BITS} bits, in 2020). A key this short is broken.</>;
+  }
+  return <>{trial} The much faster number field sieve hasn't publicly reached this size yet (record: {GNFS_RECORD_BITS} bits), and
+    {bits < 2048 ? ' keys under 2048 bits are no longer recommended.' : " 2048 bits is today's minimum."}</>;
 }

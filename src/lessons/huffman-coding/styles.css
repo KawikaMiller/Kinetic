@@ -1,0 +1,17 @@
+.hf { gap: 12px; }
+.hf-note { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--muted); }
+.hf-note.is-error { color: var(--bad); }
+.hf-tree { width: 100%; height: auto; display: block; margin: 0 auto; }
+.hf-tree .tree-node text { font: 700 14px var(--mono); }
+.hf-tree .tree-node text.hf-weight { font: 600 12px var(--mono); }
+.hf-tree .tree-node text.hf-leaf-count { font: 500 10px var(--mono); fill: var(--muted); }
+.hf-edge-bit { font: 700 12px var(--mono); fill: var(--violet); pointer-events: none; }
+.hf-side { display: flex; flex-flow: row wrap; gap: 12px; align-items: flex-start; }
+.hf-side > .tray { flex: 1 1 240px; min-width: 0; }
+.hf-queue { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.hf-q { font-family: var(--mono); }
+.hf-table .hf-code { color: var(--violet); letter-spacing: 0.04em; }
+.hf-table tr.is-current { background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.hf-field input { width: 100%; }
+.hf-side .meter + .meter { margin-top: 8px; }
+.hf-table th.hf-sym { text-transform: none; letter-spacing: 0; font: 700 13px var(--mono); color: var(--text); }

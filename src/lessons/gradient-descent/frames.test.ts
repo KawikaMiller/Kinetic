@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { descentFrames, lossText, verdict } from './frames';
-import { DEFAULT_START, RATE_PRESETS, SURFACE_IDS, presetRate, runDescent, type Run } from './model';
+import { MINIBATCH_NEAR, descentFrames, lossText, verdict } from './frames';
+import { DEFAULT_START, RATE_PRESETS, SURFACES, SURFACE_IDS, presetRate, runDescent, type Run } from './model';
 
 const runs: Run[] = [];
 for (const id of SURFACE_IDS) {
@@ -37,7 +37,7 @@ describe('descentFrames', () => {
       expect(v.includes('Converged')).toBe(o === 'minimum');
       expect(v.includes('Diverged')).toBe(o === 'diverged');
       expect(v.includes('saddle')).toBe(o === 'saddle');
-      if (o === 'budget') expect(v).toMatch(/still crawling|still bouncing|still jitters/);
+      if (o === 'budget') expect(v).toMatch(/still crawling|still bouncing|jitters around|still on its way|creeping up/);
     }
   });
 
@@ -65,5 +65,46 @@ describe('lossText', () => {
     expect(lossText(1e-7)).toBe('1.00e−7');
     expect(lossText(2.5e6)).toBe('2.50e+6');
     expect(lossText(0)).toBe('0');
+  });
+});
+
+describe('review B8: verdict sweeps', () => {
+  it('a mini-batch run far from the answer says "still on its way", never "jitters around"', () => {
+    const far = runDescent('regression', { start: DEFAULT_START.regression, rate: 0.001, momentum: 0, batchSeed: 1 });
+    const v = text(verdict(far));
+    expect(v).toContain('still on its way');
+    expect(v).not.toContain('jitters around');
+  });
+
+  it('across mini-batch rates and seeds, "jitters around" appears only within MINIBATCH_NEAR of the lowest loss', () => {
+    for (const rate of [0.001, 0.003, 0.01, 0.03, 0.1, 0.3]) {
+      for (const seed of [1, 2, 3, 4]) {
+        const run = runDescent('regression', { start: DEFAULT_START.regression, rate, momentum: 0, batchSeed: seed });
+        if (run.outcome.kind !== 'budget') continue;
+        const gap = run.outcome.loss - SURFACES.regression.floor;
+        expect(text(verdict(run)).includes('jitters around')).toBe(gap < MINIBATCH_NEAR);
+      }
+    }
+  });
+
+  it('out of steps on a non-convex surface never promises it will "get there"', () => {
+    for (const id of SURFACE_IDS) {
+      const run = runDescent(id, { start: DEFAULT_START[id], rate: presetRate(id, 'tooSmall'), momentum: 0, batchSeed: null });
+      const v = text(verdict(run));
+      expect(v.includes('eventually')).toBe(SURFACES[id].convex);
+    }
+  });
+
+  it('a rate just past the bowl limit diverges too slowly to trip the stop rule, and the verdict says so', () => {
+    const run = runDescent('bowl', { start: DEFAULT_START.bowl, rate: 1.0005, momentum: 0, batchSeed: null });
+    expect(run.outcome.kind).toBe('budget');
+    expect(text(verdict(run))).toContain('creeping up');
+  });
+
+  it('the saddle verdict states the stop tolerance, not "the gradient is 0"', () => {
+    const run = runDescent('saddle', { start: [-1.8, 0], rate: presetRate('saddle', 'justRight'), momentum: 0, batchSeed: null });
+    const v = text(verdict(run));
+    expect(v).toContain('below 1e-6');
+    expect(v).not.toContain('gradient is 0');
   });
 });

@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { useAsyncValue } from '../../core/useAsyncValue';
-import { cbcDecrypt, cbcEncrypt, ctrCrypt, gcmDecrypt, gcmEncrypt, randomBytes, type GcmOpen } from './ciphers';
+import { BLOCK, cbcDecrypt, cbcEncrypt, ctrCrypt, gcmDecrypt, gcmEncrypt, randomBytes, type GcmOpen } from './ciphers';
 import { HONESTY, tamperCaption } from './frames';
 import { TAMPER_DEFAULT_BYTE, TAMPER_TEXT, ascii, changedBytes, readable } from './model';
 
@@ -29,6 +29,14 @@ async function sendAndOpen(key: Bytes, ivs: { cbc: Bytes; ctr: Bytes; gcm: Bytes
   return cbcOut && ctrOut && gcmOut ? { cbc: cbcOut, ctr: ctrOut, gcm: gcmOut } : null;
 }
 
+/** True when CBC's decrypt flipped exactly the same bit one block after the flipped byte. */
+function nextBlockBitFlip(out: Uint8Array, byte: number): boolean {
+  const next = byte + BLOCK;
+  if (next >= PLAIN.length) return false;
+  const inNext = changedBytes(PLAIN, out).filter((i) => Math.floor(i / BLOCK) === Math.floor(next / BLOCK));
+  return inNext.length === 1 && inNext[0] === next && (out[next] ^ PLAIN[next]) === FLIP_MASK;
+}
+
 /** Decrypted text, each changed character marked. */
 function Decrypted({ bytes }: { bytes: Uint8Array }) {
   const changed = new Set(changedBytes(PLAIN, bytes));
@@ -49,6 +57,7 @@ export function TamperScene({ picker, aesKey }: { picker: ReactNode; aesKey: Byt
   const opened = useAsyncValue(() => sendAndOpen(aesKey, ivs, byte, flip), `${byte}:${flip}`, { keepPrevious: true });
   const result = opened && {
     cbcChanged: changedBytes(PLAIN, opened.cbc).length,
+    cbcNextBitFlipped: nextBlockBitFlip(opened.cbc, byte),
     ctrChanged: changedBytes(PLAIN, opened.ctr).length,
     gcmRefused: !opened.gcm.ok,
   };

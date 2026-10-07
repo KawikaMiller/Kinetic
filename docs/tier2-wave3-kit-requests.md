@@ -24,3 +24,8 @@
   - An ECDH helper once a second lesson needs it.
 - **Paint blend:** the equal-part color-mix `blend` is in tls-handshake and diffie-hellman. Second use, so extract it.
 - **SequenceDiagram:** the "current" yellow overrides the message's own tone (also filed in B6), so the last step of a MITM run loses its red.
+
+## From the B9 domain-review fixes
+- **core `toyRsa`:** has the same false e < φ rule. It should require only e > 1 and gcd(e, φ) = 1, and the rsa lesson's comparison test should then cover e > φ.
+- **core `humanDuration`:** tiny values print "0 s". Show "under a microsecond". rsa and diffie-hellman each work around this locally; migrate both.
+- **Known-flaky list in shared-api.md:** add ci-pipelines@0, endianness@0 and minimum-spanning-trees@0 (from kit-k4's run).

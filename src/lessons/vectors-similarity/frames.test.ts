@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { dotCaption, neighbourCaption, num } from './frames';
-import { QUERY_PRESETS, VECTOR_PRESETS, rank, read, topIds, type V2 } from './model';
+import { mulberry32 } from '../../core/random';
+import { QUERY_PRESETS, VECTOR_PRESETS, rank, read, snapV, topIds, type V2 } from './model';
 
 const twice = ([x, y]: V2): V2 => [2 * x, 2 * y];
 
@@ -76,6 +77,55 @@ describe('neighbourCaption', () => {
         if (q.id === 'balanced') expect(c).toContain('Both metrics agree');
         if (q.id === 'zero') expect(c).toContain("Cosine can't rank an empty query at all.");
       }
+    }
+  });
+});
+
+describe('sweep: exact-case captions only when exact (review B8)', () => {
+  const rnd = mulberry32(2024);
+  const grid = (): V2 => snapV([(rnd() - 0.5) * 10, (rnd() - 0.5) * 10]);
+  const pairs: [V2, V2][] = Array.from({ length: 20000 }, () => [grid(), grid()]);
+  // The reviewer's repros, plus near-misses on purpose: parallel but 0.1 off, perpendicular but 0.1 off.
+  pairs.push([[3, 1], [4.5, 1.6]], [[-5, -4.3], [-3.7, 4.3]], [[3, 1], [-1, 3.1]], [[3, 1], [-3, -1.1]]);
+  for (let k = 1; k <= 30; k++) pairs.push([[3, 1], snapV([3 * k / 10, k / 10])], [[2, -1], snapV([k / 10, 2 * k / 10])]);
+
+  it('"Same direction" / "Opposite" need a zero cross product; "Perpendicular" needs a zero dot product', () => {
+    let exact = 0;
+    for (const [a, b] of pairs) {
+      const c = text(dotCaption(a, b, false, null));
+      const d = a[0] * b[0] + a[1] * b[1];
+      const cross = a[0] * b[1] - a[1] * b[0];
+      if (c.startsWith('Same direction') || c.startsWith('Opposite')) {
+        exact++;
+        expect(Math.abs(cross)).toBeLessThan(1e-9);
+      }
+      if (c.startsWith('Perpendicular')) {
+        exact++;
+        expect(Math.abs(d)).toBeLessThan(1e-9);
+      }
+      if (Math.abs(cross) >= 1e-9 && Math.abs(d) >= 1e-9) expect(c).toMatch(/^θ ≈/);
+    }
+    expect(exact).toBeGreaterThan(30);
+  });
+
+  it('the reviewer repros now read "θ ≈", not an exact case', () => {
+    expect(text(dotCaption([3, 1], [4.5, 1.6], false, null))).toMatch(/^θ ≈ 1°/);
+    expect(text(dotCaption([-5, -4.3], [-3.7, 4.3], false, null))).toMatch(/^θ ≈ 90°/);
+  });
+
+  it('"Length won the dot product" only when the dot-product winner is the longer vector', () => {
+    const c = text(dotCaption([1, 0], [-0.5, 0.1], false, [-1, 4.9]));
+    expect(c).not.toContain('Length won');
+    for (let t = 0; t < 3000; t++) {
+      const a = grid();
+      const b = grid();
+      const pin = grid();
+      const cap = text(dotCaption(a, b, false, pin));
+      if (!cap.includes('Length won')) continue;
+      const rb = read(a, b);
+      const rp = read(a, pin);
+      const dotWinnerLen = rp.dot > rb.dot ? rp.normB : rb.normB;
+      expect(dotWinnerLen).toBe(Math.max(rp.normB, rb.normB));
     }
   });
 });

@@ -1,6 +1,6 @@
 // Real AES in four modes through WebCrypto. Every function resolves to null without
 // crypto.subtle. ECB isn't offered by WebCrypto (on purpose), so it's built one block at a
-// time with core/crypto's aesBlockEncrypt, only to show why it's banned.
+// time with core/crypto's aesBlockEncrypt, only to show why you should never use it (NIST still approves ECB, but nothing should use it).
 //
 // The lesson works on whole 16-byte blocks with no padding, so the pictures and the tamper
 // demo show the modes themselves. WebCrypto's AES-CBC always applies PKCS#7 padding, so:

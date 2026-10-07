@@ -1,0 +1,28 @@
+.ul-col { gap: 12px; }
+.ul-row { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: flex-start; }
+.ul-plot { width: 100%; max-width: 420px; flex: 0 1 420px; }
+.ul-honest { text-align: center; }
+
+.ul-arena { position: relative; height: 200px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--bg); transition: background 0.2s; overflow: hidden; }
+.ul-arena.is-miss { background: color-mix(in srgb, var(--bad) 22%, var(--bg)); }
+.ul-arena-note { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.ul-start { position: absolute; top: calc(50% - 13px); border-radius: 50%; border: 0; background: var(--info); cursor: pointer; padding: 0; }
+.ul-start.is-used { opacity: 0.35; cursor: default; }
+.ul-target { position: absolute; top: 20px; bottom: 20px; border-radius: 4px; border: 0; padding: 0; background: color-mix(in srgb, var(--hi) 45%, transparent); cursor: pointer; }
+.ul-target.is-live { background: var(--hi); }
+
+.ul-design { flex: 1 1 300px; max-width: 440px; display: flex; flex-direction: column; gap: 8px; }
+.ul-design .section-title { display: block; }
+.ul-layouts { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ul-layouts li { display: grid; gap: 3px; }
+.ul-layout-name { font-weight: 600; font-size: 13.5px; }
+.ul-layout-geo { font: 500 12px var(--mono); color: var(--muted); }
+
+.ul-menu-box { min-height: 200px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--bg); padding: 12px; position: relative; }
+.ul-prompt { margin: 0 0 10px; font-size: 15px; }
+.ul-want { color: var(--hi); }
+.ul-menu { display: flex; flex-wrap: wrap; gap: 6px; }
+.ul-item { font: 500 13px var(--font); padding: 6px 10px; min-height: 30px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--panel); color: var(--text); cursor: pointer; }
+.ul-item:hover { border-color: var(--faint); }
+.ul-side-note { flex: 1 1 260px; max-width: 420px; }
+.ul-btn-wrap { display: contents; }

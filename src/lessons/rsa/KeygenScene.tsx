@@ -14,7 +14,7 @@ const PRESETS: { label: string; p: string; q: string; e: string }[] = [
   { label: 'p not prime (57)', p: '57', q: '53', e: '17' },
   { label: 'p = q', p: '61', q: '61', e: '17' },
   { label: 'e shares a factor (15)', p: '61', q: '53', e: '15' },
-  { label: 'e = 65537, small primes', p: '61', q: '53', e: '65537' },
+  { label: '61, 53, e = 65537 (bigger than φ)', p: '61', q: '53', e: '65537' },
 ];
 
 /** The row label, its formula, and which colour the value wears. */
@@ -24,7 +24,7 @@ const ROW: Record<KeyStepId, { name: ReactNode; formula: string; tone?: 'info' |
   distinct: { name: 'p ≠ q', formula: 'two different primes' },
   n: { name: 'n', formula: 'p × q, public', tone: 'info' },
   phi: { name: 'φ', formula: '(p − 1)(q − 1), kept secret', tone: 'violet' },
-  'e-range': { name: 'e', formula: '1 < e < φ, public', tone: 'info' },
+  'e-range': { name: 'e', formula: 'e > 1, public', tone: 'info' },
   gcd: { name: 'gcd(e, φ)', formula: 'must be 1' },
   d: { name: 'd', formula: 'e⁻¹ mod φ, private', tone: 'violet' },
 };

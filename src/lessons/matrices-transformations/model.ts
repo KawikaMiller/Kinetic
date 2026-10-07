@@ -6,15 +6,19 @@
  * y′ = c·x + d·y. The first column (a, c) is where î = (1, 0) lands; the second (b, d)
  * is where ĵ = (0, 1) lands.
  */
-import { apply, det, inverse, matMul, type Mat } from '../../core/vec';
+import { apply, det, matMul, type Mat } from '../../core/vec';
 
 export type M2 = readonly [readonly [number, number], readonly [number, number]];
 export type P2 = readonly [number, number];
 
 export const IDENTITY: M2 = [[1, 0], [0, 1]];
 
-/** Below this |det| the plane is treated as collapsed (slider and typed values can leave float dust). */
-export const DET_EPS = 1e-9;
+/**
+ * det = ad − bc is zero when the two products cancel. Comparing against their size (not a
+ * fixed 1e-9) keeps a tiny but invertible matrix like 0.00001·I invertible, while slider
+ * float dust (0.15·0.3 − 0.45·0.1 ≈ 7e-18) still counts as exactly cancelled.
+ */
+const CANCEL = 1e-12;
 
 export const applyM = (m: M2, p: P2): P2 => apply(m as Mat, p) as unknown as P2;
 
@@ -23,20 +27,25 @@ export const columns = (m: M2): [P2, P2] => [[m[0][0], m[1][0]], [m[0][1], m[1][
 
 export const det2 = (m: M2) => det(m as Mat);
 
-export const isSingular = (m: M2) => Math.abs(det2(m)) < DET_EPS || inverse(m as Mat) === null;
-
-export function inverse2(m: M2): M2 | null {
-  if (isSingular(m)) return null;
-  const inv = inverse(m as Mat)!;
-  return [[inv[0][0], inv[0][1]], [inv[1][0], inv[1][1]]];
+export function isSingular(m: M2): boolean {
+  const ad = m[0][0] * m[1][1];
+  const bc = m[0][1] * m[1][0];
+  return Math.abs(ad - bc) <= CANCEL * (Math.abs(ad) + Math.abs(bc));
 }
 
-/** What the transform does to the plane, from the determinant and the columns. */
+/** The closed-form 2×2 inverse, [[d, −b], [−c, a]] / det; null when singular. */
+export function inverse2(m: M2): M2 | null {
+  if (isSingular(m)) return null;
+  const d = det2(m);
+  return [[m[1][1] / d, -m[0][1] / d], [-m[1][0] / d, m[0][0] / d]];
+}
+
+/** What the transform does to the plane: rank 2 (none), rank 1 (a line) or rank 0 (the origin). */
 export type Collapse = 'none' | 'line' | 'point';
 
 export function collapse(m: M2): Collapse {
   if (!isSingular(m)) return 'none';
-  return m.every((row) => row.every((v) => Math.abs(v) < DET_EPS)) ? 'point' : 'line';
+  return m.every((row) => row.every((v) => v === 0)) ? 'point' : 'line';
 }
 
 /** p first, then q: the single matrix q·p. */

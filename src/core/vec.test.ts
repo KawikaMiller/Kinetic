@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { add, apply, conditionNumber, cosine, det, distance, dot, identity, inverse, matMul, norm, normalize, rotation2, scale, solve, sub, transpose } from './vec';
+import { add, apply, conditionNumber, cosine, det, distance, dot, identity, inverse, leastSquaresQR, matMul, norm, normalize, rotation2, scale, solve, sub, transpose } from './vec';
 
 const close = (a: readonly number[], b: readonly number[], digits = 9) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i], digits));
 
@@ -152,5 +152,65 @@ describe('matrices', () => {
         [1, 1],
       ]),
     ).toBe(Infinity);
+  });
+});
+
+describe('leastSquaresQR', () => {
+  const rnd = (() => {
+    let s = 12345;
+    return () => ((s = (s * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  })();
+
+  it('solves a square non-singular system exactly like solve()', () => {
+    const a = [[2, 1, -1], [-3, -1, 2], [-2, 1, 2]];
+    const qr = leastSquaresQR(a, [8, -11, -3])!;
+    qr.x.forEach((v, i) => expect(v).toBeCloseTo([2, 3, -1][i], 12));
+  });
+
+  it('fits a hand-worked line: (0, 1), (1, 3), (2, 4) gives 7/6 + 1.5x', () => {
+    const qr = leastSquaresQR([[1, 0], [1, 1], [1, 2]], [1, 3, 4])!;
+    expect(qr.x[0]).toBeCloseTo(7 / 6, 12);
+    expect(qr.x[1]).toBeCloseTo(1.5, 12);
+  });
+
+  it('leaves a residual orthogonal to every column (Aᵀr = 0) on random overdetermined systems', () => {
+    for (let t = 0; t < 50; t++) {
+      const m = 5 + Math.floor(rnd() * 20);
+      const n = 1 + Math.floor(rnd() * 4);
+      const a = Array.from({ length: m }, () => Array.from({ length: n }, () => rnd() * 4 - 2));
+      const b = Array.from({ length: m }, () => rnd() * 4 - 2);
+      const { x } = leastSquaresQR(a, b)!;
+      const res = b.map((bi, i) => bi - dot(a[i], x));
+      for (let j = 0; j < n; j++) expect(Math.abs(a.reduce((s, row, i) => s + row[j] * res[i], 0))).toBeLessThan(1e-10);
+    }
+  });
+
+  it('is null for rank-deficient A: fewer rows than columns, a zero column, or duplicated columns', () => {
+    expect(leastSquaresQR([[1, 2, 3], [4, 5, 6]], [1, 2])).toBeNull();
+    expect(leastSquaresQR([[1, 0], [2, 0], [3, 0]], [1, 2, 3])).toBeNull();
+    expect(leastSquaresQR([[1, 2], [2, 4], [3, 6]], [1, 2, 3])).toBeNull();
+  });
+
+  it('handles a degree-12 polynomial on 15 points that defeats the normal equations', () => {
+    const xs = Array.from({ length: 15 }, (_, i) => -1 + (2 * i) / 14 + 0.01 * Math.sin(i));
+    const a = xs.map((x) => Array.from({ length: 13 }, (_, p) => x ** p));
+    const truth = Array.from({ length: 13 }, (_, p) => (p % 3) - 1);
+    const b = a.map((row) => dot(row, truth));
+    const qr = leastSquaresQR(a, b)!;
+    expect(qr).not.toBeNull();
+    // The data is exactly a degree-12 polynomial, so the fit must reproduce every point.
+    a.forEach((row, i) => expect(dot(row, qr.x)).toBeCloseTo(b[i], 8));
+    expect(qr.conditionEstimate).toBeGreaterThan(1e3);
+  });
+
+  it('ridge by appended √λ rows equals (AᵀA + λI′)⁻¹Aᵀb', () => {
+    const a = [[1, 0.2], [1, 0.9], [1, 1.7], [1, 2.4]];
+    const b = [0.5, 1.1, 2.2, 2.6];
+    const lambda = 0.3;
+    const qr = leastSquaresQR([...a, [0, Math.sqrt(lambda)]], [...b, 0])!;
+    const ata = matMul(transpose(a), a).map((row, i) => row.map((v, j) => (i === j && i > 0 ? v + lambda : v)));
+    const atb = transpose(a).map((col) => dot(col, b));
+    const direct = solve(ata, atb)!;
+    qr.x.forEach((v, i) => expect(v).toBeCloseTo(direct[i], 12));
   });
 });

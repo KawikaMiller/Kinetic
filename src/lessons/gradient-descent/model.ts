@@ -259,24 +259,44 @@ export function runDescent(surfaceId: SurfaceId, options: RunOptions): Run {
   return { surface: surfaceId, options, points, losses, steps, outcome: outcome ?? { kind: 'budget', at: w, loss: s.loss(w) } };
 }
 
-/** A flat point is a minimum only if the surface curves up in every direction there. */
+/**
+ * A flat point is a minimum only if the surface curves up in every direction there.
+ * Anything else is reported as a saddle: none of these five surfaces has a local maximum
+ * (each curves up along w₁ everywhere, or is convex), so "not a minimum" means "saddle" here.
+ */
 function classify(s: Surface, w: W): Outcome {
   const [low] = hessianEigen(s, w);
   return low > 0 ? { kind: 'minimum', at: w, loss: s.loss(w) } : { kind: 'saddle', at: w, loss: s.loss(w) };
 }
 
-/** Share of consecutive moves that reverse direction (negative dot product): the zig-zag. */
+/** The unit eigenvector of the Hessian's largest eigenvalue: the steepest-curving direction. */
+export function steepAxis(s: Surface, w: W): W {
+  const [[p, q], [, r]] = hessian(s, w);
+  const top = symEigen(p, q, r)[1];
+  if (Math.abs(q) < 1e-12) return p >= r ? [1, 0] : [0, 1];
+  const v: W = [top - r, q];
+  const n = Math.hypot(...v);
+  return [v[0] / n, v[1] / n];
+}
+
+/**
+ * Share of consecutive moves whose component along the steep axis flips sign: the zig-zag
+ * across a valley. (Whole-move reversals miss it in a ravine, where the slow drift along
+ * the floor keeps consecutive moves pointing roughly the same way.) The axis is taken
+ * where the run ended, or at its start if it diverged.
+ */
 export function zigzagShare(run: Run): number {
-  const moves = run.steps.map((st) => [st.next[0] - st.w[0], st.next[1] - st.w[1]]);
+  const s = SURFACES[run.surface];
+  const axis = steepAxis(s, run.outcome.kind === 'diverged' ? run.options.start : run.outcome.at);
+  const along = run.steps.map((st) => (st.next[0] - st.w[0]) * axis[0] + (st.next[1] - st.w[1]) * axis[1]);
   let pairs = 0;
-  let reversed = 0;
-  for (let i = 1; i < moves.length; i++) {
-    const d = moves[i][0] * moves[i - 1][0] + moves[i][1] * moves[i - 1][1];
-    if (Math.hypot(...moves[i]) < 1e-9) continue;
+  let flips = 0;
+  for (let i = 1; i < along.length; i++) {
+    if (Math.abs(along[i]) < 1e-12 || Math.abs(along[i - 1]) < 1e-12) continue;
     pairs++;
-    if (d < 0) reversed++;
+    if (along[i] * along[i - 1] < 0) flips++;
   }
-  return pairs ? reversed / pairs : 0;
+  return pairs ? flips / pairs : 0;
 }
 
 /** True when every recorded loss is higher than the one before. */
@@ -295,6 +315,12 @@ export const stabilityLimit = (id: SurfaceId) => 2 / SURFACES[id].lambdaMax;
 export const presetRate = (id: SurfaceId, p: RatePreset) => RATE_FACTORS[p] * stabilityLimit(id);
 
 /** Where each surface's run starts until the learner drops the ball somewhere else. */
+/** The saddle's ridge: start exactly here (w₂ = 0) and no gradient ever points off it. */
+export const RIDGE_START: W = [-1.8, 0];
+
+/** Surfaces whose loss is exactly quadratic: there the rate presets mean what their names say. */
+export const QUADRATIC: Record<SurfaceId, boolean> = { bowl: true, ravine: true, regression: true, twoMinima: false, saddle: false };
+
 export const DEFAULT_START: Record<SurfaceId, W> = {
   bowl: [-2.4, 1.6],
   ravine: [-2.2, -1.2],

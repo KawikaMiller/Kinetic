@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'The nested form makes the tag shorter',
       ],
       answer: 0,
-      why: 'With hashes like SHA-256, knowing hash(key ‖ m) lets someone compute a valid tag for m plus extra data without the key (length extension). HMAC\'s inner and outer hashing rules that out. Speed and tag length are the same.',
+      why: "With hashes like SHA-256 and SHA-512, knowing hash(key ‖ m) lets someone compute a valid tag for m, followed by padding and extra data, without the key (length extension). HMAC's inner and outer hashing rules that out; SHA-3 and SHA-512/256 aren't open to it either. The tag length is the same and the speed about the same.",
     },
     {
       q: 'Why compare a received tag with a constant-time function instead of ===?',

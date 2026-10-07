@@ -79,7 +79,7 @@ export function Stage() {
   const errs = curve.flatMap((p) => [p.train, p.val]);
   const yLo = Math.max(ERROR_FLOOR, Math.min(...errs) / 2);
   const yHi = Math.min(ERROR_CAP, Math.max(...errs) * 2);
-  const peekHere = peek && peekSeed === splitSeed && peek.lambda === s.lambda && peek.nTrain === s.nTrain && mode === 'degree' && peek.test <= yHi;
+  const peekHere = peek && peekSeed === splitSeed && peek.lambda === s.lambda && peek.nTrain === s.nTrain && mode === 'degree' && peek.test <= yHi && peek.test >= yLo;
   const line = (pts: readonly ErrorPoint[], key: 'train' | 'val'): Point[] => pts.map((p) => [p.at, Math.min(p[key], ERROR_CAP * 10)]);
 
   return (
@@ -160,15 +160,15 @@ export function Stage() {
           {mode === 'lambda' && s.lambda > 0 && <VLine at={s.lambda} tone="hi" />}
           <Curve points={line(curve, 'train')} tone="info" />
           <Curve points={line(curve, 'val')} tone="violet" />
-          <Points data={curve.filter((p) => p.train <= yHi).map((p) => ({ x: p.at, y: p.train, tone: 'info' }))} r={3} />
-          <Points data={curve.filter((p) => p.val <= yHi).map((p) => ({ x: p.at, y: p.val, tone: 'violet', hollow: true }))} r={3} />
+          <Points data={curve.filter((p) => p.train <= yHi && p.train >= yLo).map((p) => ({ x: p.at, y: p.train, tone: 'info' }))} r={3} />
+          <Points data={curve.filter((p) => p.val <= yHi && p.val >= yLo).map((p) => ({ x: p.at, y: p.val, tone: 'violet', hollow: true }))} r={3} />
           {peekHere && <Points data={[{ x: peek.degree, y: peek.test, tone: 'orange' }]} r={5} />}
         </Plot2D>
         <div className="sl-notes">
           {!fit.ok && <p className="sl-refusal" role="alert">{fit.reason}</p>}
           <Hint block>
             Synthetic data from a known curve plus seeded noise, so we can show the true curve. With real data you never see it. Errors above{' '}
-            {ERROR_CAP.toLocaleString('en-US')} run off the top of the error plot. Real projects often average several splits (cross-validation).
+            {ERROR_CAP.toLocaleString('en-US')} run off the top of the error plot, and below {ERROR_FLOOR} off the bottom. Ridge adds λ × each coefficient² to the error, except the intercept's. Fits are solved by QR. Real projects often average several splits (cross-validation).
           </Hint>
         </div>
       </div>

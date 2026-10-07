@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A digital signature proves a message came from the holder of a private key and wasn\'t changed; a certificate chain proves whose key it is, by having someone you already trust vouch for it.',
-    what: 'Signing uses the private key and verifying uses the public key, so anyone can check a signature but only the key holder can make one (unlike an HMAC, where every verifier could also forge). A certificate binds a name to a public key and is signed by an issuer; the issuer\'s certificate is signed by its issuer, up to a root in your trust store. A browser checks each link: dates, the hostname, the issuer\'s signature, that the issuer is allowed to issue, and that the chain ends at a trusted root.',
+    what: 'Signing uses the private key and verifying uses the public key, so anyone can check a signature but only the key holder can make one (unlike an HMAC, where every verifier could also forge). A certificate binds a name to a public key and is signed by an issuer; the issuer\'s certificate is signed by its issuer, up to a root in your trust store. A browser checks each link; among other checks: dates, the hostname, the issuer\'s signature, that the issuer is allowed to issue, and that the chain ends at a trusted root.',
     analogy: 'A notarised letter: the signature shows who wrote it, and the notary\'s stamp (whose own credentials you already accept) shows the signature is really theirs.',
     useCases: [
       'HTTPS certificates, checked on every connection (`tls-handshake`)',
@@ -19,14 +19,14 @@ const lesson: LessonModule = {
   tryThis: [
     'In Sign & verify, press Sign, then change one character of the note: verify fails.',
     'Click any signature byte to flip it, and click it again to undo: verify follows.',
-    'Press Sign twice on the same note: a different signature each time, and both verify.',
+    'Press Sign twice on the same note: here you get a different signature each time, and both verify.',
     'In Certificate chain, play "Valid chain", then each failure preset and read which link breaks.',
     'Compare "Self-signed" with "Unknown root": the signatures check out in both; trust is what\'s missing.',
   ],
   keyIdeas: [
     'Sign with the private key, verify with the public key: anyone can check, only the key holder can sign.',
     'A certificate binds a name to a public key; an issuer\'s signature vouches for that binding.',
-    'Every link is checked: dates, hostname, the issuer\'s signature and CA flag, up to a trusted root.',
+    "Every link is checked; among other checks: dates, hostname, the issuer's signature and CA flag, up to a trusted root.",
     'A valid signature isn\'t trust: a self-signed certificate verifies fine and is still rejected.',
   ],
   quiz: [

@@ -10,7 +10,7 @@ import { usePlayer } from '../../core/usePlayer';
 import { bruteCaption, eveSees, group, messagesFor, numberFrames } from './frames';
 import {
   DEFAULTS, DIGITS_MAX, DIGITS_MIN, EVE_SECRETS, TOY_WARNING, bruteForce, bruteLog10Seconds, exchange, gStrength, parseParams,
-  type BruteForce, type DhParams, type GStrength, type ParamName,
+  type BruteForce, type DhParams, type GInfo, type ParamName,
 } from './model';
 import { vastDuration } from './time';
 
@@ -29,6 +29,7 @@ const PRESETS: { label: string; text: Record<ParamName, string> }[] = [
   { label: 'p = 23, g = 5', text: { p: '23', g: '5', a: '6', b: '15' } },
   { label: 'weak g: p = 31, g = 5', text: { p: '31', g: '5', a: '7', b: '11' } },
   { label: 'subgroup: p = 23, g = 2', text: { p: '23', g: '2', a: '6', b: '15' } },
+  { label: 'composite order: p = 211, g = 4', text: { p: '211', g: '4', a: '50', b: '77' } },
   { label: 'p = 10007, g = 5', text: { p: '10007', g: '5', a: '4321', b: '8765' } },
 ];
 const toText = (p: DhParams): Record<ParamName, string> => ({ p: String(p.p), g: String(p.g), a: String(p.a), b: String(p.b) });
@@ -156,7 +157,8 @@ export function NumbersScene({ picker }: { picker: ReactNode }) {
             </p>
             <p className="dh-muted">
               Extrapolated, not run. Real attacks (the number field sieve) are much faster than trying every a, which is why real DH primes
-              are 2048+ bits (617 digits); elliptic curves avoid those shortcuts, so 256-bit curves suffice.
+              are 2048+ bits (617 digits); 512-bit groups were broken in practice in 2015. Elliptic curves avoid those shortcuts, so
+              256-bit curves suffice.
             </p>
           </Box>
         </div>
@@ -167,20 +169,37 @@ export function NumbersScene({ picker }: { picker: ReactNode }) {
 }
 
 /** What the base g is worth: nothing to say for a generator, a note for a prime-order subgroup, a warning when weak. */
-function GNote({ strength, p }: { strength: { order: number; kind: GStrength }; p: bigint }) {
-  if (strength.kind === 'generator') return null;
-  if (strength.kind === 'prime-subgroup') {
+function GNote({ strength, p }: { strength: GInfo; p: bigint }) {
+  const { order, kind, factors } = strength;
+  if (kind === 'generator') {
     return (
       <p className="dh-muted">
-        This g makes {strength.order} of the {group(p - 1n)} possible values: the prime-order half that real "safe prime" groups
-        deliberately use. Fine, as long as that prime is huge.
+        This g makes all {group(p - 1n)} values (a generator). Fine for a toy, but real groups avoid it: a full-group g leaks whether a is
+        even or odd, so they work in a large prime-order subgroup instead.
+      </p>
+    );
+  }
+  if (kind === 'prime-subgroup') {
+    return (
+      <p className="dh-muted">
+        This g makes {order} of the {group(p - 1n)} possible values, and {order} is prime: a prime-order subgroup, which is what real
+        groups deliberately use. Fine, as long as that prime is huge.
+      </p>
+    );
+  }
+  if (kind === 'tiny') {
+    return (
+      <p className="dh-weak">
+        This g only makes {order} distinct values, so A, B and the secret can only be one of {order} numbers and Eve's search is tiny. Real
+        groups use a g whose order is a huge prime.
       </p>
     );
   }
   return (
     <p className="dh-weak">
-      This g only makes {strength.order} distinct values, so A, B and the secret can only be one of {strength.order} numbers and Eve's
-      search is tiny. Real groups use a g whose order is a huge prime.
+      This g makes {order} values, but {order} = {factors.map(String).join(' × ')}: its order has only small factors, so Eve's search
+      splits into small pieces, the biggest just {String(factors.at(-1))} (the Pohlig–Hellman shortcut). Real groups use a g whose order
+      is a huge prime.
     </p>
   );
 }

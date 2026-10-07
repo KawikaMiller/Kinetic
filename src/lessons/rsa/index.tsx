@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'RSA gives you a lock anyone can close (the public key) and a key only you hold (the private key): it works because multiplying two primes is easy and getting them back from the product is not.',
-    what: 'Pick two secret primes p and q, publish n = p × q and an exponent e, and keep d, the inverse of e modulo φ = (p − 1)(q − 1). Anyone encrypts with c = mᵉ mod n; only the holder of d decrypts with m = cᵈ mod n. Run it the other way round and you get signatures: s = mᵈ, checked by anyone with sᵉ. Finding d from (n, e) means factoring n, which is hopeless at 2048 bits. Textbook RSA as shown here is deterministic and malleable, so real RSA always adds padding (OAEP for encryption, PSS for signatures).',
+    what: 'Pick two secret primes p and q, publish n = p × q and an exponent e, and keep d, the inverse of e modulo φ = (p − 1)(q − 1). Anyone encrypts with c = mᵉ mod n; only the holder of d decrypts with m = cᵈ mod n. Run it the other way round and you get signatures: s = mᵈ, checked by anyone with sᵉ. Finding d from (n, e) is as hard as factoring n, which is hopeless at 2048 bits. Textbook RSA as shown here is deterministic and malleable, so real RSA always adds padding (OAEP for encryption, PSS for signatures).',
     analogy: 'An open padlock you hand out by the hundred: anyone can snap one shut on a box, but only your key opens it.',
     useCases: [
       'Signatures on TLS certificates and the handshakes they prove (`tls-handshake`)',
@@ -14,14 +14,14 @@ const lesson: LessonModule = {
       'Wrapping a random symmetric key with RSA-OAEP, then encrypting the data with AES',
     ],
     why: 'You will generate keys, pick key sizes, configure TLS and verify signed tokens. Knowing why e is public and d isn\'t, why textbook RSA is broken, and why 1024-bit keys were retired keeps you from shipping something that looks like crypto but isn\'t. It also ties together `modular-arithmetic`, `gcd-euclid` and `primes-factoring`.',
-    watch: 'Make a key: each check is a row; the current one has a yellow outline, passed rows get a green ✓, and an invalid choice turns its row red. Public values (n and e) are blue; private ones (p, q, φ and d) are violet with a 🔒, in the rows and the top stats. Encrypt: on the clock the message is a yellow dot, the ciphertext an orange dot and the decrypted message a green dot; the blue arrow is the public-exponent step and the violet arrow the private one. In the table, the current row is tinted yellow and a ciphertext that repeats gets a red outline at the end. Sign: the owner\'s card is violet, and the verifier\'s card turns green when the signature is valid and red when it\'s rejected. Key size: the dashed violet curve is the projected time, the yellow dot is the size picked, the grey lines mark the age of the universe and 2048 bits, and found factors are green. The dashed red-edged note in every lane is the toy-key warning.',
+    watch: 'Make a key: each check is a row; the current one has a yellow outline, passed rows get a green ✓, and an invalid choice turns its row red. Public values (n and e) are blue; private ones (p, q, φ and d) are violet with a 🔒, in the rows and the top stats. Encrypt: on the clock the message is a yellow dot, the ciphertext an orange dot and the decrypted message a green dot; the blue arrow is the public-exponent step and the violet arrow the private one. In the table, the current row is tinted yellow and a ciphertext that repeats gets a red outline at the end. Sign: the owner\'s card is violet, and the verifier\'s card turns green when the signature is valid and red when it\'s rejected. Key size: the dashed violet curve is the projected trial-division time, red dots on the x axis mark the sizes that have actually been factored (512, 768 and 829 bits) and the red stat gives that record, the yellow dot is the size picked, the grey lines mark the age of the universe and 2048 bits, and found factors are green. The dashed red-edged note in every lane is the toy-key warning.',
   },
   tryThis: [
     'In Make a key, play the default key and watch extended Euclid turn e = 17 into d = 2753.',
-    'Try the "e shares a factor (15)" and "p = q" presets: each stops at its own reason.',
+    'Try the "e shares a factor (15)" and "p = q" presets: each stops at its own reason. Then try e = 65537: bigger than φ, and it works.',
     'In Encrypt, encrypt "ABBA": both B\'s give the same ciphertext. That\'s why real RSA pads.',
     'In Sign, switch "Verifier receives" to "m edited by one": the signature no longer checks out.',
-    'In Key size, press "Factor n", then drag the slider to 2048 bits and read the projected time.',
+    'In Key size, press "Factor n", then drag the slider to 512 bits: trial division says ages, yet 512-bit keys were factored in 1999.',
   ],
   keyIdeas: [
     'n and e are public; d (and p, q, φ) stay private. Encrypt and verify use e; decrypt and sign use d.',
@@ -39,7 +39,7 @@ const lesson: LessonModule = {
         'Anyone who saw the ciphertext',
       ],
       answer: 0,
-      why: 'Decryption needs d, which only Bob holds. The public key is the tempting answer, but e only goes one way: undoing mᵉ mod n without d means factoring n. Even Alice can\'t decrypt her own note.',
+      why: 'Decryption needs d, which only Bob holds. The public key is the tempting answer, but e only goes one way: undoing mᵉ mod n without d, as far as anyone knows, means factoring n. Even Alice can\'t decrypt her own note.',
     },
     {
       q: 'With p = 61, q = 53 and e = 17, what is the private exponent d?',

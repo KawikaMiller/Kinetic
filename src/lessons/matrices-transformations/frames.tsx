@@ -9,7 +9,18 @@ export function num(v: number, dp = 3): string {
   return r < 0 ? `−${s}` : s;
 }
 
-export const pt = ([x, y]: P2, dp = 3) => `(${num(x, dp)}, ${num(y, dp)})`;
+/** A determinant or area factor in significant figures, so 0.0001 never reads as "0". */
+export function sig(v: number): string {
+  if (v === 0) return '0';
+  const a = Math.abs(v);
+  const body = a < 1e-4 || a >= 1e5 ? a.toExponential(2).replace('e-', 'e−').replace('e+', 'e') : String(Number(a.toPrecision(4)));
+  return v < 0 ? `−${body}` : body;
+}
+
+/** A coordinate: dp decimals, but never a false 0 for a tiny nonzero value. */
+const coord = (v: number, dp: number) => (v !== 0 && Math.abs(v) < 10 ** -dp ? sig(v) : num(v, dp));
+
+export const pt = ([x, y]: P2, dp = 3) => `(${coord(x, dp)}, ${coord(y, dp)})`;
 
 /** What the matrix does, from its determinant. True for whatever matrix is on screen. */
 export function transformCaption(m: M2): ReactNode {
@@ -21,10 +32,10 @@ export function transformCaption(m: M2): ReactNode {
     return <>{lands} det = 0: the whole plane collapses onto {where}. Many points now land on the same spot, so nothing can undo it: <span className="hl bad">no inverse</span>.</>;
   }
   if (d < 0) {
-    return <>{lands} det = {num(d)}: areas scale by {num(Math.abs(d))}, and the minus sign means the plane was <span className="hl orange">flipped</span>: the F is mirrored.</>;
+    return <>{lands} det = {sig(d)}: areas scale by {sig(Math.abs(d))}, and the minus sign means the plane was <span className="hl orange">flipped</span>: the F is mirrored.</>;
   }
-  const area = Math.abs(d - 1) < 1e-9 ? <>areas are unchanged</> : <>every area is scaled by {num(d)}</>;
-  return <>{lands} det = {num(d)}: {area}, and the F still reads the right way round.</>;
+  const area = Math.abs(d - 1) < 1e-9 ? <>areas are unchanged</> : <>every area is scaled by {sig(d)}</>;
+  return <>{lands} det = {sig(d)}: {area}, and the F still reads the right way round.</>;
 }
 
 export interface ComposeFrame extends Frame {

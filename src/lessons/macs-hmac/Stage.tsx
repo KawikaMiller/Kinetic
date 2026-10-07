@@ -170,7 +170,7 @@ export function Stage() {
                 <p>Looked at {naive.looked} of {d.expected.length} bytes before answering.</p>
               </div>
               <div>
-                <CodePanel title="constant time" lines={CONSTANT} gutter="none" />
+                <CodePanel title="constant time (the idea; in JS use a platform function)" lines={CONSTANT} gutter="none" />
                 <p>Looked at all {constant.looked} bytes.</p>
               </div>
             </div>

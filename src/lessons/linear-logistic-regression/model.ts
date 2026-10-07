@@ -50,12 +50,16 @@ export function biggestResidual(points: readonly Pt[]): number | null {
 
 // ── The line by gradient descent ─────────────────────────────────────
 
-/** Largest eigenvalue of a symmetric 2×2 [[p, q], [q, r]]. */
-const topEigen = (p: number, q: number, r: number) => (p + r) / 2 + Math.hypot((p - r) / 2, q);
-
-export const GD_MAX_STEPS = 200_000;
-/** Stop once the gradient is this small: the line has stopped moving. */
-export const GD_TOL = 1e-8;
+export const GD_MAX_STEPS = 2000;
+/** Stop once the gradient (on standardised x) is this small: the line has stopped moving. */
+export const GD_TOL = 1e-9;
+/**
+ * On standardised x the MSE bowl's curvature is exactly 2 in every direction, whatever the
+ * data, so one fixed rate is safe and fast everywhere: each step shrinks the error by 1 − 2η.
+ */
+export const GD_RATE = 0.1;
+/** The GD line counts as "the same line" when both coefficients are this close to the closed form. */
+export const SAME_LINE = 1e-4;
 
 export interface LineSnapshot {
   step: number;
@@ -72,39 +76,48 @@ export interface LineDescent {
 }
 
 /**
- * Plain gradient descent on MSE from the flat line y = 0. The rate is 1/L, L being the
- * largest curvature of the MSE bowl (2/n·XᵀX): the biggest step that's safe for any data.
- * Snapshots are kept at roughly geometric step counts, so the early moves are all visible.
+ * Plain gradient descent on MSE from the flat line y = 0, run on x standardised to mean 0
+ * and spread 1 (as real pipelines do) and converted back to raw x for drawing. Without that,
+ * points far from x = 0 stretch the bowl into a long ravine and GD can need hundreds of
+ * thousands of steps. Snapshots are kept at roughly geometric step counts.
  */
 export function descendLine(points: readonly Pt[]): LineDescent | null {
   if (!linearFit(points).ok) return null;
-  const xs = points.map((p) => [p.x] as const);
+  const raw = points.map((p) => [p.x]);
+  const { mean, sd } = featureScale(raw);
+  const zs = raw.map(([x]) => [(x - mean[0]) / sd[0]]);
   const ys = points.map((p) => p.y);
-  const n = points.length;
-  const sx = points.reduce((s, p) => s + p.x, 0) / n;
-  const sxx = points.reduce((s, p) => s + p.x * p.x, 0) / n;
-  const rate = 1 / topEigen(2, 2 * sx, 2 * sxx);
   let params: Vec = [0, 0];
-  const snap = (step: number): LineSnapshot => ({ step, b: params[0], m: params[1], mse: mse(xs.map((x) => linearPredict(params, x)), ys) });
+  const snap = (step: number): LineSnapshot => {
+    const [b, m] = toRawParams(params, mean, sd);
+    return { step, b, m, mse: mse(points.map((p) => b + m * p.x), ys) };
+  };
   const snapshots = [snap(0)];
   let next = 1;
   let step = 0;
   let converged = false;
   while (step < GD_MAX_STEPS) {
-    const g = mseGradient(params, xs, ys);
+    const g = mseGradient(params, zs, ys);
     if (Math.hypot(...g) < GD_TOL) {
       converged = true;
       break;
     }
-    params = gradientStep(params, g, rate);
+    params = gradientStep(params, g, GD_RATE);
     step++;
     if (step >= next) {
       snapshots.push(snap(step));
-      next = Math.ceil(next * 1.35);
+      next = Math.ceil(next * 1.25);
     }
   }
   if (snapshots.at(-1)!.step !== step) snapshots.push(snap(step));
-  return { rate, snapshots, steps: step, converged };
+  return { rate: GD_RATE, snapshots, steps: step, converged };
+}
+
+/** Did the run end on the closed-form line, to within SAME_LINE? */
+export function sameAsClosedForm(run: LineDescent, points: readonly Pt[]): boolean {
+  const fit = linearFit(points);
+  const last = run.snapshots.at(-1)!;
+  return run.converged && fit.ok && Math.abs(last.b - fit.b) < SAME_LINE && Math.abs(last.m - fit.m) < SAME_LINE;
 }
 
 // ── Logistic regression ──────────────────────────────────────────────

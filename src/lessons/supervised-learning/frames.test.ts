@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { fitCaption, lambdaText, mseText, peekCaption } from './frames';
-import { MAX_DEGREE, PRESET_IDS, bestBy, degreeCurve, fitPoly, makeSplit, mseOf, peekAtTest, presetSettings } from './model';
+import { NEAR_BEST, OVERFIT, fitCaption, lambdaText, mseText, peekCaption } from './frames';
+import { LAMBDA_GRID, MAX_DEGREE, PRESET_IDS, bestBy, degreeCurve, fitPoly, makeSplit, mseOf, peekAtTest, presetSettings } from './model';
 
 describe('fitCaption', () => {
   it('states the real errors, and calls a degree best only when validation says so, for every degree on several splits', () => {
@@ -14,7 +14,7 @@ describe('fitCaption', () => {
         const c = text(fitCaption({ degree, nTrain: 30, lambda: 0 }, split));
         expect(c).toContain(`training MSE ${mseText(mseOf(f.coeffs, split.train))}, validation MSE ${mseText(mseOf(f.coeffs, split.val))}`);
         expect(c.includes('lowest validation error')).toBe(degree === best);
-        if (degree < best) expect(c).toContain('Too simple');
+        if (degree < best) expect(c).toMatch(/Too simple|About as good as the best/);
         expect(c.includes('ill-conditioned')).toBe(f.illConditioned);
       }
     }
@@ -34,7 +34,7 @@ describe('fitCaption', () => {
     const ten = makeSplit(10, 1);
     expect(text(fitCaption({ degree: 9, nTrain: 10, lambda: 0 }, ten))).toContain('as many coefficients as points, so it can pass through every one');
     expect(text(fitCaption({ degree: 12, nTrain: 10, lambda: 0 }, ten))).toContain('13 coefficients but only 10 training points');
-    expect(text(fitCaption({ degree: 12, nTrain: 10, lambda: 0.1 }, ten))).toContain('13 coefficients for 10 points');
+    expect(text(fitCaption({ degree: 12, nTrain: 10, lambda: 0.1 }, ten))).toContain('13 coefficients for 10 points: more coefficients than points, so only λ makes the fit unique');
   });
 });
 
@@ -54,4 +54,60 @@ describe('mseText', () => {
     expect(mseText(582215.47)).toBe('5.8e+5');
     expect(mseText(0.00002)).toBe('2.0e−5');
   });
+});
+
+/** These sweeps fit thousands of polynomials; give them room when the whole suite runs in parallel. */
+const SWEEP_TIMEOUT = 60_000;
+
+describe('review B8: caption sweeps', () => {
+  const settings: { degree: number; nTrain: number; lambda: number }[] = [];
+  for (const nTrain of [10, 15, 20, 30, 60, 200]) for (let degree = 0; degree <= MAX_DEGREE; degree++) for (const lambda of [0, LAMBDA_GRID[4], LAMBDA_GRID[16], LAMBDA_GRID[28]]) settings.push({ degree, nTrain, lambda });
+
+  it('never compares two numbers that print the same ("0.122 vs 0.122"), and each verdict matches its band', () => {
+    const bests = new Map<string, ReturnType<typeof bestBy>>();
+    let checked = 0;
+    for (const seed of [1, 2, 3, 4, 5]) {
+      for (const st of settings) {
+        const split = makeSplit(st.nTrain, seed);
+        const c = text(fitCaption(st, split));
+        for (const m of c.matchAll(/\(([^ ]+) vs ([^ )]+)\)/g)) expect(m[1]).not.toBe(m[2]);
+        const f = fitPoly(split.train, st.degree, st.lambda);
+        if (!f.ok) continue;
+        checked++;
+        const val = mseOf(f.coeffs, split.val);
+        const key = `${seed}/${st.nTrain}/${st.lambda}`;
+        if (!bests.has(key)) bests.set(key, bestBy(degreeCurve(split, st.lambda))!);
+        const best = bests.get(key)!;
+        if (c.includes("it's fitting the noise")) expect(val).toBeGreaterThan(best.val * (1 + OVERFIT));
+        if (c.includes('a little overfitting')) expect(val).toBeLessThanOrEqual(best.val * (1 + OVERFIT));
+        if (c.includes('About as good as the best')) expect(val).toBeLessThanOrEqual(best.val * (1 + NEAR_BEST));
+        if (c.includes('Too simple')) expect(val).toBeGreaterThan(best.val * (1 + NEAR_BEST));
+      }
+    }
+    expect(checked).toBeGreaterThan(1000);
+  }, SWEEP_TIMEOUT);
+
+  it('"Degree 12 + best λ" states the real improvement over no λ, on 20 splits', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const st = presetSettings('fixedByLambda', seed);
+      const split = makeSplit(st.nTrain, seed);
+      const plain = fitPoly(split.train, st.degree, 0);
+      const ridge = fitPoly(split.train, st.degree, st.lambda);
+      if (!plain.ok || !ridge.ok) throw new Error('fit');
+      const before = mseOf(plain.coeffs, split.val);
+      const after = mseOf(ridge.coeffs, split.val);
+      expect(after).toBeLessThan(before);
+      expect(text(fitCaption(st, split))).toContain(`validation error went down from ${mseText(before)} to ${mseText(after)}`);
+    }
+  });
+
+  it('no caption says "no unique fit" unless there really are more coefficients than points', () => {
+    for (const seed of [1, 2, 3]) {
+      for (const st of settings) {
+        const c = text(fitCaption(st, makeSplit(st.nTrain, seed)));
+        if (c.includes('no unique fit')) expect(st.degree + 1).toBeGreaterThan(st.nTrain);
+        expect(c).not.toContain('too ill-conditioned');
+      }
+    }
+  }, SWEEP_TIMEOUT);
 });
