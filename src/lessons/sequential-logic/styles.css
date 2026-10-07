@@ -4,27 +4,10 @@
 .sq-side { display: flex; flex-direction: column; gap: 8px; align-self: center; }
 .sq-svg { display: block; width: 100%; height: auto; max-width: 560px; }
 
-/* SR latch, in logic-gates' drawing style */
-.sq-wire { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
-.sq-wire.is-low { stroke: var(--dim); }
-.sq-wire.is-high { stroke: var(--hi); }
-.sq-wire.is-unknown { stroke: var(--bad); stroke-dasharray: 4 4; }
-.sq-gate-body { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; }
-.sq-gate.is-on .sq-gate-body { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); }
-.sq-gate-type { font: 700 12px var(--mono); fill: var(--muted); pointer-events: none; }
-.sq-input { cursor: pointer; }
-.sq-input circle,
-.sq-lamp circle { fill: var(--cell); stroke: var(--dim); stroke-width: 2; }
-.sq-input.is-on circle { fill: var(--hi); stroke: var(--hi); }
-.sq-input:focus-visible { outline: none; }
-.sq-input:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
-.sq-lamp.is-on circle { fill: var(--hi); stroke: var(--hi); }
-.sq-lamp.is-stored circle { stroke: var(--violet); stroke-width: 3; }
-.sq-lamp.is-broken circle { stroke: var(--bad); stroke-width: 3; }
-.sq-io-value { font: 700 15px var(--mono); fill: var(--muted); pointer-events: none; }
-.sq-input.is-on .sq-io-value,
-.sq-lamp.is-on .sq-io-value { fill: var(--on-hi); }
-.sq-io-name { font: 700 14px var(--mono); fill: var(--text); }
+/* SR latch (components/scene Gates): the stored output Q is ringed violet, an invalid state red. */
+.sq-svg .gate-type { font-size: 12px; }
+.sq-svg .gate-lamp.is-stored circle { stroke: var(--violet); stroke-width: 3; }
+.sq-svg .gate-lamp.is-broken circle { stroke: var(--bad); stroke-width: 3; }
 
 /* Timing diagram */
 .sq-timing { display: block; }

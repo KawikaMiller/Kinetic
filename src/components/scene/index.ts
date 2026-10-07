@@ -3,6 +3,8 @@
 // on custom shapes without importing a component.
 
 export { Flyer } from './Flyer';
+export { GateGlyph, GateInput, GateLamp, GateWire, SWire, type WireState } from './Gates';
+export * from './gateGeometry';
 export { Packet, type PacketTiming } from './Packet';
 export { Pulse } from './Pulse';
 export { SceneNode } from './SceneNode';

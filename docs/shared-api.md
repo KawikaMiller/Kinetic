@@ -521,6 +521,23 @@ Behaviour notes, for pixel parity:
   - `onArrive` fires once per mount, only for the trip, not the exit animation.
 - **`Pulse`** is decoration, so with `prefers-reduced-motion` it renders a still ring instead of looping. Teaching motion (packets, flyers, `TravelDot` traffic) always plays.
 
+### Gate circuits (`components/scene/Gates.tsx`, `gateGeometry.ts`) — logic-gates, adders-alu, sequential-logic
+```tsx
+import { GateGlyph, GateInput, GateLamp, GateWire, SWire, TravelDot, wiresOf, wirePoints } from '../../components/scene';
+const wires = wiresOf(circuit, board);        // circuit: { inputs, gates: [{ id, type, inputs }], outputs: [{ label, from }] }
+<svg viewBox="0 0 640 310" className="lg-svg">  {/* board: { at: { A: {x,y}, g1: {x,y} }, outputs: [{x,y}] } */}
+  {wires.map((w) => <SWire key={w.key} from={w.start} to={w.end} state={w.unused ? 'unused' : v[w.from] ? 'high' : 'low'} />)}
+  <TravelDot path={wirePoints(w.start, w.end)} color="var(--hi)" r={4} className="gate-dot" … />
+  {circuit.inputs.map((n) => <GateInput key={n} name={n} at={board.at[n]} on={v[n]} onFlip={() => flip(n)} />)}   {/* DOM order = Tab order */}
+  <GateGlyph type="NAND" at={board.at.g1} on={v.g1} className="lg-gate is-editable" role="button" …>{/* extras, gate coords */}</GateGlyph>
+  <GateLamp label="sum" at={board.outputs[0]} value={v.sum ? 1 : 0} />          {/* '?' for unknown; className for lesson states */}
+  <GateWire d={customPath} state="unknown" />                                   {/* hand-routed feedback loops (SR latch) */}
+</svg>
+```
+- Geometry is pure and tested: `gateBodyPath`, `XOR_BACK_PATH`, `bubbleAt`, `typeLabelX`, `inputPort(t, at, port, count?)`, `outputPort(t, at)`, `sourcePort`, `wiresOf`, `wirePath`, `wirePoints`; constants `IO_R` 18, `BUBBLE_R` 4, `PORT_DY` 11. Types: `GateKind` (AND OR NOT NAND NOR XOR), `GateCircuit`, `GateBoard`, `GateWire`.
+- CSS in scene.css: `.gate-wire` (`is-high` / `is-low` / `is-unused` / `is-unknown`), `.gate`, `.gate-body`, `.gate-back`, `.gate-type` (11px; brightens when the gate is on), `.gate-input`, `.gate-lamp`, `.gate-io-value`, `.gate-io-name` (14px), `.gate-dot`. Lessons tune size and glow on their own svg class (logic-gates: 10.5px type labels, 13px names, glowing wires and lamps; adders-alu: glowing wires; sequential-logic: 12px labels, stored/broken lamp rings).
+- All three lessons migrated: frames and 8 driven states pixel-identical, except sequential-logic's lit NOR label, which now brightens like the other two lessons' (deliberate).
+
 ---
 
 ## Tier 1 kit (rollout plan P1)

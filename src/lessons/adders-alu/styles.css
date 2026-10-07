@@ -5,29 +5,8 @@
 .aa-svg { display: block; width: 100%; height: auto; }
 .aa-error { color: var(--bad); }
 
-/* Gate circuit, after logic-gates' board. */
-.aa-wire { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke 0.25s; }
-.aa-wire.is-low { stroke: var(--dim); }
-.aa-wire.is-high { stroke: var(--hi); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 70%, transparent)); }
-.aa-dot { filter: drop-shadow(0 0 5px var(--hi)); pointer-events: none; }
-.aa-gate-body { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
-.aa-gate-back { fill: none; stroke: var(--line-2); stroke-width: 2; }
-.aa-gate.is-on .aa-gate-body { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); }
-.aa-gate.is-on .aa-gate-back { stroke: var(--hi); }
-.aa-gate-type { font: 700 11px var(--mono); fill: var(--muted); pointer-events: none; }
-.aa-gate.is-on .aa-gate-type { fill: var(--text); }
-.aa-input { cursor: pointer; }
-.aa-input circle,
-.aa-lamp circle { fill: var(--cell); stroke: var(--dim); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
-.aa-input.is-on circle,
-.aa-lamp.is-on circle { fill: var(--hi); stroke: var(--hi); }
-.aa-input:hover circle { stroke: var(--muted); }
-.aa-input:focus-visible { outline: none; }
-.aa-input:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
-.aa-io-value { font: 700 15px var(--mono); fill: var(--muted); pointer-events: none; }
-.aa-input.is-on .aa-io-value,
-.aa-lamp.is-on .aa-io-value { fill: var(--on-hi); }
-.aa-io-name { font: 700 14px var(--mono); fill: var(--text); }
+/* Gate circuit (components/scene Gates): high wires glow here. */
+.aa-svg .gate-wire.is-high { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 70%, transparent)); }
 
 /* Operand rows */
 .aa-rows { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 10px 12px; align-items: end; justify-content: start; }

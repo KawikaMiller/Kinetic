@@ -1,13 +1,11 @@
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
-import { TravelDot } from '../../components/scene';
+import { GateGlyph, GateInput, GateLamp, SWire, TravelDot, wirePoints, wiresOf } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { TruthTable, type TruthColumn } from '../../components/TruthTable';
 import { Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { truthRowIndex, truthRows, type TruthRow } from '../../core/truth';
-import {
-  BOARD, BUBBLE_R, IO_R, LAYOUTS, XOR_BACK_PATH, bubbleAt, gateBodyPath, wirePath, wirePoints, wiresOf, type LayoutId,
-} from './layout';
+import { BOARD, LAYOUTS, type LayoutId } from './layout';
 import {
   CUSTOM_START, GATE_FORMULA, GATE_TYPES, HALF_ADDER, NAND_AND, NAND_NOT, NAND_OR, customCircuit, deMorgan, evalGate, evaluate,
   gateDepth, type Circuit, type GateType,
@@ -165,11 +163,7 @@ export function Stage() {
         <div className="lg-board">
           <svg viewBox={`0 0 ${BOARD.width} ${BOARD.height}`} className="lg-svg" role="img" aria-label="Logic circuit">
             {wires.map((w) => (
-              <path
-                key={w.key}
-                d={wirePath(w.start, w.end)}
-                className={`lg-wire ${w.unused ? 'is-unused' : signals[w.from] ? 'is-high' : 'is-low'}`}
-              />
+              <SWire key={w.key} from={w.start} to={w.end} state={w.unused ? 'unused' : signals[w.from] ? 'high' : 'low'} />
             ))}
             {pulse > 0 &&
               wires
@@ -182,12 +176,12 @@ export function Stage() {
                     r={4}
                     duration={HOP_S}
                     delay={depth[w.from] * HOP_S}
-                    className="lg-dot"
+                    className="gate-dot"
                   />
                 ))}
             {/* Inputs first: DOM order is Tab order, and it should follow the drawing left to right. */}
             {circuit.inputs.map((name) => (
-              <InputSwitch key={name} name={name} at={layout.at[name]} on={values[name]} onFlip={() => flip(name)} />
+              <GateInput key={name} name={name} at={layout.at[name]} on={values[name]} onFlip={() => flip(name)} />
             ))}
             {circuit.gates.map((g) => (
               <GateShape
@@ -202,15 +196,7 @@ export function Stage() {
               />
             ))}
             {circuit.outputs.map((o, i) => (
-              <g key={o.label} className={`lg-lamp ${signals[o.from] ? 'is-on' : ''}`}>
-                <circle cx={layout.outputs[i].x} cy={layout.outputs[i].y} r={IO_R} />
-                <text x={layout.outputs[i].x} y={layout.outputs[i].y + 5} textAnchor="middle" className="lg-io-value">
-                  {bit(signals[o.from])}
-                </text>
-                <text x={layout.outputs[i].x} y={layout.outputs[i].y + IO_R + 16} textAnchor="middle" className="lg-io-name">
-                  {o.label}
-                </text>
-              </g>
+              <GateLamp key={o.label} label={o.label} at={layout.outputs[i]} value={bit(signals[o.from])} />
             ))}
           </svg>
           <p className="lg-note">Signals change instantly here. Real gates are a handful of transistors and take picoseconds to switch.</p>
@@ -305,28 +291,7 @@ function onActivate(fn: () => void) {
   };
 }
 
-function InputSwitch({ name, at, on, onFlip }: { name: string; at: { x: number; y: number }; on: boolean; onFlip: () => void }) {
-  return (
-    <g
-      className={`lg-input ${on ? 'is-on' : ''}`}
-      role="button"
-      tabIndex={0}
-      aria-pressed={on}
-      aria-label={`Input ${name}, ${on ? 'high' : 'low'}`}
-      onClick={onFlip}
-      onKeyDown={onActivate(onFlip)}
-    >
-      <circle cx={at.x} cy={at.y} r={IO_R} />
-      <text x={at.x} y={at.y + 5} textAnchor="middle" className="lg-io-value">
-        {bit(on)}
-      </text>
-      <text x={at.x} y={at.y - IO_R - 8} textAnchor="middle" className="lg-io-name">
-        {name}
-      </text>
-    </g>
-  );
-}
-
+/** A gate on the board; an editable slot is a button that opens the type picker. */
 function GateShape({
   type, at, on, name, editable, selected, onSelect,
 }: {
@@ -338,27 +303,16 @@ function GateShape({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const bubble = bubbleAt(type);
   const interactive = editable
     ? { role: 'button', tabIndex: 0, 'aria-label': `${name ?? 'Gate'}: ${type}. Change its type`, onClick: onSelect, onKeyDown: onActivate(onSelect) }
     : {};
   return (
-    <g
-      transform={`translate(${at.x} ${at.y})`}
-      className={`lg-gate ${on ? 'is-on' : ''} ${editable ? 'is-editable' : ''} ${selected ? 'is-selected' : ''}`}
-      {...interactive}
-    >
-      {type === 'XOR' && <path d={XOR_BACK_PATH} className="lg-gate-back" />}
-      <path d={gateBodyPath(type)} className="lg-gate-body" />
-      {bubble && <circle cx={bubble.x} cy={bubble.y} r={BUBBLE_R} className="lg-gate-body" />}
-      <text x={type === 'NOT' ? -6 : -4} y={4} textAnchor="middle" className="lg-gate-type">
-        {type}
-      </text>
+    <GateGlyph type={type} at={at} on={on} className={`lg-gate ${editable ? 'is-editable' : ''} ${selected ? 'is-selected' : ''}`} {...interactive}>
       {name && (
         <text y={-30} textAnchor="middle" className="lg-gate-name">
           {name}
         </text>
       )}
-    </g>
+    </GateGlyph>
   );
 }

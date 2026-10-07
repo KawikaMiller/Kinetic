@@ -6,36 +6,18 @@
 .lg-table { flex: 0 0 auto; align-self: center; }
 .lg-ref { color: var(--muted); font-style: italic; }
 
-.lg-wire { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke 0.25s; }
-.lg-wire.is-low { stroke: var(--dim); }
-.lg-wire.is-high { stroke: var(--hi); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 70%, transparent)); }
-.lg-wire.is-unused { stroke: var(--line); stroke-dasharray: 3 5; }
-.lg-dot { filter: drop-shadow(0 0 5px var(--hi)); pointer-events: none; }
-
-.lg-gate-body { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
-.lg-gate-back { fill: none; stroke: var(--line-2); stroke-width: 2; }
-.lg-gate.is-on .lg-gate-body { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); }
-.lg-gate.is-on .lg-gate-back { stroke: var(--hi); }
-.lg-gate-type { font: 700 10.5px var(--mono); fill: var(--muted); pointer-events: none; }
-.lg-gate.is-on .lg-gate-type { fill: var(--text); }
+.lg-svg .gate-wire.is-high { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 70%, transparent)); }
+.lg-svg .gate-type { font-size: 10.5px; }
 .lg-gate-name { font: 600 11px var(--mono); fill: var(--violet); }
 .lg-gate.is-editable { cursor: pointer; }
-.lg-gate.is-editable .lg-gate-body,
-.lg-gate.is-editable .lg-gate-back { stroke-dasharray: 5 3; stroke: var(--violet); }
-.lg-gate.is-editable.is-on .lg-gate-body { stroke: var(--hi); }
-.lg-gate.is-selected .lg-gate-body { stroke: var(--violet); stroke-width: 3; stroke-dasharray: none; }
+.lg-gate.is-editable .gate-body,
+.lg-gate.is-editable .gate-back { stroke-dasharray: 5 3; stroke: var(--violet); }
+.lg-gate.is-editable.is-on .gate-body { stroke: var(--hi); }
+.lg-gate.is-selected .gate-body { stroke: var(--violet); stroke-width: 3; stroke-dasharray: none; }
 .lg-gate:focus-visible { outline: none; }
-.lg-gate:focus-visible .lg-gate-body { stroke: var(--accent); stroke-width: 3; }
+.lg-gate:focus-visible .gate-body { stroke: var(--accent); stroke-width: 3; }
 
-.lg-input { cursor: pointer; }
-.lg-input circle,
-.lg-lamp circle { fill: var(--cell); stroke: var(--dim); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
-.lg-input.is-on circle,
-.lg-lamp.is-on circle { fill: var(--hi); stroke: var(--hi); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hi) 60%, transparent)); }
-.lg-input:hover circle { stroke: var(--muted); }
-.lg-input:focus-visible { outline: none; }
-.lg-input:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
-.lg-io-value { font: 700 15px var(--mono); fill: var(--muted); pointer-events: none; }
-.lg-input.is-on .lg-io-value,
-.lg-lamp.is-on .lg-io-value { fill: var(--on-hi); }
-.lg-io-name { font: 700 13px var(--mono); fill: var(--text); }
+/* Lit switches and lamps glow on this board. */
+.lg-svg .gate-input.is-on circle,
+.lg-svg .gate-lamp.is-on circle { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--hi) 60%, transparent)); }
+.lg-svg .gate-io-name { font-size: 13px; }
