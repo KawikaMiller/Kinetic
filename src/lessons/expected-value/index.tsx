@@ -5,13 +5,13 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'The expected value E[X] = Σ x·P(x) is the long-run average of a random quantity, not its most likely value; the variance says how far single outcomes stray from it.',
-    what: 'A random variable attaches a number to each outcome: a die\'s face, the attempts a request needs. Its expected value weights every value by its probability and adds them up; a die gives 3.5, which it never actually shows. Variance, Σ (x − E)²·P(x), measures the spread, and its square root is the standard deviation. Expectations add even for dependent variables (linearity); variances add only for independent ones. Averages of many draws settle on E, and the average of n draws has variance σ²/n.',
+    what: 'A random variable attaches a number to each outcome: a die\'s face, the attempts a request needs. Its expected value weights every value by its probability and adds them up; a die gives 3.5, which it never actually shows. Variance, Σ (x − E)²·P(x), measures the spread, and its square root is the standard deviation. Expectations add even for dependent variables (linearity); variances add only when the variables are uncorrelated (independence is enough). Averages of many draws settle on E, and the average of n draws has variance σ²/n.',
     analogy: 'A café sells a £3 coffee to 90 of every 100 customers and a £30 catering order to the other 10. The average sale is £5.70, though no one ever pays exactly that. The number still tells you the takings, and the variance tells you how bumpy a day can get.',
     useCases: [
       'Retry budgets: up to 3 retries at a 50% failure rate means 1.875× the load on average',
       'Capacity planning: expected requests, bytes or jobs per hour, plus the variance for headroom',
       'Comparing options by expected cost, such as an on-call page against a missed incident',
-      'Benchmarks: averaging many runs shrinks the noise by √n, so you can trust the difference',
+      'Benchmarks: averaging n independent runs shrinks the noise by √n (real runs are often not independent: warm-up, caches, heat)',
     ],
     why: 'Average latency, expected retries and expected cost drive most back-of-the-envelope engineering decisions. Knowing that the mean isn\'t the typical case, that it adds across components, and that variance tells you about the tail, keeps you from sizing systems for a number that never actually happens.',
     watch: 'Histogram: blue bars are the share of draws at each value (or bin, for averages), the yellow dot marks the newest draw, and the green dashed line is the exact E[X]. Running chart: the violet line is the running mean and the light violet band is the running mean ± 1 SD of the draws so far; the green dashed line is the exact E[X] and the grey dashed lines are exact E ± SD. The stat readouts use the same green (exact), violet (running) and yellow (latest). In the retry panel the load multiplier turns orange above 1× and red above 2×. In the linearity panel a green result means the sum rule holds and a red one means it doesn\'t. In your table, refused rows are listed in red.',
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'E[X] = Σ x·P(x): the long-run average. It need not be a possible value, let alone the most likely one.',
     'Var(X) = Σ (x − E)²·P(x) measures spread; SD = √Var is in the same units as X.',
-    'E[X + Y] = E[X] + E[Y] always. Var(X + Y) = Var X + Var Y only without dependence.',
+    'E[X + Y] = E[X] + E[Y] always. Var(X + Y) = Var X + Var Y only when X and Y are uncorrelated.',
     'The mean of n independent draws has variance σ²/n, so averages settle on E.',
   ],
   quiz: [
@@ -45,7 +45,7 @@ const lesson: LessonModule = {
       q: 'X is the top face of a die and Y is the bottom face, always 7 − X. What is E[X + Y]?',
       options: ['7: expectations add', 'Undefined: X and Y depend', '3.5: Y cancels X', 'Unknown until Var is known'],
       answer: 0,
-      why: 'Linearity of expectation needs no independence: E[X + Y] = 3.5 + 3.5 = 7, and indeed X + Y is always 7. What fails for dependent variables is adding variances: Var X + Var Y = 35/6, but Var(X + Y) = 0.',
+      why: 'Linearity of expectation needs no independence: E[X + Y] = 3.5 + 3.5 = 7, and indeed X + Y is always 7. What can fail for dependent variables is adding variances (it needs zero correlation): Var X + Var Y = 35/6, but Var(X + Y) = 0.',
     },
     {
       q: 'Each attempt succeeds with probability 0.25, independently. How many attempts do you expect to need?',

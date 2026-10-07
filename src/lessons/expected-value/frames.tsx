@@ -66,7 +66,7 @@ export function variableCaption(id: VarId, prm: Params, label: string): ReactNod
       ? <>X never actually equals {num(m.mean)}: the expected value is the long-run average, not an outcome you should expect.</>
       : !top.some((t) => Math.abs(t - m.mean) < 1e-9)
         ? <>Here X can equal its mean, but the mean still isn't the most likely value.</>
-        : <>Here the mean is also a likely value, which is a coincidence of the shape, not a rule.</>}</>;
+        : <>Here the mean is also a likely value, which holds for this symmetric, single-peaked shape, not in general.</>}</>;
 }
 
 /** After drawing: the running mean against E, in standard errors of that mean. */
@@ -77,7 +77,7 @@ export function drawCaption(count: number, n: number, sampleMean: number, mean: 
   return <>{what}: running mean <span className="hl violet">{num(sampleMean)}</span>, exact E[X] = <span className="hl ok">{num(mean)}</span>.{' '}
     {se === 0
       ? <>X never varies, so every draw is exactly the mean.</>
-      : <>The gap is {off < 0.1 ? 'under 0.1' : off.toFixed(1)} standard errors (σ/√{fmt(n * count)} = {num(se)}); it shrinks like 1/√(draws).</>}</>;
+      : <>The gap is {off < 0.1 ? 'under 0.1' : off.toFixed(1)} standard errors (σ/√{fmt(n * count)} = {num(se)}); the standard error shrinks like 1/√(draws).</>}</>;
 }
 
 /** The retry calculator's verdict. */

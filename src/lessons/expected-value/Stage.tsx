@@ -279,7 +279,7 @@ function LinearityPanel() {
       <SectionTitle hint="X = first die, Y = second die or the bottom face">Linearity</SectionTitle>
       {pair('Two dice (independent)', IND)}
       {pair('Top + bottom of one die (dependent)', DEP)}
-      <Hint tone="muted" block>Expectations add for any pair. Variances add only without dependence: top + bottom is always 7, so its variance is 0.</Hint>
+      <Hint tone="muted" block>Expectations add for any pair. Variances add only when X and Y are uncorrelated (independence is enough): top + bottom is always 7, so its variance is 0.</Hint>
     </Box>
   );
 }
