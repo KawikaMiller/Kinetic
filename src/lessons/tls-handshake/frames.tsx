@@ -3,8 +3,6 @@ import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { P, roundTripsBeforeData, type Paint } from './model';
 
-export { P, type Paint };
-
 /** Round trips before request data can flow, from the modelled flights (RFC 8446 / RFC 5246). */
 const RTT_13 = roundTripsBeforeData('1.3');
 const RTT_12 = roundTripsBeforeData('1.2');

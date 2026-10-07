@@ -1,0 +1,24 @@
+.cbz-stage { gap: 16px; }
+.cbz-crowd { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.cbz-crowd .section-title { display: block; align-self: stretch; text-align: center; }
+.cbz-grid { width: 100%; max-width: 560px; height: auto; }
+.cbz-note { display: block; text-align: center; }
+
+.cbz-panels { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 14px 20px; }
+.cbz-bayes { max-width: 380px; display: flex; flex-direction: column; gap: 6px; }
+.cbz-formula { margin: 0; font: 500 13px var(--mono); color: var(--text); line-height: 1.6; }
+.cbz-term { padding: 1px 4px; border-radius: 5px; white-space: nowrap; }
+.cbz-term.is-has { color: var(--violet); background: color-mix(in srgb, var(--violet) 14%, transparent); }
+.cbz-term.is-not { color: var(--sky); background: color-mix(in srgb, var(--sky) 14%, transparent); }
+.cbz-post { color: var(--hi); }
+
+.cbz-tree { width: 100%; max-width: 400px; height: auto; display: block; }
+.cbz-node rect { fill: var(--cell); stroke: var(--c); stroke-width: 1.5; }
+.cbz-node.is-filled rect { fill: color-mix(in srgb, var(--c) 22%, var(--cell)); }
+.cbz-node text { font: 600 11px var(--font); fill: var(--text); }
+.cbz-node .cbz-node-sub { font: 500 11px var(--mono); fill: var(--muted); }
+.cbz-matrix { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+.cbz-matrix .section-title { display: block; }
+.cbz-exact { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.cbz-exact b { color: var(--text); }
+.cbz-exact b.cbz-post { color: var(--hi); }

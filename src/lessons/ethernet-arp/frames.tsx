@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { SequenceActor, SequenceMessage } from '../../components/SequenceDiagram';
 import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
-import { BROADCAST_MAC, PREFIX, hostByMac, ipOf, networkOf, type Step, type Transmission } from './model';
+import { BROADCAST_MAC, PREFIX, hostByMac, networkText, type Step, type Transmission } from './model';
 
 export interface ArpFrame extends Frame {
   /** Index into the transmission's steps; -1 when nothing is being sent. */
@@ -16,8 +16,8 @@ export function stepCaption(tx: Transmission, s: Step, timeout: number): ReactNo
   const { sender, owner, hop, targetIp } = tx;
   switch (s.kind) {
     case 'decide': {
-      const mine = ipOf(networkOf(sender.ip, PREFIX));
-      const theirs = ipOf(networkOf(targetIp, PREFIX));
+      const mine = networkText(sender.ip, PREFIX);
+      const theirs = networkText(targetIp, PREFIX);
       return hop.onLink ? (
         <>{sender.name} ANDs both addresses with the /{PREFIX} mask: {mine} = {theirs}, the same subnet, so it delivers straight to{' '}
           {targetIp} and needs <b>its</b> MAC address.</>

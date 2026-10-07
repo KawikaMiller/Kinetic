@@ -5,6 +5,7 @@
  * check DORA hop by hop. Timings are the lesson's own (scripted); addresses come from RFC 1918
  * ranges and the MAC addresses are made up.
  */
+import { ipToString, ipv4 } from '../../core/ipv4';
 import type { Rnd } from '../../core/random';
 import type { Tone } from '../../core/tone';
 
@@ -28,21 +29,18 @@ export const leaseTimers = (lease: number) => ({ t1: lease * T1_SHARE, t2: lease
 
 // ── Addresses ───────────────────────────────────────────────────────────
 
-const toNum = (ip: string) => ip.split('.').reduce((a, o) => a * 256 + Number(o), 0);
-const toIp = (n: number) => [24, 16, 8, 0].map((s) => Math.floor(n / 2 ** s) % 256).join('.');
-
 /** RFC 3927: link-local hosts pick from 169.254.1.0 to 169.254.254.255 (the first and last /24 are reserved). */
 export const APIPA_FIRST = '169.254.1.0';
 export const APIPA_LAST = '169.254.254.255';
-export const isApipa = (ip: string) => toNum(ip) >= toNum(APIPA_FIRST) && toNum(ip) <= toNum(APIPA_LAST);
+export const isApipa = (ip: string) => ipv4(ip) >= ipv4(APIPA_FIRST) && ipv4(ip) <= ipv4(APIPA_LAST);
 /** A pseudo-random link-local address, as a client picks one (RFC 3927 seeds it from the MAC). */
 export function apipaAddress(rnd: Rnd): string {
-  const span = toNum(APIPA_LAST) - toNum(APIPA_FIRST) + 1;
-  return toIp(toNum(APIPA_FIRST) + Math.floor(rnd() * span));
+  const span = ipv4(APIPA_LAST) - ipv4(APIPA_FIRST) + 1;
+  return ipToString(ipv4(APIPA_FIRST) + Math.floor(rnd() * span));
 }
 
 /** `count` consecutive addresses from `first`. */
-export const range = (first: string, count: number) => Array.from({ length: count }, (_, i) => toIp(toNum(first) + i));
+export const range = (first: string, count: number) => Array.from({ length: count }, (_, i) => ipToString(ipv4(first) + i));
 
 // ── The pool ────────────────────────────────────────────────────────────
 

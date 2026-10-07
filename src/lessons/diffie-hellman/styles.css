@@ -1,0 +1,66 @@
+.dh-error { color: var(--bad); }
+.dh-muted { margin: 0; color: var(--muted); font: 500 12.5px var(--font); }
+.dh-toy {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px dashed color-mix(in srgb, var(--bad) 55%, transparent);
+  border-radius: 8px;
+  font: 600 12px var(--font);
+  color: var(--muted);
+}
+.dh-weak {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--bad) 60%, transparent);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  font: 600 13px var(--font);
+  color: var(--text);
+}
+.dh-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.dh-eve b.tone-orange { color: var(--orange); }
+
+/* Paint */
+.dh-paint-wrap { gap: 10px; }
+.dh-paint { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.dh-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+}
+.dh-col h4 { margin: 0; font: 700 13px var(--font); color: var(--text); }
+.dh-wire { border: 1px dashed color-mix(in srgb, var(--orange) 70%, transparent); background: color-mix(in srgb, var(--orange) 6%, transparent); }
+.dh-wire h4 { color: var(--orange); }
+.dh-swatch { display: flex; align-items: center; gap: 10px; font: 500 12.5px var(--font); color: var(--text); }
+.dh-swatch i { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line-2); }
+.dh-swatch.is-private i { border: 2px dashed var(--violet); }
+.dh-swatch.is-private span { color: var(--violet); }
+.dh-swatch.is-eve i { border-color: var(--orange); }
+.dh-swatch.is-final i { width: 42px; height: 42px; }
+.dh-swatch.is-match i { border-color: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 30%, transparent); }
+.dh-note { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+@media (max-width: 600px) {
+  .dh-paint { grid-template-columns: 1fr; }
+}
+
+/* Numbers */
+/* The spare right-hand lane only makes room for Bob's labels (see NumbersScene). */
+.dh-seq .seq-actor.tone-dim { display: none; }
+.dh-numbers { gap: 12px; }
+.dh-eve-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.dh-eve, .dh-bigger { flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px; }
+.dh-eve { border-color: color-mix(in srgb, var(--orange) 70%, transparent); }
+.dh-eve ul { margin: 0; padding-left: 18px; font: 600 13px var(--mono); color: var(--orange); }
+.dh-eve p, .dh-bigger p { margin: 0; font: 500 13px var(--font); }
+.dh-eve .btn { align-self: flex-start; }
+
+/* Real ECDH */
+.dh-real { gap: 12px; }
+.dh-real-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.dh-real-side { flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dh-real-label { margin: 0; font: 600 11.5px var(--font); color: var(--muted); }
+.dh-hex { display: block; font: 500 12px var(--mono); overflow-wrap: anywhere; word-break: break-all; color: var(--c); }
+.dh-private { margin: 0; font: 600 13px var(--font); color: var(--violet); }

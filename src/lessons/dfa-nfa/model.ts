@@ -1,4 +1,4 @@
-import { EPSILON, accepts, dfaStep, epsilonClosure, nfaStep, type Dfa, type Nfa, type State } from '../../core/automata';
+import { EPSILON, accepts, dfaStep, edgesOf, epsilonClosure, nfaStep, type Dfa, type Nfa, type State } from '../../core/automata';
 import type { Pt } from '../../core/graphLayout';
 
 /** A machine the lesson can draw: the automaton plus where each state sits and a name for each symbol. */
@@ -165,32 +165,6 @@ export function checkInput(m: Dfa | Nfa, text: string): InputCheck {
 }
 
 // ── Drawing helpers ──────────────────────────────────────────────────
-
-export interface DrawnEdge {
-  from: State;
-  to: State;
-  symbols: string[];
-}
-
-/** One arrow per (from, to) pair, labelled with every symbol that takes it. */
-export function edgesOf(m: Dfa | Nfa): DrawnEdge[] {
-  const byPair = new Map<string, DrawnEdge>();
-  for (const from of m.states) {
-    const row = m.delta[from] ?? {};
-    const symbols = m.kind === 'nfa' ? [EPSILON, ...m.alphabet] : m.alphabet;
-    for (const sym of symbols) {
-      const raw = (row as Record<string, State | readonly State[] | undefined>)[sym];
-      const targets = raw === undefined ? [] : typeof raw === 'string' ? [raw] : raw;
-      for (const to of targets) {
-        const key = `${from}\u0000${to}`;
-        const e = byPair.get(key) ?? { from, to, symbols: [] };
-        e.symbols.push(sym);
-        byPair.set(key, e);
-      }
-    }
-  }
-  return [...byPair.values()];
-}
 
 /** States the start can reach at all (the rest are drawn dim). */
 export function reachable(m: Dfa | Nfa): Set<State> {

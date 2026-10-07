@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { shortcutFor } from './usePlayer';
+import type { Frame } from './types';
+import { captionSources, shortcutFor } from './usePlayer';
 
 const key = (k: string, mods: Partial<{ metaKey: boolean; ctrlKey: boolean; altKey: boolean }> = {}) => ({
   key: k,
@@ -50,5 +51,61 @@ describe('shortcutFor', () => {
   it('ignores keys with a modifier held', () => {
     expect(shortcutFor(key('r', { ctrlKey: true }), body)).toBeNull();
     expect(shortcutFor(key(' ', { metaKey: true }), body)).toBeNull();
+  });
+});
+
+describe('captionSources', () => {
+  // frame i says `s<i>` when listed here; the rest inherit
+  const frames: Frame[] = ['s0', undefined, undefined, 's3', undefined, 's5', undefined, undefined].map((say) => ({ say }));
+  const sources = captionSources(frames);
+
+  /**
+   * What the caption strip reads after visiting `visits` in order, the way the player sets it:
+   * once whenever the source frame changes, never for a frame with no source.
+   */
+  function shownAfter(visits: number[], intro = 'intro'): string {
+    let caption = intro;
+    let source: number | undefined;
+    for (const i of visits) {
+      if (sources[i] === source) continue;
+      source = sources[i];
+      if (source >= 0) caption = frames[source].say as string;
+    }
+    return caption;
+  }
+
+  it('points every frame at the last frame at or before it with a say', () => {
+    expect(sources).toEqual([0, 0, 0, 3, 3, 5, 5, 5]);
+    expect(captionSources([{}, {}, { say: 'x' }, {}])).toEqual([-1, -1, 2, 2]);
+    expect(captionSources([])).toEqual([]);
+  });
+
+  it('a jump forward to a frame without say shows the last say before it, not the old caption', () => {
+    expect(shownAfter([0, 4])).toBe('s3');
+    expect(shownAfter([0, 7])).toBe('s5');
+  });
+
+  it('a jump back resolves the same way', () => {
+    expect(shownAfter([0, 7, 2])).toBe('s0');
+    expect(shownAfter([0, 7, 4])).toBe('s3');
+  });
+
+  it('scrubbing matches stepping: every visit order ending on a frame shows the same caption', () => {
+    const scrub = [0, 6, 1, 7, 3, 2, 5, 4];
+    for (let k = 1; k <= scrub.length; k++) {
+      const end = scrub[k - 1];
+      const stepped = Array.from({ length: end + 1 }, (_, i) => i);
+      expect(shownAfter(scrub.slice(0, k))).toBe(shownAfter(stepped));
+    }
+  });
+
+  it('reset to the first frame shows its caption again', () => {
+    expect(shownAfter([0, 6, 0])).toBe('s0');
+  });
+
+  it('keeps the intro caption while no frame so far has a say', () => {
+    const late = captionSources([{}, {}, { say: 'x' }]);
+    expect(late[0]).toBe(-1);
+    expect(late[1]).toBe(-1);
   });
 });

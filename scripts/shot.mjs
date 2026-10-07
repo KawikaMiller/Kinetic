@@ -19,7 +19,7 @@
 // Git Bash rewrites "/lesson/x" into a Windows path: set MSYS_NO_PATHCONV=1 (the scripts
 // warn and recover the route when they spot it).
 import fs from 'node:fs';
-import { CAPTION_SETTLE_MS, exposeCaptionSettled, openPage, outPath, parseArgs, sleep, visit, waitForCaption } from './lib/browser.mjs';
+import { CAPTION_SETTLE_MS, exposeCaptionSettled, openPage, outPath, parseArgs, shootElement, sleep, visit, waitForCaption } from './lib/browser.mjs';
 
 const KEY_GAP_MS = 150;
 
@@ -97,7 +97,7 @@ if (typeof flags.evalfile === 'string') {
 
 const file = outPath('shots', `${name}.png`);
 const stage = flags.stage ? await page.$('.stage-frame') : null;
-if (stage) await stage.screenshot({ path: file });
+if (stage) await shootElement(page, stage, file);
 else await page.screenshot({ path: file, fullPage: !!flags.full });
 
 console.log(file);

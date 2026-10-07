@@ -97,6 +97,8 @@ cssVar('cellLine')            // 'var(--cell-line)'
 categorical(i)                // 'var(--info)', 'var(--violet)', … wraps; categorical(i, 'hex') for canvas
 CATEGORICAL                   // ['info','violet','ok','amber','pink','orange','hi','sky']
 ```
+`categorical()` hands out the semantic roles (info, violet, ok, hi) as categories, so use it only on a
+stage where those colours mean nothing else. Next to semantic colours, use `plainTone(i)` from `tone.ts`.
 Delete the lesson's `const C = {…}`. **`C.line` was `#323a4f` = `TOKENS.line2`**, not `TOKENS.line`.
 A dev-only check (`assertTokensInSync`, run from `main.tsx`) logs a console error, which fails
 smoke, if this table drifts from `global.css`.
@@ -109,6 +111,7 @@ type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim'   // semantic roles
 TONES                                            // every Tone, e.g. one arrowhead marker per tone
 toneVar('ok')                                    // 'var(--ok)'
 toneFor(errPct, { warn: 20, bad: 50 })           // 'ok' | 'hi' | 'bad'; { invert: true } when higher is better
+plainTone(i)                                     // 'amber' | 'pink' | 'sky' | 'orange', wraps: categories that never wear a meaning (PLAIN_TONES)
 ```
 - Every tone has a `.tone-*` class in kit.css (`--c` plus `--on-c` ink: `--on-amber`, `--on-pink`, `--on-sky` are tokens
   too) and a `TOKENS` entry, so every tone-driven component (BitStrip, CellGrid in both modes, ByteGrid fields,
@@ -314,6 +317,11 @@ useIntroCaption(<>Intro…</>, deps?)          // set on mount and when deps cha
 setCaption(node, { quiet: true })            // swap text in place, no fade (live readouts, per keystroke)
 // step frames: { say, quiet: true } → the player passes it through
 ```
+A frame without `say` shows the caption of the last frame at or before it that has one, however
+the player got there: playing, stepping, jumping or scrubbing (`captionSources(frames)` in
+`usePlayer.ts`, memoized per frames array and unit-tested). Before frame 0..k has any `say`, the
+intro caption stays. The player sets the caption only when that source frame changes, so a caption
+the stage sets itself between frames survives until the next frame with its own `say`.
 
 ### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
 Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
@@ -714,6 +722,7 @@ const y = logScale(1e-9, 1e-1, 300, 0);       // y axis, bottom-up; y.ticks(9) �
 logScale(1, 1024, 0, 10, 2)                   // base 2
 minWidthForText(520, 13)                      // 320: StageFrame/WideRegion minWidth keeping 13px text at the 8px floor (MIN_TEXT_PX)
 minWidthForText(placement.width, 12, 320)     // third argument: never narrower than this
+minWidthForText(SCENE_W, 9, { padX: 36 })     // stage padding the drawing doesn't scale into, added on top; { floor, padX } together too
 ```
 Linear ticks are "nice" (1, 2 or 5 × 10^k) with float noise rounded off (0.3, not 0.30000000000000004).
 Log ticks are whole powers of the base inside the domain, thinned evenly beyond `count`. A log
@@ -925,6 +934,7 @@ circlePositions(ids, width, height, pad, radii?)                    // the same,
 ### Smaller pieces
 - `useMediaQuery(query)` and `PHONE_QUERY` (`components/useMediaQuery.ts`): for layout choices CSS can't make (ByteGrid's bytes per row). SSR-safe (`useSyncExternalStore`).
 - `arrowMarkerDef(id, color, size, refX)` (`ArrowMarker.tsx`): one `<marker>` element, for a set of them under one `<defs>`. `useArrowMarker` is built on it.
+- `fakeSecret(...parts)` (`core/fakeSecret.ts`): joins an example credential from pieces so no source line holds a credential-shaped literal (secrets-management, auth-sessions-jwt, and secretScan's own fixtures). Every value built with it is fake; the secretScan test checks the repo for strays.
 
 ## Tier 2 kit (rollout plan P0-b)
 
@@ -1030,8 +1040,26 @@ accepts(dfaOrNfa, input)
 subsetConstruct(nfa)              // { dfa, rows: SubsetRow[] (discovery order, isNew), members: name → NFA states }
 subsetName(['0', '1'])            // "{0,1}"; "∅" for the empty set (only present when reachable)
 longestMatch(dfa, input, from)    // { end, state, steps } | null: maximal munch; steps counts the char that killed it
+delta: { cmt: { a: 'cmt', …, [OTHER]: 'cmt' } }   // OTHER: any symbol OUTSIDE the alphabet (é, emoji halves); in-alphabet symbols never take it
+edgesOf(dfaOrNfa)                 // { from, to, symbols[] }[]: one arrow per pair, symbols in order ε, alphabet, OTHER
 ```
+- `OTHER` lets a lexer keep a finite alphabet and still say "anything but newline": explicit arrows for the alphabet minus `
+`, plus `[OTHER]`. lexing-tokens uses it instead of rewriting the source first. It's DFA-only.
 - Draw the machines with `GraphView` state mode. Minimisation is deliberately left out (T3 chomsky-hierarchy). Tests compare the subset DFA with the NFA and with a JS RegExp on every string up to length 10.
+
+### `core/ipv4.ts` — subnetting-cidr, ethernet-arp, dhcp
+```ts
+parseIPv4(' 192.168.1.10 ')       // FieldParse<number>: { ok, value: 0xc0a8010a } or { ok: false, error } with the reason
+parsePrefix('24'); parseCidr('10.0.0.0/8'); parseCidr('10.0.0.1', 24)   // fallback prefix when there's no slash
+ipv4('192.168.1.1')               // a lesson-authored literal → number; throws RangeError on a typo (never learner input)
+ipToString(0xc0a8010a)            // '192.168.1.10'
+maskOf(24); wildcardOf(24); blockSize(24)              // 0xffffff00, 0xff, 256 (/0 handled: no `<< 32`)
+networkOf(a, 24); broadcastOf(a, 24); contains(net, 24, a)   // unsigned throughout
+IPV4_BITS; IPV4_MAX_INPUT         // 32; 40 (text longer than this is refused as far too long)
+```
+- Parsing is strict on purpose: exactly four parts of 0-255, no leading zeros (some tools read `010` as octal), no shorthand like `10.1`, and every refusal says why.
+- Tests compare masks, network, broadcast and membership with a no-bitwise reference at every prefix over thousands of seeded addresses, and round-trip text for every octet value. check-tokens flags a local `parseIPv4`/`ipToString` or `0xffffffff <<` in a lesson.
+- Block-level maths a lesson draws (host range, /31 and /32 semantics, splitting, summarising) stays in subnetting-cidr's model until a second lesson needs it.
 
 ### `core/vec.ts`, `core/fit.ts`, `core/fixtures/datasets.ts` — vectors-similarity, matrices-transformations, gradient-descent, linear-logistic-regression, supervised-learning, classification-metrics, decision-trees-ensembles, clustering-kmeans, embeddings, usability-laws, rasterization, bezier-interpolation
 ```ts

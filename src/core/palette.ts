@@ -67,7 +67,11 @@ export function alpha(hex: string, a: number): string {
   return `rgb(${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255} / ${a})`;
 }
 
-/** Hues for "one colour per thing" (servers, shards, replicas, projections...). */
+/**
+ * Hues for "one colour per thing" (servers, shards, replicas, projections...) on a stage with
+ * no other colour meanings. It includes the semantic roles (info, violet, ok, hi), so where
+ * those already mean something on the stage, use `plainTone(i)` from tone.ts instead.
+ */
 export const CATEGORICAL: readonly TokenName[] = ['info', 'violet', 'ok', 'amber', 'pink', 'orange', 'hi', 'sky'];
 
 /** The i-th categorical colour (wraps), as a CSS var for DOM/SVG or a hex for canvas. */

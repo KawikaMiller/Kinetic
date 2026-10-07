@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { plural, power } from '../../core/format';
+import { IPV4_BITS, blockSize, ipToString } from '../../core/ipv4';
 import {
-  ADDRESS_BITS, blockInfo, blockSize, blockToString, firstDifference, ipToString, splitEqual, summarize, type Allocation, type Block,
+  blockInfo, blockToString, firstDifference, splitEqual, summarize, type Allocation, type Block,
 } from './model';
 
 const count = (n: number) => n.toLocaleString('en-US');
@@ -9,7 +10,7 @@ const count = (n: number) => n.toLocaleString('en-US');
 /** What the current address/prefix means, computed from the block itself. */
 export function addressCaption(addr: number, prefix: number): ReactNode {
   const info = blockInfo(addr, prefix);
-  const hostBits = ADDRESS_BITS - prefix;
+  const hostBits = IPV4_BITS - prefix;
   const cidr = `${ipToString(info.network)}/${prefix}`;
   if (prefix === 0) {
     return <>/0 has no network bits at all: it matches <b>every</b> IPv4 address ({power(32)} of them). As a route, 0.0.0.0/0 is the

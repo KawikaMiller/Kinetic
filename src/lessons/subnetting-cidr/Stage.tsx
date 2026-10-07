@@ -9,13 +9,13 @@ import { WideRegion } from '../../components/WideRegion';
 import { chunkGroups, type Bit } from '../../core/bits';
 import { useSetCaption } from '../../core/caption';
 import { NA } from '../../core/format';
+import { IPV4_BITS, blockSize, contains, ipToString, maskOf, networkOf, parseCidr, parseIPv4 } from '../../core/ipv4';
 import type { FieldParse } from '../../core/parse';
 import type { Tone } from '../../core/tone';
 import { addressCaption, equalCaption, handCaption, membershipCaption, teamsCaption, type SplitMode } from './frames';
 import {
-  ADDRESS_BITS, DEFAULT_CIDR, DEFAULT_PARENT, DEFAULT_PROBE, DEFAULT_TEAMS, MAX_FIELD_CHARS, PRESETS, addressBits, allocate, andBits,
-  blockEnd, blockInfo, blockSize, blockToString, contains, firstDifference, hex32, ipToString, maskOf, networkOf, parseCidr, parseIPv4,
-  parseTeams, placeBlock, splitEqual, type Allocation, type Block,
+  DEFAULT_CIDR, DEFAULT_PARENT, DEFAULT_PROBE, DEFAULT_TEAMS, MAX_FIELD_CHARS, PRESETS, addressBits, allocate, andBits,
+  blockEnd, blockInfo, blockToString, firstDifference, hex32, parseTeams, placeBlock, splitEqual, type Allocation, type Block,
 } from './model';
 import './styles.css';
 
@@ -31,8 +31,8 @@ function known<T>(r: FieldParse<T>): T {
 }
 
 const count = (n: number) => n.toLocaleString('en-US');
-const octetGroups = (a: number) => chunkGroups(ADDRESS_BITS, 8, { label: (k) => String((a >>> (24 - 8 * k)) & 0xff) });
-const plainGroups = chunkGroups(ADDRESS_BITS, 8);
+const octetGroups = (a: number) => chunkGroups(IPV4_BITS, 8, { label: (k) => String((a >>> (24 - 8 * k)) & 0xff) });
+const plainGroups = chunkGroups(IPV4_BITS, 8);
 const HONEST = 'Nothing simulated: every number here is computed live from the bits.';
 
 export function Stage() {
@@ -107,7 +107,7 @@ function AddressScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Slider label="Prefix" value={prefix} min={0} max={ADDRESS_BITS} onChange={setPrefix} format={(v) => `/${v}`} />
+          <Slider label="Prefix" value={prefix} min={0} max={IPV4_BITS} onChange={setPrefix} format={(v) => `/${v}`} />
         </>,
         <>
           <TextField label="Address/prefix" value={draft} onChange={setDraft} onEnter={submit} width={190} maxLength={MAX_FIELD_CHARS} spellCheck={false} />
@@ -161,7 +161,7 @@ function PrefixStrip({ addr, prefix, onPrefix }: { addr: number; prefix: number;
         onMove: onPrefix,
         tag: `/${prefix}`,
         ariaLabel: 'Prefix divider: network bits on the left, host bits on the right',
-        valueText: (p) => `/${p}: ${p} network bits, ${ADDRESS_BITS - p} host bits`,
+        valueText: (p) => `/${p}: ${p} network bits, ${IPV4_BITS - p} host bits`,
       }}
     />
   );
@@ -248,7 +248,7 @@ function SplitScene({ picker }: { picker: ReactNode }) {
     else setCaption(handCaption(parent, placed), { quiet: true });
   }, [mode, parent, into, teams, placed, setCaption]);
 
-  const equalOptions = Array.from({ length: Math.min(MAX_EQUAL_STEPS, ADDRESS_BITS - parent.prefix) }, (_, k) => {
+  const equalOptions = Array.from({ length: Math.min(MAX_EQUAL_STEPS, IPV4_BITS - parent.prefix) }, (_, k) => {
     const p = parent.prefix + 1 + k;
     return { value: p, label: `/${p}` };
   });
@@ -256,10 +256,10 @@ function SplitScene({ picker }: { picker: ReactNode }) {
   const submitParent = () => {
     const r = parseCidr(parentDraft);
     if (!r.ok) return setParentNote(r.error);
-    if (r.value.prefix === ADDRESS_BITS) return setParentNote("A /32 is one address: there's nothing to split.");
+    if (r.value.prefix === IPV4_BITS) return setParentNote("A /32 is one address: there's nothing to split.");
     const net = networkOf(r.value.addr, r.value.prefix);
     setParent({ net, prefix: r.value.prefix });
-    setInto(Math.min(ADDRESS_BITS, r.value.prefix + 2));
+    setInto(Math.min(IPV4_BITS, r.value.prefix + 2));
     setPlaced([]);
     setHandError(null);
     setParentNote(net === r.value.addr ? null : `Host bits cleared: the block is ${ipToString(net)}/${r.value.prefix}.`);

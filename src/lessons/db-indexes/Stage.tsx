@@ -6,7 +6,7 @@ import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '
 import { bytes } from '../../core/format';
 import { useElementSize } from '../../core/hooks';
 import { pick } from '../../core/random';
-import { MIN_TEXT_PX } from '../../core/scale';
+import { MIN_TEXT_PX, minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { indexFrames, insertFrames, rangeFrames, scanFrames, type IxFrame } from './frames';
 import {
@@ -44,7 +44,9 @@ const BASE_MIN_WIDTH = 620;
 function stageMinWidth(db: Db) {
   const n = db.tree.leaves.length;
   const fullest = Math.max(...db.tree.leaves.map((l) => l.length));
-  return Math.max(BASE_MIN_WIDTH, Math.ceil(PAD * 2 + GAP * (n - 1) + n * fullest * KEY_SLOT_EMS * MIN_TEXT_PX + IX_PAD_X));
+  // the tree's width with its keys already at the floor, so the text-scale factor is 1
+  const atFloor = PAD * 2 + GAP * (n - 1) + n * fullest * KEY_SLOT_EMS * MIN_TEXT_PX;
+  return minWidthForText(atFloor, MIN_TEXT_PX, { floor: BASE_MIN_WIDTH, padX: IX_PAD_X });
 }
 
 interface Run {

@@ -1,0 +1,32 @@
+.dsp-muted { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.dsp-error { color: var(--bad); }
+
+/* Sign & verify */
+.dsp-sign { gap: 12px; }
+.dsp-signed { font-style: italic; color: var(--text); }
+.dsp-keys { display: flex; flex-wrap: wrap; gap: 12px; }
+.dsp-key { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 0; border-color: color-mix(in srgb, var(--c) 60%, transparent); }
+.dsp-key p { margin: 0; font: 500 13px var(--font); color: var(--c); }
+.dsp-table { max-width: 640px; }
+
+/* Chain */
+.dsp-chain { gap: 12px; }
+.dsp-chain-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.dsp-tree { width: 300px; max-width: 100%; height: auto; flex: none; }
+.dsp-card rect { fill: var(--panel2); stroke: var(--dim); stroke-width: 2; }
+.dsp-card text { text-anchor: middle; font: 500 11.5px var(--font); fill: var(--muted); }
+.dsp-card .dsp-subject { font: 700 13px var(--font); fill: var(--text); }
+.dsp-card.is-unchecked text, .dsp-card.is-unchecked .dsp-subject { fill: var(--faint); }
+.dsp-card.is-checking rect { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 12%, var(--panel2)); }
+.dsp-card.is-ok rect { stroke: var(--ok); }
+.dsp-card.is-ok .dsp-subject { fill: var(--ok); }
+.dsp-card.is-bad rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 12%, var(--panel2)); }
+.dsp-card.is-bad .dsp-subject, .dsp-card .dsp-reason { fill: var(--bad); }
+.dsp-card.is-bad text:last-of-type { fill: var(--bad); font-weight: 700; }
+.dsp-card.is-missing rect { stroke-dasharray: 6 4; fill: none; }
+.dsp-card .dsp-store, .dsp-card.is-anchor .dsp-store { fill: none; stroke: var(--violet); stroke-width: 2; stroke-dasharray: none; }
+.dsp-side { flex: 1 1 240px; display: flex; flex-direction: column; gap: 4px; }
+.dsp-side .section-title { display: block; margin-top: 6px; }
+.dsp-side p { margin: 0; font: 500 13px var(--font); }
+.dsp-side p.dsp-host { font-family: var(--mono); color: var(--text); }
+.dsp-store-list { color: var(--violet); }

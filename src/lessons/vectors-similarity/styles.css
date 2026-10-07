@@ -1,0 +1,24 @@
+.vs-dot, .vs-nn { gap: 12px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.vs-plot { width: 100%; max-width: 420px; flex: 0 1 420px; }
+
+.vs-shadow line { stroke-width: 3; }
+.vs-arc path { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.vs-arc text { font: 600 11px var(--font); fill: var(--muted); }
+.vs-ring { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4; }
+
+.vs-labels { pointer-events: none; }
+.vs-labels text { font: 600 10.5px var(--mono); fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.vs-labels text.is-top { fill: var(--ok); }
+
+.vs-working { flex: 1 1 300px; align-self: stretch; }
+.vs-working p { margin: 6px 0 0; font: 500 13.5px var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.vs-undefined { color: var(--bad); }
+
+.vs-lists { flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; }
+.vs-list.is-current { border-color: var(--ok); }
+.vs-list ol { margin: 6px 0 0; padding-left: 22px; font: 500 13px var(--font); color: var(--text); }
+.vs-list li { margin: 2px 0; }
+.vs-list li b { color: var(--text); font-family: var(--mono); }
+.vs-list.is-current li b { color: var(--ok); }
+.vs-score { color: var(--muted); font-family: var(--mono); margin-left: 4px; }
+.vs-note { flex-basis: 100%; text-align: center; }

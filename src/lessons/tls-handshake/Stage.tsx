@@ -4,7 +4,8 @@ import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { mitmFrames, normalFrames, P, type Paint, type Party, type Wire } from './frames';
+import { mitmFrames, normalFrames, type Party, type Wire } from './frames';
+import { P, type Paint } from './model';
 import './styles.css';
 
 /** Paint blobs pop in on a bouncy spring. */

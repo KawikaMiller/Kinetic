@@ -11,7 +11,7 @@
 //   npm run smoke -- --mobile                # 390x844 phone: also fails on content the stage
 //                                            # frame clips, and on scene (SVG) text rendered
 //                                            # below MIN_SCENE_TEXT_PX (fix: StageFrame minWidth)
-import { BASE_URL, frameCount, lessonIds, openPage, outPath, parseArgs, seekFrame, sleep, visit } from './lib/browser.mjs';
+import { BASE_URL, frameCount, lessonIds, openPage, outPath, parseArgs, seekFrame, shootElement, sleep, visit } from './lib/browser.mjs';
 
 const SETTLE_MS = 1500;
 const LIVE_MS = 2500;
@@ -33,7 +33,7 @@ const results = [];
 
 async function shootStage(name) {
   const stage = await page.$('.stage-frame');
-  if (stage) await stage.screenshot({ path: outPath(label, `${name}.png`) });
+  if (stage) await shootElement(page, stage, outPath(label, `${name}.png`));
 }
 
 async function checkStructure() {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { accepts, nfaRun, subsetConstruct } from '../../core/automata';
+import { accepts, edgesOf, nfaRun, subsetConstruct } from '../../core/automata';
 import { runFrames, subsetFrames, subsetPlan } from './frames';
 import {
-  CONTAINS_AB, DFA_PRESETS, DIV3, DOOR, ENDS_01, EVEN_UNION, NFA_PRESETS, TARGETS, allStrings, blankMachine, checkInput, checkMachine, edgesOf,
+  CONTAINS_AB, DFA_PRESETS, DIV3, DOOR, ENDS_01, EVEN_UNION, NFA_PRESETS, TARGETS, allStrings, blankMachine, checkInput, checkMachine,
   isAccepting, nthFromEnd, reachable, runSteps, withSolution,
 } from './model';
 
