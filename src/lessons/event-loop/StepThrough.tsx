@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { SNIPPETS, simulate } from './sim';
+import { SNIPPETS, buildFrames } from './frames';
 
 const CHIP_SPRING = { type: 'spring', stiffness: 420, damping: 30 } as const;
 /** How far a chip slides as it enters or leaves a queue / the stack, in px. */
@@ -14,7 +14,7 @@ const STACK_DROP = 14;
 export function StepThrough({ picker }: { picker: ReactNode }) {
   const [snippetId, setSnippetId] = useState(SNIPPETS[0].id);
   const snippet = SNIPPETS.find((s) => s.id === snippetId)!;
-  const frames = useMemo(() => simulate(snippet), [snippet]);
+  const frames = useMemo(() => buildFrames(snippet), [snippet]);
   const player = usePlayer(frames, { interval: 1500 });
   const f = player.frame;
 
@@ -48,6 +48,11 @@ export function StepThrough({ picker }: { picker: ReactNode }) {
             onChange={setSnippetId}
             options={SNIPPETS.map((s) => ({ value: s.id, label: s.name }))}
           />
+          <Hint block>
+            A simplified model. The snippets' output order is checked against real JavaScript, but timers here move to the queue
+            only once the stack empties (real ones queue whenever they expire), there is one macrotask queue (browsers have
+            several task sources and render between tasks), and Node's extra phases and process.nextTick are left out.
+          </Hint>
         </Controls>
       }
     >

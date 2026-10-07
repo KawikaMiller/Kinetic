@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Debugging \"why does my setTimeout(0) run late?\"",
     ],
     why: "Every JavaScript and Node engineer works on top of the event loop, and many real bugs come from misunderstanding it: frozen UIs, starved timers, surprising orderings in async code. The same single-threaded async model also powers Python's asyncio and many servers.",
-    watch: "Yellow is whatever is running now: the highlighted line of code and the top of the call stack. Timers sit in Web APIs (dashed) until they expire. Violet chips are microtasks and blue chips are macrotasks, in queue order from left to right. Green chips in the console are the output, numbered in the order they were printed. In \"Block the loop\", green means the UI is updating and red means it froze.",
+    watch: "Yellow is whatever is running now: the highlighted line of code, the top of the call stack, and the outline on the box this step touches. Timers sit in Web APIs (dashed) until they expire. Violet chips are microtasks and blue chips are macrotasks, in queue order from left to right. Green chips in the console are the output, numbered in the order they were printed. In \"Block the loop\", the green dot and the clock are drawn by JavaScript, the blue bar is work done, and the longest pause turns red when it passes 200 ms.",
   },
   tryThis: [
     'Play "Promise vs timeout": the promise logs C before the 0 ms timeout logs B.',
@@ -37,15 +37,36 @@ const lesson: LessonModule = {
     },
     {
       q: 'Inside an async function, the code after an await runs…',
-      options: ['Immediately, on the same tick', 'As a microtask, after the current synchronous code finishes', 'As a macrotask, after pending timers', 'On a separate thread'],
+      options: [
+        'Straight away, on the same tick',
+        'As a microtask, after the current code',
+        'As a macrotask, after any pending timers',
+        'On a separate thread, in parallel',
+      ],
       answer: 1,
-      why: 'await suspends the function and queues its continuation as a microtask once the awaited value is ready.',
+      why: 'await suspends the function and queues its continuation as a microtask once the awaited value is ready, so it runs before any timer. Nothing in JavaScript runs on another thread unless you start a Worker.',
     },
     {
       q: 'A click handler runs a 2-second synchronous loop. What happens to a 100 ms setTimeout that was due meanwhile?',
-      options: ['It interrupts the loop', 'It runs on another thread', 'It waits until the loop finishes', 'It is cancelled'],
+      options: [
+        'It interrupts the loop when it is due',
+        'It runs on a separate timer thread',
+        'It waits until the loop has finished',
+        'It is cancelled for running late',
+      ],
       answer: 2,
-      why: 'Callbacks only run when the call stack is empty, so the timer is delayed until the long task ends.',
+      why: 'Callbacks only run when the call stack is empty, so the timer is delayed until the long task ends. The browser keeps the time in the background, but the callback itself still has to run on the one JavaScript thread.',
+    },
+    {
+      q: 'What does setTimeout(fn, 0) actually promise?',
+      options: [
+        'fn runs before any code that follows it',
+        'fn runs after the stack and microtasks clear',
+        'fn runs in exactly 0 milliseconds from now',
+        'fn runs before any pending promise callbacks',
+      ],
+      answer: 1,
+      why: "Zero is a minimum delay, not a schedule: fn waits for the current code and every queued microtask, then its turn among macrotasks. That is why the promise's C prints before the timeout's B.",
     },
   ],
 };
