@@ -116,7 +116,7 @@ export function caption(note: Note, w: World, c: Config): ReactNode {
       if (note.broadcast) return <>{who(note.t)} broadcasts on {note.cv}: {names(note.woke)} wake up, and each will re-check before going on.</>;
       return (
         <>
-          {who(note.t)} signals {note.cv}: <span className="hl info">{note.woke[0]}</span> wakes. It's only a hint: {note.woke[0]} still has to get{' '}
+          {who(note.t)} signals {note.cv}: {who(note.woke[0])} wakes. It's only a hint: {note.woke[0]} still has to get{' '}
           <code>m</code> back, and by then the buffer may have changed.
         </>
       );

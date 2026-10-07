@@ -136,7 +136,7 @@ export function Stage() {
             label="Random orders that deadlock"
             value={`${rate} of ${RATE_SEEDS}`}
             color={rate ? 'var(--bad)' : 'var(--ok)'}
-            sub={p.detector ? 'counting detector aborts' : 'seeded, these settings'}
+            sub={p.detector ? 'these conditions, counting detector aborts' : 'seeded random schedules, these conditions'}
           />
         </Stats>
       }

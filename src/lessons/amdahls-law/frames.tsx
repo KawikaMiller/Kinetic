@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { pct, plural, times } from '../../core/format';
-import { MAX_CORES, amdahl, bestWholeCores, ceiling, doublingCut, gustafson, peakCores, withOverhead } from './model';
+import { MAX_CORES, amdahl, bestWholeCores, ceiling, doublingCut, gustafson, withOverhead } from './model';
 
 export type Law = 'amdahl' | 'gustafson';
 
@@ -33,13 +33,6 @@ export function viewCaption({ law, s, n, c }: View): ReactNode {
     );
   if (c > 0) {
     const best = bestWholeCores(s, c, MAX_CORES);
-    if (peakCores(s, c) > MAX_CORES)
-      return (
-        <>
-          With this small a coordination cost, the speedup still rises all the way to {MAX_CORES} cores ({fmtSpeed(withOverhead(s, MAX_CORES, c))}); its
-          peak would come at about {Math.round(peakCores(s, c))} cores. {plural(n, 'core')} {give} {fmtSpeed(withOverhead(s, n, c))}.
-        </>
-      );
     return (
       <>
         With a coordination cost per core, the speedup <span className="hl ok">peaks at {plural(best, 'core')}</span> ({fmtSpeed(withOverhead(s, best, c))}) and

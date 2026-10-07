@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { pct } from '../../core/format';
 import { captionText } from '../../core/testing/captions';
-import { MAX_STEPS, byName, hottestLeaf, profileFrames } from './frames';
-import { HOT_LEAF, NO_FIXES, SAMPLE_STEPS, foldStacks, margin95, program, sample, timeline, trueShare, type Fixes } from './model';
+import { MAX_STEPS, byName, fmtMs, hottestLeaf, profileFrames, saving } from './frames';
+import { HOT_LEAF, NO_FIXES, SAMPLE_STEPS, cpuTime, foldStacks, margin95, program, sample, timeline, trueShare, type Fixes } from './model';
 import { laneBars } from './view';
 
 const FIXES: Fixes[] = [NO_FIXES, { hoist: true, fastJson: false }, { hoist: false, fastJson: true }, { hoist: true, fastJson: true }];
@@ -71,5 +71,29 @@ describe('timeline lanes', () => {
       const drawn = bars.filter((b) => b.lane === name).reduce((a, b) => a + b.end - b.start, 0);
       expect(drawn).toBeCloseTo(onStack, 9);
     }
+  });
+});
+
+describe('the "% less" matches the times shown beside it', () => {
+  it('for every fix: the % is worked out from the one-decimal ms on screen, and the colour rule is shared', () => {
+    const before = cpuTime(timeline(program(NO_FIXES)));
+    for (const fixes of FIXES.slice(1)) {
+      const now = cpuTime(timeline(program(fixes)));
+      const text = captionText(profileFrames(fixes, 200, 1).frames.at(-1)!.say);
+      const m = text.match(/is ([\d.]+) ms instead of ([\d.]+) ms, (\d+)% less/);
+      expect(m).not.toBeNull();
+      const [shownNow, shownBefore, shownPct] = [Number(m![1]), Number(m![2]), Number(m![3])];
+      expect(Math.round(((shownBefore - shownNow) / shownBefore) * 100)).toBe(shownPct);
+      expect(`${shownNow.toFixed(1)} ms`).toBe(fmtMs(now));
+      expect(saving(before, now).worthwhile).toBe(fixes.hoist);
+    }
+    expect([fmtMs(before), fmtMs(cpuTime(timeline(program({ hoist: true, fastJson: false }))))]).toEqual(['61.5 ms', '23.5 ms']);
+  });
+
+  it('after the hoist, the summary says the hot spot moved instead of calling the decoy "where to look first"', () => {
+    const text = captionText(profileFrames({ hoist: true, fastJson: false }, 1000, 1).frames.at(-1)!.say);
+    expect(text).toContain('the hot spot has moved');
+    expect(text).not.toContain('where to look first');
+    expect(captionText(profileFrames(NO_FIXES, 1000, 1).frames.at(-1)!.say)).toContain('where to look first');
   });
 });
