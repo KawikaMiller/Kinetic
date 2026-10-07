@@ -5,6 +5,19 @@ import { N, type SimEvent, type Tick } from './sim';
 
 export type Scenario = 'file' | 'video';
 export interface TuFrame extends Frame, Tick {}
+/** The link settings the run was simulated with, as fractions (0.15 = 15%). */
+export interface LinkSettings {
+  loss: number;
+  reorder: number;
+}
+
+/** What the link does to packets, in words, so the opening caption is true at every slider setting. */
+export function linkBehaviour({ loss, reorder }: LinkSettings): string {
+  if (loss > 0 && reorder > 0) return 'loses and reorders packets';
+  if (loss > 0) return 'loses packets but keeps their order';
+  if (reorder > 0) return 'reorders packets but never loses one';
+  return 'neither loses nor reorders packets';
+}
 
 /** How long autoplay lingers on a frame that narrates an event. */
 const EVENT_HOLD = 3.2;
@@ -35,22 +48,15 @@ function narrate(e: SimEvent, scenario: Scenario): ReactNode {
   }
 }
 
-export function buildFrames(ticks: Tick[], scenario: Scenario): TuFrame[] {
+export function buildFrames(ticks: Tick[], scenario: Scenario, link: LinkSettings): TuFrame[] {
   const seen = new Set<string>();
-  let lastStatus = '';
   const frames: TuFrame[] = ticks.map((tick) => {
     // one caption per tick, first-of-its-kind events win (retx/release always narrate)
     const e = tick.events.find((ev) => ev.kind === 'retx' || ev.kind === 'release' || !seen.has(ev.kind));
     tick.events.forEach((ev) => seen.add(ev.kind));
-    if (e) {
-      lastStatus = '';
-      return { ...tick, say: narrate(e, scenario), hold: EVENT_HOLD };
-    }
-    // No event: show where both protocols stand, but only when that changes,
-    // so an old event's caption never lingers over unrelated frames.
-    const status = `${tick.tcp.delivered.length}|${tick.udp.delivered.length}|${tick.udp.lost.length}`;
-    if (status === lastStatus) return { ...tick, say: undefined, hold: 1 };
-    lastStatus = status;
+    if (e) return { ...tick, say: narrate(e, scenario), hold: EVENT_HOLD };
+    // No event: where both protocols stand. Every frame states it (rather than inheriting),
+    // so jumping the timeline to any frame shows a caption that is true there.
     return {
       ...tick,
       hold: 1,
@@ -66,29 +72,40 @@ export function buildFrames(ticks: Tick[], scenario: Scenario): TuFrame[] {
   });
   frames[0].say = (
     <>
-      The same {N} packets, sent over <b>TCP</b> (top) and <b>UDP</b> (bottom), across a link that loses and reorders
-      packets. Press play.
+      The same {N} packets, sent over <b>TCP</b> (top) and <b>UDP</b> (bottom), across a link that {linkBehaviour(link)}.
+      Press play.
     </>
   );
   frames[0].quiet = false;
   frames[0].hold = 2;
   const last = frames[frames.length - 1];
-  const { tcp, udp } = last;
   last.hold = 3;
   last.quiet = false;
-  last.say =
-    scenario === 'file' ? (
-      <>
-        File download: TCP delivered <span className="hl ok">all {N} in order</span> (it took {tcp.doneAt} ticks);{' '}
-        UDP finished at {udp.doneAt} but the file is <span className="hl bad">missing {plural(udp.lost.length, 'chunk')}</span>.
-        For files, correctness wins: use TCP.
-      </>
-    ) : (
-      <>
-        Video call: TCP's longest freeze was <span className="hl bad">{tcp.longestStall} ticks</span> waiting on retransmits.{' '}
-        UDP just skipped {plural(udp.lost.length, 'frame')} and kept going. A late frame is useless, so real-time apps pick{' '}
-        <span className="hl ok">UDP</span>.
-      </>
-    );
+  last.say = scenario === 'file' ? fileVerdict(last) : videoVerdict(last);
   return frames;
+}
+
+function fileVerdict({ tcp, udp }: Tick): ReactNode {
+  return (
+    <>
+      File download: TCP delivered <span className="hl ok">all {N} in order</span> (it took {tcp.doneAt} ticks);{' '}
+      {udp.lost.length > 0 ? (
+        <>UDP finished at tick {udp.doneAt} but the file is <span className="hl bad">missing {plural(udp.lost.length, 'chunk')}</span>.</>
+      ) : (
+        <>UDP finished at tick {udp.doneAt} with nothing lost this time, but nothing would have noticed or resent a loss.</>
+      )}{' '}
+      For files, correctness wins: use TCP.
+    </>
+  );
+}
+
+function videoVerdict({ tcp, udp }: Tick): ReactNode {
+  return (
+    <>
+      Video call: TCP's longest gap with no new frame for the app was <span className="hl bad">{tcp.longestStall} ticks</span>
+      {tcp.retransmits > 0 ? <>, and it resent {plural(tcp.retransmits, 'packet')}</> : <>, with nothing lost or resent</>}.{' '}
+      {udp.lost.length > 0 ? <>UDP just skipped {plural(udp.lost.length, 'frame')} and kept going.</> : <>UDP lost nothing and never waited.</>}{' '}
+      A late frame is useless, so real-time apps pick <span className="hl ok">UDP</span>.
+    </>
+  );
 }

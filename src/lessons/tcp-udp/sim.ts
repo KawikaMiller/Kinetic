@@ -14,6 +14,9 @@ export const LATENCY = 6;
 /** Retransmission timeout in ticks (a bit more than one round trip). */
 export const RTO = 2 * LATENCY + 4;
 export const MAX_WIN = 8;
+/** Scripted losses (disclosed on screen): whenever loss > 0, the first send of these is always dropped. */
+export const FORCED_TCP_LOSS = 4;
+export const FORCED_UDP_LOSS = 5;
 /** Safety cap; heavy loss means many back-to-back timeouts, so leave room. */
 const MAX_TICKS = 900;
 
@@ -208,7 +211,7 @@ export function simulate(seed: number, loss: number, reorder: number): Tick[] {
       if (retx) retransmits++;
       if (nextSeq === base) timerStart = t;
       // Script one early loss so the story always shows up; the rest is random.
-      const force = loss > 0 && nextSeq === 4 && !retx;
+      const force = loss > 0 && nextSeq === FORCED_TCP_LOSS && !retx;
       tcpFlights.push(transmit(rT, nextSeq, t, force, retx));
       everSent.add(nextSeq);
       nextSeq++;
@@ -237,7 +240,7 @@ export function simulate(seed: number, loss: number, reorder: number): Tick[] {
     }
     if (udpSent < N) {
       udpSent++;
-      udpFlights.push(transmit(rU, udpSent, t, loss > 0 && udpSent === 5, false));
+      udpFlights.push(transmit(rU, udpSent, t, loss > 0 && udpSent === FORCED_UDP_LOSS, false));
     }
     if (udpDoneAt === null && udpSent === N && udpDelivered.length + udpLost.length === N) {
       udpDoneAt = t;
