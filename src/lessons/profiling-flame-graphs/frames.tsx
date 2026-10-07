@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { ms, pct, plural } from '../../core/format';
+import { pct, plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 import {
-  NO_FIXES, cpuTime, foldStacks, margin95, program, sample, timeline, type Fixes, type FlameNode, type Sample, type Segment,
+  HOT_LEAF, NO_FIXES, cpuTime, foldStacks, margin95, program, sample, timeline, type Fixes, type FlameNode, type Sample, type Segment,
 } from './model';
 
 /** At most this many steps to build the graph, however many samples. */
@@ -17,6 +17,20 @@ export interface PfFrame extends Frame {
 }
 
 const arrow = (stack: readonly string[]) => stack.join(' → ');
+
+/** Times as shown: one decimal, from the drift-free sum. Every on-screen ms goes through this. */
+export const shownMs = (v: number) => Math.round(v * 10) / 10;
+export const fmtMs = (v: number) => `${shownMs(v).toFixed(1)} ms`;
+
+/** A saving counts as worth having (green, not amber) above this share of the run. */
+export const WORTHWHILE = 0.1;
+
+/** The cut from `before` to `now`, worked out from the values as shown, so the % matches them. */
+export function saving(before: number, now: number): { share: number; worthwhile: boolean } {
+  const [b, n] = [shownMs(before), shownMs(now)];
+  const share = (b - n) / b;
+  return { share, worthwhile: share > WORTHWHILE };
+}
 const fixed = (ms1: number) => (Number.isInteger(ms1) ? String(ms1) : ms1.toFixed(1));
 
 /** Every node with this name, summed (a function can appear under several parents). */
@@ -52,17 +66,20 @@ function summary(samples: readonly Sample[], segs: readonly Segment[], fixes: Fi
   const before = cpuTime(timeline(program(NO_FIXES)));
   const now = cpuTime(segs);
   const share = hot.self / n;
+  const cut = saving(before, now);
   const fixNote =
     fixes.hoist || fixes.fastJson ? (
       <>
         {' '}With {[fixes.hoist && 'the formatter hoisted', fixes.fastJson && 'the faster parser'].filter(Boolean).join(' and ')}, the modelled on-CPU time is{' '}
-        {ms(now)} instead of {ms(before)}, <span className={`hl ${before - now > before / 10 ? 'ok' : 'amber'}`}>{pct((before - now) / before)} less</span>.
+        {fmtMs(now)} instead of {fmtMs(before)}, <span className={`hl ${cut.worthwhile ? 'ok' : 'amber'}`}>{pct(cut.share)} less</span>.
       </>
     ) : null;
+  const moved = hot.name !== HOT_LEAF;
   return (
     <>
       {plural(n, 'sample')}. <b>renderPage</b> is on the stack in {pct(render.total / n)} of them, but only {pct(render.self / n)} are its own work.
-      The widest leaf is <span className="hl">{hot.name}</span> at {pct(share)} (±{Math.round(margin95(share, n) * 100)} points): that's where to look first.
+      The widest leaf is <span className="hl">{hot.name}</span> at {pct(share)} (±{Math.round(margin95(share, n) * 100)} points):{' '}
+      {moved ? <>the hot spot has moved, so that's where to look next.</> : <>that's where to look first.</>}
       {fixNote}
     </>
   );

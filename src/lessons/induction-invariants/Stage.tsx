@@ -177,7 +177,7 @@ function HorseGroups() {
 
 function LoopScene({ picker }: { picker: ReactNode }) {
   const [bug, setBug] = useState<Bug>('none');
-  const [target, setTarget] = useState(56);
+  const [target, setTarget] = useState(91);
   const frames = useMemo(() => searchFrames(SEARCH_ARRAY, target, bug), [target, bug]);
   const player = usePlayer(frames, { interval: 1100 });
   const f = player.frame;
@@ -296,7 +296,7 @@ function StrongScene({ picker }: { picker: ReactNode }) {
       min: FACTOR_MIN,
       max: FACTOR_MAX,
       thousands: true,
-      messages: { tooSmall: () => 'The claim starts at 2: 0 and 1 are not products of primes.', tooBig: () => `Keep it at ${FACTOR_MAX.toLocaleString('en')} or less, so the tree fits.` },
+      messages: { tooSmall: () => 'The claim here starts at n = 2.', tooBig: () => `Keep it at ${FACTOR_MAX.toLocaleString('en')} or less, so the tree fits.` },
     });
     if (!r.ok) {
       setError(r.error);

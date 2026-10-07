@@ -82,8 +82,9 @@ export function Stage() {
       overwritten: c.overwritten + +(event.kind === 'overwrote'),
       blocked: c.blocked + +(event.kind === 'blocked'),
     }));
-    if (event.kind === 'overwrote') setFlash({ slot: event.slot, tone: 'orange', key: ++flashes.current });
-    if (event.kind === 'dropped') setFlash({ slot: tailSlot(r), tone: 'bad', key: ++flashes.current });
+    if (event.kind === 'overwrote') setFlash({ kind: 'overwrite', slot: event.slot, key: ++flashes.current });
+    // A dropped item never reaches a slot: flash it at the tail arrow, not over the item it would have hit.
+    if (event.kind === 'dropped') setFlash({ kind: 'drop', key: ++flashes.current });
     setLast(event);
     if (narrate) setCaption(eventCaption(event, r, r0), { quiet: running });
     return r;
@@ -194,7 +195,7 @@ export function Stage() {
       <div className="rb stage-pad">
         {why && (
           <p className="rb-refusal" role="alert">
-            {why}
+            {why} Still showing the last valid buffer: "{STRATEGY_LABEL[ring.strategy]}" with {ring.n} slots.
           </p>
         )}
         <div className="rb-views">
@@ -240,8 +241,10 @@ export function Stage() {
         </div>
         <Hint block>
           Nothing simulated: the buffer logic runs live in your browser, exactly as written in the readout. Producer and consumer speeds are
-          illustrative. With one producer and one consumer, each pointer has a single writer, which is why such rings can run without a lock; with
-          several producers, two could claim the same slot, and that needs atomic operations or a lock.
+          illustrative. With one producer and one consumer, "Keep one slot empty" or "Masked counters", and Block or Drop, each index has a single
+          writer (the producer moves tail, the consumer moves head), which is why such rings can run without a lock, given the right memory ordering.
+          A shared count (both sides write it), "Overwrite oldest" (the producer moves head too) or several producers break that, and need atomics or a
+          lock.
         </Hint>
       </div>
     </StageFrame>

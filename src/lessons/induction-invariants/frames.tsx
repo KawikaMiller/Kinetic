@@ -3,6 +3,7 @@ import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { dominoRun, DOMINOES, horseOverlap, oddSum, type DominoClaim } from './dominoes';
 import { leafPrimes, proofOrder, type FactorNode } from './factorTree';
+import { ABSENT_TARGETS } from './presets';
 import { invariantHolds, ITERATION_CAP, LINE, runSearch, type Bug, type Check, type SearchRun, type Verdict } from './search';
 
 const ok = (s: ReactNode) => <span className="hl ok">{s}</span>;
@@ -106,9 +107,26 @@ const STALL_SHOWN = 2;
 /** hi at the loop head where check number `at` was made (the iterations, then the exit). */
 const hiAt = (run: SearchRun, at: number) => (run.iterations[at] ?? run.exit)!.hi;
 
-export function verdictCaption(run: SearchRun, n: number): ReactNode {
+/** The verdict's label. A passing run of code with a bug injected is not "Correct": it only passed this input. */
+export const verdictLabel = (v: Verdict, bug: Bug) => (v.kind === 'ok' && bug !== 'none' ? 'Passed this run' : VERDICT_LABEL[v.kind]);
+
+/** The first preset target on which this bug actually shows (some check fails). */
+export function failingTarget(a: readonly number[], bug: Bug): number | null {
+  if (bug === 'none') return null;
+  return [...a, ...ABSENT_TARGETS].find((t) => runSearch(a, t, bug).verdict.kind !== 'ok') ?? null;
+}
+
+export function verdictCaption(run: SearchRun, n: number, a: readonly number[] = [], target = 0, bug: Bug = 'none'): ReactNode {
   const v = run.verdict;
-  const label = <b>{VERDICT_LABEL[v.kind]}.</b>;
+  const label = <b>{verdictLabel(v, bug)}.</b>;
+  if (v.kind === 'ok' && bug !== 'none') {
+    const t = failingTarget(a, bug);
+    return (
+      <>
+        {label} Every check held for target {target}, so this input doesn't exercise the injected bug. One passing run proves nothing about the code{t !== null ? <>: search for {t} to see it fail</> : null}.
+      </>
+    );
+  }
   switch (v.kind) {
     case 'ok':
       return <>{label} Initialisation, maintenance at every iteration, and termination (the range shrank every time) all check out, so {run.result === -1 ? 'the -1 is justified' : `index ${run.result} is the answer`}.</>;
@@ -172,7 +190,7 @@ export function searchFrames(a: readonly number[], target: number, bug: Bug): Se
     );
   }
   rec.set({ phase: 'verdict', line: null, check: null, allHeld: run.verdict.kind !== 'invariant' });
-  rec.close(verdictCaption(run, n), 2);
+  rec.close(verdictCaption(run, n, a, target, bug), 2);
   return rec.frames;
 }
 
@@ -194,7 +212,13 @@ function primesUnder(nodes: Map<string, FactorNode>, id: string): number[] {
 export function factorFrames(nodes: Map<string, FactorNode>): FactorFrame[] {
   const rec = createRecorder<FactorFrame>({ proven: [], current: null }, { transient: { current: null } });
   const root = nodes.get('r')!;
-  rec.snap(<>Strong induction on n ≥ 2: to prove P({root.value}), we may assume P(m) for every m from 2 to {root.value - 1}, not just m = {root.value - 1}.</>);
+  rec.snap(
+    root.value <= 3 ? (
+      <>Strong induction on n ≥ 2. {root.value} is prime and there is no smaller case to lean on: it is a base case, its own product of primes.</>
+    ) : (
+      <>Strong induction on n ≥ 2: to prove P({root.value}), we may assume P(m) for every m from 2 to {root.value - 1}, not just m = {root.value - 1}.</>
+    ),
+  );
   const proven: string[] = [];
   for (const id of proofOrder(nodes)) {
     const node = nodes.get(id)!;

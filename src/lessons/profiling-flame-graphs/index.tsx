@@ -15,19 +15,19 @@ const lesson: LessonModule = {
     ],
     why: 'Guessing at performance wastes days on code that barely runs. A profile points at the few lines that matter, and reading a flame graph correctly (width rather than position, self time rather than total) is a core debugging skill for backend and frontend engineers alike.',
     watch:
-      'In the flame graph every box is a function, coloured by function in amber, sky, pink and orange (never red: width is not an error). Its width is its share of the samples, and the functions it calls sit on top (underneath, in the Icicle view); the grey bottom box is all the samples. The selected or zoomed frame is solid yellow, the stack the latest sample caught is outlined in blue, and an optimised function turns green. Time order draws the same samples left to right in the order they were taken. The timeline has one lane per function in the same colours, solid while the function is on the stack and dashed where db.query waits for the database off the CPU, with a yellow cursor at the latest sample.',
+      'In the flame graph every box is a function, coloured by function in amber, sky, pink and orange (never red: width is not an error). Its width is its share of the samples, and the functions it calls sit on top (underneath, in the Icicle view); the grey bottom box is all the samples. The selected or zoomed frame is solid yellow, the stack the latest sample caught is outlined in blue, and an optimised function turns green. Time order draws the same samples left to right in the order they were taken, in CPU time, so the database wait is left out. The timeline has one lane per function in the same colours, solid while the function is on the stack and dashed where db.query waits for the database off the CPU, with a yellow cursor at the latest sample.',
   },
   tryThis: [
     'Play it: the flame graph builds sample by sample. renderPage is wide, but most of that width is formatPrice → Intl.NumberFormat on top of it.',
     'Look at the renderPage readout (selected to start with): a big total share, a tiny self share.',
     'Press "parseJson: faster parser": the on-CPU time barely moves. Then press "formatPrice: hoist the formatter" and watch Intl.NumberFormat shrink.',
-    'Switch View to "Time order": x is now time, and the steps appear in the order they ran instead of sorted by name.',
+    'Switch View to "Time order": x is now CPU time, in order, and the steps appear in the order they ran instead of sorted by name.',
     'Drop Samples to 20 and press "sample again" a few times: the boxes jump about and the ± margin is wide.',
   ],
   keyIdeas: [
     'Width is the share of samples, not time order: siblings are merged and sorted by name.',
     "Total time includes everything a function calls; self time is its own code. Fix where the self time is.",
-    'Sampling is cheap and statistical (more samples, smaller error); instrumentation times every call exactly, at a higher cost.',
+    'Sampling is cheap and statistical (more samples, smaller error); instrumentation times every call, at a higher cost per call.',
     "A CPU profiler can't see time spent waiting on I/O or locks: that needs a wall-clock or off-CPU profile.",
   ],
   quiz: [
@@ -73,7 +73,7 @@ const lesson: LessonModule = {
         'Self time stops being measured',
       ],
       answer: 0,
-      why: 'Each sample is a random draw, so a share measured from n samples is off by roughly 1/√n: about ±21 points at 20 samples for a 65% share, against ±3 at 1,000. More samples cost more overhead but give a steadier graph; the program itself is unchanged.',
+      why: 'Each sample is a random draw, so a share measured from n samples is off by roughly 1/√n (a conservative estimate; evenly spaced samples like these do better): about ±21 points at 20 samples for a 65% share, against ±3 at 1,000. More samples cost more overhead but give a steadier graph; the program itself is unchanged.',
     },
   ],
 };

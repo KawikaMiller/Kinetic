@@ -18,8 +18,8 @@ const lesson: LessonModule = {
       'The buffer strip shows its N slots: filled slots are blue with the item id, empty ones are plain, and the violet head and tail markers show where the next take and put happen; a garbage read or overflow turns the slot red. Beside it are the semaphores as violet token dots with their sleepers, or the lock m (its holder in yellow) and each condition variable\'s sleepers, with woken threads that must re-take m listed in blue. In the code panels the line that just ran is highlighted yellow, and each thread\'s chip sits on its line: solid yellow when running, tinted blue when ready or woken, grey dashed when asleep or blocked, grey when doing I/O. The timeline has one lane per thread over the last 40 ticks in the same colours (ready is hatched blue, I/O a dashed grey outline) with a yellow cursor. The CPU meter is blue, and red when over half the recent ticks went on spinning. Captions name producers in blue and consumers in violet.',
   },
   tryThis: [
-    'In Monitor, set produce() to 0 ticks and consume() to 12: the buffer fills, the producer sleeps on notFull, and the CPU sits idle.',
-    'Now switch "Waiting with" to Busy-wait at the same speeds: the CPU meter turns red while the producer spins.',
+    'In Monitor, set Producers to 3, Consumers to 1, produce() to 0 ticks and consume() to 12: the buffer fills, producers sleep on notFull, and the CPU sits idle.',
+    'Pick Busy-wait, set Producers back to 1, produce() to 12 ticks and consume() to 0: the consumers spin on an empty buffer and the CPU meter turns red.',
     'Set "Condition check" to "if (bug)" with 2 consumers and press "Find a seed where it breaks": a woken consumer reads an empty buffer.',
     'In "Wake-up bugs", compare "One CV + signal" with "One CV + broadcast": the hang count drops to zero.',
     'Pick "Check without the lock": the wakeup() lands before the consumer is asleep, so it sleeps forever.',

@@ -51,3 +51,15 @@ export function cpuWindow(cpu: readonly string[], n = 20) {
   if (last.length === 0) return { busy: 0, spin: 0 };
   return { busy: last.filter((x) => x !== 'idle').length / last.length, spin: last.filter((x) => x === 'spin').length / last.length };
 }
+
+/**
+ * The slot a broken step hit: a garbage read reads at head (the buffer is empty, so head is
+ * not advanced), an overflow writes at the slot just before tail. Null when nothing broke.
+ */
+export function badSlot(w: World, capacity: number): number | null {
+  const n = w.note;
+  const what = n.kind === 'violation' ? n.what : n.kind === 'take' && n.garbage ? 'garbage' : n.kind === 'put' && n.overflow ? 'overflow' : null;
+  if (what === 'garbage') return w.head;
+  if (what === 'overflow') return (w.tail - 1 + capacity) % capacity;
+  return null;
+}

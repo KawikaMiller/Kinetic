@@ -173,3 +173,22 @@ describe('overflow policies', () => {
     }
   });
 });
+
+describe('try-this: start the masked counters near 2³² and enqueue a few', () => {
+  it('tail wraps round to 0 while head is still near 2³², the size stays right, and dequeuing wraps head too', () => {
+    let r = createRing('masked', 8, NEAR_WRAP);
+    for (let v = 1; v <= 4; v++) r = enqueue(r, v, 'block').ring;
+    expect(r.tail).toBe(1);
+    expect(r.head).toBe(NEAR_WRAP);
+    expect(size(r)).toBe(4);
+    const out: number[] = [];
+    for (let k = 0; k < 4; k++) {
+      const d = dequeue(r);
+      r = d.ring;
+      if (d.event.kind === 'dequeued') out.push(d.event.value);
+    }
+    expect(out).toEqual([1, 2, 3, 4]);
+    expect(r.head).toBe(1);
+    expect(isEmpty(r)).toBe(true);
+  });
+});

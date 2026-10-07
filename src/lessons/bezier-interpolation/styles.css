@@ -1,0 +1,42 @@
+.bz-row { flex-direction: row; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: center; }
+.bz-plot { width: 100%; max-width: 420px; min-width: 300px; flex: 0 1 420px; }
+.bz-labels text { font: 700 12px var(--mono); fill: var(--violet); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.bz-honest { display: block; margin: 0 22px 14px; }
+
+.bz-weights { flex: 1 1 300px; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+.bz-weights .plot2d { width: 100%; }
+.bz-sum { margin: 0; font: 600 12.5px var(--mono); color: var(--text); line-height: 1.6; }
+.bz-sum .tone-amber, .bz-sum .tone-pink, .bz-sum .tone-sky, .bz-sum .tone-orange { color: var(--c); }
+
+.bz-side { flex: 1 1 300px; max-width: 380px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bz-xt .plot2d { width: 100%; }
+
+.bz-race { display: flex; flex-direction: column; gap: 10px; }
+.bz-track {
+  position: relative;
+  height: 26px;
+  border-radius: 99px;
+  background: var(--cell);
+  border: 1px solid var(--line-2);
+  overflow: visible;
+}
+.bz-ball { position: absolute; left: 1px; top: 1px; width: 22px; height: 22px; border-radius: 50%; }
+.bz-ball.is-css { background: var(--ok); }
+.bz-ball.is-solver { background: var(--info); }
+.bz-race-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.bz-race-note { font: 500 12px var(--font); color: var(--muted); }
+
+.bz-lerp { flex-direction: row; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: stretch; }
+.bz-lerp-panel { flex: 1 1 220px; max-width: 320px; display: flex; flex-direction: column; gap: 10px; }
+.bz-dial { width: 170px; align-self: center; overflow: visible; }
+.bz-dial-ring { fill: none; stroke: var(--line-2); stroke-width: 1.5; }
+.bz-dial-arc { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.bz-dial-arc.is-naive, .bz-dial-hand.is-naive { stroke: var(--bad); }
+.bz-dial-arc.is-short, .bz-dial-hand.is-short { stroke: var(--ok); }
+.bz-dial-hand { stroke-width: 3; stroke-linecap: round; }
+.bz-dial-mark { fill: var(--muted); }
+.bz-dial-hub { fill: var(--text); }
+.bz-swatches { display: grid; grid-template-columns: repeat(11, 1fr); height: 34px; border-radius: 8px; overflow: hidden; }
+.bz-swatch-now { height: 26px; border-radius: 8px; border: 1px solid var(--line-2); }
+.bz-number { margin: 0; font: 500 13px var(--mono); color: var(--text); }
+.bz-number b { color: var(--info); }

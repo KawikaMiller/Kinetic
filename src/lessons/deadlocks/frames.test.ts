@@ -59,3 +59,24 @@ describe('deadlockCount', () => {
     }
   });
 });
+
+describe('review fixes', () => {
+  it('all-at-once under tryLock backs off instead of waiting', () => {
+    const c = { ...ALL_ON, holdAndWait: false, noPreemption: false };
+    let seen = 0;
+    for (let seed = 0; seed < 50; seed++)
+      for (const f of buildFrames('dining', { conditions: c, schedule: { kind: 'random', seed }, backoff: 'random' })) {
+        if (f.note.kind !== 'blockAll') continue;
+        seen++;
+        expect(captionText(f.say)).toContain('backs off and tries again');
+        expect(captionText(f.say)).not.toContain('waits holding nothing');
+      }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it('a back-off release says the thread gives its locks up', () => {
+    const frames = buildFrames('two', { conditions: { ...ALL_ON, noPreemption: false }, schedule: { kind: 'turns' }, backoff: 'random' });
+    const f = frames.find((x) => x.note.kind === 'release' && x.note.reason === 'backoff' && x.note.locks.length > 0)!;
+    expect(captionText(f.say)).toContain('it gives up its locks');
+  });
+});

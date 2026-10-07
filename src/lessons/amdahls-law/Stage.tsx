@@ -7,7 +7,7 @@ import { useSetCaption } from '../../core/caption';
 import { pct, plural } from '../../core/format';
 import type { Tone } from '../../core/tone';
 import { fmtSpeed, viewCaption, type Law } from './frames';
-import { CORE_STEPS, MAX_CORES, PRESETS, amdahl, bestWholeCores, ceiling, gustafson, peakCores, runTime, withOverhead } from './model';
+import { CORE_STEPS, MAX_CORES, PRESETS, amdahl, bestWholeCores, ceiling, gustafson, runTime, withOverhead } from './model';
 import './styles.css';
 
 /** Lanes drawn one by one; the rest are summarised. */
@@ -86,7 +86,6 @@ export function Stage() {
   const f = law(mode);
   const speed = overhead > 0 ? withOverhead(s, n, overhead) : f(s, n);
   const best = overhead > 0 ? bestWholeCores(s, overhead, MAX_CORES) : null;
-  const peakInRange = overhead > 0 && peakCores(s, overhead) <= MAX_CORES;
   const cap = ceiling(s);
 
   return (
@@ -97,7 +96,7 @@ export function Stage() {
           <Stat label={mode === 'amdahl' ? 'Speedup' : 'Scaled speedup'} value={fmtSpeed(speed)} color="var(--hi)" sub={`on ${plural(n, 'core')}`} />
           {mode === 'amdahl' && <Stat label="Ceiling 1 / s" value={Number.isFinite(cap) ? fmtSpeed(cap) : 'none'} color="var(--muted)" sub="however many cores" />}
           {mode === 'amdahl' && <Stat label="Run time" value={pct(runTime(s, n, overhead), 1)} color="var(--muted)" sub="of the 1-core time" />}
-          {best !== null && <Stat label="Best core count" value={peakInRange ? best : `${MAX_CORES}+`} color="var(--ok)" sub={peakInRange ? fmtSpeed(withOverhead(s, best, overhead)) : 'still rising here'} />}
+          {best !== null && <Stat label="Best core count" value={best} color="var(--ok)" sub={fmtSpeed(withOverhead(s, best, overhead))} />}
         </Stats>
       }
       legend={
@@ -108,8 +107,8 @@ export function Stage() {
             ...(overhead > 0 ? [{ color: 'var(--bad)', label: 'coordination overhead', shape: 'square' as const }] : []),
             { color: 'var(--hi)', label: 'current point', shape: 'dot' },
             { color: 'var(--muted)', label: 'perfect: n×', shape: 'line' },
-            ...(mode === 'amdahl' ? [{ color: 'var(--dim)', label: 'ceiling 1 / s', shape: 'line' as const }] : []),
-            ...(best !== null && peakInRange ? [{ color: 'var(--ok)', label: 'best core count', shape: 'line' as const }] : []),
+            ...(mode === 'amdahl' && Number.isFinite(cap) && cap <= MAX_CORES ? [{ color: 'var(--dim)', label: 'ceiling 1 / s', shape: 'line' as const }] : []),
+            ...(best !== null ? [{ color: 'var(--ok)', label: 'best core count', shape: 'line' as const }] : []),
             ...(overhead > 0 ? [] : PRESETS.map((p, i) => ({ color: `var(--${PRESET_TONE[i]})`, label: `s = ${pct(p)}`, shape: 'line' as const }))),
           ]}
         />
@@ -166,7 +165,7 @@ export function Stage() {
             {mode === 'amdahl' && Number.isFinite(cap) && cap <= MAX_CORES && <HLine at={cap} label={`1 / s = ${fmtSpeed(cap)}`} tone="dim" />}
             <Curve fn={(x) => f(s, x)} tone="info" width={3} />
             {overhead > 0 && <Curve fn={(x) => withOverhead(s, x, overhead)} tone="bad" width={2.5} />}
-            {best !== null && peakInRange && <VLine at={best} label={`best: ${best}`} tone="ok" />}
+            {best !== null && <VLine at={best} label={`best: ${best}`} tone="ok" />}
             <Points data={[{ x: n, y: speed, tone: 'hi' }]} r={6} />
           </Plot2D>
         </div>

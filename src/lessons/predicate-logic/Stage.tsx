@@ -177,7 +177,7 @@ export function Stage() {
           />
 
           <Box className="pl-box">
-            <SectionTitle>As a type: what a proof must hand over</SectionTitle>
+            <SectionTitle>As a type: the witness a proof must hand over</SectionTitle>
             <p className="pl-type">
               <code>{TYPE_READING[formula].type}</code> <span className="pl-gloss">{TYPE_READING[formula].gloss}</span>
             </p>
@@ -227,7 +227,7 @@ export function Stage() {
 
           <CodePanel title={`As SQL: returns ${evaluate(FORMULAS[formula], world) ? 'TRUE' : 'FALSE'} on this grid`} lines={SQL[formula]} gutter="none" className="pl-sql" />
           <Hint tone="muted" block>
-            Tables: people(id), dishes(id), likes(person, dish). SQL has no "for all", so ∀ is written NOT EXISTS (… NOT EXISTS …): there is no counterexample.
+            Tables: people(id), dishes(id), likes(person, dish). SQL has no "for all", so ∀x P is written ¬∃x ¬P: a NOT EXISTS around a NOT, "there is no counterexample". The comments say which piece each line writes.
           </Hint>
         </div>
       </div>

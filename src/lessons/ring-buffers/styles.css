@@ -24,3 +24,5 @@
 .rb-where { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .rb-where-card { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--muted); }
 .rb-where-card b { color: var(--text); font-size: 13px; }
+.rb-drop circle { fill: var(--c); }
+.rb-drop text { font: 700 14px var(--mono); fill: var(--on-bad); }
