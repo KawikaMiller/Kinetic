@@ -14,6 +14,7 @@ import './DevKit.css';
 import { DevKitSection as Section } from './DevKitSection';
 import { DevKitTier2 } from './DevKitTier2';
 import { DevKitTier2b } from './DevKitTier2b';
+import { DevKitTier2c } from './DevKitTier2c';
 
 /**
  * Dev-only showcase of the Tier 1 shared components (#/dev/kit). Not linked from
@@ -53,6 +54,7 @@ export function DevKit() {
       </Section>
       <DevKitTier2 />
       <DevKitTier2b />
+      <DevKitTier2c />
     </div>
   );
 }

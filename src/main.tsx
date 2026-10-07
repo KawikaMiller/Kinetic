@@ -8,6 +8,7 @@ import { assertTokensInSync } from './core/palette';
 import './styles/global.css';
 import './styles/kit.css';
 import './components/scene/scene.css';
+import './components/colorField.css';
 
 if (import.meta.env.DEV) assertTokensInSync();
 

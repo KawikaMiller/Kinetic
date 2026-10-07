@@ -1071,6 +1071,26 @@ ecdsaKeyPair(); ecdsaSign(privateKey, data); ecdsaVerify(publicKey, sig, data)  
 - `aesBlockEncrypt` uses AES-CBC with a zero IV and keeps the first 16 bytes. WebCrypto has no ECB, so that's the only way to get it. It exists to show why ECB leaks patterns, never to encrypt anything.
 - Tests: RFC 4231 and RFC 2202 HMAC, RFC 4226 HOTP, RFC 6238 TOTP (SHA-1 and SHA-256), FIPS-197 C.1 and C.3, and ECDSA with one flipped byte failing in the message and in the signature. Test keys are the published RFC ones; nothing in source has a real credential shape (K-3 scan).
 
+## Tier 2 kit (wave 3→4 kit round)
+
+Showcased on `#/dev/kit` under "Tier 2 kit · wave 3→4" (`pages/DevKitTier2c.tsx`).
+
+### `ColorField.tsx`, `core/contrast.ts` (K-21) — accessibility, color-spaces
+```tsx
+<ColorField label="Text colour" value={fg} onChange={setFg} />   // native colour input, its label, and the #rrggbb beside it
+```
+```ts
+contrastRatio('#777', '#fff')   // 4.478…: (L1 + 0.05) / (L2 + 0.05), lighter over darker, 1 to 21; order doesn't matter
+formatRatio(r)                  // '4.48:1'; never rounds a failing ratio up onto a threshold (4.496 → '4.49:1')
+grade(r)                        // { aaNormal, aaLarge, aaaNormal, aaaLarge } against THRESHOLDS (AA 4.5 / 3, AAA 7 / 4.5)
+luminance([r, g, b])            // WCAG 2.x relative luminance of 0..255 channels (the published 0.03928 knee)
+parseHex('#abc')                // [170, 187, 204]; 3- or 6-digit
+```
+- Moved unchanged from the accessibility lesson, which now uses both (pixel-identical). Styles live in
+  `components/colorField.css`, loaded globally from `main.tsx`.
+- Tests: the lesson's contrast tests, plus the published figures: white 1, black 0, each primary its own
+  coefficient, the 0.03928 knee, and #767676 4.54, #595959 7.00, blue 8.59 and red 4.00 on white.
+
 ---
 
 ## Not built (deliberately)
@@ -1081,8 +1101,6 @@ ecdsaKeyPair(); ecdsaSign(privateKey, data); ecdsaVerify(publicKey, sig, data)  
 - **web-request's waterfall on `GanttLanes`:** it's one stacked bar whose segments grow with
   motion springs, plus a legend, not lanes on a time axis. Moving it would swap flex for absolute
   positioning and the spring for a linear transition, so it couldn't be pixel-identical. It stays local.
-- **`ColorField`:** requested after wave 2 and declined: accessibility's colour input is its only
-  user, so it stays local until a second lesson needs one (extract on the second use).
 - **Per plan §6:** a scene engine, `DataTable`, `KeyValue`, `EventLog`, `ChipChoice` and `CanvasStage`.
 
 Revisit any of these when a second, genuinely similar lesson needs one.
