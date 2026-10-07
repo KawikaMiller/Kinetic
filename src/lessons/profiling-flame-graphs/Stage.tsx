@@ -4,11 +4,11 @@ import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { ms, pct } from '../../core/format';
+import { pct } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { byName, profileFrames } from './frames';
+import { byName, fmtMs, profileFrames, saving } from './frames';
 import { FlameView } from './FlameView';
-import { HOT_LEAF, NO_FIXES, SAMPLE_STEPS, cpuTime, foldStacks, margin95, wallTime, type Fixes, type FlameNode } from './model';
+import { HOT_LEAF, NO_FIXES, SAMPLE_STEPS, cpuTime, foldStacks, margin95, program, timeline, wallTime, type Fixes, type FlameNode } from './model';
 import { laneBars, type Mode } from './view';
 import './styles.css';
 
@@ -41,6 +41,9 @@ export function Stage() {
     return walk(root);
   };
   const sel = findNode(selected);
+  // Same rule as the summary caption: a worthwhile saving is green, a token one amber.
+  const cut = saving(cpuTime(timeline(program(NO_FIXES))), cpuTime(segs));
+  const cpuColour = !(fixes.hoist || fixes.fastJson) ? 'var(--muted)' : cut.worthwhile ? 'var(--ok)' : 'var(--amber)';
   const hot = byName(root, HOT_LEAF);
   const hotShare = f.shown ? hot.self / f.shown : 0;
 
@@ -65,8 +68,8 @@ export function Stage() {
             color="var(--info)"
             sub={f.shown ? `${HOT_LEAF} ${pct(hotShare)} ±${Math.round(margin95(hotShare, f.shown) * 100)} pts` : 'none yet'}
           />
-          <Stat label="On-CPU time" value={ms(cpuTime(segs))} color={fixes.hoist || fixes.fastJson ? 'var(--ok)' : 'var(--muted)'} sub="modelled, per request" />
-          <Stat label="Wall time" value={ms(wallTime(segs))} color="var(--muted)" sub="includes the database wait" />
+          <Stat label="On-CPU time" value={fmtMs(cpuTime(segs))} color={cpuColour} sub="modelled, per request" />
+          <Stat label="Wall time" value={fmtMs(wallTime(segs))} color="var(--muted)" sub="includes the database wait" />
           {sel && sel.id !== 'all' && f.shown > 0 && (
             <Stat label={<span className="keep-case">{sel.name}</span>} value={`${pct(sel.total / f.shown)} total`} color="var(--hi)" sub={`${pct(sel.self / f.shown)} self (its own code)`} />
           )}
@@ -106,7 +109,7 @@ export function Stage() {
     >
       <div className="pf stage-pad">
         <div>
-          <SectionTitle hint={mode === 'graph' ? 'x = share of samples, merged and sorted by name: not time' : 'x = time, one column per sample'}>
+          <SectionTitle hint={mode === 'graph' ? 'x = share of samples, merged and sorted by name: not time' : 'x = CPU time, in order (the database wait is left out), one column per sample'}>
             {mode === 'graph' ? 'Flame graph' : 'Flame chart (time order)'}
           </SectionTitle>
           <WideRegion minWidth={WIDE} label="Flame graph: scroll sideways to see all of it">
