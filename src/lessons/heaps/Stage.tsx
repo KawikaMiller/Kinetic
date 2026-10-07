@@ -2,11 +2,12 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState, type CSSProperties } from 'react';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Stat, Stats } from '../../components/ui';
 import { SPRING } from '../../core/motion';
 import { randInt, shuffle } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
-import { MAX, extractFrames, heapifyFrames, idle, insertFrames, parent, type HItem, type HeapFrame } from './heap';
+import { extractFrames, heapifyFrames, idle, insertFrames, OUT_SHOWN, type HeapFrame, type OutItem } from './frames';
+import { MAX, parent, type HItem } from './model';
 import './styles.css';
 
 const START = [2, 5, 3, 8, 9, 6, 4, 12, 10];
@@ -19,7 +20,7 @@ const FIRST_NEW_ID = 100;
 
 interface Run {
   items: HItem[];
-  out: HItem[];
+  out: OutItem[];
   frames: HeapFrame[];
   nextId: number;
 }
@@ -66,7 +67,7 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="Size" value={f.items.length} sub={`max ${MAX} here`} />
-          <Stat label="Min (root)" value={f.items[0]?.v ?? '—'} color="var(--ok)" />
+          <RootStat items={f.items} />
           <Stat label="Comparisons" value={f.comparisons} color="var(--hi)" />
           <Stat label="Swaps" value={f.swaps} color="var(--violet)" />
         </Stats>
@@ -91,6 +92,10 @@ export function Stage() {
           </Button>
           <Button onClick={heapify}>Heapify a random array</Button>
           <Button onClick={() => setRun(initial())}>Reset</Button>
+          <Hint block>
+            Toy sizes: at most {MAX} items (four full levels), priorities 1 to {MAX_PRIORITY}, and the run order keeps the latest{' '}
+            {OUT_SHOWN}. Equal priorities can come out in either order: a heap isn't stable.
+          </Hint>
         </Controls>
       }
     >
@@ -100,9 +105,9 @@ export function Stage() {
           <TreeView frame={f} />
           <Tray className="hp-out" label="Run order (extracted)" labelWeight="regular">
             <AnimatePresence initial={false}>
-              {f.out.map((it, i) => (
+              {f.out.map((it) => (
                 <motion.div key={it.id} className="hp-out-item" layout initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                  <span>#{f.out.length - i}</span> priority <b>{it.v}</b>
+                  <span>#{it.run}</span> priority <b>{it.v}</b>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -111,6 +116,20 @@ export function Stage() {
         </div>
       </div>
     </StageFrame>
+  );
+}
+
+/** The root is the minimum only once heap order holds above it; mid-sift it can be the item still sinking. */
+function RootStat({ items }: { items: HItem[] }) {
+  const root = items[0];
+  const isMin = !root || items.every((it) => it.v >= root.v);
+  return (
+    <Stat
+      label="Min (root)"
+      value={root?.v ?? '—'}
+      color={isMin ? 'var(--ok)' : 'var(--info)'}
+      sub={isMin ? undefined : 'not the min yet'}
+    />
   );
 }
 

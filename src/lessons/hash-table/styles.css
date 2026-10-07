@@ -25,6 +25,16 @@
   flex: 1;
   min-width: 0;
 }
+/* Phones: the hash workings go under the incoming key, so the letter chips get the full width. */
+@media (max-width: 600px) {
+  .ht-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ht-hash {
+    align-self: stretch;
+  }
+}
 .ht-hash-empty {
   font: 500 14px var(--mono);
   color: var(--faint);
@@ -38,6 +48,7 @@
 }
 .ht-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 .ht-chip {

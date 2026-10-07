@@ -31,26 +31,37 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'An LRU cache is full and needs space. Which item goes?',
-      options: ['The newest one', 'The one used longest ago', 'The one used least often', 'A random one'],
+      options: ['The one added most recently', 'The one used longest ago', 'The one used the fewest times', 'A random one, to be fair'],
       answer: 1,
-      why: 'Least Recently Used: the item whose last access is oldest sits at the tail and is evicted first.',
+      why: 'Least Recently Used: the item whose last access is oldest sits at the tail and is evicted first. Fewest uses is LFU.',
     },
     {
       q: 'Why does an LRU cache pair a hash map with a doubly linked list?',
       options: [
-        'To keep items sorted alphabetically',
-        'The map finds a node in O(1); the list reorders and evicts in O(1)',
-        'To store two copies for safety',
-        'Linked lists use less memory than arrays',
+        'To keep the items sorted alphabetically',
+        'Map finds a node fast; list moves it in O(1)',
+        'To keep two copies of each item for safety',
+        'Linked lists use less memory than arrays do',
       ],
       answer: 1,
       why: 'Map lookup finds the node instantly, and unlinking or moving a node in a doubly linked list is constant time.',
     },
     {
-      q: 'Traffic becomes more skewed (a few very popular keys). The hit ratio usually…',
-      options: ['Goes up', 'Goes down', 'Stays exactly the same', 'Drops to zero'],
+      q: 'Traffic becomes more skewed (a few very popular keys). The hit ratio…',
+      options: ['It usually goes up', 'It usually goes down', 'It stays about the same', 'It drops close to zero'],
       answer: 0,
       why: 'Hot keys stay cached and get hit again and again, so a small cache covers most requests.',
+    },
+    {
+      q: 'A job reads 5 keys in a loop (1, 2, 3, 4, 5, 1, 2, …) through an LRU cache that holds 4. How does LRU do?',
+      options: [
+        'Great: it always keeps the most recent keys',
+        'Badly: each key is evicted before reuse',
+        'About the same as with a bigger cache',
+        'Fine, as long as the keys are hashed well',
+      ],
+      answer: 1,
+      why: 'The key needed next is always the least recently used one, so it was just evicted: every request misses. LRU is a bet on recency, and a loop one bigger than the cache loses it.',
     },
   ],
 };

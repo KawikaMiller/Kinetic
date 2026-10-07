@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, PauseButton, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, PauseButton, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA, perSec } from '../../core/format';
 import { useCanvas, useLoop } from '../../core/hooks';
@@ -24,7 +24,7 @@ const ALGOS: Record<AlgoId, { label: string; say: ReactNode }> = {
   },
   leaky: {
     label: 'Leaky bucket',
-    say: <><span className="hl violet">Leaky bucket</span>: requests queue up and leak out at a constant rate. Output is perfectly smooth; bursts wait in line, overflow gets a 429.</>,
+    say: <><span className="hl violet">Leaky bucket</span>: requests queue up and leak out at a constant rate. Output is smooth; bursts wait in line, overflow gets a 429.</>,
   },
 };
 
@@ -136,6 +136,10 @@ export function Stage() {
           <Button variant="danger" onClick={sendBurst}>⚡ Burst ×{BURST_SIZE}</Button>
           <Button onClick={attack}>⏱ Boundary attack</Button>
           <PauseButton paused={paused} onToggle={togglePause} />
+          <Hint block>
+            Simulated traffic from one client: arrivals jitter around the Traffic rate, and every algorithm judges the same
+            requests. Windows are 1 s; the leaky bucket releases once per animation frame, so its output is steady, not exact.
+          </Hint>
         </Controls>
       }
     >

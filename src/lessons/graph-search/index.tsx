@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Dependency resolution, web crawlers, network routing",
     ],
     why: "Many problems are secretly graph problems: package dependencies, service call graphs, permissions, workflows. Choosing the right one of these four is a core mid-level skill and a very common interview topic.",
-    watch: "Blue cells are the frontier (queued to explore next), violet cells are visited (fading with age), yellow is the cell being explored now, and green is the final path. Mud costs 5 to cross. The side panel shows the live queue, stack or priority queue, and how all four algorithms did on the same board.",
+    watch: "Blue cells are the frontier (queued to explore next), violet cells are visited (fading with age), yellow is the cell being explored now, and green is the final path. Stepping onto mud costs 5. The side panel shows the live queue, stack or priority queue, and how all four algorithms did on the same board.",
   },
   tryThis: [
     'Run BFS, then DFS on the Maze preset. Compare the ripple with the snake.',
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
     'BFS uses a queue → explores by distance → shortest path when every step costs the same.',
     'DFS uses a stack → dives deep → finds a path, not the shortest one.',
     'Dijkstra uses a priority queue ordered by cost → cheapest path with weights ≥ 0.',
-    'A* adds a heuristic (distance-to-goal guess) → same answer, far fewer cells explored.',
+    'A* adds a heuristic (distance-to-goal guess) → same cheapest cost, far fewer cells explored.',
   ],
   quiz: [
     {
@@ -44,13 +44,24 @@ const lesson: LessonModule = {
     {
       q: 'Why does A* usually visit fewer cells than Dijkstra?',
       options: [
-        'It skips walls faster',
-        'Its heuristic prioritises cells that look closer to the goal',
-        'It uses a stack instead of a heap',
-        'It gives up on long paths',
+        'It skips over walls instead of going around',
+        'Its heuristic tries cells nearer the goal first',
+        'It uses a stack instead of a priority queue',
+        'It stops early and settles for a good-enough path',
       ],
       answer: 1,
-      why: 'Priority = cost so far + estimated cost left, so promising directions get explored first while staying optimal.',
+      why: "Priority = cost so far + estimated cost left, so promising directions get explored first. It doesn't settle: with a guess that never overestimates, A* still returns the cheapest path.",
+    },
+    {
+      q: 'DFS reached the goal after fewer visits than BFS. Is its path the shortest?',
+      options: [
+        'Yes: fewer visits always means a shorter path',
+        'Not necessarily: DFS never promises shortest',
+        'Yes, as long as the board has no mud on it',
+        'Only when the goal is in the same row',
+      ],
+      answer: 1,
+      why: 'Visits measure search effort, not path length. DFS returns the first path its dive happens to find; only BFS (equal steps) or Dijkstra and A* (weights) guarantee the best one.',
     },
   ],
 };

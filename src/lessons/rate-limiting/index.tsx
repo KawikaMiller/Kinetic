@@ -43,9 +43,15 @@ const lesson: LessonModule = {
     },
     {
       q: 'You run 10 API servers behind a load balancer, each with its own in-memory limiter of 100/min. What limit does a client actually get?',
-      options: ['100/min', 'Up to about 1,000/min', '10/min', 'It depends on the algorithm only'],
+      options: ['Still 100/min, the limit you set', 'Up to about 1,000/min in total', 'About 10/min, split across servers', 'It depends only on the algorithm used'],
       answer: 1,
       why: 'Each server counts separately, so requests spread across servers get up to 10× the limit. A shared counter (e.g. Redis) fixes that.',
+    },
+    {
+      q: 'A token bucket refills 5 tokens a second and holds 10. A client sits idle for a minute. How many requests can it fire at once?',
+      options: ['300: five a second, saved for a minute', '10: the bucket only holds 10 tokens', '5: one second worth of refill', 'None until the next refill tick'],
+      answer: 1,
+      why: 'Tokens stop accumulating once the bucket is full, so idling never banks more than its capacity. That cap is what keeps a burst bounded.',
     },
   ],
 };

@@ -7,10 +7,8 @@ import { Button, Controls, Hint, Legend, Stat, Stats, TextField } from '../../co
 import { clamp } from '../../core/math';
 import { freshInt, shuffle } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
-import {
-  build, deleteFrames, height, idleFrames, inorderFrames, insertFrames, searchFrames, size,
-  type BstFrame, type Tree,
-} from './bst';
+import { deleteFrames, idleFrames, inorderFrames, insertFrames, searchFrames, type BstFrame } from './frames';
+import { build, height, LOPSIDED_SLACK, minHeight, size, type Tree } from './model';
 import './styles.css';
 
 const START = [50, 30, 70, 20, 40, 60, 80, 35, 65];
@@ -64,7 +62,7 @@ export function Stage() {
 
   const n = size(f.tree);
   const h = height(f.tree);
-  const ideal = n ? Math.ceil(Math.log2(n + 1)) : 0;
+  const ideal = minHeight(n);
 
   return (
     <StageFrame
@@ -74,7 +72,7 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="Nodes" value={n} />
-          <Stat label="Height" value={h} color={h > ideal + 1 ? 'var(--bad)' : 'var(--ok)'} sub={`best possible ${ideal}`} />
+          <Stat label="Height" value={h} color={h > ideal + LOPSIDED_SLACK ? 'var(--bad)' : 'var(--ok)'} sub={`best possible ${ideal}`} />
           <Stat label="Comparisons" value={f.comparisons} color="var(--hi)" sub="last operation" />
         </Stats>
       }
@@ -108,7 +106,7 @@ export function Stage() {
           <Button onClick={() => apply(searchFrames(t, value))}>Search</Button>
           <Button onClick={() => apply(deleteFrames(t, value))}>Delete</Button>
           <Button onClick={() => apply(inorderFrames(t))}>In-order walk</Button>
-          <Button onClick={() => preset(shuffle(SORTED), <>Random insertion order: the tree comes out fairly bushy and short.</>)}>Random order</Button>
+          <Button onClick={() => preset(shuffle(SORTED), <>Random insertion order: usually 5 or 6 levels, close to the best possible 4 and nowhere near a 10-long chain.</>)}>Random order</Button>
           <Button
             onClick={() =>
               preset(
@@ -123,6 +121,10 @@ export function Stage() {
             Sorted order
           </Button>
           <Hint>Tip: click a node to use its key.</Hint>
+          <Hint block>
+            A plain, unbalanced BST with whole-number keys {MIN_KEY} to {MAX_KEY}; a duplicate key is refused. Deleting a
+            node with two children uses its successor (its predecessor works too). Real ordered maps rebalance as they go.
+          </Hint>
         </Controls>
       }
     >

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { pct } from '../../core/format';
 import type { Frame } from '../../core/types';
-import { HIT_MS, MISS_MS, POLICY_NAMES, VICTIM, emojiOf, hitRatio, simulate, type Policy, type Step } from './sim';
+import { DB_MS, HIT_MS, MISS_MS, POLICY_NAMES, VICTIM, emojiOf, hitRatio, simulate, type Policy, type Step } from './sim';
 
 export type LFrame = Frame & Step;
 
@@ -42,16 +42,22 @@ function caption(s: Step, policy: Policy, cap: number, verbose: boolean): ReactN
       return (
         <>
           <span className="hl bad">Miss</span>. {em(k)} isn't cached, so it's a slow trip to the database (~
-          {MISS_MS - HIT_MS}ms).
+          {DB_MS}ms).
           {s.victim && verbose && <> Cache is full ({cap}/{cap}). Something has to go.</>}
         </>
       );
     case 'insert': {
+      // LFU ranks by use count, newest first among equals: a newcomer is next to go only if every other key was used more.
+      const nextToGo = s.cache.at(-1)?.key === k && s.cache.length > 1;
       const where =
         policy === 'lfu' ? (
-          <>
-            with a use count of 1, which puts it <b>last in line</b>. LFU is harsh on newcomers.
-          </>
+          nextToGo ? (
+            <>
+              with a use count of 1, which puts it <b>last in line</b>: every other key was used more. LFU is harsh on newcomers.
+            </>
+          ) : (
+            <>with a use count of 1, behind every key used more often.</>
+          )
         ) : (
           <>at the front.</>
         );
@@ -102,7 +108,7 @@ export function buildFrames(seq: string[], cap: number, policy: Policy): LFrame[
     say: (
       <>
         {POLICY_NAMES[policy]} with room for {cap}: hit ratio <span className="hl ok">{pct(ratio)}</span>, average{' '}
-        <span className="hl">{Math.round(avg / Math.max(1, seq.length))}ms</span> vs. {MISS_MS}ms with no cache at all.
+        <span className="hl">{Math.round(avg / Math.max(1, seq.length))}ms</span> vs. {DB_MS}ms with no cache at all.
       </>
     ),
   });
