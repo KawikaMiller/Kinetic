@@ -7,7 +7,7 @@ import { isaFrames } from './frames';
 import { COMMON_FLAGS, MAX_ARM64 } from './listings';
 import { HONESTY, PRESETS, type ProgId, type Variant } from './model';
 import { StatePanel } from './StatePanel';
-import { hex } from './x86';
+import { hex } from '../../core/x86';
 
 const STEP_MS = 1500;
 

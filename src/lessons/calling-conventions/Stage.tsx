@@ -12,7 +12,7 @@ import { callFrames, clobbered } from './frames';
 import { ABI, alignLabel, HONESTY, STACK_TOP, type RunResult, type SceneId, type SceneOptions } from './model';
 import { stackPicture, whyNoFrame } from './stackLayout';
 import { unwind, walkFramePointers } from './unwind';
-import { hex, signed, type Reg64 } from './x86';
+import { hex, signed, type Reg64 } from '../../core/x86';
 import './styles.css';
 
 const STEP_MS = 1500;

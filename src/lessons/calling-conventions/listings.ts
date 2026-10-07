@@ -1,4 +1,4 @@
-import type { ListingLine } from './x86';
+import type { ListingLine } from '../../core/x86';
 
 /**
  * Compiled listings are real gcc output, copied from

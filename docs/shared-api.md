@@ -1180,6 +1180,25 @@ equalMix(['var(--amber)', 'var(--sky)'])   // 'color-mix(in oklab, var(--amber) 
   canonical order (the lessons sort their parts first), so the mix depends only on which paints went in.
   Both lessons' paint-mixing analogies use it; their exact colour strings are unchanged (asserted in their tests).
 
+## Tier 2 kit (wave 4→5 kit round)
+
+Plot2D, CellGrid, Button, CodePanel, MemoryMap, GanttLanes, CallStackPanel and ArrayStrip additions are
+documented in their own sections above.
+
+### `core/x86.ts` — isa-assembly, calling-conventions
+```ts
+const program = assemble(listing.lines, BASE, endOffset);   // Intel-syntax lines (labels, offsets) → instrs, lineOf, labels
+let cpu = startCpu({ rip: entry, rsp: 0x7ff0, regs: { rdi: 6n, rsi: 4n }, called: true }); // bigints; called pushes RETURN_TO_CALLER
+const { cpu: next, effect } = step(program, cpu);            // one instruction: what it read/wrote, flags it set, the branch taken
+const { cpus, effects } = runToEnd(program, cpu);            // every state, up to STEP_LIMIT
+signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
+```
+- A tiny interpreter for lesson-authored listings, not an emulator: only the instructions the lessons use,
+  the flags ZF SF CF OF, and byte-addressed little-endian memory, following the Intel SDM (32-bit writes
+  zero-extend; 8/16-bit writes merge). Moved unchanged from isa-assembly, which carried a byte-identical copy
+  in calling-conventions pinned by a test; the copy and the pin test are gone, the behaviour tests moved to
+  `core/x86.test.ts`. Both lessons' frames are unchanged.
+
 ---
 
 ## Not built (deliberately)
