@@ -711,6 +711,7 @@ const y = logScale(1e-9, 1e-1, 300, 0);       // y axis, bottom-up; y.ticks(9) â
 logScale(1, 1024, 0, 10, 2)                   // base 2
 minWidthForText(520, 13)                      // 320: StageFrame/WideRegion minWidth keeping 13px text at the 8px floor (MIN_TEXT_PX)
 minWidthForText(placement.width, 12, 320)     // third argument: never narrower than this
+minWidthForText(SCENE_W, 9, { padX: 36 })     // stage padding the drawing doesn't scale into, added on top; { floor, padX } together too
 ```
 Linear ticks are "nice" (1, 2 or 5 Ã— 10^k) with float noise rounded off (0.3, not 0.30000000000000004).
 Log ticks are whole powers of the base inside the domain, thinned evenly beyond `count`. A log

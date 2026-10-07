@@ -100,7 +100,7 @@ it's safe.
   for pure logic, `draw.ts` for canvas drawing, `Stage.tsx` for React only.
 - Phones (390px) are a first-class target. Wide visuals never shrink below a readable scale and
   never push the page sideways: give the `StageFrame` a `minWidth` (the narrowest width where the
-  drawing still reads; `minWidthForText(W, smallestTextPx)` from `core/scale` computes it for the
+  drawing still reads; `minWidthForText(W, smallestTextPx, { floor?, padX? })` from `core/scale` computes it for the
   8px text floor) and on narrower screens the stage scrolls sideways inside itself with an affordance. If only part of the stage is wide (a diagram above HTML that can reflow), wrap just
   that part in `WideRegion` instead, so the rest fits the phone. HTML controls and panels wrap
   (`flex-wrap`), never `nowrap` rows that can outgrow a phone. Don't build per-lesson narrow layouts

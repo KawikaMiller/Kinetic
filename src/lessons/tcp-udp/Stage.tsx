@@ -17,7 +17,7 @@ const SCENE_W = 960;
 const SMALLEST_TEXT_PX = 9;
 /** .tu's horizontal padding, which the scene doesn't get to use. */
 const SCENE_PAD_X = 36;
-const STAGE_MIN_WIDTH = minWidthForText(SCENE_W, SMALLEST_TEXT_PX) + SCENE_PAD_X;
+const STAGE_MIN_WIDTH = minWidthForText(SCENE_W, SMALLEST_TEXT_PX, { padX: SCENE_PAD_X });
 const LINK_X0 = 250;
 const LINK_X1 = 700;
 const CELL = 24;

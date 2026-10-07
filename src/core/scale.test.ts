@@ -77,5 +77,19 @@ describe('minWidthForText', () => {
   it('never goes below the floor', () => {
     expect(minWidthForText(300, 12, 320)).toBe(320);
     expect(minWidthForText(900, 12, 320)).toBe(600);
+    expect(minWidthForText(300, 12, { floor: 320 })).toBe(320);
+  });
+
+  it('adds padX on top of the scaled width, and the floor still wins', () => {
+    expect(minWidthForText(960, 9, { padX: 36 })).toBe(Math.ceil((960 * 8) / 9) + 36);
+    expect(minWidthForText(900, 12, { padX: 24 })).toBe(624);
+    expect(minWidthForText(300, 12, { floor: 320, padX: 24 })).toBe(320);
+    expect(minWidthForText(900, 12, { floor: 320, padX: 24 })).toBe(624);
+  });
+
+  it('matches the hand-rolled max(floor, ceil(width + pad)) for a drawing already at the floor (db-indexes)', () => {
+    for (let w = 0; w <= 3000; w += 0.25) {
+      expect(minWidthForText(w, MIN_TEXT_PX, { floor: 620, padX: 24 }), String(w)).toBe(Math.max(620, Math.ceil(w + 24)));
+    }
   });
 });
