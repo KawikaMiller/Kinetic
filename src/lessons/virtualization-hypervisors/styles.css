@@ -1,0 +1,55 @@
+.vh { gap: 14px; }
+.vh .section-title { display: block; margin-bottom: 6px; }
+.vh-trap { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.vh-trap > .code-panel { flex: 1 1 220px; min-width: 0; }
+.vh-layers { flex: 1 1 320px; min-width: 0; max-width: 460px; display: block; height: auto; }
+.vh-layer { stroke-width: 1.5; fill: var(--cell); stroke: var(--line-2); transition: fill 0.25s, stroke 0.25s; }
+.vh-layer.is-kernel { stroke: var(--muted); }
+.vh-layer.is-hyper { stroke: var(--info); fill: color-mix(in srgb, var(--info) 10%, var(--cell)); }
+.vh-layer.is-hyper.is-busy { fill: color-mix(in srgb, var(--info) 26%, var(--cell)); }
+.vh-layer.is-cpu.is-direct { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 14%, var(--cell)); }
+.vh-layer-text { font: 600 11px var(--mono); fill: var(--muted); }
+.vh-pill rect { fill: var(--hi); stroke: var(--hi); }
+.vh-pill text { font: 700 12px var(--mono); fill: var(--on-hi); text-anchor: middle; }
+.vh-pill.is-direct rect { fill: var(--ok); stroke: var(--ok); }
+.vh-pill.is-direct text { fill: var(--on-ok); }
+.vh-pill.is-bad rect { fill: var(--bad); stroke: var(--bad); }
+.vh-pill.is-bad text { fill: var(--on-bad); }
+.vh-pill.is-translate rect { fill: var(--violet); stroke: var(--violet); }
+.vh-pill.is-translate text { fill: var(--on-violet); }
+.vh-miss { font: 700 11px var(--mono); fill: var(--bad); text-anchor: middle; }
+.vh-tag { font: 600 11px var(--mono); color: var(--violet); }
+.vh-tag.is-direct { color: var(--ok); }
+.vh-tag.is-bad { color: var(--bad); }
+.vh-stack { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
+.vh-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.vh-row > * { flex: 1 1 140px; }
+.vh-vm, .vh-hosted { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px dashed var(--line-2); border-radius: 10px; min-width: 0; }
+.vh-hosted { flex: 2 1 280px; border-style: solid; }
+.vh-vm-name { font: 700 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.vh-apps { display: flex; flex-wrap: wrap; gap: 6px; }
+.vh-apps > * { flex: 1 1 60px; }
+.vh-box { display: block; padding: 7px 10px; border-radius: 8px; border: 1.5px solid var(--line-2); background: var(--cell); font-size: 13px; text-align: center; }
+.vh-box.is-app { color: var(--muted); }
+.vh-box.is-guest { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--cell)); font-weight: 600; }
+.vh-box.is-hyper { border-color: var(--info); color: var(--info); background: color-mix(in srgb, var(--info) 14%, var(--cell)); font-weight: 600; }
+.vh-box.is-host { color: var(--text); }
+.vh-box.is-hw { color: var(--muted); border-style: dashed; }
+.vh-chain { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.vh-addr { display: flex; flex-direction: column; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; color: var(--muted); }
+.vh-addr b { font: 700 13px var(--mono); color: var(--text); }
+.vh-step { color: var(--c); font-weight: 600; }
+.vh-io { display: flex; flex-direction: column; gap: 6px; }
+.vh-io-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; font-size: 13px; padding: 2px 6px; border-radius: 8px; }
+.vh-io-row.is-now { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.vh-io-row b { font: 600 12.5px var(--mono); }
+.vh-mem { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; max-width: 720px; }
+.vh-mem-label { font-size: 13px; color: var(--muted); }
+.vh-mem-track { position: relative; display: flex; height: 18px; border-radius: 6px; background: var(--line); }
+.vh-mem-track i { display: block; height: 100%; background: var(--c); transition: width 0.3s; }
+.vh-mem-track i:first-child { border-radius: 6px 0 0 6px; }
+.vh-mem-line { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); }
+@media (max-width: 900px) {
+  .vh-io-row { grid-template-columns: 1fr auto; }
+  .vh-io-row .meter { grid-column: 1 / -1; grid-row: 2; }
+}
