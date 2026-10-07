@@ -131,7 +131,7 @@ export function Stage() {
         </div>
         <Hint block>
           A simulated program and profiler: the durations are illustrative, and the samples are seeded, one per equal slice of CPU time with random
-          jitter. Real profilers (perf, pprof, Chrome DevTools) sample the same way, across many requests. The ± is a rough 95% margin for the hot leaf's
+          jitter. Real profilers (perf, pprof, Chrome DevTools) also record the stack at a regular rate, across many requests. The ± is a rough 95% margin for the hot leaf's
           share. Click a frame to zoom in.
         </Hint>
       </div>
