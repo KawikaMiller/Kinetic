@@ -14,12 +14,11 @@ const INDEX_R = R + 24;
 const HEAD_R = R + 48;
 const TAIL_R = R - 30;
 
-export interface Flash {
-  slot: number;
-  tone: 'orange' | 'bad';
-  /** Changes every time, so the same slot can flash twice in a row. */
+/** overwrite: the slot whose item was lost; drop: the new item, rejected at the tail. */
+export type Flash = ({ kind: 'overwrite'; slot: number } | { kind: 'drop' }) & {
+  /** Changes every time, so the same thing can flash twice in a row. */
   key: number;
-}
+};
 
 const angleOf = (slot: number, n: number) => (slot / n) * 360 - 90;
 const at = (deg: number, r: number) => ({ x: C + r * Math.cos((deg * Math.PI) / 180), y: C + r * Math.sin((deg * Math.PI) / 180) });
@@ -44,7 +43,7 @@ export function RingView({ ring, headBase, tailBase, flash }: { ring: Ring; head
         return (
           <g key={i} transform={`translate(${p.x} ${p.y}) rotate(${deg + 90})`}>
             <rect x={-SLOT_W / 2} y={-SLOT_H / 2} width={SLOT_W} height={SLOT_H} rx={6} className={`rb-slot ${cls}`} />
-            {flash?.slot === i && (
+            {flash?.kind === 'overwrite' && flash.slot === i && (
               <motion.rect
                 key={flash.key}
                 x={-SLOT_W / 2}
@@ -52,7 +51,7 @@ export function RingView({ ring, headBase, tailBase, flash }: { ring: Ring; head
                 width={SLOT_W}
                 height={SLOT_H}
                 rx={6}
-                className={`rb-flash tone-${flash.tone}`}
+                className="rb-flash tone-orange"
                 initial={{ opacity: 0.95 }}
                 animate={{ opacity: 0 }}
                 transition={{ duration: 1.1 }}
@@ -72,6 +71,14 @@ export function RingView({ ring, headBase, tailBase, flash }: { ring: Ring; head
           </text>
         );
       })}
+      {flash?.kind === 'drop' && (
+        <motion.g key={flash.key} className="rb-drop tone-bad" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 1.1 }}>
+          <circle cx={at(tailDeg, TAIL_R - 26).x} cy={at(tailDeg, TAIL_R - 26).y} r={11} />
+          <text x={at(tailDeg, TAIL_R - 26).x} y={at(tailDeg, TAIL_R - 26).y + 4} textAnchor="middle">
+            ×
+          </text>
+        </motion.g>
+      )}
       <Pointer deg={headDeg} r={HEAD_R} label="head" tone="info" outward />
       <Pointer deg={tailDeg} r={TAIL_R} label="tail" tone="violet" />
     </svg>
