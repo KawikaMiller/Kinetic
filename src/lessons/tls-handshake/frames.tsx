@@ -1,27 +1,13 @@
-import { TOKENS } from '../../core/palette';
+import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
+import { P, roundTripsBeforeData, type Paint } from './model';
 
-export interface Paint {
-  color: string;
-  label: string;
-  secret?: boolean;
-  mixed?: boolean;
-}
+export { P, type Paint };
 
-// Paint-mixing Diffie-Hellman: mixing is easy, un-mixing is (practically) impossible.
-// The mixes are real colour blends, so they have no token.
-export const P = {
-  pub: { color: TOKENS.hi, label: 'public yellow' },
-  cSec: { color: TOKENS.bad, label: 'secret red', secret: true },
-  sSec: { color: TOKENS.info, label: 'secret blue', secret: true },
-  mSec: { color: TOKENS.violet, label: 'secret violet', secret: true },
-  cMix: { color: '#ff9a5c', label: 'yellow + red', mixed: true }, // allow-color: paint-mix analogy
-  sMix: { color: '#8fd694', label: 'yellow + blue', mixed: true }, // allow-color: paint-mix analogy
-  mMix: { color: '#e0a8d8', label: 'yellow + violet', mixed: true }, // allow-color: paint-mix analogy
-  shared: { color: '#b07a4f', label: 'shared secret', mixed: true }, // allow-color: paint-mix analogy
-  sharedM: { color: '#c46f86', label: 'shared… with Mallory', mixed: true }, // allow-color: paint-mix analogy
-} satisfies Record<string, Paint>;
+/** Round trips before request data can flow, from the modelled flights (RFC 8446 / RFC 5246). */
+const RTT_13 = roundTripsBeforeData('1.3');
+const RTT_12 = roundTripsBeforeData('1.2');
 
 export type Party = 'client' | 'server' | 'mallory';
 
@@ -77,11 +63,12 @@ export function normalFrames(): TlsFrame[] {
   const r = recorder();
   const notes = () => r.get().notes;
   // mark link i on top of whatever the previous frame had verified
-  const mark = (i: number, state: LinkState) => r.get().chain!.map((l, j) => (j === i ? { ...l, state } : l));
+  const mark = (i: number, state: LinkState, detail?: string) =>
+    r.get().chain!.map((l, j) => (j === i ? { ...l, state, detail: detail ?? l.detail } : l));
 
   r.snap(<>The client and server want a shared secret key, but <b>Eve</b> can read every byte on the wire. How do you agree on a secret in public?</>);
   r.snap(
-    <>Both sides start from the same <span className="hl">public</span> colour. Everyone knows it, Eve included. (In real TLS: a public elliptic curve.)</>,
+    <>Both sides start from the same <span className="hl">public</span> colour. Everyone knows it, Eve included. (In real TLS 1.3: an agreed public group, such as the X25519 curve.)</>,
     undefined,
     { client: [P.pub], server: [P.pub], notes: [{ text: 'public colour: yellow', color: P.pub.color }] },
   );
@@ -100,7 +87,7 @@ export function normalFrames(): TlsFrame[] {
     undefined,
     {
       wire: { label: 'ClientHello + key share', from: 'client', to: 'server', color: P.cMix.color },
-      server: [P.pub, P.sSec, P.cMix], notes: [...notes(), { text: 'client key share: yellow + red mix', color: P.cMix.color }],
+      server: [P.pub, P.sSec, P.cMix], notes: [...notes(), { text: `client key share: ${P.cMix.label} mix`, color: P.cMix.color }],
     },
   );
   r.snap(
@@ -109,7 +96,7 @@ export function normalFrames(): TlsFrame[] {
     {
       wire: { label: 'ServerHello + key share', from: 'server', to: 'client', color: P.sMix.color },
       server: [P.pub, P.sSec, P.cMix, P.sMix], client: [P.pub, P.cSec, P.cMix, P.sMix],
-      notes: [...notes(), { text: 'server key share: yellow + blue mix', color: P.sMix.color }], rtt: 1,
+      notes: [...notes(), { text: `server key share: ${P.sMix.label} mix`, color: P.sMix.color }], rtt: 1,
     },
   );
   r.snap(
@@ -143,12 +130,18 @@ export function normalFrames(): TlsFrame[] {
   );
   r.snap(<>Check 2: the intermediate's certificate is signed by the root.</>, undefined, { chain: mark(1, 'ok') });
   r.snap(
-    <>Check 3: that root is in the browser's built-in <span className="hl ok">trust store</span>. The chain holds: this really is the server.</>,
+    <>
+      Check 3: that root is in the browser's built-in <span className="hl ok">trust store</span>. The chain holds, and the
+      CertificateVerify signature over the handshake checks out against the certificate's key: this really is the server.
+    </>,
     undefined,
-    { chain: mark(2, 'ok') },
+    { chain: mark(2, 'ok', 'in your trust store') },
   );
   r.snap(
-    <>Both sides confirm with <b>Finished</b> messages and derive session keys. <span className="hl ok">Secure after 1 round trip</span> (TLS 1.2 needed 2).</>,
+    <>
+      Both sides confirm with <b>Finished</b> messages and derive traffic keys from the shared secret.{' '}
+      <span className="hl ok">Secure after {plural(RTT_13, 'round trip')}</span> (a full TLS 1.2 handshake needed {RTT_12}).
+    </>,
     undefined,
     {
       wire: { label: 'Finished', from: 'client', to: 'server', color: 'var(--ok)', cipher: true },
@@ -156,7 +149,10 @@ export function normalFrames(): TlsFrame[] {
     },
   );
   r.snap(
-    <>Now real data flows, encrypted with fast <b>symmetric</b> encryption (like AES) using that shared key. Eve sees only noise.</>,
+    <>
+      Now real data flows, encrypted with fast <b>symmetric</b> encryption (such as AES-GCM) under keys derived from that shared
+      secret. Eve sees only noise.
+    </>,
     undefined,
     {
       wire: { label: 'GET /account', from: 'client', to: 'server', color: P.shared.color, cipher: true },
@@ -214,7 +210,10 @@ export function mitmFrames(): TlsFrame[] {
     { clientKey: P.sharedM, notes: [...notes(), { text: 'now shares a key with the client!', color: P.sharedM.color }] },
   );
   r.snap(
-    <>So Mallory needs a certificate for api.example.com. No real CA will sign one for her, so she <b>signs it herself</b>.</>,
+    <>
+      So Mallory needs a certificate for api.example.com. Forwarding the real one won't do: she can't sign the handshake with its
+      private key. No real CA will issue her one, so she <b>signs one herself</b>.
+    </>,
     undefined,
     {
       wire: { label: 'Certificate (forged)', from: 'mallory', to: 'client', color: 'var(--bad)', cipher: true },
@@ -247,7 +246,7 @@ export function mitmFrames(): TlsFrame[] {
     </>,
     2.2,
     {
-      wire: { label: 'alert: bad_certificate', from: 'client', to: 'mallory', color: 'var(--bad)' },
+      wire: { label: 'alert: unknown_ca', from: 'client', to: 'mallory', color: 'var(--bad)', cipher: true },
       aborted: true, clientKey: null,
       notes: [...notes(), { text: 'got an alert. No data. Game over.', color: 'var(--bad)' }],
     },

@@ -7,8 +7,8 @@
 /* Scene nodes: the store glows a little more violet; the attacker is always red. */
 .scene-node.aj-store.on .scene-node-box { fill: color-mix(in srgb, var(--violet) 12%, var(--panel)); }
 .scene-node.aj-attacker .scene-node-box { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 10%, transparent); }
-.aj-key rect { fill: var(--bg-2); stroke: color-mix(in srgb, var(--hi) 50%, transparent); }
-.aj-key text { font: 600 10.5px var(--mono); fill: var(--hi); }
+.aj-key rect { fill: var(--bg-2); stroke: color-mix(in srgb, var(--amber) 50%, transparent); }
+.aj-key text { font: 600 10.5px var(--mono); fill: var(--amber); }
 
 .aj-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .aj-panel {
@@ -53,7 +53,7 @@
 .aj-token { font-size: 12px; word-break: break-all; line-height: 1.6; }
 .aj-token .h, .aj-decoded .h { color: var(--violet); }
 .aj-token .p, .aj-decoded .p { color: var(--info); }
-.aj-token .s, .aj-decoded .s { color: var(--hi); }
+.aj-token .s, .aj-decoded .s { color: var(--amber); }
 .aj-decoded { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .aj-decoded code { word-break: break-all; }
 
@@ -124,7 +124,7 @@
 }
 .aj-role button.on { color: var(--bg); background: var(--hi); border-color: var(--hi); }
 .aj-sigs { display: grid; grid-template-columns: 120px 1fr; gap: 4px 12px; align-items: baseline; font-size: 12px; color: var(--muted); }
-.aj-sigs code { color: var(--hi); font-size: 12px; word-break: break-all; }
+.aj-sigs code { color: var(--amber); font-size: 12px; word-break: break-all; }
 .aj-sigs code .x { color: var(--bad); text-decoration: underline; }
 .aj-big { align-self: flex-start; font: 800 16px var(--mono); padding: 6px 14px; border-radius: 10px; margin-top: 4px; }
 .aj-check.ok .aj-big { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }

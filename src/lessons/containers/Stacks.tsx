@@ -1,13 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 
-const APPS = ['web', 'api', 'worker', 'cron'];
-const VM_OS_GB = 2;
-const APP_GB = 0.2;
-const MB_PER_GB = 1000;
+import { APPS, containerDiskMb, vmDiskGb } from './model';
 /** Boot-bar animation lengths: a whole guest OS vs a process on a running kernel. */
 const VM_BOOT = '4s';
 const CONTAINER_BOOT = '0.25s';
@@ -33,8 +30,8 @@ export function Stacks({ picker }: { picker: ReactNode }) {
       height={430}
       stats={
         <Stats>
-          <Stat label="VM disk" value={`${(n * (VM_OS_GB + APP_GB)).toFixed(1)} GB`} color="var(--bad)" sub="rough, typical" />
-          <Stat label="Container disk" value={`${(n * APP_GB * MB_PER_GB).toFixed(0)} MB`} color="var(--ok)" sub="rough, typical" />
+          <Stat label="VM disk" value={`${vmDiskGb(n).toFixed(1)} GB`} color="var(--bad)" sub="rough, typical" />
+          <Stat label="Container disk" value={`${containerDiskMb(n).toFixed(0)} MB`} color="var(--ok)" sub="rough, typical" />
           <Stat label="Guest OSes" value={n} color="var(--bad)" sub="vs 0 for containers" />
         </Stats>
       }
@@ -61,6 +58,10 @@ export function Stacks({ picker }: { picker: ReactNode }) {
           >
             ▶ Boot everything
           </Button>
+          <Hint block>
+            Rough, typical numbers, and the boot bars are not to scale (a full VM can take 100 times as long). Lightweight
+            microVMs such as Firecracker boot in well under a second; it's the full guest OS that's slow.
+          </Hint>
         </Controls>
       }
     >

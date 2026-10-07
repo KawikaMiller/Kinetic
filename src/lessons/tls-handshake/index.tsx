@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Knowing why corporate proxies install their own root CA on employee machines',
     ],
     why: "Mid-level engineers configure certificates, terminate TLS at load balancers and debug handshake failures. Understanding what each step protects against tells you which errors are dangerous and which are misconfigurations, and why you must never just disable certificate verification to make an error go away.",
-    watch: "Coloured dots are paints: yellow is public, dashed dots with a 🔒 are secrets that never leave their owner, and mixes are safe to send. Pills on the wire are handshake messages; violet ones are already encrypted. The notebook lists everything the eavesdropper saw. The certificate panel checks each link of the chain: green means verified, red means failed. Switch to MITM to watch Mallory try to impersonate the server.",
+    watch: "Coloured dots are paints. Yellow is public. Dashed, grey-outlined dots with a 🔒 are secrets that never leave their owner: blue for the client, green for the server, violet for Mallory. A mix is a real blend of the paints in it and is safe to send. Pills on the wire are messages, and a 🔒 pill is encrypted: violet for the certificate, green for Finished, the shared colour for data locked with that key, red for Mallory's forged certificate and the client's alert. The notebook lists everything the eavesdropper saw, with ▒ for ciphertext. In the certificate panel, a green ✓ link is verified, a red ✕ failed and … is still to check. A green wire and green party outlines mean the session is encrypted; a red outline means the connection was aborted, and Mallory sits in a red-outlined box. Switch to MITM to watch Mallory try to impersonate the server.",
   },
   tryThis: [
     "Play the normal handshake and compare Eve's notebook with the shared colour at the end. Could she build it?",
@@ -31,21 +31,42 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'An eavesdropper records the entire key exchange. Can they compute the session key?',
-      options: ['Yes, it was sent in plain text', 'Only with the certificate', 'No: they never see either secret, only the mixed values', 'Only for TLS 1.2'],
+      options: [
+        'Yes, the key is sent in plain text',
+        'Only if they also copy the certificate',
+        'No: neither private secret crosses the wire',
+        'Only when the connection falls back to TLS 1.2',
+      ],
       answer: 2,
-      why: 'Diffie-Hellman only ever transmits the public values. Deriving the shared key requires one of the private secrets, which never leave their owners.',
+      why: "Diffie-Hellman only ever transmits the public values. Deriving the shared key needs one of the private secrets, which never leave their owners. The certificate is public and sent to everyone, so copying it gives the eavesdropper nothing.",
     },
     {
-      q: "What actually stops a man-in-the-middle from impersonating the server?",
-      options: ['The key exchange', 'Symmetric encryption', 'Certificate verification against trusted root CAs', 'TCP sequence numbers'],
+      q: 'What actually stops a man-in-the-middle from impersonating the server?',
+      options: [
+        'The key exchange, since it is encrypted',
+        'Symmetric encryption of the session data',
+        'A certificate chain up to a trusted root',
+        'TCP sequence numbers on every packet',
+      ],
       answer: 2,
-      why: "An attacker can do a perfectly good key exchange with you. What they can't do is present a valid certificate for the real domain that chains to a CA your browser trusts.",
+      why: "An attacker can do a perfectly good key exchange with you; encryption just protects your conversation with whoever you agreed a key with. What they can't do is present a valid certificate for the real domain that chains to a CA your browser trusts, and sign the handshake with its private key.",
     },
     {
       q: 'Why does TLS switch to symmetric encryption (like AES) for the actual data?',
-      options: ["It's much faster for bulk data", "It's the only kind browsers support", 'Certificates require it', 'It hides the server name'],
+      options: [
+        'It is far faster for bulk data',
+        'Browsers support no other kind',
+        'The certificate requires it',
+        'It hides which server you visit',
+      ],
       answer: 0,
-      why: 'Public-key operations are expensive, so they are used only to agree on a key. Symmetric ciphers then encrypt the data at high speed.',
+      why: 'Public-key operations are expensive, so they are used only to agree on keys. Symmetric ciphers then encrypt the data at high speed. It does not hide the server: the name usually travels in the ClientHello in the clear (SNI).',
+    },
+    {
+      q: 'On a first visit (no resumption), how many round trips does TLS 1.3 take before the client can send its request?',
+      options: ['None', 'One', 'Two', 'Three'],
+      answer: 1,
+      why: "The client's first flight carries its key share, so after the server's one reply it has everything and sends Finished with its request. A full TLS 1.2 handshake took two. Zero round trips is only possible when resuming with a pre-shared key (0-RTT).",
     },
   ],
 };

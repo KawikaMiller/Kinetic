@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend } from '../../components/ui';
+import { Button, Controls, Hint, Legend } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { useLoop } from '../../core/hooks';
 
@@ -13,6 +13,8 @@ const START_DELAY_MS = 50;
 const JANK_MS = 200;
 /** Angular speed of the sliding dot. */
 const DOT_SPEED = 2.2;
+const WORK_S = WORK_MS / 1000;
+const CHUNK_MS = WORK_MS / CHUNKS;
 
 type Busy = 'none' | 'blocking' | 'chunked';
 
@@ -62,7 +64,7 @@ export function BlockDemo({ picker }: { picker: ReactNode }) {
   const block = () => {
     resetGap();
     setBusy('blocking');
-    setCaption(<>Running a <b>2-second</b> synchronous loop on the main thread… watch the clock.</>);
+    setCaption(<>Running a <b>{WORK_S}-second</b> synchronous loop on the main thread… watch the clock.</>);
     setTimeout(() => {
       const end = performance.now() + WORK_MS;
       while (performance.now() < end) {
@@ -72,7 +74,7 @@ export function BlockDemo({ picker }: { picker: ReactNode }) {
       setBusy('none');
       setCaption(
         <>
-          The page <span className="hl bad">froze</span> for 2 s: no animation, no clicks, no timers. One long task
+          The page <span className="hl bad">froze</span> for {WORK_S} s: no animation, no clicks, no timers. One long task
           blocks the <b>whole</b> event loop, because there is only one call stack.
         </>,
       );
@@ -83,7 +85,7 @@ export function BlockDemo({ picker }: { picker: ReactNode }) {
     resetGap();
     setBusy('chunked');
     setProgress(0);
-    setCaption(<>Same 2 s of work, split into 40 chunks of 50 ms with a setTimeout between each…</>);
+    setCaption(<>Same {WORK_S} s of work, split into {CHUNKS} chunks of {CHUNK_MS} ms with a setTimeout between each…</>);
     let done = 0;
     const chunk = () => {
       const end = performance.now() + WORK_MS / CHUNKS;
@@ -95,10 +97,17 @@ export function BlockDemo({ picker }: { picker: ReactNode }) {
       if (done < CHUNKS) setTimeout(chunk, 0);
       else {
         setBusy('none');
+        // judged from what this run measured, not assumed
+        const smooth = maxGap.current <= JANK_MS;
         setCaption(
           <>
-            Still 2 s of work, but the loop got to breathe between chunks, so the clock kept ticking. Longer jobs
-            belong in a <span className="hl info">Web Worker</span> (a separate thread) entirely.
+            Still {WORK_S} s of work, but the loop got to breathe between chunks:{' '}
+            {smooth ? (
+              <>the clock kept ticking, and its longest pause was {Math.round(maxGap.current)} ms.</>
+            ) : (
+              <>even so, one pause reached {Math.round(maxGap.current)} ms on this device.</>
+            )}{' '}
+            Longer jobs belong in a <span className="hl info">Web Worker</span> (a separate thread) entirely.
           </>,
         );
       }
@@ -126,6 +135,10 @@ export function BlockDemo({ picker }: { picker: ReactNode }) {
           <Button onClick={chunked} disabled={busy !== 'none'}>
             Same work, in chunks
           </Button>
+          <Hint block>
+            This one is real, not simulated: the buttons really busy-wait on this page's main thread, and the pause readout is
+            measured between animation frames. Pauses over {JANK_MS} ms show in red.
+          </Hint>
         </Controls>
       }
     >

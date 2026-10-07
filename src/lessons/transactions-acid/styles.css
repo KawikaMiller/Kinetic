@@ -136,7 +136,7 @@
 }
 .tx-rec.begin { border-left-color: var(--faint); background: var(--cell); }
 .tx-rec.commit { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
-.tx-rec.undo { border-left-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); color: var(--hi); }
+.tx-rec.undo { border-left-color: var(--orange); background: color-mix(in srgb, var(--orange) 10%, transparent); color: var(--orange); }
 .tx-rec.redo { border-left-color: var(--ok); background: color-mix(in srgb, var(--ok) 8%, transparent); color: var(--ok); }
 .tx-empty { font-size: 13px; color: var(--faint); margin: 0; }
 

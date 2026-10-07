@@ -31,7 +31,7 @@
 .rc-thread header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .rc-thread header b { color: var(--c); font-size: 15px; }
 .rc-thread header span { font: 600 11px var(--mono); text-transform: uppercase; color: var(--faint); }
-.rc-thread.active header span { color: var(--ok); }
+.rc-thread.active header span { color: var(--hi); }
 .rc-thread.waiting header span { color: var(--bad); }
 
 .rc-code { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }

@@ -1,16 +1,23 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { plural } from '../../core/format';
+import { minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, type Scenario } from './frames';
-import { LATENCY, MAX_WIN, N, simulate, type FlightView } from './sim';
+import { FORCED_TCP_LOSS, FORCED_UDP_LOSS, LATENCY, MAX_WIN, N, simulate, type FlightView } from './sim';
 import './styles.css';
 
 /** Milliseconds per tick at 1× speed. */
 const INTERVAL = 260;
 
 // Scene geometry (SVG units)
+const SCENE_W = 960;
+/** Smallest scene text: the receiver's cell numbers (.tu-num-sm). */
+const SMALLEST_TEXT_PX = 9;
+/** .tu's horizontal padding, which the scene doesn't get to use. */
+const SCENE_PAD_X = 36;
+const STAGE_MIN_WIDTH = minWidthForText(SCENE_W, SMALLEST_TEXT_PX) + SCENE_PAD_X;
 const LINK_X0 = 250;
 const LINK_X1 = 700;
 const CELL = 24;
@@ -30,7 +37,7 @@ export function Stage() {
   // seed 19 at the default settings: one TCP retransmit, two UDP losses, one visible reorder
   const [seed, setSeed] = useState(19);
   const ticks = useMemo(() => simulate(seed, loss / 100, reorder / 100), [seed, loss, reorder]);
-  const frames = useMemo(() => buildFrames(ticks, scenario), [ticks, scenario]);
+  const frames = useMemo(() => buildFrames(ticks, scenario, { loss: loss / 100, reorder: reorder / 100 }), [ticks, scenario, loss, reorder]);
   const player = usePlayer(frames, { interval: INTERVAL, autoplayOnChange: false });
   const f = player.frame;
   const { tcp, udp } = f;
@@ -38,7 +45,7 @@ export function Stage() {
   const tcpFrozen = scenario === 'video' && !tcp.done && tcp.delivered.length > 0 && (tcp.buffer.length > 0 || f.t - tcp.lastDeliver > 6);
 
   return (
-    <StageFrame minWidth={810}
+    <StageFrame minWidth={STAGE_MIN_WIDTH}
       player={player}
       height={500}
       style={{ ['--dur' as string]: `${INTERVAL / player.speed}ms` } as CSSProperties}
@@ -56,7 +63,7 @@ export function Stage() {
             { color: 'var(--info)', label: 'packet' },
             { color: 'var(--violet)', label: 'retransmit' },
             { color: 'var(--ok)', label: 'ACK / delivered' },
-            { color: 'var(--hi)', label: 'held back / out of order' },
+            { color: 'var(--orange)', label: 'held back / out of order' },
             { color: 'var(--bad)', label: 'lost' },
           ]}
         />
@@ -75,15 +82,21 @@ export function Stage() {
           <Slider label="Packet loss" value={loss} min={0} max={40} onChange={setLoss} format={(v) => `${v}%`} />
           <Slider label="Reordering" value={reorder} min={0} max={50} onChange={setReorder} format={(v) => `${v}%`} />
           <Button onClick={() => setSeed((s) => s + 1)}>New random network</Button>
+          <Hint block>
+            A simulated link, timed in ticks rather than milliseconds. Whenever loss is above 0%, the first send of TCP #{FORCED_TCP_LOSS} and
+            UDP #{FORCED_UDP_LOSS} is always dropped so the story shows up; every other loss and delay is seeded random (New random network
+            changes the seed). TCP is simplified: one packet per tick, a window capped at {MAX_WIN}, one timer, go back and resend from the
+            first gap on a timeout, no fast retransmit on duplicate ACKs, and ACKs are never lost.
+          </Hint>
         </Controls>
       }
     >
       <div className="tu">
-        <svg className="tu-scene" viewBox="0 0 960 420" role="img" aria-label="TCP and UDP transfers side by side">
-          <Lane y={lanes.tcp} name="TCP" tag="reliable · ordered · connection" tagColor="var(--ok)">
+        <svg className="tu-scene" viewBox={`0 0 ${SCENE_W} 420`} role="img" aria-label="TCP and UDP transfers side by side">
+          <Lane y={lanes.tcp} name="TCP" tag="reliable · ordered · connection">
             <SenderGrid y={lanes.tcp} status={tcp.status} />
             <text x={30} y={lanes.tcp + 136} className="tu-small">
-              window <tspan className="tu-strong">{Math.floor(tcp.cwnd)}</tspan> packet{Math.floor(tcp.cwnd) === 1 ? '' : 's'} in flight
+              window <tspan className="tu-strong">{Math.floor(tcp.cwnd)}</tspan>: max unACKed in flight
             </text>
             <Link y={lanes.tcp} acks />
             {tcp.flights.map((fl) => (
@@ -110,7 +123,7 @@ export function Stage() {
             />
           </Lane>
 
-          <Lane y={lanes.udp} name="UDP" tag="fire and forget · no ACKs" tagColor="var(--info)">
+          <Lane y={lanes.udp} name="UDP" tag="fire and forget · no ACKs">
             <SenderGrid y={lanes.udp} status={Array.from({ length: N }, (_, i) => (i < udp.sent ? 'sent' : 'unsent'))} />
             <text x={30} y={lanes.udp + 136} className="tu-small">sends at full speed, never looks back</text>
             <Link y={lanes.udp} />
@@ -121,14 +134,14 @@ export function Stage() {
               y={lanes.udp}
               buffer={null}
               delivered={udp.delivered}
-              orderOf={(i) => (i > 0 && udp.delivered[i] < Math.max(...udp.delivered.slice(0, i)) ? 'hi' : 'ok')}
+              orderOf={(i) => (i > 0 && udp.delivered[i] < Math.max(...udp.delivered.slice(0, i)) ? 'orange' : 'ok')}
               missing={udp.done ? udp.lost : []}
               appLabel={scenario === 'file' ? 'file.zip' : 'video frames'}
               badge={
                 udp.done && udp.lost.length
                   ? scenario === 'file'
                     ? { text: `corrupt: ${udp.lost.length} missing`, tone: 'bad' }
-                    : { text: `${plural(udp.lost.length, 'glitch', 'glitches')}, no freeze`, tone: 'hi' }
+                    : { text: `${plural(udp.lost.length, 'glitch', 'glitches')}, no freeze`, tone: 'orange' }
                   : udp.done
                     ? { text: 'all arrived', tone: 'ok' }
                     : null
@@ -143,12 +156,12 @@ export function Stage() {
   );
 }
 
-function Lane({ y, name, tag, tagColor, children }: { y: number; name: string; tag: string; tagColor: string; children: ReactNode }) {
+function Lane({ y, name, tag, children }: { y: number; name: string; tag: string; children: ReactNode }) {
   return (
     <g>
       <rect x={10} y={y} width={940} height={180} rx={14} className="tu-lane" />
       <text x={28} y={y + 26} className="tu-name">{name}</text>
-      <text x={72} y={y + 26} className="tu-tag" fill={tagColor}>{tag}</text>
+      <text x={72} y={y + 26} className="tu-tag">{tag}</text>
       {children}
     </g>
   );
@@ -206,10 +219,10 @@ function Receiver({
   y: number;
   buffer: number[] | null;
   delivered: number[];
-  orderOf: (i: number) => 'ok' | 'hi';
+  orderOf: (i: number) => 'ok' | 'orange';
   missing: number[];
   appLabel: string;
-  badge: { text: string; tone: 'ok' | 'bad' | 'hi' } | null;
+  badge: { text: string; tone: 'ok' | 'bad' | 'orange' } | null;
 }) {
   const x0 = RECEIVER_X;
   const size = RX_CELL;

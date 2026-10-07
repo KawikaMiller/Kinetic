@@ -5,7 +5,7 @@
 .ix-edge { stroke: var(--line-2); stroke-width: 1.5; transition: stroke 0.3s; }
 .ix-edge.on { stroke: var(--info); stroke-width: 2.5; }
 .ix-sib { stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 3 3; transition: stroke 0.3s; }
-.ix-sib.on { stroke: var(--ok); stroke-width: 2.5; stroke-dasharray: none; }
+.ix-sib.on { stroke: var(--info); stroke-width: 2.5; stroke-dasharray: none; }
 .ix-pointer { stroke: var(--hi); stroke-width: 2.5; stroke-dasharray: 6 4; fill: none; }
 
 .ix-node rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.5; transition: fill 0.3s, stroke 0.3s; }

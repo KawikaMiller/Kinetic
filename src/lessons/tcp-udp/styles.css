@@ -19,6 +19,7 @@
 }
 .tu-tag {
   font: 600 11px var(--mono);
+  fill: var(--muted);
 }
 .tu-small {
   font: 600 11px var(--mono);
@@ -51,16 +52,16 @@
   stroke: var(--ok);
 }
 .tu-held {
-  fill: color-mix(in srgb, var(--hi) 22%, transparent);
-  stroke: var(--hi);
+  fill: color-mix(in srgb, var(--orange) 22%, transparent);
+  stroke: var(--orange);
 }
 .tu-got-ok {
   fill: color-mix(in srgb, var(--ok) 25%, transparent);
   stroke: var(--ok);
 }
-.tu-got-hi {
-  fill: color-mix(in srgb, var(--hi) 28%, transparent);
-  stroke: var(--hi);
+.tu-got-orange {
+  fill: color-mix(in srgb, var(--orange) 28%, transparent);
+  stroke: var(--orange);
 }
 .tu-missing {
   fill: color-mix(in srgb, var(--bad) 18%, transparent);
@@ -126,9 +127,9 @@
   fill: color-mix(in srgb, var(--bad) 15%, transparent);
   stroke: var(--bad);
 }
-.tu-badge-hi {
-  fill: color-mix(in srgb, var(--hi) 15%, transparent);
-  stroke: var(--hi);
+.tu-badge-orange {
+  fill: color-mix(in srgb, var(--orange) 15%, transparent);
+  stroke: var(--orange);
 }
 .tu-badge-text {
   font: 700 11px var(--mono);
@@ -159,7 +160,7 @@
 }
 .tu-cwnd-line {
   fill: none;
-  stroke: var(--ok);
+  stroke: var(--info);
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }

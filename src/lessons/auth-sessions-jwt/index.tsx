@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Short-lived access tokens paired with revocable refresh tokens",
     ],
     why: "Auth bugs are some of the most expensive bugs there are. Mid-level engineers are expected to pick between these deliberately, set cookie flags correctly, know that JWT payloads are readable by anyone, and explain why a stolen token keeps working after logout.",
-    watch: "Four lanes along the bottom. In ① and ②, blue pills are requests, violet ones are session-store traffic, green are responses and red mark an attacker or bad outcome. The panels below show what the browser holds and what the server stores. The token is coloured by part: violet header, blue payload, yellow signature. ③ runs the same traffic through both designs. In ④ you edit the payload and watch the server's real HMAC check reject it.",
+    watch: "Four lanes, picked at the top. In ① and ②, blue pills are requests, violet ones are session-store traffic, green are responses and red mark an attacker or a bad outcome; the session store is the violet box. The panels below show what the browser holds and what the server stores. The token is coloured by part: violet header, blue payload, amber signature, and the server's signing-key pill is amber too. ③ runs the same traffic through both designs: a blue dot is the request, turning violet on its store hop, and the verdicts go green when the right thing happened and red when it failed or let a banned user in. In ④ you edit the payload and watch the server's real HMAC check: signature characters that don't match are underlined in red.",
   },
   tryThis: [
     "Play ① Sessions to the end: logout deletes a row, and the copied cookie instantly dies.",
@@ -31,21 +31,42 @@ const lesson: LessonModule = {
   quiz: [
     {
       q: 'An attacker changes "role":"user" to "role":"admin" inside a JWT. What happens?',
-      options: ['They become admin', 'The signature no longer matches, so the server rejects it', 'The server decrypts it and notices', 'Nothing, roles aren’t checked'],
+      options: [
+        'They become admin on the next request',
+        'The signature stops matching: rejected',
+        'The server decrypts it and spots the edit',
+        'Nothing: roles are only checked at login',
+      ],
       answer: 1,
-      why: 'The server recomputes the signature over the edited payload with its secret; without that secret the attacker can’t produce a matching one.',
+      why: "The server recomputes the signature over the edited payload with its secret; without that secret the attacker can't produce a matching one. Nothing is decrypted: the payload was never encrypted, only signed.",
     },
     {
       q: 'You need to ban a user immediately. Which is simpler?',
       options: ['Long-lived JWTs', 'Server-side sessions', 'Putting the ban inside the JWT', 'Asking the user to log out'],
       answer: 1,
-      why: 'Delete their session rows and the next request fails. A JWT stays valid until it expires unless you add a denylist.',
+      why: "Delete their session rows and the next request fails. A JWT stays valid until it expires unless you add a denylist, and a ban written into a new JWT doesn't touch the copies already handed out.",
     },
     {
       q: 'What does the HttpOnly cookie flag protect against?',
-      options: ['JavaScript (e.g. an XSS attack) reading the cookie', 'Sending the cookie over HTTP', 'Cross-site request forgery', 'Cookie expiry'],
+      options: [
+        'Page scripts reading the cookie',
+        'The cookie travelling over plain HTTP',
+        'Other sites sending it with forged requests',
+        'The cookie expiring before logout',
+      ],
       answer: 0,
-      why: 'HttpOnly hides the cookie from document.cookie. Secure handles HTTPS-only; SameSite helps against CSRF.',
+      why: 'HttpOnly hides the cookie from document.cookie, so injected script (XSS) cannot read it. Plain HTTP is what Secure stops, and cross-site forged requests are what SameSite limits.',
+    },
+    {
+      q: "Who can read the claims inside a JWT's payload?",
+      options: [
+        'Only the server that holds the key',
+        'Anyone who has a copy of the token',
+        'Only the user the token was issued to',
+        'Nobody: the payload is encrypted',
+      ],
+      answer: 1,
+      why: "The payload is base64url-encoded JSON, not encrypted: anyone holding the token can decode it, as the Decoded panel shows. The key only signs it, so it can't be changed without being caught. Never put secrets in a JWT.",
     },
   ],
 };

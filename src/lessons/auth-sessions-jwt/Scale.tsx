@@ -2,20 +2,9 @@ import { motion } from 'motion/react';
 import { useMemo, type ReactNode } from 'react';
 import { SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Stat, Stats } from '../../components/ui';
-import type { Frame } from '../../core/types';
+import { Controls, Hint, Legend, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-
-type Outcome = 'ok' | 'bad' | 'warn' | null;
-
-interface ScFrame extends Frame {
-  target: number | null;
-  storeDown: boolean;
-  revoked: boolean;
-  sess: Outcome;
-  jwt: Outcome;
-  sessHops: number;
-}
+import { scaleFrames, type ScFrame } from './frames';
 
 const P = { client: { x: 70, y: 75 }, lb: { x: 220, y: 75 }, store: { x: 720, y: 75 } };
 const SERVERS = [30, 75, 120].map((y) => ({ x: 450, y }));
@@ -23,25 +12,8 @@ const BOX = { client: { w: 88, h: 36, rx: 9 }, lb: { w: 68, h: 36, rx: 9 }, serv
 /** Single-line labels sit 4 units below centre. */
 const LABEL_DY = 4;
 
-function build(): ScFrame[] {
-  const base: ScFrame = { target: null, storeDown: false, revoked: false, sess: null, jwt: null, sessHops: 0 };
-  const f = (p: Partial<ScFrame> & { say: ReactNode }): ScFrame => ({ ...base, ...p });
-  return [
-    f({ say: <>Three servers behind a load balancer, <b>same traffic in both lanes</b>. Top: sessions. Bottom: JWTs.</> }),
-    f({ target: 0, sess: 'ok', jwt: 'ok', sessHops: 1, say: <>Request 1 → server A. Sessions: A must ask the <span className="hl violet">shared store</span>. JWT: A checks the signature <b>locally</b>.</> }),
-    f({ target: 1, sess: 'ok', jwt: 'ok', sessHops: 2, say: <>Request 2 → server B. Same again: one extra network hop for sessions, zero for JWT.</> }),
-    f({ target: 2, sess: 'ok', jwt: 'ok', sessHops: 3, say: <>Any server works in both lanes, as long as sessions live in a <b>shared</b> store (not in one server's memory).</> }),
-    f({ target: 0, storeDown: true, sess: 'bad', jwt: 'ok', sessHops: 3, hold: 1.4,
-      say: <>The session store goes down. <span className="hl bad">Every</span> session request fails: everyone is effectively logged out. JWT servers don't notice.</> }),
-    f({ target: 1, revoked: true, sess: 'ok', jwt: 'warn', sessHops: 4, hold: 1.4,
-      say: <>Store's back. Now an admin <b>bans user 42</b>. Sessions: delete the row, the next request is refused instantly. JWT: <span className="hl bad">still accepted</span> until the token expires.</> }),
-    f({ target: null, hold: 2,
-      say: <>Neither wins outright. A common blend: a <span className="hl info">short-lived JWT</span> for speed, plus a <span className="hl violet">stored refresh token</span> you can revoke.</> }),
-  ];
-}
-
 export function Scale({ modePicker }: { modePicker: ReactNode }) {
-  const frames = useMemo(() => build(), []);
+  const frames = useMemo(() => scaleFrames(), []);
   const player = usePlayer(frames, { interval: 2200 });
   const f = player.frame;
   return (
@@ -64,7 +36,12 @@ export function Scale({ modePicker }: { modePicker: ReactNode }) {
           ]}
         />
       }
-      controls={<Controls>{modePicker}</Controls>}
+      controls={
+        <Controls>
+          {modePicker}
+          <Hint block>A scripted scenario: three requests and two incidents, not measured traffic.</Hint>
+        </Controls>
+      }
     >
       <div className="aj-scale">
         <Lane title="Sessions" sessions f={f} index={player.index} />

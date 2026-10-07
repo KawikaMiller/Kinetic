@@ -1,15 +1,14 @@
+import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
+import {
+  ALICE_START, BOB_START, PROGRAMS, TOTAL, TRANSFER, TXN_ID, consistent, recover, run, total,
+  type Account, type Disk, type Letter, type Mode, type WalRec,
+} from './model';
 
-export type Mode = 'none' | 'txn';
-export type Letter = 'A' | 'C' | 'I' | 'D';
+export { LETTER_NAMES, PROGRAMS, TOTAL, type Letter, type Mode } from './model';
+
 type LetterState = 'off' | 'ok' | 'bad' | 'hint';
 type Phase = 'run' | 'crash' | 'recover' | 'done';
-
-interface WalRec {
-  id: number;
-  text: string;
-  kind: 'begin' | 'update' | 'commit' | 'undo' | 'redo';
-}
 
 export interface TxFrame extends Frame {
   alice: number;
@@ -18,60 +17,71 @@ export interface TxFrame extends Frame {
   /** How many program lines have run. */
   ran: number;
   phase: Phase;
-  focus: 'alice' | 'bob' | null;
+  focus: Account | null;
   client: string;
   clientTone: 'wait' | 'ok' | 'bad';
   letters: Record<Letter, LetterState>;
 }
 
-const ALICE_START = 500;
-const BOB_START = 300;
-const TRANSFER = 100;
-/** The consistency rule: money only moves, so the total never changes. */
-export const TOTAL = ALICE_START + BOB_START;
+const OFF: Record<Letter, LetterState> = { A: 'off', C: 'off', I: 'off', D: 'off' };
+const DONE_TXN: Record<Letter, LetterState> = { A: 'ok', C: 'ok', I: 'hint', D: 'ok' };
+const TOLD = '✓ transfer done';
 
-export const PROGRAMS: Record<Mode, string[]> = {
-  none: ['read Alice: $500', 'Alice = 400   (write to disk)', 'Bob = 400     (write to disk)', 'reply "done"'],
+/** What each program line says as it runs, and which account it changes. */
+const NARRATION: Record<Mode, { focus?: Account; say: ReactNode }[]> = {
+  none: [
+    { say: <>Read Alice's balance.</> },
+    {
+      focus: 'alice',
+      say: (
+        <>
+          Alice drops to <span className="hl">${ALICE_START - TRANSFER}</span>, straight to disk. The ${TRANSFER} is now in
+          flight: in nobody's account.
+        </>
+      ),
+    },
+    { focus: 'bob', say: <>Bob rises to <span className="hl ok">${BOB_START + TRANSFER}</span>. Total is back to ${TOTAL}.</> },
+    { say: <>Worked this time. Now rewind and crash between the two writes.</> },
+  ],
   txn: [
-    'BEGIN',
-    'log: Alice 500 → 400',
-    'Alice = 400   (write page)',
-    'log: Bob 300 → 400',
-    'COMMIT        (flush log to disk)',
-    'reply "done"',
-    'Bob = 400     (page written later)',
+    { say: <>BEGIN: start transaction {TXN_ID}. Nothing is visible to anyone else yet.</> },
+    { say: <><b>Write-ahead:</b> record the change, with the <span className="hl">old value</span>, in the log first.</> },
+    { focus: 'alice', say: <>Now change the table. If we crash from here, the log knows how to undo it.</> },
+    { say: <>Log Bob's change too.</> },
+    {
+      say: (
+        <>
+          <span className="hl ok">COMMIT</span> is flushed to disk. This is the moment of truth: from here, the transfer{' '}
+          <b>will</b> survive any crash.
+        </>
+      ),
+    },
+    { say: <>The client is told "done". Notice Bob's page on disk still says ${BOB_START}. That's allowed.</> },
+    { focus: 'bob', say: <>Later, the database writes Bob's page. Pages can lag; the log is the source of truth.</> },
   ],
 };
 
-export const LETTER_NAMES: Record<Letter, string> = {
-  A: 'Atomicity',
-  C: 'Consistency',
-  I: 'Isolation',
-  D: 'Durability',
-};
-
-const OFF: Record<Letter, LetterState> = { A: 'off', C: 'off', I: 'off', D: 'off' };
-const DONE_TXN: Record<Letter, LetterState> = { A: 'ok', C: 'ok', I: 'hint', D: 'ok' };
+const clientOf = (d: Disk) =>
+  d.told ? { client: TOLD, clientTone: 'ok' as const } : { client: 'waiting…', clientTone: 'wait' as const };
 
 /** Frames for running the transfer, optionally crashing right after program line `crashAt`. */
 export function buildFrames(mode: Mode, crashAt: number | null): TxFrame[] {
-  const program = PROGRAMS[mode];
-  let alice = ALICE_START;
-  let bob = BOB_START;
-  let wal: WalRec[] = [];
-  let nextId = 1;
-  let committed = false;
-  const log = (text: string, kind: WalRec['kind']) => {
-    wal = [...wal, { id: nextId++, text, kind }];
+  const disks = run(mode);
+  const frame = (k: number, extra: Partial<TxFrame>): TxFrame => {
+    const d = disks[k];
+    return {
+      alice: d.alice, bob: d.bob, wal: d.wal, ran: k, phase: 'run', focus: null, ...clientOf(d),
+      letters: d.committed ? { ...OFF, D: 'ok' } : OFF,
+      ...extra,
+    };
   };
 
   const frames: TxFrame[] = [
-    {
-      alice, bob, wal, ran: 0, phase: 'run', focus: null, client: 'waiting…', clientTone: 'wait', letters: OFF,
+    frame(0, {
       say:
         mode === 'none' ? (
           <>
-            Move <span className="hl">$100</span> from Alice to Bob with two plain writes, no transaction. Press play,
+            Move <span className="hl">${TRANSFER}</span> from Alice to Bob with two plain writes, no transaction. Press play,
             then hit <b>Crash</b> half-way.
           </>
         ) : (
@@ -80,90 +90,14 @@ export function buildFrames(mode: Mode, crashAt: number | null): TxFrame[] {
             table.
           </>
         ),
-    },
+    }),
   ];
 
+  const program = PROGRAMS[mode];
   for (let k = 1; k <= program.length; k++) {
-    let focus: TxFrame['focus'] = null;
-    let client = 'waiting…';
-    let clientTone: TxFrame['clientTone'] = 'wait';
-    let say;
-    if (mode === 'none') {
-      if (k === 1) say = <>Read Alice's balance.</>;
-      if (k === 2) {
-        alice -= TRANSFER;
-        focus = 'alice';
-        say = (
-          <>
-            Alice drops to <span className="hl">$400</span>, straight to disk. The $100 is now in flight: in nobody's
-            account.
-          </>
-        );
-      }
-      if (k === 3) {
-        bob += TRANSFER;
-        focus = 'bob';
-        say = <>Bob rises to <span className="hl ok">$400</span>. Total is back to $800.</>;
-      }
-      if (k === 4) {
-        client = '✓ transfer done';
-        clientTone = 'ok';
-        say = <>Worked this time. Now rewind and crash between the two writes.</>;
-      }
-    } else {
-      if (k === 1) {
-        log('BEGIN tx 42', 'begin');
-        say = <>BEGIN: start transaction 42. Nothing is visible to anyone else yet.</>;
-      }
-      if (k === 2) {
-        log('tx42 Alice 500→400', 'update');
-        say = (
-          <>
-            <b>Write-ahead:</b> record the change, with the <span className="hl">old value</span>, in the log first.
-          </>
-        );
-      }
-      if (k === 3) {
-        alice -= TRANSFER;
-        focus = 'alice';
-        say = <>Now change the table. If we crash from here, the log knows how to undo it.</>;
-      }
-      if (k === 4) {
-        log('tx42 Bob 300→400', 'update');
-        say = <>Log Bob's change too.</>;
-      }
-      if (k === 5) {
-        log('COMMIT tx 42', 'commit');
-        committed = true;
-        say = (
-          <>
-            <span className="hl ok">COMMIT</span> is flushed to disk. This is the moment of truth: from here, the
-            transfer <b>will</b> survive any crash.
-          </>
-        );
-      }
-      if (k === 6) {
-        client = '✓ transfer done';
-        clientTone = 'ok';
-        say = <>The client is told "done". Notice Bob's page on disk still says $300. That's allowed.</>;
-      }
-      if (k === 7) {
-        bob += TRANSFER;
-        focus = 'bob';
-        say = <>Later, the database writes Bob's page. Pages can lag; the log is the source of truth.</>;
-      }
-    }
-    const letters = committed ? { ...OFF, D: 'ok' as const } : OFF;
-    // Once the client has been told "done", it stays told.
-    if (k > 1 && frames[frames.length - 1].clientTone === 'ok') {
-      client = frames[frames.length - 1].client;
-      clientTone = 'ok';
-    }
-    frames.push({ alice, bob, wal, ran: k, phase: 'run', focus, client, clientTone, letters, say });
-
-    if (crashAt === k && k < program.length) {
-      return [...frames, ...crashFrames(mode, frames[frames.length - 1], committed, nextId)];
-    }
+    const { focus, say } = NARRATION[mode][k - 1];
+    frames.push(frame(k, { focus: focus ?? null, say }));
+    if (crashAt === k && k < program.length) return [...frames, ...crashFrames(mode, frames[frames.length - 1], disks[k])];
   }
 
   const last = frames[frames.length - 1];
@@ -177,7 +111,7 @@ export function buildFrames(mode: Mode, crashAt: number | null): TxFrame[] {
       mode === 'txn' ? (
         <>
           Committed and consistent. One letter left: <b>Isolation</b>. What if another transfer touched Alice at the
-          same moment? That's the next lesson.
+          same moment? The isolation-levels lesson picks that up.
         </>
       ) : (
         <>
@@ -188,18 +122,20 @@ export function buildFrames(mode: Mode, crashAt: number | null): TxFrame[] {
   return frames;
 }
 
+const NAME: Record<Account, string> = { alice: 'Alice', bob: 'Bob' };
+
 /** What happens after a power cut right after `at`: nothing (no log), or recovery from the log. */
-function crashFrames(mode: Mode, at: TxFrame, committed: boolean, firstId: number): TxFrame[] {
+function crashFrames(mode: Mode, at: TxFrame, disk: Disk): TxFrame[] {
   const out: TxFrame[] = [];
   const base = { ...at, focus: null, letters: { ...at.letters } };
-  const lostClient = at.clientTone === 'ok' ? at.client : 'connection lost';
-  const lostTone: TxFrame['clientTone'] = at.clientTone === 'ok' ? 'ok' : 'bad';
+  const lost = disk.told
+    ? { client: TOLD, clientTone: 'ok' as const }
+    : { client: 'connection lost', clientTone: 'bad' as const };
 
   out.push({
     ...base,
+    ...lost,
     phase: 'crash',
-    client: lostClient,
-    clientTone: lostTone,
     hold: 1.4,
     say: (
       <>
@@ -209,19 +145,20 @@ function crashFrames(mode: Mode, at: TxFrame, committed: boolean, firstId: numbe
     ),
   });
 
-  if (mode === 'none') {
-    const broken = at.alice + at.bob !== TOTAL;
+  const rec = recover(mode, disk);
+  if (rec.action === 'no-log') {
+    const broken = !consistent(disk);
     out.push({
       ...base,
+      ...lost,
       phase: 'done',
-      client: lostClient,
-      clientTone: lostTone,
       hold: 2.5,
       letters: broken ? { A: 'bad', C: 'bad', I: 'off', D: 'off' } : base.letters,
       say: broken ? (
         <>
-          Restarted. Alice has $400, Bob has $300. <span className="hl bad">$100 vanished</span>, and the database has
-          no idea anything was half-done.
+          Restarted. Alice has ${disk.alice}, Bob has ${disk.bob}.{' '}
+          <span className="hl bad">${TOTAL - total(disk)} vanished</span>, and the database has no idea anything was
+          half-done.
         </>
       ) : (
         <>Restarted, and nothing was half-done. Lucky timing. Try crashing between the two writes.</>
@@ -230,72 +167,73 @@ function crashFrames(mode: Mode, at: TxFrame, committed: boolean, firstId: numbe
     return out;
   }
 
-  let wal = at.wal;
-  let id = firstId;
   out.push({
     ...base,
+    ...lost,
     phase: 'recover',
-    client: lostClient,
-    clientTone: lostTone,
     say: (
       <>
-        Restart. <b>Recovery</b> reads the log from the top: is there a COMMIT for tx 42?{' '}
-        {committed ? <span className="hl ok">Yes.</span> : <span className="hl bad">No.</span>}
+        Restart. <b>Recovery</b> reads the log from the top: is there a COMMIT for tx {TXN_ID}?{' '}
+        {disk.committed ? <span className="hl ok">Yes.</span> : <span className="hl bad">No.</span>}
       </>
     ),
   });
 
-  if (committed) {
-    wal = [...wal, { id: id++, text: 'REDO Bob → 400', kind: 'redo' }];
-    const redone = { ...base, bob: BOB_START + TRANSFER, wal, client: lostClient, clientTone: lostTone };
+  const after = { ...base, ...lost, alice: rec.disk.alice, bob: rec.disk.bob, wal: rec.disk.wal };
+  const names = rec.touched.map((a) => NAME[a]).join(' and ');
+  if (disk.committed) {
     out.push({
-      ...redone,
+      ...after,
       phase: 'recover',
-      focus: 'bob',
+      focus: rec.touched[0] ?? null,
       letters: { ...base.letters, D: 'ok' },
       say: (
         <>
-          Committed, so every logged change is <b>redone</b>. Bob's missing write is replayed from the log.
+          Committed, so every logged change is <b>redone</b> wherever its page is behind: {names}'s missing write is
+          replayed from the log.
         </>
       ),
     });
     out.push({
-      ...redone,
+      ...after,
       phase: 'done',
       hold: 2.5,
       letters: DONE_TXN,
-      say: (
+      say: disk.told ? (
         <>
           <span className="hl ok">Durability</span>: the client was told "done", and after the crash it still is.
+        </>
+      ) : (
+        <>
+          <span className="hl ok">Durability</span>: the crash came before the client heard "done", but COMMIT was on
+          disk, so the transfer stands. The client has to check before retrying, or it pays twice.
         </>
       ),
     });
   } else {
-    const aliceWritten = at.alice !== ALICE_START;
-    if (aliceWritten) wal = [...wal, { id: id++, text: 'UNDO Alice → 500', kind: 'undo' }];
-    const undone = { ...base, alice: ALICE_START, wal, client: lostClient, clientTone: lostTone };
     out.push({
-      ...undone,
+      ...after,
       phase: 'recover',
-      focus: aliceWritten ? 'alice' : null,
-      say: aliceWritten ? (
-        <>
-          No COMMIT, so the transaction <b>rolls back</b>: the log's old value puts Alice back to{' '}
-          <span className="hl">$500</span>.
-        </>
-      ) : (
-        <>No COMMIT, and nothing reached the table yet. There's nothing to undo.</>
-      ),
+      focus: rec.touched[0] ?? null,
+      say:
+        rec.action === 'undo' ? (
+          <>
+            No COMMIT, so the transaction <b>rolls back</b>: the log's old value puts {names} back to{' '}
+            <span className="hl">${rec.disk[rec.touched[0]]}</span>.
+          </>
+        ) : (
+          <>No COMMIT, and nothing reached the table yet. There's nothing to undo.</>
+        ),
     });
     out.push({
-      ...undone,
+      ...after,
       phase: 'done',
       hold: 2.5,
       letters: { A: 'ok', C: 'ok', I: 'hint', D: 'off' },
       say: (
         <>
-          <span className="hl ok">Atomicity</span>: all or nothing. The transfer never happened, the total is still
-          $800, and the client never heard "done", so nothing was promised.
+          <span className="hl ok">Atomicity</span>: all or nothing. The transfer never happened, the total is still $
+          {total(rec.disk)}, and the client never heard "done", so nothing was promised.
         </>
       ),
     });

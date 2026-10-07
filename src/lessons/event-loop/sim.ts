@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
-import type { Frame } from '../../core/types';
+// Pure model behind the event-loop lesson: a tiny interpreter for the snippets' statements
+// that moves callbacks between the call stack, Web APIs and the two queues. Each step
+// carries a typed note; frames.tsx turns notes into captions.
 
 /** A tiny model of the JS statements we need, each pointing at a line of code. */
 export type Stmt =
@@ -114,8 +115,26 @@ export const SNIPPETS: Snippet[] = [
 ];
 
 export type Phase = 'script' | 'microtasks' | 'macrotask' | 'idle';
+export type Focus = 'stack' | 'apis' | 'macro' | 'micro' | 'out' | null;
 
-export interface ElFrame extends Frame {
+export type Note =
+  | { kind: 'intro' }
+  | { kind: 'script-start' }
+  | { kind: 'log'; text: string }
+  | { kind: 'timeout' }
+  | { kind: 'then' }
+  | { kind: 'resolve' }
+  | { kind: 'executor' }
+  | { kind: 'executor-then' }
+  | { kind: 'call-async' }
+  | { kind: 'await'; fn: string }
+  | { kind: 'script-end' }
+  | { kind: 'timers-expire' }
+  | { kind: 'run-micro'; label: string; more: boolean }
+  | { kind: 'run-macro'; label: string }
+  | { kind: 'done'; out: string[] };
+
+export interface ElStep {
   stack: string[];
   apis: string[];
   macro: string[];
@@ -123,14 +142,13 @@ export interface ElFrame extends Frame {
   out: string[];
   line: number | null;
   phase: Phase;
-  /** Which box to spotlight this frame. */
-  focus: 'stack' | 'apis' | 'macro' | 'micro' | 'out' | null;
+  /** Which box to spotlight this step. */
+  focus: Focus;
+  note: Note;
 }
 
-const hl = (s: string, c = '') => <span className={`hl ${c}`}>{s}</span>;
-
-export function simulate(snippet: Snippet): ElFrame[] {
-  const frames: ElFrame[] = [];
+export function simulate(snippet: Snippet): ElStep[] {
+  const steps: ElStep[] = [];
   const stack: string[] = [];
   const apis: Task[] = [];
   const macro: Task[] = [{ label: 'main script', body: snippet.program }];
@@ -138,50 +156,49 @@ export function simulate(snippet: Snippet): ElFrame[] {
   const out: string[] = [];
   let phase: Phase = 'idle';
 
-  const emit = (line: number | null, focus: ElFrame['focus'], say: ReactNode, hold?: number) => {
-    frames.push({
+  const emit = (line: number | null, focus: Focus, note: Note) => {
+    steps.push({
       stack: [...stack], apis: apis.map((t) => t.label), macro: macro.map((t) => t.label), micro: micro.map((t) => t.label),
-      out: [...out], line, phase, focus, say, hold,
+      out: [...out], line, phase, focus, note,
     });
   };
 
   const run = (body: Stmt[]) => {
-    for (let i = 0; i < body.length; i++) {
-      const s = body[i];
+    for (const s of body) {
       switch (s.k) {
         case 'log':
           stack.push('console.log');
           out.push(s.text);
-          emit(s.line, 'out', <>console.log prints {hl(s.text, 'ok')} immediately: it's plain synchronous code.</>);
+          emit(s.line, 'out', { kind: 'log', text: s.text });
           stack.pop();
           break;
         case 'timeout':
           apis.push({ label: s.label, body: s.body });
-          emit(s.line, 'apis', <>setTimeout hands the callback to the browser's <b>timer</b> and moves on. JavaScript never waits, even for 0 ms.</>);
+          emit(s.line, 'apis', { kind: 'timeout' });
           break;
         case 'then':
           micro.push({ label: s.label, body: s.body });
-          emit(s.line, 'micro', <>The promise is already resolved, so {hl('.then', 'violet')}'s callback goes straight into the <b>microtask</b> queue. It can't run yet: the stack is busy.</>);
+          emit(s.line, 'micro', { kind: 'then' });
           break;
         case 'resolve':
-          emit(s.line, 'stack', <>resolve() marks the promise fulfilled. Nothing runs yet; callbacks are always async.</>);
+          emit(s.line, 'stack', { kind: 'resolve' });
           break;
         case 'executor':
           stack.push('Promise executor');
-          emit(s.line, 'stack', <>Surprise: the function passed to {hl('new Promise')} runs <b>right now</b>, synchronously.</>);
+          emit(s.line, 'stack', { kind: 'executor' });
           run(s.body);
           stack.pop();
           micro.push({ label: s.then.label, body: s.then.body });
-          emit(s.then.line, 'micro', <>.then is attached to an already-resolved promise, so its callback joins the <b>microtask</b> queue.</>);
+          emit(s.then.line, 'micro', { kind: 'executor-then' });
           break;
         case 'callAsync': {
           stack.push(`${s.fn}()`);
-          emit(s.line, 'stack', <>Calling an async function runs its body <b>synchronously</b>, right up to the first await.</>);
+          emit(s.line, 'stack', { kind: 'call-async' });
           const idx = s.body.findIndex((x) => x.k === 'await');
           run(idx < 0 ? s.body : s.body.slice(0, idx));
           if (idx >= 0) {
             micro.push({ label: `${s.fn} (resume)`, body: s.body.slice(idx + 1) });
-            emit(s.body[idx].line, 'micro', <>{hl('await')} pauses {s.fn}: the rest of the function is queued as a <b>microtask</b>, and {s.fn}() returns a promise to the caller.</>);
+            emit(s.body[idx].line, 'micro', { kind: 'await', fn: s.fn });
           }
           stack.pop();
           break;
@@ -195,7 +212,7 @@ export function simulate(snippet: Snippet): ElFrame[] {
   const moveTimers = () => {
     if (!apis.length) return;
     macro.push(...apis.splice(0));
-    emit(null, 'macro', <>The 0 ms timers have expired, so the browser moves their callbacks into the <b>macrotask</b> queue. They still have to wait their turn.</>);
+    emit(null, 'macro', { kind: 'timers-expire' });
   };
 
   const drainMicro = () => {
@@ -204,33 +221,33 @@ export function simulate(snippet: Snippet): ElFrame[] {
     while (micro.length) {
       const t = micro.shift()!;
       stack.push(t.label);
-      emit(null, 'micro', <>Stack is empty → run <b>every</b> microtask before anything else: {hl(t.label, 'violet')}.{micro.length ? ' More are still waiting.' : ''}</>);
+      emit(null, 'micro', { kind: 'run-micro', label: t.label, more: micro.length > 0 });
       run(t.body);
       stack.pop();
     }
   };
 
-  emit(null, 'macro', <>The whole script is itself the first <b>macrotask</b>. Press play to watch the event loop run it.</>);
+  emit(null, 'macro', { kind: 'intro' });
   const script = macro.shift()!;
   phase = 'script';
   stack.push('main script');
-  emit(null, 'stack', <>The script goes onto the <b>call stack</b> and runs top to bottom.</>);
+  emit(null, 'stack', { kind: 'script-start' });
   run(script.body);
   stack.pop();
-  emit(null, 'stack', <>Script finished. The call stack is <b>empty</b>, and only now can the event loop pick what runs next.</>);
+  emit(null, 'stack', { kind: 'script-end' });
   moveTimers();
   drainMicro();
   while (macro.length) {
     const t = macro.shift()!;
     phase = 'macrotask';
     stack.push(t.label);
-    emit(null, 'macro', <>Microtask queue empty → take <b>one</b> macrotask: {hl(t.label, 'info')}.</>);
+    emit(null, 'macro', { kind: 'run-macro', label: t.label });
     run(t.body);
     stack.pop();
     drainMicro();
     moveTimers();
   }
   phase = 'idle';
-  emit(null, 'out', <>Done. Output order: {out.map((o, i) => <span key={i}>{i ? ' → ' : ''}{hl(o, 'ok')}</span>)}. Rule: sync code, then <b>all</b> microtasks, then one macrotask, repeat.</>, 2);
-  return frames;
+  emit(null, 'out', { kind: 'done', out: [...out] });
+  return steps;
 }
