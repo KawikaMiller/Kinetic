@@ -54,23 +54,25 @@ export const ASAN_STACK = [
   '    #0 0x… in strcpy',
   '    #1 0x… in greet greet.c:3',
   '    #2 0x… in main',
+  'Address 0x7ffc… is located in stack of thread T0 at offset 40 in frame',
+  '    #0 0x… in greet greet.c:1',
   '  This frame has 1 object(s):',
   "    [32, 40) 'name' (line 2) <== Memory access at offset 40 overflows this variable",
-  'SUMMARY: AddressSanitizer: stack-buffer-overflow greet.c:3 in greet',
+  'SUMMARY: AddressSanitizer: stack-buffer-overflow in strcpy',
 ];
 
-/** Illustrative AddressSanitizer report for the use-after-free program with no defence. */
+/** Illustrative AddressSanitizer report for the use-after-free program with no defence (gcc turns the short strcpy into a memcpy). */
 export const ASAN_UAF = [
-  '==4242==ERROR: AddressSanitizer: heap-use-after-free on address 0x602… at pc 0x… bp 0x… sp 0x…',
-  'WRITE of size 4 at 0x602… thread T0',
-  '    #0 0x… in strcpy',
+  '==4242==ERROR: AddressSanitizer: heap-use-after-free on address 0x502… at pc 0x… bp 0x… sp 0x…',
+  'WRITE of size 4 at 0x502… thread T0',
+  '    #0 0x… in memcpy',
   '    #1 0x… in main uaf.c:7',
-  '0x602… is located 0 bytes inside of 16-byte region [0x602…,0x602…)',
+  '0x502… is located 0 bytes inside of 16-byte region [0x502…,0x502…)',
   'freed by thread T0 here:',
   '    #0 0x… in free',
   '    #1 0x… in main uaf.c:4',
   'previously allocated by thread T0 here:',
   '    #0 0x… in malloc',
   '    #1 0x… in main uaf.c:2',
-  'SUMMARY: AddressSanitizer: heap-use-after-free uaf.c:7 in main',
+  'SUMMARY: AddressSanitizer: heap-use-after-free in memcpy',
 ];

@@ -1,11 +1,12 @@
 import { mulberry32, randInt } from '../../core/random';
 
 /**
- * The stack-overflow scene: one simulated frame of `greet(const char *input)` with `char name[8]`,
- * laid out the way gcc on x86-64 typically does it (lowest address first): the buffer, the stack
- * canary just above it, the saved rbp, the return address, then part of main's frame. Nothing here
- * runs native code. The model shows what ends up in memory and stops there; it never models what
- * happens after a corrupted `ret`.
+ * The stack-overflow scene: one simulated frame of `greet(const char *input)` with `char name[8]`.
+ * The layout is one possible one, matching gcc -O1 -fno-omit-frame-pointer on x86-64 (lowest
+ * address first): without a stack protector, name sits directly under the saved rbp; with
+ * -fstack-protector-strong, gcc puts the canary between them. Then the return address and part of
+ * main's frame. Nothing here runs native code. The model shows what ends up in memory and stops
+ * there; it never models what happens after a corrupted `ret`.
  */
 
 export const NAME_BYTES = 8;
@@ -13,6 +14,8 @@ export const NAME_BYTES = 8;
 export const MAX_NAME_BYTES = 64;
 /** Bytes per row of the pictures: one 64-bit slot. */
 export const ROW_BYTES = 8;
+/** Bytes of memory drawn: enough for the longest name plus its NUL in either layout. */
+export const FRAME_BYTES = 72;
 
 export type SlotId = 'name' | 'canary' | 'rbp' | 'ret' | 'caller';
 
@@ -23,32 +26,38 @@ export interface Slot {
   to: number;
 }
 
-export const SLOTS: readonly Slot[] = [
+const WITH_CANARY: readonly Slot[] = [
   { id: 'name', from: 0, to: 8 },
   { id: 'canary', from: 8, to: 16 },
   { id: 'rbp', from: 16, to: 24 },
   { id: 'ret', from: 24, to: 32 },
-  { id: 'caller', from: 32, to: 72 },
+  { id: 'caller', from: 32, to: FRAME_BYTES },
 ];
 
-export const FRAME_BYTES = SLOTS.at(-1)!.to;
+const WITHOUT_CANARY: readonly Slot[] = [
+  { id: 'name', from: 0, to: 8 },
+  { id: 'rbp', from: 8, to: 16 },
+  { id: 'ret', from: 16, to: 24 },
+  { id: 'caller', from: 24, to: FRAME_BYTES },
+];
 
-export const slotOf = (offset: number): Slot => SLOTS.find((s) => offset >= s.from && offset < s.to)!;
-export const slotById = (id: SlotId): Slot => SLOTS.find((s) => s.id === id)!;
+/** The frame's slots, lowest address first: the canary exists only in a build with the stack protector. */
+export const frameSlots = (canary: boolean): readonly Slot[] => (canary ? WITH_CANARY : WITHOUT_CANARY);
+
+export const slotAt = (slots: readonly Slot[], offset: number): Slot => slots.find((s) => offset >= s.from && offset < s.to)!;
+export const findSlot = (slots: readonly Slot[], id: SlotId): Slot | undefined => slots.find((s) => s.id === id);
 
 export type DefenceId = 'memorySafe' | 'boundsCheck' | 'canary' | 'nx' | 'aslr';
 export type Defences = Record<DefenceId, boolean>;
 
-/**
- * The order defences act in, so the outcome always names the first one that applies: a memory-safe
- * language never gets as far as an unchecked copy, a bounds-checked copy never overflows, a canary
- * stops the run before `ret`, and NX and ASLR only make an overwrite that did happen harder to use.
- */
-export const DEFENCE_ORDER: readonly DefenceId[] = ['memorySafe', 'boundsCheck', 'canary', 'nx', 'aslr'];
+/** Defences that stop the run, in the order they act: the first one enabled that applies decides the outcome. */
+export type Stopper = 'memorySafe' | 'boundsCheck' | 'canary';
+export const STOP_ORDER: readonly Stopper[] = ['memorySafe', 'boundsCheck', 'canary'];
+/** Defences that leave an overwrite in place and only make it harder to abuse, in the order the caption names them. */
+export type Mitigation = 'nx' | 'aslr';
+export const MITIGATIONS: readonly Mitigation[] = ['nx', 'aslr'];
 
 export const NO_DEFENCES: Defences = { memorySafe: false, boundsCheck: false, canary: false, nx: false, aslr: false };
-
-export const firstEnabled = (d: Defences): DefenceId | undefined => DEFENCE_ORDER.find((id) => d[id]);
 
 /** Benign sample names: they break the unchecked copy by being long, nothing more. */
 export const PRESETS = [
@@ -70,12 +79,10 @@ const PAGE = 4096;
 const CODE_PAGES = 2 ** 28;
 /** Where in the program main's call to greet returns to (an offset from the code's start). */
 const CALL_SITE = 0x1189;
-/** main's frame pointer, relative to the start of name: just past the part of main's frame drawn. */
+/** main's frame pointer, relative to the start of name: inside main's frame, above greet's. */
 const MAIN_RBP_OFFSET = 0x50;
-/** In this build, without a canary the slot above name is 8 leftover bytes of padding. */
-const LEFTOVER_PADDING = [0x10, 0, 0, 0, 0, 0, 0, 0];
-/** main's own locals, part of which sits just above greet's frame: five illustrative 64-bit numbers. */
-const MAIN_LOCALS = [42, 7, 0, 3, 1000];
+/** main's own locals, part of which sits just above greet's frame: six illustrative 64-bit numbers. */
+const MAIN_LOCALS = [42, 7, 0, 3, 1000, 1];
 
 export interface RunLayout {
   /** Address of name[0]. */
@@ -104,11 +111,13 @@ export function runLayout(aslr: boolean, seed: number): RunLayout {
 
 /** The frame's bytes before the copy. name starts zeroed here (real stack memory holds leftovers). */
 export function initialFrame(layout: RunLayout, canaryOn: boolean): Uint8Array {
+  const slots = frameSlots(canaryOn);
   const out = new Uint8Array(FRAME_BYTES);
-  out.set(canaryOn ? layout.canary : LEFTOVER_PADDING, slotById('canary').from);
-  out.set(le64(layout.savedRbp), slotById('rbp').from);
-  out.set(le64(layout.returnTo), slotById('ret').from);
-  out.set(MAIN_LOCALS.flatMap(le64), slotById('caller').from);
+  if (canaryOn) out.set(layout.canary, findSlot(slots, 'canary')!.from);
+  out.set(le64(layout.savedRbp), findSlot(slots, 'rbp')!.from);
+  out.set(le64(layout.returnTo), findSlot(slots, 'ret')!.from);
+  const caller = findSlot(slots, 'caller')!;
+  out.set(MAIN_LOCALS.flatMap(le64).slice(0, caller.to - caller.from), caller.from);
   return out;
 }
 
@@ -147,18 +156,23 @@ export function rustCopy(frame: Uint8Array, input: Uint8Array): { bytes: Uint8Ar
 
 const slotBytesDiffer = (a: Uint8Array, b: Uint8Array, s: Slot) => a.subarray(s.from, s.to).some((x, i) => x !== b[s.from + i]);
 
-/** The canary check in greet's epilogue: it fires exactly when any canary byte differs. */
-export const canaryChanged = (before: Uint8Array, after: Uint8Array) => slotBytesDiffer(before, after, slotById('canary'));
+/** The canary check in greet's epilogue (canary build): it fires exactly when any canary byte differs. */
+export const canaryChanged = (before: Uint8Array, after: Uint8Array) => slotBytesDiffer(before, after, findSlot(WITH_CANARY, 'canary')!);
 
 /** The slots past the buffer whose bytes the copy changed. */
-export const changedSlots = (before: Uint8Array, after: Uint8Array): SlotId[] =>
-  SLOTS.filter((s) => s.id !== 'name' && slotBytesDiffer(before, after, s)).map((s) => s.id);
+export const changedSlots = (slots: readonly Slot[], before: Uint8Array, after: Uint8Array): SlotId[] =>
+  slots.filter((s) => s.id !== 'name' && slotBytesDiffer(before, after, s)).map((s) => s.id);
 
 export type OutcomeKind = 'fits' | 'truncated' | 'panic' | 'aborted' | 'quiet' | 'corrupted';
+
+const STOP_KIND: Record<Stopper, OutcomeKind> = { memorySafe: 'panic', boundsCheck: 'truncated', canary: 'aborted' };
 
 export interface StackRun {
   layout: RunLayout;
   defences: Defences;
+  /** Whether this build has a canary: the C build with the stack protector on (rustc adds none by default). */
+  hasCanary: boolean;
+  slots: readonly Slot[];
   input: Uint8Array;
   before: Uint8Array;
   after: Uint8Array;
@@ -167,36 +181,43 @@ export interface StackRun {
   wouldOverflow: number;
   changed: SlotId[];
   kind: OutcomeKind;
-  /** The defence that decided the outcome, if one did. */
-  by?: DefenceId;
+  /** The defence that stopped the run, if one did. */
+  stoppedBy?: Stopper;
+  /** For a corrupted run: the mitigations switched on, which leave the overwrite in place. */
+  mitigations: Mitigation[];
 }
 
 export function stackRun(input: Uint8Array, defences: Defences, seed: number): StackRun {
+  const hasCanary = defences.canary && !defences.memorySafe;
+  const slots = frameSlots(hasCanary);
   const layout = runLayout(defences.aslr, seed);
-  const before = initialFrame(layout, defences.canary);
+  const before = initialFrame(layout, hasCanary);
   const wouldOverflow = Math.max(0, input.length + 1 - NAME_BYTES);
-  const base = { layout, defences, input, before, wouldOverflow };
-
-  if (defences.memorySafe) {
-    const r = rustCopy(before, input);
-    const panicked = r.panicAt !== null;
-    return { ...base, after: r.bytes, written: r.written, changed: changedSlots(before, r.bytes), kind: panicked ? 'panic' : 'fits', by: panicked ? 'memorySafe' : undefined };
-  }
-  const r = writeString(before, input, { boundsCheck: defences.boundsCheck });
-  const changed = changedSlots(before, r.bytes);
-  const done = { ...base, after: r.bytes, written: r.written, changed };
-  if (wouldOverflow === 0) return { ...done, kind: 'fits' };
-  if (defences.boundsCheck) return { ...done, kind: 'truncated', by: 'boundsCheck' };
-  if (defences.canary && canaryChanged(before, r.bytes)) return { ...done, kind: 'aborted', by: 'canary' };
-  if (changed.includes('rbp') || changed.includes('ret')) {
-    return { ...done, kind: 'corrupted', by: defences.nx ? 'nx' : defences.aslr ? 'aslr' : undefined };
-  }
-  return { ...done, kind: 'quiet' };
+  const copy = defences.memorySafe ? rustCopy(before, input) : writeString(before, input, { boundsCheck: defences.boundsCheck });
+  const after = copy.bytes;
+  const changed = changedSlots(slots, before, after);
+  const fits = defences.memorySafe ? input.length <= NAME_BYTES : wouldOverflow === 0;
+  const applies: Record<Stopper, boolean> = {
+    memorySafe: defences.memorySafe && !fits,
+    boundsCheck: defences.boundsCheck && !defences.memorySafe && !fits,
+    canary: hasCanary && canaryChanged(before, after),
+  };
+  const stoppedBy = STOP_ORDER.find((id) => applies[id]);
+  const kind: OutcomeKind = stoppedBy
+    ? STOP_KIND[stoppedBy]
+    : fits
+      ? 'fits'
+      : changed.includes('rbp') || changed.includes('ret')
+        ? 'corrupted'
+        : 'quiet';
+  const mitigations = kind === 'corrupted' ? MITIGATIONS.filter((id) => defences[id]) : [];
+  return { layout, defences, hasCanary, slots, input, before, after, written: copy.written, wouldOverflow, changed, kind, stoppedBy, mitigations };
 }
 
 /** How many of a slot's bytes hold input characters (not the terminating NUL). */
 export const inputBytesIn = (run: StackRun, id: SlotId) => {
-  const s = slotById(id);
+  const s = findSlot(run.slots, id);
+  if (!s) return 0;
   return Math.max(0, Math.min(s.to, run.defences.boundsCheck ? NAME_BYTES - 1 : run.input.length) - s.from);
 };
 
@@ -220,13 +241,14 @@ export const asText = (bytes: ArrayLike<number>) =>
 export const hexAddr = (a: number) => `0x${a.toString(16)}`;
 
 export const HONESTY_STACK =
-  'Simulated memory: nothing runs native code. One frame drawn as gcc typically lays it out on x86-64; real frame layouts vary by compiler and flags, and the addresses are illustrative.';
+  'Simulated memory: nothing runs native code. One possible layout: gcc -O1 -fno-omit-frame-pointer on x86-64, with -fstack-protector-strong when the canary is on. Real layouts vary by compiler and flags, and the addresses are illustrative.';
 
 /**
  * Why it matters. Sources: Matt Miller, Microsoft Security Response Center, "Trends, challenges and
  * strategic shifts in the software vulnerability mitigation landscape", BlueHat IL 2019 (~70% of the
- * vulnerabilities Microsoft fixes each year are memory-safety issues); The Chromium Projects,
- * "Memory safety" (2020: ~70% of high-severity security bugs are memory-safety problems).
+ * CVEs Microsoft assigns each year are memory-safety issues); The Chromium Projects, "Memory safety"
+ * (2020: ~70% of high-severity security bugs are memory-safety problems). That share covers every
+ * kind of memory-safety bug, not only the two shown here.
  */
 export const WHY_IT_MATTERS =
-  'About 70% of the vulnerabilities Microsoft fixes each year are memory-safety bugs (Microsoft MSRC, 2019), and Chromium reports the same share of its high-severity security bugs (2020).';
+  "Memory-safety bugs (these two are among the most common kinds) are behind about 70% of the CVEs Microsoft fixes each year (Microsoft MSRC, 2019) and of Chromium's high-severity security bugs (2020).";

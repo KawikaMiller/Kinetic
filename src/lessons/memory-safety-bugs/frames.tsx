@@ -3,7 +3,7 @@ import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { cListing, RUST_LISTING, type StackListing } from './listings';
-import { asText, inputBytesIn, NAME_BYTES, ROW_BYTES, slotById, slotOf, type SlotId, type StackRun } from './model';
+import { asText, findSlot, inputBytesIn, NAME_BYTES, ROW_BYTES, slotAt, type Mitigation, type SlotId, type StackRun } from './model';
 import { blockAt, blockText, runUaf, UAF_PROGRAMS, type UafDefence, type UafStep } from './uaf';
 
 /** The risk, in the plain words the spec fixes. */
@@ -18,23 +18,16 @@ export interface StackFrame extends Frame {
   done: boolean;
 }
 
-export const listingFor = (run: StackRun): StackListing => (run.defences.memorySafe ? RUST_LISTING : cListing(run.defences.boundsCheck, run.defences.canary));
+export const listingFor = (run: StackRun): StackListing => (run.defences.memorySafe ? RUST_LISTING : cListing(run.defences.boundsCheck, run.hasCanary));
 
-/** What the slot past the buffer is called in this build. */
-export function slotName(id: SlotId, canary: boolean): string {
-  switch (id) {
-    case 'name':
-      return 'name';
-    case 'canary':
-      return canary ? 'the canary' : 'the padding above name';
-    case 'rbp':
-      return 'the saved rbp';
-    case 'ret':
-      return 'the return address';
-    case 'caller':
-      return "main's frame";
-  }
-}
+/** What a slot is called in a caption. */
+export const SLOT_NAME: Record<SlotId, string> = {
+  name: 'name',
+  canary: 'the canary',
+  rbp: 'the saved rbp',
+  ret: 'the return address',
+  caller: "main's frame",
+};
 
 const quoted = (bytes: Uint8Array) => <>&quot;{asText(bytes)}&quot;</>;
 
@@ -43,16 +36,19 @@ function startSay(run: StackRun): ReactNode {
   if (run.defences.memorySafe) {
     return (
       <>
-        Rust: <code>name</code> is an 8-byte array and every <code>name[i]</code> is bounds-checked. The input is {plural(len, 'byte')}.
+        Rust: <code>name</code> is an 8-byte array and every <code>name[i]</code> is bounds-checked. The input is {plural(len, 'byte')}. No canary here: rustc adds no
+        stack protector by default, and the Bounds check toggle doesn&apos;t apply because Rust checks every index anyway.
       </>
     );
   }
-  const above = run.defences.canary ? (
+  const above = run.hasCanary ? (
     <>
-      the <span className="hl violet">stack canary</span> (a random value the epilogue checks)
+      the <span className="hl violet">stack canary</span> (a random value the epilogue checks), then the <span className="hl violet">saved rbp</span>
     </>
   ) : (
-    <>8 bytes of padding (this build has no canary)</>
+    <>
+      directly the <span className="hl violet">saved rbp</span> (this build has no canary)
+    </>
   );
   const copy = run.defences.boundsCheck ? (
     <>
@@ -65,8 +61,7 @@ function startSay(run: StackRun): ReactNode {
   );
   return (
     <>
-      greet&apos;s frame: <code>name[8]</code> at the lowest address, then {above}, the <span className="hl violet">saved rbp</span> and the{' '}
-      <span className="hl violet">return address</span>. {copy}
+      greet&apos;s frame: <code>name[8]</code> at the lowest address, then {above} and the <span className="hl violet">return address</span>. {copy}
     </>
   );
 }
@@ -76,7 +71,8 @@ function chunkSay(run: StackRun, from: number, to: number): ReactNode {
   const textEnd = hasNul ? to - 1 : to;
   const text = run.input.subarray(from, textEnd);
   const tail = hasNul ? (text.length ? <> and the NUL</> : <>the NUL</>) : null;
-  const range = from === to - 1 ? <>Byte {from}</> : <>Bytes {from}–{to - 1}</>;
+  const one = from === to - 1;
+  const range = one ? <>Byte {from}</> : <>Bytes {from}–{to - 1}</>;
   const what = (
     <>
       {text.length > 0 && quoted(text)}
@@ -86,20 +82,19 @@ function chunkSay(run: StackRun, from: number, to: number): ReactNode {
   if (from < NAME_BYTES) {
     return (
       <>
-        {range} go into <code>name</code>: <span className="hl info">{what}</span>.
+        {range} {one ? 'goes' : 'go'} into <code>name</code>: <span className="hl info">{what}</span>.
       </>
     );
   }
-  const id = slotOf(from).id;
   return (
     <>
-      {range} run past <code>name[7]</code> into {slotName(id, run.defences.canary)}: <span className="hl bad">{what}</span>.
+      {range} {one ? 'runs' : 'run'} past <code>name[7]</code> into {SLOT_NAME[slotAt(run.slots, from).id]}: <span className="hl bad">{what}</span>.
     </>
   );
 }
 
 function canarySay(run: StackRun): ReactNode {
-  const s = slotById('canary');
+  const s = findSlot(run.slots, 'canary')!;
   const differ = run.after.subarray(s.from, s.to).filter((b, i) => b !== run.before[s.from + i]).length;
   return differ ? (
     <>
@@ -112,28 +107,36 @@ function canarySay(run: StackRun): ReactNode {
   );
 }
 
+const MITIGATION_SAY: Record<Mitigation, ReactNode> = {
+  nx: <> NX is on: the stack is data only, so the CPU won&apos;t run instructions from it. That doesn&apos;t undo this overwrite; it removes one way of abusing it.</>,
+  aslr: <> ASLR is on: these addresses change every run (try Run again), which makes guessing where things are much harder. It doesn&apos;t stop the overwrite either.</>,
+};
+
 function corruptedSay(run: StackRun): ReactNode {
-  const { nx, aslr } = run.defences;
-  const what = run.changed.includes('ret') ? (
-    inputBytesIn(run, 'ret') > 0 ? (
+  const hitRet = run.changed.includes('ret');
+  const consequence = hitRet ? (
+    <>
+      on <code>ret</code> the program would jump somewhere it never intended.
+    </>
+  ) : (
+    <>when greet returns, main&apos;s frame pointer is wrong, so main would look for its own variables in the wrong place.</>
+  );
+  const what =
+    inputBytesIn(run, hitRet ? 'ret' : 'rbp') > 0 ? (
       <>
-        The <span className="hl bad">return address now holds bytes from the input</span>: on <code>ret</code> the program would jump somewhere it never intended.
+        The <span className="hl bad">{hitRet ? 'return address' : 'saved rbp'} now holds bytes from the input</span>: {consequence}
       </>
     ) : (
       <>
-        The string&apos;s NUL <span className="hl bad">overwrote the return address&apos;s lowest byte</span>: on <code>ret</code> the program would jump somewhere it never intended.
+        The string&apos;s NUL <span className="hl bad">overwrote {hitRet ? 'the return address' : 'the saved rbp'}&apos;s lowest byte</span>: {consequence}
       </>
-    )
-  ) : (
-    <>
-      The <span className="hl bad">saved rbp now holds bytes from the input</span>: when greet returns, main&apos;s frame pointer is wrong, so main would look for its own variables in the wrong place.
-    </>
-  );
+    );
   return (
     <>
       {what} The run stops here. {RISK}
-      {nx && <> NX is on: the stack is data only, so the CPU won&apos;t run instructions from it. That doesn&apos;t undo this overwrite; it removes one way of abusing it.</>}
-      {aslr && <> ASLR is on: these addresses change every run (try Run again), which makes guessing where things are much harder. It doesn&apos;t stop the overwrite either.</>}
+      {run.mitigations.map((m) => (
+        <span key={m}>{MITIGATION_SAY[m]}</span>
+      ))}
     </>
   );
 }
@@ -148,7 +151,7 @@ export function outcomeSay(run: StackRun): ReactNode {
         </>
       ) : (
         <>
-          <span className="hl ok">Fits</span>: {plural(run.written, 'byte')}, the NUL included, in an 8-byte buffer.{run.defences.canary && ' The canary check passes.'} greet returns to main as intended.
+          <span className="hl ok">Fits</span>: {plural(run.written, 'byte')}, the NUL included, in an 8-byte buffer.{run.hasCanary && ' The canary check passes.'} greet returns to main as intended.
         </>
       );
     case 'truncated':
@@ -173,15 +176,10 @@ export function outcomeSay(run: StackRun): ReactNode {
         </>
       );
     case 'quiet':
-      return run.changed.length === 0 ? (
+      return (
         <>
-          The NUL landed one byte past <code>name[7]</code>, on a canary byte that already held 00, so nothing changed and the check passes. Still a bug:{' '}
-          <span className="hl orange">one more character overwrites the canary</span>.
-        </>
-      ) : (
-        <>
-          {plural(run.wouldOverflow, 'byte')} ran past <code>name[7]</code> into {run.changed.map((id) => slotName(id, run.defences.canary)).join(' and ')}. The saved rbp
-          and return address didn&apos;t change, so greet still returns to main: <span className="hl orange">a silent bug</span>, and a longer name changes them.
+          The NUL landed one byte past <code>name[7]</code>, on a byte of {SLOT_NAME[slotAt(run.slots, NAME_BYTES).id]} that already held 00, so nothing changed
+          {run.hasCanary ? ' and the check passes' : ''}. Still a bug: <span className="hl orange">one more character changes it</span>.
         </>
       );
     case 'corrupted':
@@ -197,8 +195,7 @@ export function stackFrames(run: StackRun): StackFrame[] {
     const to = Math.min(from + ROW_BYTES, run.written);
     r.snap(chunkSay(run, from, to), 1, { upTo: to, fresh: [from, to], line: listing.copyLine });
   }
-  const C = !run.defences.memorySafe;
-  if (C && run.defences.canary) r.snap(canarySay(run), 1, { line: listing.endLine });
+  if (run.hasCanary) r.snap(canarySay(run), 1, { line: listing.endLine });
   r.set({ done: true, line: run.kind === 'panic' ? listing.copyLine : listing.endLine });
   r.close(outcomeSay(run), 2);
   return r.frames;

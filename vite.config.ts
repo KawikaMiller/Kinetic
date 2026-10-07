@@ -26,5 +26,8 @@ export default defineConfig({
     // dev-script rules (scripts/lib) are tested too, not just app code
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
+    // Exhaustive lesson tests run a few seconds each; under a loaded machine (several
+    // checkouts testing at once) the 5 s default fails them at random.
+    testTimeout: 15_000,
   },
 })

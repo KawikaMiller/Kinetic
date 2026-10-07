@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import {
-  canaryChanged, changedSlots, FRAME_BYTES, initialFrame, le64, MAX_NAME_BYTES, NO_DEFENCES, parseName, PRESETS, runLayout, rustCopy, stackRun,
+  canaryChanged, changedSlots, FRAME_BYTES, frameSlots, initialFrame, le64, MAX_NAME_BYTES, NO_DEFENCES, parseName, PRESETS, runLayout, rustCopy, stackRun,
   writeString, type DefenceId, type Defences,
 } from './model';
 
@@ -113,14 +113,18 @@ describe('canary check', () => {
 
 describe('defence order', () => {
   const long = enc(PRESETS[2].text);
-  const expectedKind: Record<string, string> = { memorySafe: 'panic', boundsCheck: 'truncated', canary: 'aborted', nx: 'corrupted', aslr: 'corrupted', none: 'corrupted' };
+  // The spec's order: a memory-safe language, then a bounds check, then the canary stop the run;
+  // NX and ASLR never stop it, they're reported as mitigations of a corrupted run, NX first.
+  const stoppers = ['memorySafe', 'boundsCheck', 'canary'] as const;
+  const expectedKind = { memorySafe: 'panic', boundsCheck: 'truncated', canary: 'aborted' } as const;
 
   it('for an overflow that reaches the return address, the outcome comes from the first enabled defence in the fixed order', () => {
     for (const d of COMBOS) {
-      const first = IDS.find((id) => d[id]);
+      const first = stoppers.find((id) => d[id]);
       const run = stackRun(long, d, 5);
-      expect(run.by).toBe(first);
-      expect(run.kind).toBe(expectedKind[first ?? 'none']);
+      expect(run.stoppedBy).toBe(first);
+      expect(run.kind).toBe(first ? expectedKind[first] : 'corrupted');
+      expect(run.mitigations).toEqual(first ? [] : (['nx', 'aslr'] as const).filter((id) => d[id]));
     }
   });
 
@@ -134,27 +138,45 @@ describe('hand-worked cases', () => {
     expect(PRESETS.map((p) => p.text.length)).toEqual([3, 12, 40]);
   });
 
-  it('Grace Hopper: 13 bytes, 5 past the buffer, only into the slot above name', () => {
+  it('matches gcc 13.3 -O1 -fno-omit-frame-pointer: name at rbp-8 without a canary, rbp-16 with one', () => {
+    const at = (canary: boolean, id: string) => frameSlots(canary).find((x) => x.id === id)!.from;
+    // Offsets from name[0]: the saved rbp is at rbp, the return address at rbp+8.
+    expect([at(false, 'rbp'), at(false, 'ret')]).toEqual([8, 16]);
+    expect([at(true, 'canary'), at(true, 'rbp'), at(true, 'ret')]).toEqual([8, 16, 24]);
+  });
+
+  it('Grace Hopper: 13 bytes, 5 past the buffer, straight into the saved rbp without a canary', () => {
     const off = stackRun(enc('Grace Hopper'), NO_DEFENCES, 1);
     expect(off.written).toBe(13);
     expect(off.wouldOverflow).toBe(5);
-    expect(off.changed).toEqual(['canary']);
-    expect(off.kind).toBe('quiet');
-    expect(stackRun(enc('Grace Hopper'), { ...NO_DEFENCES, canary: true }, 1).kind).toBe('aborted');
+    expect(off.changed).toEqual(['rbp']);
+    expect(off.kind).toBe('corrupted');
+    const on = stackRun(enc('Grace Hopper'), { ...NO_DEFENCES, canary: true }, 1);
+    expect(on.changed).toEqual(['canary']);
+    expect(on.kind).toBe('aborted');
+  });
+
+  it('Rust has no canary even with the toggle on', () => {
+    const run = stackRun(enc('Grace Hopper'), { ...NO_DEFENCES, memorySafe: true, canary: true }, 1);
+    expect(run.hasCanary).toBe(false);
+    expect(run.slots.some((x) => x.id === 'canary')).toBe(false);
+    expect(run.kind).toBe('panic');
   });
 
   it('the 40-character name reaches the saved rbp, the return address and main\'s frame', () => {
     const run = stackRun(enc(PRESETS[2].text), NO_DEFENCES, 1);
     expect(run.wouldOverflow).toBe(33);
-    expect(run.changed).toEqual(['canary', 'rbp', 'ret', 'caller']);
+    expect(run.changed).toEqual(['rbp', 'ret', 'caller']);
     expect(run.kind).toBe('corrupted');
+    expect(stackRun(enc(PRESETS[2].text), { ...NO_DEFENCES, canary: true }, 1).changed).toEqual(['canary', 'rbp', 'ret', 'caller']);
   });
 
   it('changedSlots compares slot by slot', () => {
     const before = new Uint8Array(FRAME_BYTES);
     const after = before.slice();
     after[24] = 1;
-    expect(changedSlots(before, after)).toEqual(['ret']);
+    expect(changedSlots(frameSlots(true), before, after)).toEqual(['ret']);
+    expect(changedSlots(frameSlots(false), before, after)).toEqual(['caller']);
   });
 });
 
