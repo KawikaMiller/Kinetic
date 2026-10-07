@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Schedulers and interval lookups that need sorted, changing data",
     ],
     why: "BSTs are where you learn that the shape of a data structure decides its performance. The same keys can give a fast tree or a slow linked list depending on insertion order, which is exactly why production code uses self-balancing versions. Tree reasoning (recursion, height, traversals) also comes up constantly in mid-level work and interviews.",
-    watch: "Each circle is a node. Yellow is the node being compared right now, violet nodes and edges are the path taken, green is a key found or placed, and red is a node being deleted or an empty spot (null) where a key would have been. During a two-child delete, the dashed blue path finds the successor. The in-order walk fills the strip at the bottom in sorted order.",
+    watch: "Each circle is a node. Yellow is the node being compared right now, violet nodes and edges are the path taken, green is a key found or placed, and red is a node being deleted, a duplicate key that's refused, or an empty spot (null) where a key would have been. During a two-child delete, the dashed blue path finds the successor. The in-order walk fills the strip at the bottom in sorted order.",
   },
   tryThis: [
     'Insert a few keys and watch each one walk down, one comparison per level, to an empty spot.',
@@ -46,6 +46,17 @@ const lesson: LessonModule = {
       options: ['The keys in insertion order', 'The keys in sorted order', 'The keys level by level', 'Only the leaves'],
       answer: 1,
       why: 'Left subtree, then node, then right subtree is exactly smallest-to-largest given the BST rule.',
+    },
+    {
+      q: "Every node's left child is smaller than it and its right child is bigger. Is it a valid BST?",
+      options: [
+        'Yes: checking each parent and child is enough',
+        'Not always: whole subtrees must obey the rule',
+        'Yes, as long as the tree is also balanced',
+        'Only if every leaf sits at the same depth',
+      ],
+      answer: 1,
+      why: "50 with left child 30, and 30 with right child 60: each pair looks fine, but 60 sits in 50's left subtree. Search for 60 goes right at 50 and never finds it.",
     },
   ],
 };

@@ -22,7 +22,7 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
  */
 const PENDING_RETROFIT = new Set([
   // T2-R1
-  'trees-bst', 'heaps', 'dynamic-programming', 'lru-cache', 'rate-limiting', 'message-queues',
+  'heaps', 'dynamic-programming', 'lru-cache', 'rate-limiting', 'message-queues',
   // T2-R2
   'tcp-udp', 'tls-handshake', 'db-indexes', 'transactions-acid', 'race-conditions', 'event-loop', 'auth-sessions-jwt', 'containers',
 ]);
