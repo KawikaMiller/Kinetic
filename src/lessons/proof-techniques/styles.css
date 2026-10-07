@@ -1,0 +1,30 @@
+.pt { display: flex; flex-direction: column; gap: 12px; }
+.pt-claim { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.pt-claim-tag { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-right: 6px; }
+.pt-proof li.is-done { color: var(--text); box-shadow: inset 3px 0 0 var(--ok); }
+.pt-proof li.is-done:has(.pt-assume) { box-shadow: inset 3px 0 0 var(--violet); background: color-mix(in srgb, var(--violet) 10%, transparent); }
+.pt-proof li.is-now code { color: var(--hi); font-style: italic; }
+.pt-assume { color: var(--violet); }
+.pt-proof .trail { font-size: 11.5px; max-width: 40%; text-align: right; }
+.pt-choices { display: flex; flex-direction: column; gap: 10px; }
+.pt-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pt-chip-wrap { display: inline-flex; max-width: 100%; }
+.pt-chip { white-space: normal; text-align: left; line-height: 1.4; max-width: 100%; }
+span.pt-chip { padding: 6px 10px; font-size: 12.5px; border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); color: var(--muted); }
+span.pt-chip.is-chosen { background: var(--c); color: var(--on-c); border-color: var(--c); }
+.pt-reasons { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; line-height: 1.5; }
+.pt-reasons li b { color: var(--c); }
+.pt-reasons li span { color: var(--muted); }
+.pt-reasons li span::before { content: '— '; }
+.pt-stall { margin: 0; font-size: 13.5px; line-height: 1.6; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--bad) 10%, transparent); box-shadow: inset 3px 0 0 var(--bad); }
+.pt-stall b { color: var(--bad); }
+.pt-reading { display: flex; flex-direction: column; gap: 8px; }
+.pt-gloss { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.55; }
+.pt-table { align-self: flex-start; }
+.pt-hunt { display: flex; flex-direction: column; gap: 10px; }
+.pt-check { margin: 0; font: 600 14px var(--mono); color: var(--c); }
+.pt-grid { max-width: 100%; }
+@media (max-width: 900px) {
+  .pt-proof .trail { max-width: none; }
+  .pt-proof li { flex-wrap: wrap; }
+}
