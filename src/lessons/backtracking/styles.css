@@ -1,0 +1,17 @@
+.bt { flex-flow: row wrap; align-items: flex-start; gap: 18px; }
+.bt-left { flex: 0 1 250px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.bt-right { flex: 1 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.bt-board, .bt-items { display: flex; flex-direction: column; gap: 8px; }
+.bt-grid { max-width: 100%; height: auto; }
+.bt-items .tray { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.bt-items .tray .section-title { flex-basis: 100%; }
+.bt-subset { font-family: var(--mono); }
+.bt-tree { width: 100%; height: auto; display: block; }
+.bt-tree .tree-node.bt-cur circle { stroke: var(--hi); stroke-width: 3; }
+.bt-tree .tree-node.bt-cur.is-solid.tone-hi circle { stroke: var(--text); stroke-width: 1.5; }
+.bt-tree .tree-node text.bt-leaf { font: 600 11px var(--mono); fill: var(--ok); }
+.bt-level { font: 500 11px var(--mono); fill: var(--muted); }
+.bt-note p { margin: 0 0 8px; font-size: 14px; color: var(--muted); line-height: 1.5; }
+@media (max-width: 900px) {
+  .bt-left, .bt-right { flex-basis: 100%; }
+}
