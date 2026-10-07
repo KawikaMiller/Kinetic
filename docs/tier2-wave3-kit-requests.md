@@ -13,7 +13,7 @@
   - Background pointer hook `onPlotPointer`: gradient-descent's DropLayer and linear-logistic-regression's PointerSheet are duplicates.
   - `Arrow dashed`: vectors-similarity wraps the arrow in a dashed `<g>`.
 - **core/format `decimal(v, dp)` with a real minus sign:** there are five identical local `num()` copies.
-- **core/vec:** a relative pivot tolerance in `solve`, or QR inside `leastSquares`. A degree-12 fit on 15 points (κ ≈ 1e13) is wrongly reported singular.
+- **core/vec:** stable least squares. Being done in t2/b8-fix (domain-review fix); drop it from the kit round once that merges.
 
 ## B9 (merged)
 - **sequenceLayout:** leave room for a self-message label on the rightmost lifeline. It overflows the viewBox today; diffie-hellman hides an empty lane as a workaround.
