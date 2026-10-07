@@ -28,7 +28,7 @@ const lesson: LessonModule = {
     'Deadlock needs all four: mutual exclusion, hold and wait, no preemption, circular wait. Remove any one and it cannot happen.',
     'A global lock order is the usual fix: with everyone taking A before B, a cycle of waits cannot close.',
     'Livelock is busy but stuck (tryLock retrying in lockstep); starvation is one thread waiting while the others make progress.',
-    'With one copy of each lock, a cycle in the wait-for graph is a deadlock. Databases detect it and abort a victim.',
+    'With one copy of each lock, a cycle of blocked waits in the wait-for graph is a deadlock. Databases detect it and abort a victim.',
   ],
   quiz: [
     {

@@ -57,7 +57,12 @@ export function caption(note: Note, p: Preset, c: Conditions, s: DlState, cycle:
         </>
       );
     case 'blockAll':
-      return <>{who(note.t)} needs everything at once, but {list(note.missing)} {note.missing.length > 1 ? 'are' : 'is'} taken. It waits holding nothing.</>;
+      return (
+        <>
+          {who(note.t)} needs everything at once, but {list(note.missing)} {note.missing.length > 1 ? 'are' : 'is'} taken.{' '}
+          {c.noPreemption ? 'It waits holding nothing.' : 'It holds nothing, so it backs off and tries again.'}
+        </>
+      );
     case 'tryFail':
       return note.holding.length ? (
         <>
@@ -71,7 +76,7 @@ export function caption(note: Note, p: Preset, c: Conditions, s: DlState, cycle:
     case 'release':
       if (note.reason === 'done') return <>{who(note.t)} is done: it unlocks {list(note.locks)}.</>;
       return note.locks.length ? (
-        <>{who(note.t)} unlocks {list(note.locks)} and backs off before starting over. That's preemption: the lock was taken back.</>
+        <>{who(note.t)} unlocks {list(note.locks)} and backs off before starting over: it gives up its locks (it preempts itself).</>
       ) : (
         <>{who(note.t)} backs off before trying again.</>
       );
