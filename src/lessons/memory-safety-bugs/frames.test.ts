@@ -8,14 +8,14 @@ import { byteTone, framePicture } from './picture';
 const enc = (t: string) => new TextEncoder().encode(t);
 const IDS: DefenceId[] = ['memorySafe', 'boundsCheck', 'canary', 'nx', 'aslr'];
 const COMBOS: Defences[] = Array.from({ length: 32 }, (_, m) => Object.fromEntries(IDS.map((id, i) => [id, Boolean(m & (1 << i))])) as Defences);
-const INPUTS = [...PRESETS.map((p) => p.text), 'Margaret', '', 'Ada Lovelace Byron'];
+const INPUTS = [...PRESETS.map((p) => p.text), 'Margaret', '', 'Ada Lovelace Byron', 'Ada King Lovelac'];
 
 const FINAL: Record<string, RegExp> = {
   fits: /^Fits/,
   truncated: /^Stopped by the bounds check/,
   panic: /^Stopped by Rust/,
   aborted: /^Stopped by the canary/,
-  quiet: /silent bug|nothing changed/,
+  quiet: /nothing changed/,
   corrupted: /The run stops here/,
 };
 
@@ -32,7 +32,14 @@ describe('stack scene: every input and every defence combination', () => {
         expect(say.includes(RISK)).toBe(run.kind === 'corrupted');
         expect(say.includes('NX is on')).toBe(run.kind === 'corrupted' && d.nx);
         expect(say.includes('ASLR is on')).toBe(run.kind === 'corrupted' && d.aslr);
-        if (run.kind === 'corrupted') expect(say.includes('return address')).toBe(run.changed.includes('ret'));
+        if (run.kind === 'corrupted') {
+          expect(say.includes('return address')).toBe(run.changed.includes('ret'));
+          // "bytes from the input" only when real characters (not just the NUL) landed in that slot.
+          const slot = run.slots.find((x) => x.id === (run.changed.includes('ret') ? 'ret' : 'rbp'))!;
+          const inputInSlot = text.length > slot.from;
+          expect(say.includes('now holds bytes from the input')).toBe(inputInSlot);
+          expect(say.includes('NUL overwrote')).toBe(!inputInSlot);
+        }
         if (run.kind === 'fits' && !d.memorySafe) expect(say.includes('canary check passes')).toBe(d.canary);
         if (run.kind === 'truncated') expect(say).toContain(`returns ${text.length}`);
 
@@ -43,8 +50,9 @@ describe('stack scene: every input and every defence combination', () => {
         for (const f of copies) {
           const [from, to] = f.fresh!;
           const t = captionText(f.say);
-          expect(t).toContain(from === to - 1 ? `Byte ${from}` : `Bytes ${from}–${to - 1}`);
-          expect(t.includes('run past')).toBe(from >= 8);
+          const one = from === to - 1;
+          expect(t).toContain(one ? `Byte ${from} ${from >= 8 ? 'runs' : 'goes'}` : `Bytes ${from}–${to - 1} ${from >= 8 ? 'run' : 'go'}`);
+          expect(/runs? past/.test(t)).toBe(from >= 8);
         }
         // The canary step appears exactly for a C build with the canary on.
         expect(frames.some((f) => captionText(f.say).startsWith('The epilogue compares the canary'))).toBe(d.canary && !d.memorySafe);
@@ -54,14 +62,14 @@ describe('stack scene: every input and every defence combination', () => {
 });
 
 describe('stack picture', () => {
-  it('the canary is a guard region, red exactly when its bytes changed, and only with the canary on', () => {
+  it('the canary is a guard region, red exactly when its bytes changed, and only in a C build with the canary on (Rust has none)', () => {
     for (const d of COMBOS) {
       for (const text of INPUTS) {
         const run = stackRun(enc(text), d, 1);
         const pic = framePicture(run, run.written, null);
         const guard = pic.regions.filter((r) => r.variant === 'guard');
-        expect(guard.length).toBe(d.canary ? 1 : 0);
-        if (d.canary) expect(guard[0].tone).toBe(run.changed.includes('canary') ? 'bad' : 'violet');
+        expect(guard.length).toBe(d.canary && !d.memorySafe ? 1 : 0);
+        if (guard.length) expect(guard[0].tone).toBe(run.changed.includes('canary') ? 'bad' : 'violet');
       }
     }
   });
