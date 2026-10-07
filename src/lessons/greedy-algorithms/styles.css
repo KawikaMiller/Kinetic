@@ -1,0 +1,21 @@
+.gr { display: flex; flex-direction: column; gap: 12px; }
+.gr-order { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.gr-order-label { font: 600 12px var(--mono); color: var(--muted); }
+.gr-order > :last-child { flex: 1 1 260px; min-width: 0; }
+.gr-gantt .gantt-row-label { white-space: pre; }
+.gr-gantt .gantt-bar.is-ring { box-shadow: 0 0 0 2.5px var(--gantt-ring); }
+.gr-error { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--bad); }
+.gr-coin-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.gr-coins { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.gr-coins .section-title { display: block; }
+.gr-coin-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 30px; }
+.gr-coin-key { width: 52px; font: 600 12px var(--mono); color: var(--muted); }
+.gr-coin {
+  display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 99px;
+  background: var(--c); color: var(--on-c); font: 700 13px var(--mono);
+}
+.gr-left { font: 12px var(--mono); color: var(--muted); }
+.gr-verdict { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text); border-left: 3px solid var(--c); padding-left: 8px; }
+.gr-dp { display: flex; flex-direction: column; gap: 8px; }
+.gr-dp .section-title { display: block; }
+.gr-field input { text-align: left; }
