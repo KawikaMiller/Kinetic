@@ -1,0 +1,28 @@
+.gl-live { gap: 14px; }
+.gl-canvas { --h: 300px; border-radius: 10px; overflow: hidden; }
+.gl-panels { display: flex; flex-wrap: wrap; gap: 12px; }
+.gl-budget { flex: 1 1 280px; }
+.gl-sparks { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; }
+.gl-spark-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 500 12px var(--font); color: var(--muted); }
+.gl-honest { display: block; }
+
+.gl-bar-wrap { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.gl-bar { display: flex; height: 14px; border-radius: 99px; background: var(--dim); overflow: hidden; }
+.gl-bar-update { background: var(--hi); }
+.gl-bar-render { background: var(--ok); }
+.gl-bar-wrap.is-over .gl-bar { box-shadow: 0 0 0 2px var(--bad); }
+.gl-bar-text { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font: 500 12px var(--mono); color: var(--muted); }
+.gl-key::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.gl-key.is-update::before { background: var(--hi); }
+.gl-key.is-render::before { background: var(--ok); }
+.gl-bar-frame { margin: 0; font: 600 13px var(--mono); color: var(--text); }
+.gl-bar-frame.is-over { color: var(--bad); }
+
+.gl-machines { flex-direction: row; flex-wrap: wrap; gap: 12px; }
+.gl-machine { --h: 220px; flex: 1 1 300px; border-radius: 10px; overflow: hidden; }
+
+@media (max-width: 900px) {
+  .gl-canvas { --h: 260px; }
+  .gl-machines { flex-direction: column; }
+  .gl-machine { flex: none; width: 100%; }
+}
