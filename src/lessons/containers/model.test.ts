@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { buildFrames } from './frames';
+import lesson from './index';
 import {
   BAD, GOOD, HOT_PCT, LIMIT_MB, LEAK_STEP_MB, SLOW_BUILD_SECONDS, START, WORKER, cacheBuild, containerDiskMb, leakTick,
   meterHot, pidSeenFrom, restartPhase, vmDiskGb, type Change, type Instr,
@@ -48,8 +49,7 @@ describe('layer caching', () => {
     }
   });
 
-  it('the quiz answer: with COPY . . before npm ci, a source edit reruns npm ci', async () => {
-    const { default: lesson } = await import('./index');
+  it('the quiz answer: with COPY . . before npm ci, a source edit reruns npm ci', () => {
     const q = lesson.quiz.find((x) => x.q.includes('COPY . . before RUN npm ci'))!;
     expect(q.options[q.answer]).toMatch(/npm ci runs again/);
     expect(cacheBuild(BAD, 'code')[BAD.findIndex((i) => i.text === NPM_CI)].status).toBe('built');
