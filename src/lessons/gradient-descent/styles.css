@@ -1,0 +1,5 @@
+.gd-row { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.gd-plot { width: 100%; max-width: 420px; }
+.gd-row > .gd-plot { flex: 0 1 420px; }
+.gd-side { flex: 1 1 320px; max-width: 460px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.gd-drop { fill: transparent; cursor: crosshair; }
