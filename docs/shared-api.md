@@ -587,6 +587,11 @@ chunkGroups(20, 8, { align: 'right', tone: 'violet' })   // bytes of a number, f
 <BitStrip bits={utf8} toneOf={(i) => (isPrefix(i) ? 'dim' : 'info')} />          // per-bit tone beats the group's
 <BitStrip bits={toBits(0o754, 9)} labelOf={(i) => 'rwx'[i % 3]} groups={chunkGroups(9, 3, …)} />
 <BitStrip bits={perms} onToggle={flip} ariaLabelOf={bitName} />   // screen readers hear "group write", not "bit 4"
+<BitStrip bits={addr} groups={octets} size="sm"                      // a draggable prefix divider (subnetting-cidr)
+          divider={{ at: prefix, onMove: setPrefix, tag: `/${prefix}`, ariaLabel: 'Prefix divider', valueText: (p) => `/${p}` }} />
+// divider: drawn over the measured bits (components/bitDivider: dividerSlots, nearestSlot, dividerKeyTarget), so it follows
+// the strip's wrapping on a phone. With onMove: drag anywhere on the strip; on the focused line Left/Down and Right/Up move
+// one bit, PageDown/PageUp a byte, Home/End to the ends. Without onMove it's a plain marker. Strip layout only.
 <BitStrip bits={out} pending={(i) => i < width - filled} toneOf={…} />  // columns not worked out yet: empty dashed slots
 // A row of a CSS-grid table (error-detection-correction's Hamming table): bits fill the grid's columns
 <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(7, 38px)` }}>

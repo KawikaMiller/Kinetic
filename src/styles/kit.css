@@ -272,6 +272,19 @@
 .bit-strip { --bit-w: 24px; --bit-fs: 13px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 12px; }
 .bit-strip.size-sm { --bit-w: 18px; --bit-fs: 11px; }
 .bit-strip.size-lg { --bit-w: 30px; --bit-fs: 15px; }
+/* BitStrip divider: placed over the measured bit positions (components/bitDivider.ts); the top padding is room for its tag */
+.bit-divided { position: relative; padding: 18px 8px 4px; align-self: flex-start; max-width: 100%; }
+.bit-divided.is-movable { touch-action: none; cursor: ew-resize; }
+.bit-divider {
+  position: absolute; width: 16px; margin-left: -8px;
+  display: flex; justify-content: center; border-radius: 4px;
+}
+.bit-divided.is-movable .bit-divider { cursor: ew-resize; }
+.bit-divider::before { content: ''; width: 3px; height: 100%; border-radius: 2px; background: var(--hi); box-shadow: 0 0 8px color-mix(in srgb, var(--hi) 60%, transparent); }
+.bit-divider-tag {
+  position: absolute; top: -17px; padding: 0 5px; border-radius: 5px;
+  font: 700 11px/15px var(--mono); color: var(--on-hi); background: var(--hi); white-space: nowrap;
+}
 .bit-group { display: flex; flex-direction: column; gap: 5px; }
 .bit-row { display: flex; gap: 3px; }
 .bit-slot { display: flex; flex-direction: column; align-items: center; gap: 3px; }

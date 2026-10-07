@@ -1,9 +1,9 @@
 /**
- * Where the prefix divider can sit over a measured BitStrip: one slot before each bit and one
- * after the last, so slot k means "k network bits". The strip wraps between octets on a
+ * Where BitStrip's divider can sit over its measured bits: one slot before each bit and one
+ * after the last, so slot k means "k bits on the left" (a prefix length). The strip wraps between groups on a
  * phone, so a slot at a row break sits at the start of the new row. Pure, so it's tested.
  */
-import type { Rect } from '../../core/useMeasure';
+import type { Rect } from '../core/useMeasure';
 
 export interface Slot {
   x: number;
@@ -44,4 +44,20 @@ export function nearestSlot(slots: readonly Slot[], px: number, py: number): num
     }
   });
   return best;
+}
+
+/** PageUp/PageDown move the divider a byte at a time. */
+export const DIVIDER_PAGE = 8;
+
+/**
+ * Where a key moves a divider at slot `at` over `n` bits: arrows by one (Left/Down down,
+ * Right/Up up), PageDown/PageUp by DIVIDER_PAGE, Home/End to the ends; clamped to 0..n.
+ * null for any other key.
+ */
+export function dividerKeyTarget(key: string, at: number, n: number): number | null {
+  const step: Record<string, number> = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -DIVIDER_PAGE, PageUp: DIVIDER_PAGE };
+  if (key === 'Home') return 0;
+  if (key === 'End') return n;
+  if (!(key in step)) return null;
+  return Math.max(0, Math.min(n, at + step[key]));
 }
