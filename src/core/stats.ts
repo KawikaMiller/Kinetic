@@ -99,3 +99,53 @@ export function runningMean(xs: readonly number[]): number[] {
   let sum = 0;
   return xs.map((x, i) => (sum += x) / (i + 1));
 }
+
+/** A binary classifier's four outcome counts. */
+export interface Confusion {
+  tp: number;
+  fp: number;
+  fn: number;
+  tn: number;
+}
+
+export interface ClassificationMetrics {
+  /** TP / (TP + FP): of the predicted positives, how many were right. */
+  precision: number;
+  /** TP / (TP + FN), also sensitivity or TPR: of the actual positives, how many were caught. */
+  recall: number;
+  /** TN / (TN + FP): of the actual negatives, how many were left alone. */
+  specificity: number;
+  /** FP / (FP + TN): the ROC curve's x axis. */
+  fpr: number;
+  /** (TP + TN) / everything. */
+  accuracy: number;
+  /** Harmonic mean of precision and recall: 2TP / (2TP + FP + FN). */
+  f1: number;
+}
+
+const ratio = (num: number, den: number) => (den === 0 ? NaN : num / den);
+
+/** The derived metrics. A metric whose denominator is 0 is NaN (undefined), never a made-up 0 or 1. */
+export function classificationMetrics({ tp, fp, fn, tn }: Confusion): ClassificationMetrics {
+  return {
+    precision: ratio(tp, tp + fp),
+    recall: ratio(tp, tp + fn),
+    specificity: ratio(tn, tn + fp),
+    fpr: ratio(fp, fp + tn),
+    accuracy: ratio(tp + tn, tp + fp + fn + tn),
+    f1: ratio(2 * tp, 2 * tp + fp + fn),
+  };
+}
+
+/** Counts at a threshold: a score ≥ `threshold` is predicted positive (label 1). */
+export function confusionAt(examples: readonly { score: number; label: 0 | 1 }[], threshold: number): Confusion {
+  const c = { tp: 0, fp: 0, fn: 0, tn: 0 };
+  for (const { score, label } of examples) {
+    const predicted = score >= threshold;
+    if (predicted && label) c.tp++;
+    else if (predicted) c.fp++;
+    else if (label) c.fn++;
+    else c.tn++;
+  }
+  return c;
+}

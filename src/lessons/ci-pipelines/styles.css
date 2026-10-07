@@ -10,26 +10,8 @@
 .ci-progress { fill: var(--hi); }
 
 /* ── Gantt ─────────────────────────────────────────────────────── */
-.ci-gantt { --ci-label-w: 92px; }
-.ci-rows { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-.ci-row { display: grid; grid-template-columns: var(--ci-label-w) minmax(0, 1fr); align-items: center; }
-.ci-row-label { font: 12px var(--mono); color: var(--muted); }
-.ci-track { position: relative; height: 12px; border-radius: 4px; background: color-mix(in srgb, var(--dim) 35%, transparent); }
-.ci-plan { position: absolute; top: 0; bottom: 0; border-radius: 4px; border: 1px dashed var(--line-2); }
-.ci-bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; transition: width 0.3s linear, background 0.25s; }
-.ci-bar.is-running { background: var(--hi); }
-.ci-bar.is-passed { background: var(--ok); }
-.ci-bar.is-failed { background: var(--bad); }
-.ci-bar.is-cancelled { background: var(--dim); }
-.ci-bar.is-critical { box-shadow: 0 0 0 2px var(--violet); }
-.ci-now {
-  position: absolute;
-  top: -2px;
-  bottom: -2px;
-  width: 2px;
-  background: var(--hi);
-  transition: left 0.3s linear;
-}
+/* A GanttLanes (kit.css) under the section title. */
+.ci-gantt .gantt { margin-top: 8px; }
 
 /* ── YAML, artifacts, log ──────────────────────────────────────── */
 .ci-bottom { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 12px; align-items: start; }

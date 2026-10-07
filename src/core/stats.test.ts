@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   binomialPmf,
+  classificationMetrics,
+  confusionAt,
   choose,
   collisionProbability,
   COLLISION_EXACT_LIMIT,
@@ -114,5 +116,37 @@ describe('runningMean', () => {
   it('is the mean of each prefix', () => {
     expect(runningMean([2, 4, 6, 8])).toEqual([2, 3, 4, 5]);
     expect(runningMean([])).toEqual([]);
+  });
+});
+
+describe('classification metrics', () => {
+  it('derives the textbook numbers', () => {
+    // 100 sick of 1,000; the test catches 90 and false-alarms on 45
+    const m = classificationMetrics({ tp: 90, fn: 10, fp: 45, tn: 855 });
+    expect(m.precision).toBeCloseTo(90 / 135, 12);
+    expect(m.recall).toBeCloseTo(0.9, 12);
+    expect(m.specificity).toBeCloseTo(0.95, 12);
+    expect(m.fpr).toBeCloseTo(0.05, 12);
+    expect(m.accuracy).toBeCloseTo(0.945, 12);
+    expect(m.f1).toBeCloseTo((2 * m.precision * m.recall) / (m.precision + m.recall), 12);
+  });
+
+  it('says NaN for an undefined metric instead of inventing one', () => {
+    const m = classificationMetrics({ tp: 0, fp: 0, fn: 5, tn: 5 });
+    expect(m.precision).toBeNaN();
+    expect(m.recall).toBe(0);
+    expect(classificationMetrics({ tp: 0, fp: 0, fn: 0, tn: 0 }).accuracy).toBeNaN();
+  });
+
+  it('counts outcomes at a threshold (score ≥ threshold is positive)', () => {
+    const ex = [
+      { score: 0.1, label: 0 as const },
+      { score: 0.4, label: 1 as const },
+      { score: 0.5, label: 0 as const },
+      { score: 0.9, label: 1 as const },
+    ];
+    expect(confusionAt(ex, 0.5)).toEqual({ tp: 1, fp: 1, fn: 1, tn: 1 });
+    expect(confusionAt(ex, 0)).toEqual({ tp: 2, fp: 2, fn: 0, tn: 0 });
+    expect(confusionAt(ex, 1)).toEqual({ tp: 0, fp: 0, fn: 2, tn: 2 });
   });
 });
