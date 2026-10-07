@@ -54,17 +54,22 @@ export function read(a: V2, b: V2): Reading {
   };
 }
 
-/** How cos θ reads in words. Exact 1 / 0 / −1 come from the snapped presets; drags land near them. */
+/** How the pair reads in words. The three special cases fire only when they're exact. */
 export type Direction = 'same' | 'similar' | 'perpendicular' | 'apart' | 'opposite' | 'undefined';
 
-const NEAR = 0.0005;
+/**
+ * Exact means within float dust of the 0.1 snap grid: dot products and cross products of
+ * snapped vectors are multiples of 0.01, so anything this small is really zero.
+ */
+const EXACT = 1e-9;
 
-export function direction(cos: number | null): Direction {
-  if (cos === null) return 'undefined';
-  if (cos >= 1 - NEAR) return 'same';
-  if (cos <= -1 + NEAR) return 'opposite';
-  if (Math.abs(cos) <= NEAR) return 'perpendicular';
-  return cos > 0 ? 'similar' : 'apart';
+export function direction(a: V2, b: V2): Direction {
+  if (isZero(a) || isZero(b)) return 'undefined';
+  const d = dot(a, b);
+  const cross = a[0] * b[1] - a[1] * b[0];
+  if (Math.abs(cross) < EXACT) return d > 0 ? 'same' : 'opposite';
+  if (Math.abs(d) < EXACT) return 'perpendicular';
+  return d > 0 ? 'similar' : 'apart';
 }
 
 /** Which of two candidates each score prefers, for the "long vs short" comparison. */
