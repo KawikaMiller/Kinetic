@@ -1,0 +1,49 @@
+.sq { gap: 14px; }
+.sq-sr { flex-flow: row wrap; align-items: flex-start; gap: 18px 26px; }
+.sq-board { flex: 1 1 360px; min-width: 0; }
+.sq-side { display: flex; flex-direction: column; gap: 8px; align-self: center; }
+.sq-svg { display: block; width: 100%; height: auto; max-width: 560px; }
+
+/* SR latch, in logic-gates' drawing style */
+.sq-wire { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.25s; }
+.sq-wire.is-low { stroke: var(--dim); }
+.sq-wire.is-high { stroke: var(--hi); }
+.sq-wire.is-unknown { stroke: var(--bad); stroke-dasharray: 4 4; }
+.sq-gate-body { fill: var(--panel); stroke: var(--line-2); stroke-width: 2; }
+.sq-gate.is-on .sq-gate-body { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--panel)); }
+.sq-gate-type { font: 700 12px var(--mono); fill: var(--muted); pointer-events: none; }
+.sq-input { cursor: pointer; }
+.sq-input circle,
+.sq-lamp circle { fill: var(--cell); stroke: var(--dim); stroke-width: 2; }
+.sq-input.is-on circle { fill: var(--hi); stroke: var(--hi); }
+.sq-input:focus-visible { outline: none; }
+.sq-input:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.sq-lamp.is-on circle { fill: var(--hi); stroke: var(--hi); }
+.sq-lamp.is-stored circle { stroke: var(--violet); stroke-width: 3; }
+.sq-lamp.is-broken circle { stroke: var(--bad); stroke-width: 3; }
+.sq-io-value { font: 700 15px var(--mono); fill: var(--muted); pointer-events: none; }
+.sq-input.is-on .sq-io-value,
+.sq-lamp.is-on .sq-io-value { fill: var(--on-hi); }
+.sq-io-name { font: 700 14px var(--mono); fill: var(--text); }
+
+/* Timing diagram */
+.sq-timing { display: block; }
+.sq-lane-label { font: 600 12px var(--mono); fill: var(--muted); }
+.sq-wave { fill: none; stroke-width: 2.5; stroke-linejoin: round; }
+.sq-wave.is-level.is-high { stroke: var(--hi); }
+.sq-wave.is-level.is-low { stroke: var(--dim); }
+.sq-wave.is-stored { stroke: var(--violet); }
+.sq-edge { stroke: var(--info); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.8; }
+
+/* Register and counter */
+.sq-rows { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 12px 14px; align-items: end; justify-content: start; }
+.sq-row-label { font: 700 12px var(--mono); color: var(--muted); padding-bottom: 6px; white-space: nowrap; }
+.sq-row-label.is-stored { color: var(--violet); }
+.sq-row-label.is-bad { color: var(--bad); }
+.sq-row-note { font-size: 12px; color: var(--faint); padding-bottom: 6px; }
+.sq-ok { color: var(--ok); }
+.sq-history { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+@media (max-width: 900px) {
+  .sq-rows { grid-template-columns: auto auto; }
+  .sq-row-note { grid-column: 1 / -1; padding-bottom: 0; }
+}

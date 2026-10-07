@@ -1,0 +1,21 @@
+.bm { gap: 14px; }
+.bm-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: center; }
+.bm-row-label { font: 600 12px var(--mono); color: var(--muted); text-align: right; white-space: nowrap; }
+.bm-row-label.is-result { color: var(--hi); }
+.bm-row-label.is-mask { color: var(--violet); }
+/* Columns not worked out yet: an empty dashed slot, not a 0. */
+.bm-result .bit-slot:has(.bm-pending-mark) .bit { color: transparent; border-style: dashed; }
+.bm-pending-mark { color: var(--faint); }
+.bm-tick { color: var(--ok); font-weight: 700; }
+.bm-sign { color: var(--orange); font-weight: 700; }
+.bm-note { margin: 0; color: var(--text); font-size: 13px; }
+.bm-honest { color: var(--muted); }
+.bm-error { color: var(--bad); }
+.bm-flagnames { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.bm-flagnames .chip.tone-dim { color: var(--muted); }
+.bm-flagnames .chip.is-mask { outline: 2px solid var(--violet); outline-offset: 1px; }
+.bm-trick-body { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.bm-steps { flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; }
+.bm-trick-body .code-panel { flex: 1 1 260px; }
+/* 32 bits: the phone-size cells, so all four bytes fit one line on a desktop stage. */
+.bm.is-32 .bit-strip { --bit-w: 20px; --bit-fs: 12px; }

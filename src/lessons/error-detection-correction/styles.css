@@ -1,0 +1,33 @@
+.ed { gap: 16px; --ed-cell: 38px; --ed-cell-sm: 30px; }
+.ed-table { display: grid; gap: 6px; align-items: center; justify-content: start; }
+.ed-row-cells { display: contents; }
+.ed-head { display: flex; flex-direction: column; align-items: center; font: 500 10px/1.3 var(--mono); color: var(--faint); }
+.ed-head b { color: var(--muted); font-size: 11px; }
+.ed-bin { color: var(--faint); letter-spacing: 1px; }
+.ed-label { font: 600 11px var(--mono); color: var(--muted); text-align: right; padding-right: 6px; white-space: nowrap; }
+.ed-check { font: 600 11px var(--mono); color: var(--muted); padding-left: 6px; white-space: nowrap; }
+.ed-bad { color: var(--bad); }
+.ed-bit {
+  height: 34px; display: grid; place-items: center; border-radius: 6px;
+  font: 700 13px var(--mono); border: 2px solid var(--c);
+}
+.ed-bit.is-set { background: var(--c); color: var(--bg); }
+.ed-bit.is-clear { background: var(--cell); color: var(--c); }
+.ed-bit.is-window { outline: 2px solid var(--hi); outline-offset: 1px; }
+button.ed-bit { cursor: pointer; }
+button.ed-bit:hover { filter: brightness(1.15); }
+.ed-band { height: 26px; display: grid; place-items: center; border-radius: 5px; font: 600 12px var(--mono); }
+.ed-band.is-in { background: color-mix(in srgb, var(--c) 22%, transparent); border: 1px solid color-mix(in srgb, var(--c) 60%, transparent); color: var(--c); }
+.ed-gen { height: 26px; display: grid; place-items: center; font: 700 13px var(--mono); color: var(--faint); }
+.ed-gen.is-on { color: var(--hi); background: color-mix(in srgb, var(--hi) 14%, transparent); border-radius: 5px; }
+.ed-division .ed-bit, .ed-division .ed-gen { font-size: 12px; }
+.ed-data { display: flex; align-items: flex-end; gap: 8px; }
+.ed-note { margin: 0; font-size: 13px; color: var(--text); }
+.ed-real { display: flex; flex-direction: column; gap: 10px; }
+.ed-real-grid { display: flex; flex-wrap: wrap; gap: 18px; }
+@media (max-width: 900px) {
+  .ed { --ed-cell: 28px; --ed-cell-sm: 28px; }
+  .ed-table { gap: 4px; }
+  .ed-bit { height: 30px; }
+}
+.ed-head-key { align-items: flex-end; padding-right: 6px; }
