@@ -6,6 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { useScenePicker } from '../../components/ScenePicker';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, Hint, Legend, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { arrayFrames, listFrames, type FloydFrame } from './frames';
 import { NULL_ID, rhoLayout } from './layout';
@@ -15,7 +16,7 @@ import './styles.css';
 const STEP_MS = 800;
 const R = 18;
 /** The smallest scene text is 12px (the null box): the graph never shrinks below 8/12 of its width, and only the graph scrolls sideways. */
-const MIN_SCALE = 8 / 12;
+const SMALLEST_TEXT_PX = 12;
 
 type Scene = 'list' | 'array';
 
@@ -125,7 +126,7 @@ function ListScene({ picker }: { picker: ReactNode }) {
     >
       <div className="cd stage-pad">
         <div className="cd-main">
-          <WideRegion minWidth={Math.ceil(layout.width * MIN_SCALE)} label="Linked list: scroll sideways to see all of it">
+          <WideRegion minWidth={minWidthForText(layout.width, SMALLEST_TEXT_PX)} label="Linked list: scroll sideways to see all of it">
           <GraphView
             nodes={ids.map((id) => ({ id, at: layout.at.get(id) }))}
             edges={edges}

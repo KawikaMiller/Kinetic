@@ -5,6 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { cssVar, type TokenName } from '../../core/palette';
+import { minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { ALGO_NAMES, mstFrames, type Algo } from './frames';
 import { byWeight, countMinimumTrees, cut, distinctWeights, kruskal, parseWeight, prim, worstDetour, type WGraph } from './model';
@@ -15,7 +16,7 @@ const STEP_MS = 1000;
 const W = 520;
 const H = 340;
 /** Edge weights are 13px: the graph never shrinks below 8/13 of its width, and only the graph scrolls sideways. */
-const GRAPH_MIN_WIDTH = Math.ceil((W * 8) / 13);
+const GRAPH_MIN_WIDTH = minWidthForText(W, 13);
 /** Set colours for Kruskal's merged groups: categorical, never the ok/bad meanings. */
 const SET_TONES: readonly TokenName[] = ['amber', 'pink', 'sky', 'orange'];
 
@@ -77,7 +78,7 @@ export function Stage() {
     if (editing === null) return;
     const r = parseWeight(draft);
     if (!r.ok) {
-      setNote(`${r.why} ${edgeText(editing)} keeps ${graph.edges[editing].w}.`);
+      setNote(`${r.error} ${edgeText(editing)} keeps ${graph.edges[editing].w}.`);
       setDraft(String(graph.edges[editing].w));
       return;
     }

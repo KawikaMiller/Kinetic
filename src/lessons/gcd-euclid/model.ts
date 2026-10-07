@@ -1,27 +1,25 @@
 // Pure maths for gcd-euclid: Euclid's remainder table, its rectangle tiling, the extended
 // (Bézout) bookkeeping, the naive comparison and the Fibonacci worst case.
 import { egcd, modInverse, type EuclidStep } from '../../core/numberTheory';
-import { parseInteger } from '../../core/parse';
+import { parseBoundedInt, type FieldParse } from '../../core/parse';
 
 /** Largest value a learner may type: 10¹², still exact as a JS number. */
 export const MAX_VALUE = 1_000_000_000_000;
-const MAX_DIGITS = String(MAX_VALUE).length;
-
-export type Parsed = { value: number } | { error: string };
 
 /** One whole number from 0 to 10¹². Negatives, decimals, exponents, emoji and markup are refused. */
-export function parseValue(text: string): Parsed {
-  const raw = text.trim();
-  if (!raw) return { error: 'Type a whole number.' };
-  // Commas only as thousands separators: "1,071" is one number, "10,71" or "1,2" is refused.
-  if (raw.includes(',') && !/^\d{1,3}(,\d{3})+$/.test(raw)) return { error: 'One whole number, commas only between groups of three digits.' };
-  const t = raw.replace(/,/g, '');
-  if (/^-/.test(t) || /^−/.test(t)) return { error: 'Euclid here takes whole numbers from 0 up; no negatives.' };
-  if (new RegExp(`^\\d{${MAX_DIGITS + 1},}$`).test(t)) return { error: 'Keep it at most 10¹² (a million million).' };
-  const v = parseInteger(t);
-  if (v === null) return { error: 'Whole numbers only, like 1071 (no decimals, exponents or letters).' };
-  if (v > MAX_VALUE) return { error: 'Keep it at most 10¹² (a million million).' };
-  return { value: v };
+export function parseValue(text: string): FieldParse<number> {
+  return parseBoundedInt(text, {
+    min: 0,
+    max: MAX_VALUE,
+    // Commas only as thousands separators: "1,071" is one number, "10,71" or "1,2" is refused.
+    thousands: true,
+    messages: {
+      grouping: 'One whole number, commas only between groups of three digits.',
+      negative: 'Euclid here takes whole numbers from 0 up; no negatives.',
+      invalid: () => 'Whole numbers only, like 1071 (no decimals, exponents or letters).',
+      tooBig: () => 'Keep it at most 10¹² (a million million).',
+    },
+  });
 }
 
 /** Refuses the one pair Euclid can't answer: gcd(0, 0) has no largest divisor. */

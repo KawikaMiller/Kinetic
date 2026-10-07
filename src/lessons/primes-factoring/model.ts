@@ -1,7 +1,8 @@
 // Pure maths for primes-factoring: the sieve plan, a resumable trial-division run, the
 // time extrapolation the plot and captions read, and the three primality checks.
 import { isProbablePrime, modPow, sieve, trialFactor } from '../../core/numberTheory';
-import { humanDuration, latency, power } from '../../core/format';
+import { humanDuration, latency } from '../../core/format';
+import { parseBoundedBigInt, type FieldParse } from '../../core/parse';
 import type { Rnd } from '../../core/random';
 
 // ── Sieve ────────────────────────────────────────────────────────────
@@ -130,14 +131,8 @@ export const stepsForDigits = (digits: number) => 10 ** (digits / 2) / 2;
 export const extrapolateSeconds = (digits: number, stepsPerSecond: number) =>
   10 ** (digits / 2 - Math.log10(2) - Math.log10(stepsPerSecond));
 
-const YEAR_S = 365.25 * 24 * 3600;
-/** A time span: ms below a second, and "about 10ⁿ years" once it's past a million years (humanDuration prints raw floats there). */
-export function longTime(seconds: number): string {
-  const years = seconds / YEAR_S;
-  if (seconds < 1) return latency(seconds * 1e9);
-  if (years < 1e6) return humanDuration(seconds);
-  return `about ${power(Math.floor(Math.log10(years)), 10)} years`;
-}
+/** A time span: latency units below a second ('340 ms'), humanDuration above ('1.5 min', '5.4 × 10²⁹³ years'). */
+export const longTime = (seconds: number) => (seconds < 1 ? latency(seconds * 1e9) : humanDuration(seconds));
 
 export const digitsOf = (n: bigint) => n.toString().length;
 
@@ -184,16 +179,17 @@ export function primality(n: bigint): Primality {
   return { fermat: fermatSaysPrime(n), millerRabin, trial, truth };
 }
 
-export type ParsedBig = { value: bigint } | { error: string };
-
 /** A whole number from 2 to 40 digits. */
-export function parseCandidate(text: string): ParsedBig {
-  const t = text.trim().replace(/^(\d{1,3})((,\d{3})+)$/, (m) => m.replace(/,/g, ''));
-  if (!t) return { error: 'Type a whole number.' };
-  if (/^[-−]/.test(t)) return { error: 'Primes are positive: type a whole number from 2 up.' };
-  if (!/^\d+$/.test(t)) return { error: 'Whole numbers only, like 561 (no decimals, exponents, letters or lists).' };
-  if (t.replace(/^0+/, '').length > MAX_DIGITS) return { error: `Keep it to ${MAX_DIGITS} digits.` };
-  const v = BigInt(t);
-  if (v < 2n) return { error: `${v} is neither prime nor composite: try 2 or more.` };
-  return { value: v };
+export function parseCandidate(text: string): FieldParse<bigint> {
+  return parseBoundedBigInt(text, {
+    min: 2n,
+    max: 10n ** BigInt(MAX_DIGITS) - 1n,
+    thousands: true,
+    messages: {
+      negative: 'Primes are positive: type a whole number from 2 up.',
+      invalid: () => 'Whole numbers only, like 561 (no decimals, exponents, letters or lists).',
+      tooSmall: (v) => `${v} is neither prime nor composite: try 2 or more.`,
+      tooBig: () => `Keep it to ${MAX_DIGITS} digits.`,
+    },
+  });
 }

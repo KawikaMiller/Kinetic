@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { barsFromHistogram, clampPoint, formatTick, nudgePoint, plotFrame, sampleCurve, sampleHeat } from './plot';
+import { axisTickValues, barsFromHistogram, clampPoint, formatTick, nudgePoint, plotFrame, sampleCurve, sampleHeat } from './plot';
+import { linearScale, logScale } from './scale';
 import { histogram } from './stats';
 
 const M = { top: 10, right: 10, bottom: 30, left: 40 };
@@ -97,5 +98,21 @@ describe('formatTick', () => {
 
   it('writes large and small powers of ten as superscripts on log axes', () => {
     expect([1, 10, 100, 1000, 1e6, 1e-3, 1e-9].map((v) => formatTick(v, true))).toEqual(['1', '10', '100', '10³', '10⁶', '10⁻³', '10⁻⁹']);
+  });
+});
+
+describe('axisTickValues', () => {
+  it("uses the scale's own ticks by default", () => {
+    expect(axisTickValues({ domain: [0, 100] })).toEqual(linearScale(0, 100, 0, 1).ticks(5));
+    expect(axisTickValues({ domain: [1, 1e6], log: true, ticks: 3 })).toEqual(logScale(1, 1e6, 0, 1).ticks(3));
+  });
+
+  it('takes explicit ticks over a huge log range, dropping any outside the domain', () => {
+    const auto = axisTickValues({ domain: [1, 1e100], log: true, ticks: 5 });
+    const gaps = auto.slice(1).map((v, i) => Math.log10(v) - Math.log10(auto[i]));
+    expect(new Set(gaps).size).toBe(1);
+    expect(auto.at(-1)).toBeLessThan(1e100); // the automatic stride misses the top: why tickValues exists
+    expect(axisTickValues({ domain: [1, 1e100], log: true, tickValues: [1, 1e25, 1e50, 1e75, 1e100, 1e120] })).toEqual([1, 1e25, 1e50, 1e75, 1e100]);
+    expect(axisTickValues({ domain: [10, 0], tickValues: [-1, 0, 5, 10, 11] })).toEqual([0, 5, 10]);
   });
 });

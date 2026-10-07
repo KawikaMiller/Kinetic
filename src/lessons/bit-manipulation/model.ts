@@ -1,4 +1,5 @@
 import { fromBits, fromBitsSigned, toBits, type Bit } from '../../core/bits';
+import { parseBoundedInt, type FieldParse } from '../../core/parse';
 
 /** Register widths. 8 is a teaching width; JavaScript itself always computes in 32 bits. */
 export type Width = 8 | 32;
@@ -28,36 +29,29 @@ export const toRegister = (v: number, width: Width) => (width === 8 ? v & 0xff :
 
 export const fitsWidth = (v: number, width: Width) => Number.isInteger(v) && v >= RANGE[width].min && v <= RANGE[width].max;
 
-export type Parsed = { ok: true; value: number } | { ok: false; error: string };
-
-const DECIMAL = /^-?\d+$/;
-const HEX = /^0x[0-9a-f]+$/i;
-const BINARY = /^0b[01]+$/i;
-
 /**
  * A register value typed in decimal (-5), hex (0xFF) or binary (0b1010); underscores are
  * ignored. Anything else, and anything out of range for the width, is refused: never
  * rounded, masked or cut off. 32-bit accepts -2147483648..4294967295 (signed or unsigned
  * spelling of the same 32 bits) and stores it as the int32 JS would use.
  */
-export function parseRegister(text: string, width: Width): Parsed {
-  const t = text.trim().replace(/_/g, '');
-  if (!t) return { ok: false, error: 'Type a number: 202, 0xCA or 0b11001010.' };
-  let value: number;
-  if (DECIMAL.test(t)) value = Number(t);
-  else if (HEX.test(t)) value = parseInt(t.slice(2), 16);
-  else if (BINARY.test(t)) value = parseInt(t.slice(2), 2);
-  else return { ok: false, error: `"${text.trim()}" isn't a whole number in decimal, 0x hex or 0b binary.` };
-  const { min, max } = RANGE[width];
-  if (value < min || value > max) {
-    return {
-      ok: false,
-      error: width === 8
-        ? `8-bit mode holds 0 to 255, so ${t} is refused, not cut down. Switch to 32-bit for more.`
-        : `${t} needs more than 32 bits. JavaScript's bitwise operators only see 32.`,
-    };
-  }
-  return { ok: true, value: toRegister(value, width) };
+export function parseRegister(text: string, width: Width): FieldParse<number> {
+  const range = (_: number, t: string) =>
+    width === 8
+      ? `8-bit mode holds 0 to 255, so ${t} is refused, not cut down. Switch to 32-bit for more.`
+      : `${t} needs more than 32 bits. JavaScript's bitwise operators only see 32.`;
+  const parsed = parseBoundedInt(text, {
+    ...RANGE[width],
+    prefixes: ['hex', 'binary'],
+    underscores: true,
+    messages: {
+      empty: 'Type a number: 202, 0xCA or 0b11001010.',
+      invalid: (typed) => `"${typed}" isn't a whole number in decimal, 0x hex or 0b binary.`,
+      tooSmall: range,
+      tooBig: range,
+    },
+  });
+  return parsed.ok ? { ok: true, value: toRegister(parsed.value, width) } : parsed;
 }
 
 /** The register's bits, MSB first. */

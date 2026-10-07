@@ -5,6 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { layeredLayout, layeredPositions } from '../../core/graphLayout';
+import { minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { ALGO_NAMES, topoFrames, type Algo } from './frames';
 import { countOrders, dfsTopo, isValidOrder, kahn, layoutEdges, refuseEdge, type Dag } from './model';
@@ -15,7 +16,7 @@ const STEP_MS = 850;
 const BOX = { w: 98, h: 38 };
 const SPACING = { direction: 'down', layerGap: 82, nodeGap: 112, padMain: 40, padCross: 58 } as const;
 /** Smallest scene text (the 12px badges) stays at 8px+: the graph never shrinks below 2/3 of its natural width. */
-const MIN_SCALE = 8 / 12;
+const SMALLEST_TEXT_PX = 12;
 const PHONE_WIDTH = 320;
 const BADGE_R = 11;
 
@@ -38,7 +39,7 @@ export function Stage() {
 
   // Laid out without the edges that close a cycle, so adding one never rearranges the drawing.
   const placement = useMemo(() => layeredPositions(layeredLayout(graph.nodes, layoutEdges(graph, preset.graph)), SPACING), [graph, preset]);
-  const graphMinWidth = Math.max(PHONE_WIDTH, Math.ceil(placement.width * MIN_SCALE));
+  const graphMinWidth = minWidthForText(placement.width, SMALLEST_TEXT_PX, PHONE_WIDTH);
   const placed = new Set(f.output);
   const queued = new Set(f.queue);
   const onPath = new Set(f.path);

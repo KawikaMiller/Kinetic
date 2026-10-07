@@ -148,9 +148,9 @@ describe('worst case', () => {
 
 describe('parseValue', () => {
   it('accepts 0 to 10¹² with optional digit grouping', () => {
-    expect(parseValue(' 1071 ')).toEqual({ value: 1071 });
-    expect(parseValue('0')).toEqual({ value: 0 });
-    expect(parseValue('1,000,000,000,000')).toEqual({ value: MAX_VALUE });
+    expect(parseValue(' 1071 ')).toEqual({ ok: true, value: 1071 });
+    expect(parseValue('0')).toEqual({ ok: true, value: 0 });
+    expect(parseValue('1,000,000,000,000')).toEqual({ ok: true, value: MAX_VALUE });
   });
 
   it('refuses hostile input with a reason', () => {

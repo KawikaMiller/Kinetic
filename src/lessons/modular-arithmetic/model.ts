@@ -1,7 +1,7 @@
 // Pure maths for modular-arithmetic: the clock walk, the multiplication table and its
 // inverses, and JavaScript's % next to a true mod. Everything is computed, nothing scripted.
 import { gcd, mod } from '../../core/numberTheory';
-import { parseInteger } from '../../core/parse';
+import { parseBoundedInt, type FieldParse } from '../../core/parse';
 
 export const MIN_MOD = 2;
 export const MAX_MOD = 24;
@@ -17,21 +17,22 @@ export const modN = (a: number, n: number) => Number(mod(BigInt(a), BigInt(n)));
 /** JavaScript's own remainder operator, which keeps the sign of a. */
 export const jsRemainder = (a: number, n: number) => a % n;
 
-export type Parsed = { value: number } | { error: string };
-
 /**
  * A whole number typed by the learner, within [min, max]. Accepts a typographic minus.
  * Empty, decimals, exponents, emoji, markup and lists are refused with a reason.
  */
-export function parseWhole(text: string, min: number, max: number): Parsed {
-  const t = text.trim().replace(/^−/, '-');
-  if (!t) return { error: 'Type a whole number.' };
-  // Refuse long digit runs before Number() rounds them.
-  if (/^-?\d{8,}$/.test(t)) return { error: `Keep it between ${fmt(min)} and ${fmt(max)}.` };
-  const v = parseInteger(t);
-  if (v === null) return { error: 'Whole numbers only, like 17 or −7 (no decimals, exponents or letters).' };
-  if (v < min || v > max) return { error: `Keep it between ${fmt(min)} and ${fmt(max)}.` };
-  return { value: v };
+export function parseWhole(text: string, min: number, max: number): FieldParse<number> {
+  const range = () => `Keep it between ${fmt(min)} and ${fmt(max)}.`;
+  return parseBoundedInt(text, {
+    min,
+    max,
+    typographicMinus: true,
+    messages: {
+      invalid: () => 'Whole numbers only, like 17 or −7 (no decimals, exponents or letters).',
+      tooSmall: range,
+      tooBig: range,
+    },
+  });
 }
 
 /** Grouped with a typographic minus: −1,000,000. */

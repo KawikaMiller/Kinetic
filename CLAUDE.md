@@ -86,7 +86,8 @@ it's safe.
 - Formatting, hashing, randomness, maths and motion presets come from `core/format`, `core/hash`,
   `core/random`, `core/math`, `core/motion`. Don't re-declare `percentile`, `lerp`, FNV, springs.
 - Recurring bits of UI already exist: preset chips are `ChipButton`, a program's printed output is
-  `ConsolePanel`, a learner-typed list is `core/parse` `parseIntegers`, ns/long spans are
+  `ConsolePanel`, a learner-typed list is `core/parse` `parseIntegers` and one bounded number field is
+  `parseBoundedInt` / `parseBoundedBigInt` (refusal messages included), ns/long spans are
   `latency`/`humanDuration`, exponents are `power(k)`. Memory scenes lay out with `stackBoxes`/`fanBend`,
   not local loops. Real-DOM measurement is `core/useMeasure`. Clickable code lines (breakpoints) are
   `CodePanel onLineClick`; commit histories with parallel work use `depthColumns` + `laneLabel`.
@@ -97,8 +98,8 @@ it's safe.
   for pure logic, `draw.ts` for canvas drawing, `Stage.tsx` for React only.
 - Phones (390px) are a first-class target. Wide visuals never shrink below a readable scale and
   never push the page sideways: give the `StageFrame` a `minWidth` (the narrowest width where the
-  drawing still reads) and on narrower screens the stage scrolls sideways inside itself with an
-  affordance. If only part of the stage is wide (a diagram above HTML that can reflow), wrap just
+  drawing still reads; `minWidthForText(W, smallestTextPx)` from `core/scale` computes it for the
+  8px text floor) and on narrower screens the stage scrolls sideways inside itself with an affordance. If only part of the stage is wide (a diagram above HTML that can reflow), wrap just
   that part in `WideRegion` instead, so the rest fits the phone. HTML controls and panels wrap
   (`flex-wrap`), never `nowrap` rows that can outgrow a phone. Don't build per-lesson narrow layouts
   unless a scroll genuinely doesn't work.
@@ -131,8 +132,11 @@ it's safe.
   (a lesson is literally called error-handling-models), and don't pipe a command into
   `Select-Object -First` before reading `$LASTEXITCODE`: cutting the pipe loses the code.
 - Keyboard: drive real key presses with `npm run shot -- <route> <name> --press=Tab,Tab,Space`
-  (`--press-on=<selector>` focuses something first; modifiers join with `+`, e.g. `Shift+Tab`).
-  It prints the element that ends up focused, so a focus-order check needs no throwaway script.
+  (`--press-on=<selector>` focuses something first, SVG elements with a tabindex included; modifiers
+  join with `+`, e.g. `Shift+Tab`). It prints the element that ends up focused, so a focus-order check
+  needs no throwaway script. Captions cross-fade, so a fast read after a click or key can catch the
+  outgoing one: pass `--settle` (or `--settle=<ms>`) to wait out the fade after every click/press/play,
+  and in an `--evalfile` drive script `await window.kineticCaptionSettled()` before reading `.caption-text`.
 - In Git Bash, set `MSYS_NO_PATHCONV=1`: it rewrites `/lesson/x` into a Windows path. The
   scripts warn and recover the route when they spot it, but don't rely on that.
 

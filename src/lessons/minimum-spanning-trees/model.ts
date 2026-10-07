@@ -1,5 +1,5 @@
 import { createDisjointSet } from '../../core/disjointSet';
-import { parseInteger } from '../../core/parse';
+import { parseBoundedInt, type FieldParse } from '../../core/parse';
 
 /**
  * Minimum spanning trees as pure functions over a weighted undirected graph: Kruskal (on
@@ -168,9 +168,12 @@ export function worstDetour(g: WGraph, tree: readonly number[]): { from: number;
 export const MAX_WEIGHT = 999;
 
 /** A weight the learner typed: a whole number 0 … 999, or a reason it's refused. */
-export function parseWeight(text: string): { ok: true; value: number } | { ok: false; why: string } {
-  const v = parseInteger(text);
-  if (v === null) return { ok: false, why: 'Weights are whole numbers, like 7.' };
-  if (v < 0 || v > MAX_WEIGHT) return { ok: false, why: `Weights go from 0 to ${MAX_WEIGHT}.` };
-  return { ok: true, value: v };
+export function parseWeight(text: string): FieldParse<number> {
+  const invalid = 'Weights are whole numbers, like 7.';
+  const range = `Weights go from 0 to ${MAX_WEIGHT}.`;
+  return parseBoundedInt(text, {
+    min: 0,
+    max: MAX_WEIGHT,
+    messages: { empty: invalid, invalid: () => invalid, tooSmall: () => range, tooBig: () => range },
+  });
 }

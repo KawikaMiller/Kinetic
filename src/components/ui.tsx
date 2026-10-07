@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import type { Tone } from '../core/tone';
 import type { Option } from './options';
 import { useRadioGroup } from './useRadioGroup';
@@ -47,7 +47,7 @@ export function Slider({
 
 /** Pill-style single choice. Good for picking an algorithm, a mode, or a small number. */
 export function Segmented<T extends string | number>({
-  options, value, onChange, label, ariaLabel,
+  options, value, onChange, label, ariaLabel, ref,
 }: {
   options: Option<T>[];
   value: T;
@@ -55,6 +55,8 @@ export function Segmented<T extends string | number>({
   label?: string;
   /** Names the radio group when the visible label lives elsewhere (e.g. in a sentence around it). */
   ariaLabel?: string;
+  /** The radiogroup element (useScenePicker uses it to put focus back after a scene switch). */
+  ref?: Ref<HTMLDivElement>;
 }) {
   const radio = useRadioGroup(
     options.length,
@@ -62,7 +64,7 @@ export function Segmented<T extends string | number>({
     (i) => onChange(options[i].value),
   );
   return (
-    <div className="segmented" role="radiogroup" aria-label={ariaLabel ?? label}>
+    <div ref={ref} className="segmented" role="radiogroup" aria-label={ariaLabel ?? label}>
       {label && <span className="segmented-label">{label}</span>}
       <div className="segmented-track">
         {options.map((o, i) => (
@@ -292,7 +294,8 @@ export function Legend({ items }: { items: { color: string; label: ReactNode; sh
 export function Stat({
   label, value, color, sub, className = '', children,
 }: {
-  label: string;
+  /** Rendered uppercase: wrap Greek letters or case-sensitive names in <span className="keep-case">. */
+  label: ReactNode;
   value: ReactNode;
   color?: string;
   sub?: ReactNode;

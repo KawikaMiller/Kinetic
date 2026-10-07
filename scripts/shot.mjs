@@ -9,12 +9,17 @@
 //   npm run shot -- /lesson/sorting k --press=Tab,Tab,Space          # real key presses
 //   npm run shot -- /lesson/sorting k --press-on=.tbtn-play --press=Space,Shift+Tab
 //     (keys are Puppeteer names: Tab, Enter, Space, Escape, ArrowLeft…; join modifiers
-//      with +. After the presses the focused element is printed, to check focus order.)
+//      with +. After the presses the focused element is printed, to check focus order.
+//      --press-on focuses through element.focus(), so SVG elements with a tabindex work too.)
+//   npm run shot -- /lesson/sorting s "--click=.btn-primary" --settle "--eval=document.querySelector('.caption-text').textContent"
+//     (--settle[=ms]: after every click / key press / play, wait for the caption cross-fade to
+//      finish, up to ms (default 2000), so reads don't catch the outgoing caption. --evalfile
+//      scripts can also await window.kineticCaptionSettled() between their own clicks.)
 //
 // Git Bash rewrites "/lesson/x" into a Windows path: set MSYS_NO_PATHCONV=1 (the scripts
 // warn and recover the route when they spot it).
 import fs from 'node:fs';
-import { openPage, outPath, parseArgs, sleep, visit } from './lib/browser.mjs';
+import { CAPTION_SETTLE_MS, exposeCaptionSettled, openPage, outPath, parseArgs, sleep, visit, waitForCaption } from './lib/browser.mjs';
 
 const KEY_GAP_MS = 150;
 
@@ -43,25 +48,44 @@ const [route = '/', name = 'shot'] = positional;
 const [width, height] = String(flags.size ?? '1440x1100').split('x').map(Number);
 
 const { browser, page, errors } = await openPage({ width, height });
+
+const settleMs = flags.settle === true ? CAPTION_SETTLE_MS : Number(flags.settle ?? 0);
+/** With --settle, wait out the caption fade; reports a caption still changing at the deadline. */
+async function settle() {
+  if (settleMs && !(await waitForCaption(page, settleMs))) errors.push(`[shot] caption still changing after ${settleMs} ms`);
+}
+
+/** Focus any element, HTML or SVG: page.focus only takes HTML elements. False when it can't take focus. */
+const focusOn = (selector) =>
+  page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    el?.focus();
+    return !!el && document.activeElement === el;
+  }, selector);
+
 await visit(page, route, 800);
+await exposeCaptionSettled(page);
 
 if (flags.play) {
   await page.click('.tbtn-play').catch(() => errors.push('[shot] no play button'));
   await sleep(Number(flags.play));
+  await settle();
 }
 if (typeof flags.click === 'string') {
   for (const selector of flags.click.split('|')) {
     await page.click(selector).catch(() => errors.push(`[shot] could not click ${selector}`));
     await sleep(400);
+    await settle();
   }
 }
 if (typeof flags['press-on'] === 'string') {
-  await page.focus(flags['press-on']).catch(() => errors.push(`[shot] could not focus ${flags['press-on']}`));
+  if (!(await focusOn(flags['press-on']))) errors.push(`[shot] could not focus ${flags['press-on']}`);
 }
 if (typeof flags.press === 'string') {
   for (const chord of flags.press.split(',')) {
     await pressChord(page, chord.trim());
     await sleep(KEY_GAP_MS);
+    await settle();
   }
   console.log('focus:', await describeFocus(page));
 }

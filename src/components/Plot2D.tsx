@@ -1,9 +1,8 @@
 import { useId, useMemo, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { alpha, TOKENS } from '../core/palette';
 import {
-  clampPoint, formatTick, nudgePoint, plotFrame, sampleCurve, sampleHeat, type AxisSpec, type Point,
+  axisTickValues, clampPoint, formatTick, nudgePoint, plotFrame, sampleCurve, sampleHeat, type AxisSpec, type Point,
 } from '../core/plot';
-import { linearScale, logScale } from '../core/scale';
 import type { Tone } from '../core/tone';
 import { paintImage } from './canvasImage';
 import { PlotContext, usePlot } from './plotContext';
@@ -100,10 +99,9 @@ export function Plot2D({
   );
 }
 
-/** Tick values and labels; ticks depend only on the domain, so a unit range is enough. */
+/** Tick values and labels. */
 function axisTicks(a: AxisSpec) {
-  const scale = (a.log ? logScale : linearScale)(a.domain[0], a.domain[1], 0, 1);
-  return scale.ticks(a.ticks ?? 5).map((v) => ({ v, text: a.format ? a.format(v) : formatTick(v, a.log) }));
+  return axisTickValues(a).map((v) => ({ v, text: a.format ? a.format(v) : formatTick(v, a.log) }));
 }
 
 /* ---------- layers ---------- */

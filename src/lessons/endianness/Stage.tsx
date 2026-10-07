@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { ByteGrid } from '../../components/ByteGrid';
 import { CodePanel } from '../../components/CodePanel';
@@ -41,14 +41,6 @@ const ORDER = { off: 'Big-endian', on: 'Little-endian' };
 
 export function Stage() {
   const [scene, picker] = useScenePicker({ label: 'Scene', options: SCENES, initial: 'store' });
-  const shownScene = useRef(scene);
-  // Each scene is its own component, so switching remounts the picker and drops focus to <body>.
-  // Put it back on the picker's chosen option (Phase 2: belongs in useScenePicker).
-  useEffect(() => {
-    if (shownScene.current === scene) return;
-    shownScene.current = scene;
-    if (document.activeElement === document.body) document.querySelector<HTMLElement>('.segmented[aria-label="Scene"] button.on')?.focus();
-  }, [scene]);
   if (scene === 'misread') return <MisreadScene picker={picker} />;
   if (scene === 'network') return <NetworkScene picker={picker} />;
   return <StoreScene picker={picker} />;

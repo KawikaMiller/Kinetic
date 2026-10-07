@@ -104,6 +104,17 @@ describe('collisionProbability', () => {
     const n = COLLISION_EXACT_LIMIT + 1;
     expect(big.p).toBeCloseTo(1 - Math.exp((-n * (n - 1)) / (2 * 2 ** 52)), 12);
   });
+  it('keeps tiny chances in huge spaces instead of rounding them to 0', () => {
+    const space = 2 ** 128;
+    expect(collisionProbability(2, space).p).toBeCloseTo(1 / space, 50);
+    expect(collisionProbability(2, space).p / (1 / space)).toBeCloseTo(1, 12);
+    const exact = collisionProbability(1000, space);
+    expect(exact.method).toBe('exact');
+    expect(exact.p / ((1000 * 999) / 2 / space)).toBeCloseTo(1, 9);
+    const approx = collisionProbability(1e9, space);
+    expect(approx.method).toBe('approx');
+    expect(approx.p / ((1e9 * (1e9 - 1)) / 2 / space)).toBeCloseTo(1, 9);
+  });
   it('the approximation is close to exact where both apply', () => {
     for (const n of [10, 50, 1000]) {
       const exact = collisionProbability(n, 1e6).p;
