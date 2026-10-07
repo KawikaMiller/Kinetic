@@ -1,0 +1,9 @@
+.qs { gap: 18px; }
+.qs-note { flex-basis: 100%; }
+/* Room above the strip for the lo / hi labels. */
+.qs-strip { padding-top: 26px; }
+.qs-panels { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+.qs-race { flex: 2 1 320px; display: flex; flex-direction: column; gap: 10px; }
+.qs-race .section-title { display: block; }
+.qs-topk { flex: 1 1 220px; }
+.qs-topk-values { font: 700 15px var(--mono); color: var(--text); }
