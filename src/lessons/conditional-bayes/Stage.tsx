@@ -148,7 +148,14 @@ export function Stage() {
           </Hint>
         </div>
         <div className="cbz-panels">
-          <ConfusionMatrix tp={counts.tp} fp={counts.fp} fn={counts.fn} tn={counts.tn} labels={labels} />
+          <div className="cbz-matrix">
+            <SectionTitle hint="whole people, rounded">Counts in the grid</SectionTitle>
+            <ConfusionMatrix tp={counts.tp} fp={counts.fp} fn={counts.fn} tn={counts.tn} labels={labels} metrics={false} />
+            <p className="cbz-exact">
+              Exact, from the rates: recall (sensitivity) = <b>{rateText(rates.sensitivity)}</b>, precision = P({labels.positive} | positive) ={' '}
+              <b className="cbz-post">{probText(t.posterior)}</b>. Ratios of the rounded counts can differ.
+            </p>
+          </div>
           <Box className="cbz-bayes">
             <SectionTitle>Bayes, with these numbers</SectionTitle>
             <p className="cbz-formula">P(A | +) = P(+ | A) · P(A) / P(+)</p>
@@ -161,7 +168,7 @@ export function Stage() {
             </p>
             <Hint tone="muted" block>
               Violet terms are the {labels.positive} who test positive; the sky term is the false alarms. A = {labels.positive}.
-              {tests > 1 && ' Assumes this test\'s errors are independent of the earlier ones.'}
+              {tests > 1 && ' Assumes this test\'s errors are independent of the earlier ones, given whether the person really has it.'}
             </Hint>
           </Box>
           <TreeSvg<TreeId>

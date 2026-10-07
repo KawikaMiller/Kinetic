@@ -107,6 +107,13 @@ describe('captions and quiz numbers', () => {
     expect(gridRatio({ prevalence: 1, sensitivity: 500, specificity: 1000 }).positives).toBe(1);
   });
 
+  it('the fraud use case quotes the Fraud preset, and a positive there is mostly a false alarm', () => {
+    const fraud = PRESETS.find((p) => p.id === 'fraud')!;
+    expect(fraud.rates).toEqual({ prevalence: 2, sensitivity: 900, specificity: 980 });
+    expect(lesson.summary.useCases.join(' ')).toContain('catches 90% of fraud and clears 98% of good orders, on 0.2% fraud');
+    expect(toNumber(posterior(fraud.rates))).toBeLessThan(0.5);
+  });
+
   it('quiz answers come from the model', () => {
     const [q1, q2, q3, q4] = lesson.quiz;
     expect(q1.options[q1.answer]).toBe(`About ${probText(toNumber(posterior(headline)))}`);

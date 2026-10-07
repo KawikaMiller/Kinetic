@@ -9,12 +9,12 @@ const lesson: LessonModule = {
     analogy: 'Ten real fires and ten burnt-toast alarms both set off the same smoke detector. The detector is good at noticing fires, but when it beeps, it\'s still a coin flip whether you need the extinguisher.',
     useCases: [
       'Alerting: a rule that catches 99% of incidents with a 1% false-alarm rate pages falsely most of the time when incidents are rare',
-      'Fraud and abuse checks: a "95% accurate" detector on 0.2% fraud flags mostly legitimate customers',
+      'Fraud and abuse checks: a check that catches 90% of fraud and clears 98% of good orders, on 0.2% fraud, flags mostly legitimate customers',
       'Spam filtering: spam is common, so the same kind of filter is usually right when it flags',
       'Reading test and screening results, and choosing a confirmatory second test',
     ],
     why: 'Engineers build detectors constantly: alerts, anomaly checks, fraud rules, flaky-test classifiers. If you judge them by "accuracy" and ignore the base rate, you ship a pager that cries wolf or a fraud rule that blocks good customers. Bayes tells you what a positive is actually worth.',
-    watch: 'The crowd grid is 1,000 people: violet dots have the condition and sky-blue dots don\'t (categories, not good or bad); a bright, solid dot tested positive and a faint dot tested negative. "Only positives" turns the negatives into plain grey squares. Under it, the confusion matrix colours true positives and true negatives green, false positives red and false negatives orange. The posterior readout and the result in the Bayes panel are yellow; in the panel, violet terms are the people who have it and test positive, and the sky-blue term is the false alarms. The probability tree has a grey root, violet boxes for "has it" and sky-blue boxes for "doesn\'t", and the shaded boxes are the positive-test branches.',
+    watch: 'The crowd grid is 1,000 people: violet dots have the condition and sky-blue dots don\'t (categories, not good or bad); a bright, solid dot tested positive and a faint dot tested negative. "Only positives" turns the negatives into plain grey squares. Under it, the confusion matrix of rounded counts colours true positives and true negatives green, false positives red and false negatives orange. The posterior readout, the exact precision under the matrix and the result in the Bayes panel are yellow; in the panel, violet terms are the people who have it and test positive, and the sky-blue term is the false alarms. The probability tree has a grey root, violet boxes for "has it" and sky-blue boxes for "doesn\'t", and the shaded boxes are the positive-test branches.',
   },
   tryThis: [
     'Load "Medical test" (1%, 99%, 99%): 20 people test positive and only 10 are sick, so a positive is a coin flip.',
@@ -46,7 +46,7 @@ const lesson: LessonModule = {
       q: 'After one positive from the 1% / 99% / 99% test, the chance is 50%. A second, independent test with the same rates is also positive. Now what?',
       options: ['About 99%', 'About 75%', 'Still 50%', 'About 99.99%'],
       answer: 0,
-      why: 'The 50% posterior becomes the new prior: 0.99 × 0.5 / (0.99 × 0.5 + 0.01 × 0.5) = 99%. That only holds if the second test\'s errors are independent of the first; repeating the same flawed test doesn\'t count.',
+      why: 'The 50% posterior becomes the new prior: 0.99 × 0.5 / (0.99 × 0.5 + 0.01 × 0.5) = 99%. That only holds if the second test\'s errors are independent of the first, given whether you really have it (conditional independence); repeating the same flawed test doesn\'t count.',
     },
     {
       q: 'For the 1% / 99% / 99% test, which change raises P(sick | positive) the most?',
