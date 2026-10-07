@@ -1,0 +1,21 @@
+.uf { flex-flow: row wrap; align-items: flex-start; }
+.uf-main { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.uf-side { flex: 1 1 250px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.uf-note { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--muted); }
+.uf-forest { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto; }
+.uf-forest .tree-node text { font: 700 13px var(--mono); }
+.uf-forest .tree-node.uf-picked circle { stroke: var(--hi); stroke-width: 3.5; stroke-dasharray: 4 3; }
+.uf-strip { display: flex; align-items: center; gap: 10px; }
+.uf-strip > :last-child { flex: 1; min-width: 0; }
+.uf-strip-label { font: 600 12px var(--mono); color: var(--muted); width: 56px; flex: none; }
+.uf-moved { color: var(--info); font-weight: 700; }
+.uf-linked { color: var(--violet); font-weight: 700; }
+.uf-side .tray:not(.is-stacked) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.uf-side .tray:not(.is-stacked) .section-title { flex-basis: 100%; }
+.uf-set { font-family: var(--mono); }
+.uf-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 6px; }
+.uf-table th, .uf-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.uf-table thead th { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.uf-table td { font-family: var(--mono); }
+.uf-table tr.is-on { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.uf-table tr.is-on th { color: var(--hi); }
