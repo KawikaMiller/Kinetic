@@ -130,7 +130,7 @@ export const rotation2 = (radians: number): number[][] => [
 export interface LeastSquaresSolution {
   /** The x minimising ‖A·x − b‖. */
   x: number[];
-  /** |Rᵢᵢ| from A = QR, largest first not guaranteed: in column order. */
+  /** |Rᵢᵢ| from A = QR, in column order. */
   rDiag: number[];
   /** max |Rᵢᵢ| / min |Rᵢᵢ|: a cheap lower bound on κ₂(A) (the normal equations square it). */
   conditionEstimate: number;
