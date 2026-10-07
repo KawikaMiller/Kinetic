@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { accepts, dfaRun, dfaStep, epsilonClosure, longestMatch, nfaRun, nfaStep, subsetConstruct, subsetName, EPSILON, type Dfa, type Nfa } from './automata';
+import {
+  accepts, dfaRun, dfaStep, edgesOf, epsilonClosure, longestMatch, nfaRun, nfaStep, subsetConstruct, subsetName, EPSILON, OTHER, type Dfa, type Nfa,
+} from './automata';
 
 /** Every string over `alphabet` up to `maxLen` characters (including the empty string). */
 function allStrings(alphabet: readonly string[], maxLen: number): string[] {
@@ -164,5 +166,70 @@ describe('longestMatch (maximal munch)', () => {
       for (let end = 1; end <= s.length; end++) if (accepts(DIV3, s.slice(0, end))) expected = end;
       expect(longestMatch(DIV3, s, 0)?.end ?? -1, s).toBe(expected);
     }
+  });
+});
+
+describe('OTHER: the "any symbol outside the alphabet" arrow', () => {
+  // a line comment over {a, b, NL}: after "#", anything but NL stays in the comment
+  const comment: Dfa = {
+    kind: 'dfa',
+    states: ['S', 'c'],
+    alphabet: ['a', 'b', '#', 'NL'],
+    start: 'S',
+    accept: ['c'],
+    delta: { S: { '#': 'c' }, c: { a: 'c', b: 'c', '#': 'c', [OTHER]: 'c' } },
+  };
+
+  it('takes OTHER only for symbols outside the alphabet', () => {
+    expect(dfaStep(comment, 'c', 'é')).toBe('c');
+    expect(dfaStep(comment, 'c', 'a')).toBe('c');
+    // NL is in the alphabet with no arrow: it dies, OTHER doesn't catch it
+    expect(dfaStep(comment, 'c', 'NL')).toBeNull();
+    // no OTHER arrow on S: an unknown symbol dies there
+    expect(dfaStep(comment, 'S', 'é')).toBeNull();
+    expect(dfaStep(comment, null, 'é')).toBeNull();
+  });
+
+  it('runs and munches with it', () => {
+    expect(accepts(comment, '#aé😀b')).toBe(true);
+    expect(accepts(comment, 'é')).toBe(false);
+    expect(longestMatch(comment, '#éé', 0)).toEqual({ end: 3, state: 'c', steps: 3 });
+  });
+
+  it('never treats prototype keys as arrows', () => {
+    expect(dfaStep(comment, 'S', 'constructor')).toBeNull();
+    expect(dfaStep(comment, 'S', 'toString')).toBeNull();
+  });
+});
+
+describe('edgesOf', () => {
+  it("groups a DFA's symbols per (from, to) pair, OTHER last", () => {
+    const dfa: Dfa = {
+      kind: 'dfa', states: ['p', 'q'], alphabet: ['0', '1'], start: 'p', accept: ['q'],
+      delta: { p: { '0': 'p', '1': 'q', [OTHER]: 'q' }, q: { '0': 'p', '1': 'p' } },
+    };
+    expect(edgesOf(dfa)).toEqual([
+      { from: 'p', to: 'p', symbols: ['0'] },
+      { from: 'p', to: 'q', symbols: ['1', OTHER] },
+      { from: 'q', to: 'p', symbols: ['0', '1'] },
+    ]);
+  });
+
+  it("draws an NFA's ε-moves first and one arrow per target", () => {
+    const nfa: Nfa = {
+      kind: 'nfa', states: ['s', 'a', 'b'], alphabet: ['x'], start: 's', accept: ['b'],
+      delta: { s: { [EPSILON]: ['a', 'b'], x: ['a'] }, a: { x: ['b'] } },
+    };
+    expect(edgesOf(nfa)).toEqual([
+      { from: 's', to: 'a', symbols: [EPSILON, 'x'] },
+      { from: 's', to: 'b', symbols: [EPSILON] },
+      { from: 'a', to: 'b', symbols: ['x'] },
+    ]);
+  });
+
+  it('skips missing rows and undefined entries', () => {
+    const half = { kind: 'dfa', states: ['p', 'q'], alphabet: ['0'], start: 'p', accept: [], delta: { p: { '0': undefined } } } as unknown as Dfa;
+    expect(edgesOf(half)).toEqual([]);
+    expect(dfaStep(half, 'p', '0')).toBeNull();
   });
 });

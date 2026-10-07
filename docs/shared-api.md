@@ -1002,7 +1002,11 @@ accepts(dfaOrNfa, input)
 subsetConstruct(nfa)              // { dfa, rows: SubsetRow[] (discovery order, isNew), members: name → NFA states }
 subsetName(['0', '1'])            // "{0,1}"; "∅" for the empty set (only present when reachable)
 longestMatch(dfa, input, from)    // { end, state, steps } | null: maximal munch; steps counts the char that killed it
+delta: { cmt: { a: 'cmt', …, [OTHER]: 'cmt' } }   // OTHER: any symbol OUTSIDE the alphabet (é, emoji halves); in-alphabet symbols never take it
+edgesOf(dfaOrNfa)                 // { from, to, symbols[] }[]: one arrow per pair, symbols in order ε, alphabet, OTHER
 ```
+- `OTHER` lets a lexer keep a finite alphabet and still say "anything but newline": explicit arrows for the alphabet minus `
+`, plus `[OTHER]`. lexing-tokens uses it instead of rewriting the source first. It's DFA-only.
 - Draw the machines with `GraphView` state mode. Minimisation is deliberately left out (T3 chomsky-hierarchy). Tests compare the subset DFA with the NFA and with a JS RegExp on every string up to length 10.
 
 ### `core/ipv4.ts` — subnetting-cidr, ethernet-arp, dhcp
