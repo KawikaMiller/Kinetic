@@ -37,6 +37,9 @@ describe('reuseCaption', () => {
     expect(text(reuseCaption('CTR', false, 0, 3))).toContain('fresh random nonce');
     expect(text(reuseCaption('CBC', true, 1, 0))).toContain('1 identical block');
     expect(text(reuseCaption('CTR', true, 0, 33))).toContain('33 bytes come out as 00');
+    // What cancels is the keystream (SP 800-38A §6.5), never "the key".
+    expect(text(reuseCaption('CTR', true, 0, 33))).toContain('the keystream cancels out, leaving P1 ⊕ P2');
+    expect(text(reuseCaption('CTR', true, 0, 33))).not.toContain('key cancels');
   });
 });
 
@@ -51,8 +54,11 @@ describe('tamperCaption, from a real tamper run', () => {
     const gcm = (await gcmEncrypt(key, nonce, plain))!;
     for (const ct of [cbc, ctr, gcm]) ct[TAMPER_DEFAULT_BYTE] ^= 1;
     const ctrOut = (await ctrCrypt(key, iv, ctr))!;
+    const cbcOut = (await cbcDecrypt(key, iv, cbc))!;
     const r = {
-      cbcChanged: changedBytes(plain, (await cbcDecrypt(key, iv, cbc))!).length,
+      cbcChanged: changedBytes(plain, cbcOut).length,
+      cbcNextBitFlipped: changedBytes(plain, cbcOut).filter((i) => i >= 32).join() === String(TAMPER_DEFAULT_BYTE + 16)
+        && (cbcOut[TAMPER_DEFAULT_BYTE + 16] ^ plain[TAMPER_DEFAULT_BYTE + 16]) === 1,
       ctrChanged: changedBytes(plain, ctrOut).length,
       gcmRefused: !(await gcmDecrypt(key, nonce, gcm))!.ok,
     };
@@ -64,6 +70,9 @@ describe('tamperCaption, from a real tamper run', () => {
     const c = text(tamperCaption(true, TAMPER_DEFAULT_BYTE, r));
     expect(c).toContain(`CTR silently changes 1 byte`);
     expect(c).toContain('GCM refuses to decrypt');
+    expect(r.cbcNextBitFlipped).toBe(true);
+    expect(c).toContain('and exactly that bit flipped in the next block');
+    expect(text(tamperCaption(true, 40, { ...r, cbcNextBitFlipped: false }))).not.toContain('next block');
     expect(text(tamperCaption(false, TAMPER_DEFAULT_BYTE, r))).toContain('Untouched');
   });
 });

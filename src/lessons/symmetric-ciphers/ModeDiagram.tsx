@@ -70,7 +70,7 @@ export function ModeDiagram({ mode, changed, flippedBlocks }: { mode: ChainMode;
         }
         return (
           <g key={i}>
-            <Box x={x} y={Y.top} label={`nonce ‖ ${i}`} cls="is-counter" />
+            <Box x={x} y={Y.top} label={i === 0 ? 'ctr' : `ctr+${i}`} cls="is-counter" />
             {aes}
             <Box x={x} y={Y.xor1} label={`P${i + 1}`} cls={`is-plain ${flippedBlocks.includes(i) ? 'is-lit' : ''}`} />
             <Xor x={x} y={Y.xor2} />
