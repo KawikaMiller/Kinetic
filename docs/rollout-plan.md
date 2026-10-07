@@ -6607,17 +6607,17 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 1 | Re-verify the 14 existing T1 lessons against the tier DoD | 14 | 3 | QA | done | T-2 (tests) and T-3 (disclosure) fixed and verified in docs/qa-tier1-recheck.md |
 | 1 | **Tier 1 sign-off** | 62 | — | | ✅ done | all 62 built, merged and QA-signed-off (docs/qa-tier1-report.md, docs/qa-tier1-recheck.md); pushed |
 | 2 | Kickoff: validation, specs, batch and wave plan (§3.1) | — | pre | Atlas | done | 2026-10-01: 156 new + 16 existing = 172; 32 batches + 2 retrofit; 10 waves |
-| 2 | K-1 register the 156 Tier 2 topics | — | pre | kit A | not started | blocks wave 1 |
-| 2 | K-2 lesson-content lint, K-4 swipe hint off content, K-5 CLAUDE.md payload-free rule | — | pre | kit A | not started | block wave 1 |
-| 2 | K-3 secret-shape scan test | — | pre | kit A | not started | blocks wave 3 |
-| 2 | P0-a kit: K-6 `GraphView`, K-7 `CellGrid`, K-8 `ByteGrid`, K-9 `TreeSvg` forest, K-10 `numberTheory`, K-11 `stats`, K-12 `Plot2D`, K-20 `disjointSet` | — | pre | kit B, kit C | not started | blocks wave 1 |
-| 2 | P0-b kit: K-13 `GanttLanes`, K-14 `SequenceDiagram`, K-15 `MemoryMap`, K-16 `automata`, K-17 `vec`/`fit`/datasets, K-18 `ConfusionMatrix`, K-19 `crypto.ts` additions | — | pre | kit B, kit C | not started | blocks wave 2 |
-| 2 | Tier 1 leftovers L-1 to L-7 | — | alongside 1 | kit A | not started | not blocking; closed before sign-off |
-| 2 | T2-R1 retrofit, part 1 | 8 | 1 | t2/r1 | not started | |
-| 2 | T2-B1 Bits & encoding | 5 | 1 | t2/b1 | not started | |
-| 2 | T2-B2 Number theory & counting | 5 | 1 | t2/b2 | not started | |
-| 2 | T2-B3 Graph algorithms | 5 | 1 | t2/b3 | not started | |
-| 2 | P-follow-up after wave 1 | — | 1→2 | kit owner | not started | |
+| 2 | K-1 register the 156 Tier 2 topics | — | pre | kit A | done | merged before wave 1 |
+| 2 | K-2 lesson-content lint, K-4 swipe hint off content, K-5 CLAUDE.md payload-free rule | — | pre | kit A | done | Tier 1 baseline emptied; payload-free rule in CLAUDE.md |
+| 2 | K-3 secret-shape scan test | — | pre | kit A | done | src/core/secretScan.ts |
+| 2 | P0-a kit: K-6 `GraphView`, K-7 `CellGrid`, K-8 `ByteGrid`, K-9 `TreeSvg` forest, K-10 `numberTheory`, K-11 `stats`, K-12 `Plot2D`, K-20 `disjointSet` | — | pre | kit B, kit C | done | |
+| 2 | P0-b kit: K-13 `GanttLanes`, K-14 `SequenceDiagram`, K-15 `MemoryMap`, K-16 `automata`, K-17 `vec`/`fit`/datasets, K-18 `ConfusionMatrix`, K-19 `crypto.ts` additions | — | pre | kit B, kit C | done | merged efaae3e |
+| 2 | Tier 1 leftovers L-1 to L-7 | — | alongside 1 | kit A | done | L-6 closed as already shipped |
+| 2 | T2-R1 retrofit, part 1 | 8 | 1 | t2/r1 | done | 2026-10-06, merged 2b85c97; ten false captions fixed, all 8 off the lint baseline |
+| 2 | T2-B1 Bits & encoding | 5 | 1 | t2/b1 | done | 2026-10-06, merged 5c6196d |
+| 2 | T2-B2 Number theory & counting | 5 | 1 | t2/b2 | done | 2026-10-06, merged 04f526c |
+| 2 | T2-B3 Graph algorithms | 5 | 1 | t2/b3 | done | 2026-10-06, merged 94598c0 |
+| 2 | P-follow-up after wave 1 | — | 1→2 | kit owner | in progress | wave 1 gates: 1891 tests, smoke 114/114 desktop + 390px, captions unchanged vs Tier 1 close |
 | 2 | T2-R2 retrofit, part 2 | 8 | 2 | t2/r2 | not started | tls-handshake and auth-sessions-jwt get domain review |
 | 2 | T2-B4 Kernel & scheduling | 5 | 2 | t2/b4 | not started | |
 | 2 | T2-B5 Automata, parsing & types | 5 | 2 | t2/b5 | not started | |
