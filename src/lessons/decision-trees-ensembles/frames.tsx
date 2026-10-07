@@ -53,7 +53,9 @@ export function treeCaption(tree: Tree, steps: number, data: Dataset, opts: Tree
   const depthNow = Math.max(...tree.nodes.map((n) => n.depth));
   const verdict = val >= best.val
     ? <> No depth limit from 1 to {maxDepthOnSlider} does better on validation.</>
-    : <> A depth limit of {best.depth} would score <span className="hl ok">{pct(best.val)}</span> on validation: deeper isn't automatically better.</>;
+    : best.depth > opts.maxDepth
+      ? <> A deeper limit of {best.depth} scores <span className="hl ok">{pct(best.val)}</span> on validation: this tree is too shallow and underfits.</>
+      : <> A shallower limit of {best.depth} scores <span className="hl ok">{pct(best.val)}</span> on validation: deeper isn't automatically better.</>;
   const sliver = tree.nodes.some((n) => n.split === null && n.counts[0] + n.counts[1] === 1)
     ? <> Some leaves hold a single training point: slivers carved around one point, often noise.</>
     : null;
@@ -63,9 +65,9 @@ export function treeCaption(tree: Tree, steps: number, data: Dataset, opts: Tree
 export function forestCaption(n: number, forestVal: number, one: SeedSpread, forest: SeedSpread): ReactNode {
   const fewer = forest.disagreement < one.disagreement;
   const same = forest.disagreement === one.disagreement;
-  const head = <>{n === 1 ? 'One tree' : `${n} trees`}, each grown on its own bootstrap sample with a random feature per split; the vote map is their majority. Validation accuracy {pct(forestVal)}.</>;
+  const head = <>{n === 1 ? 'One bagged tree' : `${n} bagged trees`}, each grown on its own bootstrap sample with a random feature per split; the vote map is their majority. Validation accuracy {pct(forestVal)}.</>;
   if (n === 1) return <>{head} With one tree the forest is just that tree: retrained on {VARIANCE_SEEDS} seeds, it changes its mind on {pct(one.disagreement)} of the plane.</>;
-  return <>{head} Retrained on {VARIANCE_SEEDS} seeds, one tree changes its answer on {pct(one.disagreement)} of the plane; the forest on {pct(forest.disagreement)}
+  return <>{head} Retrained on {VARIANCE_SEEDS} seeds, one bagged tree changes its answer on {pct(one.disagreement)} of the plane; the forest on {pct(forest.disagreement)}
     {same ? ', no steadier here.' : fewer ? <>, <span className="hl ok">steadier</span>: averaging many jumpy trees cancels much of their jumpiness.</> : ', jumpier here.'}</>;
 }
 
@@ -82,7 +84,8 @@ const trendWord = (now: number, before: number) => (now > before ? 'up' : now < 
 function boostCaption(b: Boosting, t: number): ReactNode {
   const r: BoostRound = b.rounds[t];
   const stump = <>{FEATURE_NAME[r.stump.feature]} ≤ {num(r.stump.threshold)} → {CLASS_NAME[r.stump.below]}</>;
-  const errs = <>Training error {pct(r.trainError)}{t > 0 && <> ({trendWord(r.trainError, b.rounds[t - 1].trainError)})</>}, exponential loss {num(r.expLoss, 3)}.</>;
+  const errs = <>Training error {pct(r.trainError)}{t > 0 && <> ({trendWord(r.trainError, b.rounds[t - 1].trainError)})</>}, under its bound: exponential loss
+    = ∏ Zₜ = {num(r.expLoss, 3)}, which never rises.</>;
   const end = t === b.rounds.length - 1 && b.stopped
     ? b.stopped === 'perfect'
       ? <> This stump got every training point right, so boosting stops here.</>

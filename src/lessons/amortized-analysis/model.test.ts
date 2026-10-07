@@ -197,20 +197,22 @@ describe('amortized-analysis captions', () => {
         expect(last.block.length).toBe(n === 0 ? 1 : ref.buf.length);
         if (n === 0) continue;
         const text = captionText(last.say);
-        expect(text).toContain(`${ref.writes} writes in all`);
+        expect(text).toContain(`${ref.writes} ${ref.writes === 1 ? 'write' : 'writes'} in all`);
         expect(text).toContain((ref.writes / n).toFixed(2));
         expect(last.balance).toBe(COINS_PER_OP * n - ref.writes);
         // The verdict comes from the balance history, checked against a direct replay.
         let bal = 0;
+        let lowest = Infinity;
         let firstNeg: number | null = null;
         const r2 = new RefArray(g, 'none');
         for (let i = 1; i <= n; i++) {
           const before = r2.writes;
           r2.push(i);
           bal += COINS_PER_OP - (r2.writes - before);
+          lowest = Math.min(lowest, bal);
           if (bal < 0 && firstNeg === null) firstNeg = i;
         }
-        if (firstNeg === null) expect(text).toContain('never went below zero');
+        if (firstNeg === null) expect(text).toContain(`never went below zero (lowest ${lowest})`);
         else expect(text).toContain(`first went below zero at push ${firstNeg}`);
       }
     }
@@ -236,7 +238,19 @@ describe('amortized-analysis captions', () => {
     const quarter = trapFrames('quarter');
     const q = captionText(quarter[quarter.length - 1].say);
     expect(q).toContain('1 of them resized');
-    expect(q).toContain('never went below zero');
+    // The printed lowest is the real minimum, from a direct replay (not clamped at 0).
+    const ref = new RefArray('double', 'quarter');
+    let bal = 0;
+    let lowest = Infinity;
+    TRAP_OPS.forEach((op, i) => {
+      const before = ref.writes;
+      if (op === 'push') ref.push(i);
+      else ref.pop();
+      bal += COINS_PER_OP - (ref.writes - before);
+      lowest = Math.min(lowest, bal);
+    });
+    expect(lowest).toBeGreaterThan(0);
+    expect(q).toContain(`never went below zero (lowest ${lowest})`);
     for (const f of [...half, ...quarter]) expect(captionText(f.say).length).toBeGreaterThan(0);
   });
 });

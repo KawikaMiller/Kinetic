@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { leastSquares } from '../../core/fit';
 import {
-  DISTANCE_SHARES, FITTS_TRIALS, LAYOUTS, MENU_ITEMS, MENU_SIZES, MIN_TRIALS, SYNTH_FITTS, TARGET_WIDTHS, choiceBits, fitTrials, fittsSchedule,
+  DISTANCE_SHARES, FITTS_TRIALS, LAYOUTS, designBasis, predictLayouts, MENU_ITEMS, MENU_SIZES, MIN_TRIALS, SYNTH_FITTS, TARGET_WIDTHS, choiceBits, fitTrials, fittsSchedule,
   hickSchedule, hitsTarget, indexOfDifficulty, layoutId, predict, rSquared, syntheticFitts, syntheticHick,
   type Trial,
 } from './model';
@@ -154,5 +154,36 @@ describe('synthetic participant', () => {
     expect(Math.abs(f.b - SYNTH_FITTS.b)).toBeLessThan(60);
     const h = fitTrials(syntheticHick());
     expect(h.ok && h.b > 0).toBe(true);
+  });
+});
+
+describe('design panel basis (review repro: MT = −60 + 210·ID)', () => {
+  const ok = (a: number, b: number) => ({ ok: true as const, a, b, r2: 0.9, n: 10, misses: 0 });
+
+  it('uses the learner’s own line only when b > 0 and a ≥ 0', () => {
+    expect(designBasis(ok(100, 150))).toEqual({ source: 'own' });
+    expect(designBasis(ok(0, 150))).toEqual({ source: 'own' });
+    expect(designBasis(ok(-60, 210))).toEqual({ source: 'synthetic', why: 'intercept' });
+    expect(designBasis(ok(300, -5))).toEqual({ source: 'synthetic', why: 'slope' });
+    expect(designBasis(fitTrials([]))).toEqual({ source: 'synthetic', why: 'no-fit' });
+  });
+
+  it('whatever line is chosen, no layout is ever predicted below 0 ms', () => {
+    for (const [a, b] of [[-60, 210], [-500, 400], [300, -5], [100, 150]]) {
+      const basis = designBasis(ok(a, b));
+      const synth = fitTrials(syntheticFitts());
+      const line = basis.source === 'own' ? { a, b } : synth.ok ? synth : null;
+      predictLayouts(line!, syntheticFitts()).forEach((p) => expect(p.ms).toBeGreaterThanOrEqual(0));
+    }
+  });
+
+  it('flags layouts whose ID lies outside the range of the fitted trials as extrapolations', () => {
+    const trials = [trial(1, 300), trial(2, 450), trial(3, 600)];
+    const preds = predictLayouts({ a: 150, b: 150 }, trials);
+    const byId = Object.fromEntries(preds.map((p) => [p.layout.id, p]));
+    expect(byId.far.extrapolated).toBe(byId.far.id > 3);
+    expect(byId.near.extrapolated).toBe(false);
+    expect(byId.edge.extrapolated).toBe(true);
+    expect(byId.near.ms).toBe(150 + 150 * byId.near.id);
   });
 });

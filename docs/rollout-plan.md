@@ -3304,8 +3304,13 @@ Track `sec` · *"When a write lands somewhere it shouldn't"* · Builds on: `call
   - `p = malloc(16)`, then `free(p)`, then `q = malloc(16)` reuses the same chunk, then a write through stale `p` changes `q`'s data.
   - Drawn with `HeapObject` `variant="freed"` and a `RefArrow dangling`.
   - Defences: set `p = NULL` after free (a later use crashes cleanly), ownership in Rust (the compile error is shown as text), and GC languages (no manual free).
+  - **The allocator is a black box** (re-scoped 2026-10-07 after a build attempt went deeper). Say only "the allocator may hand freed memory to the next request". There is:
+    - no free-list, bin, chunk-header or metadata model;
+    - no double-free or over-read scenes;
+    - no "what an attacker would write there".
+- **Finding it** strip: fixed, lesson-authored report text in the style of AddressSanitizer for both bugs (`stack-buffer-overflow`, `heap-use-after-free`), labelled as illustrative output, with a one-line note that sanitizers and fuzzing catch these in testing.
 - A "**Why it matters**" strip states, with a source note, that memory-safety bugs account for roughly 70% of serious security bugs in large C/C++ codebases (Microsoft MSRC 2019; Chromium).
-**Out of scope.** Writing exploits, ROP, heap-grooming techniques, and undefined behaviour beyond these two bugs (T3 `undefined-behavior`).
+**Out of scope.** Writing exploits, ROP, heap-grooming techniques, allocator internals of any kind, double free, info-leak/over-read scenes, and undefined behaviour beyond these two bugs (T3 `undefined-behavior`). The lesson shows the two bug classes as corrupted program state, then how to prevent, detect and mitigate them; it never models how corruption is turned into control.
 **Kit.** `MemoryMap` (K-15) with `regions` (`variant="guard"` for the canary), memory kit (`HeapObject` `freed`, `RefArrow dangling`), `ByteGrid` (K-8) for the bytes being written, `Toggle` ×5, `TextField` (refused above 64 characters, with a message), `ChipButton` (benign samples), `ConsolePanel` (abort / panic text), `useScenePicker`, `createRecorder`.
 **AC.**
 - Watch: bytes from the input are `--info`; bytes written past the buffer are `--bad`; the canary is `--violet` (`--bad` when clobbered); the return slot is `--violet`; a defence that stopped it is `--ok`; randomised addresses are `--dim` and change per run; the freed chunk is dashed `--bad`; the stale pointer is a dashed `--bad` arrow.
@@ -3550,7 +3555,7 @@ Track `web` · *"Big, close, and few choices"* · Builds on: `linear-logistic-re
 - **Design panel:** the same toolbar laid out three ways (tiny icons far away, big buttons near, edge-pinned). Each predicts time from *your* fitted a and b. Screen edges and corners are effectively infinitely wide on a desktop pointer; this is named, and not true on touch.
 - **Hick tab:**
   - A menu of n choices (2-32) where you click the named item. Decision time is plotted against log₂(n + 1) with a fit.
-  - A caption notes that Hick's law holds for unfamiliar, equally likely choices, and that practised or searchable menus beat it.
+  - A caption notes that Hick's law models choice among equally likely options you don't have to search for; scanning an unfamiliar list grows roughly linearly, and practice flattens the slope.
 - A "touch" note: the minimum target size guidance (WCAG 2.2 AA 24×24 px, platform guidelines 44-48), linked to `responsive-design`.
 - If you skip the game, a seeded synthetic participant fills the plot, clearly labelled.
 **Out of scope.** Running user studies is `usability-testing`; full accessibility guidance is `accessibility`; GOMS/KLM models are named only.

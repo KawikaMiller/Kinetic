@@ -77,7 +77,8 @@ function queueOrder(nodes: readonly HNode[], ids: readonly number[], tie: TieBre
 }
 
 export function buildHuffman(text: string, tie: TieBreak): Huffman {
-  // Leaves are created lightest first (ties in character order), so ids carry creation order.
+  // Leaves are created lightest first (equal counts in reverse character-code order, from reversing
+  // frequencies()), so ids carry creation order.
   const freq = frequencies(text).reverse();
   const nodes: HNode[] = freq.map((f, id) => ({ id, weight: f.count, sym: f.sym }));
   let queue = queueOrder(nodes, nodes.map((n) => n.id), tie);

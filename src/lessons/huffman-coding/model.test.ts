@@ -256,3 +256,61 @@ describe('huffman-coding frames', () => {
     expect(last).toContain(`cost ${forcedOneBitCost(DEFAULT_TEXT)} bits in all, ${forcedOneBitCost(DEFAULT_TEXT) - 46} more`);
   });
 });
+
+describe('the closing caption names ties as ties', () => {
+  const closing = (text: string, tie: TieBreak) => captionText(buildFrames(buildHuffman(text, tie), tie).at(-1)!.say);
+  /** Counts per symbol, recounted here rather than taken from the model. */
+  const countOf = (text: string) => {
+    const m = new Map<string, number>();
+    for (const ch of text) m.set(ch, (m.get(ch) ?? 0) + 1);
+    return m;
+  };
+  const unshow = (s: string) => (s === '␣' ? ' ' : s);
+
+  it('all-equal counts: no commonest or rarest is named', () => {
+    for (const text of ['abcd', 'ab', 'aabb', 'abcabc']) {
+      for (const tie of TIES) {
+        const end = closing(text, tie);
+        expect(end, text).toContain('characters appear ×');
+        expect(end, text).not.toMatch(/the (commonest|rarest)/);
+        expect(end, text).not.toContain('Forcing');
+      }
+    }
+  });
+
+  it('the reviewer repros: tied rarest in aaaaaaabcd, a 1-bit tied commonest in aabbc', () => {
+    const rare = closing('aaaaaaabcd', 'old');
+    expect(rare).toContain('tie as rarest (×1 each)');
+    expect(rare).not.toContain('the rarest');
+    const top = closing('aabbc', 'new');
+    expect(top).toContain('tie as commonest (×2 each)');
+    expect(top).not.toContain('Forcing');
+  });
+
+  it('on 200 seeded strings, a single named commonest or rarest really is unique, and the forcing note only appears when no commonest symbol has 1 bit', () => {
+    const rnd = mulberry32(404);
+    for (let t = 0; t < 200; t++) {
+      const text = randomText(rnd);
+      const counts = countOf(text);
+      const max = Math.max(...counts.values());
+      const min = Math.min(...counts.values());
+      for (const tie of TIES) {
+        const end = closing(text, tie);
+        const h = buildHuffman(text, tie);
+        const top = end.match(/the commonest, ‘(.)’ ×(\d+)/);
+        if (top) {
+          expect(counts.get(unshow(top[1]))).toBe(max);
+          expect([...counts.values()].filter((c) => c === max)).toHaveLength(1);
+        }
+        const rare = end.match(/the rarest, ‘(.)’ ×(\d+)/);
+        if (rare) {
+          expect(counts.get(unshow(rare[1]))).toBe(min);
+          expect([...counts.values()].filter((c) => c === min)).toHaveLength(1);
+        }
+        const topHasOneBit = [...counts].some(([s, c]) => c === max && h.codes.get(s)!.length === 1);
+        if (end.includes('Forcing')) expect(topHasOneBit).toBe(false);
+        if (counts.size > 1 && max !== min && !topHasOneBit) expect(end).toContain('Forcing');
+      }
+    }
+  });
+});

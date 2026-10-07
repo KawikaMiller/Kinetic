@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Huffman coding gives common symbols short bit codes and rare ones long codes, and no code is the start of another, so the bits decode without separators.',
-    what: "Count how often each symbol appears and make each one a leaf weighted by its count. Repeatedly take the two lightest trees off a priority queue (`heaps` builds those) and join them under a new parent whose weight is their sum, until one tree is left. Label left edges 0 and right edges 1: a symbol's code is the path from the root to its leaf (the root-to-leaf walk from `tree-traversals`). No other code that gives each symbol its own fixed bit pattern makes the message shorter.",
+    what: "Count how often each symbol appears and make each one a leaf weighted by its count. Repeatedly take the two lightest trees off a priority queue (`heaps` builds those) and join them under a new parent whose weight is their sum, until one tree is left. Label left edges 0 and right edges 1: a symbol's code is the path from the root to its leaf (the root-to-leaf walk from `tree-traversals`). No other code that gives each symbol its own bit pattern and still decodes unambiguously makes the message shorter.",
     analogy: 'Morse code had the right instinct, E is a single dot because it is common, but needed pauses between letters. Huffman codes are built so that no pause is ever needed.',
     useCases: [
       'The last stage of DEFLATE, inside zip, gzip and PNG files',
