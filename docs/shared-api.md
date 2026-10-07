@@ -414,6 +414,7 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
   instead of shrinking the drawing; wider screens see no difference. Set it on any stage with a fixed-layout
   SVG, canvas or absolutely positioned scene. Pick the value with `npm run smoke -- --mobile <id>`: it fails
   when scene text renders under 8px or the frame clips content. Rough guide: `356 × 8 / smallestTextPx` at 390.
+  For a drawing of known natural width, compute it: `minWidthForText(W, 13)` from `core/scale` (below).
 - A `Toggle` swap changes the option order when the lesson listed "on" first (cdn-edge). That's a deliberate change, so list it.
 - `TextField`: Enter does nothing unless `onEnter` is set. For clamped number fields, keep the raw text in state and clamp in `onBlur` and when the value is used, not on every keystroke (see trees-bst).
 - `TextField` has the shared look (a 14px mono input with an accent focus ring). A lesson `className` can resize it; a disabled field dims to 0.45 as a whole.
@@ -658,6 +659,8 @@ text (regex-basics) is lesson-local until a second lesson needs it.
 const x = linearScale(0, 100, 0, 500);        // x.map(50) → 250, x.invert(250) → 50, x.ticks(5) → [0, 20, …, 100]
 const y = logScale(1e-9, 1e-1, 300, 0);       // y axis, bottom-up; y.ticks(9) → [1e-9, 1e-8, …, 1e-1]
 logScale(1, 1024, 0, 10, 2)                   // base 2
+minWidthForText(520, 13)                      // 320: StageFrame/WideRegion minWidth keeping 13px text at the 8px floor (MIN_TEXT_PX)
+minWidthForText(placement.width, 12, 320)     // third argument: never narrower than this
 ```
 Linear ticks are "nice" (1, 2 or 5 × 10^k) with float noise rounded off (0.3, not 0.30000000000000004).
 Log ticks are whole powers of the base inside the domain, thinned evenly beyond `count`. A log

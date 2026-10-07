@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SEQ, sequenceLayout, textWidth, wrapLabel, type SeqActor, type SeqMessage } from './sequenceLayout';
+import { MIN_TEXT_PX } from './scale';
 
 const DORA_ACTORS: SeqActor[] = [
   { id: 'laptop', label: 'Laptop' },
@@ -98,7 +99,7 @@ describe('sequenceLayout', () => {
 
   it('reports the narrowest container that keeps text at 8px or more', () => {
     expect(L.minWidth).toBe(Math.ceil((L.width * 8) / 12));
-    expect((SEQ.FONT * L.minWidth) / L.width).toBeGreaterThanOrEqual(SEQ.MIN_TEXT_PX);
+    expect((SEQ.FONT * L.minWidth) / L.width).toBeGreaterThanOrEqual(MIN_TEXT_PX);
   });
 
   it('a three-actor ladder with short labels fits a phone without scrolling', () => {
