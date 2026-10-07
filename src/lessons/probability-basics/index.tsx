@@ -6,7 +6,7 @@ const lesson: LessonModule = {
   summary: {
     tldr: 'A probability is favourable outcomes over equally likely outcomes. Three rules (complement, union, independence) turn that into the odds of a whole system failing, as long as you check the independence you assume.',
     what: 'A sample space lists everything that can happen; an event is a set of those outcomes. When outcomes are equally likely, P(event) = favourable ÷ total: two dice have 36 outcomes and 6 sum to 7, so P = 6/36. The complement rule (P(not A) = 1 − P(A)), the union rule (add, then subtract the overlap) and the product rule for independent events let you combine them. Rolling many times makes the frequency settle near the exact value: the law of large numbers.',
-    analogy: 'Counting probability is like counting seats: a 36-seat room where 6 seats win. Independence means knowing one person\'s seat tells you nothing about another\'s; a shared rack is a room where everyone stands up when the fire alarm goes off.',
+    analogy: 'Counting probability is like a raffle: 36 equally likely tickets and 6 winners. Independence is two raffles in two different towns, where the result of one tells you nothing about the other; a shared rack is one building where everyone leaves when the fire alarm goes off.',
     useCases: [
       'Redundancy maths: three replicas at 1% each are all down 10⁻⁶ of the time, only if they fail independently',
       'Flaky tests: 200 tests at 1% flakiness turn a suite red on about 87% of runs',

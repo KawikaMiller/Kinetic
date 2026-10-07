@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  EVENTS, RACK_DOWN, chance, checkpoints, convergence, eventSet, hitsOf, outcomeCell, replicaRisk, rollsFor, rules, runSuite,
+  EVENTS, RACK_DOWN, chance, checkpoints, distinct, ownRate, replicaDown, convergence, eventSet, hitsOf, outcomeCell, replicaRisk, rollsFor, rules, runSuite,
   spaceSize, suiteRed, totals, type Dice,
 } from './model';
 
@@ -138,17 +138,28 @@ describe('replicas and the flaky suite', () => {
     expect(chance(r.anyDown)).toBe('2.97%');
   });
 
-  it('correlated: P(all down) = rack + (1 − rack)·pⁿ, never below the rack rate', () => {
-    for (let n = 1; n <= 10; n++) {
-      for (let pm = 0; pm <= 500; pm += 5) {
+  it('shared rack: each replica is still down p overall, and P(all down) matches enumerating rack × replica states', () => {
+    for (let n = 1; n <= 4; n++) {
+      for (let pm = 5; pm <= 500; pm += 5) {
         const p = pm / 1000;
-        const r = replicaRisk(n, p, true);
-        expect(r.allDown).toBeCloseTo(RACK_DOWN + (1 - RACK_DOWN) * p ** n, 15);
-        expect(r.allDown).toBeGreaterThanOrEqual(RACK_DOWN);
-        expect(r.allDown).toBeGreaterThanOrEqual(replicaRisk(n, p, false).allDown);
+        const q = ownRate(p);
+        // Independent reference: rack down (everything down), or rack up and each up/down pattern of n replicas.
+        let all = RACK_DOWN;
+        let firstDown = RACK_DOWN;
+        for (let mask = 0; mask < 2 ** n; mask++) {
+          let prob = 1 - RACK_DOWN;
+          for (let b = 0; b < n; b++) prob *= (mask >> b) & 1 ? q : 1 - q;
+          if (mask === 2 ** n - 1) all += prob;
+          if (mask & 1) firstDown += prob;
+        }
+        expect(firstDown).toBeCloseTo(p, 12);
+        expect(replicaDown(p, true)).toBeCloseTo(p, 12);
+        expect(replicaRisk(n, p, true).allDown).toBeCloseTo(all, 12);
+        expect(replicaRisk(n, p, true).allDown).toBeGreaterThanOrEqual(RACK_DOWN);
+        expect(replicaRisk(n, p, true).allDown).toBeGreaterThanOrEqual(replicaRisk(n, p, false).allDown - 1e-15);
       }
     }
-    expect(replicaRisk(3, 0.01, true).allDown).toBeCloseTo(0.001000999, 12);
+    expect(replicaDown(0, true)).toBe(RACK_DOWN);
   });
 
   it('0.99²⁰⁰ is 13.40%, so the suite is red 86.60% of the time', () => {
@@ -172,5 +183,17 @@ describe('replicas and the flaky suite', () => {
     expect(chance(1 / 6)).toBe('16.7%');
     expect(chance(1e-4)).toBe('0.01%');
     expect(chance(9.765625e-24)).toBe('9.8 × 10⁻²⁴');
+    expect(chance(9.99e-5)).toBe('1.0 × 10⁻⁴');
+    expect(chance(1 - 1e-6)).toBe('99.9999%');
+    expect(chance(1.25e-4)).toBe('0.0125%');
+    expect(chance(0.0010007)).toBe('0.1%');
+    for (let k = 1; k <= 12; k++) expect(chance(1 - 10 ** -k)).not.toBe('100%');
+  });
+
+  it('distinct() adds figures until two different values read differently', () => {
+    expect(distinct(0.0010007, 0.001)).toEqual(['0.1001%', '0.1%']);
+    expect(distinct(1 - 0.0010007, 0.999)).toEqual(['99.8999%', '99.9%']);
+    expect(distinct(1 - 1e-6, 1 - 1e-4)).toEqual(['99.9999%', '99.99%']);
+    expect(distinct(0.5, 0.5)).toEqual(['50%', '50%']);
   });
 });
