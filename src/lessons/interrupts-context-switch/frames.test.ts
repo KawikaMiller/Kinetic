@@ -55,9 +55,19 @@ describe('claims in the lesson text', () => {
     expect(overhead(20, 5)).toBeGreaterThan(OVERHEAD_BAD);
     expect(overhead(4000, 5)).toBeLessThan(OVERHEAD_BAD);
   });
-  it('try-this: Disk then Timer twice gives B the CPU on the second tick only', () => {
+  it('try-this: Disk then Next tick twice gives B the CPU on the second tick only', () => {
     const s = (['disk', 'timer', 'timer'] as IrqSource[]).reduce((w, src) => fire(w, src), sandboxStart());
     expect(s.log.map((o) => o.reschedule)).toEqual([false, false, true]);
     expect(s.running).toBe('B');
+  });
+});
+
+describe('automatic ticks are narrated as such', () => {
+  it('a device interrupt past a tick boundary brings an automatic tick, and the sentence says so', () => {
+    const order: IrqSource[] = ['disk', 'network', 'network', 'network', 'network'];
+    const s = order.reduce((w, src) => fire(w, src), sandboxStart());
+    const auto = s.log.filter((o) => o.auto);
+    expect(auto.length).toBeGreaterThan(0);
+    for (const o of s.log) expect(outcomeText(o).includes('automatic')).toBe(o.auto);
   });
 });

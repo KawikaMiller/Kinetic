@@ -103,6 +103,8 @@ export interface Step {
   roundTrip?: boolean;
   /** For 'pick': whether the address space has to change. */
   newAsid?: boolean;
+  /** For a timer 'handler': false when the tick finds nobody else to run. */
+  switches?: boolean;
 }
 
 export interface Script {
@@ -188,11 +190,11 @@ export function switchScript(kind: SwitchKind, sameProcess: boolean): Script {
   if (kind === 'involuntary') {
     runUser('A', TICK_MS);
     enterKernel('irq', 'A', 'timer');
-    kernelStep('handler', 'A', { source: 'timer' });
+    kernelStep('handler', 'A', { source: 'timer', switches: true });
     contextSwitch('A', 'B');
     runUser('B', 2 * TICK_MS - t);
     enterKernel('irq', 'B', 'timer');
-    kernelStep('handler', 'B', { source: 'timer' });
+    kernelStep('handler', 'B', { source: 'timer', switches: true });
     contextSwitch('B', 'A');
     runUser('A', 3 * TICK_MS - t);
   } else {
@@ -201,6 +203,12 @@ export function switchScript(kind: SwitchKind, sameProcess: boolean): Script {
     states.B = 'blocked';
     kernelStep('handler', 'B', { source: 'disk' });
     contextSwitch('B', 'A');
+    // The tick at 4 ms still fires: B is blocked and nobody else is ready, so A keeps the CPU.
+    runUser('A', TICK_MS - t);
+    enterKernel('irq', 'A', 'timer');
+    kernelStep('handler', 'A', { source: 'timer', switches: false });
+    mode = 'user';
+    push('resume', 'A', { roundTrip: true });
     runUser('A', 1.5 * TICK_MS - t);
     enterKernel('irq', 'A', 'disk');
     states.B = 'ready';
@@ -209,7 +217,7 @@ export function switchScript(kind: SwitchKind, sameProcess: boolean): Script {
     push('resume', 'A', { roundTrip: true });
     runUser('A', 2 * TICK_MS - t);
     enterKernel('irq', 'A', 'timer');
-    kernelStep('handler', 'A', { source: 'timer' });
+    kernelStep('handler', 'A', { source: 'timer', switches: true });
     contextSwitch('A', 'B');
     runUser('B', 3 * TICK_MS - t);
   }
@@ -257,7 +265,8 @@ export const SLICE_TICKS = 2;
 export const DEVICE_GAP_MS = 1;
 /** Drawn width of a handler on the sandbox timeline (NOT to scale). */
 export const HANDLER_MS = 0.4;
-export const SANDBOX_MAX_EVENTS = 10;
+/** Interrupts (automatic ticks included) before the sandbox asks for a reset. */
+export const SANDBOX_MAX_EVENTS = 14;
 
 export interface SandboxSeg {
   lane: SandboxThread | 'kernel';
@@ -272,6 +281,8 @@ export interface Sandbox {
   running: SandboxThread;
   /** Ticks the running thread has had since it was dispatched. */
   ticks: number;
+  /** Tick boundaries handled so far: the next one is due at (tickCount + 1) × TICK_MS. */
+  tickCount: number;
   states: Record<SandboxThread, ThreadState>;
   segments: SandboxSeg[];
   log: Outcome[];
@@ -286,17 +297,24 @@ export interface Outcome {
   reschedule: boolean;
   from: SandboxThread;
   to: SandboxThread;
+  /** A tick the learner didn't ask for: time crossed a tick boundary on the way to a device interrupt. */
+  auto: boolean;
+  /** When it was due. A tick that comes due while another handler runs is delivered right after it. */
+  due: number;
 }
 
 export function sandboxStart(): Sandbox {
-  return { now: 0, running: 'A', ticks: 0, states: { A: 'running', B: 'blocked', C: 'blocked' }, segments: [], log: [] };
+  return { now: 0, running: 'A', ticks: 0, tickCount: 0, states: { A: 'running', B: 'blocked', C: 'blocked' }, segments: [], log: [] };
 }
 
 const waker: Record<IrqSource, SandboxThread | null> = { timer: null, disk: 'B', network: null, key: 'C' };
 
-/** When this source's interrupt lands: the next tick boundary for the timer, a short gap for devices. */
+/** The next tick boundary not yet handled. */
+export const nextTickDue = (s: Sandbox) => (s.tickCount + 1) * TICK_MS;
+
+/** When this source's interrupt lands: the next tick (right away if it came due during a handler), or a short gap for a device. */
 export function nextAt(s: Sandbox, source: IrqSource): number {
-  return source === 'timer' ? (Math.floor(s.now / TICK_MS + 1e-9) + 1) * TICK_MS : s.now + DEVICE_GAP_MS;
+  return source === 'timer' ? Math.max(nextTickDue(s), s.now) : s.now + DEVICE_GAP_MS;
 }
 
 /** Next ready thread after `from`, in A, B, C order, wrapping; null when none is ready. */
@@ -310,6 +328,18 @@ function nextReady(states: Record<SandboxThread, ThreadState>, from: SandboxThre
 }
 
 /**
+ * Fire `source` at the next moment it can happen. The timer keeps ticking on its own, so any
+ * tick boundary crossed on the way to a device interrupt is fired first, as an automatic tick.
+ */
+export function fire(s: Sandbox, source: IrqSource): Sandbox {
+  if (source === 'timer') return fireAt(s, 'timer', nextAt(s, 'timer'), false);
+  const due = nextAt(s, source);
+  let w = s;
+  while (nextTickDue(w) <= due + 1e-9) w = fireAt(w, 'timer', nextAt(w, 'timer'), true);
+  return fireAt(w, source, Math.max(due, w.now), false);
+}
+
+/**
  * The running thread runs until the interrupt, the handler runs, and then:
  * - timer: one more tick for the running thread; if that uses up its slice and another
  *   thread is ready, reschedule to it (round robin);
@@ -317,8 +347,7 @@ function nextReady(states: Record<SandboxThread, ThreadState>, from: SandboxThre
  * - network: the packet is buffered; nobody here waits on a socket, so nothing wakes.
  * Only the timer reschedules in this model; a woken thread waits for the next tick.
  */
-export function fire(s: Sandbox, source: IrqSource): Sandbox {
-  const at = nextAt(s, source);
+function fireAt(s: Sandbox, source: IrqSource, at: number, auto: boolean): Sandbox {
   const segments = [...s.segments];
   const states = { ...s.states };
   const idleBars = (from: number, to: number) => {
@@ -354,7 +383,7 @@ export function fire(s: Sandbox, source: IrqSource): Sandbox {
     ticks = 0;
   }
   return {
-    now: end, running, ticks, states, segments: mergeSegments(segments),
-    log: [...s.log, { source, at, woke, sliceUp, reschedule, from, to: running }],
+    now: end, running, ticks, tickCount: s.tickCount + (source === 'timer' ? 1 : 0), states, segments: mergeSegments(segments),
+    log: [...s.log, { source, at, woke, sliceUp, reschedule, from, to: running, auto, due: source === 'timer' ? nextTickDue(s) : at }],
   };
 }

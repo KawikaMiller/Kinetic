@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  fire, HZ, mergeSegments, nextAt, overhead, runFor, sandboxStart, SLICE_TICKS, switchesPerSecond, switchScript, TICK_MS,
+  fire, HANDLER_MS, HZ, KERNEL_STEP_MS, mergeSegments, nextAt, overhead, runFor, sandboxStart, SLICE_TICKS, switchesPerSecond, switchScript, TICK_MS,
   type IrqSource, type Sandbox, type SwitchKind,
 } from './model';
 
@@ -75,6 +75,23 @@ describe('switchScript', () => {
       for (const k of kernel) for (const r of runs) expect(r.end <= k.start + 1e-9 || r.start >= k.end - 1e-9).toBe(true);
     });
   }
+  for (const [kind, same] of COMBOS) {
+    it(`${kind}, ${same ? 'thread' : 'process'} switch: every tick boundary before the end has a timer interrupt`, () => {
+      const { steps, end } = switchScript(kind, same);
+      const fired = steps.filter((s) => s.phase === 'irq' && s.source === 'timer').map((s) => Math.round((s.t - KERNEL_STEP_MS) * 1000) / 1000);
+      const boundaries: number[] = [];
+      for (let b = TICK_MS; b < end - 1e-9; b += TICK_MS) boundaries.push(b);
+      expect(fired).toEqual(boundaries);
+    });
+  }
+  it('voluntary: the 4 ms tick finds nobody else ready and A keeps the CPU', () => {
+    const { steps } = switchScript('voluntary', true);
+    const tick = steps.findIndex((s) => s.phase === 'irq' && s.source === 'timer');
+    expect(steps[tick + 1]).toMatchObject({ phase: 'handler', switches: false });
+    expect(steps[tick + 1].states.B).toBe('blocked');
+    expect(steps[tick + 2].phase).toBe('resume');
+    expect(steps[tick + 2].cpu!.owner).toBe('A');
+  });
   it('involuntary: the timer fires on tick boundaries and each thread gets a whole tick', () => {
     const { steps } = switchScript('involuntary', true);
     const irqs = steps.filter((s) => s.phase === 'irq');
@@ -131,6 +148,23 @@ describe('interrupt sources sandbox', () => {
   it('round robin among ready threads', () => {
     const s = run(['disk', 'key', 'timer', 'timer', 'timer', 'timer']);
     expect(s.log.filter((o) => o.reschedule).map((o) => o.to)).toEqual(['B', 'C']);
+  });
+  it('time never crosses a tick boundary without a timer interrupt: device interrupts bring automatic ticks', () => {
+    const s = run(['disk', 'network', 'key', 'network', 'network', 'disk', 'timer', 'network', 'network', 'network']);
+    const ticks = s.log.filter((o) => o.source === 'timer');
+    const boundaries: number[] = [];
+    for (let b = TICK_MS; b <= s.now; b += TICK_MS) boundaries.push(b);
+    expect(ticks.map((o) => o.due)).toEqual(boundaries);
+    // delivered at the boundary, or right after a handler that was running across it
+    ticks.forEach((o) => expect(o.at - o.due).toBeGreaterThanOrEqual(0));
+    ticks.forEach((o) => expect(o.at - o.due).toBeLessThanOrEqual(HANDLER_MS + 1e-9));
+    expect(s.log.filter((o) => o.auto).length).toBeGreaterThan(0);
+    expect(s.log.filter((o) => o.auto).every((o) => o.source === 'timer')).toBe(true);
+  });
+  it('an automatic tick can reschedule too', () => {
+    // disk wakes B at 1 ms; network events push time past 4 and 8 ms, and the second tick switches to B.
+    const s = run(['disk', 'network', 'network', 'network', 'network', 'network', 'network', 'network']);
+    expect(s.log.some((o) => o.auto && o.reschedule && o.to === 'B')).toBe(true);
   });
   it('the timeline has a kernel bar per interrupt and never two runs at once', () => {
     const s = run(['disk', 'timer', 'network', 'key', 'timer', 'timer']);

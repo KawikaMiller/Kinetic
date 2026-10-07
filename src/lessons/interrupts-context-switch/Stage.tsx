@@ -80,7 +80,7 @@ function SwitchScene({ picker }: { picker: ReactNode }) {
           />
         </WideRegion>
         <Hint block>
-          Illustrative 4 ms tick (HZ = 250). Kernel work is drawn far wider than to scale: real handlers and switches take microseconds. A real kernel also saves more state (FPU and vector
+          Illustrative 4 ms tick (HZ = 250); in this walkthrough a slice is one tick (the Interrupt sources scene uses two). Kernel work is drawn far wider than to scale: real handlers and switches take microseconds. A real kernel also saves more state (FPU and vector
           registers) and may skip ticks when idle.
         </Hint>
         <RegisterCards step={step} sc={sc} />

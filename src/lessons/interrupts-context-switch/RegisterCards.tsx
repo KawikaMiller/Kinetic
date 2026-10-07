@@ -33,8 +33,11 @@ function PcbCard({ id, step, sc }: { id: ThreadId; step: Step; sc: Script }) {
   return (
     <Box className="ics-card" role="group" aria-label={`Thread ${id}'s PCB`}>
       <SectionTitle>
-        {id} · PCB <span className="keep-case">(task_struct)</span>
+        {id} · PCB
       </SectionTitle>
+      <p className="ics-card-meta">
+        in Linux: the <code>task_struct</code> and the thread's kernel stack
+      </p>
       <p className="ics-card-meta">
         process <b>{info.process}</b> · address space {info.asid} · <span className={`chip tone-${STATE_TONE[state]}`}>{state}</span>
       </p>
