@@ -124,6 +124,8 @@
   margin-left: 6px;
 }
 .empty-note { font: 500 12px var(--mono); color: var(--faint); }
+/* Inside an uppercased label (Stat, section titles): keep these characters as typed, e.g. Greek μ, λ. */
+.keep-case { text-transform: none; }
 .hint { font-size: 13px; color: var(--faint); align-self: center; }
 .hint.is-muted { color: var(--muted); }
 .hint.is-block { flex-basis: 100%; }

@@ -294,7 +294,8 @@ export function Legend({ items }: { items: { color: string; label: ReactNode; sh
 export function Stat({
   label, value, color, sub, className = '', children,
 }: {
-  label: string;
+  /** Rendered uppercase: wrap Greek letters or case-sensitive names in <span className="keep-case">. */
+  label: ReactNode;
   value: ReactNode;
   color?: string;
   sub?: ReactNode;

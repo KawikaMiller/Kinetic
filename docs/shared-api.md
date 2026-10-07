@@ -60,6 +60,7 @@ Loaded globally. Colour flows through `--c` / `--on-c`, set by a `.tone-*` class
 | `.tray` | dashed collector panel |
 | `.section-title` (+ `.is-regular`, `> .hint-inline`) | 11px uppercase label: 700 weight / .1em, or regular weight / .08em |
 | `.empty-note`, `.hint` (+ `.is-muted`, `.is-block`), `.focus-ring` | faint mono placeholder; 13px hint; 3px ring in `--c` |
+| `.keep-case` | `text-transform: none` inside an uppercased label (see the `Stat` note) |
 | `.stage-pad` | flex column stage padding 20/22 |
 | `.canvas-wrap` | `position: relative; height: var(--h, 420px)`, canvas `display: block` |
 | `.data-table`, `.log-row` | shared table look; left-bordered tinted log row in `--c` |
@@ -382,6 +383,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <ControlGroup label="Presets" inline className="xx-presets">{buttons}</ControlGroup>   // inline: label left of the group
 <Hint>…or click a number</Hint>                          // tone="muted", block (its own line), className
 <Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
+<Stat label={<>Tail <span className="keep-case">μ</span></>} value={3} />   // labels are uppercased by CSS: μ would show as Μ ("M")
 <PauseButton paused={paused} onToggle={togglePause} />
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 <ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
