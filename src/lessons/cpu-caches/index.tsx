@@ -4,7 +4,7 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'The CPU never fetches one int from RAM: it fetches a whole 64-byte cache line, so code that uses neighbouring data runs far faster than code that jumps around.',
+    tldr: 'The CPU normally fetches a whole cache line from RAM (64 bytes on most CPUs), not one int, so code that uses neighbouring data runs far faster than code that jumps around.',
     what: 'A cache is a small, fast copy of recently used memory, organised in lines (64 bytes on most CPUs). An address splits into an offset inside the line, a set index that picks which set the line may live in, and a tag that says which line it is. Each set holds a few lines (its ways); when a set is full, the least recently used line is evicted. A miss is compulsory the first time a line is touched, capacity when the data in use is bigger than the whole cache, and conflict when it would fit but too many lines map to the same set.',
     analogy: 'Fetching a whole shelf from the library when you ask for one book. If your next book is on the same shelf it\'s instant; if every book you want is on a different floor, the trolley never helps.',
     useCases: [
@@ -19,7 +19,7 @@ const lesson: LessonModule = {
   tryThis: [
     'On "16 × 16", run Row-wise, then Column-wise: same 256 reads, a 94% hit rate against 0%.',
     'On "8 × 8", compare both loop orders: why does the order hardly matter for an array this small?',
-    'On "Rows 64 ints apart", go Column-wise and watch every row land in set 0: all conflict misses.',
+    'On "Rows 64 ints apart", go Column-wise and watch every row land in set 0: after the first column, every miss is a conflict miss.',
     'On "Structs", compare Array of structs with Struct of arrays: count the lines that hold an x.',
   ],
   keyIdeas: [

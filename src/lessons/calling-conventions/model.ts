@@ -32,6 +32,9 @@ export const TOY_STACK_BYTES = 0xa0;
 export const REAL_STACK_BYTES = 8 * 1024 * 1024;
 export const GUARD_BYTES = 0x20;
 
+/** The rsp mod 16 readout's label: a plain fact about the value, true at every step. */
+export const alignLabel = (rsp: number) => (rsp % 16 === 0 ? '16-byte aligned' : rsp % 16 === 8 ? '8 off (normal right after a call)' : `${rsp % 16} off`);
+
 export type SceneId = 'calls' | 'seven' | 'saved' | 'deep';
 
 export interface SceneOptions {

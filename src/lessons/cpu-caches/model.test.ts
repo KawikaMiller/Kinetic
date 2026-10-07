@@ -87,7 +87,7 @@ describe('hand-worked counts', () => {
     // a column touches 16 lines, the cache holds 8: by the time the loop comes back, LRU has thrown them out
     expect(run('wide', 'cols')).toEqual({ hits: 0, misses: 256, compulsory: 16, capacity: 240, conflict: 0 });
   });
-  it('rows 64 ints apart: every row starts in set 0, so a column-wise walk is all conflict misses', () => {
+  it('rows 64 ints apart: every row starts in set 0, so column-wise, every miss after the 8 compulsory ones is a conflict miss', () => {
     expect(run('stride', 'rows')).toEqual({ hits: 56, misses: 8, compulsory: 8, capacity: 0, conflict: 0 });
     expect(run('stride', 'cols')).toEqual({ hits: 0, misses: 64, compulsory: 8, capacity: 0, conflict: 56 });
     const sets = sceneFor('stride', 'rows').visits.filter(([, c]) => c === 0).map(([r]) => splitAddress(BASE + r * 64 * 4, CACHE).set);

@@ -474,4 +474,4 @@ export const PRESETS: Preset[] = [
 
 export const presetById = (id: PresetId) => PRESETS.find((p) => p.id === id)!;
 
-export const HONESTY = 'A textbook 5-stage pipeline (MIPS-style), not any real x86 or ARM core. Real cores also predict branches and run instructions out of order.';
+export const HONESTY = 'A textbook 5-stage pipeline (MIPS-style), not any real x86 or ARM core. Most modern desktop and phone cores also predict branches and run instructions out of order.';

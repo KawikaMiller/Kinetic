@@ -370,7 +370,8 @@ export function step(program: Program, before: Cpu): { cpu: Cpu; effect: StepEff
 
   const op = ins.op;
   switch (true) {
-    case op === 'mov': {
+    // movabs: the name gas and objdump print for mov with a full 64-bit immediate
+    case op === 'mov' || op === 'movabs': {
       const w = width(d, s);
       write(d, w, read(s, w));
       break;

@@ -65,7 +65,7 @@ export function ProgramScene({ picker, prog }: { picker: ReactNode; prog: ProgId
         <Legend
           items={[
             { color: 'var(--hi)', label: 'instruction just run, and its C line', shape: 'square' },
-            { color: 'var(--info)', label: 'register or flag it changed', shape: 'square' },
+            { color: 'var(--hi)', label: 'register or flag it changed (tint)', shape: 'square' },
             { color: 'var(--violet)', label: 'flags a jump or cmov read; rsp', shape: 'square' },
           ]}
         />

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { callFrames, clobbered } from './frames';
 import lesson from './index';
-import { ABI, REAL_STACK_BYTES, type SceneId, type SceneOptions } from './model';
-import { stackPicture } from './stackLayout';
+import { ABI, alignLabel, REAL_STACK_BYTES, runScene, type SceneId, type SceneOptions } from './model';
+import { frameTones, stackPicture, whyNoFrame } from './stackLayout';
 import { hex, signed } from './x86';
 
 const COMBOS: [SceneId, SceneOptions][] = [
@@ -46,6 +46,7 @@ describe('every scene and option: captions true at every step', () => {
           expect(text.includes('came back changed')).toBe(lost.length > 0);
           for (const r of lost) expect(text).toContain(r);
         }
+        expect(alignLabel(Number(s.cpu.regs.rsp))).toBe(Number(s.cpu.regs.rsp) % 16 === 0 ? '16-byte aligned' : '8 off (normal right after a call)');
         // the picture can be drawn at every step
         expect(stackPicture(run, k).regions.length).toBeGreaterThan(0);
       }
@@ -63,8 +64,24 @@ describe('every scene and option: captions true at every step', () => {
   });
 });
 
+describe('frame colours and the backtrace reason', () => {
+  it('main is sky, every callee amber, recursion alternates amber and grey', () => {
+    expect(frameTones(['main', 'area', 'mul'])).toEqual(['sky', 'amber', 'amber']);
+    expect(frameTones(['main', 'sum7'])).toEqual(['sky', 'amber']);
+    expect(frameTones(['main', 'helper'])).toEqual(['sky', 'amber']);
+    expect(frameTones(['main', 'depth', 'depth', 'depth', 'depth'])).toEqual(['sky', 'amber', 'muted', 'amber', 'muted']);
+  });
+  it('inside mul the reason names this -O1 build; in area mid-prologue it says so', () => {
+    const run = runScene('calls', { framePointers: true, callerSavesRcx: false });
+    const inMul = run.steps.find((s) => s.calls.at(-1)?.fn === 'mul')!;
+    expect(whyNoFrame(run, inMul.cpu.rip)).toBe('mul, a leaf, sets no frame up in this -O1 build');
+    const areaEntry = run.steps.find((s) => s.calls.at(-1)?.fn === 'area')!;
+    expect(whyNoFrame(run, areaEntry.cpu.rip)).toBe("area's prologue or epilogue is half done");
+  });
+});
+
 describe('lesson text matches the model', () => {
-  it('the frame-pointer tip: inside mul the rbp chain alone gives mul ← main', () => {
+  it('the backtrace tip quotes the full unwind, mul ← area ← main', () => {
     expect(lesson.tryThis[0]).toContain('mul ← area ← main');
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CALLS_FP, CALLS_NOFP, CLOBBER, CLOBBER_SAVED, DEEP, SEVEN, type Listing } from './listings';
 import { ABI, GUARD_BYTES, runScene, STACK_TOP, TOY_STACK_BYTES, type RunResult, type SceneId, type SceneOptions } from './model';
 import { unwind, walkFramePointers } from './unwind';
-import { assemble, signed } from './x86';
+import { assemble, runToEnd, signed, startCpu } from './x86';
 
 const SCENES: [SceneId, SceneOptions][] = [
   ['calls', { framePointers: true, callerSavesRcx: false }],
@@ -63,10 +63,14 @@ const MAIN_UNSEEN_CALLEE = 'sub rsp, 8|mov esi, 4|mov edi, 6|call area|add rsp, 
 
 describe('System V AMD64 ABI facts (psABI §3.2), pinned', () => {
   it('gcc pads to 16 before a call it cannot see into', () => {
-    const p = assemble(MAIN_UNSEEN_CALLEE.split('|').map((asm, i) => ({ asm, offset: i * 5 })), 0, 30);
-    // entry rsp ≡ 8; after sub rsp, 8 it is ≡ 0 at the call
-    expect(p.instrs[0].text).toBe('sub rsp, 8');
-    expect(p.instrs.at(-2)!.text).toBe('add rsp, 8');
+    // run gcc's main (plus a stub area) from a real entry state: rsp ≡ 8 (mod 16) after libc's call
+    const lines = [{ label: 'main' }, ...MAIN_UNSEEN_CALLEE.split('|').map((asm, i) => ({ asm, offset: i * 5 })), { label: 'area' }, { asm: 'ret', offset: 30 }];
+    const p = assemble(lines, 0x1000, 31);
+    const run = runToEnd(p, startCpu({ rip: 0x1000, rsp: STACK_TOP, called: true }));
+    expect(Number(run.cpus[0].regs.rsp) % 16).toBe(8);
+    const i = run.effects.findIndex((e) => e.instr.text === 'call area');
+    expect(Number(run.cpus[i].regs.rsp) % 16).toBe(0);
+    expect(run.cpus.at(-1)!.regs.rsp).toBe(BigInt(STACK_TOP));
   });
   it('argument, return and preserved registers', () => {
     expect(ABI.argRegs).toEqual(['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']);

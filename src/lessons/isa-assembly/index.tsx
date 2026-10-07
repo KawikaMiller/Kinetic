@@ -14,10 +14,10 @@ const lesson: LessonModule = {
       'Debugging optimised builds where variables live in registers, not on the stack',
     ],
     why: 'Profilers, debuggers and crash dumps all speak assembly, so being able to read a few lines of it turns "the optimiser did something weird" into a concrete answer. It builds on `fetch-decode-execute` (the toy machine), `stack-vs-heap` and `twos-complement` (why signed and unsigned compare differently).',
-    watch: 'Left: the C source and its x86-64 assembly, each instruction with its address in grey at the end. The instruction just executed has a yellow bar, and so does the C line it came from. Click a line on either side and its partner lines get a light yellow tint. Right: the registers and flags. A register the last instruction changed is tinted blue with a blue value; a flag it wrote has a blue outline, and the flags a jump or cmov read are violet. Below: memory maps. The data map\'s sky-blue bracket marks the array or struct, a yellow ring marks the cell just read, and grey tags show which registers point into it. The stack map\'s amber bracket is the caller\'s frame and the violet slot (return addr) holds the address to go back to, with the violet rsp tag; after ret the slot turns grey and reads "popped". In Register widths, the 8 bytes of rax are boxes: blue bytes were set by the write, orange bytes were zeroed by a 32-bit write, and the violet brackets show which bytes each name covers. With "ARM64 too", the AArch64 version of max appears under the x86-64 one.',
+    watch: 'Left: the C source and its x86-64 assembly, each instruction with its address in grey at the end. The instruction just executed has a yellow bar, and so does the C line it came from. Click a line on either side and its partner lines get a light yellow tint. Right: the registers and flags. A register the last instruction changed is tinted yellow with a yellow value (what just happened, as in calling-conventions); a flag it wrote has a yellow outline, and the flags a jump or cmov read are violet. In captions, an argument register is blue. Below: memory maps. The data map\'s sky-blue bracket marks the array or struct, a yellow ring marks the cell just read, and grey tags show which registers point into it. The stack map\'s amber bracket is the caller\'s frame and the violet slot (return addr) holds the address to go back to, with the violet rsp tag; after ret the slot turns grey and reads "popped". In Register widths, the 8 bytes of rax are boxes: blue bytes were set by the write, orange bytes were zeroed by a 32-bit write, and the violet brackets show which bytes each name covers. With "ARM64 too", the AArch64 version of max appears under the x86-64 one.',
   },
   tryThis: [
-    'In "sum (a loop)", click the C line `for (long i = 0; i < n; i++)`: it lights up instructions before, inside and after the loop.',
+    'In "sum (a loop)", click the C line `for (long i = 0; i < n; i++)`: it lights up instructions before the loop and inside it, not one line each.',
     'In "max (if)", flip Compiled to "With cmov": the jump disappears, but the result is the same.',
     'In "absdiff (signed?)", pick absdiff(-1, 1), then switch Types to unsigned long: jl becomes jb, and the answer changes.',
     'Open Register widths and press mov eax, -1, then mov al, -1: only one of them clears the top half.',
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
     {
       q: 'How does the `for` line of sum show up in its gcc -O1 assembly?',
       options: [
-        'As several instructions spread before, in and after the loop',
+        'As several instructions, some before the loop, some inside',
         'As exactly one instruction, the way every line of C does',
         'As a single jump that goes back to the start of the loop',
         'Not at all: an optimising compiler removes the loop itself',

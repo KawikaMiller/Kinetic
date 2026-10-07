@@ -32,6 +32,9 @@ export function latencies(run: PipeRun): number[] {
   return run.rows.filter((r) => r.traceIndex !== null).map((r) => firstCycle(r, 'WB')! - firstCycle(r, 'IF')! + 1);
 }
 
+/** True if the row was held in a stage (stalled) before cycle c. */
+export const stalledBefore = (row: Row, c: number) => Object.entries(row.cells).some(([cy, k]) => Number(cy) < c && k.kind === 'stage' && k.held);
+
 function cycleSay(run: PipeRun, program: readonly Instr[], c: number, ev: CycleEvent[], opts: PipelineOptions): ReactNode {
   const name = (row: number) => <code>{program[run.rows[row].pc].op}</code>;
   const parts: ReactNode[] = [];
@@ -68,8 +71,8 @@ function cycleSay(run: PipeRun, program: readonly Instr[], c: number, ev: CycleE
       const f = e.forward;
       parts.push(
         <>
-          {name(f.toRow)} gets <span className="hl violet">r{f.reg}</span> <span className="hl info">forwarded</span> from {name(f.fromRow)}'s {f.fromStage === 'EX' ? 'EX/MEM' : 'MEM/WB'} latch, not the register file, so it
-          doesn't wait.{' '}
+          {name(f.toRow)} gets <span className="hl violet">r{f.reg}</span> <span className="hl info">forwarded</span> from {name(f.fromRow)}'s {f.fromStage === 'EX' ? 'EX/MEM' : 'MEM/WB'} latch, not the register file, so it{' '}
+          {stalledBefore(run.rows[f.toRow], c) ? <>doesn't wait any longer</> : <>doesn't wait</>}.{' '}
         </>,
       );
     } else if (e.kind === 'not-taken') {
