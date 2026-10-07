@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mean, percentile } from '../../core/sim';
 import { COLLISION_EXACT_LIMIT, choose, collisionProbability } from '../../core/stats';
 import {
-  DAYS, MONTH_DAYS, birthdayChance, cellDay, certainAt, chance, count, dayName, firstCollision, guaranteed, halfPoint, idCollision,
+  DAYS, MONTH_DAYS, birthdayChance, cellDay, certainAt, chance, count, dayName, firstCollision, guaranteed, halfPoint,
   pairs, runSizes, spread,
 } from './model';
 
@@ -64,17 +64,8 @@ describe('birthdays', () => {
 describe('IDs', () => {
   it('puts the 32-bit coin flip within 1% of 77,163, and it really is 50% there', () => {
     expect(Math.abs(halfPoint(32) - 77_163) / 77_163).toBeLessThan(0.01);
-    expect(idCollision(Math.round(halfPoint(32)), 32)).toBeCloseTo(0.5, 3);
+    expect(collisionProbability(Math.round(halfPoint(32)), 2 ** 32).p).toBeCloseTo(0.5, 3);
     expect(Math.round(halfPoint(28))).toBe(19_291);
-  });
-
-  it('agrees with the exact product within 10⁻³ wherever the exact one is accurate', () => {
-    for (const bits of [16, 20, 24, 32, 40]) {
-      for (const n of [10, 100, 1_000, 10_000, 50_000, COLLISION_EXACT_LIMIT]) {
-        const exact = collisionProbability(n, 2 ** bits);
-        expect(Math.abs(idCollision(n, bits) - exact.p), `${bits} bits, n = ${n}`).toBeLessThan(1e-3);
-      }
-    }
   });
 
   it("core collisionProbability's exact/approx switch jumps by less than 10⁻³", () => {
@@ -87,7 +78,7 @@ describe('IDs', () => {
   });
 
   it('keeps tiny UUID chances instead of rounding them to 0', () => {
-    const p = idCollision(1e9, 122);
+    const p = collisionProbability(1e9, 2 ** 122).p;
     expect(p).toBeGreaterThan(0);
     expect(Math.abs(p / ((1e9 * (1e9 - 1)) / 2 / 2 ** 122) - 1)).toBeLessThan(1e-9);
     expect(chance(p)).toMatch(/^≈ 9\.4 × 10⁻²⁰$/);
@@ -97,7 +88,7 @@ describe('IDs', () => {
     expect(birthdayChance(57)).toBeGreaterThan(0.99);
     expect(birthdayChance(56)).toBeLessThan(0.99);
     expect(count(halfPoint(122))).toBe('2.7 × 10¹⁸');
-    expect(idCollision(2 ** 31, 32)).toBeGreaterThan(0.99);
+    expect(collisionProbability(2 ** 31, 2 ** 32).p).toBeGreaterThan(0.99);
   });
 
   it('formats chances and counts', () => {

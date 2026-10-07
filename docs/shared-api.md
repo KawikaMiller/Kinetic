@@ -736,6 +736,7 @@ variance(xs); stdDev(xs)             // population; { sample: true } divides by 
 histogram(xs, { bins: 10, min: 0, max: 1 })   // { edges (bins + 1), counts, outside }: max lands in the last bin
 binomialPmf(n, k, p)
 collisionProbability(23, 365)        // { p: 0.507…, method: 'exact' }: exact product up to COLLISION_EXACT_LIMIT, then 1 − e^(−n(n−1)/2N)
+collisionProbability(2, 2 ** 128).p  // 2.9e-39, not 0: both forms run in log space (log1p / expm1), so huge ID spaces keep tiny chances
 runningMean(xs)                      // the convergence curve for simulated frequencies
 ```
 
