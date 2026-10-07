@@ -1,11 +1,11 @@
-.dl { flex-flow: row wrap; align-items: flex-start; gap: 16px; }
-.dl-main { flex: 1 1 420px; min-width: 0; }
-.dl-side { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.dl-graph { width: 100%; max-width: 520px; margin: 0 auto; }
-.dl-badge { font: 700 12px var(--mono); fill: var(--c); pointer-events: none; }
-.dl-table { width: 100%; font-size: 13px; }
-.dl-table tr.is-active td { color: var(--hi); }
-.dl-table td.dl-bad { color: var(--bad); }
-.dl-table td.dl-ok { color: var(--ok); }
-.dl-table td.dl-orange { color: var(--orange); }
-.dl .hint { flex-basis: 100%; }
+.dk { flex-flow: row wrap; align-items: flex-start; gap: 16px; }
+.dk-main { flex: 1 1 420px; min-width: 0; }
+.dk-side { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.dk-graph { width: 100%; max-width: 520px; margin: 0 auto; }
+.dk-badge { font: 700 12px var(--mono); fill: var(--c); pointer-events: none; }
+.dk-table { width: 100%; font-size: 13px; }
+.dk-table tr.is-active td { color: var(--hi); }
+.dk-table td.dk-bad { color: var(--bad); }
+.dk-table td.dk-ok { color: var(--ok); }
+.dk-table td.dk-orange { color: var(--orange); }
+.dk .hint { flex-basis: 100%; }

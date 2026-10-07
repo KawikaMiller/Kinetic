@@ -43,7 +43,7 @@ const STATUS_LABEL = { running: 'running', ready: 'ready', asleep: 'asleep', io:
 function ThreadChip({ f, t }: { f: ScFrame; t: Thread }) {
   const s = shownStatus(f, t);
   return (
-    <span className={`sc-chip tone-${SHOWN_TONE[s]} is-${s}`} title={`${t.id}: ${STATUS_LABEL[s]}`}>
+    <span className={`scv-chip tone-${SHOWN_TONE[s]} is-${s}`} title={`${t.id}: ${STATUS_LABEL[s]}`}>
       {t.id}
     </span>
   );
@@ -64,16 +64,16 @@ function Code({ f, c }: { f: ScFrame; c: Config }) {
         lines={lines.map((l) => l.text)}
         stateOf={(i) => (f.active !== null && f.threads.find((t) => t.id === f.active)!.role === role && f.line === i ? 'now' : 'idle')}
         trailing={(i) => (
-          <span className="sc-chips">
+          <span className="scv-chips">
             {here(i).map((t) => <ThreadChip key={t.id} f={f} t={t} />)}
           </span>
         )}
-        className="sc-code"
+        className="scv-code"
       />
     );
   };
   return (
-    <div className="sc-codes">
+    <div className="scv-codes">
       {panel('producer')}
       {panel('consumer')}
     </div>
@@ -82,22 +82,22 @@ function Code({ f, c }: { f: ScFrame; c: Config }) {
 
 function Tokens({ name, n, sleepers }: { name: string; n: number; sleepers: readonly string[] }) {
   return (
-    <div className="sc-prim">
+    <div className="scv-prim">
       <code>{name}</code>
-      <span className="sc-tokens" aria-label={`${name}: ${plural(n, 'token')}`}>
-        {Array.from({ length: n }, (_, i) => <i key={i} className="sc-token" />)}
+      <span className="scv-tokens" aria-label={`${name}: ${plural(n, 'token')}`}>
+        {Array.from({ length: n }, (_, i) => <i key={i} className="scv-token" />)}
         <b>{n}</b>
       </span>
-      <span className="sc-queue">{sleepers.length ? <>asleep: {sleepers.join(', ')}</> : 'nobody asleep'}</span>
+      <span className="scv-queue">{sleepers.length ? <>asleep: {sleepers.join(', ')}</> : 'nobody asleep'}</span>
     </div>
   );
 }
 
 function Queue({ name, ids }: { name: string; ids: readonly string[] }) {
   return (
-    <div className="sc-prim">
+    <div className="scv-prim">
       <code>{name}</code>
-      <span className="sc-queue">{ids.length ? <>asleep: {ids.join(', ')}</> : 'nobody asleep'}</span>
+      <span className="scv-queue">{ids.length ? <>asleep: {ids.join(', ')}</> : 'nobody asleep'}</span>
     </div>
   );
 }
@@ -107,7 +107,7 @@ function Primitives({ f, c }: { f: ScFrame; c: Config }) {
   const q = (k: string) => f.queues[k] ?? [];
   const woken = f.threads.filter((t) => t.woken).map((t) => t.id);
   return (
-    <div className="sc-prims" aria-label="Synchronisation state">
+    <div className="scv-prims" aria-label="Synchronisation state">
       {c.variant === 'semaphore' ? (
         <>
           <Tokens name="empty" n={f.sems.empty} sleepers={q('empty')} />
@@ -116,10 +116,10 @@ function Primitives({ f, c }: { f: ScFrame; c: Config }) {
         </>
       ) : (
         <>
-          <div className="sc-prim">
+          <div className="scv-prim">
             <code>m</code>
-            <span className={f.owner ? 'sc-held' : 'sc-free'}>{f.owner ? `held by ${f.owner}` : 'free'}</span>
-            <span className="sc-queue">{q('m').length ? <>blocked: {q('m').join(', ')}</> : 'nobody blocked'}</span>
+            <span className={f.owner ? 'scv-held' : 'scv-free'}>{f.owner ? `held by ${f.owner}` : 'free'}</span>
+            <span className="scv-queue">{q('m').length ? <>blocked: {q('m').join(', ')}</> : 'nobody blocked'}</span>
           </div>
           {c.variant === 'monitor' && (
             <>
@@ -129,7 +129,7 @@ function Primitives({ f, c }: { f: ScFrame; c: Config }) {
           )}
           {(c.variant === 'singleSignal' || c.variant === 'singleBroadcast') && <Queue name="changed" ids={q('changed')} />}
           {c.variant === 'lostWakeup' && <Queue name="sleep()" ids={q('wakeup')} />}
-          {woken.length > 0 && <span className="sc-woken">woken, must re-take m: {woken.join(', ')}</span>}
+          {woken.length > 0 && <span className="scv-woken">woken, must re-take m: {woken.join(', ')}</span>}
         </>
       )}
     </div>
@@ -139,7 +139,7 @@ function Primitives({ f, c }: { f: ScFrame; c: Config }) {
 function Buffer({ f, c }: { f: ScFrame; c: Config }) {
   const garbage = f.note.kind === 'violation' || (f.note.kind === 'take' && f.note.garbage) || (f.note.kind === 'put' && f.note.overflow);
   return (
-    <div className="sc-buffer">
+    <div className="scv-buffer">
       <SectionTitle hint={`count ${Math.max(0, f.count)} of ${c.capacity}`}>Buffer</SectionTitle>
       <ArrayStrip
         values={f.slots.map((s) => s ?? '')}
@@ -274,8 +274,8 @@ function BufferScene({ picker }: { picker: ReactNode }) {
         </>,
       ]}
     >
-      <div className="sc stage-pad">
-        <div className="sc-top">
+      <div className="scv stage-pad">
+        <div className="scv-top">
           <Buffer f={f} c={config} />
           <Primitives f={f} c={config} />
         </div>
@@ -328,8 +328,8 @@ function BugScene({ picker }: { picker: ReactNode }) {
         </>,
       ]}
     >
-      <div className="sc stage-pad">
-        <div className="sc-top">
+      <div className="scv stage-pad">
+        <div className="scv-top">
           <Buffer f={f} c={config} />
           <Primitives f={f} c={config} />
         </div>

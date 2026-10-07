@@ -41,7 +41,7 @@ function statusText(t: ThreadState, c: Conditions, frozen: boolean): string {
 
 function Badge({ at, text, tone }: { at: { x: number; y: number }; text: string; tone: string }) {
   return (
-    <text x={at.x} y={at.y} textAnchor="middle" dominantBaseline="central" className={`dl-badge tone-${tone}`}>
+    <text x={at.x} y={at.y} textAnchor="middle" dominantBaseline="central" className={`dk-badge tone-${tone}`}>
       {text}
     </text>
   );
@@ -115,7 +115,7 @@ export function Stage() {
       nodeMark={nodeMark}
       edgeMark={edgeMark}
       renderNode={(n, _at, base) => <>{base}{badge(n.id)}</>}
-      className="dl-graph"
+      className="dk-graph"
       ariaLabel={`Resource-allocation graph: ${edges.length ? edges.map((e) => `${e.from} ${e.kind === 'request' ? 'requests' : 'is held by'} ${e.to}`).join('; ') : 'no locks held or requested'}`}
     />
   );
@@ -197,8 +197,8 @@ export function Stage() {
         </>,
       ]}
     >
-      <div className="dl stage-pad">
-        <div className="dl-main">
+      <div className="dk stage-pad">
+        <div className="dk-main">
           {preset === 'dining' ? (
             <WideRegion minWidth={DINING_MIN_WIDTH} label="Dining table graph: scroll sideways to see all of it">
               {graph}
@@ -207,8 +207,8 @@ export function Stage() {
             graph
           )}
         </div>
-        <div className="dl-side">
-          <table className="data-table dl-table">
+        <div className="dk-side">
+          <table className="data-table dk-table">
             <thead>
               <tr>
                 <th>{p.detector ? 'Transaction' : 'Thread'}</th>
@@ -225,7 +225,7 @@ export function Stage() {
                     <td>{t.id}</td>
                     <td>{t.holds.join(', ') || '–'}</td>
                     <td>{t.wants.join(', ') || '–'}</td>
-                    <td className={stuck ? 'dl-bad' : t.status === 'done' ? 'dl-ok' : t.status === 'aborted' ? 'dl-orange' : ''}>{statusText(t, conditions, stuck)}</td>
+                    <td className={stuck ? 'dk-bad' : t.status === 'done' ? 'dk-ok' : t.status === 'aborted' ? 'dk-orange' : ''}>{statusText(t, conditions, stuck)}</td>
                   </tr>
                 );
               })}
