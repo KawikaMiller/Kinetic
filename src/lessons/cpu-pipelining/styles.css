@@ -1,0 +1,11 @@
+.pl { gap: 12px; }
+.pl-chart { margin: 0 auto; }
+.pl-dep { color: var(--violet); font-weight: 700; }
+.pl .code-panel li.is-next { background: color-mix(in srgb, var(--info) 14%, transparent); box-shadow: inset 3px 0 0 var(--info); }
+.pl-hatch { stroke: var(--faint); stroke-width: 1.6; }
+.pl-wait { stroke: var(--line-2); stroke-width: 1; }
+.pl-strike { stroke: var(--bad); stroke-width: 1.6; }
+.pl-forward { stroke: var(--info); stroke-width: 2; }
+.pl-now { fill: none; stroke: var(--hi); stroke-width: 2; }
+.pl-reorder { flex-wrap: wrap; }
+.pl-why { flex-basis: 100%; min-height: 1.2em; font-size: 13px; color: var(--muted); }
