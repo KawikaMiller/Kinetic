@@ -1,0 +1,17 @@
+.ro { flex-flow: row wrap; align-items: flex-start; }
+.ro-left { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.ro-right { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.ro-reads { margin: 0; font-size: 13px; color: var(--muted); }
+.ro-grid { max-width: 100%; }
+.ro-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.ro-cx { margin: 0; min-height: 2.8em; font-size: 13px; line-height: 1.5; }
+.ro-graph { width: 100%; max-width: 420px; margin: 0 auto; }
+.ro-graph .graph-node-label { font-size: 13px; }
+.ro-why { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ro-right .tray:not(.is-stacked) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ro-right .tray:not(.is-stacked) .section-title { flex-basis: 100%; }
+.ro-class { font-family: var(--mono); border-color: var(--c); color: var(--c); }
+.ro-ext { margin: 0 0 6px; font: 600 13px var(--mono); line-height: 1.7; }
+@media (max-width: 900px) {
+  .ro-left, .ro-right { flex-basis: 100%; }
+}
