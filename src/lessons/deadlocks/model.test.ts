@@ -39,7 +39,8 @@ describe('findCycle', () => {
   });
 });
 
-const everyState = (states: DlState[], f: (s: DlState) => void) => states.forEach(f);
+/** How many states break `ok`: plain checks in the hot loops, one assertion per test. */
+const failures = (states: DlState[], ok: (s: DlState) => boolean) => states.filter((s) => !ok(s)).length;
 
 describe('all four conditions on', () => {
   it('deadlocks every non-database preset under turn-taking, with every thread in the cycle', () => {
@@ -72,39 +73,45 @@ describe('all four conditions on', () => {
   });
 
   it('a cycle in the graph means stuck threads, checked by graph reduction on every state of 500 seeds', () => {
+    let bad = 0;
     for (const id of IDS)
       for (let seed = 0; seed < SEEDS; seed++)
-        everyState(run(PRESETS[id], { conditions: ALL_ON, schedule: random(seed), backoff: 'fixed' }), (s) => {
-          expect(ragCycle(PRESETS[id], s) !== null).toBe(stuckThreads(s).length > 0);
-        });
+        bad += failures(run(PRESETS[id], { conditions: ALL_ON, schedule: random(seed), backoff: 'fixed' }), (s) => (ragCycle(PRESETS[id], s) !== null) === stuckThreads(s).length > 0);
+    expect(bad).toBe(0);
   });
 });
 
 describe('breaking one condition', () => {
   for (const key of CONDITION_KEYS)
     it(`with ${key} off, no seeded interleaving deadlocks (500 seeds × every preset)`, () => {
+      let unfinished = 0;
+      let cycles = 0;
       for (const id of IDS)
         for (let seed = 0; seed < SEEDS; seed++) {
           const states = run(PRESETS[id], { conditions: without(key), schedule: random(seed), backoff: 'random' });
-          expect(verdictOf(states)).toBe('finished');
+          unfinished += +(verdictOf(states) !== 'finished');
           // tryLock lets a wait cycle form for a moment (then breaks it); the other three never let one form.
-          if (key !== 'noPreemption') everyState(states, (s) => expect(ragCycle(PRESETS[id], s)).toBeNull());
+          if (key !== 'noPreemption') cycles += failures(states, (s) => ragCycle(PRESETS[id], s) === null);
         }
+      expect(unfinished).toBe(0);
+      expect(cycles).toBe(0);
     });
 
   it('with each condition off, turn-taking finishes too (tryLock: 500 random back-off seeds)', () => {
     for (const key of CONDITION_KEYS)
       for (const id of IDS)
         for (let seed = 0; seed < (key === 'noPreemption' ? SEEDS : 1); seed++)
-          expect(verdictOf(run(PRESETS[id], { conditions: without(key), schedule: turns, backoff: 'random', backoffSeed: seed }))).toBe('finished');
+          if (verdictOf(run(PRESETS[id], { conditions: without(key), schedule: turns, backoff: 'random', backoffSeed: seed })) !== 'finished')
+            expect.fail(`${key} off, ${id}, back-off seed ${seed} did not finish`);
   });
 
   it('with hold-and-wait off, no thread ever holds one lock while waiting for another', () => {
+    let bad = 0;
     for (const id of IDS)
       for (let seed = 0; seed < SEEDS; seed++)
-        everyState(run(PRESETS[id], { conditions: without('holdAndWait'), schedule: random(seed), backoff: 'fixed' }), (s) => {
-          for (const t of s.threads) expect(t.holds.length > 0 && t.wants.length > 0).toBe(false);
-        });
+        bad += failures(run(PRESETS[id], { conditions: without('holdAndWait'), schedule: random(seed), backoff: 'fixed' }), (s) =>
+          s.threads.every((t) => !(t.holds.length > 0 && t.wants.length > 0)));
+    expect(bad).toBe(0);
   });
 
   it('with mutual exclusion off, a resource really is shared by two threads at once in some run', () => {
