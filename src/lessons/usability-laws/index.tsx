@@ -5,12 +5,12 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Fitts\'s law says pointing time grows with log₂(distance / width + 1), so big, close targets are fast; Hick\'s law says choosing among n equally likely options grows with log₂(n + 1). Both are fitted lines with person- and device-specific constants, not universal numbers.',
-    what: 'Fitts\'s law, in the Shannon form used in HCI, predicts movement time MT = a + b · ID, where the index of difficulty ID = log₂(D/W + 1) for a target of width W at distance D. Doubling the distance or halving the width adds about one bit. The constants a and b come from fitting a line to measured trials (least squares, as in `linear-logistic-regression`), and they differ by person, device and task. The Hick-Hyman law gives choice time a + b · log₂(n + 1) for n equally likely, unfamiliar options; practice, search and unequal popularity break it. The logs are the same base-2 logs as in `logs-exponentials`.',
+    what: 'Fitts\'s law, in the Shannon form used in HCI, predicts movement time MT = a + b · ID, where the index of difficulty ID = log₂(D/W + 1) for a target of width W at distance D. Once the distance is much larger than the width, doubling the distance or halving the width adds about one bit. The constants a and b come from fitting a line to measured trials (least squares, as in `linear-logistic-regression`), and they differ by person, device and task. The Hick-Hyman law gives choice time a + b · log₂(n + 1) for n equally likely options you don\'t have to search for; scanning an unfamiliar list grows roughly linearly, and practice flattens the slope. The logs are the same base-2 logs as in `logs-exponentials`.',
     analogy: 'Parking: a wide empty space right in front of you takes a second; a tight spot across the car park takes careful steering. And a menu with 30 dishes takes longer to order from than one with 3, unless you already know what you want.',
     useCases: [
       'Sizing and placing buttons: primary actions big and close to where the pointer or thumb already is',
       'Screen edges and corners: macOS\'s menu bar and the Windows Start button are fast because the edge stops the pointer',
-      'Touch targets: WCAG 2.2\'s 24 × 24 CSS px minimum and the 44-48 point platform guidelines',
+      'Target sizes: WCAG 2.2 SC 2.5.8 (24 × 24 CSS px, AA, with exceptions), SC 2.5.5 (44 × 44, AAA), Apple\'s 44 pt and Material\'s 48 dp',
       'Menu design: fewer, grouped or searchable options instead of one long unordered list',
     ],
     why: 'Every interface decision about size, spacing and menu length trades against these laws, and design reviews quote them. Knowing what they actually predict (and where they stop holding: touch, keyboards, practised users) lets you argue with numbers you measured instead of slogans. See `accessibility` and `responsive-design` for the target-size rules.',
@@ -25,9 +25,9 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'Fitts: MT = a + b · log₂(D/W + 1). Bigger and closer targets are faster, and a screen edge acts like an endless target for a mouse.',
-    'Hick: choice time grows with log₂(n + 1), for equally likely, unfamiliar options only.',
+    'Hick: choice time grows with log₂(n + 1) for equally likely options you don\'t have to search for; scanning an unfamiliar list grows roughly linearly.',
     'a and b are fitted from measurements and vary by person and device: the laws give the shape, not the numbers.',
-    'On touch screens there is no edge to stop a finger, so minimum target sizes (24 px in WCAG 2.2, 44-48 on platforms) matter more.',
+    'On touch screens there is no edge to stop a finger, so minimum target sizes (24 CSS px in WCAG 2.2 at AA, 44 pt or 48 dp on platforms) matter more.',
   ],
   quiz: [
     {

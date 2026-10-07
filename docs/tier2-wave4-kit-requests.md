@@ -12,3 +12,8 @@
 - **Points:** text labels via `labels?: (i) => string` (embeddings has a local Labels layer).
 - **Button:** should accept a `ref` (usability-laws wraps it in a display: contents span).
 - **Test perf:** containers/model.test.ts timed out once under the full parallel suite. Make it faster or give it more headroom.
+
+## B10 (4 of 5 merged; memory-safety-bugs re-scoped and being rebuilt)
+- **core/x86.ts:** promote the x86-64 interpreter, which is duplicated in isa-assembly and calling-conventions (a test pins the two copies identical). API: `assemble`, `step`, `runToEnd`, `startCpu`.
+- **CodePanel:** roving tabindex for `onLineClick` (`roving?`, with Up/Down/Home/End). isa-assembly has ~23 line tab stops.
+- **MemoryMap:** let two pointers share a row, or allow right-side labels (currently "sp=bp").

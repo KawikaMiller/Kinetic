@@ -79,7 +79,10 @@ function MapScene({ picker }: { picker: ReactNode }) {
   };
   const radio = useRadioGroup(VOCAB.length, checked, (i) => pick(VOCAB[i].word));
 
+  const pairMode = mode.kind === 'pair';
   const toneOf = (w: string, g: Group): Tone => {
+    // The misleading pair is neighbours on the map only, so it never wears the "nearest" green.
+    if (pairMode && (w === PAIR.a.word || w === PAIR.b.word)) return 'info';
     if (queryWords.includes(w)) return an && w !== an.c ? 'violet' : 'hi';
     if (topWords.includes(w)) return 'ok';
     return byGroup ? GROUP_TONE[g] : 'dim';
@@ -93,14 +96,20 @@ function MapScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Words" value={VOCAB.length} sub={`${DIMS.length} named dimensions`} />
           <Stat label="Map keeps" value={pct(KEPT)} sub="of the variance (PCA)" />
-          <Stat label="Nearest" value={mode.kind === 'pair' ? PAIR.b.word : top[0]?.word.word ?? '–'} color="var(--ok)" sub={mode.kind === 'pair' ? `cosine ${num(PAIR.cos)}` : top[0] ? `cosine ${num(top[0].cos)}` : undefined} />
+          {pairMode
+            ? <Stat label="Pair" value={`${PAIR.a.word} · ${PAIR.b.word}`} color="var(--info)" sub={`cosine ${num(PAIR.cos)} in 8-D`} />
+            : <Stat label="Nearest" value={top[0]?.word.word ?? '–'} color="var(--ok)" sub={top[0] ? `cosine ${num(top[0].cos)}` : undefined} />}
         </Stats>
       }
       legend={
         <Legend
           items={[
-            { color: 'var(--hi)', label: an ? 'the word the arrow starts from' : 'your word or phrase', shape: 'dot' },
-            { color: 'var(--ok)', label: `top ${TOP_K} by cosine in 8-D, and lines to them`, shape: 'dot' },
+            ...(pairMode
+              ? [{ color: 'var(--info)', label: 'the pair, and the line between them: neighbours on the map only', shape: 'dot' as const }]
+              : [
+                { color: 'var(--hi)', label: an ? 'the word the arrow starts from' : 'your word or phrase', shape: 'dot' as const },
+                { color: 'var(--ok)', label: `top ${TOP_K} by cosine in 8-D, and lines to them`, shape: 'dot' as const },
+              ]),
             ...(an ? [{ color: 'var(--violet)', label: 'analogy: the pair whose difference is added, and the arrow from the third word to the result', shape: 'line' as const }] : []),
             ...(byGroup
               ? GROUPS.map((g) => ({ color: `var(--${GROUP_TONE[g]})`, label: g, shape: 'dot' as const }))
@@ -135,11 +144,11 @@ function MapScene({ picker }: { picker: ReactNode }) {
       <div className="stage-pad emb-row">
         <Plot2D x={{ domain: X_DOMAIN, label: 'PCA axis 1' }} y={{ domain: Y_DOMAIN, label: 'PCA axis 2' }} width={MAP_W} height={MAP_H} className="emb-map" ariaLabel="The 60 toy words projected to 2-D by PCA">
           {at && mode.kind !== 'pair' && <Segments segments={top.map((n) => ({ from: at, to: MAP_POINTS[VOCAB.indexOf(n.word)], tone: 'ok' }))} />}
-          {mode.kind === 'pair' && <Segments segments={[{ from: MAP_POINTS[VOCAB.indexOf(PAIR.a)], to: MAP_POINTS[VOCAB.indexOf(PAIR.b)], tone: 'ok' }]} />}
+          {mode.kind === 'pair' && <Segments segments={[{ from: MAP_POINTS[VOCAB.indexOf(PAIR.a)], to: MAP_POINTS[VOCAB.indexOf(PAIR.b)], tone: 'info' }]} />}
           {an && anResult && <Arrow from={MAP_POINTS[VOCAB.indexOf(lookup(an.c)!)]} to={project(MAP, anResult.vector)} tone="violet" />}
           <Points data={VOCAB.map((w, i) => ({ x: MAP_POINTS[i][0], y: MAP_POINTS[i][1], tone: toneOf(w.word, w.group) }))} r={3.6} />
           {at && mode.kind === 'query' && phrase.ok && phrase.known.length > 1 && <Points data={[{ x: at[0], y: at[1], tone: 'hi' }]} r={6} />}
-          <Labels words={VOCAB.map((w, i) => ({ text: w.word, at: MAP_POINTS[i], tone: toneOf(w.word, w.group), show: allLabels || labelled.has(w.word) }))} />
+          <Labels words={VOCAB.map((w, i) => ({ text: w.word, at: MAP_POINTS[i], tone: toneOf(w.word, w.group), show: allLabels || labelled.has(w.word), left: pairMode && w.word === PAIR.b.word }))} />
         </Plot2D>
         <div className="emb-side">
           <Box>
@@ -159,12 +168,12 @@ function MapScene({ picker }: { picker: ReactNode }) {
 const LABEL_DX = 6;
 
 /** Word labels in data space, drawn after the dots so they stay readable. */
-function Labels({ words }: { words: { text: string; at: Point; tone: Tone; show: boolean }[] }) {
+function Labels({ words }: { words: { text: string; at: Point; tone: Tone; show: boolean; left?: boolean }[] }) {
   const { xs: sx, ys: sy } = usePlot();
   return (
     <g className="emb-labels" aria-hidden="true">
       {words.filter((w) => w.show).map((w) => (
-        <text key={w.text} className={`emb-label tone-${w.tone}`} x={sx.map(w.at[0]) + LABEL_DX} y={sy.map(w.at[1]) + 4}>{w.text}</text>
+        <text key={w.text} className={`emb-label tone-${w.tone}`} x={sx.map(w.at[0]) + (w.left ? -LABEL_DX : LABEL_DX)} y={sy.map(w.at[1]) + 4} textAnchor={w.left ? 'end' : 'start'}>{w.text}</text>
       ))}
     </g>
   );

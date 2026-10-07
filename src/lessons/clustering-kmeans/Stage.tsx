@@ -26,6 +26,8 @@ const MAX_POINTS = 240;
 const PLAY_MS = 1000;
 
 type CurveView = 'elbow' | 'silhouette';
+/** The curves run to k = 8, the k slider only to MAX_K: say so when the marked k is out of its reach. */
+const beyond = (k: number) => (k > MAX_K ? ` (beyond the k slider, which stops at ${MAX_K})` : '');
 const PRESET_LABELS = Object.fromEntries(PRESET_IDS.map((id) => [id, preset(id).label])) as Record<PresetId, string>;
 
 interface Data {
@@ -220,8 +222,8 @@ export function Stage() {
             </Plot2D>
             <Hint block>
               {view === 'elbow'
-                ? bend === null ? 'No clear bend in this curve.' : `The bend is at k = ${bend}. It's a heuristic, not an answer: inertia always falls as k grows, so the "right" k is a judgement.`
-                : bestSil ? `Highest mean silhouette at k = ${bestSil.k} (${num(bestSil.s)}): points sit closer to their own cluster than to the next. Also a heuristic.` : 'Silhouette needs k ≥ 2.'}
+                ? bend === null ? 'No clear bend in this curve.' : `The bend is at k = ${bend}${beyond(bend)}. It's a heuristic, not an answer: with the best of several restarts, inertia never rises as k grows, so the "right" k is a judgement.`
+                : bestSil ? `Highest mean silhouette at k = ${bestSil.k}${beyond(bestSil.k)} (${num(bestSil.s)}): on average, points sit closer to their own cluster than to the next nearest one. Also a heuristic.` : 'Silhouette needs k ≥ 2.'}
             </Hint>
           </Box>
         </div>

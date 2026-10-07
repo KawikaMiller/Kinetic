@@ -7,7 +7,12 @@ export const ms = (v: number) => `${Math.round(v).toLocaleString('en-US')} ms`;
 const signed = (v: number) => (v < 0 ? `− ${Math.round(-v)}` : `+ ${Math.round(v)}`);
 export const r2Text = (r2: number | null) => (r2 === null ? 'R² undefined' : `R² = ${r2.toFixed(2)}`);
 
-export const fitFormula = (f: Extract<Fit, { ok: true }>, x: string) => `${Math.round(f.a)} ${signed(f.b)} · ${x} ms`;
+/** The intercept with a real minus sign. */
+const lead = (v: number) => (Math.round(v) < 0 ? `−${Math.round(-v)}` : `${Math.round(v)}`);
+export const fitFormula = (f: Extract<Fit, { ok: true }>, x: string) => `${lead(f.a)} ${signed(f.b)} · ${x} ms`;
+
+/** Where Hick's law applies, worded once for the caption, the stage and the summary. */
+export const HICK_SCOPE = "equally likely options you don't have to search for; scanning an unfamiliar list grows roughly linearly, and practice flattens the slope";
 
 const nonPointer = (trials: readonly Trial[]) => trials.some((t) => t.input === 'keyboard' || t.input === 'touch' || t.input === 'pen');
 
@@ -34,7 +39,7 @@ export function hickCaption(trials: readonly Trial[], fit: Fit, alphabetical: bo
     ? <> The menu is alphabetical, so you can search it instead of reading every item.</>
     : <> The menu is shuffled each round, so you have to search it by eye: that grows closer to linearly with n, and a poor fit to log₂(n + 1) here is real, not a bug.</>;
   if (!trials.length) {
-    return <>Press Next round, then click the named item. Hick&apos;s law says choosing among n equally likely, familiar options takes a + b·log₂(n + 1).{order}</>;
+    return <>Press Next round, then click the named item. Hick&apos;s law models choice time as a + b·log₂(n + 1) for {HICK_SCOPE}.{order}</>;
   }
   const done = <>{trials.length} of {HICK_TRIALS} rounds done.</>;
   if (!fit.ok) return <>{done} {fit.n} valid so far: <span className="hl">{fit.reason}</span> before your own line can be fitted.{misses(fit.misses, 'wrong pick')}{order}</>;

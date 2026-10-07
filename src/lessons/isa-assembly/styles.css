@@ -1,0 +1,38 @@
+.isa { gap: 12px; }
+.isa-panels { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.isa-code { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.isa .code-panel li.is-next { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.isa .code-panel .trail { font-style: normal; font-size: 11.5px; }
+.isa-arm { display: flex; flex-direction: column; gap: 6px; }
+.isa-state { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.isa-regs { display: flex; flex-direction: column; gap: 8px; }
+.isa-regs .section-title { display: block; }
+.isa-reg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 10px; }
+.isa-reg { display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; border-radius: 6px; font: 500 13px var(--mono); transition: background 0.25s; }
+.isa-reg-name { color: var(--muted); }
+.isa-reg-value { color: var(--text); min-width: 0; overflow-wrap: anywhere; text-align: right; }
+.isa-reg.is-changed { background: color-mix(in srgb, var(--info) 18%, transparent); }
+.isa-reg.is-changed .isa-reg-value { color: var(--info); }
+.isa-flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.isa-flag { padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line-2); font: 500 12.5px var(--mono); color: var(--muted); }
+.isa-flag b { color: var(--text); }
+.isa-flag.is-written { border-color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
+.isa-flag.is-read { border-color: var(--violet); background: color-mix(in srgb, var(--violet) 22%, transparent); color: var(--text); }
+.isa-maps { display: flex; flex-wrap: wrap; gap: 12px; }
+.isa-map { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }
+.isa-map .section-title { display: block; }
+.isa-inputs { flex-wrap: wrap; }
+.isa-writes { flex-wrap: wrap; }
+.isa-widths { gap: 12px; align-items: center; }
+.isa-widths-svg { display: block; max-width: 100%; height: auto; }
+.isa-byte rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.2; transition: fill 0.25s, stroke 0.25s; }
+.isa-byte text { font: 600 14px var(--mono); fill: var(--text); text-anchor: middle; }
+.isa-byte.is-written rect { fill: color-mix(in srgb, var(--info) 26%, var(--cell)); stroke: var(--info); }
+.isa-byte.is-zeroed rect { fill: color-mix(in srgb, var(--orange) 24%, var(--cell)); stroke: var(--orange); }
+.isa-view path { fill: none; stroke: var(--violet); stroke-width: 1.6; }
+.isa-view text { font: 600 12px var(--mono); fill: var(--violet); text-anchor: end; }
+.isa-widths-value { margin: 0; font: 500 14px var(--mono); color: var(--muted); }
+.isa-widths-value b { color: var(--text); }
+@media (max-width: 900px) {
+  .isa-panels { grid-template-columns: minmax(0, 1fr); }
+}

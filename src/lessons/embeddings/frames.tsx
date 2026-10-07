@@ -5,6 +5,13 @@ import {
   MAP, MAP_POINTS, TOP_K, VOCAB, analogy, keywordOverlap, phraseVector, project, type Analogy, type Neighbour, type Phrase,
 } from './model';
 
+/** 1st, 2nd, 3rd, 4th … 11th, 12th, 13th, 21st. */
+export function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${suffix}`;
+}
+
 /** Two decimals with a real minus sign. */
 export const num = (v: number, dp = 2) => (Math.abs(v) < 0.5 * 10 ** -dp ? (0).toFixed(dp) : v.toFixed(dp).replace('-', '−'));
 
@@ -28,7 +35,7 @@ export function queryCaption(text: string, p: Phrase, top: readonly Neighbour[])
   if (!p.ok) return <><span className="hl bad">{p.reason}</span>{unknown}</>;
   const what = p.known.length === 1 ? <>&quot;{p.known[0]}&quot;</> : <>&quot;{text.trim()}&quot;, the mean of {p.known.length} word vectors,</>;
   const onMap = mapAgreement(p.vector, top, p.known);
-  return <>{what} has these nearest words by cosine in all 8 dimensions: {list(top)}. On the 2-D map, {onMap} of those {top.length} are also among its {top.length} closest dots.{unknown}</>;
+  return <>{what} has these nearest words by cosine in all 8 dimensions: {list(top)}. On the 2-D map, {onMap} of those {top.length} {onMap === 1 ? 'is' : 'are'} also among its {top.length} closest dots.{unknown}</>;
 }
 
 export function analogyCaption(x: Analogy): ReactNode {
@@ -40,7 +47,7 @@ export function analogyCaption(x: Analogy): ReactNode {
   }
   const rank = r.top.findIndex((n) => n.word.word === x.expected);
   return <>{head}: you might expect {x.expected}, but the nearest word is <span className="hl bad">{r.top[0].word.word}</span> (cosine {num(r.top[0].cos)})
-    {rank < 0 ? <>, and {x.expected} isn't in the top {TOP_K}</> : <>; {x.expected} comes {rank + 1}th</>}. In these dimensions &quot;small&quot; moves size, not age:
+    {rank < 0 ? <>, and {x.expected} isn't in the top {TOP_K}</> : <>; {x.expected} comes {ordinal(rank + 1)}</>}. In these dimensions &quot;small&quot; moves size, not age:
     the arithmetic follows the numbers, not what you meant. Real models fail analogies like this too.</>;
 }
 
