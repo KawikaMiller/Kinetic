@@ -1,0 +1,51 @@
+.sc-error { color: var(--bad); }
+.sc-muted { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+
+/* Picture */
+.sc-picture { gap: 12px; }
+.sc-lanes { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.sc-lane { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sc-lane figcaption { font: 600 12px var(--mono); color: var(--muted); }
+.sc-lane.is-plain figcaption { color: var(--text); }
+.sc-pixels { position: relative; width: 156px; height: 156px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line-2); }
+.sc-pixels canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.sc-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sc-overlay rect { fill: none; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.sc-overlay rect.is-repeat { stroke: var(--bad); }
+.sc-overlay rect.is-picked { stroke: var(--hi); }
+@media (max-width: 900px) {
+  .sc-lanes { display: grid; grid-template-columns: repeat(2, 120px); }
+  .sc-lane.is-plain { grid-column: 1 / -1; }
+  .sc-pixels { width: 120px; height: 120px; }
+}
+
+/* Chaining, reuse */
+.sc-chain, .sc-reuse, .sc-tamper { gap: 12px; }
+.sc-grids { display: flex; flex-wrap: wrap; gap: 14px; }
+.sc-grids > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sc-bits { display: flex; flex-direction: column; gap: 6px; }
+.sc-diagram { display: block; width: 560px; height: auto; }
+.sc-dbox rect { fill: var(--panel2); stroke: var(--line-2); stroke-width: 1.5; }
+.sc-dbox text { text-anchor: middle; font: 600 12px var(--mono); fill: var(--text); }
+.sc-dbox.is-plain rect { stroke: var(--info); }
+.sc-dbox.is-cipher rect { stroke: var(--violet); }
+.sc-dbox.is-counter rect { stroke: var(--line-2); stroke-dasharray: 4 3; }
+.sc-dbox.is-lit rect { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 18%, transparent); stroke-width: 2.5; }
+.sc-dxor circle { fill: var(--panel2); stroke: var(--muted); stroke-width: 1.5; }
+.sc-dxor path { stroke: var(--muted); stroke-width: 1.5; }
+.sc-dline { stroke: var(--line-2); stroke-width: 1.5; }
+.sc-dlabel { font: 600 12px var(--mono); fill: var(--muted); }
+.sc-messages { display: flex; flex-direction: column; gap: 4px; }
+.sc-plain { margin: 0; font: 500 13px var(--font); overflow-wrap: anywhere; }
+.sc-plain code { color: var(--info); font: 500 13px var(--mono); white-space: pre-wrap; }
+
+/* Tamper */
+.sc-cards { display: flex; flex-wrap: wrap; gap: 12px; }
+.sc-card { flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; }
+.sc-card.tone-bad, .sc-card.tone-ok { border-color: color-mix(in srgb, var(--c) 65%, transparent); }
+.sc-card > b { font: 700 13px var(--font); }
+.sc-out { font: 500 13px var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.sc-out .is-changed { color: var(--bad); background: color-mix(in srgb, var(--bad) 18%, transparent); }
+.sc-refused { margin: 0; font: 700 13px var(--font); color: var(--ok); }
+.sc-advice { margin: 0; }
+.sc-advice .chip { font-size: 12.5px; white-space: normal; max-width: 100%; }
