@@ -727,6 +727,28 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .gantt-tick:first-child { transform: none; }
 .gantt-tick:last-child { transform: translateX(-100%); }
 
+/* SequenceDiagram: actors, lifelines and messages. Untoned messages are quiet; a tone sets --c. */
+.seq { max-width: 100%; }
+.seq-svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+.seq-actor rect { fill: color-mix(in srgb, var(--c, var(--line-2)) 16%, var(--cell)); stroke: var(--c, var(--line-2)); stroke-width: 1.5; }
+.seq-actor text { font: 600 12.5px var(--font); fill: var(--text); text-anchor: middle; }
+.seq-lifeline { stroke: var(--line-2); stroke-width: 1.5; }
+.seq-actor.is-waiting .seq-lifeline { stroke-dasharray: 5 5; stroke: var(--c, var(--faint)); }
+.seq-line { fill: none; stroke: var(--c, var(--faint)); stroke-width: 1.75; }
+.seq-line.is-broadcast { stroke-dasharray: 2 4; stroke-linecap: round; stroke-width: 2.25; }
+.seq-head { fill: var(--c, var(--faint)); }
+.seq-lost line { stroke: var(--bad); stroke-width: 2.25; stroke-linecap: round; }
+.seq-label { font: 500 12px var(--font); fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.seq-msg[class*='tone-'] .seq-label { fill: var(--text); }
+.seq-msg.is-current .seq-label { font-weight: 700; }
+.seq-msg.is-current .seq-line { stroke-width: 2.5; }
+.seq-note { font: italic 500 11px var(--font); fill: var(--faint); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.seq-hit { fill: transparent; }
+.seq-msg.is-clickable { cursor: pointer; }
+.seq-msg.is-clickable:hover .seq-hit { fill: color-mix(in srgb, var(--c, var(--faint)) 8%, transparent); }
+.seq-msg.is-clickable:focus-visible { outline: none; }
+.seq-msg.is-clickable:focus-visible .seq-hit { stroke: var(--text); stroke-width: 2; }
+
 /* Text for screen readers only (a cell's full name beside its abbreviation). */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
