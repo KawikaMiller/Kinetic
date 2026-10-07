@@ -4,7 +4,7 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'A greedy algorithm makes the choice that looks best right now and never takes it back; that is fast, and it is only correct when you can prove the local choice is safe.',
+    tldr: 'A greedy algorithm makes the choice that looks best right now and never takes it back; that is fast, and you can only trust it when you can prove the local choice is safe.',
     what: 'Greedy algorithms build an answer one irreversible step at a time, picking whatever looks best at that moment: the meeting that ends first, the biggest coin that fits. Some greedy rules are provably optimal, usually by an exchange argument: any best answer can be swapped, step by step, into the greedy one without getting worse. Many tempting rules have no such proof, and a small counterexample breaks them.',
     analogy: 'Packing a day with meetings by always saying yes to the next one that ends soonest. It sounds too simple, but it leaves the most room for the rest of the day, and you can prove nothing does better.',
     useCases: [
