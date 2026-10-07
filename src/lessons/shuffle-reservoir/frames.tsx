@@ -32,7 +32,8 @@ export function shuffleFrames(algo: Algo, n: number, seed: number): ShuffleFrame
     const out = comparatorShuffle(n, mulberry32(seed));
     r.set({ arr: out });
     r.close(<>sort(() =&gt; random() - 0.5), with the seeded generator, gave {out.join(' ')}. There&apos;s nothing to step: this browser&apos;s sort decided which pairs to compare.
-      Whether the result is fair depends on that algorithm; Run ×10,000 measures it here.</>);
+      It is never exactly fair: each comparison is a coin flip, and a sort makes a bounded number of them, so every order&apos;s chance is a
+      fraction with a power of 2 underneath, which 1/{factorial(n).toLocaleString('en-US')} never is. How biased it is depends on this browser&apos;s sort; Run ×10,000 measures it.</>);
     return r.frames;
   }
   const swaps = drawSwaps(algo, n, mulberry32(seed));
@@ -61,7 +62,8 @@ export function heatCaption(algo: Algo, n: number, runs: number, counts: readonl
     (± {cellSE(n, runs).toFixed(1)} per standard error). {off === 0
       ? <>No cell is more than 3 standard errors off.</>
       : <><span className="hl bad">{off} of {cells}</span> cells are more than 3 standard errors off.</>}
-    {' '}A fair shuffle crosses that line in about 0.3% of cells by chance, so {off > Math.max(1, cells * 0.01) ? 'this looks biased.' : 'one stray cell proves nothing; a pattern does.'}</>;
+    {' '}A fair shuffle crosses that line in about 0.3% of cells by chance, so {off > Math.max(1, cells * 0.01) ? 'this looks biased.' : 'one stray cell proves nothing; a pattern does.'}
+    {' '}Flat is necessary, not sufficient (a random rotation is flat too, yet makes only {n} of the {factorial(n).toLocaleString('en-US')} orders); the exact n = 3 count is the proof.</>;
 }
 
 export interface ReservoirFrame extends Frame {

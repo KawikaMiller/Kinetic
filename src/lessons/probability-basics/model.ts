@@ -147,15 +147,27 @@ export function totals(dice: Dice): { value: number; ways: number }[] {
 /** Illustrative: the chance the shared rack (power, switch) is down, taking every replica with it. */
 export const RACK_DOWN = 0.001;
 
-/** P(every replica down) and P(at least one down), each replica down with probability p. */
+/**
+ * A replica's own failure rate outside rack outages, chosen so that each replica is still down
+ * p of the time overall: p = R + (1 − R)·q. Below the rack's rate that's impossible (the rack
+ * alone takes it down R of the time), so q is 0 and the replica is down R of the time.
+ */
+export const ownRate = (p: number) => Math.max(0, (p - RACK_DOWN) / (1 - RACK_DOWN));
+
+/** How often one replica is down: p when independent; max(p, rack) when sharing the rack. */
+export const replicaDown = (p: number, correlated: boolean) => (correlated ? RACK_DOWN + (1 - RACK_DOWN) * ownRate(p) : p);
+
+/**
+ * P(every replica down) and P(at least one down), each replica down p of the time. Correlated:
+ * the rack is down R of the time (everything is down); otherwise replicas fail independently at
+ * their own rate q, so each replica's overall rate is unchanged.
+ */
 export function replicaRisk(n: number, p: number, correlated: boolean): { allDown: number; anyDown: number } {
-  const allIndependent = p ** n;
-  const anyIndependent = 1 - (1 - p) ** n;
-  if (!correlated) return { allDown: allIndependent, anyDown: anyIndependent };
-  // The rack is down with probability RACK_DOWN (everything is down); otherwise replicas fail independently.
+  if (!correlated) return { allDown: p ** n, anyDown: 1 - (1 - p) ** n };
+  const q = ownRate(p);
   return {
-    allDown: RACK_DOWN + (1 - RACK_DOWN) * allIndependent,
-    anyDown: RACK_DOWN + (1 - RACK_DOWN) * anyIndependent,
+    allDown: RACK_DOWN + (1 - RACK_DOWN) * q ** n,
+    anyDown: RACK_DOWN + (1 - RACK_DOWN) * (1 - (1 - q) ** n),
   };
 }
 
@@ -176,13 +188,50 @@ export const runSuite = (rnd: Rnd, n: number, f: number) => Array.from({ length:
 
 // ── Formatting ───────────────────────────────────────────────────────
 
-/** A probability for people: "2.97%" down to 0.01%, then "1.0 × 10⁻⁶"; exactly 0 is "0%". */
-export function chance(p: number): string {
-  if (p === 0) return '0%';
-  if (p >= 1e-4) return `${trimZeros((p * 100).toFixed(p >= 0.1 ? 1 : 2))}%`;
-  const e = Math.floor(Math.log10(p));
-  const m = p / 10 ** e;
-  return `${m.toFixed(1)} × ${power(e, 10)}`;
+/** Most significant figures `distinct` will use before giving up. */
+const MAX_SIG = 8;
+const SCI_BELOW = 1e-4;
+const NINES_ABOVE = 0.99;
+
+/**
+ * A probability for people, to `sig` significant figures: "2.97%", "0.0125%", then
+ * "1.0 × 10⁻⁶" below 0.01%. Near 1 it keeps enough nines never to show 100% for less than
+ * certain: 1 − 10⁻⁶ is "99.9999%". Exactly 0 is "0%" and exactly 1 is "100%".
+ */
+export function chance(p: number, sig = 3): string {
+  if (p <= 0) return '0%';
+  if (p >= 1) return '100%';
+  if (p < SCI_BELOW) {
+    let e = Math.floor(Math.log10(p));
+    let m = (p / 10 ** e).toFixed(Math.max(1, sig - 2));
+    if (Number(m) >= 10) {
+      e += 1;
+      m = (p / 10 ** e).toFixed(Math.max(1, sig - 2));
+    }
+    return `${m} × ${power(e, 10)}`;
+  }
+  if (p > NINES_ABOVE) {
+    // Digits enough to show the complement to `sig` - 1 figures, so it never rounds to 100.
+    const gap = (1 - p) * 100;
+    const dp = Math.max(1, Math.ceil(-Math.log10(gap)) + sig - 2);
+    return `${trimZeros((100 - gap).toFixed(dp))}%`;
+  }
+  return `${trimZeros(Number((p * 100).toPrecision(sig)).toString())}%`;
+}
+
+/**
+ * Two probabilities at the same precision, with as many figures as it takes for them to read
+ * differently when they are different, so "0.1001% misses the target of 0.1%" never prints
+ * as "0.1% misses 0.1%". Past MAX_SIG figures the first becomes "just over 0.1%".
+ */
+export function distinct(a: number, b: number): [string, string] {
+  for (let sig = 3; sig <= MAX_SIG; sig++) {
+    const pair: [string, string] = [chance(a, sig), chance(b, sig)];
+    if (a === b || pair[0] !== pair[1]) return pair;
+  }
+  // Closer than MAX_SIG figures can show: say which side of it a is rather than print two equal numbers.
+  const target = chance(b, 3);
+  return [`${a > b ? 'just over' : 'just under'} ${target}`, target];
 }
 
 const trimZeros = (s: string) => (s.includes('.') ? s.replace(/\.?0+$/, '') : s);

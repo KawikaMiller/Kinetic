@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { superscript } from '../../core/format';
-import { RACK_DOWN, chance, fracText, replicaRisk, suiteRed, type Rules } from './model';
+import { RACK_DOWN, chance, distinct, fracText, ownRate, replicaRisk, suiteRed, type Rules } from './model';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
@@ -12,7 +12,9 @@ export function eventCaption(aLabel: string, r: Rules, bLabel: string | null): R
     {r.both === 1 ? 'cell' : 'cells'}, so P(A ∪ B) = ({r.a} + {r.b} − {r.both})/{r.total} = {r.either}/{r.total}.{' '}
     {r.independent
       ? <>Independent: {r.both}/{r.total} equals {r.a}/{r.total} × {r.b}/{r.total}.</>
-      : <>Not independent: {r.both}/{r.total} isn't {r.a}/{r.total} × {r.b}/{r.total}.</>}</>;
+      : <>Not independent: {r.both}/{r.total} isn't {r.a}/{r.total} × {r.b}/{r.total}.</>}
+    {r.both === 0 && r.a > 0 && r.b > 0 && <> They&apos;re mutually exclusive, and mutually exclusive events with nonzero chances are never
+      independent: one happening rules the other out.</>}</>;
 }
 
 /** Caption after rolling: the simulated frequency, always next to the exact value. */
@@ -29,17 +31,22 @@ export function rollCaption(label: string, rolls: number, hits: number, r: Pick<
 export function replicaCaption(n: number, p: number, budget: number, correlated: boolean): ReactNode {
   const { allDown, anyDown } = replicaRisk(n, p, correlated);
   const ok = allDown <= budget;
-  const verdict = ok ? <>meets the target (at most {chance(budget)}).</> : <>misses the target of {chance(budget)}.</>;
+  const [shown, target] = distinct(allDown, budget);
+  const verdict = ok ? <>meets the target (at most {target}).</> : <>misses the target of {target}.</>;
   if (correlated) {
+    const q = ownRate(p);
     const independent = replicaRisk(n, p, false).allDown;
     const rackShare = RACK_DOWN / allDown;
-    return <>Shared rack, down {chance(RACK_DOWN)} of the time: P(all down) = {chance(RACK_DOWN)} + (1 − {chance(RACK_DOWN)}) × ({chance(p)})
-      {superscript(n)} = <span className="hl orange">{chance(allDown)}</span>, against {chance(independent)} if they were independent.{' '}
+    const own = p >= RACK_DOWN
+      ? <>Each replica is still down {chance(p)} overall: {chance(RACK_DOWN)} from the rack, and its own failures (q = {chance(q)}) the rest of the time.</>
+      : <>The rack alone takes each replica down {chance(RACK_DOWN)} of the time, more than the {chance(p)} you set.</>;
+    return <>Shared rack, down {chance(RACK_DOWN)} of the time. {own} P(all down) = {chance(RACK_DOWN)} + (1 − {chance(RACK_DOWN)}) × q
+      {superscript(n)} = <span className="hl orange">{shown}</span>, against {chance(independent)} if they were independent.{' '}
       {rackShare > 0.5 ? 'The rack is most of that, so more replicas in the same rack barely help.' : "Here the replicas' own failures still dominate."}
       {' '}That {verdict}</>;
   }
   return <>{n} independent {n === 1 ? 'replica' : 'replicas'}, each down {chance(p)} of the time: P(all down) = ({chance(p)}){superscript(n)} ={' '}
-    <span className={`hl ${ok ? 'ok' : 'bad'}`}>{chance(allDown)}</span>, which {verdict} But P(at least one down) = 1 − (1 − {chance(p)}){superscript(n)} ={' '}
+    <span className={`hl ${ok ? 'ok' : 'bad'}`}>{shown}</span>, which {verdict} But P(at least one down) = 1 − (1 − {chance(p)}){superscript(n)} ={' '}
     {chance(anyDown)}: more machines, more pages.</>;
 }
 

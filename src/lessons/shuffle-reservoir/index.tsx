@@ -6,7 +6,7 @@ const lesson: LessonModule = {
   summary: {
     tldr: 'Fisher-Yates shuffles fairly in one pass by swapping each position with a random one not yet fixed; reservoir sampling keeps a fair random sample of a stream whose length you never learn. Small-looking changes to either make them biased.',
     what: 'Fisher-Yates walks the array once: at position i it swaps in a uniformly random element from positions i to n − 1, so the choices multiply to exactly n! equally likely paths, one per arrangement. The "naive" version that swaps with any position makes nⁿ paths, which can\'t split evenly over n! arrangements, so some come up more often. Reservoir sampling (Algorithm R) keeps the first k items, then keeps item i with probability k/i in a random slot, which leaves every item with the same k/n chance.',
-    analogy: 'Fisher-Yates is drawing names from a hat one at a time and lining them up: each draw comes only from the names still in the hat. The naive shuffle keeps putting names back and redrawing from everyone, which quietly favours some orders.',
+    analogy: 'Fisher-Yates is drawing names from a hat one at a time and lining them up: each draw comes only from the names still in the hat. The naive shuffle draws from the hat and the line together, so a name already placed can be pulled back and swapped, and some orders quietly come up more often than others.',
     useCases: [
       'Shuffling a playlist, a deck or a test order without favouring any arrangement',
       'Sampling log lines or events from a stream of unknown length in one pass',

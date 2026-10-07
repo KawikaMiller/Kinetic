@@ -10,7 +10,7 @@ import { pct } from '../../core/format';
 import { mulberry32 } from '../../core/random';
 import { eventCaption, flakyCaption, replicaCaption, rollCaption } from './frames';
 import {
-  EVENTS, FACES, RACK_DOWN, SLOS, chance, convergence, eventDef, eventSet, fracText, hitsOf, outcomeCell, outcomes, replicaRisk,
+  EVENTS, FACES, RACK_DOWN, SLOS, chance, convergence, distinct, eventDef, eventSet, fracText, hitsOf, outcomeCell, outcomes, replicaDown, replicaRisk,
   rollsFor, rules, runSuite, spaceSize, suiteRed, totalOf, totals, type Dice,
 } from './model';
 import './styles.css';
@@ -283,6 +283,8 @@ function ReplicaScene({ picker }: { picker: ReactNode }) {
   const slo = SLOS.find((s) => s.id === sloId)!;
   const risk = replicaRisk(n, p, correlated);
   const meets = risk.allDown <= slo.budget;
+  const [downText, budgetText] = distinct(risk.allDown, slo.budget);
+  const [availText, targetText] = distinct(1 - risk.allDown, 1 - slo.budget);
 
   useIntroCaption(replicaCaption(3, 0.01, 1e-4, false));
 
@@ -302,9 +304,9 @@ function ReplicaScene({ picker }: { picker: ReactNode }) {
       height={360}
       stats={
         <Stats>
-          <Stat label="P(all down)" value={chance(risk.allDown)} color={meets ? 'var(--ok)' : 'var(--bad)'} sub={`target ≤ ${chance(slo.budget)}`} />
+          <Stat label="P(all down)" value={downText} color={meets ? 'var(--ok)' : 'var(--bad)'} sub={`target ≤ ${budgetText}`} />
           <Stat label="P(at least one down)" value={chance(risk.anyDown)} />
-          <Stat label="Availability" value={chance(1 - risk.allDown)} sub="1 − P(all down)" />
+          <Stat label="Availability" value={availText} sub={`1 − P(all down) · target ${targetText}`} />
         </Stats>
       }
       legend={
@@ -350,7 +352,7 @@ function ReplicaScene({ picker }: { picker: ReactNode }) {
             {ns.slice(0, n).map((k) => (
               <li key={k}>
                 <b>replica {k}</b>
-                <span>down {chance(p)}</span>
+                <span>down {chance(replicaDown(p, correlated))}</span>
               </li>
             ))}
           </ol>
@@ -360,7 +362,7 @@ function ReplicaScene({ picker }: { picker: ReactNode }) {
           y={{ domain: [LOG_FLOOR, 1], log: true, label: 'P(all down)', tickValues: [1e-24, 1e-18, 1e-12, 1e-6, 1] }}
           ariaLabel={`P(all down) against the number of replicas; now ${chance(risk.allDown)} for ${n}`}
         >
-          <HLine at={slo.budget} label={`target ${chance(slo.budget)}`} tone="dim" />
+          <HLine at={slo.budget} label={`target ${budgetText}`} tone="dim" />
           <Curve points={pointsFor(false)} tone="info" dashed={correlated} />
           <Curve points={pointsFor(true)} tone="orange" dashed={!correlated} />
           {risk.allDown > 0 && <Points data={[{ x: n, y: risk.allDown, tone: meets ? 'ok' : 'bad' }]} r={5} />}
