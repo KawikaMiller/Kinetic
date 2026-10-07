@@ -1,0 +1,34 @@
+.so { gap: 14px; }
+.so .section-title { display: block; }
+.so-procs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.so-proc { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.so-code li.is-pending { opacity: 1; color: var(--text); box-shadow: inset 3px 0 0 var(--muted); }
+.so-code .trail { font-size: 11.5px; }
+.so-fds td:first-child { width: 3.5em; }
+.so-std td { color: var(--faint); }
+.so-fd td, .so-sock td { color: var(--c); transition: color 0.2s, background 0.2s; }
+.so-fd.tone-hi td, .so-sock.tone-hi td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.so-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.so-diagram { flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.so-side { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.so-panel { display: flex; flex-direction: column; gap: 6px; }
+.so-graph { width: 100%; max-width: 520px; display: block; margin: 0 auto; }
+.so-graph .graph-node-label { font-size: 12px; }
+.so-tag { font: 600 11px var(--mono); }
+.so-socks td { font-size: 12px; }
+.so-tuple { white-space: normal; }
+.so-state { font-weight: 700; }
+.so-queue { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.so-slot {
+  flex: 1 1 150px; padding: 5px 8px; border-radius: 6px; border: 1px dashed var(--line-2);
+  font: 500 12px var(--mono); color: var(--faint);
+}
+.so-slot.is-full { border: 1px solid var(--hi); color: var(--text); background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.so-wire { margin: 0; font: 500 12.5px var(--mono); }
+.so-wire-label { font: 700 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.so-faint { color: var(--faint); }
+.so-last { margin: 0; font-size: 13px; }
+.so-port { font-size: 11.5px; }
+@media (max-width: 900px) {
+  .so-diagram, .so-side { flex-basis: 100%; }
+}
