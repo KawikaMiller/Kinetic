@@ -1,19 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { aesBlockEncrypt, toHex } from '../../core/crypto';
-import { BLOCK, cbcDecrypt, cbcEncrypt, ctrCrypt, ecbEncrypt, gcmDecrypt, gcmEncrypt, randomBytes, xorBytes } from './ciphers';
+import { aesBlockEncrypt, aesCbcRawDecrypt, aesCbcRawEncrypt, hexToBytes, toHex } from '../../core/crypto';
+import { BLOCK, ctrCrypt, ecbEncrypt, gcmDecrypt, gcmEncrypt, randomBytes, xorBytes } from './ciphers';
 import {
   BG, CHAIN_TEXT, FG, REUSE_TEXTS, TAMPER_TEXT, ascii, blockIds, changedBlocks, changedBytes, mascot, repeatedBlocks, sameAs,
 } from './model';
 
-const hex = (s: string) => Uint8Array.from(s.match(/../g)!.map((b) => parseInt(b, 16)));
-
 // NIST SP 800-38A, appendix F: the AES-128 key and the four plaintext blocks shared by F.1.1, F.2.1 and F.5.1.
-const KEY = hex('2b7e151628aed2a6abf7158809cf4f3c');
-const PLAIN = hex('6bc1bee22e409f96e93d7e117393172a' + 'ae2d8a571e03ac9c9eb76fac45af8e51' + '30c81c46a35ce411e5fbc1191a0a52ef' + 'f69f2445df4f9b17ad2b417be66c3710');
+const KEY = hexToBytes('2b7e151628aed2a6abf7158809cf4f3c');
+const PLAIN = hexToBytes('6bc1bee22e409f96e93d7e117393172a' + 'ae2d8a571e03ac9c9eb76fac45af8e51' + '30c81c46a35ce411e5fbc1191a0a52ef' + 'f69f2445df4f9b17ad2b417be66c3710');
 
 describe('published test vectors', () => {
   it('a single raw block matches FIPS-197 appendix C.1', async () => {
-    const out = await aesBlockEncrypt(hex('000102030405060708090a0b0c0d0e0f'), hex('00112233445566778899aabbccddeeff'));
+    const out = await aesBlockEncrypt(hexToBytes('000102030405060708090a0b0c0d0e0f'), hexToBytes('00112233445566778899aabbccddeeff'));
     expect(toHex(out!)).toBe('69c4e0d86a7b0430d8cdb78070b4c55a');
   });
 
@@ -24,18 +22,18 @@ describe('published test vectors', () => {
   });
 
   it('CBC matches SP 800-38A F.2.1, and decrypts back through the padding trick', async () => {
-    const iv = hex('000102030405060708090a0b0c0d0e0f');
-    const ct = (await cbcEncrypt(KEY, iv, PLAIN))!;
+    const iv = hexToBytes('000102030405060708090a0b0c0d0e0f');
+    const ct = (await aesCbcRawEncrypt(KEY, iv, PLAIN))!;
     expect(toHex(ct)).toBe(
       '7649abac8119b246cee98e9b12e9197d' + '5086cb9b507219ee95db113a917678b2' + '73bed6b8e3c1743b7116e69e22229516' + '3ff1caa1681fac09120eca307586e1a7',
     );
-    expect(toHex((await cbcDecrypt(KEY, iv, ct))!)).toBe(toHex(PLAIN));
+    expect(toHex((await aesCbcRawDecrypt(KEY, iv, ct))!)).toBe(toHex(PLAIN));
     // Single-block slice through the same path: block 1 alone.
-    expect(toHex((await cbcEncrypt(KEY, iv, PLAIN.slice(0, BLOCK)))!)).toBe('7649abac8119b246cee98e9b12e9197d');
+    expect(toHex((await aesCbcRawEncrypt(KEY, iv, PLAIN.slice(0, BLOCK)))!)).toBe('7649abac8119b246cee98e9b12e9197d');
   });
 
   it('CTR matches SP 800-38A F.5.1', async () => {
-    const counter = hex('f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff');
+    const counter = hexToBytes('f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff');
     const ct = (await ctrCrypt(KEY, counter, PLAIN))!;
     expect(toHex(ct)).toBe(
       '874d6191b620e3261bef6864990db6ce' + '9806f66b7970fdff8617187bb9fffdff' + '5ae4df3edbd5d35e5b4f09020db03eab' + '1e031dda2fbe03d1792170a0f3009cee',
@@ -53,9 +51,9 @@ describe('GCM against the McGrew–Viega GCM specification', () => {
 
   it('test case 3: four blocks, ciphertext and tag', async () => {
     const out = (await gcmEncrypt(
-      hex('feffe9928665731c6d6a8f9467308308'),
-      hex('cafebabefacedbaddecaf888'),
-      hex('d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255'),
+      hexToBytes('feffe9928665731c6d6a8f9467308308'),
+      hexToBytes('cafebabefacedbaddecaf888'),
+      hexToBytes('d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255'),
     ))!;
     expect(toHex(out)).toBe(
       '42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985'
@@ -77,7 +75,7 @@ describe('the ECB picture', () => {
     const ecb = (await ecbEncrypt(key, img))!;
     expect(repeatedBlocks(ecb)).toBe(repeatedBlocks(img));
     for (let i = 0; i < blockIds(img).length; i++) expect(sameAs(ecb, i)).toEqual(sameAs(img, i));
-    expect(repeatedBlocks((await cbcEncrypt(key, randomBytes(16), img))!)).toBe(0);
+    expect(repeatedBlocks((await aesCbcRawEncrypt(key, randomBytes(16), img))!)).toBe(0);
     expect(repeatedBlocks((await ctrCrypt(key, randomBytes(16), img))!)).toBe(0);
     expect(repeatedBlocks((await gcmEncrypt(key, randomBytes(12), img))!.slice(0, img.length))).toBe(0);
   });
@@ -94,7 +92,7 @@ describe('chaining: one flipped plaintext bit', () => {
       flipped[byte] ^= 0x04;
       const k = Math.floor(byte / BLOCK);
       const blocksAfter = [0, 1, 2, 3].filter((b) => b >= k);
-      expect(changedBlocks((await cbcEncrypt(key, iv, plain))!, (await cbcEncrypt(key, iv, flipped))!)).toEqual(blocksAfter);
+      expect(changedBlocks((await aesCbcRawEncrypt(key, iv, plain))!, (await aesCbcRawEncrypt(key, iv, flipped))!)).toEqual(blocksAfter);
       expect(changedBlocks((await ecbEncrypt(key, plain))!, (await ecbEncrypt(key, flipped))!)).toEqual([k]);
       const a = (await ctrCrypt(key, iv, plain))!;
       const b = (await ctrCrypt(key, iv, flipped))!;
@@ -110,10 +108,10 @@ describe('IV and nonce reuse', () => {
   it('CBC with a reused IV gives an identical first block for messages that share one', async () => {
     const key = randomBytes(16);
     const iv = randomBytes(16);
-    const c1 = (await cbcEncrypt(key, iv, m1))!;
-    const reused = (await cbcEncrypt(key, iv, m2))!;
+    const c1 = (await aesCbcRawEncrypt(key, iv, m1))!;
+    const reused = (await aesCbcRawEncrypt(key, iv, m2))!;
     expect(changedBlocks(c1, reused)).toEqual([1, 2]);
-    expect(changedBlocks(c1, (await cbcEncrypt(key, randomBytes(16), m2))!)).toEqual([0, 1, 2]);
+    expect(changedBlocks(c1, (await aesCbcRawEncrypt(key, randomBytes(16), m2))!)).toEqual([0, 1, 2]);
   });
 
   it('CTR with a reused nonce leaks exactly P1 ⊕ P2', async () => {
@@ -132,11 +130,11 @@ describe('tampering with ciphertext', () => {
   it('CBC garbles the flipped block and flips the same bit in the next one', async () => {
     const key = randomBytes(16);
     const iv = randomBytes(16);
-    const ct = (await cbcEncrypt(key, iv, plain))!;
+    const ct = (await aesCbcRawEncrypt(key, iv, plain))!;
     for (const byte of [3, 20, 40]) {
       const bad = ct.slice();
       bad[byte] ^= 0x01;
-      const out = (await cbcDecrypt(key, iv, bad))!;
+      const out = (await aesCbcRawDecrypt(key, iv, bad))!;
       const k = Math.floor(byte / BLOCK);
       const diff = changedBytes(plain, out);
       expect(diff.filter((i) => Math.floor(i / BLOCK) === k).length).toBeGreaterThan(8);
@@ -181,7 +179,7 @@ describe('without Web Crypto', () => {
     vi.stubGlobal('crypto', { getRandomValues: (a: Uint8Array) => a });
     const z = new Uint8Array(16);
     expect(await ecbEncrypt(z, z)).toBeNull();
-    expect(await cbcEncrypt(z, z, z)).toBeNull();
+    expect(await aesCbcRawEncrypt(z, z, z)).toBeNull();
     expect(await ctrCrypt(z, z, z)).toBeNull();
     expect(await gcmEncrypt(z, z.slice(0, 12), z)).toBeNull();
   });

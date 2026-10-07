@@ -2,7 +2,7 @@
 // signatures, a simulated trust store, and a chain validator that walks from the leaf up
 // and stops at the first failure with its reason. All names are fictional; time comes from
 // a fixed lesson clock, never Date.now(), so every run gives the same verdicts.
-import { ecdsaKeyPair, ecdsaSign, ecdsaVerify, enc, hasSubtle, toHex } from '../../core/crypto';
+import { ecdsaKeyPair, ecdsaSign, ecdsaVerify, enc, hasSubtle, hexToBytes, toHex } from '../../core/crypto';
 
 /** The lesson's "now". */
 export const LESSON_NOW = '2026-03-01T12:00:00Z';
@@ -28,8 +28,6 @@ export type Unsigned = Omit<Cert, 'signature'>;
 export const tbsBytes = (c: Unsigned) =>
   enc.encode(JSON.stringify([c.subject, c.issuer, c.names, c.notBefore, c.notAfter, c.isCA, c.publicKey]));
 
-const fromHex = (h: string) => Uint8Array.from(h.match(/../g) ?? [], (b) => parseInt(b, 16));
-
 export async function publicHex(k: CryptoKeyPair): Promise<string> {
   return toHex(await crypto.subtle.exportKey('raw', k.publicKey));
 }
@@ -40,12 +38,12 @@ export async function issue(fields: Unsigned, issuerKey: CryptoKey): Promise<Cer
 }
 
 const importPublic = (hex: string) =>
-  crypto.subtle.importKey('raw', fromHex(hex), { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify']);
+  crypto.subtle.importKey('raw', hexToBytes(hex), { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify']);
 
 /** A real ECDSA verify of `cert`'s signature with the public key in `issuer`. */
 export async function signatureValid(cert: Cert, issuer: Cert): Promise<boolean> {
   try {
-    return (await ecdsaVerify(await importPublic(issuer.publicKey), fromHex(cert.signature), tbsBytes(cert))) === true;
+    return (await ecdsaVerify(await importPublic(issuer.publicKey), hexToBytes(cert.signature), tbsBytes(cert))) === true;
   } catch {
     return false;
   }

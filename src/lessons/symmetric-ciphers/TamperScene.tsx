@@ -5,7 +5,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { useAsyncValue } from '../../core/useAsyncValue';
-import { BLOCK, cbcDecrypt, cbcEncrypt, ctrCrypt, gcmDecrypt, gcmEncrypt, randomBytes, type GcmOpen } from './ciphers';
+import { aesCbcRawDecrypt, aesCbcRawEncrypt } from '../../core/crypto';
+import { BLOCK, ctrCrypt, gcmDecrypt, gcmEncrypt, randomBytes, type GcmOpen } from './ciphers';
 import { HONESTY, tamperCaption } from './frames';
 import { TAMPER_DEFAULT_BYTE, TAMPER_TEXT, ascii, changedBytes, readable } from './model';
 
@@ -21,11 +22,11 @@ interface Opened {
 }
 
 async function sendAndOpen(key: Bytes, ivs: { cbc: Bytes; ctr: Bytes; gcm: Bytes }, byte: number, flip: boolean): Promise<Opened | null> {
-  const [cbc, ctr, gcm] = await Promise.all([cbcEncrypt(key, ivs.cbc, PLAIN), ctrCrypt(key, ivs.ctr, PLAIN), gcmEncrypt(key, ivs.gcm, PLAIN)]);
+  const [cbc, ctr, gcm] = await Promise.all([aesCbcRawEncrypt(key, ivs.cbc, PLAIN), ctrCrypt(key, ivs.ctr, PLAIN), gcmEncrypt(key, ivs.gcm, PLAIN)]);
   if (!cbc || !ctr || !gcm) return null;
   // The same ciphertext position, flipped in transit, in each mode.
   if (flip) for (const ct of [cbc, ctr, gcm]) ct[byte] ^= FLIP_MASK;
-  const [cbcOut, ctrOut, gcmOut] = await Promise.all([cbcDecrypt(key, ivs.cbc, cbc), ctrCrypt(key, ivs.ctr, ctr), gcmDecrypt(key, ivs.gcm, gcm)]);
+  const [cbcOut, ctrOut, gcmOut] = await Promise.all([aesCbcRawDecrypt(key, ivs.cbc, cbc), ctrCrypt(key, ivs.ctr, ctr), gcmDecrypt(key, ivs.gcm, gcm)]);
   return cbcOut && ctrOut && gcmOut ? { cbc: cbcOut, ctr: ctrOut, gcm: gcmOut } : null;
 }
 

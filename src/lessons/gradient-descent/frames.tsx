@@ -1,13 +1,10 @@
 import type { ReactNode } from 'react';
+import { decimal } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { BATCH_SIZE, DIVERGE_LOSS, DIVERGE_RADIUS, GRAD_TOL, MAX_STEPS, REGRESSION_DATA, SURFACES, zigzagShare, type Run, type W } from './model';
 
-/** A number as the readouts show it: rounded, trailing zeros dropped, a real minus sign. */
-export function num(v: number, dp = 3): string {
-  const r = Number(v.toFixed(dp));
-  const s = String(Math.abs(r));
-  return r < 0 ? `−${s}` : s;
-}
+/** A number as the readouts show it (core/format decimal), to 3 places unless told otherwise. */
+export const num = (v: number, dp = 3) => decimal(v, dp);
 
 /** Losses span many decades: 4 significant figures, or an exponent for tiny or huge ones. */
 export function lossText(v: number): string {

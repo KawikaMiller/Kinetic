@@ -134,6 +134,10 @@ pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
                       // past a million years a power of ten, never a raw float: '3.2 × 10²⁹² years' (no-break spaces round ×)
+                      // a positive span under a microsecond is 'under a microsecond' (exactly 0 stays '0 s')
+humanDurationLog10(608)  // 'about 10⁶⁰¹ years' — takes log₁₀ seconds, for spans past a double (diffie-hellman, rsa);
+                      // humanDuration while it fits (below 10¹⁵ s), 'under a microsecond' below 10⁻⁶
+decimal(-0.25, 2)     // '−0.25' — rounded to dp places, trailing zeros dropped, real minus sign, -0 → '0' (the B8 readouts)
 superscript(23)       // '²³' — an integer in superscript digits
 power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
 power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in threes, narrow no-break space (big-o); superscript takes it too
@@ -162,6 +166,14 @@ and markup are always refused; only plain decimal takes a minus. Used by bit-man
 (hex value, port), gcd-euclid, modular-arithmetic, primes-factoring and minimum-spanning-trees; their
 own wording goes in `messages`. Fields that parse lists (adders-alu) or other bases (binary-hex's octal
 and `#`) keep their own parsers.
+
+```ts
+parseBoundedDecimal(text, { min: 0, max: 1e6, typographicMinus: true, messages: { tooSmall: () => "a weight can't be negative" } })
+```
+The decimal counterpart, same `FieldParse` result and message shape (`empty`, `invalid`, `tooSmall`,
+`tooBig`, `negative`). Plain decimals only (`2.5`, `-3`; not `.5`, `2.`, `1e3`, `+5`, `Infinity`, `NaN`,
+units or markup); out-of-range is refused, never clamped, compared on the parsed double. Used by
+expected-value's table cells.
 
 ### `fixtures/` — shared sample data
 ```ts
@@ -811,6 +823,7 @@ isProbablePrime(n)        // { prime, certain }: Miller-Rabin, first 13 primes a
 sieve(100)                // { isPrime, primes, passes: [{ prime, crossed: number[] }] }: one pass per prime ≤ √n, for animating
 trialFactor(360n)         // { factors: [2n, 2n, 2n, 3n, 3n, 5n], steps }
 toyRsa(61n, 53n, 17n)     // { ok: true, n, phi, e, d } | { ok: false, reason }: textbook RSA, toy sizes only
+                          // valid for any e > 1 with gcd(e, φ) = 1, e > φ included (65537 → the same d as 17)
 ```
 - Everything is `bigint` except `sieve` (a `number` limit). Tests check against brute force below 10⁴, Carmichael numbers, Bézout identities and RSA round-trips.
 
@@ -824,6 +837,9 @@ binomialPmf(n, k, p)
 collisionProbability(23, 365)        // { p: 0.507…, method: 'exact' }: exact product up to COLLISION_EXACT_LIMIT, then 1 − e^(−n(n−1)/2N)
 collisionProbability(2, 2 ** 128).p  // 2.9e-39, not 0: both forms run in log space (log1p / expm1), so huge ID spaces keep tiny chances
 runningMean(xs)                      // the convergence curve for simulated frequencies
+logCheckpoints(n, perDecade = 40)    // counts worth a point on a convergence chart: 1..10, then ~perDecade per decade, then n
+runningStats(xs, at = logCheckpoints(xs.length))   // [{ n, mean, sd }] at those counts: Welford's update, population SD,
+                                     // stable on a huge offset (probability-basics, expected-value)
 ```
 
 ### `core/disjointSet.ts` — union-find, minimum-spanning-trees
@@ -1104,6 +1120,48 @@ ecdsaKeyPair(); ecdsaSign(privateKey, data); ecdsaVerify(publicKey, sig, data)  
 - `aesBlockEncrypt` uses AES-CBC with a zero IV and keeps the first 16 bytes. WebCrypto has no ECB, so that's the only way to get it. It exists to show why ECB leaks patterns, never to encrypt anything.
 - Tests: RFC 4231 and RFC 2202 HMAC, RFC 4226 HOTP, RFC 6238 TOTP (SHA-1 and SHA-256), FIPS-197 C.1 and C.3, and ECDSA with one flipped byte failing in the message and in the signature. Test keys are the published RFC ones; nothing in source has a real credential shape (K-3 scan).
 
+## Tier 2 kit (wave 3→4 kit round)
+
+Showcased on `#/dev/kit` under "Tier 2 kit · wave 3→4" (`pages/DevKitTier2c.tsx`).
+
+### `ColorField.tsx`, `core/contrast.ts` (K-21) — accessibility, color-spaces
+```tsx
+<ColorField label="Text colour" value={fg} onChange={setFg} />   // native colour input, its label, and the #rrggbb beside it
+```
+```ts
+contrastRatio('#777', '#fff')   // 4.478…: (L1 + 0.05) / (L2 + 0.05), lighter over darker, 1 to 21; order doesn't matter
+formatRatio(r)                  // '4.48:1'; never rounds a failing ratio up onto a threshold (4.496 → '4.49:1')
+grade(r)                        // { aaNormal, aaLarge, aaaNormal, aaaLarge } against THRESHOLDS (AA 4.5 / 3, AAA 7 / 4.5)
+luminance([r, g, b])            // WCAG 2.x relative luminance of 0..255 channels (the published 0.03928 knee)
+parseHex('#abc')                // [170, 187, 204]; 3- or 6-digit
+```
+- Moved unchanged from the accessibility lesson, which now uses both (pixel-identical). Styles live in
+  `components/colorField.css`, loaded globally from `main.tsx`.
+- Tests: the lesson's contrast tests, plus the published figures: white 1, black 0, each primary its own
+  coefficient, the 0.03928 knee, and #767676 4.54, #595959 7.00, blue 8.59 and red 4.00 on white.
+
+### `crypto.ts`: `hexToBytes`, raw AES-CBC — symmetric-ciphers, macs-hmac, digital-signatures-pki
+```ts
+hexToBytes('00ff7fa0')                 // Uint8Array [0, 255, 127, 160]; either case; '' → empty; odd length or non-hex throws RangeError
+AES_BLOCK                              // 16
+aesCbcRawEncrypt(key, iv, data)        // CBC on whole blocks, no padding: output is exactly data.length bytes
+aesCbcRawDecrypt(key, iv, ct)          // the inverse; a tampered ct decrypts to garbled bytes, never a padding error
+```
+- WebCrypto's AES-CBC always applies PKCS#7. Encrypt drops the extra padding block it appends to
+  block-aligned input; decrypt appends one block that decrypts to valid padding (AES(PAD ⊕ last block),
+  possible because we hold the key). Both throw RangeError on partial blocks and resolve to null without
+  `crypto.subtle`. For lessons showing the mode itself, never for real data (no padding, no MAC).
+- Tests: SP 800-38A F.2.1/F.2.2, a flipped bit garbling its block and flipping the same bit in the next,
+  empty input, partial-block refusal; hexToBytes round-trips all 256 bytes through `toHex`.
+
+### `core/paint.ts` — diffie-hellman, tls-handshake
+```ts
+equalMix(['var(--amber)', 'var(--sky)'])   // 'color-mix(in oklab, var(--amber) 50%, var(--sky))'
+```
+- Equal parts of every colour as one real CSS colour (the k-th joins at 1/(k+1)). Pass the colours in a
+  canonical order (the lessons sort their parts first), so the mix depends only on which paints went in.
+  Both lessons' paint-mixing analogies use it; their exact colour strings are unchanged (asserted in their tests).
+
 ---
 
 ## Not built (deliberately)
@@ -1114,8 +1172,6 @@ ecdsaKeyPair(); ecdsaSign(privateKey, data); ecdsaVerify(publicKey, sig, data)  
 - **web-request's waterfall on `GanttLanes`:** it's one stacked bar whose segments grow with
   motion springs, plus a legend, not lanes on a time axis. Moving it would swap flex for absolute
   positioning and the spring for a linear transition, so it couldn't be pixel-identical. It stays local.
-- **`ColorField`:** requested after wave 2 and declined: accessibility's colour input is its only
-  user, so it stays local until a second lesson needs one (extract on the second use).
 - **Per plan §6:** a scene engine, `DataTable`, `KeyValue`, `EventLog`, `ChipChoice` and `CanvasStage`.
 
 Revisit any of these when a second, genuinely similar lesson needs one.
@@ -1126,6 +1182,9 @@ These differ between runs even on unchanged code, because a motion transition is
 1.5 s after the seek. Treat them as eyeball-only:
 - `db-indexes@2`
 - `replication@3`, `replication@7`
+- `ci-pipelines@0`, `endianness@0`, `minimum-spanning-trees@0` (seen in kit-k4's run)
+- `macs-hmac@0`, `@2`, `@4`: the key comes from `crypto.getRandomValues`, which `--frames` doesn't seed,
+  so the tag bytes differ every run (~0.5%; seen in kit-k5's run, same tree twice)
 - every `@live` shot (simulations are timing-dependent)
 - driven shots of a stage with a `WideRegion` at 390: its "swipe" hint times out after 5 s, so a
   shot taken around then may catch it mid-fade

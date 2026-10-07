@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
+import { logCheckpoints } from '../../core/stats';
 import {
-  EVENTS, RACK_DOWN, chance, checkpoints, distinct, ownRate, replicaDown, convergence, eventSet, hitsOf, outcomeCell, replicaRisk, rollsFor, rules, runSuite,
+  EVENTS, RACK_DOWN, chance, distinct, ownRate, replicaDown, convergence, eventSet, hitsOf, outcomeCell, replicaRisk, rollsFor, rules, runSuite,
   spaceSize, suiteRed, totals, type Dice,
 } from './model';
 
@@ -124,8 +125,8 @@ describe('rolling', () => {
     expect(pts[pts.length - 1][0]).toBe(3000);
     for (let i = 1; i < pts.length; i++) expect(pts[i][0]).toBeGreaterThan(pts[i - 1][0]);
     for (const [n, f] of pts) expect(f).toBeCloseTo(hitsOf(rolls.slice(0, n), ev) / n, 12);
-    expect(checkpoints(7)).toEqual([1, 2, 3, 4, 5, 6, 7]);
-    expect(checkpoints(0)).toEqual([]);
+    expect(logCheckpoints(7)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(logCheckpoints(0)).toEqual([]);
   });
 });
 

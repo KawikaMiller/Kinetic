@@ -7,9 +7,9 @@ import { Button, Legend, Segmented } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { toBits } from '../../core/bits';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { toHex } from '../../core/crypto';
+import { aesCbcRawEncrypt, toHex } from '../../core/crypto';
 import { useAsyncValue } from '../../core/useAsyncValue';
-import { BLOCK, cbcEncrypt, ctrCrypt, ecbEncrypt } from './ciphers';
+import { BLOCK, ctrCrypt, ecbEncrypt } from './ciphers';
 import { HONESTY, bitDistance, chainCaption } from './frames';
 import { ModeDiagram } from './ModeDiagram';
 import { CHAIN_TEXT, ascii, changedBlocks, changedBytes, type ChainMode } from './model';
@@ -24,7 +24,7 @@ const CIPHER_FIELDS = FIELDS.map((f) => ({ ...f, tone: 'violet' as const }));
 const IV = Uint8Array.from({ length: 16 }, (_, i) => (i * 37 + 11) & 0xff);
 
 const run = (mode: ChainMode, key: Bytes, data: Bytes) =>
-  mode === 'ECB' ? ecbEncrypt(key, data) : mode === 'CBC' ? cbcEncrypt(key, IV, data) : ctrCrypt(key, IV, data);
+  mode === 'ECB' ? ecbEncrypt(key, data) : mode === 'CBC' ? aesCbcRawEncrypt(key, IV, data) : ctrCrypt(key, IV, data);
 
 export function ChainScene({ picker, aesKey }: { picker: ReactNode; aesKey: Bytes }) {
   const [mode, setMode] = useState<ChainMode>('CBC');

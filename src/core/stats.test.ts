@@ -9,10 +9,13 @@ import {
   factorial,
   histogram,
   log2Factorial,
+  logCheckpoints,
   runningMean,
+  runningStats,
   stdDev,
   variance,
 } from './stats';
+import { mean } from './sim';
 
 describe('factorial and choose', () => {
   it('match hand-computed values', () => {
@@ -127,6 +130,47 @@ describe('runningMean', () => {
   it('is the mean of each prefix', () => {
     expect(runningMean([2, 4, 6, 8])).toEqual([2, 3, 4, 5]);
     expect(runningMean([])).toEqual([]);
+  });
+});
+
+describe('logCheckpoints', () => {
+  it('keeps every count to 10, then thins out, always ending at n', () => {
+    expect(logCheckpoints(0)).toEqual([]);
+    expect(logCheckpoints(1)).toEqual([1]);
+    expect(logCheckpoints(7)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(logCheckpoints(12)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    const pts = logCheckpoints(100_000);
+    expect(pts[pts.length - 1]).toBe(100_000);
+    for (let i = 1; i < pts.length; i++) expect(pts[i]).toBeGreaterThan(pts[i - 1]);
+  });
+  it('places about perDecade points per decade once past 10', () => {
+    const inDecade = (pts: number[], lo: number) => pts.filter((k) => k > lo && k <= lo * 10).length;
+    expect(inDecade(logCheckpoints(1e6), 1e4)).toBe(40);
+    expect(inDecade(logCheckpoints(1e6, 10), 1e4)).toBe(10);
+    // Early decades lose a few to rounding collisions (10^(1 + e/40) repeats integers below ~60).
+    expect(inDecade(logCheckpoints(1e6), 10)).toBeLessThanOrEqual(40);
+  });
+});
+
+describe('runningStats', () => {
+  it('equals a direct mean and population SD at every checkpoint', () => {
+    const xs = Array.from({ length: 3000 }, (_, i) => ((i * 7919) % 101) - 37);
+    const pts = runningStats(xs);
+    expect(pts.map((p) => p.n)).toEqual(logCheckpoints(xs.length));
+    for (const p of pts) {
+      const head = xs.slice(0, p.n);
+      expect(p.mean).toBeCloseTo(mean(head), 10);
+      expect(p.sd).toBeCloseTo(stdDev(head), 9);
+    }
+  });
+  it('reports at the counts it is given, and nothing for an empty input', () => {
+    expect(runningStats([1, 2, 3, 4], [2, 4])).toEqual([{ n: 2, mean: 1.5, sd: 0.5 }, { n: 4, mean: 2.5, sd: Math.sqrt(1.25) }]);
+    expect(runningStats([])).toEqual([]);
+  });
+  it('stays accurate on a huge offset, where the naive sum of squares cancels', () => {
+    const xs = Array.from({ length: 1000 }, (_, i) => 1e9 + (i % 2)); // SD exactly 0.5
+    const last = runningStats(xs).at(-1)!;
+    expect(last.sd).toBeCloseTo(0.5, 9);
   });
 });
 

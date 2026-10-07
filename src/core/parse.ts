@@ -116,3 +116,42 @@ export const parseBoundedInt = (text: string, o: IntFieldOptions<number>): Field
 
 /** parseBoundedInt for values past 2⁵³ (a 40-digit prime candidate, a 64-bit register). */
 export const parseBoundedBigInt = (text: string, o: IntFieldOptions<bigint>): FieldParse<bigint> => parseField(text, o, (v) => v);
+
+export interface DecimalFieldOptions {
+  min: number;
+  max: number;
+  /** Read a leading typographic minus (−2.5) as a minus. */
+  typographicMinus?: boolean;
+  messages?: Partial<IntFieldMessages<number>>;
+}
+
+/** A plain decimal: optional minus, digits, optionally a point and more digits ("2.5", "-3", not ".5" or "2."). */
+const PLAIN_DECIMAL = /^-?\d+(\.\d+)?$/;
+
+/**
+ * One plain decimal from a learner-typed field, within [min, max], or the reason it's refused.
+ * Exponents ("1e3"), "+5", Infinity, NaN, units and markup are always refused; out-of-range
+ * values are refused rather than clamped. Bounds are compared on the parsed double. Same
+ * message shape as parseBoundedInt, with generic defaults.
+ *
+ *   parseBoundedDecimal(text, { min: 0, max: 1e6, messages: { tooSmall: () => "A weight can't be negative." } })
+ */
+export function parseBoundedDecimal(text: string, o: DecimalFieldOptions): FieldParse<number> {
+  const range = () => `Keep it between ${o.min} and ${o.max}.`;
+  const m: IntFieldMessages<number> = {
+    empty: 'Type a number.',
+    invalid: (typed) => `"${typed}" isn't a plain number like 2.5 or -3.`,
+    tooSmall: range,
+    tooBig: range,
+    ...o.messages,
+  };
+  const typed = text.trim();
+  if (!typed) return { ok: false, error: m.empty };
+  if (m.negative && LEADING_MINUS.test(typed)) return { ok: false, error: m.negative };
+  const t = o.typographicMinus ? typed.replace(/^−/, '-') : typed;
+  if (!PLAIN_DECIMAL.test(t)) return { ok: false, error: m.invalid(typed) };
+  const v = Number(t);
+  if (v < o.min) return { ok: false, error: m.tooSmall(v, t) };
+  if (v > o.max) return { ok: false, error: m.tooBig(v, t) };
+  return { ok: true, value: v };
+}

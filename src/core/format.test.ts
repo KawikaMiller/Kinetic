@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, duration, humanDuration, latency, pct, plural, power, superscript } from './format';
+import { bytes, clock, decimal, duration, humanDuration, humanDurationLog10, latency, pct, plural, power, superscript } from './format';
 
 describe('superscript', () => {
   it('writes integers in superscript digits, including negatives', () => {
@@ -48,6 +48,23 @@ describe('latency and humanDuration', () => {
     expect(humanDuration(Infinity)).toBe('∞ years');
   });
 
+  it('says "under a microsecond" for a positive span too small to print, but keeps exactly 0 as "0 s"', () => {
+    expect(humanDuration(1e-9)).toBe('under a microsecond');
+    expect(humanDuration(9.99e-7)).toBe('under a microsecond');
+    expect(humanDuration(Number.MIN_VALUE)).toBe('under a microsecond');
+    expect(humanDuration(0)).toBe('0 s');
+  });
+
+  it('humanDurationLog10 words spans past a double, and agrees with humanDuration where both fit', () => {
+    expect(humanDurationLog10(-7)).toBe('under a microsecond');
+    expect(humanDurationLog10(-Infinity)).toBe('under a microsecond');
+    for (const l of [-3, 0, 2, 4.7, 9, 14.9]) expect(humanDurationLog10(l)).toBe(humanDuration(10 ** l));
+    const YEAR_LOG10 = Math.log10(365.25 * 24 * 3600);
+    expect(humanDurationLog10(608)).toBe(`about ${power(Math.round(608 - YEAR_LOG10), 10)} years`);
+    expect(humanDurationLog10(608)).toBe('about 10⁶⁰¹ years');
+    expect(humanDurationLog10(5000)).toBe('about 10⁴⁹⁹³ years');
+  });
+
   it('uses the singular for exactly one of a unit', () => {
     expect(humanDuration(3600)).toBe('1 hour');
     expect(humanDuration(86_400)).toBe('1 day');
@@ -87,5 +104,20 @@ describe('format', () => {
     expect(clock(61)).toBe('01:01');
     expect(clock(1440 + 5)).toBe('00:05');
     expect(clock(-1)).toBe('23:59');
+  });
+});
+
+describe('decimal', () => {
+  it('rounds to dp places, drops trailing zeros and writes a real minus sign', () => {
+    expect(decimal(0.25, 2)).toBe('0.25');
+    expect(decimal(-0.25, 2)).toBe('−0.25');
+    expect(decimal(1.5, 3)).toBe('1.5');
+    expect(decimal(2, 3)).toBe('2');
+    expect(decimal(-1.23456, 3)).toBe('−1.235');
+    expect(decimal(12.3456, 1)).toBe('12.3');
+  });
+  it('never prints a minus on something that rounds to zero', () => {
+    expect(decimal(-0.0004, 3)).toBe('0');
+    expect(decimal(-0, 2)).toBe('0');
   });
 });

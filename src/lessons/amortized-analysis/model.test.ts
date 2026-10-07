@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, type Rnd } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
 import { bankVerdict, pushFrames, trapCopies, trapFrames } from './frames';
+import lesson from './index';
 import {
   coinsNeeded, COINS_PER_OP, cumulativeCost, grow, GROWTHS, MAX_PUSHES, potential, pushes, run, START_CAP, TRAP_FILL, TRAP_OPS,
   type Growth, type Op, type ShrinkRule,
@@ -79,6 +80,7 @@ describe('amortized-analysis model', () => {
   it('matches a real element-moving array, write for write, on 300 seeded push/pop sequences per policy', () => {
     const rnd = mulberry32(7);
     const shrinks: ShrinkRule[] = ['none', 'half', 'quarter'];
+    const mismatches: string[] = [];
     for (let t = 0; t < 300; t++) {
       const ops = randomOps(rnd, 1 + Math.floor(rnd() * 400));
       for (const g of GROWTHS.map((x) => x.id)) {
@@ -90,29 +92,29 @@ describe('amortized-analysis model', () => {
           if (op === 'push') ref.push(i);
           else ref.pop();
           writes += steps[i].cost;
-          expect(writes).toBe(ref.writes);
-          expect(steps[i].capAfter).toBe(ref.buf.length);
-          expect(steps[i].after.length).toBe(ref.size);
+          if (writes !== ref.writes || steps[i].capAfter !== ref.buf.length || steps[i].after.length !== ref.size) {
+            mismatches.push(`seq ${t} ${g}/${shrink} op ${i}: writes ${writes}/${ref.writes}, cap ${steps[i].capAfter}/${ref.buf.length}, size ${steps[i].after.length}/${ref.size}`);
+          }
         });
       }
     }
+    expect(mismatches).toEqual([]);
   });
 
   it('doubling: total copies equal the powers-of-two sum and stay below 2n for every n up to 10,000', () => {
     let copies = 0;
+    const bad: number[] = [];
     run(pushes(10_000), 'double').forEach((s, i) => {
       copies += s.copies;
       const n = i + 1;
-      expect(copies).toBe(doublingCopies(n));
-      expect(copies).toBeLessThan(2 * n);
+      if (copies !== doublingCopies(n) || copies >= 2 * n) bad.push(n);
     });
+    expect(bad).toEqual([]);
   });
 
   it('doubling with 3 coins per push: the balance is 2n − copies and never below 0, for 1 to 10,000 pushes', () => {
-    run(pushes(10_000), 'double').forEach((s, i) => {
-      expect(s.balance).toBe(2 * (i + 1) - doublingCopies(i + 1));
-      expect(s.balance).toBeGreaterThanOrEqual(0);
-    });
+    const bad = run(pushes(10_000), 'double').filter((s, i) => s.balance !== 2 * (i + 1) - doublingCopies(i + 1) || s.balance < 0);
+    expect(bad).toEqual([]);
   });
 
   it('2 coins per push are not enough under doubling, so 3 is the smallest whole number that works', () => {
@@ -138,7 +140,17 @@ describe('amortized-analysis model', () => {
   });
 
   it('+10: total copies equal the arithmetic sum, 49,600 at n = 1,000, about n²/20', () => {
-    for (let n = 1; n <= 2000; n++) expect(copiesOf(n, 'plus10')).toBe(plus10Copies(n));
+    // One 2,000-push run gives every prefix total (run is a left-to-right fold over the ops); fresh
+    // runs at sampled n confirm a prefix of the long run is the same as running n pushes on its own.
+    const steps = run(pushes(2000), 'plus10');
+    let total = 0;
+    const bad: number[] = [];
+    steps.forEach((s, i) => {
+      total += s.copies;
+      if (total !== plus10Copies(i + 1)) bad.push(i + 1);
+    });
+    expect(bad).toEqual([]);
+    for (const n of [1, 2, 3, 10, 11, 12, 21, 22, 99, 101, 999, 1001, 2000]) expect(copiesOf(n, 'plus10')).toBe(plus10Copies(n));
     const c = copiesOf(1000, 'plus10');
     expect(c).toBe(49_600);
     expect(c / (1000 ** 2 / 20)).toBeCloseTo(0.992, 3);
@@ -153,10 +165,13 @@ describe('amortized-analysis model', () => {
 
   it('quarter-shrink with doubling: 3 coins per push or pop keep the balance at or above 0 on 500 seeded sequences', () => {
     const rnd = mulberry32(99);
+    const overdrawn: string[] = [];
     for (let t = 0; t < 500; t++) {
       const steps = run(randomOps(rnd, 1 + Math.floor(rnd() * 2000)), 'double', 'quarter');
-      for (const s of steps) expect(s.balance).toBeGreaterThanOrEqual(0);
+      const low = steps.find((s) => s.balance < 0);
+      if (low) overdrawn.push(`seq ${t} step ${low.n}: ${low.balance}`);
     }
+    expect(overdrawn).toEqual([]);
   });
 
   it('half-shrink thrash: after filling to 8, every alternating push and pop copies 8 elements', () => {
@@ -168,11 +183,11 @@ describe('amortized-analysis model', () => {
 
   it('potential Φ = 2·size − capacity + 1: Φ starts at 0, never goes negative, and every doubling push costs exactly 3 amortized', () => {
     expect(potential(0, START_CAP)).toBe(0);
-    for (const s of run(pushes(5000), 'double')) {
+    const bad = run(pushes(5000), 'double').filter((s) => {
       const amortized = s.cost + potential(s.after.length, s.capAfter) - potential(s.before.length, s.capBefore);
-      expect(amortized).toBe(3);
-      expect(potential(s.after.length, s.capAfter)).toBeGreaterThanOrEqual(0);
-    }
+      return amortized !== 3 || potential(s.after.length, s.capAfter) < 0;
+    });
+    expect(bad).toEqual([]);
   });
 
   it('cumulative cost is pushes plus copies', () => {
@@ -256,8 +271,7 @@ describe('amortized-analysis captions', () => {
 });
 
 describe('amortized-analysis lesson text', () => {
-  it("quiz and tips' numbers come from the model", async () => {
-    const lesson = (await import('./index')).default;
+  it("quiz and tips' numbers come from the model", () => {
     const q2 = lesson.quiz[1];
     expect(q2.options[q2.answer]).toBe(String(copiesOf(9, 'double')));
     expect(run(pushes(9), 'double').filter((s) => s.resize).map((s) => s.n)).toEqual([2, 3, 5, 9]);

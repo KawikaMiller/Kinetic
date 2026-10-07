@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { enc, hmac } from '../../core/crypto';
+import { enc, hexToBytes, hmac } from '../../core/crypto';
 import { mulberry32 } from '../../core/random';
 import {
   DEFAULT_ORDER, EDITED_AMOUNT, constantTimeEqual, deliver, editAmount, mismatches, naiveEqual, parseOrder, randomKey, tagFor,
 } from './model';
 
-const bytes = (hex: string) => Uint8Array.from(hex.match(/../g)!.map((b) => parseInt(b, 16)));
 const order = (t: string) => {
   const r = parseOrder(t);
   if (!r.ok) throw new Error(r.error);
@@ -29,8 +28,8 @@ describe('HMAC-SHA-256 against RFC 4231', () => {
   });
 
   it('the lesson\'s tagFor gives the same bytes as the vector', async () => {
-    const tag = await tagFor('hmac', bytes('0b'.repeat(20)), 'Hi There');
-    expect(Array.from(tag!)).toEqual(Array.from(bytes('b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7')));
+    const tag = await tagFor('hmac', hexToBytes('0b'.repeat(20)), 'Hi There');
+    expect(Array.from(tag!)).toEqual(Array.from(hexToBytes('b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7')));
   });
 });
 

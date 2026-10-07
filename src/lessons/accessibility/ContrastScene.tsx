@@ -1,9 +1,11 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import { ColorField } from '../../components/ColorField';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { CVD_MATRICES, contrastRatio, formatRatio, grade, type Vision } from './model';
+import { contrastRatio, formatRatio, grade } from '../../core/contrast';
+import { CVD_MATRICES, type Vision } from './model';
 
 // Colour pairs the learner can load. These are example inputs to the checker, not app colours.
 const PAIRS = [
@@ -83,16 +85,8 @@ export function ContrastScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <label className="ac-color">
-            <span>Text colour</span>
-            <input type="color" value={fg} onChange={(e) => setFg(e.target.value)} />
-            <code>{fg}</code>
-          </label>
-          <label className="ac-color">
-            <span>Background</span>
-            <input type="color" value={bg} onChange={(e) => setBg(e.target.value)} />
-            <code>{bg}</code>
-          </label>
+          <ColorField label="Text colour" value={fg} onChange={setFg} />
+          <ColorField label="Background" value={bg} onChange={setBg} />
         </>,
         <ControlGroup key="pairs" label="Try a pair">
           {PAIRS.map((p) => (

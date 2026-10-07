@@ -30,20 +30,21 @@ describe('keygen', () => {
     expect(toyRsa(61n, 53n, 17n)).toMatchObject({ ok: true, n: 3233n, phi: 3120n, d: 2753n });
   });
 
-  it('agrees with core toyRsa on validity and d wherever e < φ, for every prime pair under 60 and e from 2 to 60', () => {
-    // core toyRsa also refuses e ≥ φ (a textbook convention, not a requirement); compare only below φ.
+  it('agrees with core toyRsa on validity and d for every prime pair under 60 and e from 2 to 60, e > φ included', () => {
     const small = PRIMES.filter((p) => p < 60n);
+    let aboveVsPhi = 0;
     for (const p of small) {
       for (const q of small) {
         for (let e = 2n; e <= 60n; e++) {
           const mine = keygen({ p, q, e });
-          if (p !== q && e >= (p - 1n) * (q - 1n)) continue;
+          if (p !== q && e > (p - 1n) * (q - 1n)) aboveVsPhi++;
           const ref = toyRsa(p, q, e);
           expect(mine.key !== null).toBe(ref.ok);
           if (ref.ok) expect(mine.key!.d).toBe(ref.d);
         }
       }
     }
+    expect(aboveVsPhi).toBeGreaterThan(0); // pairs like (2, 3), φ = 2, really exercise e > φ
   });
 
   it('accepts e = 65537 > φ with the textbook primes, and it round-trips every message', () => {

@@ -2,6 +2,8 @@
 // and the full-handshake message flights for TLS 1.2 and 1.3, from which the round-trip
 // counts on screen are computed.
 
+import { equalMix } from '../../core/paint';
+
 export type BaseName = 'public' | 'client' | 'server' | 'mallory';
 
 export interface Paint {
@@ -21,20 +23,8 @@ const BASE_COLOR: Record<BaseName, string> = {
   mallory: 'var(--violet)',
 };
 
-/**
- * The colour of equal parts of some base paints: a real CSS blend, folded in a fixed
- * order with weights that give every base the same share. It depends only on the parts,
- * never on the order they were added, which is the property the analogy rests on.
- */
-export function blend(parts: readonly BaseName[]): string {
-  const sorted = [...parts].sort();
-  let color = BASE_COLOR[sorted[0]];
-  sorted.slice(1).forEach((name, i) => {
-    const sofar = i + 1;
-    color = `color-mix(in oklab, ${color} ${Math.round((sofar / (sofar + 1)) * 100)}%, ${BASE_COLOR[name]})`;
-  });
-  return color;
-}
+/** The colour of equal parts of some base paints (core/paint), in sorted order so it never depends on the order added. */
+export const blend = (parts: readonly BaseName[]): string => equalMix([...parts].sort().map((name) => BASE_COLOR[name]));
 
 /** Mix paints: the parts pool, and the colour is their blend. */
 export function mix(label: string, ...paints: Paint[]): Paint {

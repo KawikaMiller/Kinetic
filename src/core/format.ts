@@ -49,16 +49,43 @@ function scientific(v: number): string {
   return `${String(m)}${NBSP}×${NBSP}${power(k, 10)}`;
 }
 
+/** Below this, humanDuration says 'under a microsecond' instead of rounding to '0 s'. */
+const MICROSECOND = 1e-6;
+
 /**
  * A long span of seconds in the biggest sensible unit: '1 s', '1.7 min', '14 hours', '1 day',
- * '4.8 years', and past a million years a power of ten: '3.2 × 10²⁹² years'.
+ * '4.8 years', and past a million years a power of ten: '3.2 × 10²⁹² years'. A positive span
+ * under a microsecond is 'under a microsecond'; exactly 0 stays '0 s'.
  */
 export function humanDuration(seconds: number): string {
   if (!Number.isFinite(seconds)) return '∞ years';
+  if (seconds > 0 && seconds < MICROSECOND) return 'under a microsecond';
   if (seconds / YEAR >= SCIENTIFIC_YEARS) return `${scientific(seconds / YEAR)} years`;
   const [, size, one, many] = HUMAN_UNITS.find(([limit]) => seconds < limit)!;
   const text = sig(seconds / size);
   return `${text} ${text === '1' ? one : many}`;
+}
+
+const MICROSECOND_LOG10 = -6;
+/** Below this many log₁₀ seconds the value fits a Number comfortably, so humanDuration words it. */
+const PLAIN_LOG10_LIMIT = 15;
+const YEAR_LOG10 = Math.log10(YEAR);
+
+/**
+ * A duration given as log₁₀ seconds, for spans past what a double holds (a 617-digit search is
+ * 10⁶⁰⁸ s): humanDuration while it fits, then 'about 10ⁿ years'.
+ */
+export function humanDurationLog10(log10Seconds: number): string {
+  if (log10Seconds < MICROSECOND_LOG10) return 'under a microsecond';
+  if (log10Seconds < PLAIN_LOG10_LIMIT) return humanDuration(10 ** log10Seconds);
+  return `about ${power(Math.round(log10Seconds - YEAR_LOG10), 10)} years`;
+}
+
+/** A readout number: rounded to dp places, trailing zeros dropped, a real minus sign (−0.25); -0 prints as 0. */
+export function decimal(v: number, dp: number): string {
+  const r = Number(v.toFixed(dp));
+  const s = String(Math.abs(r));
+  return r < 0 ? `−${s}` : s;
 }
 
 /** Milliseconds, rounded: '42 ms'. */

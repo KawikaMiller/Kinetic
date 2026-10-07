@@ -4,8 +4,8 @@ import { HLine, Plot2D, Points, Curve, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { power } from '../../core/format';
-import { factorCaption, group, sizeCaption, timeText } from './frames';
+import { humanDuration, power } from '../../core/format';
+import { factorCaption, group, sizeCaption } from './frames';
 import {
   BITS_MAX, BITS_MIN, BITS_STEP, DIVISIONS_PER_SECOND, FACTORING_RECORDS, GNFS_RECORD_BITS, bitLength, factorToy, trialDivisionsLog2, trialSeconds, type FactorRun, type RsaKey,
 } from './model';
@@ -42,7 +42,7 @@ export function SizeScene({ picker, rsaKey }: { picker: ReactNode; rsaKey: RsaKe
         <Stats>
           <Stat label="Toy n" value={group(rsaKey.n)} color="var(--info)" sub={`${toyBits} bits`} />
           <Stat label={`Divisions for ${bits} bits`} value={<>≈ {power(trialDivisionsLog2(bits))}</>} sub="trial division, extrapolated" />
-          <Stat label="At 10⁹ a second" value={timeText(trialSeconds(bits))} sub="trial division only, illustrative" />
+          <Stat label="At 10⁹ a second" value={humanDuration(trialSeconds(bits))} sub="trial division only, illustrative" />
           <Stat label="GNFS record so far" value={`${GNFS_RECORD_BITS} bits`} color="var(--bad)" sub="RSA-250, factored in 2020" />
         </Stats>
       }
@@ -81,7 +81,7 @@ export function SizeScene({ picker, rsaKey }: { picker: ReactNode; rsaKey: RsaKe
           <Plot2D
             x={{ domain: [BITS_MIN, BITS_MAX], label: 'bits in n' }}
             y={{ domain: LOG_Y, ticks: 4, label: 'seconds (log)', format: (v) => power(v, 10) }}
-            ariaLabel={`Projected trial-division time: ${timeText(trialSeconds(bits))} for ${bits} bits; sizes up to ${GNFS_RECORD_BITS} bits have actually been factored`}
+            ariaLabel={`Projected trial-division time: ${humanDuration(trialSeconds(bits))} for ${bits} bits; sizes up to ${GNFS_RECORD_BITS} bits have actually been factored`}
           >
             <HLine at={Math.log10(AGE_OF_UNIVERSE_S)} label="age of the universe" tone="dim" />
             <VLine at={BITS_MAX} label="2048" tone="dim" />

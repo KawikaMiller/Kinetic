@@ -1,12 +1,9 @@
 import type { ReactNode } from 'react';
+import { decimal } from '../../core/format';
 import { TOP_K, compare, direction, isZero, metricsDisagree, rank, read, topIds, type Metric, type V2 } from './model';
 
-/** A number as the readouts show it: rounded, trailing zeros dropped, a real minus sign. */
-export function num(v: number, dp = 2): string {
-  const r = Number(v.toFixed(dp));
-  const s = String(Math.abs(r));
-  return r < 0 ? `−${s}` : s;
-}
+/** A number as the readouts show it (core/format decimal), to 2 places unless told otherwise. */
+export const num = (v: number, dp = 2) => decimal(v, dp);
 
 export const vec = ([x, y]: V2) => `(${num(x, 1)}, ${num(y, 1)})`;
 

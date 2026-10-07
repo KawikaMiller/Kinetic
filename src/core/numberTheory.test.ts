@@ -169,5 +169,13 @@ describe('toyRsa', () => {
     const shared = toyRsa(61n, 53n, 3n); // φ = 3120 is divisible by 3
     expect(shared.ok).toBe(false);
     if (!shared.ok) expect(shared.reason).toContain('shares a factor');
+    expect(toyRsa(61n, 53n, 1n)).toEqual({ ok: false, reason: 'e must be greater than 1' });
+  });
+  it('accepts any e > 1 coprime to φ, above φ too: 65537 with p = 61, q = 53 gives the same d as 17', () => {
+    expect(toyRsa(61n, 53n, 65537n)).toEqual({ ok: true, n: 3233n, phi: 3120n, e: 65537n, d: 2753n });
+    const key = toyRsa(11n, 13n, 127n); // φ = 120 < 127
+    expect(key.ok).toBe(true);
+    if (key.ok) for (let m = 0n; m < key.n; m++) expect(modPow(modPow(m, key.e, key.n), key.d, key.n)).toBe(m);
+    expect(toyRsa(11n, 13n, 125n).ok).toBe(false); // 125 shares the factor 5 with 120
   });
 });

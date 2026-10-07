@@ -1,0 +1,4 @@
+/* ColorField (components/ColorField.tsx). Loaded globally from main.tsx. */
+.color-field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.color-field input { width: 44px; height: 32px; padding: 0; border: 1px solid var(--line-2); border-radius: 8px; background: none; cursor: pointer; }
+.color-field code { font-size: 12px; color: var(--text); }

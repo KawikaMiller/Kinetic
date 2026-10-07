@@ -7,10 +7,10 @@ import { Button, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, Tex
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
 import { barsFromHistogram } from '../../core/plot';
-import { histogram } from '../../core/stats';
+import { histogram, runningStats } from '../../core/stats';
 import { drawCaption, exactLines, num, retryCaption, variableCaption } from './frames';
 import {
-  DEFAULT_TABLE, MAX_ROWS, drawsFor, exactMoments, expectedAttempts, modes, pairSummary, parseTable, pmfOf, runningStats,
+  DEFAULT_TABLE, MAX_ROWS, drawsFor, exactMoments, expectedAttempts, modes, pairSummary, parseTable, pmfOf,
   type Params, type VarId,
 } from './model';
 import './styles.css';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBoundedBigInt, parseBoundedInt, parseInteger, parseIntegers } from './parse';
+import { parseBoundedBigInt, parseBoundedDecimal, parseBoundedInt, parseInteger, parseIntegers } from './parse';
 
 /** Strings Number() turns into an integer that a learner never typed as one. */
 const NOT_PLAIN_DECIMAL = ['0x10', '0b11', '0o7', '1e1', '1E2', '+5', '5.', '.5', '3.5', 'Infinity', 'ten', '1_000', '٣'];
@@ -112,5 +112,37 @@ describe('parseBoundedBigInt', () => {
   it('gives the range messages a bigint', () => {
     const o = { min: 2n, max: 99n, messages: { tooSmall: (v: bigint) => `${v} is too small` } };
     expect(parseBoundedBigInt('1', o)).toEqual({ ok: false, error: '1 is too small' });
+  });
+});
+
+describe('parseBoundedDecimal', () => {
+  const field = { min: -10, max: 10 };
+  const value = (t: string, o: Parameters<typeof parseBoundedDecimal>[1] = field) => {
+    const r = parseBoundedDecimal(t, o);
+    return r.ok ? r.value : null;
+  };
+  it('reads plain decimals within bounds, inclusive', () => {
+    expect(value('2.5')).toBe(2.5);
+    expect(value(' -3 ')).toBe(-3);
+    expect(value('10')).toBe(10);
+    expect(value('-10.000')).toBe(-10);
+    expect(value('0')).toBe(0);
+  });
+  it('refuses exponents, Infinity, NaN, signs, half-written numbers, units and markup', () => {
+    for (const t of ['1e3', '1E3', 'Infinity', '-Infinity', 'NaN', '+5', '.5', '2.', '1,5', '1 000', '2kg', '<b>1</b>', '0x10', '🙂', '--1', '1.2.3']) {
+      expect(value(t), t).toBeNull();
+    }
+  });
+  it('reads a typographic minus only when asked', () => {
+    expect(value('−2.5')).toBeNull();
+    expect(value('−2.5', { ...field, typographicMinus: true })).toBe(-2.5);
+  });
+  it('refuses out-of-range values rather than clamping, with generic or custom messages', () => {
+    expect(parseBoundedDecimal('10.5', field)).toEqual({ ok: false, error: 'Keep it between -10 and 10.' });
+    expect(parseBoundedDecimal('', field)).toEqual({ ok: false, error: 'Type a number.' });
+    expect(parseBoundedDecimal('1e3', field)).toEqual({ ok: false, error: "\"1e3\" isn't a plain number like 2.5 or -3." });
+    const custom = parseBoundedDecimal('-0.5', { min: 0, max: 1, messages: { tooSmall: (v, t) => `${t} is below 0 (read ${v})` } });
+    expect(custom).toEqual({ ok: false, error: '-0.5 is below 0 (read -0.5)' });
+    expect(parseBoundedDecimal('-1', { ...field, messages: { negative: 'positive only' } })).toEqual({ ok: false, error: 'positive only' });
   });
 });

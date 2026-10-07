@@ -7,16 +7,21 @@ const strip = (s: string) => s.replace(/^0[xob]/, '').replace(/\s/g, '');
 
 describe('formatIn / parseAnyBase round-trip every 16-bit value', () => {
   it('agrees with Number.toString(base) and parseInt for 0..65535 in every base', () => {
+    // Exhaustive; mismatches are collected and asserted once, so a failure still names every bad value.
+    const mismatches: string[] = [];
     for (let v = 0; v <= 0xffff; v++) {
       for (const base of BASES) {
         const shown = formatIn(v, base, 16);
-        expect(parseInt(strip(shown), base)).toBe(v);
-        expect(strip(shown).replace(/^0+(?=.)/, '').toLowerCase()).toBe(v.toString(base));
+        if (parseInt(strip(shown), base) !== v) mismatches.push(`parseInt ${shown} (base ${base}) ≠ ${v}`);
+        if (strip(shown).replace(/^0+(?=.)/, '').toLowerCase() !== v.toString(base)) mismatches.push(`${shown} ≠ toString(${base}) of ${v}`);
         // the binary readout is shown grouped without a prefix, so read it back as binary
         const parsed = parseAnyBase(shown, base, 16);
-        expect(parsed).toEqual({ ok: true, value: v, base });
+        if (!parsed.ok || parsed.value !== v || parsed.base !== base || Object.keys(parsed).length !== 3) {
+          mismatches.push(`parseAnyBase(${shown}, ${base}) = ${JSON.stringify(parsed)}`);
+        }
       }
     }
+    expect(mismatches).toEqual([]);
   });
 
   it('pads hex and binary to the register width', () => {
@@ -53,16 +58,19 @@ describe('parseAnyBase', () => {
 
 describe('count up', () => {
   it('ripple steps flip one bit each and end on +1 (mod 2^16) for every 16-bit value', () => {
+    const mismatches: string[] = [];
     for (let v = 0; v <= 0xffff; v++) {
       const steps = countUpSteps(toBits(v, 16));
-      expect(fromBits(steps[steps.length - 1].bits)).toBe((v + 1) % 0x10000);
+      if (fromBits(steps[steps.length - 1].bits) !== (v + 1) % 0x10000) mismatches.push(`${v}: ends on ${fromBits(steps[steps.length - 1].bits)}`);
       let prev = toBits(v, 16);
-      for (const s of steps) {
-        expect(s.bits.filter((b, i) => b !== prev[i])).toHaveLength(1);
-        expect(s.bits[s.ring]).not.toBe(prev[s.ring]);
+      steps.forEach((s, k) => {
+        const flipped = s.bits.filter((b, i) => b !== prev[i]).length;
+        if (flipped !== 1) mismatches.push(`${v} step ${k}: ${flipped} bits flipped`);
+        if (s.bits[s.ring] === prev[s.ring]) mismatches.push(`${v} step ${k}: ring bit ${s.ring} unchanged`);
         prev = s.bits;
-      }
+      });
     }
+    expect(mismatches).toEqual([]);
   });
 
   it('lists the carries from the right, then the landing bit', () => {

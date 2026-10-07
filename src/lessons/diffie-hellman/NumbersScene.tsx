@@ -5,14 +5,13 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useSetCaption } from '../../core/caption';
-import { power } from '../../core/format';
+import { humanDurationLog10, power } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { bruteCaption, eveSees, group, messagesFor, numberFrames } from './frames';
 import {
   DEFAULTS, DIGITS_MAX, DIGITS_MIN, EVE_SECRETS, TOY_WARNING, bruteForce, bruteLog10Seconds, exchange, gStrength, parseParams,
   type BruteForce, type DhParams, type GInfo, type ParamName,
 } from './model';
-import { vastDuration } from './time';
 
 const STEP_MS = 1700;
 const ACTORS = [
@@ -153,7 +152,7 @@ export function NumbersScene({ picker }: { picker: ReactNode }) {
             <SectionTitle>Bigger p</SectionTitle>
             <Slider label="Digits in p" value={digits} min={DIGITS_MIN} max={DIGITS_MAX} onChange={setDigits} format={(d) => `${d} digits`} />
             <p>
-              Trying every a: about {power(digits, 10)} tries, <b>{vastDuration(bruteLog10Seconds(digits))}</b> at a billion a second.
+              Trying every a: about {power(digits, 10)} tries, <b>{humanDurationLog10(bruteLog10Seconds(digits))}</b> at a billion a second.
             </p>
             <p className="dh-muted">
               Extrapolated, not run. Real attacks (the number field sieve) are much faster than trying every a, which is why real DH primes
