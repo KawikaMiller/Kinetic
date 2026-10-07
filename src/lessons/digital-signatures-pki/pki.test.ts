@@ -3,6 +3,8 @@ import { ecdsaKeyPair, ecdsaSign, ecdsaVerify, enc } from '../../core/crypto';
 import { mulberry32 } from '../../core/random';
 import { EXPECTED, LESSON_NOW, makeKeys, matchName, scenario, validate, type Keys, type Preset } from './pki';
 
+const hex = (h: string) => Uint8Array.from(h.match(/../g)!, (b) => parseInt(b, 16));
+
 let keys: Keys;
 beforeAll(async () => {
   keys = (await makeKeys())!;
@@ -77,13 +79,24 @@ describe('sign and verify (real ECDSA P-256)', () => {
     }
   });
 
-  it('signs differently every time (a fresh random nonce), and both signatures verify', async () => {
+  it('two signatures of the same note both verify (whether or not the platform randomises them)', async () => {
     const pair = (await ecdsaKeyPair())!;
     const note = enc.encode('same note');
     const a = (await ecdsaSign(pair.privateKey, note))!;
     const b = (await ecdsaSign(pair.privateKey, note))!;
-    expect(Array.from(a)).not.toEqual(Array.from(b));
     expect(await ecdsaVerify(pair.publicKey, a, note)).toBe(true);
     expect(await ecdsaVerify(pair.publicKey, b, note)).toBe(true);
+  });
+
+  it('verifies the published RFC 6979 A.2.5 signature (P-256, SHA-256, message "sample")', async () => {
+    // The RFC's public key only (no private key in source): 0x04 ‖ Ux ‖ Uy.
+    const pub = hex('04'
+      + '60fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6'
+      + '7903fe1008b8bc99a41ae9e95628bc64f2f1b20c2d7e9f5177a3c294d4462299');
+    const sig = hex('efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716'
+      + 'f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8');
+    const key = await crypto.subtle.importKey('raw', pub, { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify']);
+    expect(await ecdsaVerify(key, sig, enc.encode('sample'))).toBe(true);
+    expect(await ecdsaVerify(key, sig, enc.encode('samplf'))).toBe(false);
   });
 });
