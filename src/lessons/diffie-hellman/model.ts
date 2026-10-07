@@ -1,7 +1,7 @@
 // Diffie-Hellman on toy numbers: the group, the exchange (honest and with a man in the
 // middle), Eve's brute force, and what bigger primes cost her. Exact bigint maths from
 // core/numberTheory. Toy sizes only: real DH uses 2048+ bit primes or elliptic curves.
-import { isProbablePrime, modPow } from '../../core/numberTheory';
+import { isProbablePrime, modPow, trialFactor } from '../../core/numberTheory';
 import { parseBoundedBigInt, type FieldParse } from '../../core/parse';
 
 export const DEFAULTS = { p: 23n, g: 5n, a: 6n, b: 15n } as const;
@@ -32,18 +32,32 @@ export function orderOf(g: bigint, p: bigint): number {
   return k;
 }
 
-export type GStrength = 'generator' | 'prime-subgroup' | 'weak';
+export type GStrength = 'generator' | 'prime-subgroup' | 'tiny' | 'composite';
+/** Below this many values a group is tiny however its order factors. */
+export const TINY_ORDER = 8;
+
+export interface GInfo {
+  /** How many distinct values g makes: its order. */
+  order: number;
+  kind: GStrength;
+  /** The order's prime factors (with repeats), for the composite case. */
+  factors: bigint[];
+}
 
 /**
- * How good a base g is. A generator makes all p − 1 values. A g whose order is the large
- * prime (p − 1)/2 is what real "safe prime" groups deliberately use. Anything smaller
- * leaves A, B and the secret in a small set: weak.
+ * How good a base g is, by its order k:
+ * - generator: k = p − 1, all values. Real groups avoid this: it leaks the parity of a.
+ * - prime-subgroup: k is prime, which is what real groups deliberately use (huge k).
+ * - tiny: only a handful of values.
+ * - composite: k splits into prime factors, and Eve's search splits into pieces that size (Pohlig–Hellman).
  */
-export function gStrength(g: bigint, p: bigint): { order: number; kind: GStrength } {
+export function gStrength(g: bigint, p: bigint): GInfo {
   const order = orderOf(g, p);
-  if (BigInt(order) === p - 1n) return { order, kind: 'generator' };
-  if (BigInt(order) * 2n === p - 1n && isProbablePrime(BigInt(order)).prime) return { order, kind: 'prime-subgroup' };
-  return { order, kind: 'weak' };
+  const factors = trialFactor(BigInt(order)).factors;
+  if (BigInt(order) === p - 1n) return { order, kind: 'generator', factors };
+  if (order < TINY_ORDER) return { order, kind: 'tiny', factors };
+  if (isProbablePrime(BigInt(order)).prime) return { order, kind: 'prime-subgroup', factors };
+  return { order, kind: 'composite', factors };
 }
 
 export interface Exchange {

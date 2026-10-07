@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { modPow } from '../../core/numberTheory';
 import { ecdhAgree } from './ecdh';
+import { vastDuration } from './time';
 import {
   DEFAULTS, EVE_SECRETS, bruteForce, bruteLog10Seconds, exchange, mix, gStrength, orderOf, paint, parseParams, sameMix,
 } from './model';
@@ -68,16 +69,19 @@ describe('the generator check', () => {
     expect(orderOf(2n, P)).toBe(11);
   });
 
-  it('calls a g weak only when its order is small, not for the prime-order subgroup real groups use', () => {
-    expect(gStrength(5n, 23n)).toEqual({ order: 22, kind: 'generator' });
-    // 23 = 2·11 + 1 is a safe prime: 2 generates the order-11 subgroup, on purpose in real groups.
-    expect(gStrength(2n, 23n)).toEqual({ order: 11, kind: 'prime-subgroup' });
+  it('classifies g by its order: generator, prime order, tiny, or composite (weak by its small factors)', () => {
+    expect(gStrength(5n, 23n)).toMatchObject({ order: 22, kind: 'generator' });
+    // 23 = 2·11 + 1 is a safe prime: 2 generates the prime-order-11 subgroup, on purpose in real groups.
+    expect(gStrength(2n, 23n)).toMatchObject({ order: 11, kind: 'prime-subgroup' });
     // 5³ = 125 = 4·31 + 1: only 3 values.
-    expect(gStrength(5n, 31n)).toEqual({ order: 3, kind: 'weak' });
-    // 31 isn't a safe prime ((31 − 1)/2 = 15 isn't prime), so every non-generator mod 31 is weak.
+    expect(gStrength(5n, 31n)).toMatchObject({ order: 3, kind: 'tiny' });
+    // The domain reviewer's probes: prime order 127 is the good case, order 105 = 3·5·7 is weak by its factors.
+    expect(gStrength(14n, 509n)).toMatchObject({ order: 127, kind: 'prime-subgroup' });
+    expect(gStrength(4n, 211n)).toEqual({ order: 105, kind: 'composite', factors: [3n, 5n, 7n] });
+    // Every non-generator mod 31 has order 3, 5 (tiny), or 6, 10, 15 (composite).
     for (let g = 2n; g <= 29n; g++) {
       const { order, kind } = gStrength(g, 31n);
-      expect(kind).toBe(order === 30 ? 'generator' : 'weak');
+      expect(kind).toBe(order === 30 ? 'generator' : order < 8 ? 'tiny' : 'composite');
     }
   });
 });
@@ -94,6 +98,12 @@ describe('Eve\'s brute force', () => {
       }
     }
     expect(bruteForce(P, 5n, 8n, 19n)).toEqual({ found: 6n, tries: 6, secret: 2n });
+  });
+
+  it('says "under a microsecond" for toy primes instead of 0 s', () => {
+    expect(vastDuration(bruteLog10Seconds(2))).toBe('under a microsecond');
+    expect(vastDuration(bruteLog10Seconds(12))).toBe('17 min');
+    expect(vastDuration(bruteLog10Seconds(617))).toMatch(/^about 10.* years$/);
   });
 
   it('projects a 617-digit p in log space, without overflowing', () => {
