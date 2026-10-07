@@ -148,3 +148,23 @@ describe('placement feedback', () => {
     expect(placementFeedback(CHIPS.find((c) => c.id === 'sorting')!, 'NP').text).toContain('also in P');
   });
 });
+
+describe('review B15 regressions', () => {
+  it('"about 10× per extra digit" holds step by step, not just on average', () => {
+    const ratios: number[] = [];
+    for (let d = 2; d <= MAX_DIGITS; d++) ratios.push(dpCells(TRAP_N, trapInstance(d).target) / dpCells(TRAP_N, trapInstance(d - 1).target));
+    for (const r of ratios) {
+      expect(r).toBeGreaterThan(8.5);
+      expect(r).toBeLessThan(11.5);
+    }
+  });
+
+  it('the P = NP note keeps NP-hard problems like halting outside the collapse', async () => {
+    const { P_EQUALS_NP_NOTE } = await import('./classes');
+    expect(P_EQUALS_NP_NOTE).toContain('P, NP and NP-complete would collapse');
+    expect(P_EQUALS_NP_NOTE).toMatch(/NP-hard problems outside NP, like halting, would still lie outside/);
+    expect(P_EQUALS_NP_NOTE).not.toMatch(/the regions collapse into one/);
+    // halting really is the chip that sits outside NP
+    expect(CHIPS.find((c) => c.id === 'halting')!.region).toBe('NPH');
+  });
+});

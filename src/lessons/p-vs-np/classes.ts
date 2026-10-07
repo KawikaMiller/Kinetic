@@ -86,6 +86,10 @@ export function placementFeedback(chip: ProblemChip, region: Region): { correct:
   return { correct: false, text: `${chip.label} doesn't belong in ${REGION_NAMES[region]}.` };
 }
 
+/** What the picture would look like if P = NP: shown on screen next to the map. */
+export const P_EQUALS_NP_NOTE =
+  'The nested picture assumes P ≠ NP, which nobody has proven. If P = NP, then P, NP and NP-complete would collapse into one region (apart from the two trivial problems whose answer is always yes or always no), while NP-hard problems outside NP, like halting, would still lie outside it.';
+
 /* ---------- spot it at work ---------- */
 
 export interface Scenario {
