@@ -1,6 +1,6 @@
 .bm { gap: 14px; }
-.bm-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: end; }
-.bm-row-label { font: 600 12px var(--mono); color: var(--muted); text-align: right; padding-bottom: 6px; white-space: nowrap; }
+.bm-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; align-items: center; }
+.bm-row-label { font: 600 12px var(--mono); color: var(--muted); text-align: right; white-space: nowrap; }
 .bm-row-label.is-result { color: var(--hi); }
 .bm-row-label.is-mask { color: var(--violet); }
 /* Columns not worked out yet: an empty dashed slot, not a 0. */
@@ -17,3 +17,5 @@
 .bm-trick-body { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
 .bm-steps { flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; }
 .bm-trick-body .code-panel { flex: 1 1 260px; }
+/* 32 bits: the phone-size cells, so all four bytes fit one line on a desktop stage. */
+.bm.is-32 .bit-strip { --bit-w: 20px; --bit-fs: 12px; }

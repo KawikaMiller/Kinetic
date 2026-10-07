@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { CodePanel } from '../../components/CodePanel';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -39,6 +39,14 @@ const pendingMark = <span className="bm-pending-mark">·</span>;
 
 export function Stage() {
   const [scene, picker] = useScenePicker({ label: 'Scene', options: SCENES, initial: 'ops' });
+  const shownScene = useRef(scene);
+  // Each scene is its own component, so switching remounts the picker and drops focus to <body>.
+  // Put it back on the picker's chosen option (Phase 2: belongs in useScenePicker).
+  useEffect(() => {
+    if (shownScene.current === scene) return;
+    shownScene.current = scene;
+    if (document.activeElement === document.body) document.querySelector<HTMLElement>('.segmented[aria-label="Scene"] button.on')?.focus();
+  }, [scene]);
   if (scene === 'flags') return <FlagsScene picker={picker} />;
   if (scene === 'tricks') return <TricksScene picker={picker} />;
   return <OpsScene picker={picker} />;
@@ -180,7 +188,8 @@ function OpsScene({ picker }: { picker: ReactNode }) {
               <Button onClick={() => submit('b')} disabled={!drafts.b.trim()}>Set B</Button>
             </>
           )}
-          {(errors.a || errors.b) && <Hint tone="muted" className="bm-error">{errors.a ?? errors.b}</Hint>}
+          {errors.a && <Hint tone="muted" className="bm-error">A: {errors.a}</Hint>}
+          {errors.b && usesB(op) && <Hint tone="muted" className="bm-error">B: {errors.b}</Hint>}
         </>,
         <>
           <ControlGroup label="Real uses">
@@ -196,7 +205,7 @@ function OpsScene({ picker }: { picker: ReactNode }) {
         </>,
       ]}
     >
-      <div className="stage-pad bm">
+      <div className={`stage-pad bm ${width === 32 ? 'is-32' : ''}`}>
         <div className="bm-rows">
           <span className="bm-row-label">A</span>
           <BitStrip
@@ -398,8 +407,8 @@ function TricksScene({ picker }: { picker: ReactNode }) {
       height={320}
       stats={
         <Stats>
-          <Stat label="x" value={x} sub={hex(x, 8)} />
-          {trick === 'swap' && !alias && <Stat label="y" value={y} sub={hex(y, 8)} />}
+          <Stat label="input x" value={x} sub={hex(x, 8)} />
+          {trick === 'swap' && !alias && <Stat label="input y" value={y} sub={hex(y, 8)} />}
           {fr.counter !== null && <Stat label="count" value={fr.counter} color="var(--hi)" />}
           {fr.verdicts.map((v) => (
             <Stat key={v.label} label={v.label} value={String(v.value)} color={v.value ? 'var(--hi)' : 'var(--muted)'} />
