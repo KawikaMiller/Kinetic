@@ -1,0 +1,21 @@
+.cv { gap: 12px; }
+.cv .code-panel .trail { font-size: 11.5px; }
+.cv-panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cv-stack { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cv-stack .section-title { display: block; }
+.cv-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cv-regs { display: flex; flex-direction: column; gap: 8px; }
+.cv-regs .section-title { display: block; }
+.cv-reg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 10px; }
+.cv-reg { display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; border-radius: 6px; font: 500 13px var(--mono); transition: background 0.25s; }
+.cv-reg-name { color: var(--muted); }
+.cv-reg-value { color: var(--text); min-width: 0; overflow-wrap: anywhere; text-align: right; }
+.cv-reg.is-arg .cv-reg-name { color: var(--info); }
+.cv-reg.is-changed { background: color-mix(in srgb, var(--hi) 16%, transparent); }
+.cv-reg.is-result { background: color-mix(in srgb, var(--ok) 20%, transparent); }
+.cv-reg.is-result .cv-reg-value { color: var(--ok); }
+.cv-reg.is-clobbered { background: color-mix(in srgb, var(--orange) 22%, transparent); }
+.cv-reg.is-clobbered .cv-reg-value { color: var(--orange); }
+@media (max-width: 900px) {
+  .cv-panels { grid-template-columns: minmax(0, 1fr); }
+}
