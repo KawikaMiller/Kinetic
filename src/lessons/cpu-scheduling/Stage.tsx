@@ -6,6 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { pct, plural } from '../../core/format';
+import { barLabelPx } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
 import { CompareTable } from './CompareTable';
 import { scheduleFrames } from './frames';
@@ -116,6 +117,7 @@ export function Stage() {
             unit=""
             size="md"
             labelWidth={84}
+            labelMinPx={Math.max(...jobs.map((j) => barLabelPx(j.name)))}
             ariaLabel={`Schedule up to t = ${m.t}: the CPU lane, then one lane per job`}
             className="cs-gantt"
           />

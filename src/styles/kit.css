@@ -204,6 +204,10 @@
   overflow: visible;
 }
 .meter-fill { display: block; height: 100%; border-radius: inherit; background: var(--c, var(--info)); }
+/* Bar markers: a tick in its tone, its label under the track */
+.meter.has-mark-labels .meter-track { margin-bottom: 14px; }
+.meter-mark[class*='tone-'] { background: var(--c); }
+.meter-mark-label { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; font-style: normal; }
 .meter-mark {
   position: absolute;
   top: -3px;
@@ -759,7 +763,7 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 /* Cursor and marker lines span the lanes only, never the label rows above or below (16px + the 4px gap). */
 .gantt.has-markers > :is(.gantt-now, .gantt-marker) { top: 18px; }
 .gantt.has-axis > :is(.gantt-now, .gantt-marker) { bottom: 18px; }
-.gantt-marker-label { position: absolute; bottom: 0; transform: translateX(-50%); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; }
+.gantt-marker-label { position: absolute; bottom: 0; transform: translateX(calc(-50% + var(--dx, 0px))); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; }
 .gantt-tick { position: absolute; top: 2px; transform: translateX(-50%); font: 500 10px var(--mono); color: var(--muted); white-space: nowrap; }
 .gantt-tick:first-child { transform: none; }
 .gantt-tick:last-child { transform: translateX(-100%); }
