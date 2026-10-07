@@ -7,3 +7,9 @@
   - add a per-cell class or an "outline in tone" cell state (counting sort's green outline goes through renderValue). The k6 round may cover this with `cellClass`.
 - **CodePanel:** an `add` line state tinted `--ok` for diffs (edit-distance uses renderLine).
 - **WideRegion:** scroll a given element into view (rolling-hash's window can sit off-screen on phones).
+
+## B15 (merged)
+- **Button and Box:** forward a `ref`. The k6 round is adding Button; add Box too.
+- **Plot2D:** VLine/HLine labels clamp inside the plot edges (they clip on phones).
+- **Docs:** CLAUDE.md gotcha: oxlint `only-export-components` fires on any uppercase arrow helper (`const P = …`) and then flags every export in the file.
+- Done on main at 49ece19: Vitest `testTimeout: 15_000`.
