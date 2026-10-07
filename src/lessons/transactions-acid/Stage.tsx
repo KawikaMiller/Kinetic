@@ -75,6 +75,11 @@ export function Stage() {
             Undo crash
           </Button>
           <Hint>Pause on any step, then crash there.</Hint>
+          <Hint block>
+            A scripted model, not a real database: pages are written straight to disk at their step (real ones wait in memory
+            until a checkpoint), and the log is a few readable lines. Recovery here undoes and redoes from one log, as
+            ARIES-style engines such as InnoDB do; PostgreSQL only redoes, and its visibility rules hide uncommitted rows.
+          </Hint>
         </Controls>
       }
     >
