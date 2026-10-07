@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { seededPoints } from './closest';
-import { caseLabel, num, pairFrames, thetaText, treeFrames } from './frames';
-import { A_VALUES, B_VALUES, classify, DISPLAY_K, F_IDS, PRESETS, treeLevels, treeSum } from './master';
+import { caseLabel, levelNote, num, pairFrames, thetaText, treeFrames } from './frames';
+import { A_VALUES, B_VALUES, classify, DISPLAY_K, F, F_IDS, PRESETS, treeLevels, treeSum } from './master';
 
 describe('treeFrames', () => {
   it('has one frame per level, every caption its own, and closes on the case and the real sum, for all 168 (a, b, f)', () => {
@@ -64,5 +64,65 @@ describe('try-this claims', () => {
     expect(thetaText(classify(4, 2, 'n').theta)).toBe('n²');
     const shrink = treeLevels(1, 2, 'n', DISPLAY_K[2]).slice(0, -1).map((l) => l.total);
     expect(shrink.every((t, i) => i === 0 || t < shrink[i - 1])).toBe(true);
+  });
+});
+
+describe('review B15 regressions', () => {
+  const all = A_VALUES.flatMap((a) => B_VALUES.flatMap((b) => F_IDS.map((f) => [a, b, f] as const)));
+
+  it('case 2 captions say what the level totals actually do', () => {
+    for (const [a, b, f] of all) {
+      const c = classify(a, b, f);
+      if (c.kind !== 2) continue;
+      const K = DISPLAY_K[b];
+      const lv = treeLevels(a, b, f, K);
+      const last = text(treeFrames(a, b, f, K).at(-1)!.say);
+      if (c.k === 0) {
+        expect(last).toContain('every level, the leaves included, does the same');
+        for (const l of lv) expect(l.total / lv[0].total).toBeCloseTo(1, 9);
+      } else {
+        expect(last, `${a},${b},${f}`).not.toMatch(/same work/);
+        expect(last).toContain('shrinks toward the leaves');
+        const work = lv.filter((l) => !l.leaf).map((l) => l.total);
+        expect(work.every((t, i) => i === 0 || t < work[i - 1])).toBe(true);
+        expect(work[0] / work.at(-1)!).toBeGreaterThan(2);
+      }
+    }
+  });
+
+  it('never writes "log¹"', () => {
+    for (const [a, b, f] of all) {
+      const K = DISPLAY_K[b];
+      for (const fr of treeFrames(a, b, f, K)) expect(text(fr.say)).not.toContain('log¹');
+      expect(levelNote(a, b, f)).not.toContain('log¹');
+    }
+  });
+
+  it('the level note blames the log factor exactly when the polynomial parts tie, and its direction matches the bars', () => {
+    for (const [a, b, f] of all) {
+      const note = levelNote(a, b, f);
+      const c = classify(a, b, f);
+      const tie = c.kind === 2 || c.kind === 'gap';
+      const lv = treeLevels(a, b, f, DISPLAY_K[b]).filter((l) => !l.leaf).map((l) => l.total);
+      if (F[f].q !== 0 && tie) {
+        expect(note).toContain('the log factor decides');
+        expect(note).not.toContain('polynomial part decides');
+        if (note.includes('shrinks')) expect(lv[0]).toBeGreaterThan(lv.at(-1)!);
+        if (note.includes('grows')) expect(lv[0]).toBeLessThan(lv.at(-1)!);
+      }
+      if (F[f].q !== 0 && !tie) expect(note).toContain('polynomial part decides');
+      if (F[f].q === 0) {
+        const r = lv[1] / lv[0];
+        expect(note).toContain(note.includes('growing') ? 'leaves win' : note.includes('shrinking') ? 'root wins' : 'every level the same');
+        if (note.includes('growing')) expect(r).toBeGreaterThan(1);
+        if (note.includes('shrinking')) expect(r).toBeLessThan(1);
+      }
+    }
+  });
+
+  it('discloses the closest-pair demo cost in full', () => {
+    const last = text(pairFrames(seededPoints(1, 32)).frames.at(-1)!.say);
+    expect(last).toContain('O(n log² n)');
+    expect(last).toContain('merging y-sorted halves');
   });
 });

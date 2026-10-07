@@ -37,6 +37,27 @@ export const nCrit = (a: number, b: number) => {
   return Number.isInteger(c) ? thetaText({ p: c, q: 0 }) : `n^${c.toFixed(3)}`;
 };
 
+/** "log", "log²", …: no superscript for the first power. */
+const logPower = (k: number) => (k === 1 ? 'log' : `log${superscript(k)}`);
+
+/**
+ * The note under the level bars: how one level compares with the next. When the polynomial
+ * parts tie (p = log_b a), the log factor is what decides, not the polynomial part.
+ */
+export function levelNote(a: number, b: number, f: FId): string {
+  const { p2, q } = F[f];
+  const ratio = a / b ** (p2 / 2);
+  if (q === 0) {
+    return `Each level does a / b^p = ${num(ratio)} times the level above (${ratio > 1 ? 'growing: the leaves win' : ratio < 1 ? 'shrinking: the root wins' : 'equal: every level the same'}).`;
+  }
+  if (a * a === b ** p2) {
+    return q > 0
+      ? `The polynomial parts tie (p = log_b a), so the log factor decides: level j does about ${nCrit(a, b)} · ${logPower(q)}(n/bʲ), which shrinks slowly toward the leaves, and the sum gains one more log.`
+      : `The polynomial parts tie (p = log_b a), so the log factor decides: level j does about ${nCrit(a, b)} / log(n/bʲ), which grows toward the leaves, and the sum is n times a harmonic sum, n log log n.`;
+  }
+  return `With a log factor in f the level ratio drifts slowly, but p = ${p2 / 2} and log_b a = ${critText(a, b)} differ, so the polynomial part decides.`;
+}
+
 export const caseLabel = (c: Case) => (c.kind === 'gap' ? 'Not covered' : `Case ${c.kind}`);
 
 export function caseText(a: number, b: number, f: FId, c: Case): ReactNode {
@@ -46,12 +67,17 @@ export function caseText(a: number, b: number, f: FId, c: Case): ReactNode {
   switch (c.kind) {
     case 1:
       return <>Case 1: f(n) = {F[f].label} grows polynomially slower than {crit} (exponent {p} &lt; {critText(a, b)}), so the leaves dominate: {theta}.</>;
-    case 2:
+    case 2: {
+      if (c.k === 0) {
+        return <>Case 2: f(n) = {F[f].label} matches {crit} exactly, so every level, the leaves included, does the same {crit} work, and there are about log n levels: {theta}.</>;
+      }
+      const logk = logPower(c.k);
       return (
         <>
-          Case 2{c.k > 0 ? ' (extended form, with log' + superscript(c.k) + ' n)' : ''}: f(n) = {F[f].label} matches {crit}{c.k > 0 ? ` times log${c.k === 1 ? '' : superscript(c.k)} n` : ''}, so every level does about the same work and there are about log n levels: {theta}.
+          Case 2, extended form (f has an extra {logk} n): f(n) = {F[f].label} matches {crit} times {logk} n. The polynomial part is the same at every level, but level j does about {crit} · {logk}(n/bʲ), which shrinks toward the leaves. Adding {logk} over about log n levels gives one more log: {theta}.
         </>
       );
+    }
     case 3:
       return (
         <>
@@ -127,7 +153,7 @@ export function pairFrames(points: readonly Pt[]): { run: ClosestRun; frames: Pa
   rec.set({ step: null, done: true });
   rec.close(
     <>
-      Closest pair at distance {run.best.d.toFixed(2)}. Strip checks per level ({perLevel}) never exceed 7 per point, so the combine step is linear: T(n) = 2T(n/2) + O(n), the merge-sort case, Θ(n log n). (This demo re-sorts each strip by y, an extra log factor in sorting; merging y-sorted halves avoids it.)
+      Closest pair at distance {run.best.d.toFixed(2)}. Strip checks per level ({perLevel}) never exceed 7 per point: the checks are linear per level. This demo re-sorts each strip by y, which makes its own combine O(n log n) and the whole run O(n log² n); merging y-sorted halves instead keeps the combine linear, giving T(n) = 2T(n/2) + O(n) = Θ(n log n), the merge-sort case.
     </>,
     2.5,
   );
