@@ -1,0 +1,27 @@
+.ge-tiling { gap: 12px; }
+.ge-tiling-figure { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ge-svg { width: 100%; max-width: 480px; height: auto; }
+.ge-outline { fill: none; stroke: var(--line-2); stroke-width: 1.5; }
+.ge-left { fill: color-mix(in srgb, var(--info) 22%, transparent); stroke: var(--info); stroke-width: 1; stroke-dasharray: 4 3; }
+.ge-sq rect { stroke: var(--bg); stroke-width: 1; }
+.ge-sq text { font: 700 13px var(--mono); fill: var(--bg); }
+.ge-sq.is-orange rect { fill: var(--orange); }
+.ge-sq.is-pink rect { fill: var(--pink); }
+.ge-sq.is-sky rect { fill: var(--sky); }
+.ge-sq.is-gcd rect { fill: var(--ok); }
+.ge-sq.is-now rect { fill: var(--hi); filter: drop-shadow(0 0 6px var(--hi)); }
+.ge-note { text-align: center; }
+.ge-zero { margin: 0; font: 600 14px var(--mono); color: var(--muted); }
+.ge-fib { display: block; }
+.ge-error { color: var(--bad); }
+
+.ge-table td, .ge-table th { white-space: nowrap; }
+.ge-table tr.is-now td { background: color-mix(in srgb, var(--hi) 16%, transparent); color: var(--hi); }
+.ge-table tr.is-gcd td { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.ge-table td.ge-xy { color: var(--violet); }
+.ge-table tr.is-now td.ge-xy, .ge-table tr.is-gcd td.ge-xy { font-weight: 700; }
+
+.ge-ext { gap: 12px; }
+.ge-inverse { display: flex; flex-direction: column; gap: 8px; }
+.ge-inverse-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; }
+.ge-inverse-result { margin: 0; font: 600 14px var(--mono); color: var(--text); overflow-wrap: anywhere; }
