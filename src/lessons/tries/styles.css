@@ -1,0 +1,22 @@
+.tr { gap: 14px; }
+.tr-note { flex-basis: 100%; }
+.tr-list { flex: 1 1 260px; }
+.tr-list textarea { width: 100%; box-sizing: border-box; }
+
+.tr-tree { display: block; width: 100%; height: auto; margin: 0 auto; }
+/* Pills (radix edges) get the same marks as TreeSvg's circles. */
+.tr-tree .tree-node rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.tr-tree .tree-node.is-tint rect { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }
+.tr-tree .tree-node.is-solid rect { fill: var(--c); stroke: var(--c); }
+.tr-tree .tree-node text { font: 700 13px var(--mono); }
+.tr-tree .tree-node .tr-ring,
+.tr-tree .tree-node.is-tint .tr-ring,
+.tr-tree .tree-node.is-solid .tr-ring { fill: none; stroke: var(--ok); stroke-width: 2.5; }
+
+.tr-panels { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.tr-completions { flex: 1 1 220px; flex-wrap: wrap; gap: 6px; }
+.tr-cost { flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px; }
+.tr-cost .section-title { display: block; }
+.tr-cost-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font: 13px var(--mono); }
+.tr-cost-list li { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+.tr-cost-list b { color: var(--text); }
