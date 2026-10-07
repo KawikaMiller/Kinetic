@@ -97,6 +97,8 @@ cssVar('cellLine')            // 'var(--cell-line)'
 categorical(i)                // 'var(--info)', 'var(--violet)', … wraps; categorical(i, 'hex') for canvas
 CATEGORICAL                   // ['info','violet','ok','amber','pink','orange','hi','sky']
 ```
+`categorical()` hands out the semantic roles (info, violet, ok, hi) as categories, so use it only on a
+stage where those colours mean nothing else. Next to semantic colours, use `plainTone(i)` from `tone.ts`.
 Delete the lesson's `const C = {…}`. **`C.line` was `#323a4f` = `TOKENS.line2`**, not `TOKENS.line`.
 A dev-only check (`assertTokensInSync`, run from `main.tsx`) logs a console error, which fails
 smoke, if this table drifts from `global.css`.
@@ -109,6 +111,7 @@ type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim'   // semantic roles
 TONES                                            // every Tone, e.g. one arrowhead marker per tone
 toneVar('ok')                                    // 'var(--ok)'
 toneFor(errPct, { warn: 20, bad: 50 })           // 'ok' | 'hi' | 'bad'; { invert: true } when higher is better
+plainTone(i)                                     // 'amber' | 'pink' | 'sky' | 'orange', wraps: categories that never wear a meaning (PLAIN_TONES)
 ```
 - Every tone has a `.tone-*` class in kit.css (`--c` plus `--on-c` ink: `--on-amber`, `--on-pink`, `--on-sky` are tokens
   too) and a `TOKENS` entry, so every tone-driven component (BitStrip, CellGrid in both modes, ByteGrid fields,
