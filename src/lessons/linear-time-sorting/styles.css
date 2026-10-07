@@ -1,0 +1,43 @@
+.lts { gap: 14px; }
+.lts-note { flex-basis: 100%; }
+.lts-answer[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; }
+
+/* Decision tree: boxes instead of the default circles, marked like TreeSvg's circles. */
+.lts-tree { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; }
+.lts-tree .tree-node rect { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.lts-tree .tree-node.is-tint rect { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }
+.lts-tree .tree-node.is-solid rect { fill: var(--c); stroke: var(--c); }
+.lts-tree .tree-node text { font: 700 12px var(--mono); }
+.lts-edge-labels text { font: 500 11px var(--mono); fill: var(--muted); }
+
+.lts-bound { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 24px; }
+.lts-bound .plot2d { max-width: 100%; height: auto; }
+.lts-bound-notes { flex: 1 1 260px; max-width: 420px; display: flex; flex-direction: column; gap: 8px; }
+
+/* Counting and radix rows */
+.lts-rows { gap: 16px; }
+.lts-row { display: flex; flex-direction: column; gap: 8px; }
+.lts-row-title { display: block; }
+.lts-key { color: var(--c); font-weight: 700; }
+.lts-tag { font-size: 0.72em; margin-left: 1px; }
+.array-cell.is-active .lts-key { color: inherit; }
+.lts-placed {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  box-sizing: border-box;
+  border: 2px solid var(--ok);
+  border-radius: 5px;
+}
+.array-cell.is-active .lts-placed { border-color: var(--on-hi); }
+.lts-empty { color: var(--faint); }
+
+.lts-digit-now { color: var(--hi); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.array-cell:is(.is-active, .is-done, .is-bad) .lts-digit-now { color: inherit; }
+.lts-buckets { margin: 0 auto; }
+
+.lts-why { display: flex; flex-direction: column; gap: 8px; }
+.lts-why .section-title { display: block; }
+.lts-why-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.lts-why-table { font: 12px var(--mono); }
