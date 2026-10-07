@@ -1,0 +1,26 @@
+.rh { gap: 16px; }
+.rh-note { flex-basis: 100%; }
+.rh-panels { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.rh-panels .section-title { display: block; margin-bottom: 8px; }
+.rh-pattern { flex: 0 1 220px; }
+.rh-arith { flex: 2 1 320px; }
+.rh-found { flex: 1 1 200px; flex-wrap: wrap; gap: 6px; }
+.rh-formula { margin: 4px 0; font: 13px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.rh-formula b { color: var(--text); }
+.rh-out { color: var(--bad); }
+.rh-in { color: var(--ok); }
+
+.rh-chunks .section-title { display: block; margin-bottom: 8px; }
+.rh-chunk-row { margin: 0; font: 14px/2.1 var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.rh-chunk {
+  padding: 3px 1px;
+  margin-right: 3px;
+  border-radius: 4px;
+  border: 1px solid var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  white-space: pre-wrap;
+}
+.rh-chunk.is-lost { text-decoration: line-through; text-decoration-color: var(--bad); }
+.rh-inserted { background: var(--hi); color: var(--on-hi); border-radius: 3px; padding: 0 2px; }
