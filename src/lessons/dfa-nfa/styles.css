@@ -8,7 +8,6 @@
   100% { stroke-width: 4; }
 }
 .dn-dfa-graph .graph-node-label { font-size: 12px; }
-.dn-accept-box { fill: none; stroke: var(--c, var(--line-2)); stroke-width: 1.5; pointer-events: none; }
 .dn-tape { display: flex; flex-direction: column; gap: 6px; }
 .dn-verdict { margin: 0; font-size: 13px; line-height: 1.6; }
 .dn-honest { color: var(--faint); }

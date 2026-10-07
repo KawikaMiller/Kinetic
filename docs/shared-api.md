@@ -887,8 +887,14 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 // A state machine: start arrow, accepting states, self-loops, labels; a⇄b pairs bend apart by themselves
 <GraphView nodes={[{ id: 'q2', at, accept: true }, …]} edges={[{ from: 'q0', to: 'q0', label: '1' }, …]}
            directed startNode="q0" width={500} height={220} ariaLabel="…" />
+
+// Per node / per edge extras
+{ id: 'str', at, accept: true, shape: 'box', loopSide: 'left' }   // accept on a box = an inner outline; loopSide: top (default) | right | bottom | left
+{ from: 'S', to: 'int', label: '0-9', labelAt: 0.62 }              // label 0 (at from) .. 1 (at to) along the edge, any route
+<GraphView layout="circle" circleRadii={{ rx: 260, ry: 138 }} … />  // round an ellipse instead of a circle
+circlePositions(ids, width, height, pad, radii?)                    // the same, pure: dfa-nfa places every DFA state up front with it
 ```
-- `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
+- `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top; `circleRadii` makes it an ellipse). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
 - `layoutEdges` (layered only) is the edge set the layout uses; `edges` is still what's drawn. topological-sort lays out by
   the preset's edges plus any added edge that keeps the graph acyclic, so closing a cycle draws the new arrow without
   moving a single node.

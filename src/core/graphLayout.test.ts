@@ -98,6 +98,12 @@ describe('circlePositions', () => {
     const r = (p: { x: number; y: number }) => ({ x: Math.round(p.x), y: Math.round(p.y) });
     expect(['a', 'b', 'c', 'd'].map((k) => r(at.get(k)!))).toEqual([{ x: 100, y: 20 }, { x: 180, y: 100 }, { x: 100, y: 180 }, { x: 20, y: 100 }]);
   });
+
+  it('places them round an ellipse with radii', () => {
+    const at = circlePositions<string>(['a', 'b', 'c', 'd'], 640, 400, 0, { rx: 260, ry: 138 });
+    const r = (p: { x: number; y: number }) => ({ x: Math.round(p.x), y: Math.round(p.y) });
+    expect(['a', 'b', 'c', 'd'].map((k) => r(at.get(k)!))).toEqual([{ x: 320, y: 62 }, { x: 580, y: 200 }, { x: 320, y: 338 }, { x: 60, y: 200 }]);
+  });
 });
 
 describe('routeEdge', () => {
@@ -137,6 +143,38 @@ describe('routeEdge', () => {
     const r = routeEdge(p, p, circle, circle, { directed: true, arrowGap: 3 });
     expect(r.kind).toBe('path');
     expect(r.label.y).toBeLessThan(50 - 20);
+    // the same path as before loopSide existed
+    expect(r).toEqual(routeEdge(p, p, circle, circle, { directed: true, arrowGap: 3, loopSide: 'top' }));
+    expect(r.kind === 'path' && r.d).toBe('M 38 34 C 26 -4, 74 -4, 62 32');
+  });
+
+  it('draws a self-loop on the side it is given, label beyond it', () => {
+    const p = { x: 50, y: 50 };
+    const side = (loopSide: 'right' | 'bottom' | 'left') => routeEdge(p, p, circle, circle, { directed: true, arrowGap: 3, loopSide });
+    expect(side('right').label.x).toBeGreaterThan(50 + 20);
+    expect(side('right').label.y).toBe(50);
+    expect(side('bottom').label.y).toBeGreaterThan(50 + 20);
+    expect(side('left').label.x).toBeLessThan(50 - 20);
+    // a loop on the right is the top loop turned a quarter clockwise round the centre
+    const right = side('right');
+    expect(right.kind === 'path' && right.d).toBe('M 66 38 C 104 26, 104 74, 68 62');
+  });
+
+  it('slides a label along the edge with labelAt', () => {
+    const a = { x: 0, y: 0 };
+    const b = { x: 100, y: 0 };
+    const mid = routeEdge(a, b, circle, circle, { directed: true, arrowGap: 3 });
+    expect(routeEdge(a, b, circle, circle, { directed: true, arrowGap: 3, labelAt: 0.5 }).label).toEqual(mid.label);
+    const far = routeEdge(a, b, circle, circle, { directed: true, arrowGap: 3, labelAt: 0.75 });
+    expect(far.label).toEqual({ x: 75, y: mid.label.y });
+    // bent and curved edges too: the label follows the curve toward b
+    const bent = (t?: number) => routeEdge(a, b, circle, circle, { directed: true, arrowGap: 3, parallel: true, labelAt: t });
+    expect(bent(0.5).label.x).toBeCloseTo(bent().label.x, 9);
+    expect(bent(0.5).label.y).toBeCloseTo(bent().label.y, 9);
+    expect(bent(0.8).label.x).toBeGreaterThan(bent().label.x);
+    const curve = (t?: number) => routeEdge({ x: 70, y: 108 }, { x: 220, y: 44 }, box, box, { directed: true, arrowGap: 4, curve: 'right', labelAt: t });
+    expect(curve(0.5).label).toEqual(curve().label);
+    expect(curve(0.9).label.x).toBeGreaterThan(curve().label.x);
   });
 });
 

@@ -8,6 +8,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { subsetName, type Dfa, type Nfa, type State } from '../../core/automata';
+import { circlePositions } from '../../core/graphLayout';
 import { useIntroCaption } from '../../core/caption';
 import { plural, power } from '../../core/format';
 import { minWidthForText } from '../../core/scale';
@@ -200,15 +201,13 @@ const DFA_BOX = { w: 92, h: 30, rx: 8 };
 /** The DFA's 12px labels stay at 8px or more. */
 const DFA_MIN = minWidthForText(DFA_W, 12);
 
-/** Box nodes round an ellipse (GraphView's circle layout is a circle; wide labels need the width). */
-function ellipse(ids: readonly State[]): Record<State, Pt> {
-  return Object.fromEntries(
-    ids.map((id, i) => {
-      const a = -Math.PI / 2 + (2 * Math.PI * i) / Math.max(1, ids.length);
-      return [id, { x: DFA_W / 2 + (DFA_W / 2 - 60) * Math.cos(a), y: DFA_H / 2 + (DFA_H / 2 - 62) * Math.sin(a) }];
-    }),
-  );
-}
+/** The DFA's box nodes go round an ellipse: wide labels need the width. */
+const DFA_RADII = { rx: DFA_W / 2 - 60, ry: DFA_H / 2 - 62 };
+/**
+ * Places every DFA state up front (not just the ones born so far), so a box never moves as
+ * the table fills; that's why this uses circlePositions directly rather than layout="circle".
+ */
+const ellipse = (ids: readonly State[]): Record<State, Pt> => Object.fromEntries(circlePositions(ids, DFA_W, DFA_H, 0, DFA_RADII));
 
 function SubsetScene({ picker }: { picker: ReactNode }) {
   const [choice, setChoice] = useState<NfaChoice>('nth');
@@ -331,14 +330,6 @@ function SubsetScene({ picker }: { picker: ReactNode }) {
                 className="dn-graph dn-dfa-graph"
                 ariaLabel={`The DFA built so far: ${plural(born.size, 'state')}`}
                 nodeMark={(id) => (row && subsetName(row.to) === id ? { tone: 'info', fill: 'tint', tint: 30 } : null)}
-                renderNode={(nd, p, base) => (
-                  <>
-                    {base}
-                    {dfa.accept.includes(nd.id) && (
-                      <rect className="dn-accept-box" x={p.x - DFA_BOX.w / 2 + 4} y={p.y - DFA_BOX.h / 2 + 4} width={DFA_BOX.w - 8} height={DFA_BOX.h - 8} rx={DFA_BOX.rx - 3} />
-                    )}
-                  </>
-                )}
                 edgeMark={(e) => (row && subsetName(row.from) === e.from && subsetName(row.to) === e.to ? { tone: 'info', width: 4 } : null)}
               />
             </WideRegion>

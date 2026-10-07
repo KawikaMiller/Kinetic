@@ -1,13 +1,13 @@
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import {
   circlePositions, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type GraphKey, type LayeredSpacing, type LayoutEdge,
-  type NodeBox, type Pt,
+  type LoopSide, type NodeBox, type Pt, type Radii,
 } from '../core/graphLayout';
 import { TONES, toneVar, type Tone } from '../core/tone';
 import { arrowMarkerDef } from './ArrowMarker';
 import type { TreeNodeMark } from './TreeSvg';
 
-export type { GraphKey, Pt } from '../core/graphLayout';
+export type { GraphKey, LoopSide, Pt, Radii } from '../core/graphLayout';
 
 export interface GraphNode<K extends GraphKey> {
   id: K;
@@ -16,16 +16,20 @@ export interface GraphNode<K extends GraphKey> {
   /** Position for `layout="fixed"`. */
   at?: Pt;
   shape?: 'circle' | 'box';
-  /** An accepting state: a second ring inside the circle. */
+  /** An accepting state: a second ring inside the circle, or a second outline inside the box. */
   accept?: boolean;
+  /** Which side its self-loop is drawn on (default top). */
+  loopSide?: LoopSide;
 }
 
 export interface GraphEdge<K extends GraphKey> {
   from: K;
   to: K;
-  /** Drawn at the edge's middle; a weight is drawn when there's no label. */
+  /** Drawn at the edge's middle (or at `labelAt`); a weight is drawn when there's no label. */
   label?: ReactNode;
   weight?: number;
+  /** Where the label sits along the edge: 0 at `from` .. 1 at `to` (default 0.5). Pulls labels out of a crowded hub. */
+  labelAt?: number;
 }
 
 /** Same shape as TreeSvg's: `tint` = a wash of the tone with a tone ring, `solid` = filled. */
@@ -49,6 +53,8 @@ export interface GraphBox {
 const DEFAULT_BOX: GraphBox = { w: 112, h: 46 };
 const BOX_RX = 10;
 const RING_GAP = 5;
+/** An accepting state's second ring sits this far inside the circle, or its second outline inside the box. */
+const ACCEPT_INSET = 4;
 /** A press that moves less than this is a click, not a drag. */
 const DRAG_SLOP = 6;
 const START_ARROW = 30;
@@ -60,12 +66,12 @@ type Item<K extends GraphKey> = { kind: 'node'; id: K } | { kind: 'edge'; index:
  *
  * - `layout`: `fixed` uses each node's `at`; `layered` places a DAG in layers (longest
  *   path, barycentre ordering; core/graphLayout) with `spacing`; `circle` puts the nodes
- *   round a circle in `width` × `height`. `layoutEdges` lays a layered graph out by a
+ *   round a circle in `width` × `height` (an ellipse with `circleRadii`). `layoutEdges` lays a layered graph out by a
  *   different edge set than it draws, so adding an edge (one that closes a cycle) doesn't
  *   rearrange the drawing.
  * - Edges are straight (trimmed at the target when `directed`), or `edgeStyle="curve"`
  *   for layered S-curves. In a layered layout a straight edge that would cross a node
- *   (a back edge closing a cycle) bends round it. Self-loops draw above the node; a→b with b→a bends both apart.
+ *   (a back edge closing a cycle) bends round it. Self-loops draw above the node (or on its `loopSide`); `labelAt` slides an edge label along it; a→b with b→a bends both apart.
  * - `nodeMark` / `edgeMark` highlight with tones; `nodeColor` gives unmarked nodes a
  *   colour (a component, a side); `nodeClass` / `edgeClass` add lesson classes.
  * - `renderNode(node, at, base)` draws a node yourself (absolute coordinates), e.g. a
@@ -81,7 +87,7 @@ type Item<K extends GraphKey> = { kind: 'node'; id: K } | { kind: 'edge'; index:
  *   only the lesson knows where a new node should go.)
  */
 export function GraphView<K extends GraphKey>({
-  nodes, edges, directed = false, layout = 'fixed', layoutEdges, spacing, width, height, radius = 20, box = DEFAULT_BOX, edgeStyle = 'straight',
+  nodes, edges, directed = false, layout = 'fixed', layoutEdges, spacing, width, height, circleRadii, radius = 20, box = DEFAULT_BOX, edgeStyle = 'straight',
   arrowSize = 7, arrowGap = 3, nodeMark, nodeColor, nodeClass, edgeMark, edgeClass, renderNode, startNode, onNodeClick, onEdgeClick,
   nodeAriaLabel, edgeAriaLabel, editable, ariaLabel, className = '',
 }: {
@@ -96,6 +102,8 @@ export function GraphView<K extends GraphKey>({
   /** viewBox size. Layered layouts default to their natural size; fixed and circle need it. */
   width?: number;
   height?: number;
+  /** Circle layout only: place the nodes round an ellipse with these radii (wide labels need the width). */
+  circleRadii?: Radii;
   /** Circle nodes' radius. */
   radius?: number;
   /** Box nodes' size and corner radius. */
@@ -145,7 +153,7 @@ export function GraphView<K extends GraphKey>({
     at = placed.at;
     natural = { width: placed.width, height: placed.height };
   } else if (layout === 'circle') {
-    at = circlePositions(ids, width ?? 0, height ?? 0, radius + 16);
+    at = circlePositions(ids, width ?? 0, height ?? 0, radius + 16, circleRadii);
   } else {
     at = new Map(nodes.flatMap((n) => (n.at ? [[n.id, n.at] as const] : [])));
   }
@@ -167,6 +175,7 @@ export function GraphView<K extends GraphKey>({
       : undefined;
     return routeEdge(a, b, boxOf(e.from), boxOf(e.to), {
       directed, arrowGap, parallel, curve: edgeStyle === 'curve' ? sp.direction : undefined, obstacles,
+      loopSide: byId.get(e.from)?.loopSide, labelAt: e.labelAt,
     });
   });
 
@@ -393,6 +402,16 @@ function DefaultNode<K extends GraphKey>({ node, at, radius, box }: { node: Grap
           rx={rx + 4}
         />
         <rect className="graph-node-shape" x={at.x - box.w / 2} y={at.y - box.h / 2} width={box.w} height={box.h} rx={rx} />
+        {node.accept && (
+          <rect
+            className="graph-node-accept"
+            x={at.x - box.w / 2 + ACCEPT_INSET}
+            y={at.y - box.h / 2 + ACCEPT_INSET}
+            width={box.w - 2 * ACCEPT_INSET}
+            height={box.h - 2 * ACCEPT_INSET}
+            rx={Math.max(0, rx - 3)}
+          />
+        )}
         <text className="graph-node-label" x={at.x} y={at.y + 5} textAnchor="middle">
           {label}
         </text>
@@ -403,7 +422,7 @@ function DefaultNode<K extends GraphKey>({ node, at, radius, box }: { node: Grap
     <>
       <circle className="graph-node-ring" cx={at.x} cy={at.y} r={radius + RING_GAP} />
       <circle className="graph-node-shape" cx={at.x} cy={at.y} r={radius} />
-      {node.accept && <circle className="graph-node-accept" cx={at.x} cy={at.y} r={radius - 4} />}
+      {node.accept && <circle className="graph-node-accept" cx={at.x} cy={at.y} r={radius - ACCEPT_INSET} />}
       <text className="graph-node-label" x={at.x} y={at.y + 5} textAnchor="middle">
         {label}
       </text>
