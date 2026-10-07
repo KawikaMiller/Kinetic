@@ -16,7 +16,7 @@
 .gl-key.is-update::before { background: var(--hi); }
 .gl-key.is-render::before { background: var(--ok); }
 .gl-bar-frame { margin: 0; font: 600 13px var(--mono); color: var(--text); }
-.gl-bar-frame.is-over { color: var(--bad); }
+.gl-bar-frame.is-over, .gl-over-text { color: var(--bad); }
 
 .gl-machines { flex-direction: row; flex-wrap: wrap; gap: 12px; }
 .gl-machine { --h: 220px; flex: 1 1 300px; border-radius: 10px; overflow: hidden; }

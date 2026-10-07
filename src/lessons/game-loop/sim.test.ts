@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, type Rnd } from '../../core/random';
 import {
   DT, HIT_HALF, MAX_FRAME, MAX_STEPS, SAFETY_STEPS, START, TRAIL_SECONDS, TUNNEL_SPIKE, WORLD, advanceFrame, createLoop, createMachine,
-  createWorld, machineFrame, machineGap, runTimed, spikeReady, step, type LoopMode,
+  createWorld, machineFrame, machineGap, runTimed, runTimedReports, spikeReady, spiralling, step, type LoopMode,
 } from './sim';
 
 /** Frame times: mostly about one refresh interval, sometimes a spike of up to 2 s. */
@@ -166,4 +166,35 @@ describe('the spiral of death (timing model)', () => {
     expect(counts[11]).toBeLessThan(counts[10]);
     expect(Math.max(...counts.slice(40))).toBeLessThanOrEqual(2);
   });
+
+  /** Whether any window of the run counts as a spiral, frame by frame as the Stage sees it. */
+  const everSpirals = (reports: ReturnType<typeof runTimedReports>) => reports.some((_, i) => spiralling(reports.slice(0, i + 1)));
+
+  it('a one-off catch-up with free updates is not a spiral, even when it hits the update limit (the review repro)', () => {
+    for (const spike of [0.32, 0.4, 1.5]) {
+      const reports = runTimedReports('fixed', false, { refresh, render: 0.002, cost: 0 }, 80, (i) => (i === 10 ? spike : 0));
+      expect(reports[10].steps).toBe(SAFETY_STEPS); // it does hit the limit…
+      expect(everSpirals(reports)).toBe(false); // …but the backlog shrinks, so no spiral caption
+    }
+  });
+
+  it('updates dearer than DT, uncapped, are a spiral; capped, they never are', () => {
+    expect(everSpirals(runTimedReports('fixed', false, { refresh, render: 0.002, cost: 0.02 }, 120))).toBe(true);
+    expect(everSpirals(runTimedReports('fixed', true, { refresh, render: 0.002, cost: 0.02 }, 120))).toBe(false);
+  });
 });
+
+describe('switching the cap back on', () => {
+  it('drops a backlog built up while uncapped, so acc < DT and alpha < 1 at once', () => {
+    const s = createLoop();
+    for (let i = 0; i < 20; i++) advanceFrame(s, 0.5, 'interpolated', false); // 30 steps owed per frame, 20 run
+    expect(s.acc).toBeGreaterThan(1);
+    const owed = s.acc;
+    const r = advanceFrame(s, 1 / 60, 'interpolated', true);
+    expect(s.acc).toBeLessThan(DT);
+    expect(r.alpha).toBeLessThan(1);
+    expect(r.backlog).toBe(0);
+    expect(r.dropped).toBeGreaterThan(owed - 2 * DT);
+  });
+});
+

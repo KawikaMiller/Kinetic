@@ -177,8 +177,10 @@ export const GRADIENT_SAMPLES = 32;
 
 export interface Profile {
   space: MixSpace;
-  /** OKLab L at t = i / GRADIENT_SAMPLES. */
+  /** OKLab L of the colour actually shown at t = i / GRADIENT_SAMPLES: after clipping into sRGB, as the fallback strip draws it. */
   L: number[];
+  /** OKLab L of the mix itself, before any mapping into sRGB (a straight line for oklch). Equal to L where the mix is in gamut. */
+  Lmix: number[];
   /** The sampled colours as #rrggbb (clipped into sRGB where needed). */
   hex: string[];
   /** How many samples fall outside sRGB before clipping. */
@@ -192,7 +194,8 @@ export const DIP_MIN = 0.005;
 
 export function profile(from: string, to: string, space: MixSpace): Profile {
   const samples = Array.from({ length: GRADIENT_SAMPLES + 1 }, (_, i) => mix(from, to, i / GRADIENT_SAMPLES, space));
-  const L = samples.map((s) => s.L);
+  const L = samples.map((s) => linearToOklab(clipLinear(s.lin)).L);
+  const Lmix = samples.map((s) => s.L);
   const floor = Math.min(L[0], L[GRADIENT_SAMPLES]);
   let dip: Profile['dip'] = null;
   L.forEach((v, i) => {
@@ -203,6 +206,7 @@ export function profile(from: string, to: string, space: MixSpace): Profile {
   return {
     space,
     L,
+    Lmix,
     hex: samples.map((s) => rgbToHex(fromLinear(clipLinear(s.lin)))),
     outOfGamut: samples.filter((s) => !inGamut(s.lin)).length,
     dip,

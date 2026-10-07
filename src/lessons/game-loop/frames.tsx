@@ -56,3 +56,18 @@ export function machinesCaption(mode: LoopMode): ReactNode {
   const label = MODE_LABEL[mode];
   return <>{label[0].toUpperCase() + label.slice(1)}: both displays run the same {DT_LABEL} updates in the same order, so their states match at every step, however different their frame rates. The gap stat compares them step by step.</>;
 }
+
+/** After the max-frame-time toggle: replaces any spiral or slow-motion caption it made untrue. */
+export function capCaption(capFrame: boolean): ReactNode {
+  return capFrame
+    ? <>Max frame time {ms(MAX_FRAME)}: a frame never simulates more than {ms(MAX_FRAME)}, and any backlog beyond that is dropped, so the game slows down instead of spiralling.</>
+    : <>No max frame time: every millisecond of a long frame has to be simulated, however many updates that takes (the lesson stops at {SAFETY_STEPS} per frame).</>;
+}
+
+/** After the update-cost slider: whether one update now costs more real time than it simulates. */
+export function costCaption(costMs: number): ReactNode {
+  if (costMs === 0) return <>Updates are free again: the loop can catch up with any backlog.</>;
+  return costMs > DT * 1000
+    ? <>Each update now costs {costMs} ms of real time, more than the {DT_LABEL} it simulates: the loop falls further behind every frame unless the frame time is capped.</>
+    : <>Each update now costs {costMs} ms of real time, less than the {DT_LABEL} it simulates, so the loop can still keep up.</>;
+}

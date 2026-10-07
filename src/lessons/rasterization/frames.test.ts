@@ -98,7 +98,7 @@ describe('depthCaption, z-buffer × order', () => {
         const wrong = wrongPixels(drawDepth(DEPTH_PRESET, order, z));
         if (z) {
           expect(wrong).toBe(0);
-          expect(cap).toContain('show the nearer triangle');
+          expect(cap).toContain('every overlap pixel shows the nearer triangle');
         } else {
           expect(cap).toContain(`${wrong} pixels now show the farther triangle`);
           expect(cap).toContain('no draw order is right everywhere');
