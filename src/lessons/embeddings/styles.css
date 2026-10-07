@@ -1,0 +1,30 @@
+.emb-row { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.emb-map { width: 100%; max-width: 560px; flex: 0 1 560px; }
+.emb-side { flex: 1 1 260px; max-width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.emb-side .section-title, .emb-meaning .section-title { display: block; }
+.emb-label { font: 600 11px var(--mono); fill: var(--c); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.emb-label.tone-dim { fill: var(--muted); }
+.emb-table td:last-child, .emb-table th:last-child { text-align: right; }
+.emb-empty, .emb-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.emb-refusal { margin: 6px 0 0; font: 600 13px var(--font); color: var(--bad); overflow-wrap: anywhere; }
+.emb-honest { flex-basis: 100%; text-align: center; }
+
+.emb-dims { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.emb-dims li { display: grid; grid-template-columns: 74px 1fr 44px; gap: 8px; align-items: center; font: 500 12px var(--mono); }
+.emb-dim-name { color: var(--muted); }
+.emb-dim-track { position: relative; height: 8px; border-radius: 99px; background: var(--line); }
+.emb-dim-track::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--faint); }
+.emb-dim-fill { position: absolute; left: 50%; top: 0; bottom: 0; border-radius: 99px; background: var(--info); }
+.emb-dim-fill.is-neg { left: auto; right: 50%; background: var(--violet); }
+.emb-dim-val { text-align: right; }
+
+.emb-words { display: flex; flex-wrap: wrap; gap: 4px; }
+.emb-meaning { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.emb-compare, .emb-search { flex: 1 1 300px; max-width: 460px; display: flex; flex-direction: column; gap: 6px; }
+.emb-fields { display: flex; flex-wrap: wrap; gap: 8px; }
+.emb-results { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 3px; font-size: 13px; }
+.emb-results li { padding: 3px 6px; border-radius: 6px; }
+.emb-results li > span { display: inline-flex; }
+.emb-results li.is-top { background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.emb-doc { margin-right: 8px; }
+.emb-score { font-family: var(--mono); color: var(--muted); float: right; }
