@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { gdCaption, lineText, linearCaption, num, thresholdCaption, trainFrames, trainVerdict } from './frames';
+import { mulberry32 } from '../../core/random';
+import { gdCaption, lineText, linearCaption, num, sigFig, thresholdCaption, trainFrames, trainVerdict } from './frames';
 import {
-  L2, LINEAR_DATA, NEED_TWO_X, OUTLIER, accuracyAt, descendLine, linearFit, logisticData, separates, stillGrowing, trainLogistic,
+  L2, LINEAR_DATA, NEED_TWO_X, OUTLIER, accuracyAt, descendLine, linearFit, logisticData, sameAsClosedForm, separates, stillGrowing, trainLogistic,
   type ClassSet, type Dims,
 } from './model';
 
@@ -60,5 +61,49 @@ describe('thresholdCaption', () => {
     for (const t of [0.05, 0.3, 0.5, 0.9]) {
       expect(text(thresholdCaption(params, pts, 2, t))).toContain(`${accuracyAt(params, pts, 2, t)} of ${pts.length} points get their true class`);
     }
+  });
+});
+
+describe('review B8: GD-line and slope sweeps', () => {
+  const rnd = mulberry32(31);
+
+  it('the reviewer repros (a cluster near x = 9, a very wide spread) now converge onto the closed form', () => {
+    const cluster = [{ x: 8.8, y: 3 }, { x: 9, y: 4.2 }, { x: 9.1, y: 3.6 }, { x: 9.3, y: 5 }];
+    const wide = [{ x: 0.1, y: 9.5 }, { x: 0.3, y: 9.9 }, { x: 9.9, y: 0.2 }, { x: 9.7, y: 0.5 }];
+    for (const pts of [cluster, wide]) {
+      const run = descendLine(pts)!;
+      expect(sameAsClosedForm(run, pts)).toBe(true);
+      expect(text(gdCaption(run, run.snapshots.length - 1, pts))).toContain('same line');
+    }
+  });
+
+  it('over 200 random datasets, "same line" is said exactly when GD converged within 1e-4 of the closed form', () => {
+    for (let t = 0; t < 200; t++) {
+      const n = 2 + Math.floor(rnd() * 18);
+      const centre = rnd() * 10;
+      const spread = 0.05 + rnd() * 5;
+      const pts = Array.from({ length: n }, () => ({ x: Math.min(10, Math.max(0, centre + (rnd() - 0.5) * spread)), y: rnd() * 10 }));
+      const run = descendLine(pts);
+      if (!run) continue;
+      const fit = linearFit(pts);
+      if (!fit.ok) continue;
+      const last = run.snapshots.at(-1)!;
+      const close = Math.abs(last.b - fit.b) < 1e-4 && Math.abs(last.m - fit.m) < 1e-4;
+      const c = text(gdCaption(run, run.snapshots.length - 1, pts));
+      expect(c.includes('same line')).toBe(run.converged && close);
+      if (!c.includes('same line')) expect(c).toContain('still');
+    }
+  });
+
+  it('never says "moved the slope from X to X"', () => {
+    for (let t = 0; t < 300; t++) {
+      const pts = Array.from({ length: 6 }, () => ({ x: 1 + rnd() * 8, y: rnd() * 10 }));
+      pts.push({ x: 9.5, y: rnd() * 10 });
+      const c = text(linearCaption(pts, true));
+      const m = /moved the slope from (\S+) to (\S+)\./.exec(c);
+      if (m) expect(m[1]).not.toBe(m[2]);
+    }
+    expect(sigFig(100.00004)).toBe('100');
+    expect(sigFig(-0.61123)).toBe('−0.6112');
   });
 });

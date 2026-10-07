@@ -6,7 +6,7 @@ const lesson: LessonModule = {
   summary: {
     tldr: 'Linear regression fits the straight line with the smallest mean squared error; logistic regression bends a line through a sigmoid to output a probability, and a threshold turns that into a class.',
     what: 'Least squares picks the line y = b + m·x that makes the average squared vertical miss (the residuals) as small as possible. It has a closed-form answer, and gradient descent walking downhill on the same error lands on the same line. Logistic regression computes p = σ(b + w·x), a probability between 0 and 1, and is trained by gradient steps on log loss, which punishes confident wrong answers hard. When the classes can be split perfectly, the weights grow forever chasing a perfect step; an L2 penalty keeps them finite.',
-    analogy: 'Least squares is a rubber band attached to every point: points far from the line pull harder, by the square of the distance, which is why one outlier can drag the whole line.',
+    analogy: 'Least squares is a rubber band attached to every point: the cost of each band grows with the square of its stretch, so a point twice as far off costs four times as much, which is why one outlier can drag the whole line.',
     useCases: [
       'Forecasting and trend lines: sales vs ad spend, latency vs load',
       'A/B analysis and baselines: the first model you fit before anything fancier',

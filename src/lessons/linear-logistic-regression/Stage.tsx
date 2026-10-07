@@ -211,7 +211,7 @@ function LinearScene({ picker }: { picker: ReactNode }) {
           {!fit.ok && <p className="llr-refusal" role="alert">{fit.reason}</p>}
           <Hint block>
             Click empty space to add a point, drag one to move it (or focus it and use the arrow keys). Switch the click to "Remove a point" to delete
-            one. Seeded synthetic data.
+            one. Gradient descent runs on x standardised to mean 0 and spread 1, then converts its line back. Seeded synthetic data.
           </Hint>
         </div>
       </div>
@@ -291,7 +291,7 @@ function LogisticScene({ picker }: { picker: ReactNode }) {
       height={PLOT_H + 40}
       stats={
         <Stats>
-          <Stat label="Log loss" value={num(run.snapshots[player.frame.snap].loss, 4)} />
+          <Stat label={l2 ? 'Log loss + penalty' : 'Log loss'} value={num(run.snapshots[player.frame.snap].loss, 4)} />
           <Stat label={<span className="keep-case">‖w‖</span>} value={num(weightNorm(params), 2)} sub={l2 ? `L2 on, λ = ${L2}` : 'no penalty'} />
           <Stat label="p(class 1) at the probe" value={num(p, 3)} color="var(--hi)" sub={`so class ${p >= threshold ? 1 : 0} at threshold ${num(threshold, 2)}`} />
           <Stat label="Right class" value={`${right} / ${pts.length}`} />
@@ -338,7 +338,8 @@ function LogisticScene({ picker }: { picker: ReactNode }) {
           </Hint>
           <Hint block>
             Seeded synthetic data. Trained by {run.snapshots.at(-1)!.step.toLocaleString('en-US')} real gradient steps on log loss, on features
-            standardised to mean 0 and spread 1 (as real pipelines do), then converted back to these axes.
+            standardised to mean 0 and spread 1 (as real pipelines do), then converted back to these axes. The L2 penalty applies to the
+            standardised weights; ‖w‖ above is in these axes' units.
           </Hint>
         </div>
       </div>
