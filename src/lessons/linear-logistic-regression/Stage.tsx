@@ -165,8 +165,11 @@ function LinearScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Button onClick={runGd} disabled={!fit.ok}>Fit by gradient descent</Button>
-          <Button onClick={addSeeded} disabled={points.length >= MAX_POINTS}>Add a point</Button>
-          <Button onClick={() => removeAt(points.length - 1)} disabled={points.length === 0}>Remove the last point</Button>
+          {/* Never disabled by their own press, so keyboard focus stays put; at a limit they explain instead. */}
+          <Button onClick={addSeeded}>Add a point</Button>
+          <Button onClick={() => (points.length ? removeAt(points.length - 1) : setCaption(<>No points left to remove. Click the plot or press "Add a point".</>))}>
+            Remove the last point
+          </Button>
         </>,
         <ControlGroup key="presets" label="Presets">
           <ChipButton tone="info" onClick={() => { setActive(null); update([...LINEAR_DATA], false); }}>Seeded data</ChipButton>
