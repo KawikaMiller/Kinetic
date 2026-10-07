@@ -6617,7 +6617,7 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B1 Bits & encoding | 5 | 1 | t2/b1 | done | 2026-10-06, merged 5c6196d |
 | 2 | T2-B2 Number theory & counting | 5 | 1 | t2/b2 | done | 2026-10-06, merged 04f526c |
 | 2 | T2-B3 Graph algorithms | 5 | 1 | t2/b3 | done | 2026-10-06, merged 94598c0 |
-| 2 | P-follow-up after wave 1 | — | 1→2 | kit owner | in progress | wave 1 gates: 1891 tests, smoke 114/114 desktop + 390px, captions unchanged vs Tier 1 close |
+| 2 | P-follow-up after wave 1 | — | 1→2 | kit owner | done | 2026-10-07: kit1 + kit2 merged (tones, BitStrip/TreeSvg roving keys, CellGrid canvas text + overlay, GraphView layoutEdges/detours, gate drawing, ScenePicker focus, core/parse bounded ints, humanDuration, minWidthForText, shot --settle); 1926 tests, smoke 114/114 desktop + 390px |
 | 2 | T2-R2 retrofit, part 2 | 8 | 2 | t2/r2 | not started | tls-handshake and auth-sessions-jwt get domain review |
 | 2 | T2-B4 Kernel & scheduling | 5 | 2 | t2/b4 | not started | |
 | 2 | T2-B5 Automata, parsing & types | 5 | 2 | t2/b5 | not started | |

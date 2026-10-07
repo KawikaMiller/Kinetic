@@ -37,9 +37,11 @@ what a colour means:
 | `--info` | secondary or in-flight: a request travelling, a second pointer | |
 | `--violet` | tertiary or structural: references, groupings, the third role | |
 | `--dim` | ruled out, inactive, not reached | |
+| `muted` (Tone) | plain readable grey, deliberately uncoloured: a working row, a neutral extra bit | anything that should read as faded or ruled out (that's `--dim`) |
 
 Plain categories (the fields of a float, lanes, layers) take the categorical tokens
-(`--orange`, `--amber`, `--pink`, `--sky`, the track colours) or the roles above in their
+(`--orange`, `--amber`, `--pink`, `--sky`, the track colours; as a shared component `Tone`
+these are `orange`/`amber`/`pink`/`sky`, so BitStrip, CellGrid, ByteGrid etc. draw them directly) or the roles above in their
 structural sense, never `--bad`/`--ok` as decoration. When two kinds of failure must be told
 apart (HTTP 4xx vs 5xx), the second takes `--orange`, not `--hi`. State the mapping in the
 lesson's `watch` text.
