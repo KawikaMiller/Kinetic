@@ -5,7 +5,7 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, TextField, Toggle } fro
 import { usePlayer } from '../../core/usePlayer';
 import { encryptFrames, group, type EncFrame } from './frames';
 import { ModClock, type ClockMark } from './ModClock';
-import { fixedPoints, parseMessage, repeatedCiphertexts, runItems, type Item, type MessageInput, type RsaKey } from './model';
+import { fixedPointCount, fixedPoints, parseMessage, repeatedCiphertexts, runItems, type Item, type MessageInput, type RsaKey } from './model';
 import { KeyStats, ToyNote } from './Parts';
 
 const STEP_MS = 1400;
@@ -116,7 +116,7 @@ export function EncryptScene({ picker, rsaKey }: { picker: ReactNode; rsaKey: Rs
           <b>Textbook RSA pitfalls</b>
           <ul>
             <li><b>Deterministic:</b> the same m always gives the same c, so repeats show, and anyone can test a guess by encrypting it with the public key. Real RSA pads every message with fresh randomness (OAEP).</li>
-            <li><b>Some messages aren't hidden at all:</b> {fixedPoints(rsaKey).map((v) => group(v)).join(', ')} encrypt to themselves under this key.</li>
+            <li><b>Some messages aren't hidden at all:</b> {group(fixedPointCount(rsaKey))} messages encrypt to themselves under this key, including {fixedPoints(rsaKey).map((v) => group(v)).join(', ')}.</li>
             <li>The real thing, RSA-OAEP with a 2048-bit key, runs in the Hashing & Encryption lesson's asymmetric lane.</li>
           </ul>
         </Box>

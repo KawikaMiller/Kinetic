@@ -26,7 +26,7 @@ describe('keygenFrames', () => {
       [{ p: 57n, q: 53n, e: 17n }, 'p = 57 isn\'t prime: 3 × 19'],
       [{ p: 61n, q: 61n, e: 17n }, 'p and q are both 61'],
       [{ p: 61n, q: 53n, e: 15n }, 'gcd(e, φ) = 15'],
-      [{ p: 61n, q: 53n, e: 65537n }, 'must be between 1 and φ = 3120'],
+      [{ p: 61n, q: 53n, e: 1n }, 'must be bigger than 1'],
     ];
     for (const [p, want] of bad) {
       const frames = keygenFrames(keygen(p), p.p, p.q, p.e);
@@ -73,7 +73,19 @@ describe('signCaption', () => {
 describe('size captions', () => {
   it('reports the real factoring run and the extrapolated work', () => {
     expect(text(factorCaption(key, factorToy(key.n)))).toContain('Factored in 28 steps: n = 3,233 = 53 × 61');
-    expect(text(sizeCaption(2048))).toContain('about 2¹⁰²³ trial divisions');
-    expect(text(sizeCaption(2048))).toContain('years');
+    expect(text(sizeCaption(2048))).toContain('about 2¹⁰²³ divisions');
+    expect(text(sizeCaption(2048))).toContain("2048 bits is today's minimum");
+    for (const bits of [16, 512, 768, 816, 829]) expect(text(sizeCaption(bits))).toContain('have actually been factored');
+    expect(text(sizeCaption(832))).not.toContain('have actually been factored');
+    expect(text(sizeCaption(1024))).toContain('no longer recommended');
+    expect(text(sizeCaption(16))).toContain('under a microsecond');
+  });
+
+  it('accepts e = 65537 with small primes and says why it is fine', () => {
+    const g = keygen({ p: 61n, q: 53n, e: 65537n });
+    expect(g.key!.d).toBe(2753n);
+    const all = keygenFrames(g, 61n, 53n, 65537n).map((f) => text(f.say)).join(' | ');
+    expect(all).toContain("is bigger than φ = 3,120, and that's fine: it acts exactly like e mod φ = 17");
+    expect(all).toContain('Public key');
   });
 });
