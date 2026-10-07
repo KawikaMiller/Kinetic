@@ -131,8 +131,11 @@ it's safe.
   (a lesson is literally called error-handling-models), and don't pipe a command into
   `Select-Object -First` before reading `$LASTEXITCODE`: cutting the pipe loses the code.
 - Keyboard: drive real key presses with `npm run shot -- <route> <name> --press=Tab,Tab,Space`
-  (`--press-on=<selector>` focuses something first; modifiers join with `+`, e.g. `Shift+Tab`).
-  It prints the element that ends up focused, so a focus-order check needs no throwaway script.
+  (`--press-on=<selector>` focuses something first, SVG elements with a tabindex included; modifiers
+  join with `+`, e.g. `Shift+Tab`). It prints the element that ends up focused, so a focus-order check
+  needs no throwaway script. Captions cross-fade, so a fast read after a click or key can catch the
+  outgoing one: pass `--settle` (or `--settle=<ms>`) to wait out the fade after every click/press/play,
+  and in an `--evalfile` drive script `await window.kineticCaptionSettled()` before reading `.caption-text`.
 - In Git Bash, set `MSYS_NO_PATHCONV=1`: it rewrites `/lesson/x` into a Windows path. The
   scripts warn and recover the route when they spot it, but don't rely on that.
 
