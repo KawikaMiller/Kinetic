@@ -814,6 +814,7 @@ isProbablePrime(n)        // { prime, certain }: Miller-Rabin, first 13 primes a
 sieve(100)                // { isPrime, primes, passes: [{ prime, crossed: number[] }] }: one pass per prime ≤ √n, for animating
 trialFactor(360n)         // { factors: [2n, 2n, 2n, 3n, 3n, 5n], steps }
 toyRsa(61n, 53n, 17n)     // { ok: true, n, phi, e, d } | { ok: false, reason }: textbook RSA, toy sizes only
+                          // valid for any e > 1 with gcd(e, φ) = 1, e > φ included (65537 → the same d as 17)
 ```
 - Everything is `bigint` except `sieve` (a `number` limit). Tests check against brute force below 10⁴, Carmichael numbers, Bézout identities and RSA round-trips.
 

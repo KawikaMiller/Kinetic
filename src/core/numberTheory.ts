@@ -167,7 +167,8 @@ export type ToyRsa =
   | { ok: false; reason: string };
 
 /**
- * A textbook RSA key from two primes and a public exponent, or the reason it's invalid.
+ * A textbook RSA key from two primes and a public exponent, or the reason it's invalid. Any e > 1
+ * coprime to φ(n) is valid, including e > φ; d is the inverse of e mod φ, in [0, φ).
  * Toy only: real RSA uses random 1024-bit-plus primes and padding (OAEP/PSS).
  */
 export function toyRsa(p: bigint, q: bigint, e: bigint): ToyRsa {
@@ -176,7 +177,8 @@ export function toyRsa(p: bigint, q: bigint, e: bigint): ToyRsa {
   if (p === q) return { ok: false, reason: 'p and q must be different primes' };
   const n = p * q;
   const phi = (p - 1n) * (q - 1n);
-  if (e <= 1n || e >= phi) return { ok: false, reason: `e must be between 1 and φ(n) = ${phi}` };
+  // Only e > 1 and gcd(e, φ) = 1 are required; e above φ works too (65537 with toy primes).
+  if (e <= 1n) return { ok: false, reason: 'e must be greater than 1' };
   const d = modInverse(e, phi);
   if (d === null) return { ok: false, reason: `e = ${e} shares a factor with φ(n) = ${phi}, so it has no inverse` };
   return { ok: true, n, phi, e, d };
