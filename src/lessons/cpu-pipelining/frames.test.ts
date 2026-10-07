@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
-import { latencies, pipeFrames } from './frames';
+import { latencies, pipeFrames, stalledBefore } from './frames';
 import lesson from './index';
 import { firstCycle, parseProgram, pipeline, PRESETS, type PipelineOptions } from './model';
 
@@ -41,6 +41,7 @@ describe('every program × option × mode: captions true to the cycle they narra
                 const k = run.rows[e.row].cells[c];
                 expect(k).toEqual({ kind: 'stage', stage: 'ID', held: true });
               }
+              if (e.kind === 'forward') expect(text.includes('wait any longer')).toBe(stalledBefore(run.rows[e.forward.toRow], c));
               if (e.kind === 'flush') expect(text).toContain(`${e.flushed.length === 1 ? '1 instruction' : `${e.flushed.length} instructions`} fetched behind it`);
             }
           });
@@ -62,6 +63,15 @@ describe('every program × option × mode: captions true to the cycle they narra
       }
     }
   }
+});
+
+describe('forward captions', () => {
+  it('load-use forward says the wait is over, not that there was none', () => {
+    const p = PRESETS.find((x) => x.id === 'load')!;
+    const { run, frames } = pipeFrames(parseProgram(p.lines), p.start, p.opts, true, 'intro');
+    const f = run.result!.forwards[0];
+    expect(captionText(frames[f.cycle].say)).toContain("so it doesn't wait any longer");
+  });
 });
 
 describe('quiz numbers come from the model', () => {

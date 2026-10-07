@@ -14,10 +14,10 @@ const lesson: LessonModule = {
       'Reading CPI (cycles per instruction) in a profiler or a CPU datasheet',
     ],
     why: 'Pipelining is why "instructions per cycle" is a number people care about, and hazards are why code that does the same work can run at different speeds. It builds on `fetch-decode-execute` (one instruction at a time) and `logic-gates`; branch prediction and out-of-order cores come later.',
-    watch: 'Top: the program, with the line in the pipe this cycle in yellow, finished lines plain, flushed lines struck through and faded, and a violet register where an instruction needs a result from one of the two before it. Below: the pipeline chart, one row per fetched instruction and one column per cycle. Each stage has its own colour: IF blue, ID amber, EX orange, MEM violet, WB grey. A dark hatched cell is a stall: the instruction is held where it is. A red outlined, struck-through cell belongs to an instruction that was fetched down the wrong path and flushed. A cyan arrow is a forwarded value, from the latch that holds it to the EX that needs it. The yellow outline marks the current cycle. In the Reorder program, the picked line has a cyan bar.',
+    watch: 'Top: the program, with the line in the pipe this cycle in yellow, finished lines plain, flushed lines struck through and faded, and a violet register where an instruction needs a result from one of the two before it. Below: the pipeline chart, one row per fetched instruction and one column per cycle. Each stage has its own colour: IF blue, ID amber, EX orange, MEM violet, WB grey. A dark hatched cell is a stall: the instruction is held where it is. A red outlined, struck-through cell belongs to an instruction that was fetched down the wrong path and flushed. A blue arrow is a forwarded value, from the latch that holds it to the EX that needs it. The yellow outline marks the current cycle. In the Reorder program, the picked line has a blue bar.',
   },
   tryThis: [
-    'On "Data hazard", turn Forwarding off and on: count the stall cycles, and watch the cyan arrow replace the wait.',
+    'On "Data hazard", turn Forwarding off and on: count the stall cycles, and watch the blue arrow replace the wait.',
     'On "Load-use", forwarding is on and add still waits one cycle. Why can\'t the arrow go back in time?',
     'On "Branch", watch which two rows turn red when beq finishes EX, and check the flush cycles.',
     'On "Reorder", pick lw r4, 8(r7) and move it up twice: both stalls vanish and the total drops from 13 to 11.',
