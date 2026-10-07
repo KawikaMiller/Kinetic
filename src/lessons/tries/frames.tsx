@@ -60,7 +60,7 @@ export function actionFrames(before: readonly string[], action: Action): { frame
         const scan = scanCost(before, p);
         r.snap(
           <>
-            No “{ch}” under {at === '' ? 'the root' : q(at)}: no word starts with {q(p)}. The trie knew after {plural(r.get().steps + 1, 'check')}; a
+            No “{ch}” under {at === '' ? 'the root' : q(at)}: no word starts with {q(p)}. The trie knew after {plural(r.get().steps + 1, 'child lookup')}; a
             scan of the list makes {scan.calls} startsWith calls.
           </>,
           1.6,
@@ -75,7 +75,7 @@ export function actionFrames(before: readonly string[], action: Action): { frame
     const scan = scanCost(before, p);
     r.snap(
       <>
-        Reached {p === '' ? 'the root' : <>the node for {q(p)}</>} in {plural(r.get().steps, 'step')}. Its subtree holds{' '}
+        Reached {p === '' ? 'the root' : <>the node for {q(p)}</>} in {plural(r.get().steps, 'child lookup')}. Its subtree holds{' '}
         {plural(words.length, 'word')}, read out depth first in letter order{words.length ? <>: {words.join(', ')}</> : null}. Scanning the list
         instead: {scan.calls} startsWith calls, {plural(scan.chars, 'character check')}.
       </>,

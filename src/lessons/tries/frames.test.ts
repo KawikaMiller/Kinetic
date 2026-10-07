@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
 import { actionFrames } from './frames';
-import { buildTrie, countNodes, PRESETS, radixShape, scanCost, trieShape } from './model';
+import { buildTrie, countNodes, PRESETS, radixShape, scanCost, trieLookups, trieShape } from './model';
 
 const text = (f: { say?: unknown }) => captionText(f.say as never);
 const KEYWORDS = [...PRESETS[0].words];
@@ -88,11 +88,27 @@ describe('try-this numbers', () => {
     expect(radixShape(states).size).toBeLessThan(trieShape(states).size);
     expect(radixShape(states).get('massachusetts')?.label).toBe('ssachusetts');
     const x = actionFrames(KEYWORDS, { kind: 'search', prefix: 'x' }).frames.at(-1)!;
-    expect(text(x)).toContain('after 1 check');
+    expect(text(x)).toContain('after 1 child lookup');
+    expect(trieLookups(buildTrie(KEYWORDS), 'x')).toBe(1);
     expect(text(x)).toContain('makes 12 startsWith calls');
   });
 
   it('the memory note: 26 slots per node outnumber the letters in every preset', () => {
     for (const p of PRESETS) expect(countNodes(buildTrie([...p.words])) * 26).toBeGreaterThan(p.words.join('').length);
+  });
+});
+
+describe("one count for the trie's work", () => {
+  it('the caption and the cost panel give the same child-lookup count, hit or miss, for every preset prefix', () => {
+    for (const p of PRESETS) {
+      const words = [...p.words];
+      const root = buildTrie(words);
+      const prefixes = new Set([...words.flatMap((w) => Array.from({ length: w.length + 1 }, (_, i) => w.slice(0, i))), 'x', 'caz', 'mz']);
+      for (const pre of prefixes) {
+        const say = text(actionFrames(words, { kind: 'search', prefix: pre }).frames.at(-1)!);
+        const n = trieLookups(root, pre);
+        expect(say, `${p.id} "${pre}"`).toContain(`${n} child lookup`);
+      }
+    }
   });
 });

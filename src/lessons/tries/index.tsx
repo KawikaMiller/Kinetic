@@ -4,14 +4,14 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'A trie stores words as paths of letters from a shared root, so finding every word with a given prefix takes as many steps as the prefix has letters, however many words there are.',
+    tldr: 'A trie stores words as paths of letters from a shared root, so reaching the node for a prefix takes as many steps as the prefix has letters, however many words there are; listing its completions then only walks that subtree.',
     what: 'Each node stands for a prefix, and each edge adds one letter. Words that share a beginning share those nodes, and a mark on a node says a word ends there. To autocomplete, walk the prefix\'s letters down from the root, then read out every marked node below by a depth-first walk in letter order. A radix tree compresses chains of single-child nodes into one edge.',
     analogy: 'A dictionary\'s thumb tabs taken all the way down: open at C, then the CA pages, then CAT, and everything left in your hand starts with "cat".',
     useCases: [
       'Autocomplete and search-as-you-type over a fixed vocabulary',
       'IP routing tables, which find the longest matching prefix of an address with a binary trie',
       'Spell checkers and word games, which walk a dictionary trie letter by letter',
-      'Routers in web frameworks that match URL paths segment by segment in a radix tree',
+      'Routers in web frameworks that match URL paths in a radix tree',
     ],
     why: 'Prefix queries are everywhere, and a trie turns "scan every string" into "follow the letters". It is also a good lesson in trade-offs: the speed comes from structure, and that structure costs memory. It builds on `trees-bst`, `hash-table` (a child map per node is often a small hash table) and `tree-traversals` for the depth-first read-out.',
     watch: 'Each circle is a node, labelled with the letter on the edge into it; the root is ·. In the compressed view, pills carry a run of letters. A green ring marks the end of a word. The yellow node is the letter being handled now, and violet nodes and edges are the matched path. A solid blue node was just created; blue-tinted nodes and edges are the subtree holding the completions, also listed as blue chips, while faded nodes did not match. A red node is being pruned.',
@@ -21,7 +21,7 @@ const lesson: LessonModule = {
     'Type cast into Word and press Insert: only one node is new, because c, ca and cas already exist for case.',
     'Type do into Word and press Delete: its ring goes, but no node is pruned, because double still passes through it.',
     'Pick US states, M and N and switch View to Compressed: the node count drops and the tail of massachusetts becomes one edge.',
-    'Type x into Prefix: the trie gives up after one check, while a scan still calls startsWith on every word.',
+    'Type x into Prefix: the trie gives up after one child lookup, while a scan still calls startsWith on every word.',
   ],
   keyIdeas: [
     'A trie stores each word as a path of letters from the root, with a mark on the node where the word ends.',
