@@ -1,0 +1,45 @@
+
+.pb-dice, .pb-flaky {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px 28px;
+}
+.pb-left { display: flex; flex-direction: column; gap: 10px; min-width: 0; max-width: min(100%, 400px); }
+.pb-left .section-title { display: block; }
+.pb-grid, .pb-suite { max-width: 100%; height: auto; }
+.pb-plots { display: flex; flex-direction: column; gap: 12px; max-width: 100%; }
+.pb-plots .plot2d, .pb-flaky .plot2d, .pb-replicas .plot2d { max-width: 100%; height: auto; }
+
+.pb-rules { max-width: 360px; }
+.pb-rules dl { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font: 500 13px var(--font); }
+.pb-rules dt { color: var(--muted); }
+.pb-rules dd { margin: 0; color: var(--text); font-family: var(--mono); font-size: 12.5px; }
+.pb-overlap { color: var(--violet); font-weight: 700; }
+.pb-check { color: var(--muted); font-family: var(--font); }
+
+.pb-replicas { gap: 14px; align-items: center; }
+.pb-rack { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 12px; border: 1.5px dashed transparent; max-width: 100%; }
+.pb-rack.is-shared { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 8%, transparent); }
+.pb-rack-label { font: 600 11px var(--mono); color: var(--orange); text-transform: uppercase; letter-spacing: 0.06em; }
+.pb-servers { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.pb-servers li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line-2);
+  background: var(--cell);
+  font: 500 11px var(--mono);
+  color: var(--muted);
+}
+.pb-servers b { color: var(--text); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .pb-dice, .pb-flaky { flex-direction: column; align-items: center; }
+  .pb-rules { max-width: none; align-self: stretch; }
+}
+.pb-plots .plot-segments line { stroke-width: 2.5; }
