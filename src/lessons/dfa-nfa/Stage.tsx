@@ -7,7 +7,7 @@ import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
-import { subsetName, type Dfa, type Nfa, type State } from '../../core/automata';
+import { edgesOf, subsetName, type Dfa, type Nfa, type State } from '../../core/automata';
 import { useIntroCaption } from '../../core/caption';
 import { plural, power } from '../../core/format';
 import { minWidthForText } from '../../core/scale';
@@ -15,7 +15,7 @@ import { usePlayer } from '../../core/usePlayer';
 import { runFrames, subsetFrames, subsetPlan, symbolText, verdictText } from './frames';
 import {
   CHECK_LENGTH, DFA_PRESETS, EDIT_AT, EDIT_STATES, ENDS_01, EVEN_UNION, NFA_PRESETS, TARGETS, alphabetText, blankMachine, checkInput, checkMachine,
-  edgesOf, nthFromEnd, reachable, withSolution, type Drawn,
+  nthFromEnd, reachable, withSolution, type Drawn,
 } from './model';
 import './styles.css';
 

@@ -10,6 +10,16 @@ export type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim' | 'muted' | '
 /** Every tone, for code that needs one of something per tone (arrowhead markers). */
 export const TONES: readonly Tone[] = ['hi', 'ok', 'bad', 'info', 'violet', 'dim', 'muted', 'orange', 'amber', 'pink', 'sky'];
 
+/**
+ * The hues that mean nothing but "a different one", for plain categories that sit next to
+ * semantic colours (sets, blocks, lanes). Wraps. Use it instead of `categorical()` (palette.ts)
+ * when the stage also uses hi/ok/info/violet for their meanings, since `categorical()` hands
+ * those out as categories too. Each is a Tone and a palette TokenName.
+ */
+export const PLAIN_TONES = ['amber', 'pink', 'sky', 'orange'] as const;
+export type PlainTone = (typeof PLAIN_TONES)[number];
+export const plainTone = (i: number): PlainTone => PLAIN_TONES[((i % PLAIN_TONES.length) + PLAIN_TONES.length) % PLAIN_TONES.length];
+
 /** 'var(--ok)' etc. */
 export const toneVar = (t: Tone) => `var(--${t})`;
 

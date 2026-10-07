@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { fakeSecret } from './fakeSecret';
 import { REPO_RULES, RULES, scan } from './secretScan';
 
 // Fixtures are joined from pieces so this file never holds a credential-shaped literal.
-const join = (...parts: string[]) => parts.join('');
 const FIXTURES: Record<string, string> = {
-  stripe: join('sk', '_test_', 'EXAMPLE0000DEMO0000KEY'),
-  aws: join('AK', 'IA', 'EXAMPLE0000DEMO0'),
-  github: join('gh', 'p_', 'EXAMPLE0000'.repeat(3), 'DEM'),
-  'private-key': join('-----BEGIN ', 'RSA PRIVATE', ' KEY-----'),
-  'github-pat': join('github', '_pat_', 'EXAMPLE0000DEMO0000KEY00'),
-  slack: join('xo', 'xb-', '0000-EXAMPLE-DEMO'),
-  google: join('AI', 'za', 'EXAMPLE0000DEMO0000KEY0000DEMO00000'),
-  jwt: join('ey', 'JEXAMPLE0000', '.', 'ey', 'JEXAMPLE0000', '.', 'EXAMPLE0000'),
-  'url-credentials': join('https://', 'demo', ':', 'hunter22', '@db.example.com/app'),
+  stripe: fakeSecret('sk', '_test_', 'EXAMPLE0000DEMO0000KEY'),
+  aws: fakeSecret('AK', 'IA', 'EXAMPLE0000DEMO0'),
+  github: fakeSecret('gh', 'p_', 'EXAMPLE0000'.repeat(3), 'DEM'),
+  'private-key': fakeSecret('-----BEGIN ', 'RSA PRIVATE', ' KEY-----'),
+  'github-pat': fakeSecret('github', '_pat_', 'EXAMPLE0000DEMO0000KEY00'),
+  slack: fakeSecret('xo', 'xb-', '0000-EXAMPLE-DEMO'),
+  google: fakeSecret('AI', 'za', 'EXAMPLE0000DEMO0000KEY0000DEMO00000'),
+  jwt: fakeSecret('ey', 'JEXAMPLE0000', '.', 'ey', 'JEXAMPLE0000', '.', 'EXAMPLE0000'),
+  'url-credentials': fakeSecret('https://', 'demo', ':', 'hunter22', '@db.example.com/app'),
 };
 
 describe('secret-shape scan', () => {

@@ -135,6 +135,30 @@ export function frameCount(page) {
   });
 }
 
+/** App chrome that stays pinned while the page scrolls: the sticky top bar. */
+const STICKY_CHROME = '.topbar';
+
+const setChromeVisibility = (page, visibility) =>
+  page.evaluate(
+    (sel, v) => document.querySelectorAll(sel).forEach((el) => { el.style.visibility = v; }),
+    STICKY_CHROME,
+    visibility,
+  );
+
+/**
+ * Screenshot one element. An element taller than the viewport is captured by scrolling, and
+ * the sticky top bar would be painted over its top edge, so the bar is hidden for the capture
+ * (visibility only, so nothing reflows) and restored afterwards.
+ */
+export async function shootElement(page, element, file) {
+  await setChromeVisibility(page, 'hidden');
+  try {
+    await element.screenshot({ path: file });
+  } finally {
+    await setChromeVisibility(page, '');
+  }
+}
+
 export function outPath(...parts) {
   const file = path.join(OUT_DIR, ...parts);
   fs.mkdirSync(path.dirname(file), { recursive: true });

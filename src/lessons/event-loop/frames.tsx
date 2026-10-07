@@ -2,8 +2,6 @@ import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import { simulate, type ElStep, type Note, type Snippet } from './sim';
 
-export { SNIPPETS } from './sim';
-
 export interface ElFrame extends Frame, ElStep {}
 
 /** Seconds to linger on the closing output order. */

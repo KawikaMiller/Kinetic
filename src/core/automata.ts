@@ -4,7 +4,8 @@
  * their frames from what these return.
  *
  * A missing DFA transition means the machine dies (rejects): that's the usual "dead state"
- * drawn implicitly. Minimisation is deliberately not here (T3 chomsky-hierarchy).
+ * drawn implicitly. A DFA row may also carry an `OTHER` arrow for every symbol outside the
+ * alphabet (a lexer's "any other character"). Minimisation is deliberately not here (T3 chomsky-hierarchy).
  */
 
 export type State = string;
@@ -12,13 +13,22 @@ export type State = string;
 /** The key an NFA uses for ε (empty-string) moves. */
 export const EPSILON = 'ε';
 
+/**
+ * DFA transition key for "any symbol outside the alphabet". Symbols in the alphabet never take
+ * it (no arrow on one of those still means "dies"), so a row can say "anything but newline" as
+ * explicit arrows for the alphabet minus '
+' plus an OTHER arrow. Never a single character,
+ * so it can't collide with an input symbol.
+ */
+export const OTHER = 'other';
+
 export interface Dfa {
   kind: 'dfa';
   states: readonly State[];
   alphabet: readonly string[];
   start: State;
   accept: readonly State[];
-  /** delta[state][symbol] = next state; a missing entry means "dies". */
+  /** delta[state][symbol] = next state; a missing entry means "dies". `OTHER` covers symbols outside the alphabet. */
   delta: Readonly<Record<State, Readonly<Record<string, State>>>>;
 }
 
@@ -32,10 +42,17 @@ export interface Nfa {
   delta: Readonly<Record<State, Readonly<Record<string, readonly State[]>>>>;
 }
 
-/** One DFA move. Null when the state is already dead or has no transition on `symbol`. */
+/**
+ * One DFA move. Null when the state is already dead or has no transition on `symbol`. A symbol
+ * outside the alphabet with no arrow of its own takes the row's `OTHER` arrow, if it has one.
+ */
 export function dfaStep(dfa: Dfa, state: State | null, symbol: string): State | null {
   if (state === null) return null;
-  return dfa.delta[state]?.[symbol] ?? null;
+  const row = dfa.delta[state];
+  if (!row) return null;
+  const own = Object.hasOwn(row, symbol) ? row[symbol] : undefined;
+  if (own !== undefined) return own;
+  return dfa.alphabet.includes(symbol) ? null : (row[OTHER] ?? null);
 }
 
 /** Every state visited reading `input` (path[0] is the start), and whether it ends accepting. */
@@ -47,6 +64,36 @@ export function dfaRun(dfa: Dfa, input: string): { path: (State | null)[]; accep
     path.push(state);
   }
   return { path, accepted: state !== null && dfa.accept.includes(state) };
+}
+
+/** One drawn arrow: every symbol that takes `from` to `to`. */
+export interface Edge {
+  from: State;
+  to: State;
+  symbols: string[];
+}
+
+/**
+ * One arrow per (from, to) pair, labelled with every symbol that takes it, in the order
+ * ε (NFA), the alphabet, then `OTHER` (DFA): draw a Dfa or an Nfa without casts.
+ */
+export function edgesOf(m: Dfa | Nfa): Edge[] {
+  const byPair = new Map<string, Edge>();
+  const symbols = m.kind === 'nfa' ? [EPSILON, ...m.alphabet] : [...m.alphabet, OTHER];
+  for (const from of m.states) {
+    const row: Readonly<Record<string, State | readonly State[]>> = m.delta[from] ?? {};
+    for (const sym of symbols) {
+      const raw = Object.hasOwn(row, sym) ? row[sym] : undefined;
+      if (raw === undefined) continue;
+      for (const to of typeof raw === 'string' ? [raw] : raw) {
+        const key = `${from}\u0000${to}`;
+        const e = byPair.get(key) ?? { from, to, symbols: [] };
+        e.symbols.push(sym);
+        byPair.set(key, e);
+      }
+    }
+  }
+  return [...byPair.values()];
 }
 
 /** Sorted, de-duplicated state list: the canonical form for sets of NFA states. */

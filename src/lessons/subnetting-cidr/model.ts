@@ -1,15 +1,14 @@
 /**
- * IPv4 CIDR arithmetic for the subnetting lesson: parsing, masks, the network / broadcast /
- * host range of a block, the membership AND, and carving a block into smaller ones. Every
- * address is an unsigned 32-bit number; every bitwise result goes through `>>> 0` so it
- * stays unsigned (JavaScript's & and | return signed 32-bit integers).
+ * IPv4 CIDR arithmetic for the subnetting lesson: the host range of a block, the membership
+ * AND bit by bit, and carving a block into smaller ones. Parsing, masks and the network /
+ * broadcast / membership maths come from core/ipv4. Every address is an unsigned 32-bit number.
  */
 import type { Bit } from '../../core/bits';
+import { IPV4_BITS, IPV4_MAX_INPUT, blockSize, broadcastOf, contains, ipToString, maskOf, networkOf, wildcardOf } from '../../core/ipv4';
 import type { FieldParse } from '../../core/parse';
 
-export const ADDRESS_BITS = 32;
-/** Longest text the fields accept: a full dotted quad with a prefix is 18 characters. */
-export const MAX_FIELD_CHARS = 40;
+/** Longest text the fields accept: as much as the core/ipv4 parsers read before refusing it as too long. */
+export const MAX_FIELD_CHARS = IPV4_MAX_INPUT;
 
 export interface Block {
   /** The network address (host bits all zero). */
@@ -19,79 +18,15 @@ export interface Block {
 
 // ── Text ⇄ number ───────────────────────────────────────────────────────
 
-export const ipToString = (a: number) => [24, 16, 8, 0].map((s) => (a >>> s) & 0xff).join('.');
 export const blockToString = (b: Block) => `${ipToString(b.net)}/${b.prefix}`;
 export const hex32 = (a: number) => `0x${a.toString(16).toUpperCase().padStart(8, '0')}`;
 
 /** The 32 bits of an address, most significant first. */
 export function addressBits(a: number): Bit[] {
-  return Array.from({ length: ADDRESS_BITS }, (_, i) => ((a >>> (ADDRESS_BITS - 1 - i)) & 1) as Bit);
-}
-
-const OCTET = /^\d+$/;
-
-/**
- * One learner-typed IPv4 address in dotted-quad form, refused with the reason otherwise.
- * Strict on purpose: no leading zeros (inet_aton would read 010 as octal 8), no shorthand
- * forms like `10.1`, exactly four parts of 0-255.
- */
-export function parseIPv4(text: string): FieldParse<number> {
-  const s = text.trim();
-  if (!s) return { ok: false, error: 'Type an IPv4 address, like 192.168.1.10.' };
-  if (s.length > MAX_FIELD_CHARS) return { ok: false, error: "That's far too long for an IPv4 address (at most 15 characters)." };
-  if (!/^[\d.]+$/.test(s)) return { ok: false, error: 'Only digits and dots: an IPv4 address looks like 192.168.1.10.' };
-  const parts = s.split('.');
-  if (parts.length !== 4) return { ok: false, error: `An IPv4 address has exactly four numbers separated by dots; that has ${parts.length}.` };
-  let value = 0;
-  for (const p of parts) {
-    if (!OCTET.test(p)) return { ok: false, error: 'Every part needs a number: there is an empty part between two dots.' };
-    if (p.length > 1 && p.startsWith('0')) return { ok: false, error: `No leading zeros: ${p} is ambiguous (some tools read it as octal). Write ${p.replace(/^0+(?=\d)/, '')}.` };
-    if (p.length > 3 || Number(p) > 255) return { ok: false, error: `Each part is one byte, 0-255, so ${p.length > 6 ? `${p.slice(0, 6)}…` : p} doesn't fit.` };
-    value = value * 256 + Number(p);
-  }
-  return { ok: true, value };
-}
-
-/** A prefix length typed after the slash: 0-32, digits only. */
-export function parsePrefix(text: string): FieldParse<number> {
-  const s = text.trim();
-  if (!s) return { ok: false, error: 'Add a prefix length after the slash, like /24.' };
-  if (!/^\d+$/.test(s)) return { ok: false, error: 'The prefix is a whole number of bits, 0-32, like /24.' };
-  if (s.length > 1 && s.startsWith('0')) return { ok: false, error: `No leading zeros in the prefix: write /${Number(s)}.` };
-  if (s.length > 2 || Number(s) > ADDRESS_BITS) return { ok: false, error: `/${s.length > 6 ? `${s.slice(0, 6)}…` : s} is too long: an IPv4 address only has 32 bits, so a prefix is 0-32.` };
-  return { ok: true, value: Number(s) };
-}
-
-/** `address/prefix`. Without a slash, `fallbackPrefix` is used if given, else it's refused. */
-export function parseCidr(text: string, fallbackPrefix?: number): FieldParse<{ addr: number; prefix: number }> {
-  const s = text.trim();
-  if (s.length > MAX_FIELD_CHARS) return { ok: false, error: "That's far too long for an address and prefix (at most 18 characters)." };
-  const slash = s.split('/');
-  if (slash.length > 2) return { ok: false, error: 'Only one slash: address/prefix, like 192.168.1.0/24.' };
-  const addr = parseIPv4(slash[0]);
-  if (!addr.ok) return addr;
-  if (slash.length === 1) {
-    if (fallbackPrefix === undefined) return { ok: false, error: 'Add a prefix length, like /24.' };
-    return { ok: true, value: { addr: addr.value, prefix: fallbackPrefix } };
-  }
-  const prefix = parsePrefix(slash[1]);
-  if (!prefix.ok) return prefix;
-  return { ok: true, value: { addr: addr.value, prefix: prefix.value } };
+  return Array.from({ length: IPV4_BITS }, (_, i) => ((a >>> (IPV4_BITS - 1 - i)) & 1) as Bit);
 }
 
 // ── One block ───────────────────────────────────────────────────────────
-
-/** The netmask: `prefix` ones then zeros. `<< 32` is a no-op in JavaScript, so /0 is special-cased. */
-export const maskOf = (prefix: number) => (prefix === 0 ? 0 : (0xffffffff << (ADDRESS_BITS - prefix)) >>> 0);
-/** The wildcard (inverse) mask ACLs and OSPF use: the host bits set. */
-export const wildcardOf = (prefix: number) => ~maskOf(prefix) >>> 0;
-export const blockSize = (prefix: number) => 2 ** (ADDRESS_BITS - prefix);
-
-export const networkOf = (a: number, prefix: number) => (a & maskOf(prefix)) >>> 0;
-export const broadcastOf = (a: number, prefix: number) => (networkOf(a, prefix) | wildcardOf(prefix)) >>> 0;
-
-/** The membership test: do `a` and the network agree on every network bit? */
-export const contains = (net: number, prefix: number, a: number) => ((a & maskOf(prefix)) >>> 0) === ((net & maskOf(prefix)) >>> 0);
 
 export type BlockKind = 'normal' | 'point-to-point' | 'single-host';
 
@@ -125,7 +60,7 @@ export function blockInfo(a: number, prefix: number): BlockInfo {
 /** The first network bit (0 = most significant) where `a` and `net` disagree; null when `a` is inside. */
 export function firstDifference(net: number, prefix: number, a: number): number | null {
   for (let i = 0; i < prefix; i++) {
-    const bit = ADDRESS_BITS - 1 - i;
+    const bit = IPV4_BITS - 1 - i;
     if (((a >>> bit) & 1) !== ((net >>> bit) & 1)) return i;
   }
   return null;
@@ -143,7 +78,7 @@ export const within = (outer: Block, inner: Block) => inner.prefix >= outer.pref
 
 /** `parent` cut into equal blocks of `prefix`, in address order. */
 export function splitEqual(parent: Block, prefix: number): Block[] {
-  if (prefix < parent.prefix || prefix > ADDRESS_BITS) throw new RangeError(`can't split /${parent.prefix} into /${prefix}`);
+  if (prefix < parent.prefix || prefix > IPV4_BITS) throw new RangeError(`can't split /${parent.prefix} into /${prefix}`);
   const step = blockSize(prefix);
   return Array.from({ length: 2 ** (prefix - parent.prefix) }, (_, i) => ({ net: parent.net + i * step, prefix }));
 }
@@ -263,7 +198,7 @@ export function parseTeams(text: string): FieldParse<number[]> {
   for (const t of tokens) {
     if (/^-\d+$/.test(t) || t === '0') return { ok: false, error: 'Every team needs at least 1 host.' };
     if (!/^\d+$/.test(t)) return { ok: false, error: `${t.length > 12 ? `${t.slice(0, 12)}…` : t} isn't a whole number of hosts.` };
-    if (t.length > 10 || Number(t) >= 2 ** ADDRESS_BITS) return { ok: false, error: 'More hosts than IPv4 has addresses (about 4.3 billion).' };
+    if (t.length > 10 || Number(t) >= 2 ** IPV4_BITS) return { ok: false, error: 'More hosts than IPv4 has addresses (about 4.3 billion).' };
     counts.push(Number(t));
   }
   return { ok: true, value: counts };

@@ -3,7 +3,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { SNIPPETS, buildFrames } from './frames';
+import { buildFrames } from './frames';
+import { SNIPPETS } from './sim';
 
 const CHIP_SPRING = { type: 'spring', stiffness: 420, damping: 30 } as const;
 /** How far a chip slides as it enters or leaves a queue / the stack, in px. */

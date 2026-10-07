@@ -5,8 +5,6 @@ import {
   type Account, type Disk, type Letter, type Mode, type WalRec,
 } from './model';
 
-export { LETTER_NAMES, PROGRAMS, TOTAL, type Letter, type Mode } from './model';
-
 type LetterState = 'off' | 'ok' | 'bad' | 'hint';
 type Phase = 'run' | 'crash' | 'recover' | 'done';
 

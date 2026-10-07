@@ -14,6 +14,8 @@ export const HELPER_RULES = [
   { name: 'local lerp/clamp01', re: /(?:const|function)\s+(?:lerp|clamp01)\b/g },
   { name: 'local roundBox', re: /function\s+roundBox\b/g },
   { name: 'hand-rolled queued play', re: /\bpendingPlay\b/g },
+  // core/ipv4 owns dotted-quad parsing/formatting and the prefix-mask shift.
+  { name: 'local IPv4 maths', re: /(?:const|function)\s+(?:parseIPv4|ipToString)\b|0xffffffff\s*<</g },
   // An anonymous spring literal in a transition prop: magic numbers with no name. Use a
   // SPRING preset (core/motion) or a named module constant. Matches on the object, not
   // on a variable called "spring", so a season or a DST "spring forward" isn't flagged.

@@ -5,6 +5,7 @@
  * together into the steps one transmission takes. MAC addresses are made up (locally
  * administered, 02:…); IPs are RFC 1918 plus the RFC 5737 documentation range.
  */
+import { contains, ipToString, ipv4, networkOf } from '../../core/ipv4';
 
 export const ETHERTYPE_ARP = 0x0806;
 export const ETHERTYPE_IPV4 = 0x0800;
@@ -47,10 +48,8 @@ export const hostByMac = (mac: string) => HOSTS.find((h) => h.mac === mac) ?? nu
 
 // ── Next hop ────────────────────────────────────────────────────────────
 
-const toNum = (ip: string) => ip.split('.').reduce((a, o) => a * 256 + Number(o), 0);
-const maskOf = (prefix: number) => (prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0);
-export const networkOf = (ip: string, prefix: number) => (toNum(ip) & maskOf(prefix)) >>> 0;
-export const ipOf = (n: number) => [24, 16, 8, 0].map((s) => (n >>> s) & 0xff).join('.');
+/** The network address of a dotted-quad IP, as text: 192.168.1.10 /24 → 192.168.1.0. */
+export const networkText = (ip: string, prefix: number) => ipToString(networkOf(ipv4(ip), prefix));
 
 export interface NextHop {
   onLink: boolean;
@@ -60,7 +59,7 @@ export interface NextHop {
 
 /** Same subnet → deliver to the target directly; otherwise hand it to the default gateway. */
 export function nextHop(senderIp: string, targetIp: string, prefix = PREFIX, gateway = GATEWAY.ip): NextHop {
-  const onLink = networkOf(senderIp, prefix) === networkOf(targetIp, prefix);
+  const onLink = contains(ipv4(senderIp), prefix, ipv4(targetIp));
   return { onLink, ip: onLink ? targetIp : gateway };
 }
 

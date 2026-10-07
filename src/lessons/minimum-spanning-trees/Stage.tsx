@@ -6,6 +6,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { cssVar, type TokenName } from '../../core/palette';
 import { minWidthForText } from '../../core/scale';
+import { plainTone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { ALGO_NAMES, mstFrames, type Algo } from './frames';
 import { byWeight, countMinimumTrees, cut, distinctWeights, kruskal, parseWeight, prim, worstDetour, type WGraph } from './model';
@@ -17,8 +18,6 @@ const W = 520;
 const H = 340;
 /** Edge weights are 13px: the graph never shrinks below 8/13 of its width, and only the graph scrolls sideways. */
 const GRAPH_MIN_WIDTH = minWidthForText(W, 13);
-/** Set colours for Kruskal's merged groups: categorical, never the ok/bad meanings. */
-const SET_TONES: readonly TokenName[] = ['amber', 'pink', 'sky', 'orange'];
 
 export function Stage() {
   const [presetId, setPresetId] = useState<PresetId>('offices');
@@ -53,11 +52,11 @@ export function Stage() {
   const crossing = new Set(cutNow?.crossing ?? []);
   const lightest = new Set(cutNow?.lightest ?? []);
 
-  // Kruskal's merged sets get a colour each; singletons stay plain.
+  // Kruskal's merged sets get a plain hue each (never the ok/bad meanings); singletons stay plain.
   const setTone = new Map<number, TokenName>();
   if (f.sets) {
     const roots = [...new Set(f.sets)].filter((r) => f.sets!.filter((x) => x === r).length > 1).sort((a, b) => a - b);
-    roots.forEach((r, i) => setTone.set(r, SET_TONES[i % SET_TONES.length]));
+    roots.forEach((r, i) => setTone.set(r, plainTone(i)));
   }
 
   const load = (id: PresetId) => {

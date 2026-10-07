@@ -1,4 +1,4 @@
-import { dfaStep, longestMatch, type Dfa, type State } from '../../core/automata';
+import { OTHER, dfaStep, longestMatch, type Dfa, type State } from '../../core/automata';
 
 /**
  * The batch's small expression language, as this lesson lexes it (each T2-B5 lesson keeps
@@ -35,15 +35,10 @@ const SPACE = [' ', '\t', '\n'];
 /** Every character the lesson's DFA names: printable ASCII, tab and newline. */
 const ASCII = [...range(' ', '~'), '\t', '\n'];
 /**
- * Stands in for every other character (é, emoji halves…) so the DFA's alphabet stays finite:
- * comments and strings may contain anything, no other token may. core/automata has no
- * "any other symbol" arrow, so the source is mapped through `toAlphabet` first.
+ * Every other character (é, emoji halves…) takes core/automata's OTHER arrow, so the DFA's
+ * alphabet stays finite: comments and strings may contain anything, no other token may.
  */
-export const OTHER = '¤';
 const ANY = [...ASCII, OTHER];
-
-/** The source with every character outside the DFA's ASCII set replaced by OTHER, code unit for code unit. */
-export const toAlphabet = (source: string) => source.replace(/[^\t\n\x20-\x7e]/g, OTHER);
 
 /** A transition on a class of characters, with the label drawn on its arrow. */
 interface Move {
@@ -90,7 +85,7 @@ const STATES = Object.keys(STATE_LABEL);
 export const LEXER: Dfa = {
   kind: 'dfa',
   states: STATES,
-  alphabet: ANY,
+  alphabet: ASCII,
   start: 'S',
   accept: Object.keys(ACCEPTS),
   delta: Object.fromEntries(STATES.map((s) => [s, Object.fromEntries(MOVES.filter((m) => m.from === s).flatMap((m) => m.chars.map((c) => [c, m.to])))])),
@@ -131,10 +126,9 @@ export function errorAt(source: string, pos: number): Token {
 /** Maximal munch over the combined DFA. Errors become tokens and lexing resumes after them. */
 export function lex(source: string, opts: LexOptions = { keywordsFirst: true }): Token[] {
   const out: Token[] = [];
-  const input = toAlphabet(source);
   let pos = 0;
   while (pos < source.length) {
-    const m = longestMatch(LEXER, input, pos);
+    const m = longestMatch(LEXER, source, pos);
     if (!m) {
       const err = errorAt(source, pos);
       out.push(err);
@@ -173,13 +167,12 @@ export interface Scan {
 /** Every scan the lexer makes, with each character it reads: what maximal munch actually does. */
 export function scans(source: string, opts: LexOptions = { keywordsFirst: true }): Scan[] {
   const tokens = lex(source, opts);
-  const input = toAlphabet(source);
   return tokens.map((token) => {
     const steps: ScanStep[] = [];
     let state: State | null = LEXER.start;
     let acceptEnd: number | null = null;
     for (let i = token.start; i < source.length && state !== null; i++) {
-      state = dfaStep(LEXER, state, input[i]);
+      state = dfaStep(LEXER, state, source[i]);
       steps.push({ at: i, state });
       if (state !== null && LEXER.accept.includes(state)) acceptEnd = i + 1;
     }
