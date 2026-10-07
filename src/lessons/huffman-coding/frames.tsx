@@ -41,7 +41,37 @@ export function tieDecided(h: Huffman, step: number): boolean {
   return m.queueBefore.slice(2).some((id) => h.nodes[id].weight === w);
 }
 
-/** The summary of the code table: commonest symbol, rarest, totals against fixed width and ASCII. */
+/** "a", "a and b", "a, b and c": symbols for a caption. */
+function symList(syms: readonly string[]): ReactNode {
+  return syms.map((x, i) => (
+    <span key={x}>
+      {i > 0 && (i === syms.length - 1 ? ' and ' : ', ')}
+      {q(x)}
+    </span>
+  ));
+}
+
+/** How many tied symbols a caption names one by one; beyond that it gives the code lengths. */
+const LIST_MAX = 3;
+
+/** One end of the count table (commonest or rarest), worded for ties. */
+function endPhrase(h: Huffman, group: readonly { sym: string; count: number }[], role: 'commonest' | 'rarest'): ReactNode {
+  const code = (x: string) => h.codes.get(x)!;
+  if (group.length === 1) {
+    const g = group[0];
+    return <>the {role}, {q(g.sym)} ×{g.count}, gets {code(g.sym)} ({bitWord(code(g.sym).length)})</>;
+  }
+  const lens = group.map((g) => code(g.sym).length);
+  const lo = Math.min(...lens);
+  const hi = Math.max(...lens);
+  const codes =
+    group.length <= LIST_MAX
+      ? <>get {group.map((g) => code(g.sym)).join(', ')}</>
+      : <>get codes of {lo === hi ? bitWord(lo) : `${lo}-${hi} bits`}</>;
+  return <>{symList(group.map((g) => g.sym))} tie as {role} (×{group[0].count} each) and {codes}</>;
+}
+
+/** The summary of the code table: commonest and rarest symbols (ties named as ties), totals against fixed width and ASCII. */
 export function codeSummary(h: Huffman): ReactNode {
   const c = costs(h);
   const freq = frequencies(h.text);
@@ -53,26 +83,44 @@ export function codeSummary(h: Huffman): ReactNode {
       </>
     );
   }
-  const top = freq[0];
-  const rare = freq[freq.length - 1];
-  const topLen = h.codes.get(top.sym)!.length;
+  const totals = (
+    <>
+      Total <b>{c.huffman} bits</b>, against {c.fixedBits} at a fixed {bitWord(c.fixedWidth)} and {c.ascii} in ASCII.
+    </>
+  );
+  const max = freq[0].count;
+  const min = freq[freq.length - 1].count;
+  if (max === min) {
+    const lens = freq.map((f) => h.codes.get(f.sym)!.length);
+    const lo = Math.min(...lens);
+    const hi = Math.max(...lens);
+    return (
+      <>
+        Codes read off root to leaf. All {c.distinct} characters appear ×{max} each, so none earns a shorter code than another:{' '}
+        {lo === hi ? <>every code is {bitWord(lo)}.</> : <>the codes are {lo}-{hi} bits, as even as a tree with {c.distinct} leaves allows.</>} {totals}
+      </>
+    );
+  }
+  const tops = freq.filter((f) => f.count === max);
+  const rares = freq.filter((f) => f.count === min);
+  const shortestTop = Math.min(...tops.map((t) => h.codes.get(t.sym)!.length));
   return (
     <>
-      Codes read off root to leaf: the commonest, {q(top.sym)} ×{top.count}, gets {h.codes.get(top.sym)} ({bitWord(topLen)}); the rarest, {q(rare.sym)}, gets{' '}
-      {h.codes.get(rare.sym)}. Total <b>{c.huffman} bits</b>, against {c.fixedBits} at a fixed {bitWord(c.fixedWidth)} and {c.ascii} in ASCII.
-      {topLen > 1 && <> {oneBitNote(h)}</>}
+      Codes read off root to leaf: {endPhrase(h, tops, 'commonest')}; {endPhrase(h, rares, 'rarest')}. {totals}
+      {shortestTop > 1 && <> {oneBitNote(h, tops.length > 1)}</>}
     </>
   );
 }
 
-/** Why the commonest symbol didn't get 1 bit, from the best total with it forced to 1 bit. */
-function oneBitNote(h: Huffman): ReactNode {
+/** Why no commonest symbol got 1 bit, from the best total with one of them forced to 1 bit (by symmetry, any of a tie gives the same). */
+function oneBitNote(h: Huffman, tied: boolean): ReactNode {
   const forced = forcedOneBitCost(h.text);
   const best = costs(h).huffman;
+  const it = tied ? 'one of them' : 'it';
   return forced > best ? (
-    <>Forcing it to a 1-bit code would take half of all codes and cost {forced} bits in all, {forced - best} more.</>
+    <>Forcing {it} to a 1-bit code would take half of all codes and cost {forced} bits in all, {forced - best} more.</>
   ) : (
-    <>Forcing it to a 1-bit code would tie at {forced} bits: another optimal tree does that, this one just doesn't.</>
+    <>Forcing {it} to a 1-bit code would tie at {forced} bits: another optimal tree does that, this one just doesn't.</>
   );
 }
 
@@ -94,12 +142,18 @@ export function buildFrames(h: Huffman, tie: TieBreak): HfFrame[] {
       first.
     </>,
   );
+  const firstTie = h.merges.findIndex((_, i) => tieDecided(h, i));
   h.merges.forEach((m, i) => {
     const tied = tieDecided(h, i);
     rec.snap(
       <>
         Take the two lightest trees: {nodeName(h, m.a)} and {nodeName(h, m.b)}.
-        {tied && <> Another tree weighs {h.nodes[m.b].weight} too: ties go to {tieWord(tie)}.</>}
+        {tied && (
+          <>
+            {' '}Another tree weighs {h.nodes[m.b].weight} too: ties go to {tieWord(tie)}.
+            {i === firstTie && <> Creation order: the leaves first, lightest first with equal counts in reverse character order (z before a), then each merged tree as it's made.</>}
+          </>
+        )}
       </>,
       undefined,
       { roots: m.queueBefore, merging: [m.a, m.b] },

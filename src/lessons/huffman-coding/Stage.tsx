@@ -95,7 +95,7 @@ export function Stage() {
         <Stats>
           <Stat label="Characters" value={c.n} color="var(--muted)" sub={`${c.distinct} distinct`} />
           <Stat label="Huffman bits" value={c.huffman} color="var(--ok)" sub={`${(c.huffman / c.n).toFixed(2)} per character`} />
-          <Stat label="Entropy" value={c.entropy.toFixed(2)} color="var(--muted)" sub="bits per character, the floor" />
+          <Stat label="Entropy" value={c.entropy.toFixed(2)} color="var(--muted)" sub="the floor for symbol-by-symbol codes" />
         </Stats>
       }
       legend={
