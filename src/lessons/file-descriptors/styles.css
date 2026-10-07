@@ -1,0 +1,6 @@
+.fd { gap: 12px; }
+.fd-scene { display: block; width: 100%; height: auto; }
+.fd-title { font: 600 12px var(--font); fill: var(--muted); }
+.fd-panels { display: flex; flex-wrap: wrap; gap: 12px; }
+.fd-panels > * { flex: 1 1 220px; min-width: 0; }
+.fd-error { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--bad); }
