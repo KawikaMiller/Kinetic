@@ -10,19 +10,19 @@ export function gradientCaption(from: string, to: string, profiles: Record<'srgb
   const s = profiles.srgb;
   const o = profiles.oklch;
   const ends = `${f3(s.L[0])} and ${f3(s.L[GRADIENT_SAMPLES])}`;
-  const gamut = o.outOfGamut > 0
-    ? <> {o.outOfGamut} of the {GRADIENT_SAMPLES + 1} oklch samples are outside sRGB, so your browser maps them into what your screen can show.</>
-    : null;
+  const oklch = o.outOfGamut > 0
+    ? <>OKLCH's own L runs in a straight line (the dashed line), but {o.outOfGamut} of the {GRADIENT_SAMPLES + 1} oklch samples are outside sRGB and have to be mapped in, which bends what you see (the solid line, clipped the way the fallback strip does it; browsers may map a little differently).</>
+    : <>In oklch, lightness runs in a straight line between the ends.</>;
   if (s.dip) {
     const low = s.L[Math.round(s.dip.t * GRADIENT_SAMPLES)];
     return (
       <>{from} → {to}: in srgb the strip <span className="hl bad">dips to L = {f3(low)}</span> around t = {s.dip.t.toFixed(2)}, darker than both ends ({ends}): that's the muddy band.
-        In oklch, lightness runs in a straight line between the ends.{gamut}</>
+        {' '}{oklch}</>
     );
   }
   return (
-    <>{from} → {to}: no strip dips below its ends this time (perceived lightness {ends} at the ends). Compare how evenly each one gets there:
-      in oklch it's a straight line.{gamut}</>
+    <>{from} → {to}: no strip dips below its ends this time (perceived lightness {ends} at the ends). Compare how evenly each one gets there.
+      {' '}{oklch}</>
   );
 }
 

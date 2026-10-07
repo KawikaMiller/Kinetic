@@ -11,7 +11,7 @@ import { useElementSize } from '../../core/hooks';
 import { contrastRatio, formatRatio, grade } from '../../core/contrast';
 import { contrastCaption, f3, gammaCaption, gradientCaption, modelsCaption, pct1 } from './frames';
 import {
-  CONTRAST_PRESETS, GRADIENT_PRESETS, GRADIENT_SAMPLES, HSL_HALF, MIX_SPACES, OKLCH_EVEN, cssGradient, encode8, fallbackGradient,
+  ACHROMATIC_C, CONTRAST_PRESETS, GRADIENT_PRESETS, GRADIENT_SAMPLES, HSL_HALF, MIX_SPACES, OKLCH_EVEN, cssGradient, encode8, fallbackGradient,
   hexToRgb, hslToRgb, linearOf8, oklabOf, oklchOf, oklchToRgb, profile, pureGamma, rgb8, rgbToHex, rgbToHsl, rgbToHsv, srgbToLinear,
   type MixSpace, type Profile,
 } from './model';
@@ -75,7 +75,8 @@ function GradientScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--info)', label: 'perceived lightness (OKLab L) along the strip', shape: 'line' },
+            { color: 'var(--info)', label: 'perceived lightness (OKLab L) of the colours shown', shape: 'line' },
+            ...(profiles.oklch.outOfGamut > 0 ? [{ color: 'var(--info)', label: 'dashed: oklch’s own L, before mapping into sRGB', shape: 'line' as const }] : []),
             { color: 'var(--bad)', label: 'deepest dip below both ends', shape: 'dot' },
             { color: 'var(--dim)', label: 'level of the darker end (dashed)', shape: 'line' },
           ]}
@@ -124,6 +125,7 @@ function GradientStrip({ from, to, space, p }: { from: string; to: string; space
       <div className="cs-gradient" style={{ backgroundImage: native ? cssGradient(from, to, space) : fallbackGradient(p) }} role="img" aria-label={`Gradient from ${from} to ${to} interpolated in ${space}`} />
       <Plot2D x={{ domain: [0, 1] }} y={{ domain: [0, 1], ticks: 3 }} width={Math.max(PROFILE_MIN_W, Math.round(size.width))} height={PROFILE_H} className="cs-profile" ariaLabel={`Perceived lightness along the ${space} gradient, from ${f3(p.L[0])} to ${f3(p.L[GRADIENT_SAMPLES])}${dipL !== null ? `, dipping to ${f3(dipL)}` : ''}`}>
         <HLine at={floor} tone="dim" />
+        {p.outOfGamut > 0 && <Curve points={p.Lmix.map((L, i) => [i / GRADIENT_SAMPLES, L] as const)} tone="info" dashed />}
         <Curve points={pts} tone="info" width={2.5} />
         {p.dip && dipL !== null && (
           <>
@@ -230,7 +232,7 @@ const fmt = {
   },
   oklch: (hex: string) => {
     const c = oklchOf(hex);
-    return `oklch(${f3(c.L)} ${f3(c.C)} ${c.C < 1e-3 ? 'none' : c.h.toFixed(1)})`;
+    return `oklch(${f3(c.L)} ${f3(c.C)} ${c.C < ACHROMATIC_C ? 'none' : c.h.toFixed(1)})`;
   },
 };
 
@@ -368,7 +370,7 @@ function ContrastScene({ picker }: { picker: ReactNode }) {
           <Hint block tone="muted">
             Related, not the same: "{GREY_PAIR.label}" and "{BLUE_PAIR.label}" have almost the same OKLCH ΔL ({f3(deltaL(GREY_PAIR))} and {f3(deltaL(BLUE_PAIR))}),
             but WCAG gives {formatRatio(contrastRatio(GREY_PAIR.fg, GREY_PAIR.bg))} and {formatRatio(contrastRatio(BLUE_PAIR.fg, BLUE_PAIR.bg))}: it compares luminance with a 0.05 flare term added to both sides,
-            so a pair at the dark end scores lower than a pair at the light end with the same lightness gap. WCAG 2.x is what audits use. APCA, a newer method proposed for WCAG 3, isn't a finished standard yet.
+            so a pair at the dark end scores lower than a pair at the light end with the same lightness gap. WCAG 2.x is what audits use. APCA is a newer method and a candidate for WCAG 3, which is still a draft.
           </Hint>
         </Box>
       </div>
