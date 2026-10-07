@@ -3,7 +3,7 @@ import { leastSquares, polyEval } from '../../core/fit';
 import { inverse, matMul, transpose } from '../../core/vec';
 import {
   DATA_SEED, LAMBDA_GRID, MAX_DEGREE, OVERFIT_N, PRESET_IDS, TEST_SEED, TEST_SET, bestBy, coefficientWarning, degreeCurve, fitPoly,
-  lambdaCurve, makeSplit, mseOf, presetSettings, samples, validationCount,
+  lambdaCurve, makeSplit, presetSettings, samples, validationCount,
 } from './model';
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);

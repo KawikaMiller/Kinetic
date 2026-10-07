@@ -56,11 +56,15 @@ describe('mseText', () => {
   });
 });
 
+/** These sweeps fit thousands of polynomials; give them room when the whole suite runs in parallel. */
+const SWEEP_TIMEOUT = 60_000;
+
 describe('review B8: caption sweeps', () => {
   const settings: { degree: number; nTrain: number; lambda: number }[] = [];
   for (const nTrain of [10, 15, 20, 30, 60, 200]) for (let degree = 0; degree <= MAX_DEGREE; degree++) for (const lambda of [0, LAMBDA_GRID[4], LAMBDA_GRID[16], LAMBDA_GRID[28]]) settings.push({ degree, nTrain, lambda });
 
   it('never compares two numbers that print the same ("0.122 vs 0.122"), and each verdict matches its band', () => {
+    const bests = new Map<string, ReturnType<typeof bestBy>>();
     let checked = 0;
     for (const seed of [1, 2, 3, 4, 5]) {
       for (const st of settings) {
@@ -71,7 +75,9 @@ describe('review B8: caption sweeps', () => {
         if (!f.ok) continue;
         checked++;
         const val = mseOf(f.coeffs, split.val);
-        const best = bestBy(degreeCurve(split, st.lambda))!;
+        const key = `${seed}/${st.nTrain}/${st.lambda}`;
+        if (!bests.has(key)) bests.set(key, bestBy(degreeCurve(split, st.lambda))!);
+        const best = bests.get(key)!;
         if (c.includes("it's fitting the noise")) expect(val).toBeGreaterThan(best.val * (1 + OVERFIT));
         if (c.includes('a little overfitting')) expect(val).toBeLessThanOrEqual(best.val * (1 + OVERFIT));
         if (c.includes('About as good as the best')) expect(val).toBeLessThanOrEqual(best.val * (1 + NEAR_BEST));
@@ -79,7 +85,7 @@ describe('review B8: caption sweeps', () => {
       }
     }
     expect(checked).toBeGreaterThan(1000);
-  });
+  }, SWEEP_TIMEOUT);
 
   it('"Degree 12 + best λ" states the real improvement over no λ, on 20 splits', () => {
     for (let seed = 1; seed <= 20; seed++) {
@@ -103,5 +109,5 @@ describe('review B8: caption sweeps', () => {
         expect(c).not.toContain('too ill-conditioned');
       }
     }
-  });
+  }, SWEEP_TIMEOUT);
 });

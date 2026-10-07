@@ -25,7 +25,7 @@ export function fitCaption(s: Settings, split: Split): ReactNode {
   let verdict: ReactNode;
   if (best.at === s.degree) verdict = <> That's the <span className="hl ok">lowest validation error</span> of any degree here.</>;
   else if (val <= best.val * (1 + NEAR_BEST)) {
-    verdict = <> About as good as the best: degree {best.at}'s validation error is {mseText(best.val)}, within {Math.round(NEAR_BEST * 100)}% of this one.</>;
+    verdict = <> About as good as the best: this is within {Math.round(NEAR_BEST * 100)}% of degree {best.at}'s validation error ({mseText(best.val)}).</>;
   } else if (s.degree > best.at) {
     const badly = val > best.val * (1 + OVERFIT);
     verdict = train >= best.train
@@ -40,7 +40,7 @@ export function fitCaption(s: Settings, split: Split): ReactNode {
     : warning === 'underdetermined'
       ? <> {s.degree + 1} coefficients for {split.train.length} points: more coefficients than points, so only λ makes the fit unique.</>
       : null;
-  const ill = f.illConditioned ? <> The problem is ill-conditioned (κ of the data matrix above 10⁵), so the coefficients themselves are only good to a few digits, even though the curve is fine.</> : null;
+  const ill = f.illConditioned ? <> The problem is ill-conditioned (κ of the data matrix above 10⁵), so the individual coefficients lose digits; the fitted values themselves stay accurate.</> : null;
   const plain = s.lambda > 0 ? fitPoly(split.train, s.degree, 0) : null;
   const vsPlain = plain?.ok
     ? <> Compared with no λ at this degree, validation error went {mseOf(plain.coeffs, split.val) > val ? 'down' : 'up'} from {mseText(mseOf(plain.coeffs, split.val))} to {mseText(val)}.</>
