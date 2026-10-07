@@ -135,6 +135,38 @@ export const LAYOUTS: readonly Layout[] = [
 /** ID for a layout: an edge target's effective width is unbounded, so its ID is the law's limit, 0 bits. */
 export const layoutId = (l: Layout) => (l.edge ? 0 : indexOfDifficulty(l.distance, l.width));
 
+export type DesignBasis = { source: 'own' } | { source: 'synthetic'; why: 'no-fit' | 'slope' | 'intercept' };
+
+/**
+ * Which line the design panel predicts from: the learner's own only when it rises with
+ * difficulty (b > 0) and doesn't go below zero at ID 0 (a ≥ 0); otherwise the synthetic one.
+ * The edge layout's prediction is exactly a, so a negative a would predict a negative time.
+ */
+export function designBasis(own: Fit): DesignBasis {
+  if (!own.ok) return { source: 'synthetic', why: 'no-fit' };
+  if (own.b <= 0) return { source: 'synthetic', why: 'slope' };
+  if (own.a < 0) return { source: 'synthetic', why: 'intercept' };
+  return { source: 'own' };
+}
+
+export interface Prediction {
+  layout: Layout;
+  id: number;
+  ms: number;
+  /** Outside the IDs the line was fitted on: an extrapolation. */
+  extrapolated: boolean;
+}
+
+/** Each layout's predicted time from the fit, flagging IDs beyond the range of the trials it came from. */
+export function predictLayouts(fit: { a: number; b: number }, fittedOn: readonly Trial[]): Prediction[] {
+  const ids = fittedOn.filter((t) => !t.miss && t.ms !== null).map((t) => t.bits);
+  const [lo, hi] = [Math.min(...ids), Math.max(...ids)];
+  return LAYOUTS.map((layout) => {
+    const id = layoutId(layout);
+    return { layout, id, ms: predict(fit, id), extrapolated: id < lo - 1e-9 || id > hi + 1e-9 };
+  });
+}
+
 // ── Hick game ────────────────────────────────────────────────────────
 
 export const MENU_SIZES = [2, 4, 8, 16, 32] as const;

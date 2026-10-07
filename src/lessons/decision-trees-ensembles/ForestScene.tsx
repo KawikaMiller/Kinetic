@@ -52,7 +52,7 @@ export function ForestScene({ picker, data, editor }: { picker: ReactNode; data:
         <Stats>
           <Stat label="Trees" value={n} sub={`seeds ${seed}–${seed + VARIANCE_SEEDS - 1}`} />
           <Stat label="Forest validation" value={pct(valAcc)} />
-          <Stat label="One tree: plane changed by reseeding" value={pct(one.disagreement)} sub={spreadText(one.accuracies)} />
+          <Stat label="One bagged tree: plane changed by reseeding" value={pct(one.disagreement)} sub={spreadText(one.accuracies)} />
           <Stat label={`${n} trees: plane changed by reseeding`} value={pct(many.disagreement)} color={many.disagreement < one.disagreement ? 'var(--ok)' : undefined} sub={spreadText(many.accuracies)} />
         </Stats>
       }

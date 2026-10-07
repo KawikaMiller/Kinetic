@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { fitFormula, fittsCaption, hickCaption } from './frames';
+import { HICK_SCOPE, fitFormula, fittsCaption, hickCaption } from './frames';
 import { choiceBits, fitTrials, type Trial } from './model';
 import lesson from './index';
 
@@ -38,10 +38,17 @@ describe('fittsCaption', () => {
 
   it('writes a negative coefficient with a real minus', () => {
     expect(fitFormula({ ok: true, a: 300, b: -20, r2: 0.5, n: 3, misses: 0 }, 'ID')).toBe('300 − 20 · ID ms');
+    expect(fitFormula({ ok: true, a: -60, b: 210, r2: 0.5, n: 3, misses: 0 }, 'ID')).toBe('−60 + 210 · ID ms');
   });
 });
 
 describe('hickCaption', () => {
+  it('states the one shared scope of the Hick law, never "familiar" against "unfamiliar"', () => {
+    const c = text(hickCaption([], fitTrials([]), false));
+    expect(c).toContain(HICK_SCOPE);
+    expect(c).not.toMatch(/familiar options/);
+  });
+
   it('names the menu order\'s effect in both orders', () => {
     expect(text(hickCaption([], fitTrials([]), false))).toContain('shuffled each round');
     expect(text(hickCaption([], fitTrials([]), true))).toContain('alphabetical');

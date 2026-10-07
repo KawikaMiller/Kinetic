@@ -19,13 +19,13 @@ const lesson: LessonModule = {
   tryThis: [
     'On the Tree scene, press Split a few times and click a node: the top row of its candidate table is the split the tree chose, the lowest weighted impurity of all.',
     'Load "One noisy point" and press Grow all: the tree carves a one-point sliver for the violet point. Drag Max depth down to 2 and watch validation accuracy go up.',
-    'In Forest, slide Trees from 1 to 25: the vote map smooths out and "plane changed by reseeding" drops.',
+    'In Forest, slide Trees from 1 to 25: the vote map smooths out and "plane changed by reseeding" drops overall (not at every single step).',
     'In Boosting, step through the rounds: the points the last stump missed swell, and the amber training error can tick up while the pink loss only falls.',
     'Click the plot to add a few violet points inside the blue region, then compare the tree, the forest and boosting.',
   ],
   keyIdeas: [
     'A tree is greedy: each split is the best single question for the points at that node, never revisited.',
-    'Deeper trees always fit training data better and often fit new data worse; depth and min-samples limits are the brakes.',
+    'Deeper trees never fit training data worse, and often fit new data worse; depth and min-samples limits are the brakes.',
     'Bagging plus random features makes trees disagree in different places, so their vote is far steadier than any one tree.',
     'Boosting adds small trees one at a time, each focused on what the ensemble still gets wrong; feature importance and gradient-boosting libraries build on the same trees.',
   ],

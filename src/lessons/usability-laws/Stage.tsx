@@ -8,10 +8,10 @@ import { Button, Hint, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { radioKeyTarget } from '../../core/radio';
 import { useMeasure } from '../../core/useMeasure';
-import { fitFormula, fittsCaption, hickCaption, ms, r2Text } from './frames';
+import { HICK_SCOPE, fitFormula, fittsCaption, hickCaption, ms, r2Text } from './frames';
 import {
-  FITTS_TRIALS, HICK_TRIALS, LAYOUTS, WCAG_MIN_TARGET, choiceBits, fitTrials, fittsSchedule, hickSchedule, layoutId, predict, syntheticFitts, syntheticHick,
-  type Fit, type FittsTrial, type Input, type Trial,
+  FITTS_TRIALS, HICK_TRIALS, WCAG_MIN_TARGET, choiceBits, designBasis, fitTrials, fittsSchedule, hickSchedule, predict, predictLayouts, syntheticFitts, syntheticHick,
+  type DesignBasis, type Fit, type FittsTrial, type Input, type Trial,
 } from './model';
 import './styles.css';
 
@@ -34,6 +34,11 @@ const SYNTH_HICK = syntheticHick();
 const SYNTH_FITTS_FIT = fitTrials(SYNTH_FITTS);
 const SYNTH_HICK_FIT = fitTrials(SYNTH_HICK);
 const MISS_FLASH_MS = 350;
+const BASIS_NOTE: Record<Extract<DesignBasis, { source: 'synthetic' }>['why'], string> = {
+  'no-fit': '',
+  slope: " (your slope isn't positive yet)",
+  intercept: " (your intercept is negative, so your line can't be extrapolated down to ID 0)",
+};
 /** The trial clock. Only ever read in event handlers (oxlint's purity rule can't tell a handler inside a map from render). */
 const clock = () => performance.now();
 
@@ -87,10 +92,10 @@ function FittsScene({ picker }: { picker: ReactNode }) {
   const fit = useMemo(() => fitTrials(trials), [trials]);
   const shown = fit.ok ? fit : SYNTH_FITTS_FIT;
   const whose = fit.ok ? 'your fit' : 'the synthetic participant';
-  // Predictions only make sense from a line that rises with difficulty.
-  const usable = fit.ok && fit.b > 0;
-  const forDesign = usable ? fit : SYNTH_FITTS_FIT;
-  const designWhose = usable ? 'your fit' : fit.ok ? "the synthetic participant (your slope isn't positive yet)" : 'the synthetic participant';
+  // Predictions only make sense from a line that rises with difficulty and starts at or above zero.
+  const basis = designBasis(fit);
+  const forDesign = basis.source === 'own' ? fit : SYNTH_FITTS_FIT;
+  const designWhose = basis.source === 'own' ? 'your fit' : `the synthetic participant${BASIS_NOTE[basis.why]}`;
 
   useEffect(() => {
     setCaption(fittsCaption(trials, fit));
@@ -137,8 +142,8 @@ function FittsScene({ picker }: { picker: ReactNode }) {
   };
 
   const valid = trials.filter((t) => !t.miss).length;
-  const preds = LAYOUTS.map((l) => ({ l, id: layoutId(l), t: forDesign.ok ? predict(forDesign, layoutId(l)) : 0 }));
-  const slowest = Math.max(1, ...preds.map((p) => p.t));
+  const preds = forDesign.ok ? predictLayouts(forDesign, basis.source === 'own' ? trials : SYNTH_FITTS) : [];
+  const slowest = Math.max(1, ...preds.map((p) => p.ms));
 
   return (
     <StageFrame
@@ -211,10 +216,11 @@ function FittsScene({ picker }: { picker: ReactNode }) {
           <Box className="ul-design">
             <SectionTitle hint={`predicted from ${designWhose}`}>The same toolbar, three ways</SectionTitle>
             <ul className="ul-layouts">
-              {preds.map(({ l, id, t }) => (
+              {preds.map(({ layout: l, id, ms: t, extrapolated }) => (
                 <li key={l.id}>
                   <span className="ul-layout-name">{l.label}</span>
                   <span className="ul-layout-geo">{l.edge ? `edge, ${l.distance} px away: width unbounded, ID → 0` : `${l.width} px button, ${l.distance} px away: ID ${id.toFixed(2)}`}</span>
+                  {extrapolated && <span className="ul-extrapolated">outside the IDs this line was fitted on: an extrapolation</span>}
                   <Bar value={t} max={slowest} tone={l.edge ? 'ok' : 'info'} trailing={ms(t)} />
                 </li>
               ))}
@@ -227,9 +233,10 @@ function FittsScene({ picker }: { picker: ReactNode }) {
           </Box>
         </div>
         <Hint block className="ul-honest">
-          Your own clicks, timed by the browser (± a few ms). With a keyboard or touch, the law changes, and so will your fit. The grey participant is synthetic. Touch
-          targets: WCAG 2.2 asks for at least {WCAG_MIN_TARGET} × {WCAG_MIN_TARGET} CSS px (level AA), and Apple and Google guidelines suggest 44 pt and 48 dp; see
-          the Responsive Design lesson for layouts that grow targets on phones.
+          Your own clicks, timed by the browser (± a few ms). With a keyboard or touch, the law changes, and so will your fit. The grey participant is synthetic. Target
+          size: WCAG 2.2 SC 2.5.8 Target Size (Minimum), level AA, asks for at least {WCAG_MIN_TARGET} × {WCAG_MIN_TARGET} CSS px for pointer targets, with exceptions
+          (enough spacing, an equivalent control, inline links, browser-drawn controls, essential sizes); SC 2.5.5 Target Size (Enhanced), level AAA, asks for 44 × 44 CSS px.
+          Apple suggests 44 × 44 pt and Android&apos;s Material 48 × 48 dp. See the Responsive Design lesson for layouts that grow targets on phones.
         </Hint>
       </div>
     </StageFrame>
@@ -353,9 +360,9 @@ function HickScene({ picker }: { picker: ReactNode }) {
         <div className="ul-row">
           <TimePlot own={trials} synth={SYNTH_HICK} fit={shown} xLabel="log₂(n + 1) (bits)" xMax={5.5} ariaLabel="Decision time against log₂(n + 1)" />
           <Hint block className="ul-side-note">
-            Hick&apos;s law (Hick 1952, Hyman 1953) holds for unfamiliar, equally likely choices with a fixed mapping. Practised users, menus you can search
-            (alphabetical, grouped, or with type-to-filter) and options that aren&apos;t equally likely all beat it. Times here also include reading the prompt and moving
-            the pointer. The synthetic participant&apos;s constants are illustrative.
+            Hick&apos;s law (Hick 1952, Hyman 1953) models choice time for {HICK_SCOPE}. Menus you can search smartly (alphabetical, grouped, or with type-to-filter) and
+            options that aren&apos;t equally likely change the picture too. Times here also include reading the prompt and moving the pointer. The synthetic
+            participant&apos;s constants are illustrative.
           </Hint>
         </div>
         <Hint block className="ul-honest">Your own clicks, timed by the browser (± a few ms). The grey participant is synthetic.</Hint>
