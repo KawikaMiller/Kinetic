@@ -12,8 +12,8 @@ import { drawBox } from './draw';
 import { catchUpCaption, machinesCaption, MODE_LABEL, modeCaption, slowMotionCaption, spiralCaption, tunnelCaption } from './frames';
 import { busyWait } from './lag';
 import {
-  DT, MAX_FRAME, SAFETY_STEPS, SPIKE_EVERY, START, TUNNEL_SPIKE, advanceFrame, createLoop, createMachine, machineFrame,
-  machineGap, spikeReady, type Ball, type LoopMode, type Machine,
+  DT, MAX_FRAME, SAFETY_STEPS, SPIKE_EVERY, SPIRAL_FRAMES, START, TUNNEL_SPIKE, advanceFrame, createLoop, createMachine, machineFrame,
+  machineGap, spikeReady, spiralling, type Ball, type LoopMode, type Machine,
 } from './sim';
 import './styles.css';
 
@@ -33,8 +33,13 @@ export function Stage() {
 }
 
 const BUDGET_MS = 1000 / 60;
-/** A frame counts as over budget when it misses a 60 Hz frame by a clear margin. */
-const OVER_BUDGET = 1.25;
+/**
+ * Two separate checks, each labelled on screen: the bar is over budget when update + render alone
+ * take more than 16.7 ms; a frame "misses a 60 Hz frame" when it takes over 1.25 × that (20.8 ms),
+ * a margin that keeps normal refresh jitter from flashing red.
+ */
+const MISSED_FRAME = 1.25;
+const missedFrame = (frameMs: number) => frameMs > BUDGET_MS * MISSED_FRAME;
 const HISTORY = 120;
 const SNAP_MS = 150;
 const FLASH_MS = 900;
@@ -66,7 +71,7 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
   const setCaption = useSetCaption();
   const loop = useRef(createLoop());
   const shown = useRef<{ render: Ball; ghost: Ball | null; flashUntil: number }>({ render: START, ghost: null, flashUntil: 0 });
-  const meter = useRef({ last: null as number | null, frames: [] as number[], updates: [] as number[], lastSpike: 0, lastSnap: 0, spikes: 0 });
+  const meter = useRef({ last: null as number | null, frames: [] as number[], updates: [] as number[], lastSpike: 0, lastSnap: 0, spikes: 0, reports: [] as { steps: number; backlog: number }[] });
   const events = useRef(createCooldown(EVENT_COOLDOWN_S, { armed: true }));
   const settings = useRef({ mode, spikeMs, costMs, capFrame });
   useEffect(() => {
@@ -109,6 +114,8 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
     const t0 = performance.now();
     const r = advanceFrame(loop.current, frameDt, cfg.mode, cfg.capFrame, () => busyWait(cfg.costMs));
     const t1 = performance.now();
+    m.reports.push({ steps: r.steps, backlog: r.backlog });
+    if (m.reports.length > SPIRAL_FRAMES + 1) m.reports.shift();
     shown.current.render = r.render;
     shown.current.ghost = cfg.mode === 'interpolated' ? r.physics : null;
     const sec = now / 1000;
@@ -118,13 +125,13 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
       setCaption(tunnelCaption(used, Math.abs(r.physics.vx) * used));
       events.current.fire(sec);
     } else if (cfg.mode !== 'variable' && events.current.ready(sec)) {
-      if (!cfg.capFrame && r.steps >= SAFETY_STEPS) {
+      if (!cfg.capFrame && spiralling(m.reports)) {
         setCaption(spiralCaption());
         events.current.fire(sec);
       } else if (cfg.capFrame && r.dropped > 0 && cfg.costMs > DT * 1000) {
         setCaption(slowMotionCaption());
         events.current.fire(sec);
-      } else if (r.steps >= CATCH_UP_STEPS && cfg.costMs * r.steps < frameDt * 1000) {
+      } else if (r.steps >= CATCH_UP_STEPS && cfg.costMs <= DT * 1000) {
         setCaption(catchUpCaption(frameDt, r.steps, r.dropped));
         events.current.fire(sec);
       }
@@ -166,14 +173,14 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
     setCaption(<>Tunnelling preset: variable dt with a {TUNNEL_SPIKE * 1000} ms busy-wait, injected when the ball is about to reach the thin wall. Watch the wall…</>);
   };
 
-  const over = snap.frameMs > BUDGET_MS * OVER_BUDGET;
+  const over = missedFrame(snap.frameMs);
   return (
     <StageFrame
       height={300}
       minWidth={340}
       stats={
         <Stats>
-          <Stat label="frame time" value={`${snap.frameMs.toFixed(1)} ms`} color={over ? 'var(--bad)' : undefined} sub="measured, last frame" />
+          <Stat label="frame time" value={`${snap.frameMs.toFixed(1)} ms`} color={over ? 'var(--bad)' : undefined} sub={over ? `missed a 60 Hz frame (> ${(BUDGET_MS * MISSED_FRAME).toFixed(1)} ms)` : 'measured, last frame'} />
           <Stat label="rAF rate" value={snap.hz ? `${Math.round(snap.hz)} Hz` : '–'} sub="your display, median" />
           <Stat label="updates this frame" value={snap.steps} color={snap.steps >= SAFETY_STEPS ? 'var(--bad)' : undefined} />
           <Stat label="tunnels" value={snap.tunnels} color={snap.tunnels ? 'var(--bad)' : 'var(--ok)'} sub={`${plural(snap.spikes, 'spike')} injected`} />
@@ -235,9 +242,10 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
 function BudgetBar({ updateMs, renderMs, frameMs }: { updateMs: number; renderMs: number; frameMs: number }) {
   const share = (v: number) => `${Math.min(100, (v / BUDGET_MS) * 100)}%`;
   const work = updateMs + renderMs;
-  const over = frameMs > BUDGET_MS * OVER_BUDGET;
+  const workOver = work > BUDGET_MS;
+  const missed = missedFrame(frameMs);
   return (
-    <div className={`gl-bar-wrap ${over ? 'is-over' : ''}`}>
+    <div className={`gl-bar-wrap ${workOver ? 'is-over' : ''}`}>
       <div className="gl-bar" role="img" aria-label={`Update ${updateMs.toFixed(1)} ms and render ${renderMs.toFixed(1)} ms of a ${BUDGET_MS.toFixed(1)} ms budget; the frame took ${frameMs.toFixed(1)} ms`}>
         <span className="gl-bar-update" style={{ width: share(updateMs) }} />
         <span className="gl-bar-render" style={{ width: share(Math.min(renderMs, Math.max(0, BUDGET_MS - updateMs))) }} />
@@ -245,9 +253,9 @@ function BudgetBar({ updateMs, renderMs, frameMs }: { updateMs: number; renderMs
       <p className="gl-bar-text">
         <span className="gl-key is-update">update {updateMs.toFixed(1)} ms</span>
         <span className="gl-key is-render">render {renderMs.toFixed(1)} ms</span>
-        <span>{work > BUDGET_MS ? 'work alone is over budget' : `of ${BUDGET_MS.toFixed(1)} ms`}</span>
+        <span className={workOver ? 'gl-over-text' : ''}>{workOver ? `over the ${BUDGET_MS.toFixed(1)} ms budget` : `of ${BUDGET_MS.toFixed(1)} ms`}</span>
       </p>
-      <p className={`gl-bar-frame ${over ? 'is-over' : ''}`}>frame took {frameMs.toFixed(1)} ms{over ? ': over budget' : ''}</p>
+      <p className={`gl-bar-frame ${missed ? 'is-over' : ''}`}>frame took {frameMs.toFixed(1)} ms{missed ? `: missed a 60 Hz frame (over ${(BUDGET_MS * MISSED_FRAME).toFixed(1)} ms)` : ''}</p>
     </div>
   );
 }
