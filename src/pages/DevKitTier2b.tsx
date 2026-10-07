@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ConfusionMatrix, type ConfusionCell } from '../components/ConfusionMatrix';
 import { GanttLanes, type GanttBar } from '../components/GanttLanes';
+import { MemoryMap, memPort, RefArrow, type MemCell, type MemRegion } from '../components/memory';
 import { SectionTitle } from '../components/Panel';
 import { SequenceDiagram, type SequenceActor, type SequenceMessage } from '../components/SequenceDiagram';
 import { Button, ChipButton, Slider, Toggle } from '../components/ui';
@@ -21,6 +22,12 @@ export function DevKitTier2b() {
       </Section>
       <Section title="SequenceDiagram · five-actor DNS walk (scrolls sideways on a phone to keep text ≥ 8px)">
         <DnsDemo />
+      </Section>
+      <Section title="MemoryMap · one stack frame (high addresses on top), rsp/rbp tags, nested regions; overflow the name into the canary">
+        <MemoryDemo />
+      </Section>
+      <Section title="MemoryMap · a process image in 4 KiB pages (low addresses on top), gaps collapsed, a dangling RefArrow between ports into a freed block">
+        <ProcessDemo />
       </Section>
       <Section title="ConfusionMatrix · seeded twoClassScores, a threshold slider, share toggle and a highlighted cell">
         <ConfusionDemo />
@@ -161,4 +168,65 @@ const DNS: SequenceMessage[] = [
 
 function DnsDemo() {
   return <SequenceDiagram actors={DNS_ACTORS} messages={DNS} ariaLabel="Recursive DNS resolution" />;
+}
+
+const FRAME_REGIONS: MemRegion[] = [
+  { from: 0x7fe0, to: 0x8010, label: 'greet() frame', tone: 'info' },
+  { from: 0x7fe8, to: 0x7ff0, label: 'name[8]', tone: 'hi' },
+  { from: 0x7ff0, to: 0x7ff8, label: 'canary', tone: 'orange', variant: 'guard' },
+];
+
+function MemoryDemo() {
+  const [overflow, setOverflow] = useState(false);
+  const cells: MemCell[] = [
+    { addr: 0x8008, value: 'return → main+42', tone: 'violet' },
+    { addr: 0x8000, value: 'saved rbp' },
+    { addr: 0x7ff8, value: 'saved rbx' },
+    { addr: 0x7ff0, value: overflow ? '"lace!\\0" ✗' : '0x5ac3…91e0', tone: overflow ? 'bad' : undefined },
+    { addr: 0x7fe8, value: overflow ? '"Ada Love"' : '"Ada\\0"' },
+    { addr: 0x7fe0, value: 'i = 3' },
+  ];
+  const map = { regions: FRAME_REGIONS, cells, unit: 8, highlight: overflow ? [0x7ff0] : [] };
+  return (
+    <div className="devkit-row">
+      <MemoryMap
+        {...map}
+        pointers={[
+          { addr: 0x7fe0, label: 'rsp', tone: 'hi' },
+          { addr: 0x8000, label: 'rbp', tone: 'violet' },
+        ]}
+        ariaLabel="Stack frame of greet()"
+      />
+      <div className="devkit-controls">
+        <Toggle label="strcpy(name, …)" value={overflow} onChange={setOverflow} off={'"Ada"'} on={'"Ada Lovelace!"'} />
+        <span className="hint is-muted">{overflow ? 'The canary changed: the function aborts before returning.' : 'Fits in 8 bytes; the canary is intact.'}</span>
+      </div>
+    </div>
+  );
+}
+
+const PROCESS: MemRegion[] = [
+  { from: 0x400000, to: 0x402000, label: 'code (r-x)', tone: 'violet' },
+  { from: 0x600000, to: 0x601000, label: 'data (rw-)', tone: 'info' },
+  { from: 0x601000, to: 0x605000, label: 'heap', tone: 'ok' },
+  { from: 0x603000, to: 0x604000, label: 'freed', tone: 'dim', variant: 'freed' },
+  { from: 0x7ffd0000, to: 0x7ffe0000, label: 'stack (rw-)', tone: 'hi' },
+  { from: 0x7ffcf000, to: 0x7ffd0000, label: 'guard page', tone: 'bad', variant: 'guard' },
+];
+
+function ProcessDemo() {
+  return (
+    <MemoryMap
+      regions={PROCESS}
+      cells={[
+        { addr: 0x600000, value: 'head = 0x603000', tone: 'bad' },
+        { addr: 0x603000, value: 'old list' },
+      ]}
+      pointers={[{ addr: 0x401000, label: 'pc', tone: 'violet' }]}
+      unit={0x1000}
+      direction="up"
+      ariaLabel="A process address space in pages; head still points at a freed block"
+      overlay={(L) => <RefArrow from={memPort(L, 0x600000, 'right')!} to={memPort(L, 0x603000, 'right')!} dangling bend={-40} />}
+    />
+  );
 }

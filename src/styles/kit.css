@@ -749,6 +749,26 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .seq-msg.is-clickable:focus-visible { outline: none; }
 .seq-msg.is-clickable:focus-visible .seq-hit { stroke: var(--text); stroke-width: 2; }
 
+/* MemoryMap (components/memory): address column, cells tinted by their region, brackets, pointer tags. */
+.memmap { display: block; max-width: 100%; height: auto; overflow: visible; }
+.memmap-addr { font: 500 10.5px var(--mono); fill: var(--muted); text-anchor: end; }
+.memmap-cell { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1; transition: fill 0.25s, stroke 0.25s; }
+.memmap-row[class*='tone-'] .memmap-cell { fill: color-mix(in srgb, var(--c) 12%, var(--cell)); stroke: color-mix(in srgb, var(--c) 45%, var(--cell-line)); }
+.memmap-row.is-own .memmap-cell { fill: color-mix(in srgb, var(--c) 26%, var(--cell)); stroke: var(--c); }
+.memmap-row.is-guard .memmap-cell { stroke: var(--c); stroke-width: 2; }
+.memmap-row.is-freed .memmap-cell { fill: var(--cell); stroke-dasharray: 4 3; }
+.memmap-hatch { stroke: var(--faint); stroke-width: 1.5; opacity: 0.6; }
+.memmap-row.is-highlight .memmap-cell { stroke: var(--hi); stroke-width: 2.5; }
+.memmap-value { font: 600 11.5px var(--mono); fill: var(--text); text-anchor: middle; }
+.memmap-row.is-freed .memmap-value { fill: var(--muted); text-decoration: line-through; }
+.memmap-gap rect { fill: none; stroke: var(--line-2); stroke-dasharray: 3 4; }
+.memmap-gap text { font: 700 12px var(--mono); fill: var(--faint); text-anchor: middle; }
+.memmap-region path { fill: none; stroke: var(--c); stroke-width: 1.75; }
+.memmap-region.is-freed path { stroke-dasharray: 4 3; }
+.memmap-region text { font: 600 11px var(--font); fill: var(--c); }
+.memmap-pointer text { font: 700 11px var(--mono); fill: var(--c); text-anchor: end; }
+.memmap-pointer polygon { fill: var(--c); }
+
 /* Text for screen readers only (a cell's full name beside its abbreviation). */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
