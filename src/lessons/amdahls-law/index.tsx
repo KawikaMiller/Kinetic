@@ -20,7 +20,7 @@ const lesson: LessonModule = {
   tryThis: [
     'Click the "Build: 20% linking" chip and push Cores to 256: the speedup crawls toward the 5× ceiling.',
     'Set the serial fraction to 5% and step Cores from 8 to 16: the caption shows the time drops by far less than half.',
-    'Switch Law to "Gustafson (job grows)": the same 5% serial gives over 240× at 256 cores, because the work grew too.',
+    'Switch Law to "Gustafson (job grows)": 5% serial (here, the serial share of the parallel run’s time) gives over 240× at 256 cores, because the work grew too.',
     'Back in Amdahl, raise "Overhead per extra core": the red curve peaks, the green line marks the best core count, and more cores than that make it slower.',
     'Compare the dashed presets: 50% serial tops out at 2×, while 1% keeps climbing, to about 72× at 256 cores.',
   ],
@@ -41,7 +41,7 @@ const lesson: LessonModule = {
       q: 'A build is 20% serial (linking). What is the most that any number of cores can speed it up?',
       options: ['5×', '20×', '80×', 'No limit'],
       answer: 0,
-      why: '1 / s = 1 / 0.2 = 5. Even with endless cores the linking still takes 20% of the original time. 80× would be the parallel part alone, as if linking cost nothing.',
+      why: '1 / s = 1 / 0.2 = 5. Even with endless cores the linking still takes 20% of the original time. 20× and 80× don’t come out of the formula at all: only with no serial part would the speedup keep growing, to n on n cores.',
     },
     {
       q: "Why can huge clusters still pay off despite Amdahl's law?",
