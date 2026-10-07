@@ -73,11 +73,22 @@ describe('seeded heatmaps (10,000 runs, fixed seed)', () => {
     for (const row of counts) expect(row.reduce((a, b) => a + b, 0)).toBe(2000);
   });
 
+  it('a flat heatmap is not proof: a random rotation fills every cell equally but makes only n of the n! orders', () => {
+    const n = 4;
+    const rotations = Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, i) => ((i + r) % n) + 1));
+    const counts = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+    rotations.forEach((p) => p.forEach((v, pos) => counts[v - 1][pos]++));
+    for (const row of counts) expect(row).toEqual([1, 1, 1, 1]);
+    expect(new Set(rotations.map(permKey)).size).toBe(n);
+    expect(Number(factorial(n))).toBeGreaterThan(n);
+  });
+
   it('the heat caption counts flagged cells from the data', () => {
     const counts = heat('naive', 3, 10_000, 1001);
     const off = flagged(counts, 10_000).length;
     expect(text(heatCaption('naive', 3, 10_000, counts))).toContain(`${off} of 9`);
     expect(text(heatCaption('fisher-yates', 3, 10_000, heat('fisher-yates', 3, 10_000, 1001)))).toContain('No cell is more than 3 standard errors off');
+    expect(text(heatCaption('fisher-yates', 3, 10_000, heat('fisher-yates', 3, 10_000, 1001)))).toContain('Flat is necessary, not sufficient');
   });
 });
 
@@ -135,5 +146,12 @@ describe('shuffle frames', () => {
     }
     expect(text(shuffleFrames('naive', 3, 1).at(-1)!.say)).toContain("27 equally likely paths, which can't split evenly over 6");
     expect(shuffleFrames('comparator', 4, 1).length).toBe(2);
+    for (let n = 3; n <= 8; n++) {
+      const say = text(shuffleFrames('comparator', n, 1).at(-1)!.say);
+      expect(say).toContain('It is never exactly fair');
+      expect(say).not.toContain('Whether the result is fair');
+      // n! has a factor of 3 for n ≥ 3, so 1/n! is never a fraction over a power of 2.
+      expect(Number(factorial(n)) % 3).toBe(0);
+    }
   });
 });
