@@ -1,0 +1,36 @@
+.en { gap: 16px; }
+/* Flight area geometry is mirrored by REGISTER_Y / MEMORY_Y in Stage.tsx: keep them in step. */
+.en-flight { position: relative; height: 210px; width: 100%; max-width: 560px; align-self: center; }
+.en-at-top { position: absolute; top: 0; left: 0; right: 0; }
+.en-at-bottom { position: absolute; bottom: 0; left: 0; right: 0; }
+.en-row-wrap { display: flex; flex-direction: column; gap: 4px; }
+.en-row-title { font: 600 11px/16px var(--mono); color: var(--muted); height: 16px; }
+.en-row-title.is-bad { color: var(--bad); }
+.en-row { display: grid; gap: 6px; }
+.en-slot { display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 0; }
+.en-addr { font: 500 10px/14px var(--mono); color: var(--faint); text-align: center; height: 14px; white-space: nowrap; }
+.en-addr.is-current { color: var(--hi); font-weight: 700; }
+.en-byte {
+  height: 40px; display: grid; place-items: center; border-radius: 8px;
+  font: 700 15px var(--mono); color: var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  border: 2px solid color-mix(in srgb, var(--c) 70%, transparent);
+}
+.en-byte.is-empty { background: var(--cell); border: 2px dashed var(--cell-line); }
+.en-byte.is-current { outline: 2px solid var(--hi); outline-offset: 2px; animation: en-land 0.6s ease-in both; }
+@keyframes en-land { 0%, 80% { color: transparent; } 100% { color: var(--c); } }
+.en-row.is-bad .en-byte { border-color: var(--bad); }
+.en-flyer {
+  position: absolute; padding: 9px 12px; border-radius: 8px; pointer-events: none;
+  font: 700 15px var(--mono); color: var(--c); background: var(--panel-2);
+  border: 2px solid var(--c);
+}
+.en-bits { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.en-stack { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 560px; align-self: center; }
+.en-stack.en-narrow { max-width: 300px; }
+.en-header { display: flex; flex-direction: column; gap: 8px; }
+.en-note { margin: 0; font-size: 13px; color: var(--text); }
+.en-error { color: var(--bad); }
+@media (max-width: 900px) {
+  .en-addr { font-size: 9px; }
+}
