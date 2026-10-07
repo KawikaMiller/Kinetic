@@ -35,8 +35,12 @@ describe('treeCaption', () => {
             else {
               const best = depthCurve(data, opts, MAX_DEPTH_SLIDER).reduce((b, x) => (x.val > b.val ? x : b));
               const valExact = accuracy((p) => predictTree(tree, p), data.val);
-              expect(c.includes('No depth limit from 1 to 8 does better')).toBe(valExact >= best.val);
-              expect(c.includes(`A depth limit of ${best.depth} would score`)).toBe(valExact < best.val);
+              const noBetter = valExact >= best.val;
+              expect(c.includes('No depth limit from 1 to 8 does better')).toBe(noBetter);
+              // The recommendation points the right way: deeper limits are called underfitting, shallower ones overfitting.
+              expect(c.includes(`A deeper limit of ${best.depth} scores`) && c.includes('too shallow and underfits')).toBe(!noBetter && best.depth > maxDepth);
+              expect(c.includes(`A shallower limit of ${best.depth} scores`) && c.includes("deeper isn't automatically better")).toBe(!noBetter && best.depth < maxDepth);
+              if (!noBetter) expect(best.depth).not.toBe(maxDepth);
               expect(c.includes('single training point')).toBe(tree.nodes.some((n) => !n.split && n.counts[0] + n.counts[1] === 1));
             }
           }
@@ -50,8 +54,20 @@ describe('treeCaption', () => {
     const opts: TreeOptions = { maxDepth: MAX_DEPTH_SLIDER, minSamples: 2, criterion: 'gini' };
     const tree = growTree(data.train, opts);
     const c = text(treeCaption(tree, tree.splits, data, opts, MAX_DEPTH_SLIDER));
-    expect(c).toMatch(/A depth limit of \d would score/);
+    expect(c).toMatch(/A shallower limit of \d scores/);
     expect(c).toContain('single training point');
+  });
+});
+
+describe('the depth verdict points the right way (review repro)', () => {
+  it('Moons at max depth 1 recommends a deeper limit and calls it underfitting, never "deeper is not better"', () => {
+    const data = presetData('moons');
+    const opts: TreeOptions = { maxDepth: 1, minSamples: 2, criterion: 'gini' };
+    const tree = growTree(data.train, opts);
+    const c = text(treeCaption(tree, tree.splits, data, opts, MAX_DEPTH_SLIDER));
+    expect(c).toMatch(/A deeper limit of \d scores 93%/);
+    expect(c).toContain('too shallow and underfits');
+    expect(c).not.toContain("deeper isn't automatically better");
   });
 });
 
@@ -90,6 +106,9 @@ describe('boostFrames', () => {
         const rose = t > 0 && r.trainError > b.rounds[t - 1].trainError;
         expect(c.includes('went up this round')).toBe(rose);
         expect(c).toContain('carry half of all the weight');
+        // AdaBoost's bound: training error ≤ exponential loss = ∏ Zₜ, stated with this round's number.
+        expect(r.trainError).toBeLessThanOrEqual(r.expLoss);
+        expect(c).toContain(`under its bound: exponential loss = ∏ Zₜ = ${num(r.expLoss, 3)}`);
       });
     }
   });
