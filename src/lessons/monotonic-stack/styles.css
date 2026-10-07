@@ -1,0 +1,31 @@
+.ms { flex-flow: row wrap; align-items: flex-start; gap: 20px; }
+.ms-main { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ms-side { flex: 0 0 200px; min-width: 0; }
+.ms-svg { display: block; width: 100%; max-width: 620px; height: auto; margin: 0 auto; }
+.ms-input-note { flex-basis: 100%; }
+
+.ms-base { stroke: var(--line-2); stroke-width: 1.5; }
+.ms-bar rect { fill: var(--c, var(--muted)); stroke: var(--c, var(--muted)); stroke-width: 1.5; transition: fill 0.25s, stroke 0.25s, fill-opacity 0.25s; }
+.ms-bar.is-future rect { fill: transparent; stroke: var(--line-2); }
+.ms-bar.is-past rect { --c: var(--muted); fill-opacity: 0.45; }
+.ms-bar.is-scan rect { --c: var(--hi); }
+.ms-bar.is-stack rect { --c: var(--violet); }
+.ms-bar.is-popped rect { --c: var(--info); }
+.ms-bar.is-none rect { --c: var(--dim); }
+.ms-value { font: 600 12px var(--mono); fill: var(--text); text-anchor: middle; }
+.ms-bar.is-future .ms-value { fill: var(--muted); }
+.ms-index { font: 12px var(--mono); fill: var(--muted); text-anchor: middle; }
+.ms-answer { font: 700 14px var(--mono); text-anchor: middle; fill: var(--c); }
+.ms-answer.tone-dim { fill: var(--muted); }
+
+.ms-arrow { fill: none; stroke: var(--ok); stroke-width: 1.6; opacity: 0.45; }
+.ms-arrow.is-new { stroke-width: 2.6; opacity: 1; }
+.ms-cursor { fill: var(--hi); }
+.ms-window { fill: color-mix(in srgb, var(--hi) 12%, transparent); stroke: color-mix(in srgb, var(--hi) 55%, transparent); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.ms-rect { fill: color-mix(in srgb, var(--info) 14%, transparent); stroke: var(--info); stroke-width: 2; stroke-dasharray: 6 4; }
+.ms-best { fill: none; stroke: var(--ok); stroke-width: 2.5; }
+.ms-rect-label { font: 700 13px var(--mono); fill: var(--info); text-anchor: middle; }
+
+@media (max-width: 900px) {
+  .ms-side { flex: 1 1 100%; }
+}
