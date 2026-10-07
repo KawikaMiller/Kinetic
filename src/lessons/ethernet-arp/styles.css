@@ -1,0 +1,23 @@
+.ea { gap: 14px; }
+.ea-lan { display: block; overflow: visible; }
+.ea-cable { fill: none; stroke: var(--line-2); stroke-width: 2; transition: stroke 0.3s; }
+.ea-cable.is-lit { stroke: var(--muted); }
+.ea-port { fill: var(--faint); font: 600 10px var(--mono); text-anchor: middle; }
+.ea-internet { fill: var(--muted); font: 500 11px var(--mono); text-anchor: middle; }
+.ea .section-title { display: block; }
+.ea-ladder { display: flex; flex-direction: column; gap: 6px; }
+.ea-inspector { display: flex; flex-direction: column; gap: 6px; }
+.ea-tables { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.ea-table { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
+.ea-table .data-table { font-size: 12px; }
+.ea-table td:first-child { white-space: nowrap; }
+.ea-empty { color: var(--faint); font-style: italic; }
+.ea-new td { color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ea-expired td { color: var(--faint); text-decoration: line-through; background: color-mix(in srgb, var(--dim) 45%, transparent); }
+.ea-trust {
+  margin: 0; padding: 10px 12px; font-size: 13px; border-radius: 8px;
+  border-left: 3px solid var(--line-2); background: color-mix(in srgb, var(--line-2) 18%, transparent);
+}
+@media (max-width: 900px) {
+  .ea-table .data-table td, .ea-table .data-table th { padding: 6px 4px; }
+}

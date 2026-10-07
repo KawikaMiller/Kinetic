@@ -1,0 +1,22 @@
+.dh { gap: 14px; }
+.dh-main { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.dh-ladder { flex: 1 1 340px; min-width: 0; }
+.dh-config { flex: 0 1 260px; display: flex; flex-direction: column; gap: 6px; }
+.dh-config .section-title, .dh .section-title { display: block; }
+.dh-config th { text-transform: none; letter-spacing: 0; font: 600 12px var(--font); white-space: nowrap; }
+.dh-field { color: var(--c, var(--text)); transition: color 0.3s; }
+.dh-field.dh-empty { color: var(--faint); }
+.dh-field.dh-offered { color: var(--muted); font-style: italic; }
+.dh-field.tone-ok, .dh-field.tone-orange { font-weight: 700; }
+.dh-tag { margin-left: 6px; font: 500 10px var(--font); color: var(--faint); font-style: normal; }
+.dh-pools { display: flex; flex-direction: column; gap: 8px; }
+.dh-pool { display: flex; flex-direction: column; gap: 4px; }
+.dh-pool-label { font: 500 12px var(--mono); color: var(--muted); }
+.dh-pool-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dh-slot.is-offered { border-style: dashed; }
+.dh-slot.is-leased { background: color-mix(in srgb, var(--c) 22%, transparent); }
+.dh-slot-status { opacity: 0.8; font-weight: 500; }
+.dh-apipa {
+  margin: 0; padding: 10px 12px; font-size: 13px; border-radius: 8px;
+  border-left: 3px solid var(--orange); background: color-mix(in srgb, var(--orange) 10%, transparent);
+}
