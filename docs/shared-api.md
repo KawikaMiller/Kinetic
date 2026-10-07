@@ -1033,6 +1033,7 @@ IPV4_BITS; IPV4_MAX_INPUT         // 32; 40 (text longer than this is refused as
 dot(a, b); norm(a); cosine(a, b) /* NaN for a zero vector */; add; sub; scale(a, k); distance; normalize /* null for zero */
 matMul(a, b); apply(m, v) /* m·v */; transpose; identity(n); det(m) /* 2×2, 3×3 */; rotation2(rad)
 solve(A, b) /* partial pivoting; null if singular */; inverse(m) /* null if singular */; conditionNumber(m) /* κ₁ */
+leastSquaresQR(A, b)   // Householder QR: { x, rDiag, conditionEstimate } | null (rank deficient); never forms AᵀA
 
 leastSquares(xs, ys, degree, { lambda })  // { coeffs (constant first), condition, illConditioned } | null; ridge leaves the intercept alone
 polyEval(coeffs, x); sigmoid(z); mse(pred, actual); logLoss(probs, labels)   // probs clamped by LOG_LOSS_EPS
@@ -1045,6 +1046,7 @@ lineWithNoise({ seed, n, slope, intercept, noise, xRange })     // { x, y }[]
 twoClassScores({ seed, positives, negatives, separation })      // { score ∈ (0,1), label }[], sorted by score
 gaussian(rnd)                                                   // Box–Muller from a mulberry32
 ```
+- `leastSquaresQR` keeps the digits the normal equations lose (their κ is κ(A)²): a degree-12 polynomial on 15 points solves where `solve(XᵀX, …)`'s absolute 1e-12 pivot calls it singular. Null means rank deficient (fewer rows than columns, or some |Rᵢᵢ| ≤ max(m, n)·ε·max |Rᵢᵢ|). For ridge, append √λ·eⱼ rows with target 0 for each penalised column. supervised-learning fits through it; `core/fit` `leastSquares` still uses the normal equations.
 - Every curve an ML lesson draws comes from these numbers. Same seed, same data. Tests cover the hand-computed 3-point fit, closed-form regression, ridge against the explicit inverse, both gradients against finite differences, and gradient descent converging to least squares.
 
 ### `ConfusionMatrix.tsx` (+ `core/stats.ts` metrics) — conditional-bayes, classification-metrics, decision-trees-ensembles

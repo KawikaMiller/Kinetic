@@ -9,6 +9,11 @@ export function mseText(v: number): string {
 
 export const lambdaText = (lambda: number) => (lambda === 0 ? 'no λ' : `λ = ${Number(lambda.toPrecision(2))}`);
 
+/** Within this fraction of the best validation error counts as "about as good as the best". */
+export const NEAR_BEST = 0.05;
+/** More than this fraction above the best validation error is "fitting the noise"; between the two, "a little overfitting". */
+export const OVERFIT = 0.5;
+
 /** What the current fit says, computed from its errors and the validation-best degree. */
 export function fitCaption(s: Settings, split: Split): ReactNode {
   const f = fitPoly(split.train, s.degree, s.lambda);
@@ -19,16 +24,28 @@ export function fitCaption(s: Settings, split: Split): ReactNode {
   const head = <>Degree {s.degree}, {lambdaText(s.lambda)}, {split.train.length} training points: training MSE {mseText(train)}, validation MSE {mseText(val)}.</>;
   let verdict: ReactNode;
   if (best.at === s.degree) verdict = <> That's the <span className="hl ok">lowest validation error</span> of any degree here.</>;
-  else if (s.degree > best.at) {
-    verdict = train < best.train
-      ? <> Training error is lower than degree {best.at}'s, but validation error is higher ({mseText(val)} vs {mseText(best.val)}): it's fitting the noise.</>
-      : <> Degree {best.at} does better on validation ({mseText(best.val)}).</>;
+  else if (val <= best.val * (1 + NEAR_BEST)) {
+    verdict = <> About as good as the best: this is within {Math.round(NEAR_BEST * 100)}% of degree {best.at}'s validation error ({mseText(best.val)}).</>;
+  } else if (s.degree > best.at) {
+    const badly = val > best.val * (1 + OVERFIT);
+    verdict = train >= best.train
+      ? <> Degree {best.at} does better on validation ({mseText(best.val)}).</>
+      : badly
+        ? <> Training error is lower than degree {best.at}'s, but validation error is much higher ({mseText(val)} vs {mseText(best.val)}): it's fitting the noise.</>
+        : <> Training error is lower than degree {best.at}'s and validation error a little higher ({mseText(val)} vs {mseText(best.val)}): a little overfitting is left.</>;
   } else verdict = <> Too simple to follow the curve: degree {best.at} does better on validation ({mseText(best.val)}).</>;
-  const warn = coefficientWarning(split.train.length, s.degree, s.lambda) === 'interpolates'
+  const warning = coefficientWarning(split.train.length, s.degree, s.lambda);
+  const warn = warning === 'interpolates'
     ? <> {s.degree + 1} coefficients for {split.train.length} points: as many coefficients as points, so it can pass through every one.</>
+    : warning === 'underdetermined'
+      ? <> {s.degree + 1} coefficients for {split.train.length} points: more coefficients than points, so only λ makes the fit unique.</>
+      : null;
+  const ill = f.illConditioned ? <> The problem is ill-conditioned (κ of the data matrix above 10⁵), so the individual coefficients lose digits; the fitted values themselves stay accurate.</> : null;
+  const plain = s.lambda > 0 ? fitPoly(split.train, s.degree, 0) : null;
+  const vsPlain = plain?.ok
+    ? <> Compared with no λ at this degree, validation error went {mseOf(plain.coeffs, split.val) > val ? 'down' : 'up'} from {mseText(mseOf(plain.coeffs, split.val))} to {mseText(val)}.</>
     : null;
-  const ill = f.illConditioned ? <> The normal equations here are ill-conditioned (κ above 10¹⁰), so the coefficients themselves are only good to a few digits.</> : null;
-  return <>{head}{verdict}{warn}{ill}</>;
+  return <>{head}{verdict}{vsPlain}{warn}{ill}</>;
 }
 
 export function peekCaption(p: Peek): ReactNode {

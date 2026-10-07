@@ -126,3 +126,62 @@ export const rotation2 = (radians: number): number[][] => [
   [Math.cos(radians), -Math.sin(radians)],
   [Math.sin(radians), Math.cos(radians)],
 ];
+
+export interface LeastSquaresSolution {
+  /** The x minimising ‖A·x − b‖. */
+  x: number[];
+  /** |Rᵢᵢ| from A = QR, in column order. */
+  rDiag: number[];
+  /** max |Rᵢᵢ| / min |Rᵢᵢ|: a cheap lower bound on κ₂(A) (the normal equations square it). */
+  conditionEstimate: number;
+}
+
+/**
+ * Least squares by Householder QR: minimises ‖A·x − b‖ without forming AᵀA, so it keeps
+ * about twice the digits the normal equations do (their condition number is κ(A)²).
+ * A is m × n with m ≥ n. Null when A is rank deficient: fewer rows than columns, or some
+ * |Rᵢᵢ| at or below max(m, n)·ε·max |Rᵢᵢ| (numerically, no unique answer).
+ * For ridge, append √λ·eⱼ rows with target 0 for each penalised column j.
+ */
+export function leastSquaresQR(a: Mat, b: Vec): LeastSquaresSolution | null {
+  const m = a.length;
+  const n = a[0]?.length ?? 0;
+  if (b.length !== m) throw new RangeError('A and b have different numbers of rows');
+  if (n === 0 || m < n) return null;
+  const r = a.map((row) => [...row]);
+  const y = [...b];
+  const diag: number[] = [];
+  for (let k = 0; k < n; k++) {
+    let colNorm = 0;
+    for (let i = k; i < m; i++) colNorm += r[i][k] * r[i][k];
+    colNorm = Math.sqrt(colNorm);
+    if (colNorm === 0) {
+      diag.push(0);
+      continue;
+    }
+    // Reflect column k onto −sign·‖col‖·e_k (the sign that avoids cancellation).
+    const alpha = r[k][k] > 0 ? -colNorm : colNorm;
+    const v = Array.from({ length: m - k }, (_, i) => (i === 0 ? r[k][k] - alpha : r[k + i][k]));
+    const vv = v.reduce((s, t) => s + t * t, 0);
+    const reflect = (get: (i: number) => number, set: (i: number, val: number) => void) => {
+      let s = 0;
+      for (let i = 0; i < v.length; i++) s += v[i] * get(i);
+      const f = (2 * s) / vv;
+      for (let i = 0; i < v.length; i++) set(i, get(i) - f * v[i]);
+    };
+    for (let j = k; j < n; j++) reflect((i) => r[k + i][j], (i, val) => (r[k + i][j] = val));
+    reflect((i) => y[k + i], (i, val) => (y[k + i] = val));
+    diag.push(r[k][k]);
+  }
+  const abs = diag.map(Math.abs);
+  const maxR = Math.max(...abs);
+  const tol = Math.max(m, n) * Number.EPSILON * maxR;
+  if (abs.some((d) => d <= tol)) return null;
+  const x = Array.from({ length: n }, () => 0);
+  for (let j = n - 1; j >= 0; j--) {
+    let s = y[j];
+    for (let l = j + 1; l < n; l++) s -= r[j][l] * x[l];
+    x[j] = s / r[j][j];
+  }
+  return { x, rDiag: abs, conditionEstimate: maxR / Math.min(...abs) };
+}

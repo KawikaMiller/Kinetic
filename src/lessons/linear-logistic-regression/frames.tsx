@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import {
-  GD_TOL, accuracyAt, biggestResidual, linearFit, separates, stillGrowing, weightNorm,
+  GD_TOL, accuracyAt, biggestResidual, sameAsClosedForm, linearFit, separates, stillGrowing, weightNorm,
   type Dims, type Labeled, type LineDescent, type LogisticRun, type Pt,
 } from './model';
 
@@ -10,6 +10,12 @@ export function num(v: number, dp = 3): string {
   const r = Number(v.toFixed(dp));
   const s = String(Math.abs(r));
   return r < 0 ? `−${s}` : s;
+}
+
+/** Four significant figures with a real minus sign, so big slopes don't round into each other. */
+export function sigFig(v: number): string {
+  const r = Number(v.toPrecision(4));
+  return r < 0 ? `−${Math.abs(r)}` : String(r + 0);
 }
 
 /** "y = 2.1 + 0.6x", with the sign folded in. */
@@ -23,7 +29,10 @@ export function linearCaption(points: readonly Pt[], compare: boolean): ReactNod
   const k = biggestResidual(points)!;
   const without = linearFit(points.filter((_, i) => i !== k));
   if (!without.ok) return <>{main} Without its biggest residual there'd be too few distinct x values to fit a line.</>;
-  return <>{main} Leave out the point with the biggest residual and the line would be {lineText(without.b, without.m)}: that one point moved the slope from {num(without.m)} to {num(fit.m)}.</>;
+  const from = sigFig(without.m);
+  const to = sigFig(fit.m);
+  const moved = from === to ? <>: the slope barely moves (it stays {to}).</> : <>: that one point moved the slope from {from} to {to}.</>;
+  return <>{main} Leave out the point with the biggest residual and the line would be {lineText(without.b, without.m)}{moved}</>;
 }
 
 export function gdCaption(run: LineDescent, index: number, points: readonly Pt[]): ReactNode {
@@ -32,13 +41,13 @@ export function gdCaption(run: LineDescent, index: number, points: readonly Pt[]
   if (!fit.ok) return null;
   const closed = <>closed form {lineText(fit.b, fit.m)}</>;
   if (index < run.snapshots.length - 1) {
-    return <>Gradient descent, step {s.step.toLocaleString('en-US')}: {lineText(s.b, s.m)}, MSE {num(s.mse)}. It started from the flat line y = 0 and steps with η = {num(run.rate, 4)} (1/L for this data). Target: {closed}.</>;
+    return <>Gradient descent, step {s.step.toLocaleString('en-US')}: {lineText(s.b, s.m)}, MSE {num(s.mse)}. It started from the flat line y = 0 and steps with η = {num(run.rate, 4)} on standardised x. Target: {closed}.</>;
   }
   const gap = Math.max(Math.abs(s.b - fit.b), Math.abs(s.m - fit.m));
-  const stop = run.converged
-    ? <>stopped after {run.steps.toLocaleString('en-US')} steps (gradient below {GD_TOL.toExponential(0)})</>
-    : <>ran out of steps at {run.steps.toLocaleString('en-US')}</>;
-  return <>Gradient descent {stop} at {lineText(s.b, s.m)}; the {closed}. {gap < 1e-6 ? 'They agree to 6 decimal places' : `They differ by at most ${num(gap, 6)}`}: same line, found by walking downhill.</>;
+  if (sameAsClosedForm(run, points)) {
+    return <>Gradient descent stopped after {run.steps.toLocaleString('en-US')} steps (gradient below {GD_TOL.toExponential(0)}) at {lineText(s.b, s.m)}; the {closed}. {gap < 1e-6 ? 'They agree to 6 decimal places' : `They differ by at most ${num(gap, 6)}`}: same line, found by walking downhill.</>;
+  }
+  return <>Gradient descent ran out of steps at {run.steps.toLocaleString('en-US')} with {lineText(s.b, s.m)}, still {num(gap, 4)} away from the {closed}.</>;
 }
 
 export interface TrainFrame extends Frame {
@@ -74,7 +83,7 @@ export function trainVerdict(run: LogisticRun, pts: readonly Labeled[], dims: Di
       : <>The fit hasn't settled yet.</>;
     return <>{head} The weights are <span className="hl bad">still growing</span> (‖w‖ was {num(weightNorm(mid.params), 2)} at step {mid.step.toLocaleString('en-US')}). {why} That's why regularisation exists: switch L2 on.</>;
   }
-  if (l2) return <>{head} With L2 the weights <span className="hl ok">settled</span>: the penalty λ/2·‖w‖² outweighs any gain from an ever-steeper sigmoid.</>;
+  if (l2) return <>{head} With L2 the weights <span className="hl ok">settled</span>: the penalty λ/2·‖w‖² (on the standardised weights) outweighs any gain from an ever-steeper sigmoid. The loss shown includes the penalty.</>;
   return <>{head} The weights <span className="hl ok">settled</span>. The model gives every point a probability; the threshold below turns that into a class.</>;
 }
 

@@ -29,7 +29,7 @@ function mainDotCaption(a: V2, b: V2, bName: string): ReactNode {
   }
   const r = read(a, b);
   const cos = r.cos!;
-  switch (direction(cos)) {
+  switch (direction(a, b)) {
     case 'same':
       return <>Same direction: θ = 0°, cos θ = 1. All of {bName} lies along a, so a·{bName} = ‖a‖‖{bName}‖ = {num(r.dot)}, the most these lengths can give.</>;
     case 'opposite':
@@ -52,7 +52,9 @@ function comparisonNote(a: V2, pinned: V2, b: V2, bName: string): ReactNode {
   const dotPart = <>a·b′ = {num(p.dot)} vs a·{bName} = {num(n.dot)}</>;
   const cosPart = <>cos {num(p.cos!, 3)} vs {num(n.cos!, 3)}</>;
   if (c.disagree) {
-    return <> Compared with b′: the dot product prefers {winner(c.dotPrefers)} ({dotPart}), cosine prefers {winner(c.cosPrefers)} ({cosPart}). Length won the dot product; direction won cosine.</>;
+    const dotWinnerLonger = c.dotPrefers === 'pinned' ? p.normB > n.normB : n.normB > p.normB;
+    const moral = dotWinnerLonger ? <> Length won the dot product; direction won cosine.</> : <> Cosine compares direction alone; the dot product also weighs length.</>;
+    return <> Compared with b′: the dot product prefers {winner(c.dotPrefers)} ({dotPart}), cosine prefers {winner(c.cosPrefers)} ({cosPart}).{moral}</>;
   }
   return <> Compared with b′: both scores prefer {winner(c.dotPrefers === 'tie' ? c.cosPrefers : c.dotPrefers)} ({dotPart}; {cosPart}).</>;
 }

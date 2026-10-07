@@ -64,7 +64,7 @@ describe('read', () => {
       expect(r.cos).toBeNull();
       expect(r.angle).toBeNull();
       expect(r.dot).toBe(0);
-      expect(direction(r.cos)).toBe('undefined');
+      expect(direction(a, b)).toBe('undefined');
     }
     expect(read([0, 0], [1, 1]).shadow).toBeNull();
   });
@@ -72,16 +72,15 @@ describe('read', () => {
 
 describe('presets', () => {
   it('same / perpendicular / opposite give cos 1, 0 and −1 exactly as labelled', () => {
-    const cos = (id: string) => {
-      const p = VECTOR_PRESETS.find((x) => x.id === id)!;
-      return read(p.a, p.b).cos!;
-    };
+    const byId = (id: string) => VECTOR_PRESETS.find((x) => x.id === id)!;
+    const cos = (id: string) => read(byId(id).a, byId(id).b).cos!;
+    const dir = (id: string) => direction(byId(id).a, byId(id).b);
     expect(cos('same')).toBeCloseTo(1, 12);
-    expect(direction(cos('same'))).toBe('same');
+    expect(dir('same')).toBe('same');
     expect(cos('perpendicular')).toBe(0);
-    expect(direction(cos('perpendicular'))).toBe('perpendicular');
+    expect(dir('perpendicular')).toBe('perpendicular');
     expect(cos('opposite')).toBeCloseTo(-1, 12);
-    expect(direction(cos('opposite'))).toBe('opposite');
+    expect(dir('opposite')).toBe('opposite');
   });
 
   it('"long but off-angle vs short and aligned": the dot product prefers the long one, cosine the aligned one', () => {

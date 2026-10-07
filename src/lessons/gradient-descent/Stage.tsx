@@ -7,7 +7,8 @@ import type { Point } from '../../core/plot';
 import { usePlayer } from '../../core/usePlayer';
 import { descentFrames, lossText, num, vec } from './frames';
 import {
-  DEFAULT_START, RATE_EXP_MAX, RATE_EXP_MIN, RATE_LABELS, RATE_PRESETS, SURFACES, SURFACE_IDS, presetRate, runDescent,
+  DEFAULT_START, QUADRATIC, RATE_EXP_MAX, RATE_EXP_MIN, RATE_FACTORS, RATE_LABELS, RATE_PRESETS, RIDGE_START, SURFACES, SURFACE_IDS,
+  presetRate, runDescent,
   type RatePreset, type SurfaceId, type W,
 } from './model';
 import './styles.css';
@@ -98,7 +99,11 @@ export function Stage() {
         <Stats>
           <Stat label="Step" value={`${iter} / ${run.steps.length}`} />
           <Stat label="Loss" value={lossText(lossNow)} color={diverged ? 'var(--bad)' : 'var(--hi)'} sub={`lowest possible ${lossText(s.floor)}`} />
-          <Stat label={<span className="keep-case">η</span>} value={num(rate, 4)} sub={`2/λ = ${num(2 / s.lambdaMax, 3)} here`} />
+          <Stat
+            label={<span className="keep-case">η</span>}
+            value={num(rate, 4)}
+            sub={momentum > 0 ? `limit 2(1+β)/λ = ${num((2 * (1 + momentum)) / s.lambdaMax, 3)}` : `limit 2/λ = ${num(2 / s.lambdaMax, 3)}`}
+          />
           <Stat label={<>momentum <span className="keep-case">β</span></>} value={num(momentum, 2)} />
         </Stats>
       }
@@ -135,10 +140,17 @@ export function Stage() {
           }} />
           <Segmented label="Steps per press" options={PER_PRESS} value={perPress} onChange={setPerPress} />
         </>,
-        <ControlGroup key="presets" label="Learning-rate presets (momentum off)">
+        <ControlGroup key="presets" label={QUADRATIC[surface] ? 'Learning-rate presets (momentum off)' : 'Learning rates, as fractions of 2/λ (momentum off)'}>
           {RATE_PRESETS.map((p) => (
-            <ChipButton key={p} tone="info" on={loaded === p} onClick={() => loadPreset(p)}>{RATE_LABELS[p]}</ChipButton>
+            <ChipButton key={p} tone="info" on={loaded === p} onClick={() => loadPreset(p)}>
+              {QUADRATIC[surface] ? RATE_LABELS[p] : `${RATE_FACTORS[p]} × 2/λ`}
+            </ChipButton>
           ))}
+          {surface === 'saddle' && (
+            <ChipButton tone="info" on={start[0] === RIDGE_START[0] && start[1] === RIDGE_START[1]} onClick={() => setStart(RIDGE_START)}>
+              Start exactly on the ridge (w₂ = 0)
+            </ChipButton>
+          )}
         </ControlGroup>,
         ...(surface === 'regression'
           ? [
@@ -182,8 +194,9 @@ export function Stage() {
           </Plot2D>
           <Hint block>
             Click the map (or drag the hollow start, or focus it and use the arrow keys) to drop the ball somewhere else. Presets are fractions of
-            2/λ, where λ is the steepest curvature at this surface's lowest minimum: past 2/λ plain gradient descent can't settle there. On the
-            curved surfaces the ball may meet gentler or steeper curvature than that.
+            2/λ, where λ is the steepest curvature at this surface's lowest minimum: past 2/λ plain gradient descent can't settle there (with
+            momentum β the limit is 2(1 + β)/λ). Their names hold on the quadratic surfaces; on Two minima and Saddle the ball can meet gentler or
+            steeper curvature, so there they're shown as plain fractions.
           </Hint>
           <Hint block>Two-parameter toy losses; real models have millions of parameters. Mini-batch noise is real but seeded, so runs repeat.</Hint>
         </div>

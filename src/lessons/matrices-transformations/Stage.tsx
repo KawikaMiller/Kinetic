@@ -8,7 +8,7 @@ import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { ease } from '../../core/math';
 import { useMeasure } from '../../core/useMeasure';
 import { usePlayer } from '../../core/usePlayer';
-import { composeFrames, composeStageMatrix, homogeneousCaption, num, pt, transformCaption } from './frames';
+import { composeFrames, composeStageMatrix, homogeneousCaption, num, pt, sig, transformCaption } from './frames';
 import {
   COMPOSE_PRESETS, CSS_UNIT_PX, ENTRY_MAX, F_SHAPE, LINEAR_CHOICES, PRESETS, TRANSFORM_PRESETS, UNIT_SQUARE, applyH, applyM,
   columns, cssMatches, cssMatrix, cssMatrixArgs, det2, gridSegments, homogeneous, inverse2, isSingular, lerpM, parseCssMatrix,
@@ -167,9 +167,9 @@ function TransformScene({ picker }: { picker: ReactNode }) {
           <Stat label={<>where <span className="keep-case">ĵ</span> lands</>} value={pt(j, 2)} color="var(--violet)" sub="column 2: (b, d)" />
           <Stat
             label="det = ad − bc"
-            value={num(isSingular(target) ? 0 : d)}
+            value={sig(isSingular(target) ? 0 : d)}
             color={isSingular(target) ? undefined : d > 0 ? 'var(--ok)' : 'var(--orange)'}
-            sub={isSingular(target) ? 'plane collapses' : d < 0 ? `areas ×${num(-d)}, flipped` : `areas ×${num(d)}`}
+            sub={isSingular(target) ? 'plane collapses' : d < 0 ? `areas ×${sig(-d)}, flipped` : `areas ×${sig(d)}`}
           />
           <Stat label="inverse" value={inv ? <MatrixView rows={inv} className="is-small" /> : 'none'} color={inv ? undefined : 'var(--bad)'} sub={inv ? undefined : 'can’t be undone'} />
         </Stats>

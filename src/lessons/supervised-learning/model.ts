@@ -6,7 +6,8 @@
  * those functions don't take the test set at all, so the demo can't leak it.
  */
 import { gaussian } from '../../core/fixtures/datasets';
-import { leastSquares, mse, polyEval } from '../../core/fit';
+import { mse, polyEval } from '../../core/fit';
+import { leastSquaresQR } from '../../core/vec';
 import { mulberry32, shuffle } from '../../core/random';
 
 export interface Sample {
@@ -58,24 +59,40 @@ export type Fit =
   | { ok: true; coeffs: number[]; illConditioned: boolean }
   | { ok: false; reason: string };
 
-export type CoefficientWarning = 'none' | 'interpolates' | 'singular';
+export type CoefficientWarning = 'none' | 'interpolates' | 'underdetermined' | 'singular';
 
 /**
  * degree + 1 coefficients against n points: equal means the curve can pass through every
- * training point; more means least squares has no unique answer unless λ > 0.
+ * training point; more means least squares has no unique answer, unless λ > 0 picks one.
  */
 export function coefficientWarning(nTrain: number, degree: number, lambda: number): CoefficientWarning {
-  if (degree + 1 > nTrain) return lambda > 0 ? 'interpolates' : 'singular';
+  if (degree + 1 > nTrain) return lambda > 0 ? 'underdetermined' : 'singular';
   return degree + 1 === nTrain ? 'interpolates' : 'none';
 }
 
+/** Above this estimate of κ(X), the coefficients only keep a few digits (the normal equations would square it). */
+export const ILL_CONDITIONED_X = 1e5;
+
+/**
+ * Least squares by Householder QR (core/vec leastSquaresQR) on the Vandermonde matrix, with
+ * √λ rows for ridge on every coefficient except the intercept. QR never forms XᵀX, so it
+ * solves fits the normal equations call singular (degree 12 on 15 points).
+ */
 export function fitPoly(train: readonly Sample[], degree: number, lambda: number): Fit {
   if (coefficientWarning(train.length, degree, lambda) === 'singular') {
     return { ok: false, reason: `${degree + 1} coefficients but only ${train.length} training points: no unique fit without λ > 0.` };
   }
-  const f = leastSquares(train.map((s) => s.x), train.map((s) => s.y), degree, { lambda });
-  if (!f) return { ok: false, reason: 'The normal equations are singular here: no unique fit.' };
-  return { ok: true, coeffs: f.coeffs, illConditioned: f.illConditioned };
+  const rows = train.map((s) => Array.from({ length: degree + 1 }, (_, p) => s.x ** p));
+  const ys = train.map((s) => s.y);
+  if (lambda > 0) {
+    for (let j = 1; j <= degree; j++) {
+      rows.push(Array.from({ length: degree + 1 }, (_, p) => (p === j ? Math.sqrt(lambda) : 0)));
+      ys.push(0);
+    }
+  }
+  const f = leastSquaresQR(rows, ys);
+  if (!f) return { ok: false, reason: 'Numerically too ill-conditioned to solve here, even by QR.' };
+  return { ok: true, coeffs: f.x, illConditioned: f.conditionEstimate > ILL_CONDITIONED_X };
 }
 
 export const mseOf = (coeffs: readonly number[], set: readonly Sample[]) => mse(set.map((s) => polyEval(coeffs, s.x)), set.map((s) => s.y));
@@ -147,18 +164,15 @@ export type PresetId = 'underfit' | 'good' | 'overfit' | 'fixedByLambda' | 'fixe
 export const PRESET_LABELS: Record<PresetId, string> = {
   underfit: 'Underfit (degree 1)',
   good: 'Good fit',
-  overfit: 'Overfit (degree 12, 20 points)',
-  fixedByLambda: 'Fixed by λ',
-  fixedByData: 'Fixed by data',
+  overfit: 'Overfit (degree 12, 15 points)',
+  fixedByLambda: 'Degree 12 + best λ',
+  fixedByData: 'Degree 12, 200 points',
 };
 export const PRESET_IDS: PresetId[] = ['underfit', 'good', 'overfit', 'fixedByLambda', 'fixedByData'];
 
 const BASE_N = 30;
-/**
- * 20, not the 15 first planned: at 15 points the degree-12 normal matrix has κ ≈ 10¹³ and
- * core/vec's solver calls it singular on some splits. At 20 it solves on every split tried.
- */
-export const OVERFIT_N = 20;
+/** The spec's overfit case: degree 12 on 15 points. QR solves it on every split. */
+export const OVERFIT_N = 15;
 
 /** Presets that pick a "best" pick it from validation error on the current split, like a real workflow. */
 export function presetSettings(id: PresetId, splitSeed: number): Settings {

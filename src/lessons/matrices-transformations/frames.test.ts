@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { composeFrames, composeStageMatrix, homogeneousCaption, num, transformCaption } from './frames';
-import { COMPOSE_PRESETS, IDENTITY, PRESETS, TRANSFORM_PRESETS, homogeneous, sameMatrix, thenApply, type M2 } from './model';
+import { composeFrames, composeStageMatrix, homogeneousCaption, num, sig, transformCaption } from './frames';
+import { mulberry32 } from '../../core/random';
+import { COMPOSE_PRESETS, IDENTITY, PRESETS, TRANSFORM_PRESETS, collapse, det2, homogeneous, inverse2, isSingular, sameMatrix, thenApply, type M2 } from './model';
 
 describe('transformCaption', () => {
   it('says what each preset does, from its determinant', () => {
@@ -72,5 +73,57 @@ describe('num', () => {
     expect(num(Math.sqrt(3) / 2)).toBe('0.866');
     expect(num(-0.5)).toBe('−0.5');
     expect(num(-1e-12)).toBe('0');
+  });
+});
+
+describe('sweep: tiny and typed matrices (review B8)', () => {
+  it('a tiny but invertible matrix keeps a nonzero det in the caption and a real inverse', () => {
+    expect(text(transformCaption([[0.01, 0], [0, 0.01]]))).toContain('det = 0.0001: every area is scaled by 0.0001');
+    const tiny: M2 = [[1e-5, 0], [0, 1e-5]];
+    expect(isSingular(tiny)).toBe(false);
+    expect(text(transformCaption(tiny))).toContain('det = 1.00e−10');
+    expect(text(transformCaption(tiny))).not.toContain('collapses');
+    expect(text(transformCaption(tiny))).toContain('î lands on (1.00e−5, 0)');
+    const inv = inverse2(tiny)!;
+    expect(inv[0][0]).toBeCloseTo(1e5, 6);
+  });
+
+  it('line vs point comes from the rank: a nonzero singular matrix collapses onto a line, only the zero matrix onto a point', () => {
+    expect(collapse([[1e-5, 0], [0, 0]])).toBe('line');
+    expect(collapse([[0, 0], [0, 0]])).toBe('point');
+    expect(text(transformCaption([[0, 1e-8], [0, 0]]))).toContain('onto a line');
+  });
+
+  it('over 5,000 typed matrices (decimals at many scales), the caption never prints "det = 0" for an invertible one, and inverse·M = I', () => {
+    const rnd = mulberry32(99);
+    const entry = () => {
+      const scale = 10 ** -Math.floor(rnd() * 8);
+      return rnd() < 0.2 ? 0 : Number(((rnd() * 6 - 3) * scale).toPrecision(3));
+    };
+    for (let t = 0; t < 5000; t++) {
+      const m: M2 = [[entry(), entry()], [entry(), entry()]];
+      const c = text(transformCaption(m));
+      if (isSingular(m)) {
+        expect(c).toContain('det = 0:');
+        continue;
+      }
+      expect(c).not.toContain('det = 0:');
+      expect(c).not.toContain('collapses');
+      expect(sig(det2(m))).not.toBe('0');
+      const inv = inverse2(m)!;
+      const prod = thenApply(m, inv);
+      prod.flat().forEach((v, i) => expect(Math.abs(v - [1, 0, 0, 1][i])).toBeLessThan(1e-6));
+    }
+  });
+});
+
+describe('sig', () => {
+  it('keeps significant figures, with exponents only when tiny or huge', () => {
+    expect(sig(4)).toBe('4');
+    expect(sig(-1)).toBe('−1');
+    expect(sig(0.0001)).toBe('0.0001');
+    expect(sig(0.00001)).toBe('1.00e−5');
+    expect(sig(0.866)).toBe('0.866');
+    expect(sig(0)).toBe('0');
   });
 });

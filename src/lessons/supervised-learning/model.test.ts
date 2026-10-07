@@ -3,7 +3,7 @@ import { leastSquares, polyEval } from '../../core/fit';
 import { inverse, matMul, transpose } from '../../core/vec';
 import {
   DATA_SEED, LAMBDA_GRID, MAX_DEGREE, OVERFIT_N, PRESET_IDS, TEST_SEED, TEST_SET, bestBy, coefficientWarning, degreeCurve, fitPoly,
-  lambdaCurve, makeSplit, mseOf, presetSettings, samples, validationCount,
+  lambdaCurve, makeSplit, presetSettings, samples, validationCount,
 } from './model';
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -70,7 +70,7 @@ describe('fits', () => {
     expect(coefficientWarning(20, 12, 0)).toBe('none');
     expect(coefficientWarning(13, 12, 0)).toBe('interpolates');
     expect(coefficientWarning(10, 12, 0)).toBe('singular');
-    expect(coefficientWarning(10, 12, 0.1)).toBe('interpolates');
+    expect(coefficientWarning(10, 12, 0.1)).toBe('underdetermined');
     const { train } = makeSplit(10, 1);
     const refused = fitPoly(train, 12, 0);
     expect(refused.ok).toBe(false);
@@ -87,17 +87,26 @@ describe('fits', () => {
 });
 
 describe('model selection', () => {
-  it('the best degree is the argmin of validation MSE (brute force), for many seeds', () => {
+  it('the best degree is the argmin of validation MSE, recomputed by the independent normal-equations path (core/fit)', () => {
     for (const seed of SEEDS) {
-      const split = makeSplit(30, seed);
-      const c = degreeCurve(split, 0);
-      let best = 0;
-      for (let d = 0; d <= MAX_DEGREE; d++) {
-        const f = fitPoly(split.train, d, 0);
-        const bf = fitPoly(split.train, best, 0);
-        if (f.ok && bf.ok && mseOf(f.coeffs, split.val) < mseOf(bf.coeffs, split.val)) best = d;
-      }
-      expect(bestBy(c)!.at).toBe(best);
+      // 200 points keep degree 12's normal equations well enough conditioned to serve as a reference.
+      const split = makeSplit(200, seed);
+      const reference = Array.from({ length: MAX_DEGREE + 1 }, (_, d) => {
+        const f = leastSquares(split.train.map((s) => s.x), split.train.map((s) => s.y), d)!;
+        return split.val.reduce((sum, s) => sum + (polyEval(f.coeffs, s.x) - s.y) ** 2, 0) / split.val.length;
+      });
+      const want = reference.indexOf(Math.min(...reference));
+      expect(bestBy(degreeCurve(split, 0))!.at).toBe(want);
+    }
+  });
+
+  it('QR solves every split the normal equations refused: n = 10 at degree 9 and n = 15 at degree 12, 30 splits each', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const ten = makeSplit(10, seed).train;
+      const nine = fitPoly(ten, 9, 0);
+      expect(nine.ok).toBe(true);
+      if (nine.ok) ten.forEach((s) => expect(polyEval(nine.coeffs, s.x)).toBeCloseTo(s.y, 4));
+      expect(fitPoly(makeSplit(15, seed).train, 12, 0).ok).toBe(true);
     }
   });
 

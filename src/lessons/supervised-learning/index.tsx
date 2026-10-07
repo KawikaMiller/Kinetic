@@ -18,13 +18,13 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'Slide the degree from 0 to 12: the blue training error keeps falling, the violet validation error makes a U.',
-    'Press "Overfit (degree 12, 20 points)": the curve snakes through the training points and misses the hollow ones.',
-    'Press "Fixed by λ", then "Fixed by data": a ridge penalty or 200 points tame the same degree-12 model.',
+    'Press "Overfit (degree 12, 15 points)": the curve snakes through the training points and misses the hollow ones.',
+    'Press "Degree 12 + best λ", then "Degree 12, 200 points": a ridge penalty or more data pulls validation error for the same model far down.',
     'Press "Reshuffle split" a few times: the best degree can move, because validation error is itself noisy.',
     'Press "Peek at the test set (once)", and read why tuning on it would make the number lie.',
   ],
   keyIdeas: [
-    'Training error always falls with flexibility; validation error is what tells you when to stop.',
+    'Without a penalty, training error never rises with flexibility; validation error is what tells you when to stop.',
     'Pick settings on validation data; touch the test set once, at the end.',
     'Overfitting is fitting the noise: fix it with more data or regularisation (like ridge λ).',
     'With as many coefficients as points, a model can pass through every training point.',
