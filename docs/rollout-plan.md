@@ -3550,7 +3550,7 @@ Track `web` · *"Big, close, and few choices"* · Builds on: `linear-logistic-re
 - **Design panel:** the same toolbar laid out three ways (tiny icons far away, big buttons near, edge-pinned). Each predicts time from *your* fitted a and b. Screen edges and corners are effectively infinitely wide on a desktop pointer; this is named, and not true on touch.
 - **Hick tab:**
   - A menu of n choices (2-32) where you click the named item. Decision time is plotted against log₂(n + 1) with a fit.
-  - A caption notes that Hick's law holds for unfamiliar, equally likely choices, and that practised or searchable menus beat it.
+  - A caption notes that Hick's law models choice among equally likely options you don't have to search for; scanning an unfamiliar list grows roughly linearly, and practice flattens the slope.
 - A "touch" note: the minimum target size guidance (WCAG 2.2 AA 24×24 px, platform guidelines 44-48), linked to `responsive-design`.
 - If you skip the game, a seeded synthetic participant fills the plot, clearly labelled.
 **Out of scope.** Running user studies is `usability-testing`; full accessibility guidance is `accessibility`; GOMS/KLM models are named only.
