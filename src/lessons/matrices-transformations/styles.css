@@ -1,0 +1,63 @@
+.mt-row, .mt-compose { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.mt-plot { width: 100%; max-width: 420px; flex: 0 1 420px; }
+
+.mt-editor { flex: 1 1 300px; }
+.mt-entries { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin-top: 8px; }
+.mt-entry { display: flex; flex-direction: column; gap: 4px; padding: 8px; border-radius: 10px; border: 1.5px solid var(--line-2); }
+.mt-entry.is-i { border-color: color-mix(in srgb, var(--info) 55%, transparent); }
+.mt-entry.is-j { border-color: color-mix(in srgb, var(--violet) 55%, transparent); }
+.mt-entry .slider { min-width: 0; }
+.mt-entry .slider input { width: 100%; }
+.mt-error { margin: 8px 0 0; font: 500 13px var(--font); color: var(--bad); }
+
+.mt-matrix {
+  display: inline-grid;
+  grid-auto-columns: auto;
+  gap: 0 10px;
+  padding: 2px 8px;
+  border-left: 2px solid var(--muted);
+  border-right: 2px solid var(--muted);
+  border-radius: 4px;
+  font: 600 14px var(--mono);
+  text-align: right;
+}
+.mt-matrix.is-small { font-size: 12px; }
+.mt-matrix .is-i { color: var(--info); }
+.mt-matrix .is-j { color: var(--violet); }
+.mt-matrix .is-t { color: var(--pink); }
+
+.mt-side { margin: 0; flex: 0 1 420px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mt-side figcaption { font: 600 13px var(--font); color: var(--text); }
+.mt-side figcaption span { color: var(--muted); font-family: var(--mono); margin-left: 4px; }
+.mt-side .mt-plot { flex: none; }
+
+.mt-css { flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px; }
+.mt-css-code { font: 500 12.5px var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.mt-css-stage {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  align-self: center;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+}
+.mt-css-axis { position: absolute; background: var(--line-2); }
+.mt-css-axis.is-x { left: 0; right: 0; top: 50%; height: 1px; }
+.mt-css-axis.is-y { top: 0; bottom: 0; left: 50%; width: 1px; }
+.mt-css-box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0 0;
+  display: grid;
+  place-items: center;
+  font: 800 30px var(--font);
+  color: var(--on-hi);
+  background: color-mix(in srgb, var(--hi) 85%, transparent);
+  border-radius: 4px;
+}
+.mt-css-check { margin: 0; font: 500 13px var(--font); color: var(--muted); }
+.mt-css-check code { font: 500 12px var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.mt-css-check .is-ok { color: var(--ok); }
+.mt-css-check .is-bad { color: var(--bad); }
