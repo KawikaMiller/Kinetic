@@ -4,7 +4,7 @@
 .ts-graph { margin: 0 auto; }
 .ts-meaning { margin: 0; font-size: 13px; color: var(--muted); }
 .ts-note { color: var(--text); font-weight: 600; }
-.ts-label { font-size: 13px; }
+.ts-graph .graph-node-label { font-size: 13px; }
 .ts-badge circle { fill: var(--violet); stroke: var(--bg); stroke-width: 2; }
 .ts-badge text { font: 700 12px var(--mono); fill: var(--on-violet); pointer-events: none; }
 .ts-side .tray:not(.is-stacked) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 42px; }

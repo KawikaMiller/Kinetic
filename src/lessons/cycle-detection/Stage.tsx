@@ -53,7 +53,7 @@ function ListScene({ picker }: { picker: ReactNode }) {
   const pr = run.meet !== null ? proof(run, mu) : null;
   const showProof = pr && (f.proof || f.phase >= 2);
 
-  const renderNode = (n: GraphNode<number>, p: Pt) => {
+  const renderNode = (n: GraphNode<number>, p: Pt, base: ReactNode) => {
     if (n.id === NULL_ID) {
       return (
         <>
@@ -67,11 +67,7 @@ function ListScene({ picker }: { picker: ReactNode }) {
     const tag = pointerTag(n.id, f);
     return (
       <>
-        <circle className="graph-node-ring" cx={p.x} cy={p.y} r={R + 5} />
-        <circle className="graph-node-shape" cx={p.x} cy={p.y} r={R} />
-        <text className="graph-node-label" x={p.x} y={p.y + 5} textAnchor="middle">
-          {n.id}
-        </text>
+        {base}
         {tag && (
           <text className={`cd-tag ${tag === 'S' ? 'is-slow' : tag === 'F' ? 'is-fast' : 'is-both'}`} x={p.x} y={p.y - R - 9} textAnchor="middle">
             {tag}

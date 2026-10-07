@@ -837,6 +837,18 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
            directed startNode="q0" width={500} height={220} ariaLabel="…" />
 ```
 - `layout`: `fixed` (each `at`), `layered` (`layeredLayout`: longest-path layers, cycles broken depth-first; barycentre ordering kept only when it removes crossings, so a crossing-free input order stays exactly as given), `circle` (`circlePositions`, first node at the top). Layered sizes itself; `width` overrides that (ci keeps its width when deploy is absent).
+- `layoutEdges` (layered only) is the edge set the layout uses; `edges` is still what's drawn. topological-sort lays out by
+  the preset's edges plus any added edge that keeps the graph acyclic, so closing a cycle draws the new arrow without
+  moving a single node.
+- Layered + straight edges: an edge that would cross another node (a back edge closing a cycle) bends round it in a
+  "lane" curve beside the straight line, nearest lane first, alternating sides (`detourBend` / `curveHits` in
+  `core/graphLayout`, tested; `DETOUR_MARGIN` 8px clearance). If no lane within reach clears, it stays straight.
+  S-curve (`edgeStyle="curve"`) and fixed/circle layouts are untouched.
+- `editable.onAddNode` is optional: leave it out for an edges-only editor (topological-sort); clicking empty space then
+  does nothing and the crosshair cursor goes away.
+- `renderNode(node, at, base)`: `base` is the default drawing (focus ring, circle or box, label), so adding a badge or a
+  tag is `<>{base}<Badge/></>` (topological-sort's in-degree badges, cycle-detection's S/F tags) rather than a copy of
+  the ring/shape/label markup. `box={{ w, h, rx }}` sets the box's corner radius (default 10; the ring follows at rx + 4).
 - Natural size, shrinking on narrow screens; stretch it with `width: 100%` in lesson CSS (both migrated lessons do). Big graphs on phones belong in a `WideRegion`, as in ci-pipelines.
 - Node marks use TreeSvg's shape (`{ tone, fill: 'tint' | 'solid', tint? }`); edges take `{ tone, dashed?, width? }` (default 3.5), and the arrowhead follows the tone. `nodeColor` colours only unmarked nodes. Classes: `.graph-node`, `.graph-node-shape`, `.graph-node-label`, `.graph-edge` (+ `is-marked`, `is-dashed`), `.graph-edge-label`.
 - With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop (roving tabindex, starting top-left): arrows move to the nearest node or clickable edge in that direction (`spatialNext`), Home/End jump to the ends, Enter/Space press. `editable`: clicking empty space adds a node (at least `minGap` from the rest), dragging node to node adds an edge, and from the keyboard it's C on a node then Enter on another (Escape cancels). Adding a node from the keyboard stays a lesson button, since only the lesson knows where it goes.

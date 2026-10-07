@@ -196,6 +196,69 @@ export function outlineDistance(n: NodeBox, ux: number, uy: number): number {
 /** Sideways offset of each edge of an a→b / b→a pair, so both stay visible. */
 export const PARALLEL_BEND = 22;
 const LABEL_LIFT = 6;
+/** Clearance kept between a detouring edge and the nodes it passes. */
+export const DETOUR_MARGIN = 8;
+/** Detours try lanes 1, 2, … this many steps either side of the straight line. */
+const DETOUR_STEP = 24;
+const DETOUR_TRIES = 8;
+const CURVE_SAMPLES = 40;
+
+/** A node in the way of an edge: its centre and its outline. */
+export interface Obstacle {
+  at: Pt;
+  box: NodeBox;
+}
+
+/** A cubic Bézier from a to b with control points c1, c2. A straight line has them on the chord. */
+export interface Bend {
+  c1: Pt;
+  c2: Pt;
+}
+
+function cubicAt(a: Pt, { c1, c2 }: Bend, b: Pt, t: number): Pt {
+  const u = 1 - t;
+  const k = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+  return { x: k[0] * a.x + k[1] * c1.x + k[2] * c2.x + k[3] * b.x, y: k[0] * a.y + k[1] * c1.y + k[2] * c2.y + k[3] * b.y };
+}
+
+/** Whether p lies inside the node's outline grown by `margin`. */
+function inside(p: Pt, o: Obstacle, margin: number): boolean {
+  const dx = p.x - o.at.x;
+  const dy = p.y - o.at.y;
+  if (o.box.shape === 'circle') return Math.hypot(dx, dy) < o.box.r + margin;
+  return Math.abs(dx) < o.box.w / 2 + margin && Math.abs(dy) < o.box.h / 2 + margin;
+}
+
+/** Whether the curve a → b through `bend` (straight when omitted) passes through any obstacle. */
+export function curveHits(a: Pt, b: Pt, obstacles: readonly Obstacle[], bend?: Bend, margin = DETOUR_MARGIN): boolean {
+  const via = bend ?? { c1: a, c2: b };
+  for (let i = 1; i < CURVE_SAMPLES; i++) {
+    const p = cubicAt(a, via, b, i / CURVE_SAMPLES);
+    if (obstacles.some((o) => inside(p, o, margin))) return true;
+  }
+  return false;
+}
+
+/**
+ * How to bend a → b round the obstacles: a "lane" curve that leaves a sideways, runs
+ * alongside the straight line and comes back into b, trying the nearest lane first and
+ * alternating sides. null when the straight line is already clear, or when no lane within
+ * reach clears every obstacle (the edge then stays straight).
+ */
+export function detourBend(a: Pt, b: Pt, obstacles: readonly Obstacle[]): Bend | null {
+  if (!obstacles.length || !curveHits(a, b, obstacles)) return null;
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const [nx, ny] = [-(b.y - a.y) / len, (b.x - a.x) / len];
+  for (let k = 1; k <= DETOUR_TRIES; k++) {
+    for (const side of [1, -1]) {
+      // A cubic with both control points shifted by d peaks at 3/4 d, so shift by 4/3 of the lane.
+      const d = (side * k * DETOUR_STEP * 4) / 3;
+      const bend = { c1: { x: a.x + nx * d, y: a.y + ny * d }, c2: { x: b.x + nx * d, y: b.y + ny * d } };
+      if (!curveHits(a, b, obstacles, bend)) return bend;
+    }
+  }
+  return null;
+}
 
 /**
  * The route of one edge.
@@ -203,10 +266,12 @@ const LABEL_LIFT = 6;
  *   `b` facing back (`direction` as in layeredPositions), ending `arrowGap` short.
  * - otherwise a straight line from a's centre, trimmed at b's outline when `directed`;
  *   bent sideways when `parallel` (the reverse edge exists too); a loop when a is b.
+ *   With `obstacles` (the other nodes), a straight edge that would cross one bends round
+ *   it instead (`detourBend`): a back edge in a layered drawing.
  */
 export function routeEdge(
   a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox,
-  o: { directed: boolean; arrowGap: number; parallel?: boolean; curve?: 'right' | 'down' },
+  o: { directed: boolean; arrowGap: number; parallel?: boolean; curve?: 'right' | 'down'; obstacles?: readonly Obstacle[] },
 ): EdgeRoute {
   if (a === b || (a.x === b.x && a.y === b.y)) return selfLoop(a, nodeA);
   if (o.curve === 'right') {
@@ -223,6 +288,8 @@ export function routeEdge(
   }
   const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
   const [ux, uy] = [(b.x - a.x) / len, (b.y - a.y) / len];
+  const detour = !o.parallel && o.obstacles ? detourBend(a, b, o.obstacles) : null;
+  if (detour) return laneRoute(a, b, nodeA, nodeB, detour, o.directed ? o.arrowGap : null);
   if (!o.parallel) {
     const trim = o.directed ? outlineDistance(nodeB, ux, uy) + o.arrowGap : 0;
     return {
@@ -231,8 +298,14 @@ export function routeEdge(
     };
   }
   // Bend to the right of the direction of travel, so a→b and b→a sit on opposite sides.
-  const [nx, ny] = [-uy, ux];
-  const c = { x: (a.x + b.x) / 2 + nx * PARALLEL_BEND * 2, y: (a.y + b.y) / 2 + ny * PARALLEL_BEND * 2 };
+  const c = { x: (a.x + b.x) / 2 - uy * PARALLEL_BEND * 2, y: (a.y + b.y) / 2 + ux * PARALLEL_BEND * 2 };
+  return bentRoute(a, b, nodeA, nodeB, c, o.directed ? o.arrowGap : null);
+}
+
+/** A parallel edge's curve a → (control c) → b, trimmed at both outlines (and `arrowGap` short of b when directed). */
+function bentRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, c: Pt, arrowGap: number | null): EdgeRoute {
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const [nx, ny] = [-(b.y - a.y) / len, (b.x - a.x) / len];
   const toward = (p: Pt, q: Pt, d: number) => {
     const l = Math.hypot(q.x - p.x, q.y - p.y) || 1;
     return { x: p.x + ((q.x - p.x) / l) * d, y: p.y + ((q.y - p.y) / l) * d };
@@ -242,13 +315,35 @@ export function routeEdge(
   const dirA = { x: (c.x - a.x), y: (c.y - a.y) };
   const la = Math.hypot(dirA.x, dirA.y) || 1;
   const start = toward(a, c, outlineDistance(nodeA, dirA.x / la, dirA.y / la));
-  const end = toward(b, c, outlineDistance(nodeB, dirB.x / lb, dirB.y / lb) + (o.directed ? o.arrowGap : 0));
+  const end = toward(b, c, outlineDistance(nodeB, dirB.x / lb, dirB.y / lb) + (arrowGap ?? 0));
   const f = (v: number) => Number(v.toFixed(2));
   return {
     kind: 'path',
     d: `M ${f(start.x)} ${f(start.y)} Q ${f(c.x)} ${f(c.y)} ${f(end.x)} ${f(end.y)}`,
     // The curve's midpoint is halfway between the chord's midpoint and the control point.
     label: { x: (a.x + b.x) / 4 + c.x / 2 + nx * LABEL_LIFT, y: (a.y + b.y) / 4 + c.y / 2 + ny * LABEL_LIFT },
+  };
+}
+
+/** A detour: the cubic a → b through `bend`, trimmed at both outlines along its end tangents. */
+function laneRoute(a: Pt, b: Pt, nodeA: NodeBox, nodeB: NodeBox, bend: Bend, arrowGap: number | null): EdgeRoute {
+  const trimmed = (p: Pt, toward: Pt, n: NodeBox, extra: number) => {
+    const l = Math.hypot(toward.x - p.x, toward.y - p.y) || 1;
+    const [ux, uy] = [(toward.x - p.x) / l, (toward.y - p.y) / l];
+    const d = outlineDistance(n, ux, uy) + extra;
+    return { x: p.x + ux * d, y: p.y + uy * d };
+  };
+  const start = trimmed(a, bend.c1, nodeA, 0);
+  const end = trimmed(b, bend.c2, nodeB, arrowGap ?? 0);
+  const mid = cubicAt(a, bend, b, 0.5);
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const [nx, ny] = [-(b.y - a.y) / len, (b.x - a.x) / len];
+  const side = Math.sign((bend.c1.x - a.x) * nx + (bend.c1.y - a.y) * ny) || 1;
+  const f = (v: number) => Number(v.toFixed(2));
+  return {
+    kind: 'path',
+    d: `M ${f(start.x)} ${f(start.y)} C ${f(bend.c1.x)} ${f(bend.c1.y)}, ${f(bend.c2.x)} ${f(bend.c2.y)}, ${f(end.x)} ${f(end.y)}`,
+    label: { x: mid.x + side * nx * LABEL_LIFT, y: mid.y + side * ny * LABEL_LIFT },
   };
 }
 

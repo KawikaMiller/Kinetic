@@ -651,7 +651,8 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 /* GraphView. Unmarked nodes take --c from nodeColor (falling back to a neutral line). */
 /* Natural size (one drawing unit = 1px), shrinking on narrow screens; a lesson stretches it with width: 100%. */
 .graph-view { display: block; max-width: 100%; height: auto; overflow: visible; }
-.graph-view.is-editable { touch-action: none; cursor: crosshair; }
+.graph-view.is-editable { touch-action: none; }
+.graph-view.can-add { cursor: crosshair; }
 .graph-edge { fill: none; stroke: var(--line-2); stroke-width: 2.5; transition: stroke 0.2s; }
 .graph-edge.is-marked { stroke: var(--c); }
 .graph-edge.is-dashed { stroke-dasharray: 6 5; }
