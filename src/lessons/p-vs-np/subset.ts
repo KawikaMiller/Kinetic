@@ -120,11 +120,15 @@ export const MAX_DIGITS = 9;
 /** Above this many cells the table is only counted, not built. */
 export const DP_RUN_LIMIT = 2_000_000;
 
-/** TRAP_N numbers with exactly `digits` digits each, and a target that is the sum of half of them. */
+/**
+ * TRAP_N numbers with exactly `digits` digits each, and a target that is the sum of half of
+ * them. Every digit count comes from the same fixed MAX_DIGITS-digit numbers, cut to their
+ * leading `digits` digits, so one more digit really is about 10× more value (and table).
+ */
 export function trapInstance(digits: number, seed = 7): Instance {
-  const rnd = mulberry32(seed + digits);
-  const lo = 10 ** (digits - 1);
-  const numbers = Array.from({ length: TRAP_N }, () => lo + Math.floor(rnd() * (9 * lo)));
+  const rnd = mulberry32(seed);
+  const full = Array.from({ length: TRAP_N }, () => 10 ** (MAX_DIGITS - 1) + Math.floor(rnd() * 9 * 10 ** (MAX_DIGITS - 1)));
+  const numbers = full.map((v) => Math.floor(v / 10 ** (MAX_DIGITS - digits)));
   const target = numbers.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
   return { numbers, target };
 }
