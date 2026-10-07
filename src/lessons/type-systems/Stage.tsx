@@ -339,7 +339,7 @@ function InferScene({ picker }: { picker: ReactNode }) {
                 <tbody>
                   {substRows.map(([v, t]) => (
                     <tr key={v}>
-                      <th scope="row">{v}</th>
+                      <th scope="row" className="keep-case">{v}</th>
                       <td>
                         <code>{show(t)}</code>
                       </td>

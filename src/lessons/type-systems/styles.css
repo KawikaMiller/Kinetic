@@ -25,4 +25,4 @@
 .tsy-constraints li.is-bad { background: color-mix(in srgb, var(--bad) 16%, transparent); border-left-color: var(--bad); }
 .tsy-why { color: var(--muted); font-size: 12px; }
 .tsy-subst { font-size: 13px; }
-.tsy-subst th { text-transform: none; font: 700 14px var(--mono); color: var(--violet); }
+.tsy-subst th { font: 700 14px var(--mono); color: var(--violet); }

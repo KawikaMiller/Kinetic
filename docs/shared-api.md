@@ -60,7 +60,7 @@ Loaded globally. Colour flows through `--c` / `--on-c`, set by a `.tone-*` class
 | `.tray` | dashed collector panel |
 | `.section-title` (+ `.is-regular`, `> .hint-inline`) | 11px uppercase label: 700 weight / .1em, or regular weight / .08em |
 | `.empty-note`, `.hint` (+ `.is-muted`, `.is-block`), `.focus-ring` | faint mono placeholder; 13px hint; 3px ring in `--c` |
-| `.keep-case` | `text-transform: none` inside an uppercased label (see the `Stat` note) |
+| `.keep-case` | `text-transform: none` inside an uppercased label (see the `Stat` note), on the label itself or on a `.data-table th` (Greek type variables) |
 | `.stage-pad` | flex column stage padding 20/22 |
 | `.canvas-wrap` | `position: relative; height: var(--h, 420px)`, canvas `display: block` |
 | `.data-table`, `.log-row` | shared table look; left-bordered tinted log row in `--c` |
