@@ -120,6 +120,7 @@ plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
+                      // past a million years a power of ten, never a raw float: '3.2 × 10²⁹² years'
 superscript(23)       // '²³' — an integer in superscript digits
 power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
 power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in threes, narrow no-break space (big-o); superscript takes it too

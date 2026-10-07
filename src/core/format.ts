@@ -32,8 +32,27 @@ const HUMAN_UNITS: [limit: number, size: number, one: string, many: string][] = 
   [Infinity, YEAR, 'year', 'years'],
 ];
 
-/** A long span of seconds in the biggest sensible unit: '1 s', '1.7 min', '14 hours', '1 day', '4.8 years'. */
+/** From this many years up, humanDuration writes the years as a power of ten. */
+const SCIENTIFIC_YEARS = 1e6;
+
+/** A huge number as 'm × 10ᵏ' with one decimal at most: 3.2e292 → '3.2 × 10²⁹²', 1e6 → '1 × 10⁶'. */
+function scientific(v: number): string {
+  let k = Math.floor(Math.log10(v));
+  let m = Number((v / 10 ** k).toFixed(1));
+  if (m >= 10) {
+    m /= 10;
+    k += 1;
+  }
+  return `${String(m)} × ${power(k, 10)}`;
+}
+
+/**
+ * A long span of seconds in the biggest sensible unit: '1 s', '1.7 min', '14 hours', '1 day',
+ * '4.8 years', and past a million years a power of ten: '3.2 × 10²⁹² years'.
+ */
 export function humanDuration(seconds: number): string {
+  if (!Number.isFinite(seconds)) return '∞ years';
+  if (seconds / YEAR >= SCIENTIFIC_YEARS) return `${scientific(seconds / YEAR)} years`;
   const [, size, one, many] = HUMAN_UNITS.find(([limit]) => seconds < limit)!;
   const text = sig(seconds / size);
   return `${text} ${text === '1' ? one : many}`;

@@ -138,7 +138,7 @@ describe('extrapolation', () => {
 
   it('writes huge spans as powers of ten', () => {
     expect(longTime(90)).toBe('1.5 min');
-    expect(longTime(extrapolateSeconds(RSA_2048_DIGITS, 1e7))).toMatch(/^about 10\S+ years$/);
+    expect(longTime(extrapolateSeconds(RSA_2048_DIGITS, 1e7))).toMatch(/^\d(\.\d)? × 10\S+ years$/);
   });
 
   it('makes primes with exactly the asked-for digits', () => {

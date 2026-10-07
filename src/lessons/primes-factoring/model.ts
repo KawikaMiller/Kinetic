@@ -1,7 +1,7 @@
 // Pure maths for primes-factoring: the sieve plan, a resumable trial-division run, the
 // time extrapolation the plot and captions read, and the three primality checks.
 import { isProbablePrime, modPow, sieve, trialFactor } from '../../core/numberTheory';
-import { humanDuration, latency, power } from '../../core/format';
+import { humanDuration, latency } from '../../core/format';
 import type { Rnd } from '../../core/random';
 
 // ── Sieve ────────────────────────────────────────────────────────────
@@ -130,14 +130,8 @@ export const stepsForDigits = (digits: number) => 10 ** (digits / 2) / 2;
 export const extrapolateSeconds = (digits: number, stepsPerSecond: number) =>
   10 ** (digits / 2 - Math.log10(2) - Math.log10(stepsPerSecond));
 
-const YEAR_S = 365.25 * 24 * 3600;
-/** A time span: ms below a second, and "about 10ⁿ years" once it's past a million years (humanDuration prints raw floats there). */
-export function longTime(seconds: number): string {
-  const years = seconds / YEAR_S;
-  if (seconds < 1) return latency(seconds * 1e9);
-  if (years < 1e6) return humanDuration(seconds);
-  return `about ${power(Math.floor(Math.log10(years)), 10)} years`;
-}
+/** A time span: latency units below a second ('340 ms'), humanDuration above ('1.5 min', '5.4 × 10²⁹³ years'). */
+export const longTime = (seconds: number) => (seconds < 1 ? latency(seconds * 1e9) : humanDuration(seconds));
 
 export const digitsOf = (n: bigint) => n.toString().length;
 
