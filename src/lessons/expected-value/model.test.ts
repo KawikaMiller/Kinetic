@@ -148,6 +148,11 @@ describe('the learner\'s table', () => {
     expect(parseTable('−3, 1\n\n4, 1').ok).toBe(true);
     const bad = parseTable('1, 1\nx, 2\n3, -1');
     expect(bad.ok ? [] : bad.errors.map((e) => e.line)).toEqual([2, 3]);
+    const messages = (t: string) => { const r = parseTable(t); return r.ok ? [] : r.errors.map((e) => e.message); };
+    expect(messages('2000000, x')).toEqual(['only plain numbers like 2.5 or -3']); // spelling first, as before
+    expect(messages('2000000, -1')).toEqual(['keep values between −1,000,000 and 1,000,000']);
+    expect(messages('1, -1')).toEqual(["a weight can't be negative"]);
+    expect(messages('1, 2000000')).toEqual(['keep weights at most 1,000,000']);
   });
 });
 

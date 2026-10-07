@@ -167,6 +167,14 @@ and markup are always refused; only plain decimal takes a minus. Used by bit-man
 own wording goes in `messages`. Fields that parse lists (adders-alu) or other bases (binary-hex's octal
 and `#`) keep their own parsers.
 
+```ts
+parseBoundedDecimal(text, { min: 0, max: 1e6, typographicMinus: true, messages: { tooSmall: () => "a weight can't be negative" } })
+```
+The decimal counterpart, same `FieldParse` result and message shape (`empty`, `invalid`, `tooSmall`,
+`tooBig`, `negative`). Plain decimals only (`2.5`, `-3`; not `.5`, `2.`, `1e3`, `+5`, `Infinity`, `NaN`,
+units or markup); out-of-range is refused, never clamped, compared on the parsed double. Used by
+expected-value's table cells.
+
 ### `fixtures/` — shared sample data
 ```ts
 import { ACCESS_LOG } from '../../core/fixtures/accessLog';  // 12-line Common Log Format, RFC 5737 IPs

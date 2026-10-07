@@ -1,6 +1,7 @@
 // Pure maths for expected-value: the random variables (exact pmf, E and Var), seeded
 // sampling, sample means of n, linearity with a dependent pair, the capped-retry load, and
 // the parser for the learner's own table.
+import { parseBoundedDecimal, type DecimalFieldOptions } from '../../core/parse';
 import { mulberry32, randInt, type Rnd } from '../../core/random';
 
 export type VarId = 'die' | 'two-dice' | 'opposite' | 'geometric' | 'retries' | 'custom';
@@ -197,7 +198,16 @@ export function exactFractions(pmf: Pmf): { mean: string; variance: string } | n
 
 export const MAX_ROWS = 12;
 export const MAX_ABS = 1e6;
-const NUMBER = /^[-−]?\d+(\.\d+)?$/;
+const VALUE_RANGE = 'keep values between −1,000,000 and 1,000,000';
+const PLAIN_ONLY = 'only plain numbers like 2.5 or -3';
+const VALUE_FIELD = {
+  min: -MAX_ABS, max: MAX_ABS, typographicMinus: true,
+  messages: { invalid: () => PLAIN_ONLY, tooSmall: () => VALUE_RANGE, tooBig: () => VALUE_RANGE },
+} satisfies DecimalFieldOptions;
+const WEIGHT_FIELD = {
+  min: 0, max: MAX_ABS, typographicMinus: true,
+  messages: { invalid: () => PLAIN_ONLY, tooSmall: () => "a weight can't be negative", tooBig: () => 'keep weights at most 1,000,000' },
+} satisfies DecimalFieldOptions;
 
 export interface RowError {
   line: number;
@@ -225,17 +235,13 @@ export function parseTable(text: string): TableParse {
       errors.push({ line: i + 1, message: 'needs two numbers: value, weight' });
       return;
     }
-    const [vText, wText] = fields;
-    if (!NUMBER.test(vText) || !NUMBER.test(wText)) {
-      errors.push({ line: i + 1, message: 'only plain numbers like 2.5 or -3' });
-      return;
-    }
-    const v = Number(vText.replace('−', '-'));
-    const w = Number(wText.replace('−', '-'));
-    if (Math.abs(v) > MAX_ABS) errors.push({ line: i + 1, message: 'keep values between −1,000,000 and 1,000,000' });
-    else if (w < 0) errors.push({ line: i + 1, message: "a weight can't be negative" });
-    else if (w > MAX_ABS) errors.push({ line: i + 1, message: 'keep weights at most 1,000,000' });
-    else pairs.push([v, w]);
+    const v = parseBoundedDecimal(fields[0], VALUE_FIELD);
+    const w = parseBoundedDecimal(fields[1], WEIGHT_FIELD);
+    // A spelling problem in either cell is reported ahead of a range problem, as before.
+    const failed = [v, w].flatMap((r) => (r.ok ? [] : [r.error]));
+    const error = failed.find((e) => e === PLAIN_ONLY) ?? failed[0];
+    if (error) errors.push({ line: i + 1, message: error });
+    else if (v.ok && w.ok) pairs.push([v.value, w.value]);
   });
   if (rows > MAX_ROWS) errors.unshift({ line: 0, message: `at most ${MAX_ROWS} rows (you have ${rows})` });
   if (errors.length) return { ok: false, errors };
