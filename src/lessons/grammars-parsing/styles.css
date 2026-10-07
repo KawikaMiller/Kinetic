@@ -1,0 +1,32 @@
+.gp { gap: 12px; }
+.gp-cols { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.gp-rules { flex: 0 1 240px; min-width: 0; }
+.gp-treebox { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.gp-tree { display: block; width: 100%; height: auto; margin: 0 auto; }
+.gp-tree .tree-node rect { fill: var(--cell); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.gp-tree .tree-node.gp-nt rect { stroke: var(--violet); fill: color-mix(in srgb, var(--violet) 16%, var(--cell)); }
+.gp-tree .tree-node.gp-t rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 16%, var(--cell)); }
+.gp-tree .tree-node.gp-eps rect { stroke: var(--dim); fill: none; stroke-dasharray: 3 3; }
+.gp-tree .tree-node.gp-eps text { fill: var(--muted); font-style: italic; }
+.gp-tree .tree-node.is-hot rect { fill: var(--hi); stroke: var(--hi); }
+.gp-tree .tree-node.is-hot text { fill: var(--on-hi); }
+.gp-tree .gp-badge rect { fill: var(--bg); stroke: var(--c, var(--muted)); stroke-width: 1.5; }
+.gp-tree .gp-badge text { font: 700 11px var(--mono); fill: var(--c, var(--text)); }
+.gp-form { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; font: 700 15px var(--mono); }
+.gp-sym { padding: 2px 7px; border-radius: 6px; border: 1.5px solid var(--line-2); }
+.gp-sym.is-nt { border-color: var(--violet); color: var(--violet); }
+.gp-sym.is-t { border-color: var(--info); color: var(--info); }
+.gp-sym.is-hot { background: var(--hi); border-color: var(--hi); color: var(--on-hi); }
+.gp-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.gp-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.gp-error { color: var(--bad); }
+.gp-grammar-field textarea { min-width: 240px; }
+.gp-trees { display: flex; flex-flow: row wrap; gap: 16px; }
+.gp-tree-card { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 12px; border: 2px solid var(--line); }
+.gp-tree-card.is-ok { border-color: var(--ok); }
+.gp-tree-card.is-other { border-color: var(--orange); }
+.gp-dfa { display: block; margin: 0 auto; }
+@media (max-width: 900px) {
+  .gp-tree-card { flex-basis: 100%; }
+}
+.gp-tree-wrap { margin: 0 auto; }
