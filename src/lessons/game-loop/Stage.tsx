@@ -9,7 +9,7 @@ import { useCanvas, useLoop } from '../../core/hooks';
 import { plural } from '../../core/format';
 import { createCooldown, percentile } from '../../core/sim';
 import { drawBox } from './draw';
-import { catchUpCaption, machinesCaption, MODE_LABEL, modeCaption, slowMotionCaption, spiralCaption, tunnelCaption } from './frames';
+import { capCaption, catchUpCaption, costCaption, machinesCaption, MODE_LABEL, modeCaption, slowMotionCaption, spiralCaption, tunnelCaption } from './frames';
 import { busyWait } from './lag';
 import {
   DT, MAX_FRAME, SAFETY_STEPS, SPIKE_EVERY, SPIRAL_FRAMES, START, TUNNEL_SPIKE, advanceFrame, createLoop, createMachine, machineFrame,
@@ -203,8 +203,8 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
         </>,
         <>
           <Slider label="Lag spike" value={spikeMs} min={0} max={SPIKE_MAX_MS} step={10} format={(v) => (v ? `${v} ms` : 'off')} onChange={setSpikeMs} />
-          <Slider label="Update cost" value={costMs} min={0} max={COST_MAX_MS} format={(v) => (v ? `${v} ms` : 'free')} onChange={setCostMs} />
-          <Toggle label="Max frame time" value={capFrame} onChange={setCapFrame} off="none" on={`${MAX_FRAME * 1000} ms`} />
+          <Slider label="Update cost" value={costMs} min={0} max={COST_MAX_MS} format={(v) => (v ? `${v} ms` : 'free')} onChange={(v) => { setCostMs(v); setCaption(costCaption(v), { quiet: true }); }} />
+          <Toggle label="Max frame time" value={capFrame} onChange={(c) => { setCapFrame(c); setCaption(capCaption(c)); }} off="none" on={`${MAX_FRAME * 1000} ms`} />
         </>,
         <>
           <ChipButton tone="info" size="md" onClick={tunnelPreset}>Tunnelling preset</ChipButton>
