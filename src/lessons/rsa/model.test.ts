@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { sieve, toyRsa } from '../../core/numberTheory';
 import { mulberry32 } from '../../core/random';
 import {
-  BITS_MAX, DEFAULT_PARAMS, decrypt, edited, encrypt, factorToy, fixedPoints, keygen, keygenError, parseMessage, parseParam,
+  BITS_MAX, DEFAULT_PARAMS, decrypt, edited, encrypt, factorToy, fixedPointCount, fixedPoints, keygen, keygenError, parseMessage, parseParam,
   repeatedCiphertexts, runItems, sign, trialSeconds, unsign, verify, type RsaKey,
 } from './model';
 
@@ -30,15 +30,39 @@ describe('keygen', () => {
     expect(toyRsa(61n, 53n, 17n)).toMatchObject({ ok: true, n: 3233n, phi: 3120n, d: 2753n });
   });
 
-  it('agrees with core toyRsa on validity and d, for every prime pair under 60 and e from 2 to 60', () => {
+  it('agrees with core toyRsa on validity and d wherever e < φ, for every prime pair under 60 and e from 2 to 60', () => {
+    // core toyRsa also refuses e ≥ φ (a textbook convention, not a requirement); compare only below φ.
     const small = PRIMES.filter((p) => p < 60n);
     for (const p of small) {
       for (const q of small) {
         for (let e = 2n; e <= 60n; e++) {
           const mine = keygen({ p, q, e });
+          if (p !== q && e >= (p - 1n) * (q - 1n)) continue;
           const ref = toyRsa(p, q, e);
           expect(mine.key !== null).toBe(ref.ok);
           if (ref.ok) expect(mine.key!.d).toBe(ref.d);
+        }
+      }
+    }
+  });
+
+  it('accepts e = 65537 > φ with the textbook primes, and it round-trips every message', () => {
+    const k = keyOf(61n, 53n, 65537n)!;
+    expect(k).not.toBeNull();
+    expect(65537n % 3120n).toBe(17n);
+    expect(k.d).toBe(2753n);
+    for (let m = 0n; m < k.n; m++) expect(decrypt(k, encrypt(k, m))).toBe(m);
+  });
+
+  it('accepts any e > 1 sharing no factor with φ, even above φ, and the key works', () => {
+    for (const p of [11n, 13n, 17n]) {
+      for (const q of [19n, 23n]) {
+        const phi = (p - 1n) * (q - 1n);
+        for (let e = phi + 1n; e < phi + 40n; e++) {
+          const k = keyOf(p, q, e);
+          const coprime = (function g(a: bigint, b: bigint): bigint { return b === 0n ? a : g(b, a % b); })(e, phi) === 1n;
+          expect(k !== null).toBe(coprime);
+          if (k) for (let m = 0n; m < k.n; m += 7n) expect(decrypt(k, encrypt(k, m))).toBe(m);
         }
       }
     }
@@ -53,8 +77,8 @@ describe('keygen', () => {
       [57n, 53n, 17n, 'p = 57 isn\'t prime'],
       [61n, 51n, 17n, 'q = 51 isn\'t prime'],
       [61n, 61n, 17n, 'p and q are both 61'],
-      [61n, 53n, 3120n, 'e = 3120 must be between 1 and φ = 3120'],
-      [61n, 53n, 65537n, 'e = 65537 must be between 1 and φ = 3120'],
+      [61n, 53n, 1n, 'e = 1 must be bigger than 1'],
+      [61n, 53n, 3120n, 'gcd(e, φ) = 3120'],
       [61n, 53n, 15n, 'gcd(e, φ) = 15'],
     ];
     const reasons = cases.map(([p, q, e, want]) => {
@@ -112,6 +136,16 @@ describe('encrypt and decrypt', () => {
     const items = runItems(k, parsed.value);
     expect(repeatedCiphertexts(items)).toEqual([[0, 3], [1, 2]]);
     expect(items.every((it) => it.back === it.m)).toBe(true);
+  });
+
+  it('counts the fixed points by formula, against brute force', () => {
+    const textbook = keyOf(61n, 53n, 17n)!;
+    expect(fixedPointCount(textbook)).toBe(25n);
+    for (const k of [textbook, ...seededKeys()]) {
+      let n = 0n;
+      for (let m = 0n; m < k.n; m++) if (encrypt(k, m) === m) n++;
+      expect(fixedPointCount(k)).toBe(n);
+    }
   });
 
   it('leaves 0, 1 and n − 1 unchanged on every key', () => {

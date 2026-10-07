@@ -44,6 +44,26 @@ describe('published test vectors', () => {
   });
 });
 
+describe('GCM against the McGrew–Viega GCM specification', () => {
+  it('test case 2: zero key, zero IV, one zero block', async () => {
+    const z16 = new Uint8Array(16);
+    const out = (await gcmEncrypt(z16, new Uint8Array(12), z16))!;
+    expect(toHex(out)).toBe('0388dace60b6a392f328c2b971b2fe78' + 'ab6e47d42cec13bdf53a67b21257bddf');
+  });
+
+  it('test case 3: four blocks, ciphertext and tag', async () => {
+    const out = (await gcmEncrypt(
+      hex('feffe9928665731c6d6a8f9467308308'),
+      hex('cafebabefacedbaddecaf888'),
+      hex('d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a721c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b391aafd255'),
+    ))!;
+    expect(toHex(out)).toBe(
+      '42831ec2217774244b7221b784d0d49ce3aa212f2c02a4e035c17e2329aca12e21d514b25466931c7d8f6a5aac84aa051ba30b396a0aac973d58e091473f5985'
+      + '4d5c2af327cd64a62cf35abd2ba6fab4',
+    );
+  });
+});
+
 describe('the ECB picture', () => {
   it('is a two-tone picture with plenty of repeated blocks', () => {
     const img = mascot();

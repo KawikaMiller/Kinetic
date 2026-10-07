@@ -74,8 +74,10 @@ export function keygen({ p, q, e }: RsaParams): Keygen {
   const phi = (p - 1n) * (q - 1n);
   steps.push({ id: 'n', ok: true, value: n });
   steps.push({ id: 'phi', ok: true, value: phi });
-  if (e <= 1n || e >= phi) {
-    steps.push({ id: 'e-range', ok: false, reason: `e = ${e} must be between 1 and φ = ${phi}, exclusive` });
+  // Only e > 1 and gcd(e, φ) = 1 are required. Textbooks often keep e below φ by convention, but a
+  // bigger e works the same as e mod φ, and real keys use e = 65537 (FIPS 186-5: 2¹⁶ < e < 2²⁵⁶).
+  if (e <= 1n) {
+    steps.push({ id: 'e-range', ok: false, reason: `e = ${e} must be bigger than 1` });
     return done();
   }
   steps.push({ id: 'e-range', ok: true });
@@ -123,8 +125,13 @@ export function repeatedCiphertexts(items: readonly Item[]): number[][] {
   return [...by.values()].filter((g) => g.length > 1);
 }
 
-/** Messages that encrypt to themselves under this key (0, 1 and n − 1 always do). */
+/** Messages that encrypt to themselves under every key: 0, 1 and n − 1. */
 export const fixedPoints = (k: RsaKey) => [0n, 1n, k.n - 1n].filter((m) => encrypt(k, m) === m);
+
+const gcdOf = (a: bigint, b: bigint): bigint => (b === 0n ? a : gcdOf(b, a % b));
+
+/** How many messages encrypt to themselves in all: (1 + gcd(e − 1, p − 1)) · (1 + gcd(e − 1, q − 1)). */
+export const fixedPointCount = (k: RsaKey) => (1n + gcdOf(k.e - 1n, k.p - 1n)) * (1n + gcdOf(k.e - 1n, k.q - 1n));
 
 export type MessageInput = { mode: 'number'; text: string } | { mode: 'word'; text: string };
 
@@ -170,7 +177,7 @@ export function parseParam(name: 'p' | 'q' | 'e', text: string): FieldParse<bigi
       empty: `Type a value for ${name}.`,
       negative: `${name} must be a positive whole number.`,
       tooSmall: () => `${name} must be at least 2.`,
-      tooBig: () => (name === 'e' ? `e must be below φ, so keep it under ${max.toLocaleString('en-US')}.` : `Toy primes only here: keep ${name} at ${PRIME_MAX} or less.`),
+      tooBig: () => (name === 'e' ? `Keep e at ${max.toLocaleString('en-US')} or less in this demo.` : `Toy primes only here: keep ${name} at ${PRIME_MAX} or less.`),
     },
   });
 }
@@ -191,6 +198,17 @@ export const bitLength = (n: bigint) => n.toString(2).length;
  */
 export const trialDivisionsLog2 = (bits: number) => bits / 2 - 1;
 export const trialSeconds = (bits: number) => 2 ** trialDivisionsLog2(bits) / DIVISIONS_PER_SECOND;
+
+/**
+ * Public factoring records of RSA challenge numbers, all with the general number field sieve:
+ * RSA-155 (512 bits) in 1999, RSA-768 in 2009, RSA-250 (829 bits) in 2020.
+ */
+export const FACTORING_RECORDS = [
+  { bits: 512, name: 'RSA-155', year: 1999 },
+  { bits: 768, name: 'RSA-768', year: 2009 },
+  { bits: 829, name: 'RSA-250', year: 2020 },
+] as const;
+export const GNFS_RECORD_BITS = Math.max(...FACTORING_RECORDS.map((r) => r.bits));
 
 export interface FactorRun {
   factors: bigint[];

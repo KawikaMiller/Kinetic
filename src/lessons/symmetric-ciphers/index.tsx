@@ -8,20 +8,20 @@ const lesson: LessonModule = {
     what: 'A block cipher turns 16 bytes into 16 scrambled bytes under a key. A mode of operation stretches that to whole messages. ECB encrypts every block alone, so equal blocks stay equal and patterns show through. CBC mixes each block with the previous ciphertext and needs a fresh, unpredictable IV. CTR turns AES into a keystream that is XORed onto the data, so its nonce must never repeat. None of those three detects tampering; authenticated modes like GCM add a tag and refuse anything that was changed.',
     analogy: 'ECB is a code book: the same word always becomes the same code word, so a reader learns which words repeat. A good mode is a code book that changes after every word.',
     useCases: [
-      'TLS 1.3 traffic: AES-GCM or ChaCha20-Poly1305, nothing else (`tls-handshake`)',
+      'TLS 1.3 traffic: almost always AES-GCM or ChaCha20-Poly1305 (`tls-handshake`)',
       'Encrypting a database field or a file at rest with an authenticated mode',
       'Code review: spotting ECB, a constant IV or an unauthenticated mode in a pull request',
       'Choosing what goes in the nonce so it never repeats under one key',
     ],
     why: 'Libraries still let you pick ECB or a fixed IV, and both have shipped in real products. Knowing that encryption hides content but not patterns, and doesn\'t stop tampering on its own, is what keeps you on AEAD modes and fresh nonces. It builds on `hashing-encryption`, which shows AES encrypting and decrypting, and `bit-manipulation` for XOR.',
-    watch: 'Picture: the plaintext picture is sky blue (background) and amber (figure); each ciphertext picture shows every byte as a shade of violet, brighter for higher values. Hovering or picking a block outlines every block with the same ciphertext in red; a block that is unique gets a yellow outline. The top stats count repeated blocks per mode, red when there are any. Chaining: plaintext bytes are tinted blue and ciphertext bytes violet; the picked byte has a yellow ring, and flipped plaintext bytes, changed ciphertext bytes and the diagram\'s lit boxes are yellow. In the diagram, plaintext boxes have blue edges, ciphertext boxes violet, counters dashed grey, and ⊕ marks an XOR. IV reuse: the messages are blue text, ciphertexts violet, and red rings mark leaks: identical blocks, or 00 bytes where the messages match. Tamper: the message is blue with the flipped position ringed yellow; characters that changed on decrypt are red and their card has a red edge; GCM\'s refusal is green, and so is the advice chip.',
+    watch: 'Picture: the plaintext picture is sky blue (background) and amber (figure); each ciphertext picture shows every byte as a shade of violet, brighter for higher values. Hovering or picking a block outlines every block with the same ciphertext in red; a block that is unique gets a yellow outline. The top stats count repeated blocks per mode, red when there are any. Chaining: plaintext bytes are tinted blue and ciphertext bytes violet; the picked byte has a yellow ring, and flipped plaintext bytes, changed ciphertext bytes and the diagram\'s lit boxes are yellow. In the diagram, plaintext boxes have blue edges, ciphertext boxes violet, counter blocks (ctr, ctr+1, …) dashed grey, and ⊕ marks an XOR. IV reuse: the messages are blue text, ciphertexts violet, and red rings mark leaks: identical blocks, or 00 bytes where the messages match. Tamper: the message is blue with the flipped position ringed yellow; characters that changed on decrypt are red and their card has a red edge; GCM\'s refusal is green, and so is the advice chip.',
   },
   tryThis: [
     'In Picture, compare the four ciphertexts: only ECB keeps the robot\'s outline. Hover the background to light every identical block.',
     'In Chaining, click a byte in block 1 and flip a bit: CBC changes all four blocks, CTR changes one byte.',
     'Switch Chaining to ECB and look at blocks 1 and 2: equal plaintext, equal ciphertext.',
     'In IV reuse, pick CTR with the nonce reused: C1 ⊕ C2 is 00 wherever the two messages match.',
-    'In Tamper, flip a bit of the amount: CTR turns 100 into 101 silently, CBC garbles a block, GCM refuses.',
+    'In Tamper, flip a bit of the amount: CTR turns 100 into 101 silently, CBC garbles a block and flips exactly that bit in the next one, GCM refuses.',
   ],
   keyIdeas: [
     'ECB encrypts equal blocks to equal ciphertext, so patterns survive: never use it.',
