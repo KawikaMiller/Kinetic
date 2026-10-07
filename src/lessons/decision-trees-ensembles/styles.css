@@ -1,0 +1,40 @@
+.dte-row { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.dte-plot { width: 100%; max-width: 440px; flex: 0 1 440px; }
+.dte-plot .plot-points { pointer-events: none; }
+.dte-catcher { fill: transparent; cursor: crosshair; }
+.dte-miss { fill: none; stroke: var(--bad); stroke-width: 2; }
+.dte-side { flex: 1 1 340px; min-width: 0; max-width: 620px; display: flex; flex-direction: column; gap: 10px; }
+.dte-treebox { flex-basis: 100%; min-width: 0; }
+.dte-foot { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+.dte-foot .hint { text-align: center; }
+
+.dte-tree-wrap { margin: 0 auto; }
+.dte-tree { display: block; width: 100%; height: auto; margin: 0 auto; }
+.dte-node .dte-node-box { fill: color-mix(in srgb, var(--c) 14%, var(--cell)); stroke: var(--c); stroke-width: 1.6; }
+.dte-node.is-focus .dte-node-box { stroke-width: 3; }
+.dte-node text { text-anchor: middle; fill: var(--text); pointer-events: none; }
+.dte-node .dte-node-q { font: 700 11.5px var(--mono); }
+.dte-node .dte-node-n, .dte-node .dte-node-i { font: 500 11px var(--mono); fill: var(--muted); }
+
+.dte-candidates .section-title { display: block; }
+.dte-stop { margin: 6px 0; font-size: 13px; color: var(--muted); }
+.dte-scroll { max-height: 210px; overflow-y: auto; margin-top: 6px; }
+.dte-scroll th { position: sticky; top: 0; background: var(--panel); }
+.dte-scroll td { white-space: nowrap; }
+.dte-best td { background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.dte-tag { color: var(--hi); font-weight: 700; }
+
+.dte-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 8px; }
+.dte-thumb { display: block; width: 100%; height: auto; }
+.dte-thumb-leaf { fill: color-mix(in srgb, var(--c) 30%, transparent); stroke: none; }
+.dte-thumb-frame { fill: none; stroke: var(--dim); stroke-width: 1.5; }
+
+.dte-errors .plot2d { width: 100%; max-width: 420px; margin: 4px auto 0; }
+.dte-errors .legend { justify-content: center; }
+.dte-confusion { max-width: 100%; }
+
+@media (max-width: 600px) {
+  .dte-scroll .data-table { font-size: 11.5px; }
+  .dte-scroll td, .dte-scroll th { padding: 5px 5px; }
+  .dte-thumbs { grid-template-columns: repeat(3, 1fr); }
+}
