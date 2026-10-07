@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Heapsort, and merging many sorted lists (k-way merge)",
     ],
     why: "Whenever you repeatedly need \"the most important thing next\" from changing data, a heap beats sorting over and over. It shows up in schedulers, pathfinding and stream processing, and it's a classic interview tool for top-k and median problems. It also shows how a tree can live inside an array.",
-    watch: "The top row is the array that actually stores the heap; the tree below is the same data drawn as a tree, and every item moves in both at once. Yellow items are being compared, violet ones just swapped, blue is a newly inserted or moved-in item, and green means settled or the current minimum. The formula chip shows the index maths for parents and children. Extracted items stack up on the right in the order they'd run.",
+    watch: "The top row is the array that actually stores the heap; the tree below is the same data drawn as a tree, and every item moves in both at once. Yellow items are being compared, violet ones just swapped, blue is a newly inserted or moved-in item, and green means settled or the current minimum (the Min stat turns blue while a moved-in item is still sinking from the root). The formula chip shows the index maths for parents and children. Extracted items stack up on the right in the order they'd run.",
   },
   tryThis: [
     'Insert a random task and follow it up the tree: one comparison with its parent per level.',
@@ -43,9 +43,20 @@ const lesson: LessonModule = {
     },
     {
       q: 'Which is a heap bad at?',
-      options: ['Finding the minimum', 'Removing the minimum', 'Inserting', 'Finding an arbitrary value'],
+      options: ['Finding the smallest value', 'Removing the smallest value', 'Adding a new value', 'Finding any given value'],
       answer: 3,
       why: "Heap order only relates parents to children, so searching for an arbitrary value may mean checking everything: O(n).",
+    },
+    {
+      q: "Is a min-heap's array sorted from smallest to largest?",
+      options: [
+        'Yes: the array is always sorted ascending',
+        'No: only each parent is ≤ its children',
+        'Yes, once you have run heapify on it',
+        'Only the bottom row is kept in order',
+      ],
+      answer: 1,
+      why: 'The starting heap here is [2, 5, 3, 8, …]: 5 comes before 3. Siblings and cousins can be in any order; only parent-to-child pairs are ordered.',
     },
   ],
 };
