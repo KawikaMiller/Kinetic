@@ -139,7 +139,7 @@ export function pushFrames(n: number, batch: number, growth: Growth): AmFrame[] 
   rec.set({ copied: 0, writing: null });
   rec.close(
     <>
-      {plural(n, 'push', 'pushes')}: {rec.get().total} writes in all, an average of <b>{avg(rec.get().total, n)}</b> per push. {bankVerdict(steps, growth)}
+      {plural(n, 'push', 'pushes')}: {plural(rec.get().total, 'write')} in all, an average of <b>{avg(rec.get().total, n)}</b> per push. {bankVerdict(steps, growth)}
     </>,
     2,
   );

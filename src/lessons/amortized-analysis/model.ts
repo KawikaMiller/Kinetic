@@ -127,7 +127,8 @@ export function coinsNeeded(n: number, growth: Growth): number {
 /** The first step whose balance dips below zero, or null. */
 export const firstOverdraft = (steps: readonly Step[]) => steps.find((s) => s.balance < 0) ?? null;
 
-export const lowestBalance = (steps: readonly Step[]) => (steps.length ? Math.min(0, ...steps.map((s) => s.balance)) : 0);
+/** The lowest balance after any step: the real minimum, never clamped (0 for no steps). */
+export const lowestBalance = (steps: readonly Step[]) => (steps.length ? Math.min(...steps.map((s) => s.balance)) : 0);
 
 /** The pop-shrink trap: fill to 8, then alternate push and pop. */
 export const TRAP_FILL = 8;
