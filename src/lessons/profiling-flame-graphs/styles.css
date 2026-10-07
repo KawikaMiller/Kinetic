@@ -1,0 +1,12 @@
+.pf { gap: 16px; }
+.pf .section-title { display: block; margin-bottom: 6px; }
+.pf-flame { display: block; width: 100%; height: auto; }
+.pf-box { fill: color-mix(in srgb, var(--c) 62%, var(--cell)); stroke: var(--c); stroke-width: 1; transition: fill 0.2s; }
+.pf-box.is-root { fill: color-mix(in srgb, var(--muted) 18%, var(--cell)); }
+.pf-box.tone-hi { fill: var(--hi); }
+.pf-box.is-latest { stroke: var(--info); stroke-width: 3; }
+.pf-label { font: 600 12px var(--mono); fill: var(--text); pointer-events: none; }
+.pf-label.is-selected { fill: var(--on-hi); }
+.pf-hit { cursor: pointer; }
+.pf-hit:focus-visible { outline: none; }
+.pf-hit:focus-visible .pf-box { stroke: var(--text); stroke-width: 2.5; }
