@@ -20,7 +20,7 @@ export function thresholdCaption(examples: readonly Example[], t: number, k: num
   }
   return <>Threshold {thresholdText(t)}: {fmt(flagged)} predicted positive. {c.tp} of {c.tp + c.fn} real positives caught (recall{' '}
     <span className="hl">{metric(m.recall)}</span>), {fmt(c.fp)} false alarms{per}, so precision is <span className="hl">{metric(m.precision)}</span>.
-    {' '}Raising the threshold can only lower recall; precision usually rises, but not always.</>;
+    {' '}Raising the threshold can never raise recall; precision usually rises, but not always.</>;
 }
 
 /** The accuracy paradox at the chosen class mix. */
@@ -29,7 +29,7 @@ export function imbalanceCaption(examples: readonly Example[], t: number, k: num
   const never = classificationMetrics(weighted(examples, NONE, k));
   const now = classificationMetrics(weighted(examples, t, k));
   return <>{pct(rate, 0)} positives: "always say negative" scores <span className="hl bad">{metric(never.accuracy)}</span> accuracy with recall 0.
-    {' '}The ROC curve doesn&apos;t move, because TPR and FPR are each measured inside one class, but precision at this threshold is now{' '}
+    {' '}The ROC curve doesn&apos;t move (same model, same scores per class: here the same sample is reweighted), because TPR and FPR are each measured inside one class, but precision at this threshold is now{' '}
     <span className="hl">{metric(now.precision)}</span>.</>;
 }
 
