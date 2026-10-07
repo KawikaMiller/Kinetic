@@ -53,6 +53,15 @@ describe('numbers quoted in the lesson come from the model', () => {
   it('the 16 × 16 tip: 94% against 0%', () => {
     expect(lesson.tryThis[0]).toContain(`a ${pct(rate('wide', 'rows'))} hit rate against ${pct(rate('wide', 'cols'))}`);
   });
+  it('the stride tip: column-wise, the first column misses are compulsory and every later miss is a conflict', () => {
+    const s = sceneFor('stride', 'cols');
+    const acc = simulateCache(sceneAddresses(s), CACHE);
+    acc.forEach((a, i) => {
+      const firstColumn = s.visits[i][1] === 0;
+      if (!a.hit) expect(a.kind).toBe(firstColumn ? 'compulsory' : 'conflict');
+    });
+    expect(lesson.tryThis[2]).toContain('after the first column, every miss is a conflict miss');
+  });
   it('quiz: 16 misses row-wise over a[16][16]', () => {
     const t = tally(simulateCache(sceneAddresses(sceneFor('wide', 'rows')), CACHE));
     const q = lesson.quiz[4];

@@ -237,4 +237,4 @@ export const sceneFor = (layout: LayoutId, order: Order): Scene => (layout === '
 export const sceneAddresses = (s: Scene) => s.visits.map(([r, c]) => s.addr(r, c));
 
 export const HONESTY =
-  'Toy cache: real L1 data caches are 32-48 KB with 8-12 ways, and hardware prefetchers hide much of the column-wise penalty for simple strides. Latencies are illustrative.';
+  'Toy cache: real L1 data caches are typically 32-48 KB with 8-12 ways on x86 desktops (some, such as Apple performance cores, are bigger), and hardware prefetchers hide much of the column-wise penalty for simple strides. Latencies are illustrative.';
