@@ -639,6 +639,7 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .cellgrid.is-clickable .cellgrid-cell:where(:hover) rect { stroke: var(--faint); }
 .cellgrid-cell:focus-visible { outline: none; }
 .cellgrid-cell:focus-visible rect { stroke: var(--text); stroke-width: 2.5; }
+.cellgrid-overlay { pointer-events: none; }
 .cellgrid-ring { fill: none; stroke: var(--c); stroke-width: 2; pointer-events: none; }
 .cellgrid-hitarea { fill: transparent; cursor: pointer; }
 .cellgrid-hitarea:focus-visible { outline: none; }

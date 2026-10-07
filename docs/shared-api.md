@@ -776,15 +776,18 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 
 ### `core/grid.ts`, `CellGrid.tsx` — error-detection-correction, primes-factoring, modular-arithmetic, birthday-paradox, conditional-bayes, cpu-caches, cpu-pipelining, shuffle-reservoir, virtual-memory-paging, file-systems, storage-devices, edit-distance, deployment-strategies, feature-flags
 ```tsx
-<CellGrid rows={10} cols={10} size="md"                      // xs 10px · sm 22px · md 34px cells
+<CellGrid rows={10} cols={10} size="md"                      // xs 10px · sm 22px · md 34px cells, or { cell: 40, gap?, font? }
           cell={(r, c) => ({ text: n(r, c), tone: 'ok', fill: 'tint', intensity: 0.3 })}   // fill: solid | tint | outline | none
           rowLabels={…} colLabels={…} highlight={[{ r, c, tone: 'info' }]}
           onCellClick={(r, c) => pick(r, c)} cellAriaLabel={(r, c) => `${n(r, c)}, crossed out`} cellTitle={…}
-          rowSuffix={{ width: 100, render: (r) => text }} ariaLabel="Numbers 1 to 100" />
+          rowSuffix={{ width: 100, render: (r) => text }} ariaLabel="Numbers 1 to 100"
+          overlay={({ center }) => <line {...from(center(i, j - 1))} {...to(center(i, j))} markerEnd={…} />} />  // DP arrows
 ```
 - Natural size (one unit = 1px), shrinking to fit narrow screens. `fill: 'none'` mutes the cell's text (a crossed-out number).
 - With `onCellClick` it's one tab stop: arrows move (no wrap), Home/End go to the row ends, Ctrl+Home/End to the corners, PageUp/Down five rows, Enter/Space press (`gridKeyTarget` in `core/grid`, the WAI-ARIA grid pattern). Reuse `gridKeyTarget` for any HTML grid of buttons, as graph-representations' adjacency matrix does.
-- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API; text isn't drawn) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element.
+- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element. Cell text (strings and numbers) is painted too whenever it lands at `MIN_TEXT_PX` (8px) or more on screen (the SVG's rendered scale is measured); below that it's left out, so a lesson whose canvas grid can shrink that far must say so on screen. modular-arithmetic's mod 22–24 tables now show their numbers (its WideRegion keeps them ≥ 9px), so its "too many to number" note is gone. `cellTitle` tooltips are SVG-mode only.
+- `size` takes a custom `{ cell, gap?, font? }` beyond the presets (gap defaults to ~9% of the cell, font to ~38%, none under 16px cells). Pure rules (`resolveSize`, `textReadable`, `canvasFill`, `canvasInk`) live in `components/cellGridPaint.ts`, tested.
+- `overlay(geometry)` draws SVG over the cells and rings, in the grid's coordinates (`at`, `center`, `cell`, `gap`, `width`, `height`), with no pointer events: dependency arrows, a path through the grid. Not migrated yet: dynamic-programming's LCS table (an HTML grid of 40px cells with its own SVG arrow overlay) can now be expressed as `size={{ cell: 40 }}` + `overlay`, but moving it from HTML to SVG isn't pixel-identical, so it's left for that lesson's owner.
 
 ### `core/bytes.ts`, `ByteGrid.tsx` — endianness, grpc-protobuf, symmetric-ciphers, macs-hmac, packet-capture-debugging, file-systems
 ```tsx
