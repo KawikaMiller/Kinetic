@@ -1,0 +1,20 @@
+.ics { gap: 14px; }
+.ics-machine { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.ics-card { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ics-cpu { border-color: color-mix(in srgb, var(--hi) 35%, var(--line)); }
+.ics-card-meta { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.ics-card-meta b { color: var(--text); }
+.ics-space-now { color: var(--hi); }
+.ics-space-now b { color: var(--hi); }
+.ics-empty { margin: 0; padding: 12px 0; }
+.ics-regs { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--cell); }
+.ics-regs.is-flight { border-color: var(--info); background: color-mix(in srgb, var(--info) 14%, var(--cell)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--info) 30%, transparent); }
+.ics-regs-owner { font: 700 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+.ics-reg { display: flex; justify-content: space-between; gap: 10px; font: 500 13px var(--mono); }
+.ics-reg-name { color: var(--muted); }
+.ics-threads { display: flex; flex-wrap: wrap; gap: 8px; }
+.ics-log { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+@media (max-width: 900px) {
+  .ics-machine { flex-direction: column; }
+  .ics-card { flex: none; }
+}

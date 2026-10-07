@@ -1,0 +1,34 @@
+.sk { gap: 12px; }
+.sk-wall { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; }
+.sk-band { stroke-width: 1.5; }
+.sk-band.is-user { fill: color-mix(in srgb, var(--info) 8%, transparent); stroke: color-mix(in srgb, var(--info) 45%, transparent); }
+.sk-band.is-kernel { fill: color-mix(in srgb, var(--violet) 10%, transparent); stroke: color-mix(in srgb, var(--violet) 50%, transparent); }
+.sk-band-label { font: 700 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; }
+.sk-band-label.is-user { fill: var(--info); }
+.sk-band-label.is-kernel { fill: var(--violet); }
+.sk-switch-title { font: 600 11px var(--font); fill: var(--muted); text-anchor: middle; }
+.sk-switch-track { fill: var(--cell); stroke: var(--line-2); stroke-width: 1.5; }
+.sk-switch-knob.is-user { fill: var(--info); }
+.sk-switch-knob.is-kernel { fill: var(--violet); }
+.sk-switch-text { font: 700 12px var(--mono); fill: var(--on-info); text-anchor: middle; }
+.sk-code { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.sk-code > * { flex: 1 1 260px; min-width: 0; }
+.sk-regs { flex: 0 1 200px; display: flex; flex-direction: column; gap: 4px; }
+.sk-reg { display: flex; justify-content: space-between; gap: 10px; font: 500 13px var(--mono); }
+.sk-reg-name { color: var(--muted); }
+.sk-reg-note { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.sk-batch td { white-space: nowrap; }
+.sk-muted { color: var(--muted); font-size: 11.5px; }
+.sk-cost { min-width: 160px; }
+.sk-cost .meter { margin-top: 4px; }
+.sk-pool, .sk-bin { display: flex; flex-direction: column; gap: 8px; }
+.sk-chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; align-items: center; }
+.sk-bins { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.sk-bin { flex: 1 1 220px; min-width: 0; }
+.sk-bin-put { align-self: flex-start; }
+.sk-notes { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; display: flex; flex-direction: column; gap: 4px; }
+.sk-notes .is-ok { color: var(--text); }
+.sk-notes .is-ok::marker { color: var(--ok); }
+.sk-notes .is-bad { color: var(--text); }
+.sk-notes .is-bad::marker { color: var(--bad); }
+.sk-source { color: var(--muted); }
