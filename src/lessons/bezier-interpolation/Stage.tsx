@@ -194,7 +194,7 @@ function EasingScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="at half the time" value={`t = ${f2(half.t)}`} sub={half.method === 'newton' ? "Newton's method" : 'bisection fallback'} />
           <Stat label="progress then" value={`${Math.round(ease(written, 0.5) * 100)}%`} color="var(--info)" />
-          <Stat label="time between even t steps" value={`${f2(gaps.min)}–${f2(gaps.max)}`} sub={gaps.max - gaps.min < EVEN_TOLERANCE ? 'even here: x = t' : 'uneven: x ≠ t'} />
+          <Stat label="time between even t steps" value={`${f2(gaps.min)}–${f2(gaps.max)}`} sub={gaps.max - gaps.min < EVEN_TOLERANCE ? 'even here: x ≈ t' : 'uneven: x ≠ t'} />
           <Stat label="largest ball gap" value={race && race.started && race.frames ? `${race.maxGap.toFixed(2)} px` : NA} color={race && race.frames && race.maxGap < 1 ? 'var(--ok)' : undefined} />
         </Stats>
       }

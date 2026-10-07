@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A cubic Bézier curve is lerps of lerps: blend four control points by t, three times over, and the last blend is the point on the curve. CSS easing is the same curve, read with x as time.',
-    what: 'De Casteljau\'s construction lerps each pair of neighbouring control points by t, then lerps those results, then once more, ending on one point. Written out, that point is a weighted average of the four control points with the Bernstein weights (1 − t)³, 3t(1 − t)², 3t²(1 − t) and t³, which are never negative and add up to 1, so the curve stays inside the control points\' convex hull. It starts at P0 heading for P1 and ends at P3 arriving from P2. CSS\'s cubic-bezier(x1, y1, x2, y2) fixes P0 = (0, 0) and P3 = (1, 1) and reads the curve as progress (y) against time (x). t is not the time: to ease, the browser first solves x(t) = the elapsed fraction for t, then reads y(t). The control points move like any other points (`matrices-transformations`), and a curve on screen is usually flattened into short lines before it is filled (`rasterization`).',
+    what: 'De Casteljau\'s construction lerps each pair of neighbouring control points by t, then lerps those results, then once more, ending on one point. Written out, that point is a weighted average of the four control points with the Bernstein weights (1 − t)³, 3t(1 − t)², 3t²(1 − t) and t³, which are never negative and add up to 1, so the curve stays inside the control points\' convex hull. It starts at P0 heading for P1 and ends at P3 arriving from P2 (the end tangents are 3·(P1 − P0) and 3·(P3 − P2), so this needs P1 ≠ P0 and P2 ≠ P3). CSS\'s cubic-bezier(x1, y1, x2, y2) fixes P0 = (0, 0) and P3 = (1, 1) and reads the curve as progress (y) against time (x). t is not the time: to ease, the browser first solves x(t) = the elapsed fraction for t, then reads y(t). The control points move like any other points (`matrices-transformations`), and a curve on screen is usually flattened into short lines before it is filled (`rasterization`).',
     analogy: 'String art: a bead slides along each side of the control polygon, all the same fraction t of the way. Strings between neighbouring beads carry beads of their own, and the last bead, riding the last string, traces the curve.',
     useCases: [
       'CSS transitions and animations: ease, ease-in-out and every cubic-bezier() you tune in DevTools',
@@ -25,7 +25,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'A cubic Bézier is lerps of lerps of lerps; written out, it is a weighted average of four points with weights that add up to 1.',
-    'The curve starts at P0 heading for P1 and ends at P3 coming from P2; P1 and P2 steer it.',
+    'The curve starts at P0 heading for P1 and ends at P3 coming from P2 (when they differ from the ends); P1 and P2 steer it.',
     'In CSS easing, x is time and t is only a parameter: the browser solves x(t) = time, then reads y(t).',
     'Lerp angles along the shortest arc, or 350° → 10° spins the long way round.',
   ],
