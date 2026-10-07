@@ -1,0 +1,25 @@
+.ii { display: flex; flex-direction: column; gap: 14px; }
+.ii-dominoes { display: block; width: 100%; height: auto; }
+.ii-floor { stroke: var(--line-2); stroke-width: 2; }
+.ii-domino { fill: color-mix(in srgb, var(--c) 22%, var(--cell)); stroke: var(--c); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.ii-domino.tone-hi, .ii-domino.tone-bad { fill: var(--c); }
+.ii-domino-label { font: 600 11px var(--mono); fill: var(--muted); }
+.ii-gap { font: 700 13px var(--mono); fill: var(--bad); }
+.ii-square { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; }
+.ii-note { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.ii-square .ii-note { flex: 1 1 220px; }
+.ii-horses { display: flex; flex-wrap: wrap; gap: 12px; }
+.ii-horse-box { flex: 1 1 260px; display: flex; flex-direction: column; gap: 10px; border-color: color-mix(in srgb, var(--c) 55%, var(--line)); }
+.ii-horse-row { display: flex; gap: 8px; }
+.ii-horse {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 700 13px var(--mono);
+  border: 2px solid var(--line-2); color: var(--muted);
+}
+.ii-horse.is-shared { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.ii-invariant { margin: 0; font-size: 13.5px; line-height: 1.5; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--c) 10%, transparent); box-shadow: inset 3px 0 0 var(--c); }
+.ii-invariant span { font: 700 13px var(--mono); color: var(--c); }
+.ii-strip { margin-top: 30px; }
+.ii-tree { display: block; width: 100%; height: auto; }
+.ii-tree .tree-label, .ii-tree text { font-size: 13px; }
