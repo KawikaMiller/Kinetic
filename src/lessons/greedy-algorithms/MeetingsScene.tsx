@@ -41,8 +41,9 @@ export function MeetingsScene({ picker, presets, meetings: ms, rule, onRule }: {
   const wrong = (id: string) => f.done && !inBest.has(id);
 
   const bars: GanttBar[] = [
-    ...ms.map((m) => ({ id: m.id, lane: m.id, start: m.start, end: m.end, tone: STATUS_TONE[f.status[m.id]], label: m.id, ring: wrong(m.id) && f.status[m.id] === 'booked' ? ('bad' as const) : undefined })),
-    ...ms.filter((m) => f.booked.includes(m.id)).map((m) => ({ id: `${BOOKED}-${m.id}`, lane: BOOKED, start: m.start, end: m.end, tone: 'ok' as const, label: m.id, ring: wrong(m.id) ? ('bad' as const) : undefined })),
+    ...ms.map((m) => ({ id: m.id, motionId: m.id, lane: m.id, start: m.start, end: m.end, tone: STATUS_TONE[f.status[m.id]], label: m.id, ring: wrong(m.id) && f.status[m.id] === 'booked' ? ('bad' as const) : undefined })),
+    // Same motionId as the meeting's own bar, so a booking glides down from its row into this lane.
+    ...ms.filter((m) => f.booked.includes(m.id)).map((m) => ({ id: `${BOOKED}-${m.id}`, motionId: m.id, lane: BOOKED, start: m.start, end: m.end, tone: 'ok' as const, label: m.id, ring: wrong(m.id) ? ('bad' as const) : undefined })),
     ...best.best.map((m) => ({ id: `${BEST}-${m.id}`, lane: BEST, start: m.start, end: m.end, tone: 'violet' as const, label: m.id })),
   ];
   const lanes = [

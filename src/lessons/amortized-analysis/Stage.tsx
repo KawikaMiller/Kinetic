@@ -51,6 +51,7 @@ function Block({ values, label, state }: { values: readonly (number | null)[]; l
             values={r.map((v) => v ?? '')}
             fontSize={11}
             cellState={(i) => state(k * ROW + i)}
+            cellClass={(i) => (state(k * ROW + i) === 'info' ? 'am-filled' : '')}
             cellTitle={(i) => `slot ${k * ROW + i}${r[i] === null ? ', empty' : `, element ${r[i]}`}`}
           />
         </div>

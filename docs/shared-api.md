@@ -699,6 +699,7 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 - `active` lifts in `--hi` (checking now), `info` / `violet` lift the same way in those colours (a second and third
   pointer: cycle-detection's slow and fast cells match their S and F markers), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
 - Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
+- `cellClass(i)` adds a lesson's own class to cell i on top of its state (amortized-analysis keeps filled slots flat with `am-filled` instead of overriding `.is-info` inside its block).
 - Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
 - Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
 - Range labels sit about 28px above the strip, so leave that room above it.
@@ -786,6 +787,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - `tone` on a frame accents an `idle` or `waiting` frame in that colour, to match the lesson's own colour for it (tree-traversals: violet, like its "on the stack" nodes). Other states keep their colours.
 - `frames` is **top first**. `anchor="bottom"` (default) stacks from the bottom up like plates; `anchor="top"` lists from the top like the DevTools pane. `showDepth` numbers frames by depth (0 = outermost).
 - Frames push in from above and pop off to the right (`layout` + `SPRING.snappy`); `alarm` shakes them and turns the box red.
+- `enterFrom="bottom"` brings new frames up from below; a frame's own `exit: 'right' | 'top' | 'bottom'` picks how it leaves (default right). monotonic-stack's deque joins at the back (bottom) and drops its front out of the top, its back out of the bottom.
 - `onSelect` makes frames buttons (focus ring included); `selected` highlights one with a ring in
   `selectedTone` (default `hi`; debugger-tools uses `info` so selection doesn't read as "running").
 - recursion's stack runs on it, pixel-identical. Its "↓ value" return chip is lesson-local, passed in `detail`.
@@ -1002,6 +1004,7 @@ spreadLabels([{ x, w }], gap)               // px shifts that keep centred label
 - `labelMinPx`: a bar drawn narrower than this drops its label (it stays the tooltip and accessible name) instead of showing a clipped one.
 - Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
 - The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
+- `motionId` on a bar: bars sharing one are the same thing in different places. A bar element that wasn't drawn last render starts where its motionId was last drawn and glides there (a 450ms Web Animations FLIP; skipped under prefers-reduced-motion, like the CSS transitions). greedy-algorithms' booked lane: each booking slides down from its meeting's row.
 - ci-pipelines renders its wall-clock chart through it (it adds only `.ci-gantt .gantt { margin-top: 8px }`). The migration is pixel-identical: its smoke frames plus a driven matrix of 8 option combos × 5 frames × 1440/390, 80/80 unchanged.
 
 ### `core/sequenceLayout.ts`, `SequenceDiagram.tsx` — dhcp, ethernet-arp, dns-resolution, diffie-hellman, packet-capture-debugging, http-caching, idempotency-keys, webhooks, mfa-passkeys, csrf-cookies, sockets-api, realtime-transports
@@ -1208,6 +1211,7 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
 - **Multi-state `CodePanel` lines:** requested in Phase 2 and declined; lessons that need more line states keep a small local override.
 - **`CompareRows`:** not built.
+- **A shared value-scaled `BarStrip`:** not built. monotonic-stack's bar chart is SVG with answer arrows, a sliding window, rectangle overlays and an index row tied to its own geometry; ArrayStrip is HTML cells. A BarStrip on ArrayStrip's states wouldn't replace it without re-drawing the lesson, and amortized-analysis doesn't need bars. Revisit if a second lesson wants plain value bars.
 - **web-request's waterfall on `GanttLanes`:** it's one stacked bar whose segments grow with
   motion springs, plus a legend, not lanes on a time axis. Moving it would swap flex for absolute
   positioning and the spring for a linear transition, so it couldn't be pixel-identical. It stays local.
