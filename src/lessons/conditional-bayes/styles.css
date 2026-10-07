@@ -21,3 +21,4 @@
 .cbz-matrix .section-title { display: block; }
 .cbz-exact { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
 .cbz-exact b { color: var(--text); }
+.cbz-exact b.cbz-post { color: var(--hi); }
