@@ -315,7 +315,11 @@ Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape
 ### Radio groups (`useRadioGroup.ts`, `core/radio.ts`)
 `Segmented` (so `Toggle` and `useScenePicker`) and the player's speed buttons follow the WAI-ARIA radio
 pattern: one tab stop, ← → ↑ ↓ / Home / End move the selection and focus with it, `aria-checked` on every
-option. A hand-rolled single-choice row should use the hook rather than plain buttons:
+option. `useScenePicker` also keeps focus across a scene switch: each scene renders its own copy
+of the picker, so switching unmounts the focused button, and the hook puts focus back on the new picker's
+chosen option (only when the switch was made while something had focus and focus then fell to `<body>`,
+so a scene change never steals focus on load). The same goes for a `setScene` handoff button. Lessons
+need no workaround; `Segmented` takes a `ref` to its radiogroup for this. A hand-rolled single-choice row should use the hook rather than plain buttons:
 ```tsx
 const radio = useRadioGroup(options.length, checkedIndex, (i) => select(options[i]));
 options.map((o, i) => <button key={o.id} {...radio.itemProps(i)} onClick={() => select(o)}>{o.label}</button>)
