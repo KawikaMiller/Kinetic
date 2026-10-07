@@ -1,0 +1,19 @@
+.ev-stage { gap: 14px; }
+.ev-plots { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
+.ev-plots .plot2d { max-width: 100%; height: auto; }
+.ev-note { display: block; text-align: center; }
+
+.ev-panels { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 14px 20px; }
+.ev-exact { flex: 1 1 340px; max-width: 520px; min-width: 0; }
+.ev-retry, .ev-table { flex: 1 1 300px; max-width: 460px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ev-retry p { margin: 0; font: 500 13.5px var(--font); color: var(--text); }
+.ev-retry .is-orange { color: var(--orange); }
+.ev-retry .is-bad { color: var(--bad); }
+.ev-errors { font: 500 12.5px var(--font); color: var(--bad); }
+.ev-errors ul { margin: 0; padding-left: 18px; }
+.ev-errors p { margin: 4px 0 0; color: var(--muted); }
+.ev-linearity { flex: 1 1 300px; max-width: 460px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ev-pair b { font: 600 12.5px var(--font); color: var(--text); }
+.ev-pair p { margin: 2px 0 0; font: 500 12.5px var(--mono); color: var(--muted); }
+.ev-pair .is-ok { color: var(--ok); font-weight: 700; }
+.ev-pair .is-bad { color: var(--bad); font-weight: 700; }
