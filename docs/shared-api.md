@@ -134,6 +134,10 @@ pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
                       // past a million years a power of ten, never a raw float: '3.2 × 10²⁹² years' (no-break spaces round ×)
+                      // a positive span under a microsecond is 'under a microsecond' (exactly 0 stays '0 s')
+humanDurationLog10(608)  // 'about 10⁶⁰¹ years' — takes log₁₀ seconds, for spans past a double (diffie-hellman, rsa);
+                      // humanDuration while it fits (below 10¹⁵ s), 'under a microsecond' below 10⁻⁶
+decimal(-0.25, 2)     // '−0.25' — rounded to dp places, trailing zeros dropped, real minus sign, -0 → '0' (the B8 readouts)
 superscript(23)       // '²³' — an integer in superscript digits
 power(10)             // '2¹⁰'; power(-4, 10) → '10⁻⁴' (BitStrip exponent labels, logs-exponentials)
 power(k, 10, { grouped: true })   // '10³⁰¹ ⁰²⁹ ⁹⁷²': digits in threes, narrow no-break space (big-o); superscript takes it too

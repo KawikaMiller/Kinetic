@@ -1,16 +1,13 @@
 import type { ReactNode } from 'react';
+import { decimal } from '../../core/format';
 import type { Frame } from '../../core/types';
 import {
   GD_TOL, accuracyAt, biggestResidual, sameAsClosedForm, linearFit, separates, stillGrowing, weightNorm,
   type Dims, type Labeled, type LineDescent, type LogisticRun, type Pt,
 } from './model';
 
-/** A number as the readouts show it: rounded, trailing zeros dropped, a real minus sign. */
-export function num(v: number, dp = 3): string {
-  const r = Number(v.toFixed(dp));
-  const s = String(Math.abs(r));
-  return r < 0 ? `−${s}` : s;
-}
+/** A number as the readouts show it (core/format decimal), to 3 places unless told otherwise. */
+export const num = (v: number, dp = 3) => decimal(v, dp);
 
 /** Four significant figures with a real minus sign, so big slopes don't round into each other. */
 export function sigFig(v: number): string {

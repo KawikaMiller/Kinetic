@@ -1,13 +1,10 @@
 import type { ReactNode } from 'react';
+import { decimal } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { PRESETS, collapse, columns, det2, isSingular, movesOrigin, sameMatrix, thenApply, type M2, type M3, type P2, type PresetId } from './model';
 
-/** A number as the readouts show it: rounded, trailing zeros dropped, a real minus sign. */
-export function num(v: number, dp = 3): string {
-  const r = Number(v.toFixed(dp));
-  const s = String(Math.abs(r));
-  return r < 0 ? `−${s}` : s;
-}
+/** A number as the readouts show it (core/format decimal), to 3 places unless told otherwise. */
+export const num = (v: number, dp = 3) => decimal(v, dp);
 
 /** A determinant or area factor in significant figures, so 0.0001 never reads as "0". */
 export function sig(v: number): string {

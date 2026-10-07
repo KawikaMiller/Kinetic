@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { modPow } from '../../core/numberTheory';
 import { ecdhAgree } from './ecdh';
-import { vastDuration } from './time';
+import { humanDurationLog10 } from '../../core/format';
 import {
   DEFAULTS, EVE_SECRETS, bruteForce, bruteLog10Seconds, exchange, mix, gStrength, orderOf, paint, parseParams, sameMix,
 } from './model';
@@ -101,9 +101,9 @@ describe('Eve\'s brute force', () => {
   });
 
   it('says "under a microsecond" for toy primes instead of 0 s', () => {
-    expect(vastDuration(bruteLog10Seconds(2))).toBe('under a microsecond');
-    expect(vastDuration(bruteLog10Seconds(12))).toBe('17 min');
-    expect(vastDuration(bruteLog10Seconds(617))).toMatch(/^about 10.* years$/);
+    expect(humanDurationLog10(bruteLog10Seconds(2))).toBe('under a microsecond');
+    expect(humanDurationLog10(bruteLog10Seconds(12))).toBe('17 min');
+    expect(humanDurationLog10(bruteLog10Seconds(617))).toMatch(/^about 10.* years$/);
   });
 
   it('projects a 617-digit p in log space, without overflowing', () => {

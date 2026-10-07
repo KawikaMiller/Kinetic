@@ -8,8 +8,6 @@ import {
 
 export const group = (v: bigint | number) => v.toLocaleString('en-US');
 
-/** A duration in words, with tiny ones as "under a microsecond" rather than "0 s". */
-export const timeText = (seconds: number) => (seconds < 1e-6 ? 'under a microsecond' : humanDuration(seconds));
 /** An exponent written as superscript digits: 65¹⁷. */
 export const pow = (base: bigint | number, exp: bigint) => <>{group(base)}{superscript(Number(exp))}</>;
 const lock = '🔒';
@@ -145,7 +143,7 @@ export function factorCaption(k: RsaKey, run: { factors: bigint[]; steps: number
 }
 
 export function sizeCaption(bits: number): ReactNode {
-  const trial = <>Trial division alone would need about {power(trialDivisionsLog2(bits))} divisions, {timeText(trialSeconds(bits))} at a
+  const trial = <>Trial division alone would need about {power(trialDivisionsLog2(bits))} divisions, {humanDuration(trialSeconds(bits))} at a
     billion a second (extrapolated).</>;
   if (bits <= GNFS_RECORD_BITS) {
     return <>{trial} But that's the slow way: numbers of {bits} bits or less <span className="hl bad">have actually been factored</span>{' '}
