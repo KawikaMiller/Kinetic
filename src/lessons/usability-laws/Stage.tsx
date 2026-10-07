@@ -82,8 +82,7 @@ function FittsScene({ picker }: { picker: ReactNode }) {
   const [missFlash, setMissFlash] = useState(0);
   const t0 = useRef(0);
   const lastPointer = useRef<string | null>(null);
-  // Button takes no ref (Phase 2 request), so focus goes through a display: contents wrapper.
-  const startBtn = useRef<HTMLSpanElement>(null);
+  const startBtn = useRef<HTMLButtonElement>(null);
   const dotRef = useRef<HTMLButtonElement>(null);
   const targetRef = useRef<HTMLButtonElement>(null);
   const setCaption = useSetCaption();
@@ -106,7 +105,7 @@ function FittsScene({ picker }: { picker: ReactNode }) {
   useEffect(() => {
     if (phase === 'armed') dotRef.current?.focus();
     else if (phase === 'moving') targetRef.current?.focus();
-    else if (phase === 'done') startBtn.current?.querySelector('button')?.focus();
+    else if (phase === 'done') startBtn.current?.focus();
   }, [phase, trials.length]);
 
   useEffect(() => {
@@ -169,7 +168,7 @@ function FittsScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <span ref={startBtn} className="ul-btn-wrap"><Button variant="primary" onClick={start}>{phase === 'idle' ? 'Start' : 'Start over'}</Button></span>
+          <Button ref={startBtn} variant="primary" onClick={start}>{phase === 'idle' ? 'Start' : 'Start over'}</Button>
           <Button onClick={() => { setSeed(seed + 1); setTrials([]); setPhase('idle'); }}>New schedule</Button>
         </>,
       ]}
@@ -254,7 +253,7 @@ function HickScene({ picker }: { picker: ReactNode }) {
   const t0 = useRef(0);
   const lastPointer = useRef<string | null>(null);
   const items = useRef<(HTMLButtonElement | null)[]>([]);
-  const nextBtn = useRef<HTMLSpanElement>(null);
+  const nextBtn = useRef<HTMLButtonElement>(null);
   const picked = useRef(false);
   const setCaption = useSetCaption();
   const schedule = useMemo(() => hickSchedule(seed, alphabetical), [seed, alphabetical]);
@@ -271,7 +270,7 @@ function HickScene({ picker }: { picker: ReactNode }) {
     if (open) items.current[0]?.focus();
     else if (picked.current) {
       picked.current = false;
-      nextBtn.current?.querySelector('button')?.focus();
+      nextBtn.current?.focus();
     }
   }, [open]);
 
@@ -326,7 +325,7 @@ function HickScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <span ref={nextBtn} className="ul-btn-wrap"><Button variant="primary" onClick={next} disabled={open || !round}>{round ? `Next round (${round.n} items)` : 'All rounds done'}</Button></span>
+          <Button ref={nextBtn} variant="primary" onClick={next} disabled={open || !round}>{round ? `Next round (${round.n} items)` : 'All rounds done'}</Button>
           <Toggle label="Menu order" value={alphabetical} onChange={(v) => reset({ alphabetical: v })} off="Shuffled" on="Alphabetical" />
           <Button onClick={() => reset({ seed: seed + 1 })}>Start over</Button>
         </>,
