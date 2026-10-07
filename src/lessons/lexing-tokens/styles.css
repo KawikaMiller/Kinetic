@@ -1,0 +1,20 @@
+.lx { gap: 16px; }
+.lx-main { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.lx-side { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.lx-code code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 18px; line-height: 1.7; }
+.lx-ch { border-radius: 3px; transition: background-color 0.15s, color 0.15s; }
+.lx-ch.is-scan { background: var(--hi); color: var(--on-hi); }
+.lx-ch.is-past { background: var(--orange); color: var(--on-orange); }
+.lx-ch.is-dropped { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--dim); }
+.lx-ch.is-error { color: var(--bad); background: color-mix(in srgb, var(--bad) 18%, transparent); text-decoration: underline wavy var(--bad); }
+.lx-ch.is-ahead { color: var(--muted); }
+.lx-mark { display: inline-block; width: 3px; height: 1.2em; margin: 0 1px; vertical-align: text-bottom; background: var(--ok); border-radius: 2px; }
+.lx-tray { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 48px; }
+.lx-tray .section-title { flex-basis: 100%; }
+.lx-token { white-space: pre; }
+.lx-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.lx-graph { margin: 0 auto; }
+.lx-graph .graph-node-label { font-size: 13px; }
+.lx-error { color: var(--bad); }
+.lx-stuck { color: var(--orange); }
+.lx-field input { max-width: 100%; }
