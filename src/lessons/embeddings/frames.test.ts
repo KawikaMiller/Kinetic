@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { analogyCaption, compareCaption, mapAgreement, num, pairCaption, queryCaption } from './frames';
+import { analogyCaption, compareCaption, mapAgreement, num, ordinal, pairCaption, queryCaption } from './frames';
 import { ANALOGIES, MAP, MAP_POINTS, VOCAB, analogy, lookup, misleadingPair, neighbours, phraseVector, project } from './model';
 
 describe('queryCaption', () => {
@@ -33,6 +33,20 @@ describe('queryCaption', () => {
     const near = VOCAB.map((v, i) => ({ w: v.word, d: Math.hypot(MAP_POINTS[i][0] - x, MAP_POINTS[i][1] - y) }))
       .filter((q) => q.w !== 'truck').sort((a, b) => a.d - b.d).slice(0, 5).map((q) => q.w);
     expect(mapAgreement(w.v, top, ['truck'])).toBe(top.filter((n) => near.includes(n.word.word)).length);
+  });
+});
+
+describe('caption grammar', () => {
+  it('ordinals are right, teens included', () => {
+    expect([1, 2, 3, 4, 5, 11, 12, 13, 21, 22, 23, 101].map(ordinal)).toEqual(['1st', '2nd', '3rd', '4th', '5th', '11th', '12th', '13th', '21st', '22nd', '23rd', '101st']);
+  });
+
+  it('"1 of those 5 is", any other count "are", for every word', () => {
+    for (const w of VOCAB) {
+      const top = neighbours(w.v, 5, [w.word]);
+      const k = mapAgreement(w.v, top, [w.word]);
+      expect(text(queryCaption(w.word, phraseVector(w.word), top))).toContain(`${k} of those 5 ${k === 1 ? 'is' : 'are'} also among`);
+    }
   });
 });
 
