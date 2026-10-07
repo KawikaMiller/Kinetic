@@ -1,0 +1,17 @@
+.vm { gap: 12px; }
+.vm-scene { display: block; width: 100%; height: auto; margin: 0 auto; }
+.vm-title { font: 600 12px var(--font); fill: var(--muted); }
+.vm-swap rect { fill: color-mix(in srgb, var(--dim) 25%, var(--cell)); stroke: var(--faint); stroke-dasharray: 4 3; }
+.vm-swap-title { font: 600 11px var(--font); fill: var(--muted); }
+.vm-swap-list { font: 500 11px var(--mono); fill: var(--text); }
+.vm-panel { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.vm-split { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.vm-table-box { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.vm-result { margin: 0; font: 500 13.5px var(--mono); color: var(--muted); }
+.vm-result.is-ok { color: var(--ok); }
+.vm-result.is-bad { color: var(--bad); }
+.vm-table td, .vm-table th { padding: 4px 8px; }
+.vm-table tr.is-current td { background: color-mix(in srgb, var(--hi) 16%, transparent); }
+.vm-table tr.is-unmapped td { color: var(--muted); }
+.vm-dirty { color: var(--hi); font-weight: 700; }
+.vm-error { flex-basis: 100%; min-height: 1.2em; font-size: 13px; color: var(--bad); }
