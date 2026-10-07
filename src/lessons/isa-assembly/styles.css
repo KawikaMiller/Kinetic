@@ -11,12 +11,12 @@
 .isa-reg { display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; border-radius: 6px; font: 500 13px var(--mono); transition: background 0.25s; }
 .isa-reg-name { color: var(--muted); }
 .isa-reg-value { color: var(--text); min-width: 0; overflow-wrap: anywhere; text-align: right; }
-.isa-reg.is-changed { background: color-mix(in srgb, var(--info) 18%, transparent); }
-.isa-reg.is-changed .isa-reg-value { color: var(--info); }
+.isa-reg.is-changed { background: color-mix(in srgb, var(--hi) 16%, transparent); }
+.isa-reg.is-changed .isa-reg-value { color: var(--hi); }
 .isa-flags { display: flex; flex-wrap: wrap; gap: 6px; }
 .isa-flag { padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line-2); font: 500 12.5px var(--mono); color: var(--muted); }
 .isa-flag b { color: var(--text); }
-.isa-flag.is-written { border-color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
+.isa-flag.is-written { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, transparent); }
 .isa-flag.is-read { border-color: var(--violet); background: color-mix(in srgb, var(--violet) 22%, transparent); color: var(--text); }
 .isa-maps { display: flex; flex-wrap: wrap; gap: 12px; }
 .isa-map { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }

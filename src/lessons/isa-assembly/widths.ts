@@ -2,7 +2,7 @@ import { assemble, hex, startCpu, step, type Cpu } from './x86';
 
 /** The register-widths demo: one register, a few writes of different widths. */
 export const START_VALUE = 0x1122334455667788n;
-export const WIDTH_WRITES = ['mov eax, -1', 'mov ax, -1', 'mov al, -1', 'mov rax, 0x1122334455667788'] as const;
+export const WIDTH_WRITES = ['mov eax, -1', 'mov ax, -1', 'mov al, -1', 'movabs rax, 0x1122334455667788'] as const;
 export type WidthWrite = (typeof WIDTH_WRITES)[number];
 
 /** Nested views of rax, widest first: name and how many low bytes it covers. */
@@ -33,7 +33,7 @@ export function applyWrite(cpu: Cpu, asm: WidthWrite): { cpu: Cpu; result: Width
   const r = step(program, { ...cpu, rip: 0 });
   const before = cpu.regs.rax;
   const after = r.cpu.regs.rax;
-  const wrote = asm.startsWith('mov rax') ? 8 : asm.startsWith('mov eax') ? 4 : asm.startsWith('mov ax') ? 2 : 1;
+  const wrote = asm.startsWith('movabs rax') ? 8 : asm.startsWith('mov eax') ? 4 : asm.startsWith('mov ax') ? 2 : 1;
   const zeroExtends = wrote === 4;
   const change: ByteChange[] = Array.from({ length: 8 }, (_, i) => {
     const fromLow = 7 - i;

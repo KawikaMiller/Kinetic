@@ -39,7 +39,7 @@ export function stepSay(run: RunResult, k: number, v: Variant): ReactNode {
   const op = ins.op;
   const dst = d ? opText(d) : '';
   const res = d ? value(after, d, v) : '';
-  const changed = (o: Operand | undefined) => (o?.kind === 'reg' ? <span className="hl info">{o.ref.reg}</span> : null);
+  const changed = (o: Operand | undefined) => (o?.kind === 'reg' ? <span className="hl">{o.ref.reg}</span> : null);
 
   if (op === 'mov') {
     const zeroExt = d.kind === 'reg' && d.ref.bits === 32;
@@ -72,7 +72,7 @@ export function stepSay(run: RunResult, k: number, v: Variant): ReactNode {
     return (
       <>
         {code}: work out {what} ({value(before, d, v)} {op === 'cmp' ? '−' : 'AND'} {value(before, s, v)}), throw the answer away, and keep only the flags:{' '}
-        <span className="hl info">{flagList(after, ['ZF', 'SF', 'CF', 'OF'])}</span>.
+        <span className="hl">{flagList(after, ['ZF', 'SF', 'CF', 'OF'])}</span>.
       </>
     );
   }

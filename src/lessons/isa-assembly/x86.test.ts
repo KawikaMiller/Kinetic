@@ -109,6 +109,9 @@ describe('register widths', () => {
     expect(run1('add eax, ebx', { rax: full, rbx: 1n }).regs.rax).toBe(0x55667789n);
     expect(run1('mov r8d, 7', { r8: full }).regs.r8).toBe(7n);
   });
+  it('movabs loads a full 64-bit immediate', () => {
+    expect(run1('movabs rax, 0x1122334455667788').regs.rax).toBe(full);
+  });
   it('writing an 8- or 16-bit register leaves the rest alone', () => {
     expect(run1('mov al, -1', { rax: full }).regs.rax).toBe(0x11223344556677ffn);
     expect(run1('mov ax, -1', { rax: full }).regs.rax).toBe(0x112233445566ffffn);

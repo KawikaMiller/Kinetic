@@ -70,6 +70,18 @@ const REAL: { prog: ProgId; v: Variant; values: bigint[]; rax: bigint }[] = [
   { prog: 'area', v: { cmov: false, unsignedTypes: false }, values: [0n, -3n, 5n], rax: -15n },
 ];
 
+describe('what the lesson says about the for line', () => {
+  it('line 3 of sum maps to instructions before the loop and inside it, none after', () => {
+    const idx = (label: string) => SUM.asm.findIndex((a) => a.label === label);
+    const loopStart = idx('.L3');
+    const loopEnd = SUM.asm.findIndex((a) => a.asm === 'jne .L3');
+    const lines3 = SUM.asm.map((a, i) => ({ a, i })).filter(({ a }) => a.cLine === 3).map(({ i }) => i);
+    expect(lines3.some((i) => i < loopStart)).toBe(true);
+    expect(lines3.some((i) => i > loopStart && i <= loopEnd)).toBe(true);
+    expect(lines3.some((i) => i > loopEnd)).toBe(false);
+  });
+});
+
 describe('running the listings', () => {
   it('matches what the compiled code returned on real hardware', () => {
     for (const r of REAL) {
