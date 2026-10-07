@@ -1000,7 +1000,7 @@ import { MemoryMap, MemoryMapGroup, memCellRect, memPort, memRegionRect, memoryM
   pointers={[{ addr: 0x7fe0, label: 'rsp', tone: 'hi' }]}
   unit={8}                 // bytes per row: 1, 8, 4096 (pages)…
   direction="down"         // down: high addresses on top (default); up: low on top
-  highlight={[0x7ff0]}
+  highlight={[0x7ff0]} highlightTone="orange"   // or a cell's own { addr, value, ring: 'bad' }
   overlay={(L) => <RefArrow from={memPort(L, 0x600000, 'right')!} to={memPort(L, 0x603000, 'right')!} dangling bend={-40} />}
 />
 // inside a lesson's own scene, beside VarSlots and HeapObjects:
@@ -1010,6 +1010,8 @@ const L = memoryMapLayout(props);   // same props → same rows
 ```
 - Rows are drawn only where they matter: region ends, cells, pointer targets, and every row of a region up to 12 rows long. A longer empty run collapses into one "⋮" gap row, so a process image from 0x400000 to 0x7ffd… fits. More than 400 rows is refused: use a bigger `unit`.
 - Columns are sized to their content (address digits, the longest value, the longest region label at its nesting depth); `width` stretches the cell column. A 24px link gutter between the cells and the brackets is where arrows between two cells bow (a negative `bend` heads right).
+- Unused columns collapse: omit `pointers` and there is no pointer column (pass `[]` to keep it, so the width holds steady while a pointer comes and goes); with no regions there are no brackets and no link gutter (virtual-memory-paging's RAM column: the scene went from 964 to 834 wide and fits a 768 tablet).
+- Rings: `highlight` rings in --hi, or `highlightTone`; a cell's own `ring: Tone` rings it in that tone regardless.
 - A region inside another gets `depth` 1 and its bracket steps inward. A cell is tinted by its innermost region; a cell's own `tone` is stronger. `freed` is hatched with struck values, and `guard` has a heavy border.
 - Ports: `memPort(L, addr, 'left' | 'right', at)`, `memCellRect(L, addr, at)` (a RefArrow `to`), `memRegionRect(L, i, at)`, `rowAt(L, addr)`. `memPort`, `memCellRect` and `rowAt` return null for an address off the map.
 - memory-safety-bugs is payload-free: the overflow demo is a name too long for its buffer, nothing more.

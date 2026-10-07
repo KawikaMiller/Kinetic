@@ -801,7 +801,7 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .memmap-row.is-guard .memmap-cell { stroke: var(--c); stroke-width: 2; }
 .memmap-row.is-freed .memmap-cell { fill: var(--cell); stroke-dasharray: 4 3; }
 .memmap-hatch { stroke: var(--faint); stroke-width: 1.5; opacity: 0.6; }
-.memmap-row.is-highlight .memmap-cell { stroke: var(--hi); stroke-width: 2.5; }
+.memmap-row.is-highlight .memmap-cell { stroke: var(--ring, var(--hi)); stroke-width: 2.5; }
 .memmap-value { font: 600 11.5px var(--mono); fill: var(--text); text-anchor: middle; }
 .memmap-row.is-freed .memmap-value { fill: var(--muted); text-decoration: line-through; }
 .memmap-gap rect { fill: none; stroke: var(--line-2); stroke-dasharray: 3 4; }

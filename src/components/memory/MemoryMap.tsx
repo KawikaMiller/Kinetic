@@ -1,4 +1,4 @@
-import { useId, useMemo, type ReactNode } from 'react';
+import { useId, useMemo, type CSSProperties, type ReactNode } from 'react';
 import type { Pt } from '../../core/geometry';
 import type { Tone } from '../../core/tone';
 import { formatAddr, memoryMapLayout, MEMMAP, type MemCell, type MemLayout, type MemPointer, type MemRegion } from './mapLayout';
@@ -13,6 +13,8 @@ export interface MemoryMapProps {
   direction?: 'down' | 'up';
   /** Addresses to ring (the byte being written, the slot `rsp` just moved to). */
   highlight?: readonly number[];
+  /** The ring's tone (default hi); a cell's own `ring` overrides it. */
+  highlightTone?: Tone;
   width?: number;
   addrDigits?: number;
 }
@@ -20,7 +22,9 @@ export interface MemoryMapProps {
 /**
  * An address-ordered memory column: addresses on the left, one cell per `unit` bytes, region
  * brackets on the right (live, freed = hatched, guard = a canary or guard page), and pointer
- * tags (sp, fp, pc) beside their address. Long empty runs collapse to a "⋮" row.
+ * tags (sp, fp, pc) beside their address. Long empty runs collapse to a "⋮" row. Columns a
+ * map doesn't use collapse: omit `pointers` (not []) and there's no pointer column; with no
+ * regions there are no brackets. Rings are --hi unless `highlightTone` or a cell's `ring` says.
  *
  * Standalone it draws its own <svg>; `overlay` draws on top in map coordinates, e.g.
  * `overlay={(L) => <RefArrow from={memPort(L, fp, 'right')!} to={memCellRect(L, saved)!} />}`.
@@ -78,7 +82,7 @@ function innermost(regions: readonly MemRegion[], layout: MemLayout, addr: numbe
   return best;
 }
 
-function MapBody({ layout: L, regions, cells = [], pointers = [], highlight = [] }: MemoryMapProps & { layout: MemLayout }) {
+function MapBody({ layout: L, regions, cells = [], pointers = [], highlight = [], highlightTone }: MemoryMapProps & { layout: MemLayout }) {
   const hatch = `memmap-hatch-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const cellOf = (addr: number, end: number) => cells.find((c) => c.addr >= addr && c.addr < end);
   const { cols } = L;
@@ -105,11 +109,13 @@ function MapBody({ layout: L, regions, cells = [], pointers = [], highlight = []
         const region = innermost(regions, L, row.addr, row.end);
         const tone: Tone | undefined = cell?.tone ?? region?.tone;
         const variant = region?.variant ?? 'live';
-        const ringed = highlight.some((a) => a >= row.addr && a < row.end);
+        const ringTone = cell?.ring ?? (highlight.some((a) => a >= row.addr && a < row.end) ? highlightTone : undefined);
+        const ringed = !!cell?.ring || highlight.some((a) => a >= row.addr && a < row.end);
         return (
           <g
             key={row.addr}
             className={`memmap-row ${tone ? `tone-${tone}` : ''} ${cell?.tone ? 'is-own' : ''} is-${variant} ${ringed ? 'is-highlight' : ''}`}
+            style={ringTone ? ({ '--ring': `var(--${ringTone})` } as CSSProperties) : undefined}
           >
             <title>{`${formatAddr(row.addr, L.addrDigits)}${cell ? `: ${cell.value}` : ''}${region ? ` (${region.label}${variant === 'live' ? '' : `, ${variant}`})` : ''}`}</title>
             <text className="memmap-addr" x={cols.addr + cols.addrW - 8} y={row.y + row.h / 2 + 4}>
