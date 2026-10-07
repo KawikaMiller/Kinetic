@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { latency, pct, plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { access, FAULT_NS, FRAMES, LAYOUT, RAM_NS, startMachine, thrashAccesses, usefulShare, WORKING_SET, type Access, type AccessStep, type Machine, type Policy } from './model';
+import { access, FRAMES, LAYOUT, MAJOR_FAULT_NS, MINOR_FAULT_NS, RAM_NS, startMachine, thrashAccesses, usefulShare, WORKING_SET, type Access, type AccessStep, type Machine, type Policy } from './model';
 
 export interface VmFrame extends Frame {
   m: Machine;
@@ -56,7 +56,7 @@ function stepCaption(s: AccessStep, a: Access, policy: Policy, before: Machine):
     case 'free':
       return <>Frame {s.frame} is free, so the page can go straight there.</>;
     case 'shared':
-      return <>libc's page is already in frame {s.frame} for the other process: map it into {a.proc}'s table too, read-only. No disk read at all.</>;
+      return <>libc's page is already in frame {s.frame} for the other process: map it into {a.proc}'s table too, read-only. No disk read at all: a minor fault.</>;
     case 'victim': {
       const dirty = s.evicted!.some((o) => before.tables[o.proc][o.vpn].dirty);
       const why =
@@ -72,7 +72,13 @@ function stepCaption(s: AccessStep, a: Access, policy: Policy, before: Machine):
         );
       return (
         <>
-          RAM is full. {why} ({owners(s.evicted!)}). {dirty ? <>It's dirty, so it must be written out first.</> : <>It's clean: the copy on disk is still good, so it's just dropped.</>}
+          RAM is full. {why} ({owners(s.evicted!)}). {dirty ? (
+            <>It's dirty, so it must be written out first.</>
+          ) : s.evicted!.every((o) => before.tables[o.proc][o.vpn].backing === 'zero') ? (
+            <>It's clean and was never written: it can be zero-filled again later, so it's just dropped.</>
+          ) : (
+            <>It's clean: its copy on disk (the program file or swap) is still good, so it's just dropped.</>
+          )}
         </>
       );
     }
@@ -84,7 +90,7 @@ function stepCaption(s: AccessStep, a: Access, policy: Policy, before: Machine):
       ) : s.from === 'file' ? (
         <>Read page {vpn} from the program file into frame {s.frame}, then set present = 1, frame = {s.frame}.</>
       ) : (
-        <>{a.proc} never used page {vpn} before: give it frame {s.frame}, filled with zeros, and set present = 1. No disk needed.</>
+        <>{a.proc} never used page {vpn} before: give it frame {s.frame}, filled with zeros, and set present = 1. No disk needed: a minor fault.</>
       );
     case 'retry':
       return <>Return from the fault and run the same instruction again. This time the page is present.</>;
@@ -140,7 +146,7 @@ export function thrashFrames(policy: Policy): VmFrame[] {
       ) : (
         <>
           Access {i + 1}: page {vpn} ({LAYOUT[vpn]}) <span className="hl orange">faults</span>
-          {victim ? <>, evicting frame {victim.frame} ({owners(victim.evicted!)})</> : null}. Faults so far: {r.m.faults}.
+          {victim ? <>, evicting frame {victim.frame} ({owners(victim.evicted!)})</> : null}. Faults so far: {r.m.faults} ({r.m.major} major, from disk).
         </>
       ),
       0.55,
@@ -150,8 +156,9 @@ export function thrashFrames(policy: Policy): VmFrame[] {
   });
   rec.close(
     <>
-      {plural(m.faults, 'fault')} and {plural(m.hits, 'hit')} in {thrashAccesses().length} accesses. With illustrative costs ({latency(RAM_NS)} per RAM access, {latency(FAULT_NS)} per fault) only{' '}
-      <span className="hl bad">{pct(usefulShare(m.hits, m.faults), 2)}</span> of the time is useful work. The fix is more RAM, a smaller working set, or fewer processes competing for frames.
+      {plural(m.faults, 'fault')} ({m.major} major, from disk; {m.minor} minor) and {plural(m.hits, 'hit')} in {thrashAccesses().length} accesses. With illustrative costs ({latency(RAM_NS)}{' '}
+      per RAM access, {latency(MINOR_FAULT_NS)} per minor fault, {latency(MAJOR_FAULT_NS)} per major fault) only <span className="hl bad">{pct(usefulShare(m), 2)}</span> of the time is useful
+      work. The fix is more RAM, a smaller working set, or fewer processes competing for frames.
     </>,
     2,
   );

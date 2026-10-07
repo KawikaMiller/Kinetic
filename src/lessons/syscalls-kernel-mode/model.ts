@@ -7,8 +7,11 @@
 /** Shown on every scene. */
 export const HONESTY = 'Linux on x86-64; timings are illustrative, real costs vary by CPU and security mitigations.';
 
-/** Linux x86-64 syscall numbers (arch/x86/entry/syscalls/syscall_64.tbl). */
-export const SYSCALL_NR = { read: 0, write: 1, open: 2, close: 3, getpid: 39 } as const;
+/**
+ * Linux x86-64 syscall numbers (arch/x86/entry/syscalls/syscall_64.tbl). `open` (2) still exists,
+ * but glibc 2.26 and later implement open() with `openat` (257, with AT_FDCWD), which is what strace shows.
+ */
+export const SYSCALL_NR = { read: 0, write: 1, open: 2, close: 3, getpid: 39, openat: 257 } as const;
 
 /** Illustrative costs, ns. Real ones vary by CPU, kernel and security mitigations. */
 export const COST_NS = {
@@ -57,7 +60,7 @@ export const NODE_BAND: Record<NodeId, Band> = { app: 'user', libc: 'user', buf:
 export const WRAPPER = ['read:', '  mov eax, 0     ; syscall number for read', '  syscall         ; trap into the kernel', '  ret             ; rax = bytes read'];
 export const KERNEL_PATH = [
   'entry_SYSCALL_64   ; save user registers',
-  'sys_call_table[0]  ; rax = 0 → sys_read',
+  'sys_call_table[0]  ; rax = 0 → sys_read (a switch in recent kernels)',
   'ksys_read → vfs_read',
   'page cache lookup  ; data already in RAM',
   'copy_to_user(buf)  ; 4096 bytes',
@@ -127,9 +130,9 @@ export const COPY_FILE_BYTES = MIB;
 
 export type Bin = 'always' | 'sometimes' | 'never';
 export const BINS: { id: Bin; label: string }[] = [
-  { id: 'always', label: 'Always traps' },
-  { id: 'sometimes', label: 'Sometimes traps' },
-  { id: 'never', label: 'Never traps' },
+  { id: 'always', label: 'Always makes a system call' },
+  { id: 'sometimes', label: 'Sometimes makes one' },
+  { id: 'never', label: 'Never makes one' },
 ];
 
 export interface SortItem {
@@ -157,8 +160,12 @@ export const SORT_KEY: SortItem[] = [
     source: 'vdso(7)',
   },
   { fn: 'strlen', answer: 'never', why: 'Counting bytes up to the terminating zero is plain user-space work.', source: 'string(3)' },
-  { fn: 'open', answer: 'always', why: 'Opening a file needs the kernel: it\'s system call 2.', source: 'syscall_64.tbl' },
-  { fn: 'fopen', answer: 'always', why: 'It builds a FILE object in user space, but always calls open() underneath.', source: 'fopen(3)' },
+  {
+    fn: 'open', answer: 'always',
+    why: 'Opening a file needs the kernel. Modern glibc\'s open() makes the openat system call (257), which is what strace shows; the old open (2) still exists.',
+    source: 'syscall_64.tbl; glibc 2.26 NEWS',
+  },
+  { fn: 'fopen', answer: 'always', why: 'It builds a FILE object in user space, but always calls open() (so openat) underneath.', source: 'fopen(3)' },
 ];
 
 export const isCorrect = (item: SortItem, bin: Bin) => item.answer === bin || (item.alsoOk ?? []).includes(bin);

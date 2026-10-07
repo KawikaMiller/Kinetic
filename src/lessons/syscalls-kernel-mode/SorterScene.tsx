@@ -25,7 +25,7 @@ export function SorterScene({ picker }: { picker: ReactNode }) {
     const next = root.current?.querySelector<HTMLElement>('.sk-pool .chip-button') ?? root.current?.parentElement?.closest('.stage-frame')?.querySelector<HTMLElement>('.sk-check');
     next?.focus();
   });
-  useIntroCaption(<>Which of these make the CPU cross into the kernel? Pick a function, then the bin it belongs in. Then press Check.</>);
+  useIntroCaption(<>Which of these make a system call? Pick a function, then the bin it belongs in. Then press Check.</>);
 
   const put = (bin: Bin) => {
     if (!picked) return;
@@ -104,7 +104,7 @@ export function SorterScene({ picker }: { picker: ReactNode }) {
                   <ul className="sk-notes">
                     {here.map((i) => (
                       <li key={i.fn} className={isCorrect(i, b.id) ? 'is-ok' : 'is-bad'}>
-                        <b>{i.fn}</b>: {isCorrect(i, b.id) ? '' : `it ${i.answer === 'always' ? 'always traps' : i.answer === 'never' ? 'never traps' : 'only sometimes traps'}. `}
+                        <b>{i.fn}</b>: {isCorrect(i, b.id) ? '' : `it ${i.answer === 'always' ? 'always makes one' : i.answer === 'never' ? 'never makes one' : 'only sometimes makes one'}. `}
                         {i.why} <span className="sk-source">({i.source})</span>
                       </li>
                     ))}

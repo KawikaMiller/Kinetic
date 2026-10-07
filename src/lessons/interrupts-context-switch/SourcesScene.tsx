@@ -33,7 +33,8 @@ export function SourcesScene({ picker }: { picker: ReactNode }) {
     if (full) return;
     const next = fire(world, src);
     setWorld(next);
-    setCaption(<>{outcomeText(next.log[next.log.length - 1])}</>);
+    // One press can bring automatic ticks first: narrate every interrupt it caused.
+    setCaption(<>{next.log.slice(world.log.length).map(outcomeText).join(' ')}</>);
   };
   const reset = () => {
     setWorld(sandboxStart());
@@ -81,7 +82,8 @@ export function SourcesScene({ picker }: { picker: ReactNode }) {
           />
         </WideRegion>
         <Hint block>
-          Simplified: only the timer reschedules here, so a woken thread waits for the next tick (real kernels may preempt at once for a higher-priority thread). Times are illustrative and
+          The timer keeps ticking on its own: if a device interrupt comes after a tick boundary, that tick fires first (an automatic tick). A slice here is {SLICE_TICKS} ticks. Simplified:
+          only the timer reschedules, so a woken thread waits for the next tick (real kernels may preempt at once for a thread the scheduler thinks is owed the CPU). Times are illustrative and
           handlers are drawn wider than to scale.
         </Hint>
         <div className="ics-threads">

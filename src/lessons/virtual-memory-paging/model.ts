@@ -49,6 +49,10 @@ export interface Machine {
   hand: number;
   loads: number;
   faults: number;
+  /** Faults that had to read the disk (swap or the program file). */
+  major: number;
+  /** Faults served without the disk (a zero-filled page, or a page already in RAM for the other process). */
+  minor: number;
   swapWrites: number;
   swapReads: number;
   hits: number;
@@ -79,7 +83,7 @@ const clone = (m: Machine): Machine => ({
 export function startMachine(): Machine {
   const table = (): Pte[] =>
     LAYOUT.map((kind, vpn) => ({ vpn, kind, present: false, frame: null, writable: writableKind(kind), dirty: false, backing: kind === 'code' || kind === 'libc' ? 'file' : 'zero' }));
-  const m: Machine = { tables: { A: table(), B: table() }, frames: [], hand: 0, loads: 0, faults: 0, swapWrites: 0, swapReads: 0, hits: 0 };
+  const m: Machine = { tables: { A: table(), B: table() }, frames: [], hand: 0, loads: 0, faults: 0, major: 0, minor: 0, swapWrites: 0, swapReads: 0, hits: 0 };
   const resident: [Proc, number, boolean][][] = [
     [['A', 0, false]],
     [['A', LIBC_VPN, false], ['B', LIBC_VPN, false]],
@@ -218,6 +222,7 @@ export function access(before: Machine, { proc, vaddr, write }: Access, policy: 
       m.frames[sharedFrame].owners.push({ proc, vpn });
       Object.assign(pte, { present: true, frame: sharedFrame });
       m.frames[sharedFrame].ref = true;
+      m.minor++;
       snap({ kind: 'shared', frame: sharedFrame });
     } else {
       let frame = m.frames.findIndex((f) => f.owners.length === 0);
@@ -240,6 +245,8 @@ export function access(before: Machine, { proc, vaddr, write }: Access, policy: 
       }
       const from = pte.backing;
       if (from === 'swap') m.swapReads++;
+      if (from === 'zero') m.minor++;
+      else m.major++;
       // A page read back from swap keeps its swap copy: evicting it clean later costs no write.
       Object.assign(pte, { present: true, frame, dirty: false });
       m.frames[frame] = { owners: [{ proc, vpn }], ref: true, loadedAt: m.loads++ };
@@ -292,9 +299,15 @@ export const WORKING_SET = LAYOUT.filter(Boolean).length;
 
 /** Illustrative costs for the "useful work" bar: a RAM access vs a page fault served from disk. */
 export const RAM_NS = 100;
-export const FAULT_NS = 5_000_000;
+/** A major fault: the page comes from disk (swap or the program file). */
+export const MAJOR_FAULT_NS = 5_000_000;
+/** A minor fault: no disk, just the kernel finding or zeroing a frame. */
+export const MINOR_FAULT_NS = 1_000;
 /** Share of time spent on accesses that hit RAM (the rest goes to fault handling and disk). */
-export const usefulShare = (hits: number, faults: number) => (hits + faults === 0 ? 1 : (hits * RAM_NS) / (hits * RAM_NS + faults * FAULT_NS));
+export const usefulShare = ({ hits, major, minor }: Pick<Machine, 'hits' | 'major' | 'minor'>) => {
+  const total = hits * RAM_NS + major * MAJOR_FAULT_NS + minor * MINOR_FAULT_NS;
+  return total === 0 ? 1 : (hits * RAM_NS) / total;
+};
 
 // ---------- bare reference strings (for the fault-count tests and the quiz) ----------
 

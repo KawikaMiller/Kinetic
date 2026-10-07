@@ -30,7 +30,7 @@ export function Stage() {
       { value: 'read', label: 'read() step by step' },
       { value: 'priv', label: 'Privileged instruction' },
       { value: 'batch', label: 'Batching' },
-      { value: 'sort', label: 'What traps?' },
+      { value: 'sort', label: 'Syscall or not?' },
     ],
     initial: 'read',
   });
@@ -78,10 +78,10 @@ function CallScene({ picker, privileged }: { picker: ReactNode; privileged: bool
         </WideRegion>
         <Hint block>{HONESTY}</Hint>
         {privileged ? (
-          <ConsolePanel title="terminal" lines={step.killed ? ['$ ./app', { text: 'Segmentation fault (core dumped)', tone: 'bad' }] : ['$ ./app']} />
+          <ConsolePanel title="terminal" lines={step.killed ? ['$ ./app', { text: 'Segmentation fault', tone: 'bad' }] : ['$ ./app']} />
         ) : (
           <div className="sk-code">
-            <CodePanel title="libc wrapper (x86-64)" lines={WRAPPER} active={step.wrapperLine ?? undefined} />
+            <CodePanel title="libc wrapper (x86-64, simplified: no error path)" lines={WRAPPER} active={step.wrapperLine ?? undefined} />
             <CodePanel title="kernel path (simplified)" lines={KERNEL_PATH} active={step.kernelLines.length ? step.kernelLines : undefined} />
             <Box className="sk-regs" role="group" aria-label="Registers">
               <SectionTitle>Registers</SectionTitle>

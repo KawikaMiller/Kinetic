@@ -21,7 +21,8 @@ function stepCaption(s: Step, i: number, sc: Script): ReactNode {
       if (i === 0) {
         return (
           <>
-            Thread {n} is running in user mode. {other} is {s.states[other]}: its registers wait in its PCB (Linux calls it a <code>task_struct</code>), not in the CPU.
+            Thread {n} is running in user mode. {other} is {s.states[other]}: its registers wait in its PCB (in Linux, the <code>task_struct</code> and the thread's kernel stack it
+            points to), not in the CPU.
           </>
         );
       }
@@ -39,7 +40,13 @@ function stepCaption(s: Step, i: number, sc: Script): ReactNode {
     case 'syscall':
       return <>{n} calls <code>read(fd, buf, 4096)</code>: the syscall instruction traps into the kernel, just like an interrupt but on purpose.</>;
     case 'handler':
-      if (s.source === 'timer') return <>The tick handler charges this tick to {n}. Its time slice is used up, so the handler asks for a reschedule.</>;
+      if (s.source === 'timer') {
+        return s.switches ? (
+          <>The tick handler charges this tick to {n}. Its slice (one tick in this walkthrough) is used up, so the handler asks for a reschedule.</>
+        ) : (
+          <>The tick handler charges this tick to {n}. B is still blocked and nobody else is ready, so there's nothing to switch to: {n} keeps the CPU. Not every tick switches.</>
+        );
+      }
       if (s.subject === 'B') {
         return <>The data isn't in memory, so the kernel starts a disk read and marks {n} blocked. {n} can't go on, so it gives up the CPU: a voluntary switch.</>;
       }
@@ -57,7 +64,7 @@ function stepCaption(s: Step, i: number, sc: Script): ReactNode {
         <>The scheduler picks {n}. It's a thread of the same process ({info.process}), so the page tables stay as they are: same address space.</>
       );
     case 'mm':
-      return <>Switch address space: the CPU now uses {info.process}'s page tables (address space {s.asid}). Translations cached for the old process are useless now, one reason a process switch costs more than a thread switch.</>;
+      return <>Switch address space: the CPU now uses {info.process}'s page tables (address space {s.asid}). The new process can't use the old process's translations, so it starts with TLB misses: one reason a process switch costs more than a thread switch.</>;
     case 'load':
       return (
         <>
@@ -98,7 +105,7 @@ export function switchFrames(sc: Script, kind: SwitchKind): SwitchFrame[] {
   return rec.frames;
 }
 
-const SOURCE_NAME: Record<IrqSource, string> = { timer: 'Timer', disk: 'Disk', network: 'Network', key: 'Keypress' };
+const SOURCE_NAME: Record<IrqSource, string> = { timer: 'Next tick', disk: 'Disk', network: 'Network', key: 'Keypress' };
 export const sourceName = (s: IrqSource) => SOURCE_NAME[s];
 
 /** One sandbox outcome as a sentence. */
@@ -106,9 +113,13 @@ export function outcomeText(o: Outcome): string {
   const at = `t = ${ms(o.at)}`;
   switch (o.source) {
     case 'timer':
-      if (o.reschedule) return `${at}: timer tick. ${o.from}'s slice is used up and ${o.to} is ready: context switch to ${o.to}.`;
-      if (o.sliceUp) return `${at}: timer tick. ${o.from}'s slice is used up, but nobody else is ready, so ${o.from} carries on.`;
-      return `${at}: timer tick. ${o.from} still has slice left, so it carries on.`;
+      {
+        const notes = [o.auto && 'automatic: the clock passed a tick boundary', o.at > o.due + 1e-9 && `due at ${ms(o.due)}, held until the previous handler finished`].filter(Boolean);
+        const tick = `${at}: timer tick${notes.length ? ` (${notes.join('; ')})` : ''}.`;
+        if (o.reschedule) return `${tick} ${o.from}'s slice is used up and ${o.to} is ready: context switch to ${o.to}.`;
+        if (o.sliceUp) return `${tick} ${o.from}'s slice is used up, but nobody else is ready, so ${o.from} carries on.`;
+        return `${tick} ${o.from} still has slice left, so it carries on.`;
+      }
     case 'disk':
       return o.woke ? `${at}: disk done. B's read is ready, so B becomes ready, but ${o.from} keeps the CPU until a tick.` : `${at}: disk interrupt, but nobody is waiting on the disk now.`;
     case 'key':
