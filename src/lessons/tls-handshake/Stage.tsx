@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Flyer } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { mitmFrames, normalFrames, P, type Paint, type Party, type Wire } from './frames';
 import './styles.css';
@@ -57,6 +57,12 @@ export function Stage() {
               { value: 'mitm', label: 'MITM attack (Mallory)' },
             ]}
           />
+          <Hint block>
+            An analogy, not real cryptography: mixing paint stands in for the elliptic-curve Diffie-Hellman exchange TLS 1.3 really
+            does, and the colours are blends, not numbers. Simplified: the server's EncryptedExtensions and Finished ride in its
+            second flight but aren't drawn, the certificate checks are three steps, and keys come out of a key schedule (HKDF)
+            rather than being the shared secret itself. The names and CAs are made up.
+          </Hint>
         </Controls>
       }
     >
