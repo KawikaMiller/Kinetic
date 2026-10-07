@@ -12,6 +12,8 @@ export interface QsFrame extends Frame {
   /** Lomuto's boundary (next slot for a small value) and scan pointer, during a partition. */
   i: number | null;
   j: number | null;
+  /** Where the value just compared sits now: i − 1 once it moved to the small side, else j. */
+  compared: number | null;
   /** Where the pivot sits: the end of the range while partitioning, its final slot after. */
   pivotAt: number | null;
   /** Median-of-three's sampled indices, on the frame that picks the pivot. */
@@ -32,8 +34,8 @@ export function selectFrames(values: readonly number[], k: number, rule: PivotRu
   const run = quickselect(values, k, rule, seed);
   const sortTotal = quicksortComparisons(values, rule, seed).comparisons;
   const r = createRecorder<QsFrame>(
-    { arr: values.slice(), lo: 0, hi: n - 1, i: null, j: null, pivotAt: null, sample: null, found: null, cmps: 0, rounds: 0, done: false },
-    { transient: { sample: null } },
+    { arr: values.slice(), lo: 0, hi: n - 1, i: null, j: null, compared: null, pivotAt: null, sample: null, found: null, cmps: 0, rounds: 0, done: false },
+    { transient: { sample: null, compared: null } },
   );
   r.snap(
     <>
@@ -58,11 +60,12 @@ export function selectFrames(values: readonly number[], k: number, rule: PivotRu
           Round {st.rounds}, {range(s.lo, s.hi)}. Pivot: {why}, <span className="hl">{v}</span>.{moved}
         </>,
         undefined,
-        { arr: s.arr, pivotAt: s.hi, i: s.lo, j: s.lo, sample: s.sample, cmps: st.cmps + s.cmps },
+        { arr: s.arr, pivotAt: s.hi, i: s.lo, j: null, sample: s.sample, cmps: st.cmps + s.cmps },
       );
     } else if (s.t === 'cmp') {
       const pivot = s.arr[s.hi];
-      const v = s.arr[s.small ? s.i - 1 : s.j];
+      const compared = s.small ? s.i - 1 : s.j;
+      const v = s.arr[compared];
       const say = s.small ? (
         <>
           {v} ≤ {pivot}: {s.swapped ? <>swap it into the small side</> : <>it is already on the small side</>}, and i moves to {s.i}.
@@ -72,7 +75,7 @@ export function selectFrames(values: readonly number[], k: number, rule: PivotRu
           {v} &gt; {pivot}: it stays on the big side.
         </>
       );
-      r.snap(say, undefined, { arr: s.arr, i: s.i, j: s.j, cmps: st.cmps + 1 });
+      r.snap(say, undefined, { arr: s.arr, i: s.i, j: s.j, compared, cmps: st.cmps + 1 });
     } else if (s.t === 'place') {
       const v = s.arr[s.p];
       r.snap(
@@ -124,7 +127,7 @@ export function verdict(value: number, k: number, select: number, rounds: number
       : w === 'tie' ? (
         <>
           A dead heat: {select} comparisons each.
-          {rule === 'random' ? null : <> Every extra range quick sort recursed into held at most one value, so it cost nothing.</>}
+          {rule === 'random' || select === 0 ? null : <> Every extra range quick sort recursed into held at most one value, so it cost nothing.</>}
         </>
       )
         : <>Quick sort wins this time, {sort} to {select}: its random pivots fell differently, since the two runs use the seed in a different order.</>;
