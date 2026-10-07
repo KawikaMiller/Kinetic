@@ -1,0 +1,15 @@
+.km-row { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.km-plot { width: 100%; max-width: 460px; flex: 0 1 460px; }
+.km-plot .plot-points:not(:last-of-type) { pointer-events: none; }
+.km-catcher { fill: transparent; cursor: crosshair; }
+.km-side { flex: 1 1 320px; min-width: 0; max-width: 440px; display: flex; flex-direction: column; gap: 10px; }
+.km-box { display: flex; flex-direction: column; gap: 6px; }
+.km-box .plot2d { width: 100%; }
+.km-box .section-title { display: block; }
+.km-centroids { pointer-events: none; }
+.km-cross { fill: none; stroke: var(--c); stroke-width: 4.5; stroke-linecap: round; }
+.km-cross-under { fill: none; stroke: var(--bg); stroke-width: 8; stroke-linecap: round; }
+.km-moving { fill: none; stroke: var(--hi); stroke-width: 2.5; }
+.km-name { color: var(--c); }
+.km-refusal { margin: 0; font: 600 14px var(--font); color: var(--bad); }
+.km-honest { flex-basis: 100%; text-align: center; }
