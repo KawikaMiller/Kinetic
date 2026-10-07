@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { BAD, buildFrames, GOOD, SLOW_BUILD_SECONDS, type Change } from './frames';
 
@@ -30,7 +30,7 @@ export function Layers({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--ok)', label: 'cached (reused)' },
-            { color: 'var(--hi)', label: 'rebuilt' },
+            { color: 'var(--bad)', label: 'rebuilt (the slow, costly part)' },
             { color: 'var(--dim)', label: 'not reached yet' },
           ]}
         />
@@ -57,6 +57,10 @@ export function Layers({ picker }: { picker: ReactNode }) {
               { value: 'deps', label: 'Edit package.json' },
             ]}
           />
+          <Hint block>
+            Illustrative timings and sizes, not a measured build. The cache rule is Docker's: a layer is reused only if its
+            instruction, its copied files and every layer below it are unchanged.
+          </Hint>
         </Controls>
       }
     >

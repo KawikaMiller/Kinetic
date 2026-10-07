@@ -10,7 +10,6 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const T2_R2 = 'T2-R2 retrofit (wave 2)';
 const TIER3 = 'Tier 3 kickoff: existing Tier 3 lessons are retrofitted then';
 const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
 
@@ -19,17 +18,15 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
  * They don't count towards the tier-wide share until their retrofit batch merges; existing
  * Tier 3 and 4 lessons likewise wait for their tier's kickoff. Shrinks as R1 and R2 merge.
  */
-const PENDING_RETROFIT = new Set([
-  // T2-R2
-  'containers',
+const PENDING_RETROFIT = new Set<string>([
+  // none: T2-R1 and T2-R2 have both landed
 ]);
 /** Tiers whose existing lessons are all still awaiting their kickoff retrofit. */
 const TIERS_AWAITING_KICKOFF = new Set([3, 4]);
 
 const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
-  // Tier 2, existing lessons awaiting their retrofit batch
-  'containers': { ticket: T2_R2, rules: ['quiz-length', 'quiz-longest'] },
+  // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   'cap-theorem': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'cdn-edge': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },

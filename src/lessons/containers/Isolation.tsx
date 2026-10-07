@@ -3,41 +3,15 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { useShake } from '../../core/useShake';
+import { LIMIT_MB, START, WORKER, leakTick, meterHot, pidSeenFrom, restartPhase, type Container } from './model';
 
-interface Container {
-  name: string;
-  cmd: string;
-  hostPid: number;
-  ip: string;
-  hostPort: number;
-  mem: number;
-  cpu: number;
-  status: 'running' | 'oom' | 'restarting';
-}
-
-/** Each container's cgroup memory limit, in MB. */
-const LIMIT_MB = 256;
-const START: Container[] = [
-  { name: 'web', cmd: 'nginx', hostPid: 4012, ip: '172.17.0.2', hostPort: 8080, mem: 38, cpu: 12, status: 'running' },
-  { name: 'api', cmd: 'node server.js', hostPid: 4078, ip: '172.17.0.3', hostPort: 8081, mem: 120, cpu: 35, status: 'running' },
-  { name: 'worker', cmd: 'python worker.py', hostPid: 4133, ip: '172.17.0.4', hostPort: 8082, mem: 90, cpu: 20, status: 'running' },
-];
-const WORKER = 2;
-
-/** The leak: every tick, worker's memory and CPU climb by these steps. */
+/** The leak ticks this often. */
 const LEAK_TICK_MS = 120;
-const LEAK_STEP_MB = 14;
-const LEAK_STEP_CPU = 4;
-const CPU_CAP = 95;
 /** How long each restart phase (killed → restarting → fresh) lasts. */
 const RESTART_PHASE_MS = 1300;
-/** A restarted process gets a new host PID; this is just a plausible jump. */
-const PID_BUMP = 97;
-/** Meter fill turns red above this share of its maximum. */
-const HOT_PCT = 85;
 
 /** Namespaces (each container's own view) and cgroups (its resource limits), with an OOM kill demo. */
 export function Isolation({ picker }: { picker: ReactNode }) {
@@ -65,8 +39,9 @@ export function Isolation({ picker }: { picker: ReactNode }) {
   useEffect(() => {
     if (!leaking || worker.status !== 'running') return;
     const id = setTimeout(() => {
-      if (worker.mem + LEAK_STEP_MB >= LIMIT_MB) {
-        patchWorker({ mem: LIMIT_MB, status: 'oom' });
+      const next = leakTick(worker);
+      patchWorker(next);
+      if (next.status === 'oom') {
         setLeaking(false);
         setCaption(
           <>
@@ -74,20 +49,18 @@ export function Isolation({ picker }: { picker: ReactNode }) {
             api didn't even blink. With a restart policy it comes back in a moment.
           </>,
         );
-      } else {
-        patchWorker({ mem: worker.mem + LEAK_STEP_MB, cpu: Math.min(CPU_CAP, worker.cpu + LEAK_STEP_CPU) });
       }
     }, LEAK_TICK_MS);
     return () => clearTimeout(id);
-  }, [leaking, worker.status, worker.mem, worker.cpu, patchWorker, setCaption]);
+  }, [leaking, worker, patchWorker, setCaption]);
 
   // Restart policy: killed → restarting → fresh process.
   useEffect(() => {
     if (worker.status === 'running') return;
     const id = setTimeout(() => {
-      if (worker.status === 'oom') patchWorker({ status: 'restarting' });
-      else {
-        patchWorker((c) => ({ ...START[WORKER], hostPid: c.hostPid + PID_BUMP }));
+      const wasRestarting = worker.status === 'restarting';
+      patchWorker((c) => restartPhase(c, START[WORKER]));
+      if (wasRestarting) {
         setCaption(<>worker restarted as a <b>fresh</b> process: new host PID, but inside its namespace it's PID 1 again.</>);
       }
     }, RESTART_PHASE_MS);
@@ -108,7 +81,7 @@ export function Isolation({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--info)', label: 'namespace: own view' },
             { color: 'var(--ok)', label: 'within limits' },
-            { color: 'var(--bad)', label: 'over limit / OOM-killed' },
+            { color: 'var(--bad)', label: 'near the limit / OOM-killed' },
           ]}
         />
       }
@@ -141,6 +114,10 @@ export function Isolation({ picker }: { picker: ReactNode }) {
           >
             Leak memory in worker
           </Button>
+          <Hint block>
+            Simulated: the PIDs, addresses and usage are made up, and the leak climbs on a timer. The isolation rules are the
+            real ones: a process is PID 1 in its own namespace, and the kernel kills it at its cgroup memory limit.
+          </Hint>
         </Controls>
       }
     >
@@ -162,7 +139,7 @@ export function Isolation({ picker }: { picker: ReactNode }) {
                 <dl>
                   <dt>PID</dt>
                   <dd>
-                    <AnimatedValue variant="flip" value={hostView ? c.hostPid : 1} id={hostView ? `h${c.hostPid}` : 'one'} />
+                    <AnimatedValue variant="flip" value={pidSeenFrom(c, hostView)} id={hostView ? `h${c.hostPid}` : 'one'} />
                     <em>{c.cmd}</em>
                   </dd>
                   <dt>network</dt>
@@ -189,13 +166,12 @@ export function Isolation({ picker }: { picker: ReactNode }) {
 const METER_TRANSITION = { duration: 0.15 };
 
 function Meter({ label, value, max, unit }: { label: string; value: number; max: number; unit: string }) {
-  const pct = Math.min(100, (value / max) * 100);
   return (
     <Bar
       className="ct-meter"
       value={value}
       max={max}
-      tone={pct > HOT_PCT ? 'bad' : 'ok'}
+      tone={meterHot(value, max) ? 'bad' : 'ok'}
       transition={METER_TRANSITION}
       label={<span>{label}</span>}
       trailing={

@@ -67,7 +67,7 @@
 .ct-dockerfile li code { color: var(--muted); }
 .ct-dockerfile li em { font: 700 11px var(--mono); font-style: normal; }
 .ct-dockerfile li.cached em { color: var(--ok); }
-.ct-dockerfile li.built em { color: var(--hi); }
+.ct-dockerfile li.built em { color: var(--bad); }
 .ct-dockerfile li.on { background: color-mix(in srgb, var(--hi) 12%, transparent); box-shadow: inset 3px 0 0 var(--hi); }
 .ct-dockerfile li.on code { color: var(--text); }
 .ct-ln { font: 11px var(--mono); color: var(--faint); text-align: right; }
@@ -84,7 +84,7 @@
 }
 .ct-layer b { font: 600 12px var(--mono); }
 .ct-layer.cached { background: color-mix(in srgb, var(--ok) 12%, transparent); border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: var(--ok); }
-.ct-layer.built { background: color-mix(in srgb, var(--hi) 14%, transparent); border-color: color-mix(in srgb, var(--hi) 55%, transparent); color: var(--hi); }
+.ct-layer.built { background: color-mix(in srgb, var(--bad) 14%, transparent); border-color: color-mix(in srgb, var(--bad) 55%, transparent); color: var(--bad); }
 
 /* Isolation */
 .ct-iso { padding: 22px 24px; }
