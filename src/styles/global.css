@@ -61,6 +61,9 @@
   --on-info: #03202b;
   --on-violet: #150a33;
   --on-orange: #1a0d00;
+  --on-amber: #1a1100;
+  --on-pink: #1f0510;
+  --on-sky: #06142b;
   /* Secondary (dimmer) text on a solid fill */
   --on-hi-muted: #4a3b00;
   --on-bad-muted: #4a0d14;

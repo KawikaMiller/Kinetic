@@ -3,7 +3,7 @@ import {
   circlePositions, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type GraphKey, type LayeredSpacing, type NodeBox,
   type Pt,
 } from '../core/graphLayout';
-import { toneVar, type Tone } from '../core/tone';
+import { TONES, toneVar, type Tone } from '../core/tone';
 import { arrowMarkerDef } from './ArrowMarker';
 import type { TreeNodeMark } from './TreeSvg';
 
@@ -38,7 +38,6 @@ export interface GraphEdgeMark {
   width?: number;
 }
 
-const TONES: readonly Tone[] = ['hi', 'ok', 'bad', 'info', 'violet', 'dim', 'orange'];
 /** The CI pipeline's spacing: columns 150 apart, rows 64 apart. */
 const DEFAULT_SPACING: LayeredSpacing = { direction: 'right', layerGap: 150, nodeGap: 64, padMain: 70, padCross: 44 };
 const DEFAULT_BOX = { w: 112, h: 46 };

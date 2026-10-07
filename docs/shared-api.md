@@ -102,10 +102,18 @@ smoke, if this table drifts from `global.css`.
 
 ### `tone.ts`
 ```ts
-type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim' | 'orange';
+type Tone = 'hi' | 'ok' | 'bad' | 'info' | 'violet' | 'dim'   // semantic roles
+          | 'orange' | 'amber' | 'pink' | 'sky';               // categorical hues
+TONES                                            // every Tone, e.g. one arrowhead marker per tone
 toneVar('ok')                                    // 'var(--ok)'
 toneFor(errPct, { warn: 20, bad: 50 })           // 'ok' | 'hi' | 'bad'; { invert: true } when higher is better
 ```
+- Every tone has a `.tone-*` class in kit.css (`--c` plus `--on-c` ink: `--on-amber`, `--on-pink`, `--on-sky` are tokens
+  too) and a `TOKENS` entry, so every tone-driven component (BitStrip, CellGrid in both modes, ByteGrid fields,
+  TreeSvg/GraphView marks and arrowheads, ArrayStrip ranges) draws the categorical hues with no extra code.
+- Plain categories (a Hamming parity group, a float field, Euclid's step colours) take `orange`/`amber`/`pink`/`sky`,
+  never `bad`/`ok` as decoration (CLAUDE.md's colour table). Lesson SVG can colour by class too:
+  `className={`tone-${t}`}` plus `fill: var(--c)` in lesson CSS, as gcd-euclid's squares do.
 
 ### `format.ts` — pattern 10
 ```ts

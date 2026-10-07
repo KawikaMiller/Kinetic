@@ -12,6 +12,9 @@
 .tone-info { --c: var(--info); --on-c: var(--on-info); }
 .tone-violet { --c: var(--violet); --on-c: var(--on-violet); }
 .tone-orange { --c: var(--orange); --on-c: var(--on-orange); }
+.tone-amber { --c: var(--amber); --on-c: var(--on-amber); }
+.tone-pink { --c: var(--pink); --on-c: var(--on-pink); }
+.tone-sky { --c: var(--sky); --on-c: var(--on-sky); }
 .tone-dim { --c: var(--dim); --on-c: var(--text); }
 
 /* Cell: the square/box that holds one value (array slots, nodes, chips in a row) */
