@@ -1150,6 +1150,8 @@ These differ between runs even on unchanged code, because a motion transition is
 - `db-indexes@2`
 - `replication@3`, `replication@7`
 - `ci-pipelines@0`, `endianness@0`, `minimum-spanning-trees@0` (seen in kit-k4's run)
+- `macs-hmac@0`, `@2`, `@4`: the key comes from `crypto.getRandomValues`, which `--frames` doesn't seed,
+  so the tag bytes differ every run (~0.5%; seen in kit-k5's run, same tree twice)
 - every `@live` shot (simulations are timing-dependent)
 - driven shots of a stage with a `WideRegion` at 390: its "swipe" hint times out after 5 s, so a
   shot taken around then may catch it mid-fade
