@@ -63,6 +63,9 @@ export function SearchScene({ picker }: { picker: ReactNode }) {
     return 'idle';
   };
   const windowRange = f.s !== null && !f.done ? [{ from: f.s, to: f.s + len - 1, tone: HIT_TONE[f.hit], labels: [label(f.hit), ''] as const }] : [];
+  const cells = [...text].length;
+  // On a phone the strip scrolls; keep the window on screen as it slides.
+  const reveal = f.s !== null && !f.done ? { from: f.s / cells, to: (f.s + len) / cells, within: '.array-cells' } : null;
   const hashTone = f.hash === null ? 'var(--muted)' : f.hash === run.patternHash ? 'var(--info)' : 'var(--hi)';
 
   return (
@@ -112,7 +115,7 @@ export function SearchScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="rh stage-pad">
-        <WideRegion minWidth={Math.max(STRIP_MIN_W, [...text].length * CELL_MIN)} gutter={{ top: 28 }} label="Text strip: scroll sideways to see all of it">
+        <WideRegion minWidth={Math.max(STRIP_MIN_W, cells * CELL_MIN)} gutter={{ top: 28 }} reveal={reveal} label="Text strip: scroll sideways to see all of it">
           <ArrayStrip values={cellsOf(text)} showIndex cellMax={CELL_MAX} fontSize={14} cellState={textState} ranges={windowRange} />
         </WideRegion>
         <div className="rh-panels">
