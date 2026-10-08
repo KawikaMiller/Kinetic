@@ -20,3 +20,4 @@
 .icj-failed { color: var(--bad); }
 .icj-plot { flex: 0 1 356px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .icj-plot svg { width: 100%; height: auto; max-width: 356px; }
+.icj-aot-note { align-self: center; color: var(--muted); font-size: 13px; }

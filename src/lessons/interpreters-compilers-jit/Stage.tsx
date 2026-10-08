@@ -261,7 +261,11 @@ function RaceScene({ picker }: { picker: ReactNode }) {
         picker,
         <>
           <Segmented label="Workload" value={workload} onChange={setWorkload} options={WORKLOADS.map((x) => ({ value: x.id, label: x.label }))} />
-          <Toggle label="AOT build" value={builtAhead} onChange={setBuiltAhead} off="Counted" on="Built ahead" />
+          {w.calls.some((c) => typeof c === 'string') ? (
+            <span className="icj-aot-note">AOT build: always counted here, because the string call fails the build</span>
+          ) : (
+            <Toggle label="AOT build" value={builtAhead} onChange={setBuiltAhead} off="Counted" on="Built ahead" />
+          )}
         </>,
       ]}
     >

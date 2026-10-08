@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'The same code can be run by walking its syntax tree, by compiling it to bytecode for a virtual machine, by compiling hot parts to machine code while it runs (a JIT), or by compiling all of it to machine code before it ships (AOT). Which is fastest depends on how long the code runs.',
-    what: 'A tree-walking interpreter evaluates the AST directly, revisiting every node on every iteration. A bytecode VM compiles the tree once into a flat list of simple instructions and steps a program counter through it, which is cheaper per operation. A JIT usually starts in an interpreter, counts how often code runs, and compiles the hot parts to machine code using the types it has seen; if a later call breaks that assumption, it throws the code away and falls back (deoptimisation). An AOT compiler does all its work before the program runs, so it starts fast but must know the types up front.',
+    what: 'A tree-walking interpreter evaluates the AST directly, revisiting every node on every iteration. A bytecode VM compiles the tree once into a flat list of simple instructions and steps a program counter through it, which is cheaper per operation. A JIT usually starts in an interpreter, counts how often code runs, and compiles the hot parts to machine code using the types it has seen; if a later call breaks that assumption, it throws the code away and falls back (deoptimisation). An AOT compiler does all its work before the program runs, so it starts fast; in a statically typed AOT language the types are also checked at build time.',
     analogy: 'Reading a recipe aloud line by line every time you cook (tree-walker), copying it onto a short checklist first (bytecode), memorising the dish you cook every day once you notice you keep making it (JIT), or buying it ready-made from a factory that prepped it in advance (AOT).',
     useCases: [
       'Knowing why a Node.js or JVM service gets faster after a few minutes of traffic (warm-up)',
@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Understanding why benchmarks need warm-up runs before measuring',
     ],
     why: 'Every language you use runs on one of these strategies, often several at once: CPython and Ruby run bytecode, the JVM and V8 interpret and then JIT-compile, Go and Rust compile ahead of time. Knowing the trade-off explains warm-up, start-up time and why a type change can make hot code suddenly slower. It builds on `parsing-ast` (the tree), `isa-assembly` (machine code) and `type-systems` (types checked before the run).',
-    watch: 'Yellow is what is running now everywhere: the source line, the AST node being visited (a yellow pill), the bytecode or machine-code line just run, the "now" cursor on the timeline and the yellow line on the close-up. In the AST, statements and operators are pills with violet outlines and variables and numbers have blue outlines. The VM\'s value stack is blue cells (an empty stack is one faded cell); locals are grey chips, and registers are a table. The Result stat reads deopt in red when a guard fails. On the timeline and in the close-up, orange is parsing or compiling, grey is interpreting, green is running machine code and red is a deoptimisation. Timeline markers say "hot" in violet where the JIT compiles, "deopt" in red, and "type error" in red where the AOT build fails, which the lane table also shows in red. The JIT hotness counter is a violet bar. In the close-up, the dashed grey line is the bytecode VM for comparison and a dashed red line marks each deopt. A machine-code line that fails its guard turns red.',
+    watch: 'Yellow is what is running now everywhere: the source line, the AST node being visited (a yellow pill), the bytecode or machine-code line just run, the "now" cursor on the timeline and the yellow line on the close-up. In the AST, statements and operators are pills with violet outlines and variables and numbers have blue outlines. The VM\'s value stack is blue cells (an empty stack is one faded cell); locals are grey chips, and registers are a table. The Result stat reads deopt in red when a guard fails. On the timeline and in the close-up, orange is parsing or compiling, grey is interpreting and green is running machine code; a deoptimisation is too short to see as a bar, so it shows as a red marker. Timeline markers say "hot" in violet where the JIT compiles, "deopt" in red, and "type error" in red where the AOT build fails, which the lane table also shows in red. The JIT hotness counter is a violet bar. In the close-up, the dashed grey line is the bytecode VM for comparison and a dashed red line marks each deopt. A machine-code line that fails its guard turns red.',
   },
   tryThis: [
     'On The race, play Long server: the JIT starts as slowly as the VM, pauses in orange to compile, then the green slope is far steeper.',
@@ -27,7 +27,7 @@ const lesson: LessonModule = {
     'A tree-walker revisits the AST every iteration; a bytecode VM compiles once and steps through a flat array.',
     'A JIT pays for warm-up and for compiling, so it only wins when code runs long enough to repay them.',
     'JIT machine code bets on the types it has seen; a different type fails the guard and deoptimises.',
-    'AOT does its compiling before the run: fast from the start, but types must be known at build time.',
+    'AOT does its compiling before the run: fast from the start, and a statically typed AOT language checks types at build time.',
   ],
   quiz: [
     {
@@ -83,7 +83,7 @@ const lesson: LessonModule = {
         'It waits for real types to arrive and then compiles',
       ],
       answer: 0,
-      why: 'Ahead-of-time compilation happens at build time, so the shipped binary is already machine code. The price is paid earlier, and the types must be known when building: watching real types arrive is what a JIT does, not an AOT compiler.',
+      why: 'Ahead-of-time compilation happens at build time, so the shipped binary is already machine code. The price is paid earlier, and a statically typed AOT language checks the types while building: watching real types arrive is what a JIT does, not an AOT compiler.',
     },
   ],
 };
