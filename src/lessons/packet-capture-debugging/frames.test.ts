@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ipToString } from '../../core/ipv4';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { CAPTURES } from './captures';
 import { captureIntro, guessCaption, packetCaption, traceFrames } from './frames';
 import { PATH, traceroute } from './trace';
 import { DIAGNOSES } from './views';
 import { FILTER_EXAMPLES, parseFilter } from './filter';
 
-const text = (n: Parameters<typeof captionText>[0]) => {
-  const t = captionText(n).replace(/\s+/g, ' ');
-  expect(t).not.toMatch(/[a-z)]\.[A-Z]/);
-  return t;
-};
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 
 describe('packet captions say what the packet is', () => {
   for (const c of CAPTURES) {

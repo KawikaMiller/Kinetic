@@ -105,7 +105,8 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
       redraw();
       return;
     }
-    // useLoop caps its dt at 50 ms, which would hide the spikes this lesson is about: measure the real frame time.
+    // Measured here rather than with useLoop's { maxDt: Infinity }: the first tick after a (re)start only
+    // primes the meter, where useLoop's first dt is a sliver of a frame that would skew the Hz reading.
     const frameDt = (now - m.last) / 1000;
     m.last = now;
     const cfg = settings.current;
