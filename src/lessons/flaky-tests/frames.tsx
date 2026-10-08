@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { pct, plural } from '../../core/format';
-import { exactGreen, type BatchSummary, type Config, type Run } from './sim';
+import { exactGreen, quarantinedFlakes, unfixedSources, type BatchSummary, type Config, type Run } from './sim';
 
 /** Before anything has run. */
 export const introCaption = (): ReactNode => (
@@ -16,7 +16,9 @@ export const toggleCaption = (what: string, on: boolean, exact: number): ReactNo
 export function batchCaption(s: BatchSummary, cfg: Config): ReactNode {
   const green = s.pass + s.retried;
   const exact = exactGreen(cfg);
-  const head = <>{green} of {s.runs} runs green (the exact chance per run is {pct(exact, 1)}).</>;
+  const parked = quarantinedFlakes(cfg).length;
+  const head = <>{green} of {s.runs} runs green (the exact chance per run is {pct(exact, 1)}{parked ? `, not counting the ${plural(parked, 'quarantined flaky test')}` : ''}).</>;
+  const parkedNote = parked ? <> {plural(parked, 'quarantined test')} still {parked === 1 ? 'flakes' : 'flake'}; the build just ignores {parked === 1 ? 'it' : 'them'}.</> : null;
   const retried = s.retried > 0 ? (
     <> <span className="hl orange">{s.retried}</span> of them went green only after a retry.</>
   ) : null;
@@ -27,9 +29,10 @@ export function batchCaption(s: BatchSummary, cfg: Config): ReactNode {
     <> {s.realBugsCaught} red {s.realBugsCaught === 1 ? 'run was' : 'runs were'} the real race in reserveStock: a product bug, not a test bug.</>
   ) : null;
   if (s.fail === 0 && s.retried === 0 && s.realBugsHidden === 0) {
-    return <>{head} All {s.runs} passed first time{exact === 1 ? ': nothing left can flake.' : ', but the exact chance says this batch was lucky.'}</>;
+    const clean = unfixedSources(cfg).length === 0;
+    return <>{head} All {s.runs} passed first time{clean ? ': nothing left can flake.' : exact === 1 ? ': nothing left can fail the build.' : ', but the exact chance says this batch was lucky.'}{parkedNote}</>;
   }
-  return <>{head}{retried}{hidden}</>;
+  return <>{head}{retried}{hidden}{parkedNote}</>;
 }
 
 /** One line per test of a run, for the console under the grid. */
@@ -62,4 +65,11 @@ export function runCaption(run: Run): ReactNode {
     <> The real race tripped too, but {race.quarantined ? 'its test is quarantined' : 'passed on a retry'}, so it isn&apos;t in the list.</>
   ) : null;
   return <>{where} is <span className="hl bad">red</span>: {failed.map((t) => t.id).join(', ')} failed.{hiddenRace} Replay the seed to get the same order and the same draws back.</>;
+}
+
+/** What Replay shows: the run is a pure function of its seed, so the outcome is the same. */
+export function replayCaption(run: Run): ReactNode {
+  const outcome = run.status === 'pass' ? 'passed first time' : run.status === 'retried' ? 'went green after a retry' : 'failed';
+  return <>Replayed seed <b>{run.seed}</b>: the same test order, the same draws and the same outcome (it {outcome}). The whole run is a function of its
+    seed, so &quot;it failed once on CI&quot; becomes a failure you can rerun.</>;
 }

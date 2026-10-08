@@ -155,7 +155,7 @@ function attempt(t: TestDef, k: number, d: Draws, fixed: ReadonlySet<SourceId>):
     case 'sleep': {
       const job = d.jobMs[k];
       return job > SLEEP_MS
-        ? { passed: false, reason: `expected 1 email sent, got 0: the job took ${Math.round(job)} ms but the test slept ${SLEEP_MS} ms` }
+        ? { passed: false, reason: `expected 1 email sent, got 0: the job took ${(Math.ceil(job * 10) / 10).toFixed(1)} ms but the test slept ${SLEEP_MS} ms` }
         : ok;
     }
     case 'order':
@@ -225,6 +225,11 @@ export function summarise(runs: readonly Run[]): BatchSummary {
 }
 
 /** Sources that can still turn a run red: not fixed, and their test not quarantined. */
+/** Flaky sources still in the suite but with their test quarantined: they still fail, the build ignores them. */
+export const quarantinedFlakes = (cfg: Config) => SOURCES.filter((s) => !cfg.fixed.has(s) && cfg.quarantined.has(TEST_OF[s]));
+/** Sources not fixed at all: live or quarantined, anything that can still flake. */
+export const unfixedSources = (cfg: Config) => SOURCES.filter((s) => !cfg.fixed.has(s));
+
 export const liveSources = (cfg: Config) => SOURCES.filter((s) => !cfg.fixed.has(s) && !cfg.quarantined.has(TEST_OF[s]));
 
 /**

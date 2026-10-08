@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import lesson from './index';
-import { batchCaption, runCaption, runLines, toggleCaption } from './frames';
+import { batchCaption, replayCaption, runCaption, runLines, toggleCaption } from './frames';
 import { MAX_RETRIES, SOURCES, TEST_OF, exactGreen, runSeed, runSuite, summarise, type Config, type SourceId } from './sim';
 
 const cfg = (fixed: SourceId[] = [], retries = 0, quarantined: string[] = []): Config => ({ fixed: new Set(fixed), retries, quarantined: new Set(quarantined) });
@@ -73,5 +73,72 @@ describe('quiz numbers', () => {
     const red = 1 - (1 - 0.02) ** 5;
     expect(q.options[q.answer]).toBe(`About ${(red * 100).toFixed(1)}%`);
     expect(0.02 ** 5).toBeLessThan(0.0001);
+  });
+});
+
+describe('the try-this prompts, at the default state (first Run ×100, seeds 1001-1100)', () => {
+  const none = cfg();
+  const retry = cfg([], MAX_RETRIES);
+
+  it('#2 retry on: some red runs turn orange, many stay red because the shared cart stays dirty', () => {
+    const off = summarise(batch(none));
+    const on = batch(retry);
+    const s = summarise(on);
+    expect(s.pass).toBe(off.pass);
+    expect(s.retried).toBeGreaterThan(0);
+    expect(s.fail).toBeGreaterThan(s.pass); // still mostly red: "many stay red"
+    expect(s.fail).toBeLessThan(off.fail);
+    expect(s.realBugsHidden).toBeGreaterThan(0);
+    const red = on.filter((r) => r.status === 'fail');
+    const dirty = red.filter((r) => r.tests.find((t) => t.id === 'emptyCartTotal')!.outcome === 'failed');
+    expect(dirty.length / red.length).toBeGreaterThan(0.8);
+  });
+
+  it('#5 fix the other four, quarantine the race: all 100 go green and the ! marks show it tripping', () => {
+    const c = cfg(['sleep', 'order', 'clock', 'random'], 0, [TEST_OF.race]);
+    const s = summarise(batch(c));
+    expect(s.fail).toBe(0);
+    expect(s.realBugsHidden).toBeGreaterThan(0);
+  });
+
+  it('...whereas quarantining the race alone leaves the build red', () => {
+    expect(summarise(batch(cfg([], 0, [TEST_OF.race]))).fail).toBeGreaterThan(0);
+  });
+});
+
+describe('quarantined flakes are not "fixed"', () => {
+  const parkedAll = cfg([], 0, SOURCES.map((s) => TEST_OF[s]));
+  it('never says nothing left can flake while a quarantined test still flakes', () => {
+    const fixRaceParkRest = cfg(['race'], 0, SOURCES.filter((s) => s !== 'race').map((s) => TEST_OF[s]));
+    expect(exactGreen(fixRaceParkRest)).toBe(1);
+    const s = summarise(batch(fixRaceParkRest));
+    expect(s.fail).toBe(0);
+    const t = text(batchCaption(s, fixRaceParkRest));
+    expect(t).not.toContain('nothing left can flake');
+    expect(t).toContain('nothing left can fail the build');
+    expect(t).toContain('4 quarantined tests still flake');
+    expect(t).toContain('not counting the 4 quarantined flaky tests');
+  });
+  it('says it only when every source is fixed', () => {
+    const t = text(batchCaption(summarise(batch(cfg([...SOURCES]))), cfg([...SOURCES])));
+    expect(t).toContain('nothing left can flake');
+    expect(t).not.toContain('quarantined');
+  });
+  it('a retry-hidden or quarantined run still names the parked tests', () => {
+    const t = text(batchCaption(summarise(batch(parkedAll)), parkedAll));
+    expect(t).toContain('5 quarantined tests still flake');
+  });
+});
+
+describe('replay caption', () => {
+  it('states the run real outcome for pass, retried and failed', () => {
+    const c = cfg([], MAX_RETRIES);
+    const runs = batch(c);
+    for (const status of ['pass', 'retried', 'fail'] as const) {
+      const run = runs.find((r) => r.status === status)!;
+      const t = text(replayCaption(run));
+      expect(t).toContain(`seed ${run.seed}`);
+      expect(t).toContain(status === 'pass' ? 'passed first time' : status === 'retried' ? 'went green after a retry' : 'failed');
+    }
   });
 });

@@ -8,9 +8,9 @@ import { Button, ChipButton, Hint, Legend, Stat, Stats, Toggle } from '../../com
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
 import { useInterval } from '../../core/useInterval';
-import { batchCaption, introCaption, runCaption, runLines, toggleCaption } from './frames';
+import { batchCaption, introCaption, replayCaption, runCaption, runLines, toggleCaption } from './frames';
 import {
-  FIRST_TRY_RATE, MAX_RETRIES, SLEEP_MS, SOURCES, TEST_OF, TESTS, exactGreen, finalRate, runSeed, runSuite, summarise, timeOfDay,
+  FIRST_TRY_RATE, MAX_RETRIES, SLEEP_MS, SOURCES, TEST_OF, TESTS, exactGreen, finalRate, quarantinedFlakes, runSeed, runSuite, summarise, timeOfDay,
   type Config, type Run, type SourceId,
 } from './sim';
 import './styles.css';
@@ -59,6 +59,7 @@ export function Stage() {
   const green = s.pass + s.retried;
   const exact = exactGreen(cfg);
   const filling = batch > 0 && shown < RUNS;
+  const parked = quarantinedFlakes(cfg).length;
   const sel = selected !== null && selected < shown ? runs[selected] : null;
 
   useInterval(() => {
@@ -99,13 +100,7 @@ export function Stage() {
     setSelected(i);
     setCaption(runCaption(runs[i]));
   };
-  const replay = (run: Run) => {
-    const again = runSuite(run.seed, cfg);
-    const same = JSON.stringify(again) === JSON.stringify(run);
-    setCaption(same
-      ? <>Replayed seed <b>{run.seed}</b>: the identical order, draws and {run.status === 'pass' ? 'pass' : 'failure'}. A seed turns &quot;it failed once on CI&quot; into a bug you can rerun.</>
-      : <>Replayed seed <b>{run.seed}</b>: a different result. That would mean the run isn&apos;t a function of its seed.</>);
-  };
+  const replay = (run: Run) => setCaption(replayCaption(run));
 
   const cell = (r: number, c: number): GridCellSpec => {
     const i = r * GRID + c;
@@ -127,7 +122,7 @@ export function Stage() {
       height={440}
       stats={
         <Stats>
-          <Stat label="Green runs" value={shown ? `${green} / ${shown}` : '–'} color="var(--ok)" sub={`exact chance per run: ${pct(exact, 1)}`}>
+          <Stat label="Green runs" value={shown ? `${green} / ${shown}` : '–'} color="var(--ok)" sub={`exact chance per run: ${pct(exact, 1)}${parked ? ` (not counting ${parked} quarantined)` : ''}`}>
             <Bar value={shown ? green / shown : 0} tone="ok" />
           </Stat>
           <Stat label="Green only after a retry" value={shown ? s.retried : '–'} color="var(--orange)" sub={retry ? `up to ${MAX_RETRIES} retries` : 'retries off'} />

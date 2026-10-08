@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A flaky test passes and fails on the same code; the fix is to find what it depends on that you don\'t control (timing, order, the clock, randomness) and control it, not to re-run until it goes green.',
-    what: 'Most flakiness comes from a handful of sources: sleeping instead of waiting for async work, tests sharing mutable state while the runner shuffles their order, reading the real clock, and unseeded randomness. Some intermittent failures are real bugs, like a race in the code under test. Retries make the build green but hide both kinds, so the honest tools are fixing the dependency, recording a seed so a failure can be replayed, and quarantining a known-flaky test with an owner while it gets fixed.',
+    what: 'Most flakiness comes from a handful of sources: sleeping instead of waiting for async work, tests sharing mutable state while the runner shuffles their order, reading the real clock, and unseeded randomness. Some intermittent failures are real bugs, like a race in the code under test. Retries can turn the build green but hide both kinds (and cannot rescue state that tests share), so the honest tools are fixing the dependency, recording a seed so a failure can be replayed, and quarantining a known-flaky test with an owner while it gets fixed.',
     analogy: 'A smoke alarm that goes off at random: pressing snooze every time quiets it, but the one time there is real smoke, you snooze that too.',
     useCases: [
       'Jest, pytest and RSpec printing a seed for random test order so a failing order can be rerun',
@@ -13,15 +13,15 @@ const lesson: LessonModule = {
       'Replacing setTimeout-based waits with awaited promises or polling helpers like waitFor',
       'Injecting a fake clock (Jest\'s fake timers, Sinon) instead of reading Date.now() in tests',
     ],
-    why: 'Large suites run thousands of tests, so even rare flakes make most builds red (the arithmetic is in `probability-basics`). Once a team learns to re-run red builds, real failures get re-run too. Knowing the usual sources lets you fix a flaky test in minutes instead of adding a retry, and the real race here builds on `race-conditions`.',
+    why: 'Large suites run thousands of tests, so even rare flakes can make most builds red (the arithmetic is in `probability-basics`). Once a team learns to re-run red builds, real failures get re-run too. Knowing the usual sources lets you fix a flaky test in minutes instead of adding a retry, and the real race here builds on `race-conditions`.',
     watch: 'Each square in the 10×10 grid is one run of the suite: green passed first time, orange went green only after a retry, red failed, grey outline not run yet. A yellow ring marks the run you clicked, and a ! marks a run where the real race tripped but nothing reported it. In the suite list a fix chip turns green when it\'s on, and a quarantined test\'s card goes dashed and dim with a grey owner tag. The console prints that run\'s tests: green ✓ passed, orange ↻ passed on a retry, red ✗ failed, grey ◌ quarantined. The green bar under Green runs is the share of runs shown that went green.',
   },
   tryThis: [
     'Press Run ×100 with nothing fixed, then click a red run and read why it failed.',
-    'Turn Retry failed tests on: the grid goes mostly green and orange, and Real bugs hidden starts counting.',
+    'Turn Retry failed tests on: some red runs turn orange (green after a retry) and Real bugs hidden starts counting, but many stay red: emptyCartTotal shares a dirty cart that no retry can clean.',
     'Fix one source at a time with its chip and watch the same 100 seeds flip from red to green.',
     'Click a red run, then press Replay seed: the same order and the same failure come back.',
-    'Quarantine reserveStockTwice: the build goes green and the real race hides behind its ! marks.',
+    'Fix the other four sources, then quarantine reserveStockTwice: all 100 runs go green, and the ! marks show the real race still tripping.',
   ],
   keyIdeas: [
     'A flaky test depends on something it doesn\'t control: timing, order, shared state, the clock or randomness.',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DAY_S, FIRST_TRY_RATE, MAX_RETRIES, POLLUTER, SOURCES, TEST_OF, drawsFor, exactFirstTryGreen, exactGreen, finalRate, runSeed, runSuite, summarise,
+  DAY_S, FIRST_TRY_RATE, MAX_RETRIES, POLLUTER, SLEEP_MS, SOURCES, TEST_OF, drawsFor, exactFirstTryGreen, exactGreen, finalRate, runSeed, runSuite, summarise,
   type Config, type SourceId,
 } from './sim';
 
@@ -150,7 +150,11 @@ describe('failure detail', () => {
       const d = drawsFor(s);
       for (const t of r.tests) {
         for (const a of t.attempts) expect(a.passed).toBe(a.reason === '');
-        if (t.source === 'sleep' && !t.attempts[0].passed) expect(t.attempts[0].reason).toContain(`${Math.round(d.jobMs[0])} ms`);
+        if (t.source === 'sleep' && !t.attempts[0].passed) {
+          const shown = Number(/took ([\d.]+) ms/.exec(t.attempts[0].reason)![1]);
+          expect(shown).toBeGreaterThan(SLEEP_MS); // never "took 100 ms but slept 100 ms"
+          expect(Math.abs(shown - d.jobMs[0])).toBeLessThan(0.1);
+        }
         if (t.source === 'random' && !t.attempts[0].passed) expect(d.qty[0]).toBe(0);
       }
     }
