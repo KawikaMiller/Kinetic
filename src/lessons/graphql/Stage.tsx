@@ -19,7 +19,7 @@ import { compareFrames, costCaption, levelFrames } from './frames';
 import { DEFAULT_PICK, ORDER_COUNTS, queryFor, toggle, type Pick, type PickKey } from './picker';
 import { SHOWN_ITEMS, buildTree, type TreeNode } from './resolverTree';
 import { SCREEN_ORDERS, SCREEN_QUERY, SCREEN_USER, planGraphql, planRest } from './rest';
-import { costView, dbRows, responseLines } from './scenes';
+import { CACHING_NOTE, DB_COUNT_NOTE, costView, dataLoaderNote, dbRows, responseLines } from './scenes';
 import { LIMITS, depthOf, printQuery } from './schema';
 import './styles.css';
 
@@ -66,6 +66,7 @@ function CompareScene({ picker, service, failProductId }: { picker: ReactNode; s
   const now = player.frame.now;
   const err = gql.body.errors?.[0];
   const response = useMemo(() => responseLines(gql.body, COMPARE_LINES), [gql]);
+  const naiveCalls = useMemo(() => execute(SCREEN_QUERY, { dataLoader: false, failProductId }).dbCalls.length, [failProductId]);
 
   const lanes = [...rest.requests.map((r) => ({ id: r.id, label: r.path.replace('GET ', '') })), { id: 'gql', label: 'POST /graphql' }];
   const bars: GanttBar[] = [
@@ -148,8 +149,8 @@ function CompareScene({ picker, service, failProductId }: { picker: ReactNode; s
         </div>
         <Hint block>
           {HONEST_COMPARE} A tuned REST API (field selection, embedded resources, a purpose-built endpoint for this screen) closes much of the gap; GraphQL gives every client that choice
-          without a new endpoint. It also saved round trips here, not server work. The query travels as a {kb(gql.requestBytes)} POST body, and because every request goes to one URL, an HTTP
-          cache can&apos;t key on it the way it can on GET /users/{SCREEN_USER} (see http-caching). Subscriptions, GraphQL&apos;s push, are a different transport (see realtime-transports).
+          without a new endpoint. It also saved round trips here, not server work. The query travels as a {kb(gql.requestBytes)} POST body. {CACHING_NOTE} (see http-caching). {dataLoaderNote(gql.execution.dbCalls.length, naiveCalls)}
+          Subscriptions, GraphQL&apos;s push, are a different transport (see realtime-transports).
         </Hint>
       </div>
     </StageFrame>
@@ -296,7 +297,7 @@ function ResolversScene({ picker, service, failProductId }: { picker: ReactNode;
           </table>
         </div>
         <Hint block>
-          {HONEST_COMPARE} The general N + 1 problem is the subject of orm-n-plus-one; here each product resolver is the culprit. A level only starts when the one above it is done. The query always selects name: a selection can't be empty.
+          {HONEST_COMPARE} The general N + 1 problem is the subject of orm-n-plus-one; here each product resolver is the culprit. A level only starts when the one above it is done. {DB_COUNT_NOTE} The query always selects name: a selection can't be empty.
         </Hint>
       </div>
     </StageFrame>

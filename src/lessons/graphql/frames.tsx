@@ -107,7 +107,7 @@ export function levelSummaryCaption(exec: Execution, dataLoader: boolean): React
   const errors = exec.errors.length;
   return <>Done in {ms(exec.totalMs)}: {plural(exec.invocations.length, 'resolver call')} and {plural(exec.dbCalls.length, 'database call')}
     {products.length ? <> ({plural(products.length, 'product call')}{dataLoader ? ', batched' : ', one per order'})</> : null}.
-    {errors ? <> <span className="hl orange">{plural(errors, 'field')} failed</span>: the response is still HTTP 200, with those fields null and {errors === 1 ? 'an entry' : 'entries'} in <code>errors</code>.</> : null} Simplified executor; timings illustrative.</>;
+    {errors ? <> <span className="hl orange">{plural(errors, 'field')} failed</span>: the response is still HTTP 200, with those fields null (this schema&apos;s fields are nullable; an error in a non-null field would null its nearest nullable parent) and {errors === 1 ? 'an entry' : 'entries'} in <code>errors</code>.</> : null} Simplified executor; timings illustrative.</>;
 }
 
 export function levelFrames(exec: Execution, dataLoader: boolean): LevelFrame[] {

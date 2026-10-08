@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'GraphQL lets a client send one query that names exactly the fields it needs, and the server answers by running a resolver per field: no over-fetching, but the server\'s work, and its worst case, are now the client\'s choice.',
-    what: 'A GraphQL API has one endpoint and a typed schema. A query is a selection set, fields nested as deep as the client likes, and the response has exactly that shape. The server runs one resolver per field, parents before children, so a list of 50 orders that each resolve their product makes 50 separate database calls unless a DataLoader batches them into one. Because a client can ask for anything the schema allows, servers measure a query\'s depth and cost first and reject it before any resolver runs.',
+    what: 'A GraphQL API has one endpoint and a typed schema. A query is a selection set, fields nested as deep as the client likes, and the response has exactly that shape. The server runs one resolver per field, parents before children, so a list of 50 orders that each resolve their product makes 50 separate database calls unless a DataLoader batches them into one. Because a client can ask for anything the schema allows, well-run servers measure a query\'s depth and cost first and reject it before any resolver runs.',
     analogy: 'Ordering by listing exactly what goes on the plate, instead of picking a fixed combo meal: no extras on the tray, but the kitchen cooks each item separately, and an enormous order has to be turned away at the door.',
     useCases: [
       'Mobile apps that need one tailored payload per screen over a slow network',
@@ -24,10 +24,10 @@ const lesson: LessonModule = {
     'In Cost limits, drag Friends levels from 2 to 3 and the query is refused before any resolver runs. Set n to 50 at 2 levels and the cost limit trips alone.',
   ],
   keyIdeas: [
-    'A response has exactly the shape of the query, so fields are never over-fetched, but the server still runs a resolver for each one.',
+    'A response has exactly the shape of the query, so it never contains fields the client did not ask for, though the server still reads whole rows and runs a resolver for each field.',
     'Plain resolvers on a list make 1 + N database calls; a DataLoader batches each level\'s lookups into one call.',
-    'A failed field gives HTTP 200 with that field null and an entry in errors: check errors, not just the status.',
-    'Clients choose the work, so servers price queries by depth and cost first; one POST endpoint also loses URL-keyed HTTP caching.',
+    'A failed field gives HTTP 200 with that field null (or its nearest nullable parent, if it is non-null) and an entry in errors: check errors, not just the status.',
+    'Clients choose the work, so servers price queries by depth and cost first; queries are usually POSTed to one URL, which loses URL-keyed HTTP caching unless GET and persisted queries are used.',
   ],
   quiz: [
     {
@@ -44,13 +44,13 @@ const lesson: LessonModule = {
     {
       q: 'Why is HTTP caching harder for GraphQL than for `GET /users/1`?',
       options: [
-        'Each query is a POST to one URL, so the URL no longer names the data',
+        'Queries are usually POSTed to one URL, so the URL no longer names the data',
         'The GraphQL specification forbids caching headers on any response',
         'GraphQL replies contain JSON, which no cache is able to store at all',
         'Resolvers rebuild the data on every request, so it is never repeated',
       ],
       answer: 0,
-      why: 'HTTP caches key on the method and URL, and every GraphQL request is a POST to the same endpoint with the query in the body. Nothing forbids cache headers or JSON, and the same query often returns the same data; the cache just cannot tell queries apart by URL.',
+      why: 'HTTP caches key on the method and URL, and a typical GraphQL request is a POST to the same endpoint with the query in the body (GET requests with persisted queries can restore URL caching). Nothing forbids cache headers or JSON, and the same query often returns the same data; the cache just cannot tell queries apart by URL.',
     },
     {
       q: 'One product lookup fails while the rest of the query succeeds. What does the client get back?',
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'HTTP 200, with every field null since a response is all-or-nothing',
       ],
       answer: 0,
-      why: 'A resolver error nulls only its own field and adds an entry to errors, while the request itself still succeeds. So a client that checks only the status code misses it, unlike a REST call, where that one failed request would be its own 503.',
+      why: 'A resolver error nulls only its own field when that field is nullable (all of this schema\'s are; a non-null field nulls its nearest nullable parent) and adds an entry to errors, while the request itself still succeeds. So a client that checks only the status code misses it, unlike a REST call, where that one failed request would be its own 503.',
     },
     {
       q: 'Why does a GraphQL server compute a query\'s cost before running any resolver?',

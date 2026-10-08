@@ -99,3 +99,17 @@ export function dbRows(exec: Execution, level: number, max: number): { rows: DbR
   const done = exec.dbCalls.filter((c) => c.level <= level);
   return { rows: done.slice(0, max).map((c) => ({ id: c.id, level: c.level, start: c.start, sql: c.sql, batched: c.batched })), more: Math.max(0, done.length - max) };
 }
+
+// ── Notes the stage prints ──────────────────────────────────────────────
+
+/** Why GraphQL and HTTP caching don't mix by default, without claiming it can't be done. */
+export const CACHING_NOTE =
+  'GraphQL queries are usually sent as a POST to one URL, so an HTTP cache cannot key on the URL the way it can for GET /users/1; GET requests with persisted queries can restore URL-keyed caching.';
+
+/** Which database-call count the comparison scene uses, and what the other setting would make it. */
+export function dataLoaderNote(withLoader: number, withoutLoader: number): string {
+  return `The GraphQL lane assumes a DataLoader: ${withLoader} database calls. With it off, the same query makes ${withoutLoader} (see Resolvers).`;
+}
+
+/** What the "DB calls" count in the Resolvers scene includes. */
+export const DB_COUNT_NOTE = 'The DB calls count includes the one lookup of the user; the quiz counts only the orders and products.';

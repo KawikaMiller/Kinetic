@@ -5,8 +5,8 @@ import { lastOrders } from './data';
 import { execute } from './exec';
 import { compareFrames, costCaption, levelCaption, levelFrames, levelSummaryCaption } from './frames';
 import { ORDER_COUNTS, DEFAULT_PICK, queryFor, toggle, type Pick, type PickKey } from './picker';
-import { SCREEN_ORDERS, SCREEN_USER, planGraphql, planRest } from './rest';
-import { EXEC_CAP, costView, countNames, levelCount, levelSummary, namesAsked } from './scenes';
+import { SCREEN_ORDERS, SCREEN_QUERY, SCREEN_USER, planGraphql, planRest } from './rest';
+import { CACHING_NOTE, DB_COUNT_NOTE, EXEC_CAP, costView, countNames, dataLoaderNote, levelCount, levelSummary, namesAsked } from './scenes';
 import { LIMITS } from './schema';
 import lesson from './index';
 
@@ -148,5 +148,47 @@ describe('the quiz numbers come from the model', () => {
     expect(q.options[q.answer]).toContain(String(naive));
     expect(q.options.some((o) => o.startsWith(`${loaded}:`))).toBe(true);
     expect(q.why).toContain(`1 + 50 = ${naive}`);
+  });
+});
+
+describe('claims are hedged where reality varies (review)', () => {
+  it('HTTP caching: "usually POSTed", with GET + persisted queries named, never "every request"', () => {
+    const q = lesson.quiz[1];
+    expect(q.options[q.answer]).toContain('usually POSTed');
+    expect(q.why).toContain('persisted queries');
+    expect(`${q.q} ${q.options.join(' ')} ${q.why}`).not.toMatch(/every GraphQL request/i);
+    expect(lesson.keyIdeas[3]).toContain('usually POSTed');
+    expect(lesson.keyIdeas[3]).toContain('persisted queries');
+    expect(CACHING_NOTE).toContain('usually sent as a POST');
+    expect(CACHING_NOTE).toContain('persisted queries can restore URL-keyed caching');
+    expect(CACHING_NOTE).not.toMatch(/\bevery\b|\bcannot be cached\b/);
+  });
+
+  it('over-fetching is stated about the response, not the database; servers are "well-run"', () => {
+    expect(lesson.keyIdeas[0]).not.toContain('never over-fetched');
+    expect(lesson.keyIdeas[0]).toContain('never contains fields the client did not ask for');
+    expect(lesson.summary.what).toContain('well-run servers measure');
+  });
+
+  it('error nulling is hedged on nullability, in the key idea, the quiz and the run caption', () => {
+    expect(lesson.keyIdeas[2]).toContain('nearest nullable parent');
+    expect(lesson.quiz[2].why).toContain('nearest nullable parent');
+    const exec = execute(queryFor(DEFAULT_PICK), { dataLoader: true, failProductId: failId });
+    expect(expectCaption(levelSummaryCaption(exec, true))).toContain('nearest nullable parent');
+  });
+
+  it('the comparison lane assumes a DataLoader: 3 database calls, and 5 with it off (computed from the model)', () => {
+    const withLoader = execute(SCREEN_QUERY, { dataLoader: true, failProductId: null }).dbCalls.length;
+    const without = execute(SCREEN_QUERY, { dataLoader: false, failProductId: null }).dbCalls.length;
+    expect([withLoader, without]).toEqual([3, 5]);
+    expect(dataLoaderNote(withLoader, without)).toBe('The GraphQL lane assumes a DataLoader: 3 database calls. With it off, the same query makes 5 (see Resolvers).');
+    expect(planGraphql(null).execution.dbCalls).toHaveLength(3);
+  });
+
+  it('the DB count note says it includes the user lookup: 52 naive calls for 50 orders, 51 of them orders and products', () => {
+    const e = execute(queryFor({ ...DEFAULT_PICK, n: 50 }), { dataLoader: false, failProductId: null });
+    expect(e.dbCalls).toHaveLength(52);
+    expect(e.dbCalls.filter((c) => c.kind !== 'users')).toHaveLength(51);
+    expect(DB_COUNT_NOTE).toContain('includes the one lookup of the user');
   });
 });
