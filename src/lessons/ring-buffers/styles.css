@@ -1,0 +1,28 @@
+.rb { gap: 14px; }
+.rb-refusal { margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bad); color: var(--bad); font: 500 13px var(--sans); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.rb-views { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.rb-ring-wrap { flex: 0 1 340px; min-width: 0; margin: 0 auto; }
+.rb-ring { display: block; width: 100%; max-width: 340px; height: auto; }
+.rb-ring-track { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; }
+.rb-slot { stroke-width: 1.5; }
+.rb-slot.is-filled { fill: color-mix(in srgb, var(--hi) 22%, var(--cell)); stroke: var(--hi); }
+.rb-slot.is-empty { fill: var(--cell); stroke: var(--dim); }
+.rb-slot.is-reserved { fill: var(--cell); stroke: var(--dim); stroke-dasharray: 4 3; }
+.rb-flash { fill: var(--c); stroke: none; }
+.rb-slot-text { font: 700 12px var(--mono); fill: var(--text); pointer-events: none; }
+.rb-index { font: 500 11px var(--mono); fill: var(--faint); }
+.rb-pointer polygon { fill: var(--c); }
+.rb-pointer text { font: 700 12px var(--mono); fill: var(--c); }
+.rb-side { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 28px; }
+/* Filled slots: a --hi tint, flat, like the ring's. */
+.rb-flat .array-cell.is-active { transform: none; box-shadow: none; background: color-mix(in srgb, var(--hi) 22%, var(--cell)); color: var(--text); border-color: var(--hi); }
+.rb-flat .array-pointer { white-space: nowrap; }
+.rb-decide { display: flex; flex-direction: column; gap: 4px; }
+.rb-decide code { font: 500 12.5px var(--mono); color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rb-decide code.is-true { color: var(--hi); }
+.rb-lost { align-self: flex-start; font: 700 12px var(--mono); padding: 2px 8px; border-radius: 6px; color: var(--on-c); background: var(--c); }
+.rb-where { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.rb-where-card { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--muted); }
+.rb-where-card b { color: var(--text); font-size: 13px; }
+.rb-drop circle { fill: var(--c); }
+.rb-drop text { font: 700 14px var(--mono); fill: var(--on-bad); }

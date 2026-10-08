@@ -17,3 +17,9 @@
 - **core/x86.ts:** promote the x86-64 interpreter, which is duplicated in isa-assembly and calling-conventions (a test pins the two copies identical). API: `assemble`, `step`, `runToEnd`, `startCpu`.
 - **CodePanel:** roving tabindex for `onLineClick` (`roving?`, with Up/Down/Home/End). isa-assembly has ~23 line tab stops.
 - **MemoryMap:** let two pointers share a row, or allow right-side labels (currently "sp=bp").
+
+## B13 (merged)
+- **useLoop:** add `{ maxDt? }`. The 50 ms dt cap hides the lag spikes game-loop teaches, so game-loop measures performance.now() itself.
+- **Bar:** stacked `segments={[{ value, tone }]}` (game-loop's frame-budget bar is local).
+- **Draggable overlay points:** extract Plot2D Points' drag logic as `useDragPoint`, or add an interactive CellGrid overlay. rasterization draws its own corner handles and depth probe.
+- **Ports:** agents sometimes hit another worktree's server on a shared port. Have the scripts verify the server's root before smoke/shot runs (a stamp endpoint, or a check on `vite.worktree.config` cacheDir).

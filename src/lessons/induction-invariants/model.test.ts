@@ -87,7 +87,7 @@ describe('binary search with its invariant', () => {
     expect(run.iterations.some((i) => i.mid === SEARCH_ARRAY.length && i.value === undefined)).toBe(true);
   });
 
-  it('every bug fails on some target of the preset array, and never as "ok" when it misbehaves', () => {
+  it('every bug fails on some target of the preset array', () => {
     const expected = { 'lo-mid': 'non-termination', lt: 'exit', 'hi-n': 'invariant' } as const;
     for (const bug of BUGS) {
       if (bug === 'none') continue;
@@ -129,5 +129,27 @@ describe('factor tree', () => {
     expect(splitOf(360)).toEqual([18, 20]);
     expect(splitOf(97)).toBeNull();
     expect(splitOf(1001)).toEqual([13, 77]); // the try-this tip
+  });
+});
+
+describe('review B15 regressions (model)', () => {
+  it('never reports "ok" for a run that misbehaves: wrong answer, the cap, or a read past the end', () => {
+    for (const bug of BUGS) {
+      for (const target of [...SEARCH_ARRAY, 1, 40, 99, -5, 1000]) {
+        const run = runSearch(SEARCH_ARRAY, target, bug);
+        const misbehaves = run.result === null || run.outOfBounds || run.result !== SEARCH_ARRAY.indexOf(target);
+        if (misbehaves) expect(run.verdict.kind, `${bug}/${target}`).not.toBe('ok');
+      }
+    }
+  });
+
+  it('horses: the two groups, built explicitly, share 0 horses for 2, 1 for 3, 2 for 4', () => {
+    const shared = (total: number) => {
+      const horses = Array.from({ length: total }, (_, i) => i + 1);
+      const butLast = new Set(horses.slice(0, -1));
+      return horses.slice(1).filter((h) => butLast.has(h)).length;
+    };
+    expect([shared(2), shared(3), shared(4)]).toEqual([0, 1, 2]); // worked by hand: {1}∩{2}, {1,2}∩{2,3}, {1,2,3}∩{2,3,4}
+    for (let k = 1; k <= 20; k++) expect(horseOverlap(k)).toBe(shared(k + 1));
   });
 });

@@ -1,0 +1,24 @@
+.scv { gap: 14px; }
+.scv-top { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.scv-buffer { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+.scv-prims { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.scv-prim { display: flex; flex-flow: row wrap; align-items: center; gap: 4px 10px; font: 500 12.5px var(--mono); }
+.scv-prim > code { min-width: 64px; color: var(--text); }
+.scv-tokens { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.scv-tokens b { margin-left: 4px; color: var(--violet); }
+.scv-token { width: 10px; height: 10px; border-radius: 50%; background: var(--violet); }
+.scv-queue { color: var(--muted); }
+.scv-held { color: var(--hi); }
+.scv-free { color: var(--muted); }
+.scv-woken { font: 500 12.5px var(--mono); color: var(--info); }
+.scv-codes { display: flex; flex-flow: row wrap; gap: 14px; }
+.scv-code { flex: 1 1 280px; min-width: 0; }
+.scv-chips { display: inline-flex; gap: 4px; font-style: normal; }
+.scv-chip { font: 700 11px var(--mono); padding: 0 5px; border-radius: 6px; border: 1.5px solid var(--c); color: var(--c); }
+.scv-chip.is-running { background: var(--c); color: var(--on-c); }
+.scv-chip.is-ready { background: color-mix(in srgb, var(--c) 18%, transparent); }
+.scv-chip.is-asleep { color: var(--muted); border-style: dashed; }
+.scv-chip.is-io { color: var(--muted); border-color: var(--muted); }
+/* Filled slots stay flat so the index row above them stays readable. */
+.scv-buffer .array-cell.is-info { transform: none; box-shadow: none; }
+.scv-buffer .array-pointer { white-space: nowrap; }

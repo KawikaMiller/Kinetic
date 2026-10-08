@@ -142,3 +142,26 @@ describe('displayOrder', () => {
     expect(positions.size).toBe(3);
   });
 });
+
+describe('review B15 regressions', () => {
+  it('never claims n² + n + 41 fails for only a few n: it is composite for most n', () => {
+    let composite = 0;
+    for (let n = 0; n < 10_000; n++) if (!isPrimeSlow(euler(n))) composite++;
+    expect(composite / 10_000).toBeGreaterThan(0.5); // so "fails for most n" is TRUE, not false
+    const s = CLAIMS.find((c) => c.id === 'euler')!.routes.counterexample as Script;
+    const reasons = s.lines.flatMap((l) => l.candidates.map((c) => c.reason)).join(' | ');
+    expect(reasons).not.toMatch(/not true|nor true|rarely fails|almost always prime/);
+  });
+
+  it('keeps p for the proposition only: the √2 proof names its integers a, b, c', () => {
+    const s = CLAIMS.find((c) => c.id === 'sqrt2')!.routes.contradiction as Script;
+    for (const l of s.lines) for (const c of l.candidates) expect(c.text, c.text).not.toMatch(/(^|[^A-Za-z])[pqr]([^A-Za-z]|$)/);
+    expect(CLAIMS.find((c) => c.id === 'sqrt2')!.statement).toContain('a/b');
+  });
+
+  it('says the direct route on "n² even ⇒ n even" stalls only without a lemma', () => {
+    const r = CLAIMS.find((c) => c.id === 'even-square')!.routes.direct;
+    expect(r.kind === 'stall' && r.why).toMatch(/lemma/);
+    expect(r.kind === 'stall' && r.why).toContain('stalls');
+  });
+});

@@ -18,39 +18,44 @@ export const PRESETS: readonly Preset[] = [
 
 /**
  * Each formula written as SQL over people(id), dishes(id) and likes(person, dish).
- * SQL has no "for all": ∀ is written as NOT EXISTS (… NOT …), "there's no counterexample".
+ * SQL has no "for all": ∀x P is written ¬∃x ¬P, a NOT EXISTS around a NOT, "there's no
+ * counterexample". Each comment names exactly the piece of logic its line writes.
  */
 export const SQL: Record<FormulaId, readonly string[]> = {
   AE: [
-    'SELECT NOT EXISTS (              -- ∀x',
+    'SELECT NOT EXISTS (              -- ¬∃x: no person p',
     '  SELECT 1 FROM people p',
-    '  WHERE NOT EXISTS (             -- ∃y',
+    '  WHERE NOT EXISTS (             -- ¬∃y: who likes no dish',
     '    SELECT 1 FROM likes l',
     '    WHERE l.person = p.id));',
   ],
   EA: [
-    'SELECT EXISTS (                  -- ∃y',
+    'SELECT EXISTS (                  -- ∃y: some dish d',
     '  SELECT 1 FROM dishes d',
-    '  WHERE NOT EXISTS (             -- ∀x',
+    '  WHERE NOT EXISTS (             -- ¬∃x: with no person p',
     '    SELECT 1 FROM people p',
-    '    WHERE NOT EXISTS (',
+    '    WHERE NOT EXISTS (           -- ¬likes: who does not like d',
     '      SELECT 1 FROM likes l',
     '      WHERE l.person = p.id AND l.dish = d.id)));',
   ],
-  EE: ['SELECT EXISTS (                  -- ∃x ∃y', '  SELECT 1 FROM likes l);'],
+  EE: ['SELECT EXISTS (                  -- ∃x ∃y: some like at all', '  SELECT 1 FROM likes l);'],
   AA: [
-    'SELECT NOT EXISTS (              -- ∀x ∀y',
+    'SELECT NOT EXISTS (              -- ¬∃x ∃y: no (person, dish) pair',
     '  SELECT 1 FROM people p, dishes d',
-    '  WHERE NOT EXISTS (',
+    '  WHERE NOT EXISTS (             -- ¬likes: that is not liked',
     '    SELECT 1 FROM likes l',
     '    WHERE l.person = p.id AND l.dish = d.id));',
   ],
 };
 
-/** What a proof of the formula is, read as a value of a type: the witness it has to hand over. */
+/**
+ * What a proof of the formula hands over, read as a value of a type. A bare value is only the
+ * witness; the proof also carries evidence that `likes` holds for it, which is why each gloss
+ * says so.
+ */
 export const TYPE_READING: Record<FormulaId, { type: string; gloss: string }> = {
-  AE: { type: 'pick: (x: Person) => Dish', gloss: 'a function: the dish may depend on the person' },
-  EA: { type: 'dish: Dish', gloss: 'one value, chosen before anyone is asked' },
-  EE: { type: 'pair: [Person, Dish]', gloss: 'one person and one dish' },
+  AE: { type: 'pick: (x: Person) => Dish', gloss: 'for each person, a dish, paired with proof that they like it; the dish may depend on the person' },
+  EA: { type: 'dish: Dish', gloss: 'one dish chosen before anyone is asked, paired with proof that everyone likes it' },
+  EE: { type: 'pair: [Person, Dish]', gloss: 'one person and one dish, paired with proof that the person likes it' },
   AA: { type: 'check: (x: Person, y: Dish) => true', gloss: 'no witness to pick: every pair must pass' },
 };

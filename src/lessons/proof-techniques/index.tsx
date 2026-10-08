@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Reading papers, RFCs and specs, which state results and justify each step',
     ],
     why: "Engineers reason about code all the time (this loop terminates, this case can't happen, this refactor is safe) and the same few shapes of argument cover almost all of it. Knowing them stops the classic mistakes: assuming what you want to prove, proving the converse, and trusting a claim because it held for every case you happened to try.",
-    watch: 'The proof column fills line by line: the line being filled is yellow, an accepted step gets a green left bar with its justification on the right, an assumption in a contradiction proof is violet, and the contradiction line itself is red. Candidate steps are blue chips; a rejected one turns red with ✗, shakes, and its reason appears below. When you scrub back to review a line, the chosen step is solid green and the steps not chosen are grey. A route that stalls ends in a red "stuck" line and a red-edged note. In the counterexample hunt, values of n that give a prime are green, a value that gives a composite is solid red, untested values are grey outlines, and the current n has a yellow ring. The truth table marks true values green, with the current row yellow.',
+    watch: 'The proof column fills line by line: the line being filled is yellow, an accepted step gets a green left bar with its justification on the right, an assumption in a contradiction proof is violet, and the contradiction line (or, in a counterexample proof, the failing case) is red. Candidate steps are blue chips; a rejected one turns red with ✗, shakes, and its reason appears below. When you scrub back to review a line, the chosen step is solid green and the steps not chosen are grey. A route that stalls ends in a red "stuck" line and a red-edged note. In the counterexample hunt, values of n that give a prime are green, a value that gives a composite is solid red, untested values are grey outlines, and the current n has a yellow ring. The truth table marks true values green, with the current row yellow.',
   },
   tryThis: [
     'On Odd + odd with Technique Direct, pick "Let m = 3 and n = 5." first and read why one example is not a proof. Then finish the proof.',
@@ -48,15 +48,15 @@ const lesson: LessonModule = {
       why: 'The contrapositive of p → q is ¬q → ¬p: assume the conclusion is false (n is odd) and show the hypothesis is false (n² is odd). Assuming n² is odd starts from ¬p, which is the wrong end.',
     },
     {
-      q: 'Why does the √2 proof assume p/q is in lowest terms?',
+      q: 'Why does the √2 proof assume a/b is in lowest terms?',
       options: [
-        'So that "p and q are both even" contradicts something',
+        'So that "a and b are both even" contradicts something',
         'Because √2 is only defined for fractions in lowest terms',
-        'So that p and q are guaranteed to be prime numbers',
+        'So that a and b are guaranteed to be prime numbers',
         'Because it makes the algebra in the next step shorter',
       ],
       answer: 0,
-      why: 'The proof ends by showing p and q are both even. That is only a contradiction if we assumed they share no factor. Any fraction can be reduced, so the assumption costs nothing; it does not make p or q prime, and it does not shorten the algebra.',
+      why: 'The proof ends by showing a and b are both even. That is only a contradiction if we assumed they share no factor. Any fraction can be reduced, so the assumption costs nothing; it does not make a or b prime, and it does not shorten the algebra.',
     },
     {
       q: 'Which of these, if proved, proves "if p then q"?',
