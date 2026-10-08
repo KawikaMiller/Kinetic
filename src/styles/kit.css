@@ -246,6 +246,14 @@
   color: var(--text);
   box-shadow: inset 3px 0 0 var(--bad);
 }
+.code-panel li.is-good {
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  color: var(--text);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+/* A diff's + and − lines: the text takes the colour, no bar */
+.code-panel li.is-add { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+.code-panel li.is-del { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
 .code-panel.now-solid li.is-now { background: var(--hi); color: var(--on-hi); }
 .code-panel.now-solid li.is-now .gutter { color: var(--on-hi); }
 .code-panel.now-bar li.is-now {

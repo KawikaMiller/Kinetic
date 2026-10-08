@@ -23,7 +23,3 @@
 .ed-versions { display: flex; flex-wrap: wrap; gap: 12px; }
 .ed-version { flex: 1 1 240px; }
 .ed-version textarea { width: 100%; box-sizing: border-box; }
-.ed-diff { display: block; white-space: pre; padding: 0 6px; border-radius: 4px; }
-.ed-diff.is-add { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
-.ed-diff.is-del { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
-.ed-diff.is-same { color: var(--muted); }
