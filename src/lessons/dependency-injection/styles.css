@@ -1,0 +1,14 @@
+.di { gap: 14px; }
+.di-graph { margin: 0 auto; }
+.di-graph .graph-node-label { font-size: 12px; }
+.di-code { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.di-code > * { flex: 1 1 320px; min-width: 0; }
+.di-col { display: flex; flex-direction: column; gap: 12px; }
+.di-badge { font: 600 12px var(--mono); pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+.di-badge-count { fill: var(--muted); }
+.di-badge-shared { fill: var(--violet); font-weight: 700; }
+.di-table-wrap { overflow-x: auto; max-width: 100%; }
+.di-table { width: 100%; font-size: 13px; }
+@media (max-width: 900px) { .di-table th:nth-child(2), .di-table td:nth-child(2) { display: none; } }
+.di-table td { vertical-align: middle; }
+.di-table tr.is-current td { color: var(--hi); }
