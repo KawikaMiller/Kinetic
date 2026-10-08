@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { revealScrollLeft, type RevealSpan } from './wideReveal';
+
+export type { RevealSpan } from './wideReveal';
 
 /** How long the "swipe" hint stays up if the learner doesn't scroll first. */
 const SWIPE_HINT_MS = 5000;
@@ -19,10 +22,16 @@ export interface Gutter {
  * A sideways scroller always clips vertically too (CSS forces overflow-y off `visible`
  * once overflow-x scrolls), so anything drawn above or below the children (ArrayStrip
  * range labels, pointers) is cut off unless `gutter` reserves room for it.
+ *
+ * `reveal` keeps a stretch of the content on screen while it overflows: when it changes,
+ * the region scrolls sideways just enough to show it (a sliding window that would otherwise
+ * run off a phone). It's given as fractions of the content's width, or of the first element
+ * matching `within` (an ArrayStrip's `.array-cells`), so it's exact even while the thing it
+ * points at is still gliding there. Smooth, or instant under prefers-reduced-motion.
  */
 export function WideRegion({
   children, minWidth, gutter, className = '', style, label = 'Diagram: scroll sideways to see all of it',
-  hint = 'swipe to see the whole diagram',
+  hint = 'swipe to see the whole diagram', reveal,
 }: {
   children: ReactNode;
   minWidth: number;
@@ -34,6 +43,8 @@ export function WideRegion({
   label?: string;
   /** The one-time hint's wording, for content that isn't a diagram (a table, a code listing). */
   hint?: string;
+  /** Scroll this stretch into view when it changes: `{ from, to }` in 0..1, `within` a selector to measure against. */
+  reveal?: (RevealSpan & { within?: string }) | null;
 }) {
   const padding = gutter
     ? { paddingTop: gutter.top, paddingBottom: gutter.bottom, paddingLeft: gutter.x, paddingRight: gutter.x }
@@ -46,6 +57,21 @@ export function WideRegion({
     const t = setTimeout(() => setHintDismissed(true), SWIPE_HINT_MS);
     return () => clearTimeout(t);
   }, [overflows]);
+  const { from, to: until, within } = reveal ?? {};
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || from === undefined || until === undefined || !overflows) return;
+    const scope = (within && el.querySelector<HTMLElement>(within)) || el.firstElementChild;
+    if (!scope) return;
+    const box = scope.getBoundingClientRect();
+    const origin = el.getBoundingClientRect().left - el.scrollLeft;
+    const left = box.left - origin + from * box.width;
+    const right = box.left - origin + until * box.width;
+    const to = revealScrollLeft(el, left, right);
+    if (to === null) return;
+    const instant = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({ left: to, behavior: instant ? 'auto' : 'smooth' });
+  }, [from, until, within, overflows]);
   const edges = overflows ? `${atStart ? '' : ' more-left'}${atEnd ? '' : ' more-right'}` : '';
   return (
     <div className="stage-shell">

@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode, Ref } from 'react';
 
 /**
  * Native attributes a wrapper forwards to its root element (aria-*, role, id, data-*, events).
@@ -7,17 +7,21 @@ import type { HTMLAttributes, ReactNode } from 'react';
  */
 type Forwarded<E extends HTMLElement> = Omit<HTMLAttributes<E>, 'children' | 'className'>;
 
-/** A sub-panel inside a stage (kit.css `.box`). Pass className for lesson layout, style for one-off fills. */
+/**
+ * A sub-panel inside a stage (kit.css `.box`). Pass className for lesson layout, style for
+ * one-off fills, `ref` to reach its div (measuring it, focusing it).
+ */
 export function Box({
-  variant = 'default', className = '', children, ...rest
+  variant = 'default', className = '', children, ref, ...rest
 }: {
   variant?: 'default' | 'sunken' | 'raised';
   className?: string;
   children: ReactNode;
+  ref?: Ref<HTMLDivElement>;
 } & Forwarded<HTMLDivElement>) {
   const v = variant === 'default' ? '' : ` box-${variant}`;
   return (
-    <div {...rest} className={`box${v} ${className}`}>
+    <div {...rest} ref={ref} className={`box${v} ${className}`}>
       {children}
     </div>
   );

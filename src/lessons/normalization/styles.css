@@ -1,0 +1,29 @@
+.nm { gap: 14px; }
+.nm .section-title { display: block; }
+.nm-top { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.nm-fds { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.nm-score { flex: 0 1 260px; display: flex; flex-direction: column; gap: 6px; }
+.nm-score-table td { padding: 5px 8px; }
+.nm-score-table tr.is-active td { background: color-mix(in srgb, var(--orange) 10%, transparent); }
+.nm-code { font-size: 12.5px; }
+.nm-tables { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.nm-table-box { flex: 0 1 auto; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.nm-table { width: auto; }
+.nm-table td { white-space: nowrap; }
+.nm-table th.nm-pk { color: var(--hi); }
+.nm-table th.nm-fk { color: var(--violet); }
+.nm-key { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.nm-fk-tag { margin-left: 4px; padding: 0 4px; border: 1px solid currentColor; border-radius: 4px; font-size: 9.5px; }
+.nm-repeat { background: color-mix(in srgb, var(--orange) 16%, transparent); color: var(--text); }
+.nm-bad { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); font-weight: 700; }
+.nm-list { color: var(--bad); font-style: italic; }
+.nm-added td { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.nm-moved { animation: nm-moved 2.4s ease-out; }
+@keyframes nm-moved {
+  0%, 45% { background: color-mix(in srgb, var(--info) 28%, transparent); box-shadow: inset 0 2px 0 var(--info); }
+  100% { background: transparent; box-shadow: none; }
+}
+.nm-read { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 900px) {
+  .nm-table-box, .nm-score, .nm-fds { flex-basis: 100%; }
+}

@@ -124,6 +124,7 @@ export function Stage() {
             cellState={cellState}
             ranges={f.found === null ? [{ from: f.lo, to: f.hi, tone: 'hi', labels: ['lo', 'hi'] }] : []}
             pointers={pointers}
+            mergePointers
           />
         </div>
         <div className="qs-panels">
@@ -156,17 +157,11 @@ export function Stage() {
   );
 }
 
-/** i, j and k markers; ones on the same cell share one label ("i·k") so they never overprint. */
+/** i, j and k markers; ArrayStrip's mergePointers joins ones on the same cell ("i·k") so they never overprint. */
 function markers(i: number | null, j: number | null, k: number): ArrayPointer[] {
-  const list: { at: number; name: string; tone: ArrayPointer['tone'] }[] = [];
-  if (i !== null) list.push({ at: i, name: 'i', tone: 'info' });
-  if (j !== null) list.push({ at: j, name: 'j', tone: 'violet' });
-  list.push({ at: k, name: 'k', tone: 'muted' });
-  const out: ArrayPointer[] = [];
-  for (const m of list) {
-    const same = out.find((p) => p.i === m.at);
-    if (same) same.label = `${String(same.label)}·${m.name}`;
-    else out.push({ i: m.at, label: m.name, tone: m.tone, id: m.name });
-  }
-  return out;
+  const list: ArrayPointer[] = [];
+  if (i !== null) list.push({ i, label: 'i', tone: 'info', id: 'i' });
+  if (j !== null) list.push({ i: j, label: 'j', tone: 'violet', id: 'j' });
+  list.push({ i: k, label: 'k', tone: 'muted', id: 'k' });
+  return list;
 }

@@ -33,6 +33,11 @@ export interface GanttBar {
    * e.g. a meeting sliding down into the "booked" lane.
    */
   motionId?: string;
+  /**
+   * Draw it at least this many px wide, from its start, so a very short span (a 20 µs deopt
+   * on a millisecond axis) stays visible; its tooltip and name still say how long it really was.
+   */
+  minPx?: number;
 }
 
 /** How long a bar with a motionId takes to glide to its new place. */
@@ -182,6 +187,7 @@ function Bar({ bar: b, domain, onClick, showLabel }: { bar: GanttBar; domain: Do
   const style = {
     left: `${g.left}%`,
     width: `${g.shown}%`,
+    ...(b.minPx ? { minWidth: b.minPx } : {}),
     ...(b.ring ? { '--gantt-ring': `var(--${b.ring})` } : {}),
   } as CSSProperties;
   const content = showLabel && b.label && <span className="gantt-bar-label">{b.label}</span>;

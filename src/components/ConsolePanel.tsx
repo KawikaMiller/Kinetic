@@ -5,19 +5,23 @@ export type ConsoleLine = string | { text: string; tone: Tone };
 
 /**
  * A program's console: what it printed, in order, with an empty state. Normal output is
- * green; an `error` line (e.g. an uncaught exception) goes last in red.
+ * green; an `error` line (e.g. an uncaught exception) goes last in red. `preserveWhitespace`
+ * prints lines exactly as given (white-space: pre), so column output like `ps` lines up; a
+ * line wider than the panel scrolls sideways inside it instead of wrapping.
  */
 export function ConsolePanel({
-  lines, error, title = 'console', empty = 'nothing printed yet',
+  lines, error, title = 'console', empty = 'nothing printed yet', preserveWhitespace = false,
 }: {
   lines: readonly ConsoleLine[];
   /** Printed last as "Uncaught <error>". */
   error?: string | null;
   title?: string;
   empty?: string;
+  /** Keep runs of spaces and never wrap: columns stay aligned. */
+  preserveWhitespace?: boolean;
 }) {
   return (
-    <div className="console-panel" aria-label="Console output">
+    <div className={`console-panel${preserveWhitespace ? ' is-pre' : ''}`} aria-label="Console output">
       <span className="console-panel-title">{title}</span>
       {lines.length === 0 && !error && <span className="empty-note">{empty}</span>}
       {lines.map((line, i) =>

@@ -41,7 +41,7 @@ export function ZombieScene({ picker }: { picker: ReactNode }) {
             </li>
           ))}
         </ul>
-        <ConsolePanel lines={psLines(c, player.frame.step).map((l) => (l.includes('<defunct>') ? { text: l, tone: 'dim' as const } : l))} title="ps output" />
+        <ConsolePanel lines={psLines(c, player.frame.step).map((l) => (l.includes('<defunct>') ? { text: l, tone: 'dim' as const } : l))} title="ps output" preserveWhitespace />
         <Hint block>A simulated process table. A zombie uses no CPU and almost no memory (its process entry, PID and exit status remain) until its parent calls wait().</Hint>
       </div>
     </StageFrame>

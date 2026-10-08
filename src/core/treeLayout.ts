@@ -42,7 +42,10 @@ export interface TreeNodePlace {
 
 export interface TreeLayout<K extends TreeKey> {
   place: Map<K, TreeNodePlace>;
-  /** Number of columns used: nodes in `inorder`, leaves in `tidy`. */
+  /**
+   * Number of columns used: nodes in `inorder`, leaves in `tidy` (with `size`, the distance
+   * from the leftmost to the rightmost node centre plus one, so `treeX` still maps it).
+   */
   columns: number;
   /** Depth of the deepest node (root = 0); 0 for an empty tree. */
   depth: number;
@@ -52,13 +55,19 @@ export interface TreeLayout<K extends TreeKey> {
  * Lay a tree (or a forest, via `shape.roots`) out on a grid of columns × depth. Pure; map
  * it to pixels with `treeX`. A forest's trees take consecutive runs of columns with `gap`
  * columns between neighbours and none at the ends, so one tree lays out exactly as before.
+ *
+ * `size(id)` (tidy only) is a node's footprint in columns (default 1): a wide pill next to
+ * small circles. Each subtree gets a run of columns as wide as the larger of its children's
+ * runs and its own node, so neighbours never overlap; with every size 1 the layout is the
+ * plain tidy one, column for column.
  */
 export function layoutTree<K extends TreeKey>(
   shape: TreeShape<K>,
   mode: TreeLayoutMode,
-  opts: { gap?: number } = {},
+  opts: { gap?: number; size?: (id: K) => number } = {},
 ): TreeLayout<K> {
   const gap = opts.gap ?? FOREST_GAP;
+  const size = (id: K) => Math.max(0, opts.size?.(id) ?? 1);
   const place = new Map<K, TreeNodePlace>();
   let next = 0;
   let depth = 0;
@@ -72,10 +81,25 @@ export function layoutTree<K extends TreeKey>(
     for (const c of rest) inorder(c, d + 1);
   };
 
-  const tidy = (id: K, d: number): number => {
+  const kids = (id: K) => shape.children(id).filter((c): c is K => c != null);
+  // Tidy, in two passes: each subtree's run width, then centres placed left to right.
+  const span = new Map<K, number>();
+  const measure = (id: K): number => {
+    const w = Math.max(size(id), kids(id).reduce((sum, c) => sum + measure(c), 0));
+    span.set(id, w);
+    return w;
+  };
+  const tidy = (id: K, d: number, left: number): number => {
     depth = Math.max(depth, d);
-    const cols = shape.children(id).flatMap((c) => (c == null ? [] : [tidy(c, d + 1)]));
-    const col = cols.length ? (cols[0] + cols[cols.length - 1]) / 2 : next++;
+    const cs = kids(id);
+    const block = cs.reduce((sum, c) => sum + span.get(c)!, 0);
+    let at = left + (span.get(id)! - block) / 2;
+    const cols = cs.map((c) => {
+      const col = tidy(c, d + 1, at);
+      at += span.get(c)!;
+      return col;
+    });
+    const col = cols.length ? (cols[0] + cols[cols.length - 1]) / 2 : left + span.get(id)! / 2;
     place.set(id, { col, depth: d });
     return col;
   };
@@ -84,9 +108,18 @@ export function layoutTree<K extends TreeKey>(
   roots.forEach((root, i) => {
     if (i > 0) next += gap;
     if (mode === 'inorder') inorder(root, 0);
-    else tidy(root, 0);
+    else {
+      measure(root);
+      tidy(root, 0, next);
+      next += span.get(root)!;
+    }
   });
-  return { place, columns: next, depth };
+  if (mode === 'inorder' || place.size === 0) return { place, columns: next, depth };
+  // Shift so the leftmost centre is column 0, as in the unsized layout (leaf k at column k).
+  const cols = [...place.values()].map((p) => p.col);
+  const lo = Math.min(...cols);
+  for (const p of place.values()) p.col -= lo;
+  return { place, columns: Math.max(...cols) - lo + 1, depth };
 }
 
 /** Pixel x of a column across `width`, keeping `pad` clear on both sides; one column is centred. */
