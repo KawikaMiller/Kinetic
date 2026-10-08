@@ -157,7 +157,7 @@ export function ContainerScene({ picker }: { picker: ReactNode }) {
         </div>
         <Hint block>
           A toy container: register a class with what it needs and a lifetime, and it builds the graph for you. Real ones (.NET's, Spring, Dagger) add a
-          third lifetime, scoped (one per request), and reflection or code generation to read constructor parameters. A container is optional: the
+          third lifetime, scoped (one per web request, say), and reflection or code generation to read constructor parameters. A singleton that holds a shorter-lived dependency keeps that one instance alive too (a "captive dependency", a classic container bug), which isn't modelled here. A container is optional: the
           composition-root scene does the same by hand.
         </Hint>
       </div>

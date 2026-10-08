@@ -142,3 +142,16 @@ export function mainLines(repo: RepoChoice, mailer: MailerChoice): string[] {
 
 /** Classes a block of code constructs with `new`, in order of appearance. */
 export const newsIn = (lines: readonly string[]) => [...lines.join('\n').matchAll(/\bnew (\w+)\(/g)].map((m) => m[1]);
+
+/** The OrderService class's own lines: up to and including its closing brace. */
+export const serviceClass = (lines: readonly string[]) => lines.slice(0, lines.indexOf('}') + 1);
+
+/**
+ * The distinct collaborators a class picks for itself: classes it builds with `new`, and names it
+ * looks up in a global registry. Injected collaborators arrive as parameters and don't count.
+ */
+export function pickedInside(lines: readonly string[]): string[] {
+  const text = serviceClass(lines).join(' ');
+  const lookups = [...text.matchAll(/Registry\.get\('(\w+)'\)/g)].map((m) => `lookup:${m[1]}`);
+  return [...new Set([...newsIn(serviceClass(lines)).map((c) => `new:${c}`), ...lookups])];
+}

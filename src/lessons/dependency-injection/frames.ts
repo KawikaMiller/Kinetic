@@ -36,7 +36,7 @@ export function containerFrames(regs: readonly Registration[], root: string, tim
     } else if (e.kind === 'create') {
       counts[e.key] = e.instance;
       const single = regs.find((x) => x.key === e.key)!.lifetime === 'singleton';
-      say = `Created ${impl(e.key)} #${e.instance}${single ? ': a singleton, shared from now on' : ': transient, a new one per request'}.`;
+      say = `Created ${impl(e.key)} #${e.instance}${single ? ': a singleton, shared from now on' : ': transient, a new one each time it is asked for'}.`;
     } else if (e.kind === 'reuse') {
       say = `${impl(e.key)} is a singleton: reusing instance #${e.instance}, nothing new built.`;
     } else if (e.kind === 'cycle') {

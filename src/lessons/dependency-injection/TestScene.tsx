@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { DOUBLES, ORDER_SERVICE, TESTS, type Wiring } from './programs';
+import { DOUBLES, ORDER_SERVICE, TESTS, pickedInside, type Wiring } from './programs';
 import { runTest, type RunOutput } from './run';
 import { BOX, GRAPH_MIN_WIDTH, type DiEdge } from './shared';
 
@@ -70,7 +70,7 @@ const INTRO: Record<Wiring, string> = {
 function verdict(w: Wiring, out: RunOutput): string {
   if (out.passed.every(Boolean)) return 'The test passes with no database and no mail server, and the spy shows exactly one receipt was sent.';
   if (w === 'locator') {
-    return 'The test fails on the database even though nothing in the constructor mentions one. To isolate it, the test would have to know to overwrite the global Registry first, and restore it afterwards.';
+    return 'The test fails on the database even though nothing in the constructor mentions one. To isolate it, the test would have to know to overwrite the global Registry first, and restore it afterwards. (Locators are defensible at a framework edge or for plugin lookup; the problem here is a global reachable from business code.)';
   }
   return 'The test fails: it cannot swap the database out, so it hits the (simulated) one and gets "connection refused". Switch to constructor injection.';
 }
@@ -109,7 +109,7 @@ export function TestScene({ picker }: { picker: ReactNode }) {
     return null;
   };
   const passed = out ? out.passed.every(Boolean) : null;
-  const fixedInside = g.edges.filter((e) => e.from === 'OrderService' && (e.kind === 'new' || e.kind === 'hidden')).length;
+  const fixedInside = pickedInside(ORDER_SERVICE[wiring]).length;
 
   return (
     <StageFrame

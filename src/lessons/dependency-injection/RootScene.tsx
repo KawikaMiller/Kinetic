@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { ConsolePanel } from '../../components/ConsolePanel';
 import { GraphView, type GraphEdgeMark, type GraphNodeMark } from '../../components/GraphView';
@@ -32,7 +32,7 @@ export function RootScene({ picker }: { picker: ReactNode }) {
   const setCaption = useSetCaption();
   useIntroCaption('main() is the composition root: the one place that picks concrete classes. Swap the repo or the mailer and watch what changes.');
 
-  const out = runRoot(repo, mailer);
+  const out = useMemo(() => runRoot(repo, mailer), [repo, mailer]);
   const concreteInService = CONCRETE.filter((c) => ORDER_SERVICE.injected.some((l) => l.split(/\W+/).includes(c))).length;
   const ok = out.passed.every(Boolean);
   const chosen = new Set([REPO_CLASS[repo], MAILER_CLASS[mailer]]);
