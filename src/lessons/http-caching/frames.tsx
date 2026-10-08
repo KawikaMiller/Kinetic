@@ -27,7 +27,7 @@ export function messageCaption(m: Message, o: Outcome): ReactNode {
   if (m.tone === 'violet') return <><span className="hl violet">304 Not Modified</span> from {WHERE[m.from]}: the stored copy is still current, so only headers travel, no body.{bg}</>;
   if (m.tone === 'bad') {
     return <><span className="hl bad">The shared cache hands {name} {m.note?.replace('!', '')}</span>. It stored a per-user response because nothing told it not to
-      (no <code>private</code>, no <code>Vary: Cookie</code>), so the next user got the first user's data.</>;
+      (no <code>private</code>, no <code>Vary: Cookie</code>), so the next user got the first user's data. Many CDNs add safeguards (for example, not caching responses that set cookies), but don't rely on them.</>;
   }
   if (m.tone === 'orange') return <><span className="hl orange">Stale copy served</span> by the shared cache, inside its stale-while-revalidate window; it refreshes from the origin in the background.</>;
   if (m.tone === 'ok') return <><span className="hl ok">Fresh hit at the shared cache</span>: {m.label}{m.note ? ` (${m.note})` : ''}, without asking the origin.{bg}</>;

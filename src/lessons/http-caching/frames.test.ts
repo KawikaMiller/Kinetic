@@ -68,6 +68,7 @@ describe('captions follow the outcome they describe', () => {
           if (m.tone === 'info') expect(text).toContain(m.label);
           if (m.tone === 'violet') expect(text).toContain('304 Not Modified');
           if (m.tone === 'bad') expect(text).toContain(`hands ${USERS[o.user].name} ${USERS[o.owner!].name}'s page`);
+          if (m.tone === 'bad') expect(text).toContain('Many CDNs add safeguards');
           if (m.background && m.from !== m.to) expect(text).toContain('background');
         }
         const v = expectCaption(verdict(o, PER_USER.body));

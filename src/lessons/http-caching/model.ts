@@ -109,12 +109,16 @@ export function freshnessLifetime(p: Policy, kind: CacheKind, ageOfContentAtResp
   return { seconds: 0, source: 'no max-age and no Last-Modified: stale at once' };
 }
 
-/** May a stale copy be served? Only inside a stale-while-revalidate window, and never under must-revalidate (s-maxage implies proxy-revalidate for shared caches, §5.2.2.10). */
+/**
+ * May a stale copy be served? Only inside a stale-while-revalidate window, and never under must-revalidate.
+ * Strictly per RFC 9111 §5.2.2.10, s-maxage also implies proxy-revalidate for shared caches, so none is served stale
+ * there; many CDNs apply stale-while-revalidate alongside s-maxage anyway, and the reason string says so.
+ */
 export function staleAllowed(p: Policy, kind: CacheKind, age: number, lifetime: number): { ok: boolean; why: string } {
   const noStale = p.mustRevalidate || (kind === 'shared' && p.sMaxAge !== null);
   if (p.swr === null) return { ok: false, why: 'no stale-while-revalidate: stale means revalidate first' };
   if (noStale) {
-    return { ok: false, why: p.mustRevalidate ? 'must-revalidate: never served stale' : 's-maxage implies proxy-revalidate: never served stale here' };
+    return { ok: false, why: p.mustRevalidate ? 'must-revalidate: never served stale' : 's-maxage implies proxy-revalidate (RFC 9111 §5.2.2.10): not served stale here. Many CDNs serve stale under s-maxage + stale-while-revalidate anyway' };
   }
   const left = lifetime + p.swr - age;
   return left > 0
@@ -243,11 +247,9 @@ export function handle(w: World, p: Policy, res: Resource, user: UserId, reload:
     entry: e,
     age,
   });
-  const conditional = (e: Entry | null, base: Request): Request => ({
-    ...base,
-    ifNoneMatch: e?.etag ?? null,
-    ifModifiedSince: e && e.etag === null ? e.lastModifiedAt : null,
-  });
+  /** The request a cache sends upstream: its own stored copy's validators if it has one, else the client's conditional request as it came (RFC 9111 §4.3.1). */
+  const conditional = (e: Entry | null, base: Request): Request =>
+    e ? { ...base, ifNoneMatch: e.etag, ifModifiedSince: e.etag === null ? e.lastModifiedAt : null } : base;
   const reqText = (req: Request) => {
     const cond = req.ifNoneMatch !== null ? `If-None-Match: ${req.ifNoneMatch}` : req.ifModifiedSince !== null ? 'If-Modified-Since' : undefined;
     const label = `GET ${res.path}${cond ? ' (conditional)' : ''}`;
@@ -291,6 +293,11 @@ export function handle(w: World, p: Policy, res: Resource, user: UserId, reload:
         row('Upstream said', '304 Not Modified: the stored copy is still good', true);
         return { entry: kept, age: up.age };
       }
+      if (up.status === 304) {
+        // The client's own validator matched at the origin and this cache holds no copy to refresh: pass it on, store nothing.
+        row('Upstream said', '304 Not Modified: passed on to the client; there is no body to store here', true);
+        return { entry: up.entry, age: up.age };
+      }
       const keep = storable(p, kind);
       row('Upstream said', `200 with the body (version ${up.entry.version})`, null);
       row('Store it?', keep.why, keep.ok);
@@ -321,12 +328,18 @@ export function handle(w: World, p: Policy, res: Resource, user: UserId, reload:
       row('no-cache', 'stored, but must be revalidated before every use', false);
       return forward();
     }
-    if (req.reload && kind === 'private') {
-      if (fresh && p.immutable) {
+    if (req.reload) {
+      if (kind === 'private' && fresh && p.immutable) {
         row('Reload', 'immutable: a fresh copy is used without asking', true);
         return { resp: answer(e, req, age), how: 'fresh' };
       }
-      row('Reload', fresh ? 'revalidate even though it is fresh (immutable would skip this)' : 'revalidate', false);
+      row(
+        'Reload',
+        kind === 'shared'
+          ? 'the reload sent max-age=0, which a shared cache honours by revalidating (RFC 9111 §5.2.1.1)'
+          : fresh ? 'revalidate even though it is fresh (immutable would skip this)' : 'revalidate',
+        false,
+      );
       return forward();
     }
     if (fresh) return { resp: answer(e, req, age), how: 'fresh' };

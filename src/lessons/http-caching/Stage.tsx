@@ -209,7 +209,11 @@ export function Stage() {
             {resource.perUser && (
               <Toggle label="The developer" value={!policy.private} onChange={(forgot) => setPolicy({ ...policy, private: !forgot })} off="sent private" on="forgot private" />
             )}
-            <Hint block>Changing a header starts the timeline again with empty caches.</Hint>
+            <Hint block>
+              Changing a header starts the timeline again with empty caches. must-revalidate only matters here together with stale-while-revalidate: it forbids the stale serving that
+              window would allow. A reload sends max-age=0, so a shared cache revalidates too, except for an immutable copy in the browser. s-maxage also stops stale serving in a shared
+              cache (RFC 9111 §5.2.2.10), though many CDNs serve stale under it anyway.
+            </Hint>
           </Box>
           <HeaderBlock policy={policy} />
         </div>

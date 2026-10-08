@@ -154,7 +154,8 @@ describe('the presets', () => {
     const o = run(policy, [req(0), req(DAY), req(DAY, 'B'), req(2 * DAY, 'A', true)], resource);
     expect(o.map((x) => [x.kind, x.answeredBy])).toEqual([['miss', 'origin'], ['fresh', 'browser'], ['fresh', 'shared'], ['fresh', 'browser']]);
     const plain = run({ ...policy, immutable: false }, [req(0), req(DAY, 'A', true)], resource);
-    expect(plain[1]).toMatchObject({ kind: 'revalidated-304', answeredBy: 'shared' });
+    // A reload sends max-age=0, so even a fresh copy in the shared cache is revalidated with the origin (RFC 9111 §5.2.1.1).
+    expect(plain[1]).toMatchObject({ kind: 'revalidated-304', answeredBy: 'origin' });
   });
 
   it('HTML page: no-cache always revalidates', () => {
@@ -195,6 +196,54 @@ describe('the presets', () => {
     expect(o[2].messages[0]).toMatchObject({ from: 'browser', to: 'browser', tone: 'orange' });
     expect(o[2].messages.slice(1).every((m) => m.background)).toBe(true);
     expect(o[3].kind).toBe('revalidated-304');
+  });
+});
+
+describe('a stale browser copy with nothing in the shared cache (review: the conditional request must reach the origin)', () => {
+  const { policy, resource } = PRESETS.dashboard;
+
+  it('the dashboard revalidates to a 304 of headers only, not a full 200', () => {
+    const { outcomes, world } = replay(policy, resource, [req(0, 'A'), req(61, 'A')]);
+    expect(outcomes[1]).toMatchObject({ kind: 'revalidated-304', answeredBy: 'origin', originStatuses: [304], originBytes: HEAD_BYTES, clientBytes: HEAD_BYTES });
+    const toOrigin = outcomes[1].messages.find((m) => m.from === 'shared' && m.to === 'origin')!;
+    expect(toOrigin.label).toBe('GET /dashboard (conditional)');
+    expect(toOrigin.note).toBe('If-None-Match: "v1-a"');
+    expect(outcomes[1].messages.find((m) => m.from === 'origin')!.label).toBe('304 Not Modified');
+    // Nothing was stored in the shared cache, and the browser copy was refreshed.
+    expect(world.shared.size).toBe(0);
+    expect(world.browsers.A!.storedAt).toBe(61);
+  });
+
+  it('a changed resource still comes back as a full 200 through the same path', () => {
+    const o = run(policy, [req(0, 'A'), deploy(30), req(61, 'A')], resource);
+    expect(o[1]).toMatchObject({ kind: 'revalidated-200', originStatuses: [200], originBytes: HEAD_BYTES + resource.body, version: 2 });
+  });
+
+  it('holds for no-store-free policies that a shared cache will not keep, across validators', () => {
+    for (const etag of ['strong', 'weak'] as const) {
+      const p: Policy = { ...BLANK, private: true, maxAge: 60, etag };
+      const o = run(p, [req(0, 'A'), req(100, 'A')], resource);
+      expect(o[1]).toMatchObject({ kind: 'revalidated-304', originBytes: HEAD_BYTES });
+    }
+    const lm: Policy = { ...BLANK, private: true, maxAge: 60, lastModified: true };
+    expect(run(lm, [req(0, 'A'), req(100, 'A')], resource)[1]).toMatchObject({ kind: 'revalidated-304', originBytes: HEAD_BYTES });
+  });
+
+  it('a reload of a page the shared cache holds fresh is revalidated at the origin, for a hashed asset only when not immutable', () => {
+    const base: Policy = { ...BLANK, public: true, maxAge: 600, etag: 'strong' };
+    const o = run(base, [req(0, 'A'), req(10, 'B', true)]);
+    expect(o[1]).toMatchObject({ kind: 'revalidated-304', answeredBy: 'origin' });
+    expect(o[1].trail.some((r) => r.layer === 'Shared cache' && r.check === 'Reload')).toBe(true);
+    const immutable = run({ ...base, immutable: true }, [req(0, 'A'), req(10, 'A', true)]);
+    expect(immutable[1]).toMatchObject({ kind: 'fresh', answeredBy: 'browser' });
+  });
+});
+
+describe('s-maxage and stale serving, with the on-screen hedge', () => {
+  it('keeps the RFC 9111 rule but says many CDNs differ', () => {
+    const why = staleAllowed({ ...BLANK, sMaxAge: 60, swr: 100 }, 'shared', 61, 60).why;
+    expect(why).toContain('RFC 9111 §5.2.2.10');
+    expect(why).toContain('Many CDNs serve stale under s-maxage + stale-while-revalidate anyway');
   });
 });
 
