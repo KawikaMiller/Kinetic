@@ -40,6 +40,7 @@ export interface TreeGeometry<K extends TreeKey> {
  *   anything else: the layout always uses the whole shape.
  * - `overlay` draws between edges and nodes with the tree's geometry.
  * - `natural` sizes it to the container but never past its viewBox width (no wrapper div needed).
+ * - `nodeSize(id)` (tidy) gives a node a wider footprint than one column (the tries' radix pills).
  * - Forest mode: give `shape.roots` (and no `root`) to draw several trees side by side
  *   (union-find sets, a Huffman merge); `forestGap` is the empty columns between trees.
  * - With `onNodeClick` the nodes are buttons and the tree is one tab stop (starting at the
@@ -48,7 +49,7 @@ export interface TreeGeometry<K extends TreeKey> {
  *   node, Enter/Space press. `treeKeyTarget` in core/treeLayout is the pure key map.
  */
 export function TreeSvg<K extends TreeKey>({
-  shape, layout = 'tidy', forestGap, width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
+  shape, layout = 'tidy', forestGap, nodeSize, width, height, pad = 40, top = 34, levelGap, maxLevelGap = 70, bottomRoom = 70,
   radius = 19, label, renderNode, nodeMark, nodeClass, nodeScale, nodeOpacity, edgeMark, markedEdgeWidth, hidden,
   enterScale = 0.2, transition = SPRING.soft, onNodeClick, nodeAriaLabel, overlay, natural = false, className = '', ariaLabel,
 }: {
@@ -56,6 +57,12 @@ export function TreeSvg<K extends TreeKey>({
   layout?: TreeLayoutMode;
   /** Forest mode only: empty columns between neighbouring trees (default FOREST_GAP, 0.5). */
   forestGap?: number;
+  /**
+   * `tidy` only: a node's footprint in columns (default 1), so a wide pill gets the room it
+   * needs without widening every column. `layoutTree(shape, 'tidy', { size })` gives the
+   * resulting `columns` to size `width` with.
+   */
+  nodeSize?: (id: K) => number;
   /** viewBox size; the SVG scales to its CSS box. */
   width: number;
   height: number;
@@ -90,7 +97,7 @@ export function TreeSvg<K extends TreeKey>({
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [focusId, setFocusId] = useState<K | null>(null);
-  const { place, columns, depth } = layoutTree(shape, layout, { gap: forestGap });
+  const { place, columns, depth } = layoutTree(shape, layout, { gap: forestGap, size: nodeSize });
   const gap = levelGap ?? Math.min(maxLevelGap, (height - bottomRoom) / Math.max(1, depth));
   const at = (id: K) => {
     const p = place.get(id);

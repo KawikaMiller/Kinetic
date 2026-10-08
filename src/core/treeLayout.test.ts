@@ -179,3 +179,61 @@ describe('treeKeyTarget', () => {
     expect(treeKeyTarget('ArrowUp', 3, forest, laid)).toBeNull();
   });
 });
+
+describe('layoutTree tidy with node sizes', () => {
+  const kids: Record<string, string[]> = { r: ['a', 'b'], a: ['a1', 'a2'], b: [], a1: [], a2: [] };
+  const shape: TreeShape<string> = { root: 'r', children: (id) => kids[id] };
+
+  /** The tidy layout before sizes existed: leaves take consecutive columns. */
+  function unsizedTidy<K extends string | number>(s: TreeShape<K>, gap: number) {
+    const place = new Map<K, { col: number; depth: number }>();
+    let next = 0;
+    let depth = 0;
+    const tidy = (id: K, d: number): number => {
+      depth = Math.max(depth, d);
+      const cols = s.children(id).flatMap((c) => (c == null ? [] : [tidy(c, d + 1)]));
+      const col = cols.length ? (cols[0] + cols[cols.length - 1]) / 2 : next++;
+      place.set(id, { col, depth: d });
+      return col;
+    };
+    (s.roots ?? (s.root != null ? [s.root] : [])).forEach((root, i) => {
+      if (i > 0) next += gap;
+      tidy(root, 0);
+    });
+    return { place, columns: next, depth };
+  }
+
+  it('matches the unsized layout exactly when every size is 1, forests included', () => {
+    let seed = 7;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let t = 0; t < 200; t++) {
+      const n = 1 + Math.floor(rand() * 20);
+      const children = new Map<number, number[]>(Array.from({ length: n }, (_, i) => [i, []]));
+      const roots: number[] = [0];
+      for (let i = 1; i < n; i++) {
+        if (rand() < 0.15) roots.push(i);
+        else children.get(Math.floor(rand() * i))!.push(i);
+      }
+      const forest: TreeShape<number> = { roots, children: (id) => children.get(id)! };
+      expect(layoutTree(forest, 'tidy', { size: () => 1 })).toEqual(unsizedTidy(forest, 0.5));
+      expect(layoutTree(forest, 'tidy')).toEqual(unsizedTidy(forest, 0.5));
+    }
+  });
+
+  it('spaces a wide leaf by its footprint', () => {
+    const { place, columns } = layoutTree(shape, 'tidy', { size: (id) => (id === 'a2' ? 3 : 1) });
+    // a1 [0,1], a2 [1,4], b [4,5]: centres 0.5, 2.5, 4.5, shifted so a1 is column 0.
+    expect(place.get('a1')!.col).toBe(0);
+    expect(place.get('a2')!.col).toBe(2);
+    expect(place.get('b')!.col).toBe(4);
+    expect(place.get('a')!.col).toBe(1);
+    expect(columns).toBe(5);
+  });
+
+  it('gives a parent wider than its children a run of its own, children centred in it', () => {
+    const { place } = layoutTree(shape, 'tidy', { size: (id) => (id === 'a' ? 4 : 1) });
+    // a's run is 4 wide with its two leaves centred: a1, a2 at 1.5, 2.5; b after it at 4.5.
+    expect(place.get('a2')!.col - place.get('a1')!.col).toBe(1);
+    expect(place.get('b')!.col - place.get('a')!.col).toBe(2.5);
+  });
+});

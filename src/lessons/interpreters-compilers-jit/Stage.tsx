@@ -205,6 +205,8 @@ function Locals({ env }: { env: Record<string, Value> }) {
 const SEG_TONE: Record<SegKind, Tone> = { compile: 'orange', interp: 'muted', native: 'ok', deopt: 'bad' };
 const SEG_LABEL: Record<SegKind, string> = { compile: 'compile', interp: 'interpret', native: 'machine code', deopt: 'deopt' };
 const MS = 1e6;
+/** A deopt lasts microseconds on a millisecond axis; draw it at least this wide so the failed guard is visible. */
+const DEOPT_MIN_PX = 4;
 
 function laneBars(lanes: readonly Lane[]): GanttBar[] {
   return lanes.flatMap((l) =>
@@ -215,6 +217,7 @@ function laneBars(lanes: readonly Lane[]): GanttBar[] {
       end: s.end / MS,
       tone: SEG_TONE[s.kind],
       label: s.kind === 'compile' ? s.what : SEG_LABEL[s.kind],
+      ...(s.kind === 'deopt' ? { minPx: DEOPT_MIN_PX } : {}),
     })),
   );
 }

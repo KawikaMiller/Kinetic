@@ -1,7 +1,7 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { GanttLanes } from '../../components/GanttLanes';
 import { barLabelPx } from '../../core/gantt';
-import { HeapObject, RefArrow, heapFieldPort, heapHeight, heapRect, slotPort, VarSlot, type PortSide } from '../../components/memory';
+import { HeapObject, RefArrow, heapFieldPort, heapGrid, heapHeight, heapRect, portToward, slotPort, VarSlot } from '../../components/memory';
 import { SectionTitle } from '../../components/Panel';
 import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
@@ -54,13 +54,13 @@ interface Grid {
   at: (slot: number) => Pt;
 }
 
-const plainGrid = (cols: number): Grid => ({ cols, at: (s) => ({ x: HEAP_X + (s % cols) * COL_W, y: HEAP_TOP + Math.floor(s / cols) * ROW_H }) });
+const plainGrid = (cols: number): Grid => ({ cols, at: heapGrid({ cols, colW: COL_W, rowH: ROW_H, origin: { x: HEAP_X, y: HEAP_TOP } }).at });
 
 /** Field port on the side facing the target, and a bow when source and target share a column. */
 function fieldArrow(grid: Grid, from: Obj, i: number, toSlot: number) {
   const a = grid.at(from.slot);
   const b = grid.at(toSlot);
-  const side: PortSide = b.x < a.x ? 'left' : 'right';
+  const side = portToward({ at: a, w: BOX_W }, { at: b, w: BOX_W });
   // Same column: bow out sideways. Same row, more than one column apart: bow over the boxes in between.
   const skips = b.y === a.y && Math.abs(b.x - a.x) > COL_W;
   return { from: heapFieldPort(a, BOX_W, i, side), bend: b.x === a.x ? (b.y > a.y ? -34 : 34) : skips ? (b.x < a.x ? SKIP_BEND : -SKIP_BEND) : 0 };

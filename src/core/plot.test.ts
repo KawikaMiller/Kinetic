@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  fitLabel,
   axisTickValues, barsFromHistogram, clampPoint, equalAspectHeight, formatTick, nudgePoint, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
 } from './plot';
 import { linearScale, logScale } from './scale';
@@ -171,5 +172,24 @@ describe('rovingPointTarget', () => {
   it('leaves the arrow keys (they move the point) and every other key alone', () => {
     for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Tab', 'a']) expect(rovingPointTarget(k, 1, 5)).toBeNull();
     expect(rovingPointTarget('End', 0, 0)).toBeNull();
+  });
+});
+
+describe('fitLabel', () => {
+  it('keeps the preferred spot when it fits', () => {
+    expect(fitLabel([104, 20], 30, 40, 300)).toEqual({ index: 0, dx: 0 });
+  });
+
+  it('takes the other side when only that fits', () => {
+    expect(fitLabel([284, 236], 40, 40, 300)).toEqual({ index: 1, dx: 0 });
+  });
+
+  it('slides the preferred spot inside when neither side fits', () => {
+    expect(fitLabel([200, 10], 150, 40, 300)).toEqual({ index: 0, dx: 300 - 150 - 200 });
+    expect(fitLabel([20], 50, 40, 300)).toEqual({ index: 0, dx: 20 });
+  });
+
+  it('starts a label wider than the box at its left edge', () => {
+    expect(fitLabel([100], 400, 40, 300)).toEqual({ index: 0, dx: -60 });
   });
 });

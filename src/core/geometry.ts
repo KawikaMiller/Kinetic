@@ -26,3 +26,22 @@ export function treeToPixels(
   const x = o.count <= 1 ? o.width / 2 : o.pad + (span * p.x) / (o.count - 1);
   return { x, y: o.top + p.depth * o.levelGap };
 }
+
+/**
+ * The (dx, dy) an arrow key moves something by `step` (screen axes: ArrowDown is +y), or null
+ * for any other key. Shared by draggable handles that nudge with the keyboard.
+ */
+export function arrowStep(key: string, step: number): [number, number] | null {
+  switch (key) {
+    case 'ArrowLeft':
+      return [-step, 0];
+    case 'ArrowRight':
+      return [step, 0];
+    case 'ArrowUp':
+      return [0, -step];
+    case 'ArrowDown':
+      return [0, step];
+    default:
+      return null;
+  }
+}
