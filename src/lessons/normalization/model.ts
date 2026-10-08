@@ -97,13 +97,15 @@ export function fdsIn(t: Table, fds: readonly Fd[] = FDS): Fd[] {
  * Every violation in the table, checked over all its attribute subsets (not just the listed FDs),
  * then named by the listed FD that witnesses it. 2NF: a non-prime attribute depends on part of a
  * key. 3NF: a non-prime attribute depends on something that isn't a superkey. BCNF: any
- * non-trivial dependency whose left side isn't a superkey.
+ * non-trivial dependency whose left side isn't a superkey. A table failing 1NF reports only that.
  */
 export function violations(t: Table, fds: readonly Fd[] = FDS): Violation[] {
   const out: Violation[] = [];
   for (const c of t.listCols ?? []) {
     out.push({ form: '1NF', table: t.name, fd: null, why: `${c} holds a list in one cell, so a single value can't be looked up or joined` });
   }
+  // A table that isn't in 1NF isn't judged on the higher forms: they build on it, and a list cell can't be part of a key.
+  if (out.length > 0) return out;
   const keys = candidateKeys(t.cols, fds);
   const prime = new Set(keys.flat());
   const named = fdsIn(t, fds);
@@ -203,7 +205,7 @@ export function schemaAt(stage: StageId): Schema {
       customer_name: CUSTOMERS[o.customer_id].name,
       customer_email: CUSTOMERS[o.customer_id].email,
       warehouse: o.warehouse,
-      items: o.items.map(([p, q]) => `${PRODUCTS[p].name} ×${q}`).join(', '),
+      items: o.items.map(([p, q]) => `${PRODUCTS[p].name} ×${q} @ ${money(PRODUCTS[p].price)}`).join(', '),
     }));
     return [{ name: 'orders', cols: ['order_id', 'customer_id', 'customer_name', 'customer_email', 'warehouse', 'items'], key: ['order_id'], rows, listCols: ['items'] }];
   }
@@ -315,7 +317,8 @@ export function factsHeld(s: Schema): Set<string> {
   for (const t of s) {
     for (const r of t.rows) {
       if (t.cols.includes('price') && r.product_id !== undefined) out.add(`price of ${PRODUCTS[r.product_id as string]?.name ?? r.product_name}`);
-      if (t.cols.includes('items') && typeof r.items === 'string') for (const [, p] of Object.entries(PRODUCTS)) if (r.items.includes(p.name)) out.add(`price of ${p.name}`);
+      if (t.cols.includes('items') && typeof r.items === 'string')
+        for (const p of Object.values(PRODUCTS)) if (new RegExp(`${p.name} ×\\d+ @ ${money(p.price)}`).test(r.items)) out.add(`price of ${p.name}`);
       if (t.cols.includes('customer_email') && r.customer_id !== undefined) out.add(`email of ${CUSTOMERS[r.customer_id as string].name}`);
     }
   }

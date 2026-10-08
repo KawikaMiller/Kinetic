@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CUSTOMERS, DELETED_ORDER, FDS, PRODUCTS, WIDE_COLS, WIDE_ROWS, candidateKeys, closure, factsHeld, inconsistencies, invoiceSql, isForeignKey,
-  isSuperkey, joinAll, joinCount, normalForm, repeatedCells, runAnomaly, schemaAt, violations, type Fd, type Row, type StageId,
+  isSuperkey, joinAll, joinCount, money, normalForm, repeatedCells, runAnomaly, schemaAt, violations, type Fd, type Row, type StageId,
 } from './model';
 
 interface Db {
@@ -51,10 +51,14 @@ describe('closure and keys', () => {
 });
 
 describe('the normal-form checker on every stage', () => {
-  it('0NF fails 1NF on the list column', () => {
-    const v = schemaAt(0).flatMap((t) => violations(t));
-    expect(v.find((x) => x.form === '1NF')?.why).toMatch(/items/);
+  it('0NF fails 1NF on the list column, and only that: the key is order_id and no 2NF or 3NF flag is invented (review repro)', () => {
+    const t = schemaAt(0)[0];
+    const v = violations(t);
+    expect(v.map((x) => x.form)).toEqual(['1NF']);
+    expect(v[0].why).toMatch(/items/);
+    expect(v[0].fd).toBeNull();
     expect(normalForm(schemaAt(0))).toBe('0NF');
+    expect(candidateKeys(t.cols.filter((c) => !t.listCols?.includes(c)))).toEqual([['order_id']]);
   });
 
   it('1NF fails 2NF on both partial dependencies', () => {
@@ -130,6 +134,16 @@ describe('anomalies reproduce before the split and not after', () => {
     expect(runAnomaly('insert', schemaAt(1)).refused).toMatch(/order_id/);
     expect(runAnomaly('insert', schemaAt(2)).ok).toBe(true);
     expect(fixedAt('insert')).toBe(2);
+  });
+
+  it('the 0NF table really holds every price it can lose: each product price is in the items text', () => {
+    const items = schemaAt(0)[0].rows.map((r) => String(r.items)).join(' | ');
+    for (const p of Object.values(PRODUCTS)) expect(items.includes(`${p.name} ×`), p.name).toBe(true);
+    for (const p of Object.values(PRODUCTS)) expect(items).toContain(money(p.price));
+    expect(factsHeld(schemaAt(0)).has('price of stapler')).toBe(true);
+    // A table with no price anywhere cannot lose one.
+    const noPrices = [{ ...schemaAt(0)[0], rows: schemaAt(0)[0].rows.map((r) => ({ ...r, items: 'pen ×1' })) }];
+    expect([...factsHeld(noPrices)].some((f) => f.startsWith('price'))).toBe(false);
   });
 
   it('every stage starts consistent and records every fact', () => {

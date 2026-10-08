@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Normalization splits a table so that each fact is stored exactly once, which stops updates, deletes and inserts from corrupting or losing data.',
-    what: 'A functional dependency A → B says that knowing A fixes B: a customer id fixes the email, a product id fixes the price. A table repeats a fact when it stores B next to things that don\'t determine it, and every repeat is a copy that can drift. 1NF makes every cell a single value. 2NF removes columns that depend on only part of a composite key. 3NF removes columns that depend on a non-key column (a transitive dependency). BCNF is the stricter version: every left side of a dependency must be a key.',
+    what: 'A functional dependency A → B says that knowing A fixes B: a customer id fixes the email, a product id fixes the price. A table repeats a fact when it stores B next to things that don\'t determine it, and every repeat is a copy that can drift. 1NF makes every cell a single value. 2NF removes columns that depend on only part of a composite key. 3NF removes columns that depend on a non-key column (a transitive dependency). BCNF is the stricter version: the left side of every non-trivial dependency must be a superkey (3NF lets a dependency slip when its right side is part of a key).',
     analogy: 'Writing a friend\'s phone number on every party invitation you send them, instead of once in your address book. When the number changes, you will miss one, and if you throw the invitations away, the number goes with them.',
     useCases: [
       'Designing the tables for a new feature so an email change is one UPDATE, not a hunt',
@@ -20,7 +20,7 @@ const lesson: LessonModule = {
     "At 1NF, press \"Change Ada's email in one row\" and find the red cells. Keep it pressed and step Design up to 3NF.",
     'Press "Delete order 1004" at 1NF, 2NF and 3NF: what does each design forget?',
     'At 1NF, press "Add a product nobody has ordered", then switch Design to 2NF.',
-    'Step from 1NF to 2NF and watch which columns move into products and order_lines; then read which dependency turned red.',
+    'Step from 1NF to 2NF and watch which columns move into products and order_lines; then read which dependency is still red.',
     'Compare the reading-back query at 1NF and at 3NF, and count the joins.',
   ],
   keyIdeas: [

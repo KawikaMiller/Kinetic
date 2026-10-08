@@ -40,7 +40,7 @@ export function Stage() {
     return forms.length ? `breaks ${forms.join(', ')}` : null;
   };
   const prevSchema = schemaAt(prev);
-  const moved = (t: Table, c: string) => prev !== stage && !t.key.includes(c) && !prevSchema.some((p) => p.name === t.name && p.cols.includes(c));
+  const moved = (t: Table, c: string) => stage > prev && !t.key.includes(c) && !prevSchema.some((p) => p.name === t.name && p.cols.includes(c));
 
   return (
     <StageFrame
@@ -50,7 +50,7 @@ export function Stage() {
         { color: 'var(--violet)', label: 'foreign key' },
         { color: 'var(--orange)', label: 'a repeated fact' },
         { color: 'var(--info)', label: 'column just moved' },
-        { color: 'var(--bad)', label: 'inconsistent / broken' },
+        { color: 'var(--bad)', label: 'inconsistent, broken or a list in one cell' },
         { color: 'var(--ok)', label: 'anomaly fixed' },
       ]} />}
       stats={
