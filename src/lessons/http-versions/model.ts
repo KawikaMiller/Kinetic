@@ -480,8 +480,8 @@ export const FACTS: Record<Version, Facts> = {
     framing: 'Binary frames',
     transport: 'QUIC over UDP',
     compression: 'QPACK',
-    setup: `${SETUP_RTTS.h3} RTT (QUIC + TLS 1.3 together)`,
-    hol: 'Per stream: a loss stalls only its own stream',
+    setup: `${SETUP_RTTS.h3} RTT (QUIC + TLS 1.3 together), once the client knows to use HTTP/3`,
+    hol: 'Per stream: a loss stalls only the streams whose data was in the lost packet',
   },
 };
 

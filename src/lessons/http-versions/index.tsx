@@ -9,11 +9,11 @@ const lesson: LessonModule = {
     analogy: 'HTTP/1.1 is six single-file checkout lanes: a slow customer holds up everyone behind them in that lane. HTTP/2 is one lane where cashiers serve everyone a bit at a time, until the conveyor belt jams and stops for all. HTTP/3 gives each customer a belt of their own.',
     useCases: [
       'Reading a DevTools network waterfall: queueing, waiting for the first byte and download time',
-      'Deciding whether bundling, domain sharding or sprite sheets still help (mostly not on HTTP/2)',
+      'Deciding whether domain sharding or sprite sheets still help (mostly not on HTTP/2), and what bundling still saves in compression and per-request overhead',
       'Explaining why HTTP/3 helps most on lossy mobile and Wi-Fi networks',
       'Choosing what a load balancer or CDN should speak to browsers and to the origin',
     ],
-    why: 'Page speed is mostly round trips and waiting, not raw bandwidth, and the HTTP version decides how much of that waiting overlaps. Knowing where head-of-line blocking lives (per connection in 1.1, in TCP for 2, nowhere across streams in 3) lets you read a waterfall and pick the right fix. It builds on `http-basics`, `tcp-udp`, `tls-handshake` and `latency-bandwidth`.',
+    why: 'Page speed is mostly round trips and waiting, not raw bandwidth, and the HTTP version decides how much of that waiting overlaps. Knowing where head-of-line blocking lives (per connection in 1.1, in TCP for 2, and for 3 no transport-level blocking across streams) lets you read a waterfall and pick the right fix. It builds on `http-basics`, `tcp-udp`, `tls-handshake` and `latency-bandwidth`.',
     watch: 'Three waterfalls, one per version (on a phone, pick one with Show), with one lane per resource; HTTP/1.1 lanes also say which connection (c1 to c6) carried it. In each lane, hatched grey is time queued or waiting for the first byte, blue is bytes arriving, and the bar turns green once the response is complete. After a lost packet, the time a response is held up is a red dashed bar, and a red "✕ lost" marker line shows when the gap was noticed. The yellow line is the current time. The highlighted stream (picked under the waterfalls) has a yellow outline. In the HTTP/2 frame strip, each chip is one frame: H for HEADERS, D for DATA, with its stream ID, coloured by resource type (HTML sky blue, CSS amber, JS violet, images grey; HEADERS chips are a stronger tint), the highlighted stream\'s frames are solid yellow, and the lost packet is a red ✕ chip. The load times at the top turn green when a version finishes. In the header readout, HTTP/1.1\'s text is red (the costly side) and HPACK green.',
   },
   tryThis: [
@@ -53,15 +53,15 @@ const lesson: LessonModule = {
       why: 'HTTP/1.1 connections are kept alive and reused, so it isn\'t a close after every response (that was HTTP/1.0 without keep-alive). But a connection carries one request and response at a time, so the only way to fetch in parallel is more connections, each paying its own handshake.',
     },
     {
-      q: 'On a first visit, how many round trips pass before the first request can go out over HTTP/2 with TLS 1.3, and over HTTP/3?',
+      q: 'On a first connection with no resumption, how many round trips pass before the first request can go out over HTTP/2 with TLS 1.3, and over HTTP/3 once the client knows the server speaks it?',
       options: [
         'Two for HTTP/2 (TCP, then TLS) and one for HTTP/3 (QUIC does both)',
-        'One for HTTP/2 and zero for HTTP/3, on every first visit',
+        'One for HTTP/2 and zero for HTTP/3, on every first connection',
         'Three for HTTP/2 (TCP, TLS, HTTP) and two for HTTP/3',
         'Two for both, because HTTP/3 still runs QUIC on top of TCP',
       ],
       answer: 0,
-      why: 'TCP\'s handshake takes one round trip and TLS 1.3 another. QUIC runs over UDP and carries the TLS 1.3 handshake inside its own, so both finish in one. Zero round trips only happens when resuming an earlier session (0-RTT), never on a first visit, and QUIC does not run on TCP.',
+      why: 'TCP\'s handshake takes one round trip and TLS 1.3 another. QUIC runs over UDP and carries the TLS 1.3 handshake inside its own, so both finish in one. Zero round trips only happens when resuming an earlier session (0-RTT), never on a first connection, and QUIC does not run on TCP.',
     },
     {
       q: 'A page makes 12 requests whose headers are almost identical. What does HTTP/2\'s HPACK do with them?',

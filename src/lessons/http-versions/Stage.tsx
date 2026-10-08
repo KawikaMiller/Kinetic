@@ -113,7 +113,7 @@ export function Stage() {
         </div>
         <Hint block>
           {HONEST} Bandwidth {bytes(BANDWIDTH_BYTES_PER_MS * 1000, { base: 1000, dp: 2 })}/s (10 Mbit/s) shared equally by every response sending at that moment;
-          no slow start. The page's sub-resources are all found when the HTML arrives. Server push, now deprecated, is left out.
+          no slow start. The page's sub-resources are all found when the HTML arrives. Server push, now deprecated, is left out. During a stall the model idles the whole link for one RTT, so every HTTP/2 stream finishes exactly one RTT later; a real TCP connection keeps receiving into its buffer and releases it in a burst, so the real HTTP/2 versus HTTP/3 gap is smaller than drawn. A stalled stream's bandwidth also goes to the others, so its own finish time can barely move even though it paused.
         </Hint>
       </div>
     </StageFrame>

@@ -79,10 +79,11 @@ export function milestones(runs: Record<Version, Run>, p: Params): Milestone[] {
           ? <><span className="hl bad">✕ A packet of {LOST_RESOURCE} was lost</span>. TCP delivers bytes strictly in order, so <b>all {l.stalled} streams</b>{' '}
             still in flight on {name} stalled until the retransmission arrived at {ms(l.until)}: head-of-line blocking at the transport layer.</>
           : v === 'h3'
-            ? <><span className="hl bad">✕ The same loss</span> on {name} stalled only {LOST_RESOURCE}'s own stream (QUIC recovers each stream separately); the
-              other streams kept using the link.</>
+            ? <><span className="hl bad">✕ The same loss</span> on {name} stalled only the stream whose data was in the lost packet, {LOST_RESOURCE} (QUIC recovers each stream separately, though one packet can carry
+              several streams' data); the other streams kept using the link.</>
             : <><span className="hl bad">✕ The same loss</span> on {name} stalled only connection {runs.h1.timings.find((x) => x.id === LOST_RESOURCE)!.conn + 1},
-              the one carrying {LOST_RESOURCE}; its other connections are separate TCP streams.</>,
+              the one carrying {LOST_RESOURCE}.
+              {p.conns === 1 ? ' With a single connection, everything queued behind it waits anyway.' : p.conns === 2 ? ' The other connection is a separate TCP stream and keeps going.' : ` The other ${p.conns - 1} connections are separate TCP streams and keep going.`}</>,
       });
     }
     out.push({ t: run.total, say: <><span className="hl ok">{name} finished</span>: all {run.timings.length} resources in at {ms(run.total)}.</> });

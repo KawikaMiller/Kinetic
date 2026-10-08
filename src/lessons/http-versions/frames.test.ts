@@ -3,7 +3,8 @@ import { ms } from '../../core/format';
 import { expectCaption } from '../../core/testing/captions';
 import { RTT_MAX, RTT_MIN, RTT_STEP } from './constants';
 import { buildFrames, milestones, summary } from './frames';
-import { LOST_RESOURCE, VERSION_NAME, simulateAll, type ConnCount, type Version } from './model';
+import lesson from './index';
+import { FACTS, LOST_RESOURCE, VERSION_NAME, simulateAll, type ConnCount, type Version } from './model';
 
 const RTTS: number[] = [];
 for (let r = RTT_MIN; r <= RTT_MAX; r += RTT_STEP) RTTS.push(r);
@@ -30,9 +31,13 @@ describe('captions, every RTT × connection count × loss (full cross product)',
       if (p.loss) {
         expect(text).toContain(`all ${runs.h2.loss!.stalled} streams`);
         expect(text).toContain(`arrived at ${ms(runs.h2.loss!.until)}`);
-        expect(text).toContain(`stalled only ${LOST_RESOURCE}'s own stream`);
+        expect(text).toContain(`stalled only the stream whose data was in the lost packet, ${LOST_RESOURCE}`);
+        expect(text).toContain('one packet can carry several streams');
         const conn = runs.h1.timings.find((x) => x.id === LOST_RESOURCE)!.conn + 1;
         expect(text).toContain(`stalled only connection ${conn},`);
+        const others = p.conns === 1 ? 'With a single connection, everything queued behind it waits anyway.' : p.conns === 2 ? 'The other connection is a separate TCP stream and keeps going.' : `The other ${p.conns - 1} connections are separate TCP streams and keep going.`;
+        expect(text).toContain(others);
+        expect(text.includes('its other connections')).toBe(false);
       } else {
         expect(text).not.toContain('lost');
         expect(text).not.toContain('✕');
@@ -88,5 +93,19 @@ describe('captions, every RTT × connection count × loss (full cross product)',
     for (let i = 1; i < frames.length; i++) expect(frames[i].now).toBeGreaterThanOrEqual(frames[i - 1].now);
     expect(frames.at(-1)!.now).toBe(end);
     expect(expectCaption(frames.at(-1)!.say)).toContain('Illustrative model');
+  });
+});
+
+describe('claims about HTTP/3 and the page are not over-absolute (review)', () => {
+  it('the facts table and the lesson text hedge them', () => {
+    expect(FACTS.h3.hol).toBe('Per stream: a loss stalls only the streams whose data was in the lost packet');
+    expect(FACTS.h3.setup).toContain('once the client knows to use HTTP/3');
+    expect(lesson.summary.why).toContain('no transport-level blocking across streams');
+    expect(lesson.summary.why).not.toContain('nowhere across streams');
+    const q = lesson.quiz[2];
+    expect(q.q).toContain('first connection with no resumption');
+    expect(q.q).toContain('once the client knows the server speaks it');
+    expect(lesson.summary.useCases.join(' ')).toContain('what bundling still saves');
+    expect(lesson.summary.useCases.join(' ')).not.toMatch(/bundling[^,]*still help \(mostly not/);
   });
 });
