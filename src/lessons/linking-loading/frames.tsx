@@ -109,7 +109,7 @@ export function linkFrames(inputs: readonly Input[], r: LinkResult, mode: Mode):
     } else if (e.k === 'duplicate') {
       const second = inputName(inputs[e.input]);
       rec.snap(
-        <><code>{second}</code> defines <code>{e.symbol}</code> again: a multiple definition. The first one, in <code>{e.first}</code>, is orange, and the clash in <code>{second}</code> is red. ld reports it and carries on, but the link will fail.</>,
+        <><code>{second}</code> defines <code>{e.symbol}</code> again: a multiple definition. The first one, in <code>{e.first}</code>, is orange, and the clash in <code>{second}</code> is red. ld will report it at the end, after reading the rest, and the link will fail.</>,
         1.6,
         { input: e.input, read: [...state().read, e.input], duplicate: { symbol: e.symbol, first: e.first, second } },
       );
@@ -177,7 +177,7 @@ const loadCaption = (s: LoadStep, plan: LoadPlan, mode: Mode, binding: Binding):
         <>
           Run <code>./app</code>: the kernel reads the program headers and maps each segment with its permissions: headers r--, code r-x, read-only data r--, data rw-.
           It&apos;s <code>-no-pie</code>, so they land where ld put them. The stack goes at a random address (ASLR).
-          {mode === 'static' && ' There is no interpreter, so it starts at the program\'s own entry point.'}
+          {mode === 'static' && ' There is no interpreter, so it starts at the program\'s own entry point, _start (start-up code from crt1.o, left out of this simplified link).'}
         </>
       );
     case 'interp':
@@ -188,7 +188,7 @@ const loadCaption = (s: LoadStep, plan: LoadPlan, mode: Mode, binding: Binding):
       return <><code>-z now</code>: ld.so looks printf up in libc.so.6 right away and writes {hex(plan.printf)} into <code>GOT[printf]</code>, before main runs.</>;
     case 'main':
       return mode === 'static' ? (
-        <>The start-up code calls main, which calls <code>area(3, 4)</code>. Its call to printf is a direct call to code inside the program itself.</>
+        <>The start-up code (<code>_start</code>, not shown) calls main, which calls <code>area(3, 4)</code>. Its call to printf is a direct call to code inside the program itself.</>
       ) : binding === 'lazy' ? (
         <>ld.so hands over to the program&apos;s start-up code, which calls main, then <code>area(3, 4)</code>. <code>GOT[printf]</code> still points back into <code>printf@plt</code>: nobody has looked printf up yet (lazy binding).</>
       ) : (

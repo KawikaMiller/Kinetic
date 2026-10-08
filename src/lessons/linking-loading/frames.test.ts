@@ -49,6 +49,9 @@ describe('link captions, every preset × libc mode', () => {
           const clash = texts.findIndex((t) => t.includes('multiple definition'));
           expect(read).toBeGreaterThan(0);
           expect(clash).toBe(read + 1);
+          // At the clash nothing is printed yet, so the caption only promises the report.
+          expect(frames[clash].messages).toEqual([]);
+          expect(texts[clash]).toContain('will report it');
         }
         if (p.id === 'wrongOrder') expect(texts[1]).toMatch(/^Search libgeom\.a: nothing is undefined yet/);
       });
@@ -72,6 +75,9 @@ describe('load captions, every mode × binding', () => {
       expect(all.includes(hex(bases.libc))).toBe(mode === 'dynamic');
       expect(all.includes('resolver')).toBe(mode === 'dynamic' && binding === 'lazy');
       expect(all.includes('-z now')).toBe(binding === 'now');
+      // rip never claims the program starts at main: the first step has no rip, or rip in ld.so.
+      expect(plan.steps[0].pointer).toBeNull();
+      if (mode === 'static') expect(texts.join(' ')).toContain('_start');
     });
   }
 });

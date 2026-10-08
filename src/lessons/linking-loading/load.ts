@@ -108,7 +108,8 @@ export function loadPlan(link: LinkResult, mode: Mode, binding: Binding, bases: 
 
   if (!dynamic) {
     const cells = [textCell(textValue)];
-    push('exec', [...exe, stack], cells, rip(BASE.text), null);
+    // The real entry is _start from crt1.o, which this simplified link leaves out, so no rip yet.
+    push('exec', [...exe, stack], cells, null, null);
     push('main', [...exe, stack], cells, rip(main), null);
     push('printed', [...exe, heap, stack], cells, rip(printf), null, false, [printedLine()]);
     return { steps, printf, pltStub: null, gotSlot: null };
