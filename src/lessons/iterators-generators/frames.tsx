@@ -91,7 +91,7 @@ export function protoFrames(p: ProgramId): ProtoFrame[] {
     rs.forEach((r, i) => {
       const resumeAt = i === 0 ? 1 : 3;
       rec.snap(
-        <>{i === 0 ? <>The first <code>next()</code> starts the body</> : <><code>next()</code> resumes right after the <code>yield</code></>}: the generator&apos;s frame goes back on the stack and runs.</>,
+        <>{i === 0 ? <>The first <code>next()</code> starts the body: the generator&apos;s frame goes on the stack for the first time and runs to the first <code>yield</code>.</> : <><code>next()</code> resumes right after the <code>yield</code>: the generator&apos;s frame goes back on the stack and runs.</>}</>,
         undefined,
         { callerLine: i + 1, defLine: resumeAt, stack: [{ id: 'gen', name: 'countdown(3)', state: 'running' }, mainWaiting], parked: null },
       );
@@ -131,14 +131,19 @@ export function protoFrames(p: ProgramId): ProtoFrame[] {
   rec.snap(<><code>naturals()</code> never ends: <code>while (true)</code>. That is fine for a generator, because it only runs when asked.</>);
   for (let i = 1; i <= run.pulled; i++) {
     rec.snap(<><code>take</code> asks; <code>naturals</code> resumes, yields <b>{i}</b> and suspends again.</>, undefined, {
-      callerLine: 1, defLine: 2, parked: `naturals() · paused at yield · n = ${i + 1}`, printed: [],
+      callerLine: 0, defLine: 2, parked: `naturals() · paused at yield · n = ${i + 1}`, printed: [],
     });
   }
-  rec.set({ parked: null, printed: [showArray(run.result)], callerLine: 2, defLine: null });
+  rec.snap(
+    <><code>--k</code> reaches 0, so <code>take</code> returns. Leaving its <code>for…of</code> calls <code>naturals</code>&apos;s <code>return()</code>, which closes it: it will never run again.</>,
+    undefined,
+    { callerLine: 0, defLine: 8, parked: null, stack: [{ id: 'take', name: 'take(…, 3)', state: 'running' }, mainWaiting] },
+  );
+  rec.set({ parked: null, printed: [showArray(run.result)], callerLine: 1, defLine: null, stack: [MAIN] });
   rec.close(
     <>
-      After {run.pulled} values <code>take</code> returns and closes <code>naturals</code>: <span className="hl ok">{showArray(run.result)}</span>. An endless sequence, and nothing froze. (Spreading it
-      without <code>take</code> would never finish: try the button.)
+      After {run.pulled} values <code>take</code> is done: <span className="hl ok">{showArray(run.result)}</span>. An endless sequence, and it finished. (Spreading it without <code>take</code> never
+      gets a <code>done: true</code>, so it never returns normally: try the button.)
     </>,
   );
   return rec.frames;
@@ -167,8 +172,8 @@ export function passFrames(id: SourceId): PassFrame[] {
       </>
     ) : (
       <>
-        Second pass: <span className="hl bad">{showArray(second)}</span>. A {id === 'file' ? 'stream of lines' : 'generator object'} is an iterator: its{' '}
-        <code>[Symbol.iterator]()</code> returns itself, already at the end. Single pass, like reading a file or a network stream.
+        Second pass: <span className="hl bad">{showArray(second)}</span>. A {id === 'file' ? 'line reader (a stand-in for reading a file)' : 'generator object'} is an iterator: its{' '}
+        <code>[Symbol.iterator]()</code> returns itself, already at the end. Single pass, like a real file or network stream.
       </>
     ),
     2,

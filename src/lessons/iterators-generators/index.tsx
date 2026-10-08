@@ -18,7 +18,7 @@ const lesson: LessonModule = {
       'In Eager vs lazy, each lane has four stations, range (grey), map (blue), filter (violet) and take (green), joined by dashed links; the number under each is how many values it handled: orange in the eager lane (the costly side) and green in the lazy lane. In the lazy lane the value moving now is a yellow pill hopping between stations, and a value the filter drops falls away as a grey pill. In The protocol, the line running in the definition and in the caller has a yellow bar; the call stack shows the running frame in yellow and a waiting caller dimmed, and a suspended generator sits in the dashed box below as a dimmed, violet-edged frame, off the stack. Printed results are green (done: true included) and the refused spread prints red. In Single pass, values still to come are blue boxes and consumed ones turn grey and dashed; printed lines are green, an empty second pass red.',
   },
   tryThis: [
-    'In Eager vs lazy, play the lazy lane: it stops at 6 pulled from range, while the eager lane did 1,000,000 at every stage.',
+    'In Eager vs lazy, play the lazy lane: it stops at 6 pulled from range, while the eager lane built, squared and tested all 1,000,000 values.',
     'Set filter to > 50 and take to 5: the lazy lane now pulls 12 values, still nowhere near a million.',
     'In The protocol, step through function*: at each yield the frame leaves the call stack and waits in the dashed box.',
     'Pick naturals() + take and play it, then press Try [...naturals()] to see why the lesson refuses to run that.',

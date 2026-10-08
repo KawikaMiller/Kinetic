@@ -8,7 +8,7 @@ import { Hint, Legend, Segmented } from '../../components/ui';
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { lazyFrames } from './frames';
-import { EAGER_CODE, FILTERS, LAZY_CODE, STATIONS, TAKES, eagerRun, pipelineCode, showArray, type FilterId, type Station, type TakeN } from './model';
+import { EAGER_CODE, FILTERS, HELPER_CODE, LAZY_CODE, STATIONS, TAKES, eagerRun, pipelineCode, showArray, type FilterId, type Station, type TakeN } from './model';
 
 const LANE_W = 360;
 const LANE_H = 118;
@@ -111,6 +111,7 @@ export function PipeScene({ picker }: { picker: ReactNode }) {
             <CodePanel title="lazy (generators written in this lesson)" lines={pipelineCode(LAZY_CODE, filterId, n)} className="itg-code" />
           </div>
         </div>
+        <CodePanel title="the helpers the lazy lane runs (and take, which stops the whole chain)" lines={HELPER_CODE} className="itg-code" />
         <Hint block>
           Every count comes from running the pipeline. ES2025 adds built-in iterator helpers (Iterator.prototype.map, filter, take); the lesson writes its own generator functions so every
           step is visible.

@@ -111,6 +111,20 @@ export function eagerRun(filterId: FilterId, n: number): EagerCounts {
   return { result, produced: nums.length, squared, filtered, arrays: 4, elements: nums.length + sq.length + kept.length + result.length };
 }
 
+/** The generators the lazy lane runs, shown on screen and run as real JavaScript in the tests. */
+export const HELPER_CODE = [
+  'function* range(from, to) { for (let i = from; i <= to; i++) yield i; }',
+  'function* map(it, f) { for (const x of it) yield f(x); }',
+  'function* filter(it, keep) { for (const x of it) if (keep(x)) yield x; }',
+  'function* take(it, k) {',
+  '  if (k <= 0) return;',
+  '  for (const x of it) {',
+  '    yield x;',
+  '    if (--k === 0) return;   // stops asking: the generators behind it never run again',
+  '  }',
+  '}',
+];
+
 export const EAGER_CODE = [
   `const nums = Array.from({ length: ${RANGE_TO.toLocaleString('en-US').replace(/,/g, '_')} }, (_, i) => i + 1);`,
   'const squares = nums.map((x) => x * x);',
@@ -161,8 +175,20 @@ export const PROGRAM_CODE: Record<ProgramId, { def: string[]; caller: string[] }
     caller: ['for (const x of countdown(3)) {', '  if (x === 2) break;', '  console.log(x);', '}'],
   },
   naturals: {
-    def: ['function* naturals() {', '  let n = 1;', '  while (true) yield n++;', '}'],
-    caller: ['// take() is the one from Eager vs lazy', 'const first = [...take(naturals(), 3)];', 'console.log(first);'],
+    def: [
+      'function* naturals() {',
+      '  let n = 1;',
+      '  while (true) yield n++;',
+      '}',
+      'function* take(it, k) {',
+      '  if (k <= 0) return;',
+      '  for (const x of it) {',
+      '    yield x;',
+      '    if (--k === 0) return;   // leaving the loop closes `it`',
+      '  }',
+      '}',
+    ],
+    caller: ['const first = [...take(naturals(), 3)];', 'console.log(first);'],
   },
 };
 
@@ -256,7 +282,7 @@ export const SOURCES: { value: SourceId; label: string }[] = [
   { value: 'array', label: 'array' },
   { value: 'generator', label: 'generator object' },
   { value: 'iterable', label: 'iterable class' },
-  { value: 'file', label: 'file lines' },
+  { value: 'file', label: 'line reader' },
 ];
 
 export const FILE_TEXT = 'GET /\nGET /about\nPOST /login';
@@ -265,7 +291,18 @@ export const SOURCE_CODE: Record<SourceId, string[]> = {
   array: ['const xs = [1, 2, 3];'],
   generator: ['function* gen() { yield 1; yield 2; yield 3; }', 'const xs = gen();'],
   iterable: ['class Trio {', '  *[Symbol.iterator]() { yield 1; yield 2; yield 3; }', '}', 'const xs = new Trio();'],
-  file: ['function* lines(text) {', '  for (const line of text.split("\\n")) yield line;', '}', 'const xs = lines(accessLog);'],
+  file: [
+    'function* lines(text) {   // a line reader: one line per next()',
+    '  let start = 0;',
+    '  while (start < text.length) {',
+    '    let end = text.indexOf("\\n", start);',
+    '    if (end === -1) end = text.length;',
+    '    yield text.slice(start, end);',
+    '    start = end + 1;',
+    '  }',
+    '}',
+    'const xs = lines(accessLog);',
+  ],
 };
 export const PASS_CODE = ['console.log([...xs]);   // first pass', 'console.log([...xs]);   // second pass'];
 
@@ -282,7 +319,13 @@ class Trio {
   }
 }
 function* lines(text: string) {
-  for (const line of text.split('\n')) yield line;
+  let start = 0;
+  while (start < text.length) {
+    let end = text.indexOf('\n', start);
+    if (end === -1) end = text.length;
+    yield text.slice(start, end);
+    start = end + 1;
+  }
 }
 
 /** Both passes, from a real run. */

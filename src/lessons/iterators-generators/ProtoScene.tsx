@@ -10,7 +10,7 @@ import { protoFrames } from './frames';
 import { PROGRAMS, PROGRAM_CODE, type ProgramId } from './model';
 
 /** Shown instead of running `[...naturals()]`: the lesson never starts an endless spread. */
-export const SPREAD_REFUSAL = 'Not run: [...naturals()] asks for every value of a generator that never finishes, so the spread would never return and the tab would freeze.';
+export const SPREAD_REFUSAL = 'Not run: [...naturals()] collects values until the generator says done: true, and it never does. It would never return normally; memory would fill until a RangeError or a crash.';
 
 export function ProtoScene({ picker }: { picker: ReactNode }) {
   const [program, setProgram] = useState<ProgramId>('gen');

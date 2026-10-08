@@ -53,7 +53,7 @@ export function PassScene({ picker }: { picker: ReactNode }) {
         <div className="itg-row">
           <div className="itg-col">
             <CodePanel lines={[...SOURCE_CODE[source], ...PASS_CODE]} active={f.pass === 0 ? null : SOURCE_CODE[source].length + f.pass - 1} className="itg-code" />
-            {source === 'file' && <Hint block>accessLog is a fixed three-line string here: {JSON.stringify(FILE_TEXT)}.</Hint>}
+            {source === 'file' && <Hint block>accessLog is a fixed three-line string standing in for a file: the generator yields one line per next(), but a real reader would also read from disk lazily. Its text is {JSON.stringify(FILE_TEXT)}.</Hint>}
           </div>
           <div className="itg-col">
             <ConsolePanel lines={lines} empty="(not run yet)" />

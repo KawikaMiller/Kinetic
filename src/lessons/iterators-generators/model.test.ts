@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { lazyFrames, passFrames, protoFrames } from './frames';
 import {
-  FILE_TEXT, FILTERS, PASS_CODE, PROGRAMS, PROGRAM_CODE, RANGE_TO, SOURCES, SOURCE_CODE, TAKES, countdownResults, eagerRun, forBreakRun, lazyRun, naturalsRun,
+  FILE_TEXT, FILTERS, HELPER_CODE, LAZY_CODE, EAGER_CODE, pipelineCode, PASS_CODE, PROGRAMS, PROGRAM_CODE, RANGE_TO, SOURCES, SOURCE_CODE, TAKES, countdownResults, eagerRun, forBreakRun, lazyRun, naturalsRun,
   showResult, twoPasses,
 } from './model';
 
@@ -40,9 +40,20 @@ describe('scene 1: eager vs lazy', () => {
     expect(events.filter((e) => e.dropped).map((e) => e.value)).toEqual([1, 9, 25]);
   });
 
-  it('eager does the full million at every stage', () => {
+  it('the helpers and both pipelines on screen, run as real JavaScript, give the answers the model gives', () => {
+    for (const f of FILTERS) {
+      for (const n of TAKES) {
+        const lazy = run([...HELPER_CODE, ...pipelineCode(LAZY_CODE, f.value, n), 'return result;'].join('\n'));
+        expect(lazy).toEqual(lazyRun(f.value, n).result);
+        const eager = run([...pipelineCode(EAGER_CODE, f.value, n), 'return result;'].join('\n'));
+        expect(eager).toEqual(eagerRun(f.value, n).result);
+      }
+    }
+  });
+
+  it('eager builds, squares and tests the full million; take keeps only n', () => {
     const e = eagerRun('even', 3);
-    expect([e.squared, e.filtered, e.arrays]).toEqual([RANGE_TO, RANGE_TO, 4]);
+    expect([e.produced, e.squared, e.filtered, e.result.length, e.arrays]).toEqual([RANGE_TO, RANGE_TO, RANGE_TO, 3, 4]);
     expect(e.elements).toBe(RANGE_TO + RANGE_TO + RANGE_TO / 2 + 3);
   });
 
@@ -91,10 +102,9 @@ describe('scene 2: the protocol is what real JavaScript does', () => {
     expect(protoFrames('forBreak').at(-1)!.printed).toEqual(logs);
   });
 
-  it('take(naturals(), 3) finishes after pulling exactly 3', () => {
-    const takeSrc = 'function* take(it, k) { if (k <= 0) return; for (const x of it) { yield x; if (--k === 0) return; } }';
+  it('take(naturals(), 3) finishes after pulling exactly 3, using the take shown on screen', () => {
     const logs: unknown[] = [];
-    run([...PROGRAM_CODE.naturals.def, takeSrc, ...PROGRAM_CODE.naturals.caller].join('\n'), ['console', { log: (s: unknown) => logs.push(s) }]);
+    run([...PROGRAM_CODE.naturals.def, ...PROGRAM_CODE.naturals.caller].join('\n'), ['console', { log: (s: unknown) => logs.push(s) }]);
     expect(logs).toEqual([[1, 2, 3]]);
     expect(naturalsRun(3)).toEqual({ result: [1, 2, 3], pulled: 3 });
   });
