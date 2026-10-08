@@ -1,0 +1,18 @@
+.rf { flex-flow: row wrap; align-items: flex-start; gap: 16px; }
+.rf > :first-child { flex: 1 1 480px; min-width: 0; }
+.rf-side { flex: 1 1 280px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rf-code li.is-next {
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+  color: var(--text);
+  box-shadow: inset 3px 0 0 var(--info);
+}
+.rf-code li.is-bad code { text-decoration: line-through; text-decoration-color: var(--bad); }
+.rf-smell { text-decoration: underline wavy var(--orange); text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+.rf-smell.is-selected { text-decoration-color: var(--hi); text-decoration-style: solid; text-decoration-thickness: 2.5px; }
+.rf-badge {
+  padding: 8px 12px; border-radius: 10px; font: 600 13px var(--mono); color: var(--c);
+  background: color-mix(in srgb, var(--c) 12%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+}
+.rf-call { font: 12px var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.rf-picks { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; }
+.rf-unsafe { white-space: normal; text-align: left; max-width: 100%; }
