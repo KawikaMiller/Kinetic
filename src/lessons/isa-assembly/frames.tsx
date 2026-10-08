@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { cResult, formatValue, runProgram, type ProgId, type RunResult, type Variant } from './model';
-import { CONDITIONS, effectiveAddress, hex, operandText, readMem, type Cpu, type Flag, type Operand, type StepEffect } from './x86';
+import { CONDITIONS, effectiveAddress, hex, operandText, readMem, type Cpu, type Flag, type Operand, type StepEffect } from '../../core/x86';
 
 export interface IsaFrame extends Frame {
   /** Index into the run's states: 0 = just called, k = after the k-th instruction. */

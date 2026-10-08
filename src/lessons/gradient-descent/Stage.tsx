@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Arrow, Curve, Heat, Plot2D, Points, Segments, type HeatValue } from '../../components/Plot2D';
-import { usePlot } from '../../components/plotContext';
+import { Arrow, Curve, Heat, Plot2D, PointerLayer, Points, Segments, type HeatValue } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import type { Point } from '../../core/plot';
@@ -16,9 +15,9 @@ import './styles.css';
 const SURFACE_OPTIONS = SURFACE_IDS.map((id) => ({ value: id, label: SURFACES[id].label }));
 const PER_PRESS = [1, 5, 20].map((n) => ({ value: n, label: `${n}` }));
 
-/** 356 × 350 makes the map's inner box square with axis titles on both sides. */
 const MAP_W = 356;
-const MAP_H = 350;
+/** The square map (aspect="equal") is 350 tall at MAP_W; the stage leaves room around it. */
+const STAGE_H = 390;
 const LOSS_H = 240;
 const HEAT_RES = 72;
 /** Contour bands: the map is quantised so equal-loss rings read as rings. */
@@ -94,7 +93,7 @@ export function Stage() {
   return (
     <StageFrame
       player={player}
-      height={MAP_H + 40}
+      height={STAGE_H}
       stats={
         <Stats>
           <Stat label="Step" value={`${iter} / ${run.steps.length}`} />
@@ -167,12 +166,12 @@ export function Stage() {
           x={{ domain: s.domain, label: s.axes[0] }}
           y={{ domain: s.domain, label: s.axes[1] }}
           width={MAP_W}
-          height={MAP_H}
+          aspect="equal"
           className="gd-plot"
           ariaLabel={`${s.label} loss map; ball at ${vec(ball, 2)}, loss ${lossText(lossNow)}`}
         >
           <Heat fn={contours} resolution={HEAT_RES} />
-          <DropLayer onDrop={drop} />
+          <PointerLayer onDown={drop} />
           <Curve points={trail} tone="hi" width={1.25} />
           {diverged && iter > 0 && <Segments segments={[{ from: run.points[iter - 1], to: ball, tone: 'bad' }]} />}
           {step && <Arrow from={ball} to={[ball[0] - rate * step.grad[0], ball[1] - rate * step.grad[1]]} tone="violet" />}
@@ -205,20 +204,3 @@ export function Stage() {
   );
 }
 
-/** A transparent sheet over the map: a click drops the ball there. */
-function DropLayer({ onDrop }: { onDrop: (p: Point) => void }) {
-  const { box, toData } = usePlot();
-  return (
-    <rect
-      className="gd-drop"
-      x={box.x}
-      y={box.y}
-      width={box.width}
-      height={box.height}
-      onPointerDown={(e) => {
-        const p = toData(e.clientX, e.clientY);
-        if (p) onDrop(p);
-      }}
-    />
-  );
-}

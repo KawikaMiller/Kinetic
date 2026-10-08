@@ -1,5 +1,5 @@
 import { ABSDIFF_SIGNED, ABSDIFF_UNSIGNED, AREA, MAX_BRANCH, MAX_CMOV, SUM, type Listing } from './listings';
-import { assemble, runToEnd, signed, startCpu, unsigned, writeMem, type Cpu, type Program, type StepEffect } from './x86';
+import { assemble, runToEnd, signed, startCpu, unsigned, writeMem, type Cpu, type Program, type StepEffect } from '../../core/x86';
 
 /** Where things live. Typical non-PIE Linux addresses, not taken from a real run. */
 export const CODE_BASE = 0x401126;

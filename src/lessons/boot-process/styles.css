@@ -1,0 +1,17 @@
+.bp { gap: 14px; }
+.bp-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.bp-handoff { color: var(--muted); font: 600 12.5px var(--mono); }
+.bp-handoff i { color: var(--violet); font-style: normal; margin: 0 4px; }
+.bp-checks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
+.bp-checks li { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.bp-checks li.is-ok { border-color: var(--ok); color: var(--ok); }
+.bp-checks li.is-bad { border-color: var(--bad); color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.bp-checks li.is-pending { border-style: dashed; color: var(--dim); }
+.bp-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.bp-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.bp-col .section-title { display: block; }
+.bp-grow { flex: 1 1 580px; }
+.bp-units { display: block; width: 100%; height: auto; }
+.bp-units .graph-node-label { font-size: 12px; }
+.bp-blame td { font-family: var(--mono); font-size: 12.5px; }
+.bp-blame tr.is-failed td { color: var(--orange); }

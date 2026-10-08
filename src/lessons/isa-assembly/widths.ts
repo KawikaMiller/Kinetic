@@ -1,4 +1,4 @@
-import { assemble, hex, startCpu, step, type Cpu } from './x86';
+import { assemble, hex, startCpu, step, type Cpu } from '../../core/x86';
 
 /** The register-widths demo: one register, a few writes of different widths. */
 export const START_VALUE = 0x1122334455667788n;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Frame } from './types';
 import { captionSources, shortcutFor } from './usePlayer';
 
-const key = (k: string, mods: Partial<{ metaKey: boolean; ctrlKey: boolean; altKey: boolean }> = {}) => ({
+const key = (k: string, mods: Partial<{ metaKey: boolean; ctrlKey: boolean; altKey: boolean; defaultPrevented: boolean }> = {}) => ({
   key: k,
   metaKey: false,
   ctrlKey: false,
@@ -17,6 +17,11 @@ const target = (...tags: string[]) => ({
 const body = target();
 
 describe('shortcutFor', () => {
+  it('leaves a key alone once a nearer handler has called preventDefault', () => {
+    for (const k of [' ', 'ArrowRight', 'ArrowLeft', 'r']) expect(shortcutFor(key(k, { defaultPrevented: true }), body)).toBeNull();
+    expect(shortcutFor(key('ArrowRight', { defaultPrevented: false }), body)).toBe('forward');
+  });
+
   it('maps the player keys when focus is on the page', () => {
     expect(shortcutFor(key(' '), body)).toBe('toggle');
     expect(shortcutFor(key('ArrowRight'), body)).toBe('forward');

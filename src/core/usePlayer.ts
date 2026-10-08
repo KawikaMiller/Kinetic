@@ -17,6 +17,8 @@ interface KeyLike {
   metaKey: boolean;
   ctrlKey: boolean;
   altKey: boolean;
+  /** Set when a handler nearer the target already used the key (a composite widget's arrows). */
+  defaultPrevented?: boolean;
 }
 interface TargetLike {
   closest(selector: string): unknown;
@@ -24,6 +26,7 @@ interface TargetLike {
 
 /** Which player shortcut a keydown means, or null to leave the key alone. Pure, for testing. */
 export function shortcutFor(e: KeyLike, target: TargetLike | null): ShortcutAction | null {
+  if (e.defaultPrevented) return null;
   if (e.metaKey || e.ctrlKey || e.altKey) return null;
   if (target?.closest(TEXT_ENTRY)) return null;
   switch (e.key) {

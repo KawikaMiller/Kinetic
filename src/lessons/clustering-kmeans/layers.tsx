@@ -1,8 +1,6 @@
 import { motion } from 'motion/react';
-import type { PointerEvent } from 'react';
 import { usePlot } from '../../components/plotContext';
 import { SPRING } from '../../core/motion';
-import type { Point } from '../../core/plot';
 import { CLUSTER_TONES } from './view';
 import type { P } from './model';
 
@@ -25,12 +23,3 @@ export function Centroids({ centroids, moving }: { centroids: readonly P[]; movi
   );
 }
 
-/** Pointer path for editing points: a click in the plotting box. The keyboard path is the cursor and its buttons. */
-export function ClickCatcher({ onClick }: { onClick: (p: Point) => void }) {
-  const { box, toData } = usePlot();
-  const down = (e: PointerEvent<SVGRectElement>) => {
-    const p = toData(e.clientX, e.clientY);
-    if (p) onClick(p);
-  };
-  return <rect className="km-catcher" x={box.x} y={box.y} width={box.width} height={box.height} onPointerDown={down} aria-hidden="true" />;
-}

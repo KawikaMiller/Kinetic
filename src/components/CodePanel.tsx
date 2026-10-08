@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { listKeyTarget } from '../core/radio';
 import { SectionTitle } from './Panel';
 
 /** `bad`: the line that threw or is wrong, tinted --bad with a left bar. */
@@ -13,11 +14,13 @@ export type LineState = 'idle' | 'past' | 'now' | 'next' | 'done' | 'cut' | 'cac
  * - `marker(i)` fills a narrow slot left of the line number, like a debugger's breakpoint
  *   gutter; return null for an empty slot. The slot is there for every line once you pass it.
  * - `onLineClick` makes every line a button (keyboard-operable, focus-visible), e.g. to
- *   toggle a breakpoint; `pressed(i)` reports toggle state to assistive tech.
+ *   toggle a breakpoint; `pressed(i)` reports toggle state to assistive tech. With `roving`
+ *   the panel is one tab stop instead of one per line: ↑/↓ move between lines, Home/End
+ *   jump to the first and last.
  */
 export function CodePanel({
   title, lines, stateOf, active, gutter = 'number', nowStyle = 'bar', trailing, renderLine, marker, onLineClick, pressed,
-  lineLabel, className = '',
+  lineLabel, roving = false, className = '',
 }: {
   title?: ReactNode;
   lines: readonly string[];
@@ -37,8 +40,20 @@ export function CodePanel({
   pressed?: (i: number) => boolean;
   /** Accessible name of a clickable line; defaults to "Line N: <code>". */
   lineLabel?: (i: number) => string;
+  /** Clickable lines share one tab stop; the arrow keys move between them. */
+  roving?: boolean;
   className?: string;
 }) {
+  const [current, setCurrent] = useState(0);
+  const buttons = useRef(new Map<number, HTMLButtonElement>());
+  const focusLine = Math.min(current, Math.max(0, lines.length - 1));
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const to = listKeyTarget(e.key, i, lines.length);
+    if (to === null) return;
+    e.preventDefault();
+    setCurrent(to);
+    buttons.current.get(to)?.focus();
+  };
   const activeSet = new Set(active == null ? [] : typeof active === 'number' ? [active] : active);
   const state = (i: number): LineState => stateOf?.(i) ?? (activeSet.has(i) ? 'now' : 'idle');
   return (
@@ -63,6 +78,15 @@ export function CodePanel({
                 <button
                   type="button"
                   className="code-line"
+                  {...(roving && {
+                    tabIndex: i === focusLine ? 0 : -1,
+                    ref: (el: HTMLButtonElement | null) => {
+                      if (el) buttons.current.set(i, el);
+                      else buttons.current.delete(i);
+                    },
+                    onFocus: () => setCurrent(i),
+                    onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => onKeyDown(e, i),
+                  })}
                   onClick={() => onLineClick(i)}
                   aria-pressed={pressed?.(i)}
                   aria-label={lineLabel?.(i) ?? `Line ${i + 1}: ${line}`}

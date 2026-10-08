@@ -2,8 +2,6 @@
 .emb-map { width: 100%; max-width: 560px; flex: 0 1 560px; }
 .emb-side { flex: 1 1 260px; max-width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .emb-side .section-title, .emb-meaning .section-title { display: block; }
-.emb-label { font: 600 11px var(--mono); fill: var(--c); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
-.emb-label.tone-dim { fill: var(--muted); }
 .emb-table td:last-child, .emb-table th:last-child { text-align: right; }
 .emb-empty, .emb-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 .emb-refusal { margin: 6px 0 0; font: 600 13px var(--font); color: var(--bad); overflow-wrap: anywhere; }

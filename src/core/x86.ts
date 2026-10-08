@@ -4,8 +4,8 @@
  * the four flags the lessons show (ZF SF CF OF), and a byte-addressed little-endian memory.
  * It is not an emulator: no real machine code is decoded or run.
  *
- * Kept byte-identical in isa-assembly/x86.ts and calling-conventions/x86.ts (lessons can't
- * import each other); a test fails if the two copies drift. Phase 2: promote to core/x86.ts.
+ * Shared by isa-assembly and calling-conventions (it began as a copy in each).
+ * API: `assemble` a listing, `startCpu`, then `step` one instruction or `runToEnd`.
  *
  * Semantics follow the Intel SDM, Vol. 2:
  * - writing a 32-bit register zero-extends into the full 64 bits; writing an 8- or 16-bit

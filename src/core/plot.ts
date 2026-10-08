@@ -45,6 +45,53 @@ export function plotFrame(width: number, height: number, margin: Margin, x: Axis
   return { xs: scale(x, box.x, box.x + box.width), ys: scale(y, box.y + box.height, box.y), box };
 }
 
+/** Tick label size and the approximate advance of one tick glyph (10px mono), in drawing units. */
+export const PLOT_FONT = 10;
+const TICK_CHAR_W = 6;
+
+/** A tick's label text: the axis's own `format`, else formatTick. */
+export const tickText = (a: AxisSpec, v: number) => (a.format ? a.format(v) : formatTick(v, a.log));
+
+/**
+ * Plot2D's margins: room for the tick labels (the y axis's widest one sets the left side)
+ * and for each axis title.
+ */
+export function plotMargin(x: AxisSpec, y: AxisSpec): Margin {
+  const yWidest = Math.max(...axisTickValues(y).map((v) => tickText(y, v).length));
+  return {
+    top: 10,
+    right: 14,
+    bottom: PLOT_FONT + 12 + (x.label ? PLOT_FONT + 8 : 0),
+    left: Math.max(24, yWidest * TICK_CHAR_W + 10) + (y.label ? PLOT_FONT + 8 : 0),
+  };
+}
+
+/** An axis's extent in screen-even units: its data span, or its span in decades on a log axis. */
+const axisSpan = (a: AxisSpec) => Math.abs(a.log ? Math.log10(a.domain[1]) - Math.log10(a.domain[0]) : a.domain[1] - a.domain[0]);
+
+/**
+ * The height at which a plot `width` wide draws one unit of x as long as one unit of y
+ * (`aspect="equal"`): equal domains give a square inner box, so circles stay round and
+ * right angles look right. On a log axis a "unit" is a decade.
+ */
+export function equalAspectHeight(width: number, x: AxisSpec, y: AxisSpec): number {
+  const m = plotMargin(x, y);
+  const boxW = width - m.left - m.right;
+  return m.top + m.bottom + (boxW * axisSpan(y)) / axisSpan(x);
+}
+
+/**
+ * Roving focus between draggable points (the arrow keys already move a point): Page Down
+ * or ] picks the next, Page Up or [ the previous, Home and End the first and last. Null
+ * for other keys; never wraps.
+ */
+export function rovingPointTarget(key: string, i: number, n: number): number | null {
+  if (n <= 0) return null;
+  const to: Record<string, number> = { PageDown: i + 1, ']': i + 1, PageUp: i - 1, '[': i - 1, Home: 0, End: n - 1 };
+  if (!(key in to)) return null;
+  return Math.min(n - 1, Math.max(0, to[key]));
+}
+
 /** The axis's tick values: `tickValues` inside the domain when given, else the scale's own ticks. */
 export function axisTickValues(a: AxisSpec): number[] {
   const [lo, hi] = [Math.min(...a.domain), Math.max(...a.domain)];

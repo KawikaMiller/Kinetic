@@ -1,0 +1,31 @@
+.ll { gap: 14px; }
+.ll-cmd { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font: 13px var(--mono); color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.ll-prompt { color: var(--muted); }
+.ll-cards { display: block; width: 100%; max-width: 560px; height: auto; }
+.ll-card-box { fill: var(--cell); stroke: var(--line-2); stroke-width: 1.5; transition: stroke 0.2s, opacity 0.2s; }
+.ll-card.is-now .ll-card-box { stroke: var(--hi); stroke-width: 2.5; }
+.ll-card.is-unread { opacity: 0.5; }
+.ll-card.is-skipped .ll-card-box { stroke-dasharray: 5 4; }
+.ll-card-title { font: 700 13px var(--mono); fill: var(--text); }
+.ll-card-kind { font: 11px var(--font); fill: var(--muted); }
+.ll-member { font: 11.5px var(--mono); fill: var(--muted); }
+.ll-member.is-pulled { fill: var(--text); }
+.ll-sym-name { font: 12px var(--mono); fill: var(--text); }
+.ll-note { font: 11px var(--font); fill: var(--muted); }
+.ll-peg, .ll-socket { stroke-width: 2; transition: fill 0.2s, stroke 0.2s; }
+.ll-sym .ll-peg { fill: var(--ok); stroke: var(--ok); }
+.ll-sym .ll-socket { fill: var(--cell); stroke: var(--dim); }
+.ll-sym.is-unread .ll-peg, .ll-sym.is-unread .ll-socket { fill: var(--cell); stroke: var(--dim); }
+.ll-sym.is-unread .ll-sym-name { fill: var(--muted); }
+.ll-sym.is-current .ll-socket { fill: var(--hi); stroke: var(--hi); }
+.ll-sym.is-resolved .ll-socket { fill: var(--violet); stroke: var(--violet); }
+.ll-sym.is-first .ll-peg { fill: var(--orange); stroke: var(--orange); }
+.ll-sym.is-error .ll-peg, .ll-sym.is-error .ll-socket { fill: var(--bad); stroke: var(--bad); }
+.ll-sym.is-error .ll-sym-name { fill: var(--bad); }
+.ll-row { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.ll-table { flex: 1 1 100%; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ll-scroll { overflow-x: auto; }
+.ll-table td { white-space: nowrap; }
+.ll-num { font-family: var(--mono); text-align: right; }
+.ll-table tr.is-done .ll-value { color: var(--info); }
+.ll-bytes { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }

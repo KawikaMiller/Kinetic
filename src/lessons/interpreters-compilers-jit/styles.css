@@ -1,0 +1,23 @@
+.icj { gap: 14px; }
+.icj-row { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.icj-code { flex: 1 1 300px; min-width: 0; }
+.icj-code code { font-size: 12px; }
+.icj-ast { flex: 2 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.icj-side { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.icj-locals { display: flex; flex-direction: column; gap: 6px; }
+.icj-local-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.icj-local { font-size: 13px; }
+.icj-tree .tree-node rect { fill: var(--cell); stroke: var(--violet); stroke-width: 2; transition: fill 0.2s, stroke 0.2s; }
+.icj-tree .tree-node.is-leaf rect { stroke: var(--info); }
+.icj-tree .tree-node text { font: 700 12px var(--mono); fill: var(--text); }
+.icj-tree .tree-node.is-now rect { fill: var(--hi); stroke: var(--hi); }
+.icj-tree .tree-node.is-now text { fill: var(--on-hi); }
+.icj-regs td { padding: 4px 10px; }
+.icj-num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+.icj-unit { color: var(--muted); font-size: 11px; }
+.icj-table-wrap { overflow-x: auto; }
+.icj-lanes { width: 100%; }
+.icj-failed { color: var(--bad); }
+.icj-plot { flex: 0 1 356px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.icj-plot svg { width: 100%; height: auto; max-width: 356px; }
+.icj-aot-note { align-self: center; color: var(--muted); font-size: 13px; }

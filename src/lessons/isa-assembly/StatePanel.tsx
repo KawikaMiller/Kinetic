@@ -2,7 +2,7 @@ import { AnimatedValue } from '../../components/AnimatedValue';
 import { MemoryMap, type MemCell, type MemPointer, type MemRegion } from '../../components/memory';
 import { Box, SectionTitle } from '../../components/Panel';
 import { DATA_BASE, formatValue, STACK_TOP, type RunResult, type Variant } from './model';
-import { hex, readMem, type Cpu, type Flag, type Reg64, type StepEffect } from './x86';
+import { hex, readMem, type Cpu, type Flag, type Reg64, type StepEffect } from '../../core/x86';
 
 const SHOWN_REGS: Reg64[] = ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rsp', 'rbp'];
 const FLAGS: Flag[] = ['ZF', 'SF', 'CF', 'OF'];

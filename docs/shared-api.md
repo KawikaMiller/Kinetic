@@ -208,6 +208,10 @@ Verified: `hash32`, `hexHash` and `fnv1a` produce identical output to the consis
 git-internals and probabilistic-structures copies, and `mulberry32` matches tcp-udp's. lsm-trees
 and sharding use the same FNV loop. Still diff captions after swapping.
 `hooks.ts` is hooks only (`useLoop`, `useElementSize`, `useCanvas`); maths and randomness come from here.
+`useLoop(cb, running?, { maxDt? })`: `cb(dt, t)` per animation frame. `dt` is capped at `maxDt`
+seconds (default `DEFAULT_MAX_DT`, 0.05) so a background tab doesn't teleport the sim, and never
+negative. Pass `{ maxDt: Infinity }` when the real frame time is the lesson (game-loop's lag spikes).
+The clock restarts whenever `running` turns true, so a pause never counts as one huge frame.
 
 ### `geometry.ts`
 ```ts
@@ -250,6 +254,18 @@ createCooldown(8, { armed: true })        // ready immediately instead of 8 s in
 ```
 `createCooldown` has separate `ready()`/`fire()` because insight gates only re-arm when an
 insight actually fires; a throttle that re-arms on every true check would behave differently.
+
+### `tokenBucket.ts` — rate-limiting, reverse-proxy-gateway
+```ts
+type BucketParams = { rate, capacity }        // tokens per second; most tokens held (the burst size)
+type Bucket = { tokens, last }                // a plain value: keep it in a world or a frame
+fullBucket(p, now?)                           // full at `now`
+refill(b, now, p)                             // tokens earned since `last`, capped; clock moves to `now`
+takeToken(b, now, p)                          // { allowed, bucket, retryAfter }: refill, then spend one whole token
+```
+Pure functions, no class: rate-limiting's `Limiter` keeps a `Bucket` for its token algorithm (its
+`tokens` is a getter over it), a scripted lesson can keep one per client. `retryAfter` is the whole
+seconds until one token is back, as an HTTP `Retry-After` would say.
 
 ### `spark.ts`
 ```ts
@@ -335,11 +351,36 @@ the player got there: playing, stepping, jumping or scrubbing (`captionSources(f
 intro caption stays. The player sets the caption only when that source frame changes, so a caption
 the stage sets itself between frames survives until the next frame with its own `say`.
 
+### Test helpers (`core/testing/`)
+Test-only modules: never import them from app code.
+```ts
+captionText(node)                    // plain text a ReactNode renders to (markup stripped, entities decoded)
+captionText(node, { strict: true })  // same, but throws on a glued sentence ("port.60 s")
+expectCaption(node)                  // = captionText(node, { strict: true })
+gluedSentences(text)                 // glue.ts: snippets around each glued spot ([] when none)
+spawnSync(cmd, args, { timeout?, cwd?, input? })  // node.ts: { stdout, stderr, status }, UTF-8, 10 s default timeout
+runNode(code | lines, opts?)         // node.ts: spawnSync(nodePath, ['-e', code]); lines join with \n
+nodePath                             // the Node binary running the tests
+```
+- A glued sentence is what a JSX line break next to `{…}` produces: JSX drops a line break that
+  touches an expression, so text ending a line in `…the port.` with `{n} s later` starting the next
+  comes out as "port.60 s later" (fix: `{' '}` at the line end). The
+  rule (`glue.ts`): a lowercase letter or `)`/`]`, then `. ! ? ; : ,`, then a capital or digit.
+  Decimals, hosts and file names pass. Inline `<code>`/`<kbd>`/`<samp>` contents are blanked first,
+  so `Math.PI` is fine but `<code>f()</code>.Then` is glued. Use `expectCaption` in every
+  caption-truth test instead of a local regex.
+- `npm run captions` runs the same rule over every caption it steps through, in every step-player
+  lesson, and exits 1 on a hit. It sees what the browser renders, including captions a test can't build.
+- `node.ts` exists because the app tsconfig has no Node types; it loads `node:child_process` at run
+  time with a typed shape. Use it to check a lesson's claim against real Node output (async-await-coroutines).
+
 ### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
 Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
 and Space on a focused button, link or `role=radio|button|…` control presses that control instead
 of toggling playback. ← / → are left to radio groups, tabs and sliders, where they move the
-selection. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
+selection. A keydown some handler already `preventDefault()`ed is left alone too, so a composite
+widget that owns its keys (a flame graph's arrow-key focus, a grid's Space) just calls
+`e.preventDefault()`, with no `stopPropagation` needed. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
 with the keyboard on registers itself with the lesson page, which shows the shortcut hint only
 then, so lessons do nothing extra. A one-frame player never reports `playing`.
 
@@ -414,6 +455,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
 <Stat label={<>Tail <span className="keep-case">μ</span></>} value={3} />   // labels are uppercased by CSS: μ would show as Μ ("M")
 <PauseButton paused={paused} onToggle={togglePause} />
+<Button ref={startBtn} variant="primary" onClick={start}>Start</Button>   // ref is the <button>: move focus back to it (usability-laws)
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 <ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 <ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
@@ -499,6 +541,9 @@ so expect to keep a few lesson overrides for exact pixel parity.
 - `onLineClick` turns every line into a button that looks identical to a plain line: Space/Enter,
   the focus-visible ring, `aria-pressed` from `pressed(i)`, and `lineLabel(i)` as its name (default
   "Line N: code"). The dev kit showcase (`#/dev/kit`) has a breakpoint demo.
+- `roving` makes the clickable lines one tab stop instead of one per line: ↑/↓ move focus (no wrap),
+  Home/End jump to the ends, and re-entering the panel returns to the line last focused
+  (`listKeyTarget` in `core/radio`, tested). isa-assembly's C and assembly panels use it (they had ~23 stops).
 - Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
   row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 
@@ -695,6 +740,7 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 - `active` lifts in `--hi` (checking now), `info` / `violet` lift the same way in those colours (a second and third
   pointer: cycle-detection's slow and fast cells match their S and F markers), `done` lifts in `--ok` (found), `dim` is ruled out, `bad` is a `--bad` fill. `idle` cells inside the **first** range get a light tint in that range's own tone (`--hi` by default).
 - Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
+- `cellClass(i)` adds a lesson's own class to cell i on top of its state (amortized-analysis keeps filled slots flat with `am-filled` instead of overriding `.is-info` inside its block).
 - Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
 - Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
 - Range labels sit about 28px above the strip, so leave that room above it.
@@ -782,6 +828,7 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - `tone` on a frame accents an `idle` or `waiting` frame in that colour, to match the lesson's own colour for it (tree-traversals: violet, like its "on the stack" nodes). Other states keep their colours.
 - `frames` is **top first**. `anchor="bottom"` (default) stacks from the bottom up like plates; `anchor="top"` lists from the top like the DevTools pane. `showDepth` numbers frames by depth (0 = outermost).
 - Frames push in from above and pop off to the right (`layout` + `SPRING.snappy`); `alarm` shakes them and turns the box red.
+- `enterFrom="bottom"` brings new frames up from below; a frame's own `exit: 'right' | 'top' | 'bottom'` picks how it leaves (default right). monotonic-stack's deque joins at the back (bottom) and drops its front out of the top, its back out of the bottom.
 - `onSelect` makes frames buttons (focus ring included); `selected` highlights one with a ring in
   `selectedTone` (default `hi`; debugger-tools uses `info` so selection doesn't read as "running").
 - recursion's stack runs on it, pixel-identical. Its "↓ value" return chip is lesson-local, passed in `detail`.
@@ -866,7 +913,7 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 ```
 - Natural size (one unit = 1px), shrinking to fit narrow screens. `fill: 'none'` mutes the cell's text (a crossed-out number).
 - With `onCellClick` it's one tab stop: arrows move (no wrap), Home/End go to the row ends, Ctrl+Home/End to the corners, PageUp/Down five rows, Enter/Space press (`gridKeyTarget` in `core/grid`, the WAI-ARIA grid pattern). Reuse `gridKeyTarget` for any HTML grid of buttons, as graph-representations' adjacency matrix does.
-- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element. Cell text (strings and numbers) is painted too whenever it lands at `MIN_TEXT_PX` (8px) or more on screen (the SVG's rendered scale is measured); below that it's left out, so a lesson whose canvas grid can shrink that far must say so on screen. modular-arithmetic's mod 22–24 tables now show their numbers (its WideRegion keeps them ≥ 9px), so its "too many to number" note is gone. `cellTitle` tooltips are SVG-mode only.
+- Above `CANVAS_THRESHOLD` (400) cells it paints them on a canvas from `TOKENS` (same API) with one focusable hit area and a cursor ring, so a 1,000-person crowd is one element. Cell text (strings and numbers) is painted too whenever it lands at `MIN_TEXT_PX` (8px) or more on screen (the SVG's rendered scale is measured); below that it's left out, so a lesson whose canvas grid can shrink that far must say so on screen. modular-arithmetic's mod 22–24 tables now show their numbers (its WideRegion keeps them ≥ 9px), so its "too many to number" note is gone. `cellTitle` tooltips are SVG-mode only. Tint and outline cells are edged in their tone on the canvas too (1px and 1.5px, inset; `canvasStroke`, with `cellFill` resolving a toned cell with no fill to a tint as the SVG does), so conditional-bayes' 1,000-person crowd draws its negatives as the outlines its spec asks for instead of a faint wash. Plain and solid cells stay edgeless on the canvas.
 - `size` takes a custom `{ cell, gap?, font? }` beyond the presets (gap defaults to ~9% of the cell, font to ~38%, none under 16px cells). Pure rules (`resolveSize`, `textReadable`, `canvasFill`, `canvasInk`) live in `components/cellGridPaint.ts`, tested.
 - `overlay(geometry)` draws SVG over the cells and rings, in the grid's coordinates (`at`, `center`, `cell`, `gap`, `width`, `height`), with no pointer events: dependency arrows, a path through the grid. Not migrated yet: dynamic-programming's LCS table (an HTML grid of 40px cells with its own SVG arrow overlay) can now be expressed as `size={{ cell: 40 }}` + `overlay`, but moving it from HTML to SVG isn't pixel-identical, so it's left for that lesson's owner.
 - Inside a scene SVG (a grid with RefArrows to its cells): `<CellGridGroup at={{ x, y }} {...props} />` draws it as a `<g>` there, and `cellGridLayout(props, at)` (components/cellGridLayout, pure) returns the same geometry in scene coordinates (`at(r, c)`, `center(r, c)`, `cell`, `gap`, `width`, `height`) to aim arrows with. Keyboard, rings, overlay and canvas mode work the same.
@@ -894,6 +941,16 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
   <Arrow from={[0, 0]} to={v} label="a" tone="info" />
   <Points data={[{ x, y, tone, hollow }]} r={4.5} onDrag={(i, [x, y]) => …} pointLabel={(i) => 'centroid A'} />
 </Plot2D>
+
+<Plot2D x={…} y={…} width={356} aspect="equal" ariaLabel="…">          {/* height follows: x and y units equally long */}
+  <PointerLayer onDown={(p) => add(p)} onMove={setProbe} cursor="crosshair" />   {/* under the draggable layers */}
+  <Points data={[{ x, y, tone, r: 6, ring: 'bad' }]} labels={(i) => words[i]} />   // per-point r / ring; text labels
+  <Points data={many} onDrag={…} roving />                             {/* one tab stop: PageUp/PageDown, [ ], Home/End */}
+  <PointLabels data={dots} labels={(i) => show[i] ? { text, left: true } : null} />   {/* labels as their own later layer */}
+  <PlotCursor at={cursor} onMove={setCursor} label="Add-point cursor" />  {/* keyboard twin of a PointerLayer */}
+  <Arrow to={v} tone="muted" dashed />
+  <VLine at={t} onDrag={(x) => move(x)} onStep={(dir) => step(dir)} ariaLabel="Threshold" valueText="threshold 0.62" />
+</Plot2D>
 ```
 - Layers are children in data coordinates, drawn in order; path layers are clipped to the plot box. Custom layers call `usePlot()` (from `components/plotContext`) for `xs`, `ys` and `box`.
 - `tickValues: [1, 1e25, 1e50, 1e75, 1e100]` on an axis replaces the automatic ticks (values outside the domain are dropped): a log axis over a huge range otherwise strides by an awkward number of decades and can miss the top. `axisTickValues(spec)` in `core/plot` is the tested logic.
@@ -901,6 +958,10 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - `Curve fn` is sampled evenly on screen (so log axes too) and breaks where `fn` isn't finite. `Heat fn` returns a 0..1 intensity of `tone` or `{ tone, intensity }` (a region), or pass `grid` (row 0 at the top); memoise `fn`, since it repaints when it changes.
 - Draggable `Points` take pointer drags and are focusable: arrow keys move 4 units (Shift: 20), always clamped to the domain (`nudgePoint`, `clampPoint`).
 - A `dim` rule is a quiet reference line (faint line, muted label). `formatTick` writes 1.5k, 2M, and 10ⁿ on log axes.
+- `aspect="equal"` sets the height so one unit of x is as long on screen as one of y (a decade on a log axis): equal domains give a square box. `equalAspectHeight(width, x, y)` and `plotMargin(x, y)` in `core/plot` are the tested logic; gradient-descent, linear-logistic-regression, matrices-transformations and vectors-similarity use it instead of a hand-tuned 356 × 350.
+- `PointerLayer` is a transparent sheet over the box reporting the pointer in data space (`onDown` click-to-add or drop, `onMove` a probe); it has no keyboard path, so pair it with `PlotCursor` (a hollow grey draggable point) and a button, or with draggable points. Replaces gradient-descent's DropLayer, linear-logistic-regression's PointerSheet, and decision-trees' and clustering's click catchers.
+- `Points`: a point's own `r` and `ring: Tone` (an outline 2.5 units out; decision-trees' misclassified samples) and `labels(i)` (text beside each point in its tone, dim → muted; `PointLabels` is the same as a separate layer, for when something must sit between the dots and their words, as in embeddings). `roving` makes draggable points one tab stop: Page Up/Down (or `[` `]`) pick the previous/next point, Home/End the ends, arrows still move it (`rovingPointTarget`); linear-logistic-regression's up-to-20 points use it.
+- `Arrow dashed` dashes the shaft. `VLine onDrag` is a slider (`role="slider"`, a grip, pointer drag anywhere in the box; arrows call `onStep(±1)`, or nudge 4 units through `onDrag` without one): classification-metrics' threshold.
 - `paintImage(w, h, draw)` (`components/canvasImage.ts`) is the shared paint-to-data-URL step behind Heat and CellGrid's canvas mode.
 
 ### `core/graphLayout.ts`, `GraphView.tsx` — topological-sort, union-find, minimum-spanning-trees, relations-orders, cycle-detection, dfa-nfa, lexing-tokens, deadlocks, garbage-collection, memory-leaks, build-systems, bundlers-code-splitting, coupling-cohesion, test-doubles, dependency-injection, behavioral-patterns, mobile-app-lifecycle, sockets-api, software-licensing; graph-representations, ci-pipelines
@@ -984,6 +1045,7 @@ spreadLabels([{ x, w }], gap)               // px shifts that keep centred label
 - `labelMinPx`: a bar drawn narrower than this drops its label (it stays the tooltip and accessible name) instead of showing a clipped one.
 - Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
 - The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
+- `motionId` on a bar: bars sharing one are the same thing in different places. A bar element that wasn't drawn last render starts where its motionId was last drawn and glides there (a 450ms Web Animations FLIP; skipped under prefers-reduced-motion, like the CSS transitions). greedy-algorithms' booked lane: each booking slides down from its meeting's row.
 - ci-pipelines renders its wall-clock chart through it (it adds only `.ci-gantt .gantt { margin-top: 8px }`). The migration is pixel-identical: its smoke frames plus a driven matrix of 8 option combos × 5 frames × 1440/390, 80/80 unchanged.
 
 ### `core/sequenceLayout.ts`, `SequenceDiagram.tsx` — dhcp, ethernet-arp, dns-resolution, diffie-hellman, packet-capture-debugging, http-caching, idempotency-keys, webhooks, mfa-passkeys, csrf-cookies, sockets-api, realtime-transports
@@ -1041,6 +1103,8 @@ const L = memoryMapLayout(props);   // same props → same rows
 - Columns are sized to their content (address digits, the longest value, the longest region label at its nesting depth); `width` stretches the cell column. A 24px link gutter between the cells and the brackets is where arrows between two cells bow (a negative `bend` heads right).
 - Unused columns collapse: omit `pointers` and there is no pointer column (pass `[]` to keep it, so the width holds steady while a pointer comes and goes); with no regions there are no brackets and no link gutter (virtual-memory-paging's RAM column: the scene went from 940 to 810 wide and fits a 768 tablet).
 - Rings: `highlight` rings in --hi, or `highlightTone`; a cell's own `ring: Tone` rings it in that tone regardless.
+- Pointers at the same row stack their tags (12px apart, centred on the row) beside one arrowhead in the first pointer's tone: calling-conventions shows `rsp` over `rbp` when they're equal (it used a combined "sp=bp" label). `L.pointerRows` is the tested layout.
+- Region labels sit on their band's first row, but where regions nest the deepest are placed first and an outer region whose first row is already labelled moves its label to the next free row of its band (`band.labelY`), so a frame's name doesn't print over its first slot's.
 - A region inside another gets `depth` 1 and its bracket steps inward. A cell is tinted by its innermost region; a cell's own `tone` is stronger. `freed` is hatched with struck values, and `guard` has a heavy border.
 - Ports: `memPort(L, addr, 'left' | 'right', at)`, `memCellRect(L, addr, at)` (a RefArrow `to`), `memRegionRect(L, i, at)`, `rowAt(L, addr)`. `memPort`, `memCellRect` and `rowAt` return null for an address off the map.
 - memory-safety-bugs is payload-free: the overflow demo is a name too long for its buffer, nothing more.
@@ -1162,6 +1226,25 @@ equalMix(['var(--amber)', 'var(--sky)'])   // 'color-mix(in oklab, var(--amber) 
   canonical order (the lessons sort their parts first), so the mix depends only on which paints went in.
   Both lessons' paint-mixing analogies use it; their exact colour strings are unchanged (asserted in their tests).
 
+## Tier 2 kit (wave 4→5 kit round)
+
+Plot2D, CellGrid, Button, CodePanel, MemoryMap, GanttLanes, CallStackPanel and ArrayStrip additions are
+documented in their own sections above.
+
+### `core/x86.ts` — isa-assembly, calling-conventions
+```ts
+const program = assemble(listing.lines, BASE, endOffset);   // Intel-syntax lines (labels, offsets) → instrs, lineOf, labels
+let cpu = startCpu({ rip: entry, rsp: 0x7ff0, regs: { rdi: 6n, rsi: 4n }, called: true }); // bigints; called pushes RETURN_TO_CALLER
+const { cpu: next, effect } = step(program, cpu);            // one instruction: what it read/wrote, flags it set, the branch taken
+const { cpus, effects } = runToEnd(program, cpu);            // every state, up to STEP_LIMIT
+signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
+```
+- A tiny interpreter for lesson-authored listings, not an emulator: only the instructions the lessons use,
+  the flags ZF SF CF OF, and byte-addressed little-endian memory, following the Intel SDM (32-bit writes
+  zero-extend; 8/16-bit writes merge). Moved unchanged from isa-assembly, which carried a byte-identical copy
+  in calling-conventions pinned by a test; the copy and the pin test are gone, the behaviour tests moved to
+  `core/x86.test.ts`. Both lessons' frames are unchanged.
+
 ---
 
 ## Not built (deliberately)
@@ -1169,6 +1252,7 @@ equalMix(['var(--amber)', 'var(--sky)'])   // 'color-mix(in oklab, var(--amber) 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
 - **Multi-state `CodePanel` lines:** requested in Phase 2 and declined; lessons that need more line states keep a small local override.
 - **`CompareRows`:** not built.
+- **A shared value-scaled `BarStrip`:** not built. monotonic-stack's bar chart is SVG with answer arrows, a sliding window, rectangle overlays and an index row tied to its own geometry; ArrayStrip is HTML cells. A BarStrip on ArrayStrip's states wouldn't replace it without re-drawing the lesson, and amortized-analysis doesn't need bars. Revisit if a second lesson wants plain value bars.
 - **web-request's waterfall on `GanttLanes`:** it's one stacked bar whose segments grow with
   motion springs, plus a legend, not lanes on a time axis. Moving it would swap flex for absolute
   positioning and the spring for a linear transition, so it couldn't be pixel-identical. It stays local.

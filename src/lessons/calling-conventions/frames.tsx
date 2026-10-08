@@ -5,7 +5,7 @@ import type { Frame } from '../../core/types';
 import { ABI, argCount, REAL_STACK_BYTES, runScene, TOY_STACK_BYTES, type RunResult, type SceneId, type SceneOptions } from './model';
 import { NO_PAD_NOTE } from './listings';
 import { functionAt } from './unwind';
-import { hex, operandText, signed, type Reg64 } from './x86';
+import { hex, operandText, signed, type Reg64 } from '../../core/x86';
 
 export interface CallFrame extends Frame {
   /** Index into the run's steps. */

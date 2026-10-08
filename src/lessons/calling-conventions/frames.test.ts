@@ -4,7 +4,7 @@ import { callFrames, clobbered } from './frames';
 import lesson from './index';
 import { ABI, alignLabel, REAL_STACK_BYTES, runScene, type SceneId, type SceneOptions } from './model';
 import { frameTones, stackPicture, whyNoFrame } from './stackLayout';
-import { hex, signed } from './x86';
+import { hex, signed } from '../../core/x86';
 
 const COMBOS: [SceneId, SceneOptions][] = [
   ['calls', { framePointers: true, callerSavesRcx: false }],
