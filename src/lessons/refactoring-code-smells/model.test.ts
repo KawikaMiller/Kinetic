@@ -105,3 +105,13 @@ describe('the merged diff', () => {
     }
   });
 });
+
+describe('the metrics are rough proxies: single steps can make one worse', () => {
+  const m = (...rs: RefactorId[]) => metrics(versionLines(new Set(rs)));
+  it('Remove Flag Argument raises duplicated lines (4 → 6) and Introduce Parameter Object lengthens the longest function (28 → 29)', () => {
+    expect(m().duplicatedLines).toBe(4);
+    expect(m('flag').duplicatedLines).toBe(6);
+    expect(m().longestFunction).toBe(28);
+    expect(m('paramObject').longestFunction).toBe(29);
+  });
+});

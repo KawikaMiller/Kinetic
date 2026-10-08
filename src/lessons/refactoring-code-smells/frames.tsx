@@ -15,7 +15,7 @@ export function appliedCaption(r: RefactorId, rows: readonly DiffRow[], tests: r
   const removed = rows.filter((x) => x.kind === 'removed').length;
   const red = tests.some((t) => !t.passed);
   return <>{SMELLS[r].refactoring}: {plural(added, 'line')} in, {plural(removed, 'line')} out, and {verdict(tests)}.
-    {red ? (unsafe ? ' The unsafe edit is still in, so the red is that edit, not this refactoring.' : '') : ' Same behaviour, new structure: that is a refactoring.'}</>;
+    {red ? (unsafe ? ' The unsafe edit is still in, so the red is that edit, not this refactoring.' : '') : ' Every test still agrees, so behaviour looks unchanged (twelve tests are evidence, not proof): that is a refactoring.'}</>;
 }
 
 export function unsafeCaption(on: boolean, tests: readonly TestOutcome[]): ReactNode {

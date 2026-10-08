@@ -13,7 +13,7 @@ const lesson: LessonModule = {
       'Code review comments like "extract this" or "this flag wants two functions"',
       'Preparatory refactoring: reshape the code so the next feature is a small change',
     ],
-    why: 'Most of a working engineer\'s time goes on changing code someone else wrote. Knowing the smells gives you words for what is wrong in a review (`code-review`), and keeping refactors behaviour-preserving, with the tests as proof, is what lets you clean up without shipping a regression. Pure, small functions are the natural end point (`functional-programming`).',
+    why: 'Much of a working engineer\'s time can go on changing code someone else wrote. Knowing the smells gives you words for what is wrong in a review (`code-review`), and keeping refactors behaviour-preserving, with the tests as a safety net, is what lets you clean up without shipping a regression. Pure, small functions are the natural end point (`functional-programming`).',
     watch: 'Lines with a smell have a wavy orange underline; the smell you picked is underlined in solid yellow instead. After a step, lines the refactoring added or changed are tinted blue with a blue bar, and lines it removed stay in place tinted red and struck through. The test badge and the Tests stat are green while all characterization tests pass and red when any fails; the console lists each test, a green ✓ or a red ✗ with what it got. Smell chips are orange, the unsafe edit chip red, and the grey metrics compare with the original.',
   },
   tryThis: [
@@ -24,7 +24,7 @@ const lesson: LessonModule = {
     'Apply Remove Flag Argument and read how the tests now call it: the API changed, the expected totals did not.',
   ],
   keyIdeas: [
-    'A refactoring changes structure, never behaviour; the tests are the proof.',
+    'A refactoring changes structure, never behaviour; the tests are your evidence and safety net, not a proof.',
     'Pin untested code with characterization tests before you change it.',
     'Name the smell, then reach for its refactoring, one small step at a time.',
     'Bug fixes are behaviour changes: their own commit, with their own test.',

@@ -135,6 +135,7 @@ export function Stage() {
             title="characterization tests"
             lines={tests.map((t) => (t.passed ? `✓ ${t.name}` : { text: `✗ ${t.name}: expected ${t.expected}, got ${t.actual}`, tone: 'bad' as const }))}
           />
+          <Hint block>The metrics are rough proxies and can rise on a single step: Remove Flag Argument trades one flag for a small repeated call, and Introduce Parameter Object adds a line to unpack.</Hint>
           <SectionTitle>The tests call it as</SectionTitle>
           <code className="rf-call">{callLine(applied)}</code>
           <Hint block>
