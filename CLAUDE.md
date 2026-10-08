@@ -116,7 +116,10 @@ it's safe.
   missing structure. Needs the dev server running (`npm run dev`, on 127.0.0.1:5317 by default
   because another local app owns 5199). A second checkout (e.g. a git worktree) runs side by
   side with `KINETIC_PORT=5341 npm run dev`, and the scripts follow it with
-  `KINETIC_URL=http://127.0.0.1:5341`.
+  `KINETIC_URL=http://127.0.0.1:5341`. The scripts check that the server they reach serves
+  *their own* checkout (the dev server answers `/__kinetic_root` with its project root) and abort
+  with both paths named when another checkout owns the port; restart the right server rather than
+  setting `KINETIC_SKIP_ROOT_CHECK=1`.
 - `npm run smoke -- --mobile` must pass too: at 390x844 it fails on page overflow, content the
   stage frame clips, and scene (SVG) text rendered under 8px. Look at the 390px screenshots of
   anything you touched, and check 768px as well.
