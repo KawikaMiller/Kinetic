@@ -1,3 +1,4 @@
+import { lineDiff } from '../../core/lineDiff';
 import { mulberry32, pick, randInt } from '../../core/random';
 
 /**
@@ -257,29 +258,6 @@ export function metrics(lines: readonly string[]): Metrics {
   }
   const duplicatedLines = [...counts.values()].filter((c) => c > 1).reduce((a, c) => a + c, 0);
   return { longestFunction: longest, maxDepth: depth, duplicatedLines, lines: lines.length };
-}
-
-/** Indices of lines in `after` that aren't part of a longest common subsequence with `before`. */
-export function lineDiff(before: readonly string[], after: readonly string[]): { added: Set<number>; removed: Set<number> } {
-  const n = before.length;
-  const m = after.length;
-  const L = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = before[i] === after[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-  const keptA = new Set<number>();
-  const keptB = new Set<number>();
-  for (let i = 0, j = 0; i < n && j < m;) {
-    if (before[i] === after[j]) {
-      keptB.add(i);
-      keptA.add(j);
-      i++;
-      j++;
-    } else if (L[i + 1][j] >= L[i][j + 1]) i++;
-    else j++;
-  }
-  return {
-    added: new Set(after.map((_, j) => j).filter((j) => !keptA.has(j))),
-    removed: new Set(before.map((_, i) => i).filter((i) => !keptB.has(i))),
-  };
 }
 
 /** Every subset of the six refactorings, for exhaustive checks. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
-import { NODE, VIEW, layoutModules, moduleAt, passThroughs, segmentHitsBox } from './layout';
+import { NODE, VIEW, layoutModules, moduleAt, passThroughs } from './layout';
 import {
   EDGES, FN_IDS, PRESETS, PRESET_IDS, REQUESTS, SLOTS, blastRadius, changeSet, coupling, couplingDelta, edgesFlipped, meanCohesion,
   moduleStats, modulesTouched, moveFn, reasonsToChange, requestById, type Assignment, type FnId, type PresetId, type RequestId, type Slot,
@@ -212,29 +212,6 @@ describe('layout', () => {
   it('is deterministic: the same assignment gives the same drawing', () => {
     const a = PRESETS.feature.assign;
     expect(layoutModules({ ...a })).toEqual(layoutModules(a));
-  });
-
-  it('segmentHitsBox agrees with dense sampling along the segment (5,000 random cases)', () => {
-    const rnd = mulberry32(11);
-    let hits = 0;
-    for (let t = 0; t < 5000; t++) {
-      const a = { x: rnd() * 200, y: rnd() * 200 };
-      const b = { x: rnd() * 200, y: rnd() * 200 };
-      const c = { x: rnd() * 200, y: rnd() * 200 };
-      const hw = 5 + rnd() * 40;
-      const hh = 5 + rnd() * 20;
-      let sampled = false;
-      for (let k = 0; k <= 4000 && !sampled; k++) {
-        const x = a.x + ((b.x - a.x) * k) / 4000;
-        const y = a.y + ((b.y - a.y) * k) / 4000;
-        if (Math.abs(x - c.x) <= hw - 0.05 && Math.abs(y - c.y) <= hh - 0.05) sampled = true;
-      }
-      const exact = segmentHitsBox(a, b, c, hw, hh);
-      // Sampling inside a slightly shrunk box can only miss grazing hits, never invent one.
-      if (sampled) expect(exact).toBe(true);
-      if (exact) hits++;
-    }
-    expect(hits).toBeGreaterThan(200);
   });
 
   it('finds no module in the gaps between boxes', () => {

@@ -5,7 +5,7 @@ import {
   BOUNDED_FIXED, BOX_CODE, LANGS, OPS, TS_LATER_CRASH, VIEWS, compiledCopies, lang, maxOf, strategySentence, varianceLines, verdict,
   type Op, type TypeArg, type VerdictKind, type ViewId,
 } from './model';
-import { emitJs, tscErrors } from './tscCheck';
+import { emitJs, tscErrors } from '../../core/testing/tsc';
 
 /** Run lesson-authored TypeScript as real JavaScript (types stripped by the compiler). Test-only. */
 function runTs(src: string): { value: unknown; error: string | null } {

@@ -6,9 +6,10 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
+import { lineDiff } from '../../core/lineDiff';
 import { changeVerdict, doneCaption, moveCaption } from './frames';
 import {
-  CODE, DONE, KATA_START, STEPS, applyMove, changeCode, changedLines, changeTests, coverage, runTests, shownCode, shownTests, stepAt, testLine, undoMove, wheelPhase,
+  CODE, DONE, KATA_START, STEPS, applyMove, changeCode, changeTests, coverage, runTests, shownCode, shownTests, stepAt, testLine, undoMove, wheelPhase,
   type ChangeKind, type KataState, type Move, type Phase, type TestId, type TestResult, type VersionId,
 } from './model';
 import './styles.css';
@@ -85,7 +86,7 @@ function TestList({ results, title = 'Tests' }: { results: readonly TestResult[]
 }
 
 function Code({ v, before, title }: { v: VersionId; before: VersionId | null; title: string }) {
-  const changed = before === null ? new Set<number>() : changedLines(CODE[before], CODE[v]);
+  const changed = before === null ? new Set<number>() : lineDiff(CODE[before], CODE[v]).added;
   return <CodePanel title={title} lines={CODE[v]} stateOf={(i) => (changed.has(i) ? 'now' : 'idle')} />;
 }
 

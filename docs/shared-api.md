@@ -220,7 +220,19 @@ pointAlong(a, b, t), midpoint(a, b)
 pillWidth(label, charW = 6.5, pad = 20)          // label.length * charW + pad
 archPath(x1, x2, baseY, lift)                    // quadratic arch 'M … Q … …'
 treeToPixels({ x, depth }, { count, width, pad, top, levelGap })
+arrowStep(key, step)                             // [dx, dy] for an arrow key, else null
+segmentHitsBox(a, b, c, halfW, halfH)            // does segment a→b cross the box centred on c (Liang–Barsky)? coupling-cohesion, layered-hexagonal, architecture-diagrams-c4
 ```
+
+### `lineDiff.ts` — tdd, refactoring-code-smells
+```ts
+lineDiff(before, after)                          // { added: Set<index in after>, removed: Set<index in before> }
+```
+Lines outside a longest common subsequence are changed, so a moved line is removed and added, as `diff` reports it.
+solid-principles' `changedLines` is deliberately not this: it compares a class's lines with the same-named class in the other
+variant (set membership, order-blind) and returns indices into a rendered listing, so a reordered or moved line is not flagged and
+an LCS would change which lines glow. technical-writing's `wordDiff` is an LCS over words with a different output (a token
+stream with eq/ins/del), so it stays too.
 
 ### `motion.ts` — pattern 18
 ```ts
@@ -367,6 +379,8 @@ gluedSentences(text)                 // glue.ts: snippets around each glued spot
 spawnSync(cmd, args, { timeout?, cwd?, input? })  // node.ts: { stdout, stderr, status }, UTF-8, 10 s default timeout
 runNode(code | lines, opts?)         // node.ts: spawnSync(nodePath, ['-e', code]); lines join with \n
 nodePath                             // the Node binary running the tests
+tscErrors({ 'a.ts': src })           // tsc.ts: real `tsc --strict` over in-memory files -> [{ file, line, code, message }] (generics-polymorphism, null-option-adts)
+emitJs(src)                          // tsc.ts: what TypeScript emits for a snippet (types erased)
 ```
 - A glued sentence is what a JSX line break next to `{…}` produces: JSX drops a line break that
   touches an expression, so text ending a line in `…the port.` with `{n} s later` starting the next
