@@ -1,0 +1,13 @@
+.sg { gap: 14px; }
+.sg-scene { display: block; width: 100%; max-width: 640px; height: auto; }
+.sg-link { stroke: var(--info); stroke-width: 3; }
+.sg-link.is-removed { stroke: var(--violet); stroke-dasharray: 6 5; opacity: 0.8; }
+.sg-code { display: flex; flex-direction: column; gap: 8px; }
+.sg-procs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.sg-procs li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; border: 1.5px solid var(--info); border-radius: 8px; max-width: 360px; }
+.sg-procs li span { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.sg-procs li b { font-family: var(--mono); }
+.sg-procs li.is-zombie { border-color: var(--dim); border-style: dashed; color: var(--muted); }
+.sg-procs li i { font-style: normal; font-weight: 700; color: var(--muted); }
+.sg-table td.is-yes { color: var(--ok); font-weight: 600; }
+.sg-table td.is-no { color: var(--bad); font-weight: 600; }

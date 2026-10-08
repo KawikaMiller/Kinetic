@@ -1,0 +1,36 @@
+.sd { gap: 14px; }
+.sd-hdd { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.sd-hdd > .stage-shell { flex: 1 1 360px; min-width: 0; }
+.sd-platter { display: block; width: 100%; max-width: 520px; height: auto; }
+.sd-disc { fill: var(--cell); stroke: var(--line-2); stroke-width: 1.5; }
+.sd-track { fill: none; stroke: var(--line); stroke-width: 1; }
+.sd-spoke { stroke: var(--line); stroke-width: 0.6; opacity: 0.6; }
+.sd-spindle { fill: var(--bg); stroke: var(--line-2); }
+.sd-rpm { font: 600 11px var(--mono); fill: var(--muted); text-anchor: middle; }
+.sd-sector { fill: none; stroke-width: 7; stroke-linecap: butt; }
+.sd-sector.is-queued { stroke: var(--muted); opacity: 0.55; }
+.sd-sector.is-done { stroke: var(--dim); }
+.sd-sector.is-now { stroke: var(--hi); }
+.sd-arm { stroke: var(--info); stroke-width: 4; stroke-linecap: round; }
+.sd-head { fill: none; stroke: var(--info); stroke-width: 2.5; }
+.sd-pivot { fill: var(--cell); stroke: var(--info); stroke-width: 2; }
+.sd-label { font: 500 11px var(--mono); fill: var(--muted); }
+.sd-queue { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; flex: 0 1 220px; align-content: flex-start; font: 500 12px var(--mono); }
+.sd-queue li { display: flex; gap: 8px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
+.sd-queue li.is-done { color: var(--dim); border-color: var(--line); }
+.sd-queue li.is-now { color: var(--hi); border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.sd-stale { text-decoration: line-through; }
+.sd-flash { display: flex; flex-direction: column; gap: 10px; }
+.sd-queues { display: flex; flex-direction: column; gap: 6px; }
+.sd-latency { display: flex; flex-direction: column; gap: 6px; }
+.sd-latency .section-title { display: block; }
+.sd-lat-row { display: grid; grid-template-columns: minmax(120px, 210px) 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.sd-lat-label { color: var(--muted); }
+.sd-lat-track { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.sd-lat-track i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
+.sd-lat-row b { font: 600 13px var(--mono); }
+@media (max-width: 900px) {
+  .sd-queue { flex-basis: 100%; }
+  .sd-lat-row { grid-template-columns: 1fr auto; }
+  .sd-lat-track { grid-column: 1 / -1; grid-row: 2; }
+}

@@ -6640,9 +6640,9 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B15 Logic, proof & complexity | 5 | 5 | t2/b15 | done | merged e1da29a; review 5 MAJOR fixed 5ea578c |
 | 2 | T2-B16 Concurrency & performance | 5 | 5 | t2/b16 | done | merged 30d8015; review 5 MAJOR fixed 0f0ae7c |
 | 2 | P-follow-up after wave 5 | — | 5→6 | kit owner | not started | |
-| 2 | T2-B17 Sockets & the edge | 5 | 6 | t2/b17 | not started | |
-| 2 | T2-B18 Runtimes & memory | 5 | 6 | t2/b18 | not started | |
-| 2 | T2-B19 Machines, disks & lifecycles | 5 | 6 | t2/b19 | not started | |
+| 2 | T2-B17 Sockets & the edge | 5 | 6 | t2/b17 | done | merged 624cd85 with review fixes on-branch (11 MAJOR: latency defaults, REJECT=ICMP default, Wireshark bare-field semantics, retry-safety) |
+| 2 | T2-B18 Runtimes & memory | 5 | 6 | t2/b18 | done | merged 067cb39 with review fixes on-branch (3 MAJOR: refcount cascade, leak try-this, rejected-promise explanation) |
+| 2 | T2-B19 Machines, disks & lifecycles | 5 | 6 | t2/b19 | done | merged c7c12b9 with review fixes on-branch (9 MAJOR: PV model, Secure Boot scope, emergency.target, fsync try-this, SIGCHLD, post-SIGKILL handler) |
 | 2 | P-follow-up after wave 6 | — | 6→7 | kit owner | not started | |
 | 2 | T2-B20 Types & patterns | 5 | 7 | t2/b20 | not started | |
 | 2 | T2-B21 Testing & change | 5 | 7 | t2/b21 | not started | |
