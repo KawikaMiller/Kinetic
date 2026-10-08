@@ -20,5 +20,4 @@
 .scv-chip.is-asleep { color: var(--muted); border-style: dashed; }
 .scv-chip.is-io { color: var(--muted); border-color: var(--muted); }
 /* Filled slots stay flat so the index row above them stays readable. */
-.scv-buffer .array-cell.is-info { transform: none; box-shadow: none; }
 .scv-buffer .array-pointer { white-space: nowrap; }

@@ -1,3 +1,4 @@
+import { arrowStep } from './geometry';
 import { linearScale, logScale, type Scale } from './scale';
 
 /**
@@ -118,8 +119,7 @@ export const BIG_NUDGE = 20;
  */
 export function nudgePoint(p: Point, key: string, xs: Scale, ys: Scale, big = false): Point | null {
   const d = big ? BIG_NUDGE : NUDGE;
-  const delta: Record<string, [number, number]> = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] };
-  const step = delta[key];
+  const step = arrowStep(key, d);
   if (!step) return null;
   const px = xs.map(p[0]) + step[0];
   const py = ys.map(p[1]) + step[1];
@@ -201,3 +201,17 @@ export function formatTick(v: number, log = false): string {
 }
 
 const trim = (v: number) => String(Number(v.toPrecision(3)));
+
+/**
+ * Where a rule's label goes so it stays inside [lo, hi] (the plot box): `lefts` are the
+ * candidate left edges in order of preference (the side it's drawn on, then the other side),
+ * `w` its measured width. Returns the first candidate that fits, else the first one slid
+ * inside (a label wider than the box starts at `lo`): which candidate, and how far to move it.
+ */
+export function fitLabel(lefts: readonly number[], w: number, lo: number, hi: number): { index: number; dx: number } {
+  const fits = lefts.findIndex((l) => l >= lo && l + w <= hi);
+  if (fits >= 0) return { index: fits, dx: 0 };
+  const left = lefts[0];
+  const slid = w > hi - lo ? lo : Math.min(hi - w, Math.max(lo, left));
+  return { index: 0, dx: slid - left };
+}
