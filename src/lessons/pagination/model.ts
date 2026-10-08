@@ -233,3 +233,30 @@ export function pageAll(table: readonly Row[], tieBreak: boolean): number[][] {
 
 /** The depth stops on the cost slider. */
 export const DEPTHS = [1, 10, 100, 1000, 10000] as const;
+
+// ── What the offset session's next page would do ────────────────────────
+
+export interface Preview {
+  /** Ids the next OFFSET page would return. */
+  rows: number[];
+  /** Of those, ids the session already showed. */
+  repeated: number[];
+  /** Rows sorting after the last row shown but before the page's first row: jumped over. */
+  skipped: number[];
+}
+
+/** Looks ahead at the offset session's next page on the table as it is now, without loading it. */
+export function previewOffset(w: World): Preview {
+  const s = w.offset;
+  const rows = offsetPage(w.table, s.offset).rows;
+  const seen = new Set(s.pages.flat());
+  const sorted = [...w.table].sort(byFeed);
+  const frontier = s.cursor;
+  const afterFrontier = frontier ? sorted.filter((r) => afterCursor(r, frontier, true)) : sorted;
+  const first = rows[0];
+  return {
+    rows: rows.map((r) => r.id),
+    repeated: rows.filter((r) => seen.has(r.id)).map((r) => r.id),
+    skipped: (first ? afterFrontier.filter((r) => byFeed(r, first) < 0) : afterFrontier).map((r) => r.id),
+  };
+}

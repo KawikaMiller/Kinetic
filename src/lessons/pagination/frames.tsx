@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { analyse, repeatedOnLastPage, type Session, type World } from './model';
+import { analyse, previewOffset, repeatedOnLastPage, type Session, type World } from './model';
 
 export const list = (xs: readonly number[]) => xs.map((id) => `#${id}`).join(', ');
 
@@ -26,10 +26,19 @@ export function pageCaption(before: World, after: World): ReactNode {
     {side('Cursor', pageNews(before, after, 'cursor'))} {stable ? <span className="hl ok">The cursor stays stable.</span> : null}</>;
 }
 
-export const insertCaption = (added: readonly number[], offset: number, offsetDone: boolean): ReactNode =>
-  <>{list(added)} arrived at the top. Every row below moved down {added.length} places
-    {offsetDone ? '.' : <>, so OFFSET {offset} now lands {added.length} rows earlier in the list.</>}</>;
+/** What the offset session's next page would do now, from a real look-ahead (so it is right after any mix of inserts and deletes). */
+function nextOffsetNews(w: World): ReactNode {
+  if (!w.offset.hasMore) return null;
+  const p = previewOffset(w);
+  const clean = p.repeated.length === 0 && p.skipped.length === 0;
+  return <> The next OFFSET {w.offset.offset} page would {clean
+    ? <span className="hl ok">line up exactly</span>
+    : <>{p.repeated.length ? <span className="hl bad">repeat {list(p.repeated)}</span> : null}{p.repeated.length && p.skipped.length ? ' and ' : null}
+      {p.skipped.length ? <span className="hl orange">skip {list(p.skipped)}</span> : null}</>}.</>;
+}
 
-export const deleteCaption = (gone: number, offset: number, offsetDone: boolean): ReactNode =>
-  <>#{gone} was deleted from the top. Every row below moved up one
-    {offsetDone ? '.' : <>, so OFFSET {offset} now lands one row later: the offset page will jump over a row.</>}</>;
+export const insertCaption = (added: readonly number[], after: World): ReactNode =>
+  <>{list(added)} arrived at the top, so every row below moved down {added.length} places.{nextOffsetNews(after)}</>;
+
+export const deleteCaption = (gone: number, wasNew: boolean, after: World): ReactNode =>
+  <>#{gone}{wasNew ? ' (one of the new rows)' : ''} was deleted from the top, so every row below moved up one place.{nextOffsetNews(after)}</>;

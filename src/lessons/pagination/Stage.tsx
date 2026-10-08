@@ -71,11 +71,12 @@ function FeedScene({ picker }: { picker: ReactNode }) {
   const insert = () => {
     const n = insertAtHead(w, INSERT_K);
     setW(n);
-    setCaption(insertCaption(n.table.slice(-INSERT_K).map((r) => r.id), w.offset.offset, !w.offset.hasMore));
+    setCaption(insertCaption(n.table.slice(-INSERT_K).map((r) => r.id), n));
   };
   const del = () => {
-    setW(deleteNewest(w));
-    setCaption(deleteCaption(sorted[0].id, w.offset.offset, !w.offset.hasMore));
+    const n = deleteNewest(w);
+    setW(n);
+    setCaption(deleteCaption(sorted[0].id, !w.initial.includes(sorted[0].id), n));
   };
   const reset = () => {
     setW(fresh());
