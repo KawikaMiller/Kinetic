@@ -1,0 +1,18 @@
+.aac { gap: 14px; }
+.aac-row { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.aac-code { flex: 1 1 300px; min-width: 0; }
+.aac-code code { font-size: 12px; }
+.aac-wide { flex: 2 1 380px; }
+.aac-side { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.aac-pit li.is-done { background: color-mix(in srgb, var(--ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ok); }
+.aac-frame { padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--violet); background: color-mix(in srgb, var(--violet) 10%, transparent); }
+.aac-frame.is-empty { border-color: var(--line); background: none; }
+.aac-locals td { padding: 2px 10px 2px 0; font-family: var(--mono); font-size: 13px; }
+.aac-locals td:first-child { color: var(--violet); }
+.aac-reqs { display: flex; flex-wrap: wrap; gap: 14px; }
+.aac-req { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
+.aac-scroll { overflow-x: auto; }
+.aac-table td { white-space: nowrap; }
+.aac-table tr.is-picked td { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.aac-ok { color: var(--ok); }
+.aac-bad { color: var(--bad); }
