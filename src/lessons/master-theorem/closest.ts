@@ -6,8 +6,9 @@ import { mulberry32 } from '../../core/random';
  * is compared only with the points above it that are less than δ higher (at most 7), so the
  * strip checks are linear per level: T(n) = 2T(n/2) + O(n), the merge-sort case.
  *
- * This version re-sorts each strip by y, which costs an extra log factor in sorting; the
- * textbook version merges y-sorted halves instead. The checks counted here are the same.
+ * This version re-sorts each strip by y, so its own combine is O(n log n) and the whole run
+ * O(n log² n); the textbook version merges y-sorted halves, keeping the combine linear. The
+ * checks counted here are the same either way.
  */
 
 export interface Pt {

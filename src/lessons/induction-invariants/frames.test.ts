@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { dominoRun, DOMINOES, type DominoClaim } from './dominoes';
 import { factorTree, FACTOR_PRESETS, leafPrimes } from './factorTree';
-import { dominoFrames, factorFrames, searchFrames, VERDICT_LABEL } from './frames';
+import { dominoFrames, factorFrames, failingTarget, searchFrames, verdictLabel } from './frames';
 import { ABSENT_TARGETS, SEARCH_ARRAY } from './presets';
 import { BUGS, ITERATION_CAP, runSearch } from './search';
 
@@ -45,7 +45,7 @@ describe('searchFrames', () => {
       for (const target of targets) {
         const frames = searchFrames(SEARCH_ARRAY, target, bug);
         const run = runSearch(SEARCH_ARRAY, target, bug);
-        expect(text(frames.at(-1)!.say).startsWith(VERDICT_LABEL[run.verdict.kind]), `${bug}/${target}`).toBe(true);
+        expect(text(frames.at(-1)!.say).startsWith(verdictLabel(run.verdict, bug)), `${bug}/${target}`).toBe(true);
         expect(frames.every((f) => f.say != null)).toBe(true);
         if (bug === 'none') expect(run.verdict.kind).toBe('ok');
         expect(frames.at(-1)!.allHeld).toBe(run.verdict.kind !== 'invariant');
@@ -92,5 +92,40 @@ describe('factorFrames', () => {
       expect(text(frames.at(-1)!.say)).toContain(`${n} = ${leafPrimes(t).join(' × ')}`);
     }
     expect(text(factorFrames(factorTree(360))[factorFrames(factorTree(360)).length - 2].say)).toContain('not P(359)');
+  });
+});
+
+describe('review B15 regressions', () => {
+  const targets = [...SEARCH_ARRAY, ...ABSENT_TARGETS];
+
+  it('never calls code with an injected bug "Correct", and points at a target that really fails', () => {
+    for (const bug of BUGS) {
+      if (bug === 'none') continue;
+      for (const target of targets) {
+        const frames = searchFrames(SEARCH_ARRAY, target, bug);
+        for (const f of frames) expect(text(f.say), `${bug}/${target}`).not.toMatch(/\bCorrect\b/);
+        const run = runSearch(SEARCH_ARRAY, target, bug);
+        if (run.verdict.kind === 'ok') {
+          const last = text(frames.at(-1)!.say);
+          expect(last).toMatch(/^Passed this run\./);
+          const t = failingTarget(SEARCH_ARRAY, bug)!;
+          expect(last).toContain(`search for ${t} to see it fail`);
+          expect(runSearch(SEARCH_ARRAY, t, bug).verdict.kind).not.toBe('ok');
+        }
+      }
+    }
+  });
+
+  it('the default target 91 shows every bug failing', () => {
+    for (const bug of BUGS) if (bug !== 'none') expect(runSearch(SEARCH_ARRAY, 91, bug).verdict.kind).not.toBe('ok');
+  });
+
+  it('opens the strong-induction walk sensibly for n = 2 and 3, where there is no smaller case', () => {
+    for (const n of [2, 3]) {
+      const first = text(factorFrames(factorTree(n))[0].say);
+      expect(first).toContain('base case');
+      expect(first).not.toContain('from 2 to');
+    }
+    expect(text(factorFrames(factorTree(4))[0].say)).toContain('from 2 to 3');
   });
 });

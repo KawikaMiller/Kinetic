@@ -8,7 +8,7 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats 
 import { superscript } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { BASE_SIZE, POINT_SPAN, seededPoints } from './closest';
-import { caseLabel, critText, nCrit, num, pairFrames, thetaText, treeFrames } from './frames';
+import { caseLabel, critText, levelNote, nCrit, num, pairFrames, thetaText, treeFrames } from './frames';
 import { A_VALUES, B_VALUES, classify, DISPLAY_K, F, F_IDS, PRESETS, treeLevels, type FId } from './master';
 import './styles.css';
 
@@ -83,8 +83,6 @@ function TreeScene({ picker }: { picker: ReactNode }) {
   const columns = [...drawn.nodes.keys()].filter((id) => drawn.kids.get(id)!.length === 0).length;
   const width = Math.max(300, columns * TREE_COL);
   const dominantLevel = c.kind === 1 ? K : c.kind === 3 ? 0 : null;
-  const p = F[f].p2 / 2;
-  const levelRatio = a / b ** p;
 
   const load = (id: string) => {
     const pr = PRESETS.find((x) => x.id === id)!;
@@ -202,10 +200,7 @@ function TreeScene({ picker }: { picker: ReactNode }) {
               <HLine at={a ** K} label={nCrit(a, b)} tone="violet" />
             </Plot2D>
             <p className="mt-note">
-              {F[f].q === 0
-                ? `Each level does a / b^p = ${num(levelRatio)} times the level above (${levelRatio > 1 ? 'growing: leaves win' : levelRatio < 1 ? 'shrinking: the root wins' : 'equal: every level the same'}).`
-                : 'With a log factor in f the level ratio drifts slowly, but the polynomial part decides.'}{' '}
-              Log scale.
+              {levelNote(a, b, f)} Log scale.
             </p>
           </div>
         </div>
@@ -309,7 +304,7 @@ function PairScene({ picker }: { picker: ReactNode }) {
               <HLine at={7 * PAIR_POINTS} label="7 per point" tone="dim" />
             </Plot2D>
             <p className="mt-note">
-              Every level's strip checks stay under 7 per point, so combining is linear per level: T(n) = 2T(n/2) + O(n), the merge-sort case. Subproblems of {BASE_SIZE} or fewer points compare every pair ({run.baseChecks} checks here).
+              Every level's strip checks stay under 7 per point: linear per level. This demo re-sorts each strip by y, so its own combine is O(n log n) and the run O(n log² n); merging y-sorted halves gives the textbook T(n) = 2T(n/2) + O(n), the merge-sort case. Subproblems of {BASE_SIZE} or fewer points compare every pair ({run.baseChecks} checks here).
             </p>
           </div>
         </div>

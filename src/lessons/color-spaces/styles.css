@@ -1,0 +1,38 @@
+.cs-strips { gap: 14px; }
+.cs-strip { display: flex; flex-direction: column; gap: 6px; }
+.cs-strip-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.cs-strip-head code { font: 600 13px var(--mono); color: var(--text); }
+.cs-strip-note { font: 500 12px var(--font); color: var(--muted); }
+.cs-gradient { height: 44px; border-radius: 8px; border: 1px solid var(--line-2); }
+.cs-profile { width: 100%; max-width: 100%; }
+
+.cs-row { flex-direction: row; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: center; }
+.cs-gamma-plot { width: 100%; max-width: 420px; min-width: 300px; flex: 0 1 420px; }
+.cs-patches { flex: 1 1 240px; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+.cs-patch { margin: 0; display: flex; align-items: center; gap: 12px; }
+.cs-patch div { width: 64px; height: 64px; flex: none; border-radius: 10px; border: 1px solid var(--line-2); }
+.cs-patch figcaption { font: 500 13px var(--font); color: var(--muted); }
+.cs-patch figcaption b { color: var(--info); font-family: var(--mono); }
+
+.cs-models { gap: 14px; }
+.cs-same { display: flex; flex-wrap: wrap; gap: 12px; }
+.cs-same-row { flex: 1 1 280px; }
+.cs-same-swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.cs-same-swatches figure { margin: 0; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.cs-same-swatches div { width: 100%; height: 48px; border-radius: 8px; }
+.cs-same-swatches figcaption { font: 600 12px var(--mono); color: var(--text); }
+.cs-table { width: 100%; font-size: 12px; white-space: nowrap; }
+.cs-table th, .cs-table td { padding-left: 6px; padding-right: 6px; }
+.cs-table th[scope='row'] { text-align: left; font-weight: 500; }
+.cs-table tr.is-current th, .cs-table tr.is-current td { color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.cs-chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; border: 1px solid var(--line-2); }
+
+.cs-preview { flex: 1 1 280px; max-width: 420px; border-radius: 12px; padding: 18px 20px; border: 1px solid var(--line-2); }
+.cs-preview p { margin: 0 0 8px; font: 400 16px var(--font); }
+.cs-preview .cs-preview-big { font: 700 24px var(--font); }
+.cs-grades { flex: 1 1 260px; max-width: 380px; }
+.cs-grades ul { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cs-grades li { font: 500 13px var(--font); color: var(--text); }
+.cs-grades li b { display: inline-block; min-width: 40px; text-transform: uppercase; font: 700 11px var(--font); letter-spacing: 0.06em; padding: 2px 6px; border-radius: 6px; margin-right: 6px; text-align: center; }
+.cs-grades li.is-pass b { color: var(--on-ok); background: var(--ok); }
+.cs-grades li.is-fail b { color: var(--on-bad); background: var(--bad); }

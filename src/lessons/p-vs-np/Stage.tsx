@@ -10,7 +10,7 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { power } from '../../core/format';
 import { parseBoundedInt } from '../../core/parse';
-import { CHIPS, MAPPINGS, placementFeedback, REGION_NAMES, SCENARIOS, type Region } from './classes';
+import { CHIPS, MAPPINGS, P_EQUALS_NP_NOTE, placementFeedback, REGION_NAMES, SCENARIOS, type Region } from './classes';
 import { dpCaption, solveCaption, verifyCaption } from './frames';
 import {
   createSolver, DP_RUN_LIMIT, dpCells, dpSolve, inputDigits, MAX_ABS, MAX_DIGITS, MAX_ITEMS, maskToChosen, parseNumbers, seededInstance, SIZES,
@@ -458,7 +458,7 @@ function ClassScene({ picker }: { picker: ReactNode }) {
         </ControlGroup>
         {feedback && <p className={`pn-feedback tone-${feedback.correct ? 'ok' : 'bad'}`}>{feedback.text}</p>}
         <Hint tone="muted" block>
-          The nested picture assumes P ≠ NP, which nobody has proven; if P = NP, the regions collapse into one. NP means "a yes answer can be checked in polynomial time", not "not polynomial".
+          {P_EQUALS_NP_NOTE} NP means "a yes answer can be checked in polynomial time", not "not polynomial".
         </Hint>
       </div>
     </StageFrame>
