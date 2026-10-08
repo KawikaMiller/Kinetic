@@ -6,7 +6,9 @@
 /* Fixed outputs include long unbroken names (List`1[System.String]): wrap them on a phone. */
 .gp .console-panel code { overflow-wrap: anywhere; }
 /* A compile-time rejection is the earlier, cheaper failure: orange, not the runtime red. */
-.gp-code.is-compile li.is-bad { background: color-mix(in srgb, var(--orange) 16%, transparent); border-left-color: var(--orange); }
+.gp-code.is-compile li.is-bad { background: color-mix(in srgb, var(--orange) 16%, transparent); box-shadow: inset 3px 0 0 var(--orange); }
+/* A line checked safe is green. */
+.gp-code li.is-done { background: color-mix(in srgb, var(--ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ok); }
 
 .gp-box-svg, .gp-stamp-svg, .gp-var-svg { display: block; width: 100%; height: auto; }
 .gp-box-svg { max-width: 300px; }
