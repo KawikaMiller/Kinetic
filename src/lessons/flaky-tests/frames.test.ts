@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionText as text } from '../../core/testing/captions';
+import { expectCaption as text } from '../../core/testing/captions';
 import lesson from './index';
 import { batchCaption, replayCaption, runCaption, runLines, toggleCaption } from './frames';
 import { MAX_RETRIES, SOURCES, TEST_OF, exactGreen, runSeed, runSuite, summarise, type Config, type SourceId } from './sim';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionText as text } from '../../core/testing/captions';
+import { expectCaption as text } from '../../core/testing/captions';
 import { callFrames, overMockCaption, resultCaption } from './frames';
 import { BUGS, CLEAN, FLAKY_EVERY, KINDS, checkoutLines, overMockedTestLines, runConfig, runTest, verdict, type Config } from './model';
 

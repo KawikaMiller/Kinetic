@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionText as text } from '../../core/testing/captions';
+import { expectCaption as text } from '../../core/testing/captions';
 import { changeVerdict, moveCaption } from './frames';
 import {
   KATA_START, STEPS, applyMove, changeCode, changeTests, coverage, runTests, shownCode, shownTests, undoMove, type ChangeKind, type KataState,

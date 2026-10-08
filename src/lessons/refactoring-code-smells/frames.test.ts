@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionText as text } from '../../core/testing/captions';
+import { expectCaption as text } from '../../core/testing/captions';
 import { appliedCaption, smellCaption, unsafeCaption } from './frames';
 import { ALL_SUBSETS, REFACTORS, SMELLS, diffRows, runCharacterization, versionLines, type RefactorId } from './model';
 

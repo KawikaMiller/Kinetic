@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { captionText as text } from '../../core/testing/captions';
+import { expectCaption as text } from '../../core/testing/captions';
 import { buildFrames, nodeStates, verdicts } from './frames';
 import lesson from './index';
 import { NOTHING_BUILT, fileHash, makeRun, targets, type Mode } from './model';
