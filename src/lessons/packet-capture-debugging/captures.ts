@@ -80,7 +80,7 @@ export function dnsMessage(id: number, name: string, type: 'A' | 'AAAA', respons
   return [id >> 8, id & 0xff, flags >> 8, flags & 0xff, 0, 1, 0, an, 0, 0, 0, 0, ...q, ...answer];
 }
 
-const TLS_CONTENT = { handshake: 0x16, alert: 0x15, appData: 0x17 } as const;
+const TLS_CONTENT = { changeCipherSpec: 0x14, handshake: 0x16, alert: 0x15, appData: 0x17 } as const;
 /** A TLS 1.2 record of `len` bytes in total; the body is deterministic filler after the first type byte. */
 function tlsRecord(content: number, len: number, first: number[], seed: number): number[] {
   const rnd = mulberry32(seed);
@@ -225,6 +225,8 @@ function lookup(b: Builder, t = 0) {
 function handshake(b: Builder, t: number) {
   return b.at(t).tcp('client', ['SYN']).at(t + RTT).tcp('server', ['SYN', 'ACK']).at(t + RTT + 0.0002).tcp('client', ['ACK']);
 }
+/** A ChangeCipherSpec record: content type 20, TLS 1.2, length 1, the single byte 1. */
+const CCS = [TLS_CONTENT.changeCipherSpec, 0x03, 0x03, 0x00, 0x01, 0x01];
 const hello = (seed: number) => tlsRecord(TLS_CONTENT.handshake, 517, [0x01], seed);
 const serverFlight = (seed: number) => tlsRecord(TLS_CONTENT.handshake, 1380, [0x02], seed);
 
@@ -232,8 +234,11 @@ const serverFlight = (seed: number) => tlsRecord(TLS_CONTENT.handshake, 1380, [0
 function tlsHandshake(b: Builder, t: number) {
   b.at(t).tcp('client', ['PSH', 'ACK'], hello(1), { tls: { record: 'Client Hello' } });
   b.at(t + RTT).tcp('server', ['PSH', 'ACK'], serverFlight(2), { tls: { record: 'Server Hello, Certificate, Server Hello Done' } });
-  b.at(t + RTT + 0.002).tcp('client', ['PSH', 'ACK'], tlsRecord(TLS_CONTENT.handshake, 126, [0x10], 3), { tls: { record: 'Client Key Exchange, Change Cipher Spec, Finished' } });
-  b.at(t + 2 * RTT + 0.002).tcp('server', ['PSH', 'ACK'], tlsRecord(TLS_CONTENT.handshake, 51, [0x14], 4), { tls: { record: 'Change Cipher Spec, Finished' } });
+  // One segment can carry several records: ChangeCipherSpec is its own record type (20), never inside a handshake record.
+  b.at(t + RTT + 0.002).tcp('client', ['PSH', 'ACK'], [...tlsRecord(TLS_CONTENT.handshake, 75, [0x10], 3), ...CCS, ...tlsRecord(TLS_CONTENT.handshake, 45, [0x14], 7)], {
+    tls: { record: 'Client Key Exchange, Change Cipher Spec, Finished' },
+  });
+  b.at(t + 2 * RTT + 0.002).tcp('server', ['PSH', 'ACK'], [...CCS, ...tlsRecord(TLS_CONTENT.handshake, 45, [0x14], 4)], { tls: { record: 'Change Cipher Spec, Finished' } });
   b.at(t + 2 * RTT + 0.003).tcp('client', ['PSH', 'ACK'], tlsRecord(TLS_CONTENT.appData, 210, [0x00], 5), { tls: { record: 'Application Data' } });
   return b;
 }

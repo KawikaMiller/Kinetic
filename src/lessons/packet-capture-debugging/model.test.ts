@@ -197,13 +197,18 @@ describe('the display filter subset', () => {
   it('tcp.flags.syn == 1 is exactly the packets with the SYN bit set', () => {
     expect(run('tcp.flags.syn == 1')).toEqual(pkts.filter((p) => p.tcp && flags(p) & 2));
     expect(run('tcp.flags.syn == 0')).toEqual(pkts.filter((p) => p.tcp && !(flags(p) & 2)));
-    expect(run('tcp.flags.syn')).toEqual(run('tcp.flags.syn == 1'));
+    // Bare flag fields test presence in Wireshark (every TCP packet), so they're refused rather than read as == 1.
+    for (const bare of ['tcp.flags.syn', 'tcp.flags.reset', 'tcp.flags.ack', 'tcp.flags.fin']) {
+      const r = parseFilter(bare);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toContain(`${bare} == 1`);
+    }
   });
   it('ip.addr matches either end; ip.src and ip.dst one end', () => {
     const s = ipv4('203.0.113.10');
     expect(run('ip.addr == 203.0.113.10')).toEqual(pkts.filter((p) => dword(p.frame, 26) === s || dword(p.frame, 30) === s));
     expect(run('ip.src == 203.0.113.10')).toEqual(pkts.filter((p) => dword(p.frame, 26) === s));
-    expect(run('ip.dst == 203.0.113.10 && tcp.flags.reset')).toEqual(pkts.filter((p) => dword(p.frame, 30) === s && p.tcp && flags(p) & 4));
+    expect(run('ip.dst == 203.0.113.10 && tcp.flags.reset == 1')).toEqual(pkts.filter((p) => dword(p.frame, 30) === s && p.tcp && flags(p) & 4));
   });
   it('protocols, ports, analysis flags and combinations', () => {
     expect(run('dns')).toEqual(pkts.filter((p) => p.frame[23] === 17));
@@ -272,6 +277,7 @@ describe('tcpdump view', () => {
       if (p.tcp) {
         expect(line).toContain(`length ${p.tcp.len}`);
         if (p.tcp.flags.includes('SYN')) expect(line).toContain(`seq ${p.tcp.seq}`);
+        if (p.tcp.flags.includes('FIN')) expect(line).toContain(`seq ${p.tcp.relSeq}`);
         if (p.tcp.flags.join() === 'SYN') expect(line).toContain('Flags [S],');
         if (p.tcp.flags.join() === 'RST,ACK') expect(line).toContain('Flags [R.],');
       } else expect(line).toMatch(p.dns!.response ? (p.dns!.rcode === 3 ? /NXDomain/ : /1\/0\/0 A/) : /\+ A{1,4}\? /);

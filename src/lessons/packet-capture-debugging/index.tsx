@@ -39,7 +39,7 @@ const lesson: LessonModule = {
         'Refused: the DNS lookup failed. Timed out: TLS never finished',
       ],
       answer: 0,
-      why: 'A refusal is an answer: the host (or a firewall set to REJECT) sent RST,ACK, so the client knows at once. A timeout is silence: the client retransmits its SYN with growing gaps and gives up. Treating them as the same failure is the tempting mistake, and it sends you to the wrong team.',
+      why: 'A refusal is an answer: the host (or a firewall rule set to REJECT with tcp-reset) sent RST,ACK, so the client knows at once. A timeout is silence: the client retransmits its SYN with growing gaps and gives up. Treating them as the same failure is the tempting mistake, and it sends you to the wrong team.',
     },
     {
       q: 'In a capture, the client sends three duplicate ACKs for the same byte. What does that point to?',

@@ -6,7 +6,7 @@
  *   protocols      tcp  udp  dns  tls
  *   addresses      ip.addr == A   ip.src == A   ip.dst == A
  *   ports          tcp.port == N  udp.port == N
- *   TCP flags      tcp.flags.syn  tcp.flags.ack  tcp.flags.fin  tcp.flags.reset   (bare, or == 0 / == 1)
+ *   TCP flags      tcp.flags.syn == 1   (also .ack, .fin, .reset; == 0 or == 1, never bare: in Wireshark a bare\n *                  field only tests that the field exists, so it would match every TCP packet)
  *   analysis       tcp.analysis.retransmission  tcp.analysis.duplicate_ack
  *   DNS            dns.flags.rcode == N
  *   combining      !  not  &&  and  ||  or   (no parentheses)
@@ -83,7 +83,8 @@ export function parseFilter(input: string): FieldParse<Predicate> {
     if (FLAG_FIELDS[field]) {
       const flag = FLAG_FIELDS[field];
       const has: Predicate = (p) => !!p.tcp?.flags.includes(flag);
-      if (!hasEq) return { ok: true, value: has };
+      if (!hasEq)
+        return { ok: false, error: `A bare ${field} only checks that the field exists, so in Wireshark it matches every TCP packet. Write ${field} == 1.` };
       const v = value();
       if (!v.ok) return v;
       if (v.value !== '0' && v.value !== '1') return { ok: false, error: `${field} is 0 or 1.` };
@@ -158,4 +159,4 @@ export function parseFilter(input: string): FieldParse<Predicate> {
   return result;
 }
 
-export const FILTER_EXAMPLES = ['tcp.flags.syn == 1', 'ip.addr == 203.0.113.10', 'dns', 'tcp.analysis.retransmission', 'tcp.flags.reset', 'tls'];
+export const FILTER_EXAMPLES = ['tcp.flags.syn == 1', 'ip.addr == 203.0.113.10', 'dns', 'tcp.analysis.retransmission', 'tcp.flags.reset == 1', 'tls'];

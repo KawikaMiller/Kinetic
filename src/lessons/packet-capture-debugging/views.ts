@@ -29,7 +29,8 @@ export function tcpdumpLine(p: Captured): string {
   const letters = (['SYN', 'FIN', 'PSH', 'RST'] as const).filter((f) => t.flags.includes(f)).map((f) => FLAG_LETTER[f]).join('') + (t.flags.includes('ACK') ? '.' : '');
   const head = `${clock(p.t)} IP ${ipToString(d.src)}.${d.tcp!.sport} > ${ipToString(d.dst)}.${d.tcp!.dport}: Flags [${letters}],`;
   const handshake = t.flags.includes('SYN') || t.flags.includes('RST');
-  const seq = handshake ? `seq ${t.seq}` : t.len ? `seq ${t.relSeq}:${t.relSeq + t.len}` : '';
+  // tcpdump prints seq for SYN, FIN and RST even with no data; absolute for the handshake, relative after it.
+  const seq = handshake ? `seq ${t.seq}` : t.len ? `seq ${t.relSeq}:${t.relSeq + t.len}` : t.flags.includes('FIN') ? `seq ${t.relSeq}` : '';
   const ack = t.flags.includes('ACK') ? `ack ${handshake ? t.ack : t.relAck}` : '';
   return `${head} ${[seq, ack, `win ${d.tcp!.window}`, `length ${t.len}`].filter(Boolean).join(', ')}`;
 }
@@ -49,7 +50,7 @@ export interface Diagnosis {
 
 export const DIAGNOSES: readonly Diagnosis[] = [
   { id: 'healthy', label: 'Healthy request', pattern: 'DNS answers, the three-way handshake completes, TLS finishes, data flows both ways and both sides send FIN.' },
-  { id: 'refused', label: 'Connection refused', pattern: 'The SYN is answered at once with RST,ACK: something answered, usually the host itself with nothing listening on that port (a firewall set to REJECT can send one too).' },
+  { id: 'refused', label: 'Connection refused', pattern: 'The SYN is answered at once with RST,ACK: something answered, usually the host itself with nothing listening on that port (a firewall rule set to REJECT with tcp-reset can send one too).' },
   { id: 'timeout', label: 'Timed out (dropped)', pattern: 'The SYN is retransmitted with growing gaps (1 s, 2 s, 4 s…) and nothing ever comes back: silence, most often a firewall dropping it, or a host or route that is down.' },
   { id: 'loss', label: 'Packet loss', pattern: 'The client sends duplicate ACKs for the same byte, then the missing segment arrives as a retransmission and the ACK jumps ahead.' },
   { id: 'dns', label: 'DNS failure', pattern: 'The resolver answers "No such name" (NXDOMAIN), so the client never has an address and no SYN is ever sent.' },
@@ -60,7 +61,7 @@ export const diagnosisOf = (id: DiagnosisId) => DIAGNOSES.find((d) => d.id === i
 
 // ── Application-layer fields, for the layer tree and the bytes ─────────
 
-const TLS_TYPES: Record<number, string> = { 0x15: 'Alert (21)', 0x16: 'Handshake (22)', 0x17: 'Application Data (23)' };
+const TLS_TYPES: Record<number, string> = { 0x14: 'Change Cipher Spec (20)', 0x15: 'Alert (21)', 0x16: 'Handshake (22)', 0x17: 'Application Data (23)' };
 const ALERT_NAMES: Record<number, string> = { 42: 'Bad Certificate (42)' };
 const hex4 = (n: number) => `0x${n.toString(16).padStart(4, '0')}`;
 
@@ -90,7 +91,8 @@ export function appFields(p: Captured): Field[] {
     ];
     if (b[at] === 0x15)
       return [...head, f('tls.alert.level', 'Alert level', b[at + 5] === 2 ? 'Fatal (2)' : `${b[at + 5]}`, at + 5, 1), f('tls.alert.desc', 'Alert description', ALERT_NAMES[b[at + 6]] ?? `${b[at + 6]}`, at + 6, 1)];
-    return [...head, f('tls.body', b[at] === 0x17 ? 'Encrypted data' : 'Handshake messages', `${len} bytes`, at + 5, len)];
+    const body = b[at] === 0x17 ? 'Encrypted data' : b[at] === 0x14 ? 'Change Cipher Spec message' : 'Handshake message';
+    return [...head, f('tls.body', body, `${len} bytes${p.tls.record.includes(',') ? ' (first record of this segment)' : ''}`, at + 5, len)];
   }
   return [];
 }

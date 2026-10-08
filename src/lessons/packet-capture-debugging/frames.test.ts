@@ -5,6 +5,7 @@ import { CAPTURES } from './captures';
 import { captureIntro, guessCaption, packetCaption, traceFrames } from './frames';
 import { PATH, traceroute } from './trace';
 import { DIAGNOSES } from './views';
+import { FILTER_EXAMPLES, parseFilter } from './filter';
 
 const text = (n: Parameters<typeof captionText>[0]) => {
   const t = captionText(n).replace(/\s+/g, ' ');
@@ -60,5 +61,38 @@ describe('traceroute frames', () => {
     });
     expect(text(frames.at(-1)!.say)).toContain(`Port Unreachable`);
     expect(text(frames.at(-1)!.say)).toContain(`after ${trace.length} hops`);
+  });
+});
+
+describe('review fixes', () => {
+  it('every Try chip is a filter the parser accepts', () => {
+    for (const f of FILTER_EXAMPLES) expect(parseFilter(f).ok, f).toBe(true);
+  });
+
+  it('ChangeCipherSpec is its own record (content type 20), after the handshake record in the same segment', () => {
+    for (const c of CAPTURES) {
+      const cke = c.packets.find((p) => p.tls?.record.startsWith('Client Key Exchange'));
+      if (!cke) continue;
+      const at = 54;
+      const firstLen = (cke.frame[at + 3] << 8) | cke.frame[at + 4];
+      expect(cke.frame[at]).toBe(0x16);
+      expect(cke.frame.slice(at + 5 + firstLen, at + 5 + firstLen + 6)).toEqual([0x14, 0x03, 0x03, 0x00, 0x01, 0x01]);
+      const server = c.packets.find((p) => p.tls?.record === 'Change Cipher Spec, Finished')!;
+      expect(server.frame[at]).toBe(0x14);
+    }
+  });
+
+  it('the loss capture\'s retransmission is captioned as a fast retransmit triggered by the duplicate ACKs', () => {
+    const c = CAPTURES.find((x) => x.answer === 'loss')!;
+    const re = c.packets.find((p) => p.tag === 'retransmission')!;
+    const say = text(packetCaption(re, c.packets));
+    expect(say).toContain('fast retransmission');
+    expect(say).toContain('3 duplicate ACKs');
+  });
+
+  it('the silent hop is captioned as part of the simulated path, not as something traceroute could know', () => {
+    const trace = traceroute();
+    const i = trace.findIndex((h) => h.from === null);
+    expect(text(traceFrames(trace)[i + 1].say)).toContain('in this simulated path');
   });
 });

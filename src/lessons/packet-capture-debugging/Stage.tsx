@@ -279,7 +279,7 @@ function TraceScene({ picker }: { picker: ReactNode }) {
               <tr key={h.ttl} className={h.from === null ? 'is-silent' : ''}>
                 <td>{h.ttl}</td>
                 <td>{h.from === null ? '*' : ipToString(h.from)}</td>
-                <td>{PATH[h.at].name}</td>
+                <td>{h.from === null ? '?' : PATH[h.at].name}</td>
                 <td className="pc-rtts">{h.rtts.map((r, k) => <span key={k}>{r === null ? '*' : `${r} ms`}</span>)}</td>
               </tr>
             ))}

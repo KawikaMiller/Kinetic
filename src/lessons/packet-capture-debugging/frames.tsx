@@ -24,6 +24,10 @@ export function packetCaption(p: Captured, all: readonly Captured[]): ReactNode 
   const t = p.tcp!;
   if (p.tag === 'retransmission') {
     const prev = all.filter((q) => q.no < p.no && q.from === p.from && q.tcp?.seq === t.seq).at(-1);
+    const dups = all.filter((q) => q.no < p.no && q.tag === 'dup-ack' && q.tcp?.ack === t.seq).length;
+    if (dups >= 3)
+      return <>{n}: a <span className="hl orange">fast retransmission</span> of Seq={t.relSeq}: {dups} duplicate ACKs told the server this segment never
+        arrived, so it resent it at once instead of waiting for its retransmission timer. The original never reached this capture.</>;
     return <>{n}: a <span className="hl orange">retransmission</span> of Seq={t.relSeq}{prev ? <>, {secs(p.t - prev.t)} after packet {prev.no}</> : ''}. The sender
       never saw an ACK for it, so it sent it again.</>;
   }
@@ -67,7 +71,7 @@ export function traceFrames(trace: readonly ProbeResult[]): TraceFrame[] {
         return { shown: i + 1, hold: 2, say: <>TTL {h.ttl} reaches {ipToString(hop.ip)} itself, which answers <span className="hl ok">ICMP Port Unreachable</span> ({rtts}):
           the trace is done after {h.ttl} hops.</> };
       if (h.from === null)
-        return { shown: i + 1, say: <>TTL {h.ttl} dies at hop {h.ttl}, the {hop.name}, which doesn't answer: <b>* * *</b>. Not
+        return { shown: i + 1, say: <>TTL {h.ttl} dies at hop {h.ttl} (in this simulated path, the {hop.name}), which doesn't answer: <b>* * *</b>. Not
           necessarily broken: many routers ignore or rate-limit these probes. If later hops answer, this one is forwarding fine.</> };
       return { shown: i + 1, say: <>TTL {h.ttl} dies at hop {h.ttl}, the {hop.name} ({ipToString(hop.ip)}), which answers{' '}
         <span className="hl info">ICMP Time Exceeded</span>: {rtts}.</> };
