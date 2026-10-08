@@ -1,0 +1,24 @@
+.bcs { gap: 12px; }
+.bcs .section-title { display: block; margin-bottom: 4px; }
+.bcs-graph { width: 100%; display: block; }
+.bcs-dropped .graph-node-shape { stroke: var(--dim); stroke-dasharray: 5 4; fill: none; }
+.bcs-dropped .graph-node-label { fill: var(--dim); }
+.bcs-below { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.bcs-exports { display: flex; flex-direction: column; gap: 6px; }
+.bcs-export-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bcs-export-name { min-width: 84px; font: 700 12px var(--mono); color: var(--text); }
+.bcs-chip {
+  padding: 2px 8px; border-radius: 999px; font: 600 11.5px var(--mono); color: var(--muted);
+  border: 1px solid var(--line-2);
+}
+.bcs-chip.is-kept { color: var(--text); border-color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
+.bcs-chip.is-gone { color: var(--dim); border-style: dashed; border-color: var(--dim); text-decoration: line-through; }
+.bcs-table-wrap { min-width: 0; }
+.bcs-table { width: 100%; }
+.bcs-table th, .bcs-table td { text-align: left; white-space: nowrap; }
+.bcs-table tr.is-current td { background: color-mix(in srgb, var(--hi) 8%, transparent); font-weight: 700; }
+
+@media (max-width: 900px) {
+  .bcs-below { grid-template-columns: minmax(0, 1fr); }
+  .bcs-table-wrap { overflow-x: auto; }
+}
