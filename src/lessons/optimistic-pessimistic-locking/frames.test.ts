@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { buildHttpFrames, changeCaption, httpTone, introCaption } from './frames';
 import { LUNCH_TICKS, STRATEGIES, START, finished, httpScript, lostUpdates, orderings, run, type Opts, type UserId, type World } from './model';
 
-const text = (n: Parameters<typeof captionText>[0]) => captionText(n).replace(/\s+/g, ' ');
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 const intro = introCaption('x');
 
 const OPTS: Opts[] = [3, 5, 12].flatMap((lockTimeout) => [1, LUNCH_TICKS].map((ana) => ({ editTicks: { ana, ben: 1 }, lockTimeout })));

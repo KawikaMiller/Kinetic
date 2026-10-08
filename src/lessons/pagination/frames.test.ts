@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { deleteCaption, insertCaption, pageCaption, pageNews } from './frames';
 import { createWorld, deleteNewest, insertAtHead, makeTable, nextPage, type World } from './model';
 
-const text = (n: Parameters<typeof captionText>[0]) => captionText(n).replace(/\s+/g, ' ');
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 const start = () => nextPage(createWorld(makeTable(15)));
 
 describe('feed captions are derived from the sessions', () => {

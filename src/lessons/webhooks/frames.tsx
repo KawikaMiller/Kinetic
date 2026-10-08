@@ -25,7 +25,7 @@ export const REJECT_TEXT: Record<Reject, string> = {
 };
 
 /** Short forms for the ladder's notes: a long note shrinks the whole drawing on a phone. */
-const SHORT_REJECT: Record<Reject, string> = { malformed: 'malformed', 'bad-signature': 'bad signature', stale: 'too old', future: 'too far ahead' };
+const SHORT_REJECT: Record<Reject, string> = { malformed: 'malformed', 'bad-signature': 'no match', stale: 'too old', future: 'too far ahead' };
 
 export function signatureLadder(r: Inspection, edited: boolean, ageS: number): SequenceMessage[] {
   const ok = r.verdict.ok;
@@ -33,7 +33,7 @@ export function signatureLadder(r: Inspection, edited: boolean, ageS: number): S
     { id: 's0', from: 'provider', to: 'queue', label: 'enqueue payment.succeeded', note: 'evt_1001', tone: 'info' },
     { id: 's1', from: 'queue', to: 'queue', label: 'sign timestamp.body', note: 'HMAC-SHA-256', tone: 'muted' },
     { id: 's2', from: 'queue', to: 'receiver', label: 'POST /webhooks', tone: 'info',
-      note: [edited ? 'body edited' : null, ageS > 0 ? `${minutes(ageS)} old` : null].filter(Boolean).join(' · ') || undefined },
+      note: [edited ? 'edited' : null, ageS > 0 ? `${minutes(ageS)} old` : null].filter(Boolean).join(' · ') || undefined },
     { id: 's3', from: 'receiver', to: 'receiver', label: 'verify', tone: ok ? 'ok' : 'bad', note: ok ? 'verified' : SHORT_REJECT[(r.verdict as { reason: Reject }).reason] },
     { id: 's4', from: 'receiver', to: 'queue', label: ok ? '200 OK' : '400 Bad Request', tone: ok ? 'ok' : 'bad' },
   ];
@@ -175,7 +175,7 @@ function fastCaption(s: FastStep, workS: number): ReactNode {
 
 export function fastSummary(run: FastRun, workS: number): ReactNode {
   if (run.acked)
-    return <>Done: the 2xx came {run.steps.find((x) => x.kind === 'reply')!.note} on attempt {run.attempts}; the work has run {times(run.workRuns)} ({workS} s of it). Retries stopped.</>;
+    return <>Done: the 2xx came {run.steps.find((x) => x.kind === 'reply')!.note} on attempt {run.attempts}, and the {workS} s of work has run {times(run.workRuns)}. Retries stopped.</>;
   return <>After {run.attempts} attempts the provider still has no 2xx and keeps retrying, but the work has already run <span className="hl bad">{times(run.workRuns)}</span> for one event (the ladder shows the first {SHOWN_ATTEMPTS}). Slow work before the reply turns a timeout into duplicates.</>;
 }
 

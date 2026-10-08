@@ -41,7 +41,7 @@ export function FastScene({ picker }: { picker: ReactNode }) {
       </>]}
     >
       <div className="stage-pad wh">
-        <SequenceDiagram actors={FAST_ACTORS} messages={messages} step={Math.min(at, run.steps.length)} ariaLabel="Webhook delivery and handler timing" />
+        <SequenceDiagram actors={FAST_ACTORS} messages={messages} step={Math.min(at, run.steps.length)} fit="shown" ariaLabel="Webhook delivery and handler timing" />
         <div className="wh-stats">
           <Stat label="Times the work has run" value={now?.workRuns ?? 0} color={now && now.workRuns > 1 ? 'var(--bad)' : undefined} />
           <Stat label="Provider has a 2xx" value={now?.acked ? 'yes' : 'no'} color={now?.acked ? 'var(--ok)' : undefined} />

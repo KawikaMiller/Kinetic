@@ -13,7 +13,7 @@ const DEFAULT_UP_AT = 20;
 const MAX_UP_AT = 180;
 /** How wide an attempt is drawn on the minutes axis. */
 const TICK_MIN = 2;
-const TIMELINE_MIN_W = 480;
+const TIMELINE_MIN_W = 440;
 const HONEST = 'Simulated provider; the retry schedule is illustrative (real providers document their own, and some retry for days).';
 
 export function RetryScene({ picker }: { picker: ReactNode }) {
@@ -44,7 +44,7 @@ export function RetryScene({ picker }: { picker: ReactNode }) {
             <SectionTitle weight="regular" hint={FEED[0].id}>The first event's attempts</SectionTitle>
             <SequenceDiagram actors={RETRY_ACTORS(upAt > 0)} messages={retryLadder(all[0])} ariaLabel="Delivery attempts for the first event" />
           </div>
-          <div className="wh-col">
+          <div className="wh-col wh-wide">
             <SectionTitle weight="regular" hint={`waits of ${RETRY_DELAYS_MIN.join(', ')} min`}>Every event, on one clock</SectionTitle>
             <WideRegion minWidth={TIMELINE_MIN_W} label="Retry timeline: scroll sideways to see all of it">
               <GanttLanes

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { buildFrames, chargedText, toneOf } from './frames';
 import { BODY, FAILURES, OTHER_BODY, TTL_H, charges, raceScenario, retryScenario, reuseScenario, type Step } from './model';
 
-const text = (n: Parameters<typeof captionText>[0]) => captionText(n).replace(/\s+/g, ' ');
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 
 /** Every "charged N" a caption states equals the ledger at that step, and only duplicates are red. */
 function checkAll(steps: Step[]) {

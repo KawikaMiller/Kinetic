@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { fastFrames, fastLadder, fastTone, orderFrames, retryCaption, retryLadder, signatureCaption, signatureLadder } from './frames';
 import {
   FEED, ORDERINGS, PROVIDER_TIMEOUT_S, TRUTH, deliverAll, fastScript, orderLabel, permutations, receive, scheduleEnd, withDuplicates, type ReplyMode,
 } from './model';
 import { BODY, SECRET, SIGNED_AT, TOLERANCE_S, inspect, signedDelivery, tamper } from './signature';
 
-const text = (n: Parameters<typeof captionText>[0]) => captionText(n).replace(/\s+/g, ' ');
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 
 describe('signature captions, for every body × delivery age', () => {
   for (const edited of [false, true])
@@ -32,7 +32,7 @@ describe('signature captions, for every body × delivery age', () => {
         const ladder = signatureLadder(r, edited, min * 60);
         expect(ladder[ladder.length - 1].label).toBe(r.verdict.ok ? '200 OK' : '400 Bad Request');
         expect(ladder[ladder.length - 1].tone).toBe(r.verdict.ok ? 'ok' : 'bad');
-        expect(ladder[2].note?.includes('body edited') ?? false).toBe(edited);
+        expect(ladder[2].note?.includes('edited') ?? false).toBe(edited);
         expect(ladder[2].note?.includes(`${min} min old`) ?? false).toBe(min > 0);
       });
 });
