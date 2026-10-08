@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, pick, randInt } from '../../core/random';
-// Test-only: the gateway's bucket must behave exactly like the rate-limiting lesson's.
-import { Limiter } from '../rate-limiting/sim';
+import { fullBucket } from '../../core/tokenBucket';
 import {
-  API_HOST, BURST, CLIENT_IP, DEFAULT_BUCKET, DEFAULT_CONFIG, DEFAULT_ROUTES, PRESETS, SERVICES, SPOOFED_XFF, STAGES, STATIC_HOST, appendXff,
-  fullBucket, handle, isIdempotent, parsePath, retrySafe, parsePrefix, prefixMatches, presetRequests, route, runRequests, takeToken, type GatewayConfig,
+  API_HOST, BURST, CLIENT_IP, DEFAULT_CONFIG, DEFAULT_ROUTES, PRESETS, SERVICES, SPOOFED_XFF, STAGES, STATIC_HOST, appendXff,
+  handle, isIdempotent, parsePath, retrySafe, parsePrefix, prefixMatches, presetRequests, route, runRequests, type GatewayConfig,
   type Route,
 } from './model';
 
@@ -71,29 +70,6 @@ describe('the pipeline, every preset in every setting (a decision table)', () =>
     expect(last.stoppedAt).toBe('rate');
     expect(last.bucket.tokens).toBeLessThan(1);
     expect(last.responseHeaders).toContainEqual(['Retry-After', '1']);
-  });
-});
-
-describe('the token bucket matches rate-limiting\'s', () => {
-  it('decides every request of a seeded burst the same way', () => {
-    for (const p of [DEFAULT_BUCKET, { rate: 4, capacity: 1 }, { rate: 10, capacity: 20 }]) {
-      const rnd = mulberry32(p.capacity * 31 + p.rate);
-      let t = 0;
-      const lim = new Limiter('token', { limit: p.rate, capacity: p.capacity });
-      let b = fullBucket(p);
-      for (let i = 0; i < 300; i++) {
-        t += rnd() < 0.7 ? rnd() * 0.05 : rnd() * 1.5;
-        const theirs = lim.offer(t);
-        const ours = takeToken(b, t, p);
-        b = ours.bucket;
-        expect(ours.allowed ? 'ok' : 'reject').toBe(theirs);
-      }
-    }
-  });
-
-  it('Retry-After is the whole seconds until one token is back', () => {
-    expect(takeToken({ tokens: 0.2, last: 0 }, 0, { rate: 1, capacity: 5 }).retryAfter).toBe(1);
-    expect(takeToken({ tokens: 0, last: 0 }, 0, { rate: 0.25, capacity: 5 }).retryAfter).toBe(4);
   });
 });
 
