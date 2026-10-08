@@ -23,3 +23,7 @@
 .ed-versions { display: flex; flex-wrap: wrap; gap: 12px; }
 .ed-version { flex: 1 1 240px; }
 .ed-version textarea { width: 100%; box-sizing: border-box; }
+/* The diff keeps its inset rows: the tint sits 8px in from the panel, 1px clear above and below, with 6px of text padding. */
+.ed-code li { margin: 1px 8px; padding: 0 6px; border-radius: 4px; }
+.ed-code li + li { margin-top: 2px; }
+.ed-code code { white-space: pre; }
