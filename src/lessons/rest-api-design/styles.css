@@ -1,0 +1,46 @@
+.ra { gap: 14px; }
+.ra .section-title { display: block; }
+.ra-req, .ra-url { font: 500 12.5px var(--mono); overflow-wrap: break-word; }
+.ra-method { color: var(--violet); font-weight: 700; }
+.ra-seg.is-noun { color: var(--info); }
+.ra-seg.is-id { color: var(--muted); }
+.ra-seg.is-verb { color: var(--orange); text-decoration: underline wavy color-mix(in srgb, var(--orange) 60%, transparent); }
+.ra-board { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.ra-cards { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ra-card {
+  width: 100%; display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  color: var(--text); background: color-mix(in srgb, var(--panel) 80%, transparent); border: 1px solid var(--line); border-left: 4px solid var(--c);
+}
+.ra-card:hover { background: color-mix(in srgb, var(--c) 8%, var(--panel)); }
+.ra-card.is-on { border-color: var(--hi); border-left-color: var(--c); box-shadow: 0 0 0 1px var(--hi); }
+.ra-card-job { font-size: 13px; font-weight: 600; }
+.ra-card-legacy { font-size: 12px; color: var(--muted); }
+.ra-card-legacy code { font-size: 11.5px; }
+.ra-mark { color: var(--c); font-weight: 700; font-family: var(--mono); }
+.ra-editor { flex: 2 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.ra-form { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
+.ra-msg { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--muted); }
+.ra-msg.is-err { color: var(--bad); }
+.ra-code { display: flex; flex-wrap: wrap; gap: 12px; }
+.ra-code > * { flex: 1 1 240px; min-width: 0; }
+.ra-scenario { display: flex; flex-direction: column; gap: 10px; max-width: 720px; }
+.ra-situation { margin: 0; font-size: 15px; }
+.ra-situation code { color: var(--info); margin-right: 6px; }
+.ra-codes { display: flex; flex-wrap: wrap; gap: 6px; }
+.ra-code-chip {
+  font: 500 12.5px var(--mono); padding: 5px 9px; border-radius: 8px; cursor: pointer;
+  color: var(--text); background: transparent; border: 1px solid var(--line-2);
+}
+.ra-code-chip:hover { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ra-code-chip.is-right { background: var(--ok); color: var(--on-ok); border-color: var(--ok); }
+.ra-code-chip.is-wrong { background: var(--bad); color: var(--on-bad); border-color: var(--bad); }
+.ra-judgement { margin: 0; font-size: 14px; color: var(--muted); min-height: 2.6em; }
+.ra-judgement.is-right { color: var(--ok); }
+.ra-judgement.is-wrong { color: var(--bad); }
+.ra-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.ra-collect { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.ra-query, .ra-error { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ra-table-wrap { overflow-x: auto; }
+.ra-table-wrap td { font: 500 12px var(--mono); }
+.ra-problem, .ra-adhoc { overflow-wrap: anywhere; }
+.ra-problem li.is-done, .ra-code li.is-done { background: color-mix(in srgb, var(--ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ok); }

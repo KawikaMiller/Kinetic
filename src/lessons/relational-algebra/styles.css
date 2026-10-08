@@ -1,0 +1,57 @@
+.ra { gap: 14px; }
+.ra .section-title { display: block; }
+.ra-top { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.ra-tree-box { flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ra-sql { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ra-code { font-size: 12.5px; }
+.ra-data { flex: 1 1 260px; margin: 0; font-size: 13px; color: var(--muted); align-self: center; }
+.ra-error { margin: 0; padding: 6px 10px; border-left: 3px solid var(--bad); color: var(--bad); font: 600 13px var(--mono); }
+.ra-picked { font-size: 13px; color: var(--muted); }
+.ra-picked b { color: var(--text); font-family: var(--mono); }
+
+/* The expression tree */
+.ra-tree { display: block; width: 100%; }
+.ra-tree .tree-node .ra-box { fill: var(--cell); stroke: var(--line-2); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.ra-tree .tree-node.is-op .ra-box { stroke: var(--muted); }
+.ra-tree .tree-node.is-rel .ra-box { fill: var(--bg-2); }
+.ra-tree .tree-node .ra-label { font: 600 12px var(--mono); fill: var(--text); }
+.ra-tree .tree-node.is-selected .ra-box { stroke: var(--hi); stroke-dasharray: 5 3; }
+.ra-tree .tree-node.is-current .ra-box { fill: var(--hi); stroke: var(--hi); stroke-dasharray: none; }
+.ra-tree .tree-node.is-current .ra-label { fill: var(--on-hi); }
+.ra-tree .tree-node.is-error .ra-box { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 16%, var(--cell)); }
+.ra-tree .tree-node.is-current.is-error .ra-box { fill: var(--bad); stroke: var(--bad); }
+.ra-tree .tree-node.is-current.is-error .ra-label { fill: var(--on-bad); }
+.ra-count { font: 700 11px var(--mono); fill: var(--c); }
+
+/* Tables */
+.ra-tables { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.ra-rel { flex: 0 1 auto; min-width: 150px; display: flex; flex-direction: column; gap: 4px; }
+.ra-table { width: auto; }
+.ra-table td { white-space: nowrap; }
+.ra-arrow { align-self: center; font: 700 18px var(--mono); color: var(--muted); }
+.ra-row td { color: var(--c, var(--text)); transition: color 0.25s, background 0.25s; }
+.ra-row.tone-info td { background: color-mix(in srgb, var(--info) 8%, transparent); }
+.ra-row.tone-ok td { background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.ra-row.tone-orange td { background: color-mix(in srgb, var(--orange) 10%, transparent); }
+.ra-row.tone-dim td { color: var(--faint); }
+.ra-row.is-struck td { text-decoration: line-through; }
+.ra-row.is-flash td { background: color-mix(in srgb, var(--violet) 22%, transparent); animation: ra-flash 0.9s ease-in-out 2; }
+.ra-row.is-padded td { background: color-mix(in srgb, var(--violet) 10%, transparent); }
+.ra-null { color: var(--violet) !important; font-style: italic; }
+.ra-head-lit { color: var(--hi) !important; }
+.ra-empty { color: var(--faint); font-style: italic; }
+.ra-more { margin: 0; font-size: 12px; color: var(--faint); }
+.ra-tri { font-size: 11px; }
+
+@keyframes ra-flash {
+  50% { background: color-mix(in srgb, var(--violet) 40%, transparent); }
+}
+
+/* Pushdown */
+.ra-plans { display: flex; flex-flow: row wrap; gap: 16px; }
+.ra-plan { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 900px) {
+  .ra-tree-box, .ra-sql, .ra-plan { flex-basis: 100%; }
+  .ra-arrow { display: none; }
+}
