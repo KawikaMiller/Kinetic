@@ -6,6 +6,7 @@ import {
 } from '../core/plot';
 import type { Tone } from '../core/tone';
 import { paintImage } from './canvasImage';
+import { useDragPoint } from './useDragPoint';
 import { PlotContext, usePlot } from './plotContext';
 
 export type { AxisSpec, Point } from '../core/plot';
@@ -408,22 +409,10 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
   roving?: boolean;
 }) {
   const { xs, ys, toData } = usePlot();
-  const dragging = useRef<number | null>(null);
   const [current, setCurrent] = useState(0);
   const refs = useRef(new Map<number, SVGGElement>());
   const focusIndex = Math.min(current, Math.max(0, data.length - 1));
-
-  const onPointerDown = (e: PointerEvent<SVGGElement>, i: number) => {
-    dragging.current = i;
-    setCurrent(i);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    e.currentTarget.focus();
-  };
-  const onPointerMove = (e: PointerEvent<SVGGElement>, i: number) => {
-    if (dragging.current !== i) return;
-    const p = toData(e.clientX, e.clientY);
-    if (p) onDrag?.(i, p);
-  };
+  const drag = useDragPoint(toData, onDrag, { onGrab: setCurrent });
   const onKeyDown = (e: KeyboardEvent<SVGGElement>, i: number) => {
     const to = roving ? rovingPointTarget(e.key, i, data.length) : null;
     if (to !== null) {
@@ -464,10 +453,7 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
             aria-roledescription="draggable point"
             aria-label={`${pointLabel?.(i) ?? `point ${i + 1}`} at ${num(d.x)}, ${num(d.y)}.${keysHint}`}
             onFocus={roving ? () => setCurrent(i) : undefined}
-            onPointerDown={(e) => onPointerDown(e, i)}
-            onPointerMove={(e) => onPointerMove(e, i)}
-            onPointerUp={() => (dragging.current = null)}
-            onPointerCancel={() => (dragging.current = null)}
+            {...drag(i)}
             onKeyDown={(e) => onKeyDown(e, i)}
           >
             {ring}

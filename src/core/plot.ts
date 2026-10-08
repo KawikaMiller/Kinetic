@@ -1,3 +1,4 @@
+import { arrowStep } from './geometry';
 import { linearScale, logScale, type Scale } from './scale';
 
 /**
@@ -118,8 +119,7 @@ export const BIG_NUDGE = 20;
  */
 export function nudgePoint(p: Point, key: string, xs: Scale, ys: Scale, big = false): Point | null {
   const d = big ? BIG_NUDGE : NUDGE;
-  const delta: Record<string, [number, number]> = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] };
-  const step = delta[key];
+  const step = arrowStep(key, d);
   if (!step) return null;
   const px = xs.map(p[0]) + step[0];
   const py = ys.map(p[1]) + step[1];
