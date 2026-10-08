@@ -1,0 +1,11 @@
+.td { gap: 14px; }
+.td .section-title { display: block; }
+.td-table, .td-retry-table { align-self: stretch; }
+.td-table th, .td-retry-table th { text-transform: none; letter-spacing: 0; font: 600 12px var(--font); white-space: nowrap; }
+.td-budget { min-width: 150px; }
+.td-budget .meter { gap: 8px; }
+.td-budget .meter-track { flex: 1 1 60px; min-width: 60px; }
+.td-budget-text { font: 500 11.5px var(--mono); color: var(--muted); white-space: nowrap; }
+.td-faint { color: var(--faint); }
+.td-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.td .plot2d { max-width: 100%; height: auto; align-self: center; }

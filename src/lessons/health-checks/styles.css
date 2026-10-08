@@ -1,0 +1,25 @@
+.hc { gap: 12px; }
+.hc-service { margin: 0; font-size: 13.5px; color: var(--muted); }
+.hc-service b { color: var(--info); }
+.hc-pods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.hc-pod { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border: 1.5px solid var(--line-2); border-radius: 10px; font-size: 12.5px; min-width: 0; }
+.hc-pod.is-ready { border-color: var(--info); background: color-mix(in srgb, var(--info) 8%, transparent); }
+.hc-pod.is-restarting { border-color: var(--orange); border-style: dashed; background: color-mix(in srgb, var(--orange) 8%, transparent); }
+.hc-status { color: var(--muted); }
+.hc-lights { display: flex; flex-direction: column; gap: 3px; }
+.hc-light-wrap { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.hc-light-wrap.is-off { opacity: 0.6; }
+.hc-light { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; box-shadow: 0 0 8px color-mix(in srgb, var(--c) 55%, transparent); }
+.hc-light.tone-dim { box-shadow: none; }
+.hc-light.is-hollow { background: transparent; border: 1.5px solid var(--dim); box-shadow: none; }
+.hc-restarts em { color: var(--orange); font-style: normal; font-weight: 600; }
+.hc-restarts .hc-hung { color: var(--bad); }
+.hc-db { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 8px 12px; border: 1.5px solid var(--line-2); border-radius: 10px; font-size: 12.5px; }
+.hc-db.is-down { border-color: var(--bad); }
+.hc-db.is-down > span:nth-of-type(1) { color: var(--bad); font-weight: 600; }
+.hc-attempts { color: var(--muted); }
+.hc-attempts.is-pulse { color: var(--hi); font-weight: 600; animation: hc-pulse 0.7s ease-out; }
+@keyframes hc-pulse { from { background: color-mix(in srgb, var(--hi) 35%, transparent); } to { background: transparent; } }
+.hc-row-label { font: 700 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .hc-attempts.is-pulse { animation: none; } }
+@media (max-width: 900px) { .hc-pods { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

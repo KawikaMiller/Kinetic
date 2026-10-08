@@ -1,0 +1,29 @@
+.cp { gap: 14px; }
+.cp .section-title { display: block; }
+.cp-pane { display: flex; flex-direction: column; gap: 12px; }
+.cp-note { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.cp .plot2d { max-width: 100%; height: auto; align-self: center; }
+.cp-window { display: flex; flex-direction: column; gap: 6px; }
+
+.cp-state { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-store {
+  flex: 1 1 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background: color-mix(in srgb, var(--c) 9%, transparent);
+  transition: background 0.3s, border-color 0.3s;
+}
+.cp-store dt { font: 700 10.5px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.cp-store dd { margin: 0; font: 700 16px var(--mono); color: var(--c); display: flex; align-items: baseline; gap: 8px; }
+.cp-store.is-empty dd { font-weight: 500; color: var(--faint); }
+.cp-store.is-dim { opacity: 0.8; }
+.cp-flag { font: 700 10.5px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--orange); }
+
+.cp-keys th { text-transform: none; letter-spacing: 0; font: 600 12px var(--font); white-space: nowrap; }
+.cp-keys td { font: 500 12.5px var(--mono); }
+.cp-key { color: var(--info); }
+.cp-wrong { color: var(--orange); }

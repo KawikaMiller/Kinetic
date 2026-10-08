@@ -1,0 +1,14 @@
+.k8s { gap: 12px; }
+.k8s-scene { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
+.k8s-down { fill: var(--cell-dead); stroke: var(--bad); stroke-width: 1.5; opacity: 0.6; pointer-events: none; }
+.k8s-loop { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; font-size: 12.5px; }
+.k8s-loop-title { flex-basis: 100%; font: 700 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.k8s-step { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border: 1.5px solid var(--line-2); border-radius: 8px; min-width: 110px; }
+.k8s-step b { font: 700 10px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.k8s-step.is-act { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.k8s-step.is-act b { color: var(--hi); }
+.k8s-arrow { align-self: center; color: var(--muted); }
+.k8s-pending { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.k8s-pending li { padding: 6px 10px; border: 1.5px solid var(--hi); border-radius: 8px; background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.k8s-log { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.k8s-log .log-row b { margin-right: 6px; color: var(--muted); font-family: var(--mono); }

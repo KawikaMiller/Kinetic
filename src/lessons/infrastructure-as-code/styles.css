@@ -1,0 +1,21 @@
+.iac { gap: 14px; }
+.iac-panes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.iac-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.iac-pane textarea { min-height: 260px; white-space: pre; overflow-x: auto; }
+.iac-error { margin: 0; color: var(--bad); font-size: 13px; }
+.iac-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+.iac-list li { display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
+.iac-list li code { color: var(--muted); }
+.iac-list li.is-unmanaged { border-color: var(--orange); border-style: dashed; }
+.iac-list li em { color: var(--orange); font-style: normal; }
+.iac-attrs { display: flex; flex-wrap: wrap; gap: 4px; }
+.iac-attr { font: 500 11.5px var(--mono); color: var(--muted); padding: 1px 6px; border-radius: 6px; border: 1.5px solid transparent; }
+.iac-attr.is-drift { border-color: var(--orange); color: var(--orange); }
+.iac-plan { display: flex; flex-direction: column; gap: 8px; }
+.iac-plan .code-panel { max-height: 320px; overflow: auto; }
+.iac-review { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1.5px solid var(--line-2); border-radius: 10px; }
+.iac-review p { margin: 0; font-size: 13.5px; }
+.iac-destroys { color: var(--bad); font-weight: 600; }
+.iac-review-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.iac-log { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+@media (max-width: 900px) { .iac-panes { grid-template-columns: 1fr; } }

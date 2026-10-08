@@ -1,0 +1,18 @@
+.pm { gap: 14px; }
+.pm .section-title { display: block; }
+.pm-lane, .pm-dependency { display: flex; flex-direction: column; gap: 6px; }
+.pm-status { margin: 0; min-height: 2.6em; font-size: 13.5px; color: var(--muted); }
+.pm-outcomes { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: flex-start; }
+.pm-dlq { flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pm-history { flex: 1 1 280px; min-width: 0; }
+.pm-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.pm-redriven { border-style: dashed; border-color: var(--violet); color: var(--violet); }
+.pm-more { margin: 0; font-size: 12.5px; color: var(--muted); }
+.pm-note { margin: 0; font-size: 13px; color: var(--muted); }
+.pm-lag { display: flex; flex-direction: column; gap: 4px; }
+.pm-alarm { margin: 0; font: 500 12.5px var(--mono); color: var(--muted); }
+.pm-alarm.is-firing { color: var(--orange); }
+.pm-alarm.is-firing .chip { --c: var(--orange); font-weight: 700; }
+.pm .array-cell.pm-wait { border-color: var(--info); color: var(--info); background: color-mix(in srgb, var(--info) 10%, transparent); }
+.pm .array-cell.pm-head { box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 55%, transparent); }
+.pm .array-cell.pm-retry { box-shadow: 0 0 0 3px var(--orange); }
