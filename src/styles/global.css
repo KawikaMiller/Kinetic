@@ -161,6 +161,9 @@ strong {
 .hl.violet { background: rgb(167 139 250 / 0.14); color: var(--violet); }
 .hl.amber { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber); }
 .hl.orange { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
+/* A chip stays on one line, so keep it short (see docs/shared-api.md, Captions). A long verdict
+   adds `wrap`: it breaks at spaces like the text around it, each line keeping the chip's padding. */
+.hl.wrap { white-space: normal; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 
 /* `code` inside lesson text (summary, tips, key ideas, quiz): components/InlineText */
 .inline-code {
