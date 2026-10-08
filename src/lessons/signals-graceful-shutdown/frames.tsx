@@ -124,7 +124,7 @@ export function zombieFrames(c: ChildCase): ZombieFrame[] {
   rec.snap(<>The server (PID {PARENT_PID}) has started a worker child (PID {CHILD_PID}).</>, 1, { step: 0 });
   const zombie = (step: number) => procTable(c, step).some(isZombie);
   if (c === 'orphan') {
-    rec.snap(<>The server exits first. Its child is an orphan, so the kernel re-parents it to PID 1 (its PPID is now 1).</>, 1.4, { step: 1 });
+    rec.snap(<>The server exits first. Its child is an orphan, so the kernel re-parents it to PID 1, or to the nearest subreaper if one is set (here, PID 1: its PPID is now 1).</>, 1.4, { step: 1 });
     rec.snap(<>When the worker exits, PID 1 collects its exit status, so no zombie is left: reaping orphans is part of init's job, and why a container's PID 1 needs to do it too.</>, 1.4, { step: 2 });
   } else {
     rec.snap(
@@ -139,7 +139,8 @@ export function zombieFrames(c: ChildCase): ZombieFrame[] {
       c === 'reap' ? (
         <>The parent's SIGCHLD handler calls <code>waitpid()</code>, so the zombie is reaped and its PID freed.</>
       ) : (
-        <>The parent ignores SIGCHLD and never calls <code>wait()</code>, so the zombie stays, holding its PID. Enough of them and the system runs out of PIDs.</>
+        <>The parent leaves SIGCHLD at its default and never calls <code>wait()</code>, so the zombie stays, holding its PID. Enough of them and the system runs out of PIDs.
+          (Setting SIGCHLD to SIG_IGN would make the kernel reap children automatically.)</>
       ),
       1.4,
       { step: 2 },

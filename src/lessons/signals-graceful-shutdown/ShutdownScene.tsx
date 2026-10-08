@@ -19,7 +19,7 @@ const MODES: { value: Mode; label: string }[] = [
   { value: 'slow', label: 'Too slow' },
   { value: 'pid1', label: 'PID 1 shell' },
 ];
-const DOCKERFILE = ['FROM node:22-slim', 'COPY . /app', 'WORKDIR /app', '# shell form: runs /bin/sh -c "node server.js"', 'CMD node server.js'];
+const DOCKERFILE = ['FROM node:22-slim', 'COPY . /app', 'WORKDIR /app', '# shell form: /bin/sh -c "…" is PID 1, node is its child', 'CMD npm run migrate && node server.js'];
 const SCENE_W = 540;
 /** The node sub-labels are 10px: keep them at 8px or more. */
 const SCENE_MIN_W = minWidthForText(SCENE_W, 10);
@@ -110,7 +110,7 @@ export function ShutdownScene({ picker }: { picker: ReactNode }) {
           ) : mode === 'none' ? (
             <p className="empty-note">No SIGTERM handler: the default action terminates the process immediately.</p>
           ) : (
-            <CodePanel title="server.js (Node)" lines={HANDLER} stateOf={handlerState(phase, run.killed)} />
+            <CodePanel title="server.js (Node)" lines={HANDLER} stateOf={handlerState(phase, run, now)} />
           )}
           <Hint block>
             A simulated process and orchestrator; requests are long and timings illustrative so the drain is visible. Signal behaviour follows Linux <code>signal(7)</code>. In

@@ -154,3 +154,30 @@ describe('view: countdown and markers', async () => {
     }
   });
 });
+
+describe('review G1 / G2', async () => {
+  const { handlerState, killedAtLine, HANDLER } = await import('./view');
+  it('a dead process never shows a running handler line, for every mode, grace and frame', () => {
+    for (const m of MODES) {
+      for (const g of GRACES) {
+        const run = shutdown(m, g);
+        for (const f of shutdownFrames(run)) {
+          const state = handlerState(f.phase, run, f.now);
+          const lines = HANDLER.map((_, i) => state(i));
+          if (f.now >= run.exitAt) expect(lines).not.toContain('now');
+          if (f.now >= run.exitAt && run.killed) expect(lines.indexOf('cut')).toBe(killedAtLine(run));
+        }
+      }
+    }
+  });
+  it('a short grace kills the handler while it still waits for the LB (line 6), a long one while it drains (line 8)', () => {
+    expect(killedAtLine(shutdown('graceful', 1))).toBe(5);
+    expect(killedAtLine(shutdown('slow', DEFAULT_GRACE))).toBe(7);
+  });
+  it('the zombie caption gets the SIGCHLD rule right', () => {
+    const text = zombieFrames('no-reap').map((f) => captionText(f.say)).join(' ');
+    expect(text).not.toContain('ignores SIGCHLD');
+    expect(text).toContain('leaves SIGCHLD at its default');
+    expect(text).toContain('SIG_IGN would make the kernel reap children');
+  });
+});

@@ -9,12 +9,12 @@ const lesson: LessonModule = {
     analogy: 'SIGTERM is the barista saying "we close in ten minutes": you finish your coffee and the door is locked behind the last customer. SIGKILL is the fire alarm: everyone out now, cups left on the tables.',
     useCases: [
       'Zero-downtime deploys: draining an instance before Kubernetes replaces it',
-      'A container that takes exactly 30 s to stop: its PID 1 is ignoring SIGTERM',
+      'A Kubernetes pod that takes exactly its 30 s grace period to stop (docker stop waits 10 s): its PID 1 is ignoring SIGTERM',
       'Ctrl-C (SIGINT) and kill (SIGTERM) in the terminal, and kill -9 when nothing else works',
       'Zombie <defunct> processes piling up under a parent that never calls wait()',
     ],
     why: 'Every deploy, autoscale and node drain shuts processes down. Without a proper handler, each one drops in-flight requests and shows users errors; with a slow one, the deploy waits out the grace period and SIGKILL cuts the rest. It builds on `processes-threads` (PIDs, parents and children), `file-descriptors` (the listening socket you close) and `containers` (PID 1 in a container), and on `load-balancing` for removing an instance from rotation.',
-    watch: 'Deploy shutdown: in the scene, the yellow pill is SIGTERM and the red one SIGKILL, travelling from the orchestrator to the server; the load balancer\'s link to the server turns violet and dashed when it removes the instance, and the server box turns red if it died from a signal or dim after a clean exit. On the timeline, blue bars are requests in flight, green ones finished after SIGTERM (during the drain, when there is one), grey ones finished before the deploy, red bars were cut by the kill and short red stubs got an error from the load balancer; dim dashed stubs went to another replica. Markers: yellow SIGTERM, violet "LB removes", the grace deadline in yellow turning red as SIGKILL, and a green "exit 0". The code panel highlights the handler line running now in yellow, earlier lines dimmed, and a line cut short by SIGKILL struck through; in the PID 1 Dockerfile the shell-form CMD is red. Children & zombies: blue boxes are running processes, a dashed dim box is a zombie, and the ps line for a zombie is dim. Signal table: "yes" in green can be caught, "no" in red can\'t.',
+    watch: 'Deploy shutdown: in the scene, the yellow pill is SIGTERM and the red one SIGKILL, travelling from the orchestrator to the server; the load balancer\'s link to the server turns violet and dashed when it removes the instance, and the server box turns red if it died from a signal or dim after a clean exit. On the timeline, blue bars are requests in flight, green ones finished after SIGTERM (during the drain, when there is one), grey ones finished before the deploy, red bars were cut by the kill and short red stubs got an error from the load balancer; dim dashed stubs went to another replica. Markers: yellow SIGTERM, violet "LB removes", the grace deadline in yellow turning red as SIGKILL, and a green "exit 0". The code panel highlights the handler line running now in yellow, earlier lines dimmed, and a line cut short by SIGKILL struck through; once the process is dead the panel freezes; in the PID 1 Dockerfile the shell-form CMD is red. Children & zombies: blue boxes are running processes, a dashed dim box is a zombie, and the ps line for a zombie is dim. Signal table: "yes" in green can be caught, "no" in red can\'t.',
   },
   tryThis: [
     'Play Graceful, then switch Handler to No handler and compare the red bars.',
@@ -53,7 +53,7 @@ const lesson: LessonModule = {
       why: 'SIGKILL (and SIGSTOP) are handled by the kernel itself and never reach the process. Cleanup has to happen on SIGTERM, before the grace period runs out.',
     },
     {
-      q: 'A container started with CMD node server.js (shell form) always takes 30 s to stop. Why?',
+      q: 'A Kubernetes pod whose image has CMD npm run migrate && node server.js (shell form) always takes 30 s to stop. Why?',
       options: [
         'sh is PID 1 and never passes SIGTERM on',
         'Node needs 30 s to close its event loop',
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'SIGTERM is queued until all files are closed',
       ],
       answer: 0,
-      why: 'The shell form runs /bin/sh -c as PID 1. It doesn\'t forward SIGTERM, and PID 1 has no default action for it, so nothing happens until SIGKILL. Use the exec form (CMD ["node", "server.js"]) with a handler, or an init such as tini.',
+      why: 'The shell form runs /bin/sh -c as PID 1, with node as its child. The shell doesn\'t forward SIGTERM, and PID 1 has no default action for it, so nothing happens until Kubernetes sends SIGKILL at the end of its 30 s grace period. Use the exec form (CMD ["node", "server.js"], migrations elsewhere) with a handler, or an init such as tini.',
     },
     {
       q: 'Why should a graceful handler wait a moment before closing the listening socket?',

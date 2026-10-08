@@ -57,12 +57,23 @@ export const HANDLER = [
 /** Which handler lines are running in each phase. */
 const ACTIVE: Record<Phase, number[]> = { running: [0], sigterm: [2, 3, 4], lb: [5, 6], drain: [7], exit: [8, 9] };
 
-export function handlerState(phase: Phase, killed: boolean) {
-  const now = ACTIVE[phase];
-  const reached = Math.max(...now);
+/** The handler line that was running when SIGKILL landed: still waiting for the LB, or waiting for the drain. */
+export const killedAtLine = (run: ShutdownRun) => (run.exitAt < run.lbRemoved ? 5 : 7);
+
+/**
+ * Line states for the handler panel at `now`. Once the process is dead the panel freezes:
+ * after a clean exit every line ran; after SIGKILL the line it was on is struck through and
+ * nothing after it ran. A dead process never shows a "now" line.
+ */
+export function handlerState(phase: Phase, run: ShutdownRun, now: number) {
+  if (now >= run.exitAt) {
+    const cutAt = killedAtLine(run);
+    return (i: number): LineState => (run.killed ? (i === cutAt ? 'cut' : i < cutAt ? 'past' : 'idle') : i <= 9 ? 'past' : 'idle');
+  }
+  const active = ACTIVE[phase];
+  const reached = Math.max(...active);
   return (i: number): LineState => {
-    if (killed && phase === 'exit') return i === 7 ? 'cut' : i < 7 ? 'past' : 'idle';
-    if (now.includes(i)) return 'now';
+    if (active.includes(i)) return 'now';
     return i < reached && phase !== 'running' ? 'past' : 'idle';
   };
 }
