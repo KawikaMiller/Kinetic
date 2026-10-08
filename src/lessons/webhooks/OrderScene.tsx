@@ -42,7 +42,7 @@ export function OrderScene({ picker }: { picker: ReactNode }) {
       height={520}
       legend={<Legend items={[
         { color: 'var(--info)', label: 'delivery' }, { color: 'var(--hi)', label: 'current' }, { color: 'var(--violet)', label: 'out of order' },
-        { color: 'var(--dim)', label: 'dropped by dedup' }, { color: 'var(--ok)', label: 'ends at the truth' }, { color: 'var(--bad)', label: 'wrong status / repeated effect' },
+        { color: 'var(--dim)', label: 'dropped, ignored or unchanged' }, { color: 'var(--ok)', label: 'ends at the truth' }, { color: 'var(--bad)', label: 'wrong status / repeated effect' },
       ]} />}
       controls={[
         <>{picker}</>,
@@ -84,7 +84,7 @@ export function OrderScene({ picker }: { picker: ReactNode }) {
         </div>
         <Hint block>
           {HONEST} Delivery is at least once and unordered, so a webhook consumer must be idempotent (<code>idempotency-keys</code> does the same job for requests): dedupe by event id, and
-          either apply an event only if it is newer than the last one, or treat the payload as a hint and fetch the current state. Keeping the seen-ids table forever isn't free, so real systems expire it.
+          either apply an event only if it is newer than the last one, or treat the payload as a hint and fetch the current state. Keeping the seen-ids table forever isn't free, so real systems expire it. Comparing timestamps also drops a repeat quietly, and two different events stamped in the same second would clash, so real providers add a sequence number or you break ties by id. Fetching the current state assumes all three events have already happened at the provider, as they have here.
         </Hint>
       </div>
     </StageFrame>

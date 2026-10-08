@@ -102,7 +102,7 @@ export function SignatureScene({ picker }: { picker: ReactNode }) {
         <Hint block>
           {HONEST} Anyone who learns your URL can send it requests, so an unguessable URL is not security: the signature is. Compare signatures with your
           language's constant-time function (Node's <code>crypto.timingSafeEqual</code>, Python's <code>hmac.compare_digest</code>), as in <code>macs-hmac</code>;
-          this page compares plainly because nothing here can measure timing. A replay inside the window still passes the check, which is why consumers also dedupe by event id.
+          this page compares plainly because nothing here can measure timing. A replay inside the window still passes the check, which is why consumers also dedupe by event id. The slider models a delivery that arrives late or is replayed; a legitimate retry is signed afresh, so it arrives with a fresh timestamp (see Receiver offline).
         </Hint>
       </div>
     </StageFrame>

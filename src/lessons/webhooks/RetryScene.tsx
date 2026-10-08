@@ -33,7 +33,7 @@ export function RetryScene({ picker }: { picker: ReactNode }) {
     <StageFrame
       height={520}
       legend={<Legend items={[
-        { color: 'var(--info)', label: 'delivery' }, { color: 'var(--orange)', label: 'failed attempt, retried later' }, { color: 'var(--ok)', label: 'delivered / receiver up' },
+        { color: 'var(--orange)', label: 'failed attempt, retried later' }, { color: 'var(--ok)', label: 'delivered / receiver up' },
         { color: 'var(--bad)', label: 'receiver down' },
       ]} />}
       controls={[<>{picker}<Slider label="Receiver comes back at" value={upAt} min={0} max={MAX_UP_AT} step={1} onChange={setUpAt} format={(m) => (m === 0 ? 'never went down' : `minute ${m}`)} /></>]}
@@ -58,7 +58,7 @@ export function RetryScene({ picker }: { picker: ReactNode }) {
           <thead><tr><th>your endpoint answers</th><th>provider</th><th>note</th></tr></thead>
           <tbody>{POLICY.map((r) => <tr key={r.answer}><td>{r.answer}</td><td>{r.provider}</td><td>{r.note}</td></tr>)}</tbody>
         </table>
-        <Hint block>{HONEST} Backoff spaces the retries out so a struggling receiver isn't hammered, and the events arrive late and out of order, which the next scene handles.</Hint>
+        <Hint block>{HONEST} Backoff spaces the retries out so a struggling receiver isn't hammered, and the events arrive late and out of order, which the next scene handles. Each attempt is signed with that attempt's own timestamp (providers typically do this, but check yours), so the 5-minute tolerance applies to the attempt, not to the event: a retry at minute 156 is not a replay.</Hint>
       </div>
     </StageFrame>
   );

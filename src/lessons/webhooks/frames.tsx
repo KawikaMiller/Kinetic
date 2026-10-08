@@ -65,7 +65,7 @@ export const RETRY_ACTORS = (down: boolean): SequenceActor[] => [
 /** The first event's attempts as a ladder: each failed attempt is lost at the down receiver, then the one that gets through. */
 export function retryLadder(d: Delivered): SequenceMessage[] {
   const out: SequenceMessage[] = d.attempts.map((a, i) => ({
-    id: `r${i}`, from: 'queue', to: 'receiver', label: `POST /webhooks${i ? ` (retry ${i})` : ''}`, note: `minute ${a.t}`, lost: !a.ok, tone: i ? 'orange' : 'info',
+    id: `r${i}`, from: 'queue', to: 'receiver', label: `POST /webhooks${i ? ` (retry ${i})` : ''}`, note: `minute ${a.t}`, lost: !a.ok, tone: a.ok ? 'ok' : 'orange',
   }));
   if (d.deliveredAt !== null) out.push({ id: 'r-ok', from: 'receiver', to: 'queue', label: '200 OK', note: 'retries stop', tone: 'ok' });
   return out;
@@ -103,11 +103,11 @@ function orderCaption(s: ReceiveStep, ordering: Ordering, dedupe: boolean): Reac
     case 'dropped-duplicate':
       return <>{arrives}: its id is already in the seen table, so it is <span className="hl dim">dropped</span> and nothing runs twice.</>;
     case 'ignored-stale':
-      return <>{arrives}: it is older than the last event applied, so it is ignored. The status stays {s.state}.</>;
+      return <>{arrives}: it is not newer than the last event applied, so it is ignored{s.duplicate ? ' (a repeat is never newer, so this rule quietly drops duplicates too)' : ''}. The status stays {s.state}.</>;
     case 'no-change':
-      return <>{arrives}. The receiver ignores its payload and reads the provider's current state: {TRUTH}, which it already has. Nothing to do{s.duplicate ? ', so the repeat is harmless' : ''}.</>;
+      return <>{arrives}. The receiver ignores its payload and reads the provider's current state: {TRUTH}, which it already has (this scene assumes all three events have already happened at the provider). Nothing to do{s.duplicate ? ', so the repeat is harmless' : ''}.</>;
     case 'applied': {
-      const how = ordering === 'refetch' ? <>The receiver reads the provider's current state instead of trusting the payload: <b>{s.state}</b></>
+      const how = ordering === 'refetch' ? <>The receiver reads the provider's current state instead of trusting the payload: <b>{s.state}</b> (this scene assumes all three events have already happened at the provider)</>
         : <>Status becomes <b>{s.state}</b></>;
       return <>{arrives}{s.duplicate && !dedupe ? <>, and nothing recognises it</> : null}. {how}{fx ? <>; effect: <b>{fx}</b>{s.duplicate ? ', sent again' : ''}</> : null}.</>;
     }

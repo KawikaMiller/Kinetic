@@ -70,7 +70,7 @@ export interface PolicyRow {
 /** An example provider policy; providers differ, so the lesson shows it as a table to read, not a rule. */
 export const POLICY: readonly PolicyRow[] = [
   { answer: '2xx (200, 201, 202, 204)', provider: 'Success: stops retrying', note: 'Reply 2xx as soon as the event is safely stored.' },
-  { answer: '3xx', provider: 'Usually a failure', note: 'Most providers don\'t follow redirects.' },
+  { answer: '3xx', provider: 'Often a failure', note: 'Many providers don\'t follow redirects.' },
   { answer: '4xx (400, 401, 404…)', provider: 'Failure: keeps retrying', note: 'Some providers stop on 410 Gone. A 400 for a bad signature will retry too.' },
   { answer: '429 or 5xx', provider: 'Failure: keeps retrying', note: 'Backing off on 429 is polite; many providers honour Retry-After.' },
   { answer: 'No answer before the timeout', provider: 'Failure: keeps retrying', note: 'The receiver may still have processed it: that is how duplicates happen.' },

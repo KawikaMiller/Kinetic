@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { fastFrames, fastLadder, fastTone, orderFrames, retryCaption, retryLadder, signatureCaption, signatureLadder } from './frames';
 import {
-  FEED, ORDERINGS, PROVIDER_TIMEOUT_S, TRUTH, deliverAll, fastScript, orderLabel, permutations, receive, scheduleEnd, withDuplicates, type ReplyMode,
+  FEED, ORDERINGS, PAY_EVENTS, PROVIDER_TIMEOUT_S, TRUTH, deliverAll, fastScript, orderLabel, permutations, receive, scheduleEnd, withDuplicates, type ReplyMode,
 } from './model';
 import { BODY, SECRET, SIGNED_AT, TOLERANCE_S, inspect, signedDelivery, tamper } from './signature';
 
@@ -60,7 +60,10 @@ describe('retry captions', () => {
       const m = retryLadder(d);
       expect(m.filter((x) => x.lost)).toHaveLength(d.attempts.filter((a) => !a.ok).length);
       expect(m.some((x) => x.label === '200 OK')).toBe(d.deliveredAt !== null);
-      expect(m.filter((x) => x.label.includes('retry')).every((x) => x.tone === 'orange')).toBe(true);
+      expect(m.filter((x) => x.lost).every((x) => x.tone === 'orange')).toBe(true);
+      const posts = m.filter((x) => x.label.startsWith('POST'));
+      if (d.deliveredAt !== null) expect(posts[posts.length - 1].tone).toBe('ok');
+      else expect(posts.every((x) => x.tone === 'orange')).toBe(true);
     }
   });
 });
@@ -81,7 +84,10 @@ describe('duplicate and ordering captions, for every order × duplicates × dedu
               expect(t.includes('out of order'), `step ${i}`).toBe(s.outOfOrder);
               expect(t.includes('arrives again')).toBe(s.duplicate);
               expect(t.includes('dropped')).toBe(s.action === 'dropped-duplicate');
-              expect(t.includes('is older than the last event applied')).toBe(s.action === 'ignored-stale');
+              expect(t.includes('is not newer than the last event applied')).toBe(s.action === 'ignored-stale');
+              expect(t).not.toContain('older than the last');
+              if (ordering === 'refetch' && (s.action === 'applied' || s.action === 'no-change')) expect(t).toContain('assumes all three events have already happened');
+              else expect(t).not.toContain('assumes all three events');
               if (s.action === 'applied') expect(t).toContain(s.state!);
               if (s.action === 'applied' && s.effects.length) expect(t.includes('effect:')).toBe(true);
             });
@@ -93,6 +99,20 @@ describe('duplicate and ordering captions, for every order × duplicates × dedu
             expect(sum.includes('repeated')).toBe(repeats > 0);
             if (repeats > 0) expect(sum).toContain(`${repeats} repeated`);
           });
+});
+
+describe('a repeat of the newest event, with timestamps and no dedupe', () => {
+  it('is "not newer", never "older" (the review repro: created, succeeded, refunded, refunded)', () => {
+    const [created, succeeded, refunded] = PAY_EVENTS;
+    const steps = receive([created, succeeded, refunded, refunded], { dedupe: false, ordering: 'timestamp' });
+    expect(steps.map((s) => s.action)).toEqual(['applied', 'applied', 'applied', 'ignored-stale']);
+    expect(steps[3].event.created).toBe(steps[2].event.created);
+    const frames = orderFrames(steps, { ordering: 'timestamp', dedupe: false }, 'intro');
+    const t = text(frames[4].say);
+    expect(t).toContain('not newer than the last event applied');
+    expect(t).toContain('quietly drops duplicates');
+    expect(t).not.toContain('older');
+  });
 });
 
 describe('respond-fast captions', () => {
