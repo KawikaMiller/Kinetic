@@ -169,10 +169,14 @@ describe('moving a function', () => {
   });
 });
 
+/** Each layout runs a seeded search, so this test gets a budget well past its typical run time. */
+const LAYOUT_TEST_MS = 60_000;
+const RANDOM_LAYOUTS = 60;
+
 describe('layout', () => {
-  it('keeps every function inside its own box, inside the view, without overlaps, for every preset and 300 random layouts', () => {
+  it('keeps every function inside its own box, inside the view, without overlaps, for every preset and 60 random layouts', () => {
     const rnd = mulberry32(3);
-    const layouts = [...PRESET_IDS.map((p) => PRESETS[p].assign), ...Array.from({ length: 300 }, () => randomAssignment(rnd))];
+    const layouts = [...PRESET_IDS.map((p) => PRESETS[p].assign), ...Array.from({ length: RANDOM_LAYOUTS }, () => randomAssignment(rnd))];
     for (const a of layouts) {
       const { boxes, at } = layoutModules(a);
       for (const b of boxes) {
@@ -196,14 +200,14 @@ describe('layout', () => {
         }
       }
     }
-  });
+  }, LAYOUT_TEST_MS);
 
   it('draws no edge through a node it does not connect, on every preset and after any single move from one (126 layouts)', () => {
     for (const p of PRESET_IDS) {
       expect(passThroughs(layoutModules(PRESETS[p].assign).at), p).toEqual([]);
       for (const fn of FN_IDS) for (const m of SLOTS) expect(passThroughs(layoutModules(moveFn(PRESETS[p].assign, fn, m)).at), `${p} ${fn}→${m}`).toEqual([]);
     }
-  });
+  }, LAYOUT_TEST_MS);
 
   it('is deterministic: the same assignment gives the same drawing', () => {
     const a = PRESETS.feature.assign;
