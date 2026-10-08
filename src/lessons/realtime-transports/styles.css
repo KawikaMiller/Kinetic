@@ -1,0 +1,13 @@
+.rt { gap: 12px; }
+.rt .section-title { display: block; margin-bottom: 4px; }
+.rt-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.rt-card { display: flex; flex-direction: column; gap: 6px; }
+.rt-card .stats { flex-wrap: wrap; gap: 6px; }
+.rt-card .stat { min-width: 0; flex: 1 1 30%; padding: 6px 8px; }
+.rt-card .stat-value { font-size: 16px; }
+.rt-server { margin: 0; font-size: 12.5px; color: var(--muted); }
+.rt-server b { color: var(--text); }
+.rt-hs { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.rt-hs-ladder { flex: 1 1 340px; min-width: 0; }
+.rt-wire { flex: 1 1 320px; min-width: 0; }
+.rt-hs .hint { flex-basis: 100%; }
