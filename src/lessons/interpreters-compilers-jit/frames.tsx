@@ -1,19 +1,15 @@
 import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { compile, formatInstr, runVm, type Instr } from './bytecode';
+import { runVm, type Instr } from './bytecode';
 import {
   COST, COUNTS, HOT_THRESHOLD, fmtCount, fmtTime, opsAt, type Lane, type Race, type Segment,
 } from './costModel';
-import { SUM_SQUARES, allNodes, nodeLabel, printFn, treeWalk, type Env, type Node, type Value } from './lang';
+import { SUM_SQUARES, nodeLabel, treeWalk, type Env, type Node, type Value } from './lang';
 import { NATIVE, runNative, type Regs } from './native';
+import { BYTECODE, NODES } from './program';
 
 export type Strategy = 'tree' | 'vm' | 'native';
-
-export const BYTECODE = compile(SUM_SQUARES);
-export const BYTECODE_LINES = BYTECODE.code.map(formatInstr);
-export const SOURCE = printFn(SUM_SQUARES);
-export const NODES = new Map<number, Node>(allNodes(SUM_SQUARES).map((n) => [n.id, n]));
 
 export const show = (v: Value | null | undefined) => (v === undefined || v === null ? '–' : typeof v === 'string' ? `"${v}"` : String(v));
 
@@ -234,16 +230,3 @@ export function verdict(r: Race): ReactNode {
 
 /** Total ops of each lane at a moment, for the counters. */
 export const laneOpsAt = (lane: Lane, t: number) => Math.round(opsAt(lane, t));
-
-/** Node id → the source line it sits on: a statement's own line (a loop's condition sits on the `while` line). */
-export const LINE_OF_NODE: ReadonlyMap<number, number> = (() => {
-  const map = new Map<number, number>();
-  SOURCE.stmtOfLine.forEach((id, line) => {
-    if (id === null) return;
-    const node = NODES.get(id)!;
-    map.set(id, line);
-    const own = node.kind === 'while' ? allNodes(node.cond) : node.kind === 'fn' ? [] : allNodes(node);
-    for (const n of own) if (!map.has(n.id)) map.set(n.id, line);
-  });
-  return map;
-})();

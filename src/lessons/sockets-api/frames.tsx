@@ -137,7 +137,7 @@ export function sceneFrames(steps: readonly Step[], intro: ReactNode): SocketFra
   ];
 }
 
-export const LIFECYCLE_INTRO = <>A server and a client, each a process with its own code and FD table. Step through the calls: every socket
+export const lifecycleIntro = <>A server and a client, each a process with its own code and FD table. Step through the calls: every socket
   shows up as an FD, and its TCP state lights on the diagram.</>;
 
 export function queueIntro(slow: boolean): ReactNode {

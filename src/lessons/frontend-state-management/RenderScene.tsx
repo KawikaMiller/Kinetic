@@ -6,7 +6,7 @@ import { TreeSvg, type TreeNodeMark } from '../../components/TreeSvg';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { actionCaption, RENDER_INTRO } from './captions';
+import { actionCaption, renderIntro } from './captions';
 import { createBus, createTally, expectedKey, useTallyKey, type ActionBus, type RenderTally } from './counts';
 import {
   COMPONENTS, EFFECT_FOR, IDS, INITIAL, LABEL, PRODUCTS, SIGNAL_EDGES, childrenOf, createSignalCart, outcome, ownerOf, reduce,
@@ -164,7 +164,7 @@ export function RenderScene({ picker }: { picker: ReactNode }) {
   const [tally] = useState(createTally);
   const [bus] = useState(createBus);
   const setCaption = useSetCaption();
-  useIntroCaption(RENDER_INTRO);
+  useIntroCaption(renderIntro);
 
   const reset = () => {
     setState(INITIAL);
@@ -178,12 +178,12 @@ export function RenderScene({ picker }: { picker: ReactNode }) {
   const choose = (a: Approach) => {
     setApproach(a);
     reset();
-    setCaption(RENDER_INTRO);
+    setCaption(renderIntro);
   };
   const toggleMemo = (on: boolean) => {
     setMemoOn(on);
     reset();
-    setCaption(RENDER_INTRO);
+    setCaption(renderIntro);
   };
 
   const act = (action: Action) => {
@@ -241,7 +241,7 @@ export function RenderScene({ picker }: { picker: ReactNode }) {
             ))}
             <ChipButton tone="violet" onClick={() => act({ type: 'theme' })}>Toggle theme</ChipButton>
           </ControlGroup>
-          <Button onClick={() => { reset(); setCaption(RENDER_INTRO); }}>Reset</Button>
+          <Button onClick={() => { reset(); setCaption(renderIntro); }}>Reset</Button>
         </>,
       ]}
     >

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ELEMENTS, nielsenLandauer, type MethodResults, type Session, type Step } from './model';
 
-export const SESSIONS_INTRO = (
+export const sessionsIntro = (
   <>
     A fictional checkout with three planted problems, and simulated participants who try to buy the blue mug. Play a replay, add participants, and watch which problems each one finds.
   </>

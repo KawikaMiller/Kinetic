@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { toneFor, type Tone } from '../../core/tone';
-import { eventCaption, LIFECYCLE_INTRO, typedCaption } from './captions';
+import { eventCaption, lifecycleIntro, typedCaption } from './captions';
 import { Machine } from './Machine';
 import {
   EVENT_LABEL, EVENTS, STRATEGY_LABEL, callbackLine, canFire, edit, fire, initialPhone, ruleFor,
@@ -50,7 +50,7 @@ export function LifecycleScene({ picker }: { picker: ReactNode }) {
   const [session, setSession] = useState<Session>(() => fresh('android'));
   const [strategy, setStrategy] = useState<Strategy>('none');
   const setCaption = useSetCaption();
-  useIntroCaption(LIFECYCLE_INTRO);
+  useIntroCaption(lifecycleIntro);
   const { platform, phone, log, last, landscape } = session;
 
   const press = (event: EventId) => {
@@ -70,7 +70,7 @@ export function LifecycleScene({ picker }: { picker: ReactNode }) {
   };
   const restart = (to: Platform) => {
     setSession(fresh(to));
-    setCaption(LIFECYCLE_INTRO);
+    setCaption(lifecycleIntro);
   };
 
   return (

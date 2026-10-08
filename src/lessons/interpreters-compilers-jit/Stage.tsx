@@ -17,11 +17,10 @@ import { usePlayer } from '../../core/usePlayer';
 import {
   HOT_THRESHOLD, WORKLOADS, crossover, race, fmtCount, fmtTime, itersAt, liveCounterAt, type Lane, type SegKind, type Workload,
 } from './costModel';
-import {
-  BYTECODE, BYTECODE_LINES, LINE_OF_NODE, NODES, SOURCE, laneOpsAt, raceFrames, show, stepFrames, type Strategy,
-} from './frames';
+import { laneOpsAt, raceFrames, show, stepFrames, type Strategy } from './frames';
 import { SUM_SQUARES, childrenOf, nodeLabel, type Value } from './lang';
 import { NATIVE_LINES, REG_OF } from './native';
+import { BYTECODE, BYTECODE_LINES, LINE_OF_NODE, NODES, SOURCE } from './program';
 import './styles.css';
 
 const STEP_MS = 900;

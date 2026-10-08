@@ -4,7 +4,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { derivedCaption, DERIVED_INTRO } from './captions';
+import { derivedCaption, derivedIntro } from './captions';
 import { DERIVED_CODE, EMPTY_CART, STORED_CODE, derivedTotal, editCart, isDrifting, type CartEdit, type DerivedCart } from './derived';
 import { PRODUCTS } from './model';
 
@@ -17,7 +17,7 @@ export function DerivedScene({ picker }: { picker: ReactNode }) {
   const [product, setProduct] = useState(0);
   const [lastEdit, setLastEdit] = useState<CartEdit['type'] | null>(null);
   const setCaption = useSetCaption();
-  useIntroCaption(DERIVED_INTRO);
+  useIntroCaption(derivedIntro);
   const derived = derivedTotal(cart);
   const drifting = isDrifting(cart);
 
@@ -30,7 +30,7 @@ export function DerivedScene({ picker }: { picker: ReactNode }) {
   const reset = () => {
     setCart(EMPTY_CART);
     setLastEdit(null);
-    setCaption(DERIVED_INTRO);
+    setCaption(derivedIntro);
   };
 
   return (

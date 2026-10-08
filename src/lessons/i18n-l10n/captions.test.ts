@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
 import {
-  FORMAT_INTRO, LAYOUT_INTRO, SENTENCE_INTRO, countCaption, formatCaption, growthPct, layoutCaption, naiveMessage, orderCaption, overflows,
+  formatIntro, layoutIntro, sentenceIntro, countCaption, formatCaption, growthPct, layoutCaption, naiveMessage, orderCaption, overflows,
 } from './captions';
 import { COUNT_RANGE, LOCALES } from './model';
 
@@ -14,7 +14,7 @@ describe('captions', () => {
         expectCaption(countCaption(l, n));
       }
     }
-    for (const intro of [FORMAT_INTRO, SENTENCE_INTRO, LAYOUT_INTRO]) expectCaption(intro);
+    for (const intro of [formatIntro, sentenceIntro, layoutIntro]) expectCaption(intro);
   });
 
   it('Polish 2: the English rule writes the wrong form, and the caption quotes it', () => {
@@ -72,7 +72,7 @@ describe('layout caption', () => {
   });
 
   it('falls back to the intro before anything is measured, and names pseudo-localisation', () => {
-    expect(layoutCaption('en-US', false, null)).toBe(LAYOUT_INTRO);
+    expect(layoutCaption('en-US', false, null)).toBe(layoutIntro);
     expect(captionText(layoutCaption('en-US', true, spill))).toContain('The pseudo-localised label');
   });
 });

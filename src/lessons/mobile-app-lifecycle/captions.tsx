@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { BACKGROUND_BUDGET_S, type BackgroundRun } from './constraints';
 import { EVENT_LABEL, SAVE_CALLBACK, callbackLine, type EventId, type Phone, type Rule, type StateId, type Strategy } from './model';
 
-export const LIFECYCLE_INTRO = (
+export const lifecycleIntro = (
   <>
     Type a draft in the phone, then press events. The state machine shows the real state names of the platform you pick, and the log shows the callbacks that ran. Try Home, then Low memory, then Return.
   </>
 );
 
-export const CONSTRAINTS_INTRO = (
+export const constraintsIntro = (
   <>
     A phone is not a server: the network drops, background work is cut off, and waking up to check for news costs battery. Play with each of the three.
   </>

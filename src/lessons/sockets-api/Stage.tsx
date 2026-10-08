@@ -14,7 +14,7 @@ import { minWidthForText } from '../../core/scale';
 import { toneVar, type Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import {
-  LIFECYCLE_INTRO, bindCaption, pileupCaption, queueIntro, realRanges, sceneFrames, type Occupant, type SocketFrame,
+  lifecycleIntro, bindCaption, pileupCaption, queueIntro, realRanges, sceneFrames, type Occupant, type SocketFrame,
 } from './frames';
 import {
   CLIENT_CODE, ERRNO_TEXT, HOSTS, SERVER_CODE, SERVER_PORT, TIME_WAIT_S, TOY_RANGE, TRANSITIONS, acceptQueueScene, bindCheck,
@@ -64,7 +64,7 @@ const QUEUE_LEGEND = <Legend items={[CURRENT, LISTENING, CONNECTED, { color: 'va
 
 function LifecycleScene({ picker }: { picker: ReactNode }) {
   const steps = useMemo(() => lifecycle(), []);
-  const frames = useMemo(() => sceneFrames(steps, LIFECYCLE_INTRO), [steps]);
+  const frames = useMemo(() => sceneFrames(steps, lifecycleIntro), [steps]);
   const player = usePlayer<SocketFrame>(frames, { interval: STEP_MS, autoplayOnChange: false });
   const i = player.frame.step;
   const step = i >= 0 ? steps[i] : null;

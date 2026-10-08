@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Slider } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption } from '../../core/caption';
-import { RETRY_ACTORS, retryCaption, retryLadder } from './frames';
+import { retryActors, retryCaption, retryLadder } from './frames';
 import { FEED, POLICY, RETRY_DELAYS_MIN, deliverAll, scheduleEnd } from './model';
 
 const DEFAULT_UP_AT = 20;
@@ -42,7 +42,7 @@ export function RetryScene({ picker }: { picker: ReactNode }) {
         <div className="wh-cols">
           <div className="wh-col">
             <SectionTitle weight="regular" hint={FEED[0].id}>The first event's attempts</SectionTitle>
-            <SequenceDiagram actors={RETRY_ACTORS(upAt > 0)} messages={retryLadder(all[0])} ariaLabel="Delivery attempts for the first event" />
+            <SequenceDiagram actors={retryActors(upAt > 0)} messages={retryLadder(all[0])} ariaLabel="Delivery attempts for the first event" />
           </div>
           <div className="wh-col wh-wide">
             <SectionTitle weight="regular" hint={`waits of ${RETRY_DELAYS_MIN.join(', ')} min`}>Every event, on one clock</SectionTitle>

@@ -57,7 +57,7 @@ export function signatureCaption(r: Inspection, edited: boolean): ReactNode {
 
 // ── Retries ─────────────────────────────────────────────────────────────
 
-export const RETRY_ACTORS = (down: boolean): SequenceActor[] => [
+export const retryActors = (down: boolean): SequenceActor[] => [
   { id: 'queue', label: 'Provider queue', tone: 'info' },
   { id: 'receiver', label: down ? 'Your endpoint (down)' : 'Your endpoint', tone: down ? 'bad' : undefined, waiting: down },
 ];

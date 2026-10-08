@@ -4,17 +4,17 @@ import {
   type Locale,
 } from './model';
 
-export const FORMAT_INTRO = (
+export const formatIntro = (
   <>
     One card, formatted live by the browser's own Intl data. Pick a locale and drag the count: the plural category, the separators, the date and the currency all change with it.
   </>
 );
-export const SENTENCE_INTRO = (
+export const sentenceIntro = (
   <>
     Two ways to build a translated sentence: glue translated fragments around the values, or translate one message with placeholders. Pick a locale and see where gluing breaks.
   </>
 );
-export const LAYOUT_INTRO = (
+export const layoutIntro = (
   <>
     Translated text and right-to-left scripts change the size and direction of everything around them. Pick German or Arabic, or turn on pseudo-localisation to find the bugs early.
   </>
@@ -85,7 +85,7 @@ export const overflows = (m: LayoutMeasure): boolean => m.text > m.room;
 export const growthPct = (m: LayoutMeasure): number => Math.round((m.text / m.english - 1) * 100);
 
 export function layoutCaption(locale: Locale, pseudo: boolean, m: LayoutMeasure | null): ReactNode {
-  if (!m) return LAYOUT_INTRO;
+  if (!m) return layoutIntro;
   const grow = growthPct(m);
   const label = pseudo ? 'The pseudo-localised label' : `The ${locale} label`;
   const size = grow === 0 ? 'as wide as' : grow > 0 ? `${grow}% wider than` : `${-grow}% narrower than`;
