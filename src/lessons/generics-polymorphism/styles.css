@@ -1,0 +1,36 @@
+.gp { gap: 12px; }
+.gp-row { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.gp-col { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.gp-diagram { flex: 0 1 300px; }
+.gp-code code { white-space: pre-wrap; }
+/* Fixed outputs include long unbroken names (List`1[System.String]): wrap them on a phone. */
+.gp .console-panel code { overflow-wrap: anywhere; }
+/* A compile-time rejection is the earlier, cheaper failure: orange, not the runtime red. */
+.gp-code.is-compile li.is-bad { background: color-mix(in srgb, var(--orange) 16%, transparent); box-shadow: inset 3px 0 0 var(--orange); }
+/* A line checked safe is green. */
+.gp-code li.is-done { background: color-mix(in srgb, var(--ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ok); }
+
+.gp-box-svg, .gp-stamp-svg, .gp-var-svg { display: block; width: 100%; height: auto; }
+.gp-box-svg { max-width: 300px; }
+.gp-stamp-svg, .gp-var-svg { max-width: 640px; margin: 0 auto; }
+.gp-corrupt { fill: var(--bad); font-weight: 700; }
+.gp-box { fill: var(--panel); stroke: var(--cell-line); stroke-width: 2; }
+.gp-box-title { font: 700 14px var(--mono); fill: var(--text); }
+.gp-tag rect { fill: color-mix(in srgb, var(--c) 14%, var(--panel)); stroke: var(--c); stroke-width: 1.5; }
+.gp-tag text, .gp-rt text { font: 700 11px var(--mono); fill: var(--c); }
+.gp-pill rect { fill: var(--c); transition: fill 0.25s; }
+.gp-pill text { font: 700 13px var(--mono); fill: var(--on-c); }
+.gp-pill.is-rejected rect { fill: var(--panel); stroke: var(--orange); stroke-width: 2; stroke-dasharray: 4 3; }
+.gp-pill.is-rejected text { fill: var(--orange); }
+.gp-reject { font: 700 11px var(--mono); fill: var(--orange); }
+.gp-crash { font: 700 11px var(--mono); fill: var(--bad); }
+
+.gp-node .scene-node-title { font: 700 13px var(--mono); }
+.gp-stamp-edge { stroke: var(--violet); stroke-width: 1.5; stroke-dasharray: 4 5; }
+.gp-rt rect { fill: color-mix(in srgb, var(--c) 14%, var(--panel)); stroke: var(--c); stroke-width: 1.5; }
+
+.gp-decl { font: 700 11px var(--mono); fill: var(--muted); }
+.gp-decl.is-rejected { fill: var(--orange); }
+.gp-gate rect { fill: var(--orange); }
+.gp-gate line { stroke: var(--orange); stroke-width: 2; stroke-dasharray: 4 4; }
+.gp-gate text { font: 700 12px var(--mono); fill: var(--orange); }
