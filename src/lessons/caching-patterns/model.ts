@@ -250,7 +250,7 @@ export type BeatKind =
   | 'queue' | 'flush' | 'crash' | 'ttl';
 
 export const BEAT_TONE: Record<BeatKind, Tone> = {
-  hit: 'ok', miss: 'hi', 'db-read': 'info', 'replica-read': 'info', fill: 'hi', 'db-write': 'info', delete: 'violet', set: 'sky',
+  hit: 'ok', miss: 'bad', 'db-read': 'info', 'replica-read': 'info', fill: 'hi', 'db-write': 'info', delete: 'violet', set: 'sky',
   'cache-write': 'sky', 'cache-db-write': 'info', queue: 'sky', flush: 'info', crash: 'bad', ttl: 'dim',
 };
 

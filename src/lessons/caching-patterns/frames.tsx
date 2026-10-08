@@ -37,7 +37,7 @@ export function beatCaption(beats: readonly Beat[], i: number, ttl: number | nul
         ? <>{who} reads the cache: a <span className="hl ok">hit</span> that returns <span className="hl orange">{b.served!.value}</span>, but the database already holds {b.view.db}. A stale read: the cache cannot tell its entry is out of date.</>
         : <>{who} reads the cache: a <span className="hl ok">hit</span>, {b.served!.value}, and the database was never asked.</>;
     case 'miss':
-      return <>{who} reads the cache: a <span className="hl">miss</span>. {b.note?.includes('loads') ? 'The cache layer loads it from the database itself.' : 'The app has to go and get it from the database.'}</>;
+      return <>{who} reads the cache: a <span className="hl bad">miss</span>. {b.note?.includes('loads') ? 'The cache layer loads it from the database itself.' : 'The app has to go and get it from the database.'}</>;
     case 'db-read':
       return b.from === 'cache'
         ? <>The cache layer reads {readValue(b)} from the <span className="hl info">database</span> and stores it, so the next read hits.</>

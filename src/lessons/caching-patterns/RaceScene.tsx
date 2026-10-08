@@ -35,7 +35,8 @@ const LEGEND = (
   <Legend
     items={[
       { color: 'var(--ok)', label: 'cache hit' },
-      { color: 'var(--hi)', label: 'miss / fill' },
+      { color: 'var(--bad)', label: 'cache miss' },
+      { color: 'var(--hi)', label: 'fill' },
       { color: 'var(--info)', label: 'database read or write' },
       { color: 'var(--violet)', label: 'invalidation (delete)' },
       { color: 'var(--dim)', label: 'TTL expiry' },

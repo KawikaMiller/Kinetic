@@ -47,7 +47,7 @@ export const GAUGES: Record<GaugeId, Gauge> = {
   disk: { id: 'disk', label: 'Disk bytes', unit: 'bytes', limit: DISK_BYTES, baseline: 20 * GIB, error: 'ENOSPC', lesson: 'file-systems' },
   inodes: { id: 'inodes', label: 'Inodes', unit: 'count', limit: DISK_BYTES / BYTES_PER_INODE, baseline: 200_000, error: 'ENOSPC', lesson: 'file-systems' },
   fds: { id: 'fds', label: 'File descriptors', unit: 'count', limit: DEFAULT_FD_LIMIT, baseline: 60, error: 'EMFILE', lesson: 'file-descriptors' },
-  pool: { id: 'pool', label: 'DB connections', unit: 'count', limit: 20, baseline: 3, error: 'pool acquire timeout', lesson: 'connection-pooling' },
+  pool: { id: 'pool', label: 'Pool in use', unit: 'count', limit: 20, baseline: 3, error: 'pool acquire timeout', lesson: 'connection-pooling' },
   ports: { id: 'ports', label: 'Ephemeral ports', unit: 'count', limit: EPHEMERAL_PORTS, baseline: 150, error: 'EADDRNOTAVAIL', lesson: 'sockets-api' },
   memory: { id: 'memory', label: 'Memory', unit: 'bytes', limit: 2 * GIB, baseline: 600 * MIB, error: 'OOM kill (exit 137)', lesson: 'memory-leaks' },
 };
@@ -170,6 +170,9 @@ export const NODE_TEXT: Record<Exclude<NodeId, 'loop'>, string> = {
   restart: 'The orchestrator restarts the process',
 };
 
+/** This scenario's pool acquire timeout. connection-pooling uses 1 s to keep its simulation short; each service picks its own. */
+export const POOL_TIMEOUT_SECONDS = 30;
+
 /** cause -> effect, with the delay in seconds. Illustrative: your health check and timeouts will differ. */
 export const EDGES: readonly { from: NodeId; to: NodeId; seconds: number }[] = [
   { from: 'enospc-bytes', to: 'log-writes-fail', seconds: 1 },
@@ -179,7 +182,7 @@ export const EDGES: readonly { from: NodeId; to: NodeId; seconds: number }[] = [
   { from: 'emfile', to: 'refused', seconds: 1 },
   { from: 'refused', to: 'errors5xx', seconds: 2 },
   { from: 'refused', to: 'health', seconds: 10 },
-  { from: 'pool-timeout', to: 'piled', seconds: 30 },
+  { from: 'pool-timeout', to: 'piled', seconds: POOL_TIMEOUT_SECONDS },
   { from: 'piled', to: 'errors5xx', seconds: 1 },
   { from: 'piled', to: 'health', seconds: 15 },
   { from: 'eaddrnotavail', to: 'outbound-fails', seconds: 1 },
@@ -244,7 +247,7 @@ export const SYMPTOMS: Record<GaugeId, string> = {
   disk: 'Everything that writes fails: uploads, log files, the package manager. Reads still work.',
   inodes: 'Creating any file fails, yet df -h shows plenty of free space.',
   fds: 'New connections are refused and opening any file fails. The process was fine for hours.',
-  pool: 'Requests hang for 30 seconds, then return a 500.',
+  pool: `Requests hang for ${POOL_TIMEOUT_SECONDS} seconds, then return a 500.`,
   ports: 'Outbound calls fail instantly with "cannot assign requested address" under heavy traffic, though the upstream is healthy.',
   memory: 'The service vanishes every few hours with nothing in its own log. The container shows exit code 137.',
 };

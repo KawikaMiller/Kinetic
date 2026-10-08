@@ -37,7 +37,7 @@ export function GaugeRow({ id, load, hours, alertOn }: { id: GaugeId; load: Load
         <span className="re-gauge-value">
           {formatValue(id, used)} <span className="re-faint">of {formatValue(id, g.limit)}</span>
         </span>
-        {tone === 'bad' ? <span className="chip tone-bad">{g.error}</span> : <span className="re-faint">{g.error}</span>}
+        {tone === 'bad' ? <span className="chip tone-bad">{g.error}</span> : <span className="re-faint">fails as {g.error}</span>}
         {willFail && !alertOn && <span className="chip tone-orange" title="Nothing warns you before this limit is hit">no early warning</span>}
         {alertOn && <span className="chip tone-orange">alert at {ALERT_FRACTION * PERCENT}%</span>}
         <LessonRef id={g.lesson} />
