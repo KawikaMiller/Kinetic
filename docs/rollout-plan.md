@@ -4245,8 +4245,7 @@ Track `arch` · *"One front door for many services"* · Builds on: `load-balanci
 **AC.**
 - Watch:
   - the request `--info`, the active stage `--hi`, the upstream response `--ok`;
-  - 4xx rejections at the edge (401, 404, 429) `--bad`;
-  - 5xx gateway errors (502, 504) `--orange`, the second failure kind, as in `http-basics`;
+  - 4xx rejections at the edge (401, 404, 429) `--orange`, and 5xx gateway errors (502, 504) `--bad`, as in `http-basics` (its FAMILY_COLOR; corrected 2026-10-07 per review, the earlier text had them swapped);
   - the encrypted edge segment `--violet` and the internal segment `--dim` (or `--violet` when mTLS is on).
 - Misconception: "a reverse proxy is the same as a forward proxy" (it acts for the servers, not the clients), or "502 and 504 are client mistakes".
 - Correctness:
