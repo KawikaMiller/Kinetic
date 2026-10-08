@@ -6639,29 +6639,29 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B14 Sorting, selection & strings | 5 | 5 | t2/b14 | done | merged c388c87; spec quickselect formula corrected; review 3 MAJOR fixed 68ddc42 |
 | 2 | T2-B15 Logic, proof & complexity | 5 | 5 | t2/b15 | done | merged e1da29a; review 5 MAJOR fixed 5ea578c |
 | 2 | T2-B16 Concurrency & performance | 5 | 5 | t2/b16 | done | merged 30d8015; review 5 MAJOR fixed 0f0ae7c |
-| 2 | P-follow-up after wave 5 | — | 5→6 | kit owner | not started | |
+| 2 | P-follow-up after wave 5 | — | 5→6 | kit owner | done | kit round merged on main (k6/k7/k8 queues in docs/tier2-wave*-kit-requests.md); gates green |
 | 2 | T2-B17 Sockets & the edge | 5 | 6 | t2/b17 | done | merged 624cd85 with review fixes on-branch (11 MAJOR: latency defaults, REJECT=ICMP default, Wireshark bare-field semantics, retry-safety) |
 | 2 | T2-B18 Runtimes & memory | 5 | 6 | t2/b18 | done | merged 067cb39 with review fixes on-branch (3 MAJOR: refcount cascade, leak try-this, rejected-promise explanation) |
 | 2 | T2-B19 Machines, disks & lifecycles | 5 | 6 | t2/b19 | done | merged c7c12b9 with review fixes on-branch (9 MAJOR: PV model, Secure Boot scope, emergency.target, fsync try-this, SIGCHLD, post-SIGKILL handler) |
-| 2 | P-follow-up after wave 6 | — | 6→7 | kit owner | not started | |
+| 2 | P-follow-up after wave 6 | — | 6→7 | kit owner | done | kit round merged on main (k6/k7/k8 queues in docs/tier2-wave*-kit-requests.md); gates green |
 | 2 | T2-B20 Types & patterns | 5 | 7 | t2/b20 | done | merged c594c8d with review fixes on-branch (6 MAJOR: decorator error narrated as success, builder 'same request', x! crash type, tsc 'refuses to compile', State shape, Strategy 'no existing code') |
 | 2 | T2-B21 Testing & change | 5 | 7 | t2/b21 | done | merged 2074fb9 with review fixes on-branch (5 MAJOR: flaky try-this 2 and 5 false as written, quarantine caption, build fetch captioned building) |
 | 2 | T2-B22 Structuring code | 5 | 7 | t2/b22 | done | merged ee2ef1e with review fixes on-branch (6 MAJOR: test-speed strip, layered strawman, ISP emailScan, locator count, Q5 always, DIP/DI/IoC) |
-| 2 | P-follow-up after wave 7 | — | 7→8 | kit owner | not started | |
+| 2 | P-follow-up after wave 7 | — | 7→8 | kit owner | done | kit round merged on main (k6/k7/k8 queues in docs/tier2-wave*-kit-requests.md); gates green |
 | 2 | T2-B23 Data models & queries | 5 | 8 | t2/b23 | done | merged d505494 with review fixes on-branch (10 MAJOR: pushdown 17 vs 8 includes join reorder, SELECT before HAVING, 0NF key, nosql unit asymmetry, hidden controls, DataLoader snippet) |
 | 2 | T2-B24 HTTP & API protocols | 5 | 8 | t2/b24 | done | merged 12c5be8 with review fixes on-branch (5 MAJOR: conditional request dropped by shared cache, open-connections, protobuf size verdict, GraphQL caching) |
 | 2 | T2-B25 API design | 5 | 8 | t2/b25 | done | merged 79ae572 with review fixes on-branch (6 MAJOR: 200 vs 204, delete caption, duplicate vs different payment, Django, webhook retry timestamps) |
-| 2 | P-follow-up after wave 8 | — | 8→9 | kit owner | not started | |
+| 2 | P-follow-up after wave 8 | — | 8→9 | kit owner | done | kit round merged on main (k6/k7/k8 queues in docs/tier2-wave*-kit-requests.md); gates green |
 | 2 | T2-B26 Reliable services | 5 | 9 | t2/b26 | done | merged 737e8bf, 8 MAJOR fixed on-branch (stale -6 s, DLQ redrive, pool captions/refused stat) |
 | 2 | T2-B27 Cloud building blocks | 5 | 9 | t2/b27 | done | merged af7dfee, 5 MAJOR fixed (IaC lost-state, rollout note unrendered, Ready-too-early, Fail-part slider) |
 | 2 | T2-B28 App security | 5 | 9 | t2/b28 | done | merged 0768c9c, 6 MAJOR fixed (IAM exposure vs lane, CSRF on GET, path . handling); payload-free audit passed |
-| 2 | P-follow-up after wave 9 | — | 9→10 | kit owner | not started | |
+| 2 | P-follow-up after wave 9 | — | 9→10 | kit owner | done | kit round merged on main (k6/k7/k8 queues in docs/tier2-wave*-kit-requests.md); gates green |
 | 2 | T2-B29 How browsers render | 5 | 10 | t2/b29 | done | merged 4898c6c, 6 MAJOR fixed (shared chunk, Too fine, img preload scanner, a11y claim) |
 | 2 | T2-B30 UI frameworks & product | 5 | 10 | t2/b30 | done | merged cee5f9e, 3 MAJOR fixed (Android call vs Stopped, 85% line, word-order caption) |
 | 2 | T2-B31 Shipping safely | 5 | 10 | t2/b31 | done | merged d583103, 7 MAJOR fixed (disk claim, port boundary, canary rollback, rule panel inversion, cert dates) |
 | 2 | T2-B32 Engineering responsibly | 3 | 10 | t2/b32 | done | merged 28a855f, 5 MAJOR fixed (invented history labelled, contested licence verdicts, chip order) |
-| 2 | Tier 2 close-out kit round | — | 10→QA | kit owner | not started | |
-| 2 | **Tier 2 sign-off** | 172 | — | | not started | QA report plus recheck, as in Tier 1; push only after sign-off |
+| 2 | Tier 2 close-out kit round | — | 10→QA | kit owner | done | merged 9647649: <sup> rule, miss colour, core/lineDiff + core/testing/tsc + segmentHitsBox extracted, shot.mjs fixes, 45 lint warnings cleared; smoke 255/255 desktop + 390px |
+| 2 | **Tier 2 sign-off** | 172 | — | | done | Sentry QA: sign-off with conditions C1-C3, all closed (docs/qa-tier2-report.md); 172 lessons, 7,951 tests; push after sign-off |
 | 3 | Kickoff | — | pre | | not started | |
 | 3 | Batches T3-B1 … T3-B31 | 155 | ~9-10 | | not started | `wifi-shared-medium` added at the T2 kickoff |
 | 3 | **Tier 3 sign-off** | 167 | — | | not started | |
