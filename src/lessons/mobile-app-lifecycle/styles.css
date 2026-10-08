@@ -1,0 +1,62 @@
+.mal { gap: 14px; }
+.mal-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; }
+.mal-left { display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 330px; }
+.mal-right { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.mal-graph { display: block; width: 100%; max-width: 520px; height: auto; margin: 0 auto; }
+
+/* The phone mock */
+.mal-phone {
+  position: relative; width: 190px; height: 330px; padding: 8px 10px 12px; box-sizing: border-box; overflow: hidden;
+  border: 3px solid var(--line-2); border-radius: 26px; background: var(--bg);
+  display: flex; flex-direction: column; gap: 8px;
+  transition: width 0.35s ease, height 0.35s ease;
+}
+.mal-phone.is-landscape { width: 320px; height: 190px; }
+.mal-status { display: flex; justify-content: space-between; align-items: flex-end; font: 600 11px var(--mono); color: var(--muted); }
+.mal-signal { display: inline-flex; align-items: flex-end; gap: 2px; }
+.mal-signal i { width: 3px; border-radius: 1px; background: var(--ok); }
+.mal-signal.is-big i { width: 8px; border-radius: 2px; }
+.mal-signal.is-off i { background: var(--dim); }
+.mal-app { position: relative; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+.mal-app-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+.mal-instance { font: 700 10.5px var(--mono); color: var(--muted); background: var(--cell); border-radius: 6px; padding: 1px 6px; }
+.mal-draft { width: 100%; }
+.mal-draft input { width: 100%; box-sizing: border-box; }
+.mal-lost { margin: 0; min-height: 18px; font: 600 12px var(--mono); color: var(--bad); }
+.mal-lost s { text-decoration-thickness: 2px; }
+.mal-call {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; text-align: center; padding: 8px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); border-radius: 12px; font-size: 12px; color: var(--muted);
+}
+.mal-call b { font-size: 14px; color: var(--text); }
+.mal-home { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 0; }
+.mal-launcher { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 8px 4px; }
+.mal-launcher i { aspect-ratio: 1; border-radius: 10px; background: var(--cell); border: 1.5px solid var(--cell-line); }
+.mal-launcher .mal-app-icon { border-color: var(--info); background: color-mix(in srgb, var(--info) 22%, transparent); }
+.mal-launcher .mal-app-icon.is-frozen { border-color: var(--dim); background: color-mix(in srgb, var(--dim) 30%, transparent); }
+.mal-launcher .mal-app-icon.is-dead { border: 1.5px dashed var(--bad); background: transparent; }
+.mal-home-note { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
+.mal-home-note.is-dead { color: var(--bad); }
+.mal-dead-tag { position: absolute; right: 8px; bottom: 8px; font: 700 10px var(--mono); color: var(--on-bad); background: var(--bad); border-radius: 6px; padding: 1px 6px; }
+
+/* Callback log */
+.mal-log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.mal-log .log-row { display: flex; flex-direction: column; gap: 1px; }
+.mal-calls { font-weight: 400; font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+
+/* Constraints */
+.mal-constraints { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.mal-constraints > .hint { grid-column: 1 / -1; }
+.mal-panel { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mal-net { display: flex; align-items: flex-end; gap: 14px; }
+.mal-feed { margin: 0; font-size: 13px; }
+.mal-feed.is-loaded { color: var(--ok); }
+.mal-feed.is-failed { color: var(--bad); }
+.mal-feed.is-idle { color: var(--muted); }
+.mal-result { margin: 0; font: 600 13px var(--mono); }
+
+@media (max-width: 900px) {
+  .mal-grid { grid-template-columns: minmax(0, 1fr); }
+  .mal-left { max-width: none; }
+  .mal-constraints { grid-template-columns: minmax(0, 1fr); }
+}
