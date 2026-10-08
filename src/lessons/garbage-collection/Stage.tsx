@@ -13,7 +13,7 @@ import type { Pt } from '../../core/geometry';
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { genFrames, markSweepFrames, type GcFrame, type GenFrame } from './frames';
-import { byId, freeSpace, refCounts, shortLivedRuns, SHORT_LIVED, type Heap, type Obj } from './model';
+import { byId, freeSpace, refCountCascade, shortLivedRuns, SHORT_LIVED, type Heap, type Obj } from './model';
 import { GEN_START, NURSERY_SLOTS, PRESETS, type PresetId } from './presets';
 import './styles.css';
 
@@ -177,7 +177,8 @@ function MarkSweepScene({ picker }: { picker: ReactNode }) {
   const run = useMemo(() => markSweepFrames(heap, compactOn), [heap, compactOn]);
   const player = usePlayer(run.frames, { interval: STEP_MS });
   const f: GcFrame = player.frame;
-  const rc = useMemo(() => refCounts(f.heap), [f.heap]);
+  // What a reference-counting runtime would hold for each object, after it frees what it can.
+  const rc = useMemo(() => refCountCascade(f.heap).counts, [f.heap]);
   const space = freeSpace(f.heap);
   const tracing = f.phase !== 'swept' && f.phase !== 'compacted';
   const p = run.pause.totalUs;

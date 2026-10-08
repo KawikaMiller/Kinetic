@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import {
-  afterSweep, byId, compact, dangling, freeSpace, mark, minorCollect, minorMark, pauseOf, refCounts, sweep, writeField, PAUSE, PROMOTE_AGE, type Heap,
+  afterSweep, byId, compact, dangling, freeSpace, mark, minorCollect, minorMark, pauseOf, refCountCascade, sweep, writeField, PAUSE, PROMOTE_AGE, type Heap,
 } from './model';
 import { NURSERY_SLOTS } from './presets';
 
@@ -66,8 +66,8 @@ export function markSweepFrames(heap: Heap, compactOn: boolean): GcRun {
     frames.push({ ...base, phase: 'mark', gray: s.gray, black: s.black, scanning: s.scanning, progress: markShare(k), say, hold: 1 });
   });
 
-  const counts = refCounts(heap);
-  const stuck = freed.filter((id) => counts.get(id)! > 0);
+  const rc = refCountCascade(heap);
+  const stuck = freed.filter((id) => rc.kept.includes(id));
   frames.push({
     ...base,
     phase: 'marked',
@@ -79,7 +79,7 @@ export function markSweepFrames(heap: Heap, compactOn: boolean): GcRun {
     say: (
       <>
         Mark is done: {m.marked.length} live, black. Still white, so unreachable: {join(names(heap, freed))}.
-        {stuck.length > 0 && <> {join(names(heap, stuck))} still {stuck.length > 1 ? 'have' : 'has'} a reference count above zero (they point at {stuck.length > 1 ? 'each other' : 'it'}), so naive reference counting would never free {stuck.length > 1 ? 'them' : 'it'}. Tracing only asks what the roots can reach.</>}
+        {stuck.length > 0 && <> Even after reference counting frees everything whose count drops to zero, {join(names(heap, stuck))} {stuck.length > 1 ? 'keep' : 'keeps'} a count above zero: a cycle holds {stuck.length > 1 ? 'them' : 'it'} up, so naive reference counting would never free {stuck.length > 1 ? 'them' : 'it'}. Tracing only asks what the roots can reach.</>}
       </>
     ),
     hold: 1.6,
@@ -197,12 +197,14 @@ export function genFrames(start: Heap, barrier: boolean): GenFrame[] {
       const label = byId(heap).get(s.scanning!)!.label;
       push({ gc: n, gray: s.gray, black: s.black, scanning: s.scanning, say: <>Scan {label}{s.shaded.length ? `: shade ${join(names(heap, s.shaded))} gray` : ''}. {label} is live.</>, hold: 0.9 });
     });
-    const c = minorCollect(heap, m.marked, NURSERY_SLOTS);
+    const c = minorCollect(heap, m.marked, NURSERY_SLOTS, remembered);
     const young = heap.objects.filter((o) => o.gen === 'young').length;
-    push({ gc: n, black: m.marked, doomed: c.freed, say: <>Mark done. {m.marked.length} of {young} young objects are live; {join(names(heap, c.freed))} {c.freed.length === 1 ? 'is' : 'are'} garbage. The work grew with the {m.marked.length} live young objects, not with the size of the whole heap.</> });
+    push({ gc: n, black: m.marked, doomed: c.freed, say: <>Mark done. {m.marked.length} of {young} young objects {m.marked.length === 1 ? 'is' : 'are'} live; {join(names(heap, c.freed))} {c.freed.length === 1 ? 'is' : 'are'} garbage. The work grew with the {m.marked.length} live young objects, not with the size of the whole heap.</> });
     const freedNames = names(heap, c.freed);
     const promotedNames = names(heap, c.promoted);
     heap = c.heap;
+    const droppedFromRs = remembered.filter((id) => !c.remembered.includes(id));
+    remembered = c.remembered;
     const broken = dangling(heap);
     push({
       gc: n,
@@ -211,6 +213,7 @@ export function genFrames(start: Heap, barrier: boolean): GenFrame[] {
         <>
           Freed {join(freedNames)}. The survivors are one GC older.
           {promotedNames.length > 0 && <> {join(promotedNames)} survived {PROMOTE_AGE} minor GCs, so {promotedNames.length > 1 ? 'they are' : 'it is'} promoted: copied into the old generation, which minor GCs skip.</>}
+          {droppedFromRs.length > 0 && <> {join(names(heap, droppedFromRs))} no longer {droppedFromRs.length > 1 ? 'point' : 'points'} at a young object, so {droppedFromRs.length > 1 ? 'they leave' : 'it leaves'} the remembered set.</>}
           {broken.length > 0 && <> But cache.last now points at freed memory: the entry was reachable, only through an old object nobody traced. Without a remembered set a minor GC frees live objects, which is why runtimes pay for the write barrier.</>}
         </>
       ),

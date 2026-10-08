@@ -112,6 +112,30 @@ export function refCounts(h: Heap): Map<string, number> {
   return counts;
 }
 
+/**
+ * What naive reference counting would actually do: free every object whose count is zero, drop
+ * the counts of what it pointed at, and repeat. `counts` are the counts after that cascade (what
+ * an RC runtime would hold); `kept` is what it never frees. Anything kept but unreachable is held
+ * up by a cycle: inside one, or hanging off one.
+ */
+export function refCountCascade(h: Heap): { counts: Map<string, number>; kept: string[] } {
+  const counts = refCounts(h);
+  const objs = byId(h);
+  const freed = new Set<string>();
+  const queue = h.objects.filter((o) => counts.get(o.id) === 0).map((o) => o.id);
+  while (queue.length) {
+    const id = queue.shift()!;
+    if (freed.has(id)) continue;
+    freed.add(id);
+    for (const f of objs.get(id)!.fields) {
+      if (f.to === null || !counts.has(f.to) || freed.has(f.to)) continue;
+      counts.set(f.to, counts.get(f.to)! - 1);
+      if (counts.get(f.to) === 0) queue.push(f.to);
+    }
+  }
+  return { counts, kept: h.objects.map((o) => o.id).filter((id) => !freed.has(id)) };
+}
+
 /** The heap after a sweep: freed objects removed (their slots become free). */
 export function afterSweep(h: Heap, freed: readonly string[]): Heap {
   const gone = new Set(freed);
@@ -192,7 +216,7 @@ export function minorMark(h: Heap, remembered: readonly string[]): MarkResult {
  * After a minor GC: unmarked young objects freed, survivors one older, and those old enough
  * promoted: copied into the lowest free slot of the old generation (slots from `oldFrom` up).
  */
-export function minorCollect(h: Heap, marked: readonly string[], oldFrom: number): { heap: Heap; freed: string[]; promoted: string[] } {
+export function minorCollect(h: Heap, marked: readonly string[], oldFrom: number, remembered: readonly string[] = []): { heap: Heap; freed: string[]; promoted: string[]; remembered: string[] } {
   const live = new Set(marked);
   const freed = h.objects.filter((o) => o.gen === 'young' && !live.has(o.id)).map((o) => o.id);
   const promoted: string[] = [];
@@ -215,7 +239,19 @@ export function minorCollect(h: Heap, marked: readonly string[], oldFrom: number
       }
       return { ...o, age };
     });
-  return { heap: { ...h, objects }, freed, promoted };
+  const heap = { ...h, objects };
+  return { heap, freed, promoted, remembered: rememberedAfter(heap, remembered, promoted) };
+}
+
+/**
+ * The remembered set after a minor GC: keep only old objects that still point at a young one
+ * (an entry whose target was promoted is now old to old), and add any promoted object that
+ * still points into the nursery, as a runtime must when it promotes.
+ */
+export function rememberedAfter(h: Heap, remembered: readonly string[], promoted: readonly string[]): string[] {
+  const objs = byId(h);
+  const pointsYoung = (id: string) => objs.get(id)?.gen === 'old' && objs.get(id)!.fields.some((f) => f.to !== null && objs.get(f.to)?.gen === 'young');
+  return [...new Set([...remembered, ...promoted])].filter(pointsYoung);
 }
 
 /** References that point at nothing: a field or root whose target was freed. A correct GC never makes one. */

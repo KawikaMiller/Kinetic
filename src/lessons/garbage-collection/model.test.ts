@@ -3,7 +3,7 @@ import { mulberry32 } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
 import { genFrames, markSweepFrames } from './frames';
 import {
-  afterSweep, compact, dangling, freeSpace, mark, minorCollect, minorMark, pauseOf, refCounts, shortLivedRuns, sweep, writeField, PAUSE, type Heap, type Obj,
+  afterSweep, compact, dangling, freeSpace, mark, minorCollect, minorMark, pauseOf, refCountCascade, refCounts, rememberedAfter, shortLivedRuns, sweep, writeField, PAUSE, type Heap, type Obj,
 } from './model';
 import { GEN_START, NURSERY_SLOTS, PRESETS } from './presets';
 
@@ -100,6 +100,53 @@ describe('mark and sweep', () => {
   });
 });
 
+describe('reference counting, done properly (a cascade)', () => {
+  /** Brute force: an object RC can never free is reachable from some object on a cycle that the roots can't reach. */
+  function heldByCycle(h: Heap): Set<string> {
+    const live = reachable(h, h.roots.map((r) => r.to));
+    const onCycle = h.objects.filter((o) => !live.has(o.id) && reachable(h, o.fields.map((f) => f.to)).has(o.id)).map((o) => o.id);
+    return reachable(h, onCycle, (o) => !live.has(o.id));
+  }
+  const nullUser = (h: Heap): Heap => ({ ...h, roots: h.roots.map((r) => (r.id === 'user' ? { ...r, to: null } : r)) });
+  const heaps = [...PRESETS.map((p) => p.heap), ...PRESETS.map((p) => nullUser(p.heap)), ...SEEDS.map(randomHeap)];
+
+  it('keeps exactly the reachable objects plus whatever an unreachable cycle holds up', () => {
+    for (const h of heaps) {
+      const live = reachable(h, h.roots.map((r) => r.to));
+      expect(new Set(refCountCascade(h).kept)).toEqual(new Set([...live, ...heldByCycle(h)]));
+    }
+  });
+
+  it('try this: with user nulled on Basic, RC frees all of it; nothing is stuck', () => {
+    const h = nullUser(PRESETS.find((p) => p.id === 'basic')!.heap);
+    const unreachable = sweep(h, mark(h).marked);
+    expect(unreachable).toEqual(expect.arrayContaining(['u', 'p', 'av', 'o', 'i1']));
+    expect(refCountCascade(h).kept.filter((id) => unreachable.includes(id))).toEqual([]);
+    const said = markSweepFrames(h, false).frames.map((f) => captionText(f.say)).join(' ');
+    expect(said).not.toMatch(/cycle|reference count/);
+    // The raw snapshot would have claimed profile has a count of 1; after the cascade it's 0.
+    expect(refCounts(h).get('p')).toBe(1);
+    expect(refCountCascade(h).counts.get('p')).toBe(0);
+  });
+
+  it('the cycle preset: both nodes stay at count 1, and the caption blames the cycle', () => {
+    const h = PRESETS.find((p) => p.id === 'cycle')!.heap;
+    const rc = refCountCascade(h);
+    expect(rc.counts.get('a')).toBe(1);
+    expect(rc.counts.get('b')).toBe(1);
+    expect(markSweepFrames(h, false).frames.map((f) => captionText(f.say)).join(' ')).toContain('a cycle holds them up');
+  });
+
+  it('the caption claims a cycle exactly when the cascade leaves unreachable objects', () => {
+    for (const h of heaps.slice(0, 120)) {
+      const freed = sweep(h, mark(h).marked);
+      const stuck = refCountCascade(h).kept.filter((id) => freed.includes(id));
+      const said = markSweepFrames(h, false).frames.map((f) => captionText(f.say)).join(' ');
+      expect(said.includes('a cycle holds')).toBe(stuck.length > 0);
+    }
+  });
+});
+
 describe('generational', () => {
   /** A complete remembered set: every old object holding a young reference. */
   const fullRemembered = (h: Heap) => {
@@ -148,6 +195,30 @@ describe('generational', () => {
     expect(new Set(end.objects.map((o) => o.slot)).size).toBe(end.objects.length);
     expect(end.objects.filter((o) => o.gen === 'young').map((o) => o.id)).toEqual([]);
     expect(frames.some((f) => f.promoted.includes('en'))).toBe(true);
+  });
+
+  it('the remembered set is maintained: pruned when old→young becomes old→old, extended on promotion', () => {
+    const h: Heap = {
+      slots: 12,
+      roots: [{ id: 'r', label: 'r', kind: 'stack', to: 'y1' }],
+      objects: [
+        { id: 'o', label: 'o', slot: 6, gen: 'old', age: 2, fields: [{ name: 'f', to: 'y2' }] },
+        { id: 'y1', label: 'y1', slot: 0, gen: 'young', age: 1, fields: [{ name: 'g', to: 'y3' }] },
+        { id: 'y2', label: 'y2', slot: 1, gen: 'young', age: 1, fields: [] },
+        { id: 'y3', label: 'y3', slot: 2, gen: 'young', age: 0, fields: [] },
+      ],
+    };
+    const c = minorCollect(h, minorMark(h, ['o']).marked, NURSERY_SLOTS, ['o']);
+    // y1 and y2 are promoted; o now points old→old (pruned); y1 still points at the young y3 (added).
+    expect(c.promoted.sort()).toEqual(['y1', 'y2']);
+    expect(c.remembered).toEqual(['y1']);
+    expect(rememberedAfter(c.heap, ['o'], [])).toEqual([]);
+  });
+
+  it('the scripted run drops cache from the remembered set once entry is promoted', () => {
+    const frames = genFrames(GEN_START, true);
+    expect(frames.at(-1)!.remembered).toEqual([]);
+    expect(frames.map((f) => captionText(f.say)).some((t) => t.includes('leaves the remembered set'))).toBe(true);
   });
 
   it('the barrier-off run ends with a dangling cache.last and says so', () => {
