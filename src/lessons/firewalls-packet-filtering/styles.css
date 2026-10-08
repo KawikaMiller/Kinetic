@@ -1,0 +1,40 @@
+.fw { gap: 14px; }
+.fw .section-title { display: block; }
+.fw-table { display: flex; flex-direction: column; gap: 4px; }
+.fw-head, .fw-line {
+  display: grid; grid-template-columns: 22px 52px 140px 92px 44px 150px 1fr; gap: 8px; align-items: baseline;
+}
+.fw-head { padding: 0 8px; font: 700 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.fw-rules li.is-past { color: var(--faint); box-shadow: inset 3px 0 0 var(--dim); }
+.fw-rules li.is-pending { opacity: 0.4; }
+.fw-rules li.is-cut { text-decoration: none; }
+.fw-rules li.is-done { color: var(--text); }
+.fw-rules li.is-done:has([data-act='ACCEPT']) { background: color-mix(in srgb, var(--ok) 14%, transparent); box-shadow: inset 3px 0 0 var(--ok); }
+.fw-rules li.is-done:has([data-act='DROP']) { background: color-mix(in srgb, var(--bad) 14%, transparent); box-shadow: inset 3px 0 0 var(--bad); }
+.fw-rules li.is-done:has([data-act='REJECT']) { background: color-mix(in srgb, var(--orange) 14%, transparent); box-shadow: inset 3px 0 0 var(--orange); }
+.fw-line.is-selected > span:first-child { color: var(--accent); font-weight: 700; }
+.fw-act { color: var(--c); font-weight: 700; }
+.fw-rules .trail { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-style: normal; }
+.fw-warn { font-size: 11px; }
+.fw-note { color: var(--faint); font: italic 500 11.5px var(--mono); }
+.fw-policy {
+  margin: 0; padding: 4px 8px; border-radius: 6px; font: 500 12.5px var(--mono); color: var(--violet);
+  border: 1px dashed color-mix(in srgb, var(--violet) 50%, transparent);
+}
+.fw-policy.is-lit { background: color-mix(in srgb, var(--violet) 18%, transparent); border-style: solid; }
+.fw-lane-svg { display: block; width: 100%; max-width: 680px; margin: 0 auto; --packet-fs: 11px; }
+.fw-lane-note { font: 600 12px var(--mono); fill: var(--muted); }
+.fw-lane-note[class*='tone-'] { fill: var(--c); }
+.fw-x { font: 700 22px var(--font); fill: var(--bad); }
+.fw-ct { display: flex; flex-direction: column; gap: 6px; max-width: 560px; }
+.fw-ct-row td { transition: background 0.2s; }
+.fw-ct-row td:last-child { color: var(--info); font-weight: 700; }
+.fw-ct-row.is-new td { background: color-mix(in srgb, var(--info) 14%, transparent); }
+.fw-off { margin: 0; font-size: 13px; color: var(--muted); }
+.fw-editor { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+.fw-editor-title { font: 700 13px var(--font); align-self: center; }
+.fw-error { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--bad); }
+.fw-error.is-empty { color: var(--faint); }
+.fw-rules li { flex-wrap: wrap; }
+.fw-rules code { flex: 0 0 auto; }
+.fw-rules .trail { margin-left: auto; justify-content: flex-end; }
