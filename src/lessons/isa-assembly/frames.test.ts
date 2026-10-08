@@ -4,7 +4,7 @@ import { isaFrames } from './frames';
 import lesson from './index';
 import { cResult, formatValue, PRESETS, type ProgId, type Variant } from './model';
 import { applyWrite, START_VALUE, WIDTH_WRITES, widthStart } from './widths';
-import { assemble, CONDITIONS, hex, startCpu, step } from './x86';
+import { assemble, CONDITIONS, hex, startCpu, step } from '../../core/x86';
 
 const VARIANTS: Record<ProgId, Variant[]> = {
   sum: [{ cmov: false, unsignedTypes: false }],

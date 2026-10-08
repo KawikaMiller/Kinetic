@@ -1,7 +1,6 @@
 .km-row { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
 .km-plot { width: 100%; max-width: 460px; flex: 0 1 460px; }
 .km-plot .plot-points:not(:last-of-type) { pointer-events: none; }
-.km-catcher { fill: transparent; cursor: crosshair; }
 .km-side { flex: 1 1 320px; min-width: 0; max-width: 440px; display: flex; flex-direction: column; gap: 10px; }
 .km-box { display: flex; flex-direction: column; gap: 6px; }
 .km-box .plot2d { width: 100%; }

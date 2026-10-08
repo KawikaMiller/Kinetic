@@ -1,6 +1,6 @@
 import { CALLS_FP, CALLS_NOFP, CLOBBER, CLOBBER_SAVED, DEEP, SEVEN, type Listing } from './listings';
 import { functionAt, functionsOf, unwindRules, type FunctionInfo, type UnwindRule } from './unwind';
-import { assemble, hex, readMem, startCpu, step, type Cpu, type Program, type Reg64, type StepEffect } from './x86';
+import { assemble, hex, readMem, startCpu, step, type Cpu, type Program, type Reg64, type StepEffect } from '../../core/x86';
 
 /**
  * System V AMD64 ABI facts this lesson shows (System V Application Binary Interface,

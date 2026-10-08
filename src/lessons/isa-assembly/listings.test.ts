@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import { ABSDIFF_SIGNED, ABSDIFF_UNSIGNED, AREA, MAX_BRANCH, MAX_CMOV, SUM, type Listing } from './listings';
 import { assembleListing, cResult, PRESETS, runProgram, STACK_TOP, type ProgId, type Variant } from './model';
-import { signed, unsigned } from './x86';
+import { signed, unsigned } from '../../core/x86';
 
 /**
  * Fixture: the instruction lines of `gcc -O1 -masm=intel -S` (gcc 13.3.0, Ubuntu 24.04,

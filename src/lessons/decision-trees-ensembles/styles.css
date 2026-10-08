@@ -1,8 +1,6 @@
 .dte-row { gap: 14px; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
 .dte-plot { width: 100%; max-width: 440px; flex: 0 1 440px; }
 .dte-plot .plot-points { pointer-events: none; }
-.dte-catcher { fill: transparent; cursor: crosshair; }
-.dte-miss { fill: none; stroke: var(--bad); stroke-width: 2; }
 .dte-side { flex: 1 1 340px; min-width: 0; max-width: 620px; display: flex; flex-direction: column; gap: 10px; }
 .dte-treebox { flex-basis: 100%; min-width: 0; }
 .dte-foot { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }

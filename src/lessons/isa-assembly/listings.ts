@@ -1,4 +1,4 @@
-import type { ListingLine } from './x86';
+import type { ListingLine } from '../../core/x86';
 
 /**
  * Every x86-64 listing here is real compiler output, copied from

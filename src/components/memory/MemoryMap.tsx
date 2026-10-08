@@ -82,7 +82,7 @@ function innermost(regions: readonly MemRegion[], layout: MemLayout, addr: numbe
   return best;
 }
 
-function MapBody({ layout: L, regions, cells = [], pointers = [], highlight = [], highlightTone }: MemoryMapProps & { layout: MemLayout }) {
+function MapBody({ layout: L, regions, cells = [], highlight = [], highlightTone }: MemoryMapProps & { layout: MemLayout }) {
   const hatch = `memmap-hatch-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const cellOf = (addr: number, end: number) => cells.find((c) => c.addr >= addr && c.addr < end);
   const { cols } = L;
@@ -138,22 +138,22 @@ function MapBody({ layout: L, regions, cells = [], pointers = [], highlight = []
         return (
           <g key={`region-${i}`} className={`memmap-region tone-${r.tone} is-${variant}`}>
             <path d={`M${x - 4},${b.y + 2} H${x} V${b.y + b.h - 2} H${x - 4}`} />
-            <text x={x + 5} y={b.y + Math.min(b.h / 2, MEMMAP.ROW_H / 2) + 4}>
+            <text x={x + 5} y={b.labelY + 4}>
               {r.label}
             </text>
           </g>
         );
       })}
-      {pointers.map((p, i) => {
-        const row = L.rows.find((r) => p.addr >= r.addr && p.addr < r.end);
-        if (!row) return null;
-        const y = row.y + row.h / 2;
+      {L.pointerRows.map((p, i) => {
         const tip = cols.pointer + MEMMAP.POINTER_W - 2;
+        const { y } = p;
         return (
           <g key={`ptr-${i}`} className={`memmap-pointer tone-${p.tone}`}>
-            <text x={tip - 10} y={y + 4}>
-              {p.label}
-            </text>
+            {p.labels.map((l, k) => (
+              <text key={k} className={l.tone === p.tone ? undefined : `tone-${l.tone}`} x={tip - 10} y={l.y + 4}>
+                {l.label}
+              </text>
+            ))}
             <polygon points={`${tip},${y} ${tip - 7},${y - 4} ${tip - 7},${y + 4}`} />
           </g>
         );

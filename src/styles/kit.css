@@ -731,6 +731,17 @@ rect.graph-node-accept { stroke-width: 1.5; pointer-events: none; }
 .plot-point .plot-hit { fill: transparent; stroke: none; }
 .plot-point.is-draggable:focus-visible { outline: none; }
 .plot-point.is-draggable:focus-visible circle:not(.plot-hit) { stroke: var(--text); stroke-width: 2.5; }
+.plot-ring { fill: none; stroke: var(--c); stroke-width: 2; }
+.plot-label { font: 600 11px var(--mono); fill: var(--c); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.plot-label.tone-dim { fill: var(--muted); }
+.plot-pointer { fill: transparent; }
+.plot-rule-drag { cursor: ew-resize; touch-action: none; }
+.plot-rule-drag:focus-visible { outline: none; }
+.plot-rule-drag .plot-hit { fill: transparent; }
+.plot-rule.plot-rule-drag line { stroke-width: 2.5; }
+.plot-grip { fill: var(--c); stroke: var(--bg); stroke-width: 1.5; }
+.plot-rule-drag:focus-visible .plot-grip { stroke: var(--text); stroke-width: 2.5; }
+.plot-rule.plot-rule-drag:focus-visible line { stroke-width: 3.5; }
 
 /* GanttLanes: lanes on a shared time axis. Positions are % of the track; the label column is --gantt-label-w. */
 .gantt { --gantt-label-w: 92px; --gantt-track-h: 12px; position: relative; display: flex; flex-direction: column; gap: 4px; }

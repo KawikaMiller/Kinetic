@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CALLS_FP, CALLS_NOFP, CLOBBER, CLOBBER_SAVED, DEEP, SEVEN, type Listing } from './listings';
 import { ABI, GUARD_BYTES, runScene, STACK_TOP, TOY_STACK_BYTES, type RunResult, type SceneId, type SceneOptions } from './model';
 import { unwind, walkFramePointers } from './unwind';
-import { assemble, runToEnd, signed, startCpu } from './x86';
+import { assemble, runToEnd, signed, startCpu } from '../../core/x86';
 
 const SCENES: [SceneId, SceneOptions][] = [
   ['calls', { framePointers: true, callerSavesRcx: false }],
@@ -13,15 +13,6 @@ const SCENES: [SceneId, SceneOptions][] = [
   ['deep', { framePointers: true, callerSavesRcx: false }],
 ];
 const runs: [string, RunResult][] = SCENES.map(([s, o]) => [`${s} ${JSON.stringify(o)}`, runScene(s, o)]);
-
-describe('the interpreter is the same file as isa-assembly\'s', () => {
-  it('byte for byte', () => {
-    const files = import.meta.glob<string>(['./x86.ts', '../isa-assembly/x86.ts'], { query: '?raw', import: 'default', eager: true });
-    const [here, there] = [files['./x86.ts'], files['../isa-assembly/x86.ts']];
-    expect(here.length).toBeGreaterThan(1000);
-    expect(here).toBe(there);
-  });
-});
 
 /** gcc 13.3 -O1 -masm=intel -S output (directives removed), and objdump offsets of the same build. */
 const GCC: Record<string, { asm: string; offsets: number[] }> = {

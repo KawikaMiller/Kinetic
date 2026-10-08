@@ -51,16 +51,19 @@ function randomPartialOrder(rnd: Rnd, n: number): Rel {
 
 describe('relation properties', () => {
   it('match the definitions on all 2^16 relations on 4 elements, and every counterexample really breaks the property', () => {
+    // One assertion at the end: per-iteration expect() over 2^16 × 4 cases is what made this slow.
+    const wrong: string[] = [];
     for (let bits = 0; bits < 1 << (N4 * N4); bits++) {
       const r = relFromBits(bits);
       for (const p of PROPERTIES) {
-        expect(holds(r, p)).toBe(brute[p](r));
+        if (holds(r, p) !== brute[p](r)) wrong.push(`${bits} ${p}: holds`);
         const cx = counterexample(r, p);
         if (!cx) continue;
-        for (const [a, b] of cx.present) expect(r[a][b]).toBe(true);
-        for (const [a, b] of cx.missing) expect(r[a][b]).toBe(false);
+        if (cx.present.some(([a, b]) => !r[a][b])) wrong.push(`${bits} ${p}: a present pair is missing`);
+        if (cx.missing.some(([a, b]) => r[a][b])) wrong.push(`${bits} ${p}: a missing pair is present`);
       }
     }
+    expect(wrong).toEqual([]);
   });
 });
 

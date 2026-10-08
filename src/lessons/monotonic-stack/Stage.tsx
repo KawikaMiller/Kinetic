@@ -124,6 +124,7 @@ export function Stage() {
             title={scene === 'window' ? 'Deque' : 'Stack'}
             meta={scene === 'window' ? 'front at top' : 'newest on top'}
             anchor={scene === 'window' ? 'top' : 'bottom'}
+            enterFrom={scene === 'window' ? 'bottom' : 'top'}
             showDepth={false}
             minHeight={180}
             frames={stackFrames(scene, values, f)}
@@ -166,7 +167,7 @@ function stackFrames(scene: Scene, values: readonly number[], f: MsFrame): CallF
     if (f.popped === null) return items;
     // An index leaving at the front is older than everything left; one leaving at the back is newer.
     const front = f.stack.length === 0 || f.popped < f.stack[0];
-    return front ? [item(f.popped, 'returning'), ...items] : [...items, item(f.popped, 'returning')];
+    return front ? [{ ...item(f.popped, 'returning'), exit: 'top' }, ...items] : [...items, { ...item(f.popped, 'returning'), exit: 'bottom' }];
   }
   const items = [...f.stack].reverse().map((i) => item(i));
   return f.popped === null ? items : [item(f.popped, 'returning'), ...items];

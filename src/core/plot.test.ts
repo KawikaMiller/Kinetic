@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { axisTickValues, barsFromHistogram, clampPoint, formatTick, nudgePoint, plotFrame, sampleCurve, sampleHeat } from './plot';
+import {
+  axisTickValues, barsFromHistogram, clampPoint, equalAspectHeight, formatTick, nudgePoint, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+} from './plot';
 import { linearScale, logScale } from './scale';
 import { histogram } from './stats';
 
@@ -114,5 +116,60 @@ describe('axisTickValues', () => {
     expect(auto.at(-1)).toBeLessThan(1e100); // the automatic stride misses the top: why tickValues exists
     expect(axisTickValues({ domain: [1, 1e100], log: true, tickValues: [1, 1e25, 1e50, 1e75, 1e100, 1e120] })).toEqual([1, 1e25, 1e50, 1e75, 1e100]);
     expect(axisTickValues({ domain: [10, 0], tickValues: [-1, 0, 5, 10, 11] })).toEqual([0, 5, 10]);
+  });
+});
+
+describe('plotMargin and equalAspectHeight', () => {
+  it('leaves room for the widest y tick and each axis title', () => {
+    expect(plotMargin({ domain: [0, 10] }, { domain: [0, 10] })).toEqual({ top: 10, right: 14, bottom: 22, left: 24 });
+    expect(plotMargin({ domain: [0, 10], label: 'x' }, { domain: [0, 10], label: 'y' })).toEqual({ top: 10, right: 14, bottom: 40, left: 42 });
+    // "0.25" is four glyphs: 4 × 6 + 10.
+    expect(plotMargin({ domain: [0, 1] }, { domain: [0, 1], tickValues: [0, 0.25, 0.5] }).left).toBe(34);
+  });
+
+  it('gives the hand-tuned 356 × 350 square boxes the B8 lessons used, with and without axis titles', () => {
+    for (const label of [undefined, 'w']) {
+      const x = { domain: [-3, 3] as const, label };
+      const y = { domain: [-3, 3] as const, label };
+      const h = equalAspectHeight(356, x, y);
+      expect(h).toBe(350);
+      const { box } = plotFrame(356, h, plotMargin(x, y), x, y);
+      expect(box.width).toBe(box.height);
+    }
+  });
+
+  it('draws one unit of x as long as one unit of y on unequal domains, and counts decades on a log axis', () => {
+    const x = { domain: [0, 20] as const };
+    const y = { domain: [0, 5] as const };
+    const h = equalAspectHeight(356, x, y);
+    const { xs, ys } = plotFrame(356, h, plotMargin(x, y), x, y);
+    expect(Math.abs(xs.map(1) - xs.map(0))).toBeCloseTo(Math.abs(ys.map(1) - ys.map(0)), 9);
+    const lx = { domain: [1, 1e4] as const, log: true };
+    const ly = { domain: [1, 100] as const, log: true };
+    const lh = equalAspectHeight(356, lx, ly);
+    const f = plotFrame(356, lh, plotMargin(lx, ly), lx, ly);
+    expect(f.box.height).toBeCloseTo(f.box.width / 2, 9);
+  });
+
+  it('tickText uses the axis format when given', () => {
+    expect(tickText({ domain: [0, 1], format: (v) => `${v * 100}%` }, 0.5)).toBe('50%');
+    expect(tickText({ domain: [1, 1e6], log: true }, 1e6)).toBe(formatTick(1e6, true));
+  });
+});
+
+describe('rovingPointTarget', () => {
+  it('Page Up/Down and [ ] step one point, Home/End jump to the ends, never wrapping', () => {
+    expect(rovingPointTarget('PageDown', 2, 5)).toBe(3);
+    expect(rovingPointTarget(']', 2, 5)).toBe(3);
+    expect(rovingPointTarget('PageUp', 2, 5)).toBe(1);
+    expect(rovingPointTarget('[', 0, 5)).toBe(0);
+    expect(rovingPointTarget('PageDown', 4, 5)).toBe(4);
+    expect(rovingPointTarget('Home', 3, 5)).toBe(0);
+    expect(rovingPointTarget('End', 0, 5)).toBe(4);
+  });
+
+  it('leaves the arrow keys (they move the point) and every other key alone', () => {
+    for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Tab', 'a']) expect(rovingPointTarget(k, 1, 5)).toBeNull();
+    expect(rovingPointTarget('End', 0, 0)).toBeNull();
   });
 });

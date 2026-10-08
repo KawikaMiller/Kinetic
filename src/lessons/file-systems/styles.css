@@ -1,0 +1,52 @@
+.fs { gap: 14px; }
+.fs-walk { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.fs-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fs-col .section-title { display: block; }
+.fs-grow { flex: 1 1 300px; }
+.fs-tree { display: block; width: 100%; height: auto; }
+.fs-node { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.5; transition: fill 0.25s, stroke 0.25s; }
+.fs-node-text { font: 600 12px var(--mono); fill: var(--text); text-anchor: middle; }
+.fs-tree .tree-node.is-tint .fs-node { stroke: var(--c); fill: color-mix(in srgb, var(--c) 18%, var(--cell)); }
+.fs-tree .tree-node.is-solid .fs-node { stroke: var(--c); fill: var(--c); }
+.fs-tree .tree-node.is-solid .fs-node-text { fill: var(--on-c); }
+.fs-node.is-dangling { stroke: var(--bad); stroke-dasharray: 4 3; }
+.fs-inode th { text-align: left; color: var(--muted); font-weight: 500; }
+.fs-inode td { font-family: var(--mono); }
+.fs-noname td { color: var(--muted); font-style: italic; }
+.fs-entries, .fs-cards, .fs-homes, .fs-events, .fs-verdict { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.fs-entries li { padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); }
+.fs-entries li.is-now { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.fs-entries li.is-missing { border-color: var(--bad); color: var(--bad); }
+.fs-cards li { display: flex; flex-wrap: wrap; gap: 4px 8px; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; }
+.fs-cards li span { color: var(--muted); }
+.fs-cards li.is-shared { border-color: var(--violet); }
+.fs-cards li.is-orphan { border-style: dashed; border-color: var(--muted); }
+.fs-writes { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 600 12.5px var(--mono); }
+.fs-w { padding: 4px 9px; border-radius: 8px; border: 1.5px solid var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.fs-w.is-log { --c: var(--sky); }
+.fs-w.is-commit { --c: var(--ok); }
+.fs-w.is-home-D { --c: var(--info); }
+.fs-w.is-home-I { --c: var(--violet); }
+.fs-w.is-home-B { --c: var(--muted); }
+.fs-w.is-pending { opacity: 0.35; border-style: dashed; background: none; }
+.fs-w.is-now { box-shadow: 0 0 0 2px var(--hi); }
+.fs-cut { color: var(--hi); font-weight: 700; }
+.fs-homes li { padding: 5px 9px; border-radius: 8px; border: 1px solid var(--line); color: var(--muted); }
+.fs-homes li b { color: var(--text); margin-right: 6px; }
+.fs-homes li.is-new { border-color: var(--ok); color: var(--text); }
+.fs-homes li.is-lost { border-color: var(--orange); color: var(--orange); }
+.fs-journal { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 600 12.5px var(--mono); color: var(--muted); }
+.fs-jentry { padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--sky) 22%, transparent); color: var(--sky); }
+.fs-commit { padding: 2px 8px; border-radius: 6px; background: var(--ok); color: var(--on-ok); }
+.fs-verdict { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+.fs-verdict li { padding: 4px 10px; border-radius: 99px; font-weight: 600; }
+.fs-verdict .is-ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+.fs-verdict .is-lost { background: color-mix(in srgb, var(--orange) 18%, transparent); color: var(--orange); }
+.fs-verdict .is-bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+.fs-events li { padding: 4px 9px; border-left: 3px solid var(--ok); }
+.fs-events li b { font-family: var(--mono); margin-right: 6px; }
+.fs-events li.is-after { border-left-color: var(--dim); color: var(--dim); }
+.fs-cutline { border-left-color: var(--hi) !important; color: var(--hi); font-weight: 700; }
+.fs-outcome { margin: 4px 0 0; font-weight: 700; }
+.fs-outcome.is-safe { color: var(--ok); }
+.fs-outcome.is-data-lost, .fs-outcome.is-file-missing { color: var(--orange); }
