@@ -95,7 +95,7 @@ export const createLoop = (start?: Ball): LoopState => ({ world: createWorld(sta
 export interface FrameReport {
   /** Physics updates run this frame. */
   steps: number;
-  /** Seconds of real time thrown away by the max-frame cap (or left in the backlog when uncapped). */
+  /** Seconds of real time thrown away by the max-frame cap (including a stale backlog when the cap is switched on). */
   dropped: number;
   /** Seconds still waiting to be simulated after this frame (≥ DT only when uncapped and behind). */
   backlog: number;
@@ -121,6 +121,12 @@ export function advanceFrame(s: LoopState, frameDt: number, mode: LoopMode, capF
     onUpdate?.();
     return { steps: 1, dropped: cut, backlog: 0, alpha: 1, render: { ...s.world.ball }, physics: { ...s.world.ball } };
   }
+  let stale = 0;
+  if (capFrame && s.acc >= DT) {
+    // A backlog left over from running uncapped: the cap's whole job is to drop it, so do that now.
+    stale = s.acc - (s.acc % DT);
+    s.acc %= DT;
+  }
   s.acc += dt;
   const limit = capFrame ? MAX_STEPS : SAFETY_STEPS;
   let steps = 0;
@@ -133,7 +139,7 @@ export function advanceFrame(s: LoopState, frameDt: number, mode: LoopMode, capF
   const alpha = Math.min(s.acc / DT, 1);
   const physics = { ...s.world.ball };
   const render = mode === 'interpolated' ? lerpBall(s.world.prev, s.world.ball, alpha) : physics;
-  return { steps, dropped: cut, backlog: s.acc >= DT ? s.acc : 0, alpha, render, physics };
+  return { steps, dropped: cut + stale, backlog: s.acc >= DT ? s.acc : 0, alpha, render, physics };
 }
 
 // ── Lag spikes ──────────────────────────────────────────────────────
@@ -169,16 +175,33 @@ export interface TimingModel {
  * spent (its updates × cost + render, at least one refresh) plus any injected spike.
  * Returns the updates per frame.
  */
-export function runTimed(mode: LoopMode, capFrame: boolean, t: TimingModel, frames: number, spikeAt: (i: number) => number = () => 0): number[] {
+export function runTimedReports(mode: LoopMode, capFrame: boolean, t: TimingModel, frames: number, spikeAt: (i: number) => number = () => 0): FrameReport[] {
   const s = createLoop();
-  const counts: number[] = [];
+  const out: FrameReport[] = [];
   let lastSteps = 1;
   for (let i = 0; i < frames; i++) {
     const frameDt = Math.max(t.refresh, lastSteps * t.cost + t.render) + spikeAt(i);
-    lastSteps = advanceFrame(s, frameDt, mode, capFrame).steps;
-    counts.push(lastSteps);
+    const r = advanceFrame(s, frameDt, mode, capFrame);
+    lastSteps = r.steps;
+    out.push(r);
   }
-  return counts;
+  return out;
+}
+
+/** Updates per frame from runTimedReports. */
+export const runTimed = (...args: Parameters<typeof runTimedReports>): number[] => runTimedReports(...args).map((r) => r.steps);
+
+/** Consecutive frames at the update limit with a growing backlog that count as a spiral, not a catch-up. */
+export const SPIRAL_FRAMES = 3;
+
+/**
+ * A spiral of death: the last SPIRAL_FRAMES frames all hit the update limit and the backlog grew
+ * every time. A one-off long frame hits the limit once and then shrinks its backlog, so it isn't one.
+ */
+export function spiralling(recent: readonly Pick<FrameReport, 'steps' | 'backlog'>[]): boolean {
+  if (recent.length < SPIRAL_FRAMES + 1) return false;
+  const tail = recent.slice(-(SPIRAL_FRAMES + 1));
+  return tail.slice(1).every((r, i) => r.steps >= SAFETY_STEPS && r.backlog > tail[i].backlog);
 }
 
 // ── Simulated displays ──────────────────────────────────────────────

@@ -204,8 +204,32 @@ export function onOpenSegment(a: Vertex, b: Vertex, px: number, py: number): boo
 export interface DepthPixel {
   /** Index of the triangle that ends up in the pixel, or -1. */
   shown: number;
-  /** Index of the nearest covering triangle (the right answer), or -1. */
+  /** Index of the nearest covering triangle (the right answer), -1 if none covers it, TIE if two are exactly as near. */
   nearest: number;
+}
+
+/** Two covering triangles at exactly the same depth: either answer is "right" (z-fighting). */
+export const TIE = -2;
+
+/** Depth of every covering triangle at each pixel centre, order-independent. */
+function coverDepths(tris: readonly Tri[]): { i: number; z: number }[][] {
+  const out: { i: number; z: number }[][] = Array.from({ length: GRID_W * GRID_H }, () => []);
+  tris.forEach((t, i) => {
+    const r = rasterize(t);
+    if (!r.tri) return;
+    for (const p of r.tested) if (p.cover) out[pixelKey(p.x, p.y)].push({ i, z: depthAt(r.tri, p.x + 0.5, p.y + 0.5) });
+  });
+  return out;
+}
+
+/** The nearest covering triangle per pixel, worked out on its own: no draw order, no depth buffer. */
+export function nearestPerPixel(tris: readonly Tri[]): number[] {
+  return coverDepths(tris).map((cs) => {
+    if (!cs.length) return -1;
+    const zMin = Math.min(...cs.map((c) => c.z));
+    const at = cs.filter((c) => c.z === zMin);
+    return at.length > 1 ? TIE : at[0].i;
+  });
 }
 
 /**
@@ -215,29 +239,25 @@ export interface DepthPixel {
 export function drawDepth(tris: readonly Tri[], order: readonly number[], zBuffer: boolean): DepthPixel[] {
   const shown = new Array<number>(GRID_W * GRID_H).fill(-1);
   const depth = new Array<number>(GRID_W * GRID_H).fill(Infinity);
-  const nearZ = new Array<number>(GRID_W * GRID_H).fill(Infinity);
-  const nearest = new Array<number>(GRID_W * GRID_H).fill(-1);
   for (const i of order) {
     const r = rasterize(tris[i]);
     for (const p of r.tested) {
       if (!p.cover || !r.tri) continue;
       const k = pixelKey(p.x, p.y);
       const z = depthAt(r.tri, p.x + 0.5, p.y + 0.5);
-      if (z < nearZ[k]) {
-        nearZ[k] = z;
-        nearest[k] = i;
-      }
       if (!zBuffer || z < depth[k]) {
         depth[k] = z;
         shown[k] = i;
       }
     }
   }
+  const nearest = nearestPerPixel(tris);
   return shown.map((s, k) => ({ shown: s, nearest: nearest[k] }));
 }
 
-/** Pixels where the triangle on screen isn't the nearest one. */
-export const wrongPixels = (px: readonly DepthPixel[]) => px.filter((p) => p.shown !== p.nearest).length;
+/** Pixels where the triangle on screen isn't the nearest one (exact ties never count as wrong). */
+export const isWrong = (p: DepthPixel) => p.nearest !== TIE && p.shown !== p.nearest;
+export const wrongPixels = (px: readonly DepthPixel[]) => px.filter(isWrong).length;
 
 // ── Presets ───────────────────────────────────────────────────────────
 

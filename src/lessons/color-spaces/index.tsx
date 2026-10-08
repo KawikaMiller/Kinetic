@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Accessibility checks: WCAG contrast ratios computed from linear luminance',
     ],
     why: 'Colour bugs look like design bugs: muddy gradients, dark fringes when images are scaled, a "50% grey" that\'s too dark, palettes whose steps jump unevenly, and contrast that passes a checker but still reads badly. Knowing which space your numbers live in tells you which of those is a maths mistake.',
-    watch: 'Gradients: the three strips show the colours themselves, drawn by your browser. Under each, a blue line plots perceived lightness (OKLab L) along the strip, a grey dashed line marks the darker end\'s level, and a red line and dot mark the deepest dip below both ends; a midpoint stat turns red when its strip dips. Gamma: the blue curve is the sRGB decoding curve and the grey dashed curve a plain 2.2 gamma; the yellow dot is your grey (drag it) with grey guide lines to the axes, and the violet dot is sRGB 188, half the light. The patches are the greys themselves. Models: the swatches are the colours themselves, with their perceived lightness under each; your colour\'s table row is yellow. Contrast: the preview uses your two colours; pass labels are green and fail labels red, and the ratio stat is green when it passes AA for body text and red when it doesn\'t.',
+    watch: 'Gradients: the three strips show the colours themselves, drawn by your browser. Under each, a blue line plots the perceived lightness (OKLab L) of the colours shown along the strip (where oklch leaves sRGB, a dashed blue line adds OKLCH’s own L before mapping), a grey dashed line marks the darker end\'s level, and a red line and dot mark the deepest dip below both ends; a midpoint stat turns red when its strip dips. Gamma: the blue curve is the sRGB decoding curve and the grey dashed curve a plain 2.2 gamma; the yellow dot is your grey (drag it) with grey dashed crosshair lines through it, and the violet dot is sRGB 188, half the light. The patches are the greys themselves. Models: the swatches are the colours themselves, with their perceived lightness under each; your colour\'s table row is yellow. Contrast: the preview uses your two colours; pass labels are green and fail labels red, and the ratio stat is green when it passes AA for body text and red when it doesn\'t.',
   },
   tryThis: [
     'In Gradients, with "red → green", watch the srgb strip go muddy in the middle: its lightness line dips below both ends at the red marker.',
@@ -72,7 +72,7 @@ const lesson: LessonModule = {
         'The difference between the two hex numbers',
       ],
       answer: 0,
-      why: 'WCAG 2.x (AA: 4.5:1 for body text) is what laws and audits point to. OKLCH ΔL follows perceived lightness better, and APCA is proposed for WCAG 3, but neither is today\'s audit criterion. #777 on white and blue on black have nearly the same ΔL, yet WCAG rates them 4.48:1 and 2.44:1.', // allow-color: a colour named in the lesson's text
+      why: 'WCAG 2.x (AA: 4.5:1 for body text) is what laws and audits point to. OKLCH ΔL follows perceived lightness better, and APCA is a candidate for WCAG 3, which is still a draft, but neither is today\'s audit criterion. #777 on white and blue on black have nearly the same ΔL, yet WCAG rates them 4.48:1 and 2.44:1.', // allow-color: a colour named in the lesson's text
     },
     {
       q: 'Shrinking an image averages a black pixel with a white one. Done in linear light, which stored sRGB value is right?',

@@ -177,6 +177,8 @@ describe('gradients', () => {
 
   it('in srgb, the red → green midpoint is darker than in oklch, and dips below both ends', () => {
     expect(mix(RG.from, RG.to, 0.5, 'srgb').L).toBeLessThan(mix(RG.from, RG.to, 0.5, 'oklch').L);
+    // and for the colours actually shown (the oklch midpoint is outside sRGB and gets clipped)
+    expect(profile(RG.from, RG.to, 'srgb').L[GRADIENT_SAMPLES / 2]).toBeLessThan(profile(RG.from, RG.to, 'oklch').L[GRADIENT_SAMPLES / 2]);
     const p = profile(RG.from, RG.to, 'srgb');
     expect(p.dip).not.toBeNull();
     expect(p.L[GRADIENT_SAMPLES / 2]).toBeLessThan(Math.min(p.L[0], p.L[GRADIENT_SAMPLES]));
@@ -186,14 +188,30 @@ describe('gradients', () => {
     expect(profile(RG.from, RG.to, 'srgb').hex[GRADIENT_SAMPLES / 2]).toBe('#808000'); // allow-color: test vector
   });
 
-  it('in oklch, L is a straight line in t, so it never dips, for any pair of colours', () => {
-    for (let n = 0; n < 200; n++) {
+  it('the plotted L is the L of the colour actually shown, checked through its 8-bit hex', () => {
+    for (let n = 0; n < 100; n++) {
       const a = rgbToHex(randomRgb());
       const b = rgbToHex(randomRgb());
-      const p = profile(a, b, 'oklch');
-      expect(p.dip).toBeNull();
-      p.L.forEach((L, i) => expect(L).toBeCloseTo(p.L[0] + ((p.L[GRADIENT_SAMPLES] - p.L[0]) * i) / GRADIENT_SAMPLES, 12));
+      for (const space of ['srgb', 'srgb-linear', 'oklch'] as const) {
+        const p = profile(a, b, space);
+        // independent route: the drawn stop's hex, decoded again (8-bit rounding moves L by well under 0.005)
+        p.hex.forEach((h, i) => expect(Math.abs(oklabOf(h).L - p.L[i])).toBeLessThan(0.005));
+      }
     }
+  });
+
+  it('oklch’s own L (before mapping) is a straight line in t; where the mix leaves sRGB the shown L bends away from it', () => {
+    for (let n = 0; n < 100; n++) {
+      const p = profile(rgbToHex(randomRgb()), rgbToHex(randomRgb()), 'oklch');
+      p.Lmix.forEach((L, i) => expect(L).toBeCloseTo(p.Lmix[0] + ((p.Lmix[GRADIENT_SAMPLES] - p.Lmix[0]) * i) / GRADIENT_SAMPLES, 12));
+    }
+    // the review's case: blue → yellow at t = 0.375 (sample 12) is out of gamut
+    const by = profile('#0000ff', '#ffff00', 'oklch'); // allow-color: test vector
+    expect(by.outOfGamut).toBe(23);
+    expect(by.Lmix[12]).toBeCloseTo(0.646, 3);
+    expect(by.L[12]).toBeCloseTo(0.71, 2);
+    // in-gamut strips: what is shown is the mix itself
+    for (const g of GRADIENT_PRESETS) for (const space of ['srgb', 'srgb-linear'] as const) expect(profile(g.from, g.to, space).L).toEqual(profile(g.from, g.to, space).Lmix);
   });
 
   it('black → white: no dip anywhere, and linear light rushes bright (its midpoint is ∛0.5 ≈ 0.79)', () => {

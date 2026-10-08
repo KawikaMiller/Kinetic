@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, type Rnd } from '../../core/random';
+import { solve } from '../../core/vec';
 import {
   COVERAGE_PRESET, DEPTH_PRESET, GRID_H, GRID_W, SHARED_PRESET, SLIVER_PRESET, TINY_PRESET, barycentric, boundingBox,
-  coverage, depthAt, drawDepth, inBox, pixelKey, rasterize, sampleOffsets, sharedEdge, testPoint, wind, wrongPixels,
+  TIE, coverage, depthAt, drawDepth, inBox, pixelKey, rasterize, sampleOffsets, sharedEdge, testPoint, wind, wrongPixels,
   type FillRule, type Tri, type Vertex,
 } from './model';
 
@@ -250,41 +251,64 @@ describe('supersampled coverage', () => {
 });
 
 describe('z-buffer', () => {
-  it('gives the same picture in either draw order, and it is the nearest triangle per pixel', () => {
+  /**
+   * Independent reference: which triangles cover the centre (ray casting + the geometric top-left
+   * rule) and each one's depth from the plane z = a·x + b·y + c through its corners (solved with
+   * core/vec), not from edge functions. Returns the nearest index, -1 for none, or null for a tie.
+   */
+  function referenceNearest(tris: readonly Tri[], px: number, py: number): number | null {
+    const hits = tris.flatMap((t, i) => {
+      const w = wind(t);
+      if (!w || !referenceCovers(w, px, py, 'topLeft')) return [];
+      const [a, b, c] = solve(t.map((v) => [v.x, v.y, 1]), t.map((v) => v.z ?? 0))!;
+      return [{ i, z: a * px + b * py + c }];
+    });
+    if (!hits.length) return -1;
+    const zMin = Math.min(...hits.map((h) => h.z));
+    const at = hits.filter((h) => Math.abs(h.z - zMin) < 1e-9);
+    return at.length > 1 ? null : at[0].i;
+  }
+
+  it('with the z-buffer, every draw order shows the reference nearest triangle (150 random triples)', () => {
     const rnd = mulberry32(17);
     const z = () => Math.round(rnd() * 1000) / 1000;
+    let checked = 0;
+    let painterWrong = 0;
     for (let n = 0; n < 150; n++) {
       const tris = [0, 1, 2].map(() => randomTri(rnd).map((p) => ({ ...p, z: z() })) as unknown as Tri);
-      const orders = [[0, 1, 2], [2, 1, 0], [1, 2, 0]];
-      const pics = orders.map((o) => drawDepth(tris, o, true));
-      // Exact depth ties are order-dependent in a real z-buffer too (z-fighting): leave those pixels out.
-      const tie = (k: number) => {
-        const zs = tris.flatMap((t) => {
-          const w = wind(t);
-          if (!w || !testPoint(w, (k % GRID_W) + 0.5, Math.floor(k / GRID_W) + 0.5, 'topLeft').inside) return [];
-          return [depthAt(w, (k % GRID_W) + 0.5, Math.floor(k / GRID_W) + 0.5)];
-        });
-        return new Set(zs).size < zs.length;
-      };
+      const pics = [[0, 1, 2], [2, 1, 0], [1, 2, 0]].map((o) => drawDepth(tris, o, true));
+      const painter = drawDepth(tris, [0, 1, 2], false);
       for (let k = 0; k < GRID_W * GRID_H; k++) {
-        if (tie(k)) continue;
-        expect(pics[1][k].shown).toBe(pics[0][k].shown);
-        expect(pics[2][k].shown).toBe(pics[0][k].shown);
-        expect(pics[0][k].shown).toBe(pics[0][k].nearest);
+        const ref = referenceNearest(tris, (k % GRID_W) + 0.5, Math.floor(k / GRID_W) + 0.5);
+        if (ref === null) continue; // exact ties are order-dependent in a real z-buffer too (z-fighting)
+        for (const pic of pics) expect(pic[k].shown).toBe(ref);
+        expect(pics[0][k].nearest).toBe(ref); // the model's own "right answer" agrees with the reference
+        if (painter[k].shown !== ref) painterWrong++;
+        checked++;
       }
     }
+    expect(checked).toBeGreaterThan(10000);
+    expect(painterWrong).toBeGreaterThan(0); // the reference can tell a wrong picture apart
   });
 
-  it('the depth preset: each triangle is nearer over part of the overlap, so neither draw order is right without it', () => {
-    const correct = drawDepth(DEPTH_PRESET, [0, 1], true);
-    const winners = new Set(correct.filter((p, k) => {
-      const both = DEPTH_PRESET.every((t) => testPoint(wind(t)!, (k % GRID_W) + 0.5, Math.floor(k / GRID_W) + 0.5, 'topLeft').inside);
-      return both && p.shown >= 0;
-    }).map((p) => p.shown));
-    expect(winners).toEqual(new Set([0, 1]));
-    expect(wrongPixels(drawDepth(DEPTH_PRESET, [0, 1], false))).toBeGreaterThan(0);
-    expect(wrongPixels(drawDepth(DEPTH_PRESET, [1, 0], false))).toBeGreaterThan(0);
-    expect(wrongPixels(correct)).toBe(0);
-    expect(wrongPixels(drawDepth(DEPTH_PRESET, [1, 0], true))).toBe(0);
+  it('the depth preset has no ties, each triangle is nearer over part of the overlap, and only the z-buffer gets it all right', () => {
+    const refs = Array.from({ length: GRID_W * GRID_H }, (_, k) => referenceNearest(DEPTH_PRESET, (k % GRID_W) + 0.5, Math.floor(k / GRID_W) + 0.5));
+    expect(refs.includes(null)).toBe(false);
+    const both = (k: number) => DEPTH_PRESET.every((t) => referenceCovers(wind(t)!, (k % GRID_W) + 0.5, Math.floor(k / GRID_W) + 0.5, 'topLeft'));
+    expect(new Set(refs.filter((_, k) => both(k)))).toEqual(new Set([0, 1]));
+    const wrongVsRef = (o: number[], zb: boolean) => drawDepth(DEPTH_PRESET, o, zb).filter((p, k) => p.shown !== refs[k]).length;
+    expect(wrongVsRef([0, 1], false)).toBeGreaterThan(0);
+    expect(wrongVsRef([1, 0], false)).toBeGreaterThan(0);
+    expect(wrongVsRef([0, 1], true)).toBe(0);
+    expect(wrongVsRef([1, 0], true)).toBe(0);
+    // and the model's own count agrees with the reference count
+    expect(wrongPixels(drawDepth(DEPTH_PRESET, [0, 1], false))).toBe(wrongVsRef([0, 1], false));
+  });
+
+  it('exact ties are not counted as wrong', () => {
+    const a: Tri = [{ x: 2, y: 2, z: 0.5 }, { x: 20, y: 2, z: 0.5 }, { x: 2, y: 14, z: 0.5 }];
+    const px = drawDepth([a, a], [0, 1], false);
+    expect(px.some((p) => p.nearest === TIE)).toBe(true);
+    expect(wrongPixels(px)).toBe(0);
   });
 });

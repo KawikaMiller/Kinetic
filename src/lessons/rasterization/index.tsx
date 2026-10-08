@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'To draw a triangle, a rasterizer tests each pixel centre against the triangle\'s three edges, and the pixels whose centres pass light up.',
-    what: 'An edge function is a cross product: for the edge a → b and a point p it is (b.x − a.x)(p.y − a.y) − (b.y − a.y)(p.x − a.x), positive on the triangle\'s side. A pixel is covered when its centre (x + 0.5, y + 0.5) passes all three edges (w0, w1, w2), and only pixels inside the triangle\'s bounding box are tested. A centre exactly on an edge (w = 0) needs a tie-break: the top-left rule means two triangles that share an edge never both draw a pixel and never both skip one. Divided by the triangle\'s area, the same three numbers are barycentric weights, which blend per-corner values such as depth or colour across the triangle. The corners got to these screen positions by the transforms in `matrices-transformations`.',
+    what: 'An edge function is a cross product: for the edge a → b and a point p it is (b.x − a.x)(p.y − a.y) − (b.y − a.y)(p.x − a.x), positive on the triangle\'s side. A pixel is covered when its centre (x + 0.5, y + 0.5) passes all three edges (w0, w1, w2), and only pixels inside the triangle\'s bounding box are tested. A centre exactly on an edge (w = 0) needs a tie-break: the top-left rule means two triangles that share an edge never both draw a pixel, and never both skip one along the shared edge between its ends. Divided by the triangle\'s area, the same three numbers are barycentric weights, which blend per-corner values such as depth or colour across the triangle. The corners got to these screen positions by the transforms in `matrices-transformations`.',
     analogy: 'A stencil laid over graph paper: you look at the dot in the middle of each square and colour the square only if that dot shows through the cut-out. Antialiasing is putting 4 or 16 dots in each square and colouring it by how many show.',
     useCases: [
       'GPUs: every 3D frame and every composited UI layer is triangles turned into pixels this way',
@@ -27,7 +27,7 @@ const lesson: LessonModule = {
     'A pixel is covered when its centre passes all three edge functions; partial overlap only counts with antialiasing, at extra cost.',
     'Only the bounding box is tested, so long thin triangles waste most of their tests.',
     'The top-left rule gives each centre on a shared edge to exactly one triangle: no double-drawn seams and no cracks.',
-    'A z-buffer decides visibility per pixel, so the draw order stops mattering.',
+    'A z-buffer decides visibility per pixel, so the draw order stops mattering for opaque triangles (exact ties aside).',
   ],
   quiz: [
     {

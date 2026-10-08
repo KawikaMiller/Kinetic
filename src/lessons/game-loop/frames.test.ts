@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { catchUpCaption, DT_LABEL, machinesCaption, modeCaption, spiralCaption, tunnelCaption } from './frames';
+import { capCaption, catchUpCaption, costCaption, DT_LABEL, machinesCaption, modeCaption, spiralCaption, tunnelCaption } from './frames';
 import lesson from './index';
 import { DT, HIT_HALF, MAX_FRAME, SAFETY_STEPS, START, WORLD, advanceFrame, createLoop, type LoopMode } from './sim';
 
@@ -53,3 +53,16 @@ describe('the quiz\'s numbers come from the model', () => {
     expect(MAX_FRAME).toBe(0.25);
   });
 });
+
+describe('setting captions replace the ones they make untrue', () => {
+  it('the cap toggle and the cost slider say what the new setting does', () => {
+    expect(text(capCaption(true))).toContain('slows down instead of spiralling');
+    expect(text(capCaption(false))).toContain(`stops at ${SAFETY_STEPS} per frame`);
+    expect(text(costCaption(0))).toContain('free again');
+    expect(text(costCaption(16))).toContain('less than the');
+    expect(text(costCaption(17))).toContain('more than the');
+    expect(16).toBeLessThan(DT * 1000);
+    expect(17).toBeGreaterThan(DT * 1000);
+  });
+});
+

@@ -76,7 +76,7 @@ export function sharedCaption(r: SharedResult, rule: FillRule): ReactNode {
   const twice = r.overdraw.length;
   const missed = r.gaps.length;
   if (!r.proper) {
-    return <>Both far corners are now on the same side of the shared edge, so the triangles overlap: the {twice} pixels drawn twice are real overlap, not a fill-rule problem. Drag a corner back across.</>;
+    return <>Both far corners are now on the same side of the shared edge's line (or on it), so the triangles overlap or one has collapsed: this isn't a fair shared edge, and any pixel drawn twice ({twice} now) is real overlap, not a fill-rule problem. Drag a corner back across.</>;
   }
   if (rule === 'inclusive') {
     if (twice === 0) return <>w ≥ 0 counts a centre on an edge for both triangles, but no pixel centre lies on the shared edge right now, so nothing is drawn twice. Put the shared edge's ends on half-pixel spots to see it.</>;
@@ -97,13 +97,11 @@ export function sharedCaption(r: SharedResult, rule: FillRule): ReactNode {
 export const DEPTH_NAMES = ['violet', 'amber'] as const;
 
 export function depthCaption(tris: readonly Tri[], order: readonly [number, number], zBuffer: boolean): ReactNode {
-  const wrong = wrongPixels(drawDepth(tris, order, zBuffer));
   const last = DEPTH_NAMES[order[1]];
   if (zBuffer) {
-    return wrong === 0
-      ? <>Z-buffer on: each pixel keeps the depth of what's drawn there and only lets something nearer overwrite it, so all overlap pixels show the nearer triangle, in either draw order.</>
-      : <>Z-buffer on, yet {plural(wrong, 'pixel')} show the farther triangle.</>;
+    return <>Z-buffer on: each pixel keeps the depth of what's drawn there and only lets something nearer overwrite it, so every overlap pixel shows the nearer triangle, in either draw order.</>;
   }
+  const wrong = wrongPixels(drawDepth(tris, order, false));
   const otherWrong = wrongPixels(drawDepth(tris, [order[1], order[0]], false));
   const both = wrong > 0 && otherWrong > 0;
   return (
