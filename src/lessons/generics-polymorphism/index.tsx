@@ -51,7 +51,7 @@ const lesson: LessonModule = {
         'Three copies in debug builds, one shared copy in release',
       ],
       answer: 0,
-      why: 'Rust monomorphises: each distinct type argument gets its own copy of the code, specialised for that type. That makes each copy fast, at the cost of binary size and compile time, in every build mode. A single shared copy is the erasure approach, which Java uses.',
+      why: 'Rust monomorphises: each distinct type argument gets its own copy of the code, specialised for that type. That makes each copy fast, at the cost of binary size and compile time (the optimiser can inline or merge some copies). A single shared copy is the erasure approach, which Java uses.',
     },
     {
       q: 'Java will not let you pass a `List<Cat>` where a `List<Animal>` is expected. What would go wrong if it did?',

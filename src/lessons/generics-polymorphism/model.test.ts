@@ -24,7 +24,7 @@ describe('one language table drives every claim', () => {
   it('pins each language to its strategy', () => {
     const table = Object.fromEntries(LANGS.map((l) => [l.label, l.strategy]));
     expect(table).toEqual({ Java: 'erasure', TypeScript: 'erasure', 'C#': 'reified', Rust: 'monomorphised', 'C++': 'monomorphised' });
-    expect(LANGS.filter((l) => l.argsAtRuntime).map((l) => l.label)).toEqual(['C#']);
+    expect(LANGS.filter((l) => l.strategy === 'reified').map((l) => l.label)).toEqual(['C#']);
   });
 
   it('generates every caption sentence from the table', () => {

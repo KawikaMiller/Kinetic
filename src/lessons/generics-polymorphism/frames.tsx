@@ -53,7 +53,7 @@ export function boxFrames(version: BoxVersion, bound: boolean): BoxFrame[] {
         { now: 5, stored: '42', claimed: 'string', failed: true },
       );
       rec.snap(
-        <>With line {lineNo(5)} deleted, line {lineNo(4)} runs and prints <span className="hl ok">{code.output[0]}</span>: one definition, checked for every T, no copies to keep in step.</>,
+        <>Take away the rejected line {lineNo(5)} and line {lineNo(4)} runs and prints <span className="hl ok">{code.output[0]}</span>: one definition, checked for every T, no copies to keep in step.</>,
         undefined,
         { now: 4, stored: "'ada'", claimed: 'string', failed: false, printed: code.output },
       );
@@ -123,7 +123,7 @@ export function stampFrames(l: Lang, uses: readonly TypeArg[]): StampFrame[] {
         l.strategy === 'reified' ? (
           <>{t}: the definition is compiled once. The runtime keeps the argument, so {t} is its own type at run time.</>
         ) : (
-          <>{t}: the compiler checks this use, then erases the argument. One compiled class, no T inside it.</>
+          <>{t}: the compiler checks this use, then erases the argument. {l.id === 'ts' ? 'The emitted JavaScript has no types at all.' : 'One compiled class, no T inside it.'}</>
         );
     } else {
       say =
@@ -143,8 +143,8 @@ export function stampFrames(l: Lang, uses: readonly TypeArg[]): StampFrame[] {
       {l.strategy === 'monomorphised'
         ? 'Each copy is specialised for its type (fast, no boxing), at the cost of a bigger binary and a longer compile.'
         : l.strategy === 'reified'
-          ? 'One definition; the type arguments survive into run time, so the program can ask about them.'
-          : 'One shared class: small output, but the type arguments are gone at run time.'}{' '}
+          ? 'One definition in the compiled program, with the type arguments kept at run time so the program can ask about them (the JIT may still generate separate native code per value type).'
+          : l.id === 'ts' ? 'One piece of plain JavaScript: small output, but the type arguments are gone at run time.' : 'One shared class: small output, but the type arguments are gone at run time.'}{' '}
       Erased: {byStrategy('erasure').join(', ')}. Reified: {byStrategy('reified').join(', ')}. Monomorphised: {byStrategy('monomorphised').join(', ')}.
     </>,
     2,
@@ -183,7 +183,7 @@ export function varianceFrames(viewId: ViewId, op: Op): VarianceFrame[] {
   const sayOp = {
     ok: <><span className="hl ok">Safe</span>: <code>{lines[1]}</code> works, because {ver.message}.</>,
     compile: <><span className="hl orange">Rejected at compile time</span>: <code>{ver.message}</code>. The compiler refuses before anything runs, because {ver.reason}.</>,
-    runtime: <><span className="hl bad">Compiles, then throws at run time</span>: <code>{ver.message}</code>. Java arrays are covariant, so the compiler allowed it and the JVM checks every store instead.</>,
+    runtime: <><span className="hl bad">Compiles, then throws at run time</span>: <code>{ver.message}</code>. Java arrays are covariant, so the compiler allowed it and the JVM checks each array store at run time instead.</>,
     unsound: (
       <>
         <span className="hl bad">Compiles and runs with no error</span>: TypeScript treats arrays as covariant and checks method parameters like <code>push</code>&apos;s bivariantly (even

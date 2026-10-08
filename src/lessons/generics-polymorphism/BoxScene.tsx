@@ -126,8 +126,8 @@ export function BoxScene({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <Hint block>
-          The TypeScript messages are real tsc output and the crash is what real JavaScript throws (both checked in the lesson&apos;s tests); the Java message is a fixed, real javac
-          result (abridged), shown, not run.
+          The TypeScript messages are real tsc output and the crash is what real JavaScript throws (both checked in the lesson&apos;s tests); the Java message is shown, not run:
+          abridged, wording from memory.
         </Hint>
       </div>
     </StageFrame>

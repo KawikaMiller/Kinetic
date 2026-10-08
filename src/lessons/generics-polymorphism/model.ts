@@ -20,7 +20,7 @@ export interface BoxCode {
   failLine: number | null;
   /** When it fails: the compiler, before running, or the runtime. */
   failsAt: 'compile' | 'runtime' | null;
-  /** The message, verbatim from the real tool (tsc 6, V8, javac 21). */
+  /** The message: verbatim from tsc 6 and V8; the Java text is abridged and its wording is from memory. */
   message: string | null;
   /** Lines that ran and were checked safe, with what they printed. */
   output: string[];
@@ -132,8 +132,6 @@ export interface Lang {
   id: LangId;
   label: string;
   strategy: Strategy;
-  /** Are the type arguments still there while the program runs? */
-  argsAtRuntime: boolean;
   /** How the generic list type is spelled, with `{}` for the argument. */
   spell: string;
   /** The language's name for each type argument. */
@@ -147,7 +145,6 @@ export const LANGS: Lang[] = [
     id: 'java',
     label: 'Java',
     strategy: 'erasure',
-    argsAtRuntime: false,
     spell: 'ArrayList<{}>',
     args: { int: 'Integer', string: 'String', point: 'Point' },
     demo: [
@@ -160,7 +157,6 @@ export const LANGS: Lang[] = [
     id: 'ts',
     label: 'TypeScript',
     strategy: 'erasure',
-    argsAtRuntime: false,
     spell: 'Array<{}>',
     args: { int: 'number', string: 'string', point: 'Point' },
     demo: [
@@ -172,7 +168,6 @@ export const LANGS: Lang[] = [
     id: 'csharp',
     label: 'C#',
     strategy: 'reified',
-    argsAtRuntime: true,
     spell: 'List<{}>',
     args: { int: 'int', string: 'string', point: 'Point' },
     demo: [
@@ -185,7 +180,6 @@ export const LANGS: Lang[] = [
     id: 'rust',
     label: 'Rust',
     strategy: 'monomorphised',
-    argsAtRuntime: false,
     spell: 'Vec<{}>',
     args: { int: 'i32', string: 'String', point: 'Point' },
     demo: [
@@ -197,7 +191,6 @@ export const LANGS: Lang[] = [
     id: 'cpp',
     label: 'C++',
     strategy: 'monomorphised',
-    argsAtRuntime: false,
     spell: 'std::vector<{}>',
     args: { int: 'int', string: 'std::string', point: 'Point' },
     demo: [
@@ -252,11 +245,12 @@ export const ILLUSTRATIVE_COPY_KB = 6;
 export function strategySentence(l: Lang): string {
   switch (l.strategy) {
     case 'erasure':
+      if (l.id === 'ts') return `${l.label} erases every type when it emits JavaScript: there is no per-type code, and at run time nothing tells ${spellType(l, 'string')} from ${spellType(l, 'int')}.`;
       return `${l.label} erases type arguments: one compiled ${spellTemplate(l).replace('<T>', '')} serves every ${spellTemplate(l)}, and at run time nobody can tell ${spellType(l, 'string')} from ${spellType(l, 'int')}.`;
     case 'reified':
       return `${l.label} keeps type arguments at run time (reified): ${spellType(l, 'int')} and ${spellType(l, 'string')} are different types the program can ask about.`;
     case 'monomorphised':
-      return `${l.label} monomorphises: the compiler stamps out a separate copy of the code for each distinct type argument, specialised and fast, but every copy adds to the binary and the compile time.`;
+      return `${l.label} monomorphises: the compiler stamps out a separate copy of the code for each distinct type argument, specialised and fast, but each copy can add to the binary and the compile time (an optimiser may inline or merge some).`;
   }
 }
 

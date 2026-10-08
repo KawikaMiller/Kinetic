@@ -41,7 +41,7 @@ export function StampScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Uses" value={uses.length} color="var(--muted)" />
           <Stat label="Distinct type args" value={distinctArgs(uses).length} color="var(--info)" />
-          <Stat label="Compiled copies" value={f.copies} color="var(--hi)">
+          <Stat label="Compiled copies" value={f.copies} color="var(--hi)" sub={l.strategy === 'reified' ? 'definitions; the JIT may emit more native code' : undefined}>
             <Bar value={f.sizeKb} max={MAX_USES * ILLUSTRATIVE_COPY_KB} tone="hi" height={8} />
           </Stat>
         </Stats>
@@ -93,7 +93,7 @@ export function StampScene({ picker }: { picker: ReactNode }) {
                   at={{ x: l.strategy === 'reified' ? 150 : TEMPLATE_AT.x, y: COPY_Y }}
                   w={220}
                   h={52}
-                  title={l.strategy === 'reified' ? `${spellTemplate(l)}, compiled once` : spellTemplate(l).replace('<T>', '')}
+                  title={l.strategy === 'reified' ? `${spellTemplate(l)}, compiled once` : l.id === 'ts' ? 'emitted JavaScript' : spellTemplate(l).replace('<T>', '')}
                   sub={l.id === 'java' ? 'T erased: holds Object' : l.id === 'ts' ? 'plain JavaScript, no types' : 'one definition in the DLL'}
                   tone={currentArg !== null ? 'hi' : 'info'}
                   on
@@ -127,7 +127,7 @@ export function StampScene({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <Hint block>
-          Java, C#, Rust and C++ outputs are fixed, real compiler and runtime results, shown, not run. Code sizes are illustrative ({ILLUSTRATIVE_COPY_KB} KB a copy), not
+          Java, C#, Rust and C++ outputs are fixed results shown, not run (the C# lines were checked against a real .NET run; the Java, Rust and C++ wording is from memory). Code sizes are illustrative ({ILLUSTRATIVE_COPY_KB} KB a copy), not
           measured. C# nuance: .NET shares one native body for reference-type arguments and makes one per value type, but every argument stays visible at run time.
         </Hint>
       </div>

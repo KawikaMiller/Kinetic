@@ -166,7 +166,7 @@ export function VarianceScene({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <Hint block>
-          Java results are fixed, real javac and JVM outputs (messages abridged, CAP#1 is javac&apos;s name for the unknown wildcard type), shown, not run. The TypeScript rows are what
+          Java results are shown, not run: abridged, wording from memory (javac may word the wildcard errors differently, and CAP#1 is its name for the unknown wildcard type). The TypeScript rows are what
           real tsc and JavaScript do, checked in the lesson&apos;s tests.
         </Hint>
       </div>
