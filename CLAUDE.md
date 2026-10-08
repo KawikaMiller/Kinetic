@@ -148,6 +148,9 @@ it's safe.
 - Effect bodies must not return values: `useEffect(() => { window.scrollTo(0, 0); })`.
   Chromium's `scrollTo` returns a Promise, which React treats as a broken cleanup.
 - Don't read `ref.current` during render (oxlint `react/refs`).
+- oxlint `react/only-export-components` treats any uppercase arrow helper (`const P = (…) => …`)
+  as a component, and once it has one it flags every other export in the file. Name such helpers
+  in lowerCamelCase or move them out of a file that exports non-components.
 - For motion SVG attributes you animate, set the start value via `initial`, not as a plain attribute too.
 - motion's `pathLength` breaks with `vector-effect: non-scaling-stroke`.
 - Reduced motion is split on purpose: `main.tsx` wraps the app in `MotionConfig reducedMotion="user"`
