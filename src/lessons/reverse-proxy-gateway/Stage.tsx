@@ -38,7 +38,8 @@ export function Stage() {
   const cur = f.k >= 0 ? results[f.k] : null;
   /** Responses the client has had so far: every earlier request, plus this one once it's on its way back. */
   const done = results.slice(0, f.stage === null ? f.k + 1 : f.k);
-  const reached = cur && (f.stage === 'forward' || (f.stage === null && cur.out.ran.includes('forward')));
+  // A refused connection (502) never reached the service, so there's nothing it "saw".
+  const reached = cur && cur.out.status !== 502 && (f.stage === 'forward' || (f.stage === null && cur.out.ran.includes('forward')));
 
   return (
     <StageFrame
@@ -120,7 +121,8 @@ function Pipeline({ frame, cfg, mtls, cur }: { frame: GwFrame; cfg: GatewayConfi
           <text x={150} y={54} className="scene-zone">gateway (reverse proxy)</text>
           <SceneNode at={CLIENT_AT} w={88} h={54} title="client" sub={CLIENT_IP} />
           {STAGES.map((s, i) => {
-            const stopped = out && out.stoppedAt === s && (frame.stage === s || frame.stage === null) && s !== 'forward';
+            // The stage that answered is outlined, forward included for 502/504; a service's own answer outlines the service instead.
+            const stopped = out && out.stoppedAt === s && (frame.stage === s || frame.stage === null) && !(s === 'forward' && out.fromService);
             const ranAt = out ? out.ran.indexOf(s) : -1;
             const passed = ranAt >= 0 && ranAt < (frame.stage ? at : out!.ran.length) && !stopped;
             return (
@@ -131,10 +133,17 @@ function Pipeline({ frame, cfg, mtls, cur }: { frame: GwFrame; cfg: GatewayConfi
           })}
           {SERVICES.map((s) => {
             const h = cfg.health[s];
+            // A route to this service needs a token (static files don't), so it checks JWTs when auth moves into the services.
+            const guarded = cfg.routes.some((x) => x.service === s && x.auth);
+            // A down service never receives the request, so it doesn't light up.
+            const receiving = frame.stage === 'forward' && svc === s && h !== 'down' && !(!!out && out.fromService && out.status >= 400);
+            const rejected = !!out && out.fromService && out.status >= 400 && svc === s && (frame.stage === 'forward' || frame.stage === null);
             return (
               <SceneNode key={s} at={{ x: SVC_X, y: SVC_Y[s] }} w={112} h={40} title={`/${s}`}
-                sub={h === 'down' ? 'down' : h === 'slow' ? `slow (${cfg.latency.slow} s)` : cfg.authAtEdge ? 'up' : 'up · checks JWT'}
-                on={frame.stage === 'forward' && svc === s} tone={frame.stage === 'forward' && svc === s ? 'hi' : undefined} variant={h === 'down' ? 'dim' : 'default'} />
+                sub={rejected ? `${out!.status}` : h === 'down' ? 'down' : h === 'slow' ? `slow (${cfg.latency.slow} s)` : cfg.authAtEdge || !guarded ? 'up' : 'up · checks JWT'}
+                on={receiving}
+                tone={rejected ? statusTone(out!.status) : receiving ? 'hi' : undefined}
+                className={rejected ? 'gw-stopped' : ''} variant={h === 'down' ? 'dim' : 'default'} />
             );
           })}
           {cur && frame.stage && (
@@ -210,7 +219,7 @@ function ServiceView({ cur }: { cur: ReturnType<typeof runRequests>[number] | nu
       <SectionTitle weight="regular" hint={cur?.out.route ? `as ${cur.out.route.service} receives it` : ''}>What the service sees</SectionTitle>
       {lines.length ? (
         <CodePanel lines={lines} gutter="none" stateOf={(i) => (i === xffLine ? 'now' : 'idle')} className="gw-headers" />
-      ) : <p className="empty-note">Nothing has reached a service yet.</p>}
+      ) : <p className="empty-note">No request has reached a service.</p>}
       <Hint block>
         X-Forwarded-For is only trustworthy when your own proxy set it: a client can send any value, so trust only the entries your proxies
         appended (here, the last one).

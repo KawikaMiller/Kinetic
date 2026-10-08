@@ -102,6 +102,13 @@ export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 /** RFC 9110 §9.2.2: GET, HEAD, PUT, DELETE (and OPTIONS, TRACE) are idempotent; POST isn't. */
 export const isIdempotent = (m: Method) => m !== 'POST';
 
+/**
+ * May the gateway retry after this failure? A refused connection sent nothing, so any method
+ * is safe to retry. Once the request went out and the connection then dropped, the service may
+ * already have acted on it, so only an idempotent method may be repeated.
+ */
+export const retrySafe = (m: Method, failure: 'refused' | 'dropped-after-send') => failure === 'refused' || isIdempotent(m);
+
 export interface Request {
   id: number;
   t: number;
@@ -198,7 +205,7 @@ export function handle(req: Request, cfg: GatewayConfig, bucket: Bucket): Outcom
   const base = { route: r, forwarded, bucket };
   const health = cfg.health[r.service];
   if (health === 'down') {
-    const attempts = isIdempotent(req.method) ? 1 + cfg.retries : 1;
+    const attempts = retrySafe(req.method, 'refused') ? 1 + cfg.retries : 1;
     return { ...base, status: 502, stoppedAt: 'forward', ran, fromService: false, responseHeaders: [], attempts, waited: 0.001 * attempts, note: 'upstream refused the connection' };
   }
   if (cfg.latency[health] > cfg.timeout)

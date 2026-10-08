@@ -35,7 +35,13 @@ describe('every caption is true, for every preset × auth × spoofed XFF × mTLS
                 expect(say.includes('only that last entry can be trusted')).toBe(spoof);
               }
               if (f.stage === null) expect(say).toContain(out.fromService ? 'came from the service' : 'gateway answered it itself');
-              if (f.stage === 'forward' && out.status === 502) expect(say).toContain(`${out.attempts} attempts`);
+              if (f.stage === 'forward' && out.status === 502) {
+                expect(say).toContain(`${out.attempts} attempts`);
+                expect(say).toContain('safe for any method');
+              }
+              if (f.stage === 'auth' && authAtEdge && out.route?.auth && out.stoppedAt !== 'auth')
+                expect(say).toContain(mtls ? 'with mTLS inside, only the gateway can reach them' : 'rests on the network being isolated');
+              expect(say).not.toMatch(/\b1 whole tokens\b/);
             }
           });
 

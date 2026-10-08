@@ -4,7 +4,7 @@ import { mulberry32, pick, randInt } from '../../core/random';
 import { Limiter } from '../rate-limiting/sim';
 import {
   API_HOST, BURST, CLIENT_IP, DEFAULT_BUCKET, DEFAULT_CONFIG, DEFAULT_ROUTES, PRESETS, SERVICES, SPOOFED_XFF, STAGES, STATIC_HOST, appendXff,
-  fullBucket, handle, isIdempotent, parsePath, parsePrefix, prefixMatches, presetRequests, route, runRequests, takeToken, type GatewayConfig,
+  fullBucket, handle, isIdempotent, parsePath, retrySafe, parsePrefix, prefixMatches, presetRequests, route, runRequests, takeToken, type GatewayConfig,
   type Route,
 } from './model';
 
@@ -107,14 +107,17 @@ describe('headers, retries and timeouts', () => {
     expect(out.forwarded!.at(-1)).toEqual(['X-User-Id', '42']);
   });
 
-  it('only idempotent methods are retried when the upstream refuses', () => {
+  it('a refused connection is retry-safe for any method; after the request was sent, only idempotent ones are', () => {
+    expect(retrySafe('POST', 'refused')).toBe(true);
+    expect(retrySafe('POST', 'dropped-after-send')).toBe(false);
+    expect(retrySafe('GET', 'dropped-after-send')).toBe(true);
     expect(isIdempotent('GET')).toBe(true);
     expect(isIdempotent('PUT')).toBe(true);
     expect(isIdempotent('POST')).toBe(false);
     const cfg = { ...DEFAULT_CONFIG, health: { ...DEFAULT_CONFIG.health, orders: 'down' as const } };
     const req = { id: 1, t: 0, host: API_HOST, path: '/orders', token: 'valid' as const, peer: CLIENT_IP };
     expect(handle({ ...req, method: 'GET' }, cfg, fullBucket(cfg.bucket)).attempts).toBe(1 + cfg.retries);
-    expect(handle({ ...req, method: 'POST' }, cfg, fullBucket(cfg.bucket)).attempts).toBe(1);
+    expect(handle({ ...req, method: 'POST' }, cfg, fullBucket(cfg.bucket)).attempts).toBe(1 + cfg.retries);
   });
 
   it('504 comes exactly when the upstream is slower than the timeout', () => {

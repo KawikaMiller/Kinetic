@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Reading X-Forwarded-For and X-Request-Id in a service\'s logs to trace a request',
     ],
     why: "Almost every production web system has one of these in front, and many outages and security bugs live there: a route that shadows another, a timeout shorter than a slow endpoint, a retried POST that charges twice, a service trusting a client-supplied X-Forwarded-For. Knowing which status comes from which stage tells you where to look. It builds on `load-balancing`, `tls-handshake`, `rate-limiting`, `auth-sessions-jwt` and `client-server`.",
-    watch: 'The client is on the left, the gateway is the dashed zone with its six stages in order, and the four services are on the right. A blue pill is the request moving from stage to stage; the stage it is at is lit yellow, stages it has passed say "passed", and a stage that rejected it is outlined orange (4xx: 401, 404, 429) or red (5xx: 502, 504) with the status. The response pill travels back to the client in green (2xx), orange (4xx) or red (5xx). The client-to-gateway link is violet (HTTPS); the gateway-to-services links are grey dashed (plain HTTP) or violet (mTLS). The service receiving the request lights yellow, a down service is dimmed, and each says "checks JWT" when auth is moved into the services. In the routing table, the row that wins for the typed path is tinted yellow, other prefixes that also match are violet, and the route the current request took has a blue bar. In What the service sees, the X-Forwarded-For line is highlighted yellow. The response log lists each answer in green, orange or red, and a refused prefix or path is shown in red.',
+    watch: 'The client is on the left, the gateway is the dashed zone with its six stages in order, and the four services are on the right. A blue pill is the request moving from stage to stage; the stage it is at is lit yellow, stages it has passed say "passed", and a stage that answered with an error is outlined orange (4xx: 401, 404, 429) or red (5xx: 502 and 504, on the forward stage) with the status; when auth lives in the services, the service that rejects a request is outlined orange instead. The response pill travels back to the client in green (2xx), orange (4xx) or red (5xx). The client-to-gateway link is violet (HTTPS); the gateway-to-services links are grey dashed (plain HTTP) or violet (mTLS). The service receiving the request lights yellow, a down service is dimmed, and each says "checks JWT" when auth is moved into the services. In the routing table, the row that wins for the typed path is tinted yellow, other prefixes that also match are violet, and the route the current request took has a blue bar. In What the service sees, the X-Forwarded-For line is highlighted yellow. The response log lists each answer in green, orange or red, and a refused prefix or path is shown in red.',
   },
   tryThis: [
     'Send Over the limit and play: which request gets 429, and what does Retry-After say?',
@@ -27,7 +27,7 @@ const lesson: LessonModule = {
     'A reverse proxy acts for the servers: one front door doing TLS, routing, auth, rate limits and headers once.',
     'Routing is longest prefix wins, by path segment: /orders/export beats /orders for /orders/export/2024.',
     '4xx at the edge (401, 404, 429) is the request\'s problem; 502 and 504 mean the upstream failed or was too slow.',
-    'X-Forwarded-For is only trustworthy for the entries your own proxies appended; retry only idempotent requests.',
+    'X-Forwarded-For is only trustworthy for the entries your own proxies appended; once a request was sent, retry only idempotent ones.',
   ],
   quiz: [
     {
@@ -75,15 +75,15 @@ const lesson: LessonModule = {
       why: 'The gateway appends the address the connection really came from. Anything before it was sent by the client and can say whatever the client likes, so "the first entry is the client" is exactly the trap. Entries your own proxies added are reliable.',
     },
     {
-      q: 'An upstream refuses connections. Why would the gateway retry a GET but not a POST?',
+      q: "The upstream took a POST, then the connection dropped before any response. Why shouldn't the gateway just retry it, as it would a GET?",
       options: [
-        'GET is idempotent; a retried POST might place the same order twice',
-        'POST bodies are too big for the gateway to keep a copy of for a retry',
-        'Only GET requests are ever allowed through a reverse proxy in the first place',
-        'POST responses are always cached, so the gateway never needs to retry',
+        'The POST may already have run; a retry could place the order twice',
+        'POST bodies are too big for the gateway to keep a copy for a retry',
+        'Only GET requests are ever allowed through a reverse proxy at all',
+        'POST responses are always cached, so a retry would never be needed',
       ],
       answer: 0,
-      why: 'Repeating an idempotent request leaves the same result, so a retry is safe. A POST may have been partly processed before the failure, so repeating it can duplicate the effect; that needs idempotency keys, not a blind retry.',
+      why: 'Once the request was sent, the service may have acted on it before the connection broke. Repeating an idempotent GET is harmless; repeating a POST can duplicate its effect, which needs an idempotency key, not a blind retry. A refused connection is different: nothing was sent, so any method can be retried.',
     },
   ],
 };
