@@ -1,0 +1,14 @@
+.td { gap: 14px; }
+.td-top { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.td-graph-wrap { flex: 1 1 520px; min-width: 0; }
+.td-graph { width: 100%; display: block; }
+.td-graph .graph-node-label { font-size: 13px; }
+.td-badge { font: 600 11.5px var(--mono); pointer-events: none; }
+.td-badge.is-double { fill: var(--sky); }
+.td-badge.is-real { fill: var(--violet); }
+.td-pickers { flex: 1 1 280px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.td-matrix table { width: auto; }
+.td-matrix th.td-current { color: var(--hi); }
+.td-verdict { color: var(--c); font-weight: 600; }
+.td-code { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 12px; align-items: start; }
+.td-code .code-panel code { overflow-wrap: anywhere; }
