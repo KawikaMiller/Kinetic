@@ -111,7 +111,11 @@ export function reverseReachable(g: BuildGraph, from: readonly string[], deps: B
   return seen;
 }
 
-const short = (h: string | null) => h ?? 'no-crypto';
+/** Without crypto.subtle every key would be the same string, so refuse rather than fake it (the stage shows a message first). */
+const short = (h: string | null) => {
+  if (h === null) throw new Error('SHA-256 is unavailable: this lesson needs crypto.subtle');
+  return h;
+};
 const hash = async (s: string) => short(await sha256Hex(s));
 
 /** A source's content hash (hash mode compares these). */

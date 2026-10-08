@@ -3,7 +3,7 @@ import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { topoOrder, verdictOf, type BuildRun, type Verdict } from './model';
 
-export type NodeState = 'idle' | 'edited' | 'queued' | 'building' | 'rebuilt' | 'hit' | 'uptodate' | 'stale' | 'poisoned';
+export type NodeState = 'idle' | 'edited' | 'queued' | 'building' | 'fetching' | 'rebuilt' | 'hit' | 'uptodate' | 'stale' | 'poisoned';
 
 export interface BuildFrame extends Frame {
   t: number;
@@ -43,7 +43,8 @@ export function nodeStates(run: BuildRun, t: number, final: boolean): Record<str
     const r = run.result.results[n.id];
     const s = slot.get(n.id);
     let state: NodeState;
-    if (s) state = t < s.start ? 'queued' : t < s.end ? 'building' : r.status === 'rebuilt' ? 'rebuilt' : 'hit';
+    const runs = r.status === 'rebuilt';
+    if (s) state = t < s.start ? 'queued' : t < s.end ? (runs ? 'building' : 'fetching') : runs ? 'rebuilt' : 'hit';
     else if (r.status === 'cutoff') state = t < settle.get(n.id)! ? 'queued' : 'hit';
     else state = 'uptodate';
     const verdict = v[n.id];
@@ -59,7 +60,8 @@ function startCaption(run: BuildRun): ReactNode {
   const work = run.slots.length;
   if (run.clean) {
     const fetched = run.slots.filter((s) => results[s.id].status !== 'rebuilt').length;
-    return <>Clean build on {plural(run.workers, 'worker')}: no previous outputs{fetched ? `, but ${plural(fetched, 'target')} can come from a cache` : ''}. {plural(work, 'action')} to run, in topological order.</>;
+    const runs = work - fetched;
+    return <>Clean build on {plural(run.workers, 'worker')}: no previous outputs. {plural(work, 'action')} in topological order: {runs ? `${runs} to run` : 'none to run'}{fetched ? `, ${fetched} to fetch from a cache` : ''}.</>;
   }
   if (!changed.length) {
     return run.mode === 'hash'
@@ -86,8 +88,11 @@ function eventCaption(run: BuildRun, t: number): ReactNode {
     const same = run.before[s.id]?.out === r.out;
     return same ? <>{s.id} rebuilt, and its output hash is <b>unchanged</b>.</> : <>{s.id} rebuilt with a new output hash.</>;
   });
-  if (cut.length) parts.push(<><span className="hl ok">{list(cut)}</span>: inputs unchanged, same key, a cache hit (early cutoff).</>);
-  if (started.length) parts.push(<>Now building {list(started.map((s) => s.id))}.</>);
+  if (cut.length) parts.push(<><span className="hl ok">{list(cut)}</span>: inputs unchanged, same key, so nothing had to run (early cutoff).</>);
+  const building = started.filter((s) => results[s.id].status === 'rebuilt');
+  const fetching = started.filter((s) => results[s.id].status !== 'rebuilt');
+  if (building.length) parts.push(<>Now building {list(building.map((s) => s.id))}.</>);
+  if (fetching.length) parts.push(<>Now fetching {list(fetching.map((s) => s.id))} from {fetching.some((s) => results[s.id].status === 'hit-remote') ? 'the remote' : 'the local'} cache.</>);
   return <>t = {secs(t)}: {parts.map((p, i) => <span key={i}>{i ? ' ' : ''}{p}</span>)}</>;
 }
 
@@ -108,8 +113,12 @@ function finalCaption(run: BuildRun): ReactNode {
       ? ` ${list(skipped)} reads ${list(skipped.flatMap((id) => run.graph.actual[id].filter((d) => !run.graph.declared[id].includes(d))))} without declaring it, so the edit never reached it.`
       : ''}</>
   ) : null;
+  // A poisoned target either has a key that leaves out an input (a root), or inherits wrong bytes through its inputs.
+  const roots = poisoned.filter((id) => !run.graph.declared[id].some((d) => v[d] === 'poisoned'));
+  const inherited = poisoned.filter((id) => !roots.includes(id));
   const poisonNote = poisoned.length ? (
-    <> <span className="hl orange">Poisoned: {list(poisoned)}</span> came out of a cache with the wrong bytes: the key leaves out an input that differs between machines.</>
+    <> <span className="hl orange">Poisoned: {list(poisoned)}</span> came out of a cache with the wrong bytes. Only {list(roots)}&apos;s key leaves out an input that
+      differs between machines{inherited.length ? `; ${list(inherited)} inherit${inherited.length === 1 ? 's' : ''} it through ${inherited.length === 1 ? 'its' : 'their'} inputs` : ''}.</>
   ) : null;
   const verdict = !stale.length && !poisoned.length ? <> Every output matches a from-scratch build.</> : null;
   return <>{head}{staleNote}{poisonNote}{verdict}</>;

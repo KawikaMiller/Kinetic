@@ -88,4 +88,15 @@ export function edit(e: FileEdits, kind: EditKind, tick: number): FileEdits {
   return { code: e.code + (kind === 'code' ? 1 : 0), comment: e.comment + (kind === 'comment' ? 1 : 0), mtime: tick };
 }
 
+/**
+ * Undo the edits between `previous` and `current`: each changed file gets its old text back and a
+ * fresh mtime, as `git checkout` of an old version would (the file is rewritten now).
+ */
+export function revertEdits(current: Record<SourceId, FileEdits>, previous: Record<SourceId, FileEdits>, tick: number): Record<SourceId, FileEdits> {
+  return Object.fromEntries(SOURCES.map((s) => {
+    const same = current[s].code === previous[s].code && current[s].comment === previous[s].comment;
+    return [s, same ? current[s] : { code: previous[s].code, comment: previous[s].comment, mtime: tick }];
+  })) as Record<SourceId, FileEdits>;
+}
+
 export const isSource = (id: string): id is SourceId => (SOURCES as readonly string[]).includes(id);
