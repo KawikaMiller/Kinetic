@@ -208,6 +208,9 @@
   overflow: visible;
 }
 .meter-fill { display: block; height: 100%; border-radius: inherit; background: var(--c, var(--info)); }
+/* Stacked segments: square-edged parts, clipped to the rounded track */
+.meter-track.is-stacked { display: flex; overflow: hidden; }
+.meter-seg { display: block; height: 100%; background: var(--c, var(--info)); }
 /* Bar markers: a tick in its tone, its label under the track */
 .meter.has-mark-labels .meter-track { margin-bottom: 14px; }
 .meter-mark[class*='tone-'] { background: var(--c); }
