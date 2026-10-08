@@ -1,7 +1,7 @@
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import {
-  ASSERT_CRASH, CITY, FALLBACK, GUARDS, LINKS, checkLength, checkMatch, evaluate, firstNull, members, missingVariants, narrowed, printedFor,
+  CITY, assertCrashes, FALLBACK, GUARDS, LINKS, checkLength, checkMatch, evaluate, firstNull, members, missingVariants, narrowed, printedFor,
   type Arms, type FixMode, type Guard, type Link, type MatchLang, type Nulls, type ParamType, type Preset,
 } from './model';
 
@@ -57,7 +57,9 @@ export function chainFrames(mode: FixMode, n: Nulls): ChainFrame[] {
       ladder: <><code>{PATH[l]} !== null</code> is false: the inner blocks are skipped and <code>city</code> keeps &quot;{FALLBACK}&quot;.</>,
       optional: <><code>?.</code> sees that <code>{PATH[l]}</code> is null and stops the whole chain: the rest is never evaluated, and <code>city</code> is <code>undefined</code>.</>,
       optionalDefault: <><code>?.</code> stops the chain at the null <code>{PATH[l]}</code>, giving <code>undefined</code>, and <code>??</code> swaps in &quot;{FALLBACK}&quot;.</>,
-      option: <><code>{PATH[l]}</code> is null, so this <code>map</code> returns None. Every later <code>map</code> sees None and skips its function.</>,
+      option: l === 'user'
+        ? <><code>Option.of(user)</code> sees null and gives None. Every <code>map</code> after it sees None and skips its function.</>
+        : <><code>{PATH[l]}</code> is null, so this <code>map</code> returns None. Every later <code>map</code> sees None and skips its function.</>,
     }[mode];
     rec.snap(say, undefined, { current: l, seen: [...seen], skipped: rest });
     break;
@@ -94,8 +96,13 @@ export function narrowCaption(param: ParamType, guard: Guard) {
   if (v.unchecked) {
     return (
       <>
-        <code>x!</code> tells the checker &quot;trust me, not null&quot;, so it compiles, but nothing was ruled out. <span className="hl bad">len(null)</span> still throws{' '}
-        <code>{ASSERT_CRASH}</code>.
+        <code>x!</code> tells the checker &quot;trust me, not null or undefined&quot;, so it compiles, but nothing was ruled out.{' '}
+        {assertCrashes(param).map((c, i) => (
+          <span key={c.arg}>
+            {i > 0 ? ' ' : ''}
+            <span className="hl bad">len({c.arg})</span> still throws <code>{c.message}</code>.
+          </span>
+        ))}
       </>
     );
   }
@@ -129,7 +136,6 @@ export interface MatchFrame extends Frame {
 export function matchFrames(lang: MatchLang, p: Preset, arms: Arms, catchAll: boolean): MatchFrame[] {
   const v = checkMatch(lang, p, arms, catchAll);
   const missing = missingVariants(p, arms);
-  const langName = lang === 'rust' ? 'Rust' : 'TypeScript';
   const rec = createRecorder<MatchFrame>({ checked: false, current: null, done: [] });
   rec.snap(
     <>
@@ -141,8 +147,9 @@ export function matchFrames(lang: MatchLang, p: Preset, arms: Arms, catchAll: bo
     rec.set({ checked: true });
     rec.close(
       <>
-        <span className="hl orange">{langName} refuses to compile</span>: <code>{v.message}</code>{v.message!.endsWith('.') ? ' ' : '. '}The missing arm{missing.length === 1 ? '' : 's'} ({missing.map((x) => x.name).join(', ')}) {missing.length === 1 ? 'is' : 'are'}{' '}
-        caught before the program runs, not by a user.
+        <span className="hl orange">{lang === 'rust' ? 'Rust refuses to compile' : 'tsc reports an error'}</span>: <code>{v.message}</code>{v.message!.endsWith('.') ? ' ' : '. '}The missing arm{missing.length === 1 ? '' : 's'} ({missing.map((x) => x.name).join(', ')}) {missing.length === 1 ? 'is' : 'are'}{' '}
+        caught at build time, not by a user.
+        {lang === 'ts' ? <> (tsc still emits JavaScript unless <code>noEmitOnError</code> is set, so the build has to fail on type errors for that to hold.)</> : null}
       </>,
       2,
     );

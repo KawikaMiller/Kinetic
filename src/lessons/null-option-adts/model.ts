@@ -189,8 +189,11 @@ export function narrowSource(p: ParamType, g: Guard): { lines: string[]; useLine
   return { lines: [head, `  ${guard.code}`, '    return x.length;', '  }', '  return 0;', '}'], useLine: 2 };
 }
 
-/** What `len(null)` does at run time with the assertion (real JavaScript, asserted in the tests). */
-export const ASSERT_CRASH = v8NullRead('length');
+/**
+ * What `len(arg)` does at run time with the assertion, for each value the declared type still allows
+ * (real JavaScript, asserted in the tests): null reads fail with V8's "of null", undefined with "of undefined".
+ */
+export const assertCrashes = (p: ParamType) => members(p).filter((m) => m !== 'string').map((m) => ({ arg: m, message: `TypeError: Cannot read properties of ${m} (reading 'length')` }));
 
 // ── Scene 3 · sum types and exhaustive matching ────────────────────
 

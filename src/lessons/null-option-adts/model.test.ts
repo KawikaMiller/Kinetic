@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { chainFrames, matchFrames, narrowCaption } from './frames';
 import {
-  ALL_ARMS, ALL_NULLS, ASSERT_CRASH, FIX_CODE, FIX_MODES, GUARDS, Option, PARAM_TYPES, PRESETS, checkLength, checkMatch, evaluate, flagRows, joinedPatterns,
-  narrowSource, narrowed, rustMatchSource, tsMatchSource, userSource, type Arms, type Nulls,
+  ALL_ARMS, ALL_NULLS, FIX_CODE, FIX_MODES, GUARDS, Option, PARAM_TYPES, PRESETS, checkLength, checkMatch, evaluate, flagRows, joinedPatterns,
+  assertCrashes, narrowSource, narrowed, rustMatchSource, tsMatchSource, userSource, type Arms, type Nulls,
 } from './model';
 import { emitJs, tscErrors } from './tscCheck';
 
@@ -89,19 +89,33 @@ describe('scene 2: the narrowing checker matches tsc --strict', () => {
     for (const [p, g] of combos) {
       const say = captionText(narrowCaption(p, g));
       const v = checkLength(p, g);
-      if (v.unchecked) expect(say).toContain(ASSERT_CRASH);
+      if (v.unchecked) for (const c of assertCrashes(p)) expect(say).toContain(c.message);
       else if (v.ok) expect(say).toContain('tsc accepts it');
       else expect(say).toContain(v.message!);
       expect(say.includes('ruled the rest out')).toBe(v.ok && !v.unchecked && narrowed(p, g).length < PARAM_TYPES.find((t) => t.value === p)!.members.length);
     }
   });
 
-  it('the assertion compiles but still crashes on a real null', () => {
+  it('the assertion compiles but still crashes: each remaining value throws exactly the message shown, for every parameter type', () => {
     expect(checkLength('sn', 'assert')).toEqual({ ok: true, message: null, unchecked: true });
     expect(checkLength('s', 'assert').unchecked).toBe(false);
-    const js = emitJs(`${narrowSource('sn', 'assert').lines.join('\n')}\nlen(null);`);
-    // Safe: fixed, lesson-authored snippet.
-    expect(() => new Function(js)()).toThrow(ASSERT_CRASH.replace('TypeError: ', ''));
+    for (const p of PARAM_TYPES) {
+      const crashes = assertCrashes(p.value);
+      expect(crashes.map((c) => c.arg)).toEqual(p.members.filter((m) => m !== 'string'));
+      for (const c of crashes) {
+        // Safe: fixed, lesson-authored snippet.
+        const js = emitJs(`${narrowSource(p.value, 'assert').lines.join('\n')}\nlen(${c.arg});`);
+        let msg = '';
+        try {
+          new Function(js)();
+        } catch (e) {
+          msg = `${(e as Error).name}: ${(e as Error).message}`;
+        }
+        expect([p.value, c.arg, msg]).toEqual([p.value, c.arg, c.message]);
+      }
+    }
+    // len(undefined) on a string | undefined is the real crash: it says "of undefined", not "of null".
+    expect(assertCrashes('su')[0].message).toContain('of undefined');
   });
 });
 
@@ -186,7 +200,9 @@ describe('scene 3: exhaustive matching', () => {
             const v = checkMatch(lang, p, arms, c);
             const say = captionText(frames.at(-1)!.say);
             if (!v.ok) {
-              expect(say).toContain('refuses to compile');
+              expect(say).toContain(lang === 'rust' ? 'Rust refuses to compile' : 'tsc reports an error');
+              expect(say.includes('refuses to compile')).toBe(lang === 'rust');
+              expect(say.includes('noEmitOnError')).toBe(lang === 'ts');
               expect(say).toContain(v.message!);
               expect(frames.at(-1)!.done).toEqual([]);
             } else {

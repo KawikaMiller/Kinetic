@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Segmented } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { narrowCaption } from './frames';
-import { ASSERT_CRASH, GUARDS, PARAM_TYPES, checkLength, members, narrowSource, narrowed, type Guard, type ParamType } from './model';
+import { GUARDS, assertCrashes, PARAM_TYPES, checkLength, members, narrowSource, narrowed, type Guard, type ParamType } from './model';
 
 function TypeChips({ all, kept, label }: { all: string[]; kept: string[]; label: ReactNode }) {
   return (
@@ -36,7 +36,7 @@ export function NarrowScene({ picker }: { picker: ReactNode }) {
   useIntroCaption(narrowCaption(param, guard), [param, guard]);
 
   const consoleLines: ConsoleLine[] = v.unchecked
-    ? [{ text: 'no errors', tone: 'ok' }, { text: `len(null) → ${ASSERT_CRASH}`, tone: 'bad' }]
+    ? [{ text: 'no errors', tone: 'ok' }, ...assertCrashes(param).map((c) => ({ text: `len(${c.arg}) → ${c.message}`, tone: 'bad' as const }))]
     : v.ok
       ? [{ text: 'no errors', tone: 'ok' }]
       : [{ text: v.message!, tone: 'orange' }];
@@ -74,7 +74,7 @@ export function NarrowScene({ picker }: { picker: ReactNode }) {
               stateOf={(i) => (i === src.useLine ? (v.ok ? (v.unchecked ? 'bad' : 'done') : 'bad') : 'idle')}
               className={`noa-code ${v.ok ? '' : 'is-compile'}`}
             />
-            <ConsolePanel title={v.unchecked ? 'tsc --strict, then run len(null)' : 'tsc --strict'} lines={consoleLines} />
+            <ConsolePanel title={v.unchecked ? 'tsc --strict, then run the calls' : 'tsc --strict'} lines={consoleLines} />
           </div>
           <div className="noa-col">
             <TypeChips all={all} kept={all} label={<>declared type of <code className="keep-case">x</code></>} />

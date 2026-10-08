@@ -56,7 +56,7 @@ export function ChainScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--hi)', label: 'link being read now' },
             { color: 'var(--info)', label: 'present value' },
-            { color: 'var(--bad)', label: 'the null that crashed / a leaked undefined' },
+            { color: 'var(--bad)', label: 'a null that wasn’t handled (crash, or a leaked undefined)' },
             { color: 'var(--ok)', label: 'handled' },
             { color: 'var(--dim)', label: 'never evaluated' },
           ]}
@@ -116,6 +116,7 @@ export function ChainScene({ picker }: { picker: ReactNode }) {
             </Box>
           </div>
         </div>
+        {Object.values(nulls).filter(Boolean).length > 1 && <Hint block>Only the first null in the chain matters: the chain stops there, so a null after it is never reached.</Hint>}
         <Hint block>The program runs as real JavaScript in the lesson&apos;s tests: every crash message and printed line here is what V8 gives for that combination.</Hint>
       </div>
     </StageFrame>

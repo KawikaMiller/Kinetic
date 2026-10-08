@@ -150,14 +150,14 @@ export function MatchScene({ picker }: { picker: ReactNode }) {
               )}
               {f.checked && !v.ok && (
                 <text className="noa-flagged" x={SORTER_W / 2} y={34} textAnchor="middle">
-                  doesn&apos;t compile: nothing runs
+                  {lang === 'rust' ? 'doesn’t compile: nothing runs' : 'tsc reports an error'}
                 </text>
               )}
             </svg>
           </div>
           <div className="noa-col">
             <CodePanel title={lang === 'rust' ? 'Rust (fixed)' : 'TypeScript'} lines={src.lines} stateOf={lineState} className="noa-code is-compile" />
-            <ConsolePanel title={lang === 'rust' ? 'rustc, then run (fixed real outputs)' : 'tsc --strict, then run'} lines={consoleLines} empty="(not compiled yet)" />
+            <ConsolePanel title={lang === 'rust' ? 'rustc, then run (abridged, shown not run)' : 'tsc --strict, then run'} lines={consoleLines} empty="(not compiled yet)" />
           </div>
         </div>
         <div className="noa-flags">
@@ -180,7 +180,7 @@ export function MatchScene({ picker }: { picker: ReactNode }) {
           </Hint>
         </div>
         <Hint block>
-          Rust code and compiler messages are fixed, real rustc outputs, shown, not run. The TypeScript version and its messages are real: tsc and the outputs are checked in the
+          Rust code and compiler messages are shown, not run: the first line of rustc’s diagnostic, wording from memory. The TypeScript version and its messages are real: tsc and the outputs are checked in the
           lesson&apos;s tests.
         </Hint>
       </div>
