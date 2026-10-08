@@ -38,6 +38,10 @@ const toneOf = (strategy: Strategy, q: Query, total: number, lazyTotal: number):
   strategy === 'lazy' ? (q.kind === 'first' ? 'info' : 'orange') : fixTone(total, lazyTotal);
 const roundTenth = (v: number) => Math.round(v * 10) / 10;
 
+const BODY_PREVIEW_CHARS = 24;
+/** A long column shown shortened, with its true length, so the table stays readable. */
+const shortText = (s: string) => (s.length <= BODY_PREVIEW_CHARS ? s : `${s.slice(0, BODY_PREVIEW_CHARS)}… (${s.length} chars)`);
+
 export function OrmScene({ scene, picker }: { scene: Scene; picker: ReactNode }) {
   const [strategy, setStrategy] = useState<Strategy>('lazy');
   const [n, setN] = useState(PAGE_DEFAULT);
@@ -189,15 +193,17 @@ function WireRows({ run }: { run: ReturnType<typeof runStrategy> }) {
       <SectionTitle weight="regular" hint={`${plural(q.rows.length, 'row')} for ${plural(posts, 'post')}, ${fmtBytes(q.bytes)}`}>What came back over the wire</SectionTitle>
       <WideRegion minWidth={460} label="Rows returned by the join: scroll sideways">
         <table className="data-table" aria-label="Rows returned by the join">
-          <thead><tr><th>post</th><th>title</th><th>comment</th><th>body</th><th>commenter</th></tr></thead>
+          <thead><tr><th>post</th><th>title</th><th>post body</th><th>comment</th><th>comment text</th><th>commenter</th></tr></thead>
           <tbody>
             {q.rows.slice(0, WIRE_ROWS).map((r, i) => {
               const repeat = i > 0 && q.rows[i - 1][0] === r[0];
+              const cls = repeat ? 'orm-dup' : undefined;
               return (
                 <tr key={i}>
-                  <td className={repeat ? 'orm-dup' : undefined}>{r[0]}</td>
-                  <td className={repeat ? 'orm-dup' : undefined}>{r[1]}</td>
-                  {r.slice(2).map((v, k) => <td key={k} className={v === null ? 'orm-null' : undefined}>{v === null ? 'NULL' : v}</td>)}
+                  <td className={cls}>{r[0]}</td>
+                  <td className={cls}>{r[1]}</td>
+                  <td className={cls}>{shortText(r[2] as string)}</td>
+                  {r.slice(3).map((v, k) => <td key={k} className={v === null ? 'orm-null' : undefined}>{v === null ? 'NULL' : v}</td>)}
                 </tr>
               );
             })}
