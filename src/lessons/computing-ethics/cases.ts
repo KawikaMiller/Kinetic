@@ -1,7 +1,11 @@
 import type { PrincipleId } from './acm';
 
-/** harm to people, a risk raised and handled, or a trade-off that stays open. Authored, never computed. */
-export type ImpactTone = 'harm' | 'handled' | 'open';
+/**
+ * harm to people; a risk that was raised and addressed (`handled`: use it only where a risk is dealt with);
+ * a benefit or a cost saved, including doing nothing (`benefit`); or a trade-off that stays open.
+ * Authored, never computed.
+ */
+export type ImpactTone = 'harm' | 'handled' | 'benefit' | 'open';
 
 export interface Impact {
   tone: ImpactTone;
@@ -16,8 +20,16 @@ export interface Choice {
   users: Impact;
   team: Impact;
   you: Impact;
-  /** Therac-25 only: the choice that matches what actually happened. */
+  /** Therac-25 only: the choice that matches what actually happened. The consequences on its cards are still authored. */
   history?: boolean;
+}
+
+/** What the outcome panel says about where a choice's consequences come from. */
+export function choiceBasis(c: { fictional: boolean }, choice: Pick<Choice, 'history'>): string {
+  if (c.fictional) return 'Illustrative consequences, not predictions';
+  return choice.history
+    ? 'This choice matches what happened; the consequences below are written for this lesson, not taken from the reports'
+    : 'A what-if written for this lesson, not what happened';
 }
 
 export interface Decision {
@@ -60,6 +72,7 @@ export interface EthicsCase {
 
 const h = (text: string): Impact => ({ tone: 'harm', text });
 const ok = (text: string): Impact => ({ tone: 'handled', text });
+const gain = (text: string): Impact => ({ tone: 'benefit', text });
 const open = (text: string): Impact => ({ tone: 'open', text });
 
 /** The facts the Therac-25 case rests on (Leveson & Turner, "An Investigation of the Therac-25 Accidents", IEEE Computer, 1993). */
@@ -75,24 +88,24 @@ const THERAC: EthicsCase = {
   title: 'Therac-25',
   subtitle: 'History, 1985-87',
   fictional: false,
-  honesty: `History, summarised from ${THERAC_FACTS.source}. The Therac-25 was a computer-controlled radiation therapy machine. Between June 1985 and January 1987 there were six known accidents in which patients received massive radiation overdoses, with deaths and serious injuries. You play an engineer on the project; one choice at each point is what actually happened, the others are what-ifs written for this lesson.`,
+  honesty: `History, summarised from ${THERAC_FACTS.source}. The Therac-25 was a computer-controlled radiation therapy machine. Between June 1985 and January 1987 there were six known accidents in which patients received massive radiation overdoses, with deaths and serious injuries. You play an engineer on the project; one choice at each point matches what happened, the others are what-ifs. The consequences shown on the cards are written for this lesson, and the set-up is a simplification of a long chain of events.`,
   start: 'design',
   nodes: [
     {
       kind: 'decision', id: 'design', short: 'Design', title: 'Safety design',
-      setup: 'The earlier model protected patients with independent hardware interlocks as well as software. The new design reuses much of the older software and relies on software checks for the same protections. The schedule is tight. What do you push for?',
+      setup: 'The earlier model protected patients with independent hardware interlocks as well as software. The new design reuses much of the older software and relies on software checks for the same protections. What do you push for?',
       principles: ['2.5', '1.2'],
       choices: [
         {
           id: 'A', label: 'Rely on the software checks; drop the hardware interlocks', to: 'testing', history: true,
           users: h('Nothing independent of the software stands between a software fault and the patient.'),
-          team: open('A simpler build and a faster schedule, resting on the assumption that reused software is already safe.'),
-          you: open('You avoid a schedule argument and take on an assumption nobody has tested.'),
+          team: open('Less to build, resting on the assumption that reused software is already safe.'),
+          you: open('You take on an assumption that still needs checking.'),
         },
         {
           id: 'B', label: 'Keep an independent hardware interlock as a backstop', to: 'end-interlock',
           users: ok('A software fault now has a second, independent check to get past.'),
-          team: open('More cost and a harder schedule conversation.'),
+          team: open('More cost, and a harder conversation about effort.'),
           you: ok('You can point to a safety argument that does not rest on the software alone.'),
         },
         {
@@ -105,14 +118,14 @@ const THERAC: EthicsCase = {
     },
     {
       kind: 'decision', id: 'testing', short: 'Testing', title: 'Timing faults and error messages',
-      setup: 'In testing, odd failures show up when an operator edits the treatment entry quickly, and the machine shows terse messages such as "MALFUNCTION 54" that the manual does not explain. Pressing a key lets treatment carry on. The timing fault is a race condition, the bug class from `race-conditions`. What do you push for?',
+      setup: 'The reports describe many warning signs, and this set-up is a simplification of them. Imagine odd failures when an operator edits the treatment entry quickly, and terse messages such as "MALFUNCTION 54" that the manual does not explain. Pressing a key lets treatment carry on. The timing fault is a race condition, the bug class from `race-conditions`. What do you push for?',
       principles: ['2.1', '2.5'],
       choices: [
         {
           id: 'A', label: 'Treat the messages as nuisance faults; operators can proceed', to: 'reports', history: true,
           users: h('A dangerous machine state can be reached with little warning, and carrying on is one keypress.'),
-          team: open('Fewer interruptions in the clinic and fewer support calls.'),
-          you: open('You keep the schedule, and the messages become part of the daily routine.'),
+          team: open('Fewer interruptions to treatment sessions, and no redesign.'),
+          you: open('The messages become part of the daily routine.'),
         },
         {
           id: 'B', label: 'Test timing deliberately, make errors say what is wrong, and block unsafe resume', to: 'end-testing',
@@ -190,13 +203,13 @@ const DARK_PATTERN: EthicsCase = {
   nodes: [
     {
       kind: 'decision', id: 'request', short: 'Request', title: 'The request',
-      setup: 'The retention target is ambitious and the spec is signed off. You are asked to build the flow as written. What do you do?',
+      setup: 'The retention target is ambitious and the spec is signed off. The product team has a fair point as far as it goes: an offer made at the right moment, such as a discount, really does help some people who were about to leave. The problem is not the offer, it is hiding the way out. You are asked to build the flow as written. What do you do?',
       principles: ['1.3', '1.2'],
       choices: [
         {
           id: 'A', label: 'Build it as specified', to: 'launched',
           users: h('Some people who meant to cancel keep paying, or give up after a long search.'),
-          team: ok('The retention metric improves and the sprint stays on time.'),
+          team: gain('The retention metric improves and the sprint stays on time.'),
           you: open('You deliver what was asked and own part of what it does to users.'),
         },
         {
@@ -241,7 +254,7 @@ const DARK_PATTERN: EthicsCase = {
           id: 'A', label: 'Offer a compromise you can build this sprint: clear Cancel, one offer', to: 'end-compromise',
           users: ok('Cancelling is clear, and an offer is still shown.'),
           team: open('Part of the planned uplift is traded for fewer complaints.'),
-          you: ok('You keep the conversation going and the launch on time.'),
+          you: gain('You keep the conversation going and the launch on time.'),
         },
         {
           id: 'B', label: 'Document your concerns, build as told, and escalate to whoever owns the policy', to: 'end-escalated',
@@ -253,7 +266,7 @@ const DARK_PATTERN: EthicsCase = {
     },
     {
       kind: 'end', id: 'end-honest', short: 'Honest flow', title: 'An honest retention flow', basis: 'illustrative',
-      text: 'Illustrative. Cancelling is easy, so the product keeps customers who want it and loses those who do not. Complaints about the flow are unlikely to be its problem, and the team has traded some retention for trust.',
+      text: 'Illustrative. Cancelling is easy, so the product keeps customers who want it and loses those who do not. The flow itself is less likely to draw complaints, and the team has traded some retention for trust.',
       question: 'How would you test whether an honest offer retains enough customers to satisfy the goal?',
     },
     {
@@ -295,7 +308,7 @@ const LOCATION: EthicsCase = {
         {
           id: 'A', label: 'Collect precise location from everyone, always', to: 'review',
           users: h('A detailed movement history exists about people who only wanted the nearby feature.'),
-          team: ok('The analytics team has flexibility and no extra design work.'),
+          team: gain('The analytics team has flexibility and no extra design work.'),
           you: open('You make the team happy now and own the data you chose to keep.'),
         },
         {
@@ -326,7 +339,7 @@ const LOCATION: EthicsCase = {
         {
           id: 'B', label: 'Note it for later; nothing has gone wrong', to: 'end-deferred',
           users: h('The data stays widely readable and indefinitely kept.'),
-          team: ok('No immediate work.'),
+          team: gain('No immediate work, at the price of leaving a known risk in place.'),
           you: open('The risk is known and written down, and not yet dealt with.'),
         },
       ],
@@ -345,7 +358,7 @@ const LOCATION: EthicsCase = {
         {
           id: 'B', label: 'Pre-tick the box', to: 'end-pretick',
           users: h('Many people share precise location without noticing they agreed to anything.'),
-          team: ok('Most users end up in the dataset.'),
+          team: gain('Most users end up in the dataset.'),
           you: open('You still have an "opt-in" to point to, and a doubt about how real the choice is.'),
         },
       ],
@@ -372,7 +385,7 @@ const LOCATION: EthicsCase = {
     },
     {
       kind: 'end', id: 'end-pretick', short: 'Pre-ticked', title: 'A pre-ticked box', basis: 'illustrative',
-      text: 'Illustrative. The dataset is larger. Many of the people in it may not realise they agreed, which makes the consent weaker and invites complaints if it comes to light.',
+      text: 'Illustrative. The dataset is larger. Many of the people in it may not realise they agreed, which makes the consent weaker (in some jurisdictions a pre-ticked box does not count as valid consent) and invites complaints if it comes to light.',
       question: 'What makes a default a choice, and what makes it a nudge?',
     },
   ],
@@ -394,7 +407,7 @@ const FRIDAY: EthicsCase = {
         {
           id: 'A', label: 'Ship on time and log a ticket for later', to: 'week-later',
           users: h('Screen-reader users cannot complete checkout from day one.'),
-          team: ok('The launch date holds.'),
+          team: gain('The launch date holds.'),
           you: open('You know about the blocker and have chosen not to stop for it.'),
         },
         {
@@ -425,7 +438,7 @@ const FRIDAY: EthicsCase = {
         {
           id: 'B', label: 'Leave it in the backlog', to: 'end-ignored',
           users: h('The gap stays open, and more people run into it.'),
-          team: ok('Planned work carries on.'),
+          team: gain('Planned work carries on, with the known gap still open.'),
           you: open('You are leaving a ticket you wrote waiting while people are affected.'),
         },
       ],
@@ -444,7 +457,7 @@ const FRIDAY: EthicsCase = {
         {
           id: 'B', label: 'Accept the gap: it only affects some people at the weekend', to: 'end-gap',
           users: h('Some people have no way to finish a purchase on some days.'),
-          team: ok('No extra staffing.'),
+          team: gain('No extra staffing.'),
           you: open('The workaround exists on paper and not when people need it.'),
         },
       ],

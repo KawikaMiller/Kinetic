@@ -9,8 +9,9 @@ import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { minWidthForText } from '../../core/scale';
 import { principle, type PrincipleId } from './acm';
-import type { Choice, CaseNode, EthicsCase, Impact, ImpactTone } from './cases';
+import { choiceBasis, type Choice, type CaseNode, type EthicsCase, type Impact } from './cases';
 import { PrincipleChips } from './PrincipleChips';
+import { IMPACT_TONE, IMPACT_WORD } from './tones';
 import { markEdge, markNode, type Progress } from './progress';
 import { advance, back, edgeKey, isDecision, mapOf, nodeOf, pick, startWalk, summarisePath } from './walk';
 
@@ -20,23 +21,16 @@ const MAP_BOX = { w: 122, h: 36 };
 const MAP_TEXT_PX = 10;
 const WIDE_QUERY = '(max-width: 900px)';
 
-const TONE_OF: Record<ImpactTone, 'bad' | 'ok' | 'orange'> = { harm: 'bad', handled: 'ok', open: 'orange' };
-const TONE_WORD: Record<ImpactTone, string> = { harm: 'harm', handled: 'risk raised and handled', open: 'trade-off still open' };
 const WHO = [['users', 'Users'], ['team', 'The team'], ['you', 'You']] as const;
 
 function ImpactCard({ who, impact }: { who: string; impact: Impact }) {
   return (
-    <div className={`ce-impact tone-${TONE_OF[impact.tone]}`}>
+    <div className={`ce-impact tone-${IMPACT_TONE[impact.tone]}`}>
       <span className="ce-impact-who">{who}</span>
-      <span className="chip">{TONE_WORD[impact.tone]}</span>
+      <span className="chip">{IMPACT_WORD[impact.tone]}</span>
       <span>{impact.text}</span>
     </div>
   );
-}
-
-function basisLabel(c: EthicsCase, choice: Choice) {
-  if (c.fictional) return 'Illustrative consequences, not predictions';
-  return choice.history ? 'This is what actually happened' : 'A what-if written for this lesson, not what happened';
 }
 
 function endBasisLabel(node: Extract<CaseNode, { kind: 'end' }>) {
@@ -60,7 +54,7 @@ export function CaseScene({ picker, c, progress, onProgress }: { picker: ReactNo
   const choose = (choice: Choice) => {
     if (!isDecision(node)) return;
     update(markEdge({ ...progress, walk: pick(c, walk, choice.id) }, edgeKey(node.id, choice.id)));
-    setCaption(<>You chose <b>{choice.id}</b>: {choice.label}. {basisLabel(c, choice)}.</>);
+    setCaption(<>You chose <b>{choice.id}</b>: {choice.label}. {choiceBasis(c, choice)}.</>);
   };
   const next = () => {
     const w = advance(c, walk);
@@ -117,9 +111,10 @@ export function CaseScene({ picker, c, progress, onProgress }: { picker: ReactNo
             { color: 'var(--hi)', label: 'you are here' },
             { color: 'var(--info)', label: 'seen / taken' },
             { color: 'var(--dim)', label: 'not yet explored' },
-            { color: 'var(--bad)', label: 'harm' },
-            { color: 'var(--ok)', label: 'risk raised and handled' },
-            { color: 'var(--orange)', label: 'trade-off still open' },
+            { color: 'var(--bad)', label: IMPACT_WORD.harm },
+            { color: 'var(--ok)', label: IMPACT_WORD.handled },
+            { color: 'var(--muted)', label: IMPACT_WORD.benefit },
+            { color: 'var(--orange)', label: IMPACT_WORD.open },
             { color: 'var(--violet)', label: 'ACM principle' },
           ]}
         />
@@ -166,7 +161,7 @@ export function CaseScene({ picker, c, progress, onProgress }: { picker: ReactNo
                 </div>
                 {picked && (
                   <div className="ce-outcome" aria-live="polite">
-                    <SectionTitle hint={basisLabel(c, picked)}>What follows</SectionTitle>
+                    <SectionTitle hint={choiceBasis(c, picked)}>What follows</SectionTitle>
                     <div className="ce-impacts">
                       {WHO.map(([key, who]) => (
                         <ImpactCard key={key} who={who} impact={picked[key]} />

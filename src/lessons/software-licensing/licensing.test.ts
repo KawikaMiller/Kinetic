@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { statusWord } from './labels';
 import { LICENCE_FACTS, LICENCES, MODELS, PRODUCT_LICENCES, RULES, type LicenceId, type Model, type ProductLicence, type Setup } from './licences';
 import {
-  ALLOW_LIST, compatibility, DEFAULT_PRESET, depthOf, MAX_DEPS, MAX_DEPTH, obligationRows, PRESETS, resolveDep, resolveTree, ROOT, scan, spdxCoverage,
+  ALLOW_LIST, compatibility, DEFAULT_PRESET, depthOf, MAX_DEPS, MAX_DEPTH, obligationRows, PRESETS, resolveDep, resolveTree, underSeparate, compatNote, ROOT, type Dep, scan, spdxCoverage,
   withAdded, withFlag, withLicence, withoutDep, type Compat, type DepStatus,
 } from './resolver';
 
 // Valid SPDX license list identifiers, typed by hand (https://spdx.org/licenses/). The bare "GPL-3.0",
 // "LGPL-2.1" and "AGPL-3.0" are deprecated in favour of the -only / -or-later forms.
 const SPDX_VALID = new Set(['MIT', 'BSD-3-Clause', 'Apache-2.0', 'MPL-2.0', 'LGPL-2.1-only', 'GPL-2.0-only', 'GPL-3.0-only', 'AGPL-3.0-only']);
+
+const dep = (id: string, licence: LicenceId, parent: string = ROOT, flags: Partial<Pick<Dep, 'modified' | 'separate'>> = {}): Dep => ({
+  id, name: id, licence, parent, modified: false, separate: false, ...flags,
+});
 
 const setup = (model: Model, flags: Partial<Setup> = {}): Setup => ({ model, modified: false, separate: false, ...flags });
 const dueIds = (licence: LicenceId, s: Setup) => obligationRows(licence, s).filter((o) => o.state === 'due').map((o) => o.id);
@@ -201,17 +206,22 @@ describe('presets, worked by hand', () => {
     return Object.fromEntries(p.deps.map((d) => [d.id, t.verdicts.get(d.id)?.status]));
   };
 
-  it('MIT app + GPL-3.0 chart library: the whole goes out under GPL-3.0 (no clash with MIT); closed source is the conflict', () => {
-    expect(statuses('chart')).toEqual({ 'web-framework': 'ok', 'date-utils': 'ok', 'chart-lib': 'violet' });
-    const v = resolveTree(preset('chart').deps, 'MIT', 'distributed').verdicts.get('chart-lib');
+  it('MIT app + GPL-3.0 report-engine library: the whole goes out under GPL-3.0 (no clash with MIT); closed source is the conflict', () => {
+    expect(statuses('chart')).toEqual({ 'web-framework': 'ok', 'date-utils': 'ok', 'report-engine': 'violet' });
+    const v = resolveTree(preset('chart').deps, 'MIT', 'distributed').verdicts.get('report-engine');
     expect(v?.compat).toBe('whole-copyleft');
-    expect(statuses('chart', { product: 'proprietary' })['chart-lib']).toBe('bad');
+    expect(statuses('chart', { product: 'proprietary' })['report-engine']).toBe('bad');
+  });
+
+  it('the SaaS preset library is server-side, and the note says browser-shipped code counts as distributed', () => {
+    expect(preset('chart').note).toMatch(/browsers is distributed/);
+    expect(preset('chart').deps.map((d) => d.id).join()).not.toMatch(/chart/);
   });
 
   it('the same app as an internal tool, or a service, triggers nothing (use alone is not distribution)', () => {
     for (const model of ['internal', 'saas'] as const) {
-      expect(statuses('chart', { model })).toEqual({ 'web-framework': 'dim', 'date-utils': 'dim', 'chart-lib': 'dim' });
-      expect(statuses('chart', { model, product: 'proprietary' })['chart-lib']).toBe('dim');
+      expect(statuses('chart', { model })).toEqual({ 'web-framework': 'dim', 'date-utils': 'dim', 'report-engine': 'dim' });
+      expect(statuses('chart', { model, product: 'proprietary' })['report-engine']).toBe('dim');
     }
   });
 
@@ -227,7 +237,74 @@ describe('presets, worked by hand', () => {
 
     // Built into the service instead of run beside it: the whole service is the question, and closed source conflicts.
     const bundled = withFlag(unmodified, 'graph-db', 'separate', false);
-    expect(resolveTree(bundled, p.product, p.model).verdicts.get('graph-db')?.status).toBe('bad');
+    const built = resolveTree(bundled, p.product, p.model).verdicts.get('graph-db')!;
+    expect(built.status).toBe('bad'); // the red stays, but the wording must not state it as settled
+    expect(built.contested).toBe(true);
+    expect(built.headline).toMatch(/Likely conflict/);
+    expect(built.headline).toMatch(/contested/);
+    expect(statusWord(built)).toBe('likely conflict (contested)');
+  });
+
+  it('a contested combination is never worded as a flat verdict, in the headline or the status chip', () => {
+    for (const licence of ['GPL-2.0-only', 'GPL-3.0-only', 'AGPL-3.0-only'] as const) {
+      const v = resolveDep({ id: 'x', name: 'x', licence, parent: ROOT, modified: false, separate: false }, 'proprietary', 'distributed');
+      expect(v.status).toBe('bad');
+      expect(v.headline).not.toMatch(/^Conflict/);
+      expect(v.headline).toMatch(/if this is one combined work/);
+      expect(statusWord(v)).toMatch(/contested/);
+    }
+    const copyleft = resolveDep({ id: 'x', name: 'x', licence: 'GPL-3.0-only', parent: ROOT, modified: false, separate: false }, 'GPL-3.0-only', 'distributed');
+    expect(copyleft.headline).toMatch(/likely triggered/);
+    expect(copyleft.headline).toMatch(/contested/);
+  });
+
+  it('settled results are not marked contested', () => {
+    const none = resolveDep({ id: 'x', name: 'x', licence: 'none', parent: ROOT, modified: false, separate: false }, 'proprietary', 'internal');
+    expect(none.contested).toBe(false);
+    expect(statusWord(none)).toBe('conflict or no permission');
+    const mit = resolveDep({ id: 'x', name: 'x', licence: 'MIT', parent: ROOT, modified: false, separate: false }, 'proprietary', 'distributed');
+    expect(statusWord(mit)).toBe('notices only');
+  });
+
+  it('a package under a separate program belongs to that program, so it is not combined into your product', () => {
+    const p = preset('agpl-saas');
+    const child = withAdded(p.deps, 'graph-db', 'GPL-3.0-only')!;
+    expect(underSeparate(child.deps, child.id)).toBe(true);
+    for (const model of ['distributed', 'saas'] as const) {
+      const v = resolveTree(child.deps, 'proprietary', model).verdicts.get(child.id)!;
+      expect(v.compat).toBeNull();
+      expect(v.status).not.toBe('bad');
+    }
+    // Flip the parent to built-in and the same child is combined again.
+    const builtIn = withFlag(child.deps, 'graph-db', 'separate', false);
+    expect(underSeparate(builtIn, child.id)).toBe(false);
+    expect(resolveTree(builtIn, 'proprietary', 'distributed').verdicts.get(child.id)?.status).toBe('bad');
+  });
+
+  it('separate is inherited through more than one level, and a sibling is unaffected', () => {
+    const base = [dep('a', 'MIT', ROOT, { separate: true }), dep('b', 'MIT', 'a'), dep('c', 'GPL-3.0-only', 'b'), dep('d', 'GPL-3.0-only', ROOT)];
+    expect(underSeparate(base, 'c')).toBe(true);
+    expect(underSeparate(base, 'd')).toBe(false);
+    expect(underSeparate(base, 'a')).toBe(false);
+    const t = resolveTree(base, 'proprietary', 'distributed');
+    expect(t.verdicts.get('c')?.status).not.toBe('bad');
+    expect(t.verdicts.get('d')?.status).toBe('bad');
+  });
+
+  it('only a GPL-family product gets the MPL secondary-licence note', () => {
+    expect(compatNote('MPL-2.0', 'MIT')).not.toMatch(/§3\.3/);
+    expect(compatNote('MPL-2.0', 'proprietary')).not.toMatch(/§3\.3/);
+    expect(compatNote('MPL-2.0', 'GPL-3.0-only')).toMatch(/§3\.3/);
+  });
+
+  it('the AGPL rows do not say GPL-covered, and the idle network note is only the internal one for internal use', () => {
+    const rows = obligationRows('AGPL-3.0-only', { model: 'distributed', modified: false, separate: false });
+    expect(rows.find((r) => r.id === 'gpl-source')!.detail).not.toMatch(/GPL-covered/);
+    expect(rows.find((r) => r.id === 'gpl-source')!.detail).toMatch(/AGPL-covered/);
+    const network = (model: Model) => obligationRows('AGPL-3.0-only', { model, modified: false, separate: true }).find((r) => r.id === 'agpl-network')!.detail;
+    expect(network('internal')).toMatch(/only your own organisation/);
+    expect(network('distributed')).not.toMatch(/only your own organisation/);
+    expect(network('library')).not.toMatch(/only your own organisation/);
   });
 
   it('copy-pasted code with no licence is a problem in every model, even internal', () => {
@@ -236,11 +313,11 @@ describe('presets, worked by hand', () => {
   });
 
   it('relicensing: the product licence you pick is limited by what you depend on', () => {
-    expect(statuses('relicense')).toEqual({ 'web-framework': 'ok', 'http-client': 'ok', 'parser-lib': 'violet', 'chart-lib': 'violet' });
-    expect(statuses('relicense', { product: 'proprietary' })).toMatchObject({ 'chart-lib': 'bad', 'http-client': 'ok', 'parser-lib': 'violet' });
-    expect(statuses('relicense', { product: 'GPL-2.0-only' })).toMatchObject({ 'http-client': 'bad', 'chart-lib': 'bad', 'parser-lib': 'violet', 'web-framework': 'ok' });
-    expect(statuses('relicense', { product: 'MIT' })).toMatchObject({ 'chart-lib': 'violet', 'http-client': 'ok' });
-    expect(statuses('relicense', { product: 'Apache-2.0' })['chart-lib']).toBe('violet');
+    expect(statuses('relicense')).toEqual({ 'web-framework': 'ok', 'http-client': 'ok', 'parser-lib': 'violet', 'report-engine': 'violet' });
+    expect(statuses('relicense', { product: 'proprietary' })).toMatchObject({ 'report-engine': 'bad', 'http-client': 'ok', 'parser-lib': 'violet' });
+    expect(statuses('relicense', { product: 'GPL-2.0-only' })).toMatchObject({ 'http-client': 'bad', 'report-engine': 'bad', 'parser-lib': 'violet', 'web-framework': 'ok' });
+    expect(statuses('relicense', { product: 'MIT' })).toMatchObject({ 'report-engine': 'violet', 'http-client': 'ok' });
+    expect(statuses('relicense', { product: 'Apache-2.0' })['report-engine']).toBe('violet');
   });
 
   it('every preset has its selected node and a valid parent for every dependency', () => {

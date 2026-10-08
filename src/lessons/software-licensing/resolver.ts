@@ -56,7 +56,11 @@ export function compatNote(dep: LicenceId, product: ProductLicence): string {
     return `Allowed, but the combined work you distribute carries the ${d} terms: '${p}' no longer describes the whole (your own files can still be available under it separately).`;
   }
   if (dep === product) return 'Same licence on both sides: the terms line up.';
-  if (dep === 'MPL-2.0') return 'The MPL files stay MPL. MPL-2.0 §3.3 lets them join GPL-family works unless a file says it is incompatible with secondary licences.';
+  if (dep === 'MPL-2.0') {
+    return STRONG.includes(product as LicenceId)
+      ? 'The MPL files stay MPL. MPL-2.0 §3.3 lets them join GPL-family works unless a file says it is incompatible with secondary licences.'
+      : 'The MPL files stay MPL (file-level copyleft); the rest of your product can use other terms.';
+  }
   if (dep === 'LGPL-2.1-only') return 'Allowed: other products use the library under the replace-the-library condition (§6), and LGPL-2.1 §3 lets GPL products take it under the GPL.';
   if (dep === 'Apache-2.0' || dep === 'MIT' || dep === 'BSD-3-Clause') {
     return product === 'proprietary'
@@ -107,6 +111,8 @@ export interface DepVerdict {
   obligations: ObligationRow[];
   /** Evaluated only when the dependency is combined into a distributed (or, for the AGPL, served) work. */
   compat: Compat | null;
+  /** True when the status rests on the package being one combined work, which is legally contested. */
+  contested: boolean;
   headline: string;
 }
 
@@ -133,17 +139,36 @@ export function combinedWork(dep: Dep, model: Model): boolean {
 /** True when the dependency's own terms must then hold for the whole work (a strong copyleft licence). */
 export const wholeWorkApplies = (dep: Dep, model: Model): boolean => STRONG.includes(dep.licence) && combinedWork(dep, model);
 
-export function resolveDep(dep: Dep, product: ProductLicence, model: Model): DepVerdict {
-  const obligations = obligationRows(dep.licence, setupOf(dep, model));
+/** True when `id` sits below a package marked as a separate program: it belongs to that program, not to your product. */
+export function underSeparate(deps: readonly Dep[], id: string): boolean {
+  const seen = new Set<string>();
+  for (let cur = deps.find((d) => d.id === id); cur && !seen.has(cur.id); cur = deps.find((d) => d.id === cur?.parent)) {
+    seen.add(cur.id);
+    if (deps.find((d) => d.id === cur?.parent)?.separate) return true;
+  }
+  return false;
+}
+
+/**
+ * `inheritedSeparate` is true when an ancestor is a separate program (see `underSeparate`): the package
+ * then counts as separate too, whatever its own flag says.
+ */
+export function resolveDep(dep: Dep, product: ProductLicence, model: Model, inheritedSeparate = false): DepVerdict {
+  const eff: Dep = inheritedSeparate ? { ...dep, separate: true } : dep;
+  const obligations = obligationRows(dep.licence, setupOf(eff, model));
   const base = { dep, obligations };
-  if (dep.licence === 'none') return { ...base, status: 'bad', compat: 'no-permission', headline: 'No permission granted: all rights reserved.' };
+  if (dep.licence === 'none') return { ...base, status: 'bad', compat: 'no-permission', contested: false, headline: 'No permission granted: all rights reserved.' };
   const due = obligations.filter((o) => o.state === 'due');
-  const compat = combinedWork(dep, model) ? compatibility(dep.licence, product) : null;
-  if (compat === 'conflict') return { ...base, status: 'bad', compat, headline: `Conflict with a ${productLabel(product)} product: ${compatNote(dep.licence, product)}` };
-  if (compat !== null && wholeWorkApplies(dep, model)) return { ...base, status: 'violet', compat, headline: `Copyleft triggered. ${compatNote(dep.licence, product)}` };
-  if (due.some((o) => o.copyleft)) return { ...base, status: 'violet', compat: null, headline: `Copyleft duties triggered: ${due.filter((o) => o.copyleft).map((o) => o.label).join('; ')}.` };
-  if (due.length > 0) return { ...base, status: 'ok', compat: null, headline: 'Notice duties only.' };
-  return { ...base, status: 'dim', compat: null, headline: `Nothing triggered when shipped as: ${MODEL_LABEL[model].toLowerCase()}.` };
+  const compat = combinedWork(eff, model) ? compatibility(dep.licence, product) : null;
+  if (compat === 'conflict') {
+    return { ...base, status: 'bad', compat, contested: true, headline: `Likely conflict with a ${productLabel(product)} product, if this is one combined work (which is legally contested): ${compatNote(dep.licence, product)}` };
+  }
+  if (compat !== null && wholeWorkApplies(eff, model)) {
+    return { ...base, status: 'violet', compat, contested: true, headline: `Copyleft likely triggered, if this is one combined work (which is legally contested). ${compatNote(dep.licence, product)}` };
+  }
+  if (due.some((o) => o.copyleft)) return { ...base, status: 'violet', compat: null, contested: false, headline: `Copyleft duties triggered: ${due.filter((o) => o.copyleft).map((o) => o.label).join('; ')}.` };
+  if (due.length > 0) return { ...base, status: 'ok', compat: null, contested: false, headline: 'Notice duties only.' };
+  return { ...base, status: 'dim', compat: null, contested: false, headline: `Nothing triggered when shipped as: ${MODEL_LABEL[model].toLowerCase()}.` };
 }
 
 export interface TreeSummary {
@@ -156,7 +181,7 @@ export interface TreeSummary {
 }
 
 export function resolveTree(deps: readonly Dep[], product: ProductLicence, model: Model): TreeSummary {
-  const verdicts = new Map(deps.map((d) => [d.id, resolveDep(d, product, model)]));
+  const verdicts = new Map(deps.map((d) => [d.id, resolveDep(d, product, model, underSeparate(deps, d.id))]));
   const all = [...verdicts.values()];
   const counts = new Map<ObligationId, { label: string; copyleft: boolean; count: number }>();
   for (const v of all) {
@@ -230,7 +255,7 @@ export const ALLOW_LIST: Record<Model, readonly LicenceId[]> = {
   library: ['MIT', 'BSD-3-Clause', 'Apache-2.0', 'MPL-2.0', 'LGPL-2.1-only'],
 };
 
-/** How many packages carry a machine-readable SPDX identifier (every one with a licence does). */
+/** How many packages carry a machine-readable SPDX identifier (every one with a licence does, in this model). */
 export const spdxCoverage = (deps: readonly Dep[]) => ({ have: deps.filter((d) => LICENCE_FACTS[d.licence].spdx !== null).length, total: deps.length });
 
 export type ScanState = 'unchecked' | 'report-only' | 'pass' | 'fail';
@@ -290,12 +315,12 @@ export const DEFAULT_PRESET: Preset = {
 export const PRESETS: Preset[] = [
   {
     id: 'chart',
-    label: 'MIT app adds a GPL chart library',
+    label: 'MIT app adds a GPL report-engine library',
     product: 'MIT',
     model: 'distributed',
-    deps: [dep('web-framework', 'MIT'), dep('date-utils', 'BSD-3-Clause', 'web-framework'), dep('chart-lib', 'GPL-3.0-only')],
-    selected: 'chart-lib',
-    note: "Shipped as an app, the combined work goes out under GPL-3.0 with source. MIT code can join a GPL work, so the licences don't clash: but the promise 'this app is MIT' no longer covers the whole binary. Press Internal and nothing is triggered; switch the product to Proprietary and it is a conflict.",
+    deps: [dep('web-framework', 'MIT'), dep('date-utils', 'BSD-3-Clause', 'web-framework'), dep('report-engine', 'GPL-3.0-only')],
+    selected: 'report-engine',
+    note: "Shipped as an app, the combined work goes out under GPL-3.0 with source. MIT code can join a GPL work, so the licences don't clash: but the promise 'this app is MIT' no longer covers the whole binary. Press Internal and nothing is triggered; switch the product to Proprietary and it is a likely conflict. Run as a SaaS it stays quiet only while the library stays on your servers: code you send to users' browsers is distributed (a browser-side chart library would be).",
   },
   {
     id: 'agpl-saas',
@@ -320,8 +345,8 @@ export const PRESETS: Preset[] = [
     label: 'Relicensing your own project',
     product: 'GPL-3.0-only',
     model: 'distributed',
-    deps: [dep('web-framework', 'MIT'), dep('http-client', 'Apache-2.0'), dep('parser-lib', 'MPL-2.0'), dep('chart-lib', 'GPL-3.0-only')],
-    selected: 'chart-lib',
-    note: "Your project's own licence is your choice for code you wrote, but relicensing needs every copyright holder's agreement (contributors count), and your dependencies' licences limit what you can pick. Try Proprietary, GPL-2.0-only, then MIT.",
+    deps: [dep('web-framework', 'MIT'), dep('http-client', 'Apache-2.0'), dep('parser-lib', 'MPL-2.0'), dep('report-engine', 'GPL-3.0-only')],
+    selected: 'report-engine',
+    note: "Your project's own licence is your choice for code you wrote, but relicensing generally needs every copyright holder's agreement (contributors count, unless a contributor agreement or inbound-equals-outbound terms already cover it), and your dependencies' licences limit what you can pick. Try Proprietary, GPL-2.0-only, then MIT.",
   },
 ];

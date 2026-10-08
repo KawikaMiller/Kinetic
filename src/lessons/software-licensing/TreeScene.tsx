@@ -8,10 +8,10 @@ import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { minWidthForText } from '../../core/scale';
 import { badge, distributes, LICENCES, MODEL_LABEL, MODEL_NOTE, MODELS, PRODUCT_LICENCES, productLabel, type LicenceId, type Model, type ProductLicence } from './licences';
-import { STATUS_TONE, STATUS_WORD } from './labels';
+import { STATUS_TONE, statusWord } from './labels';
 import { CompatChip, Disclaimer, LicenceBadge, ObligationTable } from './parts';
 import {
-  ALLOW_LIST, DEFAULT_PRESET, depthOf, MAX_DEPS, MAX_DEPTH, PRESETS, resolveTree, ROOT, scan, spdxCoverage, withAdded, withFlag, withLicence,
+  ALLOW_LIST, DEFAULT_PRESET, depthOf, MAX_DEPS, MAX_DEPTH, PRESETS, resolveTree, ROOT, scan, spdxCoverage, underSeparate, withAdded, withFlag, withLicence,
   withoutDep, type Dep, type Preset,
 } from './resolver';
 
@@ -45,7 +45,7 @@ function describe(s: State): ReactNode {
   return (
     <>
       Shipped as <b>{MODEL_LABEL[s.model].toLowerCase()}</b>, product licence <b>{productLabel(s.product)}</b>:{' '}
-      {plural(t.copyleft, 'package')} with copyleft triggered, {plural(t.conflicts, 'conflict')}, {plural(t.noPermission, 'package')} with no permission.
+      {plural(t.copyleft, 'package')} with copyleft triggered, {plural(t.conflicts, 'likely conflict')}, {plural(t.noPermission, 'package')} with no permission.
       {v && (
         <>
           {' '}
@@ -112,7 +112,7 @@ export function TreeScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Packages" value={deps.length} />
           <Stat label="Copyleft triggered" value={summary.copyleft} color={summary.copyleft ? 'var(--violet)' : 'var(--ok)'} />
-          <Stat label="Conflicts" value={summary.conflicts} color={summary.conflicts ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Likely conflicts" value={summary.conflicts} color={summary.conflicts ? 'var(--bad)' : 'var(--ok)'} />
           <Stat label="No permission" value={summary.noPermission} color={summary.noPermission ? 'var(--bad)' : 'var(--ok)'} />
         </Stats>
       }
@@ -178,7 +178,7 @@ export function TreeScene({ picker }: { picker: ReactNode }) {
           onNodeClick={select}
           nodeAriaLabel={(id) => {
             const d = deps.find((x) => x.id === id);
-            return d ? `${d.name}, ${badge(d.licence)}, ${STATUS_WORD[summary.verdicts.get(id)!.status]}` : `Your product, ${productLabel(product)}`;
+            return d ? `${d.name}, ${badge(d.licence)}, ${statusWord(summary.verdicts.get(id)!)}` : `Your product, ${productLabel(product)}`;
           }}
           nodeClass={(id) => {
             const v = summary.verdicts.get(id);
@@ -216,7 +216,7 @@ export function TreeScene({ picker }: { picker: ReactNode }) {
                   <SectionTitle>Selected package</SectionTitle>
                   <b className="sl-detail-name">{dep.name}</b>
                   <LicenceBadge id={dep.licence} tone={STATUS_TONE[verdict.status]} />
-                  <span className={`chip tone-${STATUS_TONE[verdict.status]}`}>{STATUS_WORD[verdict.status]}</span>
+                  <span className={`chip tone-${STATUS_TONE[verdict.status]}`}>{statusWord(verdict)}</span>
                   {verdict.compat && <CompatChip compat={verdict.compat} />}
                 </div>
                 <ControlGroup label="Swap its licence" inline>
@@ -233,6 +233,9 @@ export function TreeScene({ picker }: { picker: ReactNode }) {
                     Remove {dep.name}
                   </Button>
                 </div>
+                {underSeparate(deps, dep.id) && (
+                  <p className="sl-headline">It sits under a package marked as a separate program, so it counts as part of that program, not of your product.</p>
+                )}
                 <p className="sl-headline">{verdict.headline}</p>
                 <ObligationTable rows={verdict.obligations} />
               </>

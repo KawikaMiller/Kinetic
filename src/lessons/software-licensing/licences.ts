@@ -74,7 +74,7 @@ export const MODEL_NOTE: Record<Model, string> = {
   internal: 'Only your own organisation runs it. No copy goes to anyone else.',
   distributed: 'You hand copies (an installer, an app, a container image) to customers or the public.',
   saas: 'Users reach a service you run; they receive no copy of the server code. Code you send to their browsers or devices is distributed: treat that part as the distributed column.',
-  library: 'You publish a library for others to link against. That is distribution, and your own licence choice is inherited by everyone who builds on it.',
+  library: 'You publish a library for others to link against. That is distribution, and a copyleft licence choice is passed on to everyone who builds on it.',
 };
 
 /** Handing copies to others is what triggers most licence conditions. */
@@ -218,7 +218,7 @@ export const RULES: Record<LicenceId, readonly Rule[]> = {
       ...r,
       label: r.label.replace('GPL', 'AGPL'),
       source: r.source.replace('GPL-3.0', 'AGPL-3.0'),
-      detail: (s: Setup) => r.detail(s).replace('GPL-3.0', 'AGPL-3.0').replace('under the GPL', 'under the AGPL'),
+      detail: (s: Setup) => r.detail(s).replace('GPL-3.0', 'AGPL-3.0').replace('under the GPL', 'under the AGPL').replace('GPL-covered', 'AGPL-covered'),
       idle: (s: Setup) => (s.model === 'saas' ? 'Not triggered by distribution: nothing is distributed. The network clause below covers a service.' : (r.idle ?? idleReason)(s)),
     })),
     {
@@ -229,7 +229,9 @@ export const RULES: Record<LicenceId, readonly Rule[]> = {
         : 'Built into your service, it arguably makes your service a modified version of the AGPL program: offer your service’s corresponding source to its network users (contested for each way of combining).'),
       idle: (s) => (s.model === 'saas'
         ? 'Not triggered: §13 applies to a modified version, and this is an unmodified, separate program. Whether your own staff count as users, or your code is combined with it, is a question for your lawyers.'
-        : 'Not triggered: assumes only your own organisation uses it. If outsiders can reach it, treat it as the SaaS column.'),
+        : s.model === 'internal'
+          ? 'Not triggered: assumes only your own organisation uses it. If outsiders can reach it, treat it as the SaaS column.'
+          : 'Not triggered by distribution alone: §13 is about network use of a modified version, separate from the distribution duties above. It would matter only if you also offer the program as a service.'),
     },
   ],
   none: [

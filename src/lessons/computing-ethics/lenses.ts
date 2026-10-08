@@ -13,7 +13,7 @@ export type LensId = 'consequences' | 'duties' | 'virtue' | 'code';
 
 export const SCENARIO = {
   title: 'Location "just in case"',
-  text: 'Fictional. A "nearby help" feature needs only a rough area, but the analytics team would like precise location from every user, kept indefinitely, in case it is useful later. Reason it through before you decide.',
+  text: 'Fictional, and the same situation as the Location case, laid out as a reasoning table instead of a branching story. A "nearby help" feature needs only a rough area, but the analytics team would like precise location from every user, kept indefinitely, in case it is useful later. Reason it through before you decide.',
 };
 
 export const STAKEHOLDERS: readonly { id: StakeholderId; label: string; stake: string }[] = [
@@ -35,7 +35,7 @@ const impact = (tone: ImpactTone, text: string): Impact => ({ tone, text });
 export const EFFECTS: Record<OptionId, Record<StakeholderId, Impact>> = {
   all: {
     users: impact('harm', 'A detailed record of where they go exists, and they had little say in it.'),
-    analysts: impact('handled', 'Full flexibility to ask questions later.'),
+    analysts: impact('benefit', 'Full flexibility to ask questions later.'),
     company: impact('open', 'More insight, and more data to protect, store and answer for.'),
     later: impact('harm', 'Everything that is kept can be seen or misused by whoever gets access.'),
     public: impact('open', 'Broad collection "just in case" is the kind of practice norms and rules often question.'),
@@ -43,7 +43,7 @@ export const EFFECTS: Record<OptionId, Record<StakeholderId, Impact>> = {
   minimise: {
     users: impact('handled', 'The feature works and there is little precise data about them to leak.'),
     analysts: impact('open', 'Some questions can no longer be answered.'),
-    company: impact('handled', 'Less to store and defend, and a simple story to tell.'),
+    company: impact('open', 'Less to store and defend and a simple story to tell, but less insight and fewer analytics features to build on.'),
     later: impact('handled', 'There is little precise data to see or misuse.'),
     public: impact('handled', 'Collection matches the stated purpose.'),
   },
@@ -81,8 +81,8 @@ export const LENSES: readonly { id: LensId; label: string; what: string; questio
 
 export const NOTICED: Record<OptionId, Record<LensId, string>> = {
   all: {
-    consequences: 'Benefits are possible but vague; harms are concrete and grow with how long and how widely the data is kept.',
-    duties: 'Collecting far beyond what the feature needs is hard to square with what people agreed to.',
+    consequences: 'The analytics benefit is real but speculative ("in case it is useful"); the harms are concrete and grow with how long and how widely the data is kept.',
+    duties: 'Collecting far beyond what the feature needs may be hard to square with what people would agree to if asked; the scenario does not say what they were told.',
     virtue: 'Hoarding "just in case" can build a habit of taking more than you need.',
     code: 'Raises questions under 1.6 (respect privacy) and 2.5 (evaluate risks).',
   },
@@ -103,7 +103,7 @@ export const NOTICED: Record<OptionId, Record<LensId, string>> = {
 /** Where the lenses tend to pull apart, per option: a prompt to discuss, not a ruling. */
 export const TENSION: Record<OptionId, string> = {
   all: 'The consequences lens might count the possible benefits; the duties and professional-code lenses ask whether people agreed to this at all.',
-  minimise: 'All four lenses lean the same way here, but the consequences lens still asks what is lost, and who bears it.',
+  minimise: 'The lenses may lean the same way here, but the consequences lens still asks what insight is lost and who bears that cost, and the others ask whether the coarse area really is all the feature needs.',
   ask: 'The lenses agree on asking; they differ on whether a low opt-in rate is a cost to accept or a sign the question should be reworded.',
 };
 

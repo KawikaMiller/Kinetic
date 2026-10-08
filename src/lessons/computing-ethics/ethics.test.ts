@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { findTopic } from '../../core/curriculum';
 import { ACM_CODE, principle } from './acm';
-import { CASES, THERAC_FACTS, type CaseNode, type EthicsCase } from './cases';
+import { CASES, THERAC_FACTS, choiceBasis, type CaseNode, type EthicsCase } from './cases';
 import { CODE_PRINCIPLES, EFFECTS, LENSES, NOTICED, OPTIONS, STAKEHOLDERS, TENSION } from './lenses';
+import { IMPACT_TONE, IMPACT_WORD } from './tones';
 import { freshProgress, markEdge, markNode } from './progress';
 import { advance, back, edgeKey, isDecision, isEnding, mapOf, nodeOf, pick, startWalk, summarisePath, type Walk } from './walk';
 
@@ -158,6 +159,29 @@ describe('the Therac-25 case matches its source', () => {
     expect(Object.entries(bases).filter(([id]) => id !== 'end-history').every(([, b]) => b === 'what-if')).toBe(true);
   });
 
+  it('labels only the choice as history, and says the consequences on its cards are authored', () => {
+    const decisions = therac.nodes.filter(isDecision);
+    for (const d of decisions) {
+      for (const ch of d.choices) {
+        const label = choiceBasis(therac, ch);
+        expect(label).not.toBe('This is what actually happened');
+        if (ch.history) {
+          expect(label).toMatch(/matches what happened/);
+          expect(label).toMatch(/written for this lesson/);
+        } else {
+          expect(label).toMatch(/what-if/);
+        }
+      }
+    }
+    expect(therac.honesty).toMatch(/consequences .*written for this lesson/);
+  });
+
+  it('does not narrate motives or schedule pressure as history', () => {
+    const decisions = therac.nodes.filter(isDecision);
+    const text = JSON.stringify(decisions);
+    expect(text).not.toMatch(/schedule|In testing|support calls/i);
+  });
+
   it('names no individuals and no company', () => {
     const text = JSON.stringify(therac);
     expect(text).not.toMatch(/AECL|Atomic Energy|Miller|Leveson said|Dr\./);
@@ -186,7 +210,7 @@ describe('the fictional cases are labelled as fiction', () => {
         if (!isDecision(n)) continue;
         for (const ch of n.choices) {
           for (const impact of [ch.users, ch.team, ch.you]) {
-            expect(['harm', 'handled', 'open']).toContain(impact.tone);
+            expect(['harm', 'handled', 'benefit', 'open']).toContain(impact.tone);
             expect(impact.text.length).toBeGreaterThan(10);
           }
         }
@@ -262,6 +286,35 @@ describe('walking, the map and progress', () => {
   });
 });
 
+describe('the tone of an effect says what the card is', () => {
+  const impacts = CASES.flatMap((c) =>
+    c.nodes.filter(isDecision).flatMap((d) => d.choices.flatMap((ch) => [ch.users, ch.team, ch.you].map((i) => ({ where: `${c.id}/${d.id}/${ch.id}`, ...i })))),
+  );
+
+  it('gives each tone its own words and colour, and never calls a benefit or inaction a handled risk', () => {
+    expect(new Set(Object.values(IMPACT_WORD)).size).toBe(4);
+    expect(new Set(Object.values(IMPACT_TONE)).size).toBe(4);
+    // Doing nothing, holding a date or saving effort is a cost saved, not a risk handled.
+    const inaction = /^No (immediate|extra)|carries on|date holds|stays on time|improves|flexibility|most users end up/i;
+    for (const i of impacts.filter((x) => x.tone === 'handled')) expect(i.text, i.where).not.toMatch(inaction);
+  });
+
+  it('keeps the known benefit and inaction cards on the benefit tone', () => {
+    const benefit = impacts.filter((i) => i.tone === 'benefit').map((i) => i.where);
+    expect(benefit).toEqual(expect.arrayContaining([
+      'dark-pattern/request/A', 'location/collect/A', 'location/review/B', 'location/optin/B', 'friday/blocker/A', 'friday/week-later/B', 'friday/workaround/B',
+    ]));
+  });
+
+  it('shows a harm or an open trade-off beside every benefit of a choice that leaves a known risk', () => {
+    for (const where of ['location/review/B', 'friday/week-later/B', 'friday/workaround/B']) {
+      const [c, d, ch] = where.split('/');
+      const choice = byId(c).nodes.filter(isDecision).find((n) => n.id === d)!.choices.find((x) => x.id === ch)!;
+      expect([choice.users.tone, choice.you.tone]).toContain('harm');
+    }
+  });
+});
+
 describe('the reasoning exercise', () => {
   it('covers every option and stakeholder, and every option through every lens', () => {
     for (const o of OPTIONS) {
@@ -278,5 +331,20 @@ describe('the reasoning exercise', () => {
       const tones = new Set(STAKEHOLDERS.map((s) => EFFECTS[o.id][s.id].tone));
       expect(tones.size).toBeGreaterThan(1);
     }
+  });
+
+  it('is balanced: the option that collects least has a cost, and the one that collects most has a benefit', () => {
+    const toneList = (o: string) => STAKEHOLDERS.map((s) => EFFECTS[o as 'all'][s.id].tone);
+    expect(toneList('all')).toContain('benefit');
+    expect(toneList('minimise')).toContain('open');
+    expect(EFFECTS.minimise.company.tone).toBe('open');
+  });
+
+  it('does not hand over a verdict: no lens text calls the lenses unanimous or says what people agreed to', () => {
+    const text = JSON.stringify({ NOTICED, TENSION });
+    expect(text).not.toMatch(/All four lenses lean|all lenses agree/i);
+    expect(NOTICED.all.duties).toMatch(/may be hard|would agree to if asked/);
+    expect(NOTICED.all.consequences).toMatch(/speculative/);
+    expect(TENSION.minimise).toMatch(/may lean/);
   });
 });

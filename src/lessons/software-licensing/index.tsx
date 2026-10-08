@@ -14,14 +14,14 @@ const lesson: LessonModule = {
       'Setting up an allow-list and a licence scanner next to your dependency checks',
     ],
     why: 'Dependencies arrive by the hundred, and each one comes with terms. Knowing which terms bite when you ship an app, run a service or publish a library lets you spot a real problem early, ask a lawyer the right question, and not panic over a GPL badge on something you only run internally.',
-    watch: 'Each package box shows its SPDX identifier as text, and its colour says what this way of shipping triggers: green means only notices are due, violet means copyleft is triggered, red means a conflict with your product licence or no licence at all, and a faded dashed box means nothing is triggered here. The yellow ring is the selected package. In the obligations table, a chip reads due (green notices, violet copyleft, red no permission), applies (blue, a benefit such as the Apache patent grant) or not triggered (faded). Product-licence chips are sky blue and licence palettes amber: plain categories, not verdicts. Compatibility chips read fine, whole under its terms, conflict or no permission.',
+    watch: 'Each package box shows its SPDX identifier as text, and its colour says what this way of shipping triggers: green means only notices are due, violet means copyleft is triggered, red means a likely conflict with your product licence or no licence at all, and a faded dashed box means nothing is triggered here. The yellow ring is the selected package. In the obligations table, a chip reads due (green notices, violet copyleft, red no permission), applies (blue, a benefit such as the Apache patent grant) or not triggered (faded). Product-licence chips are sky blue and licence palettes amber: plain categories, not verdicts. Compatibility chips read fine, whole under its terms, conflict or no permission.',
   },
   tryThis: [
-    "Load the preset 'MIT app adds a GPL chart library': the library turns violet, because shipping an app triggers the GPL. Press Internal under 'How is it shipped?' and nothing is triggered.",
-    "From that same preset, set the product's own licence to Proprietary: the chart library turns red, because a closed product can't offer the whole work under the GPL.",
+    "Load the preset 'MIT app adds a GPL report-engine library': the library turns violet (copyleft likely triggered), because shipping an app triggers the GPL. Press Internal under 'How is it shipped?' and nothing is triggered.",
+    "From that same preset, set the product's own licence to Proprietary: the report-engine library turns red, because a closed product can't offer the whole work under the GPL.",
     "Load 'AGPL database behind your SaaS', then flip 'We changed its files' to No and the box fades. Flip 'How it's used' to Built into our product and the whole service becomes the question.",
     "Load 'Relicensing your own project' and try Proprietary, then GPL-2.0-only, then MIT as the product licence. Compare which packages turn red.",
-    "In The rule table, keep Apache-2.0 and read the product column: GPL-3.0-only is fine and GPL-2.0-only is a conflict. Then pick GPL-3.0-only and compare the other direction.",
+    "In The rule table, keep Apache-2.0 and read the product column: GPL-3.0-only is fine (the whole then carries GPL-3.0 terms) and GPL-2.0-only is a conflict. Then pick GPL-3.0-only and compare the other direction.",
   ],
   keyIdeas: [
     'Obligations are mostly triggered by distributing copies (or, for the AGPL, by network use of a modified version), not by using the code.',

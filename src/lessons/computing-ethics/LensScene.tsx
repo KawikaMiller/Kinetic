@@ -4,12 +4,9 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import type { PrincipleId } from './acm';
-import type { ImpactTone } from './cases';
 import { CODE_PRINCIPLES, EFFECTS, LENSES, NOTICED, OPTIONS, SCENARIO, STAKEHOLDERS, TENSION, type LensId, type OptionId, type StakeholderId } from './lenses';
 import { PrincipleChips } from './PrincipleChips';
-
-const TONE_OF: Record<ImpactTone, 'bad' | 'ok' | 'orange'> = { harm: 'bad', handled: 'ok', open: 'orange' };
-const TONE_WORD: Record<ImpactTone, string> = { harm: 'harm', handled: 'risk handled', open: 'trade-off open' };
+import { IMPACT_TONE, IMPACT_WORD } from './tones';
 
 /** The reasoning exercise: stakeholders, options, effects, and four lenses. It has no score and no verdict. */
 export function LensScene({ picker }: { picker: ReactNode }) {
@@ -103,7 +100,7 @@ export function LensScene({ picker }: { picker: ReactNode }) {
                         <b>{s.label}</b>
                       </td>
                       <td data-label="Effect">
-                        <span className={`chip tone-${TONE_OF[e.tone]}`}>{TONE_WORD[e.tone]}</span> {e.text}
+                        <span className={`chip tone-${IMPACT_TONE[e.tone]}`}>{IMPACT_WORD[e.tone]}</span> {e.text}
                       </td>
                     </tr>
                   );
