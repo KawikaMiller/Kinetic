@@ -13,7 +13,7 @@ import { toneVar, type Tone } from '../../core/tone';
 import { swapCaption, viewCaption } from './captions';
 import { BANDS, BAND_H, BOX, HEX, VIEW, drawnEdge, hexPoints, labelOf, positionOf } from './layout';
 import {
-  ILLUSTRATIVE_MS, changedFiles, coreChanged, filesFor, importEdges, rankIn, violations, type Choices, type Design, type DriverChoice, type RepoChoice,
+  ILLUSTRATIVE_MS, changedFiles, coreChanged, domainTestNeedsOrm, filesFor, importEdges, rankIn, violations, type Choices, type Design, type DriverChoice, type RepoChoice,
 } from './model';
 import './styles.css';
 
@@ -51,6 +51,7 @@ export function Stage() {
   const shownFile = files[selected] ? selected : DEFAULT_FILE[c.view];
   const drawn = edges.filter(drawnEdge);
   const paths = Object.keys(files);
+  const needsOrm = domainTestNeedsOrm(files);
 
   const restructure = (next: Choices) => {
     setC(next);
@@ -105,7 +106,7 @@ export function Stage() {
                   { color: 'var(--bad)', label: 'points the wrong way', shape: 'line' },
                 ]
               : [
-                  { color: 'var(--violet)', label: 'domain', shape: 'square' },
+                  { color: 'var(--violet)', label: 'domain (includes the driving port, PlaceOrder)', shape: 'square' },
                   { color: 'var(--info)', label: 'port', shape: 'square' },
                   { color: 'var(--amber)', label: 'driving adapter', shape: 'square' },
                   { color: 'var(--sky)', label: 'driven adapter', shape: 'square' },
@@ -215,20 +216,28 @@ export function Stage() {
           <div className="lh-side">
             <SectionTitle weight="regular">Test speed (illustrative)</SectionTitle>
             <div className="lh-speed">
-              <span>Domain test, no database</span>
-              <Bar value={ILLUSTRATIVE_MS.domain} max={ILLUSTRATIVE_MS.integration} tone="ok" height={8} trailing={`~${ILLUSTRATIVE_MS.domain} ms`} />
+              <span>{needsOrm ? 'Business-rule test: it reaches the ORM, so it needs the database too' : 'Business-rule test: no database needed'}</span>
+              <Bar
+                value={needsOrm ? ILLUSTRATIVE_MS.integration : ILLUSTRATIVE_MS.domain}
+                max={ILLUSTRATIVE_MS.integration}
+                tone={needsOrm ? 'bad' : 'ok'}
+                height={8}
+                trailing={`~${needsOrm ? ILLUSTRATIVE_MS.integration : ILLUSTRATIVE_MS.domain} ms`}
+              />
               <span>Integration test through adapters and a real database</span>
               <Bar value={ILLUSTRATIVE_MS.integration} max={ILLUSTRATIVE_MS.integration} tone="bad" height={8} trailing={`~${ILLUSTRATIVE_MS.integration} ms`} />
             </div>
             <Hint block>
-              Typical orders of magnitude, not measured here, drawn to scale with each other. A domain with no imports outward can be unit-tested with an
-              in-memory adapter.
+              {needsOrm
+                ? 'Here the business rule reaches lib/orm.ts, so it cannot be tested without it: there is no database-free test to speed up. '
+                : 'The business rule reaches no database, so it can be unit-tested with an in-memory adapter. '}
+              Typical orders of magnitude, not measured here, drawn to scale with each other. The ORM in this lesson is simulated: there is no real database anywhere.
             </Hint>
           </div>
         </div>
         <Hint block>
           A small hand-written app. The hexagonal files are real TypeScript in this lesson (its tests run the domain with both repository adapters); the
-          layered and "imports the ORM" files are lesson-authored text. Arrows are each file's import lines; main.ts's own arrows (it imports every
+          layered and "imports the ORM" files are lesson-authored text. The layered files show the naive variant, where the service names a concrete repository; a layered app can invert that dependency and then looks much like the hexagon. Arrows are each file's import lines; main.ts's own arrows (it imports every
           adapter) are left out of the drawing but counted by the checker. Click a box to read its source.
         </Hint>
       </div>

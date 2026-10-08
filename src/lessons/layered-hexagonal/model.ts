@@ -234,3 +234,23 @@ export const coreChanged = (a: FileSet, b: FileSet) => changedFiles(a, b).filter
 
 /** Illustrative test durations, for the speed strip (not measured). */
 export const ILLUSTRATIVE_MS = { domain: 2, integration: 180 } as const;
+
+/**
+ * Can the business rule be tested without the (simulated) ORM and database? Follows imports from
+ * the files holding the rule; true when they reach lib/orm.ts, directly or through a repository.
+ */
+export function domainTestNeedsOrm(files: FileSet): boolean {
+  const edges = importEdges(files);
+  const seen = new Set(Object.keys(files).filter(isCore));
+  const queue = [...seen];
+  while (queue.length) {
+    const from = queue.pop()!;
+    for (const e of edges) {
+      if (e.from === from && !seen.has(e.to)) {
+        seen.add(e.to);
+        queue.push(e.to);
+      }
+    }
+  }
+  return seen.has('lib/orm.ts');
+}

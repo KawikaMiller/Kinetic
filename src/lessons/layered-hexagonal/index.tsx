@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Layered and hexagonal apps can have the same pieces; the difference is which way the arrows point. In a hexagon the business logic depends on nothing, and databases, web frameworks and CLIs plug into interfaces it owns.',
-    what: 'A layered architecture stacks controller, service, repository and database, each importing the one below, so the business rules end up depending on storage. Hexagonal architecture, Alistair Cockburn\'s "ports and adapters", puts the domain in the centre: it defines ports (interfaces such as OrderRepository), adapters outside implement them (Postgres, in-memory, an HTTP controller, a CLI), and one composition root wires them together. The dependency rule: source dependencies only point inward.',
+    what: "A typical layered architecture stacks controller, service, repository and database, each importing the one below, and in the usual naive version the service names a concrete repository, so the business rules end up depending on storage. (A layered app can invert that dependency by letting the service own the repository interface; it is then close to ports and adapters.) Hexagonal architecture, Alistair Cockburn's \"ports and adapters\", puts the domain in the centre: it defines ports (interfaces such as OrderRepository), adapters outside implement them (Postgres, in-memory, an HTTP controller, a CLI), and one composition root wires them together. The dependency rule, Robert C. Martin's name for it: source dependencies only point inward.",
     analogy: 'A laptop with USB-C ports: it says what shape a charger, a screen or a drive must have, and anything that fits plugs in. It doesn\'t have a particular brand of screen soldered to the motherboard.',
     useCases: [
       'Swapping a database or payment provider without touching business rules',
@@ -13,15 +13,15 @@ const lesson: LessonModule = {
       'Driving the same use case from an HTTP API, a CLI, a queue consumer and tests',
       'Enforcing "the domain imports nothing outward" with an import-rule lint in CI',
     ],
-    why: 'In many codebases the business rules import the ORM, the HTTP framework and the payment SDK, so every infrastructure change becomes a business-logic change and every test needs a database. Knowing the dependency rule lets you spot that in review, structure new services so the core stays testable, and talk sensibly about "clean", "onion" and "hexagonal", which are variations on this one idea.',
+    why: "In many codebases the business rules import the ORM, the HTTP framework and the payment SDK, so every infrastructure change becomes a business-logic change and every test needs a database. Knowing the dependency rule lets you spot that in review and structure new services so the core stays testable. \"Clean\", \"onion\" and \"hexagonal\" architecture all share that rule while differing in how they structure the rings.",
     watch:
-      'Boxes are source files and arrows are their import lines. In the layered view, four tinted bands run top to bottom: controller (amber), service (violet), repository (sky) and database (grey), and each file is tinted in its band\'s colour. In the hexagon view, a violet-tinted hexagon holds the domain: domain files are tinted violet and ports blue, driving adapters (HTTP controller, CLI) amber, driven adapters sky blue, and the ORM library and main.ts grey. An adapter you just swapped in is solid yellow and slides in. An import that points the wrong way (outward, or up) is a thick red arrow, and its import line is tinted red in the code panel. The box whose source is showing has a white outline. In the stats, the rule counter and the changed-files counter are green at 0 and red above 0. The test-speed bars are green for the domain test and red for the integration test.',
+      'Boxes are source files and arrows are their import lines. In the layered view, four tinted bands run top to bottom: controller (amber), service (violet), repository (sky) and database (grey), and each file is tinted in its band\'s colour. In the hexagon view, a violet-tinted hexagon holds the domain: domain files are tinted violet (the driving port, the PlaceOrder type, lives in one of them) and the driven ports blue, driving adapters (HTTP controller, CLI) amber, driven adapters sky blue, and the ORM library and main.ts grey. An adapter you just swapped in is solid yellow and slides in. An import that points the wrong way (outward, or up) is a thick red arrow, and its import line is tinted red in the code panel. The box whose source is showing has a white outline. In the stats, the rule counter and the changed-files counter are green at 0 and red above 0. The test-speed bars are red for the integration test, and for the business-rule test whenever the rule reaches the ORM, and green when it needs no database.',
   },
   tryThis: [
-    'In the layered view, switch the Database adapter to In-memory: OrderService, the file with the business rule, has to change.',
-    'Toggle View to Hexagon and swap the database again: only main.ts and the adapters change, and "Domain files changed" stays at 0.',
+    'In the layered view, switch the Database adapter to In-memory: OrderService, the file with the business rule, has to change in this naive layered variant.',
+    'Toggle View to Hexagon and swap the database again: only main.ts and the adapter files change (the ORM library is just dropped from the build), and "Domain files changed" stays at 0.',
     'Swap the Driver from HTTP controller to CLI in the hexagon: a new adapter slides in on the left, and the domain is untouched again.',
-    'Set Domain to "Domain imports the ORM": a red arrow points outward. Swap the database now and the domain-files counter jumps to 1.',
+    'In the hexagon view, set Domain to "Domain imports the ORM": a red arrow points outward and the test-speed bars show the domain now needs the database too. Swap the database and the domain-files counter jumps to 1.',
     'Click any box, such as PostgresOrderRepo or placeOrder, to read its real source and see which imports make up its arrows.',
   ],
   keyIdeas: [
@@ -73,7 +73,7 @@ const lesson: LessonModule = {
         'TypeScript strips the database code out when it runs unit tests',
       ],
       answer: 0,
-      why: 'placeOrder takes an OrderRepository, a PaymentPort and a Notifier, and this lesson\'s tests run it with the in-memory repository and with the Postgres one. Nothing strips or stubs database code by magic; it is the inward-only imports that make the swap possible.',
+      why: 'placeOrder takes an OrderRepository, a PaymentPort and a Notifier, and this lesson\'s tests run it with the in-memory repository and with the Postgres one (backed by a simulated ORM here). Nothing strips or stubs database code by magic; it is the inward-only imports that make the swap possible.',
     },
     {
       q: 'When is a full ports-and-adapters setup most likely overkill?',

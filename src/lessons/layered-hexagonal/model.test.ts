@@ -9,7 +9,7 @@ import { APPROVAL_LIMIT } from './app/domain/order';
 import type { OrderRepository } from './app/domain/OrderRepository';
 import { placeOrder } from './app/domain/placeOrder';
 import {
-  APP_FILES, changedFiles, coreChanged, filesFor, importEdges, importsOf, rankIn, resolveSpecifier, violations,
+  APP_FILES, changedFiles, coreChanged, domainTestNeedsOrm, filesFor, importEdges, importsOf, rankIn, resolveSpecifier, violations,
   type Choices, type Design, type DriverChoice, type RepoChoice, type View,
 } from './model';
 
@@ -133,5 +133,45 @@ describe('what a swap changes', () => {
     for (const repo of ['postgres', 'memory'] as RepoChoice[]) {
       expect(filesFor(layered({ design: 'orm', repo }))).toEqual(filesFor(layered({ repo })));
     }
+  });
+});
+
+describe('review fixes, pinned', () => {
+  it('the business-rule test needs the ORM exactly when the rule reaches lib/orm.ts, in all 16 deployments', () => {
+    const expected = (c: Choices) => c.repo === 'postgres' && (c.view === 'layered' || c.design === 'orm');
+    for (const c of ALL) expect(domainTestNeedsOrm(filesFor(c)), JSON.stringify(c)).toBe(expected(c));
+  });
+
+  it('the default layered deployment has no database-free business-rule test, and the clean hexagon has one', () => {
+    expect(domainTestNeedsOrm(filesFor(layered()))).toBe(true);
+    expect(domainTestNeedsOrm(filesFor(hex()))).toBe(false);
+    expect(domainTestNeedsOrm(filesFor(hex({ design: 'orm' })))).toBe(true);
+  });
+
+  it('the violating domain really contains the ORM import and the audit write (the text edit did not silently no-op)', () => {
+    for (const repo of ['postgres', 'memory'] as RepoChoice[]) {
+      const text = filesFor(hex({ design: 'orm', repo }))['domain/placeOrder.ts'];
+      const lib = repo === 'postgres' ? "from '../lib/orm'" : "from '../lib/memoryAudit'";
+      expect(text.split('\n')[0]).toContain(lib);
+      expect(text).toContain(repo === 'postgres' ? "db.insert('order_audit'" : 'memoryAudit.push(');
+      expect(text).toContain('It also talks to storage directly.');
+      expect(text).not.toContain('never the adapters');
+      expect(text).not.toBe(APP_FILES['domain/placeOrder.ts']);
+    }
+  });
+
+  it('the layered view is presented as the usual naive variant, not as inherent', async () => {
+    const { viewCaption } = await import('./captions');
+    expect(viewCaption(layered())).toContain('usual naive variant');
+    expect(viewCaption(layered())).toContain('could instead own that interface');
+    const { default: lesson } = await import('./index');
+    expect(lesson.summary.what).toContain('naive version');
+    expect(lesson.summary.what).toContain('can invert that dependency');
+    expect(lesson.summary.what).not.toContain('so the business rules end up depending on storage. Hexagonal');
+  });
+
+  it('try-this 4 names the hexagon view, which is where the Domain selector exists', async () => {
+    const { default: lesson } = await import('./index');
+    expect(lesson.tryThis[3]).toContain('In the hexagon view');
   });
 });
