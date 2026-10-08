@@ -3,10 +3,13 @@ import { CellGrid, type GridCellSpec, type GridHighlight } from '../../component
 import { Box as Panel, SectionTitle } from '../../components/Panel';
 import { useScenePicker } from '../../components/ScenePicker';
 import { StageFrame } from '../../components/StageFrame';
+import { svgPoint, useDragPoint } from '../../components/useDragPoint';
 import { WideRegion } from '../../components/WideRegion';
 import { ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA, pct } from '../../core/format';
+import { arrowStep } from '../../core/geometry';
+import { gridKeyTarget } from '../../core/grid';
 import { TOKENS } from '../../core/palette';
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
@@ -63,39 +66,29 @@ function PixelBoard({
   ariaLabel: string;
 }) {
   const svg = useRef<SVGSVGElement>(null);
-  const dragging = useRef<number | null>(null);
 
   const toGrid = (clientX: number, clientY: number) => {
-    const m = svg.current?.getScreenCTM();
-    if (!m) return null;
-    const p = new DOMPoint(clientX, clientY).matrixTransform(m.inverse());
-    return { x: fromBoard(p.x), y: fromBoard(p.y) };
+    const p = svgPoint(svg.current, clientX, clientY);
+    return p && { x: fromBoard(p.x), y: fromBoard(p.y) };
   };
-
-  const onHandleMove = (e: PointerEvent, i: number) => {
-    if (dragging.current !== i || !handles) return;
-    const p = toGrid(e.clientX, e.clientY);
-    if (p) handles.onMove(i, clampVertex({ ...handles.points[i], ...p }));
-  };
+  const drag = useDragPoint(toGrid, handles && ((i, p) => handles.onMove(i, clampVertex({ ...handles.points[i], ...p }))));
 
   const onHandleKey = (e: KeyboardEvent, i: number) => {
     if (!handles) return;
-    const d = e.shiftKey ? 1 : 1 / SNAP;
-    const step: Record<string, [number, number]> = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] };
-    const s = step[e.key];
+    const s = arrowStep(e.key, e.shiftKey ? 1 : 1 / SNAP);
     if (!s) return;
     e.preventDefault();
     const v = handles.points[i];
     handles.onMove(i, clampVertex({ ...v, x: v.x + s[0], y: v.y + s[1] }));
   };
 
+  /** The probe moves like a grid cursor: arrows, Home/End (Ctrl for the corners), Page Up/Down. */
   const onProbeKey = (e: KeyboardEvent) => {
     if (!probe) return;
-    const step: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-    const s = step[e.key];
-    if (!s) return;
-    e.preventDefault();
-    probe.onMove(Math.min(GRID_W - 1, Math.max(0, probe.at.x + s[0])), Math.min(GRID_H - 1, Math.max(0, probe.at.y + s[1])));
+    const to = gridKeyTarget(e.key, { r: probe.at.y, c: probe.at.x }, GRID_H, GRID_W, { ctrl: e.ctrlKey });
+    // Arrows at the edge are still the probe's: don't let them scroll the page.
+    if (to || arrowStep(e.key, 1)) e.preventDefault();
+    if (to) probe.onMove(to.c, to.r);
   };
 
   const onProbePointer = (e: PointerEvent) => {
@@ -121,7 +114,7 @@ function PixelBoard({
                 height={BOARD_H}
                 tabIndex={0}
                 role="button"
-                aria-label={`Depth probe at pixel (${probe.at.x}, ${probe.at.y}). Arrow keys move it.`}
+                aria-label={`Depth probe at pixel (${probe.at.x}, ${probe.at.y}). Arrow keys move it; Home and End jump to the row's ends.`}
                 onPointerMove={onProbePointer}
                 onPointerDown={onProbePointer}
                 onKeyDown={onProbeKey}
@@ -144,14 +137,7 @@ function PixelBoard({
                 tabIndex={0}
                 aria-roledescription="draggable corner"
                 aria-label={`${handles.label(i)} at (${num(v.x)}, ${num(v.y)}). Arrow keys move it a quarter pixel, Shift a whole pixel.`}
-                onPointerDown={(e) => {
-                  dragging.current = i;
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  e.currentTarget.focus();
-                }}
-                onPointerMove={(e) => onHandleMove(e, i)}
-                onPointerUp={() => (dragging.current = null)}
-                onPointerCancel={() => (dragging.current = null)}
+                {...drag(i)}
                 onKeyDown={(e) => onHandleKey(e, i)}
               >
                 <circle className="rz-handle-hit" cx={toBoard(v.x)} cy={toBoard(v.y)} r={14} />

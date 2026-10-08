@@ -75,11 +75,7 @@ export function DiffScene({ picker }: { picker: ReactNode }) {
           title="diff: version 1 → version 2"
           lines={diff.map((l) => `${l.sign} ${l.text}`)}
           gutter="none"
-          renderLine={(_, i) => (
-            <span className={`ed-diff is-${diff[i].sign === '+' ? 'add' : diff[i].sign === '-' ? 'del' : 'same'}`}>
-              {diff[i].sign} {diff[i].text}
-            </span>
-          )}
+          stateOf={(i) => (diff[i].sign === '+' ? 'add' : diff[i].sign === '-' ? 'del' : 'idle')}
           className="ed-code"
         />
         <Hint block>

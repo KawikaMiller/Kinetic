@@ -207,7 +207,8 @@ export function Stage() {
             <ArrayStrip
               className="rb-flat"
               values={ring.slots.map((v) => v ?? '')}
-              cellState={(i) => (ring.slots[i] !== null ? 'active' : i === reserved ? 'idle' : 'dim')}
+              cellState={(i) => (ring.slots[i] !== null || i === reserved ? 'idle' : 'dim')}
+              cellTone={(i) => (ring.slots[i] !== null ? 'hi' : null)}
               pointers={
                 headSlot(ring) === tailSlot(ring)
                   ? [{ i: headSlot(ring), label: 'head = tail', tone: 'violet', id: 'both' }]

@@ -55,7 +55,7 @@ export function Stage() {
   const path = graphB && target ? retainingPath(graphB, target.id) : null;
 
   const listing = listingFor(leak, config.fix, config.cacheFix);
-  const lineState = (i: number): LineState => (i === listing.bad ? 'bad' : listing.good?.includes(i) ? 'done' : 'idle');
+  const lineState = (i: number): LineState => (i === listing.bad ? 'bad' : listing.good?.includes(i) ? 'good' : 'idle');
 
   useIntroCaption(verdictCaption(leak, run), [config, minutes, v.verdict]);
 

@@ -2,8 +2,12 @@ import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { listKeyTarget } from '../core/radio';
 import { SectionTitle } from './Panel';
 
-/** `bad`: the line that threw or is wrong, tinted --bad with a left bar. */
-export type LineState = 'idle' | 'past' | 'now' | 'next' | 'done' | 'cut' | 'cached' | 'pending' | 'bad';
+/**
+ * `bad`: the line that threw or is wrong, tinted --bad with a left bar; `good` mirrors it in
+ * --ok (the fixed line, the right way). `add` / `del` are a diff's + and − lines: tinted
+ * --ok / --bad with the text in that colour and no bar.
+ */
+export type LineState = 'idle' | 'past' | 'now' | 'next' | 'done' | 'cut' | 'cached' | 'pending' | 'bad' | 'good' | 'add' | 'del';
 
 /**
  * Source code with per-line state: the line running now, lines already run, lines skipped...

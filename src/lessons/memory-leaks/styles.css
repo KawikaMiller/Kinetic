@@ -4,7 +4,6 @@
 .ml-plot svg { width: 100%; height: auto; max-width: 356px; }
 .ml-code { flex: 1 1 320px; min-width: 0; }
 .ml-code code { font-size: 12px; }
-.ml-code li.is-done { background: color-mix(in srgb, var(--ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ok); }
 .ml-snap { display: flex; flex-direction: column; gap: 8px; }
 .ml-snap-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ml-note { color: var(--muted); font-size: 13px; }
