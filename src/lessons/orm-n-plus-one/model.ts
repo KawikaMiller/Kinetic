@@ -11,6 +11,8 @@ export interface Post {
   id: number;
   author_id: number;
   title: string;
+  /** A realistic fat column: ORMs select every column, so a join repeats it on every child row. */
+  body: string;
 }
 export interface Commenter {
   id: number;
@@ -28,10 +30,22 @@ const COMMENTERS = ['Zoe', 'Max', 'Ivy', 'Sam', 'Eve', 'Raj', 'Mia', 'Leo', 'Noa
 const ADJECTIVES = ['Fast', 'Quiet', 'Broken', 'Simple', 'Hidden', 'Tiny', 'Lazy', 'Eager'];
 const NOUNS = ['caches', 'queries', 'indexes', 'locks', 'tests', 'builds', 'logs', 'pipes'];
 const ENDINGS = ['explained', 'revisited', 'in practice', 'the hard way'];
+const SENTENCES = [
+  'The cache was warm, the index was there, and the page still took a second to load.',
+  'We traced the slowdown to a loop that quietly asked the database one more question per row.',
+  'Nothing in the code looked wrong, which is exactly why nobody had noticed it for months.',
+  'On a laptop with ten rows of test data the whole thing felt instant and fine.',
+  'In production with real traffic every extra round trip was waiting on the network.',
+  'The fix took four lines, and the graph of requests per page dropped straight down.',
+  'Measure the number of queries a page sends before you guess at what is slow.',
+  'Each query was fast; there were simply hundreds of them stacked end to end.',
+];
 const REPLIES = ['Great post', 'Disagree on the last point', 'Thanks, this fixed my bug', 'Can you share the code?', 'Same here in production', 'Nice summary'];
 
 export const MAX_POSTS = 200;
 export const MAX_COMMENTS_PER_POST = 6;
+const BODY_SENTENCES_MIN = 6;
+const BODY_SENTENCES_MAX = 10;
 
 export interface Fixture {
   authors: Author[];
@@ -47,7 +61,8 @@ function buildFixture(): Fixture {
   const posts: Post[] = [];
   const comments: Comment[] = [];
   for (let id = 1; id <= MAX_POSTS; id++) {
-    posts.push({ id, author_id: randInt(1, authors.length, rnd), title: `${pick(ADJECTIVES, rnd)} ${pick(NOUNS, rnd)} ${pick(ENDINGS, rnd)}` });
+    const body = Array.from({ length: randInt(BODY_SENTENCES_MIN, BODY_SENTENCES_MAX, rnd) }, () => pick(SENTENCES, rnd)).join(' ');
+    posts.push({ id, author_id: randInt(1, authors.length, rnd), title: `${pick(ADJECTIVES, rnd)} ${pick(NOUNS, rnd)} ${pick(ENDINGS, rnd)}`, body });
     for (let k = randInt(0, MAX_COMMENTS_PER_POST, rnd); k > 0; k--) {
       comments.push({ id: comments.length + 1, post_id: id, user_id: randInt(1, commenters.length, rnd), body: pick(REPLIES, rnd) });
     }
@@ -109,9 +124,9 @@ const authorName = (id: number) => FIXTURE.authors.find((a) => a.id === id)!.nam
 const commenterName = (id: number) => FIXTURE.commenters.find((c) => c.id === id)!.name;
 const firstPosts = (n: number) => FIXTURE.posts.slice(0, n);
 
-const POSTS_COLS = ['id', 'author_id', 'title'];
+const POSTS_COLS = ['id', 'author_id', 'title', 'body'];
 const postsQuery = (n: number, line: number) =>
-  query(`SELECT id, author_id, title FROM posts ORDER BY id LIMIT ${n}`, line, 'first', POSTS_COLS, firstPosts(n).map((p) => [p.id, p.author_id, p.title]));
+  query(`SELECT id, author_id, title, body FROM posts ORDER BY id LIMIT ${n}`, line, 'first', POSTS_COLS, firstPosts(n).map((p) => [p.id, p.author_id, p.title, p.body]));
 
 const authorOne = (id: number, line: number) =>
   query(`SELECT id, name FROM authors WHERE id = ${id}`, line, 'each', ['id', 'name'], FIXTURE.authors.filter((a) => a.id === id).map((a) => [a.id, a.name]));
@@ -131,20 +146,20 @@ const commentersIn = (ids: readonly number[], line: number, kind: QueryKind) =>
   query(`SELECT id, name FROM commenters WHERE id IN (${list(ids)})`, line, kind, ['id', 'name'], FIXTURE.commenters.filter((c) => ids.includes(c.id)).map((c) => [c.id, c.name]));
 
 function authorsJoin(n: number): Query {
-  const rows = firstPosts(n).map((p): Row => [p.id, p.title, authorName(p.author_id)]);
-  return query(`SELECT p.id, p.title, a.name FROM posts p JOIN authors a ON a.id = p.author_id ORDER BY p.id LIMIT ${n}`, 0, 'join', ['id', 'title', 'name'], rows);
+  const rows = firstPosts(n).map((p): Row => [p.id, p.author_id, p.title, p.body, authorName(p.author_id)]);
+  return query(`SELECT p.id, p.author_id, p.title, p.body, a.name FROM posts p JOIN authors a ON a.id = p.author_id ORDER BY p.id LIMIT ${n}`, 0, 'join', ['id', 'author_id', 'title', 'body', 'name'], rows);
 }
 
 function nestedJoin(n: number): Query {
   const rows: Row[] = [];
   for (const p of firstPosts(n)) {
     const cs = FIXTURE.comments.filter((c) => c.post_id === p.id);
-    if (cs.length === 0) rows.push([p.id, p.title, null, null, null]);
-    for (const c of cs) rows.push([p.id, p.title, c.id, c.body, commenterName(c.user_id)]);
+    if (cs.length === 0) rows.push([p.id, p.title, p.body, null, null, null]);
+    for (const c of cs) rows.push([p.id, p.title, p.body, c.id, c.body, commenterName(c.user_id)]);
   }
   return query(
-    `SELECT p.id, p.title, c.id, c.body, u.name FROM (SELECT * FROM posts ORDER BY id LIMIT ${n}) p LEFT JOIN comments c ON c.post_id = p.id LEFT JOIN commenters u ON u.id = c.user_id ORDER BY p.id, c.id`,
-    0, 'join', ['id', 'title', 'id', 'body', 'name'], rows,
+    `SELECT p.id, p.title, p.body, c.id, c.body, u.name FROM (SELECT * FROM posts ORDER BY id LIMIT ${n}) p LEFT JOIN comments c ON c.post_id = p.id LEFT JOIN commenters u ON u.id = c.user_id ORDER BY p.id, c.id`,
+    0, 'join', ['id', 'title', 'body', 'id', 'body', 'name'], rows,
   );
 }
 
@@ -157,16 +172,20 @@ export interface Run {
 export function snippet(scene: Scene, strategy: Strategy, n: number): string[] {
   const all = `Post.all(limit=${n})`;
   if (scene === 'authors') {
-    const load = { lazy: all, join: `${all}.join(Author)`, batch: `${all}.preload(Author)`, loader: all }[strategy];
-    return [`posts = ${load}`, 'for p in posts:', strategy === 'loader' ? '    show(p.title, await authors.load(p.author_id))' : '    show(p.title, p.author.name)'];
+    // A DataLoader batches only the load() calls made in the same tick, so they are issued together (Promise.all), not one await per loop turn.
+    if (strategy === 'loader') return [`posts = ${all}`, 'authors = await Promise.all(posts.map(p => authorLoader.load(p.author_id)))', 'show each p.title with its authors[i].name'];
+    const load = { lazy: all, join: `${all}.join(Author)`, batch: `${all}.preload(Author)` }[strategy];
+    return [`posts = ${load}`, 'for p in posts:', '    show(p.title, p.author.name)'];
   }
-  const load = { lazy: all, join: `${all}.join(Comment).join(User)`, batch: `${all}.preload(Comment, User)`, loader: all }[strategy];
-  return [
-    `posts = ${load}`,
-    'for p in posts:',
-    strategy === 'loader' ? '    for c in await comments.load(p.id):' : '    for c in p.comments:',
-    strategy === 'loader' ? '        show(c.body, await users.load(c.user_id))' : '        show(c.body, c.user.name)',
-  ];
+  if (strategy === 'loader')
+    return [
+      `posts = ${all}`,
+      'groups = await Promise.all(posts.map(p => commentLoader.load(p.id)))',
+      'users = await Promise.all(groups.flat().map(c => userLoader.load(c.user_id)))',
+      'show each comment c.body with its user name',
+    ];
+  const load = { lazy: all, join: `${all}.join(Comment).join(User)`, batch: `${all}.preload(Comment, User)` }[strategy];
+  return [`posts = ${load}`, 'for p in posts:', '    for c in p.comments:', '        show(c.body, c.user.name)'];
 }
 
 /** Runs one strategy for a page of `n` posts: the queries it sends, in order, and the page it builds. */
@@ -181,13 +200,13 @@ export function runStrategy(scene: Scene, strategy: Strategy, n: number): Run {
         return { queries: [posts, ...ps.map((p) => authorOne(p.author_id, 2))], page: page() };
       case 'join': {
         const q = authorsJoin(n);
-        return { queries: [q], page: q.rows.map((r) => ({ id: r[0] as number, title: r[1] as string, author: r[2] as string })) };
+        return { queries: [q], page: q.rows.map((r) => ({ id: r[0] as number, title: r[2] as string, author: r[4] as string })) };
       }
       case 'batch':
         return { queries: [posts, authorsIn(uniq(ps.map((p) => p.author_id)), 0, 'batch')], page: page() };
       case 'loader':
-        // Every load() in the loop is collected until the loop yields, then sent as one query.
-        return { queries: [posts, authorsIn(uniq(ps.map((p) => p.author_id)), 2, 'batch')], page: page() };
+        // Every load() made in the Promise.all is collected until the tick ends, then sent as one query.
+        return { queries: [posts, authorsIn(uniq(ps.map((p) => p.author_id)), 1, 'batch')], page: page() };
     }
   }
   const commentsOf = (postId: number) => FIXTURE.comments.filter((c) => c.post_id === postId);
@@ -204,7 +223,7 @@ export function runStrategy(scene: Scene, strategy: Strategy, n: number): Run {
       const byPost = new Map<number, PostView>();
       for (const r of q.rows) {
         const v = byPost.get(r[0] as number) ?? { id: r[0] as number, title: r[1] as string, comments: [] };
-        if (r[2] !== null) v.comments!.push({ body: r[3] as string, user: r[4] as string });
+        if (r[3] !== null) v.comments!.push({ body: r[4] as string, user: r[5] as string });
         byPost.set(v.id, v);
       }
       return { queries: [q], page: [...byPost.values()] };
@@ -213,8 +232,8 @@ export function runStrategy(scene: Scene, strategy: Strategy, n: number): Run {
     case 'loader': {
       const line = (l: number) => (strategy === 'loader' ? l : 0);
       const kind: QueryKind = 'batch';
-      const queries = [posts, commentsIn(ps.map((p) => p.id), line(2), kind)];
-      if (pageComments.length > 0) queries.push(commentersIn(uniq(pageComments.map((c) => c.user_id)), line(3), kind));
+      const queries = [posts, commentsIn(ps.map((p) => p.id), line(1), kind)];
+      if (pageComments.length > 0) queries.push(commentersIn(uniq(pageComments.map((c) => c.user_id)), line(2), kind));
       return { queries, page: page() };
     }
   }
@@ -272,4 +291,15 @@ export function stopsFor(count: number, maxStops = 14, singles = 6): number[] {
 
 export function pageComments(n: number): number {
   return FIXTURE.comments.filter((c) => c.post_id <= n).length;
+}
+
+/** How many of the lazy author queries ask for an author id the page already loaded (what an identity map or query cache would skip). */
+export function repeatedAuthorQueries(n: number): number {
+  const ids = firstPosts(n).map((p) => p.author_id);
+  return ids.length - new Set(ids).size;
+}
+
+/** A fix's queries are the cheap side only while the strategy beats lazy loading on time. */
+export function fixTone(total: number, lazyTotal: number): 'ok' | 'bad' {
+  return total < lazyTotal ? 'ok' : 'bad';
 }

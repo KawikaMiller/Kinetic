@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
-  FIXTURE, INT_BYTES, MAX_COMMENTS_PER_POST, MAX_POSTS, MS_PER_BYTE, NULL_BYTES, PAGE_MAX, ROW_BYTES, STRATEGIES, WORK_BASE_MS, pageComments, rowBytes,
+  FIXTURE, INT_BYTES, MAX_COMMENTS_PER_POST, MAX_POSTS, MS_PER_BYTE, NULL_BYTES, PAGE_MAX, ROW_BYTES, STRATEGIES, WORK_BASE_MS, fixTone, pageComments, repeatedAuthorQueries, rowBytes,
   runStrategy, snippet, stopsFor, timeline, workMs, type PostView, type Query, type Row, type Scene, type Strategy, type Value,
 } from './model';
 
@@ -14,11 +14,11 @@ beforeAll(async () => {
   const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => Db };
   db = new DatabaseSync(':memory:');
   db.exec('CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT); CREATE TABLE commenters (id INTEGER PRIMARY KEY, name TEXT);');
-  db.exec('CREATE TABLE posts (id INTEGER PRIMARY KEY, author_id INTEGER, title TEXT); CREATE TABLE comments (id INTEGER PRIMARY KEY, post_id INTEGER, user_id INTEGER, body TEXT);');
+  db.exec('CREATE TABLE posts (id INTEGER PRIMARY KEY, author_id INTEGER, title TEXT, body TEXT); CREATE TABLE comments (id INTEGER PRIMARY KEY, post_id INTEGER, user_id INTEGER, body TEXT);');
   const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
   for (const a of FIXTURE.authors) db.exec(`INSERT INTO authors VALUES (${a.id}, ${q(a.name)})`);
   for (const c of FIXTURE.commenters) db.exec(`INSERT INTO commenters VALUES (${c.id}, ${q(c.name)})`);
-  for (const p of FIXTURE.posts) db.exec(`INSERT INTO posts VALUES (${p.id}, ${p.author_id}, ${q(p.title)})`);
+  for (const p of FIXTURE.posts) db.exec(`INSERT INTO posts VALUES (${p.id}, ${p.author_id}, ${q(p.title)}, ${q(p.body)})`);
   for (const c of FIXTURE.comments) db.exec(`INSERT INTO comments VALUES (${c.id}, ${c.post_id}, ${c.user_id}, ${q(c.body)})`);
 });
 
@@ -157,17 +157,35 @@ describe('the over-eager trap: one join duplicates the post on every comment row
     }
   });
 
-  it('transfers more bytes than the batch fix for every page size from 10 up', () => {
+  it('transfers more bytes than the batch fix for every page size from 10 up, and at least 1.5 times as many from 20 up (the post body repeats)', () => {
     for (let n = 10; n <= PAGE_MAX; n++) {
       const bytes = (s: Strategy) => runStrategy('nested', s, n).queries.reduce((sum, q) => sum + q.bytes, 0);
       expect(bytes('join'), `N = ${n}`).toBeGreaterThan(bytes('batch'));
+      if (n >= 20) expect(bytes('join') / bytes('batch'), `N = ${n}`).toBeGreaterThan(1.5);
     }
+  });
+
+  it('the bytes are the repeated parent: the join carries every post body once per comment row (a post with none once)', () => {
+    const n = 20;
+    const q = runStrategy('nested', 'join', n).queries[0];
+    const bodies = q.rows.reduce((s, r) => s + (r[2] as string).length, 0);
+    const once = FIXTURE.posts.slice(0, n).reduce((s, p) => s + p.body.length, 0);
+    expect(bodies).toBeGreaterThan(2 * once);
+    expect(bodies).toBe(FIXTURE.posts.slice(0, n).reduce((s, p) => s + p.body.length * Math.max(1, FIXTURE.comments.filter((c) => c.post_id === p.id).length), 0));
+  });
+
+  it('the trade-off shows in the time too: at 0.2 ms the batch beats the join on a big page, at 20 ms the join wins', () => {
+    const total = (s: Strategy, n: number, latency: number) => timeline(runStrategy('nested', s, n).queries, latency).total;
+    expect(total('batch', 200, 0.2)).toBeLessThan(total('join', 200, 0.2));
+    expect(total('join', 200, 20)).toBeLessThan(total('batch', 200, 20));
+    // and lazy loading still loses to both at every latency
+    for (const latency of [0.2, 5, 20]) expect(total('lazy', 200, latency)).toBeGreaterThan(total('join', 200, latency));
   });
 
   it('a post with no comments still appears, with NULLs for the comment side', () => {
     const empty = FIXTURE.posts.find((p) => !FIXTURE.comments.some((c) => c.post_id === p.id))!;
     const q = runStrategy('nested', 'join', empty.id).queries[0];
-    expect(q.rows.some((r) => r[0] === empty.id && r[2] === null && r[3] === null && r[4] === null)).toBe(true);
+    expect(q.rows.some((r) => r[0] === empty.id && r[3] === null && r[4] === null && r[5] === null)).toBe(true);
   });
 });
 
@@ -194,7 +212,7 @@ describe('the SQL is real: every statement runs in SQLite and returns the rows t
         const a = runStrategy('authors', s, n).queries.map((q) => sqliteRows(q.sql));
         const authors = new Map<number, string>();
         let pageA: PostView[];
-        if (s === 'join') pageA = a[0].map((r) => ({ id: r[0] as number, title: r[1] as string, author: r[2] as string }));
+        if (s === 'join') pageA = a[0].map((r) => ({ id: r[0] as number, title: r[2] as string, author: r[4] as string }));
         else {
           for (const rows of a.slice(1)) for (const r of rows) authors.set(r[0] as number, r[1] as string);
           pageA = a[0].map((r) => ({ id: r[0] as number, title: r[2] as string, author: authors.get(r[1] as number)! }));
@@ -211,6 +229,53 @@ describe('the SQL is real: every statement runs in SQLite and returns the rows t
       }));
       expect(pageB.map(({ id, title, comments: cs }) => ({ id, title, comments: cs }))).toEqual(referencePage('nested', n));
     }
+  });
+});
+
+describe('the DataLoader snippet would really batch (review repro)', () => {
+  it('issues every load() together with Promise.all, never one await per loop turn', () => {
+    for (const scene of SCENES) {
+      const lines = snippet(scene, 'loader', 20);
+      expect(lines.some((l) => l.includes('Promise.all'))).toBe(true);
+      // no await on a line indented inside a loop
+      expect(lines.some((l) => /^\s+/.test(l) && l.includes('await'))).toBe(false);
+      expect(lines.some((l) => /^for /.test(l))).toBe(false);
+    }
+  });
+
+  it('the batched queries come from the Promise.all lines, one tick each: authors, then comments, then users', () => {
+    const a = runStrategy('authors', 'loader', 20).queries;
+    expect(snippet('authors', 'loader', 20)[a[1].line]).toContain('authorLoader');
+    const n = runStrategy('nested', 'loader', 20).queries;
+    const lines = snippet('nested', 'loader', 20);
+    expect(lines[n[1].line]).toContain('commentLoader');
+    expect(lines[n[2].line]).toContain('userLoader');
+  });
+
+  it('the lazy snippets do have the loop that causes the N', () => {
+    expect(snippet('authors', 'lazy', 20).some((l) => /^for /.test(l))).toBe(true);
+  });
+});
+
+describe('repeats an identity map would skip, and the fix colours', () => {
+  it('counts author queries that repeat an id already loaded, independently', () => {
+    for (const n of [10, 20, 100, 200]) {
+      const seen = new Set<number>();
+      let repeats = 0;
+      for (const p of FIXTURE.posts.slice(0, n)) {
+        if (seen.has(p.author_id)) repeats++;
+        seen.add(p.author_id);
+      }
+      expect(repeatedAuthorQueries(n)).toBe(repeats);
+      expect(runStrategy('authors', 'lazy', n).queries.length - 1 - repeats).toBe(seen.size);
+    }
+    expect(repeatedAuthorQueries(20)).toBeGreaterThan(0);
+  });
+
+  it('a fix is the cheap side only while it beats lazy loading', () => {
+    expect(fixTone(5, 100)).toBe('ok');
+    expect(fixTone(100, 100)).toBe('bad');
+    expect(fixTone(150, 100)).toBe('bad');
   });
 });
 

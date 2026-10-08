@@ -11,7 +11,7 @@ import { toneVar, type Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { fmtBytes, fmtMs, ormFrames, shortSql, summaryRow, type OrmFrame } from './frames';
 import {
-  LATENCY_DEFAULT_MS, LATENCY_MAX_MS, LATENCY_MIN_MS, PAGE_DEFAULT, PAGE_MAX, PAGE_MIN, STRATEGIES, runStrategy, snippet, timeline,
+  LATENCY_DEFAULT_MS, LATENCY_MAX_MS, LATENCY_MIN_MS, PAGE_DEFAULT, PAGE_MAX, PAGE_MIN, STRATEGIES, fixTone, repeatedAuthorQueries, runStrategy, snippet, timeline,
   type Query, type Scene, type Strategy,
 } from './model';
 
@@ -27,14 +27,15 @@ const LEGEND = (
     { color: 'var(--hi)', label: 'ORM line running' },
     { color: 'var(--info)', label: 'the first query' },
     { color: 'var(--orange)', label: 'one query per item (the N)' },
-    { color: 'var(--ok)', label: "a fix's queries" },
-    { color: 'var(--bad)', label: 'duplicated rows in a join' },
+    { color: 'var(--ok)', label: 'a fix that beats lazy loading' },
+    { color: 'var(--bad)', label: 'a fix that does not, or duplicated rows' },
     { color: 'var(--dim)', label: 'application idle' },
   ]} />
 );
 
-/** The colour of a query: the lazy loop's repeats are the N, a fix's queries are the cheap side. */
-const toneOf = (strategy: Strategy, q: Query): Tone => (strategy === 'lazy' ? (q.kind === 'first' ? 'info' : 'orange') : 'ok');
+/** The colour of a query: the lazy loop's repeats are the N; a fix's queries are the cheap side only while it beats lazy loading on time. */
+const toneOf = (strategy: Strategy, q: Query, total: number, lazyTotal: number): Tone =>
+  strategy === 'lazy' ? (q.kind === 'first' ? 'info' : 'orange') : fixTone(total, lazyTotal);
 const roundTenth = (v: number) => Math.round(v * 10) / 10;
 
 export function OrmScene({ scene, picker }: { scene: Scene; picker: ReactNode }) {
@@ -50,6 +51,7 @@ export function OrmScene({ scene, picker }: { scene: Scene; picker: ReactNode })
   const tl = useMemo(() => timeline(run.queries, latency), [run, latency]);
   const compare = useMemo(() => STRATEGIES.map((s) => ({ ...s, ...summaryRow(scene, s.id, n, latency) })), [scene, n, latency]);
   const slowest = Math.max(...compare.map((c) => c.total));
+  const lazyTotal = compare.find((c) => c.id === 'lazy')!.total;
   const fastest = Math.min(...compare.map((c) => c.total));
   const sofar = tl.items.slice(0, shown);
   const spent = sofar.at(-1)?.end ?? 0;
@@ -57,14 +59,14 @@ export function OrmScene({ scene, picker }: { scene: Scene; picker: ReactNode })
 
   const bars: GanttBar[] = sofar.flatMap((t, i) => [
     { id: `idle${i}`, lane: 'app', start: t.start, end: t.end, tone: 'dim', kind: 'blocked' },
-    { id: `q${i}`, lane: 'db', start: t.start, end: t.end, tone: toneOf(strategy, t.query), ...(focus !== null && t.query.line === focus ? { ring: 'hi' as const } : {}) },
+    { id: `q${i}`, lane: 'db', start: t.start, end: t.end, tone: toneOf(strategy, t.query, tl.total, lazyTotal), ...(focus !== null && t.query.line === focus ? { ring: 'hi' as const } : {}) },
   ]);
 
   const logLines: ConsoleLine[] = [
     ...(shown > LOG_TAIL ? [{ text: `… ${shown - LOG_TAIL} earlier queries`, tone: 'muted' as Tone }] : []),
     ...sofar.slice(-LOG_TAIL).map((t, k) => {
       const i = Math.max(0, shown - LOG_TAIL) + k;
-      return { text: `${i + 1}. ${shortSql(t.query.sql)}`, tone: focus !== null && t.query.line === focus ? ('hi' as Tone) : toneOf(strategy, t.query) };
+      return { text: `${i + 1}. ${shortSql(t.query.sql)}`, tone: focus !== null && t.query.line === focus ? ('hi' as Tone) : toneOf(strategy, t.query, tl.total, lazyTotal) };
     }),
   ];
 
@@ -135,9 +137,15 @@ export function OrmScene({ scene, picker }: { scene: Scene; picker: ReactNode })
         <Compare rows={compare} selected={strategy} fastest={fastest} slowest={slowest} />
         {scene === 'nested' && strategy === 'join' && <WireRows run={run} />}
         <Preview run={run} />
+        {scene === 'authors' && strategy === 'lazy' && (
+          <Hint block>
+            {repeatedAuthorQueries(n)} of these {n} author queries ask for an author the page already loaded. Some ORMs (an identity map or query cache, as in SQLAlchemy,
+            Hibernate or Rails) skip those repeats; that trims the N but still leaves one query per distinct author.
+          </Hint>
+        )}
         <Hint block>
-          A fix has its own cost: the join returns one row per comment and repeats the post's columns on each (see the red rows), and a batch's {`IN (…)`} list grows with the
-          page. Queries here are serial because each needs the previous answer. {HONEST}
+          A fix has its own cost: {scene === 'nested' ? 'the join returns one row per comment and repeats the post (including its body) on each, so it moves more bytes than the batch, and at low latency on a big page it can even lose to it; ' : 'the join returns one row per post with the author joined on, which costs nothing extra here, but in the nested page it repeats the parent on every child row; '}
+          a batch's {`IN (…)`} list grows with the page. The queries are serial because this code blocks on each answer; async code could overlap them, at the cost of more connections. {HONEST}
         </Hint>
       </div>
     </StageFrame>

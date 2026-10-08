@@ -18,7 +18,7 @@ describe('frames: every scene x strategy x size x latency', () => {
             expect(frames.map((f) => f.shown)).toEqual([0, ...stops, run.queries.length]);
             for (const f of frames.slice(1, -1)) {
               expect(text(f.say)).toContain(`${f.shown} ${f.shown === 1 ? 'query' : 'queries'} so far, ${fmtMs(tl.items[f.shown - 1].end)}`);
-              expect(text(f.say)).toContain(`${fmtMs(f.shown * latency)} was only waiting`);
+              expect(text(f.say)).toContain(`${fmtMs(f.shown * latency)} is round-trip latency`);
               expect(f.line).toBe(run.queries[f.shown - 1].line);
             }
             const last = text(frames.at(-1)!.say);

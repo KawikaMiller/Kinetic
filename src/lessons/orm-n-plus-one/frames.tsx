@@ -37,10 +37,10 @@ const whatIsAsked = (q: Query): string => {
 };
 
 /** What happened between the previous stop and this one, from the queries themselves. */
-function stopCaption(strategy: Strategy, run: Run, tl: Timeline, from: number, to: number, latencyMs: number): ReactNode {
+function stopCaption(scene: Scene, strategy: Strategy, run: Run, tl: Timeline, from: number, to: number, latencyMs: number): ReactNode {
   const qs = run.queries.slice(from, to);
   const last = tl.items[to - 1];
-  const sofar = <> {plural(to, 'query', 'queries')} so far, {fmtMs(last.end)}, of which {fmtMs(to * latencyMs)} was only waiting on the round trips.</>;
+  const sofar = <> {plural(to, 'query', 'queries')} so far, {fmtMs(last.end)}, of which {fmtMs(to * latencyMs)} is round-trip latency.</>;
   const first = qs[0];
   if (qs.every((q) => q.kind === 'each')) {
     const what = [...new Set(qs.map(whatIsAsked))].join(' and ');
@@ -51,14 +51,14 @@ function stopCaption(strategy: Strategy, run: Run, tl: Timeline, from: number, t
   }
   if (from === 0 && first.kind === 'first') {
     return <>Query 1 loads the page's {plural(first.rows.length, 'post')}: {plural(first.rows.length, 'row')}, {fmtBytes(first.bytes)}.
-      {strategy === 'lazy' ? ' Nothing else is loaded yet: p.author and p.comments are fetched the first time the code touches them.' : ''}{sofar}</>;
+      {strategy === 'lazy' ? ` Nothing else is loaded yet: ${scene === 'authors' ? 'p.author' : 'p.comments and c.user'} ${scene === 'authors' ? 'is' : 'are'} fetched the first time the code touches ${scene === 'authors' ? 'it' : 'them'}.` : ''}{sofar}</>;
   }
   const q = first;
   if (q.kind === 'join')
     return <>One query joins everything: <span className="hl ok">{plural(q.rows.length, 'row')}</span>, {fmtBytes(q.bytes)}, in a single round trip of {fmtMs(latencyMs)}.{sofar}</>;
   const ids = IN_LIST.exec(q.sql)![1].split(', ').length;
   return <>Query {to}: <span className="hl ok">one query</span> asks for {plural(ids, 'id')} at once with {code('IN (…)')}, and gets back {plural(q.rows.length, 'row')} ({fmtBytes(q.bytes)}).
-    {strategy === 'loader' ? ' Every load() call made while the loop ran was collected, de-duplicated, and sent when the loop yielded.' : ''}{sofar}</>;
+    {strategy === 'loader' ? ' The load() calls were all issued together in one Promise.all, so the loader collected them in the same tick, de-duplicated the ids, and sent one query.' : ''}{sofar}</>;
 }
 
 /** Frames for a run: an intro, then a stop per few queries, ending on the summary. */
@@ -72,14 +72,14 @@ export function ormFrames(scene: Scene, strategy: Strategy, run: Run, latencyMs:
   }];
   let prev = 0;
   for (const stop of stops) {
-    frames.push({ shown: stop, line: run.queries[stop - 1].line, say: stopCaption(strategy, run, tl, prev, stop, latencyMs) });
+    frames.push({ shown: stop, line: run.queries[stop - 1].line, say: stopCaption(scene, strategy, run, tl, prev, stop, latencyMs) });
     prev = stop;
   }
   const waitingPct = Math.round((tl.waiting / tl.total) * 100);
   frames.push({
     shown: run.queries.length, line: run.queries.at(-1)!.line, hold: 2,
-    say: <>Done: <b>{plural(run.queries.length, 'query', 'queries')}</b>, <b>{fmtMs(tl.total)}</b>, {fmtBytes(tl.bytes)} over the wire. {waitingPct}% of the time was the
-      application waiting on round trips, not the database working.</>,
+    say: <>Done: <b>{plural(run.queries.length, 'query', 'queries')}</b>, <b>{fmtMs(tl.total)}</b>, {fmtBytes(tl.bytes)} over the wire. {waitingPct}% of the time was round-trip latency;
+      the rest was the database working and the bytes travelling. The application sat idle throughout.</>,
   });
   return frames;
 }
