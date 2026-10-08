@@ -1,0 +1,14 @@
+.ik { gap: 14px; }
+.ik .section-title { display: block; }
+.ik-tables { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.ik-table { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
+.ik-table td { font-size: 12.5px; }
+.ik-ok td { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--ok) 12%, transparent); }
+.ik-ok td:first-child { border-left: 3px solid var(--ok); }
+.ik-dup td { color: var(--bad); box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--bad) 16%, transparent); font-weight: 700; }
+.ik-dup td:first-child { border-left: 3px solid var(--bad); }
+.ik-lock td { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--hi) 16%, transparent); }
+.ik-replay { color: var(--violet); font-weight: 700; }
+.ik-need { color: var(--text); font-weight: 700; }
+.ik-free { color: var(--muted); }
+.ik-natural code { font-size: 11.5px; overflow-wrap: anywhere; }
