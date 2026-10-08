@@ -97,6 +97,8 @@
 .console-panel code { color: var(--ok); }
 /* --c inherits, so only a line that sets its own tone may use it */
 .console-panel code[class*='tone-'] { color: var(--c); }
+.console-panel.is-pre { overflow-x: auto; }
+.console-panel.is-pre code { white-space: pre; }
 
 /* Boxes and panels inside a stage */
 .box {
