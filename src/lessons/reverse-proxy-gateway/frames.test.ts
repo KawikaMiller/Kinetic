@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { REASON, introFor, runFrames, statusTone } from './frames';
 import { DEFAULT_CONFIG, PRESETS, presetRequests, runRequests, type GatewayConfig } from './model';
 
-const text = (n: Parameters<typeof captionText>[0]) => {
-  const t = captionText(n).replace(/\s+/g, ' ');
-  expect(t).not.toMatch(/[a-z)]\.[A-Z]/);
-  return t;
-};
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 const STATUS_RE = /\b(200|401|404|429|502|504) (?:OK|[A-Z][a-z]+)/g;
 
 describe('every caption is true, for every preset × auth × spoofed XFF × mTLS', () => {

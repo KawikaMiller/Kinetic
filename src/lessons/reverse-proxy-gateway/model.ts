@@ -6,6 +6,8 @@
  * latencies and tokens are simulated; no request leaves the page.
  */
 
+import { fullBucket, takeToken, type Bucket, type BucketParams } from '../../core/tokenBucket';
+
 export const STAGES = ['tls', 'route', 'auth', 'rate', 'headers', 'forward'] as const;
 export type StageId = (typeof STAGES)[number];
 export const STAGE_LABEL: Record<StageId, string> = {
@@ -75,26 +77,9 @@ export function parsePath(text: string): { ok: true; value: string } | { ok: fal
   return { ok: true, value: t };
 }
 
-// ── Rate limiting: the token bucket from rate-limiting ───────────────────
+// ── Rate limiting: the token bucket (core/tokenBucket, shared with rate-limiting) ──
 
-export interface BucketParams {
-  /** Tokens added per second. */
-  rate: number;
-  capacity: number;
-}
-export interface Bucket {
-  tokens: number;
-  last: number;
-}
 export const DEFAULT_BUCKET: BucketParams = { rate: 1, capacity: 5 };
-export const fullBucket = (p: BucketParams, now = 0): Bucket => ({ tokens: p.capacity, last: now });
-
-/** Refill for the time since `last` (never past capacity), then spend one token if there is a whole one. */
-export function takeToken(b: Bucket, now: number, p: BucketParams): { allowed: boolean; bucket: Bucket; retryAfter: number } {
-  const tokens = Math.min(p.capacity, b.tokens + (now - b.last) * p.rate);
-  if (tokens >= 1) return { allowed: true, bucket: { tokens: tokens - 1, last: now }, retryAfter: 0 };
-  return { allowed: false, bucket: { tokens, last: now }, retryAfter: Math.ceil((1 - tokens) / p.rate) };
-}
 
 // ── Requests and the pipeline ───────────────────────────────────────────
 

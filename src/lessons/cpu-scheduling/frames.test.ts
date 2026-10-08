@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { scheduleFrames } from './frames';
 import lesson from './index';
 import { compareAll, DEFAULT_OPTS, metricsOf, POLICIES, PRESETS, schedule, STARVE_TICKS } from './model';
@@ -17,7 +17,7 @@ describe('scheduleFrames: every preset under every policy (25 combinations)', ()
         expect(frames.every((f) => f.say !== undefined)).toBe(true);
         frames.slice(0, -1).forEach((f, i) => {
           const m = s.moments[i];
-          const text = captionText(f.say);
+          const text = expectCaption(f.say);
           expect(f.at).toBe(i);
           expect(text.startsWith(`t = ${m.t}:`)).toBe(true);
           if (m.cpu?.kind === 'run') expect(text).toMatch(new RegExp(`${p.jobs[m.cpu.job].name} (gets the CPU|keeps running|runs now)`));
@@ -28,7 +28,7 @@ describe('scheduleFrames: every preset under every policy (25 combinations)', ()
           expect(text.includes('starving')).toBe(starving);
         });
         const x = metricsOf(s);
-        const last = captionText(frames.at(-1)!.say);
+        const last = expectCaption(frames.at(-1)!.say);
         expect(last).toContain(`at t = ${s.end}`);
         expect(last).toContain(`average waiting ${fmt(x.waiting)}`);
         expect(last).toContain(`average turnaround ${fmt(x.turnaround)}`);

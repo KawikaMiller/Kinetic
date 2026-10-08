@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { ROOT_ENDPOINT, rootMismatch, SKIP_ENV } from './root.mjs';
 import { recoverRoute } from './route.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -52,6 +53,32 @@ export function parseArgs(argv = process.argv.slice(2)) {
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Abort unless the dev server at BASE_URL serves this checkout (see ./root.mjs). */
+async function assertServesThisCheckout() {
+  if (process.env[SKIP_ENV] === '1') return;
+  let served = null;
+  try {
+    const res = await fetch(new URL(ROOT_ENDPOINT, BASE_URL));
+    if (res.ok) served = await res.json();
+  } catch {
+    // not JSON (Vite's SPA fallback page, or another app): rootMismatch reports it
+  }
+  // Same machine, so resolve junctions and symlinks on both sides before comparing.
+  const real = (dir) => {
+    try {
+      return fs.realpathSync.native(dir);
+    } catch {
+      return dir;
+    }
+  };
+  if (typeof served?.root === 'string') served = { root: real(served.root) };
+  const why = rootMismatch(served, real(ROOT), BASE_URL);
+  if (why) {
+    console.error(`[kinetic] Wrong dev server. ${why}`);
+    process.exit(1);
+  }
+}
+
 /**
  * Launch a headless browser with one page that records console errors.
  * `seed` replaces Math.random with a seeded generator before any app code runs,
@@ -65,6 +92,7 @@ export async function openPage({ width = 1440, height = 1000, seed, reducedMotio
   } catch {
     throw new Error(`Dev server not reachable at ${BASE_URL}. Start it with \`npm run dev\`.`);
   }
+  await assertServesThisCheckout();
   const browser = await puppeteer.launch({
     executablePath: findBrowser(),
     headless: true,
