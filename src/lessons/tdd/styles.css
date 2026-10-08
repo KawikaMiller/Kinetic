@@ -1,0 +1,19 @@
+.tdd { flex-flow: row wrap; align-items: flex-start; gap: 18px; }
+.tdd-left { flex: 0 1 260px; display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
+.tdd-wheel { width: 150px; height: 150px; display: block; }
+.tdd-arc path { fill: var(--c); opacity: 0.28; transition: opacity 0.2s; }
+.tdd-arc.is-on path { opacity: 1; }
+.tdd-arc .tdd-ring { fill: none; stroke: var(--hi); stroke-width: 3; opacity: 1; }
+.tdd-wheel-text { font: 700 14px var(--font); fill: var(--text); }
+.tdd-moves { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; }
+.tdd-moves .chip-button { text-align: left; white-space: normal; }
+.tdd-panels { flex: 1 1 420px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; min-width: 0; }
+.tdd-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tdd-tests ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.tdd-tests li { color: var(--c); font: 12.5px var(--mono); overflow-wrap: anywhere; }
+.tdd-tests li code { color: var(--text); }
+.tdd-got { color: var(--c); }
+.tdd-flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tdd-compare { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.tdd-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tdd-verdict { margin: 0; font-size: 14px; line-height: 1.5; }
