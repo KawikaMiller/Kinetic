@@ -1,0 +1,51 @@
+.noa { gap: 12px; }
+.noa-row { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.noa-col { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.noa-code code { white-space: pre-wrap; }
+.noa .console-panel code { overflow-wrap: anywhere; }
+/* Compile-time rejections are the earlier, cheaper failure: orange, not the runtime red. */
+.noa-code.is-compile li.is-bad { background: color-mix(in srgb, var(--orange) 16%, transparent); box-shadow: inset 3px 0 0 var(--orange); }
+/* An accepted or covered line is green; an unreachable catch-all is just dimmed, not struck out. */
+.noa-code li.is-done { background: color-mix(in srgb, var(--ok) 12%, transparent); box-shadow: inset 3px 0 0 var(--ok); }
+.noa-code li.is-cut { text-decoration: none; }
+
+/* The chain, as wrapping HTML so it reflows on a phone */
+.noa-chain { list-style: none; margin: 0; padding: 0; display: flex; flex-flow: row wrap; align-items: center; gap: 6px; }
+.noa-link {
+  display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; min-width: 72px;
+  border: 1.5px solid var(--c); border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+  transition: border-color 0.25s, background 0.25s, opacity 0.25s;
+}
+.noa-link.tone-dim { opacity: 0.45; border-style: dashed; }
+.noa-link.is-current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 30%, transparent); }
+.noa-link-name { font: 700 12.5px var(--mono); color: var(--text); }
+.noa-link-value { font: 700 12px var(--mono); color: var(--c); }
+.noa-link.tone-muted .noa-link-value { color: var(--muted); }
+.noa-arrow { color: var(--faint); font: 700 14px var(--mono); }
+
+.noa-quote blockquote { margin: 0 0 6px; font: italic 500 14px/1.45 var(--font); color: var(--text); }
+.noa-quote cite { font: 500 12px var(--font); color: var(--muted); font-style: normal; }
+
+/* Narrowing: the type's members */
+.noa-types { display: flex; flex-direction: column; gap: 6px; }
+.noa-type-row { display: flex; flex-flow: row wrap; gap: 6px; }
+.noa-type {
+  font: 700 13px var(--mono); padding: 4px 10px; border-radius: 99px;
+  border: 1.5px solid var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent);
+}
+.noa-type.is-out { text-decoration: line-through; color: var(--muted); border-style: dashed; }
+
+/* Sum types: the shape sorter */
+.noa-sorter-col { flex: 0 1 360px; }
+.noa-sorter { display: block; width: 100%; max-width: 360px; height: auto; }
+.noa-slot-shape { fill: color-mix(in srgb, var(--c) 14%, var(--panel)); stroke: var(--c); stroke-width: 2.5; stroke-dasharray: 5 4; transition: stroke 0.25s, fill 0.25s; }
+.noa-slot.tone-ok .noa-slot-shape { stroke-dasharray: none; }
+.noa-slot.tone-dim { opacity: 0.55; }
+.noa-slot text { font: 700 12px var(--mono); fill: var(--text); }
+.noa-slot .noa-slot-sub { font: 500 11px var(--mono); fill: var(--c); }
+.noa-token-shape { fill: var(--c); stroke: var(--bg); stroke-width: 2; }
+.noa-token-label { font: 700 12px var(--mono); fill: var(--hi); }
+.noa-flagged { font: 700 12px var(--mono); fill: var(--orange); }
+.noa-flags { display: flex; flex-direction: column; gap: 8px; }
+.noa-flags .section-title { display: block; }

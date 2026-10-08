@@ -9,3 +9,9 @@
 - **core/crypto:** `b64urlDecode` and a byte-level `timingSafeEqual`. Pagination has a local `decodeCursor`; webhooks compares with plain `===` and says so on screen.
 - **scripts/shot.mjs:** wrap `--evalfile` in an async function (top-level `await` is a SyntaxError today). `--play` on a scene with no player prints "no play button" for every shot; make it a quiet no-op.
 - **GanttLanes:** an optional per-bar ring colour and a separate "now" colour, so a current step can be marked without overriding the result ring.
+
+## B24
+- **Time-stepped frame builder** (3 users: http-versions, realtime-transports, graphql): `timeFrames({ end, steps, milestones: {t, say}[], intro, summary }) → {now, say?, hold?}[]` in core.
+- **GanttLanes `labels={false}`:** lessons pass `labelMinPx={Infinity}` to hide bar labels on thin bars.
+- **Roving toolbar hook:** `useRovingToolbar(count)` (http-caching has a local `useToolbar`; `useRadioGroup` is radio-semantic and doesn't fit a row of toggle chips).
+- **Docs:** `plural(n, 'x')` already includes the number ("24 24 bytes" bit two B24 captions); add a one-line doc warning.
