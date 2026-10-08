@@ -5,10 +5,11 @@ import { TreeSvg, type TreeNodeMark, type TreeShape } from '../../components/Tre
 import { Button, ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextArea, TextField, Toggle } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { minWidthForText } from '../../core/scale';
+import { layoutTree } from '../../core/treeLayout';
 import { usePlayer } from '../../core/usePlayer';
 import { actionFrames, type Action } from './frames';
 import {
-  buildTrie, depthOf, leafCount, parseList, parseWord, PRESETS, radixNodeFor, radixShape, ROOT_ID, scanCost, SLOTS_PER_NODE, subtree, totalChars, trieShape,
+  buildTrie, depthOf, parseList, parseWord, PRESETS, radixNodeFor, radixShape, ROOT_ID, scanCost, SLOTS_PER_NODE, subtree, totalChars, trieShape,
   trieLookups,
 } from './model';
 import './styles.css';
@@ -29,6 +30,8 @@ const COL_SPACE = 4;
 const PILL_PAD = 12;
 /** A node's drawn width: a circle for one letter, a pill for a run of letters. */
 const pillWidth = (label: string) => Math.max(2 * NODE_R, label.length * CHAR_W + PILL_PAD);
+/** Columns a node needs: its pill plus its end-of-word ring and a little air, never under one column. */
+const footprint = (label: string) => Math.max(1, (pillWidth(label) + RING_GAP * 2 + COL_SPACE) / COL_W);
 
 type Field = 'list' | 'prefix' | 'word';
 
@@ -75,12 +78,12 @@ export function Stage() {
   const shape = useMemo(() => (compress ? radixShape(root) : trieShape(root)), [root, compress]);
   const plainNodes = useMemo(() => trieShape(root).size, [root]);
   const radixNodes = useMemo(() => radixShape(root).size, [root]);
-  // Columns fit the widest label (pills in the compressed view) plus its ring, so neighbours never overlap.
-  const widest = Math.max(...[...shape.values()].map((n) => pillWidth(n.label)));
-  const width = Math.max(MIN_W, leafCount(shape) * Math.max(COL_W, widest + RING_GAP * 2 + COL_SPACE) + 2 * PAD);
+  const treeShape: TreeShape<string> = { root: ROOT_ID, children: (id) => shape.get(id)?.children ?? [] };
+  // Each node takes the columns its own label (a pill in the compressed view) and ring need, so neighbours never overlap.
+  const nodeSize = (id: string) => footprint(id === ROOT_ID ? '·' : shape.get(id)!.label);
+  const width = Math.max(MIN_W, layoutTree(treeShape, 'tidy', { size: nodeSize }).columns * COL_W + 2 * PAD);
   const height = TOP + depthOf(shape) * LEVEL_GAP + 2 * NODE_R + 16;
 
-  const treeShape: TreeShape<string> = { root: ROOT_ID, children: (id) => shape.get(id)?.children ?? [] };
   // In the compressed view a trie position can fall mid-edge: mark the radix node whose edge holds it.
   const at = (id: string) => (compress ? radixNodeFor(shape, id) ?? id : id);
   const hot = f.hot === null ? null : at(f.hot);
@@ -163,6 +166,7 @@ export function Stage() {
           <TreeSvg
             shape={treeShape}
             layout="tidy"
+            nodeSize={nodeSize}
             width={width}
             height={height}
             top={TOP}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { useScenePicker } from '../../components/ScenePicker';
 import { Sparkline } from '../../components/Sparkline';
@@ -39,6 +40,8 @@ const BUDGET_MS = 1000 / 60;
  * a margin that keeps normal refresh jitter from flashing red.
  */
 const MISSED_FRAME = 1.25;
+/** The budget bar's track height, px. */
+const BAR_H = 14;
 const missedFrame = (frameMs: number) => frameMs > BUDGET_MS * MISSED_FRAME;
 const HISTORY = 120;
 const SNAP_MS = 150;
@@ -241,16 +244,20 @@ function LiveScene({ picker, mode, setMode, modePicker }: { picker: ReactNode; m
 
 /** The last frame's update and render time against a 16.7 ms track, with the measured frame time. */
 function BudgetBar({ updateMs, renderMs, frameMs }: { updateMs: number; renderMs: number; frameMs: number }) {
-  const share = (v: number) => `${Math.min(100, (v / BUDGET_MS) * 100)}%`;
   const work = updateMs + renderMs;
   const workOver = work > BUDGET_MS;
   const missed = missedFrame(frameMs);
   return (
     <div className={`gl-bar-wrap ${workOver ? 'is-over' : ''}`}>
-      <div className="gl-bar" role="img" aria-label={`Update ${updateMs.toFixed(1)} ms and render ${renderMs.toFixed(1)} ms of a ${BUDGET_MS.toFixed(1)} ms budget; the frame took ${frameMs.toFixed(1)} ms`}>
-        <span className="gl-bar-update" style={{ width: share(updateMs) }} />
-        <span className="gl-bar-render" style={{ width: share(Math.min(renderMs, Math.max(0, BUDGET_MS - updateMs))) }} />
-      </div>
+      <Bar
+        className="gl-bar"
+        segments={[{ value: updateMs, tone: 'hi' }, { value: renderMs, tone: 'ok' }]}
+        max={BUDGET_MS}
+        height={BAR_H}
+        track="var(--dim)"
+        animate={false}
+        ariaLabel={`Update ${updateMs.toFixed(1)} ms and render ${renderMs.toFixed(1)} ms of a ${BUDGET_MS.toFixed(1)} ms budget; the frame took ${frameMs.toFixed(1)} ms`}
+      />
       <p className="gl-bar-text">
         <span className="gl-key is-update">update {updateMs.toFixed(1)} ms</span>
         <span className="gl-key is-render">render {renderMs.toFixed(1)} ms</span>

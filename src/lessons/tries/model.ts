@@ -149,8 +149,6 @@ export function depthOf(shape: Shape, id = ROOT_ID): number {
   return n && n.children.length ? 1 + Math.max(...n.children.map((c) => depthOf(shape, c))) : 0;
 }
 
-export const leafCount = (shape: Shape) => [...shape.values()].filter((n) => n.children.length === 0).length;
-
 // ── Costs ─────────────────────────────────────────────────────────────
 
 /** Edges a prefix lookup follows before it reaches the prefix node or falls off: at most |p|. */
