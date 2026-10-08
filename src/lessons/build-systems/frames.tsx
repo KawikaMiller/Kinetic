@@ -37,7 +37,8 @@ export function nodeStates(run: BuildRun, t: number, final: boolean): Record<str
   const v = verdicts(run);
   for (const n of run.graph.nodes) {
     if (n.kind === 'src') {
-      out[n.id] = run.result.changed.includes(n.id) ? 'edited' : 'idle';
+      // A clean build has no previous build to compare with, so every source counts as changed: none was edited by the learner.
+      out[n.id] = !run.clean && run.result.changed.includes(n.id) ? 'edited' : 'idle';
       continue;
     }
     const r = run.result.results[n.id];

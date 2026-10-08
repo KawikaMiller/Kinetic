@@ -166,3 +166,13 @@ describe('without crypto.subtle', () => {
     await expect(fileHash({ code: 'a', comment: 'b', mtime: 0 })).rejects.toThrow('SHA-256 is unavailable');
   });
 });
+
+describe('sources are only "edited" when the learner edited them', () => {
+  it('a clean build leaves every source idle; an incremental build marks just the edited one', async () => {
+    const clean = await remoteClean(false);
+    expect(Object.entries(nodeStates(clean, 0, false)).filter(([id]) => /\.[ch]$/.test(id)).map(([, s]) => s)).toEqual(Array(6).fill('idle'));
+    const inc = await scenario('good', false, 'hash', 'math.c', 'code');
+    const st = nodeStates(inc, 0, false);
+    expect(Object.entries(st).filter(([, s]) => s === 'edited').map(([id]) => id)).toEqual(['math.c']);
+  });
+});
