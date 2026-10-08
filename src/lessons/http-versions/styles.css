@@ -1,0 +1,22 @@
+.hv { gap: 14px; }
+.hv .section-title { display: block; margin-bottom: 4px; }
+.hv-waterfalls { display: flex; flex-direction: column; gap: 16px; }
+.hv-version .gantt-row-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hv-frames { display: flex; flex-wrap: wrap; gap: 3px; min-height: 22px; }
+.hv-frame {
+  min-width: 26px; padding: 2px 3px; border-radius: 4px; text-align: center;
+  font: 600 10.5px var(--mono); color: var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.hv-frame.is-headers { background: color-mix(in srgb, var(--c) 34%, transparent); }
+.hv-frame.is-picked { color: var(--on-hi); background: var(--hi); box-shadow: none; }
+.hv-frame.hv-lost { color: var(--bad); background: color-mix(in srgb, var(--bad) 16%, transparent); box-shadow: inset 0 0 0 1px var(--bad); }
+.hv-picker { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.hv-picker-label { font: 600 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-right: 4px; }
+.hv-lower { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.hv-headers { flex: 1 1 260px; min-width: 0; }
+.hv-facts { flex: 2 1 380px; min-width: 0; }
+.hv-table-wrap { overflow-x: auto; }
+.hv-facts th[scope='row'] { text-transform: none; letter-spacing: 0; font: 600 12px var(--font); white-space: nowrap; }
+.hv-facts td { font-size: 12.5px; min-width: 116px; }
