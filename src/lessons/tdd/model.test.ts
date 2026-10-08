@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { lineDiff } from '../../core/lineDiff';
 import {
-  CODE, DONE, RANGE, STEPS, TESTS, changeCode, changedLines, changeTests, compile, coverage, outputs, reference, regressions, runTests, wheelPhase,
+  CODE, DONE, RANGE, STEPS, TESTS, changeCode, changeTests, compile, coverage, outputs, reference, regressions, runTests, wheelPhase,
   type TestId, type VersionId,
 } from './model';
 
@@ -141,10 +142,10 @@ describe('every version is real JavaScript', () => {
 
 describe('the line diff', () => {
   it('marks added lines and a moved line, like diff does', () => {
-    expect([...changedLines(CODE.testAfter, CODE.testAfterCareless)].sort()).toEqual([3, 4]);
-    expect([...changedLines(CODE.parts, CODE.tddCareless)].sort()).toEqual([3, 4]);
-    expect([...changedLines(CODE.fizzbuzz, CODE.fizzbuzz)]).toEqual([]);
-    expect([...changedLines([], ['a', 'b'])]).toEqual([0, 1]);
+    expect([...lineDiff(CODE.testAfter, CODE.testAfterCareless).added].sort()).toEqual([3, 4]);
+    expect([...lineDiff(CODE.parts, CODE.tddCareless).added].sort()).toEqual([3, 4]);
+    expect([...lineDiff(CODE.fizzbuzz, CODE.fizzbuzz).added]).toEqual([]);
+    expect([...lineDiff([], ['a', 'b']).added]).toEqual([0, 1]);
   });
 });
 

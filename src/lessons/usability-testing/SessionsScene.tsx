@@ -6,7 +6,7 @@ import { useIntroCaption } from '../../core/caption';
 import { pct } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { SESSIONS_INTRO, stepCaption } from './captions';
+import { sessionsIntro, stepCaption } from './captions';
 import {
   DEFAULT_PARTICIPANTS, MAX_PARTICIPANTS, NO_BIAS, PROBLEMS, foundAfter, hitList, runSessions, sessionStats, summarize, type Bias,
 } from './model';
@@ -31,7 +31,7 @@ export function SessionsScene({ picker }: { picker: ReactNode }) {
     () => [{ upto: -1 }, ...session.steps.map((step, i) => ({ upto: i, say: stepCaption(step, session) }))],
     [session],
   );
-  useIntroCaption(SESSIONS_INTRO);
+  useIntroCaption(sessionsIntro);
   const player = usePlayer(frames, { interval: REPLAY_MS });
   const now = player.frame.upto;
   const spoken = session.steps.slice(0, now + 1).filter((s) => s.say);

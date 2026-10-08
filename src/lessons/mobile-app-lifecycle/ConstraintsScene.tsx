@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { useInterval } from '../../core/useInterval';
-import { backgroundCaption, CONSTRAINTS_INTRO } from './captions';
+import { backgroundCaption, constraintsIntro } from './captions';
 import {
   BACKGROUND_BUDGET_S, EMPTY_FEED, MESSAGES_PER_DAY, POLL_RANGE, WORK_RANGE, pollingDay, pushDay, refreshFeed, runInBackground, setNetwork,
 } from './constraints';
@@ -23,7 +23,7 @@ const FEED_TEXT = {
 
 export function ConstraintsScene({ picker }: { picker: ReactNode }) {
   const setCaption = useSetCaption();
-  useIntroCaption(CONSTRAINTS_INTRO);
+  useIntroCaption(constraintsIntro);
   const [online, setOnline] = useState(true);
   const [feed, setFeed] = useState(EMPTY_FEED);
   const [work, setWork] = useState(45);
@@ -45,7 +45,7 @@ export function ConstraintsScene({ picker }: { picker: ReactNode }) {
   /** A changed setting makes the last result stale: forget the run and its caption. */
   const resetRun = () => {
     setElapsed(null);
-    setCaption(CONSTRAINTS_INTRO);
+    setCaption(constraintsIntro);
   };
 
   const goOnline = (value: boolean) => {

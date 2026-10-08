@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
 import { BACKGROUND_BUDGET_S, runInBackground } from './constraints';
-import { backgroundCaption, CONSTRAINTS_INTRO, eventCaption, LIFECYCLE_INTRO, typedCaption } from './captions';
+import { backgroundCaption, constraintsIntro, eventCaption, lifecycleIntro, typedCaption } from './captions';
 import { EVENTS, TABLES, edit, fire, initialPhone, type Platform, type Strategy } from './model';
 
 const STRATEGIES: Strategy[] = ['none', 'state', 'persist'];
@@ -21,7 +21,7 @@ describe('lifecycle captions', () => {
         }
       }
     }
-    for (const node of [LIFECYCLE_INTRO, CONSTRAINTS_INTRO, typedCaption('', 'none'), typedCaption('hi', 'persist')]) expectCaption(node);
+    for (const node of [lifecycleIntro, constraintsIntro, typedCaption('', 'none'), typedCaption('hi', 'persist')]) expectCaption(node);
   });
 
   it('says the draft is gone after a kill, and the process was never told', () => {

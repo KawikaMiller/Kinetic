@@ -20,6 +20,8 @@ export const HELPER_RULES = [
   // SPRING preset (core/motion) or a named module constant. Matches on the object, not
   // on a variable called "spring", so a season or a DST "spring forward" isn't flagged.
   { name: 'inline spring literal', re: /transition=\{\{\s*type:\s*['"]spring['"]/g },
+  // Exponents are real font glyphs: core/format power(k) writes 2^k as '2ᵏ'.
+  { name: 'hand-rolled <sup>', re: /<sup[\s>]/g },
 ];
 
 // `allow-color:` followed by a reason. A bare marker doesn't count, and neither does the

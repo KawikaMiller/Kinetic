@@ -4,7 +4,7 @@
 //   npm run shot -- /lesson/sorting s --play=3000 --full
 //   npm run shot -- /lesson/crdts c "--click=.cr-net|.btn-primary" --wait=2000
 //   npm run shot -- /lesson/raft r --size=1440x900 "--eval=document.title"
-//   npm run shot -- /lesson/raft r --evalfile=path/to/script.js
+//   npm run shot -- /lesson/raft r --evalfile=path/to/script.js   # top-level await works; the last value prints
 //   npm run shot -- /lesson/raft r --stage     # screenshot just the stage frame
 //   npm run shot -- /lesson/sorting k --press=Tab,Tab,Space          # real key presses
 //   npm run shot -- /lesson/sorting k --press-on=.tbtn-play --press=Space,Shift+Tab
@@ -55,6 +55,22 @@ async function settle() {
   if (settleMs && !(await waitForCaption(page, settleMs))) errors.push(`[shot] caption still changing after ${settleMs} ms`);
 }
 
+/**
+ * Run a drive script in the page. REPL mode is what lets the script use top-level `await` (a plain
+ * page.evaluate parses it as a classic script and throws a SyntaxError); the value of the last
+ * expression comes back, awaited if it is a promise.
+ */
+async function runScript(source) {
+  const cdp = await page.createCDPSession();
+  try {
+    const { result, exceptionDetails } = await cdp.send('Runtime.evaluate', { expression: source, awaitPromise: true, returnByValue: true, replMode: true });
+    if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
+    return result.value;
+  } finally {
+    await cdp.detach();
+  }
+}
+
 /** Focus any element, HTML or SVG: page.focus only takes HTML elements. False when it can't take focus. */
 const focusOn = (selector) =>
   page.evaluate((sel) => {
@@ -67,7 +83,8 @@ await visit(page, route, 800);
 await exposeCaptionSettled(page);
 
 if (flags.play) {
-  await page.click('.tbtn-play').catch(() => errors.push('[shot] no play button'));
+  // A live simulation has no play button and is already running: just let it run.
+  await (await page.$('.tbtn-play'))?.click();
   await sleep(Number(flags.play));
   await settle();
 }
@@ -92,7 +109,7 @@ if (typeof flags.press === 'string') {
 if (flags.wait) await sleep(Number(flags.wait));
 if (typeof flags.eval === 'string') console.log('eval:', JSON.stringify(await page.evaluate(flags.eval)));
 if (typeof flags.evalfile === 'string') {
-  console.log('eval:', JSON.stringify(await page.evaluate(fs.readFileSync(flags.evalfile, 'utf8'))));
+  console.log('eval:', JSON.stringify(await runScript(fs.readFileSync(flags.evalfile, 'utf8'))));
 }
 
 const file = outPath('shots', `${name}.png`);

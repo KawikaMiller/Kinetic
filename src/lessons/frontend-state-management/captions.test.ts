@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
-import { DERIVED_INTRO, RENDER_INTRO, SWR_INTRO, actionCaption, derivedCaption, swrCaption } from './captions';
+import { derivedIntro, renderIntro, swrIntro, actionCaption, derivedCaption, swrCaption } from './captions';
 import { EMPTY_CART, editCart } from './derived';
 import { INITIAL, createSignalCart, outcome, reduce, type Action, type ReactApproach } from './model';
 import { swrFrames } from './swr';
@@ -39,7 +39,7 @@ describe('render captions', () => {
   });
 
   it('the intros read cleanly', () => {
-    for (const intro of [RENDER_INTRO, SWR_INTRO, DERIVED_INTRO]) expectCaption(intro);
+    for (const intro of [renderIntro, swrIntro, derivedIntro]) expectCaption(intro);
   });
 });
 

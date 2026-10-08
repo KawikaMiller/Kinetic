@@ -312,24 +312,3 @@ export function applyMove(s: KataState, m: Move): KataState {
 }
 
 export const undoMove = (s: KataState): KataState => ({ ...s, bad: null, prevCode: shownCode(s) });
-
-/**
- * Lines of `after` that a line diff marks as added or moved: everything outside a longest
- * common subsequence with `before` (the way `diff` decides), so a moved line counts.
- */
-export function changedLines(before: readonly string[], after: readonly string[]): Set<number> {
-  const n = before.length;
-  const m = after.length;
-  const L = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = before[i] === after[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-  const kept = new Set<number>();
-  for (let i = 0, j = 0; i < n && j < m;) {
-    if (before[i] === after[j]) {
-      kept.add(j);
-      i++;
-      j++;
-    } else if (L[i + 1][j] >= L[i][j + 1]) i++;
-    else j++;
-  }
-  return new Set(after.map((_, j) => j).filter((j) => !kept.has(j)));
-}

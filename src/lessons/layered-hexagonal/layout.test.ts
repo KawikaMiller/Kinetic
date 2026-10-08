@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { segmentHitsBox } from '../coupling-cohesion/layout';
+import { segmentHitsBox } from '../../core/geometry';
 import { BOX, VIEW, drawnEdge, labelOf, positionOf } from './layout';
 import { filesFor, importEdges, type Choices, type Design, type DriverChoice, type RepoChoice, type View } from './model';
 

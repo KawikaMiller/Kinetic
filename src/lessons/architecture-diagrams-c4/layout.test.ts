@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { segmentHitsBox } from '../coupling-cohesion/layout';
+import { segmentHitsBox } from '../../core/geometry';
 import { FIX_IDS, applyFixes, type FixId } from './diagram';
 import {
   BOX, FIX_AT, FIX_TITLE, FIX_VIEW, VIEWS, VIEW_W, boxRect, edgeKey, frameTitleRect, labelPoint, labelRect, rectsOverlap, type Rect,

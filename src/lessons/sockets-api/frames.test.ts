@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-import { LIFECYCLE_INTRO, bindCaption, pileupCaption, queueIntro, realRanges, sceneFrames, stepCaption, type Occupant } from './frames';
+import { lifecycleIntro, bindCaption, pileupCaption, queueIntro, realRanges, sceneFrames, stepCaption, type Occupant } from './frames';
 import { BACKLOG, ERRNO_TEXT, TOY_RANGE, acceptQueueScene, bindCheck, lifecycle, pileup, rangeSize, type TcpState } from './model';
 
 const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 
 describe('lifecycle captions follow the model', () => {
   const steps = lifecycle();
-  const frames = sceneFrames(steps, LIFECYCLE_INTRO);
+  const frames = sceneFrames(steps, lifecycleIntro);
 
   it('one frame per step after the intro, every one with its own caption', () => {
     expect(frames).toHaveLength(steps.length + 1);

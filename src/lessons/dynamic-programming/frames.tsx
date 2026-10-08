@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { power } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { backStep, blankTable, lcsStep, naiveCalls, type Cell, type Style } from './model';
 
@@ -208,7 +209,7 @@ export function lcsFrames(a: string, b: string, style: Style): LcsFrame[] {
     say: (
       <>
         Longest common subsequence: <span className="hl ok">{answer || '(none)'}</span>. Diagonal steps on the green path are the matched letters. O(m × n) instead of trying all
-        2<sup>{m}</sup> subsequences.
+        {power(m)} subsequences.
       </>
     ),
   });

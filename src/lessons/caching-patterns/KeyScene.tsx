@@ -19,7 +19,7 @@ const LEGEND = (
   <Legend
     items={[
       { color: 'var(--ok)', label: 'hit' },
-      { color: 'var(--hi)', label: 'miss' },
+      { color: 'var(--bad)', label: 'miss' },
       { color: 'var(--orange)', label: 'wrong page served' },
     ]}
   />
@@ -79,7 +79,7 @@ export function KeyScene({ picker }: { picker: ReactNode }) {
                   <td>{s.n}</td>
                   <td>user {s.request.user} · {s.request.locale} · v{s.request.version}</td>
                   <td className="cp-key">{s.key}</td>
-                  <td><span className={`chip ${s.hit ? 'tone-ok' : 'tone-hi'}`}>{s.hit ? 'hit' : 'miss'}</span></td>
+                  <td><span className={`chip ${s.hit ? 'tone-ok' : 'tone-bad'}`}>{s.hit ? 'hit' : 'miss'}</span></td>
                   <td className={s.wrong ? 'cp-wrong' : undefined}>{s.served}{s.wrong && <span className="cp-flag"> wrong: needed {contentFor(kind, s.request)}</span>}</td>
                 </tr>
               ))}

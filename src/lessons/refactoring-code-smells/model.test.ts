@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { lineDiff } from '../../core/lineDiff';
 import {
-  ALL_SUBSETS, CHARACTERIZATION, REFACTORS, callLine, compileVersion, diffRows, lineDiff, metrics, randomOrders, runCharacterization, smellLines, versionLines,
+  ALL_SUBSETS, CHARACTERIZATION, REFACTORS, callLine, compileVersion, diffRows, metrics, randomOrders, runCharacterization, smellLines, versionLines,
   type Order, type RefactorId,
 } from './model';
 

@@ -7,7 +7,7 @@ import { isDrifting, type DerivedCart } from './derived';
 const names = (ids: readonly CompId[]) => ids.map((id) => LABEL[id]).join(', ');
 const verb = (a: Action) => (a.type === 'add' ? `Added a ${PRODUCTS[a.product].name}` : 'Toggled the theme');
 
-export const RENDER_INTRO = (
+export const renderIntro = (
   <>
     One piece of state changes, and four ways of sharing it decide which components run again. Pick an approach, then press an action. Boxes show how many times each component re-rendered.
   </>
@@ -57,7 +57,7 @@ export function actionCaption(approach: Approach, memo: boolean, action: Action,
   );
 }
 
-export const SWR_INTRO = (
+export const swrIntro = (
   <>
     A price lives on a server and the UI reads it through a cache. Change the server price, pick how the component reads it, and press play: watch which value the UI shows, and when.
   </>
@@ -66,7 +66,7 @@ export const SWR_INTRO = (
 export function swrCaption(f: SwrFrame, mode: SwrMode, serverPrice: number): ReactNode {
   const stale = isStale(f);
   switch (f.event) {
-    case 'intro': return SWR_INTRO;
+    case 'intro': return swrIntro;
     case 'ask': return <>The component asks the cache for the price. Nothing is cached yet, so it has nothing to show.</>;
     case 'miss': return <>Cache miss: the cache fetches the price from the server.</>;
     case 'stored': return <>The server answers {FIRST_PRICE} and the cache stores it.</>;
@@ -95,7 +95,7 @@ export function swrCaption(f: SwrFrame, mode: SwrMode, serverPrice: number): Rea
   }
 }
 
-export const DERIVED_INTRO = (
+export const derivedIntro = (
   <>
     Two carts hold the same items. One computes its total from the items on every render; the other keeps the total as a second piece of state. Add and remove items, and compare.
   </>

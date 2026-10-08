@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { WORKLOADS, fmtTime, race } from './costModel';
-import { LINE_OF_NODE, NODES, SOURCE, raceFrames, stepFrames, type Strategy } from './frames';
+import { raceFrames, stepFrames, type Strategy } from './frames';
+import { LINE_OF_NODE, NODES, SOURCE } from './program';
 import { printFn, SUM_SQUARES, type Value } from './lang';
 
 const realJs = new Function(`${printFn(SUM_SQUARES).lines.join('\n')}\nreturn sumSquares;`)() as (n: Value) => number;

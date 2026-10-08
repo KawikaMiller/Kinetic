@@ -5,7 +5,7 @@ import {
   ALL_ARMS, ALL_NULLS, FIX_CODE, FIX_MODES, GUARDS, Option, PARAM_TYPES, PRESETS, checkLength, checkMatch, evaluate, flagRows, joinedPatterns,
   assertCrashes, narrowSource, narrowed, rustMatchSource, tsMatchSource, userSource, type Arms, type Nulls,
 } from './model';
-import { emitJs, tscErrors } from './tscCheck';
+import { emitJs, tscErrors } from '../../core/testing/tsc';
 
 /** Run a mode's fixed program as real JavaScript (V8), capturing console.log. Test-only. */
 function runReal(lines: readonly string[], n: Nulls): { printed: string | null; error: string | null } {

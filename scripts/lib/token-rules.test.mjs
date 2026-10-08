@@ -36,3 +36,10 @@ describe('colour literals', () => {
     expect(findHits('a\nb\ncolor: #fff;')[0].line).toBe(3);
   });
 });
+
+describe('hand-rolled <sup>', () => {
+  it('flags a superscript element but not a word that starts with sup', () => {
+    expect(rules('2<sup>{m}</sup> subsequences')).toEqual(['hand-rolled <sup>']);
+    expect(rules('<supplier name="x" />')).toEqual([]);
+  });
+});

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
-import { SESSIONS_INTRO, curveCaption, methodCaption, stepCaption } from './captions';
+import { sessionsIntro, curveCaption, methodCaption, stepCaption } from './captions';
 import { CURVE_PARTICIPANTS, MAX_PARTICIPANTS, runSessions, methodResults, type Bias, type Session, type Step } from './model';
 
 const BOTH: Bias = { leading: true, helping: true };
 
 describe('replay captions', () => {
   it('read cleanly for every step of every participant, with and without bias', () => {
-    expectCaption(SESSIONS_INTRO);
+    expectCaption(sessionsIntro);
     for (const bias of [{ leading: false, helping: false }, { leading: true, helping: false }, { leading: false, helping: true }, BOTH]) {
       for (const s of runSessions(60, bias)) for (const step of s.steps) expectCaption(stepCaption(step, s));
     }

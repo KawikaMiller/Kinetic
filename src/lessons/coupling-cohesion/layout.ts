@@ -1,4 +1,4 @@
-import type { Pt } from '../../core/geometry';
+import { segmentHitsBox, type Pt } from '../../core/geometry';
 import { outlineDistance, type NodeBox } from '../../core/graphLayout';
 import { mulberry32, shuffle } from '../../core/random';
 import { EDGES, FN_IDS, SLOTS, membersOf, type Assignment, type FnId, type Slot } from './model';
@@ -77,31 +77,6 @@ function initialCells(members: readonly FnId[]): (FnId | null)[] {
     cells[(k % cols) * MAX_ROWS + Math.floor(k / cols)] = id;
   });
   return cells;
-}
-
-/** Does segment a→b pass through the box centred on c (Liang–Barsky clipping)? */
-export function segmentHitsBox(a: Pt, b: Pt, c: Pt, halfW: number, halfH: number): boolean {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  let t0 = 0;
-  let t1 = 1;
-  const edges: [number, number][] = [
-    [-dx, a.x - (c.x - halfW)],
-    [dx, c.x + halfW - a.x],
-    [-dy, a.y - (c.y - halfH)],
-    [dy, c.y + halfH - a.y],
-  ];
-  for (const [p, q] of edges) {
-    if (p === 0) {
-      if (q < 0) return false;
-      continue;
-    }
-    const r = q / p;
-    if (p < 0) t0 = Math.max(t0, r);
-    else t1 = Math.min(t1, r);
-    if (t0 > t1) return false;
-  }
-  return true;
 }
 
 /** The part of an edge GraphView draws: from one box outline to the other. */

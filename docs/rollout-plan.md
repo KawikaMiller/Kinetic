@@ -6652,14 +6652,14 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B24 HTTP & API protocols | 5 | 8 | t2/b24 | done | merged 12c5be8 with review fixes on-branch (5 MAJOR: conditional request dropped by shared cache, open-connections, protobuf size verdict, GraphQL caching) |
 | 2 | T2-B25 API design | 5 | 8 | t2/b25 | done | merged 79ae572 with review fixes on-branch (6 MAJOR: 200 vs 204, delete caption, duplicate vs different payment, Django, webhook retry timestamps) |
 | 2 | P-follow-up after wave 8 | — | 8→9 | kit owner | not started | |
-| 2 | T2-B26 Reliable services | 5 | 9 | t2/b26 | not started | |
-| 2 | T2-B27 Cloud building blocks | 5 | 9 | t2/b27 | not started | |
-| 2 | T2-B28 App security | 5 | 9 | t2/b28 | not started | payload-free; domain review on every lesson |
+| 2 | T2-B26 Reliable services | 5 | 9 | t2/b26 | done | merged 737e8bf, 8 MAJOR fixed on-branch (stale -6 s, DLQ redrive, pool captions/refused stat) |
+| 2 | T2-B27 Cloud building blocks | 5 | 9 | t2/b27 | done | merged af7dfee, 5 MAJOR fixed (IaC lost-state, rollout note unrendered, Ready-too-early, Fail-part slider) |
+| 2 | T2-B28 App security | 5 | 9 | t2/b28 | done | merged 0768c9c, 6 MAJOR fixed (IAM exposure vs lane, CSRF on GET, path . handling); payload-free audit passed |
 | 2 | P-follow-up after wave 9 | — | 9→10 | kit owner | not started | |
-| 2 | T2-B29 How browsers render | 5 | 10 | t2/b29 | not started | |
-| 2 | T2-B30 UI frameworks & product | 5 | 10 | t2/b30 | not started | |
-| 2 | T2-B31 Shipping safely | 5 | 10 | t2/b31 | not started | |
-| 2 | T2-B32 Engineering responsibly | 3 | 10 | t2/b32 | not started | |
+| 2 | T2-B29 How browsers render | 5 | 10 | t2/b29 | done | merged 4898c6c, 6 MAJOR fixed (shared chunk, Too fine, img preload scanner, a11y claim) |
+| 2 | T2-B30 UI frameworks & product | 5 | 10 | t2/b30 | done | merged cee5f9e, 3 MAJOR fixed (Android call vs Stopped, 85% line, word-order caption) |
+| 2 | T2-B31 Shipping safely | 5 | 10 | t2/b31 | done | merged d583103, 7 MAJOR fixed (disk claim, port boundary, canary rollback, rule panel inversion, cert dates) |
+| 2 | T2-B32 Engineering responsibly | 3 | 10 | t2/b32 | done | merged 28a855f, 5 MAJOR fixed (invented history labelled, contested licence verdicts, chip order) |
 | 2 | Tier 2 close-out kit round | — | 10→QA | kit owner | not started | |
 | 2 | **Tier 2 sign-off** | 172 | — | | not started | QA report plus recheck, as in Tier 1; push only after sign-off |
 | 3 | Kickoff | — | pre | | not started | |

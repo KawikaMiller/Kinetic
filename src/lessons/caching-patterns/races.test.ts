@@ -221,9 +221,9 @@ describe('captions', () => {
     expect(frames.map((f) => f.index)).toEqual([-1, ...s.beats.map((_, i) => i), s.beats.length - 1]);
   });
 
-  it('arrow tones follow the colour table: hit green, miss yellow, database blue, delete violet, stale orange, crash red', () => {
+  it('arrow tones follow the colour table: hit green, miss red (the costly side), fill yellow, database blue, delete violet, stale orange, crash red', () => {
     const aside = asideScript('delete').beats;
-    expect(aside.map(beatTone)).toEqual(['hi', 'info', 'hi', 'ok', 'info', 'violet', 'hi', 'info', 'hi']);
+    expect(aside.map(beatTone)).toEqual(['bad', 'info', 'hi', 'ok', 'info', 'violet', 'bad', 'info', 'hi']);
     const stale = race('ttl-only', cfg({ ttl: 30 })).beats;
     expect(beatTone(stale[4])).toBe('orange');
     expect(beatTone(behindScript(true).at(-1)!)).toBe('bad');

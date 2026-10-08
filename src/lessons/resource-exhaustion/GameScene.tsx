@@ -3,7 +3,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { pct } from '../../core/format';
-import { GAUGES, GAUGE_IDS, SYMPTOMS, WRONG_GUESS_MINUTES, check, symptomOrder, type Check, type GaugeId } from './model';
+import { GAUGES, GAUGE_IDS, POOL_TIMEOUT_SECONDS, SYMPTOMS, WRONG_GUESS_MINUTES, check, symptomOrder, type Check, type GaugeId } from './model';
 import { LessonRef } from './GaugeRow';
 
 const SEED = 3;
@@ -12,7 +12,7 @@ const MECHANISM: Record<GaugeId, string> = {
   disk: 'The disk has no free blocks left, so every write fails. A deleted file that a process still holds open keeps its bytes too.',
   inodes: 'The file system ran out of inodes, the records that name files. Free bytes cannot help: no new file can be created.',
   fds: 'The process hit its limit on open descriptors. Sockets, files and pipes all count, so everything that opens one fails.',
-  pool: 'Every connection in the pool is checked out and never came back. Callers wait for one until the acquire timeout, then fail.',
+  pool: `Every connection in the pool is checked out and never came back. Callers wait for one until the acquire timeout (${POOL_TIMEOUT_SECONDS} s in this scenario; the connection-pooling lesson uses 1 s to keep its simulation short), then fail.`,
   ports: 'Each outgoing connection needs a local port, and a closed one stays reserved for a minute (TIME_WAIT). Under heavy traffic to one upstream address and port the range runs out.',
   memory: 'The cache never evicts, so memory grows until the container limit. The kernel kills the process with SIGKILL, with no chance to log anything.',
 };
