@@ -1,0 +1,26 @@
+.itg { gap: 12px; }
+.itg-row { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.itg-col { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.itg-code code { white-space: pre-wrap; }
+.itg .console-panel code { overflow-wrap: anywhere; }
+
+/* The two lanes sit side by side on a wide screen and stack at ≤ 900px. */
+.itg-lanes { display: flex; flex-flow: row wrap; gap: 16px; }
+.itg-lane-box { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.itg-lane-box .section-title { display: block; }
+.itg-lane { display: block; flex: none; width: 100%; max-width: 480px; height: auto; }
+.itg-station .scene-node-title { font: 700 12px var(--mono); }
+.itg-count { font: 700 13px var(--mono); fill: var(--c); }
+.itg-pulled { color: var(--ok); }
+
+.itg-stacks .call-stack-box { gap: 6px; }
+.itg-parked .call-stack-box { border-style: dashed; }
+
+.itg-items { list-style: none; margin: 0; padding: 0; display: flex; flex-flow: row wrap; gap: 8px; align-items: center; }
+.itg-item {
+  font: 700 13px var(--mono); padding: 6px 12px; border-radius: 10px;
+  border: 1.5px solid var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent);
+  transition: color 0.3s, border-color 0.3s, background 0.3s;
+}
+.itg-item.tone-dim { color: var(--muted); border-style: dashed; }
+.itg-item-note { font: 500 12px var(--mono); color: var(--muted); }

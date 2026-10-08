@@ -1,0 +1,12 @@
+.bs { gap: 14px; }
+.bs-graph { width: 100%; display: block; }
+.bs-graph .graph-node-label { font-size: 12px; }
+.bs-graph .bs-selected .graph-node-shape { stroke-width: 3.5; }
+.bs-lower { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.bs-col { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.bs-keys { font-size: 12px; }
+.bs-keys code { font-size: 11.5px; }
+.bs-keys tr.bs-flag td { color: var(--c); font-weight: 600; }
+.bs-selected-panel { display: flex; flex-direction: column; gap: 8px; }
+.bs-edit-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.bs-warn { margin: 0; font-size: 13px; color: var(--c); }
