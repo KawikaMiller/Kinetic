@@ -1,0 +1,37 @@
+.os { gap: 12px; }
+.os-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.os-cols.os-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.os-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.os-prefix { color: var(--violet); }
+.os-keys td:first-child { word-break: break-all; }
+.os-node rect { fill: var(--cell); stroke: var(--line-2); stroke-width: 1.5; }
+.os-node.os-dir rect { stroke: var(--violet); }
+.os-node.is-solid rect { fill: var(--c); stroke: var(--c); }
+.os-node text { fill: var(--text); font: 600 11px var(--mono); }
+.os-keys tr.os-touched td { background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.os-keys tr.os-touched td:first-child { box-shadow: inset 3px 0 0 var(--hi); }
+.os-verdict { margin: 0; font-size: 12.5px; }
+.os-ok { color: var(--ok); }
+.os-bad { color: var(--bad); }
+.os-warn { color: var(--orange); }
+.os-cost td, .os-cost th { vertical-align: top; }
+.os-cost td.os-ok, .os-cost td.os-bad { font-weight: 700; }
+.os-error { margin: 0; color: var(--bad); font-size: 13px; }
+.os-upload { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.os-progress { flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.os-panel { display: flex; flex-direction: column; gap: 10px; }
+.os-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.os-url { display: block; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 11.5px; word-break: break-all; color: var(--muted); }
+.os-keylist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font: 500 12.5px var(--mono); }
+.os-keylist li { padding: 3px 8px; border-radius: 6px; border: 1.5px solid transparent; }
+.os-keylist li.is-off { color: var(--dim); }
+.os-keylist li.is-listed { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.os-keylist li.is-folder { border-color: var(--violet); color: var(--violet); background: color-mix(in srgb, var(--violet) 10%, transparent); }
+.os-keylist li.is-folder em { font-style: normal; color: var(--muted); font-size: 11px; }
+.os-keylist li.is-stale { border-color: var(--bad); color: var(--bad); }
+.os-total td { font-weight: 700; }
+@media (max-width: 900px) {
+  .os-cols, .os-cols.os-two { grid-template-columns: 1fr; }
+  /* The verdict is already under each store, so the phone table keeps only the numbers. */
+  .os-cost th:nth-child(2), .os-cost td:nth-child(2) { display: none; }
+}

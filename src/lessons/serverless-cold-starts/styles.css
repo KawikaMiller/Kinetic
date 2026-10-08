@@ -1,0 +1,18 @@
+.sc { gap: 14px; }
+.sc-scene { display: block; width: 100%; max-width: 640px; height: auto; }
+.sc-empty { fill: none; stroke: var(--dim); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: 0.6; }
+.sc-table th, .sc-table td { vertical-align: top; }
+.sc-example { display: block; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); font-size: 11px; margin-top: 2px; }
+.sc-row-btn { background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; padding: 2px 0; text-transform: none; letter-spacing: 0; }
+.sc-table tr.is-picked > th, .sc-table tr.is-picked > td { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.sc-table tr.is-picked > th { box-shadow: inset 3px 0 0 var(--hi); }
+.sc-cell b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.sc-cell span { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+.sc-cell.is-you b { color: var(--info); }
+.sc-cell.is-split b { color: var(--violet); }
+.sc-cell.is-provider b { color: var(--dim); }
+.sc-cell.is-you { background: color-mix(in srgb, var(--info) 10%, transparent); }
+.sc-cell.is-split { background: color-mix(in srgb, var(--violet) 10%, transparent); }
+.sc-cell.is-provider { background: color-mix(in srgb, var(--dim) 14%, transparent); }
+.sc-cost { display: flex; flex-direction: column; gap: 8px; }
+.sc-cost tr.sc-cheaper td:last-child { color: var(--ok); font-weight: 700; }
