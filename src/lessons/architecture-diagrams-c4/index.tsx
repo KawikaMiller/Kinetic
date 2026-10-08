@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Draw a system at four zoom levels (context, containers, components, code) instead of one diagram with everything on it, so each picture answers one audience\'s question at one level of detail.',
-    what: 'The C4 model is Simon Brown\'s way of drawing software architecture. Level 1, System Context, shows the system as one box with the people and other systems around it. Level 2, Containers, opens it into the separately running parts (a web app, an API, a database, a queue). Level 3, Components, opens one container, and level 4, Code, opens one component into classes, which most teams skip or generate. C4 does not prescribe a notation: boxes and labelled arrows are enough.',
+    what: "The C4 model is Simon Brown's way of drawing software architecture. Level 1, System Context, shows the system as one box with the people and other systems around it. Level 2, Containers, opens it into the separately running parts (a web app, an API, a database, a queue). Level 3, Components, opens one container, and level 4, Code, opens one component into classes. Brown's advice is that levels 1 and 2 are enough for most teams: add components only where a container is complicated, and skip or generate the code level. C4 does not prescribe a notation: boxes and labelled arrows are enough.",
     analogy: 'A map app: the world, then the country, then the city, then the street. You do not read a street plan to decide which country to fly to, and a world map will not tell you which door to knock on.',
     useCases: [
       'Onboarding a new engineer with a picture of the parts before they open any code',
@@ -19,15 +19,15 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'Click the Book a table box (it has a +): the frame grows out of it and five containers appear. Click API, then Availability service, to reach the code.',
-    'Pick Executive in the audience picker: the stage jumps to level 1 (Context), and at levels 2 to 4 the whole picture fades.',
+    'Zoom to 3 Component, then pick Executive: the stage jumps back to level 1 (Context), the level this lesson pairs with an executive, and zooming down again fades the whole picture.',
     'Pick On-call, then New engineer: both land on Containers, but the on-call view keeps the protocols (SQL, AMQP) at full strength and the engineer view fades them.',
     'Open Fix a bad diagram and tick "Keep one level per diagram": the reservations table folds into the Database box and the arrow follows it.',
     'Tick the five fixes in any order: the Readability score goes from 0 to 5, one check at a time, whatever order you pick.',
   ],
   keyIdeas: [
     'One diagram per level and per audience: a single diagram that shows everything answers nobody\'s question.',
-    'Context shows people and systems, containers show what runs, components show what is inside one container, code is optional.',
-    'Label every arrow with its intent, and from the container level down with the protocol too, and give every diagram a title and a key.',
+    'Context shows people and systems, containers show what runs, components show what is inside one container. Levels 1 and 2 are enough for most teams; components and code are optional zoom-ins.',
+    'Label every arrow with its intent, add the protocol where two separate processes talk, and give every diagram a title and a key.',
     'Keep one level per diagram: do not put a database table next to a whole external system.',
   ],
   quiz: [

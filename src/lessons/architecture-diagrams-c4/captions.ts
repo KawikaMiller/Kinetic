@@ -19,12 +19,12 @@ export function audienceNote(a: Audience, level: Level): string {
   if (a.level === null) return '';
   if (a.level === level) return ` This level answers the question of the ${a.label.toLowerCase()}: ${a.question}`;
   const more = level > a.level;
-  return ` ${more ? 'More' : 'Less'} detail than the ${a.label.toLowerCase()} needs: that question is answered at the ${LEVEL_NAMES[a.level]} level.`;
+  return ` ${more ? 'More' : 'Less'} detail than the ${a.label.toLowerCase()} needs: this lesson pairs that question with the ${LEVEL_NAMES[a.level]} level.`;
 }
 
 export function audienceCaption(a: Audience): string {
   if (a.level === null) return `${a.question}`;
-  return `${a.label}: "${a.question}" That is answered by the ${LEVEL_NAMES[a.level]} diagram, so the stage jumps there; detail they do not need is dimmed.`;
+  return `${a.label}: "${a.question}" This lesson pairs that question with the ${LEVEL_NAMES[a.level]} diagram (a rule of thumb), so the stage jumps there; detail they do not need is dimmed.`;
 }
 
 export function noDeeperLevel(id: string): string {

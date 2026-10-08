@@ -68,7 +68,7 @@ export function ZoomScene({ picker }: { picker: ReactNode }) {
   const audienceLine =
     audience.level === null
       ? audience.question
-      : `${audience.label}: "${audience.question}" Answered at level ${audience.level}, ${LEVEL_NAMES[audience.level]}.${audience.level === level ? '' : ` This level has ${level > audience.level ? 'more' : 'less'} detail than that.`}`;
+      : `${audience.label}: "${audience.question}" This lesson pairs it with level ${audience.level}, ${LEVEL_NAMES[audience.level]}.${audience.level === level ? '' : ` This level has ${level > audience.level ? 'more' : 'less'} detail than that.`}`;
 
   return (
     <StageFrame
@@ -181,7 +181,8 @@ export function ZoomScene({ picker }: { picker: ReactNode }) {
           A made-up system. The four diagrams are views of one nested model: every box here is an element in it, and a zoom shows exactly the children of the box
           you opened. C4 does not prescribe a notation: boxes and labelled arrows are enough, so the colours and shapes are this lesson's own.
           {level === 2 && ' A C4 "container" is a separately running thing (a web app, a database, a queue), not necessarily a Docker container.'}
-          {level === 4 && ' The code level is optional: most teams skip it or generate it from the code, and keep the first three for hand-drawing.'}
+          {level >= 3 && ' Components and code are optional zoom-ins: Brown suggests levels 1 and 2 are enough for most teams, and the code level is usually generated or skipped.'}
+          {audience.level !== null && ' Pairing an audience with one level is a rule of thumb of this lesson, not part of C4. The guidance from Simon Brown is looser: a context diagram suits technical and non-technical readers alike.'}
         </Hint>
       </div>
     </StageFrame>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { audienceCaption, audienceNote, fixCaption, fixIntro, levelCaption, noDeeperLevel } from './captions';
 import { BAD, FIX_IDS, applyFixes, score, type FixId } from './diagram';
-import { AUDIENCES, AUDIENCE_IDS, LEVELS, viewAt } from './model';
+import { AUDIENCES, AUDIENCE_IDS, LEVELS, RELATIONS, ancestorAt, relationLevel, viewAt } from './model';
 
 describe('captions are computed from the model', () => {
   it('every level caption counts its own boxes and arrows', () => {
@@ -57,5 +57,40 @@ describe('quiz numbers come from the model', () => {
     expect(q.options).toContain(String(v.children.length + v.surroundings.length));
     for (const s of v.surroundings) expect(q.why).toContain(s.name);
     expect(q.why).toContain(`${v.surroundings.length === 4 ? 'four' : '?'} boxes`);
+  });
+});
+
+describe('review fixes, pinned', () => {
+  it('the audience pairing is flagged as this lesson\'s rule of thumb everywhere it is stated', async () => {
+    expect(audienceCaption(AUDIENCES.exec)).toContain('rule of thumb');
+    expect(audienceNote(AUDIENCES.exec, 2)).toContain('this lesson pairs that question');
+    const { default: lesson } = await import('./index');
+    expect(lesson.tryThis.join(' ')).toContain('this lesson pairs with an executive');
+  });
+
+  it('try-this 2 works from the default state: it starts by zooming away from level 1, so Executive really jumps', async () => {
+    const { default: lesson } = await import('./index');
+    expect(lesson.tryThis[1]).toMatch(/^Zoom to 3 Component, then pick Executive/);
+    // From level 3, an executive's level (1) is a jump; from the default level 1 it would not be.
+    expect(AUDIENCES.exec.level).toBe(1);
+    expect(viewAt(3).level).not.toBe(AUDIENCES.exec.level);
+  });
+
+  it('does not imply components are required: levels 1 and 2 are called enough for most teams', async () => {
+    const { default: lesson } = await import('./index');
+    expect(lesson.summary.what).toContain('levels 1 and 2 are enough for most teams');
+    expect(lesson.keyIdeas.join(' ')).toContain('Levels 1 and 2 are enough for most teams');
+  });
+
+  it('protocols are asked for between separate processes, matching the model', async () => {
+    const { default: lesson } = await import('./index');
+    expect(lesson.keyIdeas.join(' ')).toContain('where two separate processes talk');
+    expect(lesson.keyIdeas.join(' ')).not.toContain('from the container level down');
+    // The model agrees: every relationship between different containers names a protocol, in-process ones do not.
+    for (const r of RELATIONS) {
+      const crosses = ancestorAt(r.from, 2) !== ancestorAt(r.to, 2);
+      if (relationLevel(r) >= 2 && crosses) expect(r.protocol, `${r.from}>${r.to}`).toBeDefined();
+      if (!crosses && relationLevel(r) >= 3) expect(r.protocol, `${r.from}>${r.to}`).toBeUndefined();
+    }
   });
 });
