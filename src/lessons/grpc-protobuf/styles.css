@@ -1,0 +1,25 @@
+.pb { gap: 14px; }
+.pb .section-title { display: block; margin-bottom: 6px; }
+.pb-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.pb-top, .pb-mid, .pb-calls { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.pb-proto { flex: 1 1 300px; min-width: 0; }
+.pb-fields { flex: 2 1 380px; min-width: 0; }
+.pb-inputs { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.pb-field { display: flex; flex-direction: column; gap: 3px; max-width: 100%; }
+.pb-error { font-size: 12px; color: var(--bad); max-width: 230px; }
+.pb-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); vertical-align: middle; }
+.pb-trail { margin-left: 14px; font: 500 11px var(--mono); color: var(--muted); }
+.pb-varint { flex: 3 1 360px; min-width: 0; }
+.pb-size { flex: 2 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pb-json { display: block; font: 12.5px var(--mono); color: var(--muted); word-break: break-all; }
+.pb-varint-body { display: flex; flex-direction: column; gap: 8px; }
+.pb-varint-text { margin: 0; font-size: 13px; color: var(--muted); }
+.pb-varint-text code { font-size: 12px; word-break: break-word; }
+.pb-table-wrap { overflow-x: auto; }
+.pb-hex { font-family: var(--mono); white-space: nowrap; }
+.pb-trace td { font-size: 12.5px; }
+.pb-skipped td { color: var(--muted); font-style: italic; }
+.pb-ladder { flex: 3 1 380px; min-width: 0; }
+.pb-codes { flex: 2 1 260px; min-width: 0; }
+.pb-codes th[scope='row'] { text-transform: none; letter-spacing: 0; font: 600 12px var(--mono); white-space: nowrap; }
+.pb-codes td { font-size: 12.5px; }
