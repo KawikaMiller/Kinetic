@@ -8,7 +8,7 @@ import {
 const code = (s: string) => <code>{s}</code>;
 const n = (k: number) => plural(k, 'row');
 
-/** An aggregate's value as the result table shows it: AVG to one decimal place, NULL spelled out. */
+/** An aggregate's value as the result table shows it: AVG rounded to one decimal place (the real value has more), NULL spelled out. */
 export function showValue(v: Cell): string {
   if (v === null) return 'NULL';
   return typeof v === 'number' && !Number.isInteger(v) ? decimal(v, 1) : String(v);
@@ -16,8 +16,11 @@ export function showValue(v: Cell): string {
 
 // ── GROUP BY ────────────────────────────────────────────────────────────
 
-/** rows: the raw table. where: WHERE judged each row. group: rows sorted into buckets. collapse: one summary row per bucket. having: whole groups judged. */
-export type GroupPhase = 'rows' | 'where' | 'group' | 'collapse' | 'having';
+/**
+ * The order the database really runs the clauses: FROM (the rows), WHERE (judges rows), GROUP BY (buckets),
+ * HAVING (judges whole groups), SELECT (computes each surviving group's output row), then ORDER BY.
+ */
+export type GroupPhase = 'rows' | 'where' | 'group' | 'having' | 'select';
 
 export interface GroupFrame extends Frame {
   phase: GroupPhase;
@@ -36,41 +39,46 @@ export function groupFrames(q: GroupQuery, run: GroupRun = runGroup(q)): GroupFr
   }
   const frames: GroupFrame[] = [{
     phase: 'rows',
-    say: <>{total} sales, {nulls} with no amount booked yet (NULL). Press play to run the query clause by clause, in the order the database does.</>,
+    say: <>{total} sales, {nulls} with no amount booked yet (NULL). Press play to run the query clause by clause, in the order the database does: FROM, WHERE, GROUP BY, HAVING, SELECT.</>,
   }];
   const kept = run.whereKept.filter(Boolean).length;
   if (q.place === 'where' && f.id !== 'none') {
     const droppedNull = SALES.filter((s, i) => !run.whereKept[i] && s.amount === null).length;
+    // Only a test on amount can drop a NULL amount as UNKNOWN; a region test drops rows for their region.
+    const nullNote = f.id === 'amount-100' && droppedNull > 0
+      ? <>, including the {plural(droppedNull, 'NULL amount')} (NULL {'>='} 100 is UNKNOWN, not TRUE)</>
+      : '';
     frames.push({
       phase: 'where',
-      say: <>{code(`WHERE ${f.sql}`)} runs first, on single rows: {kept} kept, {total - kept} dropped
-        {droppedNull ? <>, including the {droppedNull} NULL amounts (NULL {'>='} 100 is UNKNOWN, not TRUE)</> : ''}. Groups don't exist yet.</>,
+      say: <>{code(`WHERE ${f.sql}`)} runs first, on single rows: {kept} kept, {total - kept} dropped{nullNote}. Groups don't exist yet.</>,
     });
   }
   const groups = run.groups;
   frames.push({
     phase: 'group',
     say: q.by === 'none'
-      ? <>No {code('GROUP BY')}: all {n(kept)} form <b>one</b> group, so the aggregate makes exactly one row.</>
-      : <>{code(`GROUP BY ${q.by}`)} sorts the {n(kept)} into {plural(groups.length, 'bucket')}, one per {q.by}.</>,
-  });
-  const skipped = groups.reduce((s, g) => s + nullAmounts(g.rows), 0);
-  frames.push({
-    phase: 'collapse',
-    say: <>Each bucket collapses to one row holding {code(aggSql(q.agg))}.{' '}
-      {skipped === 0 ? 'No NULL amounts are left in these groups.'
-        : q.agg === 'count-star' ? <>{code('COUNT(*)')} counts rows, so the {skipped} NULL {skipped === 1 ? 'amount counts' : 'amounts count'} too.</>
-        : <>It skips the {skipped} NULL {skipped === 1 ? 'amount' : 'amounts'}{q.agg === 'count-amount' ? <>, so it's {skipped} less than {code('COUNT(*)')}</> : ''}.</>}</>,
+      ? <>No {code('GROUP BY')}: all {n(kept)} form <b>one</b> group.</>
+      : <>{code(`GROUP BY ${q.by}`)} sorts the {n(kept)} into {plural(groups.length, 'bucket')}, one per {q.by}. Nothing is summed yet.</>,
   });
   if (q.place === 'having' && f.id !== 'none') {
     const out = groups.filter((g) => !g.kept);
     frames.push({
       phase: 'having',
-      say: <>{code(`HAVING ${f.sql}`)} runs after grouping, on whole groups:{' '}
+      say: <>{code(`HAVING ${f.sql}`)} runs after grouping, on whole groups (so it can use an aggregate):{' '}
         {out.length === 0 ? 'every group passes.' : <>{out.map((g) => g.key || 'the one group').join(', ')} {out.length === 1 ? 'fails and is' : 'fail and are'} struck out.</>}</>,
     });
   }
-  frames.push({ phase: frames.at(-1)!.phase, hold: 2, say: <>Result: {n(run.result.length)}{q.by === 'none' ? '' : <>, one per {q.by} that survived</>}.</> });
+  const survivors = groups.filter((g) => g.kept);
+  const skipped = survivors.reduce((s, g) => s + nullAmounts(g.rows), 0);
+  const nullText = skipped === 0 ? 'No NULL amounts are left in these groups.'
+    : q.agg === 'count-star' ? <>{code('COUNT(*)')} counts rows, so the {plural(skipped, 'NULL amount')} {skipped === 1 ? 'counts' : 'count'} too.</>
+    : <>It skips the {plural(skipped, 'NULL amount')}{q.agg === 'count-amount' ? <>, so these groups add up to {skipped} fewer than {code('COUNT(*)')} would give</> : ''}.</>;
+  frames.push({
+    phase: 'select',
+    say: <>{code('SELECT')} runs now, on the groups that survived: {code(aggSql(q.agg))} for each one, one result row per group. {nullText}
+      {q.by === 'none' ? '' : <> {code(`ORDER BY ${q.by}`)} then sorts them.</>}</>,
+  });
+  frames.push({ phase: 'select', hold: 2, say: <>Result: {n(run.result.length)}{q.by === 'none' ? '' : <>, one per {q.by} that survived</>}.</> });
   return frames;
 }
 

@@ -50,7 +50,7 @@ const PRESETS: { id: string; label: string; q: GroupQuery }[] = [
 ];
 
 const GROUP_LABEL: Record<GroupCol, string> = { none: 'nothing', region: 'region', rep: 'rep', month: 'month' };
-const PHASE_ORDER: GroupPhase[] = ['rows', 'where', 'group', 'collapse', 'having'];
+const PHASE_ORDER: GroupPhase[] = ['rows', 'where', 'group', 'having', 'select'];
 const reached = (now: GroupPhase, p: GroupPhase) => PHASE_ORDER.indexOf(now) >= PHASE_ORDER.indexOf(p);
 
 function GroupScene({ picker }: { picker: ReactNode }) {
@@ -70,7 +70,7 @@ function GroupScene({ picker }: { picker: ReactNode }) {
       const bad = run.error.kind === 'aggregate-in-where' ? 'WHERE' : run.error.kind === 'ungrouped-in-having' ? 'HAVING' : 'SELECT';
       return line.startsWith(bad) ? 'bad' : 'idle';
     }
-    const now: Record<GroupPhase, string> = { rows: 'FROM', where: 'WHERE', group: 'GROUP BY', collapse: 'SELECT', having: 'HAVING' };
+    const now: Record<GroupPhase, string> = { rows: 'FROM', where: 'WHERE', group: 'GROUP BY', having: 'HAVING', select: 'SELECT' };
     return line.startsWith(now[phase]) && player.index > 0 ? 'now' : 'idle';
   };
 
@@ -138,14 +138,14 @@ function GroupScene({ picker }: { picker: ReactNode }) {
               </table>
               {grouped && run.whereKept.some((k) => !k) && <p className="sa-note">{run.whereKept.filter((k) => !k).length} rows removed by WHERE before grouping.</p>}
             </div>
-            {!run.error && reached(phase, 'collapse') && (
+            {!run.error && reached(phase, 'select') && (
               <div className="sa-panel">
                 <SectionTitle weight="regular" hint={`${run.result.length} ${run.result.length === 1 ? 'row' : 'rows'}`}>Result</SectionTitle>
                 <table className="data-table sa-table" aria-label="Query result">
                   <thead><tr>{run.resultCols.map((c) => <th key={c} className="keep-case">{c}</th>)}</tr></thead>
                   <tbody>
-                    {run.groups.map((g) => (
-                      <motion.tr key={g.key} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className={`sa-row tone-${toneOf(g.key)} ${struckGroups.has(g.key) ? 'is-struck' : ''}`}>
+                    {run.groups.filter((g) => g.kept).map((g) => (
+                      <motion.tr key={g.key} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className={`sa-row tone-${toneOf(g.key)}`}>
                         {q.by !== 'none' && <td>{g.key}</td>}
                         {g.value === null ? <td className="sa-null">NULL</td> : <td>{showValue(g.value)}</td>}
                       </motion.tr>
@@ -157,8 +157,8 @@ function GroupScene({ picker }: { picker: ReactNode }) {
           </div>
         </WideRegion>
         <Hint block>
-          {filter.id !== 'none' && !filter.aggregate && filter.col === q.by ? 'This filter tests the grouped column, so WHERE and HAVING give the same rows; WHERE is cheaper, since it shrinks the input before grouping. ' : ''}
-          {HONEST}
+          {filter.id !== 'none' && !filter.aggregate && filter.col === q.by ? 'This filter tests the grouped column, so WHERE and HAVING give the same rows; WHERE usually does less work, since it shrinks the input before grouping (though optimisers often move such a filter down for you). ' : ''}
+          {q.agg === 'avg' ? 'AVG is shown rounded to one decimal place. ' : ''}{HONEST}
         </Hint>
       </div>
     </StageFrame>
@@ -243,7 +243,7 @@ function RankScene({ picker }: { picker: ReactNode }) {
         <CodePanel lines={RANK_SQL} gutter="none" className="sa-code" />
         <WideRegion minWidth={NARROW_TABLE_PX} label="Table: scroll sideways to see every column">
           <table className="data-table sa-table sa-window" aria-label="Sales ranked three ways">
-            <thead><tr>{['rep', 'amount', 'row_number', 'rank', 'dense_rank'].map((h) => <th key={h} className="keep-case">{h}</th>)}</tr></thead>
+            <thead><tr>{['rep', 'amount', 'row_num', 'rank_pos', 'dense_pos'].map((h) => <th key={h} className="keep-case">{h}</th>)}</tr></thead>
             <tbody>
               {rows.map((r, k) => {
                 const s = SALES[r.sale];

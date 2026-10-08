@@ -318,9 +318,9 @@ export function runRanking(): RankRow[] {
 
 export const RANK_SQL = [
   'SELECT region, rep, amount,',
-  '  ROW_NUMBER() OVER (PARTITION BY region ORDER BY amount DESC, id) AS row_number,',
-  '  RANK()       OVER (PARTITION BY region ORDER BY amount DESC) AS rank,',
-  '  DENSE_RANK() OVER (PARTITION BY region ORDER BY amount DESC) AS dense_rank',
+  '  ROW_NUMBER() OVER (PARTITION BY region ORDER BY amount DESC, id) AS row_num,',
+  '  RANK()       OVER (PARTITION BY region ORDER BY amount DESC) AS rank_pos,',
+  '  DENSE_RANK() OVER (PARTITION BY region ORDER BY amount DESC) AS dense_pos',
   'FROM sales',
   'WHERE amount IS NOT NULL',
   'ORDER BY region, amount DESC, id',

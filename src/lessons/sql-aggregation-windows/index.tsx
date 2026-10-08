@@ -14,10 +14,10 @@ const lesson: LessonModule = {
       'Finding a query that silently undercounts because COUNT(col) skipped NULLs',
     ],
     why: 'Almost every report and analytics query is a GROUP BY or a window function, and the classic bugs are quiet ones: a filter in the wrong clause, a count that skips NULLs, a running total that jumps on tied dates, a "top N" that drops ties. Knowing the order WHERE → GROUP BY → HAVING runs in, and that a window keeps rows, is what makes these queries right the first time. It builds on `sql-basics` and `relational-algebra`.',
-    watch: 'The SQL at the top lights the clause running now with a yellow bar; a line that is not valid SQL is red, with a red message below. GROUP BY: the sales table, NULL amounts in violet italics. Rows WHERE drops turn grey and struck through; then the rows regroup into buckets, each with a heading and an underline in its own hue (amber, pink, sky, orange, repeating past four), and the result table appears with one row per group in the same hue. Groups HAVING removes are struck through in grey, heading and result row too. Window frames: every row stays, each partition under a heading and underline in its hue (amber, pink, sky); the row being computed is yellow with a yellow edge, the rows in its frame violet with a violet edge, and the total column fills in row by row. Ranking: the same partition hues, and the RANK and DENSE_RANK of tied amounts in bold blue.',
+    watch: 'The SQL at the top lights the clause running now with a yellow bar; a line that is not valid SQL is red, with a red message below. GROUP BY: the sales table, NULL amounts in violet italics. Rows WHERE drops turn grey and struck through; then the rows regroup into buckets, each with a heading and an underline in its own hue (amber, pink, sky, orange, repeating past four). Groups HAVING removes are struck through in grey, heading and rows. Last, the result table SELECT produces appears with one row per surviving group in the same hue. Window frames: every row stays, each partition under a heading and underline in its hue (amber, pink, sky); the row being computed is yellow with a yellow edge, the rows in its frame violet with a violet edge, and the total column fills in row by row. Ranking: the same partition hues, and the RANK and DENSE_RANK of tied amounts in bold blue.',
   },
   tryThis: [
-    'Play the WHERE vs HAVING preset and watch HAVING strike West out after grouping. Then switch Put it in to WHERE.',
+    'Play the WHERE vs HAVING preset and watch HAVING strike West out after grouping, before SELECT runs. Then switch Put it in to WHERE.',
     'Load COUNT(*) vs COUNT(amount), play to the end, then switch Aggregate to COUNT(*): which regions change, and by how much?',
     'Load the non-aggregated column preset and read the red line; then set GROUP BY to rep.',
     "In Window frames, play the default frame and stop on South's two 2026-02 rows; then switch to ROWS UNBOUNDED PRECEDING and look again.",
@@ -45,7 +45,7 @@ const lesson: LessonModule = {
         'HAVING is just the newer spelling of WHERE',
       ],
       answer: 0,
-      why: 'The database runs WHERE, then GROUP BY, then HAVING. When WHERE runs there are no groups to sum yet, so aggregates are only allowed in HAVING (and SELECT). They are not interchangeable spellings: a test on a plain column works in both, but in WHERE it shrinks the input before grouping.',
+      why: 'The database runs WHERE, then GROUP BY, then HAVING. When WHERE runs there are no groups to sum yet, so an aggregate cannot appear in WHERE: it is fine in HAVING, SELECT and ORDER BY. They are not interchangeable spellings: a test on a grouped column works in both, but in WHERE it shrinks the input before grouping.',
     },
     {
       q: 'A group has 5 rows, and one of them has amount NULL. What are COUNT(*) and COUNT(amount)?',
@@ -68,7 +68,7 @@ const lesson: LessonModule = {
         'An error, since month is not unique',
       ],
       answer: 0,
-      why: 'With ORDER BY and no frame clause the frame is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW, and RANGE treats rows with an equal month as one step, so both see both. A different total each is what ROWS gives, and then only if the ORDER BY breaks the tie.',
+      why: 'With ORDER BY and no frame clause the frame is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW, and RANGE treats rows with an equal month as one step, so both see both. ROWS counts physical rows instead, so the two give different totals, and which row gets which is undefined unless the ORDER BY breaks the tie.',
     },
   ],
 };

@@ -3,6 +3,7 @@ import { captionText as text } from '../../core/testing/captions';
 import { groupFrames, rankCaption, showValue, windowFrames } from './frames';
 import { AGGS, FILTERS, FRAMES, GROUP_COLS, SALES, runGroup, runWindow, type GroupQuery } from './model';
 
+const PHASES = ['rows', 'where', 'group', 'having', 'select'];
 const ALL: GroupQuery[] = GROUP_COLS.flatMap((by) => AGGS.flatMap((a) => FILTERS.flatMap((f) => (['where', 'having'] as const).flatMap((place) =>
   [false, true].map((withRep) => ({ by, agg: a.id, filter: f.id, place, withRep }))))));
 
@@ -26,11 +27,39 @@ describe('GROUP BY captions, every combination', () => {
       if (where) expect(text(where.say)).toContain(`${run.whereKept.filter(Boolean).length} kept`);
       const having = frames.find((x) => x.phase === 'having');
       if (having) for (const g of run.groups.filter((x) => !x.kept)) expect(text(having.say)).toContain(g.key || 'the one group');
-      const collapse = text(frames.find((x) => x.phase === 'collapse')!.say);
-      const skipped = run.groups.reduce((s, g) => s + g.rows.filter((i) => SALES[i].amount === null).length, 0);
-      if (skipped && q.agg !== 'count-star') expect(collapse, label).toContain(`skips the ${skipped} NULL`);
-      if (!skipped) expect(collapse, label).toContain('No NULL amounts');
+      const select = text(frames.find((x) => x.phase === 'select')!.say);
+      const skipped = run.groups.filter((g) => g.kept).reduce((s, g) => s + g.rows.filter((i) => SALES[i].amount === null).length, 0);
+      if (skipped && q.agg !== 'count-star') expect(select, label).toContain(`skips the ${skipped} NULL`);
+      if (!skipped) expect(select, label).toContain('No NULL amounts');
+      // The clauses run in SQL's order, and the result only comes after HAVING.
+      const order = frames.map((x) => PHASES.indexOf(x.phase));
+      expect(order, label).toEqual([...order].sort((a, b) => a - b));
+      const hi = frames.findIndex((x) => x.phase === 'having');
+      if (hi >= 0) expect(hi, label).toBeLessThan(frames.findIndex((x) => x.phase === 'select'));
+      expect(text(frames.at(-1)!.say), label).toContain('Result:');
+      // A NULL explanation appears only on the filter that actually produces it.
+      if (where) expect(text(where.say).includes('NULL amount'), label).toBe(f.id === 'amount-100');
     }
+  });
+
+  it('region <> West in WHERE drops 6 rows for their region, and says nothing about NULL amounts (review repro)', () => {
+    const q: GroupQuery = { by: 'region', agg: 'sum', filter: 'not-west', place: 'where', withRep: false };
+    const say = text(groupFrames(q).find((f) => f.phase === 'where')!.say);
+    expect(say).toContain('10 kept, 6 dropped');
+    expect(say).not.toMatch(/NULL/);
+  });
+
+  it('amount >= 100 in WHERE names both NULL amounts it drops, with the right plural', () => {
+    const q: GroupQuery = { by: 'none', agg: 'count-star', filter: 'amount-100', place: 'where', withRep: false };
+    expect(text(groupFrames(q).find((f) => f.phase === 'where')!.say)).toContain('including the 2 NULL amounts');
+  });
+
+  it('SELECT is the last clause the animation lights, after HAVING struck a group (review repro)', () => {
+    const q: GroupQuery = { by: 'region', agg: 'sum', filter: 'sum-450', place: 'having', withRep: false };
+    const frames = groupFrames(q);
+    expect(frames.map((f) => f.phase)).toEqual(['rows', 'group', 'having', 'select', 'select']);
+    expect(text(frames.find((f) => f.phase === 'having')!.say)).toContain('West');
+    expect(text(frames.find((f) => f.phase === 'select')!.say)).toContain('on the groups that survived');
   });
 
   it('no frame keeps an earlier caption: every frame has its own', () => {
