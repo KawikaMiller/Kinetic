@@ -27,16 +27,20 @@ export function ModelsScene({ picker }: { picker: ReactNode }) {
   const [model, setModel] = useState<ModelId>('document');
   const [query, setQuery] = useState<QueryId>('price');
   const [product, setProduct] = useState('P1');
-  const [indexed, setIndexed] = useState(false);
+  const [prepared, setPrepared] = useState(true);
   const params = useMemo<Params>(() => ({ order: EXAMPLE_ORDER, customer: EXAMPLE_CUSTOMER, product, newPrice: newPriceFor(product) }), [product]);
-  const engine = useMemo(() => buildEngine(model, { indexed }), [model, indexed]);
+  const engine = useMemo(() => buildEngine(model, { prepared }), [model, prepared]);
   const result = useMemo(() => runQuery(engine, query, params), [engine, query, params]);
-  const frames = useMemo(() => queryFrames(model, query, result, params), [model, query, result, params]);
+  const frames = useMemo(() => queryFrames(model, query, result, params, prepared), [model, query, result, params, prepared]);
   const player = usePlayer<QueryFrame>(frames, { interval: STEP_MS, autoplayOnChange: false });
   const step = player.frame.step;
   const tones = recordTones(result, step);
   const soFar = result.steps.slice(0, step + 1).reduce((s, x) => s + x.count, 0);
-  const runs = useMemo(() => Object.fromEntries(MODELS.map((m) => [m.id, runQuery(buildEngine(m.id, { indexed }), query, params)])) as Record<ModelId, Result<unknown>>, [query, indexed, params]);
+  const runs = useMemo(() => Object.fromEntries(MODELS.map((m) => [m.id, runQuery(buildEngine(m.id, { prepared }), query, params)])) as Record<ModelId, Result<unknown>>, [query, prepared, params]);
+  const unprepared = useMemo(() => ({
+    scan: runQuery(buildEngine('kv'), 'also', params).lookups,
+    nested: runQuery(buildEngine('relational'), 'also', params).lookups,
+  }), [params]);
   const ext = extremes(query, runs);
   const done = step >= result.steps.length;
 
@@ -59,7 +63,7 @@ export function ModelsScene({ picker }: { picker: ReactNode }) {
         </ControlGroup>,
         <Fragment key="params">
           <Segmented label="Product (price and also-bought)" value={product} onChange={setProduct} options={PRODUCTS.map((p) => ({ value: p.id, label: `${p.id} ${p.name}` }))} />
-          {model === 'kv' && <Toggle label="Index keys the app maintains" value={indexed} onChange={setIndexed} off="None" on="customer:<id>:orders, product:<id>:orders" />}
+          <Toggle label="Prepare each store for these queries" value={prepared} onChange={setPrepared} off="Unprepared" on="Prepared" />
         </Fragment>,
       ]}
     >
@@ -77,10 +81,21 @@ export function ModelsScene({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <CompareTable runs={runs} query={query} selected={model} ext={ext} />
+        <Hint block>
+          Prepared adds what each store would add for these queries: relational a covering index and a purchases summary table, document a covering index and a
+          purchased list on each customer, key-value index keys. Wide-column (tables built per query) and graph (BOUGHT edges) always carry theirs. Every one of
+          those is another copy the application must keep up to date. One lookup is a keyed read or write, an index probe, a whole partition, or a node with its edge list.
+        </Hint>
         {query === 'also' && (
           <Hint block>
-            The cheap models here each keep a structure built for this question (wide-column's items_by_product and products_by_customer tables, the graph's BOUGHT
-            edges); every one of those is another copy the application must keep up to date. Relational and document do it with joins or lookups over what they already have.
+            Prepared, every model answers in the same number of lookups: a graph pays off on multi-hop questions (friends of friends), not one hop over a list
+            someone already precomputed. Unprepared, a full scan ({unprepared.scan} records) beats the relational nested-loop plan ({unprepared.nested} lookups) at this
+            size; scans lose as data grows, index lookups don't.
+          </Hint>
+        )}
+        {query === 'last10' && (
+          <Hint block>
+            Graph databases can index properties, which this model doesn't; here a graph has no ordering to read the newest 10 from, so it reads every order of the customer.
           </Hint>
         )}
         <Hint block>

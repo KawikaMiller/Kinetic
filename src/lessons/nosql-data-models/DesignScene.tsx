@@ -7,14 +7,14 @@ import { useIntroCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { EXAMPLE_CUSTOMER, EXAMPLE_ORDER } from './canon';
 import {
-  CLUSTERINGS, PARTITION_KEYS, REQUIREMENT_SETS, evaluateDesign, partitionCount, totalsFor, type Clustering, type Design, type PartitionKey, type Serve,
+  CLUSTERINGS, PARTITION_KEYS, REQUIREMENT_SETS, ddl, evaluateDesign, partitionCount, totalsFor, type Clustering, type Design, type PartitionKey, type Serve,
 } from './design';
 import { MODELS, buildEngine, runQuery, type ModelId, type Params, type QueryId } from './engines';
 import { QUERIES, modelLabel, newPriceFor } from './frames';
 
 const TABLE_MIN_PX = 480;
 const P: Params = { order: EXAMPLE_ORDER, customer: EXAMPLE_CUSTOMER, product: 'P1', newPrice: newPriceFor('P1') };
-const HONEST = 'Lookup counts come from a simplified model of each store (key-value here has no index keys; wide-column follows your design). Real databases add indexes and caches.';
+const HONEST = 'Lookup counts come from a simplified model of each store, every store prepared with the structures it would add (wide-column follows the table design above). Real databases add planners, indexes and caches.';
 
 const SERVE_TONE: Record<Serve['kind'], 'ok' | 'orange' | 'bad'> = { one: 'ok', 'one-sorted-in-app': 'orange', scatter: 'bad' };
 const SERVE_TEXT: Record<Serve['kind'], string> = { one: 'one partition', 'one-sorted-in-app': 'one partition, sorted by the app', scatter: 'every partition' };
@@ -24,7 +24,7 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
   const [setId, setSetId] = useState(REQUIREMENT_SETS[0].id);
   const [model, setModel] = useState<ModelId>('wide');
   const [key, setKey] = useState<PartitionKey>('order_id');
-  const [clustering, setClustering] = useState<Clustering>('none');
+  const [clustering, setClustering] = useState<Clustering>('id');
   const set = REQUIREMENT_SETS.find((s) => s.id === setId)!;
   const design: Design = { key, clustering };
   const verdict = evaluateDesign(set, design);
@@ -32,7 +32,7 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
   const lo = Math.min(...Object.values(totals));
   const hi = Math.max(...Object.values(totals));
   const best = MODELS.filter((m) => totals[m.id] === lo).map((m) => m.label);
-  const perModel = (m: ModelId, q: QueryId) => (m === 'wide' ? verdict.perQuery.find((x) => x.query === q)!.serve.partitions : runQuery(buildEngine(m), q, P).lookups);
+  const perModel = (m: ModelId, q: QueryId) => (m === 'wide' ? verdict.perQuery.find((x) => x.query === q)!.serve.partitions : runQuery(buildEngine(m, { prepared: true }), q, P).lookups);
 
   useIntroCaption(
     model === 'wide'
@@ -40,7 +40,8 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
         {verdict.served < 2 ? <>; the other has to read {plural(verdict.perQuery.find((x) => x.serve.kind === 'scatter')!.serve.partitions, 'partition')}. One table per query is how wide-column stores are designed, at the price of a copy to keep in sync</> : ''}.
         {verdict.hot.level === 'bad' ? <> But that one partition takes all the traffic and data: a hot partition, so the low count is no bargain.</> : ''}
         {' '}Fewest lookups for this pair: {best.join(' and ')} ({lo}).</>
-      : <>{modelLabel(model)} needs {totals[model]} lookups for these two queries; the fewest is {lo}, by {best.join(' and ')}. No model is best at every pair of queries: change the required set.</>,
+      : <>{modelLabel(model)} needs {totals[model]} lookups for these two queries; the fewest is {lo}, by {best.join(' and ')}. The wide-column column follows the table design below
+        (partition key <code>{key}</code>{verdict.hot.level === 'bad' ? ', a hot partition' : ''}). No model is best at every pair of queries: change the required set.</>,
     [setId, model, key, clustering],
   );
 
@@ -58,21 +59,16 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
         <ControlGroup key="model" label="Your model" inline>
           {MODELS.map((m) => <ChipButton key={m.id} tone="info" on={model === m.id} onClick={() => setModel(m.id)}>{m.label}</ChipButton>)}
         </ControlGroup>,
-        ...(model === 'wide' ? [
-          <Fragment key="key">
-            <Segmented label="Partition key" value={key} onChange={setKey} options={PARTITION_KEYS.map((k) => ({ value: k.id, label: k.label }))} />
-            <Segmented label="Clustering" value={clustering} onChange={setClustering} options={CLUSTERINGS.map((c) => ({ value: c.id, label: c.label }))} />
-          </Fragment>,
-        ] : []),
+        <Fragment key="key">
+          <Segmented label="Wide-column partition key" value={key} onChange={setKey} options={PARTITION_KEYS.map((k) => ({ value: k.id, label: k.label }))} />
+          <Segmented label="Clustering" value={clustering} onChange={setClustering} options={CLUSTERINGS.map((c) => ({ value: c.id, label: c.label }))} />
+        </Fragment>,
       ]}
     >
       <div className="stage-pad nm">
-        {model === 'wide' && (
-          <div className="nm-design">
-            <SectionTitle weight="regular" hint={`${plural(partitionCount(key), 'partition')} in this data`}>Your table</SectionTitle>
-            <p className="nm-table-def">
-              PRIMARY KEY (({key}){clustering === 'date-desc' ? ', order_date DESC' : ''})
-            </p>
+        <div className="nm-design">
+            <SectionTitle weight="regular" hint={`${plural(partitionCount(key), 'partition')} in this data`}>Your wide-column table, one row per order line</SectionTitle>
+            <p className="nm-table-def">{ddl({ key, clustering })}</p>
             <div className={`nm-hot tone-${verdict.hot.level === 'ok' ? 'ok' : verdict.hot.level === 'warn' ? 'orange' : 'bad'}`} role="status">
               <b>{verdict.hot.level === 'ok' ? 'Even spread' : verdict.hot.level === 'warn' ? 'Hot partitions likely' : 'Hot partition'}</b>: {verdict.hot.reason}.
             </div>
@@ -83,8 +79,7 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+        </div>
         <SectionTitle weight="regular" hint="lookups, from the compare scene">The two queries in every model</SectionTitle>
         <WideRegion minWidth={TABLE_MIN_PX} label="Totals table: scroll sideways to see every model">
           <table className="data-table nm-compare-table" aria-label="Lookups for the two required queries in each model">
@@ -107,7 +102,7 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
         </WideRegion>
         <Hint block>
           Access-pattern-first: write down the queries before choosing the model and the key. In a wide-column store a query that isn't served by the
-          partition key reads every partition. {HONEST}
+          partition key has to read every partition: Cassandra refuses it unless you add ALLOW FILTERING or an index, and DynamoDB needs a Scan. {HONEST}
         </Hint>
       </div>
     </StageFrame>

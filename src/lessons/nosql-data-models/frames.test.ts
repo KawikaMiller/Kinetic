@@ -5,16 +5,16 @@ import { MODELS, buildEngine, runQuery, type Params, type QueryId } from './engi
 import { QUERIES, newPriceFor, queryFrames, queryText, recordTones } from './frames';
 
 const params = (product: string): Params => ({ order: EXAMPLE_ORDER, customer: EXAMPLE_CUSTOMER, product, newPrice: newPriceFor(product) });
-const CASES = MODELS.flatMap((m) => (m.id === 'kv' ? [false, true] : [false]).map((indexed) => ({ model: m.id, indexed })));
+const CASES = MODELS.flatMap((m) => [false, true].map((prepared) => ({ model: m.id, prepared })));
 
 describe('captions tell the truth about each run (every model x query x product)', () => {
   for (const c of CASES)
     for (const q of QUERIES)
-      it(`${c.model}${c.indexed ? ' + index keys' : ''}: ${q.id}`, () => {
+      it(`${c.model}${c.prepared ? ' (prepared)' : ' (unprepared)'}: ${q.id}`, () => {
         for (const pr of PRODUCTS) {
           const p = params(pr.id);
-          const r = runQuery(buildEngine(c.model, { indexed: c.indexed }), q.id, p);
-          const frames = queryFrames(c.model, q.id, r, p);
+          const r = runQuery(buildEngine(c.model, { prepared: c.prepared }), q.id, p);
+          const frames = queryFrames(c.model, q.id, r, p, c.prepared);
           expect(frames.length).toBe(r.steps.length + 2);
           expect(frames.map((f) => f.step)).toEqual([-1, ...r.steps.map((_, i) => i), r.steps.length]);
           const last = text(frames.at(-1)!.say);

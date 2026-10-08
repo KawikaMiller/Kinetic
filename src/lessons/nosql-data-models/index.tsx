@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Document, key-value, wide-column and graph stores are not "SQL but faster": each one lays data out for a particular kind of question, so you pick the model and the keys from the queries you must answer.',
-    what: 'The same shop data can live as relational rows, as order documents with their items embedded, as opaque values behind keys, as wide-column rows grouped into partitions, or as nodes and edges. Each layout makes some lookups one step and others a scan: a document reads a whole order at once but copies product names into every order; a key-value store can only fetch by key; a wide-column partition returns a customer\'s orders already sorted but only if the partition key says so; a graph follows edges but has no cheap "newest first". This is a simplified model of each, counting keyed lookups, round trips and copies.',
+    what: 'The same shop data can live as relational rows, as order documents with their items embedded, as opaque values behind keys, as wide-column rows grouped into partitions, or as nodes and edges. Each layout makes some lookups one step and others a scan: a document reads a whole order at once but copies product names into every order; a key-value store can only fetch by key; a wide-column partition returns a customer\'s orders already sorted but only if the partition key says so; a graph follows edges, and "newest first" needs an ordering you build (graph databases can index properties, which this model does not). This is a simplified model of each, counting keyed lookups, round trips and copies, with each store optionally prepared with the indexes it would add.',
     analogy: 'Filing cabinets arranged for different questions: by order number, by customer, by date. A cabinet organised for one question makes the others a walk through every drawer, and a second cabinet that answers the other question is a second set of papers to keep up to date.',
     useCases: [
       'Choosing between Postgres, MongoDB, DynamoDB, Cassandra and Neo4j for a new feature',
@@ -14,19 +14,19 @@ const lesson: LessonModule = {
       'Knowing what embedding data in a document costs when that data changes',
     ],
     why: 'NoSQL is not "no design": the layout is the design, and a store that fits today\'s query can make tomorrow\'s need a full scan or a rewrite of millions of records. Starting from the access patterns, and counting what each choice costs on reads and writes, avoids that. It does not say one kind of store scales and another does not: relational databases scale too, and each model here is a trade-off. It builds on `sql-basics`, `er-data-modeling`, `normalization` and `hash-table`; spreading data over machines is `sharding`, `replication` and `cap-theorem`.',
-    watch: 'Five models of one shop, each as record chips (a graph for the graph model). The record being read now is solid yellow, records already read are blue, and records an update rewrites are orange. Violet lines in the document are embedded sub-documents; dashed violet lines in the graph are the BOUGHT shortcut edges. The code panel shows how order 1042 is stored in that model. The row at the bottom compares all five models for the query: green is the cheapest, red the costliest. In Design from the queries, a red banner and red text mark a hot partition or a query that must read every partition, orange marks a warning or sorting in the application, and green marks one partition.',
+    watch: 'Five models of one shop, each as record chips (a graph for the graph model). The record being read now is solid yellow, records already read are blue, and records an update rewrites are orange. Violet lines in the document are embedded sub-documents; dashed violet lines in the graph are the BOUGHT shortcut edges. The code panel shows how order 1042 is stored in that model. The Prepare toggle gives relational, document and key-value the structures they would add for these queries (wide-column and graph always carry theirs). The row at the bottom compares all five models for the query: green is the cheapest, red the costliest, nothing marked when they tie. In Design from the queries, a red banner and red text mark a hot partition or a query that must read every partition, orange marks a warning or sorting in the application, and green marks one partition.',
   },
   tryThis: [
     'In Five models, pick Document and the price update, press play, and count the orange records; then pick Relational and Graph.',
-    'Pick Key-value and "a customer\'s last 10 orders": it has to read every blob. Turn on the index keys and play it again, then read the round trips.',
+    'Pick Key-value and "a customer\'s last 10 orders": with the store Prepared it is one lookup. Switch Prepare to Unprepared and it has to read every blob.',
     'Pick each model for "get order 1042 with its items" and compare the lookups: which model pays for its joins?',
-    'In Design from the queries, keep Wide-column and change the partition key until order history is one partition; then switch to the order page query set.',
+    'In Design from the queries, change the partition key until order history is one partition; then switch Required queries to Price changes + order page and re-pick the key.',
     'Set the partition key to a constant and read the red banner; then try product_id and compare its warning.',
   ],
   keyIdeas: [
     'Pick the model and the keys from the queries; a layout that suits one query can make another scan everything.',
     "Embedding copies data into many records, so a change to that data rewrites them all.",
-    'A wide-column partition key makes one query a single read of sorted rows, and every other query a scatter.',
+    'A wide-column partition key makes one query a single read of sorted rows; queries it does not match read every partition.',
     "A hot partition is a key that sends most of the traffic to one place: a constant, a date, a bestseller.",
   ],
   quiz: [

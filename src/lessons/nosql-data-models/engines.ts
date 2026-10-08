@@ -1,11 +1,14 @@
 // Five simplified stores built from the one canonical dataset by pure transforms. Each answers
 // the four shop queries over its own structures and reports what the access cost:
-//   lookups     = keyed accesses: one key / row / partition read or write, one index probe, one
-//                 edge hop. A scan counts every record it reads. A clustered or ordered run read
-//                 in one go (a wide-column partition) counts once.
-//   roundTrips  = separate requests the application sends (a batch or multi-get is one).
+//   lookups     = keyed accesses. ONE lookup is: a record read or written by key, an index probe, a
+//                 whole wide-column partition read in one go, or a graph node read together with its
+//                 edge list. A scan counts every record it reads.
+//   roundTrips  = separate requests the application sends (a batch, a multi-get or one SQL join is one).
 //   copies      = for the price update only: how many records now hold that price.
-// A simplified model: real stores add indexes, caches, batching and planners.
+// "Prepared" means each store has been given the structures it would add for these queries (a covering
+// index, a maintained summary table, index keys). Wide-column and graph always carry theirs, because
+// that is how their data is laid out; the toggle gives the other three the same kind of help, so the
+// comparison is fair. A simplified model: real stores add planners, caches and batching.
 import {
   CUSTOMERS, LIMIT, ORDERS, PRODUCTS, productName, sortAlso, sortLines,
   type Also, type Customer, type Line, type Product,
@@ -91,11 +94,15 @@ interface RelRep {
   products: Product[];
   orders: { id: number; customer_id: string; date: string }[];
   items: { order_id: number; product_id: string; qty: number }[];
+  /** A covering index on orders(customer_id, order_date, id) and a purchases(customer_id, product_id) summary table. */
+  prepared: boolean;
 }
 
 function relational(rep: RelRep): Engine {
   const ordersOf = (c: string) => byDateDesc(rep.orders.filter((o) => o.customer_id === c));
   const price = (p: string) => rep.products.find((x) => x.id === p)!.price;
+  const customerOf = (orderId: number) => rep.orders.find((o) => o.id === orderId)!.customer_id;
+  const bought = (c: string) => uniq(rep.orders.filter((o) => o.customer_id === c).flatMap((o) => rep.items.filter((i) => i.order_id === o.id).map((i) => i.product_id)));
   return {
     id: 'relational',
     order(id) {
@@ -108,6 +115,8 @@ function relational(rep: RelRep): Engine {
     },
     last10(c) {
       const top = ordersOf(c).slice(0, LIMIT);
+      if (rep.prepared)
+        return done(top.map((o) => o.id), [step('read', 'covering index on orders(customer_id, order_date, id): the 10 newest entries are the answer', [], 1)], 1);
       return done(top.map((o) => o.id), [
         step('read', 'index on orders(customer_id, order_date)', [], 1),
         step('read', 'fetch the rows the index points at', top.map((o) => `orders:${o.id}`)),
@@ -115,17 +124,21 @@ function relational(rep: RelRep): Engine {
     },
     also(p) {
       const o1 = uniq(rep.items.filter((i) => i.product_id === p).map((i) => i.order_id));
-      const buyers = uniq(o1.map((id) => rep.orders.find((o) => o.id === id)!.customer_id)).sort();
+      const buyers = uniq(o1.map(customerOf)).sort();
+      if (rep.prepared) {
+        const rows = buyers.flatMap((c) => bought(c).map((product) => ({ customer: c, product })));
+        return done(alsoFrom(boughtBy(rows), p), [
+          step('read', 'purchases(customer_id, product_id), a summary table kept up to date: who bought it (index on product_id)', [], 1),
+          step('read', "purchases: each buyer's products", buyers.map((c) => `purchases:${c}`)),
+        ], 1);
+      }
       const o2 = rep.orders.filter((o) => buyers.includes(o.customer_id)).map((o) => o.id);
-      const rows = o2.flatMap((id) => {
-        const c = rep.orders.find((o) => o.id === id)!.customer_id;
-        return rep.items.filter((i) => i.order_id === id).map((i) => ({ customer: c, product: i.product_id }));
-      });
+      const rows = o2.flatMap((id) => rep.items.filter((i) => i.order_id === id).map((i) => ({ customer: customerOf(id), product: i.product_id })));
       return done(alsoFrom(boughtBy(rows), p), [
         step('read', 'order_items by product_id (index)', [], 1),
         step('read', 'the orders those lines belong to, to learn the customer', o1.map((id) => `orders:${id}`)),
         step('read', "each buyer's orders (index on customer_id)", buyers.map((c) => `customers:${c}`)),
-        step('read', 'the lines of every one of those orders', o2.map((id) => `items:${id}`)),
+        step('read', 'the lines of every one of those orders (a nested-loop plan over indexes)', o2.map((id) => `items:${id}`)),
       ], 1);
     },
     price(p, newPrice) {
@@ -138,6 +151,7 @@ function relational(rep: RelRep): Engine {
       { title: 'products', items: rep.products.map((p) => ({ id: `products:${p.id}`, label: p.id })) },
       { title: 'orders', items: rep.orders.map((o) => ({ id: `orders:${o.id}`, label: String(o.id) })) },
       { title: 'order_items, grouped by order', items: rep.orders.map((o) => ({ id: `items:${o.id}`, label: String(o.id) })) },
+      ...(rep.prepared ? [{ title: 'purchases (summary table the app or a trigger keeps up to date), by customer', items: rep.customers.map((c) => ({ id: `purchases:${c.id}`, label: c.id })) }] : []),
     ],
     storage(id) {
       const o = rep.orders.find((x) => x.id === id)!;
@@ -154,8 +168,9 @@ function relational(rep: RelRep): Engine {
   };
 }
 
-export function buildRelational(): RelRep {
+export function buildRelational(prepared: boolean): RelRep {
   return {
+    prepared,
     customers: CUSTOMERS.map((c) => ({ ...c })),
     products: PRODUCTS.map((p) => ({ ...p })),
     orders: ORDERS.map((o) => ({ id: o.id, customer_id: o.customer, date: o.date })),
@@ -171,10 +186,16 @@ interface DocOrder {
   orderDate: string;
   items: { productId: string; name: string; price: number; qty: number }[];
 }
+interface DocCustomer extends Customer {
+  /** Products this customer bought, kept on the customer document when the store is prepared. */
+  purchased?: string[];
+}
 interface DocRep {
   orders: DocOrder[];
-  customers: Customer[];
+  customers: DocCustomer[];
   products: Product[];
+  /** A covering compound index (customerId, orderDate) and a multikey index on customers.purchased. */
+  prepared: boolean;
 }
 
 function document(rep: DocRep): Engine {
@@ -190,12 +211,22 @@ function document(rep: DocRep): Engine {
     },
     last10(c) {
       const top = docsOf(c).slice(0, LIMIT);
+      if (rep.prepared)
+        return done(top.map((d) => d._id), [step('read', 'covered query on the compound index (customerId, orderDate): answered from the index alone', [], 1)], 1);
       return done(top.map((d) => d._id), [
         step('read', 'secondary index on (customerId, orderDate)', [], 1),
         step('read', 'fetch the documents the index points at', top.map((d) => `orders:${d._id}`)),
       ], 1);
     },
     also(p) {
+      if (rep.prepared) {
+        const buyers = rep.customers.filter((c) => c.purchased!.includes(p));
+        const rows = buyers.flatMap((c) => c.purchased!.map((product) => ({ customer: c.id, product })));
+        return done(alsoFrom(boughtBy(rows), p), [
+          step('read', 'multikey index on customers.purchased: who bought it', [], 1),
+          step('read', "fetch those customers' documents: each lists what they bought", buyers.map((c) => `customers:${c.id}`)),
+        ], 1);
+      }
       const o1 = withProduct(p);
       const buyers = uniq(o1.map((o) => o.customerId)).sort();
       const o2 = rep.orders.filter((o) => buyers.includes(o.customerId));
@@ -222,7 +253,7 @@ function document(rep: DocRep): Engine {
       };
     },
     groups: () => [
-      { title: 'customers', items: rep.customers.map((c) => ({ id: `customers:${c.id}`, label: c.id })) },
+      { title: rep.prepared ? 'customers (each lists what they bought)' : 'customers', items: rep.customers.map((c) => ({ id: `customers:${c.id}`, label: c.id })) },
       { title: 'products', items: rep.products.map((p) => ({ id: `products:${p.id}`, label: p.id })) },
       { title: 'orders (each with its items embedded)', items: rep.orders.map((o) => ({ id: `orders:${o._id}`, label: String(o._id) })) },
     ],
@@ -237,9 +268,13 @@ function document(rep: DocRep): Engine {
   };
 }
 
-export function buildDocument(): DocRep {
+export function buildDocument(prepared: boolean): DocRep {
   return {
-    customers: CUSTOMERS.map((c) => ({ ...c })),
+    prepared,
+    customers: CUSTOMERS.map((c) => ({
+      ...c,
+      ...(prepared ? { purchased: uniq(ORDERS.filter((o) => o.customer === c.id).flatMap((o) => o.lines.map((l) => l.product))).sort() } : {}),
+    })),
     products: PRODUCTS.map((p) => ({ ...p })),
     orders: ORDERS.map((o) => ({
       _id: o.id,
@@ -254,7 +289,7 @@ export function buildDocument(): DocRep {
 
 interface KvRep {
   kv: Record<string, string>;
-  /** Application-maintained index keys (customer:C1:orders, product:P1:orders). */
+  /** Prepared: application-maintained index keys (customer:C1:orders, product:P1:orders, product:P1:customers, customer:C1:products). */
   indexed: boolean;
 }
 interface KvOrder {
@@ -269,7 +304,8 @@ function kvStore(rep: KvRep): Engine {
   const orderKeys = Object.keys(rep.kv).filter((k) => ORDER_KEY.test(k));
   const parse = (k: string): KvOrder => JSON.parse(rep.kv[k]) as KvOrder;
   const idOf = (k: string) => Number(ORDER_KEY.exec(k)![1]);
-  const list = (k: string) => JSON.parse(rep.kv[k]) as number[];
+  const idList = (k: string) => JSON.parse(rep.kv[k]) as number[];
+  const textList = (k: string) => JSON.parse(rep.kv[k]) as string[];
   const all = () => orderKeys.map((k) => ({ key: k, id: idOf(k), ...parse(k) }));
   return {
     id: 'kv',
@@ -282,29 +318,23 @@ function kvStore(rep: KvRep): Engine {
         const top = byDateDesc(all().filter((o) => o.customer === c)).slice(0, LIMIT);
         return done(top.map((o) => o.id), [step('scan', "no way to ask by customer: read every order's blob and look inside", orderKeys)], 1);
       }
-      const ids = list(`customer:${c}:orders`);
-      const top = byDateDesc(ids.map((id) => ({ id, date: parse(`order:${id}`).date }))).slice(0, LIMIT);
-      return done(top.map((o) => o.id), [
-        step('read', 'GET the index key customer:<id>:orders', [`customer:${c}:orders`]),
-        step('read', 'multi-GET the last orders it lists', top.map((o) => `order:${o.id}`)),
-      ], 2);
+      // The list is kept in date order by whoever writes an order, so the newest 10 are its last 10 entries.
+      const ids = idList(`customer:${c}:orders`);
+      return done(ids.slice(-LIMIT).reverse(), [step('read', 'GET the index key customer:<id>:orders: the newest ids are at its end', [`customer:${c}:orders`])], 1);
     },
     also(p) {
-      const finish = (rows: KvOrder[]) => alsoFrom(boughtBy(rows.flatMap((o) => o.items.map((i) => ({ customer: o.customer, product: i.product })))), p);
-      if (!rep.indexed) return done(finish(all()), [step('scan', 'read every order blob and work it out in the application', orderKeys)], 1);
-      const o1 = list(`product:${p}:orders`);
-      const buyers = uniq(o1.map((id) => parse(`order:${id}`).customer)).sort();
-      const o2 = uniq(buyers.flatMap((c) => list(`customer:${c}:orders`))).sort((a, b) => a - b);
-      return done(finish(o2.map((id) => parse(`order:${id}`))), [
-        step('read', 'GET product:<id>:orders', [`product:${p}:orders`]),
-        step('read', 'multi-GET those orders, to learn the customer', o1.map((id) => `order:${id}`)),
-        step('read', "GET each buyer's customer:<id>:orders", buyers.map((c) => `customer:${c}:orders`)),
-        step('read', 'multi-GET all of those orders', o2.map((id) => `order:${id}`)),
-      ], 4);
+      const finish = (rows: { customer: string; product: string }[]) => alsoFrom(boughtBy(rows), p);
+      if (!rep.indexed)
+        return done(finish(all().flatMap((o) => o.items.map((i) => ({ customer: o.customer, product: i.product })))), [step('scan', 'read every order blob and work it out in the application', orderKeys)], 1);
+      const buyers = textList(`product:${p}:customers`);
+      return done(finish(buyers.flatMap((c) => textList(`customer:${c}:products`).map((product) => ({ customer: c, product })))), [
+        step('read', 'GET product:<id>:customers', [`product:${p}:customers`]),
+        step('read', "multi-GET each buyer's customer:<id>:products", buyers.map((c) => `customer:${c}:products`)),
+      ], 2);
     },
     price(p, newPrice) {
       const next: KvRep = { ...rep, kv: { ...rep.kv } };
-      const hit = rep.indexed ? list(`product:${p}:orders`).map((id) => `order:${id}`) : all().filter((o) => o.items.some((i) => i.product === p)).map((o) => o.key);
+      const hit = rep.indexed ? idList(`product:${p}:orders`).map((id) => `order:${id}`) : all().filter((o) => o.items.some((i) => i.product === p)).map((o) => o.key);
       for (const k of hit) {
         const o = parse(k);
         for (const i of o.items) if (i.product === p) i.price = newPrice;
@@ -324,8 +354,10 @@ function kvStore(rep: KvRep): Engine {
       { title: 'order:<id> → blob', items: orderKeys.map((k) => ({ id: k, label: String(idOf(k)) })) },
       { title: 'product:<id> → blob', items: PRODUCTS.map((x) => ({ id: `product:${x.id}`, label: x.id })) },
       ...(rep.indexed ? [
-        { title: 'customer:<id>:orders → list (index key the app maintains)', items: CUSTOMERS.map((c) => ({ id: `customer:${c.id}:orders`, label: c.id })) },
-        { title: 'product:<id>:orders → list (index key the app maintains)', items: PRODUCTS.map((x) => ({ id: `product:${x.id}:orders`, label: x.id })) },
+        { title: 'customer:<id>:orders → list (index key the app keeps up to date)', items: CUSTOMERS.map((c) => ({ id: `customer:${c.id}:orders`, label: c.id })) },
+        { title: 'product:<id>:orders → list (index key)', items: PRODUCTS.map((x) => ({ id: `product:${x.id}:orders`, label: x.id })) },
+        { title: 'product:<id>:customers → list (index key)', items: PRODUCTS.map((x) => ({ id: `product:${x.id}:customers`, label: x.id })) },
+        { title: 'customer:<id>:products → list (index key)', items: CUSTOMERS.map((c) => ({ id: `customer:${c.id}:products`, label: c.id })) },
       ] : []),
     ],
     storage(id) {
@@ -345,8 +377,15 @@ export function buildKv(indexed: boolean): KvRep {
   }
   for (const p of PRODUCTS) kv[`product:${p.id}`] = JSON.stringify(p);
   if (indexed) {
-    for (const c of CUSTOMERS) kv[`customer:${c.id}:orders`] = JSON.stringify(ORDERS.filter((o) => o.customer === c.id).map((o) => o.id));
-    for (const p of PRODUCTS) kv[`product:${p.id}:orders`] = JSON.stringify(ORDERS.filter((o) => o.lines.some((l) => l.product === p.id)).map((o) => o.id));
+    const purchases = (c: string) => uniq(ORDERS.filter((o) => o.customer === c).flatMap((o) => o.lines.map((l) => l.product))).sort();
+    for (const c of CUSTOMERS) {
+      kv[`customer:${c.id}:orders`] = JSON.stringify(ORDERS.filter((o) => o.customer === c.id).map((o) => o.id));
+      kv[`customer:${c.id}:products`] = JSON.stringify(purchases(c.id));
+    }
+    for (const p of PRODUCTS) {
+      kv[`product:${p.id}:orders`] = JSON.stringify(ORDERS.filter((o) => o.lines.some((l) => l.product === p.id)).map((o) => o.id));
+      kv[`product:${p.id}:customers`] = JSON.stringify(CUSTOMERS.filter((c) => purchases(c.id).includes(p.id)).map((c) => c.id));
+    }
   }
   return { kv, indexed };
 }
@@ -480,12 +519,12 @@ function graph(rep: GraphRep): Engine {
       ], 1);
     },
     also(p) {
+      // A node is read together with its edge list, so a buyer's BOUGHT edges come with the buyer: no extra hop per product.
       const buyers = into(`p:${p}`, 'BOUGHT').map((e) => e.from).sort();
       const hops = buyers.flatMap((b) => out(b, 'BOUGHT').map((e) => ({ customer: b.slice(2), product: e.to.slice(2) })));
       return done(alsoFrom(boughtBy(hops), p), [
-        step('read', 'find the product node', [`p:${p}`]),
-        step('read', 'follow BOUGHT edges backwards to the buyers', buyers),
-        step('read', 'follow each buyer\'s BOUGHT edges to the products they bought', uniq(hops.map((h) => `p:${h.product}`)), hops.length),
+        step('read', 'find the product node: its edge list names the buyers (BOUGHT edges, followed backwards)', [`p:${p}`]),
+        step('read', "read each buyer's node: its BOUGHT edges are the products they bought", buyers),
       ], 1);
     },
     price(p, newPrice) {
@@ -529,14 +568,15 @@ export function buildGraph(): GraphRep {
 
 // ── Building and running ────────────────────────────────────────────────
 
-export function buildEngine(model: ModelId, opts: { indexed?: boolean } = {}): Engine {
+export function buildEngine(model: ModelId, opts: { prepared?: boolean } = {}): Engine {
+  const prepared = opts.prepared ?? false;
   switch (model) {
     case 'relational':
-      return relational(buildRelational());
+      return relational(buildRelational(prepared));
     case 'document':
-      return document(buildDocument());
+      return document(buildDocument(prepared));
     case 'kv':
-      return kvStore(buildKv(opts.indexed ?? false));
+      return kvStore(buildKv(prepared));
     case 'wide':
       return wide(buildWide());
     case 'graph':

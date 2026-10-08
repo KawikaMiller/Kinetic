@@ -1,19 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { CUSTOMERS, EXAMPLE_CUSTOMER, EXAMPLE_ORDER, ORDERS, PRODUCTS, refAlso, refLast, refOrder } from './canon';
 import {
-  CLUSTERINGS, PARTITION_KEYS, REQUIREMENT_SETS, evaluateDesign, hotPartition, partitionCount, partitionSizes, serves, totalsFor,
+  CLUSTERINGS, PARTITION_KEYS, REQUIREMENT_SETS, ddl, evaluateDesign, hotPartition, partitionCount, partitionSizes, primaryKey, serves, totalsFor, type Design,
 } from './design';
 import { MODELS, buildEngine, extremes, runQuery, type Engine, type ModelId, type Params, type QueryId, type Result } from './engines';
 
 const P: Params = { order: EXAMPLE_ORDER, customer: EXAMPLE_CUSTOMER, product: 'P1', newPrice: 175 };
-const ENGINES: { name: string; make: () => Engine; id: ModelId }[] = [
-  { name: 'relational', make: () => buildEngine('relational'), id: 'relational' },
-  { name: 'document', make: () => buildEngine('document'), id: 'document' },
-  { name: 'key-value (no index keys)', make: () => buildEngine('kv'), id: 'kv' },
-  { name: 'key-value (index keys)', make: () => buildEngine('kv', { indexed: true }), id: 'kv' },
-  { name: 'wide-column', make: () => buildEngine('wide'), id: 'wide' },
-  { name: 'graph', make: () => buildEngine('graph'), id: 'graph' },
-];
+const ENGINES: { name: string; make: () => Engine; id: ModelId }[] = MODELS.flatMap((m) => [
+  { name: `${m.label} (unprepared)`, make: () => buildEngine(m.id, { prepared: false }), id: m.id },
+  { name: `${m.label} (prepared)`, make: () => buildEngine(m.id, { prepared: true }), id: m.id },
+]);
 
 describe('the dataset the hand-worked numbers rest on', () => {
   it('has 16 orders, Ada has 12, pen is in 9 orders held by 2 customers with 15 orders between them', () => {
@@ -77,13 +73,23 @@ const row = (lookups: number, roundTrips: number, copies: number | null = null):
 // Worked by hand from the dataset: N = 16 orders; order 1042 has 2 lines; Ada has 12 orders; pen is in 9
 // orders (O1 = 9) bought by 2 customers (B = 2) who have 15 orders between them (O2 = 15); Ada bought 4
 // products and Linus 3 (7 BOUGHT edges to follow).
+const wideRows = {
+  order: row(1, 1), last10: row(1, 1), also: row(1 + 2, 2), price: row(1 + 9 + 1, 2, 10),
+};
+const graphRows = {
+  order: row(1 + 2, 1), last10: row(1 + 12, 1), also: row(1 + 2, 1), price: row(1, 1, 1),
+};
 const EXPECTED: Record<string, Record<QueryId, Row>> = {
-  relational: { order: row(1 + 1 + 2, 1), last10: row(1 + 10, 1), also: row(1 + 9 + 2 + 15, 1), price: row(1, 1, 1) },
-  document: { order: row(1, 1), last10: row(1 + 10, 1), also: row(1 + 9 + 2 + 15, 2), price: row(1 + 9 + 1, 2, 10) },
-  'key-value (no index keys)': { order: row(1, 1), last10: row(16, 1), also: row(16, 1), price: row(16 + 9 + 1, 2, 10) },
-  'key-value (index keys)': { order: row(1, 1), last10: row(1 + 10, 2), also: row(1 + 9 + 2 + 15, 4), price: row(1 + 9 + 1, 2, 10) },
-  'wide-column': { order: row(1, 1), last10: row(1, 1), also: row(1 + 2, 2), price: row(1 + 9 + 1, 2, 10) },
-  graph: { order: row(1 + 2, 1), last10: row(1 + 12, 1), also: row(1 + 2 + 7, 1), price: row(1, 1, 1) },
+  'Relational (unprepared)': { order: row(1 + 1 + 2, 1), last10: row(1 + 10, 1), also: row(1 + 9 + 2 + 15, 1), price: row(1, 1, 1) },
+  'Relational (prepared)': { order: row(1 + 1 + 2, 1), last10: row(1, 1), also: row(1 + 2, 1), price: row(1, 1, 1) },
+  'Document (unprepared)': { order: row(1, 1), last10: row(1 + 10, 1), also: row(1 + 9 + 2 + 15, 2), price: row(1 + 9 + 1, 2, 10) },
+  'Document (prepared)': { order: row(1, 1), last10: row(1, 1), also: row(1 + 2, 1), price: row(1 + 9 + 1, 2, 10) },
+  'Key-value (unprepared)': { order: row(1, 1), last10: row(16, 1), also: row(16, 1), price: row(16 + 9 + 1, 2, 10) },
+  'Key-value (prepared)': { order: row(1, 1), last10: row(1, 1), also: row(1 + 2, 2), price: row(1 + 9 + 1, 2, 10) },
+  'Wide-column (unprepared)': wideRows,
+  'Wide-column (prepared)': wideRows,
+  'Graph (unprepared)': graphRows,
+  'Graph (prepared)': graphRows,
 };
 
 describe('lookups, round trips and copies per model x query (hand-worked)', () => {
@@ -115,19 +121,27 @@ describe('lookups, round trips and copies per model x query (hand-worked)', () =
 });
 
 describe('what each model is good and bad at (the comparison row)', () => {
-  const runs = (q: QueryId) => Object.fromEntries(MODELS.map((m) => [m.id, runQuery(buildEngine(m.id), q, P)])) as Record<ModelId, Result<unknown>>;
+  const runs = (q: QueryId, prepared: boolean) => Object.fromEntries(MODELS.map((m) => [m.id, runQuery(buildEngine(m.id, { prepared }), q, P)])) as Record<ModelId, Result<unknown>>;
 
-  it('order page: document, key-value and wide-column are cheapest, relational (its joins) the costliest', () => {
-    expect(extremes('order', runs('order'))).toEqual({ cheapest: ['document', 'kv', 'wide'], costliest: ['relational'] });
+  it('prepared: order page cheapest in document, key-value and wide-column, costliest in relational (its joins)', () => {
+    expect(extremes('order', runs('order', true))).toEqual({ cheapest: ['document', 'kv', 'wide'], costliest: ['relational'] });
   });
-  it('last 10 orders: wide-column is cheapest, key-value without an index the costliest', () => {
-    expect(extremes('last10', runs('last10'))).toEqual({ cheapest: ['wide'], costliest: ['kv'] });
+  it('prepared: last 10 orders is one lookup everywhere except the graph, which reads every order of the customer', () => {
+    expect(extremes('last10', runs('last10', true))).toEqual({ cheapest: ['relational', 'document', 'kv', 'wide'], costliest: ['graph'] });
   });
-  it('price update: relational and graph store the price once; key-value pays most', () => {
-    expect(extremes('price', runs('price'))).toEqual({ cheapest: ['relational', 'graph'], costliest: ['kv'] });
+  it('price update: relational and graph store the price once; document, key-value and wide-column copy it', () => {
+    expect(extremes('price', runs('price', true))).toEqual({ cheapest: ['relational', 'graph'], costliest: ['document', 'kv', 'wide'] });
   });
-  it('also bought: wide-column cheapest, relational and document costliest (no join is not free)', () => {
-    expect(extremes('also', runs('also'))).toEqual({ cheapest: ['wide'], costliest: ['relational', 'document'] });
+  it('prepared: also bought costs 3 lookups in every model, so nothing is marked (not rigged)', () => {
+    const r = runs('also', true);
+    for (const m of MODELS) expect(r[m.id].lookups, m.id).toBe(3);
+    expect(extremes('also', r)).toEqual({ cheapest: [], costliest: [] });
+  });
+  it('unprepared: also bought is cheap only where a structure was built for it (wide-column, graph) and costly in the nested-loop plans', () => {
+    expect(extremes('also', runs('also', false))).toEqual({ cheapest: ['wide', 'graph'], costliest: ['relational', 'document'] });
+  });
+  it('unprepared: last 10 orders costs most in key-value (a full scan), least in wide-column', () => {
+    expect(extremes('last10', runs('last10', false))).toEqual({ cheapest: ['wide'], costliest: ['kv'] });
   });
 
   it('marks nothing when every model costs the same', () => {
@@ -135,23 +149,65 @@ describe('what each model is good and bad at (the comparison row)', () => {
     expect(extremes('order', same)).toEqual({ cheapest: [], costliest: [] });
   });
 
-  it('no model wins every query', () => {
-    const cheapest = (['order', 'last10', 'price', 'also'] as QueryId[]).map((q) => extremes(q, runs(q)).cheapest);
-    expect(cheapest.flat().length).toBeGreaterThan(4);
-    for (const m of MODELS) expect(cheapest.every((c) => c.includes(m.id))).toBe(false);
+  it('no model is cheapest at every query, prepared or not', () => {
+    for (const prepared of [true, false]) {
+      const cheapest = (['order', 'last10', 'price', 'also'] as QueryId[]).map((q) => extremes(q, runs(q, prepared)).cheapest);
+      for (const m of MODELS) expect(cheapest.every((c) => c.includes(m.id)), `${m.id} ${prepared}`).toBe(false);
+    }
   });
 });
 
-describe('index keys are an application cost the numbers do not hide', () => {
-  it('indexed key-value reads a list and then the orders: more round trips than the scan, fewer lookups for a customer', () => {
-    const scan = runQuery(buildEngine('kv'), 'last10', P);
-    const idx = runQuery(buildEngine('kv', { indexed: true }), 'last10', P);
+describe('the prepare toggle: everything it changes is visible, and it is the same unit for every model', () => {
+  it('changes the numbers of relational, document and key-value, and leaves wide-column and graph alone (they always carry their structures)', () => {
+    for (const q of ['last10', 'also'] as QueryId[]) {
+      for (const m of ['relational', 'document', 'kv'] as ModelId[])
+        expect(runQuery(buildEngine(m, { prepared: true }), q, P).lookups, `${m} ${q}`).toBeLessThan(runQuery(buildEngine(m, { prepared: false }), q, P).lookups);
+      for (const m of ['wide', 'graph'] as ModelId[])
+        expect(runQuery(buildEngine(m, { prepared: true }), q, P).lookups).toBe(runQuery(buildEngine(m, { prepared: false }), q, P).lookups);
+    }
+  });
+
+  it('a wide-column partition and a graph node with its edge list are each one lookup for the same "also bought" shape: 1 + buyers', () => {
+    const buyers = 2;
+    expect(runQuery(buildEngine('wide'), 'also', P).lookups).toBe(1 + buyers);
+    expect(runQuery(buildEngine('graph'), 'also', P).lookups).toBe(1 + buyers);
+  });
+
+  it('prepared key-value pays round trips for its index keys but not lookups; unprepared scans everything', () => {
+    const scan = runQuery(buildEngine('kv', { prepared: false }), 'also', P);
+    const idx = runQuery(buildEngine('kv', { prepared: true }), 'also', P);
     expect(idx.lookups).toBeLessThan(scan.lookups);
     expect(idx.roundTrips).toBeGreaterThan(scan.roundTrips);
   });
 
-  it('at this size a scan beats the index for "also bought" (16 against 27): honest, and why the dataset is labelled small', () => {
-    expect(runQuery(buildEngine('kv'), 'also', P).lookups).toBeLessThan(runQuery(buildEngine('kv', { indexed: true }), 'also', P).lookups);
+  it('at 16 records a scan beats the relational nested-loop plan, and the hint says so with these numbers', () => {
+    expect(runQuery(buildEngine('kv'), 'also', P).lookups).toBeLessThan(runQuery(buildEngine('relational'), 'also', P).lookups);
+  });
+});
+
+describe('no control feeds numbers it does not show (review repros)', () => {
+  const scenes = import.meta.glob<string>('./*Scene.tsx', { query: '?raw', import: 'default', eager: true });
+  const source = (name: string) => Object.entries(scenes).find(([k]) => k.endsWith(name))![1];
+
+  it('the prepare toggle is always rendered, not behind a model check', () => {
+    const src = source('ModelsScene.tsx');
+    expect(src).toMatch(/<Toggle label="Prepare each store/);
+    expect(src).not.toMatch(/model === '\w+' && <Toggle/);
+  });
+
+  it('the wide-column key and clustering pickers are always rendered, since the Wide-column column always uses them', () => {
+    const src = source('DesignScene.tsx');
+    expect(src).not.toMatch(/model === 'wide' \? \[/);
+    expect(src).toMatch(/label="Wide-column partition key"/);
+    expect(src).toMatch(/label="Clustering"/);
+  });
+
+  it('the exercise totals take no state beyond the set, the design and the params', () => {
+    const page = REQUIREMENT_SETS.find((x) => x.id === 'page')!;
+    const a = totalsFor(page, { key: 'constant', clustering: 'id' }, P);
+    const b = totalsFor(page, { key: 'constant', clustering: 'id' }, P);
+    expect(a).toEqual(b);
+    expect(a.wide).toBe(evaluateDesign(page, { key: 'constant', clustering: 'id' }).total);
   });
 });
 
@@ -172,13 +228,13 @@ describe('partition keys: hot partitions and what one partition can serve', () =
   });
 
   it('serves: the matching key reads one partition, any other scatters over all of them', () => {
-    expect(serves('order_id', 'none', 'order')).toMatchObject({ kind: 'one', partitions: 1 });
+    expect(serves('order_id', 'id', 'order')).toMatchObject({ kind: 'one', partitions: 1 });
     expect(serves('customer_id', 'date-desc', 'order')).toMatchObject({ kind: 'scatter', partitions: 3 });
     expect(serves('customer_id', 'date-desc', 'last10')).toMatchObject({ kind: 'one', partitions: 1 });
-    expect(serves('customer_id', 'none', 'last10')).toMatchObject({ kind: 'one-sorted-in-app', partitions: 1 });
+    expect(serves('customer_id', 'id', 'last10')).toMatchObject({ kind: 'one-sorted-in-app', partitions: 1 });
     expect(serves('order_id', 'date-desc', 'last10')).toMatchObject({ kind: 'scatter', partitions: 16 });
-    expect(serves('product_id', 'none', 'price')).toMatchObject({ kind: 'one', partitions: 1 });
-    expect(serves('product_id', 'none', 'also')).toMatchObject({ kind: 'scatter', partitions: 4 });
+    expect(serves('product_id', 'id', 'price')).toMatchObject({ kind: 'one', partitions: 1 });
+    expect(serves('product_id', 'id', 'also')).toMatchObject({ kind: 'scatter', partitions: 4 });
   });
 
   it('"also bought" is never one partition unless everything is: no single key serves it', () => {
@@ -186,14 +242,14 @@ describe('partition keys: hot partitions and what one partition can serve', () =
   });
 
   it('the constant key serves everything from one partition, and is still flagged bad', () => {
-    for (const q of ['order', 'last10', 'price', 'also'] as QueryId[]) expect(serves('constant', 'none', q).partitions).toBe(1);
-    expect(evaluateDesign(REQUIREMENT_SETS[0], { key: 'constant', clustering: 'none' }).hot.level).toBe('bad');
+    for (const q of ['order', 'last10', 'price', 'also'] as QueryId[]) expect(serves('constant', 'id', q).partitions).toBe(1);
+    expect(evaluateDesign(REQUIREMENT_SETS[0], { key: 'constant', clustering: 'id' }).hot.level).toBe('bad');
   });
 
   it('evaluates a design over both required queries', () => {
     const page = REQUIREMENT_SETS.find((s) => s.id === 'page')!;
     expect(evaluateDesign(page, { key: 'customer_id', clustering: 'date-desc' })).toMatchObject({ total: 1 + 3, served: 1 });
-    expect(evaluateDesign(page, { key: 'order_id', clustering: 'none' })).toMatchObject({ total: 1 + 16, served: 1 });
+    expect(evaluateDesign(page, { key: 'order_id', clustering: 'id' })).toMatchObject({ total: 1 + 16, served: 1 });
     const reco = REQUIREMENT_SETS.find((s) => s.id === 'reco')!;
     expect(evaluateDesign(reco, { key: 'customer_id', clustering: 'date-desc' })).toMatchObject({ total: 1 + 3, served: 1 });
   });
@@ -206,10 +262,44 @@ describe('partition keys: hot partitions and what one partition can serve', () =
 });
 
 describe('model totals in the exercise', () => {
-  it('sum the two required queries per model, with wide-column taken from the design', () => {
+  it('sum the two required queries per model (every store prepared), with wide-column taken from the design', () => {
     const page = REQUIREMENT_SETS.find((s) => s.id === 'page')!;
     expect(totalsFor(page, { key: 'customer_id', clustering: 'date-desc' }, P)).toEqual({
-      relational: 4 + 11, document: 1 + 11, kv: 1 + 16, wide: 1 + 3, graph: 3 + 13,
+      relational: 4 + 1, document: 1 + 1, kv: 1 + 1, wide: 1 + 3, graph: 3 + 13,
     });
+  });
+});
+
+describe('the wide-column DDL is valid: a primary key is unique per row (review repro)', () => {
+  const LINES = ORDERS.flatMap((o) => o.lines.map((l) => ({ order_id: String(o.id), customer_id: o.customer, product_id: l.product, order_date: o.date, constant: 'all' })));
+  const columnsOf = (d: Design) => {
+    const { partition, clustering } = primaryKey(d);
+    return [partition, ...clustering.map((c) => c.replace(' DESC', ''))] as (keyof (typeof LINES)[number])[];
+  };
+
+  it('every key x clustering choice gives each order line a distinct primary key, so no row overwrites another', () => {
+    for (const k of PARTITION_KEYS)
+      for (const c of CLUSTERINGS) {
+        const cols = columnsOf({ key: k.id, clustering: c.id });
+        expect(new Set(LINES.map((l) => JSON.stringify(cols.map((col) => l[col])))).size, `${k.id} ${c.id}`).toBe(LINES.length);
+      }
+  });
+
+  it('a key with no clustering columns would hold one row per partition: the second order overwrites the first', () => {
+    const customerOnly = LINES.map((l) => l.customer_id);
+    expect(new Set(customerOnly).size).toBeLessThan(LINES.length);
+  });
+
+  it('renders the real DDL for the choices the scene offers', () => {
+    expect(ddl({ key: 'customer_id', clustering: 'date-desc' })).toBe('PRIMARY KEY ((customer_id), order_date DESC, order_id, product_id)');
+    expect(ddl({ key: 'customer_id', clustering: 'id' })).toBe('PRIMARY KEY ((customer_id), order_id, product_id)');
+    expect(ddl({ key: 'order_id', clustering: 'id' })).toBe('PRIMARY KEY ((order_id), product_id)');
+    expect(ddl({ key: 'product_id', clustering: 'date-desc' })).toBe('PRIMARY KEY ((product_id), order_date DESC, order_id)');
+    expect(ddl({ key: 'constant', clustering: 'id' })).toBe("PRIMARY KEY (('all'), order_id, product_id)");
+  });
+
+  it('clustering by the ids only is not date-ordered, so the newest-orders query sorts in the application', () => {
+    expect(serves('customer_id', 'id', 'last10').kind).toBe('one-sorted-in-app');
+    expect(serves('customer_id', 'date-desc', 'last10').kind).toBe('one');
   });
 });

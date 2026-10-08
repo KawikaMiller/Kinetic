@@ -5,7 +5,8 @@ import { ORDERS } from './canon';
 import { MODELS, buildEngine, runQuery, type ModelId, type Params, type QueryId } from './engines';
 
 export type PartitionKey = 'order_id' | 'customer_id' | 'product_id' | 'constant';
-export type Clustering = 'date-desc' | 'none';
+/** The clustering columns after the partition key: by date (newest first) or just the ids that make each row unique. */
+export type Clustering = 'date-desc' | 'id';
 
 export const PARTITION_KEYS: { id: PartitionKey; label: string }[] = [
   { id: 'order_id', label: 'order_id' },
@@ -15,8 +16,21 @@ export const PARTITION_KEYS: { id: PartitionKey; label: string }[] = [
 ];
 export const CLUSTERINGS: { id: Clustering; label: string }[] = [
   { id: 'date-desc', label: 'order_date, newest first' },
-  { id: 'none', label: 'nothing' },
+  { id: 'id', label: 'the ids only (unique, not date-ordered)' },
 ];
+
+/** The table holds one row per order line. A primary key must be unique per row, so the ids that identify a line fill in whatever the partition key doesn't. */
+const UNIQUE_BY = ['order_id', 'product_id'] as const;
+
+export function primaryKey(d: Design): { partition: PartitionKey; clustering: string[] } {
+  const rest = UNIQUE_BY.filter((c) => c !== d.key);
+  return { partition: d.key, clustering: d.clustering === 'date-desc' ? ['order_date DESC', ...rest] : [...rest] };
+}
+
+export function ddl(d: Design): string {
+  const { partition, clustering } = primaryKey(d);
+  return `PRIMARY KEY ((${partition === 'constant' ? "'all'" : partition})${clustering.map((c) => `, ${c}`).join('')})`;
+}
 
 /** One row per order line: the rows a wide-column table here would hold. */
 const LINES = ORDERS.flatMap((o) => o.lines.map((l) => ({ order: o.id, customer: o.customer, product: l.product })));
@@ -70,7 +84,7 @@ export function serves(key: PartitionKey, clustering: Clustering, q: QueryId): S
       if (key === 'customer_id')
         return clustering === 'date-desc'
           ? { kind: 'one', partitions: 1, note: "one customer's partition, already newest first" }
-          : { kind: 'one-sorted-in-app', partitions: 1, note: "one customer's partition, but with no clustering order the whole partition is read and sorted in the app" };
+          : { kind: 'one-sorted-in-app', partitions: 1, note: "one customer's partition, but its rows are ordered by id, which need not follow the dates: the whole partition is read and sorted in the app" };
       return key === 'constant' ? { ...whole, kind: 'one-sorted-in-app' } : scatter('orders are not grouped by customer');
     case 'price':
       return key === 'product_id' ? { kind: 'one', partitions: 1, note: "the product's partition lists every line to rewrite" } : key === 'constant' ? whole : scatter('lines are not grouped by product');
@@ -109,13 +123,14 @@ export function evaluateDesign(set: (typeof REQUIREMENT_SETS)[number], design: D
   };
 }
 
-/** Lookups each model needs for the two required queries (key-value with no index keys; wide-column per the design). */
+/** Lookups each model needs for the two required queries (every store prepared; wide-column per the design). */
 export function totalsFor(set: (typeof REQUIREMENT_SETS)[number], design: Design, p: Params): Record<ModelId, number> {
+  // Every store prepared with the structures it would add, so the comparison is fair (wide-column follows the design).
   const out = {} as Record<ModelId, number>;
   for (const m of MODELS) {
     out[m.id] = m.id === 'wide'
       ? evaluateDesign(set, design).total
-      : set.queries.reduce((s, q) => s + runQuery(buildEngine(m.id), q, p).lookups, 0);
+      : set.queries.reduce((s, q) => s + runQuery(buildEngine(m.id, { prepared: true }), q, p).lookups, 0);
   }
   return out;
 }

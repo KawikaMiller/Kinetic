@@ -44,10 +44,11 @@ function totals(r: Result<unknown>, q: QueryId): ReactNode {
 }
 
 /** The record being read now, then every step in order, then the totals. All from the model's own steps. */
-export function queryFrames(model: ModelId, q: QueryId, r: Result<unknown>, p: Params): QueryFrame[] {
+export function queryFrames(model: ModelId, q: QueryId, r: Result<unknown>, p: Params, prepared = true): QueryFrame[] {
+  const state = model === 'wide' || model === 'graph' ? '' : prepared ? ' (prepared with the indexes it would add)' : ' (unprepared: no extra indexes)';
   const frames: QueryFrame[] = [{
     step: -1,
-    say: <>{modelLabel(model)}: {queryText(q, p)}. Press play to follow every lookup it makes; each is one read or write by key.</>,
+    say: <>{modelLabel(model)}{state}: {queryText(q, p)}. Press play to follow every lookup it makes: a keyed read or write, an index probe, a partition, or a scan.</>,
   }];
   let sofar = 0;
   r.steps.forEach((s, i) => {
