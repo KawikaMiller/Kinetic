@@ -21,6 +21,10 @@ export const SEED = 11;
 const LATENCY_WINDOW = 400;
 const HISTORY_EVERY_MS = 250;
 export const HISTORY_LENGTH = 60;
+/** How far back the measured mean of connections in use looks, so it follows a change of rate instead of averaging the whole run. */
+export const MEAN_WINDOW_MS = 10_000;
+/** A query shorter than one tick still holds its connection for a whole tick, so this is the shortest hold the model can show. */
+export const effectiveHoldMs = (queryMs: number) => Math.max(queryMs, TICK_MS);
 
 export interface Config {
   /** Requests a second, spread over every app instance. */
@@ -79,8 +83,12 @@ export interface World {
   timeoutWaits: { min: number; max: number };
   latencies: number[];
   connects: { count: number; tcp: number; tls: number; auth: number };
+  /** Connections in use summed over the ticks of the bucket being filled. */
   inUseSum: number;
+  /** Ticks in that bucket. */
   ticks: number;
+  /** Finished buckets of the last MEAN_WINDOW_MS, oldest first. */
+  inUseWindow: { sum: number; ticks: number }[];
   sinceHistory: number;
   /** Longest wait of any queued request now, sampled every 250 ms. */
   waitHistory: number[];
@@ -122,7 +130,7 @@ export function createWorld(cfg: Config, seed = SEED): World {
   const rnd = mulberry32(seed);
   const w: World = {
     rnd, time: 0, carry: 0, nextArrival: Infinity, pools: [], direct: [], arrived: 0, served: 0, timedOut: 0, refusedRequests: 0, refusedOpens: 0,
-    timeoutWaits: { min: Infinity, max: 0 }, latencies: [], connects: { count: 0, tcp: 0, tls: 0, auth: 0 }, inUseSum: 0, ticks: 0, sinceHistory: 0, waitHistory: [],
+    timeoutWaits: { min: Infinity, max: 0 }, latencies: [], connects: { count: 0, tcp: 0, tls: 0, auth: 0 }, inUseSum: 0, ticks: 0, inUseWindow: [], sinceHistory: 0, waitHistory: [],
   };
   if (cfg.usePool) {
     for (let i = 0; i < cfg.instances; i++) {
@@ -251,6 +259,10 @@ export function tick(w: World, cfg: Config) {
   w.sinceHistory += TICK_MS;
   if (w.sinceHistory >= HISTORY_EVERY_MS) {
     w.sinceHistory = 0;
+    w.inUseWindow.push({ sum: w.inUseSum, ticks: w.ticks });
+    if (w.inUseWindow.length > MEAN_WINDOW_MS / HISTORY_EVERY_MS) w.inUseWindow.shift();
+    w.inUseSum = 0;
+    w.ticks = 0;
     w.waitHistory.push(g.longestWait);
     if (w.waitHistory.length > HISTORY_LENGTH) w.waitHistory.shift();
   }
@@ -312,10 +324,13 @@ export interface Summary extends Gauges {
   arrived: number;
   served: number;
   timedOut: number;
+  /** Slots the database refuses right now (pool), or requests it turned away (no pool). Each is counted once, however often it retries. */
   refused: number;
+  /** Every refusal so far, a slot's retries included. */
+  refusedAttempts: number;
   p50: number;
   p95: number;
-  /** In use, averaged over every tick of the run so far. */
+  /** In use, averaged over the last MEAN_WINDOW_MS of the run. */
   meanInUse: number;
   slowdown: number;
   /** The database's load, 0 to 1 (illustrative): busy cores plus the cost of holding many connections. */
@@ -335,10 +350,11 @@ export function summarize(w: World, cfg: Config): Summary {
     arrived: w.arrived,
     served: w.served,
     timedOut: w.timedOut,
-    refused: w.refusedRequests + w.refusedOpens,
+    refused: cfg.usePool ? g.failed : w.refusedRequests,
+    refusedAttempts: w.refusedRequests + w.refusedOpens,
     p50: sorted.length ? percentile(sorted, 0.5) : 0,
     p95: sorted.length ? percentile(sorted, 0.95) : 0,
-    meanInUse: w.ticks ? w.inUseSum / w.ticks : 0,
+    meanInUse: meanInUse(w),
     slowdown: slowdown(w, cfg),
     cpu: Math.min(1, 0.7 * Math.min(1, busy / CORES) + 0.3 * fullness * fullness),
     connectMean: { tcp: w.connects.tcp / n, tls: w.connects.tls / n, auth: w.connects.auth / n },
@@ -347,3 +363,9 @@ export function summarize(w: World, cfg: Config): Summary {
 
 /** Little's law: connections in use on average = arrival rate x time each is held. */
 export const littlesLaw = (rate: number, holdMs: number) => (rate * holdMs) / 1000;
+
+function meanInUse(w: World): number {
+  const sum = w.inUseWindow.reduce((n, b) => n + b.sum, w.inUseSum);
+  const ticks = w.inUseWindow.reduce((n, b) => n + b.ticks, w.ticks);
+  return ticks ? sum / ticks : 0;
+}

@@ -59,7 +59,7 @@ function reachCaption(run: ChainRun, h: HopRun): ReactNode {
 function gaveUpCaption(run: ChainRun): ReactNode {
   const running = stillWorking(run, run.gaveUp);
   if (run.params.propagate) {
-    return <>The deadline, <span className="hl">{sec(run.gaveUp)}</span>, passes. Every hop was given this absolute time, so {running.length ? <>{list(running)} {running.length === 1 ? 'stops' : 'stop'} now</> : 'nothing is still running'}.</>;
+    return <>The deadline, <span className="hl">{sec(run.gaveUp)}</span>, passes. Every hop was given this absolute time, so {running.length ? <>{list(running)} {running.length === 1 ? 'stops' : 'stop'} at this same instant</> : 'nothing is still running'}.</>;
   }
   if (!running.length) return <><span className="hl bad">The user gives up</span> at {sec(run.gaveUp)}. Nothing is still working, so no work is left over.</>;
   return <><span className="hl bad">The user gives up</span> at {sec(run.gaveUp)}, but {list(running)} {running.length === 1 ? 'is' : 'are'} still working: nothing told {running.length === 1 ? 'it' : 'them'} to stop, and each still holds a thread.</>;

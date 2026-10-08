@@ -3,7 +3,7 @@ import { plural } from '../../core/format';
 import { FORMAT_NAMES } from './anatomy';
 import type { FormatId } from './formats';
 import { BURST_LIMIT, type Attempt, type BurstRun } from './limits';
-import type { SortKey, TradeoffRow } from './tradeoffs';
+import { TRADEOFFS, type SortKey, type TradeoffRow } from './tradeoffs';
 import { formatCount, formatProbability } from './odds';
 import type { Snapshot } from './btree';
 
@@ -12,17 +12,28 @@ const WHAT: Record<FormatId, ReactNode> = {
   uuidv4: <>122 random bits with <span className="hl">version</span> and variant bits laid over them. Nothing is shared between machines, and nothing in the ID says when it was made.</>,
   uuidv7: <>a 48-bit <span className="hl info">millisecond timestamp</span> first, then <span className="hl">version</span> and variant bits, a 12-bit counter and random bits. Newer IDs sort after older ones.</>,
   ulid: <>a 48-bit <span className="hl info">millisecond timestamp</span> then 80 random bits, written in 26 Crockford base32 characters that sort as text.</>,
-  snowflake: <>a <span className="hl info">41-bit timestamp</span>, a <span className="hl violet">10-bit machine ID</span> and a <span className="hl orange">12-bit sequence</span> in 64 bits. Uniqueness comes from giving every machine its own ID.</>,
+  snowflake: <>a <span className="hl info">41-bit timestamp</span> (milliseconds since a custom epoch; Twitter used 4 Nov 2010), a <span className="hl violet">10-bit machine ID</span> and a <span className="hl orange">12-bit sequence</span> in 64 bits. Uniqueness comes from giving every machine its own ID.</>,
 };
 
 export const anatomyCaption = (format: FormatId): ReactNode => <><b>{FORMAT_NAMES[format]}</b>: {WHAT[format]}</>;
 
+const INDEX_SHAPE: Record<'append' | 'ulid' | 'scatter', string> = {
+  append: ' New keys sort after every old one, so they pile onto the right-hand edge.',
+  ulid: ' Keys sort by their millisecond, so most pile onto the right-hand edge; inside one millisecond they are random, so a few land just before the newest key.',
+  scatter: ' New keys land anywhere, so each insert may need a page that is not in memory.',
+};
+
+const indexShape = (format: FormatId) => {
+  if (format === 'ulid') return INDEX_SHAPE.ulid;
+  return TRADEOFFS.find((r) => r.id === format)!.locality === 'appends' ? INDEX_SHAPE.append : INDEX_SHAPE.scatter;
+};
+
 export function indexCaption(format: FormatId, s: Snapshot): ReactNode {
   const name = FORMAT_NAMES[format];
   if (s.inserts === 0) return <>Press a format and drag the slider: each cell is one leaf page of the index, and the inserts have not started.</>;
-  return <>After <b>{s.inserts.toLocaleString('en-US')}</b> {name} inserts the index has <b>{s.pages.length}</b> pages. The last 100 inserts wrote to{' '}
+  return <>After <b>{s.inserts.toLocaleString('en-US')}</b> {name} inserts the index has <b>{plural(s.pages.length, 'page')}</b>. The last 100 inserts wrote to{' '}
     <span className="hl">{plural(s.touched, 'page')}</span>, and <span className="hl bad">{plural(s.middleSplits, 'page split')}</span> moved keys around so far.
-    {s.touched <= 3 ? ' New keys sort after every old one, so they pile onto the right-hand edge.' : ' New keys land anywhere, so each insert may need a page that is not in memory.'}</>;
+    {indexShape(format)}</>;
 }
 
 export function burstCaption(run: BurstRun): ReactNode {

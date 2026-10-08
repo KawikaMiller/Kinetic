@@ -60,7 +60,7 @@ export function show(format: FormatId, id: bigint): Shown {
   const bits = bitsOfBig(id, LAYOUTS[format].bits);
   switch (format) {
     case 'autoincrement':
-      return { bits, text: id.toString(), decoded: [{ label: 'counter', value: `${id} (the ${id}th row ever made)`, tone: FIELD_TONE.counter }] };
+      return { bits, text: id.toString(), decoded: [{ label: 'counter', value: `${id} (row number ${id} ever made)`, tone: FIELD_TONE.counter }] };
     case 'uuidv4':
       return {
         bits,

@@ -251,7 +251,7 @@ export const LAYOUTS: Record<FormatId, { bits: number; fields: Field[] }> = {
     bits: 64,
     fields: [
       { kind: 'sign', from: 0, to: 0, label: '0' },
-      { kind: 'time', from: 1, to: 41, label: 'ms since epoch (41)' },
+      { kind: 'time', from: 1, to: 41, label: 'ms since a custom epoch (41)' },
       { kind: 'machine', from: 42, to: 51, label: 'machine (10)' },
       { kind: 'sequence', from: 52, to: 63, label: 'sequence (12)' },
     ],

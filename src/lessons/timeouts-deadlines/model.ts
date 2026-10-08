@@ -257,6 +257,7 @@ export function latencySamples(seed = LATENCY_SEED, count = SAMPLE_COUNT): Laten
 
 export interface TimeoutStats {
   p50: number;
+  /** The 99th percentile of healthy calls: the stuck tail is what the timeout is for, so it stays out of the line. */
   p99: number;
   /** Share of healthy requests that were cut off by this timeout. */
   healthyCut: number;
@@ -267,10 +268,11 @@ export interface TimeoutStats {
 export function timeoutStats(samples: readonly LatencySample[], timeout: number): TimeoutStats {
   const sorted = samples.map((s) => s.seconds).sort((a, b) => a - b);
   const healthy = samples.filter((s) => !s.stuck);
+  const healthySorted = healthy.map((s) => s.seconds).sort((a, b) => a - b);
   const stuck = samples.filter((s) => s.stuck);
   return {
     p50: percentile(sorted, 0.5),
-    p99: percentile(sorted, 0.99),
+    p99: percentile(healthySorted, 0.99),
     healthyCut: healthy.length ? healthy.filter((s) => s.seconds > timeout).length / healthy.length : 0,
     stuckHold: stuck.length ? stuck.reduce((sum, s) => sum + Math.min(s.seconds, timeout), 0) / stuck.length : 0,
   };

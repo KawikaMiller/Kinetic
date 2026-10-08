@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Machines can make unique IDs without asking anyone, by mixing a clock, a machine number and random bits. Which mix you choose decides whether IDs sort by time, how big they are and how kindly they treat a database index.',
-    what: 'UUIDv4 is 122 random bits, so a collision is practically impossible, but the IDs have no order. UUIDv7 and ULID put a millisecond timestamp first and random bits after, so they sort by creation time. A snowflake-style ID packs a 41-bit timestamp, a 10-bit machine ID and a 12-bit sequence into 64 bits: it is smaller and sorts too, but every machine needs its own ID, and it must not issue more than 4,096 IDs a millisecond or run when the clock steps backwards. Primary keys end up in a B-tree index, where time-ordered keys append to the right-hand page and random keys land on a different page every time.',
+    what: 'UUIDv4 is 122 random bits, so a collision is practically impossible, but the IDs have no order. UUIDv7 and ULID put a millisecond timestamp first and random bits after, so they sort by creation time, to the millisecond. A snowflake-style ID packs a 41-bit timestamp, a 10-bit machine ID and a 12-bit sequence into 64 bits: it is smaller and sorts too, but every machine needs its own ID, and it must not issue more than 4,096 IDs a millisecond or run when the clock steps backwards. Primary keys end up in a B-tree index, where time-ordered keys append to the right-hand page and random keys land on a different page every time.',
     analogy: 'Ticket numbers at several shop counters: each counter can hand out tickets without phoning the others if the ticket carries the time, the counter\'s own letter and a running number on that counter.',
     useCases: [
       'Primary keys for rows created by many app servers without a central counter',
@@ -14,17 +14,17 @@ const lesson: LessonModule = {
       'Sharded databases, where each shard or node needs IDs that never clash with another\'s',
     ],
     why: 'The ID is the first design choice of a table and the hardest to change. Random primary keys are a classic cause of slow inserts and bloated indexes at scale, snowflake generators have caused real duplicate-ID incidents when a clock stepped back, and sortable IDs quietly publish when something was created. It builds on `bit-manipulation` and `binary-hex` for the fields, `birthday-paradox` for the collision odds and `db-indexes` for why order matters to a B-tree.',
-    watch: 'In the bit strips, blue is the timestamp, violet the machine ID, orange the sequence, sky-blue the random bits and yellow the version and variant bits. In the index view a yellow cell is a page written in the last 100 inserts and a red one a page made by a split; grey pages are older. Orange in the limits scene means a generator waited or refused, and red is a duplicate ID. In the odds and trade-offs scenes green is the cheap side of a trade, red the costly one, and orange, amber and green are the three ID sizes.',
+    watch: 'In the bit strips, blue is the timestamp, violet the machine ID, orange the sequence, sky-blue the random bits and yellow the version and variant bits. In the index view a yellow cell is a page written in the last 100 inserts and a red one a page made by a split in that same window; grey pages are older. Orange in the limits scene means a generator waited or refused, and red is a duplicate ID. In the odds and trade-offs scenes green is the cheap side of a trade, red the costly one, and orange, amber and green are the three ID sizes.',
   },
   tryThis: [
     'In ID anatomy, press Generate 5 at once on UUIDv7, then on UUIDv4: which fields change between the five, and which format keeps them in order?',
     'In Index locality, UUIDv4 sits at 1,000 inserts: how many of the pages were written in the last 100 inserts, and how many for UUIDv7?',
-    'In Snowflake limits, A burst, ask for 5,000 IDs: how many milliseconds does it take, and why does it never take just one?',
+    'In Snowflake limits, A burst, ask for 5,000 IDs: how many milliseconds does it take, and why can 5,000 not fit in one?',
     'In The clock goes backwards the safeguard is off: count the duplicates, then pick Refuse and Wait it out and see what changes.',
     'In Two machines, one ID, make the machine IDs different and find out what stops the duplicates.',
   ],
   keyIdeas: [
-    'Unique without coordination means the ID carries its own uniqueness: random bits make a clash unlikely, and a machine ID plus a sequence make it impossible as long as every machine ID is handed out once.',
+    'Unique without coordination means the ID carries its own uniqueness: random bits make a clash unlikely, and a machine ID plus a sequence make it impossible as long as every machine ID is handed out once and the clock never goes backwards.',
     'A timestamp at the front makes IDs sort by time, which keeps database inserts on the right-hand edge of the index; random IDs scatter inserts across every page, causing splits and reads from disk.',
     'Time-ordered IDs reveal when something was created, and a snowflake generator depends on a clock that never goes backwards: refuse or wait, never carry on, and never reuse a machine ID.',
     'Short random IDs are not safe at scale: the birthday paradox makes a repeat likely long before the space is full, which is why UUIDs use 122 random bits and a 32-bit random ID does not.',

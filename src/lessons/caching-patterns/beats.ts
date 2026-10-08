@@ -96,7 +96,7 @@ export function behindBeats(db: string, ops: readonly BehindOp[]): BehindBeat[] 
     const base = { id: `w${i}`, t: i, view: behindView(state), stale: false, state };
     switch (op.op) {
       case 'write':
-        beats.push({ ...base, from: 'A', to: 'cache', kind: 'queue', label: `PUT ${KEY}=${op.value}`, note: `queued for the database (${state.queue.length} waiting)`, lostNow: 0 });
+        beats.push({ ...base, from: 'A', to: 'cache', kind: 'queue', label: `PUT ${KEY}=${op.value}`, note: `queued for the database (${state.queue.length} waiting)`, lostNow: 0, client: 'A' });
         break;
       case 'flush':
         beats.push({ ...base, from: 'cache', to: 'db', kind: 'flush', label: `UPDATE ${KEY}=${state.db}`, note: `flush: ${before.queue.length} queued write${before.queue.length === 1 ? '' : 's'} become one`, lostNow: 0 });

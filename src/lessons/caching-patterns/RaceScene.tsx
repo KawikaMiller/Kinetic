@@ -38,6 +38,7 @@ const LEGEND = (
       { color: 'var(--hi)', label: 'miss / fill' },
       { color: 'var(--info)', label: 'database read or write' },
       { color: 'var(--violet)', label: 'invalidation (delete)' },
+      { color: 'var(--dim)', label: 'TTL expiry' },
       { color: 'var(--sky)', label: 'write into the cache' },
       { color: 'var(--orange)', label: 'stale value' },
     ]}

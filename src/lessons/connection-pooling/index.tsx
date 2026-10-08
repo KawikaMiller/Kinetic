@@ -18,10 +18,10 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'Start from Pool too small. How many requests wait, and what happens to them after a second? Raise Pool size each to 5: what changes?',
-    'Switch to No pool: where does the latency go, and how does the number of connections at the database compare with the pool at the same rate?',
+    'Switch to No pool: how does the latency change, and what does every request now pay that the pool paid only once?',
     'Pick Too big, many instances: how many slots does the database refuse, and what happens to the speed of queries? Lower Pool size each to 10.',
     'Pick A leak and watch the red cells. How many requests does it take to drain the pool, and which gauge warns you first?',
-    'Start from About right and compare the measured connections in use with Little\'s law. Double Requests a second and see how both move.',
+    'Start from About right and compare the measured connections in use with Little\'s law. Raise Requests a second to 300 (6 of the 10 slots busy) and watch both for ten seconds, then to 500 to see the pool saturate.',
   ],
   keyIdeas: [
     'A connection is expensive to open (TCP, TLS, login, a database process) and cheap to reuse, so a pool pays that cost once and lends the connection to many requests.',
@@ -80,7 +80,7 @@ const lesson: LessonModule = {
         'The pool loses a connection each time that path runs, until none are left and every request times out',
         'The database closes the connection on its own, so the pool slowly refills with fresh ones',
         'Nothing at all, because a connection that is not returned is reused by the next request anyway',
-        'The pool grows by one connection each time, which only uses a little more database memory and so does no real harm over time',
+        'The pool grows by one connection each time, which does no real harm',
       ],
       answer: 0,
       why: 'A borrowed connection that is never returned stays marked in use for good. The usable pool shrinks by one per leak until nothing is left, which is why returning it in a finally block, and flagging connections held too long, matter.',

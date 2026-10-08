@@ -187,7 +187,8 @@ export function stalenessWindow(ttl: number): { bars: WindowBar[]; domain: [numb
   const r = race('ttl-only', { invalidate: 'delete', ttl, lag: 0 });
   const stored = r.beats.find((b) => b.kind === 'fill')!.t;
   const write = r.beats.find((b) => b.kind === 'db-write')!.t;
-  const expiry = r.staleUntil!;
+  // The entry expires a TTL after it was stored, whether or not anyone reads it inside the window.
+  const expiry = stored + ttl;
   const end = expiry + 6;
   return {
     bars: [

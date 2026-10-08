@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { decimal, plural } from '../../core/format';
+import { plural } from '../../core/format';
 import type { ErrorKind, Scenario, Settings, SimEvent } from './model';
 import type { Snapshot } from './sim';
 
@@ -59,7 +59,7 @@ export function eventCaption(e: SimEvent, ctx: NarrationContext, told: Set<strin
       if (e.attempt !== 1) return null;
       if (e.error === 'validation') {
         if (!once(`fail-${e.id}`)) return null;
-        return <>Message <b>#{e.id}</b> fails with a <span className="hl bad">validation error</span>: the message itself is malformed, so retrying can never fix it. {policyLine(ctx.settings)}</>;
+        return <>Message <b>#{e.id}</b> fails with a <span className="hl bad">validation error</span>: the message itself is malformed, so retrying the same code can never fix it. {policyLine(ctx.settings)}</>;
       }
       if (!once('first-timeout')) return null;
       return <>Messages start failing with a <span className="hl orange">timeout</span>: the dependency is down, and it is not their fault. {policyLine(ctx.settings)}</>;
@@ -88,7 +88,7 @@ export function eventCaption(e: SimEvent, ctx: NarrationContext, told: Set<strin
         ? <>Pausing is off, so consumption <span className="hl orange">resumes</span> while the dependency is still down, and attempts start failing again.</>
         : <>The dependency is back, so consumption <span className="hl ok">resumes</span> and the backlog drains.</>;
     case 'redriven':
-      return <>Redrive: {plural(e.ids.length, 'parked message')} go back onto the main queue as new deliveries, behind anything already waiting, so order is not kept.{' '}
+      return <>Redrive: {plural(e.ids.length, 'parked message')} {e.ids.length === 1 ? 'goes' : 'go'} back onto the main queue as new deliveries, behind anything already waiting, so order is not kept.{' '}
         {ctx.settings.dedupe ? 'The consumer dedupes by message id, so work it already did is skipped.' : 'The consumer does not dedupe, so work it already did for these messages will run again.'}
         {ctx.settings.bugFixed ? '' : ' The bug is not fixed, so they will fail again.'}</>;
   }
@@ -98,7 +98,7 @@ export function eventCaption(e: SimEvent, ctx: NarrationContext, told: Set<strin
 export function insightCaption(snap: Snapshot, s: Settings): ReactNode | null {
   const blocked = snap.lane[0]?.poison;
   if (blocked && s.policy === 'forever' && snap.stats.lag >= 30) {
-    return <>Lag is <b>{snap.stats.lag}</b> and the oldest message has waited <b>{decimal(snap.stats.oldestAge, 0)} s</b>. One bad message at the head holds every good message behind it: head-of-line blocking.</>;
+    return <>The lag has passed 30 and keeps climbing, and the oldest waiting message is getting older with it (the stats beside the lane show the live numbers). One bad message at the head holds every good message behind it: head-of-line blocking.</>;
   }
   if (snap.stats.dlq > 0 && snap.stats.dropped === 0 && snap.down === false && snap.stats.lag < 3) {
     return <>The queue is quiet, but the DLQ holds <b>{snap.stats.dlq}</b>. Nothing was lost, and nothing is fixed: someone has to look, or it is a slower way to lose data.</>;

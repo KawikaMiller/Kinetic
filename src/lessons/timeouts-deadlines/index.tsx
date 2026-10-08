@@ -39,7 +39,7 @@ const lesson: LessonModule = {
         'Only A keeps going, and B and C stop when A\'s call returns',
       ],
       answer: 0,
-      why: 'A timeout is local to the hop that set it. Closing the user\'s connection tells nobody downstream, and nothing rolls work back, so every hop runs until it finishes or reaches its own limit, with a thread held all that time.',
+      why: 'A timeout is local to the hop that set it. Closing the user\'s connection does not by itself stop downstream work unless each hop propagates cancellation, and nothing rolls work back, so every hop runs until it finishes or reaches its own limit, with a thread held all that time.',
     },
     {
       q: 'What does deadline propagation hand to the next hop?',

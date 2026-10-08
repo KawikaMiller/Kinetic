@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Read-heavy services on read replicas, where replica lag decides how fresh a cache fill can be',
     ],
     why: 'Cache bugs are quiet: the app keeps answering fast, and wrongly. A stale price, the French page served to German readers or a hot key expiring under load are classic production incidents, and "just add a cache" is where many start. It builds on `lru-cache`, which owns eviction, on `db-indexes` for the reads a cache saves, and on `replication`, where replica lag comes from.',
-    watch: 'Arrows run between the app or clients, the cache and the database (and a replica). Green is a cache hit, yellow a miss and the fill after it, blue a database read or write, violet an invalidation (a delete), and orange a stale value read or stored; the light blue arrows are writes into the cache itself. Red is writes lost to a crash. The boxes under the diagram show what each store holds now, and an orange cache box means its entry is older than the database\'s. In the charts, green is the hit rate and orange the stale reads.',
+    watch: 'Arrows run between the app or clients, the cache and the database (and a replica). Green is a cache hit, yellow a miss and the fill after it, blue a database read or write, violet an invalidation (a delete), a dim loop on the cache a TTL expiring, and orange a stale value read or stored; the light blue arrows are writes into the cache itself. Red is writes lost to a crash. The boxes under the diagram show what each store holds now, and an orange cache box means its entry is older than the database\'s. In the charts, green is the hit rate and orange the stale reads.',
   },
   tryThis: [
     'In Patterns, step through cache-aside: after the write\'s database arrow the cache box turns orange for exactly one arrow. What closes that gap, and what could slip into it?',
@@ -27,7 +27,7 @@ const lesson: LessonModule = {
     'Cache-aside reads lazily and invalidates on write; write-through keeps cache and database level at the cost of slower writes; write-behind is fast but loses whatever was queued if the cache dies.',
     'Prefer deleting a key to overwriting it: overwrites let two writers store the older value last, while a delete leaves nothing stale behind. A reader that loaded before the write can still fill an old value in afterwards.',
     'A TTL does not make a cache correct, it bounds how wrong it can be: a stale entry lives at most the TTL, and a longer TTL buys hit rate at the cost of freshness.',
-    'The key must name every input the content depends on (user, locale, version) and nothing more: too little serves wrong pages, too much fragments the cache. A hot key expiring under load needs request coalescing, and many keys need jittered TTLs.',
+    'The key must name every input the content depends on (user, locale, version) and nothing more: too little serves wrong pages, too much fragments the cache. A hot key expiring under load is usually fixed with request coalescing, locks or early refresh, and many keys with jittered TTLs.',
   ],
   quiz: [
     {

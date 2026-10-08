@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACQUIRE_TIMEOUT_MS, advance, CONNECT_PARTS, createWorld, gauges, inFlight, LEAK_FLAG_MS, littlesLaw, summarize, tick, TICK_MS, type Config, type World } from './model';
+import { ACQUIRE_TIMEOUT_MS, advance, CONNECT_PARTS, createWorld, effectiveHoldMs, gauges, inFlight, LEAK_FLAG_MS, littlesLaw, summarize, tick, TICK_MS, type Config, type World } from './model';
 import { SCENARIOS, scenarioConfig } from './scenarios';
 
 const base: Config = { rate: 300, instances: 2, poolSize: 6, dbMax: 100, queryMs: 20, usePool: true, leak: false };
@@ -164,5 +164,47 @@ describe('the try-this steps, from the default preset', () => {
     expect(gauges(a).waiting).toBeGreaterThan(0);
     const bigger = { ...small, poolSize: 5 };
     expect(run(bigger, 15, () => {}).timedOut).toBe(0);
+  });
+});
+
+describe('the measured mean in use follows the present, not the whole run', () => {
+  it('after the rate rises from 250 to 300 a second it settles on the new Little figure within ten seconds', () => {
+    const cfg = scenarioConfig('right');
+    const w = createWorld(cfg, 5);
+    advance(w, cfg, 20);
+    const raised = { ...cfg, rate: 300 };
+    advance(w, raised, 12);
+    const expected = littlesLaw(300, cfg.queryMs);
+    expect(Math.abs(summarize(w, raised).meanInUse - expected) / expected).toBeLessThan(0.15);
+  });
+});
+
+describe('queries shorter than one tick', () => {
+  it('hold their connection for a whole tick, so the measured mean matches rate x one tick, not rate x query time', () => {
+    const cfg: Config = { rate: 400, instances: 2, poolSize: 10, dbMax: 100, queryMs: 2, usePool: true, leak: false };
+    const w = createWorld(cfg, 21);
+    advance(w, cfg, 60);
+    const measured = summarize(w, cfg).meanInUse;
+    const expected = littlesLaw(cfg.rate, effectiveHoldMs(cfg.queryMs));
+    expect(effectiveHoldMs(2)).toBe(TICK_MS);
+    expect(Math.abs(measured - expected) / expected).toBeLessThan(0.15);
+    expect(measured).toBeGreaterThan(littlesLaw(cfg.rate, cfg.queryMs) * 1.5);
+  });
+});
+
+describe('Refused counts distinct refusals', () => {
+  it('Too big: the stat is the slots refused now, and the retries are counted separately', () => {
+    const cfg = scenarioConfig('toobig');
+    const w = run(cfg, 6, () => {});
+    const s = summarize(w, cfg);
+    expect(s.refused).toBe(s.failed);
+    expect(s.refused).toBe(cfg.instances * cfg.poolSize - cfg.dbMax);
+    expect(s.refusedAttempts).toBeGreaterThan(s.refused * 2);
+  });
+  it('with no pool it counts requests turned away', () => {
+    const cfg: Config = { ...scenarioConfig('nopool'), dbMax: 3 };
+    const w = run(cfg, 3, () => {});
+    expect(summarize(w, cfg).refused).toBe(w.refusedRequests);
+    expect(w.refusedRequests).toBeGreaterThan(0);
   });
 });

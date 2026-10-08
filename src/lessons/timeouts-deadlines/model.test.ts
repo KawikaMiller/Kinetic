@@ -291,16 +291,17 @@ describe('picking a timeout', () => {
     const stats = timeoutStats(samples, 1);
     const sorted = samples.map((s) => s.seconds).sort((a, b) => a - b);
     expect(stats.p50).toBe(percentile(sorted, 0.5));
-    expect(stats.p99).toBe(percentile(sorted, 0.99));
+    const healthy = samples.filter((s) => !s.stuck).map((s) => s.seconds).sort((a, b) => a - b);
+    expect(stats.p99).toBe(percentile(healthy, 0.99));
     expect(stats.p50).toBeGreaterThan(0.12);
     expect(stats.p50).toBeLessThan(0.18);
     expect(stats.p99).toBeGreaterThan(0.4);
     expect(stats.p99).toBeLessThan(0.7);
   });
-  it('a timeout below p99 cuts off healthy requests: about 1% at p99, nearly all at the median', () => {
+  it('a timeout at the healthy p99 cuts off about 1% of healthy requests, nearly all at the median', () => {
     const { p50, p99 } = timeoutStats(samples, 1);
-    expect(timeoutStats(samples, p99).healthyCut).toBeGreaterThan(0.005);
-    expect(timeoutStats(samples, p99).healthyCut).toBeLessThan(0.02);
+    expect(timeoutStats(samples, p99).healthyCut).toBeGreaterThan(0.007);
+    expect(timeoutStats(samples, p99).healthyCut).toBeLessThan(0.0125);
     expect(timeoutStats(samples, p50).healthyCut).toBeGreaterThan(0.4);
     expect(timeoutStats(samples, 8).healthyCut).toBe(0);
   });

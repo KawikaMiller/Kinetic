@@ -48,7 +48,7 @@ export function PickScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="p50" value={sec(stats.p50)} sub="typical request" />
-          <Stat label="p99" value={sec(stats.p99)} color="var(--violet)" sub="1 in 100 is slower" />
+          <Stat label="p99" value={sec(stats.p99)} color="var(--violet)" sub="1 in 100 healthy calls is slower" />
           <Stat label="Healthy cut off" value={pct(stats.healthyCut, 1)} color={stats.healthyCut >= CUT_ALARM ? 'var(--bad)' : 'var(--ok)'} sub="timed out while still working" />
           <Stat label="Stuck request held" value={sec(stats.stuckHold)} sub={`${stuckCount} stuck of ${SAMPLE_COUNT}`} />
         </Stats>

@@ -25,6 +25,7 @@ const LEGEND = (
       { color: 'var(--hi)', label: 'miss / fill' },
       { color: 'var(--info)', label: 'database read or write' },
       { color: 'var(--violet)', label: 'invalidation (delete)' },
+      { color: 'var(--dim)', label: 'TTL expiry' },
       { color: 'var(--sky)', label: 'write into the cache' },
       { color: 'var(--orange)', label: 'stale value' },
       { color: 'var(--bad)', label: 'writes lost' },
@@ -55,7 +56,7 @@ export function PatternScene({ picker }: { picker: ReactNode }) {
       return {
         ...s,
         intro: <><b>Write-through</b>: the cache layer sits in front of the database. A miss is loaded by the layer; a write goes through it to the database before it answers. (The layer is assumed to serialise each key.)</>,
-        point: <>Cache and database agree after every write, and a read after a write always hits. The cost: each write pays for both, and values nobody reads still get cached.</>,
+        point: <>Cache and database agree after every write, and a read after a write hits until the entry expires or is evicted. The cost: each write pays for both, and values nobody reads still get cached.</>,
       };
     }
     const s = asideScript(invalidate);

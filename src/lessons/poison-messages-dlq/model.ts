@@ -292,9 +292,11 @@ export const REDRIVE_SCENARIO: Scenario = {
  * is parked in the DLQ. New messages keep arriving afterwards, so a redrive lands behind them.
  */
 export function redriveStart(settings: Partial<Settings> = {}): World {
-  const w = createWorld(REDRIVE_SCENARIO, { ...DEFAULT_SETTINGS, policy: 'max-attempts', maxAttempts: 3, ...settings });
+  // The batch always fails first: a fix the learner has already switched on applies to the redrive, not to the history.
+  const w = createWorld(REDRIVE_SCENARIO, { ...DEFAULT_SETTINGS, policy: 'max-attempts', maxAttempts: 3, ...settings, bugFixed: false });
   runUntilDrained(w);
   w.scenario = { ...REDRIVE_SCENARIO, total: null };
+  w.settings = { ...w.settings, bugFixed: settings.bugFixed ?? false };
   w.events.length = 0;
   return w;
 }

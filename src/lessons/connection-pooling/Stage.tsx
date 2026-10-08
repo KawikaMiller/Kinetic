@@ -9,7 +9,7 @@ import { useSetCaption } from '../../core/caption';
 import { decimal, plural } from '../../core/format';
 import { useSimulation } from '../../core/useSimulation';
 import { poolCaption } from './captions';
-import { advance, ACQUIRE_TIMEOUT_MS, createWorld, HISTORY_LENGTH, littlesLaw, shapeKey, summarize, type Config, type Summary } from './model';
+import { advance, ACQUIRE_TIMEOUT_MS, createWorld, HISTORY_LENGTH, littlesLaw, MEAN_WINDOW_MS, shapeKey, summarize, TICK_MS, type Config, type Summary } from './model';
 import { scenarioConfig, SCENARIOS, type ScenarioId } from './scenarios';
 import { poolView, type CellView, type PoolView } from './view';
 import './styles.css';
@@ -18,7 +18,7 @@ const FIRST: ScenarioId = 'small';
 const GRID_MIN_W = 560;
 const SPARK_W = 200;
 const SPARK_H = 36;
-const HONEST = 'Simulated app and database: requests arrive at random from a seed, connect and query costs are illustrative, and the pool is a fixed size opened at start.';
+const HONEST = `Simulated app and database: requests arrive at random from a seed, connect and query costs are illustrative, and the pool is a fixed size opened at start. Time moves in ${TICK_MS} ms steps, so a query shorter than that is rounded up to one step. The slowdown from holding many connections is an invented curve, up to 2× at the maximum, not a measurement of any database.`;
 
 interface Snap {
   summary: Summary;
@@ -102,10 +102,10 @@ export function Stage() {
       stats={
         s && (
           <Stats>
-            <Stat label={cfg.usePool ? 'Pool in use' : 'Connections open'} value={cfg.usePool ? `${s.inUse} / ${s.slots}` : s.inUse} color="var(--info)" sub={cfg.usePool ? 'connections handed to requests' : 'connections, one per request'} />
+            <Stat label={cfg.usePool ? 'Pool in use' : 'Connections open'} value={cfg.usePool ? `${s.inUse} / ${s.slots}` : s.inUse} color="var(--info)" sub={cfg.usePool ? 'handed to requests, leaked ones included' : 'connections, one per request'} />
             <Stat label="Waiting" value={s.waiting} color={s.waiting ? 'var(--violet)' : undefined} sub="requests queued for a connection" />
             <Stat label="Timeouts" value={s.timedOut} color={s.timedOut ? 'var(--bad)' : undefined} sub={`waited ${ACQUIRE_TIMEOUT_MS / 1000} s for one`} />
-            <Stat label="Refused" value={s.refused} color={s.refused ? 'var(--orange)' : undefined} sub="by the database's maximum" />
+            <Stat label={cfg.usePool ? 'Slots refused' : 'Requests refused'} value={s.refused} color={s.refused ? 'var(--orange)' : undefined} sub={cfg.usePool ? `refused now; ${decimal(s.refusedAttempts, 0)} refusals counting retries` : "turned away at the database's maximum"} />
             <Stat label="Latency p50 / p95" value={`${decimal(s.p50, 0)} / ${decimal(s.p95, 0)} ms`} sub="arrival to answer" />
           </Stats>
         )
@@ -127,8 +127,8 @@ export function Stage() {
         </>,
         <>
           <Toggle label="Pool" value={cfg.usePool} onChange={(usePool) => update({ usePool })} off="No pool" on="Pool" />
-          <Slider label="App instances" value={cfg.instances} min={1} max={20} onChange={(instances) => update({ instances })} />
-          <Slider label="Pool size each" value={cfg.poolSize} min={1} max={50} onChange={(poolSize) => update({ poolSize })} />
+          {cfg.usePool && <Slider label="App instances" value={cfg.instances} min={1} max={20} onChange={(instances) => update({ instances })} />}
+          {cfg.usePool && <Slider label="Pool size each" value={cfg.poolSize} min={1} max={50} onChange={(poolSize) => update({ poolSize })} />}
           <Slider label="Database max" value={cfg.dbMax} min={50} max={1000} step={50} onChange={(dbMax) => update({ dbMax })} />
         </>,
       ]}
@@ -188,7 +188,7 @@ export function Stage() {
             <p className="cpl-note">
               {cfg.rate} requests a second × {cfg.queryMs} ms each = about <b>{decimal(little, 1)}</b> connections busy running queries on average.
               {cfg.usePool
-                ? <> This run measures <b>{decimal(s!.meanInUse, 1)}</b> in use. You have <b>{total}</b> slots ({cfg.instances} × {cfg.poolSize}), and the database accepts {cfg.dbMax}: the total is always instances × pool size.
+                ? <> Over the last {MEAN_WINDOW_MS / 1000} s the run measures <b>{decimal(s!.meanInUse, 1)}</b> in use{cfg.leak ? ' (leaked connections count as in use)' : ''}. You have <b>{total}</b> slots ({cfg.instances} × {cfg.poolSize}), and the database accepts {cfg.dbMax}: the total is always instances × pool size.
                     When many instances would multiply past the database's limit, an external pooler such as PgBouncer sits in front and shares a few real connections between them.</>
                 : <> A pool of about that size, with some headroom, would serve this traffic. Without one, each request needs a connection for its whole {decimal(connectMs + cfg.queryMs, 0)} ms.</>}
             </p>

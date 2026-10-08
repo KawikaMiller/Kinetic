@@ -19,7 +19,7 @@ const LEGEND = (
   <Legend
     items={[
       { color: 'var(--hi)', label: `page written in the last ${RECENT} inserts`, shape: 'square' },
-      { color: 'var(--bad)', label: 'page made by a split', shape: 'square' },
+      { color: 'var(--bad)', label: `page made by a split in the last ${RECENT} inserts`, shape: 'square' },
       { color: 'var(--dim)', label: 'older page (fuller is brighter)', shape: 'square' },
     ]}
   />

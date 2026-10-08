@@ -20,7 +20,7 @@ const LANE_MIN_W = 520;
 const INSIGHT_COOLDOWN_S = 10;
 /** How far the dependency timeline looks ahead of the outage. */
 const TIMELINE_SPAN = 60;
-const HONEST = 'Simulated queue and consumer, at three times real speed; rates, delays and the outage are illustrative. In an ordered partition the lane also waits during a backoff (real systems often retry from a separate queue), and Pause assumes the consumer can tell the dependency is down, say through a health check or a breaker.';
+const HONEST = 'Simulated queue and consumer, at three times real speed; rates, delays and the outage are illustrative. In an ordered partition the lane also waits during a backoff (real systems often retry from a separate queue), and Pause assumes the consumer can tell the dependency is down, say through a health check or a breaker. Retries inside one delivery are assumed to reuse the work already done, so Work repeated counts only redeliveries.';
 
 const POLICIES: { value: Policy; label: string }[] = [
   { value: 'forever', label: 'Retry forever' },
@@ -179,7 +179,7 @@ function QueueStats({ snap, scene }: { snap: Snapshot | null; scene: SceneId }) 
 function Lane({ snap, settings }: { snap: Snapshot | null; settings: Settings }) {
   const lane = snap?.lane ?? [];
   const values = Array.from({ length: LANE_CELLS }, (_, i) => (lane[i] ? `#${lane[i].id}` : ''));
-  const retrying = (snap?.headAttempts ?? 0) > 1;
+  const retrying = (snap?.headAttempts ?? 0) >= 1;
   const stateOf = (i: number): ArrayCellState => {
     const cell = lane[i];
     if (!cell) return 'dim';

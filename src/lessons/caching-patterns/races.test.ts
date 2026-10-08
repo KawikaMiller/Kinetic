@@ -119,8 +119,18 @@ describe('the races, as scripted', () => {
     }
   });
 
+  it('TTL only at the slider minimum: the entry expires before the late read, so the read is fresh but the window is still drawn', () => {
+    const r = race('ttl-only', cfg({ ttl: 5 }));
+    expect(r.staleUntil).toBeNull();
+    expect(r.beats.at(-1)!.stale).toBe(false);
+    const w = stalenessWindow(5);
+    expect(w.expiry).toBe(8);
+    expect(w.window).toBe(2);
+    expect(Number.isFinite(w.domain[1])).toBe(true);
+  });
+
   it('the staleness window is the TTL minus the three seconds before the write', () => {
-    for (const ttl of [10, 30, 60]) {
+    for (const ttl of [5, 10, 30, 60]) {
       const w = stalenessWindow(ttl);
       expect(w.write).toBe(6);
       expect(w.expiry).toBe(3 + ttl);
@@ -153,6 +163,9 @@ describe('captions', () => {
     behind.forEach((_, i) => expectCaption(beatCaption(behind, i, null)));
     expect(expectCaption(beatCaption(behind, 5, null))).toContain('2 queued writes were only ever in its memory');
     expect(expectCaption(beatCaption(behind, 5, null))).toContain('the database still holds $12');
+    for (const [i, beat] of behind.entries()) {
+      if (beat.kind === 'queue') expect(expectCaption(beatCaption(behind, i, null))).toMatch(/^The app writes /);
+    }
   });
 
   it('a stale hit says it is stale and names both values; a fresh hit does not', () => {

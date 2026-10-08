@@ -188,7 +188,7 @@ describe('the insight captions', () => {
     advance(l, 8);
     const s = snapshot(l);
     const text = expectCaption(insightCaption(s, l.world.settings));
-    expect(text).toContain(`Lag is ${s.stats.lag}`);
+    expect(text).toContain('lag has passed 30');
     expect(text).toContain('head-of-line blocking');
   });
 

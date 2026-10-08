@@ -198,6 +198,12 @@ describe('a transient outage is not poison', () => {
 });
 
 describe('redrive', () => {
+  it('a fix already switched on does not change the starting history: the three bad messages are still parked', () => {
+    const w = redriveStart({ bugFixed: true });
+    expect(w.dlq.map((e) => e.id)).toEqual([3, 5, 8]);
+    expect(w.settings.bugFixed).toBe(true);
+  });
+
   it('starts with the three bad messages parked and everything else done', () => {
     const w = redriveStart();
     expect(w.dlq.map((e) => e.id)).toEqual([3, 5, 8]);
