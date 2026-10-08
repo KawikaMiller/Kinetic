@@ -1,0 +1,25 @@
+.gw { gap: 14px; }
+.gw .section-title { display: block; }
+.gw-svg { display: block; width: 100%; max-width: 780px; margin: 0 auto; --packet-fs: 11px; }
+.gw-zone { fill: color-mix(in srgb, var(--panel) 60%, transparent); stroke: var(--line-2); stroke-dasharray: 5 4; }
+.gw-link { stroke-width: 2.5; }
+.gw-link.is-edge { stroke: var(--violet); }
+.gw-link.is-inside { stroke: var(--dim); stroke-dasharray: 5 5; }
+.gw-link-label { font: 700 10px var(--mono); }
+.gw-link-label.is-edge { fill: var(--violet); }
+.gw-link-label.is-inside { fill: var(--muted); }
+.gw-stopped .scene-node-box { stroke: var(--c); stroke-width: 2.5; fill: color-mix(in srgb, var(--c) 18%, var(--panel)); }
+.gw-stopped .scene-node-sub { fill: var(--c); font-weight: 700; }
+.gw-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.gw-routes { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.gw-side { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.gw-routes td { font-size: 12px; }
+.gw-routes tr.is-winner td { background: color-mix(in srgb, var(--hi) 16%, transparent); }
+.gw-routes tr.is-also td { color: var(--violet); }
+.gw-routes tr.is-active td:first-child { box-shadow: inset 3px 0 0 var(--info); }
+.gw-form { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
+.gw-msg { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--muted); }
+.gw-err { color: var(--bad); }
+.gw-sees { display: flex; flex-direction: column; gap: 6px; }
+.gw-headers code { overflow-wrap: anywhere; }
+.gw-table-wrap { overflow-x: auto; }
