@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  APP, ERROR_RING, FLAT_TOLERANCE, LIST_ITEMS, LRU_CAP, SIZE, buildGraph, diff, heapRun, reachable, retainingPath, snapshot, survivorOf, verdict,
+  APP, ERROR_RING, FLAT_TOLERANCE, LIST_ITEMS, LRU_CAP, MB, SIZE, buildGraph, diff, heapRun, reachable, retainingPath, snapshot, survivorOf, verdict,
   type Config, type Ctor, type Graph, type LeakId,
 } from './model';
 
@@ -72,6 +72,24 @@ describe('the sawtooth', () => {
     const leak = heapRun(cfg('errors'), HOURS_4).troughs;
     expect(big[2].heap).toBeGreaterThan(leak[2].heap * 5);
     expect(verdict(heapRun(cfg('bigCache'), HOURS_4)).verdict).toBe('flat');
+  });
+
+  it('try this: High but flat sits around 300 MB and stays flat at every slider position, while every leak climbs', () => {
+    for (let h = 1; h <= 8; h += 0.5) {
+      const big = heapRun(cfg('bigCache'), h * 60);
+      for (const t of big.troughs) {
+        expect(t.heap).toBeGreaterThan(280 * MB);
+        expect(t.heap).toBeLessThan(320 * MB);
+      }
+      expect(verdict(big).verdict).toBe('flat');
+      for (const leak of LEAKS) expect(verdict(heapRun(cfg(leak), h * 60)).verdict).toBe('leak');
+    }
+  });
+
+  it('when nothing grew, the default row is the constructor holding the most bytes', () => {
+    const rows = diff(snapshot(buildGraph(cfg('bigCache'), 90)), snapshot(buildGraph(cfg('bigCache'), 120)));
+    expect(rows.every((r) => r.delta === 0)).toBe(true);
+    expect(rows[0].ctor).toBe('ImageBitmap');
   });
 
   it('the heap between GCs is live data plus the minute-by-minute garbage', () => {

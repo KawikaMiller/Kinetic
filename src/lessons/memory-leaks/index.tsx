@@ -21,7 +21,7 @@ const lesson: LessonModule = {
     'Turn Fix on: the AbortController removes each listener, and the trough line goes flat and green.',
     'On Unbounded cache, compare Fix LRU (100) and WeakMap: both flatten it, the WeakMap because finished request objects become unreachable.',
     'On Forgotten interval, look at the snapshot table: canvases and list items grow, and the path runs from the active timers through a closure and a detached div to its canvas.',
-    'Pick High but flat: the heap is the highest of all, yet the verdict is flat, because a bounded cache is not a leak.',
+    'Pick High but flat: the heap sits around 300 MB after every GC, yet its trough line is flat and green, because a bounded cache is not a leak; only the troughs of the leaks keep climbing.',
   ],
   keyIdeas: [
     'A GC frees what is unreachable; anything a root can still reach stays, needed or not.',

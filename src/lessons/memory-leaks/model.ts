@@ -289,6 +289,8 @@ export interface DiffRow {
   b: number;
   delta: number;
   deltaBytes: number;
+  /** Bytes this constructor holds in B: the tie-break when nothing grew. */
+  bBytes: number;
 }
 
 export function diff(a: Snapshot, b: Snapshot): DiffRow[] {
@@ -297,9 +299,9 @@ export function diff(a: Snapshot, b: Snapshot): DiffRow[] {
     .map((ctor) => {
       const x = a.get(ctor) ?? { count: 0, bytes: 0 };
       const y = b.get(ctor) ?? { count: 0, bytes: 0 };
-      return { ctor, a: x.count, b: y.count, delta: y.count - x.count, deltaBytes: y.bytes - x.bytes };
+      return { ctor, a: x.count, b: y.count, delta: y.count - x.count, deltaBytes: y.bytes - x.bytes, bBytes: y.bytes };
     })
-    .sort((p, q) => q.deltaBytes - p.deltaBytes || q.delta - p.delta || p.ctor.localeCompare(q.ctor));
+    .sort((p, q) => q.deltaBytes - p.deltaBytes || q.delta - p.delta || q.bBytes - p.bBytes || p.ctor.localeCompare(q.ctor));
 }
 
 /** The shortest chain of references from a GC root to `target` (BFS), or null if it's unreachable. */

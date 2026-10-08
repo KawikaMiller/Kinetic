@@ -212,7 +212,7 @@ function RetainingPath({ g, path, survived, leaked }: { g: Graph; path: { id: st
         retaining path · {survived ? `one ${boxes.at(-1)!.n.ctor} alive at both snapshots` : `the newest ${boxes.at(-1)!.n.ctor} (none survived from A)`} · from a GC root
       </SectionTitle>
       <WideRegion minWidth={Math.max(460, minWidthForText(width, PATH_TEXT_PX))} label="Retaining path: scroll sideways to see all of it">
-        <svg className="ml-path-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Retaining path: ${boxes.map((b) => b.n.name).join(' → ')}`}>
+        <svg className="ml-path-svg" style={{ maxWidth: width }} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Retaining path: ${boxes.map((b) => b.n.name).join(' → ')}`}>
           {boxes.map((b, i) => (
             <HeapObject
               key={b.p.id}
