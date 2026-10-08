@@ -9,8 +9,6 @@ export const SHOP_ORIGIN = `https://${SHOP}`;
 export const OTHER_ORIGIN = `https://${OTHER}`;
 /** The session cookie value shown in the request: a made-up demo value. */
 export const SESSION_VALUE = fakeSecret('sess', '_demo_', '8f3a21');
-/** The page's one-time token the server expects; only shop.example's own pages ever see it. */
-export const CSRF_TOKEN = fakeSecret('csrf', '_demo_', 'a91c47');
 /** The made-up address the forged request tries to set. */
 export const NEW_EMAIL = 'someone@mailbox.example';
 export const CUSTOM_HEADER = 'X-Shop-Client';
@@ -72,17 +70,27 @@ export interface Outcome {
 /** A script that must add the custom header can't send a "simple" request, so the browser asks first. */
 const needsPreflight = (c: Config) => c.header && c.kind === 'fetch';
 
+/**
+ * Which server defences actually run. Framework CSRF middleware skips safe methods, so on a GET (the
+ * link click) the token and the custom-header check never run: the fix there is a GET that changes nothing.
+ */
+export function activeDefences(c: Config): { origin: boolean; token: boolean; header: boolean } {
+  const safeMethod = methodOf(c.kind) === 'GET';
+  return { origin: c.origin, token: c.token && !safeMethod, header: c.header && !safeMethod };
+}
+
 export function evaluate(c: Config): Outcome {
   if (needsPreflight(c)) {
     return { preflight: true, sent: false, cookieSent: false, credential: false, stoppedAt: 'preflight', harm: false };
   }
+  const on = activeDefences(c);
   const attached = c.auth === 'cookie' && cookieSent(c.mode, c.kind);
   const base = { preflight: false, sent: true, cookieSent: attached, credential: attached };
   // The server's checks run in this order: who are you, where did this come from, token, header.
   if (!attached) return { ...base, stoppedAt: 'no-credential', harm: false };
-  if (c.origin) return { ...base, stoppedAt: 'origin', harm: false };
-  if (c.token) return { ...base, stoppedAt: 'token', harm: false };
-  if (c.header) return { ...base, stoppedAt: 'header', harm: false };
+  if (on.origin) return { ...base, stoppedAt: 'origin', harm: false };
+  if (on.token) return { ...base, stoppedAt: 'token', harm: false };
+  if (on.header) return { ...base, stoppedAt: 'header', harm: false };
   return { ...base, stoppedAt: null, harm: true };
 }
 
@@ -93,21 +101,6 @@ export const STOP_LABELS: Record<StopPoint, string> = {
   token: 'the CSRF token check',
   header: 'the custom header and JSON content type check',
 };
-
-/** Compare two strings without stopping at the first difference (the token check). */
-export function constantTimeEqual(a: string, b: string): { equal: boolean; looked: number } {
-  const x = new TextEncoder().encode(a);
-  const y = new TextEncoder().encode(b);
-  if (x.length !== y.length) return { equal: false, looked: 0 };
-  let diff = 0;
-  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
-  return { equal: diff === 0, looked: x.length };
-}
-
-/** What the forged request carries as its token: nothing, because the other site cannot read the page's token. */
-export const forgedToken = (): string => '';
-
-export const tokenValid = (sent: string, expected: string) => constantTimeEqual(sent, expected).equal;
 
 export const MODES: SameSiteMode[] = ['none', 'lax', 'strict'];
 export const FORGE_KINDS: ForgeKind[] = KINDS.map((k) => k.id);
@@ -129,14 +122,20 @@ export function allConfigs(): Config[] {
   return out;
 }
 
-export const SERVER_LINES = [
-  'const user = sessionFor(request.cookie);',
-  'if (!user) return reject(401);',
-  `if (request.origin !== '${SHOP_ORIGIN}') return reject(403);`,
-  'if (!constantTimeEqual(request.csrfToken, user.csrfToken)) return reject(403);',
-  `if (request.header('${CUSTOM_HEADER}') !== 'web' || request.type !== 'application/json') return reject(403);`,
-  'user.email = request.body.email;',
-] as const;
+/** The server handler as shown on screen. A GET link click carries a Referer and its data in the query string. */
+export function serverLines(kind: ForgeKind): string[] {
+  const link = methodOf(kind) === 'GET';
+  return [
+    'const user = sessionFor(request.cookie);',
+    'if (!user) return reject(401);',
+    link
+      ? `if (originOf(request.referer) !== '${SHOP_ORIGIN}') return reject(403);`
+      : `if (request.origin !== '${SHOP_ORIGIN}') return reject(403);`,
+    'if (request.csrfToken !== user.csrfToken) return reject(403);',
+    `if (request.header('${CUSTOM_HEADER}') !== 'web' || request.type !== 'application/json') return reject(403);`,
+    link ? 'user.email = request.query.to;' : 'user.email = request.body.email;',
+  ];
+}
 
 /** Which server line each defence is, and the line that makes the change. */
 export const LINE_OF: Record<'auth' | 'origin' | 'token' | 'header' | 'change', number> = { auth: 1, origin: 2, token: 3, header: 4, change: 5 };

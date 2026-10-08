@@ -3,13 +3,13 @@
 // runs. Every row of the table is a decision from the four toggles.
 
 export interface Layers {
-  /** A strict Content Security Policy: scripts only from the site itself or carrying the page's one-time nonce. */
+  /** A strict Content Security Policy: only scripts carrying the page's one-time nonce run. */
   csp: boolean;
   /** The session cookie is HttpOnly: page scripts cannot read it. */
   httpOnly: boolean;
   /** The session cookie is SameSite=Lax or Strict. */
   sameSite: boolean;
-  /** Sessions end after a short idle time instead of weeks. */
+  /** Sessions have a short absolute lifetime (they end after a fixed time whatever the use, not after idling), so a copy cannot be kept alive by using it. */
   shortSession: boolean;
 }
 
@@ -21,10 +21,10 @@ export const LAYER_LABELS: Record<LayerId, string> = {
   csp: 'CSP (strict, nonce)',
   httpOnly: 'HttpOnly cookie',
   sameSite: 'SameSite cookie',
-  shortSession: 'Short sessions',
+  shortSession: 'Short session lifetime',
 };
 
-/** Illustrative session lifetimes, in minutes. */
+/** Illustrative absolute session lifetimes, in minutes. */
 export const SHORT_SESSION_MIN = 15;
 export const LONG_SESSION_MIN = 30 * 24 * 60;
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { expectCaption } from '../../core/testing/captions';
 import { runNode } from '../../core/testing/node';
-import { pathFrames } from './frames';
+import { finalCaption, pathFrames } from './frames';
 import {
   ENTRIES, FILE_IDS, MAX_NAME, ROOT, SAMPLES, UPLOADS, childrenOf, entryAt, handle, isInside, isUnsafe, joinPath, normalize, parseName, walk,
   type HandlerMode,
@@ -43,7 +43,7 @@ describe('joinPath against real path.posix.join', () => {
   it('hand-worked cases', () => {
     expect(joinPath(UPLOADS, 'invoice-42.pdf')).toBe('/srv/shop/uploads/invoice-42.pdf');
     expect(joinPath(UPLOADS, 'notes..txt')).toBe('/srv/shop/uploads/notes..txt');
-    expect(joinPath(UPLOADS, 'reports/../../config/settings.yml')).toBe('/srv/shop/config/settings.yml');
+    expect(joinPath(UPLOADS, '../logo.png')).toBe('/srv/shop/logo.png');
     expect(joinPath(UPLOADS, '')).toBe(UPLOADS);
     expect(normalize('/..')).toBe('/');
     expect(normalize('/a/b/')).toBe('/a/b/');
@@ -105,18 +105,18 @@ describe('what each handler does with the samples', () => {
       'invoice-42.pdf': { status: 'served', escaped: false, unsafe: false },
       '2026/march.csv': { status: 'served', escaped: false, unsafe: false },
       'notes..txt': { status: 'not-found', escaped: false, unsafe: false },
-      'reports/../../config/settings.yml': { status: 'served', escaped: true, unsafe: true },
+      '../logo.png': { status: 'served', escaped: true, unsafe: true },
     },
     check: {
       'invoice-42.pdf': { status: 'served', escaped: false, unsafe: false },
       '2026/march.csv': { status: 'served', escaped: false, unsafe: false },
       'notes..txt': { status: 'not-found', escaped: false, unsafe: false },
-      'reports/../../config/settings.yml': { status: 'rejected', escaped: true, unsafe: false },
+      '../logo.png': { status: 'rejected', escaped: true, unsafe: false },
     },
     id: {
       'invoice-42.pdf': { status: 'not-found', escaped: false, unsafe: false },
       'notes..txt': { status: 'not-found', escaped: false, unsafe: false },
-      'reports/../../config/settings.yml': { status: 'not-found', escaped: false, unsafe: false },
+      '../logo.png': { status: 'not-found', escaped: false, unsafe: false },
       'f-1': { status: 'served', escaped: false, unsafe: false },
       'f-2': { status: 'served', escaped: false, unsafe: false },
       'f-9': { status: 'not-found', escaped: false, unsafe: false },
@@ -158,7 +158,41 @@ describe('what each handler does with the samples', () => {
 describe('the tree', () => {
   it('every entry hangs off the root and children are listed once', () => {
     for (const e of ENTRIES) if (e.path !== ROOT) expect(entryAt(e.path.slice(0, e.path.lastIndexOf('/')) || '/')).toBeDefined();
-    expect(childrenOf(ROOT).sort()).toEqual([`${ROOT}/config`, `${ROOT}/keys`, UPLOADS, `${ROOT}/uploads-old`].sort());
+    expect(childrenOf(ROOT).sort()).toEqual([`${ROOT}/config`, `${ROOT}/keys`, `${ROOT}/logo.png`, UPLOADS, `${ROOT}/uploads-old`].sort());
+  });
+});
+
+describe('the uploads folder itself', () => {
+  for (const name of ['.', 'a/..', './', '2026/..']) {
+    it(`"${name}" resolves to the folder: not outside, not a file, and the check still refuses it`, () => {
+      const join = handle('join', name);
+      expect(join.atRoot).toBe(true);
+      expect(join.escaped).toBe(false);
+      expect(isUnsafe(join)).toBe(false);
+      expect(join.status).toBe('not-found');
+      const check = handle('check', name);
+      expect(check.atRoot).toBe(true);
+      expect(check.escaped).toBe(false);
+      expect(check.status).toBe('rejected');
+    });
+  }
+
+  it('is described as the folder itself, never as outside', () => {
+    for (const mode of ['join', 'check'] as const) {
+      const text = expectCaption(finalCaption(handle(mode, '.')));
+      expect(text).toContain('the uploads folder itself');
+      expect(text).not.toContain('outside');
+    }
+  });
+
+  it('a name that climbs past it is still outside', () => {
+    expect(handle('join', '..').escaped).toBe(true);
+    expect(handle('join', '..').atRoot).toBe(false);
+  });
+
+  it('a directory inside uploads is called a folder, not a missing file', () => {
+    const text = expectCaption(finalCaption(handle('join', '2026')));
+    expect(text).toContain('a folder, not a file');
   });
 });
 
@@ -200,7 +234,7 @@ describe('path frames', () => {
   });
 
   it('climbs are recorded only for up steps between real folders', () => {
-    const frames = pathFrames('join', 'reports/../../config/settings.yml');
+    const frames = pathFrames('join', '../logo.png');
     expect(frames.at(-1)!.climbs).toEqual([[UPLOADS, ROOT]]);
   });
 });

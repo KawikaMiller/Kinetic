@@ -11,7 +11,7 @@ const lesson: LessonModule = {
       'Adding an authenticator app or a security key to a service\'s sign-in',
       'Choosing what to offer when someone loses their phone, and what that choice costs',
       'Rolling out passkeys next to passwords without weakening recovery',
-      'Debugging "invalid code" reports, which are nearly always the phone\'s clock',
+      'Debugging "invalid code" reports, which are often the phone\'s clock',
     ],
     why: 'MFA is on most security checklists, and "we have MFA" is often taken to mean "phishing is handled". Knowing why a TOTP code can be relayed, what a passkey changes, and that a text-message reset can undo it all lets you make the right calls on login and recovery design.',
     watch: 'Scene 1: chips grouped by kind (know blue, have yellow, are pink); the verdict is green for two different kinds and red for one kind. Scene 2: the shared secret is purple with a lock, the counter and the countdown bar are blue, the offset nibble and the four selected bytes in the 20-byte hex dump are yellow, a matching code is green and a refused one red. Scene 3: you and your own steps are blue, the look-alike site is orange, the passkey signature is purple, a matching origin or "nothing to give" is green, and a stranger signing in is red. Scene 4: each way in is a chip coloured by strength (green phishing-resistant, orange phishable, red weak), and the headline is the weakest one enabled.',

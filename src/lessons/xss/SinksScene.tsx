@@ -86,7 +86,7 @@ export function SinksScene({ picker }: { picker: ReactNode }) {
             gutter="none"
             stateOf={(i) => (SINKS[i].safe ? 'done' : 'bad')}
             marker={(i) => (i === sinkIndex ? <span className="xss-pick" aria-hidden="true">▶</span> : null)}
-            trailing={(i) => (SINKS[i].safe ? 'safe sink' : <>use <code>{SINKS[i].fix}</code></>)}
+            trailing={(i) => (SINKS[i].safe ? (SINKS[i].id === 'setAttribute' ? 'safe for inert attributes' : 'safe sink') : <>use <code>{SINKS[i].fix}</code></>)}
             onLineClick={(i) => update({ sink: SINKS[i].id })}
             pressed={(i) => i === sinkIndex}
             lineLabel={(i) => `${SINKS[i].safe ? 'Safe' : 'Unsafe'} sink: ${SINKS[i].code}`}

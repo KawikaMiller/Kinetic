@@ -73,7 +73,7 @@ export function PathScene({ picker }: { picker: ReactNode }) {
       height={640}
       stats={
         <Stats>
-          <Stat className="dpt-open" label="Opens" value={outcome ? (outcome.path ?? 'no path') : '…'} color={!outcome ? undefined : outcome.escaped ? 'var(--bad)' : 'var(--ok)'} sub={outcome ? (outcome.escaped ? 'outside uploads/' : mode === 'id' ? 'a row from the table' : 'inside uploads/') : 'play to find out'} />
+          <Stat className="dpt-open" label="Opens" value={outcome ? (outcome.path ?? 'no path') : '…'} color={!outcome ? undefined : outcome.escaped ? 'var(--bad)' : 'var(--ok)'} sub={outcome ? (outcome.escaped ? 'outside uploads/' : outcome.atRoot ? 'the uploads folder itself' : mode === 'id' ? 'a row from the table' : 'inside uploads/') : 'play to find out'} />
           <Stat label="Result" value={outcome ? outcome.status : '…'} />
         </Stats>
       }
@@ -135,7 +135,7 @@ export function PathScene({ picker }: { picker: ReactNode }) {
           </Box>
         </div>
         <Hint block>
-          Fictional file tree and loader; nothing on your machine is read, and nothing is executed. Encoded or alternate separators are not modelled: check after decoding, on the platform&apos;s own resolver.
+          Fictional file tree and loader; nothing on your machine is read, and nothing is executed. Encoded or alternate separators are not modelled: check after decoding, on the platform&apos;s own resolver. Symbolic links inside the folder are not modelled either: a text-only check does not see them, so real code resolves the real path (or opens relative to a directory handle).
         </Hint>
       </div>
     </StageFrame>

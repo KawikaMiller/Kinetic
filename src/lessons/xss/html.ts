@@ -1,7 +1,7 @@
 // A small model of how a browser's HTML parser reads text it is handed: where tags start and which
 // character references it decodes. It only covers what this lesson's four templates need (tags, end
 // tags, "bogus comments" and the common character references), nothing is ever put into the real
-// page, and a browser script compares it with the real DOMParser (see the lesson's tests).
+// page, and it is a model, not the real parser.
 
 /** A piece of text the browser read as markup: [from, to) in the string it was given. */
 export interface TagToken {

@@ -17,7 +17,7 @@ export function blastCaption(statements: readonly Statement[], compromised: bool
       {compromised
         ? <>If <b>{PRINCIPAL}</b> is compromised, an attacker reaches <span className="hl bad">{radius.length} of {RESOURCES.length} resources</span>{radius.length ? <> ({names})</> : null}.</>
         : <><b>{PRINCIPAL}</b> can reach {radius.length} of {RESOURCES.length} resources{radius.length ? <> ({names})</> : null}. Compromise it to see them light up.</>}
-      {' '}It is allowed {pairs} of {totalPairs} actions, and the service really used {plural(used, 'action')} in the last 90 days.
+      {' '}It is allowed {pairs} of {totalPairs} action-on-resource pairs, and the service really used {plural(used, 'action')} in the last 90 days.
       {works ? <> The service still works.</> : <> <span className="hl orange">The service would break:</span> something it uses is no longer allowed.</>}
     </>
   );

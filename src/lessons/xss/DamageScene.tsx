@@ -59,7 +59,7 @@ export function DamageScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--violet)', label: 'layer on' },
             { color: 'var(--ok)', label: 'layer that stopped something' },
             { color: 'var(--bad)', label: 'reached' },
-            { color: 'var(--dim)', label: 'not reached, layer off' },
+            { color: 'var(--dim)', label: 'not reached' },
           ]}
         />
       }
@@ -132,7 +132,7 @@ function Scene({ layers, stoppers }: { layers: Layers; stoppers: LayerId[] }) {
         return (
           <g key={lane}>
             {!dead && <polyline className={`scene-edge xss-lane ${o.reached ? 'is-open' : 'is-cut'}`} points={path.map((p) => `${p.x},${p.y}`).join(' ')} />}
-            {gate && <Gate x={GATE_X} y={y} h={46} label={gate === 'httpOnly' ? 'HttpOnly' : 'SameSite'} tone={gateTone(gate)} />}
+            {gate && <Gate x={GATE_X} y={y} h={46} label={gate === 'httpOnly' ? 'HttpOnly' : 'SameSite: no-op'} tone={gate === 'httpOnly' ? gateTone(gate) : 'off'} />}
             {!dead && o.reached && <TravelDot key={`${lane}${key}`} path={path} color="var(--orange)" r={5} duration={DOT_SECONDS} repeat />}
             {blockedAtGate && <TravelDot key={`${lane}${key}b`} path={stopAt} color="var(--orange)" r={5} duration={1.6} />}
             {blockedAtGate && <text className="xss-stop" x={GATE_X - 22} y={y - 10} textAnchor="end">✕</text>}
@@ -169,7 +169,7 @@ function ShortSession({ on }: { on: boolean }) {
     <g className={`xss-gate is-${on ? 'violet' : 'off'}`}>
       <rect x={TARGET_X - TARGET_W / 2} y={LANE_Y.cookie + 34} width={TARGET_W} height={22} rx={6} />
       <text x={TARGET_X} y={LANE_Y.cookie + 49} textAnchor="middle" className="xss-clock">
-        {on ? `short sessions: ${SHORT_SESSION_MIN} min` : `sessions last ${windowText(LONG_SESSION_MIN)}`}
+        {on ? `session lifetime: ${SHORT_SESSION_MIN} min` : `sessions last ${windowText(LONG_SESSION_MIN)}`}
       </text>
     </g>
   );

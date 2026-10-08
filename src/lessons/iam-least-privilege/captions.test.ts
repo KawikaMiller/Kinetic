@@ -12,7 +12,7 @@ describe('blast caption, for every policy and both compromise states', () => {
         const text = expectCaption(blastCaption(statements, compromised));
         const n = blastRadius(statements).length;
         expect(text).toContain(`${n} of ${RESOURCES.length} resources`);
-        expect(text).toContain(`allowed ${allowedPairs(statements)} of ${totalPairs} actions`);
+        expect(text).toContain(`allowed ${allowedPairs(statements)} of ${totalPairs} action-on-resource pairs`);
         expect(text.includes('The service would break')).toBe(!keepsServiceWorking(statements, ACCESS_LOG));
         expect(text.includes('If reports-api is compromised')).toBe(compromised);
       }
@@ -22,7 +22,7 @@ describe('blast caption, for every policy and both compromise states', () => {
 
 describe('credential caption', () => {
   it('says nothing about a copy before the leak, and the true remaining time after it', () => {
-    for (let leak = 1; leak < 20; leak++) {
+    for (let leak = 1; leak <= 55; leak++) {
       for (let now = 0; now <= 60; now += 3) {
         const text = expectCaption(credCaption(leak, 10, now));
         if (now < leak) {
@@ -31,8 +31,9 @@ describe('credential caption', () => {
           continue;
         }
         const e = exposures(leak, 10);
-        expect(text.includes('no longer')).toBe(leak + e.role <= now || leak + e.vault <= now);
-        if (leak + e.role > now) expect(text).toContain('more');
+        const dead = [e.role, e.vault].filter((exp) => leak + exp <= now).length;
+        expect(text.split('no longer').length - 1).toBe(dead);
+        expect(text.split(' more').length - 1).toBe(2 - dead);
       }
     }
   });

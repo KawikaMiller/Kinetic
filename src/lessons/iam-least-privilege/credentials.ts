@@ -38,7 +38,8 @@ export interface Exposure {
 export function exposures(leakAt: number, rotation: number): Exposure {
   return {
     key: exposure({ issuedAt: 0, ttl: KEY_ROTATION_MINUTES }, leakAt),
-    role: exposure({ issuedAt: 0, ttl: ROLE_MINUTES }, leakAt),
+    // Role sessions run back to back, like the bars drawn in the lane, so a copy is made mid-session.
+    role: exposure(vaultCredentialAt(ROLE_MINUTES, leakAt), leakAt),
     vault: exposure(vaultCredentialAt(rotation, leakAt), leakAt),
   };
 }

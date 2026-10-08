@@ -83,7 +83,7 @@ const lesson: LessonModule = {
         'It hides cookie values from the scripts that the page itself already runs',
       ],
       answer: 2,
-      why: 'A CSP is defence in depth: with nonce-based script rules an injected script is not run. It does not encode anything and does not hide cookies, so encoding stays the first fix and the CSP is the net under it.',
+      why: 'A CSP is defence in depth: with a strict nonce-based policy an injected script is not run (markup-only injection such as fake forms or links is not covered). It does not encode anything and does not hide cookies, so encoding stays the first fix and the CSP is the net under it.',
     },
   ],
 };

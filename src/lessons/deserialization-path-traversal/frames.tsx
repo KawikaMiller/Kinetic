@@ -42,9 +42,9 @@ export function finalCaption(o: Outcome): ReactNode {
       ? <><span className="hl ok">Found.</span> The id picked a row, and the row holds the path {code(o.path ?? '')}. The input never touched the file system.</>
       : <><span className="hl ok">404.</span> That is not an id in the table, so no path is ever built from it.</>;
   }
-  const where = o.escaped ? <><span className="hl bad">outside</span> {code(UPLOADS)}</> : <><span className="hl ok">inside</span> {code(UPLOADS)}</>;
+  const where = o.atRoot ? <><span className="hl ok">the uploads folder itself</span></> : o.escaped ? <><span className="hl bad">outside</span> {code(UPLOADS)}</> : <><span className="hl ok">inside</span> {code(UPLOADS)}</>;
   const path = code(o.path ?? '');
-  if (o.status === 'rejected') return <><span className="hl ok">Rejected (403).</span> The finished path {path} is {where}, and the check says so before anything is opened.</>;
+  if (o.status === 'rejected') return <><span className="hl ok">Rejected (403).</span> The finished path {path} is {where}{o.atRoot ? ', not a file inside it' : ''}, and the check says so before anything is opened.</>;
   if (isUnsafe(o)) {
     return o.status === 'served'
       ? <><span className="hl bad">Served.</span> The handler opens {path}, which is {where}: the name chose which file to read.</>
@@ -52,7 +52,7 @@ export function finalCaption(o: Outcome): ReactNode {
   }
   return o.status === 'served'
     ? <><span className="hl ok">Served.</span> {path} is {where}, and it exists.</>
-    : <><span className="hl ok">404.</span> {path} is {where}, but no such file exists.</>;
+    : <><span className="hl ok">404.</span> {path} is {where}, but {o.atRoot || entryAt(o.path ?? '')?.kind === 'dir' ? 'it is a folder, not a file' : 'no such file exists'}.</>;
 }
 
 /** The walk, step by step, ending on the handler's decision. */

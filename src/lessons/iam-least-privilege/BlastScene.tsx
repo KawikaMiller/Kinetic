@@ -54,7 +54,7 @@ export function BlastScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Blast radius" value={`${radius.length} of ${RESOURCES.length}`} color={compromised ? 'var(--bad)' : undefined} sub="resources reachable" />
-          <Stat label="Allowed actions" value={`${allowedPairs(statements)} of ${totalPairs}`} sub={`${ACCESS_LOG.length} used in ${LOG_DAYS} days`} />
+          <Stat label="Allowed pairs" value={`${allowedPairs(statements)} of ${totalPairs}`} sub={`action on resource; ${ACCESS_LOG.length} used in ${LOG_DAYS} days`} />
           <Stat label="Service still works" value={works ? 'yes' : 'no'} color={works ? 'var(--ok)' : 'var(--orange)'} />
         </Stats>
       }

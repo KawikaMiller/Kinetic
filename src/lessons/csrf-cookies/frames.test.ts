@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { frames, ladder, requestStep, stepCaption, verdictOf } from './frames';
-import { LINE_OF, SERVER_LINES, SESSION_VALUE, allConfigs, evaluate } from './model';
+import { LINE_OF, SESSION_VALUE, activeDefences, allConfigs, evaluate, serverLines } from './model';
 import { cookieLineIndex, requestLines, serverLineStates } from './panels';
 
 const all = allConfigs();
@@ -91,8 +91,9 @@ describe('panels', () => {
       const o = evaluate(c);
       const arrived = serverLineStates(c, o, true);
       const before = serverLineStates(c, o, false);
-      expect(arrived.length).toBe(SERVER_LINES.length);
-      for (const [line, on] of [[LINE_OF.origin, c.origin], [LINE_OF.token, c.token], [LINE_OF.header, c.header]] as const) {
+      expect(arrived.length).toBe(serverLines(c.kind).length);
+      const active = activeDefences(c);
+      for (const [line, on] of [[LINE_OF.origin, active.origin], [LINE_OF.token, active.token], [LINE_OF.header, active.header]] as const) {
         expect(arrived[line] === 'cut').toBe(!on);
         expect(before[line] === 'cut').toBe(!on);
       }

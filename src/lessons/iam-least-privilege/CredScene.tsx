@@ -43,7 +43,7 @@ export function CredScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Leaked access key works for" value={leaked ? minutes(e.key) : '…'} color={leaked ? 'var(--bad)' : undefined} sub="until someone rotates it (illustrative: a year)" />
-          <Stat label={`Leaked ${ROLE_MINUTES}-minute role`} value={leaked ? minutes(e.role) : '…'} color={leaked ? 'var(--ok)' : undefined} sub="then it dies on its own" />
+          <Stat label={`Leaked ${ROLE_MINUTES}-minute role`} value={leaked ? minutes(e.role) : '…'} color={leaked ? 'var(--ok)' : undefined} sub="time left in the session it was copied from" />
           <Stat label="Leaked vault credential" value={leaked ? minutes(e.vault) : '…'} color={leaked ? 'var(--ok)' : undefined} sub={`rotates every ${rotation} min`} />
         </Stats>
       }
@@ -86,7 +86,7 @@ export function CredScene({ picker }: { picker: ReactNode }) {
           A copied access key works for as long as the key does. A role or vault credential is useless to whoever copied it once it expires, so the same leak costs minutes, not months.
         </p>
         <Hint block>
-          Simulated cloud account. One second is one simulated minute. Lifetimes are illustrative, and the access key&apos;s bar is not to scale: it keeps going far past this clock.
+          Simulated cloud account. Two simulated minutes pass each second. Lifetimes are illustrative, and the access key&apos;s bar is not to scale: it keeps going far past this clock.
         </Hint>
       </div>
     </StageFrame>

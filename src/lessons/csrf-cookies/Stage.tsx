@@ -7,7 +7,7 @@ import { ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, Toggle 
 import { usePlayer } from '../../core/usePlayer';
 import { ACTORS, frames as buildFrames, ladder, requestStep, verdictOf } from './frames';
 import {
-  DEFAULT_CONFIG, KINDS, MODES, SERVER_LINES, STOP_LABELS, evaluate, type Auth, type Config, type SameSiteMode,
+  DEFAULT_CONFIG, KINDS, MODES, STOP_LABELS, evaluate, methodOf, serverLines, type Auth, type Config, type SameSiteMode,
 } from './model';
 import { cookieLineIndex, requestLines, serverLineStates } from './panels';
 import './styles.css';
@@ -66,12 +66,16 @@ export function Stage() {
       controls={[
         <>
           <Segmented label="Authentication" value={config.auth} onChange={(auth: Auth) => patch({ auth })} options={AUTH} />
-          <Segmented
-            label="Cookie SameSite"
-            value={config.mode}
-            onChange={(mode: SameSiteMode) => patch({ mode })}
-            options={MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }))}
-          />
+          {config.auth === 'cookie' ? (
+            <Segmented
+              label="Cookie SameSite"
+              value={config.mode}
+              onChange={(mode: SameSiteMode) => patch({ mode })}
+              options={MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }))}
+            />
+          ) : (
+            <Hint>SameSite applies to cookies; a bearer token is not a cookie, so there is nothing to set.</Hint>
+          )}
         </>,
         <Segmented
           key="kind"
@@ -81,9 +85,15 @@ export function Stage() {
           options={KINDS.map((k) => ({ value: k.id, label: k.label }))}
         />,
         <>
-          <Toggle label="CSRF token" value={config.token} onChange={(token) => patch({ token })} />
+          {methodOf(config.kind) === 'GET' ? (
+            <Hint>CSRF middleware skips GET, so a token or custom header is never checked on a link click. The fix is a GET that changes nothing.</Hint>
+          ) : (
+            <>
+              <Toggle label="CSRF token" value={config.token} onChange={(token) => patch({ token })} />
+              <Toggle label="JSON + custom header" value={config.header} onChange={(header) => patch({ header })} />
+            </>
+          )}
           <Toggle label="Origin / Referer check" value={config.origin} onChange={(origin) => patch({ origin })} />
-          <Toggle label="JSON + custom header" value={config.header} onChange={(header) => patch({ header })} />
           <ControlGroup label="Misconception">
             <ChipButton tone="violet" on={cors} onClick={() => setCors(!cors)}>Why CORS doesn&apos;t stop this</ChipButton>
           </ControlGroup>
@@ -102,7 +112,7 @@ export function Stage() {
               gutter="none"
               stateOf={(i) => (i === cookieAt ? 'now' : 'idle')}
             />
-            <CodePanel title="Server check" lines={SERVER_LINES} gutter="none" stateOf={(i) => serverStates[i]} />
+            <CodePanel title="Server check" lines={serverLines(config.kind)} gutter="none" stateOf={(i) => serverStates[i]} />
           </div>
         </div>
         {cors && (

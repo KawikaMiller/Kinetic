@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mulberry32 } from '../../core/random';
 import {
-  CSRF_TOKEN, DEFAULT_CONFIG, FORGE_KINDS, MODES, allConfigs, constantTimeEqual, cookieSent, evaluate, forgedToken, tokenValid,
+  DEFAULT_CONFIG, FORGE_KINDS, MODES, activeDefences, allConfigs, cookieSent, evaluate, serverLines,
   type Config, type ForgeKind, type StopPoint,
 } from './model';
 
@@ -35,12 +34,13 @@ describe('worked scenarios', () => {
     { name: 'a token stops a form with the cookie attached', c: { token: true }, stoppedAt: 'token', harm: false, cookie: true },
     { name: 'the Origin check fires before the token check', c: { token: true, origin: true }, stoppedAt: 'origin', harm: false, cookie: true },
     { name: 'the header check stops a form', c: { header: true }, stoppedAt: 'header', harm: false, cookie: true },
-    { name: 'the header check stops a link click', c: { header: true, kind: 'link' }, stoppedAt: 'header', harm: false, cookie: true },
+    { name: 'the header check never runs on a GET link click', c: { header: true, kind: 'link' }, stoppedAt: null, harm: true, cookie: true },
     { name: 'the header makes a script ask first, and be refused', c: { header: true, kind: 'fetch' }, stoppedAt: 'preflight', harm: false, cookie: false },
     { name: 'without the header a script POST goes through like a form', c: { kind: 'fetch' }, stoppedAt: null, harm: true, cookie: true },
     { name: 'a bearer token is never attached by the browser', c: { auth: 'bearer' }, stoppedAt: 'no-credential', harm: false, cookie: false },
     { name: 'Lax plus a token: stopped earlier, by the missing cookie', c: { mode: 'lax', token: true }, stoppedAt: 'no-credential', harm: false, cookie: false },
-    { name: 'Lax plus a token on a link click: the token is the layer that holds', c: { mode: 'lax', kind: 'link', token: true }, stoppedAt: 'token', harm: false, cookie: true },
+    { name: 'Lax plus a token on a link click: middleware skips GET, so the change still goes through', c: { mode: 'lax', kind: 'link', token: true }, stoppedAt: null, harm: true, cookie: true },
+    { name: 'the Referer check does stop a link click', c: { mode: 'lax', kind: 'link', origin: true }, stoppedAt: 'origin', harm: false, cookie: true },
   ];
   for (const t of cases) {
     it(t.name, () => {
@@ -72,9 +72,9 @@ describe('every combination of auth, SameSite mode, request kind and the three s
       const o = evaluate(c);
       if (o.harm) {
         expect(o.credential).toBe(true);
-        expect(c.token || c.origin || c.header).toBe(false);
+        expect(Object.values(activeDefences(c)).some(Boolean)).toBe(false);
       }
-      if (!c.token && !c.origin && !c.header && o.credential) expect(o.harm).toBe(true);
+      if (!Object.values(activeDefences(c)).some(Boolean) && o.credential) expect(o.harm).toBe(true);
     }
   });
 
@@ -114,27 +114,28 @@ describe('every combination of auth, SameSite mode, request kind and the three s
   });
 });
 
-describe('the token check', () => {
-  it('rejects the forged request (it has no token) and accepts the real one', () => {
-    expect(tokenValid(forgedToken(), CSRF_TOKEN)).toBe(false);
-    expect(tokenValid(CSRF_TOKEN, CSRF_TOKEN)).toBe(true);
-  });
-
-  it('constantTimeEqual agrees with === on 400 seeded pairs, including different lengths and non-ASCII', () => {
-    const rnd = mulberry32(31337);
-    const alphabet = ['a', 'b', 'Z', '0', '9', '_', 'é', '😀', ''];
-    const make = () => Array.from({ length: Math.floor(rnd() * 8) }, () => alphabet[Math.floor(rnd() * alphabet.length)]).join('');
-    for (let i = 0; i < 400; i++) {
-      const a = make();
-      const b = rnd() < 0.3 ? a : make();
-      expect(constantTimeEqual(a, b).equal).toBe(a === b);
+describe('GET requests', () => {
+  it('never run the token or custom-header check, whatever the toggles say', () => {
+    for (const c of allConfigs().filter((x) => x.kind === 'link')) {
+      const on = activeDefences(c);
+      expect(on.token).toBe(false);
+      expect(on.header).toBe(false);
+      expect(on.origin).toBe(c.origin);
     }
   });
 
-  it('looks at every byte even when the first one differs', () => {
-    const r = constantTimeEqual('xbcdef', 'abcdef');
-    expect(r).toEqual({ equal: false, looked: 6 });
-    expect(constantTimeEqual('abcdef', 'abcdeg').looked).toBe(6);
-    expect(constantTimeEqual('abc', 'abcd')).toEqual({ equal: false, looked: 0 });
+  it('keep both checks for a POST', () => {
+    for (const c of allConfigs().filter((x) => x.kind !== 'link')) {
+      const on = activeDefences(c);
+      expect(on.token).toBe(c.token);
+      expect(on.header).toBe(c.header);
+    }
+  });
+
+  it('read the address from the query string and the Referer, a POST from the body and Origin', () => {
+    expect(serverLines('link').join(' ')).toContain('request.query.to');
+    expect(serverLines('link').join(' ')).toContain('request.referer');
+    expect(serverLines('form').join(' ')).toContain('request.body.email');
+    expect(serverLines('form').join(' ')).toContain('request.origin');
   });
 });

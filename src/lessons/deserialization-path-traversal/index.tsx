@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'When input chooses a file path or a class to build, it chooses what your server touches. Resolve the finished path and check it stays under the allowed folder (or look files up by ID), and read untrusted data with a data-only format that you validate against a schema.',
-    what: 'A download handler that glues a file name onto a folder lets a name with ".." pieces climb out of that folder; the fix is to normalise the finished path and require it to stay under the root, with a trailing separator so a sibling like uploads-old does not pass. Better, let the input pick an ID and keep the paths in your own table. A deserialiser for a type-naming format reads a class name from the input and runs that class\'s setup code before your code sees the object. A data-only format such as JSON, validated against a schema, can only ever produce plain data, and signing what your own server writes (see `macs-hmac`) rejects blobs someone else edited.',
+    what: 'A download handler that glues a file name onto a folder lets a name with ".." pieces climb out of that folder, even by accident; the fix is to normalise the finished path and require it to stay under the root, with a trailing separator so a sibling like uploads-old does not pass. Better, let the input pick an ID and keep the paths in your own table. A deserialiser for a type-naming format reads a class name from the input and runs that class\'s setup code before your code sees the object. A data-only format such as JSON, validated against a schema, can only ever produce plain data, and signing what your own server writes (see `macs-hmac`) rejects blobs someone else edited.',
     analogy: 'A coat-check where you hand over a ticket number is safe; one where you write the shelf address yourself lets you walk into the back room. Likewise a form that says "build whichever machine this label names" is a way to start any machine in the building.',
     useCases: [
       'File download and upload endpoints, archive extraction and static file servers',
@@ -17,7 +17,7 @@ const lesson: LessonModule = {
     watch: 'Scene 1: a fictional file tree. The segment the walk is on is yellow, folders and files it visited are purple, and a climb (..) draws its edge in purple. The uploads folder has a thick green outline; a finished path inside it turns green and one outside it turns red; everything untouched is grey. The handler code shows the active line, and the log prints the answer. Scene 2: the blob is blue, a defence that is switched on is purple, a check that refused the blob is green, and the constructor box turns red when the input chose a class the reader never meant to build.',
   },
   tryThis: [
-    'In scene 1 (Join the name) pick the fourth name, the relative path that climbs out, and press Play: the finished path lands outside uploads and the file is served.',
+    'In scene 1 (Join the name) pick the fourth name, ../logo.png (someone typing a relative path by accident), and press Play: the finished path lands one folder above uploads and the file is served.',
     'With that same name, switch Handler to "Resolve, then check the root": the same walk ends in a 403. Then try "notes..txt": two dots inside a name are harmless.',
     'Switch Handler to "Look up by ID" and choose f-1: the name never touches the file system; the id picks a row.',
     'In scene 2 the edited blob names another type: with both toggles off, the constructor box turns red. Turn on the allow-list, then try signed blobs instead.',

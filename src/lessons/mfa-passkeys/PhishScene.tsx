@@ -82,7 +82,7 @@ export function PhishScene({ picker }: { picker: ReactNode }) {
           </Box>
         )}
         <Hint block>
-          Real HMAC-SHA-1 and ECDSA in your browser; the sites, phone and authenticator are simulated. Passkeys are simplified: real WebAuthn adds attestation, counters and user verification. The look-alike is an abstract actor: no relay steps are shown.
+          Real HMAC-SHA-1 and ECDSA in your browser; the sites, phone and authenticator are simulated. Passkeys are simplified: real WebAuthn adds attestation, counters and user verification. The look-alike is an abstract actor: the relay is a single arrow, and proxy details are not modelled.
         </Hint>
       </div>
     </StageFrame>

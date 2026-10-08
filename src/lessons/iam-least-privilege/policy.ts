@@ -1,5 +1,5 @@
 // A simplified cloud policy language: statements that Allow or Deny actions on resources, matched
-// with a glob, evaluated with the rule every major provider shares: an explicit Deny wins, then any
+// with a glob, evaluated with the AWS-style rule (other providers differ in detail): an explicit Deny wins, then any
 // Allow, otherwise the request is denied by default. Real systems add conditions, permission
 // boundaries and resource policies; this models none of them.
 

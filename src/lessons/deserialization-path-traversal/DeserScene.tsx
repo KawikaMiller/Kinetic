@@ -86,10 +86,10 @@ export function DeserScene({ picker }: { picker: ReactNode }) {
                 <span key={i} className={line.startsWith('type:') ? 'dpt-typeline' : ''}>{line}{'\n'}</span>
               ))}
             </pre>
-            <div className={`dpt-stage ${signed ? 'is-defence' : 'is-off'}`}>
+            <div className={`dpt-stage ${typed.stage === 'signature' ? 'is-check' : signed ? 'is-defence' : 'is-off'}`}>
               ① Signature {signed ? <b>{signing ? (signatureValid ? 'matches the tag stored at save time' : 'does not match: not something our server wrote') : 'computing…'}</b> : 'not checked'}
             </div>
-            <div className={`dpt-stage ${allowList ? 'is-defence' : 'is-off'}`}>
+            <div className={`dpt-stage ${typed.stage === 'allow-list' ? 'is-check' : allowList ? 'is-defence' : 'is-off'}`}>
               ② Allow-list {allowList ? <b>{typed.stage === 'allow-list' ? `refused ${typed.named}` : `allows only ${ALLOWED_TYPES.join(', ')}`}</b> : 'off: any class the app has can be named'}
             </div>
             <div className="dpt-stage">
@@ -114,7 +114,7 @@ export function DeserScene({ picker }: { picker: ReactNode }) {
         <p className="dpt-note">
           Formats that can name a type to build include Python&apos;s pickle, Java&apos;s built-in serialization and YAML with type tags (named, not shown). Their loaders are not safe for untrusted input: use a data-only format and validate it, and sign what your own server writes.
         </p>
-        <Hint block>Fictional classes whose constructors only describe an effect; nothing is executed. The signature is a real HMAC-SHA-256 over the blob text.</Hint>
+        <Hint block>Fictional classes whose constructors only describe an effect; nothing is executed. The signature is a real HMAC-SHA-256 over the blob text. Signing is shown on the type-naming route only; the JSON route is validated, and real systems sign what they write on both.</Hint>
       </div>
     </StageFrame>
   );

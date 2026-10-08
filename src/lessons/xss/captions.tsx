@@ -26,7 +26,7 @@ export function sinkCaption(id: SinkId, value: string, link: string): ReactNode 
     return isWebUrl(link) ? (
       <>The link value <b>{link}</b> is {v.kind === 'relative' ? 'a path on this site' : 'a web address'}, so the allow-list lets it through.</>
     ) : (
-      <>The link value <b>{link}</b> {v.kind === 'other' ? <>uses the <span className="hl bad">{v.scheme}</span> scheme, which your app never meant to open</> : <>is not a web address</>}; the allow-list refuses it. Setting <code>href</code> unchecked would accept it.</>
+      <>The link value <b>{link}</b> {v.kind === 'other' ? <>uses the <span className="hl bad">{v.scheme}</span> scheme, which your app never meant to open (some schemes make the browser run code instead of showing a page)</> : <>is not a web address</>}; the allow-list refuses it. Setting <code>href</code> unchecked would accept it.</>
     );
   }
   const kept = keptAsData(id, value);
@@ -43,11 +43,11 @@ export function damageCaption(l: Layers): ReactNode {
   const n = reachedCount(l);
   const reuse = reach(l).find((o) => o.id === 'reuse')!;
   const stoppers = activeStoppers(l);
-  if (n === 0) return <>The injected script never runs: <span className="hl ok">{LAYER_LABELS.csp}</span> stopped it before it could reach anything. The earlier fix (encoding) is still the first line of defence.</>;
+  if (n === 0) return <>The injected script never runs: <span className="hl ok">{LAYER_LABELS.csp}</span> stopped it before it could reach anything (a strict, nonce-based policy against an injected script; markup-only tricks like fake forms or links are a different gap). The earlier fix (encoding) is still the first line of defence.</>;
   return (
     <>
       The script ran and reaches {n} of {reach(l).length} things.
-      {stoppers.includes('httpOnly') ? <> <span className="hl ok">HttpOnly</span> kept the cookie out of reach, but the script can still act as the user on the page.</> : <> The session cookie is readable{reuse.windowMin ? <>, so a copy would work for {windowText(reuse.windowMin)}</> : null}.</>}
+      {stoppers.includes('httpOnly') ? <> <span className="hl ok">HttpOnly</span> kept the cookie out of reach, but the script can still act as the user on the page.</> : <> The session cookie is readable{reuse.windowMin ? <>, so a copy would work until the session ends, up to {windowText(reuse.windowMin)}</> : null}.</>}
       {' '}SameSite changes nothing here: the script&apos;s requests come from the site itself.
     </>
   );

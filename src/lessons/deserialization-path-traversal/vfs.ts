@@ -17,6 +17,7 @@ export const ENTRIES: Entry[] = [
   { path: `${UPLOADS}/2026/march.csv`, kind: 'file' },
   { path: `${ROOT}/uploads-old`, kind: 'dir' },
   { path: `${ROOT}/uploads-old/legacy.txt`, kind: 'file' },
+  { path: `${ROOT}/logo.png`, kind: 'file' },
   { path: `${ROOT}/config`, kind: 'dir' },
   { path: `${ROOT}/config/settings.yml`, kind: 'file' },
   { path: `${ROOT}/keys`, kind: 'dir' },
@@ -102,20 +103,24 @@ export interface Outcome {
   mode: HandlerMode;
   /** The path the handler ends up opening, or null when it never builds one. */
   path: string | null;
-  /** The path is outside the uploads folder. */
+  /** The path is outside the uploads folder (the folder itself does not count as outside). */
   escaped: boolean;
+  /** The path is the uploads folder itself: not outside it, but not a file inside it either. */
+  atRoot: boolean;
   status: Status;
 }
 
 export function handle(mode: HandlerMode, name: string): Outcome {
   if (mode === 'id') {
     const row = FILE_IDS.find((f) => f.id === name);
-    return { mode, path: row?.path ?? null, escaped: false, status: row ? 'served' : 'not-found' };
+    return { mode, path: row?.path ?? null, escaped: false, atRoot: false, status: row ? 'served' : 'not-found' };
   }
   const path = joinPath(UPLOADS, name);
-  const escaped = !isInside(UPLOADS, path);
-  if (mode === 'check' && escaped) return { mode, path, escaped, status: 'rejected' };
-  return { mode, path, escaped, status: fileExists(path) ? 'served' : 'not-found' };
+  const atRoot = path.replace(/\/$/, '') === UPLOADS;
+  const escaped = !atRoot && !isInside(UPLOADS, path);
+  // The check wants a path strictly under the folder, so the folder itself is refused too.
+  if (mode === 'check' && (escaped || atRoot)) return { mode, path, escaped, atRoot, status: 'rejected' };
+  return { mode, path, escaped, atRoot, status: fileExists(path) ? 'served' : 'not-found' };
 }
 
 /** The handler opened (or tried to open) something outside uploads: the bug, whether or not a file was there. */
@@ -144,5 +149,5 @@ export const SAMPLES: { id: string; name: string; note: string }[] = [
   { id: 'invoice', name: 'invoice-42.pdf', note: 'an ordinary file' },
   { id: 'nested', name: '2026/march.csv', note: 'a file in a folder' },
   { id: 'dots', name: 'notes..txt', note: 'two dots inside a name: harmless' },
-  { id: 'up', name: 'reports/../../config/settings.yml', note: 'a relative path that climbs out' },
+  { id: 'up', name: '../logo.png', note: 'a typed path that goes up one folder by accident' },
 ];

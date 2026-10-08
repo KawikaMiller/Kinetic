@@ -36,7 +36,7 @@ export function ladder(c: Config): SequenceMessage[] {
     { id: 'login', from: 'you', to: 'shop', label: 'log in', tone: 'info' },
     {
       id: 'session', from: 'shop', to: 'you', tone: 'info',
-      label: c.auth === 'cookie' ? `Set-Cookie: session (${MODE_NAME[c.mode]})` : 'token in the reply',
+      label: c.auth === 'cookie' ? `Set-Cookie: session (${MODE_NAME[c.mode]}${c.mode === 'none' ? '; Secure' : ''})` : 'token in the reply',
       note: c.auth === 'cookie' ? undefined : 'the app keeps it in script memory',
     },
     { id: 'visit', from: 'you', to: 'other', label: `visit ${OTHER}`, tone: 'info' },
@@ -86,7 +86,7 @@ function cookieReason(c: Config, sent: boolean): ReactNode {
   return <><span className="hl ok">SameSite=Strict</span> never sends the cookie on a request another site caused.</>;
 }
 
-function replyCaption(o: Outcome): ReactNode {
+function replyCaption(o: Outcome, link: boolean): ReactNode {
   if (o.harm) {
     return (
       <>
@@ -99,9 +99,11 @@ function replyCaption(o: Outcome): ReactNode {
     case 'no-credential':
       return <><span className="hl ok">Rejected: logged out.</span> The request arrived without a credential, so the server treats it as a stranger&apos;s and changes nothing.</>;
     case 'origin':
-      return <><span className="hl ok">Rejected by the Origin check.</span> The browser tells the server who started the request, and it was {OTHER}, not {SHOP}.</>;
+      return <><span className="hl ok">Rejected by the Origin check.</span> {link
+        ? <>A link click carries a <code>Referer</code> rather than an Origin, and it was {OTHER}, not {SHOP}. A Referer can be missing or trimmed by the browser&apos;s referrer policy, so treat this check as a layer, not a guarantee.</>
+        : <>The browser tells the server who started the request, and it was {OTHER}, not {SHOP}.</>}</>;
     case 'token':
-      return <><span className="hl ok">Rejected by the CSRF token check.</span> The token lives in {SHOP}&apos;s own pages and {OTHER} cannot read them, so the request carries none that matches (compared in constant time).</>;
+      return <><span className="hl ok">Rejected by the CSRF token check.</span> The token lives in {SHOP}&apos;s own pages and {OTHER} cannot read them, so the request carries none that matches.</>;
     default:
       return <><span className="hl ok">Rejected: no custom header.</span> A form or a link cannot set <code>{CUSTOM_HEADER}</code> or a JSON content type, so the server turns it away.</>;
   }
@@ -129,7 +131,7 @@ export function stepCaption(c: Config, id: string): ReactNode {
         ? <><span className="hl ok">Blocked by the browser.</span> The preflight was refused, so the request is never sent{c.auth === 'cookie' ? ' and your cookie never leaves' : ''}.</>
         : <>The request leaves for {SHOP}. {o.cookieSent ? <><span className="hl hi">Your cookie is attached.</span> </> : null}{cookieReason(c, o.cookieSent)}</>;
     default:
-      return replyCaption(o);
+      return replyCaption(o, c.kind === 'link');
   }
 }
 

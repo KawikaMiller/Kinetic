@@ -20,8 +20,19 @@ describe('a credential and the lesson clock', () => {
 });
 
 describe('exposure of the three credential styles', () => {
-  it('the role stops working on its own: leak time plus exposure is the lifetime', () => {
-    for (let leak = 0; leak < ROLE_MINUTES; leak++) expect(leak + exposures(leak, DEFAULT_ROTATION_MIN).role).toBe(ROLE_MINUTES);
+  it('the role stops working on its own: a copy dies when the session it came from ends, for every leak time on the clock', () => {
+    for (let leak = 1; leak <= 55; leak++) {
+      const role = exposures(leak, DEFAULT_ROTATION_MIN).role;
+      expect(role).toBeGreaterThan(0);
+      expect(role).toBeLessThanOrEqual(ROLE_MINUTES);
+      expect((leak + role) % ROLE_MINUTES).toBe(0);
+      expect(leak + role).toBe((Math.floor(leak / ROLE_MINUTES) + 1) * ROLE_MINUTES);
+    }
+  });
+
+  it('a role copy made after the first session is still live, matching the back-to-back sessions in the lane (the old model said 0)', () => {
+    expect(exposures(20, 10).role).toBe(10);
+    expect(exposures(15, 10).role).toBe(ROLE_MINUTES);
   });
 
   it('the long-lived key stays valid far beyond anything on the clock', () => {
@@ -89,12 +100,12 @@ describe('lane bars', () => {
     }
   });
 
-  it('the copy in the role and vault lanes ends exactly leak + exposure from the model', () => {
-    for (let leak = 1; leak < 15; leak++) {
+  it('the copy in the role and vault lanes ends exactly leak + exposure from the model, for every leak time on the slider', () => {
+    for (let leak = 1; leak <= 55; leak++) {
       const e = exposures(leak, 10);
       const end = (lane: string) => laneBars(leak, 10, leak).find((b) => b.lane === lane && b.tone !== 'info')!.end;
-      expect(end('role')).toBe(leak + e.role);
-      expect(end('vault')).toBe(leak + e.vault);
+      expect(end('role')).toBe(Math.min(leak + e.role, 60));
+      expect(end('vault')).toBe(Math.min(leak + e.vault, 60));
     }
   });
 });
