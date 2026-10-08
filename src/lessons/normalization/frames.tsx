@@ -36,7 +36,7 @@ export function anomalyCaption(stage: StageId, id: AnomalyId, run: AnomalyRun = 
       const others = run.inconsistent.size - 1;
       return run.ok
         ? <>At {at}, Ada's email lives in one row, so changing it there changes it everywhere: <span className="hl ok">no update anomaly</span>.</>
-        : <>The app changed Ada's email to {code(NEW_EMAIL)} in one row, but {plural(others, 'other copy', 'other copies')} still say the old one: the
+        : <>The app changed Ada's email to {code(NEW_EMAIL)} in one row, but {plural(others, 'other copy', 'other copies')} still {others === 1 ? 'says' : 'say'} the old one: the
           database now <span className="hl bad">disagrees with itself</span> (an update anomaly). Every copy must be found and changed, every time.</>;
     }
     case 'delete':

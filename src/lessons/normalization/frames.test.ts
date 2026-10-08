@@ -32,3 +32,10 @@ describe('anomaly captions, every stage x anomaly', () => {
         if (a.id === 'update' && !run.ok) expect(say).toMatch(new RegExp(`${run.inconsistent.size - 1} other cop`));
       });
 });
+
+describe('number agreement in the update caption', () => {
+  it('1 other copy still says; 2 other copies still say', () => {
+    expect(text(anomalyCaption(2, 'update'))).toMatch(/1 other copy still says the old one/);
+    expect(text(anomalyCaption(1, 'update'))).toMatch(/2 other copies still say the old one/);
+  });
+});
