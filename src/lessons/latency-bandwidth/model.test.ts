@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BANDWIDTH_STOPS, CHATTY_CALLS, CHATTY_EACH, GB, GBIT, KB, MB, MBIT, NEW_CONNECTION_RTTS, PIPE_SLOTS, RTT_STOPS, WINDOW_STOPS, bdp, blockBytes,
+  BANDWIDTH_STOPS, blockShare, CHATTY_CALLS, CHATTY_EACH, GB, GBIT, KB, MB, MBIT, NEW_CONNECTION_RTTS, PIPE_SLOTS, RTT_STOPS, WINDOW_STOPS, bdp, blockBytes,
   blocksInFlight, chattyVsBatched, createPipe, nearestStop, rateText, sizeText, stepPipe, throughput, timeText, transferTime, type Link,
 } from './model';
 
@@ -137,6 +137,15 @@ describe('the drawn pipe', () => {
           }
           expect(Math.abs(peak - Math.min(PIPE_SLOTS, window / blockBytes(l)))).toBeLessThanOrEqual(1);
         }
+  });
+});
+
+describe('a window smaller than one drawn block', () => {
+  it('draws a share of a block, never a whole one bigger than the window', () => {
+    const l = { rtt: 0.08, bandwidth: GBIT, window: 64 * KB };
+    expect(blockShare(l)).toBeCloseTo((64 * KB) / ((10 * MB) / PIPE_SLOTS), 9);
+    expect(blockShare(l)).toBeLessThan(1);
+    expect(blockShare({ ...l, window: 20 * MB })).toBe(1);
   });
 });
 

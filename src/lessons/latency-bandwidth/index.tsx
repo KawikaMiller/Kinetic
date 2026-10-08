@@ -14,10 +14,10 @@ const lesson: LessonModule = {
       'Reading a waterfall chart: which requests wait on round trips and which on bytes',
     ],
     why: 'The usual fix for "it\'s slow" is "buy more bandwidth", and for most API traffic it does nothing, because the time goes on round trips. Knowing when you\'re latency-bound (batch, cache, move closer) and when you\'re bandwidth-bound (compress, bigger pipe), and checking the window against the BDP, saves weeks of guessing. It builds on `tcp-udp` and `memory-hierarchy`.',
-    watch: 'The pipe: a sender box on the left, a receiver on the right, and a pipe between whose length is the RTT and whose thickness is the bandwidth (both on log scales). Blue blocks are data in flight along the top lane, violet bars are ACKs returning along the bottom lane, and the dim grey part of the pipe is empty, unused capacity. The labels give the RTT, the bandwidth, and how many bytes one block stands for. Above it, the BDP readout is yellow and the throughput turns green when it reaches the link\'s full rate. In the plot, the blue curve is throughput against window size (both axes log), the green dashed line the bandwidth ceiling, the yellow dashed line the BDP, and the yellow dot your window. Transfer time: each file size has a bar split into amber (waiting on round trips) and sky blue (bytes on the wire), with its total and an amber "latency-bound" or blue "bandwidth-bound" chip. Chatty vs batched: on a time axis, the chatty lane is a run of red hatched segments, one round trip per call, and the batched lane one green bar; the totals above are red and green.',
+    watch: 'The pipe: a sender box on the left, a receiver on the right, and a pipe between whose length is the RTT and whose thickness is the bandwidth (both on log scales). Blue blocks are data in flight along the top lane, violet bars are ACKs returning along the bottom lane, and the dim grey part of the pipe is empty, unused capacity. The labels give the RTT, the bandwidth, and how many bytes one block stands for; a window smaller than one block draws as a thinner, partial block and the label gives its share. Above it, the BDP readout is yellow and the throughput turns green when it reaches the link\'s full rate. In the plot, the blue curve is throughput against window size (both axes log), the green dashed line the bandwidth ceiling, the yellow dashed line the BDP (a note says when it falls off the scale), and the yellow dot your window. Transfer time: each file size has a bar split into amber (waiting on round trips) and sky blue (bytes on the wire), with its total and an amber "latency-bound" or "window-limited" (stalled waiting on ACKs) or a blue "bandwidth-bound" chip. Chatty vs batched: on a time axis, the chatty lane is a run of red hatched segments, one round trip per call, and the batched lane one green bar; the totals above are red and green.',
   },
   tryThis: [
-    'In The pipe, drag the window down from 5 MB to 64 KB on Cross-continent and watch the pipe empty out and the throughput drop.',
+    'In The pipe, drag the window down from 20 MB to 2 MB on Cross-continent and watch the pipe empty out and the throughput drop.',
     'Pick Same rack, then Satellite (GEO): how big a window does each need to fill the pipe?',
     'In Transfer time, compare 10 KB and 1 GB, then double the bandwidth: which one cares?',
     'In Chatty vs batched, drag the bandwidth all the way up. Then drag the RTT down instead.',
@@ -44,7 +44,7 @@ const lesson: LessonModule = {
       q: 'A 1 Gbit/s path has an 80 ms round trip. How many bytes must be in flight to keep it busy?',
       options: ['10 MB', '80 MB', '1.25 MB', '100 KB'],
       answer: 0,
-      why: 'Bandwidth × RTT = 1,000,000,000 bits/s × 0.08 s = 80,000,000 bits, and ÷ 8 that is 10 MB. 80 MB forgets to turn bits into bytes, and 1.25 MB is one millisecond\'s worth, not 80.',
+      why: 'Bandwidth × RTT = 1,000,000,000 bits/s × 0.08 s = 80,000,000 bits, and ÷ 8 that is 10 MB. 80 MB forgets to turn bits into bytes, and 1.25 MB divides by 8 twice (10 MB ÷ 8).',
     },
     {
       q: 'The same 1 Gbit/s, 80 ms path, but the sender\'s window is 64 KB. Roughly what throughput does it get?',

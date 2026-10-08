@@ -2,7 +2,7 @@ import { FONT, box, rect, text } from '../../core/canvas';
 import { clamp01, lerp } from '../../core/math';
 import { TOKENS, alpha } from '../../core/palette';
 import {
-  ANIM_RTT_S, BANDWIDTH_STOPS, PIPE_SLOTS, RTT_STOPS, blockBytes, rateText, sizeText, timeText, type Link, type PipeWorld,
+  ANIM_RTT_S, BANDWIDTH_STOPS, PIPE_SLOTS, RTT_STOPS, blockBytes, blockShare, rateText, sizeText, timeText, type Link, type PipeWorld,
 } from './model';
 
 const PAD = 14;
@@ -46,7 +46,9 @@ export function drawPipe(ctx: CanvasRenderingContext2D, w: number, h: number, wo
   ctx.setLineDash([]);
 
   const slotW = g.len / (PIPE_SLOTS / 2);
-  const blockW = Math.max(2, slotW * 0.78);
+  // A window smaller than one block draws that share of a block, never a whole one.
+  const share = blockShare(l);
+  const blockW = Math.max(2, slotW * 0.78 * share);
   // Blocks slide in and out of the pipe's ends, so clip them to it rather than squash them.
   ctx.save();
   ctx.beginPath();
@@ -64,5 +66,6 @@ export function drawPipe(ctx: CanvasRenderingContext2D, w: number, h: number, wo
   text(ctx, `← ACKs`, g.x1 - 4, g.cy + lane + 14, { color: TOKENS.violet, font: LABEL_FONT, align: 'right' });
   text(ctx, `RTT ${timeText(l.rtt)} = length`, mid, PAD + 4, { color: TOKENS.muted, font: LABEL_FONT, align: 'center', baseline: 'top' });
   text(ctx, `${rateText(l.bandwidth)} = thickness (both log scale)`, w / 2, h - PAD - 16, { color: TOKENS.muted, font: LABEL_FONT, align: 'center' });
-  text(ctx, `1 block = ${sizeText(blockBytes(l))} · slowed: 1 round trip = ${ANIM_RTT_S} s`, w / 2, h - PAD, { color: TOKENS.faint, font: LABEL_FONT, align: 'center' });
+  const blockNote = share < 1 ? `window = ${Math.max(1, Math.floor(share * 100))}% of one ${sizeText(blockBytes(l))} block` : `1 block = ${sizeText(blockBytes(l))}`;
+  text(ctx, `${blockNote} · slowed: 1 round trip = ${ANIM_RTT_S} s`, w / 2, h - PAD, { color: TOKENS.faint, font: LABEL_FONT, align: 'center' });
 }

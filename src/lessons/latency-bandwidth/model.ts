@@ -103,6 +103,17 @@ export const SIZES = [
 export const CHATTY_CALLS = 100;
 export const CHATTY_EACH = 2 * KB;
 
+/** The link every scene starts on: cross-continent, with a window above its 10 MB BDP so transfers can be bandwidth-bound. */
+export const DEFAULT_LINK: Link = { rtt: 0.08, bandwidth: GBIT, window: 20 * MB };
+/** Chatty vs batched has no window slider, so it uses a window big enough never to stall. */
+export const CHATTY_WINDOW = 100 * MB;
+
+/** The verdict a transfer earns: a stalled one is window-limited (round trips waiting on ACKs), not just latency-bound. */
+export function verdictOf(t: TransferTime): 'latency-bound' | 'window-limited' | 'bandwidth-bound' {
+  if (t.dominant === 'bandwidth') return 'bandwidth-bound';
+  return t.stalls > 0 ? 'window-limited' : 'latency-bound';
+}
+
 /** The index of the stop nearest `v` (on a log scale). */
 export const nearestStop = (stops: readonly number[], v: number) =>
   stops.reduce((best, s, i) => (Math.abs(Math.log(s / v)) < Math.abs(Math.log(stops[best] / v)) ? i : best), 0);
@@ -144,7 +155,10 @@ export const ANIM_RTT_S = 2.4;
 
 export const blockBytes = (l: Link) => bdp(l.bandwidth, l.rtt) / PIPE_SLOTS;
 
-/** Blocks the window allows in flight, capped by what the pipe holds. */
+/** How much of one drawn block the window fills (1 when it holds at least a block): under 1, the pipe draws a partial block. */
+export const blockShare = (l: Link) => Math.min(1, l.window / blockBytes(l));
+
+/** Blocks the window allows in flight, capped by what the pipe holds (at least one, drawn partial when blockShare < 1). */
 export const blocksInFlight = (l: Link) => Math.min(PIPE_SLOTS, Math.max(1, Math.round(l.window / blockBytes(l))));
 
 export interface Block {

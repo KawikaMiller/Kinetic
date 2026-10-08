@@ -11,7 +11,7 @@ import { useSimulation } from '../../core/useSimulation';
 import { drawPipe } from './draw';
 import { chattyCaption, pipeCaption, shareText, transferCaption } from './frames';
 import {
-  BANDWIDTH_STOPS, CHATTY_CALLS, CHATTY_EACH, NEW_CONNECTION_RTTS, PRESETS, RTT_STOPS, SIZES, WINDOW_STOPS, bdp, blocksInFlight, chattyVsBatched,
+  BANDWIDTH_STOPS, CHATTY_CALLS, CHATTY_WINDOW, DEFAULT_LINK, verdictOf, CHATTY_EACH, NEW_CONNECTION_RTTS, PRESETS, RTT_STOPS, SIZES, WINDOW_STOPS, bdp, blocksInFlight, chattyVsBatched,
   createPipe, nearestStop, rateText, sizeText, stepPipe, throughput, timeText, transferTime, windowLimited, type Link,
 } from './model';
 import './styles.css';
@@ -23,7 +23,9 @@ const SCENES: { value: SceneId; label: string }[] = [
   { value: 'chatty', label: 'Chatty vs batched' },
 ];
 const HONEST = 'Idealised link: no loss, no congestion control, a fixed window. Every number is computed from the sliders.';
-const DEFAULT = { rtt: nearestStop(RTT_STOPS, 0.08), bw: nearestStop(BANDWIDTH_STOPS, 1e9), win: nearestStop(WINDOW_STOPS, 5e6) };
+const DEFAULT = {
+  rtt: nearestStop(RTT_STOPS, DEFAULT_LINK.rtt), bw: nearestStop(BANDWIDTH_STOPS, DEFAULT_LINK.bandwidth), win: nearestStop(WINDOW_STOPS, DEFAULT_LINK.window),
+};
 
 interface LinkControls {
   link: Link;
@@ -139,6 +141,7 @@ function ThroughputPlot({ link }: { link: Link }) {
         <Curve fn={fn} tone="info" />
         <Points data={[{ x: link.window, y: throughput(link) }]} tone="hi" />
       </Plot2D>
+      {(b < lo || b > hi) && <Hint block>The BDP ({sizeText(b)}) is off this scale, {b < lo ? 'left of 1 KB: any window fills this pipe' : `right of ${sizeText(hi)}: no window on the slider fills it`}.</Hint>}
     </div>
   );
 }
@@ -170,9 +173,7 @@ function TransferScene({ picker, idx, setIdx }: SceneProps) {
                   <span className="lb-seg tone-sky" style={{ width: `${100 - lat}%` }} />
                 </div>
                 <span className="lb-total">{timeText(t.total)}</span>
-                <span className={`chip lb-verdict tone-${t.dominant === 'latency' ? 'amber' : 'sky'}`}>
-                  {t.dominant === 'latency' ? 'latency-bound' : 'bandwidth-bound'}
-                </span>
+                <span className={`chip lb-verdict tone-${t.dominant === 'latency' ? 'amber' : 'sky'}`}>{verdictOf(t)}</span>
                 <span className="lb-detail">
                   {t.roundTrips.toLocaleString('en-US')} round trips{t.stalls ? ` (${t.stalls.toLocaleString('en-US')} window stalls)` : ''} + {timeText(t.serialization)} on the wire
                 </span>
@@ -192,7 +193,8 @@ function TransferScene({ picker, idx, setIdx }: SceneProps) {
 // ── Chatty vs batched ───────────────────────────────────────────────────
 
 function ChattyScene({ picker, idx, setIdx }: SceneProps) {
-  const { link, controls } = useLink(picker, idx, setIdx, false);
+  const { link: sliders, controls } = useLink(picker, idx, setIdx, false);
+  const link = { ...sliders, window: CHATTY_WINDOW };
   const r = chattyVsBatched(CHATTY_CALLS, CHATTY_EACH, link);
   useIntroCaption(chattyCaption(link), [link.rtt, link.bandwidth]);
   const one = r.one.total;
@@ -224,7 +226,7 @@ function ChattyScene({ picker, idx, setIdx }: SceneProps) {
           labelWidth={72}
           ariaLabel={`${CHATTY_CALLS} sequential calls take ${timeText(r.chatty)}; one batched call takes ${timeText(r.batched)}`}
         />
-        <Hint block>To scale: each red segment is one call ({timeText(one)}: a round trip plus {timeText(r.one.serialization)} of bytes). {HONEST}</Hint>
+        <Hint block>This scene assumes a window big enough that no call ever stalls ({sizeText(CHATTY_WINDOW)}), so only RTT and bandwidth matter. To scale: each red segment is one call ({timeText(one)}: a round trip plus {timeText(r.one.serialization)} of bytes). {HONEST}</Hint>
       </div>
     </StageFrame>
   );
