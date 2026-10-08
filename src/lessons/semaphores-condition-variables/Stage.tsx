@@ -143,7 +143,8 @@ function Buffer({ f, c }: { f: ScFrame; c: Config }) {
       <SectionTitle hint={`count ${Math.max(0, f.count)} of ${c.capacity}`}>Buffer</SectionTitle>
       <ArrayStrip
         values={f.slots.map((s) => s ?? '')}
-        cellState={(i) => (i === bad ? 'bad' : f.slots[i] ? 'info' : 'idle')}
+        cellState={(i) => (i === bad ? 'bad' : 'idle')}
+        cellTone={(i) => (i !== bad && f.slots[i] ? { tone: 'info', fill: 'solid' } : null)}
         pointers={
           f.head === f.tail
             ? [{ i: f.head, label: 'head = tail', tone: 'violet', id: 'head' }]

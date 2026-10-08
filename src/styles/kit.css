@@ -428,6 +428,19 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   border-color: color-mix(in srgb, var(--range-c, var(--hi)) 30%, transparent);
 }
 .array-cell.is-dim { opacity: 0.28; background: var(--dim); border-color: transparent; }
+/* cellTone: a flat colour from the cell's .tone-* (--c). Before the lift rules, so a lift state wins. */
+.array-cell.fill-tint { background: color-mix(in srgb, var(--c) 22%, var(--cell)); color: var(--text); border-color: var(--c); }
+.array-cell.fill-solid { background: var(--c); color: var(--on-c); border-color: var(--c); }
+.array-cell-ring {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  box-sizing: border-box;
+  border: 2px solid var(--c);
+  border-radius: 5px;
+}
+.array-cell:is(.is-active, .is-info, .is-violet) .array-cell-ring { border-color: var(--on-c); }
 /* Lifted cells: active (--hi, being checked), info (a second pointer), violet (a third role). */
 .array-cell.is-active { --c: var(--hi); --on-c: var(--on-hi); }
 .array-cell.is-info { --c: var(--info); --on-c: var(--on-info); }
