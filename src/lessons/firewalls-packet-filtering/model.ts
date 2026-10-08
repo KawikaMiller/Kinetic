@@ -202,8 +202,8 @@ const stateCovers = (a: StateMatch, b: StateMatch) => a === 'any' || a === b;
 export const covers = (a: Rule, b: Rule) => netCovers(a.src, b.src) && portCovers(a.dport, b.dport) && protoCovers(a.proto, b.proto) && stateCovers(a.state, b.state);
 
 /**
- * Rules that can never take effect: an earlier enabled rule matches a superset of their
- * packets with a different action. Returns, per rule index, the index of the rule hiding it.
+ * Rules that can never take effect: the first earlier enabled rule matching a superset of
+ * their packets has a different action. Returns, per rule index, the index of the rule hiding it.
  * Without tracking, a rule that matches on state never fires, so it hides nothing.
  */
 export function shadowed(rules: readonly Rule[], tracking = true): Map<number, number> {
@@ -212,11 +212,11 @@ export function shadowed(rules: readonly Rule[], tracking = true): Map<number, n
     if (!b.enabled) return;
     for (let i = 0; i < j; i++) {
       const a = rules[i];
-      if (!tracking && a.state !== 'any') continue;
-      if (a.enabled && a.action !== b.action && covers(a, b)) {
-        out.set(j, i);
-        return;
-      }
+      if (!a.enabled || (!tracking && a.state !== 'any') || !covers(a, b)) continue;
+      // The first earlier rule covering j takes all of j's packets: j is shadowed if that rule acts differently
+      // (same action: merely redundant, not flagged).
+      if (a.action !== b.action) out.set(j, i);
+      return;
     }
   });
   return out;
@@ -282,7 +282,7 @@ const pk = (id: string, dir: Packet['dir'], src: number, sport: number, dst: num
 const OUTBOUND: Packet[] = [
   pk('out', 'out', SERVER, OUT_PORT, UPDATES, 443, 'SYN', 'the server fetches updates'),
   pk('reply', 'in', UPDATES, 443, SERVER, OUT_PORT, 'SYN,ACK', 'the update server replies'),
-  pk('stray', 'in', OTHER, 443, SERVER, OUT_PORT, 'SYN,ACK', 'an unrelated host aims at the same port'),
+  pk('stray', 'in', OTHER, 443, SERVER, OUT_PORT, 'SYN', 'an unrelated host tries to open the same port'),
 ];
 
 export const ESTABLISHED_RULE = (id = 'est') => rule(id, 'ACCEPT', { state: 'ESTABLISHED,RELATED', note: 'replies to flows we know' });

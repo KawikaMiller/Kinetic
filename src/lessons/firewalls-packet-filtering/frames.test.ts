@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
-import { introText, streamFrames } from './frames';
+import { introText, outcomeText, streamFrames } from './frames';
 import { BROAD_RETURN_RULE, PRESETS, cloneRules, runStream } from './model';
 
 const text = (n: Parameters<typeof captionText>[0]) => {
@@ -48,4 +48,13 @@ describe('every caption is true, for every preset × tracking × broad rule', ()
           });
         });
       }
+});
+
+describe('REJECT is described as iptables does it (review fix)', () => {
+  it('the default answer is ICMP port unreachable; a TCP RST needs tcp-reset; both read as connection refused', () => {
+    const say = captionText(outcomeText('REJECT')).replace(/\s+/g, ' ');
+    expect(say).toContain('ICMP "port unreachable"');
+    expect(say).toContain('--reject-with tcp-reset');
+    expect(say).toContain('connection refused');
+  });
 });

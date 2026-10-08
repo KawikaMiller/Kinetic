@@ -207,7 +207,7 @@ const Y = 48;
 const AT = { remote: { x: 80, y: Y }, fw: { x: 340, y: Y }, server: { x: 600, y: Y } };
 const NODE = { w: 132, h: 50 };
 /** Where pills wait: in the gaps either side of the firewall box, never over a label. */
-const GAP = { outside: { x: 210, y: Y }, inside: { x: 470, y: Y }, back: { x: 196, y: Y }, gate: { x: 262, y: Y } };
+const GAP = { outside: { x: 210, y: Y }, inside: { x: 470, y: Y }, back: { x: 218, y: Y }, gate: { x: 262, y: Y } };
 
 function ClientLane({ frame, step }: { frame: FwFrame; step: StreamStep | null }) {
   const p = step?.packet;
@@ -227,7 +227,7 @@ function ClientLane({ frame, step }: { frame: FwFrame; step: StreamStep | null }
     pill = <PacketPill key={`a${frame.k}`} path={[GAP.outside, GAP.inside]} label={label} color="var(--ok)" arrive="stay" duration={0.8} />;
     note = 'let in';
   } else if (p && action === 'REJECT') {
-    pill = <PacketPill key={`r${frame.k}`} path={[GAP.gate, GAP.back]} label="RST" color="var(--orange)" arrive="stay" duration={0.8} />;
+    pill = <PacketPill key={`r${frame.k}`} path={[GAP.gate, GAP.back]} label="ICMP unreachable" color="var(--orange)" arrive="stay" duration={0.8} />;
     note = 'client: connection refused (at once)';
   } else if (p && action === 'DROP') {
     note = 'client: no answer… retries, then a timeout';

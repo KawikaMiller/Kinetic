@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Reviewing a rule set for shadowed rules that can never fire',
     ],
     why: "Firewall rules are some of the first infrastructure you'll edit, and the classic mistakes are all here: a broad rule above a specific one, a stateless rule set that opens every high port to let replies in, and DROP where REJECT would have made debugging obvious. Knowing first-match order and what conntrack does lets you read a rule set and predict it. It builds on `subnetting-cidr`, `ip-ports`, `tcp-udp` and `security-principles`.",
-    watch: 'The rule list has one row per rule: number, chain, source CIDR, destination port, protocol, state and action; the action word is always coloured green (ACCEPT), red (DROP) or orange (REJECT), and the selected rule\'s number is purple. While a packet walks the list, the rule being checked has a yellow tint and bar, rules it has passed turn faint grey with a dim bar, and the rule that matched is tinted green, red or orange for its action; rules below it fade (never reached), and switched-off rules are faded too. An orange "shadowed by rule n" chip marks a rule an earlier one hides, and grey italic notes say what each rule is for. The violet dashed line is the default policy, filled in when it decides. The client lane shows the remote host, the firewall (lit while checking) and our server as grey boxes: a blue pill is the packet, green when it is let through to the server, an orange RST pill bounces back for a REJECT, and a red ✕ marks a DROP, with the client\'s view written underneath in the same colour. The connection table lists tracked flows with their state in blue, and the row a packet just created or updated is tinted blue. The orange chip adds the broad return rule in stateless mode.',
+    watch: 'The rule list has one row per rule: number, chain, source CIDR, destination port, protocol, state and action; the action word is always coloured green (ACCEPT), red (DROP) or orange (REJECT), and the selected rule\'s number is purple. While a packet walks the list, the rule being checked has a yellow tint and bar, rules it has passed turn faint grey with a dim bar, and the rule that matched is tinted green, red or orange for its action; rules below it fade (never reached), and switched-off rules are faded too. An orange "shadowed by rule n" chip marks a rule an earlier one hides, and grey italic notes say what each rule is for. The violet dashed line is the default policy, filled in when it decides. The client lane shows the remote host, the firewall (lit while checking) and our server as grey boxes: a blue pill is the packet, green when it is let through to the server, an orange "ICMP unreachable" pill bounces back for a REJECT, and a red ✕ marks a DROP, with the client\'s view written underneath in the same colour. The connection table lists tracked flows with their state in blue, and the row a packet just created or updated is tinted blue. The orange chip adds the broad return rule in stateless mode.',
   },
   tryThis: [
     'Load The shadowed rule and play: why is the office SSH packet dropped? Select rule 3 and press Move up, then play again.',
@@ -39,13 +39,13 @@ const lesson: LessonModule = {
         'The default policy decides between the two',
       ],
       answer: 0,
-      why: 'iptables-style filters stop at the first match, so rule 3 can never fire for SSH: it is shadowed. "The most specific rule wins" is the tempting answer, and it is how routing tables work, not packet filters. Moving rule 3 above rule 2 fixes it.',
+      why: 'iptables-style filters stop at the first match, so rule 3 can never fire for SSH: it is shadowed. "The most specific rule wins" is the tempting answer, and it is how routing tables work, not iptables-style filters (pf, for one, uses the last match unless a rule says quick). Moving rule 3 above rule 2 fixes it.',
     },
     {
       q: 'A client trying a firewalled port gets "connection refused" straight away. Which action did the matching rule use?',
       options: ['REJECT', 'DROP', 'ACCEPT', 'LOG'],
       answer: 0,
-      why: 'REJECT discards the packet but answers with a TCP RST or an ICMP "port unreachable", so the client fails fast. DROP sends nothing back, so the client waits and reports a timeout instead. LOG only records the packet and lets checking carry on.',
+      why: 'REJECT discards the packet but answers, with an ICMP "port unreachable" by default or a TCP RST with tcp-reset, so the client fails fast. DROP sends nothing back, so the client waits and reports a timeout instead. LOG only records the packet and lets checking carry on.',
     },
     {
       q: "Your server's INPUT policy is DROP. On a stateful firewall, why do replies to its own outbound HTTPS calls get in?",

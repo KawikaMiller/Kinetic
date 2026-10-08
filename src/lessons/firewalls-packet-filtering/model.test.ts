@@ -111,7 +111,9 @@ describe('the shadowing detector', () => {
       const rules = Array.from({ length: randInt(2, 6, rnd) }, (_, k) => randomRule(rnd, k));
       const got = shadowed(rules);
       rules.forEach((b, j) => {
-        const by = rules.findIndex((a, i) => i < j && a.enabled && b.enabled && a.action !== b.action && bruteCovers(a, b));
+        // The first earlier enabled rule covering j decides j's packets; j is shadowed when it acts differently.
+        const first = b.enabled ? rules.findIndex((a, i) => i < j && a.enabled && bruteCovers(a, b)) : -1;
+        const by = first >= 0 && rules[first].action !== b.action ? first : -1;
         expect(got.get(j) ?? -1, `rule ${j} of ${JSON.stringify(rules)}`).toBe(by);
         if (by >= 0) flagged++;
       });
@@ -124,6 +126,13 @@ describe('the shadowing detector', () => {
     expect([...shadowed(rules)]).toEqual([[2, 1]]);
     [rules[1], rules[2]] = [rules[2], rules[1]];
     expect(shadowed(rules).size).toBe(0);
+  });
+
+  it('names the rule that really hides it: an earlier same-action rule makes it redundant, not shadowed by a later one', () => {
+    const allSsh = (id: string, action: Action, src: Net | null = null): Rule => ({ id, enabled: true, src, dport: { lo: 22, hi: 22 }, proto: 'tcp', state: 'any', action });
+    const office = parseSource('198.51.100.0/24');
+    if (!office.ok) throw new Error('cidr');
+    expect([...shadowed([allSsh('a', 'ACCEPT'), allSsh('b', 'DROP'), allSsh('c', 'ACCEPT', office.value)])]).toEqual([[1, 0]]);
   });
 
   it('without tracking, a state rule hides nothing (it can never fire)', () => {

@@ -42,7 +42,7 @@ export function outcomeText(a: Action): ReactNode {
   if (a === 'DROP')
     return <><span className="hl bad">DROP</span>: thrown away silently. The client hears nothing, so it retries and eventually reports a{' '}
       <b>timeout</b>, the same as a dead host or a cut cable.</>;
-  return <><span className="hl orange">REJECT</span>: the firewall answers (a TCP RST, or an ICMP "port unreachable"), so the client fails at
+  return <><span className="hl orange">REJECT</span>: the firewall answers with an ICMP "port unreachable" (iptables' default; <code>--reject-with tcp-reset</code> sends a TCP RST instead), so the client fails at
     once with <b>connection refused</b>.</>;
 }
 
