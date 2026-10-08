@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Watch a handful of real people try real tasks: what they do shows you problems that opinions and surveys never will, and the first few participants find most of the common ones.',
-    what: 'A usability test gives participants a task and watches where they hesitate, click the wrong thing, backtrack or give up, ideally while they think aloud. Each problem is found by only some of the participants, so every new participant finds fewer new problems than the last. Nielsen and Landauer modelled this as 1 − (1 − L)ⁿ, where L is the chance that a participant meets a given problem; with their average of 0.31, five participants find about 84% of the problems. Other methods answer other questions: a survey shows what people say, analytics shows what happened but not why, and a moderated test shows why. Leading questions and helping the participant make a test look better than the product is.',
+    what: 'A usability test gives participants a task and watches where they hesitate, click the wrong thing, backtrack or give up, ideally while they think aloud. Each problem is found by only some of the participants, so on average every new participant finds fewer new problems than the last. Nielsen and Landauer modelled this as 1 − (1 − L)ⁿ, where L is the chance that a participant meets a given problem; with their average of 0.31, five participants find about 84% of the problems. Other methods answer other questions: a survey shows what people say, analytics shows what happened but not why, and a moderated test shows why. Leading questions and helping the participant make a test look better than the product is.',
     analogy: 'Watching someone try to open a door. Asking whether the door is easy to open gets a polite "yes". Watching shows them pushing a pull handle, looking round, then asking someone. The second tells you what to fix.',
     useCases: [
       'Finding the confusing button, label or step in a checkout, sign-up or settings flow before launch',
@@ -20,12 +20,12 @@ const lesson: LessonModule = {
     'In Sessions, press play with Replay P1. Where does P1 hesitate, what do they say, and how much longer than the 19 s of a participant who meets no problem?',
     'With 5 participants, which of the three problems are found? Then open How many users: after how many participants is the third one found, and why so late?',
     'Back in Sessions, turn on Leading questions, then reset it and turn on Helping the participant. How does Bought the mug change, and which rows are flagged?',
-    'In How many users, drag L from 0.31 down to 0.10. How many participants does the model now need to reach 85%?',
+    'In How many users, drag L from 0.31 down to 0.10. How many participants does the model now need to reach 80%?',
     'In Which method, step through Survey, Analytics and Moderated test. Which one tells you why people typed a card number into the coupon box?',
   ],
   keyIdeas: [
     'What people do beats what they say: watch them attempt a real task and listen to them think aloud.',
-    'Each new participant finds fewer new problems: 1 − (1 − L)ⁿ, with L around 0.31 on average, so five participants find about 84%.',
+    'On average each new participant finds fewer new problems: 1 − (1 − L)ⁿ, with L around 0.31 on average, so five participants find about 84%.',
     'That 31% is an average, not a law: a problem met by 1 user in 10 usually needs many more participants, or another round.',
     'Leading questions and helping the participant inflate success: flag those sessions and report the unbiased ones separately.',
   ],

@@ -19,10 +19,11 @@ export const FOREGROUND: Record<Platform, StateId> = { android: 'Resumed', ios: 
 /** States with no running process: nothing of the app is in memory. */
 export const DEAD_STATES: readonly StateId[] = ['Destroyed', 'Not running'];
 
-export type EventId = 'call' | 'home' | 'wait' | 'rotate' | 'lowmem' | 'return';
+export type EventId = 'call' | 'dialog' | 'home' | 'wait' | 'rotate' | 'lowmem' | 'return';
 
 export const EVENT_LABEL: Record<EventId, string> = {
   call: 'Incoming call',
+  dialog: 'Permission dialog',
   home: 'Home button',
   wait: 'Time passes',
   rotate: 'Rotate the screen',
@@ -32,11 +33,14 @@ export const EVENT_LABEL: Record<EventId, string> = {
 
 /** Which buttons a platform has: iOS suspends a backgrounded app after a while, Android has no such state. */
 export const EVENTS: Record<Platform, readonly EventId[]> = {
-  android: ['call', 'home', 'rotate', 'lowmem', 'return'],
+  android: ['dialog', 'home', 'rotate', 'lowmem', 'return'],
   ios: ['call', 'home', 'wait', 'rotate', 'lowmem', 'return'],
 };
 
-/** The callback in which an app that wants to keep its draft writes it down before it can be killed. */
+/**
+ * The callback in which an app that wants to keep its draft writes it down before it can be killed.
+ * `onSaveInstanceState` runs after `onStop` from Android 9 (API 28); before that it ran before `onStop`.
+ */
 export const SAVE_CALLBACK: Record<Platform, string> = { android: 'onSaveInstanceState', ios: 'sceneDidEnterBackground' };
 
 export interface Rule {
@@ -56,7 +60,7 @@ type Table = Partial<Record<StateId, Partial<Record<EventId, Rule>>>>;
 
 const ANDROID_TABLE: Table = {
   Resumed: {
-    call: { to: 'Paused', via: ['Resumed', 'Paused'], callbacks: ['onPause'], note: 'A full-screen call covers the activity: it is still visible behind it, so it pauses, not stops.' },
+    dialog: { to: 'Paused', via: ['Resumed', 'Paused'], callbacks: ['onPause'], note: 'A dialog takes focus but the activity is still visible behind it, so it pauses, not stops. (A full-screen call would hide it and go on to onStop.)' },
     home: {
       to: 'Stopped', via: ['Resumed', 'Paused', 'Stopped'], callbacks: ['onPause', 'onStop', 'onSaveInstanceState'],
       note: 'Home hides the activity. It stays in memory, for now.',
@@ -70,9 +74,9 @@ const ANDROID_TABLE: Table = {
   Paused: {
     home: {
       to: 'Stopped', via: ['Paused', 'Stopped'], callbacks: ['onStop', 'onSaveInstanceState'],
-      note: 'Home while the call screen is up: the activity goes the rest of the way to Stopped.',
+      note: 'Home while the dialog is up: the activity goes the rest of the way to Stopped.',
     },
-    return: { to: 'Resumed', via: ['Paused', 'Resumed'], callbacks: ['onResume'], note: 'The call ends and the activity is in front again.' },
+    return: { to: 'Resumed', via: ['Paused', 'Resumed'], callbacks: ['onResume'], note: 'The dialog is dismissed and the activity has focus again.' },
   },
   Stopped: {
     lowmem: {
@@ -154,7 +158,7 @@ export const LINKS: Record<Platform, readonly Link[]> = {
     { from: 'Paused', to: 'Resumed', label: 'onResume' },
     { from: 'Paused', to: 'Stopped', label: 'onStop' },
     { from: 'Stopped', to: 'Started', label: 'onRestart' },
-    { from: 'Stopped', to: 'Destroyed', label: 'killed' },
+    { from: 'Stopped', to: 'Destroyed', label: 'onDestroy / killed' },
     { from: 'Destroyed', to: 'Created', label: 'onCreate' },
   ],
   ios: [
@@ -191,7 +195,7 @@ export interface Phone {
   gone: string;
   /** Which activity or scene instance is on screen; a new one is a recreation or a relaunch. */
   instance: number;
-  /** Disk or state writes so far. */
+  /** Disk writes and saved-state writes so far. */
   writes: number;
   /** Text that was in memory and did not come back on the last restore: the loss the learner should see. */
   lost: string;

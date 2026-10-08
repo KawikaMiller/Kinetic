@@ -20,7 +20,7 @@ const PLATFORM_OPTIONS: { value: Platform; label: string }[] = [
 const STRATEGY_OPTIONS = (Object.keys(STRATEGY_LABEL) as Strategy[]).map((value) => ({ value, label: STRATEGY_LABEL[value] }));
 const LOG_LINES = 8;
 const NOUN: Record<Platform, string> = { android: 'activity', ios: 'scene' };
-/** Disk writes at which the meter reads as costly. */
+/** Saves (disk or saved state) at which the meter reads as costly. */
 const WRITES_WARN = 8;
 const WRITES_BAD = 20;
 const WRITES_MAX = 40;
@@ -90,8 +90,8 @@ export function LifecycleScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="State" value={phone.state} />
           <Stat label={`${NOUN[platform]} instance`} value={`#${phone.instance}`} />
-          <Stat label="Disk writes" value={phone.writes}>
-            <Bar value={phone.writes} max={WRITES_MAX} tone={toneFor(phone.writes, { warn: WRITES_WARN, bad: WRITES_BAD })} ariaLabel={`${phone.writes} writes`} />
+          <Stat label="Saves" value={phone.writes}>
+            <Bar value={phone.writes} max={WRITES_MAX} tone={toneFor(phone.writes, { warn: WRITES_WARN, bad: WRITES_BAD })} ariaLabel={`${phone.writes} saves`} />
           </Stat>
         </Stats>
       }
@@ -113,7 +113,7 @@ export function LifecycleScene({ picker }: { picker: ReactNode }) {
         <div className="mal-grid">
           <div className="mal-left">
             <PhoneMock phone={phone} landscape={landscape} online noun={NOUN[platform]} onDraft={type} />
-            <Hint block>Draft limit {DRAFT_MAX} characters. {strategy === 'none' ? 'The draft lives only in memory.' : 'The app writes the draft down, so a kill is survivable.'}</Hint>
+            <Hint block>Draft limit {DRAFT_MAX} characters. {strategy === 'none' ? 'The draft lives only in memory.' : 'The app writes the draft down, so a system kill in the background is survivable.'}</Hint>
           </div>
           <div className="mal-right">
             <Machine platform={platform} phone={phone} last={last} />

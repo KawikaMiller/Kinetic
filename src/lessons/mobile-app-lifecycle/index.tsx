@@ -17,15 +17,15 @@ const lesson: LessonModule = {
     watch: 'The phone on the left is the app; the diagram on the right is the platform\'s real lifecycle. The current state is solid yellow, states the last event passed through are a blue tint with blue arrows, and a killed process is solid red with a red arrow. A lost draft appears struck through in red, and a draft that came back is a green line in the log. In the log, red rows are kills or lost drafts and green rows are restored drafts. In Phone constraints, grey network bars mean offline, green is finished or the cheap side, and red is cut off or the costly side.',
   },
   tryThis: [
-    'With nothing saved, type a draft, press Home, then Low memory, then Return to the app. What came back, and which callback warned the app that it was about to be killed?',
-    'Press Reset, switch The app saves to Save state when leaving, type a draft and repeat the same three events. Then try Persist every keystroke and compare the Disk writes meter.',
+    'With nothing saved, type a draft, press Home, then Low memory, then Return to the app. What came back, and which callback ran at the moment of the kill?',
+    'Press Reset, switch The app saves to Save state when leaving, type a draft and repeat the same three events. Then try Persist every keystroke and compare the Saves meter.',
     'Type a draft with nothing saved and press Rotate the screen on Android, then on iOS. Which platform lost the draft, and which instance number changed?',
     'Switch to iOS and press Home, Time passes, then Low memory. Which callbacks ran at each step, and why can a suspended app not be told anything?',
     'In Phone constraints, run the 45 s task without and then with Save progress as it goes. Then drag Poll every to 1 min and compare it with push.',
   ],
   keyIdeas: [
     'A stopped or suspended app can be killed with no callback: do not wait for a warning, because it may never come.',
-    'Write down what the user would miss in the callback made when the app leaves the screen (`onSaveInstanceState` on Android, `sceneDidEnterBackground` on iOS), and read it back on the next start.',
+    'Write down what the user would miss in the callback made when the app leaves the screen (`onSaveInstanceState` on Android, which since Android 9 runs after `onStop`; `sceneDidEnterBackground` on iOS), and read it back on the next start. `onSaveInstanceState` is for small UI state: write real user data to storage in `onPause` or `onStop`.',
     'Rotation rebuilds an Android activity and drops everything in memory, while iOS resizes the same views.',
     'A phone has a flaky network, a short background budget and a battery: do less work, checkpoint long tasks and prefer push to polling.',
   ],

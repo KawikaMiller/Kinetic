@@ -14,6 +14,12 @@ const SCREEN_OF: Record<StateId, Screen> = {
   'Not running': 'dead', Inactive: 'covered', Active: 'app', Background: 'home', Suspended: 'frozen',
 };
 
+/** What covers the app while it is Paused (Android) or Inactive (iOS). */
+const COVER: Record<PhoneState['platform'], { title: string; note: string }> = {
+  android: { title: 'Permission dialog', note: 'The app is still visible behind it' },
+  ios: { title: 'Incoming call', note: 'The app is still on screen behind it' },
+};
+
 const HOME_NOTE: Record<Screen, string> = {
   app: '',
   covered: '',
@@ -63,7 +69,7 @@ export function PhoneMock({
           <motion.p key={phone.steps} className="mal-lost" animate={shake(phone.lost !== '')} aria-live="polite">
             {phone.lost ? <>Draft lost: <s>{phone.lost}</s></> : ''}
           </motion.p>
-          {screen === 'covered' && <div className="mal-call"><b>Incoming call</b><span>The app is still on screen behind it</span></div>}
+          {screen === 'covered' && <div className="mal-call"><b>{COVER[phone.platform].title}</b><span>{COVER[phone.platform].note}</span></div>}
         </div>
       ) : (
         <div className="mal-home">

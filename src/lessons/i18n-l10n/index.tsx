@@ -20,8 +20,8 @@ const lesson: LessonModule = {
     'In Formats and plurals pick pl-PL and drag the count through 1, 2, 5 and 22. Which category does each use, and when does the English rule write the wrong form?',
     'Pick ar-EG and slide through 0 to 12. How many different categories do you see, and which count is the first "many"?',
     'In Sentences, pick ja-JP with Word order. Which value does the glued version put first, and which does the real message put first?',
-    'In Sentences, switch to A count in a sentence, stay on en-US and set the count to 1, then 2. Where does the fixed text go wrong, and does pl-PL go wrong in the same places?',
-    'In Space and direction pick de-DE and drag the card narrower, then pick ar-EG. What overflows, and which icon row keeps its gap in right-to-left?',
+    'In Sentences, switch to A count in a sentence, stay on en-US and set the count to 1, then 2. Where does the fixed text go wrong, and does pl-PL go wrong in the same places? (Its sample word has the same form for few, many and other, so look at the Formats tab to see where Polish really splits.)',
+    'In Space and direction pick de-DE: the label overflows its fixed 120 px button. Then pick ar-EG: nothing overflows, but which icon row keeps its gap in right-to-left?',
   ],
   keyIdeas: [
     'Format with `Intl` and let the locale decide separators, currency, date order and digits: de-DE writes 1.234,5.',

@@ -96,7 +96,7 @@ export function LayoutScene({ picker, locale, setLocale }: { picker: ReactNode; 
         <div className="i18n-code-row">
           <CodePanel title="The two icon rows" lines={CSS_LINES} gutter="none" />
           <p className="i18n-note">
-            Top row (orange) uses <code>margin-left</code>, bottom row (blue) uses <code>margin-inline-start</code>. {DIRECTION[locale] === 'rtl' && !pseudo ? 'In Arabic the page runs right to left: the physical margin lands on the wrong side and the icon touches its label.' : 'Switch to ar-EG: the page runs right to left and only the logical margin follows.'}
+            Top row (orange) uses <code>margin-left</code>, bottom row (blue) uses <code>margin-inline-start</code>. {DIRECTION[locale] !== 'rtl' ? 'Switch to ar-EG: the page runs right to left and only the logical margin follows.' : pseudo ? 'Turn pseudo-localisation off to see the Arabic layout.' : 'In Arabic the page runs right to left: the physical margin lands on the wrong side and the icon touches its label.'}
           </p>
         </div>
         <Hint block>

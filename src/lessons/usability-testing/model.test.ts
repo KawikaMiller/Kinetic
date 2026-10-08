@@ -229,12 +229,16 @@ describe('Nielsen and Landauer', () => {
     }
   });
 
-  it('a problem that 1 participant in 10 meets takes 15 participants to be found 80% of the time', () => {
-    expect(nielsenLandauer(0.1, 15)).toBeGreaterThan(0.79);
-    expect(nielsenLandauer(0.1, 14)).toBeLessThan(0.79);
+  it('a problem that 1 participant in 10 meets takes 16 participants to be found 80% of the time', () => {
+    expect(nielsenLandauer(0.1, 16)).toBeGreaterThanOrEqual(0.8);
+    expect(nielsenLandauer(0.1, 15)).toBeLessThan(0.8);
   });
 
-  it('needs 6 participants for 85% at L = 0.31, and more for a lower L', () => {
+  it('needs 5 participants for 80% at L = 0.31 (the lesson target), 6 for a strict 85%, and more for a lower L', () => {
+    expect(participantsFor(0.31, 0.8)).toBe(5);
+    expect(nielsenLandauer(0.31, 5)).toBeGreaterThanOrEqual(0.8);
+    expect(nielsenLandauer(0.31, 5)).toBeGreaterThan(0.84);
+    expect(participantsFor(0.1, 0.8)).toBe(16);
     expect(participantsFor(0.31, 0.85)).toBe(6);
     expect(nielsenLandauer(0.31, 6)).toBeGreaterThanOrEqual(0.85);
     expect(nielsenLandauer(0.31, 5)).toBeLessThan(0.85);

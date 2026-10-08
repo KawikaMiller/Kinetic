@@ -52,7 +52,7 @@ const RealList = memo(function RealList({ caption }: { caption: (n: ReactNode) =
     setAdded(added + 1);
     caption(
       keys === 'index' ? (
-        <>With <code>key={'{index}'}</code> React matched rows by position: each row reused the instance that was at its index, input text included. A note typed before now sits beside a different name (red outline).</>
+        <>With <code>key={'{index}'}</code> React matched rows by position: each row reused the instance that was at its index, input text included. If you typed a note before, it now sits beside a different name (red outline).</>
       ) : (
         <>With <code>key={'{item.id}'}</code> each item kept its own row instance, so notes stayed with their names. Only the new row is fresh.</>
       ),
@@ -189,7 +189,7 @@ export function RealReactScene({ picker }: { picker: ReactNode }) {
           <WastedRender caption={setCaption} />
         </div>
         <Hint block>
-          A row's input is uncontrolled: its text lives in the browser's DOM node, and React keeps that node for as long as it keeps the row instance. The key decides which item an instance belongs to.
+          A row's input is uncontrolled: its text lives in the browser's DOM node, and React keeps that node for as long as it keeps the row instance (same key, same position in the same parent, same type). The key decides which item an instance belongs to.
           React runs this list for real here. The counts on the right come from a MutationObserver and from effects, not from the model.
         </Hint>
       </div>

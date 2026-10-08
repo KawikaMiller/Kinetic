@@ -253,7 +253,7 @@ export function RenderScene({ picker }: { picker: ReactNode }) {
             <Hint block>
               {approach === 'signals'
                 ? '×n is how many times a component function re-ran (it never does here); ✎n is how many times its text binding ran. Signals here are this lesson’s own small tested library, not a real framework.'
-                : '×n is how many times each component re-rendered since the last reset. The tree on the left is a model; the counts in the real panel come from real React renders.'}
+                : '×n is how many times each component re-rendered since the last reset. Components that only forward props to their children count as wasted here: they re-ran and drew the same. The tree on the left is a model; the counts in the real panel come from real React renders.'}
             </Hint>
           </div>
           <div className="fs-right">

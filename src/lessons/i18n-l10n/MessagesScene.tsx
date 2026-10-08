@@ -81,7 +81,7 @@ export function MessagesScene({ picker, locale, setLocale }: { picker: ReactNode
           </>
         )}
         <Hint block>
-          The fragments and messages are short samples written for this lesson, not reviewed by translators. Gluing fixes the order of the values and the words around them to English's.
+          The fragments and messages are short samples written for this lesson, not reviewed by translators. Gluing fixes the order of the values and the words around them to English's; the German fragments here are deliberately cut to fit English's shape.
         </Hint>
       </div>
     </StageFrame>

@@ -34,6 +34,7 @@ describe('render captions', () => {
     expect(text).toContain('No component function ran again');
     expect(text).toContain('3 text bindings');
     expect(text).toContain('count and total recomputed once each');
+    expect(text).not.toMatch(/card\d|\be-/);
     expect(captionText(actionCaption('signals', true, THEME, null, createSignalCart().apply(THEME)))).toContain('Nothing was recomputed');
   });
 

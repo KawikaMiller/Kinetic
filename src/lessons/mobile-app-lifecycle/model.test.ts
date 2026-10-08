@@ -66,7 +66,7 @@ describe('the transition tables', () => {
 
   it('pins the callback order the platforms document for the main sequences', () => {
     const run = (p: Platform, from: StateId, e: EventId) => callbackLine(ruleFor({ platform: p, state: from }, e)!);
-    expect(run('android', 'Resumed', 'call')).toBe('onPause');
+    expect(run('android', 'Resumed', 'dialog')).toBe('onPause');
     expect(run('android', 'Resumed', 'home')).toBe('onPause → onStop → onSaveInstanceState');
     expect(run('android', 'Stopped', 'return')).toBe('onRestart → onStart → onResume');
     expect(run('android', 'Destroyed', 'return')).toBe('onCreate → onStart → onRestoreInstanceState → onResume');
@@ -75,6 +75,13 @@ describe('the transition tables', () => {
     expect(run('ios', 'Active', 'home')).toBe('sceneWillResignActive → sceneDidEnterBackground');
     expect(run('ios', 'Background', 'return')).toBe('sceneWillEnterForeground → sceneDidBecomeActive');
     expect(run('ios', 'Not running', 'return')).toBe('scene(_:willConnectTo:options:) → sceneWillEnterForeground → sceneDidBecomeActive');
+  });
+
+  it('only a dialog pauses an Android activity; a call is an iOS Inactive, never an Android event', () => {
+    expect(ruleFor({ platform: 'android', state: 'Resumed' }, 'dialog')!.to).toBe('Paused');
+    expect(ruleFor({ platform: 'android', state: 'Resumed' }, 'call')).toBeNull();
+    expect(EVENTS.android).not.toContain('call');
+    expect(EVENTS.ios).not.toContain('dialog');
   });
 
   it('a kill, and an iOS suspend, run no callback at all', () => {
@@ -87,7 +94,7 @@ describe('the transition tables', () => {
   it('enables exactly these events in every state, and disables the rest', () => {
     const expected: Record<Platform, Record<string, EventId[]>> = {
       android: {
-        Created: [], Started: [], Resumed: ['call', 'home', 'rotate'], Paused: ['home', 'return'], Stopped: ['lowmem', 'return'], Destroyed: ['return'],
+        Created: [], Started: [], Resumed: ['dialog', 'home', 'rotate'], Paused: ['home', 'return'], Stopped: ['lowmem', 'return'], Destroyed: ['return'],
       },
       ios: {
         'Not running': ['return'], Inactive: ['home', 'return'], Active: ['call', 'home', 'rotate'], Background: ['wait', 'lowmem', 'return'], Suspended: ['lowmem', 'return'],
@@ -173,7 +180,7 @@ describe('the draft', () => {
     for (const s of STRATEGIES) {
       expect(go(typed('android', s), s, 'home', 'return').draft).toBe('hi');
       expect(go(typed('ios', s), s, 'home', 'wait', 'return').draft).toBe('hi');
-      expect(go(typed('android', s), s, 'call', 'return').draft).toBe('hi');
+      expect(go(typed('android', s), s, 'dialog', 'return').draft).toBe('hi');
     }
   });
 
@@ -211,7 +218,7 @@ describe('the draft', () => {
 
 describe('every event sequence up to length 4', () => {
   type Op = 'type' | EventId;
-  const OPS: Op[] = ['type', 'call', 'home', 'wait', 'rotate', 'lowmem', 'return'];
+  const OPS: Op[] = ['type', 'call', 'dialog', 'home', 'wait', 'rotate', 'lowmem', 'return'];
 
   function* sequences(max: number): Generator<Op[]> {
     function* grow(prefix: Op[]): Generator<Op[]> {
@@ -261,6 +268,6 @@ describe('every event sequence up to length 4', () => {
         }
       }
     }
-    expect(checked).toBe(2 * 3 * (1 + 7 + 49 + 343 + 2401));
+    expect(checked).toBe(2 * 3 * (1 + 8 + 64 + 512 + 4096));
   });
 });

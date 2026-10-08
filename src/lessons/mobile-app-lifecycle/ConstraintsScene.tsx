@@ -12,7 +12,7 @@ import {
 
 /** One simulated second of background work plays in this many ms, so a 60 s task is over in 3 s. */
 const MS_PER_SIM_SECOND = 50;
-const BATTERY_MAX_PCT = 10;
+const BATTERY_MAX_PCT = 30;
 const SIGNAL_BARS = 4;
 
 const FEED_TEXT = {
@@ -41,6 +41,12 @@ export function ConstraintsScene({ picker }: { picker: ReactNode }) {
   useEffect(() => {
     if (elapsed !== null && elapsed >= finishedAt) setCaption(backgroundCaption(runInBackground(work, checkpointed), work, checkpointed));
   }, [elapsed, finishedAt, work, checkpointed, setCaption]);
+
+  /** A changed setting makes the last result stale: forget the run and its caption. */
+  const resetRun = () => {
+    setElapsed(null);
+    setCaption(CONSTRAINTS_INTRO);
+  };
 
   const goOnline = (value: boolean) => {
     setOnline(value);
@@ -75,8 +81,8 @@ export function ConstraintsScene({ picker }: { picker: ReactNode }) {
           <Button onClick={() => setFeed(refreshFeed(feed, online))}>Refresh</Button>
         </>,
         <>
-          <Slider label="Task needs" value={work} min={WORK_RANGE.min} max={WORK_RANGE.max} step={5} onChange={(v) => { setWork(v); setElapsed(null); }} format={(v) => `${v} s`} />
-          <Toggle label="Save progress as it goes" value={checkpointed} onChange={(v) => { setCheckpointed(v); setElapsed(null); }} />
+          <Slider label="Task needs" value={work} min={WORK_RANGE.min} max={WORK_RANGE.max} step={5} onChange={(v) => { setWork(v); resetRun(); }} format={(v) => `${v} s`} />
+          <Toggle label="Save progress as it goes" value={checkpointed} onChange={(v) => { setCheckpointed(v); resetRun(); }} />
           <Button onClick={() => setElapsed(0)}>Run in the background</Button>
           <Slider label="Poll every" value={pollMin} min={POLL_RANGE.min} max={POLL_RANGE.max} onChange={setPollMin} format={(v) => `${v} min`} />
         </>,
@@ -98,7 +104,7 @@ export function ConstraintsScene({ picker }: { picker: ReactNode }) {
           <SectionTitle>A background task and its budget</SectionTitle>
           <Bar
             value={Math.min(shown, work)} max={work} tone={cutOff ? 'bad' : elapsed !== null && !running ? 'ok' : 'hi'}
-            markers={[{ at: Math.min(BACKGROUND_BUDGET_S, work), label: `OS cuts it off at ${BACKGROUND_BUDGET_S} s`, tone: 'bad' }]}
+            markers={work > BACKGROUND_BUDGET_S ? [{ at: BACKGROUND_BUDGET_S, label: `OS cuts it off at ${BACKGROUND_BUDGET_S} s`, tone: 'bad' }] : []}
             transition={{ duration: 0.05 }} height={12} ariaLabel={`${shown} of ${work} seconds of work done`}
           />
           <p className="mal-result" role="status">

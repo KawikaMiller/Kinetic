@@ -34,6 +34,16 @@ describe('captions', () => {
     expect(captionText(orderCaption('en-US'))).toContain('the same as the message');
   });
 
+  it('word order: same-order locales do not claim a word-order win, ja does', () => {
+    for (const l of ['de-DE', 'fr-FR'] as const) {
+      const text = captionText(orderCaption(l));
+      expect(text, l).toContain('item still comes first');
+      expect(text, l).toContain('moved the verb');
+      expect(text, l).not.toContain('always the item first');
+    }
+    expect(captionText(orderCaption('ja-JP'))).toContain('always the item first');
+  });
+
   it('count sentence: English 1 is wrong with fixed text, English 3 is not', () => {
     expect(captionText(countCaption('en-US', 1))).toContain('the fixed text has the wrong words');
     expect(captionText(countCaption('en-US', 3))).toContain('happens to read the same');

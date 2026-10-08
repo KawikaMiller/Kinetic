@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
-import { IDS, LABEL, PRODUCTS, type Action, type Approach, type CompId, type Outcome, type SignalRun } from './model';
-import { isStale, type SwrFrame, type SwrMode } from './swr';
+import { EFFECT_FOR, IDS, LABEL, PRODUCTS, type Action, type Approach, type CompId, type Outcome, type SignalRun } from './model';
+import { FIRST_PRICE, isStale, type SwrFrame, type SwrMode } from './swr';
 import { isDrifting, type DerivedCart } from './derived';
 
 const names = (ids: readonly CompId[]) => ids.map((id) => LABEL[id]).join(', ');
@@ -21,8 +21,8 @@ export function actionCaption(approach: Approach, memo: boolean, action: Action,
     const bound = run.effects.length;
     return (
       <>
-        {verb(action)}. No component function ran again: {plural(bound, 'text binding')} did ({run.effects.map((e) => e.replace(/^e-/, '')).join(', ')}).{' '}
-        {run.computeds.length ? `${run.computeds.join(' and ')} recomputed once each.` : 'Nothing was recomputed.'}
+        {verb(action)}. No component function ran again: {plural(bound, 'text binding')} did ({run.effects.map((e) => LABEL[EFFECT_FOR[e]!]).join(', ')}).{' '}
+        {run.computeds.length ? `${run.computeds.join(' and ')} recomputed once${run.computeds.length > 1 ? ' each' : ''}.` : 'Nothing was recomputed.'}
       </>
     );
   }
@@ -69,28 +69,28 @@ export function swrCaption(f: SwrFrame, mode: SwrMode, serverPrice: number): Rea
     case 'intro': return SWR_INTRO;
     case 'ask': return <>The component asks the cache for the price. Nothing is cached yet, so it has nothing to show.</>;
     case 'miss': return <>Cache miss: the cache fetches the price from the server.</>;
-    case 'stored': return <>The server answers 12 and the cache stores it.</>;
-    case 'fresh': return <>The component shows 12. The value is fresh: the cache and the server agree.</>;
+    case 'stored': return <>The server answers {FIRST_PRICE} and the cache stores it.</>;
+    case 'fresh': return <>The component shows {FIRST_PRICE}. The value is fresh: the cache and the server agree.</>;
     case 'edit':
       return serverPrice === f.cache ? (
         <>The price is saved again on the server, but it is still {serverPrice}, so nothing the UI shows is out of date.</>
       ) : (
-        <>Someone changes the price on the server to {serverPrice}. The UI still shows 12 and cannot know: that value is now <span className="hl bad">stale</span>.</>
+        <>Someone changes the price on the server to {serverPrice}. The UI still shows {FIRST_PRICE} and cannot know: that value is now <span className="hl bad">stale</span>.</>
       );
     case 'revisit': return <>The user comes back to the page (a refocus or a remount) and the component reads the price again.</>;
     case 'instant':
-      return <>Stale-while-revalidate: the cache answers at once with what it has, 12{stale ? ', which is stale' : ''}, so the page never waits.</>;
+      return <>Stale-while-revalidate: the cache answers at once with what it has, {FIRST_PRICE}{stale ? ', which is stale' : ''}, so the page never waits.</>;
     case 'copied':
-      return <>The anti-pattern: the component copies the cached 12 into its own local state with <code>useState</code>. From now on the cache cannot reach it.</>;
+      return <>The anti-pattern: the component copies the cached {FIRST_PRICE} into its own local state with <code>useState</code>. From now on the cache cannot reach it. (Shown at the revisit so the stale value is visible; a real copy happens on the first mount.)</>;
     case 'revalidate': return <>Behind the scenes the cache asks the server again.</>;
     case 'updated': return <>The server answers {serverPrice} and the cache updates{mode === 'swr' && stale ? ', but the UI has not heard yet' : ''}.</>;
     case 'refreshed':
       return <>The cache tells the component and it re-renders with {serverPrice}: <span className="hl ok">fresh</span> again. Stale first, then fresh, and the user never saw a spinner.</>;
     case 'drift':
-      return serverPrice === 12 ? (
+      return serverPrice === FIRST_PRICE ? (
         <>The price never changed, so the copy happens to be right. It would not have been otherwise.</>
       ) : (
-        <>The cache and the server say {serverPrice}, but the component keeps its local copy, 12. Two sources of truth drifted apart and nothing will fix it.</>
+        <>The cache and the server say {serverPrice}, but the component keeps its local copy, {FIRST_PRICE}. Two sources of truth drifted apart and nothing will fix it.</>
       );
   }
 }
@@ -102,6 +102,7 @@ export const DERIVED_INTRO = (
 );
 
 export function derivedCaption(cart: DerivedCart, derived: number): ReactNode {
+  if (!isDrifting(cart) && derived === 0) return <>Both totals read $0: the cart is empty, so there was nothing to remove.</>;
   return isDrifting(cart) ? (
     <>
       The stored total says ${cart.storedTotal}; the items add up to ${derived}. The code that removes items never updated the copy, so the copy is <span className="hl bad">stale</span>.

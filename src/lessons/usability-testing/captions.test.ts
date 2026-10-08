@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
 import { SESSIONS_INTRO, curveCaption, methodCaption, stepCaption } from './captions';
-import { CURVE_PARTICIPANTS, MAX_PARTICIPANTS, runSessions, methodResults, type Bias } from './model';
+import { CURVE_PARTICIPANTS, MAX_PARTICIPANTS, runSessions, methodResults, type Bias, type Session, type Step } from './model';
 
 const BOTH: Bias = { leading: true, helping: true };
 
@@ -51,6 +51,14 @@ describe('curve and method captions', () => {
   it('a test run that never met the coupon box says it learned nothing', () => {
     const none = methodResults(runSessions(5));
     expect(captionText(methodCaption('test', none))).toContain('Nobody in this run met the coupon box');
+  });
+});
+
+describe('a leading-contaminated participant who hits a problem', () => {
+  it('does not read as a clear think-aloud', () => {
+    const session = { contaminated: ['leading'] } as unknown as Session;
+    const step = { kind: 'error', element: 'coupon', t: 10, say: 'Yeah, that was easy.', speaker: 'participant' } as unknown as Step;
+    expect(captionText(stepCaption(step, session))).toContain('the real problem goes unspoken');
   });
 });
 

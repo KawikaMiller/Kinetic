@@ -144,6 +144,7 @@ export interface DiffResult {
 /**
  * For each new child, the index of the old child it is matched with (or null).
  * With any key among the new children, matching is by key; otherwise by position.
+ * Simplification: with mixed keyed and unkeyed siblings, unkeyed new children count as inserts, whereas React matches an unkeyed child by its index. No preset mixes them.
  */
 export function matchChildren(oldKeys: readonly (string | undefined)[], newKeys: readonly (string | undefined)[]): (number | null)[] {
   const keyed = newKeys.some((k) => k !== undefined);

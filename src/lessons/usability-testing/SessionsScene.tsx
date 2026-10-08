@@ -127,7 +127,7 @@ export function SessionsScene({ picker }: { picker: ReactNode }) {
           </table>
         </Box>
         <Hint block>
-          Simulated participants with seeded behaviour; real sessions are messier. A participant who gives up never meets the problems further along.
+          Simulated participants with seeded behaviour; real sessions are messier. A participant who gives up never meets the problems further along. Leading questions can raise the mean time, because participants who would have quit now finish.
         </Hint>
       </div>
     </StageFrame>

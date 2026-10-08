@@ -81,7 +81,7 @@ export const ITEMS: Messages = {
 /** The welcome sentence, with the count worked in per plural category. */
 export const WELCOME: Messages = {
   'en-US': { one: 'Welcome, {name}! You have {n} message.', other: 'Welcome, {name}! You have {n} messages.' },
-  'de-DE': { one: 'Willkommen, {name}! Du hast {n} Nachricht.', other: 'Willkommen, {name}! Du hast {n} Nachrichten.' },
+  'de-DE': { one: 'Willkommen, {name}! Sie haben {n} Nachricht.', other: 'Willkommen, {name}! Sie haben {n} Nachrichten.' },
   'fr-FR': {
     one: 'Bienvenue, {name} ! Vous avez {n} message.', many: 'Bienvenue, {name} ! Vous avez {n} de messages.', other: 'Bienvenue, {name} ! Vous avez {n} messages.',
   },

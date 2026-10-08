@@ -82,7 +82,7 @@ export function FormatScene({ picker, locale, setLocale }: { picker: ReactNode; 
           </div>
         </div>
         <Hint block>
-          Formatting is your browser's real Intl data. The translations are short samples written for this lesson, and the price is each locale's usual currency, not converted.
+          Formatting is your browser's real Intl data. The count slider stops at 25, so the Arabic 100+ and French 1 000 000 rows are only in the table. The translations are short samples written for this lesson, and the price is each locale's usual currency, not converted.
         </Hint>
       </div>
     </StageFrame>

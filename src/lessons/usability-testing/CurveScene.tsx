@@ -11,7 +11,7 @@ import {
 } from './model';
 
 const L_RANGE = { min: 0.05, max: 0.6, step: 0.01 } as const;
-const TARGET = 0.85;
+const TARGET = 0.8;
 const percent = (v: number) => `${Math.round(v * 100)}%`;
 
 export function CurveScene({ picker }: { picker: ReactNode }) {
@@ -55,7 +55,7 @@ export function CurveScene({ picker }: { picker: ReactNode }) {
           y={{ domain: [0, 1], label: 'share of problems found', format: percent }}
           ariaLabel="Share of usability problems found against number of participants"
         >
-          <HLine at={TARGET} label="85%" tone="dim" />
+          <HLine at={TARGET} label={percent(TARGET)} tone="dim" />
           <VLine at={n} label={`${n}`} />
           <Curve fn={expectedFound} tone="violet" dashed />
           <Curve fn={(x) => nielsenLandauer(l, x)} tone="info" />
@@ -81,7 +81,7 @@ export function CurveScene({ picker }: { picker: ReactNode }) {
           </table>
         </Box>
         <Hint block>
-          Simulated participants with seeded behaviour. The 31% figure is Nielsen and Landauer&apos;s 1993 average, not a law: it varies a lot by product and task, and a rare problem needs far more people than a single average suggests.
+          Simulated participants with seeded behaviour. The model gives every problem the same L; the three problems here are met by 50%, 33% and 10%, which is why the violet curve sits below the blue one. The 31% figure is Nielsen and Landauer&apos;s 1993 average, not a law: it varies a lot by product and task, and a rare problem needs far more people than a single average suggests.
         </Hint>
       </div>
     </StageFrame>

@@ -25,6 +25,7 @@ export function stepCaption(step: Step, session: Session): ReactNode {
       );
     case 'error':
       if (step.speaker === 'facilitator') return <>Types a card number into the <b>{name}</b> box. The facilitator steps in: “{step.say}” <span className="hl orange wrap">a helped session</span></>;
+      if (step.say && leading) return <>Types a card number into the <b>{name}</b> box, but after a leading question says “{step.say}” <span className="hl orange wrap">the real problem goes unspoken</span></>;
       return step.say ? <>Types a card number into the <b>{name}</b> box, thinking aloud: “{step.say}”</> : <>Clicks <b>{name}</b> by mistake: nothing useful happens.</>;
     case 'backtrack':
       return <>Backs out and returns to <b>{name}</b>.</>;

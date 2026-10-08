@@ -16,7 +16,7 @@ export const SENTENCE_INTRO = (
 );
 export const LAYOUT_INTRO = (
   <>
-    Translated text and right-to-left scripts change the size and direction of everything around them. Drag the card narrower, pick German or Arabic, or turn on pseudo-localisation to find the bugs early.
+    Translated text and right-to-left scripts change the size and direction of everything around them. Pick German or Arabic, or turn on pseudo-localisation to find the bugs early.
   </>
 );
 
@@ -46,6 +46,13 @@ export function orderCaption(locale: Locale): ReactNode {
   const message = messageAdded(locale, SAMPLE.item, SAMPLE.list);
   const order = slotOrder(ADDED[locale].message);
   if (glued === message) return <>In {locale} the glued fragments give “{glued}”, the same as the message: the fragments were cut along English's own shape.</>;
+  if (order[0] === 'item') {
+    return (
+      <>
+        Glued fragments give “{glued}”. The message with placeholders lets the translator write “{message}”: the item still comes first, but the translator moved the verb, which fragments cut to English's shape cannot do. <span className="hl ok wrap">The translator is in control</span>.
+      </>
+    );
+  }
   return (
     <>
       Glued fragments give “{glued}”, always the item first. The message with placeholders lets the translator write “{message}”, with the {order[0]} first: <span className="hl ok wrap">the translator is in control</span>.
