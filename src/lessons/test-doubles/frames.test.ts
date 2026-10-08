@@ -49,3 +49,12 @@ describe('over-mocking captions', () => {
     }
   });
 });
+
+describe('stub captions fit what the stub does', () => {
+  it('an email stub returns nothing; a tax stub returns its canned answer', () => {
+    const frames = callFrames(runConfig({ gateway: 'stub', tax: 'stub', email: 'stub', clock: 'stub' }, 'none', 0), 'done');
+    const said = frames.map((f) => text(f.say));
+    expect(said.find((s) => s.includes('EmailSender.send'))).toContain('does nothing and returns nothing');
+    expect(said.find((s) => s.includes('TaxService.taxFor'))).toContain('returns its canned answer');
+  });
+});

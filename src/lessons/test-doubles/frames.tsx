@@ -31,7 +31,8 @@ function callCaption(c: Call): ReactNode {
     : c.by === 'dummy' ? <> It&apos;s a <b>dummy</b>, which must never be called: it throws.</>
       : c.by === 'mock' ? <> The <b>mock</b> records it, to check against its expectations at the end.</>
         : c.by === 'fake' ? <> The <b>fake</b> does real work in memory: no network.</>
-          : <> The <b>stub</b> returns its canned answer, whatever it&apos;s asked.</>;
+          : c.dep === 'email' ? <> The <b>stub</b> does nothing and returns nothing: it only stops the call from failing.</>
+            : <> The <b>stub</b> returns its canned answer, whatever it&apos;s asked.</>;
   return <>checkout calls <code>{DEP_NAME[c.dep]}.{c.method}({short(c.args)})</code>.{how}</>;
 }
 
@@ -81,7 +82,7 @@ export function overMockCaption(r: TestRun, gateway: 'mock' | 'fake', refactor: 
     return <><span className="hl bad">✗ failed</span>: {err}.{refactor ? ' The refactor didn’t change what checkout returns, only how it asks: the mock is coupled to the implementation.' : ''}</>;
   }
   if (err.includes('currency')) {
-    return <><span className="hl bad">✗ failed</span>: {err}. The fake follows the real API&apos;s rules, so it catches the integration bug that the mock copied.</>;
+    return <><span className="hl bad">✗ failed</span>: {err}. The fake enforces one rule of the real API (the currency field), so it catches the integration bug that the mock copied.</>;
   }
   return <><span className="hl bad">✗ failed</span>: {err}.</>;
 }

@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A test double stands in for a real dependency so a unit test is fast and repeatable, and each kind (dummy, stub, spy, mock, fake) can see different things, so the kind you pick decides which bugs the test can catch.',
-    what: 'Gerard Meszaros named five kinds. A dummy is passed in but never used. A stub returns canned answers. A spy records how it was called so the test can check afterwards. A mock is set up with expectations and verifies the calls itself (behaviour verification, where most tests check the result, which is state verification). A fake is a working, simplified implementation, like an in-memory ledger. Doubles buy speed and determinism, but they only know what the test author told them, so a test that mocks everything mostly checks that the code calls its mocks.',
+    what: 'Gerard Meszaros named five kinds. A dummy is passed in but never used. A stub returns canned answers. A spy records how it was called so the test can check afterwards (in this lesson it wraps the real service, as jest.spyOn does). A mock is set up with expectations and verifies the calls itself. Most tests check results (state verification); a mock checks the calls made (behaviour verification), a distinction Martin Fowler drew in "Mocks Aren’t Stubs". A fake is a working, simplified implementation, like an in-memory ledger. Doubles buy speed and determinism, but they only know what the test author told them, so a test that mocks everything mostly checks that the code calls its mocks.',
     analogy: 'Rehearsing a play with stand-ins: one just stands there (dummy), one reads the same line every time (stub), one takes notes on what you said (spy), and one walks off if you skip your cue (mock). None of them tells you the real actor plays the scene differently.',
     useCases: [
       'Unit tests that replace a payment API with a stub or a fake so they run in milliseconds offline',
@@ -20,14 +20,14 @@ const lesson: LessonModule = {
     'Plant Email never sent and run the test: the mock EmailSender catches it. Switch EmailSender to stub and run again: it ships.',
     'Plant Tax rounding wrong: the stubbed TaxService hides it. Pick spy or real for TaxService and run again.',
     'Plant Charges twice and compare stub, fake and mock for PaymentGateway in the table.',
-    'Set PaymentGateway to real and press Run the test four times: slow, over the network, and run #4 times out.',
+    'Set PaymentGateway to real and press Run the test four times: slow, over the network, and every 4th run (#4, #8, and so on) times out.',
     'Open the Over-mocking scene and run it: everything is mocked, the integration bug is there, and the test passes.',
   ],
   keyIdeas: [
     'A stub feeds answers in; a mock or spy checks the calls that go out.',
     'A double can only catch what it can observe, so pick it for the bug you want to catch.',
     'A stub hides bugs in the code it replaces: that code needs its own tests.',
-    'Mocks copied from the code test your assumptions, not the real API, and break on harmless refactors.',
+    'Mocks copied from the code test your assumptions, not the real API, and often break on harmless refactors.',
   ],
   quiz: [
     {
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'The bug was in production settings, so no test could ever see it',
       ],
       answer: 0,
-      why: "The mock expected exactly what checkout sends, currencyCode included, because that's what the author copied from the code. Mocks can check arguments; they check them against the test's beliefs. A fake that enforces the real API's rules, or a contract or integration test, is what catches it.",
+      why: "The mock expected exactly what checkout sends, currencyCode included, because that's what the author copied from the code. Mocks can check arguments; they check them against the test's beliefs. A fake that checks the real API's required fields, or a contract or integration test, is what catches it.",
     },
     {
       q: 'checkout must send a receipt email. Which stand-in for EmailSender lets a test notice when it does not?',

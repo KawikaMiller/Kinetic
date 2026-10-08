@@ -284,8 +284,8 @@ function OverScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="PaymentGateway" value={gw} onChange={(v) => { setGw(v); changed(v === 'fake' ? <>The gateway is now a fake that checks requests the way the real API does.</> : <>The gateway is a mock again.</>); }}
-            options={[{ value: 'mock', label: 'mock (copied from code)' }, { value: 'fake', label: 'fake (real API rules)' }]} />
+          <Segmented label="PaymentGateway" value={gw} onChange={(v) => { setGw(v); changed(v === 'fake' ? <>The gateway is now a fake that, like the real API, rejects a request with no currency field.</> : <>The gateway is a mock again.</>); }}
+            options={[{ value: 'mock', label: 'mock (copied from code)' }, { value: 'fake', label: 'fake (checks the currency field)' }]} />
           <Segmented label="TaxService" value={tax} onChange={(v) => { setTax(v); changed(<>TaxService is now a {v}.</>); }} options={[{ value: 'mock', label: 'mock' }, { value: 'fake', label: 'fake' }]} />
           <Toggle label="Harmless refactor" value={refactor} onChange={(v) => { setRefactor(v); changed(v ? <>checkout now asks for the tax <i>rate</i> and multiplies itself: same total, different calls.</> : <>Refactor undone.</>); }} off="taxFor()" on="rateFor()" />
           <Button variant="primary" onClick={go}>Run the test</Button>
