@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bytes as formatBytes, pct } from '../../core/format';
 import { mulberry32 } from '../../core/random';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { callFrames, callSummary, encodeCaption, messageCaption } from './frames';
 import { ENDINGS, MODES, buildCall } from './calls';
 import { INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, MAX_TAGS, emptyOrder, type DeltaType, type Order } from './model';
@@ -25,7 +25,7 @@ describe('caption, every message × delta type × reader', () => {
         for (const r of READER_IDS) {
           const a = analyse(o, dt, r);
           const n = a.encoded.bytes.length;
-          const text = captionText(encodeCaption(o, a, r));
+          const text = expectCaption(encodeCaption(o, a, r));
           if (n === 0) expect(text).toContain('0 bytes');
           else {
             expect(text).toContain(`${n} ${n === 1 ? 'byte' : 'bytes'} in protobuf and ${a.jsonBytes} bytes as JSON`);
@@ -138,7 +138,7 @@ describe('gRPC call captions, every mode × ending', () => {
       for (const ending of ENDINGS) {
         const ms = buildCall(mode, ending);
         for (const m of ms) {
-          const text = captionText(messageCaption(m, mode));
+          const text = expectCaption(messageCaption(m, mode));
           if (m.framed !== undefined) {
             expect(text).toContain(`${m.framed} B in a DATA frame`);
             expect(text).toContain(`${m.payload} B of protobuf`);
@@ -150,7 +150,7 @@ describe('gRPC call captions, every mode × ending', () => {
         const req = ms.filter((m) => m.kind === 'req-data').length;
         const resp = ms.filter((m) => m.kind === 'resp-data').length;
         const total = ms.reduce((s, m) => s + (m.framed ?? 0), 0);
-        const text = captionText(callSummary(mode, ending));
+        const text = expectCaption(callSummary(mode, ending));
         expect(text).toContain(`${req} request ${req === 1 ? 'message' : 'messages'} and ${resp} response ${resp === 1 ? 'message' : 'messages'}`);
         expect(text).toContain(`(${formatBytes(total, { base: 1000 })} of`);
         const frames = callFrames(mode, ending);

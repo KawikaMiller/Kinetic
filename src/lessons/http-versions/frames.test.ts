@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ms } from '../../core/format';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { RTT_MAX, RTT_MIN, RTT_STEP } from './constants';
 import { buildFrames, milestones, summary } from './frames';
 import { LOST_RESOURCE, VERSION_NAME, simulateAll, type ConnCount, type Version } from './model';
@@ -14,7 +14,7 @@ describe('captions, every RTT × connection count × loss (full cross product)',
   it('each version\'s finish caption gives its modelled load time, at that moment', () => {
     for (const p of COMBOS) {
       const runs = simulateAll(p);
-      const marks = milestones(runs, p).map((m) => ({ t: m.t, text: captionText(m.say) }));
+      const marks = milestones(runs, p).map((m) => ({ t: m.t, text: expectCaption(m.say) }));
       for (const v of VERSIONS) {
         const m = marks.find((x) => x.text.includes(`${VERSION_NAME[v]} finished: all 12 resources in at ${ms(runs[v].total)}`));
         expect(m, `${v} ${JSON.stringify(p)}`).toBeDefined();
@@ -26,7 +26,7 @@ describe('captions, every RTT × connection count × loss (full cross product)',
   it('the HTTP/2 loss caption counts exactly the streams the model stalled, and only appears with a loss', () => {
     for (const p of COMBOS) {
       const runs = simulateAll(p);
-      const text = milestones(runs, p).map((m) => captionText(m.say)).join(' ');
+      const text = milestones(runs, p).map((m) => expectCaption(m.say)).join(' ');
       if (p.loss) {
         expect(text).toContain(`all ${runs.h2.loss!.stalled} streams`);
         expect(text).toContain(`arrived at ${ms(runs.h2.loss!.until)}`);
@@ -44,7 +44,7 @@ describe('captions, every RTT × connection count × loss (full cross product)',
     for (const p of COMBOS) {
       const runs = simulateAll(p);
       const slow = runs.h1.timings.find((x) => x.id === 'config.js')!;
-      const hol = milestones(runs, p).map((m) => captionText(m.say)).find((t) => t.includes('head-of-line blocking at the HTTP layer'));
+      const hol = milestones(runs, p).map((m) => expectCaption(m.say)).find((t) => t.includes('head-of-line blocking at the HTTP layer'));
       const behind = runs.h1.timings.find((x) => x.conn === slow.conn && Math.abs(x.sent - slow.done) < 1e-6);
       if (!behind) {
         expect(hol).toBeUndefined();
@@ -59,7 +59,7 @@ describe('captions, every RTT × connection count × loss (full cross product)',
     for (const p of COMBOS.filter((c) => c.conns > 1)) {
       const runs = simulateAll(p);
       const extra = runs.h1.connReady[1];
-      const text = milestones(runs, p).map((m) => captionText(m.say)).join(' ');
+      const text = milestones(runs, p).map((m) => expectCaption(m.say)).join(' ');
       expect(text).toContain(`the ${p.conns - 1} new connections finished their handshakes at ${ms(extra)}`);
       for (let c = 1; c < p.conns; c++) expect(runs.h1.timings.some((x) => x.conn === c && Math.abs(x.sent - extra) < 1e-6)).toBe(true);
       expect(runs.h1.timings.filter((x) => x.sent < extra - 1e-6).every((x) => x.conn === 0)).toBe(true);
@@ -69,7 +69,7 @@ describe('captions, every RTT × connection count × loss (full cross product)',
   it('the summary ranks the versions by their modelled totals', () => {
     for (const p of COMBOS) {
       const runs = simulateAll(p);
-      const text = captionText(summary(runs, p));
+      const text = expectCaption(summary(runs, p));
       const order = [...VERSIONS].sort((a, b) => runs[a].total - runs[b].total);
       const at = order.map((v) => text.indexOf(`${VERSION_NAME[v]} ${ms(runs[v].total)}`));
       expect(at.every((i) => i >= 0)).toBe(true);
@@ -84,9 +84,9 @@ describe('captions, every RTT × connection count × loss (full cross product)',
     const end = 1200;
     const frames = buildFrames(runs, p, end);
     expect(frames[0].now).toBe(0);
-    expect(captionText(frames[0].say)).toContain('up to 6 connections');
+    expect(expectCaption(frames[0].say)).toContain('up to 6 connections');
     for (let i = 1; i < frames.length; i++) expect(frames[i].now).toBeGreaterThanOrEqual(frames[i - 1].now);
     expect(frames.at(-1)!.now).toBe(end);
-    expect(captionText(frames.at(-1)!.say)).toContain('Illustrative model');
+    expect(expectCaption(frames.at(-1)!.say)).toContain('Illustrative model');
   });
 });

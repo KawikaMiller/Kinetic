@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bytes } from '../../core/format';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { messageCaption, requestFrames, verdict } from './frames';
 import { BLANK, HEAD_BYTES, PRESETS, USERS, replay, type EtagMode, type Event, type Policy, type Resource, type VaryHeader } from './model';
 
@@ -64,13 +64,13 @@ describe('captions follow the outcome they describe', () => {
     for (const p of everyPolicy()) {
       for (const o of replay(p, PER_USER, SCRIPT).outcomes) {
         for (const m of o.messages) {
-          const text = captionText(messageCaption(m, o));
+          const text = expectCaption(messageCaption(m, o));
           if (m.tone === 'info') expect(text).toContain(m.label);
           if (m.tone === 'violet') expect(text).toContain('304 Not Modified');
           if (m.tone === 'bad') expect(text).toContain(`hands ${USERS[o.user].name} ${USERS[o.owner!].name}'s page`);
           if (m.background && m.from !== m.to) expect(text).toContain('background');
         }
-        const v = captionText(verdict(o, PER_USER.body));
+        const v = expectCaption(verdict(o, PER_USER.body));
         const word = { fresh: 'Fresh hit', stale: 'Stale served', 'revalidated-304': 'Revalidated: 304', 'revalidated-200': 'it had changed', miss: 'Miss', 'not-stored': 'no-store' }[o.kind];
         expect(v).toContain(word);
         expect(v).toContain(o.originBytes === 0 ? 'Nothing reached the origin.' : `${bytes(o.originBytes, { base: 1000 })} crossed the origin link.`);
@@ -84,7 +84,7 @@ describe('captions follow the outcome they describe', () => {
     const [, second] = replay(policy, resource, SCRIPT.slice(0, 2)).outcomes;
     const frames = requestFrames(second, 'intro', resource.body);
     expect(frames.map((f) => f.step)).toEqual([-1, ...second.messages.map((_, i) => i), second.messages.length - 1]);
-    expect(captionText(frames[0].say)).toBe('Ben requests the page at t = 30 s.');
+    expect(expectCaption(frames[0].say)).toBe('Ben requests the page at t = 30 s.');
     expect(requestFrames(null, 'intro', 1)).toEqual([{ step: -1, say: 'intro' }]);
   });
 });
