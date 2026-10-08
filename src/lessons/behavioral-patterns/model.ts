@@ -83,18 +83,20 @@ export interface SubState {
 }
 export interface ObserverState {
   subs: Record<SubId, SubState>;
+  /** Attached subscribers in the order they subscribed: a Set notifies in insertion order, so this is the notify order. */
+  order: SubId[];
   tick: number;
   /** Who the last publish was delivered to (in subscription order), and who was dead. */
   last: { price: number; to: SubId[]; dead: SubId[] } | null;
 }
 const fresh = (attached: boolean): SubState => ({ attached, mounted: true, received: 0, deadDeliveries: 0 });
-export const initialObserver = (): ObserverState => ({ subs: { chart: fresh(true), alert: fresh(false), log: fresh(false) }, tick: 0, last: null });
+export const initialObserver = (): ObserverState => ({ subs: { chart: fresh(true), alert: fresh(false), log: fresh(false) }, order: ['chart'], tick: 0, last: null });
 
 export type ObserverAction = { type: 'attach' | 'detach' | 'unmount'; id: SubId } | { type: 'publish' } | { type: 'reset' };
 
 export const isDead = (s: SubState) => s.attached && !s.mounted;
-/** Subscription order: the order they were attached in is fixed to chart, alert, log. */
-export const attachedIds = (st: ObserverState) => SUBS.filter((x) => st.subs[x.id].attached).map((x) => x.id);
+/** Attached subscribers, in subscription order. */
+export const attachedIds = (st: ObserverState) => [...st.order];
 
 export function canAct(st: ObserverState, a: ObserverAction): boolean {
   if (a.type === 'attach') return !st.subs[a.id].attached && st.subs[a.id].mounted;
@@ -107,11 +109,18 @@ export function observerStep(st: ObserverState, a: ObserverAction): ObserverStat
   if (a.type === 'reset') return initialObserver();
   if (!canAct(st, a)) return st;
   const subs = { chart: { ...st.subs.chart }, alert: { ...st.subs.alert }, log: { ...st.subs.log } };
-  if (a.type === 'attach') subs[a.id].attached = true;
-  if (a.type === 'detach') subs[a.id].attached = false;
+  let order = st.order;
+  if (a.type === 'attach') {
+    subs[a.id].attached = true;
+    order = [...order, a.id];
+  }
+  if (a.type === 'detach') {
+    subs[a.id].attached = false;
+    order = order.filter((x) => x !== a.id);
+  }
   if (a.type === 'unmount') subs[a.id].mounted = false;
-  if (a.type !== 'publish') return { ...st, subs };
-  const to = SUBS.filter((x) => subs[x.id].attached).map((x) => x.id);
+  if (a.type !== 'publish') return { ...st, subs, order };
+  const to = [...order];
   const dead: SubId[] = [];
   for (const id of to) {
     subs[id].received++;
@@ -120,7 +129,7 @@ export function observerStep(st: ObserverState, a: ObserverAction): ObserverStat
       dead.push(id);
     }
   }
-  return { subs, tick: st.tick + 1, last: { price: PRICES[st.tick % PRICES.length], to, dead } };
+  return { subs, order, tick: st.tick + 1, last: { price: PRICES[st.tick % PRICES.length], to, dead } };
 }
 
 /** Objects the program can no longer use but still holds: each dead subscriber plus every price it has been handed since. */
@@ -244,6 +253,9 @@ export const REASONS: Record<PState, Partial<Record<PEvent, string>>> = {
   paused: { pause: 'it is already paused', drop: 'in this model a paused player is not fetching, so a drop changes nothing', recover: 'it is not buffering' },
   buffering: { play: 'there is nothing to play until the network is back', pause: 'this model does not allow pausing while buffering', drop: 'it is already buffering' },
 };
+
+/** How the diagram draws a state: the lesson's `watch` text says "box" and a test keeps the two in step. */
+export const STATE_NODE_SHAPE = 'box' as const;
 
 export const nextState = (s: PState, e: PEvent): PState | null => TRANSITIONS[s][e] ?? null;
 export const isValid = (s: PState, e: PEvent) => nextState(s, e) !== null;

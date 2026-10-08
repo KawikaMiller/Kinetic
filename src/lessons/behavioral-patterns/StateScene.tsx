@@ -9,16 +9,16 @@ import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption } from '../../core/caption';
 import { stateCaption } from './frames';
 import {
-  FLAGS, FLAGS_CODE, P_EVENTS, P_STATES, REASONS, STATE_CODE, STATE_LABEL, TRANSITIONS, flagRows, isValid, nextState, type PEvent, type PState,
+  FLAGS, FLAGS_CODE, P_EVENTS, STATE_NODE_SHAPE, P_STATES, REASONS, STATE_CODE, STATE_LABEL, TRANSITIONS, flagRows, isValid, nextState, type PEvent, type PState,
 } from './model';
 
 const W = 440;
 const H = 260;
 const NODES: GraphNode<PState>[] = [
-  { id: 'stopped', label: STATE_LABEL.stopped, at: { x: 66, y: 130 }, shape: 'box' },
-  { id: 'playing', label: STATE_LABEL.playing, at: { x: 270, y: 130 }, shape: 'box' },
-  { id: 'paused', label: STATE_LABEL.paused, at: { x: 270, y: 36 }, shape: 'box' },
-  { id: 'buffering', label: STATE_LABEL.buffering, at: { x: 270, y: 224 }, shape: 'box' },
+  { id: 'stopped', label: STATE_LABEL.stopped, at: { x: 66, y: 130 }, shape: STATE_NODE_SHAPE },
+  { id: 'playing', label: STATE_LABEL.playing, at: { x: 270, y: 130 }, shape: STATE_NODE_SHAPE },
+  { id: 'paused', label: STATE_LABEL.paused, at: { x: 270, y: 36 }, shape: STATE_NODE_SHAPE },
+  { id: 'buffering', label: STATE_LABEL.buffering, at: { x: 270, y: 224 }, shape: STATE_NODE_SHAPE },
 ];
 const EDGES: (GraphEdge<PState> & { event: PEvent })[] = P_STATES.flatMap((from) =>
   (Object.entries(TRANSITIONS[from]) as [PEvent, PState][]).map(([event, to]) => ({ from, to, label: event, event })),
@@ -129,7 +129,7 @@ export function StateScene({ picker }: { picker: ReactNode }) {
           <CodePanel title="a state machine: one table, one state" lines={STATE_CODE} className="bp-code" />
         )}
         <Hint block>
-          A scripted player. Pausing while buffering and a drop while paused are refused here as a modelling choice; real players differ. When not to: a single on/off boolean doesn&apos;t
+          A scripted player, written as a table-driven state machine. The GoF State pattern instead puts each state’s behaviour in its own object, and unlike a Strategy, a state decides the next state itself. This player is scripted: pausing while buffering and a drop while paused are refused here as a modelling choice; real players differ. When not to: a single on/off boolean doesn&apos;t
           need a state machine.
         </Hint>
       </div>

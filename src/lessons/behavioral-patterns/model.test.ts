@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import lesson from './index';
 import { mulberry32 } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
 import { commandCaption, observerCaption, stateCaption, strategyCaption } from './frames';
 import {
-  CARRIERS, ORDER_TOTALS, P_EVENTS, P_STATES, REASONS, SLOTS, SUBS, TRANSITIONS, addedLines, applyCommand, attachedIds, canAct, canEdit, carriersFor, commandFor,
+  CARRIERS, ORDER_TOTALS, STATE_NODE_SHAPE, P_EVENTS, P_STATES, REASONS, SLOTS, SUBS, TRANSITIONS, addedLines, applyCommand, attachedIds, canAct, canEdit, carriersFor, commandFor,
   describe as describeCmd, editorStep, editsShippingBody, flagRows, initialEditor, initialObserver, isDead, isValid, nextState, observerStep, retainedObjects, shippingCode,
   type CarrierId, type Editor, type EditorAction, type ObserverAction, type ObserverState, type PEvent, type PState, type Shape, type StrategyMode,
 } from './model';
@@ -81,19 +82,28 @@ describe('observer', () => {
       if (kind === 'detach') attached.delete(id);
       if (kind === 'unmount') mounted.delete(id);
       if (kind === 'publish') {
-        const expected = ids.filter((x) => attached.has(x));
+        // A real Set, as in the code on screen: notified in insertion (subscription) order.
+        const expected = [...attached];
         expect(st.last!.to).toEqual(expected);
         expect(st.last!.dead).toEqual(expected.filter((x) => !mounted.has(x)));
         for (const x of expected) expect(st.subs[x as 'chart'].received).toBe(before.subs[x as 'chart'].received + 1);
         for (const x of ids.filter((y) => !attached.has(y))) expect(st.subs[x as 'chart'].received).toBe(before.subs[x as 'chart'].received);
       }
-      expect(attachedIds(st)).toEqual(ids.filter((x) => attached.has(x)));
+      expect(attachedIds(st)).toEqual([...attached]);
     }
     return st;
   }
 
   it('each publish notifies exactly the attached subscribers, the leaked one included (200 seeded runs of 60 steps)', () => {
     for (let seed = 1; seed <= 200; seed++) run(seed, 60);
+  });
+
+  it('notifications follow subscription order: re-attaching puts a subscriber last', () => {
+    let st = initialObserver();
+    st = observerStep(observerStep(st, { type: 'attach', id: 'log' }), { type: 'attach', id: 'alert' });
+    expect(observerStep(st, { type: 'publish' }).last!.to).toEqual(['chart', 'log', 'alert']);
+    st = observerStep(observerStep(st, { type: 'detach', id: 'chart' }), { type: 'attach', id: 'chart' });
+    expect(observerStep(st, { type: 'publish' }).last!.to).toEqual(['log', 'alert', 'chart']);
   });
 
   it('the forgotten-unsubscribe preset: the dead chart keeps being called and the retained count climbs', () => {
@@ -171,7 +181,8 @@ describe('command undo/redo', () => {
       expect(e.doc).toEqual(history[at]);
       expect(e.undo).toHaveLength(at);
       expect(e.redo).toHaveLength(history.length - 1 - at);
-      expect(canEdit(e, a) === canEdit(e, a)).toBe(true);
+      expect(canEdit(e, { type: 'undo' })).toBe(at > 0);
+      expect(canEdit(e, { type: 'redo' })).toBe(at < history.length - 1);
     }
     return { e, history };
   }
@@ -231,6 +242,22 @@ describe('command undo/redo', () => {
     expect(after.redo).toEqual([]);
     expect(captionText(commandCaption(after, { type: 'draw' }, ran, e.redo.length))).toContain('discards the 2 undone commands');
     expect(captionText(commandCaption(e, { type: 'undo' }, null))).toContain('Undo pops');
+  });
+});
+
+describe('lesson text matches what is drawn', () => {
+  it('State: the watch text names the shape the diagram uses', () => {
+    expect(STATE_NODE_SHAPE).toBe('box');
+    expect(lesson.summary.watch).toContain(`solid yellow ${STATE_NODE_SHAPE}`);
+    expect(lesson.summary.watch).not.toContain('circle');
+  });
+
+  it('Strategy: the key idea claims what the scene shows (a new line inside the table, shipping untouched)', () => {
+    expect(addedLines('strategies')).toHaveLength(1);
+    expect(editsShippingBody('strategies')).toBe(false);
+    const idea = lesson.keyIdeas.find((k) => k.startsWith('Strategy'))!;
+    expect(idea).not.toContain('no existing code');
+    expect(idea).toContain('not the shipping function');
   });
 });
 

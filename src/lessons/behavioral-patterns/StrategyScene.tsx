@@ -44,7 +44,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
           </ChipButton>
         </>,
         <>
-          <ControlGroup label="Carrier (swapped at run time)">
+          <ControlGroup label="Carrier">
             {carriersFor(added).map((x) => (
               <ChipButton key={x.id} tone="info" on={x.id === id} onClick={() => setChosen(x.id)}>
                 {x.label}
@@ -71,7 +71,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
         </div>
         <CodePanel title={mode === 'switch' ? 'shipping(): a branch per carrier' : 'a small function per carrier'} lines={lines} stateOf={(i) => (fresh.has(lines[i]) ? 'next' : 'idle')} className="bp-code" />
         <Hint block>
-          Scripted checkout with illustrative prices. The code on screen runs as real JavaScript in the lesson&apos;s tests and prices every carrier like a reference. When not to: with two
+          Scripted checkout with illustrative prices. The code on screen runs as real JavaScript in the lesson&apos;s tests and prices every carrier like a reference. Both versions pick the carrier at run time; the difference is open/closed: a new carrier extends the table without editing shipping. When not to: with two
           fixed options that never change, an if is simpler than a table of strategies.
         </Hint>
       </div>

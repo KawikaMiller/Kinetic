@@ -128,7 +128,7 @@ export function ObserverScene({ picker }: { picker: ReactNode }) {
           <CodePanel title="the subject" lines={OBSERVER_CODE} className="bp-code" />
         </div>
         <Hint block>
-          Scripted price feed. &quot;Retained&quot; counts the dead subscriber plus every price it has been handed since, a simplified measure of what stays in memory. It is the same pattern as{' '}
+          Scripted price feed. &quot;Retained&quot; counts the dead subscriber plus every price it has been handed since, assuming it keeps them: a simplified measure of what stays in memory. Subscribers are notified in the order they subscribed, like the Set above. It is the same pattern as{' '}
           <code>addEventListener</code> in <code>dom-events</code>, and a forgotten unsubscribe is a classic leak (see <code>memory-leaks</code>). When not to: for one listener, pass a callback;
           reach for observers when the number of listeners varies.
         </Hint>

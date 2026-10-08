@@ -46,10 +46,10 @@ export function observerCaption(st: ObserverState, a: ObserverAction | null) {
     const id = a.id;
     return st.subs[id].attached ? (
       <>
-        The {id} component unmounts but <span className="hl bad">never unsubscribed</span>: the subject still references it, so it cannot be freed and will keep being called. Publish to see.
+        The {id} component unmounts but <span className="hl bad">never unsubscribed</span>: the subject still references it, so, while the feed itself lives, it cannot be freed and will keep being called. Publish to see.
       </>
     ) : (
-      <>The {id} component unmounts after it was detached, so nothing refers to it any more and it can be freed.</>
+      <>The {id} component unmounts, and the subject holds no reference to it, so nothing keeps it alive and it can be freed.</>
     );
   }
   if (a?.type === 'detach') {

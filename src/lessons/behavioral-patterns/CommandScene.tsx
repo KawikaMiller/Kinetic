@@ -107,7 +107,7 @@ export function CommandScene({ picker }: { picker: ReactNode }) {
               </span>
             ))}
           </Tray>
-          <Tray stack label="Command log (could be sent to a server)" className="bp-log" empty="nothing run yet">
+          <Tray stack label="Command log (every command run, undone or not)" className="bp-log" empty="nothing run yet">
             {ed.log.map((c, i) => (
               <span key={i} className="bp-cmd tone-muted">
                 {i + 1}. {describe(c)}
@@ -117,7 +117,7 @@ export function CommandScene({ picker }: { picker: ReactNode }) {
         </div>
         <CodePanel title="the editor" lines={EDITOR_CODE} className="bp-code" />
         <Hint block>
-          A scripted editor: six slots, shapes named A, B, C… in order. Each action becomes a command object that knows how to undo itself. Tested against a snapshot-history
+          A scripted editor: six slots, each new shape gets the next letter (undoing a draw does not give its letter back). Each action becomes a command object that knows how to undo itself, and the log could be sent to a server, though replaying it would also need the undo and redo events. Tested against a snapshot-history
           reference over 500 seeded sequences. When not to: if undo is only ever &quot;restore the last saved copy&quot;, saving snapshots is simpler than writing a reverse for every command.
         </Hint>
       </div>
