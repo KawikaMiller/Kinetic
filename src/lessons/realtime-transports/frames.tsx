@@ -144,11 +144,11 @@ const HS_SAY: Record<'ws' | 'sse', ReactNode[]> = {
     <>Both directions, any time, one connection. The catch: no built-in reconnect or replay; the app has to handle both.</>,
   ],
   sse: [
-    <>SSE is plain HTTP: a GET that accepts <b>text/event-stream</b>. On a reconnect the browser adds <b>Last-Event-ID</b> by itself.</>,
+    <>SSE is plain HTTP: a GET that accepts <b>text/event-stream</b>. After a drop, the browser repeats it by itself with a <b>Last-Event-ID</b> header.</>,
     <><span className="hl ok">200 OK</span>, and the response simply never ends. <code>retry: 3000</code> sets the reconnection delay.</>,
     <>Each event is a few lines of text ending in a blank line; its <code>id</code> is what Last-Event-ID repeats after a drop.</>,
     <>SSE is one-way, server to client: to talk back, the browser makes a normal request.</>,
-    <>More events on the same open response. Simpler than WebSocket, works through ordinary HTTP proxies, and reconnects by itself.</>,
+    <>More events on the same open response. Simpler than WebSocket and plain HTTP, though proxies that buffer or time out idle responses can still break a stream; the browser reconnects by itself.</>,
   ],
 };
 

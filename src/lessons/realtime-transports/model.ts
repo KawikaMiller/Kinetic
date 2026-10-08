@@ -34,6 +34,9 @@ export const LONG_POLL_RETRY = 2;
 export const HTTP_HEADER_BYTES = 800;
 /** RFC 6455 §5.2: a server→client frame with under 126 payload bytes has a 2-byte header; client frames add a 4-byte mask key. */
 export const WS_SERVER_FRAME_HEADER = 2;
+/** What an SSE event adds around its payload: `id: N`, `data: ` and the blank line that ends it (WHATWG HTML, server-sent events). */
+export const sseFramingBytes = (id: number): number => `id: ${id}
+data: `.length + 2;
 export const WS_CLIENT_FRAME_HEADER = 6;
 /** The outage when "disconnect" is on: the network is down from DROP to BACK. */
 export const DROP = 20;
@@ -100,9 +103,9 @@ export interface Lane {
   /** Responses that carried no event. */
   wasted: number;
   failed: number;
-  /** Header and framing bytes for the whole run. */
+  /** HTTP header bytes plus per-message framing (WebSocket frame headers, SSE `id:`/`data:` lines) for the whole run. */
   headerBytes: number;
-  /** Seconds a connection to the server was open (time-averaged, it's the open connections per client). */
+  /** Seconds a connection was busy with a request or a held-open stream (idle keep-alive sockets between polls are not counted). */
   openSeconds: number;
   /** Extra requests the client needed to send its own messages. */
   sendRequests: number;
@@ -189,7 +192,8 @@ function longPoll(events: ServerEvent[], p: Params): Lane {
     }
     if (respond > DURATION + ONE_WAY) respond = DURATION + ONE_WAY;
     const batch = events.filter((e) => e.id > seen && e.t <= respond);
-    const got = respond + ONE_WAY;
+    // The run ends at DURATION: a request still held then is cut there, so it can't count time past the run.
+    const got = Math.min(respond + ONE_WAY, DURATION);
     lane.bars.push({ kind: 'hanging', from: s, to: got });
     lane.openSeconds += got - s;
     if (batch.length) {
@@ -221,7 +225,7 @@ function persistent(transport: 'sse' | 'ws', events: ServerEvent[], p: Params): 
   };
   const push = (e: ServerEvent, delivered: number) => {
     lane.deliveries.push({ id: e.id, at: e.t, delivered });
-    if (transport === 'ws') lane.headerBytes += WS_SERVER_FRAME_HEADER;
+    lane.headerBytes += transport === 'ws' ? WS_SERVER_FRAME_HEADER : sseFramingBytes(e.id);
   };
   handshake(0);
   const open = RTT;
@@ -282,9 +286,9 @@ export interface Counters {
   maxDelay: number | null;
   missed: number;
   headerBytes: number;
-  /** Open connections at the server, averaged over the run, for `clients` clients. */
+  /** Connections busy with a request (or holding a stream open), averaged over the run, for `clients` clients. */
   openConnections: number;
-  /** HTTP requests per second arriving at the server, for `clients` clients. */
+  /** Steady-state HTTP requests per second at the server for `clients` clients: SSE and WebSocket connection setup isn't counted. */
   requestsPerSec: number;
 }
 
@@ -301,7 +305,7 @@ export function counters(lane: Lane, clients: number): Counters {
     missed: lane.missed.length,
     headerBytes: lane.headerBytes,
     openConnections: (lane.openSeconds / DURATION) * clients,
-    requestsPerSec: (lane.requests / DURATION) * clients,
+    requestsPerSec: ((lane.transport === 'sse' || lane.transport === 'ws' ? lane.sendRequests : lane.requests) / DURATION) * clients,
   };
 }
 
@@ -339,20 +343,20 @@ export const WS_HANDSHAKE: HandshakeLine[] = [
     lines: ['HTTP/1.1 101 Switching Protocols', 'Upgrade: websocket', 'Connection: Upgrade', `Sec-WebSocket-Accept: ${WS_ACCEPT}`],
   },
   { from: 'server', label: 'text frame: new message', note: '2-byte header, unmasked', lines: [`[frame] FIN text, ${payloadBytes(MSG_HI)} bytes: ${MSG_HI}`] },
-  { from: 'client', label: 'text frame: reply', note: '6-byte header: client frames are masked', lines: [`[frame] FIN text, masked, ${payloadBytes(MSG_HEY)} bytes: ${MSG_HEY}`] },
+  { from: 'client', label: 'text frame: reply', note: '6-byte header: client frames are masked', lines: [`[frame] FIN text, masked, ${payloadBytes(MSG_HEY)} bytes (shown unmasked here): ${MSG_HEY}`] },
   { from: 'server', label: 'text frame: new message', note: 'either side can send at any time', lines: [`[frame] FIN text, ${payloadBytes(MSG_LUNCH)} bytes: ${MSG_LUNCH}`] },
 ];
 
 export const SSE_HANDSHAKE: HandshakeLine[] = [
   {
     from: 'client', label: 'GET /events HTTP/1.1', note: 'Accept: text/event-stream',
-    lines: ['GET /events HTTP/1.1', 'Host: chat.example', 'Accept: text/event-stream', 'Last-Event-ID: 6'],
+    lines: ['GET /events HTTP/1.1', 'Host: chat.example', 'Accept: text/event-stream'],
   },
   {
     from: 'server', label: '200 OK, text/event-stream', note: 'the response never ends',
     lines: ['HTTP/1.1 200 OK', 'Content-Type: text/event-stream', 'Cache-Control: no-cache', '', 'retry: 3000'],
   },
-  { from: 'server', label: 'id: 7, data: …', note: 'an event is lines of text and a blank line', lines: ['id: 7', `data: ${MSG_HI}`, ''] },
+  { from: 'server', label: 'id: 1, data: …', note: 'an event is lines of text and a blank line', lines: ['id: 1', `data: ${MSG_HI}`, ''] },
   { from: 'client', label: 'POST /messages', note: 'the client talks back with a normal request', lines: ['POST /messages HTTP/1.1', 'Content-Type: application/json', '', MSG_HEY] },
-  { from: 'server', label: 'id: 8, data: …', note: 'on the same open response', lines: ['id: 8', `data: ${MSG_LUNCH}`, ''] },
+  { from: 'server', label: 'id: 2, data: …', note: 'on the same open response', lines: ['id: 2', `data: ${MSG_LUNCH}`, ''] },
 ];

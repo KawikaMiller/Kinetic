@@ -13,20 +13,20 @@ const lesson: LessonModule = {
       'Live dashboards and prices pushed from server to browser (SSE fits well)',
       'Multiplayer games and collaborative editors that need both directions',
     ],
-    why: 'Picking the transport decides your server bill and your outage behaviour: polling multiplies requests by clients, persistent connections multiply open sockets, and only some options recover missed messages on their own. The defaults are simple: poll for rare updates, SSE for server push, WebSocket when the client talks a lot too. It builds on `http-basics`, `http-versions` and the `event-loop` that keeps one server holding thousands of idle connections.',
+    why: 'Picking the transport decides your server bill and your outage behaviour: polling multiplies requests by clients, persistent connections hold a socket per client, and only some options recover missed messages on their own. The defaults are simple: poll for rare updates, SSE for server push, WebSocket when the client talks a lot too. It builds on `http-basics`, `http-versions` and the `event-loop` that keeps one server holding thousands of idle connections.',
     watch: 'Four lanes share one 60-second axis, under a lane of amber ticks that mark when each message reaches the server. Blue bars are requests; a hatched blue bar is an open SSE or WebSocket connection; a hatched violet bar is a long-poll request the server is holding. A grey bar is an empty response (a wasted poll, or a long poll that timed out). A green tick is a message delivered to the browser, orange if it arrived slower than that lane\'s mean delay. With the network drop on, a "network" lane shows the outage as a red dashed bar between red drop and back markers, failed requests are red dashed bars, and messages a WebSocket missed are red ticks (✕ in its counters). With "client sends too?" on, sky-blue bars are the browser\'s own messages. The yellow line is the current time. In the cards, a missed count is red. In Handshakes, requests from the browser are blue arrows, server frames violet, and the 200 or 101 that opens the stream green; the arrow being explained now is yellow.',
   },
   tryThis: [
     'Press play and compare the lanes: short polling\'s grey empty bars against the others\' one long connection.',
     'Set Poll every to 1 s, then to 30 s: watch the requests and the max delay trade places.',
-    'Switch Network to drop 20–25 s and play to the end: SSE replays what it missed, WebSocket shows red missed ticks.',
+    'Switch Network to drop 20–25 s and play to the end: SSE replays what it missed, while the WebSocket lane shows one or more red missed ticks.',
     'With the drop still on, set WebSocket resync to ask for missed: the gap closes, because the app now asks.',
     'Drag Clients to 10,000 and read the server line in each card: requests per second against open connections.',
   ],
   keyIdeas: [
     'Short polling delays each event by up to the interval and spends most requests on empty answers.',
     'Long polling is held requests: near-instant delivery, one request per event, timeouts to survive proxies.',
-    'SSE is one-way server push over plain HTTP that reconnects itself and resumes from Last-Event-ID.',
+    'SSE is one-way server push over plain HTTP that reconnects itself, and can resume from Last-Event-ID if the server keeps and replays events.',
     'WebSocket is two-way after a 101 upgrade, but reconnecting and catching up are the app\'s job.',
   ],
   quiz: [
@@ -57,11 +57,11 @@ const lesson: LessonModule = {
       options: [
         'It reconnects by itself and sends Last-Event-ID, so the server can replay',
         'TCP retransmits the missed events once the new connection is open',
-        'Nothing: SSE has no built-in way to recover events that were sent while it was down',
+        'The browser replays its own copy of every event it received before the drop',
         'The browser polls a separate endpoint that it has to be given first',
       ],
       answer: 0,
-      why: 'EventSource reconnects on its own and repeats the last id it saw in a Last-Event-ID header; a server that keeps recent events replays the rest. TCP can\'t help, because the old connection, and anything in flight on it, is gone.',
+      why: 'EventSource reconnects on its own and repeats the last id it saw in a Last-Event-ID header; a server that keeps recent events replays the rest, and one that doesn\'t leaves a gap. The browser can\'t replay what it never received, and TCP can\'t help, because the old connection, and anything in flight on it, is gone.',
     },
     {
       q: 'What does the server answer when a WebSocket upgrade succeeds?',
@@ -77,13 +77,13 @@ const lesson: LessonModule = {
     {
       q: 'You move 10,000 clients from short polling every 5 s to WebSockets. What changes on the server?',
       options: [
-        'Far fewer requests per second, but 10,000 connections held open',
+        'Far fewer requests per second, but 10,000 long-lived connections to keep',
         'Nothing at all: both cost the server the same amount of work',
         'More requests per second, since every message is a request',
         'Fewer open connections, because WebSockets close when idle',
       ],
       answer: 0,
-      why: 'Polling every 5 s is 2,000 requests a second for 10,000 clients, most of them empty; WebSockets replace that with one long-lived connection per client, which costs memory and file descriptors instead. They stay open while idle, which is the point.',
+      why: 'Polling every 5 s is 2,000 requests a second for 10,000 clients, most of them empty; WebSockets replace that with one long-lived connection per client, which costs memory, file descriptors and heartbeats instead. Polling clients may keep idle keep-alive sockets too, but a WebSocket server must hold every connection open and healthy, whether or not a message flows.',
     },
   ],
 };

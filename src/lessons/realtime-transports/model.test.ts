@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BACK, CLIENT_SENDS, DROP, DURATION, EVENTS_UNTIL, HTTP_HEADER_BYTES, LONG_POLL_TIMEOUT, ONE_WAY, POLL_INTERVALS, RTT, TRANSPORTS,
-  WS_ACCEPT, WS_GUID, WS_HANDSHAKE, WS_KEY, WS_SERVER_FRAME_HEADER, counters, delays, eventStream, simulate, type Params, type Rate,
+  WS_ACCEPT, WS_GUID, WS_HANDSHAKE, SSE_HANDSHAKE, sseFramingBytes, WS_KEY, WS_SERVER_FRAME_HEADER, counters, delays, eventStream, simulate, type Params, type Rate,
 } from './model';
 
 const RATES: Rate[] = ['rare', 'normal', 'chatty'];
@@ -138,6 +138,57 @@ describe('SSE and WebSocket', () => {
   });
 });
 
+describe('busy time never exceeds the run (review: 10,017 open connections at 10,000 clients)', () => {
+  it('every lane, every combination: one busy connection per client for the run, plus a short extra one for each message the client sends', () => {
+    for (const p of ALL) {
+      const { lanes } = simulate(p);
+      for (const t of TRANSPORTS) {
+        const bound = DURATION + lanes[t].sendRequests * RTT;
+        expect(lanes[t].openSeconds).toBeLessThanOrEqual(bound + 1e-9);
+        expect(counters(lanes[t], 10_000).openConnections).toBeLessThanOrEqual((bound / DURATION) * 10_000 + 1e-6);
+        if (!p.clientSends) expect(counters(lanes[t], 10_000).openConnections).toBeLessThanOrEqual(10_000 + 1e-6);
+      }
+      for (const b of lanes.long.bars) expect(b.to).toBeLessThanOrEqual(DURATION + 1e-9);
+    }
+  });
+
+  it('the default long-poll lane at 10,000 clients is at most 10,000 (it was 10,017)', () => {
+    const c = counters(simulate(base).lanes.long, 10_000);
+    expect(c.openConnections).toBeLessThanOrEqual(10_000);
+    expect(c.openConnections).toBeGreaterThan(9_000);
+  });
+});
+
+describe('steady-state requests and framing bytes', () => {
+  it('SSE and WebSocket make no steady-state HTTP requests unless the client sends; polling makes duration / interval', () => {
+    const idle = simulate(base).lanes;
+    expect(counters(idle.sse, 10_000).requestsPerSec).toBe(0);
+    expect(counters(idle.ws, 10_000).requestsPerSec).toBe(0);
+    expect(counters(idle.poll, 10_000).requestsPerSec).toBe(2000);
+    const sends = simulate({ ...base, clientSends: true }).lanes;
+    expect(counters(sends.sse, 10_000).requestsPerSec).toBeCloseTo((CLIENT_SENDS.length / DURATION) * 10_000, 6);
+    expect(counters(sends.ws, 10_000).requestsPerSec).toBe(0);
+  });
+
+  it('SSE counts its per-event id and data lines and the blank line (hand-worked: 12 bytes for id: 1, a newline and data: , plus 2 = 14)', () => {
+    expect(sseFramingBytes(1)).toBe(14);
+    expect(sseFramingBytes(12)).toBe(15);
+    const { events, lanes } = simulate(base);
+    expect(lanes.sse.headerBytes).toBe(HTTP_HEADER_BYTES + events.reduce((sum, e) => sum + sseFramingBytes(e.id), 0));
+  });
+});
+
+describe('the handshake examples are consistent', () => {
+  it('a first SSE request has no Last-Event-ID (that header is for a reconnect) and its events start at id 1', () => {
+    expect(SSE_HANDSHAKE[0].lines.some((l) => l.startsWith('Last-Event-ID'))).toBe(false);
+    expect(SSE_HANDSHAKE[2].lines[0]).toBe('id: 1');
+  });
+  it('the masked client frame says it is shown unmasked', () => {
+    expect(WS_HANDSHAKE[3].lines[0]).toContain('masked');
+    expect(WS_HANDSHAKE[3].lines[0]).toContain('shown unmasked here');
+  });
+});
+
 describe('server-side cost', () => {
   it('scales open connections and requests per second with the number of clients', () => {
     const { lanes } = simulate(base);
@@ -155,7 +206,7 @@ describe('the WebSocket handshake (RFC 6455)', () => {
     expect(btoa(String.fromCharCode(...digest))).toBe(WS_ACCEPT);
   });
   it('frame lines state each payload\'s real UTF-8 length (hand-counted: 30, 27, 30)', () => {
-    const parsed = WS_HANDSHAKE.slice(2).map((h) => /(\d+) bytes: (.*)$/.exec(h.lines[0])!);
+    const parsed = WS_HANDSHAKE.slice(2).map((h) => /(\d+) bytes(?: \(shown unmasked here\))?: (.*)$/.exec(h.lines[0])!);
     expect(parsed.map((m) => Number(m[1]))).toEqual([30, 27, 30]);
     for (const m of parsed) expect(new TextEncoder().encode(m[2]).length).toBe(Number(m[1]));
   });

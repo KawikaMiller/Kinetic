@@ -144,7 +144,11 @@ function LanesScene({ picker }: { picker: ReactNode }) {
             ariaLabel={`Four transports delivering ${events.length} messages over ${DURATION} seconds`}
           />
         </WideRegion>
-        <Hint block>Bars shorter than {MIN_VISIBLE} s (a 100 ms request) are drawn {MIN_VISIBLE} s wide so you can see them. {HONEST}</Hint>
+        <Hint block>
+          Bars shorter than {MIN_VISIBLE} s (a 100 ms request) are drawn {MIN_VISIBLE} s wide so you can see them. {HONEST} &quot;Busy&quot; means a request is in flight or a stream is held open:
+          with HTTP keep-alive a polling client usually keeps an idle socket open between requests too, so what differs is requests per second and how much each held connection must stay
+          healthy (heartbeats, state), not whether a socket exists.
+        </Hint>
         <div className="rt-cards">
           {TRANSPORTS.map((t) => <Card key={t} lane={lanes[t]} clients={clients} />)}
         </div>
@@ -169,11 +173,11 @@ function Card({ lane, clients }: { lane: Lane; clients: number }) {
         <Stat label="Avg delay" value={delay(c.meanDelay)} />
         <Stat label="Max delay" value={delay(c.maxDelay)} />
         <Stat label="Missed" value={c.missed ? `✕ ${c.missed}` : 0} color={c.missed ? 'var(--bad)' : undefined} />
-        <Stat label="Header bytes" value={bytes(c.headerBytes, { base: 1000 })} />
+        <Stat label="Header + framing" value={bytes(c.headerBytes, { base: 1000 })} />
       </Stats>
       <p className="rt-server">
-        Server, {clients.toLocaleString('en-US')} {clients === 1 ? 'client' : 'clients'}: <b>{rateText(c.requestsPerSec)}</b> HTTP requests (averaged over the run),{' '}
-        <b>{Math.round(c.openConnections).toLocaleString('en-US')}</b> open connections on average
+        Server, {clients.toLocaleString('en-US')} {clients === 1 ? 'client' : 'clients'}: <b>{rateText(c.requestsPerSec)}</b> steady-state HTTP requests (connection setup not counted),{' '}
+        <b>{Math.round(c.openConnections).toLocaleString('en-US')}</b> connections busy with a request or stream on average
       </p>
     </Box>
   );
