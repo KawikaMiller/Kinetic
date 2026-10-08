@@ -59,6 +59,8 @@ export type Ev =
       kind: 'save'; user: UserId; t0: number; t1: number; result: 'committed' | 'conflict';
       /** Stock after the statement. */
       stock: number;
+      /** The value the statement tried to write. */
+      attempted: number | null;
       seenVersion: number;
       /** The row's version after the statement. */
       version: number;
@@ -152,7 +154,7 @@ function save(w: World, u: UserId) {
     w.committed++;
   }
   w.events.push({
-    kind: 'save', user: u, t0, t1: t0 + 1, result: committed ? 'committed' : 'conflict', stock: w.row.stock, seenVersion: seen.version,
+    kind: 'save', user: u, t0, t1: t0 + 1, result: committed ? 'committed' : 'conflict', stock: w.row.stock, attempted: s.local, seenVersion: seen.version,
     version: w.row.version, clobbered: committed && clobbered,
   });
   if (committed) {

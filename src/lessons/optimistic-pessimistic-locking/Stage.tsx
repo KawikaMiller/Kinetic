@@ -137,6 +137,9 @@ function Lane({ user, w, disabled, onStep }: { user: UserId; w: World; disabled:
   const tone = LANE_TONE[user];
   const last = [...w.events].reverse().find((e) => e.kind !== 'wait');
   const sql = STEPS.map((st) => sqlFor(w.strategy, st, s.seen, s.local));
+  // A conflicted save resets the user to the start, but the line that just ran should show what it really sent.
+  if (last && last.user === user && last.kind === 'save' && last.result === 'conflict')
+    sql[LINE.save] = sqlFor(w.strategy, 'save', { stock: 0, version: last.seenVersion, writes: 0 }, last.attempted);
   // The line this user just ran is the current step; a conflicted save stays flagged until anyone acts again.
   const justRan = last && last.user === user ? LINE[last.kind] : -1;
   const state = (i: number): LineState => {

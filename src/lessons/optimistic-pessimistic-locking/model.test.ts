@@ -130,6 +130,11 @@ describe('optimistic locking never loses one and reports a conflict exactly when
       expect(w.users[loser].retries).toBe(changed ? 1 : 0);
     }
   });
+  it('a conflicted save records what it tried to write and the version it checked', () => {
+    const w = run('optimistic', DEFAULT_OPTS, ['ana', 'ben', 'ana', 'ben', 'ana', 'ben']);
+    const c = w.events.find((e) => e.kind === 'save' && e.result === 'conflict');
+    expect(c).toMatchObject({ user: 'ben', attempted: 9, seenVersion: START.version });
+  });
   it('a conflicted save changes nothing, and the retry re-reads the new version', () => {
     const w = run('optimistic', DEFAULT_OPTS, ['ana', 'ben', 'ana', 'ben', 'ana', 'ben']);
     expect(w.row).toMatchObject({ stock: 9, version: START.version + 1 });
