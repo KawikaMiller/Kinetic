@@ -6631,15 +6631,15 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B7 Probability & evaluation | 5 | 3 | t2/b7 | done | 2026-10-07, merged efb4ac0. Domain review: 3 MAJOR (rounding contradicting verdicts, unlabelled rounded Bayes metrics, comparator shuffle implied fair) + 14 minor, fixed cae9c92 |
 | 2 | T2-B8 Linear algebra & fitting | 5 | 3 | t2/b8 | done | 2026-10-07, merged 25835dc. Domain review: ~10 MAJOR caption/verdict contradictions (exact-case tolerance, false singular refusals, GD quiz missing maxima, momentum story) + minors, fixed 2a7e765 incl. core/vec leastSquaresQR |
 | 2 | T2-B9 Cryptography | 5 | 3 | t2/b9 | done | 2026-10-07, merged 98f4fc2. Domain review: 3 MAJOR (CTR keystream caption, false e<phi rule, key-size plot vs factoring records) + 17 minor, fixed 0685fc9; payload-free confirmed |
-| 2 | P-follow-up after wave 3 | — | 3→4 | kit owner | not started | includes K-21 `ColorField` + `core/contrast` extraction for color-spaces |
-| 2 | T2-B10 Inside the CPU | 5 | 4 | t2/b10 | not started | memory-safety-bugs is payload-free |
-| 2 | T2-B11 Algorithm design | 5 | 4 | t2/b11 | not started | |
-| 2 | T2-B12 Models from data | 4 | 4 | t2/b12 | not started | domain review |
-| 2 | T2-B13 Graphics & motion | 4 | 4 | t2/b13 | not started | |
-| 2 | P-follow-up after wave 4 | — | 4→5 | kit owner | not started | also: fold back any kit piece still on one user |
-| 2 | T2-B14 Sorting, selection & strings | 5 | 5 | t2/b14 | not started | |
-| 2 | T2-B15 Logic, proof & complexity | 5 | 5 | t2/b15 | not started | |
-| 2 | T2-B16 Concurrency & performance | 5 | 5 | t2/b16 | not started | |
+| 2 | P-follow-up after wave 3 | — | 3→4 | kit owner | done | kit-k5 merged 4881f8c: K-21 ColorField + core/contrast, format/stats/parse/crypto/paint helpers, slow tests 7.3→2.0 s; Vitest testTimeout 15 s |
+| 2 | T2-B10 Inside the CPU | 5 | 4 | t2/b10 | done | merged e667760 + memory-safety-bugs 1fc5f12 (re-scoped after a safety-classifier stop; allocator a black box). Reviews: 8 MAJOR fixed 0310a83; msb payload-free PASS, 2 MAJOR fixed a5c88bf |
+| 2 | T2-B11 Algorithm design | 5 | 4 | t2/b11 | done | merged 3b8ea84; review 3 MAJOR fixed aaba751 |
+| 2 | T2-B12 Models from data | 4 | 4 | t2/b12 | done | merged c5bbed4; domain review 5 MAJOR fixed 12a1cdf; spec's Hick and AdaBoost claims corrected |
+| 2 | T2-B13 Graphics & motion | 4 | 4 | t2/b13 | done | merged 2675566 (K-21 ColorField used); review 3 MAJOR fixed 2b0697f |
+| 2 | P-follow-up after wave 4 | — | 4→5 | kit owner | in progress | waves 4+5 gates on main (2026-10-07): 3788 tests, smoke 177/177 desktop + 390px, captions only the 6 known CHECKs. Component kit round kit-k6 running; queues docs/tier2-wave4-kit-requests.md, tier2-wave5-kit-requests.md |
+| 2 | T2-B14 Sorting, selection & strings | 5 | 5 | t2/b14 | done | merged c388c87; spec quickselect formula corrected; review 3 MAJOR fixed 68ddc42 |
+| 2 | T2-B15 Logic, proof & complexity | 5 | 5 | t2/b15 | done | merged e1da29a; review 5 MAJOR fixed 5ea578c |
+| 2 | T2-B16 Concurrency & performance | 5 | 5 | t2/b16 | done | merged 30d8015; review 5 MAJOR fixed 0f0ae7c |
 | 2 | P-follow-up after wave 5 | — | 5→6 | kit owner | not started | |
 | 2 | T2-B17 Sockets & the edge | 5 | 6 | t2/b17 | not started | |
 | 2 | T2-B18 Runtimes & memory | 5 | 6 | t2/b18 | not started | |
