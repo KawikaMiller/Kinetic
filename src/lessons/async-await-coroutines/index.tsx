@@ -67,13 +67,13 @@ const lesson: LessonModule = {
     {
       q: '`try { return load(); } catch (e) { … }` inside an async function, and load() rejects. Why isn\'t the error caught?',
       options: [
-        'The promise is returned before it rejects',
+        'A rejected promise is a value, not a throw',
         'catch blocks never run in async functions',
         'load() rejects on another thread entirely',
-        'try/catch only catches errors from await calls',
+        'The try block ends before load() is called',
       ],
       answer: 0,
-      why: 'Without await, return hands back the pending promise and the try block ends at once; the rejection happens later, outside it. `return await load()` keeps the function inside the try until load() settles, so the catch runs.',
+      why: 'load() throws, so its promise is already rejected when return hands it back. But returning a rejected promise throws nothing inside the try: it is just a value, so catch has nothing to catch and the rejection escapes. `return await load()` turns the rejection into a throw at that line, where catch sees it.',
     },
   ],
 };

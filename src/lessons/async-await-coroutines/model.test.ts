@@ -43,8 +43,9 @@ describe('sequential vs parallel, against real JavaScript with fake timers', () 
   });
 });
 
-/** Every assignment of outcomes, over permutations of three times plus some ties. */
-const TIMINGS: number[][] = [[100, 200, 300], [100, 300, 200], [200, 100, 300], [200, 300, 100], [300, 100, 200], [300, 200, 100], [100, 100, 300], [200, 200, 200], [300, 100, 100]];
+/** The lab's whole grid: every time each request can be set to (ties included), for every outcome. */
+const UI_TIMES = [100, 200, 300, 500];
+const TIMINGS: number[][] = UI_TIMES.flatMap((ta) => UI_TIMES.flatMap((tb) => UI_TIMES.map((tc) => [ta, tb, tc])));
 const OUTCOMES: Outcome[][] = Array.from({ length: 8 }, (_, m) => REQS.map((_, i) => ((m >> i) & 1 ? 'reject' : 'resolve')));
 
 const describeReal = (s: PromiseSettledResult<string>[]) => `[${s.map((r) => (r.status === 'fulfilled' ? `fulfilled "${r.value}"` : `rejected ${(r.reason as Error).message}`)).join(', ')}]`;
@@ -76,7 +77,7 @@ describe('combinators: the model matches real Promise.all / allSettled / race / 
   afterEach(() => vi.useRealTimers());
 
   for (const c of COMBINATORS) {
-    it(`${c}: every outcome × timing`, async () => {
+    it(`${c}: every outcome × every UI timing (512 cases)`, async () => {
       for (const times of TIMINGS) {
         for (const outs of OUTCOMES) {
           vi.setSystemTime(0);

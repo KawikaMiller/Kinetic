@@ -267,7 +267,7 @@ function MachineScene({ picker }: { picker: ReactNode }) {
         </div>
         <Hint block>
           JavaScript&apos;s async functions are stackless coroutines: only the one function&apos;s locals are saved, and an await can only suspend the function it is written in.
-          Stackful coroutines (Lua&apos;s coroutines, Go&apos;s goroutines) keep a whole stack and can pause from deep inside nested calls. The desugared form is simplified: real
+          Stackful coroutines, such as Lua&apos;s, keep a whole stack and can pause from deep inside nested calls. The desugared form is simplified: real
           engines also handle errors (try/catch across awaits) and differ in how many microtask ticks each step takes.
         </Hint>
       </div>

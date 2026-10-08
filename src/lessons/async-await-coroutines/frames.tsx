@@ -78,6 +78,6 @@ export function pitfallCaption(p: Pitfall, fixed: boolean): ReactNode {
     case 'forEach':
       return <>forEach ignores the promises its callback returns, so &quot;all sent&quot; prints first and the sends finish later, in timer order.</>;
     case 'returnNoAwait':
-      return <>return load() hands the promise back before it rejects, so the try/catch is already over: the error escapes as an unhandled rejection and &quot;main finished&quot; never prints.</>;
+      return <>load() has already rejected by the time return hands its promise back, but a rejected promise is a value, not a throw, so nothing is thrown inside the try and catch never runs. The rejection escapes as an unhandled rejection and &quot;main finished&quot; never prints. <code>return await load()</code> turns it into a throw where catch sees it.</>;
   }
 }
