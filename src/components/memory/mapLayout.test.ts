@@ -129,3 +129,60 @@ describe('unused columns collapse', () => {
     expect(L.cols.region).toBe(L.cols.cell + L.cols.cellW + MEMMAP.LINK_W);
   });
 });
+
+describe('region labels', () => {
+  it('sit on the first row of their band when nothing else labels it', () => {
+    const L = memoryMapLayout(FRAME);
+    expect(L.bands.map((b) => b.labelY)).toEqual([MEMMAP.ROW_H / 2, 3.5 * MEMMAP.ROW_H, 2.5 * MEMMAP.ROW_H]);
+  });
+
+  it("move an outer region's label off a row its nested region already labels", () => {
+    // The frame's first row (top, high addresses) is also the return-address slot's only row.
+    const L = memoryMapLayout({
+      regions: [
+        { from: 0x7ff0, to: 0x8010, label: 'greet() frame', tone: 'info' },
+        { from: 0x8008, to: 0x8010, label: 'return address', tone: 'violet' },
+        { from: 0x8000, to: 0x8008, label: 'saved rbp', tone: 'violet' },
+      ],
+    });
+    const [frame, ret, rbp] = L.bands;
+    expect(ret.labelY).toBe(MEMMAP.ROW_H / 2);
+    expect(rbp.labelY).toBe(1.5 * MEMMAP.ROW_H);
+    // Rows 0 and 1 are taken by the slots, so the frame's name goes on row 2.
+    expect(frame.labelY).toBe(2.5 * MEMMAP.ROW_H);
+  });
+
+  it('keep the first row when every row of the band is labelled by nested regions', () => {
+    const L = memoryMapLayout({
+      regions: [
+        { from: 0x8000, to: 0x8010, label: 'outer', tone: 'info' },
+        { from: 0x8008, to: 0x8010, label: 'a', tone: 'violet' },
+        { from: 0x8000, to: 0x8008, label: 'b', tone: 'violet' },
+      ],
+    });
+    expect(L.bands[0].labelY).toBe(MEMMAP.ROW_H / 2);
+  });
+});
+
+describe('pointer rows', () => {
+  it('stack the tags of pointers at the same row, centred on it, with one arrowhead', () => {
+    const L = memoryMapLayout({
+      ...FRAME,
+      pointers: [
+        { addr: 0x7ff0, label: 'rsp', tone: 'muted' },
+        { addr: 0x7ff0, label: 'rbp', tone: 'hi' },
+        { addr: 0x8008, label: 'x', tone: 'info' },
+      ],
+    });
+    const y = 3.5 * MEMMAP.ROW_H;
+    expect(L.pointerRows).toEqual([
+      { y, tone: 'muted', labels: [{ label: 'rsp', tone: 'muted', y: y - MEMMAP.POINTER_LINE / 2 }, { label: 'rbp', tone: 'hi', y: y + MEMMAP.POINTER_LINE / 2 }] },
+      { y: MEMMAP.ROW_H / 2, tone: 'info', labels: [{ label: 'x', tone: 'info', y: MEMMAP.ROW_H / 2 }] },
+    ]);
+  });
+
+  it('keep a lone pointer at the middle of its row', () => {
+    const L = memoryMapLayout(FRAME);
+    expect(L.pointerRows).toEqual([{ y: 3.5 * MEMMAP.ROW_H, tone: 'hi', labels: [{ label: 'rsp', tone: 'hi', y: 3.5 * MEMMAP.ROW_H }] }]);
+  });
+});

@@ -30,8 +30,8 @@ export function Stage() {
   return <TransformScene picker={picker} />;
 }
 
-/** 356 × 350 gives a square inner box with Plot2D's margins, so the grid's squares stay square. */
 const PLOT_W = 356;
+/** The plots are aspect="equal" (the grid's squares stay square): 350 tall at PLOT_W. The stages leave room around that. */
 const PLOT_H = 350;
 const EXTENT = 4;
 const TWEEN_MS = 450;
@@ -73,7 +73,7 @@ function WarpPlot({ m, ariaLabel, showBasis = true, extent = EXTENT }: { m: M2; 
   const [i, j] = columns(m);
   const squareTone = isSingular(m) ? 'dim' : d > 0 ? 'ok' : 'orange';
   return (
-    <Plot2D x={{ domain: [-extent, extent] }} y={{ domain: [-extent, extent] }} width={PLOT_W} height={PLOT_H} className="mt-plot" ariaLabel={ariaLabel}>
+    <Plot2D x={{ domain: [-extent, extent] }} y={{ domain: [-extent, extent] }} width={PLOT_W} aspect="equal" className="mt-plot" ariaLabel={ariaLabel}>
       <Segments segments={gridSegments(m)} tone="dim" />
       <Polygon points={UNIT_SQUARE.map((p) => applyM(m, p))} tone={squareTone} />
       <Polygon points={F_SHAPE} tone="dim" dashed />
@@ -347,7 +347,7 @@ function HomogeneousScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="stage-pad mt-row">
-        <Plot2D x={{ domain: [-H_EXTENT, H_EXTENT] }} y={{ domain: [-H_EXTENT, H_EXTENT] }} width={PLOT_W} height={PLOT_H} className="mt-plot" ariaLabel={`F moved by the 3×3 matrix; origin goes to ${pt(t, 1)}`}>
+        <Plot2D x={{ domain: [-H_EXTENT, H_EXTENT] }} y={{ domain: [-H_EXTENT, H_EXTENT] }} width={PLOT_W} aspect="equal" className="mt-plot" ariaLabel={`F moved by the 3×3 matrix; origin goes to ${pt(t, 1)}`}>
           <Polygon points={F_SHAPE} tone="dim" dashed />
           <Polygon points={moved} tone="hi" />
           <Arrow to={t} tone="pink" label="t" />

@@ -73,9 +73,8 @@ export function FlameView({
   // One tab stop (the selected box, else the root); arrow keys walk the boxes in drawing order.
   const stop = mode === 'graph' ? (boxes.some((b) => b.key === selected) ? selected : 'all') : null;
   const move = (e: KeyboardEvent<SVGGElement>, delta: number) => {
-    // The arrows are ours here: keep them from also stepping the player (it listens on window).
+    // The arrows are ours here; usePlayer skips a prevented keydown, so they don't also step it.
     e.preventDefault();
-    e.stopPropagation();
     const all = [...(e.currentTarget.ownerSVGElement?.querySelectorAll<SVGGElement>('.pf-hit') ?? [])];
     const i = all.indexOf(e.currentTarget);
     all[Math.min(all.length - 1, Math.max(0, i + delta))]?.focus();

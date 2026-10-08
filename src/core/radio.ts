@@ -24,3 +24,23 @@ export function radioKeyTarget(key: string, index: number, count: number): numbe
 
 /** The one option that's in the tab order: the checked one, or the first if none is. */
 export const rovingTabStop = (checkedIndex: number) => (checkedIndex < 0 ? 0 : checkedIndex);
+
+/**
+ * Where a key press moves focus in a vertical list with one tab stop (CodePanel's clickable
+ * lines): ↑/↓ step without wrapping, Home/End jump to the ends. null = not a list key.
+ */
+export function listKeyTarget(key: string, index: number, count: number): number | null {
+  if (count <= 0) return null;
+  switch (key) {
+    case 'ArrowDown':
+      return Math.min(count - 1, index + 1);
+    case 'ArrowUp':
+      return Math.max(0, index - 1);
+    case 'Home':
+      return 0;
+    case 'End':
+      return count - 1;
+    default:
+      return null;
+  }
+}

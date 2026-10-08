@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
-import { Curve, Heat, Plot2D, Points, VLine } from '../../components/Plot2D';
+import { Curve, Heat, Plot2D, PlotCursor, PointerLayer, Points, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { clamp } from '../../core/math';
@@ -8,7 +8,7 @@ import type { Point } from '../../core/plot';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
 import { CLUSTER_TONES, MAX_K, num } from './view';
-import { Centroids, ClickCatcher } from './layers';
+import { Centroids } from './layers';
 import {
   ELBOW_MAX_K, PRESET_IDS, RESTARTS, agreement, bestOfRestarts, elbowCurve, elbowK, finalStep, initCentroids, lloyd, nearest, preset, sqDist, standardise,
   type InitMethod, type P, type Preset, type PresetId,
@@ -191,10 +191,10 @@ export function Stage() {
           ariaLabel={`${space.length} points, k = ${k}, ${step ? `${step.phase} step` : 'not run'}`}
         >
           {voronoi && <Heat fn={voronoi} resolution={72} />}
-          <ClickCatcher onClick={click} />
+          <PointerLayer onDown={click} />
           <Points data={space.map((q, i) => ({ x: q[0], y: q[1], tone: step?.assign ? CLUSTER_TONES[step.assign[i]] : 'dim' }))} r={3.6} />
           {step && <Centroids centroids={step.centroids} moving={step.phase === 'update'} />}
-          <Points data={[{ x: cur[0], y: cur[1], tone: 'muted', hollow: true }]} r={5} onDrag={(_, q) => setCursor(q)} pointLabel={() => 'Edit cursor'} />
+          <PlotCursor at={cur} onMove={setCursor} label="Edit cursor" />
         </Plot2D>
         <div className="km-side">
           {!enough && <p className="km-refusal" role="alert">Need at least {k} points for k = {k}: there are {space.length}.</p>}

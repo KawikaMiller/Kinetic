@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties, type RefObject } from 'react';
 import { barGeometry, domainFraction, ganttTicks, spreadLabels, type Domain } from '../core/gantt';
 import type { Tone } from '../core/tone';
 import { useMeasure } from '../core/useMeasure';
@@ -27,7 +27,16 @@ export interface GanttBar {
   progress?: number;
   /** An outline in this tone (the critical path, the job being asked about). */
   ring?: Tone;
+  /**
+   * Bars with the same motionId are one thing in different places: when one appears (a new
+   * bar, or a bar moved to another lane) it glides in from where that id was last drawn,
+   * e.g. a meeting sliding down into the "booked" lane.
+   */
+  motionId?: string;
 }
+
+/** How long a bar with a motionId takes to glide to its new place. */
+const GLIDE_MS = 450;
 
 /** Space kept between neighbouring marker labels, px. */
 const MARKER_LABEL_GAP = 4;
@@ -44,8 +53,9 @@ export interface GanttMarker {
  * close together are nudged apart, core/gantt spreadLabels). Positions are
  * percentages, so it stretches to its container; on a phone a lesson wraps it in
  * `WideRegion` when bars get too thin to read. Extracted from ci-pipelines' wall-clock
- * chart, which renders through it pixel-identically. Motion is CSS transitions only, so
- * prefers-reduced-motion (global.css) stills it.
+ * chart, which renders through it pixel-identically. Motion is CSS transitions, plus the
+ * motionId glide; prefers-reduced-motion (global.css) stills the transitions and the glide is
+ * skipped too.
  */
 export function GanttLanes({
   lanes, bars, domain, now, markers = [], unit = '', axis = false, size = 'sm', labelWidth, labelMinPx, onBarClick, ariaLabel, className = '',
@@ -83,6 +93,7 @@ export function GanttLanes({
   const shift = measured && measured.labels.length === markers.length
     ? spreadLabels(markers.map((m, i) => ({ x: domainFraction(m.at, domain) * trackPx, w: measured.labels[i] })), MARKER_LABEL_GAP)
     : markers.map(() => 0);
+  useGlide(root);
   const showLabel = (b: GanttBar) => labelMinPx === undefined || !trackPx || (barGeometry(b.start, b.end, domain, b.progress ?? 1).shown / 100) * trackPx >= labelMinPx;
 
   return (
@@ -136,6 +147,35 @@ export function GanttLanes({
   );
 }
 
+/**
+ * FLIP for bars with a motionId: a bar element that wasn't there last render starts at the
+ * place its motionId was last drawn and glides to where it is now (Web Animations, so it
+ * runs over the bar's own CSS transitions without fighting them).
+ */
+function useGlide(root: RefObject<HTMLDivElement | null>) {
+  const last = useRef(new Map<string, { x: number; y: number }>());
+  const seen = useRef(new WeakSet<Element>());
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const origin = el.getBoundingClientRect();
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const now = new Map<string, { x: number; y: number }>();
+    el.querySelectorAll<HTMLElement>('[data-motion-id]').forEach((bar) => {
+      const id = bar.dataset.motionId!;
+      const r = bar.getBoundingClientRect();
+      const at = { x: r.left - origin.left, y: r.top - origin.top };
+      const from = last.current.get(id);
+      if (!seen.current.has(bar) && from && !reduce && (from.x !== at.x || from.y !== at.y)) {
+        bar.animate([{ transform: `translate(${from.x - at.x}px, ${from.y - at.y}px)` }, { transform: 'none' }], { duration: GLIDE_MS, easing: 'ease-out' });
+      }
+      seen.current.add(bar);
+      if (!now.has(id)) now.set(id, at);
+    });
+    last.current = now;
+  });
+}
+
 function Bar({ bar: b, domain, onClick, showLabel }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean }) {
   const g = barGeometry(b.start, b.end, domain, b.progress ?? 1);
   const classes = ['gantt-bar', b.tone && `tone-${b.tone}`, `is-${b.kind ?? 'work'}`, b.ring && 'is-ring'].filter(Boolean).join(' ');
@@ -149,11 +189,11 @@ function Bar({ bar: b, domain, onClick, showLabel }: { bar: GanttBar; domain: Do
     <>
       {b.progress !== undefined && <span className="gantt-plan" style={{ left: `${g.left}%`, width: `${g.full}%` }} />}
       {onClick ? (
-        <button type="button" className={classes} style={style} title={b.label} aria-label={b.label ?? b.id} onClick={() => onClick(b.id)}>
+        <button type="button" className={classes} style={style} title={b.label} aria-label={b.label ?? b.id} data-motion-id={b.motionId} onClick={() => onClick(b.id)}>
           {content}
         </button>
       ) : (
-        <span className={classes} style={style} title={b.label}>
+        <span className={classes} style={style} title={b.label} data-motion-id={b.motionId}>
           {content}
         </span>
       )}

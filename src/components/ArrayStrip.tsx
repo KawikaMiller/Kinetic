@@ -38,17 +38,20 @@ export interface ArrayRange {
  * window plus its best-so-far, a git-bisect commit range.
  *
  * - `cellState(i)` styles each cell; idle cells inside the first range get the in-range tint.
+ *   `cellClass(i)` adds a lesson's own class to a cell (prefix it with the lesson's prefix).
  * - `pointers`: pass `[]` (not undefined) when a lesson's pointers come and go, so the
  *   pointer lane keeps its height and the layout doesn't jump.
  * - `onCellClick` makes the cells buttons; otherwise they're plain boxes.
  * - Cell width comes from the container (`--n` equal columns); set `fontSize` for crowded rows.
  */
 export function ArrayStrip({
-  values, cellState, pointers, ranges = [], showIndex = false, onCellClick, cellTitle, renderValue,
+  values, cellState, cellClass, pointers, ranges = [], showIndex = false, onCellClick, cellTitle, renderValue,
   fontSize, cellMax, className = '',
 }: {
   values: readonly (number | string)[];
   cellState?: (i: number) => ArrayCellState;
+  /** Extra class names for cell i, for a lesson-specific style on top of its state. */
+  cellClass?: (i: number) => string;
   pointers?: readonly ArrayPointer[];
   ranges?: readonly ArrayRange[];
   showIndex?: boolean;
@@ -65,10 +68,10 @@ export function ArrayStrip({
   const primary = ranges[0];
   const inPrimary = (i: number) => !!primary && i >= primary.from && i <= primary.to;
 
-  const cellClass = (i: number) => {
+  const classesOf = (i: number) => {
     const state = cellState?.(i) ?? 'idle';
     const inRange = state === 'idle' && inPrimary(i) ? 'is-in-range' : '';
-    return `array-cell is-${state} ${inRange} ${onCellClick ? 'is-clickable' : ''}`;
+    return `array-cell is-${state} ${inRange} ${onCellClick ? 'is-clickable' : ''} ${cellClass?.(i) ?? ''}`;
   };
 
   const style = {
@@ -108,11 +111,11 @@ export function ArrayStrip({
         {values.map((v, i) => {
           const content = renderValue ? renderValue(v, i) : v;
           return onCellClick ? (
-            <button key={i} type="button" className={cellClass(i)} onClick={() => onCellClick(i)} title={cellTitle?.(i)}>
+            <button key={i} type="button" className={classesOf(i)} onClick={() => onCellClick(i)} title={cellTitle?.(i)}>
               {content}
             </button>
           ) : (
-            <div key={i} className={cellClass(i)} title={cellTitle?.(i)}>
+            <div key={i} className={classesOf(i)} title={cellTitle?.(i)}>
               {content}
             </div>
           );

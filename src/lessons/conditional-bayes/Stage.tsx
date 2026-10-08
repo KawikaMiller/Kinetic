@@ -17,8 +17,6 @@ const GRID_COLS = 40;
 const GRID_ROWS = POPULATION / GRID_COLS;
 const PREV_MAX = 500;
 const RATE_MIN = 500;
-/** How strongly a negative person's dot is washed toward their colour. */
-const NEGATIVE_WASH = 0.3;
 
 /** Truth is a category (violet / sky); the test result is the shape (filled / outline). */
 const TRUTH_TONE: Record<Group, Tone> = { tp: 'violet', fn: 'violet', fp: 'sky', tn: 'sky' };
@@ -76,8 +74,7 @@ export function Stage() {
   const cell = (r: number, c: number): GridCellSpec => {
     const g = groupOf(counts, r * GRID_COLS + c);
     if (onlyPositives && !POSITIVE[g]) return { tone: 'dim', fill: 'solid' };
-    // A 1,000-cell grid paints on a canvas, which draws no cell edges, so a negative is a faint wash rather than an outline.
-    return POSITIVE[g] ? { tone: TRUTH_TONE[g], fill: 'solid' } : { tone: TRUTH_TONE[g], fill: 'tint', intensity: NEGATIVE_WASH };
+    return { tone: TRUTH_TONE[g], fill: POSITIVE[g] ? 'solid' : 'outline' };
   };
 
   const treeText: Record<TreeId, [string, string]> = {
@@ -107,7 +104,7 @@ export function Stage() {
           items={[
             { color: 'var(--violet)', label: labels.positive, shape: 'dot' },
             { color: 'var(--sky)', label: labels.negative, shape: 'dot' },
-            { color: 'var(--muted)', label: 'bright = tested positive · faint = negative', shape: 'dot' },
+            { color: 'var(--muted)', label: 'solid = tested positive · outlined = negative', shape: 'dot' },
             { color: 'var(--dim)', label: 'filtered out', shape: 'dot' },
           ]}
         />
