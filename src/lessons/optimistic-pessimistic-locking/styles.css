@@ -16,3 +16,4 @@
 .lk-cols { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
 .lk-stats { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .lk-plot { flex: 1 1 356px; min-width: 0; }
+.lk-conflict { color: var(--orange); font-weight: 700; }

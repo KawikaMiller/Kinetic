@@ -24,7 +24,7 @@ function describe(e: Ev, w: World): ReactNode {
       if (e.result === 'conflict')
         return <>{who}'s UPDATE … WHERE version = {e.seenVersion} <span className="hl orange">matches 0 rows</span>: the version is now {e.version}. A conflict was detected, nothing was overwritten, so {who} must re-read and retry.</>;
       if (e.clobbered)
-        return <>{who} saves stock = {e.stock}, overwriting a newer value: <span className="hl bad">a lost update</span>.</>;
+        return <>{who} saves stock = {e.stock}, worked out from a stale read, so the other sale is erased: <span className="hl bad">a lost update</span>.</>;
       if (w.strategy === 'optimistic')
         return <>{who}'s UPDATE … WHERE version = {e.seenVersion} <span className="hl ok">matches 1 row</span>: stock {e.stock}, version {e.version}.</>;
       if (w.strategy === 'atomic') return <>{who}'s UPDATE stock = stock - 1 leaves <span className="hl ok">stock {e.stock}</span>.</>;
@@ -39,7 +39,7 @@ export function verdictCaption(w: World): ReactNode {
   const conflicts = w.events.filter((e) => e.kind === 'save' && e.result === 'conflict').length;
   return <>{lost > 0
     ? <><span className="hl bad">Final stock {w.row.stock}</span>: {w.committed} sales were saved but only {START.stock - w.row.stock} counted, so {lost} decrement{lost === 1 ? ' was' : 's were'} lost.</>
-    : <><span className="hl ok">Final stock {w.row.stock}</span>: every sale that was saved is counted
+    : <><span className={`hl ${timedOut.length ? '' : 'ok'}`}>Final stock {w.row.stock}</span>: every sale that was saved is counted
       {conflicts ? <>, after {conflicts} detected conflict{conflicts === 1 ? '' : 's'} and a retry</> : null}.</>}
     {timedOut.length ? <> {timedOut.map((u) => NAME[u]).join(' and ')} timed out waiting, so that sale was not made.</> : null}</>;
 }

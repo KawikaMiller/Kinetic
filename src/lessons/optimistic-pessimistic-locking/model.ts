@@ -327,7 +327,7 @@ export function httpScript(requireIfMatch: boolean, benSendsIfMatch: boolean): H
   };
   const put = (u: UserId, stock: number, saw: number, sendTag: boolean): PutOutcome => {
     const tag = sendTag ? etag(saw) : null;
-    add({ kind: 'put', from: u, to: 'api', owner: u, label: `PUT stock=${stock}`, note: tag ? `If-Match: ${tag}` : 'no If-Match', stock, tag });
+    add({ kind: 'put', from: u, to: 'api', owner: u, label: `PATCH stock=${stock}`, note: tag ? `If-Match: ${tag}` : 'no If-Match', stock, tag });
     const r = putOutcome(requireIfMatch, tag, p.version, saw);
     if (r.applied) p = { stock, version: p.version + 1 };
     add({

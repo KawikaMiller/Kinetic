@@ -200,9 +200,13 @@ describe('contention', () => {
   it('one editor never conflicts and never waits', () => {
     expect(curve[0].retries).toBe(0);
   });
-  it('optimistic loses less at low contention, pessimistic at high', () => {
-    for (const c of curve.filter((x) => x.editors <= 3)) expect(c.optimisticLost, `${c.editors}`).toBeLessThan(c.pessimisticLost);
-    for (const c of curve.filter((x) => x.editors >= 5)) expect(c.pessimisticLost, `${c.editors}`).toBeLessThan(c.optimisticLost);
+  it('optimistic loses less at low contention and pessimistic at high, crossing once (where depends on the constants)', () => {
+    expect(curve[0].optimisticLost).toBeLessThan(curve[0].pessimisticLost);
+    expect(curve[1].optimisticLost).toBeLessThan(curve[1].pessimisticLost);
+    expect(curve[MAX_EDITORS - 1].pessimisticLost).toBeLessThan(curve[MAX_EDITORS - 1].optimisticLost);
+    const sign = curve.map((c) => Math.sign(c.optimisticLost - c.pessimisticLost));
+    const changes = sign.slice(1).filter((x, i) => x !== sign[i] && x !== 0 && sign[i] !== 0).length;
+    expect(changes).toBeLessThanOrEqual(1);
   });
   it('both grow with the number of editors', () => {
     for (let i = 1; i < curve.length; i++) {

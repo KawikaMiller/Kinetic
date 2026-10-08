@@ -43,7 +43,7 @@ const STRATEGY_NOTE: Record<Strategy, string> = {
   none: 'Each user runs plain statements in its own transaction at READ COMMITTED: a transaction alone does not stop two read-modify-writes from overwriting each other.',
   pessimistic: 'SELECT … FOR UPDATE takes a row lock that is held until COMMIT: the second reader waits.',
   optimistic: 'No lock: the UPDATE only applies if the version is still the one that was read; 0 rows means someone else got there first.',
-  atomic: 'One statement does the subtraction inside the database, so there is no read-modify-write to interleave. Only works when the change is a simple formula.',
+  atomic: 'One statement does the subtraction inside the database, so there is no read-modify-write to interleave. It only works for a simple formula, real UPDATEs still queue briefly on the row lock, and a stock decrement also needs WHERE stock > 0 (or a CHECK constraint) so it cannot go negative.',
 };
 const SCOPE = 'Simulated database row and lock manager at READ COMMITTED; times are in illustrative ticks.';
 
@@ -125,7 +125,7 @@ function tallyText(s: Strategy, t: ReturnType<typeof tally>): string {
     case 'pessimistic':
       return `Pessimistic locking loses an update in ${t.lost} ${of}; the second reader waits in ${t.blocked}${t.timedOut ? ` and times out in ${t.timedOut}` : ''}.`;
     case 'optimistic': return `Optimistic locking loses an update in ${t.lost} ${of}; a conflict is detected and retried in ${t.conflicts}.`;
-    case 'atomic': return `The atomic UPDATE loses an update in ${t.lost} ${of}, with no waiting and no conflicts.`;
+    case 'atomic': return `The atomic UPDATE loses an update in ${t.lost} ${of}, with no waiting and no conflicts in this model.`;
   }
 }
 
@@ -140,7 +140,7 @@ function Lane({ user, w, disabled, onStep }: { user: UserId; w: World; disabled:
   // The line this user just ran is the current step; a conflicted save stays flagged until anyone acts again.
   const justRan = last && last.user === user ? LINE[last.kind] : -1;
   const state = (i: number): LineState => {
-    if (i === justRan) return last!.kind === 'save' && last!.result === 'conflict' ? 'bad' : 'now';
+    if (i === justRan) return 'now';
     if (s.waitingSince !== null && i === 0) return 'pending';
     return i < s.pc ? 'done' : 'idle';
   };
@@ -157,7 +157,7 @@ function Lane({ user, w, disabled, onStep }: { user: UserId; w: World; disabled:
         ))}
       </div>
       <CodePanel lines={sql} gutter="none" stateOf={state} className="lk-sql"
-        trailing={(i) => (i === 0 && s.waitingSince !== null ? 'blocked: the row is locked' : null)} />
+        trailing={(i) => (i === 0 && s.waitingSince !== null ? 'blocked: the row is locked' : i === justRan && last!.kind === 'save' && last!.result === 'conflict' ? <span className="lk-conflict">0 rows: conflict</span> : null)} />
     </div>
   );
 }
@@ -232,7 +232,7 @@ function HttpScene({ picker }: { picker: ReactNode }) {
         <Toggle label="Ben" value={sends} onChange={setSends} off="Sends no If-Match" on="Sends If-Match" /></>]}
     >
       <div className="stage-pad lk">
-        <SequenceDiagram actors={HTTP_ACTORS} messages={messages} step={Math.min(at, steps.length)} ariaLabel="Conditional PUT exchange" />
+        <SequenceDiagram actors={HTTP_ACTORS} messages={messages} step={Math.min(at, steps.length)} ariaLabel="Conditional PATCH exchange" />
         <div className="lk-row">
           <SectionTitle weight="regular" hint="what the server holds">Product 7</SectionTitle>
           <table className="data-table">
@@ -285,7 +285,7 @@ function ContentionScene({ picker }: { picker: ReactNode }) {
         </div>
         <Hint block>
           Seeded model, averaged over {TRIALS} arrival patterns: each editor's read, edit and save takes 3 ticks, and editors arrive at random within 30 ticks.
-          Optimistic redoes all 3 ticks on each conflict; pessimistic queues behind the lock and pays an illustrative 0.5 tick to take it. Real numbers depend on how long the lock is held and how often rows collide.
+          Optimistic redoes all 3 ticks on each conflict; pessimistic queues behind the lock and pays an illustrative 0.5 tick to take it. Where the two lines cross depends on these made-up numbers (the 0.5 tick lock cost, the 30-tick window); real systems depend on how long the lock is held and how often rows collide.
         </Hint>
       </div>
     </StageFrame>
