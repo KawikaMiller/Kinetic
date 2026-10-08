@@ -32,7 +32,7 @@ export function overcommitCaption(vms: number, used: number): ReactNode {
     return (
       <>
         {o.committed} GB promised on a {HOST_GB} GB host: {ratioText(o.ratio)} overcommitted. It works because the guests only touch {o.used} GB between them, and pages a guest
-        never touches never get host memory.
+        never touches usually never get host memory (preallocated, hugepage and device-passthrough guests are exceptions).
       </>
     );
   }

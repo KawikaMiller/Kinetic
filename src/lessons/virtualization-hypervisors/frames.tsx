@@ -51,6 +51,13 @@ export function instrCaption(instr: Instr, technique: Technique): ReactNode {
           fault needed.
         </>
       );
+    case 'shared':
+      return (
+        <>
+          The paravirtualised kernel doesn&apos;t run {code} on the real CPU flag at all: it writes to an event mask in memory it shares with the hypervisor ({instr.does}). An
+          ordinary memory write, so no exit and no hypercall.
+        </>
+      );
     case 'hypercall':
       return <>The paravirtualised kernel was modified: instead of {code} it asks the hypervisor on purpose, with a hypercall ({instr.does}).</>;
   }
@@ -59,7 +66,7 @@ export function instrCaption(instr: Instr, technique: Technique): ReactNode {
 export const VERDICT: Record<Technique, string> = {
   classic: 'One sensitive instruction that never traps is enough to break trap-only virtualization, which is why x86 needed another way.',
   bt: 'Correct and unmodified guests, at the price of a clever translator in the hypervisor.',
-  pv: 'Fast and correct, but the guest kernel had to be changed to cooperate.',
+  pv: 'Correct, with few exits, but the guest kernel had to be changed to cooperate.',
   hw: 'Unmodified guests, correct, and most privileged work never leaves guest mode.',
 };
 
@@ -71,7 +78,7 @@ export function trapFrames(technique: Technique): TrapFrame[] {
   rec.set({ i: -1 });
   rec.close(
     <>
-      {t.direct} of {STREAM.length} ran directly, {t.caught} {t.caught === 1 ? 'was' : 'were'} handled by the hypervisor
+      {t.direct} of {STREAM.length} ran directly{t.shared > 0 ? <>, {t.shared} became plain writes to shared memory</> : null}, {t.caught} {t.caught === 1 ? 'was' : 'were'} handled by the hypervisor
       {t.bad > 0 ? <>, and <span className="hl bad">{t.bad} went silently wrong</span></> : null}: {t.cycles.toLocaleString('en-US')} cycles (illustrative). {VERDICT[technique]}
     </>,
     2,

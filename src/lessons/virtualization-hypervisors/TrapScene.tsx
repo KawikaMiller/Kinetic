@@ -15,11 +15,11 @@ const LAYER_H = 50;
 const KERNEL_H = 74;
 const PILL = { x: 190, y: LAYER.kernel + 46 };
 
-const TAG: Record<Handling, string> = { direct: 'direct', trap: 'trap', translate: 'rewritten', hypercall: 'hypercall', bad: 'wrong!' };
+const TAG: Record<Handling, string> = { direct: 'direct', trap: 'trap', translate: 'rewritten', hypercall: 'hypercall', shared: 'shared mem', bad: 'wrong!' };
 
 function kernelLabel(t: Technique) {
   if (t === 'hw') return 'guest kernel · ring 0, guest mode';
-  if (t === 'pv') return 'guest kernel (modified) · ring 1';
+  if (t === 'pv') return 'guest kernel (modified) · ring 3 (ring 1 on 32-bit)';
   return 'guest kernel · deprivileged to ring 1';
 }
 
@@ -41,7 +41,7 @@ export function TrapScene({ picker }: { picker: ReactNode }) {
       height={400}
       stats={
         <Stats>
-          <Stat label="Ran directly" value={sofar.direct} color="var(--ok)" />
+          <Stat label="Ran directly" value={sofar.direct + sofar.shared} color="var(--ok)" sub={sofar.shared ? `incl. ${sofar.shared} shared-memory write${sofar.shared === 1 ? '' : 's'}` : undefined} />
           <Stat label="Hypervisor handled" value={sofar.caught} color="var(--violet)" />
           <Stat label="Silently wrong" value={sofar.bad} color={sofar.bad ? 'var(--bad)' : undefined} />
           <Stat label="Cycles" value={sofar.cycles.toLocaleString('en-US')} sub="illustrative" />
@@ -75,7 +75,7 @@ export function TrapScene({ picker }: { picker: ReactNode }) {
             <text x={22} y={LAYER.kernel + 20} className="vh-layer-text">{kernelLabel(technique)}</text>
             <rect x={10} y={LAYER.hyper} width={W - 20} height={LAYER_H} rx={10} className={`vh-layer is-hyper ${caught ? 'is-busy' : ''}`} />
             <text x={22} y={LAYER.hyper + 30} className="vh-layer-text">hypervisor{technique === 'hw' ? ' · VMX root mode' : ' · ring 0'}</text>
-            <rect x={10} y={LAYER.cpu} width={W - 20} height={LAYER_H} rx={10} className={`vh-layer is-cpu ${h === 'direct' ? 'is-direct' : ''}`} />
+            <rect x={10} y={LAYER.cpu} width={W - 20} height={LAYER_H} rx={10} className={`vh-layer is-cpu ${h === 'direct' || h === 'shared' ? 'is-direct' : ''}`} />
             <text x={22} y={LAYER.cpu + 30} className="vh-layer-text">physical CPU</text>
             {instr && (
               <g className={`vh-pill is-${h}`}>
@@ -105,7 +105,7 @@ export function TrapScene({ picker }: { picker: ReactNode }) {
             )}
           </svg>
         </div>
-        <Hint block>Simplified instruction stream. Real VM exits cost hundreds to thousands of cycles; the cycle counts here are illustrative.</Hint>
+        <Hint block>Simplified instruction stream. Real VM exits cost hundreds to thousands of cycles; the cycle counts here are illustrative and not comparable across techniques (real costs depended on the CPU generation).</Hint>
       </div>
     </StageFrame>
   );

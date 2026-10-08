@@ -11,15 +11,15 @@
 .vh-layer-text { font: 600 11px var(--mono); fill: var(--muted); }
 .vh-pill rect { fill: var(--hi); stroke: var(--hi); }
 .vh-pill text { font: 700 12px var(--mono); fill: var(--on-hi); text-anchor: middle; }
-.vh-pill.is-direct rect { fill: var(--ok); stroke: var(--ok); }
-.vh-pill.is-direct text { fill: var(--on-ok); }
+.vh-pill.is-direct rect, .vh-pill.is-shared rect { fill: var(--ok); stroke: var(--ok); }
+.vh-pill.is-direct text, .vh-pill.is-shared text { fill: var(--on-ok); }
 .vh-pill.is-bad rect { fill: var(--bad); stroke: var(--bad); }
 .vh-pill.is-bad text { fill: var(--on-bad); }
 .vh-pill.is-translate rect { fill: var(--violet); stroke: var(--violet); }
 .vh-pill.is-translate text { fill: var(--on-violet); }
 .vh-miss { font: 700 11px var(--mono); fill: var(--bad); text-anchor: middle; }
 .vh-tag { font: 600 11px var(--mono); color: var(--violet); }
-.vh-tag.is-direct { color: var(--ok); }
+.vh-tag.is-direct, .vh-tag.is-shared { color: var(--ok); }
 .vh-tag.is-bad { color: var(--bad); }
 .vh-stack { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
 .vh-row { display: flex; flex-wrap: wrap; gap: 8px; }

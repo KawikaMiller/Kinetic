@@ -6,20 +6,51 @@ import {
 } from './model';
 
 /**
- * The expected handling, typed out per instruction and technique from the x86 rules
- * (Intel SDM: cli/out/hlt/mov-cr3 fault outside ring 0 with IOPL 0; popf silently keeps IF;
- * VT-x exits on I/O and hlt when configured, and not on mov cr3 with EPT).
+ * An independent reference, from the rules rather than from handle()'s code:
+ * - x86 privilege checks (Intel SDM): cli and out need CPL <= IOPL; mov cr3 and hlt need CPL 0;
+ *   popf outside CPL <= IOPL silently leaves IF unchanged (no fault).
+ * - classic: the guest kernel runs at CPL 1 with IOPL 0. A fault is a trap; a silent
+ *   difference from what CPL 0 would do is bad.
+ * - bt: anything whose behaviour at CPL 1 differs from CPL 0 gets rewritten.
+ * - pv (Xen ABI): cli/sti/popf write the vcpu_info event mask; cr3 is mmuext_op, console
+ *   output is console_io, hlt is sched_op (hypercalls).
+ * - hw: the guest runs at CPL 0 in non-root mode; exits are what the VMCS controls ask for:
+ *   HLT exiting and I/O exiting on, CR3-load exiting off (EPT).
  */
-const TABLE: Record<string, Record<Technique, Handling>> = {
-  load: { classic: 'direct', bt: 'direct', pv: 'direct', hw: 'direct' },
-  add: { classic: 'direct', bt: 'direct', pv: 'direct', hw: 'direct' },
-  copy: { classic: 'direct', bt: 'direct', pv: 'direct', hw: 'direct' },
-  cli: { classic: 'trap', bt: 'translate', pv: 'hypercall', hw: 'direct' },
-  popf: { classic: 'bad', bt: 'translate', pv: 'hypercall', hw: 'direct' },
-  cr3: { classic: 'trap', bt: 'translate', pv: 'hypercall', hw: 'direct' },
-  out: { classic: 'trap', bt: 'translate', pv: 'hypercall', hw: 'trap' },
-  hlt: { classic: 'trap', bt: 'translate', pv: 'hypercall', hw: 'trap' },
-};
+type Outcome = 'ok' | 'fault' | 'silent';
+const IOPL = 0;
+function atCpl(id: string, cpl: number): Outcome {
+  switch (id) {
+    case 'cli':
+    case 'out':
+      return cpl <= IOPL ? 'ok' : 'fault';
+    case 'cr3':
+    case 'hlt':
+      return cpl === 0 ? 'ok' : 'fault';
+    case 'popf':
+      return cpl <= IOPL ? 'ok' : 'silent';
+    default:
+      return 'ok';
+  }
+}
+const XEN_SHARED = new Set(['cli', 'popf']);
+const VMCS_EXITS = new Set(['hlt', 'out']);
+function reference(id: string, t: Technique): Handling {
+  const deprivileged = atCpl(id, 1);
+  switch (t) {
+    case 'classic':
+      return deprivileged === 'fault' ? 'trap' : deprivileged === 'silent' ? 'bad' : 'direct';
+    case 'bt':
+      return deprivileged === 'ok' ? 'direct' : 'translate';
+    case 'pv':
+      return deprivileged === 'ok' ? 'direct' : XEN_SHARED.has(id) ? 'shared' : 'hypercall';
+    case 'hw':
+      return VMCS_EXITS.has(id) ? 'trap' : 'direct';
+  }
+}
+const TABLE: Record<string, Record<Technique, Handling>> = Object.fromEntries(
+  Object.keys(INSTRS).map((id) => [id, Object.fromEntries((['classic', 'bt', 'pv', 'hw'] as Technique[]).map((t) => [t, reference(id, t)]))]),
+) as Record<string, Record<Technique, Handling>>;
 
 const ALL = TECHNIQUES.map((t) => t.value);
 
@@ -47,7 +78,8 @@ describe('counters', () => {
       const got = tally(STREAM, t);
       expect(got.direct).toBe(handled.filter((h) => h === 'direct').length);
       expect(got.bad).toBe(handled.filter((h) => h === 'bad').length);
-      expect(got.caught).toBe(handled.filter((h) => h !== 'direct' && h !== 'bad').length);
+      expect(got.shared).toBe(handled.filter((h) => h === 'shared').length);
+      expect(got.caught).toBe(handled.filter((h) => h !== 'direct' && h !== 'bad' && h !== 'shared').length);
       expect(got.cycles).toBe(handled.reduce((s, h) => s + CYCLES[h], 0));
     }
   });
@@ -69,7 +101,8 @@ describe('frames and captions, every technique', () => {
         const h = handle(instr, t);
         expect(text.includes('VM exit') || text.includes('a trap')).toBe(h === 'trap');
         expect(text.includes('silently wrong')).toBe(h === 'bad');
-        expect(text.includes('hypercall')).toBe(h === 'hypercall');
+        expect(text.includes('with a hypercall')).toBe(h === 'hypercall');
+        expect(text.includes('shares with the hypervisor')).toBe(h === 'shared');
         expect(text.includes('rewrote')).toBe(h === 'translate');
       });
       const last = captionText(frames.at(-1)!.say);
@@ -148,5 +181,16 @@ describe('I/O and overcommit captions, every slider value', async () => {
         if (o.short > 0) expect(text).toContain(`${o.short} GB more`);
       }
     }
+  });
+});
+
+describe('PV verdict matches its numbers (review V1)', () => {
+  it('PV is never called "fast"; spot-check the Xen rows', () => {
+    expect(handle(INSTRS.cli, 'pv')).toBe('shared');
+    expect(handle(INSTRS.popf, 'pv')).toBe('shared');
+    expect(handle(INSTRS.cr3, 'pv')).toBe('hypercall');
+    const last = captionText(trapFrames('pv').at(-1)!.say);
+    expect(last.toLowerCase()).not.toContain('fast');
+    expect(last).toContain('2 became plain writes to shared memory');
   });
 });

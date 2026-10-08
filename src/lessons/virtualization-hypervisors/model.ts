@@ -5,7 +5,7 @@
 
 export type Technique = 'classic' | 'bt' | 'pv' | 'hw';
 export type InstrKind = 'ordinary' | 'privileged' | 'sensitive';
-export type Handling = 'direct' | 'trap' | 'translate' | 'hypercall' | 'bad';
+export type Handling = 'direct' | 'trap' | 'translate' | 'hypercall' | 'shared' | 'bad';
 
 export interface Instr {
   id: string;
@@ -44,8 +44,10 @@ export const TECHNIQUES: { value: Technique; label: string }[] = [
  *   That is a Popek-Goldberg violation, and why plain trap-and-emulate failed on x86.
  * - bt: the hypervisor rewrites the guest kernel's code before it runs, replacing every
  *   sensitive instruction with a safe call; ordinary instructions are copied and run as-is.
- * - pv: the guest kernel is modified to ask the hypervisor on purpose (a hypercall, or for
- *   some operations a write to memory it shares with the hypervisor; shown as a hypercall).
+ * - pv: the guest kernel is modified to cooperate. In Xen PV, cli/sti/popf don't touch the
+ *   real interrupt flag at all: they become an ordinary write to an event mask in vcpu_info,
+ *   memory shared with the hypervisor ('shared', no exit). Switching page tables, console
+ *   output and idling are hypercalls (mmuext_op, console_io, sched_op).
  * - hw: the guest kernel really runs in ring 0, in VMX non-root (guest) mode, so cli and
  *   popf just work on its own virtual state. Only configured events cause a VM exit: here
  *   I/O and hlt. With nested paging (EPT/NPT) the hypervisor lets mov cr3 run directly.
@@ -58,27 +60,34 @@ export function handle(instr: Instr, technique: Technique): Handling {
     case 'bt':
       return 'translate';
     case 'pv':
-      return 'hypercall';
+      return instr.id === 'cli' || instr.id === 'popf' ? 'shared' : 'hypercall';
     case 'hw':
       return instr.id === 'out' || instr.id === 'hlt' ? 'trap' : 'direct';
   }
 }
 
-/** Illustrative cycles per handling: a VM exit and re-entry is the expensive part. */
-export const CYCLES: Record<Handling, number> = { direct: 1, bad: 1, translate: 40, hypercall: 900, trap: 1500 };
+/**
+ * Illustrative cycles per handling: a VM exit and re-entry is the expensive part. Not
+ * comparable across techniques in any precise way: real costs depend on the CPU generation
+ * (early VT-x exits were slower than VMware's binary translation, for example).
+ */
+export const CYCLES: Record<Handling, number> = { direct: 1, bad: 1, shared: 2, translate: 40, hypercall: 900, trap: 1500 };
 
 export interface Tally {
   direct: number;
+  /** PV: plain writes to memory shared with the hypervisor (they run directly, without an exit). */
+  shared: number;
   caught: number;
   bad: number;
   cycles: number;
 }
 
 export function tally(stream: readonly Instr[], technique: Technique): Tally {
-  const t: Tally = { direct: 0, caught: 0, bad: 0, cycles: 0 };
+  const t: Tally = { direct: 0, shared: 0, caught: 0, bad: 0, cycles: 0 };
   for (const i of stream) {
     const h = handle(i, technique);
     if (h === 'direct') t.direct++;
+    else if (h === 'shared') t.shared++;
     else if (h === 'bad') t.bad++;
     else t.caught++;
     t.cycles += CYCLES[h];

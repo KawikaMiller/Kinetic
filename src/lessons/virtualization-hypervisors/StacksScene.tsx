@@ -43,12 +43,16 @@ export function StacksScene({ picker }: { picker: ReactNode }) {
       height={380}
       legend={
         <Legend
-          items={[
-            { color: 'var(--info)', label: 'hypervisor' },
-            { color: 'var(--amber)', label: 'guest kernel, VM 1' },
-            { color: 'var(--sky)', label: 'guest kernel, VM 2' },
-            { color: 'var(--muted)', label: 'host kernel, apps, hardware' },
-          ]}
+          items={
+            containers
+              ? [{ color: 'var(--muted)', label: 'host kernel, container processes, hardware' }]
+              : [
+                  { color: 'var(--info)', label: 'hypervisor' },
+                  { color: 'var(--amber)', label: 'guest kernel, VM 1' },
+                  { color: 'var(--sky)', label: 'guest kernel, VM 2' },
+                  { color: 'var(--muted)', label: 'host kernel, apps, hardware' },
+                ]
+          }
         />
       }
       controls={[
