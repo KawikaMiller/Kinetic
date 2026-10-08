@@ -97,6 +97,8 @@
 .console-panel code { color: var(--ok); }
 /* --c inherits, so only a line that sets its own tone may use it */
 .console-panel code[class*='tone-'] { color: var(--c); }
+.console-panel.is-pre { overflow-x: auto; }
+.console-panel.is-pre code { white-space: pre; }
 
 /* Boxes and panels inside a stage */
 .box {
@@ -206,6 +208,9 @@
   overflow: visible;
 }
 .meter-fill { display: block; height: 100%; border-radius: inherit; background: var(--c, var(--info)); }
+/* Stacked segments: square-edged parts, clipped to the rounded track */
+.meter-track.is-stacked { display: flex; overflow: hidden; }
+.meter-seg { display: block; height: 100%; background: var(--c, var(--info)); }
 /* Bar markers: a tick in its tone, its label under the track */
 .meter.has-mark-labels .meter-track { margin-bottom: 14px; }
 .meter-mark[class*='tone-'] { background: var(--c); }
@@ -246,6 +251,14 @@
   color: var(--text);
   box-shadow: inset 3px 0 0 var(--bad);
 }
+.code-panel li.is-good {
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  color: var(--text);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+/* A diff's + and − lines: the text takes the colour, no bar */
+.code-panel li.is-add { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); }
+.code-panel li.is-del { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
 .code-panel.now-solid li.is-now { background: var(--hi); color: var(--on-hi); }
 .code-panel.now-solid li.is-now .gutter { color: var(--on-hi); }
 .code-panel.now-bar li.is-now {
@@ -420,6 +433,19 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   border-color: color-mix(in srgb, var(--range-c, var(--hi)) 30%, transparent);
 }
 .array-cell.is-dim { opacity: 0.28; background: var(--dim); border-color: transparent; }
+/* cellTone: a flat colour from the cell's .tone-* (--c). Before the lift rules, so a lift state wins. */
+.array-cell.fill-tint { background: color-mix(in srgb, var(--c) 22%, var(--cell)); color: var(--text); border-color: var(--c); }
+.array-cell.fill-solid { background: var(--c); color: var(--on-c); border-color: var(--c); }
+.array-cell-ring {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  box-sizing: border-box;
+  border: 2px solid var(--c);
+  border-radius: 5px;
+}
+.array-cell:is(.is-active, .is-info, .is-violet) .array-cell-ring { border-color: var(--on-c); }
 /* Lifted cells: active (--hi, being checked), info (a second pointer), violet (a third role). */
 .array-cell.is-active { --c: var(--hi); --on-c: var(--on-hi); }
 .array-cell.is-info { --c: var(--info); --on-c: var(--on-info); }
