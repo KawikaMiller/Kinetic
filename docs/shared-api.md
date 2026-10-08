@@ -335,6 +335,12 @@ the player got there: playing, stepping, jumping or scrubbing (`captionSources(f
 intro caption stays. The player sets the caption only when that source frame changes, so a caption
 the stage sets itself between frames survives until the next frame with its own `say`.
 
+Caption chips (`<span className="hl ok">…</span>`, global.css) never wrap, so a chip longer than a
+line overflows the caption. Keep chips under about 34 characters (what fits one line of a 390px phone
+caption: 320px wide, ~8.8px a character plus padding), and give a longer verdict `wrap`
+(`className="hl bad wrap"`): it then breaks at spaces like the text around it, with padding at the
+chip's two ends only (so a wrapped chip never overflows). Every existing chip is unchanged (it's opt-in).
+
 ### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
 Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
 and Space on a focused button, link or `role=radio|button|…` control presses that control instead
@@ -426,6 +432,7 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
   <Dag />                                  // or just one wide part of a stage (components/WideRegion)
 </WideRegion>
 <WideRegion minWidth={720} gutter={{ top: 30, bottom: 4, x: 8 }}>  // room for labels drawn outside the children
+<WideRegion minWidth={w} reveal={{ from: s / n, to: (s + len) / n, within: '.array-cells' }}>  // keep a sliding window on screen
 ```
 - `ChipButton`: pass `on` only for a chip with a state (the loaded preset, a set flag); it's then a
   toggle with `aria-pressed`. A chip without `on` is a plain action and must not announce a pressed
@@ -434,6 +441,11 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
 - `Slider` announces `format(value)` as `aria-valuetext`, so give it a `format` whenever the label
   shows something other than the raw number ("no limit", "1.2/day").
 - `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
+  `reveal={{ from, to, within? }}` keeps a stretch on screen while it overflows: whenever it changes,
+  the region scrolls sideways just enough to show it (plus a 24px margin), smoothly, or instantly under
+  prefers-reduced-motion. `from`/`to` are fractions (0..1) of the content's width, or of the first
+  element matching `within`, so it's exact even while the target is still gliding (rolling-hash's window
+  on a phone). `revealScrollLeft` (components/wideReveal) is the tested maths.
   The hint sits in its own row under the scroller, only while it overflows, so it never covers
   content; the row stays after the hint goes, so nothing shifts.
   A sideways scroller always clips vertically too (CSS forces `overflow-y` off `visible` once
@@ -460,7 +472,7 @@ const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES
 <Tray stack label="Search the repo">{field}{results}</Tray>   // label on its own line above the content
 <Box role="region" aria-label="Order pipeline" id="pipe">…</Box>  // native attributes are forwarded
 ```
-`Box`, `SectionTitle` and `Tray` forward native attributes (`aria-*`, `role`, `id`, `data-*`, events)
+`Box` takes a `ref` to its div (React 19 ref-as-prop, like `Button`). `Box`, `SectionTitle` and `Tray` forward native attributes (`aria-*`, `role`, `id`, `data-*`, events)
 to their root element. They used to drop them, and TS doesn't catch that (hyphenated JSX props aren't
 checked against declared props); `Panel.test.ts` renders them to prove the attributes arrive.
 `Tray` shows `empty` as a faint mono note. If your empty text needs its own styling, render it as
@@ -476,6 +488,13 @@ parent, give it `display: block` in the lesson CSS so its line box matches a div
 It renders `.meter` / `.meter-track` / `.meter-fill` / `.meter-mark`: a track (default `--line`)
 with a radius-99 fill in `--c`. `transition` is the fill's motion transition (default 0.4 s
 easeOut; `{}` = motion's default tween). Lesson CSS can restyle `.xx-bar .meter-mark` (hash-table's taller tick).
+```tsx
+<Bar segments={[{ value: updateMs, tone: 'hi' }, { value: renderMs, tone: 'ok' }]} max={BUDGET_MS}
+     height={14} track="var(--dim)" animate={false} ariaLabel="Update 3 ms and render 4 ms of 16.7 ms" />
+```
+- `segments` stacks fills end to end instead of one `value`: square-edged parts clipped by the rounded
+  track, cut where the running total reaches `max` (`stackShares` in components/barSegments, tested).
+  game-loop's frame-budget bar runs on it. `ariaLabel` makes the whole bar one `img`.
 
 ### `CodePanel.tsx` — pattern 13
 ```tsx
@@ -483,8 +502,12 @@ easeOut; `{}` = motion's default tween). Lesson CSS can restyle `.xx-bar .meter-
            nowStyle="solid | bar" trailing={(i) => status[i]} />
 // or active={3} / active={[2, 3]}
 ```
-Line states: `idle past now next done cut cached pending bad` (`bad`: the line that threw or is
-wrong, a `--bad` tint and left bar). `solid` gives the now-line a `--hi` fill
+Line states: `idle past now next done cut cached pending bad good add del` (`bad`: the line that threw or is
+wrong, a `--bad` tint and left bar; `good` mirrors it in `--ok`, the fixed or right line; `add` / `del` are
+a diff's + and − lines, tinted `--ok` / `--bad` with the text in that colour and no bar: edit-distance's
+line diff). memory-leaks and async-await-coroutines' pitfall panels use `good` for the fixed lines.
+edit-distance keeps four lines of its own CSS (inset rows, no wrap) so its diff stays pixel-identical: the kit's
+add/del tint the whole row. `solid` gives the now-line a `--hi` fill
 (tx-acid); `bar` gives it a tint and a left bar (race, recursion, containers). The CSS is generic,
 so expect to keep a few lesson overrides for exact pixel parity.
 ```tsx
@@ -512,6 +535,9 @@ so expect to keep a few lesson overrides for exact pixel parity.
 <ConsolePanel lines={['ok', { text: 'deprecated', tone: 'orange' }]} title="output" empty="(silent)" />
 ```
 Plain lines are green (`--ok`); a `{ text, tone }` line takes its own tone. Shows `empty` while nothing's printed.
+`preserveWhitespace` prints lines exactly as given (`white-space: pre`): runs of spaces survive, so column
+output (`ps`, a table) lines up, and a line wider than the panel scrolls sideways inside it instead of wrapping.
+signals-graceful-shutdown's `ps output` uses it (its columns now align).
 
 ### `Sparkline.tsx`, `AnimatedValue.tsx`, `ArrowMarker.tsx`
 ```tsx
@@ -686,6 +712,20 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 - `RefArrow` ends on the target box's border facing its source (`rectEdgeToward`), so arrows never poke inside. `from` can be a box too (edge to edge). `bend` bows it; `dangling` is dashed `--bad`; `color` / `dashed` / `thin` draw a non-reference link.
 - A field's `port: 'left'` puts its reference dot on the left border; start the arrow at `heapFieldPort(at, w, i, 'left')`.
 - `collectable` is dim and dashed with a corner tag (unreachable, waiting for GC). `freed` is dashed `--bad` with a "freed" tag. Pass `tag` to override the corner text (e.g. `GC`). The tag shares the title row, so title + tag must fit in `w`; if they don't, use `tagPlacement="above"` rather than widening the box.
+- `tagSize` sets the corner tag's font size in px (default 10 from kit.css): 11px tags stay readable in a scene
+  that has to scale down on a phone, instead of forcing a wide `minWidth`.
+- Object graphs: `heapGrid({ cols, colW, rowH, origin })` places boxes on a grid (`at(i)` row by row, `cell(col, row)`,
+  `size(count, lastH)`; colW/rowH are pitches, box plus gap), and `fieldArrowBetween({ at, w, field }, { at, w, fields })`
+  returns `{ from, to, port }` for a field's reference to another box, with the port on the side facing it (set the
+  field's `port` to match); `portToward(src, dst)` is just that side choice. All pure and tested. garbage-collection's
+  plain grid and port sides run on `heapGrid` and `portToward` (pixel-identical, frames diffed). memory-leaks'
+  retaining path stays local: it's one row of boxes of different widths, not a fixed-pitch grid.
+```tsx
+const grid = heapGrid({ cols: 3, colW: 200, rowH: 96, origin: { x: 24, y: 40 } });
+const a = fieldArrowBetween({ at: grid.at(0), w: 160, field: 1 }, { at: grid.at(4), w: 160, fields: 2 });
+<HeapObject at={grid.at(0)} w={160} … fields={[…, { name: 'next', isRef: true, port: a.port }]} tagSize={11} />
+<RefArrow from={a.from} to={a.to} />
+```
 - Heap blocks fade in; solid arrows draw themselves in and dashed ones fade in (motion's `pathLength` draw-in writes its own `stroke-dasharray`, which would erase the dashes). Under reduced motion both appear at once.
 
 ### `ArrayStrip.tsx` — two-pointers, sliding-window, prefix-sums, debugging-method; binary-search
@@ -701,6 +741,14 @@ const frames = stackBoxes(frameHeights, { start: STACK_BOTTOM, gap: 6, direction
 - Pass `pointers={[]}` (not undefined) when pointers come and go, so the pointer lane keeps its height.
 - `cellClass(i)` adds a lesson's own class to cell i on top of its state (amortized-analysis keeps filled slots flat with `am-filled` instead of overriding `.is-info` inside its block).
 - Ranges and pointers glide with `SPRING.snappy`. Pointers keep their identity by `id`, or by `label` when it's a string.
+- `mergePointers` joins pointers that land on one cell into a single marker, "i·k" (a string prop picks another
+  separator): the first pointer there keeps its tone and id. quickselect uses it instead of its local merge
+  (`mergeSharedPointers` in components/arrayPointers, tested).
+- `cellTone(i)` colours a cell flat in any `Tone`, without the lift: a bare tone or `{ tone, fill: 'tint' }` is a
+  22% wash edged in the tone (ring-buffers' filled slots), `'solid'` a full fill in the tone with its on-colour text
+  (semaphores' buffer), `'outline'` a 2px ring inset in the cell (counting sort's placed items). A lift state
+  (`active` / `info` / `violet`) still wins, and an outline ring then turns that state's on-colour. Those three
+  lessons dropped their `.array-cell.is-*` overrides and renderValue ring for it.
 - Cells share the strip width equally. For short arrays pass `cellMax`: the strip narrows, so the markers stay aligned.
 - Range labels sit about 28px above the strip, so leave that room above it.
 - binary-search runs on it, pixel-identical: 11/11 frames against the pre-migration code, including 8 and 40 cells and a fully ruled-out missing-value search.
@@ -771,6 +819,11 @@ const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, node
 - `onNodeClick` makes every node a keyboard button (`role="button"`, Enter/Space press it, accent focus ring) and the SVG a `group`. The tree is **one tab stop** (roving tabindex, starting at the first node in reading order, then staying on the last node used) and the arrow keys follow its structure: Up = parent, Down = leftmost child, Left/Right = the neighbour on the same level (across subtrees, and across trees in a forest), Home/End = first and last node. `treeKeyTarget(key, from, shape, place, visible?)` in `core/treeLayout` is the pure, tested key map; hidden nodes are skipped. A lesson that moves focus itself (tree-traversals after a removal) just calls `.focus()` on `[data-node="id"]`, and that node becomes the tab stop. Its accessible name is the node's text label or id; pass `nodeAriaLabel(id)` for a better one ("Remove leaf 35"). Only pass `onNodeClick` while clicking does something, or every node becomes a dead tab stop.
 - `nodeScale(id)` and `nodeOpacity(id)` (0..1) animate size and fade. motion owns the node group's opacity, so fade nodes through `nodeOpacity`, not CSS (tree-traversals fades nodes that can't be removed).
 - trees-bst (in-order, the null ghost as an `overlay`) runs on it pixel-identically. recursion's fib tree (tidy, custom nodes, `hidden`) does too, except for subpixel antialiasing on a few label glyphs (≤0.03% of the stage), because labels are now placed by the node's transform instead of absolute coordinates.
+- `nodeSize(id)` (tidy only) gives a node a footprint wider than one column: each subtree takes a run as wide as
+  its children's runs or its own node, whichever is wider, so neighbours never overlap and narrow nodes stay packed.
+  `layoutTree(shape, 'tidy', { size })` returns the `columns` to size `width` with. With every size 1 it's the plain
+  tidy layout, column for column (tested against the old algorithm over 200 random forests). tries' compressed
+  view uses it instead of sizing every column to the widest pill.
 - heaps keeps its own tree: nodes sit at array-index positions of a complete binary tree with `2i+1`/`2i+2` edge labels, and they're keyed by item so swaps animate. A third layout mode is worth adding only when a Tier 1 lesson needs it.
 
 ### `CallStackPanel.tsx` — tree-traversals, error-handling-models, debugger-tools; recursion
@@ -920,6 +973,15 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - `aspect="equal"` sets the height so one unit of x is as long on screen as one of y (a decade on a log axis): equal domains give a square box. `equalAspectHeight(width, x, y)` and `plotMargin(x, y)` in `core/plot` are the tested logic; gradient-descent, linear-logistic-regression, matrices-transformations and vectors-similarity use it instead of a hand-tuned 356 × 350.
 - `PointerLayer` is a transparent sheet over the box reporting the pointer in data space (`onDown` click-to-add or drop, `onMove` a probe); it has no keyboard path, so pair it with `PlotCursor` (a hollow grey draggable point) and a button, or with draggable points. Replaces gradient-descent's DropLayer, linear-logistic-regression's PointerSheet, and decision-trees' and clustering's click catchers.
 - `Points`: a point's own `r` and `ring: Tone` (an outline 2.5 units out; decision-trees' misclassified samples) and `labels(i)` (text beside each point in its tone, dim → muted; `PointLabels` is the same as a separate layer, for when something must sit between the dots and their words, as in embeddings). `roving` makes draggable points one tab stop: Page Up/Down (or `[` `]`) pick the previous/next point, Home/End the ends, arrows still move it (`rovingPointTarget`); linear-logistic-regression's up-to-20 points use it.
+- `VLine` / `HLine` labels stay inside the plot box: measured after layout, a label that doesn't fit on its side
+  of the rule goes to the other side, and one that fits neither is slid inside (`fitLabel` in core/plot, tested).
+  A label that already fit draws exactly where it did.
+- Draggable `Points` take their pointer handling from `useDragPoint` (components/useDragPoint), which is shared
+  with hand-drawn SVG handles outside a plot: `const drag = useDragPoint(toLocal, onDrag, { onGrab })`, then
+  `<g {...drag(i)} onKeyDown={…}>` per point (press captures the pointer and focuses the element; moves call
+  `onDrag(i, toLocal(clientX, clientY))`). `svgPoint(svg, clientX, clientY)` is the client → SVG user-units
+  step, and `arrowStep(key, step)` (core/geometry) the shared arrow-key table. rasterization's corner handles
+  use them, and its depth probe moves with `gridKeyTarget`, so it now also takes Home/End and Page Up/Down.
 - `Arrow dashed` dashes the shaft. `VLine onDrag` is a slider (`role="slider"`, a grip, pointer drag anywhere in the box; arrows call `onStep(±1)`, or nudge 4 units through `onDrag` without one): classification-metrics' threshold.
 - `paintImage(w, h, draw)` (`components/canvasImage.ts`) is the shared paint-to-data-URL step behind Heat and CellGrid's canvas mode.
 
@@ -1005,6 +1067,8 @@ spreadLabels([{ x, w }], gap)               // px shifts that keep centred label
 - Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
 - The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
 - `motionId` on a bar: bars sharing one are the same thing in different places. A bar element that wasn't drawn last render starts where its motionId was last drawn and glides there (a 450ms Web Animations FLIP; skipped under prefers-reduced-motion, like the CSS transitions). greedy-algorithms' booked lane: each booking slides down from its meeting's row.
+- `minPx` on a bar draws it at least that many px wide from its start, so a 20 µs deopt on a millisecond axis
+  stays visible; its tooltip and name still carry its real span. interpreters-compilers-jit draws deopt bars at 4px.
 - ci-pipelines renders its wall-clock chart through it (it adds only `.ci-gantt .gantt { margin-top: 8px }`). The migration is pixel-identical: its smoke frames plus a driven matrix of 8 option combos × 5 frames × 1440/390, 80/80 unchanged.
 
 ### `core/sequenceLayout.ts`, `SequenceDiagram.tsx` — dhcp, ethernet-arp, dns-resolution, diffie-hellman, packet-capture-debugging, http-caching, idempotency-keys, webhooks, mfa-passkeys, csrf-cookies, sockets-api, realtime-transports
