@@ -67,10 +67,42 @@ export function maxLifetimeDays(issuedAt: number): number {
   return days;
 }
 
+// ── The issue-date picker ───────────────────────────────────────────────
+// Two positions a month, the 1st and the 15th: the schedule's steps change on the 15th, so a
+// month-only picker would show the wrong limit for the second half of March in 2026, 2027 and 2029.
+
+const ISSUE_FIRST_YEAR = 2025;
+const ISSUE_LAST_YEAR = 2030;
+const POSITIONS_PER_MONTH = 2;
+const MID_MONTH_DAY = 15;
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export const ISSUE_LAST_INDEX = (ISSUE_LAST_YEAR - ISSUE_FIRST_YEAR + 1) * 12 * POSITIONS_PER_MONTH - 1;
+export const ISSUE_DEFAULT_INDEX = (2026 - ISSUE_FIRST_YEAR) * 12 * POSITIONS_PER_MONTH + 8 * POSITIONS_PER_MONTH;
+
+const issueParts = (index: number) => {
+  const month = Math.floor(index / POSITIONS_PER_MONTH);
+  return { year: ISSUE_FIRST_YEAR + Math.floor(month / 12), month: month % 12, day: index % POSITIONS_PER_MONTH === 0 ? 1 : MID_MONTH_DAY };
+};
+
+/** The issue date a picker position stands for (00:00 UTC). */
+export const issueDateAt = (index: number) => {
+  const p = issueParts(index);
+  return utc(p.year, p.month + 1, p.day);
+};
+
+export const issueLabel = (index: number) => {
+  const p = issueParts(index);
+  return `${p.day} ${MONTH_NAMES[p.month]} ${p.year}`;
+};
+
 /** The common ACME convention: renew once a third of the lifetime is left (about day 60 of 90). A convention, not a rule. */
 export const renewAfterDays = (lifetime: number) => (lifetime * 2) / 3;
 /** How many renewals a year this convention means for a certificate that lives `lifetime` days. */
 export const renewalsPerYear = (lifetime: number) => 365 / renewAfterDays(lifetime);
+
+/** How many of the 30, 14 and 7 days-left alerts fire before a problem fixed on `fixDay` (the job renews on the first try after the fix). */
+export const alertsBeforeFix = (fixDay: number) => ALERT_DAYS.filter((n) => ACME_LIFETIME_DAYS - n < fixDay).length;
 
 /** After the certificate expired, the log stops listing each failed daily try this many days later. */
 const FAILED_ATTEMPTS_LOGGED_AFTER_EXPIRY_DAYS = 7;

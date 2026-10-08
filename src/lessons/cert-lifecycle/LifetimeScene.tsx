@@ -3,34 +3,28 @@ import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { DAY, LIFETIME_SCHEDULE, formatUtc, maxLifetimeDays, renewAfterDays, renewalsPerYear, utc } from './model';
+import { DAY, ISSUE_DEFAULT_INDEX, ISSUE_LAST_INDEX, LIFETIME_SCHEDULE, formatUtc, issueDateAt, issueLabel, maxLifetimeDays, renewAfterDays, renewalsPerYear } from './model';
 
-const FIRST_YEAR = 2025;
-const LAST_MONTH_INDEX = (2030 - FIRST_YEAR) * 12 + 11;
-const DEFAULT_MONTH_INDEX = (2026 - FIRST_YEAR) * 12 + 8;
 const BAR_MAX_DAYS = LIFETIME_SCHEDULE[0].maxDays;
 const BAR_MAX_RENEWALS = 12;
 /** More renewals than this a year is too many to do by hand (shown as the costly side). */
 const MANY_RENEWALS_A_YEAR = 4;
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const issueDate = (index: number) => utc(FIRST_YEAR + Math.floor(index / 12), (index % 12) + 1, 1);
-const monthLabel = (index: number) => `${MONTHS[index % 12]} ${FIRST_YEAR + Math.floor(index / 12)}`;
 const stepLabel = (from: number | null) => (from === null ? 'before 15 Mar 2026' : `from ${formatUtc(from).slice(0, 10)}`);
 
 export function LifetimeScene({ picker }: { picker: ReactNode }) {
-  const [month, setMonth] = useState(DEFAULT_MONTH_INDEX);
-  const issued = issueDate(month);
+  const [position, setPosition] = useState(ISSUE_DEFAULT_INDEX);
+  const issued = issueDateAt(position);
   const days = maxLifetimeDays(issued);
   const perYear = renewalsPerYear(days);
   const lastDeadline = formatUtc(issued + days * DAY).slice(0, 10);
 
   useIntroCaption(
     <>
-      A public certificate issued in <b>{monthLabel(month)}</b> may live at most <span className="hl info">{days} days</span>: if nobody renews it, it expires on {lastDeadline}. Renewing at two thirds of its life means a renewal every{' '}
+      A public certificate issued on <b>{issueLabel(position)}</b> may live at most <span className="hl info">{days} days</span>: if nobody renews it, it expires on {lastDeadline}. Renewing at two thirds of its life means a renewal every{' '}
       {Math.round(renewAfterDays(days))} days, <b>{perYear.toFixed(1)}</b> a year.
     </>,
-    [month, days, perYear, lastDeadline],
+    [position, days, perYear, lastDeadline],
   );
 
   return (
@@ -38,7 +32,7 @@ export function LifetimeScene({ picker }: { picker: ReactNode }) {
       height={400}
       stats={
         <Stats>
-          <Stat label="Issued" value={monthLabel(month)} />
+          <Stat label="Issued" value={issueLabel(position)} />
           <Stat label="Longest allowed" value={`${days} days`} color="var(--info)" />
           <Stat label="Renewals a year" value={perYear.toFixed(1)} sub="at two thirds of the life" color={perYear > MANY_RENEWALS_A_YEAR ? 'var(--bad)' : 'var(--ok)'} />
         </Stats>
@@ -51,7 +45,7 @@ export function LifetimeScene({ picker }: { picker: ReactNode }) {
           ]}
         />
       }
-      controls={[picker, <Slider key="m" label="Certificate issued in" value={month} min={0} max={LAST_MONTH_INDEX} onChange={setMonth} format={monthLabel} />]}
+      controls={[picker, <Slider key="m" label="Certificate issued on" value={position} min={0} max={ISSUE_LAST_INDEX} onChange={setPosition} format={issueLabel} />]}
     >
       <div className="cl stage-pad">
         {LIFETIME_SCHEDULE.map((step) => {
@@ -65,7 +59,7 @@ export function LifetimeScene({ picker }: { picker: ReactNode }) {
           );
         })}
         <Hint block>
-          Dates are the CA/Browser Forum schedule for publicly trusted TLS certificates (Ballot SC-081v3, 2025); a private CA is not bound by it. Renewing at two thirds of the lifetime is a common convention, not a rule. A yearly
+          The picker moves between the 1st and the 15th of each month because the limits change on the 15th. Dates are the CA/Browser Forum schedule for publicly trusted TLS certificates (Ballot SC-081v3, 2025); a private CA is not bound by it. Renewing at two thirds of the lifetime is a common convention, not a rule. A yearly
           calendar reminder does not fit a schedule like this: automate renewal and monitor the certificate the server presents.
         </Hint>
       </div>

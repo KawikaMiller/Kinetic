@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
 import { deployFrames, sayFor } from './frames';
-import { DEFAULTS, HORIZON, REPLICAS, REQ_PER_TICK, STRATEGIES, served, simulate, type Config } from './model';
+import { DEFAULTS, HORIZON, ROLLOUT_PCT_STEP, REPLICAS, REQ_PER_TICK, STRATEGIES, served, simulate, type Config } from './model';
 import { PRESETS } from './presets';
 
 const SETTINGS: Partial<Config>[] = [];
@@ -78,6 +78,21 @@ describe('captions, over every combination of strategy, bug, migration, drain, a
     expect(rolling).toContain('at most 27 servers run and at least 14 serve');
     expect(caption(simulate({ ...DEFAULTS, strategy: 'rolling', surgePct: 0, unavailablePct: 0 }), 1)).toContain('rejects 0% and 0%');
     expect(caption(simulate({ ...DEFAULTS, strategy: 'bluegreen' }), 1)).toContain(`${REPLICAS * 2} servers`);
+  });
+
+  it('the 33% example is reachable on the rollout sliders', () => {
+    expect(33 % ROLLOUT_PCT_STEP).toBe(0);
+  });
+
+  it('a canary rolled back after full promotion says it is a rolling undo, and one rolled back early says the weight drops', () => {
+    const late = simulate(PRESETS.find((p) => p.id === 'short-bake')!.cfg);
+    expect(late.ticks[late.trigger!.tick].v1).toBe(0);
+    const lateText = captionText(sayFor(late, late.trigger!.tick + 1));
+    expect(lateText).toContain('rolling update back to v1');
+    expect(lateText).not.toContain('straight away');
+    const early = simulate({ ...DEFAULTS, strategy: 'canary', bugRate: 0.2, bakeTicks: 8, seed: 1 });
+    expect(early.ticks[early.trigger!.tick].v1).toBeGreaterThan(0);
+    expect(captionText(sayFor(early, early.trigger!.tick + 1))).toContain('straight away');
   });
 
   it('every preset plays a full set of captions with its own opening', () => {

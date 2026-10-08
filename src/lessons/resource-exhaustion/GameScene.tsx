@@ -13,7 +13,7 @@ const MECHANISM: Record<GaugeId, string> = {
   inodes: 'The file system ran out of inodes, the records that name files. Free bytes cannot help: no new file can be created.',
   fds: 'The process hit its limit on open descriptors. Sockets, files and pipes all count, so everything that opens one fails.',
   pool: 'Every connection in the pool is checked out and never came back. Callers wait for one until the acquire timeout, then fail.',
-  ports: 'Each outgoing connection needs a local port, and a closed one stays reserved for a minute (TIME_WAIT). Under heavy traffic the range runs out.',
+  ports: 'Each outgoing connection needs a local port, and a closed one stays reserved for a minute (TIME_WAIT). Under heavy traffic to one upstream address and port the range runs out.',
   memory: 'The cache never evicts, so memory grows until the container limit. The kernel kills the process with SIGKILL, with no chance to log anything.',
 };
 

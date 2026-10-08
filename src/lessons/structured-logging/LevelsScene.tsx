@@ -44,7 +44,7 @@ export function LevelsScene({ picker }: { picker: ReactNode }) {
           <Stat label="Lines kept" value={`${kept.length} / ${run.events.length}`} />
           <Stat label="Per request" value={bytes(perRequest)} />
           <Stat label="Per day" value={gb(perDay)} color={over ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="Per month" value={DOLLARS(dollarsPerMonth(perDay))} sub={`at $${PRICE_PER_GB.toFixed(2)} a GB`} color={over ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Per month" value={DOLLARS(dollarsPerMonth(perDay))} sub={`at $${PRICE_PER_GB.toFixed(2)} a GB (illustrative)`} color={over ? 'var(--bad)' : 'var(--ok)'} />
         </Stats>
       }
       legend={
@@ -95,7 +95,7 @@ export function LevelsScene({ picker }: { picker: ReactNode }) {
         <LogStream rows={rows} label="Lines kept at this level" />
         <Hint block>
           Simulated services and logs; the traffic ({REQUESTS_PER_SECOND} requests a second), the {BUDGET_GB_PER_DAY} GB budget and the ${PRICE_PER_GB.toFixed(2)} a GB price are made up for illustration. Bytes are
-          measured on the lines shown, averaged over these 10 requests (one fails); a real service's mix differs.
+          measured on the lines shown, averaged over these 10 requests (one fails); a real service's mix differs. Structured lines also cost more bytes each than the same line in free text, because every field is named: you pay for searchability.
         </Hint>
       </div>
     </StageFrame>

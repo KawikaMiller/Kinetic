@@ -58,11 +58,14 @@ function startSays(run: Run): ReactNode {
 }
 
 /** What undoing a deploy takes, per strategy. */
-function rollbackSays(strategy: Strategy): ReactNode {
+function rollbackSays(strategy: Strategy, v1Left: number): ReactNode {
   switch (strategy) {
     case 'recreate': return <>Undoing a recreate is another recreate: stop everything, start v1, and another outage.</>;
     case 'bluegreen': return <>Blue is still running, so the switch just flips back at once.</>;
-    case 'canary': return <>The weight on v2 goes back to 0% straight away and v1 servers are restored.</>;
+    case 'canary':
+      return v1Left > 0
+        ? <>The weight on v2 goes back to 0% straight away and v1 servers are restored.</>
+        : <>The canary was already at 100% with no v1 servers left, so undoing it is a rolling update back to v1 and users on v2 stay on it until the last v2 server is gone.</>;
     case 'rolling': return <>Undoing a rolling update is another rolling update, so users on v2 stay on it until the last v2 server is gone.</>;
   }
 }
@@ -100,7 +103,7 @@ function news(run: Run, t: number): ReactNode[] {
     if (trigger.blocked) out.push(<>There is no rollback: v1 cannot read the migrated schema, so the only way out is forward.</>);
   }
   if (trigger && !trigger.blocked && t === trigger.tick + 1) {
-    out.push(<><span className="hl orange">Rollback starts.</span> {rollbackSays(cfg.strategy)}</>);
+    out.push(<><span className="hl orange">Rollback starts.</span> {rollbackSays(cfg.strategy, run.ticks[trigger.tick].v1)}</>);
   }
   if (run.rolledBackAt === t) out.push(<>Back on v1: no traffic reaches v2 any more.</>);
   if (run.completedAt === t && !trigger) out.push(<>The deploy is complete: every server runs v2.</>);

@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { Crowd } from './Crowd';
-import { DEFAULT_ORDER, FLAG_KEY, RULES, USER_COUNT, bucketOf, countOn, evaluate, makeUsers, moveRule, percentFor, reached, usersByRule, type RuleId } from './model';
+import { DEFAULT_ORDER, FLAG_KEY, RULES, USER_COUNT, bucketOf, countOn, evaluate, makeUsers, moveRule, percentFor, reached, ruleLineState, usersByRule, type RuleId } from './model';
 
 const ruleLine = (id: RuleId, dial: number) => `${RULES[id].text.padEnd(14)} -> ${percentFor(id, dial)}% on`;
 
@@ -20,7 +20,7 @@ export function RulesScene({ picker }: { picker: ReactNode }) {
   const table = usersByRule(users, order, dial);
   const total = countOn(users, order, dial, false);
   const lines = order.map((id) => ruleLine(id, dial));
-  const stateOf = (i: number): LineState => (i < ran - 1 ? 'idle' : i === ran - 1 ? 'now' : 'past');
+  const stateOf = (i: number): LineState => ruleLineState(i, ran);
   const bucket = bucketOf(FLAG_KEY, user.id);
 
   useIntroCaption(

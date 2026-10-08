@@ -30,7 +30,7 @@ export function KillScene({ picker }: { picker: ReactNode }) {
   useIntroCaption(
     t === 0 ? (
       <>
-        The new checkout is broken for everyone at minute 0:00. <span className="hl violet">Kill switch</span>: flip the flag and every client picks it up within {FLAG_REFRESH_SECONDS} seconds.{' '}
+        The new checkout is broken for everyone at minute 0:00. <span className="hl violet">Kill switch</span>: flip the flag and in this model every client picks it up within {FLAG_REFRESH_SECONDS} seconds.{' '}
         <span className="hl orange">Roll back the deploy</span>: wait for the pipeline, then replace the servers. Drag the clock.
       </>
     ) : (

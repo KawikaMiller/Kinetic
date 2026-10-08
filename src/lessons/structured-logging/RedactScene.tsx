@@ -26,7 +26,7 @@ export function RedactScene({ picker }: { picker: ReactNode }) {
   useIntroCaption(
     cards > 0 ? (
       <>
-        Every payment line carries the whole body, so the log now holds <span className="hl bad">{cards} card numbers</span>, readable by anyone who can read logs. Redact them, or better, do not log the body.
+        Each charge logs the whole request body, so the log now holds <span className="hl bad">{cards} card numbers</span>, readable by anyone who can read logs. Redact them, or better, do not log the body.
       </>
     ) : logBody ? (
       <>

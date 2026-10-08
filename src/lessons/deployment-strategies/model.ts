@@ -12,6 +12,8 @@ import { mulberry32 } from '../../core/random';
  */
 
 export const REPLICAS = 20;
+/** maxSurge / maxUnavailable slider step: 1 so the learner can land on 33%, the value that shows the up/down rounding asymmetry. */
+export const ROLLOUT_PCT_STEP = 1;
 export const REQ_PER_TICK = 200;
 export const BOOT_TICKS = 2;
 export const HORIZON = 60;

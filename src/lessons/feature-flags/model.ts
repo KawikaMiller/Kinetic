@@ -95,6 +95,12 @@ export function moveRule(order: readonly RuleId[], i: number, dir: -1 | 1): Rule
 }
 
 /** How many rules ran before one matched: the matched one and those before it. */
+/**
+ * How the targeting-rules panel draws rule `i` once `ran` rules were asked: the ones asked before the match
+ * are 'past' (read, did not decide), the match is 'now', and the ones never reached are 'idle' (dim).
+ */
+export const ruleLineState = (i: number, ran: number): 'past' | 'now' | 'idle' => (ran === 0 || i < ran - 1 ? 'past' : i === ran - 1 ? 'now' : 'idle');
+
 export const reached = (order: readonly RuleId[], rule: RuleId | null) => (rule === null ? 0 : order.indexOf(rule) + 1);
 
 export function countOn(users: readonly User[], order: readonly RuleId[], dial: number, killed: boolean): number {
@@ -164,7 +170,7 @@ export const KIND_ORDER: FlagKind[] = ['release', 'experiment', 'ops', 'permissi
 
 /** Typical lifetimes, as conventions: teams differ, and a lifetime is a habit, not a rule. */
 export const KIND_INFO: Record<FlagKind, { label: string; lifetime: string; purpose: string; months: number | null }> = {
-  release: { label: 'Release', lifetime: 'days to weeks', purpose: 'turn a finished feature on gradually, then delete the flag', months: 1 },
+  release: { label: 'Release', lifetime: 'weeks to a couple of months', purpose: 'turn a finished feature on gradually, then delete the flag', months: 1 },
   experiment: { label: 'Experiment', lifetime: 'weeks', purpose: 'compare variants until a decision is made, then delete it', months: 2 },
   ops: { label: 'Ops kill switch', lifetime: 'long-lived', purpose: 'turn a risky or costly path off in an incident', months: null },
   permission: { label: 'Permission', lifetime: 'as long as the entitlement', purpose: 'show a feature only to the plans or people entitled to it', months: null },

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { Tone } from '../../core/tone';
 import { SERVICE_TONE, type Level, type Service } from './model';
+import { rowTone } from './rowTone';
 
 export interface StreamRow {
   key: number;
@@ -16,9 +16,6 @@ export interface StreamRow {
   /** A card-shaped secret in the line (`secret`) or one that was masked (`redacted`). */
   flag?: 'secret' | 'redacted';
 }
-
-/** Errors and warnings keep their own colour, a matching line is the current-request yellow, and a line the filter ruled out is dimmed. */
-const rowTone = (r: StreamRow): Tone | null => (r.flag === 'secret' ? 'bad' : r.flag === 'redacted' ? 'ok' : r.level === 'ERROR' ? 'bad' : r.level === 'WARN' ? 'orange' : r.match ? 'hi' : null);
 
 /** Breathing room above the first highlighted line when the stream scrolls to it. */
 const SCROLL_MARGIN_PX = 4;

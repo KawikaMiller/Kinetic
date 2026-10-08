@@ -1,5 +1,5 @@
 import { ChipButton, ControlGroup, Hint, Segmented, Slider, Toggle } from '../../components/ui';
-import { REPLICAS, STRATEGIES, resolveFenceposts, type Config, type Strategy } from './model';
+import { REPLICAS, ROLLOUT_PCT_STEP, STRATEGIES, resolveFenceposts, type Config, type Strategy } from './model';
 import { PRESETS } from './presets';
 import { STRATEGY_LABEL } from './view';
 
@@ -32,13 +32,14 @@ export function StrategyKnobs({ cfg, only, update }: { cfg: Config; only: Strate
   const f = resolveFenceposts(REPLICAS, cfg.surgePct, cfg.unavailablePct);
   return (
     <>
-      {(only === null || only === 'rolling') && (
+      {(only === null || only === 'rolling' || only === 'canary') && (
         <>
-          <Slider label="maxSurge" value={cfg.surgePct} min={0} max={100} step={5} onChange={(v) => update({ surgePct: v })} format={PCT} />
-          <Slider label="maxUnavailable" value={cfg.unavailablePct} min={0} max={100} step={5} onChange={(v) => update({ unavailablePct: v })} format={PCT} />
+          <Slider label="maxSurge" value={cfg.surgePct} min={0} max={100} step={ROLLOUT_PCT_STEP} onChange={(v) => update({ surgePct: v })} format={PCT} />
+          <Slider label="maxUnavailable" value={cfg.unavailablePct} min={0} max={100} step={ROLLOUT_PCT_STEP} onChange={(v) => update({ unavailablePct: v })} format={PCT} />
           <Hint block>
             {cfg.surgePct}% of {REPLICAS} servers, rounded up, is {f.surge}; {cfg.unavailablePct}% rounded down is {f.unavailable}. At most {REPLICAS + f.surge} servers run and at least {REPLICAS - f.unavailable} serve.
             {f.apiRejects && ' Kubernetes rejects 0% and 0%, so this run uses maxUnavailable 1.'}
+            {only === 'canary' && ' A canary only uses these if it reaches 100% before the alert: undoing it is then a rolling update with these two settings.'}
           </Hint>
         </>
       )}

@@ -17,8 +17,8 @@ const lesson: LessonModule = {
     watch: 'Servers: blue is v1 and violet is v2 (just categories), a yellow outlined "..." is a server starting, and grey is idle or switched off. Requests are tiny squares, green served and red failed. The load balancer\'s lines are blue to v1 and violet to v2, thicker for a bigger share and grey dashed when nothing is up. Orange means a rollback: a border round the fleet, the "Rolled back after" number and the "undo" bars in the comparison. In the comparison timeline, yellow bars are servers starting before anyone is on v2, violet bars are users on v2. The cost bar is blue, turning yellow when more than the 20 servers a fleet needs are running at once; its tick marks 20.',
   },
   tryThis: [
-    'Press play on the default Rolling deploy with its 5% bug. Watch the traffic on v2 reach 100% before the alert fires, then note "Users hit". Pick Blue-green above and replay it.',
-    'Click "Canary, 3% bug, 1 min bake": the canary passes every window and the bug reaches everyone before the alert fires. Drag Bake time up to 8 min and replay: it is caught at 10%.',
+    'Press play on the default Rolling deploy with its 5% bug. Watch the traffic on v2 reach 100% by the time the alert fires, then note "Users hit". Pick Blue-green above and replay it.',
+    'Click "Canary, 3% bug, 1 min bake": the canary passes every window and the bug reaches everyone before the alert fires, and the rollback is then a rolling update (the maxSurge and maxUnavailable sliders apply). Drag Bake time up to 8 min and replay: it is caught at 10%.',
     'Pick Rolling and drag both sliders to 33%: the hint shows 33% of 20 rounds up to 7 for maxSurge and down to 6 for maxUnavailable. Then try maxSurge 0% with maxUnavailable 5%.',
     'Click "Breaking migration" and play: v1 servers fail against the new schema, the alert fires, and the rollback says "blocked". Try the Canary strategy with it.',
     'Pick Recreate, then switch "Drain old servers" to Kill at once and read the captions: every killed server drops its in-flight requests.',
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'Blast radius is the share of users exposed multiplied by how long it takes to notice and undo the bug; compare strategies on both.',
     'Rolling and canary run v1 and v2 together, so both must work with one database: expand the schema, deploy, then contract in a later release.',
-    'Blue-green buys an instant way back for double the servers, but the switch itself exposes every user at once.',
+    'Blue-green buys an instant way back for double the servers (if the schema allows it), but the switch itself exposes every user at once.',
     'A canary only protects you if it compares against a baseline, sees enough requests, bakes long enough and rolls back by rule.',
   ],
   quiz: [

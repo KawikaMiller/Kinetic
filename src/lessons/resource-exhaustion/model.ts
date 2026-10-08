@@ -79,6 +79,10 @@ export interface Load {
 }
 
 export const DEFAULT_RPS = 100;
+/** The Traffic slider's range; step 1 so the learner can land on both sides of the port edge (468 / 469). */
+export const RPS_MIN = 20;
+export const RPS_MAX = 600;
+export const RPS_STEP = 1;
 export const DEFAULT_LEAKS: readonly LeakId[] = ['logs', 'tempfiles'];
 
 /** Units a gauge gains per hour from the steady leaks (everything except ports). */
@@ -214,7 +218,7 @@ export function cascade(first: GaugeId): CascadeStep[] {
 /** What the restart changes: files stay on disk, but a leaked descriptor, connection or byte of memory is freed. */
 export function loopText(first: GaugeId, load: Load): string {
   if (first === 'disk' || first === 'inodes') return 'The files are still on disk: it is still full, so it fails again at once';
-  if (first === 'ports') return 'A restart frees the ports, but the traffic takes them straight back';
+  if (first === 'ports') return 'The process restarts, but the kernel still holds its TIME_WAIT ports for up to 60 s and the traffic refills them';
   const again = hitHours(first, load);
   return again === null ? 'The leak starts over' : `The leak starts over: the limit is reached again in about ${formatHours(again)}`;
 }

@@ -143,7 +143,7 @@ describe('the first failure and its cascade', () => {
     expect(loopText('disk', load(['logs']))).toContain('still full');
     expect(loopText('inodes', load(['tempfiles']))).toContain('still full');
     expect(loopText('fds', l)).toContain(`${hitHours('fds', l)!.toFixed(1)} h`);
-    expect(loopText('ports', load(['outbound'], 500))).toContain('traffic takes them straight back');
+    expect(loopText('ports', load(['outbound'], 500))).toContain('TIME_WAIT');
   });
 });
 

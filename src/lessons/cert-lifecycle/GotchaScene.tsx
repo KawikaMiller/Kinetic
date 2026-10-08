@@ -15,7 +15,7 @@ const TAIL: Record<GotchaId, (o: GotchaOptions) => string> = {
 };
 
 const HINT: Record<GotchaId, string> = {
-  intermediate: 'Every certificate in the chain needs to be inside its validity period (some validators treat the trust anchor differently). The old intermediate and its date are made up for the demo.',
+  intermediate: 'Every certificate in the chain needs to be inside its validity period (some validators treat the trust anchor differently). The old intermediate and its date are made up for the demo. A CA would not normally issue a leaf that outlives its intermediate: the failure shown is the stale chain file the server keeps sending.',
   skew: 'Many CAs backdate notBefore by about an hour, which does not cover a clock that is days off. The skew is simulated; a clock far enough ahead would see a certificate expire early, which renewals 30 days ahead hide here.',
   reload: 'Monitoring that probes the endpoint sees the old certificate and alerts; a check that reads the files would be happy. Whether a server reloads on a signal or needs a restart depends on the software.',
   pinned: 'Pinning the exact certificate is the strictest form; pinning a public key survives renewal only if the key is reused. Many teams avoid pinning because of outages like this one.',

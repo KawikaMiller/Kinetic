@@ -49,7 +49,7 @@ export function FindScene({ picker }: { picker: ReactNode }) {
   useIntroCaption(
     active ? (
       <>
-        <b>{score.hits}</b> lines match. The failed request wrote <b>{score.truth}</b> lines: <span className="hl ok">{score.found} found</span>, <span className={score.missed ? 'hl bad' : 'hl ok'}>{score.missed} missed</span>,{' '}
+        <b>{score.hits}</b> lines match. The failed request wrote <b>{score.truth}</b> lines: <span className={score.missed ? 'hl' : 'hl ok'}>{score.found} found</span>, <span className={score.missed ? 'hl bad' : 'hl ok'}>{score.missed} missed</span>,{' '}
         <span className={score.falseHits ? 'hl bad' : 'hl ok'}>{score.falseHits} unrelated</span>.
       </>
     ) : (
@@ -66,7 +66,7 @@ export function FindScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Lines returned" value={active ? score.hits : NA} />
-          <Stat label="Failed request's lines found" value={active ? `${score.found} / ${score.truth}` : NA} color={active ? 'var(--ok)' : undefined} />
+          <Stat label="Failed request's lines found" value={active ? `${score.found} / ${score.truth}` : NA} color={active && !score.missed ? 'var(--ok)' : undefined} />
           <Stat label="Missed" value={active ? score.missed : NA} color={active ? (score.missed ? 'var(--bad)' : 'var(--ok)') : undefined} />
           <Stat label="Unrelated hits" value={active ? score.falseHits : NA} color={active ? (score.falseHits ? 'var(--bad)' : 'var(--ok)') : undefined} />
         </Stats>
@@ -74,9 +74,9 @@ export function FindScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--hi)', label: 'matched line · its request path' },
-            { color: 'var(--bad)', label: 'ERROR' },
-            { color: 'var(--orange)', label: 'WARN' },
+            { color: 'var(--hi)', label: 'matched line (keeps yellow even if ERROR or WARN) · its request path' },
+            { color: 'var(--bad)', label: 'ERROR, unmatched' },
+            { color: 'var(--orange)', label: 'WARN, unmatched' },
             ...SERVICES.map((s) => ({ color: `var(--${SERVICE_TONE[s]})`, label: s })),
           ]}
         />

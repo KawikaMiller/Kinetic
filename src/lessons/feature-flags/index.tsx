@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A feature flag separates deploying code from releasing it: the code ships switched off, and a rule evaluated at runtime decides who sees it, so you can ramp up, target or switch off without another deploy.',
-    what: 'A flag is a runtime condition around a code path. A percentage rollout hashes the flag name and the user id into a bucket from 0 to 99 and turns the feature on for buckets below the dial, so a user always gets the same answer and a ramp from 10% to 20% only adds users. Targeting rules are checked top to bottom and the first match decides. A kill switch is a flag you flip in an incident. Flags are code too: each one you leave in doubles the paths to test.',
+    what: 'A flag is a runtime condition around a code path. A percentage rollout hashes the flag name and the user id into a bucket from 0 to 99 and turns the feature on for buckets below the dial, so a user always gets the same answer and a ramp from 10% to 20% only adds users. Targeting rules are checked top to bottom and the first match decides. A kill switch is a flag you flip in an incident. Flags are code too: each independent flag you leave in can double the paths to test.',
     analogy: 'A light switch wired in before the lamp goes up: the electricians (deploys) can fit the wiring any day, and the switch decides when the room lights up and for whom.',
     useCases: [
       'Gradual rollouts to 1%, 10%, 50% and 100% of users, hashed so each user keeps their experience',

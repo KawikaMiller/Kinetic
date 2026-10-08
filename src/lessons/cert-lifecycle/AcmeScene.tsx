@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Segmented, Slider } from '../../components/ui';
-import { ACME_LIFETIME_DAYS, ACME_START, DAY, acmeScenario, renewAfterDays, type RenewalProblem } from './model';
+import { ACME_LIFETIME_DAYS, ACME_START, DAY, acmeScenario, alertsBeforeFix, renewAfterDays, type RenewalProblem } from './model';
 import { ScenarioView } from './ScenarioView';
 
 const FIX_MIN_DAY = 55;
@@ -35,14 +35,16 @@ export function AcmeScene({ picker }: { picker: ReactNode }) {
       tail={
         problem === 'none'
           ? `The job renews on day ${window} of ${ACME_LIFETIME_DAYS}, long before anything is at risk.`
-          : fixDay <= ACME_LIFETIME_DAYS
-            ? `Fixed on day ${fixDay}, still inside the window: the alerts fired and nobody was hurt.`
+          : fixDay <= window
+            ? `Fixed on day ${fixDay}, before the first renewal try on day ${window}: the job renews on its first try, so no try fails and no alert fires.`
+            : fixDay <= ACME_LIFETIME_DAYS
+            ? `Fixed on day ${fixDay}, still inside the window: ${alertsBeforeFix(fixDay)} of the 3 alerts fired and nobody was hurt.`
             : `Fixed on day ${fixDay}, after the certificate expired: handshakes fail until then.`
       }
       hint={
         <>
           Scripted timeline for a fictional service. The {ACME_LIFETIME_DAYS}-day lifetime and renewing when a third is left (day {window}) are common ACME conventions, not rules; the job tries once a day here, and the error
-          wording is paraphrased. Alerts count down to the certificate the server actually presents, at 30, 14 and 7 days left.
+          wording is paraphrased. Alerts count down to the certificate the server actually presents, typically at 30, 14 and 7 days left.
         </>
       }
     />

@@ -63,7 +63,7 @@ export function RolloutScene({ picker }: { picker: ReactNode }) {
           <Toggle label="Code deployed" value={deployed} onChange={setDeployed} off="Old build" on="New build, flag-gated" />
           <Slider label="Rollout dial" value={dial} min={0} max={100} step={DIAL_STEP} onChange={setDial} format={(v) => `${v}%`} />
           <Segmented label="Bucketing" value={mode} onChange={setMode} options={[{ value: 'stable', label: 'Stable hash of user' }, { value: 'random', label: 'Random each request' }]} />
-          <Button onClick={() => setRound((r) => r + 1)}>Everyone loads another page</Button>
+          <Button disabled={mode !== 'random'} onClick={() => setRound((r) => r + 1)}>Everyone loads another page</Button>
         </>,
       ]}
     >

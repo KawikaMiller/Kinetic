@@ -91,7 +91,7 @@ export function GaugesScene({ picker, run }: { picker: ReactNode; run: RunState 
           ))}
         </div>
         <Hint block>
-          Simulated server: every limit, leak rate and the traffic are illustrative, and each leak adds a fixed amount per request. The ephemeral-port range (32768-60999) and the 60 s TIME_WAIT are the Linux defaults. After the first
+          Simulated server: every limit, leak rate and the traffic are illustrative, and each leak adds a fixed amount per request. The ephemeral-port range (32768-60999) and the 60 s TIME_WAIT are the Linux defaults, and the port gauge models connections to one upstream address and port, since ports run out per destination. After the first
           failure the gauges keep going as if the service stayed up, to show what would fail next. Error wording is typical, not exact for every system.
         </Hint>
       </div>

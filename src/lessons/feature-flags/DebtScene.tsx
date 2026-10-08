@@ -73,7 +73,7 @@ export function DebtScene({ picker }: { picker: ReactNode }) {
           ))}
         </ul>
         <Hint block>
-          A scripted year of flags for one team: lifetimes are typical habits, not rules. Each live flag doubles the combinations; the two states of every flag need testing, not only the one you ship.
+          A scripted year of flags for one team: lifetimes are typical habits, not rules. Each independent live flag doubles the combinations (nested or dependent flags give fewer); the two states of every flag need testing, not only the one you ship.
         </Hint>
       </div>
     </StageFrame>

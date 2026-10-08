@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  ACME_LIFETIME_DAYS, ACME_START, ALERT_DAYS, DAY, GOTCHA_DEFAULTS, GOTCHAS, HOUR, LIFETIME_SCHEDULE, MANUAL_ISSUED, MANUAL_LIFETIME_DAYS, OLD_INTERMEDIATE, TRUE_CLIENT,
-  acmeScenario, chainValidAt, formatInZone, gotchaScenario, handshake, isValidAt, lifetimeDays, manualScenario, maxLifetimeDays, outageRanges, renewAfterDays, renewalsPerYear, sampleTimes,
+  ACME_LIFETIME_DAYS, ACME_START, ALERT_DAYS, DAY, GOTCHA_DEFAULTS, GOTCHAS, HOUR, ISSUE_DEFAULT_INDEX, ISSUE_LAST_INDEX, LIFETIME_SCHEDULE, MANUAL_ISSUED, MANUAL_LIFETIME_DAYS, OLD_INTERMEDIATE, TRUE_CLIENT,
+  acmeScenario, alertsBeforeFix, chainValidAt, formatInZone, gotchaScenario, handshake, isValidAt, issueDateAt, issueLabel, lifetimeDays, manualScenario, maxLifetimeDays, outageRanges, renewAfterDays, renewalsPerYear, sampleTimes,
   servedAt, utc, type Cert, type Scenario,
 } from './model';
 
@@ -243,5 +243,37 @@ describe('outageRanges matches an hour-by-hour brute force', () => {
         expect(inRange).toBe(!handshake(s.served, client, t).ok);
       }
     }
+  });
+});
+
+describe('the issue-date picker', () => {
+  const indexOf = (label: string) => Array.from({ length: ISSUE_LAST_INDEX + 1 }, (_, i) => i).find((i) => issueLabel(i) === label)!;
+
+  it('can land on both sides of every limit change, with the label naming the exact date', () => {
+    const cases: [string, string, number, number][] = [
+      ['1 Mar 2026', '15 Mar 2026', 398, 200],
+      ['1 Mar 2027', '15 Mar 2027', 200, 100],
+      ['1 Mar 2029', '15 Mar 2029', 100, 47],
+    ];
+    for (const [before, from, a, b] of cases) {
+      expect(maxLifetimeDays(issueDateAt(indexOf(before)))).toBe(a);
+      expect(maxLifetimeDays(issueDateAt(indexOf(from)))).toBe(b);
+    }
+  });
+
+  it('starts on a date the label shows exactly, and the last position is the end of 2030', () => {
+    expect(issueLabel(ISSUE_DEFAULT_INDEX)).toBe('1 Sep 2026');
+    expect(issueLabel(ISSUE_LAST_INDEX)).toBe('15 Dec 2030');
+  });
+});
+
+describe('ACME alerts before a fix', () => {
+  it('matches the alerts the scenario really raises for every fix day, and none when the first try works', () => {
+    for (let fixDay = 55; fixDay <= 90; fixDay++) {
+      const s = acmeScenario({ problem: 'dns', fixedAt: ACME_START + fixDay * DAY, reload: true });
+      const alerts = s.events.filter((e) => e.kind === 'alert' && e.t < ACME_START + ACME_LIFETIME_DAYS * DAY).length;
+      expect(alertsBeforeFix(fixDay)).toBe(alerts);
+    }
+    expect(alertsBeforeFix(60)).toBe(0);
   });
 });

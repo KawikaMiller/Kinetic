@@ -1,10 +1,6 @@
 import { ChipButton, ControlGroup, Slider } from '../../components/ui';
-import { LEAKS, LEAK_IDS } from './model';
+import { LEAKS, LEAK_IDS, RPS_MAX, RPS_MIN, RPS_STEP } from './model';
 import type { RunState } from './useRunState';
-
-const RPS_MIN = 20;
-const RPS_MAX = 600;
-const RPS_STEP = 10;
 
 /** The leaky workload toggles and the traffic that drives them. */
 export function LeakControls({ run }: { run: RunState }) {

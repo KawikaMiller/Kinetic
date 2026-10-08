@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { hash32 } from '../../core/hash';
 import {
   BUCKETS, DEFAULT_ORDER, FLAGS, FLAG_KEY, FLAG_REFRESH_SECONDS, KIND_INFO, MONTHS, PIPELINE_SECONDS, REPLACE_SECONDS, RULES, STALE_AFTER, USER_COUNT,
-  bucketOf, combinations, moveRule, countOn, debtCode, evaluate, flickerCount, goesOffAt, inRollout, isStale, liveFlags, makeUsers, percentFor, randomEach, reached, shareStillOn,
+  bucketOf, combinations, moveRule, countOn, debtCode, evaluate, flickerCount, goesOffAt, inRollout, isStale, liveFlags, makeUsers, percentFor, randomEach, reached, ruleLineState, shareStillOn,
   staleFlags, stillOn, usersByRule, type RuleId, type User,
 } from './model';
 
@@ -94,6 +94,24 @@ describe('random each request (the mistake)', () => {
       const on = big.filter((u) => randomEach(u.id, 7, percent)).length;
       expect(Math.abs((100 * on) / SIZE - percent)).toBeLessThanOrEqual(3);
     }
+  });
+});
+
+describe('the targeting-rules panel styling', () => {
+  it('rules asked before the match are past, the match is now, and the rules never reached are idle (the dim ones)', () => {
+    const staff = users.find((u) => u.staff)!;
+    const ran = reached(DEFAULT_ORDER, evaluate(DEFAULT_ORDER, staff, 10, false).rule);
+    expect(DEFAULT_ORDER[0]).toBe('staff');
+    expect(DEFAULT_ORDER.map((_, i) => ruleLineState(i, ran))).toEqual(['now', 'idle', 'idle']);
+    expect([0, 1, 2].map((i) => ruleLineState(i, 3))).toEqual(['past', 'past', 'now']);
+    expect([0, 1].map((i) => ruleLineState(i, 0))).toEqual(['past', 'past']);
+  });
+});
+
+describe('flag lifetimes', () => {
+  it('scripted release flags live no longer than the release label says (weeks to a couple of months)', () => {
+    expect(KIND_INFO.release.lifetime).toBe('weeks to a couple of months');
+    for (const f of FLAGS.filter((x) => x.kind === 'release')) expect(f.done! - f.born).toBeLessThanOrEqual(2);
   });
 });
 

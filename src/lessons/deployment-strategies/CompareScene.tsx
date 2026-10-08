@@ -19,7 +19,7 @@ export function CompareScene({ cfg, controls }: { cfg: Config; controls: ReactNo
   const summary = useMemo(() => compareSummary(rows), [rows]);
   useIntroCaption(
     <>
-      The same bug, schema, traffic sample and settings, run through all four strategies: <span className="hl ok">{names(summary.fewest)}</span> hit the fewest users (about {summary.fewestHit}),{' '}
+      The same bug, schema, traffic sample and settings, run through all four strategies: <span className="hl ok">{names(summary.fewest)}</span> caused the fewest failed requests (about {summary.fewestHit}),{' '}
       <span className="hl bad">{names(summary.most)}</span> the most (about {summary.mostHit}) over {HORIZON} minutes.
     </>,
     [summary],
