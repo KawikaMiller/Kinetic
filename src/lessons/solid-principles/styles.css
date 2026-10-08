@@ -1,0 +1,14 @@
+.sp { gap: 14px; }
+.sp-rule { display: flex; flex-direction: column; gap: 4px; }
+.sp-rule p { margin: 0; }
+.sp-statement { font-size: 15px; line-height: 1.5; }
+.sp-statement b { color: var(--violet); font-family: var(--mono); margin-right: 4px; }
+.sp-source { font-size: 12px; color: var(--muted); }
+.sp-design { font-size: 13px; line-height: 1.6; }
+.sp-design-tag { display: inline-block; margin-right: 8px; padding: 0 7px; border-radius: 99px; font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--muted); color: var(--muted); }
+.sp-graph { margin: 0 auto; }
+.sp-graph .graph-node-label { font-size: 12px; }
+.sp-code { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.sp-code > * { flex: 1 1 340px; min-width: 0; }
+.sp-panel { font-size: 12.5px; }
+.sp-overkill p { margin: 6px 0 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
