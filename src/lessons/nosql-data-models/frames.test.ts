@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { EXAMPLE_CUSTOMER, EXAMPLE_ORDER, PRODUCTS, money } from './canon';
 import { MODELS, buildEngine, runQuery, type Params, type QueryId } from './engines';
-import { QUERIES, newPriceFor, queryFrames, queryText, recordTones } from './frames';
+import { CLUSTERINGS, PARTITION_KEYS, REQUIREMENT_SETS, evaluateDesign, totalsFor } from './design';
+import { QUERIES, designCaption, newPriceFor, queryFrames, queryText, recordTones } from './frames';
 
 const params = (product: string): Params => ({ order: EXAMPLE_ORDER, customer: EXAMPLE_CUSTOMER, product, newPrice: newPriceFor(product) });
 const CASES = MODELS.flatMap((m) => [false, true].map((prepared) => ({ model: m.id, prepared })));
@@ -19,7 +20,7 @@ describe('captions tell the truth about each run (every model x query x product)
           expect(frames.map((f) => f.step)).toEqual([-1, ...r.steps.map((_, i) => i), r.steps.length]);
           const last = text(frames.at(-1)!.say);
           expect(last).toContain(`${r.lookups} ${r.lookups === 1 ? 'lookup' : 'lookups'} in ${r.roundTrips} round ${r.roundTrips === 1 ? 'trip' : 'trips'}`);
-          if (q.id === 'price') expect(last).toContain(`${r.copies} ${r.copies === 1 ? 'record' : 'records'} now hold the new price`);
+          if (q.id === 'price') expect(last).toContain(`${r.copies} ${r.copies === 1 ? 'record now holds' : 'records now hold'} the new price`);
           else expect(last).not.toContain('now hold');
           let sofar = 0;
           r.steps.forEach((s, i) => {
@@ -62,5 +63,50 @@ describe('query text', () => {
     expect(say('last10')).toBe("Ada's last 10 orders");
     expect(say('price')).toBe(`set the price of the ink to ${money(425)}`);
     expect(say('also')).toBe('who also bought the ink?');
+  });
+});
+
+describe('design captions, every model x required set x key x clustering', () => {
+  const P = params('P1');
+  it('state how many queries one partition serves, how the rest read, hot keys, and the fewest lookups, from the verdict', () => {
+    for (const m of MODELS)
+      for (const set of REQUIREMENT_SETS)
+        for (const k of PARTITION_KEYS)
+          for (const c of CLUSTERINGS) {
+            const design = { key: k.id, clustering: c.id };
+            const verdict = evaluateDesign(set, design);
+            const totals = totalsFor(set, design, P);
+            const say = text(designCaption(m.id, design, verdict, totals));
+            const lo = Math.min(...Object.values(totals));
+            const label = `${m.id} ${set.id} ${k.id} ${c.id}`;
+            if (m.id === 'wide') {
+              expect(say, label).toContain(`serves ${verdict.served} of the 2 required queries from one partition`);
+              const scatter = verdict.perQuery.filter((x) => x.serve.kind === 'scatter').length;
+              expect(say.includes('both have to read every partition'), label).toBe(scatter === 2);
+              expect(say.includes('the other has to read'), label).toBe(scatter === 1);
+              expect(say.includes('One table per query'), label).toBe(scatter > 0);
+              expect(say.includes('a hot partition'), label).toBe(k.id === 'constant');
+              expect(say).toContain(`(${lo}).`);
+            } else {
+              expect(say, label).toContain(`needs ${totals[m.id]} lookups`);
+              expect(say.includes('a hot partition'), label).toBe(k.id === 'constant');
+            }
+          }
+  });
+
+  it('neither query served names both, not "the other" (review repro)', () => {
+    const set = REQUIREMENT_SETS.find((s) => s.id === 'catalogue')!;
+    const design = { key: 'customer_id', clustering: 'date-desc' } as const;
+    const say = text(designCaption('wide', design, evaluateDesign(set, design), totalsFor(set, design, P)));
+    expect(say).toContain('serves 0 of the 2 required queries');
+    expect(say).toContain('both have to read every partition (3 each)');
+    expect(say).not.toContain('the other');
+  });
+
+  it('1 record now holds the new price; 10 records now hold it', () => {
+    const one = runQuery(buildEngine('relational'), 'price', P);
+    const ten = runQuery(buildEngine('document'), 'price', P);
+    expect(text(queryFrames('relational', 'price', one, P).at(-1)!.say)).toContain('1 record now holds the new price');
+    expect(text(queryFrames('document', 'price', ten, P).at(-1)!.say)).toContain('10 records now hold the new price');
   });
 });

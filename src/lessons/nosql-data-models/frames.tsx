@@ -3,6 +3,7 @@ import { plural } from '../../core/format';
 import type { Tone } from '../../core/tone';
 import type { Frame } from '../../core/types';
 import { CUSTOMERS, PRODUCTS, money, productName, type Customer } from './canon';
+import type { Design, Verdict } from './design';
 import { MODELS, type ModelId, type Params, type QueryId, type Result } from './engines';
 
 export interface QueryFrame extends Frame {
@@ -39,7 +40,7 @@ export const newPriceFor = (product: string) => PRODUCTS.find((p) => p.id === pr
 function totals(r: Result<unknown>, q: QueryId): ReactNode {
   return <>
     <b>{plural(r.lookups, 'lookup')}</b> in {plural(r.roundTrips, 'round trip')}
-    {q === 'price' && r.copies !== null ? <>, and <span className="hl orange">{plural(r.copies, 'record')}</span> now hold the new price</> : ''}.
+    {q === 'price' && r.copies !== null ? <>, and <span className="hl orange">{plural(r.copies, 'record')}</span> now {r.copies === 1 ? 'holds' : 'hold'} the new price</> : ''}.
   </>;
 }
 
@@ -72,4 +73,22 @@ export function recordTones(r: Result<unknown>, step: number): Map<string, Tone>
     for (const ref of s.refs) out.set(ref, s.mode === 'write' ? 'orange' : i === step ? 'hi' : 'info');
   });
   return out;
+}
+
+/** The design scene's caption: what the learner's wide-column table serves, where it is hot, and who is cheapest (from the verdict and totals). */
+export function designCaption(model: ModelId, design: Design, verdict: Verdict, totals: Record<ModelId, number>): ReactNode {
+  const lo = Math.min(...Object.values(totals));
+  const best = MODELS.filter((m) => totals[m.id] === lo).map((m) => m.label).join(' and ');
+  const hot = verdict.hot.level === 'bad';
+  const scatter = verdict.perQuery.filter((x) => x.serve.kind === 'scatter');
+  if (model !== 'wide')
+    return <>{modelLabel(model)} needs {totals[model]} lookups for these two queries; the fewest is {lo}, by {best}. The wide-column column follows the table design below
+      (partition key <code>{design.key}</code>{hot ? ', a hot partition' : ''}). No model is best at every pair of queries: change the required set.</>;
+  const rest = scatter.length === 0 ? '' : scatter.length === 2
+    ? `; both have to read every partition (${scatter[0].serve.partitions} each)`
+    : `; the other has to read ${plural(scatter[0].serve.partitions, 'partition')}`;
+  return <>Your wide-column table, partitioned by <code>{design.key}</code>, serves {verdict.served} of the 2 required queries from one partition{rest}
+    {scatter.length > 0 ? '. One table per query is how wide-column stores are designed, at the price of a copy to keep in sync' : ''}.
+    {hot ? ' But that one partition takes all the traffic and data: a hot partition, so the low count is no bargain.' : ''}
+    {' '}Fewest lookups for this pair: {best} ({lo}).</>;
 }

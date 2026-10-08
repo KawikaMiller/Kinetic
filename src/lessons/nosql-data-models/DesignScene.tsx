@@ -10,7 +10,7 @@ import {
   CLUSTERINGS, PARTITION_KEYS, REQUIREMENT_SETS, ddl, evaluateDesign, partitionCount, totalsFor, type Clustering, type Design, type PartitionKey, type Serve,
 } from './design';
 import { MODELS, buildEngine, runQuery, type ModelId, type Params, type QueryId } from './engines';
-import { QUERIES, modelLabel, newPriceFor } from './frames';
+import { QUERIES, designCaption, newPriceFor } from './frames';
 
 const TABLE_MIN_PX = 480;
 const P: Params = { order: EXAMPLE_ORDER, customer: EXAMPLE_CUSTOMER, product: 'P1', newPrice: newPriceFor('P1') };
@@ -31,19 +31,9 @@ export function DesignScene({ picker }: { picker: ReactNode }) {
   const totals = totalsFor(set, design, P);
   const lo = Math.min(...Object.values(totals));
   const hi = Math.max(...Object.values(totals));
-  const best = MODELS.filter((m) => totals[m.id] === lo).map((m) => m.label);
   const perModel = (m: ModelId, q: QueryId) => (m === 'wide' ? verdict.perQuery.find((x) => x.query === q)!.serve.partitions : runQuery(buildEngine(m, { prepared: true }), q, P).lookups);
 
-  useIntroCaption(
-    model === 'wide'
-      ? <>Your wide-column table, partitioned by <code>{key}</code>, serves {verdict.served} of the 2 required queries from one partition
-        {verdict.served < 2 ? <>; the other has to read {plural(verdict.perQuery.find((x) => x.serve.kind === 'scatter')!.serve.partitions, 'partition')}. One table per query is how wide-column stores are designed, at the price of a copy to keep in sync</> : ''}.
-        {verdict.hot.level === 'bad' ? <> But that one partition takes all the traffic and data: a hot partition, so the low count is no bargain.</> : ''}
-        {' '}Fewest lookups for this pair: {best.join(' and ')} ({lo}).</>
-      : <>{modelLabel(model)} needs {totals[model]} lookups for these two queries; the fewest is {lo}, by {best.join(' and ')}. The wide-column column follows the table design below
-        (partition key <code>{key}</code>{verdict.hot.level === 'bad' ? ', a hot partition' : ''}). No model is best at every pair of queries: change the required set.</>,
-    [setId, model, key, clustering],
-  );
+  useIntroCaption(designCaption(model, design, verdict, totals), [setId, model, key, clustering]);
 
   return (
     <StageFrame
