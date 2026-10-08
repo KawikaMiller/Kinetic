@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  BODY, CAP_S, FAILURES, KEY, OTHER_BODY, TTL_H, begin, charges, finish, interleavings, newServer, raceScenario, roundSpread, retryDelay, retryScenario,
+  BODY, CAP_S, FAILURES, KEY, OTHER_BODY, TTL_H, begin, charges, duplicateRows, finish, interleavings, newServer, raceScenario, roundSpread, retryDelay, retryScenario,
   retryTimes, reuseScenario, runInterleaving,
 } from './model';
 
@@ -35,6 +35,20 @@ describe('retries with and without a key', () => {
     const steps = retryScenario('client-timeout', true, 3);
     expect(steps.filter((s) => s.kind === 'reject').map((s) => s.resp!.status)).toEqual([409, 409, 409]);
     expect(steps.filter((s) => s.kind === 'ignored')).toHaveLength(1);
+  });
+});
+
+describe('duplicate ledger rows', () => {
+  it('are the same amount charged again, and only that', () => {
+    expect(duplicateRows(last(retryScenario('response-lost', false, 1)).server)).toEqual([1]);
+    expect(duplicateRows(last(retryScenario('response-lost', false, 3)).server)).toEqual([1, 2, 3]);
+    expect(duplicateRows(last(retryScenario('response-lost', true, 3)).server)).toEqual([]);
+    // After expiry a different body is a new payment: two rows, no duplicate.
+    const late = last(reuseScenario(TTL_H + 1, OTHER_BODY)).server;
+    expect(charges(late)).toBe(2);
+    expect(late.ledger.map((r) => r.amount)).toEqual([BODY.amount, OTHER_BODY.amount]);
+    expect(duplicateRows(late)).toEqual([]);
+    expect(duplicateRows(last(reuseScenario(TTL_H + 1, BODY)).server)).toEqual([1]);
   });
 });
 

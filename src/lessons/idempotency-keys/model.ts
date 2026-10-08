@@ -100,6 +100,14 @@ export function finish(s: Server, key: string | null, body: Body, attempt: numbe
 /** How many times the handler charged: the ledger is the truth. */
 export const charges = (s: Server) => s.ledger.length;
 
+/**
+ * Ledger rows that charge the same amount an earlier row already did: the same payment charged
+ * again. A row with a different amount is a different payment (what a different body gets once
+ * its key has expired), so it is not a duplicate.
+ */
+export const duplicateRows = (s: Server): number[] =>
+  s.ledger.flatMap((r, i) => (s.ledger.slice(0, i).some((x) => x.amount === r.amount) ? [i] : []));
+
 // ── Scripted exchanges for the sequence diagram ─────────────────────────
 
 export type Failure = 'request-lost' | 'response-lost' | 'client-timeout';

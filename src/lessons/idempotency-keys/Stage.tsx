@@ -11,7 +11,7 @@ import { mulberry32 } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, ladder, type IkFrame } from './frames';
 import {
-  BODY, FAILURES, OTHER_BODY, POLICIES, TTL_H, money, newServer, raceScenario, retryScenario, retryTimes, reuseScenario, roundSpread, type Failure,
+  BODY, FAILURES, OTHER_BODY, POLICIES, TTL_H, duplicateRows, money, newServer, raceScenario, retryScenario, retryTimes, reuseScenario, roundSpread, type Failure,
   type Policy, type Server, type Step,
 } from './model';
 import './styles.css';
@@ -23,7 +23,7 @@ const SCENES: { value: SceneId; label: string }[] = [
   { value: 'reuse', label: 'Reuse & expiry' },
   { value: 'policy', label: 'Retry policy' },
 ];
-const HONEST = 'Simulated payment API; the key store is in memory. The Idempotency-Key header is an IETF draft widely used in practice.';
+const HONEST = 'Simulated payment API; the key store is in memory. The Idempotency-Key header comes from an IETF Internet-Draft (not a published standard) that many APIs follow.';
 const STEP_MS = 1400;
 const ACTORS = [
   { id: 'client', label: 'Client', tone: 'info' as const },
@@ -71,6 +71,7 @@ function Exchange({ steps, intro, controls, extra }: { steps: Step[]; intro: Rea
 }
 
 function Ledger({ server }: { server: Server }) {
+  const dups = duplicateRows(server);
   return (
     <div className="ik-table">
       <SectionTitle weight="regular" hint={`${server.ledger.length} ${server.ledger.length === 1 ? 'charge' : 'charges'}`}>Ledger</SectionTitle>
@@ -78,7 +79,7 @@ function Ledger({ server }: { server: Server }) {
         <table className="data-table">
           <thead><tr><th>payment</th><th>amount</th><th>from attempt</th></tr></thead>
           <tbody>{server.ledger.map((r, i) => (
-            <tr key={r.id} className={i === 0 ? 'ik-ok' : 'ik-dup'}><td>{r.id}{i > 0 ? ' · duplicate' : ''}</td><td>{money(r.amount)}</td><td>{r.attempt}</td></tr>
+            <tr key={r.id} className={dups.includes(i) ? 'ik-dup' : 'ik-ok'}><td>{r.id}{dups.includes(i) ? ' · duplicate' : i > 0 ? ' · a different payment' : ''}</td><td>{money(r.amount)}</td><td>{r.attempt}</td></tr>
           ))}</tbody>
         </table>
       ) : <p className="empty-note">no charges</p>}
@@ -164,7 +165,7 @@ function RaceScene({ picker }: { picker: ReactNode }) {
       steps={steps}
       intro={intro}
       controls={[<>{picker}<Toggle label="Key store" value={!lockFirst} onChange={(v) => setLockFirst(!v)} off="Claim the key first" on="Look up, write after" /></>]}
-      extra={<Hint block>The test runs all 6 orderings of two requests: claiming the key first charges once in every one; looking up and writing afterwards charges twice in the 4 where both look before either writes. That is a check-then-act race (<code>race-conditions</code>): the claim must be one atomic insert, such as a unique key in the database.</Hint>}
+      extra={<Hint block>The test runs all 6 orderings of two requests: claiming the key first charges once in every one; looking up and writing afterwards charges twice in the 4 where both look before either writes. That is a check-then-act race (<code>race-conditions</code>): the claim must be one atomic insert, such as a unique key in the database. "Never double-processes" holds while the first handler is alive: a real server also expires an in-progress key after a timeout, since a crashed handler would otherwise leave it locked forever.</Hint>}
     />
   );
 }

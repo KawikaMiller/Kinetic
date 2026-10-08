@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { SequenceMessage } from '../../components/SequenceDiagram';
 import type { Tone } from '../../core/tone';
 import type { Frame } from '../../core/types';
-import { BODY, REASON, TTL_H, charges, money, type Step } from './model';
+import { BODY, REASON, TTL_H, charges, duplicateRows, money, type Server, type Step } from './model';
 
 export interface IkFrame extends Frame {
   /** Index of the current step; -1 before the first, steps.length for the summary. */
@@ -11,14 +11,18 @@ export interface IkFrame extends Frame {
 
 const times = (n: number) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
 export const chargedText = (n: number) => (n === 0 ? 'not charged yet' : `charged ${times(n)}`);
-const charged = (n: number) => <span className={`hl ${n > 1 ? 'bad' : 'ok'}`}>{chargedText(n)}</span>;
+/** The charge count, red only where the ledger holds a duplicate (the same amount again), not for a second, different payment. */
+const charged = (server: Server) => {
+  const n = charges(server);
+  return <span className={`hl ${duplicateRows(server).length ? 'bad' : n > 1 ? '' : 'ok'}`}>{chargedText(n)}</span>;
+};
 
 /** Message colour on the ladder: requests blue, a lost one red, charges green (a duplicate red), replays violet, 409/422 orange. */
 export function toneOf(s: Step): Tone {
   if (s.lost && s.kind !== 'ignored') return 'bad';
   switch (s.kind) {
     case 'send': return 'info';
-    case 'charged': return charges(s.server) > 1 ? 'bad' : 'ok';
+    case 'charged': return duplicateRows(s.server).length ? 'bad' : 'ok';
     case 'respond': return 'ok';
     case 'replay': return 'violet';
     case 'reject': return 'orange';
@@ -51,24 +55,27 @@ export function stepCaption(s: Step): ReactNode {
       return <>Same key, different body: the key was first used for {money(BODY.amount)}, this request asks for {money(s.body!.amount)}. A reused key with a new body is a client bug.</>;
     }
     case 'charge': return <>The server charges the card: a new ledger row.</>;
-    case 'charged':
-      return n > 1
-        ? <>Ledger row {n}: the customer is now {charged(n)} for one payment.</>
-        : <>Ledger row 1: {s.resp!.payment} is stored{s.server.keys && Object.keys(s.server.keys).length ? ', and the response saved under the key in the same transaction' : ''}.</>;
+    case 'charged': {
+      if (n === 1) return <>Ledger row 1: {s.resp!.payment} is stored{Object.keys(s.server.keys).length ? ', and the response saved under the key in the same transaction' : ''}.</>;
+      const row = s.server.ledger[n - 1];
+      return duplicateRows(s.server).includes(n - 1)
+        ? <>Ledger row {n}: the same {money(row.amount)} again, so the customer is now {charged(s.server)} for one payment.</>
+        : <>Ledger row {n}: a different payment, {money(row.amount)}. The key had expired, so the server treats this different body as a new payment, and the customer is now {charged(s.server)}.</>;
+    }
     case 'respond':
       return s.lost
         ? <>The response is <span className="hl bad">lost on the way back</span>. The card was {chargedText(n)}, but the client can't tell whether it worked.</>
-        : <>{s.resp!.status} {REASON[s.resp!.status]} reaches the client. So far the customer is {charged(n)}.</>;
+        : <>{s.resp!.status} {REASON[s.resp!.status]} reaches the client. So far the customer is {charged(s.server)}.</>;
     case 'replay':
       return s.lost
-        ? <>The stored response is sent again, and lost again. Still {charged(n)}.</>
-        : <>The stored 201 ({s.resp!.payment}) <span className="hl violet">is replayed</span>: the client learns its payment worked, and it was {charged(n)}.</>;
+        ? <>The stored response is sent again, and lost again. Still {charged(s.server)}.</>
+        : <>The stored 201 ({s.resp!.payment}) <span className="hl violet">is replayed</span>: the client learns its payment worked, and it was {charged(s.server)}.</>;
     case 'reject':
       return s.resp!.status === 409
         ? <><span className="hl orange">409 Conflict</span>: still processing, retry later. A correct refusal, not a failure.</>
         : <><span className="hl orange">422 Unprocessable Content</span>: this key belongs to a different payment, so nothing is charged.</>;
     case 'ignored':
-      return <>The first request finally finishes and answers, but the client stopped waiting for that connection. Charged: {charged(n)}.</>;
+      return <>The first request finally finishes and answers, but the client stopped waiting for that connection. Charged: {charged(s.server)}.</>;
     case 'timeout':
       return <>No usable answer, so the client {s.label.includes('later') ? <>waits and retries ({s.label})</> : 'retries the same payment'}.</>;
   }
@@ -77,8 +84,12 @@ export function stepCaption(s: Step): ReactNode {
 export function summaryCaption(steps: readonly Step[]): ReactNode {
   const end = steps[steps.length - 1].server;
   const n = charges(end);
+  const dup = duplicateRows(end).length > 0;
   const settled = steps.filter((s) => s.settled).length > 0;
-  return <>Done: one payment, {charged(n)}{n > 1 ? ' (the duplicate is the red ledger row)' : ''}. {settled ? 'The client ended with 201 Created.' : 'The client ended without a success response.'}</>;
+  const lead = dup ? <>Done: one payment, {charged(end)} (the duplicate is the red ledger row).</>
+    : n > 1 ? <>Done: {charged(end)}, but for two different payments ({end.ledger.map((r) => money(r.amount)).join(' and ')}): the second body was new, so it is not a duplicate.</>
+      : <>Done: one payment, {charged(end)}.</>;
+  return <>{lead} {settled ? 'The client ended with 201 Created.' : 'The client ended without a success response.'}</>;
 }
 
 export function buildFrames(steps: readonly Step[], intro: ReactNode): IkFrame[] {
