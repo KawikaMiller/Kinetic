@@ -6635,7 +6635,7 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B11 Algorithm design | 5 | 4 | t2/b11 | done | merged 3b8ea84; review 3 MAJOR fixed aaba751 |
 | 2 | T2-B12 Models from data | 4 | 4 | t2/b12 | done | merged c5bbed4; domain review 5 MAJOR fixed 12a1cdf; spec's Hick and AdaBoost claims corrected |
 | 2 | T2-B13 Graphics & motion | 4 | 4 | t2/b13 | done | merged 2675566 (K-21 ColorField used); review 3 MAJOR fixed 2b0697f |
-| 2 | P-follow-up after wave 4 | — | 4→5 | kit owner | in progress | waves 4+5 gates on main (2026-10-07): 3788 tests, smoke 177/177 desktop + 390px, captions only the 6 known CHECKs. Component kit round kit-k6 running; queues docs/tier2-wave4-kit-requests.md, tier2-wave5-kit-requests.md |
+| 2 | P-follow-up after wave 4 | — | 4→5 | kit owner | done (kit-k6 merged: Plot2D family, CellGrid canvas edges, Button ref, CodePanel roving, core/x86, MemoryMap rows/labels, Gantt motionId) | waves 4+5 gates on main (2026-10-07): 3788 tests, smoke 177/177 desktop + 390px, captions only the 6 known CHECKs. Component kit round kit-k6 running; queues docs/tier2-wave4-kit-requests.md, tier2-wave5-kit-requests.md |
 | 2 | T2-B14 Sorting, selection & strings | 5 | 5 | t2/b14 | done | merged c388c87; spec quickselect formula corrected; review 3 MAJOR fixed 68ddc42 |
 | 2 | T2-B15 Logic, proof & complexity | 5 | 5 | t2/b15 | done | merged e1da29a; review 5 MAJOR fixed 5ea578c |
 | 2 | T2-B16 Concurrency & performance | 5 | 5 | t2/b16 | done | merged 30d8015; review 5 MAJOR fixed 0f0ae7c |
