@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Factory, Builder, Adapter and Decorator are named fixes for recurring problems in making and composing objects; each one is worth it only when its problem is really there.',
-    what: 'A Factory puts the choice of which class to create in one place, so callers ask for "a payment client" instead of naming one. A Builder replaces a long list of positional arguments with named steps and one validation point. An Adapter makes an object you can\'t change fit the interface your code expects. A Decorator wraps an object in another with the same interface to add behaviour (logging, caching, retries) without touching it; decorators stack, and their order matters. All four trade a little indirection for a change that stays local.',
+    what: 'A Factory (here a simple factory function, not the GoF Factory Method or Abstract Factory) puts the choice of which class to create in one place, so callers ask for "a payment client" instead of naming one. A Builder replaces a long list of positional arguments with named steps and one validation point. An Adapter makes an object you can\'t change fit the interface your code expects. A Decorator wraps an object in another with the same interface to add behaviour (logging, caching, retries) without touching it; decorators stack, and their order matters. All four trade a little indirection for a change that stays local.',
     analogy: 'A travel plug adapter lets your laptop (the app) use a foreign socket (the legacy API) without rewiring either. A decorator is a phone case: same phone, same buttons, extra protection, and you can stack a wallet case on top.',
     useCases: [
       'Choosing a payment, storage or email provider from config without if-chains in every caller',
@@ -21,7 +21,7 @@ const lesson: LessonModule = {
     'In Factory, press + add adyen: four files light orange. Switch Code to createPaymentClient() and only payments.ts does.',
     'In Builder, turn on show what each one means, then set retries to 9 and timeout to 0 ms: build() refuses with both reasons.',
     'In Adapter, set Between them to nothing (plug in directly) and play: the call does not fit.',
-    'In Decorator, play caching outside retry, then retry outside caching: watch where the second call stops.',
+    'In Decorator, play caching outside retry, then retry outside caching: on the second call retry is only reached in the second order.',
     'Pick logging inside caching and play: the second call is a cache hit, and logging never sees it.',
   ],
   keyIdeas: [

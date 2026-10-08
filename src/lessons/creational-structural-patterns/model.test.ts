@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { NO_ADAPTER_ERROR, adapterFrames, builderCaption, factoryCaption, stackFrames } from './frames';
 import {
-  ADAPTER_CODE, ALL_CHOICES, CALL_SITES, DECORATOR_PRESETS, FACTORY_FILE, LAYERS, TIME, appCode, buildFrom, legacyWeather, permutations, runStack, touchedFiles,
+  ADAPTER_CODE, ALL_CHOICES, ARG_NAMES, RequestBuilder, builderLines, positionalArgs, CALL_SITES, DECORATOR_PRESETS, FACTORY_FILE, LAYERS, TIME, appCode, buildFrom, legacyWeather, permutations, runStack, touchedFiles,
   xmlWeatherAdapter, type BuilderChoice, type LayerId,
 } from './model';
 
@@ -23,7 +23,7 @@ describe('builder', () => {
   /** Independent statement of the rules the caption lists. */
   const expectedErrors = (c: BuilderChoice) =>
     [
-      c.method === 'GET' && c.body && 'a GET request cannot have a body',
+      c.method === 'GET' && c.body && 'a GET request cannot have a body (this builder, like fetch, refuses it)',
       c.method === 'POST' && !c.body && 'a POST request needs a body',
       c.retries > 5 && 'retries must be 0 to 5',
       c.timeoutMs <= 0 && 'the timeout must be above 0 ms',
@@ -39,6 +39,33 @@ describe('builder', () => {
       if (want.length) for (const w of want) expect(say).toContain(w as string);
       else expect(say).toContain('accepts it');
     }
+  });
+});
+
+describe('builder: both versions are the same request', () => {
+  it('for all 16 choices the positional arguments and the builder steps carry the same seven values', () => {
+    for (const c of ALL_CHOICES) {
+      const r = buildFrom(c);
+      // Safe: fixed, lesson-authored text; the arguments follow the controls.
+      const positional = new Function(`return [${positionalArgs(c).join(', ')}];`)() as unknown[];
+      expect(positional).toHaveLength(7);
+      const viaSteps = new Function('RequestBuilder', `${builderLines(c).join('\n')}\nreturn req;`)(RequestBuilder) as ReturnType<typeof buildFrom>;
+      expect(viaSteps).toEqual(r);
+      if (r.ok) {
+        const q = r.request;
+        expect(positional).toEqual([q.url, q.method, q.body, q.followRedirects, q.retries, q.timeoutMs, q.cache]);
+      } else {
+        // An invalid request is still the same seven values on both sides.
+        expect(positional[1]).toBe(c.method);
+        expect(positional[2] === null).toBe(!c.body);
+        expect(positional[4]).toBe(c.retries);
+        expect(positional[5]).toBe(c.timeoutMs);
+      }
+    }
+    expect(ARG_NAMES).toHaveLength(7);
+    // Every one of the seven settings has a step in the builder version.
+    const steps = builderLines(ALL_CHOICES[0]).join('\n');
+    for (const name of ['method', 'followRedirects', 'retries', 'timeout', 'cache']) expect(steps).toContain(`.${name}(`);
   });
 });
 
@@ -110,6 +137,42 @@ describe('decorator stack', () => {
     expect(retryOut.trace.filter((e) => e.call === 2 && e.layer === 'retry' && e.kind === 'enter')).toHaveLength(1);
     // Logging inside the cache never sees the hit.
     expect(logIn.trace.filter((e) => e.call === 2 && e.layer === 'logging')).toEqual([]);
+  });
+
+  it('every exit event reports the real outcome of its call: ok=false from the failing core until retry catches it, for all 24 orderings and subsets', () => {
+    const check = (order: LayerId[]) => {
+      const r = runStack(order);
+      let failing = false;
+      let call = 0;
+      for (const e of r.trace) {
+        if (e.call !== call) {
+          call = e.call;
+          failing = false;
+        }
+        if (e.kind === 'retry') failing = false;
+        if (e.kind !== 'exit') continue;
+        if (e.layer === 'core') failing = !e.ok;
+        else expect([order.join(), e.call, e.layer, e.ok]).toEqual([order.join(), e.call, e.layer, !failing]);
+      }
+      // The outermost layer's last exit agrees with what the caller got.
+      for (let c = 1; c <= 2; c++) {
+        const exits = r.trace.flatMap((e) => (e.kind === 'exit' && e.call === c && e.layer === order[0] ? [e.ok] : []));
+        if (order.length) expect([order.join(), c, exits.at(-1)]).toEqual([order.join(), c, !r.results[c - 1].startsWith('error')]);
+      }
+    };
+    for (const order of all) check(order);
+    for (const order of [['timing'], ['timing', 'caching'], ['logging', 'timing'], ['caching', 'timing', 'retry']] as LayerId[][]) check(order);
+  });
+
+  it('the timing layer inside retry reports the failed attempt as an error, and the caption says error, not response', () => {
+    const order: LayerId[] = ['logging', 'caching', 'retry', 'timing'];
+    const timingExits = runStack(order).trace.filter((e) => e.kind === 'exit' && e.layer === 'timing' && e.call === 1);
+    expect(timingExits.map((e) => e.kind === 'exit' && e.ok)).toEqual([false, true]);
+    const frames = stackFrames(order);
+    const failed = frames.filter((f) => f.active === 'timing' && f.direction === 'out' && !f.ok);
+    expect(failed.length).toBe(1);
+    expect(captionText(failed[0].say)).toContain('The error passes back out through timing');
+    expect(captionText(failed[0].say)).not.toContain('The response passes');
   });
 
   it('subsets: without retry the first call fails and is not cached', () => {

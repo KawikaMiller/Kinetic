@@ -42,20 +42,23 @@ export function touchedFiles(factory: boolean): string[] {
 
 // ── Builder ────────────────────────────────────────────────────────
 
-export const POSITIONAL = ["'https://api.example.com/users'", "'GET'", 'null', 'true', '3', '5000', 'false'];
 export const ARG_NAMES = ['url', 'method', 'body', 'followRedirects', 'retries', 'timeoutMs', 'cache'];
+export const REQUEST_URL = 'https://api.example.com/users';
+const BODY_TEXT = '{"name":"Ada"}';
 
 export interface RequestSpec {
   url: string;
   method: 'GET' | 'POST';
   body: string | null;
+  followRedirects: boolean;
   retries: number;
   timeoutMs: number;
+  cache: boolean;
 }
 
 /** The rules build() enforces, in the order it checks them. The caption lists exactly these. */
 export const BUILD_RULES: { id: string; text: string; broken: (r: RequestSpec) => boolean }[] = [
-  { id: 'getBody', text: 'a GET request cannot have a body', broken: (r) => r.method === 'GET' && r.body !== null },
+  { id: 'getBody', text: 'a GET request cannot have a body (this builder, like fetch, refuses it)', broken: (r) => r.method === 'GET' && r.body !== null },
   { id: 'postBody', text: 'a POST request needs a body', broken: (r) => r.method === 'POST' && r.body === null },
   { id: 'retries', text: 'retries must be 0 to 5', broken: (r) => r.retries < 0 || r.retries > 5 },
   { id: 'timeout', text: 'the timeout must be above 0 ms', broken: (r) => r.timeoutMs <= 0 },
@@ -64,7 +67,7 @@ export const BUILD_RULES: { id: string; text: string; broken: (r: RequestSpec) =
 export class RequestBuilder {
   private spec: RequestSpec;
   constructor(url: string) {
-    this.spec = { url, method: 'GET', body: null, retries: 0, timeoutMs: 10_000 };
+    this.spec = { url, method: 'GET', body: null, followRedirects: true, retries: 0, timeoutMs: 10_000, cache: false };
   }
   method(m: RequestSpec['method']) {
     this.spec.method = m;
@@ -74,12 +77,20 @@ export class RequestBuilder {
     this.spec.body = b;
     return this;
   }
+  followRedirects(on: boolean) {
+    this.spec.followRedirects = on;
+    return this;
+  }
   retries(n: number) {
     this.spec.retries = n;
     return this;
   }
   timeout(ms: number) {
     this.spec.timeoutMs = ms;
+    return this;
+  }
+  cache(on: boolean) {
+    this.spec.cache = on;
     return this;
   }
   /** Validates the whole request at once: every broken rule, or the finished request. */
@@ -96,20 +107,35 @@ export interface BuilderChoice {
   timeoutMs: 5000 | 0;
 }
 export const DEFAULT_CHOICE: BuilderChoice = { method: 'GET', body: false, retries: 3, timeoutMs: 5000 };
+/** The two settings the controls leave alone: both versions say so, so the requests match argument for argument. */
+export const FIXED = { followRedirects: true, cache: false } as const;
+
+/** The seven positional arguments, as source text, for the current choice. */
+export const positionalArgs = (c: BuilderChoice): string[] => [
+  `'${REQUEST_URL}'`,
+  `'${c.method}'`,
+  c.body ? `'${BODY_TEXT}'` : 'null',
+  String(FIXED.followRedirects),
+  String(c.retries),
+  String(c.timeoutMs),
+  String(FIXED.cache),
+];
 
 export function buildFrom(c: BuilderChoice) {
-  const b = new RequestBuilder('https://api.example.com/users').method(c.method).retries(c.retries).timeout(c.timeoutMs);
-  if (c.body) b.body('{"name":"Ada"}');
+  const b = new RequestBuilder(REQUEST_URL).method(c.method).followRedirects(FIXED.followRedirects).retries(c.retries).timeout(c.timeoutMs).cache(FIXED.cache);
+  if (c.body) b.body(BODY_TEXT);
   return b.build();
 }
 
 export function builderLines(c: BuilderChoice): string[] {
   return [
-    "const req = new RequestBuilder('https://api.example.com/users')",
+    `const req = new RequestBuilder('${REQUEST_URL}')`,
     `  .method('${c.method}')`,
-    ...(c.body ? ['  .body(\'{"name":"Ada"}\')'] : []),
+    ...(c.body ? [`  .body('${BODY_TEXT}')`] : []),
+    `  .followRedirects(${FIXED.followRedirects})`,
     `  .retries(${c.retries})`,
     `  .timeout(${c.timeoutMs})`,
+    `  .cache(${FIXED.cache})`,
     '  .build();',
   ];
 }
@@ -193,13 +219,13 @@ export function runStack(order: readonly LayerId[]): { trace: TraceEvent[]; core
     trace.push({ kind: 'enter', layer: 'core', call });
     if (CORE_FAILS_ON.includes(coreCalls)) {
       clock += TIME.coreFail;
-      say('core', `fetchUser(${id}) timed out`);
       trace.push({ kind: 'exit', layer: 'core', call, ok: false });
+      say('core', `fetchUser(${id}) timed out`);
       throw new Error('timeout');
     }
     clock += TIME.coreOk;
-    say('core', `fetchUser(${id}) → Ada`);
     trace.push({ kind: 'exit', layer: 'core', call, ok: true });
+    say('core', `fetchUser(${id}) → Ada`);
     return { name: 'Ada' };
   };
 
@@ -264,10 +290,13 @@ export function runStack(order: readonly LayerId[]): { trace: TraceEvent[]; core
     timing: (next) => (id) => {
       trace.push({ kind: 'enter', layer: 'timing', call });
       const start = clock;
+      let ok = false;
       try {
-        return next(id);
+        const r = next(id);
+        ok = true;
+        return r;
       } finally {
-        trace.push({ kind: 'exit', layer: 'timing', call, ok: true });
+        trace.push({ kind: 'exit', layer: 'timing', call, ok });
         say('timing', `${clock - start} ms`);
       }
     },
@@ -305,5 +334,5 @@ export const SIGHTINGS: { pattern: PatternId; where: string; code: string }[] = 
   { pattern: 'factory', where: 'Array.from and document.createElement', code: "Array.from(set) · document.createElement('div')" },
   { pattern: 'builder', where: 'query builders (Knex-style)', code: "db('users').where({ id: 42 }).limit(1)" },
   { pattern: 'adapter', where: 'a wrapper giving an old API the shape you need', code: 'const fetchLike = adaptXhr(xhr)' },
-  { pattern: 'decorator', where: 'Express middleware, React higher-order components', code: 'app.use(logger) · withAuth(Profile)' },
+  { pattern: 'decorator', where: 'Express middleware (decorator-like: a chain of handlers), React higher-order components', code: 'app.use(logger) · withAuth(Profile)' },
 ];

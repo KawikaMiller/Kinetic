@@ -110,7 +110,13 @@ function sayEvent(e: TraceEvent, logLine: string | null) {
     case 'store':
       return <>caching stores the answer on its way out.</>;
     case 'exit':
-      if (e.layer === 'core') return e.ok ? <>{l} answers Ada; the response travels back out.</> : <><span className="hl bad">{l} times out</span>: the error travels back out.</>;
+      if (e.layer === 'core') {
+        return e.ok ? (
+          <>{l} answers Ada; the response travels back out.{logLine ? <> It reports <code>{logLine}</code>.</> : null}</>
+        ) : (
+          <><span className="hl bad">{l} times out</span>: the error travels back out.{logLine ? <> It reports <code>{logLine}</code>.</> : null}</>
+        );
+      }
       return e.ok ? <>The response passes back out through {l}.{logLine ? <> It reports <code>{logLine}</code>.</> : null}</> : <>The error passes back out through {l}.{logLine ? <> It reports <code>{logLine}</code>.</> : null}</>;
     default:
       return null;
@@ -156,8 +162,7 @@ export function stackFrames(order: readonly LayerId[]) {
   rec.set({ active: null, direction: null, printed: [...run.logs] });
   rec.close(
     <>
-      Results: <b>{run.results.join(', ')}</b>, with the real <code>fetchUser</code> called <b>{run.coreCalls}</b> time{run.coreCalls === 1 ? '' : 's'}. The same layers in a different order give
-      different behaviour: try the presets.
+      Results: <b>{run.results.join(', ')}</b>, with the real <code>fetchUser</code> called <b>{run.coreCalls}</b> time{run.coreCalls === 1 ? '' : 's'}. The same layers in another order can give the same results but different logs and timings: try the presets.
     </>,
     2,
   );

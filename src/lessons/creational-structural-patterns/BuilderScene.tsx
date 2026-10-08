@@ -5,22 +5,22 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Segmented, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { builderCaption } from './frames';
-import { ARG_NAMES, BUILD_RULES, DEFAULT_CHOICE, POSITIONAL, buildFrom, builderLines, type BuilderChoice } from './model';
+import { ARG_NAMES, BUILD_RULES, DEFAULT_CHOICE, buildFrom, positionalArgs, builderLines, type BuilderChoice } from './model';
 import { Recognise } from './Recognise';
-
-const POSITIONAL_LINE = `const req = new Request(${POSITIONAL.join(', ')});`;
 
 export function BuilderScene({ picker }: { picker: ReactNode }) {
   const [showNames, setShowNames] = useState(false);
   const [c, setC] = useState<BuilderChoice>(DEFAULT_CHOICE);
   useIntroCaption(builderCaption(c), [c]);
   const r = buildFrom(c);
+  const args = positionalArgs(c);
+  const positionalLine = `const req = new Request(${args.join(', ')});`;
   const set = (patch: Partial<BuilderChoice>) => setC({ ...c, ...patch });
 
   const positional = () => (
     <>
       {'const req = new Request('}
-      {POSITIONAL.map((v, i) => (
+      {args.map((v, i) => (
         <span key={i}>
           {i > 0 && ', '}
           <span className={`csp-arg ${showNames ? 'is-named' : ''}`} title={ARG_NAMES[i]}>
@@ -59,10 +59,10 @@ export function BuilderScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="csp stage-pad">
-        <CodePanel title="7 positional arguments: hover one, or show their names" lines={[POSITIONAL_LINE]} renderLine={positional} className="csp-code" />
+        <CodePanel title="the request as 7 positional arguments (follows the controls): hover one, or show their names" lines={[positionalLine]} renderLine={positional} className="csp-code" />
         <div className="csp-row">
           <div className="csp-col">
-            <CodePanel title="the same request with a builder" lines={builderLines(c)} className="csp-code" />
+            <CodePanel title="the same request, built step by step (all seven settings named)" lines={builderLines(c)} className="csp-code" />
           </div>
           <div className="csp-col">
             <ConsolePanel title="build()" lines={r.ok ? [JSON.stringify(r.request)] : r.errors.map((text) => ({ text: `✕ ${text}`, tone: 'bad' as const }))} />
@@ -70,7 +70,7 @@ export function BuilderScene({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <Hint block>
-          When not to: in JavaScript an options object often does the same job (<code>new Request(url, {'{ method: \'GET\', retries: 3 }'})</code>). Reach for a builder when
+          When not to: in JavaScript an options object often does the same job (<code>new Request(url, {'{ method: \'GET\', maxRetries: 3 }'})</code>; <code>maxRetries</code> is invented for this lesson, the real <code>Request</code> has no retry option). Reach for a builder when
           construction has steps or rules worth enforcing in one place; it is a choice, not a rule.
         </Hint>
         <Recognise current="builder" />

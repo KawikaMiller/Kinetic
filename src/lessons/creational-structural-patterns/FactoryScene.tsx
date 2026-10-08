@@ -49,7 +49,7 @@ export function FactoryScene({ picker }: { picker: ReactNode }) {
           ))}
         </div>
         <Hint block>
-          When not to: with one implementation that will never vary, a factory is indirection for nothing. It pays off when the choice really varies (config, tests, platforms) and
+          This is a simple factory function; the GoF Factory Method (subclasses decide) and Abstract Factory (families of related objects) are bigger relatives. When not to: with one implementation that will never vary, a factory is indirection for nothing. It pays off when the choice really varies (config, tests, platforms) and
           the callers shouldn&apos;t care which class they get.
         </Hint>
         <Recognise current="factory" />
