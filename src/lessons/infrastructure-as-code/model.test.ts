@@ -353,7 +353,7 @@ describe('plan: every preset', () => {
     expect(run.final.cloud.objects).toEqual(baselineWorld().cloud.objects);
   });
 
-  it('lost state: the plan creates all five, and applying collides with what already exists', () => {
+  it('lost state: the plan creates all five, and in this simulated cloud (unique names) applying collides with what already exists', () => {
     const { config, world, p } = planOf('lost');
     expect(p.changes.map((c) => c.action)).toEqual(['create', 'create', 'create', 'create', 'create']);
     const run = apply(config, world, p);

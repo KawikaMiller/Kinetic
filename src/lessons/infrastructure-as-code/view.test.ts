@@ -89,6 +89,15 @@ describe('captions', () => {
     }
   });
 
+  it('lost state: a skipped step says there is no id to give it, not that nothing exists', () => {
+    const { config, world, p } = setup('lost');
+    const run = apply(config, world, p);
+    const skippedAt = run.results.findIndex((r) => r.status === 'skipped');
+    const caption = expectCaption(applyFrames(world, run)[skippedAt + 1].say);
+    expect(caption).toContain('no id to give it');
+    expect(caption).not.toContain('nothing it needs exists');
+  });
+
   it('the world in each frame is the world after that many steps', () => {
     const { config, world, p } = setup('cidr');
     const run = apply(config, world, p);

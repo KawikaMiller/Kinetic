@@ -7,7 +7,7 @@ import { Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { bytes, plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { makeParts, stateCounts, uploadFrames, uploadRequests } from './frames';
-import { bytesAt, checkParts, CONCURRENCY, MIN_PART, partStatesAt, schedule, type PartState } from './multipart';
+import { bytesAt, checkParts, clampFailPart, CONCURRENCY, MIN_PART, partStatesAt, schedule, type PartState } from './multipart';
 import { FILE_SIZE, MIB } from './store';
 
 const STEP_MS = 420;
@@ -28,7 +28,11 @@ export function MultipartScene({ picker }: { picker: ReactNode }) {
   const [partMib, setPartMib] = useState(DEFAULT_PART_MIB);
   const [failPart, setFailPart] = useState(0);
   const parts = useMemo(() => makeParts(partMib * MIB), [partMib]);
-  const failing = failPart > 0 && failPart <= parts.length ? failPart : null;
+  const failing = failPart > 0 ? failPart : null;
+  const changePartSize = (mib: number) => {
+    setPartMib(mib);
+    setFailPart((f) => clampFailPart(f, makeParts(mib * MIB).length));
+  };
   const attempts = useMemo(() => schedule(parts, { failPart: failing, seed: SEED }), [parts, failing]);
   const frames = useMemo(() => uploadFrames(parts, attempts), [parts, attempts]);
   const player = usePlayer(frames, { interval: STEP_MS });
@@ -66,10 +70,10 @@ export function MultipartScene({ picker }: { picker: ReactNode }) {
       controls={[
         picker,
         <>
-          <Slider label="Part size" value={partMib} min={1} max={16} onChange={setPartMib} format={(v) => `${v} MiB`} />
+          <Slider label="Part size" value={partMib} min={1} max={16} onChange={changePartSize} format={(v) => `${v} MiB`} />
           <Slider
             label="Fail part"
-            value={Math.min(failPart, parts.length)}
+            value={failPart}
             min={0}
             max={parts.length}
             onChange={setFailPart}

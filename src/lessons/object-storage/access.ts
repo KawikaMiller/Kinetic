@@ -70,7 +70,7 @@ export interface Prices {
 export const PRICES: Record<StorageClass, Prices> = {
   standard: { storage: 0.023, per1000Writes: 0.005, per1000Reads: 0.0004, retrievalPerGb: 0, egressPerGb: 0.09 },
   infrequent: { storage: 0.0125, per1000Writes: 0.01, per1000Reads: 0.001, retrievalPerGb: 0.01, egressPerGb: 0.09 },
-  archive: { storage: 0.004, per1000Writes: 0.03, per1000Reads: 0.0004, retrievalPerGb: 0.03, egressPerGb: 0.09 },
+  archive: { storage: 0.004, per1000Writes: 0.03, per1000Reads: 0.002, retrievalPerGb: 0.03, egressPerGb: 0.09 },
 };
 
 export interface Usage {
@@ -90,6 +90,9 @@ export interface Bill {
   egress: number;
   total: number;
 }
+
+/** Only what was read back can leave for the internet, so lowering the read-back volume pulls the egress down with it. */
+export const withReadBack = (u: Usage, readBackGb: number): Usage => ({ ...u, readBackGb, egressGb: Math.min(u.egressGb, readBackGb) });
 
 /** A month's bill: linear in every part of the usage. */
 export function monthlyBill(cls: StorageClass, u: Usage): Bill {

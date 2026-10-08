@@ -16,10 +16,10 @@ import { laneCount, poolBars, slotLane, slotsAt, THROTTLE_LANE, windowAt } from 
 const STEP_MS = 320;
 /** Narrowest width where the instance boxes' 10px labels and the timeline stay readable. */
 const POOL_MIN_W = 520;
-const PROFILES: { value: Profile; label: string; peakRate: number }[] = [
-  { value: 'spiky', label: 'Spiky traffic', peakRate: 6 },
-  { value: 'steady', label: 'Steady traffic', peakRate: 6 },
-  { value: 'batch', label: 'Nightly batch', peakRate: 6 },
+const PROFILES: { value: Profile; label: string }[] = [
+  { value: 'spiky', label: 'Spiky traffic' },
+  { value: 'steady', label: 'Steady traffic' },
+  { value: 'batch', label: 'Nightly batch' },
 ];
 
 const COLS = 5;
@@ -91,7 +91,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
         picker,
         <ControlGroup key="traffic" label="Traffic" inline>
           {PROFILES.map((p) => (
-            <ChipButton key={p.value} tone="info" on={cfg.profile === p.value} onClick={() => set({ profile: p.value, peakRate: p.peakRate })}>
+            <ChipButton key={p.value} tone="info" on={cfg.profile === p.value} onClick={() => set({ profile: p.value })}>
               {p.label}
             </ChipButton>
           ))}

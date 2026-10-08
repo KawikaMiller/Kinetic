@@ -64,7 +64,7 @@ export function Stage() {
           <Stat label="Errors served" value={totals.errors} color={totals.errors > 0 ? 'var(--bad)' : undefined} />
           <Stat label="Slow served" value={totals.slow} color={totals.slow > 0 ? 'var(--hi)' : undefined} />
           <Stat label="DB attempts" value={totals.dbAttempts} color="var(--hi)" />
-          <Stat label="Rotation changes" value={totals.rotationChanges} />
+          <Stat label="Rotation changes (incl. first join)" value={totals.rotationChanges} />
         </Stats>
       }
       legend={
@@ -117,7 +117,7 @@ export function Stage() {
         </WideRegion>
         <Hint block>
           Simulated pods and probes; timings are compressed (a real kubelet backs off between restarts, up to five minutes, which is what CrashLoopBackOff means). A probe that times out counts
-          as a failure, and every probe's first run is when its container starts. The failures slider is how many failures in a row make a probe give up.
+          as a failure, and a probe runs at multiples of its period counted from when its container starts (liveness and readiness are held back until the startup probe has passed, so their first run can come a few seconds after it). The failures slider is how many failures in a row make a probe give up.
         </Hint>
       </div>
     </StageFrame>

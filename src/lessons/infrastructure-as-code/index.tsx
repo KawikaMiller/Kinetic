@@ -11,7 +11,7 @@ const lesson: LessonModule = {
       'Creating the same network, VMs and DNS for staging and production from one reviewed file',
       'Reviewing a plan in a pull request, where a replacement or destroy stands out before anyone approves it',
       'Finding out that someone changed a setting in the console, and putting it back with the next apply',
-      'Recovering from a lost or corrupted state file without creating duplicates of everything',
+      'Recovering from a lost or corrupted state file without creating duplicates of everything (by importing the existing objects into state or restoring a backup)',
     ],
     why: 'Mid-level engineers change production infrastructure through files, and the dangerous mistakes are exactly the ones a plan shows: a rename that destroys a database, a change that cascades to every VM, a state file that no longer matches reality. It builds on `ci-pipelines` (plans run in review and apply in a pipeline), `data-formats` (a config is structured text with a grammar) and `git-internals` (the config lives in version control). Continuous reconciliation straight from git is a later topic.',
     watch: 'Three panes: Config is the text you edit, State is what the tool last recorded, and Real world is the simulated cloud; an orange outline on an attribute means the cloud differs from what the state recorded, and a dashed orange box is an object the state doesn\'t know. In the plan, green + is a create, yellow ~ an update in place, orange -/+ a replacement (and orange is also drift), and red - a destroy; each changed attribute is listed under its resource. In the graph, boxes are resources and arrows point from a dependency to what depends on it: blue is a normal resource, the plan tints each box by its action (green, yellow, orange, red, or dim for no change), the solid yellow box is the step being applied now, a box turns blue once its step ran, a failed one red and a skipped one dim.',
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'An error: a plan cannot run without a state',
       ],
       answer: 0,
-      why: 'The tool decides what exists from its state, not from the config or by searching the cloud. With nothing recorded it plans a create, and the apply then collides with the real VM of the same name.',
+      why: 'The tool decides what exists from its state, not from the config or by searching the cloud. With nothing recorded it plans a create, and the apply then either fails on a name that is already taken (a bucket) or silently makes a duplicate of the real VM.',
     },
     {
       q: 'A plan marks a VM -/+. What does that mean?',

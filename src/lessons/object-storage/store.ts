@@ -27,6 +27,8 @@ export interface BucketObject {
   size: number;
 }
 
+export const BUCKET_NAME = 'example-reports';
+
 export const BUCKET: BucketObject[] = [
   { key: 'logs/app.log', size: 6 * MIB },
   { key: 'readme.txt', size: 2 * KIB },
@@ -153,7 +155,7 @@ export function renameSteps(): RenameStep[] {
   const steps: RenameStep[] = [{ request: '(nothing sent yet)', rows: settled }];
   for (const o of moving) {
     const rows: ObjectRow[] = [...settled, { key: renamedKey(o.key), size: o.size, state: 'new' }];
-    steps.push({ request: `PUT /${renamedKey(o.key)}  x-amz-copy-source: /${o.key}`, rows });
+    steps.push({ request: `PUT /${renamedKey(o.key)}  x-amz-copy-source: /${BUCKET_NAME}/${o.key}`, rows });
     settled = rows.map((r) => ({ ...r, state: 'normal' }));
   }
   for (const o of moving) {
@@ -172,7 +174,7 @@ export function httpLines(op: OpId): string[] {
     case 'append':
       return [
         `PUT /${FILE_KEY} HTTP/1.1`,
-        'Host: example-reports.objects.example',
+        `Host: ${BUCKET_NAME}.objects.example`,
         `Content-Length: ${FILE_SIZE + LINE_BYTES}`,
         '',
         '200 OK  (the old version is replaced as a whole)',
@@ -182,7 +184,7 @@ export function httpLines(op: OpId): string[] {
     case 'range':
       return [
         `GET /${FILE_KEY} HTTP/1.1`,
-        'Host: example-reports.objects.example',
+        `Host: ${BUCKET_NAME}.objects.example`,
         `Range: bytes=${RANGE.from}-${RANGE.to}`,
         '',
         '206 Partial Content',
@@ -192,7 +194,7 @@ export function httpLines(op: OpId): string[] {
     case 'list':
       return [
         'GET /?list-type=2&prefix=reports%2F&delimiter=%2F HTTP/1.1',
-        'Host: example-reports.objects.example',
+        `Host: ${BUCKET_NAME}.objects.example`,
         '',
         '200 OK',
         'CommonPrefixes: reports/2025/, reports/2026/',

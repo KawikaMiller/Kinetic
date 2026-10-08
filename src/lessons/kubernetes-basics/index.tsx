@@ -19,8 +19,8 @@ const lesson: LessonModule = {
   tryThis: [
     'Click a Ready pod in the grid, press Delete selected pod, and read the strip: the ReplicaSet observes two pods, wants three, and creates one.',
     'Drag Replicas up to 5 and follow a new pod from Pending to Ready: the Deployment sets the number, the ReplicaSet creates the pods and the scheduler places them.',
-    'Press Change image to v2 and watch the rings: it never has more than one extra pod, and (with 3 replicas) never fewer than 3 Ready.',
-    'Press Crash node-2 and watch the requests: pods on the silent node keep receiving traffic until the control plane marks the node NotReady, then they are replaced elsewhere.',
+    'Press Change image to v2 and watch the rings: it never has more than one extra pod, and (with 3 replicas) never fewer than 3 Ready; the note under the strip shows that allowance.',
+    'Press Crash node-2 and watch the requests: pods on the silent node keep receiving traffic until the control plane marks the node NotReady (the pods leave the Service); a little later it evicts them and replacements start elsewhere.',
     'Press Over-request CPU: the new pod stays Pending with the scheduler\'s reason, because no node has that much CPU.',
   ],
   keyIdeas: [

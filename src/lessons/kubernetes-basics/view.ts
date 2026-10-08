@@ -1,7 +1,7 @@
 /** How the cluster is drawn: one cell per pod slot, coloured by what the pod is doing. Pure, so it is tested. */
 import type { GridHighlight } from '../../components/CellGrid';
 import type { GridCellSpec } from '../../components/cellGridPaint';
-import { isReady, matchesService, ownedBy, SLOTS, type Cluster, type Pod } from './model';
+import { BIG_CPU, isReady, matchesService, ownedBy, SLOTS, type Cluster, type Pod } from './model';
 
 export type PodState = 'Pending' | 'ContainerCreating' | 'Running' | 'Ready' | 'Terminating';
 
@@ -14,6 +14,9 @@ export const podAt = (c: Cluster, node: number, slot: number) => c.pods.find((p)
 
 /** Pods that no node has taken yet. */
 export const unscheduled = (c: Cluster) => c.pods.filter((p) => p.node === null);
+
+/** True while an over-sized pod is waiting: it can only be cleared by Reset, so a second one adds nothing. */
+export const hasOversizedPending = (c: Cluster) => unscheduled(c).some((p) => p.cpu === BIG_CPU);
 
 export const nodeIsDown = (c: Cluster, node: number) => c.nodes[node].status !== 'Ready';
 

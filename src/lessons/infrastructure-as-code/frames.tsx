@@ -23,10 +23,10 @@ function stepCaption(run: ApplyRun, k: number): ReactNode {
       Step {k + 1} of {n}: <b>{OP_VERB[op].toLowerCase()}</b> <code>{address}</code>.{' '}
     </>
   );
-  if (r.status === 'skipped') return <>{head}<span className="hl">{r.message}</span>: nothing it needs exists, so the tool doesn't try.</>;
+  if (r.status === 'skipped') return <>{head}<span className="hl">{r.message}</span>, so there is no id to give it and the tool doesn't try.</>;
   if (r.status === 'failed') return <>{head}<span className="hl bad">Failed: {r.message}.</span> The tool never recorded it, so it can't tell it is already there.</>;
   const deps = run.snapshots[k].state[address]?.deps ?? [];
-  if (op === 'destroy') return <>{head}It goes {k === 0 ? 'first' : 'next'}: <span className="hl bad">{r.message}</span>, before anything it depends on.</>;
+  if (op === 'destroy') return <>{head}It goes {k === 0 ? 'first' : 'next'}: <span className="hl bad">{r.message}</span>, once everything that depends on it has gone.</>;
   if (op === 'update') return <>{head}<span className="hl">{r.message}</span>: same resource, same id.</>;
   return (
     <>

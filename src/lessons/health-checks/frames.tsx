@@ -97,7 +97,7 @@ function introCaption(run: Run): ReactNode {
     case 'deadlock':
       return <>At {s.deadlock?.at} s pod {(s.deadlock?.pod ?? 0) + 1} will hang: its port stays open but its handler stops answering. Press play.</>;
     case 'early-ready':
-      return <>The handler answers {s.bootS} s after start, but the cache needs {s.cacheS} s more to warm. Press play to see who gets the cold requests.</>;
+      return <>The handler answers {s.bootS} s after start, but the cache needs {s.cacheS} s more to warm. Press play to see who gets the cold requests. All four pods start together, so a cache check leaves nothing in rotation for the first {s.bootS + s.cacheS} s.</>;
     case 'flapping':
       return <>The database will blip {s.dbDown.length} times for {s.dbDown[0][1] - s.dbDown[0][0]} s each. Press play to see how readiness reacts.</>;
   }

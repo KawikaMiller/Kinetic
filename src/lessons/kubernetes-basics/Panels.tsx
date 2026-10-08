@@ -1,5 +1,7 @@
 import { SectionTitle } from '../../components/Panel';
+import { Hint } from '../../components/ui';
 import type { Cluster, TickReport } from './model';
+import { rolloutNote } from './narrate';
 import type { LogEntry } from './sim';
 import { unscheduled } from './view';
 
@@ -31,6 +33,12 @@ export function ReconcileStrip({ report }: { report: TickReport | null }) {
       </span>
     </div>
   );
+}
+
+/** The rolling-update allowance (maxSurge, maxUnavailable) in plain numbers, shown only while two ReplicaSets are live. */
+export function RolloutNote({ cluster }: { cluster: Cluster }) {
+  const note = rolloutNote(cluster);
+  return note ? <Hint block>{note}</Hint> : null;
 }
 
 /** Pods no node has taken yet, and why. */

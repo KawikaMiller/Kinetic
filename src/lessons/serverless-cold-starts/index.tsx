@@ -18,14 +18,14 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'Press play on Function pool with the defaults (spiky traffic) and compare the p50 and p99 cards at the end: the typical request is fast, the cold-started ones set the tail.',
-    'From the defaults, drag Init work up to 3 s and replay: the violet init bars stretch and the p99 grows by the same amount.',
+    'From the defaults, drag Init work up to 3 s and replay: the violet init bars stretch and the p99 grows by the same amount. The Cold starts count drops, though: longer inits keep early instances busy, so more get built before the burst arrives and the burst meets a bigger warm pool. Fewer, but each one longer.',
     'From the defaults, set Provisioned to 7 and replay: no cold starts at all, but the cost table now favours the always-on VM.',
-    'Pick Steady traffic and compare the cost table: constant load makes the VM the cheaper option.',
+    'Pick Steady traffic and compare the cost table: constant load makes the VM the cheaper option. Note the throttled requests in the first seconds: while the first instances are cold-starting, steady traffic can already exceed the concurrency limit.',
     'From the defaults, drag Concurrency limit down to 3 and replay: bursts now meet red 429 stubs and nothing waits in a queue.',
   ],
   keyIdeas: [
     'A cold start happens whenever no warm instance is free: first request, burst, or after idle instances are reaped.',
-    'A cold start is provision, runtime start, then your init code; only the init part is yours to shorten.',
+    'A cold start is provision, runtime start, then your init code; mostly the init part is yours to shorten (package size and memory also change the other phases on real platforms).',
     'Provisioned concurrency trades money for latency: it keeps instances warm and bills for them even when idle.',
     'Serverless removes servers to run, not decisions: memory, timeouts, limits and dependencies are still yours.',
   ],

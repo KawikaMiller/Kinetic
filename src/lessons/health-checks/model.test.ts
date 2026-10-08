@@ -253,6 +253,8 @@ describe('the four scenarios as written', () => {
     expect(totalsAt(good, HORIZON).slow).toBe(0);
     expect(firstReady(bad)).toBe(5);
     expect(firstReady(good)).toBe(20);
+    // The fix is not free here: every pod starts at once, so the 20 s with nothing in rotation become errors.
+    expect(totalsAt(good, HORIZON).errors).toBeGreaterThan(totalsAt(bad, HORIZON).errors);
   });
 
   it('flapping: a readiness threshold at or under the length of a blip flips the rotation every time; above it, never', () => {

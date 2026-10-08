@@ -6,9 +6,9 @@ import { useSimulation } from '../../core/useSimulation';
 import { ClusterScene } from './ClusterScene';
 import { endpoints, MAX_REPLICAS, imageTag, type Cluster, type TickReport } from './model';
 import { tickCaption } from './narrate';
-import { EventLog, PendingList, ReconcileStrip } from './Panels';
+import { EventLog, PendingList, ReconcileStrip, RolloutNote } from './Panels';
 import { advance, createWorld, crash, drain, killSelected, overRequest, relabelSelected, restore, rollOut, scaleTo, selectPod, stepOnce, type LogEntry, type SimWorld } from './sim';
-import { podState, readyCount } from './view';
+import { hasOversizedPending, podState, readyCount } from './view';
 import './styles.css';
 
 const SCENE_MIN_W = 540;
@@ -91,6 +91,7 @@ export function Stage() {
             { color: 'var(--violet)', label: 'old ReplicaSet' },
             { color: 'var(--sky)', label: 'new ReplicaSet' },
             { color: 'var(--amber)', label: 'selected pod' },
+            { color: 'var(--dim)', label: 'dim ring: not selected by the Service; dashed cell: free slot' },
           ]}
         />
       }
@@ -109,7 +110,7 @@ export function Stage() {
             onChange={(n) => act((w) => scaleTo(w, n))}
           />
           <Button onClick={() => act(rollOut)}>Change image to {nextImage}</Button>
-          <Button onClick={() => act(overRequest)}>Over-request CPU</Button>
+          <Button disabled={hasOversizedPending(cluster)} onClick={() => act(overRequest)}>Over-request CPU</Button>
         </>,
         <>
           <Button disabled={!chosen} onClick={() => act(killSelected)}>
@@ -132,10 +133,11 @@ export function Stage() {
           <ClusterScene cluster={cluster} report={report} selected={selected} onSelect={select} />
         </WideRegion>
         <ReconcileStrip report={report} />
+        <RolloutNote cluster={cluster} />
         <PendingList cluster={cluster} />
         <EventLog log={log} />
         <Hint block>
-          Simulated cluster; timings are shortened (a real node is marked NotReady after about 40 s and its pods are evicted minutes later). Pod names are illustrative. Each tick runs the
+          Simulated cluster with a simplified scheduler (most free CPU, lowest node first on a tie); timings are shortened (a real node is marked NotReady after about 40 s and its pods are evicted minutes later). Pod names are illustrative. Each tick runs the
           node monitor, kubelets, scheduler, Deployment and ReplicaSet loops once, in that order.
         </Hint>
       </div>

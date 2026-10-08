@@ -25,7 +25,7 @@ const TOUCHED_CELL: Record<OpId, number> = { append: LAST_FILE_CELL, rename: DIR
 
 /** The file system's directory tree, as parent -> children. */
 const TREE: Record<string, string[]> = {
-  '/': ['/reports', '/logs'],
+  '/': ['/reports', '/logs', '/readme.txt'],
   '/reports': ['/reports/2025', '/reports/2026'],
   '/reports/2025': ['/reports/2025/q4.csv'],
   '/reports/2026': ['/reports/2026/q2.csv', '/reports/2026/q3.csv'],
@@ -134,34 +134,37 @@ function ObjectColumn({ op, step }: { op: OpId; step: number }) {
 
 function CostTable({ op }: { op: OpId }) {
   return (
-    <table className="data-table os-cost">
-      <caption className="sr-only">Cost of {OP_LABEL[op]} in each store</caption>
-      <thead>
-        <tr>
-          <th>{OP_LABEL[op]}</th>
-          <th>What happens</th>
-          <th>Bytes moved</th>
-          <th>Requests</th>
-          <th>Atomic</th>
-        </tr>
-      </thead>
-      <tbody>
-        {STORES.map((s) => {
-          const o = outcome(op, s);
-          return (
-            <tr key={s}>
-              <th scope="row" className="keep-case">
-                {STORE_LABEL[s]}
-              </th>
-              <td>{o.verdict}</td>
-              <td className={`os-${o.tone}`}>{bytes(o.bytes)}</td>
-              <td className={`os-${o.tone}`}>{plural(o.requests, o.unit)}</td>
-              <td>{o.atomic ? 'yes' : 'no'}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <>
+      <table className="data-table os-cost">
+        <caption className="sr-only">Cost of {OP_LABEL[op]} in each store</caption>
+        <thead>
+          <tr>
+            <th>{OP_LABEL[op]}</th>
+            <th>What happens</th>
+            <th>Bytes moved</th>
+            <th>Requests</th>
+            <th>Atomic</th>
+          </tr>
+        </thead>
+        <tbody>
+          {STORES.map((s) => {
+            const o = outcome(op, s);
+            return (
+              <tr key={s}>
+                <th scope="row" className="keep-case">
+                  {STORE_LABEL[s]}
+                </th>
+                <td>{o.verdict}</td>
+                <td className={`os-${o.tone}`}>{bytes(o.bytes)}</td>
+                <td className={`os-${o.tone}`}>{plural(o.requests, o.unit)}</td>
+                <td>{o.atomic ? 'yes' : 'no'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="hint">Bytes moved counts every byte the store moves. A server-side copy (the object rename) stays inside the store and sends nothing over your network; the append is a new upload over the wire.</p>
+    </>
   );
 }
 

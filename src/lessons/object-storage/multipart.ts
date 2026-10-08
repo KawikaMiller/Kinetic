@@ -9,6 +9,9 @@ import { MIB } from './store';
 
 export const MIN_PART = 5 * MIB;
 export const MAX_PARTS = 10_000;
+/** The part chosen to fail, kept only if that part still exists after the part count changed; otherwise back to none (0). */
+export const clampFailPart = (failPart: number, partCount: number) => (failPart > partCount ? 0 : failPart);
+
 export const CONCURRENCY = 4;
 /** Bytes per second one connection carries: illustrative. */
 export const BANDWIDTH = 2 * MIB;

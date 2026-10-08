@@ -172,7 +172,7 @@ export function Stage() {
         )}
         <Hint block>
           Simulated provider and cloud; the syntax is HCL-like, not a real tool's. Real tools also run independent steps in parallel, lock the state while they work and keep it in a
-          shared place; here the steps run one at a time.
+          shared place; here the steps run one at a time. Here every resource name must be unique, so a second create fails; many real providers would instead make a duplicate, or fail only for globally unique names such as buckets.
         </Hint>
       </div>
     </StageFrame>

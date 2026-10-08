@@ -4,7 +4,7 @@ import { expectCaption } from '../../core/testing/captions';
 import { listingCaption, makeParts, storeFrames, uploadEnd, uploadFrames, uploadRequests } from './frames';
 import lesson from './index';
 import { DEMO_KEYS, listAll, listObjects, listRequest } from './listing';
-import { checkParts, planParts, schedule } from './multipart';
+import { checkParts, clampFailPart, planParts, schedule } from './multipart';
 import { FILE_SIZE, MIB, OPS, outcome, stepCount, STORES } from './store';
 
 describe('captions: the three stores', () => {
@@ -94,7 +94,18 @@ describe('the try-this prompts, from the default state', () => {
   it('the request line encodes the prefix and the continuation', () => {
     const page = listObjects(DEMO_KEYS, { prefix: 'reports/', delimiter: '/', maxKeys: 3, after: null });
     expect(listRequest('reports/', '/', 3, null)).toBe('GET /?list-type=2&prefix=reports%2F&delimiter=%2F&max-keys=3 HTTP/1.1');
-    expect(listRequest('reports/', '/', 3, page.next)).toContain('start-after=reports%2F2026%2F');
+    expect(listRequest('reports/', '/', 3, page.next)).toContain(`continuation-token=${encodeURIComponent(btoa('reports/2026/'))}`);
     expect(listRequest('a b&c', null, 1, null)).toBe('GET /?list-type=2&prefix=a%20b%26c&max-keys=1 HTTP/1.1');
+  });
+});
+
+describe('the Fail part slider after the part size changes', () => {
+  it('part 8 of 10 (4 MiB) is reset when 8 MiB leaves only 5 parts, so the slider never shows a part that is not failing', () => {
+    expect(makeParts(4 * MIB)).toHaveLength(10);
+    expect(makeParts(8 * MIB)).toHaveLength(5);
+    expect(clampFailPart(8, makeParts(4 * MIB).length)).toBe(8);
+    expect(clampFailPart(8, makeParts(8 * MIB).length)).toBe(0);
+    expect(clampFailPart(5, makeParts(8 * MIB).length)).toBe(5);
+    expect(clampFailPart(0, 5)).toBe(0);
   });
 });

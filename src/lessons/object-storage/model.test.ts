@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fakeSecret } from '../../core/fakeSecret';
 import { mulberry32, pick, shuffle, type Rnd } from '../../core/random';
 import {
-  CLASSES, monthlyBill, PRICES, presign, readAfterWrite, sign, STALE_READS, toUrl, verify, type Method, type Presigned, type Usage,
+  CLASSES, monthlyBill, PRICES, presign, readAfterWrite, sign, STALE_READS, toUrl, verify, withReadBack, type Method, type Presigned, type Usage,
 } from './access';
 import { DEMO_KEYS, entryOf, listAll, listObjects, type Entry } from './listing';
 import {
@@ -67,7 +67,7 @@ describe('the object rename, request by request', () => {
     expect(steps).toHaveLength(7);
     expect(stepCount('rename')).toBe(6);
     expect(steps.map((s) => s.rows.length)).toEqual([5, 6, 7, 8, 7, 6, 5]);
-    expect(steps[1].request).toBe('PUT /archive/2025/q4.csv  x-amz-copy-source: /reports/2025/q4.csv');
+    expect(steps[1].request).toBe('PUT /archive/2025/q4.csv  x-amz-copy-source: /example-reports/reports/2025/q4.csv');
     expect(steps[4].request).toBe('DELETE /reports/2025/q4.csv');
     // Halfway through (three copies done, nothing deleted) every key exists twice.
     expect(keys(3).filter((k) => k.startsWith('reports/'))).toHaveLength(3);
@@ -377,7 +377,7 @@ describe('the price model', () => {
     expect(std.egress).toBeCloseTo(20 * 0.09);
     expect(std.total).toBeCloseTo(2.3 + 0.45 + 0 + 1.8);
     const arc = monthlyBill('archive', usage);
-    expect(arc.total).toBeCloseTo(0.4 + 0.7 + 0.3 + 1.8);
+    expect(arc.total).toBeCloseTo(0.4 + (0.3 + 2.0) + 0.3 + 1.8);
   });
 
   it('is linear in every part of the usage, and the total is the sum of its parts', () => {
@@ -388,6 +388,18 @@ describe('the price model', () => {
       expect(one.total).toBeCloseTo(one.storage + one.requests + one.retrieval + one.egress, 12);
       expect(monthlyBill(cls, { storedGb: 0, writes: 0, reads: 0, readBackGb: 0, egressGb: 0 }).total).toBe(0);
     }
+  });
+
+  it('read requests also get dearer as the class gets colder', () => {
+    expect(PRICES.infrequent.per1000Reads).toBeGreaterThan(PRICES.standard.per1000Reads);
+    expect(PRICES.archive.per1000Reads).toBeGreaterThan(PRICES.infrequent.per1000Reads);
+  });
+
+  it('lowering Read back pulls Sent to internet down with it, and never raises it', () => {
+    const u: Usage = { storedGb: 1, writes: 0, reads: 0, readBackGb: 100, egressGb: 100 };
+    expect(withReadBack(u, 0).egressGb).toBe(0);
+    expect(withReadBack(u, 40).egressGb).toBe(40);
+    expect(withReadBack({ ...u, egressGb: 10 }, 40).egressGb).toBe(10);
   });
 
   it('the colder the class, the cheaper to store and the dearer to read back', () => {

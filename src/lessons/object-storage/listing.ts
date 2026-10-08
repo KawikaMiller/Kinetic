@@ -91,9 +91,9 @@ export const DEMO_KEYS: string[] = [
 
 export const MAX_PREFIX_CHARS = 60;
 
-/** The request line for a listing page (fictional host). */
+/** The request line for a listing page (fictional host). The continuation token stands in for the opaque token a real service returns: you pass it back unchanged and never build it yourself. */
 export function listRequest(prefix: string, delimiter: string | null, maxKeys: number, after: Entry | null): string {
   const q = [`list-type=2`, `prefix=${encodeURIComponent(prefix)}`, ...(delimiter ? [`delimiter=${encodeURIComponent(delimiter)}`] : []), `max-keys=${maxKeys}`];
-  if (after) q.push(`start-after=${encodeURIComponent(after.name)}`);
+  if (after) q.push(`continuation-token=${encodeURIComponent(btoa(after.name))}`);
   return `GET /?${q.join('&')} HTTP/1.1`;
 }

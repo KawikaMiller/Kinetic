@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Segmented, Slider } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { fakeSecret } from '../../core/fakeSecret';
-import { CLASSES, monthlyBill, presign, readAfterWrite, toUrl, verify, type ConsistencyModel, type Method, type Presigned, type StorageClass, type Usage, type Verdict } from './access';
+import { CLASSES, monthlyBill, presign, readAfterWrite, toUrl, verify, withReadBack, type ConsistencyModel, type Method, type Presigned, type StorageClass, type Usage, type Verdict } from './access';
 import { FILE_KEY } from './store';
 
 const SECRET = fakeSecret('demo-', 'signing-', 'key');
@@ -102,7 +102,7 @@ function ConsistencyPanel() {
         ))}
       </ul>
       <p className="hint">
-        Amazon S3 has been strongly consistent for reads after writes, overwrites, deletes and listings since December 2020. Some other stores, caches and older systems are only eventually consistent,
+        Amazon S3 has been strongly consistent for reads after writes, overwrites, deletes and listings since December 2020. In the eventual mode the stale reads last a fixed two GETs, which is illustrative: real staleness has no fixed length. Some other stores, caches and older systems are only eventually consistent,
         so check the one you use.
       </p>
     </Box>
@@ -111,7 +111,7 @@ function ConsistencyPanel() {
 
 function CostPanel() {
   const [cls, setCls] = useState<StorageClass>('standard');
-  const [usage, setUsage] = useState<Usage>({ storedGb: 100, writes: 10_000, reads: 1_000_000, readBackGb: 10, egressGb: 20 });
+  const [usage, setUsage] = useState<Usage>({ storedGb: 100, writes: 10_000, reads: 1_000_000, readBackGb: 20, egressGb: 20 });
   const set = (patch: Partial<Usage>) => setUsage((u) => ({ ...u, ...patch }));
   const bill = monthlyBill(cls, usage);
   return (
@@ -122,8 +122,8 @@ function CostPanel() {
         <Slider label="Stored" value={usage.storedGb} min={1} max={1000} onChange={(v) => set({ storedGb: v })} format={(v) => `${v} GB`} />
         <Slider label="Writes" value={usage.writes / 1000} min={0} max={1000} onChange={(v) => set({ writes: v * 1000 })} format={(v) => `${v}k`} />
         <Slider label="Reads" value={usage.reads / 1000} min={0} max={10_000} step={100} onChange={(v) => set({ reads: v * 1000 })} format={(v) => `${v}k`} />
-        <Slider label="Read back" value={usage.readBackGb} min={0} max={100} onChange={(v) => set({ readBackGb: v })} format={(v) => `${v} GB`} />
-        <Slider label="Sent to internet" value={usage.egressGb} min={0} max={100} onChange={(v) => set({ egressGb: v })} format={(v) => `${v} GB`} />
+        <Slider label="Read back" value={usage.readBackGb} min={0} max={100} onChange={(v) => setUsage((u) => withReadBack(u, v))} format={(v) => `${v} GB`} />
+        <Slider label="Sent to internet" value={usage.egressGb} min={0} max={usage.readBackGb} onChange={(v) => set({ egressGb: v })} format={(v) => `${v} GB`} />
       </div>
       <table className="data-table">
         <tbody>
@@ -134,7 +134,7 @@ function CostPanel() {
           <tr className="os-total"><td>Total per month</td><td>{money(bill.total)}</td></tr>
         </tbody>
       </table>
-      <p className="hint">Colder classes cost less to keep and more to read; storing is rarely the whole bill. Real prices also add minimum storage periods and per-region differences.</p>
+      <p className="hint">Colder classes cost less to keep and more to read; storing is rarely the whole bill. Only data read back can leave, so Sent to internet never exceeds Read back; Standard has no retrieval charge, so Read back changes the bill only through egress there. Real prices also add minimum storage periods and per-region differences, and archive tiers often need a restore wait before you can read at all (this panel treats them as instant).</p>
     </Box>
   );
 }

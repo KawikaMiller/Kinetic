@@ -18,9 +18,10 @@ export function rolloutNote(c: Cluster): ReactNode {
   const r = c.deployment.replicas;
   const sets = liveSets(c);
   if (sets.length < 2) return null;
+  const down = maxUnavailable(r);
   return (
     <>
-      Rolling update: at most {plural(maxSurge(r), 'extra pod')} above {r} and at most {maxUnavailable(r)} below {r} Ready at any moment.
+      Rolling update: at most {plural(maxSurge(r), 'extra pod')} above {r} and {down === 0 ? `never fewer than ${r}` : `at most ${down} below ${r}`} Ready at any moment.
     </>
   );
 }

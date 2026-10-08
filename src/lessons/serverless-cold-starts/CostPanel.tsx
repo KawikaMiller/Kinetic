@@ -32,7 +32,7 @@ export function CostPanel({ run, costs }: { run: Run; costs: Costs }) {
           <tr className={cheaper === 'vm' ? 'sc-cheaper' : ''}>
             <td>Always-on VM</td>
             <td>
-              {plural(costs.vms, 'VM')} running all month, sized for the offered load ({VM_SLOTS} requests at once each)
+              {plural(costs.vms, 'VM')} running all month, sized for the peak of requests in flight, ignoring cold-start time ({VM_SLOTS} requests at once each)
             </td>
             <td>{money(costs.vm)}</td>
           </tr>

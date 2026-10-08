@@ -3,8 +3,9 @@ import { expectCaption } from '../../core/testing/captions';
 import lesson from './index';
 import { addBigPod, changeImage, killNode, killPod, maxSurge, maxUnavailable, NOT_READY_TICKS, relabelPod, runTicks, settledCluster, tick } from './model';
 import { rolloutNote, tickCaption } from './narrate';
+import { RolloutNote } from './Panels';
 import { advance, createWorld, crash, killSelected, overRequest, relabelSelected, rollOut, scaleTo, selectPod, stepOnce, TICK_SECONDS } from './sim';
-import { liveSets, nodeLabel, podAt, podCell, podState, rings, unscheduled } from './view';
+import { hasOversizedPending, liveSets, nodeLabel, podAt, podCell, podState, rings, unscheduled } from './view';
 
 describe('podCell: what each pod state looks like', () => {
   it('maps every state to its tone and fill, and a down node turns its pods red', () => {
@@ -173,6 +174,22 @@ describe('captions', () => {
     changeImage(c);
     runTicks(c, 2);
     expect(expectCaption(rolloutNote(c))).toBe('Rolling update: at most 2 extra pods above 8 and at most 2 below 8 Ready at any moment.');
+  });
+
+  it('the rollout note is rendered on screen while two ReplicaSets are live, with the zero-unavailable wording', () => {
+    const c = settledCluster(3);
+    expect(expectCaption(<RolloutNote cluster={c} />)).toBe('');
+    changeImage(c);
+    runTicks(c, 2);
+    expect(expectCaption(<RolloutNote cluster={c} />)).toBe('Rolling update: at most 1 extra pod above 3 and never fewer than 3 Ready at any moment.');
+  });
+
+  it('over-request is blocked while an oversized pod is already pending', () => {
+    const c = settledCluster(3);
+    expect(hasOversizedPending(c)).toBe(false);
+    addBigPod(c);
+    runTicks(c, 2);
+    expect(hasOversizedPending(c)).toBe(true);
   });
 
   it('every action line reads cleanly', () => {
