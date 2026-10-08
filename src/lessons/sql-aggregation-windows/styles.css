@@ -1,0 +1,22 @@
+.sa { gap: 12px; }
+.sa .section-title { display: block; }
+.sa-code { font-size: 12.5px; }
+.sa-error { margin: 0; padding: 6px 10px; border-left: 3px solid var(--bad); color: var(--bad); font: 600 13px var(--mono); }
+.sa-tables { display: flex; flex-flow: row wrap; gap: 16px; align-items: flex-start; }
+.sa-panel { display: flex; flex-direction: column; gap: 4px; flex: 0 1 auto; }
+.sa-table { width: auto; }
+.sa-table td { white-space: nowrap; }
+.sa-window { width: 100%; }
+.sa-row td { transition: color 0.25s, background 0.25s, opacity 0.25s; }
+.sa-row[class*='tone-'] td { background: color-mix(in srgb, var(--c) 9%, transparent); }
+.sa-row.is-dropped td { color: var(--faint); background: none; text-decoration: line-through; }
+.sa-row.is-struck td, .sa-bucket.is-struck td { color: var(--faint); text-decoration: line-through; background: none; }
+.sa-bucket td { padding: 8px 8px 3px; font: 700 11px var(--font); letter-spacing: 0.06em; color: var(--c); border-bottom: 2px solid var(--c); }
+.sa-null { color: var(--violet); font-style: italic; }
+.sa-note { margin: 4px 0 0; font-size: 12px; color: var(--faint); }
+.sa-row.in-frame td { background: color-mix(in srgb, var(--violet) 20%, transparent); }
+.sa-row.in-frame td:first-child { box-shadow: inset 4px 0 0 var(--violet); }
+.sa-row.is-current td { background: color-mix(in srgb, var(--hi) 22%, transparent); color: var(--text); }
+.sa-row.is-current td:first-child { box-shadow: inset 4px 0 0 var(--hi); }
+.sa-total { font-weight: 700; color: var(--text); }
+.sa-tie { color: var(--info); font-weight: 700; }
