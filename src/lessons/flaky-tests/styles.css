@@ -1,0 +1,19 @@
+.ft { flex-flow: row wrap; align-items: flex-start; gap: 18px; }
+.ft-runs { flex: 0 1 260px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ft-side { flex: 1 1 340px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ft-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ft-row {
+  display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+}
+.ft-row.is-quarantined { border-style: dashed; border-color: var(--dim); }
+.ft-row.is-quarantined .ft-row-head code,
+.ft-row.is-quarantined .ft-what { color: var(--dim); }
+.ft-row-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
+.ft-row-head code { font: 600 13px var(--mono); color: var(--text); }
+.ft-rate { font: 12px var(--mono); color: var(--muted); }
+.ft-what { font-size: 12.5px; color: var(--muted); }
+.ft-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ft-owner { font-size: 11px; }
+.ft-detail { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.ft-detail .console-panel { align-self: stretch; }
