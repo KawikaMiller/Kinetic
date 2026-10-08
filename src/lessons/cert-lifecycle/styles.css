@@ -1,0 +1,7 @@
+.cl { gap: 12px; }
+.cl-timeline { display: flex; flex-direction: column; gap: 10px; }
+.cl-log { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow: auto; padding-right: 4px; }
+.cl-log .log-row { font-size: 12px; overflow-wrap: anywhere; }
+.cl-date { color: var(--muted); }
+.cl-step { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 10px; }
+.cl-step-label { font: 600 12px var(--mono); color: var(--muted); }
