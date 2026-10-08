@@ -13,3 +13,8 @@
 - **Plot2D:** VLine/HLine labels clamp inside the plot edges (they clip on phones).
 - **Docs:** CLAUDE.md gotcha: oxlint `only-export-components` fires on any uppercase arrow helper (`const P = …`) and then flags every export in the file.
 - Done on main at 49ece19: Vitest `testTimeout: 15_000`.
+
+## B16 (merged)
+- **usePlayer:** the window keydown handler should skip events with `defaultPrevented` set, so composite widgets don't need stopPropagation (the flame graph).
+- **ArrayStrip:** `cellTone?: (i) => Tone`, or let cellState accept any Tone. ring-buffers and semaphores override the active/info CSS just to get flat tinted cells.
+- Test timeouts: done on main (15 s).

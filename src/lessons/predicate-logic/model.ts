@@ -34,7 +34,7 @@ export const FORMULAS: Record<FormulaId, Formula> = {
 };
 export const FORMULA_IDS: readonly FormulaId[] = ['AE', 'EA', 'EE', 'AA'];
 export const ENGLISH: Record<FormulaId, string> = {
-  AE: 'everyone likes something (each their own)',
+  AE: 'everyone likes something (possibly different ones)',
   EA: "there's one dish everyone likes",
   EE: 'somebody likes something',
   AA: 'everyone likes everything',

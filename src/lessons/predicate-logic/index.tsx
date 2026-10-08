@@ -10,7 +10,7 @@ const lesson: LessonModule = {
     useCases: [
       'SQL queries (one step past `sql-basics`): "customers who bought every product" is a NOT EXISTS inside a NOT EXISTS',
       'Specs and tests: "for every input there is a valid output" versus "one output works for every input"',
-      'Types: a function (x: A) => B hands over a witness for each x, the shape of a ∀x ∃y proof',
+      'Types: a proof of ∀x ∃y is a function that returns, for each x, a y together with evidence that it works',
       'Access rules: "every request has some role that allows it" versus "one role allows every request"',
     ],
     why: 'Requirements, database queries, API contracts and property-based tests are all quantified statements, and swapping ∀ and ∃ or misplacing a NOT silently changes them. Reading the order correctly, knowing that one counterexample sinks a ∀, and pushing negations through by rule are how you write the query or the check that actually means what the ticket says.',
@@ -21,7 +21,7 @@ const lesson: LessonModule = {
     "In that preset, click Ben's sushi cell to clear it: ∀x ∃y turns false and Ben's row is the counterexample.",
     'Load Nobody here (empty domain): both ∀x formulas are true with nobody to check, ∃x ∃y is false, and ∃y ∀x is true because pizza is liked by all zero people.',
     'Under Push the negation inward, click the yellow ¬ twice: ¬∀x ∃y becomes ∃x ∀y ¬likes(x, y), and the true/false next to each line never changes.',
-    'Pick ∀x ∃y and read the SQL panel: the "for all" is a NOT EXISTS wrapped around another NOT EXISTS.',
+    'Pick ∀x ∃y and read the SQL panel: the outer NOT EXISTS says "no person", the inner one "who likes no dish". Together that is ¬∃x ¬∃y, which is ∀x ∃y.',
   ],
   keyIdeas: [
     '∀x ∃y lets the witness y depend on x; ∃y ∀x needs one y for every x. The second always implies the first; the reverse can fail.',

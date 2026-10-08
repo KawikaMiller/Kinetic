@@ -111,7 +111,7 @@ function ClaimScene({ claim, picker }: { claim: Claim; picker: ReactNode }) {
           items={[
             { color: 'var(--hi)', label: 'line being filled', shape: 'square' },
             { color: 'var(--ok)', label: 'accepted step', shape: 'square' },
-            { color: 'var(--bad)', label: 'rejected step / contradiction', shape: 'square' },
+            { color: 'var(--bad)', label: 'rejected step / contradiction / counterexample', shape: 'square' },
             { color: 'var(--violet)', label: 'assumption', shape: 'square' },
             { color: 'var(--dim)', label: 'steps not chosen', shape: 'square' },
           ]}

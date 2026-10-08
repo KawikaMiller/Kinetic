@@ -1,0 +1,11 @@
+.ah { gap: 16px; }
+.ah-bars { display: flex; flex-direction: column; gap: 6px; max-width: 640px; width: 100%; }
+.ah-bars .section-title { display: block; }
+.ah-track { position: relative; width: 100%; border-radius: 4px; background: color-mix(in srgb, var(--line) 40%, transparent); }
+.ah-seg { position: absolute; border-radius: 3px; transition: left 0.35s ease, width 0.35s ease; }
+.ah-seg.is-serial { background: var(--orange); }
+.ah-seg.is-parallel { background: var(--info); }
+.ah-seg.is-overhead { background: var(--bad); }
+.ah-note { margin: 0; font-size: 12.5px; color: var(--muted); }
+.ah-plot { width: 100%; max-width: 480px; }
+.ah-plot svg { width: 100%; height: auto; display: block; }
