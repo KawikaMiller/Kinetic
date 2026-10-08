@@ -51,6 +51,21 @@ export interface MemBand {
   h: number;
   /** How many other regions contain this one (a frame inside the stack is 1): its bracket steps inward. */
   depth: number;
+  /**
+   * Middle of the row the region's label sits on: its first row, unless a region nested in it
+   * (or around it) already labels that row, in which case the next free row of its band.
+   */
+  labelY: number;
+}
+
+/** The pointer tags on one row: labels stacked one above another, one arrowhead at the row. */
+export interface MemPointerRow {
+  /** Middle of the row the tags point at. */
+  y: number;
+  /** Arrowhead tone: the first pointer's. */
+  tone: Tone;
+  /** Each label's middle, centred as a stack on the row. */
+  labels: { label: string; tone: Tone; y: number }[];
 }
 
 export interface MemLayout {
@@ -60,6 +75,8 @@ export interface MemLayout {
   rows: MemRow[];
   /** One band per region, in region order: the y-span its rows cover. */
   bands: MemBand[];
+  /** Pointer tags grouped by the row they point at (rsp and rbp on one row stack). */
+  pointerRows: MemPointerRow[];
   /** x and width of each column. */
   cols: { pointer: number; addr: number; addrW: number; cell: number; cellW: number; link: number; region: number; regionW: number };
   addrDigits: number;
@@ -83,6 +100,8 @@ export const MEMMAP = {
   MAX_ROWS: 400,
   /** Each nesting level moves a region's bracket this far right. */
   BRACKET_STEP: 10,
+  /** Line spacing of pointer tags that share a row. */
+  POINTER_LINE: 12,
 } as const;
 
 const align = (addr: number, unit: number) => Math.floor(addr / unit) * unit;
@@ -147,13 +166,15 @@ export function memoryMapLayout(o: {
     return row;
   });
 
-  const bands: MemBand[] = o.regions.map((r, index) => {
+  const spans = o.regions.map((r, index) => {
     const inside = rows.filter((row) => row.addr >= align(r.from, unit) && row.end <= align(r.to - 1, unit) + unit);
     const top = Math.min(...inside.map((row) => row.y));
     const bottom = Math.max(...inside.map((row) => row.y + row.h));
     const depth = o.regions.filter((q, j) => j !== index && q.from <= r.from && q.to >= r.to && (q.from < r.from || q.to > r.to)).length;
-    return { index, y: top, h: bottom - top, depth };
+    return { index, y: top, h: bottom - top, depth, inside };
   });
+  const labelYs = placeRegionLabels(spans);
+  const bands: MemBand[] = spans.map(({ index, y: top, h, depth }) => ({ index, y: top, h, depth, labelY: labelYs[index] }));
 
   const maxAddr = Math.max(0, ...rows.map((r) => r.end - 1));
   const addrDigits = o.addrDigits ?? Math.max(4, maxAddr.toString(16).length);
@@ -174,9 +195,49 @@ export function memoryMapLayout(o: {
     unit,
     rows,
     bands,
+    pointerRows: pointerRows(rows, pointers),
     cols: { pointer: 0, addr: pointerW, addrW, cell, cellW, link: cell + cellW, region: cell + cellW + linkW, regionW },
     addrDigits,
   };
+}
+
+/**
+ * Each region's label row. A label goes on its band's first row (the middle of a one-row band);
+ * where regions nest, the deepest are placed first and an outer region whose first row is
+ * already labelled by a region of another depth moves down to the next free row in its band,
+ * so a frame's name doesn't print over its first slot's. Regions at the same depth never
+ * share rows, so they keep their spot.
+ */
+function placeRegionLabels(spans: readonly { index: number; y: number; h: number; depth: number; inside: readonly MemRow[] }[]): number[] {
+  const out: number[] = [];
+  const placed: { y: number; depth: number }[] = [];
+  const order = [...spans].sort((a, b) => b.depth - a.depth || a.index - b.index);
+  for (const s of order) {
+    const preferred = s.y + Math.min(s.h / 2, MEMMAP.ROW_H / 2);
+    const candidates = [preferred, ...s.inside.filter((r) => r.kind === 'cell').map((r) => r.y + r.h / 2)];
+    const free = (y: number) => !placed.some((p) => p.depth !== s.depth && Math.abs(p.y - y) < MEMMAP.ROW_H / 2);
+    const y = candidates.find(free) ?? preferred;
+    out[s.index] = y;
+    placed.push({ y, depth: s.depth });
+  }
+  return out;
+}
+
+/** Pointers grouped by the drawn row they point at, in pointer order; pointers off the map are left out. */
+function pointerRows(rows: readonly MemRow[], pointers: readonly MemPointer[]): MemPointerRow[] {
+  const byRow = new Map<MemRow, MemPointer[]>();
+  for (const p of pointers) {
+    const row = rows.find((r) => p.addr >= r.addr && p.addr < r.end);
+    if (row) byRow.set(row, [...(byRow.get(row) ?? []), p]);
+  }
+  return [...byRow].map(([row, ps]) => {
+    const y = row.y + row.h / 2;
+    return {
+      y,
+      tone: ps[0].tone,
+      labels: ps.map((p, k) => ({ label: p.label, tone: p.tone, y: y + (k - (ps.length - 1) / 2) * MEMMAP.POINTER_LINE })),
+    };
+  });
 }
 
 /** The drawn row holding `addr` (a cell row, or the gap that hides it); null if it's off the map. */

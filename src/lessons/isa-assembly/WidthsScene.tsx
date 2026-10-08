@@ -3,7 +3,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { applyWrite, bytesOf, START_VALUE, VIEWS, WIDTH_WRITES, widthStart, type ByteChange, type WidthResult, type WidthWrite } from './widths';
-import { hex } from './x86';
+import { hex } from '../../core/x86';
 
 const BYTE_W = 40;
 const BYTE_H = 34;

@@ -7,7 +7,7 @@ import { isaFrames } from './frames';
 import { COMMON_FLAGS, MAX_ARM64 } from './listings';
 import { HONESTY, PRESETS, type ProgId, type Variant } from './model';
 import { StatePanel } from './StatePanel';
-import { hex } from './x86';
+import { hex } from '../../core/x86';
 
 const STEP_MS = 1500;
 
@@ -92,6 +92,7 @@ export function ProgramScene({ picker, prog }: { picker: ReactNode; prog: ProgId
               lines={listing.c}
               stateOf={cState}
               onLineClick={(i) => toggle('c', i)}
+              roving
               pressed={(i) => pin?.side === 'c' && pin.line === i}
               lineLabel={(i) => `C line ${i + 1}: ${listing.c[i] || '(blank)'}. Highlight its instructions`}
             />
@@ -101,6 +102,7 @@ export function ProgramScene({ picker, prog }: { picker: ReactNode; prog: ProgId
               stateOf={asmState}
               trailing={(i) => (listing.asm[i].asm ? hex(run.program.instrs[run.program.lineOf[i]!].addr) : '')}
               onLineClick={(i) => toggle('asm', i)}
+              roving
               pressed={(i) => pin?.side === 'asm' && pin.line === i}
               lineLabel={(i) => `Assembly line ${i + 1}: ${asmLines[i].trim()}. Highlight its C line`}
             />

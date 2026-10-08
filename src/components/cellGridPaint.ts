@@ -65,6 +65,26 @@ export function canvasFill(sp: GridCellSpec): string {
   return alpha(tone, sp.intensity ?? DEFAULT_TINT);
 }
 
+/** Edge widths of tint and outline cells, as in kit.css (.cellgrid-cell.is-tint / .is-outline rect). */
+export const TINT_EDGE = 1;
+export const OUTLINE_EDGE = 1.5;
+
+/**
+ * A canvas cell's edge, matching the SVG rules in kit.css: tint and outline cells are edged in
+ * their tone (--line-2 without one); other cells get no edge on the canvas, which keeps a big
+ * crowd of plain or solid cells from turning into a mesh.
+ */
+export function canvasStroke(sp: GridCellSpec): { color: string; width: number } | null {
+  const fill = cellFill(sp);
+  if (fill !== 'tint' && fill !== 'outline') return null;
+  return { color: sp.tone ? TOKENS[sp.tone] : TOKENS.line2, width: fill === 'outline' ? OUTLINE_EDGE : TINT_EDGE };
+}
+
+/** The fill a spec draws with: its own, else a tint when it has a tone or an intensity (as CellGrid's SVG cells). */
+export function cellFill(sp: GridCellSpec): GridCellSpec['fill'] {
+  return sp.fill ?? (sp.intensity !== undefined || sp.tone ? 'tint' : undefined);
+}
+
 /** Text colour on a canvas cell, matching the SVG rules in kit.css (.cellgrid-cell text). */
 export function canvasInk(sp: GridCellSpec): string {
   if (sp.fill === 'none') return TOKENS.muted;

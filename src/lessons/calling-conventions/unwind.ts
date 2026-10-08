@@ -1,4 +1,4 @@
-import { readMem, RETURN_TO_CALLER, type Cpu, type Program } from './x86';
+import { readMem, RETURN_TO_CALLER, type Cpu, type Program } from '../../core/x86';
 
 /**
  * Where a function's return address is, at each of its instructions: what the .eh_frame

@@ -27,12 +27,26 @@ export interface CallFrame {
    * "on the stack" nodes in a tree). Running/returning/ok/error keep their state colours.
    */
   tone?: Tone;
+  /**
+   * Which way the frame leaves when it's removed: off to the right (default, a pop), or out
+   * of the top or bottom edge (a deque dropping its front or its back).
+   */
+  exit?: 'right' | 'top' | 'bottom';
 }
 
-const POP_EXIT = { opacity: 0, x: 80, transition: { duration: 0.3 } };
+const EXIT_SHIFT = 80;
+const ENTER_SHIFT = 24;
+const EXIT_TIME = { duration: 0.3 };
+const EXITS = {
+  right: { opacity: 0, x: EXIT_SHIFT, transition: EXIT_TIME },
+  top: { opacity: 0, y: -ENTER_SHIFT, transition: EXIT_TIME },
+  bottom: { opacity: 0, y: ENTER_SHIFT, transition: EXIT_TIME },
+} as const;
 
 /**
  * A call stack: frames push in from above and pop off to the right.
+ * (`enterFrom="bottom"` brings new frames up from below, and a frame's own `exit` picks its way
+ * out: a deque joins at the back and leaves at either end.)
  *
  * - `frames` is **top first** (the running call at index 0), like a debugger lists them.
  * - `anchor="bottom"` (default) stacks from the bottom up, like a stack of plates;
@@ -45,7 +59,7 @@ const POP_EXIT = { opacity: 0, x: 80, transition: { duration: 0.3 } };
  */
 export function CallStackPanel({
   frames, title = 'Call stack', meta, anchor = 'bottom', showDepth = true, selected, selectedTone = 'hi', onSelect, alarm = false,
-  empty, overlay, minHeight = 360, className = '',
+  empty, overlay, minHeight = 360, enterFrom = 'top', className = '',
 }: {
   frames: readonly CallFrame[];
   title?: ReactNode;
@@ -59,6 +73,8 @@ export function CallStackPanel({
   empty?: ReactNode;
   overlay?: ReactNode;
   minHeight?: number;
+  /** Where new frames slide in from (default top). */
+  enterFrom?: 'top' | 'bottom';
   className?: string;
 }) {
   // Bottom-anchored stacks render outermost-first in a column-reverse box.
@@ -83,9 +99,9 @@ export function CallStackPanel({
                 layout
                 type={clickable ? 'button' : undefined}
                 className={`call-frame is-${f.state ?? 'idle'} ${f.tone ? `has-tone tone-${f.tone}` : ''} ${f.id === selected ? 'is-selected' : ''} ${clickable ? 'is-clickable' : ''}`}
-                initial={{ opacity: 0, y: -24, scale: 0.9 }}
+                initial={{ opacity: 0, y: enterFrom === 'top' ? -ENTER_SHIFT : ENTER_SHIFT, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1, ...shake(alarm) }}
-                exit={POP_EXIT}
+                exit={EXITS[f.exit ?? 'right']}
                 transition={SPRING.snappy}
                 onClick={clickable ? () => onSelect(f.id) : undefined}
               >

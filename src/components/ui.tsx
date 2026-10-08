@@ -8,7 +8,11 @@ export function Controls({ children }: { children: ReactNode }) {
   return <div className="controls">{children}</div>;
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' };
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'ghost' | 'danger';
+  /** The <button> itself, e.g. to move focus back to it. */
+  ref?: Ref<HTMLButtonElement>;
+};
 
 export function Button({ variant = 'ghost', className = '', ...rest }: ButtonProps) {
   return <button type="button" className={`btn btn-${variant} ${className}`} {...rest} />;
