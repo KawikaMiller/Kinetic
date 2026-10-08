@@ -1,8 +1,9 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ASYNC_SRC, CALLER_SRC, COMBINATORS, DESUGARED_SRC, DURATION, HELPERS, MACHINE, PITFALLS, REQS, SHAPE_CODE, predict, reasonOf, shapeRun, valueOf,
   type Combinator, type Outcome, type ReqId, type ReqSetting, type Settled, type Shape,
 } from './model';
+import { runNode } from '../../core/testing/node';
 
 // Tests may run on-screen snippets as real JS (CLAUDE.md); none of this text comes from a learner.
 
@@ -134,19 +135,9 @@ describe('the coroutine as a state machine', () => {
 });
 
 describe('pitfalls: the console lines are what Node really prints', () => {
-  // The app's tsconfig has no Node types (adding them would change timer types app-wide), so the
-  // child-process API is loaded at run time with just the shape this test uses.
-  type Spawn = (cmd: string, args: string[], o: { encoding: 'utf8'; timeout: number }) => { stdout: string; stderr: string; status: number | null };
-  const nodePath = (globalThis as unknown as { process: { execPath: string } }).process.execPath;
-  let spawnSync: Spawn;
-  beforeAll(async () => {
-    const moduleName = 'node:child_process';
-    spawnSync = ((await import(/* @vite-ignore */ moduleName)) as { spawnSync: Spawn }).spawnSync;
-  });
-  const run = (code: string[]) => spawnSync(nodePath, ['-e', code.join(String.fromCharCode(10))], { encoding: 'utf8', timeout: 10_000 });
   for (const p of PITFALLS) {
     it(`${p.id}: as written`, () => {
-      const r = run(p.code);
+      const r = runNode(p.code);
       expect(r.stdout.trim().split('\n').filter(Boolean)).toEqual(p.out);
       if (p.unhandled) {
         // Node's default for an unhandled rejection: print the error and exit with code 1.
@@ -155,7 +146,7 @@ describe('pitfalls: the console lines are what Node really prints', () => {
       } else expect(r.status).toBe(0);
     });
     it(`${p.id}: fixed`, () => {
-      const r = run(p.fixed);
+      const r = runNode(p.fixed);
       expect(r.status).toBe(0);
       expect(r.stdout.trim().split('\n').filter(Boolean)).toEqual(p.fixedOut);
     });

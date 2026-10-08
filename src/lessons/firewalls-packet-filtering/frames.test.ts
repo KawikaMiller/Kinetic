@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { introText, outcomeText, streamFrames } from './frames';
 import { BROAD_RETURN_RULE, PRESETS, cloneRules, runStream } from './model';
 
-const text = (n: Parameters<typeof captionText>[0]) => {
-  const t = captionText(n).replace(/\s+/g, ' ');
-  expect(t).not.toMatch(/[a-z)]\.[A-Z]/);
-  return t;
-};
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 
 describe('every caption is true, for every preset × tracking × broad rule', () => {
   for (const preset of PRESETS)
@@ -52,7 +48,7 @@ describe('every caption is true, for every preset × tracking × broad rule', ()
 
 describe('REJECT is described as iptables does it (review fix)', () => {
   it('the default answer is ICMP port unreachable; a TCP RST needs tcp-reset; both read as connection refused', () => {
-    const say = captionText(outcomeText('REJECT')).replace(/\s+/g, ' ');
+    const say = expectCaption(outcomeText('REJECT')).replace(/\s+/g, ' ');
     expect(say).toContain('ICMP "port unreachable"');
     expect(say).toContain('--reject-with tcp-reset');
     expect(say).toContain('connection refused');

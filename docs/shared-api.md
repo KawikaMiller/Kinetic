@@ -208,6 +208,10 @@ Verified: `hash32`, `hexHash` and `fnv1a` produce identical output to the consis
 git-internals and probabilistic-structures copies, and `mulberry32` matches tcp-udp's. lsm-trees
 and sharding use the same FNV loop. Still diff captions after swapping.
 `hooks.ts` is hooks only (`useLoop`, `useElementSize`, `useCanvas`); maths and randomness come from here.
+`useLoop(cb, running?, { maxDt? })`: `cb(dt, t)` per animation frame. `dt` is capped at `maxDt`
+seconds (default `DEFAULT_MAX_DT`, 0.05) so a background tab doesn't teleport the sim, and never
+negative. Pass `{ maxDt: Infinity }` when the real frame time is the lesson (game-loop's lag spikes).
+The clock restarts whenever `running` turns true, so a pause never counts as one huge frame.
 
 ### `geometry.ts`
 ```ts
@@ -250,6 +254,18 @@ createCooldown(8, { armed: true })        // ready immediately instead of 8 s in
 ```
 `createCooldown` has separate `ready()`/`fire()` because insight gates only re-arm when an
 insight actually fires; a throttle that re-arms on every true check would behave differently.
+
+### `tokenBucket.ts` — rate-limiting, reverse-proxy-gateway
+```ts
+type BucketParams = { rate, capacity }        // tokens per second; most tokens held (the burst size)
+type Bucket = { tokens, last }                // a plain value: keep it in a world or a frame
+fullBucket(p, now?)                           // full at `now`
+refill(b, now, p)                             // tokens earned since `last`, capped; clock moves to `now`
+takeToken(b, now, p)                          // { allowed, bucket, retryAfter }: refill, then spend one whole token
+```
+Pure functions, no class: rate-limiting's `Limiter` keeps a `Bucket` for its token algorithm (its
+`tokens` is a getter over it), a scripted lesson can keep one per client. `retryAfter` is the whole
+seconds until one token is back, as an HTTP `Retry-After` would say.
 
 ### `spark.ts`
 ```ts
@@ -341,11 +357,36 @@ caption: 320px wide, ~8.8px a character plus padding), and give a longer verdict
 (`className="hl bad wrap"`): it then breaks at spaces like the text around it, with padding at the
 chip's two ends only (so a wrapped chip never overflows). Every existing chip is unchanged (it's opt-in).
 
+### Test helpers (`core/testing/`)
+Test-only modules: never import them from app code.
+```ts
+captionText(node)                    // plain text a ReactNode renders to (markup stripped, entities decoded)
+captionText(node, { strict: true })  // same, but throws on a glued sentence ("port.60 s")
+expectCaption(node)                  // = captionText(node, { strict: true })
+gluedSentences(text)                 // glue.ts: snippets around each glued spot ([] when none)
+spawnSync(cmd, args, { timeout?, cwd?, input? })  // node.ts: { stdout, stderr, status }, UTF-8, 10 s default timeout
+runNode(code | lines, opts?)         // node.ts: spawnSync(nodePath, ['-e', code]); lines join with \n
+nodePath                             // the Node binary running the tests
+```
+- A glued sentence is what a JSX line break next to `{…}` produces: JSX drops a line break that
+  touches an expression, so text ending a line in `…the port.` with `{n} s later` starting the next
+  comes out as "port.60 s later" (fix: `{' '}` at the line end). The
+  rule (`glue.ts`): a lowercase letter or `)`/`]`, then `. ! ? ; : ,`, then a capital or digit.
+  Decimals, hosts and file names pass. Inline `<code>`/`<kbd>`/`<samp>` contents are blanked first,
+  so `Math.PI` is fine but `<code>f()</code>.Then` is glued. Use `expectCaption` in every
+  caption-truth test instead of a local regex.
+- `npm run captions` runs the same rule over every caption it steps through, in every step-player
+  lesson, and exits 1 on a hit. It sees what the browser renders, including captions a test can't build.
+- `node.ts` exists because the app tsconfig has no Node types; it loads `node:child_process` at run
+  time with a typed shape. Use it to check a lesson's claim against real Node output (async-await-coroutines).
+
 ### Player keyboard (`usePlayer.ts`, `playerRegistry.ts`)
 Space / ← / → / R are bound by `usePlayer` (unless `keyboard: false`). They never fire while typing,
 and Space on a focused button, link or `role=radio|button|…` control presses that control instead
 of toggling playback. ← / → are left to radio groups, tabs and sliders, where they move the
-selection. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
+selection. A keydown some handler already `preventDefault()`ed is left alone too, so a composite
+widget that owns its keys (a flame graph's arrow-key focus, a grid's Space) just calls
+`e.preventDefault()`, with no `stopPropagation` needed. The mapping is the pure `shortcutFor(event, target)` (unit-tested). A player
 with the keyboard on registers itself with the lesson page, which shows the shortcut hint only
 then, so lessons do nothing extra. A one-frame player never reports `playing`.
 

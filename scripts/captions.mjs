@@ -1,9 +1,12 @@
 // Step through each step-player lesson and flag long runs of an unchanged caption:
 // candidates for a stale caption (a frame without `say` keeps the previous one).
 // A flagged run is only a bug if the caption has stopped being true, so eyeball them.
+// It also fails (exit 1) on a glued sentence in any caption it sees ("port.60 s": a JSX line
+// break after `{…}` swallowed the space), with inline code blanked first; see core/testing/glue.ts.
 //
 //   npm run captions                 # all lessons
 //   npm run captions -- tcp-udp      # just these
+import { CODE_PLACEHOLDER, gluedSentences } from '../src/core/testing/glue.ts';
 import { BASE_URL, lessonIds, openPage, parseArgs, sleep, stepForward } from './lib/browser.mjs';
 
 const MAX_STEPS = 70;
@@ -13,6 +16,7 @@ const { positional } = parseArgs();
 const ids = positional.length ? positional : lessonIds();
 // Seeded, with a full reload per lesson, so lessons with random inputs give the same frames every run.
 const { browser, page } = await openPage({ seed: 1 });
+const glued = [];
 
 for (const id of ids) {
   await page.goto('about:blank');
@@ -23,13 +27,20 @@ for (const id of ids) {
   const seen = [];
   let lastCounter = '';
   for (let s = 0; s < MAX_STEPS; s++) {
-    const { caption, counter } = await page.evaluate(() => ({
-      caption: (document.querySelector('.caption-text')?.textContent ?? '').trim(),
-      counter: document.querySelector('.tcount')?.textContent ?? '',
-    }));
+    const { caption, prose, counter } = await page.evaluate((placeholder) => {
+      const el = document.querySelector('.caption-text');
+      const copy = el?.cloneNode(true);
+      copy?.querySelectorAll('code, kbd, samp').forEach((c) => { c.textContent = placeholder; });
+      return {
+        caption: (el?.textContent ?? '').trim(),
+        prose: copy?.textContent ?? '',
+        counter: document.querySelector('.tcount')?.textContent ?? '',
+      };
+    }, CODE_PLACEHOLDER);
     if (counter === lastCounter) break; // reached the last frame
     lastCounter = counter;
     seen.push(caption);
+    for (const hit of gluedSentences(prose)) glued.push(`${id} frame ${s + 1}: "${hit}"`);
     await stepForward(page);
   }
 
@@ -46,3 +57,7 @@ for (const id of ids) {
   );
 }
 await browser.close();
+if (glued.length) {
+  console.error(`\nGlued sentences (a JSX line break after {…} swallowed the space):\n  ${glued.join('\n  ')}`);
+  process.exitCode = 1;
+}
