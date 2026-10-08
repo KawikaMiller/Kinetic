@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
@@ -73,13 +73,17 @@ function momentCaption(jobs: readonly Job[], s: Schedule, at: number, policy: Po
     }
   }
   const starving = jobs.map((_, j) => j).filter((j) => m.streak[j] >= STARVE_TICKS);
-  for (const j of starving) {
+  starving.forEach((j, k) => {
+    // A space between two starving notes, outside the highlight (the other parts end with their own).
     parts.push(
-      <span key={`st-${j}`} className="hl bad">
-        {jobs[j].name} has waited {m.streak[j]} ticks in a row: it's starving.
-      </span>,
+      <Fragment key={`st-${j}`}>
+        {k > 0 && ' '}
+        <span className="hl bad">
+          {jobs[j].name} has waited {m.streak[j]} ticks in a row: it's starving.
+        </span>
+      </Fragment>,
     );
-  }
+  });
   return (
     <>
       <b>t = {m.t}:</b> {parts}

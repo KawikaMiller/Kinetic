@@ -1,6 +1,7 @@
 // Four rate-limiting algorithms, all fed the same request stream.
 // Time is in seconds. `limit` is requests per second; `capacity` is the
 // bucket size for token / leaky bucket.
+import { fullBucket, refill, takeToken, type Bucket, type BucketParams } from '../../core/tokenBucket';
 
 export type AlgoId = 'fixed' | 'sliding' | 'token' | 'leaky';
 export const ALGO_IDS: AlgoId[] = ['fixed', 'sliding', 'token', 'leaky'];
@@ -24,9 +25,8 @@ export class Limiter {
   count = 0;
   // sliding window log
   log: number[] = [];
-  // token bucket
-  tokens: number;
-  private lastRefill = 0;
+  // token bucket (core/tokenBucket)
+  private bucket: Bucket;
   // leaky bucket (as a queue that drains at a constant rate)
   queue: number[] = [];
   private drain = 0;
@@ -37,7 +37,12 @@ export class Limiter {
   constructor(id: AlgoId, p: Params) {
     this.id = id;
     this.p = p;
-    this.tokens = p.capacity;
+    this.bucket = fullBucket(this.bucketParams());
+  }
+
+  /** Tokens in the token bucket right now (fractional while it refills). */
+  get tokens(): number {
+    return this.bucket.tokens;
   }
 
   offer(t: number): Outcome {
@@ -53,11 +58,12 @@ export class Limiter {
         out = this.log.length < this.p.limit ? 'ok' : 'reject';
         if (out === 'ok') this.log.push(t);
         break;
-      case 'token':
-        this.refill(t);
-        out = this.tokens >= 1 ? 'ok' : 'reject';
-        if (out === 'ok') this.tokens -= 1;
+      case 'token': {
+        const take = takeToken(this.bucket, t, this.bucketParams());
+        this.bucket = take.bucket;
+        out = take.allowed ? 'ok' : 'reject';
         break;
+      }
       case 'leaky':
         out = this.queue.length < this.p.capacity ? 'queued' : 'reject';
         if (out === 'queued') this.queue.push(t);
@@ -73,7 +79,7 @@ export class Limiter {
     let released = 0;
     if (this.id === 'fixed') this.rollWindow(t);
     if (this.id === 'sliding') this.trimLog(t);
-    if (this.id === 'token') this.refill(t);
+    if (this.id === 'token') this.bucket = refill(this.bucket, t, this.bucketParams());
     if (this.id === 'leaky') {
       this.drain += this.p.limit * dt;
       while (this.drain >= 1 && this.queue.length) {
@@ -93,7 +99,7 @@ export class Limiter {
 
   setParams(p: Params) {
     this.p = p;
-    this.tokens = Math.min(this.tokens, p.capacity);
+    this.bucket = { ...this.bucket, tokens: Math.min(this.bucket.tokens, p.capacity) };
     while (this.queue.length > p.capacity) {
       this.queue.pop();
     }
@@ -111,9 +117,9 @@ export class Limiter {
     while (this.log.length && this.log[0] <= t - WINDOW) this.log.shift();
   }
 
-  private refill(t: number) {
-    this.tokens = Math.min(this.p.capacity, this.tokens + (t - this.lastRefill) * this.p.limit);
-    this.lastRefill = t;
+  /** The token bucket's view of the params: it refills at `limit` per second. */
+  private bucketParams(): BucketParams {
+    return { rate: this.p.limit, capacity: this.p.capacity };
   }
 
   /** Most requests let through in any 1-second span of the last `span` seconds. */

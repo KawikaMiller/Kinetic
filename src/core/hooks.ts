@@ -1,11 +1,28 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
+/** useLoop's default cap on one frame's dt, in seconds: a background tab doesn't teleport the sim. */
+export const DEFAULT_MAX_DT = 0.05;
+
+export interface LoopOptions {
+  /**
+   * Cap on `dt` in seconds (default DEFAULT_MAX_DT). Pass Infinity when the real frame time is
+   * the point, e.g. a lesson about lag spikes.
+   */
+  maxDt?: number;
+}
+
+/** Seconds between two animation-frame timestamps, never negative and at most `maxDt`. Pure, for testing. */
+export function frameDt(prevMs: number, nowMs: number, maxDt = DEFAULT_MAX_DT): number {
+  return Math.min(maxDt, Math.max(0, (nowMs - prevMs) / 1000));
+}
+
 /**
  * requestAnimationFrame loop for continuous simulations.
- * `cb(dt, t)` gets seconds since last frame (capped so a background tab
- * doesn't teleport everything) and total elapsed seconds.
+ * `cb(dt, t)` gets seconds since last frame (capped by `maxDt`, never negative) and total
+ * elapsed seconds. The clock restarts whenever `running` turns true, so a pause never shows
+ * up as one huge frame.
  */
-export function useLoop(cb: (dt: number, t: number) => void, running = true) {
+export function useLoop(cb: (dt: number, t: number) => void, running = true, { maxDt = DEFAULT_MAX_DT }: LoopOptions = {}) {
   const cbRef = useRef(cb);
   useEffect(() => {
     cbRef.current = cb;
@@ -17,14 +34,14 @@ export function useLoop(cb: (dt: number, t: number) => void, running = true) {
     let last = performance.now();
     const start = last;
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dt = frameDt(last, now, maxDt);
       last = now;
       cbRef.current(dt, (now - start) / 1000);
       id = requestAnimationFrame(tick);
     };
     id = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(id);
-  }, [running]);
+  }, [running, maxDt]);
 }
 
 /** Live width/height of an element, for sizing SVG and canvas stages. */
