@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Readers skim, so put the conclusion and the ask first, say who did what, cut filler, and keep real uncertainty. For a decision, write a recommendation, what it costs and what would change it, not a list of features. Write for the reader in front of you: the same facts look different to an executive, a peer and an on-call engineer.',
-    what: 'Three exercises, all on fictional examples. First, a wordy 180-word incident update: apply five edits (conclusion first, cut hedges, name who acted, state the ask, list as bullets) and watch a diff, the word, sentence and grade-level numbers, and where the ask first appears move. Second, a trade-off summary built slot by slot (context, options, recommendation, what we give up, when we would revisit) from sentence chips, set beside a weak version that lists features and never picks. Third, one change written three ways, which you match to an executive, a peer engineer and an on-call SRE, with a table of the details each version kept.',
+    what: 'Three exercises, all on fictional examples. First, a wordy 176-word incident update: apply five edits (conclusion first, cut hedges, name who acted, state the ask, list as bullets) and watch a diff, the word, sentence and grade-level numbers, and where the ask first appears move. Second, a trade-off summary built slot by slot (context, options, recommendation, what we give up, when we would revisit) from sentence chips, set beside a weak version that lists features and never picks. Third, one change written three ways, which you match to an executive, a peer engineer and an on-call SRE, with a table of the details each version kept.',
     analogy: 'Like a function signature: the reader should know what it takes, what it returns and what it costs without reading the body.',
     useCases: [
       'Incident updates, status posts and handover notes that people read in a hurry',
@@ -18,9 +18,9 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'In Tighten an update, press Conclusion first and read the Ask at word number: it jumps from past the orange skim marker to inside it.',
-    'In Tighten an update, apply Cut the hedges: the word count falls (176 to 131 once Conclusion first is on) and the diff strikes through every filler word. Real uncertainty stays.',
+    'In Tighten an update, apply Cut the hedges: the word count falls (176 to 148 from the draft, or 159 to 133 once Conclusion first is on) and the diff strikes through every filler word. Real uncertainty stays.',
     'In Tighten an update, apply List as bullets: sentences go up and words per sentence go down. A formula cannot tell you whether the bullets help the reader.',
-    'In Write the trade-off, fill every slot with the first sentence in each, then press Check my summary and read what is missing from the weak ones.',
+    'In Write the trade-off, fill every slot with the first sentence listed, then press Check my summary: four of the five are weak, so read what each is missing. The strong sentence is not always in the same place.',
     'In Three readers, assign Version A to Executive and read why it does not fit, then find the version that does.',
   ],
   keyIdeas: [

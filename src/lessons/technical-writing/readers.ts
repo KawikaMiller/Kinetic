@@ -13,9 +13,9 @@ export interface Detail {
 export const DETAILS: readonly Detail[] = [
   { id: 'money', label: 'Business value', fact: 'Recovers about $41k a month in payments that fail today.', marker: /\$41k/ },
   { id: 'cause', label: 'Why it fails', fact: '2.1% of first card attempts fail on transient provider errors.', marker: /2\.1%|2 in 100/ },
-  { id: 'config', label: 'The settings', fact: 'Retries go from 3 to 5, with exponential backoff from a 200 ms base.', marker: /200 ms/ },
+  { id: 'config', label: 'The settings', fact: 'The attempts per payment go from 3 to 5 (total, first try included), with exponential backoff from a 200 ms base.', marker: /200 ms/ },
   { id: 'flag', label: 'The flag', fact: 'It ships behind the flag payments_retry_v2.', marker: /payments_retry_v2/ },
-  { id: 'load', label: 'The extra load', fact: 'During a provider incident, up to 1.7x peak calls to their API.', marker: /1\.7x/ },
+  { id: 'load', label: 'The extra load', fact: 'During a provider incident, up to about 1.7x peak calls (5 attempts instead of 3) to their API.', marker: /1\.7x/ },
   { id: 'watch', label: 'What to watch', fact: 'The payments-retry-rate dashboard; it pages above 8%.', marker: /payments-retry-rate/ },
   { id: 'rollback', label: 'How to undo it', fact: 'Setting the flag to 0% takes effect in about a minute; no deploy.', marker: /a minute/ },
   { id: 'when', label: 'When', fact: 'Tuesday 14:00 UTC, to 10% of traffic.', marker: /Tuesday/ },
@@ -50,7 +50,7 @@ export const VERSIONS: readonly Version[] = [
   {
     id: 'A',
     reader: 'sre',
-    text: 'Tuesday 14:00 UTC: payments_retry_v2 goes to 10% of traffic (retries 3 to 5, exponential backoff from 200 ms). While the provider is failing, expect up to 1.7x peak calls to their API. Watch payments-retry-rate; it pages above 8%. To roll back, set the flag to 0%; it takes effect in about a minute.',
+    text: 'Tuesday 14:00 UTC: payments_retry_v2 goes to 10% of traffic (attempts per payment 3 to 5, exponential backoff from 200 ms). While the provider is failing, expect up to about 1.7x peak calls (5 attempts instead of 3) to their API. Watch payments-retry-rate; it pages above 8%. To roll back, set the flag to 0%; it takes effect in about a minute.',
   },
   {
     id: 'B',
@@ -60,7 +60,7 @@ export const VERSIONS: readonly Version[] = [
   {
     id: 'C',
     reader: 'peer',
-    text: 'Card-payment retries go from 3 to 5, with exponential backoff from a 200 ms base, behind the flag payments_retry_v2. About 2.1% of first attempts fail on transient provider errors. Worst case, during a provider incident, we send up to 1.7x our peak calls to their API. Rolling back is a flag flip that takes about a minute to propagate, no deploy.',
+    text: 'Card payments get 5 attempts instead of 3, with exponential backoff from a 200 ms base, behind the flag payments_retry_v2. About 2.1% of first attempts fail on transient provider errors. Worst case, during a provider incident, we send up to 1.7x our peak calls to their API. Rolling back is a flag flip that takes about a minute to propagate, no deploy.',
   },
 ];
 

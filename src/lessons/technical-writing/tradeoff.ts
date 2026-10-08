@@ -79,7 +79,7 @@ export const CHIPS: readonly SentenceChip[] = [
   {
     id: 'opt-features', slot: 'options', strong: false, uses: [],
     text: 'Postgres has transactions, indexes and joins, and a document store has flexible schemas and horizontal scaling.',
-    flaw: 'A feature list for each side: it is not tied to our data or our team, so it does not lead to a choice.',
+    flaw: 'A feature list for each side: it is not tied to our data or our team, so it does not lead to a choice (and it wrongly hints that document stores lack transactions).',
   },
   {
     id: 'rec-good', slot: 'recommendation', strong: true, uses: ['joins', 'skills', 'ops'],
@@ -97,7 +97,7 @@ export const CHIPS: readonly SentenceChip[] = [
   },
   {
     id: 'give-good', slot: 'giveUp', strong: true, uses: ['varying'],
-    text: 'What we give up: the database does not enforce a schema on those fields by default, so the application must validate filters, and very large per-user field sets may force a redesign.',
+    text: 'What we give up: the database does not enforce a schema on those fields by default, so unless you add constraints the application must validate filters, and very large per-user field sets may force a redesign.',
   },
   {
     id: 'give-none', slot: 'giveUp', strong: false, uses: [],
@@ -125,7 +125,20 @@ export const CHIPS: readonly SentenceChip[] = [
   },
 ];
 
-export const chipsFor = (slot: SlotId): SentenceChip[] => CHIPS.filter((c) => c.slot === slot);
+/**
+ * The order the sentences are offered in, per slot. It is fixed and deliberately mixed: the strong
+ * sentence is second, third, first, second, second, so position never gives the answer away and the
+ * first sentence in each slot is not the one to pick.
+ */
+export const CHIP_ORDER: Record<SlotId, readonly string[]> = {
+  context: ['ctx-vague', 'ctx-good', 'ctx-tech'],
+  options: ['opt-features', 'opt-vague', 'opt-good'],
+  recommendation: ['rec-good', 'rec-bare', 'rec-vague'],
+  giveUp: ['give-shrug', 'give-good', 'give-none'],
+  revisit: ['rev-complaint', 'rev-good', 'rev-someday'],
+};
+
+export const chipsFor = (slot: SlotId): SentenceChip[] => CHIP_ORDER[slot].map(chipById);
 
 /** One chosen chip per slot. A slot with no entry is missing. */
 export type Assembly = Partial<Record<SlotId, string>>;

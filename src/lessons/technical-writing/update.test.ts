@@ -13,9 +13,15 @@ const HEDGES = /\b(just|basically|sort of|kind of|I think|I believe|maybe|probab
 describe('the draft', () => {
   const draft = viewOf(NO_EDITS);
 
-  it('is a wordy update of about 180 words', () => {
-    expect(draft.stats.words).toBeGreaterThanOrEqual(170);
-    expect(draft.stats.words).toBeLessThanOrEqual(190);
+  it('is a wordy update of 176 words, the number the lesson text quotes', () => {
+    expect(draft.stats.words).toBe(176);
+  });
+
+  it('quotes the word counts of the hedge edit, alone and after Conclusion first', () => {
+    const words = (e: Edits) => viewOf(e).stats.words;
+    expect(words(toggleEdit(NO_EDITS, 'hedges'))).toBe(148);
+    expect(words(toggleEdit(NO_EDITS, 'bluf'))).toBe(159);
+    expect(words(toggleEdit(toggleEdit(NO_EDITS, 'bluf'), 'hedges'))).toBe(133);
   });
 
   it('buries the ask far past where a skimmer stops', () => {
@@ -57,6 +63,7 @@ describe('the edits', () => {
     const text = renderUpdate(toggleEdit(NO_EDITS, 'hedges'));
     expect(HEDGES.test(text)).toBe(false);
     expect(text).toContain('We are still looking into why the lock lasted so long.');
+    expect(text).toContain('most likely caused the outage');
   });
 
   it('naming the actor replaces both passives that hid an owner and keeps the one that should stay passive', () => {

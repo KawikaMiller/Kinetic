@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DETAILS, READERS, VERSIONS, explainFit, fitOf, keptBy, type Fit } from './readers';
-import { CHIPS, FACTS, SLOTS, chipsFor, factsUsed, missingSlots, paragraphOf, place, recommendationAt, verdictOf, WEAK_VERSION, type Assembly } from './tradeoff';
+import { CHIPS, CHIP_ORDER, FACTS, SLOTS, chipsFor, factsUsed, missingSlots, paragraphOf, place, recommendationAt, verdictOf, WEAK_VERSION, type Assembly } from './tradeoff';
 import { sentencesOf } from './textStats';
 
 describe('trade-off chips', () => {
@@ -35,6 +35,27 @@ describe('trade-off chips', () => {
       const [strong] = chipsFor(s.id).filter((c) => c.strong);
       for (const weak of chipsFor(s.id).filter((c) => !c.strong)) expect(weak.text.length).toBeLessThan(strong.text.length * 1.3);
     }
+  });
+});
+
+describe('chip order', () => {
+  it('lists every chip of a slot exactly once', () => {
+    for (const s of SLOTS) {
+      expect([...CHIP_ORDER[s.id]].sort()).toEqual(CHIPS.filter((c) => c.slot === s.id).map((c) => c.id).sort());
+    }
+  });
+
+  it('does not put the strong sentence in the same place in every slot, and not always first', () => {
+    const at = SLOTS.map((s) => chipsFor(s.id).findIndex((c) => c.strong));
+    expect(new Set(at).size).toBeGreaterThan(1);
+    expect(at.every((i) => i === 0)).toBe(false);
+    expect(at.every((i) => i === at.length - 1)).toBe(false);
+  });
+
+  it('makes picking the first sentence in every slot a weak summary, as the try-this step says', () => {
+    const firsts: Assembly = Object.fromEntries(SLOTS.map((s) => [s.id, chipsFor(s.id)[0].id]));
+    expect(verdictOf(firsts)).toBe('weak');
+    expect(SLOTS.filter((s) => !chipsFor(s.id)[0].strong)).toHaveLength(4);
   });
 });
 

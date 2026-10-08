@@ -8,12 +8,12 @@ const WORD = /[A-Za-z0-9]+(?:['’:.-][A-Za-z0-9]+)*/g;
 
 export const wordsOf = (text: string): string[] => text.match(WORD) ?? [];
 
-/** Syllables in one word, by counting vowel groups with the usual silent-e and -ed corrections. */
+/** Syllables in one word, by counting vowel groups with the usual silent-e and -ed corrections (an -ed after t or d is its own syllable: needed, added). */
 export function syllables(word: string): number {
   const w = word.toLowerCase().replace(/[^a-z]/g, '');
   if (w.length === 0) return 1; // a number or time read as one beat
   if (w.length <= 3) return 1;
-  const trimmed = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '');
+  const trimmed = w.replace(/(?:[^laeiouy]es|(?<![td])ed|[^laeiouy]e)$/, '').replace(/^y/, '');
   const groups = trimmed.match(/[aeiouy]{1,2}/g);
   const hiatus = trimmed.match(/cr(?=ea)/g); // cre-ate, cre-ation: "ea" is two beats here, not one
   return Math.max(1, (groups ? groups.length : 1) + (hiatus ? hiatus.length : 0));

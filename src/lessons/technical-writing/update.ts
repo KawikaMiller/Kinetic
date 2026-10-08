@@ -24,7 +24,7 @@ export function renderUpdate(e: Edits): string {
     : 'Hi all, I just wanted to give a quick update on what happened with checkout earlier today.';
 
   const conclusion = e.hedges
-    ? "Checkout has been healthy again since 10:20 UTC, and last night's database migration caused the outage."
+    ? "Checkout has been healthy again since 10:20 UTC, and last night's database migration most likely caused the outage."
     : 'So overall, checkout seems to be working again now, and I think maybe it was kind of the database migration from last night that caused it.';
 
   const ran = e.voice
@@ -71,7 +71,7 @@ export interface EditDef {
 
 export const EDITS: readonly EditDef[] = [
   { id: 'bluf', label: 'Conclusion first', why: 'Bottom line up front: the conclusion and the ask lead, and the greeting that said nothing goes.' },
-  { id: 'hedges', label: 'Cut the hedges', why: 'Filler like "just", "basically" and "I think maybe" goes; the real uncertainty ("still looking into why") stays.' },
+  { id: 'hedges', label: 'Cut the hedges', why: 'Filler like "just", "basically" and "I think maybe" goes; the real uncertainty ("most likely", "still looking into why") stays.' },
   { id: 'voice', label: 'Name who acted', why: 'Passive voice hides the owner where it matters (who ran the migration, who rolled it back); "was paged" stays passive because the actor is the alert system.' },
   { id: 'ask', label: 'State the ask', why: 'A vague "it would be great if someone" becomes a request with an object and a deadline.' },
   { id: 'bullets', label: 'List as bullets', why: 'Three parallel next steps buried in one sentence become a list a skimmer can count.' },

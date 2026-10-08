@@ -79,7 +79,7 @@ export function TightenScene({ picker }: { picker: ReactNode }) {
   const [last, setLast] = useState<{ id: EditId; before: Edits } | null>(null);
   const [show, setShow] = useState<Show>('diff');
   const setCaption = useSetCaption();
-  useIntroCaption(<>A wordy incident update, about 180 words (the incident is fictional). Apply the edits one at a time: the diff shows what changed and the numbers update from the text on screen.</>);
+  useIntroCaption(<>A wordy incident update, 176 words (the incident is fictional). Apply the edits one at a time: the diff shows what changed and the numbers update from the text on screen.</>);
 
   const view = viewOf(edits);
   const { stats } = view;

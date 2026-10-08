@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { firstWordOf, sentencesOf, skimEnd, skimWords, syllables, textStats, wordsOf } from './textStats';
 
-/** Syllable counts from a dictionary, typed by hand: the heuristic must land within one of each. */
+/** Syllable counts from a dictionary, typed by hand: the heuristic must match each exactly, except the few words listed in KNOWN_OFF_BY_ONE. */
 const DICTIONARY: Record<string, number> = {
   the: 1, cat: 1, migration: 3, database: 3, checkout: 2, engineer: 3, approve: 2, deadline: 2, conclusion: 3,
   write: 1, writing: 2, technical: 3, communicate: 4, communicating: 5, information: 4, reader: 2, readers: 2,
@@ -15,18 +15,34 @@ const DICTIONARY: Record<string, number> = {
   scenario: 4, option: 2, options: 2, choose: 1, choice: 1, strategy: 3, latency: 3, throughput: 2, review: 2,
 };
 
+/**
+ * Words the heuristic is known to miss by one (a silent or split vowel it cannot see). They are listed
+ * so the rest of the dictionary can be held to an exact match instead of hiding behind a tolerance.
+ */
+const KNOWN_OFF_BY_ONE = new Set(['queue', 'business', 'area', 'idea', 'science', 'quiet', 'player', 'being', 'usually', 'scenario', 'strategy', 'every', 'different', 'everyone', 'therefore', 'whole', 'hedges', 'evaluate']);
+
 describe('syllables', () => {
   for (const [word, expected] of Object.entries(DICTIONARY)) {
     const w = word.replace('_', '');
-    it(`${w} is within one syllable of ${expected}`, () => {
-      expect(Math.abs(syllables(w) - expected)).toBeLessThanOrEqual(1);
-    });
+    if (KNOWN_OFF_BY_ONE.has(w)) {
+      it(`${w} is a known approximation, within one syllable of ${expected}`, () => {
+        expect(Math.abs(syllables(w) - expected)).toBeLessThanOrEqual(1);
+      });
+    } else {
+      it(`${w} is exactly ${expected} syllables`, () => {
+        expect(syllables(w)).toBe(expected);
+      });
+    }
   }
 
-  it('is exact on most of the list', () => {
-    const entries = Object.entries(DICTIONARY);
-    const exact = entries.filter(([w, n]) => syllables(w.replace('_', '')) === n).length;
-    expect(exact / entries.length).toBeGreaterThan(0.8);
+  it('counts the -ed after t or d as its own syllable, as in the words the lesson text uses', () => {
+    for (const [w, n] of [['needed', 2], ['expected', 3], ['created', 3], ['updated', 3], ['added', 2], ['started', 2]] as const) {
+      expect(syllables(w)).toBe(n);
+    }
+  });
+
+  it('drops the silent -ed elsewhere', () => {
+    for (const [w, n] of [['rolled', 1], ['locked', 1], ['failed', 1], ['replayed', 2]] as const) expect(syllables(w)).toBe(n);
   });
 
   it('reads a number or a time as one beat and never returns less than one', () => {
