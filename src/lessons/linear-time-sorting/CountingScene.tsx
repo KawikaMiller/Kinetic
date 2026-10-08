@@ -110,6 +110,7 @@ export function CountingScene({ picker }: { picker: ReactNode }) {
             showIndex
             renderValue={(_, i) => <OutCell item={f.out[i]} />}
             cellState={(i) => (i === f.slot ? 'active' : 'idle')}
+            cellTone={(i) => (f.out[i] ? { tone: 'ok', fill: 'outline' } : null)}
             fontSize={FONT}
             cellMax={ITEM_CELL_MAX}
           />
@@ -140,9 +141,5 @@ export function ItemTag({ item }: { item: Item }) {
 
 function OutCell({ item }: { item: CountFrame['out'][number] }) {
   if (!item) return <span className="lts-empty">·</span>;
-  return (
-    <span className="lts-placed">
-      <ItemTag item={item} />
-    </span>
-  );
+  return <ItemTag item={item} />;
 }

@@ -283,7 +283,7 @@ function PitfallScene({ picker }: { picker: ReactNode }) {
   const p = PITFALLS.find((x) => x.id === id)!;
   useIntroCaption(pitfallCaption(p, fixed), [id, fixed]);
   const lines = fixed ? p.fixed : p.code;
-  const state = (i: number): LineState => (fixed ? (p.fixLines.includes(i) ? 'done' : 'idle') : i === p.badLine ? 'bad' : 'idle');
+  const state = (i: number): LineState => (fixed ? (p.fixLines.includes(i) ? 'good' : 'idle') : i === p.badLine ? 'bad' : 'idle');
   const out: ConsoleLine[] = fixed ? p.fixedOut : [...p.out, ...(p.unhandled ? [{ text: p.unhandled, tone: 'bad' as const }] : [])];
   return (
     <StageFrame

@@ -2,8 +2,8 @@ export { HeapObject, type HeapField, type HeapVariant, type TagPlacement } from 
 export { RefArrow } from './RefArrow';
 export { VarSlot } from './VarSlot';
 export {
-  HEAP, SLOT, fanBend, heapFieldPort, heapHeight, heapRect, rectCenter, rectEdgeToward, slotPort, slotValueRect, stackBoxes,
-  type PortSide, type Rect,
+  HEAP, SLOT, fanBend, fieldArrowBetween, heapFieldPort, heapGrid, heapHeight, heapRect, portToward, rectCenter, rectEdgeToward, slotPort, slotValueRect, stackBoxes,
+  type HeapGrid, type PortSide, type Rect,
 } from './geometry';
 export { MemoryMap, MemoryMapGroup, type MemoryMapProps } from './MemoryMap';
 export {

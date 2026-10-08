@@ -1,0 +1,29 @@
+.gq { gap: 14px; }
+.gq .section-title { display: block; margin-bottom: 6px; }
+.gq-two, .gq-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.gq-rest { flex: 1 1 340px; min-width: 0; }
+.gq-gql { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.gq-rest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.gq-rest-list li { display: grid; grid-template-columns: minmax(0, 1fr) 36px; gap: 3px 8px; align-items: center; }
+.gq-rest-list .meter { grid-column: 1 / -1; }
+.gq-path { font: 600 12px var(--mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gq-status { font: 700 12px var(--mono); text-align: right; color: var(--faint); }
+.gq-status.is-ok { color: var(--ok); }
+.gq-status.is-bad { color: var(--bad); }
+.gq-orange { color: var(--orange); }
+.gq-bad { color: var(--bad); }
+.gq-query { flex: 1 1 260px; min-width: 0; }
+.gq-response { flex: 2 1 340px; min-width: 0; }
+.gq-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.gq-meters { flex: 2 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.gq-meter { display: grid; grid-template-columns: 54px minmax(0, 1fr); align-items: center; gap: 8px; }
+.gq-meter-label { font: 600 11px var(--font); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.gq-table-wrap { overflow-x: auto; }
+.gq-sql { font-family: var(--mono); font-size: 12px; word-break: break-word; }
+.gq-node .gq-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.gq-node.is-now .gq-box { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 16%, var(--cell)); }
+.gq-node.is-done .gq-box { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 10%, var(--cell)); }
+.gq-node.is-error .gq-box { stroke: var(--orange); fill: color-mix(in srgb, var(--orange) 14%, var(--cell)); }
+.gq-node.kind-more .gq-box { stroke-dasharray: 5 4; }
+.gq-node .gq-title { font: 700 12px var(--mono); fill: var(--text); text-anchor: middle; }
+.gq-node .gq-sub { font: 500 10.5px var(--mono); fill: var(--muted); text-anchor: middle; }

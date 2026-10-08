@@ -78,3 +78,49 @@ export function stackBoxes(heights: readonly number[], o: { start: number; gap: 
   });
   return { tops, end: cursor };
 }
+
+/** A grid of heap boxes: column/row pitch from an origin, filled row by row. */
+export interface HeapGrid {
+  /** Top-left corner of grid cell (col, row). */
+  cell: (col: number, row: number) => Pt;
+  /** Top-left corner of the i-th box, filling rows left to right. */
+  at: (i: number) => Pt;
+  /** Area `count` boxes cover: columns × colW wide (so one trailing gap), rows' pitch plus the last row's box height `h` (default rowH). */
+  size: (count: number, h?: number) => { w: number; h: number };
+}
+
+/**
+ * Lay HeapObjects out on a grid instead of placing each by hand (an object graph for GC or
+ * leak lessons): `colW` / `rowH` are the pitch (box size plus gap), `origin` the first box's top-left.
+ */
+export function heapGrid(o: { cols: number; colW: number; rowH: number; origin?: Pt }): HeapGrid {
+  const origin = o.origin ?? { x: 0, y: 0 };
+  const cols = Math.max(1, o.cols);
+  const cell = (col: number, row: number): Pt => ({ x: origin.x + col * o.colW, y: origin.y + row * o.rowH });
+  return {
+    cell,
+    at: (i) => cell(i % cols, Math.floor(i / cols)),
+    size: (count, h = o.rowH) => {
+      if (count <= 0) return { w: 0, h: 0 };
+      const rows = Math.ceil(count / cols);
+      return { w: Math.min(count, cols) * o.colW, h: (rows - 1) * o.rowH + h };
+    },
+  };
+}
+
+/** The side of a field's port that faces a target box: left when the target sits left of the source box, else right. */
+export const portToward = (src: { at: Pt; w: number }, dst: { at: Pt; w: number }): PortSide => (dst.at.x + dst.w / 2 < src.at.x ? 'left' : 'right');
+
+/**
+ * A reference arrow from field `field` of one HeapObject to another whole box: where it
+ * starts, the box it ends on, and which side the field's port must be on (`port: side` on the
+ * field) so the arrow leaves toward its target instead of crossing its own box.
+ * Spread it into RefArrow: `<RefArrow from={a.from} to={a.to} />`.
+ */
+export function fieldArrowBetween(
+  src: { at: Pt; w: number; field: number },
+  dst: { at: Pt; w: number; fields: number; collapseEmpty?: boolean },
+): { from: Pt; to: Rect; port: PortSide } {
+  const port = portToward(src, dst);
+  return { from: heapFieldPort(src.at, src.w, src.field, port), to: heapRect(dst.at, dst.w, dst.fields, dst.collapseEmpty), port };
+}
