@@ -1,14 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { captionText } from '../../core/testing/captions';
+import { expectCaption } from '../../core/testing/captions';
 import { LIFECYCLE_INTRO, bindCaption, pileupCaption, queueIntro, realRanges, sceneFrames, stepCaption, type Occupant } from './frames';
 import { BACKLOG, ERRNO_TEXT, TOY_RANGE, acceptQueueScene, bindCheck, lifecycle, pileup, rangeSize, type TcpState } from './model';
 
-const text = (n: Parameters<typeof captionText>[0]) => {
-  const t = captionText(n).replace(/\s+/g, ' ');
-  // A JSX line break can swallow the space between two sentences ("port.60 s").
-  expect(t).not.toMatch(/[a-z)]\.[A-Z0-9]/);
-  return t;
-};
+const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n).replace(/\s+/g, ' ');
 
 describe('lifecycle captions follow the model', () => {
   const steps = lifecycle();
