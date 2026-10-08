@@ -6644,13 +6644,13 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B18 Runtimes & memory | 5 | 6 | t2/b18 | done | merged 067cb39 with review fixes on-branch (3 MAJOR: refcount cascade, leak try-this, rejected-promise explanation) |
 | 2 | T2-B19 Machines, disks & lifecycles | 5 | 6 | t2/b19 | done | merged c7c12b9 with review fixes on-branch (9 MAJOR: PV model, Secure Boot scope, emergency.target, fsync try-this, SIGCHLD, post-SIGKILL handler) |
 | 2 | P-follow-up after wave 6 | — | 6→7 | kit owner | not started | |
-| 2 | T2-B20 Types & patterns | 5 | 7 | t2/b20 | not started | |
-| 2 | T2-B21 Testing & change | 5 | 7 | t2/b21 | not started | |
-| 2 | T2-B22 Structuring code | 5 | 7 | t2/b22 | not started | |
+| 2 | T2-B20 Types & patterns | 5 | 7 | t2/b20 | done | merged c594c8d with review fixes on-branch (6 MAJOR: decorator error narrated as success, builder 'same request', x! crash type, tsc 'refuses to compile', State shape, Strategy 'no existing code') |
+| 2 | T2-B21 Testing & change | 5 | 7 | t2/b21 | done | merged 2074fb9 with review fixes on-branch (5 MAJOR: flaky try-this 2 and 5 false as written, quarantine caption, build fetch captioned building) |
+| 2 | T2-B22 Structuring code | 5 | 7 | t2/b22 | done | merged ee2ef1e with review fixes on-branch (6 MAJOR: test-speed strip, layered strawman, ISP emailScan, locator count, Q5 always, DIP/DI/IoC) |
 | 2 | P-follow-up after wave 7 | — | 7→8 | kit owner | not started | |
-| 2 | T2-B23 Data models & queries | 5 | 8 | t2/b23 | not started | |
-| 2 | T2-B24 HTTP & API protocols | 5 | 8 | t2/b24 | not started | |
-| 2 | T2-B25 API design | 5 | 8 | t2/b25 | not started | |
+| 2 | T2-B23 Data models & queries | 5 | 8 | t2/b23 | done | merged d505494 with review fixes on-branch (10 MAJOR: pushdown 17 vs 8 includes join reorder, SELECT before HAVING, 0NF key, nosql unit asymmetry, hidden controls, DataLoader snippet) |
+| 2 | T2-B24 HTTP & API protocols | 5 | 8 | t2/b24 | done | merged 12c5be8 with review fixes on-branch (5 MAJOR: conditional request dropped by shared cache, open-connections, protobuf size verdict, GraphQL caching) |
+| 2 | T2-B25 API design | 5 | 8 | t2/b25 | done | merged 79ae572 with review fixes on-branch (6 MAJOR: 200 vs 204, delete caption, duplicate vs different payment, Django, webhook retry timestamps) |
 | 2 | P-follow-up after wave 8 | — | 8→9 | kit owner | not started | |
 | 2 | T2-B26 Reliable services | 5 | 9 | t2/b26 | not started | |
 | 2 | T2-B27 Cloud building blocks | 5 | 9 | t2/b27 | not started | |
