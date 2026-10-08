@@ -140,15 +140,18 @@ export function messageNote(m: CallMessage): string | undefined {
   }
 }
 
-export type StreamState = 'idle' | 'open' | 'half-closed (client)' | 'half-closed (server)' | 'closed';
+/** RFC 9113 §5.1 states, from the client's side: local = the client has finished sending, remote = the server has finished. */
+export type StreamState = 'idle' | 'open' | 'half-closed (local)' | 'half-closed (remote)' | 'closed';
 
 /** The HTTP/2 stream's state after the messages up to and including `step`. */
 export function streamState(messages: readonly CallMessage[], step: number): StreamState {
   const seen = messages.slice(0, step + 1);
   if (!seen.length) return 'idle';
-  if (seen.some((m) => m.kind === 'cancel') || seen.some((m) => m.from === 'server' && m.endStream)) return 'closed';
-  if (seen.some((m) => m.from === 'client' && m.endStream)) return 'half-closed (client)';
-  return 'open';
+  const clientDone = seen.some((m) => m.from === 'client' && m.endStream);
+  const serverDone = seen.some((m) => m.from === 'server' && m.endStream);
+  if (seen.some((m) => m.kind === 'cancel') || (clientDone && serverDone)) return 'closed';
+  if (clientDone) return 'half-closed (local)';
+  return serverDone ? 'half-closed (remote)' : 'open';
 }
 
 export interface StatusReadout {

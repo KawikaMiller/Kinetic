@@ -20,7 +20,7 @@ import { callFrames, encodeCaption } from './frames';
 import {
   FIELD_NAMES, INT64_MAX, PROTO_LINE, emptyOrder, presentFields, protoLines, type DeltaType, type FieldName, type Order,
 } from './model';
-import { READERS, analyse, parseId, parseInt32, parseTags, traceRows, varintBreakdown, type ReaderId } from './scene';
+import { READERS, analyse, parseId, parseInt32, parseTags, sizeTones, sizeVerdict, traceRows, varintBreakdown, type ReaderId, type SizeVerdict } from './scene';
 import './styles.css';
 
 type SceneId = 'encode' | 'calls';
@@ -49,6 +49,7 @@ const PRESETS: { label: string; order: Order }[] = [
   { label: 'Negative numbers', order: { id: -2n, item: '', qty: -1, delta: -1, tags: [-1] } },
   { label: 'Biggest int64', order: { ...emptyOrder(), id: INT64_MAX, item: 'big' } },
   { label: 'Unicode string', order: { ...emptyOrder(), item: 'café 😀', qty: 1 } },
+  { label: 'Twelve −1 tags', order: { ...emptyOrder(), tags: Array(12).fill(-1) } },
   { label: 'All defaults', order: emptyOrder() },
 ];
 
@@ -60,6 +61,12 @@ interface Texts {
   tags: string;
 }
 const textsOf = (o: Order): Texts => ({ id: o.id.toString(), item: o.item, qty: String(o.qty), delta: String(o.delta), tags: o.tags.join(', ') });
+
+/** The cheaper side of the size comparison is green, the costlier red; equal sizes stay plain. */
+const sizeColor = (v: SizeVerdict, side: 'protobuf' | 'json'): string | undefined => {
+  const tone = sizeTones(v)[side];
+  return tone ? `var(--${tone})` : undefined;
+};
 
 const toneOf = (role: 'tag' | 'length' | 'value', f: FieldName): Tone => (role === 'value' ? FIELD_TONE[f] : 'violet');
 
@@ -111,6 +118,7 @@ function EncodeScene({ picker }: { picker: ReactNode }) {
   }, [a]);
 
   const rows = traceRows(a);
+  const size = sizeVerdict(a.encoded.bytes.length, a.jsonBytes);
   const n = a.encoded.bytes.length;
   const lines = protoLines(a.writer);
   const fieldOfLine = (i: number) => FIELD_NAMES.find((f) => PROTO_LINE[f] === i);
@@ -213,9 +221,9 @@ function EncodeScene({ picker }: { picker: ReactNode }) {
             <SectionTitle weight="regular">Same data as JSON</SectionTitle>
             <code className="pb-json">{a.json}</code>
             <Stats>
-              <Stat label="protobuf" value={`${n} B`} color="var(--ok)" />
-              <Stat label="JSON" value={`${a.jsonBytes} B`} color="var(--bad)" />
-              <Stat label="ratio" value={n ? `${(a.jsonBytes / n).toFixed(1)}×` : NA} />
+              <Stat label="protobuf" value={`${n} B`} color={sizeColor(size, 'protobuf')} />
+              <Stat label="JSON" value={`${a.jsonBytes} B`} color={sizeColor(size, 'json')} />
+              <Stat label="JSON ÷ protobuf" value={size.ratio === null ? NA : `${size.ratio.toFixed(1)}×`} />
             </Stats>
           </Box>
         </div>
@@ -313,7 +321,7 @@ function CallsScene({ picker }: { picker: ReactNode }) {
       }
       stats={
         <Stats>
-          <Stat label="Stream 1" value={state} />
+          <Stat label="Stream 1 (client's view)" value={state} />
           <Stat label="HTTP status" value={status.http ?? NA} />
           <Stat
             label="grpc-status"

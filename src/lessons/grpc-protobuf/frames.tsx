@@ -5,19 +5,24 @@ import {
   DEADLINE_MS, GRPC_PREFIX, METHOD, MODE_LABEL, SERVICE, STATUS_NAME, buildCall, type CallMessage, type Ending, type Mode,
 } from './calls';
 import type { Order } from './model';
-import { lostFields, type Analysis, type ReaderId } from './scene';
+import { lostFields, sizeTones, sizeVerdict, type Analysis, type ReaderId } from './scene';
 
 const signed = (n: number) => (n < 0 ? `−${Math.abs(n)}` : String(n));
 
 /** The live caption of the encode scene, from the numbers the model computed for the current message. */
 export function encodeCaption(order: Order, a: Analysis, readerId: ReaderId): ReactNode {
   const n = a.encoded.bytes.length;
+  const size = sizeVerdict(n, a.jsonBytes);
+  const tones = sizeTones(size);
+  const tenByte = a.encoded.varints.some((v) => v.to - v.from + 1 === 10);
   const sizes =
     n === 0 ? (
       <>Every field is at its default, so the message is <b>0 bytes</b>: proto3 never sends a default. (As JSON it would still be {a.jsonBytes} bytes: <code>{a.json}</code>.)</>
     ) : (
-      <>This Order is <span className="hl ok">{plural(n, 'byte')}</span> in protobuf and <span className="hl bad">{a.jsonBytes} bytes</span> as JSON
-        ({pct(1 - n / a.jsonBytes)} smaller): only field numbers and values travel, never the names.</>
+      <>This Order is <span className={`hl ${tones.protobuf ?? ''}`}>{plural(n, 'byte')}</span> in protobuf and <span className={`hl ${tones.json ?? ''}`}>{a.jsonBytes} bytes</span> as JSON
+        {size.smaller === 'protobuf' ? ` (${pct(size.saving)} smaller)` : size.smaller === 'json' ? ` (protobuf is ${pct(size.overhead!)} larger here)` : ' (the same size)'}
+        {size.smaller === 'protobuf' ? ': only field numbers and values travel, never the names.' : '.'}
+        {tenByte ? ' A negative int32 or int64 is sign-extended to 64 bits and takes 10 bytes, which is why a number like -1 costs more than its JSON text.' : null}</>
     );
   const delta = a.encoded.varints.find((v) => v.field === 'delta');
   const deltaNote = delta ? (
@@ -69,10 +74,11 @@ export function messageCaption(m: CallMessage, mode: Mode): ReactNode {
       return <>Trailers: a last HEADERS frame with <span className="hl ok">grpc-status: {m.status} ({STATUS_NAME[m.status!]})</span> and END_STREAM closes the stream. That is why gRPC needs HTTP/2 trailers.</>;
     case 'trailers-only':
       return <><span className="hl bad">NOT_FOUND ({m.status})</span>: the server has no answer, so one HEADERS frame carries both <code>:status 200</code> and <code>grpc-status: {m.status}</code>{' '}
-        and END_STREAM. gRPC errors travel as a status code, not as an HTTP 404.</>;
+        and END_STREAM. gRPC errors travel as a status code, not as an HTTP 404.
+        {mode === 'bidi' ? <> The client has not finished sending, so the server can also send RST_STREAM with NO_ERROR to tell it to stop (RFC 9113 §8.1).</> : null}</>;
     case 'cancel':
       return <><span className="hl orange">{DEADLINE_MS} ms passed with no answer</span>. The client sends RST_STREAM(CANCEL) so the server can stop working, and its own call fails with{' '}
-        <b>DEADLINE_EXCEEDED ({m.status})</b>. The server never sent that status: the client made it.</>;
+        <b>DEADLINE_EXCEEDED ({m.status})</b>. In this script the server never answered, so the client made that status itself; the server is told the deadline too, and could also return it.</>;
   }
 }
 

@@ -106,15 +106,21 @@ describe('message sizes come from the real encoder', () => {
 });
 
 describe('stream state and statuses follow the messages shown', () => {
-  it('walks idle → open → half-closed (client) → closed for a unary call', () => {
+  it('bidirectional NOT_FOUND: the server finishes while the client is still sending, so the stream is half-closed (remote), not closed', () => {
+    const ms = buildCall('bidi', 'not-found');
+    expect(streamState(ms, ms.length - 1)).toBe('half-closed (remote)');
+    for (const mode of ['unary', 'server', 'client'] as const) expect(streamState(buildCall(mode, 'not-found'), 99)).toBe('closed');
+  });
+
+  it('walks idle → open → half-closed (local) → closed for a unary call', () => {
     const ms = buildCall('unary', 'ok');
-    expect([-1, 0, 1, 2, 3, 4].map((i) => streamState(ms, i))).toEqual(['idle', 'open', 'half-closed (client)', 'half-closed (client)', 'half-closed (client)', 'closed']);
+    expect([-1, 0, 1, 2, 3, 4].map((i) => streamState(ms, i))).toEqual(['idle', 'open', 'half-closed (local)', 'half-closed (local)', 'half-closed (local)', 'closed']);
   });
   it('bidirectional stays open until the client\'s last message, and the HTTP status is 200 from the first response headers on', () => {
     const ms = buildCall('bidi', 'ok');
     const at = (kind: string, n?: number) => ms.findIndex((m) => m.kind === kind && m.n === n);
     expect(streamState(ms, at('req-data', 2))).toBe('open');
-    expect(streamState(ms, at('req-data', 3))).toBe('half-closed (client)');
+    expect(streamState(ms, at('req-data', 3))).toBe('half-closed (local)');
     expect(statusAt(ms, at('req-data', 1)).http).toBeNull();
     expect(statusAt(ms, at('resp-headers'))).toEqual({ http: 200, grpc: null });
   });

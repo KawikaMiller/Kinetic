@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Protocol Buffers turn a typed message into a few compact bytes that carry field numbers instead of names, and gRPC sends those messages, one or many, over a single HTTP/2 stream.',
-    what: 'A .proto file declares each field with a type and a permanent number. On the wire, every field is a tag, its number shifted left three bits with a 3-bit wire type, followed by its value: a varint (7 bits per byte, with a continuation bit) or a length-delimited run such as a string. Fields left at their default are not sent at all, and a reader skips any field number it doesn\'t know by its length, which is how old and new versions keep talking. gRPC wraps each message in a 5-byte length prefix inside HTTP/2 DATA frames, with the outcome as `grpc-status` in the trailers.',
+    what: 'A .proto file declares each field with a type and a permanent number. On the wire, every field is a tag, its number shifted left three bits with a 3-bit wire type, followed by its value: a varint (7 bits per byte, with a continuation bit) or a length-delimited run such as a string. Plain proto3 fields left at their default are not sent at all (optional, message and oneof fields can still tell "absent" from "zero"), and a reader skips any field number it doesn\'t know by its length, which is how old and new versions keep talking. gRPC wraps each message in a 5-byte length prefix inside HTTP/2 DATA frames, with the outcome as `grpc-status` in the trailers.',
     analogy: 'A form where each box has a printed number and you only fill in the boxes that apply. The recipient reads "box 3: 5" using their own copy of the form; if you add box 6, they ignore it, but if you quietly renumber box 3, they read your answers into the wrong boxes.',
     useCases: [
       'Service-to-service calls inside a microservice system, with typed clients generated in many languages',
@@ -14,12 +14,12 @@ const lesson: LessonModule = {
       'Public APIs that must keep working with years-old clients while the schema grows',
     ],
     why: 'Interviews and design reviews ask why gRPC is smaller and faster than JSON over REST, and the answer is field numbers, varints and HTTP/2 streams. Knowing the one hard rule, never reuse or renumber a field number, prevents the silent data corruption that comes from "tidying" a schema while old clients are still deployed. It builds on `bit-manipulation`, `endianness`, `data-formats` and `http-versions`.',
-    watch: 'Bytes on the wire: each byte is a cell in the hex grid. Violet bytes are the framing: a tag (field number and wire type) and, for strings and lists, a length. The value bytes take their field\'s colour, matching the dot beside its line in the .proto: id sky blue, item amber, qty orange, delta pink, tags grey. A fainter .proto line is a field left at its default, which takes 0 bytes. Bytes the chosen reader skips are dim, with a "skipped" label, and a yellow ring marks the bytes of the varint being expanded; its bit strip shows each byte\'s first bit in yellow (the continuation bit) and the other seven in blue (payload), set bits filled and clear ones outlined. Beside it, the protobuf size is green (the cheap side) and the JSON size red (the costly side). In the reader table, a skipped field is grey italic. gRPC calls: the ladder\'s blue arrows go from client to server and violet ones back, a green grpc-status is OK, red an error, and an orange RST_STREAM is the client giving up; the message being explained now is yellow. The three readouts above it show the stream\'s state, the HTTP status, and the grpc-status (orange when the client made it).',
+    watch: 'Bytes on the wire: each byte is a cell in the hex grid. Violet bytes are the framing: a tag (field number and wire type) and, for strings and lists, a length. The value bytes take their field\'s colour, matching the dot beside its line in the .proto: id sky blue, item amber, qty orange, delta pink, tags grey. A fainter .proto line is a field left at its default, which takes 0 bytes. Bytes the chosen reader skips are dim, with a "skipped" label, and a yellow ring marks the bytes of the varint being expanded; its bit strip shows each byte\'s first bit in yellow (the continuation bit) and the other seven in blue (payload), set bits filled and clear ones outlined. Beside it, whichever encoding is smaller for the message is green and the larger red (protobuf is usually the smaller, but not for twelve -1 tags). In the reader table, a skipped field is grey italic. gRPC calls: the ladder\'s blue arrows go from client to server and violet ones back, a green grpc-status is OK, red an error, and an orange RST_STREAM is the client giving up; the message being explained now is yellow. The three readouts above it show the stream\'s state (from the client\'s side), the HTTP status, and the grpc-status (orange when the client made it).',
   },
   tryThis: [
     'Read the default message in the byte grid: the first byte 08 is the tag for field 1 (a varint), and 96 01 after it is 150.',
     'Switch "delta is declared" to int32: the −1 grows from 1 byte to 10, while sint32 keeps it at 1.',
-    'Set "Who reads the bytes" to older: no field 5: the grey bytes are skipped by their length and every other field still reads.',
+    'Set "Who reads the bytes" to older: no field 5: the dim bytes labelled "skipped: field 5" are skipped by their length and every other field still reads.',
     'Pick "writer renumbered qty": the reader skips the moved field and reads qty as 0, with no error at all.',
     'In gRPC calls, play Bidirectional, then set How it ends to deadline missed and see who sends the status.',
   ],
@@ -83,7 +83,7 @@ const lesson: LessonModule = {
         'No response at all: the stream is reset with RST_STREAM',
       ],
       answer: 0,
-      why: 'gRPC reports its own status in the trailers, and the HTTP status stays 200 once the server has answered. A client that gives up on a deadline is the one that sends RST_STREAM, and it makes DEADLINE_EXCEEDED itself.',
+      why: 'gRPC reports its own status in the trailers, and the HTTP status stays 200 once the server has answered. A client that gives up on a deadline is the one that sends RST_STREAM, and it makes DEADLINE_EXCEEDED itself (a server that is told the deadline can return it too).',
     },
   ],
 };

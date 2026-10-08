@@ -6,7 +6,7 @@ import { callFrames, callSummary, encodeCaption, messageCaption } from './frames
 import { ENDINGS, MODES, buildCall } from './calls';
 import { INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, MAX_TAGS, emptyOrder, type DeltaType, type Order } from './model';
 import { randomOrder } from './randomOrder';
-import { READERS, RENUMBERED_QTY, analyse, lostFields, parseId, parseInt32, parseTags, traceRows, varintBreakdown, type ReaderId } from './scene';
+import { READERS, RENUMBERED_QTY, analyse, lostFields, parseId, parseInt32, parseTags, sizeVerdict, traceRows, varintBreakdown, type ReaderId } from './scene';
 
 const order = (o: Partial<Order>): Order => ({ ...emptyOrder(), ...o });
 const DELTA_TYPES: DeltaType[] = ['sint32', 'int32'];
@@ -29,7 +29,11 @@ describe('caption, every message × delta type × reader', () => {
           if (n === 0) expect(text).toContain('0 bytes');
           else {
             expect(text).toContain(`${n} ${n === 1 ? 'byte' : 'bytes'} in protobuf and ${a.jsonBytes} bytes as JSON`);
-            expect(text).toContain(`(${pct(1 - n / a.jsonBytes)} smaller)`);
+            // The verdict follows the sizes: protobuf is not always the smaller one.
+            const v = sizeVerdict(n, a.jsonBytes);
+            if (v.smaller === 'protobuf') expect(text).toContain(`(${pct(v.saving)} smaller)`);
+            else if (v.smaller === 'json') expect(text).toContain(`(protobuf is ${pct(v.overhead!)} larger here)`);
+            else expect(text).toContain('(the same size)');
           }
           const delta = a.encoded.varints.find((v) => v.field === 'delta');
           expect(text.includes('delta =')).toBe(delta !== undefined);
@@ -145,6 +149,8 @@ describe('gRPC call captions, every mode × ending', () => {
           }
           if (m.kind === 'trailers' || m.kind === 'trailers-only') expect(text).toContain(`grpc-status: ${m.status}`);
           if (m.kind === 'cancel') expect(text).toContain('DEADLINE_EXCEEDED (4)');
+          if (m.kind === 'cancel') expect(text).toContain('the server is told the deadline too, and could also return it');
+          if (m.kind === 'trailers-only') expect(text.includes('RST_STREAM with NO_ERROR')).toBe(mode === 'bidi');
           expect(text.includes('END_STREAM')).toBe(m.endStream);
         }
         const req = ms.filter((m) => m.kind === 'req-data').length;

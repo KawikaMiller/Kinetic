@@ -300,7 +300,9 @@ export function decode(bytes: readonly number[], r: Reader): DecodeResult {
 
 /**
  * Write a decoded message back out, putting the skipped unknown records back byte for byte,
- * the way a proto3 library that keeps unknown fields does. Known fields use the reader's numbers.
+ * as a proto3 library that keeps unknown fields would. Real libraries typically append unknown fields after the known ones; here they
+ * are merged in field-number order, which gives the same bytes for this schema because the unknown numbers (5, 6) sit after the ones the reader knows.
+ * Known fields use the reader's numbers.
  */
 export function reserialize(bytes: readonly number[], d: Decoded, r: Reader): number[] {
   const w: Writer = { numbers: { ...SCHEMA.numbers, ...(r.numbers as Partial<Record<FieldName, number>>) }, deltaType: r.deltaType };

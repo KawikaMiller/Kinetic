@@ -164,3 +164,33 @@ export function traceRows(a: Analysis): TraceRow[] {
   ];
   return rows.sort((x, y) => x.from - y.from).map(({ from: _from, ...r }) => r);
 }
+
+// ── Size comparison ─────────────────────────────────────────────────────
+
+export interface SizeVerdict {
+  /** Which encoding is smaller for this message. */
+  smaller: 'protobuf' | 'json' | 'same';
+  /** How much smaller the smaller one is, as a share of the larger (0.65 = 65% smaller); 0 when equal. */
+  saving: number;
+  /** How much larger protobuf is than JSON as a share of JSON (1.65 = 165% larger), or null when it isn't larger. */
+  overhead: number | null;
+  /** JSON bytes ÷ protobuf bytes, or null for an empty message. */
+  ratio: number | null;
+}
+
+/** Compare the two encodings of one message. Protobuf is not always the smaller one. */
+export function sizeVerdict(protobuf: number, json: number): SizeVerdict {
+  const smaller = protobuf < json ? 'protobuf' : protobuf > json ? 'json' : 'same';
+  return {
+    smaller,
+    saving: smaller === 'protobuf' ? 1 - protobuf / json : smaller === 'json' ? 1 - json / protobuf : 0,
+    overhead: smaller === 'json' ? protobuf / json - 1 : null,
+    ratio: protobuf ? json / protobuf : null,
+  };
+}
+
+/** The colour of each side of the comparison: the cheaper side is --ok and the costlier --bad; equal sizes stay plain. */
+export function sizeTones(v: SizeVerdict): { protobuf: 'ok' | 'bad' | undefined; json: 'ok' | 'bad' | undefined } {
+  if (v.smaller === 'same') return { protobuf: undefined, json: undefined };
+  return v.smaller === 'protobuf' ? { protobuf: 'ok', json: 'bad' } : { protobuf: 'bad', json: 'ok' };
+}
