@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  CHUNK_MS, SHIFTS, THRESHOLDS, VIEWPORT, bandOf, chunksOf, clsOf, distanceFraction, heroFetch, impactArea, impactFraction, inpOf, interactionTotal, lcpCandidates, lcpOf,
+  CHUNK_MS, LCP_TIMES, SHIFTS, THRESHOLDS, VIEWPORT, bandOf, chunksOf, clsOf, distanceFraction, heroFetch, impactArea, impactFraction, inpOf, interactionTotal, lcpCandidates, lcpOf,
   mainThreadWork, pageElements, sessionWindows, shiftScore, shiftsFor, windowIndexOf, type Interaction, type LayoutShift, type LcpOptions, type PageElement, type Rect, type ShiftId,
 } from './model';
 
@@ -84,7 +84,7 @@ describe('LCP candidates', () => {
 
 describe('the scripted page load, worked by hand', () => {
   it('the hero download is a round trip plus its size over 0.5 KB per ms', () => {
-    expect(heroFetch({ preload: false, lazy: false, small: false })).toEqual({ start: 900, done: 900 + 150 + 2400 });
+    expect(heroFetch({ preload: false, lazy: false, small: false })).toEqual({ start: 700, done: 700 + 150 + 2400 });
     expect(heroFetch({ preload: true, lazy: false, small: true })).toEqual({ start: 300, done: 300 + 150 + 600 });
     expect(heroFetch({ preload: false, lazy: true, small: false }).start).toBe(1500);
   });
@@ -96,11 +96,22 @@ describe('the scripted page load, worked by hand', () => {
     expect(bandOf('lcp', value)).toBe('poor');
   });
 
-  it('the try-this steps, one at a time from the default: not lazy 3500, preload 2900, smaller file 1100', () => {
-    expect(lcpOf(lcpOpts({ lazy: false })).value).toBe(3500);
+  it('the try-this steps, one at a time from the default: set in CSS 3300, preload 2900, smaller file 1100', () => {
+    expect(lcpOf(lcpOpts({ lazy: false })).value).toBe(3300);
     expect(lcpOf(lcpOpts({ lazy: false, preload: true })).value).toBe(2900);
     expect(lcpOf(lcpOpts({ lazy: false, preload: true, small: true })).value).toBe(1100);
     expect(bandOf('lcp', 1100)).toBe('good');
+  });
+
+  it('the stylesheet is parsed no later than the first paint, since nothing paints before render-blocking CSS is in', () => {
+    expect(LCP_TIMES.cssParsed).toBeLessThanOrEqual(LCP_TIMES.heading);
+    expect(LCP_TIMES.html).toBeLessThan(LCP_TIMES.cssParsed);
+  });
+
+  it('a preloaded hero is found at the HTML, earlier than one set in CSS or in a lazy script', () => {
+    const start = (o: Partial<LcpOptions>) => heroFetch({ preload: false, lazy: false, small: false, ...o }).start;
+    expect(start({ preload: true })).toBeLessThan(start({}));
+    expect(start({})).toBeLessThan(start({ lazy: true }));
   });
 
   it('with lazy loading on, even a preloaded small hero cannot be painted before the lazy script has run', () => {

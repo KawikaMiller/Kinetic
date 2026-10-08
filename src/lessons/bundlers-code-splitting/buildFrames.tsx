@@ -53,15 +53,16 @@ function eventCaption(e: ShakeEvent, b: Build): ReactNode {
   const m = b.graph.modules[e.id];
   switch (e.kind) {
     case 'drop':
-      return <><b>{label(e.id)}</b> is imported but never used, and importing it does nothing else: the bundler drops the whole module (−{kbText(e.kb)}).</>;
+      return <><b>{label(e.id)}</b> is imported but never used. Its package is marked side-effect free (<code>&quot;sideEffects&quot;: false</code>), which tells the bundler that importing it does nothing else, so it may
+        drop the whole module (−{kbText(e.kb)}). Without that mark, many bundlers keep a bare import.</>;
     case 'exports':
       return <><b>{label(e.id)}</b> is an ES module, so the bundler can see exactly which exports are imported. It keeps <b>{b.shaken.keptExports[e.id].join(', ')}</b> and
-        removes {e.removed.join(', ')} (−{kbText(e.kb)}).{e.id === 'datelib' ? <> The kept ones are what main, settings and reports use between them.</> : null}</>;
+        removes {e.removed.join(', ')} (−{kbText(e.kb)}).{e.id === 'datelib' ? <> The kept ones are what settings and reports use between them.</> : null}</>;
     case 'sideEffect':
-      return <><b>{label(e.id)}</b> is never used, but it is marked as having side effects (it registers itself when imported), so removing it could change what the app does. It
+      return <><b>{label(e.id)}</b> is never used, but its package is not marked <code>&quot;sideEffects&quot;: false</code> and it registers itself when imported, so removing it could change what the app does. It
         stays, <span className="hl orange">kept only because of its side effects</span>.</>;
     case 'cjs':
-      return <><b>{label(e.id)}</b> is CommonJS (<code>require</code>): what it exports is only known when the code runs, so the bundler cannot tell which parts are unused. It stays
+      return <><b>{label(e.id)}</b> is CommonJS (<code>require</code>): what it exports is only known when the code runs, so most bundlers cannot tell which parts are unused. It stays
         whole ({kbText(moduleKb(m))}) although only {b.shaken.keptExports[e.id].length ? 'part of it' : 'none of it'} is used.</>;
   }
 }
@@ -95,22 +96,23 @@ export function buildFrames(b: Build, o: AppOptions): BuildFrame[] {
   frames.push({
     ...base, phase: 'shake', visited: b.walk, shakeStep: events.length,
     say: <><span className="hl ok">Tree shaken</span>: {kbText(b.fullKb)} down to {kbText(b.shakenKb)}. Shaking needs ES modules, whose imports and exports are fixed in the source, and
-      code with no side effects; without either, the code stays. This is whole-program: an export survives if any importer uses it.</>,
+      code the bundler may treat as free of side effects (often a <code>&quot;sideEffects&quot;: false</code> mark); without either, the code usually stays. This is whole-program: an export survives if any importer uses it.</>,
   });
-  if (o.splitReports) {
+  if (o.splitPages) {
     frames.push({
       ...base, phase: 'split', visited: b.walk, shakeStep: events.length, splitStep: 1,
-      say: <>Now <b>reports</b> is loaded with <code>import(&apos;./reports&apos;)</code> instead of a plain import. The dashed violet edge means: not needed to show the first screen,
-        fetch it when it is asked for.</>,
+      say: <>Now the <b>settings</b> and <b>reports</b> pages are loaded with <code>import()</code> instead of plain imports. The dashed violet edges mean: not needed to show the first
+        screen, fetch them when they are asked for.</>,
     });
   }
   const chunkText = b.chunks.map((c) => `${chunkName(c)} ${kbText(c.kb)}`).join(', ');
   frames.push({
     ...base, phase: 'split', visited: b.walk, shakeStep: events.length, splitStep: 2,
-    say: o.splitReports
-      ? <><span className="hl violet">Split</span> into {b.chunks.length} chunks: {chunkText}. A module needed by only the first screen goes in the initial chunk, one needed only by reports goes in
-        reports&apos; chunk, and <b>datelib</b>, needed by both, goes in a shared chunk so it is not shipped twice.</>
-      : <>Nothing is loaded on demand, so there is nothing to split: one chunk of {kbText(b.shakenKb)}. Turn on the dynamic import to see reports move out.</>,
+    say: o.splitPages
+      ? <><span className="hl violet">Split</span> into {b.chunks.length} chunks: {chunkText}. Everything the first screen reaches stays in the initial chunk, and each lazy page gets its own chunk (the chart library
+        rides with reports). <b>datelib</b> is needed by two lazy pages and by nothing in the first screen, so it goes in a shared chunk that is fetched once, not copied into both. (A module the
+        first screen already contains would not need one: a lazy chunk just uses it from there.)</>
+      : <>Nothing is loaded on demand, so there is nothing to split: one chunk of {kbText(b.shakenKb)}. Turn on the dynamic imports to see the pages move out.</>,
   });
   return frames;
 }

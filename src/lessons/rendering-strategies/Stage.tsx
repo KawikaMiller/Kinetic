@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Segmented, Slider } from '../../components/ui';
-import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { ms } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, type TapMode } from './frames';
@@ -15,7 +14,6 @@ import './styles.css';
 const STEP_MS = 900;
 const AXIS_STEP = 500;
 const AXIS_PAD = 100;
-const PHONE_SHOWN: StrategyId[] = ['csr', 'ssr'];
 const PRESET_IDS = Object.keys(PRESETS) as PresetId[];
 const TAP_OPTIONS: { value: TapMode; label: string }[] = [
   { value: 'ignored', label: 'is ignored' },
@@ -29,16 +27,15 @@ function axisEnd(inputs: Inputs): number {
 }
 
 export function Stage() {
-  const phone = useMediaQuery(PHONE_QUERY);
   const [inputs, setInputs] = useState<Inputs>(PRESETS[DEFAULT_PRESET].inputs);
-  const [shown, setShown] = useState<StrategyId[]>(() => (phone ? PHONE_SHOWN : [...STRATEGY_IDS]));
+  const [shown, setShown] = useState<StrategyId[]>([...STRATEGY_IDS]);
   const [tap, setTap] = useState<TapMode>('ignored');
   const frames = useMemo(() => buildFrames(inputs, shown, tap), [inputs, shown, tap]);
   const player = usePlayer(frames, { interval: STEP_MS });
   const now = player.frame.now;
   const end = axisEnd(inputs);
   const rows = useMemo(() => tableRows(inputs), [inputs]);
-  const bestPaint = best(rows, 'firstPaintMs');
+  const bestContent = best(rows, 'contentMs');
   const bestLive = best(rows, 'interactiveMs');
 
   const toggle = (id: StrategyId) => {
@@ -82,14 +79,15 @@ export function Stage() {
             <StrategyPanel key={id} id={id} inputs={inputs} end={end} now={now} />
           ))}
         </div>
-        <SectionTitle weight="regular" hint="every cell comes from the model above; best first paint and best interactive are marked">Trade-offs</SectionTitle>
+        <SectionTitle weight="regular" hint="every cell comes from the model above; the fastest content on screen and the fastest interactive are marked (ties all marked)">Trade-offs</SectionTitle>
         <div className="rs-table-wrap">
           <table className="data-table rs-table">
             <thead>
               <tr>
                 <th>Strategy</th>
                 <th>SEO: the first HTML has</th>
-                <th>First paint</th>
+                <th>First paint (streaming: the shell)</th>
+                <th>Content on screen</th>
                 <th>Interactive</th>
                 <th>Server work per request</th>
                 <th>Data is from</th>
@@ -100,8 +98,9 @@ export function Stage() {
                 <tr key={r.id}>
                   <td>{STRATEGY_SHORT[r.id]}</td>
                   <td>{r.seo}</td>
-                  <td className={r.id === bestPaint ? 'is-best' : ''}>{ms(r.firstPaintMs)}</td>
-                  <td className={r.id === bestLive ? 'is-best' : ''}>{ms(r.interactiveMs)}</td>
+                  <td>{ms(r.firstPaintMs)}</td>
+                  <td className={bestContent.includes(r.id) ? 'is-best' : ''}>{ms(r.contentMs)}</td>
+                  <td className={bestLive.includes(r.id) ? 'is-best' : ''}>{ms(r.interactiveMs)}</td>
                   <td>{r.serverCost}</td>
                   <td>{r.freshness}</td>
                 </tr>
@@ -112,7 +111,7 @@ export function Stage() {
         <Hint block>
           Illustrative timings on a modelled network and device (a fixed round trip, 4 Mbit/s, JavaScript that costs time per KB); real frameworks add their own steps. The static page is built
           once, earlier, so it has no server work on this clock. Streaming is simplified: it hydrates once its HTML is complete, where real frameworks can hydrate parts earlier. Its first paint
-          is the shell, not the content. On-demand revalidation can refresh a static page without a full rebuild.
+          is the shell, not the content. Every download gets the full bandwidth and the data takes the same time to fetch whether the server or the browser asks for it; a server usually reaches its data faster than a phone does, which would make the server-rendered lanes look better still. On-demand revalidation can refresh a static page without a full rebuild.
         </Hint>
       </div>
     </StageFrame>

@@ -40,12 +40,12 @@ export function buildLcpFrames(o: LcpOptions): LcpFrame[] {
     {
       t: LCP_TIMES.html,
       say: <>The HTML arrived at {ms(LCP_TIMES.html)}. Nothing is painted yet.{' '}
-        {o.preload ? <>A <code>preload</code> hint is in the head, so the hero image&apos;s request goes out right now.</> : <>The browser has not met the hero image yet: a plain image is found only once the CSS has been parsed ({ms(LCP_TIMES.cssParsed)}).</>}</>,
+        {o.preload ? <>A <code>preload</code> hint is in the head, so the hero image&apos;s request goes out right now.</> : <>The browser has not met the hero image yet: an image set in CSS is found only once the CSS has been parsed ({ms(LCP_TIMES.cssParsed)}), and a script-lazy-loaded one only once its script has run ({ms(LCP_TIMES.script)}). A plain <code>&lt;img&gt;</code> in the HTML would have been found at once, by the preload scanner.</>}</>,
     },
     ...pageElements(o).map((el) => ({ t: el.at, say: paintedCaption(o, el) })),
   ];
   if (o.inputAt !== null) {
-    events.push({ t: o.inputAt, say: <>The user <span className="hl violet">taps</span> at {ms(o.inputAt)}. From now on nothing new can become the LCP candidate: the browser stops looking.</> });
+    events.push({ t: o.inputAt, say: <>The user <span className="hl violet">taps</span> at {ms(o.inputAt)} (a key press or a scroll would do the same). From now on nothing new can become the LCP candidate: the browser stops looking.</> });
   }
   const { value, element } = lcpOf(o);
   events.push({
@@ -56,7 +56,7 @@ export function buildLcpFrames(o: LcpOptions): LcpFrame[] {
   });
   const sorted = events.sort((a, b) => a.t - b.t);
   return [
-    { t: 0, say: <>A <b>scripted page load</b> on a slow phone connection. LCP is the moment the <b>largest</b> element in view was painted, among those painted before the user first taps or presses a key. Press play.</> },
+    { t: 0, say: <>A <b>scripted page load</b> on a slow phone connection. LCP is the moment the <b>largest</b> element in view was painted, among those painted before the user first taps, presses a key or scrolls. Press play.</> },
     ...sorted.map((e) => ({ ...e, hold: 1.6 })),
   ];
 }

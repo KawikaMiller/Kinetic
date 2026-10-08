@@ -133,7 +133,7 @@ export function ThrashScene({ picker }: { picker: ReactNode }) {
         </div>
         <Hint block>
           Real DOM, real timings: your device sets the numbers, so they change between runs and machines. A read such as <code>offsetHeight</code> right after a write
-          makes the browser finish layout early so it can answer; the model counts those reads.
+          makes the browser finish layout early so it can answer; the model counts those reads. Interleaved forces {FORCED.interleaved} of the {THRASH_ROWS} reads, not {THRASH_ROWS}, because the first read has no pending write before it.
         </Hint>
       </div>
     </StageFrame>

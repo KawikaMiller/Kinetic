@@ -17,14 +17,14 @@ const lesson: LessonModule = {
     watch: 'Each metric has one meter: the fill is green in the good band, orange when it needs improvement and red when it is poor, with ticks at the band edges. In the LCP scene the mock page draws each element as it is painted, and the current LCP candidate has a yellow outline. In the CLS scene the dashed blue box is the element before a shift and the solid one after it, the yellow tint is the area the score counts, and a grey one is excluded because of your own tap; the timeline has blue shift marks and violet session windows, with the worst window outlined yellow. In the INP scene the three phases are violet (input delay), yellow (processing) and blue (presentation delay).',
   },
   tryThis: [
-    'In LCP, press play from the default (a lazy-loaded 1200 KB hero): the LCP is poor. Switch Hero image loading to "plain image", then add the preload, then the 300 KB file, replaying each time.',
+    'In LCP, press play from the default (a lazy-loaded 1200 KB hero): the LCP is poor. Switch Hero image loading to "set in CSS" (found once the stylesheet is parsed), then add the preload (the same early discovery a plain `<img>` in the HTML gets), then the 300 KB file, replaying each time.',
     'In LCP, set First tap to "at 2000 ms" and play: the hero is never counted, because it was painted after the tap.',
-    'In CLS, click each shift to see its before and after boxes, then press Fix on the late ad: CLS drops from poor, because the image and the font swap now fall in separate windows.',
+    'In CLS, click each shift to see its before and after boxes, then press Fix on the late ad: CLS drops from poor, because the biggest shift is gone; the image and the font swap now fall in separate windows.',
     'In CLS, also fix the image: the largest window is now the late cookie banner, and the tap-triggered shift never counts.',
     'In INP, press the button a few times at the default 250 ms of work, then switch Handler to "Yield between slices" and press again.',
   ],
   keyIdeas: [
-    'LCP is when the largest element in view was painted, ignoring anything that appears after the first tap or key press.',
+    'LCP is when the largest element in view was painted, ignoring anything that appears after the first tap, key press or scroll.',
     'A layout shift scores impact fraction times distance fraction; CLS is the worst session window, not the total.',
     'INP is the worst interaction: input delay plus processing plus presentation delay, with one in 50 ignored.',
     'Load time, stability and responsiveness are separate: fixing one does not fix the others, and the real verdict is the 75th percentile of real visitors.',

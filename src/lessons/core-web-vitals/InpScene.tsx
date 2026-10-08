@@ -86,8 +86,13 @@ export function InpScene({ picker }: { picker: ReactNode }) {
     const inputDelay = Math.max(0, start - e.nativeEvent.timeStamp);
     setClicks((c) => c + 1);
     if (fix === 'worker') {
-      worker.current ??= new Worker(new URL('./busy.worker.ts', import.meta.url), { type: 'module' });
-      worker.current.postMessage({ workMs });
+      try {
+        worker.current ??= new Worker(new URL('./busy.worker.ts', import.meta.url), { type: 'module' });
+        worker.current.postMessage({ workMs });
+      } catch {
+        setCaption(<>Workers are unavailable here, so this handler could not run. Pick another handler.</>, { quiet: true });
+        return;
+      }
     } else {
       busyWait(mainThreadWork(fix, workMs));
     }
@@ -161,7 +166,7 @@ export function InpScene({ picker }: { picker: ReactNode }) {
         </WideRegion>
         <Hint block>
           Measured live from your clicks, so the numbers are your device&apos;s and change from click to click. The three phases are the real definition; the presentation delay is approximated
-          as the time from the end of the handler until a task queued after the next animation frame ran. Input delay is small unless the main thread is busy when you click. Yielding runs{' '}
+          as the time from the end of the handler until a task queued after the next animation frame ran. Input delay is small unless the main thread is busy when you click: with the default handler, press twice quickly to see it. Yielding runs{' '}
           {CHUNK_MS} ms slices with the page free between them; the worker is a real worker thread running fixed busy work.
         </Hint>
       </div>

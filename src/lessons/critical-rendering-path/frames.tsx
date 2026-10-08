@@ -47,7 +47,7 @@ function arrivalNote(id: ResId, cfg: Config): ReactNode {
   if (id === 'main' || id === 'widgets') {
     const mode = cfg.css[id as CssId];
     return mode === 'print'
-      ? <>It was loaded as <code>media=&quot;print&quot;</code> and swaps itself in when it arrives, so nothing waited for it.</>
+      ? <>It was loaded as <code>media=&quot;print&quot;</code> and swaps itself in when it arrives, so nothing waited for it (it can restyle the page, and shift it, when it lands).</>
       : <>It is render-blocking: nothing paints until every normal stylesheet is in.</>;
   }
   if (id === 'font') return <>The page can switch to the web font in the next frame.</>;
@@ -102,7 +102,7 @@ export function moments(tl: Timeline): Moment[] {
   });
   out.push({
     t: tl.dclAt,
-    say: <><span className="hl violet">DOMContentLoaded</span> at {ms(tl.dclAt)}: the document is parsed and the <code>defer</code> and module scripts have run. Neither <code>async</code> scripts nor images hold it up.</>,
+    say: <><span className="hl violet">DOMContentLoaded</span> at {ms(tl.dclAt)}: the document is parsed and any <code>defer</code> and module scripts have run. Neither <code>async</code> scripts nor images hold it up.</>,
   });
   out.push({
     t: tl.loadAt,

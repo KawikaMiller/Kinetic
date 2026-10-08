@@ -231,7 +231,8 @@ export interface RenderTree {
 /**
  * Builds the render tree from the DOM and the learner's styles: a `display: none` element (and
  * everything under it) gets no box at all; `visibility: hidden` keeps the box (and so its space)
- * but doesn't draw it, and children inherit it.
+ * but doesn't draw it, and children inherit it unless they override it (a child with
+ * `visibility: visible` would show again; this model has no such override).
  */
 export function buildRenderTree(styles: Styles): RenderTree {
   const inTree = new Set<string>();

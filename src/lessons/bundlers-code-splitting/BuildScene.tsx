@@ -21,7 +21,7 @@ const LEGEND = [
   { color: 'var(--hi)', label: 'being visited' },
   { color: 'var(--info)', label: 'in the bundle, or the initial chunk' },
   { color: 'var(--dim)', label: 'shaken out (dashed)' },
-  { color: 'var(--orange)', label: 'kept only for side effects' },
+  { color: 'var(--orange)', label: 'kept only for side effects (while shaking)' },
   { color: 'var(--violet)', label: 'lazy chunk' },
   { color: 'var(--sky)', label: 'shared chunk' },
 ];
@@ -55,7 +55,7 @@ export function BuildScene({ picker, options, onOptions }: { picker: ReactNode; 
       ]}
     >
       <div className="stage-pad bcs">
-        <SectionTitle weight="regular" hint="sizes are gzipped KB, a fictional app">Module graph</SectionTitle>
+        <SectionTitle weight="regular" hint="sizes are made-up KB, a fictional app">Module graph</SectionTitle>
         <WideRegion minWidth={GRAPH_MIN_W} label="Module graph: scroll sideways to see all of it">
           <GraphView
             nodes={APP_IDS.map((id) => ({ id, shape: 'box' as const, label: APP_LABEL[id] }))}
@@ -65,7 +65,7 @@ export function BuildScene({ picker, options, onOptions }: { picker: ReactNode; 
             spacing={SPACING}
             box={BOX}
             className="bcs-graph"
-            ariaLabel="Module graph of a fictional app: main imports router, button, utils and datelib; the router imports the three pages; reports imports a chart library"
+            ariaLabel="Module graph of a fictional app: main imports router, button and utils; the router imports the three pages; settings and reports import the date library; reports imports a chart library"
             nodeMark={(id) => markOf(states[id])}
             nodeClass={(id) => (states[id] === 'dropped' ? 'bcs-dropped' : '')}
             edgeMark={(e) => edgeMarkOf(b.graph.imports.find((i) => i.from === e.from && i.to === e.to)!, f, states)}
@@ -98,7 +98,7 @@ export function BuildScene({ picker, options, onOptions }: { picker: ReactNode; 
         </div>
         <Hint block>
           A model of what bundlers do with a fictional app: reachability, tree shaking and chunking follow the general rules, but real tools (and their heuristics) differ in detail. Sizes are
-          made up, and minification and source maps are left out.
+          made up (parse and run cost follows the uncompressed size, so treat them as that), and minification and source maps are left out.
         </Hint>
       </div>
     </StageFrame>

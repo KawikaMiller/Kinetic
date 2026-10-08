@@ -9,11 +9,11 @@ const lesson: LessonModule = {
     analogy: 'A flat-pack restaurant. CSR hands you the box of parts and the instructions, SSR serves a finished table that you cannot touch until the staff come to fix the legs, SSG is a table assembled yesterday and kept on the shelf, and streaming brings the tablecloth first and the dishes as they are cooked.',
     useCases: [
       'Picking SSG for a marketing page or documentation, and SSR or CSR for a logged-in dashboard',
-      'Explaining why a page looks ready but ignores the first taps on a slow phone',
-      'Understanding what "SEO-friendly" means: whether the first HTML response already holds the content',
+      'Explaining why a page looks ready but its buttons do nothing for the first moments on a slow phone',
+      'Understanding what "SEO-friendly" means: whether the first HTML response already holds the content, which search engines index more reliably (they can also run JavaScript, later and less reliably)',
       'Reading a framework\'s options (static, server, streaming, client) and knowing what each trades',
     ],
-    why: 'Choosing where HTML is made is one of the first architecture decisions of a web app, and it decides speed, cost and freshness. The common mistake is to expect server rendering to make a page interactive sooner, when it makes it visible sooner and leaves the JavaScript cost in place.',
+    why: 'Choosing where HTML is made is one of the first architecture decisions of a web app, and it decides speed, cost and freshness. The common mistake is to expect server rendering to make a page interactive much sooner, when it makes it visible sooner and leaves the JavaScript cost in place.',
     watch: 'Each strategy has a phone and a timeline with a server, network, browser and screen lane. Server work is violet, network transfer is blue and browser work is yellow. The screen lane runs from blank (grey) to the stretch where the page is visible but not interactive (orange, hatched) to interactive (green); the phone border follows the same colours. The two green markers are first paint and interactive. A streamed page also has a shell stage (grey). The grey "built earlier" bar on the static page marks work done at build time, before the request.',
   },
   tryThis: [
@@ -24,7 +24,7 @@ const lesson: LessonModule = {
     'Switch "A tap before it is interactive" to "is replayed later" and play to the end: the captions change for the lanes with an orange stretch.',
   ],
   keyIdeas: [
-    'Server rendering and static generation make content visible sooner; they do not make the page interactive sooner.',
+    'Server rendering and static generation make content visible sooner; they do not make the page interactive much sooner.',
     'Hydration needs both the HTML and the JavaScript, so on a slow device the gap between visible and interactive can be long.',
     'Static pages are fast and cheap to serve but only as fresh as the last build; server rendering costs work on every request.',
     'Streaming shows the shell and the parts that are ready without waiting for the slowest data.',
@@ -33,13 +33,13 @@ const lesson: LessonModule = {
     {
       q: 'A page is server-rendered. What does the user see while the JavaScript bundle is still downloading?',
       options: [
-        'The finished-looking page, which ignores taps until hydration is done',
+        'The finished-looking page, whose buttons do nothing until hydration is done',
         'A blank screen, because the page needs its JavaScript to draw anything',
         'A loading spinner that is replaced when the server sends the data',
         'The finished page, which already reacts to taps through the HTML',
       ],
       answer: 0,
-      why: 'Server-rendered HTML can be painted as soon as it arrives, without the JavaScript. But the buttons are only wired up when the JavaScript downloads, runs and hydrates the page, so until then taps do nothing (or, in some setups, are remembered and replayed). That gap is the main cost of the approach.',
+      why: 'Server-rendered HTML can be painted as soon as it arrives, without the JavaScript. But the buttons are only wired up when the JavaScript downloads, runs and hydrates the page, so until then taps on buttons do nothing (or, in some setups, are remembered and replayed; plain links and forms still work). That gap is the main cost of the approach.',
     },
     {
       q: 'Why does a client-rendered page show nothing until later than a server-rendered one, on the same network?',

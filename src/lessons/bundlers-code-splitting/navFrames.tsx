@@ -86,7 +86,7 @@ const SAY: Record<Level, ReactNode> = {
   bundle: <>Everything in one file, nothing removed: the first load carries it all, and reports opens instantly.</>,
   shaken: <>One file again, but with unused code shaken out. Smaller, and still no waiting at the click.</>,
   split: <>Split: the first load carries only what the first screen needs, and reports is fetched when you click.</>,
-  fine: <>Too fine: every module is its own file. The same bytes, but many more requests, and the connection limit makes some of them wait.</>,
+  fine: <>Too fine: every module is its own file. The same code, but many more requests, each with its own round trip and overhead, sharing one bandwidth, and the connection limit makes some of them wait.</>,
 };
 
 export function navFrames(s: Scenario): NavFrame[] {

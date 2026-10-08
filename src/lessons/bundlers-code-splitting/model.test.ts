@@ -7,6 +7,7 @@ import {
 
 const opts = (o: Partial<AppOptions> = {}): AppOptions => ({ ...APP_DEFAULTS, ...o });
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+const chunk = (id: string, kb: number): Chunk => ({ id, kind: 'module', modules: [id], kb });
 
 describe('the app, worked by hand', () => {
   const b = buildApp(opts());
@@ -29,28 +30,41 @@ describe('the app, worked by hand', () => {
     expect(b.shaken.sideEffectOnly).toEqual([]);
   });
 
-  it('step 3: reports and chartlib become a lazy chunk, datelib (needed by both) a shared chunk, the rest the initial chunk', () => {
+  it('step 3: settings and reports become lazy chunks, datelib (needed only by those two) a shared chunk, what the first screen reaches the initial chunk', () => {
     expect(b.chunks.map((c) => [c.id, c.kb])).toEqual([
-      [INITIAL, 4 + 6 + 8 + 10 + 4],
+      [INITIAL, 4 + 6 + 8 + 4],
+      [lazyChunkId('settings'), 10],
       [SHARED, 34],
       [lazyChunkId('reports'), 14 + 90],
     ]);
-    expect(b.chunks.find((c) => c.id === INITIAL)!.modules).toEqual(['main', 'router', 'home', 'settings', 'utils']);
+    expect(b.chunks.find((c) => c.id === INITIAL)!.modules).toEqual(['main', 'router', 'home', 'utils']);
+    expect(b.chunks.find((c) => c.id === SHARED)!.modules).toEqual(['datelib']);
     expect(b.chunks.find((c) => c.id === lazyChunkId('reports'))!.modules).toEqual(['reports', 'chartlib']);
   });
 
-  it('loading: the first screen needs the initial and shared chunks, then a click fetches the lazy chunk', () => {
+  it('a module the entry already reaches stays in the initial chunk even when lazy chunks need it too: no shared chunk', () => {
+    const g = appGraph(opts());
+    g.imports.push({ from: 'main', to: 'datelib', names: ['format'] });
+    const s = shake(g);
+    const chunks = chunksOf(g, s);
+    expect(chunks.find((c) => c.id === INITIAL)!.modules).toContain('datelib');
+    expect(chunks.some((c) => c.id === SHARED)).toBe(false);
+  });
+
+  it('loading: the first screen is the initial chunk alone, then a click fetches the shared and reports chunks side by side, sharing the bandwidth', () => {
     const p = b.plan;
-    expect(p.fetches[0]).toEqual({ chunk: INITIAL, start: 0, done: 100 + 33 / 0.5 });
-    expect(p.fetches[1]).toEqual({ chunk: SHARED, start: 0, done: 100 + 35 / 0.5 });
-    expect(p.interactiveAt).toBe(170 + (32 + 34) * 0.5);
-    expect(p.clickAt).toBe(203 + 400);
-    expect(p.lazyChunks).toEqual([lazyChunkId('reports')]);
-    expect(p.visibleAt).toBe(603 + 100 + 105 / 0.5 + 104 * 0.5);
+    expect(p.fetches[0]).toEqual({ chunk: INITIAL, start: 0, done: 100 + 23 / 0.5 });
+    expect(p.interactiveAt).toBe(146 + 22 * 0.5);
+    expect(p.clickAt).toBe(157 + 400);
+    expect(p.lazyChunks).toEqual([SHARED, lazyChunkId('reports')]);
+    // after the round trip both are on the wire at 0.25 KB/ms each: shared (35 KB) is done 140 ms later, reports then has 70 KB left at 0.5 KB/ms
+    expect(p.fetches[1]).toEqual({ chunk: SHARED, start: 557, done: 557 + 100 + 140 });
+    expect(p.fetches[2]).toEqual({ chunk: lazyChunkId('reports'), start: 557, done: 557 + 100 + 140 + 140 });
+    expect(p.visibleAt).toBe(937 + (34 + 104) * 0.5);
   });
 
   it('without the dynamic import everything ships in one chunk, and opening reports costs nothing more', () => {
-    const flat = buildApp(opts({ splitReports: false }));
+    const flat = buildApp(opts({ splitPages: false }));
     expect(flat.chunks.map((c) => [c.id, c.kb])).toEqual([[INITIAL, 170]]);
     expect(flat.plan.lazyChunks).toEqual([]);
     expect(flat.plan.visibleAt).toBe(flat.plan.clickAt);
@@ -58,20 +72,28 @@ describe('the app, worked by hand', () => {
   });
 
   it('the split page is usable sooner than the one-bundle page, and reports then appears later: the trade', () => {
-    const flat = buildApp(opts({ splitReports: false }));
+    const flat = buildApp(opts({ splitPages: false }));
     expect(b.plan.interactiveAt).toBeLessThan(flat.plan.interactiveAt);
     expect(b.plan.visibleAt - b.plan.clickAt).toBeGreaterThan(flat.plan.visibleAt - flat.plan.clickAt);
   });
 
-  it('too fine (a chunk per module) is slower to be usable than the sensible split, though it ships the same bytes', () => {
+  it('too fine (a chunk per module) has a slower first screen than the sensible split, though it ships the same code', () => {
     const fine = buildApp(opts(), true);
     expect(fine.chunks).toHaveLength(8);
     expect(sum(fine.chunks.map((c) => c.kb))).toBe(sum(b.chunks.map((c) => c.kb)));
-    // six chunks, four connections: main 110, router 114, home 118, settings 122, then datelib (starts at 110) done 280 and utils (114) done 224
-    expect(fine.plan.fetches.slice(0, 6).map((f) => f.done)).toEqual([110, 114, 118, 122, 280, 224]);
-    expect(fine.plan.interactiveAt).toBe(280 + (4 + 6 + 8 + 10 + 34 + 4) * 0.5);
+    expect(fine.plan.fetches.filter((f) => f.start === 0)).toHaveLength(NET.connections);
     expect(fine.plan.interactiveAt).toBeGreaterThan(b.plan.interactiveAt);
     expect(fine.plan.fetches.length).toBeGreaterThan(b.plan.fetches.length);
+  });
+
+  it('too fine is also slower than one shaken bundle when nothing is lazy, because more connections do not add bandwidth', () => {
+    for (const datelibCjs of [false, true]) for (const buttonSideEffects of [false, true]) {
+      const o = opts({ splitPages: false, datelibCjs, buttonSideEffects });
+      const flat = buildApp(o);
+      const fine = buildApp(o, true);
+      const shakenBundle = loadPlan(flat.graph, flat.shaken, singleBundle(flat, true), 'reports');
+      expect(fine.plan.interactiveAt).toBeGreaterThan(shakenBundle.interactiveAt);
+    }
   });
 });
 
@@ -97,8 +119,8 @@ describe('side effects and CommonJS', () => {
   });
 
   it('the default app has the same tree under every combination of the three toggles: shaken is never bigger than the walk', () => {
-    for (const buttonSideEffects of [false, true]) for (const datelibCjs of [false, true]) for (const splitReports of [false, true]) {
-      const b = buildApp({ buttonSideEffects, datelibCjs, splitReports });
+    for (const buttonSideEffects of [false, true]) for (const datelibCjs of [false, true]) for (const splitPages of [false, true]) {
+      const b = buildApp({ buttonSideEffects, datelibCjs, splitPages });
       expect(b.shakenKb).toBeLessThanOrEqual(b.fullKb);
       expect(sum(b.chunks.map((c) => c.kb))).toBe(b.shakenKb);
     }
@@ -106,16 +128,30 @@ describe('side effects and CommonJS', () => {
 });
 
 describe('fetching', () => {
-  const chunk = (id: string, kb: number): Chunk => ({ id, kind: 'module', modules: [id], kb });
+  it('downloads in flight share one bandwidth: two parallel requests each take longer than one alone, together no faster than one request for both', () => {
+    const [x, y] = fetchAll([chunk('x', 9), chunk('y', 9)], 0);
+    expect(fetchMs(9)).toBe(120);
+    expect(x.done).toBe(100 + 10 / (NET.kbPerMs / 2));
+    expect(y.done).toBe(x.done);
+    expect(x.done).toBeGreaterThan(fetchMs(9));
+    expect(x.done).toBeGreaterThanOrEqual(fetchMs(19) - NET.requestKb / NET.kbPerMs);
+  });
 
-  it('a request takes a round trip plus its bytes, one extra KB of overhead included, over the bandwidth', () => {
+  it('a download that finishes first hands its share to the others', () => {
+    const [small, big] = fetchAll([chunk('s', 4), chunk('b', 24)], 0);
+    expect(small.done).toBe(100 + 5 / 0.25);
+    expect(big.done).toBe(120 + (25 - 5) / 0.5);
+  });
+
+  it('a request on its own takes a round trip plus its bytes, one extra KB of overhead included, over the bandwidth', () => {
     expect(fetchMs(0)).toBe(100 + 1 / 0.5);
     expect(fetchMs(49)).toBe(100 + 50 / 0.5);
   });
 
   it('never has more requests in flight than there are connections, and a request waits for a free one', () => {
     const six = fetchAll(Array.from({ length: 6 }, (_, i) => chunk(`c${i}`, 10)), 0);
-    const each = fetchMs(10);
+    // four on the wire at once, 11 KB each at 0.125 KB/ms: 100 + 88 ms
+    const each = 100 + 11 / (NET.kbPerMs / NET.connections);
     expect(six.map((f) => f.start)).toEqual([0, 0, 0, 0, each, each]);
     for (const f of six) expect(six.filter((g) => g.start <= f.start && f.start < g.done).length).toBeLessThanOrEqual(NET.connections);
   });
@@ -218,7 +254,7 @@ describe('chunking, on random graphs', () => {
     }
   });
 
-  it('puts a module in the initial chunk only if the entry needs it; the shared chunk holds exactly the modules two or more entry points need', () => {
+  it('puts a module in the initial chunk exactly when the entry needs it; the shared chunk holds the modules two or more lazy roots need and the entry does not', () => {
     const rnd = mulberry32(24);
     for (let n = 0; n < GRAPHS; n++) {
       const g = randomGraph(rnd);
@@ -243,7 +279,7 @@ describe('chunking, on random graphs', () => {
       for (const id of s.included) {
         const by = roots.filter((r) => needs(r, id));
         expect(by.length).toBeGreaterThan(0);
-        expect(where.get(id)).toBe(by.length > 1 ? SHARED : by[0] === g.entry ? INITIAL : lazyChunkId(by[0]));
+        expect(where.get(id)).toBe(by.includes(g.entry) ? INITIAL : by.length > 1 ? SHARED : lazyChunkId(by[0]));
       }
       const initial = chunks.find((c) => c.id === INITIAL) ?? { modules: [] }; // absent when a lazy chunk imports the entry back and so shares it
       for (const id of initial.modules) expect(needs(g.entry, id)).toBe(true);
@@ -278,7 +314,7 @@ describe('loading, on random graphs', () => {
         expect(p.visibleAt).toBeGreaterThanOrEqual(p.clickAt);
         for (const f of p.fetches) {
           const c = chunks.find((x) => x.id === f.chunk)!;
-          expect(f.done - f.start).toBe(fetchMs(c.kb));
+          expect(f.done - f.start).toBeGreaterThanOrEqual(fetchMs(c.kb) - 1e-6);
           expect(p.fetches.filter((o) => o.start <= f.start && f.start < o.done).length).toBeLessThanOrEqual(NET.connections);
         }
         expect(new Set(p.fetches.map((f) => f.chunk)).size).toBe(p.fetches.length);
@@ -296,8 +332,8 @@ describe('the one-bundle views', () => {
     expect(singleBundle(b, true)[0].modules).toEqual(b.shaken.included);
   });
 
-  it('appGraph marks only reports as a dynamic import', () => {
-    expect(appGraph(opts()).imports.filter((i) => i.dynamic).map((i) => i.to)).toEqual(['reports']);
-    expect(appGraph(opts({ splitReports: false })).imports.some((i) => i.dynamic)).toBe(false);
+  it('appGraph marks only the two lazy pages as dynamic imports', () => {
+    expect(appGraph(opts()).imports.filter((i) => i.dynamic).map((i) => i.to)).toEqual(['settings', 'reports']);
+    expect(appGraph(opts({ splitPages: false })).imports.some((i) => i.dynamic)).toBe(false);
   });
 });

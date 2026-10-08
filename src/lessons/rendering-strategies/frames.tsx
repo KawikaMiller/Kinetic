@@ -35,7 +35,7 @@ function say(m: Milestone, input: Inputs, tap: TapMode): ReactNode {
       const valley = valleyMs(t);
       if (valley === 0) return <>{tag(m.id)} is <span className="hl ok">interactive</span> at {ms(m.at)}, the same moment the content appeared. There is no gap between seeing and using.</>;
       return <>{tag(m.id)} is <span className="hl ok">interactive</span> at {ms(m.at)}, {ms(valley)} after the content was visible. A tap in between would have been{' '}
-        {tap === 'ignored' ? <span className="hl orange">ignored</span> : <span className="hl orange">remembered and replayed</span>}{tap === 'ignored' ? '' : ' now (some setups record early events; many do not)'}.</>;
+        {tap === 'ignored' ? <><span className="hl orange">ignored</span> by buttons and handlers (links and forms still work)</> : <span className="hl orange">remembered and replayed</span>}{tap === 'ignored' ? '' : ' now (some setups record early events; many do not)'}.</>;
     }
   }
 }

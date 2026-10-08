@@ -11,7 +11,7 @@ const lesson: LessonModule = {
       'Reading a DevTools Performance recording and knowing what its layout and paint blocks mean',
       'Choosing `transform` over `left` or `top` for an animation that has to stay smooth',
       'Batching DOM reads before writes in a loop that touches many elements',
-      'Explaining why `display: none` and `visibility: hidden` differ for layout and for screen readers',
+      'Explaining why `display: none` and `visibility: hidden` differ for layout space, and for whether children can show again',
     ],
     why: 'Janky scrolling and animation usually come from doing layout or paint work on the main thread in every frame, and the fix starts with knowing which change triggers which stage. "Why is this animation janky?" and "why is this loop slow?" are common review and interview questions.',
     watch: 'In the pipeline strip, a stage that re-runs for the change lights up yellow, a stage that is skipped goes grey, and when the path skips both layout and paint the stages that run are green. The sandbox box is real and really changes. In the thrashing scene the interleaved bar is red (the costly pattern) and the batched bar green, with timings measured live in your browser. In the animation scene the top box is red and the bottom green, with a sparkline of real frame times. In the render tree, nodes with a box are blue, and nodes with no box are grey and dashed.',
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'They are the same, and only the browser\'s default styling differs',
       ],
       answer: 0,
-      why: 'The element stays in the DOM either way, but display: none gives it no box, so it takes no space and neither does anything inside it. visibility: hidden keeps the box in the render tree and just does not draw it, leaving a gap, and its children inherit that.',
+      why: 'The element stays in the DOM either way, but display: none gives it no box, so it takes no space and neither does anything inside it. visibility: hidden keeps the box in the render tree and just does not draw it, leaving a gap, and its children inherit it unless they set visibility: visible themselves.',
     },
     {
       q: 'Why can a transform animation typically keep moving while the main thread is busy?',

@@ -30,7 +30,7 @@ function barsAt(o: LcpOptions, now: number, currentId: ElementId | undefined): G
   const fetch = heroFetch(o);
   const bars: GanttBar[] = [bar({ id: 'html', lane: 'html', start: 0, end: LCP_TIMES.html, tone: 'info', label: 'HTML' }, now)];
   if (fetch.start > LCP_TIMES.html) {
-    bars.push(bar({ id: 'wait', lane: 'hero', start: LCP_TIMES.html, end: fetch.start, tone: 'dim', kind: 'blocked', label: o.lazy ? 'lazy script' : 'not found yet' }, now));
+    bars.push(bar({ id: 'wait', lane: 'hero', start: LCP_TIMES.html, end: fetch.start, tone: 'dim', kind: 'blocked', label: o.lazy ? 'lazy script' : 'waiting for CSS' }, now));
   }
   bars.push(bar({ id: 'get', lane: 'hero', start: fetch.start, end: fetch.done, tone: 'info', label: 'hero.jpg' }, now));
   for (const el of pageElements(o)) {
@@ -89,7 +89,7 @@ export function LcpScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Toggle label="Hero image loading" value={o.lazy} onChange={(lazy) => set({ lazy })} off="plain image" on="lazy-loaded by a script" />
+          <Toggle label="Hero image loading" value={o.lazy} onChange={(lazy) => set({ lazy })} off="set in CSS" on="lazy-loaded by a script" />
           <Toggle label="Preload hero" value={o.preload} onChange={(preload) => set({ preload })} off="no hint" on="preload" />
           <Toggle label="Hero file" value={o.small} onChange={(small) => set({ small })} off="1200 KB" on="300 KB" />
           <Segmented label="First tap" value={o.inputAt ?? 0} onChange={(v) => set({ inputAt: v === 0 ? null : v })} options={[{ value: 0, label: 'none' }, { value: TAP_AT, label: `at ${ms(TAP_AT)}` }]} />
@@ -119,8 +119,9 @@ export function LcpScene({ picker }: { picker: ReactNode }) {
             </WideRegion>
             <Hint block>
               A scripted page load (a real one cannot run inside this page): every number here comes from fixed timings, the rule is the real one. The LCP is the paint time of the last
-              candidate: an element that was larger than every one painted before it, and was painted before the first tap or key press. Lazy-loading is modelled as a script that sets
-              the image&apos;s source at {ms(LCP_TIMES.script)}.
+              candidate: an element that was larger than every one painted before it, and was painted before the first tap, key press or scroll. Lazy-loading is modelled as a script that sets
+              the image&apos;s source at {ms(LCP_TIMES.script)}, and the CSS option as a hero set in the stylesheet, found at {ms(LCP_TIMES.cssParsed)}. A plain &lt;img&gt; in the HTML is found by the
+              preload scanner as the HTML arrives, which is what the preload hint gives the other two.
             </Hint>
           </div>
         </div>

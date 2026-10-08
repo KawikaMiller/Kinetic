@@ -26,7 +26,7 @@ const LEGEND = [
   { color: 'var(--hi)', label: 'running on the main thread' },
 ];
 
-const shortName = (c: Chunk) => (c.kind === 'module' ? APP_LABEL[c.modules[0] as keyof typeof APP_LABEL] : c.kind === 'lazy' ? 'reports chunk' : c.id);
+const shortName = (c: Chunk) => (c.kind === 'module' ? APP_LABEL[c.modules[0] as keyof typeof APP_LABEL] : c.kind === 'lazy' ? `${APP_LABEL[c.modules[0] as keyof typeof APP_LABEL]} chunk` : c.id);
 
 function bar(b: Omit<GanttBar, 'progress' | 'tone'> & { tone: Tone }, now: number): GanttBar {
   if (now <= b.start) return { ...b, tone: undefined, progress: 0 };
@@ -118,7 +118,7 @@ export function NavigateScene({ picker, options, onOptions }: { picker: ReactNod
           </table>
         </div>
         <Hint block>
-          Scripted: every request costs a {ms(NET.rtt)} round trip plus its bytes at {NET.kbPerMs} KB per ms, the model allows {NET.connections} requests at once, and running code costs {NET.execMsPerKb} ms
+          Scripted: every request costs a {ms(NET.rtt)} round trip plus its bytes plus {NET.requestKb} KB of overhead, all downloads in flight share {NET.kbPerMs} KB per ms between them, the model allows {NET.connections} requests at once, and running code costs {NET.execMsPerKb} ms
           per KB. Shared and lazy chunks are requested together with the first load or the click (as a bundler&apos;s preload hints would). Real tools and networks differ; the
           trade-off is real: more files help only while the bytes saved outweigh the extra round trips.
         </Hint>

@@ -74,7 +74,7 @@ export function ChangeScene({ picker }: { picker: ReactNode }) {
         <Hint block>
           Which stages re-run is the typical behaviour of Chromium-based browsers for a one-off change to{' '}
           <code>{property}</code> ({PROPERTY_INFO[property].trigger === 'layout' ? 'typically triggers layout' : PROPERTY_INFO[property].trigger === 'paint' ? 'typically triggers paint, not layout' : 'can typically skip layout and paint on its own layer'}).
-          Engines differ, and DevTools&apos; Performance panel is the real authority. The sandbox box is real: it really changes.
+          Top only counts on a positioned element. Engines differ, and DevTools&apos; Performance panel is the real authority. The sandbox box is real: it really changes.
         </Hint>
       </div>
     </StageFrame>

@@ -5,7 +5,7 @@ import { navFrames, scenariosFor, firstLoadKb, type Level } from './navFrames';
 import { bytesSegments, nodeState } from './view';
 
 const COMBOS: AppOptions[] = [false, true].flatMap((buttonSideEffects) =>
-  [false, true].flatMap((datelibCjs) => [false, true].map((splitReports) => ({ buttonSideEffects, datelibCjs, splitReports }))),
+  [false, true].flatMap((datelibCjs) => [false, true].map((splitPages) => ({ buttonSideEffects, datelibCjs, splitPages }))),
 );
 const total = (segments: { value: number }[]) => segments.reduce((s, x) => s + x.value, 0);
 
@@ -90,11 +90,11 @@ describe('the navigate story', () => {
     }
   });
 
-  it('the first load is the same 66 KB (4 + 6 + 8 + 10 + 34 + 4) whether the split is sensible or too fine, and reports comes after the click in both', () => {
+  it('the first load is the same 22 KB (4 + 6 + 8 + 4) whether the split is sensible or too fine, and reports (with the shared date library and the chart library) comes after the click in both', () => {
     const sc = scenariosFor(APP_DEFAULTS);
-    expect(firstLoadKb(sc.split)).toBe(66);
-    expect(firstLoadKb(sc.fine)).toBe(66);
-    expect(sc.fine.plan.lazyChunks).toEqual(['module:reports', 'module:chartlib']);
+    expect(firstLoadKb(sc.split)).toBe(22);
+    expect(firstLoadKb(sc.fine)).toBe(22);
+    expect(sc.fine.plan.lazyChunks).toEqual(['module:datelib', 'module:reports', 'module:chartlib']);
   });
 
   it('the default table tells the story the lesson claims: split is usable first, one bundle never waits at the click, too fine is slower than split', () => {

@@ -46,11 +46,14 @@ export interface PageElement {
 export interface LcpOptions {
   /** `<link rel="preload">` for the hero: its request starts when the HTML arrives. */
   preload: boolean;
-  /** A script-based lazy loader sets the hero's src only once its script has run. */
+  /**
+   * How the hero is found. True: a script-based lazy loader sets its src only once the script has run. False: it is set in CSS (a background image), so the browser meets it only once the
+   * stylesheet has been parsed. (A plain `<img src>` in the HTML is found by the preload scanner while the HTML streams in, which behaves like the preload hint here.)
+   */
   lazy: boolean;
   /** A smaller file for the same on-screen picture. */
   small: boolean;
-  /** The first tap or key press, ms, or null for none. Later elements cannot become the LCP. */
+  /** The first tap, key press or scroll, ms, or null for none. Later elements cannot become the LCP. */
   inputAt: number | null;
 }
 
@@ -59,8 +62,8 @@ export const LCP_TIMES = {
   html: 300,
   heading: 800,
   text: 1700,
-  /** The stylesheet has been parsed: a plain `<img>` is discovered. */
-  cssParsed: 900,
+  /** The stylesheet has been parsed (and, as render-blocking CSS, the first paint is possible): an image set in CSS is discovered. */
+  cssParsed: 700,
   /** The lazy-load script has run. */
   script: 1500,
   rtt: 150,

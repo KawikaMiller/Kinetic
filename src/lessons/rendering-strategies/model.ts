@@ -190,6 +190,8 @@ export interface Row {
   label: string;
   seo: string;
   firstPaintMs: number;
+  /** When the real content is on screen: the first paint, except for streaming, which paints its shell first. */
+  contentMs: number;
   interactiveMs: number;
   /** Per-request server work: none, or the milliseconds of data and rendering. */
   serverCost: string;
@@ -206,6 +208,7 @@ export function tableRows(input: Inputs): Row[] {
       label: STRATEGY_LABEL[id],
       seo: f.htmlHasContent ? 'content in the HTML' : 'an empty shell',
       firstPaintMs: tl.firstPaintAt,
+      contentMs: tl.contentAt,
       interactiveMs: tl.interactiveAt,
       serverCost: tl.serverMsPerRequest > 0 ? `${tl.serverMsPerRequest} ms of work` : f.staticResponse ? 'a file served' : 'none',
       freshness: f.freshness,
@@ -225,9 +228,10 @@ export const PRESETS: Record<PresetId, { label: string; inputs: Inputs; blurb: s
 };
 export const DEFAULT_PRESET: PresetId = 'default';
 
-/** The fastest strategy at something, ties going to the first listed. */
-export function best(rows: readonly Row[], key: 'firstPaintMs' | 'interactiveMs'): StrategyId {
-  return rows.reduce((a, b) => (b[key] < a[key] ? b : a)).id;
+/** The fastest strategies at something: every one that ties for the lead. */
+export function best(rows: readonly Row[], key: 'firstPaintMs' | 'contentMs' | 'interactiveMs'): StrategyId[] {
+  const fastest = Math.min(...rows.map((r) => r[key]));
+  return rows.filter((r) => r[key] === fastest).map((r) => r.id);
 }
 
 // ── Events, for the captions ─────────────────────────────────────────────

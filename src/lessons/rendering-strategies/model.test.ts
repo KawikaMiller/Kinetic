@@ -188,8 +188,16 @@ describe('the presets tell the stories they are named for', () => {
     const rows = tableRows(PRESETS.marketing.inputs);
     const content = Object.fromEntries(STRATEGY_IDS.map((id) => [id, timeline(id, PRESETS.marketing.inputs).contentAt]));
     expect(Math.min(...Object.values(content))).toBe(content.ssg);
-    expect(best(rows, 'firstPaintMs')).toBe('stream');
-    expect(best(rows, 'interactiveMs')).toBe('ssg');
+    expect(best(rows, 'firstPaintMs')).toEqual(['stream']);
+    expect(best(rows, 'contentMs')).toEqual(['ssg']);
+    expect(best(rows, 'interactiveMs')).toEqual(['ssg']);
+  });
+
+  it('strategies that tie are all reported as best, not just the first listed', () => {
+    const rows = tableRows(PRESETS.default.inputs);
+    const at = (id: StrategyId) => rows.find((r) => r.id === id)!.interactiveMs;
+    expect(at('ssg')).toBe(at('stream'));
+    expect(best(rows, 'interactiveMs')).toEqual(['ssg', 'stream']);
   });
 
   it('dashboard: server rendering and client rendering end up within a few percent of each other, but the server paints seconds earlier', () => {

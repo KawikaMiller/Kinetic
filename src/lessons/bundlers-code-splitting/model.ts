@@ -157,8 +157,9 @@ export function lazyRoots(g: Graph, shaken: Shaken): string[] {
 }
 
 /**
- * Partition the surviving modules into chunks. Each module belongs to the entry point(s) that need
- * it: the entry, and each lazy root. Needed by one: that entry's chunk. Needed by two or more: the
+ * Partition the surviving modules into chunks. Whatever the always-loaded entry reaches stays in the
+ * initial chunk, even when a lazy root needs it too: that root just imports it from there. A module
+ * only lazy roots need goes in that root's chunk, or, when two or more lazy roots need it, in the
  * shared chunk. With `fine`, every module is its own chunk instead.
  */
 export function chunksOf(g: Graph, shaken: Shaken, o: { fine?: boolean } = {}): Chunk[] {
@@ -170,7 +171,7 @@ export function chunksOf(g: Graph, shaken: Shaken, o: { fine?: boolean } = {}): 
   const groups = new Map<string, string[]>();
   for (const id of shaken.included) {
     const by = roots.filter((r) => needs.get(r)!.has(id));
-    const chunkId = by.length > 1 ? SHARED : by[0] === g.entry ? INITIAL : lazyChunkId(by[0]);
+    const chunkId = by.includes(g.entry) ? INITIAL : by.length > 1 ? SHARED : lazyChunkId(by[0]);
     groups.set(chunkId, [...(groups.get(chunkId) ?? []), id]);
   }
   const kindOf = (id: string): ChunkKind => (id === INITIAL ? 'initial' : id === SHARED ? 'shared' : 'lazy');
@@ -179,7 +180,7 @@ export function chunksOf(g: Graph, shaken: Shaken, o: { fine?: boolean } = {}): 
 
 // ── Loading the chunks ───────────────────────────────────────────────────
 
-/** An illustrative network: round trip, bandwidth, per-request overhead, a connection cap, and parse and run cost. */
+/** An illustrative network: round trip, bandwidth shared by the downloads in flight, per-request overhead, a connection cap, and parse and run cost. */
 export const NET = { rtt: 100, kbPerMs: 0.5, requestKb: 1, connections: 4, execMsPerKb: 0.5, clickDelay: 400 } as const;
 
 export interface Fetch {
@@ -188,17 +189,42 @@ export interface Fetch {
   done: number;
 }
 
+/** How long a request takes with the connection to itself: the fastest it can be. */
 export const fetchMs = (kb: number) => NET.rtt + (kb + NET.requestKb) / NET.kbPerMs;
 
-/** Request `chunks` from `from`: each takes the earliest free connection, in list order. */
+const SETTLED_KB = 1e-9;
+
+interface Live {
+  index: number;
+  start: number;
+  wireAt: number;
+  leftKb: number;
+}
+
+/**
+ * Request `chunks` from `from`, in list order, each as soon as one of the connections is free. A
+ * request first waits a round trip; then its bytes share the one bandwidth equally with every
+ * other download that is on the wire, so more connections do not mean more bandwidth.
+ */
 export function fetchAll(chunks: readonly Chunk[], from: number): Fetch[] {
-  const free = Array.from({ length: NET.connections }, () => from);
-  return chunks.map((c) => {
-    const slot = free.indexOf(Math.min(...free));
-    const start = free[slot];
-    free[slot] = start + fetchMs(c.kb);
-    return { chunk: c.id, start, done: free[slot] };
-  });
+  const done: Fetch[] = [];
+  let live: Live[] = [];
+  let next = 0;
+  let t = from;
+  while (next < chunks.length || live.length) {
+    while (live.length < NET.connections && next < chunks.length) {
+      live.push({ index: next, start: t, wireAt: t + NET.rtt, leftKb: chunks[next].kb + NET.requestKb });
+      next++;
+    }
+    const onWire = live.filter((l) => l.wireAt <= t);
+    const rate = NET.kbPerMs / Math.max(1, onWire.length);
+    const step = Math.min(...live.map((l) => (l.wireAt > t ? l.wireAt - t : l.leftKb / rate)));
+    for (const l of onWire) l.leftKb -= rate * step;
+    t += step;
+    for (const l of live) if (l.wireAt <= t && l.leftKb <= SETTLED_KB) done[l.index] = { chunk: chunks[l.index].id, start: l.start, done: t };
+    live = live.filter((l) => !(l.wireAt <= t && l.leftKb <= SETTLED_KB));
+  }
+  return done;
 }
 
 /** The chunks a page needs once `root` runs: those holding a module reachable from it by static imports. */
@@ -256,8 +282,8 @@ export interface AppOptions {
   buttonSideEffects: boolean;
   /** The date library is CommonJS (`require`), so its exports cannot be told apart. */
   datelibCjs: boolean;
-  /** `reports` is loaded with `import('./reports')`. */
-  splitReports: boolean;
+  /** The `settings` and `reports` pages are loaded with `import('./settings')` and `import('./reports')`. */
+  splitPages: boolean;
 }
 
 export const APP_IDS = ['main', 'router', 'button', 'utils', 'datelib', 'home', 'settings', 'reports', 'chartlib'] as const;
@@ -287,10 +313,9 @@ export function appGraph(o: AppOptions): Graph {
       { from: 'main', to: 'router' },
       { from: 'main', to: 'button', names: [] },
       { from: 'main', to: 'utils', names: ['formatDate'] },
-      { from: 'main', to: 'datelib', names: ['format'] },
       { from: 'router', to: 'home' },
-      { from: 'router', to: 'settings' },
-      { from: 'router', to: 'reports', dynamic: o.splitReports },
+      { from: 'router', to: 'settings', dynamic: o.splitPages },
+      { from: 'router', to: 'reports', dynamic: o.splitPages },
       { from: 'settings', to: 'datelib', names: ['format'] },
       { from: 'reports', to: 'datelib', names: ['diff'] },
       { from: 'reports', to: 'chartlib' },
@@ -298,7 +323,7 @@ export function appGraph(o: AppOptions): Graph {
   };
 }
 
-export const APP_DEFAULTS: AppOptions = { buttonSideEffects: false, datelibCjs: false, splitReports: true };
+export const APP_DEFAULTS: AppOptions = { buttonSideEffects: false, datelibCjs: false, splitPages: true };
 /** The lazy section the navigate demo opens. */
 export const LAZY_TARGET: AppId = 'reports';
 
