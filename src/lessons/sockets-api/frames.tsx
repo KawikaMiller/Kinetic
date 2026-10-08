@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 import {
   BACKLOG, ERRNO_TEXT, HOSTS, IANA_EPHEMERAL, LINUX_EPHEMERAL, PILEUP_RATE, PRIVILEGED_BELOW, SERVER_PORT, SYN_RTO_S, TIME_WAIT_S, rangeSize,
@@ -74,8 +75,9 @@ export function stepCaption(s: Step): ReactNode {
     case 'server-close':
       return <><code>close(conn)</code> frees fd {closedFd(s)} and sends the server's FIN: {moved(s.changes[0])}.</>;
     case 'last-fin-arrives':
-      return <>The client ACKs the server's FIN: {moved(s.changes[0])}. The side that closed first waits here, so a late duplicate segment can't
-        be mistaken for part of a new connection on the same 4-tuple.</>;
+      return <>The client ACKs the server's FIN: {moved(s.changes[0])}. The side that closed first waits here, for two reasons: if that final
+        ACK is lost, the server resends its FIN and the client can ACK it again; and a late duplicate segment can't be mistaken for part of a
+        new connection on the same 4-tuple.</>;
     case 'last-ack-arrives':
       return <>That ACK arrives: {moved(s.changes[0])}, and the server's connection socket is gone. The listener on fd {listenerOf(s).fd} is
         untouched, still LISTEN.</>;
@@ -98,7 +100,7 @@ export function stepCaption(s: Step): ReactNode {
     }
     case 'queue-retry': {
       const c = sockOf(s);
-      return <>One accept() made room, so {clientLabel(c)}'s retried SYN, {SYN_RTO_S} s later, gets in: the queue is {queueText(s)} again.
+      return <>One accept() made room, so {clientLabel(c)}'s retried SYN, sent {SYN_RTO_S} s after its first one, gets in: the queue is {queueText(s)} again.
         Every connection shares port {SERVER_PORT}; the 4-tuples differ only in the client's address and port.</>;
     }
   }
@@ -161,7 +163,7 @@ export function pileupCaption(f: PileupFrame, i: number, frames: readonly Pileup
     return <>Connection {f.attempted}: all {size} ports are in <span className="hl orange">TIME_WAIT</span>, so connect() fails with{' '}
       <span className="hl bad">EADDRNOTAVAIL</span> ("{ERRNO_TEXT.EADDRNOTAVAIL}"). Nothing is broken; the ports are waiting out their {TIME_WAIT_S} s.</>;
   if (reuse)
-    return <>{f.attempted} requests over one kept-alive connection: {f.ports.filter((p) => p === 'open').length} port in use,{' '}
+    return <>{f.attempted} requests over one kept-alive connection: {plural(f.ports.filter((p) => p === 'open').length, 'port')} in use,{' '}
       {f.timeWait} in TIME_WAIT, and every request got through.</>;
   return <>{f.attempted} connections so far: {f.timeWait} ports sit in <span className="hl orange">TIME_WAIT</span> because the client closed
     first, {free} free{f.failed ? <>, and {n(f.failed)} connects <span className="hl bad">refused</span></> : ''}.</>;
@@ -190,7 +192,7 @@ export function bindCaption(port: number, occupant: Occupant, privileged: boolea
   }
   if (r.errno === 'EACCES')
     return <><span className="hl bad">EACCES</span>: ports below {PRIVILEGED_BELOW} are privileged on Linux. Run with CAP_NET_BIND_SERVICE, put a proxy
-      on :{port} in front of an unprivileged port, or lower <code>net.ipv4.ip_unprivileged_port_start</code>.{privileged ? '' : ' Try "Run as root".'}</>;
+      on :{port} in front of an unprivileged port, or lower <code>net.ipv4.ip_unprivileged_port_start</code>.{privileged ? '' : ' Or set "Runs as" to Root.'}</>;
   if (occupant === 'listener')
     return <><span className="hl bad">EADDRINUSE</span>: another socket is already LISTENing on :{port}.{reuseAddr ? ' SO_REUSEADDR doesn\'t help: on Linux it doesn\'t let two listeners share a TCP port (that takes SO_REUSEPORT).' : ''} Stop the other server or pick another port.</>;
   return <><span className="hl bad">EADDRINUSE</span>: the old run's connections are still in TIME_WAIT on :{port}, and without{' '}

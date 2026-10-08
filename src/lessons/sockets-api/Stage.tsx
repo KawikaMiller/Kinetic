@@ -311,7 +311,7 @@ function QueueScene({ picker }: { picker: ReactNode }) {
             />
           </div>
         </div>
-        <Hint block>Linux drops the SYN when the queue is full (with tcp_abort_on_overflow set it resets instead), admits one more than the backlog, and caps the backlog at somaxconn. {HONEST}</Hint>
+        <Hint block>Linux drops the SYN when the queue is full (with tcp_abort_on_overflow set it resets instead), admits one more than the backlog (this model admits exactly the backlog), and caps the backlog at somaxconn. {HONEST}</Hint>
       </div>
     </StageFrame>
   );

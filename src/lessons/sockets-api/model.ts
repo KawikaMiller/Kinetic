@@ -446,7 +446,7 @@ export function acceptQueueScene(slow: boolean): Step[] {
     return { changes: [syn.change!, synAck.change!, ack.change!], child: syn.sock! };
   };
 
-  const waiting: Sock[] = [];
+  const waiting: { sock: Sock; t: number }[] = [];
   for (const host of QUEUE_CLIENTS) {
     t += 0.2;
     const fd = k.socket(host);
@@ -454,7 +454,7 @@ export function acceptQueueScene(slow: boolean): Step[] {
     const sock = k.byFd(host, fd);
     const hs = handshake(sock);
     if (!hs) {
-      waiting.push(sock);
+      waiting.push({ sock, t });
       push({ kind: 'queue-drop', line: {}, changes: [c.change], segment: { ...c.segment, dropped: true }, conn: sock.id });
       continue;
     }
@@ -467,9 +467,10 @@ export function acceptQueueScene(slow: boolean): Step[] {
   if (slow && waiting.length) {
     const acc = k.accept('server', lfd)!;
     push({ kind: 'queue-accept', line: { server: SERVER_LINES.accept }, ret: `${acc.fd}`, changes: [], conn: acc.sock.id });
+    // The first dropped client retries its SYN one initial RTO after sending it.
     const first = waiting[0];
-    t += SYN_RTO_S;
-    const hs = handshake(first)!;
+    t = Math.max(t, first.t + SYN_RTO_S);
+    const hs = handshake(first.sock)!;
     push({ kind: 'queue-retry', line: {}, changes: hs.changes, conn: hs.child.id });
   }
   return steps;

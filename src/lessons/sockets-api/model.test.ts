@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BACKLOG, HOSTS, IANA_EPHEMERAL, Kernel, LINUX_EPHEMERAL, PILEUP_CONNECTIONS, PILEUP_RATE, QUEUE_CLIENTS, REQUEST_BYTES, RECV_CHUNKS, SERVER_PORT,
-  TCP_STATES, TIME_WAIT_S, TOY_RANGE, TRANSITIONS, acceptQueueScene, bindCheck, lifecycle, pileup, rangeSize, sustainableRate, transition,
+  SYN_RTO_S, TCP_STATES, TIME_WAIT_S, TOY_RANGE, TRANSITIONS, acceptQueueScene, bindCheck, lifecycle, pileup, rangeSize, sustainableRate, transition,
   type Step, type TcpEvent, type TcpState,
 } from './model';
 
@@ -219,6 +219,14 @@ describe('the accept queue', () => {
       expect(child.state).toBe('ESTABLISHED');
       expect(child.fd).toBeNull();
     }
+  });
+
+  it('the dropped client retries exactly one initial RTO after its first SYN (the caption says so)', () => {
+    const slow = acceptQueueScene(true);
+    const drop = slow.find((s) => s.kind === 'queue-drop')!;
+    const retry = slow.at(-1)!;
+    expect(retry.t - drop.t).toBeCloseTo(SYN_RTO_S, 9);
+    expect(retry.socks.find((x) => x.id === retry.conn)!.remote!.port).toBe(drop.socks.find((x) => x.id === drop.conn)!.local!.port);
   });
 
   it('after one accept() makes room, the retried SYN gets in', () => {

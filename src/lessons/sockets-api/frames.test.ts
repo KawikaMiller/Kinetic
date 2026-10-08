@@ -105,7 +105,7 @@ describe('bind() captions, every combination the scene offers', () => {
               expect(say).toMatch(new RegExp(`^${r.errno}`));
               if (r.errno === 'EADDRINUSE') expect(say).toContain(occupant === 'listener' ? 'already LISTENing' : 'TIME_WAIT');
               // Only suggest root when it isn't already on.
-              expect(say.includes('Try "Run as root"')).toBe(r.errno === 'EACCES' && !privileged);
+              expect(say.includes('Or set "Runs as" to Root.')).toBe(r.errno === 'EACCES' && !privileged);
             }
           });
         }
