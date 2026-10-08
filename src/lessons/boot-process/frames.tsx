@@ -62,6 +62,20 @@ export function consoleFor(c: BootConfig, r: BootResult): { stage: number; text:
   return out;
 }
 
+/** getty is one of systemd's units: it had the prompt up before the boot counted as finished. */
+function loginCaption(r: BootResult): ReactNode {
+  const systemd = r.stages.find((x) => x.info.id === 'systemd')!;
+  const getty = r.units?.find((u) => u.id === 'getty@tty1');
+  return getty ? (
+    <>
+      getty@tty1 has had the login prompt up since {secText(systemd.start + getty.end)}: it is one of systemd's units, and systemd stays PID 1. The boot counts as done once
+      multi-user.target is reached.
+    </>
+  ) : (
+    <>The login prompt is up.</>
+  );
+}
+
 function stageCaption(c: BootConfig, r: BootResult, s: StageRun): ReactNode {
   const uefi = c.firmware === 'uefi';
   const sb = uefi && c.secureBoot;
@@ -87,8 +101,8 @@ function stageCaption(c: BootConfig, r: BootResult, s: StageRun): ReactNode {
       if (failed) {
         return (
           <>
-            Secure Boot: the kernel isn't signed by a trusted key, so it's refused (<code>{r.message}</code>). Each stage only runs the next one if its signature checks out, so
-            nothing unsigned ever gets control.
+            Secure Boot: the kernel isn't signed by a trusted key, so it's refused (<code>{r.message}</code>). Each stage only runs the next one if its signature checks out, so an
+            unsigned bootloader or kernel never runs. (The initramfs isn't checked in this chain; unified kernel images close that gap.)
           </>
         );
       }
@@ -99,7 +113,7 @@ function stageCaption(c: BootConfig, r: BootResult, s: StageRun): ReactNode {
         </>
       );
     case 'kernel':
-      return <>The kernel decompresses itself, sets up memory management and its drivers, and unpacks the initramfs into RAM as a temporary root file system.</>;
+      return <>The kernel decompresses itself, sets up memory management and its drivers, unpacks the initramfs into RAM as a temporary root file system, and runs its <code>/init</code> as PID 1: the first user-space process.</>;
     case 'initramfs':
       return failed ? (
         <>
@@ -113,9 +127,14 @@ function stageCaption(c: BootConfig, r: BootResult, s: StageRun): ReactNode {
         </>
       );
     case 'systemd':
-      return <>The kernel runs <code>/sbin/init</code>, which is systemd, as PID 1: the first user-space process. It starts units in parallel wherever their dependencies allow.</>;
+      return (
+        <>
+          <code>switch_root</code> replaced the initramfs's <code>/init</code> in place with the real root's <code>/sbin/init</code>, which is systemd, so systemd keeps PID 1. It
+          starts units in parallel wherever their dependencies allow.
+        </>
+      );
     case 'login':
-      return <>getty prints the login prompt on the console.</>;
+      return <>{loginCaption(r)}</>;
   }
 }
 
@@ -152,8 +171,8 @@ export function bootFrames(c: BootConfig, r: BootResult): BootFrame[] {
       rec.snap(
         degraded ? (
           <>
-            Reached multi-user.target in {secText(s.end - s.start)}, but degraded: {join(r.degraded)} {r.degraded.length === 1 ? "isn't" : "aren't"} running. One failed unit
-            doesn't stop the boot; the target only wants its units.
+            Reached multi-user.target in {secText(s.end - s.start)}, but degraded: {join(r.degraded)} {r.degraded.length === 1 ? "isn't" : "aren't"} running. A unit that's only
+            wanted leaves the boot degraded; a failed required mount (local-fs.target) would drop systemd to emergency mode instead.
           </>
         ) : (
           <>Reached multi-user.target in {secText(s.end - s.start)} with every unit started.</>

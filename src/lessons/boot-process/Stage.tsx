@@ -75,7 +75,9 @@ export function Stage() {
     >
       <div className="bp stage-pad">
         <div className="bp-chips" aria-live="off">
-          {prev && prev.status === 'ok' && (
+          {s.info.id === 'login' ? (
+            <span className="bp-handoff">systemd stays PID 1; getty is one of its units</span>
+          ) : prev && prev.status === 'ok' && (
             <span className="bp-handoff">
               {prev.info.control} <i aria-hidden="true">⟶</i> {s.info.control}
             </span>
@@ -101,9 +103,9 @@ export function Stage() {
             {r.verifications.map((v, i) => {
               const shown = stage >= CHECK_STAGE[i];
               return (
-                <li key={v.what} className={!shown ? 'is-pending' : v.ok ? 'is-ok' : 'is-bad'}>
-                  {shown ? (v.ok ? '✓' : '✗') : '·'} {v.by} checks {v.what}
-                  {i === 2 && shown && !v.ok ? ': refused' : ''}
+                <li key={v.what} className={!shown || v.status === 'not-reached' ? 'is-pending' : v.status === 'ok' ? 'is-ok' : 'is-bad'}>
+                  {!shown || v.status === 'not-reached' ? '·' : v.status === 'ok' ? '✓' : '✗'} {v.by} checks {v.what}
+                  {shown && v.status === 'failed' ? ': refused' : shown && v.status === 'not-reached' ? ': nothing to check' : ''}
                 </li>
               );
             })}

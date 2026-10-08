@@ -85,11 +85,14 @@ describe('bootRun, per preset', () => {
   it('with Secure Boot on, an unsigned kernel always stops the chain; with it off, it boots', () => {
     for (const scenario of SCENARIOS) {
       const r = bootRun({ firmware: 'uefi', secureBoot: true, scenario });
-      const unsignedSeen = scenario === 'unsigned-kernel';
-      if (unsignedSeen) {
+      // The kernel check: refused for the unsigned kernel, never made when there is no kernel (review B1).
+      const kernel = r.verifications.at(-1)!.status;
+      if (scenario === 'unsigned-kernel') {
         expect(r.stoppedAt).toBe('bootloader');
-        expect(r.verifications.at(-1)!.ok).toBe(false);
-      } else expect(r.verifications.every((v) => v.ok)).toBe(true);
+        expect(kernel).toBe('failed');
+      } else if (scenario === 'no-kernel') expect(kernel).toBe('not-reached');
+      else expect(kernel).toBe('ok');
+      expect(r.verifications.slice(0, 2).every((v) => v.status === 'ok')).toBe(true);
     }
     expect(run('unsigned-kernel', false).stoppedAt).toBeNull();
   });
@@ -168,5 +171,34 @@ describe('view helpers', async () => {
     expect(plannedEnd(r)).toBeGreaterThan(r.stages[2].end);
     // Before the failure nothing gives the ending away.
     expect(stageBars(r, r.stages[1].end, 1).some((b) => b.tone === 'dim')).toBe(false);
+  });
+});
+
+describe('review fixes: captions say what is true', () => {
+  const text = (c: BootConfig) => bootFrames(c, bootRun(c)).map((f) => captionText(f.say)).join(' | ');
+  it('Secure Boot is not claimed to cover everything (B2)', () => {
+    const t = text({ firmware: 'uefi', secureBoot: true, scenario: 'unsigned-kernel' });
+    expect(t).not.toContain('nothing unsigned ever gets control');
+    expect(t).toContain("The initramfs isn't checked in this chain");
+  });
+  it('a degraded boot is not sold as a rule: required mounts go to emergency mode (B3)', () => {
+    const t = text({ firmware: 'uefi', secureBoot: false, scenario: 'failing-service' });
+    expect(t).not.toContain("One failed unit doesn't stop the boot");
+    expect(t).toContain('emergency mode');
+  });
+  it('PID 1 passes from the initramfs /init to systemd in place (B4)', () => {
+    const t = text({ firmware: 'uefi', secureBoot: false, scenario: 'normal' });
+    const kernelAt = t.indexOf('runs its /init as PID 1');
+    const systemdAt = t.indexOf('so systemd keeps PID 1');
+    expect(kernelAt).toBeGreaterThan(-1);
+    expect(systemdAt).toBeGreaterThan(kernelAt);
+    expect(t.split('first user-space process').length - 1).toBe(1);
+  });
+  it('the login caption gives getty its real start time and keeps systemd as PID 1', () => {
+    const r = bootRun({ firmware: 'uefi', secureBoot: false, scenario: 'normal' });
+    const systemd = r.stages.find((x) => x.info.id === 'systemd')!;
+    const getty = r.units!.find((u) => u.id === 'getty@tty1')!;
+    expect(text({ firmware: 'uefi', secureBoot: false, scenario: 'normal' })).toContain(`login prompt up since ${secText(systemd.start + getty.end)}`);
+    expect(getty.end).toBeLessThan(systemd.end - systemd.start);
   });
 });

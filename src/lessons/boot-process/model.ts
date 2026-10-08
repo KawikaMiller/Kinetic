@@ -45,11 +45,11 @@ export function stageInfo(id: StageId, c: BootConfig, systemdMs = 0): StageInfo 
     case 'kernel':
       return { id, name: 'Linux kernel', control: 'the kernel', from: `RAM (GRUB loaded ${KERNEL_PATH})`, ms: MS.kernel };
     case 'initramfs':
-      return { id, name: 'initramfs', control: 'the kernel, running /init from the initramfs', from: `RAM (GRUB loaded ${INITRD_PATH})`, ms: MS.initramfs };
+      return { id, name: 'initramfs', control: '/init from the initramfs (PID 1, user space)', from: `RAM (GRUB loaded ${INITRD_PATH})`, ms: MS.initramfs };
     case 'systemd':
       return { id, name: 'systemd (PID 1)', control: 'systemd, PID 1', from: 'the real root file system', ms: systemdMs };
     case 'login':
-      return { id, name: 'Login prompt', control: 'getty and login', from: 'the real root file system', ms: MS.login };
+      return { id, name: 'Login prompt', control: 'getty@tty1, a unit systemd started', from: 'the real root file system', ms: MS.login };
   }
 }
 
@@ -61,7 +61,7 @@ export interface Unit {
   id: string;
   /** Must start after these (After=). */
   after: string[];
-  /** If one of these fails, this unit isn't started (Requires=). A target only Wants= its units. */
+  /** If one of these fails, this unit isn't started (Requires= together with After=; every entry here is also in `after`). A target only Wants= its units. */
   requires: string[];
   ms: number;
 }
@@ -92,7 +92,7 @@ export interface UnitRun {
 
 /**
  * Start every unit as soon as everything it's ordered after has finished (ASAP, so
- * independent units run in parallel). A failed unit's dependants that Require it are
+ * independent units run in parallel). A failed unit's dependants that Require it (and are ordered After it) are
  * never started; ones that are only ordered after it still start once it's settled.
  */
 export function scheduleUnits(units: readonly Unit[], failing: ReadonlySet<string> = new Set()): UnitRun[] {
@@ -129,7 +129,8 @@ export interface Verification {
   by: string;
   /** What gets checked. */
   what: string;
-  ok: boolean;
+  /** not-reached: the stage that would check never got that far (no kernel to check). */
+  status: 'ok' | 'failed' | 'not-reached';
 }
 
 export interface BootResult {
@@ -157,9 +158,13 @@ export function bootRun(c0: BootConfig): BootResult {
   const systemdMs = units.reduce((m, u) => Math.max(m, u.end), 0);
   const verifications: Verification[] = c.secureBoot
     ? [
-        { by: 'UEFI firmware', what: 'shim (signed with Microsoft\'s UEFI key)', ok: true },
-        { by: 'shim', what: 'GRUB (signed with the distribution\'s key)', ok: true },
-        { by: 'GRUB (via shim)', what: 'the kernel', ok: c.scenario !== 'unsigned-kernel' },
+        { by: 'UEFI firmware', what: 'shim (signed with Microsoft\'s UEFI key)', status: 'ok' },
+        { by: 'shim', what: 'GRUB (signed with the distribution\'s key)', status: 'ok' },
+        {
+          by: 'GRUB (via shim)',
+          what: 'the kernel',
+          status: c.scenario === 'no-kernel' ? 'not-reached' : c.scenario === 'unsigned-kernel' ? 'failed' : 'ok',
+        },
       ]
     : [];
   const failAt: StageId | null =
