@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 import {
-  DB, GLYPH, condText, evaluate, intermediateRows, postOrder, resultOf, sameRows, schemaOf, type Evaluation, type Expr, type Mode, type NodeResult,
+  DB, GLYPH, condText, evaluate, intermediateRows, postOrder, resultOf, sameRows, schemaOf, type Evaluation, type Expr, type Mode, type NodeResult, type Rewrite,
 } from './model';
 import { runNullQuery, type NullQueryId, type NullRun, type Variant } from './nulls';
 
@@ -103,6 +103,8 @@ export function opCaption(e: Expr, ev: Evaluation, phase: Phase, mode: Mode): Re
     }
     case 'diff': {
       const gone = d.removed.filter(Boolean).length;
+      if (mode === 'bag')
+        return <><span className="hl">−</span> is {code('EXCEPT ALL')} here: each right row cancels <b>one</b> matching left row, so a left row survives when it has more copies than the right: {gone} cancelled, {n(out)} left.</>;
       return <><span className="hl">−</span> keeps the left rows that aren't on the right: {gone} cancelled, {n(out)} left.</>;
     }
   }
@@ -168,16 +170,17 @@ export interface PushFrame extends Frame {
   steps: number;
 }
 
-export function pushdownFrames(unpushed: Expr, pushed: Expr, mode: Mode): PushFrame[] {
+export function pushdownFrames(unpushed: Expr, pushed: Expr, mode: Mode, rewrite: Rewrite = 'sigma'): PushFrame[] {
   const ua = postOrder(unpushed).filter((x) => x.op !== 'rel');
   const pa = postOrder(pushed).filter((x) => x.op !== 'rel');
   const ue = evaluate(unpushed, mode);
   const pe = evaluate(pushed, mode);
   const steps = Math.max(ua.length, pa.length);
+  const reorder = rewrite === 'sigma-reorder';
   const frames: PushFrame[] = [{
     steps: 0,
-    say: <>Two plans for one question. Left: join everything, then filter. Right: filter {code('Courses')} first, then join. Press play to run both
-      side by side.</>,
+    say: <>Two plans for one question. Left: join everything, then filter. Right: filter {code('Courses')} first{reorder ? ', and join the small side first' : ', with the joins in the same order'}.
+      Press play to run both side by side.</>,
   }];
   for (let k = 0; k < steps; k++) {
     const u = ua[k];
@@ -197,8 +200,9 @@ export function pushdownFrames(unpushed: Expr, pushed: Expr, mode: Mode): PushFr
     steps,
     hold: 2,
     say: <>{same ? <>Same result, {n(rowsOf(ru))}.</> : <span className="hl bad">The results differ.</span>} But the intermediate tables held{' '}
-      <span className={`hl ${iu > ip ? 'bad' : iu < ip ? 'ok' : ''}`}>{n(iu)}</span> against <span className={`hl ${ip < iu ? 'ok' : ip > iu ? 'bad' : ''}`}>{n(ip)}</span>.
-      An optimiser rewrites your query into the cheaper shape for you, which is why the order you write SQL in isn't the order it runs.</>,
+      <span className={`hl ${iu > ip ? 'bad' : iu < ip ? 'ok' : ''}`}>{n(iu)}</span> against <span className={`hl ${ip < iu ? 'ok' : ip > iu ? 'bad' : ''}`}>{n(ip)}</span>.{' '}
+      {reorder ? 'Two rewrites did that: σ moved below the join, and the joins were regrouped so the small, filtered side goes first (inner joins can be regrouped). ' : 'Only σ moved. '}
+      An optimiser makes rewrites like these for you, which is why the order you write SQL in isn't the order it runs.</>,
   });
   return frames;
 }
@@ -243,7 +247,7 @@ export function nullCaption(id: NullQueryId, v: Variant, unknownStudent: boolean
       return v === 'trap'
         ? <>LEFT JOIN keeps every course ({padded} with no enrolment, padded with <span className="hl violet">NULL</span>) but drops enrolments whose course is
           gone: {n(k)}.</>
-        : <>FULL JOIN keeps unmatched rows from <b>both</b> sides: the orphaned enrolment appears with a NULL title. {n(k)}, {padded} padded.</>;
+        : <>FULL JOIN keeps unmatched rows from <b>both</b> sides: the orphaned enrolment appears with a NULL title. {n(k)}, {padded} padded. (Postgres and SQL Server have FULL JOIN, SQLite from 3.39; MySQL and MariaDB don't.)</>;
   }
 }
 

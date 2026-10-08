@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { mulberry32, pick, randInt, type Rnd } from '../../core/random';
 import {
-  CMP_OPS, DB, PRESETS, REL_NAMES, TEACHERS, bin, eq, evaluate, intermediateRows, postOrder, proj, pushedPlan, rel, relabel, ren, resultOf,
+  CMP_OPS, DB, PRESETS, REL_NAMES, REWRITES, TEACHERS, bin, eq, evaluate, intermediateRows, postOrder, proj, pushedPlan, rel, relabel, ren, resultOf,
   sameRows, schemaOf, sel, unpushedPlan, type Cond, type Expr, type Mode, type Relation, type Value,
 } from './model';
 import { toSql } from './sql';
@@ -209,18 +209,28 @@ describe('algebraic laws (property tests)', () => {
 
 describe('pushdown', () => {
   for (const t of TEACHERS)
-    it(`σ below ⋈ gives the same rows with fewer intermediate rows (${t})`, () => {
-      for (const mode of ['set', 'bag'] as const) {
-        expect(sameRows(ok(unpushedPlan(t), mode), ok(pushedPlan(t), mode))).toBe(true);
-        expect(sameRows(ok(unpushedPlan(t), mode), sqlite(unpushedPlan(t), mode))).toBe(true);
-        expect(sameRows(ok(pushedPlan(t), mode), sqlite(pushedPlan(t), mode))).toBe(true);
-        expect(intermediateRows(pushedPlan(t), mode)).toBeLessThan(intermediateRows(unpushedPlan(t), mode));
-      }
-    });
+    for (const rewrite of REWRITES.map((r) => r.id))
+      it(`${rewrite}: the same rows with fewer intermediate rows (${t})`, () => {
+        for (const mode of ['set', 'bag'] as const) {
+          const plan = pushedPlan(t, rewrite);
+          expect(sameRows(ok(unpushedPlan(t), mode), ok(plan, mode))).toBe(true);
+          expect(sameRows(ok(unpushedPlan(t), mode), sqlite(unpushedPlan(t), mode))).toBe(true);
+          expect(sameRows(ok(plan, mode), sqlite(plan, mode))).toBe(true);
+          expect(intermediateRows(plan, mode)).toBeLessThan(intermediateRows(unpushedPlan(t), mode));
+        }
+      });
 
-  it('counts intermediates by hand for Hopper: 7 + 7 + 3 against 2 + 3 + 3', () => {
+  it('counts intermediates by hand for Hopper: 7 + 7 + 3 = 17 unpushed; σ alone 7 + 2 + 3 = 12; σ and joining the small side first 2 + 3 + 3 = 8', () => {
     expect(intermediateRows(unpushedPlan('Hopper'), 'set')).toBe(17);
-    expect(intermediateRows(pushedPlan('Hopper'), 'set')).toBe(8);
+    expect(intermediateRows(pushedPlan('Hopper', 'sigma'), 'set')).toBe(12);
+    expect(intermediateRows(pushedPlan('Hopper', 'sigma-reorder'), 'set')).toBe(8);
+  });
+
+  it('most of the 17 to 8 saving needs the join regrouping, not σ alone: the rewrites are told apart', () => {
+    for (const t of TEACHERS) {
+      expect(intermediateRows(pushedPlan(t, 'sigma-reorder'), 'set')).toBeLessThan(intermediateRows(pushedPlan(t, 'sigma'), 'set'));
+    }
+    expect(intermediateRows(pushedPlan('Hopper', 'sigma'), 'set')).toBeGreaterThan(8);
   });
 });
 

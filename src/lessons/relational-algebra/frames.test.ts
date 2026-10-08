@@ -3,7 +3,7 @@ import { captionText } from '../../core/testing/captions';
 import { MAX_NODES, canWrap, nodeCount, renameTarget, swapRelation, unwrapNode, wrapNode } from './edit';
 import { nullCaption, pushdownFrames, runFrames } from './frames';
 import {
-  PRESETS, TEACHERS, bin, evaluate, findNode, intermediateRows, postOrder, proj, pushedPlan, rel, relabel, resultOf, unpushedPlan, type Expr,
+  PRESETS, TEACHERS, bin, eq, evaluate, findNode, intermediateRows, postOrder, proj, pushedPlan, rel, relabel, resultOf, sel, unpushedPlan, type Expr,
 } from './model';
 import { NULL_QUERIES, runNullQuery } from './nulls';
 import { panelsFor } from './view';
@@ -133,13 +133,29 @@ describe('editing', () => {
 
 describe('pushdown captions', () => {
   for (const t of TEACHERS)
-    it(`${t}: the final caption states both totals from the model`, () => {
-      const u = unpushedPlan(t);
-      const p = pushedPlan(t);
-      const say = text(pushdownFrames(u, p, 'set').at(-1)!.say);
-      expect(say).toContain('Same result');
-      expect(say).toContain(`held ${intermediateRows(u, 'set')} rows against ${intermediateRows(p, 'set')} rows`);
-    });
+    for (const rewrite of ['sigma', 'sigma-reorder'] as const)
+      it(`${t} / ${rewrite}: the final caption states both totals from the model and which rewrites made them`, () => {
+        const u = unpushedPlan(t);
+        const p = pushedPlan(t, rewrite);
+        const say = text(pushdownFrames(u, p, 'set', rewrite).at(-1)!.say);
+        expect(say).toContain('Same result');
+        expect(say).toContain(`held ${intermediateRows(u, 'set')} rows against ${intermediateRows(p, 'set')} rows`);
+        if (rewrite === 'sigma') expect(say).toContain('Only σ moved');
+        else expect(say).toContain('regrouped');
+      });
+});
+
+describe('bag difference caption', () => {
+  it('says each right row cancels one left row under EXCEPT ALL, and the set caption does not', () => {
+    const e = relabel(bin('diff', proj(['sid'], rel('Enrolments')), proj(['sid'], sel(eq('year', 3), rel('Students')))));
+    const diff = postOrder(e).find((n) => n.op === 'diff')!;
+    const bag = runFrames(e, 'bag').find((f) => f.node === diff.id)!;
+    const set = runFrames(e, 'set').find((f) => f.node === diff.id)!;
+    expect(text(bag.say)).toMatch(/cancels one matching left row/);
+    expect(text(set.say)).toMatch(/keeps the left rows that aren't on the right/);
+    const ev = evaluate(e, 'bag').get(diff.id)!;
+    expect(ev.ok && ev.out.rows.length).toBe(6);
+  });
 });
 
 describe('NULL captions, every query × version × NULL row', () => {

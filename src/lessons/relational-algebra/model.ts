@@ -438,8 +438,18 @@ export function unpushedPlan(teacher: string): Expr {
   return relabel(proj(['name'], sel(eq('teacher', teacher), bin('join', bin('join', rel('Students'), rel('Enrolments')), rel('Courses')))), 'u');
 }
 
-export function pushedPlan(teacher: string): Expr {
-  return relabel(proj(['name'], bin('join', rel('Students'), bin('join', rel('Enrolments'), sel(eq('teacher', teacher), rel('Courses'))))), 'p');
+/** The two rewrites that make the right-hand plan cheaper: σ alone, then σ plus joining the small side first. */
+export type Rewrite = 'sigma' | 'sigma-reorder';
+
+export const REWRITES: { id: Rewrite; label: string }[] = [
+  { id: 'sigma', label: 'push σ down only' },
+  { id: 'sigma-reorder', label: 'push σ down and join the small side first' },
+];
+
+export function pushedPlan(teacher: string, rewrite: Rewrite = 'sigma'): Expr {
+  const courses = () => sel(eq('teacher', teacher), rel('Courses'));
+  if (rewrite === 'sigma') return relabel(proj(['name'], bin('join', bin('join', rel('Students'), rel('Enrolments')), courses())), 'p');
+  return relabel(proj(['name'], bin('join', rel('Students'), bin('join', rel('Enrolments'), courses()))), 'p');
 }
 
 /** Rows produced by every operator below the root (base relations are read, not produced). */
