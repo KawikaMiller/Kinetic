@@ -37,7 +37,7 @@ const VARIANT_TAG: Record<HeapVariant, string | null> = { live: null, collectabl
  * - `fields=[]` keeps one empty row (an empty object); `collapseEmpty` makes it a title-only box.
  */
 export function HeapObject({
-  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, tagPlacement = 'corner', collapseEmpty = false, className = '',
+  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, tagPlacement = 'corner', tagSize, collapseEmpty = false, className = '',
 }: {
   at: Pt;
   w: number;
@@ -49,6 +49,8 @@ export function HeapObject({
   /** Overrides the variant's corner tag ('collectable', 'freed'). */
   tag?: ReactNode;
   tagPlacement?: TagPlacement;
+  /** Tag font size in px (default 10, kit.css); 11 reads better where boxes are scaled down. */
+  tagSize?: number;
   /** With no fields, draw just the title row (a file object, a lock) instead of one empty row; size it with `heapHeight(0, true)`. */
   collapseEmpty?: boolean;
   className?: string;
@@ -65,7 +67,7 @@ export function HeapObject({
         {title}
       </text>
       {cornerTag != null && (
-        <text className="heap-obj-tag" x={at.x + w - 8} y={tagPlacement === 'above' ? at.y - TAG_ABOVE_GAP : at.y + 16} textAnchor="end">
+        <text className="heap-obj-tag" x={at.x + w - 8} y={tagPlacement === 'above' ? at.y - TAG_ABOVE_GAP : at.y + 16} textAnchor="end" style={tagSize ? { fontSize: tagSize } : undefined}>
           {cornerTag}
         </text>
       )}

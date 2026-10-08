@@ -2,6 +2,9 @@ import { motion } from 'motion/react';
 import type { CSSProperties, ReactNode } from 'react';
 import { SPRING } from '../core/motion';
 import { toneVar, type Tone } from '../core/tone';
+import { mergeSharedPointers, POINTER_JOIN, resolveCellTone, type ArrayCellTone, type ArrayPointer } from './arrayPointers';
+
+export type { ArrayCellFill, ArrayCellTone, ArrayPointer } from './arrayPointers';
 
 /** Must match `.array-cells { gap }` in kit.css. */
 const CELL_GAP = 3;
@@ -13,14 +16,6 @@ const CELL_GAP = 3;
  * (cycle-detection's slow and fast), so a cell can match its pointer's tone.
  */
 export type ArrayCellState = 'idle' | 'active' | 'info' | 'violet' | 'done' | 'dim' | 'bad';
-
-export interface ArrayPointer {
-  i: number;
-  label: ReactNode;
-  tone?: Tone;
-  /** Stable identity for the glide animation; defaults to the label when it's a string. */
-  id?: string;
-}
 
 export interface ArrayRange {
   /** Inclusive. */
@@ -41,18 +36,26 @@ export interface ArrayRange {
  *   `cellClass(i)` adds a lesson's own class to a cell (prefix it with the lesson's prefix).
  * - `pointers`: pass `[]` (not undefined) when a lesson's pointers come and go, so the
  *   pointer lane keeps its height and the layout doesn't jump.
+ * - `cellTone(i)` colours a cell flat in any Tone (`tint`, `solid` or an inset `outline` ring)
+ *   without the lift of the active/info/violet states; a lift state still wins over it.
+ * - `mergePointers` joins pointers that land on the same cell into one marker ("i·k"), so
+ *   their labels never overprint; pass a string for another separator.
  * - `onCellClick` makes the cells buttons; otherwise they're plain boxes.
  * - Cell width comes from the container (`--n` equal columns); set `fontSize` for crowded rows.
  */
 export function ArrayStrip({
-  values, cellState, cellClass, pointers, ranges = [], showIndex = false, onCellClick, cellTitle, renderValue,
+  values, cellState, cellClass, cellTone, pointers: rawPointers, mergePointers = false, ranges = [], showIndex = false, onCellClick, cellTitle, renderValue,
   fontSize, cellMax, className = '',
 }: {
   values: readonly (number | string)[];
   cellState?: (i: number) => ArrayCellState;
   /** Extra class names for cell i, for a lesson-specific style on top of its state. */
   cellClass?: (i: number) => string;
+  /** A flat colour for cell i (a bare Tone is a tint), or null for none. */
+  cellTone?: (i: number) => Tone | ArrayCellTone | null | undefined;
   pointers?: readonly ArrayPointer[];
+  /** Merge pointers sharing a cell into one marker; true joins labels with "·", a string with that. */
+  mergePointers?: boolean | string;
   ranges?: readonly ArrayRange[];
   showIndex?: boolean;
   onCellClick?: (i: number) => void;
@@ -64,6 +67,9 @@ export function ArrayStrip({
   className?: string;
 }) {
   const n = values.length;
+  const pointers = rawPointers && mergePointers
+    ? mergeSharedPointers(rawPointers, typeof mergePointers === 'string' ? mergePointers : POINTER_JOIN)
+    : rawPointers;
   const pct = (i: number) => `${(i / n) * 100}%`;
   const primary = ranges[0];
   const inPrimary = (i: number) => !!primary && i >= primary.from && i <= primary.to;
@@ -71,7 +77,9 @@ export function ArrayStrip({
   const classesOf = (i: number) => {
     const state = cellState?.(i) ?? 'idle';
     const inRange = state === 'idle' && inPrimary(i) ? 'is-in-range' : '';
-    return `array-cell is-${state} ${inRange} ${onCellClick ? 'is-clickable' : ''} ${cellClass?.(i) ?? ''}`;
+    const flat = resolveCellTone(cellTone?.(i));
+    const toned = flat ? ` fill-${flat.fill} tone-${flat.tone}` : '';
+    return `array-cell is-${state} ${inRange} ${onCellClick ? 'is-clickable' : ''} ${cellClass?.(i) ?? ''}${toned}`;
   };
 
   const style = {
@@ -109,7 +117,8 @@ export function ArrayStrip({
       )}
       <div className="array-cells">
         {values.map((v, i) => {
-          const content = renderValue ? renderValue(v, i) : v;
+          const value = renderValue ? renderValue(v, i) : v;
+          const content = resolveCellTone(cellTone?.(i))?.fill === 'outline' ? <span className="array-cell-ring">{value}</span> : value;
           return onCellClick ? (
             <button key={i} type="button" className={classesOf(i)} onClick={() => onCellClick(i)} title={cellTitle?.(i)}>
               {content}

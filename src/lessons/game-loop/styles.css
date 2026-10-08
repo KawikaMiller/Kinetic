@@ -7,10 +7,7 @@
 .gl-honest { display: block; }
 
 .gl-bar-wrap { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.gl-bar { display: flex; height: 14px; border-radius: 99px; background: var(--dim); overflow: hidden; }
-.gl-bar-update { background: var(--hi); }
-.gl-bar-render { background: var(--ok); }
-.gl-bar-wrap.is-over .gl-bar { box-shadow: 0 0 0 2px var(--bad); }
+.gl-bar-wrap.is-over .gl-bar .meter-track { box-shadow: 0 0 0 2px var(--bad); }
 .gl-bar-text { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font: 500 12px var(--mono); color: var(--muted); }
 .gl-key::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
 .gl-key.is-update::before { background: var(--hi); }

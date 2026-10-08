@@ -1,11 +1,12 @@
-import { useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { alpha, TOKENS } from '../core/palette';
 import {
-  axisTickValues, clampPoint, equalAspectHeight, nudgePoint, PLOT_FONT, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+  axisTickValues, clampPoint, equalAspectHeight, fitLabel, nudgePoint, PLOT_FONT, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
   type AxisSpec, type Point,
 } from '../core/plot';
 import type { Tone } from '../core/tone';
 import { paintImage } from './canvasImage';
+import { useDragPoint } from './useDragPoint';
 import { PlotContext, usePlot } from './plotContext';
 
 export type { AxisSpec, Point } from '../core/plot';
@@ -197,10 +198,12 @@ export function VLine({ at, label, tone, onDrag, onStep, ariaLabel, valueText, d
   const { xs, box } = usePlot();
   const x = xs.map(at);
   const flip = x > box.x + box.width * 0.75;
+  const right: LabelSpot = { x: x + RULE_LABEL_GAP, anchor: 'start' };
+  const left: LabelSpot = { x: x - RULE_LABEL_GAP, anchor: 'end' };
   const text = label != null && (
-    <text x={x + (flip ? -4 : 4)} y={box.y + FONT + 2} textAnchor={flip ? 'end' : 'start'}>
+    <RuleLabel spots={flip ? [left, right] : [right, left]} y={box.y + FONT + 2}>
       {label}
-    </text>
+    </RuleLabel>
   );
   if (onDrag) {
     return (
@@ -214,6 +217,47 @@ export function VLine({ at, label, tone, onDrag, onStep, ariaLabel, valueText, d
       <line x1={x} x2={x} y1={box.y} y2={box.y + box.height} />
       {text}
     </g>
+  );
+}
+
+/** Space between a rule and its label. */
+const RULE_LABEL_GAP = 4;
+
+interface LabelSpot {
+  x: number;
+  anchor: 'start' | 'end';
+}
+
+/**
+ * A rule's label, kept inside the plot box: drawn at the first spot where it fits (its own
+ * side, then the other side of the rule), else slid inside. Measured after layout, so a label
+ * that fits renders exactly where it always did.
+ */
+function RuleLabel({ spots, y, children }: { spots: readonly LabelSpot[]; y: number; children: ReactNode }) {
+  const { box } = usePlot();
+  const ref = useRef<SVGTextElement>(null);
+  const [w, setW] = useState<number | null>(null);
+  // The width depends only on the text, not where it's drawn: measure when the label changes,
+  // and again once the web fonts are in (they swap in after first paint).
+  useLayoutEffect(() => {
+    let live = true;
+    const measure = () => {
+      const next = ref.current?.getBBox().width;
+      if (live && next !== undefined) setW(next);
+    };
+    measure();
+    void document.fonts?.ready.then(measure);
+    return () => {
+      live = false;
+    };
+  }, [children]);
+  const lefts = spots.map((s) => (s.anchor === 'start' ? s.x : s.x - (w ?? 0)));
+  const fit = w === null ? { index: 0, dx: 0 } : fitLabel(lefts, w, box.x, box.x + box.width);
+  const spot = spots[fit.index];
+  return (
+    <text ref={ref} x={spot.x + fit.dx} y={y} textAnchor={spot.anchor}>
+      {children}
+    </text>
   );
 }
 
@@ -282,9 +326,9 @@ export function HLine({ at, label, tone, dashed = true }: { at: number; label?: 
     <g className={`plot-rule ${toneClass(tone, 'hi')} ${dashed ? 'is-dashed' : ''}`}>
       <line x1={box.x} x2={box.x + box.width} y1={y} y2={y} />
       {label != null && (
-        <text x={box.x + box.width - 4} y={below ? y + FONT + 2 : y - 4} textAnchor="end">
+        <RuleLabel spots={[{ x: box.x + box.width - RULE_LABEL_GAP, anchor: 'end' }]} y={below ? y + FONT + 2 : y - 4}>
           {label}
-        </text>
+        </RuleLabel>
       )}
     </g>
   );
@@ -365,22 +409,10 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
   roving?: boolean;
 }) {
   const { xs, ys, toData } = usePlot();
-  const dragging = useRef<number | null>(null);
   const [current, setCurrent] = useState(0);
   const refs = useRef(new Map<number, SVGGElement>());
   const focusIndex = Math.min(current, Math.max(0, data.length - 1));
-
-  const onPointerDown = (e: PointerEvent<SVGGElement>, i: number) => {
-    dragging.current = i;
-    setCurrent(i);
-    e.currentTarget.setPointerCapture(e.pointerId);
-    e.currentTarget.focus();
-  };
-  const onPointerMove = (e: PointerEvent<SVGGElement>, i: number) => {
-    if (dragging.current !== i) return;
-    const p = toData(e.clientX, e.clientY);
-    if (p) onDrag?.(i, p);
-  };
+  const drag = useDragPoint(toData, onDrag, { onGrab: setCurrent });
   const onKeyDown = (e: KeyboardEvent<SVGGElement>, i: number) => {
     const to = roving ? rovingPointTarget(e.key, i, data.length) : null;
     if (to !== null) {
@@ -421,10 +453,7 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
             aria-roledescription="draggable point"
             aria-label={`${pointLabel?.(i) ?? `point ${i + 1}`} at ${num(d.x)}, ${num(d.y)}.${keysHint}`}
             onFocus={roving ? () => setCurrent(i) : undefined}
-            onPointerDown={(e) => onPointerDown(e, i)}
-            onPointerMove={(e) => onPointerMove(e, i)}
-            onPointerUp={() => (dragging.current = null)}
-            onPointerCancel={() => (dragging.current = null)}
+            {...drag(i)}
             onKeyDown={(e) => onKeyDown(e, i)}
           >
             {ring}
