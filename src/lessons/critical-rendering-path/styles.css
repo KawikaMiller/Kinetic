@@ -32,5 +32,6 @@
 @media (max-width: 900px) {
   .crp-top { grid-template-columns: minmax(0, 1fr); }
   .crp-film { gap: 8px; }
-  .crp-shot-fig { flex: 0 0 100px; min-width: 0; }
+  /* wide enough for the longest label, "DOMContentLoaded", so it never breaks mid-word */
+  .crp-shot-fig { flex: 0 0 120px; min-width: 0; }
 }
