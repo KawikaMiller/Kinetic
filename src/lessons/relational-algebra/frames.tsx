@@ -69,7 +69,7 @@ export function opCaption(e: Expr, ev: Evaluation, phase: Phase, mode: Mode): Re
       const dups = d.dupOf.filter((x) => x >= 0).length;
       const cols = (e as Expr & { op: 'project' }).cols.join(', ');
       if (phase === 'collapse')
-        return <>A relation is a <b>set</b>, so the {plural(dups, 'duplicate')} <span className="hl violet">collapse</span>: {n(out)} left.</>;
+        return <>A relation is a <b>set</b>, so the {plural(dups, 'duplicate')} <span className="hl violet">{dups === 1 ? 'collapses' : 'collapse'}</span>: {n(out)} left.</>;
       if (mode === 'bag') {
         const same = new Set(d.projected.map((x) => JSON.stringify(x))).size;
         return <><span className="hl">{nodeTitle(e)}</span> keeps only {cols}: {n(out)}.{' '}
@@ -97,7 +97,7 @@ export function opCaption(e: Expr, ev: Evaluation, phase: Phase, mode: Mode): Re
     }
     case 'union': {
       const dups = d.dupOf.filter((x) => x >= 0).length;
-      if (phase === 'collapse') return <>As a set, the {plural(dups, 'row')} in both inputs <span className="hl violet">collapse</span> to one each: {n(out)}.</>;
+      if (phase === 'collapse') return <>As a set, the {plural(dups, 'row')} in both inputs <span className="hl violet">{dups === 1 ? 'collapses' : 'collapse'}</span> to one each: {n(out)}.</>;
       return <><span className="hl">∪</span> stacks both inputs: {d.fromLeft} + {d.stacked.length - d.fromLeft} = {n(d.stacked.length)}.
         {mode === 'bag' ? <> Bag mode keeps them all ({code('UNION ALL')}).</> : dups ? <> {plural(dups, 'row')} appear on both sides.</> : ' Nothing appears twice.'}</>;
     }

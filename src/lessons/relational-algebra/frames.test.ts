@@ -145,6 +145,16 @@ describe('pushdown captions', () => {
       });
 });
 
+describe('collapse captions agree in number', () => {
+  it('one duplicate collapses; several collapse', () => {
+    const one = runFrames(PRESETS[0].expr, 'set').find((f) => f.phase === 'collapse')!;
+    expect(text(one.say)).toMatch(/the 1 duplicate collapses:/);
+    const many = relabel(proj(['cid'], rel('Enrolments')));
+    const say = text(runFrames(many, 'set').find((f) => f.phase === 'collapse')!.say);
+    expect(say).toMatch(/the \d+ duplicates collapse:/);
+  });
+});
+
 describe('bag difference caption', () => {
   it('says each right row cancels one left row under EXCEPT ALL, and the set caption does not', () => {
     const e = relabel(bin('diff', proj(['sid'], rel('Enrolments')), proj(['sid'], sel(eq('year', 3), rel('Students')))));
