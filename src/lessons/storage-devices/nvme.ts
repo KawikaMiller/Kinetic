@@ -14,7 +14,11 @@ export const PAGE_BYTES = 4096;
 export const LINK_BYTES_PER_S: Record<Interface, number> = { sata: 550e6, nvme: 3.5e9 };
 /** Driver and protocol cost per command (AHCI's register handshake vs NVMe's doorbell), illustrative. */
 export const OVERHEAD_US: Record<Interface, number> = { sata: 20, nvme: 5 };
-/** AHCI (SATA): one command queue of 32. NVMe: up to 65,535 I/O queues, each up to 65,536 commands deep. */
+/**
+ * AHCI (SATA): one command queue of 32. NVMe: up to 65,535 I/O queues, each up to 65,536
+ * entries; one entry always stays empty (a full ring looks like an empty one), so at most
+ * 65,535 commands are outstanding per queue.
+ */
 export const AHCI_QUEUE_DEPTH = 32;
 export const NVME_MAX_QUEUES = 65_535;
 export const NVME_MAX_QUEUE_DEPTH = 65_536;

@@ -90,3 +90,16 @@ describe('queue captions, every depth × interface', () => {
     }
   });
 });
+
+describe('review: the WA colour matches the number shown', async () => {
+  const { waText, waTooHigh } = await import('./ssdText');
+  it('2.0029 shows as 2.00 and is not red; 2.005 shows as 2.01 and is', () => {
+    expect(waText(2.0029)).toBe('2.00');
+    expect(waTooHigh(2.0029)).toBe(false);
+    expect(waTooHigh(2.006)).toBe(true);
+    for (let k = 0; k < 400; k++) {
+      const wa = 1 + k / 97;
+      expect(waTooHigh(wa)).toBe(Number(waText(wa)) > 2);
+    }
+  });
+});

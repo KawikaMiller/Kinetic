@@ -158,7 +158,7 @@ export function HddScene({ picker }: { picker: ReactNode }) {
         </WideRegion>
         <Hint block>
           Toy drive with illustrative seek times (1 ms to the next track, 16 ms across the disk); the rotation maths is exact for {RPM.toLocaleString('en-US')} rpm. Each read is one
-          4 KiB sector.
+          4 KiB sector, and a toy track is tiny, so its sequential throughput is far below a real drive's (about 150 to 250 MB/s).
         </Hint>
       </div>
     </StageFrame>

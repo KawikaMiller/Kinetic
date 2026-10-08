@@ -73,13 +73,14 @@ export function NvmeScene({ picker }: { picker: ReactNode }) {
             {iface === 'sata' ? (
               qd > AHCI_QUEUE_DEPTH ? <>{qd - AHCI_QUEUE_DEPTH} more wait in the OS: AHCI can't hold more than 32.</> : <>AHCI (native command queuing) holds at most 32 commands.</>
             ) : (
-              <>The NVMe spec allows up to {NVME_MAX_QUEUES.toLocaleString('en-US')} I/O queues of up to {NVME_MAX_QUEUE_DEPTH.toLocaleString('en-US')} commands each; real drives offer fewer.</>
+              <>The NVMe spec allows up to {NVME_MAX_QUEUES.toLocaleString('en-US')} I/O queues of up to {NVME_MAX_QUEUE_DEPTH.toLocaleString('en-US')} entries each (so up to {(NVME_MAX_QUEUE_DEPTH - 1).toLocaleString('en-US')} commands in flight per queue); real drives offer fewer.</>
             )}
           </Hint>
         </div>
         <WideRegion minWidth={480} label="Channel timeline: scroll sideways to see all of it">
           <GanttLanes lanes={LANES} bars={bars} domain={[0, SHOW_US]} axis unit=" µs" size="sm" labelWidth={78} ariaLabel={`Flash channels and host link over the first ${SHOW_US} µs`} />
         </WideRegion>
+        <Hint block>Simplified: each read goes to whichever channel is free. A real read has to go to the chip that holds its data, so some channels queue up while others idle.</Hint>
         <LatencyStrip />
       </div>
     </StageFrame>

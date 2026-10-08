@@ -5,7 +5,7 @@ import { Button, Hint, Legend, Segmented, Slider, Stat, Stats, Toggle } from '..
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
 import { BLOCKS, MAX_SPARE, MIN_SPARE, PAGES, runTrace, WA_WARN, writeAmplification, type Workload } from './ftl';
-import { batchSummary, ssdCaption, ssdIntro, waText } from './ssdText';
+import { batchSummary, ssdCaption, ssdIntro, waText, waTooHigh } from './ssdText';
 
 const BATCHES = [1, 10, 100] as const;
 
@@ -60,7 +60,7 @@ export function SsdScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Host writes" value={ftl.hostWrites} />
           <Stat label="NAND writes" value={ftl.nandWrites} />
-          <Stat label="Write amp." value={waText(wa)} color={wa > WA_WARN ? 'var(--bad)' : undefined} sub={`red above ${WA_WARN}`} />
+          <Stat label="Write amp." value={waText(wa)} color={waTooHigh(wa) ? 'var(--bad)' : undefined} sub={`red above ${WA_WARN}`} />
           <Stat label="GC runs" value={ftl.gcRuns} color="var(--violet)" />
           {workload === 'random' && !trim && <Stat label="Deleted, drive unaware" value={result.unseenDeletes} sub="pages the drive wasn't told about" />}
         </Stats>

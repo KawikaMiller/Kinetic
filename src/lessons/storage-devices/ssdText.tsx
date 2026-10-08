@@ -28,6 +28,9 @@ export function batchSummary(r: RunResult): BatchSummary {
 
 export const waText = (wa: number) => wa.toFixed(2);
 
+/** Red above the threshold, judged on the value as shown (2.0029 reads 2.00, which is not above 2). */
+export const waTooHigh = (wa: number) => Number(waText(wa)) > WA_WARN;
+
 /** "block 5", "blocks 5 and 6": each block once, in order. */
 const blockList = (blocks: readonly number[]) => {
   const u = [...new Set(blocks)].sort((a, b) => a - b);
@@ -74,7 +77,7 @@ export function ssdCaption(s: BatchSummary, workload: Workload, trim: boolean): 
   const wa = (
     <>
       {' '}
-      Write amplification so far: <span className={`hl ${s.wa > WA_WARN ? 'bad' : 'ok'}`}>{waText(s.wa)}</span>
+      Write amplification so far: <span className={`hl ${waTooHigh(s.wa) ? 'bad' : 'ok'}`}>{waText(s.wa)}</span>
       {workload === 'sequential' && s.wa === 1 ? <> (sequential writes empty whole blocks, so GC never has anything to copy).</> : <>.</>}
     </>
   );
