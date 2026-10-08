@@ -229,13 +229,13 @@ export const STEPS: readonly Step[] = [
     phase: 'green', code: 'parts', tests: T5,
     moves: [
       { label: "Add: if (n % 7 === 0) out += 'Bazz'", kind: 'code', good: true, code: 'bazz', tests: T5, why: 'One line, thanks to the refactor. 21, 35 and 105 now compose too, but no test says so yet: see the orange flag.' },
-      { label: 'Write every Bazz combination by hand', kind: 'all-at-once', good: false, code: 'bazzEveryCombo', tests: T5, why: 'It works, but the combinations arrive with no tests, and the code is twice as long as it needs to be.' },
+      { label: 'Write every Bazz combination by hand', kind: 'all-at-once', good: false, code: 'bazzEveryCombo', tests: T5, why: 'It works, but the combinations arrive with no tests, and the code is much longer than it needs to be.' },
     ],
   },
   {
     phase: 'refactor', code: 'bazz', tests: T5,
     moves: [
-      { label: "Pin a combination: test 21 → 'FizzBazz'", kind: 'next', good: true, code: 'bazz', tests: T6, why: 'It passes straight away, because the design already composes; now that behaviour is pinned too.' },
+      { label: "Pin a combination: test 21 → 'FizzBazz'", kind: 'next', good: true, code: 'bazz', tests: T6, why: 'It passes straight away, because the design already composes. That makes it a characterization-style pin, not a red-green step: a test that never failed cannot show it is able to fail, so it earns its place only by guarding behaviour that already works.' },
     ],
   },
 ];

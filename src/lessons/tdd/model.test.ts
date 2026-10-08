@@ -147,3 +147,11 @@ describe('the line diff', () => {
     expect([...changedLines([], ['a', 'b'])]).toEqual([0, 1]);
   });
 });
+
+describe('the last step is a pin, not a red-green step', () => {
+  it('its test passes at once and the move says so', () => {
+    const last = STEPS[STEPS.length - 1].moves.find((m) => m.good)!;
+    expect(runTests(STEPS[STEPS.length - 1].code, last.tests).every((r) => r.passed)).toBe(true);
+    expect(last.why).toContain('characterization-style pin');
+  });
+});
