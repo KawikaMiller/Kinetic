@@ -100,12 +100,15 @@ export type RuleId =
   | 'verb-in-path' | 'too-deep' | 'wrong-resource' | 'needs-item' | 'needs-collection' | 'create-on-collection' | 'ends-in-action'
   | 'read-not-safe' | 'get-must-be-safe' | 'delete-method' | 'put-replaces' | 'patch-for-replace' | 'post-not-idempotent' | 'put-create'
   | 'method-fits';
+/** Where a rule comes from: RFC 9110 (method properties), RFC 5789 (PATCH), a mix of an RFC fact and a convention, or a convention. */
+export type FlagSource = 'RFC 9110' | 'RFC 5789' | 'RFC 9110 + RFC 5789' | 'RFC 9110 + convention' | 'convention';
+
 export interface Flag {
   rule: RuleId;
   level: Level;
   text: string;
   /** RFC 9110 for the method properties; a common guideline otherwise. */
-  source: 'RFC 9110' | 'convention';
+  source: FlagSource;
 }
 
 export interface Intent {
@@ -163,23 +166,23 @@ function methodFlags(intent: Intent, m: Method): Flag[] {
     return [{ rule: 'get-must-be-safe', level: 'bad', source: 'RFC 9110',
       text: `GET must be safe: ${a === 'delete' ? 'deleting' : 'changing data'} on GET lets a crawler or a link prefetcher ${a === 'delete' ? 'delete' : 'change'} data just by following links.` }];
   if (a === 'delete' && m !== 'DELETE')
-    return [{ rule: 'delete-method', level: 'bad', source: 'RFC 9110',
-      text: `Removing is DELETE, which is idempotent (RFC 9110 §9.2.2): if the response is lost, sending it again is harmless. ${m} says something else.` }];
+    return [{ rule: 'delete-method', level: 'bad', source: 'RFC 9110 + convention',
+      text: `Removing is DELETE by convention, and DELETE is idempotent (RFC 9110 §9.2.2): if the response is lost, sending it again is harmless. ${m} says something else.` }];
   if (a === 'update' && m === 'PUT')
-    return [{ rule: 'put-replaces', level: 'bad', source: 'RFC 9110',
-      text: 'PUT replaces, PATCH changes part. A PUT carrying only the status would replace the whole order with just a status. Send PATCH with the one field.' }];
+    return [{ rule: 'put-replaces', level: 'bad', source: 'RFC 9110 + RFC 5789',
+      text: 'PUT replaces (RFC 9110), PATCH changes part (RFC 5789). A PUT carrying only the status would replace the whole order with just a status. Send PATCH with the one field.' }];
   if (a === 'replace' && m === 'PATCH')
     return [{ rule: 'patch-for-replace', level: 'warn', source: 'convention',
       text: 'PATCH changes part. For a full replacement PUT says exactly that, and PUT is idempotent (RFC 9110 §9.2.2), so a retry is safe.' }];
   if (a === 'create' && m === 'PUT')
-    return [{ rule: 'put-create', level: 'bad', source: 'RFC 9110',
-      text: 'PUT means "store this at exactly this URL", so the client would have to choose the id. When the server assigns ids, create with POST to the collection.' }];
+    return [{ rule: 'put-create', level: 'bad', source: 'RFC 9110 + convention',
+      text: 'PUT means "store this at exactly this URL" (RFC 9110), so the client would have to choose the id. When the server assigns ids, the convention is to create with POST to the collection.' }];
   if ((a === 'update' || a === 'replace') && m === 'POST')
     return [{ rule: 'post-not-idempotent', level: 'bad', source: 'RFC 9110',
       text: `POST is neither safe nor idempotent, so a retried POST might apply twice. ${METHOD_FOR[a]} says what this request does${a === 'replace' ? ', and PUT is idempotent' : ''}.` }];
   if (m !== METHOD_FOR[a])
     return [{ rule: 'method-fits', level: 'bad', source: 'convention', text: `${m} doesn't fit this job: use ${METHOD_FOR[a]}.` }];
-  return [{ rule: 'method-fits', level: 'ok', source: m === 'PATCH' ? 'convention' : 'RFC 9110', text: FITS[m] ?? `${m} fits this job.` }];
+  return [{ rule: 'method-fits', level: 'ok', source: m === 'PATCH' ? 'RFC 5789' : m === 'POST' ? 'RFC 9110 + convention' : 'RFC 9110', text: FITS[m] ?? `${m} fits this job.` }];
 }
 
 const FITS: Partial<Record<Method, string>> = {
@@ -273,12 +276,12 @@ export const MEANS: Record<Code, string> = {
   201: 'a new resource now exists (its URL goes in Location)',
   202: 'accepted, but the work happens later',
   204: 'success, with nothing in the body',
-  400: 'the request itself is malformed (it couldn\'t be parsed)',
+  400: 'the request can\'t be processed because of a client error: malformed syntax, or, in some APIs, failed validation',
   404: 'there is nothing at this URL',
   409: 'it clashes with the resource\'s current state',
   412: 'a precondition the client sent (If-Match) is false',
   422: 'well-formed, but the content fails validation',
-  429: 'too many requests: slow down (Retry-After)',
+  429: 'too many requests: slow down (a Retry-After header may say when)',
 };
 
 export interface StatusScenario {
@@ -286,8 +289,10 @@ export interface StatusScenario {
   request: string;
   situation: string;
   accepted: readonly Code[];
-  /** Why the accepted answer fits, shown on a right pick. */
+  /** Why the first accepted answer fits, shown on a right pick. */
   why: string;
+  /** What to say when another accepted code is picked. */
+  alsoOk?: Partial<Record<Code, string>>;
 }
 
 export const SCENARIOS: readonly StatusScenario[] = [
@@ -295,12 +300,14 @@ export const SCENARIOS: readonly StatusScenario[] = [
     why: '201 Created, with Location: /orders/8 so the client knows where the new order lives.' },
   { id: 'async', request: 'POST /reports', situation: 'The report will be built by a background job in a few minutes.', accepted: [202],
     why: '202 Accepted: nothing is done yet. Point to a status URL the client can poll.' },
-  { id: 'deleted', request: 'DELETE /orders/7', situation: 'The order is gone and there is nothing to send back.', accepted: [204],
-    why: '204 No Content: it worked and the body is empty. (200 with a body would also do, if you return something.)' },
+  { id: 'deleted', request: 'DELETE /orders/7', situation: 'The order is gone and there is nothing to send back.', accepted: [204, 200],
+    why: '204 No Content: it worked and the body is empty.',
+    alsoOk: { 200: '200 OK is fine too when the response carries a body, such as the deleted order. With nothing to send, 204 is the usual answer.' } },
   { id: 'malformed', request: 'POST /orders', situation: 'The body is broken JSON: a missing closing brace.', accepted: [400],
     why: '400 Bad Request: the server couldn\'t even parse it. Say what was wrong in a problem-details body.' },
   { id: 'invalid', request: 'POST /orders', situation: 'Valid JSON, but "quantity": -3.', accepted: [422, 400],
-    why: '422 Unprocessable Content (or 400: conventions vary): well-formed, but it fails validation. Send a problem-details body naming the field.' },
+    why: '422 Unprocessable Content: well-formed, but it fails validation. Send a problem-details body naming the field.',
+    alsoOk: { 400: '400 is accepted too: some APIs use it for validation errors as well as for malformed requests, though 422 says more. Pick one convention and use it everywhere.' } },
   { id: 'missing', request: 'GET /orders/999', situation: 'There is no order 999.', accepted: [404],
     why: '404 Not Found: nothing exists at that URL.' },
   { id: 'conflict', request: 'POST /users', situation: 'That email address is already registered.', accepted: [409],
@@ -308,7 +315,7 @@ export const SCENARIOS: readonly StatusScenario[] = [
   { id: 'stale', request: 'PUT /orders/7 (If-Match: "v3")', situation: 'Someone saved the order since; it is now "v4".', accepted: [412],
     why: '412 Precondition Failed: the client\'s If-Match no longer matches, so its copy is stale. It should re-read and retry.' },
   { id: 'limited', request: 'GET /orders', situation: 'This client sent 120 requests this minute; the limit is 100.', accepted: [429],
-    why: '429 Too Many Requests, with Retry-After saying when to come back.' },
+    why: '429 Too Many Requests. A Retry-After header can say when to come back (RFC 6585 says it MAY be sent).' },
 ];
 
 export interface StatusJudgement {
@@ -317,7 +324,7 @@ export interface StatusJudgement {
 }
 
 export function judgeStatus(s: StatusScenario, code: Code): StatusJudgement {
-  if (s.accepted.includes(code)) return { ok: true, text: s.why };
+  if (s.accepted.includes(code)) return { ok: true, text: (code !== s.accepted[0] && s.alsoOk?.[code]) || s.why };
   return { ok: false, text: `${code} ${REASON[code]} means ${MEANS[code]}. Not this one: ${s.situation}` };
 }
 

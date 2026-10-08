@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CODES, ENDPOINTS, IDEMPOTENT, METHODS, METHOD_FOR, ORDERS, PROBLEM, SAFE, SCENARIOS, examplePath, judgeStatus, parsePath, problemResponse,
+  CODES, ENDPOINTS, IDEMPOTENT, MEANS, METHODS, METHOD_FOR, ORDERS, PROBLEM, SAFE, SCENARIOS, examplePath, judgeStatus, parsePath, problemResponse,
   queryString, roleOf, runQuery, shape, validate, verdict, type Code, type Method,
 } from './model';
 
@@ -66,6 +66,13 @@ describe('the validator', () => {
   const run = (id: string, method: Method, path: string) => validate(ENDPOINTS.find((e) => e.id === id)!.intent, method, shape(path));
   const rules = (id: string, method: Method, path: string) => run(id, method, path).map((f) => f.rule);
 
+  it('labels each rule with where it really comes from', () => {
+    expect(run('update-status', 'PATCH', '/orders/{id}')[0].source).toBe('RFC 5789');
+    expect(run('update-status', 'PUT', '/orders/{id}')[0].source).toBe('RFC 9110 + RFC 5789');
+    expect(run('create-order', 'PUT', '/orders')[0].source).toBe('RFC 9110 + convention');
+    expect(run('delete-order', 'POST', '/orders/{id}')[0].source).toBe('RFC 9110 + convention');
+    expect(run('get-user', 'GET', '/users/{id}')[0].source).toBe('RFC 9110');
+  });
   it('GET must be safe: deleting on GET is flagged, with the crawler reason', () => {
     const f = run('delete-order', 'GET', '/orders/{id}');
     expect(verdict(f)).toBe('bad');
@@ -128,7 +135,7 @@ describe('the validator', () => {
 
 describe('status codes', () => {
   const expected: Record<string, Code[]> = {
-    created: [201], async: [202], deleted: [204], malformed: [400], invalid: [422, 400], missing: [404], conflict: [409], stale: [412], limited: [429],
+    created: [201], async: [202], deleted: [204, 200], malformed: [400], invalid: [422, 400], missing: [404], conflict: [409], stale: [412], limited: [429],
   };
   it.each(SCENARIOS.map((s) => [s.id, s] as const))('%s accepts exactly its codes', (id, s) => {
     for (const c of CODES) expect(judgeStatus(s, c).ok, `${id} ${c}`).toBe(expected[id].includes(c));
@@ -137,9 +144,23 @@ describe('status codes', () => {
     const s = SCENARIOS.find((x) => x.id === 'created')!;
     expect(judgeStatus(s, 200).text).toContain('200 OK means success, with the result in the body');
   });
-  it('every code on the board is used by some scenario except 200', () => {
+  it('picking 200 for a delete is accepted and explained, never called wrong while the text calls it fine', () => {
+    const s = SCENARIOS.find((x) => x.id === 'deleted')!;
+    const j = judgeStatus(s, 200);
+    expect(j.ok).toBe(true);
+    expect(j.text).toContain('200 OK is fine too');
+    expect(j.text).not.toContain('Not this one');
+    for (const sc of SCENARIOS) for (const c of sc.accepted) expect(judgeStatus(sc, c).text, sc.id + ' ' + c).not.toContain('Not this one');
+    expect(judgeStatus(SCENARIOS.find((x) => x.id === 'invalid')!, 400).text).toContain('accepted too');
+  });
+  it('429 is described with Retry-After as optional, and 400 covers validation in some APIs', () => {
+    expect(SCENARIOS.find((x) => x.id === 'limited')!.why).toContain('MAY');
+    expect(MEANS[429]).toContain('may say');
+    expect(MEANS[400]).toContain('validation');
+  });
+  it('every code on the board is used by some scenario', () => {
     const used = new Set(SCENARIOS.flatMap((s) => s.accepted));
-    expect(CODES.filter((c) => !used.has(c))).toEqual([200]);
+    expect(CODES.filter((c) => !used.has(c))).toEqual([]);
   });
 });
 

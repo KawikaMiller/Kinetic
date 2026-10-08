@@ -7,12 +7,12 @@ import { StageFrame } from '../../components/StageFrame';
 import { useRadioGroup } from '../../components/useRadioGroup';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, TextField, Toggle } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import type { Tone } from '../../core/tone';
 import {
   CODES, ENDPOINTS, METHODS, ORDERS, ORDER_FIELDS, REASON, SCENARIOS, adHocResponse, examplePath, judgeStatus, parsePath, problemResponse, queryString,
   runQuery, shape, successFor, validate, verdict, type Code, type Endpoint, type Level, type Method, type OrderField, type OrderQuery, type OrderStatus,
   type PathShape, type SortKey,
 } from './model';
+import { LEVEL_TONE, boardCaption } from './frames';
 import './styles.css';
 
 type SceneId = 'board' | 'status' | 'collections';
@@ -22,7 +22,6 @@ const SCENES: { value: SceneId; label: string }[] = [
   { value: 'collections', label: 'Collections & errors' },
 ];
 const HONEST = 'Conventions, not a standard: the validator encodes common REST guidelines and says which rules come from RFC 9110.';
-const LEVEL_TONE: Record<Level, Tone> = { ok: 'ok', warn: 'orange', bad: 'bad' };
 const LEVEL_MARK: Record<Level, string> = { ok: '✓', warn: '!', bad: '✗' };
 
 export function Stage() {
@@ -56,15 +55,11 @@ function BoardScene({ picker }: { picker: ReactNode }) {
   const e = ENDPOINTS.find((x) => x.id === selected)!;
   const choose = (next: Choice) => {
     setChoices((c) => ({ ...c, [e.id]: next }));
-    const flags = validate(e.intent, next.method, shape(next.path));
-    const v = verdict(flags);
-    const problems = flags.filter((f) => f.level !== 'ok').length;
-    setCaption(
-      <>{next.method} {next.path}: {v === 'ok'
-        ? <span className="hl ok">matches the conventions</span>
-        : <>{problems === 1 ? 'one flag' : `${problems} flags`}, worst <span className={`hl ${LEVEL_TONE[v]}`}>{v === 'bad' ? 'a violation' : 'a style warning'}</span></>}.</>,
-      { quiet: true },
-    );
+    setCaption(boardCaption(e, next), { quiet: true });
+  };
+  const select = (id: string) => {
+    setSelected(id);
+    setCaption(boardCaption(ENDPOINTS.find((x) => x.id === id)!, choices[id]), { quiet: true });
   };
   const clean = ENDPOINTS.filter((x) => verdict(validate(x.intent, choices[x.id].method, shape(choices[x.id].path))) === 'ok').length;
 
@@ -85,7 +80,7 @@ function BoardScene({ picker }: { picker: ReactNode }) {
               const v = verdict(validate(x.intent, c.method, shape(c.path)));
               return (
                 <li key={x.id}><button type="button" className={`ra-card tone-${LEVEL_TONE[v]} ${x.id === selected ? 'is-on' : ''}`}
-                  aria-current={x.id === selected} onClick={() => setSelected(x.id)}>
+                  aria-current={x.id === selected} onClick={() => select(x.id)}>
                   <span className="ra-card-job">{x.intent.job}</span>
                   <span className="ra-card-legacy">was <code>{x.legacy}</code></span>
                   <span className="ra-card-now"><span className="ra-mark">{LEVEL_MARK[v]}</span> <RequestText method={c.method} s={shape(c.path)} /></span>

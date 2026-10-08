@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'REST design models an API as resources, nouns in the URL, and lets the standard HTTP methods and status codes say what happens, so clients, caches and retries all understand a request without reading your docs.',
-    what: 'A collection is a plural noun (`/orders`), one item is the collection plus an id (`/orders/7`), and a sub-collection nests once (`/users/42/orders`). The method is the verb: GET reads, POST to a collection creates (201 Created + Location), PUT replaces, PATCH changes part, DELETE removes. RFC 9110 says GET, HEAD and OPTIONS are safe, and PUT and DELETE are idempotent as well; POST and PATCH are neither in general. Filters, sorting and field selection are query parameters, and errors come back as a real 4xx or 5xx with a problem-details body (RFC 9457).',
+    what: 'A collection is a plural noun (`/orders`), one item is the collection plus an id (`/orders/7`), and a sub-collection nests once (`/users/42/orders`). The method is the verb: GET reads, POST to a collection creates (201 Created + Location), PUT replaces, PATCH changes part, DELETE removes. RFC 9110 says GET, HEAD and OPTIONS are safe, and PUT and DELETE are idempotent as well; POST is neither, and PATCH (RFC 5789) is not idempotent in general. Filters, sorting and field selection are query parameters, and errors come back as a real 4xx or 5xx with a problem-details body (RFC 9457).',
     analogy: 'A library catalogue: every book has a shelf mark (the URL) and the desk offers the same few services for any book (borrow, return, look up). Nobody invents a new counter called "getBookByTitleNow".',
     useCases: [
       'Turning a pile of RPC-style endpoints into a resource tree before a public API ships',
@@ -14,10 +14,10 @@ const lesson: LessonModule = {
       'Returning problem+json errors that a client can branch on by their type URI',
     ],
     why: 'Every web service you join will have an API, and many have one where `POST /doThing` hides what is safe to retry, cache or prefetch. Getting methods and status codes right is what lets proxies, browsers, SDKs and on-call engineers reason about a request. It builds on `http-basics` (methods and codes) and `client-server` (why a contract matters).',
-    watch: 'On the board each endpoint is a card with a left edge coloured by its verdict: green (conventions met, ✓), orange (a style warning such as a verb in the path or deep nesting, !) or red (a violation, ✗); the card being edited has a yellow outline. In request lines the method is violet, resource nouns are blue, ids are grey and a verb in the path is orange with a wavy underline. The validator prints each flag in the same green, orange or red, tagged with its source (RFC 9110 or convention), and the typical response\'s status line gets a green bar when nothing is violated. A refused typed path shows its reason in red. In Status codes, a right pick fills green and a wrong one red, with the explanation in the same colour. In Collections & errors the method is violet and /orders blue; the problem-details members have green bars, and the ad-hoc body\'s misleading lines red ones.',
+    watch: 'On the board each endpoint is a card with a left edge coloured by its verdict: green (conventions met, ✓), orange (a style warning such as a verb in the path or deep nesting, !) or red (a violation, ✗); the card being edited has a yellow outline. In request lines the method is violet, resource nouns are blue, ids are grey and a verb in the path is orange with a wavy underline. The validator prints each flag in the same green, orange or red, tagged with its source (RFC 9110, RFC 5789, a mix, or convention), and the typical response\'s status line gets a green bar when nothing is violated. A refused typed path shows its reason in red. In Status codes, a right pick fills green and a wrong one red, with the explanation in the same colour. In Collections & errors the method is violet and /orders blue; the problem-details members have green bars, and the ad-hoc body\'s misleading lines red ones.',
   },
   tryThis: [
-    'On the board pick "Remove order 7" with the method left on GET: read the first flag, then switch to DELETE and /orders/{id}.',
+    'On the board pick "Remove order 7" with the method left on GET: find the flag that mentions a crawler, then switch to DELETE and /orders/{id}.',
     'For "Mark order 7 as shipped", try PUT and then PATCH on /orders/{id}: why does only one pass?',
     'Pick the reviews card (nested too deep) and choose /items/{id}/reviews: what happens to the warning?',
     'In Status codes, answer the quantity -3 situation with 400, then with 422: both are accepted. Why?',
@@ -25,7 +25,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'URLs name resources (plural nouns, an id for one item); the method is the verb.',
-    'RFC 9110: GET, HEAD and OPTIONS are safe; PUT and DELETE are idempotent too; POST and PATCH are neither in general.',
+    'RFC 9110: GET, HEAD and OPTIONS are safe; PUT and DELETE are idempotent too. POST is neither; PATCH (RFC 5789) is not idempotent in general.',
     'Create with POST to the collection → 201 + Location. PUT replaces the whole thing, PATCH changes part.',
     'Errors are a real 4xx or 5xx with an RFC 9457 problem body; filters and sorting are query parameters.',
   ],
