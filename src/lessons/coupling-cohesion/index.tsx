@@ -48,7 +48,7 @@ const lesson: LessonModule = {
         'Grouping by feature: cart, payment, email',
         'Grouping by layer: controllers, services, utils',
         'Giving every function its own separate module',
-        'Grouping the functions alphabetically by name',
+        'Putting emailClient and sendReceipt in different modules',
       ],
       answer: 0,
       why: 'The change edits emailClient and its caller sendReceipt. By feature both sit in email; by layer one is a util and the other a service, so the change spans two modules. One function per module makes every multi-function change cross modules.',

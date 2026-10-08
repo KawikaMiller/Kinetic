@@ -7,6 +7,9 @@ import {
 
 const list = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
+/** A preset's name while the layout is still that preset; "Custom layout" once a function has moved. */
+export const layoutName = (presetLabel: string, presetAssign: Assignment, current: Assignment) => (current === presetAssign ? presetLabel : 'Custom layout');
+
 export function layoutCaption(label: string, a: Assignment): string {
   const c = coupling(a);
   if (c === 0) {
@@ -21,7 +24,7 @@ export function requestCaption(req: ChangeRequest, a: Assignment, modules: reado
   const touched = modulesTouched(a, req);
   const edits = callers.length ? `edits ${req.seed} and its ${plural(callers.length, 'caller')} ${list(callers)}` : `edits ${req.seed}`;
   const where = touched.length === 1 ? `1 module (${modules[touched[0]]})` : `${touched.length} modules (${list(touched.map((m) => modules[m]))})`;
-  return `"${req.label}" ${edits}: it lands in ${where}, with ${blastRadius(a, req)} functions to re-read and retest alongside it.`;
+  return `"${req.label}" ${edits}: it lands in ${where}, with a blast radius of ${blastRadius(a, req)} (the functions in those modules: this lesson's rough proxy for code to re-read and retest).`;
 }
 
 export function moveCaption(fn: FnId, before: Assignment, to: Slot, modules: readonly string[], req: ChangeRequest | null): string {

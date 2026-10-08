@@ -96,7 +96,7 @@ export const PRESETS: Record<PresetId, Preset> = {
   god: {
     id: 'god',
     label: 'God module',
-    modules: ['shop', 'module b', 'module c'],
+    modules: ['shop', 'spare A', 'spare B'],
     assign: assignBy(() => 'all', ['all']),
   },
 };

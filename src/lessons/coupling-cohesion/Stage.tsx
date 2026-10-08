@@ -8,7 +8,7 @@ import { NA, pct } from '../../core/format';
 import type { Pt } from '../../core/geometry';
 import { minWidthForText } from '../../core/scale';
 import { toneVar, type Tone } from '../../core/tone';
-import { layoutCaption, moveCaption, requestCaption } from './captions';
+import { layoutCaption, layoutName, moveCaption, requestCaption } from './captions';
 import { NODE, VIEW, layoutModules, moduleAt, passThroughs } from './layout';
 import {
   EDGES, FN_IDS, PRESETS, PRESET_IDS, REQUESTS, SLOTS, THRESHOLDS, blastRadius, changeSet, coupling, crosses, meanCohesion, moduleStats,
@@ -46,6 +46,8 @@ export function Stage() {
   const touched = request ? modulesTouched(assign, request) : [];
   const { boxes, at } = useMemo(() => layoutModules(assign), [assign]);
   const hidden = useMemo(() => passThroughs(at).length, [at]);
+  /** Moving a function makes the layout the learner's own: the preset's name no longer describes it. */
+  const name = layoutName(preset.label, preset.assign, assign);
   const c = coupling(assign);
   const cohesion = meanCohesion(assign);
 
@@ -61,7 +63,7 @@ export function Stage() {
   const pickRequest = (id: RequestId) => {
     const next = id === requestId ? null : id;
     setRequestId(next);
-    setCaption(next ? requestCaption(requestById(next), assign, modules) : layoutCaption(preset.label, assign));
+    setCaption(next ? requestCaption(requestById(next), assign, modules) : layoutCaption(name, assign));
   };
   const move = (fn: FnId, to: Slot) => {
     if (assign[fn] === to) return;
@@ -280,6 +282,12 @@ export function Stage() {
             ))}
           </tbody>
         </table>
+        {SLOTS.some((m) => stats[m].size === FN_IDS.length) && (
+          <Hint block tone="muted">
+            Coupling 0 and cohesion 100% look perfect, yet every change request lands in all 14 functions (pick one and watch Blast radius). Edge counts
+            alone cannot see a god module; the change requests can.
+          </Hint>
+        )}
         <Hint block>
           A toy codebase; the scores are simple edge counts, not a standard metric, and the green and red cut-offs are this lesson's rules of thumb.
           Ca, Ce and I follow Robert C. Martin's package metrics, counted over functions instead of classes. A change request is modelled as editing one
