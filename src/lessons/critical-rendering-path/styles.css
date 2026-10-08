@@ -1,0 +1,36 @@
+.crp { gap: 12px; }
+.crp .section-title { display: block; margin-bottom: 4px; }
+.crp-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; align-items: start; }
+.crp-editor { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.crp-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.crp-row-name { min-width: 108px; font: 600 12px var(--mono); color: var(--text); }
+.crp-code { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.crp-gate { font: 500 13px var(--font); color: var(--muted); }
+.crp-gate b { color: var(--ok); font-weight: 700; }
+.crp-broken { font: 600 13px var(--font); }
+
+/* the filmstrip */
+.crp-film { display: flex; gap: 12px; }
+.crp-shot-fig { flex: 1 1 100px; min-width: 100px; max-width: 150px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.crp-shot-fig figcaption { min-width: 0; font: 500 11.5px var(--font); color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.crp-shot-fig figcaption b { color: var(--text); overflow-wrap: anywhere; }
+.crp-shot {
+  aspect-ratio: 3 / 4; border-radius: 8px; border: 1px solid var(--line-2); padding: 8px; display: flex; flex-direction: column; gap: 6px; overflow: hidden;
+  background: color-mix(in srgb, var(--text) 8%, var(--bg));
+}
+.crp-shot.is-pending { background: transparent; border-style: dashed; }
+.crp-shot-h1 { font-size: 20px; line-height: 1.1; color: var(--text); }
+.crp-shot-h1.is-fallback { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; }
+.crp-shot-h1.is-web { font-family: var(--font); font-weight: 800; }
+.crp-shot-h1.is-none, .crp-shot-h1.is-invisible { visibility: hidden; }
+.crp-shot-lines { display: flex; flex-direction: column; gap: 4px; }
+.crp-shot-lines i { display: block; height: 5px; border-radius: 3px; background: var(--muted); opacity: 0.6; }
+.crp-shot-lines i:last-child { width: 70%; }
+.crp-shot-lines.is-none, .crp-shot-lines.is-invisible { visibility: hidden; }
+.crp-shot-hero { flex: 1; min-height: 28px; border-radius: 6px; background: linear-gradient(135deg, color-mix(in srgb, var(--info) 55%, var(--bg)), color-mix(in srgb, var(--violet) 55%, var(--bg))); }
+
+@media (max-width: 900px) {
+  .crp-top { grid-template-columns: minmax(0, 1fr); }
+  .crp-film { gap: 8px; }
+  .crp-shot-fig { flex: 0 0 100px; min-width: 0; }
+}
