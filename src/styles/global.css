@@ -162,8 +162,9 @@ strong {
 .hl.amber { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber); }
 .hl.orange { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
 /* A chip stays on one line, so keep it short (see docs/shared-api.md, Captions). A long verdict
-   adds `wrap`: it breaks at spaces like the text around it, each line keeping the chip's padding. */
-.hl.wrap { white-space: normal; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+   adds `wrap`: it breaks at spaces like the text around it (padding stays at the chip's two ends, so a wrapped
+   chip never overflows the caption). */
+.hl.wrap { white-space: normal; }
 
 /* `code` inside lesson text (summary, tips, key ideas, quiz): components/InlineText */
 .inline-code {
