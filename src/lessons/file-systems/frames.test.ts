@@ -93,3 +93,23 @@ describe('fsync captions and timeline, every toggle × cut', () => {
     }
   });
 });
+
+describe('review F1: the fsync try-this works exactly as written', () => {
+  it('Just created + fsync(fd), cut at 12 ms: missing; add fsync(dir fd): still missing at 12 ms (call not returned), safe at 20 ms', () => {
+    const fileOnly = { newFile: true, fsyncFile: true, fsyncDir: false };
+    const both = { newFile: true, fsyncFile: true, fsyncDir: true };
+    expect(CUT_STOPS[2]).toBe(12);
+    expect(CUT_STOPS).toContain(20);
+    expect(afterPowerCut(fileOnly, 12)).toBe('file-missing');
+    expect(captionText(syncCaption(fileOnly, 12))).toContain('needs fsync on its directory too');
+    expect(afterPowerCut(both, 12)).toBe('file-missing');
+    const text = captionText(syncCaption(both, 12));
+    expect(text).toContain("fsync(dir fd) was called but hadn't returned yet");
+    expect(text).not.toContain('needs fsync on its directory too');
+    expect(afterPowerCut(both, 20)).toBe('safe');
+  });
+  it('the try-this text names the 20 ms cut', async () => {
+    const lesson = (await import('./index')).default;
+    expect(lesson.tryThis.some((t) => t.includes('fsync(dir fd) and move the cut to 20 ms'))).toBe(true);
+  });
+});

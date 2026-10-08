@@ -18,7 +18,7 @@ export function syncEvents(c: SyncConfig): SyncEvent[] {
   if (c.fsyncFile) ev.push({ label: 'fsync(fd) returns: file data and inode on disk', at: d.data });
   if (c.fsyncDir && c.newFile) ev.push({ label: 'fsync(dir fd) returns: the new name is on disk', at: d.entry });
   if (c.fsyncDir && !c.newFile) ev.push({ label: 'fsync(dir fd) returns: nothing new to write there', at: (c.fsyncFile ? FILE_SYNC_MS : 0) + DIR_SYNC_MS });
-  ev.push({ label: 'kernel background flush (ext4 commits every 5 s)', at: FLUSH_MS });
+  ev.push({ label: 'background writeback, shown at 5 s (illustrative; without fsync nothing is promised)', at: FLUSH_MS });
   return ev.sort((a, b) => a.at - b.at);
 }
 
@@ -40,14 +40,19 @@ export function syncCaption(c: SyncConfig, t: number): ReactNode {
       <>
         {lead}
         <span className="hl orange">The file is gone after the reboot:</span> its directory entry was still only in memory
-        {c.fsyncFile && t >= d.data ? <>, even though fsync on the file had already put the data on disk. A new file needs fsync on its directory too</> : null}.
+        {c.fsyncDir ? (
+          <>: fsync(dir fd) was called but hadn't returned yet (it's done at {msLabel(d.entry)})</>
+        ) : c.fsyncFile && t >= d.data ? (
+          <>, even though fsync on the file had already put the data on disk. A new file needs fsync on its directory too</>
+        ) : null}
+        .
       </>
     );
   }
   return (
     <>
       {lead}
-      <span className="hl orange">The write is lost:</span> <code>write()</code> only copied it into the page cache, and {c.fsyncFile ? 'fsync' : 'the background flush'} hadn't
+      <span className="hl orange">The write is lost:</span> <code>write()</code> only copied it into the page cache, and {c.fsyncFile ? 'fsync' : 'background writeback'} hadn't
       put it on disk yet{c.newFile ? <> (the file exists, but without the new data)</> : null}.
     </>
   );

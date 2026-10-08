@@ -110,7 +110,11 @@ export function crashPoints(mode: Mode, order: NoJournalOrder = 'DIB'): CrashPoi
 /** Illustrative timings, ms after write() returned. */
 export const FILE_SYNC_MS = 8;
 export const DIR_SYNC_MS = 8;
-/** ext4 commits its journal (and, in ordered mode, the data with it) every 5 s by default. */
+/**
+ * When background writeback happens to land, illustrative. ext4 commits its journal every
+ * 5 s by default, and dirty data is typically written back within about 30 s, but without
+ * fsync there is no promise at all.
+ */
 export const FLUSH_MS = 5000;
 
 export interface SyncConfig {

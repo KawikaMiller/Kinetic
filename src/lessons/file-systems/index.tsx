@@ -21,7 +21,7 @@ const lesson: LessonModule = {
     'In Links, press ln notes.txt n2, ln -s notes.txt s2, rm notes.txt, then cat n2 and cat s2.',
     'In Links, press Reset, then exec 3< notes.txt and rm notes.txt: df and du disagree until you press exec 3<&-.',
     'In Crash with no journal, slide Power cut across every write for each write order; then switch to data=journal and do the same.',
-    'In fsync, set The file to Just created and turn on fsync(fd) only, with the cut at 12 ms: the file vanishes. Turn on fsync(dir fd).',
+    'In fsync, set The file to Just created and turn on fsync(fd) only, with the cut at 12 ms: the file vanishes. Turn on fsync(dir fd) and move the cut to 20 ms.',
   ],
   keyIdeas: [
     'An inode is the file; names live in directories, and the link count says how many there are.',
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'No: write() data never reaches the disk',
       ],
       answer: 0,
-      why: 'write() copies into the page cache and returns; the kernel flushes later (ext4 commits every 5 s by default). Only a completed fsync promises it is on disk. It isn\'t lost forever either: left alone, the background flush would have written it.',
+      why: 'write() copies into the page cache and returns; the kernel writes it back later, typically within seconds to about 30 s, with no promise. Only a completed fsync promises it is on disk. It isn\'t lost forever either: left alone, the background flush would have written it.',
     },
     {
       q: 'Where is a file\'s name stored?',

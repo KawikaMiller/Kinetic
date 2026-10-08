@@ -33,7 +33,7 @@ function stepCaption(f: Fs, s: WalkStep, i: number): ReactNode {
       if (i === 0) {
         return (
           <>
-            Start at the root directory: it is always inode {ROOT_INO}. Read block {s.block} of the inode table to get it: a directory, with its entries in data block {node.blocks[0]}.
+            Start at the root directory: on ext4 it is always inode {ROOT_INO}. Read block {s.block} of the inode table to get it: a directory, with its entries in data block {node.blocks[0]}.
           </>
         );
       }
