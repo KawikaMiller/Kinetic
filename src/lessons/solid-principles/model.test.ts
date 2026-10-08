@@ -3,7 +3,7 @@ import { L_CODE, VARIANTS, type Design, type PrincipleId, type Unit } from './co
 import { breaks, buildFrames, impactOf } from './frames';
 import { changedLines, dependencies, impact, renderListing, stubCount, touchedCount } from './model';
 import { PRINCIPLE_IDS } from './principles';
-import { L_CALLS, programText, runAll } from './run';
+import { L_CALLS, isBaseline, programText, runAll, substitutions } from './run';
 
 type Changing = Exclude<PrincipleId, 'L'>;
 const CHANGING: Changing[] = ['S', 'O', 'I', 'D'];
@@ -17,7 +17,7 @@ const HAND: Record<Changing, Record<Design, { edited: string[]; added: string[];
   },
   O: {
     violating: { edited: ['Exporter'], added: [], retest: ['ReportJob', 'AdminPage'] },
-    fixed: { edited: ['exporterFor'], added: ['CsvExporter'], retest: [] },
+    fixed: { edited: ['exporterFor'], added: ['CsvExporter'], retest: ['main'] },
   },
   I: {
     violating: { edited: ['Printer', 'OfficePrinter', 'SimpleScanner'], added: [], retest: ['ScanApp', 'PrintApp'] },
@@ -52,8 +52,12 @@ describe('change impact per principle × design', () => {
     }
   }
 
-  it('the fixed design touches fewer classes for every change request', () => {
-    for (const p of CHANGING) expect(touchedCount(impactOf(p, 'fixed')), p).toBeLessThan(touchedCount(impactOf(p, 'violating')));
+  it('the fixed design touches fewer classes for S, I and D, and ties for O (3 and 3), which the O caption says', () => {
+    for (const p of ['S', 'I', 'D'] as const) expect(touchedCount(impactOf(p, 'fixed')), p).toBeLessThan(touchedCount(impactOf(p, 'violating')));
+    expect(touchedCount(impactOf('O', 'fixed'))).toBe(3);
+    expect(touchedCount(impactOf('O', 'violating'))).toBe(3);
+    const last = buildFrames('O', 'fixed').at(-1)!;
+    expect(last.say).toContain('The count ties');
   });
 
   it('the fixed O and D designs never open an existing class: only the wiring function changes', () => {
@@ -61,9 +65,18 @@ describe('change impact per principle × design', () => {
     expect(impactOf('D', 'fixed').edited).toEqual(['main']);
   });
 
+  it('the stubs are exactly the methods a scanner cannot do: emailScan is real code in both designs', () => {
+    const stubs = (v: Unit[]) => v.find((u) => u.name === 'SimpleScanner')!.members.filter((m) => m.lines.some((l) => l.includes("'not supported'"))).map((m) => m.name);
+    expect(stubs(VARIANTS.I.violating.before)).toEqual(['print', 'fax', 'staple', 'copy']);
+    expect(stubs(VARIANTS.I.violating.after)).toEqual(['print', 'printDuplex', 'fax', 'staple', 'copy']);
+    const emailScan = (v: Unit[]) => v.find((u) => u.name === 'SimpleScanner')!.members.find((m) => m.name === 'emailScan')!.lines.join(' ');
+    expect(emailScan(VARIANTS.I.violating.before)).toBe(emailScan(VARIANTS.I.fixed.before));
+    expect(buildFrames('I', 'violating').at(-1)!.say).toContain('now stubs 5 methods (it had 4)');
+  });
+
   it('the fat interface forces stubs on SimpleScanner, and the change adds one more', () => {
-    expect(stubCount(VARIANTS.I.violating.before, 'SimpleScanner')).toBe(5);
-    expect(stubCount(VARIANTS.I.violating.after, 'SimpleScanner')).toBe(6);
+    expect(stubCount(VARIANTS.I.violating.before, 'SimpleScanner')).toBe(4);
+    expect(stubCount(VARIANTS.I.violating.after, 'SimpleScanner')).toBe(5);
     expect(stubCount(VARIANTS.I.fixed.after, 'SimpleScanner')).toBe(0);
   });
 });
@@ -75,7 +88,7 @@ describe('dependencies are read off the code', () => {
     expect(edges(VARIANTS.O.fixed.before)).toEqual(
       [
         'PdfExporter implements Exporter', 'HtmlExporter implements Exporter', 'ReportJob uses Exporter', 'AdminPage uses Exporter',
-        'exporterFor uses PdfExporter', 'exporterFor uses HtmlExporter',
+        'exporterFor uses PdfExporter', 'exporterFor uses HtmlExporter', 'main uses ReportJob', 'main uses AdminPage', 'main uses exporterFor',
       ].sort(),
     );
   });
@@ -129,6 +142,15 @@ describe('L: the substitution run is real JavaScript', () => {
     expect(check).toEqual([true, 'function']);
   });
 
+  it('only calls that hand a subclass to base-type code count as substitutions; baselines are labelled and left out', () => {
+    expect(substitutions('violating').map((r) => r.call.subclass)).toEqual(['ReadOnlyFile']);
+    expect(substitutions('fixed').map((r) => r.call.subclass)).toEqual(['WritableFile', 'ReadOnlyFile']);
+    for (const d of DESIGNS) for (const c of L_CALLS[d]) expect(isBaseline(c), c.code).toBe(c.subclass === c.base);
+    const out = buildFrames('L', 'violating').at(-1)!.console.map((l) => l.text);
+    expect(out.filter((t) => t.includes('baseline'))).toHaveLength(1);
+    expect(breaks('violating')).toBe(1);
+  });
+
   it('the fixed design runs every call', () => {
     const results = runAll('fixed');
     expect(results.every((r) => r.ok)).toBe(true);
@@ -143,13 +165,24 @@ describe('L: the substitution run is real JavaScript', () => {
 });
 
 describe('frames: every principle × design', () => {
+  it('the change starts in a class that is already in the diagram (never in one the change adds)', () => {
+    for (const p of CHANGING) {
+      for (const d of DESIGNS) {
+        const frames = buildFrames(p, d);
+        const start = Object.keys(frames[1].marks);
+        expect(start).toHaveLength(1);
+        expect(VARIANTS[p][d].before.map((u) => u.name), `${p} ${d}`).toContain(start[0]);
+      }
+    }
+  });
+
   for (const p of PRINCIPLE_IDS) {
     for (const d of DESIGNS) {
       it(`${p} ${d} ends on a caption computed from the run`, () => {
         const frames = buildFrames(p, d);
         const last = frames[frames.length - 1];
         if (p === 'L') {
-          expect(last.say).toContain(d === 'violating' ? '1 of 2 substitutions broke' : '3 of 3 substitutions work');
+          expect(last.say).toContain(d === 'violating' ? '1 of 1 substitution broke' : '2 of 2 substitutions work');
           expect(last.console.some((l) => l.tone === 'bad')).toBe(d === 'violating');
         } else {
           const n = touchedCount(impactOf(p, d));

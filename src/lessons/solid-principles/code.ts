@@ -89,6 +89,11 @@ const oFixed = (csv: boolean): Variant => [
     '};',
     'return all[format];',
   ]),
+  fn('function main()', [
+    "const job = new ReportJob(exporterFor('pdf'));",
+    "const page = new AdminPage(exporterFor('html'));",
+    'return [job, page];',
+  ]),
 ];
 
 // ---- I: interface segregation ----
@@ -120,7 +125,7 @@ const iViolating = (duplex: boolean): Variant => [
     m('fax', `fax() ${STUB}`),
     m('staple', `staple() ${STUB}`),
     m('copy', `copy() ${STUB}`),
-    m('emailScan', `emailScan() ${STUB}`),
+    m('emailScan', 'emailScan(to: string) { mail(to, this.scan()); }'),
   ]),
   cls('class ScanApp', [m('constructor', 'constructor(private dev: Printer) {}'), m('run', 'run() { return this.dev.scan(); }')]),
   cls('class PrintApp', [m('constructor', 'constructor(private dev: Printer) {}'), m('run', 'run(doc: Doc) { this.dev.print(doc); }')]),

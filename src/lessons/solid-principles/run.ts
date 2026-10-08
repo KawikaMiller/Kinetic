@@ -25,6 +25,9 @@ export const L_CALLS: Record<Design, SubstitutionCall[]> = {
   ],
 };
 
+/** A call on the base type itself is a baseline, not a substitution: it can't show a subtype breaking anything. */
+export const isBaseline = (c: SubstitutionCall) => c.subclass === c.base;
+
 export type RunResult =
   | { call: SubstitutionCall; ok: true; value: string[] }
   | { call: SubstitutionCall; ok: false; errorName: string; message: string; isTypeError: boolean };
@@ -48,3 +51,6 @@ export function runCall(design: Design, call: SubstitutionCall): RunResult {
 }
 
 export const runAll = (design: Design) => L_CALLS[design].map((c) => runCall(design, c));
+
+/** Only the calls that hand a subclass to code written for its base type. */
+export const substitutions = (design: Design) => runAll(design).filter((r) => !isBaseline(r.call));

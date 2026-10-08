@@ -3,7 +3,7 @@ import type { Tone } from '../../core/tone';
 import { L_CODE, VARIANTS, type Design, type PrincipleId, type Variant } from './code';
 import { changedLines, impact, stubCount, touchedCount, type Impact } from './model';
 import { PRINCIPLES } from './principles';
-import { runAll, type RunResult } from './run';
+import { isBaseline, runAll, substitutions, type RunResult } from './run';
 
 /** A frame's mark on a class: the change ripple, or the L run's verdict. */
 export type UnitMark = 'hi' | 'bad' | 'orange' | 'ok';
@@ -33,10 +33,10 @@ function extra(p: Exclude<PrincipleId, 'L'>, d: Design): string {
   if (p === 'I') {
     const before = stubCount(v.before, 'SimpleScanner');
     const after = stubCount(v.after, 'SimpleScanner');
-    return after ? ` SimpleScanner now stubs ${after} methods (it had ${before}), none of which it can do.` : ' SimpleScanner stubs nothing: it only implements Scanning.';
+    return after ? ` SimpleScanner now stubs ${after} methods (it had ${before}): none of them is something a scanner can do.` : ' SimpleScanner stubs nothing: it only implements Scanning.';
   }
   if (p === 'S' && d === 'violating') return ' Report.total() rode along: unchanged, but it ships and is re-tested with the layout change.';
-  if (p === 'O' && d === 'fixed') return ' The one existing edit is a line in exporterFor, the wiring; no exporter that already worked was opened.';
+  if (p === 'O' && d === 'fixed') return ' The count ties, but the one edit to existing code is a line in exporterFor, the wiring: no exporter that already worked was opened, and main only needs re-testing.';
   if (p === 'D' && d === 'fixed') return ' ReportService never changed: it only knows ReportRepo.';
   return '';
 }
@@ -45,7 +45,8 @@ function changeFrames(p: Exclude<PrincipleId, 'L'>, d: Design): SpFrame[] {
   const pr = PRINCIPLES[p];
   const { before, after } = VARIANTS[p][d];
   const im = impact(before, after);
-  const start = im.added[0] ?? im.edited[0];
+  // Every design edits an existing unit, so the change starts somewhere that is already in the diagram.
+  const start = im.edited[0];
   const changed = changedLines(before, after);
   const base = { console: [] };
   const edits: Record<string, UnitMark> = Object.fromEntries([...im.edited.map((u) => [u, 'bad']), ...im.added.map((u) => [u, 'hi'])]);
@@ -78,19 +79,19 @@ function changeFrames(p: Exclude<PrincipleId, 'L'>, d: Design): SpFrame[] {
 }
 
 const printed = (r: RunResult): { text: string; tone: Tone }[] => [
-  { text: `> ${r.call.code}`, tone: 'muted' },
+  { text: `> ${r.call.code}${isBaseline(r.call) ? '   // baseline: the base type itself' : ''}`, tone: 'muted' },
   ...(r.ok ? r.value.map((text) => ({ text, tone: 'ok' as Tone })) : [{ text: `Uncaught ${r.errorName}: ${r.message}`, tone: 'bad' as Tone }]),
 ];
 
 /** Subclasses that broke the function written for their base type, in a full run. */
-export const breaks = (d: Design) => runAll(d).filter((r) => !r.ok).length;
+export const breaks = (d: Design) => substitutions(d).filter((r) => !r.ok).length;
 
 function substitutionFrames(d: Design): SpFrame[] {
   const results = runAll(d);
   const variant = L_CODE[d];
   const frames: SpFrame[] = [
     {
-      say: `Each call hands a subclass to a function written for its base type, and really runs it. Press play.`,
+      say: `Each call really runs. Calls on the base type itself are baselines; the ones that hand a subclass to code written for its base type are the substitutions that count. Press play.`,
       variant,
       marks: {},
       changed: NONE,
@@ -104,20 +105,23 @@ function substitutionFrames(d: Design): SpFrame[] {
     const now: Record<string, UnitMark> = { ...marks, [r.call.fn]: 'hi', [r.call.subclass]: r.ok ? 'ok' : 'bad' };
     marks[r.call.subclass] = r.ok ? (marks[r.call.subclass] === 'bad' ? 'bad' : 'ok') : 'bad';
     frames.push({
-      say: r.ok
-        ? `${r.call.fn}() was written for ${r.call.base}; handed a ${r.call.subclass}, it works.`
-        : `${r.call.fn}() was written for ${r.call.base}; handed a ${r.call.subclass}, it throws a real ${r.errorName}. It compiled fine; the subclass broke the base type's promise.`,
+      say: isBaseline(r.call)
+        ? `Baseline: ${r.call.fn}() on a plain ${r.call.base} works. That says nothing yet about subclasses.`
+        : r.ok
+          ? `${r.call.fn}() was written for ${r.call.base}; handed a ${r.call.subclass}, it works.`
+          : `${r.call.fn}() was written for ${r.call.base}; handed a ${r.call.subclass}, it throws a real ${r.errorName}. The code parses and runs; the subclass's write() broke the base type's promise.`,
       variant,
       marks: now,
       changed: NONE,
       console: [...out],
     });
   });
-  const broke = results.filter((r) => !r.ok);
+  const subs = substitutions(d);
+  const broke = subs.filter((r) => !r.ok);
   frames.push({
     say: broke.length
-      ? `${broke.length} of ${results.length} substitutions broke. Every caller of saveAll now needs to know which kind of File it has, which is what the principle forbids.`
-      : `${results.length} of ${results.length} substitutions work. In TypeScript, saveAll(files: WritableFile[]) would also refuse a ReadOnlyFile at compile time; here JSDoc only documents it.`,
+      ? `${broke.length} of ${subs.length} ${subs.length === 1 ? 'substitution' : 'substitutions'} broke. Any caller of saveAll that might pass a ReadOnlyFile now has to know which kind of File it holds, which is what the principle is about avoiding.`
+      : `${subs.length} of ${subs.length} substitutions work. In TypeScript, saveAll(files: WritableFile[]) would also refuse a ReadOnlyFile at compile time; here JSDoc only documents it.`,
     variant,
     marks: { ...marks },
     changed: NONE,

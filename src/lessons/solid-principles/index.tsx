@@ -19,9 +19,9 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'On S, play the violating design, then switch Design to Fixed and play again: 3 classes touched against 2.',
-    'On O, play the fixed design: adding CsvExporter edits only one line of wiring, and no exporter that already worked.',
+    'On O, play the fixed design: adding CsvExporter edits only one line of wiring, and no exporter that already worked. The counts still tie with the violating design at 3: the difference is what you had to open.',
     'On L, play the violating design: saveAll throws a real TypeError for ReadOnlyFile, though the code is valid JavaScript.',
-    'On I, play the violating design and watch SimpleScanner turn red: it gains a sixth method that just throws.',
+    'On I, play the violating design and watch SimpleScanner turn red: it gains a fifth method that just throws.',
     'Read each principle\'s "When it\'s overkill" note, and on D notice the fixed design adds an interface you\'d skip if nothing ever swapped the repository.',
   ],
   keyIdeas: [
@@ -43,15 +43,15 @@ const lesson: LessonModule = {
       why: 'Dependency inversion asks high-level code to depend on an abstraction where the details vary. An interface with one implementation that never changes and is never faked is pure indirection, which is what each scene\'s "overkill" note warns about. "Every class" is the tempting answer, and the misconception.',
     },
     {
-      q: 'ReadOnlyFile extends File compiles fine, but its write() throws. Which principle does that break?',
+      q: 'ReadOnlyFile is a valid subclass of File, but its write() throws. Which principle does that break?',
       options: [
         'Liskov: code written for File breaks when handed the subclass',
         'Single responsibility: the class now does reading and writing',
         'Open/closed: the subclass reached in and changed the File class',
-        'None: it compiles, so the type checker has accepted the design',
+        'None: it is a valid subclass, so the language has accepted the design',
       ],
       answer: 0,
-      why: 'Substitution is about behaviour: saveAll was written against File\'s promise that write() works, and the subclass breaks that promise at runtime, as the real TypeError shows. Compiling only proves the method signatures line up, which is the misconception this question targets.',
+      why: 'Substitution is about behaviour: saveAll was written against File\'s promise that write() works, and the subclass breaks that promise at runtime, as the real TypeError shows. Being a valid subclass (or compiling, in a typed language) only proves the method signatures line up, which is the misconception this question targets.',
     },
     {
       q: 'In the fixed O design, adding CSV still edits one existing function. Which one?',

@@ -14,7 +14,7 @@ import { L_CODE, VARIANTS, type Design, type PrincipleId, type Unit } from './co
 import { breaks, buildFrames, impactOf, type UnitMark } from './frames';
 import { dependencies, renderListing, touchedCount } from './model';
 import { PRINCIPLES, PRINCIPLE_IDS } from './principles';
-import { L_CALLS } from './run';
+import { substitutions } from './run';
 import './styles.css';
 
 const STEP_MS = 1500;
@@ -92,9 +92,9 @@ export function Stage() {
           ) : (
             <Stat
               label="Substitutions that break"
-              value={`${breaks(design)} of ${L_CALLS[design].length}`}
+              value={`${breaks(design)} of ${substitutions(design).length}`}
               color={breaks(design) ? 'var(--bad)' : 'var(--ok)'}
-              sub="a subclass handed to code written for its base type"
+              sub="a subclass handed to code written for its base type (calls on the base type itself are baselines, not counted)"
             />
           )}
         </Stats>

@@ -39,8 +39,8 @@ export const PRINCIPLES: Record<PrincipleId, Principle> = {
   L: {
     id: 'L',
     name: 'Liskov substitution',
-    statement: 'Code written for a base type must keep working when it is handed any subtype.',
-    source: 'Barbara Liskov (1987), formalised with Jeannette Wing (1994) as behavioural subtyping.',
+    statement: 'Where a base type is expected, any subtype must work without surprises: no stronger preconditions, no weaker postconditions.',
+    source: "Barbara Liskov (1987), formalised with Jeannette Wing (1994) as behavioural subtyping: a subtype keeps the base type's contract.",
     request: 'Pass every subclass to the function written for its base type',
     violating: 'ReadOnlyFile extends File and makes write() throw',
     fixed: 'only WritableFile has write(); ReadOnlyFile is a plain File',
@@ -60,10 +60,10 @@ export const PRINCIPLES: Record<PrincipleId, Principle> = {
     id: 'D',
     name: 'Dependency inversion',
     statement: 'High-level modules should not depend on low-level modules; both should depend on abstractions.',
-    source: 'Robert C. Martin. Wiring the pieces together is the dependency-injection lesson.',
+    source: 'Robert C. Martin. The rule is about who owns the abstraction: the high-level side. Passing the object in is dependency injection, a separate technique, in the dependency-injection lesson.',
     request: 'Add a cache in front of the repository',
     violating: 'ReportService creates a MySqlRepo itself',
-    fixed: 'ReportService asks for any ReportRepo',
+    fixed: 'ReportService asks for any ReportRepo, an interface on its own side of the line (that is the inversion), and main hands one in (that is dependency injection)',
     overkill: 'An interface with exactly one implementation that will never be swapped or faked in a test is extra indirection. Add it when a second implementation (or a test double) appears.',
   },
 };
