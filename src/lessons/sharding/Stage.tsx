@@ -1,15 +1,16 @@
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { NA } from '../../core/format';
+import { cssVar } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
-import { buildFrames, HOT_FACTOR, ORDERS, type ShardKey, type Strategy } from './model';
+import { buildFrames } from './frames';
+import { BASE_MS, HOT_MS, isHot, loadOf, ORDERS, type ShardKey, type Strategy } from './model';
 import './styles.css';
 
-const SHARD_COLORS = ['var(--info)', 'var(--violet)', 'var(--ok)', 'var(--amber)', 'var(--orange)'];
-/** A hot shard also needs a few orders, so one early write doesn't count. */
-const HOT_MIN_ORDERS = 4;
+/** One hue per shard, none of them a status colour: red means hot, violet means moved, yellow means asked. */
+const SHARD_COLORS = [cssVar('sky'), cssVar('trkHw'), cssVar('trkMath'), cssVar('trkLang'), cssVar('trkWeb')];
 /** More orders moving than this in a rebalance is a bad sign (half of them). */
 const MANY_MOVED = ORDERS.length / 2;
 /** Order chips glide between shards on this spring. */
@@ -23,9 +24,9 @@ export function Stage() {
   const player = usePlayer(frames, { interval: 700 });
   const f = player.frame;
 
-  const counts = f.shards.map((_, i) => Object.values(f.placed).filter((s) => s === i).length + (f.incoming && f.placed[f.incoming.id] === i ? -1 : 0));
+  const { counts, even, busiest } = loadOf(f.placed, f.shards.length, f.incoming?.id);
   const maxCount = Math.max(1, ...counts);
-  const avg = Object.keys(f.placed).length / f.shards.length;
+  const busiestHot = isHot(Math.max(...counts), even);
 
   const change = (s: Strategy, k: ShardKey) => {
     setStrategy(s);
@@ -45,8 +46,8 @@ export function Stage() {
         <Stats>
           <Stat
             label="Busiest shard"
-            value={`${counts.length ? Math.round((Math.max(...counts) / Math.max(1, avg)) * 100) / 100 : 0}×`}
-            color={Math.max(...counts) > avg * HOT_FACTOR ? 'var(--bad)' : 'var(--ok)'}
+            value={`${busiest.toFixed(2)}×`}
+            color={busiestHot ? 'var(--bad)' : undefined}
             sub="vs an even share"
           />
           <Stat
@@ -62,13 +63,19 @@ export function Stage() {
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--hi)', label: 'incoming / queried' },
-            { color: 'var(--bad)', label: 'hot shard' },
-            { color: 'var(--violet)', label: 'moved in rebalance' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--hi)', label: 'incoming / queried' },
+              { color: 'var(--bad)', label: 'hot shard' },
+              { color: 'var(--violet)', label: 'moved in rebalance' },
+            ]}
+          />
+          <ProvenanceRow>
+            <Provenance kind="toy">{ORDERS.length} made-up orders, hashed with FNV-1a; shard counts are exact for these orders</Provenance>
+            <Provenance kind="illustrative">query times ({BASE_MS} ms, {HOT_MS} ms on a hot shard) are made up, not measured</Provenance>
+          </ProvenanceRow>
+        </>
       }
       controls={
         <Controls>
@@ -127,7 +134,7 @@ export function Stage() {
 
           <div className="sh-shards" style={{ '--n': f.shards.length } as CSSProperties}>
             {f.shards.map((s, i) => {
-              const hot = counts[i] > avg * HOT_FACTOR && counts[i] >= HOT_MIN_ORDERS;
+              const hot = isHot(counts[i], even);
               const queried = f.query?.touched.includes(i);
               const isNew = f.newShard === i;
               return (

@@ -41,7 +41,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
   padding: 10px;
+  padding-bottom: 30px;
   min-height: 250px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--panel) 85%, transparent);
@@ -49,9 +51,9 @@
   border-top: 3px solid var(--c);
   transition: border-color 0.3s, box-shadow 0.3s;
 }
-.sh-shard header { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.sh-shard header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 6px; min-width: 0; }
 .sh-shard header b { font-size: 14px; color: var(--c); }
-.sh-shard header span { font: 600 10.5px var(--mono); color: var(--muted); text-align: right; }
+.sh-shard header span { font: 600 10.5px var(--mono); color: var(--muted); text-align: right; overflow-wrap: break-word; min-width: 0; }
 .sh-shard.hot { border-color: var(--bad); box-shadow: 0 0 28px -8px var(--bad); }
 .sh-shard.queried { border-color: var(--hi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hi) 20%, transparent); }
 .sh-shard.new { border-style: dashed; border-color: var(--violet); }
