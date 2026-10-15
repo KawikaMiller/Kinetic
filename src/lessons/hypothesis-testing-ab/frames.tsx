@@ -51,6 +51,17 @@ const armLine = (a: Arms, t: ZTest) => (
   </>
 );
 
+/** Below this many expected conversions in the smaller arm (pooled rate x visitors) the normal approximation of the z-test is poor. */
+export const ROUGH_EXPECTED_CONVERSIONS = 5;
+
+/** A warning that the p-value is only rough, when the counts are small; null otherwise. */
+export function smallCountNote(a: Arms, t: ZTest): ReactNode | null {
+  if (t.status !== 'ok') return null;
+  const expected = t.pooled * Math.min(a.visitorsA, a.visitorsB);
+  if (expected >= ROUGH_EXPECTED_CONVERSIONS) return null;
+  return <> Only about {sig(expected, 2)} conversions are expected per arm (below {ROUGH_EXPECTED_CONVERSIONS}), so the normal approximation is poor: treat the p-value as rough.</>;
+}
+
 /** Why there is no p-value, when there is not one. */
 function refusal(t: ZTest): ReactNode | null {
   if (t.status === 'too-few') return <>Under {MIN_VISITORS} visitors in an arm is too few for a z-test, so there is no p-value and no verdict.</>;
@@ -65,7 +76,7 @@ export function runCaption(spec: ExperimentSpec, arms: Arms, t: ZTest): ReactNod
   return (
     <>
       {armLine(arms, t)} z = {zText(t.z!)}, p = <span className="hl violet">{pText(t.p!)}</span>: {verdictSpan(kind)}. The 95% interval for B − A is{' '}
-      {pointsText(t.lo!)} to {pointsText(t.hi!)}; the true lift in this simulation is {pointsText(spec.lift / 100)}, which a real experiment never shows you.
+      {pointsText(t.lo!)} to {pointsText(t.hi!)}; the true lift in this simulation is {pointsText(spec.lift / 100)}, which a real experiment never shows you.{smallCountNote(arms, t)}
     </>
   );
 }
@@ -112,6 +123,7 @@ export function peekCaption(run: readonly Look[], looks: number, bonferroni: boo
         : <>In this run p first fell below {sig(threshold, 2)} at look {k + 1} of {looks} ({run[k].visitors.toLocaleString('en-US')} visitors per arm): stopping there is {verdictSpan(crossKind)}.</>}{' '}
       Over {rates.runs.toLocaleString('en-US')} such experiments, {pctText(rates.anyLook)} would have been stopped with a &quot;winner&quot; by stopping at the first p &lt; {sig(threshold, 2)}, against{' '}
       {pctText(rates.lastLook)} when looking once at the end.
+      {bonferroni && rates.anyLook < ALPHA && <> Bonferroni is conservative here, because the looks share data: it lands below 5%, not at it.</>}
     </>
   );
 }
@@ -135,7 +147,7 @@ export function ownCaption(arms: Arms, t: ZTest): ReactNode {
   return (
     <>
       {armLine(arms, t)} z = {zText(t.z!)}, p = <span className="hl violet">{pText(t.p!)}</span>: {verdictSpan(kind)}. The 95% interval for B − A is {pointsText(t.lo!)} to {pointsText(t.hi!)}. A p-value is not the chance
-      that B is better.
+      that B is better.{smallCountNote(arms, t)}
     </>
   );
 }

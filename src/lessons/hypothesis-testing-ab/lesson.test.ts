@@ -1,15 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { pctText, sig } from '../distributions/fmt';
-import { ownCaption, peekCaption, pText, pointsText, powerCaption, repeatCaption, runCaption, sliceCaption, verdictSays } from './frames';
+import { ownCaption, peekCaption, pText, smallCountNote, pointsText, powerCaption, repeatCaption, runCaption, sliceCaption, verdictSays } from './frames';
 import lesson from './index';
 import {
   ALPHA, LIFT, OWN_DEFAULT, PEEK_DEFAULT, REPEAT_DEFAULT, REPLICATES, RUN_DEFAULT, SLICES, SLICE_DEFAULT, SLICE_REPLICATES, anySignificantRate, familyWiseRate,
   firstCrossing, lookAlpha, parseArms, peekRates, peekRun, replicate, runExperiment, runSeed, sampleSizePerArm, significantSlices, sliceAlpha, slicePValues,
-  sliceRun, verdictKind, visitorsAt, zTest,
+  sliceRun, tailRanges, verdictKind, visitorsAt, zTest, Z_AXIS,
 } from './model';
 
 const SIMULATION_TIMEOUT_MS = 90_000;
+/** Two-sided z cut-off for alpha 0.05 / 20 = 0.0025 (standard normal table: z at 0.99875). */
+const Z_BONFERRONI_20 = 3.0233;
+
+/** Independent of the lesson's binomial simulation: share of Gaussian random walks whose z at any of `looks` equal steps exceeds `zCritical`. */
+function gaussianWalkAnyLook(looks: number, zCritical: number, runs: number): number {
+  let state = 0x9e3779b9;
+  const uniform = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return (state + 0.5) / 4294967296;
+  };
+  const normal = () => Math.sqrt(-2 * Math.log(uniform())) * Math.cos(2 * Math.PI * uniform());
+  let hits = 0;
+  for (let r = 0; r < runs; r++) {
+    let sum = 0;
+    for (let k = 1; k <= looks; k++) {
+      sum += normal();
+      if (Math.abs(sum / Math.sqrt(k)) > zCritical) {
+        hits++;
+        break;
+      }
+    }
+  }
+  return hits / runs;
+}
 const defaultVisitors = visitorsAt(RUN_DEFAULT.exponent);
 const significantRuns = (visitors: number, runs: number) =>
   Array.from({ length: runs }, (_, i) => runExperiment({ baseline: RUN_DEFAULT.baseline, lift: RUN_DEFAULT.lift, visitors, seed: runSeed(RUN_DEFAULT.seed, i) }).test.p! < ALPHA).filter(Boolean).length;
@@ -41,15 +65,23 @@ describe('try-this entries, from the default state, as written', { timeout: SIMU
     expect(REPEAT_DEFAULT.power).toBe(0.8);
   });
 
-  it('try-this 4: A/A with 20 looks declares a false winner about a quarter of the time; looking once is 5%; Bonferroni is about 5%', () => {
+  it('try-this 4: A/A with 20 looks declares a false winner about a quarter of the time; looking once is 5%; Bonferroni falls below 5%, to about 2%', () => {
     const spec = { baseline: PEEK_DEFAULT.baseline, lift: PEEK_DEFAULT.lift, looks: PEEK_DEFAULT.looks };
     const plain = peekRates(spec, PEEK_DEFAULT.seed, false);
     expect(plain.anyLook).toBeGreaterThan(0.18);
     expect(plain.anyLook).toBeLessThan(0.32);
     expect(Math.abs(plain.lastLook - ALPHA)).toBeLessThan(0.02);
     const bonferroni = peekRates(spec, PEEK_DEFAULT.seed, true);
-    expect(bonferroni.anyLook).toBeLessThanOrEqual(0.06);
+    // The independent oracle is a Gaussian random walk (cumulative z at equal steps) with its own generator.
+    const oracle = gaussianWalkAnyLook(PEEK_DEFAULT.looks, Z_BONFERRONI_20, 20_000);
+    expect(oracle, 'the oracle itself shows Bonferroni well below 5%').toBeLessThan(0.04);
+    expect(Math.abs(bonferroni.anyLook - oracle)).toBeLessThan(0.012);
+    expect(bonferroni.anyLook).toBeGreaterThan(0.01);
+    expect(bonferroni.anyLook).toBeLessThan(0.03);
+    expect(bonferroni.anyLook, 'below the one-look rate, so "about 5%" would be false').toBeLessThan(plain.lastLook);
     expect(bonferroni.lastLook).toBe(plain.lastLook);
+    expect(text(peekCaption(peekRun({ ...spec, seed: runSeed(PEEK_DEFAULT.seed, 0) }), spec.looks, true, spec.lift, bonferroni))).toContain(`${pctText(bonferroni.anyLook)} would have been stopped`);
+    expect(lesson.tryThis.find((t) => t.startsWith('In Peeking'))).toContain('about 2%');
     const first = peekRun({ ...spec, seed: runSeed(PEEK_DEFAULT.seed, 0) });
     expect(firstCrossing(first, ALPHA), 'the opening A/A run dips below 0.05 at look 9').toBe(8);
     expect(first[first.length - 1].p!).toBeGreaterThan(ALPHA);
@@ -198,5 +230,51 @@ describe('hidden controls do not feed numbers', () => {
   it('visitors per arm in the scene-3 peeking experiment are 500 × looks regardless of the number of looks chosen', () => {
     for (const looks of [1, 5, 10, 20]) expect(peekRun({ baseline: 10, lift: 0, looks, seed: 1 }).at(-1)!.visitors).toBe(10_000);
     expect(sig(10_000)).toBe('10,000');
+  });
+});
+
+describe('the p-value area is drawn honestly', () => {
+  const density = (x: number) => Math.exp((-x * x) / 2) / Math.sqrt(2 * Math.PI);
+  const simpson = (from: number, to: number, steps = 2000) => {
+    const h = (to - from) / steps;
+    let total = density(from) + density(to);
+    for (let i = 1; i < steps; i++) total += density(from + i * h) * (i % 2 === 0 ? 2 : 4);
+    return (total * h) / 3;
+  };
+  const shadedMass = (z: number) => tailRanges(z).reduce((sum, [from, to]) => sum + simpson(from, to), 0);
+  const bothTails = (z: number) => 2 * simpson(Math.abs(z), 12, 4000);
+  const offAxisTails = bothTails(Z_AXIS);
+
+  it('on the axis the shaded mass is the p-value less the sliver beyond the axis, and it is never the whole bell', () => {
+    for (const z of [0, 0.5, 1.96, 2.5, 3.2, 3.9, -2.1, -3.7]) {
+      expect(shadedMass(z), `z = ${z}`).toBeCloseTo(bothTails(z) - offAxisTails, 6);
+    }
+  });
+
+  it('try-this 1: at 10,000 visitors the first run is off the axis, its tails are too thin to draw, and nothing is shaded', () => {
+    const { test } = runExperiment({ baseline: RUN_DEFAULT.baseline, lift: RUN_DEFAULT.lift, visitors: 10_000, seed: runSeed(RUN_DEFAULT.seed, 0) });
+    expect(Math.abs(test.z!)).toBeGreaterThanOrEqual(Z_AXIS);
+    expect(test.p!).toBeLessThan(0.001);
+    expect(tailRanges(test.z!)).toEqual([]);
+    expect(shadedMass(test.z!)).toBe(0);
+    for (const z of [Z_AXIS, -Z_AXIS, 4.64, -9, 40]) expect(shadedMass(z), `z = ${z}`).toBeLessThan(bothTails(Z_AXIS) + 1e-9);
+  });
+});
+
+describe('small counts get a rough-p-value note', () => {
+  const note = (conversionsA: number, conversionsB: number, visitors: number) => {
+    const arms = { conversionsA, visitorsA: visitors, conversionsB, visitorsB: visitors };
+    return smallCountNote(arms, zTest(arms));
+  };
+
+  it('fires with 1 and 2 conversions in 30 visitors, and stays quiet at 100 and 130 in 1,000', () => {
+    expect(text(note(1, 2, 30)!)).toContain('treat the p-value as rough');
+    expect(note(100, 130, 1000)).toBeNull();
+    expect(note(0, 0, 30), 'no p-value, no note: the refusal says it').toBeNull();
+  });
+
+  it('is on the Own-numbers caption and the Run caption for a small-count experiment', () => {
+    const arms = { conversionsA: 1, visitorsA: 30, conversionsB: 2, visitorsB: 30 };
+    expect(text(ownCaption(arms, zTest(arms)))).toContain('treat the p-value as rough');
   });
 });

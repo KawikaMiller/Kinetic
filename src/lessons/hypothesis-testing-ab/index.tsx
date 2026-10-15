@@ -20,13 +20,13 @@ const lesson: LessonModule = {
     'In Run the experiment (a real +2 point lift, 1,000 visitors per arm), press Run again ten times: only a few runs are significant. Drag visitors to 10,000 and almost every run is.',
     'In Run it 1,000 times (no true lift): about 5% of the experiments have p below 0.05 anyway. Set the true lift to +1 point and the share rises: that is the power.',
     'In Run it 1,000 times, the power calculator says 10% → 11% takes about 14,749 visitors per arm; set the smallest lift to +0.5 points and it takes about 57,800.',
-    'In Peeking (A/A, 20 looks, stop at the first p < 0.05): about a quarter of experiments declare a false winner against 5% for one look. Switch Bonferroni on and it falls to about 5%.',
+    'In Peeking (A/A, 20 looks, stop at the first p < 0.05): about a quarter of experiments declare a false winner against 5% for one look. Switch Bonferroni on and it falls below 5% (about 2% here: Bonferroni over-corrects when the looks share data).',
     'In Slice until significant (no difference anywhere): about two in three simulated experiments have at least one significant slice. Switch the correction on and it drops to about 5%.',
   ],
   keyIdeas: [
     'A p-value is the chance of data at least this extreme if there were no difference; it is not the chance that B is better.',
     'At a fixed horizon an A/A test is significant about 5% of the time; power is the significant share when a real lift exists, and it grows with n and with the lift, since n scales like 1/δ².',
-    'Checking repeatedly and stopping at the first p < 0.05 inflates the false-positive rate far above 5%; testing each look at α ÷ looks (Bonferroni) pulls it back.',
+    'Checking repeatedly and stopping at the first p < 0.05 inflates the false-positive rate far above 5%; testing each look at α ÷ looks (Bonferroni) pulls it back below 5%, more than it needs to, because the looks share data.',
     'Test enough slices and one will look significant: 20 fair tests give a 64% chance of at least one false positive, 1 − 0.95^20.',
   ],
   quiz: [
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'About 5%, as long as each day is tested on its own',
       ],
       answer: 0,
-      why: 'Each look is another chance for noise to cross 0.05, and the looks share data, so with 20 looks the chance is far above 5%; this lesson\'s simulation puts it near one in four. One look at the end, or α split over the looks, keeps it near 5%.',
+      why: 'Each look is another chance for noise to cross 0.05, and the looks share data, so with 20 looks the chance is far above 5%; this lesson\'s simulation puts it near one in four. One look at the end keeps it near 5%, and α split over the looks keeps it at or below 5%.',
     },
     {
       q: 'Baseline conversion is 10% and you want to detect a rise to 11% with 80% power at α = 0.05. About how many visitors per arm?',

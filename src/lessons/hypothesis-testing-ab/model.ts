@@ -73,6 +73,18 @@ export interface ZTest {
   hi: number | null;
 }
 
+/** Half-width of the z axis the Run scene draws. */
+export const Z_AXIS = 4;
+
+/**
+ * The part of each p-value tail that lies on the z axis, as [from, to] ranges. A z beyond the axis has
+ * both tails entirely off it, so nothing is shaded (the area would be invisibly thin) rather than the whole bell.
+ */
+export function tailRanges(z: number, axis = Z_AXIS): [number, number][] {
+  const edge = Math.abs(z);
+  return edge < axis ? [[edge, axis], [-axis, -edge]] : [];
+}
+
 /** P(|Z| ≥ |z|). */
 export const twoSidedP = (z: number): number => 2 * (1 - normalCdf(Math.abs(z)));
 

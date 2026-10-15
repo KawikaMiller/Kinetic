@@ -9,10 +9,10 @@ import { pctText, sig } from '../distributions/fmt';
 import { SeedField } from '../distributions/SeedField';
 import { VERDICT_TONE, pText, pointsText, runCaption, verdictSays, zText } from './frames';
 import {
-  ALPHA, BASELINE, LIFT, RUN_DEFAULT, VISITORS_EXPONENT, Z_CRITICAL, rateA, rateB, runExperiment, runSeed, verdictKind, visitorsAt,
+  ALPHA, BASELINE, LIFT, RUN_DEFAULT, VISITORS_EXPONENT, Z_AXIS, Z_CRITICAL, rateA, rateB, runExperiment, runSeed, tailRanges, verdictKind, visitorsAt,
 } from './model';
 
-const Z_AXIS = 4;
+const OFF_AXIS_MARGIN = 0.05;
 const DENSITY_TOP = 0.45;
 const INTERVAL_PAD = 0.15;
 
@@ -32,6 +32,7 @@ export function RunScene({ picker }: { picker: ReactNode }) {
 
   const z = test.z;
   const edge = z === null ? null : Math.abs(z);
+  const offAxis = edge !== null && edge >= Z_AXIS;
   const lo = test.lo;
   const hi = test.hi;
   const xs = lo === null || hi === null ? [-0.02, 0.02] : [Math.min(lo, 0), Math.max(hi, 0)];
@@ -88,13 +89,12 @@ export function RunScene({ picker }: { picker: ReactNode }) {
             y={{ domain: [0, DENSITY_TOP], label: 'density if there were no difference', ticks: 3 }}
             ariaLabel={z === null ? 'Normal curve; no z-test for this run' : `Normal curve; this run is at z = ${zText(z)} and p = ${pText(test.p!)}`}
           >
-            {edge !== null && edge < Z_AXIS && <Area fn={(x) => normalPdf(x)} from={edge} to={Z_AXIS} tone="violet" />}
-            {edge !== null && edge < Z_AXIS && <Area fn={(x) => normalPdf(x)} from={-Z_AXIS} to={-edge} tone="violet" />}
-            {edge !== null && edge >= Z_AXIS && <Area fn={(x) => normalPdf(x)} from={-Z_AXIS} to={Z_AXIS} tone="violet" />}
+            {z !== null && tailRanges(z).map(([from, to]) => <Area key={from} fn={(x) => normalPdf(x)} from={from} to={to} tone="violet" />)}
             <Curve fn={(x) => normalPdf(x)} tone="info" />
             <VLine at={-Z_CRITICAL} tone="dim" />
             <VLine at={Z_CRITICAL} tone="dim" label="1.96" />
-            {z !== null && Math.abs(z) <= Z_AXIS && <VLine at={z} tone="hi" label={`z = ${zText(z)}`} dashed={false} />}
+            {z !== null && offAxis && <VLine at={Math.sign(z) * (Z_AXIS - OFF_AXIS_MARGIN)} tone="hi" label={`z = ${zText(z)} →`} dashed={false} />}
+            {z !== null && !offAxis && <VLine at={z} tone="hi" label={`z = ${zText(z)}`} dashed={false} />}
           </Plot2D>
           <Plot2D
             x={{ domain: [xs[0] - pad, xs[1] + pad], label: 'B − A (share of visitors)', format: (v) => `${(v * 100).toFixed(1)}`, ticks: 5 }}
@@ -106,6 +106,11 @@ export function RunScene({ picker }: { picker: ReactNode }) {
             {lo !== null && hi !== null && <Points data={[{ x: test.diff, y: 1, tone: 'hi' }]} r={5} />}
           </Plot2D>
         </div>
+        {offAxis && test.p !== null && (
+          <Hint tone="muted" className="ab-note">
+            This z is beyond the axis (±{Z_AXIS}), so both tails are too thin to see: p = {pText(test.p)}. The line sits at the edge and the arrow means &quot;further out&quot;.
+          </Hint>
+        )}
         <Box className="ab-verdict">
           <SectionTitle>Verdict</SectionTitle>
           <p className={tone ? `ab-${tone}` : ''}>{test.status === 'ok' ? verdictSays(kind) : 'No verdict from this run.'}</p>
