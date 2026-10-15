@@ -110,7 +110,7 @@ export function QueryScene({ picker, corpus }: { picker: ReactNode; corpus: Corp
           )}
         </Box>
         {q.notes.length > 0 && <p className="ii-status" role="status">{q.notes.join(' ')}</p>}
-        <Hint tone="muted" block>Supported: words, -word to subtract, "two words" for a phrase. Parentheses, wildcards and other operators are not supported and are read as punctuation.</Hint>
+        <Hint tone="muted" block>Supported: words, -word to subtract, "two words" for a phrase. Capital AND, OR and NOT, -"two words", parentheses and wildcards are not supported: the first three and the subtracted phrase are refused with a note, the rest read as punctuation.</Hint>
         <ProvenanceRow>
           <Provenance kind="real">the answer is merged from the real posting lists of the corpus you edited, and checked against a scan of every document in the tests</Provenance>
           <Provenance kind="toy">a phrase is checked with word positions counted after the analyzer, so a dropped stop word closes the gap</Provenance>

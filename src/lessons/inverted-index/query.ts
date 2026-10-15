@@ -16,13 +16,20 @@ export interface ParsedQuery {
   notes: string[];
 }
 
+/** Capitalised words people type as operators; this lesson has no such syntax, so they are refused rather than searched for. */
+const OPERATOR_WORDS: ReadonlySet<string> = new Set(['AND', 'OR', 'NOT']);
+
 /** Split a query into raw units: quoted phrases, `-word`s and plain words. */
 export function parseQuery(text: string, steps: Steps): ParsedQuery {
   const units: string[][] = [];
   const not: string[][] = [];
   const notes: string[] = [];
-  const pieces = [...text.matchAll(/"([^"]*)"|"([^"]*)$|(-?\S+)/g)];
+  const pieces = [...text.matchAll(/-"[^"]*"?|"([^"]*)"|"([^"]*)$|(-?\S+)/g)];
   for (const m of pieces) {
+    if (m[0].startsWith('-"')) {
+      notes.push(`Subtracting a phrase (${m[0]}) is not supported: only -word is, so it was ignored.`);
+      continue;
+    }
     if (m[3] === undefined) {
       const quoted = m[1] ?? m[2] ?? '';
       if (m[1] === undefined) notes.push('A quote was never closed, so everything after it is read as one phrase.');
@@ -32,6 +39,10 @@ export function parseQuery(text: string, steps: Steps): ParsedQuery {
       continue;
     }
     const raw = m[3];
+    if (OPERATOR_WORDS.has(raw)) {
+      notes.push(`${raw} is not an operator here: use the AND/OR control, and -word to subtract. The word ${raw} was ignored.`);
+      continue;
+    }
     const negated = raw.startsWith('-') && raw.length > 1;
     if (raw === '-') {
       notes.push('A lone - subtracts nothing: put a word right after it.');

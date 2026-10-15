@@ -8,6 +8,23 @@ import { evaluate, mergeTrace, parseQuery, phraseDocs, whyEmpty, type ListOrder,
 import { B_RANGE, K1_RANGE, idfBm25, idfClassic, rankDocs, scoreDoc } from './rank';
 import { FIXED_BYTES, decodeVByte, encodeList, encodeVByte, fromGaps, seededIds, sizesOf, toGaps } from './vbyte';
 
+describe('syntax the lesson does not support is refused visibly, never searched for', () => {
+  it('-"phrase" is ignored with a note instead of becoming NOT cat AND sat', () => {
+    const q = parseQuery('dog -"cat sat"', ALL_STEPS);
+    expect(q.units).toEqual([['dog']]);
+    expect(q.not).toEqual([]);
+    expect(q.notes.join(' ')).toContain('Subtracting a phrase');
+  });
+  it('capital AND, OR and NOT are ignored with a note instead of being searched as words', () => {
+    for (const op of ['AND', 'OR', 'NOT']) {
+      const q = parseQuery(`cat ${op} dog`, ALL_STEPS);
+      expect(q.units, op).toEqual([['cat'], ['dog']]);
+      expect(q.notes.join(' '), op).toContain(`${op} is not an operator`);
+    }
+    expect(parseQuery('cat or dog', ALL_STEPS).notes).toEqual([]);
+  });
+});
+
 describe('the toy analyzer', () => {
   it('strips -ing, -ed and a plural -s, and leaves short words and -ss alone', () => {
     expect(['cats', 'dogs', 'sleeping', 'jumped', 'glass', 'sing', 'bring', 'red', 'purr', 'was', 'barked', 'birds'].map(toyStem)).toEqual(['cat', 'dog', 'sleep', 'jump', 'glass', 'sing', 'bring', 'red', 'purr', 'was', 'bark', 'bird']);
