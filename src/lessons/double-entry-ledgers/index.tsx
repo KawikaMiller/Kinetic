@@ -4,42 +4,42 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'Money is counted in whole cents, and each change to the books is an entry whose debits equal its credits, so a ledger can prove itself balanced and a mistake gets found instead of hidden.',
-    what: 'A JavaScript number adds up ten cents imprecisely, so money is held as integer cents and shared out by largest remainder so the parts add up. Double-entry bookkeeping records each transaction as at least two lines, debits and credits of equal total, and refuses an entry that does not balance; a trial balance then adds the whole ledger. The ledger only grows: a correction is a reversing entry followed by the right one, so history is kept.',
-    analogy: 'A two-column notebook where each line in one column needs a matching total in the other: a page that tips tells you something is missing, and bisecting the pages tells you where.',
+    tldr: 'Money is counted in whole cents, and each change to the books is an entry whose debits equal its credits, so a ledger can check that it balances and an entry that breaks the balance can be found; balancing does not prove every entry is right.',
+    what: 'A JavaScript number adds up ten cents imprecisely, so money is held as integer cents and shared out by largest remainder so the parts add up. Double-entry bookkeeping records each transaction as at least two lines, debits and credits of equal total, and refuses an entry that does not balance; a trial balance then adds the whole ledger, which catches an unbalanced entry but not a wrong account or a wrong amount written on both sides. The ledger grows by adding entries: a correction is a reversing entry followed by the right one, so history is kept.',
+    analogy: 'A two-column notebook where each line in one column needs a matching total in the other: a page that tips tells you something is missing, and bisecting the pages tells you where, though a wrong figure written in both columns will not tip it.',
     useCases: [
       'Payment and wallet systems, where a balance is the sum of ledger lines',
       'Marketplaces that hold a buyer\'s money and pay sellers out later',
       'Billing and invoicing, where receivables are tracked against payments',
       'Reconciling an internal ledger against a bank or processor statement',
     ],
-    why: 'Bugs in money code are rarely loud: a rounding cent or a double-posted payment passes tests and shows up in an audit. Integer cents, entries that must balance, an append-only history and a reconciliation make those bugs visible. It builds on `floating-point`, borrows the idea of an event log from `event-sourcing` and the duplicate check from `idempotency-keys`.',
+    why: 'Bugs in money code are rarely loud: a rounding cent or a double-posted payment passes tests and shows up in an audit. Integer cents, entries checked to balance, an append-only history and a reconciliation make those bugs visible. It builds on `floating-point`, borrows the idea of an event log from `event-sourcing` and the duplicate check from `idempotency-keys`.',
     watch: 'On the entry lines and the T-accounts, a debit is blue and a credit violet: two plain roles, not good and bad. A green chip is a sum or a trial balance that agrees, a red one a drift, a difference or a refusal, and the yellow rows in the ledger are the range still being searched while the bad entry is red. A reversing entry is orange. In the first scene the share chips are blue, turning red when the shares do not add up to the bill.',
   },
   tryThis: [
     'In Why not floats, the default sums 10,000 payments of $0.10 as a JavaScript number and the balance check fails; switch to Integer cents and it is exactly $1,000.00.',
     'Still in Why not floats, the bill of $100.00 split 3 ways adds up to $99.99 when each share is rounded alone, and to $100.00 by largest remainder.',
     'In Post journal entries, change the second line\'s amount to 99.00 and press Post entry: nothing is posted, and the message says debits are higher by $1.00.',
-    'Switch Validation to bypassed and post that unbalanced entry: the trial balance is out by $1.00, and Find the bad entry needs 2 checks to name it among 4 entries.',
+    'Change the second line to 99.00 again, switch Validation to bypassed and press Post entry: the trial balance is out by $1.00, and Find the bad entry needs 2 checks to name it among 4 entries.',
     'In Append-only, press Correct the selected entry (T-1004, to $90.00): a reversing entry and a corrected one are added, while Edit entry is refused.',
   ],
   keyIdeas: [
     'Money is counted in whole cents: a JavaScript number does not sum 10,000 payments of $0.10 to 1000, while integer cents give exactly 100,000.',
-    'An entry posts when its debits equal its credits and is refused when they do not, so the trial balance of the ledger agrees after each post.',
+    'An entry posts when its debits equal its credits and is refused when they do not, so the trial balance of the ledger agrees after each post; agreeing is necessary, not sufficient, since a wrong account or two offsetting errors balance too.',
     'A debit raises an asset or an expense and lowers a liability, equity or revenue, so what it does depends on the type of account.',
     'A ledger is a log you add to: a mistake is corrected by a reversing entry and then the right one, and a transaction id posted once is refused a second time.',
   ],
   quiz: [
     {
-      q: 'What does "double-entry" bookkeeping mean?',
+      q: 'What does "double-entry" bookkeeping give you?',
       options: [
-        'Debits and credits of equal total in each entry',
+        'Debits equal credits, though an entry can still be wrong',
         'Each transaction is stored twice, as a backup copy',
         'Two people have to type in each transaction',
         'Each amount is kept in two currencies at once',
       ],
       answer: 0,
-      why: 'The two sides are two lines of one entry, and the rule that they add up equally is what lets the books check themselves. It is not a backup, and a copy would not tell you anything was missing.',
+      why: 'The two sides are two lines of one entry, and the rule that they add up equally lets the books check themselves. It cannot tell a wrong account or a wrong amount on both sides from a right one. It is not a backup, and a copy would not tell you anything was missing.',
     },
     {
       q: 'A customer pays a $100 invoice that was sold on credit. Which entry records it?',

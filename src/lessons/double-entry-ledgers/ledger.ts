@@ -134,6 +134,9 @@ export function trialBalance(ledger: Ledger): TrialBalance {
   return { debitColumn, creditColumn, difference: debitColumn - creditColumn };
 }
 
+/** The entries that are out of balance on their own. A trial balance can agree while this is not empty: two errors of opposite sign cancel. */
+export const unbalancedEntries = (ledger: Ledger): Entry[] => ledger.entries.filter((e) => imbalance(e.lines) !== 0n);
+
 // ── Finding a bad entry by bisection ────────────────────────────────────
 
 /** Debits minus credits over the first k entries: zero when the books balanced after entry k. */
@@ -151,7 +154,10 @@ export const startBisection = (ledger: Ledger): Bisection => ({ lo: 0, hi: ledge
 export const bisectionDone = (b: Bisection) => b.hi - b.lo <= 1;
 export const middle = (b: Bisection) => Math.floor((b.lo + b.hi) / 2);
 
-/** Check the books up to the middle entry and keep the half that still holds the imbalance. */
+/**
+ * Check the books up to the middle entry and keep the half that still holds the imbalance. The range always
+ * ends on an entry that is out of balance, but with several bad entries it is not necessarily the first.
+ */
 export function bisectStep(ledger: Ledger, b: Bisection): Bisection {
   if (bisectionDone(b)) return b;
   const mid = middle(b);
@@ -184,7 +190,9 @@ export function correctAmount(ledger: Ledger, id: string, cents: bigint): PostRe
   const original = ledger.entries.find((e) => e.id === id);
   if (!original) return { ok: false, error: `There is no entry ${id}.` };
   if (original.lines.length !== 2) return { ok: false, error: 'This lesson corrects two-line entries.' };
-  const reversed = postEntry(ledger, reversalOf(original));
+  const reversal = reversalOf(original);
+  if (ledger.entries.some((e) => e.reverses === id)) return { ok: false, error: `${id} was already reversed by ${reversal.id}. Correct ${id}${CORRECTION_SUFFIX} instead, the entry that replaced it.` };
+  const reversed = postEntry(ledger, reversal);
   if (!reversed.ok) return reversed;
   return postEntry(reversed.ledger, {
     id: `${id}${CORRECTION_SUFFIX}`,

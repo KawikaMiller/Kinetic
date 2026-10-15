@@ -146,7 +146,7 @@ export function AppendScene({ picker }: { picker: ReactNode }) {
           </p>
         </Box>
         <div className="dl-chips">
-          <Provenance kind="simulated">an invented company and bank</Provenance>
+          <Provenance kind="illustrative">an invented company and bank</Provenance>
           <Provenance kind="real">posting, reversal and reconciliation run here on BigInt cents</Provenance>
         </div>
         <Hint block>Simplified bookkeeping, not accounting or legal advice. A correction is a reversing entry then the right one, so history is kept; the id check is the same idea as an idempotency key.</Hint>

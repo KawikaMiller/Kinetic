@@ -5,16 +5,16 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Domain-driven design draws boundaries inside the model first: one word can mean different things to different teams, so each meaning gets its own bounded context, and each consistency rule gets an aggregate.',
-    what: 'A shared Customer with every team\'s attributes in it couples those teams, because a change for one reaches the others. A bounded context is a boundary around a model and its vocabulary, inside which a word means one thing; between contexts, models are translated and linked by an id. Inside a context, an aggregate is a cluster of objects with one root that enforces an invariant, such as an order\'s limit on lines.',
-    analogy: 'A hospital where "patient" means a bed to the ward, an account to billing and a chart to the lab: one shared form with every field would belong to nobody, while three forms linked by a patient number let each department change its own.',
+    what: 'A shared Customer holding the attributes of all four teams couples those teams, because a change for one reaches the others. A bounded context is a boundary around a model and its vocabulary, inside which a word means one thing; between contexts, models are translated and linked by an id. Inside a context, an aggregate is a cluster of objects with one root that enforces an invariant, such as an order\'s limit on lines.',
+    analogy: 'A hospital where "patient" means a bed to the ward, an account to billing and a chart to the lab: one shared form with a field for each department\'s needs would belong to nobody, while three forms linked by a patient number let each department change its own.',
     useCases: [
-      'Untangling a model that every team edits, before anyone proposes splitting it into services',
+      'Untangling a model that several teams edit, before anyone proposes splitting it into services',
       'Deciding which team owns a word such as customer, account or product',
       'Setting the consistency boundary of an order, a booking or a basket',
       'Choosing how two teams integrate: a shared kernel, a published language or a translation layer',
     ],
-    why: 'Teams argue about services when the real problem is a model that has no boundaries. Drawing contexts and aggregates first gives the arguments about services something to follow, and it explains why one shared Customer table keeps costing every team. It builds on `coupling-cohesion` and `layered-hexagonal`, and uses `optimistic-pessimistic-locking` for the version check.',
-    watch: 'Contexts are plain categories drawn as coloured regions (amber Billing, sky Fulfilment, pink Support), and a concept inside one takes that colour while a concept not yet placed stays grey. An edge inside a context is green, one that crosses a boundary and keeps only an id is red, one that reaches into another context\'s own objects is orange, and one that passes through a split Customer is violet and dashed with a label. In the first scene each team has its own colour, a solid cell is a write and a tinted one a read, and a yellow ring marks the attribute being changed. In the last scene a blue cell is a line in the order, a red one a line over the limit, and a red chip a design that broke the limit where a green chip means it held.',
+    why: 'Teams argue about services when the real problem is a model that has no boundaries. Drawing contexts and aggregates first gives the arguments about services something to follow, and it explains why one shared Customer table keeps costing the teams that share it. It builds on `coupling-cohesion` and `layered-hexagonal`, and uses `optimistic-pessimistic-locking` for the version check.',
+    watch: 'Contexts are plain categories drawn as coloured regions (amber Billing, sky Fulfilment, pink Support), and a concept inside one takes that colour while a concept not yet placed stays grey. An edge inside a context is green, one that crosses a boundary and keeps only an id is red, one that reaches into another context\'s own objects is orange, and one that passes through a split Customer, or has a published language or an anticorruption layer chosen for it, is violet and dashed with a label. In the first scene each team has its own colour, a solid cell is a write and a tinted one a read, and a yellow ring marks the attribute being changed. In the last scene a blue cell is a line in the order, a red one a line over the limit, and a red chip a design that broke the limit where a green chip means it held.',
   },
   tryThis: [
     'In One model for everything, "Support renames tier" touches 3 of the 4 teams; pick any other request and the blast radius is still 3.',
@@ -72,7 +72,7 @@ const lesson: LessonModule = {
         'The one that cuts the heaviest usage edge',
       ],
       answer: 0,
-      why: 'Edges that cross a boundary are the coupling between contexts, so fewer crossings means a more cohesive split. Counting concepts per context says nothing about coupling, and cutting the heaviest edge makes the coupling worse.',
+      why: 'Edges that cross a boundary are the coupling between contexts, so fewer crossings means a more cohesive split. Counting concepts per context says nothing about coupling, and this lesson counts crossing edges, not their weight, so cutting the heaviest edge does not by itself lower the number it measures.',
     },
     {
       q: 'An order may hold 5 lines and holds 4. Two actors both read 4 before either writes, and the lines are independent records. How does it end?',

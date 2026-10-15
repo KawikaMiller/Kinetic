@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, pick, type Rnd } from '../../core/random';
 import {
-  ALL_IN_ONE, CONCEPTS, CONTEXTS, CUSTOMER_MEANINGS, EDGES, IDENTITY_KEY, NODE_BOX, PARTS, PART_CONTEXT, RELATIONSHIPS, REGION, START_STATE, SUGGESTED, VIEW, contextOf, danglingEdges,
-  identityLinks, layout, patternCost, regionX, resolveEdges, statsOf, type Assignment, type ConceptId, type Context, type MapState, type PartId, type UsageEdge,
+  ALL_IN_ONE, CONCEPTS, CONTEXTS, CUSTOMER_MEANINGS, EDGES, activePatterns, describeEdge, IDENTITY_KEY, NODE_BOX, PARTS, PART_CONTEXT, RELATIONSHIPS, REGION, START_STATE, SUGGESTED, VIEW, contextOf, danglingEdges,
+  identityLinks, layout, patternCost, regionX, resolveEdges, statsOf, type Assignment, type ConceptId, type Context, type MapState, type PartId, type RelationshipId, type UsageEdge,
 } from './contextMap';
 
 const ctxIds = CONTEXTS.map((c) => c.id);
@@ -203,5 +203,75 @@ describe('the drawing', () => {
         }
       }
     }
+  });
+});
+
+describe('a chosen pattern changes how the edge is read and counted', () => {
+  // Independent oracle: the patterns that put a translation or a documented format between the sides.
+  const CONTRACT_IDS = ['anticorruption', 'published-language'];
+  const DIRECTIONAL_IDS = ['customer-supplier', 'conformist', 'anticorruption'];
+  const states: MapState[] = [
+    { ...START_STATE, assign: SUGGESTED },
+    { ...START_STATE, assign: SUGGESTED, split: true },
+    { ...START_STATE, assign: { ...SUGGESTED, Invoice: 'fulfilment' }, split: true },
+  ];
+
+  it('for every pattern on every crossing edge, a contract pattern makes the edge translated and no other pattern changes its kind', () => {
+    for (const base of states) {
+      const plain = resolveEdges(base);
+      for (const e of plain.filter((x) => ['raw', 'internals', 'translated'].includes(x.kind))) {
+        for (const r of RELATIONSHIPS) {
+          const [got] = resolveEdges({ ...base, patterns: { [e.index]: r.id } }).filter((x) => x.index === e.index);
+          const want = e.kind === 'translated' || CONTRACT_IDS.includes(r.id) ? 'translated' : e.kind;
+          expect(got.kind, `${e.index} ${r.id} ${base.split}`).toBe(want);
+          expect(got.pattern).toBe(r.id);
+        }
+      }
+    }
+  });
+
+  it('counts move with the pattern: a published language on a raw edge takes it out of raw and into translated', () => {
+    const base: MapState = { ...START_STATE, assign: SUGGESTED };
+    const before = statsOf(base);
+    const edge = resolveEdges(base).find((e) => e.kind === 'internals')!;
+    const after = statsOf({ ...base, patterns: { [edge.index]: 'published-language' } });
+    expect([after.raw, after.internals, after.translated, after.crossing]).toEqual([before.raw - 1, before.internals - 1, before.translated + 1, before.crossing]);
+    const conformist = statsOf({ ...base, patterns: { [edge.index]: 'conformist' } });
+    expect([conformist.raw, conformist.internals, conformist.translated]).toEqual([before.raw, before.internals, before.translated]);
+  });
+
+  it('the words follow: a contract clears the internals flag, a conformist or shared kernel keeps the dependence and says so', () => {
+    const base: MapState = { ...START_STATE, assign: SUGGESTED };
+    const edge = resolveEdges(base).find((e) => e.kind === 'internals')!;
+    const text = (id: RelationshipId) => describeEdge(resolveEdges({ ...base, patterns: { [edge.index]: id } })[edge.index]);
+    expect(describeEdge(resolveEdges(base)[edge.index])).toContain("dependence on another context's internals");
+    for (const r of RELATIONSHIPS) {
+      if (CONTRACT_IDS.includes(r.id)) expect(text(r.id), r.id).not.toContain('internals');
+      else {
+        expect(text(r.id), r.id).toContain("dependence on another context's internals");
+        expect(text(r.id), r.id).toContain('does not remove it');
+      }
+    }
+  });
+
+  it('directional patterns say there is an upstream and a downstream side the map does not draw; the others do not', () => {
+    expect(RELATIONSHIPS.filter((r) => r.directional).map((r) => r.id).sort()).toEqual([...DIRECTIONAL_IDS].sort());
+    const base: MapState = { ...START_STATE, assign: SUGGESTED };
+    const edge = resolveEdges(base).find((e) => e.kind === 'internals')!;
+    for (const r of RELATIONSHIPS) {
+      const text = describeEdge(resolveEdges({ ...base, patterns: { [edge.index]: r.id } })[edge.index]);
+      expect(text.includes('upstream and a downstream side'), r.id).toBe(DIRECTIONAL_IDS.includes(r.id));
+      if (DIRECTIONAL_IDS.includes(r.id)) expect(text).toContain('does not say which side is which');
+    }
+  });
+
+  it('a pattern chosen for an edge that no longer crosses is ignored and costs nothing', () => {
+    const edge = resolveEdges({ ...START_STATE, assign: SUGGESTED }).find((e) => e.kind === 'internals')!;
+    const crossing: MapState = { ...START_STATE, assign: SUGGESTED, patterns: { [edge.index]: 'anticorruption' } };
+    expect(patternCost(activePatterns(crossing))).toBe(4);
+    const merged: MapState = { ...crossing, assign: ALL_IN_ONE };
+    expect(activePatterns(merged)).toEqual({});
+    expect(patternCost(activePatterns(merged))).toBe(0);
+    expect(resolveEdges(merged).every((e) => e.kind === 'inside')).toBe(true);
   });
 });

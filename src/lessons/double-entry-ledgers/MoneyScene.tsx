@@ -120,9 +120,9 @@ export function MoneyScene({ picker }: { picker: ReactNode }) {
         </div>
         <div className="dl-chips">
           <Provenance kind="real">real JavaScript arithmetic runs here</Provenance>
-          <Provenance kind="simulated">the payments, the bill and the lines are invented</Provenance>
+          <Provenance kind="illustrative">the payments, the bill and the lines are invented</Provenance>
         </div>
-        <Hint block>Simplified bookkeeping, not accounting or legal advice. Real systems add currencies, tax, periods and controls; many jurisdictions expect an audit trail, so check yours.</Hint>
+        <Hint block>Simplified bookkeeping, not accounting or legal advice. Real systems add currencies, tax, periods and controls; many jurisdictions expect an audit trail, so check yours. Whole cents held in a JavaScript number are exact up to 2^53 cents (about $90 trillion), and this scene stops at $1 trillion, so BigInt is headroom here, not a need; past 2^53 cents it is the answer.</Hint>
       </div>
     </StageFrame>
   );

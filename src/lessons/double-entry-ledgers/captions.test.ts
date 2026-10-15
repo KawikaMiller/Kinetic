@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-import { appendCaption, journalCaption, moneyCaption } from './captions';
+import { appendCaption, badEntryNote, journalCaption, moneyCaption } from './captions';
 import { RECONCILE_ENTRIES, START_ENTRIES, postAll, postEntry, reconcile, trialBalance, type Ledger } from './ledger';
 import { PAYMENT_COUNTS, REPRESENTATIONS, TAX_LINES, TAX_RATES, formatMoney, splitBill, sumPayments, taxRounding } from './money';
 
@@ -46,12 +46,37 @@ describe('journal captions follow the books', () => {
   };
 
   it('says agrees when balanced and out by the difference when not, with the number of checks that will find it', () => {
-    expect(journalCaption(start, null, false)).toBe('The trial balance agrees: debits $1,650.00 and credits $1,650.00.');
+    expect(journalCaption(start, null, false)).toBe('The trial balance agrees: debits $1,650.00 and credits $1,650.00. That does not prove every entry is right.');
     const text = expectCaption(journalCaption(bad(), 'Posted BAD, out of balance by $0.40.', true));
     expect(text).toBe(
       'Posted BAD, out of balance by $0.40. The validation bug is on: an unbalanced entry will be posted. The trial balance is out by $0.40: debits $1,651.00 and credits $1,650.60. About 2 checks will find the bad entry among 4.',
     );
     expect(trialBalance(bad()).difference).toBe(40n);
+  });
+
+  it('says a balanced trial balance is not proof, and names entries that cancel', () => {
+    expect(badEntryNote(start)).toContain('does not prove every entry is right');
+    expect(badEntryNote(start)).toContain('wrong account');
+    let l = start;
+    for (const [id, credit] of [['UP', 400n], ['DOWN', 600n]] as const) {
+      const r = postEntry(l, { id, memo: id, lines: [{ account: 'cash', side: 'debit', cents: 500n }, { account: 'equity', side: 'credit', cents: credit }] }, true);
+      if (!r.ok) throw new Error(r.error);
+      l = r.ledger;
+    }
+    expect(trialBalance(l).difference).toBe(0n);
+    const note = expectCaption(badEntryNote(l));
+    expect(note).toContain('agrees, yet 2 entries (UP, DOWN) are out of balance');
+    expect(note).not.toContain('nothing to find');
+    expect(journalCaption(l, null, false)).toContain('Yet 2 entries are out of balance and the errors cancel.');
+  });
+
+  it('says the search finds one of several bad entries, and nothing extra for a single one', () => {
+    expect(badEntryNote(bad())).toBe('');
+    const r = postEntry(bad(), { id: 'BAD2', memo: 'bad', lines: [{ account: 'cash', side: 'debit', cents: 100n }, { account: 'equity', side: 'credit', cents: 30n }] }, true);
+    if (!r.ok) throw new Error(r.error);
+    expect(badEntryNote(r.ledger)).toContain('2 entries are out of balance');
+    expect(badEntryNote(r.ledger)).toContain('not necessarily the first');
+    expect(journalCaption(r.ledger, null, false)).toContain('one of the bad entries');
   });
 
   it('keeps the bug warning only while the bug is on', () => {

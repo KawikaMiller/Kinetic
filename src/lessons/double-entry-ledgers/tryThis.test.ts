@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import lesson from './index';
 import {
-  RECONCILE_ENTRIES, START_ENTRIES, TEMPLATES, REFUSALS, balances, bisectStep, bisectionBound, bisectionDone, correctAmount, postAll, postEntry, startBisection, trialBalance, type Line,
+  RECONCILE_ENTRIES, START_ENTRIES, TEMPLATES, REFUSALS, balances, bisectStep, bisectionBound, bisectionDone, correctAmount, postAll, postEntry, startBisection, trialBalance, unbalancedEntries,
 } from './ledger';
+import { draftOf, entryFromDraft } from './draft';
 import { parseMoney, splitBill, sumPayments } from './money';
 
 /** Default state: scene 1 on a JavaScript number, 10,000 payments, $100.00 in 3 ways, 10%; scene 2 with the first template as the draft; scene 3 on the cheque ledger. */
@@ -30,17 +31,33 @@ describe('the try-this prompts work from the default state, as written', () => {
     expect(r).toEqual({ ok: false, error: 'Nothing was posted: debits are higher by $1.00 (debits $100.00, credits $99.00).' });
   });
 
-  it('try-this 4: bypassing posts that entry, the trial balance is out by $1.00, and 2 checks name it among 4 entries', () => {
-    const lines: Line[] = [{ account: 'cash', side: 'debit', cents: 10_000n }, { account: 'receivable', side: 'credit', cents: 9_900n }];
-    const r = postEntry(postAll(START_ENTRIES), { id: 'T-1004', memo: 'x', lines }, true);
+  it('try-this 4: from a fresh load, 99.00 on the second line plus bypassed validation posts T-1004, out by $1.00, found in 2 checks among 4', () => {
+    // Fresh state: the default draft, validation on, T-1004 next. The steps are the ones the prompt names, in order.
+    const fresh = draftOf(TEMPLATES[0].lines);
+    const edited = fresh.map((d, i) => (i === 1 ? { ...d, text: '99.00' } : d));
+    const typed = entryFromDraft(edited, 'T-1004', TEMPLATES[0].memo);
+    if (!typed.ok) throw new Error(typed.error);
+    const start = postAll(START_ENTRIES);
+    expect(postEntry(start, typed.entry, false).ok).toBe(false);
+    const r = postEntry(start, typed.entry, true);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
+    expect(r.ledger.entries).toHaveLength(4);
     expect(trialBalance(r.ledger).difference).toBe(100n);
     let b = startBisection(r.ledger);
     while (!bisectionDone(b)) b = bisectStep(r.ledger, b);
     expect(r.ledger.entries[b.hi - 1].id).toBe('T-1004');
     expect(b.steps).toBe(2);
     expect(bisectionBound(4)).toBe(2);
+  });
+
+  it('try-this 4 does not work without the edit: bypassing alone posts a balanced entry and nothing is found', () => {
+    const typed = entryFromDraft(draftOf(TEMPLATES[0].lines), 'T-1004', 'x');
+    if (!typed.ok) throw new Error(typed.error);
+    const r = postEntry(postAll(START_ENTRIES), typed.entry, true);
+    if (!r.ok) throw new Error(r.error);
+    expect(trialBalance(r.ledger).difference).toBe(0n);
+    expect(unbalancedEntries(r.ledger)).toEqual([]);
   });
 
   it('try-this 5: correcting T-1004 to $90.00 adds a reversal and a corrected entry, and an edit is refused', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, pick, randInt, type Rnd } from '../../core/random';
 import {
   ACCOUNTS, BANK_FEE_CENTS, FEE_ENTRY_ID, MAX_ENTRIES, MAX_LINES, RECONCILE_ENTRIES, REFUSALS, START_ENTRIES, TEMPLATES, balances, bisectStep, bisectionBound, bisectionDone, cashEffect,
-  correctAmount, feeEntry, imbalance, postAll, postEntry, prefixImbalance, reconcile, reversalOf, startBisection, sumSide, trialBalance, type AccountId, type Entry, type Ledger, type Line,
+  correctAmount, feeEntry, imbalance, postAll, postEntry, prefixImbalance, reconcile, reversalOf, startBisection, sumSide, trialBalance, unbalancedEntries, type AccountId, type Entry, type Ledger, type Line,
 } from './ledger';
 
 const books = () => postAll(START_ENTRIES);
@@ -170,6 +170,35 @@ describe('finding a bad entry by bisection', () => {
     expect(b.steps).toBe(bisectionBound(4));
   });
 
+  it('two bypassed entries that offset each other leave the trial balance agreeing while both are unbalanced', () => {
+    let l = books();
+    for (const [id, credit] of [['UP', 400n], ['DOWN', 600n]] as const) {
+      const r = postEntry(l, entry(id, [dr('cash', 500n), cr('equity', credit)]), true);
+      if (r.ok) l = r.ledger;
+    }
+    expect(trialBalance(l).difference).toBe(0n);
+    expect(unbalancedEntries(l).map((e) => e.id)).toEqual(['UP', 'DOWN']);
+  });
+
+  it('with two bad entries the search still ends on an unbalanced entry, which need not be the first', () => {
+    // Imbalances +100, -100, 0, 0, 0, +100: every prefix check up to entry 5 reads zero, so the search skips A and B and ends on F.
+    const lines: [string, bigint, bigint][] = [['A', 600n, 500n], ['B', 400n, 500n], ['C', 500n, 500n], ['D', 500n, 500n], ['E', 500n, 500n], ['F', 600n, 500n]];
+    let l: Ledger = { entries: [] };
+    for (const [id, d, c] of lines) {
+      const r = postEntry(l, entry(id, [dr('cash', d), cr('equity', c)]), true);
+      if (r.ok) l = r.ledger;
+    }
+    expect(trialBalance(l).difference).toBe(100n);
+    let b = startBisection(l);
+    while (!bisectionDone(b)) b = bisectStep(l, b);
+    const found = l.entries[b.hi - 1];
+    expect(imbalance(found.lines)).not.toBe(0n);
+    expect(unbalancedEntries(l).map((e) => e.id)).toContain(found.id);
+    expect(found.id).toBe('F');
+    expect(unbalancedEntries(l).map((e) => e.id)).toEqual(['A', 'B', 'F']);
+    expect(prefixImbalance(l, b.lo)).toBe(0n);
+  });
+
   it('the bound is ceil(log2 n)', () => {
     expect([1, 2, 3, 4, 5, 8, 9, 500].map(bisectionBound)).toEqual([0, 1, 2, 2, 3, 3, 4, 9]);
   });
@@ -208,7 +237,18 @@ describe('append-only, with corrections', () => {
     expect(correctAmount(l, 'M', 1n)).toEqual({ ok: false, error: 'This lesson corrects two-line entries.' });
     const once = correctAmount(books(), 'T-1001', 90_000n);
     expect(once.ok).toBe(true);
-    if (once.ok) expect(correctAmount(once.ledger, 'T-1001', 80_000n).ok).toBe(false);
+    if (once.ok) expect(correctAmount(once.ledger, 'T-1001', 80_000n)).toEqual({ ok: false, error: 'T-1001 was already reversed by T-1001-R. Correct T-1001-C instead, the entry that replaced it.' });
+  });
+
+  it('the correction itself can be corrected, which is what the refusal points to', () => {
+    const once = correctAmount(books(), 'T-1001', 90_000n);
+    if (!once.ok) throw new Error(once.error);
+    const twice = correctAmount(once.ledger, 'T-1001-C', 80_000n);
+    expect(twice.ok).toBe(true);
+    if (twice.ok) {
+      expect(trialBalance(twice.ledger).difference).toBe(0n);
+      expect(balances(twice.ledger).find((b) => b.account.id === 'cash')?.balance).toBe(80_000n);
+    }
   });
 
   it('refuses to post a transaction id twice, so the money is not counted twice', () => {

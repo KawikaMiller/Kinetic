@@ -1,5 +1,5 @@
 import { plural } from '../../core/format';
-import { bisectionBound, trialBalance, type Ledger, type Reconciliation } from './ledger';
+import { bisectionBound, trialBalance, unbalancedEntries, type Ledger, type Reconciliation } from './ledger';
 import { PAYMENT_CENTS, TAX_LINES, TAX_RATES, formatMoney, splitBill, sumPayments, taxRounding, type Representation } from './money';
 
 /** Captions as plain text, computed from the same numbers the cards show. */
@@ -19,12 +19,28 @@ export function moneyCaption(rep: Representation, n: number, total: bigint, part
   return `${n.toLocaleString('en-US')} ${n === 1 ? 'payment' : 'payments'} of $0.10 as ${rep === 'float' ? 'a JavaScript number' : rep === 'cents' ? 'integer cents' : 'BigInt cents'}: ${sumText}. ${splitText}; ${taxText}.`;
 }
 
+/** What the "Find the bad entry" card says about the books: the trial balance is evidence, not proof. */
+export function badEntryNote(ledger: Ledger): string {
+  const t = trialBalance(ledger);
+  const bad = unbalancedEntries(ledger);
+  if (t.difference === 0n && bad.length === 0) {
+    return 'The trial balance agrees, so there is no unbalanced entry to search for. That does not prove every entry is right: a posting to the wrong account, a wrong amount on both sides, or two mistakes that offset each other still balance. Turn the validation off and post an unbalanced entry to try the search.';
+  }
+  if (t.difference === 0n) {
+    return `The trial balance agrees, yet ${plural(bad.length, 'entry', 'entries')} (${bad.map((e) => e.id).join(', ')}) ${bad.length === 1 ? 'is' : 'are'} out of balance on their own and the errors cancel. The trial balance cannot see that, so the search has nothing to follow.`;
+  }
+  if (bad.length > 1) return `${bad.length} entries are out of balance. Each check halves the range and ends on one of them, not necessarily the first; the search assumes the books balanced before the first bad entry.`;
+  return '';
+}
+
 export function journalCaption(ledger: Ledger, notice: string | null, bypass: boolean): string {
   const t = trialBalance(ledger);
+  const bad = unbalancedEntries(ledger);
+  const out = t.difference < 0n ? -t.difference : t.difference;
   const books =
     t.difference === 0n
-      ? `The trial balance agrees: debits ${formatMoney(t.debitColumn)} and credits ${formatMoney(t.creditColumn)}.`
-      : `The trial balance is out by ${formatMoney(t.difference < 0n ? -t.difference : t.difference)}: debits ${formatMoney(t.debitColumn)} and credits ${formatMoney(t.creditColumn)}. About ${plural(bisectionBound(ledger.entries.length), 'check')} will find the bad entry among ${ledger.entries.length}.`;
+      ? `The trial balance agrees: debits ${formatMoney(t.debitColumn)} and credits ${formatMoney(t.creditColumn)}. ${bad.length === 0 ? 'That does not prove every entry is right.' : `Yet ${plural(bad.length, 'entry', 'entries')} ${bad.length === 1 ? 'is' : 'are'} out of balance and the errors cancel.`}`
+      : `The trial balance is out by ${formatMoney(out)}: debits ${formatMoney(t.debitColumn)} and credits ${formatMoney(t.creditColumn)}. About ${plural(bisectionBound(ledger.entries.length), 'check')} will find ${bad.length > 1 ? 'one of the bad entries' : 'the bad entry'} among ${ledger.entries.length}.`;
   return `${notice ? `${notice} ` : ''}${bypass ? 'The validation bug is on: an unbalanced entry will be posted. ' : ''}${books}`;
 }
 

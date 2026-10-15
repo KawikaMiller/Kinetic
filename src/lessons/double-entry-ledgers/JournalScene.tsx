@@ -3,20 +3,14 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Provenance, TextField, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
-import { journalCaption } from './captions';
+import { badEntryNote, journalCaption } from './captions';
+import { draftOf, entryFromDraft, type Draft } from './draft';
 import {
-  ACCOUNTS, MAX_LINES, START_ENTRIES, TEMPLATES, balances, bisectStep, bisectionBound, bisectionDone, imbalance, middle, postAll, postEntry, prefixImbalance, startBisection, trialBalance,
-  type AccountId, type Bisection, type Entry, type Ledger, type Line, type Side,
+  ACCOUNTS, MAX_LINES, START_ENTRIES, TEMPLATES, balances, bisectStep, bisectionBound, bisectionDone, imbalance, middle, postAll, postEntry, prefixImbalance, startBisection, trialBalance, unbalancedEntries,
+  type AccountId, type Bisection, type Ledger,
 } from './ledger';
-import { formatMoney, parseMoney } from './money';
+import { formatMoney } from './money';
 
-interface Draft {
-  account: AccountId;
-  side: Side;
-  text: string;
-}
-
-const draftOf = (lines: readonly Line[]): Draft[] => lines.map((l) => ({ account: l.account, side: l.side, text: `${l.cents / 100n}.${(l.cents % 100n).toString().padStart(2, '0')}` }));
 const START_DRAFT = draftOf(TEMPLATES[0].lines);
 const FIRST_NEW_ID = 1004;
 
@@ -40,6 +34,8 @@ export function JournalScene({ picker }: { picker: ReactNode }) {
   const bis = bisected ?? startBisection(ledger);
   const done = bisectionDone(bis);
   const out = t.difference !== 0n;
+  const badCount = unbalancedEntries(ledger).length;
+  const note = badEntryNote(ledger);
 
   const caption = useMemo(() => journalCaption(ledger, notice?.text ?? null, bypass), [ledger, notice, bypass]);
   useEffect(() => {
@@ -47,16 +43,13 @@ export function JournalScene({ picker }: { picker: ReactNode }) {
   }, [caption, setCaption]);
 
   const post = () => {
-    const lines: Line[] = [];
-    for (const [i, d] of draft.entries()) {
-      const amount = parseMoney(d.text);
-      if (!amount.ok) {
-        setNotice({ tone: 'bad', text: `Line ${i + 1}: ${amount.error} Nothing was posted.` });
-        return;
-      }
-      lines.push({ account: d.account, side: d.side, cents: amount.value });
+    const typed = entryFromDraft(draft, `T-${nextId}`, memo);
+    if (!typed.ok) {
+      setNotice({ tone: 'bad', text: typed.error });
+      return;
     }
-    const entry: Entry = { id: `T-${nextId}`, memo: memo || 'Entry', lines };
+    const entry = typed.entry;
+    const lines = entry.lines;
     const r = postEntry(ledger, entry, bypass);
     if (!r.ok) {
       setNotice({ tone: 'bad', text: r.error });
@@ -151,8 +144,8 @@ export function JournalScene({ picker }: { picker: ReactNode }) {
         </Box>
 
         <Box className="dl-card">
-          <SectionTitle weight="regular" hint={`${n} entries: at most ${bisectionBound(n)} checks`}>Find the bad entry</SectionTitle>
-          {!out && <p className="muted">The books balance, so there is nothing to find. Turn the validation off and post an unbalanced entry to try it.</p>}
+          <SectionTitle weight="regular" hint={`${n} entries: at most ${bisectionBound(n)} checks, if one is bad`}>Find the bad entry</SectionTitle>
+          {note && <p className={out ? 'dl-note' : 'muted'}>{note}</p>}
           {out && !done && (
             <>
               <p className="dl-note">The books balance up to entry {bis.lo} and are out up to entry {bis.hi}. Check the middle.</p>
@@ -160,7 +153,7 @@ export function JournalScene({ picker }: { picker: ReactNode }) {
             </>
           )}
           {out && done && (
-            <span className="chip tone-bad wrap">Entry {bis.hi}, {ledger.entries[bis.hi - 1].id}, is out of balance by {formatMoney(absolute(imbalance(ledger.entries[bis.hi - 1].lines)))}: found in {bis.steps} {bis.steps === 1 ? 'check' : 'checks'}.</span>
+            <span className="chip tone-bad wrap">Entry {bis.hi}, {ledger.entries[bis.hi - 1].id}, is out of balance by {formatMoney(absolute(imbalance(ledger.entries[bis.hi - 1].lines)))}: found in {bis.steps} {bis.steps === 1 ? 'check' : 'checks'}{badCount > 1 ? `, one of ${badCount}` : ''}.</span>
           )}
           {lastCheck && <p className="muted">{lastCheck}</p>}
           {out && bisected && <Button onClick={() => { setBisected(null); setLastCheck(null); }}>Start over</Button>}
@@ -182,10 +175,10 @@ export function JournalScene({ picker }: { picker: ReactNode }) {
           </ul>
         </Box>
         <div className="dl-chips">
-          <Provenance kind="simulated">an invented company and chart of accounts</Provenance>
+          <Provenance kind="illustrative">an invented company and chart of accounts</Provenance>
           <Provenance kind="real">the posting rule and the trial balance run here on BigInt cents</Provenance>
         </div>
-        <Hint block>Simplified bookkeeping, not accounting or legal advice. A debit raises an asset or an expense and lowers a liability, equity or revenue; a credit does the opposite.</Hint>
+        <Hint block>Simplified bookkeeping, not accounting or legal advice. A balanced trial balance is necessary, not sufficient: it does not catch a wrong account, a wrong amount on both sides, or two offsetting errors. A debit raises an asset or an expense and lowers a liability, equity or revenue; a credit does the opposite.</Hint>
       </div>
     </StageFrame>
   );

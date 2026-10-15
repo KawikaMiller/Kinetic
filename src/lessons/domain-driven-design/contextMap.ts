@@ -73,13 +73,25 @@ export const ALL_IN_ONE: Assignment = Object.fromEntries(CONCEPTS.map((c) => [c,
 export type RelationshipId = 'customer-supplier' | 'conformist' | 'anticorruption' | 'shared-kernel' | 'published-language';
 
 /** Evans's context-map patterns as recalled here (from memory: check the book); cost is an invented 1 to 5 of ongoing coordination. */
-export const RELATIONSHIPS: { id: RelationshipId; label: string; consequence: string; cost: number }[] = [
-  { id: 'customer-supplier', label: 'Customer / supplier', consequence: 'The upstream team plans around the downstream team\'s needs; it takes regular negotiation.', cost: 3 },
-  { id: 'conformist', label: 'Conformist', consequence: 'The downstream team adopts the upstream model as it is: cheap now, but its own model bends to the other\'s.', cost: 2 },
-  { id: 'anticorruption', label: 'Anticorruption layer', consequence: 'A translation layer keeps the downstream model clean; it is code to write and to keep in step.', cost: 4 },
-  { id: 'shared-kernel', label: 'Shared kernel', consequence: 'Both teams own a small shared model and change it together; any change needs both teams.', cost: 5 },
-  { id: 'published-language', label: 'Published language', consequence: 'A documented exchange format both sides translate to and from; stable, and slow to change.', cost: 1 },
+export interface Relationship {
+  id: RelationshipId;
+  label: string;
+  consequence: string;
+  cost: number;
+  /** Has an upstream and a downstream side: one context's model drives the other's. */
+  directional: boolean;
+  /** Puts a translation or a documented format between the two sides, so neither reaches into the other's own objects. */
+  contract: boolean;
+}
+
+export const RELATIONSHIPS: Relationship[] = [
+  { id: 'customer-supplier', label: 'Customer / supplier', consequence: 'The upstream team plans around the downstream team\'s needs; it takes regular negotiation.', cost: 3, directional: true, contract: false },
+  { id: 'conformist', label: 'Conformist', consequence: 'The downstream team adopts the upstream model as it is: cheap now, but its own model bends to the other\'s.', cost: 2, directional: true, contract: false },
+  { id: 'anticorruption', label: 'Anticorruption layer', consequence: 'A translation layer keeps the downstream model clean; it is code to write and to keep in step.', cost: 4, directional: true, contract: true },
+  { id: 'shared-kernel', label: 'Shared kernel', consequence: 'Both teams own a small shared model and change it together; any change needs both teams.', cost: 5, directional: false, contract: false },
+  { id: 'published-language', label: 'Published language', consequence: 'A documented exchange format both sides translate to and from; stable, and slow to change.', cost: 1, directional: false, contract: true },
 ];
+export const relationshipById = (id: RelationshipId): Relationship => RELATIONSHIPS.find((r) => r.id === id)!;
 
 export interface MapState {
   assign: Assignment;
@@ -98,6 +110,10 @@ export interface ResolvedEdge {
   to: NodeId;
   weight: number;
   kind: EdgeKind;
+  /** Why a translated edge is translated: its Customer end was split off, or the learner chose a pattern that puts a contract between the sides. */
+  translatedBy?: 'split' | RelationshipId;
+  /** The pattern the learner chose for a crossing edge. */
+  pattern?: RelationshipId;
 }
 
 /** The context a node sits in, or undefined if the learner has not placed it. */
@@ -116,8 +132,12 @@ export function resolveEdges(state: MapState, edges: readonly UsageEdge[] = EDGE
     const to = swap(e.b);
     const [x, y] = [contextOf(from, state.assign), contextOf(to, state.assign)];
     const throughPart = from !== e.a || to !== e.b;
-    const kind: EdgeKind = !x || !y ? 'pending' : x === y ? 'inside' : throughPart ? 'translated' : e.ref === 'object' ? 'internals' : 'raw';
-    return { index, from, to, weight: e.weight, kind };
+    const base: EdgeKind = !x || !y ? 'pending' : x === y ? 'inside' : throughPart ? 'translated' : e.ref === 'object' ? 'internals' : 'raw';
+    const crossing = base === 'raw' || base === 'internals' || base === 'translated';
+    const pattern = crossing ? state.patterns[index] : undefined;
+    if (base === 'translated') return { index, from, to, weight: e.weight, kind: base, translatedBy: 'split', pattern };
+    if (pattern && relationshipById(pattern).contract) return { index, from, to, weight: e.weight, kind: 'translated', translatedBy: pattern, pattern };
+    return { index, from, to, weight: e.weight, kind: base, pattern };
   });
 }
 
@@ -159,9 +179,37 @@ export function statsOf(state: MapState, edges: readonly UsageEdge[] = EDGES): M
 export const IDENTITY_KEY = 'customerId';
 export const identityLinks = (state: MapState): [PartId, PartId][] => (state.split ? [['Payer', 'Recipient'], ['Recipient', 'Requester']] : []);
 
+/** The patterns that still apply: one chosen for an edge that has since stopped crossing a boundary is not counted. */
+export const activePatterns = (state: MapState): MapState['patterns'] =>
+  Object.fromEntries(resolveEdges(state).flatMap((e) => (e.pattern ? [[e.index, e.pattern] as const] : [])));
+
 /** The coordination cost of the patterns the learner has chosen. */
-export const patternCost = (patterns: MapState['patterns']): number =>
-  Object.values(patterns).reduce((sum, id) => sum + RELATIONSHIPS.find((r) => r.id === id)!.cost, 0);
+export const patternCost = (patterns: MapState['patterns']): number => Object.values(patterns).reduce((sum, id) => sum + relationshipById(id).cost, 0);
+
+const DIRECTION_NOTE = 'It is a relationship between the two contexts with an upstream and a downstream side; the usage edges here are drawn without direction, so the map does not say which side is which.';
+
+/** What one edge is, in words: its kind, and what a chosen pattern does and does not change. */
+export function describeEdge(e: ResolvedEdge): string {
+  const pattern = e.pattern ? relationshipById(e.pattern) : undefined;
+  const direction = pattern?.directional ? ` ${DIRECTION_NOTE}` : '';
+  switch (e.kind) {
+    case 'pending':
+      return 'not placed yet';
+    case 'inside':
+      return 'inside one context';
+    case 'translated':
+      return e.translatedBy === 'split'
+        ? `crosses a boundary through the customer id, translated${pattern ? `, and labelled ${pattern.label}` : ''}.${direction}`
+        : `crosses a boundary through a ${pattern!.label.toLowerCase()}: a translation or a documented format sits between the sides, so neither reaches into the other's own objects.${direction}`;
+    case 'internals':
+    case 'raw': {
+      const base = e.kind === 'internals'
+        ? 'crosses a boundary by reaching into the other side\'s own objects: direct dependence on another context\'s internals'
+        : 'crosses a boundary and keeps only an id of the other side\'s object, with no model of its own in between';
+      return pattern ? `${base}. Labelled ${pattern.label}, which manages that dependence but does not remove it.${direction}` : base;
+    }
+  }
+}
 
 // ── Drawing positions ───────────────────────────────────────────────────
 

@@ -9,7 +9,7 @@ import type { Tone } from '../../core/tone';
 import { mapCaption } from './captions';
 import {
   ALL_IN_ONE, CONTEXTS, CUSTOMER_MEANINGS, IDENTITY_KEY, NODE_BOX, PARTS, RELATIONSHIPS, REGION, START_STATE, SUGGESTED, VIEW, contextOf, identityLinks, layout,
-  patternCost, regionX, resolveEdges, statsOf, type ConceptId, type Context, type EdgeKind, type MapState, type NodeId,
+  activePatterns, describeEdge, patternCost, regionX, relationshipById, resolveEdges, statsOf, type ConceptId, type Context, type EdgeKind, type MapState, type NodeId,
 } from './contextMap';
 
 const MAP_MIN_WIDTH = 560;
@@ -17,13 +17,6 @@ const CONTEXT_TONE: Record<Context, Tone> = { billing: 'amber', fulfilment: 'sky
 const EDGE_WIDTH = { base: 1.5, perWeight: 0.5 } as const;
 const IDENTITY_EDGE_WIDTH = 1.5;
 const KIND_TONE: Record<EdgeKind, GraphEdgeMark['tone'] | null> = { pending: null, inside: 'ok', raw: 'bad', internals: 'orange', translated: 'violet' };
-const KIND_WORD: Record<EdgeKind, string> = {
-  pending: 'not placed yet',
-  inside: 'inside one context',
-  raw: 'crosses a boundary',
-  internals: 'crosses a boundary by reaching into the other side\'s own objects: direct dependence on another context\'s internals',
-  translated: 'crosses a boundary through the customer id, translated',
-};
 const isPart = (n: NodeId) => (PARTS as readonly string[]).includes(n);
 
 type Selection = { kind: 'node'; id: NodeId } | { kind: 'edge'; index: number } | null;
@@ -34,6 +27,7 @@ export function MapScene({ picker }: { picker: ReactNode }) {
   const [selected, setSelected] = useState<Selection>(null);
 
   const stats = statsOf(state);
+  const active = activePatterns(state);
   const resolved = useMemo(() => resolveEdges(state), [state]);
   const nodes = useMemo(() => layout(state), [state]);
   const caption = useMemo(() => mapCaption(state), [state]);
@@ -62,7 +56,7 @@ export function MapScene({ picker }: { picker: ReactNode }) {
     ...resolved.map((e) => ({
       from: e.from,
       to: e.to,
-      label: e.kind === 'translated' && !state.patterns[e.index] ? 'translated' : state.patterns[e.index] ? RELATIONSHIPS.find((r) => r.id === state.patterns[e.index])!.label : undefined,
+      label: e.pattern ? relationshipById(e.pattern).label : e.kind === 'translated' ? 'translated' : undefined,
     })),
     ...identityLinks(state).map(([a, b]) => ({ from: a, to: b, label: IDENTITY_KEY })),
   ];
@@ -95,10 +89,15 @@ export function MapScene({ picker }: { picker: ReactNode }) {
       }
       stats={
         <Stats>
-          <Stat label="Crossing a boundary" value={stats.crossing} color={stats.crossing ? 'var(--bad)' : 'var(--ok)'} sub={[`${stats.raw} raw`, `${stats.translated} translated`]} />
+          <Stat
+            label="Crossing a boundary"
+            value={stats.placed ? stats.crossing : '–'}
+            color={stats.placed ? (stats.crossing ? 'var(--bad)' : 'var(--ok)') : undefined}
+            sub={stats.placed ? [`${stats.raw} raw`, `${stats.translated} translated`] : 'nothing placed yet'}
+          />
           <Stat label="Inside a context" value={stats.cohesion === null ? '–' : `${Math.round(stats.cohesion * 100)}%`} sub={`${stats.inside} of ${stats.placed} placed edges`} />
           <Stat label="One name, several meanings" value={stats.unsplitMeanings.length ? stats.unsplitMeanings.join(', ') : 'none'} color={stats.unsplitMeanings.length ? 'var(--orange)' : 'var(--ok)'} />
-          <Stat label="Relationship upkeep, invented" value={patternCost(state.patterns)} sub={`${Object.keys(state.patterns).length} edges labelled`} />
+          <Stat label="Relationship upkeep, invented" value={patternCost(active)} sub={`${Object.keys(active).length} edges labelled`} />
         </Stats>
       }
       controls={[
@@ -123,7 +122,7 @@ export function MapScene({ picker }: { picker: ReactNode }) {
               <ChipButton
                 key={r.id}
                 tone="violet"
-                on={state.patterns[pickedEdge.index] === r.id}
+                on={pickedEdge.pattern === r.id}
                 onClick={() => setState((s) => ({ ...s, patterns: { ...s.patterns, [pickedEdge.index]: r.id } }))}
               >
                 {r.label}
@@ -166,7 +165,7 @@ export function MapScene({ picker }: { picker: ReactNode }) {
               onNodeClick={(id) => setSelected({ kind: 'node', id })}
               onEdgeClick={(_, index) => index < resolved.length && setSelected({ kind: 'edge', index })}
               nodeAriaLabel={(id) => `${id}, ${contextOf(id, state.assign) ?? 'not placed'}`}
-              edgeAriaLabel={(_, index) => (index < resolved.length ? `${resolved[index].from} to ${resolved[index].to}: ${KIND_WORD[resolved[index].kind]}` : 'customer id link')}
+              edgeAriaLabel={(_, index) => (index < resolved.length ? `${resolved[index].from} to ${resolved[index].to}: ${describeEdge(resolved[index])}` : 'customer id link')}
               ariaLabel="Nine concepts of a shop, the usage between them, and the context each is placed in"
             />
           </WideRegion>
@@ -186,8 +185,8 @@ export function MapScene({ picker }: { picker: ReactNode }) {
           )}
           {pickedEdge && (
             <>
-              <p><b>{pickedEdge.from} and {pickedEdge.to}</b> (used {pickedEdge.weight} on a scale of 5): {KIND_WORD[pickedEdge.kind]}.</p>
-              {state.patterns[pickedEdge.index] && <p className="muted">{RELATIONSHIPS.find((r) => r.id === state.patterns[pickedEdge.index])!.consequence}</p>}
+              <p><b>{pickedEdge.from} and {pickedEdge.to}</b> (used {pickedEdge.weight} on a scale of 5): {describeEdge(pickedEdge)}</p>
+              {pickedEdge.pattern && <p className="muted">{relationshipById(pickedEdge.pattern).consequence}</p>}
             </>
           )}
         </Box>
@@ -196,7 +195,7 @@ export function MapScene({ picker }: { picker: ReactNode }) {
           <Provenance kind="from-memory">the relationship patterns are recalled from Evans, 2003; check the book</Provenance>
         </div>
         <Hint block>
-          The suggested placement is one reasonable answer, not the answer: it has the fewest edges crossing a boundary under the rule that each context holds two to five of the other concepts. Dragging has a keyboard twin: select, then press 1 to 3.
+          The suggested placement is one reasonable answer, not the answer: with Customer split, it has the fewest edges crossing a boundary of any placement that gives each context two to five of the other eight concepts (unsplit, other placements tie it). A line is drawn thicker the more it is used, but no number here uses that weight; only the count of crossing edges does. Dragging has a keyboard twin: select, then press 1 to 3.
         </Hint>
       </div>
     </StageFrame>
