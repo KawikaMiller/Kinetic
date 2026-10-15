@@ -55,7 +55,7 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  */
 const TIER3_AWAITING_RETROFIT = new Set([
   'monolith-microservices',
-  'cdn-edge', 'oauth-flows',
+  'oauth-flows',
 ]);
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */
 const TIER3_EXISTING_COUNT = 12;
