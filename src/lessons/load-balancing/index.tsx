@@ -13,13 +13,13 @@ const lesson: LessonModule = {
       "Rolling deploys and taking servers out for maintenance",
       "Surviving a server failure without users noticing",
     ],
-    why: "Most systems with more than one server have a load balancer somewhere (a cloud load balancer, a proxy, a Kubernetes Service), and its strategy directly shapes tail latency (p99) and what happens when things fail. Seniors are expected to choose it deliberately and understand health checks, not just \"add a load balancer\".",
+    why: "Many systems with more than one server have a load balancer somewhere (a cloud load balancer, a proxy, a Kubernetes Service), and its strategy directly shapes tail latency (p99) and what happens when things fail. Seniors are expected to choose it deliberately and understand health checks, not just \"add a load balancer\".",
     watch: "Blue dots are requests, yellow squares are requests waiting in a server's queue (red when it is nearly full), green dots are responses, and red rings mark requests that failed or were dropped. The ring on each server shows how busy it is: green, then yellow, then red as it fills. A server that has died gets a red outline and says DOWN. Click a server box, or use the server buttons, to kill or revive it. The chart runs every strategy on the same seeded traffic, so their p99 lines compare fairly; the chips say the traffic is simulated and the speeds and delays are illustrative.",
   },
   tryThis: [
     'Leave "One slow server" on and flip between Round robin and Least conn. With round robin api-5\'s queue fills up and requests are dropped; with least connections it stays short.',
     'Click a server (or its button) to kill it. Count the red failures before the health check pulls it, then watch them stop.',
-    'Pick Least conn, let it run for ten seconds or so, then kill a server: its count drops to zero, so it looks idle and gets more than its share of requests until the health check catches up.',
+    'Pick Least conn, let it run for ten seconds or so, then kill a server: its count drops, so it looks idle and gets more than its share of requests until the health check catches up.',
     'Let it run for about ten seconds, then hit Traffic spike and compare the p99 lines in the chart: round robin and random end up highest.',
   ],
   keyIdeas: [
@@ -65,7 +65,7 @@ const lesson: LessonModule = {
     {
       q: 'A team says "least connections is the best strategy, full stop". When can it hurt?',
       options: [
-        'A dead server with zero connections looks idle until a health check removes it',
+        'A dead server with few connections looks idle until a health check removes it',
         'It cannot see which server is slow, so it splits the traffic evenly anyway',
         'It needs every client to remember which server it used last time',
         'It only works when all the servers have exactly the same speed',

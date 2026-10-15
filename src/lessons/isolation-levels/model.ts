@@ -22,7 +22,7 @@
 export type Level = 'ru' | 'rc' | 'si' | 'ser';
 export type AnomalyId = 'dirty' | 'nonrepeat' | 'phantom' | 'lost' | 'skew';
 export type Tx = 'T1' | 'T2';
-export type Tone = 'ok' | 'bad' | 'hi' | 'info' | '';
+export type Tone = 'ok' | 'bad' | 'info' | '';
 /** What a level does about an anomaly: it happens in some interleaving, never happens, or is stopped by aborting a transaction. */
 export type Outcome = 'happens' | 'prevented' | 'aborted';
 
@@ -34,11 +34,11 @@ export const LEVELS: { id: Level; label: string; short: string; model: string }[
   { id: 'rc', label: 'Read Committed', short: 'RC', model: 'A read sees the newest committed version at the moment of the read.' },
   {
     id: 'si', label: 'Repeatable Read / Snapshot', short: 'RR / SI',
-    model: "A read sees the snapshot taken at the transaction's first statement. Writing a row that changed since then aborts the writer.",
+    model: "A read sees the snapshot taken at the transaction's first statement. Writing a row that changed since then aborts the writer (Postgres behaviour: InnoDB's Repeatable Read lets that lost update through, and the SQL standard's Repeatable Read allows phantoms, which snapshot reads do not).",
   },
   {
     id: 'ser', label: 'Serializable', short: 'SER',
-    model: 'Snapshot reads, and a transaction is aborted at commit if it and another one each read something the other wrote.',
+    model: "A simplified version of Postgres's SSI: snapshot reads, and a transaction is aborted at commit if it and one other transaction each read something the other wrote. It is a pairwise check; real SSI also catches longer chains and may abort needlessly.",
   },
 ];
 
@@ -320,7 +320,7 @@ const money = (v: string) => Number(v.replace('$', ''));
 const sawOf = (who: Tx, key: string, idx: number): Saw => ({ key, idx, who });
 const NOT_SERIALIZABLE = 'ERROR: could not serialize';
 
-const rollbackStep: StepDef = { sql: 'ROLLBACK', run: (c) => { c.db.rollback(c.id); return { tone: 'hi' }; } };
+const rollbackStep: StepDef = { sql: 'ROLLBACK', run: (c) => { c.db.rollback(c.id); return {}; } };
 
 /** "Read the counter, add one, write and commit": the app-level read-modify-write behind the lost update. */
 const readStep = (key: string): StepDef => ({
@@ -341,7 +341,7 @@ const incrementStep = (retry: boolean): StepDef => ({
     }
     const row = c.db.rows.find((r) => r.key === 'likes')!;
     const unseen = row.versions.some((v) => v.st === 'c' && (v.seq ?? 0) > c.db.snapshotOf(c.id));
-    if (c.db.write(c.id, 'likes', String(Number(c.mine.n) + 1)) === 'conflict') return { result: NOT_SERIALIZABLE, tone: 'hi' };
+    if (c.db.write(c.id, 'likes', String(Number(c.mine.n) + 1)) === 'conflict') return { result: NOT_SERIALIZABLE, tone: 'bad' };
     c.db.commit(c.id);
     if (retry) return { result: 'ok', tone: 'ok' };
     return unseen ? { result: 'ok', tone: 'bad' } : { tone: 'info' };
@@ -369,7 +369,7 @@ const leaveStep = (key: string, name: string): StepDef => ({
 const commitSkewStep = (): StepDef => ({
   sql: 'COMMIT',
   run: (c) => {
-    if (c.db.commit(c.id) === 'conflict') return { result: NOT_SERIALIZABLE, tone: 'hi' };
+    if (c.db.commit(c.id) === 'conflict') return { result: NOT_SERIALIZABLE, tone: 'bad' };
     const onCall = c.db.rows.filter((r) => c.db.committed(r.key) === 'true').length;
     return { result: 'ok', tone: onCall === 0 ? 'bad' : 'ok' };
   },

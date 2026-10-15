@@ -5,7 +5,7 @@ import { Controls, Legend, Provenance, Segmented } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
-import { ANOMALIES, interleavingCounts, LEVELS, MATRIX, type AnomalyId, type Level, type Outcome } from './model';
+import { ANOMALIES, deriveMatrix, interleavingCounts, LEVELS, type AnomalyId, type Level, type Outcome } from './model';
 import './styles.css';
 
 /** T1 and T2 colours, via the kit's tone classes. */
@@ -54,7 +54,9 @@ export function Stage() {
   const f = player.frame;
   const cols = frames.length - 1;
   const current = LEVELS.find((l) => l.id === level)!;
-  const counts = ANOMALIES.map((a) => interleavingCounts()[a.id]).join(', ');
+  // The table is generated here by running every interleaving, so "each cell is checked" is literally true.
+  const matrix = useMemo(() => deriveMatrix(), []);
+  const counts = ANOMALIES.map((a) => `${a.label.toLowerCase()} ${interleavingCounts()[a.id]}`).join(', ');
 
   const pick = (a: AnomalyId, l: Level) => {
     setAnomaly(a);
@@ -210,7 +212,7 @@ export function Stage() {
                 <tr key={a.id} className={a.id === anomaly ? 'on' : ''}>
                   <th title={a.blurb}>{a.label}</th>
                   {LEVELS.map((l) => {
-                    const o = MATRIX[a.id][l.id];
+                    const o = matrix[a.id][l.id];
                     const current = a.id === anomaly && l.id === level;
                     return (
                       <td key={l.id}>
@@ -247,14 +249,16 @@ export function Stage() {
           </p>
           <p className="iso-foot">
             <Provenance kind="simulated">
-              each cell is checked by running every interleaving of the two toy transactions ({counts}) through the engine
+              each cell is computed when this page loads, by running every interleaving of the two toy transactions through the engine ({counts})
             </Provenance>{' '}
-            Click any cell to play it.
+            Click any cell to play it. The toy does not wait on a row lock: a write conflict aborts at once, where real engines usually block first.
           </p>
           <p className="iso-foot">
             <Provenance kind="from-memory">real engines differ; check your database's docs</Provenance> Level names are not portable. For example,
             Postgres treats Read Uncommitted as Read Committed, so it never shows a dirty read, and MySQL's InnoDB Repeatable Read does not abort the second
-            writer the way this toy snapshot level does.
+            writer the way this toy snapshot level does (an UPDATE overwrites, so the lost update happens there). The SQL standard's Repeatable Read allows
+            phantoms; snapshot reads, as here, do not. Lock-based serializable (InnoDB, SQL Server) blocks instead of aborting, and Oracle's SERIALIZABLE is
+            snapshot isolation, which still allows write skew.
           </p>
         </aside>
       </div>

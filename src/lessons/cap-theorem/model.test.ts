@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { checkInvariants, forSeeds, linearizable } from '../../core/distSim';
+import { checkInvariants, forSeeds, linearizable, type Cluster } from '../../core/distSim';
 import { expectCaption } from '../../core/testing/captions';
 import lesson from './index';
 import { buildFrames } from './frames';
 import {
-  BROKEN_SEED, choiceAfterNetSwitch, clientsSeeOneRegister, faultScenario, HEALTHY_ONE_WAY_MS, historyOf, INITIAL_VALUE, MAJORITY,
+  BROKEN_SEED, choiceAfterNetSwitch, clientsSeeOneRegister, faultScenario, HEALTHY_ONE_WAY_MS, partitionOnlyScenario, historyOf, INITIAL_VALUE, MAJORITY,
   minorityRefuses, NODE_IDS, OP_TIMEOUT_MS, PARTITION, PROCESS_MS, reachableAt, runStory, SEARCH_END_MS, staleReads, writeLatencyMs,
-  type Choice, type Net, type OpRecord,
+  type Choice, type Msg, type Net, type NodeState, type OpRecord,
 } from './model';
 
 const SEEDS = 300;
@@ -40,10 +40,36 @@ describe('the CP choice (majority quorum) over seeded fault schedules', () => {
 });
 
 describe('the AP choice (answer locally, merge later) is the broken mode', () => {
-  it(`breaks the consistency check, and its lowest failing seed is the pinned BROKEN_SEED (${BROKEN_SEED})`, () => {
-    const verdict = forSeeds(SEEDS, faultScenario('local'), [clientsSeeOneRegister], { until: SEARCH_END_MS });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) expect(verdict.seed).toBe(BROKEN_SEED);
+  const consistent = (scenario: (seed: number) => Cluster<Msg, NodeState>) =>
+    (seed: number) => checkInvariants(scenario(seed), [clientsSeeOneRegister], { until: SEARCH_END_MS }).ok;
+
+  it('breaks the consistency check on the full random fault search', () => {
+    expect(forSeeds(SEEDS, faultScenario('local'), [clientsSeeOneRegister], { until: SEARCH_END_MS }).ok).toBe(false);
+  });
+
+  it(`a partition alone (no loss, crash or skew) breaks it: the lowest seed where the schedule fails with the cut and passes without it is the pinned BROKEN_SEED (${BROKEN_SEED})`, () => {
+    const caused = (seed: number) => !consistent(partitionOnlyScenario('local'))(seed) && consistent(partitionOnlyScenario('local', false))(seed);
+    let lowest = -1;
+    for (let seed = 0; seed < SEEDS && lowest < 0; seed++) if (caused(seed)) lowest = seed;
+    expect(lowest).toBe(BROKEN_SEED);
+  });
+
+  it('the pinned seed shows the stated reason: the trace has a partition, and AP failed because of it', () => {
+    const cluster = partitionOnlyScenario('local')(BROKEN_SEED);
+    const result = checkInvariants(cluster, [clientsSeeOneRegister], { until: SEARCH_END_MS });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.trace.some((row) => row.kind === 'partition')).toBe(true);
+    expect(consistent(partitionOnlyScenario('local', false))(BROKEN_SEED)).toBe(true);
+  });
+
+  it('CP stays consistent on the same partition-only schedules, on all seeds', () => {
+    const verdict = forSeeds(SEEDS, partitionOnlyScenario('quorum'), [clientsSeeOneRegister], { until: SEARCH_END_MS });
+    expect(verdict).toEqual({ ok: true, seeds: SEEDS });
+  });
+
+  it('AP is non-linearizable with the partition removed too (the EL point): some seed fails with no fault at all', () => {
+    const failing = Array.from({ length: SEEDS }, (_, seed) => seed).filter((seed) => !consistent(partitionOnlyScenario('local', false))(seed));
+    expect(failing.length).toBeGreaterThan(0);
   });
 
   it('also answers ok from the minority side on some seed (so the minority check can fail)', () => {
@@ -120,6 +146,12 @@ describe('what the stories show, against hand-worked expectations', () => {
     expect(story.valuesAt(HEALTHY_ONE_WAY_MS + PROCESS_MS).N3).toBe(2);
   });
 
+  it('the four stories are the same on every seed (fixed delays, no loss), so no seed is shown for them', () => {
+    for (const [net, choice] of STORIES) {
+      expect(runStory(net, choice, 3).cluster.trace).toEqual(runStory(net, choice, 999).cluster.trace);
+    }
+  });
+
   it('the stories are deterministic: the same seed gives the same trace', () => {
     for (const [net, choice] of STORIES) {
       expect(runStory(net, choice, 7).cluster.trace).toEqual(runStory(net, choice, 7).cluster.trace);
@@ -179,6 +211,7 @@ describe('frames', () => {
     expect(ap).toContain('answering in 5 ms');
     expect(ap).toContain('different answers: x=2 and x=3');
     expect(ap).toContain('every replica ends at x=3');
+    expect(ap).toContain('AP can serve a stale read with no partition too');
     expect(text('healthy', 'ec')).toContain(`The write took ${PROCESS_MS + 2 * HEALTHY_ONE_WAY_MS} ms`);
     expect(text('healthy', 'el')).toContain('acknowledged 15 ms earlier');
   });

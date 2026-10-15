@@ -227,6 +227,18 @@ export const PRESETS = {
 } as const;
 export type PresetId = keyof typeof PRESETS;
 
+/** The request rate the slider starts at (req/s). */
+export const DEFAULT_RATE = 11;
+/** The slider's range (req/s). */
+export const RATE_RANGE = { min: 2, max: 24 } as const;
+
+/** Mean seconds of work a request needs at 1x speed. */
+const MEAN_WORK_S = WORK.base + WORK.mean;
+/** Requests per second a fleet can finish in total if its servers were never idle or overloaded. */
+export const capacityPerSec = (speeds: readonly number[]) => speeds.reduce((a, b) => a + b, 0) / MEAN_WORK_S;
+/** The rate above which an even split (round robin, random) hands the slowest server more than it can finish. */
+export const evenSplitLimit = (speeds: readonly number[]) => (speeds.length * Math.min(...speeds)) / MEAN_WORK_S;
+
 export const serverName = (i: number) => `api-${i + 1}`;
 
 type Sampler = ReturnType<typeof createSampler<number>>;

@@ -10,7 +10,7 @@ import { useSimulation } from '../../core/useSimulation';
 import { fleetCaption, healthCaption, insightCaption, introCaption, spikeCaption, strategyCaption, toggleCaption } from './captions';
 import { drawScene, serverAt } from './draw';
 import {
-  advance, createWorld, HEALTH_DELAY, HISTORY, PRESETS, SERVER_COUNT, serverName, setFleet, snapshot, spike, takeInsight, toggleServer, TRAFFIC_SEED,
+  advance, createWorld, DEFAULT_RATE, HEALTH_DELAY, HISTORY, PRESETS, RATE_RANGE, SERVER_COUNT, serverName, setFleet, snapshot, spike, takeInsight, toggleServer, TRAFFIC_SEED,
   type HealthChange, type PresetId, type World,
 } from './sim';
 import { STRATEGIES, type StrategyId } from './strategies';
@@ -24,7 +24,7 @@ const P99_BAD = 2; // seconds
 export function Stage() {
   const setCaption = useSetCaption();
   const [strategyId, setStrategyId] = useState<StrategyId>('rr');
-  const [rate, setRate] = useState(11);
+  const [rate, setRate] = useState(DEFAULT_RATE);
   const [preset, setPreset] = useState<PresetId>('slow');
 
   useIntroCaption(introCaption());
@@ -99,7 +99,7 @@ export function Stage() {
           <Legend
             items={[
               { color: 'var(--info)', label: 'request', shape: 'dot' },
-              { color: 'var(--hi)', label: 'queued' },
+              { color: 'var(--amber)', label: 'queued' },
               { color: 'var(--ok)', label: 'response', shape: 'dot' },
               { color: 'var(--bad)', label: 'failed / dropped', shape: 'dot' },
             ]}
@@ -121,7 +121,7 @@ export function Stage() {
             value={preset}
             onChange={pickPreset}
           />
-          <Slider label="Request rate" value={rate} min={2} max={24} onChange={setRate} format={(v) => perSec(v)} />
+          <Slider label="Request rate" value={rate} min={RATE_RANGE.min} max={RATE_RANGE.max} onChange={setRate} format={(v) => perSec(v)} />
           <ControlGroup label="Servers (or click one in the picture)">
             {Array.from({ length: SERVER_COUNT }, (_, i) => {
               const alive = snap?.alive[i] ?? true;

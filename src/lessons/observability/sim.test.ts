@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
-import { causeLine, logsFiltered, rowClicked, traceOpened } from './captions';
+import { causeLine, logsFiltered, possessive, rowClicked, traceOpened } from './captions';
 import lesson from './index';
 import {
   ERROR_PCT, health, isProblemRequest, LONG_SELF_MS, makeRequest, METRICS_WINDOW_S, metrics, outlinedSpans, pickTrace, selfTime, SERIES_LABELS,
-  seriesBound, SERVICES, SLOW_P99_MS, TRACE_LOOKBACK, TRAFFIC_SEED, USER_ID_VALUES, type Incident, type Req,
+  seriesBound, SERVICES, SLOW_P99_MS, TRACE_LOOKBACK, TRAFFIC_SEED, USER_ID_VALUES, type Incident, type Req, type Svc, type SvcMetrics,
 } from './sim';
 
 const TICK_S = 0.4;
@@ -294,5 +294,34 @@ describe('try-this, from the lesson as it loads (Healthy, live traffic from seed
       return health(metrics(reqs, now)[0]) === 'slow';
     });
     expect(slowSeeds.length).toBeGreaterThanOrEqual(28);
+  });
+});
+
+describe('metrics-row caption wording', () => {
+  const row = (svc: Svc, p99: number, errPct: number): SvcMetrics => ({ svc, rps: 10, errPct, mean: 10, p50: 10, p99 });
+  const healthyRows = SERVICES.map((s) => row(s, 20, 0));
+  const withSick = (sick: Svc[], p99: number, errPct: number) => healthyRows.map((r) => (sick.includes(r.svc) ? row(r.svc, p99, errPct) : r));
+
+  it('uses a correct possessive for a service whose name ends in s', () => {
+    expect(possessive('payments')).toBe("payments'");
+    expect(possessive('fraud')).toBe("fraud's");
+    const text = captionText(rowClicked('slow', withSick(['payments'], 900, 0), 'payments').caption);
+    expect(text).toContain("payments' p99 is 900 ms");
+    expect(text).not.toContain("payments's");
+  });
+
+  it('never says "1 services": a lone sick service gets its own sentence', () => {
+    const text = captionText(rowClicked('slow', withSick(['payments'], 900, 0), 'payments').caption);
+    expect(text).not.toMatch(/\b1 services\b/);
+    expect(text).toContain('only payments looks sick');
+  });
+
+  it('for an error incident the explanation is about failures bubbling up, not about time', () => {
+    const text = captionText(rowClicked('errors', withSick(['gateway', 'orders', 'inventory'], 20, 40), 'inventory').caption);
+    expect(text).toContain('3 services look sick');
+    expect(text).toContain('errors include the failures');
+    expect(text).not.toContain("service's time includes");
+    const slow = captionText(rowClicked('slow', withSick(['gateway', 'orders', 'payments'], 900, 0), 'payments').caption);
+    expect(slow).toContain("service's time includes");
   });
 });

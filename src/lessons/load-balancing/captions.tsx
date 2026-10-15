@@ -4,7 +4,7 @@
  * changes with the model instead of drifting from it.
  */
 import type { ReactNode } from 'react';
-import { HEALTH_DELAY, PRESETS, serverName, SPIKE, type HealthChange, type Insight, type PresetId } from './sim';
+import { capacityPerSec, DEFAULT_RATE, evenSplitLimit, HEALTH_DELAY, PRESETS, serverName, SPIKE, type HealthChange, type Insight, type PresetId } from './sim';
 import { strategy, type StrategyId } from './strategies';
 
 /** How many times slower the slow preset's server is than the others. */
@@ -18,10 +18,15 @@ const STRATEGY_SAY: Record<StrategyId, ReactNode> = {
   wrr: <><span className="hl">Weighted round robin</span>: faster servers get more turns. Here the weights are the servers' true speeds, which is what makes it work.</>,
 };
 
+/** Whole requests per second, rounded down so a claim like "about 20/s" never overstates. */
+const perSecond = (n: number) => Math.floor(n);
+const EQUAL_CAPACITY = perSecond(capacityPerSec(PRESETS.equal.speeds));
+const MIXED_EVEN_LIMIT = perSecond(evenSplitLimit(PRESETS.mixed.speeds));
+
 const FLEET_SAY: Record<PresetId, ReactNode> = {
   slow: <>api-5 is now <span className="hl bad">{SLOWDOWN}× slower</span> than the rest. Which strategies notice?</>,
-  mixed: <>A <b>mixed fleet</b>: old and new hardware. Blind strategies overload the weak boxes.</>,
-  equal: <>All servers equal. At this request rate every strategy copes, which is exactly why this case is misleading.</>,
+  mixed: <>A <b>mixed fleet</b>: old and new hardware. An even split hands the weakest box more than it can finish once the rate passes about {MIXED_EVEN_LIMIT} req/s, so at the default {DEFAULT_RATE} req/s the blind strategies overload it.</>,
+  equal: <>All servers equal. At the default {DEFAULT_RATE} req/s every strategy copes, which is exactly why this case is misleading: the fleet tops out near {EQUAL_CAPACITY} req/s, and at the top of the rate slider even this fleet drops requests.</>,
 };
 
 export const introCaption = (): ReactNode => <>Requests stream in from the left. {STRATEGY_SAY.rr}</>;

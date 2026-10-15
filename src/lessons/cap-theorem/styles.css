@@ -46,7 +46,7 @@
 .cap-client span { font: 600 12px var(--mono); }
 .cap-client span.ok { color: var(--ok); }
 .cap-client span.bad { color: var(--bad); }
-.cap-client span.wait { color: var(--hi); }
+.cap-client span.wait { color: var(--info); }
 
 .cap-node {
   position: absolute;
@@ -86,7 +86,7 @@
   pointer-events: none;
   box-shadow: 0 4px 14px -4px rgb(0 0 0 / 0.6); /* allow-color: neutral drop shadow */
 }
-.cap-pkt.kind-write { background: var(--hi); }
+.cap-pkt.kind-write { background: var(--amber); }
 .cap-pkt.kind-read { background: var(--violet); }
 .cap-pkt.kind-repl { background: var(--info); }
 .cap-pkt.kind-ok { background: var(--ok); }

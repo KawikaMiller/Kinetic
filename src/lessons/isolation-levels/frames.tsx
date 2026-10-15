@@ -157,7 +157,7 @@ const skew: Captions = (run, level) => {
 
 const CAPTIONS: Record<AnomalyId, Captions> = { dirty, nonrepeat, phantom, lost, skew };
 
-const VERDICT: Record<AnomalyId, { present: string; absent: (run: RunResult) => string }> = {
+const VERDICT: Record<AnomalyId, { present: string; absent: (run: RunResult, level: Level) => string }> = {
   dirty: { present: 'Dirty read: T2 acted on data that was rolled back.', absent: () => 'Prevented: in this run T2 never saw uncommitted data.' },
   nonrepeat: {
     present: 'Non-repeatable read: same query, different answer inside one transaction.',
@@ -166,11 +166,11 @@ const VERDICT: Record<AnomalyId, { present: string; absent: (run: RunResult) => 
   phantom: { present: 'Phantom read: a row appeared out of nowhere between two identical queries.', absent: () => "Prevented: Carol's row isn't in T1's snapshot." },
   lost: {
     present: 'Lost update: two likes, the counter only went up by one.',
-    absent: () => 'Prevented by aborting: the app retries and both likes count.',
+    absent: (_run, level) => `Prevented by aborting${level === 'si' ? " (as in Postgres; InnoDB's Repeatable Read lets this one through)" : ''}: the app retries and both likes count.`,
   },
   skew: {
     present: 'Write skew: each decision was valid alone; together, nobody is on call.',
-    absent: () => 'Prevented by aborting: Serializable noticed T2 read data T1 then changed.',
+    absent: () => "Prevented by aborting: this toy's simplified SSI noticed T2 read data T1 then changed.",
   },
 };
 
@@ -189,7 +189,7 @@ export function buildFrames(anomaly: AnomalyId, level: Level): IsoFrame[] {
       col: i,
       saw: step.saw,
       hidden: step.hidden,
-      verdict: last ? { tone: present ? 'bad' : 'ok', text: present ? VERDICT[anomaly].present : VERDICT[anomaly].absent(run) } : null,
+      verdict: last ? { tone: present ? 'bad' : 'ok', text: present ? VERDICT[anomaly].present : VERDICT[anomaly].absent(run, level) } : null,
       say: steps[i],
     });
   });

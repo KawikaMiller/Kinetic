@@ -8,7 +8,7 @@ import { useInterval } from '../../core/useInterval';
 import { appendedCaption, introCaption, money, newProjectionCaption, rejectedCaption, resetCaption, scrubCaption } from './captions';
 import { bigWithdrawals, dateOf, fold, SEED, statement, type AccountEvent, type EventType, type Projection } from './events';
 import {
-  addBigProjection, DEPOSIT, hasBigProjection, initialSim, isBehind, lagOf, runCommand, tick, WITHDRAW, WITHDRAW_TOO_MUCH, type Sim,
+  addBigProjection, DEPOSIT, hasBigProjection, initialSim, isBehind, lagLabel, lagOf, runCommand, tick, WITHDRAW, WITHDRAW_TOO_MUCH, type Sim,
 } from './model';
 import './styles.css';
 
@@ -68,9 +68,9 @@ export function Stage() {
       height={480}
       stats={
         <Stats>
-          <Stat label="Events stored" value={events.length} sub="never edited or deleted" />
+          <Stat label="Events stored" value={events.length} sub="append-only (Reset starts over)" />
           <Stat label="Balance" value={money(live.balance)} sub="fold(events)" />
-          <Stat label="Read-model lag" value={lag} color={lag ? 'var(--hi)' : 'var(--ok)'} sub={lag ? 'events behind' : 'caught up'} />
+          <Stat label="Read-model lag" value={lag} color={lag ? 'var(--info)' : 'var(--ok)'} sub={lagLabel(sim)} />
           <Stat label="Rejected commands" value={rejected} color={rejected ? 'var(--bad)' : undefined} />
         </Stats>
       }

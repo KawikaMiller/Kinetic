@@ -3,11 +3,11 @@ import { mulberry32 } from '../../core/random';
 import { captionText, expectCaption } from '../../core/testing/captions';
 import { appendedCaption, introCaption, money, newProjectionCaption, rejectedCaption, resetCaption, scrubCaption } from './captions';
 import {
-  apply, bigWithdrawals, dateOf, EMPTY, fold, foldFrom, SEED, statement, upcast, type AccountEvent, type EventType,
+  apply, BIG_WITHDRAWAL_MIN, bigWithdrawals, dateOf, EMPTY, fold, foldFrom, SEED, statement, upcast, type AccountEvent, type EventType,
 } from './events';
 import lesson from './index';
 import {
-  addBigProjection, DEPOSIT, hasBigProjection, initialSim, isBehind, lagOf, LAST_DAY, runCommand, tick, WITHDRAW, WITHDRAW_TOO_MUCH, type Sim,
+  addBigProjection, DEPOSIT, hasBigProjection, initialSim, isBehind, lagLabel, lagOf, LAST_DAY, runCommand, tick, WITHDRAW, WITHDRAW_TOO_MUCH, type Sim,
 } from './model';
 
 /** A random but valid log: opens an account, then deposits and withdrawals the balance can cover, v1 and v2 events mixed. */
@@ -316,5 +316,46 @@ describe('try-this, from the default state (the seven seed events, projections l
     const big = sim.projections[2];
     expect([big.pos, big.rebuilding]).toEqual([SEED.length, false]);
     expect(bigWithdrawals(sim.events, big.pos).map((e) => e.seq)).toEqual([3, 6]);
+  });
+});
+
+describe('the lag stat wording', () => {
+  const ticks = (s: Sim, n: number) => Array.from({ length: n }).reduce<Sim>((acc) => tick(acc), s);
+
+  it('uses the singular for one event, the plural otherwise, and says "caught up" at zero', () => {
+    const start = initialSim();
+    expect(lagLabel(start)).toBe('caught up');
+    const r = runCommand(start, 'Deposited', DEPOSIT);
+    if (!r.ok) throw new Error('deposit rejected');
+    expect(lagLabel(r.sim)).toBe('event behind');
+    const r2 = runCommand(r.sim, 'Deposited', DEPOSIT);
+    if (!r2.ok) throw new Error('deposit rejected');
+    expect(lagLabel(r2.sim)).toBe('events behind');
+  });
+
+  it('says "to replay", not "behind", while a new projection rebuilds, and goes back to "caught up" when it is level', () => {
+    const rebuilding = addBigProjection(initialSim());
+    expect(lagOf(rebuilding)).toBe(rebuilding.events.length);
+    expect(lagLabel(rebuilding)).toBe('events to replay');
+    expect(lagLabel(ticks(rebuilding, rebuilding.events.length - 1))).toBe('event to replay');
+    const done = ticks(rebuilding, rebuilding.events.length + 2);
+    expect(lagLabel(done)).toBe('caught up');
+  });
+});
+
+describe('the big-withdrawal threshold is one constant', () => {
+  it('the projection label, the filter and the amounts agree: the label names the constant, a withdrawal of exactly the minimum is in and one below is out', () => {
+    expect(addBigProjection(initialSim()).projections[2].name).toBe(`Big withdrawals ≥ ${BIG_WITHDRAWAL_MIN}`);
+    const withdrew = (seq: number, amount: number): AccountEvent => ({ seq, type: 'Withdrew', amount, day: 1, v: 2 });
+    const events = [withdrew(1, BIG_WITHDRAWAL_MIN - 1), withdrew(2, BIG_WITHDRAWAL_MIN)];
+    expect(bigWithdrawals(events, events.length).map((e) => e.seq)).toEqual([2]);
+  });
+
+  it('each projection dot has its own colour, and none repeats an event colour except the withdrawals view, which is orange on purpose', () => {
+    const sim = addBigProjection(initialSim());
+    const colours = sim.projections.map((p) => p.color);
+    expect(new Set(colours).size).toBe(colours.length);
+    expect(colours).not.toContain('var(--info)');
+    expect(colours).not.toContain('var(--sky)');
   });
 });

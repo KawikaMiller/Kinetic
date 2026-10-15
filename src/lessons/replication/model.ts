@@ -339,10 +339,13 @@ const isAppend = (payload: unknown, entry: string) => {
 
 /**
  * The broken mode's pinned seed: the lowest on which async loses an acknowledged write in the fault
- * search below (a test pins it). The stories run on it, so the broken mode is shown on the schedule
- * that provably breaks it.
+ * search below (a test pins it). It names the counterexample the search found. The stories do not
+ * run on that schedule: they are scripted (hand-placed crash, fixed link delays, no loss), so they
+ * play the same on every seed and the seed changes nothing on screen.
  */
 export const BROKEN_SEED = 1;
+/** The seed the scripted stories run on; any seed gives the same run. */
+export const STORY_SEED = 0;
 
 const viewOf = (cluster: Cluster<Msg, NodeState>): Record<NodeId, NodeView> => {
   const nodes = cluster.snapshot().nodes;
@@ -357,7 +360,7 @@ const viewOf = (cluster: Cluster<Msg, NodeState>): Record<NodeId, NodeView> => {
 };
 
 /** Run one of the lesson's four stories. Deterministic: latencies are the constants above. */
-export function runStory(scenario: Scenario, mode: Mode, seed = BROKEN_SEED): Story {
+export function runStory(scenario: Scenario, mode: Mode, seed = STORY_SEED): Story {
   const script = SCRIPTS[scenario][mode];
   const build = () => buildCluster({ seed, mode, ...script });
   const full = build();

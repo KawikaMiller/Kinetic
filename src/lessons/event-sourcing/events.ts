@@ -88,5 +88,8 @@ export function statement(events: readonly AccountEvent[], upTo: number) {
   return [...rows.values()];
 }
 
+/** A withdrawal of at least this much (in euros) belongs in the big-withdrawals read model. */
+export const BIG_WITHDRAWAL_MIN = 100;
+
 export const bigWithdrawals = (events: readonly AccountEvent[], upTo: number) =>
-  events.slice(0, upTo).filter((e) => e.type === 'Withdrew' && e.amount >= 100);
+  events.slice(0, upTo).filter((e) => e.type === 'Withdrew' && e.amount >= BIG_WITHDRAWAL_MIN);

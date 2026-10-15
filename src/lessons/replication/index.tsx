@@ -15,7 +15,7 @@ const lesson: LessonModule = {
       "Serving reads close to users in other regions",
     ],
     why: "Many production databases are replicated, and replication lag causes some of the most confusing bugs: \"I saved it and it disappeared\", and writes lost during failover. Seniors are expected to choose sync vs async deliberately and design around lag with read-your-writes strategies.",
-    watch: "The leader (green border) takes writes; followers copy its log. F2 sits in another region behind a slow, dotted link. Pills are messages: yellow = write, blue = replication, green = ack or reply, violet = read, red = lost (a copy the leader never sent). Log entries glow yellow when they have just arrived. A crashed node is dimmed with a red border, and the follower that takes over gets a thicker green border and the label \"new leader\". Client text turns green when the client was told something correct, red when it was told something wrong. The stats are computed from the run: write latency (red for the slow figure, green for the fast one), how many entries each follower is behind the longest live log, stale reads answered, and acknowledged writes that no live node holds. The chips say what is simulated and what is scripted.",
+    watch: "The leader (green border) takes writes; followers copy its log. F2 sits in another region behind a slow, dotted link. Pills are messages: yellow = write, blue = replication, green = ack or reply, violet = read, red = lost, or a copy the leader had not sent yet (labelled not sent yet). Log entries glow yellow when they have just arrived. A crashed node is dimmed with a red border, and the follower that takes over gets a thicker green border and the label \"new leader\". Client text turns green when the client was told something correct, red when it was told something wrong. The stats are computed from the run: write latency (red for the slow figure, green for the fast one), how many entries each follower is behind the longest live log, stale reads answered, and acknowledged writes that no live node holds. The chips say what is simulated and what is scripted.",
   },
   tryThis: [
     'Play "Stale read" with Asynchronous (the default): after you save Ada, the reload on F2 returns Ana and "Stale reads" becomes 1.',
@@ -24,7 +24,7 @@ const lesson: LessonModule = {
     'Compare the F2 lag stat when the client is told "saved": it is still 1 with Asynchronous and already 0 with Synchronous.',
   ],
   keyIdeas: [
-    'Writes go through the leader; followers replay its log in order.',
+    'In single-leader replication, writes go through the leader and followers replay its log in order.',
     'Async: fast writes, stale follower reads, and a failover can lose writes that had not been shipped yet.',
     'Sync: in this model no acknowledged write is lost on failover and replicas are fresh, but each write waits for the slowest follower.',
     "Read-your-writes: send a user's reads to the leader (or an up-to-date replica) right after they write.",

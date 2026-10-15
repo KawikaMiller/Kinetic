@@ -26,6 +26,14 @@ describe('failover under seeded faults (jitter, 5% loss, 10% duplication, the le
     }
   });
 
+  it('the stories are scripted: the same trace on every seed, so the pinned search seed drives nothing on screen', () => {
+    for (const scenario of ['stale', 'failover'] as const) {
+      for (const mode of ['async', 'sync'] as const) {
+        expect(runStory(scenario, mode, 3).trace, `${scenario} ${mode}`).toEqual(runStory(scenario, mode, 77).trace);
+      }
+    }
+  });
+
   it('async loses a write on many seeds, not just one', () => {
     const failing = Array.from({ length: SEEDS }, (_, i) => i).filter((seed) => !forSeeds({ from: seed, to: seed + 1 }, failoverScenario('async'), [noAcknowledgedWriteLost], bounds).ok);
     expect(failing.length).toBeGreaterThan(SEEDS / 10);

@@ -84,7 +84,7 @@ export function drawScene(ctx: Ctx, width: number, height: number, w: World) {
     // queue
     const full = srv.queue.length >= QUEUE_WARN;
     ctx.globalAlpha = 0.85;
-    srv.queue.forEach((_, k) => rect(ctx, queueX(i, k) - 4.5, p.y - 4.5, 9, 9, { fill: full ? C.bad : C.hi }));
+    srv.queue.forEach((_, k) => rect(ctx, queueX(i, k) - 4.5, p.y - 4.5, 9, 9, { fill: full ? C.bad : C.amber }));
     ctx.globalAlpha = 1;
     if (srv.alive) rect(ctx, queueX(i, QUEUE_CAP - 1) - 7, p.y - 7, QUEUE_CAP * QUEUE_SLOT + 2, 14, { stroke: C.cellLine });
   });
@@ -149,7 +149,7 @@ function drawUtilRing(ctx: Ctx, x: number, y: number, util: number | null) {
   ctx.arc(x, y, RING.r, 0, Math.PI * 2);
   ctx.stroke();
   if (util !== null) {
-    ctx.strokeStyle = util > 0.9 ? C.bad : util > 0.6 ? C.hi : C.ok;
+    ctx.strokeStyle = util > 0.9 ? C.bad : util > 0.6 ? C.amber : C.ok;
     ctx.beginPath();
     ctx.arc(x, y, RING.r, -Math.PI / 2, -Math.PI / 2 + util * Math.PI * 2);
     ctx.stroke();

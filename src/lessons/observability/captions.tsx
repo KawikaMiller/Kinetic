@@ -31,6 +31,9 @@ export const INTRO: Record<Incident, ReactNode> = {
   ),
 };
 
+/** "payments'" / "fraud's": the possessive of a service name. */
+export const possessive = (name: string) => (name.endsWith('s') ? `${name}'` : `${name}'s`);
+
 const list = (names: string[]) => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
 
 /** What clicking a service's metrics row says. */
@@ -43,8 +46,8 @@ export function rowClicked(incident: Incident, rows: readonly SvcMetrics[], svc:
     check: 'metrics',
     caption: (
       <>
-        <span className="hl ok">✓ Metrics</span> say <b>something is wrong</b>: {svc}'s {incident === 'slow' ? `p99 is ${Math.round(row.p99)} ms` : `error rate is ${row.errPct.toFixed(0)}%`}.
-        But {sick.length} services look sick ({list(sick)}), because a service's time includes the services it calls, so metrics can't say <i>where</i>. Step 2: open a{' '}
+        <span className="hl ok">✓ Metrics</span> say <b>something is wrong</b>: {possessive(svc)} {incident === 'slow' ? `p99 is ${Math.round(row.p99)} ms` : `error rate is ${row.errPct.toFixed(0)}%`}.
+        But {sick.length === 1 ? `only ${svc} looks sick here, and` : `${sick.length} services look sick (${list(sick)}), because ${incident === 'slow' ? "a service's time includes the services it calls" : "a service's errors include the failures of the services it calls"}, so`} metrics can't say <i>where</i>. Step 2: open a{' '}
         {incident === 'slow' ? 'slow' : 'failing'} <span className="hl">trace</span>.
       </>
     ),

@@ -63,7 +63,7 @@
 .es-proj header i { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); }
 .es-proj header em { margin-left: auto; font: 600 11px var(--mono); font-style: normal; padding: 1px 6px; border-radius: 5px; }
 .es-proj header em.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
-.es-proj header em.lag { color: var(--hi); background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.es-proj header em.lag { color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
 .es-proj-big { margin: 0; font: 700 22px var(--mono); }
 .es-table { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
 .es-table th { text-align: left; color: var(--faint); font-weight: 500; padding: 2px 0; }

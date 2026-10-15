@@ -6,7 +6,7 @@ import { Flyer } from '../../components/scene';
 import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, type Pkt, type Place } from './frames';
-import { BROKEN_SEED, DETECT_MS, FLUSH_MS, LAT, lagOf, NODE_IDS, runStory, writeMs, type Mode, type NodeId, type Scenario } from './model';
+import { DETECT_MS, FLUSH_MS, LAT, lagOf, NODE_IDS, runStory, writeMs, type Mode, type NodeId, type Scenario } from './model';
 import './styles.css';
 
 const INTERVAL = 1500;
@@ -49,7 +49,7 @@ export function Stage() {
             sub={`async ${writeMs('async')} · sync ${writeMs('sync')}`}
           />
           <Stat label="F1 lag" value={lag.F1} sub="entries behind" />
-          <Stat label="F2 lag" value={lag.F2} color={lag.F2 > 0 ? 'var(--hi)' : undefined} sub="entries behind" />
+          <Stat label="F2 lag" value={lag.F2} sub="entries behind" />
           <Stat label="Stale reads" value={f.stale} color={f.stale ? 'var(--bad)' : undefined} sub="answered" />
           <Stat label="Acked writes lost" value={f.missing} color={f.missing ? 'var(--bad)' : undefined} sub="on no live node" />
         </Stats>
@@ -58,7 +58,7 @@ export function Stage() {
         <>
           <Legend
             items={[
-              { color: 'var(--hi)', label: 'write', shape: 'dot' },
+              { color: 'var(--amber)', label: 'write', shape: 'dot' },
               { color: 'var(--info)', label: 'replication', shape: 'dot' },
               { color: 'var(--ok)', label: 'ack / reply', shape: 'dot' },
               { color: 'var(--violet)', label: 'read', shape: 'dot' },
@@ -66,10 +66,10 @@ export function Stage() {
             ]}
           />
           <div className="rep-prov">
-            <Provenance kind="simulated" seed={BROKEN_SEED}>
-              a leader and two followers on a seeded network simulator; logs, lag, loss and latency are read back from the run
+            <Provenance kind="simulated">
+              a leader and two followers on a network simulator; logs, lag, loss and latency are read back from the run
             </Provenance>
-            <Provenance kind="scripted">the crash, the failover manager's timing ({DETECT_MS} ms after it) and which follower the read lands on</Provenance>
+            <Provenance kind="scripted">the crash, the failover manager's timing ({DETECT_MS} ms after it), which follower the read lands on and fixed link delays, so every seed plays the same; the seeded search for a schedule that loses a write runs in the tests</Provenance>
             <Provenance kind="illustrative">link delays and the {FLUSH_MS} ms background sender</Provenance>
           </div>
         </>

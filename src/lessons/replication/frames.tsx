@@ -81,7 +81,7 @@ function staleFrames(story: Story): RepFrame[] {
   r.push(
     write.invoke + 1,
     { pkts: [writePkt], client: { text: 'saving…', tone: 'wait' } },
-    <>You rename yourself to <span className="hl">{shown(after)}</span>. Writes always go to the leader.</>,
+    <>You rename yourself to <span className="hl">{shown(after)}</span>. In single-leader replication, writes go to the leader.</>,
   );
   if (isAsync) {
     r.push(
@@ -239,8 +239,8 @@ function failoverFrames(story: Story): RepFrame[] {
         pkts: [
           { id: 'r32', from: 'L', to: 'F2', label: orderNo(first), kind: 'repl', dur: 4 },
           { id: 'a4', from: 'L', to: 'C', label: 'ok', kind: 'ack' },
-          { id: 'r41', from: 'L', to: 'F1', label: orderNo(second), kind: 'lost' },
-          { id: 'r42', from: 'L', to: 'F2', label: orderNo(second), kind: 'lost' },
+          { id: 'r41', from: 'L', to: 'F1', label: `${orderNo(second)} not sent yet`, kind: 'lost' },
+          { id: 'r42', from: 'L', to: 'F2', label: `${orderNo(second)} not sent yet`, kind: 'lost' },
         ],
       },
       <>

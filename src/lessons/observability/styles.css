@@ -20,11 +20,11 @@
 
 .ob-svg { width: 100%; height: auto; }
 .ob-link-line { stroke: var(--line-2); stroke-width: 2; stroke-dasharray: 5 5; animation: ob-flow 1s linear infinite; }
-.ob-link-line.slow { stroke: var(--hi); }
+.ob-link-line.slow { stroke: var(--amber); }
 .ob-link-line.bad { stroke: var(--bad); }
 @keyframes ob-flow { to { stroke-dashoffset: -10; } }
 .ob-node circle { fill: var(--cell); stroke: var(--ok); stroke-width: 2.5; transition: stroke 0.4s, fill 0.4s; }
-.ob-node.slow circle { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 16%, var(--cell)); }
+.ob-node.slow circle { stroke: var(--amber); fill: color-mix(in srgb, var(--amber) 16%, var(--cell)); }
 .ob-node.bad circle { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 18%, var(--cell)); animation: ob-blink 1s ease-in-out infinite; }
 @keyframes ob-blink { 50% { opacity: 0.6; } }
 .ob-node text { fill: var(--text); font: 600 13px var(--mono); }
@@ -54,7 +54,7 @@
 .ob-row-btn { display: inline-flex; align-items: center; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .ob-table tbody tr { cursor: pointer; transition: background 0.2s; }
 .ob-table tbody tr:hover { background: var(--panel-2); }
-.ob-table tr.slow .p99 { color: var(--hi); font-weight: 700; }
+.ob-table tr.slow .p99 { color: var(--amber); font-weight: 700; }
 .ob-table tr.bad .err { color: var(--bad); font-weight: 700; }
 .ob-table tr.found { background: color-mix(in srgb, var(--ok) 10%, transparent); }
 .ob-spark { overflow: hidden; }
@@ -77,9 +77,16 @@
 .ob-logs .msg { overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
 .ob-logs .tid { color: var(--faint); }
 .ob-logs .lvl { color: var(--faint); }
-.ob-logs li.warn .lvl, .ob-logs li.warn .msg { color: var(--hi); }
+.ob-logs li.warn .lvl, .ob-logs li.warn .msg { color: var(--amber); }
 .ob-logs li.error .lvl, .ob-logs li.error .msg { color: var(--bad); }
 @keyframes ob-in { from { opacity: 0; transform: translateY(-4px); } }
+
+/* On a phone the message gets its own wrapped line, so the root-cause WARN is readable in the logs panel. */
+@media (max-width: 600px) {
+  .ob-logs { max-height: 320px; }
+  .ob-logs li { grid-template-columns: 48px 80px 1fr; white-space: normal; }
+  .ob-logs .msg { grid-column: 1 / -1; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+}
 
 @media (max-width: 900px) {
   .ob { grid-template-columns: 1fr; }

@@ -7,7 +7,7 @@ import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames, valueLabel, type Pkt, type Place } from './frames';
 import {
-  BROKEN_SEED, choiceAfterNetSwitch, HEALTHY_ONE_WAY_MS, NODE_IDS, PARTITION, PARTITION_ONE_WAY_MS, runStory, type Choice, type Net,
+  choiceAfterNetSwitch, HEALTHY_ONE_WAY_MS, NODE_IDS, PARTITION, PARTITION_ONE_WAY_MS, runStory, type Choice, type Net,
 } from './model';
 import './styles.css';
 
@@ -65,7 +65,7 @@ export function Stage() {
         <>
           <Legend
             items={[
-              { color: 'var(--hi)', label: 'write', shape: 'dot' },
+              { color: 'var(--amber)', label: 'write', shape: 'dot' },
               { color: 'var(--violet)', label: 'read', shape: 'dot' },
               { color: 'var(--info)', label: 'replication', shape: 'dot' },
               { color: 'var(--ok)', label: 'ok / ack', shape: 'dot' },
@@ -73,13 +73,13 @@ export function Stage() {
             ]}
           />
           <div className="cap-prov">
-            <Provenance kind="simulated" seed={BROKEN_SEED}>
-              three replicas on a seeded network simulator; values, refusals and latencies are read back from the run
+            <Provenance kind="simulated">
+              three replicas on a network simulator; values, refusals and latencies are read back from the run
             </Provenance>
             <Provenance kind="scripted">
               {net === 'partition'
-                ? `the partition (${PARTITION.from} to ${PARTITION.to} ms) and the four client requests`
-                : 'the client requests'}
+                ? `the partition (${PARTITION.from} to ${PARTITION.to} ms), the four client requests and fixed message delays, so all four stories play the same on every seed; the seeded search for the failing schedule runs in the tests`
+                : 'the client requests and fixed message delays; the seeded search runs in the tests'}
             </Provenance>
             <Provenance kind="illustrative">{net === 'partition' ? PARTITION_ONE_WAY_MS : HEALTHY_ONE_WAY_MS} ms one-way delay</Provenance>
           </div>
@@ -206,8 +206,13 @@ export function Stage() {
           </div>
           <p>
             Not "pick 2 of 3". Partitions happen on real networks, so the real question is what you give up when they do,
-            and what you trade the rest of the time. PACELC is Daniel Abadi's 2012 extension of CAP.
+            and what you trade the rest of the time. AP is stale-prone even with no partition: it acknowledges after a local write, so
+            a read just after can miss it (try Healthy, Latency).
           </p>
+          <Provenance kind="from-memory">
+            CAP is Brewer's conjecture, proved by Gilbert and Lynch under narrow definitions of C and A; PACELC is Daniel Abadi's
+            extension (an idea from 2010, a 2012 paper)
+          </Provenance>
         </aside>
       </div>
     </StageFrame>

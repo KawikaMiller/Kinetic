@@ -103,10 +103,10 @@ export function Stage() {
       height={560}
       stats={
         <Stats>
-          <Stat label="Checkout p99" value={`${Math.round(gateway?.p99 ?? 0)} ms`} color={(gateway?.p99 ?? 0) >= SLOW_P99_MS ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Checkout p99" value={`${Math.round(gateway?.p99 ?? 0)} ms`} color={(gateway?.p99 ?? 0) >= SLOW_P99_MS ? 'var(--amber)' : 'var(--ok)'} />
           <Stat label="Checkout mean" value={`${Math.round(gateway?.mean ?? 0)} ms`} sub={`p99 is ${((gateway?.p99 ?? 0) / Math.max(1, gateway?.mean ?? 0)).toFixed(1)}× the mean`} />
           <Stat label="Checkout errors" value={`${(gateway?.errPct ?? 0).toFixed(1)}%`} color={(gateway?.errPct ?? 0) >= ERROR_PCT ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="Investigation" value={incident === 'healthy' ? '–' : `${done}/3`} color={done === 3 ? 'var(--ok)' : 'var(--hi)'} sub="metrics → trace → logs" />
+          <Stat label="Investigation" value={incident === 'healthy' ? '–' : `${done}/3`} color={done === 3 ? 'var(--ok)' : 'var(--info)'} sub="metrics → trace → logs" />
         </Stats>
       }
       legend={
@@ -114,7 +114,7 @@ export function Stage() {
           <Legend
             items={[
               { color: 'var(--ok)', label: 'healthy' },
-              { color: 'var(--hi)', label: `slow (p99 ≥ ${SLOW_P99_MS} ms)` },
+              { color: 'var(--amber)', label: `slow (p99 ≥ ${SLOW_P99_MS} ms)` },
               { color: 'var(--bad)', label: `erroring (≥ ${ERROR_PCT}%)` },
               ...SERVICES.map((s) => ({ color: SVC_COLOR[s], label: s, shape: 'dot' as const })),
             ]}

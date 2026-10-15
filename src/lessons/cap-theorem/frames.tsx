@@ -189,7 +189,7 @@ function partitionFrames(story: Story): CapFrame[] {
     },
     <>
       Two clients ask for the same key and get <span className="hl bad">different answers</span>: {valueLabel(r1.value ?? 0)} and {valueLabel(r2.value ?? 0)}. The
-      replicas have diverged, and the {valueLabel(r1.value ?? 0)} answer is stale: {valueLabel(w2.value ?? 0)} was already acknowledged.
+      replicas have diverged, and the {valueLabel(r1.value ?? 0)} answer is stale: {valueLabel(w2.value ?? 0)} was already acknowledged. The cut caused this one, but AP can serve a stale read with no partition too (see Healthy, Latency).
     </>,
   );
   r.push(
@@ -280,7 +280,7 @@ function healthyFrames(story: Story): CapFrame[] {
         hold: 2.5,
       },
       <>
-        Any replica gives the <span className="hl ok">latest value</span>. Consistent, but every write pays for the slowest replica.
+        In this run any replica gives the <span className="hl ok">latest value</span>. Consistent, but while every replica is up each write pays for the slowest one (with one down, writes stall).
       </>,
     );
     return r.frames;

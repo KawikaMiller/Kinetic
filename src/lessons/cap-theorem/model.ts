@@ -323,11 +323,16 @@ export type Choice = 'cp' | 'ap' | 'ec' | 'el';
 export const POLICY_OF: Record<Choice, Policy> = { cp: 'quorum', ap: 'local', ec: 'all', el: 'local' };
 
 /**
- * The seed the AP story runs on. It is the lowest seed on which AP breaks the linearizability
- * check in the random fault search of `faultScenario` (a test pins this), so the "broken" choice
- * is shown on the schedule that provably breaks it. The CP choice holds on every seed.
+ * The seed of the partition-only fault search (`partitionOnlyScenario`) that shows what a partition
+ * does to AP: the lowest seed on which AP breaks the linearizability check with the partition
+ * and passes the same schedule without it (a test finds it independently and pins this). The four
+ * stories below are scripted, with fixed delays and no loss, so they play the same on every seed
+ * and this seed does not drive anything on screen; it names the counterexample the tests found.
+ * The CP choice holds on every seed.
  */
-export const BROKEN_SEED = 0;
+export const BROKEN_SEED = 10;
+/** The seed the scripted stories run on; any seed gives the same run. */
+export const STORY_SEED = 0;
 
 /** One-way message delay in the PACELC (healthy) story, ms (illustrative). */
 export const HEALTHY_ONE_WAY_MS = 40;
@@ -396,7 +401,7 @@ const buildStoryCluster = (net: Net, choice: Choice, seed: number): Cluster<Msg,
 };
 
 /** Run one of the lesson's four stories on the replicas. Deterministic. */
-export function runStory(net: Net, choice: Choice, seed = BROKEN_SEED): Story {
+export function runStory(net: Net, choice: Choice, seed = STORY_SEED): Story {
   const cluster = buildStoryCluster(net, choice, seed);
   cluster.run({ until: STORY_END_MS });
   const ops = allOps(cluster.snapshot().nodes).sort((a, b) => a.op - b.op);
@@ -418,6 +423,21 @@ const SEARCH_REQUESTS: readonly Request[] = [0, 1, 2, 3].flatMap((i): Request[] 
   { at: 60 + 200 * i, client: 'C2', node: NODE_IDS[(i + 1) % 3], kind: 'read' },
   { at: 130 + 200 * i, client: 'C2', node: NODE_IDS[(i + 2) % 3], kind: 'read' },
 ]);
+
+/**
+ * Fault search with one random partition and nothing else (no loss, duplication, crash or skew),
+ * or with no fault at all when `partition` is false: the schedule that isolates what a partition does.
+ */
+export const partitionOnlyScenario = (policy: Policy, partition = true) => (seed: number): Cluster<Msg, NodeState> => {
+  const cluster = createCluster<Msg, NodeState>({
+    seed,
+    nodes: Object.fromEntries(NODE_IDS.map((id) => [id, registerNode(policy, id)])),
+    latency: { min: 1, max: 15 },
+  });
+  if (partition) cluster.randomFaults({ horizonMs: FAULT_HORIZON_MS, partitions: 1 });
+  injectRequests(cluster, SEARCH_REQUESTS);
+  return cluster;
+};
 
 export const faultScenario = (policy: Policy, faults = true) => (seed: number): Cluster<Msg, NodeState> => {
   const cluster = createCluster<Msg, NodeState>({

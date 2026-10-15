@@ -13,19 +13,19 @@ const lesson: LessonModule = {
       "Consistent reports and exports while writes keep arriving",
       "Choosing a level per transaction, and knowing when to retry on serialization errors",
     ],
-    why: "Postgres, Oracle and SQL Server default to Read Committed (from memory; MySQL's InnoDB defaults to Repeatable Read, so check your database), and Read Committed allows lost updates and write skew. These bugs show up under load, can't be reproduced easily on a laptop, and corrupt money or inventory. Seniors are expected to recognise the anomaly, pick the right level or locking strategy, and handle retries.",
-    watch: "T1 (blue) and T2 (violet) run on two lanes; time flows left to right and the yellow tick is the current step. The table shows every row version: green = committed, dashed yellow = pending, red strike-through = rolled back. A blue or violet ring shows which version each transaction read, and a dashed blue tag says a row is not in T1's snapshot. A green or red banner gives the verdict for the run. The matrix shows what each level allows in the toy engine: red x = the anomaly happens in some interleaving, green tick = prevented, yellow arrow = prevented by aborting a transaction. Click a cell to play it; the chips say what is a toy, what is scripted and what is from memory.",
+    why: "Postgres, Oracle and SQL Server default to Read Committed (from memory; MySQL's InnoDB defaults to Repeatable Read, so check your database), and Read Committed allows lost updates and write skew (InnoDB's Repeatable Read still allows lost updates from a plain read-modify-write too). These bugs show up under load, can't be reproduced easily on a laptop, and corrupt money or inventory. Seniors are expected to recognise the anomaly, pick the right level or locking strategy, and handle retries.",
+    watch: "T1 (blue) and T2 (violet) run on two lanes; time flows left to right and the yellow tick is the current step. The table shows every row version: green = committed, dashed orange = pending, red strike-through = rolled back. A blue or violet ring shows which version each transaction read, and a dashed blue tag says a row is not in T1's snapshot. A green or red banner gives the verdict for the run. The matrix shows what each level allows in the toy engine: red x = the anomaly happens in some interleaving, green tick = prevented, orange arrow = prevented by aborting a transaction (the Repeatable Read / Snapshot column follows Postgres; Serializable is this toy's simplified SSI). An abort result is red text, like any error. Click a cell to play it; the chips say what is a toy, what is scripted and what is from memory.",
   },
   tryThis: [
     'Play "Dirty read" at Read Uncommitted (the default): T2 reads the uncommitted $200 and approves a loan on it. Then pick Read Committed and play it again.',
     'Pick "Non-repeatable read" and Repeatable Read / Snapshot, then play: T1 reads the older version both times.',
-    'Pick "Lost update" and Repeatable Read / Snapshot, then play: T2 is aborted and the app has to retry.',
-    'Pick "Write skew" and Repeatable Read / Snapshot, then play: nobody is left on call. Switch the level to Serializable and T2 is aborted instead.',
+    'Pick "Lost update" and Repeatable Read / Snapshot, then play (Postgres behaviour; InnoDB\'s Repeatable Read would let this one through): T2 is aborted and the app has to retry.',
+    'Pick "Write skew" and Repeatable Read / Snapshot, then play: nobody is left on call. Switch the level to Serializable (this toy\'s simplified SSI) and T2 is aborted instead.',
   ],
   keyIdeas: [
     'Higher isolation prevents more anomalies but causes more blocking or aborts.',
     'MVCC keeps old row versions so readers see a consistent snapshot without blocking writers.',
-    'In this model snapshot isolation still allows write skew, and Serializable is the level that aborts it.',
+    'In this model snapshot isolation still allows write skew, and Serializable (a simplified SSI here) is the level that aborts it.',
     'Level names mean different things in different databases, so check yours.',
   ],
   quiz: [
@@ -47,7 +47,7 @@ const lesson: LessonModule = {
       why: 'Both did read-modify-write from the same starting value, so one increment was overwritten and lost.',
     },
     {
-      q: 'At Serializable, what does the database do when an interleaving would be unsafe?',
+      q: 'In a snapshot-based engine such as Postgres, what does Serializable do when an interleaving would be unsafe?',
       options: [
         'It merges both writes silently so neither one is lost',
         'It aborts one transaction so the app can retry it',
@@ -55,7 +55,7 @@ const lesson: LessonModule = {
         'It switches the transaction down to Read Committed',
       ],
       answer: 1,
-      why: "Serializable guarantees a result equal to some one-at-a-time order; when it can't, it aborts a transaction with a serialization error.",
+      why: "In Postgres, Serializable (SSI) aims for a result equal to some one-at-a-time order, and when it can't it aborts a transaction with a serialization error. Engines differ: InnoDB and SQL Server serializable are lock-based and block instead (plus the odd deadlock abort), and Oracle's SERIALIZABLE is snapshot isolation, which still allows write skew.",
     },
     {
       q: 'T1 counts 2 doctors on call, T2 inserts a third and commits, T1 counts again and still gets 2. What explains it?',

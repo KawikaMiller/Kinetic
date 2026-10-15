@@ -3,7 +3,7 @@ import { expectCaption } from '../../core/testing/captions';
 import { buildFrames } from './frames';
 import lesson from './index';
 import {
-  ANOMALY_IDS, interleavings, LEVEL_IDS, MATRIX, programLengths, rowsOf, runSchedule, scriptedRun, verdictOf, type AnomalyId, type Level,
+  ANOMALY_IDS, interleavings, LEVEL_IDS, LEVELS, MATRIX, programLengths, rowsOf, runSchedule, scriptedRun, verdictOf, type AnomalyId, type Level,
 } from './model';
 
 const cells = ANOMALY_IDS.flatMap((a) => LEVEL_IDS.map((l) => [a, l] as const));
@@ -142,5 +142,31 @@ describe('try-this, from the default state (Dirty read, Read Uncommitted)', () =
     expect(scriptedRun('skew', 'si').present).toBe(true);
     expect(verdictOf('skew', 'ser')).toBe('aborted');
     expect(scriptedRun('skew', 'ser').steps.some((s) => s.who === 'T2' && s.aborted)).toBe(true);
+  });
+});
+
+describe('engine-specific claims are scoped on screen', () => {
+  const text = (v: ReturnType<typeof last>['verdict']) => v?.text ?? '';
+
+  it('the lost-update abort at Repeatable Read / Snapshot says it is Postgres behaviour and that InnoDB lets it through; Serializable does not need that caveat', () => {
+    expect(text(last('lost', 'si').verdict)).toMatch(/Postgres.*InnoDB/);
+    expect(text(last('lost', 'ser').verdict)).not.toMatch(/InnoDB/);
+  });
+
+  it('Serializable is labelled a simplified SSI (a pairwise check) in the level text, the write-skew verdict and the quiz', () => {
+    const ser = LEVELS.find((l) => l.id === 'ser')!;
+    expect(ser.model).toMatch(/simplified/i);
+    expect(ser.model).toMatch(/pairwise/);
+    expect(text(last('skew', 'ser').verdict)).toMatch(/simplified SSI/);
+    const q3 = lesson.quiz.find((q) => q.q.includes('Serializable'))!;
+    expect(q3.q).toMatch(/Postgres/);
+    expect(q3.why).toMatch(/InnoDB/);
+    expect(q3.why).toMatch(/Oracle/);
+  });
+
+  it('the engine error text is drawn as an error (red), in every cell where it appears', () => {
+    const results = cells.flatMap(([a, l]) => scriptedRun(a, l).steps.filter((s) => s.result?.startsWith('ERROR')));
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.every((s) => s.tone === 'bad')).toBe(true);
   });
 });

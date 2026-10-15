@@ -3,7 +3,7 @@
  * asynchronously. Pure and deterministic: a tick is one step of every projection, a command
  * either appends an event or is rejected, and nothing reads a clock.
  */
-import { fold, SEED, type AccountEvent, type Projection } from './events';
+import { BIG_WITHDRAWAL_MIN, fold, SEED, type AccountEvent, type Projection } from './events';
 
 /** Each new event is dated this many days after the previous one, capped at year end. */
 export const DAYS_BETWEEN_EVENTS = 5;
@@ -15,11 +15,11 @@ export const WITHDRAW_TOO_MUCH = 5000;
 /** The projections the lesson starts with, level with the log, each with the lag (in ticks per event) it simulates. */
 export const START_PROJECTIONS: readonly Projection[] = [
   { id: 'balance', name: 'Balance view', color: 'var(--violet)', pos: SEED.length, rebuilding: false, delay: 8, wait: 0 },
-  { id: 'statement', name: 'Monthly statement', color: 'var(--info)', pos: SEED.length, rebuilding: false, delay: 12, wait: 0 },
+  { id: 'statement', name: 'Monthly statement', color: 'var(--pink)', pos: SEED.length, rebuilding: false, delay: 12, wait: 0 },
 ];
 /** The projection "+ New projection" adds: it starts empty and replays the whole log. */
 export const BIG_WITHDRAWALS: Projection = {
-  id: 'big', name: 'Big withdrawals ≥ 100', color: 'var(--orange)', pos: 0, rebuilding: true, delay: 8, wait: 0,
+  id: 'big', name: `Big withdrawals ≥ ${BIG_WITHDRAWAL_MIN}`, color: 'var(--orange)', pos: 0, rebuilding: true, delay: 8, wait: 0,
 };
 
 export interface Sim {
@@ -32,8 +32,19 @@ export const initialSim = (): Sim => ({ events: SEED, projections: START_PROJECT
 /** True while some projection has events left to consume (the clock only needs to run then). */
 export const isBehind = (s: Sim): boolean => s.projections.some((p) => p.pos < s.events.length);
 
+/** The projection with the most events left to consume. */
+const furthestBehind = (s: Sim): Projection => s.projections.reduce((a, b) => (s.events.length - b.pos > s.events.length - a.pos ? b : a));
+
 /** Events the furthest-behind projection has yet to consume. */
-export const lagOf = (s: Sim): number => Math.max(...s.projections.map((p) => s.events.length - p.pos));
+export const lagOf = (s: Sim): number => s.events.length - furthestBehind(s).pos;
+
+/** The lag stat's sub-label: a rebuild replays history, which is not the same thing as a read model falling behind. */
+export function lagLabel(s: Sim): string {
+  const lag = lagOf(s);
+  if (lag === 0) return 'caught up';
+  if (furthestBehind(s).rebuilding) return lag === 1 ? 'event to replay' : 'events to replay';
+  return lag === 1 ? 'event behind' : 'events behind';
+}
 
 /**
  * One tick. A normal projection waits its own `delay` ticks per event (that is its visible lag); a

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { captionText } from '../../core/testing/captions';
 import { mulberry32 } from '../../core/random';
+import { fleetCaption } from './captions';
 import {
-  advance, createWorld, HEALTH_DELAY, PRESETS, QUEUE_CAP, QUEUE_WARN, setFleet, Sim, snapshot, spike, SPIKE, takeInsight, toggleServer,
+  advance, capacityPerSec, createWorld, DEFAULT_RATE, evenSplitLimit, HEALTH_DELAY, PRESETS, QUEUE_CAP, QUEUE_WARN, RATE_RANGE, setFleet, Sim, snapshot, spike, SPIKE, takeInsight, toggleServer,
   type Phase, type PresetId, type Req, type World,
 } from './sim';
 import { STRATEGIES, type StrategyId } from './strategies';
@@ -311,5 +313,43 @@ describe('traffic spike', () => {
     const before = count(spiking);
     for (let t = 0; t < 4; t += DT) advance(spiking, DT);
     expect((count(spiking) - before) / (4 * 11)).toBeLessThan(1.3);
+  });
+});
+
+describe('fleet captions against the rate slider (extremes, not just the default)', () => {
+  const dropsAt = (id: StrategyId, preset: PresetId, rate: number, seed: number) => runWorld(id, seed, 60, { preset, rate }).stats.dropped;
+
+  it('the equal-fleet caption: nothing drops at the default and at the bottom of the slider, everything drops at the top, and the stated capacity is the independent sum', () => {
+    expect(capacityPerSec(PRESETS.equal.speeds)).toBeCloseTo(5 / 0.25, 9);
+    expect(RATE_RANGE.max).toBeGreaterThan(capacityPerSec(PRESETS.equal.speeds));
+    for (const seed of SEEDS) {
+      for (const id of ids) {
+        expect(dropsAt(id, 'equal', DEFAULT_RATE, seed), `${id} default ${seed}`).toBe(0);
+        expect(dropsAt(id, 'equal', RATE_RANGE.min, seed), `${id} min ${seed}`).toBe(0);
+        expect(dropsAt(id, 'equal', RATE_RANGE.max, seed), `${id} max ${seed}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('the mixed-fleet caption: the even split only overloads above its stated limit, so the blind strategies are fine at the bottom and overloaded at the default', () => {
+    const limit = evenSplitLimit(PRESETS.mixed.speeds);
+    expect(limit).toBeCloseTo((5 * 0.35) / 0.25, 9);
+    expect(RATE_RANGE.min).toBeLessThan(limit);
+    expect(DEFAULT_RATE).toBeGreaterThan(limit);
+    for (const seed of SEEDS) {
+      for (const id of ['rr', 'random'] as const) {
+        expect(dropsAt(id, 'mixed', RATE_RANGE.min, seed), `${id} min ${seed}`).toBe(0);
+        expect(dropsAt(id, 'mixed', DEFAULT_RATE, seed), `${id} default ${seed}`).toBeGreaterThan(0);
+        expect(dropsAt(id, 'mixed', RATE_RANGE.max, seed), `${id} max ${seed}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('the captions name the default rate and the numbers the model computes', () => {
+    const mixed = captionText(fleetCaption('mixed'));
+    const equal = captionText(fleetCaption('equal'));
+    expect(equal).toContain(`default ${DEFAULT_RATE} req/s`);
+    expect(equal).toContain(`near ${Math.floor(capacityPerSec(PRESETS.equal.speeds))} req/s`);
+    expect(mixed).toContain(`about ${Math.floor(evenSplitLimit(PRESETS.mixed.speeds))} req/s`);
   });
 });
