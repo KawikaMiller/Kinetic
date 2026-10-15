@@ -70,6 +70,17 @@ on-screen snippets as real JS freely. Note that runtime execution needs `'unsafe
 strict Content Security Policy would break those lessons; comment every call site saying why
 it's safe.
 
+**Tier 3 lessons carry extra rules: read AC-0/T3 in `docs/tier3-plan.md` §3 before writing one.**
+Two to know by heart. A lesson that simulates nodes, messages, clocks or transactions tests its
+safety property as an invariant over at least 200 seeded fault schedules (delay, loss,
+duplication, partition, crash, clock skew) with the `core/distSim` harness (K3-8), never by screenshot,
+and its "broken" mode must violate the invariant on a named seed (AC-0/T3 #20). Anything
+simulated, illustrative, scripted, a toy, quoted from memory or shown without being run wears the
+`Provenance` chip from `components/ui` at the moment it matters, and every domain-reviewed lesson
+has at least one (#21). `lessonContentT3.ts` lints the mechanical rules (unscoped absolutes in key
+ideas and quiz `why`, exempted per line with `allow-absolute: <reason>`; a missing chip; fewer
+`try-this N:` tests than try-this entries) on Tier 3 lessons only.
+
 ## Shared kit
 
 `docs/shared-api.md` lists every shared piece with usage. The durable rules:

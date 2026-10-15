@@ -2,7 +2,19 @@ import { describe, expect, it } from 'vitest';
 import rolloutPlan from '../../docs/rollout-plan.md?raw';
 import { FAMILIES, TOPICS, TRACKS } from './curriculum';
 import { BUILT_TOPICS } from './lessons';
+import { tier3PlanRows } from './testing/tier3Plan';
 import { ALL, filterToParams, matchesFilter, parseFilter, tracksInFamily } from './topicFilter';
+
+/** The Tier 3 lessons that existed before the kickoff registered the planned ones (plan §5). */
+const EXISTING_TIER3 = new Set([
+  'load-balancing', 'consistent-hashing', 'cap-theorem', 'circuit-breakers', 'monolith-microservices', 'event-sourcing',
+  'replication', 'sharding', 'isolation-levels', 'cdn-edge', 'observability', 'oauth-flows',
+]);
+/** Plan headline table: new Tier 3 topics per track. */
+const TIER3_NEW_PER_TRACK = {
+  hw: 4, os: 9, lang: 12, math: 15, dsa: 18, net: 9, arch: 16, data: 21, sec: 12, ops: 10, craft: 5, web: 5, ml: 11, lead: 7,
+};
+const byId = new Map(TOPICS.map((t) => [t.id, t]));
 
 describe('curriculum', () => {
   it('has unique topic ids', () => {
@@ -59,7 +71,40 @@ describe('curriculum', () => {
   it('leaves out the topics the Tier 2 plan merged or moved up', () => {
     const ids = new Set(TOPICS.map((t) => t.id));
     expect(ids.has('comparison-sort-lower-bound'), 'merged into linear-time-sorting').toBe(false);
-    expect(ids.has('wifi-shared-medium'), 'moved to Tier 3, registered at its kickoff').toBe(false);
+    expect(byId.get('wifi-shared-medium')?.tier, 'moved up to Tier 3 and registered there').toBe(3);
+  });
+
+  describe('Tier 3 roadmap (docs/tier3-plan.md §2)', () => {
+    const tier3 = TOPICS.filter((t) => t.tier === 3);
+    const newTier3 = tier3.filter((t) => !EXISTING_TIER3.has(t.id));
+
+    it('registers the 12 existing lessons plus the 154 planned topics', () => {
+      expect(tier3.filter((t) => EXISTING_TIER3.has(t.id))).toHaveLength(12);
+      expect(newTier3).toHaveLength(154);
+      expect(tier3).toHaveLength(166);
+    });
+
+    it('counts the new topics per track as the plan does', () => {
+      const counts: Record<string, number> = {};
+      for (const t of newTier3) counts[t.track] = (counts[t.track] ?? 0) + 1;
+      expect(counts).toEqual(TIER3_NEW_PER_TRACK);
+    });
+
+    it('registers the merged and moved-up topics, and leaves out the dropped and merged-away ones', () => {
+      expect(byId.get('segment-trees')?.title).toBe('Segment Trees & Fenwick Trees');
+      expect(byId.get('leases-fencing')?.tier, 'moved up from Tier 4').toBe(3);
+      expect(byId.has('fenwick-trees'), 'merged into segment-trees').toBe(false);
+      expect(byId.has('namespaces-cgroups'), 'dropped: containers covers it').toBe(false);
+      expect(byId.has('two-generals'), 'merged into exactly-once-myth').toBe(false);
+    });
+
+    it.skipIf(!tier3PlanRows.length)('matches the plan table row for row (id, track, title)', () => {
+      expect(tier3PlanRows).toHaveLength(154);
+      for (const p of tier3PlanRows) {
+        const t = byId.get(p.id);
+        expect({ tier: t?.tier, track: t?.track, title: t?.title }, p.id).toEqual({ tier: 3, track: p.track, title: p.title });
+      }
+    });
   });
 
   it('has a curriculum entry for every built lesson folder', () => {
