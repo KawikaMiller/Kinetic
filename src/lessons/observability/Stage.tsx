@@ -1,29 +1,28 @@
 import { motion } from 'motion/react';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Sparkline } from '../../components/Sparkline';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
+import { mulberry32 } from '../../core/random';
 import { useInterval } from '../../core/useInterval';
-import { ERROR_PCT, health, makeRequest, metrics, SERVICES, SLOW_P99_MS, SVC_COLOR, type Incident, type Req, type Svc } from './sim';
+import { INTRO, logsFiltered, rowClicked, traceOpened, type Step } from './captions';
+import {
+  ERROR_PCT, health, LONG_SELF_MS, makeRequest, METRICS_WINDOW_S, metrics, NO_CHECKS, pickTrace, selfTime, SERIES_LABELS, seriesBound, SERVICES, SLOW_P99_MS,
+  SVC_COLOR, TRAFFIC_SEED, USER_ID_VALUES, type Checks, type Incident, type Req, type Svc,
+} from './sim';
 import './styles.css';
 
 const TICK_MS = 400;
 /** Requests kept in memory, and p99 samples kept per service for the sparklines. */
 const KEEP = 160;
 const HISTORY = 30;
-/** How far back 'Slowest recent' / 'Latest error' look, in requests. */
-const TRACE_LOOKBACK = 60;
 /** The unfiltered log view: lines from this many recent requests, newest first, capped. */
 const LOG_REQUESTS = 24;
 const LOG_LINES = 40;
-/** A span doing at least this much work itself (not waiting on children) is outlined. */
-const LONG_SELF_MS = 100;
 /** Sparkline y-axis never shrinks below this, so a healthy service reads as flat. */
 const SPARK_FLOOR_MS = 250;
-/** Metric-series cardinality: label values multiplied. */
-const BASE_SERIES = 5 * 4 * 5; // service × route × status
-const USER_IDS = 1_000_000;
+const BASE_LABELS = Object.values(SERIES_LABELS);
 
 const CULPRITS: Record<Incident, Svc[]> = { healthy: [], slow: ['payments', 'fraud'], errors: ['inventory'] };
 
@@ -35,34 +34,6 @@ interface Sim {
 
 const emptyHistory = () => Object.fromEntries(SERVICES.map((s) => [s, [] as number[]])) as unknown as Record<Svc, number[]>;
 
-interface Checks {
-  metrics: boolean;
-  trace: boolean;
-  logs: boolean;
-}
-const NO_CHECKS: Checks = { metrics: false, trace: false, logs: false };
-
-const INTRO: Record<Incident, ReactNode> = {
-  healthy: (
-    <>
-      All green. Every request leaves three kinds of evidence: <span className="hl info">logs</span>,{' '}
-      <span className="hl violet">metrics</span> and a <span className="hl">trace</span>.
-    </>
-  ),
-  slow: (
-    <>
-      <span className="hl bad">Checkout is slow</span> and users are complaining. Step 1: which service's <b>p99</b> jumped in the
-      metrics? Click its row.
-    </>
-  ),
-  errors: (
-    <>
-      <span className="hl bad">Checkout is failing</span> for some users. Step 1: which service's <b>error rate</b> moved? Click its
-      row.
-    </>
-  ),
-};
-
 export function Stage() {
   const setCaption = useSetCaption();
   const [incident, setIncident] = useState<Incident>('healthy');
@@ -71,11 +42,12 @@ export function Stage() {
   const [filterLogs, setFilterLogs] = useState(false);
   const [checks, setChecks] = useState<Checks>(NO_CHECKS);
   const [userIdLabel, setUserIdLabel] = useState(false);
+  const rnd = useRef(mulberry32(TRAFFIC_SEED));
 
   useInterval(() => {
     setSim((s) => {
       const now = s.now + TICK_MS / 1000;
-      const reqs = [...s.reqs, makeRequest((s.reqs.at(-1)?.id ?? 0) + 1, now, incident)].slice(-KEEP);
+      const reqs = [...s.reqs, makeRequest((s.reqs.at(-1)?.id ?? 0) + 1, now, incident, rnd.current)].slice(-KEEP);
       const m = metrics(reqs, now);
       const history = { ...s.history };
       for (const row of m) history[row.svc] = [...history[row.svc], row.p99].slice(-HISTORY);
@@ -89,7 +61,13 @@ export function Stage() {
   const gateway = rows[0];
   const trace = picked ?? sim.reqs.at(-1) ?? null;
   const culprits = CULPRITS[incident];
-  const isProblem = (q: Req) => (incident === 'slow' && q.slow) || (incident === 'errors' && q.error);
+
+  const apply = (step: Step | null) => {
+    if (!step) return;
+    setCaption(step.caption);
+    const { check } = step;
+    if (check) setChecks((c) => ({ ...c, [check]: true }));
+  };
 
   const changeIncident = (i: Incident) => {
     setIncident(i);
@@ -98,72 +76,19 @@ export function Stage() {
     setChecks(NO_CHECKS);
   };
 
-  const clickRow = (svc: Svc) => {
-    if (incident === 'healthy') {
-      setCaption(<>Nothing is wrong yet. Inject an incident with the controls below, then investigate.</>);
-      return;
-    }
-    const row = rows.find((m) => m.svc === svc);
-    if (row && health(row) !== 'ok') {
-      setChecks((c) => ({ ...c, metrics: true }));
-      setCaption(
-        <>
-          <span className="hl ok">✓ Metrics</span> say <b>something is wrong</b>: {svc}'s {incident === 'slow' ? `p99 is ${Math.round(row.p99)} ms` : `error rate is ${row.errPct.toFixed(0)}%`}.
-          But every caller of a sick service looks sick too, so metrics can't say <i>where</i>. Step 2: open a{' '}
-          {incident === 'slow' ? 'slow' : 'failing'} <span className="hl">trace</span>.
-        </>,
-      );
-    } else {
-      setCaption(<>{svc} looks normal. Compare the p99 and error columns (and the sparklines) across services.</>);
-    }
-  };
-
   const openTrace = (kind: 'slowest' | 'error') => {
-    const recent = sim.reqs.slice(-TRACE_LOOKBACK);
-    const q = kind === 'slowest'
-      ? recent.reduce<Req | null>((a, b) => (!a || b.total > a.total ? b : a), null)
-      : [...recent].reverse().find((x) => x.error) ?? null;
-    if (!q) {
-      setCaption(<>No {kind === 'error' ? 'failing' : ''} requests in the last few seconds.</>);
-      return;
+    const q = pickTrace(sim.reqs, kind);
+    if (q) {
+      setPicked(q);
+      setFilterLogs(false);
     }
-    setPicked(q);
-    setFilterLogs(false);
-    if (incident !== 'healthy' && isProblem(q)) {
-      setChecks((c) => ({ ...c, trace: true }));
-      const culprit = incident === 'slow' ? q.spans.find((s) => s.svc === 'fraud') : q.spans.find((s) => s.error && s.depth === 2);
-      setCaption(
-        <>
-          <span className="hl ok">✓ Trace</span> shows <b>where</b>: {incident === 'slow'
-            ? <>the <span className="hl">fraud</span> call inside payments takes {Math.round(culprit?.dur ?? 0)} ms.</>
-            : <><span className="hl bad">inventory</span> failed and the error bubbled up.</>}{' '}
-          Step 3: read this trace's <b>logs</b> to learn why.
-        </>,
-      );
-    } else {
-      setCaption(<>Trace <code>{q.trace}</code>: {Math.round(q.total)} ms end to end. Each bar is one service's span.</>);
-    }
+    apply(traceOpened(incident, kind, q));
   };
 
   const toggleLogs = () => {
     const on = !filterLogs;
     setFilterLogs(on);
-    if (on && trace && incident !== 'healthy' && isProblem(trace)) {
-      setChecks((c) => ({ ...c, logs: true }));
-      setCaption(
-        incident === 'slow' ? (
-          <>
-            <span className="hl ok">✓ Logs</span> say <b>why</b>: the payments → fraud-api <b>connection pool is exhausted</b>, so
-            requests queue for a connection. Metrics → trace → logs: found.
-          </>
-        ) : (
-          <>
-            <span className="hl ok">✓ Logs</span> say <b>why</b>: inventory can't reach <b>database replica-2</b>. Metrics → trace →
-            logs: found.
-          </>
-        ),
-      );
-    }
+    apply(logsFiltered(incident, trace, on));
   };
 
   const logLines = filterLogs && trace
@@ -171,6 +96,7 @@ export function Stage() {
     : sim.reqs.slice(-LOG_REQUESTS).flatMap((q) => q.logs).reverse().slice(0, LOG_LINES);
 
   const done = Object.values(checks).filter(Boolean).length;
+  const series = seriesBound(userIdLabel ? [...BASE_LABELS, USER_ID_VALUES] : BASE_LABELS);
 
   return (
     <StageFrame
@@ -178,19 +104,26 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="Checkout p99" value={`${Math.round(gateway?.p99 ?? 0)} ms`} color={(gateway?.p99 ?? 0) >= SLOW_P99_MS ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Checkout mean" value={`${Math.round(gateway?.mean ?? 0)} ms`} sub={`p99 is ${((gateway?.p99 ?? 0) / Math.max(1, gateway?.mean ?? 0)).toFixed(1)}× the mean`} />
           <Stat label="Checkout errors" value={`${(gateway?.errPct ?? 0).toFixed(1)}%`} color={(gateway?.errPct ?? 0) >= ERROR_PCT ? 'var(--bad)' : 'var(--ok)'} />
           <Stat label="Investigation" value={incident === 'healthy' ? '–' : `${done}/3`} color={done === 3 ? 'var(--ok)' : 'var(--hi)'} sub="metrics → trace → logs" />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--ok)', label: 'healthy' },
-            { color: 'var(--hi)', label: `slow (p99 ≥ ${SLOW_P99_MS} ms)` },
-            { color: 'var(--bad)', label: `erroring (≥ ${ERROR_PCT}%)` },
-            ...SERVICES.map((s) => ({ color: SVC_COLOR[s], label: s, shape: 'dot' as const })),
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--ok)', label: 'healthy' },
+              { color: 'var(--hi)', label: `slow (p99 ≥ ${SLOW_P99_MS} ms)` },
+              { color: 'var(--bad)', label: `erroring (≥ ${ERROR_PCT}%)` },
+              ...SERVICES.map((s) => ({ color: SVC_COLOR[s], label: s, shape: 'dot' as const })),
+            ]}
+          />
+          <div className="ob-prov">
+            <Provenance kind="simulated" seed={TRAFFIC_SEED}>seeded requests through a made-up checkout system; metrics, trace and logs all come from the same requests</Provenance>
+            <Provenance kind="illustrative">service names, log messages, label counts and the failure and slowdown shares are invented</Provenance>
+          </div>
+        </>
       }
       controls={
         <Controls>
@@ -219,13 +152,13 @@ export function Stage() {
           </ol>
           <div className={`ob-card ${userIdLabel ? 'boom' : ''}`}>
             <p>
-              Metric series = label values multiplied:
+              Metric series, at most the label values multiplied:
               <br />
-              <code>service(5) × route(4) × status(5)</code>
-              {userIdLabel && <code className="bad"> × user_id(1,000,000)</code>}
+              <code>{Object.entries(SERIES_LABELS).map(([name, n]) => `${name}(${n})`).join(' × ')}</code>
+              {userIdLabel && <code className="bad"> × user_id({USER_ID_VALUES.toLocaleString()})</code>}
             </p>
             <motion.p key={String(userIdLabel)} className="ob-series" initial={{ scale: 1.2 }} animate={{ scale: 1 }}>
-              {(userIdLabel ? BASE_SERIES * USER_IDS : BASE_SERIES).toLocaleString()} series
+              {series.toLocaleString()} series
             </motion.p>
             <button type="button" className="ob-link" onClick={() => setUserIdLabel((v) => !v)}>
               {userIdLabel ? 'Remove user_id label' : 'Add a user_id label'}
@@ -237,7 +170,7 @@ export function Stage() {
         {/* ── Metrics ──────────────────────────── */}
         <section className="ob-panel">
           <h4>
-            Metrics <span>rolling 12 s · click a row</span>
+            Metrics <span>rolling {METRICS_WINDOW_S} s · click a row</span>
           </h4>
           <table className="ob-table">
             <thead>
@@ -252,10 +185,16 @@ export function Stage() {
             </thead>
             <tbody>
               {rows.map((m) => (
-                <tr key={m.svc} className={`${health(m)} ${checks.logs && culprits.includes(m.svc) ? 'found' : ''}`} onClick={() => clickRow(m.svc)}>
+                <tr
+                  key={m.svc}
+                  className={`${health(m)} ${checks.logs && culprits.includes(m.svc) ? 'found' : ''}`}
+                  onClick={() => apply(rowClicked(incident, rows, m.svc))}
+                >
                   <td>
-                    <i style={{ background: SVC_COLOR[m.svc] }} />
-                    {m.svc}
+                    <button type="button" className="ob-row-btn">
+                      <i style={{ background: SVC_COLOR[m.svc] }} />
+                      {m.svc}
+                    </button>
                   </td>
                   <td>{m.rps.toFixed(1)}</td>
                   <td className="err">{m.errPct.toFixed(1)}</td>
@@ -273,7 +212,7 @@ export function Stage() {
         {/* ── Trace ─────────────────────────────── */}
         <section className="ob-panel">
           <h4>
-            Trace <span>{trace ? `${trace.trace} · ${Math.round(trace.total)} ms${picked ? '' : ' · live'} · outlined = most time spent in itself` : 'waiting…'}</span>
+            Trace <span>{trace ? `${trace.trace} · ${Math.round(trace.total)} ms${picked ? '' : ' · live'} · outlined = at least ${LONG_SELF_MS} ms of its own time` : 'waiting…'}</span>
           </h4>
           <div className="ob-trace-actions">
             <Button onClick={() => openTrace('slowest')}>Slowest recent</Button>
@@ -366,13 +305,6 @@ function Spark({ values, color }: { values: number[]; color: string }) {
       strokeWidth={1.6}
     />
   );
-}
-
-/** A span's own time, excluding time spent waiting on its child spans. */
-function selfTime(req: Req, i: number) {
-  const s = req.spans[i];
-  const kids = req.spans.filter((c) => c.depth === s.depth + 1 && c.start >= s.start && c.start < s.start + s.dur);
-  return s.dur - kids.reduce((sum, c) => sum + c.dur, 0);
 }
 
 function Waterfall({ req }: { req: Req }) {

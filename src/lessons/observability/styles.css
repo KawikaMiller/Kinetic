@@ -50,6 +50,8 @@
 .ob-table td { padding: 5px 6px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .ob-table td:first-child { font-family: var(--font); font-weight: 600; white-space: nowrap; }
 .ob-table td i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; }
+.ob-prov { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ob-row-btn { display: inline-flex; align-items: center; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .ob-table tbody tr { cursor: pointer; transition: background 0.2s; }
 .ob-table tbody tr:hover { background: var(--panel-2); }
 .ob-table tr.slow .p99 { color: var(--hi); font-weight: 700; }
@@ -71,7 +73,7 @@
 .ob-wf-ms { text-align: right; color: var(--faint); }
 
 .ob-logs { list-style: none; margin: 0; padding: 0; max-height: 150px; overflow: hidden; font: 12px var(--mono); display: flex; flex-direction: column; gap: 2px; }
-.ob-logs li { display: grid; grid-template-columns: 48px 80px 60px 1fr; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: ob-in 0.3s ease-out; }
+.ob-logs li { flex-shrink: 0; display: grid; grid-template-columns: 48px 80px 60px 1fr; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: ob-in 0.3s ease-out; }
 .ob-logs .msg { overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
 .ob-logs .tid { color: var(--faint); }
 .ob-logs .lvl { color: var(--faint); }
