@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
 import { Flyer } from '../../components/scene';
 import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { LAT, SCENARIOS, WRITE_MS, type Mode, type NodeId, type Pkt, type Place, type Scenario } from './scenarios';
+import { buildFrames, type Pkt, type Place } from './frames';
+import { DETECT_MS, FLUSH_MS, LAT, lagOf, NODE_IDS, runStory, writeMs, type Mode, type NodeId, type Scenario } from './model';
 import './styles.css';
 
 const INTERVAL = 1500;
@@ -29,10 +30,11 @@ const NODE_NAME: Record<NodeId, string> = { L: 'Leader', F1: 'Follower 1', F2: '
 export function Stage() {
   const [scenario, setScenario] = useState<Scenario>('stale');
   const [mode, setMode] = useState<Mode>('async');
-  const frames = useMemo(() => SCENARIOS[scenario](mode), [scenario, mode]);
+  const frames = useMemo(() => buildFrames(runStory(scenario, mode)), [scenario, mode]);
   const player = usePlayer(frames, { interval: INTERVAL });
   const f = player.frame;
-  const leaderLen = Math.max(...(Object.values(f.nodes).map((n) => n.log.length)));
+  const lag = lagOf(f.nodes);
+  const slowest = Math.max(writeMs('async'), writeMs('sync'));
 
   return (
     <StageFrame minWidth={740}
@@ -42,29 +44,35 @@ export function Stage() {
         <Stats>
           <Stat
             label="Write latency"
-            value={f.latency === null ? NA : `${f.latency} ms`}
-            color={f.latency === null ? undefined : f.latency > 20 ? 'var(--bad)' : 'var(--ok)'}
-            sub={`async ${WRITE_MS.async} · sync ${WRITE_MS.sync}`}
+            value={f.latencyMs === null ? NA : `${f.latencyMs} ms`}
+            color={f.latencyMs === null ? undefined : f.latencyMs === slowest ? 'var(--bad)' : 'var(--ok)'}
+            sub={`async ${writeMs('async')} · sync ${writeMs('sync')}`}
           />
-          <Stat label="F1 lag" value={leaderLen - f.nodes.F1.log.length} sub="entries behind" />
-          <Stat
-            label="F2 lag"
-            value={leaderLen - f.nodes.F2.log.length}
-            color={leaderLen - f.nodes.F2.log.length > 0 ? 'var(--hi)' : undefined}
-            sub="entries behind"
-          />
+          <Stat label="F1 lag" value={lag.F1} sub="entries behind" />
+          <Stat label="F2 lag" value={lag.F2} sub="entries behind" />
+          <Stat label="Stale reads" value={f.stale} color={f.stale ? 'var(--bad)' : undefined} sub="answered" />
+          <Stat label="Acked writes lost" value={f.missing} color={f.missing ? 'var(--bad)' : undefined} sub="on no live node" />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--hi)', label: 'write', shape: 'dot' },
-            { color: 'var(--info)', label: 'replication', shape: 'dot' },
-            { color: 'var(--ok)', label: 'ack / reply', shape: 'dot' },
-            { color: 'var(--violet)', label: 'read', shape: 'dot' },
-            { color: 'var(--bad)', label: 'lost', shape: 'dot' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--amber)', label: 'write', shape: 'dot' },
+              { color: 'var(--info)', label: 'replication', shape: 'dot' },
+              { color: 'var(--ok)', label: 'ack / reply', shape: 'dot' },
+              { color: 'var(--violet)', label: 'read', shape: 'dot' },
+              { color: 'var(--bad)', label: 'lost', shape: 'dot' },
+            ]}
+          />
+          <div className="rep-prov">
+            <Provenance kind="simulated">
+              a leader and two followers on a network simulator; logs, lag, loss and latency are read back from the run
+            </Provenance>
+            <Provenance kind="scripted">the crash, the failover manager's timing ({DETECT_MS} ms after it), which follower the read lands on and fixed link delays, so every seed plays the same; the seeded search for a schedule that loses a write runs in the tests</Provenance>
+            <Provenance kind="illustrative">link delays and the {FLUSH_MS} ms background sender</Provenance>
+          </div>
+        </>
       }
       controls={
         <Controls>
@@ -136,7 +144,7 @@ export function Stage() {
           </motion.span>
         </div>
 
-        {(Object.keys(NODE_NAME) as NodeId[]).map((id) => {
+        {NODE_IDS.map((id) => {
           const n = f.nodes[id];
           const role = n.role === 'promoted' ? 'new leader' : n.role;
           return (

@@ -1,6 +1,6 @@
 // A small discrete load-balancer simulation. Several copies run side by side
 // (one per strategy) on identical traffic, so the chart compares them fairly.
-import { expSample, pick, randInt } from '../../core/random';
+import { expSample, mulberry32, pick, randInt, type Rnd } from '../../core/random';
 import { createCooldown, createSampler, percentile, trimWindow } from '../../core/sim';
 import { STRATEGIES, type StrategyId } from './strategies';
 
@@ -52,8 +52,10 @@ export class Sim {
   dropped = 0;
   private rr = 0;
   readonly strategy: StrategyId;
+  private readonly rnd: Rnd;
 
-  constructor(strategy: StrategyId, speeds: readonly number[]) {
+  constructor(strategy: StrategyId, speeds: readonly number[], rnd: Rnd = Math.random) {
+    this.rnd = rnd;
     this.strategy = strategy;
     this.servers = speeds.map((speed) => ({
       speed, alive: true, healthy: true, healthAt: null, queue: [], current: null, util: 0, wrr: 0,
@@ -99,12 +101,12 @@ export class Sim {
         return -1;
       }
       case 'random':
-        return pick(pool);
+        return pick(pool, this.rnd);
       case 'least':
         return pool.reduce((best, i) => (this.load(i) < this.load(best) ? i : best), pool[0]);
       case 'p2c': {
-        const a = pick(pool);
-        const b = pick(pool);
+        const a = pick(pool, this.rnd);
+        const b = pick(pool, this.rnd);
         return this.load(a) <= this.load(b) ? a : b;
       }
       case 'wrr': {
@@ -213,6 +215,8 @@ export const HISTORY = 60; // p99 samples at 0.5 s = 30 s
 const SAMPLE_EVERY = 0.5;
 export const SPIKE = { factor: 3, seconds: 4 };
 export const INSIGHT_COOLDOWN = 9;
+/** The seed of the lesson's traffic: every load of the lesson sees the same requests. */
+export const TRAFFIC_SEED = 7;
 const BURSTINESS = { min: 0.4, spread: 1.2 }; // arrivals jitter between 0.4× and 1.6× the rate
 const WORK = { base: 0.1, mean: 0.15 }; // seconds of work per request at 1× speed
 
@@ -222,6 +226,18 @@ export const PRESETS = {
   mixed: { label: 'Mixed fleet', speeds: [1.6, 1.2, 1, 0.6, 0.35] },
 } as const;
 export type PresetId = keyof typeof PRESETS;
+
+/** The request rate the slider starts at (req/s). */
+export const DEFAULT_RATE = 11;
+/** The slider's range (req/s). */
+export const RATE_RANGE = { min: 2, max: 24 } as const;
+
+/** Mean seconds of work a request needs at 1x speed. */
+const MEAN_WORK_S = WORK.base + WORK.mean;
+/** Requests per second a fleet can finish in total if its servers were never idle or overloaded. */
+export const capacityPerSec = (speeds: readonly number[]) => speeds.reduce((a, b) => a + b, 0) / MEAN_WORK_S;
+/** The rate above which an even split (round robin, random) hands the slowest server more than it can finish. */
+export const evenSplitLimit = (speeds: readonly number[]) => (speeds.length * Math.min(...speeds)) / MEAN_WORK_S;
 
 export const serverName = (i: number) => `api-${i + 1}`;
 
@@ -240,12 +256,15 @@ export interface World {
   strategy: StrategyId;
   rate: number;
   insight: ReturnType<typeof createCooldown>;
+  /** The traffic's random stream: the same seed gives the same requests. */
+  rnd: Rnd;
+  seed: number;
 }
 
 const perStrategy = <T>(make: (id: StrategyId) => T) =>
   Object.fromEntries(STRATEGIES.map((s) => [s.id, make(s.id)])) as Record<StrategyId, T>;
 
-export function createWorld(strategy: StrategyId, rate: number): World {
+export function createWorld(strategy: StrategyId, rate: number, seed = TRAFFIC_SEED): World {
   const insight = createCooldown(INSIGHT_COOLDOWN, { armed: true }); // the first insight can fire right away
   return {
     now: 0,
@@ -254,11 +273,13 @@ export function createWorld(strategy: StrategyId, rate: number): World {
     spikeUntil: -1,
     prevHealthy: Array(SERVER_COUNT).fill(true),
     pending: [],
-    sims: perStrategy((id) => new Sim(id, PRESETS.slow.speeds)),
+    sims: perStrategy((id) => new Sim(id, PRESETS.slow.speeds, mulberry32(seed + 1 + STRATEGIES.findIndex((s) => s.id === id)))),
     history: perStrategy(() => createSampler<number>({ every: SAMPLE_EVERY, cap: HISTORY })),
     strategy,
     rate,
     insight,
+    rnd: mulberry32(seed),
+    seed,
   };
 }
 
@@ -276,11 +297,11 @@ export function advance(w: World, dt: number): HealthChange[] {
   const spiking = now < w.spikeUntil;
 
   // new requests leave the clients
-  w.acc += w.rate * (spiking ? SPIKE.factor : 1) * dt * (BURSTINESS.min + Math.random() * BURSTINESS.spread);
+  w.acc += w.rate * (spiking ? SPIKE.factor : 1) * dt * (BURSTINESS.min + w.rnd() * BURSTINESS.spread);
   while (w.acc >= 1) {
     w.acc -= 1;
-    const client = randInt(0, CLIENT_COUNT - 1);
-    const spec: Spec = { id: w.nextId++, client, work: WORK.base + expSample(WORK.mean) };
+    const client = randInt(0, CLIENT_COUNT - 1, w.rnd);
+    const spec: Spec = { id: w.nextId++, client, work: WORK.base + expSample(WORK.mean, w.rnd) };
     w.pending.push({ spec, t0: now });
   }
   // ...and reach the LB, where every strategy's sim routes the same request
@@ -339,6 +360,7 @@ export function setFleet(w: World, preset: PresetId) {
 export function snapshot(w: World) {
   return {
     stats: w.sims[w.strategy].stats(w.now),
+    alive: w.sims[w.strategy].servers.map((s) => s.alive),
     history: perStrategy((id) => [...w.history[id].values]),
   };
 }
