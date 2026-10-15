@@ -39,7 +39,7 @@ export function CompressScene({ picker, corpus }: { picker: ReactNode; corpus: C
         <Stats>
           <Stat label="Fixed 4-byte ids" value={sizes.fixed} color="var(--bad)" sub="bytes" />
           <Stat label="Variable-byte ids" value={sizes.ids} color="var(--info)" sub="bytes" />
-          <Stat label="Variable-byte gaps" value={sizes.gaps} color="var(--ok)" sub="bytes: the smallest" />
+          <Stat label="Variable-byte gaps" value={sizes.gaps} color="var(--ok)" sub={sizes.gaps < sizes.ids ? 'bytes: the smallest' : 'bytes'} />
         </Stats>
       }
       legend={
@@ -86,7 +86,7 @@ export function CompressScene({ picker, corpus }: { picker: ReactNode; corpus: C
               </table>
             </div>
           )}
-          <Hint tone="muted" block>Each byte holds 7 bits of the number, and its top bit says whether another byte follows: one common scheme, among others. Small gaps fit one byte, which is why a long list of nearby ids shrinks.</Hint>
+          <Hint tone="muted" block>Each byte holds 7 bits of the number, and its top bit says whether another byte follows: one common scheme, among others. A gap is never larger than its id, so on a long list of large ids the gaps need fewer bytes; while every id is below 128 the two tie.</Hint>
         </Box>
         <Box>
           <SectionTitle hint="why updates are expensive">Adding a document</SectionTitle>

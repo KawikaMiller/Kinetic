@@ -79,6 +79,21 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
   });
 });
 
+describe('the compression wording follows the sizes', () => {
+  it('on the default corpus ids and gaps tie, so the caption claims no gap saving; on the big collection it states one measured against the ids', () => {
+    const busiest = [...index.postings.keys()].sort((x, y) => index.postings.get(y)!.length - index.postings.get(x)!.length || x.localeCompare(y))[0];
+    const small = sizesOf(docIds(index, busiest));
+    expect(small.gaps).toBe(small.ids);
+    const tie = plain(compressCaption({ count: docIds(index, busiest).length, sizes: small, source: 'x' }));
+    expect(tie).toContain('tie with the ids');
+    expect(tie).not.toContain('gaps save');
+    const big = sizesOf(seededIds(POSTINGS_SHOWN, 10 ** DEFAULT_EXPONENT, BIG_SEED));
+    const saving = Math.round((1 - big.gaps / big.ids) * 100);
+    expect(plain(compressCaption({ count: POSTINGS_SHOWN, sizes: big, source: 'x' }))).toContain(`gaps save ${saving}% against the variable-byte ids`);
+    expect(plain(compressCaption({ count: 0, sizes: sizesOf([]), source: 'x' }))).toContain('nothing to encode');
+  });
+});
+
 describe('captions and frames are computed from the model', () => {
   it('the query caption states comparisons and documents for every operator, order and a range of queries', () => {
     for (const q of ['cat dog', 'cat dog garden', 'barn -cat', '"cat sat"', 'zebra', 'cat zebra', '']) {

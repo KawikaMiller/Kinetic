@@ -53,10 +53,17 @@ export function rankCaption(o: { ranker: Ranker; top: Scored | null; matches: nu
 }
 
 export function compressCaption(o: { count: number; sizes: Sizes; source: string }): ReactNode {
-  const save = (n: number) => `${Math.round((1 - n / o.sizes.fixed) * 100)}%`;
-  return (
+  const save = (n: number, against: number) => `${Math.round((1 - n / against) * 100)}%`;
+  const { fixed, ids, gaps } = o.sizes;
+  const sizes = <>{o.count} {noun(o.count, 'id')} take {hl('bad', `${fixed} bytes`)} at 4 bytes each, {hl('info', `${ids} bytes`)} as variable-byte ids and {hl('ok', `${gaps} bytes`)} as variable-byte gaps</>;
+  if (o.count === 0) return <>{o.source}: nothing to encode.</>;
+  return gaps < ids ? (
     <>
-      {o.source}: {o.count} {noun(o.count, 'id')} take {hl('bad', `${o.sizes.fixed} bytes`)} at 4 bytes each, {hl('info', `${o.sizes.ids} bytes`)} as variable-byte ids and {hl('ok', `${o.sizes.gaps} bytes`)} as variable-byte gaps: gaps save {save(o.sizes.gaps)}, because small numbers need fewer 7-bit groups.
+      {o.source}: {sizes}: gaps save {save(gaps, ids)} against the variable-byte ids (and {save(gaps, fixed)} against 4-byte ids), because a gap is smaller than its id and small numbers need fewer 7-bit groups.
+    </>
+  ) : (
+    <>
+      {o.source}: {sizes}. Variable-byte saves {save(ids, fixed)} against 4-byte ids, but the gaps tie with the ids here because every id fits in one byte; pick "A big collection" to see the gaps win.
     </>
   );
 }
