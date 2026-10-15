@@ -64,3 +64,18 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | 2-D roving-tabindex grid hook (arrow keys between cells) | isolation-levels matrix (20 local lines), likely authz-models, query-planning tables | when a 2nd user appears in a batch | |
 | `ProvenanceRow` wrapper (the same flex-wrap chip row each lesson re-styles under its own class) | all R1 lessons and most D lessons | wave 1 to 2 round | tiny; avoids 50 copies |
 | Documented `WideRegion reveal` pattern for step timelines | isolation-levels | docs only | |
+
+## From T3-R2 and T3-B5 (builder reports)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Synchronous SHA-256 in `core` (core/crypto is async only) | oauth-flows (local 30-line pkce.ts now); extract when a 2nd lesson needs it | on second user | tested against node:crypto |
+| Byte-oriented / BigInt FNV-1a in `core/hash` | sharding test re-implements it | on second user | check-tokens flags the offset-basis literal; test files may use `0x811c_9dc5n` |
+| Shared `core/testing` wrapper for `node:crypto` (test tsconfig lacks node types) | oauth-flows tests, any crypto test | next kit round | same dynamic-import shim as core/testing/node.ts |
+| Normalise `src/core/lessonContent.test.ts` line endings (CRLF in working tree, repo is LF-enforced) so BASELINE edits stop failing silently | all | next kit round | R2 found two lessons hidden by stale entries |
+| Move `erlangC` from `queueing-theory/model.ts` to `core/` | capacity-planning (2nd user) | wave 2 to 3 round | |
+| Move `nearestRank` from `percentiles-statistics/model` to `core/` | benchmarking-methodology (2nd user), B1 helpers (fmt, SeedField, seed, normalQuantile, drawSample) | wave 2 to 3 round | already queued from B1 |
+| Fast inverse normal CDF in `core/distributions` (tail-latency has a tested Acklam approximation; the bisection one is too slow to sample with) | tail-latency, any sampler lesson | wave 2 to 3 round | |
+
+## Spec corrections to carry
+- T3-B5 capacity-planning: the M/M/c survival formula in the spec is wrong when theta = mu: the limit is (1 + C*mu*t)e^{-mu t} (equals the spec's only when C = 1). The model uses the correct form; fix the spec text.
+- T3-B1 hypothesis-testing-ab: the spec's '14,748' is a truncation; ceil gives 14,749 (the lesson is right).
