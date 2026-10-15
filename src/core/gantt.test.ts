@@ -180,6 +180,9 @@ describe('instants (zero-length bars)', () => {
       expect(b.left).toBeGreaterThanOrEqual(-1e-9);
       expect(b.right).toBeLessThanOrEqual(400 + 1e-9);
     }
+  });
+});
+
 describe('barAt / barsAt', () => {
   const bar: TimedBar & { id: string } = { id: 'a', start: 10, end: 20 };
 

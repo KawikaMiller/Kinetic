@@ -190,6 +190,8 @@ export function placeInstantLabels(marks: readonly LabelSpan[], trackPx: number,
     const inside = Math.min(Math.max(wanted, m.w / 2), Math.max(m.w / 2, trackPx - m.w / 2));
     return { side: sides[i], dx: inside - centre[i] };
   });
+}
+
 /** What `barAt` needs of a bar: GanttLanes' `GanttBar` fits. */
 export interface TimedBar {
   start: number;
