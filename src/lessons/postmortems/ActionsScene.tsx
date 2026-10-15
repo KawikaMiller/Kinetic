@@ -1,9 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ChipButton, ClaimLabel, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
+import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
-import { DONES, OWNERS, PRESETS, TAGS, TAG_LETTER, WHATS, checklist, isComplete, type Item, type Tag } from './actions';
+import { DONES, OWNERS, PRESETS, PROBLEM_TEXT, TAGS, TAG_LETTER, WHATS, checklist, passes, problemsOf, tagAdvice, type Item, type Tag } from './actions';
 import { actionsCaption } from './captions';
 import { LEAF_IDS, factorOf } from './tree';
 
@@ -41,11 +41,28 @@ export function ActionsScene({ picker }: { picker: ReactNode }) {
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [nextId, setNextId] = useState(1);
   const checks = checklist(items);
+  const listRef = useRef<HTMLDivElement>(null);
+  /** Where focus goes after an action is removed: the position it had, or the list itself once it is empty. */
+  const focusAfterRemove = useRef<number | null>(null);
   const covered = (leaf: string) => items.some((i) => WHATS.find((w) => w.id === i.what)?.covers.includes(leaf));
 
   useEffect(() => {
     setCaption(actionsCaption(items), { quiet: true });
   }, [setCaption, items]);
+
+  useEffect(() => {
+    const at = focusAfterRemove.current;
+    if (at === null) return;
+    focusAfterRemove.current = null;
+    const removes = listRef.current?.querySelectorAll<HTMLButtonElement>('.pm-item button');
+    if (removes && removes.length > 0) removes[Math.min(at, removes.length - 1)].focus();
+    else listRef.current?.focus();
+  }, [items]);
+
+  const remove = (index: number) => {
+    focusAfterRemove.current = index;
+    setItems(items.filter((_, k) => k !== index));
+  };
 
   const add = () => {
     if (items.length >= MAX_ITEMS) return;
@@ -98,21 +115,29 @@ export function ActionsScene({ picker }: { picker: ReactNode }) {
 
         <Box>
           <SectionTitle hint="an empty slot leaves an action incomplete">Actions</SectionTitle>
-          {items.length === 0 ? (
-            <p className="empty-note">No actions yet.</p>
-          ) : (
-            <ul className="pm-items">
-              {items.map((i) => (
-                <li key={i.id} className={`pm-item ${isComplete(i) ? 'is-ok' : 'is-bad'}`}>
-                  <span className="chip pm-tag">{i.tag ? TAG_LETTER[i.tag] : '?'}</span>
-                  <span>
-                    <b>{whatText(i.what)}</b> · {i.owner ?? 'no owner role'} · done when: {doneText(i.done)}
-                  </span>
-                  <Button onClick={() => setItems(items.filter((x) => x.id !== i.id))}>Remove</Button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div ref={listRef} tabIndex={-1} className="pm-list" aria-label="Actions">
+            {items.length === 0 ? (
+              <p className="empty-note">No actions yet.</p>
+            ) : (
+              <ul className="pm-items">
+                {items.map((i, index) => {
+                  const problems = problemsOf(i);
+                  const advice = tagAdvice(i);
+                  return (
+                    <li key={i.id} className={`pm-item ${passes(i) ? 'is-ok' : 'is-bad'}`}>
+                      <span className="chip pm-tag">{i.tag ? TAG_LETTER[i.tag] : '?'}</span>
+                      <span>
+                        <b>{whatText(i.what)}</b> · {i.owner ?? 'no owner role'} · done when: {doneText(i.done)}
+                        {problems.length > 0 && <span className="pm-detail-text"> (fails: {problems.map((p) => PROBLEM_TEXT[p]).join('; ')})</span>}
+                        {advice && <span className="pm-detail-text"> (advice, not a check: {advice})</span>}
+                      </span>
+                      <Button onClick={() => remove(index)}>Remove</Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </Box>
 
         <Box variant="sunken">
@@ -133,9 +158,11 @@ export function ActionsScene({ picker }: { picker: ReactNode }) {
             ))}
           </div>
         </Box>
+        <Hint block>An action can have a cost of its own: shortening an alert window pages sooner but also pages for more blips, which is why this incident’s window was lengthened. A done-when has to check that action, not just be checkable.</Hint>
         <ProvenanceRow>
           <Provenance kind="invented">invented incident and action list</Provenance>
           <ClaimLabel kind="practice">an owner role, a tag and a done-when someone can check are common practice for action items</ClaimLabel>
+          <ClaimLabel kind="view">which tag an action gets is a judgment (rolling out in stages could be called prevent or mitigate), and “not only prevent” is one view of a balanced list, so the tag check and the advice are not facts</ClaimLabel>
         </ProvenanceRow>
       </div>
     </StageFrame>

@@ -6,7 +6,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A blameless postmortem asks what made a failure possible, finds several contributing factors rather than one culprit, and ends in action items someone owns and can check.',
-    what: `You explore one invented outage (a config change took checkout down for ${OUTAGE_MIN} minutes) as a tree of factors, each tagged trigger, contributing factor or latent condition. You rewrite eight blaming sentences so that they name a condition of the system instead of a person, then build action items from slots (what, owner role, done-when, tag) and watch a checklist computed from them. Last, the same facts are walked as a chain of five whys and as the whole tree, with a count of how many factors each found. The incident, names and numbers are invented, and each claim says whether it is common practice or one view.`,
+    what: `You explore one invented outage (a config change took checkout down for ${OUTAGE_MIN} minutes) as a tree of factors, each tagged trigger, contributing factor or latent condition. You rewrite eight blaming sentences so that they name a condition of the system instead of a person, then build action items from slots (what, owner role, done-when, tag) and watch a checklist computed from them. Last, the same facts are walked as authored chains of whys of different lengths and as the whole tree, with a count of how many factors each chain found. The incident, names and numbers are invented, and each claim says whether it is common practice or one view.`,
     analogy: 'Like investigating a house fire by asking what let it spread, not who dropped the match: the missing smoke alarm and the blocked exit are fixable, and a promise to be careful is not.',
     useCases: [
       'Reviewing an outage in a way that makes people willing to describe what really happened',
@@ -20,14 +20,14 @@ const lesson: LessonModule = {
   tryThis: [
     `On The factors tree, press Ask about everything: the tree shows ${FACTOR_IDS.length} factors and ${LEAF_IDS.length} leaves, and none of them is the single root cause.`,
     'On Blame to system, pick the first rewrite of the first sentence: it still blames a person. Pick the second: it names the config tool’s condition.',
-    'On Action items, load “Be more careful”: no check passes. Then load “A good postmortem”: all five do, and every leaf has an action.',
-    `On Five whys vs a tree, the default chain stops at a person and surfaces 1 of ${FACTOR_IDS.length} factors. Pick Follows the config checks: it reaches 3 factors and one leaf.`,
+    'On Action items, load “Be more careful”: no check passes. Then load “A good postmortem”: all four do, and every leaf has an action. Then add “Roll config out in stages” with done-when “Staged rollout is used for the next ten config changes” and the tag prevent: its card shows advice, not a failure.',
+    `On Whys vs a tree, the default chain is the naive one that stops at a person and surfaces 1 of ${FACTOR_IDS.length} factors. Pick Follows the config checks: it reaches 3 factors and one leaf. The chains here are 2 to 4 answers long, because no branch of the tree is deeper.`,
   ],
   keyIdeas: [
     'A blameless postmortem asks what made the failure possible; in this tree there are several contributing factors and no single root cause.',
     'Tags help: a trigger sets it off, a contributing factor makes it bigger or longer, and a latent condition sat in the system before.',
-    'A real action item has an owner role, a done-when someone can check, and points at a factor; “be more careful” has none of the three.',
-    'A chain of whys follows one branch and stops where the asker is satisfied; the tree keeps the other branches.',
+    'A real action item has an owner role, a done-when someone can check that checks it, and points at a factor; “be more careful” has none of the three.',
+    'A single chain of whys follows one branch and stops where the asker is satisfied; the tree keeps the other branches, which is why many teams run the whys once per branch.',
   ],
   quiz: [
     {

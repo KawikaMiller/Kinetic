@@ -13,19 +13,21 @@ export interface WhatOption {
   text: string;
   /** The leaf factors it addresses: empty for an item that points at nothing. */
   covers: readonly string[];
-  /** What the action does, by the usual meaning of each tag. */
-  tag: Tag;
+  /** What most teams would call the action. A judgment, so it is advice and never a pass or a fail. */
+  usualTag: Tag;
+  /** The done-whens that actually check this action. */
+  checkedBy: readonly string[];
 }
 
 export const WHATS: readonly WhatOption[] = [
-  { id: 'range-check', text: 'Reject out-of-range values in the config tool', covers: ['old-schema'], tag: 'prevent' },
-  { id: 'preview', text: 'Show the effect of a config change in review', covers: ['one-line-review'], tag: 'prevent' },
-  { id: 'staged', text: 'Roll config out in stages behind a health gate', covers: ['no-stages', 'shared-file'], tag: 'mitigate' },
-  { id: 'alert-window', text: 'Alert on the error ratio with a shorter window', covers: ['noisy-history'], tag: 'detect' },
-  { id: 'one-step-rollback', text: 'Add a one-step config rollback', covers: ['manual-revert'], tag: 'mitigate' },
-  { id: 'runbook', text: 'Update the config runbook and link it from the alert', covers: ['stale-runbook'], tag: 'mitigate' },
-  { id: 'careful', text: 'Be more careful with config changes', covers: [], tag: 'prevent' },
-  { id: 'retrain', text: 'Retrain the engineer who made the change', covers: [], tag: 'prevent' },
+  { id: 'range-check', text: 'Reject out-of-range values in the config tool', covers: ['old-schema'], usualTag: 'prevent', checkedBy: ['ci-test'] },
+  { id: 'preview', text: 'Show the effect of a config change in review', covers: ['one-line-review'], usualTag: 'prevent', checkedBy: ['ci-test', 'next-changes'] },
+  { id: 'staged', text: 'Roll config out in stages behind a health gate', covers: ['no-stages', 'shared-file'], usualTag: 'mitigate', checkedBy: ['next-changes'] },
+  { id: 'alert-window', text: 'Shorten the alert window, and tune it against one-minute blips', covers: ['noisy-history'], usualTag: 'detect', checkedBy: ['replay'] },
+  { id: 'one-step-rollback', text: 'Add a one-step config rollback', covers: ['manual-revert'], usualTag: 'mitigate', checkedBy: ['drill'] },
+  { id: 'runbook', text: 'Update the config runbook and link it from the alert', covers: ['stale-runbook'], usualTag: 'mitigate', checkedBy: ['drill', 'replay'] },
+  { id: 'careful', text: 'Be more careful with config changes', covers: [], usualTag: 'prevent', checkedBy: [] },
+  { id: 'retrain', text: 'Retrain the engineer who made the change', covers: [], usualTag: 'prevent', checkedBy: [] },
 ];
 
 export interface DoneOption {
@@ -57,10 +59,40 @@ export interface Item {
 const whatOf = (id: string | null) => WHATS.find((w) => w.id === id);
 const doneOf = (id: string | null) => DONES.find((d) => d.id === id);
 
-export const isComplete = (i: Item): boolean => i.what !== null && i.owner !== null && i.tag !== null && doneOf(i.done)?.verifiable === true;
+export const isConcrete = (i: Item): boolean => (whatOf(i.what)?.covers.length ?? 0) > 0;
+
+/** Why one action fails, in the words the card shows: the one source of truth for the card and for the checklist. */
+export type Problem = 'empty-slot' | 'unverifiable' | 'wrong-check' | 'vague';
+export const PROBLEM_TEXT: Record<Problem, string> = {
+  'empty-slot': 'a slot is empty',
+  unverifiable: 'the done-when is not something anyone can check',
+  'wrong-check': 'the done-when does not check this action',
+  vague: 'it points at care or a person, not at a factor',
+};
+
+export function problemsOf(i: Item): Problem[] {
+  const done = doneOf(i.done);
+  const what = whatOf(i.what);
+  const problems: Problem[] = [];
+  if (i.what === null || i.owner === null || i.tag === null || i.done === null) problems.push('empty-slot');
+  else if (!done?.verifiable) problems.push('unverifiable');
+  else if (what && !what.checkedBy.includes(done.id)) problems.push('wrong-check');
+  if (!isConcrete(i)) problems.push('vague');
+  return problems;
+}
+
+/** An action passes when it has no problem: the card's colour and the checklist read the same list. */
+export const passes = (i: Item): boolean => problemsOf(i).length === 0;
+
+/** The usual tag, as advice: null when the learner's tag is the usual one or the action has no usual tag. */
+export function tagAdvice(i: Item): string | null {
+  const what = whatOf(i.what);
+  if (!what || i.tag === null || !isConcrete(i) || what.usualTag === i.tag) return null;
+  return `most teams call this ${what.usualTag}; ${i.tag} is a defensible reading`;
+}
 
 export interface Check {
-  id: 'coverage' | 'complete' | 'concrete' | 'mix' | 'tags';
+  id: 'coverage' | 'complete' | 'concrete' | 'mix';
   label: string;
   pass: boolean;
   detail: string;
@@ -69,11 +101,9 @@ export interface Check {
 /** The checklist over a list of items. Computed by walking the leaves and the items, never by the tree code. */
 export function checklist(items: readonly Item[]): Check[] {
   const uncovered = LEAF_IDS.filter((leaf) => !items.some((i) => whatOf(i.what)?.covers.includes(leaf)));
-  const incomplete = items.filter((i) => !isComplete(i));
-  const vague = items.filter((i) => (whatOf(i.what)?.covers.length ?? 0) === 0);
+  const incomplete = items.filter((i) => problemsOf(i).some((p) => p !== 'vague'));
+  const vague = items.filter((i) => problemsOf(i).includes('vague'));
   const tagged = items.filter((i) => i.tag !== null);
-  const mismatched = items.filter((i) => i.tag !== null && whatOf(i.what) && whatOf(i.what)!.covers.length > 0 && whatOf(i.what)!.tag !== i.tag);
-  const concreteTagged = tagged.filter((i) => (whatOf(i.what)?.covers.length ?? 0) > 0);
   const onlyPrevent = tagged.length > 0 && tagged.every((i) => i.tag === 'prevent');
   return [
     {
@@ -84,7 +114,7 @@ export function checklist(items: readonly Item[]): Check[] {
     },
     {
       id: 'complete',
-      label: 'Every action has an owner role, a tag and a done-when someone can check',
+      label: 'Every action has an owner role, a tag and a done-when that someone can check and that checks this action',
       pass: items.length > 0 && incomplete.length === 0,
       detail: items.length === 0 ? 'no actions yet' : `${items.length - incomplete.length} of ${items.length} actions are complete`,
     },
@@ -96,15 +126,9 @@ export function checklist(items: readonly Item[]): Check[] {
     },
     {
       id: 'mix',
-      label: 'The tags include something that detects or mitigates, not only prevents',
+      label: 'The tags include something that detects or mitigates, not only prevents (one view)',
       pass: tagged.length > 0 && !onlyPrevent,
       detail: tagged.length === 0 ? 'no tagged actions yet' : onlyPrevent ? 'every tagged action is prevent' : 'prevent, detect and mitigate are not all prevent',
-    },
-    {
-      id: 'tags',
-      label: 'Each tag matches what its action does',
-      pass: concreteTagged.length > 0 && mismatched.length === 0,
-      detail: mismatched.length === 0 ? 'no mismatches' : `${mismatched.length} ${mismatched.length === 1 ? 'action is' : 'actions are'} tagged against what it does`,
     },
   ];
 }

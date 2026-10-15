@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { expectCaption } from '../../core/testing/captions';
-import { DONES, OWNERS, PRESETS, TAGS, WHATS, checklist, type Item } from './actions';
+import { DONES, OWNERS, PRESETS, TAGS, WHATS, checklist, passes, problemsOf, tagAdvice, type Item } from './actions';
 import { FAULT_REASON, SENTENCES, correctIndex } from './blame';
 import { actionsCaption, blameCaption, factorsCaption, whysCaption } from './captions';
-import { FACTORS, FACTOR_IDS, LEAF_IDS, ROOT, factorOf, revealed } from './tree';
+import { FACTORS, FACTOR_IDS, LEAF_IDS, MAX_WHYS, ROOT, factorOf, revealed } from './tree';
 import { CHAINS, surfaced } from './whys';
 
 describe('the authored factors tree', () => {
@@ -66,36 +66,62 @@ describe('the blame rewrites', () => {
   });
 });
 
-/** An independent checker written straight from the checklist's sentences, not from the lesson's code. */
+/**
+ * An independent checker written straight from the checklist's sentences, with its own hand-written tables (which actions
+ * point at a factor, which done-when checks which action, which done-whens anyone can verify), not from the lesson's data.
+ */
+const SPEC_COVERS: Record<string, string[]> = {
+  'range-check': ['old-schema'],
+  preview: ['one-line-review'],
+  staged: ['no-stages', 'shared-file'],
+  'alert-window': ['noisy-history'],
+  'one-step-rollback': ['manual-revert'],
+  runbook: ['stale-runbook'],
+  careful: [],
+  retrain: [],
+};
+const SPEC_CHECKS: Record<string, string[]> = {
+  'range-check': ['ci-test'],
+  preview: ['ci-test', 'next-changes'],
+  staged: ['next-changes'],
+  'alert-window': ['replay'],
+  'one-step-rollback': ['drill'],
+  runbook: ['drill', 'replay'],
+  careful: [],
+  retrain: [],
+};
+const SPEC_VERIFIABLE = ['ci-test', 'drill', 'replay', 'next-changes'];
+const SPEC_LEAVES = ['old-schema', 'one-line-review', 'no-stages', 'shared-file', 'noisy-history', 'manual-revert', 'stale-runbook'];
+
+/** The two per-action facts the card and the checklist both depend on, from the spec tables. */
+const specComplete = (i: Item) =>
+  i.what !== null && i.owner !== null && i.tag !== null && i.done !== null && SPEC_VERIFIABLE.includes(i.done) && SPEC_CHECKS[i.what].includes(i.done);
+const specConcrete = (i: Item) => i.what !== null && SPEC_COVERS[i.what].length > 0;
+
 function oracle(items: readonly Item[]): boolean[] {
-  const what = (id: string | null) => WHATS.find((w) => w.id === id);
-  const leafHasAction = (leaf: string) => items.some((i) => what(i.what)?.covers.includes(leaf) ?? false);
-  const complete = (i: Item) => i.owner !== null && i.tag !== null && what(i.what) !== undefined && (DONES.find((d) => d.id === i.done)?.verifiable ?? false);
-  const concrete = (i: Item) => (what(i.what)?.covers.length ?? 0) > 0;
+  const leafHasAction = (leaf: string) => items.some((i) => i.what !== null && SPEC_COVERS[i.what].includes(leaf));
   const tags = items.map((i) => i.tag).filter((t) => t !== null);
-  const concreteTagged = items.filter((i) => i.tag !== null && concrete(i));
   return [
-    items.length > 0 && LEAF_IDS.every(leafHasAction),
-    items.length > 0 && items.every(complete),
-    items.length > 0 && items.every((i) => i.what === null ? false : concrete(i)),
+    items.length > 0 && SPEC_LEAVES.every(leafHasAction),
+    items.length > 0 && items.every(specComplete),
+    items.length > 0 && items.every(specConcrete),
     tags.length > 0 && tags.some((t) => t !== 'prevent'),
-    concreteTagged.length > 0 && concreteTagged.every((i) => what(i.what)!.tag === i.tag),
   ];
 }
 
 describe('the action-item checklist', () => {
   const run = (id: string) => checklist(PRESETS.find((p) => p.id === id)!.items).map((c) => c.pass);
 
-  it('try-this 3: “be more careful” passes no check and a good postmortem passes all five, with every leaf addressed', () => {
-    expect(run('careful')).toEqual([false, false, false, false, false]);
-    expect(run('good')).toEqual([true, true, true, true, true]);
+  it('try-this 3: “be more careful” passes no check and a good postmortem passes all four, with every leaf addressed', () => {
+    expect(run('careful')).toEqual([false, false, false, false]);
+    expect(run('good')).toEqual([true, true, true, true]);
     const good = checklist(PRESETS.find((p) => p.id === 'good')!.items);
     expect(good[0].detail).toBe('7 of 7 leaf factors are addressed');
-    expect(expectCaption(actionsCaption(PRESETS.find((p) => p.id === 'good')!.items))).toContain('all 5 checks pass');
+    expect(expectCaption(actionsCaption(PRESETS.find((p) => p.id === 'good')!.items))).toContain('all 4 checks pass');
   });
 
   it('fails coverage, completeness and the mix for the chain that ends at a person', () => {
-    expect(run('person')).toEqual([false, false, false, false, false]);
+    expect(run('person')).toEqual([false, false, false, false]);
   });
 
   it('flags a list of only prevent actions even when every action is complete and covers leaves', () => {
@@ -103,15 +129,49 @@ describe('the action-item checklist', () => {
       { id: 1, what: 'range-check', owner: OWNERS[0], done: 'ci-test', tag: 'prevent' },
       { id: 2, what: 'preview', owner: OWNERS[1], done: 'ci-test', tag: 'prevent' },
     ];
-    const passes = checklist(onlyPrevent).map((c) => c.pass);
-    expect(passes[1]).toBe(true);
-    expect(passes[3]).toBe(false);
+    const results = checklist(onlyPrevent).map((c) => c.pass);
+    expect(results[1]).toBe(true);
+    expect(results[3]).toBe(false);
   });
 
   it('never passes an item with an empty slot', () => {
     for (const slot of ['what', 'owner', 'done', 'tag'] as const) {
       const item = { ...PRESETS[0].items[0], [slot]: null } as Item;
       expect(checklist([item])[1].pass, slot).toBe(false);
+      expect(passes(item), slot).toBe(false);
+    }
+  });
+
+  it('does not let a vague item look fine: “be more careful” with an owner, a verifiable done-when and a tag fails its card and the concrete check', () => {
+    const vague: Item = { id: 1, what: 'careful', owner: OWNERS[0], done: 'ci-test', tag: 'prevent' };
+    expect(passes(vague)).toBe(false);
+    expect(problemsOf(vague)).toContain('vague');
+    expect(checklist([vague])[2].pass).toBe(false);
+  });
+
+  it('fails a done-when that is checkable but does not check this action', () => {
+    const mismatched: Item = { id: 1, what: 'staged', owner: OWNERS[1], done: 'ci-test', tag: 'mitigate' };
+    expect(problemsOf(mismatched)).toEqual(['wrong-check']);
+    expect(checklist([mismatched])[1].pass).toBe(false);
+    expect(passes({ ...mismatched, done: 'next-changes' })).toBe(true);
+  });
+
+  it('treats the tag as a judgment: staged rollout tagged prevent still passes every per-action rule and only draws advice', () => {
+    const staged: Item = { id: 1, what: 'staged', owner: OWNERS[1], done: 'next-changes', tag: 'prevent' };
+    expect(passes(staged)).toBe(true);
+    expect(tagAdvice(staged)).toContain('most teams call this mitigate');
+    expect(tagAdvice({ ...staged, tag: 'mitigate' })).toBeNull();
+    expect(checklist([staged]).some((c) => c.label.toLowerCase().includes('tag matches'))).toBe(false);
+  });
+
+  it('one source of truth: a card passes exactly when the checklist run on that single item passes its complete and concrete checks', () => {
+    const rnd = mulberry32(77);
+    const pick = <T,>(xs: readonly T[]): T | null => (rnd() < 0.15 ? null : xs[Math.floor(rnd() * xs.length)]);
+    for (let n = 0; n < 500; n++) {
+      const i: Item = { id: 1, what: pick(WHATS.map((w) => w.id)), owner: pick(OWNERS), done: pick(DONES.map((d) => d.id)), tag: pick(TAGS) };
+      const [, complete, concrete] = checklist([i]);
+      expect(passes(i), JSON.stringify(i)).toBe(complete.pass && concrete.pass);
+      expect(passes(i), JSON.stringify(i)).toBe(specComplete(i) && specConcrete(i));
     }
   });
 
@@ -130,9 +190,15 @@ describe('the action-item checklist', () => {
     }
   });
 
-  it('gives every authored action a tag, and the six real ones cover each leaf at least once', () => {
-    for (const w of WHATS) expect(TAGS).toContain(w.tag);
+  it('keeps the authored tables in step with the oracle’s, and each action’s usual tag a real tag', () => {
+    for (const w of WHATS) {
+      expect(TAGS).toContain(w.usualTag);
+      expect([...w.covers], w.id).toEqual(SPEC_COVERS[w.id]);
+      expect([...w.checkedBy], w.id).toEqual(SPEC_CHECKS[w.id]);
+    }
+    expect(DONES.filter((d) => d.verifiable).map((d) => d.id).sort()).toEqual([...SPEC_VERIFIABLE].sort());
     for (const leaf of LEAF_IDS) expect(WHATS.some((w) => w.covers.includes(leaf)), leaf).toBe(true);
+    expect([...LEAF_IDS].sort()).toEqual([...SPEC_LEAVES].sort());
   });
 });
 
@@ -142,7 +208,17 @@ describe('five whys against the tree', () => {
     expect(surfaced(person, person.steps.length)).toEqual({ factors: ['pool-zero'], leaves: [] });
     const schema = CHAINS.find((c) => c.id === 'schema')!;
     expect(surfaced(schema, schema.steps.length)).toEqual({ factors: ['pool-zero', 'no-range', 'old-schema'], leaves: ['old-schema'] });
-    expect(expectCaption(whysCaption(person, person.steps.length))).toContain('1 of the tree’s 12 factors');
+    expect(expectCaption(whysCaption(person, person.steps.length))).toContain('1 of the authored tree’s 12 factors');
+  });
+
+  it('has chains of genuinely differing depth, none with five whys, because no branch of the tree is that deep (an independent depth walk)', () => {
+    const depthBelow = (id: string): number => Math.max(0, ...factorOf(id).children.map((c) => 1 + depthBelow(c)));
+    expect(MAX_WHYS).toBe(depthBelow(ROOT));
+    expect(MAX_WHYS).toBeLessThan(5);
+    const answers = CHAINS.map((c) => c.steps.length - 1);
+    expect(new Set(answers).size).toBeGreaterThanOrEqual(3);
+    for (const n of answers) expect(n).toBeLessThanOrEqual(MAX_WHYS);
+    expect(CHAINS.find((c) => c.id === 'person')!.label).toContain('naive');
   });
 
   it('every chain surfaces fewer factors than the tree, by a number computed from the data', () => {

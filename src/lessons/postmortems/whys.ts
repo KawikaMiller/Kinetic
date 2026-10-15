@@ -1,6 +1,7 @@
 /**
  * Scene 4: the same facts walked as one chain of "why" questions. A chain follows one branch of the tree and
- * stops where the asker is satisfied; the tree keeps every branch. A step is a factor of the tree, or the one
+ * stops where the asker is satisfied; the tree keeps every branch. The chains are authored: each stops at a different depth,
+ * and none has five whys because no branch of this tree is that deep. A step is a factor of the tree, or the one
  * convenient stopping point (a person) that is not a factor.
  */
 import { FACTOR_IDS, LEAF_IDS, ROOT } from './tree';
@@ -20,11 +21,28 @@ export interface Chain {
 export const CHAINS: readonly Chain[] = [
   {
     id: 'person',
-    label: 'Stops at a person',
+    label: 'Stops at a person (the usual naive version)',
     steps: [
       { factor: ROOT, text: 'Why did checkout fail?' },
       { factor: 'pool-zero', text: 'Because a config change set the pool size to 0.' },
       { factor: null, text: 'Why? Because an engineer typed the wrong value. (Stop: human error.)' },
+    ],
+  },
+  {
+    id: 'trigger',
+    label: 'Stops at the trigger',
+    steps: [
+      { factor: ROOT, text: 'Why did checkout fail?' },
+      { factor: 'pool-zero', text: 'Because a config change set the pool size to 0. (Stop: revert it.)' },
+    ],
+  },
+  {
+    id: 'recovery',
+    label: 'Follows the slow recovery',
+    steps: [
+      { factor: ROOT, text: 'Why did checkout fail for so long?' },
+      { factor: 'slow-recovery', text: 'Because recovery took a long time.' },
+      { factor: 'manual-revert', text: 'Why? Reverting meant finding the old value and pushing it by hand.' },
     ],
   },
   {
@@ -38,12 +56,13 @@ export const CHAINS: readonly Chain[] = [
     ],
   },
   {
-    id: 'recovery',
-    label: 'Follows the slow recovery',
+    id: 'alerting',
+    label: 'Follows the late alert',
     steps: [
       { factor: ROOT, text: 'Why did checkout fail for so long?' },
       { factor: 'slow-recovery', text: 'Because recovery took a long time.' },
-      { factor: 'manual-revert', text: 'Why? Reverting meant finding the old value and pushing it by hand.' },
+      { factor: 'slow-alert', text: 'Why? The alert paged only after the error ratio had stayed high for a while.' },
+      { factor: 'noisy-history', text: 'Why? The window was lengthened after an earlier alert paged for a one-minute blip.' },
     ],
   },
 ];

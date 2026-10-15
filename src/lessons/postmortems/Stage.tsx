@@ -9,7 +9,7 @@ const SCENES = [
   { value: 'factors', label: 'The factors tree' },
   { value: 'blame', label: 'Blame to system' },
   { value: 'actions', label: 'Action items' },
-  { value: 'whys', label: 'Five whys vs a tree' },
+  { value: 'whys', label: 'Whys vs a tree' },
 ] as const;
 
 export function Stage() {

@@ -55,8 +55,8 @@ export function whysCaption(chain: Chain, depth: number): ReactNode {
   const stoppedAtPerson = depth >= chain.steps.length && chain.steps[chain.steps.length - 1].factor === null;
   return (
     <>
-      {depth === 1 ? 'One why' : `${depth} whys`} along “{chain.label.toLowerCase()}” surface {factors.length} of the tree’s {FACTOR_IDS.length} factors and {plural(leaves.length, 'leaf', 'leaves')} of its {LEAF_IDS.length}.
-      {stoppedAtPerson && <> The last step is a person, who is not one of the tree’s factors.</>}
+      {depth === 1 ? 'One why' : `${depth} whys`} along “{chain.label.toLowerCase()}” surface {factors.length} of the authored tree’s {FACTOR_IDS.length} factors and {plural(leaves.length, 'leaf', 'leaves')} of its {LEAF_IDS.length}.
+      {stoppedAtPerson && <> The last step is a person, who is not one of the tree’s factors: this is the usual naive version of the technique.</>}
     </>
   );
 }

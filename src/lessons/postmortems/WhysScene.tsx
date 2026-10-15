@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { whysCaption } from './captions';
 import { FactorTree } from './FactorTree';
-import { FACTOR_IDS, LEAF_IDS, ROOT } from './tree';
+import { FACTOR_IDS, LEAF_IDS, MAX_WHYS, ROOT } from './tree';
 import { CHAINS, surfaced } from './whys';
 
 export function WhysScene({ picker }: { picker: ReactNode }) {
@@ -31,14 +31,14 @@ export function WhysScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Surfaced by the chain" value={`${factors.length} of ${FACTOR_IDS.length}`} sub={`${leaves.length} of ${LEAF_IDS.length} leaves`} />
-          <Stat label="Surfaced by the tree" value={`${FACTOR_IDS.length} of ${FACTOR_IDS.length}`} sub={`${LEAF_IDS.length} of ${LEAF_IDS.length} leaves`} color="var(--ok)" />
+          <Stat label="The authored tree has" value={`${FACTOR_IDS.length} factors`} sub={`${LEAF_IDS.length} leaves: the authored list, not a measurement`} />
         </Stats>
       }
       legend={
         <Legend
           items={[
             { color: 'var(--info)', label: 'asked along the chain', shape: 'square' },
-            { color: 'var(--dim)', label: 'never reached by the chain (faded)', shape: 'square' },
+            { color: 'var(--dim)', label: 'not reached by this chain (faded)', shape: 'square' },
           ]}
         />
       }
@@ -51,6 +51,9 @@ export function WhysScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="pm stage-pad">
+        <Hint block>
+          These chains are authored to stop at different depths, from {Math.min(...CHAINS.map((c) => c.steps.length - 1))} to {Math.max(...CHAINS.map((c) => c.steps.length - 1))} answers. None has five whys, because the deepest branch of this tree is only {MAX_WHYS} answers long; the technique’s name is a convention. The person chain is the usual naive version, not how careful teams run it.
+        </Hint>
         <ol className="pm-whys">
           {chain.steps.slice(0, depth).map((s, i) => (
             <li key={i}>{s.text}</li>
@@ -65,6 +68,7 @@ export function WhysScene({ picker }: { picker: ReactNode }) {
         />
         <ProvenanceRow>
           <Provenance kind="invented">the same invented incident; the chains are authored, not generated</Provenance>
+          <ClaimLabel kind="view">five whys is criticised for following one branch; teams that run it once per branch find more, so this is one view of the technique, not a measurement</ClaimLabel>
         </ProvenanceRow>
       </div>
     </StageFrame>

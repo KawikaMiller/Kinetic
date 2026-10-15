@@ -49,7 +49,7 @@ export const FACTOR_SHAPE: TreeShape<string> = { root: ROOT, children: (id) => f
 export const KIND_TONE: Record<FactorKind, Tone> = { trigger: 'orange', contributing: 'violet', latent: 'amber' };
 export const KIND_LABEL: Record<FactorKind, string> = { trigger: 'trigger', contributing: 'contributing factor', latent: 'latent condition' };
 export const KIND_EXPLAIN: Record<FactorKind, string> = {
-  trigger: 'the event that set the outage off; on its own it explains little, because other changes had not caused one',
+  trigger: 'the event that set the outage off; it explains little on its own, because the conditions below it are what let it through',
   contributing: 'something present during the incident that made it larger, longer or likelier',
   latent: 'a condition that sat in the system before the incident, unnoticed until something triggered it',
 };
@@ -64,3 +64,9 @@ export function revealed(asked: ReadonlySet<string>): Set<string> {
   for (const id of asked) for (const c of factorOf(id).children) out.add(c);
   return out;
 }
+
+/** The most answers any chain of whys can have in this tree: factors on the deepest branch, the impact excluded. */
+export const MAX_WHYS = (() => {
+  const depth = (id: string): number => 1 + Math.max(0, ...factorOf(id).children.map(depth));
+  return depth(ROOT) - 1;
+})();
