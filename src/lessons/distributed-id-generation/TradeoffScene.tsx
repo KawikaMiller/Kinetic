@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Hint, Legend } from '../../components/ui';
+import { Hint, Legend, SortTh } from '../../components/ui';
+import { useSortedRows } from '../../components/useSortedRows';
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption } from '../../core/caption';
 import { tradeoffCaption } from './captions';
-import { sortRows, TRADEOFFS, type SortKey } from './tradeoffs';
+import { TRADEOFF_COLUMNS, TRADEOFFS, type SortKey, type TradeoffRow } from './tradeoffs';
 
 const TABLE_MIN_W = 640;
 const COLUMNS: { key: SortKey; label: string }[] = [
@@ -27,12 +28,8 @@ const LEGEND = (
 );
 
 export function TradeoffScene({ picker }: { picker: ReactNode }) {
-  const [sort, setSort] = useState<{ key: SortKey; ascending: boolean }>({ key: 'coordination', ascending: true });
-  const rows = sortRows(TRADEOFFS, sort.key, sort.ascending);
+  const { sorted: rows, sort, headerProps } = useSortedRows<TradeoffRow, SortKey>(TRADEOFFS, TRADEOFF_COLUMNS, { key: 'coordination' });
   useIntroCaption(tradeoffCaption(sort.key, rows), [sort.key, sort.ascending]);
-
-  const click = (key: SortKey) => setSort((s) => ({ key, ascending: s.key === key ? !s.ascending : true }));
-  const ariaSort = (key: SortKey) => (sort.key !== key ? undefined : sort.ascending ? 'ascending' : 'descending');
 
   return (
     <StageFrame height={420} legend={LEGEND} controls={[picker]}>
@@ -43,12 +40,9 @@ export function TradeoffScene({ picker }: { picker: ReactNode }) {
             <thead>
               <tr>
                 {COLUMNS.map((c) => (
-                  <th key={c.key} scope="col" aria-sort={ariaSort(c.key)}>
-                    <button type="button" className="idg-sortbtn" onClick={() => click(c.key)}>
-                      {c.label}
-                      {sort.key === c.key && <span aria-hidden="true">{sort.ascending ? '▲' : '▼'}</span>}
-                    </button>
-                  </th>
+                  <SortTh key={c.key} {...headerProps(c.key)}>
+                    {c.label}
+                  </SortTh>
                 ))}
               </tr>
             </thead>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ms } from '../../core/format';
+import { timeFrames } from '../../core/frames';
 import type { Frame } from '../../core/types';
 import {
   BACK, CLIENT_SENDS, DROP, DURATION, LONG_POLL_TIMEOUT, TRANSPORTS, TRANSPORT_NAME, counters, type HandshakeLine, type Lane, type Params, type ServerEvent,
@@ -118,14 +119,7 @@ const MILESTONE_HOLD = 3;
 
 /** One frame per simulated second, plus a captioned frame at each milestone, then the summary. */
 export function buildFrames(events: ServerEvent[], lanes: Record<Transport, Lane>, p: Params): RtFrame[] {
-  const frames: RtFrame[] = [{ now: 0, say: intro(p) }];
-  const marks = milestones(events, lanes, p);
-  const plain = Array.from({ length: DURATION }, (_, i) => ({ t: i + 1, say: undefined as ReactNode }));
-  for (const m of [...plain, ...marks].sort((a, b) => a.t - b.t)) {
-    frames.push(m.say === undefined ? { now: m.t } : { now: Math.min(m.t, DURATION), say: m.say, hold: MILESTONE_HOLD });
-  }
-  frames.push({ now: DURATION, say: summary(lanes), hold: MILESTONE_HOLD });
-  return frames;
+  return timeFrames({ end: DURATION, steps: DURATION, milestones: milestones(events, lanes, p), intro: intro(p), summary: summary(lanes), hold: MILESTONE_HOLD });
 }
 
 // ── Handshake scene ─────────────────────────────────────────────────────

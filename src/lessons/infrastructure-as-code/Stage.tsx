@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { LogStream } from '../../components/LogStream';
+import type { LogRow } from '../../components/logRows';
 import { StageFrame } from '../../components/StageFrame';
 import { useMediaQuery } from '../../components/useMediaQuery';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
@@ -16,6 +18,11 @@ import './styles.css';
 
 const NARROW_QUERY = '(max-width: 900px)';
 const APPLY_STEP_MS = 1100;
+const applyLogRow = (r: ApplyRun['results'][number]): LogRow => ({
+  id: `${r.step.op}-${r.step.address}`,
+  tone: r.status === 'ok' ? 'ok' : r.status === 'failed' ? 'bad' : 'dim',
+  text: `${r.step.op} ${r.step.address}: ${r.message}`,
+});
 const IDLE: ApplyFrame[] = [{ done: 0, world: emptyWorld(), result: null }];
 
 type Pane = 'config' | 'state' | 'world';
@@ -161,15 +168,7 @@ export function Stage() {
         )}
         <PlanPanel plan={planned ?? applied?.plan ?? null} reviewing={applied === null} onApprove={approve} onReject={reject} />
         <ResourceGraph config={config} world={shownWorld} plan={applied ? applied.plan : planned} results={results} current={current} />
-        {applied && (
-          <div className="iac-log" role="log" aria-label="Apply output">
-            {results.map((r) => (
-              <div key={`${r.step.op}-${r.step.address}`} className={`log-row tone-${r.status === 'ok' ? 'ok' : r.status === 'failed' ? 'bad' : 'dim'}`}>
-                {r.step.op} {r.step.address}: {r.message}
-              </div>
-            ))}
-          </div>
-        )}
+        {applied && <LogStream label="Apply output" empty="" rows={results.map(applyLogRow)} />}
         <Hint block>
           Simulated provider and cloud; the syntax is HCL-like, not a real tool's. Real tools also run independent steps in parallel, lock the state while they work and keep it in a
           shared place; here the steps run one at a time. Here every resource name must be unique, so a second create fails; many real providers would instead make a duplicate, or fail only for globally unique names such as buckets.

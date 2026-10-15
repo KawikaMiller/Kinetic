@@ -581,6 +581,14 @@ so expect to keep a few lesson overrides for exact pixel parity.
 - `roving` makes the clickable lines one tab stop instead of one per line: ↑/↓ move focus (no wrap),
   Home/End jump to the ends, and re-entering the panel returns to the line last focused
   (`listKeyTarget` in `core/radio`, tested). isa-assembly's C and assembly panels use it (they had ~23 stops).
+- **A long line scrolls inside the panel (K3-6).** `.code-panel` has `min-width: 0` and its `ol` is an
+  `overflow-x: auto` scroller, so a line with an unbreakable run (a URL, a long identifier, a compiler
+  flag) no longer widens a flex or grid parent and pushes the page sideways at 390. Ordinary lines still
+  wrap (`pre-wrap`); each `li` is `min-width: min-content`, so a scrolled line's tint and left bar cover all
+  of it. The focus ring of a clickable line sits inside the line (`outline-offset: -2px`) because the scroller
+  would clip it. At 900px and up every `CodePanel` caller is pixel-identical (checked on all 115 lessons with a
+  `CodePanel` or `GanttLanes`; 390px shots changed nowhere either). `#/dev/kit` ("Tier 3 kit · kickoff round")
+  has a long-line demo in a flex row.
 - Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
   row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 
@@ -1080,6 +1088,17 @@ circlePositions(ids, width, height, pad, radii?)                    // the same,
   tag is `<>{base}<Badge/></>` (topological-sort's in-degree badges, cycle-detection's S/F tags) rather than a copy of
   the ring/shape/label markup. `box={{ w, h, rx }}` sets the box's corner radius (default 10; the ring follows at rx + 4).
 - Natural size, shrinking on narrow screens; stretch it with `width: 100%` in lesson CSS (both migrated lessons do). Big graphs on phones belong in a `WideRegion`, as in ci-pipelines.
+- **`underlay` and `labelHalo` (K3-5).** `underlay={<>…</>}` is SVG drawn first inside the graph's own `<svg>`, in the
+  same coordinates and under the edges and nodes: module boxes, a VPC, a component hull. It scales with the drawing,
+  takes no pointer events (`.graph-underlay`) and is `aria-hidden`, so a lesson no longer stacks a second SVG with a
+  copied viewBox (coupling-cohesion, layered-hexagonal and architecture-diagrams-c4's two scenes did). Read the
+  graph's coordinate transform with `canvas.querySelector('svg.graph-view').getScreenCTM()` (coupling-cohesion's drag).
+  `labelHalo` adds the page colour round edge labels (`paint-order: stroke`, 4px, round joins); the kit default
+  `.graph-edge-label` only gains `paint-order: stroke`, so labels without the prop are unchanged. The halo rule has
+  specificity 0,2,0 so a lesson's own `.x-graph .graph-edge-label` wins (minimum-spanning-trees keeps `stroke-linejoin: miter`).
+  Migrated pixel-identically: coupling-cohesion, layered-hexagonal, architecture-diagrams-c4 (zoom frame and fix title) and
+  minimum-spanning-trees (`labelHalo`); frames at 1440 and 390, plus driven states (c4 fix chip and a zoom, the hexagon view, a
+  preset with a request and a selection). One change in motion only: c4's zoom frame now fades with the graph's own fade-in.
 - Node marks use TreeSvg's shape (`{ tone, fill: 'tint' | 'solid', tint? }`); edges take `{ tone, dashed?, width? }` (default 3.5), and the arrowhead follows the tone. `nodeColor` colours only unmarked nodes. Classes: `.graph-node`, `.graph-node-shape`, `.graph-node-label`, `.graph-edge` (+ `is-marked`, `is-dashed`), `.graph-edge-label`.
 - With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop (roving tabindex, starting top-left): arrows move to the nearest node or clickable edge in that direction (`spatialNext`), Home/End jump to the ends, Enter/Space press. `editable`: clicking empty space adds a node (at least `minGap` from the rest), dragging node to node adds an edge, and from the keyboard it's C on a node then Enter on another (Escape cancels). Adding a node from the keyboard stays a lesson button, since only the lesson knows where it goes.
 - Both lessons migrated pixel-identically: smoke frames plus ten driven states (presets, weights, a selected edge, a cycle, two-colouring; feature branch, 1 and 4 shards, a broken test, fail-fast). graph-representations' Tab path to the quiz went from 78 stops to 24 (L-7): the graph and the adjacency matrix are one stop each.
@@ -1378,6 +1397,188 @@ unscopedAbsolutes(text); tryThisTestNumbers(testSource); DOMAIN_REVIEW_IDS
   tests skip, when `docs/tier3-plan.md` isn't in the tree.
 
 ---
+
+## Tier 3 kit (kickoff round: extractions)
+
+Extractions and extensions for the Tier 3 batches (`docs/tier3-plan.md` §4), each migrating its Tier 2 source pixel-identically
+(`smoke --frames` + `diff`). Demos are on `#/dev/kit` under "Tier 3 kit · kickoff round, extractions" (`pages/DevKitTier3b.tsx`).
+The CodePanel (K3-6) and GraphView (K3-5) changes are noted in their own entries above.
+
+### `SortTh`, `useSortedRows` (K3-4) — distributed-id-generation; later api-versioning, query-planning, join-algorithms, consistency-models, authz-models, routing-algorithms, bgp, dora-metrics, kafka-partitioned-log
+```tsx
+const { sorted, sort, headerProps } = useSortedRows(rows, { name: (r) => r.name, cost: (r) => r.cost }, { key: 'cost' });
+<table className="data-table">
+  <thead><tr>
+    <SortTh {...headerProps('name')}>Plan</SortTh>   // <th scope="col" aria-sort><button class="sort-btn">Plan ▲</button></th>
+    <SortTh {...headerProps('cost')}>Cost</SortTh>
+  </tr></thead>
+  <tbody>{sorted.map((r) => …)}</tbody>
+</table>
+```
+- A column is a getter returning a number (compared numerically) or text (`localeCompare`, so "amy" sorts with "Bob"). The sort is **stable in both
+  directions**: ties keep the table's own order, also when reversed (`core/sortRows`: `sortRows`, `nextSort`, `sortDirection`, tested including a
+  broken-comparator case). Pressing a column sorts it ascending, pressing it again reverses it, and it keeps flipping; there is no "unsorted" third state.
+- With no third argument the rows start in table order and `sort` is null; with `{ key, ascending? }` it is never null (overloads), so
+  captions can read `sort.key`.
+- `aria-sort` is on the sorted column's `<th>` only; the ▲ / ▼ is `aria-hidden`. The heading is a native `<button>`, so Enter and Space work
+  (driven with real key presses: Tab, Enter, Tab, Space, Space ends on "Sorts by time ▼"). Keep the sorted order in the table, not in the
+  caption alone: a caption that names the order reads it from `sorted`.
+- `ui.tsx` re-exports `SortTh` in a delimited block; the hook is imported from `components/useSortedRows` (a value export from `ui.tsx`
+  trips oxlint's only-export-components). `SortTh` lives in `SortTh.tsx`. CSS: `.sort-btn` in `kit.css`. Name the generics when `initial` is
+  given (`useSortedRows<Row, Key>`), or TypeScript narrows the key type to the initial one.
+- distributed-id-generation's trade-offs table migrated: default, "Size" ascending and "Format" descending at 1440 and 390 are pixel-identical
+  (the 390 default shot differs by 0.09% between *any* two runs, caption cross-fade noise, same as two shots of the unchanged tree).
+
+### `LogStream.tsx` (`logRows.ts`) (K3-9) — structured-logging, cert-lifecycle, resource-exhaustion, dom-events, infrastructure-as-code; later incident-response, postmortems, alerting-design, change-data-capture, write-ahead-log, kafka-partitioned-log, stream-windowing, fuzzing, job-scheduling, io-models
+```tsx
+<LogStream label="What has happened up to today" maxHeight={190} follow max={200}
+           rows={events.map((e) => ({ id: e.id, at: e.clock, level: e.level, tone: e.tone, source: e.service, sourceTone: 'info', text: e.text }))}
+           highlight={(row) => (query ? matches(row) : null)}   // false dims the row, true is where it scrolls to, null = nothing highlighted
+           live="polite" empty="Nothing yet." className="my-log" />
+```
+- A `role="log"` region of `.log-row`s (mono, tinted by `tone`; `level` ERROR is red and WARN orange when no tone is given) with an
+  optional muted timestamp (`at`), a bold `level` and `source` (`sourceTone`), then the `text`. Wraps at 390 (`overflow-wrap: anywhere`).
+  `id` must be unique and stable (a counter, not text plus time); it is the React key and the scroll target.
+- `maxHeight` (px) makes it a scroller and a tab stop (a region that scrolls must be reachable by keyboard); without it the list just grows. `follow`
+  keeps the newest row in view until the learner scrolls up. `max` keeps only the newest rows. Newest-first logs (resource-exhaustion) pass their
+  rows reversed and leave `follow` off.
+- The region is mounted whether or not there are rows (`live` is `polite` by default, `off` for a log the learner scrubs), so the first row is
+  announced. `empty=""` shows nothing while empty. Callers that only render a log after some action (infrastructure-as-code's apply output)
+  still mount it conditionally, to keep their layout; a new lesson should mount it always.
+- `lastRows` and `rowTone` (`logRows.ts`) are pure and tested. The lesson keeps its own mapping from model to `LogRow` (structured-logging's
+  `streamRows.ts` with `toLogRows` and `streamHighlight`, tested).
+- **Migrated pixel-identically** (frames at 1440 and 390, plus a driven click or apply): structured-logging (its local `LogStream.tsx` is gone),
+  cert-lifecycle, resource-exhaustion, dom-events (the empty note keeps the 12px margins its old `<p>` had) and infrastructure-as-code.
+  structured-logging scrolls to the first highlighted row, a secret or mask included, but not to a row the filter dimmed (it used to).
+  Its `@live` shot differs from the *baseline* by 5 to 7% but matches the unmodified tree of the same day exactly.
+- **Not migrated, and why.** cors-same-origin (`RequestScene`): an ordered `<ol>` of the steps of one request, replaced on every send, not an
+  append-only log (list semantics, no timestamps, nothing to follow); `OriginScene`'s `.log-row` is a single verdict line. kubernetes-basics'
+  `EventLog`: its heading lives inside the `role="log"` region and each tick is a bold mono prefix with its own margin, so it isn't the same row.
+  The other `.log-row` users (accessibility, browser-storage, injection-attacks, xss, mfa-passkeys, secrets-management, usability-testing...)
+  use it as a verdict or result box, not a stream. mobile-app-lifecycle's callback list has two-line rows (a bold callback name over its calls) in a
+  `<ul>`, and secrets-management's `LeakScene` is a numbered `<ol>` timeline with a current row: lists of steps with their own anatomy, not
+  timestamped streams, so they stay on plain `.log-row`. (virtual-dom's patch list, interrupts-context-switch's outcomes, poison-messages-dlq and
+  event-sourcing were only grepped, not read closely; none has `role="log"`.)
+
+### `GanttLanes` instants (K3-11) — later incident-response, postmortems, project-planning-critical-path, job-scheduling, io-models, change-data-capture, safe-config-rollout
+```tsx
+{ id: 'rb', lane: 'deploys', start: 55, end: 55, tone: 'bad', label: 'rollback' }   // start === end: a diamond with its label beside it
+```
+- A bar with `start === end` **and a `tone`** is an instant: an 8px diamond (`.gantt-instant`, a `<button>` when `onBarClick` is set, with the
+  label as its name and tooltip) centred on its time, with the `label` in plain text beside it (`.gantt-instant-label`, 10.5px mono, no
+  fill). `minPx` still means "draw it this wide", so a zero-length bar with `minPx` is the thin sliver it always was; a zero-length bar with
+  no `tone` still draws nothing (the plan ghost). Existing bars are untouched: all 37 GanttLanes lessons are pixel-identical at 1440 (93 deterministic frames)
+  (no existing bar had `start === end` and a tone).
+- **Label placement reuses the marker-label spreading** (`spreadLabels`), per lane, from the real widths the component already measures
+  (`core/gantt` `placeInstantLabels`, tested): a label goes right of its diamond; left when it would run past the track's end or sit on
+  another instant's diamond and the left is clear; labels that overlap are nudged apart; finally every label is pulled back inside the track.
+  The diamond itself is kept wholly inside the track (`instantX`, and a CSS `clamp`), so an instant at the very start or end of the domain stays inside.
+- `isInstant(bar)`, `INSTANT_GAP_PX`, `INSTANT_SIZE_PX` are in `core/gantt`. Instants take no `motionId` glide and no `progress`.
+
+### `GanttLanes` calendar axis and `hideEmptyLanes` (K3-12) — later project-planning-critical-path, estimation, job-scheduling, incident-response, etl-orchestration, backups-disaster-recovery, dora-metrics, safe-config-rollout
+```tsx
+<GanttLanes lanes={…} bars={…} domain={[0, 72]}                       // domain: hours since `start`
+            axis={{ calendar: { start: '2026-03-02T00:00:00Z', unit: 'hour' } }}   // 'hour' | 'day' | 'week'
+            hideEmptyLanes />
+calendarTicks(domain, { start, unit }, count?)   // [{ value, at, label }]: value in domain hours, at in % of the track
+barInDomain(start, end, domain)                  // does a bar touch the domain: what hideEmptyLanes counts
+```
+- **The calendar domain is hours since `start`**, whatever the unit: `unit` only says which boundaries get a tick (every hour, every UTC
+  midnight, every Monday 00:00 UTC). Labels are "Mon 09:00" (hour) or "Mon 12 Oct" (day and week), in **UTC**, and the axis says so on screen
+  (a muted "UTC" in the lane-label column). `start` must be an ISO instant with a zone (`Z` or an offset); a bare "2026-03-02T00:00" would be read in the
+  browser's own zone, so `calendarTicks` throws on it.
+- A crowded axis is thinned to a round stride counted from midnight (every 2nd, 3rd, 4th, 6th, 8th, 12th hour; every 2nd, 3rd, 5th, 10th day; every 2nd, 4th
+  week...), never "every 13th hour", and `GanttLanes` asks for fewer ticks on a narrow track (one per ~84px, 2 to 6), so at 390 it shows "Mon 00:00  Tue 13:00"-style pairs
+  rather than overlapping text. Tests cover week boundaries, a month and a year end, an offset `start`, ticks exactly on the ends, and the refusal.
+- `hideEmptyLanes` leaves out every lane with no bar touching the domain (an instant inside it counts) and says which on a line under the
+  chart ("1 lane with nothing in this window is hidden: next month"), so the omission is on screen and in the reading order. With nothing hidden
+  the markup is unchanged. Bars and instants of hidden lanes are not drawn; markers and `now` still are.
+- Without `calendar`, `axis` is the numeric axis it always was (all 37 GanttLanes lessons pixel-identical at 1440 after this change).
+
+### `MetricMeter.tsx` (`meterBands.ts`) (K3-13) — core-web-vitals; later capacity-planning, autoscaling, tail-latency, alerting-design, buffer-pool, model-evals-drift, dora-metrics, benchmarking-methodology
+```tsx
+<MetricMeter label="Interaction to Next Paint" value={inp /* number | null */} max={800} unit=" ms"
+             bands={[
+               { upTo: 200, tone: 'ok', label: 'good', tick: { label: 'good ≤ 200 ms', tone: 'ok' } },
+               { upTo: 500, tone: 'orange', label: 'needs improvement', tick: { label: 'poor > 500 ms', tone: 'bad' } },
+               { upTo: 800, tone: 'bad', label: 'poor' },
+             ]}
+             header={<><b>INP</b> the slowest interaction, give or take…</>} format={(v) => `${Math.round(v)} ms`} />
+```
+- The metric's name on the left and "value · band" on the right in the band's colour (`.metric-meter-*`), over a 12px `Bar` whose fill takes the band's
+  tone. `bands` go in ascending order of `upTo` (inclusive: a value equal to an edge belongs to the lower band; the last band catches everything above, its
+  `upTo` is only the meter's end), with tones per the colour table. `tick` draws a labelled tick at that band's upper edge.
+- `value: null` is "not measured yet" (an empty muted track), not zero. `format` writes the value (default: the number and `unit`); `header` is a node
+  above the name line, for a title and a definition; `ariaLabel` names the whole meter as one image (default: label and readout).
+- `bandOfValue(value, bands)` (`meterBands.ts`) is the pure rule, tested. core-web-vitals keeps a 20-line adapter, `VitalsMeter.tsx`, that gives the shared
+  meter its names, thresholds and ticks; its three scenes are pixel-identical at 1440 and 390 (frames, and the CLS and INP scenes driven).
+
+### `timeFrames` (`core/frames.ts`) (K3-14) — http-versions, realtime-transports, graphql; later tail-latency, cache-stampede, graceful-degradation, io-models, quic, congestion-control, incident-response
+```tsx
+const frames = timeFrames({ end, steps: 40, milestones: [{ t: 120, say: <>The TLS handshake finishes.</> }], intro, summary, hold: 2.5 });
+// → { now, say?, hold? }[] : the intro at 0, `steps` plain frames at (i + 1) × end / steps, a captioned held frame per milestone, the summary at `end`
+```
+- The frames of a lesson whose Stage is a clock. Plain frames keep the previous caption (no `say`, no `hold`); where a plain frame and a milestone share a
+  time the plain frame comes first; a milestone past `end` is clamped to it; the summary is always last, at `end`. `TimedFrame` (`extends Frame` with `now`) is the
+  return type, so a lesson's own frame type (`HvFrame`, `RtFrame`, `CompareFrame`) accepts it. The lesson still writes its milestones and captions
+  (`frames.tsx`); only the stepping lives in `core/frames.ts`, tested in `core/frames.test.ts`.
+- This was a Tier 2 wave 8 request (B24, `docs/tier2-wave8-kit-requests.md`); it was never declined (it is not under "Not built"), so it is built.
+  http-versions, realtime-transports and graphql now call it from their `buildFrames` / `compareFrames`, and their frames at 1440 and 390 (9 deterministic
+  shots each width) and their existing frame tests are unchanged. The other B24 requests (`useRovingToolbar`, `plural`'s doc warning) are not part of this item.
+
+### `core/protobuf.ts` — grpc-protobuf; later schema-evolution
+```ts
+encodeVarint(150n)            // [0x96, 0x01]; throws RangeError outside 0 .. 2^64 - 1
+readVarint(bytes, at)         // { value, next } | null (truncated, or longer than 10 bytes)
+zigzag32(-1) / unzigzag32(1)  // 1 / -1 (sint32)
+int32Varint(-1) / int64Varint(-1n) / asInt32(v)   // sign-extended to 64 bits, and back to the low 32
+tagOf(field, WIRE.len)        // (field << 3) | wire type, as a varint
+readRecords(bytes)            // { ok: true, records: WireRecord[] } | { ok: false, error, at }: split bytes into wire records, no schema applied
+WIRE, WIRE_NAME, INT32_MIN/MAX, INT64_MIN/MAX
+```
+- The wire format only, with no particular message: how a field is tagged, how integers become varints, and how bytes split into records (each with its tag byte
+  range and its value's byte range, for a byte grid). A message's own encoder and decoder stay in the lesson: grpc-protobuf's `model.ts` keeps `Order`'s field
+  order, proto3 defaults, packed `repeated`, unknown-field skipping and `reserialize`; schema-evolution builds its own over the same functions.
+- Extracted unchanged from grpc-protobuf's `model.ts`; its varint, zigzag, tag and record-reading tests moved to `core/protobuf.test.ts` (the protobuf docs'
+  `08 96 01` and `"testing"` examples, an independent arithmetic reference for every value below 70,000, seeded round trips over the whole 64-bit range) with two
+  new ones on sign extension. The lesson's remaining tests are unchanged and pass; its default-scene shot is identical to the unmodified tree's (pure logic moved, so no other
+  scene was driven).
+
+### `core/expr.ts` — debugger-tools; later coverage-mutation-testing (compiler-optimisations, undefined-behavior may follow)
+```ts
+evaluate('total * 0.9', [locals, script])                    // { ok: true, value } | { ok: false, error, unsupported }
+evaluate('weight > 10 ? base + 1 : base', scope, { ternary: true })
+const tree = parseExpr(src, { ternary: true })               // ExprNode: lit | name | member | unary | binary | ternary
+runTree(tree, scope)                                         // throws Unsupported / EvalError; run a mutant by running an edited copy
+preview(value, bare?)                                        // the DevTools console's one-line preview
+type Value, Vars, Scope                                      // Scope = Vars[], innermost first
+```
+- A hand-written evaluator, no `eval` and no `new Function`: a lexer and a precedence-climbing parser for numbers, strings, `true false null undefined`, names,
+  `a.b`, `a[expr]`, `.length`, unary `! - +`, `* / % + -`, comparisons, `=== !== == !=`, `&& || ??` and parentheses, run with JavaScript's own operators so
+  the answers are real. Calls, assignment, `++`, arrows, templates, `new`, optional chaining and the rest are "not supported here" and never run; members read
+  own data only (nothing inherited, so nothing callable comes back); real globals are "unsupported", never "not defined".
+- **`{ ternary: true }` adds `test ? a : b`** (lowest precedence, right-associative, evaluates only the branch taken). It is an option, not the default, so
+  debugger-tools' watch, console and condition boxes keep the subset their `SUPPORTED` line documents (a ternary there is still "not supported here").
+- **The tree is exposed**: `ExprNode` and `parseExpr` are exported, with `runTree` to run a tree. A mutant is a copy with one node edited (an operator, a literal
+  off by one, swapped ternary branches, a negation), run against the same scope; `core/expr.test.ts` builds a `>` to `>=` mutant that is equivalent over an
+  integer domain and a swapped-branch one that is not, from the `cost(weight, express)` function the mutation lesson uses.
+- Extracted from `debugger-tools/expr.ts`; the lesson keeps `watch.ts` (its `SUPPORTED` text, `logLine`, `splitArgs`) and imports `Value` and `Vars` from here instead of `program.ts`.
+  Its evaluator tests stay with the lesson (they run against its real trace scope); `core/expr.test.ts` adds the ternary, tree and mutant tests. A pretty-printer for a tree
+  (the mutation lesson prints it into a `CodePanel`) is not here: that lesson writes it, as the second user, and files it if a third wants it.
+- The lesson's default shot is pixel-identical to the unmodified tree's.
+
+### `core/latencyLadder.ts` — memory-hierarchy, cpu-caches (test); later back-of-envelope
+```ts
+LEVELS      // Level[], fastest first: reg, l1, l2, l3, ram, nvme, dc (datacenter round trip), hdd, wan
+levelById('ram')   // { id, name, ns, range: [lo, hi], capacity: bytes | null, note }
+```
+- The ladder of typical latencies and capacities, from a register (0.3 ns) to a cross-continent round trip (150 ms): **typical orders of magnitude from the usual
+  "latency numbers" tables and vendor datasheets, not measurements** (real hardware varies). Each level's `range` is the documented span its figure must sit inside;
+  `core/latencyLadder.test.ts` holds every figure to it, checks the 3-5x steps inside the chip and the 500x from RAM to an SSD, that the ladder is sorted fastest first
+  and that bigger storage is slower. `capacity: null` marks a network hop, which stores nothing.
+- Extracted unchanged from memory-hierarchy's `model.ts`, which keeps what it computes over the ladder (`effectiveNs`, `ratio`, `HUMAN_SECONDS_PER_NS`) and its own
+  misconception test; cpu-caches' test imported `levelById` across lessons and now imports it from here. back-of-envelope reads `ns` and `capacity` instead of copying
+  the table. memory-hierarchy's shots at 1440 and 390 are pixel-identical.
 
 ## Not built (deliberately)
 

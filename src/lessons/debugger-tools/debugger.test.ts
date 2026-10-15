@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { changedVars, move, stepsToLineByStepInto, type Breakpoint } from './debugger';
-import { evaluate, preview } from './expr';
 import { FUNCTIONS, L, TRACE } from './program';
+import { evaluate, preview } from '../../core/expr';
 
 const bp = (line: number, kind: Breakpoint['kind'] = 'break', text = ''): Breakpoint => ({ line, kind, text });
 const lineOf = (k: number | null) => (k === null ? null : TRACE.pauses[k].line);

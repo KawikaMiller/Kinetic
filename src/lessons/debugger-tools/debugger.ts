@@ -1,6 +1,7 @@
 // Debugger controls over the precomputed trace. Pure functions, unit-tested in debugger.test.ts.
-import { evaluate, logLine, splitArgs, type Scope } from './expr';
-import type { FrameSnap, Pause, Trace, Value } from './program';
+import { logLine, splitArgs } from './watch';
+import type { FrameSnap, Pause, Trace } from './program';
+import { evaluate, type Scope, type Value } from '../../core/expr';
 
 export type BreakpointKind = 'break' | 'cond' | 'log';
 

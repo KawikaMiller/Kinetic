@@ -7,7 +7,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { useSetCaption } from '../../core/caption';
 import { ms } from '../../core/format';
 import { busyWait } from './busy';
-import { MetricMeter } from './MetricMeter';
+import { VitalsMeter } from './VitalsMeter';
 import { BAND_TONE, CHUNK_MS, IGNORED_PER, bandOf, chunksOf, inpOf, interactionTotal, mainThreadWork, type InpFix, type Interaction } from './model';
 
 const BREAKDOWN_MIN_W = 420;
@@ -134,7 +134,7 @@ export function InpScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="stage-pad cwv">
-        <MetricMeter metric="inp" value={inpValue} />
+        <VitalsMeter metric="inp" value={inpValue} />
         <div className="cwv-inp-body">
           <div className="cwv-inp-sandbox">
             <Button variant="primary" onClick={onClick}>Press me ({clicks})</Button>

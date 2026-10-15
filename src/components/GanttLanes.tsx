@@ -1,5 +1,9 @@
 import { useLayoutEffect, useRef, type CSSProperties, type RefObject } from 'react';
-import { barGeometry, domainFraction, ganttTicks, spreadLabels, type Domain } from '../core/gantt';
+import { plural } from '../core/format';
+import {
+  barGeometry, barInDomain, calendarTicks, domainFraction, ganttTicks, INSTANT_GAP_PX, INSTANT_SIZE_PX, instantX, isInstant, placeInstantLabels, spreadLabels,
+  type CalendarAxis, type Domain, type InstantLabelPlace,
+} from '../core/gantt';
 import type { Tone } from '../core/tone';
 import { useMeasure } from '../core/useMeasure';
 
@@ -11,6 +15,7 @@ export interface GanttLane {
 export interface GanttBar {
   id: string;
   lane: string;
+  /** `start === end` is an instant (a deploy, a page, a syscall): with a `tone` it draws a diamond with its `label` beside it. */
   start: number;
   end: number;
   /** Fill colour. No tone draws nothing but the plan ghost (a job not started yet). */
@@ -43,6 +48,11 @@ export interface GanttBar {
 /** How long a bar with a motionId takes to glide to its new place. */
 const GLIDE_MS = 450;
 
+/** A calendar tick label ("Mon 12 Oct") needs about this much track, px, so a narrow track gets fewer ticks. */
+const CALENDAR_TICK_PX = 84;
+const MIN_CALENDAR_TICKS = 2;
+const MAX_CALENDAR_TICKS = 6;
+
 /** Space kept between neighbouring marker labels, px. */
 const MARKER_LABEL_GAP = 4;
 
@@ -63,7 +73,7 @@ export interface GanttMarker {
  * skipped too.
  */
 export function GanttLanes({
-  lanes, bars, domain, now, markers = [], unit = '', axis = false, size = 'sm', labelWidth, labelMinPx, onBarClick, ariaLabel, className = '',
+  lanes, bars, domain, now, markers = [], unit = '', axis = false, hideEmptyLanes = false, size = 'sm', labelWidth, labelMinPx, onBarClick, ariaLabel, className = '',
 }: {
   lanes: readonly GanttLane[];
   bars: readonly GanttBar[];
@@ -74,8 +84,14 @@ export function GanttLanes({
   markers?: readonly GanttMarker[];
   /** Appended to axis tick labels: "ms", "s". */
   unit?: string;
-  /** Draw a tick axis under the lanes. */
-  axis?: boolean;
+  /**
+   * Draw a tick axis under the lanes. `{ calendar: { start, unit } }` makes it a calendar: the domain is then
+   * hours since `start` (an ISO instant with a zone) and the ticks are "Mon 09:00" (hour) or "Mon 12 Oct" (day, week)
+   * on every boundary, in UTC, which the axis says on screen.
+   */
+  axis?: boolean | { calendar: CalendarAxis };
+  /** Leave out lanes with no bar inside the domain, and say which on a line under the chart. */
+  hideEmptyLanes?: boolean;
   /** sm: 12px tracks (dense); md: 20px tracks with room for bar labels. */
   size?: 'sm' | 'md';
   /** Lane label column width in px (default 92). */
@@ -93,15 +109,22 @@ export function GanttLanes({
   const measured = useMeasure(root, (el) => ({
     track: el.querySelector<HTMLElement>('.gantt-track, .gantt-marker-labels')?.clientWidth ?? 0,
     labels: [...el.querySelectorAll<HTMLElement>('.gantt-marker-label')].map((l) => l.offsetWidth),
+    instantLabels: [...el.querySelectorAll<HTMLElement>('.gantt-instant-label')].map((l) => l.offsetWidth),
   }));
   const trackPx = measured?.track ?? 0;
   const shift = measured && measured.labels.length === markers.length
     ? spreadLabels(markers.map((m, i) => ({ x: domainFraction(m.at, domain) * trackPx, w: measured.labels[i] })), MARKER_LABEL_GAP)
     : markers.map(() => 0);
+  const shownLanes = hideEmptyLanes ? lanes.filter((l) => bars.some((b) => b.lane === l.id && barInDomain(b.start, b.end, domain))) : lanes;
+  const hiddenLanes = lanes.filter((l) => !shownLanes.includes(l));
+  const instantPlaces = placeInstants(shownLanes, bars, domain, trackPx, measured?.instantLabels);
   useGlide(root);
   const showLabel = (b: GanttBar) => labelMinPx === undefined || !trackPx || (barGeometry(b.start, b.end, domain, b.progress ?? 1).shown / 100) * trackPx >= labelMinPx;
+  const calendar = typeof axis === 'object' ? axis.calendar : undefined;
+  const calendarTickCount = trackPx ? Math.max(MIN_CALENDAR_TICKS, Math.min(MAX_CALENDAR_TICKS, Math.floor(trackPx / CALENDAR_TICK_PX))) : MAX_CALENDAR_TICKS;
+  const ticks = axis ? (calendar ? calendarTicks(domain, calendar, calendarTickCount) :ganttTicks(domain).map((t) => ({ ...t, label: `${t.value}${unit}` }))) : [];
 
-  return (
+  const chart = (
     <div ref={root} className={`gantt size-${size} ${markers.length ? 'has-markers' : ''} ${axis ? 'has-axis' : ''} ${className}`} style={style} role="group" aria-label={ariaLabel}>
       {markers.length > 0 && (
         <div className="gantt-row gantt-marker-row" aria-hidden="true">
@@ -119,26 +142,25 @@ export function GanttLanes({
           </div>
         </div>
       )}
-      {lanes.map((lane) => (
+      {shownLanes.map((lane) => (
         <div key={lane.id} className="gantt-row">
           <span className="gantt-row-label">{lane.label}</span>
           <div className="gantt-track">
             {bars
               .filter((b) => b.lane === lane.id)
               .map((b) => (
-                <Bar key={b.id} bar={b} domain={domain} onClick={onBarClick} showLabel={showLabel(b)} />
+                <Bar key={b.id} bar={b} domain={domain} onClick={onBarClick} showLabel={showLabel(b)} place={instantPlaces.get(b.id)} />
               ))}
           </div>
         </div>
       ))}
       {axis && (
         <div className="gantt-row gantt-axis" aria-hidden="true">
-          <span />
+          {calendar ? <span className="gantt-axis-zone">UTC</span> : <span />}
           <div className="gantt-axis-track">
-            {ganttTicks(domain).map((t) => (
+            {ticks.map((t) => (
               <span key={t.value} className="gantt-tick" style={{ left: `${t.at}%` }}>
-                {t.value}
-                {unit}
+                {t.label}
               </span>
             ))}
           </div>
@@ -148,6 +170,15 @@ export function GanttLanes({
         <div key={i} className={`gantt-marker tone-${m.tone}`} style={{ left: at(m.at) }} />
       ))}
       {now !== undefined && <div className="gantt-now" style={{ left: at(now) }} />}
+    </div>
+  );
+  if (hiddenLanes.length === 0) return chart;
+  return (
+    <div className="gantt-wrap">
+      {chart}
+      <p className="gantt-hidden-note">
+        {plural(hiddenLanes.length, 'lane')} with nothing in this window {hiddenLanes.length === 1 ? 'is' : 'are'} hidden: {hiddenLanes.map((l) => l.label).join(', ')}
+      </p>
     </div>
   );
 }
@@ -181,7 +212,49 @@ function useGlide(root: RefObject<HTMLDivElement | null>) {
   });
 }
 
-function Bar({ bar: b, domain, onClick, showLabel }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean }) {
+/** A bar with a tone and no width (an instant) is drawn as a diamond with its label beside it, unless `minPx` already gives it a width. */
+const drawsAsInstant = (b: GanttBar) => isInstant(b) && b.tone !== undefined && !b.minPx;
+
+/** Label placement for the instants of every lane (each lane's labels are spread apart on their own). Empty until the widths are measured. */
+function placeInstants(
+  lanes: readonly GanttLane[], bars: readonly GanttBar[], domain: Domain, trackPx: number, labelWidths: readonly number[] | undefined,
+): Map<string, InstantLabelPlace> {
+  const places = new Map<string, InstantLabelPlace>();
+  const groups = lanes.map((lane) => bars.filter((b) => b.lane === lane.id && drawsAsInstant(b) && b.label));
+  if (!labelWidths || !trackPx || labelWidths.length !== groups.flat().length) return places;
+  let next = 0;
+  for (const group of groups) {
+    const marks = group.map((b) => ({ x: instantX(domainFraction(b.start, domain), trackPx), w: labelWidths[next++] }));
+    placeInstantLabels(marks, trackPx).forEach((place, i) => places.set(group[i].id, place));
+  }
+  return places;
+}
+
+function Instant({ bar: b, domain, onClick, place }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; place?: InstantLabelPlace }) {
+  const half = INSTANT_SIZE_PX / 2;
+  const left = `clamp(${half}px, ${domainFraction(b.start, domain) * 100}%, calc(100% - ${half}px))`;
+  const classes = `gantt-instant tone-${b.tone}`;
+  return (
+    <>
+      {onClick ? (
+        <button type="button" className={classes} style={{ left }} title={b.label} aria-label={b.label ?? b.id} onClick={() => onClick(b.id)} />
+      ) : (
+        <span className={classes} style={{ left }} title={b.label} />
+      )}
+      {b.label && (
+        <span
+          className={`gantt-instant-label ${place?.side === 'left' ? 'is-left' : ''}`}
+          style={{ left, '--dx': `${place?.dx ?? 0}px`, '--gap': `${INSTANT_GAP_PX}px` } as CSSProperties}
+        >
+          {b.label}
+        </span>
+      )}
+    </>
+  );
+}
+
+function Bar({ bar: b, domain, onClick, showLabel, place }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean; place?: InstantLabelPlace }) {
+  if (drawsAsInstant(b)) return <Instant bar={b} domain={domain} onClick={onClick} place={place} />;
   const g = barGeometry(b.start, b.end, domain, b.progress ?? 1);
   const classes = ['gantt-bar', b.tone && `tone-${b.tone}`, `is-${b.kind ?? 'work'}`, b.ring && 'is-ring'].filter(Boolean).join(' ');
   const style = {

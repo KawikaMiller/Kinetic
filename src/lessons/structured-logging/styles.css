@@ -2,12 +2,8 @@
 .sl-map { display: block; width: 100%; max-width: 520px; height: auto; }
 .sl-map-note { font: 500 11px var(--mono); fill: var(--muted); }
 .sl-edge-on { stroke: var(--hi); stroke-dasharray: none; stroke-width: 2.5; }
-.sl-stream { position: relative; display: flex; flex-direction: column; gap: 3px; max-height: 300px; overflow: auto; padding-right: 4px; }
-.sl-row { font-size: 12px; overflow-wrap: anywhere; transition: opacity 0.2s; }
-.sl-dim { opacity: 0.35; }
-.sl-head { color: var(--muted); white-space: pre; }
-.sl-tag { color: var(--c); font-weight: 700; }
-.sl-body { color: var(--text); }
+.sl-stream { gap: 3px; }
+.sl-stream .log-row { font-size: 12px; }
 .sl-refusal { color: var(--bad); font-size: 13px; margin: 0; }
 .sl-field { flex: 1 1 260px; }
 .sl-field input { width: 100%; font-family: var(--mono); }

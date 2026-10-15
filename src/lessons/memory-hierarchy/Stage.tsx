@@ -7,7 +7,8 @@ import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { bytes, humanDuration, latency, NA, pct, times } from '../../core/format';
 import { useElementSize } from '../../core/hooks';
 import { logScale } from '../../core/scale';
-import { HUMAN_SECONDS_PER_NS, LEVELS, effectiveNs, levelById } from './model';
+import { LEVELS, levelById } from '../../core/latencyLadder';
+import { HUMAN_SECONDS_PER_NS, effectiveNs } from './model';
 import './styles.css';
 
 /** Narrowest stage where the ladder's columns still fit without squashing the track. */

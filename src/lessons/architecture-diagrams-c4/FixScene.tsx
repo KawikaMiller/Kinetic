@@ -74,11 +74,6 @@ export function FixScene({ picker }: { picker: ReactNode }) {
     >
       <div className="c4 stage-pad">
         <div className="c4-canvas">
-          <svg className="c4-backdrop" viewBox={`0 0 ${FIX_VIEW.w} ${FIX_VIEW.h}`} aria-hidden="true">
-            <text x={FIX_TITLE.x} y={FIX_TITLE.y} className={d.title ? 'c4-diagram-title' : 'c4-diagram-title is-missing'}>
-              {d.title ?? '(no title)'}
-            </text>
-          </svg>
           <GraphView
             nodes={d.elements.map((e) => ({ id: e.id, at: FIX_AT[e.id], shape: 'box' as const, label: '' }))}
             edges={d.edges.map((e) => ({
@@ -87,6 +82,12 @@ export function FixScene({ picker }: { picker: ReactNode }) {
               label: e.intent || e.protocol ? <EdgeLabel intent={e.intent} protocol={e.protocol} /> : undefined,
             }))}
             directed
+            labelHalo
+            underlay={
+              <text x={FIX_TITLE.x} y={FIX_TITLE.y} className={d.title ? 'c4-diagram-title' : 'c4-diagram-title is-missing'}>
+                {d.title ?? '(no title)'}
+              </text>
+            }
             width={FIX_VIEW.w}
             height={FIX_VIEW.h}
             box={BOX}

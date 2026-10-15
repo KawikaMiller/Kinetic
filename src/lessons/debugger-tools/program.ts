@@ -2,8 +2,7 @@
 // every place a debugger could pause: the line, the whole call stack and every variable.
 // program.test.ts runs SOURCE as real JavaScript and checks the trace against it.
 
-export type Value = number | string | boolean | null | undefined | readonly Value[] | { readonly [k: string]: Value };
-export type Vars = Readonly<Record<string, Value>>;
+import type { Value, Vars } from '../../core/expr';
 
 export const SOURCE: readonly string[] = [
   'const DISCOUNTS = { SAVE10: 0.1, HALF: 0.5 };',

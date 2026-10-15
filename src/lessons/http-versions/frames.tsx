@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ms } from '../../core/format';
+import { timeFrames } from '../../core/frames';
 import type { Frame } from '../../core/types';
 import { LOST_RESOURCE, SETUP_RTTS, SLOW_THINK_MS, VERSION_NAME, type Params, type Run, type Version } from './model';
 
@@ -112,14 +113,5 @@ export function summary(runs: Record<Version, Run>, p: Params): ReactNode {
 
 /** Evenly spaced time steps plus one captioned frame per milestone, then the summary. */
 export function buildFrames(runs: Record<Version, Run>, p: Params, end: number): HvFrame[] {
-  const marks = milestones(runs, p);
-  const frames: HvFrame[] = [{ now: 0, say: intro(p) }];
-  const plain = Array.from({ length: TIME_STEPS }, (_, i) => ((i + 1) * end) / TIME_STEPS);
-  const all = [...plain.map((t) => ({ t, say: undefined as ReactNode })), ...marks].sort((a, b) => a.t - b.t);
-  for (const m of all) {
-    if (m.say === undefined) frames.push({ now: m.t });
-    else frames.push({ now: m.t, say: m.say, hold: MILESTONE_HOLD });
-  }
-  frames.push({ now: end, say: summary(runs, p), hold: MILESTONE_HOLD });
-  return frames;
+  return timeFrames({ end, steps: TIME_STEPS, milestones: milestones(runs, p), intro: intro(p), summary: summary(runs, p), hold: MILESTONE_HOLD });
 }

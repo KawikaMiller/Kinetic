@@ -36,7 +36,7 @@ export function Stage() {
   const [requestId, setRequestId] = useState<RequestId | null>(null);
   const [selected, setSelected] = useState<FnId | null>(null);
   const [drag, setDrag] = useState<{ fn: FnId; start: Pt; over: Slot | null; moved: boolean } | null>(null);
-  const backdrop = useRef<SVGSVGElement>(null);
+  const canvas = useRef<HTMLDivElement>(null);
   const setCaption = useSetCaption();
 
   const preset = PRESETS[presetId];
@@ -78,7 +78,7 @@ export function Stage() {
 
   // ---- pointer: click a module box to move the selected function there, or drag a function onto one ----
   const toView = (e: PointerEvent): Pt | null => {
-    const ctm = backdrop.current?.getScreenCTM();
+    const ctm = canvas.current?.querySelector<SVGSVGElement>('svg.graph-view')?.getScreenCTM();
     if (!ctm) return null;
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
     return { x: p.x, y: p.y };
@@ -191,29 +191,13 @@ export function Stage() {
     >
       <div className="cc stage-pad">
         <div
+          ref={canvas}
           className={`cc-canvas ${selected ? 'has-selection' : ''}`}
           onPointerDown={down}
           onPointerMove={pointerMove}
           onPointerUp={up}
           onPointerLeave={() => setDrag(null)}
         >
-          <svg ref={backdrop} className="cc-backdrop" viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} aria-hidden="true">
-            {boxes.map((b) => {
-              const s = stats[b.slot];
-              const target = drag?.moved && drag.over === b.slot;
-              return (
-                <g key={b.slot} className={`cc-module tone-${MODULE_TONES[b.slot]} ${target ? 'is-target' : ''} ${touched.includes(b.slot) ? 'is-touched' : ''}`}>
-                  <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={12} className="cc-module-box" />
-                  <text x={b.x + 12} y={b.y + 20} className="cc-module-name">
-                    {modules[b.slot]}
-                  </text>
-                  <text x={b.x + b.w - 12} y={b.y + 20} textAnchor="end" className="cc-module-count">
-                    {s.size}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
           <GraphView
             nodes={FN_IDS.map((id) => ({ id, at: at[id], shape: 'box' as const }))}
             edges={EDGES}
@@ -222,6 +206,25 @@ export function Stage() {
             height={VIEW.h}
             box={{ ...NODE, rx: 7 }}
             arrowSize={5}
+            underlay={
+              <>
+                {boxes.map((b) => {
+                  const s = stats[b.slot];
+                  const target = drag?.moved && drag.over === b.slot;
+                  return (
+                    <g key={b.slot} className={`cc-module tone-${MODULE_TONES[b.slot]} ${target ? 'is-target' : ''} ${touched.includes(b.slot) ? 'is-touched' : ''}`}>
+                      <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={12} className="cc-module-box" />
+                      <text x={b.x + 12} y={b.y + 20} className="cc-module-name">
+                        {modules[b.slot]}
+                      </text>
+                      <text x={b.x + b.w - 12} y={b.y + 20} textAnchor="end" className="cc-module-count">
+                        {s.size}
+                      </text>
+                    </g>
+                  );
+                })}
+              </>
+            }
             nodeColor={(id) => toneVar(MODULE_TONES[assign[id]])}
             nodeMark={nodeMark}
             edgeMark={edgeMark}

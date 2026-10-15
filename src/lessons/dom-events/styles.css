@@ -78,6 +78,9 @@
 .de-node.is-solid text { fill: var(--on-c); }
 
 .de-log { display: flex; flex-direction: column; gap: 6px; }
+.de-stream { gap: 6px; }
+/* the empty note was a <p>, which carries the browser's 1em margins; kept so the log box keeps its height */
+.de-stream .empty-note { margin: 12px 0; }
 
 /* Delegation */
 .de-list-box { display: flex; flex-direction: column; gap: 10px; }

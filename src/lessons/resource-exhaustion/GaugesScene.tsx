@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { LogStream } from '../../components/LogStream';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, PauseButton, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
@@ -9,6 +10,7 @@ import type { RunState } from './useRunState';
 import { clockLabel, logEntries } from './view';
 
 const TIME_STEP_HOURS = 0.5;
+const LOG_MAX_HEIGHT_PX = 190;
 
 export function GaugesScene({ picker, run }: { picker: ReactNode; run: RunState }) {
   const { load, hours, alerts } = run;
@@ -82,14 +84,18 @@ export function GaugesScene({ picker, run }: { picker: ReactNode; run: RunState 
             <GaugeRow key={g} id={g} load={load} hours={hours} alertOn={alerts.has(g)} />
           ))}
         </div>
-        <div className="re-log" role="log" aria-label="What has happened up to the clock" tabIndex={0}>
-          {entries.length === 0 && <div className="empty-note">Nothing has happened yet.</div>}
-          {[...entries].reverse().map((e, i) => (
-            <div key={`${e.at}-${i}`} className={`log-row tone-${e.kind === 'alert' ? 'hi' : e.kind === 'first' ? 'bad' : 'orange'}`}>
-              <span className="re-faint">{clockLabel(e.at)}</span> {e.text}
-            </div>
-          ))}
-        </div>
+        <LogStream
+          className="re-log"
+          label="What has happened up to the clock"
+          maxHeight={LOG_MAX_HEIGHT_PX}
+          empty="Nothing has happened yet."
+          rows={[...entries].reverse().map((e, i) => ({
+            id: `${e.at}-${i}`,
+            at: clockLabel(e.at),
+            tone: e.kind === 'alert' ? 'hi' : e.kind === 'first' ? 'bad' : 'orange',
+            text: e.text,
+          }))}
+        />
         <Hint block>
           Simulated server: every limit, leak rate and the traffic are illustrative, and each leak adds a fixed amount per request. The ephemeral-port range (32768-60999) and the 60 s TIME_WAIT are the Linux defaults, and the port gauge models connections to one upstream address and port, since ports run out per destination. After the first
           failure the gauges keep going as if the service stayed up, to show what would fail next. Error wording is typical, not exact for every system.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barGeometry, barLabelPx, domainFraction, ganttTicks, spreadLabels } from './gantt';
+import { barGeometry, barInDomain, barLabelPx, calendarTicks, domainFraction, ganttTicks, INSTANT_GAP_PX, INSTANT_SIZE_PX, instantX, isInstant, placeInstantLabels, spreadLabels } from './gantt';
 
 describe('gantt geometry', () => {
   it('places bars as percentages of the domain', () => {
@@ -62,5 +62,123 @@ describe('barLabelPx', () => {
     expect(barLabelPx('')).toBe(10);
     expect(barLabelPx('Big')).toBe(Math.ceil(3 * 6.3 + 10));
     expect(barLabelPx('P10')).toBeGreaterThan(barLabelPx('P1'));
+  });
+});
+
+describe('calendarTicks', () => {
+  // 2026-03-02 is a Monday (checked against the calendar, not against the implementation).
+  const MON = '2026-03-02T00:00:00Z';
+
+  it('labels hour ticks "Mon 09:00" in UTC and places them as a share of the domain', () => {
+    const t = calendarTicks([9, 13], { start: MON, unit: 'hour' }, 10);
+    expect(t.map((x) => x.label)).toEqual(['Mon 09:00', 'Mon 10:00', 'Mon 11:00', 'Mon 12:00', 'Mon 13:00']);
+    expect(t.map((x) => x.at)).toEqual([0, 25, 50, 75, 100]);
+    expect(t.map((x) => x.value)).toEqual([9, 10, 11, 12, 13]);
+  });
+
+  it('puts day ticks on UTC midnight, not on the start time, and rolls the weekday over the date', () => {
+    const t = calendarTicks([9, 9 + 72], { start: MON, unit: 'day' });
+    expect(t.map((x) => x.label)).toEqual(['Tue 3 Mar', 'Wed 4 Mar', 'Thu 5 Mar']);
+    expect(t.map((x) => x.value)).toEqual([24, 48, 72]);
+  });
+
+  it('puts week ticks on Monday 00:00 UTC, including across a month and a year end', () => {
+    const t = calendarTicks([0, 24 * 21], { start: '2026-03-02T09:30:00Z', unit: 'week' });
+    expect(t.map((x) => x.label)).toEqual(['Mon 9 Mar', 'Mon 16 Mar', 'Mon 23 Mar']);
+    expect(t.map((x) => x.value)).toEqual([24 * 7 - 9.5, 24 * 14 - 9.5, 24 * 21 - 9.5]);
+    const newYear = calendarTicks([0, 24 * 10], { start: '2026-12-28T00:00:00Z', unit: 'week' });
+    expect(newYear.map((x) => x.label)).toEqual(['Mon 28 Dec', 'Mon 4 Jan']);
+  });
+
+  it('includes a boundary exactly on either end of the domain', () => {
+    const t = calendarTicks([0, 24], { start: MON, unit: 'day' });
+    expect(t.map((x) => x.at)).toEqual([0, 100]);
+  });
+
+  it('thins a crowded axis to a round stride counted from midnight, never to an odd one like every 13th hour', () => {
+    const t = calendarTicks([0, 48], { start: MON, unit: 'hour' }, 6);
+    expect(t.map((x) => x.label)).toEqual(['Mon 00:00', 'Mon 12:00', 'Tue 00:00', 'Tue 12:00', 'Wed 00:00']);
+    const shifted = calendarTicks([5, 53], { start: MON, unit: 'hour' }, 6);
+    expect(shifted.map((x) => x.label)).toEqual(['Mon 08:00', 'Mon 16:00', 'Tue 00:00', 'Tue 08:00', 'Tue 16:00', 'Wed 00:00']);
+    for (const count of [2, 3, 4, 5, 6, 10]) expect(calendarTicks([0, 72], { start: MON, unit: 'hour' }, count).length).toBeLessThanOrEqual(count);
+  });
+
+  it('falls back to its widest stride rather than drawing every tick, and thins days and weeks the same way', () => {
+    expect(calendarTicks([0, 24 * 40], { start: MON, unit: 'day' }, 4).length).toBeLessThanOrEqual(4);
+    expect(calendarTicks([0, 24 * 7 * 60], { start: MON, unit: 'week' }, 6).length).toBeLessThanOrEqual(6);
+    expect(calendarTicks([0, 24 * 7 * 400], { start: MON, unit: 'week' }, 2).length).toBeGreaterThan(0);
+  });
+
+  it('honours a zone offset in start, still ticking on UTC boundaries', () => {
+    const t = calendarTicks([0, 24], { start: '2026-03-02T05:00:00+05:00', unit: 'day' });
+    expect(t.map((x) => x.label)).toEqual(['Mon 2 Mar', 'Tue 3 Mar']);
+  });
+
+  it('refuses a start without a zone, which would be read in the browser\'s local time', () => {
+    expect(() => calendarTicks([0, 24], { start: '2026-03-02T00:00:00', unit: 'day' })).toThrow(RangeError);
+    expect(() => calendarTicks([0, 24], { start: 'next Monday', unit: 'day' })).toThrow(RangeError);
+  });
+});
+
+describe('barInDomain', () => {
+  it('counts a bar that overlaps the domain, one that touches an end, and an instant inside, but not one that lies wholly outside', () => {
+    expect(barInDomain(2, 5, [0, 10])).toBe(true);
+    expect(barInDomain(-5, 0, [0, 10])).toBe(true);
+    expect(barInDomain(10, 12, [0, 10])).toBe(true);
+    expect(barInDomain(4, 4, [0, 10])).toBe(true);
+    expect(barInDomain(-5, -1, [0, 10])).toBe(false);
+    expect(barInDomain(11, 11, [0, 10])).toBe(false);
+  });
+});
+
+describe('instants (zero-length bars)', () => {
+  it('only a bar with start equal to end is an instant', () => {
+    expect(isInstant({ start: 5, end: 5 })).toBe(true);
+    expect(isInstant({ start: 5, end: 5.001 })).toBe(false);
+  });
+
+  it('an instant at either end of the track keeps its whole diamond inside it', () => {
+    expect(instantX(0, 400)).toBe(INSTANT_SIZE_PX / 2);
+    expect(instantX(1, 400)).toBe(400 - INSTANT_SIZE_PX / 2);
+    expect(instantX(0.5, 400)).toBe(200);
+    expect(instantX(0.5, 0)).toBe(INSTANT_SIZE_PX / 2);
+  });
+
+  it('a lone label sits to the right of its marker, a fixed gap away, with no shift', () => {
+    expect(placeInstantLabels([{ x: 100, w: 40 }], 400)).toEqual([{ side: 'right', dx: 0 }]);
+  });
+
+  it('a marker at the right edge of the track puts its label on the left, inside the track', () => {
+    const [p] = placeInstantLabels([{ x: 400, w: 60 }], 400);
+    expect(p.side).toBe('left');
+    expect(400 - INSTANT_GAP_PX - 60 + p.dx).toBeGreaterThanOrEqual(0);
+  });
+
+  it('a marker at the left edge keeps its label inside the track on the right', () => {
+    const [p] = placeInstantLabels([{ x: 0, w: 60 }], 400);
+    expect(p.side).toBe('right');
+    expect(INSTANT_GAP_PX + p.dx).toBeGreaterThanOrEqual(0);
+  });
+
+  it('a label does not sit on the next instant\'s diamond when the other side is clear, and stays on the right when both sides are blocked', () => {
+    const [a, b] = placeInstantLabels([{ x: 200, w: 40 }, { x: 215, w: 40 }], 400);
+    expect(a.side).toBe('left');
+    expect(b.side).toBe('right');
+    const boxed = placeInstantLabels([{ x: 20, w: 60 }, { x: 40, w: 10 }, { x: 105, w: 10 }], 400);
+    expect(boxed[0].side).toBe('right');
+  });
+
+  it('two instants close together get labels that do not overlap, and every label stays inside the track', () => {
+    const marks = [{ x: 100, w: 70 }, { x: 108, w: 70 }, { x: 392, w: 70 }];
+    const places = placeInstantLabels(marks, 400, 4);
+    const boxes = marks.map((m, i) => {
+      const centre = m.x + (places[i].side === 'right' ? 1 : -1) * (INSTANT_GAP_PX + m.w / 2) + places[i].dx;
+      return { left: centre - m.w / 2, right: centre + m.w / 2 };
+    }).sort((a, b) => a.left - b.left);
+    for (let i = 1; i < boxes.length; i++) expect(boxes[i].left - boxes[i - 1].right).toBeGreaterThanOrEqual(4 - 1e-9);
+    for (const b of boxes) {
+      expect(b.left).toBeGreaterThanOrEqual(-1e-9);
+      expect(b.right).toBeLessThanOrEqual(400 + 1e-9);
+    }
   });
 });

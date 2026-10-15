@@ -156,6 +156,9 @@
   border-bottom: 1px solid var(--line);
 }
 .data-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+/* SortTh (components/SortTh.tsx): the heading is a button that looks like the heading */
+.sort-btn { all: unset; cursor: pointer; font: inherit; display: inline-flex; gap: 4px; align-items: center; }
+.sort-btn:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 .log-row {
   padding: 5px 10px;
   border-left: 3px solid var(--c, var(--line-2));
@@ -163,6 +166,21 @@
   border-radius: 0 6px 6px 0;
   font: 500 12.5px var(--mono);
 }
+
+/* MetricMeter (components/MetricMeter.tsx): name left, "value · band" right in the band's colour, then the Bar */
+.metric-meter-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin-bottom: 4px; }
+.metric-meter-label { font: 700 12px var(--font); color: var(--text); }
+.metric-meter-value { font: 700 13px var(--mono); color: var(--c, var(--text)); }
+
+/* LogStream (components/LogStream.tsx): rows are .log-row; it scrolls only when given a max height */
+.log-stream { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.log-stream.is-scroll { overflow: auto; padding-right: 4px; }
+.log-stream .log-row { overflow-wrap: anywhere; transition: opacity 0.2s; }
+.log-stream .log-row.is-dim { opacity: 0.35; }
+.log-at { color: var(--muted); white-space: pre; }
+.log-level, .log-source { font-weight: 700; }
+.log-source { color: var(--c, var(--text)); }
+.log-text { color: var(--text); }
 
 /* Stacked control rows (StageFrame `controls={[row1, row2]}`) */
 .controls-stack > .controls + .controls { border-top-style: dashed; }
@@ -226,9 +244,11 @@
 }
 
 /* CodePanel (components/CodePanel.tsx) */
-.code-panel { display: flex; flex-direction: column; gap: 6px; }
-.code-panel ol { margin: 0; padding: 0; list-style: none; font: 500 12.5px/1.6 var(--mono); }
+/* min-width: 0 lets the panel shrink inside a flex or grid parent; a line with an unbreakable run (a URL, a long identifier) then scrolls inside the ol, and its li grows to fit it (min-width: min-content) so the tint covers the whole line. */
+.code-panel { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.code-panel ol { margin: 0; padding: 0; list-style: none; font: 500 12.5px/1.6 var(--mono); overflow-x: auto; }
 .code-panel li {
+  min-width: min-content;
   display: flex;
   gap: 10px;
   padding: 1px 8px;
@@ -281,6 +301,8 @@
   text-align: left;
   cursor: pointer;
 }
+/* The ol clips, so the focus ring goes inside the line */
+.code-panel .code-line:focus-visible { outline-offset: -2px; }
 .code-panel .code-line:hover { background: color-mix(in srgb, var(--hi) 6%, transparent); }
 
 /* Sparkline (components/Sparkline.tsx) */
@@ -706,7 +728,10 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .graph-edge.is-marked { stroke: var(--c); }
 .graph-edge.is-dashed { stroke-dasharray: 6 5; }
 .graph-edge-hit { fill: none; stroke: transparent; stroke-width: 14; cursor: pointer; }
-.graph-edge-label { font: 700 12px var(--mono); fill: var(--muted); pointer-events: none; }
+.graph-edge-label { font: 700 12px var(--mono); fill: var(--muted); pointer-events: none; paint-order: stroke; }
+/* GraphView labelHalo: the page colour round the glyphs, drawn under them (paint-order), so a label stays readable over an edge or an underlay */
+.has-label-halo .graph-edge-label { stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.graph-underlay { pointer-events: none; }
 .graph-edge-group:focus-visible { outline: none; }
 .graph-edge-group:focus-visible .graph-edge { stroke: var(--text); }
 .graph-start { stroke: var(--line-2); stroke-width: 2.5; }
@@ -796,6 +821,12 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .gantt-bar.is-ring { box-shadow: 0 0 0 2px var(--gantt-ring); }
 .gantt-bar-label { display: block; padding: 0 5px; font: 600 10.5px/var(--gantt-track-h) var(--mono); color: var(--on-c, var(--text)); white-space: nowrap; }
 .gantt-bar.is-wait .gantt-bar-label, .gantt-bar.is-blocked .gantt-bar-label { color: var(--text); }
+/* An instant (a bar with start === end): a diamond centred on its time, its label beside it (--gap from the centre, --dx from label spreading) */
+.gantt-instant { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; transform: rotate(45deg); background: var(--c); }
+button.gantt-instant { padding: 0; border: 0; cursor: pointer; }
+button.gantt-instant:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.gantt-instant-label { position: absolute; top: 0; font: 600 10.5px/var(--gantt-track-h) var(--mono); color: var(--text); white-space: nowrap; pointer-events: none; transform: translateX(calc(var(--gap) + var(--dx))); }
+.gantt-instant-label.is-left { transform: translateX(calc(-100% - var(--gap) + var(--dx))); }
 .gantt-now, .gantt-marker { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--hi); transition: left 0.3s linear; pointer-events: none; }
 .gantt-marker { background: var(--c); opacity: 0.8; }
 .gantt-marker-labels, .gantt-axis-track { position: relative; height: 16px; }
@@ -804,6 +835,8 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .gantt.has-axis > :is(.gantt-now, .gantt-marker) { bottom: 18px; }
 .gantt-marker-label { position: absolute; bottom: 0; transform: translateX(calc(-50% + var(--dx, 0px))); font: 600 10.5px var(--font); color: var(--c); white-space: nowrap; }
 .gantt-tick { position: absolute; top: 2px; transform: translateX(-50%); font: 500 10px var(--mono); color: var(--muted); white-space: nowrap; }
+.gantt-axis-zone { font: 500 10px var(--mono); color: var(--faint); }
+.gantt-hidden-note { margin: 6px 0 0; font: 500 11px var(--mono); color: var(--muted); }
 .gantt-tick:first-child { transform: none; }
 .gantt-tick:last-child { transform: translateX(-100%); }
 

@@ -3,7 +3,8 @@ import { CodePanel } from '../../components/CodePanel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { LogStream, type StreamRow } from './LogStream';
+import { LogStream } from '../../components/LogStream';
+import { EMPTY_STREAM, STREAM_MAX_HEIGHT_PX, streamHighlight, toLogRows, type StreamRow } from './streamRows';
 import { DEFAULT_SEED, REDACTED, cardShapes, displayParts, makeRun, renderLine, textParts, type Format } from './model';
 
 const NOT_LOGGED = '(the request body is not logged)';
@@ -70,7 +71,7 @@ export function RedactScene({ picker }: { picker: ReactNode }) {
         <div className="sl-code">
           <CodePanel title="one payments line, as written" lines={[sampleLine]} stateOf={() => (cards > 0 ? 'bad' : sample ? 'good' : 'idle')} />
         </div>
-        <LogStream rows={rows} label="Log lines" />
+        <LogStream rows={toLogRows(rows)} highlight={streamHighlight(rows)} maxHeight={STREAM_MAX_HEIGHT_PX} className="sl-stream" empty={EMPTY_STREAM} label="Log lines" />
         <Hint block>
           Simulated services and logs; the card number is fake and generated at runtime. The mask works by shape (a run of 13 to 19 digits), so it is a safety net: an oddly formatted number could slip past it, which is
           why the safest fix is not to log the body at all.

@@ -17,11 +17,10 @@ import {
   DEADLINE_MS, MODES, MODE_LABEL, STATUS_NAME, STATUS_TABLE, buildCall, messageLabel, messageNote, statusAt, streamState, type Ending, type Mode,
 } from './calls';
 import { callFrames, encodeCaption } from './frames';
-import {
-  FIELD_NAMES, INT64_MAX, PROTO_LINE, emptyOrder, presentFields, protoLines, type DeltaType, type FieldName, type Order,
-} from './model';
+import { FIELD_NAMES, PROTO_LINE, emptyOrder, presentFields, protoLines, type DeltaType, type FieldName, type Order } from './model';
 import { READERS, analyse, parseId, parseInt32, parseTags, sizeTones, sizeVerdict, traceRows, varintBreakdown, type ReaderId, type SizeVerdict } from './scene';
 import './styles.css';
+import { INT64_MAX } from '../../core/protobuf';
 
 type SceneId = 'encode' | 'calls';
 const SCENES: { value: SceneId; label: string }[] = [

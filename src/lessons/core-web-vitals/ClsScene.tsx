@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Stat, Stats } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { useSetCaption } from '../../core/caption';
-import { MetricMeter } from './MetricMeter';
+import { VitalsMeter } from './VitalsMeter';
 import {
   RECENT_INPUT_MS, SHIFTS, VIEWPORT, clsOf, distanceFraction, impactFraction, sessionWindows, shiftScore, shiftsFor, windowIndexOf, type ShiftId, type ShiftSpec,
 } from './model';
@@ -107,7 +107,7 @@ export function ClsScene({ picker }: { picker: ReactNode }) {
       controls={[picker]}
     >
       <div className="stage-pad cwv">
-        <MetricMeter metric="cls" value={cls} />
+        <VitalsMeter metric="cls" value={cls} />
         <div className="cwv-cls-body">
           <ShiftDrawing spec={drawn} fixed={fixed.has(drawn.id)} />
           <div className="cwv-cls-list">

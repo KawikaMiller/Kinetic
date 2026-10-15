@@ -157,28 +157,6 @@ export function Stage() {
     >
       <div className="lh stage-pad">
         <div className="lh-canvas">
-          <svg className="lh-backdrop" viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} aria-hidden="true">
-            {c.view === 'hexagon' ? (
-              <>
-                <polygon points={hexPoints()} className="lh-hex" />
-                <text x={HEX.cx} y={HEX.cy - HEX.r + 62} textAnchor="middle" className="lh-ring-label tone-violet">
-                  domain
-                </text>
-                <text x={12} y={22} className="lh-ring-label tone-muted">
-                  outside: adapters, libraries, main
-                </text>
-              </>
-            ) : (
-              BANDS.map((b, i) => (
-                <g key={b.label} className={`tone-${BAND_TONES[i]}`}>
-                  <rect x={8} y={b.y - BAND_H / 2 + 4} width={VIEW.w - 16} height={BAND_H - 8} rx={10} className="lh-band" />
-                  <text x={22} y={b.y + 5} className="lh-ring-label">
-                    {b.label}
-                  </text>
-                </g>
-              ))
-            )}
-          </svg>
           <GraphView
             nodes={paths.map((p) => ({ id: p, at: positionOf(c.view, p), shape: 'box' as const, label: labelOf(p) }))}
             edges={drawn}
@@ -187,6 +165,30 @@ export function Stage() {
             height={VIEW.h}
             box={BOX}
             arrowSize={6}
+            underlay={
+              <>
+                {c.view === 'hexagon' ? (
+                  <>
+                    <polygon points={hexPoints()} className="lh-hex" />
+                    <text x={HEX.cx} y={HEX.cy - HEX.r + 62} textAnchor="middle" className="lh-ring-label tone-violet">
+                      domain
+                    </text>
+                    <text x={12} y={22} className="lh-ring-label tone-muted">
+                      outside: adapters, libraries, main
+                    </text>
+                  </>
+                ) : (
+                  BANDS.map((b, i) => (
+                    <g key={b.label} className={`tone-${BAND_TONES[i]}`}>
+                      <rect x={8} y={b.y - BAND_H / 2 + 4} width={VIEW.w - 16} height={BAND_H - 8} rx={10} className="lh-band" />
+                      <text x={22} y={b.y + 5} className="lh-ring-label">
+                        {b.label}
+                      </text>
+                    </g>
+                  ))
+                )}
+              </>
+            }
             nodeColor={(id) => toneVar(toneOf(c.view, id))}
             nodeMark={nodeMark}
             edgeMark={edgeMark}

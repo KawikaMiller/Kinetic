@@ -77,6 +77,9 @@ type Item<K extends GraphKey> = { kind: 'node'; id: K } | { kind: 'edge'; index:
  * - `renderNode(node, at, base)` draws a node yourself (absolute coordinates), e.g. a
  *   SceneNode. `base` is the default drawing (focus ring, shape, label), so a lesson that
  *   only adds a badge or a tag returns `<>{base}{badge}</>` instead of copying it.
+ * - `underlay`: SVG drawn first, in the graph's own coordinates (module boxes, a VPC, a component
+ *   hull), so it scales with the drawing and needs no second stacked SVG. `labelHalo` outlines
+ *   edge labels in the page colour.
  * - With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop: arrow keys
  *   move between nodes (and clickable edges) by position, Home/End jump to the ends,
  *   Enter or Space presses.
@@ -88,7 +91,7 @@ type Item<K extends GraphKey> = { kind: 'node'; id: K } | { kind: 'edge'; index:
  */
 export function GraphView<K extends GraphKey>({
   nodes, edges, directed = false, layout = 'fixed', layoutEdges, spacing, width, height, circleRadii, radius = 20, box = DEFAULT_BOX, edgeStyle = 'straight',
-  arrowSize = 7, arrowGap = 3, nodeMark, nodeColor, nodeClass, edgeMark, edgeClass, renderNode, startNode, onNodeClick, onEdgeClick,
+  arrowSize = 7, arrowGap = 3, underlay, labelHalo = false, nodeMark, nodeColor, nodeClass, edgeMark, edgeClass, renderNode, startNode, onNodeClick, onEdgeClick,
   nodeAriaLabel, edgeAriaLabel, editable, ariaLabel, className = '',
 }: {
   nodes: readonly GraphNode<K>[];
@@ -112,6 +115,10 @@ export function GraphView<K extends GraphKey>({
   arrowSize?: number;
   /** Gap between an arrowhead and the node it points at. */
   arrowGap?: number;
+  /** Drawn inside the same SVG, in the same coordinates, before (so under) the edges and nodes: a region, a boundary, a hull. It takes no pointer events and is hidden from assistive tech. */
+  underlay?: ReactNode;
+  /** A halo in the page colour round edge labels, so a label crossing a line or an underlay stays readable. */
+  labelHalo?: boolean;
   nodeMark?: (id: K) => GraphNodeMark | null | undefined;
   /** Any CSS colour for an unmarked node (a categorical component colour). */
   nodeColor?: (id: K) => string | undefined;
@@ -306,7 +313,7 @@ export function GraphView<K extends GraphKey>({
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
       width={W}
-      className={`graph-view ${editable ? 'is-editable' : ''} ${editable?.onAddNode ? 'can-add' : ''} ${className}`}
+      className={`graph-view ${editable ? 'is-editable' : ''} ${editable?.onAddNode ? 'can-add' : ''} ${labelHalo ? 'has-label-halo' : ''} ${className}`}
       role={interactive ? 'group' : 'img'}
       aria-label={ariaLabel}
       {...(editable && { onPointerDown: down, onPointerMove: move, onPointerUp: up })}
@@ -316,6 +323,11 @@ export function GraphView<K extends GraphKey>({
           {arrowMarkerDef(markerId(), 'var(--line-2)', arrowSize, 9)}
           {TONES.map((t) => arrowMarkerDef(markerId(t), toneVar(t), arrowSize, 9))}
         </defs>
+      )}
+      {underlay && (
+        <g className="graph-underlay" aria-hidden="true">
+          {underlay}
+        </g>
       )}
       {edges.map((e, i) => {
         const r = routes[i];

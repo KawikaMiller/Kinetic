@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
-import { levelById } from '../memory-hierarchy/model';
+import { levelById } from '../../core/latencyLadder';
 import {
   ADDRESS_BITS, ARRAYS, BASE, CACHE, illustrativeNs, L1_NS, lineOf, RAM_NS, sceneAddresses, sceneFor, simulateCache, splitAddress, tally,
   type CacheConfig, type LayoutId, type Order,
