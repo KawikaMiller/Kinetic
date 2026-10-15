@@ -47,8 +47,8 @@ const SEMANTIC = ['hi', 'ok', 'bad', 'info', 'violet', 'dim'] as const;
 
 describe('the node colour palette', () => {
   it('the distance oracle is sane: identical colours 0, black against white 100', () => {
-    expect(deltaE2000('#ffffff', '#ffffff')).toBe(0);
-    expect(deltaE2000('#000000', '#ffffff')).toBeCloseTo(100, 0);
+    expect(deltaE2000('#ffffff', '#ffffff')).toBe(0); // allow-color: test input for the distance oracle
+    expect(deltaE2000('#000000', '#ffffff')).toBeCloseTo(100, 0); // allow-color: test input for the distance oracle
   });
 
   it('has twelve colours, every pair at least 15 apart (CIEDE2000)', () => {
