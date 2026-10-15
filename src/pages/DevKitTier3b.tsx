@@ -8,6 +8,7 @@ import { SectionTitle } from '../components/Panel';
 import { MetricMeter } from '../components/MetricMeter';
 import { Button, Slider, SortTh } from '../components/ui';
 import { useSortedRows } from '../components/useSortedRows';
+import { timeFrames } from '../core/frames';
 import { DevKitSection as Section } from './DevKitSection';
 
 /** Dev-only demos of the Tier 3 kickoff kit round, extractions (#/dev/kit). */
@@ -32,6 +33,9 @@ export function DevKitTier3b() {
       </Section>
       <Section title="MetricMeter · a value against its bands, with a header, a null (not measured) and edge ticks (K3-13)">
         <MeterDemo />
+      </Section>
+      <Section title="timeFrames · the frames of a clock-driven lesson: intro, plain steps, captioned milestones, summary (K3-14)">
+        <TimeFramesDemo />
       </Section>
       <Section title="CodePanel · a long line scrolls inside the panel instead of widening a flex row (K3-6)">
         <LongLineDemo />
@@ -116,6 +120,40 @@ function GanttCalendarDemo() {
         </div>
       </div>
     </>
+  );
+}
+
+const DEMO_FRAMES = timeFrames({
+  end: 100,
+  steps: 5,
+  milestones: [{ t: 30, say: 'milestone at 30' }, { t: 120, say: 'late milestone, clamped to the end' }],
+  intro: 'intro',
+  summary: 'summary',
+  hold: 2.5,
+});
+
+function TimeFramesDemo() {
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>now</th>
+          <th>caption</th>
+          <th>hold</th>
+        </tr>
+      </thead>
+      <tbody>
+        {DEMO_FRAMES.map((f, i) => (
+          <tr key={i}>
+            <td>{i}</td>
+            <td>{f.now}</td>
+            <td>{f.say ?? '(keeps the previous caption)'}</td>
+            <td>{f.hold ?? ''}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

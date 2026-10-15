@@ -1459,6 +1459,19 @@ barInDomain(start, end, domain)                  // does a bar touch the domain:
 - `bandOfValue(value, bands)` (`meterBands.ts`) is the pure rule, tested. core-web-vitals keeps a 20-line adapter, `VitalsMeter.tsx`, that gives the shared
   meter its names, thresholds and ticks; its three scenes are pixel-identical at 1440 and 390 (frames, and the CLS and INP scenes driven).
 
+### `timeFrames` (`core/frames.ts`) (K3-14) — http-versions, realtime-transports, graphql; later tail-latency, cache-stampede, graceful-degradation, io-models, quic, congestion-control, incident-response
+```tsx
+const frames = timeFrames({ end, steps: 40, milestones: [{ t: 120, say: <>The TLS handshake finishes.</> }], intro, summary, hold: 2.5 });
+// → { now, say?, hold? }[] : the intro at 0, `steps` plain frames at (i + 1) × end / steps, a captioned held frame per milestone, the summary at `end`
+```
+- The frames of a lesson whose Stage is a clock. Plain frames keep the previous caption (no `say`, no `hold`); where a plain frame and a milestone share a
+  time the plain frame comes first; a milestone past `end` is clamped to it; the summary is always last, at `end`. `TimedFrame` (`extends Frame` with `now`) is the
+  return type, so a lesson's own frame type (`HvFrame`, `RtFrame`, `CompareFrame`) accepts it. The lesson still writes its milestones and captions
+  (`frames.tsx`); only the stepping lives in `core/frames.ts`, tested in `core/frames.test.ts`.
+- This was a Tier 2 wave 8 request (B24, `docs/tier2-wave8-kit-requests.md`); it was never declined (it is not under "Not built"), so it is built.
+  http-versions, realtime-transports and graphql now call it from their `buildFrames` / `compareFrames`, and their frames at 1440 and 390 (9 deterministic
+  shots each width) and their existing frame tests are unchanged. The other B24 requests (`useRovingToolbar`, `plural`'s doc warning) are not part of this item.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

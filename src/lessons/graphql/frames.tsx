@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { bytes, ms, pct, plural } from '../../core/format';
+import { timeFrames } from '../../core/frames';
 import type { Frame } from '../../core/types';
 import { DB_CALL_MS, POOL_SIZE, type Execution } from './exec';
 import { RTT_MS, SCREEN_ORDERS, planGraphql, planRest, type GraphqlPlan, type RestPlan } from './rest';
@@ -65,11 +66,9 @@ export function compareFrames(failProductId: number | null): { frames: CompareFr
   const rest = planRest(failProductId);
   const gql = planGraphql(failProductId);
   const end = Math.max(rest.totalMs, gql.end);
-  const marks = compareMilestones(rest, gql);
-  const frames: CompareFrame[] = [{ now: 0, say: compareIntro(rest) }];
-  const plain = Array.from({ length: TIME_STEPS }, (_, i) => ({ t: ((i + 1) * end) / TIME_STEPS, say: undefined as ReactNode }));
-  for (const m of [...plain, ...marks].sort((a, b) => a.t - b.t)) frames.push(m.say === undefined ? { now: m.t } : { now: m.t, say: m.say, hold: MILESTONE_HOLD });
-  frames.push({ now: end, say: compareSummary(rest, gql), hold: MILESTONE_HOLD });
+  const frames = timeFrames({
+    end, steps: TIME_STEPS, milestones: compareMilestones(rest, gql), intro: compareIntro(rest), summary: compareSummary(rest, gql), hold: MILESTONE_HOLD,
+  });
   return { frames, end };
 }
 
