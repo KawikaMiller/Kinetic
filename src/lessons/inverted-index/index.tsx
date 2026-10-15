@@ -70,7 +70,7 @@ const lesson: LessonModule = {
         'A short list is read from disk faster, and that is the whole effect the order has on the work of the query',
       ],
       answer: 0,
-      why: 'Each list is sorted, and the result is the same in any order. The order changes how many comparisons are made, because a short running result is cheap to merge against the long lists.',
+      why: 'Each list is sorted, and the result is the same in any order. The order often changes how many comparisons are made, because the running result is short after the first intersection; with this lesson\'s plain two-pointer merge the saving is not guaranteed (the Query scene prints both orders\' counts, and sometimes shortest-first does not win), and real engines add skip pointers so a short list can jump through a long one.',
     },
     {
       q: 'To match the phrase "cat sat", what does the index need beyond which documents hold each word?',

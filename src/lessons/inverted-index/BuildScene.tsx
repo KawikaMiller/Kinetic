@@ -9,6 +9,7 @@ import { MAX_DOCS, MAX_DOC_CHARS, docName } from './corpus';
 import { termsOf } from './postings';
 import type { Corpus } from './useCorpus';
 
+const ADD_DOC_ID = 'ii-add-doc';
 const NEW_DOC = 'a new document about a cat';
 
 function Pipeline({ text, steps }: { text: string; steps: Corpus['steps'] }) {
@@ -34,6 +35,12 @@ export function BuildScene({ picker, corpus }: { picker: ReactNode; corpus: Corp
   const shown = Math.min(Math.max(look, 1), Math.max(docs.length, 1));
 
   useIntroCaption(buildCaption(index), [index]);
+
+  /** Deleting the last document unmounts the button that had focus, so focus moves to the control that brings one back. */
+  const removeDoc = (i: number) => {
+    corpus.removeDoc(i);
+    if (docs.length === 1) requestAnimationFrame(() => document.getElementById(ADD_DOC_ID)?.focus());
+  };
 
   return (
     <StageFrame
@@ -65,7 +72,7 @@ export function BuildScene({ picker, corpus }: { picker: ReactNode; corpus: Corp
         </>,
         <>
           <Slider label="Show the pipeline for document" value={shown} min={1} max={Math.max(docs.length, 1)} onChange={setLook} format={(v) => docName(v - 1)} />
-          <Button onClick={() => corpus.addDoc(NEW_DOC)} softDisabled={docs.length >= MAX_DOCS}>Add a document</Button>
+          <Button id={ADD_DOC_ID} onClick={() => corpus.addDoc(NEW_DOC)} softDisabled={docs.length >= MAX_DOCS}>Add a document</Button>
         </>,
       ]}
     >
@@ -78,7 +85,7 @@ export function BuildScene({ picker, corpus }: { picker: ReactNode; corpus: Corp
               <div key={i} className="ii-doc">
                 <b className="ii-docname">{docName(i)}</b>
                 <TextField value={d} onChange={(typed) => corpus.setDoc(i, typed)} ariaLabel={`Text of ${docName(i)}`} spellCheck={false} className="ii-docfield" />
-                <ChipButton tone="bad" ariaLabel={`Delete ${docName(i)}`} onClick={() => corpus.removeDoc(i)}>×</ChipButton>
+                <ChipButton tone="bad" ariaLabel={`Delete ${docName(i)}`} onClick={() => removeDoc(i)}>×</ChipButton>
               </div>
             ))}
           </div>
