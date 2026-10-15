@@ -1,0 +1,33 @@
+/* stream-windowing */
+.sw-stage { gap: 12px; min-width: 0; }
+.sw-plot { display: block; width: 100%; height: auto; }
+.sw-plot text { font-family: var(--mono, monospace); }
+.sw-tick { font-size: 10px; fill: var(--muted); }
+.sw-lane { font-size: 10px; fill: var(--muted); }
+.sw-minute { stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 3 4; }
+.sw-axis { stroke: var(--line-2); stroke-width: 1.5; }
+.sw-link { stroke: var(--line-2); stroke-width: 1.2; }
+.sw-link.is-bad { stroke: var(--bad); stroke-width: 1.6; }
+.sw-dot { fill: var(--c); stroke: var(--c); stroke-width: 1.5; }
+.sw-dot.is-hollow { fill: transparent; opacity: 0.7; }
+.sw-window rect { fill: color-mix(in srgb, var(--c) 28%, transparent); stroke: var(--c); stroke-width: 1.5; }
+.sw-window.is-fired rect { fill: color-mix(in srgb, var(--c) 14%, transparent); stroke-dasharray: 4 3; }
+.sw-window.is-late rect { stroke-width: 2.5; }
+.sw-count { font-size: 11px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }
+.sw-watermark { stroke: var(--hi); stroke-width: 2.5; }
+.sw-watermark-label { font-size: 10px; fill: var(--hi); font-weight: 700; }
+
+.sw-status { margin: 0; font: 500 12.5px var(--font); color: var(--bad); }
+.sw-table td, .sw-table th { font-size: 12.5px; }
+.sw-wrong { color: var(--bad); font-weight: 700; }
+.sw-job { font-weight: 700; color: var(--text); }
+.sw-scroll { max-height: 190px; overflow: auto; }
+
+.sw-results { display: flex; flex-direction: column; gap: 8px; }
+.sw-result { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 8px; align-items: center; font: 500 12px var(--mono, monospace); }
+.sw-result-name { color: var(--muted); }
+.sw-result-nums { white-space: nowrap; }
+@media (max-width: 600px) {
+  .sw-result { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .sw-result-nums { white-space: normal; }
+}
