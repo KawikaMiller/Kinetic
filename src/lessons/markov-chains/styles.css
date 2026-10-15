@@ -1,0 +1,31 @@
+.mc-stage { flex-flow: row wrap; align-items: flex-start; justify-content: center; gap: 12px 24px; }
+.mc-visual { flex: 1 1 320px; max-width: 480px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.mc-visual .plot2d, .mc-visual .mc-graph { max-width: 100%; height: auto; align-self: center; }
+.mc-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
+.mc-note { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.mc-corpus textarea { width: min(100%, 520px); }
+
+.mc-matrix { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+.mc-matrix th, .mc-matrix td { padding: 3px 6px; text-align: right; font-weight: 500; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.mc-matrix th:first-child, .mc-matrix thead th { text-align: left; }
+.mc-matrix thead th { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.mc-matrix tr.is-row th, .mc-matrix tr.is-row td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.mc-sum { color: var(--muted); }
+
+.mc-conditions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.mc-conditions li { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.mc-conditions .is-met b { color: var(--ok); }
+.mc-conditions .is-unmet b { color: var(--orange); }
+.mc-conditions .is-na b { color: var(--muted); }
+.mc-conditions span { color: var(--muted); }
+.mc-verdict { margin: 0; font-size: 13px; line-height: 1.5; font-weight: 600; }
+.mc-verdict.is-ok { color: var(--ok); }
+.mc-verdict.is-orange { color: var(--orange); }
+
+.mc-sentences { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.7; color: var(--text); }
+.mc-sentences .is-new { color: var(--info); }
+.mc-new { margin-left: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--info); border: 1px solid var(--info); border-radius: 99px; padding: 0 6px; }
+.mc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mc-next { border-collapse: collapse; font-size: 13px; width: 100%; }
+.mc-next th, .mc-next td { padding: 3px 6px; text-align: left; font-weight: 500; border-bottom: 1px solid var(--line); }
+.mc-bar-cell { width: 45%; }

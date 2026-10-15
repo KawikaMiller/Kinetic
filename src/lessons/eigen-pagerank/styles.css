@@ -1,0 +1,9 @@
+.ep-stage { flex-flow: row wrap; align-items: flex-start; justify-content: center; gap: 12px 24px; }
+.ep-stage > .plot2d { max-width: 100%; height: auto; }
+.ep-web { width: 100%; max-width: 560px; height: auto; }
+.ep-rank-disc { fill: color-mix(in srgb, var(--info) 22%, transparent); stroke: var(--info); stroke-width: 1.5; }
+.ep-ranks { border-collapse: collapse; font-size: 13px; min-width: 200px; }
+.ep-ranks th, .ep-ranks td { padding: 3px 10px; text-align: left; font-weight: 500; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.ep-ranks thead th { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ep-ranks tr.is-dead th, .ep-ranks tr.is-dead td { color: var(--bad); }
+.ep-note { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--muted); }
