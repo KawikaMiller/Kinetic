@@ -2,19 +2,19 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, Plot2D, Points, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { pctText } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { hnswCaption } from './captions';
-import { MAX_K, bruteForce, clusteredPoints, recallAt, seededQueries, DOMAIN } from './data';
+import { EVAL_QUERIES, evalQueries, hnswMeanAt } from './compare';
+import { MAX_K, bruteForce, clusteredPoints, missed, recallAt } from './data';
 import { searchFrames } from './frames';
-import { MAX_M, MIN_M, buildHnsw, searchHnsw } from './hnsw';
+import { MAX_M, MIN_M, buildHnsw, reachableFromStart, searchHnsw } from './hnsw';
 import { LayerPlot } from './LayerPlot';
 import type { Settings } from './useSettings';
 
 const EF_SWEEP = [1, 2, 4, 8, 16, 32, 64, 128];
-const SWEEP_QUERIES = 40;
 const EF_MAX = 128;
 const EF_C_MIN = 8;
 const EF_C_MAX = 128;
@@ -31,13 +31,15 @@ export function HnswScene({ picker, s, set }: { picker: ReactNode; s: Settings; 
   const player = usePlayer(frames, { interval: 450, autoplayOnChange: false });
   const f = player.frame;
   const sweep = useMemo(() => {
-    const qs = seededQueries(s.seed + 3, SWEEP_QUERIES, 2, DOMAIN);
+    const qs = evalQueries(s.seed);
     const truths = qs.map((q) => bruteForce(points, q, s.k).neighbours);
     return EF_SWEEP.map((ef) => {
-      const runs = qs.map((q) => searchHnsw(h, q, s.k, ef));
-      return { x: runs.reduce((a, x) => a + x.computations, 0) / qs.length, y: runs.reduce((a, x, i) => a + recallAt(truths[i], x.neighbours), 0) / qs.length };
+      const run = hnswMeanAt(h, qs, truths, s.k, ef);
+      return { x: run.computations, y: run.recall };
     });
   }, [h, points, s.seed, s.k]);
+  const unreachable = points.length - reachableFromStart(h, r.start);
+  const missedIds = f.step?.kind === 'done' ? missed(truth, r.neighbours).map((n) => n.id) : [];
   const layer = layerPick === 'auto' ? f.layer : Math.min(layerPick, h.top);
   const layers = Array.from({ length: h.top + 1 }, (_, i) => ({ value: i, label: `${i}` }));
   const visited = new Set(f.visited);
@@ -62,7 +64,7 @@ export function HnswScene({ picker, s, set }: { picker: ReactNode; s: Settings; 
             { color: 'var(--info)', label: 'a node already visited', shape: 'dot' },
             { color: 'var(--violet)', label: 'links on an upper layer', shape: 'line' },
             { color: 'var(--dim)', label: 'links on layer 0', shape: 'line' },
-            { color: 'var(--bad)', label: 'a local minimum: the walk ends short of the true neighbours', shape: 'square' },
+            { color: 'var(--bad)', label: 'a true neighbour the search missed (ringed once the walk is done)', shape: 'square' },
           ]}
         />
       }
@@ -71,6 +73,7 @@ export function HnswScene({ picker, s, set }: { picker: ReactNode; s: Settings; 
           {picker}
           <Segmented label="Layer shown" value={layerPick} onChange={setLayerPick} options={[{ value: 'auto' as const, label: 'Follow the search' }, ...layers]} />
           <Slider label="efSearch" value={s.efSearch} min={1} max={EF_MAX} onChange={(efSearch) => set({ efSearch })} />
+          {s.efSearch < s.k && <Hint>below k the list is still k long: the candidate list is max(efSearch, k), so values under {s.k} change nothing</Hint>}
         </>,
         <>
           <Slider label="M (links)" value={s.m} min={MIN_M} max={MAX_M} onChange={(m) => set({ m })} />
@@ -82,10 +85,10 @@ export function HnswScene({ picker, s, set }: { picker: ReactNode; s: Settings; 
       <div className="vs-stage vs-pair stage-pad">
         <Box>
           <SectionTitle hint={`layer ${layer}: ${h.levels.filter((l) => l >= layer).length} nodes`}>The graph, one layer at a time</SectionTitle>
-          <LayerPlot h={h} layer={layer} query={s.query} visited={visited} current={f.current} hop={f.step} ariaLabel={`Layer ${layer} of the graph with the search so far`} />
+          <LayerPlot h={h} layer={layer} query={s.query} visited={visited} missedIds={missedIds} current={f.current} hop={f.step} ariaLabel={`Layer ${layer} of the graph with the search so far`} />
         </Box>
         <Box>
-          <SectionTitle hint={`mean over ${SWEEP_QUERIES} seeded queries, each efSearch run for real`}>Recall against work</SectionTitle>
+          <SectionTitle hint={`mean over ${EVAL_QUERIES} seeded queries, each efSearch run for real`}>Recall against work</SectionTitle>
           <div className="vs-plot">
             <Plot2D x={{ domain: [0, points.length], label: 'distance computations' }} y={{ domain: [0, 1.05], label: `recall@${s.k}` }} width={356} height={240} ariaLabel="Recall against distance computations as efSearch grows">
               <Curve points={sweep.map((p): [number, number] => [p.x, p.y])} tone="info" />
@@ -93,6 +96,11 @@ export function HnswScene({ picker, s, set }: { picker: ReactNode; s: Settings; 
               <VLine at={r.computations} tone="hi" label="this query" />
             </Plot2D>
           </div>
+          {unreachable > 0 && (
+            <Hint tone="muted" block>
+              {unreachable} of {points.length} points cannot be reached on layer 0 from where this search starts, so no efSearch finds them and the curve cannot reach 100%. That comes from this toy build (links are pruned one way); a real graph is better connected.
+            </Hint>
+          )}
         </Box>
         <ProvenanceRow>
           <Provenance kind="toy" seed={s.seed}>a simplified HNSW on toy 2-D data: simple neighbour selection, not the paper's heuristic</Provenance>

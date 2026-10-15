@@ -3,7 +3,7 @@ import { pctText } from '../../core/format';
 import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { compareCaption, curseCaption, exactCaption, hnswCaption, ivfCaption } from './captions';
-import { compareIndexes } from './compare';
+import { compareIndexes, evalQueries, hnswMeanAt } from './compare';
 import { curseRows } from './concentration';
 import { MAX_K, bruteForce, clusteredPoints, dist, missed, recallAt } from './data';
 import { LONGER_LIST, RAISED_NPROBE, curseFacts, exactFacts, hnswFacts, ivfFacts, tableFacts } from './facts';
@@ -24,6 +24,7 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(lesson.tryThis[0]).toContain('400 distance computations whatever k is');
     expect(plain(exactCaption({ n: 400, k: S.k, unit: false, metric: 'euclid', agree: false }))).toContain('different neighbours');
     expect(plain(exactCaption({ n: 400, k: S.k, unit: true, metric: 'euclid', agree: true }))).toContain('they agree');
+    expect(plain(exactCaption({ n: 400, k: S.k, unit: true, metric: 'euclid', agree: false }))).not.toContain('they agree');
   });
 
   it('try-this 2: with one cell probed the scan is that cell and one true neighbour across a border is missed; two cells fix it; all cells cost more than brute force', () => {
@@ -105,10 +106,28 @@ describe('captions follow the model across the controls', () => {
 });
 
 describe('nothing hidden feeds a number', () => {
-  it('the comparison table does not depend on the k slider or the query, which it does not show, only on the index settings it prints', () => {
+  it('the comparison table ignores the query it does not show, follows k and the index settings it prints, and its HNSW row is the HNSW sweep point at the same efSearch', () => {
     const base = compareIndexes(points, S);
-    expect(compareIndexes(points, { ...S, k: 1, query: [1, 1] } as typeof S)).toEqual(base);
+    expect(compareIndexes(points, { ...S, query: [1, 1] } as typeof S)).toEqual(base);
     expect(compareIndexes(points, { ...S, nprobe: 5 })[1].recall).toBeGreaterThanOrEqual(base[1].recall);
+    const queries = evalQueries(S.seed);
+    const h = buildHnsw(points, S.m, S.efConstruction, S.seed);
+    for (const [k, ef] of [[5, 1], [5, 16], [3, 128], [10, 32]] as const) {
+      const truths = queries.map((q) => bruteForce(points, q, k).neighbours);
+      const sweepPoint = hnswMeanAt(h, queries, truths, k, ef);
+      const row = compareIndexes(points, { ...S, k, efSearch: ef })[2];
+      expect(row.recall, `k ${k} ef ${ef}`).toBe(sweepPoint.recall);
+      expect(row.computations, `k ${k} ef ${ef}`).toBe(sweepPoint.computations);
+      const own = queries.map((q) => recallAt(truths[queries.indexOf(q)], searchHnsw(h, q, k, ef).neighbours));
+      expect(row.recall, `k ${k} ef ${ef} by hand`).toBeCloseTo(own.reduce((x, y) => x + y, 0) / own.length, 12);
+    }
+  });
+
+  it('the HNSW table row says how much of the graph a search can reach, and recall never exceeds the share of points reachable', () => {
+    const row = compareIndexes(points, S)[2];
+    expect(row.reachable).toBeGreaterThan(0);
+    expect(row.reachable).toBeLessThanOrEqual(1);
+    expect(compareIndexes(points, { ...S, efSearch: 400 })[2].recall).toBeLessThanOrEqual(1);
   });
 
   it('an nprobe above nlist, a k above N, a query outside the plot and an empty dataset are all handled without an exception', () => {

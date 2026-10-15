@@ -41,7 +41,7 @@ export function ExactScene({ picker, s, set }: { picker: ReactNode; s: Settings;
         <Stats>
           <Stat label="Distance computations" value={points.length} color="var(--info)" sub="one for every point, whatever k is" />
           <Stat label="Euclidean and cosine" value={agree ? '✓ agree' : '✗ differ'} color={agree ? 'var(--ok)' : 'var(--bad)'} sub={`on the nearest ${s.k}`} />
-          <Stat label="Nearest" value={decimalOf(nearestD)} sub="distance to the closest point" />
+          <Stat label="Nearest" value={decimalOf(nearestD)} sub={metric === 'euclid' ? 'distance to the closest point' : 'Euclidean distance to the closest by cosine'} />
         </Stats>
       }
       legend={

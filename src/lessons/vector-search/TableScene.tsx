@@ -1,13 +1,17 @@
 import { useMemo, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { pctText, sig } from '../../core/format';
 import { compareCaption } from './captions';
-import { COMPARE_QUERIES, compareIndexes } from './compare';
-import { MAX_K, clusteredPoints } from './data';
+import { EVAL_QUERIES, compareIndexes } from './compare';
+import { clusteredPoints } from './data';
 import type { Settings } from './useSettings';
+
+/** The narrowest width at which the five columns read without wrapping into each other. */
+const TABLE_MIN_WIDTH = 560;
 
 export function TableScene({ picker, s }: { picker: ReactNode; s: Settings }) {
   const points = useMemo(() => clusteredPoints(s.seed), [s.seed]);
@@ -30,10 +34,11 @@ export function TableScene({ picker, s }: { picker: ReactNode; s: Settings }) {
     >
       <div className="vs-stage stage-pad">
         <Box>
-          <SectionTitle hint={`means over ${COMPARE_QUERIES} seeded queries on the same 400 points`}>Recall, speed, memory and build cost</SectionTitle>
+          <SectionTitle hint={`means over ${EVAL_QUERIES} seeded queries on the same 400 points`}>Recall, speed, memory and build cost</SectionTitle>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="The comparison table: scroll sideways to see all of it">
           <table className="data-table vs-table">
             <thead>
-              <tr><th scope="col">Index</th><th scope="col">Recall@{MAX_K}</th><th scope="col">Distance computations a query</th><th scope="col">Extra numbers stored</th><th scope="col">Build computations</th></tr>
+              <tr><th scope="col">Index</th><th scope="col">Recall@{s.k}</th><th scope="col">Distance computations a query</th><th scope="col">Extra numbers stored</th><th scope="col">Build computations</th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
@@ -47,11 +52,18 @@ export function TableScene({ picker, s }: { picker: ReactNode; s: Settings }) {
               ))}
             </tbody>
           </table>
+          </WideRegion>
+          {hnsw.reachable !== undefined && hnsw.reachable < 1 && (
+            <Hint tone="muted" block>
+              HNSW recall is capped here: on average a layer-0 search can reach only {pctText(hnsw.reachable, 0)} of the points, because this toy build prunes links one way. The same queries and the same efSearch give the point on the HNSW scene's curve.
+            </Hint>
+          )}
+          <Hint tone="muted" block>Build computations are not one unit: IVF counts k-means distance computations (iterations times points times cells), HNSW counts the nodes visited while inserting (plus some re-pruning distances), so compare them within a column of one index, not across.</Hint>
           <Hint tone="muted" block>"Extra numbers stored" counts the centroids' coordinates and one cell id per point (IVF) or every neighbour id on every layer (HNSW), beyond the 800 coordinates of the points. Product quantisation, which shrinks the vectors themselves, is a third lever not shown here.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="toy" seed={s.seed}>toy 2-D data, simplified HNSW and IVF; these numbers are for this dataset only</Provenance>
-          <Provenance kind="real">each row is measured by running the search on 60 queries</Provenance>
+          <Provenance kind="real">each row is measured by running the search on {EVAL_QUERIES} queries</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

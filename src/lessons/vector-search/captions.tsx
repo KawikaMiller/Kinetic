@@ -17,7 +17,7 @@ export function exactCaption(o: { n: number; k: number; unit: boolean; metric: '
   return (
     <>
       Brute force measures the distance from the query to all {hl('bad', o.n)} points and sorts them: {hl('', `${o.n} computations`)} to return the {o.k} nearest by {o.metric === 'euclid' ? 'Euclidean distance' : 'cosine similarity'}.{' '}
-      {o.unit ? <>With every vector scaled to unit length |a − b|² = 2 − 2cos(a, b), so the two measures rank alike: {hl('ok', 'they agree')}.</> : o.agree ? <>On these raw vectors the two measures happen to pick the same {o.k}.</> : <>On these raw vectors the two measures pick {hl('bad', 'different neighbours')}: cosine ignores length, Euclidean does not.</>}
+      {o.unit ? <>With every vector scaled to unit length |a − b|² = 2 − 2cos(a, b), so the two measures rank alike: {o.agree ? hl('ok', 'they agree') : <>{hl('bad', 'they differ')} here only because a tie at the k-th place falls on different sides of the cut</>}.</> : o.agree ? <>On these raw vectors the two measures happen to pick the same {o.k}.</> : <>On these raw vectors the two measures pick {hl('bad', 'different neighbours')}: cosine ignores length, Euclidean does not.</>}
     </>
   );
 }

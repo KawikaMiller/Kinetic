@@ -11,6 +11,7 @@
 .vs-node.is-visited { fill: var(--info); }
 .vs-node.is-current { fill: var(--hi); stroke: var(--on-hi); stroke-width: 1; }
 .vs-hop { stroke: var(--hi); stroke-width: 2.5; }
+.vs-missed { fill: none; stroke: var(--bad); stroke-width: 2.5; }
 .vs-query { fill: none; stroke: var(--hi); stroke-width: 2.5; }
 .vs-table td, .vs-table th { font-size: 12.5px; }
 .vs-good { color: var(--ok); font-weight: 700; }
