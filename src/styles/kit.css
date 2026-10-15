@@ -886,7 +886,8 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 
 /* Provenance (components/ui.tsx, K3-7): a muted chip saying simulated / illustrative / from memory / real.
    Text stays --muted whatever the kind; it is never a status colour. Wraps at phone width. */
-.provenance {
+.provenance,
+.claim-label {
   --c: var(--muted);
   display: inline-flex;
   flex-wrap: wrap;
@@ -899,7 +900,14 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
   border-style: dashed;
 }
 .provenance.is-real { border-style: solid; }
-.provenance b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; }
+/* ClaimLabel (components/ui.tsx): the same muted chip; border style tells the kinds apart
+   alongside the printed label: solid = standard, double = research, dashed = practice, dotted = one view. */
+.claim-label.is-standard { border-style: solid; }
+.claim-label.is-research { border-style: double; border-width: 3px; }
+.claim-label.is-practice { border-style: dashed; }
+.claim-label.is-view { border-style: dotted; }
+.provenance b,
+.claim-label b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; }
 .provenance-seed { font-variant-numeric: tabular-nums; }
 .provenance-seed::before { content: '·'; margin-right: 6px; }
 

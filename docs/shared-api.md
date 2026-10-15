@@ -1343,6 +1343,21 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
   The chip renders `data-provenance="<kind>"`, the hook for tests that want the chip's kind.
 - Showcase: `#/dev/kit`, "Tier 3 kit".
 
+- `kind="invented"` ("invented") is for scenarios, dialogues and case studies the author made up; the lead
+  lessons put it on every one (AC-0/T3 #24). The kinds and labels live in `core/provenance.ts`.
+
+### `ClaimLabel` (`components/ui.tsx`, `kit.css`) — design-docs-rfcs, technical-debt (T3-B2), the lead lessons in T3-B31
+```tsx
+<ClaimLabel kind="research">named study, from memory</ClaimLabel>
+<ClaimLabel kind="view" />
+```
+- `kind`: `standard | research | practice | view`, printed as "standard", "research finding", "common practice",
+  "one view". Separates opinion from evidence on screen (AC-0/T3 #24): label every claim in a non-technical lesson.
+- Same muted chip as `Provenance` (never `--bad`/`--ok`); the border style (solid, double, dashed, dotted) is a
+  second cue next to the printed label. `role="note"` with `aria-label="research finding: <text>"` (the
+  visible pieces are `aria-hidden` so it isn't read twice); a note that isn't a plain string is read as the kind alone.
+- Tests: `core/provenance.test.ts` pins the kinds, distinct labels, the data hooks and the aria text.
+
 ### `core/lessonContentT3.ts` — the Tier 3 content lint (K3-T2)
 ```ts
 lintTier3Lesson(lesson, { domainReview, source, tryThisTests })  // → { rule, detail }[]

@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
+import { CLAIM_LABEL, PROVENANCE_LABEL, type ClaimKind, type ProvenanceKind } from '../core/provenance';
 import type { Tone } from '../core/tone';
 import type { Option } from './options';
 import { useRadioGroup } from './useRadioGroup';
@@ -326,21 +327,10 @@ export function Stats({ children }: { children: ReactNode }) {
 
 // ── Provenance (K3-7, docs/tier3-plan.md AC-0/T3 #21) ───────────────────────
 
-export type ProvenanceKind = 'simulated' | 'illustrative' | 'toy' | 'scripted' | 'from-memory' | 'not-run' | 'real';
-
-const PROVENANCE_LABEL: Record<ProvenanceKind, string> = {
-  simulated: 'simulated',
-  illustrative: 'illustrative',
-  toy: 'toy model',
-  scripted: 'scripted',
-  'from-memory': 'from memory',
-  'not-run': 'shown, not run',
-  real: 'real',
-};
-
 /**
  * Says what the learner is looking at, at the moment it matters: simulated, illustrative,
- * a toy, scripted, quoted from memory, shown without running it, or the real thing.
+ * a toy, scripted, quoted from memory, shown without running it, an invented scenario, or the
+ * real thing.
  * Always muted (never `--bad`/`--ok`: provenance is not a verdict); only `real` has a solid
  * border, the rest are dashed. `children` is the short note ("what EXPLAIN prints on Postgres"),
  * `seed` prints a seeded sim's seed. Every domain-reviewed Tier 3 lesson carries at least one.
@@ -360,3 +350,24 @@ export function Provenance({
     </span>
   );
 }
+
+/**
+ * Says how much weight a sentence can bear: a `standard` (a spec, a convention someone wrote
+ * down), a `research` finding (named and hedged), `practice` (what many teams do) or `view`
+ * (one person's opinion). Non-technical lessons label every claim with one (AC-0/T3 #24).
+ * `children` is the short text ("Dunning 2002, from memory"); it is read out with the kind,
+ * "research finding: Dunning 2002, from memory". Muted like Provenance, never a status colour.
+ */
+export function ClaimLabel({ kind, children }: { kind: ClaimKind; children?: ReactNode }) {
+  const label = CLAIM_LABEL[kind];
+  return (
+    <span className={`chip claim-label is-${kind}`} data-claim={kind} role="note" aria-label={ariaText(label, children)}>
+      <b aria-hidden="true">{label}</b>
+      {children && <span className="provenance-note" aria-hidden="true">{children}</span>}
+    </span>
+  );
+}
+
+/** "kind: note" for an aria-label; a ReactNode note that isn't plain text reads as the kind alone. */
+const ariaText = (label: string, note: ReactNode) =>
+  typeof note === 'string' || typeof note === 'number' ? `${label}: ${note}` : label;
