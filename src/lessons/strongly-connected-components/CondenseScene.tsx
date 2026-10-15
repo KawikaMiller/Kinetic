@@ -8,7 +8,8 @@ import { useIntroCaption } from '../../core/caption';
 import { cssVar } from '../../core/palette';
 import { plainTone } from '../../core/tone';
 import { EditRow, PresetChips } from './Controls';
-import { condense, kosaraju } from './model';
+import { condense } from '../../core/scc';
+import { kosaraju } from './model';
 import { compColor } from './colors';
 import { SccGraph } from './SccGraph';
 import type { SccEditor } from './useSccEditor';
@@ -20,7 +21,7 @@ export function CondenseScene({ picker, ed }: { picker: ReactNode; ed: SccEditor
   const g = ed.graph;
   const { run, cond } = useMemo(() => {
     const r = kosaraju(g);
-    return { run: r, cond: condense(g, r.comp, r.components.length) };
+    return { run: r, cond: condense(g.edges, r.comp, r.components.length) };
   }, [g]);
   const [showOrder, setShowOrder] = useState(false);
   const label = (c: number) => [...run.components[c]].sort((a, b) => a - b).map((v) => g.names[v]).join(' ');

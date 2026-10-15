@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { EditRow, PresetChips } from './Controls';
 import { FlowGraph } from './FlowGraph';
 import { isMaximum } from './model';
@@ -12,10 +11,11 @@ export function AugmentScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor
   const net = ed.net;
   const maximum = isMaximum(net, ed.flow);
   const caption = augmentCaption({ net, flow: ed.flow, value: ed.value, pushes: ed.steps.length, walk: ed.walk, arcs: ed.pathArcs, complete: ed.complete, delta: ed.delta });
-  useIntroCaption(<>{caption}</>, [caption]);
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>

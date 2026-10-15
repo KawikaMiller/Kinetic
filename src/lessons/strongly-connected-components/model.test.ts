@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
-import { MAX_NODES, PRESETS, addEdge, addNode, adjacency, canonical, condense, edgeEffect, kosaraju, presetById, tarjan, type Arc, type Digraph } from './model';
+import { adjacency, canonicalPartition, condense, stronglyConnectedComponents, type Arc } from '../../core/scc';
+import { MAX_NODES, PRESETS, addEdge, addNode, edgeEffect, kosaraju, presetById, type Digraph } from './model';
 
 const NO_POS = { x: 0, y: 0 };
 const make = (n: number, edges: Arc[]): Digraph => ({ names: Array.from({ length: n }, (_, i) => String.fromCharCode(97 + i)), at: Array(n).fill(NO_POS), edges });
@@ -41,9 +42,9 @@ describe('the partition equals mutual reachability', () => {
     let multi = 0;
     for (let t = 0; t < 2000; t++) {
       const g = randomDigraph(rnd, 8, [0.1, 0.2, 0.35][t % 3]);
-      const truth = canonical(closureClasses(g));
-      expect(canonical(kosaraju(g).components)).toBe(truth);
-      expect(canonical(tarjan(g))).toBe(truth);
+      const truth = canonicalPartition(closureClasses(g));
+      expect(canonicalPartition(kosaraju(g).components)).toBe(truth);
+      expect(canonicalPartition(stronglyConnectedComponents(g.names.length, g.edges).components)).toBe(truth);
       if (closureClasses(g).some((c) => c.length > 1)) multi++;
     }
     expect(multi).toBeGreaterThan(500);
@@ -54,12 +55,12 @@ describe('the partition equals mutual reachability', () => {
     let finishOrdersDiffered = 0;
     for (let t = 0; t < 120; t++) {
       const g = randomDigraph(rnd, 5, 0.3);
-      const truth = canonical(closureClasses(g));
+      const truth = canonicalPartition(closureClasses(g));
       const orders = permutations(g.names.map((_, i) => i));
       const finishes = new Set<string>();
       for (const order of orders) {
         const run = kosaraju(g, order);
-        expect(canonical(run.components)).toBe(truth);
+        expect(canonicalPartition(run.components)).toBe(truth);
         finishes.add(run.finishOrder.join());
       }
       if (finishes.size > 1) finishOrdersDiffered++;
@@ -79,7 +80,7 @@ describe('the partition equals mutual reachability', () => {
       for (const w of fwd[v]) if (comp[w] < 0) grow(w);
     };
     for (const v of [...run.finishOrder].reverse()) if (comp[v] < 0) { classes.push([]); grow(v); }
-    expect(canonical(classes)).not.toBe(canonical(closureClasses(g)));
+    expect(canonicalPartition(classes)).not.toBe(canonicalPartition(closureClasses(g)));
   });
 });
 
@@ -89,7 +90,7 @@ describe('the condensation', () => {
     for (let t = 0; t < 2000; t++) {
       const g = randomDigraph(rnd, 8, 0.25);
       const run = kosaraju(g);
-      const c = condense(g, run.comp, run.components.length);
+      const c = condense(g.edges, run.comp, run.components.length);
       expect(c.order).not.toBeNull();
       const pos = new Map(c.order!.map((x, i) => [x, i]));
       for (const [a, b] of c.edges) expect(pos.get(a)!).toBeLessThan(pos.get(b)!);
@@ -127,7 +128,7 @@ describe('the presets and the hand-worked case', () => {
   });
 
   it('every preset agrees with the closure oracle', () => {
-    for (const p of PRESETS) expect(canonical(kosaraju(p.graph).components)).toBe(canonical(closureClasses(p.graph)));
+    for (const p of PRESETS) expect(canonicalPartition(kosaraju(p.graph).components)).toBe(canonicalPartition(closureClasses(p.graph)));
   });
 });
 
@@ -198,7 +199,7 @@ describe('the editor refuses hostile input', () => {
       expect(g.names.length).toBeLessThanOrEqual(MAX_NODES);
       expect(g.at).toHaveLength(g.names.length);
       expect(new Set(g.edges.map(([a, b]) => `${a}>${b}`)).size).toBe(g.edges.length);
-      expect(canonical(kosaraju(g).components)).toBe(canonical(closureClasses(g)));
+      expect(canonicalPartition(kosaraju(g).components)).toBe(canonicalPartition(closureClasses(g)));
     }
   });
 });

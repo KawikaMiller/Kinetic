@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import type { Result } from '../../core/result';
+import { useGraphEdits } from '../../core/useGraphEdits';
 import {
-  addJob, addWorker, emptyMatching, findAugmenting, flip, greedy, hasEdge, jobName, maximumMatching, presetById, removeJob, removeWorker, toggleEdge, workerName, type Bipartite, type Matching,
-  type PresetId, type Result, type Search,
+  addJob, addWorker, emptyMatching, findAugmenting, flip, greedy, hasEdge, jobName, maximumMatching, PRESETS, presetById, removeJob, removeWorker, toggleEdge, workerName, type Bipartite, type Matching,
+  type PresetId, type Search,
 } from './model';
 
 /** Keep only the matched pairs that are still edges between existing nodes. */
@@ -17,35 +19,29 @@ export interface Flipped {
  * then a job, a greedy or Kuhn-built matching, the search being shown and the edges the last flip changed.
  */
 export function useMatchEditor(scene: string) {
-  const [presetId, setPresetId] = useState<PresetId>('greedy');
-  const [graph, setGraph] = useState<Bipartite>(presetById('greedy').graph);
-  const [matching, setMatching] = useState<Matching>(emptyMatching(presetById('greedy').graph));
+  const edits = useGraphEdits<Bipartite, PresetId>({ presets: PRESETS, initial: 'greedy', graphOf: (id) => presetById(id).graph, edgeCount: (g) => g.edges.length, scene });
+  const { graph, note, setNote } = edits;
+  const [matching, setMatching] = useState<Matching>(emptyMatching(graph));
   const [selected, setSelected] = useState<number | null>(null);
   const [found, setFound] = useState<Search | null>(null);
   const [flipped, setFlipped] = useState<Flipped[]>([]);
-  const [written, setWritten] = useState({ text: '', scene });
-  const note = written.scene === scene ? written.text : '';
-  const setNote = (text: string) => setWritten({ text, scene });
 
-  const settle = (g: Bipartite, m: Matching, message: string) => {
-    setGraph(g);
+  /** The graph changed shape: keep the matched pairs that survive, drop the search and the last flip. */
+  const settle = (g: Bipartite, m: Matching) => {
     setMatching(sanitise(g, m));
     setFound(null);
     setFlipped([]);
-    setNote(message);
   };
   const edit = (r: Result<Bipartite>, message: string) => {
-    if (r.ok) settle(r.value, matching, message);
-    else setNote(r.error);
+    if (edits.edit(r, message) && r.ok) settle(r.value, matching);
   };
 
   return {
-    presetId, graph, matching, selected, found, flipped, note,
+    presetId: edits.presetId, graph, matching, selected, found, flipped, note,
     load: (id: PresetId) => {
-      const g = presetById(id).graph;
-      setPresetId(id);
+      const g = edits.load(id);
       setSelected(null);
-      settle(g, emptyMatching(g), `Loaded ${presetById(id).label}.`);
+      settle(g, emptyMatching(g));
     },
     clickWorker: (w: number) => {
       setSelected(w);
@@ -57,7 +53,9 @@ export function useMatchEditor(scene: string) {
         return;
       }
       const had = hasEdge(graph, selected, j);
-      settle(toggleEdge(graph, selected, j), matching, `${had ? 'Removed' : 'Added'} the edge ${workerName(selected)}-${jobName(j)}.`);
+      const next = toggleEdge(graph, selected, j);
+      edits.set(next, `${had ? 'Removed' : 'Added'} the edge ${workerName(selected)}-${jobName(j)}.`);
+      settle(next, matching);
     },
     runGreedy: () => {
       setMatching(greedy(graph));

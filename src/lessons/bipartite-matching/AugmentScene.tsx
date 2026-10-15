@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { EditRow, PresetChips } from './Controls';
 import { MatchGraph } from './MatchGraph';
 import { matchingSize, maximumMatching } from './model';
@@ -12,10 +11,11 @@ export function AugmentScene({ picker, ed }: { picker: ReactNode; ed: MatchEdito
   const g = ed.graph;
   const size = matchingSize(ed.matching);
   const caption = matchCaption(g, ed.matching, ed.found);
-  useIntroCaption(<>{caption}</>, [caption]);
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>
