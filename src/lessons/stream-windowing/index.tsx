@@ -74,7 +74,7 @@ const lesson: LessonModule = {
         'Sixty: a window starts at every second, and an event counts in every one it touches',
       ],
       answer: 0,
-      why: 'Windows start at every multiple of the slide and last the size, so a time lies in size divided by slide of them when slide divides size. A slide longer than the size leaves gaps where an event lands in none.',
+      why: 'Windows start at multiples of the slide and last the size, so a time lies in size divided by slide of them when slide divides size. A slide longer than the size leaves gaps where an event lands in none.',
     },
     {
       q: 'Two sessions of one user are 25 s apart and the gap is 20 s, so they are separate. Both are still open when an event timed between them, 10 s from each, arrives. What happens?',
