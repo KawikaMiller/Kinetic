@@ -1,0 +1,29 @@
+.rb-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.rb-split { flex-flow: row wrap; align-items: flex-start; }
+.rb-main { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.rb-side { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.rb-svg { display: block; margin: 0 auto; }
+.rb-node.is-red { fill: var(--pink); stroke: var(--pink); }
+.rb-node.is-black { fill: var(--muted); stroke: var(--muted); }
+.rb-key { font: 700 10px var(--mono); text-anchor: middle; pointer-events: none; }
+.rb-key.is-red { fill: var(--on-pink); }
+.rb-key.is-black { fill: var(--on-fill); }
+.rb-badge { font: 700 10px var(--mono); text-anchor: middle; fill: var(--muted); pointer-events: none; }
+.rb-ring { fill: none; stroke: var(--c); stroke-width: 3; pointer-events: none; }
+.rb-hull rect { fill: color-mix(in srgb, var(--violet) 10%, transparent); stroke: var(--violet); stroke-width: 1.5; stroke-dasharray: 5 4; pointer-events: none; }
+.rb-hull text { font: 600 10px var(--mono); fill: var(--violet); }
+.rb-ghost line { stroke: var(--violet); stroke-width: 2; stroke-dasharray: 4 3; }
+.rb-ghost circle { fill: none; stroke: var(--violet); stroke-width: 2; stroke-dasharray: 3 3; }
+.rb-ghost text { font: 600 10px var(--mono); text-anchor: middle; fill: var(--violet); }
+.rb-rules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5; }
+.rb-rules .is-ok b { color: var(--ok); }
+.rb-rules .is-bad b { color: var(--bad); }
+.rb-detail { color: var(--muted); }
+.rb-table { width: 100%; font-size: 13px; }
+.rb-table td { text-align: right; font-family: var(--mono); }
+.rb-table th { text-align: left; font-weight: 500; }
+.rb-line { margin: 0; font-size: 13px; line-height: 1.6; }
+.rb-stage ~ .provenance-row { margin: 8px 16px 12px; }
+@media (max-width: 900px) {
+  .rb-main, .rb-side { flex-basis: 100%; }
+}
