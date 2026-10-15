@@ -1,0 +1,10 @@
+.ir { gap: 14px; }
+.ir-table-wrap { overflow-x: auto; }
+.ir-table th[scope='row'] { text-transform: none; letter-spacing: 0; font: 600 13px var(--font); color: var(--text); }
+.ir-table td { white-space: nowrap; }
+.ir-table tr.is-mine th { box-shadow: inset 3px 0 0 var(--hi); }
+.ir-table tr.is-mine td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ir-best { color: var(--ok); font-weight: 700; }
+.ir-you { color: var(--hi); font-size: 11.5px; }
+.ir-unit { display: block; color: var(--faint); font-size: 11.5px; }
+.ir-table th, .ir-table td { padding-left: 4px; padding-right: 4px; }

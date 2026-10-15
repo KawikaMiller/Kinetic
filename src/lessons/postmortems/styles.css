@@ -1,0 +1,33 @@
+.pm { gap: 14px; }
+.pm-node { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.pm-node-text { font: 600 11px var(--mono); fill: var(--text); pointer-events: none; transition: fill 0.25s; }
+.tree-node.is-tint .pm-node { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }
+.tree-node.is-solid .pm-node { fill: var(--c); stroke: var(--c); }
+.tree-node.is-solid .pm-node-text { fill: var(--on-c); }
+.pm-detail p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; }
+.pm-tag { font-weight: 700; }
+
+.pm-sentences { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.pm-blame { margin: 0 0 6px; font-weight: 600; }
+.pm-rewrites { display: flex; flex-wrap: wrap; gap: 6px; }
+.pm-rewrites .chip { white-space: normal; text-align: left; }
+.pm-verdict { margin: 6px 0 0; font-size: 13px; line-height: 1.5; }
+.pm-verdict.is-ok { color: var(--ok); }
+.pm-verdict.is-bad { color: var(--bad); }
+
+.pm-slot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.pm-slot .chip { white-space: normal; text-align: left; }
+.pm-slot-label { flex: 0 0 84px; font: 600 11.5px var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pm-add { margin-top: 10px; }
+.pm-items, .pm-checks { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pm-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.pm-item.is-ok { border-color: var(--ok); }
+.pm-item.is-bad { border-color: var(--bad); }
+.pm-checks li { display: flex; gap: 8px; font-size: 13px; line-height: 1.5; }
+.pm-checks .is-ok .pm-mark { color: var(--ok); }
+.pm-checks .is-bad .pm-mark { color: var(--bad); }
+.pm-detail-text { color: var(--muted); }
+.pm-leaves { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pm-leaf.is-ok { border-color: var(--ok); color: var(--ok); }
+.pm-leaf.is-bad { border: 2px solid var(--bad); color: var(--bad); }
+.pm-whys { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.6; }
