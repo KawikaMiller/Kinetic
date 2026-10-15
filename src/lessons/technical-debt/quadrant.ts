@@ -49,7 +49,7 @@ export const CARDS: readonly Card[] = [
     id: 'layers',
     text: 'A new hire nobody has onboarded puts database queries inside the button handlers, and it ships unreviewed.',
     accepts: ['inadvertent-reckless'],
-    why: 'Nobody chose it, and the missing review and onboarding are what let it through. Others read the same story as plain inexperience.',
+    why: 'Nobody chose it, and the missing review and onboarding are what let it through.',
   },
   {
     id: 'model',

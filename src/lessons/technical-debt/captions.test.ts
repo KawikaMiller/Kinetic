@@ -80,6 +80,8 @@ describe('the price caption', () => {
     const c = expectCaption(priceCaption(ITEMS, report, 12));
     expect(c).toContain('interest is 0');
     expect(c).toContain('never');
+    expect(c).toContain('In this model a mess nobody touches');
+    expect(c).toContain('risk that the model leaves out');
     expect(c).not.toMatch(/Infinity|NaN/);
   });
 });

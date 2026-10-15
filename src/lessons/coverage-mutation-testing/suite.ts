@@ -62,6 +62,16 @@ export function parseExpected(text: string): FieldParse<number> {
   });
 }
 
+/**
+ * The case a learner adds. Outside the exact mode the expected-value field is hidden, so the stored value is the
+ * intended cost rather than a stale number that switching back to exact would suddenly make binding.
+ */
+export const newCase = (mode: Mode, weight: number, express: boolean, typedExpected: number): TestCase => ({
+  weight,
+  express,
+  expected: mode === 'exact' ? typedExpected : intendedCost(weight, express),
+});
+
 export type AddResult = { ok: true; suite: Suite } | { ok: false; error: string };
 
 /** Add a case. The same weight and `express` collapse to one case (the newest expected value wins, in place); a thirteenth case is refused. */

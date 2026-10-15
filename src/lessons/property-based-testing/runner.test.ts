@@ -20,6 +20,14 @@ function bruteForceCandidates(xs: readonly number[]): Set<string> {
   return out;
 }
 
+describe('shrink candidates and negative zero', () => {
+  it('never produces -0, whichever value is halved', () => {
+    for (const x of [-1, 1, 0, -3, 3, -1e9]) {
+      for (const cand of shrinkCandidates([x])) for (const v of cand) expect(Object.is(v, -0), `${x}`).toBe(false);
+    }
+  });
+});
+
 describe('shrink candidates', () => {
   it('are exactly the single drops, halvings and first-half prefix, for 500 seeded arrays', () => {
     for (let seed = 1; seed <= 500; seed++) {

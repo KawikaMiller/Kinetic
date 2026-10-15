@@ -163,7 +163,10 @@ export function PriceScene({ picker }: { picker: ReactNode }) {
           <span className="td-claim">
             <ClaimLabel kind="practice">teams estimate interest, they do not measure it like this</ClaimLabel>
           </span>
-          <Hint block>Interest only accrues where people work: an item nobody touches costs nothing however ugly it is.</Hint>
+          <span className="td-claim">
+            <ClaimLabel kind="view">in this model interest is only the days lost when people work there; untouched code can still carry risk that this model leaves out</ClaimLabel>
+          </span>
+          <Hint block>In this model, interest only accrues where people work, so an item nobody touches has none.</Hint>
         </div>
       </div>
     </StageFrame>

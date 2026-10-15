@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-import { billCaption } from './captions';
+import { billCaption, billNote } from './captions';
 import { AVG_DEPS, CURVE_SIZES, GRAPH_SEEDS, PACKAGE_CI_MINUTES, SIZE_MAX, SIZE_MIN, bill, minutesFor, nextSeed, randomDag } from './bill';
 
 /** Independent oracle: reachability by Warshall's closure over an index matrix. */
@@ -78,6 +78,20 @@ describe('the bill', () => {
         expect(text).toContain(`${(Math.round(minutesFor(b, detection) * 10) / 10).toFixed(1)} CI minutes`);
         expect(text).toContain(`detection ${detection ? 'on' : 'off'}`);
       }
+    }
+  });
+});
+
+describe('the bill note', () => {
+  it('quotes the scene’s own figures at the size extremes and says the polyrepo side is not modelled', () => {
+    for (const size of [SIZE_MIN, 100, SIZE_MAX]) {
+      const b = bill(size, GRAPH_SEEDS[0]);
+      const text = expectCaption(billNote(b));
+      expect(text).toContain(`all ${size} packages`);
+      expect(text).toContain(`${size * PACKAGE_CI_MINUTES} CI minutes`);
+      expect(text).toContain((Math.round(b.withDetection * 10) / 10).toFixed(1));
+      expect(text).toContain('does not model');
+      expect(text).not.toMatch(/expensive option/);
     }
   });
 });

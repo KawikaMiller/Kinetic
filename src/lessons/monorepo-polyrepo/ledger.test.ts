@@ -71,8 +71,8 @@ describe('the tallies', () => {
     expect(tally('polyrepo', f).costs).toBeCloseTo(1.35, 12);
   });
 
-  it('opens close to level, and calls nets within the margin level', () => {
-    expect(lean(OPENING_FACTORS).margin).toBeLessThan(0.2);
+  it('opens level, and calls nets within the margin level', () => {
+    expect(lean(OPENING_FACTORS).option).toBeNull();
     for (const f of factorGrid()) {
       const l = lean(f);
       if (l.option === null) expect(l.margin).toBeLessThan(TIE_MARGIN);

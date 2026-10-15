@@ -7,7 +7,7 @@ import { useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { ownersCaption } from './captions';
 import {
-  FLAG_TEAMS, MAX_PATTERN, OPENING_RULES, PATHS, PULL_REQUESTS, TEAMS, TEAM_TONE, moveRule, ownerOf, parsePattern, removeRule, review, ruleLines, setRule, unownedPaths,
+  FLAG_TEAMS, MAX_PATTERN, OPENING_RULES, PATHS, PULL_REQUESTS, TEAMS, TEAM_TONE, matchesNoPath, moveRule, ownerOf, parsePattern, removeRule, review, ruleLines, setRule, unownedPaths,
   type Rule, type Team,
 } from './owners';
 
@@ -33,7 +33,8 @@ export function OwnersScene({ picker }: { picker: ReactNode }) {
     const next = setRule(rules, { pattern: parsed.pattern, owner });
     setRules(next.rules);
     setSelected(null);
-    setMessage(next.replaced ? `A rule for ${parsed.pattern} already existed, so it was replaced in place.` : null);
+    if (next.replaced) setMessage(`A rule for ${parsed.pattern} already existed, so it was replaced in place.`);
+    else setMessage(matchesNoPath(parsed.pattern) ? `Added, but ${parsed.pattern} matches no path in the repository: a directory needs a trailing /.` : null);
   };
   const remove = () => {
     if (selected === null) return;
@@ -53,7 +54,7 @@ export function OwnersScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Rules" value={rules.length} sub="last matching rule wins" />
           <Stat label="Paths with no owner" value={unowned.length} sub={`of ${PATHS.length}`} color={unowned.length ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="Pull requests needing 5 teams" value={reviews.filter((r) => r.flagged).length} sub={`of ${reviews.length}`} color={reviews.some((r) => r.flagged) ? 'var(--orange)' : undefined} />
+          <Stat label={`Pull requests needing ${FLAG_TEAMS} teams`} value={reviews.filter((r) => r.flagged).length} sub={`of ${reviews.length}`} color={reviews.some((r) => r.flagged) ? 'var(--orange)' : undefined} />
         </Stats>
       }
       legend={
@@ -138,7 +139,8 @@ export function OwnersScene({ picker }: { picker: ReactNode }) {
         <div className="mp-notes">
           <Provenance kind="invented">an invented repository and pull requests</Provenance>
           <Provenance kind="toy">simplified syntax: patterns are anchored at the root and use *, *.ext, a directory ending in /, or one file</Provenance>
-          <ClaimLabel kind="standard">on GitHub, the last matching pattern in the file wins; from memory, check its CODEOWNERS documentation</ClaimLabel>
+          <ClaimLabel kind="practice">on GitHub, the last matching pattern in a CODEOWNERS file wins; one vendor's convention, not a standard</ClaimLabel>
+          <Provenance kind="from-memory">check the platform's CODEOWNERS documentation before relying on it</Provenance>
         </div>
       </div>
     </StageFrame>

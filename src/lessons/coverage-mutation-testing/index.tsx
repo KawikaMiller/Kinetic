@@ -72,7 +72,7 @@ const lesson: LessonModule = {
         'Tests are meant to cover whole files, so it counts as a failure',
       ],
       answer: 2,
-      why: 'A test that does not reach the changed code returns what it returned before. Skipping it saves runs without changing which mutants die.',
+      why: 'For a deterministic test, one that does not reach the changed code returns what it returned before. Skipping it saves runs without changing which mutants die.',
     },
   ],
 };

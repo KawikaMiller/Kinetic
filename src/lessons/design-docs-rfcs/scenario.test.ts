@@ -46,6 +46,19 @@ describe('validateScenario', () => {
   });
 });
 
+describe('validateScenario with allowCycles', () => {
+  const looping = nodeEdit(GOOD, 'b', { choices: [...GOOD.nodes[1].choices, { id: 'b3', label: 'Again', to: 'a', because: 'Go round once more.' }] });
+
+  it('rejects a looping scenario by default and accepts it when the loop is meant, while every other problem is still reported', () => {
+    expect(kinds(looping)).toContain('cycle');
+    expect(validateScenario(looping, { allowCycles: true })).toEqual([]);
+    const huge = nodeEdit(looping, 'a', { choices: [{ id: 'a1', label: 'Huge', to: 'b', effects: { m: 20 }, because: 'x' }] });
+    expect(validateScenario(huge, { allowCycles: true }).map((p) => p.kind)).toContain('out-of-bounds');
+    expect(validateScenario({ ...looping, endings: [...looping.endings, { id: 'end3', title: 'Never', text: '' }] }, { allowCycles: true }).map((p) => p.kind)).toContain('unreachable-ending');
+    expect(validateScenario(nodeEdit(looping, 'a', { choices: [] }), { allowCycles: true }).map((p) => p.kind)).toContain('dead-end');
+  });
+});
+
 describe('the review scenario: every ending reachable, every path in bounds', () => {
   const paths = enumeratePaths(PROPOSAL);
 

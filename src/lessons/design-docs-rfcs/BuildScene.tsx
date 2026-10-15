@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -7,7 +7,7 @@ import { ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance, Segment
 import { useSetCaption } from '../../core/caption';
 import { buildCaption } from './captions';
 import {
-  ALTERNATIVES, COST_MAX, DEADLINE_LABEL, DECISION_LABEL, OPENING_CONTENT, READERS, keptOrder, lintDoc, moveSection, noDecision, readerReach, reachOf, sectionOf,
+  ALTERNATIVES, COST_MAX, DEADLINE_LABEL, DECISION_LABEL, OPENING_CONTENT, READERS, askCounts, askOutcome, keptOrder, lintDoc, moveSection, readerReach, sectionOf,
   type AlternativeId, type Deadline, type Decision, type DocContent, type Reach, type SectionId,
 } from './designdoc';
 
@@ -22,6 +22,9 @@ function ReachCell({ read, words, reach, ask }: { read: number; words: number; r
 export function BuildScene({ picker }: { picker: ReactNode }) {
   const [doc, setDoc] = useState<DocContent>(OPENING_CONTENT);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const list = useRef<HTMLOListElement>(null);
+  /** The row and button that had focus when a move was pressed: the button may be disabled once the row has moved. */
+  const refocus = useRef<{ id: SectionId; label: string | null } | null>(null);
   const setCaption = useSetCaption();
   const kept = keptOrder(doc);
   const lint = useMemo(() => lintDoc(doc), [doc]);
@@ -30,11 +33,22 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
     setCaption(buildCaption(doc), { quiet: true });
   }, [setCaption, doc]);
 
-  const move = (id: SectionId, by: number) => {
-    const from = doc.order.indexOf(id);
-    setDoc({ ...doc, order: moveSection(doc.order, from, from + by) });
+  useEffect(() => {
+    const want = refocus.current;
+    refocus.current = null;
+    if (!want) return;
+    const buttons = [...(list.current?.querySelectorAll<HTMLButtonElement>(`[data-section="${want.id}"] button`) ?? [])];
+    // Keep focus on the pressed button; when the move disabled it, fall to the row's first button that still works.
+    const target = buttons.find((b) => !b.disabled && b.getAttribute('aria-label') === want.label) ?? buttons.find((b) => !b.disabled);
+    target?.focus();
+  }, [doc.order]);
+
+  const moveTo = (id: SectionId, to: number, label: string) => {
+    refocus.current = { id, label };
+    setDoc({ ...doc, order: moveSection(doc.order, doc.order.indexOf(id), to) });
   };
-  const toTop = (id: SectionId) => setDoc({ ...doc, order: moveSection(doc.order, doc.order.indexOf(id), 0) });
+  const move = (id: SectionId, by: number, label: string) => moveTo(id, doc.order.indexOf(id) + by, label);
+  const toTop = (id: SectionId, label: string) => moveTo(id, 0, label);
   const toggleKept = (id: SectionId) => setDoc({ ...doc, dropped: doc.dropped.includes(id) ? doc.dropped.filter((d) => d !== id) : [...doc.dropped, id] });
   const toggleAlt = (id: AlternativeId) =>
     setDoc({ ...doc, alternatives: doc.alternatives.some((a) => a.id === id) ? doc.alternatives.filter((a) => a.id !== id) : [...doc.alternatives, { id, cost: '' }] });
@@ -49,14 +63,14 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
     onDrop: () => drop(i),
   });
 
-  const noDecisions = READERS.filter((r) => noDecision(kept, r.budget)).length;
+  const asks = askCounts(kept);
 
   return (
     <StageFrame
       height={620}
       stats={
         <Stats>
-          <Stat label="Readers who reach the ask" value={`${READERS.length - noDecisions} of ${READERS.length}`} color={noDecisions ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Readers who read the ask in full" value={`${asks.read} of ${READERS.length}`} color={asks.read === READERS.length ? 'var(--ok)' : 'var(--bad)'} />
           <Stat label="Doc checks passing" value={`${lint.filter((l) => l.pass).length} of ${lint.length}`} color={lint.every((l) => l.pass) ? 'var(--ok)' : 'var(--hi)'} />
           <Stat label="Words in the doc" value={kept.reduce((s, id) => s + sectionOf(id).words, 0).toLocaleString('en-US')} sub="authored per section" />
         </Stats>
@@ -64,10 +78,10 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--ok)', label: 'words a reader read in full', shape: 'square' },
-            { color: 'var(--hi)', label: 'cut off partway', shape: 'square' },
-            { color: 'var(--dim)', label: 'not reached', shape: 'square' },
-            { color: 'var(--bad)', label: 'the ask never reached', shape: 'square' },
+            { color: 'var(--ok)', label: 'in the table: words a reader read in full', shape: 'square' },
+            { color: 'var(--hi)', label: 'in the table: cut off partway', shape: 'square' },
+            { color: 'var(--dim)', label: 'in the table: not reached', shape: 'square' },
+            { color: 'var(--bad)', label: 'in the table: the ask never reached', shape: 'square' },
           ]}
         />
       }
@@ -92,19 +106,19 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
         <div className="dd-split">
           <Box className="dd-sections">
             <SectionTitle hint="move with the arrows, or drag the handle">Sections, in reading order</SectionTitle>
-            <ol className="dd-list">
+            <ol className="dd-list" ref={list}>
               {doc.order.map((id, i) => {
                 const s = sectionOf(id);
                 const isKept = !doc.dropped.includes(id);
                 return (
-                  <li key={id} className={`dd-row ${isKept ? '' : 'is-dropped'}`} {...dragProps(i)}>
+                  <li key={id} data-section={id} className={`dd-row ${isKept ? '' : 'is-dropped'}`} {...dragProps(i)}>
                     <span className="dd-handle" draggable onDragStart={() => setDragFrom(i)} onDragEnd={() => setDragFrom(null)} title="Drag to reorder" aria-hidden="true">⠿</span>
                     <span className={`chip tone-${s.tone} dd-name`}>{s.name}</span>
                     <span className="dd-words">{s.words} words</span>
                     <span className="dd-buttons">
-                      <ChipButton tone="muted" ariaLabel={`Move ${s.name} to the top`} disabled={i === 0} onClick={() => toTop(id)}>top</ChipButton>
-                      <ChipButton tone="muted" ariaLabel={`Move ${s.name} up`} disabled={i === 0} onClick={() => move(id, -1)}>↑</ChipButton>
-                      <ChipButton tone="muted" ariaLabel={`Move ${s.name} down`} disabled={i === doc.order.length - 1} onClick={() => move(id, 1)}>↓</ChipButton>
+                      <ChipButton tone="muted" ariaLabel={`Move ${s.name} to the top`} disabled={i === 0} onClick={() => toTop(id, `Move ${s.name} to the top`)}>top</ChipButton>
+                      <ChipButton tone="muted" ariaLabel={`Move ${s.name} up`} disabled={i === 0} onClick={() => move(id, -1, `Move ${s.name} up`)}>↑</ChipButton>
+                      <ChipButton tone="muted" ariaLabel={`Move ${s.name} down`} disabled={i === doc.order.length - 1} onClick={() => move(id, 1, `Move ${s.name} down`)}>↓</ChipButton>
                       <ChipButton tone="info" on={isKept} ariaLabel={`Keep ${s.name} in the doc`} onClick={() => toggleKept(id)}>keep</ChipButton>
                     </span>
                   </li>
@@ -116,8 +130,7 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
           <div className="dd-readers">
             {READERS.map((r) => {
               const reach = readerReach(kept, r.budget);
-              const ask = reachOf(kept, r.budget, 'recommendation');
-              const none = noDecision(kept, r.budget);
+              const ask = askOutcome(kept, r.budget);
               return (
                 <Box key={r.id} variant="sunken" className="dd-reader">
                   <SectionTitle hint={`${r.budget.toLocaleString('en-US')} words`}>{r.name}</SectionTitle>
@@ -128,8 +141,8 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
                     animate={false}
                     ariaLabel={`${r.name} spends a budget of ${r.budget} words across the sections in order`}
                   />
-                  <span className={`chip ${none ? 'tone-bad' : ask?.reach === 'partly' ? 'tone-hi' : 'tone-ok'}`}>
-                    {none ? 'no decision reached' : ask?.reach === 'partly' ? 'decision cut off' : 'reaches the decision'}
+                  <span className={`chip ${ask === 'none' ? 'tone-bad' : ask === 'cut' ? 'tone-hi' : 'tone-ok'}`}>
+                    {ask === 'none' ? 'no decision reached' : ask === 'cut' ? 'decision cut off' : 'reaches the decision'}
                   </span>
                 </Box>
               );
@@ -176,6 +189,7 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
           <Box className="dd-costs">
             <SectionTitle hint={`up to ${COST_MAX} characters, plain text`}>Cost of each alternative</SectionTitle>
             {doc.alternatives.length === 0 && <p className="empty-note">No alternatives listed.</p>}
+            {kept.includes('alternatives') ? null : <p className="empty-note">The Alternatives section is dropped, so none of this is in the doc.</p>}
             {doc.alternatives.map((a) => (
               <TextField
                 key={a.id}

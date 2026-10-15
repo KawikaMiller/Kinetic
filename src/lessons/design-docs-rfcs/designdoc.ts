@@ -82,6 +82,21 @@ export const noDecision = (order: readonly SectionId[], budget: number): boolean
   return r === undefined || r.reach === 'none';
 };
 
+export type AskOutcome = 'read' | 'cut' | 'none';
+
+/** What a reader makes of the recommendation: read in full, cut off inside it, or never reached. */
+export const askOutcome = (order: readonly SectionId[], budget: number): AskOutcome => {
+  const r = reachOf(order, budget, 'recommendation')?.reach ?? 'none';
+  return r === 'full' ? 'read' : r === 'partly' ? 'cut' : 'none';
+};
+
+/** How many of the readers land in each outcome for the recommendation. */
+export function askCounts(order: readonly SectionId[]): Record<AskOutcome, number> {
+  const counts: Record<AskOutcome, number> = { read: 0, cut: 0, none: 0 };
+  for (const r of READERS) counts[askOutcome(order, r.budget)]++;
+  return counts;
+}
+
 // ── Moving and keeping sections ──────────────────────────────────────────
 
 /** Move the section at `from` to index `to`, shifting the rest. Out-of-range moves leave the order alone. */
@@ -156,27 +171,30 @@ export interface LintResult {
 
 const trimmed = (s: string) => s.trim();
 
-/** Every check, computed from the arrangement and the alternatives table, never scripted. */
+/** Every check, computed from the arrangement and the alternatives table, never scripted. The alternatives and costs checks also need the Alternatives section to be in the doc: chips alone are notes, not text a reader can read. */
 export function lintDoc(c: DocContent): LintResult[] {
   const kept = keptOrder(c);
   const names = c.alternatives.map((a) => a.id);
   const unpriced = c.alternatives.filter((a) => trimmed(a.cost) === '');
   const questionsAt = kept.indexOf('questions');
   const proposalAt = kept.indexOf('proposal');
+  const hasAlternatives = kept.includes('alternatives');
   const buried = questionsAt >= 0 && proposalAt >= 0 && questionsAt < proposalAt;
   return [
     { id: 'nongoals', label: 'Says what it will not do', pass: kept.includes('nongoals'), found: kept.includes('nongoals') ? 'a Non-goals section is in the doc' : 'no Non-goals section' },
     {
       id: 'alternatives',
       label: 'Lists at least two alternatives, including doing nothing',
-      pass: c.alternatives.length >= 2 && names.includes('nothing'),
-      found: `${c.alternatives.length} listed${names.includes('nothing') ? ', including do nothing' : ', without do nothing'}`,
+      pass: hasAlternatives && c.alternatives.length >= 2 && names.includes('nothing'),
+      found: !hasAlternatives
+        ? 'no Alternatives section in the doc, so nothing listed is read'
+        : `${c.alternatives.length} listed${names.includes('nothing') ? ', including do nothing' : ', without do nothing'}`,
     },
     {
       id: 'costs',
       label: 'States a cost for each alternative',
-      pass: c.alternatives.length > 0 && unpriced.length === 0,
-      found: c.alternatives.length === 0 ? 'no alternatives to price' : unpriced.length === 0 ? 'every listed alternative has a cost' : `${unpriced.length} without a stated cost`,
+      pass: hasAlternatives && c.alternatives.length > 0 && unpriced.length === 0,
+      found: !hasAlternatives ? 'no Alternatives section in the doc to hold the costs' : c.alternatives.length === 0 ? 'no alternatives to price' : unpriced.length === 0 ? 'every listed alternative has a cost' : `${unpriced.length} without a stated cost`,
     },
     {
       id: 'ask',

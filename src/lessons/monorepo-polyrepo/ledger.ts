@@ -28,8 +28,8 @@ export const FACTOR_LABEL: Record<keyof Factors, string> = {
   access: 'Access-control needs',
 };
 
-/** The opening situation: middling everywhere, so the two options start close together. */
-export const OPENING_FACTORS: Factors = { teams: 0.4, shared: 0.5, cadence: 0.5, tooling: 0.5, access: 0.3 };
+/** The opening situation: middling everywhere, with some tooling capacity, so the ledger opens level. */
+export const OPENING_FACTORS: Factors = { teams: 0.4, shared: 0.5, cadence: 0.5, tooling: 0.6, access: 0.3 };
 
 export interface Line {
   id: string;

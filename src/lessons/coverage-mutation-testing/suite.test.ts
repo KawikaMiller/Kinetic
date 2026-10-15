@@ -6,7 +6,7 @@ import { coverageOf } from './coverage';
 import { PRESETS, presetOf, OPENING } from './presets';
 import { BUGGY, COST, DOMAIN, WEIGHT_MAX, intendedCost, runProgram } from './program';
 import {
-  MAX_CASES, addCase, analysisOf, approveCurrent, assertionFails, disagreeingWithIntent, firstFailure, killingTest, parseExpected, parseWeight, programOf, removeCase,
+  MAX_CASES, addCase, analysisOf, approveCurrent, assertionFails, disagreeingWithIntent, firstFailure, killingTest, parseExpected, parseWeight, programOf, newCase, removeCase,
   report, type CodeVariant, type Suite, type TestCase,
 } from './suite';
 
@@ -103,6 +103,22 @@ describe('hidden controls do not feed the numbers', () => {
         expect(rb.baselinePasses).toBe(true);
       }
     }
+  });
+});
+
+describe('a case added while the expected value is hidden', () => {
+  it('still passes on the unmutated code after switching back to exact, for every weight and both express settings', () => {
+    for (let weight = 0; weight <= WEIGHT_MAX; weight++) {
+      for (const express of [false, true]) {
+        const added = newCase('weak', weight, express, 0);
+        expect(added.expected).toBe(intendedCost(weight, express));
+        expect(firstFailure(COST, { mode: 'exact', cases: [added] })).toBeNull();
+      }
+    }
+  });
+
+  it('keeps the value the learner types in the exact mode, even a wrong one', () => {
+    expect(newCase('exact', 11, false, 123).expected).toBe(123);
   });
 });
 

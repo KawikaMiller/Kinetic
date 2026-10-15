@@ -116,13 +116,21 @@ export interface Problem {
 /** Paths longer than this are not explored: a scenario that long is a cycle or a mistake. */
 export const MAX_DEPTH = 40;
 
+export interface ValidateOptions {
+  /**
+   * A scenario meant to loop (a retry, a review round) is not a problem. Paths are then enumerated only
+   * until they first revisit a node, so the meter bounds are checked on the first lap and no further.
+   */
+  allowCycles?: boolean;
+}
+
 /**
  * Check a scenario: ids unique, every choice leads somewhere that exists, every node and every
  * ending is reachable from the start, no node is a dead end, there are no cycles (so the paths
- * can be enumerated), and on every path from the start to an ending the meters stay inside their
+ * can be enumerated, unless `allowCycles` says a looping scenario is meant), and on every path from the start to an ending the meters stay inside their
  * bounds at every step with the effects applied as written, with no clamping.
  */
-export function validateScenario(s: Scenario): Problem[] {
+export function validateScenario(s: Scenario, { allowCycles = false }: ValidateOptions = {}): Problem[] {
   const problems: Problem[] = [];
   const add = (kind: ProblemKind, detail: string) => problems.push({ kind, detail });
 
@@ -156,7 +164,7 @@ export function validateScenario(s: Scenario): Problem[] {
     const node = findNode(s, id);
     if (!node) return;
     if (trail.length >= MAX_DEPTH || trail.includes(id)) {
-      add('cycle', `${[...trail, id].join(' > ')} loops or runs past ${MAX_DEPTH} steps`);
+      if (!allowCycles) add('cycle', `${[...trail, id].join(' > ')} loops or runs past ${MAX_DEPTH} steps`);
       return;
     }
     for (const c of node.choices) {
@@ -171,7 +179,7 @@ export function validateScenario(s: Scenario): Problem[] {
   return problems;
 }
 
-/** Every path from the start to an ending, with the meters it ends on (assumes the scenario validates). */
+/** Every path from the start to an ending, with the meters it ends on (assumes the scenario validates and has no cycles). */
 export function enumeratePaths(s: Scenario): { endingId: string; choices: string[]; meters: Values }[] {
   const out: { endingId: string; choices: string[]; meters: Values }[] = [];
   const go = (id: string, values: Values, choices: string[]) => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { buildCaption } from './captions';
 import {
-  COST_MAX, OPENING_CONTENT, OPENING_ORDER, READERS, SECTIONS, keptOrder, lintDoc, moveSection, noDecision, readerReach, reachOf, sectionOf, type DocContent, type SectionId,
+  COST_MAX, OPENING_CONTENT, OPENING_ORDER, READERS, SECTIONS, keptOrder, lintDoc, moveSection, noDecision, askCounts, readerReach, reachOf, sectionOf, type DocContent, type SectionId,
 } from './designdoc';
 
 const skimmer = READERS[0].budget;
@@ -141,6 +141,15 @@ describe('the doc checks, computed from the arrangement and content', () => {
     expect(pass({ ...full, dropped: ['questions'] }).questions).toBe(true);
   });
 
+  it('needs the Alternatives section in the doc: listing and pricing alternatives passes nothing when the section is dropped', () => {
+    expect(pass(full)).toEqual({ nongoals: true, alternatives: true, costs: true, ask: true, questions: true });
+    const dropped = { ...full, dropped: ['alternatives' as SectionId] };
+    expect(pass(dropped)).toMatchObject({ alternatives: false, costs: false, ask: true });
+    expect(lintDoc(dropped).filter((l) => l.pass)).toHaveLength(3);
+    expect(expectCaption(buildCaption(dropped))).toContain('3 of 5 doc checks pass');
+    expect(lintDoc(dropped).find((l) => l.id === 'alternatives')!.found).toContain('no Alternatives section');
+  });
+
   it('keeps only kept sections in the reading order, so a dropped section gives its words to the ones after it', () => {
     const dropped: DocContent = { ...OPENING_CONTENT, dropped: ['context'] };
     expect(keptOrder(dropped)).toEqual(OPENING_ORDER.filter((id) => id !== 'context'));
@@ -149,6 +158,45 @@ describe('the doc checks, computed from the arrangement and content', () => {
 
   it('bounds the typed cost text at 60 characters', () => {
     expect(COST_MAX).toBe(60);
+  });
+});
+
+describe('the ask: read in full, cut off inside it, or never reached', () => {
+  /** Independent oracle: the ask is read in full when the budget covers every word up to and including it. */
+  const oracle = (order: readonly SectionId[], budget: number) => {
+    const upTo = order.slice(0, order.indexOf('recommendation') + 1).reduce((s, id) => s + sectionOf(id).words, 0);
+    const before = upTo - sectionOf('recommendation').words;
+    return order.includes('recommendation') ? (budget >= upTo ? 'read' : budget > before ? 'cut' : 'none') : 'none';
+  };
+
+  it('says "every reader gets to the recommendation" only when each reader reads the whole ask, for 500 seeded orders with sections dropped', () => {
+    let seed = 11;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    let sawCut = 0;
+    for (let k = 0; k < 500; k++) {
+      const order = [...OPENING_ORDER].sort(() => rnd() - 0.5);
+      const dropped = OPENING_ORDER.filter(() => rnd() < 0.3);
+      const c: DocContent = { ...OPENING_CONTENT, order, dropped };
+      const kept = keptOrder(c);
+      const want = READERS.map((r) => oracle(kept, r.budget));
+      const counts = askCounts(kept);
+      expect(counts.read).toBe(want.filter((w) => w === 'read').length);
+      expect(counts.cut).toBe(want.filter((w) => w === 'cut').length);
+      const text = expectCaption(buildCaption(c));
+      expect(text.includes('every reader gets to the recommendation')).toBe(want.every((w) => w === 'read'));
+      expect(text.includes('cut off inside it')).toBe(want.includes('cut'));
+      if (want.includes('cut')) sawCut++;
+    }
+    expect(sawCut).toBeGreaterThan(5);
+  });
+
+  it('describes Goals then Recommendation then the rest: the skimmer is cut off inside the ask, so the caption does not claim every reader gets there', () => {
+    const order: SectionId[] = ['goals', 'recommendation', ...OPENING_ORDER.filter((id) => id !== 'goals' && id !== 'recommendation')];
+    // 120 words of Goals leave the 150-word skimmer 30 of the ask's 60 words
+    expect(askCounts(order)).toEqual({ read: 2, cut: 1, none: 0 });
+    const text = expectCaption(buildCaption({ ...OPENING_CONTENT, order }));
+    expect(text).toContain('1 reader is cut off inside it');
+    expect(text).not.toContain('every reader gets to the recommendation');
   });
 });
 

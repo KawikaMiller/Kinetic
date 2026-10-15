@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Hint, Legend, Provenance, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
-import { billCaption } from './captions';
+import { billCaption, billNote } from './captions';
 import { CURVE_SIZES, GRAPH_SEEDS, PACKAGE_CI_MINUTES, SIZE_MAX, SIZE_MIN, SIZE_STEP, bill, minutesFor, nextSeed } from './bill';
 
 const OPENING_SIZE = 100;
@@ -66,12 +66,11 @@ export function BillScene({ picker }: { picker: ReactNode }) {
             <Points data={[{ x: b.size, y: minutes, tone: 'hi' }]} r={6} />
           </Plot2D>
         </div>
-        <p className="mp-note">
-          A monorepo without good tooling is the expensive option: every change builds everything. The tooling that finds the affected set is what makes the atomic change affordable, and building and keeping it is a cost of its own.
-        </p>
+        <p className="mp-note">{billNote(b)}</p>
         <div className="mp-notes">
           <Provenance kind="simulated" seed={seed}>a seeded random dependency graph, about 2 dependencies per package</Provenance>
           <Provenance kind="illustrative">{PACKAGE_CI_MINUTES} minutes of CI per package is made up</Provenance>
+          <ClaimLabel kind="view">that the affected-set tooling is what makes a monorepo's atomic change affordable, and that it is a cost of its own, is a judgement this scene does not measure</ClaimLabel>
           <ClaimLabel kind="practice">tools that build only the packages a change can reach are widely used in monorepos</ClaimLabel>
           <Hint block>Each point averages every package in turn being the one that changed. A real repository&apos;s graph is not this shape, so the affected fraction here says nothing about yours.</Hint>
         </div>

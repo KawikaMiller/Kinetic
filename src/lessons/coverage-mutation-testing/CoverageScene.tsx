@@ -100,7 +100,7 @@ export function CoverageScene({ picker, state }: { picker: ReactNode; state: Sha
         <div className="cm-notes">
           <Provenance kind="real">the evaluator runs for real in your browser, with no eval</Provenance>
           <Provenance kind="toy">a toy function and a few mutation operators; real tools have dozens and smarter equivalence handling</Provenance>
-          <Hint block>Executable lines are the {cov.lineCount} that hold code; the function header and closing brace are not counted.</Hint>
+          <Hint block>Executable lines are the {cov.lineCount} that hold code; the function header and closing brace are not counted. Each branch of a one-line conditional is printed on its own line here, so line and branch coverage move together; many real tools count that conditional as one line.</Hint>
         </div>
       </div>
     </StageFrame>

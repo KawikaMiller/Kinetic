@@ -45,7 +45,7 @@ export function priceCaption(items: readonly Item[], selected: Item, horizonMont
   if (interest === 0) {
     return (
       <>
-        <b>{selected.name}</b> costs {selected.fixDays} days to fix and nobody works there, so its interest is 0 and its payback is <b>never</b>. A mess nobody touches charges nothing.
+        <b>{selected.name}</b> costs {selected.fixDays} days to fix and nobody works there, so its interest is 0 and its payback is <b>never</b>. In this model a mess nobody touches charges no interest; untouched code can still carry risk that the model leaves out.
       </>
     );
   }

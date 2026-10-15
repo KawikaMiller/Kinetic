@@ -71,7 +71,7 @@ export function DecisionScene({ picker }: { picker: ReactNode }) {
       height={640}
       stats={
         <Stats>
-          <Stat label="Ranks first" value={ranked[0].knockedOut.length === 0 ? ranked[0].option.name : 'nothing'} color="var(--hi)" sub={ranked[0].knockedOut.length === 0 ? `score ${ranked[0].score.toFixed(2)}` : 'every option is knocked out'} />
+          <Stat label="Ranks first" value={ranked[0].knockedOut.length === 0 ? ranked[0].option.name : 'nothing'} sub={ranked[0].knockedOut.length === 0 ? `score ${ranked[0].score.toFixed(2)}` : 'every option is knocked out'} />
           <Stat label="Knocked out" value={ranked.filter((r) => r.knockedOut.length > 0).length} color="var(--dim)" sub="by a must-have constraint" />
           <Stat label={`ADR ${active.number}`} value={active.status} sub={`chosen: ${chosen.name}`} />
         </Stats>
@@ -147,7 +147,7 @@ export function DecisionScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
         </WideRegion>
-        <Hint block>Each criterion is scaled 0 to 1 across the four options (1 is the best value, shown after the dot), weighted by the sliders (shown as shares of 100%), and summed. Lower is better on every criterion.</Hint>
+        <Hint block>Each criterion is scaled 0 to 1 across the four options (1 is the best value, shown after the dot), weighted by the sliders (shown as shares of 100%), and summed. Lower is better on every criterion. The scaling uses all four options, so knocking one out does not rescale the others.</Hint>
 
         <Box variant="sunken" className="dd-flip">
           <SectionTitle hint="scanned from 0 to 1 in steps of 0.01, the other weights keeping their proportions">Where does the decision flip?</SectionTitle>

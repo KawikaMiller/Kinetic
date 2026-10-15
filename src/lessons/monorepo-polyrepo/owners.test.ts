@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { ownersCaption } from './captions';
 import {
-  FLAG_TEAMS, MAX_PATTERN, OPENING_RULES, PATHS, PULL_REQUESTS, TEAMS, matches, moveRule, ownerOf, parsePattern, removeRule, review, ruleLines, setRule, unownedPaths,
+  FLAG_TEAMS, MAX_PATTERN, OPENING_RULES, PATHS, PULL_REQUESTS, TEAMS, matches, matchesNoPath, moveRule, ownerOf, parsePattern, removeRule, review, ruleLines, setRule, unownedPaths,
   type Rule,
 } from './owners';
 
@@ -119,5 +119,18 @@ describe('reviews', () => {
   it('prints the file one rule a line, pattern then team', () => {
     expect(ruleLines(OPENING_RULES).map((l) => l.trim().split(/\s+/))).toEqual(OPENING_RULES.map((r) => [r.pattern, r.owner]));
     expect(TEAMS).toHaveLength(6);
+  });
+});
+
+describe('patterns that match nothing', () => {
+  it('flags a directory written without its trailing slash and a typo, and not a pattern that covers a path', () => {
+    expect(matchesNoPath('shared-lib')).toBe(true);
+    expect(matchesNoPath('/shared-lib')).toBe(true);
+    expect(matchesNoPath('/billng/')).toBe(true);
+    expect(matchesNoPath('shared-lib/')).toBe(false);
+    expect(matchesNoPath('*.tf')).toBe(false);
+    expect(matchesNoPath('/README.md')).toBe(false);
+    // agrees with a plain scan of the paths for every pattern the opening rules use
+    for (const r of OPENING_RULES) expect(matchesNoPath(r.pattern)).toBe(PATHS.filter((p) => matches(r.pattern, p)).length === 0);
   });
 });

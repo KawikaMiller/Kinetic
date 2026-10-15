@@ -27,7 +27,7 @@ export const PROPOSAL: Scenario = {
           label: 'A one-page doc',
           to: 'objectors-short',
           effects: { [CLARITY]: 3, [DAYS]: 1, [SURPRISE]: 3 },
-          because: 'Reviewers read a short doc to the end and decide quickly, but what it leaves out can come back during implementation.',
+          because: 'In this invented scenario, reviewers read a short doc to the end and decide quickly, but what it leaves out can come back during implementation.',
         },
         {
           id: 'long',
@@ -82,7 +82,7 @@ function objectorChoices(from: string): Choice[] {
       label: 'Invite them before you circulate',
       to: 'dissent-early',
       effects: { [CLARITY]: 1, [DAYS]: 4, [SURPRISE]: -2 },
-      because: 'Early conversations cost days now and bring their objections into the doc before anyone else reads it.',
+      because: 'Early conversations cost days now and tend to bring their objections into the doc before anyone else reads it.',
     },
     {
       id: `${from}-late`,
@@ -96,7 +96,7 @@ function objectorChoices(from: string): Choice[] {
       label: 'Do not invite them',
       to: 'dissent-none',
       effects: { [SURPRISE]: 3 },
-      because: 'Nothing is spent now, and whatever they would have said turns up when the system is being built.',
+      because: 'Nothing is spent now, and whatever they would have said may well turn up when the system is being built.',
     },
   ];
 }
@@ -115,7 +115,7 @@ function dissentChoices(timing: string): Choice[] {
       label: 'Leave it out',
       to: `${timing}-unrecorded`,
       effects: { [CLARITY]: -1, [SURPRISE]: 2 },
-      because: 'The doc stays tidy and the decision is faster, but the disagreement is still real and reappears later.',
+      because: 'The doc stays tidy and the decision is faster, but the disagreement is still there and tends to reappear later.',
     },
   ];
 }

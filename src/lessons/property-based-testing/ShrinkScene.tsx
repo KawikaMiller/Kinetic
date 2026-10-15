@@ -29,7 +29,7 @@ export function ShrinkScene({ picker, config, set }: { picker: ReactNode; config
     }
   }, [setCaption, found]);
 
-  const same = found ? replayIdentical(config) : null;
+  const same = useMemo(() => (found ? replayIdentical(config) : null), [found, config]);
 
   return (
     <StageFrame

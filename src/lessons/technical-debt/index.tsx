@@ -25,7 +25,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'Debt is a price tag, not a sin: a shortcut can be the right call when the horizon is short, and the trouble starts when nobody has priced it.',
-    'Interest is paid where people work. In this model an item nobody touches has no interest and a payback of never, so a rough corner nobody visits can wait.',
+    'Interest is paid where people work. In this model an item nobody touches has no interest and a payback of never, so a rough corner nobody visits can wait, though untouched code can still carry risks the model leaves out.',
     'The biggest pain and the best return are different rankings: divide the fix cost by the monthly interest to see which fix pays for itself first.',
     'Interest rates and quadrant boxes are estimates and views. Label which one you are giving, and say it in the units the decider uses, such as weeks of engineering a quarter.',
   ],
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'A break-even sprint that arrives sooner as the horizon gets shorter',
       ],
       answer: 2,
-      why: 'At 1% each point of debt costs a hundredth of a point of velocity per sprint, so paying it off takes about a hundred sprints to return what it costs, so debt can be the right call.',
+      why: 'At 1% each point of debt costs a hundredth of a point of velocity per sprint, so paying it off takes about a hundred sprints to return what it costs. That is why debt can be the right call.',
     },
     {
       q: 'Item A loses 9 days a month and takes 40 days to fix. Item B loses 4 days a month and takes 8 days to fix. Which pays back first?',

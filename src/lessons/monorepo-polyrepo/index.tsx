@@ -18,7 +18,7 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'On Change a shared library, the opening state is a breaking rename in a monorepo: one commit, five packages built, and it lands whole. Switch Repository layout to Polyrepo: four repositories each need their own change and the last one lands on day 7.',
-    'Pick Add an optional parameter: a monorepo still builds the affected set, but in a polyrepo the callers’ ^1.4.0 range accepts the minor release, so no repository needs a change.',
+    'Pick Add an optional parameter: a monorepo still builds the affected set, but in a polyrepo the callers’ ^1.4.0 range accepts the minor release, so no repository needs a change to keep working.',
     'On The bill, 100 packages cost far fewer CI minutes with affected-set detection than without. Drag the size to 500 and compare the two stats again: the gap widens.',
     'On Who owns what, most paths start red with no owner. Pick @platform and press Add or replace rule with the pattern /api/: the four api paths gain an owner and the rename pull request lists @platform as a reviewer.',
     'On It depends, set independent release cadence and access control to 100%: the ledger leans polyrepo. Then set shared code to 100% and those two back to 0%: it leans monorepo.',
@@ -56,7 +56,7 @@ const lesson: LessonModule = {
       q: 'The library adds an optional parameter and callers pin ^1.4.0. In the polyrepo, what does the change need?',
       options: [
         'A pull request in each of the four repositories, in dependency order',
-        'No repository needs a change: the caret range accepts the new minor release',
+        'No repository needs a change to keep working: the caret range accepts the new minor release',
         'A major release, since any change to a shared function counts as breaking',
         'One commit that updates every repository together before the release',
       ],

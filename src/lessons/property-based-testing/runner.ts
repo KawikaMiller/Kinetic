@@ -42,7 +42,7 @@ export function shrinkCandidates(xs: readonly number[]): number[][] {
   if (xs.length > 1) out.push(xs.slice(0, Math.ceil(xs.length / 2)));
   for (let i = 0; i < xs.length; i++) out.push([...xs.slice(0, i), ...xs.slice(i + 1)]);
   for (let i = 0; i < xs.length; i++) {
-    const half = Math.trunc(xs[i] / 2);
+    const half = Math.trunc(xs[i] / 2) + 0; // + 0 turns a -0 into 0
     if (half !== xs[i]) out.push(xs.map((v, j) => (j === i ? half : v)));
   }
   // The shorter prefix can equal dropping the last element: try each distinct candidate once.

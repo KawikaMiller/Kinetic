@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Button, ChipButton, Hint, TextField, Toggle } from '../../components/ui';
-import { addCase, parseExpected, parseWeight, removeCase, MAX_CASES, type Suite } from './suite';
+import { addCase, newCase, parseExpected, parseWeight, removeCase, MAX_CASES, type Suite } from './suite';
 
 /** The suite as a table of cases, with a form to add one. The expected-value column and field exist only for the exact-value assertion. */
 export function CasesEditor({ suite, onSuite }: { suite: Suite; onSuite: (s: Suite) => void }) {
@@ -16,7 +16,7 @@ export function CasesEditor({ suite, onSuite }: { suite: Suite; onSuite: (s: Sui
     if (!w.ok) return setError(w.error);
     const e = exact ? parseExpected(expected) : { ok: true as const, value: 0 };
     if (!e.ok) return setError(e.error);
-    const result = addCase(suite, { weight: w.value, express, expected: e.value });
+    const result = addCase(suite, newCase(suite.mode, w.value, express, e.value));
     if (!result.ok) return setError(result.error);
     setError(null);
     onSuite(result.suite);

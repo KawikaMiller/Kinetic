@@ -1,17 +1,30 @@
 import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
-import { READERS, keptOrder, lintDoc, reachOf, type DocContent, type Reach } from './designdoc';
+import { READERS, askCounts, keptOrder, lintDoc, reachOf, type AskOutcome, type DocContent, type Reach } from './designdoc';
 import { CRITERIA, rank, sweepFlips, type ConstraintId, type CriterionId, type Weights } from './decision';
 import { findEnding, findNode, ledger, redMeters, type Scenario, type Walk } from './scenario';
 
 const REACH_WORD: Record<Reach | 'cut', string> = { full: 'reaches it', partly: 'is cut off partway through it', none: 'never reaches it', cut: 'is cut off' };
+
+/** The verdict on the ask, from how many readers never reach it, are cut off inside it, or read it in full. */
+function askVerdict(c: Record<AskOutcome, number>): ReactNode {
+  if (c.none === 0 && c.cut === 0) return <>so every reader gets to the recommendation.</>;
+  return (
+    <>
+      so{' '}
+      {c.none > 0 && <b>{plural(c.none, 'reader')} {c.none === 1 ? 'reaches' : 'reach'} no decision</b>}
+      {c.none > 0 && c.cut > 0 && ' and '}
+      {c.cut > 0 && <b>{plural(c.cut, 'reader')} {c.cut === 1 ? 'is' : 'are'} cut off inside it</b>}.
+    </>
+  );
+}
 
 /** Scene 1: where each reader gets to in the learner's order, and how many doc checks pass. */
 export function buildCaption(c: DocContent): ReactNode {
   const order = keptOrder(c);
   const lint = lintDoc(c);
   const passes = lint.filter((l) => l.pass).length;
-  const none = READERS.filter((r) => (reachOf(order, r.budget, 'recommendation')?.reach ?? 'none') === 'none').length;
+  const counts = askCounts(order);
   return (
     <>
       {READERS.map((r, i) => {
@@ -24,7 +37,7 @@ export function buildCaption(c: DocContent): ReactNode {
         );
       })}
       {', '}
-      {none === 0 ? <>so every reader gets to the recommendation.</> : <>so <b>{plural(none, 'reader')} reach no decision</b>.</>} {passes} of {lint.length} doc checks pass.
+      {askVerdict(counts)} {passes} of {lint.length} doc checks pass.
     </>
   );
 }

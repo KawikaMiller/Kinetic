@@ -147,7 +147,7 @@ export function InterestScene({ picker }: { picker: ReactNode }) {
           </Provenance>
           <span className="td-claim">
             <ClaimLabel kind="view">debt as interest is a metaphor teams use, not a measurement</ClaimLabel>
-            <ClaimLabel kind="practice">paying down where interest is high is a common rule of thumb; this model builds it in</ClaimLabel>
+            <ClaimLabel kind="practice">paying down where interest is high is a common rule of thumb; this model charges one rate on all debt, so it does not show that choice</ClaimLabel>
           </span>
           <Hint block>
             A point of shortcut skips a point of work today and adds a point of principal. Each point of principal then costs {pct(plan.rate)} of a point of velocity, every sprint, until it is paid.

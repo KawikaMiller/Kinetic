@@ -7,6 +7,15 @@ import { FLAG_TEAMS, type Review, type Rule } from './owners';
 import { CONSUMER_RANGE, changeOf, monorepo, pinsAt, polyrepo, versionsInUse, type ChangeId } from './release';
 
 const oneDecimal = (v: number) => (Math.round(v * 10) / 10).toFixed(1);
+
+/** The scene 2 verdict, scoped to what the scene computes: only the monorepo's bill is modelled. */
+export function billNote(b: Bill): ReactNode {
+  return (
+    <>
+      In this model a monorepo with no way to find the affected set builds all {b.size} packages for every change, <b>{b.withoutDetection} CI minutes</b> against <b>{oneDecimal(b.withDetection)}</b> with it. A polyrepo CI run builds its own repository, which this scene does not model, so it shows what that tooling is worth to a monorepo, not which layout is cheaper.
+    </>
+  );
+}
 const points = (v: number) => (Math.round(v * 100) / 100).toFixed(2);
 
 /** Scene 1: the monorepo play-out, or the polyrepo one at a given day. */
@@ -14,7 +23,7 @@ export function releaseCaption(id: ChangeId, mode: 'monorepo' | 'polyrepo', call
   const change = changeOf(id);
   if (mode === 'monorepo') {
     const m = monorepo(change, callersUpdated);
-    const callers = change.compatible ? null : callersUpdated ? <> and updates {m.failing.length === 0 ? 'the callers' : 'some callers'}</> : <> without touching the callers</>;
+    const callers = change.compatible ? null : callersUpdated ? <> and updates the callers</> : <> without touching the callers</>;
     return (
       <>
         One commit changes the library{callers}. CI builds the affected set, <b>{plural(m.affected.length, 'package')}</b>, and the commit{' '}
@@ -27,7 +36,7 @@ export function releaseCaption(id: ChangeId, mode: 'monorepo' | 'polyrepo', call
   if (p.prs === 0) {
     return (
       <>
-        The library releases <b>{p.version}</b>, a {kind} release: the callers&apos; {CONSUMER_RANGE} range accepts it, so no repository needs a change.
+        The library releases <b>{p.version}</b>, a {kind} release: the callers&apos; {CONSUMER_RANGE} range accepts it, so no repository needs a change to keep working.
       </>
     );
   }

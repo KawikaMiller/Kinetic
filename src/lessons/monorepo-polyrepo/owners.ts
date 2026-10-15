@@ -92,6 +92,9 @@ export function matches(pattern: string, path: string): boolean {
   return anchored.endsWith('/') ? path.startsWith(anchored) : path === anchored;
 }
 
+/** Does the pattern cover none of the repository's paths (a typo, or a directory written without its trailing slash)? */
+export const matchesNoPath = (pattern: string): boolean => !PATHS.some((p) => matches(pattern, p));
+
 /** The owner of a path: the last rule that matches it, or null. */
 export function ownerOf(rules: readonly Rule[], path: string): Team | null {
   for (let i = rules.length - 1; i >= 0; i--) if (matches(rules[i].pattern, path)) return rules[i].owner;

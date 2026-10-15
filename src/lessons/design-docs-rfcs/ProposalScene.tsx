@@ -4,11 +4,14 @@ import { ClaimLabel, Legend, Provenance, Stat, Stats } from '../../components/ui
 import { useSetCaption } from '../../core/caption';
 import { scenarioCaption } from './captions';
 import { BECAUSE_CLAIM, PROPOSAL } from './proposal';
-import { choose, enumeratePaths, findEnding, redMeters, startWalk, undo } from './scenario';
+import { choose, enumeratePaths, findEnding, redMeters, startWalk, undo, validateScenario } from './scenario';
 import { ScenarioView } from './ScenarioView';
 
 /** Every path in this scenario makes the same number of decisions. */
 const DECISIONS = enumeratePaths(PROPOSAL)[0].choices.length;
+
+/** Said only because the validator, run here, finds nothing wrong: every ending can be reached. */
+const ENDING_HINT = validateScenario(PROPOSAL).length === 0 ? 'every ending is reachable' : undefined;
 
 export function ProposalScene({ picker }: { picker: ReactNode }) {
   const [walk, setWalk] = useState(() => startWalk(PROPOSAL));
@@ -48,6 +51,7 @@ export function ProposalScene({ picker }: { picker: ReactNode }) {
           walk={walk}
           picked={picked}
           claimOf={(id) => BECAUSE_CLAIM[id]}
+          endingHint={ENDING_HINT}
           onPick={setPicked}
           onContinue={() => {
             if (picked === null) return;

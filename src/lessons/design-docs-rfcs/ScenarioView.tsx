@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Button, ClaimLabel, Hint } from '../../components/ui';
@@ -10,19 +11,22 @@ const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
 /** Where a meter's red edge sits, as a Bar marker in the meter's own units. */
 const redEdge = (m: Meter) => ('below' in m.bad ? m.bad.below : m.bad.above);
 
-function MeterRow({ m, value, preview }: { m: Meter; value: number; preview?: number }) {
+/** Builds a class name from the view's prefix, so an extracted scenario view can carry its own lesson's prefix. */
+type ClassName = (name: string) => string;
+
+function MeterRow({ m, value, preview, cls }: { m: Meter; value: number; preview?: number; cls: ClassName }) {
   const bad = isBad(m, value);
   const after = preview === undefined ? undefined : value + preview;
   return (
-    <div className="dd-meter">
-      <span className="dd-meter-label">
+    <div className={cls('meter')}>
+      <span className={cls('meter-label')}>
         {m.label}{' '}
         <b className={bad ? 'is-bad' : ''}>
           {value}
           {m.unit ? ` ${m.unit}` : ''}
         </b>
         {preview !== undefined && preview !== 0 && (
-          <span className={`dd-preview ${after !== undefined && isBad(m, after) ? 'is-bad' : ''}`}> {signed(preview)} if chosen</span>
+          <span className={`${cls('preview')} ${after !== undefined && isBad(m, after) ? 'is-bad' : ''}`}> {signed(preview)} if chosen</span>
         )}
       </span>
       <Bar
@@ -38,9 +42,13 @@ function MeterRow({ m, value, preview }: { m: Meter; value: number; preview?: nu
   );
 }
 
-/** Presentational: the meters, the choices as a keyboard radio group with their reasons, the ledger and the ending. */
+/**
+ * Presentational: the meters, the choices as a keyboard radio group with their reasons, the ledger and the ending.
+ * Class names carry `classPrefix` (lesson CSS is global, so each lesson passes its own), and the one sentence about
+ * the scenario as a whole, `endingHint`, is the caller's to supply because only the caller knows it is true.
+ */
 export function ScenarioView({
-  scenario, walk, picked, onPick, onContinue, onUndo, onReplay, claimOf,
+  scenario, walk, picked, onPick, onContinue, onUndo, onReplay, claimOf, classPrefix = 'dd', endingHint, stepTitle = (n) => `Decision ${n}`,
 }: {
   scenario: Scenario;
   walk: Walk;
@@ -50,7 +58,15 @@ export function ScenarioView({
   onUndo: () => void;
   onReplay: () => void;
   claimOf?: (choiceId: string) => ClaimKind | undefined;
+  classPrefix?: string;
+  /** Shown beside the ending heading, e.g. a claim the caller has checked with `validateScenario`. */
+  endingHint?: string;
+  /** The heading of the n-th step (1-based). */
+  stepTitle?: (n: number) => string;
 }) {
+  const cls: ClassName = (name) => `${classPrefix}-${name}`;
+  const root = useRef<HTMLDivElement>(null);
+  const firstRender = useRef(true);
   const node = findNode(scenario, walk.at);
   const ending = findEnding(scenario, walk.at);
   const choices = node?.choices ?? [];
@@ -59,27 +75,38 @@ export function ScenarioView({
   const chosen: Choice | undefined = choices[pickedIndex];
   const rows = ledger(scenario, walk);
 
+  // Continue, Undo and Replay disable themselves or vanish with the step they act on, so focus moves
+  // to the new step: its first choice, or the ending's title.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const el = root.current?.querySelector<HTMLElement>(`[role="radio"][tabindex="0"], .${cls('ending-title')}`);
+    el?.focus();
+  }, [walk.at]);
+
   return (
-    <div className="dd-scenario">
-      <div className="dd-meters">
+    <div className={cls('scenario')} ref={root}>
+      <div className={cls('meters')}>
         {scenario.meters.map((m) => (
-          <MeterRow key={m.id} m={m} value={walk.meters[m.id]} preview={chosen?.effects?.[m.id]} />
+          <MeterRow key={m.id} m={m} value={walk.meters[m.id]} preview={chosen?.effects?.[m.id]} cls={cls} />
         ))}
       </div>
 
       {node && (
         <Box>
-          <SectionTitle>{`Decision ${walk.path.length + 1}`}</SectionTitle>
-          <p className="dd-prompt">{node.prompt}</p>
-          <div className="dd-choices" role="radiogroup" aria-label="What do you do?">
+          <SectionTitle>{stepTitle(walk.path.length + 1)}</SectionTitle>
+          <p className={cls('prompt')}>{node.prompt}</p>
+          <div className={cls('choices')} role="radiogroup" aria-label="What do you do?">
             {choices.map((c, i) => (
-              <button key={c.id} type="button" {...radio.itemProps(i)} className={`dd-choice ${c.id === picked ? 'is-on' : ''}`} onClick={() => onPick(c.id)}>
+              <button key={c.id} type="button" {...radio.itemProps(i)} className={`${cls('choice')} ${c.id === picked ? 'is-on' : ''}`} onClick={() => onPick(c.id)}>
                 <b>{c.label}</b>
-                {c.id === picked && <span className="dd-because">{c.because} {claimOf?.(c.id) && <ClaimLabel kind={claimOf(c.id)!} />}</span>}
+                {c.id === picked && <span className={cls('because')}>{c.because} {claimOf?.(c.id) && <ClaimLabel kind={claimOf(c.id)!} />}</span>}
               </button>
             ))}
           </div>
-          <div className="dd-actions">
+          <div className={cls('actions')}>
             <Button variant="primary" disabled={!chosen} onClick={onContinue}>Continue</Button>
             <Button disabled={walk.path.length === 0} onClick={onUndo}>Undo the last choice</Button>
             {!chosen && <Hint>Pick a choice to see why it does what it does.</Hint>}
@@ -88,18 +115,18 @@ export function ScenarioView({
       )}
 
       {ending && (
-        <Box variant="sunken" className="dd-ending">
-          <SectionTitle hint="every ending is reachable">Ending</SectionTitle>
-          <p className="dd-ending-title">{ending.title}</p>
+        <Box variant="sunken" className={cls('ending')}>
+          <SectionTitle hint={endingHint}>Ending</SectionTitle>
+          <p className={cls('ending-title')} tabIndex={-1}>{ending.title}</p>
           <p>{ending.text}</p>
-          <div className="dd-actions">
+          <div className={cls('actions')}>
             <Button onClick={onUndo}>Undo the last choice</Button>
             <Button variant="primary" onClick={onReplay}>Replay from the start</Button>
           </div>
         </Box>
       )}
 
-      <Box className="dd-ledger">
+      <Box className={cls('ledger')}>
         <SectionTitle hint="what you chose and what it cost">Ledger</SectionTitle>
         {rows.length === 0 ? (
           <p className="empty-note">Nothing chosen yet.</p>
@@ -108,7 +135,7 @@ export function ScenarioView({
             {rows.map((r) => (
               <li key={r.nodeId}>
                 <b>{r.choice.label}</b>
-                <span className="dd-effects">
+                <span className={cls('effects')}>
                   {scenario.meters.map((m) => {
                     const d = r.choice.effects?.[m.id] ?? 0;
                     return d === 0 ? null : (
@@ -116,7 +143,7 @@ export function ScenarioView({
                     );
                   })}
                 </span>
-                <span className="dd-because">{r.choice.because}</span>
+                <span className={cls('because')}>{r.choice.because}</span>
               </li>
             ))}
           </ol>
