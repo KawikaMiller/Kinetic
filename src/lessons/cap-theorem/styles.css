@@ -72,10 +72,8 @@
   border: 1px solid var(--cell-line);
 }
 .cap-node.refusing { border-color: var(--bad); box-shadow: 0 0 24px -6px var(--bad); }
-.cap-node.conflict { border-color: var(--hi); box-shadow: 0 0 24px -6px var(--hi); }
-.cap-node.conflict .cap-vals b { border-color: var(--hi); color: var(--hi); }
 .cap-flag { font: 700 10px var(--mono); text-transform: uppercase; color: var(--bad); }
-.cap-node.conflict .cap-flag { color: var(--hi); }
+.cap-prov { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 .cap-pkt {
   position: absolute;

@@ -1,11 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
 import { Flyer } from '../../components/scene';
 import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { buildFrames, type Choice, type Net, type NodeId, type Pkt, type Place } from './scenarios';
+import { buildFrames, valueLabel, type Pkt, type Place } from './frames';
+import {
+  BROKEN_SEED, choiceAfterNetSwitch, HEALTHY_ONE_WAY_MS, NODE_IDS, PARTITION, PARTITION_ONE_WAY_MS, runStory, type Choice, type Net,
+} from './model';
 import './styles.css';
 
 const INTERVAL = 1500;
@@ -31,18 +34,16 @@ const crosses = (a: Place, b: Place) => (POS[a].x - WALL_X) * (POS[b].x - WALL_X
 export function Stage() {
   const [net, setNet] = useState<Net>('partition');
   const [choice, setChoice] = useState<Choice>('cp');
-  const frames = useMemo(() => buildFrames(net, choice), [net, choice]);
+  const frames = useMemo(() => buildFrames(runStory(net, choice)), [net, choice]);
   const player = usePlayer(frames, { interval: INTERVAL });
   const f = player.frame;
 
   const switchNet = (n: Net) => {
     setNet(n);
-    // keep the "same side" of the trade-off: C↔C, A↔L
-    setChoice((c) => (n === 'healthy' ? (c === 'ap' || c === 'el' ? 'el' : 'ec') : c === 'el' || c === 'ap' ? 'ap' : 'cp'));
+    setChoice((c) => choiceAfterNetSwitch(n, c));
   };
 
-  const all = Object.values(f.values).map((v) => v.join('|'));
-  const agree = all.every((v) => v === all[0]) && !all[0].includes('|');
+  const identical = new Set(Object.values(f.values)).size === 1;
 
   return (
     <StageFrame minWidth={740}
@@ -50,25 +51,39 @@ export function Stage() {
       height={430}
       stats={
         <Stats>
-          <Stat label="Replicas agree?" value={agree ? 'yes' : 'no'} color={agree ? 'var(--ok)' : 'var(--bad)'} />
+          <Stat label="Replicas identical?" value={identical ? 'yes' : 'no'} color={identical ? 'var(--ok)' : 'var(--bad)'} />
+          <Stat label="Stale reads served" value={f.stale} color={f.stale ? 'var(--bad)' : undefined} />
           <Stat
             label="Unavailable"
             value={f.refusing.length ? f.refusing.join(', ') : 'none'}
             color={f.refusing.length ? 'var(--bad)' : undefined}
           />
-          <Stat label="Write latency" value={f.latency === null ? NA : `${f.latency} ms`} />
+          <Stat label="Write latency" value={f.latencyMs === null ? NA : `${f.latencyMs} ms`} />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--hi)', label: 'write', shape: 'dot' },
-            { color: 'var(--violet)', label: 'read', shape: 'dot' },
-            { color: 'var(--info)', label: 'replication', shape: 'dot' },
-            { color: 'var(--ok)', label: 'ok / ack', shape: 'dot' },
-            { color: 'var(--bad)', label: 'error / lost', shape: 'dot' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--hi)', label: 'write', shape: 'dot' },
+              { color: 'var(--violet)', label: 'read', shape: 'dot' },
+              { color: 'var(--info)', label: 'replication', shape: 'dot' },
+              { color: 'var(--ok)', label: 'ok / ack', shape: 'dot' },
+              { color: 'var(--bad)', label: 'error / lost', shape: 'dot' },
+            ]}
+          />
+          <div className="cap-prov">
+            <Provenance kind="simulated" seed={BROKEN_SEED}>
+              three replicas on a seeded network simulator; values, refusals and latencies are read back from the run
+            </Provenance>
+            <Provenance kind="scripted">
+              {net === 'partition'
+                ? `the partition (${PARTITION.from} to ${PARTITION.to} ms) and the four client requests`
+                : 'the client requests'}
+            </Provenance>
+            <Provenance kind="illustrative">{net === 'partition' ? PARTITION_ONE_WAY_MS : HEALTHY_ONE_WAY_MS} ms one-way delay</Provenance>
+          </div>
+        </>
       }
       controls={
         <Controls>
@@ -148,14 +163,13 @@ export function Stage() {
             );
           })}
 
-          {(['N1', 'N2', 'N3'] as NodeId[]).map((n) => {
-            const vals = f.values[n];
-            const conflict = vals.length > 1;
+          {NODE_IDS.map((n) => {
+            const value = f.values[n];
             const refusing = f.refusing.includes(n);
             return (
               <motion.div
                 key={n}
-                className={`cap-node ${refusing ? 'refusing' : ''} ${conflict ? 'conflict' : ''}`}
+                className={`cap-node ${refusing ? 'refusing' : ''}`}
                 style={{ left: `${POS[n].x}%`, top: `${POS[n].y}%`, x: '-50%', y: '-50%' }}
                 animate={refusing ? { rotate: [0, -4, 4, 0] } : { rotate: 0 }}
                 transition={{ duration: 0.4 }}
@@ -163,14 +177,11 @@ export function Stage() {
                 <span className="cap-node-name">{n}</span>
                 <div className="cap-vals">
                   <AnimatePresence mode="popLayout" initial={false}>
-                    {vals.map((v) => (
-                      <motion.b key={v} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                        {v}
-                      </motion.b>
-                    ))}
+                    <motion.b key={value} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+                      {valueLabel(value)}
+                    </motion.b>
                   </AnimatePresence>
                 </div>
-                {conflict && <span className="cap-flag">conflict</span>}
                 {refusing && <span className="cap-flag">no quorum</span>}
               </motion.div>
             );
@@ -194,8 +205,8 @@ export function Stage() {
             <span className={`cap-cell ${net === 'healthy' && choice === 'ec' ? 'on' : ''}`}>C: stay correct</span>
           </div>
           <p>
-            Not "pick 2 of 3". Partitions <b>will</b> happen, so the real question is what you give up when they do, and
-            what you trade the rest of the time.
+            Not "pick 2 of 3". Partitions happen on real networks, so the real question is what you give up when they do,
+            and what you trade the rest of the time. PACELC is Daniel Abadi's 2012 extension of CAP.
           </p>
         </aside>
       </div>
