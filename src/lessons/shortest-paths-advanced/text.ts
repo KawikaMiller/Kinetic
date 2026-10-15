@@ -1,4 +1,4 @@
-import type { Costs, Graph, NegativeCycle } from './model';
+import { rateText, type Costs, type Graph, type NegativeCycle } from './model';
 
 /** The sentence that compares the two all-pairs costs, from the counts on screen. */
 export function costVerdict(c: Costs): string {
@@ -36,3 +36,14 @@ export function cycleText(g: Graph, c: NegativeCycle): string {
 }
 
 export const nodeList = (g: Graph, nodes: readonly number[]): string => nodes.map((v) => g.names[v]).join(', ');
+
+/** For a currency market, what a negative cycle means in money: the rates round the loop multiply to e^(-sum), above 1. Empty for other graphs. */
+export function marketLoopText(g: Graph, c: NegativeCycle): string {
+  if (!g.market) return '';
+  const start = c.nodes.indexOf(Math.min(...c.nodes));
+  const ring = [...c.nodes.slice(start), ...c.nodes.slice(0, start)];
+  const rates = ring.map((from, k) => c.edges.map((i) => g.edges[i]).find((e) => e.from === from && e.to === ring[(k + 1) % ring.length])?.rate);
+  if (rates.some((r) => r === undefined)) return '';
+  const shown = rates.map((r) => rateText(r!)).join(' × ');
+  return ` In money: ${shown} = ${Math.exp(-c.sum).toFixed(3)}, so a round trip returns ${Math.exp(-c.sum).toFixed(3)} of what you started with (invented rates).`;
+}

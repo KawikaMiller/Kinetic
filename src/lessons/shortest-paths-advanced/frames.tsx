@@ -4,7 +4,7 @@ import type { Frame } from '../../core/types';
 import {
   dijkstraVisited, dijkstraWrong, bellmanFord, settledAfter, type BfRun, type Cell, type FwRun, type Graph,
 } from './model';
-import { cycleText, distText, edgeText, nodeList, sumText } from './text';
+import { cycleText, distText, edgeText, marketLoopText, nodeList, sumText } from './text';
 
 // ---- Bellman-Ford ------------------------------------------------------------------------
 
@@ -14,6 +14,8 @@ export interface BfFrame extends Frame {
   round: number;
   /** The edge being tested. */
   edge: number | null;
+  /** Distances changed by the round the caption speaks of: the running count while it runs, its total once it is done (0 in a quiet check round), the edges that still lower in a failing check. */
+  changes: number;
   /** Edges that lowered a distance this round so far. */
   lowered: number[];
   /** Changes per finished round. */
@@ -37,7 +39,7 @@ export function bfFrames(g: Graph, run: BfRun): BfFrame[] {
   const d0 = Array<number>(n).fill(Infinity);
   d0[run.source] = 0;
   const rec = createRecorder<BfFrame>(
-    { dist: d0, round: 0, edge: null, lowered: [], roundChanges: [], tests: 0, checkEdges: [], cycle: [], noPath: [] },
+    { dist: d0, round: 0, edge: null, changes: 0, lowered: [], roundChanges: [], tests: 0, checkEdges: [], cycle: [], noPath: [] },
     { transient: { edge: null } },
   );
   const name = (v: number) => g.names[v];
@@ -78,7 +80,7 @@ export function bfFrames(g: Graph, run: BfRun): BfFrame[] {
           </>
         ),
         undefined,
-        { dist: [...dist], round, edge: t.edge, lowered, tests },
+        { dist: [...dist], round, edge: t.edge, changes: lowered.length, lowered, tests },
       );
     }
     const changes = list.filter((t) => t.lowered).length;
@@ -92,18 +94,21 @@ export function bfFrames(g: Graph, run: BfRun): BfFrame[] {
           ? 'A round that changes nothing means no further round can, so the run stops here.'
           : run.cycle
             ? `${plural(settled.length, 'node')} of ${n} already hold the value they will end with, but with a negative cycle nothing is final yet.`
-            : `After ${plural(round, 'round')} every node whose shortest path has at most ${round} ${round === 1 ? 'edge' : 'edges'} is final: ${settled.length} of the ${reachable} reachable ${reachable === 1 ? 'node holds' : 'nodes hold'} its final distance.`}
+            : `After ${plural(round, 'round')} every node whose shortest path has at most ${round} ${round === 1 ? 'edge' : 'edges'} is final: ${settled.length} of the ${reachable} reachable ${reachable === 1 ? 'node holds its' : 'nodes hold their'} final distance.`}
       </>,
       0.8,
-      { lowered: [], roundChanges: finished, edge: null },
+      { lowered: [], roundChanges: finished, edge: null, changes },
     );
   }
   const rounds = run.roundChanges.length;
   if (run.stoppedEarly) {
     rec.close(
       <>
-        Done after {plural(rounds, 'round')} ({plural(run.tests.length, 'edge test')}), not the {n - 1} rounds the worst case allows. A negative cycle that was reachable would have kept lowering something, so there is
-        none. Distances: {g.names.map((v, i) => `${v} ${distText(g, run.dist[i])}`).join(', ')}.
+        Done after {plural(rounds, 'round')} ({plural(run.tests.length, 'edge test')}),{' '}
+        {rounds < n - 1
+          ? `not the ${n - 1} rounds the worst case allows.`
+          : `the most the worst case allows (n - 1 = ${n - 1}), and the last one changed nothing.`}{' '}
+        A negative cycle that was reachable would have kept lowering something, so there is none. Distances: {g.names.map((v, i) => `${v} ${distText(g, run.dist[i])}`).join(', ')}.
       </>,
       2,
     );
@@ -115,7 +120,7 @@ export function bfFrames(g: Graph, run: BfRun): BfFrame[] {
         {plural(n - 1, 'round')} done, which is enough for any shortest path (it has at most {n - 1} edges). Round {n} is the check: no edge lowers anything, so there is no reachable negative cycle.
       </>,
       undefined,
-      { round: n },
+      { round: n, changes: 0 },
     );
     rec.close(<>Done: distances {g.names.map((v, i) => `${v} ${distText(g, run.dist[i])}`).join(', ')}.</>, 2);
     return rec.frames;
@@ -126,11 +131,11 @@ export function bfFrames(g: Graph, run: BfRun): BfFrame[] {
       <span className="hl bad">{run.checkEdges.map((i) => edgeText(g, i)).join(', ')}</span>. Something is going round a loop.
     </>,
     undefined,
-    { round: n, checkEdges: run.checkEdges },
+    { round: n, changes: run.checkEdges.length, checkEdges: run.checkEdges },
   );
   rec.snap(
     <>
-      Negative cycle <span className="hl bad">{cycleText(g, run.cycle)}</span>, summing to {sumText(g, run.cycle.sum)}: each trip round it makes every distance on it, and on anything it can reach, smaller.
+      Negative cycle <span className="hl bad">{cycleText(g, run.cycle)}</span>, summing to {sumText(g, run.cycle.sum)}: each trip round it makes every distance on it, and on anything it can reach, smaller.{marketLoopText(g, run.cycle)}
     </>,
     undefined,
     { cycle: run.cycle.edges },

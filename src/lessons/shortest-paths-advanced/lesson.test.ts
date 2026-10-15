@@ -4,7 +4,7 @@ import { mulberry32, randInt } from '../../core/random';
 import { bfFrames, dijkstraFrames, fwFrames } from './frames';
 import lesson from './index';
 import { EPS, PRESETS, bellmanFord, costs, dijkstraVisited, floydWarshall, presetById, type Graph } from './model';
-import { costVerdict, cycleText, distText } from './text';
+import { costVerdict, cycleText, distText, marketLoopText } from './text';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
 const textbook = presetById('textbook');
@@ -65,7 +65,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(run.steps.slice(0, -1).every((s) => s.negativeDiagonal.length === 0)).toBe(true);
   });
 
-  it('try-this 5: on the textbook graph Bellman-Ford makes 30 edge tests from s, 150 over every source, and Floyd-Warshall 125', () => {
+  it('try-this 5: on the textbook graph Bellman-Ford makes 30 edge tests from s, the independent total over every source (160), and Floyd-Warshall 125', () => {
     const c = costs(textbook.graph, bellmanFord(textbook.graph, 0), floydWarshall(textbook.graph));
     // Independent count: 5 sources, each run's rounds (until a no-change round or n - 1 plus the check) x 10 edges.
     let independent = 0;
@@ -94,6 +94,7 @@ describe('try-this entries, from the default state, as written', () => {
 });
 
 describe('every caption is computed from the model and reads cleanly', () => {
+it('the closing caption does not claim a saving when the quiet round is the last one allowed (Dijkstra breaks, n = 3), and does when rounds were saved (textbook)', () => {    const quiet = bellmanFord(breaks.graph, breaks.source);    expect(quiet.roundChanges.length).toBe(breaks.graph.names.length - 1);    const last = text(bfFrames(breaks.graph, quiet).at(-1)!.say);    expect(last).toContain('Done after 2 rounds (6 edge tests), the most the worst case allows (n - 1 = 2), and the last one changed nothing.');    expect(last).not.toContain('not the 2 rounds');    const saved = text(bfFrames(textbook.graph, bellmanFord(textbook.graph, textbook.source)).at(-1)!.say);    expect(saved).toContain('not the 4 rounds the worst case allows');  });  it('Changed this round equals the number the caption states at every round-end and closing frame, and the running count mid-round (presets x sources)', () => {    for (const p of PRESETS) {      for (let source = 0; source < p.graph.names.length; source++) {        const run = bellmanFord(p.graph, source);        const frames = bfFrames(p.graph, run);        const perRound = new Map<number, boolean[]>();        for (const t of run.tests) perRound.set(t.round, [...(perRound.get(t.round) ?? []), t.lowered]);        let seenInRound = 0;        for (const f of frames) {          const said = text(f.say);          const done = /^Round (d+) done: (d+) distances? changed/.exec(said);          if (done) {            const independent = (perRound.get(Number(done[1])) ?? []).filter(Boolean).length;            expect(Number(done[2]), `${p.id} from ${source}`).toBe(independent);            expect(f.changes, `${p.id} from ${source} round ${done[1]}`).toBe(independent);            seenInRound = 0;          } else if (f.edge !== null) {            if (f.lowered.length > seenInRound) seenInRound = f.lowered.length;            expect(f.changes).toBe(f.lowered.length);          }        }        const closing = frames.at(-1)!;        const settledRounds = run.roundChanges;        const expected = run.cycle ? run.checkEdges.length : run.stoppedEarly ? settledRounds.at(-1)! : 0;        expect(closing.changes, `${p.id} from ${source} closing`).toBe(expected);      }    }  });  it('the arbitrage preset states the rates and the product 1.053 on the cycle caption, and other graphs add nothing', () => {    const arb = presetById('arbitrage');    const run = bellmanFord(arb.graph, arb.source);    const caption = text(bfFrames(arb.graph, run).find((f) => text(f.say).startsWith('Negative cycle'))!.say);    expect(caption).toContain('0.90 × 0.90 × 1.30 = 1.053');    expect(0.9 * 0.9 * 1.3).toBeCloseTo(1.053, 3);    expect(marketLoopText(textbook.graph, bellmanFord(negCycle.graph, 0).cycle!)).toBe('');  });
   it('walks every preset x every source node through all three step-through scenes: no NaN, no raw Infinity, no glued sentence', () => {
     let frames = 0;
     for (const p of PRESETS) {

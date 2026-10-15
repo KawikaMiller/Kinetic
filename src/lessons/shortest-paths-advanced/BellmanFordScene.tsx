@@ -42,7 +42,7 @@ export function BellmanFordScene({ picker, ed }: { picker: ReactNode; ed: GraphE
       stats={
         <Stats>
           <Stat label="Round" value={f.round === 0 ? '-' : f.round === n ? `${n} (check)` : f.round} color="var(--hi)" sub={`${changedRounds} of ${f.roundChanges.length} finished changed something`} />
-          <Stat label="Changed this round" value={f.lowered.length} color="var(--ok)" sub="distances lowered so far" />
+          <Stat label="Changed this round" value={f.changes} color="var(--ok)" sub="distances lowered in the round shown" />
           <Stat label="Edge tests" value={f.tests} sub={`${g.edges.length} per round`} />
         </Stats>
       }
