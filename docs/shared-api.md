@@ -1421,6 +1421,26 @@ const { sorted, sort, headerProps } = useSortedRows(rows, { name: (r) => r.name,
   The diamond itself is kept wholly inside the track (`instantX`, and a CSS `clamp`), so an instant at the very start or end of the domain stays inside.
 - `isInstant(bar)`, `INSTANT_GAP_PX`, `INSTANT_SIZE_PX` are in `core/gantt`. Instants take no `motionId` glide and no `progress`.
 
+### `GanttLanes` calendar axis and `hideEmptyLanes` (K3-12) — later project-planning-critical-path, estimation, job-scheduling, incident-response, etl-orchestration, backups-disaster-recovery, dora-metrics, safe-config-rollout
+```tsx
+<GanttLanes lanes={…} bars={…} domain={[0, 72]}                       // domain: hours since `start`
+            axis={{ calendar: { start: '2026-03-02T00:00:00Z', unit: 'hour' } }}   // 'hour' | 'day' | 'week'
+            hideEmptyLanes />
+calendarTicks(domain, { start, unit }, count?)   // [{ value, at, label }]: value in domain hours, at in % of the track
+barInDomain(start, end, domain)                  // does a bar touch the domain: what hideEmptyLanes counts
+```
+- **The calendar domain is hours since `start`**, whatever the unit: `unit` only says which boundaries get a tick (every hour, every UTC
+  midnight, every Monday 00:00 UTC). Labels are "Mon 09:00" (hour) or "Mon 12 Oct" (day and week), in **UTC**, and the axis says so on screen
+  (a muted "UTC" in the lane-label column). `start` must be an ISO instant with a zone (`Z` or an offset); a bare "2026-03-02T00:00" would be read in the
+  browser's own zone, so `calendarTicks` throws on it.
+- A crowded axis is thinned to a round stride counted from midnight (every 2nd, 3rd, 4th, 6th, 8th, 12th hour; every 2nd, 3rd, 5th, 10th day; every 2nd, 4th
+  week...), never "every 13th hour", and `GanttLanes` asks for fewer ticks on a narrow track (one per ~84px, 2 to 6), so at 390 it shows "Mon 00:00  Tue 13:00"-style pairs
+  rather than overlapping text. Tests cover week boundaries, a month and a year end, an offset `start`, ticks exactly on the ends, and the refusal.
+- `hideEmptyLanes` leaves out every lane with no bar touching the domain (an instant inside it counts) and says which on a line under the
+  chart ("1 lane with nothing in this window is hidden: next month"), so the omission is on screen and in the reading order. With nothing hidden
+  the markup is unchanged. Bars and instants of hidden lanes are not drawn; markers and `now` still are.
+- Without `calendar`, `axis` is the numeric axis it always was (all 37 GanttLanes lessons pixel-identical at 1440 after this change).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

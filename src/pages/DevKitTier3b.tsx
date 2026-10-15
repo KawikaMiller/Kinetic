@@ -26,6 +26,9 @@ export function DevKitTier3b() {
       <Section title="GanttLanes · instants: a bar with start = end is a diamond with its label beside it (K3-11)">
         <GanttInstantsDemo />
       </Section>
+      <Section title="GanttLanes · a calendar axis (UTC, hours since a Monday) and hideEmptyLanes (K3-12)">
+        <GanttCalendarDemo />
+      </Section>
       <Section title="CodePanel · a long line scrolls inside the panel instead of widening a flex row (K3-6)">
         <LongLineDemo />
       </Section>
@@ -67,6 +70,48 @@ function GanttInstantsDemo() {
         <GanttLanes lanes={INSTANT_LANES} bars={INSTANT_BARS} domain={[0, 100]} axis unit=" min" size="md" ariaLabel="Deploys and pages on a 100 minute axis" />
       </div>
     </div>
+  );
+}
+
+const CALENDAR_LANES = [
+  { id: 'backup', label: 'backups' },
+  { id: 'cron', label: 'cron jobs' },
+  { id: 'oncall', label: 'on-call' },
+  { id: 'later', label: 'next month' },
+];
+/** Hours since Monday 2026-03-02 00:00 UTC. */
+const CALENDAR_BARS: GanttBar[] = [
+  { id: 'b1', lane: 'backup', start: 2, end: 3, tone: 'ok', label: 'full' },
+  { id: 'b2', lane: 'backup', start: 26, end: 27, tone: 'info' },
+  { id: 'b3', lane: 'backup', start: 50, end: 51, tone: 'info' },
+  { id: 'c1', lane: 'cron', start: 9, end: 9, tone: 'hi', label: 'report' },
+  { id: 'c2', lane: 'cron', start: 33, end: 33, tone: 'hi', label: 'report' },
+  { id: 'o1', lane: 'oncall', start: 0, end: 48, tone: 'violet', label: 'Ana' },
+  { id: 'o2', lane: 'oncall', start: 48, end: 72, tone: 'sky', label: 'Bo' },
+  { id: 'l1', lane: 'later', start: 900, end: 910, tone: 'info' },
+];
+
+function GanttCalendarDemo() {
+  const [hide, setHide] = useState(true);
+  return (
+    <>
+      <div className="devkit-row">
+        <Button onClick={() => setHide((h) => !h)}>{hide ? 'Show empty lanes' : 'Hide empty lanes'}</Button>
+      </div>
+      <div className="devkit-row">
+        <div className="devkit-gantt">
+          <GanttLanes
+            lanes={CALENDAR_LANES}
+            bars={CALENDAR_BARS}
+            domain={[0, 72]}
+            axis={{ calendar: { start: '2026-03-02T00:00:00Z', unit: 'hour' } }}
+            hideEmptyLanes={hide}
+            size="md"
+            ariaLabel="Three days of backups, cron jobs and on-call shifts, in UTC"
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
