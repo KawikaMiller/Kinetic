@@ -1,0 +1,23 @@
+.ab-stage { gap: 12px; align-items: center; }
+.ab-stage > .plot2d, .ab-row .plot2d { max-width: 100%; height: auto; }
+.ab-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
+.ab-note { display: block; text-align: center; }
+.ab-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; }
+
+.ab-verdict, .ab-calc, .ab-slice, .ab-slices, .ab-stale, .ab-refusals { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 8px; }
+.ab-verdict p, .ab-calc p, .ab-slice p, .ab-stale p, .ab-refusals p { margin: 0; font: 500 13.5px var(--font); color: var(--text); }
+.ab-calc b { font-family: var(--mono); color: var(--hi); }
+.ab-verdict p { font-weight: 700; }
+.ab-ok { color: var(--ok); }
+.ab-verdict .ab-bad, .ab-slice .ab-bad { color: var(--bad); }
+.ab-verdict .ab-orange, .ab-slice .ab-orange { color: var(--orange); }
+.ab-slice .ab-ok { color: var(--ok); }
+
+.ab-refusals ul { margin: 0; padding-left: 18px; font: 500 12.5px var(--font); color: var(--bad); }
+
+.ab-slices .data-table td:nth-child(2) { font-family: var(--font); }
+.ab-picked td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ab-flagged td { color: var(--bad); }
+
+.ab-bar-label { display: block; font: 600 12.5px var(--font); color: var(--text); margin-bottom: 3px; }
+.ab-bar-value { font: 700 12.5px var(--mono); color: var(--muted); }
