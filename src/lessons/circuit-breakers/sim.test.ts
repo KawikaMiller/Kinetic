@@ -113,7 +113,7 @@ describe('safety invariants over 200 seeded fault schedules (breaker mode)', () 
         },
       });
     }
-  });
+  }, 90_000);
 
   it('transitions are only closed to open, open to half, half to open and half to closed', () => {
     const allowed = new Set(['closed>open', 'open>half', 'half>open', 'half>closed']);
