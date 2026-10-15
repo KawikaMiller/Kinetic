@@ -1,65 +1,49 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { toOptions } from '../../components/options';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, PauseButton, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, PauseButton, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { duration, NA, perSec } from '../../core/format';
 import { useCanvas, useLoop } from '../../core/hooks';
 import { createCooldown } from '../../core/sim';
 import { useSimulation } from '../../core/useSimulation';
+import { BAD_DAY, badDayCaption, HEALTHY, healCaption, insightCaption, introCaption, MODE_LABEL, modeCaption, transitionCaption } from './captions';
 import { drawScene } from './draw';
-import { advance, B_CAP, createWorld, OPEN_FOR, THREADS, TIMEOUT, type Mode, type Stats as SimStats, type World } from './sim';
+import {
+  advance, B_CAP, BROKEN_SEED, createWorld, insightFor, NET, STORM_RATIO, THREADS, TIMEOUT, type Mode, type Stats as SimStats, type World,
+} from './sim';
 
-const MODES: { id: Mode; label: string; say: ReactNode }[] = [
-  { id: 'naive', label: 'Naive retries',
-    say: <><span className="hl bad">Naive retries</span>: on any failure, retry immediately, up to 3 times. Sounds helpful. Now give B a bad day.</> },
-  { id: 'backoff', label: 'Backoff + jitter',
-    say: <><span className="hl violet">Exponential backoff + jitter</span>: wait a random time up to 0.2 s, 0.4 s, 0.8 s before each retry. Retries stop arriving in lockstep.</> },
-  { id: 'breaker', label: 'Circuit breaker',
-    say: <><span className="hl ok">Circuit breaker</span> (plus backoff): if most recent calls fail, stop calling B at all for a while and serve a fallback.</> },
-];
+const MODES: Mode[] = ['naive', 'backoff', 'breaker'];
 
 const STAGE_HEIGHT = 470;
 const INSIGHT_COOLDOWN_S = 8;
-const STORM_RATIO = 1.8; // B load vs real traffic that counts as a retry storm
-const HEALTHY = { fail: 3, latency: 120 };
-const BAD_DAY = { fail: 60, latency: 700 };
+/** A's error rate from which the stat turns red (percent). */
+const ERROR_RED_PCT = 1;
+const DEFAULT_RATE = 15;
 
 export function Stage() {
   const setCaption = useSetCaption();
   const [mode, setMode] = useState<Mode>('naive');
   const [fail, setFail] = useState(HEALTHY.fail);
   const [latency, setLatency] = useState(HEALTHY.latency);
-  const [rate, setRate] = useState(15);
+  const [rate, setRate] = useState(DEFAULT_RATE);
   const insight = useRef(createCooldown(INSIGHT_COOLDOWN_S));
   const lastTransition = useRef(-1); // time of the last breaker transition we narrated
 
-  useIntroCaption(<>Users hit <b>Service A</b>, which calls <b>Service B</b> for every request. Everything's healthy. {MODES[0].say}</>);
+  useIntroCaption(introCaption());
 
   const narrateTransitions = (w: World) => {
-    const sim = w.sim;
-    for (const t of sim.transitions.filter((x) => x.t > lastTransition.current)) {
+    for (const t of w.sim.transitions.filter((x) => x.t > lastTransition.current)) {
       lastTransition.current = t.t;
-      if (t.to === 'open') setCaption(<>Breaker <span className="hl bad">OPEN</span>: most recent calls failed. For {OPEN_FOR} s, A fails fast with a fallback instead of calling B, and B gets room to recover.</>);
-      if (t.to === 'half') setCaption(<><span className="hl">HALF-OPEN</span>: {OPEN_FOR} s are up. Let 3 probe requests through to test whether B has recovered.</>);
-      if (t.to === 'closed' && sim.mode === 'breaker') setCaption(<>Probes succeeded → breaker <span className="hl ok">CLOSED</span>. Normal traffic flows to B again.</>);
+      if (t.to !== 'closed' || w.sim.mode === 'breaker') setCaption(transitionCaption(t.to));
     }
   };
 
   const narrateInsight = (w: World, st: SimStats) => {
-    const { sim } = w;
-    if (!insight.current.ready(sim.now)) return;
-    let say: ReactNode = null;
-    if (st.busyThreads >= THREADS && st.errorPct > 50) {
-      say = <><span className="hl bad">Cascade</span>: all {THREADS} of A's threads are stuck waiting on B, so A now fails its own users. B's problem became A's problem.</>;
-    } else if (st.bLoad > w.rate * STORM_RATIO && sim.mode !== 'breaker') {
-      say = <><span className="hl bad">Retry storm</span>: B is getting {(st.bLoad / w.rate).toFixed(1)}× the real user traffic. Every retry is extra load on a service that's already struggling.</>;
-    } else if (st.bConc > B_CAP * 2 && sim.failRate < 0.1) {
-      say = <>B is healthy again, but still buried under <b>{st.bConc}</b> calls, many for requests A already gave up on. Retries keep it from recovering.</>;
-    }
-    if (say) {
-      insight.current.fire(sim.now);
-      setCaption(say);
+    if (!insight.current.ready(w.sim.now)) return;
+    const found = insightFor(st, { rate: w.rate, mode: w.sim.mode, failRate: w.sim.failRate });
+    if (found) {
+      insight.current.fire(w.sim.now);
+      setCaption(insightCaption(found));
     }
   };
 
@@ -87,18 +71,18 @@ export function Stage() {
   const pickMode = (m: Mode) => {
     setMode(m);
     world().sim.setMode(m);
-    setCaption(MODES.find((x) => x.id === m)!.say);
+    setCaption(modeCaption(m));
   };
 
   const badDay = () => {
     setFail(BAD_DAY.fail);
     setLatency(BAD_DAY.latency);
-    setCaption(<><span className="hl bad">B is having a bad day</span>: 60% of calls fail and the rest take 0.7 s. A's timeout is {TIMEOUT} s. Watch what A does to B.</>);
+    setCaption(badDayCaption());
   };
   const heal = () => {
     setFail(HEALTHY.fail);
     setLatency(HEALTHY.latency);
-    setCaption(<><span className="hl ok">B is fixed</span>. Does the system recover on its own?</>);
+    setCaption(healCaption());
   };
 
   return (
@@ -106,27 +90,48 @@ export function Stage() {
       height={STAGE_HEIGHT}
       stats={
         <Stats>
-          <Stat label="Load on B" value={snap ? perSec(snap.bLoad) : NA} color={snap && snap.bLoad > rate * 1.5 ? 'var(--bad)' : 'var(--info)'} sub={`users send ${rate}/s`} />
-          <Stat label="A error rate" value={snap ? `${snap.errorPct.toFixed(0)}%` : NA} color="var(--bad)" sub={snap ? `${snap.fallbackPct.toFixed(0)}% fallbacks` : ''} />
+          <Stat
+            label="Load on B"
+            value={snap ? perSec(snap.bLoad) : NA}
+            color={snap && snap.bLoad > rate * STORM_RATIO ? 'var(--bad)' : undefined}
+            sub={snap ? [`users send ${rate}/s`, `${perSec(snap.bRetryLoad)} are retries`] : `users send ${rate}/s`}
+          />
+          <Stat
+            label="A error rate"
+            value={snap ? `${snap.errorPct.toFixed(0)}%` : NA}
+            color={snap && snap.errorPct >= ERROR_RED_PCT ? 'var(--bad)' : undefined}
+            sub={snap ? `${snap.fallbackPct.toFixed(0)}% fallbacks` : ''}
+          />
           <Stat label="p99 latency" value={snap ? duration(snap.p99) : NA} color={snap && snap.p99 > TIMEOUT ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="A threads busy" value={snap ? `${snap.busyThreads}/${THREADS}` : NA} color={snap && snap.busyThreads >= THREADS ? 'var(--bad)' : 'var(--hi)'} />
+          <Stat label="A threads busy" value={snap ? `${snap.busyThreads}/${THREADS}` : NA} color={snap && snap.busyThreads >= THREADS ? 'var(--bad)' : undefined} />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--info)', label: 'call to B', shape: 'dot' },
-            { color: 'var(--ok)', label: 'success', shape: 'dot' },
-            { color: 'var(--bad)', label: 'failure / timeout', shape: 'dot' },
-            { color: 'var(--violet)', label: 'waiting to retry' },
-            { color: 'var(--hi)', label: 'fallback', shape: 'dot' },
-            { color: 'var(--faint)', label: 'orphaned work', shape: 'dot' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--info)', label: 'call to B', shape: 'dot' },
+              { color: 'var(--ok)', label: 'success', shape: 'dot' },
+              { color: 'var(--bad)', label: 'failure / timeout', shape: 'dot' },
+              { color: 'var(--violet)', label: 'waiting to retry' },
+              { color: 'var(--trk-hw)', label: 'fallback', shape: 'dot' },
+              { color: 'var(--amber)', label: 'probe / half-open', shape: 'dot' },
+              { color: 'var(--faint)', label: 'orphaned work', shape: 'dot' },
+            ]}
+          />
+          <ProvenanceRow>
+            <Provenance kind="simulated" seed={BROKEN_SEED}>
+              seeded random failures and bursty traffic; the clock follows your frame rate, so a live run can differ from the same seed in a test
+            </Provenance>
+            <Provenance kind="illustrative">
+              B's capacity ({B_CAP} calls), its slowdown under load and the {Math.round(NET * 1000)} ms hop (slowed down to watch) are made up, not measured
+            </Provenance>
+          </ProvenanceRow>
+        </>
       }
       controls={
         <Controls>
-          <Segmented label="Protection" options={toOptions(MODES)} value={mode} onChange={pickMode} />
+          <Segmented label="Protection" options={MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }))} value={mode} onChange={pickMode} />
           <Slider label="B failure rate" value={fail} min={0} max={90} onChange={setFail} format={(v) => `${v}%`} />
           <Slider label="B latency" value={latency} min={50} max={1500} step={10} onChange={setLatency} format={(v) => `${v}ms`} />
           <Slider label="User traffic" value={rate} min={5} max={25} onChange={setRate} format={(v) => perSec(v)} />

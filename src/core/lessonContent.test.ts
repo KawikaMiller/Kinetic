@@ -54,7 +54,7 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  * Every other Tier 3 lesson is held to the rules from its first commit.
  */
 const TIER3_AWAITING_RETROFIT = new Set([
-  'circuit-breakers', 'monolith-microservices',
+  'monolith-microservices',
   'cdn-edge', 'oauth-flows',
 ]);
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */
