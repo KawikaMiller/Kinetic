@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { forSeeds, type TraceRow } from '../../core/distSim';
 import {
-  BROKEN_CONFIG, BROKEN_SEED, HORIZON_MS, SAFE_CONFIG, SEED_COUNT, UNCLEAN_CONFIG, UNCLEAN_SEED, acknowledgedNeverLost, highWatermarkMonotone, lostRecords,
+  BROKEN_CONFIG, BROKEN_SEED, HORIZON_MS, SAFE_CONFIG, SEED_COUNT, UNCLEAN_CONFIG, UNCLEAN_SEED, acknowledgedNeverLost, highWatermarkMonotone, lostRecords, missingSentRecords,
   replCluster, runChecked, scriptedSetup, seededSetup,
   type ReplConfig, type ReplMsg, type ReplSnapshot, type ReplState, type ScriptedFault,
 } from './replication';
@@ -21,7 +21,7 @@ describe('the safe settings hold on every seeded fault schedule', () => {
   it('acks=all with min.insync=1 and a clean election also holds: the data waits on a dead leader, unavailable and not lost', () => {
     expect(seeds(0, 500, { acks: 'all', minIsr: 1, unclean: false })).toEqual({ ok: true, seeds: 500 });
   });
-  it('acks=0 acknowledges nothing, so there is nothing acknowledged to lose', () => {
+  it('acks=0 acknowledges nothing, so the safety check cannot fail: the loss is shown as sent records missing from the leader instead', () => {
     expect(seeds(0, SEED_COUNT, { acks: 0, minIsr: 1, unclean: true })).toEqual({ ok: true, seeds: SEED_COUNT });
   });
   it('with delays only (no faults) every setting holds', () => {
@@ -176,5 +176,30 @@ describe('the checks themselves reject a broken log', () => {
       return JSON.stringify(c.trace);
     };
     expect(run()).toBe(run());
+  });
+});
+
+describe('acks=0 loses silently, and the lesson says so', () => {
+  it('the default crash schedule at acks=0: r4 (sent at 65 ms, only on the leader that dies) is missing from the new leader, r1 to r3 are not', () => {
+    const run = runRepl({ ...DEFAULT_REPL, config: { acks: 0, minIsr: 1, unclean: false }, faults: ['crash-leader'] });
+    const last = run.frames[run.frames.length - 1];
+    expect(last.records.every((r) => r.fate === 'sent')).toBe(true);
+    expect(last.missing.map((m) => m.id)).toEqual([4]);
+    expect(last.lost).toEqual([]);
+  });
+  it('a record still on the wire is not counted as missing, only one older than the settle time', () => {
+    const run = runRepl({ ...DEFAULT_REPL, config: { acks: 0, minIsr: 1, unclean: false }, faults: [] });
+    expect(run.frames.every((f) => f.missing.length === 0)).toBe(true);
+  });
+  it('over seeded fault schedules, sent records go missing from the leader at acks=0 on most seeds', () => {
+    const missingAt = (config: ReplConfig, seed: number) => {
+      const c = replCluster(seededSetup(seed, config, true));
+      c.start();
+      while (c.nextTime() <= HORIZON_MS && c.step()) { /* run to the horizon */ }
+      return missingSentRecords(c.snapshot(), c.time).length;
+    };
+    let losing = 0;
+    for (let s = 0; s < 100; s++) if (missingAt({ acks: 0, minIsr: 1, unclean: false }, s) > 0) losing++;
+    expect(losing).toBeGreaterThan(50);
   });
 });

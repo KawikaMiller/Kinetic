@@ -135,8 +135,9 @@ describe('captions are computed from the model', () => {
               const id = `${acks}/${minIsr}/${unclean} ${faults.join('+')} @${t}`;
               expect(c.includes('acknowledged record') || c.includes('acknowledged records'), id).toBe(f.lost.length > 0);
               expect(c.includes('there is no live leader'), id).toBe(f.leader === null || !f.brokers[f.leader].up);
-              expect(c.includes('Nothing acknowledged is lost'), id).toBe(run.verdict.ok);
+              expect(c.includes('Nothing acknowledged is lost'), id).toBe(run.verdict.ok && acks !== 0);
               expect(c.includes('The check fails at'), id).toBe(!run.verdict.ok);
+              expect(c.includes('missing from the leader: ') || c.includes('are missing from the leader') || /r\d+ is missing from the leader/.test(c), id).toBe(f.lost.length > 0 || f.missing.length > 0);
               if (f.lost.length > 0) expect(c).toContain(`${f.lost.length} acknowledged`);
             }
           }

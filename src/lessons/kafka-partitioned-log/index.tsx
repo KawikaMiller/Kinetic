@@ -35,7 +35,7 @@ const lesson: LessonModule = {
     'In this model a key always hashes to one partition, so its records keep their order, while records of different keys interleave freely and no order exists across partitions.',
     'A group gives each partition to one consumer, so in this model consumers beyond the partition count sit idle, and adding partitions changes which one a key hashes to.',
     'The commit decides the failure: in this model committing after the work repeats a record on a crash (at-least-once), and committing before skips one (at-most-once).',
-    'The high watermark is what every in-sync replica holds; in this model acks=all with a sufficient min.insync.replicas and a clean election keeps acknowledged records, while acks=1 and unclean election are how they are lost.',
+    'The high watermark is what every in-sync replica holds; in this model acks=all with a clean election never loses an acknowledged record while a broker holding it survives, min.insync.replicas sets how many brokers must hold a record before it is answered, and acks=1 and unclean election are how acknowledged records are lost.',
   ],
   quiz: [
     {
@@ -72,7 +72,7 @@ const lesson: LessonModule = {
       why: 'The replacement resumes at the committed offset, which already points past the record. In this model committing first gives at-most-once: a crash can cost the record in flight, and no record is repeated.',
     },
     {
-      q: 'Which setting can lose a write that the producer was told succeeded?',
+      q: 'Which setting can lose a write that the broker told the producer had succeeded?',
       options: [
         'acks=1 with a clean election: the leader answers before any follower has copied the record',
         'acks=all with min.insync.replicas=2 and a clean election, when the leader crashes right after answering',
@@ -80,7 +80,7 @@ const lesson: LessonModule = {
         'acks=all, because waiting for the in-sync replicas makes the producer time out and give up',
       ],
       answer: 0,
-      why: 'With acks=1 the leader answers on its own copy, so a follower elected afterwards may lack the record. With acks=all and min.insync.replicas=2 in this model an answer means two replicas hold it, and acks=0 never answers at all.',
+      why: 'With acks=1 the leader answers on its own copy, so a follower elected afterwards may lack the record. With acks=all and min.insync.replicas=2 in this model an answer means two replicas hold it, and acks=0 never answers at all: it loses records too, but none of them was ever reported as stored, so the Replication scene counts them as sent and missing instead.',
     },
     {
       q: 'A log is compacted and a consumer then asks for offset 3, which the cleaner removed. What does it get?',

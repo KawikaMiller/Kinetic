@@ -100,8 +100,16 @@ export function replicationCaption(o: { config: ReplConfig; run: ReplRun; t: num
           {hl('bad wrap', `${f.lost.length} acknowledged ${noun(f.lost.length, 'record')} missing from the leader: ${f.lost.map((l) => `r${l.id} at offset ${l.offset}`).join(', ')}`)}.
         </>
       )}
+      {f.missing.length > 0 && (
+        <>
+          {' '}
+          {hl('bad wrap', `acks=0: nothing counts as acknowledged, and ${f.missing.map((l) => `r${l.id}`).join(', ')} ${f.missing.length === 1 ? 'is' : 'are'} missing from the leader`)}.
+        </>
+      )}
       {' '}
-      {v.ok ? <>Nothing acknowledged is lost in the whole {HORIZON_MS} ms run.</> : <>The check fails at {hl('bad', `${Math.round(v.time)} ms`)} (event {v.step}): {v.message}.</>}
+      {o.config.acks === 0 ? (
+        <>The producer was told nothing, so no record counts as acknowledged and the safety check cannot fail; the table of what the leader holds is the real answer.</>
+      ) : v.ok ? <>Nothing acknowledged is lost in the whole {HORIZON_MS} ms run.</> : <>The check fails at {hl('bad', `${Math.round(v.time)} ms`)} (event {v.step}): {v.message}.</>}
     </>
   );
 }

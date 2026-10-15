@@ -5,7 +5,7 @@
 import type { TraceRow } from '../../core/distSim';
 import type { Tone } from '../../core/tone';
 import {
-  BROKERS, HORIZON_MS, SEED_COUNT, brokersOf, controllerOf, lostRecords, lowestViolatingSeed, producerOf, replCluster, runChecked, scriptedSetup, seededSetup,
+  BROKERS, HORIZON_MS, SEED_COUNT, brokersOf, controllerOf, lostRecords, missingSentRecords, lowestViolatingSeed, producerOf, replCluster, runChecked, scriptedSetup, seededSetup,
   type LostRecord, type ProducerRecord, type ReplCluster, type ReplConfig, type ReplMsg, type ReplSetup, type ReplVerdict, type ScriptedFault,
 } from './replication';
 
@@ -56,6 +56,8 @@ export interface ReplFrame {
   isr: string[];
   records: ProducerRecord[];
   lost: LostRecord[];
+  /** acks=0 records sent and never confirmed that the leader lacks. */
+  missing: LostRecord[];
 }
 
 export interface ReplRun {
@@ -77,6 +79,7 @@ function frameOf(c: ReplCluster): ReplFrame {
     isr: ctl.isr,
     records: producerOf(snap).records,
     lost: lostRecords(snap),
+    missing: missingSentRecords(snap, c.time),
   };
 }
 

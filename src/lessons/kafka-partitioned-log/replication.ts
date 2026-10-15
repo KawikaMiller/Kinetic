@@ -444,9 +444,22 @@ export const brokersOf = (snap: ReplSnapshot): Record<string, BrokerState> =>
 
 export interface LostRecord {
   id: number;
+  /** Where the leader put it when it answered, or -1 for an acks=0 record that was never confirmed. */
   offset: number;
   /** Who leads now, and does not hold it. */
   leader: string;
+}
+
+/** An acks=0 record gets this long to arrive before its absence from the leader counts: a produce is on the wire for a few ms. */
+export const SENT_SETTLE_MS = 10;
+
+/** The leader of the moment, when it is up and has itself learned it was elected: a leader that has not heard the news is not judged. */
+function leaderInOffice(snap: ReplSnapshot): { id: string; log: number[] } | null {
+  const ctl = controllerOf(snap);
+  if (ctl.leader === null || !snap.nodes[ctl.leader].up) return null;
+  const leader = brokerOf(snap, ctl.leader)!;
+  if (leader.leader !== ctl.leader || leader.epoch !== ctl.epoch) return null;
+  return { id: ctl.leader, log: leader.log };
 }
 
 /**
@@ -454,13 +467,23 @@ export interface LostRecord {
  * a record that sits only on a dead leader is unavailable, not lost, and a leader that has not heard the news yet is not judged.
  */
 export function lostRecords(snap: ReplSnapshot): LostRecord[] {
-  const ctl = controllerOf(snap);
-  if (ctl.leader === null || !snap.nodes[ctl.leader].up) return [];
-  const leader = brokerOf(snap, ctl.leader)!;
-  if (leader.leader !== ctl.leader || leader.epoch !== ctl.epoch) return [];
+  const leader = leaderInOffice(snap);
+  if (!leader) return [];
   return producerOf(snap).records
     .filter((r) => r.fate === 'acked' && !leader.log.includes(r.id))
-    .map((r) => ({ id: r.id, offset: r.offset ?? -1, leader: ctl.leader! }));
+    .map((r) => ({ id: r.id, offset: r.offset ?? -1, leader: leader.id }));
+}
+
+/**
+ * acks=0 records (sent, never confirmed) the leader in office does not hold at time `now`. Nothing is acknowledged at acks=0, so the
+ * safety invariant cannot see them; this is what the producer cannot know.
+ */
+export function missingSentRecords(snap: ReplSnapshot, now: number): LostRecord[] {
+  const leader = leaderInOffice(snap);
+  if (!leader) return [];
+  return producerOf(snap).records
+    .filter((r) => r.fate === 'sent' && now - r.at >= SENT_SETTLE_MS && !leader.log.includes(r.id))
+    .map((r) => ({ id: r.id, offset: -1, leader: leader.id }));
 }
 
 /** Safety: a record the producer was told is stored is never missing from the leader in office. */
