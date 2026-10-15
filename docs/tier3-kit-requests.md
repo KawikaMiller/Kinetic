@@ -113,3 +113,13 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | `SequenceDiagram` filtered `toSequence` helper (`storyRows` drops heartbeats/empty fetches) | kafka-partitioned-log; any distSim lesson | next kit round | |
 | Shared distSim controller/metadata node (heartbeat-driven leader election) | kafka (local) | on second user | |
 | `Stat` `subTone` for a red/green line | B11 | optional | |
+
+## From T3-B12 (builder report)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Shared `parseKeyList`/`parseKey` (bounded integers, duplicates, node limit) and `refuseOp` | avl-trees, red-black-trees, skip-lists (copies exist) and later tree/heap lessons | wave 4 to 5 round | |
+| Shared binary-tree drawing helper (treeBox sizing + WideRegion per tree) | avl-trees, red-black-trees | wave 4 to 5 round | |
+| Shared stepper session hook (`useAvlSession`/`useRbSession` same shape) | avl-trees, red-black-trees | wave 4 to 5 round | |
+| Shared balanced-trees model: red-black-trees carries a local compact AVL (`avlRef.ts`) for its comparison scene | avl-trees, red-black-trees | wave 4 to 5 round | two lessons must agree on one AVL model |
+| `GraphView` layered layout `place` callback or columns-by-covered-range mode | persistent-data-structures (local SVG DAG) | on second user | |
+| `TreeSvg`: semi-transparent node tint lets thick edge ends show through the label | B12 | optional | |
