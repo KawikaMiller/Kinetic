@@ -1,9 +1,8 @@
 import type { Pt } from '../../components/GraphView';
 import type { Result } from '../../core/result';
+import { adjacency, reverseEdges, type Arc } from '../../core/scc';
 
 export const MAX_NODES = 9;
-
-export type Arc = readonly [from: number, to: number];
 
 export interface Digraph {
   names: string[];
@@ -82,17 +81,6 @@ export function addNode(g: Digraph): Result<Digraph> {
 
 export const removeLastEdge = (g: Digraph, keep: number): Digraph => (g.edges.length > keep ? { ...g, edges: g.edges.slice(0, -1) } : g);
 
-// ---- adjacency helpers --------------------------------------------------------------------
-
-/** Out-neighbours of each node in ascending order: the fixed order every DFS here visits them in. */
-export function adjacency(n: number, edges: readonly Arc[]): number[][] {
-  const adj: number[][] = Array.from({ length: n }, () => []);
-  for (const [a, b] of edges) adj[a].push(b);
-  return adj.map((l) => [...new Set(l)].sort((a, b) => a - b));
-}
-
-export const reverseEdges = (edges: readonly Arc[]): Arc[] => edges.map(([a, b]) => [b, a] as const);
-
 // ---- Kosaraju ----------------------------------------------------------------------------
 
 export interface DfsEvent {
@@ -162,78 +150,6 @@ export function kosaraju(g: Digraph, order: readonly number[] = g.names.map((_, 
     grow(v, components.length - 1, null);
   }
   return { order: [...order], pass1, finishOrder, pass2, comp, components };
-}
-
-// ---- Tarjan (the second implementation the tests compare against) -------------------------
-
-/** Tarjan's one-pass algorithm; returns components as sorted node lists, in the order they close. */
-export function tarjan(g: Digraph): number[][] {
-  const n = g.names.length;
-  const adj = adjacency(n, g.edges);
-  const index = new Array<number>(n).fill(-1);
-  const low = new Array<number>(n).fill(0);
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  const out: number[][] = [];
-  let counter = 0;
-  const strong = (v: number) => {
-    index[v] = low[v] = counter++;
-    stack.push(v);
-    onStack[v] = true;
-    for (const w of adj[v]) {
-      if (index[w] < 0) {
-        strong(w);
-        low[v] = Math.min(low[v], low[w]);
-      } else if (onStack[w]) low[v] = Math.min(low[v], index[w]);
-    }
-    if (low[v] === index[v]) {
-      const c: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop()!;
-        onStack[w] = false;
-        c.push(w);
-      } while (w !== v);
-      out.push(c.sort((a, b) => a - b));
-    }
-  };
-  for (let v = 0; v < n; v++) if (index[v] < 0) strong(v);
-  return out;
-}
-
-/** A partition in canonical form: each class sorted, classes sorted by their smallest node. Equal partitions compare equal as strings. */
-export const canonical = (classes: readonly (readonly number[])[]): string =>
-  JSON.stringify([...classes].map((c) => [...c].sort((a, b) => a - b)).sort((a, b) => a[0] - b[0]));
-
-// ---- condensation ------------------------------------------------------------------------
-
-export interface Condensation {
-  /** Component index of each node (from `comp`). */
-  count: number;
-  /** Unique edges between different components. */
-  edges: Arc[];
-  /** A topological order of the components (Kahn's algorithm), or null if the condensation had a cycle (it cannot). */
-  order: number[] | null;
-}
-
-export function condense(g: Digraph, comp: readonly number[], count: number): Condensation {
-  const seen = new Set<string>();
-  const edges: Arc[] = [];
-  for (const [a, b] of g.edges) {
-    if (comp[a] === comp[b] || seen.has(`${comp[a]}>${comp[b]}`)) continue;
-    seen.add(`${comp[a]}>${comp[b]}`);
-    edges.push([comp[a], comp[b]]);
-  }
-  const indeg = new Array<number>(count).fill(0);
-  for (const [, b] of edges) indeg[b]++;
-  const queue = indeg.flatMap((d, c) => (d === 0 ? [c] : []));
-  const order: number[] = [];
-  while (queue.length) {
-    const c = queue.shift()!;
-    order.push(c);
-    for (const [a, b] of edges) if (a === c && --indeg[b] === 0) queue.push(b);
-  }
-  return { count, edges, order: order.length === count ? order : null };
 }
 
 // ---- adding an edge: what changes -------------------------------------------------------

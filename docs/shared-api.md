@@ -1850,6 +1850,18 @@ edits.undoAdded(removeLastEdge, 'Removed the last edge you added.');   // never 
 - The transitions are pure functions in `core/graphEdits.ts` (`loadPreset`, `applyResult`, `setGraph`, `noteFor`), tested in `graphEdits.test.ts` (preset load and baseline, accepted and refused edits, scene-keyed notes, the added-edge count); the hook is a thin `useState` over them (no React test renderer in this repo).
 - **Migrated:** the five B9 lessons' editors (`useGraphEditor`, `useSccEditor`, `useFlowEditor`, `useMatchEditor`, `useColorEditor`; about 65 fewer lines in all). Their tests pass unchanged and every scene's shots (all scenes, first, middle and last frame) are pixel-identical.
 
+### `core/scc.ts` — strongly-connected-components (migrated); markov-chains (communicating classes)
+```ts
+import { stronglyConnectedComponents, condense, canonicalPartition, adjacency, type Arc } from '../../core/scc';
+const { components, comp } = stronglyConnectedComponents(n, edges);   // Tarjan; edges are [from, to] pairs on nodes 0..n-1
+const c = condense(edges, comp, components.length);                    // { edges between components, order: a topological order }
+const closed = components.filter((_, i) => !c.edges.some(([a]) => a === i));   // closed classes: nothing leaves them
+```
+- `components` are sorted node lists in the order the search closes them, so every edge between components goes to an earlier one (sinks first). A self-loop or lone node is a component of its own. `comp[v]` indexes `components`.
+- Takes plain node counts and edge pairs, so any lesson's graph type feeds it. The lesson's own Kosaraju trace (the animated two passes, with its events) stays in `strongly-connected-components`; it builds on `adjacency` and `reverseEdges` from here.
+- Tests: `core/scc.test.ts` (the textbook graph, the transitive-closure oracle on 2,000 seeded graphs, the sinks-first order on 500, condensation edges unique with a valid topological order, closed classes of a small chain). The lesson's tests compare Kosaraju with this routine and the closure oracle, unchanged apart from their imports.
+- **Migrated:** `strongly-connected-components` (its `tarjan`, `canonical`, `adjacency`, `condense` and `Arc` moved here; `canonical` is `canonicalPartition`, and `condense` takes the edge list instead of the lesson's graph). Its shots are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

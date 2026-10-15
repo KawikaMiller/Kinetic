@@ -2,6 +2,7 @@ import { SectionTitle } from '../components/Panel';
 import { Button, Hint } from '../components/ui';
 import { canonicalCodes, kraftSum } from '../core/huffman';
 import { eigen2x2, powerIteration, svdSmall } from '../core/linalg';
+import { condense, stronglyConnectedComponents, type Arc } from '../core/scc';
 import type { Result } from '../core/result';
 import { useGraphEdits } from '../core/useGraphEdits';
 import { DevKitSection as Section } from './DevKitSection';
@@ -14,6 +15,9 @@ const SHEAR = [[1, 1], [0, 1]];
 const STRIPES = [[1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]];
 const RFC_LENGTHS = [3, 3, 3, 3, 3, 2, 4, 4];
 const MAX_EDGES = 4;
+const CHAIN_NODES = 5;
+/** A small chain: 0 and 1 leak into the closed class {2, 3}; 4 is absorbing. */
+const CHAIN_EDGES: Arc[] = [[0, 1], [1, 0], [1, 2], [2, 3], [3, 2], [0, 4], [4, 4]];
 const POWER_STEPS = 5;
 const DIGITS = 3;
 
@@ -58,6 +62,17 @@ function addNextEdge(g: EdgeList): Result<EdgeList> {
   return edge ? { ok: true, value: { edges: [...g.edges, edge] } } : { ok: false, error: 'Every edge already exists.' };
 }
 
+function SccDemo() {
+  const { components, comp } = stronglyConnectedComponents(CHAIN_NODES, CHAIN_EDGES);
+  const leaving = condense(CHAIN_EDGES, comp, components.length).edges;
+  const closed = components.filter((_, i) => !leaving.some(([from]) => from === i));
+  return (
+    <p className="mono">
+      classes {components.map((c) => `{${c.join(',')}}`).join(' ')} · closed (nothing leaves): {closed.map((c) => `{${c.join(',')}}`).join(' ')}
+    </p>
+  );
+}
+
 function GraphEditsDemo() {
   const edits = useGraphEdits<EdgeList, EdgePresetId>({
     presets: EDGE_PRESETS,
@@ -90,6 +105,9 @@ export function DevKitTier3g() {
       </Section>
       <Section title="core/useGraphEdits · preset load, an edit that is refused at the bound, undo of added edges only">
         <GraphEditsDemo />
+      </Section>
+      <Section title="core/scc · components of a small chain and the closed classes (what a Markov chain settles into)">
+        <SccDemo />
       </Section>
     </>
   );
