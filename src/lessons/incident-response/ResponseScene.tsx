@@ -52,7 +52,7 @@ export function ResponseScene({ picker, cause, onCause, walk, onWalk }: {
         <>
           {picker}
           <Segmented
-            label="Hidden cause (the story won't say until you investigate)"
+            label="Hidden cause (changing it restarts the story; it stays hidden until you investigate)"
             value={cause}
             onChange={onCause}
             options={CAUSES.map((c) => ({ value: c, label: CAUSE_LABEL[c] }))}

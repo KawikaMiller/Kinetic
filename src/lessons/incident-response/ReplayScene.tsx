@@ -65,7 +65,7 @@ export function ReplayScene({ picker, cause, walk }: { picker: ReactNode; cause:
             { color: 'var(--bad)', label: 'failing before anyone knew', shape: 'square' },
             { color: 'var(--hi)', label: 'an action in progress', shape: 'square' },
             { color: 'var(--ok)', label: 'it worked', shape: 'square' },
-            { color: 'var(--orange)', label: 'did nothing for this cause', shape: 'square' },
+            { color: 'var(--orange)', label: 'did nothing for this cause, or lost to a collision', shape: 'square' },
             { color: 'var(--info)', label: 'the page, a finding, a status update', shape: 'square' },
           ]}
         />

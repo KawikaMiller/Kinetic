@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { choose, enumeratePaths, findEnding, startWalk, validateScenario, type Scenario } from '../../core/scenario';
 import {
-  ACTIONS, CAUSES, FAILED, MINUTES, PEOPLE, SCENARIOS, TRUST, buildScenario, failedBy, outcomeRows, rateAfterActions, timelineOf,
+  ACTIONS, CAUSES, meanFailedByFirst, FAILED, MINUTES, PEOPLE, SCENARIOS, TRUST, buildScenario, failedBy, outcomeRows, rateAfterActions, timelineOf,
   type Action, type Cause,
 } from './model';
 
@@ -150,5 +150,23 @@ describe('the outcome table', () => {
   it('shows what a wrong first guess costs: failing over a bad deploy first loses 2,800 more requests than rolling back first', () => {
     const find = (cause: Cause, first: Action) => rows.find((r) => r.cause === cause && r.first === first)!;
     expect(find('deploy', 'failover').failed - find('deploy', 'rollback').failed).toBe(2800);
+  });
+
+  it('states the model’s limit honestly: investigating first is never the cheapest row, and a 2-minute wrong guess beats it on a bad deploy', () => {
+    for (const cause of CAUSES) {
+      const forCause = rows.filter((r) => r.cause === cause);
+      const best = Math.min(...forCause.map((r) => r.failed));
+      expect(forCause.find((r) => r.first === 'investigate')!.failed).toBeGreaterThan(best);
+    }
+    const failed = (cause: Cause, first: Action) => rows.find((r) => r.cause === cause && r.first === first)!.failed;
+    expect(failed('deploy', 'flag')).toBeLessThan(failed('deploy', 'investigate'));
+  });
+
+  it('means per first action over the three causes equal the hand-added table values (4,800+6,000+3,320 for the flag)', () => {
+    const means = meanFailedByFirst(rows);
+    expect(means.flag).toBeCloseTo((4800 + 6000 + 3320) / 3, 6);
+    expect(means.investigate).toBeCloseTo((5200 + 6400 + 4520) / 3, 6);
+    expect(means.investigate).toBeGreaterThan(means.flag);
+    expect(means.investigate).toBeGreaterThan(means.rollback);
   });
 });

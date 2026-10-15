@@ -5,7 +5,7 @@ import { useSortedRows } from '../../components/useSortedRows';
 import { useSetCaption } from '../../core/caption';
 import type { Walk } from '../../core/scenario';
 import { outcomeCaption } from './captions';
-import { ACTIONS, ACTION_SHORT, CAUSE_LABEL, CAUSES, DEGRADED_RATE, TRAFFIC, choiceIdsOf, outcomeRows, type Action, type Cause, type OutcomeRow } from './model';
+import { ACTIONS, ACTION_MINUTES, ACTION_SHORT, CAUSE_LABEL, CAUSES, DEGRADED_RATE, TRAFFIC, choiceIdsOf, meanFailedByFirst, outcomeRows, type Action, type Cause, type OutcomeRow } from './model';
 
 /** The row for the first action the learner took in their own walk, if they have taken one. */
 const firstActionOf = (walk: Walk): Action | null => (choiceIdsOf(walk).find((id) => (ACTIONS as readonly string[]).includes(id)) as Action | undefined) ?? null;
@@ -16,6 +16,7 @@ export function OutcomeScene({ picker, cause, walk }: { picker: ReactNode; cause
   const setCaption = useSetCaption();
   const rows = useMemo(() => outcomeRows(), []);
   const mine = firstActionOf(walk);
+  const means = useMemo(() => meanFailedByFirst(rows), [rows]);
   const { sorted, headerProps } = useSortedRows<OutcomeRow, 'cause' | 'first' | 'mitigated' | 'failed'>(
     rows,
     {
@@ -47,6 +48,10 @@ export function OutcomeScene({ picker, cause, walk }: { picker: ReactNode; cause
       <div className="ir stage-pad">
         <Hint block>
           Every first action against every cause: the best way to carry on after it, over every path the story allows, with SEV2 and all four roles so that only the actions differ. Press a heading to sort. A row marked contained stops counting at the hand-off: its errors go on at {DEGRADED_RATE} per {TRAFFIC.toLocaleString('en-US')} until the dependency’s owner fixes it, so it does not compare minute for minute with a fixed row.
+        </Hint>
+        <Hint block>
+          The limit of this toy: investigating costs {ACTION_MINUTES.investigate} minutes and does not change what you can do next, so it cannot win here, and a cheap wrong guess can beat it. A real investigation earns its time by narrowing a wrong guess, which this model does not price. With the three causes weighted equally (an assumption), the mean failed requests by first action are{' '}
+          {ACTIONS.map((a) => `${ACTION_SHORT[a]} ${fmt(Math.round(means[a]))}`).join(', ')}.
         </Hint>
         <div className="ir-table-wrap">
           <table className="data-table ir-table">

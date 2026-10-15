@@ -8,7 +8,7 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 
 const rollbackFirst = row('deploy', 'rollback');
 const investigateFirst = row('deploy', 'investigate');
-const failoverFirst = row('deploy', 'failover');
+const flagFirst = row('deploy', 'flag');
 
 const lesson: LessonModule = {
   Stage,
@@ -23,7 +23,7 @@ const lesson: LessonModule = {
       'Reading an incident timeline to see where the minutes went',
     ],
     why: 'Most of the cost of an incident is paid while it is still running. The habits that shorten it are small and learnable: act on cheap, reversible options, name who decides, and keep customers informed while you work.',
-    watch: 'Meters are blue until they cross the red mark on their bar, then turn red. In the timeline replay a red bar is time spent failing before anyone knew, a yellow bar is an action in progress, a green one worked, an orange one changed nothing for this cause, and blue marks the page, a finding or a status update; diamonds are single moments. In the table, a yellow-edged row is your own first move and a green number is the fewest failed requests for that cause. Dashed chips say what is invented; solid-bordered labels say whether a claim is common practice or one view.',
+    watch: 'Meters are blue until they cross the red mark on their bar, then turn red. In the timeline replay a red bar is time spent failing before anyone knew, a yellow bar is an action in progress, a green one worked, an orange one changed nothing for this cause or was lost to two responders colliding, and blue marks the page, a finding or a status update; diamonds are single moments. In the table, a yellow-edged row is your own first move and a green number is the fewest failed requests for that cause. Dashed chips say what is invented; solid-bordered labels say whether a claim is common practice or one view.',
   },
   tryThis: [
     'With the cause on Bad deploy, pick SEV2, assign all four roles, then roll back: it ends at minute 10 with 4,000 failed requests. Undo twice, then investigate first and roll back: minute 13, 5,200.',
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
     'Open Every first move with the cause on Bad deploy: rolling back first is best at 4,000 failed requests, and failing over first costs 2,800 more.',
   ],
   keyIdeas: [
-    'Mitigate first, understand second is common practice, not a law: the first action should be cheap, reversible and matched to what the evidence shows.',
+    'Mitigate first, understand second is common practice, not a law: the first action should be cheap, reversible and matched to what the evidence shows. This toy cannot show the value of investigating, because it costs minutes here and does not change what you can do next.',
     'A mitigation can do nothing for the cause you actually have; in this model a rollback does not help a slow dependency, and failing over does not help a bad build.',
     'A degraded mitigation limits the damage while the cause remains, and saying so to customers is part of the job.',
     'Roles exist so that one person decides, one types and one tells customers; skipping them costs minutes and trust in this model.',
@@ -48,7 +48,7 @@ const lesson: LessonModule = {
         'Wait for a second alert, because one alert is not enough to act on',
       ],
       answer: 1,
-      why: `In this lesson’s model a rollback on a bad deploy mitigates at minute ${rollbackFirst.mitigatedAt} for ${fmt(rollbackFirst.failed)} failed requests, while investigating first reaches minute ${investigateFirst.mitigatedAt} for ${fmt(investigateFirst.failed)}, and failing over first (a wrong guess that costs ${ACTION_MINUTES.failover} minutes) ${fmt(failoverFirst.failed)}.`,
+      why: `In this lesson’s model a rollback on a bad deploy mitigates at minute ${rollbackFirst.mitigatedAt} for ${fmt(rollbackFirst.failed)} failed requests, while investigating first reaches minute ${investigateFirst.mitigatedAt} for ${fmt(investigateFirst.failed)}. The model has a limit you should know: investigating costs ${ACTION_MINUTES.investigate} minutes and changes nothing you can do next, so it cannot win here, and even a wrong ${ACTION_MINUTES.flag}-minute guess (the flag, ${fmt(flagFirst.failed)}) beats it on a bad deploy. In a real incident an investigation earns its time by narrowing a wrong guess, which this toy does not price. The worry that a rollback destroys evidence is real, but capturing logs and snapshots takes seconds and can run alongside the rollback. Mitigating first is common practice, not something this table measured.`,
     },
     {
       q: 'What does the incident commander do in the usual incident-command structure?',
@@ -65,7 +65,7 @@ const lesson: LessonModule = {
       q: `A flag cut a slow dependency from ${ONSET_RATE} to ${DEGRADED_RATE} failures per 1,000, and no action in your hands removes the rest. What now?`,
       options: [
         'Keep rolling back and failing over until the errors reach zero',
-        'Switch the flag off again, since a mitigation that leaves errors failed',
+        'Switch the flag off again, since a mitigation that leaves errors has failed',
         'Declare it resolved, because the error rate is far lower than before',
         'Keep the flag on, tell customers what is degraded and hand the rest to the owner',
       ],

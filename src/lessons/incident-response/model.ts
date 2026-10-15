@@ -87,7 +87,7 @@ export const SEVERITIES: readonly Severity[] = ['sev1', 'sev2', 'sev3'];
 export const SEVERITY_TEXT: Record<Severity, { label: string; meaning: string; people: number; trust: number }> = {
   sev1: { label: 'SEV1: most users cannot check out', meaning: 'everyone on the escalation list is paged', people: 8, trust: 0 },
   sev2: { label: 'SEV2: a major feature is badly degraded', meaning: 'the service team and a few others are paged', people: 3, trust: 0 },
-  sev3: { label: 'SEV3: minor, there is a workaround', meaning: 'no status-page post goes out in this example scale', people: 0, trust: -5 },
+  sev3: { label: 'SEV3: minor, there is a workaround', meaning: 'nobody else is paged and customers get a lighter notice, which costs some trust in this model', people: 0, trust: -5 },
 };
 
 export type Roles = 'all' | 'no-commander' | 'no-comms' | 'none';
@@ -335,4 +335,16 @@ export function outcomeRows(): OutcomeRow[] {
     }
   }
   return rows;
+}
+
+/**
+ * The mean of the failed requests of each first action over the three causes, weighting them equally
+ * (an assumption: the learner does not know the cause, and the lesson does not say how likely each is).
+ */
+export function meanFailedByFirst(rows: readonly OutcomeRow[] = outcomeRows()): Record<Action, number> {
+  const mean = (first: Action) => {
+    const mine = rows.filter((r) => r.first === first);
+    return mine.reduce((sum, r) => sum + r.failed, 0) / mine.length;
+  };
+  return Object.fromEntries(ACTIONS.map((a) => [a, mean(a)])) as Record<Action, number>;
 }
