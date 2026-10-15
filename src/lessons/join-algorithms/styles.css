@@ -1,0 +1,38 @@
+/* join-algorithms */
+.ja-stage { gap: 14px; min-width: 0; }
+.ja-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.ja-grids { display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: flex-start; min-width: 0; }
+.ja-table { min-width: 0; max-width: 100%; }
+.ja-table-title { font: 600 12px var(--font); color: var(--muted); margin-bottom: 4px; }
+.ja-empty { margin: 0; font: 500 12px var(--font); color: var(--dim); }
+.ja-note { margin: 0; font: 500 12px var(--font); color: var(--muted); }
+
+/* hash table buckets */
+.ja-buckets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 760px) { .ja-buckets { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+.ja-bucket { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 34px; padding: 4px 6px; border-radius: 8px; border: 1.5px solid var(--line-2); background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.ja-bucket.is-hot { border-color: var(--violet); box-shadow: 0 0 0 2px color-mix(in srgb, var(--violet) 30%, transparent); }
+.ja-bucket-n { font: 600 10.5px var(--mono); color: var(--faint); width: 100%; }
+.ja-bucket-key { font: 600 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--text); }
+
+/* merge strips */
+.ja-strips { display: flex; flex-direction: column; gap: 6px; }
+.ja-strip { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ja-strip-label { font: 600 12px var(--font); color: var(--muted); }
+
+/* result */
+.ja-result { display: flex; flex-direction: column; gap: 6px; }
+.ja-agree { margin: 0; font: 500 12.5px var(--font); }
+.ja-agree.is-ok { color: var(--ok); }
+.ja-agree.is-bad { color: var(--bad); }
+.ja-pair { font: 600 12px var(--mono); padding: 1px 7px; border-radius: 6px; background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.ja-pair.is-more { background: none; color: var(--muted); }
+
+/* cost table */
+.ja-table-wrap { overflow-x: auto; max-width: 100%; }
+.ja-cost td, .ja-cost th { white-space: normal; }
+.ja-cost td:nth-child(2), .ja-cost th:nth-child(2) { white-space: nowrap; }
+.ja-cost tr.is-cheapest td { color: var(--ok); }
+.ja-cost tr.is-dearest td { color: var(--bad); }
+.ja-cost tr.is-refused td { color: var(--dim); }
+.ja-result .ja-tray { flex-wrap: wrap; overflow-x: visible; }
