@@ -1,0 +1,37 @@
+.av { gap: 14px; }
+.av .section-title { display: block; margin-bottom: 6px; }
+.av-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.av-field { display: inline-flex; flex-direction: column; gap: 3px; }
+.av-error { font-size: 12px; color: var(--bad); max-width: 260px; }
+.av-pair { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.av-pair > * { flex: 1 1 300px; min-width: 0; }
+.av-select-label { display: inline-flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.av-select {
+  font: 500 13px var(--mono);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 7px 8px;
+  max-width: 100%;
+}
+.av-card { min-width: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.av-card p { margin: 0; font-size: 13px; color: var(--muted); }
+.av-card .av-lead { color: var(--text); }
+.av-matrix { min-width: 760px; }
+.av-matrix th:first-child, .av-matrix td:first-child { width: 190px; }
+.av-caption { text-align: left; font: 500 12px var(--font); color: var(--muted); padding: 0 0 6px; caption-side: top; }
+.av-client { color: var(--c); }
+.av-rowhead { text-align: left; font: 600 12.5px var(--font); text-transform: none; letter-spacing: 0; color: var(--text); }
+.av-pick { all: unset; cursor: pointer; display: block; min-height: 44px; box-sizing: border-box; padding: 4px 0; }
+.av-pick:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.av-matrix .sort-btn { min-height: 44px; }
+.av-cell { vertical-align: top; color: var(--c); font-size: 12px; }
+.av-cell b { display: block; font-weight: 700; }
+.av-why { display: block; color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
+.av-matrix tr.is-selected > * { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.av-detail { min-width: 0; }
+.av-reasons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.av-reasons .log-row { font-size: 12px; overflow-wrap: anywhere; }
+.av-card .data-table tr.is-selected > * { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.av-card .meter { width: 100%; }
