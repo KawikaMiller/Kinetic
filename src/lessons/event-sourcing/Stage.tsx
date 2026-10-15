@@ -1,140 +1,67 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Provenance, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { SPRING } from '../../core/motion';
 import { useInterval } from '../../core/useInterval';
+import { appendedCaption, introCaption, money, newProjectionCaption, rejectedCaption, resetCaption, scrubCaption } from './captions';
+import { bigWithdrawals, dateOf, fold, SEED, statement, type AccountEvent, type EventType, type Projection } from './events';
 import {
-  bigWithdrawals, dateOf, fold, SEED, statement,
-  type AccountEvent, type EventType, type Projection,
-} from './events';
+  addBigProjection, DEPOSIT, hasBigProjection, initialSim, isBehind, lagOf, runCommand, tick, WITHDRAW, WITHDRAW_TOO_MUCH, type Sim,
+} from './model';
 import './styles.css';
 
-/** Event colours, via the kit's tone classes. */
-const TYPE_TONE: Record<EventType, string> = { AccountOpened: 'tone-info', Deposited: 'tone-ok', Withdrew: 'tone-bad' };
+/** Event colours: plain categories, so categorical tones rather than the ok/bad meanings. */
+const TYPE_TONE: Record<EventType, string> = { AccountOpened: 'tone-sky', Deposited: 'tone-amber', Withdrew: 'tone-orange' };
 
 /** Projections advance one step per tick. */
 const TICK_MS = 150;
-/** Each new event is dated this many days after the previous one, capped at year end. */
-const DAYS_BETWEEN_EVENTS = 5;
-const LAST_DAY = 365;
-const DEPOSIT = 100;
-const WITHDRAW = 70;
-const WITHDRAW_TOO_MUCH = 5000;
-
-const START_PROJECTIONS: Projection[] = [
-  { id: 'balance', name: 'Balance view', color: 'var(--violet)', pos: SEED.length, rebuilding: false, delay: 8, wait: 0 },
-  { id: 'statement', name: 'Monthly statement', color: 'var(--info)', pos: SEED.length, rebuilding: false, delay: 12, wait: 0 },
-];
-const BIG: Projection = { id: 'big', name: 'Big withdrawals ≥ 100', color: 'var(--orange)', pos: 0, rebuilding: true, delay: 8, wait: 0 };
-
-interface Sim {
-  events: AccountEvent[];
-  projections: Projection[];
-}
-
-const money = (n: number) => `${n < 0 ? '−' : ''}€${Math.abs(n).toLocaleString()}`;
 
 export function Stage() {
   const setCaption = useSetCaption();
-  const [sim, setSim] = useState<Sim>({ events: SEED, projections: START_PROJECTIONS });
+  const [sim, setSim] = useState<Sim>(initialSim);
   const [cursor, setCursor] = useState<number | null>(null); // null = live
   const [rejected, setRejected] = useState(0);
   const { events, projections } = sim;
 
-  // Projections consume the log asynchronously. Each normal one waits its own
-  // `delay` ticks per event (that's the visible lag); a rebuilding one replays
-  // history as fast as it can.
-  const behind = projections.some((p) => p.pos < events.length);
-  useInterval(
-    () =>
-      setSim((s) => ({
-        ...s,
-        projections: s.projections.map((p) => {
-          if (p.pos >= s.events.length) return p.rebuilding ? { ...p, rebuilding: false, wait: 0 } : p;
-          if (p.rebuilding) return { ...p, pos: p.pos + 1 };
-          if (p.wait + 1 < p.delay) return { ...p, wait: p.wait + 1 };
-          return { ...p, pos: p.pos + 1, wait: 0 };
-        }),
-      })),
-    TICK_MS,
-    behind,
-  );
+  useInterval(() => setSim(tick), TICK_MS, isBehind(sim));
 
-  useIntroCaption(
-    <>
-      Nothing is updated in place. Every change is an <span className="hl">event</span> appended to the log, and the balance is
-      computed by <b>replaying</b> them.
-    </>,
-  );
+  useIntroCaption(introCaption());
 
   const live = fold(events);
   const at = cursor ?? events.length;
   const past = fold(events, at);
-  const lag = Math.max(...projections.map((p) => events.length - p.pos));
+  const lag = lagOf(sim);
 
   const command = (type: 'Deposited' | 'Withdrew', amount: number) => {
-    if (type === 'Withdrew' && amount > live.balance) {
+    const result = runCommand(sim, type, amount);
+    if (!result.ok) {
       setRejected((r) => r + 1);
-      setCaption(
-        <>
-          <span className="hl bad">Command rejected</span>: withdraw {money(amount)} with only {money(live.balance)}. No event is
-          written; events record facts that <b>already happened</b>.
-        </>,
-      );
+      setCaption(rejectedCaption(amount, result.balance));
       return;
     }
-    const last = events[events.length - 1];
-    const e: AccountEvent = { seq: last.seq + 1, type, amount, day: Math.min(LAST_DAY, last.day + DAYS_BETWEEN_EVENTS), v: 2, currency: 'EUR' };
-    setSim((s) => ({ ...s, events: [...s.events, e] }));
+    setSim(result.sim);
     setCursor(null);
-    setCaption(
-      <>
-        <span className={`hl ${type === 'Deposited' ? 'ok' : 'bad'}`}>
-          {type} {money(amount)}
-        </span>{' '}
-        appended as event <b>#{e.seq}</b>. The write is done; read models <b>catch up a moment later</b> (eventual consistency).
-      </>,
-    );
+    setCaption(appendedCaption(result.event));
   };
 
   const addProjection = () => {
-    setSim((s) => ({ ...s, projections: [...s.projections, { ...BIG }] }));
-    setCaption(
-      <>
-        A brand-new read model, built by <span className="hl violet">replaying all of history</span>. No migration, no backfill
-        script: the log already has everything.
-      </>,
-    );
+    setSim(addBigProjection);
+    setCaption(newProjectionCaption());
   };
 
   const scrub = (v: number) => {
-    const c = v >= events.length ? null : v;
-    setCursor(c);
-    const s = fold(events, v);
-    const e = events[v - 1];
-    setCaption(
-      c === null ? (
-        <>Back to the present: {events.length} events, balance {money(s.balance)}.</>
-      ) : (
-        <>
-          <span className="hl">Time travel</span>: state as of event #{v}
-          {e ? ` (${dateOf(e.day).label})` : ''} = balance <b>{money(s.balance)}</b>. Nothing stored this; it's recomputed from the log.
-        </>
-      ),
-      { quiet: true },
-    );
+    setCursor(v >= events.length ? null : v);
+    setCaption(scrubCaption(events, v, fold(events, v).balance), { quiet: true });
   };
 
   const reset = () => {
-    setSim({ events: SEED, projections: START_PROJECTIONS });
+    setSim(initialSim());
     setCursor(null);
     setRejected(0);
-    setCaption(<>Reset to the original seven events.</>);
+    setCaption(resetCaption(SEED.length));
   };
-
-  const hasBig = projections.some((p) => p.id === 'big');
 
   return (
     <StageFrame
@@ -142,21 +69,27 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="Events stored" value={events.length} sub="never edited or deleted" />
-          <Stat label="Balance" value={money(live.balance)} color="var(--ok)" sub="fold(events)" />
+          <Stat label="Balance" value={money(live.balance)} sub="fold(events)" />
           <Stat label="Read-model lag" value={lag} color={lag ? 'var(--hi)' : 'var(--ok)'} sub={lag ? 'events behind' : 'caught up'} />
           <Stat label="Rejected commands" value={rejected} color={rejected ? 'var(--bad)' : undefined} />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--info)', label: 'AccountOpened' },
-            { color: 'var(--ok)', label: 'Deposited' },
-            { color: 'var(--bad)', label: 'Withdrew' },
-            { color: 'var(--violet)', label: 'projection position', shape: 'dot' },
-            { color: 'var(--hi)', label: 'time-travel cursor', shape: 'line' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--sky)', label: 'AccountOpened' },
+              { color: 'var(--amber)', label: 'Deposited' },
+              { color: 'var(--orange)', label: 'Withdrew' },
+              ...projections.map((p) => ({ color: p.color, label: `${p.name} position`, shape: 'dot' as const })),
+              { color: 'var(--hi)', label: 'time-travel cursor', shape: 'line' as const },
+            ]}
+          />
+          <div className="es-prov">
+            <Provenance kind="toy">one invented bank account; the dates are days of a year with 28 days in February</Provenance>
+            <Provenance kind="illustrative">the read models' lag ({projections[0].delay} and {projections[1].delay} ticks per event) is set to be visible, not measured</Provenance>
+          </div>
+        </>
       }
       controls={
         <Controls>
@@ -167,7 +100,7 @@ export function Stage() {
           <Button variant="danger" onClick={() => command('Withdrew', WITHDRAW_TOO_MUCH)}>
             {`Withdraw ${money(WITHDRAW_TOO_MUCH)}`}
           </Button>
-          <Button onClick={addProjection} disabled={hasBig}>
+          <Button onClick={addProjection} disabled={hasBigProjection(sim)}>
             + New projection
           </Button>
           <Button onClick={reset}>Reset</Button>
@@ -180,7 +113,7 @@ export function Stage() {
           <h4>
             Event log <span>append-only</span>
           </h4>
-          <ol className="es-log">
+          <ol className="es-log" tabIndex={0} aria-label="Event log (scrollable)">
             <AnimatePresence initial={false}>
               {events.map((e, i) => {
                 const future = i >= at;
@@ -261,7 +194,7 @@ export function Stage() {
   );
 }
 
-function ProjectionCard({ p, events }: { p: Projection; events: AccountEvent[] }) {
+function ProjectionCard({ p, events }: { p: Projection; events: readonly AccountEvent[] }) {
   const lag = events.length - p.pos;
   return (
     <motion.article
@@ -275,7 +208,7 @@ function ProjectionCard({ p, events }: { p: Projection; events: AccountEvent[] }
         <span>{p.name}</span>
         <em className={lag ? 'lag' : 'ok'}>{p.rebuilding ? `replaying ${p.pos}/${events.length}` : lag ? `${lag} behind` : 'up to date'}</em>
       </header>
-      {p.id === 'balance' && <p className="es-proj-big">€{fold(events, p.pos).balance.toLocaleString()}</p>}
+      {p.id === 'balance' && <p className="es-proj-big">{money(fold(events, p.pos).balance)}</p>}
       {p.id === 'statement' && (
         <table className="es-table">
           <thead>
@@ -289,8 +222,8 @@ function ProjectionCard({ p, events }: { p: Projection; events: AccountEvent[] }
             {statement(events, p.pos).map((r) => (
               <tr key={r.month}>
                 <td>{r.month}</td>
-                <td className="in">+{r.inflow}</td>
-                <td className="out">−{r.outflow}</td>
+                <td className="in">{r.inflow ? `+${r.inflow}` : 0}</td>
+                <td className="out">{r.outflow ? `−${r.outflow}` : 0}</td>
               </tr>
             ))}
           </tbody>
@@ -300,7 +233,7 @@ function ProjectionCard({ p, events }: { p: Projection; events: AccountEvent[] }
         <ul className="es-big">
           {bigWithdrawals(events, p.pos).map((e) => (
             <motion.li key={e.seq} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
-              #{e.seq} · {dateOf(e.day).label} · €{e.amount}
+              #{e.seq} · {dateOf(e.day).label} · {money(e.amount)}
             </motion.li>
           ))}
           {bigWithdrawals(events, p.pos).length === 0 && <li className="muted">none yet</li>}

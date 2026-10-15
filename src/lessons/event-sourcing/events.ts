@@ -57,8 +57,11 @@ export function apply(state: AccountState, raw: AccountEvent): AccountState {
 
 export const EMPTY: AccountState = { owner: null, balance: 0, applied: 0 };
 
+/** Replay `events` on top of `from` (the empty state, or a snapshot taken part-way). */
+export const foldFrom = (from: AccountState, events: readonly AccountEvent[]): AccountState => events.reduce(apply, from);
+
 /** Current state is nothing more than a left fold over the log. */
-export const fold = (events: AccountEvent[], upTo = events.length) => events.slice(0, upTo).reduce(apply, EMPTY);
+export const fold = (events: readonly AccountEvent[], upTo = events.length): AccountState => foldFrom(EMPTY, events.slice(0, upTo));
 
 // ── Projections (read models) ───────────────────────────────────────
 export type ProjectionId = 'balance' | 'statement' | 'big';
@@ -73,7 +76,7 @@ export interface Projection {
   wait: number;
 }
 
-export function statement(events: AccountEvent[], upTo: number) {
+export function statement(events: readonly AccountEvent[], upTo: number) {
   const rows = new Map<string, { month: string; inflow: number; outflow: number }>();
   for (const e of events.slice(0, upTo)) {
     const { month } = dateOf(e.day);
@@ -85,5 +88,5 @@ export function statement(events: AccountEvent[], upTo: number) {
   return [...rows.values()];
 }
 
-export const bigWithdrawals = (events: AccountEvent[], upTo: number) =>
+export const bigWithdrawals = (events: readonly AccountEvent[], upTo: number) =>
   events.slice(0, upTo).filter((e) => e.type === 'Withdrew' && e.amount >= 100);

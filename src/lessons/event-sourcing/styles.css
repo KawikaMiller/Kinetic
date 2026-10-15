@@ -68,8 +68,9 @@
 .es-table { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
 .es-table th { text-align: left; color: var(--faint); font-weight: 500; padding: 2px 0; }
 .es-table td { padding: 2px 0; }
-.es-table .in { color: var(--ok); }
-.es-table .out { color: var(--bad); }
+.es-table .in { color: var(--amber); }
+.es-table .out { color: var(--orange); }
+.es-prov { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .es-big { margin: 0; padding: 0; list-style: none; font: 12px var(--mono); display: flex; flex-direction: column; gap: 3px; }
 
 @media (max-width: 900px) {
