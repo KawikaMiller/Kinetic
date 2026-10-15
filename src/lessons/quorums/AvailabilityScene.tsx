@@ -57,8 +57,8 @@ export function AvailabilityScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="A write survives" value={`${failuresTolerated(n, w)} failures`} sub={`N − W = ${n} − ${w}`} />
           <Stat label="A read survives" value={`${failuresTolerated(n, r)} failures`} sub={`N − R = ${n} − ${r}`} />
-          <Stat label="Write in the simulation" value={sim.write.outcome === 'ok' ? `acked at ${sim.write.response} ms` : `no quorum at ${sim.write.response} ms`} color={sim.write.outcome === 'ok' ? 'var(--ok)' : 'var(--bad)'} sub={`${down.length} of ${n} replicas unreachable`} />
-          <Stat label="Read in the simulation" value={sim.read.outcome === 'ok' ? `returns at ${sim.read.response} ms` : `no quorum at ${sim.read.response} ms`} color={sim.read.outcome === 'ok' ? 'var(--ok)' : 'var(--bad)'} sub={`needs ${r} replies`} />
+          <Stat label="Write in the simulation" value={sim.write.outcome === 'ok' ? `acked in ${sim.write.response! - sim.write.invoke} ms` : `no quorum after ${sim.write.response! - sim.write.invoke} ms`} color={sim.write.outcome === 'ok' ? 'var(--ok)' : 'var(--bad)'} sub={`${down.length} of ${n} replicas unreachable`} />
+          <Stat label="Read in the simulation" value={sim.read.outcome === 'ok' ? `returns in ${sim.read.response! - sim.read.invoke} ms` : `no quorum after ${sim.read.response! - sim.read.invoke} ms`} color={sim.read.outcome === 'ok' ? 'var(--ok)' : 'var(--bad)'} sub={`needs ${r} replies`} />
         </Stats>
       }
       legend={
@@ -110,6 +110,7 @@ export function AvailabilityScene({ picker }: { picker: ReactNode }) {
           <Points tone="violet" r={3} data={rows.map((x) => ({ x: x.w, y: x.p99 }))} />
           <VLine at={w} tone="hi" label={`W = ${w}`} />
         </Plot2D>
+        <p className="qr-status">The simulation above the plot uses a fixed 5 ms on every link, so an operation takes 10 ms; the plot is a separate model with log-normal replies, a median near 20 ms.</p>
         <p className="qr-status">p50 {sig(rows[w - 1].p50, 3)} ms and p99 {sig(rows[w - 1].p99, 3)} ms at W = {w}; log-normal latencies, 5,000 seeded trials.</p>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>the availability outcomes run on distSim with the chosen replicas crashed; the wait is seeded log-normal draws</Provenance>

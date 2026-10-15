@@ -4,7 +4,7 @@
 import { checkInvariants, linearizable } from '../../core/distSim';
 import { mulberry32 } from '../../core/random';
 import {
-  BROKEN_SEED_NO_OVERLAP, TIMEOUT_MS, historyFor, homesOf, opsOf, readsSeeAcknowledgedWrites, storeCluster,
+  BROKEN_SEED_NO_OVERLAP, BROKEN_SEED_SLOPPY_TOGGLE, STAND_INS, TIMEOUT_MS, TOGGLE_FAULTS, historyFor, homesOf, opsOf, readsSeeAcknowledgedWrites, storeCluster,
   type StoreCluster, type StoreConfig, type StoreOp, type StoreSetup,
 } from './store';
 
@@ -15,6 +15,10 @@ export const SCHEDULES: readonly { id: Schedule; label: string }[] = [
   { id: 'seeded', label: 'Seeded run' },
 ];
 export const STORE_N = 3;
+/** Every lane scene 3 can draw, in order; a run draws the ones its trace mentions. */
+export const STORE_ACTORS = ['client', 'W', 'X', 'Y', ...homesOf(STORE_N), ...STAND_INS].map((id) => ({ id, label: id }));
+/** The Sloppy toggle exists only where stand-ins can matter: the in-flight schedule has no partition. */
+export const sloppyApplies = (schedule: Schedule): boolean => schedule !== 'inflight';
 /** How many seeds the "lowest seed that breaks it" button searches. */
 export const SEARCH_SEEDS = 500;
 export const DEFAULT_STORE: { schedule: Schedule; w: number; r: number; sloppy: boolean; repair: boolean; seed: number; faults: boolean } = {
@@ -39,7 +43,14 @@ export interface StoreControls {
   faults: boolean;
 }
 
-export function setupFor(c: StoreControls): StoreSetup {
+/** The controls as the model sees them: a control hidden on this schedule is pinned off, whatever it was left at. */
+export const effectiveControls = (c: StoreControls): StoreControls => ({ ...c, sloppy: c.sloppy && sloppyApplies(c.schedule) });
+
+/** The seed that shows the failure the current seeded settings are about: the no-overlap seed, or the sloppy one with faults on. */
+export const pinnedSeed = (c: StoreControls): number => (c.sloppy && c.faults ? BROKEN_SEED_SLOPPY_TOGGLE : BROKEN_SEED_NO_OVERLAP);
+
+export function setupFor(controls: StoreControls): StoreSetup {
+  const c = effectiveControls(controls);
   const config: StoreConfig = { n: STORE_N, w: c.w, r: c.r, sloppy: c.sloppy, repair: c.repair };
   if (c.schedule === 'inflight') {
     // Version 1 reaches A at 5 ms and B, C at 50 ms. X reads at 10 ms and hears A and C first, Y reads at 20 ms and hears B and C first.
@@ -48,7 +59,7 @@ export function setupFor(c: StoreControls): StoreSetup {
   if (c.schedule === 'sloppy') {
     return { seed: 0, config, writes: [0], reads: [{ at: 100, via: 'X' }, { at: 340, via: 'X' }], latency: fixed({}), partition: { ...SLOPPY_PARTITION, a: [...SLOPPY_PARTITION.a], b: [...SLOPPY_PARTITION.b] } };
   }
-  return { seed: c.seed, config, faults: c.faults ? { loss: 0.1, duplicate: 0.15, chaos: true } : {} };
+  return { seed: c.seed, config, faults: c.faults ? TOGGLE_FAULTS : {} };
 }
 
 export interface ReplicaFrame {
@@ -68,9 +79,37 @@ export interface StoreRun {
   invariant: string | null;
   /** The linearizable checker's reason, or null when the history is linearizable. */
   linearizable: string | null;
+  /** Operations still waiting when the run stops: the linearizable check leaves them out of the history. */
+  open: number;
   cluster: StoreCluster;
   end: number;
 }
+
+/** The lanes a run draws: those that send or receive in its whole trace, so the lanes stay put while the learner replays. */
+export const drawnActors = (run: StoreRun) => {
+  const used = new Set(run.cluster.trace.filter((r) => r.kind === 'send' || r.kind === 'deliver').flatMap((r) => [r.from, r.to]));
+  return STORE_ACTORS.filter((a) => used.has(a.id));
+};
+
+export interface ReplicaRow {
+  ids: string[];
+  /** A partition cut is drawn after this index, between the two sides, or null when there is no partition. */
+  cutAfter: number | null;
+}
+
+/** The replica boxes of a schedule, grouped by side of the partition where there is one; stand-ins only when they take part. */
+export function replicaRow(controls: StoreControls): ReplicaRow {
+  const { sloppy, schedule } = effectiveControls(controls);
+  const homes = homesOf(STORE_N);
+  const standIns: readonly string[] = sloppy ? STAND_INS : [];
+  if (schedule !== 'sloppy') return { ids: [...homes, ...standIns], cutAfter: null };
+  const writerSide = SLOPPY_PARTITION.a.filter((id) => homes.includes(id) || standIns.includes(id));
+  const otherSide = SLOPPY_PARTITION.b.filter((id) => homes.includes(id));
+  return { ids: [...writerSide, ...otherSide], cutAfter: writerSide.length - 1 };
+}
+
+/** True while the partition cut of the partition schedule is up at time t. */
+export const cutUpAt = (t: number): boolean => t >= SLOPPY_PARTITION.from && t < SLOPPY_PARTITION.to;
 
 const names = (n: number): string[] => [...homesOf(n), 'S1', 'S2'];
 
@@ -94,7 +133,10 @@ export function runStore(setup: StoreSetup, until: number): StoreRun {
   capture();
   while (c.nextTime() <= until && c.step()) capture();
   const ops = opsOf(c.snapshot());
-  return { frames, ops, invariant: invariant.ok ? null : invariant.message, linearizable: linearizable(historyFor(ops), { initial: 0 }), cluster: c, end: c.time };
+  return {
+    frames, ops, invariant: invariant.ok ? null : invariant.message, linearizable: linearizable(historyFor(ops), { initial: 0 }),
+    open: ops.filter((o) => o.response === null).length, cluster: c, end: c.time,
+  };
 }
 
 /** The lowest seed below `limit` on which the seeded schedule breaks the acknowledged-write invariant for these controls, or null. */

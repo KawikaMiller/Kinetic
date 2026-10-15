@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
@@ -8,7 +8,7 @@ import { toSequence } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
 import { storeCaption } from './captions';
 import { STAND_INS, homesOf, type StoreMsg } from './store';
-import { DEFAULT_STORE, HORIZON_MS, SCHEDULES, SEARCH_SEEDS, STORE_N, lowestBrokenSeed, runStore, setupFor, type Schedule, type StoreControls } from './storeView';
+import { DEFAULT_STORE, HORIZON_MS, SCHEDULES, SEARCH_SEEDS, STORE_N, cutUpAt, drawnActors, effectiveControls, lowestBrokenSeed, pinnedSeed, replicaRow, runStore, setupFor, sloppyApplies, type Schedule, type StoreControls } from './storeView';
 
 const SCHEDULE_OPTIONS = SCHEDULES.map((s) => ({ value: s.id, label: s.label }));
 const DOMAIN_NOTE: Record<Schedule, string> = {
@@ -16,7 +16,6 @@ const DOMAIN_NOTE: Record<Schedule, string> = {
   sloppy: 'The writer side {W, A, S1, S2} is cut off from {X, B, C} until 300 ms.',
   seeded: 'Three writes and six reads at seeded times, seeded delays.',
 };
-const ACTORS = ['client', 'W', 'X', 'Y', ...homesOf(STORE_N), ...STAND_INS].map((id) => ({ id, label: id }));
 
 const messageLabel = (p: StoreMsg): string => {
   switch (p.type) {
@@ -35,22 +34,27 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
   const [at, setAt] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const set = (patch: Partial<StoreControls>) => {
-    setC((old) => ({ ...old, ...patch }));
+    setC((old) => {
+      const next = { ...old, ...patch };
+      // A learner still on the pinned seed follows it to the new mode's pinned seed; a seed they chose stays.
+      return old.seed === pinnedSeed(old) && !('seed' in patch) ? { ...next, seed: pinnedSeed(next) } : next;
+    });
     setAt(null);
     setNote('');
   };
   const horizon = HORIZON_MS[c.schedule];
   const run = useMemo(() => runStore(setupFor(c), horizon), [c, horizon]);
+  const actors = useMemo(() => drawnActors(run), [run]);
+  const row = replicaRow(c);
   const t = at === null ? horizon : Math.min(at, horizon);
   const frame = [...run.frames].reverse().find((f) => f.t <= t) ?? run.frames[0];
   const sequence = useMemo(
-    () => toSequence(run.cluster.trace.filter((r) => r.t <= t), { actors: ACTORS, label: messageLabel, events: false, times: true }),
-    [run, t],
+    () => toSequence(run.cluster.trace.filter((r) => r.t <= t), { actors, label: messageLabel, events: false, times: true }),
+    [run, actors, t],
   );
 
-  useIntroCaption(storeCaption({ schedule: c.schedule, run, w: c.w, r: c.r, sloppy: c.sloppy, t }), [run, t]);
+  useIntroCaption(storeCaption({ schedule: c.schedule, run, w: c.w, r: c.r, sloppy: effectiveControls(c).sloppy, t }), [run, t]);
 
-  const sloppyApplies = c.schedule !== 'inflight';
   const find = () => {
     const found = lowestBrokenSeed(c, SEARCH_SEEDS);
     if (found === null) setNote(`No seed below ${SEARCH_SEEDS} breaks the invariant with these settings.`);
@@ -63,7 +67,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Acknowledged-write invariant" value={run.invariant ? '✗ broken' : '✓ holds'} color={run.invariant ? 'var(--bad)' : 'var(--ok)'} sub={run.invariant ?? 'a read after an acknowledged write never goes behind it'} />
-          <Stat label="Linearizable" value={run.linearizable ? '✗ no' : '✓ yes'} color={run.linearizable ? 'var(--bad)' : 'var(--ok)'} sub="the same checker as the consistency lesson" />
+          <Stat label="Linearizable" value={run.linearizable ? '✗ no' : '✓ yes'} color={run.linearizable ? 'var(--bad)' : 'var(--ok)'} sub={run.open > 0 ? `${run.open} still waiting at the end, left out of the check` : 'the same checker as the consistency lesson'} />
         </Stats>
       }
       legend={
@@ -72,7 +76,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--ok)', label: 'a replica with the newest version' },
             { color: 'var(--orange)', label: 'a stale replica' },
             { color: 'var(--amber)', label: 'a stand-in node' },
-            { color: 'var(--dim)', label: 'a partition cut', shape: 'line' },
+            { color: 'var(--dim)', label: 'a partition cut (while it lasts)', shape: 'line' },
             { color: 'var(--cell-dead)', label: 'a crashed replica' },
           ]}
         />
@@ -86,7 +90,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
           <Slider label="Write quorum W" value={c.w} min={1} max={STORE_N} onChange={(w) => set({ w })} />
           <Slider label="Read quorum R" value={c.r} min={1} max={STORE_N} onChange={(r) => set({ r })} />
           <Toggle label="Read repair" value={c.repair} onChange={(repair) => set({ repair })} />
-          {sloppyApplies && <Toggle label="Sloppy quorum" value={c.sloppy} onChange={(sloppy) => set({ sloppy })} off="Strict" on="Sloppy" />}
+          {sloppyApplies(c.schedule) && <Toggle label="Sloppy quorum" value={c.sloppy} onChange={(sloppy) => set({ sloppy })} off="Strict" on="Sloppy" />}
         </>,
         <>
           {c.schedule === 'seeded' && (
@@ -103,17 +107,20 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
       <div className="qr-stage stage-pad">
         <Hint tone="muted">{DOMAIN_NOTE[c.schedule]}</Hint>
         <div className="qr-replicas" role="group" aria-label={`Replica versions at ${t} ms`}>
-          {[...homesOf(STORE_N), ...(c.sloppy && sloppyApplies ? STAND_INS : [])].map((id) => {
+          {row.ids.map((id, i) => {
             const f = frame.replicas[id];
             const newest = Math.max(...homesOf(STORE_N).map((h) => frame.replicas[h].version));
             const stale = homesOf(STORE_N).includes(id) && f.version < newest;
             const hint = Object.entries(f.hints).map(([home, v]) => `hint v${v} for ${home}`).join(', ');
             return (
-              <div key={id} className={`qr-replica qr-static ${!f.up ? 'is-down' : stale ? 'is-stale' : homesOf(STORE_N).includes(id) && newest > 0 ? 'is-newest' : ''} ${STAND_INS.includes(id as (typeof STAND_INS)[number]) ? 'is-standin' : ''}`}>
+              <Fragment key={id}>
+              <div className={`qr-replica qr-static ${!f.up ? 'is-down' : stale ? 'is-stale' : homesOf(STORE_N).includes(id) && newest > 0 ? 'is-newest' : ''} ${STAND_INS.includes(id as (typeof STAND_INS)[number]) ? 'is-standin' : ''}`}>
                 <b>{id}</b>
                 <span className="qr-version">v{f.version}</span>
                 <span className="qr-member">{!f.up ? 'down' : hint}</span>
               </div>
+              {i === row.cutAfter && <span className={`qr-cut ${cutUpAt(t) ? '' : 'is-healed'}`} role="img" aria-label={cutUpAt(t) ? 'The partition cut between these replicas' : 'The partition has healed'} />}
+              </Fragment>
             );
           })}
         </div>
@@ -140,7 +147,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Box>
           <SectionTitle hint="every message so far">The messages</SectionTitle>
-          <SequenceDiagram actors={ACTORS.filter((a) => sloppyApplies || !STAND_INS.includes(a.id as (typeof STAND_INS)[number]))} messages={sequence.messages} ariaLabel="Writes, reads and their replies" />
+          <SequenceDiagram actors={actors} messages={sequence.messages} ariaLabel="Writes, reads and their replies" />
         </Box>
         {note && <p className="qr-status" role="status">{note}</p>}
         <ProvenanceRow>

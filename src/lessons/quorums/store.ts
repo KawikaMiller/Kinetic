@@ -227,4 +227,9 @@ export const readsSeeAcknowledgedWrites: Safety<StoreState> = (snap) => {
 export const STORE_FIXED_LATENCY: Latency = () => 5;
 
 export const BROKEN_SEED_NO_OVERLAP = 5;
+/** Lowest seed that breaks a sloppy N=3, W=2, R=2 store under random partitions and crashes alone (`{ chaos: true }`). */
 export const BROKEN_SEED_SLOPPY = 18;
+/** The fault mix behind scene 3's "Faults" toggle: loss, duplication and random partitions, crashes and pauses. */
+export const TOGGLE_FAULTS = { loss: 0.1, duplicate: 0.15, chaos: true } as const;
+/** Lowest seed that breaks a sloppy N=3, W=2, R=2 store under exactly the toggle's fault mix. */
+export const BROKEN_SEED_SLOPPY_TOGGLE = 97;

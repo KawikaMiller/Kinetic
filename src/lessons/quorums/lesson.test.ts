@@ -35,7 +35,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(run(3, ['A', 'B'])[0].outcome).toBe('ok');
     expect(run(3, ['A', 'B', 'C'])[0].outcome).toBe('refused');
     const c = text(availabilityCaption({ n: 5, w: 5, r: 3, unreachable: 1, write: blocked[0], read: blocked[1] }), { strict: true });
-    expect(c).toContain('no quorum at 150 ms');
+    expect(c).toContain('no quorum after 150 ms');
     expect(c).not.toContain('disagrees');
   });
 
