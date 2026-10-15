@@ -9,7 +9,6 @@ import { AVL_LEGEND, frameEdgeMark, frameNodeMark, frameScale } from './marks';
 import { heightOf, sizeOf } from './model';
 import { CASE_PRESETS, REPAIR_DEFAULT, caseBase, casePreset, type CasePreset } from './presets';
 import { useAvlSession } from './useAvlSession';
-import { stageMinWidth } from './treeBox';
 
 const STEP_MS = 1100;
 
@@ -34,7 +33,6 @@ export function RepairScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       player={player}
-      minWidth={stageMinWidth(session.tree, f.tree)}
       height={460}
       stats={
         <Stats>

@@ -9,7 +9,6 @@ import { parseKeyList } from './keys';
 import { buildAvl, buildBst, deepestPath, heightOf } from './model';
 import { COMPARE_PRESETS, DEFAULT_SEED, presetKeys, type ComparePreset } from './presets';
 import { compareCaption } from './text';
-import { stageMinWidth } from './treeBox';
 
 type Source = ComparePreset['id'] | 'typed';
 
@@ -53,7 +52,6 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
 
   return (
     <StageFrame
-      minWidth={stageMinWidth(plain, avl.tree)}
       height={520}
       stats={
         <Stats>

@@ -9,7 +9,6 @@ import { AVL_LEGEND, frameEdgeMark, frameNodeMark, frameScale } from './marks';
 import { buildAvl, heightOf, sizeOf } from './model';
 import { DELETE_DEFAULT_KEY, DELETE_TREE_HEIGHT, SORTED_KEYS, deleteBase } from './presets';
 import { useAvlSession, type AvlStart } from './useAvlSession';
-import { stageMinWidth } from './treeBox';
 
 const STEP_MS = 1000;
 const PERFECT_DELETE_KEY = 8;
@@ -46,7 +45,6 @@ export function DeleteScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       player={player}
-      minWidth={stageMinWidth(session.tree, f.tree)}
       height={470}
       stats={
         <Stats>

@@ -14,7 +14,6 @@ const MAX_GAP = 48;
 export const RADIUS = 13;
 /** Smallest text drawn: the balance-factor badge. */
 export const BADGE_TEXT_PX = 10;
-const STAGE_PAD_X = 36;
 
 /** Size of the drawing for a tree: one column per node, levels squeezed to fit a chain on screen. */
 export function treeBox(t: Tree): { width: number; height: number; gap: number } {
@@ -24,6 +23,5 @@ export function treeBox(t: Tree): { width: number; height: number; gap: number }
   return { width: clamp(n * COLUMN_PX + 2 * SIDE_PAD, MIN_WIDTH, MAX_WIDTH), height: TOP + depth * gap + BOTTOM, gap };
 }
 
-/** The narrowest stage width at which every tree shown keeps its badges at 8px or more. */
-export const stageMinWidth = (...trees: Tree[]): number =>
-  Math.max(...trees.map((t) => minWidthForText(treeBox(t).width, BADGE_TEXT_PX, { padX: STAGE_PAD_X })));
+/** The narrowest width at which this tree keeps its badges at 8px or more. */
+export const treeMinWidth = (t: Tree): number => minWidthForText(treeBox(t).width, BADGE_TEXT_PX);

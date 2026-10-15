@@ -1,7 +1,8 @@
+import { WideRegion } from '../../components/WideRegion';
 import { TreeSvg, type TreeEdgeMark, type TreeNodeMark, type TreeShape } from '../../components/TreeSvg';
 import { balanceOf, type Tree } from './model';
 import { signed } from './text';
-import { RADIUS, SIDE_PAD, TOP, treeBox } from './treeBox';
+import { RADIUS, SIDE_PAD, TOP, treeBox, treeMinWidth } from './treeBox';
 
 const BADGE_DY = RADIUS + 10;
 
@@ -33,6 +34,7 @@ export function AvlTreeView({ tree, showBalance = true, showHeight = false, node
     );
   };
   return (
+    <WideRegion minWidth={treeMinWidth(tree)} label={`Tree: scroll sideways to see all ${Object.keys(nodes).length} nodes`}>
     <TreeSvg
       shape={shape}
       layout="inorder"
@@ -61,5 +63,6 @@ export function AvlTreeView({ tree, showBalance = true, showHeight = false, node
       nodeAriaLabel={(id) => `Node ${id}, balance factor ${signed(balanceOf(tree, id))}`}
       ariaLabel={ariaLabel}
     />
+    </WideRegion>
   );
 }

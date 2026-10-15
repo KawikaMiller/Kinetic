@@ -8,7 +8,6 @@ import { CaseSketch } from './CaseSketch';
 import { applyChoice, heightOf, stopAtImbalance, unbalancedNodes, type Case, type Choice, type PickOutcome } from './model';
 import { CASE_PRESETS, PICK_DEFAULT, caseBase, casePreset } from './presets';
 import { CHOICE_LABEL, pickCaption } from './text';
-import { stageMinWidth } from './treeBox';
 
 const CHOICES: Choice[] = ['right', 'left', 'left-right', 'right-left'];
 
@@ -48,7 +47,6 @@ export function PickScene({ picker }: { picker: ReactNode }) {
 
   return (
     <StageFrame
-      minWidth={stageMinWidth(state.tree, tree)}
       height={440}
       stats={
         <Stats>

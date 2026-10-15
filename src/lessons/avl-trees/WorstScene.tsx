@@ -10,7 +10,6 @@ import { avlBound, growthSeries } from './growth';
 import { buildBalanced, fibonacciSize, fibonacciTree, heightOf, inOrder, sizeOf } from './model';
 import { FIB_DEFAULT_HEIGHT, FIB_HEIGHTS, PLOT_MAX_N, PLOT_SEED } from './presets';
 import { worstCaption } from './text';
-import { stageMinWidth } from './treeBox';
 
 const PLOT_MAX_HEIGHT = 1100;
 const PLOT_WIDTH = 300;
@@ -31,7 +30,6 @@ export function WorstScene({ picker }: { picker: ReactNode }) {
 
   return (
     <StageFrame
-      minWidth={stageMinWidth(thin, packed)}
       height={560}
       stats={
         <Stats>
