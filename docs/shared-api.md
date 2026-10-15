@@ -1406,6 +1406,21 @@ const { sorted, sort, headerProps } = useSortedRows(rows, { name: (r) => r.name,
   timestamped streams, so they stay on plain `.log-row`. (virtual-dom's patch list, interrupts-context-switch's outcomes, poison-messages-dlq and
   event-sourcing were only grepped, not read closely; none has `role="log"`.)
 
+### `GanttLanes` instants (K3-11) — later incident-response, postmortems, project-planning-critical-path, job-scheduling, io-models, change-data-capture, safe-config-rollout
+```tsx
+{ id: 'rb', lane: 'deploys', start: 55, end: 55, tone: 'bad', label: 'rollback' }   // start === end: a diamond with its label beside it
+```
+- A bar with `start === end` **and a `tone`** is an instant: an 8px diamond (`.gantt-instant`, a `<button>` when `onBarClick` is set, with the
+  label as its name and tooltip) centred on its time, with the `label` in plain text beside it (`.gantt-instant-label`, 10.5px mono, no
+  fill). `minPx` still means "draw it this wide", so a zero-length bar with `minPx` is the thin sliver it always was; a zero-length bar with
+  no `tone` still draws nothing (the plan ghost). Existing bars are untouched: all 37 GanttLanes lessons are pixel-identical at 1440 (93 deterministic frames)
+  (no existing bar had `start === end` and a tone).
+- **Label placement reuses the marker-label spreading** (`spreadLabels`), per lane, from the real widths the component already measures
+  (`core/gantt` `placeInstantLabels`, tested): a label goes right of its diamond; left when it would run past the track's end or sit on
+  another instant's diamond and the left is clear; labels that overlap are nudged apart; finally every label is pulled back inside the track.
+  The diamond itself is kept wholly inside the track (`instantX`, and a CSS `clamp`), so an instant at the very start or end of the domain stays inside.
+- `isInstant(bar)`, `INSTANT_GAP_PX`, `INSTANT_SIZE_PX` are in `core/gantt`. Instants take no `motionId` glide and no `progress`.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barGeometry, barLabelPx, domainFraction, ganttTicks, spreadLabels } from './gantt';
+import { barGeometry, barLabelPx, domainFraction, ganttTicks, INSTANT_GAP_PX, INSTANT_SIZE_PX, instantX, isInstant, placeInstantLabels, spreadLabels } from './gantt';
 
 describe('gantt geometry', () => {
   it('places bars as percentages of the domain', () => {
@@ -62,5 +62,57 @@ describe('barLabelPx', () => {
     expect(barLabelPx('')).toBe(10);
     expect(barLabelPx('Big')).toBe(Math.ceil(3 * 6.3 + 10));
     expect(barLabelPx('P10')).toBeGreaterThan(barLabelPx('P1'));
+  });
+});
+
+describe('instants (zero-length bars)', () => {
+  it('only a bar with start equal to end is an instant', () => {
+    expect(isInstant({ start: 5, end: 5 })).toBe(true);
+    expect(isInstant({ start: 5, end: 5.001 })).toBe(false);
+  });
+
+  it('an instant at either end of the track keeps its whole diamond inside it', () => {
+    expect(instantX(0, 400)).toBe(INSTANT_SIZE_PX / 2);
+    expect(instantX(1, 400)).toBe(400 - INSTANT_SIZE_PX / 2);
+    expect(instantX(0.5, 400)).toBe(200);
+    expect(instantX(0.5, 0)).toBe(INSTANT_SIZE_PX / 2);
+  });
+
+  it('a lone label sits to the right of its marker, a fixed gap away, with no shift', () => {
+    expect(placeInstantLabels([{ x: 100, w: 40 }], 400)).toEqual([{ side: 'right', dx: 0 }]);
+  });
+
+  it('a marker at the right edge of the track puts its label on the left, inside the track', () => {
+    const [p] = placeInstantLabels([{ x: 400, w: 60 }], 400);
+    expect(p.side).toBe('left');
+    expect(400 - INSTANT_GAP_PX - 60 + p.dx).toBeGreaterThanOrEqual(0);
+  });
+
+  it('a marker at the left edge keeps its label inside the track on the right', () => {
+    const [p] = placeInstantLabels([{ x: 0, w: 60 }], 400);
+    expect(p.side).toBe('right');
+    expect(INSTANT_GAP_PX + p.dx).toBeGreaterThanOrEqual(0);
+  });
+
+  it('a label does not sit on the next instant\'s diamond when the other side is clear, and stays on the right when both sides are blocked', () => {
+    const [a, b] = placeInstantLabels([{ x: 200, w: 40 }, { x: 215, w: 40 }], 400);
+    expect(a.side).toBe('left');
+    expect(b.side).toBe('right');
+    const boxed = placeInstantLabels([{ x: 20, w: 60 }, { x: 40, w: 10 }, { x: 105, w: 10 }], 400);
+    expect(boxed[0].side).toBe('right');
+  });
+
+  it('two instants close together get labels that do not overlap, and every label stays inside the track', () => {
+    const marks = [{ x: 100, w: 70 }, { x: 108, w: 70 }, { x: 392, w: 70 }];
+    const places = placeInstantLabels(marks, 400, 4);
+    const boxes = marks.map((m, i) => {
+      const centre = m.x + (places[i].side === 'right' ? 1 : -1) * (INSTANT_GAP_PX + m.w / 2) + places[i].dx;
+      return { left: centre - m.w / 2, right: centre + m.w / 2 };
+    }).sort((a, b) => a.left - b.left);
+    for (let i = 1; i < boxes.length; i++) expect(boxes[i].left - boxes[i - 1].right).toBeGreaterThanOrEqual(4 - 1e-9);
+    for (const b of boxes) {
+      expect(b.left).toBeGreaterThanOrEqual(-1e-9);
+      expect(b.right).toBeLessThanOrEqual(400 + 1e-9);
+    }
   });
 });

@@ -816,6 +816,12 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
 .gantt-bar.is-ring { box-shadow: 0 0 0 2px var(--gantt-ring); }
 .gantt-bar-label { display: block; padding: 0 5px; font: 600 10.5px/var(--gantt-track-h) var(--mono); color: var(--on-c, var(--text)); white-space: nowrap; }
 .gantt-bar.is-wait .gantt-bar-label, .gantt-bar.is-blocked .gantt-bar-label { color: var(--text); }
+/* An instant (a bar with start === end): a diamond centred on its time, its label beside it (--gap from the centre, --dx from label spreading) */
+.gantt-instant { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; transform: rotate(45deg); background: var(--c); }
+button.gantt-instant { padding: 0; border: 0; cursor: pointer; }
+button.gantt-instant:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.gantt-instant-label { position: absolute; top: 0; font: 600 10.5px/var(--gantt-track-h) var(--mono); color: var(--text); white-space: nowrap; pointer-events: none; transform: translateX(calc(var(--gap) + var(--dx))); }
+.gantt-instant-label.is-left { transform: translateX(calc(-100% - var(--gap) + var(--dx))); }
 .gantt-now, .gantt-marker { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--hi); transition: left 0.3s linear; pointer-events: none; }
 .gantt-marker { background: var(--c); opacity: 0.8; }
 .gantt-marker-labels, .gantt-axis-track { position: relative; height: 16px; }

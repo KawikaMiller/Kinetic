@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, type CSSProperties, type RefObject } from 'react';
-import { barGeometry, domainFraction, ganttTicks, spreadLabels, type Domain } from '../core/gantt';
+import {
+  barGeometry, domainFraction, ganttTicks, INSTANT_GAP_PX, INSTANT_SIZE_PX, instantX, isInstant, placeInstantLabels, spreadLabels, type Domain, type InstantLabelPlace,
+} from '../core/gantt';
 import type { Tone } from '../core/tone';
 import { useMeasure } from '../core/useMeasure';
 
@@ -11,6 +13,7 @@ export interface GanttLane {
 export interface GanttBar {
   id: string;
   lane: string;
+  /** `start === end` is an instant (a deploy, a page, a syscall): with a `tone` it draws a diamond with its `label` beside it. */
   start: number;
   end: number;
   /** Fill colour. No tone draws nothing but the plan ghost (a job not started yet). */
@@ -93,11 +96,13 @@ export function GanttLanes({
   const measured = useMeasure(root, (el) => ({
     track: el.querySelector<HTMLElement>('.gantt-track, .gantt-marker-labels')?.clientWidth ?? 0,
     labels: [...el.querySelectorAll<HTMLElement>('.gantt-marker-label')].map((l) => l.offsetWidth),
+    instantLabels: [...el.querySelectorAll<HTMLElement>('.gantt-instant-label')].map((l) => l.offsetWidth),
   }));
   const trackPx = measured?.track ?? 0;
   const shift = measured && measured.labels.length === markers.length
     ? spreadLabels(markers.map((m, i) => ({ x: domainFraction(m.at, domain) * trackPx, w: measured.labels[i] })), MARKER_LABEL_GAP)
     : markers.map(() => 0);
+  const instantPlaces = placeInstants(lanes, bars, domain, trackPx, measured?.instantLabels);
   useGlide(root);
   const showLabel = (b: GanttBar) => labelMinPx === undefined || !trackPx || (barGeometry(b.start, b.end, domain, b.progress ?? 1).shown / 100) * trackPx >= labelMinPx;
 
@@ -126,7 +131,7 @@ export function GanttLanes({
             {bars
               .filter((b) => b.lane === lane.id)
               .map((b) => (
-                <Bar key={b.id} bar={b} domain={domain} onClick={onBarClick} showLabel={showLabel(b)} />
+                <Bar key={b.id} bar={b} domain={domain} onClick={onBarClick} showLabel={showLabel(b)} place={instantPlaces.get(b.id)} />
               ))}
           </div>
         </div>
@@ -181,7 +186,49 @@ function useGlide(root: RefObject<HTMLDivElement | null>) {
   });
 }
 
-function Bar({ bar: b, domain, onClick, showLabel }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean }) {
+/** A bar with a tone and no width (an instant) is drawn as a diamond with its label beside it, unless `minPx` already gives it a width. */
+const drawsAsInstant = (b: GanttBar) => isInstant(b) && b.tone !== undefined && !b.minPx;
+
+/** Label placement for the instants of every lane (each lane's labels are spread apart on their own). Empty until the widths are measured. */
+function placeInstants(
+  lanes: readonly GanttLane[], bars: readonly GanttBar[], domain: Domain, trackPx: number, labelWidths: readonly number[] | undefined,
+): Map<string, InstantLabelPlace> {
+  const places = new Map<string, InstantLabelPlace>();
+  const groups = lanes.map((lane) => bars.filter((b) => b.lane === lane.id && drawsAsInstant(b) && b.label));
+  if (!labelWidths || !trackPx || labelWidths.length !== groups.flat().length) return places;
+  let next = 0;
+  for (const group of groups) {
+    const marks = group.map((b) => ({ x: instantX(domainFraction(b.start, domain), trackPx), w: labelWidths[next++] }));
+    placeInstantLabels(marks, trackPx).forEach((place, i) => places.set(group[i].id, place));
+  }
+  return places;
+}
+
+function Instant({ bar: b, domain, onClick, place }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; place?: InstantLabelPlace }) {
+  const half = INSTANT_SIZE_PX / 2;
+  const left = `clamp(${half}px, ${domainFraction(b.start, domain) * 100}%, calc(100% - ${half}px))`;
+  const classes = `gantt-instant tone-${b.tone}`;
+  return (
+    <>
+      {onClick ? (
+        <button type="button" className={classes} style={{ left }} title={b.label} aria-label={b.label ?? b.id} onClick={() => onClick(b.id)} />
+      ) : (
+        <span className={classes} style={{ left }} title={b.label} />
+      )}
+      {b.label && (
+        <span
+          className={`gantt-instant-label ${place?.side === 'left' ? 'is-left' : ''}`}
+          style={{ left, '--dx': `${place?.dx ?? 0}px`, '--gap': `${INSTANT_GAP_PX}px` } as CSSProperties}
+        >
+          {b.label}
+        </span>
+      )}
+    </>
+  );
+}
+
+function Bar({ bar: b, domain, onClick, showLabel, place }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean; place?: InstantLabelPlace }) {
+  if (drawsAsInstant(b)) return <Instant bar={b} domain={domain} onClick={onClick} place={place} />;
   const g = barGeometry(b.start, b.end, domain, b.progress ?? 1);
   const classes = ['gantt-bar', b.tone && `tone-${b.tone}`, `is-${b.kind ?? 'work'}`, b.ring && 'is-ring'].filter(Boolean).join(' ');
   const style = {

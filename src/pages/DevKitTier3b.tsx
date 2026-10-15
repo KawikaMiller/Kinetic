@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CodePanel } from '../components/CodePanel';
+import { GanttLanes, type GanttBar } from '../components/GanttLanes';
 import { GraphView } from '../components/GraphView';
 import { LogStream } from '../components/LogStream';
 import type { LogRow } from '../components/logRows';
@@ -22,6 +23,9 @@ export function DevKitTier3b() {
       <Section title="LogStream · a live region that follows the newest row, dims what a filter rules out and scrolls to what it highlights (K3-9)">
         <LogDemo />
       </Section>
+      <Section title="GanttLanes · instants: a bar with start = end is a diamond with its label beside it (K3-11)">
+        <GanttInstantsDemo />
+      </Section>
       <Section title="CodePanel · a long line scrolls inside the panel instead of widening a flex row (K3-6)">
         <LongLineDemo />
       </Section>
@@ -39,6 +43,29 @@ function LongLineDemo() {
     <div className="devkit-row" style={{ flexWrap: 'nowrap' }}>
       <CodePanel title="flex child, 1 of 2" lines={LONG_CODE} active={0} />
       <CodePanel title="flex child, 2 of 2" lines={['ok();']} />
+    </div>
+  );
+}
+
+const INSTANT_LANES = [
+  { id: 'deploys', label: 'deploys' },
+  { id: 'pages', label: 'pages' },
+];
+const INSTANT_BARS: GanttBar[] = [
+  { id: 'bar', lane: 'deploys', start: 10, end: 40, tone: 'info' },
+  { id: 'd0', lane: 'deploys', start: 0, end: 0, tone: 'ok', label: 'at the very start' },
+  { id: 'd1', lane: 'deploys', start: 52, end: 52, tone: 'hi', label: 'canary' },
+  { id: 'd2', lane: 'deploys', start: 55, end: 55, tone: 'bad', label: 'rollback' },
+  { id: 'p1', lane: 'pages', start: 30, end: 30, tone: 'violet', label: 'page' },
+  { id: 'p2', lane: 'pages', start: 100, end: 100, tone: 'bad', label: 'at the very end' },
+];
+
+function GanttInstantsDemo() {
+  return (
+    <div className="devkit-row">
+      <div className="devkit-gantt">
+        <GanttLanes lanes={INSTANT_LANES} bars={INSTANT_BARS} domain={[0, 100]} axis unit=" min" size="md" ariaLabel="Deploys and pages on a 100 minute axis" />
+      </div>
     </div>
   );
 }
