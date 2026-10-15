@@ -1,6 +1,7 @@
 import type { LessonModule } from '../../core/types';
 import { pctText } from '../../core/format';
-import { DEFAULT_SEED, KNEE_SHARE, MEASURE, SKEW, hitRatio, knee, newPool, request, scanExperiment, sizeCurve, take, workload } from './pool';
+import { points } from './captions';
+import { DEFAULT_SEED, KNEE_SHARE, MEASURE, SCAN_SEEDS, SKEW, hitRatio, knee, newPool, request, scanAverage, scanExperiment, sizeCurve, take, workload } from './pool';
 import { BATCH } from './usePoolState';
 import { Stage } from './Stage';
 
@@ -9,8 +10,9 @@ const SERVED = 4 * BATCH;
 let served = newPool('lru');
 for (const page of take(workload(DEFAULT_SEED, SKEW.initial), SERVED)) served = request(served, { page });
 const servedRatio = hitRatio(served.count)!;
-const lru = scanExperiment('lru', DEFAULT_SEED, SKEW.initial);
-const ring = scanExperiment('ring', DEFAULT_SEED, SKEW.initial);
+const lruSample = scanExperiment('lru', DEFAULT_SEED, SKEW.initial);
+const lru = scanAverage('lru', SKEW.initial);
+const ring = scanAverage('ring', SKEW.initial);
 const KNEE = knee(sizeCurve('lru', DEFAULT_SEED, SKEW.initial));
 
 const lesson: LessonModule = {
@@ -27,32 +29,32 @@ const lesson: LessonModule = {
     ],
     why: 'The pool is where memory meets disk for a database, so its hit ratio sets query latency. Seniors are expected to say why a scan hurts, why more memory has diminishing returns, and what a pin or a dirty page does to eviction, instead of just raising a size setting.',
     watch:
-      'The frame table has one row per frame, with its page, pin count, a dirty dot and (for the clock policies) its usage count. The rail beside a row is yellow for the frame holding the page just requested, with the words hit or miss, violet for a pinned frame, grey for a free one, and blue marks the clock hand. A dirty dot is orange, and a page in the pool is blue in the disk strip below. The meter is the hit ratio, red when poor, orange when fair and green when good. In the size plot each policy is a curve, the violet line is the knee and the yellow line is the pool size you chose. The chips say what is simulated, a toy or from memory.',
+      'The frame table has one row per frame, with its page, pin count, a dirty dot and (for the clock policies) its usage count. The rail beside a row is yellow for the frame holding the page just requested, with the words hit or miss, violet for a pinned frame, grey for a free one, and blue marks the clock hand. A dirty dot is orange, and a page in the pool is blue in the disk strip below. In the scan table a red cell is a fall in hit ratio caused by the scan, and a rise is left uncoloured. Hits are green and misses red in the counters and the caption. The meter is the hit ratio, red when poor, orange when fair and green when good. In the size plot each policy is a curve, the violet line is the knee and the yellow line is the pool size you chose. The chips say what is simulated, a toy or from memory.',
   },
   tryThis: [
     `Press Run ${BATCH} four times: LRU serves ${SERVED} requests of the seeded workload at a hit ratio of ${pctText(servedRatio, 1)}.`,
-    `In "The scan pollutes the pool" the table (seed ${DEFAULT_SEED}) shows the hit ratio of the next ${MEASURE} requests before and after a full scan: LRU ${pctText(lru.before, 0)} to ${pctText(lru.after, 0)}, the scan ring ${pctText(ring.before, 0)} to ${pctText(ring.after, 0)}.`,
+    `In "The scan pollutes the pool" the table serves the same next ${MEASURE} requests with and without a full scan before them. Averaged over ${SCAN_SEEDS} seeds LRU goes from ${pctText(lru.without, 1)} to ${pctText(lru.withScan, 1)} (${points(lru.change)}) and the scan ring from ${pctText(ring.without, 1)} to ${pctText(ring.withScan, 1)} (${points(ring.change)}). Seed ${DEFAULT_SEED} alone is one sample, and for LRU it goes ${pctText(lruSample.without, 0)} to ${pctText(lruSample.withScan, 0)}: single seeds scatter around the average.`,
     `In "Pins and dirty pages" press Run ${BATCH}, click each of the eight frames to pin it, then click a disk page that is not blue: the request has no unpinned frame and fails.`,
     'In "Pins and dirty pages" switch clicking to "writes it", click disk page 5 (it loads and turns dirty), then press Checkpoint: the write-backs read 1.',
     `In "Size it" LRU reaches ${pctText(KNEE_SHARE, 0)} of its 16-frame hit ratio at ${KNEE} frames on seed ${DEFAULT_SEED}: the violet line.`,
   ],
   keyIdeas: [
     'In this model a hit costs nothing and a miss costs a disk read, so the hit ratio is the number to watch.',
-    'LRU is not scan-proof: one full scan evicts the hot pages, and a scan ring confines the scan to a few frames.',
+    `LRU is not scan-proof: on average one full scan lowers the hit ratio of the requests that follow, because its pages push hot pages out, and the effect is on average, not on every seed. A scan ring confines the scan to a few frames and costs far less.`,
     'A pinned page is skipped when a victim is chosen, and a dirty page costs a write-back when it is evicted or checkpointed.',
     'A bigger pool helps until it holds the working set; past that knee the extra frames buy little.',
   ],
   quiz: [
     {
-      q: 'A nightly job scans a whole table, then the morning queries run against the hot pages. With plain LRU, what do the first morning queries see?',
+      q: 'A nightly job scans a whole table, then the morning queries run against the hot pages. With plain LRU, how do the first morning queries compare with the same queries on a night without the scan?',
       options: [
-        'Mostly misses: the scan pushed the hot pages out, so they are read from disk again',
-        'Mostly hits: LRU keeps the pages used most often, however long the scan was',
+        'More misses on average: the scan pushed some hot pages out, so they are read from disk again',
+        'No extra misses: LRU keeps the pages used most often, however long the scan was',
         'The same hit ratio as before, since the scan pages are the least recently used',
         'Errors, because the pool is full of pages that no query has asked for',
       ],
       answer: 0,
-      why: 'Each scan page becomes the newest page in the pool, so the hot pages age out and are evicted. LRU looks at recency alone, and a scan is pure recency with no reuse.',
+      why: `Each scan page becomes the newest page in the pool, so hot pages age out and are evicted. LRU looks at recency alone, and a scan is pure recency with no reuse. In this model it costs ${points(lru.change).slice(1)} of hit ratio on the next ${MEASURE} requests on average over ${SCAN_SEEDS} seeds, and it hurts on ${lru.hurt} of ${SCAN_SEEDS}: some seeds scatter the other way.`,
     },
     {
       q: 'What does a scan ring do?',
@@ -63,7 +65,7 @@ const lesson: LessonModule = {
         'It copies every scanned page to a second pool so that the first one is never touched',
       ],
       answer: 0,
-      why: 'The scan reuses its own small set of frames instead of claiming a new one for each page. The hot pages in the other frames survive, which is why the measured hit ratio after the scan barely moves.',
+      why: `The scan reuses its own small set of frames instead of claiming a new one for each page. The hot pages in the other frames survive, which is why on average over ${SCAN_SEEDS} seeds the hit ratio after the scan moves by only ${points(ring.change).slice(1)} here, against ${points(lru.change).slice(1)} for LRU (an average, not every seed).`,
     },
     {
       q: 'The pool needs a frame and the page in one candidate is pinned. What happens?',

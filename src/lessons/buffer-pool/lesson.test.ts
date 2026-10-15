@@ -3,7 +3,7 @@ import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { poolCaption, scanCaption } from './captions';
 import {
-  DEFAULT_SEED, DISK_PAGES, KNEE_SHARE, MEASURE, POLICIES, SKEW, checkpoint, hitRatio, knee, newPool, request, run, scanExperiment, sizeCurve, take, togglePin, workload, writeBacks, type Policy, type Pool,
+  DEFAULT_SEED, DISK_PAGES, KNEE_SHARE, MEASURE, POLICIES, SKEW, checkpoint, hitRatio, knee, newPool, request, run, scanAverage, scanExperiment, sizeCurve, take, togglePin, workload, writeBacks, type Policy, type Pool,
 } from './pool';
 import { BATCH } from './usePoolState';
 import lesson from './index';
@@ -19,14 +19,29 @@ describe('try-this entries, from the default state (LRU, seed 7, skew 1.1), as w
     expect(text(poolCaption(pool), { strict: true })).toContain(`(${pct} hit ratio)`);
   });
 
-  it('try-this 2: the scan table shows LRU and the ring before and after, and the caption quotes the same numbers', () => {
-    const rows = POLICIES.map((p) => ({ label: p.label, ...scanExperiment(p.value, DEFAULT_SEED, SKEW.initial) }));
-    const lru = rows[0];
-    const ring = rows[2];
-    expect(lesson.tryThis[1]).toContain(`LRU ${(lru.before * 100).toFixed(0)}% to ${(lru.after * 100).toFixed(0)}%`);
-    expect(lesson.tryThis[1]).toContain(`the scan ring ${(ring.before * 100).toFixed(0)}% to ${(ring.after * 100).toFixed(0)}%`);
-    const c = text(scanCaption(rows, MEASURE), { strict: true });
-    for (const r of rows) expect(c).toContain(`${r.label} ${(r.before * 100).toFixed(0)}% to ${(r.after * 100).toFixed(0)}%`);
+  it('try-this 2: the table quotes the paired averages and the default seed sample, and the caption quotes the same numbers', () => {
+    const rows = POLICIES.map((p) => ({ label: p.label, sample: scanExperiment(p.value, DEFAULT_SEED, SKEW.initial), average: scanAverage(p.value, SKEW.initial) }));
+    const [lru, , ring] = rows;
+    const p1 = (x: number) => `${(x * 100).toFixed(1)}%`;
+    const pts = (x: number) => `${x < 0 ? '-' : '+'}${Math.abs(x * 100).toFixed(1)} points`;
+    expect(lesson.tryThis[1]).toContain(`LRU goes from ${p1(lru.average.without)} to ${p1(lru.average.withScan)} (${pts(lru.average.change)})`);
+    expect(lesson.tryThis[1]).toContain(`the scan ring from ${p1(ring.average.without)} to ${p1(ring.average.withScan)} (${pts(ring.average.change)})`);
+    expect(lesson.tryThis[1]).toContain(`it goes ${(lru.sample.without * 100).toFixed(0)}% to ${(lru.sample.withScan * 100).toFixed(0)}%`);
+    const c = text(scanCaption(rows, MEASURE, DEFAULT_SEED), { strict: true });
+    for (const r of rows) {
+      expect(c).toContain(`${r.label} ${(r.sample.without * 100).toFixed(0)}% to ${(r.sample.withScan * 100).toFixed(0)}%`);
+      expect(c).toContain(`${r.label} ${pts(r.average.change)}`);
+      expect(c).toContain(`${r.label} on ${r.average.hurt} of 30`);
+    }
+    expect(c).toContain('on average');
+  });
+
+  it('quiz Q1 and Q2 quote the same averages (and never say "mostly misses")', () => {
+    const lru = scanAverage('lru', SKEW.initial);
+    expect(lesson.quiz[0].why).toContain(`${(Math.abs(lru.change) * 100).toFixed(1)} points`);
+    expect(lesson.quiz[0].why).toContain(`${lru.hurt} of 30`);
+    expect(lesson.quiz[0].options.join(' ')).not.toMatch(/mostly misses/i);
+    expect(lesson.quiz[1].why).toContain('an average, not every seed');
   });
 
   it('try-this 3: after Run 50, pinning all eight frames makes a request for a page not in the pool fail', () => {

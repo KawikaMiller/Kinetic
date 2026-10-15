@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { pctText } from '../../core/format';
-import { POLICIES, hitRatio, writeBacks, type Pool } from './pool';
+import { POLICIES, SCAN_SEEDS, hitRatio, writeBacks, type Pool, type ScanAverage, type ScanResult } from './pool';
 
 const hl = (cls: string, text: ReactNode): ReactNode => <span className={`hl ${cls}`}>{text}</span>;
 
@@ -22,13 +22,21 @@ export function poolCaption(pool: Pool): ReactNode {
   );
 }
 
-/** Scene 2's sentence about the measured before and after of one policy. */
-export function scanCaption(rows: readonly { label: string; before: number; after: number }[], measured: number): ReactNode {
+/** A change of hit ratio in percentage points, signed, to one decimal: "-7.7 points". */
+export const points = (change: number): string => `${change < 0 ? '-' : '+'}${Math.abs(change * 100).toFixed(1)} points`;
+
+export interface ScanRow { label: string; sample: ScanResult; average: ScanAverage }
+
+/** Scene 2's sentence: a paired control (the same requests with and without the scan), one seed as a sample and the average over many. */
+export function scanCaption(rows: readonly ScanRow[], measured: number, seed: number): ReactNode {
+  const tone = (change: number, text: string) => (change < 0 ? hl('bad', text) : text);
   return (
     <>
-      Hit ratio of the next {measured} requests, before and after one full scan of the disk, measured by running it: {rows.map((r, i) => (
-        <span key={r.label}>{i > 0 ? '; ' : ''}{r.label} {pctText(r.before, 0)} to {r.after < r.before ? hl('bad', pctText(r.after, 0)) : hl('ok', pctText(r.after, 0))}</span>
-      ))}.
+      The same next {measured} requests, served with and without a full scan of the disk before them. Seed {seed} is one sample: {rows.map((r, i) => (
+        <span key={r.label}>{i > 0 ? '; ' : ''}{r.label} {pctText(r.sample.without, 0)} to {tone(r.sample.change, pctText(r.sample.withScan, 0))}</span>
+      ))}. Averaged over {SCAN_SEEDS} seeds the scan changes the hit ratio by {rows.map((r, i) => (
+        <span key={r.label}>{i > 0 ? ', ' : ''}{r.label} {tone(r.average.change, points(r.average.change))}</span>
+      ))}: the effect is on average, and it hurt {rows.map((r, i) => <span key={r.label}>{i > 0 ? ', ' : ''}{r.label} on {r.average.hurt} of {SCAN_SEEDS}</span>)} seeds.
     </>
   );
 }

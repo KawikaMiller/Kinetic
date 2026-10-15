@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  DISK_PAGES, RING_SIZE, SCAN, SIZE_RANGE, checkpoint, framesInUse, hitRatio, newPool, request, run, scanExperiment, sizeCurve, take, togglePin, workload, writeBacks,
+  DEFAULT_SEED, DISK_PAGES, MEASURE, RING_SIZE, SCAN, SCAN_SEEDS, SIZE_RANGE, WARM_UP, checkpoint, framesInUse, hitRatio, newPool, request, run, scanAverage, scanExperiment, sizeCurve, take, togglePin, workload, writeBacks,
   type Policy, type Pool,
 } from './pool';
 
@@ -137,29 +137,43 @@ describe('dirty pages', () => {
   });
 });
 
-describe('a full scan pollutes the pool, and the scan ring contains it', () => {
-  const SEEDS = Array.from({ length: 30 }, (_, i) => i + 1);
-  const mean = (policy: Policy, skew: number) => {
-    const runs = SEEDS.map((seed) => scanExperiment(policy, seed, skew));
-    return { before: runs.reduce((s, r) => s + r.before, 0) / runs.length, after: runs.reduce((s, r) => s + r.after, 0) / runs.length };
-  };
+describe('a full scan costs hits on average, and the scan ring contains it (paired control: the same requests with and without the scan)', () => {
+  const mean = (policy: Policy, skew: number) => scanAverage(policy, skew);
 
-  it('over 30 seeds the hit ratio of the first requests after a scan falls under LRU and Clock and barely moves under the ring; the means are pinned', () => {
+  it('the paired LRU numbers equal an independent array-LRU replay of warm-up + scan + window, on 30 seeds', () => {
+    for (let seed = 1; seed <= SCAN_SEEDS; seed++) {
+      const next = workload(seed, 1.1);
+      const warm = take(next, WARM_UP);
+      const window = take(next, MEASURE);
+      const scan = SCAN.map((r) => r.page);
+      const windowHits = (trace: number[]) => referenceLru(trace, 8).slice(-MEASURE).filter(Boolean).length / MEASURE;
+      const got = scanExperiment('lru', seed, 1.1);
+      expect(got.without, `seed ${seed}`).toBeCloseTo(windowHits([...warm, ...window]), 10);
+      expect(got.withScan, `seed ${seed}`).toBeCloseTo(windowHits([...warm, ...scan, ...window]), 10);
+      expect(got.change).toBeCloseTo(got.withScan - got.without, 10);
+    }
+  });
+
+  it('on average over 30 seeds the scan lowers LRU and Clock hit ratios by 7 to 10 points and the ring by under 2; the means and the seeds hurt are pinned', () => {
     const lru = mean('lru', 1.1);
     const clock = mean('clock', 1.1);
     const ring = mean('ring', 1.1);
-    expect(lru.after).toBeCloseTo(0.565, 2);
-    expect(clock.after).toBeCloseTo(0.567, 2);
-    expect(ring.after).toBeCloseTo(0.66, 2);
-    expect(lru.before - lru.after).toBeGreaterThan(0.06);
-    expect(clock.before - clock.after).toBeGreaterThan(0.08);
-    expect(Math.abs(ring.before - ring.after)).toBeLessThan(0.01);
-    expect(ring.after - lru.after).toBeGreaterThan(0.08);
+    expect(lru.change).toBeCloseTo(-0.077, 3);
+    expect(clock.change).toBeCloseTo(-0.097, 3);
+    expect(ring.change).toBeCloseTo(-0.013, 3);
+    expect([lru.hurt, clock.hurt, ring.hurt]).toEqual([24, 24, 11]);
+    expect(ring.change - lru.change).toBeGreaterThan(0.05);
   });
 
-  it('the effect is real at a stronger skew too, and shrinks when requests are spread evenly', () => {
-    expect(mean('ring', 1.5).after - mean('lru', 1.5).after).toBeGreaterThan(0.1);
-    expect(mean('ring', 0).after - mean('lru', 0).after).toBeLessThan(0.1);
+  it('single seeds scatter: the scan raises LRU on some seeds (the lesson says the effect is on average), including the default seed', () => {
+    const changes = Array.from({ length: SCAN_SEEDS }, (_, i) => scanExperiment('lru', i + 1, 1.1).change);
+    expect(changes.filter((c) => c > 0).length).toBeGreaterThan(0);
+    expect(scanExperiment('lru', DEFAULT_SEED, 1.1).change).toBeGreaterThan(0);
+  });
+
+  it('the effect is larger at a stronger skew too, and shrinks when requests are spread evenly', () => {
+    expect(mean('ring', 1.5).change - mean('lru', 1.5).change).toBeGreaterThan(0.05);
+    expect(Math.abs(mean('lru', 0).change)).toBeLessThan(Math.abs(mean('lru', 1.1).change));
   });
 
   it('the ring claims at most its size in frames during a scan of a warm pool, and the other frames keep their pages', () => {

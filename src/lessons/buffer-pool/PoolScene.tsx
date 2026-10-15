@@ -6,8 +6,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { pctText } from '../../core/format';
-import { poolCaption, scanCaption } from './captions';
-import { DISK_PAGES, MEASURE, POLICIES, SKEW, hitRatio, scanExperiment, writeBacks, type Pool } from './pool';
+import { poolCaption, points, scanCaption } from './captions';
+import { DISK_PAGES, MEASURE, POLICIES, SCAN_SEEDS, SKEW, hitRatio, scanAverage, scanExperiment, writeBacks, type Pool } from './pool';
 import { BATCH, type PoolState } from './usePoolState';
 
 export type PoolSceneId = 'hot' | 'scan' | 'pins';
@@ -34,10 +34,10 @@ export function PoolScene({ scene, st, picker }: { scene: PoolSceneId; st: PoolS
   const c = pool.count;
   const ratio = hitRatio(c);
   const scanRows = useMemo(
-    () => POLICIES.map((p) => ({ label: p.label, ...scanExperiment(p.value, st.seed, st.skew) })),
+    () => POLICIES.map((p) => ({ label: p.label, sample: scanExperiment(p.value, st.seed, st.skew), average: scanAverage(p.value, st.skew) })),
     [st.seed, st.skew],
   );
-  useIntroCaption(scene === 'scan' ? <>{scanCaption(scanRows, MEASURE)} {poolCaption(pool)}</> : poolCaption(pool), [scene, pool, scanRows]);
+  useIntroCaption(scene === 'scan' ? <>{scanCaption(scanRows, MEASURE, st.seed)} {poolCaption(pool)}</> : poolCaption(pool), [scene, pool, scanRows]);
   const inPool = new Set(pool.frames.flatMap((f) => (f.page === null ? [] : [f.page])));
 
   return (
@@ -53,9 +53,7 @@ export function PoolScene({ scene, st, picker }: { scene: PoolSceneId; st: PoolS
       legend={
         <Legend
           items={[
-            { color: 'var(--hi)', label: 'frame holding the requested page' },
-            { color: 'var(--ok)', label: 'hit' },
-            { color: 'var(--bad)', label: 'miss' },
+            { color: 'var(--hi)', label: 'frame holding the requested page (the rail says hit or miss)' },
             { color: 'var(--violet)', label: 'pinned' },
             { color: 'var(--orange)', label: 'dirty page' },
             { color: 'var(--info)', label: 'clock hand, page in the pool' },
@@ -121,19 +119,27 @@ export function PoolScene({ scene, st, picker }: { scene: PoolSceneId; st: PoolS
           />
         </div>
         {scene === 'scan' && (
+          <div className="bp-scan-wrap" tabIndex={0} role="region" aria-label="The scan experiment: the same requests with and without a scan">
           <table className="data-table bp-scan">
-            <thead><tr><th>Policy</th><th>Before the scan</th><th>After the scan</th></tr></thead>
+            <caption>The same next {MEASURE} requests, with and without a full scan before them</caption>
+            <thead><tr><th>Policy</th><th>This seed: one sample</th><th>Average of {SCAN_SEEDS} seeds</th><th>Seeds it hurt</th></tr></thead>
             <tbody>
               {scanRows.map((r) => (
-                <tr key={r.label}><td>{r.label}</td><td>{pctText(r.before, 0)}</td><td className={r.after < r.before ? 'is-bad' : 'is-ok'}>{pctText(r.after, 0)}</td></tr>
+                <tr key={r.label}>
+                  <td>{r.label}</td>
+                  <td className={r.sample.change < 0 ? 'is-bad' : ''}>{pctText(r.sample.without, 0)} to {pctText(r.sample.withScan, 0)} ({points(r.sample.change)})</td>
+                  <td className={r.average.change < 0 ? 'is-bad' : ''}>{pctText(r.average.without, 1)} to {pctText(r.average.withScan, 1)} ({points(r.average.change)})</td>
+                  <td>{r.average.hurt} of {SCAN_SEEDS}</td>
+                </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
         <ProvenanceRow>
           <Provenance kind="simulated" seed={st.seed}>a seeded Zipf-skewed workload over {DISK_PAGES} pages</Provenance>
           <Provenance kind="toy">a teaching model: real pools hash pages to buffers, use latches and run a background writer</Provenance>
-          <Provenance kind="from-memory">the usage-count cap and the scan ring size are as remembered from PostgreSQL: check the source</Provenance>
+          <Provenance kind="from-memory">the usage-count cap is as remembered from PostgreSQL: check the source. The ring here is 4 frames, half this toy pool, a toy value: PostgreSQL's ring differs, check the source</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

@@ -202,19 +202,43 @@ export function take(next: () => number, n: number): number[] {
 export const WARM_UP = 300;
 export const MEASURE = 20;
 
-/** Hit ratio of the next MEASURE workload requests, before and after one full scan, for a policy. Computed by running it. */
-export function scanExperiment(policy: Policy, seed: number, skew: number, size = DEFAULT_FRAMES): { before: number; after: number } {
+export interface ScanResult {
+  /** Hit ratio of the next MEASURE requests on the warmed pool. */
+  without: number;
+  /** Hit ratio of the same MEASURE requests when one full scan runs first. */
+  withScan: number;
+  /** withScan minus without: negative means the scan cost hits. */
+  change: number;
+}
+
+/**
+ * A paired control: warm the pool up, copy it, and serve the very same next MEASURE requests to both copies, one of which
+ * runs a full scan first. The only difference between the two numbers is the scan.
+ */
+export function scanExperiment(policy: Policy, seed: number, skew: number, size = DEFAULT_FRAMES): ScanResult {
   const next = workload(seed, skew);
-  let pool = run(newPool(policy, size), take(next, WARM_UP));
-  const measure = (p: Pool): { pool: Pool; ratio: number } => {
-    const hits = p.count.hits;
-    const done = run(p, take(next, MEASURE));
-    return { pool: done, ratio: (done.count.hits - hits) / MEASURE };
-  };
-  const before = measure(pool);
-  pool = before.pool;
-  for (const r of SCAN) pool = request(pool, r);
-  return { before: before.ratio, after: measure(pool).ratio };
+  const warm = run(newPool(policy, size), take(next, WARM_UP));
+  const window = take(next, MEASURE);
+  const ratio = (start: Pool) => (run(start, window).count.hits - start.count.hits) / MEASURE;
+  const scanned = SCAN.reduce((p, r) => request(p, r), warm);
+  const without = ratio(warm);
+  const withScan = ratio(scanned);
+  return { without, withScan, change: withScan - without };
+}
+
+/** The seeds the scan table averages over. */
+export const SCAN_SEEDS = 30;
+
+export interface ScanAverage extends ScanResult {
+  /** Seeds, of SCAN_SEEDS, on which the scan lowered the hit ratio of the window. */
+  hurt: number;
+}
+
+/** The paired result averaged over seeds 1 to SCAN_SEEDS: the scan's effect on average, which single seeds scatter around. */
+export function scanAverage(policy: Policy, skew: number, size = DEFAULT_FRAMES): ScanAverage {
+  const runs = Array.from({ length: SCAN_SEEDS }, (_, i) => scanExperiment(policy, i + 1, skew, size));
+  const mean = (pick: (r: ScanResult) => number) => runs.reduce((s, r) => s + pick(r), 0) / runs.length;
+  return { without: mean((r) => r.without), withScan: mean((r) => r.withScan), change: mean((r) => r.change), hurt: runs.filter((r) => r.change < 0).length };
 }
 
 /** Hit ratio over `requests` workload requests (after a warm-up) at each pool size, for a policy: the plot of scene 4. */
