@@ -11,11 +11,12 @@ const LABEL_PX = 13;
 const GRAPH_MIN_WIDTH = minWidthForText(W, LABEL_PX);
 const NODE_R = 22;
 const BADGE_OFFSET = 15;
+const RING_GAP = 8;
 
 /**
  * An undirected graph whose nodes carry colours: the fill is the colour's hue and a small number repeats it, so the colour
  * never carries the meaning alone. Conflicting edges (equal colours) and an odd cycle draw `--bad`; the node being
- * coloured draws `--hi`.
+ * coloured gets a dashed ring, a shape that does not depend on any hue.
  */
 export function ColourGraph({
   g, colours, current = null, conflictEdges = [], cycle = [], onAddEdge, ariaLabel, note,
@@ -51,7 +52,6 @@ export function ColourGraph({
           radius={NODE_R}
           className="gc-graph"
           ariaLabel={ariaLabel}
-          nodeMark={(v) => (v === current ? { tone: 'hi', fill: 'tint' } : null)}
           nodeColor={(v) => (colours[v] > 0 ? colourVar(colours[v]) : undefined)}
           edgeMark={(e) => {
             const a = Number(e.from);
@@ -60,6 +60,7 @@ export function ColourGraph({
           }}
           renderNode={(n, at, base) => (
             <>
+              {Number(n.id) === current && <circle className="gc-current" cx={at.x} cy={at.y} r={NODE_R + RING_GAP} />}
               {base}
               {colours[Number(n.id)] > 0 && (
                 <text x={at.x + BADGE_OFFSET} y={at.y - BADGE_OFFSET} className="gc-badge" textAnchor="middle">

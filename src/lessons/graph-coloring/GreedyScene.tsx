@@ -38,7 +38,7 @@ export function GreedyScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor
           <Stat
             label="Colours used"
             value={usedSoFar}
-            color={player.atEnd && usedSoFar > best ? 'var(--orange)' : 'var(--ok)'}
+            color={player.atEnd && usedSoFar > best ? 'var(--bad)' : 'var(--ok)'}
             sub={player.atEnd ? (usedSoFar > best ? `${usedSoFar - best} more than the minimum` : 'the minimum') : 'so far'}
           />
           <Stat label="True minimum" value={best} color="var(--ok)" sub="exact, by backtracking search" />
@@ -47,11 +47,10 @@ export function GreedyScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor
       legend={
         <Legend
           items={[
-            { color: 'var(--hi)', label: 'node being coloured', shape: 'dot' },
+            { color: 'var(--text)', label: 'dashed ring: the node being coloured', shape: 'dot' },
             { color: 'var(--dim)', label: 'colour forbidden by a neighbour', shape: 'square' },
-            { color: 'var(--orange)', label: 'colours beyond the minimum', shape: 'square' },
+            { color: 'var(--bad)', label: 'colours beyond the minimum', shape: 'square' },
             { color: 'var(--ok)', label: 'the minimum', shape: 'square' },
-            { color: 'var(--amber)', label: 'each colour: a hue and a number', shape: 'dot' },
           ]}
         />
       }
@@ -115,7 +114,7 @@ export function GreedyScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor
               ))}
             </div>
             <Hint tone="muted" block>
-              {f.current === null ? 'Step through to see each choice.' : `Struck-through colours are taken by a neighbour; the ringed one is chosen.`}
+              {f.current === null ? 'Step through to see each choice.' : `Struck-through colours are taken by a neighbour; the ringed one is chosen. Each colour is a hue and a number.`}
             </Hint>
           </Tray>
         </div>

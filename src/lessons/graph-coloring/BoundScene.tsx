@@ -5,8 +5,8 @@ import { Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../comp
 import { useIntroCaption } from '../../core/caption';
 import { ColourGraph } from './ColourGraph';
 import { EditRow, PresetChips } from './Controls';
-import { greedyColour, isInvented } from './model';
-import { bound, boundCaption } from './text';
+import { greedyColour, identityOrder, isInvented } from './model';
+import { boundCaption, boundOf } from './text';
 import type { ColorEditor } from './useColorEditor';
 
 interface Row {
@@ -17,12 +17,12 @@ interface Row {
 
 export function BoundScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor }) {
   const g = ed.graph;
-  const b = useMemo(() => bound(g, ed.order), [g, ed.order]);
-  const colours = useMemo(() => greedyColour(g, ed.order).colours, [g, ed.order]);
+  const b = useMemo(() => boundOf({ graph: g, order: ed.order }), [g, ed.order]);
+  const colours = useMemo(() => greedyColour(g, identityOrder(g.names.length)).colours, [g]);
   const caption = boundCaption(b);
   useIntroCaption(<>{caption}</>, [caption]);
   const rows: Row[] = [
-    { label: 'Greedy, your order', value: b.yours, tone: 'orange' },
+    { label: 'Greedy, order as given', value: b.yours, tone: 'orange' },
     { label: 'Greedy, smallest-last', value: b.smallestLast, tone: 'violet' },
     { label: 'Bound: max degree + 1', value: b.degreeBound, tone: 'info' },
     { label: 'Bound: degeneracy + 1', value: b.degeneracyBound, tone: 'info' },
@@ -43,7 +43,7 @@ export function BoundScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor 
       legend={
         <Legend
           items={[
-            { color: 'var(--orange)', label: 'greedy in your order', shape: 'square' },
+            { color: 'var(--orange)', label: 'greedy, order as given', shape: 'square' },
             { color: 'var(--violet)', label: 'greedy, smallest-last', shape: 'square' },
             { color: 'var(--info)', label: 'a bound', shape: 'square' },
             { color: 'var(--ok)', label: 'the exact minimum', shape: 'square' },
@@ -60,7 +60,7 @@ export function BoundScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor 
     >
       <div className="gc-stage stage-pad">
         <div className="gc-main">
-          <ColourGraph g={g} colours={colours} note={ed.note} onAddEdge={ed.addEdge} ariaLabel={`Graph coloured greedily in your order: ${b.yours} colours`} />
+          <ColourGraph g={g} colours={colours} note={ed.note} onAddEdge={ed.addEdge} ariaLabel={`Graph coloured greedily in the order as given: ${b.yours} colours`} />
         </div>
         <div className="gc-side">
           <Box className="gc-bars">

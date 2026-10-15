@@ -4,6 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { ColourGraph } from './ColourGraph';
+import { colourVar } from './colors';
 import { EditRow, PresetChips } from './Controls';
 import { chromatic, conflicts, isInvented, twoColour } from './model';
 import { hardCaption } from './text';
@@ -28,8 +29,8 @@ export function HardScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor }
       legend={
         <Legend
           items={[
-            { color: 'var(--orange)', label: 'colour 1 of the sweep', shape: 'dot' },
-            { color: 'var(--amber)', label: 'colour 2 of the sweep', shape: 'dot' },
+            { color: colourVar(1), label: 'colour 1 of the sweep', shape: 'dot' },
+            { color: colourVar(2), label: 'colour 2 of the sweep', shape: 'dot' },
             { color: 'var(--bad)', label: 'odd cycle: the clash', shape: 'line' },
           ]}
         />

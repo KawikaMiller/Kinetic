@@ -20,11 +20,11 @@ export interface Bound {
   peelDegrees: number[];
 }
 
-/** Every number the bound scene draws, from the graph and the order on screen. */
-export function bound(g: Graph, order: readonly number[]): Bound {
+/** Every number the bound scene draws, from the graph alone: its greedy row is always the order as given (the scene has no order control). */
+export function bound(g: Graph): Bound {
   const p = peel(g);
   return {
-    yours: greedyColour(g, order).used,
+    yours: greedyColour(g, identityOrder(g.names.length)).used,
     smallestLast: greedyColour(g, smallestLast(g)).used,
     degreeBound: maxDegree(g) + 1,
     degeneracyBound: p.degeneracy + 1,
@@ -35,9 +35,12 @@ export function bound(g: Graph, order: readonly number[]): Bound {
   };
 }
 
+/** The bound scene's numbers from the editor state on screen. The order is deliberately not an input: the scene shows no order, so none may reach it. */
+export const boundOf = (ed: { graph: Graph; order: readonly number[] }): Bound => bound(ed.graph);
+
 export function boundCaption(b: Bound): string {
   const tight = b.optimum === b.degreeBound ? ` This graph needs exactly ${b.degreeBound}: the bound is tight here.` : '';
-  return `Greedy in your order used ${plural(b.yours, 'colour')}, never above the maximum degree + 1 = ${b.degreeBound}. Smallest-last used ${b.smallestLast}, never above the degeneracy + 1 = ${b.degeneracyBound}. The exact minimum is ${b.optimum}.${tight}`;
+  return `Greedy in the order as given used ${plural(b.yours, 'colour')}, never above the maximum degree + 1 = ${b.degreeBound}. Smallest-last used ${b.smallestLast}, never above the degeneracy + 1 = ${b.degeneracyBound}. The exact minimum is ${b.optimum}.${tight}`;
 }
 
 export interface Timetable {

@@ -3,7 +3,7 @@ import { expectCaption } from '../../core/testing/captions';
 import { greedyFrames } from './frames';
 import lesson from './index';
 import { ORDERS, PRESETS, byName, chromatic, greedyColour, identityOrder, presetById, twoColour } from './model';
-import { bound, boundCaption, hardCaption, timetable, timetableCaption } from './text';
+import { boundCaption, boundOf, hardCaption, timetable, timetableCaption } from './text';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
 const crown = presetById('crown').graph;
@@ -31,7 +31,7 @@ describe('try-this entries, from the default state, as written', () => {
   });
 
   it('try-this 3: on the Crown graph the degree bound is 4, as given uses 4, smallest-last uses a number at or under the degeneracy + 1', () => {
-    const b = bound(crown, identityOrder(8));
+    const b = boundOf({ graph: crown, order: identityOrder(8) });
     expect(b.degreeBound).toBe(4);
     expect(b.yours).toBe(4);
     expect(b.smallestLast).toBeLessThanOrEqual(b.degeneracyBound);
@@ -66,7 +66,7 @@ describe('try-this entries, from the default state, as written', () => {
 });
 
 describe('every caption reads cleanly and is computed from the state', () => {
-  it('walks every preset x every order through the step-through scene and the bound scene: no NaN, right counts, no glued sentence', () => {
+  it('walks every preset x every order through the step-through scene: no NaN, right counts, no glued sentence', () => {
     let frames = 0;
     for (const p of PRESETS) {
       for (const o of ORDERS) {
@@ -79,22 +79,32 @@ describe('every caption reads cleanly and is computed from the state', () => {
           frames++;
         }
         expect(list[list.length - 1].colours).toEqual(run.colours);
-        const b = bound(p.graph, order);
-        expect(b.yours).toBe(run.used);
-        expect(boundCaption(b)).toContain(`Greedy in your order used ${run.used} ${run.used === 1 ? 'colour' : 'colours'}`);
         expect(hardCaption(p.graph)).not.toMatch(/NaN|undefined|null/);
       }
     }
     expect(frames).toBeGreaterThan(150);
   });
 
+  it('the bound scene shows no order, so its numbers do not move with the order chosen in Greedy (every preset x every order button)', () => {
+    for (const p of PRESETS) {
+      const asGiven = greedyColour(p.graph, identityOrder(p.graph.names.length)).used;
+      for (const o of ORDERS) {
+        const b = boundOf({ graph: p.graph, order: o.build(p.graph) });
+        expect(b.yours, `${p.id} after choosing ${o.id}`).toBe(asGiven);
+        expect(boundCaption(b)).toContain(`Greedy in the order as given used ${asGiven} ${asGiven === 1 ? 'colour' : 'colours'}`);
+      }
+    }
+    // the try-this route: by name in Greedy, then The bound on the Crown graph still says 4
+    expect(boundOf({ graph: crown, order: byName(crown) }).yours).toBe(4);
+  });
+
   it('the bound caption calls the bound tight exactly when the exact minimum equals max degree + 1 (K5 and the odd cycle yes, the crown graph no)', () => {
     for (const p of PRESETS) {
-      const b = bound(p.graph, identityOrder(p.graph.names.length));
+      const b = boundOf({ graph: p.graph, order: identityOrder(p.graph.names.length) });
       expect(boundCaption(b).includes('the bound is tight here')).toBe(b.optimum === b.degreeBound);
     }
-    expect(boundCaption(bound(presetById('k5').graph, identityOrder(5)))).toContain('the bound is tight here');
-    expect(boundCaption(bound(presetById('odd').graph, identityOrder(5)))).toContain('the bound is tight here');
+    expect(boundCaption(boundOf({ graph: presetById('k5').graph, order: identityOrder(5) }))).toContain('the bound is tight here');
+    expect(boundCaption(boundOf({ graph: presetById('odd').graph, order: identityOrder(5) }))).toContain('the bound is tight here');
   });
 
   it('the timetable caption never claims a minimum the placement does not have: partial, clashing and clean boards say different things', () => {
