@@ -1,8 +1,5 @@
 .cwv { gap: 12px; }
 .cwv .section-title { display: block; margin-bottom: 4px; }
-.cwv-meter-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin-bottom: 4px; }
-.cwv-meter-name { font: 700 12px var(--font); color: var(--text); }
-.cwv-meter-value { font: 700 13px var(--mono); color: var(--c, var(--text)); }
 
 /* the mock phone page (LCP) */
 .cwv-lcp-body, .cwv-cls-body { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 16px; align-items: start; }

@@ -167,6 +167,11 @@
   font: 500 12.5px var(--mono);
 }
 
+/* MetricMeter (components/MetricMeter.tsx): name left, "value · band" right in the band's colour, then the Bar */
+.metric-meter-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin-bottom: 4px; }
+.metric-meter-label { font: 700 12px var(--font); color: var(--text); }
+.metric-meter-value { font: 700 13px var(--mono); color: var(--c, var(--text)); }
+
 /* LogStream (components/LogStream.tsx): rows are .log-row; it scrolls only when given a max height */
 .log-stream { position: relative; display: flex; flex-direction: column; gap: 4px; }
 .log-stream.is-scroll { overflow: auto; padding-right: 4px; }

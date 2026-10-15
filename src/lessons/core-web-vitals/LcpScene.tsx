@@ -9,7 +9,7 @@ import { ms } from '../../core/format';
 import { clamp01 } from '../../core/math';
 import { usePlayer } from '../../core/usePlayer';
 import { buildLcpFrames, candidatesAt } from './lcpFrames';
-import { MetricMeter } from './MetricMeter';
+import { VitalsMeter } from './VitalsMeter';
 import { LCP_TIMES, heroFetch, pageElements, type ElementId, type LcpOptions } from './model';
 
 const STEP_MS = 1100;
@@ -97,7 +97,7 @@ export function LcpScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="stage-pad cwv">
-        <MetricMeter metric="lcp" value={current ? current.at : null} />
+        <VitalsMeter metric="lcp" value={current ? current.at : null} />
         <div className="cwv-lcp-body">
           <MockPage o={o} now={now} />
           <div className="cwv-lcp-side">

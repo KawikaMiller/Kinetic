@@ -5,7 +5,8 @@ import { GraphView } from '../components/GraphView';
 import { LogStream } from '../components/LogStream';
 import type { LogRow } from '../components/logRows';
 import { SectionTitle } from '../components/Panel';
-import { Button, SortTh } from '../components/ui';
+import { MetricMeter } from '../components/MetricMeter';
+import { Button, Slider, SortTh } from '../components/ui';
 import { useSortedRows } from '../components/useSortedRows';
 import { DevKitSection as Section } from './DevKitSection';
 
@@ -28,6 +29,9 @@ export function DevKitTier3b() {
       </Section>
       <Section title="GanttLanes · a calendar axis (UTC, hours since a Monday) and hideEmptyLanes (K3-12)">
         <GanttCalendarDemo />
+      </Section>
+      <Section title="MetricMeter · a value against its bands, with a header, a null (not measured) and edge ticks (K3-13)">
+        <MeterDemo />
       </Section>
       <Section title="CodePanel · a long line scrolls inside the panel instead of widening a flex row (K3-6)">
         <LongLineDemo />
@@ -111,6 +115,24 @@ function GanttCalendarDemo() {
           />
         </div>
       </div>
+    </>
+  );
+}
+
+const METER_MAX = 800;
+const DEMO_BANDS = [
+  { upTo: 200, tone: 'ok', label: 'good', tick: { label: 'good ≤ 200 ms', tone: 'ok' } },
+  { upTo: 500, tone: 'orange', label: 'needs improvement', tick: { label: 'poor > 500 ms', tone: 'bad' } },
+  { upTo: METER_MAX, tone: 'bad', label: 'poor' },
+] as const;
+
+function MeterDemo() {
+  const [v, setV] = useState(320);
+  return (
+    <>
+      <Slider label="Response time" value={v} min={0} max={METER_MAX} step={10} onChange={setV} format={(x) => `${x} ms`} />
+      <MetricMeter label="Interaction latency" value={v} unit=" ms" max={METER_MAX} bands={DEMO_BANDS} header={<b>A made-up metric</b>} />
+      <MetricMeter label="Not measured" value={null} max={METER_MAX} bands={DEMO_BANDS} />
     </>
   );
 }

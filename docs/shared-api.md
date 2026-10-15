@@ -1441,6 +1441,24 @@ barInDomain(start, end, domain)                  // does a bar touch the domain:
   the markup is unchanged. Bars and instants of hidden lanes are not drawn; markers and `now` still are.
 - Without `calendar`, `axis` is the numeric axis it always was (all 37 GanttLanes lessons pixel-identical at 1440 after this change).
 
+### `MetricMeter.tsx` (`meterBands.ts`) (K3-13) — core-web-vitals; later capacity-planning, autoscaling, tail-latency, alerting-design, buffer-pool, model-evals-drift, dora-metrics, benchmarking-methodology
+```tsx
+<MetricMeter label="Interaction to Next Paint" value={inp /* number | null */} max={800} unit=" ms"
+             bands={[
+               { upTo: 200, tone: 'ok', label: 'good', tick: { label: 'good ≤ 200 ms', tone: 'ok' } },
+               { upTo: 500, tone: 'orange', label: 'needs improvement', tick: { label: 'poor > 500 ms', tone: 'bad' } },
+               { upTo: 800, tone: 'bad', label: 'poor' },
+             ]}
+             header={<><b>INP</b> the slowest interaction, give or take…</>} format={(v) => `${Math.round(v)} ms`} />
+```
+- The metric's name on the left and "value · band" on the right in the band's colour (`.metric-meter-*`), over a 12px `Bar` whose fill takes the band's
+  tone. `bands` go in ascending order of `upTo` (inclusive: a value equal to an edge belongs to the lower band; the last band catches everything above, its
+  `upTo` is only the meter's end), with tones per the colour table. `tick` draws a labelled tick at that band's upper edge.
+- `value: null` is "not measured yet" (an empty muted track), not zero. `format` writes the value (default: the number and `unit`); `header` is a node
+  above the name line, for a title and a definition; `ariaLabel` names the whole meter as one image (default: label and readout).
+- `bandOfValue(value, bands)` (`meterBands.ts`) is the pure rule, tested. core-web-vitals keeps a 20-line adapter, `VitalsMeter.tsx`, that gives the shared
+  meter its names, thresholds and ticks; its three scenes are pixel-identical at 1440 and 390 (frames, and the CLS and INP scenes driven).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
