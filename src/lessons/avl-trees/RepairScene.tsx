@@ -6,7 +6,7 @@ import { AvlTreeView } from './AvlTreeView';
 import { CaseSketch } from './CaseSketch';
 import { KeyOps } from './KeyOps';
 import { AVL_LEGEND, frameEdgeMark, frameNodeMark, frameScale } from './marks';
-import { heightOf, sizeOf } from './model';
+import { levelsOf, sizeOf } from './model';
 import { CASE_PRESETS, REPAIR_DEFAULT, caseBase, casePreset, type CasePreset } from './presets';
 import { useAvlSession } from './useAvlSession';
 
@@ -37,7 +37,7 @@ export function RepairScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Nodes" value={sizeOf(f.tree)} />
-          <Stat label="Height" value={heightOf(f.tree)} sub="levels; a lone node is 1" />
+          <Stat label="Height" value={levelsOf(f.tree)} sub="levels; a lone node is 1" />
           <Stat label="Rotations" value={f.rotations} color={f.rotations ? 'var(--violet)' : undefined} sub="this operation; a double counts as two" />
         </Stats>
       }
@@ -66,7 +66,7 @@ export function RepairScene({ picker }: { picker: ReactNode }) {
             nodeMark={frameNodeMark(f)}
             edgeMark={frameEdgeMark(f)}
             nodeScale={frameScale(f)}
-            ariaLabel={`AVL tree of ${sizeOf(f.tree)} nodes, ${heightOf(f.tree)} levels tall`}
+            ariaLabel={`AVL tree of ${sizeOf(f.tree)} nodes, ${levelsOf(f.tree)} levels tall`}
           />
         </div>
         <div className="avl-side">

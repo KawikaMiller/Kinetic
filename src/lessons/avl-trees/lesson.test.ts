@@ -16,6 +16,7 @@ import {
   heightOf,
   inOrder,
   insertKey,
+  levelsOf,
   removeKey,
   sizeOf,
   stopAtImbalance,
@@ -107,6 +108,31 @@ describe('try-this entries, from the default state, as written', () => {
     expect(text(worstCaption({ height: 5, nodes: 12, shortest: 4 }))).toContain('has only 12 nodes');
     expect(lesson.tryThis[4]).toContain('12 nodes');
     expect(lesson.tryThis[4]).toContain('only 4 levels tall');
+  });
+});
+
+describe('the Height stat follows the tree as drawn, not the stored heights', () => {
+  /** Breadth-first level count over the links only. */
+  const levelsByBfs = (t: Parameters<typeof levelsOf>[0]): number => {
+    let layer = t.root === null ? [] : [t.root];
+    let n = 0;
+    while (layer.length) {
+      n++;
+      layer = layer.flatMap((k) => [t.nodes[k].left, t.nodes[k].right]).filter((c): c is number => c !== null);
+    }
+    return n;
+  };
+
+  it('levelsOf equals an independent breadth-first count on every frame of the repair and delete scenes, and differs from the stored height mid-repair', () => {
+    const runs = [opFrames(caseBase('LL'), 'insert', 5), opFrames(deleteBase(), 'delete', 20), opFrames(buildAvl(SORTED_KEYS).tree, 'delete', 1)];
+    let stale = 0;
+    for (const run of runs) {
+      for (const fr of run.frames) {
+        expect(levelsOf(fr.tree)).toBe(levelsByBfs(fr.tree));
+        if (heightOf(fr.tree) !== levelsOf(fr.tree)) stale++;
+      }
+    }
+    expect(stale).toBeGreaterThan(0);
   });
 });
 

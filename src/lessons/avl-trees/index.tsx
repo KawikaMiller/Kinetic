@@ -15,19 +15,19 @@ const lesson: LessonModule = {
       'A reason to prefer a balanced tree over a plain one whenever the input arrives sorted or nearly sorted',
     ],
     why: 'Knowing why a plain search tree degrades, and that a handful of local rotations repair it, explains the guarantees behind the ordered maps you use daily and lets you reason about what an insert or delete costs.',
-    watch: 'A node is a circle with its key inside and its balance factor (height of right minus height of left) written under it. Blue is the node being looked at or the walk down, green means checked and inside the rule, red means out of balance, and violet marks the two nodes a rotation just moved. In the first scene the deepest path is red in the plain tree and green in the AVL tree. The small z, y, x and T1 to T4 sketch shows the case being repaired, with z as the red node and the triangles as whole subtrees.',
+    watch: 'A node is a circle with its key inside and its balance factor (height of right minus height of left) written under it. Yellow is the node being looked at, blue the walk down, green means checked and inside the rule, red means out of balance, and violet marks the two nodes a rotation just moved. In the first scene the deepest path is red in the plain tree and green in the AVL tree. The small z, y, x and T1 to T4 sketch shows the case being repaired, with z as the red node and the triangles as whole subtrees.',
   },
   tryThis: [
     `In Plain vs AVL, with Sorted 1 to ${F.sortedCount} (the default): the plain tree is ${F.plainSortedHeight} levels tall, a chain, while the AVL tree is ${F.avlSortedHeight} levels after ${F.avlSortedRotations} rotations. Then press Zig-zag 30, 10, 20: the plain tree is ${F.zigzagPlainHeight} levels, and the AVL tree needs ${F.zigzagRotations} rotations (one double rotation) and ends with ${F.zigzagRoot} on top, ${F.zigzagHeight} levels tall.`,
     `In Step the repair, press play on the default (insert ${F.repairKey}): ${F.repairAt.at} goes out of balance, one rotation fixes it (${F.repairRotations} rotation, ${F.repairFixes} fix), and the checked nodes turn green.`,
-    `In You pick the rotation, Puzzle 3 (the default): press Rotate right and the tree is still out of balance, with ${F.pickWrongRoot} now at ${F.pickWrongBf > 0 ? '+' : ''}${F.pickWrongBf}; press Undo, then Left, then right, and the tree is a valid AVL tree again.`,
+    `In You pick the rotation, Puzzle 3 (the default): press Rotate right and the tree is still out of balance, with ${F.pickWrongRoot} now at ${F.pickWrongBf > 0 ? '+' : ''}${F.pickWrongBf}; press the Left, then right button (each pick starts from the same tree, so Undo is optional), and the tree is a valid AVL tree again.`,
     `In Delete and the cost, press play on the default (delete ${F.deleteKey} from the thinnest tree of height ${F.deleteHeight}): the delete needs ${F.deleteRotations} rotations across ${F.deleteFixes} ancestors, where an insert needs one repair at the very most.`,
     `In The worst case, at height ${F.fibHeight} (the default): the thinnest AVL tree has ${F.fibNodes} nodes, while a packed tree of ${F.fibNodes} nodes is only ${F.fibPackedHeight} levels tall.`,
   ],
   keyIdeas: [
     'A rotation changes who is the parent of whom and leaves the in-order sequence of keys alone, so the tree is still a search tree afterwards: nothing is re-sorted or rebuilt.',
     `An AVL tree keeps each balance factor between −1 and +1: the keys 1 to ${F.sortedCount} inserted in order end ${F.avlSortedHeight} levels tall in an AVL tree and ${F.plainSortedHeight} in a plain one.`,
-    'Left-left and right-right are repaired by one rotation, left-right and right-left by two; a single rotation on a double case just swaps which side is heavy.',
+    'Left-left and right-right are repaired by one rotation, left-right and right-left by two; a single rotation cannot repair a double case: it swaps which side is heavy or makes the imbalance bigger.',
     'An insert needs no more than one repair (one single or one double rotation), while a delete can need a repair at several ancestors on the way up; the height stays under about 1.44 log2(n + 2), a classic bound quoted from memory.',
   ],
   quiz: [
@@ -35,12 +35,12 @@ const lesson: LessonModule = {
       q: 'A node is rotated to repair an AVL tree. What does the rotation leave unchanged?',
       options: [
         'The left-to-right order of the keys, which stays sorted',
-        'Which node is the parent of which, apart from the two moved',
+        'The depth of every node in the tree',
         'The heights stored on the nodes that were rotated',
         'The node that sits at the root of the whole tree',
       ],
       answer: 0,
-      why: 'A rotation re-hangs a node and one of its children, so parents, stored heights and sometimes the root change. What it cannot change is the in-order sequence, which is why the tree is still a valid search tree afterwards without any sorting.',
+      why: 'A rotation re-hangs a node and one of its children, so parents, depths, stored heights and sometimes the root change. What it cannot change is the in-order sequence, which is why the tree is still a valid search tree afterwards without any sorting.',
     },
     {
       q: `After inserting ${F.pickKey}, node ${F.pickAt} has balance factor ${F.pickBf < 0 ? '−' : '+'}${Math.abs(F.pickBf)} and its left child leans right. Which repair fixes it?`,

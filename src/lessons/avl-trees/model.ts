@@ -61,6 +61,11 @@ export interface OpOptions {
 const heightOfNode = (nodes: Readonly<Record<number, TNode>>, k: number | null): number => (k === null ? 0 : nodes[k].h);
 
 export const heightOf = (t: Tree): number => heightOfNode(t.nodes, t.root);
+/** Levels of the tree as drawn, counted by walking the links: unlike `heightOf` it never trusts the stored heights, which lag behind a repair in progress. */
+export function levelsOf(t: Tree): number {
+  const go = (k: number | null): number => (k === null ? 0 : 1 + Math.max(go(t.nodes[k].left), go(t.nodes[k].right)));
+  return go(t.root);
+}
 export const sizeOf = (t: Tree): number => Object.keys(t.nodes).length;
 export const hasKey = (t: Tree, key: number): boolean => key in t.nodes;
 export const balanceOf = (t: Tree, k: number): number => heightOfNode(t.nodes, t.nodes[k].right) - heightOfNode(t.nodes, t.nodes[k].left);

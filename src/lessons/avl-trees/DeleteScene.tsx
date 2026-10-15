@@ -6,7 +6,7 @@ import { usePlayer } from '../../core/usePlayer';
 import { AvlTreeView } from './AvlTreeView';
 import { KeyOps } from './KeyOps';
 import { AVL_LEGEND, frameEdgeMark, frameNodeMark, frameScale } from './marks';
-import { buildAvl, heightOf, sizeOf } from './model';
+import { buildAvl, levelsOf, sizeOf } from './model';
 import { DELETE_DEFAULT_KEY, DELETE_TREE_HEIGHT, SORTED_KEYS, deleteBase } from './presets';
 import { useAvlSession, type AvlStart } from './useAvlSession';
 
@@ -49,7 +49,7 @@ export function DeleteScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Nodes" value={sizeOf(f.tree)} />
-          <Stat label="Height" value={heightOf(f.tree)} sub="levels; a lone node is 1" />
+          <Stat label="Height" value={levelsOf(f.tree)} sub="levels; a lone node is 1" />
           <Stat label="Rotations" value={f.rotations} color={f.rotations ? 'var(--violet)' : undefined} sub="this operation; a double counts as two" />
           <Stat label="Ancestors fixed" value={f.fixes} sub="imbalances repaired on the way up" />
         </Stats>
@@ -79,7 +79,7 @@ export function DeleteScene({ picker }: { picker: ReactNode }) {
             nodeMark={frameNodeMark(f)}
             edgeMark={frameEdgeMark(f)}
             nodeScale={frameScale(f)}
-            ariaLabel={`AVL tree of ${sizeOf(f.tree)} nodes, ${heightOf(f.tree)} levels tall`}
+            ariaLabel={`AVL tree of ${sizeOf(f.tree)} nodes, ${levelsOf(f.tree)} levels tall`}
           />
         </div>
         <div className="avl-side">
