@@ -1,0 +1,15 @@
+.nf-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.nf-note { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--muted); }
+.nf-graph { width: 100%; max-width: 680px; margin: 0 auto; }
+.nf-graph .graph-edge-label { font-size: 13px; fill: var(--text); }
+.nf-graph .nf-selected .graph-edge { stroke-dasharray: 2 4; }
+.nf-graph .nf-selected .graph-edge-label { fill: var(--hi); }
+.nf-cutlists { display: flex; flex-wrap: wrap; gap: 12px; }
+.nf-cutlists > * { flex: 1 1 240px; min-width: 0; }
+.nf-cutlists .tray { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.nf-cutlists .tray .section-title { flex-basis: 100%; }
+.nf-chip { font-family: var(--mono); }
+.nf-why { display: flex; flex-direction: column; gap: 12px; }
+.nf-use { display: flex; flex-direction: column; gap: 6px; }
+.nf-line { margin: 0 0 6px; font-size: 13px; line-height: 1.6; }
+.nf-use-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

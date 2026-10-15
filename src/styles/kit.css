@@ -950,6 +950,8 @@ button.gantt-instant:focus-visible { outline: 2px solid var(--text); outline-off
 .provenance-seed::before { content: '·'; margin-right: 6px; }
 /* ProvenanceRow (components/ui.tsx): the chips under a stage's visual. */
 .provenance-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+/* A row after a padded stage lines up with the stage's content (16px in, 8px below it), not with the frame's edge. */
+.stage-pad ~ .provenance-row { margin: 8px 16px 12px; }
 
 @media (max-width: 900px) {
   .stage-pad { padding: 16px; }

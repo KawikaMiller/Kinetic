@@ -13,10 +13,15 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'ghost' | 'danger';
   /** The <button> itself, e.g. to move focus back to it. */
   ref?: Ref<HTMLButtonElement>;
+  /**
+   * Unavailable but still focusable (`aria-disabled`, click ignored). Use it on a button the press itself can disable
+   * (Undo, Clear, Push), so keyboard focus stays on it instead of falling to the page.
+   */
+  softDisabled?: boolean;
 };
 
-export function Button({ variant = 'ghost', className = '', ...rest }: ButtonProps) {
-  return <button type="button" className={`btn btn-${variant} ${className}`} {...rest} />;
+export function Button({ variant = 'ghost', className = '', softDisabled = false, onClick, ...rest }: ButtonProps) {
+  return <button type="button" className={`btn btn-${variant} ${className}`} aria-disabled={softDisabled || undefined} onClick={softDisabled ? undefined : onClick} {...rest} />;
 }
 
 export function Slider({
