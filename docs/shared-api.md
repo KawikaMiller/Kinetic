@@ -581,6 +581,14 @@ so expect to keep a few lesson overrides for exact pixel parity.
 - `roving` makes the clickable lines one tab stop instead of one per line: ↑/↓ move focus (no wrap),
   Home/End jump to the ends, and re-entering the panel returns to the line last focused
   (`listKeyTarget` in `core/radio`, tested). isa-assembly's C and assembly panels use it (they had ~23 stops).
+- **A long line scrolls inside the panel (K3-6).** `.code-panel` has `min-width: 0` and its `ol` is an
+  `overflow-x: auto` scroller, so a line with an unbreakable run (a URL, a long identifier, a compiler
+  flag) no longer widens a flex or grid parent and pushes the page sideways at 390. Ordinary lines still
+  wrap (`pre-wrap`); each `li` is `min-width: min-content`, so a scrolled line's tint and left bar cover all
+  of it. The focus ring of a clickable line sits inside the line (`outline-offset: -2px`) because the scroller
+  would clip it. At 900px and up every `CodePanel` caller is pixel-identical (checked on all 115 lessons with a
+  `CodePanel` or `GanttLanes`; 390px shots changed nowhere either). `#/dev/kit` ("Tier 3 kit · kickoff round")
+  has a long-line demo in a flex row.
 - Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
   row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 

@@ -226,9 +226,11 @@
 }
 
 /* CodePanel (components/CodePanel.tsx) */
-.code-panel { display: flex; flex-direction: column; gap: 6px; }
-.code-panel ol { margin: 0; padding: 0; list-style: none; font: 500 12.5px/1.6 var(--mono); }
+/* min-width: 0 lets the panel shrink inside a flex or grid parent; a line with an unbreakable run (a URL, a long identifier) then scrolls inside the ol, and its li grows to fit it (min-width: min-content) so the tint covers the whole line. */
+.code-panel { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.code-panel ol { margin: 0; padding: 0; list-style: none; font: 500 12.5px/1.6 var(--mono); overflow-x: auto; }
 .code-panel li {
+  min-width: min-content;
   display: flex;
   gap: 10px;
   padding: 1px 8px;
@@ -281,6 +283,8 @@
   text-align: left;
   cursor: pointer;
 }
+/* The ol clips, so the focus ring goes inside the line */
+.code-panel .code-line:focus-visible { outline-offset: -2px; }
 .code-panel .code-line:hover { background: color-mix(in srgb, var(--hi) 6%, transparent); }
 
 /* Sparkline (components/Sparkline.tsx) */
