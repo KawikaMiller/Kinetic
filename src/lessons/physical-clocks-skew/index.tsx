@@ -46,7 +46,7 @@ const lesson: LessonModule = {
         'Either, because the two differ only in what they are called',
       ],
       answer: 0,
-      why: 'A step by NTP can make the wall clock jump, even backwards, so a duration measured across it can come out negative. A monotonic clock is never stepped (NTP may still slew its rate by a small amount), which is why durations use it.',
+      why: 'A step by NTP can make the wall clock jump, even backwards, so a duration measured across it can come out negative. A monotonic clock is not stepped by a sync (NTP may still slew its rate by a small amount), which is why durations use it.',
     },
     {
       q: 'Replica A\'s clock is 5 s fast. A client writes x = 1 through A and, once that is acknowledged, a second client writes x = 2 through B. What does last-write-wins keep?',

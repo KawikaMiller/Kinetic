@@ -74,7 +74,7 @@ const lesson: LessonModule = {
         'It is causally consistent, because C2 may have read from two replicas, which causal consistency allows',
       ],
       answer: 0,
-      why: 'Convergence is a promise about the end state, and here every client does end on 2. But one client wrote 1 and then 2, so 1 comes before 2 in cause order, and C2 saw them the other way round. Two writes with no cause between them could be seen in either order, as in the "concurrent writes seen in two orders" preset; here the order is fixed.',
+      why: 'Convergence is a promise about the end state, and here the clients do end on 2. But one client wrote 1 and then 2, so 1 comes before 2 in cause order, and C2 saw them the other way round. Two writes with no cause between them could be seen in either order, as in the "concurrent writes seen in two orders" preset; here the order is fixed.',
     },
     {
       q: 'In the simulated service the follower-reads design returns a stale value. What causes that?',
