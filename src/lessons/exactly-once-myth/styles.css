@@ -1,0 +1,12 @@
+/* exactly-once-myth */
+.eo-stage { gap: 12px; min-width: 0; }
+.eo-note { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.eo-outcome { margin: 8px 0 0; font: 600 13px var(--font); }
+.eo-outcome.is-both { color: var(--ok); }
+.eo-outcome.is-disagree { color: var(--bad); }
+.eo-outcome.is-nobody { color: var(--muted); }
+.eo-table td, .eo-table th { vertical-align: top; font-size: 12.5px; }
+.eo-table td.is-ok { color: var(--ok); }
+.eo-table td.is-bad { color: var(--bad); }
+.eo-table td.is-here, .eo-table tr.is-here > * { outline: 2px solid var(--violet); outline-offset: -2px; }
+@media (max-width: 900px) { .eo-table { display: block; overflow-x: auto; } }

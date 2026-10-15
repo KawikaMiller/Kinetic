@@ -1,0 +1,44 @@
+/* consistency-models */
+.cm-stage { gap: 12px; min-width: 0; }
+
+/* Bars in the timeline editor: a write is solid, a read is outlined; the colour is the client (--c from its tone class). */
+.cm-bar { stroke: var(--c); stroke-width: 1.5; }
+.cm-bar.is-write { fill: var(--c); }
+.cm-bar.is-read { fill: color-mix(in srgb, var(--c) 10%, transparent); }
+.cm-bar-label { font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.cm-bar-label.is-write { fill: var(--on-fill); }
+.cm-bar-label.is-read { fill: var(--text); }
+.cm-ring-subset { fill: none; stroke: var(--hi); stroke-width: 2.5; }
+.cm-ring-selected { fill: none; stroke: var(--text); stroke-width: 1.25; stroke-dasharray: 3 3; }
+.cm-order circle { fill: var(--info); }
+.cm-order text { fill: var(--on-info); font-size: 9px; font-weight: 700; pointer-events: none; }
+
+.cm-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+
+/* "What each model says" */
+.cm-why-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.45; }
+.cm-why-list li { padding-left: 10px; border-left: 3px solid var(--line-2); }
+.cm-why-list li.is-ok { border-left-color: var(--ok); }
+.cm-why-list li.is-bad { border-left-color: var(--bad); }
+.cm-why-list li.is-na { border-left-color: var(--info); }
+
+/* The chain of models */
+.cm-chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.cm-link { flex: 1 1 150px; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line-2); font-size: 12.5px; line-height: 1.35; }
+.cm-link b { font-size: 13px; }
+.cm-link.is-strongest { background: color-mix(in srgb, var(--ok) 26%, transparent); border-color: var(--ok); }
+.cm-link.is-implied { background: color-mix(in srgb, var(--ok) 9%, transparent); border-color: color-mix(in srgb, var(--ok) 55%, var(--line-2)); }
+.cm-link.is-fails { background: color-mix(in srgb, var(--bad) 14%, transparent); border-color: var(--bad); }
+.cm-link.is-converged { border-style: dashed; border-color: var(--info); background: color-mix(in srgb, var(--info) 10%, transparent); }
+.cm-subset { align-self: center; color: var(--muted); font-size: 18px; }
+.cm-chain-note { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+/* Tables */
+.cm-table td, .cm-table th, .cm-axes td, .cm-axes th { vertical-align: top; font-size: 12.5px; }
+.cm-axes td { min-width: 150px; }
+.cm-table, .cm-axes { width: 100%; }
+
+@media (max-width: 900px) {
+  .cm-subset { flex-basis: 100%; text-align: center; transform: rotate(90deg); line-height: 1; }
+  .cm-table, .cm-axes { display: block; overflow-x: auto; }
+}

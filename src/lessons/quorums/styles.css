@@ -1,0 +1,26 @@
+/* quorums */
+.qr-stage { gap: 12px; min-width: 0; }
+.qr-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.qr-status.is-bad { color: var(--bad); }
+.qr-status.is-ok { color: var(--ok); }
+
+/* Replica boxes */
+.qr-replicas { display: flex; flex-wrap: wrap; gap: 10px; }
+.qr-replica {
+  flex: 1 1 78px; max-width: 130px; min-width: 70px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 8px; border-radius: 12px; border: 2px solid var(--line-2); background: color-mix(in srgb, var(--bg) 72%, transparent); color: var(--text); font: inherit; cursor: pointer;
+}
+.qr-replica b { font-size: 16px; }
+.qr-version { font: 600 13px var(--mono, monospace); font-variant-numeric: tabular-nums; }
+.qr-member { min-height: 14px; font-size: 10.5px; color: var(--muted); text-align: center; overflow-wrap: anywhere; }
+.qr-replica.is-violet { border-color: var(--violet); }
+.qr-replica.is-info { border-color: var(--info); }
+.qr-replica.is-hi { border-color: var(--hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hi) 35%, transparent); }
+.qr-replica.is-newest .qr-version { color: var(--ok); }
+.qr-replica.is-stale .qr-version { color: var(--orange); }
+.qr-replica.is-standin { border-style: dashed; border-color: var(--amber); }
+.qr-static { cursor: default; }
+.qr-static.is-down { background: var(--cell-dead); border-color: var(--line-2); color: var(--muted); }
+.qr-ops td, .qr-ops th { font-size: 12.5px; }
+.qr-cut { align-self: stretch; width: 0; border-left: 2px dashed var(--dim); margin: 0 2px; }
+.qr-cut.is-healed { border-left-style: dotted; }
