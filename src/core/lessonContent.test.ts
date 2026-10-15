@@ -14,7 +14,6 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const TIER3 = 'Tier 3 kickoff: existing Tier 3 lessons are retrofitted then';
 const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
 
 /**
@@ -32,7 +31,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
-  'oauth-flows': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   // Tier 4
   'backpressure': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
   'crdts': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
@@ -50,9 +48,7 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  * AC-0/T3 rules until T3-R1 and T3-R2 retrofit them; remove each id as its retrofit merges.
  * Every other Tier 3 lesson is held to the rules from its first commit.
  */
-const TIER3_AWAITING_RETROFIT = new Set([
-  'oauth-flows',
-]);
+const TIER3_AWAITING_RETROFIT = new Set<string>();
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */
 const TIER3_EXISTING_COUNT = 12;
 

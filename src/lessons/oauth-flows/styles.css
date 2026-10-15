@@ -13,13 +13,15 @@
 .oa-node-alert { fill: var(--bad); font-weight: 700; }
 
 .oa-popup { fill: var(--panel-2); stroke: var(--hi); stroke-width: 1.5; filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.6)); } /* allow-color: neutral drop shadow */
+.oa-popup.bad { stroke: var(--bad); }
 .oa-popup-title { font: 700 12.5px var(--font); fill: var(--text); }
 .oa-popup-body { font: 600 11px var(--mono); fill: var(--ok); }
+.oa-popup-body.bad { fill: var(--bad); }
 .oa-popup-note { font: 500 10px var(--mono); fill: var(--muted); }
 .oa-allow { fill: var(--ok); }
 .oa-allow-text { font: 700 10px var(--font); fill: var(--on-ok); }
 
-.oa-url, .oa-hold {
+.oa-url, .oa-hold, .oa-bind {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -30,10 +32,11 @@
 .oa-url-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .oa-url code { font-size: 11.5px; color: var(--muted); word-break: break-all; line-height: 1.6; }
 .oa-param b { font-weight: 600; color: var(--text); }
-.oa-param.scope b { color: var(--info); }
-.oa-param.state b { color: var(--violet); }
-.oa-param.pkce b { color: var(--hi); }
-.oa-param.code b { color: var(--ok); }
+.oa-param.scope b { color: var(--sky); }
+.oa-param.state b { color: var(--trk-hw); }
+.oa-param.pkce b { color: var(--trk-lang); }
+.oa-param.code b { color: var(--trk-math); }
+.oa-param.redirect b { color: var(--orange); }
 .oa-muted { color: var(--faint); font: 500 12px var(--mono); }
 
 .oa-holds { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
@@ -49,3 +52,29 @@
   font: 700 11.5px var(--mono);
 }
 .oa-chip i { font: 500 10px var(--mono); color: var(--faint); font-style: normal; }
+
+.oa-bind-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.oa-bind-list code { color: var(--text); }
+.oa-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 8px; }
+
+.oa-matrix { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+.oa-matrix caption { text-align: left; font-size: 11px; color: var(--muted); padding-bottom: 6px; }
+.oa-matrix th, .oa-matrix td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+.oa-matrix thead th { color: var(--muted); font-weight: 600; background: color-mix(in srgb, var(--panel) 70%, transparent); }
+.oa-matrix tbody th { font-weight: 600; color: var(--text); white-space: nowrap; }
+.oa-matrix td.good { color: var(--ok); }
+.oa-matrix td.bad { color: var(--bad); }
+.oa-matrix thead th.now { color: var(--text); box-shadow: inset 0 -2px 0 var(--hi); }
+.oa-matrix tr.now > th { box-shadow: inset 3px 0 0 var(--hi); }
+.oa-matrix td.now { background: color-mix(in srgb, var(--hi) 14%, transparent); font-weight: 700; }
+
+/* Caption highlights for the parameters take the same hues as the URL bar, the chips and the table. */
+.hl.oa-scope { background: color-mix(in srgb, var(--sky) 14%, transparent); color: var(--sky); }
+.hl.oa-state { background: color-mix(in srgb, var(--trk-hw) 14%, transparent); color: var(--trk-hw); }
+.hl.oa-pkce { background: color-mix(in srgb, var(--trk-lang) 14%, transparent); color: var(--trk-lang); }
+.hl.oa-code { background: color-mix(in srgb, var(--trk-math) 14%, transparent); color: var(--trk-math); }
+.hl.oa-redirect { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
+.hl.oa-token { background: color-mix(in srgb, var(--trk-web) 14%, transparent); color: var(--trk-web); }
+
+.oa-matrix-wrap { overflow-x: auto; }
+.oa-matrix { min-width: 640px; }
