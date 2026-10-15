@@ -74,8 +74,8 @@ export function LogScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Deployment frequency" value={perWeek(m.deploymentsPerWeek)} sub={[`${log.length} deployments in ${LOG_WEEKS} weeks`]} />
-          <Stat label="Lead time" value={hours(m.leadMedian)} color="var(--hi)" sub={['median', `mean ${hours(m.leadMean)}`, leadTimeLabel(defs.leadStart)]} />
-          <Stat label="Change failure rate" value={`${sig(m.failureRate * 100, 3)}%`} color="var(--bad)" sub={[`${m.failures} of ${log.length}`, `failure: ${FAILURE_NAME[defs.failure]}`]} />
+          <Stat label="Lead time" value={hours(m.leadMedian)} sub={['median, calendar hours', `mean ${hours(m.leadMean)}`, leadTimeLabel(defs.leadStart)]} />
+          <Stat label="Change failure rate" value={`${sig(m.failureRate * 100, 3)}%`} color={m.failures ? 'var(--bad)' : undefined} sub={[`${m.failures} of ${log.length}`, `failure: ${FAILURE_NAME[defs.failure]}`]} />
           <Stat label="Time to restore" value={m.restoreMedian === null ? '–' : minutes(m.restoreMedian)} sub={m.restoreMedian === null ? ['no failures, so no time to restore'] : ['median', `mean ${minutes(m.restoreMean!)}`, `ends at ${RESTORE_END_NAME[defs.restoreEnd]}`]} />
         </Stats>
       }

@@ -256,10 +256,14 @@ export const HOURS_PER_WEEK = 168;
 export const LOG_SEED = 1;
 const WEEKDAYS_PER_WEEK = 5;
 const HOURS_PER_DAY = 24;
-/** The planted failures: a seeded log always holds each kind, so every definition gives a different number. */
+/** The planted failures: a seeded log always holds each kind, so every definition gives a different number. In every failure the fix is deployed after service is restored, so ending the clock at the fix always moves the median. */
 export const PLANTED = { rollbacks: 3, quickHotfixes: 2, lateHotfixes: 1, okIncidents: 2 } as const;
 const HOTFIX_WINDOW_HOURS = 24;
 const LATE_HOTFIX_HOURS = 40;
+/** After a rollback or a mitigation the real fix ships later: this many hours, plus up to FOLLOW_UP_SPREAD_HOURS more. */
+const FOLLOW_UP_MIN_HOURS = 2;
+const FOLLOW_UP_SPREAD_HOURS = 22;
+const followUpHours = (restoredMin: number, rnd: Rnd): number => restoredMin / MINUTES_PER_HOUR + FOLLOW_UP_MIN_HOURS + Math.floor(rnd() * FOLLOW_UP_SPREAD_HOURS);
 
 /** A seeded log of 50 deployments over 4 weeks, with planted failures (3 rollbacks, 2 quick hotfixes, 1 late hotfix, 2 incidents on good deploys). */
 export function makeLog(seed: number): Deployment[] {
@@ -290,7 +294,7 @@ export function makeLog(seed: number): Deployment[] {
     d.outcome = 'rollback';
     d.incident = k < 2;
     d.restoredMin = restore();
-    d.fixHours = d.restoredMin / MINUTES_PER_HOUR;
+    d.fixHours = followUpHours(d.restoredMin, rnd);
   });
   plant(PLANTED.quickHotfixes, (d, k) => {
     d.outcome = 'hotfix';
@@ -307,7 +311,7 @@ export function makeLog(seed: number): Deployment[] {
   plant(PLANTED.okIncidents, (d) => {
     d.incident = true;
     d.restoredMin = restore();
-    d.fixHours = d.restoredMin / MINUTES_PER_HOUR;
+    d.fixHours = followUpHours(d.restoredMin, rnd);
   });
   return log;
 }

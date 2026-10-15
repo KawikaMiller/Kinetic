@@ -57,15 +57,15 @@ const lesson: LessonModule = {
       why: 'Where lead time starts or what counts as a failure varies from team to team, and so do the product and the risk. A team\'s own numbers over time show whether it is improving; one team\'s numbers beside another\'s mostly show the definitions.',
     },
     {
-      q: 'A team raises its deployment frequency fivefold by splitting each change into five deploys. What improved?',
+      q: 'A team raises its deployment frequency fivefold by splitting each change into five deploys, and the five pieces still ship together, as one change. What improved?',
       options: [
         'Nothing real: the count rose, while the time from merge to live did not move',
         'Delivery speed, since five deploys are five times as fast as one',
-        'Stability, since smaller deploys are less likely to fail than big ones',
+        'Stability, since each of the five deploys is now a smaller risk',
         'Lead time, since each piece now ships on its own, ahead of the rest',
       ],
       answer: 0,
-      why: 'Deployment frequency counts deploys, so splitting inflates it. In this model the five pieces go out together, so the merge-to-live time, the failure rate and the restore time are untouched; real batch size is what the metric is meant to reflect.',
+      why: 'Deployment frequency counts deploys, so splitting inflates it. The five pieces go out together, so the merge-to-live time, the failure rate and the restore time are untouched; real batch size is what the metric is meant to reflect.',
     },
     {
       q: 'A team is told to cut its change failure rate and starts counting only rollbacks as failures. What happens?',

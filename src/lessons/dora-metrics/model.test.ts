@@ -184,12 +184,22 @@ describe('measuring from a log', () => {
       const failures = FAILURE_DEFS.map((failure) => at({ failure }).failures);
       expect(failures, `failures, seed ${seed}`).toEqual([3, 5, 6]);
       for (const failure of FAILURE_DEFS) {
-        // The mean always moves with the end point (the medians of a mixed list can coincide); the median is checked as present and positive.
-        const means = RESTORE_ENDS.map((restoreEnd) => at({ failure, restoreEnd }).restoreMean);
-        if (failure !== 'rollback') expect(means[0], `restore, ${failure}, seed ${seed}`).not.toBe(means[1]);
-        expect(RESTORE_ENDS.map((restoreEnd) => at({ failure, restoreEnd }).restoreMedian).every((v) => v !== null && v > 0)).toBe(true);
+        const [restored, fix] = RESTORE_ENDS.map((restoreEnd) => at({ failure, restoreEnd }));
+        expect(restored.restoreMedian, `restore median, ${failure}, seed ${seed}`).not.toBeNull();
+        expect(fix.restoreMedian, `restore median moves, ${failure}, seed ${seed}`).not.toBe(restored.restoreMedian);
+        expect(fix.restoreMedian!, `fix lands after restore, ${failure}, seed ${seed}`).toBeGreaterThan(restored.restoreMedian!);
+        expect(fix.restoreMean, `restore mean moves, ${failure}, seed ${seed}`).not.toBe(restored.restoreMean);
       }
     }
+  });
+
+  it('broken variant: a log whose fixes land at the instant service is restored would leave the median unmoved, and the check above would reject it', () => {
+    const flat = makeLog(1).map((d) => (d.restoredMin === null ? d : { ...d, fixHours: d.restoredMin / 60 }));
+    const same = FAILURE_DEFS.filter((failure) => {
+      const [restored, fix] = RESTORE_ENDS.map((restoreEnd) => logMetrics(flat, { ...DEFINITIONS_DEFAULT, failure, restoreEnd }).restoreMedian!);
+      return Math.abs(restored - fix) < 1e-9;
+    });
+    expect(same.length).toBeGreaterThan(0);
   });
 
   it('the weekly deploy ticks equal the table: the four weeks partition the log, and each week holds the rows that fall in it', () => {

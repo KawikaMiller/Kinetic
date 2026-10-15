@@ -24,7 +24,10 @@ export function pipelineCaption(p: Pipeline, m: DeliveryMetrics, shown: Reported
       {p.changesPerDay} changes a day, {releaseRule(p)}: <span className="hl">{sig(m.deploymentsPerWeek)} releases a week</span>, {lead} (working hours),{' '}
       {m.failureRate === null ? 'no releases to fail' : <>{pctText(m.failureRate, 0)} of releases failing</>}, {restore}.
       {gaming === 'split' && <> Splitting each change into {SPLIT_FACTOR} deploys reports <span className="hl orange">{perWeek(shown.deploymentsPerWeek)}</span>, while the merge-to-live time for a change stays {m.leadHoursMedian === null ? 'the same' : hours(m.leadHoursMedian)}.</>}
-      {gaming === 'rollbacks-only' && m.failureRate !== null && shown.failureRate !== null && (
+      {gaming === 'rollbacks-only' && m.failureRate !== null && shown.failureRate !== null && m.failures === m.rollbacks && (
+        <> Counting only rollbacks changes nothing here: no failure was fixed forward, so there is nothing to hide.</>
+      )}
+      {gaming === 'rollbacks-only' && m.failureRate !== null && shown.failureRate !== null && m.failures !== m.rollbacks && (
         <> Counting only rollbacks reports <span className="hl orange">{pctText(shown.failureRate, 0)}</span> against the real <span className="hl info">{pctText(m.failureRate, 0)}</span>: {m.failures - m.rollbacks} fixed-forward {m.failures - m.rollbacks === 1 ? 'failure vanishes' : 'failures vanish'} and nothing improved.</>
       )}
     </>
