@@ -9,6 +9,7 @@ import './styles/global.css';
 import './styles/kit.css';
 import './components/scene/scene.css';
 import './components/colorField.css';
+import './components/scenarioStory.css';
 
 if (import.meta.env.DEV) assertTokensInSync();
 

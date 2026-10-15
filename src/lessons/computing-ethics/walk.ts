@@ -1,5 +1,6 @@
+import type { Scenario } from '../../core/scenario';
 import type { PrincipleId } from './acm';
-import type { CaseNode, Choice, Decision, Ending, EthicsCase } from './cases';
+import { choiceBasis, type CaseNode, type Choice, type Decision, type Ending, type EthicsCase } from './cases';
 
 /** Where a learner is in a case: the node they are at, the choice they have just made there, and the path so far. */
 export interface Walk {
@@ -59,3 +60,21 @@ export function mapOf(c: EthicsCase): { nodes: { id: string; label: string; end:
 }
 
 export const edgeKey = (from: string, choice: Choice['id']) => `${from}:${choice}`;
+
+/**
+ * The case as a shared `core/scenario` Scenario (no meters: a case has no numbers, only authored consequences),
+ * so the shared validator and path enumeration check its graph. The lesson's own walk stays local: it has a
+ * pick-then-continue step and a two-level back that the shared one does not.
+ */
+export function toScenario(c: EthicsCase): Scenario {
+  return {
+    start: c.start,
+    meters: [],
+    nodes: c.nodes.filter(isDecision).map((d) => ({
+      id: d.id,
+      prompt: d.setup,
+      choices: d.choices.map((ch) => ({ id: ch.id, label: ch.label, to: ch.to, because: choiceBasis(c, ch) })),
+    })),
+    endings: c.nodes.filter(isEnding).map((e) => ({ id: e.id, title: e.title, text: e.text })),
+  };
+}
