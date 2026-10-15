@@ -82,3 +82,27 @@ export const GANTT_LABEL = { CHAR_PX: 6.3, PAD_PX: 5 } as const;
 
 /** How wide a bar must be, in px, to show `text` unclipped: a value for GanttLanes' `labelMinPx`. */
 export const barLabelPx = (text: string) => Math.ceil(text.length * GANTT_LABEL.CHAR_PX + 2 * GANTT_LABEL.PAD_PX);
+
+/** What `barAt` needs of a bar: GanttLanes' `GanttBar` fits. */
+export interface TimedBar {
+  start: number;
+  end: number;
+  progress?: number;
+}
+
+/**
+ * A bar as it looks at time `now`, for replaying a timeline: null before it starts, the bar
+ * with `progress` = the elapsed share (0 at its start, so only the dashed plan shows) while it
+ * runs, and the bar untouched once `now` reaches its end (a zero-length bar is done at its start).
+ * Replaces the per-lesson clipping loops. Any `progress` the bar carried is replaced while it runs.
+ */
+export function barAt<B extends TimedBar>(bar: B, now: number): B | null {
+  if (now < bar.start) return null;
+  if (now >= bar.end) return bar;
+  return { ...bar, progress: (now - bar.start) / (bar.end - bar.start) };
+}
+
+/** `barAt` over a list: the bars that have started by `now`, in their original order. */
+export function barsAt<B extends TimedBar>(bars: readonly B[], now: number): B[] {
+  return bars.flatMap((b) => barAt(b, now) ?? []);
+}
