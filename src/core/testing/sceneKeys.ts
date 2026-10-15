@@ -1,14 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+const stageSources = import.meta.glob<string>('../../lessons/*/Stage.tsx', { query: '?raw', import: 'default', eager: true });
 
 /**
- * Every scene a Stage returns, as `[component, hasKey]`. When two scenes render the same component type React reuses
- * the instance on a switch, so the second scene would open on the first one's state unless each carries its own `key`.
+ * Every scene a lesson's Stage returns, as `[component, hasKey]`. When two scenes render the same component type
+ * React reuses the instance on a switch, so the second scene would open on the first one's state unless each
+ * carries its own `key`.
  */
 export function sceneElements(lessonId: string): { component: string; keyed: boolean }[] {
-  const source = readFileSync(join(process.cwd(), 'src', 'lessons', lessonId, 'Stage.tsx'), 'utf8');
-  const returns = [...source.matchAll(/return\s+<(\w+)([^>]*?)\/>/g)];
-  return returns.map((m) => ({ component: m[1], keyed: /\bkey=/.test(m[2]) }));
+  const source = stageSources[`../../lessons/${lessonId}/Stage.tsx`];
+  if (source === undefined) throw new Error(`no Stage.tsx for ${lessonId}`);
+  return [...source.matchAll(/return\s+<(\w+)([^>]*?)\/>/g)].map((m) => ({ component: m[1], keyed: /\bkey=/.test(m[2]) }));
 }
 
 /** Component types that more than one scene returns. */

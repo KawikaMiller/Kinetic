@@ -39,8 +39,8 @@ export function SearchScene({ picker }: { picker: ReactNode }) {
 
   // Colour the costlier side red and the cheaper green only once the search is done; a tie or a search in progress takes no verdict.
   const skipSteps = f.moves + f.dropCount;
-  const plainCostlier = done && f.linear > skipSteps;
-  const skipCostlier = done && skipSteps > f.linear;
+  const plainCostlier = f.linear !== null && f.linear > skipSteps;
+  const skipCostlier = f.linear !== null && skipSteps > f.linear;
   const skipColor = skipCostlier ? 'var(--bad)' : plainCostlier ? 'var(--ok)' : undefined;
   const plainColor = plainCostlier ? 'var(--bad)' : skipCostlier ? 'var(--ok)' : undefined;
 
