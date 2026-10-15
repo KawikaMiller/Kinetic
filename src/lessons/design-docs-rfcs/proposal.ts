@@ -4,7 +4,7 @@
  * data for the pure engine in scenario.ts.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Scenario } from './scenario';
+import type { Choice, Scenario } from '../../core/scenario';
 
 export const CLARITY = 'clarity';
 export const DAYS = 'days';
