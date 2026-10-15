@@ -1,0 +1,12 @@
+.ad { gap: 14px; }
+.ad-meter-note { display: block; margin-bottom: 4px; font-size: 12.5px; color: var(--muted); }
+.ad-table th[scope='row'] { text-transform: none; letter-spacing: 0; font: 600 13px var(--font); color: var(--text); }
+.ad-ok { color: var(--ok); font-weight: 700; }
+.ad-false { color: var(--orange); font-weight: 700; }
+.ad-alerts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ad-alert { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.ad-alert-text { font-weight: 600; font-size: 13.5px; }
+.ad-facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ad-verdict { font-size: 12.5px; line-height: 1.5; }
+.ad-verdict.is-ok { color: var(--ok); }
+.ad-verdict.is-bad { color: var(--bad); }
