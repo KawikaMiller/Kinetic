@@ -1,0 +1,30 @@
+.st-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.st-svg, .st-fen { display: block; margin: 0 auto; max-width: none; }
+.st-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.st-box.is-current { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 24%, transparent); }
+.st-box.is-cover { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 24%, transparent); }
+.st-box.is-partial { stroke: var(--info); fill: color-mix(in srgb, var(--info) 18%, transparent); }
+.st-box.is-outside { stroke: var(--dim); stroke-dasharray: 4 3; opacity: 0.6; }
+.st-box.is-pushed { stroke: var(--violet); stroke-width: 3.5; }
+.st-range { font: 600 10px var(--mono); text-anchor: middle; fill: var(--muted); pointer-events: none; }
+.st-agg { font: 700 12px var(--mono); text-anchor: middle; fill: var(--text); pointer-events: none; }
+.st-tag rect { fill: var(--violet); }
+.st-tag text { font: 700 10px var(--mono); text-anchor: middle; fill: var(--on-violet); pointer-events: none; }
+.st-idx { font: 600 10px var(--mono); text-anchor: middle; fill: var(--muted); }
+.st-fcell { fill: var(--cell); stroke: var(--cell-line); stroke-width: 1.5; }
+.st-fcell.is-read { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 24%, transparent); }
+.st-fcell.is-write { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 24%, transparent); }
+.st-fval { font: 700 12px var(--mono); text-anchor: middle; fill: var(--text); }
+.st-bar { fill: var(--c); opacity: 0.45; }
+.st-bar.is-read, .st-bar.is-write { opacity: 0.9; }
+.st-pair { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.st-col { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.st-code { display: flex; flex-flow: row wrap; gap: 8px; }
+.st-code > * { flex: 1 1 200px; min-width: 0; }
+.st-line { margin: 0; font-size: 13px; line-height: 1.6; }
+.st-refuse { border: 1px dashed var(--bad); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
+.st-bars { display: flex; flex-direction: column; gap: 8px; }
+.st-bar-row { display: grid; grid-template-columns: 110px minmax(60px, 1fr) auto; align-items: center; gap: 10px; font-size: 13px; }
+.st-table { width: 100%; font-size: 13px; }
+.st-table tr.is-pick td { color: var(--ok); font-weight: 700; }
+.st-stage ~ .provenance-row { margin: 8px 16px 12px; }
