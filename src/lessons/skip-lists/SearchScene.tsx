@@ -37,14 +37,21 @@ export function SearchScene({ picker }: { picker: ReactNode }) {
     else setNote(parsed.error);
   };
 
+  // Colour the costlier side red and the cheaper green only once the search is done; a tie or a search in progress takes no verdict.
+  const skipSteps = f.moves + f.dropCount;
+  const plainCostlier = done && f.linear > skipSteps;
+  const skipCostlier = done && skipSteps > f.linear;
+  const skipColor = skipCostlier ? 'var(--bad)' : plainCostlier ? 'var(--ok)' : undefined;
+  const plainColor = plainCostlier ? 'var(--bad)' : skipCostlier ? 'var(--ok)' : undefined;
+
   return (
     <StageFrame
       player={player}
       height={300}
       stats={
         <Stats>
-          <Stat label="Skip list steps" value={f.moves + f.dropCount} color="var(--ok)" sub={`${f.moves} moves + ${f.dropCount} drops so far`} />
-          <Stat label="Plain list steps" value={done ? f.linear : '–'} color={done ? 'var(--bad)' : undefined} sub="one move per key below the target" />
+          <Stat label="Skip list steps" value={f.moves + f.dropCount} color={skipColor} sub={`${f.moves} moves + ${f.dropCount} drops so far`} />
+          <Stat label="Plain list steps" value={done ? f.linear : '–'} color={plainColor} sub="one move per key below the target" />
           <Stat label="Levels" value={snap.levels} sub="the tallest tower" />
         </Stats>
       }
@@ -90,7 +97,7 @@ export function SearchScene({ picker }: { picker: ReactNode }) {
           <ArrayStrip
             values={DEFAULT_KEYS}
             cellState={(i) => (done && DEFAULT_KEYS[i] === f.found ? 'done' : 'idle')}
-            cellTone={(i) => (i < walked ? { tone: 'bad', fill: 'tint' } : null)}
+            cellTone={(i) => (i < walked ? { tone: plainCostlier ? 'bad' : 'muted', fill: 'tint' } : null)}
             onCellClick={(i) => run(DEFAULT_KEYS[i])}
             cellTitle={(i) => `Search for ${DEFAULT_KEYS[i]}`}
             fontSize={12}

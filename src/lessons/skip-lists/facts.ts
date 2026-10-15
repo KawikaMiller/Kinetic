@@ -63,5 +63,5 @@ export const FACTS = {
   whyWrites: whyLast.writes,
   whyHeight: whyFlips.height,
   whyTouched: touchedNodes(afterDefault, whyLast.snap).length,
-  whyNodes: whyLast.snap.towers.length + 1,
+  whyNodes: afterDefault.towers.length + 1,
 };

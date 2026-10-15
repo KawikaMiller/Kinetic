@@ -1,4 +1,5 @@
 import type { LessonModule } from '../../core/types';
+import { plural } from '../../core/format';
 import { FACTS as F } from './facts';
 import { MC_SEEDS } from './presets';
 import { Stage } from './Stage';
@@ -23,13 +24,13 @@ const lesson: LessonModule = {
     `In Insert with coin flips, press play on the default (insert ${F.insertKey}): the coins come up ${F.coinsText}, so the tower is ${F.insertHeight} levels tall and ${F.insertWrites} pointers are written.`,
     `In Insert with coin flips, choose Rigged: all tails, type ${F.riggedKey} and press Insert: the tower is ${F.riggedHeight} level tall with ${F.riggedWrites} pointer writes, and a list rigged this way is just a linked list.`,
     `In Is it really log n? (the defaults: p = 1/2, n = ${F.mcN.toLocaleString('en-US')}): the measured mean is ${F.mcMean.toFixed(1)} steps against the formula's ${F.mcFormula.toFixed(1)}, the unluckiest list took ${F.mcWorst.toFixed(1)}, and the pointers per key are ${F.mcPointers.toFixed(2)}.`,
-    `In Why use one?, press Insert with the default key ${F.whyKey}: it takes ${F.whyWrites} pointer writes for a tower of ${F.whyHeight} levels and touches ${F.whyTouched} of the ${F.whyNodes} nodes already there.`,
+    `In Why use one?, press Insert with the default key ${F.whyKey}: it takes ${F.whyWrites} pointer writes for a tower of ${plural(F.whyHeight, 'level')} and touches ${F.whyTouched} of the ${F.whyNodes} nodes already there.`,
   ],
   keyIdeas: [
     'A skip list is a sorted linked list with lanes above it: search moves right while the next key is smaller and drops a lane when it would overshoot, so many keys are skipped.',
     `Tower heights come from coin flips, so balance is statistical: at p = 1/2 the pointers per key average about 2 and a search over ${F.mcN.toLocaleString('en-US')} keys took ${F.mcMean.toFixed(1)} steps here, against ${F.allTailsMean.toFixed(0)} when the coins were rigged to tails.`,
     'An insert changes the pointers of the new tower and of its predecessors on the search path, one per level, and leaves the other towers alone; there is no rotation or rebuild.',
-    'The speed is fast in expectation and with high probability, not certain: a bad run of flips makes one list slow, as the worst-luck line shows.',
+    'The speed is fast in expectation and with high probability, not certain: the unluckiest of the seeded lists is only somewhat slower, and a list rigged to all tails is a plain linked list.',
   ],
   quiz: [
     {
@@ -52,7 +53,7 @@ const lesson: LessonModule = {
         'None yet: the key is appended at the end and linked in later on',
       ],
       answer: 0,
-      why: `A tower of height 3 is linked into three levels: the new tower points on to what followed, and the predecessor found by the search points to it, which is ${F.whyWrites} writes for height ${F.whyHeight} in the lesson. No other tower is rewritten, so nothing shifts and nothing is rebalanced.`,
+      why: `A tower of height 3 is linked into three levels: the new tower points on to what followed, and the predecessor found by the search points to it, which is ${F.insertWrites} writes for height ${F.insertHeight} in the lesson (the insert of ${F.insertKey}). No other tower is rewritten, so nothing shifts and nothing is rebalanced.`,
     },
     {
       q: 'At p = 1/4 a tower grows with probability 1/4 per flip. How many pointers does a key hold on average?',

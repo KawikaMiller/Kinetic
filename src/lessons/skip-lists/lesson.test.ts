@@ -5,7 +5,7 @@ import { insertFrames, removeFrames, searchFrames } from './frames';
 import lesson from './index';
 import { KEY_MAX, KEY_MIN, parseKey, refuseOp } from './keys';
 import { HEAD, LEVEL_CAP, buildList, flipHeight, pughCost, touchedNodes, type Entry } from './model';
-import { DEFAULT_COIN_SEED, DEFAULT_INSERT_KEY, DEFAULT_KEYS, DEFAULT_TARGET, DRAWN_LIMIT, P_OPTIONS, RIG_OPTIONS, coinFlips, defaultEntries } from './presets';
+import { DEFAULT_COIN_SEED, DEFAULT_INSERT_KEY, DEFAULT_KEYS, DEFAULT_P, DEFAULT_TARGET, DRAWN_LIMIT, P_OPTIONS, RIG_OPTIONS, coinFlips, defaultEntries } from './presets';
 import { mulberry32 } from '../../core/random';
 import { costCaption, plainSteps, writesCaption } from './text';
 
@@ -116,9 +116,12 @@ describe('try-this entries, from the default state, as written', () => {
     }
     expect(new Set(touchedNodes(before, after))).toEqual(preds);
     expect(FACTS.whyTouched).toBe(preds.size);
-    expect(FACTS.whyNodes).toBe(entries.length + 2);
+    // "of N nodes, head included": the keys there before the insert, plus the head
+    expect(FACTS.whyNodes).toBe(before.towers.length + 1);
+    expect(FACTS.whyNodes).toBe(entries.length + 1);
     expect(text(writesCaption({ key: 53, height: FACTS.whyHeight, writes: FACTS.whyWrites, nodes: entries.length + 1 }))).toContain('none of the unrelated towers changed');
-    expect(lesson.tryThis[4]).toContain(`${FACTS.whyWrites} pointer writes for a tower of ${FACTS.whyHeight} levels`);
+    expect(lesson.tryThis[4]).toContain(`${FACTS.whyWrites} pointer writes for a tower of 1 level and touches ${FACTS.whyTouched} of the ${FACTS.whyNodes} nodes`);
+    expect(lesson.tryThis[4]).not.toContain('1 levels');
   });
 });
 
@@ -199,6 +202,24 @@ describe('hostile input', () => {
     const l = buildList(Array.from({ length: DRAWN_LIMIT }, (_, i) => ({ key: i, height: 1 + (i % 3) })));
     expect(l.size).toBe(DRAWN_LIMIT);
     expect(defaultEntries().map((e) => e.key)).toEqual(DEFAULT_KEYS);
+  });
+});
+
+describe('the coin-flip caption', () => {
+  const flipCaptions = (flips: ReturnType<typeof coinFlips>, rig: 'heads' | null) =>
+    insertFrames(defaultEntries(), 33, flips, rig === 'heads' ? 'all heads' : null)
+      .map((fr) => text(fr.say as Parameters<typeof text>[0]))
+      .filter((c) => c.startsWith('Flip '));
+
+  it('says "level cap" only on a flip that reaches the cap, never on the default insert whose tower stops at 3', () => {
+    const fair = coinFlips(DEFAULT_COIN_SEED, 0, DEFAULT_P, 'fair');
+    expect(fair.height).toBe(3);
+    const captions = flipCaptions(fair, null);
+    expect(captions).toHaveLength(fair.flips.length);
+    expect(captions.some((c) => c.includes('level cap'))).toBe(false);
+    const rigged = flipCaptions(coinFlips(DEFAULT_COIN_SEED, 0, DEFAULT_P, 'heads'), 'heads');
+    expect(rigged.filter((c) => c.includes('level cap'))).toHaveLength(1);
+    expect(rigged[rigged.length - 1]).toContain(`height ${LEVEL_CAP} (the level cap)`);
   });
 });
 

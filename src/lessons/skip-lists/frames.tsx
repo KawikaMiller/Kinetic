@@ -1,7 +1,7 @@
 import { createRecorder, type Recorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import type { Edge } from './SkipDrawing';
-import { HEAD, buildList, type Entry, type Flips, type Pos, type SearchResult, type Snapshot, type SkipList } from './model';
+import { HEAD, LEVEL_CAP, buildList, type Entry, type Flips, type Pos, type SearchResult, type Snapshot, type SkipList } from './model';
 import { nodeName, plainSteps } from './text';
 
 export interface SkipFrame extends Frame {
@@ -120,7 +120,7 @@ export function insertFrames(entries: readonly Entry[], key: number, flips: Flip
     rec.snap(
       <>
         Flip {i + 1}: {hl(coinWord(heads), heads ? 'amber' : 'pink')}.{' '}
-        {heads ? <>The tower grows to height {height}{height === flips.height ? <> (the level cap), so there is nothing left to flip</> : <>: flip again</>}.</> : <>The tower stops at height {height}.</>}
+        {heads ? <>The tower grows to height {height}{height >= LEVEL_CAP ? <> (the level cap), so there is nothing left to flip</> : <>: flip again</>}.</> : <>The tower stops at height {height}.</>}
         {rigged ? <> The coin is rigged ({rigged}): this is not random.</> : null}
       </>,
       undefined,
@@ -152,7 +152,7 @@ export function insertFrames(entries: readonly Entry[], key: number, flips: Flip
   rec.set({ changed: [], snap: after });
   rec.close(
     <>
-      Inserted {hl(key, 'ok')} with a tower of height {flips.height}: {hl(writes)} pointer writes, all on its own tower and its {flips.height === 1 ? 'one predecessor' : `${flips.height} predecessors`}. No rebalancing.
+      Inserted {hl(key, 'ok')} with a tower of height {flips.height}: {hl(writes)} pointer writes, all on its own tower and one predecessor pointer per level. No rebalancing.
     </>,
     2,
   );
