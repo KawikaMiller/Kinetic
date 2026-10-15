@@ -59,7 +59,7 @@ const lesson: LessonModule = {
       options: [
         'It saves work, because comparing everything is always cheaper than reading a single event',
         'It is required by git, which has no way to send an event when one of its files changes',
-        'A handler that only reacts to events never sees a missed one again, but a full comparison still does',
+        'An event-only handler never sees a missed event again, but a full comparison still does',
         'It lets the controller skip git altogether and read the desired state from the cluster itself',
       ],
       answer: 2,
@@ -79,7 +79,7 @@ const lesson: LessonModule = {
     {
       q: 'What does the pull style of GitOps change about credentials?',
       options: [
-        'In the usual pull setup the cluster credentials stay inside the cluster, where an agent reads git',
+        'In the usual pull setup the cluster credentials stay inside it, where an agent reads git',
         'The pipeline holds the cluster credentials in a pull setup, because it has to reach in to apply',
         'Git holds the cluster credentials, since it is the source of the desired state for everything',
         'There are no credentials, because the controller never changes anything',

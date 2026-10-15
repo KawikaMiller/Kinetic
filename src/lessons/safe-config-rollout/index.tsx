@@ -45,7 +45,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'A config change is a deployment: it deserves a check before it ships, a staged rollout, a watching gate and a rollback.',
-    `In this model the gate keeps watching every server it has reached, so staging helps once the watching before the last stage lands (the earlier stages together) outlasts the time the change takes to show itself. For the ${PEAK_DELAY}-minute change, a bake under ${peakBake.beforeAll} minutes lets it reach all ${FLEET}, ${peakBake.beforeAll} or more stops it short of everyone, and ${peakBake.atFirstStage} or more stops it at the canary.`,
+    `In this model the gate keeps watching every server it has reached, so staging helps once the watching before the last stage lands (the earlier stages together) outlasts the time the change takes to show itself. For the ${PEAK_DELAY}-minute change, a bake under ${peakBake.beforeAll} minutes lets it reach the whole fleet of ${FLEET}, ${peakBake.beforeAll} or more stops it short of everyone, and ${peakBake.atFirstStage} or more stops it at the canary.`,
     'A canary tells you about the servers it runs on, so a fault confined to one region can pass the early stages until that region gets it.',
     'Count the damage in one unit across strategies, here server-minutes from the minute a server fails until the rollback reaches it.',
   ],
@@ -59,7 +59,7 @@ const lesson: LessonModule = {
         'No, because a gate cannot stop a change once it has landed anywhere',
       ],
       answer: 1,
-      why: `In this lesson’s model that rollout reaches all ${peakShort.reached} servers before the gate sees a problem and costs ${peakShort.serverMinutes} server-minutes: staging still helps, since an all-at-once push with the same gate and automatic rollback costs ${peakAllSafe.serverMinutes}, but far less than it could. The gate watches every server reached, so what counts is the watching time before the last stage lands, not each bake against the delay: a bake of ${peakBake.beforeAll} minutes stops it at ${peakMidBake.reached} servers for ${peakMidBake.serverMinutes}, and 25 stops it at the canary for ${peakLong.serverMinutes}.`,
+      why: `In this lesson’s model that rollout reaches all ${peakShort.reached} servers before the gate sees a problem and costs ${peakShort.serverMinutes} server-minutes: staging still helps, since an all-at-once push with the same gate and automatic rollback costs ${peakAllSafe.serverMinutes}, but far less than it could. The gate watches the servers it has reached, so what counts is the watching time before the last stage lands, not each bake against the delay: a bake of ${peakBake.beforeAll} minutes stops it at ${peakMidBake.reached} servers for ${peakMidBake.serverMinutes}, and 25 stops it at the canary for ${peakLong.serverMinutes}.`,
     },
     {
       q: `A config change sets a timeout of ${TIMEOUT_TYPO} where ${fmt(TIMEOUT_OK)} was meant, and the schema allows ${fmt(TIMEOUT_RANGE.min)} to ${fmt(TIMEOUT_RANGE.max)}. What does validating before the push do?`,
@@ -92,7 +92,7 @@ const lesson: LessonModule = {
         'Because a minute of failure on one server is worth the same as an hour on another',
       ],
       answer: 1,
-      why: `Comparing plans needs one unit. Everything at once, as scene 1 pushes it (no gate, rollback by hand), costs ${fmt(crashAll.serverMinutes)} server-minutes for a crash and the default staged plan ${crashStaged.serverMinutes}. The unit is the same but the plans differ in more than staging: the same push all at once with the default’s gate and automatic rollback costs ${crashAllSafe.serverMinutes}, which is why the staged scene shows that number beside its own.`,
+      why: `Comparing plans needs one unit. Everything at once, as scene 1 pushes it (no gate, rollback by hand), costs ${fmt(crashAll.serverMinutes)} server-minutes for a crash and the default staged plan ${crashStaged.serverMinutes}. The unit is the same but the plans differ in more than staging: the same push in one step with the default’s gate and automatic rollback costs ${crashAllSafe.serverMinutes}, which is why the staged scene shows that number beside its own.`,
     },
   ],
 };
