@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { expectCaption } from '../../core/testing/captions';
 import { ORDER_LABELS, pushFrames, runFor, sampledCounts, type Order } from './frames';
 import lesson from './index';
@@ -167,5 +168,20 @@ describe('claims on screen that the tests have to back', () => {
       const wider = { ...net, edges: net.edges.map((x, j) => (j === i ? { ...x, cap: x.cap + 50 } : x)) };
       expect(edmondsKarp(wider).value).toBe(4);
     });
+  });
+});
+
+describe('the closing caption of the unlucky run colours the costly count red and the cheap count green, in either order', () => {
+  const classOf = (markup: string, count: number) => new RegExp(`class="hl (bad|ok)">${count.toLocaleString('en-US')} augmentations?<`).exec(markup)?.[1];
+  it.each([[2], [7], [UNLUCKY_K]])('k = %i', (k) => {
+    const adversarial = runFor('adversarial', k).steps.length;
+    const shortest = runFor('shortest', k).steps.length;
+    expect(adversarial).toBeGreaterThan(shortest);
+    for (const order of ['adversarial', 'shortest'] as const) {
+      const last = pushFrames(order, k).at(-1)!.say;
+      const markup = renderToStaticMarkup(last);
+      expect(classOf(markup, adversarial), `${order} k=${k}: the many-augmentation count`).toBe('bad');
+      expect(classOf(markup, shortest), `${order} k=${k}: the few-augmentation count`).toBe('ok');
+    }
   });
 });

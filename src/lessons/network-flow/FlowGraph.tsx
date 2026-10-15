@@ -69,7 +69,7 @@ export function FlowGraph({
       return a.back ? { tone: 'violet', dashed: true, width: 3 } : null;
     }
     if (path.some((p) => p.edge === i)) return { tone: 'hi', width: 5 };
-    if (region?.crossing.has(i)) return { tone: 'bad', width: 4.5 };
+    if (region?.crossing.has(i)) return { tone: 'violet', width: 4.5 };
     const f = flow[i];
     const cap = net.edges[i].cap;
     if (f > 0 && f === cap) return { tone: 'bad', width: 4 };

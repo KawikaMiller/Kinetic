@@ -28,6 +28,9 @@ export function sampledCounts(total: number): number[] {
   return [...new Set(wanted.filter((j) => j >= 1 && j <= total))].sort((a, b) => a - b);
 }
 
+/** The costly count of two reads `bad`, the cheap one `ok` (a tie reads `ok` on both). */
+const costly = (mine: number, theirs: number): 'bad' | 'ok' => (mine > theirs ? 'bad' : 'ok');
+
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 
 export function pushFrames(order: Order, k: number): PushFrame[] {
@@ -71,8 +74,8 @@ export function pushFrames(order: Order, k: number): PushFrame[] {
   });
   rec.close(
     <>
-      Done: flow {run.value.toLocaleString('en-US')} after <span className="hl bad">{plural(run.steps.length, 'augmentation')}</span> in this order; the {order === 'adversarial' ? 'shortest-path-first' : 'adversarial'} order
-      needs <span className="hl ok">{plural(other.steps.length, 'augmentation')}</span>.
+      Done: flow {run.value.toLocaleString('en-US')} after <span className={`hl ${costly(run.steps.length, other.steps.length)}`}>{plural(run.steps.length, 'augmentation')}</span> in this order; the {order === 'adversarial' ? 'shortest-path-first' : 'adversarial'} order
+      needs <span className={`hl ${costly(other.steps.length, run.steps.length)}`}>{plural(other.steps.length, 'augmentation')}</span>.
       {order === 'adversarial' ? ' The adversarial order is scripted to show the worst case; a real search may or may not choose it.' : ' For shortest-path-first the count is bounded by the network\'s size, not by its capacities.'}
     </>,
     2,

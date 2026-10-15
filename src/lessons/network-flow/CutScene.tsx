@@ -27,7 +27,7 @@ export function CutScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor }) 
       stats={
         <Stats>
           <Stat label="Flow now" value={ed.value} color="var(--info)" sub="net out of s" />
-          <Stat label="Cut capacity" value={capacity} color="var(--bad)" sub={`${crossing.length} ${crossing.length === 1 ? 'edge crosses' : 'edges cross'} from S to T`} />
+          <Stat label="Cut capacity" value={capacity} color="var(--violet)" sub={`${crossing.length} ${crossing.length === 1 ? 'edge crosses' : 'edges cross'} from S to T`} />
           <Stat label="Cut minus flow" value={capacity - ed.value} color={capacity - ed.value === 0 ? 'var(--ok)' : 'var(--muted)'} sub={capacity - ed.value === 0 ? 'equal: the flow is maximum and this cut is minimum' : 'never below zero'} />
         </Stats>
       }
@@ -36,7 +36,8 @@ export function CutScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor }) 
           items={[
             { color: 'var(--ok)', label: 'S side (source side)', shape: 'dot' },
             { color: 'var(--dim)', label: 'T side', shape: 'dot' },
-            { color: 'var(--bad)', label: 'edge crossing from S to T (counts)', shape: 'line' },
+            { color: 'var(--violet)', label: 'edge crossing from S to T (counts)', shape: 'line' },
+            { color: 'var(--bad)', label: 'full edge (flow = capacity) that does not cross', shape: 'line' },
             { color: 'var(--info)', label: 'flow on an edge', shape: 'line' },
           ]}
         />
@@ -71,7 +72,7 @@ export function CutScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor }) 
         />
         <div className="nf-cutlists">
           <Tray label="Edges that count: S to T" labelWeight="regular" empty="none" ariaLabel="Edges crossing the cut">
-            {crossing.length > 0 && crossing.map((i) => <span key={i} className="chip nf-chip tone-bad">{edgeName(i)}</span>)}
+            {crossing.length > 0 && crossing.map((i) => <span key={i} className="chip nf-chip tone-violet">{edgeName(i)}</span>)}
           </Tray>
           <Tray label="Edges back from T to S: not counted" labelWeight="regular" empty="none" ariaLabel="Edges going back across the cut">
             {back.length > 0 && back.map((i) => <span key={i} className="chip nf-chip">{edgeName(i)}</span>)}

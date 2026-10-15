@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  addEdge, addNode, applyPath, arcBetween, bottleneck, edmondsKarp, flowValue, nudgeCap, presetById, removeEdge, shortestPath, zeroFlow, type Arc, type Augmentation, type Network,
+  addEdge, addNode, applyPath, arcBetween, bottleneck, edmondsKarp, flowValue, isMaximum, nudgeCap, presetById, reachableSet, removeEdge, shortestPath, zeroFlow, type Arc, type Augmentation, type Network,
   type PresetId, type Result,
 } from './model';
 
@@ -105,7 +105,7 @@ export function useFlowEditor(scene: string) {
         return;
       }
       setWalk([...walk, v]);
-      setNote(arc.back ? `${name(from)}⇠${name(v)} undoes ${arc.res} units of flow already sent ${name(v)}→${name(from)}.` : `${name(from)}→${name(v)} has ${arc.res} spare.`);
+      setNote(arc.back ? `${name(from)}⇠${name(v)} undoes ${arc.res} ${arc.res === 1 ? 'unit' : 'units'} of flow already sent ${name(v)}→${name(from)}.` : `${name(from)}→${name(v)} has ${arc.res} spare.`);
     },
     clearPath: () => {
       setWalk([net.source]);
@@ -150,8 +150,10 @@ export function useFlowEditor(scene: string) {
         setNote(v === net.source ? 's is always on the S side.' : 't is always on the T side.');
         return;
       }
+      // Editing while the minimum cut is shown starts from the set on screen, not from the hand-built one behind it.
+      const shown = showMinCut && isMaximum(net, flow) ? [...reachableSet(net, flow)] : sideNodes;
       setShowMinCut(false);
-      setSideNodes(sideNodes.includes(v) ? sideNodes.filter((x) => x !== v) : [...sideNodes, v]);
+      setSideNodes(shown.includes(v) ? shown.filter((x) => x !== v) : [...shown, v]);
     },
     resetSide: () => {
       setSideNodes([net.source]);
