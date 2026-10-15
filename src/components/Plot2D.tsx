@@ -10,13 +10,14 @@ import { useDragPoint } from './useDragPoint';
 import { PlotContext, usePlot } from './plotContext';
 
 export type { AxisSpec, Point } from '../core/plot';
+export { Area, Band, Steps } from './PlotAreas';
 
 const FONT = PLOT_FONT;
 
 /**
  * A 2-D plot on core/scale axes (linear or log), with tick labels, axis titles and a grid.
  * Layers are children, drawn in order, all in data coordinates: Heat (put it first: it's
- * a canvas underneath), Bars, Polygon, Curve, Segments, VLine/HLine, Arrow, Points.
+ * a canvas underneath), Bars, Area, Band, Polygon, Curve, Steps, Segments, VLine/HLine, Arrow, Points.
  * The default 356 × 240 fits a phone at 390 with 10 px tick labels; `aspect="equal"`
  * picks the height that draws x and y units the same length (a square box for equal
  * domains). Custom layers read the scales with usePlot() from ./plotContext.
