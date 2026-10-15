@@ -124,7 +124,7 @@ export function RelationScene({ picker }: { picker: ReactNode }) {
           </table>
         </Box>
         <ProvenanceRow>
-          <ClaimLabel kind="research">causal consistency is the strongest model known to stay available under partitions: Mahajan, Alvisi and Dahlin 2011, from memory; check the paper</ClaimLabel>
+          <ClaimLabel kind="research">real-time causal consistency with convergence is the strongest model known to stay available under partitions, when each client keeps talking to one replica: Mahajan, Alvisi and Dahlin 2011, from memory; check the paper</ClaimLabel>
           <Provenance kind="from-memory">the table's cells summarise common designs, not every system; real products differ</Provenance>
           <Provenance kind="toy">the history above is checked by the scene 1 checkers</Provenance>
         </ProvenanceRow>

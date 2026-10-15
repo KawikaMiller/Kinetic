@@ -66,15 +66,15 @@ const lesson: LessonModule = {
       why: 'The one shared order has to keep each client\'s own order and explain what each read returned, but it does not have to follow the clock. "Strong" and "latest" are linearizability words.',
     },
     {
-      q: 'A history ends with every client reading 2, but one client read 2 and then read 1. Which statement is right?',
+      q: 'C1 writes 1 and then writes 2. Every client ends up reading 2, but C2 read 2 and afterwards read 1. Which statement is right?',
       options: [
-        'It is converged but not causally consistent, because convergence says nothing about order',
-        'It is causally consistent, because the clients agree on 2 once the writes stop',
-        'It is neither, because convergence needs a linearizable order to begin with',
-        'It is causally consistent, because 1 was written before 2 in the history',
+        'It is converged but not causally consistent: C2 saw the later write before the earlier one',
+        'It is causally consistent, because the clients all agree on 2 once the writes have stopped',
+        'It is neither converged nor causally consistent, because convergence needs a linearizable order first',
+        'It is causally consistent, because C2 may have read from two replicas, which causal consistency allows',
       ],
       answer: 0,
-      why: 'Convergence is a promise about the end state. A client that saw the newer write and then the older one broke the order cause and effect require, whatever the clients read after the writes stop.',
+      why: 'Convergence is a promise about the end state, and here every client does end on 2. But one client wrote 1 and then 2, so 1 comes before 2 in cause order, and C2 saw them the other way round. Two writes with no cause between them could be seen in either order, as in the "concurrent writes seen in two orders" preset; here the order is fixed.',
     },
     {
       q: 'In the simulated service the follower-reads design returns a stale value. What causes that?',

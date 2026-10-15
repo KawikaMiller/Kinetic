@@ -88,6 +88,16 @@ describe('the verdicts', () => {
     expect(convergedVerdict(ops, { values: [1, 9, 1] })).toEqual({ state: 'bad', message: "C2's quiet read returned 9, which no write wrote." });
   });
 
+  it('agreeing on the starting value after an acknowledged write is not convergence on it: every write was lost', () => {
+    const ops = opsOf(presetById('stale-read').model());
+    expect(ops.some((o) => o.kind === 'write')).toBe(true);
+    const lost = convergedVerdict(ops, { values: [0, 0, 0] });
+    expect(lost.state).toBe('bad');
+    expect(lost.message).toContain('every write was lost');
+    expect(convergedVerdict(ops, { values: [1, 1, 1] }).state).toBe('ok');
+    expect(convergedVerdict([], { values: [0, 0, 0] }).state).toBe('ok');
+  });
+
   it('the strongest model that holds and the chain colours follow from the verdicts', () => {
     for (const p of PRESETS) {
       const v = verdictsOf(opsOf(p.model()), { values: p.quiet });

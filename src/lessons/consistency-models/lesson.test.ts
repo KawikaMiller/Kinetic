@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { moveItem } from '../../core/laneEditor';
+import { correctStrictlyLongest } from '../../core/testing/quiz';
+import { buildLaneModel, moveItem } from '../../core/laneEditor';
 import { relationCaption, serviceCaption, timelineCaption } from './captions';
 import lesson from './index';
 import {
-  CLIENTS, DEFAULT_PRESET, MODEL_NAME, ORDER_MODELS, PRESETS, explainViolation, opsOf, orderVerdict, presetById, smallestViolation, strongestHolding, verdictsOf,
+  CLIENTS, DEFAULT_PRESET, LIMITS, MODEL_NAME, ORDER_MODELS, PRESETS, explainViolation, opsOf, orderVerdict, presetById, smallestViolation, strongestHolding, verdictsOf,
   type OrderModel, type OpModel,
 } from './model';
 import {
@@ -160,7 +161,24 @@ describe('scene 3 captions are computed from the recorded run', () => {
   });
 });
 
+describe('quiz question 4 is decided by its stem', () => {
+  const history = (rows: readonly [number, number, number, 'write' | 'read', number][]) =>
+    opsOf(buildLaneModel(LIMITS, rows.map(([lane, start, end, kind, value]) => ({ lane, slot: start, span: end - start, data: { kind, value } }))));
+  it('C1 writes 1 then 2 and C2 reads 2 then 1: converged yes, causal no (the stem), while the same reads of two concurrent writes are causal', () => {
+    const ordered = history([[0, 1, 3, 'write', 1], [0, 4, 6, 'write', 2], [1, 8, 9, 'read', 2], [1, 10, 11, 'read', 1]]);
+    const v = verdictsOf(ordered, { values: [2, 2, 2] });
+    expect([v.causal.ok, v.converged.state]).toEqual([false, 'ok']);
+    const concurrent = history([[0, 1, 3, 'write', 1], [1, 1, 3, 'write', 2], [1, 8, 9, 'read', 2], [1, 10, 11, 'read', 1]]);
+    expect(verdictsOf(concurrent, { values: [2, 2, 2] }).causal.ok).toBe(true);
+    expect(lesson.quiz[3].q).toContain('C1 writes 1 and then writes 2');
+    expect(lesson.quiz[3].options[lesson.quiz[3].answer]).toContain('not causally consistent');
+  });
+});
+
 describe('lesson content', () => {
+  it('the correct quiz option is the strictly longest in at most half of the questions', () => {
+    expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
   it('has five try-this entries, four key ideas and five questions', () => {
     expect(lesson.tryThis).toHaveLength(5);
     expect(lesson.keyIdeas).toHaveLength(4);

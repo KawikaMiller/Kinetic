@@ -145,6 +145,8 @@ export function convergedVerdict(ops: readonly Op[], quiet: Quiet): Verdicts['co
   if (stray >= 0) return { state: 'bad', message: `${CLIENTS[stray]}'s quiet read returned ${quiet.values[stray]}, which no write wrote.` };
   const reads: RegisterOp<number>[] = CLIENTS.map((c, i) => ({ process: c, kind: 'read', value: quiet.values[i], invoke: QUIET_AT, response: QUIET_AT + 1 }));
   const message = convergent([...registerOps(ops.filter((o) => o.kind === 'write')), ...reads]);
+  const lost = message === null && seen.size > 0 && !seen.has(quiet.values[0]);
+  if (lost) return { state: 'bad', message: `Every client reads the starting value ${INITIAL_VALUE} after the writes stop: they agree, but every write was lost.` };
   if (message === null) return { state: 'ok', message: `After the writes stop, every client reads ${quiet.values[0]}.` };
   const sees = CLIENTS.map((c, i) => `${c} reads ${quiet.values[i]}`).join(', ');
   return { state: 'bad', message: `After the writes stop the clients still disagree: ${sees}.` };
