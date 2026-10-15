@@ -67,10 +67,10 @@ export function GreedyScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor
               </ChipButton>
             ))}
           </ControlGroup>
-          <Button onClick={() => ed.move(-1)} disabled={ed.picked === null || ed.picked === 0}>
+          <Button onClick={() => ed.move(-1)} softDisabled={ed.picked === null || ed.picked === 0}>
             Move earlier
           </Button>
-          <Button onClick={() => ed.move(1)} disabled={ed.picked === null || ed.picked === g.names.length - 1}>
+          <Button onClick={() => ed.move(1)} softDisabled={ed.picked === null || ed.picked === g.names.length - 1}>
             Move later
           </Button>
         </>,

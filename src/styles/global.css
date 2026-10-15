@@ -259,7 +259,7 @@ strong {
 }
 .btn:hover { border-color: var(--faint); background: #1f2536; }
 .btn:active { transform: translateY(1px); }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled, .btn[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), #5b7cff);
   border-color: transparent;

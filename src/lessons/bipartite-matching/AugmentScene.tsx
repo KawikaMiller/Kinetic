@@ -42,11 +42,11 @@ export function AugmentScene({ picker, ed }: { picker: ReactNode; ed: MatchEdito
         <>
           <Button onClick={ed.runGreedy}>Greedy</Button>
           <Button onClick={ed.find}>{ed.selected !== null && ed.matching[ed.selected] < 0 ? `Find path from ${`W${ed.selected + 1}`}` : 'Find path'}</Button>
-          <Button variant="primary" onClick={ed.flipFound} disabled={!ed.found?.path}>
+          <Button variant="primary" onClick={ed.flipFound} softDisabled={!ed.found?.path}>
             Flip the path
           </Button>
           <Button onClick={ed.augmentAll}>Augment from every free worker</Button>
-          <Button onClick={ed.clearMatching} disabled={size === 0}>
+          <Button onClick={ed.clearMatching} softDisabled={size === 0}>
             Clear matching
           </Button>
         </>,

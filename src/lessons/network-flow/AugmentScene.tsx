@@ -43,19 +43,19 @@ export function AugmentScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor
         <>
           <Toggle label="View" value={ed.residual} onChange={ed.setResidual} off="Flow / capacity" on="Residual" />
           <Button onClick={ed.shortest}>Shortest path</Button>
-          <Button variant="primary" onClick={ed.push} disabled={!ed.complete}>
+          <Button variant="primary" onClick={ed.push} softDisabled={!ed.complete}>
             {ed.complete ? `Push ${ed.delta}` : 'Push'}
           </Button>
-          <Button onClick={ed.clearPath} disabled={ed.walk.length < 2}>
+          <Button onClick={ed.clearPath} softDisabled={ed.walk.length < 2}>
             Clear path
           </Button>
-          <Button onClick={ed.undo} disabled={ed.steps.length === 0}>
+          <Button onClick={ed.undo} softDisabled={ed.steps.length === 0}>
             Undo push
           </Button>
-          <Button onClick={ed.finish} disabled={maximum}>
+          <Button onClick={ed.finish} softDisabled={maximum}>
             Finish, shortest first
           </Button>
-          <Button onClick={ed.reset} disabled={ed.steps.length === 0}>
+          <Button onClick={ed.reset} softDisabled={ed.steps.length === 0}>
             Reset flow
           </Button>
         </>,

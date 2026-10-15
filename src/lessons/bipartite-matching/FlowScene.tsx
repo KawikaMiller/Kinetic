@@ -43,10 +43,10 @@ export function FlowScene({ picker, ed }: { picker: ReactNode; ed: MatchEditor }
           <Toggle label="Draw as" value={asFlow} onChange={setAsFlow} off="Two columns" on="Unit network" />
           <Button onClick={ed.runGreedy}>Greedy</Button>
           <Button onClick={ed.find}>Find path</Button>
-          <Button variant="primary" onClick={ed.flipFound} disabled={!ed.found?.path}>
+          <Button variant="primary" onClick={ed.flipFound} softDisabled={!ed.found?.path}>
             Push along it
           </Button>
-          <Button onClick={ed.clearMatching} disabled={size === 0}>
+          <Button onClick={ed.clearMatching} softDisabled={size === 0}>
             Clear matching
           </Button>
         </>,

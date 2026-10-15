@@ -20,7 +20,7 @@ export function EditRow({ ed }: { ed: ColorEditor }) {
       <Button onClick={ed.addNode} disabled={ed.graph.names.length >= MAX_NODES}>
         Add node
       </Button>
-      <Button onClick={ed.undo} disabled={ed.added === 0}>
+      <Button onClick={ed.undo} softDisabled={ed.added === 0}>
         Undo last edge
       </Button>
       <Hint>Drag from one node to another to add an edge (up to {MAX_NODES} nodes); with the keyboard press C on a node, then Enter on another.</Hint>

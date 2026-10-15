@@ -48,13 +48,13 @@ export function CutScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor }) 
           <PresetChips ed={ed} />
         </>,
         <>
-          <Button onClick={ed.finish} disabled={maximum}>
+          <Button onClick={ed.finish} softDisabled={maximum}>
             Finish the flow, shortest first
           </Button>
           <ChipButton tone="ok" on={showing} disabled={!maximum} onClick={() => ed.setShowMinCut(!ed.showMinCut)}>
             Show the minimum cut
           </ChipButton>
-          <Button onClick={ed.resetSide} disabled={ed.sideNodes.length === 1 && !ed.showMinCut}>
+          <Button onClick={ed.resetSide} softDisabled={ed.sideNodes.length === 1 && !ed.showMinCut}>
             Reset the cut
           </Button>
           <Hint>{maximum ? 'The flow is a maximum: the minimum cut can be shown.' : 'Push the flow to its maximum to show the minimum cut.'}</Hint>
