@@ -10,7 +10,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Instead of overwriting a row, the database keeps versions of it. Each transaction reads the versions its snapshot can see, so readers do not block writers, and old versions pile up until VACUUM removes the ones nobody can see.',
-    what: 'In a PostgreSQL-style table every row version carries the id of the transaction that created it (xmin) and the one that deleted or replaced it (xmax). An UPDATE marks the old version and appends a new one. A snapshot records which transactions had committed when it was taken, and a version is visible to a transaction when its creator is that transaction or one the snapshot counts as committed, and its deleter is not. Two readers can see two different answers from one table without waiting for each other. The price is dead versions: VACUUM can only remove a version that no open snapshot can still see, so one forgotten open transaction stops cleanup. Which anomalies each isolation level allows is the job of `isolation-levels`; this lesson is the machinery under it.',
+    what: 'In a PostgreSQL-style table every row version carries the id of the transaction that created it (xmin) and the one that deleted or replaced it (xmax). An UPDATE marks the old version and appends a new one. A snapshot records which transactions had committed when it was taken, and a version is visible to a transaction when its creator is that transaction or one the snapshot counts as committed, and its deleter is not. Two readers can see two different answers from one table without waiting for each other. The price is dead versions: VACUUM can only remove a version that no open snapshot can still see, so one forgotten open transaction that holds a snapshot stops cleanup. Which anomalies each isolation level allows is the job of `isolation-levels`; this lesson is the machinery under it.',
     analogy: 'A shared document with a full revision history. Every editor opens the page as it stood when they started, so they never see each other half-way through a change. The cost is the history: old revisions can be thrown away only once nobody who might still be looking at them is left.',
     useCases: [
       'Understanding why a long-running report or an idle transaction makes a table bloat',
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
     'In this model a version is visible to a transaction when its creator committed before the snapshot, or is the transaction itself, and its deleter did not.',
     'Readers and writers do not wait for each other; two writers on one row do, and under per-transaction snapshots the second is aborted once the first commits.',
     'An UPDATE appends a version instead of overwriting, so a deleted or replaced row keeps its space until VACUUM removes it.',
-    'VACUUM may remove a version only once the oldest open snapshot cannot see it, so one idle open transaction stops cleanup in this model.',
+    'VACUUM may remove a version only once the oldest open snapshot cannot see it, so in this model one idle open transaction that holds a snapshot (per-transaction timing) stops cleanup.',
   ],
   quiz: [
     {
@@ -83,7 +83,7 @@ const lesson: LessonModule = {
     {
       q: 'Which version is VACUUM allowed to remove in this model?',
       options: [
-        'One whose deleter committed before the oldest open snapshot was taken',
+        'In this model, one whose deleter committed before every open snapshot was taken',
         'Any version with a committed deleter, even if an open snapshot still reads it',
         'Any version older than a fixed number of minutes, set when the table is made',
         'The newest version of each row, once a reader has fetched it for the first time',

@@ -54,7 +54,7 @@ export function BrokenReplay({ picker, onBack }: { picker: ReactNode; onBack: ()
           <Stat label="Table shown as" value={`T${slot}`} color="var(--info)" sub={`${player.index + 1} of ${frames.length} steps`} />
         </Stats>
       }
-      legend={<Legend items={[{ color: 'var(--ok)', label: `visible to T${slot}` }, { color: 'var(--dim)', label: 'not visible' }, { color: 'var(--bad)', label: 'dead, or removed by the broken VACUUM' }]} />}
+      legend={<Legend items={[{ color: 'var(--ok)', label: `visible to T${slot} (a fresh snapshot until T${slot} begins)` }, { color: 'var(--dim)', label: 'not visible' }, { color: 'var(--bad)', label: 'dead, or removed by the broken VACUUM' }]} />}
       controls={[
         <>
           {picker}

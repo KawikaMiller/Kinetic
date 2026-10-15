@@ -29,7 +29,7 @@ export function Workbench({ scene, wb, picker }: { scene: 'versions' | 'vacuum';
 
   useIntroCaption(workbenchCaption(db, who, scene, last), [db, who, scene, last?.id]);
 
-  const op = (o: Op) => ({ onClick: () => wb.run(o), disabled: disabledReason(db, o) !== null, title: disabledReason(db, o) ?? undefined });
+  const op = (o: Op) => ({ onClick: () => wb.run(o), softDisabled: disabledReason(db, o) !== null, title: disabledReason(db, o) ?? undefined });
   const reason = closedViewer ? disabledReason(db, { kind: 'select', who }) : null;
 
   if (scene === 'vacuum' && broken) {
@@ -66,6 +66,7 @@ export function Workbench({ scene, wb, picker }: { scene: 'versions' | 'vacuum';
         </>,
         <>
           <Segmented label="Snapshot" value={db.timing} onChange={wb.setTiming} options={TIMINGS} />
+          <Hint tone="muted">per transaction is like PostgreSQL&apos;s REPEATABLE READ, per statement like READ COMMITTED</Hint>
           {wb.timingBlocked && <Hint tone="muted">{wb.timingBlocked}</Hint>}
         </>,
         <>
