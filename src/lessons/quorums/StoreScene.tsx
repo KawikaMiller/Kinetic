@@ -3,6 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
@@ -33,6 +34,8 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
   const [c, setC] = useState<StoreControls>(DEFAULT_STORE);
   const [at, setAt] = useState<number | null>(null);
   const [note, setNote] = useState('');
+  // The time notes under the arrows would render under 8px on a phone; the operations table beside the diagram has the times.
+  const phone = useMediaQuery(PHONE_QUERY);
   const set = (patch: Partial<StoreControls>) => {
     setC((old) => {
       const next = { ...old, ...patch };
@@ -49,8 +52,8 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
   const t = at === null ? horizon : Math.min(at, horizon);
   const frame = [...run.frames].reverse().find((f) => f.t <= t) ?? run.frames[0];
   const sequence = useMemo(
-    () => toSequence(run.cluster.trace.filter((r) => r.t <= t), { actors, label: messageLabel, events: false, times: true }),
-    [run, actors, t],
+    () => toSequence(run.cluster.trace.filter((r) => r.t <= t), { actors, label: messageLabel, events: false, times: !phone }),
+    [run, actors, t, phone],
   );
 
   useIntroCaption(storeCaption({ schedule: c.schedule, run, w: c.w, r: c.r, sloppy: effectiveControls(c).sloppy, t }), [run, t]);
@@ -76,7 +79,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--ok)', label: 'a replica with the newest version' },
             { color: 'var(--orange)', label: 'a stale replica' },
             { color: 'var(--amber)', label: 'a stand-in node' },
-            { color: 'var(--dim)', label: 'a partition cut (while it lasts)', shape: 'line' },
+            { color: 'var(--dim)', label: 'a partition cut (dotted once healed)', shape: 'line' },
             { color: 'var(--cell-dead)', label: 'a crashed replica' },
           ]}
         />

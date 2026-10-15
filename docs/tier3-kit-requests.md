@@ -80,7 +80,7 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | Request | Users | Round | Notes |
 |---|---|---|---|
 | Promote `distributions/SeedField` (+ `seed.ts`, `seedField.css`) to `components/` (already queued from B1) | now also consistency-models, quorums (two scenes), physical-clocks-skew, logical-clocks, exactly-once-myth | Phase 2 kit round | Eleven lessons import `../distributions/SeedField`: the extract-on-second-use rule is long past; migrate every caller in one pixel-identical change. |
-| `SequenceDiagram`: size `minWidth` from the smallest text it draws (the 11px `times` note), not from `SEQ.FONT` (12px) | consistency-models, quorums scene 3, any lesson passing `times: true` to `toSequence` | Phase 2 kit round | At 390px the notes render at 7.3px (8.5px at 768 with many lanes). The lessons work around it by drawing only the lanes a run uses; the kit should do it for everyone. |
+| `SequenceDiagram`: size `minWidth` from the smallest text it draws (the 11px `times` note), not from `SEQ.FONT` (12px) | consistency-models, quorums scene 3, any lesson passing `times: true` to `toSequence` | Phase 2 kit round | At 390px the notes render at 7.3px (8.5px at 768 with many lanes). The two lessons work around it by drawing only the lanes a run uses and, on a phone, turning `times` off (the times stay in their tables and sliders); the kit should size the note from its real font so a phone keeps them. |
 
 ## Spec corrections to carry
 - T3-B5 capacity-planning: the M/M/c survival formula in the spec is wrong when theta = mu: the limit is (1 + C*mu*t)e^{-mu t} (equals the spec's only when C = 1). The model uses the correct form; fix the spec text.

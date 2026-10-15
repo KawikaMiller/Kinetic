@@ -3,6 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { SequenceDiagram, type SequenceActor } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider } from '../../components/ui';
+import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence, type TraceRow } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
@@ -46,6 +47,8 @@ export function ServiceScene({ picker }: { picker: ReactNode }) {
   const [seed, setSeed] = useState(BROKEN_SEED);
   const [at, setAt] = useState<number | null>(null);
   const [note, setNote] = useState('');
+  // The time notes under the arrows would render under 8px on a phone; the replay slider and the bars carry the times.
+  const phone = useMediaQuery(PHONE_QUERY);
 
   const run = useMemo(() => runService(design, seed), [design, seed]);
   const t = at === null ? run.end : Math.min(at, run.end);
@@ -72,8 +75,8 @@ export function ServiceScene({ picker }: { picker: ReactNode }) {
     };
   });
   const sequence = useMemo(
-    () => toSequence(view.subset ? relevantRows(run, new Set(view.subset.map((o) => o.id)), t) : [], { actors: ACTORS, label: messageLabel, events: false, times: true }),
-    [run, view.subset, t],
+    () => toSequence(view.subset ? relevantRows(run, new Set(view.subset.map((o) => o.id)), t) : [], { actors: ACTORS, label: messageLabel, events: false, times: !phone }),
+    [run, view.subset, t, phone],
   );
 
   // Only the lanes the trace uses: fewer lanes keep the diagram's time notes at a readable size on a phone.

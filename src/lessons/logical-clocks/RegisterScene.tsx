@@ -3,6 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
@@ -27,6 +28,8 @@ export function RegisterScene({ picker }: { picker: ReactNode }) {
   const [resolve, setResolve] = useState<Resolve>(DEFAULT_REGISTER.resolve);
   const [seed, setSeed] = useState<number>(DEFAULT_REGISTER.seed);
   const [at, setAt] = useState<number | null>(null);
+  // The time notes under the arrows would render under 8px on a phone; the replay slider carries the time.
+  const phone = useMediaQuery(PHONE_QUERY);
 
   const run = useMemo(() => runRegister({ seed, mode, resolve }), [seed, mode, resolve]);
   const last = run.frames.length - 1;
@@ -35,8 +38,8 @@ export function RegisterScene({ picker }: { picker: ReactNode }) {
   const first = run.frames.findIndex((f) => f.violation !== null);
   const widest = Math.max(0, ...run.frames.slice(0, index + 1).flatMap((f) => Object.values(f.replicas).flatMap((vs) => vs.map((v) => Object.keys(v.vv).length))));
   const sequence = useMemo(
-    () => toSequence(visibleTrace(run.trace, mode).filter((r) => r.t <= frame.t), { actors: ACTORS, label, events: false, times: true }),
-    [run, mode, frame.t],
+    () => toSequence(visibleTrace(run.trace, mode).filter((r) => r.t <= frame.t), { actors: ACTORS, label, events: false, times: !phone }),
+    [run, mode, frame.t, phone],
   );
 
   useIntroCaption(registerCaption({ mode, seed, frame, widest }), [mode, resolve, seed, index]);

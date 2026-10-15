@@ -23,4 +23,4 @@
 .qr-static.is-down { background: var(--cell-dead); border-color: var(--line-2); color: var(--muted); }
 .qr-ops td, .qr-ops th { font-size: 12.5px; }
 .qr-cut { align-self: stretch; width: 0; border-left: 2px dashed var(--dim); margin: 0 2px; }
-.qr-cut.is-healed { opacity: 0.35; }
+.qr-cut.is-healed { border-left-style: dotted; }
