@@ -7,8 +7,8 @@ import { generatorCaption } from './captions';
 import { formatProbability } from './config';
 import { DEFAULT_CASES, MAX_LENGTH, OPENING_GENERATOR, OPENING_LENGTH, RANGES, repeatProbability, repeatWithin, type GenConfig, type RangeId } from './generator';
 import { forAll } from './runner';
-import { SeedField } from './SeedField';
 import { bugOf } from './sorts';
+import { SeedField } from '../../components/SeedField';
 
 const MIN_LENGTH = 2;
 

@@ -3,10 +3,10 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
 import { trafficCaption } from './frames';
 import { SECONDS_PER_DAY, SHORTCUT_ERROR, TRAFFIC_DEFAULT, bigText, parseDau, traffic } from './model';
 import { useNumberField } from './useNumberField';
+import { pctText } from '../../core/format';
 
 const DAU_EXPONENT = { min: 3, max: Math.log10(2e9), step: 0.05 } as const;
 

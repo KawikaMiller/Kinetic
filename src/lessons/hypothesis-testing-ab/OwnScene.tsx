@@ -4,9 +4,9 @@ import { Plot2D, Points, Segments, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
 import { VERDICT_TONE, ownCaption, pText, pointsText, verdictSays, zText } from './frames';
 import { MIN_VISITORS, OWN_DEFAULT, parseArms, verdictKind, zTest, type ArmFields } from './model';
+import { pctText, sig } from '../../core/format';
 
 const INTERVAL_PAD = 0.15;
 

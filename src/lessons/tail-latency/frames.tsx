@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { timeFrames, type TimedFrame } from '../../core/frames';
-import { pctText, sig } from '../distributions/fmt';
 import {
   MM1, REQUESTS, crossoverRho, type Backend, type FanoutReport, type Hedge, type HedgedRequest, type HedgeReport, type Mm1Hedging,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 export const msText = (x: number): string => `${sig(x)} ms`;
 

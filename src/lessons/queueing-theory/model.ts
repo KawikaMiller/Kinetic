@@ -1,4 +1,5 @@
 import { exponential } from '../../core/distributions';
+import { erlangC } from '../../core/queueing';
 import { createTickSim, type TickSim } from '../../core/simTick';
 import { mulberry32, type Rnd } from '../../core/random';
 import { parseBoundedDecimal, type FieldParse } from '../../core/parse';
@@ -80,19 +81,6 @@ export const mm1Multiple = (rho: number): number => 1 / (1 - rho);
 
 /** The utilisations the curve marks. */
 export const CURVE_MARKS = [0.5, 0.8, 0.9, 0.95, 0.99] as const;
-
-/** Erlang C: the chance an arrival must wait in an M/M/c queue with c servers and offered load a = λ/μ (needs a < c). */
-export function erlangC(c: number, a: number): number {
-  if (!(a < c)) return 1;
-  let term = 1;
-  let sum = 1;
-  for (let k = 1; k < c; k++) {
-    term *= a / k;
-    sum += term;
-  }
-  const top = ((term * a) / c) * (c / (c - a));
-  return top / (sum + top);
-}
 
 export type Topology = 'split' | 'pool' | 'fast';
 

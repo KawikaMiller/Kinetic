@@ -6,12 +6,12 @@ import type { Option } from '../../components/options';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { ecdf } from '../../core/stats';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { pLabel, ruleCaption } from './frames';
 import {
   P_RANGE, RULES, RULE_DEFAULT, RULE_NAME, STREAM_SIZES, clampPct, countAbove, ecdfAt, ruleDetail, ruleValue, scene1Data, type DataSource, type Rule,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const SOURCE_OPTIONS: Option<DataSource>[] = [
   { value: 'stream', label: 'Latency stream' },

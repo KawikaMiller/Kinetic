@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { pctText } from '../distributions/fmt';
 import type { Counters, DeliveryMode } from './delivery';
 import { CRASH_LABEL, type CrashPoint, type DedupeDesign, type Outcome as DedupeOutcome } from './dedupe';
 import { DEPTH, LOSS_MAX, pBoth, pDisagree, pNobody, type Outcome } from './generals';
+import { pctText } from '../../core/format';
 
 const OUTCOME_TEXT: Record<Outcome, ReactNode> = {
   both: <span className="hl ok">both generals attack</span>,

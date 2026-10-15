@@ -7,13 +7,13 @@ import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider,
 import { WideRegion } from '../../components/WideRegion';
 import { barsAt } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
-import { pctText } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { hedgeFrames, msText, sampleSelectionNote, timelineEnd } from './frames';
 import {
   CORRELATION_RANGE, HEDGE_BACKEND, HEDGE_DEFAULT, HEDGE_DELAY_RANGE, P99_TARGET_MS, REPLICA_CHOICES, hedgeReport, hedgeRun, hedgedShare, p95DelayMs, thirdCopyEffect, type Hedge,
   type HedgedRequest,
 } from './model';
+import { pctText } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const STEP_MS = 420;
 const METER_MAX = 400;

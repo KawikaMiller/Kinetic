@@ -1,10 +1,10 @@
 import type { LessonModule } from '../../core/types';
-import { pctText } from '../distributions/fmt';
 import { hours, minutes, perWeek } from './frames';
 import {
   DEFINITIONS_DEFAULT, LOG_SEED, PIPELINE_DEFAULT, QA_GATE_HOURS, SCENE1_SEED, SPLIT_FACTOR, logMetrics, makeLog, reportedMetrics, runDelivery, type Definitions,
 } from './model';
 import { Stage } from './Stage';
+import { pctText } from '../../core/format';
 
 const DEFAULT_RUN = runDelivery(PIPELINE_DEFAULT, SCENE1_SEED);
 const SINGLE_RUN = runDelivery({ ...PIPELINE_DEFAULT, batch: 1 }, SCENE1_SEED);

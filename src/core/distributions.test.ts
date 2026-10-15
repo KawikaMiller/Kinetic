@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  erf, exponential, exponentialCdf, exponentialPdf, harmonic, ksCritical, ksStatistic, lognormal, lognormalCdf, lognormalPdf, normal, normalCdf,
-  normalPdf, pareto, paretoCdf, paretoPdf, poisson, poissonCdf, poissonPmf, quantile, zipfPmf, zipfSampler,
+  distCdf, drawSample, erf, exponential, exponentialCdf, exponentialPdf, fastNormalQuantile, harmonic, ksCritical, ksStatistic, lognormal, lognormalCdf,
+  lognormalPdf, normal, normalCdf, normalPdf, normalQuantile, pareto, paretoCdf, paretoPdf, poisson, poissonCdf, poissonPmf, quantile, zipfPmf, zipfSampler,
 } from './distributions';
 import { mulberry32 } from './random';
 import { mean } from './sim';
@@ -190,5 +190,35 @@ describe('quantile', () => {
   it('recovers the true quantile of a large sample', () => {
     const sorted = draw(41, (r) => exponential(r, 1)).sort((a, b) => a - b);
     expect(quantile(sorted, 0.5)).toBeCloseTo(Math.LN2, 1);
+  });
+});
+
+describe('the inverse normal cdf', () => {
+  it('the fast one inverts normalCdf: a relative error in p under 1e-7 down to 1e-12 (an x error near 1e-9, times |x| out in the tail)', () => {
+    for (let k = -12; k <= -1; k += 0.25) {
+      const p = 10 ** k;
+      expect(Math.abs(normalCdf(fastNormalQuantile(p)) / p - 1), `p = ${p}`).toBeLessThan(1e-7);
+    }
+    for (let p = 0.01; p < 1; p += 0.01) expect(normalCdf(fastNormalQuantile(p))).toBeCloseTo(p, 8);
+    expect(fastNormalQuantile(0.5)).toBeCloseTo(0, 12);
+  });
+
+  it('the bisection one matches the published z values and the fast one agrees with it to 1e-8', () => {
+    expect(normalQuantile(0.99)).toBeCloseTo(2.3263478740408408, 9);
+    expect(normalQuantile(0.999)).toBeCloseTo(3.090232306167813, 9);
+    for (const p of [1e-6, 0.001, 0.02, 0.3, 0.5, 0.8, 0.97, 0.9999]) expect(fastNormalQuantile(p)).toBeCloseTo(normalQuantile(p), 7);
+    expect(normalQuantile(0)).toBe(-Infinity);
+    expect(normalQuantile(1)).toBe(Infinity);
+  });
+});
+
+describe('drawSample', () => {
+  it('is deterministic per seed and draws from the family it is given', () => {
+    const d = { family: 'exponential', mean: 5 } as const;
+    expect(drawSample(d, 7, 50)).toEqual(drawSample(d, 7, 50));
+    expect(drawSample(d, 7, 50)).not.toEqual(drawSample(d, 8, 50));
+    const xs = drawSample(d, 3, 20_000);
+    expect(mean(xs)).toBeCloseTo(5, 0);
+    expect(ksStatistic(xs, (x) => distCdf(d, x))).toBeLessThan(ksCritical(xs.length));
   });
 });

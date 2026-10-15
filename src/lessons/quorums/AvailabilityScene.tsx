@@ -4,11 +4,11 @@ import { StageFrame } from '../../components/StageFrame';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { availabilityCaption, latencyCaption } from './captions';
 import { DEFAULT_N, N_RANGE, expectedKthFastest, failuresTolerated, simulateKthFastest, waitByQuorum, LATENCY_SEED } from './quorum';
 import { HOMES, STORE_FIXED_LATENCY, opsOf, storeCluster } from './store';
+import { sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const PLOT_W = { wide: 560, narrow: 356 } as const;
 const KTH_TRIALS = 20_000;

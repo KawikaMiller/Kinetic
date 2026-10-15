@@ -3,7 +3,7 @@ import { exponentialCdf, ksCritical, ksStatistic, normalCdf } from '../../core/d
 import { mulberry32 } from '../../core/random';
 import {
   BACKEND_DEFAULT, CAUSES, FANOUT_STEPS, FAST_EXPONENTIAL_MEAN_MS, FAST_LOGNORMAL, HEDGE_DEFAULT, MM1, MM1_RHO, MM1_SWEEP_STEP, P99, REQUESTS,
-  callQuantile, callSurvival, createFanoutRun, crossoverRho, drawHedged, extraLoad, fanoutReport, fanoutRun, fastNormalQuantile, hedgeReport, hedgeRun, hedgedQuantile,
+  callQuantile, callSurvival, createFanoutRun, crossoverRho, drawHedged, extraLoad, fanoutReport, fanoutRun, hedgeReport, hedgeRun, hedgedQuantile,
   hedgedSurvival, hedgingHurts, loadedUtilisation, medianSlowWidth, mm1Hedging, mm1PlainP99, p95DelayMs, requestCalls, sampleCall, sampleQuantile, sampleSlowest,
   slowestOfCalls, slowestQuantile, touchesSlow, type Backend, type Family, type Hedge,
 } from './model';
@@ -40,17 +40,6 @@ describe('fan-out: the arithmetic of 1 − 0.99^N', () => {
       while (1 - (1 - p) ** n < 0.5) n++;
       expect(medianSlowWidth(p), `p = ${p}`).toBe(n);
     }
-  });
-});
-
-describe('the fast inverse normal used by the samplers', () => {
-  it('inverts normalCdf: a relative error in p under 1e-7 down to 1e-12 (an x error near 1e-9, times |x| out in the tail)', () => {
-    for (let k = -12; k <= -1; k += 0.25) {
-      const p = 10 ** k;
-      expect(Math.abs(normalCdf(fastNormalQuantile(p)) / p - 1), `p = ${p}`).toBeLessThan(1e-7);
-    }
-    for (let p = 0.01; p < 1; p += 0.01) expect(normalCdf(fastNormalQuantile(p))).toBeCloseTo(p, 8);
-    expect(fastNormalQuantile(0.5)).toBeCloseTo(0, 12);
   });
 });
 

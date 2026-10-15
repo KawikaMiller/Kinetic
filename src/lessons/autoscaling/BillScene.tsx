@@ -4,12 +4,12 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { billCaption, money, priceNote } from './frames';
 import {
   CONTROLLER_DEFAULT, POLICIES, POLICY_NAME, PRESETS, PRESET_NAME, SCENE_DEFAULT, WARMUP_RANGE, bill, cost, runFleet, type Policy, type Preset,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const POLICY_OPTIONS = POLICIES.map((p) => ({ value: p, label: POLICY_NAME[p] }));
 const PRESET_OPTIONS = PRESETS.map((p) => ({ value: p, label: PRESET_NAME[p] }));

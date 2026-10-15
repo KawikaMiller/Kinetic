@@ -3,12 +3,12 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
 import { storageCaption } from './frames';
 import {
   NIC_BYTES_PER_SECOND, NIC_GBIT, STORAGE_DEFAULT, TRAFFIC_DEFAULT, add, bandwidth, bigText, dimsText, parseRecord, parseWrites, quantity, storage, traffic,
 } from './model';
 import { useNumberField } from './useNumberField';
+import { pctText } from '../../core/format';
 
 /** The peak QPS this scene's bandwidth line uses: scene 1's defaults, stated on screen so it is not a hidden input. */
 const PEAK_QPS = traffic({ dau: 1e8, actionsPerUser: TRAFFIC_DEFAULT.actions, peakFactor: TRAFFIC_DEFAULT.peak, readsPerWrite: 1, round: false }).peak.value;

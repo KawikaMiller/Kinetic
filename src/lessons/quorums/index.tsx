@@ -1,7 +1,7 @@
 import type { LessonModule } from '../../core/types';
-import { sig } from '../distributions/fmt';
 import { missingPairs, waitByQuorum } from './quorum';
 import { Stage } from './Stage';
+import { sig } from '../../core/format';
 
 const missing = missingPairs({ n: 5, w: 3, r: 2 });
 const waits = waitByQuorum(5);

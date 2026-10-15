@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { sig } from '../distributions/fmt';
 import { curveCaption, littleCaption, liveCaption, poolCaption, sizingCaption } from './frames';
 import lesson from './index';
 import {
@@ -8,6 +7,7 @@ import {
   concurrency, createQueueSim, curveRunLength, drainedRun, littleRun, measure, measureCurve, measurePool, mm1Multiple, parseRate, parseSeconds, picture, simulateQueue, theory,
   topologyTheory, type ServiceShape,
 } from './model';
+import { sig } from '../../core/format';
 
 const SIMULATION_TIMEOUT_MS = 90_000;
 const rhos = Array.from({ length: 19 }, (_, i) => (i + 1) * 0.05);

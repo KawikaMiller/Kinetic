@@ -5,12 +5,12 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { normalPdf } from '../../core/distributions';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { VERDICT_TONE, pText, pointsText, runCaption, verdictSays, zText } from './frames';
 import {
   ALPHA, BASELINE, LIFT, RUN_DEFAULT, VISITORS_EXPONENT, Z_AXIS, Z_CRITICAL, rateA, rateB, runExperiment, runSeed, tailRanges, verdictKind, visitorsAt,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const OFF_AXIS_MARGIN = 0.05;
 const DENSITY_TOP = 0.45;

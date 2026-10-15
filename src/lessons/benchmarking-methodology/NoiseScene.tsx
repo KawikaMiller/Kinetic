@@ -5,10 +5,10 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { histogram } from '../../core/stats';
-import { SeedField } from '../distributions/SeedField';
-import { sig } from '../distributions/fmt';
 import { noiseCaption, us } from './frames';
 import { NOISE_DEFAULT, OTHER_PROCESS, RUNS_RANGE, RUN_NOISE, readNoise, type NoiseSettings } from './model';
+import { SeedField } from '../../components/SeedField';
+import { sig } from '../../core/format';
 
 /** The histogram's range: the quiet runs and the slowed ones fit, and a rare ×3 pause falls off the right edge. */
 const HIST = { min: 7, max: 22, bins: 45 } as const;

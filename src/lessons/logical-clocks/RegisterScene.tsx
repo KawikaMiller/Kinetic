@@ -6,9 +6,9 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Sta
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
-import { SeedField } from '../distributions/SeedField';
 import { MODE_NAME, registerCaption } from './captions';
 import { DEFAULT_REGISTER, canHoldStale, REG_MODES, REPLICAS, runRegister, visibleTrace, vvText, type RegMode, type RegMsg, type Resolve, type Version } from './register';
+import { SeedField } from '../../components/SeedField';
 
 const MODE_OPTIONS = REG_MODES.map((m) => ({ value: m, label: MODE_NAME[m] }));
 const RESOLVE_OPTIONS: { value: Resolve; label: string }[] = [

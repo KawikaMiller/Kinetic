@@ -3,13 +3,13 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { FleetPlot } from './FleetPlot';
 import { cheapestClean, policyCaption } from './frames';
 import {
   CONTROLLER_DEFAULT, FOCUS_MINUTE, POLICIES, POLICY_NAME, PRESETS, PRESET_NAME, SCENE_DEFAULT, WARMUP_RANGE, policyTable, runFleet, type Policy, type Preset,
 } from './model';
+import { sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const POLICY_OPTIONS = POLICIES.map((p) => ({ value: p, label: POLICY_NAME[p] }));
 const PRESET_OPTIONS = PRESETS.map((p) => ({ value: p, label: PRESET_NAME[p] }));

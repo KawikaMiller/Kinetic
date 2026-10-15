@@ -1,4 +1,4 @@
-import { exponential, normalCdf, lognormal } from '../../core/distributions';
+import { exponential, fastNormalQuantile, normalCdf, lognormal } from '../../core/distributions';
 import { mulberry32, type Rnd } from '../../core/random';
 import { createTickSim, type TickSim } from '../../core/simTick';
 
@@ -91,27 +91,6 @@ export const touchesSlow = (slowProb: number, n: number): number => -Math.expm1(
 export const medianSlowWidth = (slowProb: number): number => (slowProb <= 0 ? Infinity : Math.ceil(Math.log(0.5) / Math.log1p(-slowProb)));
 
 /* ---------- sampling ---------- */
-
-// Peter Acklam's rational approximation of the inverse normal cdf (relative error about 1e-9), which is plenty for sampling.
-const ACKLAM_A = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239];
-const ACKLAM_B = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
-const ACKLAM_C = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
-const ACKLAM_D = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
-const ACKLAM_LOW = 0.02425;
-
-const horner = (coef: readonly number[], x: number) => coef.reduce((acc, c) => acc * x + c, 0);
-
-/** Φ⁻¹(p) for 0 < p < 1, fast: a rational approximation, not the bisection of the distributions lesson. */
-export function fastNormalQuantile(p: number): number {
-  if (p < ACKLAM_LOW) {
-    const q = Math.sqrt(-2 * Math.log(p));
-    return horner(ACKLAM_C, q) / (horner(ACKLAM_D, q) * q + 1);
-  }
-  if (p > 1 - ACKLAM_LOW) return -fastNormalQuantile(1 - p);
-  const q = p - 0.5;
-  const r = q * q;
-  return (horner(ACKLAM_A, r) * q) / (horner(ACKLAM_B, r) * r + 1);
-}
 
 /** One fast latency. */
 function fastDraw(family: Family, rnd: Rnd): number {

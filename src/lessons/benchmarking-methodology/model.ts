@@ -1,7 +1,7 @@
 import { lognormal, quantile } from '../../core/distributions';
 import { mulberry32, type Rnd } from '../../core/random';
 import { createTickSim, type TickSim } from '../../core/simTick';
-import { nearestRank } from '../percentiles-statistics/model';
+import { nearestRank } from '../../core/stats';
 
 /* ---------- scene 1: warm-up ---------- */
 

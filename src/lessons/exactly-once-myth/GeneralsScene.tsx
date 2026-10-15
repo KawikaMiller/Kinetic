@@ -6,10 +6,10 @@ import { StageFrame } from '../../components/StageFrame';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { generalsCaption, removalNote } from './captions';
 import { DEFAULT_DEPTH, DEFAULT_LOSS, DEPTH, GENERALS_SEED, LOSS_MAX, patternCounts, pBoth, pDisagree, pNobody, receiverOf, runSeeded, senderOf } from './generals';
+import { pctText } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const PLOT_W = { wide: 520, narrow: 356 } as const;
 const LOSS_STEP = 0.05;

@@ -6,7 +6,6 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider } fr
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence, type TraceRow } from '../../core/distSim';
-import { SeedField } from '../distributions/SeedField';
 import { serviceCaption } from './captions';
 import { HistoryGantt } from './HistoryGantt';
 import { clientTone, type HistoryBar } from './historyBars';
@@ -16,6 +15,7 @@ import {
 } from './service';
 import { answeredBy, firstBreakTime, serviceView } from './view';
 import { VerdictStats } from './VerdictStats';
+import { SeedField } from '../../components/SeedField';
 
 const DESIGN_OPTIONS = DESIGNS.map((d) => ({ value: d.id, label: d.label }));
 const SEARCHED: readonly OrderModel[] = ['linearizable', 'sequential'];

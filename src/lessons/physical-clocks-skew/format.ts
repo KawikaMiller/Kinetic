@@ -1,4 +1,4 @@
-import { sig } from '../distributions/fmt';
+import { sig } from '../../core/format';
 
 /** A signed time in ms as "−3.52 s" from a second up and "−204 ms" below it. */
 export const timeText = (ms: number): string => (Math.abs(ms) >= 1000 ? `${sig(ms / 1000, 4)} s` : `${sig(ms, 4)} ms`);

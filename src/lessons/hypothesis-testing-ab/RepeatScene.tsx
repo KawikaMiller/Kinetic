@@ -5,12 +5,12 @@ import { StageFrame } from '../../components/StageFrame';
 import type { Option } from '../../components/options';
 import { Button, Hint, Legend, Provenance, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { pointsText, powerCaption, repeatCaption } from './frames';
 import {
   ALPHA, BASELINE, LIFT, REPEAT_DEFAULT, REPLICATES, VISITORS_EXPONENT, pHistogram, replicate, sampleSizePerArm, visitorsAt, type Replicated,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const BINS = 20;
 const POWER_OPTIONS: Option<number>[] = [

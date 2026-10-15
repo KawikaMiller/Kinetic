@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
-import { pctText } from '../distributions/fmt';
 import { dedupeCaption, deliveryCaption, generalsCaption, removalNote } from './captions';
 import { CRASH_POINTS, DESIGNS, crashTable, runCrashPoint } from './dedupe';
 import { DEFAULT_LOSS as DELIVERY_LOSS, DELIVERY_BROKEN_SEED, DELIVERY_MODES, HORIZON_MS, MESSAGES, countersAt, countersOf, deliveryCluster, linkTotals } from './delivery';
 import { DEFAULT_DEPTH, DEFAULT_LOSS, DEPTH, GENERALS_SEED, LOSS_MAX, pBoth, pDisagree, pNobody, runSeeded } from './generals';
 import lesson from './index';
 import { SCOPES } from './scopes';
+import { pctText } from '../../core/format';
 
 const counters = (mode: (typeof DELIVERY_MODES)[number], seed: number, loss = DELIVERY_LOSS, crash = false) => {
   const c = deliveryCluster({ seed, mode, loss, crash });

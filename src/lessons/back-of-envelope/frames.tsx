@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { pctText, sig } from '../distributions/fmt';
 import {
   LATENCY_TARGET_MS, NIC_GBIT, ROUND_SECONDS_PER_DAY, SECONDS_PER_DAY, SHORTCUT_ERROR, TIB_BINARY, TB_DECIMAL, bigText, orderError, withinTenfold,
   type Bandwidth, type PathResult, type Servers, type Storage, type Traffic,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const perSecond = (x: number) => `${bigText(x)} req/s`;
 

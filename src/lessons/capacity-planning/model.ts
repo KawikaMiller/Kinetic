@@ -3,7 +3,7 @@ import { parseBoundedInt, type FieldParse } from '../../core/parse';
 import { mulberry32 } from '../../core/random';
 import { percentile } from '../../core/sim';
 import { createTickSim, type TickSim } from '../../core/simTick';
-import { erlangC } from '../queueing-theory/model';
+import { erlangC } from '../../core/queueing';
 
 const MS_PER_S = 1000;
 

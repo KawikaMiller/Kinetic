@@ -4,11 +4,11 @@ import { Curve, HLine, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
 import { rps, scaleCaption } from './frames';
 import {
   DB_LIMIT_RANGE, DB_NO_LIMIT, INSTANCES_RANGE, OPTIMISE_RANGE, SCALE_INSTANCES, SERVICE_DEFAULT, SLO_MS, kneeLoad, optimised, poolRows, scaledCapacity,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const INSTANCES_SHOWN = { min: 1, max: SCALE_INSTANCES, step: INSTANCES_RANGE.step };
 

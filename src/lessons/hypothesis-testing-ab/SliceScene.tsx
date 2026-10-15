@@ -4,13 +4,13 @@ import { StageFrame } from '../../components/StageFrame';
 import type { Option } from '../../components/options';
 import { Hint, Legend, Provenance, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { VERDICT_TONE, pText, pointsText, sliceCaption, verdictSays } from './frames';
 import {
   SLICES, SLICE_DEFAULT, SLICE_REPLICATES, SLICE_VISITORS, anySignificantRate, familyWiseRate, significantSlices, sliceAlpha, slicePValues, sliceRun,
   verdictKind,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const SLICE_OPTIONS: Option<number>[] = Array.from({ length: SLICES }, (_, i) => ({ value: i, label: String(i + 1) }));
 

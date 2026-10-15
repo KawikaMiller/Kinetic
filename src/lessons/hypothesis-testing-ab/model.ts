@@ -1,7 +1,6 @@
-import { normalCdf } from '../../core/distributions';
+import { normalCdf, normalQuantile } from '../../core/distributions';
 import { parseBoundedInt } from '../../core/parse';
 import { mulberry32, type Rnd } from '../../core/random';
-import { normalQuantile } from '../distributions/model';
 
 /* ---------- constants ---------- */
 

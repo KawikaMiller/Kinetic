@@ -4,10 +4,10 @@ import { StageFrame } from '../../components/StageFrame';
 import type { Option } from '../../components/options';
 import { Hint, Legend, Provenance, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
 import { serverCaption } from './frames';
 import { SERVER_DEFAULT, bigText, parseCpuMs, parsePeak, servers, type Redundancy } from './model';
 import { useNumberField } from './useNumberField';
+import { pctText } from '../../core/format';
 
 const REDUNDANCY: Option<Redundancy>[] = [
   { value: 'none', label: 'None' },
