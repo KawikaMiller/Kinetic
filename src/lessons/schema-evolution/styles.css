@@ -1,0 +1,39 @@
+.se { gap: 14px; }
+.se .section-title { display: block; margin-bottom: 6px; }
+.se-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.se-field { display: inline-flex; flex-direction: column; gap: 3px; }
+.se-error { font-size: 12px; color: var(--bad); max-width: 260px; }
+.se-pair { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.se-pair > * { flex: 1 1 300px; min-width: 0; }
+.se-refused p { margin: 0; font-size: 13px; color: var(--muted); }
+.se-readings { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+.se-card { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.se-card-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; }
+.se-card-head .section-title { margin-bottom: 0; }
+.se-decoded { display: block; font: 12.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.se-findings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.se-findings .log-row { font-size: 12px; overflow-wrap: anywhere; }
+.se-wire { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.se-json { font: 12.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.se .chip.wrap { white-space: normal; }
+.se-editor { display: flex; flex-direction: column; gap: 8px; }
+.se-fields { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.se-frow { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.se-frow code { min-width: 4.5em; font-weight: 700; }
+.se-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.se-select {
+  font: 500 13px var(--mono);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+.se-schema { display: flex; flex-direction: column; gap: 8px; }
+.se-regs { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.se-reg { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.se-checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.se-check { font-size: 12.5px; }
+.se-check-results { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.se-grid, .se-verdict { min-width: 0; }
+.se-verdict p { margin: 0; font-size: 13px; color: var(--muted); }
