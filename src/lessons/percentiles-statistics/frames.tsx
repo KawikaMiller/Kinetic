@@ -71,10 +71,13 @@ export function intervalCaption(v: IntervalView): ReactNode {
   );
 }
 
-/** How the measured coverage compares with the 95% promised: within two standard errors, below, or above. */
+/** Standard errors of a coverage estimate that still count as the promised 95%: 3 keeps a calibrated interval from being called short by chance. */
+export const COVERAGE_SE_BAND = 3;
+
+/** How the measured coverage compares with the 95% promised: within three standard errors of the run, below, or above. */
 export function coverageVerdict(coverage: number, experiments: number): 'near' | 'short' | 'over' {
   const se = Math.sqrt((0.95 * 0.05) / experiments);
-  if (Math.abs(coverage - 0.95) <= 2 * se) return 'near';
+  if (Math.abs(coverage - 0.95) <= COVERAGE_SE_BAND * se) return 'near';
   return coverage < 0.95 ? 'short' : 'over';
 }
 
@@ -89,6 +92,9 @@ export function coverageCaption(run: CoverageRun, stat: Statistic, n: number): R
     <>
       Of {run.experiments.toLocaleString('en-US')} experiments at n = {n.toLocaleString('en-US')}, {run.covered.toLocaleString('en-US')} intervals contained the true{' '}
       {STAT_NAME[stat]} of {sig(run.truth)}: <span className={`hl ${verdict === 'short' ? 'bad' : 'ok'}`}>{pctText(run.coverage)}</span>, {says}
+      {verdict === 'short' && stat === 'p99' && (
+        <> A bootstrap of an extreme percentile cannot see beyond the largest value in the sample, so with few samples above the p99 it misses the true value more than 5% of the time.</>
+      )}
     </>
   );
 }

@@ -120,11 +120,36 @@ describe('captions are computed from the model', () => {
     }
   });
 
-  it('the verdict thresholds are two standard errors around 95%', () => {
+  it('the verdict thresholds are three standard errors around 95%', () => {
     expect(coverageVerdict(0.95, 1000)).toBe('near');
     expect(coverageVerdict(0.92, 1000)).toBe('short');
     expect(coverageVerdict(0.98, 1000)).toBe('over');
     expect(coverageVerdict(0.93, 200)).toBe('near');
+    expect(coverageVerdict(0.935, 1000), 'the calibrated n = 10 mean interval, default seed').toBe('near');
+  });
+
+  it('a calibrated interval is almost never called short: normal source, mean, n = 10 over 20 seeds', () => {
+    const verdicts = Array.from({ length: 20 }, (_, i) => {
+      const run = coverageRun('normal', 'mean', 10, i + 1);
+      return coverageVerdict(run.coverage, run.experiments);
+    });
+    expect(verdicts.filter((v) => v === 'short').length).toBeLessThanOrEqual(1);
+    const first = coverageRun('normal', 'mean', 10, INTERVAL_DEFAULT.seed);
+    expect(text(coverageCaption(first, 'mean', 10))).not.toContain('short of the 95%');
+  });
+
+  it('the p99 bootstrap cannot reach past the sample maximum, and the caption says why when p99 coverage falls short', () => {
+    for (let i = 0; i < 50; i++) {
+      const sample = drawSampleOf('normal', 1, i, 100);
+      const interval = intervalFor('p99', sample, 200, mulberry32(i + 1))!;
+      expect(interval.hi, 'a resample cannot contain a value the sample lacks').toBeLessThanOrEqual(Math.max(...sample));
+    }
+    const small = coverageRun('normal', 'p99', 10, INTERVAL_DEFAULT.seed);
+    expect(coverageVerdict(small.coverage, small.experiments)).toBe('short');
+    expect(small.coverage).toBeLessThan(0.3);
+    expect(text(coverageCaption(small, 'p99', 10))).toContain('cannot see beyond the largest value in the sample');
+    const mean = coverageRun('normal', 'mean', 10, INTERVAL_DEFAULT.seed);
+    expect(text(coverageCaption(mean, 'mean', 10))).not.toContain('cannot see beyond');
   });
 });
 

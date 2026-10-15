@@ -10,7 +10,7 @@ import { pctText, sig } from '../distributions/fmt';
 import { SeedField } from '../distributions/SeedField';
 import { coverageCaption, intervalCaption } from './frames';
 import {
-  BOOTSTRAP_RESAMPLES, INTERVAL_DEFAULT, SAMPLE_N, SHOWN_INTERVALS, SOURCES, SWEEP_SIZES, TAIL_PCT, coverageRun, drawSampleOf,
+  BOOTSTRAP_RESAMPLES, COVERAGE_RESAMPLES, INTERVAL_DEFAULT, SAMPLE_N, SHOWN_INTERVALS, SOURCES, SWEEP_SIZES, TAIL_PCT, coverageRun, drawSampleOf,
   experimentsFor, expectedAbove, intervalFor, sampleSeed, sweepIntervals, truth, type CoverageRun, type Interval, type SourceId, type Statistic,
 } from './model';
 
@@ -92,11 +92,8 @@ export function IntervalScene({ picker }: { picker: ReactNode }) {
             sub={[interval ? `95% interval ${sig(interval.lo)} to ${sig(interval.hi)}` : 'interval undefined', `n = ${n.toLocaleString('en-US')}, sample ${index + 1}`]}
           />
           <Stat label="True value" value={sig(exact)} sub={[`the source's exact ${stat === 'mean' ? 'mean' : 'p99'}`]} />
-          <Stat
-            label={run ? 'Coverage' : 'Tail samples'}
-            value={run ? pctText(run.coverage) : sig(tail, 2)}
-            sub={run ? [`${run.covered.toLocaleString('en-US')} of ${run.experiments.toLocaleString('en-US')} intervals contained it`] : [`n × (1 − p99): expected samples above p99`]}
-          />
+          <Stat label="Tail samples" value={sig(tail, 2)} sub={[`n × (1 − p99): expected samples above p99`]} />
+          {run && <Stat label="Coverage" value={pctText(run.coverage)} sub={[`${run.covered.toLocaleString('en-US')} of ${run.experiments.toLocaleString('en-US')} intervals contained it`]} />}
         </Stats>
       }
       legend={
@@ -156,7 +153,7 @@ export function IntervalScene({ picker }: { picker: ReactNode }) {
           <SectionTitle>How the interval is made</SectionTitle>
           <p>
             Mean: mean ± t·s/√n, with t from a small table (2.262 at n = 10, 1.960 for a large n). p99: the 2.5% and 97.5% points of {BOOTSTRAP_RESAMPLES.toLocaleString('en-US')} seeded
-            resamples of this sample (a percentile bootstrap). The band shows the same interval on the first n values of one stream, so it narrows like 1/√n for the mean.
+            resamples of this sample (a percentile bootstrap); the coverage experiments use {COVERAGE_RESAMPLES.toLocaleString('en-US')} resamples per interval so that {experimentsFor(SAMPLE_N.min).toLocaleString('en-US')} of them stay quick. The band shows the same interval on the first n values of one stream, so it narrows like 1/√n for the mean.
           </p>
         </Box>
         <div className="ps-chips">
