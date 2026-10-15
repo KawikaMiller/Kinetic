@@ -39,6 +39,11 @@ function startTerm(text: string): Term {
   return p.term;
 }
 
+/** A run's end seen from the whole history: a repeat certificate counts steps from the start of the history, not from where the run began. */
+export function endInHistory(end: RunEnd, stepsBefore: number): RunEnd {
+  return end.kind === 'loop' ? { kind: 'loop', first: end.first + stepsBefore, at: end.at + stepsBefore } : end;
+}
+
 /** The learner's term, its reduction history and the actions on it. The reducer is `reduce.ts`; this only keeps state. */
 export function useStepper(initialText: string): Stepper {
   const [text, setTextState] = useState(initialText);
@@ -80,7 +85,7 @@ export function useStepper(initialText: string): Stepper {
       const prev = r.terms.length > 1 ? r.terms[r.terms.length - 2] : null;
       const at = prev ? nextRedex(prev, strategy) : null;
       const last = prev && at !== null ? stepAt(prev, at, mode) : state.last;
-      setState({ ...state, terms, last, note: { kind: 'ended', end: r.end, strategy, steps: terms.length - 1, budget } });
+      setState({ ...state, terms, last, note: { kind: 'ended', end: endInHistory(r.end, state.terms.length - 1), strategy, steps: terms.length - 1, budget } });
     },
     reset() {
       setState(fresh(state.start));

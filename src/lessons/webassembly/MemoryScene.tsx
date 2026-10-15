@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ByteGrid } from '../../components/ByteGrid';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -41,7 +41,9 @@ export function MemoryScene({ picker }: { picker: ReactNode }) {
     if (p.ok) setLen(p.value);
   };
 
-  const result = sumArray(world, ptr, len);
+  // Memoised: the caption effect below depends on it, and a fresh object every render would re-set the caption forever.
+  // `grows` is not read inside sumArray but memory.grow changes what the call sees, so it must invalidate the result.
+  const result = useMemo(() => sumArray(world, ptr, len), [world, ptr, len, grows]);
   const bytes = memoryBytes(world);
   const total = world.memory.buffer.byteLength;
   const maxWindow = Math.max(0, total - WINDOW_BYTES);

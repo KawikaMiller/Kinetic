@@ -372,3 +372,15 @@ describe('try-this entries, from the default state', () => {
     expect(lesson.tryThis[4]).toContain('RuntimeError');
   });
 });
+
+describe('the caption effects cannot loop', () => {
+  // The repo has no DOM renderer, so this is a source-level guard for a bug that shipped once: MemoryScene recomputed
+  // sumArray on every render and listed the fresh result in the effect that sets the caption, which re-rendered the
+  // stage, which ran the effect again, forever ("Maximum update depth exceeded").
+  const sources = import.meta.glob<string>('./*Scene.tsx', { query: '?raw', import: 'default', eager: true });
+
+  it('MemoryScene computes the engine result inside useMemo', () => {
+    const memory = sources['./MemoryScene.tsx'];
+    expect(memory).toMatch(/const result = useMemo\(\(\) => sumArray\(world, ptr, len\), \[world, ptr, len, grows\]\)/);
+  });
+});

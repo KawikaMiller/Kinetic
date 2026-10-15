@@ -12,6 +12,7 @@ import {
   allNames, app, decodeBoolean, decodeNumeral, describeValue, freeVars, lam, LIMITS, named, NAMED_SOURCE, numeral, parse, print, replaceAt, getAt, termSize, v,
   type NamedId, type Term,
 } from './term';
+import { endInHistory } from './useStepper';
 import { tonesOf } from './tones';
 import lesson from './index';
 
@@ -407,6 +408,20 @@ describe('captions', () => {
     expect(naiveText).toContain('the correct result is λy1.y');
     const dropped = expectCaption(stepText(stepAt(must('(λx.z) w'), '', 'safe')!, 1));
     expect(dropped).toContain('does not occur in the body');
+  });
+
+  it('a repeat certificate after a manual step names steps of the whole history', () => {
+    const history = [must('(λa.a) ((λx.x x) (λx.x x))')];
+    const manual = stepAt(history[0], nextRedex(history[0], 'normal')!, 'safe')!;
+    history.push(manual.after);
+    const r = run(manual.after, 'normal', 10);
+    const end = endInHistory(r.end, history.length - 1);
+    history.push(...r.terms.slice(1));
+    if (end.kind !== 'loop') throw new Error('expected a loop');
+    expect(end.first).toBeGreaterThan(r.end.kind === 'loop' ? r.end.first : Infinity);
+    expect(alphaEqual(history[end.first], history[end.at])).toBe(true);
+    expect(end.at).toBeLessThan(history.length);
+    expect(expectCaption(endText(end, { steps: history.length - 1, strategy: 'normal' }))).toContain(`step ${end.at} is the term after step ${end.first}`);
   });
 
   it('the stepper caption walks a whole run: start, step, normal form, not-a-redex and budget', () => {
