@@ -1365,6 +1365,17 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
 - `kind="invented"` ("invented") is for scenarios, dialogues and case studies the author made up; the lead
   lessons put it on every one (AC-0/T3 #24). The kinds and labels live in `core/provenance.ts`.
 
+### `ProvenanceRow` (`components/ui.tsx`, `kit.css`) — cap-theorem, replication, isolation-levels, load-balancing, observability, event-sourcing; every **D** lesson after them
+```tsx
+<ProvenanceRow>
+  <Provenance kind="simulated" seed={TRAFFIC_SEED}>seeded random requests</Provenance>
+  <Provenance kind="illustrative">server speeds are made up, not measured</Provenance>
+</ProvenanceRow>
+```
+- The wrapping row of chips under a stage's visual: `display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px` (class `provenance-row`, in `kit.css`). One row per stage; it takes `Provenance` and `ClaimLabel` chips.
+  Don't give it a lesson class (`xx-prov`): the six lessons that each styled their own identical copy (`cap-prov`, `rep-prov`, `iso-prov`, `lb-prov`, `ob-prov`, `es-prov`) use it now and those rules are gone.
+  Their stage shots are pixel-identical.
+
 ### `ClaimLabel` (`components/ui.tsx`, `kit.css`) — design-docs-rfcs, technical-debt (T3-B2), the lead lessons in T3-B31
 ```tsx
 <ClaimLabel kind="research">named study, from memory</ClaimLabel>

@@ -73,7 +73,6 @@
 }
 .cap-node.refusing { border-color: var(--bad); box-shadow: 0 0 24px -6px var(--bad); }
 .cap-flag { font: 700 10px var(--mono); text-transform: uppercase; color: var(--bad); }
-.cap-prov { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 .cap-pkt {
   position: absolute;

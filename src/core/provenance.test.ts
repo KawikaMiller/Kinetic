@@ -1,7 +1,8 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { ClaimLabel, Provenance } from '../components/ui';import { CLAIM_LABEL, PROVENANCE_LABEL, type ClaimKind, type ProvenanceKind } from './provenance';
+import { ClaimLabel, Provenance, ProvenanceRow } from '../components/ui';
+import { CLAIM_LABEL, PROVENANCE_LABEL, type ClaimKind, type ProvenanceKind } from './provenance';
 
 const provenanceKinds = Object.keys(PROVENANCE_LABEL) as ProvenanceKind[];
 const claimKinds = Object.keys(CLAIM_LABEL) as ClaimKind[];
@@ -38,5 +39,14 @@ describe('Provenance and ClaimLabel kinds', () => {
       expect(html).toContain(`aria-label="${CLAIM_LABEL[kind]}: Dunning 2002"`);
     }
     expect(renderToStaticMarkup(createElement(ClaimLabel, { kind: 'view' }))).toContain('aria-label="one view"');
+  });
+
+  it('ProvenanceRow puts its chips in one wrapping row, in the order given', () => {
+    const html = renderToStaticMarkup(
+      createElement(ProvenanceRow, null, createElement(Provenance, { kind: 'simulated' }), createElement(Provenance, { kind: 'scripted' }), createElement(ClaimLabel, { kind: 'view' })),
+    );
+    expect(html.match(/class="provenance-row"/g)).toHaveLength(1);
+    expect(html.indexOf('data-provenance="simulated"')).toBeLessThan(html.indexOf('data-provenance="scripted"'));
+    expect(html.indexOf('data-provenance="scripted"')).toBeLessThan(html.indexOf('data-claim="view"'));
   });
 });

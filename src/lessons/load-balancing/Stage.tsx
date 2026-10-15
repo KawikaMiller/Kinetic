@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties, type MouseEvent } from 'react';
 import { toOptions } from '../../components/options';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ChipButton, Controls, ControlGroup, Legend, PauseButton, Provenance, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, ChipButton, Controls, ControlGroup, Legend, PauseButton, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { duration, NA, perSec } from '../../core/format';
 import { useCanvas, useLoop } from '../../core/hooks';
@@ -104,12 +104,12 @@ export function Stage() {
               { color: 'var(--bad)', label: 'failed / dropped', shape: 'dot' },
             ]}
           />
-          <div className="lb-prov">
+          <ProvenanceRow>
             <Provenance kind="simulated" seed={TRAFFIC_SEED}>
               seeded random requests, one copy of the balancer per strategy on the same traffic
             </Provenance>
             <Provenance kind="illustrative">server speeds, a {HEALTH_DELAY} s health check and queue sizes are made up, not measured</Provenance>
-          </div>
+          </ProvenanceRow>
         </>
       }
       controls={

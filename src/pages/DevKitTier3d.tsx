@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LaneEditor } from '../components/LaneEditor';
 import { SectionTitle } from '../components/Panel';
-import { Button, Segmented } from '../components/ui';
+import { Button, Provenance, ProvenanceRow, Segmented } from '../components/ui';
 import { buildLaneModel, type LaneItem, type LaneLimits, type LaneMode } from '../core/laneEditor';
 import type { Tone } from '../core/tone';
 import { DevKitSection as Section } from './DevKitSection';
@@ -16,6 +16,13 @@ export function DevKitTier3d() {
       </Section>
       <Section title="LaneEditor · operation intervals on client rows (consistency-models): Alt + Left/Right stretches the selected bar">
         <IntervalsDemo />
+      </Section>
+      <Section title="ProvenanceRow · the wrapping row of chips under a stage's visual (cap-theorem, replication, isolation-levels, load-balancing, observability, event-sourcing)">
+        <ProvenanceRow>
+          <Provenance kind="simulated" seed={7}>seeded random requests, one copy of the balancer per strategy on the same traffic</Provenance>
+          <Provenance kind="scripted">the crash, the failover manager's timing and fixed link delays, so every seed plays the same</Provenance>
+          <Provenance kind="illustrative">server speeds and queue sizes are made up, not measured</Provenance>
+        </ProvenanceRow>
       </Section>
     </>
   );
