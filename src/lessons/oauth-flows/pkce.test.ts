@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { toHex } from '../../core/crypto';
+import { nodeDigest, nodeRandomBase64url, nodeRandomBytes } from '../../core/testing/nodeCrypto';
 import { ATTACKER_VERIFIER, VICTIM_VERIFIER } from './model';
 import { isValidVerifier, s256, sha256, VERIFIER_LENGTH } from './pkce';
 
 const enc = new TextEncoder();
 
-/** node:crypto, loaded at run time with just the shape used here (the app's tsconfig has no Node types). */
-interface NodeCrypto {
-  createHash: (alg: 'sha256') => { update: (d: Uint8Array | string) => { digest: (e: 'hex' | 'base64url') => string } };
-  randomBytes: (n: number) => Uint8Array & { toString: (e: 'base64url') => string };
-}
-const NODE_CRYPTO = 'node:crypto';
-const { createHash, randomBytes } = (await import(/* @vite-ignore */ NODE_CRYPTO)) as NodeCrypto;
 
 describe('sha256', () => {
   it('matches the NIST vectors for "", "abc" and the 448-bit message', () => {
@@ -24,14 +18,14 @@ describe('sha256', () => {
 
   it('matches node:crypto on every length from 0 to 200 bytes (the padding edge cases around 55, 56, 63, 64 included)', () => {
     for (let len = 0; len <= 200; len++) {
-      const data = new Uint8Array(randomBytes(len));
-      expect(toHex(sha256(data)), `length ${len}`).toBe(createHash('sha256').update(data).digest('hex'));
+      const data = nodeRandomBytes(len);
+      expect(toHex(sha256(data)), `length ${len}`).toBe(nodeDigest('sha256', data));
     }
   });
 
   it('matches node:crypto on a 100,000-byte message (many blocks)', () => {
-    const data = new Uint8Array(randomBytes(100_000));
-    expect(toHex(sha256(data))).toBe(createHash('sha256').update(data).digest('hex'));
+    const data = nodeRandomBytes(100_000);
+    expect(toHex(sha256(data))).toBe(nodeDigest('sha256', data));
   });
 });
 
@@ -42,8 +36,8 @@ describe('the PKCE S256 transform', () => {
 
   it('equals base64url of node:crypto\'s SHA-256, with no padding, for random verifiers', () => {
     for (let i = 0; i < 50; i++) {
-      const verifier = randomBytes(32).toString('base64url');
-      expect(s256(verifier)).toBe(createHash('sha256').update(verifier).digest('base64url'));
+      const verifier = nodeRandomBase64url(32);
+      expect(s256(verifier)).toBe(nodeDigest('sha256', verifier, 'base64url'));
       expect(s256(verifier)).not.toContain('=');
     }
   });
