@@ -22,6 +22,22 @@ const SPREAD = 0.9;
 
 const clamp = (v: number) => Math.min(DOMAIN, Math.max(0, v));
 
+/**
+ * Where a drag of the query handle leaves the stored query (which IVF, HNSW and the trade table all search with). As drawn, the handle
+ * is the query. Scaled to unit length, the handle is drawn on the unit circle's scale, so the drag can only say which direction the query
+ * points: the stored query keeps its length (capped so it stays inside the domain) and turns to that direction.
+ */
+export function dragQuery(stored: Point, dragged: Point, unit: boolean): Point {
+  const x = clamp(dragged[0]);
+  const y = clamp(dragged[1]);
+  if (!unit) return [x, y];
+  const reach = Math.hypot(x, y);
+  if (reach === 0) return stored;
+  const dir = [x / reach, y / reach];
+  const length = Math.min(Math.hypot(stored[0], stored[1]), DOMAIN / Math.max(dir[0], dir[1]));
+  return [dir[0] * length, dir[1] * length];
+}
+
 /** 400 points in 5 blobs inside [0, 10]^2. */
 export const clusteredPoints = (seed: number): Point[] =>
   blobs({ seed, centers: CENTERS, n: POINTS_2D / CLUSTERS, spread: SPREAD }).map((p) => [clamp(p.x), clamp(p.y)]);

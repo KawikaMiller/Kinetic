@@ -6,7 +6,7 @@ import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats
 import { useIntroCaption } from '../../core/caption';
 import { cosine, normalize } from '../../core/vec';
 import { exactCaption } from './captions';
-import { DOMAIN, MAX_K, bruteForce, clusteredPoints, dist, type Point } from './data';
+import { DOMAIN, MAX_K, bruteForce, clusteredPoints, dist, dragQuery, type Point } from './data';
 import type { Settings } from './useSettings';
 
 type Metric = 'euclid' | 'cosine';
@@ -68,7 +68,7 @@ export function ExactScene({ picker, s, set }: { picker: ReactNode; s: Settings;
           <div className="vs-plot">
             <Plot2D x={{ domain: [0, domain] }} y={{ domain: [0, domain] }} aspect="equal" width={356} ariaLabel={`${points.length} points and a query; the ${s.k} nearest are highlighted`}>
               <Points data={points.map((p, i) => ({ x: p[0], y: p[1], tone: top.includes(i) ? 'ok' as const : 'dim' as const, r: top.includes(i) ? 5 : 3 }))} />
-              <Points data={[{ x: q[0], y: q[1], tone: 'hi' as const, r: 7 }]} onDrag={(_i, [x, y]) => set({ query: [Math.max(0, x), Math.max(0, y)] })} pointLabel={() => 'Query'} />
+              <Points data={[{ x: q[0], y: q[1], tone: 'hi' as const, r: 7 }]} onDrag={(_i, to) => set({ query: dragQuery(s.query, to, unit) })} pointLabel={() => 'Query'} />
             </Plot2D>
           </div>
           <Hint tone="muted" block>{unit ? 'Every point is pushed onto the unit circle (the arc in the corner), where distance and angle say the same thing.' : 'With lengths kept, a point far away in the same direction is close by cosine and far by Euclidean distance.'}</Hint>

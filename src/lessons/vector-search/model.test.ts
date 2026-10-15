@@ -3,9 +3,9 @@ import { mulberry32 } from '../../core/random';
 import { cosine, normalize } from '../../core/vec';
 import { compareIndexes } from './compare';
 import { CURSE_K, DIMS, concentrationRatio, curseRows, ivfRecallAt } from './concentration';
-import { DEFAULT_K, DEFAULT_QUERY, DEFAULT_SEED, MAX_K, POINTS_2D, bruteForce, clusteredPoints, dist, hits, missed, recallAt, seededQueries, uniformPoints, type Point } from './data';
+import { DEFAULT_K, DEFAULT_QUERY, DEFAULT_SEED, MAX_K, DOMAIN, POINTS_2D, bruteForce, clusteredPoints, dist, dragQuery, hits, missed, recallAt, seededQueries, uniformPoints, type Point } from './data';
 import { DEFAULT_EF_CONSTRUCTION, DEFAULT_M, buildHnsw, reachableFromStart, searchHnsw } from './hnsw';
-import { buildIvf, searchIvf } from './ivf';
+import { DEFAULT_NLIST, DEFAULT_NPROBE, buildIvf, searchIvf } from './ivf';
 import { kmeans } from './kmeans';
 
 const seeds = Array.from({ length: 10 }, (_, i) => i);
@@ -76,6 +76,55 @@ describe('exact search', () => {
     expect(pts.every((p) => p.every((v) => v >= 0 && v <= 10))).toBe(true);
     expect(clusteredPoints(DEFAULT_SEED)).toEqual(pts);
     expect(clusteredPoints(DEFAULT_SEED + 1)).not.toEqual(pts);
+  });
+});
+
+describe('dragging the query never changes what the other scenes search with', () => {
+  const NUDGES: Point[] = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1]];
+  it('across unit mode on and off, every k, and every start and nudge direction, the stored query stays in the domain and keeps its length in unit mode', () => {
+    const starts: Point[] = [DEFAULT_QUERY, [0.3, 9.7], [9.9, 0.2], [10, 10], [5, 5], [0, 4]];
+    for (const unit of [false, true]) {
+      for (let k = 1; k <= MAX_K; k++) {
+        for (const start of starts) {
+          for (const [dx, dy] of NUDGES) {
+            let stored: Point = start;
+            for (let step = 0; step < 40; step++) {
+              const shown = unit ? (normalize(stored) ?? stored) : stored;
+              const stepSize = unit ? 0.02 : 0.2;
+              stored = dragQuery(stored, [shown[0] + dx * stepSize, shown[1] + dy * stepSize], unit);
+              const id = `unit ${unit} k ${k} start ${start} nudge ${dx},${dy} step ${step}`;
+              expect(Math.min(...stored), id).toBeGreaterThanOrEqual(0);
+              expect(Math.max(...stored), id).toBeLessThanOrEqual(DOMAIN + 1e-9);
+              if (unit && stored[0] + stored[1] > 0) {
+                const length = Math.hypot(stored[0], stored[1]);
+                const cap = Math.min(Math.hypot(start[0], start[1]), DOMAIN / Math.max(stored[0] / length, stored[1] / length));
+                expect(length, id).toBeCloseTo(cap, 6);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('the repro: five arrow-key steps in unit mode leave IVF scanning about what it did before, not the near-origin query that cut it to 49 points', () => {
+    const points = clusteredPoints(DEFAULT_SEED);
+    const ivf = buildIvf(points, DEFAULT_NLIST, DEFAULT_SEED);
+    let stored: Point = DEFAULT_QUERY;
+    for (let i = 0; i < 5; i++) {
+      const shown = normalize(stored) ?? stored;
+      stored = dragQuery(stored, [shown[0] - 0.02, shown[1]], true);
+    }
+    const before = searchIvf(ivf, DEFAULT_QUERY, DEFAULT_K, DEFAULT_NPROBE);
+    const after = searchIvf(ivf, stored, DEFAULT_K, DEFAULT_NPROBE);
+    expect(Math.hypot(stored[0], stored[1])).toBeCloseTo(Math.hypot(DEFAULT_QUERY[0], DEFAULT_QUERY[1]), 6);
+    expect(Math.abs(after.computations - before.computations)).toBeLessThan(0.5 * before.computations);
+  });
+
+  it('as drawn, the handle is the query: a drag sets it directly, clamped to the domain', () => {
+    expect(dragQuery(DEFAULT_QUERY, [3, 4], false)).toEqual([3, 4]);
+    expect(dragQuery(DEFAULT_QUERY, [-2, 40], false)).toEqual([0, DOMAIN]);
+    expect(dragQuery(DEFAULT_QUERY, [0, 0], true)).toEqual(DEFAULT_QUERY);
   });
 });
 
