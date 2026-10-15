@@ -1,0 +1,37 @@
+.dl { gap: 14px; }
+.dl .section-title { display: block; margin-bottom: 6px; }
+.dl-chips { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.dl-field { display: inline-flex; flex-direction: column; gap: 3px; }
+.dl-error { font-size: 12px; color: var(--bad); max-width: 260px; }
+.dl-card { min-width: 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.dl-card p { margin: 0; font-size: 13px; }
+.dl-label { color: var(--muted); }
+.dl-note { color: var(--text); }
+.dl-pair { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.dl-pair > * { flex: 1 1 260px; min-width: 0; }
+.dl-shares, .dl-trial { display: flex; flex-wrap: wrap; gap: 6px; }
+.dl .chip.wrap { white-space: normal; }
+.dl-draft { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.dl-draftrow { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.dl-select {
+  font: 500 13px var(--mono);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 6px 8px;
+  max-width: 100%;
+}
+.dl-taccounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.dl-t { min-width: 0; }
+.dl-tcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid var(--line-2); margin-top: 4px; padding-top: 4px; font: 500 12px var(--mono); }
+.dl-tcols ul { list-style: none; margin: 0; padding: 0 0 0 6px; color: var(--c); }
+.dl-tcols ul:first-child { border-right: 1px solid var(--line-2); padding: 0 6px 0 0; text-align: right; }
+.dl-balance { display: block; margin-top: 6px; font: 700 13px var(--mono); }
+.dl-ledger { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.dl-ledger .log-row { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; overflow-wrap: anywhere; }
+.dl-line { color: var(--c); margin-right: 8px; white-space: nowrap; }
+.dl-lines { display: flex; flex-wrap: wrap; }
+.dl-pick { all: unset; cursor: pointer; font: inherit; }
+.dl-pick:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.dl-recrow { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font: 500 12px var(--mono); justify-content: space-between; }
