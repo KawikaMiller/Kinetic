@@ -72,10 +72,10 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(c).toContain(`The check fails at ${f.at} ms`);
   });
 
-  it('try-this 5: retention moves the log start to 8 and the consumer at 2 is out of range; compaction keeps offsets 5, 11 and 12 of 13 and the Map replay still matches', () => {
+  it('try-this 5: retention moves the log start to 8 and the consumer at 2 is out of range; compaction keeps offsets 5, 10, 11 and 12 of 13 and the Map replay still matches', () => {
     const f = retentionFacts();
-    expect(f).toMatchObject({ sent: 13, logStart: 8, position: 2, outOfRange: true, kept: [5, 11, 12], compactionDiffers: [] });
-    expect(lesson.tryThis[4]).toContain('offsets 5, 11 and 12');
+    expect(f).toMatchObject({ sent: 13, logStart: 8, position: 2, outOfRange: true, kept: [5, 10, 11, 12], compactionDiffers: [] });
+    expect(lesson.tryThis[4]).toContain('offsets 5, 10, 11 and 12');
     const log = preloaded();
     expect(plain(retentionCaption({ policy: 'retention', log: applyRetention(log, DEFAULT_KEPT_SEGMENTS), position: DEFAULT_POSITION, keep: DEFAULT_KEPT_SEGMENTS }))).toContain('offset out of range');
     expect(plain(retentionCaption({ policy: 'compaction', log: applyCompaction(log), position: DEFAULT_POSITION, keep: DEFAULT_KEPT_SEGMENTS }))).toContain('the same state');

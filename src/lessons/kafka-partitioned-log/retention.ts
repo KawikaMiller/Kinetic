@@ -60,13 +60,16 @@ export function applyRetention(log: SegLog, keep: number): SegLog {
   return { ...log, segments, logStart: segments[0][0].offset };
 }
 
-/** Compaction: in every closed segment, drop a record when a later record on disk has the same key. Empty segments go. */
+/**
+ * Compaction: in every closed segment, drop a record when a later record of the same key sits in a closed segment too. The cleaner
+ * looks at closed segments only, so the open segment is neither cleaned nor consulted. Empty segments go.
+ */
 export function applyCompaction(log: SegLog): SegLog {
+  const closed = log.segments.slice(0, -1);
   const newest = new Map<string, number>();
-  for (const r of onDisk(log)) newest.set(r.key, r.offset);
-  const last = log.segments.length - 1;
+  for (const r of closed.flat()) newest.set(r.key, r.offset);
   const segments = log.segments
-    .map((seg, i) => (i === last ? seg : seg.filter((r) => newest.get(r.key) === r.offset)))
+    .map((seg, i) => (i === closed.length ? seg : seg.filter((r) => newest.get(r.key) === r.offset)))
     .filter((seg) => seg.length > 0);
   return { ...log, segments };
 }

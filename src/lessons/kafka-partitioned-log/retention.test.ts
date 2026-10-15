@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  KEYS, MAX_APPENDS, SEGMENT_SIZE, append, applyCompaction, applyRetention, emptyLog, gaps, logEnd, onDisk, readFrom, replay, sameState, stateDiff, type SegLog,
+  KEYS, MAX_APPENDS, SEGMENT_SIZE, append, applyCompaction, applyRetention, emptyLog, gaps, logEnd, onDisk, preloaded, readFrom, replay, sameState, stateDiff, type SegLog,
 } from './retention';
 
 const appendOk = (log: SegLog, key: string, value: number | null): SegLog => {
@@ -115,6 +115,20 @@ describe('compaction', () => {
     }
   });
 
+  it('a closed-segment record survives exactly when it is the newest of its key among the closed segments, for 200 seeded logs (an independent per-record oracle)', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const full = seeded(seed, 6 + (seed % 30));
+      const closed = full.segments.slice(0, -1).flat();
+      const expected = closed.filter((r) => !closed.some((o) => o.key === r.key && o.offset > r.offset)).map((r) => r.offset);
+      const survivors = onDisk(applyCompaction(full)).map((r) => r.offset).filter((o) => closed.some((r) => r.offset === o));
+      expect(survivors, `seed ${seed}`).toEqual(expected);
+    }
+  });
+
+  it('the preloaded log keeps offset 10 (the newest a of the closed segments) although a newer a sits in the open segment', () => {
+    expect(onDisk(applyCompaction(preloaded())).map((r) => r.offset)).toEqual([5, 10, 11, 12]);
+  });
+
   it('a tombstone is the newest record of its key: it survives compaction and deletes the key in the replay', () => {
     let log = emptyLog();
     for (const [k, v] of [['a', 1], ['b', 2], ['a', null], ['c', 3], ['b', 4], ['c', 5], ['a', 6], ['b', null]] as const) log = appendOk(log, k, v);
@@ -129,8 +143,8 @@ describe('compaction', () => {
     let log = emptyLog();
     for (let i = 0; i < 9; i++) log = appendOk(log, 'a', i);
     const compacted = applyCompaction(log);
-    expect(onDisk(compacted).map((r) => r.offset)).toEqual([8]);
-    expect(readFrom(compacted, 2)).toMatchObject({ kind: 'record', record: { offset: 8 } });
+    expect(onDisk(compacted).map((r) => r.offset)).toEqual([7, 8]);
+    expect(readFrom(compacted, 2)).toMatchObject({ kind: 'record', record: { offset: 7 } });
   });
 
   it('compacting twice changes nothing more', () => {
