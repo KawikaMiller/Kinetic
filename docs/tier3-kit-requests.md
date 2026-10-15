@@ -85,3 +85,12 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 ## Spec corrections to carry
 - T3-B5 capacity-planning: the M/M/c survival formula in the spec is wrong when theta = mu: the limit is (1 + C*mu*t)e^{-mu t} (equals the spec's only when C = 1). The model uses the correct form; fix the spec text.
 - T3-B1 hypothesis-testing-ab: the spec's '14,748' is a truncation; ceil gives 14,749 (the lesson is right).
+
+## From T3-B9 (builder report)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| `useGraphEdits` (preset load, add edge/node with refusal messages, bounded counts, undo of added edges, scene-keyed notes) | shortest-paths-advanced, strongly-connected-components, network-flow, bipartite-matching, graph-coloring (each carries a ~50-line copy) and later graph lessons | wave 3 to 4 round | five users now: extract |
+| `convexHull`/`hullPoints` in `core/geometry` (underlay hulls) | strongly-connected-components (local hull.ts, tested); convex-hull lesson (wave 5) is the natural 2nd user | wave 4 to 5 round | promote when convex-hull is built |
+| SCC routine in `core` | strongly-connected-components (user one), markov-chains | on second user | |
+| Kit-level default caption for player-less StageFrames | B9 fixed it per scene with `useIntroCaption` in six scenes | wave 3 to 4 round | avoids repeating the fix |
+| `ProvenanceRow` margin inside the stage-pad (five lesson-CSS copies of `.xxx-stage ~ .provenance-row`) | B9 lessons | wave 3 to 4 round | tiny kit tweak |
