@@ -275,7 +275,7 @@ describe('the curse of dimensionality, computed', () => {
 describe('the comparison table', () => {
   it('is measured: brute force is exact at N computations, the others trade recall for fewer, and every figure is non-negative', () => {
     const pts = clusteredPoints(DEFAULT_SEED);
-    const rows = compareIndexes(pts, { nlist: 8, nprobe: 2, m: 4, efConstruction: 32, efSearch: 16, seed: DEFAULT_SEED });
+    const rows = compareIndexes(pts, { k: 10, nlist: 8, nprobe: 2, m: 4, efConstruction: 32, efSearch: 16, seed: DEFAULT_SEED });
     expect(rows.map((r) => r.name)).toEqual(['Brute force', 'IVF', 'HNSW']);
     expect(rows[0]).toMatchObject({ recall: 1, computations: 400, extra: 0, build: 0 });
     expect(rows[1].computations).toBeLessThan(400);
