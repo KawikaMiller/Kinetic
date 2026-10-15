@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
-import type { CSSProperties, ReactNode } from 'react';
-import { useCaption } from '../core/caption';
+import type { CSSProperties, DependencyList, ReactNode } from 'react';
+import { useCaption, useIntroCaption } from '../core/caption';
 import type { Player } from '../core/usePlayer';
 import type { Frame } from '../core/types';
 import { Transport } from './Transport';
@@ -14,7 +14,7 @@ import { WideRegion } from './WideRegion';
  * like the same app.
  */
 export function StageFrame<F extends Frame>({
-  children, player, controls, legend, stats, height = 420, minWidth, style,
+  children, player, controls, legend, stats, height = 420, minWidth, style, intro, introKey,
 }: {
   children: ReactNode;
   player?: Player<F>;
@@ -31,6 +31,14 @@ export function StageFrame<F extends Frame>({
    */
   minWidth?: number;
   style?: CSSProperties;
+  /**
+   * The caption a player-less stage opens with: set when the stage mounts (a scene switch no longer
+   * leaves the previous scene's caption behind) and again whenever `introKey` changes. Leave `introKey`
+   * out for a fixed sentence; pass the values a computed sentence depends on otherwise. Ignored when
+   * there is a `player`: its frames own the caption.
+   */
+  intro?: ReactNode;
+  introKey?: DependencyList;
 }) {
   const stageStyle = { minHeight: height, ...style };
   return (
@@ -50,6 +58,7 @@ export function StageFrame<F extends Frame>({
           {children}
         </div>
       )}
+      {!player && intro != null && <IntroCaption node={intro} deps={introKey} />}
       <Caption />
       {player && <Transport player={player} />}
       {Array.isArray(controls) ? (
@@ -63,6 +72,12 @@ export function StageFrame<F extends Frame>({
       )}
     </div>
   );
+}
+
+/** Sets the intro caption from inside the frame, so only a player-less stage that asked for one does. */
+function IntroCaption({ node, deps }: { node: ReactNode; deps?: DependencyList }) {
+  useIntroCaption(node, deps);
+  return null;
 }
 
 function Caption() {

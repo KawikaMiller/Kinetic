@@ -1,5 +1,8 @@
+import { useCallback, useState } from 'react';
 import { SectionTitle } from '../components/Panel';
-import { Button, Hint } from '../components/ui';
+import { StageFrame } from '../components/StageFrame';
+import { Button, Hint, Provenance, ProvenanceRow, Segmented } from '../components/ui';
+import { CaptionContext, SetCaptionContext, type CaptionState, type SetCaption } from '../core/caption';
 import { canonicalCodes, kraftSum } from '../core/huffman';
 import { eigen2x2, powerIteration, svdSmall } from '../core/linalg';
 import { condense, stronglyConnectedComponents, type Arc } from '../core/scc';
@@ -15,6 +18,11 @@ const SHEAR = [[1, 1], [0, 1]];
 const STRIPES = [[1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]];
 const RFC_LENGTHS = [3, 3, 3, 3, 3, 2, 4, 4];
 const MAX_EDGES = 4;
+const SCENES = [
+  { value: 'a', label: 'Scene A', intro: 'Scene A opens with its own caption.' },
+  { value: 'b', label: 'Scene B', intro: 'Scene B opens with its own, not one carried over from Scene A.' },
+] as const;
+type SceneId = (typeof SCENES)[number]['value'];
 const CHAIN_NODES = 5;
 /** A small chain: 0 and 1 leak into the closed class {2, 3}; 4 is absorbing. */
 const CHAIN_EDGES: Arc[] = [[0, 1], [1, 0], [1, 2], [2, 3], [3, 2], [0, 4], [4, 4]];
@@ -60,6 +68,28 @@ function addNextEdge(g: EdgeList): Result<EdgeList> {
   if (g.edges.length >= MAX_EDGES) return { ok: false, error: `At most ${MAX_EDGES} edges here: the drawing stays readable.` };
   const edge = NEXT_EDGES.find((e) => !g.edges.includes(e));
   return edge ? { ok: true, value: { edges: [...g.edges, edge] } } : { ok: false, error: 'Every edge already exists.' };
+}
+
+/** What LessonPage provides, so a StageFrame outside a lesson can show its caption. */
+function IntroDemo() {
+  const [caption, setCaptionState] = useState<CaptionState>({ node: null, version: 0 });
+  const setCaption = useCallback<SetCaption>((node) => setCaptionState((c) => ({ node, version: c.version + 1 })), []);
+  const [scene, setScene] = useState<SceneId>('a');
+  const current = SCENES.find((x) => x.value === scene)!;
+  return (
+    <SetCaptionContext.Provider value={setCaption}>
+      <CaptionContext.Provider value={caption}>
+        <StageFrame key={scene} height={90} intro={current.intro} controls={<Segmented label="Scene" options={SCENES.map(({ value, label }) => ({ value, label }))} value={scene} onChange={setScene} />}>
+          <div className="stage-pad">
+            <Hint tone="muted">No player here, so the caption below is the stage's intro. Switch scene: it changes with it.</Hint>
+          </div>
+          <ProvenanceRow>
+            <Provenance kind="illustrative">this row sits after the padded stage and lines up with it, with no lesson CSS</Provenance>
+          </ProvenanceRow>
+        </StageFrame>
+      </CaptionContext.Provider>
+    </SetCaptionContext.Provider>
+  );
 }
 
 function SccDemo() {
@@ -108,6 +138,9 @@ export function DevKitTier3g() {
       </Section>
       <Section title="core/scc · components of a small chain and the closed classes (what a Markov chain settles into)">
         <SccDemo />
+      </Section>
+      <Section title="StageFrame intro (a player-less stage's opening caption) and the ProvenanceRow margin after a stage-pad">
+        <IntroDemo />
       </Section>
     </>
   );

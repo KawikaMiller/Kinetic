@@ -1862,6 +1862,17 @@ const closed = components.filter((_, i) => !c.edges.some(([a]) => a === i));   /
 - Tests: `core/scc.test.ts` (the textbook graph, the transitive-closure oracle on 2,000 seeded graphs, the sinks-first order on 500, condensation edges unique with a valid topological order, closed classes of a small chain). The lesson's tests compare Kosaraju with this routine and the closure oracle, unchanged apart from their imports.
 - **Migrated:** `strongly-connected-components` (its `tarjan`, `canonical`, `adjacency`, `condense` and `Arc` moved here; `canonical` is `canonicalPartition`, and `condense` takes the edge list instead of the lesson's graph). Its shots are pixel-identical.
 
+### `StageFrame intro` and the `ProvenanceRow` margin after a `stage-pad` (small tweaks) — every player-less scene; the five B9 lessons migrated
+```tsx
+<StageFrame intro={caption} introKey={[caption]} controls={...}>   // no player: the caption opens with this
+  <div className="xx-stage stage-pad">…</div>
+  <ProvenanceRow>…</ProvenanceRow>                                   // no lesson CSS for its margin
+</StageFrame>
+```
+- `intro` (with `introKey`, the values a computed sentence depends on; leave it out for a fixed sentence) sets the caption when a player-less stage mounts and again when `introKey` changes, so switching scene never leaves the previous scene's caption behind. It is `useIntroCaption` from inside the frame; a stage with a `player` ignores it (the frames own the caption). A scene that calls `useIntroCaption` itself keeps working.
+- `.stage-pad ~ .provenance-row` in `kit.css` gives a row that follows a padded stage the same 16px inset and 8px gap the stage content has. The five lesson-CSS copies (`.bm-stage ~ .provenance-row` and the other four) are gone; a row nested inside the `stage-pad` is unaffected (the gap already spaces it).
+- **Migrated:** the nine B9 scenes whose caption was `useIntroCaption(<>{caption}</>, [caption])` (network-flow augment and cut, bipartite-matching augment, cost, flow and Hall, graph-coloring bound, hard and timetable) now pass `intro`/`introKey`. The five other B9 scenes with a longer computed caption (`shortest-paths-advanced` cost, `strongly-connected-components` condense, order and why, network-flow models) still call `useIntroCaption` and are fine as they are. Shots and the opening caption of every scene are unchanged.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
