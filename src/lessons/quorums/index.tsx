@@ -40,9 +40,9 @@ const lesson: LessonModule = {
       q: 'With N = 5, W = 3 and R = 3 the sets always overlap. Does a read that runs while a write is in flight get a consistent answer?',
       options: [
         'No: the overlap covers acknowledged writes, so two reads during the write can disagree',
-        'Yes: any two quorums overlap, so a read always sees a write that has begun',
+        'Yes: any two quorums overlap, so a read always sees a write that has begun, even one still in flight',
         'Yes, provided read repair is switched on for every read the store serves',
-        'No, because a write quorum of 3 is smaller than the 5 replicas holding the key',
+        'No, because a write quorum of 3 is smaller than the 5 replicas holding the key, so some replica is always left out',
       ],
       answer: 0,
       why: 'Overlap guarantees a shared replica with a write that was acknowledged. A write still in flight may have reached one replica and not the others, so one read can see it and a later read miss it.',
@@ -73,7 +73,7 @@ const lesson: LessonModule = {
       q: 'What does a sloppy quorum trade away?',
       options: [
         'Consistency for availability: stand-ins let a write succeed, but a read can miss it',
-        'Availability for consistency: it refuses writes until every home replica is back',
+        'Availability for consistency: it refuses writes until every home replica is back online',
         'Latency for durability: it waits for stand-ins before it acknowledges anything',
         'Nothing at all, because a hint is handed off before any later read begins',
       ],
@@ -85,7 +85,7 @@ const lesson: LessonModule = {
       options: [
         'It waits for the W-th fastest reply, so slower replicas set the wait',
         'Each extra replica adds the same delay in front of the one before it',
-        'The coordinator sends to the W replicas one after another, in turn',
+        'The coordinator sends to the W replicas one after another, in turn, waiting for each reply',
         'Replies are checked by the leader first, and a bigger W takes longer',
       ],
       answer: 0,

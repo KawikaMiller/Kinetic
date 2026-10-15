@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
+import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { availabilityCaption, latencyCaption, setsCaption, storeCaption } from './captions';
 import lesson from './index';
 import { expectedKthFastest, missingPairs, simulateKthFastest, waitByQuorum } from './quorum';
@@ -112,5 +113,8 @@ describe('lesson content', () => {
   it('has five try-this entries and five questions', () => {
     expect(lesson.tryThis).toHaveLength(5);
     expect(lesson.quiz).toHaveLength(5);
+  });
+  it('the correct quiz option is the strictly longest in at most half of the questions', () => {
+    expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
   });
 });
