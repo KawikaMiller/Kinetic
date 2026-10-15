@@ -108,12 +108,41 @@ describe('the latency ladder and the guess', () => {
     expect(withinTenfold(5, chat)).toBe(true);
     expect(withinTenfold(7, chat)).toBe(false);
     expect(withinTenfold(2, chat)).toBe(false);
-    expect(GUESS_EXPONENTS).toEqual([2, 3, 4, 5, 6, 7]);
+    expect(GUESS_EXPONENTS).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
   it('every scenario has a computable answer with the units it claims', () => {
     for (const s of SCENARIOS) expect(Number.isFinite(scenarioQps(s))).toBe(true);
     expect(scenarioQps(SCENARIOS[2])).toBeCloseTo((5000 * 40) / 86_400, 9);
+  });
+});
+
+describe('Guess first can be won in every scenario', () => {
+  // Hand-worked answers: users x requests a day / 86,400 seconds, with the exponent written out.
+  const worked: Record<string, { qps: number; winning: number[] }> = {
+    chat: { qps: 1e9 / 86_400, winning: [4, 5] },
+    photos: { qps: 6e7 / 86_400, winning: [2, 3] },
+    internal: { qps: 2e5 / 86_400, winning: [0, 1] },
+  };
+
+  it('each scenario answer matches the hand arithmetic, and at least one picker value lies within 10x of it', () => {
+    expect(SCENARIOS.map((s) => s.id).sort()).toEqual(Object.keys(worked).sort());
+    for (const s of SCENARIOS) {
+      const { qps, winning } = worked[s.id];
+      expect(scenarioQps(s)).toBeCloseTo(qps, 9);
+      const winners = GUESS_EXPONENTS.filter((e) => Math.abs(e - Math.log10(qps)) < 1);
+      expect(winners, s.id).toEqual(winning);
+      for (const e of winners) expect(withinTenfold(e, scenarioQps(s)), s.id).toBe(true);
+    }
+  });
+
+  it('the picker reaches below one request a second and the answer is never outside its range', () => {
+    expect(Math.min(...GUESS_EXPONENTS)).toBe(0);
+    for (const s of SCENARIOS) {
+      const exponent = Math.log10(scenarioQps(s));
+      expect(exponent).toBeGreaterThanOrEqual(Math.min(...GUESS_EXPONENTS));
+      expect(exponent).toBeLessThanOrEqual(Math.max(...GUESS_EXPONENTS));
+    }
   });
 });
 

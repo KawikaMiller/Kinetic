@@ -51,7 +51,7 @@ export function StorageScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--info)', label: 'an input you set' },
             { color: 'var(--hi)', label: 'a derived quantity' },
-            { color: 'var(--bad)', label: 'a unit mismatch, refused' },
+            { color: 'var(--bad)', label: 'an input that was refused' },
           ]}
         />
       }
@@ -82,7 +82,7 @@ export function StorageScene({ picker }: { picker: ReactNode }) {
           <p className="boe-units">
             <span className="boe-input">{bigText(payload)}</span> B/req × <b>{bigText(PEAK_QPS)}</b> req/s (scene 1&apos;s peak) = <b>{bigText(b.bytesPerSecond.value)} B/s</b>, × 8 bit/B = <b>{bigText(b.bitsPerSecond.value)} bit/s</b>
           </p>
-          <span className="boe-mismatch" role="note">Adding bytes to bits: refused ({addRefusal()}).</span>
+          <span className="boe-mismatch" role="note">Worked example, not an error: the unit algebra refuses to add bytes to bits ({addRefusal()}).</span>
           {(record.error || writes.error) && <span className="boe-refusal" role="status">{record.error ?? writes.error} Keeping the last valid number.</span>}
         </Box>
         <div className="boe-chips">

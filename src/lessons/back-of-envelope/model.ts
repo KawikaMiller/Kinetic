@@ -208,7 +208,7 @@ export const SCENARIOS: readonly Scenario[] = [
   { id: 'photos', name: 'A photo site: 20 million users, 3 uploads or views each a day', dau: 20_000_000, actionsPerUser: 3 },
   { id: 'internal', name: 'An internal tool: 5,000 users, 40 requests each a day', dau: 5_000, actionsPerUser: 40 },
 ];
-export const GUESS_EXPONENTS = [2, 3, 4, 5, 6, 7] as const;
+export const GUESS_EXPONENTS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
 export const scenarioQps = (s: Scenario): number => traffic({ dau: s.dau, actionsPerUser: s.actionsPerUser, peakFactor: 1, readsPerWrite: 1, round: false }).average.value;
 

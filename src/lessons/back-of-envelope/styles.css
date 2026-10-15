@@ -7,7 +7,7 @@
 .boe-input { color: var(--info); }
 .boe-cancel { color: var(--dim); text-decoration: line-through; }
 .boe-refusal { font: 500 12.5px var(--font); color: var(--bad); }
-.boe-mismatch { font: 500 12.5px var(--font); color: var(--bad); }
+.boe-mismatch { font: 500 12.5px var(--font); color: var(--muted); }
 .boe-fleet { display: flex; flex-wrap: wrap; gap: 4px; }
 .boe-fleet i { width: 14px; height: 14px; border-radius: 3px; }
 .boe-server { background: var(--hi); }
