@@ -1,84 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { randomOrder } from './randomOrder';
-import {
-  INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, SCHEMA, decode, emptyOrder, encode, encodeVarint, jsonBytes, presentFields, readRecords,
-  readVarint, reserialize, tagOf, toJson, unzigzag32, zigzag32, type Order, type Reader, type Writer,
-} from './model';
+import { SCHEMA, decode, emptyOrder, encode, jsonBytes, presentFields, reserialize, toJson, type Order, type Reader, type Writer } from './model';
+import { INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN } from '../../core/protobuf';
 
 const hex = (bytes: number[]) => bytes.map((b) => b.toString(16).padStart(2, '0')).join(' ');
 const order = (o: Partial<Order>): Order => ({ ...emptyOrder(), ...o });
 const SAME: Reader = { numbers: SCHEMA.numbers, deltaType: 'sint32' };
 const OLDER: Reader = { numbers: { id: 1, item: 2, qty: 3, delta: 4 }, deltaType: 'sint32' };
-
-describe('varints (hand-worked and the protobuf docs)', () => {
-  it.each([
-    [0n, '00'], [1n, '01'], [127n, '7f'], [128n, '80 01'], [150n, '96 01'], [300n, 'ac 02'], [16383n, 'ff 7f'], [16384n, '80 80 01'],
-  ])('%s → %s', (v, bytes) => {
-    expect(hex(encodeVarint(v))).toBe(bytes);
-  });
-
-  it('matches an independent arithmetic reference for every value below 70,000', () => {
-    const reference = (n: number): number[] => {
-      const out: number[] = [];
-      let rest = n;
-      for (;;) {
-        const low = rest % 128;
-        rest = Math.floor(rest / 128);
-        if (rest === 0) return [...out, low];
-        out.push(low + 128);
-      }
-    };
-    for (let n = 0; n < 70_000; n++) expect(encodeVarint(BigInt(n))).toEqual(reference(n));
-  });
-
-  it('uses bigint: 2^63 - 1 is 9 bytes with no precision loss, 2^64 - 1 is 10 bytes', () => {
-    expect(hex(encodeVarint(INT64_MAX))).toBe('ff ff ff ff ff ff ff ff 7f');
-    expect(hex(encodeVarint(2n ** 64n - 1n))).toBe('ff ff ff ff ff ff ff ff ff 01');
-    expect(readVarint(encodeVarint(INT64_MAX), 0)).toEqual({ value: INT64_MAX, next: 9 });
-  });
-
-  it('refuses values a varint cannot hold, and reads nothing from truncated or over-long input', () => {
-    expect(() => encodeVarint(-1n)).toThrow(RangeError);
-    expect(() => encodeVarint(2n ** 64n)).toThrow(RangeError);
-    expect(readVarint([0x80], 0)).toBeNull();
-    expect(readVarint(Array(11).fill(0x80), 0)).toBeNull();
-  });
-
-  it('round-trips seeded values across the whole 64-bit range', () => {
-    const rnd = mulberry32(5);
-    for (let i = 0; i < 500; i++) {
-      const bits = 1 + Math.floor(rnd() * 64);
-      let v = 0n;
-      for (let b = 0; b < bits; b++) v = (v << 1n) | (rnd() < 0.5 ? 0n : 1n);
-      expect(readVarint(encodeVarint(v), 0)!.value).toBe(v);
-    }
-  });
-});
-
-describe('zigzag (the protobuf docs table)', () => {
-  it.each([[0, 0], [-1, 1], [1, 2], [-2, 3], [2, 4], [INT32_MAX, 4294967294], [INT32_MIN, 4294967295]])('zigzag(%i) = %i', (n, z) => {
-    expect(zigzag32(n)).toBe(z);
-    expect(unzigzag32(z)).toBe(n);
-  });
-  it('agrees with 2n / -2n - 1 and inverts for seeded int32 values', () => {
-    const rnd = mulberry32(8);
-    for (let i = 0; i < 2000; i++) {
-      const n = Math.floor(rnd() * 2 ** 32) - 2 ** 31;
-      expect(zigzag32(n)).toBe(n >= 0 ? 2 * n : -2 * n - 1);
-      expect(unzigzag32(zigzag32(n))).toBe(n);
-    }
-  });
-});
-
-describe('field tags: (field number << 3) | wire type', () => {
-  it('matches hand-worked bytes', () => {
-    expect(hex(tagOf(1, 0))).toBe('08');
-    expect(hex(tagOf(2, 2))).toBe('12');
-    expect(hex(tagOf(5, 2))).toBe('2a');
-    expect(hex(tagOf(16, 0))).toBe('80 01');
-  });
-});
 
 describe('encoding known messages', () => {
   it('field 1 = 150 is 08 96 01 (the protobuf docs example)', () => {
@@ -132,19 +61,6 @@ describe('encoding known messages', () => {
   it('writes fields in field-number order even when the writer renumbers', () => {
     const w: Writer = { ...SCHEMA, numbers: { ...SCHEMA.numbers, qty: 6 } };
     expect(hex(encode(order({ qty: 3, tags: [1] }), w).bytes)).toBe('2a 01 01 30 03');
-  });
-});
-
-describe('record reading', () => {
-  it('reads 32- and 64-bit values by their fixed length, and refuses what it can\'t skip safely', () => {
-    const r = readRecords([0x0d, 1, 2, 3, 4, 0x11, 1, 2, 3, 4, 5, 6, 7, 8, 0x08, 0x01]);
-    expect(r.ok && r.records.map((x) => [x.field, x.wire, x.from, x.to])).toEqual([[1, 5, 0, 4], [2, 1, 5, 13], [1, 0, 14, 15]]);
-    expect(readRecords([0x0b]).ok).toBe(false);
-    expect(readRecords([0x12, 0x05, 1, 2]).ok).toBe(false);
-    expect(readRecords([0x00, 0x01]).ok).toBe(false);
-    expect(readRecords([0x0e]).ok).toBe(false);
-    expect(readRecords([0x08]).ok).toBe(false);
-    expect(readRecords([0x0d, 1, 2, 3]).ok).toBe(false);
   });
 });
 

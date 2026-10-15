@@ -1472,6 +1472,24 @@ const frames = timeFrames({ end, steps: 40, milestones: [{ t: 120, say: <>The TL
   http-versions, realtime-transports and graphql now call it from their `buildFrames` / `compareFrames`, and their frames at 1440 and 390 (9 deterministic
   shots each width) and their existing frame tests are unchanged. The other B24 requests (`useRovingToolbar`, `plural`'s doc warning) are not part of this item.
 
+### `core/protobuf.ts` — grpc-protobuf; later schema-evolution
+```ts
+encodeVarint(150n)            // [0x96, 0x01]; throws RangeError outside 0 .. 2^64 - 1
+readVarint(bytes, at)         // { value, next } | null (truncated, or longer than 10 bytes)
+zigzag32(-1) / unzigzag32(1)  // 1 / -1 (sint32)
+int32Varint(-1) / int64Varint(-1n) / asInt32(v)   // sign-extended to 64 bits, and back to the low 32
+tagOf(field, WIRE.len)        // (field << 3) | wire type, as a varint
+readRecords(bytes)            // { ok: true, records: WireRecord[] } | { ok: false, error, at }: split bytes into wire records, no schema applied
+WIRE, WIRE_NAME, INT32_MIN/MAX, INT64_MIN/MAX
+```
+- The wire format only, with no particular message: how a field is tagged, how integers become varints, and how bytes split into records (each with its tag byte
+  range and its value's byte range, for a byte grid). A message's own encoder and decoder stay in the lesson: grpc-protobuf's `model.ts` keeps `Order`'s field
+  order, proto3 defaults, packed `repeated`, unknown-field skipping and `reserialize`; schema-evolution builds its own over the same functions.
+- Extracted unchanged from grpc-protobuf's `model.ts`; its varint, zigzag, tag and record-reading tests moved to `core/protobuf.test.ts` (the protobuf docs'
+  `08 96 01` and `"testing"` examples, an independent arithmetic reference for every value below 70,000, seeded round trips over the whole 64-bit range) with two
+  new ones on sign extension. The lesson's remaining tests are unchanged and pass; its default-scene shot is identical to the unmodified tree's (pure logic moved, so no other
+  scene was driven).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

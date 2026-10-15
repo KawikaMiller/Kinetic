@@ -4,10 +4,8 @@
  * Pure, so the live caption and the panels read the same numbers.
  */
 import { parseBoundedBigInt, parseBoundedInt, type FieldParse } from '../../core/parse';
-import {
-  INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, MAX_TAGS, SCHEMA, WIRE_NAME, decode, encode, jsonBytes, reserialize, toJson, type DecodeResult,
-  type DeltaType, type Encoded, type FieldName, type Order, type Reader, type Writer,
-} from './model';
+import { MAX_TAGS, SCHEMA, decode, encode, jsonBytes, reserialize, toJson, type DecodeResult, type DeltaType, type Encoded, type FieldName, type Order, type Reader, type Writer } from './model';
+import { INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, WIRE_NAME } from '../../core/protobuf';
 
 /** Who reads the bytes: a reader with the same .proto, an older one without field 5, or one that missed a renumbering. */
 export type ReaderId = 'same' | 'older' | 'renumbered';

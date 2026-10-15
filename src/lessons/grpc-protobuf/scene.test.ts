@@ -4,9 +4,10 @@ import { mulberry32 } from '../../core/random';
 import { expectCaption } from '../../core/testing/captions';
 import { callFrames, callSummary, encodeCaption, messageCaption } from './frames';
 import { ENDINGS, MODES, buildCall } from './calls';
-import { INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN, MAX_TAGS, emptyOrder, type DeltaType, type Order } from './model';
+import { MAX_TAGS, emptyOrder, type DeltaType, type Order } from './model';
 import { randomOrder } from './randomOrder';
 import { READERS, RENUMBERED_QTY, analyse, lostFields, parseId, parseInt32, parseTags, sizeVerdict, traceRows, varintBreakdown, type ReaderId } from './scene';
+import { INT32_MAX, INT32_MIN, INT64_MAX, INT64_MIN } from '../../core/protobuf';
 
 const order = (o: Partial<Order>): Order => ({ ...emptyOrder(), ...o });
 const DELTA_TYPES: DeltaType[] = ['sint32', 'int32'];
