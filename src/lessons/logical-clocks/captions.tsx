@@ -33,7 +33,7 @@ export function compareCaption(v: ExecView, a: number | null, b: number | null, 
   const [sa, sb] = [v.stamps[a], v.stamps[b]];
   return (
     <>
-      Truth: <span className={`hl ${p.truth === 'concurrent' ? 'orange' : 'ok'}`}>{RELATION_TEXT[p.truth](na, nb)}</span>. Lamport {sa.lamport} against {sb.lamport} orders{' '}
+      Truth: <span className={`hl ${p.truth === 'concurrent' ? 'orange' : 'ok'}`}>{RELATION_TEXT[p.truth](na, nb)}</span>. Lamport {sa.lamport} against {sb.lamport}{sa.lamport === sb.lamport ? ' (equal stamps, ties broken by process number)' : ''} orders{' '}
       {p.lamport === 'before' ? `${na} before ${nb}` : `${nb} before ${na}`}
       {p.lamportMisleads ? <>, <span className="hl bad">which the events do not have</span></> : null}. Vectors {vectorText(sa.vector)} and {vectorText(sb.vector)} say{' '}
       <span className={`hl ${p.vectorWrong ? 'bad' : 'ok'}`}>{RELATION_TEXT[p.vector](na, nb)}</span>.

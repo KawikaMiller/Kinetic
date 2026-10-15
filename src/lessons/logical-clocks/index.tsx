@@ -1,12 +1,13 @@
 import type { LessonModule } from '../../core/types';
 import { ruleText } from './clocks';
 import { DEFAULT_PRESET, PROCESSES, viewOf } from './execution';
-import { BROKEN_SEED } from './register';
+import { BROKEN_SEED, DEFAULT_REGISTER, widestVector } from './register';
 import { Stage } from './Stage';
 
 /** The event e of the default drawing, the receive at the end of the two-message chain, and the rule that stamps it. */
 const start = viewOf(DEFAULT_PRESET.model());
 const e = start.stamps.findIndex((_, i) => start.name(i) === 'e');
+const SIBLING_ENTRIES = widestVector({ ...DEFAULT_REGISTER, mode: 'siblings' });
 const eRule = ruleText(start.stamps[e], PROCESSES[start.stamps[e].lane]);
 
 const lesson: LessonModule = {
@@ -28,9 +29,9 @@ const lesson: LessonModule = {
   tryThis: [
     `In the default drawing a happened before e through two messages. Press e on P3: its Lamport rule reads ${eRule.lamport}, and its vector rule reads ${eRule.vector}.`,
     'Open "Before, or concurrent?" and press "Find me a pair", then press a pair: the Lamport card orders the two events although the truth card says concurrent, and the vector card agrees with the truth.',
-    'Load "two concurrent writes": both writes get Lamport stamp 1 and the vectors [1,0,0] and [0,1,0] are incomparable, so the verdict is concurrent.',
+    'In "Before, or concurrent?" load "two concurrent writes" and press a, then b: both writes have Lamport stamp 1, the vectors [1,0,0] and [0,1,0] are incomparable, and the vector card says concurrent.',
     `Open "Use it: a replicated register" (Lamport last-write-wins, seed ${BROKEN_SEED}): a replica throws write a away although it is concurrent with write b, and the invariants read broken. "Jump to the first violation" lands on it.`,
-    'Switch the register to "version-vector siblings": both writes are kept, the resolution replaces both, and the largest vector has 3 entries. "Siblings that are never pruned" breaks the second invariant: a replica keeps an ancestor.',
+    `Switch the register to "version-vector siblings": both writes are kept, the resolution replaces both, and the largest vector has ${SIBLING_ENTRIES} entries on this seed, one per replica that coordinated a write; a seed where the resolution lands on a third replica gives 3. "Siblings that are never pruned" breaks the second invariant: a replica keeps an ancestor.`,
   ],
   keyIdeas: [
     'If a happened before b then L(a) < L(b); a smaller Lamport stamp alone does not prove a happened before b.',
@@ -56,7 +57,7 @@ const lesson: LessonModule = {
         'Neither vector is at most the other in every component',
         'The vectors are equal in every component except the last',
         'The sum of the first vector is smaller than the sum of the second',
-        'The first vector is larger in its own process\'s component than the second',
+        'The first vector is larger in some components and equal in all the others',
       ],
       answer: 0,
       why: 'Happened-before means one vector is less than or equal to the other component by component. When each is bigger somewhere, neither event knew about the other, so they are concurrent.',
@@ -86,7 +87,7 @@ const lesson: LessonModule = {
     {
       q: 'How does the size of a version vector grow?',
       options: [
-        'With the number of replicas or clients that have coordinated writes to the value',
+        'With the number of replicas or clients that coordinated writes to it',
         'With the number of writes to the value, one new entry for every write made',
         'With the length of the stored value, one entry for each byte it holds',
         'It stays the same size however many writers there are, since it is a counter',

@@ -71,6 +71,9 @@ export function viewOf(model: ExecModel): ExecView {
   return { stamps, byId, hb, misleading: misleadingPairs(stamps, hb), name: (i) => itemById(model, exec.events[i].id)?.data.name ?? '?' };
 }
 
+/** True when `next` differs from `model` only in which event is selected: the compare scene accepts nothing else. */
+export const isSelectionOnly = (model: ExecModel, next: ExecModel): boolean => next.items === model.items && next.links === model.links;
+
 export interface PairView {
   truth: Relation;
   /** What the Lamport order says: always an order, never "concurrent". */

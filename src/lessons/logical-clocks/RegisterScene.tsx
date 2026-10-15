@@ -7,7 +7,7 @@ import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
 import { MODE_NAME, registerCaption } from './captions';
-import { BROKEN_SEED, REG_MODES, REPLICAS, runRegister, vvText, type RegMode, type RegMsg, type Resolve, type Version } from './register';
+import { DEFAULT_REGISTER, canHoldStale, REG_MODES, REPLICAS, runRegister, visibleTrace, vvText, type RegMode, type RegMsg, type Resolve, type Version } from './register';
 
 const MODE_OPTIONS = REG_MODES.map((m) => ({ value: m, label: MODE_NAME[m] }));
 const RESOLVE_OPTIONS: { value: Resolve; label: string }[] = [
@@ -24,8 +24,8 @@ const dominates = (x: Version, y: Version): boolean => Object.entries(y.vv).ever
 
 export function RegisterScene({ picker }: { picker: ReactNode }) {
   const [mode, setMode] = useState<RegMode>('lww');
-  const [resolve, setResolve] = useState<Resolve>('merge');
-  const [seed, setSeed] = useState(BROKEN_SEED);
+  const [resolve, setResolve] = useState<Resolve>(DEFAULT_REGISTER.resolve);
+  const [seed, setSeed] = useState<number>(DEFAULT_REGISTER.seed);
   const [at, setAt] = useState<number | null>(null);
 
   const run = useMemo(() => runRegister({ seed, mode, resolve }), [seed, mode, resolve]);
@@ -35,8 +35,8 @@ export function RegisterScene({ picker }: { picker: ReactNode }) {
   const first = run.frames.findIndex((f) => f.violation !== null);
   const widest = Math.max(0, ...run.frames.slice(0, index + 1).flatMap((f) => Object.values(f.replicas).flatMap((vs) => vs.map((v) => Object.keys(v.vv).length))));
   const sequence = useMemo(
-    () => toSequence(run.trace.filter((r) => r.t <= frame.t), { actors: ACTORS, label, events: false, times: true }),
-    [run, frame.t],
+    () => toSequence(visibleTrace(run.trace, mode).filter((r) => r.t <= frame.t), { actors: ACTORS, label, events: false, times: true }),
+    [run, mode, frame.t],
   );
 
   useIntroCaption(registerCaption({ mode, seed, frame, widest }), [mode, resolve, seed, index]);
@@ -55,7 +55,7 @@ export function RegisterScene({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--ok)', label: 'a version a replica keeps' },
-            { color: 'var(--orange)', label: 'a kept version that a newer one makes stale' },
+            ...(canHoldStale(mode) ? [{ color: 'var(--orange)', label: 'a kept version that a newer one makes stale' }] : []),
             { color: 'var(--bad)', label: 'a write the replica threw away' },
             { color: 'var(--info)', label: 'a message', shape: 'line' },
           ]}

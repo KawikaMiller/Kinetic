@@ -9,7 +9,7 @@ import { BUG_SEEDS } from './bugs';
 import { BROKEN_SEED, RAW_SKEW_MAX, lwwScenario, runLww, writeTwoWins } from './lww';
 import { LOG_BROKEN_SEED, logScenario, causeBeforeEffect, runLog } from './orderLog';
 import { LEASE_BROKEN_SEED } from './lease';
-import { checkInvariants } from '../../core/distSim';
+import { checkInvariants, type Cluster, type Safety } from '../../core/distSim';
 import { decidableShare, sampleGaps } from './intervals';
 
 const view = (patch: Partial<DriftState> = {}) => {
@@ -115,9 +115,9 @@ describe('the seed each bug opens on is the pinned failing seed, and the pinned 
     expect(LEASE_BROKEN_SEED).toBe(3);
   });
   it('raw stamping loses write 2 on 279 of the first 500 seeds and the merged log breaks on 498, so seed 0 is just the first of many', () => {
-    const failing = (make: (s: number) => Parameters<typeof checkInvariants>[0], inv: Parameters<typeof checkInvariants>[1][number]) => Array.from({ length: 500 }, (_, s) => s).filter((s) => !checkInvariants(make(s), [inv]).ok).length;
-    expect(failing(lwwScenario('raw', { within: RAW_SKEW_MAX }), writeTwoWins as never)).toBe(279);
-    expect(failing(logScenario, causeBeforeEffect as never)).toBe(498);
+    const failing = <M, S>(make: (s: number) => Cluster<M, S>, inv: Safety<S>) => Array.from({ length: 500 }, (_, s) => s).filter((s) => !checkInvariants(make(s), [inv]).ok).length;
+    expect(failing(lwwScenario('raw', { within: RAW_SKEW_MAX }), writeTwoWins)).toBe(279);
+    expect(failing(logScenario, causeBeforeEffect)).toBe(498);
   });
 });
 

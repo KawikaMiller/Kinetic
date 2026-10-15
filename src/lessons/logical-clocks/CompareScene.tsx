@@ -7,11 +7,13 @@ import type { LaneModel } from '../../core/laneEditor';
 import { vectorText } from './clocks';
 import { compareCaption } from './captions';
 import { ExecutionEditor, type Picks } from './ExecutionEditor';
-import { PRESETS, RELATION_TEXT, pairView, viewOf, type EvData } from './execution';
+import { PRESETS, RELATION_TEXT, isSelectionOnly, pairView, viewOf, type EvData } from './execution';
 import type { ExecutionState } from './useExecution';
 
 /** How many of the misleading pairs the "find me a pair" list shows at once. */
 const LIST_MAX = 8;
+const COMPARE_READ_ONLY = 'This scene only compares: draw and edit events in "Draw an execution".';
+const COMPARE_HINT = 'Arrow keys move around the grid. Enter on an event picks it: the first is a, the second is b. Drawing happens in the first scene.';
 
 export function CompareScene({ picker, exec }: { picker: ReactNode; exec: ExecutionState }) {
   const [picks, setPicks] = useState<Picks>({ a: null, b: null });
@@ -27,6 +29,10 @@ export function CompareScene({ picker, exec }: { picker: ReactNode; exec: Execut
   useIntroCaption(compareCaption(view, a, b, pair), [model, picks]);
 
   const onChange = (next: LaneModel<EvData>) => {
+    if (!isSelectionOnly(model, next)) {
+      exec.setMessage(COMPARE_READ_ONLY);
+      return;
+    }
     exec.change(next);
     if (next.selected && next.selected !== model.selected) {
       // The first press picks a, the second picks b, the third starts over with a.
@@ -49,7 +55,7 @@ export function CompareScene({ picker, exec }: { picker: ReactNode; exec: Execut
             label="Lamport says"
             value={pair ? (pair.lamport === 'before' ? `${names(a!)} before ${names(b!)}` : `${names(b!)} before ${names(a!)}`) : '–'}
             color={pair?.lamportMisleads ? 'var(--bad)' : undefined}
-            sub={pair ? `L ${view.stamps[a!].lamport} against ${view.stamps[b!].lamport}${pair.lamportMisleads ? ': an order that is not there' : ''}` : 'it always orders, it cannot say concurrent'}
+            sub={pair ? `L ${view.stamps[a!].lamport} against ${view.stamps[b!].lamport}${view.stamps[a!].lamport === view.stamps[b!].lamport ? ', equal: ties by process' : ''}${pair.lamportMisleads ? ': an order that is not there' : ''}` : 'it always orders, it cannot say concurrent'}
           />
           <Stat
             label="Vector says"
@@ -85,7 +91,7 @@ export function CompareScene({ picker, exec }: { picker: ReactNode; exec: Execut
       ]}
     >
       <div className="lc-stage stage-pad">
-        <ExecutionEditor model={model} onChange={onChange} onRefuse={exec.setMessage} mode="edit" view={view} showStamps picks={picks} ariaLabel="Pick two events to compare" />
+        <ExecutionEditor model={model} onChange={onChange} onRefuse={exec.setMessage} mode="edit" view={view} showStamps picks={picks} ariaLabel="Pick two events to compare" hint={COMPARE_HINT} />
         <p className="lc-status" role="status">{exec.message || 'Press an event to pick it. The first press is a, the second is b.'}</p>
         <Box>
           <SectionTitle>The two theorems, with their direction</SectionTitle>

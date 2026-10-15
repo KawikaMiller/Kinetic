@@ -212,6 +212,19 @@ export function lostWrites(snap: Snapshot<RegState>): { replica: string; write: 
 
 export const REGISTER_SAFETY: Safety<RegState>[] = [noConcurrentWriteDiscarded, siblingsAreMaximal];
 
+/** Only never-pruning ever holds a version that a newer one makes stale; the other modes replace it at once. */
+export const canHoldStale = (mode: RegMode): boolean => mode === 'no-prune';
+
+/** The register scene opens on this seed and resolution, in every mode. */
+export const DEFAULT_REGISTER = { seed: 0, resolve: 'merge' } as const satisfies { seed: number; resolve: Resolve };
+
+/** The trace as the scene draws it: last-write-wins ignores the resolution, so its arrow is left out rather than shown doing nothing. */
+export const visibleTrace = (trace: RegCluster['trace'], mode: RegMode): RegCluster['trace'] =>
+  mode === 'lww' ? trace.filter((r) => r.payload?.type !== 'resolve') : trace;
+
+/** The widest version vector a run reaches: one entry per replica that coordinated a write. */
+export const widestVector = (s: RegSetup): number => runRegister(s).widest;
+
 /** The lowest seed on which raw Lamport last-write-wins breaks (1) (a test searches for it). */
 export const BROKEN_SEED = 0;
 /** The lowest seed on which never pruning breaks (2) (a test searches for it). */

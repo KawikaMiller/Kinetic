@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
+import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { ruleText } from './clocks';
 import { compareCaption, drawCaption, registerCaption } from './captions';
-import { DEFAULT_PRESET, MAX_EVENTS, PRESETS, PROCESSES, SLOTS, pairView, viewOf } from './execution';
+import { addItem, moveItem, removeItem, selectItem } from '../../core/laneEditor';
+import { DEFAULT_PRESET, MAX_EVENTS, isSelectionOnly, PRESETS, PROCESSES, SLOTS, pairView, viewOf } from './execution';
 import lesson from './index';
-import { BROKEN_SEED, NO_PRUNE_SEED, runRegister } from './register';
+import { vectorBetween } from './clocks';
+import { BROKEN_SEED, DEFAULT_REGISTER, NO_PRUNE_SEED, REG_MODES, canHoldStale, registerCluster, runRegister, visibleTrace, widestVector, type RegMode } from './register';
 
 const nameIndex = (v: ReturnType<typeof viewOf>, name: string) => v.stamps.findIndex((_, i) => v.name(i) === name);
 
@@ -58,17 +61,86 @@ describe('try-this entries, from the default state, as written', () => {
     expect(c).toContain('Silently lost so far');
   });
 
-  it('try-this 5: siblings keep both writes and end on the resolution with a 3-entry vector (resolver outside the writers); never pruning breaks the second invariant', () => {
-    const hand = { places: { a: 'r1', b: 'r2', resolver: 'r3' }, fixedLatencyMs: 20, seed: 0 } as const;
-    const sib = runRegister({ ...hand, mode: 'siblings', resolve: 'merge' });
+  it('try-this 5: from the scene default (seed 0, merge), siblings keep both writes and the largest vector has as many entries as replicas that coordinated; a third replica resolving gives 3; never pruning breaks the second invariant', () => {
+    const sib = runRegister({ ...DEFAULT_REGISTER, mode: 'siblings' });
     expect(sib.frames.every((f) => f.violation === null)).toBe(true);
-    expect(sib.widest).toBe(3);
+    // Independent count: the replicas that received a put or the resolve at the default seed (every one of them created a version with its own entry).
+    const c = registerCluster({ ...DEFAULT_REGISTER, mode: 'siblings' });
+    c.run();
+    const resolver = c.trace.find((r) => r.kind === 'deliver' && (r.payload as { type?: string } | undefined)?.type === 'resolve')!.to!;
+    const puts = c.trace.filter((r) => r.kind === 'deliver' && (r.payload as { type?: string } | undefined)?.type === 'put').map((r) => r.to!);
+    expect(sib.widest).toBe(new Set([...puts, resolver]).size);
+    expect(widestVector({ ...DEFAULT_REGISTER, mode: 'siblings' })).toBe(sib.widest);
+    expect(lesson.tryThis[4]).toContain(`has ${sib.widest} entries on this seed`);
+    expect(lesson.tryThis[4]).toContain('gives 3');
+    const third = runRegister({ places: { a: 'r1', b: 'r2', resolver: 'r3' }, fixedLatencyMs: 20, seed: 0, mode: 'siblings', resolve: 'merge' });
+    expect(third.widest).toBe(3);
     const noPrune = runRegister({ seed: NO_PRUNE_SEED, mode: 'no-prune', resolve: 'merge' });
     expect(noPrune.frames.find((f) => f.violation)?.violation).toMatch(/an ancestor of/);
   });
 });
 
+describe('the compare scene is read-only', () => {
+  it('only a change of selection passes; adding, moving, removing or linking an event does not', () => {
+    const model = DEFAULT_PRESET.model();
+    expect(isSelectionOnly(model, selectItem(model, model.items[0].id))).toBe(true);
+    const added = addItem(model, 1, 12, { name: 'z' });
+    if (!added.ok) throw new Error(added.reason);
+    expect(isSelectionOnly(model, added.model)).toBe(false);
+    const removed = removeItem(model, model.items[0].id);
+    if (!removed.ok) throw new Error(removed.reason);
+    expect(isSelectionOnly(model, removed.model)).toBe(false);
+    const moved = moveItem(model, model.items[0].id, 0, 1);
+    if (!moved.ok) throw new Error(moved.reason);
+    expect(isSelectionOnly(model, moved.model)).toBe(false);
+  });
+});
+
+describe('the register scene draws only what can happen in each mode', () => {
+  const dominated = (frames: ReturnType<typeof runRegister>['frames']) =>
+    frames.some((f) => Object.values(f.replicas).some((vs) => vs.some((u) => vs.some((v) => v.id !== u.id && Object.entries(u.vv).every(([k, n]) => (v.vv[k] ?? 0) >= n)))));
+  it('a kept-but-stale version occurs in no-prune and never in lww or siblings, over 200 seeds each (so the legend lists it only there)', () => {
+    for (const mode of REG_MODES) {
+      const seen = Array.from({ length: 200 }, (_, seed) => dominated(runRegister({ seed, mode, resolve: 'merge' }).frames)).some(Boolean);
+      expect(seen, mode).toBe(canHoldStale(mode));
+    }
+  });
+  it('last-write-wins draws no resolve arrow, because the resolution does nothing there; the other modes keep it', () => {
+    const c = (mode: RegMode) => { const k = registerCluster({ ...DEFAULT_REGISTER, mode }); k.run(); return visibleTrace(k.trace, mode).map((r) => (r.payload as { type?: string } | undefined)?.type); };
+    expect(c('lww')).not.toContain('resolve');
+    expect(c('siblings')).toContain('resolve');
+  });
+});
+
+describe('quiz question 2: "larger in some components and equal in the rest" never means concurrent', () => {
+  it('over random vector pairs, a vector that is at least the other everywhere and larger somewhere is after it, never concurrent', () => {
+    let state = 12345;
+    const next = () => (state = (state * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (let i = 0; i < 2000; i++) {
+      const x = [0, 1, 2].map(() => Math.floor(next() * 4));
+      const y = x.map((n) => n + Math.floor(next() * 3));
+      const strictlyMore = y.some((n, k) => n > x[k]);
+      if (strictlyMore) expect(vectorBetween(y, x)).toBe('after');
+    }
+    expect(lesson.quiz[1].options.filter((o) => o.includes('larger in some components and equal in all the others'))).toHaveLength(1);
+    expect(lesson.quiz[1].answer).toBe(0);
+  });
+});
+
 describe('captions are computed from the model', () => {
+  it('the compare caption says ties go by process exactly when the two Lamport stamps are equal', () => {
+    for (const p of PRESETS) {
+      const v = viewOf(p.model());
+      for (let a = 0; a < v.stamps.length; a++) {
+        for (let b = 0; b < v.stamps.length; b++) {
+          if (a === b) continue;
+          const c = text(compareCaption(v, a, b, pairView(v, a, b)), { strict: true });
+          expect(c.includes('equal stamps, ties broken by process number'), `${p.id} ${a} ${b}`).toBe(v.stamps[a].lamport === v.stamps[b].lamport);
+        }
+      }
+    }
+  });
+
   it('the draw caption counts the concurrent pairs it prints, for every preset', () => {
     for (const p of PRESETS) {
       const v = viewOf(p.model());
@@ -105,6 +177,9 @@ describe('captions are computed from the model', () => {
 });
 
 describe('lesson content', () => {
+  it('the correct quiz option is the strictly longest in at most half of the questions', () => {
+    expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
   it('has five try-this entries and five questions', () => {
     expect(lesson.tryThis).toHaveLength(5);
     expect(lesson.quiz).toHaveLength(5);

@@ -22,7 +22,7 @@ export interface Picks {
  * vector under it, the components the event raised in violet. Messages are the editor's blue arrows.
  */
 export function ExecutionEditor({
-  model, onChange, onRefuse, mode, view, showStamps, picks, ariaLabel,
+  model, onChange, onRefuse, mode, view, showStamps, picks, ariaLabel, hint,
 }: {
   model: ExecModel;
   onChange: (next: ExecModel) => void;
@@ -32,6 +32,7 @@ export function ExecutionEditor({
   showStamps: boolean;
   picks?: Picks;
   ariaLabel: string;
+  hint?: string | null;
 }) {
   return (
     <LaneEditor
@@ -41,6 +42,7 @@ export function ExecutionEditor({
       laneLabels={PROCESSES}
       mode={mode}
       ariaLabel={ariaLabel}
+      hint={hint}
       newData={(): EvData => ({ name: nextName(model) })}
       describeItem={(item) => {
         const s = view.stamps[view.byId.get(item.id) ?? -1];
