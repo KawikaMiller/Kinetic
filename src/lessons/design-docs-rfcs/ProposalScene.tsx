@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { ScenarioStory } from '../../components/ScenarioStory';
 import { StageFrame } from '../../components/StageFrame';
-import { ClaimLabel, Legend, Provenance, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Legend, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
+import { enumeratePaths, findEnding, redMeters, startWalk, validateScenario } from '../../core/scenario';
 import { scenarioCaption } from './captions';
 import { BECAUSE_CLAIM, PROPOSAL } from './proposal';
-import { choose, enumeratePaths, findEnding, redMeters, startWalk, undo, validateScenario } from './scenario';
-import { ScenarioView } from './ScenarioView';
 
 /** Every path in this scenario makes the same number of decisions. */
 const DECISIONS = enumeratePaths(PROPOSAL)[0].choices.length;
@@ -15,7 +15,6 @@ const ENDING_HINT = validateScenario(PROPOSAL).length === 0 ? 'every ending is r
 
 export function ProposalScene({ picker }: { picker: ReactNode }) {
   const [walk, setWalk] = useState(() => startWalk(PROPOSAL));
-  const [picked, setPicked] = useState<string | null>(null);
   const setCaption = useSetCaption();
 
   useEffect(() => {
@@ -46,31 +45,15 @@ export function ProposalScene({ picker }: { picker: ReactNode }) {
       controls={[<>{picker}</>]}
     >
       <div className="dd stage-pad">
-        <ScenarioView
+        <ScenarioStory
           scenario={PROPOSAL}
           walk={walk}
-          picked={picked}
+          onWalk={setWalk}
+          provenance="an invented scenario: every effect is a made-up number chosen to show a trade-off"
+          notes={<ClaimLabel kind="view">each reason shown is a view or common practice, not a measurement; RFC processes differ between organisations</ClaimLabel>}
           claimOf={(id) => BECAUSE_CLAIM[id]}
           endingHint={ENDING_HINT}
-          onPick={setPicked}
-          onContinue={() => {
-            if (picked === null) return;
-            setWalk(choose(PROPOSAL, walk, picked));
-            setPicked(null);
-          }}
-          onUndo={() => {
-            setWalk(undo(PROPOSAL, walk));
-            setPicked(null);
-          }}
-          onReplay={() => {
-            setWalk(startWalk(PROPOSAL));
-            setPicked(null);
-          }}
         />
-        <div className="dd-notes">
-          <Provenance kind="invented">an invented scenario: every effect is a made-up number chosen to show a trade-off</Provenance>
-          <ClaimLabel kind="view">each reason shown is a view or common practice, not a measurement; RFC processes differ between organisations</ClaimLabel>
-        </div>
       </div>
     </StageFrame>
   );

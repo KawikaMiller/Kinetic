@@ -1,8 +1,8 @@
 /**
- * The branching decision-simulator engine, written pure and in its own file in the shape
- * docs/tier3-plan.md K3-15 asks for, so that extracting it into `core/scenario.ts` after wave 1 is a
- * move and not a rewrite. No React, nothing about design docs: a scenario is nodes with choices,
- * meters that choices move, and endings. Every choice carries the `because` that explains it.
+ * The branching decision-simulator engine (K3-15), pure: no React, nothing about any one lesson.
+ * A scenario is nodes with choices, meters that choices move, and endings; every choice carries
+ * the `because` that explains it. `components/ScenarioStory.tsx` draws it, `validateScenario`
+ * keeps an authored scenario honest (reachable, no dead end, meters in bounds on every path).
  */
 
 /** A number the choices move. It reads `bad` once it crosses `bad`; until then it is fine. */
