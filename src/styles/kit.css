@@ -884,6 +884,25 @@ button.gantt-bar:focus-visible { outline: 2px solid var(--text); outline-offset:
   .confusion-count { font-size: 17px; }
 }
 
+/* Provenance (components/ui.tsx, K3-7): a muted chip saying simulated / illustrative / from memory / real.
+   Text stays --muted whatever the kind; it is never a status colour. Wraps at phone width. */
+.provenance {
+  --c: var(--muted);
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  max-width: 100%;
+  font-weight: 500;
+  white-space: normal;
+  background: transparent;
+  border-style: dashed;
+}
+.provenance.is-real { border-style: solid; }
+.provenance b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; }
+.provenance-seed { font-variant-numeric: tabular-nums; }
+.provenance-seed::before { content: '·'; margin-right: 6px; }
+
 @media (max-width: 900px) {
   .stage-pad { padding: 16px; }
   .bit-strip { --bit-w: 20px; --bit-fs: 12px; }

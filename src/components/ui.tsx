@@ -323,3 +323,40 @@ export function Stat({
 export function Stats({ children }: { children: ReactNode }) {
   return <div className="stats">{children}</div>;
 }
+
+// ── Provenance (K3-7, docs/tier3-plan.md AC-0/T3 #21) ───────────────────────
+
+export type ProvenanceKind = 'simulated' | 'illustrative' | 'toy' | 'scripted' | 'from-memory' | 'not-run' | 'real';
+
+const PROVENANCE_LABEL: Record<ProvenanceKind, string> = {
+  simulated: 'simulated',
+  illustrative: 'illustrative',
+  toy: 'toy model',
+  scripted: 'scripted',
+  'from-memory': 'from memory',
+  'not-run': 'shown, not run',
+  real: 'real',
+};
+
+/**
+ * Says what the learner is looking at, at the moment it matters: simulated, illustrative,
+ * a toy, scripted, quoted from memory, shown without running it, or the real thing.
+ * Always muted (never `--bad`/`--ok`: provenance is not a verdict); only `real` has a solid
+ * border, the rest are dashed. `children` is the short note ("what EXPLAIN prints on Postgres"),
+ * `seed` prints a seeded sim's seed. Every domain-reviewed Tier 3 lesson carries at least one.
+ */
+export function Provenance({
+  kind, seed, children,
+}: {
+  kind: ProvenanceKind;
+  seed?: number | string;
+  children?: ReactNode;
+}) {
+  return (
+    <span className={`chip provenance is-${kind}`} data-provenance={kind}>
+      <b>{PROVENANCE_LABEL[kind]}</b>
+      {children && <span className="provenance-note">{children}</span>}
+      {seed !== undefined && <span className="provenance-seed">seed {seed}</span>}
+    </span>
+  );
+}

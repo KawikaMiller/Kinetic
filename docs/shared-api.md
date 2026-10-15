@@ -1323,6 +1323,26 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
   in calling-conventions pinned by a test; the copy and the pin test are gone, the behaviour tests moved to
   `core/x86.test.ts`. Both lessons' frames are unchanged.
 
+## Tier 3 kit (kickoff kit round: Agent A)
+
+### `Provenance` (`components/ui.tsx`, `kit.css`) — K3-7; every domain-reviewed (**D**) Tier 3 lesson
+```tsx
+<Provenance kind="simulated" seed={42}>seeded fault schedule</Provenance>
+<Provenance kind="from-memory">what EXPLAIN prints on Postgres</Provenance>
+<Provenance kind="real">crypto.subtle, run in your browser</Provenance>
+```
+- `kind`: `simulated | illustrative | toy | scripted | from-memory | not-run | real`. The kind's name is printed
+  as a small uppercase label ("toy model", "shown, not run"), so the meaning never rides on colour alone.
+  `children` is an optional short note; `seed` prints a seeded sim's seed after it.
+- Always muted: text is `--muted` for every kind, never `--bad`/`--ok` (provenance is not a verdict). Only
+  `real` has a solid border; the others are dashed. Wraps inside its container, so it holds at 390px.
+- Use it at the moment the claim matters (next to the output, the plot or the caption), not in a footnote
+  (AC-0/T3 #21). `real` means real: real `RegExp`, `crypto.subtle`, real SQLite; anything else is one of
+  the other six.
+- The Tier 3 content lint (`core/lessonContentT3.ts`) fails a **D** lesson whose source has no `<Provenance`.
+  The chip renders `data-provenance="<kind>"`, the hook for tests that want the chip's kind.
+- Showcase: `#/dev/kit`, "Tier 3 kit".
+
 ---
 
 ## Not built (deliberately)
