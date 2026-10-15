@@ -30,7 +30,7 @@ const lesson: LessonModule = {
     'A skip list is a sorted linked list with lanes above it: search moves right while the next key is smaller and drops a lane when it would overshoot, so many keys are skipped.',
     `Tower heights come from coin flips, so balance is statistical: at p = 1/2 the pointers per key average about 2 and a search over ${F.mcN.toLocaleString('en-US')} keys took ${F.mcMean.toFixed(1)} steps here, against ${F.allTailsMean.toFixed(0)} when the coins were rigged to tails.`,
     'An insert changes the pointers of the new tower and of its predecessors on the search path, one per level, and leaves the other towers alone; there is no rotation or rebuild.',
-    'The speed is fast in expectation and with high probability, not certain: the unluckiest of the seeded lists is only somewhat slower, and a list rigged to all tails is a plain linked list.',
+    'The speed is fast in expectation and with high probability, not certain: in the seeded runs the unluckiest list was somewhat slower than the mean, and a list rigged to tails is a plain linked list.',
   ],
   quiz: [
     {
