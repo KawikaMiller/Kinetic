@@ -123,3 +123,9 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | Shared balanced-trees model: red-black-trees carries a local compact AVL (`avlRef.ts`) for its comparison scene | avl-trees, red-black-trees | wave 4 to 5 round | two lessons must agree on one AVL model |
 | `GraphView` layered layout `place` callback or columns-by-covered-range mode | persistent-data-structures (local SVG DAG) | on second user | |
 | `TreeSvg`: semi-transparent node tint lets thick edge ends show through the label | B12 | optional | |
+
+## From T3-B11 fix pass (Sentry review)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| `SeedField` resyncs its text to the `seed` prop when it differs and the field is not focused (it only reads the prop on mount, so a preset or "lowest seed that breaks it" leaves the old number showing) | kafka-partitioned-log (keyed workaround), any lesson that sets the seed from a preset | Phase 2 | lessons currently remount the field with a `key` |
+| `SequenceDiagram` text floor: ladder text renders 7.7px at 768 when `times` is on | kafka-partitioned-log scene 3 | Phase 2 | measured by the review, 8.0 at 390 |
