@@ -2,6 +2,7 @@ import { CellGrid } from '../components/CellGrid';
 import type { RowDecor, RowDecorFn } from '../components/cellGridLayout';
 import { SectionTitle } from '../components/Panel';
 import type { GridCellSpec } from '../components/cellGridPaint';
+import { PdaDemo, TuringDemo } from './DevKitAutomata';
 import { DevKitSection as Section } from './DevKitSection';
 
 /** Dev-only demo of the Tier 3 kit round, wave 2 to 3, agent F (#/dev/kit). */
@@ -39,6 +40,12 @@ export function DevKitTier3f() {
       </Section>
       <Section title="CellGrid rowDecor in canvas mode (480 cells): rails and labels are the same SVG, the cells are painted">
         <CellGrid rows={BIG_ROWS} cols={BIG_COLS} cell={(r, c) => ({ tone: (r + c) % 5 === 0 ? 'info' : undefined })} size="xs" rowDecor={bigDecor} ariaLabel="Large grid with row rails" />
+      </Section>
+      <Section title="TapeStrip + core/tm · a Turing machine you can edit: Step and Back move the head (the window follows it), Left/Right on the strip look along the tape, a looping table stops at the budget">
+        <TuringDemo />
+      </Section>
+      <Section title="core/automata Pda · w wᴿ needs a guess: every live configuration (state, unread input, stack) is shown per move, and the run is bounded by a configuration budget">
+        <PdaDemo />
       </Section>
     </>
   );

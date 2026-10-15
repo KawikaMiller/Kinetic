@@ -155,3 +155,41 @@ export function parseBoundedDecimal(text: string, o: DecimalFieldOptions): Field
   if (v > o.max) return { ok: false, error: m.tooBig(v, t) };
   return { ok: true, value: v };
 }
+
+/** A learner-edited table, one rule per line: every row that parsed, or the first refusal with its 1-based line. */
+export type RowParse<T> = { ok: true; rows: { line: number; value: T }[] } | { ok: false; error: string; line: number };
+
+export interface RowParseOptions<T> {
+  /** Refuse a table with more rules than this (blank and comment lines don't count). */
+  maxRows: number;
+  /** Refuse a line longer than this many characters, before reading it. */
+  maxLineChars: number;
+  /** Lines starting with this (after trimming) are comments; default `#`. */
+  comment?: string;
+  /** Read one trimmed, non-empty line; return the value or the sentence to show. */
+  row: (text: string, line: number) => FieldParse<T>;
+}
+
+/**
+ * Reads a table of rules, one per line, with the bounds checked first and refusals that name the
+ * line. Hand-written, so learner text never reaches `eval`. The caller reads each line with `row`,
+ * then checks anything across lines (a duplicate rule) on the returned rows.
+ */
+export function parseRows<T>(text: string, o: RowParseOptions<T>): RowParse<T> {
+  const comment = o.comment ?? '#';
+  const rows: { line: number; value: T }[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = i + 1;
+    if (lines[i].length > o.maxLineChars) {
+      return { ok: false, line, error: `Line ${line} is ${lines[i].length} characters; keep each rule to ${o.maxLineChars} or fewer.` };
+    }
+    const trimmed = lines[i].trim();
+    if (!trimmed || trimmed.startsWith(comment)) continue;
+    if (rows.length >= o.maxRows) return { ok: false, line, error: `Line ${line}: more than ${o.maxRows} rules; delete one first.` };
+    const read = o.row(trimmed, line);
+    if (!read.ok) return { ok: false, line, error: `Line ${line}: ${read.error}` };
+    rows.push({ line, value: read.value });
+  }
+  return { ok: true, rows };
+}

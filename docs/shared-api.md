@@ -1225,6 +1225,26 @@ edgesOf(dfaOrNfa)                 // { from, to, symbols[] }[]: one arrow per pa
 `, plus `[OTHER]`. lexing-tokens uses it instead of rewriting the source first. It's DFA-only.
 - Draw the machines with `GraphView` state mode. Minimisation is deliberately left out (T3 chomsky-hierarchy). Tests compare the subset DFA with the NFA and with a JS RegExp on every string up to length 10.
 
+### `core/automata.ts` PDA half, `core/tm.ts`, `TapeStrip.tsx`, `parseRows` — K3-17: turing-machines, halting-problem, pushdown-automata, chomsky-hierarchy
+```ts
+// PDA (core/automata): a move pops ONE stack symbol and pushes a string, top first; the stack is a string, top at index 0
+const pda: Pda = { kind: 'pda', start: 'q0', bottom: 'Z', accept: ['qf'], rules: [{ from: 'q0', read: 'a', pop: 'Z', to: 'q0', push: 'AZ' }, { from: 'q0', read: '', pop: 'Z', to: 'qf', push: 'Z' } /* '' = ε */] };
+pdaStart(pda)                              // { state, pos, stack: 'Z' }: a configuration is (state, input read so far, stack)
+pdaMoves(pda, input, config)               // every configuration one rule away (non-determinism lives here)
+pdaStep(pda, input, configs)               // one move of a whole SET: de-duplicated, sorted, dead ones gone
+pdaRun(pda, input, { maxConfigs, accept })  // { status: 'accepted' | 'rejected' | 'budget-exhausted', levels: PdaConfig[][], explored }; accept 'final-state' (default) | 'empty-stack'
+// Turing machine (core/tm): tape is a sparse Map (blank '_' unset), unbounded both ways; halting states default to halt / accept / reject
+const tm = parseTmTable('q0 1 -> 0 R q0\nq0 _ -> 1 S halt');   // { ok: true, value: Tm } | { ok: false, error: 'Line 2: …', line }
+tmStart(tm, '1011'); tmStep(tm, config)    // { status: 'moved', config, rule } | { status: 'halted' | 'stuck', config }; pure
+runTm(tm, '1011', { maxSteps: 5000 })      // { status: 'halted' | 'stuck' | 'budget-exhausted', steps, config }
+tapeText(config); symbolAt(config, i)      // '1100' (first to last written cell); one cell, blank '_' anywhere
+<TapeStrip symbol={(i) => symbolAt(config, i)} head={config.head} state={config.state} changed={[prevHead]} cells={13} />
+```
+- `budget-exhausted` is not a verdict: it never says "never halts" (say "did not halt within N steps"). A halting-problem certificate (a repeated configuration) is the lesson's own check.
+- `parseTmTable` refuses with the line named: a missing arrow, a wrong word count, an unknown move, a state name over 8 characters, a multi-character symbol, a rule for a halting state, a duplicate (state, symbol) ("Line 3: q0 0 already has a rule on line 1."), more than 40 rules, a line over 40 characters, an empty table. No `eval`. The row machinery is `parseRows(text, { maxRows, maxLineChars, row })` in `core/parse` (`RowParse`: every row with its line, or the first refusal); K3-22 `parseKit` may build on or replace it.
+- `TapeStrip` (on ArrayStrip): `cells` (default 17, odd) centred on the head, head cell lifted, blank cells dimmed, `changed` indices in --ok, the head marker labelled with `state`. It is ONE tab stop: Left/Right pan the view, Home or Escape recentre, and any head move recentres; a head panned off screen shows a hint. Pure window rules are in `components/tapeWindow.ts`.
+- Tests: balanced brackets, a^n b^n and w wᴿ (the guess) PDAs against closed-form oracles on every string up to length 10; the spec's increment and palindrome tables (every string up to 10 bits / length 10, hand-pinned step counts 8, 8, 3, 10, 21), an a^n b^n machine, loops stopped at the budget, `runTm` against an independent array simulator on 500 seeded random 4-state tables. Demo on `#/dev/kit`.
+
 ### `core/ipv4.ts` — subnetting-cidr, ethernet-arp, dhcp
 ```ts
 parseIPv4(' 192.168.1.10 ')       // FieldParse<number>: { ok, value: 0xc0a8010a } or { ok: false, error } with the reason
