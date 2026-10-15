@@ -28,6 +28,12 @@ export interface Structure {
 
 const log2 = (n: number) => Math.ceil(Math.log2(n));
 
+/** Why a structure is out when the updates it must take are beyond it; a plain Fenwick tree is scoped, since two of them do give a range add. */
+const updateRefusal = (s: Structure, updates: Need['updates']): string => {
+  if (updates !== 'range') return 'every update rebuilds it';
+  return s.id === 'fenwick' ? 'a plain one has no range add (two give one: not covered here)' : 'has no range add';
+};
+
 /** The structures in the order of the rule: the first one that fits is the simplest. */
 export const STRUCTURES: readonly Structure[] = [
   { id: 'prefix', label: 'prefix sums', ops: ['sum'], updates: ['none'], numbers: (n) => n + 1, numbersNote: 'n + 1' },
@@ -51,7 +57,7 @@ export interface Recommendation {
 export function recommend(need: Need, n: number): Recommendation {
   const considered = STRUCTURES.map((s) => {
     if (!s.ops.includes(need.op)) return { structure: s, fits: false, why: `cannot answer ${need.op}` };
-    if (!s.updates.includes(need.updates)) return { structure: s, fits: false, why: need.updates === 'range' ? 'cannot add to a range' : 'cannot take updates' };
+    if (!s.updates.includes(need.updates)) return { structure: s, fits: false, why: updateRefusal(s, need.updates) };
     return { structure: s, fits: true, why: 'fits' };
   });
   const fitting = considered.filter((c) => c.fits);

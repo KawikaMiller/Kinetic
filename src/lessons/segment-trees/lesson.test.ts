@@ -128,7 +128,12 @@ describe('try-this entries, from the default state, as written', () => {
     expect(FACTS.eagerTouched).toBe(eager.touched);
     expect(FACTS.pushedAt).toBeGreaterThan(0);
     expect(queryRange(lazy.tree, 3, 3).value).toBe(want[3]);
-    expect(lesson.tryThis[2]).toContain(`lazy tags touch ${lazy.touched} nodes where visiting every leaf`);
+    expect(lesson.tryThis[2]).toContain(`lazy tags touch ${lazy.touched} nodes and the other-way stat says ${eager.touched}`);
+    // The written order: play the lazy default, then Query 3..3 pushes; after Reset an eager Add on the fresh tree touches the eager count.
+    expect(queryRange(lazy.tree, 3, 3, { record: true }).events.some((e) => e.kind === 'push')).toBe(true);
+    expect(addRange(buildTree(valuesFor(8), 'sum'), ADD_DEFAULT.l, ADD_DEFAULT.r, ADD_DEFAULT.v, false).touched).toBe(eager.touched);
+    // Pressing the eager Add straight after the lazy one pushes the tags first, so a later Query pushes nothing: the reason for the Reset.
+    expect(queryRange(addRange(lazy.tree, 2, 5, 5, false).tree, 3, 3, { record: true }).events.some((e) => e.kind === 'push')).toBe(false);
   });
 
   it('try-this 4: query 13 reads 13, 12, 8; update 5 writes 5, 6, 8, 16; cells 3 to 11 sum to 40 in 4 reads and the segment tree agrees; min is wrong', () => {

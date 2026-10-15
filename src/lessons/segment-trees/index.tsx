@@ -1,4 +1,5 @@
 import type { LessonModule } from '../../core/types';
+import { plural } from '../../core/format';
 import { FACTS as F } from './facts';
 import { Stage } from './Stage';
 
@@ -22,7 +23,7 @@ const lesson: LessonModule = {
   tryThis: [
     `In Why prefix sums stop, on the defaults (8 cells, 50% updates): over the seeded ${F.workload} operations prefix sums touch ${F.smallPrefix} cells, the segment tree ${F.smallSegment} nodes (partial nodes count, so it is the red bar here) and the Fenwick tree ${F.smallFenwick}, so on 8 cells prefix sums are not the worst. Choose 1,024 cells, where prefix sums turn red: ${n(F.bigPrefix)} against ${n(F.bigSegment)} and ${n(F.bigFenwick)}.`,
     `In The segment tree, press play on the default (sum of cells ${F.queryL} to ${F.queryR}): the covering nodes are ${F.queryCovering}, ${F.queryCoveringCount} of them, the search touches ${F.queryTouched} nodes and the answer is ${F.queryValue}.`,
-    `In Lazy range updates, press play on the default (add ${F.addV} to cells ${F.addL} to ${F.addR}): lazy tags touch ${F.lazyTouched} nodes where visiting every leaf (switch Laziness off, press Add) touches ${F.eagerTouched}. Then set l and r to 3 and press Query: the tag is pushed down.`,
+    `In Lazy range updates, press play on the default (add ${F.addV} to cells ${F.addL} to ${F.addR}): lazy tags touch ${F.lazyTouched} nodes and the other-way stat says ${F.eagerTouched}. Then set l and r to 3 and press Query: the tag is pushed down. Press Reset, switch Laziness off and press Add: visiting every leaf touches ${F.eagerTouched}, and the stat now says ${F.lazyTouched}.`,
     `In The Fenwick tree, on the defaults: a prefix query up to ${F.fenQuery} reads cells ${F.fenReads} and an update at ${F.fenUpdate} writes cells ${F.fenWrites}; cells ${F.rangeL} to ${F.rangeR} sum to ${F.rangeValue} in ${F.rangeCells} reads, and the segment tree agrees. Choose min: the range becomes cells ${F.minL} to ${F.minR}, the Fenwick tree is refused, and its prefix recipe says ${F.minWrong} where a plain loop says ${F.minTrue}.`,
     `In Pick the structure, on the defaults (min, no updates): a sparse table at ${n(F.sparseNumbers)} numbers; switch Memory is tight to Yes and it becomes a segment tree at ${n(F.leanNumbers)}.`,
   ],
@@ -75,7 +76,7 @@ const lesson: LessonModule = {
         'Never: a node keeps its tag and its children are updated by recomputing from the leaves',
       ],
       answer: 0,
-      why: `Pushing is postponed on purpose: the tagged node already holds the right aggregate for its own range, and the children are brought up to date when something has to descend through it. In the lesson a query on cell 3 after the add pushes ${F.pushedAt} tags on its way down. Pushing at once would cost the same work as visiting each leaf.`,
+      why: `Pushing is postponed on purpose: the tagged node already holds the right aggregate for its own range, and the children are brought up to date when something has to descend through it. In the lesson a query on cell 3 after the add pushes ${plural(F.pushedAt, 'tag')} on its way down. Pushing at once would cost the same work as visiting each leaf.`,
     },
   ],
 };

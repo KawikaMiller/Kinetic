@@ -15,6 +15,9 @@ const STEP_MS = 1000;
 interface Session {
   tree: SegTree;
   run: SegRun;
+  /** The operation just run and the tree it ran on: what the "other way" stat compares against. */
+  action: Action;
+  before: SegTree;
 }
 
 const defaultAction = (mode: 'basic' | 'lazy', n: number): Action =>
@@ -24,8 +27,9 @@ const defaultAction = (mode: 'basic' | 'lazy', n: number): Action =>
 
 const start = (mode: 'basic' | 'lazy', n: number, op: Op): Session => {
   const tree = buildTree(valuesFor(n), op);
-  const run = segFrames(tree, defaultAction(mode, n));
-  return { tree: run.result.tree, run };
+  const action = defaultAction(mode, n);
+  const run = segFrames(tree, action);
+  return { tree: run.result.tree, run, action, before: tree };
 };
 
 const OPS_BASIC: Op[] = ['sum', 'min', 'max', 'gcd'];
@@ -86,14 +90,16 @@ export function TreeScene({ picker, mode }: { picker: ReactNode; mode: 'basic' |
     }
     setNote(null);
     setSwap(null);
-    const next = segFrames(session.tree, make(l, r, value.value));
-    setSession({ tree: next.result.tree, run: next });
-  };  const doQuery = () => run('range', (l, r) => ({ kind: 'query', l, r }));
+    const action = make(l, r, value.value);
+    const next = segFrames(session.tree, action);
+    setSession({ tree: next.result.tree, run: next, action, before: session.tree });
+  };
+  const doQuery = () => run('range', (l, r) => ({ kind: 'query', l, r }));
   const doSet = () => run('cell', (l, _r, v) => ({ kind: 'set', i: l, v }));
   const doAdd = () => run('range', (l, r, v) => ({ kind: 'add', l, r, v, lazy }));
 
-  const eagerTouched = mode === 'lazy' && session.run.frames.length > 0 && f.range ? addRange(buildTree(valuesFor(n), op), f.range.l, f.range.r, 1, false).touched : null;
-  const lazyTouched = mode === 'lazy' && f.range ? addRange(buildTree(valuesFor(n), op), f.range.l, f.range.r, 1, true).touched : null;
+  const last = session.action;
+  const otherWay = last.kind === 'add' ? addRange(session.before, last.l, last.r, last.v, !last.lazy).touched : null;
   const values = cellValues(f.tree);
   const bound = 2 * Math.ceil(Math.log2(n));
 
@@ -107,7 +113,7 @@ export function TreeScene({ picker, mode }: { picker: ReactNode; mode: 'basic' |
           {mode === 'basic' ? (
             <Stat label="Covering nodes" value={result.covering.length} sub={`at most 2 x ceil(log2 ${n}) = ${bound}`} />
           ) : (
-            <Stat label="Same range, other way" value={lazy ? eagerTouched ?? '–' : lazyTouched ?? '–'} sub={lazy ? 'nodes the eager way would touch' : 'nodes lazy tags would touch'} />
+            <Stat label="Same add, other way" value={otherWay ?? '–'} sub={last.kind !== 'add' ? 'shown after an add' : last.lazy ? 'nodes the eager way would touch' : 'nodes lazy tags would touch'} />
           )}
           <Stat label="Pending tags" value={Object.values(f.tree.nodes).filter((x) => x.tag !== 0).length} color="var(--violet)" sub="added, not yet pushed down" />
         </Stats>
@@ -167,7 +173,7 @@ export function TreeScene({ picker, mode }: { picker: ReactNode; mode: 'basic' |
             </Button>
           )}
           <Hint>
-            <span role="status">{note ?? `${WORD[mode]}. Cells are numbered from 0 to ${n - 1}; values are whole numbers from -999 to 999.`}</span>
+            <span role="status">{note ?? `${WORD[mode]}. Cells are numbered from 0 to ${n - 1}; values are whole numbers from -999 to 999.${mode === 'lazy' ? ' gcd is not offered here: a range add has no effect on a gcd that a tag could hold, so it is refused.' : ''}`}</span>
           </Hint>
         </>,
       ]}
