@@ -37,7 +37,7 @@ describe('try-this entries, from the default state, as written', () => {
 
   it('try-this 3: the Hall scene names {W1, W2, W3} and {J1, J2}, and the cover has 2 nodes, the largest matching\'s size', () => {
     const c = hallCaption(none, true);
-    expect(c).toContain('{W1, W2, W3} likes only {J1, J2}: 3 workers cannot fit 2 jobs');
+    expect(c).toContain('{W1, W2, W3} like only {J1, J2}: 3 workers cannot fit 2 jobs');
     expect(c).toContain('The largest matching has 2');
     expect(c).toMatch(/A vertex cover of 2 nodes/);
     expect(hallCaption(none, false)).not.toContain('vertex cover');

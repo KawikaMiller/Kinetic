@@ -39,7 +39,7 @@ const lesson: LessonModule = {
   tryThis: [
     `In Greedy vs augmenting press Greedy: it matches ${matchingSize(GREEDY_MATCHING)} of ${GREEDY_GRAPH.workers} (${GREEDY_PAIRS}) and strands ${STRANDED}. Press Find path to see ${PATH}, then Flip the path: the matching reaches ${FINAL}.`,
     `In Greedy vs augmenting load No perfect matching, press Augment from every free worker, then Find path: the search reaches ${VIOLATOR_WORKERS} and ${VIOLATOR_JOBS} and finds no augmenting path.`,
-    `Open When it cannot be done and load No perfect matching: ${VIOLATOR_WORKERS} likes only ${VIOLATOR_JOBS}. Switch on the vertex cover: ${NONE_COVER.workers.length + NONE_COVER.jobs.length} nodes, the size of the largest matching, ${matchingSize(NONE_BEST)}.`,
+    `Open When it cannot be done and load No perfect matching: ${VIOLATOR_WORKERS} like only ${VIOLATOR_JOBS}. Switch on the vertex cover: ${NONE_COVER.workers.length + NONE_COVER.jobs.length} nodes, the size of the largest matching, ${matchingSize(NONE_BEST)}.`,
     `Open As a flow, press Greedy, Find path and Push along it: the path s → W2 → J1 ⇠ W1 → J2 ⇠ W4 → J4 → t raises the flow from ${matchingSize(GREEDY_MATCHING)} to ${FINAL}.`,
     `Open Costs: greedy per row costs ${GREEDY_COST} and the optimal assignment costs ${BEST_COST} (${BEST_PAIRS}).`,
   ],

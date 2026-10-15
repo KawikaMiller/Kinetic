@@ -45,7 +45,7 @@ export function hallCaption(g: Bipartite, showCover: boolean): string {
   const size = matchingSize(m);
   const v = hallViolator(g);
   const lead = v
-    ? `${setText(v.workers.map(workerName))} likes only ${setText(v.neighbourhood.map(jobName))}: ${plural(v.workers.length, 'worker')} cannot fit ${plural(v.neighbourhood.length, 'job')}, so no matching covers every worker. The largest matching has ${size}.`
+    ? `${setText(v.workers.map(workerName))} ${v.workers.length === 1 ? 'likes' : 'like'} only ${setText(v.neighbourhood.map(jobName))}: ${plural(v.workers.length, 'worker')} cannot fit ${plural(v.neighbourhood.length, 'job')}, so no matching covers every worker. The largest matching has ${size}.`
     : `A largest matching has ${size} and gives every worker a job, so no set of workers is short of jobs.`;
   if (!showCover) return lead;
   const c = minimumVertexCover(g, m);

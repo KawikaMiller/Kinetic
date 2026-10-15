@@ -107,6 +107,7 @@ export function CondenseScene({ picker, ed }: { picker: ReactNode; ed: SccEditor
           <Hint tone="muted" block>
             The collapsed graph has no cycle: a cycle through two components would let each reach the other, and then they would have been one component to begin with.
             {isDag ? ' Here the graph had no cycle already, so collapsing changes nothing.' : ''}
+            {' '}In the dependency order an edge from a to b puts a before b.
           </Hint>
         </div>
       </div>

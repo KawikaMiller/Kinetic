@@ -24,7 +24,7 @@ export function EditRow({ ed }: { ed: SccEditor }) {
       <Button onClick={ed.undo} disabled={ed.added === 0}>
         Undo last edge
       </Button>
-      <Hint>Drag from one node to another to add an edge (up to {MAX_NODES} nodes); with the keyboard press C on a node, then Enter on another.</Hint>
+      <Hint>Drag from one node to another to add an edge (up to {MAX_NODES} nodes); with the keyboard press C on a node, then Enter on another. A second copy of an edge is refused, and a self-loop is not offered here (it would not change any component).</Hint>
     </>
   );
 }

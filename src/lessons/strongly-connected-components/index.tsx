@@ -22,7 +22,7 @@ const lesson: LessonModule = {
       'Collapsing a cyclic graph into a DAG so it can be ordered or scheduled',
       'Solving 2-SAT, which reduces to components of an implication graph (named, not shown)',
     ],
-    why: 'Every algorithm on a directed graph that needs "no cycles" can be run on the collapsed graph instead. Knowing the components also tells you what is trapped together: which modules have to change as a unit, and which tasks are actually deadlocked.',
+    why: 'Many algorithms on a directed graph that need "no cycles" can be run on the collapsed graph instead. Knowing the components also tells you what is trapped together: which modules have to change as a unit, and which tasks are actually deadlocked.',
     watch: 'The graph is directed: arrowheads show direction. In pass 1 the node the search is on is yellow, a finished node gets a green tint, and the strip beside the graph is the finish-order stack, blue, with each node and its finish time. When the edges flip they turn violet and dashed. In pass 2 each component gets one colour (amber, pink, sky or orange) on its nodes and on a soft hull behind them; the colours repeat after four, so read the hulls and the list too. In Try to break it the edge you just added is orange. In Condensation each box is one component, and the blue tint and number show its place in the dependency order.',
   },
   tryThis: [
