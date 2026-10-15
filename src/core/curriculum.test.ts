@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import rolloutPlan from '../../docs/rollout-plan.md?raw';
 import { FAMILIES, TOPICS, TRACKS } from './curriculum';
 import { BUILT_TOPICS } from './lessons';
+import { tier3PlanRows } from './testing/tier3Plan';
 import { ALL, filterToParams, matchesFilter, parseFilter, tracksInFamily } from './topicFilter';
 
 /** The Tier 3 lessons that existed before the kickoff registered the planned ones (plan §5). */
@@ -13,10 +14,6 @@ const EXISTING_TIER3 = new Set([
 const TIER3_NEW_PER_TRACK = {
   hw: 4, os: 9, lang: 12, math: 15, dsa: 18, net: 9, arch: 16, data: 21, sec: 12, ops: 10, craft: 5, web: 5, ml: 11, lead: 7,
 };
-/** Present once docs/tier3-plan.md is in the tree; the row-for-row check skips without it. */
-const tier3Plan = Object.values(
-  import.meta.glob<string>('../../docs/tier3-plan.md', { query: '?raw', import: 'default', eager: true }),
-)[0];
 const byId = new Map(TOPICS.map((t) => [t.id, t]));
 
 describe('curriculum', () => {
@@ -101,19 +98,9 @@ describe('curriculum', () => {
       expect(byId.has('two-generals'), 'merged into exactly-once-myth').toBe(false);
     });
 
-    it.skipIf(!tier3Plan)('matches the plan table row for row (id, track, title)', () => {
-      const lines = (tier3Plan ?? '').split('\n');
-      const start = lines.findIndex((l) => l.startsWith('## 2.'));
-      const end = lines.findIndex((l, i) => i > start && l.startsWith('## 3.'));
-      const planned = lines
-        .slice(start, end)
-        .filter((l) => /^\| `[a-z0-9-]+` \|/.test(l))
-        .map((l) => {
-          const [id, title, track] = l.split('|').slice(1, 4).map((c) => c.trim());
-          return { id: id.replace(/`/g, ''), title, track };
-        });
-      expect(planned).toHaveLength(154);
-      for (const p of planned) {
+    it.skipIf(!tier3PlanRows.length)('matches the plan table row for row (id, track, title)', () => {
+      expect(tier3PlanRows).toHaveLength(154);
+      for (const p of tier3PlanRows) {
         const t = byId.get(p.id);
         expect({ tier: t?.tier, track: t?.track, title: t?.title }, p.id).toEqual({ tier: 3, track: p.track, title: p.title });
       }

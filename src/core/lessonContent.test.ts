@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { TOPICS } from './curriculum';
+import { tier3PlanRows } from './testing/tier3Plan';
 import { lintLesson, longestTally, SHORT_OPTION_CHARS, TIER_LONGEST_SHARE, type ContentRule } from './lessonContent';
+import {
+  DOMAIN_REVIEW_IDS, lintTier3Lesson, tryThisTestNumbers, unscopedAbsolutes, type Tier3Evidence,
+} from './lessonContentT3';
 import type { LessonModule, QuizQuestion } from './types';
 
 /**
@@ -51,6 +55,32 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   'slos-error-budgets': { ticket: TIER4, rules: ['quiz-length'] },
   'zero-trust': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
 };
+
+/**
+ * The 12 Tier 3 lessons that predate AC-0/T3 (docs/tier3-plan.md §5). They are exempt from the
+ * AC-0/T3 rules until T3-R1 and T3-R2 retrofit them; remove each id as its retrofit merges.
+ * Every other Tier 3 lesson is held to the rules from its first commit.
+ */
+const TIER3_AWAITING_RETROFIT = new Set([
+  'load-balancing', 'consistent-hashing', 'cap-theorem', 'circuit-breakers', 'monolith-microservices', 'event-sourcing',
+  'replication', 'sharding', 'isolation-levels', 'cdn-edge', 'observability', 'oauth-flows',
+]);
+
+/** Lesson folders' source, loaded on demand: only Tier 3 lessons are ever read. */
+const lessonSources = import.meta.glob<string>('../lessons/**/*.{ts,tsx}', { query: '?raw', import: 'default' });
+const IS_TEST_FILE = /\.test\.tsx?$/;
+
+/** What the Tier 3 lint needs to know about a lesson beyond its module: its source and its tests. */
+async function tier3Evidence(id: string): Promise<Tier3Evidence> {
+  const files = Object.entries(lessonSources).filter(([path]) => path.startsWith(`../lessons/${id}/`));
+  const read = async (tests: boolean) =>
+    Promise.all(files.filter(([path]) => IS_TEST_FILE.test(path) === tests).map(([, load]) => load()));
+  return {
+    domainReview: DOMAIN_REVIEW_IDS.has(id),
+    source: (await read(false)).join('\n'),
+    tryThisTests: (await read(true)).flatMap(tryThisTestNumbers),
+  };
+}
 
 const modules = import.meta.glob<{ default: LessonModule }>('../lessons/*/index.tsx', { eager: true });
 const lessons = Object.entries(modules).map(([path, mod]) => ({ id: path.split('/')[2], lesson: mod.default }));
@@ -137,6 +167,85 @@ describe('lesson-content rules', () => {
   });
 });
 
+// ── AC-0/T3 rules (K3-T2) fail on planted bad fixtures ───────────────────
+
+const CLEAN: Tier3Evidence = { domainReview: false, source: '', tryThisTests: [1, 2, 3] };
+const t3Rules = (l: LessonModule, ev: Partial<Tier3Evidence> = {}) => lintTier3Lesson(l, { ...CLEAN, ...ev }).map((i) => i.rule);
+const withKeyIdea = (text: string): LessonModule => ({ ...GOOD, keyIdeas: [text, 'two', 'three'] });
+const withWhy = (why: string): LessonModule => ({ ...GOOD, quiz: [{ ...GOOD.quiz[0], why }, ...GOOD.quiz.slice(1)] });
+
+describe('AC-0/T3 rules', () => {
+  it('pass a well-formed lesson', () => {
+    expect(t3Rules(GOOD)).toEqual([]);
+  });
+
+  it('find an unscoped absolute, and every word the list names', () => {
+    for (const word of ['never', 'always', 'every', 'all', 'only', 'must', 'guaranteed', 'most', 'typical', 'typically']) {
+      expect(unscopedAbsolutes(`A cache ${word} helps.`), word).toEqual([word]);
+    }
+    expect(unscopedAbsolutes('ALWAYS verify. Never trust.')).toEqual(['always', 'never']);
+    expect(unscopedAbsolutes('A cache can help, sometimes.')).toEqual([]);
+    expect(unscopedAbsolutes('Normally the first request is slow.')).toEqual([]);
+  });
+
+  it('read a scope phrase as hedging only the sentence it sits in', () => {
+    expect(unscopedAbsolutes('In this model, a leaf never sets up a frame.')).toEqual([]);
+    expect(unscopedAbsolutes('Browsers default to Lax by default in current Chrome, never elsewhere.')).toEqual([]);
+    expect(unscopedAbsolutes('It holds in this model. A real cluster never agrees for free.')).toEqual(['never']);
+  });
+
+  it('fail on an unscoped absolute in keyIdeas or a quiz why', () => {
+    expect(t3Rules(withKeyIdea('Retries always make things worse.'))).toContain('absolutes');
+    expect(t3Rules(withWhy('Every provider shares deny-wins.'))).toContain('absolutes');
+    expect(t3Rules(withKeyIdea('Retries make things worse unless they back off.'))).not.toContain('absolutes');
+  });
+
+  it('read allow-absolute: <reason> on the line that holds the text as an exemption', () => {
+    const text = "Retries always make things worse, don't they.";
+    const marked = `  keyIdeas: [\n    'Retries always make things worse, don\\'t they.', // allow-absolute: pinned by sim.test.ts\n  ],`;
+    const bareMarker = `    'Retries always make things worse, don\\'t they.', // allow-absolute:`;
+    const elsewhere = `    'Something else entirely, always.', // allow-absolute: other line`;
+    expect(t3Rules(withKeyIdea(text), { source: marked })).not.toContain('absolutes');
+    expect(t3Rules(withKeyIdea(text), { source: bareMarker })).toContain('absolutes');
+    expect(t3Rules(withKeyIdea(text), { source: elsewhere })).toContain('absolutes');
+  });
+
+  it('fail a D lesson without a Provenance chip, and pass it with one', () => {
+    expect(t3Rules(GOOD, { domainReview: true, source: 'export const x = 1;' })).toContain('provenance');
+    expect(t3Rules(GOOD, { domainReview: true, source: '<Provenance kind="toy">a toy</Provenance>' })).not.toContain('provenance');
+    expect(t3Rules(GOOD, { domainReview: false, source: '' })).not.toContain('provenance');
+    expect(t3Rules(GOOD, { domainReview: true, source: '// <Provenance> is imported elsewhere' })).toContain('provenance');
+  });
+
+  it('fail a lesson with fewer try-this N: tests than tryThis entries', () => {
+    expect(t3Rules(GOOD, { tryThisTests: [1, 2] })).toContain('try-this-tests');
+    expect(t3Rules(GOOD, { tryThisTests: [] })).toContain('try-this-tests');
+    expect(t3Rules(GOOD, { tryThisTests: [1, 1, 3] }), 'a repeated number is not a second test').toContain('try-this-tests');
+    expect(t3Rules(GOOD, { tryThisTests: [1, 2, 3, 4] })).not.toContain('try-this-tests');
+  });
+
+  it('find the try-this N: tests in a test file', () => {
+    const src = [
+      "it('try-this 1: the default state shows a stale read', () => {});",
+      'test("try-this 2: first reset, then drag", () => {});',
+      "it.skip('try-this 3: not run', () => {});",
+      "it('try-this: no number', () => {});",
+      "it('tries this 4: wrong name', () => {});",
+    ].join('\n');
+    expect(tryThisTestNumbers(src)).toEqual([1, 2, 3]);
+  });
+
+  it('flag 86 registered Tier 3 topics as D', () => {
+    expect(DOMAIN_REVIEW_IDS.size).toBe(86);
+    for (const id of DOMAIN_REVIEW_IDS) expect(tierOf.get(id), id).toBe(3);
+  });
+
+  it.skipIf(!tier3PlanRows.length)('flag exactly the D rows of the plan', () => {
+    const planned = tier3PlanRows.filter((r) => r.domainReview).map((r) => r.id);
+    expect([...DOMAIN_REVIEW_IDS].sort()).toEqual(planned.sort());
+  });
+});
+
 // ── Every built lesson ───────────────────────────────────────────────────
 
 describe('every built lesson', () => {
@@ -149,6 +258,36 @@ describe('every built lesson', () => {
       }
     }
     expect(unexpected).toEqual([]);
+  });
+
+  it('passes the AC-0/T3 rules if it is a Tier 3 lesson, apart from the 12 awaiting T3-R1/T3-R2', async () => {
+    const unexpected: string[] = [];
+    for (const { id, lesson } of lessons) {
+      if (tierOf.get(id) !== 3 || TIER3_AWAITING_RETROFIT.has(id)) continue;
+      for (const issue of lintTier3Lesson(lesson, await tier3Evidence(id))) unexpected.push(`${id}: ${issue.rule}: ${issue.detail}`);
+    }
+    expect(unexpected).toEqual([]);
+  });
+
+  it('allowlists only built Tier 3 lessons, and every one of them is checked once it leaves the list', () => {
+    const built = new Set(lessons.map((l) => l.id));
+    for (const id of TIER3_AWAITING_RETROFIT) {
+      expect(built.has(id), id).toBe(true);
+      expect(tierOf.get(id), id).toBe(3);
+    }
+    expect(TIER3_AWAITING_RETROFIT.size).toBe(12);
+  });
+
+  it('reports the AC-0/T3 issues the allowlisted lessons still have', async () => {
+    // Information for T3-R1/T3-R2, not a failure: each entry leaves the allowlist when its retrofit merges.
+    const rows: string[] = [];
+    for (const { id, lesson } of lessons) {
+      if (!TIER3_AWAITING_RETROFIT.has(id)) continue;
+      const rules = new Set(lintTier3Lesson(lesson, await tier3Evidence(id)).map((i) => i.rule));
+      rows.push(`${id}: ${[...rules].join(', ') || 'clean'}`);
+    }
+    console.info(`AC-0/T3 issues in the allowlisted Tier 3 lessons:\n  ${rows.join('\n  ')}`);
+    expect(rows).toHaveLength(TIER3_AWAITING_RETROFIT.size);
   });
 
   it('has a baseline that only names built lessons, each with a ticket', () => {
