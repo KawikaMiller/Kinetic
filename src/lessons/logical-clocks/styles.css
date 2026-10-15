@@ -1,0 +1,28 @@
+/* logical-clocks */
+.lc-stage { gap: 12px; min-width: 0; }
+.lc-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+
+/* Events in the lane editor: the colour is the process (--c from its tone class). */
+.lc-dot { fill: var(--c); }
+.lc-ring { fill: none; stroke: var(--hi); stroke-width: 2.5; }
+.lc-name { fill: var(--on-fill); font-size: 11px; font-weight: 700; pointer-events: none; }
+.lc-pick { fill: var(--hi); font-size: 10px; font-weight: 700; pointer-events: none; }
+.lc-lamport { fill: var(--text); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.lc-vector { fill: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; pointer-events: none; }
+.lc-vector .is-raised { fill: var(--violet); font-weight: 700; }
+
+.lc-rule-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.45; }
+.lc-rule-list li { padding-left: 10px; border-left: 3px solid var(--line-2); }
+.lc-rule-list li.is-live { border-left-color: var(--hi); }
+.lc-rule-now { color: var(--text); font-family: var(--mono, monospace); font-size: 12px; }
+.lc-pairs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* Replicas */
+.lc-replicas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.lc-versions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 28px; }
+.lc-version { font-size: 12px; padding: 3px 8px; }
+.lc-version.is-lost { text-decoration: line-through; }
+
+@media (max-width: 600px) {
+  .lc-replicas { grid-template-columns: minmax(0, 1fr); }
+}
