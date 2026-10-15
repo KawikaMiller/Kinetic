@@ -9,9 +9,9 @@ import { barsAt } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
 import { pctText } from '../distributions/fmt';
 import { SeedField } from '../distributions/SeedField';
-import { hedgeFrames, msText, timelineEnd } from './frames';
+import { hedgeFrames, msText, sampleSelectionNote, timelineEnd } from './frames';
 import {
-  CORRELATION_RANGE, HEDGE_BACKEND, HEDGE_DEFAULT, HEDGE_DELAY_RANGE, P99_TARGET_MS, REPLICA_CHOICES, hedgeReport, hedgeRun, p95DelayMs, type Hedge,
+  CORRELATION_RANGE, HEDGE_BACKEND, HEDGE_DEFAULT, HEDGE_DELAY_RANGE, P99_TARGET_MS, REPLICA_CHOICES, hedgeReport, hedgeRun, hedgedShare, p95DelayMs, thirdCopyEffect, type Hedge,
   type HedgedRequest,
 } from './model';
 
@@ -50,6 +50,7 @@ export function HedgeScene({ picker }: { picker: ReactNode }) {
   const now = player.frame.now;
   const end = timelineEnd(run.samples);
   const p95 = p95DelayMs(HEDGE_BACKEND);
+  const third = hedge.replicas === 3 ? thirdCopyEffect(HEDGE_BACKEND, hedge) : null;
 
   const lanes: GanttLane[] = run.samples.flatMap((_, i) =>
     Array.from({ length: hedge.replicas }, (__, j) => ({ id: `r${i}c${j}`, label: `req ${i + 1} · ${COPY_NAME(j)}` })),
@@ -83,7 +84,6 @@ export function HedgeScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--violet)', label: 'hedge copy' },
             { color: 'var(--ok)', label: 'winner' },
             { color: 'var(--dim)', label: 'cancelled (dashed)' },
-            { color: 'var(--orange)', label: 'extra load' },
           ]}
         />
       }
@@ -110,7 +110,7 @@ export function HedgeScene({ picker }: { picker: ReactNode }) {
     >
       <div className="tl-stage stage-pad">
         <Box className="tl-onerequest">
-          <SectionTitle hint="six seeded requests; press play">The first replies win</SectionTitle>
+          <SectionTitle hint="six seeded requests, chosen as the note below says; press play">The first replies win</SectionTitle>
           <WideRegion minWidth={480} label="Hedged requests: scroll sideways to see all of the timeline">
             <GanttLanes
               lanes={lanes}
@@ -126,6 +126,7 @@ export function HedgeScene({ picker }: { picker: ReactNode }) {
               ariaLabel="Six sample requests with their hedged copies"
             />
           </WideRegion>
+          <Hint tone="muted" block>{sampleSelectionNote(run.samples, hedgedShare(run))}</Hint>
         </Box>
         <MetricMeter
           label={`Hedged p99 against a ${P99_TARGET_MS} ms target`}
@@ -143,6 +144,11 @@ export function HedgeScene({ picker }: { picker: ReactNode }) {
           <Provenance kind="illustrative">latencies and the {P99_TARGET_MS} ms target are made up</Provenance>
           <Provenance kind="from-memory">hedged requests and the roughly 5% extra load at a p95 delay: The Tail at Scale (Dean and Barroso, 2013), verify before quoting</Provenance>
         </ProvenanceRow>
+        {third && (
+          <Hint tone="muted" className="tl-note">
+            The third copy goes out at {third.goesOutAt} ms, when {pctText(third.stillWaiting, 1)} of requests are still waiting, so it moves the hedged p99 from {msText(third.p99Without)} to {msText(third.p99With)}.
+          </Hint>
+        )}
         <Hint tone="muted" className="tl-note">
           Copies are independent unless shared fate says otherwise: with that probability every copy of a request has the first copy&apos;s latency, as when one rack or one
           dependency is slow. At 100% hedging only adds load. With one copy the delay and shared fate do nothing.

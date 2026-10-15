@@ -87,6 +87,13 @@ export function hedgeFrames(samples: readonly HedgedRequest[], hedge: Hedge, rep
   return timeFrames({ end: timelineEnd(samples), steps: FRAME_STEPS, milestones, intro: hedgeIntro(hedge), summary: hedgeSummary(hedge, report), hold: 2.5 });
 }
 
+/** Says how the timeline's requests were chosen, from the run: some are picked because they hedged, and the share of all requests that hedge is quoted beside them. */
+export function sampleSelectionNote(samples: readonly HedgedRequest[], share: number): string {
+  const hedged = samples.filter((r) => r.sentAt.length > 1).length;
+  if (hedged === 0) return `These ${samples.length} are the run's first requests, and none of them sent a second copy.`;
+  return `${hedged} of these ${samples.length} were picked because they hedged, so the picture over-shows hedging: ${pctText(share, 1)} of all requests in the run sent a second copy.`;
+}
+
 export function hurtCaption(r: Mm1Hedging): ReactNode {
   const cross = crossoverRho();
   const crossText = cross === null ? 'never in this range' : pctText(cross, 0);

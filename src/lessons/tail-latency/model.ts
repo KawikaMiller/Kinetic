@@ -371,6 +371,24 @@ export function timelineSamples(s: HedgeState): HedgedRequest[] {
   return [...hedged, ...plain].sort((a, b) => a.index - b.index).map((p) => p.request);
 }
 
+/** The share of the run's requests that sent a second copy, counted request by request. */
+export function hedgedShare(run: HedgeState): number {
+  let hedged = 0;
+  for (let i = 0; i < run.count; i++) if (run.sent[i] > 1) hedged++;
+  return run.count ? hedged / run.count : 0;
+}
+
+/** What the third copy adds at the current delay: when it goes out, how many requests are still waiting then, and the p99 with and without it. */
+export function thirdCopyEffect(b: Backend, hedge: Hedge): { goesOutAt: number; stillWaiting: number; p99Without: number; p99With: number } {
+  const goesOutAt = 2 * hedge.delay;
+  return {
+    goesOutAt,
+    stillWaiting: hedgedSurvival(b, { ...hedge, replicas: 3 }, goesOutAt),
+    p99Without: hedgedQuantile(b, { ...hedge, replicas: 2 }, P99),
+    p99With: hedgedQuantile(b, { ...hedge, replicas: 3 }, P99),
+  };
+}
+
 export interface HedgeRun extends HedgeState {
   samples: HedgedRequest[];
 }

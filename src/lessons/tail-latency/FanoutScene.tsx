@@ -17,7 +17,8 @@ import {
 } from './model';
 
 const HIST_MIN = 5;
-const HIST_MAX = 3000;
+/** The slowest request p99 the sliders can reach (about 9,200 ms at a ×50 factor, 10% slow, N = 1000) fits under this. */
+const HIST_MAX = 10_000;
 const METER_MAX = 1000;
 const LANES_SHOWN = 12;
 const ONE_REQUEST_SEED_OFFSET = 1000;
@@ -170,6 +171,7 @@ export function FanoutScene({ picker }: { picker: ReactNode }) {
           ]}
           className="tl-meter"
         />
+        {report.slowestP99 > METER_MAX && <Hint tone="muted" className="tl-note">The meter stops at {msText(METER_MAX)}; the request p99 here is {msText(report.slowestP99)}.</Hint>}
         <Box className="tl-row">
           <SectionTitle hint={`each call slow ${sig(backend.slowProb * 100)}% of the time`}>Share of requests that touch a slow backend</SectionTitle>
           <table className="data-table tl-table">

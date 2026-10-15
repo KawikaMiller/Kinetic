@@ -1,14 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
 import { pctText, sig } from '../distributions/fmt';
-import { FRAME_STEPS, fanoutCaption, hedgeFrames, hedgeIntro, hedgeSummary, hurtCaption, msText, timelineEnd, touchText } from './frames';
+import { FRAME_STEPS, fanoutCaption, hedgeFrames, hedgeIntro, hedgeSummary, hurtCaption, msText, sampleSelectionNote, timelineEnd, touchText } from './frames';
 import lesson from './index';
 import {
   BACKEND_DEFAULT, FANOUT_DEFAULT, FANOUT_STEPS, HEDGE_BACKEND, HEDGE_DEFAULT, MM1, MM1_DEFAULT_RHO, MM1_RHO, P99, SAMPLE_REQUESTS, callQuantile, callSurvival, crossoverRho,
-  extraLoad, fanoutReport, fanoutRun, hedgeReport, hedgeRun, hedgedQuantile, hedgingHurts, medianSlowWidth, mm1Hedging, p95DelayMs, touchesSlow, type Hedge,
+  extraLoad, fanoutReport, fanoutRun, hedgeReport, hedgeRun, hedgedQuantile, hedgedShare, hedgingHurts, medianSlowWidth, mm1Hedging, p95DelayMs, thirdCopyEffect, touchesSlow, type Hedge,
 } from './model';
 
 const text = (node: Parameters<typeof captionText>[0]) => expectCaption(node);
+
+describe('the third copy at the default delay', () => {
+  it('goes out after the p99, so it leaves the p99 unchanged, and the scene note quotes the model', () => {
+    const t = thirdCopyEffect(HEDGE_BACKEND, HEDGE_DEFAULT);
+    expect(t.goesOutAt).toBe(2 * HEDGE_DEFAULT.delay);
+    expect(t.p99Without).toBeLessThan(t.goesOutAt);
+    expect(t.p99With).toBeCloseTo(t.p99Without, 6);
+    expect(t.stillWaiting).toBeLessThan(0.01);
+    const wide = thirdCopyEffect(HEDGE_BACKEND, { ...HEDGE_DEFAULT, delay: 10 });
+    expect(wide.p99With).toBeLessThan(wide.p99Without);
+  });
+});
 
 describe('try-this entries, from the default state, as written', () => {
   it('try-this 1: at the defaults N = 100 with 1% slow calls reads 63.4%, and N = 1 and N = 1,000 read 1.0% and 99.996%', () => {
@@ -37,7 +49,19 @@ describe('try-this entries, from the default state, as written', () => {
     const run = hedgeRun(HEDGE_BACKEND, HEDGE_DEFAULT, 1);
     const r = hedgeReport(HEDGE_BACKEND, HEDGE_DEFAULT, run);
     expect(run.samples).toHaveLength(6);
-    expect(run.samples.filter((s) => s.sentAt.length > 1)).toHaveLength(3);
+    // The timeline over-picks hedged requests; the note must say so and quote the run's real share, counted here independently.
+    let hedgedCount = 0;
+    for (let i = 0; i < run.count; i++) if (run.sent[i] > 1) hedgedCount++;
+    expect(hedgedShare(run)).toBe(hedgedCount / run.count);
+    expect(hedgedShare(run)).toBeGreaterThan(0.03);
+    expect(hedgedShare(run)).toBeLessThan(0.07);
+    const picked = run.samples.filter((s) => s.sentAt.length > 1).length;
+    const note = sampleSelectionNote(run.samples, hedgedShare(run));
+    expect(note).toContain(`${picked} of these 6 were picked because they hedged`);
+    expect(note).toContain(`${pctText(hedgedCount / run.count, 1)} of all requests`);
+    expect(picked / run.samples.length).toBeGreaterThan(5 * hedgedShare(run));
+    const noHedge = hedgeRun(HEDGE_BACKEND, { ...HEDGE_DEFAULT, replicas: 1 }, 1);
+    expect(sampleSelectionNote(noHedge.samples, hedgedShare(noHedge))).toContain('none of them sent a second copy');
     expect(r.hedgedP99).toBeLessThan(r.plainP99);
     expect(r.hedgedP99Sim).toBeLessThan(r.plainP99Sim);
     expect(r.extra).toBeGreaterThan(0.045);

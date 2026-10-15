@@ -75,7 +75,7 @@ export function HurtScene({ picker }: { picker: ReactNode }) {
           <Provenance kind="from-memory">the M/M/1 time in system is exponential with rate μ(1 − ρ): verify against a queueing text</Provenance>
         </ProvenanceRow>
         <Hint tone="muted" className="tl-note">
-          Simplifications, stated: hedges are not cancelled, so each one is real load; the second copy joins the same queue, so ρ′ = ρ(1 + P(T &gt; h)) is solved as a fixed point; arrivals
+          Simplifications, stated: hedges are not cancelled, so each one is real load; the hedge&apos;s own latency is treated as an independent draw (a real second copy would queue behind the same work, so this flatters the hedge), and ρ′ = ρ(1 + P(T &gt; h)) is solved as a fixed point; arrivals
           are Poisson and service exponential. Past the crossover the p99 you buy back is smaller than the queue you build. The plot stops where the hedges overload the backend.
         </Hint>
       </div>
