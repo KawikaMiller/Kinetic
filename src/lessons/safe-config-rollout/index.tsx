@@ -1,5 +1,5 @@
 import type { LessonModule } from '../../core/types';
-import { ALL_AT_ONCE, FAULT_REGION, FLEET, PEAK_DELAY, REGIONS, REGION_SIZE, TIMEOUT_OK, TIMEOUT_RANGE, TIMEOUT_TYPO, changeOf, planFrom, simulate, type ChangeId, type Plan } from './model';
+import { ALL_AT_ONCE, FAULT_REGION, FLEET, PEAK_DELAY, REGIONS, REGION_SIZE, TIMEOUT_OK, TIMEOUT_RANGE, TIMEOUT_TYPO, allAtOnceWith, bakeThresholds, changeOf, planFrom, simulate, type ChangeId, type Plan } from './model';
 import { DEFAULT_PLAN } from './plan';
 import { Stage } from './Stage';
 
@@ -15,6 +15,10 @@ const peakLong = run('peak', staged({ bake: 25 }));
 const regionStaged = run('region', staged());
 const validationOn = run('validation', staged({ validate: true }));
 const validationOff = run('validation', staged());
+const crashAllSafe = run('crash', allAtOnceWith(DEFAULT_PLAN));
+const peakAllSafe = run('peak', allAtOnceWith(DEFAULT_PLAN));
+const peakBake = bakeThresholds(changeOf('peak'), staged());
+const peakMidBake = run('peak', staged({ bake: peakBake.beforeAll! }));
 const fmt = (n: number) => n.toLocaleString('en-US');
 
 const lesson: LessonModule = {
@@ -34,14 +38,14 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `The change starts as Crashes on load. Pushed everywhere at once, ${FLEET} servers fail for 25 minutes: ${fmt(crashAll.serverMinutes)} server-minutes. Switch to Bad for one region’s data: ${REGION_SIZE} servers, ${fmt(regionAll.serverMinutes)}.`,
-    `On Staged, the default plan (canary, one region, half, then all, a ${DEFAULT_PLAN.bake} minute bake, a gate and automatic rollback) costs ${crashStaged.serverMinutes} server-minutes for Crashes on load: the gate stops it at the canary.`,
-    `On Staged, pick Bad only at peak. With the ${DEFAULT_PLAN.bake} minute bake all ${FLEET} servers get it first and it costs ${peakShort.serverMinutes}; drag Bake to 25 and the gate stops it at the canary for ${peakLong.serverMinutes}.`,
+    `On Staged, the default plan (canary, one region, half, then all, a ${DEFAULT_PLAN.bake} minute bake, a gate and automatic rollback) costs ${crashStaged.serverMinutes} server-minutes for Crashes on load: the gate stops it at the canary. Read the stat beside it: the same push all at once with that gate and rollback costs ${crashAllSafe.serverMinutes}, so the gate and rollback account for most of the drop from the ${fmt(crashAll.serverMinutes)} of scene 1, and staging for the rest.`,
+    `On Staged, pick Bad only at peak. With the ${DEFAULT_PLAN.bake} minute bake all ${FLEET} servers get it first and it costs ${peakShort.serverMinutes}; drag Bake to ${peakBake.beforeAll} and the gate stops it before everyone has it; drag it to 25 and it stops at the canary for ${peakLong.serverMinutes}.`,
     `On Staged, pick Fails validation: the gate stops it at the canary for ${validationOff.serverMinutes} server-minutes. Switch Validate before push on: it is refused and nothing ships, so 0.`,
     `On Staged, pick Bad for one region’s data. The canary, one region and half all pass, because the broken region only gets it at the last stage: ${regionStaged.serverMinutes} server-minutes.`,
   ],
   keyIdeas: [
     'A config change is a deployment: it deserves a check before it ships, a staged rollout, a watching gate and a rollback.',
-    'In this model, staging helps when each bake is longer than the change takes to show itself; a shorter bake promotes the change before the gate has anything to see.',
+    `In this model the gate keeps watching every server it has reached, so staging helps once the watching before the last stage lands (the earlier stages together) outlasts the time the change takes to show itself. For the ${PEAK_DELAY}-minute change, a bake under ${peakBake.beforeAll} minutes lets it reach all ${FLEET}, ${peakBake.beforeAll} or more stops it short of everyone, and ${peakBake.atFirstStage} or more stops it at the canary.`,
     'A canary tells you about the servers it runs on, so a fault confined to one region can pass the early stages until that region gets it.',
     'Count the damage in one unit across strategies, here server-minutes from the minute a server fails until the rollback reaches it.',
   ],
@@ -50,12 +54,12 @@ const lesson: LessonModule = {
       q: `A change takes ${PEAK_DELAY} minutes to show itself, and the rollout bakes each stage for ${DEFAULT_PLAN.bake} minutes. Does staging protect you?`,
       options: [
         'Yes, because staged is safe whatever the bake time is',
-        'Little, because every stage lands before the gate has anything to see',
+        'Far less than it could, because every stage lands before the gate sees a problem',
         'Yes, because the first stage is only one server and cannot hurt',
         'No, because a gate cannot stop a change once it has landed anywhere',
       ],
       answer: 1,
-      why: `In this lesson’s model that rollout reaches all ${peakShort.reached} servers before the gate sees a problem and costs ${peakShort.serverMinutes} server-minutes. With a 25 minute bake the gate stops it at the canary for ${peakLong.serverMinutes}.`,
+      why: `In this lesson’s model that rollout reaches all ${peakShort.reached} servers before the gate sees a problem and costs ${peakShort.serverMinutes} server-minutes: staging still helps, since an all-at-once push with the same gate and automatic rollback costs ${peakAllSafe.serverMinutes}, but far less than it could. The gate watches every server reached, so what counts is the watching time before the last stage lands, not each bake against the delay: a bake of ${peakBake.beforeAll} minutes stops it at ${peakMidBake.reached} servers for ${peakMidBake.serverMinutes}, and 25 stops it at the canary for ${peakLong.serverMinutes}.`,
     },
     {
       q: `A config change sets a timeout of ${TIMEOUT_TYPO} where ${fmt(TIMEOUT_OK)} was meant, and the schema allows ${fmt(TIMEOUT_RANGE.min)} to ${fmt(TIMEOUT_RANGE.max)}. What does validating before the push do?`,
@@ -88,7 +92,7 @@ const lesson: LessonModule = {
         'Because a minute of failure on one server is worth the same as an hour on another',
       ],
       answer: 1,
-      why: `Comparing plans needs one unit. Everything at once costs ${fmt(crashAll.serverMinutes)} server-minutes for a crash and the default staged plan ${crashStaged.serverMinutes}: the same count, applied to both.`,
+      why: `Comparing plans needs one unit. Everything at once, as scene 1 pushes it (no gate, rollback by hand), costs ${fmt(crashAll.serverMinutes)} server-minutes for a crash and the default staged plan ${crashStaged.serverMinutes}. The unit is the same but the plans differ in more than staging: the same push all at once with the default’s gate and automatic rollback costs ${crashAllSafe.serverMinutes}, which is why the staged scene shows that number beside its own.`,
     },
   ],
 };

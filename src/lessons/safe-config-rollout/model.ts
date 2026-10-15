@@ -77,6 +77,14 @@ export interface Plan {
  */
 export const ALL_AT_ONCE: Plan = { stages: [FLEET], bake: 0, gate: false, validate: false, autoRollback: false };
 
+/** The all-at-once push with a plan's other safeguards (gate, validation, rollback), so a comparison with a staged plan differs only in the staging. */
+export const allAtOnceWith = (plan: Pick<Plan, 'gate' | 'validate' | 'autoRollback'>): Plan => ({
+  ...ALL_AT_ONCE,
+  gate: plan.gate,
+  validate: plan.validate,
+  autoRollback: plan.autoRollback,
+});
+
 export const planFrom = (chosen: readonly (typeof STAGE_CHOICES)[number]['id'][], rest: Omit<Plan, 'stages'>): Plan => ({
   ...rest,
   stages: [...STAGE_CHOICES.filter((s) => chosen.includes(s.id)).map((s) => s.size), FLEET],
@@ -176,4 +184,19 @@ export const endOf = (r: Result): number => (r.revertAt ?? Math.max(0, ...r.stag
 /** Which stage is baking at minute `now`, or null when none is (before the start, after a stop, or after the last bake). */
 export function bakingStage(r: Result, now: number): StageRun | null {
   return r.stages.find((s) => now >= s.start && now < s.end && (r.detectedAt === null || now < r.detectedAt)) ?? null;
+}
+
+/**
+ * From a sweep of the bake over 0..BAKE_MAX with the gate on and the plan's other settings: the shortest bake at which the gate stops the
+ * rollout before every server has the change, and the shortest at which it stops it at the first stage. Null when no bake in range does.
+ */
+export function bakeThresholds(change: Change, plan: Plan): { beforeAll: number | null; atFirstStage: number | null } {
+  let beforeAll: number | null = null;
+  let atFirstStage: number | null = null;
+  for (let bake = 0; bake <= BAKE_MAX; bake++) {
+    const r = simulate(change, { ...plan, bake, gate: true });
+    if (beforeAll === null && r.reached < FLEET) beforeAll = bake;
+    if (atFirstStage === null && r.reached === plan.stages[0] && r.detectedBy === 'gate') atFirstStage = bake;
+  }
+  return { beforeAll, atFirstStage };
 }

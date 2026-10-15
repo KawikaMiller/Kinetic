@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
-import { FLEET, GATE_THRESHOLD, HUMAN_DETECT_MIN, REGIONS, TIMEOUT_RANGE, statusAt, type Change, type Plan, type Result } from './model';
+import { FLEET, GATE_THRESHOLD, HUMAN_DETECT_MIN, REGIONS, TIMEOUT_RANGE, bakeThresholds, statusAt, type Change, type Plan, type Result } from './model';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
@@ -11,8 +11,12 @@ const reachedAt = (r: Result, now: number): number => Array.from({ length: FLEET
 /** The sentence about whether staging helped, computed from the plan and what happened. */
 function stagingVerdict(c: Change, plan: Plan, r: Result): ReactNode {
   if (plan.stages.length < 2) return null;
-  if (r.reached > plan.stages[0] && c.delay > plan.bake && r.detectedBy !== 'gate') {
-    return <> Each bake ({plan.bake} min) is shorter than the {c.delay} minutes this change takes to show itself, so staging only helps if each bake is longer than the change takes to show itself: all {r.reached} servers that were going to get it had it before the gate could see a problem.</>;
+  if (!plan.gate && r.reached > plan.stages[0]) return <> The gate is off, so nothing watches the bake: a person notices {HUMAN_DETECT_MIN} minutes after the first failure.</>;
+  if (plan.gate && r.reached === FLEET) {
+    const { beforeAll, atFirstStage } = bakeThresholds(c, plan);
+    const watched = (plan.stages.length - 1) * plan.bake;
+    const early = beforeAll === null ? 'No bake up to the slider’s end stops it before everyone has it.' : `With these stages a bake of ${beforeAll} minutes or more stops it before everyone has it${atFirstStage === null ? '' : `, and ${atFirstStage} or more stops it at the first stage`}.`;
+    return <> The change takes {c.delay} minutes to show itself, and the last stage lands after only {plural(watched, 'minute')} of watching, so all {r.reached} servers had it {r.detectedBy === 'gate' ? 'by the time the gate saw a problem' : 'before the gate could see a problem'}. The gate keeps watching every server it has reached, so what counts is the watching time before the last stage lands (the earlier stages together), not each bake on its own. {early}</>;
   }
   if (r.detectedBy === 'gate' && r.reached < FLEET) return <> The gate stopped the rollout after {plural(r.reached, 'server')}, so {FLEET - r.reached} never received it.</>;
   return null;

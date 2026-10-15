@@ -1,6 +1,6 @@
 /** Scene 3: the rollout laid on a UTC calendar, with each region's traffic-peak window. Pure. */
 import type { GanttBar, GanttLane } from '../../components/GanttLanes';
-import { REGIONS, regionOf, type Plan, type Result } from './model';
+import { REGIONS, regionOf, type Plan, type Result, type StageRun } from './model';
 
 export const MIN_PER_HOUR = 60;
 /** Each region's peak, as UTC hours of the day (invented): start and length. */
@@ -41,13 +41,16 @@ function newRegions(plan: Plan, k: number): number[] {
   return [...new Set(Array.from({ length: plan.stages[k] - from }, (_, i) => regionOf(from + i)))];
 }
 
+/** A stage's bake ends where its watching ends: at the stop when the rollout was stopped inside it, else at the end of its bake. */
+const bakeEnd = (s: StageRun, r: Result): number => (s.outcome === 'stopped' && r.detectedAt !== null ? Math.min(s.end, r.detectedAt) : s.end);
+
 export function scheduleBars(plan: Plan, r: Result, startHour: number): GanttBar[] {
   const end = domainHours(r);
   const bars: GanttBar[] = [];
   r.stages.forEach((s, k) => {
     for (const region of newRegions(plan, k)) {
       const lane = REGIONS[region];
-      bars.push({ id: `bake-${k}-${region}`, lane, start: s.start / MIN_PER_HOUR, end: s.end / MIN_PER_HOUR, tone: 'violet', kind: 'wait', label: `stage ${k + 1}` });
+      bars.push({ id: `bake-${k}-${region}`, lane, start: s.start / MIN_PER_HOUR, end: bakeEnd(s, r) / MIN_PER_HOUR, tone: 'violet', kind: 'wait', label: `stage ${k + 1}` });
       bars.push({ id: `land-${k}-${region}`, lane, start: s.start / MIN_PER_HOUR, end: s.start / MIN_PER_HOUR, tone: 'hi' });
       if (s.outcome === 'passed') bars.push({ id: `pass-${k}-${region}`, lane, start: s.end / MIN_PER_HOUR, end: s.end / MIN_PER_HOUR, tone: 'ok' });
     }
@@ -73,4 +76,10 @@ export function landingsInPeak(plan: Plan, r: Result, startHour: number): { stag
       return w && at >= w[0] && at < w[1] ? [{ stage: k, region }] : [];
     }),
   );
+}
+
+/** The plan the schedule scene reads, in words, so every setting it depends on is on screen there (read-only: it is edited in the staged scene). */
+export function planSummary(plan: Plan): string {
+  const stages = plan.stages.map((n) => n.toLocaleString('en-US')).join(' then ');
+  return `stages ${stages} servers, bake ${plan.bake} min, health gate ${plan.gate ? 'on' : 'off'}, validation ${plan.validate ? 'on' : 'off'}, rollback ${plan.autoRollback ? 'automatic' : 'by hand'}`;
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ALL_AT_ONCE, CHANGES, FAULT_REGION, FLEET, GATE_THRESHOLD, HUMAN_DETECT_MIN, PEAK_DELAY, REGION_SIZE, ROLLBACK_AUTO_MIN, ROLLBACK_MANUAL_MIN, STAGE_CHOICES, TIMEOUT_RANGE,
-  changeOf, planFrom, simulate, statusAt, withinRange, type Change, type Plan,
+  ALL_AT_ONCE, BAKE_MAX, CHANGES, FAULT_REGION, FLEET, GATE_THRESHOLD, HUMAN_DETECT_MIN, PEAK_DELAY, REGION_SIZE, ROLLBACK_AUTO_MIN, ROLLBACK_MANUAL_MIN, STAGE_CHOICES, TIMEOUT_RANGE,
+  bakeThresholds, changeOf, planFrom, simulate, statusAt, withinRange, type Change, type Plan,
 } from './model';
 
 /**
@@ -133,6 +133,34 @@ describe('the way to fail: a bake shorter than the change takes to show itself',
   it('a bake exactly as long as the delay still catches it, and one minute shorter does not', () => {
     expect(simulate(peak, four(PEAK_DELAY)).reached).toBe(1);
     expect(simulate(peak, four(PEAK_DELAY - 1)).reached).toBeGreaterThan(1);
+  });
+});
+
+describe('the bake sweep: what the gate really needs', () => {
+  const four = (bake: number): Plan => planFrom(['canary', 'region', 'half'], { bake, gate: true, validate: false, autoRollback: true });
+  const peak = changeOf('peak');
+  const sweep = Array.from({ length: BAKE_MAX + 1 }, (_, bake) => ({ bake, sim: simulate(peak, four(bake)), ref: oracle(peak, four(bake)) }));
+
+  it('matches the independent oracle at every bake from 0 to 40, not only a sample', () => {
+    for (const { bake, sim, ref } of sweep) expect([sim.reached, sim.detectedAt, sim.serverMinutes], `bake ${bake}`).toEqual([ref.landed, ref.detect, ref.serverMinutes]);
+  });
+
+  it('derives the thresholds from the sweep: before everyone at 10 minutes, at the canary at 20, far below "each bake longer than the delay"', () => {
+    const firstWhere = (pred: (landed: number) => boolean) => sweep.find((x) => pred(x.ref.landed))?.bake ?? null;
+    const t = bakeThresholds(peak, four(0));
+    expect(t.beforeAll).toBe(firstWhere((l) => l < FLEET));
+    expect(t.atFirstStage).toBe(firstWhere((l) => l === 1));
+    expect([t.beforeAll, t.atFirstStage]).toEqual([10, 20]);
+    expect(t.beforeAll!).toBeLessThan(PEAK_DELAY);
+  });
+
+  it('is monotone: a longer bake never reaches more servers', () => {
+    for (let i = 1; i < sweep.length; i++) expect(sweep[i].ref.landed).toBeLessThanOrEqual(sweep[i - 1].ref.landed);
+  });
+
+  it('shows the plain lesson for a bake of 8: the gate does see it, but only after all 48 servers have it', () => {
+    const r = sweep[8].sim;
+    expect([r.reached, r.detectedBy]).toEqual([FLEET, 'gate']);
   });
 });
 

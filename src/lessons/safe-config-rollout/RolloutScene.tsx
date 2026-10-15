@@ -6,10 +6,10 @@ import { timeFrames } from '../../core/frames';
 import { usePlayer } from '../../core/usePlayer';
 import { momentCaption, summaryCaption } from './captions';
 import {
-  ALL_AT_ONCE, BAKE_MAX, CHANGES, FLEET, GATE_THRESHOLD, HUMAN_DETECT_MIN, REGIONS, ROLLBACK_MANUAL_MIN, REGION_SIZE, STAGE_CHOICES, bakingStage, endOf, simulate, statusAt, changeOf, planFrom,
+  ALL_AT_ONCE, BAKE_MAX, allAtOnceWith, CHANGES, FLEET, GATE_THRESHOLD, HUMAN_DETECT_MIN, REGIONS, ROLLBACK_MANUAL_MIN, REGION_SIZE, STAGE_CHOICES, bakingStage, endOf, simulate, statusAt, changeOf, planFrom,
   type ChangeId, type Result, type ServerStatus,
 } from './model';
-import type { PlanState } from './plan';
+import { DEFAULT_PLAN, type PlanState } from './plan';
 
 const STEP_MS = 420;
 const HOLD = 2;
@@ -47,6 +47,8 @@ export function RolloutScene({ picker, staged, change, onChange, state, onState 
   const c = changeOf(change);
   const plan = useMemo(() => (staged ? planFrom(state.stages, { bake: state.bake, gate: state.gate, validate: state.validate, autoRollback: state.autoRollback }) : ALL_AT_ONCE), [staged, state]);
   const result = useMemo(() => simulate(c, plan), [c, plan]);
+  /** The same push all at once with the same gate, validation and rollback: the like-for-like number beside a staged plan. Scene 1 reads the staged default's, as constants. */
+  const atOnceSame = useMemo(() => simulate(c, allAtOnceWith(staged ? plan : DEFAULT_PLAN)), [c, plan, staged]);
   const frames = useMemo(
     () => framesFor(result, (now) => momentCaption(c, plan, result, now, staged), summaryCaption(c, plan, result, staged)),
     [result, c, plan, staged],
@@ -66,6 +68,11 @@ export function RolloutScene({ picker, staged, change, onChange, state, onState 
       stats={
         <Stats>
           <Stat label="Blast radius" value={result.refused ? '0' : result.serverMinutes.toLocaleString('en-US')} sub="server-minutes affected" color={result.serverMinutes > 0 ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat
+            label="Same push at once"
+            value={atOnceSame.serverMinutes.toLocaleString('en-US')}
+            sub={staged ? 'same gate, validation, rollback' : 'with the staged default’s gate and rollback'}
+          />
           <Stat label="Servers reached" value={`${result.reached} of ${FLEET}`} sub={result.peakFailing ? `${result.peakFailing} failed at most` : 'none failed'} />
           <Stat
             label="Seen"
@@ -132,8 +139,10 @@ export function RolloutScene({ picker, staged, change, onChange, state, onState 
         <Hint block>
           {staged
             ? `The health gate checks every minute of a stage’s bake, and stops the rollout when more than ${Math.round(GATE_THRESHOLD * 100)}% of the servers reached are failing. Without a gate, a person notices ${HUMAN_DETECT_MIN} minutes after the first failure.`
-            : `Pushed everywhere at once, with no gate and no validation: a person notices ${HUMAN_DETECT_MIN} minutes after the first failure, and rolls back by hand, which takes ${ROLLBACK_MANUAL_MIN}.`}
-          {' '}Server-minutes counts each failing server from the minute it fails until the rollback reaches it.
+            : `The usual naive version, pushed everywhere at once with no gate and no validation: a person notices ${HUMAN_DETECT_MIN} minutes after the first failure, and rolls back by hand, which takes ${ROLLBACK_MANUAL_MIN}.`}
+          {' '}
+          {!staged && 'The stat beside the blast radius is the same push with the staged default’s gate and automatic rollback, so you can see how much of the drop is rollback speed and how much is staging. '}
+          Server-minutes counts each failing server from the minute it fails until the rollback reaches it.
         </Hint>
         <ProvenanceRow>
           <Provenance kind="simulated">a simulated fleet and traffic: whole minutes, invented numbers</Provenance>

@@ -7,7 +7,7 @@ import { useSetCaption } from '../../core/caption';
 import { pad2 } from '../../core/format';
 import { scheduleCaption } from './captions';
 import { CHANGES, planFrom, simulate, changeOf, type ChangeId } from './model';
-import { MIN_PER_HOUR, calendarStart, domainHours, landingsInPeak, scheduleBars, scheduleLanes } from './schedule';
+import { MIN_PER_HOUR, calendarStart, domainHours, landingsInPeak, planSummary, scheduleBars, scheduleLanes } from './schedule';
 import type { PlanState } from './plan';
 
 const GANTT_MIN_W = 520;
@@ -39,7 +39,7 @@ export function ScheduleScene({ picker, change, onChange, state, startHour, onSt
       stats={
         <Stats>
           <Stat label="Stages" value={result.stages.length} sub={`of ${plan.stages.length} planned`} />
-          <Stat label="Stages landing in a peak" value={inPeak.length} sub="a riskier time to ship" color={inPeak.length ? 'var(--hi)' : undefined} />
+          <Stat label="Stages landing in a peak" value={inPeak.length} sub="a riskier time to ship" />
           <Stat label="Blast radius" value={result.serverMinutes.toLocaleString('en-US')} sub="server-minutes affected" />
         </Stats>
       }
@@ -63,7 +63,9 @@ export function ScheduleScene({ picker, change, onChange, state, startHour, onSt
       ]}
     >
       <div className="cr stage-pad">
-        <Hint block>The plan is the one from the staged scene: change it there. Times are UTC. A region&apos;s peak is drawn only when it falls inside the hours the rollout spans.</Hint>
+        <Hint block>
+          The plan is the one from the staged scene, shown here as it is read: <b>{planSummary(plan)}</b>. Change it there. Times are UTC. A region&apos;s peak is drawn only when it falls inside the hours the rollout spans. The start hour moves the drawing and the count of stages landing in a peak, and nothing else: in this model the change takes the same minutes to show itself at any hour.
+        </Hint>
         <WideRegion minWidth={GANTT_MIN_W} label="Rollout schedule: scroll sideways to see all of it">
           <GanttLanes
             lanes={scheduleLanes()}
