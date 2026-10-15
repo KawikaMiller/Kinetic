@@ -4,11 +4,11 @@ import { captionText } from '../../core/testing/captions';
 import { buildFrames } from './frames';
 import lesson from './index';
 import {
-  ATTACKER, ATTACKER_STATE, ATTACKER_VERIFIER, authorizeUrl, AuthServer, Client, CLIENT_ID, countDefences, DEFAULT_OPTS, FORWARDING_REDIRECT, REGISTERED_REDIRECT,
+  ATTACKER, ATTACKER_STATE, ATTACKER_VERIFIER, authorizeUrl, AuthServer, Client, CLIENT_ID, countDefences, DEFAULT_OPTS, defencesInPlay, FORWARDING_REDIRECT, REGISTERED_REDIRECT,
   SCENE_EDGES, SCOPE, VICTIM, VICTIM_STATE, VICTIM_VERIFIER, type Attack, type BlockedAt, type Defences, type Opts, type Outcome,
 } from './model';
 import { s256 } from './pkce';
-import { ATTACKS, BINDINGS, cellText, COLUMNS, defenceMatrix, runFlow, summarize } from './run';
+import { BINDINGS, cellText, COLUMNS, defenceMatrix, runFlow, summarize } from './run';
 
 const ATTACK_MODES: Attack[] = ['none', 'steal', 'forge', 'redirect'];
 const BOOLS = [false, true];
@@ -22,17 +22,18 @@ interface Expected {
 /**
  * The truth table, worked out by hand from what each parameter binds:
  *  - steal: the attacker reads the app's own code and redeems it without the verifier, so only PKCE stops it;
- *  - forge: the callback is rejected if the app checks state, else the code is rejected at /token if the app uses PKCE
- *    (it has no verifier for a code from someone else's flow), else the app takes the attacker's account;
+ *  - forge: the callback is rejected if the app checks state. Otherwise the attacker, who writes its own authorize request, has
+ *    left the challenge out, so /token refuses the code only if the server insists on PKCE for a client that uses it
+ *    (RFC 9700's downgrade point); a server that accepts a challenge-less code lets the attacker in even with PKCE on;
  *  - redirect: the attacker wrote the request, including its own challenge, so PKCE binds the code to the attacker;
  *    only refusing the redirect_uri before issuing a code stops it.
  */
-function expected(attack: Attack, d: Defences): Expected {
+function expected(attack: Attack, d: Defences, requirePkce = true): Expected {
   if (attack === 'none') return { outcome: 'printed', blockedAt: null };
   if (attack === 'steal') return d.pkce ? { outcome: 'blocked', blockedAt: 'token' } : { outcome: 'leaked', blockedAt: null };
   if (attack === 'forge') {
     if (d.state) return { outcome: 'blocked', blockedAt: 'callback' };
-    return d.pkce ? { outcome: 'blocked', blockedAt: 'token' } : { outcome: 'hijacked', blockedAt: null };
+    return d.pkce && requirePkce ? { outcome: 'blocked', blockedAt: 'token' } : { outcome: 'hijacked', blockedAt: null };
   }
   return d.exactRedirect ? { outcome: 'blocked', blockedAt: 'authorize' } : { outcome: 'leaked', blockedAt: null };
 }
@@ -149,27 +150,31 @@ describe('what each parameter binds: the whole truth table, from the model again
   it.each(ATTACK_MODES)('attack "%s" ends as expected under every combination of the three defences, with and without the openid scope', (attack) => {
     for (const d of ALL_DEFENCES) {
       for (const oidc of BOOLS) {
-        const got = summarize({ ...d, attack, oidc });
-        expect(got, `${attack} ${JSON.stringify(d)} oidc=${oidc}`).toEqual(expected(attack, d));
+        for (const requirePkce of BOOLS) {
+          const got = summarize({ ...d, attack, oidc, requirePkce });
+          expect(got, `${attack} ${JSON.stringify(d)} oidc=${oidc} requirePkce=${requirePkce}`).toEqual(expected(attack, d, requirePkce));
+        }
       }
     }
   });
 
-  it('the generated matrix equals the hand-worked table for all 15 cells, and each cell\'s words say where it stopped', () => {
+  it('the generated matrix equals the hand-worked table for all 20 cells, and each cell\'s words say where it stopped', () => {
     const rows = defenceMatrix();
-    expect(rows.map((r) => r.attack)).toEqual(ATTACKS);
+    expect(rows.map((r) => [r.attack, r.requirePkce])).toEqual([['steal', true], ['forge', true], ['forge', false], ['redirect', true]]);
     for (const row of rows) {
       expect(row.cells.map((c) => c.column)).toEqual(COLUMNS.map((c) => c.id));
       for (const cell of row.cells) {
         const d = COLUMNS.find((c) => c.id === cell.column)!.defences;
-        expect(cell.summary, `${row.attack} / ${cell.column}`).toEqual(expected(row.attack, d));
+        expect(cell.summary, `${row.label} / ${cell.column}`).toEqual(expected(row.attack, d, row.requirePkce));
       }
     }
-    const text = (attack: Attack, column: string) => cellText(rows.find((r) => r.attack === attack)!.cells.find((c) => c.column === column)!.summary);
+    const text = (attack: Attack, column: string, requirePkce = true) => cellText(rows.find((r) => r.attack === attack && r.requirePkce === requirePkce)!.cells.find((c) => c.column === column)!.summary);
     expect(text('steal', 'none')).toBe('photos leaked');
     expect(text('steal', 'pkce')).toBe('blocked at /token');
     expect(text('forge', 'state')).toBe('blocked at the callback');
     expect(text('forge', 'none')).toBe('account hijacked');
+    expect(text('forge', 'pkce')).toBe('blocked at /token');
+    expect(text('forge', 'pkce', false)).toBe('account hijacked');
     expect(text('redirect', 'pkce')).toBe('photos leaked');
     expect(text('redirect', 'exactRedirect')).toBe('blocked at /authorize');
   });
@@ -202,6 +207,66 @@ describe('what each parameter binds: the whole truth table, from the model again
     expect(ids).toEqual(['intro', 'crafted-link', 'crafted-arrive', 'login', 'consent', 'code-to-attacker', 'redeem', 'leak-tokens', 'leak-call', 'leak-photos']);
     expect(steps.find((s) => s.id === 'crafted-link')!.url!.params.find(([k]) => k === 'code_challenge')![1]).toBe(s256(ATTACKER_VERIFIER));
     expect(steps.find((s) => s.id === 'redeem')!.msg!.label).toContain('its own verifier');
+  });
+});
+
+describe('PKCE blocks the forged callback only if the server insists on it', () => {
+  // An independent check: no run.ts, no table. The attacker's own /authorize request, then the token request PhotoPrint would make.
+  const attackerRequest = (withChallenge: boolean) => ({
+    client_id: CLIENT_ID, redirect_uri: REGISTERED_REDIRECT, scope: SCOPE, state: ATTACKER_STATE,
+    ...(withChallenge ? { code_challenge: s256(ATTACKER_VERIFIER), code_challenge_method: 'S256' as const } : {}),
+  });
+  /** What PhotoPrint sends for a code it did not start: the app has no verifier for it. */
+  const appsTokenRequest = (code: string) => ({ code, client_id: CLIENT_ID, redirect_uri: REGISTERED_REDIRECT, code_verifier: undefined });
+  const redeemedByApp = (server: AuthServer, withChallenge: boolean) => {
+    const issued = server.authorize(attackerRequest(withChallenge), ATTACKER);
+    if (!issued.ok) throw new Error("the attacker's request is for the registered redirect_uri");
+    return server.token(appsTokenRequest(issued.code));
+  };
+
+  it("an attacker who omits the challenge: a server that requires PKCE refuses the code at /token, one that does not issues the attacker's tokens", () => {
+    expect(redeemedByApp(new AuthServer(true, true), false)).toEqual({ ok: false, error: 'invalid_grant', reason: 'challenge_required' });
+    const lax = redeemedByApp(new AuthServer(true, false), false);
+    expect(lax.ok).toBe(true);
+    if (lax.ok) expect(lax.account).toBe(ATTACKER);
+  });
+
+  it('an attacker who includes a challenge gets nowhere against either server, so omitting it is its better move', () => {
+    for (const requirePkce of BOOLS) expect(redeemedByApp(new AuthServer(true, requirePkce), true)).toEqual({ ok: false, error: 'invalid_grant', reason: 'verifier_missing' });
+  });
+
+  it("the run uses that better move: the forged callback's authorize request carries no code_challenge, with PKCE on or off", () => {
+    for (const pkce of BOOLS) {
+      const steps = runFlow({ ...DEFAULT_OPTS, attack: 'forge', state: false, pkce });
+      expect(steps.find((s) => s.id === 'att-start')!.url!.params.map(([k]) => k)).not.toContain('code_challenge');
+    }
+  });
+
+  it("with the app's state check off and PKCE on, the run agrees with the server-level check, setting by setting", () => {
+    for (const requirePkce of BOOLS) {
+      const run = summarize({ ...DEFAULT_OPTS, attack: 'forge', state: false, requirePkce });
+      const direct = redeemedByApp(new AuthServer(true, requirePkce), false);
+      expect(run.outcome).toBe(direct.ok ? 'hijacked' : 'blocked');
+    }
+  });
+
+  it('the forge captions say which server this is: the block names the requirement, the hijack with PKCE on says the attacker left the challenge out', () => {
+    const said = (o: Partial<Opts>, id: string) => captionText(buildFrames({ ...DEFAULT_OPTS, attack: 'forge', state: false, ...o }).find((f) => f.id === id)!.say, { strict: true });
+    expect(said({}, 'forge-blocked')).toContain('this server insists on PKCE');
+    expect(said({}, 'forge-blocked')).toContain('requires PKCE from PhotoPrint');
+    expect(said({ requirePkce: false }, 'hijacked')).toContain('only helps here when the server insists on it');
+    expect(said({ pkce: false }, 'hijacked')).not.toContain('only helps here');
+  });
+
+  it('the setting is inert where the attacker cannot exploit it: the other attacks, and the forged callback with PKCE off, do not change', () => {
+    const render = (o: Opts) => JSON.stringify(buildFrames(o).map((f) => ({ ...f, say: captionText(f.say) })));
+    for (const attack of ['none', 'steal', 'redirect'] as const) {
+      for (const d of ALL_DEFENCES) expect(render({ ...d, attack, oidc: true, requirePkce: true }), `${attack} ${JSON.stringify(d)}`).toBe(render({ ...d, attack, oidc: true, requirePkce: false }));
+    }
+    for (const state of BOOLS) {
+      const base = { ...DEFAULT_OPTS, attack: 'forge' as const, pkce: false, state };
+      expect(render({ ...base, requirePkce: true })).toBe(render({ ...base, requirePkce: false }));
+    }
   });
 });
 
@@ -259,6 +324,8 @@ describe('the pictures obey the protocol', () => {
         // In the redirect attack the attacker wrote the request, challenge included, so the app's own PKCE and state settings are out of the picture:
         // the caption on the crafted link says so, and the run is the same either way.
         if (attack === 'redirect' && (key === 'pkce' || key === 'state')) expect(on).toBe(off);
+        // In the forged-callback run with State on, the callback is rejected before PKCE is reached, so PKCE flips nothing there (the run is the same).
+        else if (attack === 'forge' && key === 'pkce') expect(render({ ...DEFAULT_OPTS, attack, state: false, pkce: true })).not.toBe(render({ ...DEFAULT_OPTS, attack, state: false, pkce: false }));
         else expect(on, `${attack} / ${key}`).not.toBe(off);
       }
     }
@@ -285,7 +352,7 @@ describe('captions say what the model decided', () => {
 
   it('the refusal captions name the server\'s own reason', () => {
     expect(text({ ...DEFAULT_OPTS, attack: 'steal' }, 'blocked-token')).toContain('no code_verifier was sent');
-    expect(text({ ...DEFAULT_OPTS, attack: 'forge', state: false }, 'forge-blocked')).toContain('no code_verifier was sent');
+    expect(text({ ...DEFAULT_OPTS, attack: 'forge', state: false }, 'forge-blocked')).toContain('requires PKCE from PhotoPrint');
     expect(text({ ...DEFAULT_OPTS, attack: 'redirect' }, 'redirect-error')).toContain('Refused at /authorize');
   });
 
@@ -340,10 +407,12 @@ describe('try-this, from the lesson as it loads (PKCE, state and exact redirect_
   });
 
   it('try-this 3: forging the callback works with State check and PKCE both off, and either one back on rejects it', () => {
-    const forge = (over: Partial<Defences>) => summarize({ ...DEFAULT_OPTS, attack: 'forge', ...over });
+    const forge = (over: Partial<Opts>) => summarize({ ...DEFAULT_OPTS, attack: 'forge', ...over });
     expect(forge({ state: false, pkce: false })).toEqual({ outcome: 'hijacked', blockedAt: null });
     expect(forge({ state: true, pkce: false })).toEqual({ outcome: 'blocked', blockedAt: 'callback' });
     expect(forge({ state: false, pkce: true })).toEqual({ outcome: 'blocked', blockedAt: 'token' });
+    // The PKCE route holds only while the server insists on PKCE (the default here; the "Server requires PKCE" switch).
+    expect(forge({ state: false, pkce: true, requirePkce: false })).toEqual({ outcome: 'hijacked', blockedAt: null });
   });
 
   it('try-this 4: a loose redirect_uri sends the code to the attacker even with PKCE on, and an exact one refuses before any code exists', () => {
@@ -363,6 +432,15 @@ describe('try-this, from the lesson as it loads (PKCE, state and exact redirect_
     expect(openid.find((s) => s.id === 'tokens')!.app).toContain('id_token');
     expect(openid.some((s) => s.signedIn)).toBe(true);
     expect(ATTACKER_STATE).not.toBe(VICTIM_STATE);
+  });
+});
+
+describe("the redirect attack ignores the app's own PKCE and state, and the stats and controls say so", () => {
+  it('only the redirect_uri rule is in play there; the other attacks use all three', () => {
+    expect(defencesInPlay('redirect')).toEqual(['exactRedirect']);
+    expect(defencesInPlay('forge')).toEqual(['pkce', 'state', 'exactRedirect']);
+    expect(countDefences({ pkce: true, state: true, exactRedirect: false }, defencesInPlay('redirect'))).toBe(0);
+    expect(countDefences({ pkce: false, state: false, exactRedirect: true }, defencesInPlay('redirect'))).toBe(1);
   });
 });
 

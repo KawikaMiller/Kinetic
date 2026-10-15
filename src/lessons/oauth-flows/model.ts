@@ -23,7 +23,19 @@ export interface Opts extends Defences {
   attack: Attack;
   /** The openid scope: the response also carries an id_token. */
   oidc: boolean;
+  /**
+   * The authorization server insists on PKCE for this client: it refuses to redeem a code that was issued without a challenge.
+   * Only meaningful while the app itself uses PKCE (a server that required it would turn the app's own PKCE-less flow away),
+   * and only the forged-callback attacker, who can leave the challenge out, notices. Default true.
+   */
+  requirePkce?: boolean;
 }
+
+/** Whether the server enforces PKCE in a run: needs the app to use PKCE, and defaults to on. */
+export const serverEnforcesPkce = (o: Pick<Opts, 'pkce' | 'requirePkce'>): boolean => o.pkce && (o.requirePkce ?? true);
+
+/** The defences an attack's own run can use: the attacker wrote the redirect attack's request, so the app's own PKCE and state are out of the picture there. */
+export const defencesInPlay = (attack: Attack): (keyof Defences)[] => (attack === 'redirect' ? ['exactRedirect'] : ['pkce', 'state', 'exactRedirect']);
 
 /** The wires of the scene: every message travels along one of these (in either direction). */
 export const SCENE_EDGES: [NodeId, NodeId][] = [
@@ -32,10 +44,10 @@ export const SCENE_EDGES: [NodeId, NodeId][] = [
 ];
 
 /** The defences all on, no attacker, the openid scope: how the lesson loads. */
-export const DEFAULT_OPTS: Opts = { pkce: true, state: true, exactRedirect: true, attack: 'none', oidc: true };
+export const DEFAULT_OPTS: Opts = { pkce: true, state: true, exactRedirect: true, attack: 'none', oidc: true, requirePkce: true };
 
 export const DEFENCE_NAMES: Record<keyof Defences, string> = { pkce: 'PKCE', state: 'State check', exactRedirect: 'Exact redirect_uri' };
-export const countDefences = (d: Defences) => [d.pkce, d.state, d.exactRedirect].filter(Boolean).length;
+export const countDefences = (d: Defences, among: (keyof Defences)[] = ['pkce', 'state', 'exactRedirect']) => among.filter((k) => d[k]).length;
 
 // ── The made-up parties and their (fake) values ─────────────────────
 export const CLIENT_ID = 'photoprint';
@@ -75,7 +87,7 @@ export interface TokenRequest {
   redirect_uri: string;
   code_verifier?: string;
 }
-type Rejection = 'unknown_code' | 'code_reused' | 'client_mismatch' | 'redirect_mismatch' | 'verifier_missing' | 'verifier_mismatch';
+type Rejection = 'unknown_code' | 'code_reused' | 'client_mismatch' | 'redirect_mismatch' | 'verifier_missing' | 'verifier_mismatch' | 'challenge_required';
 export type AuthorizeResult = { ok: true; code: string; redirectTo: string } | { ok: false; error: 'invalid_redirect_uri' | 'unauthorized_client' };
 export type TokenResult = { ok: true; account: string; grants: Held[] } | { ok: false; error: 'invalid_grant'; reason: Rejection };
 
@@ -95,9 +107,12 @@ export class AuthServer {
   private issued = 0;
 
   private readonly exactRedirect: boolean;
+  /** Refuse to redeem a code that has no challenge stored with it (RFC 9700 expects a server to resist this downgrade). */
+  private readonly requirePkce: boolean;
 
-  constructor(exactRedirect: boolean) {
+  constructor(exactRedirect: boolean, requirePkce = false) {
     this.exactRedirect = exactRedirect;
+    this.requirePkce = requirePkce;
   }
 
   private redirectAllowed(uri: string) {
@@ -123,6 +138,8 @@ export class AuthServer {
     if (rec.code_challenge) {
       if (!req.code_verifier) return fail('verifier_missing');
       if (s256(req.code_verifier) !== rec.code_challenge) return fail('verifier_mismatch');
+    } else if (this.requirePkce) {
+      return fail('challenge_required');
     }
     rec.used = true;
     const grants: Held[] = rec.scope.split(' ').includes('openid') ? ['access_token', 'refresh_token', 'id_token'] : ['access_token', 'refresh_token'];

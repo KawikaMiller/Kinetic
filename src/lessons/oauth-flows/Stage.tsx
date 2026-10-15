@@ -9,10 +9,10 @@ import { cssVar } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
 import {
-  type Attack, countDefences, DEFAULT_OPTS, DEFENCE_NAMES, type Defences, type Held, ILLUSTRATIVE, type Kind, type Msg, type NodeId, type Opts, SCENE_EDGES,
+  type Attack, countDefences, DEFAULT_OPTS, defencesInPlay, DEFENCE_NAMES, type Defences, type Held, ILLUSTRATIVE, type Kind, type Msg, type NodeId, type Opts, SCENE_EDGES,
   type UrlView,
 } from './model';
-import { ATTACK_LABEL, ATTACKS, BINDINGS, cellText, COLUMNS, defenceMatrix, OUTCOME_LABEL } from './run';
+import { ATTACK_LABEL, ATTACKS, BINDINGS, cellText, COLUMNS, defenceMatrix, type MatrixRow, OUTCOME_LABEL } from './run';
 import './styles.css';
 
 const COLOR: Record<Kind, string> = { front: 'var(--info)', back: 'var(--violet)', ok: 'var(--ok)', bad: 'var(--bad)' };
@@ -65,7 +65,9 @@ export function Stage() {
   const f = player.frame;
   const active = new Set<NodeId>(f.msg ? [f.msg.from, f.msg.to] : f.busy ? [f.busy] : []);
   const nodes: NodeId[] = opts.attack === 'none' ? ['browser', 'app', 'auth', 'api'] : ['browser', 'app', 'auth', 'api', 'attacker'];
-  const off = (Object.keys(DEFENCE_NAMES) as (keyof Defences)[]).filter((k) => !opts[k]);
+  const inPlay = defencesInPlay(opts.attack);
+  const off = inPlay.filter((k) => !opts[k]);
+  const redirectAttack = opts.attack === 'redirect';
   const matrix = useMemo(() => defenceMatrix(), []);
 
   return (
@@ -74,7 +76,11 @@ export function Stage() {
       height={520}
       stats={
         <Stats>
-          <Stat label="Defences on" value={`${countDefences(opts)}/3`} sub={off.length ? `${off.map((k) => DEFENCE_NAMES[k]).join(', ')} off` : 'PKCE, state, exact redirect_uri'} />
+          <Stat
+            label="Defences on"
+            value={`${countDefences(opts, inPlay)}/${inPlay.length}`}
+            sub={off.length ? `${off.map((k) => DEFENCE_NAMES[k]).join(', ')} off` : inPlay.map((k) => DEFENCE_NAMES[k]).join(', ')}
+          />
           <Stat label="Signed in as" value={f.signedIn ? 'Ada' : '·'} sub="from the id_token" />
           <Stat
             label="Outcome"
@@ -98,15 +104,25 @@ export function Stage() {
             <Provenance kind="real">the PKCE challenge is a real SHA-256; codes, verifiers and tokens are fake values</Provenance>
             <Provenance kind="scripted">an attacker who can read the redirect, and a forwarding page on photoprint.app, are scenario assumptions</Provenance>
             <ClaimLabel kind="standard">RFC 6749 (OAuth 2.0) and RFC 7636 (PKCE) define these checks</ClaimLabel>
-            <ClaimLabel kind="practice">exact redirect_uri matching, PKCE for every client and leaving the implicit flow are current guidance, from memory</ClaimLabel>
+            <ClaimLabel kind="practice">exact redirect_uri matching, PKCE for public clients (recommended for others too) and leaving the implicit flow are current guidance, from memory</ClaimLabel>
+            <ClaimLabel kind="practice">a server that refuses a code issued without a challenge (RFC 9700 expects this of one that supports PKCE), from memory; one that accepts it can be downgraded</ClaimLabel>
           </ProvenanceRow>
         </>
       }
       controls={
         <Controls>
           <Segmented label="Attacker" options={ATTACK_OPTIONS} value={opts.attack} onChange={set('attack')} />
-          <Toggle label="PKCE" value={opts.pkce} onChange={set('pkce')} />
-          <Toggle label="State check" value={opts.state} onChange={set('state')} />
+          {redirectAttack ? (
+            <span className="oa-unused">PKCE and State check: not used in this attack, the attacker wrote the request</span>
+          ) : (
+            <>
+              <Toggle label="PKCE" value={opts.pkce} onChange={set('pkce')} />
+              <Toggle label="State check" value={opts.state} onChange={set('state')} />
+            </>
+          )}
+          {opts.attack === 'forge' && opts.pkce && (
+            <Toggle label="Server requires PKCE" value={opts.requirePkce ?? true} onChange={set('requirePkce')} off="Optional" on="Required" />
+          )}
           <Toggle label="redirect_uri matching" value={opts.exactRedirect} onChange={set('exactRedirect')} off="Any URL on the site" on="Exact" />
           <Toggle label="Scope" value={opts.oidc} onChange={set('oidc')} off="photos.read" on="openid + photos.read" />
         </Controls>
@@ -188,7 +204,7 @@ export function Stage() {
           </ul>
           <div className="oa-matrix-wrap" tabIndex={0} role="region" aria-label="What each defence stops, a table you can scroll sideways">
           <table className="oa-matrix">
-            <caption>What each defence stops: every cell is a run of the same model, and each column switches on only the defences it names</caption>
+            <caption>What each defence stops: every cell is a run of the same model, and each column switches on only the defences it names. The forged-callback attacker leaves the challenge out, so that attack has a row for a server that requires PKCE and one for a server that does not</caption>
             <thead>
               <tr>
                 <th scope="col">Attack</th>
@@ -199,12 +215,12 @@ export function Stage() {
             </thead>
             <tbody>
               {matrix.map((row) => (
-                <tr key={row.attack} className={row.attack === opts.attack ? 'now' : ''}>
-                  <th scope="row">{ATTACK_LABEL[row.attack]}</th>
+                <tr key={row.label} className={rowIsCurrent(row, opts) ? 'now' : ''}>
+                  <th scope="row">{row.label}</th>
                   {row.cells.map((cell) => {
                     const col = COLUMNS.find((c) => c.id === cell.column)!;
                     return (
-                      <td key={cell.column} className={`${cell.summary.outcome === 'blocked' ? 'good' : 'bad'} ${row.attack === opts.attack && sameDefences(col.defences, opts) ? 'now' : ''}`}>
+                      <td key={cell.column} className={`${cell.summary.outcome === 'blocked' ? 'good' : 'bad'} ${rowIsCurrent(row, opts) && sameDefences(col.defences, opts) ? 'now' : ''}`}>
                         {cellText(cell.summary)}
                       </td>
                     );
@@ -219,6 +235,9 @@ export function Stage() {
     </StageFrame>
   );
 }
+
+/** The matrix row for the current attack; the forged-callback attack has one row per server setting. */
+const rowIsCurrent = (row: MatrixRow, o: Opts) => row.attack === o.attack && (row.attack !== 'forge' || row.requirePkce === (o.requirePkce ?? true));
 
 const sameDefences = (a: Defences, b: Defences) => a.pkce === b.pkce && a.state === b.state && a.exactRedirect === b.exactRedirect;
 

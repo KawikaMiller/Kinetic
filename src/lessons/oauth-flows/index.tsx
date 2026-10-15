@@ -19,7 +19,7 @@ const lesson: LessonModule = {
   tryThis: [
     "Play it through once with the defaults (PKCE on, no attacker): follow the code from the URL bar into the back channel, and watch the verifier stay in PhotoPrint's chips until /token.",
     "Set Attacker to \"Steals the code\" and turn PKCE off: your photos leak. Turn PKCE back on: the stolen code is rejected at /token.",
-    "Set Attacker to \"Forges the callback\" and turn both State check and PKCE off: PhotoPrint accepts the attacker's code. Turn either one back on and it is rejected.",
+    "Set Attacker to \"Forges the callback\" and turn both State check and PKCE off: PhotoPrint accepts the attacker's code. Turn State back on and it is rejected at the callback. Turn PKCE back on instead and it is rejected at /token, but only because \"Server requires PKCE\" is on: switch that off and the attacker, who left the challenge out, gets in again.",
     "Set Attacker to \"Swaps redirect_uri\" and redirect_uri matching to \"Any URL on the site\": the code reaches the attacker even with PKCE on, because the attacker picked the challenge. Set matching to Exact and the server refuses before it issues a code.",
     "Switch Scope to plain photos.read and notice there's no id_token and no \"signed in as\".",
   ],
@@ -44,8 +44,8 @@ const lesson: LessonModule = {
     {
       q: 'Why does the flow return a code first instead of the access token directly?',
       options: [
-        'Codes are shorter, which makes the redirect URL easier to type',
-        'Access tokens are too large to fit in a URL, so the server cannot send them at all',
+        'The code proves who the user is, so the app can skip checking an ID token',
+        'Browsers refuse to follow a redirect whose URL carries a token, so the server has no choice',
         'It makes the flow faster by skipping the second server call',
         'The front channel (browser URLs) is exposed, so tokens use the back channel',
       ],
@@ -68,7 +68,7 @@ const lesson: LessonModule = {
       options: [
         "PKCE protects only mobile apps, so a link opened on the web is outside its reach",
         "The attacker's link carries a challenge it chose, and the attacker keeps the verifier",
-        'PKCE encrypts the redirect, and loose matching switches the encryption off',
+        'Loose matching makes the server ignore the code_challenge it was sent',
         "The code travels over the back channel, which PKCE does not cover at all",
       ],
       answer: 1,

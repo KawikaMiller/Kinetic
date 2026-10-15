@@ -15,6 +15,7 @@ const REASON_TEXT: Record<string, string> = {
   code_reused: 'the code was already used',
   client_mismatch: 'the code was issued to another client',
   unknown_code: 'the server has no such code',
+  challenge_required: 'this server requires PKCE from PhotoPrint, and the code was issued without a challenge',
 };
 const reasonText = (reason: string | undefined) => (reason ? REASON_TEXT[reason] ?? reason : 'refused');
 
@@ -59,7 +60,7 @@ function caption(step: Step, o: Opts): ReactNode {
     case 'tokens':
       return <>Tokens: a short-lived {hl('oa-token', 'access_token')} (scope photos.read) and a {hl('oa-token', 'refresh_token')} to get new ones later{o.oidc ? <>, plus an {hl('oa-token', 'id_token')}</> : null}.</>;
     case 'id-token':
-      return <>The {hl('oa-token', 'id_token')} is OIDC: a signed JWT saying <b>who you are</b> (sub, email). That's <i>authentication</i>, and the app has to check its signature, issuer, audience and expiry before it trusts it. The access token is only <i>authorization</i>.</>;
+      return <>The {hl('oa-token', 'id_token')} is OIDC: a signed JWT saying <b>who you are</b> (sub, email). That's <i>authentication</i>, and the app has to check its signature, issuer, audience and expiry (and the <code>nonce</code> it sent, if it sent one) before it trusts it. The access token is only <i>authorization</i>.</>;
     case 'api-call': return <>PhotoPrint calls the Photos API with the access token.</>;
     case 'api-ok': return <>The API checks the token and that its scope includes <b>photos.read</b>. {hl('ok', '200.')}</>;
     case 'api-delete': return <>Could PhotoPrint delete a photo?</>;
@@ -83,7 +84,7 @@ function caption(step: Step, o: Opts): ReactNode {
         ? <>{hl('bad', 'Your photos leak.')} PKCE did not help: the attacker picked the challenge and kept the verifier, so the code was bound to the attacker. Only an exact <code>redirect_uri</code> match stops this before a code exists.</>
         : <>{hl('bad', 'Your photos leak.')} Turn PKCE on and replay this.</>;
 
-    case 'att-start': return <>The attacker starts a connection from its own browser, as itself ({ATTACKER}), through PhotoPrint's real <code>client_id</code>.</>;
+    case 'att-start': return <>The attacker starts a connection from its own browser, as itself ({ATTACKER}), through PhotoPrint's real <code>client_id</code>. It writes the request, so it leaves the <code>code_challenge</code> out: whatever PhotoPrint does, the code will have no challenge stored with it.</>;
     case 'att-code': return <>It logs in and approves. The server issues a code for the {ATTACKER} account, but the attacker does not follow the redirect. It <b>keeps the code</b>.</>;
     case 'att-lure': return <>Then it gets <i>you</i> to open PhotoPrint's callback link with the attacker's code in it (a link, an image, a redirect).</>;
     case 'forged-callback': return <>Your browser delivers the attacker's code to PhotoPrint. You never started this connection.</>;
@@ -92,9 +93,14 @@ function caption(step: Step, o: Opts): ReactNode {
     case 'forged-token':
       return <>With no state check PhotoPrint trusts the callback and swaps the code for tokens{o.pkce ? <>, but it has no <code>code_verifier</code> for this code</> : null}.</>;
     case 'forge-blocked':
-      return <>{hl('ok', 'Blocked at /token.')} The attacker's code is bound to a challenge only the attacker's own connection can prove, and PhotoPrint has no matching verifier ({reasonText(data.reason)}).</>;
+      return <>{hl('ok', 'Blocked at /token, because this server insists on PKCE.')} The attacker's code has no challenge stored with it, and the server refuses to redeem such a code for a client that uses PKCE ({reasonText(data.reason)}). Turn "Server requires PKCE" off and the same code is redeemed.</>;
     case 'hijacked':
-      return <>{hl('bad', 'Account hijacked.')} PhotoPrint now holds tokens for the <b>{data.account}</b> account, tied to <i>your</i> session. What you print or save from here goes to the attacker's library.</>;
+      return (
+        <>
+          {hl('bad', 'Account hijacked.')} PhotoPrint now holds tokens for the <b>{data.account}</b> account, tied to <i>your</i> session. What you print or save from here goes to the attacker's library.
+          {o.pkce ? <> PhotoPrint uses PKCE, but this server accepts a code issued without a challenge, so the attacker simply left it out: PKCE only helps here when the server insists on it.</> : null}
+        </>
+      );
 
     case 'crafted-link':
       return <>The attacker writes its own <code>/authorize</code> link: PhotoPrint's <code>client_id</code>, a <code>redirect_uri</code> on photoprint.app that forwards elsewhere, and a {hl('oa-pkce', 'code_challenge')} the attacker picked itself, so PhotoPrint's own PKCE and state settings are out of the picture here.</>;
