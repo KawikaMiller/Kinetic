@@ -86,7 +86,7 @@ export function PolicyScene({ picker }: { picker: ReactNode }) {
         </ProvenanceRow>
         <Hint tone="muted" className="as-note">
           Scheduled raises the minimum between 08:00 and 20:00 each day, with the reactive loop underneath. Predictive provisions ahead for the busiest minute of yesterday&apos;s load in the next few
-          minutes, and has no yesterday on day 1, so it only runs from day 2. The flash spike happens on day 2 only, so yesterday cannot know about it. Vertical scaling (a bigger instance,
+          minutes, and has no yesterday on day 1, so it only runs from day 2. The flash spike happens on day 2 only, so yesterday cannot know about it. The daily wave has a steep morning rush, faster than a launch warms up, which is the shape a reactive loop is late for. On noisy traffic nothing repeats, so a policy that scores fewer violations than reactive there is only padding: predictive provisions for the highest value of yesterday&apos;s independent noise, which is not forecasting. Vertical scaling (a bigger instance,
           usually with a restart) is named here and not modelled.
         </Hint>
       </div>

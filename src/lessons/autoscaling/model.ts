@@ -33,6 +33,18 @@ export const FLASH = { startMinute: MINUTES_PER_DAY + 14 * MINUTES_PER_HOUR, min
 /** The scheduled policy raises the minimum between 08:00 and 20:00 each day. */
 export const SCHEDULE = { fromMinute: 8 * MINUTES_PER_HOUR, toMinute: 20 * MINUTES_PER_HOUR, minimum: 8 } as const;
 const NOISE = { base: 350, spread: 150 } as const;
+/** The daily wave: a night level, a steep morning rush (a whole `rampStep` more requests/s each minute, faster than a launch warms up), a plateau, and an evening ease-down. */
+export const DAILY = { night: 200, plateau: 700, rampStart: 9 * MINUTES_PER_HOUR, rampStep: 100, easeStart: 18 * MINUTES_PER_HOUR, easeMinutes: MINUTES_PER_HOUR } as const;
+
+/** The daily wave's offered load at a minute of the day. */
+export function dailyLoad(minuteOfDay: number): number {
+  const rampEnd = DAILY.rampStart + (DAILY.plateau - DAILY.night) / DAILY.rampStep;
+  if (minuteOfDay < DAILY.rampStart) return DAILY.night;
+  if (minuteOfDay < rampEnd) return DAILY.night + DAILY.rampStep * (minuteOfDay - DAILY.rampStart + 1);
+  if (minuteOfDay < DAILY.easeStart) return DAILY.plateau;
+  const eased = Math.round(((DAILY.plateau - DAILY.night) * (minuteOfDay - DAILY.easeStart + 1)) / DAILY.easeMinutes);
+  return Math.max(DAILY.night, DAILY.plateau - eased);
+}
 
 /** Offered load (requests/s, whole numbers) for each minute of the run. Only `noisy` reads the seed. */
 export function loadCurve(preset: Preset, seed: number): number[] {
@@ -40,7 +52,7 @@ export function loadCurve(preset: Preset, seed: number): number[] {
   return Array.from({ length: RUN_MINUTES }, (_, t) => {
     const minuteOfDay = t % MINUTES_PER_DAY;
     switch (preset) {
-      case 'daily': return Math.round(350 + 250 * Math.sin((2 * Math.PI * (minuteOfDay - 540)) / MINUTES_PER_DAY));
+      case 'daily': return dailyLoad(minuteOfDay);
       case 'flash': return t >= FLASH.startMinute && t < FLASH.startMinute + FLASH.minutes ? FLASH.base * FLASH.factor : FLASH.base;
       case 'sawtooth': return 200 + Math.round((400 * (t % MINUTES_PER_HOUR)) / MINUTES_PER_HOUR);
       case 'noisy': return Math.round(NOISE.base + NOISE.spread * (2 * rnd() - 1));

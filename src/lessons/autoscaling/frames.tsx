@@ -59,6 +59,9 @@ export function policyCaption(table: Record<Policy, Record<Preset, FleetSummary>
     <>
       {capitalise(POLICY_NAME[policy])} on the {PRESET_NAME[preset]} has <span className={`hl ${cell.violationMinutes > 0 ? 'bad' : 'ok'}`}>{cell.violationMinutes}</span> violation minutes on day 2
       for {sig(cell.instanceMinutes)} instance-minutes. On this load the fewest violation minutes ({fewest}) belong to {joinList(best.map((p) => POLICY_NAME[p]))}.
+      {preset === 'noisy' && policy !== 'reactive' && (
+        <> Noise does not repeat, so this is not forecasting: {policy === 'predictive' ? 'it provisions for the highest load of the previous day over the next few minutes' : 'it keeps a raised minimum whatever the noise does'}, which is padding. The reactive loop has {table.reactive.noisy.violationMinutes} violation minutes for {sig(table.reactive.noisy.instanceMinutes)} instance-minutes.</>
+      )}
     </>
   );
 }

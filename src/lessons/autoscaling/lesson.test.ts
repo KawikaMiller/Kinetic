@@ -41,11 +41,17 @@ describe('try-this entries, from the default state, as written', () => {
     expect(lesson.tryThis[3]).toContain(`from ${calm} reversals to ${jittery}`);
   });
 
-  it('try-this 5: the default pick (predictive, daily wave) has 0 violation minutes, and the flash spike has more than the reactive loop', () => {
+  it('try-this 5: on the daily wave reactive has violation minutes and scheduled and predictive have 0, and predictive has more on the flash spike than the reactive loop', () => {
+    const reactive = go('daily').summary.violationMinutes;
+    expect(reactive).toBeGreaterThan(0);
     expect(go('daily', { policy: 'predictive' }).summary.violationMinutes).toBe(0);
+    expect(go('daily', { policy: 'scheduled' }).summary.violationMinutes).toBe(0);
     const flash = go('flash', { policy: 'predictive' }).summary.violationMinutes;
     expect(flash).toBeGreaterThanOrEqual(FLASH.minutes);
-    expect(lesson.tryThis[4]).toContain(`it has ${flash}`);
+    expect(flash).toBeGreaterThan(go('flash').summary.violationMinutes);
+    expect(lesson.tryThis[4]).toContain(`reactive has ${reactive} violation minutes on it, scheduled 0 and predictive 0`);
+    expect(lesson.tryThis[4]).toContain(`predictive has ${flash}`);
+    expect(lesson.keyIdeas[3]).toContain(`reactive loop has ${reactive} violation minutes and predictive 0`);
   });
 });
 
@@ -89,6 +95,8 @@ describe('captions are computed from the minute they describe', () => {
         const best = POLICIES.filter((p) => table[p][preset].violationMinutes === fewest);
         expect(t).toContain(`(${fewest}) belong to ${joinList(best)}.`);
         expect(t.startsWith(capitalise(policy))).toBe(true);
+        expect(t.includes('this is not forecasting'), `${policy} ${preset}`).toBe(preset === 'noisy' && policy !== 'reactive');
+        if (preset === 'noisy' && policy !== 'reactive') expect(t).toContain(`The reactive loop has ${table.reactive.noisy.violationMinutes} violation minutes`);
       }
     }
   });

@@ -12,7 +12,9 @@ const FLASH_SLOW = run('flash', { warmupMin: 8 }).summary;
 const NEEDED = ceilDiv(FLASH.base * FLASH.factor * 100, INSTANCE_RPS * CONTROLLER_DEFAULT.targetPct);
 const NOISY_CALM = run('noisy').summary.flaps;
 const NOISY_JITTERY = run('noisy', { cooldownOut: 0, cooldownIn: 0 }).summary.flaps;
+const DAILY_REACTIVE = run('daily').summary.violationMinutes;
 const PREDICTIVE_DAILY = run('daily', { policy: 'predictive' }).summary.violationMinutes;
+const SCHEDULED_DAILY = run('daily', { policy: 'scheduled' }).summary.violationMinutes;
 const PREDICTIVE_FLASH = run('flash', { policy: 'predictive' }).summary.violationMinutes;
 const WARM = CONTROLLER_DEFAULT.warmupMin;
 
@@ -36,17 +38,17 @@ const lesson: LessonModule = {
     `Set Warm-up to 8: the violation minutes grow to ${FLASH_SLOW.violationMinutes}, one for each minute that capacity is late.`,
     `Turn Warming instances to "count as current": the fleet overshoots to its ${MAX_INSTANCES} maximum, though ${NEEDED} instances carry the spike.`,
     `Pick the noisy traffic, then set both cooldowns to 0: flapping goes from ${NOISY_CALM} reversals to ${NOISY_JITTERY}.`,
-    `In Scheduled and predictive, predictive on the daily wave has ${PREDICTIVE_DAILY} violation minutes. Pick the flash spike: it has ${PREDICTIVE_FLASH}, because yesterday had no spike.`,
+    `In Scheduled and predictive, the daily wave has a steep morning rush: reactive has ${DAILY_REACTIVE} violation minutes on it, scheduled ${SCHEDULED_DAILY} and predictive ${PREDICTIVE_DAILY}. Pick the flash spike: predictive has ${PREDICTIVE_FLASH}, because yesterday had no spike.`,
   ],
   keyIdeas: [
     'A reactive autoscaler is late by design: it acts after the metric moves and its new instances serve after the warm-up, so in this model a spike drops requests for the warm-up plus a minute.',
     'Target tracking is ⌈current × metric ÷ target⌉, computed on whole percents: the float 3 × 0.1 ÷ 0.3 is 1.0000000000000002, which a ceiling rounds up to 2.',
     'In this model, counting warming instances as current while the metric reads just the ready ones makes the loop ask for more each minute, and near-zero cooldowns let noise make the fleet flap.',
-    'Scheduled and predictive scaling help in this model where the load repeats: predictive has no violations on a periodic wave and no help on a spike that yesterday lacked.',
+    `In this model scheduled and predictive scaling help where the load repeats and climbs faster than the warm-up: on the daily rush the reactive loop has ${DAILY_REACTIVE} violation minutes and predictive ${PREDICTIVE_DAILY}, and on a spike that yesterday lacked predictive is no help. On noisy traffic a lower count is padding, not forecasting.`,
   ],
   quiz: [
     {
-      q: 'A flash spike quadruples load in one minute, and new instances take 5 minutes to warm up. What happens in the first minutes?',
+      q: 'A flash spike quadruples load within a minute, and new instances take 5 minutes to warm up. What happens in the first minutes?',
       options: [
         'Load above the ready capacity is dropped until the new instances serve',
         'Autoscaling absorbs the spike, since it reacts as fast as the load moves',

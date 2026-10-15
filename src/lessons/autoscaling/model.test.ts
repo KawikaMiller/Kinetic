@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CONTROLLER_DEFAULT, FLASH, INSTANCE_RPS, MAX_INSTANCES, MINUTES_PER_DAY, POLICIES, PRESETS, RUN_MINUTES, SCHEDULE, SCORED_FROM, VIOLATION_PCT,
-  bill, ceilDiv, cooldownAllows, countReversals, createFleetSim, desiredCount, isViolation, latencyProxy, loadCurve, policyTable, runFleet, staticFleet, utilisationPct,
+  DAILY, bill, ceilDiv, cooldownAllows, countReversals, createFleetSim, desiredCount, isViolation, latencyProxy, loadCurve, policyTable, runFleet, staticFleet, utilisationPct,
   type Controller, type Preset,
 } from './model';
 
@@ -197,6 +197,51 @@ describe('predictive scaling: wins where yesterday is a good guide, and is no he
   });
 });
 
+describe('the table shows a repeating load where predictive and scheduled beat reactive', () => {
+  const day2 = (run: ReturnType<typeof runFleet>) => run.rows.filter((r) => r.minute >= SCORED_FROM);
+
+  it('the daily wave repeats and its morning rush climbs by DAILY.rampStep a minute, faster than a launch of any warm-up from 0 to 10 minutes can follow', () => {
+    const curve = loadCurve('daily', 1);
+    const rampMinutes = (DAILY.plateau - DAILY.night) / DAILY.rampStep;
+    for (let k = 0; k < rampMinutes; k++) expect(curve[MINUTES_PER_DAY + DAILY.rampStart + k]).toBe(DAILY.night + DAILY.rampStep * (k + 1));
+    expect(Math.max(...curve)).toBe(DAILY.plateau);
+    // A hand check on the geometry: capacity decided from the load a launch-time ago is at most that load over the target share, so the ramp outruns it.
+    expect(DAILY.rampStep).toBeGreaterThan(INSTANCE_RPS / 2);
+  });
+
+  it('at every warm-up from 0 to 10 minutes, reactive has violation minutes on the daily wave and predictive and scheduled have none, predictive for fewer instance-minutes than scheduled', () => {
+    for (let warmupMin = 0; warmupMin <= 10; warmupMin++) {
+      const table = policyTable(withPolicy({ warmupMin }), 1);
+      expect(table.reactive.daily.violationMinutes, `reactive W=${warmupMin}`).toBeGreaterThan(0);
+      expect(table.predictive.daily.violationMinutes, `predictive W=${warmupMin}`).toBe(0);
+      expect(table.scheduled.daily.violationMinutes, `scheduled W=${warmupMin}`).toBe(0);
+      expect(table.predictive.daily.instanceMinutes, `cost W=${warmupMin}`).toBeLessThan(table.scheduled.daily.instanceMinutes);
+    }
+  });
+
+  it('the reactive loop violates on the daily wave only in the rush, and is clean on the plateau and the evening ease-down', () => {
+    const rows = day2(runFleet('daily', CONTROLLER_DEFAULT, 1));
+    const bad = rows.filter((r) => r.violation).map((r) => r.minute - MINUTES_PER_DAY);
+    expect(bad.length).toBeGreaterThan(0);
+    const rampEnd = DAILY.rampStart + (DAILY.plateau - DAILY.night) / DAILY.rampStep;
+    for (const m of bad) {
+      expect(m, `minute ${m}`).toBeGreaterThanOrEqual(DAILY.rampStart);
+      expect(m, `minute ${m}`).toBeLessThanOrEqual(rampEnd + CONTROLLER_DEFAULT.warmupMin + 1);
+    }
+  });
+
+  it('broken variant: on the old gentle sine wave a reactive loop is clean, so a table built on it shows no cell where predictive wins (the check above would fail)', () => {
+    const sine = (m: number) => Math.round(350 + 250 * Math.sin((2 * Math.PI * (m - 540)) / MINUTES_PER_DAY));
+    const peakStep = Math.max(...Array.from({ length: MINUTES_PER_DAY - 1 }, (_, m) => Math.abs(sine(m + 1) - sine(m))));
+    expect(peakStep).toBeLessThan(DAILY.rampStep / 10);
+  });
+
+  it('noisy traffic is not a repeating load: day 2 does not equal day 1', () => {
+    const curve = loadCurve('noisy', 1);
+    expect(curve.slice(0, MINUTES_PER_DAY).join()).not.toBe(curve.slice(MINUTES_PER_DAY).join());
+  });
+});
+
 describe('the table and the bill', () => {
   it('the 12 cells of the policy table equal 12 separate runs', () => {
     const table = policyTable(CONTROLLER_DEFAULT, 1);
@@ -209,7 +254,7 @@ describe('the table and the bill', () => {
     const run = runFleet('daily', CONTROLLER_DEFAULT, 1);
     const b = bill(run);
     expect(b.staticInstances).toBe(staticFleet(loadCurve('daily', 1), CONTROLLER_DEFAULT));
-    expect(b.staticInstances).toBe(Math.ceil((600 * 100) / (INSTANCE_RPS * 60)));
+    expect(b.staticInstances).toBe(Math.ceil((DAILY.plateau * 100) / (INSTANCE_RPS * 60)));
     expect(b.staticHours).toBe((b.staticInstances * 1440) / 60);
     expect(b.saving).toBeCloseTo(1 - b.autoHours / b.staticHours, 12);
     expect(b.saving!).toBeGreaterThan(0);

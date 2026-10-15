@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { MetricMeter } from '../../components/MetricMeter';
 import type { MeterBand } from '../../components/meterBands';
 import { StageFrame } from '../../components/StageFrame';
@@ -110,7 +111,7 @@ export function ReactiveScene({ picker }: { picker: ReactNode }) {
         </ProvenanceRow>
         <Hint tone="muted" className="as-note">
           A launch decided at the end of a minute serves from the minute after, plus the warm-up. Load above ready capacity is dropped. The utilisation the controller reads is load as a percent of ready
-          capacity and can pass 100%. The latency number is a proxy.
+          capacity and can pass 100%. The latency number is a proxy: its 1 / (1 − ρ) shape is the <Link to="/lesson/queueing-theory">queueing theory</Link> lesson, and finding the load where a fleet&apos;s latency turns the corner is <Link to="/lesson/capacity-planning">load testing and capacity planning</Link>.
         </Hint>
       </div>
     </StageFrame>
