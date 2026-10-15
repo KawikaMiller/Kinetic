@@ -12,8 +12,8 @@ const broken = breakFacts();
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'A Count-Min sketch estimates how often each item occurred in a stream from a small fixed grid of counters: it can only overcount, by a bounded amount, which is enough to find the heaviest items without counting everything.',
-    what: 'A Bloom filter says "seen it or not" and HyperLogLog counts distinct items; a Count-Min sketch answers "how many times?". Each item is hashed once per row of a d by w grid and adds one to its cell in each row, and its estimate is the smallest of those d cells. Collisions only add, so the estimate is never below the truth, and with w = ⌈e/ε⌉ and d = ⌈ln(1/δ)⌉ it is within ε times the stream length with probability 1 − δ. The sketch cannot list its items, so heavy hitters are found by keeping a few candidates beside it.',
+    tldr: 'A Count-Min sketch estimates how often each item occurred in a stream from a small fixed grid of counters: with inserts only it can only overcount, by at most ε·N with probability 1 − δ, which is enough to find the heaviest items without counting everything.',
+    what: 'A Bloom filter says "seen it or not" and HyperLogLog counts distinct items; a Count-Min sketch answers "how many times?". Each item is hashed once per row of a d by w grid and adds one to its cell in each row, and its estimate is the smallest of those d cells. Collisions only add, so with inserts only (no deletes) the estimate is never below the truth, and with w = ⌈e/ε⌉ and d = ⌈ln(1/δ)⌉ it is within ε times the stream length with probability 1 − δ. The sketch cannot list its items, so heavy hitters are found by keeping a few candidates beside it.',
     analogy: 'Several tally boards ruled differently: each item is ticked on one square of every board, and to ask "how many?" you read its squares and trust the smallest, since the others were inflated by items that share them.',
     useCases: [
       'Finding the most requested URLs, search terms or keys in a stream',
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
     `In "Breaking it", switch Estimate by to "The mean": the worst overcount grows from ${Math.round(broken.minWorst)} to ${Math.round(broken.meanWorst)}. Switch it back and turn Deletes on: ${broken.under} items are undercounted, up from ${broken.underAtStart}.`,
   ],
   keyIdeas: [
-    'Collisions only add, so in this model the minimum of an item\'s cells is never below its true count: the error is an overcount.',
+    'Collisions only add, so with inserts only (no deletes) the minimum of an item\'s cells is never below its true count in this model, and the error is an overcount; the Deletes toggle shows how deleting items that were never added breaks that.',
     'Width sets the error bound ε·N and depth the chance δ of passing it, so in this model a wider sketch shrinks the bound and more rows shrink the failure chance exponentially.',
     'The bound is relative to the total N, so a sketch ranks heavy items well and says little about items rarer than ε·N; it cannot list its items, which is why candidates are kept beside it.',
     'In this model sketches with the same hash functions add cell by cell into the sketch of the combined stream, and sketches with different hashes cannot be merged.',
