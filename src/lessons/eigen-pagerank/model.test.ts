@@ -90,10 +90,10 @@ describe('applying a matrix again and again', () => {
     conv.forEach((v, i) => {
       if (i % 6 !== 3) expect(lineGap(v, [1, 1])).toBeLessThan(1e-6);
     });
-    // rotation: direction keeps turning by 40 degrees each step
+    // rotation: direction keeps turning by the 3-4-5 angle atan(3/4) each step
     const rot = MATRICES.find((m) => m.id === 'rotation')!.A;
     const b = iterates(rot, [1, 0], 201);
-    expect(lineGap(b[201], b[200])).toBeCloseTo(40, 6);
+    expect(lineGap(b[201], b[200])).toBeCloseTo((Math.atan(3 / 4) * 180) / Math.PI, 6);
     // shear: error shrinks like 1/k, not geometrically
     const shear: Matrix2 = [[1, 1], [0, 1]];
     const err = (k: number) => lineGap(iterates(shear, [0, 1], k)[k], [1, 0]);

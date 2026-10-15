@@ -22,9 +22,14 @@ export type Matrix2 = [[number, number], [number, number]];
 
 export const DEFAULT_MATRIX: Matrix2 = [[2, 1], [1, 2]];
 
+/** The 3-4-5 rotation: 0.8 and 0.6 are exact on the 0.1 sliders, so the preset is exactly what the sliders show. */
+const ROTATION_345: Matrix2 = [[0.8, -0.6], [0.6, 0.8]];
+/** How far that rotation turns an arrow each step. */
+export const ROTATION_DEGREES = (Math.atan2(ROTATION_345[1][0], ROTATION_345[0][0]) * 180) / Math.PI;
+
 export const PRESETS: readonly { id: string; label: string; A: Matrix2 }[] = [
   { id: 'symmetric', label: '[[2, 1], [1, 2]]', A: DEFAULT_MATRIX },
-  { id: 'rotation', label: 'rotation 40°', A: [[Math.cos(Math.PI * 40 / 180), -Math.sin(Math.PI * 40 / 180)], [Math.sin(Math.PI * 40 / 180), Math.cos(Math.PI * 40 / 180)]] },
+  { id: 'rotation', label: 'rotation 37° (3-4-5)', A: ROTATION_345 },
   { id: 'shear', label: 'shear', A: [[1, 1], [0, 1]] },
   { id: 'equal', label: 'equal stretch', A: [[2, 0], [0, 2]] },
   { id: 'flip', label: 'flip', A: [[2, 0], [0, -2]] },
@@ -94,3 +99,37 @@ export const lineGap = (a: Vec, b: Vec): number => {
   const d = Math.abs(lineAngle(a) - lineAngle(b));
   return Math.min(d, 180 - d);
 };
+
+export type EigenLine = { direction: Vec; tone: 'ok' | 'violet' };
+
+/** A null vector of A - lambda I for a shear (its one eigen-direction), unit length. */
+function shearDirection(A: Matrix2, lambda: number): Vec {
+  const rows: Vec[] = [[A[0][0] - lambda, A[0][1]], [A[1][0], A[1][1] - lambda]];
+  const row = norm(rows[0]) >= norm(rows[1]) ? rows[0] : rows[1];
+  return [-row[1] / norm(row), row[0] / norm(row)];
+}
+
+/** The eigen-lines worth drawing: two for distinct real eigenvalues (larger first), the single one of a shear, none otherwise. */
+export function eigenLines(A: Matrix2): EigenLine[] {
+  const b = behaviourOf(A);
+  if (b.kind === 'shear') return [{ direction: shearDirection(A, b.lambda), tone: 'ok' }];
+  if (b.kind !== 'converges' && b.kind !== 'ties') return [];
+  const e = eigen2x2(A);
+  if (!e || e.kind !== 'real') return [];
+  return e.vectors.map((direction, i): EigenLine => ({ direction, tone: i === 0 ? 'ok' : 'violet' }));
+}
+
+/** How close (degrees) a dragged arrow must come to an eigen-line to snap onto it. */
+export const SNAP_DEGREES = 3;
+
+/** The arrow moved onto an eigen-line (keeping its length) when within SNAP_DEGREES of one; otherwise unchanged. */
+export function snapToEigenLine(v: Vec, lines: readonly EigenLine[]): Vec {
+  const length = norm(v);
+  if (length === 0) return v;
+  for (const { direction } of lines) {
+    const along = dot(v, direction);
+    const gap = (Math.acos(Math.min(1, Math.abs(along) / length)) * 180) / Math.PI;
+    if (gap <= SNAP_DEGREES) return [Math.sign(along) * length * direction[0], Math.sign(along) * length * direction[1]];
+  }
+  return v;
+}

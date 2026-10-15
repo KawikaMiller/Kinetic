@@ -8,9 +8,9 @@ import { minWidthForText } from '../../core/scale';
 import { useGraphEdits } from '../../core/useGraphEdits';
 import { usePlayer } from '../../core/usePlayer';
 import {
-  DEFAULT_DAMPING, MAX_ITERATIONS, WEB_SIZE, addLink, addPage, deadEndsOf, presetById, rankSteps, removeLastLink, trapsOf, PRESETS, type DeadEnds, type PresetId, type Web,
+  DEFAULT_DAMPING, MAX_ITERATIONS, WEB_SIZE, addLink, addPage, deadEndsOf, presetById, rankSteps, removeLastLink, trapMass, trapsOf, PRESETS, type DeadEnds, type PresetId, type Web,
 } from './pagerank';
-import { n4, rankCaption } from './text';
+import { DEAD_END_CONVENTIONS, n4, rankCaption } from './text';
 
 const STEP_MS = 500;
 const NODE_RADIUS = 10;
@@ -46,6 +46,7 @@ export function RankScene({ picker, presetIds, initial }: { picker: ReactNode; p
       stats={
         <Stats>
           <Stat label="Total rank" value={n4(step.total)} color={leaked ? 'var(--bad)' : 'var(--ok)'} sub={leaked ? 'rank has leaked out' : 'sums to 1'} />
+          {traps.length > 0 && <Stat label="Rank inside the trap" value={n4(trapMass(w, step.r))} sub={d < 1 ? 'the teleport keeps feeding the other pages' : 'at d = 1 nothing leaves a closed group'} />}
           <Stat label="Damping d" value={d.toFixed(2)} sub={`teleport share (1 − d)/${w.names.length} = ${n4((1 - d) / w.names.length)}`} />
           <Stat label="L1 change this step" value={player.frame.i === 0 ? '–' : step.change.toExponential(2)} sub={d < 1 ? `at most d × the step before, d = ${d.toFixed(2)}` : 'no teleport to pull it back'} />
         </Stats>
@@ -55,8 +56,7 @@ export function RankScene({ picker, presetIds, initial }: { picker: ReactNode; p
           items={[
             { color: 'var(--info)', label: 'a page: its area is its rank', shape: 'dot' },
             { color: 'var(--bad)', label: 'a dead end that drops rank', shape: 'dot' },
-            { color: 'var(--dim)', label: 'the teleport share', shape: 'square' },
-            { color: 'var(--bad)', label: 'L1 change per step (log axis)', shape: 'line' },
+            { color: 'var(--info)', label: 'L1 change per step (log axis)', shape: 'line' },
             { color: 'var(--violet)', label: 'the d^t bound', shape: 'line' },
           ]}
         />
@@ -75,6 +75,7 @@ export function RankScene({ picker, presetIds, initial }: { picker: ReactNode; p
         <>
           <Slider label="Damping d" value={d} min={0} max={1} step={0.01} format={(v) => v.toFixed(2)} onChange={setD} />
           <Toggle label="Dead ends" value={dead === 'spread'} onChange={(on) => setDead(on ? 'spread' : 'drop')} off={DEAD_OPTIONS.off} on={DEAD_OPTIONS.on} />
+          <Hint>{DEAD_END_CONVENTIONS}</Hint>
         </>,
         <>
           <Button onClick={() => edits.edit(addPage(w), 'Added a page: drag from one page to another to link them.')} softDisabled={w.names.length >= 8}>Add page</Button>
@@ -111,7 +112,7 @@ export function RankScene({ picker, presetIds, initial }: { picker: ReactNode; p
           </thead>
           <tbody>
             {w.names.map((name, i) => (
-              <tr key={name} className={deadEnds.includes(i) ? 'is-dead' : undefined}>
+              <tr key={name} className={dead === 'drop' && deadEnds.includes(i) ? 'is-dead' : undefined}>
                 <th scope="row">{name}</th>
                 <td>{n4(step.r[i])}</td>
                 <td>{w.edges.filter(([a]) => a === i).length || 'none'}</td>
@@ -121,9 +122,9 @@ export function RankScene({ picker, presetIds, initial }: { picker: ReactNode; p
         </table>
         <Plot2D x={{ domain: [0, MAX_ITERATIONS], label: 'step', ticks: 6 }} y={{ domain: [CHANGE_AXIS, 2], log: true, label: 'L1 change', ticks: 5 }} ariaLabel="L1 change of the ranks per step on a log axis, with the d^t bound">
           {bound && <Curve points={bound} tone="violet" dashed />}
-          {measured.length > 1 && <Curve points={measured} tone="bad" />}
+          {measured.length > 1 && <Curve points={measured} tone="info" />}
         </Plot2D>
-        {traps.length > 0 && <p className="ep-note">Spider trap: the pages {traps.map((t) => t.map((i) => w.names[i]).join(', ')).join(' and ')} only link among themselves.</p>}
+        {traps.length > 0 && <p className="ep-note">Closed group (a spider trap): the pages {traps.map((t) => t.map((i) => w.names[i]).join(', ')).join(' and ')} only link among themselves. With d &lt; 1 the teleport keeps it from swallowing all the rank; at d = 1 it can.</p>}
       </div>
       <ProvenanceRow>
         <Provenance kind="toy">a toy web of {w.names.length} pages, computed live by power iteration</Provenance>

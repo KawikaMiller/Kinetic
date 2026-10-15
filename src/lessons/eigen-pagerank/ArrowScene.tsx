@@ -4,20 +4,23 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { eigen2x2 } from '../../core/linalg';
 import {
-  DEFAULT_MATRIX, MATRIX_BOUNDS, MATRIX_STEP, MAX_APPLIES, PRESETS, RESIDUAL_TOLERANCE, behaviourOf, cloud, eigenCoordinates, iterates, rayleigh, residual, stretchAt, type Matrix2,
+  MATRIX_BOUNDS, MATRIX_STEP, MAX_APPLIES, PRESETS, RESIDUAL_TOLERANCE, SNAP_DEGREES, behaviourOf, cloud, eigenCoordinates, eigenLines, iterates, rayleigh, residual, snapToEigenLine, stretchAt, type Behaviour, type Matrix2,
 } from './eigen';
+import { startMatrix, type ArrowMode } from './scenes';
 import { arrowCaption, eigenvalueText, n3, residualText } from './text';
 
 const DOMAIN = [-1.6, 1.6] as const;
 const LINE_REACH = 1.5;
 const INSPECT_START: [number, number] = [1, 0.4];
-const ROTATION = PRESETS.find((p) => p.id === 'rotation')!.A;
 const AXIS_NAMES = [['a', 'b'], ['c', 'd']];
 
-export type ArrowMode = 'apply' | 'nothing';
+const lineLabel = (kind: Behaviour['kind'], i: number): string => {
+  if (kind === 'shear') return 'the one eigen-line';
+  return i === 0 ? 'the eigen-line of the larger eigenvalue' : 'the other eigen-line';
+};
 
 export function ArrowScene({ picker, mode }: { picker: ReactNode; mode: ArrowMode }) {
-  const [A, setA] = useState<Matrix2>(mode === 'apply' ? DEFAULT_MATRIX : ROTATION);
+  const [A, setA] = useState<Matrix2>(startMatrix(mode));
   const [k, setK] = useState(0);
   const [probe, setProbe] = useState<[number, number]>(INSPECT_START);
   const behaviour = behaviourOf(A);
@@ -40,9 +43,7 @@ export function ArrowScene({ picker, mode }: { picker: ReactNode; mode: ArrowMod
     setA(m);
     setK(0);
   };
-  const lines = eigen && eigen.kind === 'real'
-    ? eigen.vectors.map((v, i) => ({ from: [-LINE_REACH * v[0], -LINE_REACH * v[1]] as [number, number], to: [LINE_REACH * v[0], LINE_REACH * v[1]] as [number, number], tone: i === 0 ? ('ok' as const) : ('violet' as const) }))
-    : [];
+  const lines = eigenLines(A).map(({ direction: v, tone }) => ({ from: [-LINE_REACH * v[0], -LINE_REACH * v[1]] as [number, number], to: [LINE_REACH * v[0], LINE_REACH * v[1]] as [number, number], tone }));
 
   return (
     <StageFrame
@@ -54,15 +55,14 @@ export function ArrowScene({ picker, mode }: { picker: ReactNode; mode: ArrowMod
           <Stat label="Eigenvalues" value={eigenvalueText(behaviour)} color="var(--ok)" sub="from the characteristic quadratic" />
           <Stat label="Stretch factor" value={stretch === null ? '–' : n3(stretch)} sub={stretch === null ? 'press Apply A' : 'length ratio of the arrow at 0°'} />
           <Stat label="Second ÷ first component" value={ratio === null ? '–' : n3(ratio)} sub={ratio === null ? 'needs two real eigen-directions' : 'of the arrow at 0°, in the eigen-basis'} />
-          <Stat label="Residual |Av − λv|" value={residualText(res, RESIDUAL_TOLERANCE)} color={res < RESIDUAL_TOLERANCE ? 'var(--ok)' : 'var(--bad)'} sub={`the dragged arrow, λ ≈ ${n3(lambda)}`} />
+          <Stat label={<>Residual |Av − <span className="keep-case">λ</span>v|</>} value={residualText(res, RESIDUAL_TOLERANCE)} color={res < RESIDUAL_TOLERANCE ? 'var(--ok)' : 'var(--bad)'} sub={`the dragged arrow, λ ≈ ${n3(lambda)}`} />
         </Stats>
       }
       legend={
         <Legend
           items={[
             { color: 'var(--hi)', label: 'the arrow you drag', shape: 'dot' },
-            { color: 'var(--ok)', label: 'the eigen-line of the larger eigenvalue', shape: 'line' },
-            { color: 'var(--violet)', label: 'the other eigen-line', shape: 'line' },
+            ...lines.map((l, i) => ({ color: l.tone === 'ok' ? 'var(--ok)' : 'var(--violet)', label: lineLabel(behaviour.kind, i), shape: 'line' as const })),
             { color: 'var(--info)', label: 'the 12 arrows and their trails', shape: 'line' },
           ]}
         />
@@ -87,7 +87,7 @@ export function ArrowScene({ picker, mode }: { picker: ReactNode; mode: ArrowMod
           <Button variant="primary" onClick={() => setK(Math.min(MAX_APPLIES, k + 1))}>Apply A</Button>
           <Button onClick={() => setK(Math.min(MAX_APPLIES, k + 10))}>Apply 10 times</Button>
           <Button onClick={() => setK(0)}>Reset arrows</Button>
-          <Hint>Matrix [[a, b], [c, d]]. Drag the yellow dot to inspect any arrow: its residual is 0 only along an eigen-line.</Hint>
+          <Hint>Matrix [[a, b], [c, d]]. Drag the yellow dot to inspect any arrow: its residual is 0 only along an eigen-line, and it snaps onto one within {SNAP_DEGREES}°.</Hint>
         </>,
       ]}
     >
@@ -101,7 +101,7 @@ export function ArrowScene({ picker, mode }: { picker: ReactNode; mode: ArrowMod
             <Arrow key={i} to={[t[at][0], t[at][1]]} tone="info" />
           ))}
           <Arrow to={probe} tone="hi" />
-          <Points data={[{ x: probe[0], y: probe[1], tone: 'hi' }]} onDrag={(_, p) => setProbe([p[0], p[1]])} pointLabel={() => 'inspected arrow'} />
+          <Points data={[{ x: probe[0], y: probe[1], tone: 'hi' }]} onDrag={(_, p) => setProbe(snapToEigenLine([p[0], p[1]], eigenLines(A)))} pointLabel={() => 'inspected arrow'} />
         </Plot2D>
       </div>
       <ProvenanceRow>

@@ -7,7 +7,7 @@ import { arrowCaption, eigenvalueText, rankCaption, residualText } from './text'
 const NO_JUNK = /NaN|undefined|null|Infinity|\[object/;
 
 describe('try-this entries, from the default state, as written', () => {
-  it('try-this 1: after three applications the component ratio is 1/27 = 0.037 and the stretch is 2.8 (heading to 3)', () => {
+  it('try-this 1: after three applications the component ratio is 1/27 = 0.037 and the stretch is 2.984 (heading to 3)', () => {
     const e1 = [Math.SQRT1_2, Math.SQRT1_2];
     const e2 = [Math.SQRT1_2, -Math.SQRT1_2];
     const v = iterates(DEFAULT_MATRIX, [1, 0], 3)[3];
@@ -19,15 +19,15 @@ describe('try-this entries, from the default state, as written', () => {
     expect(lesson.tryThis[0]).toContain(`stretch factor is ${Math.sqrt(365 / 41).toFixed(3)}`);
   });
 
-  it('try-this 2: the rotation has eigenvalues cos 40° ± i sin 40° of modulus 1, and the caption says the arrows keep turning', () => {
+  it('try-this 2: the rotation has eigenvalues 0.8 ± 0.6i of modulus 1, and the caption says the arrows keep turning', () => {
     const b = behaviourOf(MATRICES.find((m) => m.id === 'rotation')!.A);
     expect(b.kind).toBe('complex');
     if (b.kind !== 'complex') return;
-    expect(b.re).toBeCloseTo(Math.cos((40 * Math.PI) / 180), 12);
-    expect(Math.abs(b.im)).toBeCloseTo(Math.sin((40 * Math.PI) / 180), 12);
+    expect(b.re).toBeCloseTo(0.8, 12);
+    expect(Math.abs(b.im)).toBeCloseTo(0.6, 12);
     expect(b.modulus).toBeCloseTo(1, 12);
     expect(arrowCaption(b, 1)).toContain('keep turning');
-    expect(lesson.tryThis[1]).toContain('0.766 ± 0.643i with modulus 1.000');
+    expect(lesson.tryThis[1]).toContain('0.800 ± 0.600i with modulus 1.000');
     expect(arrowCaption(behaviourOf([[1, 1], [0, 1]]), 0)).toContain('1/k');
   });
 

@@ -34,9 +34,9 @@ export function arrowCaption(b: Behaviour, k: number): string {
     case 'ties':
       return `The eigenvalues ${n3(b.lambda1)} and ${n3(b.lambda2)} have the same size, so neither direction wins: an arrow on neither line alternates between two directions instead of settling.`;
     case 'complex':
-      return `No real direction is kept: the eigenvalues are the complex pair ${n3(b.re)} ± ${n3(Math.abs(b.im))}i (modulus ${n3(b.modulus)}), so the arrows keep turning instead of settling.`;
+      return `No real direction is kept: the eigenvalues are the complex pair ${n3(b.re)} ± ${n3(Math.abs(b.im))}i (modulus ${n3(b.modulus)}), so the arrows keep turning instead of settling, and no eigen-line is drawn.`;
     case 'shear':
-      return `One eigen-direction only (the eigenvalue ${n3(b.lambda)} is repeated): arrows approach it like 1/k, slowly, not by a fixed factor each step.`;
+      return `One eigen-direction only (the eigenvalue ${n3(b.lambda)} is repeated): arrows approach that one eigen-line (drawn in green) like 1/k, slowly, not by a fixed factor each step.`;
   }
 }
 
@@ -48,6 +48,9 @@ export function residualText(res: number, tolerance: number): string {
 
 export const pageList = (w: Web, ids: readonly number[]): string => ids.map((i) => w.names[i]).join(', ');
 
+/** A total below this is zero for the caption: nothing is left to rank. */
+const NO_RANK = 1e-12;
+
 export function rankCaption(w: Web, d: number, dead: 'drop' | 'spread', step: RankStep, i: number): string {
   const n = w.names.length;
   const top = step.r.indexOf(Math.max(...step.r));
@@ -55,10 +58,13 @@ export function rankCaption(w: Web, d: number, dead: 'drop' | 'spread', step: Ra
   const traps = trapsOf(w);
   const lead = i === 0
     ? `Every page starts with 1/${n} = ${n4(1 / n)}. Each step a page passes d = ${d.toFixed(2)} of its rank along its out-links and every page gets (1 − d)/${n} = ${n4((1 - d) / n)} from the teleport.`
-    : `After ${noun(i, 'step')} the ranks changed by ${step.change.toExponential(2)} in total (L1); the largest is ${w.names[top]} at ${n4(step.r[top])}.`;
+    : `After ${noun(i, 'step')} the ranks changed by ${step.change.toExponential(2)} in total (L1); ${step.total < NO_RANK ? 'no rank is left.' : `the largest is ${w.names[top]} at ${n4(step.r[top])}.`}`;
   const leak = step.total < 1 - 1e-9
     ? ` The ranks sum to ${n4(step.total)}, not 1: ${deadEnds.length > 0 && dead === 'drop' ? `the dead end ${pageList(w, deadEnds)} drops the rank it receives` : 'rank is leaking'}.`
     : '';
   const trap = traps.length > 0 && d === 1 ? ` The group ${traps.map((t) => `{${pageList(w, t)}}`).join(' and ')} only links to itself, so at d = 1 it keeps whatever rank reaches it.` : '';
   return `${lead}${leak}${trap}`;
 }
+
+/** The two ways the lesson treats a dead end, and which one is the standard. Shown under the toggle. */
+export const DEAD_END_CONVENTIONS = 'Drop: a dead end passes nothing on, so r ← d·M·r + (1 − d)/n loses what it receives and the total falls below 1 whenever d < 1. Spread (the standard treatment): a dead end passes 1/n to every page, which is the Google matrix G = d·M + (1 − d)/n and conserves the total. The matrix G is not drawn here; the totals show its effect.';

@@ -1,20 +1,14 @@
 import { useScenePicker } from '../../components/ScenePicker';
 import { ArrowScene } from './ArrowScene';
 import { RankScene } from './RankScene';
+import { SCENES, SCENE_SETUP, type Scene } from './scenes';
 import './styles.css';
-
-type Scene = 'apply' | 'nothing' | 'surfer' | 'leaks';
-const SCENES: { value: Scene; label: string }[] = [
-  { value: 'apply', label: 'Apply it again and again' },
-  { value: 'nothing', label: 'When nothing lines up' },
-  { value: 'surfer', label: 'PageRank as a random surfer' },
-  { value: 'leaks', label: 'Where it leaks' },
-];
 
 export function Stage() {
   const [scene, picker] = useScenePicker<Scene>({ label: 'Scene', options: SCENES, initial: 'apply' });
-  if (scene === 'nothing') return <ArrowScene picker={picker} mode="nothing" />;
-  if (scene === 'surfer') return <RankScene picker={picker} presetIds={['web6', 'example']} initial="web6" />;
-  if (scene === 'leaks') return <RankScene picker={picker} presetIds={['chain', 'trap', 'deadend']} initial="chain" />;
-  return <ArrowScene picker={picker} mode="apply" />;
+  const setup = SCENE_SETUP[scene];
+  // The key makes each scene mount fresh: two scenes share a component, and without it React would keep the
+  // previous scene's matrix, web, damping and frame, so the scene would not open on its own start.
+  if (setup.kind === 'arrows') return <ArrowScene key={scene} picker={picker} mode={setup.mode} />;
+  return <RankScene key={scene} picker={picker} presetIds={setup.presetIds} initial={setup.initial} />;
 }
