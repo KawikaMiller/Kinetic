@@ -9,8 +9,8 @@
 .re-gauge-bar { flex: 1; min-width: 0; }
 .re-lesson { font: 600 12px var(--mono); }
 .re-lesson.is-soon { color: var(--muted); }
-.re-log { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow: auto; padding-right: 4px; }
-.re-log .log-row, .re-readings .log-row { font-size: 12.5px; overflow-wrap: anywhere; }
+.re-log .log-at { font-size: 12px; }
+.re-readings .log-row { font-size: 12.5px; overflow-wrap: anywhere; }
 .re-symptom { display: flex; flex-direction: column; gap: 8px; font-size: 15px; }
 .re-symptom p { margin: 0; font-size: 17px; line-height: 1.45; }
 .re-picks { display: flex; flex-wrap: wrap; gap: 8px; }

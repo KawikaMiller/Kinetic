@@ -1375,6 +1375,37 @@ const { sorted, sort, headerProps } = useSortedRows(rows, { name: (r) => r.name,
 - distributed-id-generation's trade-offs table migrated: default, "Size" ascending and "Format" descending at 1440 and 390 are pixel-identical
   (the 390 default shot differs by 0.09% between *any* two runs, caption cross-fade noise, same as two shots of the unchanged tree).
 
+### `LogStream.tsx` (`logRows.ts`) (K3-9) — structured-logging, cert-lifecycle, resource-exhaustion, dom-events, infrastructure-as-code; later incident-response, postmortems, alerting-design, change-data-capture, write-ahead-log, kafka-partitioned-log, stream-windowing, fuzzing, job-scheduling, io-models
+```tsx
+<LogStream label="What has happened up to today" maxHeight={190} follow max={200}
+           rows={events.map((e) => ({ id: e.id, at: e.clock, level: e.level, tone: e.tone, source: e.service, sourceTone: 'info', text: e.text }))}
+           highlight={(row) => (query ? matches(row) : null)}   // false dims the row, true is where it scrolls to, null = nothing highlighted
+           live="polite" empty="Nothing yet." className="my-log" />
+```
+- A `role="log"` region of `.log-row`s (mono, tinted by `tone`; `level` ERROR is red and WARN orange when no tone is given) with an
+  optional muted timestamp (`at`), a bold `level` and `source` (`sourceTone`), then the `text`. Wraps at 390 (`overflow-wrap: anywhere`).
+  `id` must be unique and stable (a counter, not text plus time); it is the React key and the scroll target.
+- `maxHeight` (px) makes it a scroller and a tab stop (a region that scrolls must be reachable by keyboard); without it the list just grows. `follow`
+  keeps the newest row in view until the learner scrolls up. `max` keeps only the newest rows. Newest-first logs (resource-exhaustion) pass their
+  rows reversed and leave `follow` off.
+- The region is mounted whether or not there are rows (`live` is `polite` by default, `off` for a log the learner scrubs), so the first row is
+  announced. `empty=""` shows nothing while empty. Callers that only render a log after some action (infrastructure-as-code's apply output)
+  still mount it conditionally, to keep their layout; a new lesson should mount it always.
+- `lastRows` and `rowTone` (`logRows.ts`) are pure and tested. The lesson keeps its own mapping from model to `LogRow` (structured-logging's
+  `streamRows.ts` with `toLogRows` and `streamHighlight`, tested).
+- **Migrated pixel-identically** (frames at 1440 and 390, plus a driven click or apply): structured-logging (its local `LogStream.tsx` is gone),
+  cert-lifecycle, resource-exhaustion, dom-events (the empty note keeps the 12px margins its old `<p>` had) and infrastructure-as-code.
+  structured-logging scrolls to the first highlighted row, a secret or mask included, but not to a row the filter dimmed (it used to).
+  Its `@live` shot differs from the *baseline* by 5 to 7% but matches the unmodified tree of the same day exactly.
+- **Not migrated, and why.** cors-same-origin (`RequestScene`): an ordered `<ol>` of the steps of one request, replaced on every send, not an
+  append-only log (list semantics, no timestamps, nothing to follow); `OriginScene`'s `.log-row` is a single verdict line. kubernetes-basics'
+  `EventLog`: its heading lives inside the `role="log"` region and each tick is a bold mono prefix with its own margin, so it isn't the same row.
+  The other `.log-row` users (accessibility, browser-storage, injection-attacks, xss, mfa-passkeys, secrets-management, usability-testing...)
+  use it as a verdict or result box, not a stream. mobile-app-lifecycle's callback list has two-line rows (a bold callback name over its calls) in a
+  `<ul>`, and secrets-management's `LeakScene` is a numbered `<ol>` timeline with a current row: lists of steps with their own anatomy, not
+  timestamped streams, so they stay on plain `.log-row`. (virtual-dom's patch list, interrupts-context-switch's outcomes, poison-messages-dlq and
+  event-sourcing were only grepped, not read closely; none has `role="log"`.)
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

@@ -167,6 +167,16 @@
   font: 500 12.5px var(--mono);
 }
 
+/* LogStream (components/LogStream.tsx): rows are .log-row; it scrolls only when given a max height */
+.log-stream { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.log-stream.is-scroll { overflow: auto; padding-right: 4px; }
+.log-stream .log-row { overflow-wrap: anywhere; transition: opacity 0.2s; }
+.log-stream .log-row.is-dim { opacity: 0.35; }
+.log-at { color: var(--muted); white-space: pre; }
+.log-level, .log-source { font-weight: 700; }
+.log-source { color: var(--c, var(--text)); }
+.log-text { color: var(--text); }
+
 /* Stacked control rows (StageFrame `controls={[row1, row2]}`) */
 .controls-stack > .controls + .controls { border-top-style: dashed; }
 

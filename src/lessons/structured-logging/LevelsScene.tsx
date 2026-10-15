@@ -4,7 +4,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { bytes, pct } from '../../core/format';
-import { LogStream, type StreamRow } from './LogStream';
+import { LogStream } from '../../components/LogStream';
+import { EMPTY_STREAM, STREAM_MAX_HEIGHT_PX, streamHighlight, toLogRows, type StreamRow } from './streamRows';
 import {
   BUDGET_GB_PER_DAY, DEFAULT_SEED, LEVELS, PRICE_PER_GB, REQUESTS_PER_SECOND, bytesPerRequest, countByLevel, dollarsPerMonth, displayParts, gbPerDay, keptLines, makeRun, textParts, type Format, type Level,
 } from './model';
@@ -92,7 +93,7 @@ export function LevelsScene({ picker }: { picker: ReactNode }) {
             </span>
           ))}
         </div>
-        <LogStream rows={rows} label="Lines kept at this level" />
+        <LogStream rows={toLogRows(rows)} highlight={streamHighlight(rows)} maxHeight={STREAM_MAX_HEIGHT_PX} className="sl-stream" empty={EMPTY_STREAM} label="Lines kept at this level" />
         <Hint block>
           Simulated services and logs; the traffic ({REQUESTS_PER_SECOND} requests a second), the {BUDGET_GB_PER_DAY} GB budget and the ${PRICE_PER_GB.toFixed(2)} a GB price are made up for illustration. Bytes are
           measured on the lines shown, averaged over these 10 requests (one fails); a real service's mix differs. Structured lines also cost more bytes each than the same line in free text, because every field is named: you pay for searchability.

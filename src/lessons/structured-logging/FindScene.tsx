@@ -3,7 +3,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { NA } from '../../core/format';
-import { LogStream, type StreamRow } from './LogStream';
+import { LogStream } from '../../components/LogStream';
+import { EMPTY_STREAM, STREAM_MAX_HEIGHT_PX, streamHighlight, toLogRows, type StreamRow } from './streamRows';
 import { ServiceMap } from './ServiceMap';
 import {
   DEFAULT_SEED, FAILED_USER, QUERY_HELP, SERVICES, SERVICE_TONE, displayParts, filterHits, grepLines, makeRun, parseQuery, scoreHits, textParts, type Format, type Run, type Service,
@@ -114,7 +115,7 @@ export function FindScene({ picker }: { picker: ReactNode }) {
         ) : (
           <p className="sl-help">{format === 'text' ? 'Plain substring search over the text, like grep -i. Nothing else in the line is queryable.' : `Syntax: ${QUERY_HELP}`}</p>
         )}
-        <LogStream rows={rows} label={`Log lines, ${format === 'text' ? 'free text' : 'JSON'}`} />
+        <LogStream rows={toLogRows(rows)} highlight={streamHighlight(rows)} maxHeight={STREAM_MAX_HEIGHT_PX} className="sl-stream" empty={EMPTY_STREAM} label={`Log lines, ${format === 'text' ? 'free text' : 'JSON'}`} />
         <Hint block>
           Simulated services and logs: the ten requests, the lines and the timings are scripted. The failed request is the only one that fails, and the search results are scored against the lines the simulation
           knows belong to it.

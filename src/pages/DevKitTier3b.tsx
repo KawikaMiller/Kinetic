@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { CodePanel } from '../components/CodePanel';
 import { GraphView } from '../components/GraphView';
+import { LogStream } from '../components/LogStream';
+import type { LogRow } from '../components/logRows';
 import { SectionTitle } from '../components/Panel';
-import { SortTh } from '../components/ui';
+import { Button, SortTh } from '../components/ui';
 import { useSortedRows } from '../components/useSortedRows';
 import { DevKitSection as Section } from './DevKitSection';
 
@@ -15,6 +18,9 @@ export function DevKitTier3b() {
       </Section>
       <Section title="SortTh + useSortedRows · press a heading to sort, again to reverse (K3-4)">
         <SortDemo />
+      </Section>
+      <Section title="LogStream · a live region that follows the newest row, dims what a filter rules out and scrolls to what it highlights (K3-9)">
+        <LogDemo />
       </Section>
       <Section title="CodePanel · a long line scrolls inside the panel instead of widening a flex row (K3-6)">
         <LongLineDemo />
@@ -101,5 +107,35 @@ function SortDemo() {
         ))}
       </tbody>
     </table>
+  );
+}
+
+const SOURCES = ['api', 'db', 'queue'] as const;
+const SOURCE_TONES = ['info', 'violet', 'amber'] as const;
+const LOG_MAX_ROWS = 8;
+const LOG_HEIGHT_PX = 150;
+
+function LogDemo() {
+  const [rows, setRows] = useState<LogRow[]>([
+    { id: 1, at: '12:00:01', level: 'INFO', source: 'api', sourceTone: 'info', text: 'GET /cart 200' },
+    { id: 2, at: '12:00:02', level: 'WARN', source: 'db', sourceTone: 'violet', text: 'slow query: 1.2 s' },
+  ]);
+  const [onlyErrors, setOnlyErrors] = useState(false);
+  const add = () =>
+    setRows((r) => {
+      const n = r.length + 1;
+      const error = n % 4 === 0;
+      const source = n % SOURCES.length;
+      const text = error ? 'upstream timed out' : `handled request ${n}`;
+      return [...r, { id: n, at: `12:00:${String(n + 1).padStart(2, '0')}`, level: error ? 'ERROR' : 'INFO', source: SOURCES[source], sourceTone: SOURCE_TONES[source], text }];
+    });
+  return (
+    <>
+      <div className="devkit-row">
+        <Button onClick={add}>Log a line</Button>
+        <Button onClick={() => setOnlyErrors((o) => !o)}>{onlyErrors ? 'Show everything' : 'Highlight errors'}</Button>
+      </div>
+      <LogStream rows={rows} max={LOG_MAX_ROWS} maxHeight={LOG_HEIGHT_PX} follow highlight={onlyErrors ? (r) => r.level === 'ERROR' : undefined} label="Demo log" />
+    </>
   );
 }

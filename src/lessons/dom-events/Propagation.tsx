@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { LogStream } from '../../components/LogStream';
+import type { LogRow } from '../../components/logRows';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { TreeSvg, type TreeNodeMark } from '../../components/TreeSvg';
@@ -197,6 +199,10 @@ export function Propagation({ picker }: { picker: ReactNode }) {
   };
   const shownFired = run ? run.steps.slice(0, at + 1).filter((s) => s.fired) : [];
   const cutFrom = run ? run.steps.findIndex((s) => s.cut) : -1;
+  const logRows: LogRow[] = shownFired.map((s, i) => ({ id: `${s.node}-${s.phase}`, tone: 'ok', text: `${i + 1}. ${PHASE_NAME[s.phase]} · ${TAG[s.node]}` }));
+  if (run?.stoppedAt && cutFrom >= 0 && at >= cutFrom) {
+    logRows.push({ id: 'cut', tone: 'bad', text: `✂ stopPropagation() in ${TAG[run.stoppedAt]}: the rest of the trip is cut` });
+  }
 
   return (
     <StageFrame
@@ -313,17 +319,12 @@ export function Propagation({ picker }: { picker: ReactNode }) {
         </div>
         <Box className="de-log">
           <SectionTitle hint="recorded from the real listeners">Log</SectionTitle>
-          {shownFired.length === 0 && (
-            <p className="empty-note">{run ? 'No listener has fired for this click (yet).' : 'No clicks yet.'}</p>
-          )}
-          {shownFired.map((s, i) => (
-            <div key={`${s.node}-${s.phase}`} className="log-row tone-ok">
-              {i + 1}. {PHASE_NAME[s.phase]} · {TAG[s.node]}
-            </div>
-          ))}
-          {run?.stoppedAt && cutFrom >= 0 && at >= cutFrom && (
-            <div className="log-row tone-bad">✂ stopPropagation() in {TAG[run.stoppedAt]}: the rest of the trip is cut</div>
-          )}
+          <LogStream
+            className="de-stream"
+            label="Listeners that fired"
+            empty={run ? 'No listener has fired for this click (yet).' : 'No clicks yet.'}
+            rows={logRows}
+          />
         </Box>
       </div>
     </StageFrame>

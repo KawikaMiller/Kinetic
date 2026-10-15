@@ -1,11 +1,14 @@
 import { useState, type ReactNode } from 'react';
+import { LogStream } from '../../components/LogStream';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
+import type { Tone } from '../../core/tone';
 import { DAY, SAMPLES, daysFromStart, daysLeft, failedSoFar, formatInZone, formatUtc, handshake, servedAt, type Scenario, type TimelineEvent } from './model';
 import { Timeline } from './Timeline';
 
 const SLIDER_STEP_DAYS = 0.25;
+const LOG_MAX_HEIGHT_PX = 190;
 const ZONES = [
   { label: 'Los Angeles', zone: 'America/Los_Angeles' },
   { label: 'Tokyo', zone: 'Asia/Tokyo' },
@@ -14,7 +17,7 @@ const ZONES = [
 /** "14 Sep, 17:00": the wall-clock time in a zone, without the year. */
 const wallClock = (t: number, zone: string) => formatInZone(t, zone).replace(/ \d{4}/, '');
 
-const EVENT_TONE: Record<TimelineEvent['kind'], string> = { issued: 'ok', 'attempt-failed': 'orange', alert: 'hi', expired: 'bad', reminder: 'hi', note: 'violet' };
+const EVENT_TONE: Record<TimelineEvent['kind'], Tone> = { issued: 'ok', 'attempt-failed': 'orange', alert: 'hi', expired: 'bad', reminder: 'hi', note: 'violet' };
 
 /**
  * The shared stage of the manual, ACME and gotcha scenes: today's readout, the timeline with its
@@ -85,14 +88,13 @@ export function ScenarioView({
     >
       <div className="cl stage-pad">
         <Timeline scenario={scenario} now={now} />
-        <div className="cl-log" role="log" aria-label="What has happened up to today" tabIndex={0}>
-          {log.length === 0 && <div className="empty-note">Nothing yet.</div>}
-          {log.map((e, i) => (
-            <div key={`${e.t}-${i}`} className={`log-row tone-${EVENT_TONE[e.kind]}`}>
-              <span className="cl-date">{formatUtc(e.t).replace(' UTC', '')}</span> {e.text}
-            </div>
-          ))}
-        </div>
+        <LogStream
+          className="cl-log"
+          label="What has happened up to today"
+          maxHeight={LOG_MAX_HEIGHT_PX}
+          empty="Nothing yet."
+          rows={log.map((e, i) => ({ id: `${e.t}-${i}`, at: formatUtc(e.t).replace(' UTC', ''), tone: EVENT_TONE[e.kind], text: e.text }))}
+        />
         <Hint block>
           {hint} The strip samples {SAMPLES} moments, so a short outage can fall between two cells; the readout for Today is exact.
         </Hint>
