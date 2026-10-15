@@ -16,6 +16,7 @@
 .mc-conditions li { display: flex; flex-wrap: wrap; gap: 4px 8px; }
 .mc-conditions .is-met b { color: var(--ok); }
 .mc-conditions .is-unmet b { color: var(--orange); }
+.mc-conditions .is-na b { color: var(--muted); }
 .mc-conditions span { color: var(--muted); }
 .mc-verdict { margin: 0; font-size: 13px; line-height: 1.5; font-weight: 600; }
 .mc-verdict.is-ok { color: var(--ok); }

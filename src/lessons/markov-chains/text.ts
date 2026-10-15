@@ -4,6 +4,8 @@ import type { Analysis, Lambdas } from './model';
 
 /** A probability to at most three decimals, with trailing zeros dropped ("0.15", "0.333"). */
 export const prob = (p: number): string => String(Number(p.toFixed(3)));
+/** An edge label: a chance that would round to 0 says so instead of printing a 0 on a drawn arrow. */
+export const edgeLabel = (p: number): string => (p < 0.0005 ? '<0.001' : prob(p));
 export const num3 = (x: number): string => x.toFixed(3);
 const noun = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -75,7 +77,10 @@ export function forgetCaption(r: ForgetReadout): string {
   const ratio = measuredRatio(r.prevTv, r.tv);
   const complex = r.lambdas.kind === 'complex' ? ' The pair is complex, so the distance wobbles as it falls and the guide follows the modulus.' : '';
   const step = r.tv === null ? '' : ` At step ${r.t} the distance is ${r.tv.toExponential(2)}${ratio !== null ? ` and it is ${num3(ratio)} times the previous step's, against the guide's ${num3(r.lambdas.slem)}` : ''}.`;
-  return `${lam} Each step shrinks the distance by about ${num3(r.lambdas.slem)}, the larger modulus.${complex}${step}`;
+  const shrink = r.lambdas.kind === 'complex'
+    ? `On average each step shrinks the distance by about the modulus ${num3(r.lambdas.slem)}.`
+    : `Each step shrinks the distance by about ${num3(r.lambdas.slem)}, the larger modulus.`;
+  return `${lam} ${shrink}${complex}${step}`;
 }
 
 // ── Scene 3 ──────────────────────────────────────────────────────────
@@ -87,7 +92,7 @@ const names = (states: readonly string[], ids: readonly number[]) => ids.map((i)
 export function verdictOf(a: Analysis, states: readonly string[]): Verdict {
   if (a.ergodic) return { tone: 'ok', text: 'Irreducible, aperiodic and finite: one stationary distribution, and the distribution settles to it from any start.' };
   if (a.irreducible) {
-    return { tone: 'orange', text: `Irreducible but periodic with period ${a.period}: a stationary distribution exists, but the distribution cycles forever instead of settling.` };
+    return { tone: 'orange', text: `Irreducible but periodic with period ${a.period}: a stationary distribution exists, and the long-run share of time in each state still reaches it, but the distribution at step t cycles forever instead of settling.` };
   }
   if (a.closedClasses.length > 1) {
     return { tone: 'orange', text: `Reducible with ${a.closedClasses.length} closed classes (${a.closedClasses.map((c) => `{${names(states, c.states)}}`).join(' and ')}): the stationary distribution is not unique, and where the mass ends depends on the start.` };
@@ -98,8 +103,19 @@ export function verdictOf(a: Analysis, states: readonly string[]): Verdict {
   return { tone: 'orange', text: 'Reducible: some states cannot be reached from others.' };
 }
 
+/** The Verdict stat, derived from the same flags as the stationary-distribution stat and the verdict sentence, so the three cannot disagree. */
+export function verdictStat(a: Analysis): { value: string; sub: string } {
+  const classes = noun(a.closedClasses.length, 'closed class', 'closed classes');
+  if (a.ergodic) return { value: 'settles', sub: 'irreducible and aperiodic' };
+  if (!a.uniqueStationary) return { value: 'not unique', sub: classes };
+  if (a.settles) return { value: 'settles, not irreducible', sub: classes };
+  return { value: `cycles, period ${a.closedClasses[0].period}`, sub: a.irreducible ? 'irreducible but periodic' : classes };
+}
+
 export interface Condition {
   name: string;
+  /** False when the condition does not apply (aperiodicity is only asked of an irreducible chain). */
+  asked: boolean;
   met: boolean;
   detail: string;
 }
@@ -107,9 +123,9 @@ export interface Condition {
 export function conditionsOf(a: Analysis, states: readonly string[]): Condition[] {
   const classes = a.classes.map((c) => `{${names(states, c)}}`).join(' ');
   return [
-    { name: 'Irreducible', met: a.irreducible, detail: a.irreducible ? 'every state can reach every other' : `${noun(a.classes.length, 'communicating class', 'communicating classes')}: ${classes}` },
-    { name: 'Aperiodic', met: a.period === 1, detail: a.period === null ? 'not asked: the chain is not irreducible' : a.period === 1 ? 'return times have gcd 1' : `return times have gcd ${a.period}` },
-    { name: 'Finite', met: true, detail: `${noun(states.length, 'state')}` },
+    { name: 'Irreducible', asked: true, met: a.irreducible, detail: a.irreducible ? 'every state can reach every other' : `${noun(a.classes.length, 'communicating class', 'communicating classes')}: ${classes}` },
+    { name: 'Aperiodic', asked: a.period !== null, met: a.period === 1, detail: a.period === null ? 'not asked: the chain is not irreducible' : a.period === 1 ? 'return times have gcd 1' : `return times have gcd ${a.period}` },
+    { name: 'Finite', asked: true, met: true, detail: `${noun(states.length, 'state')}` },
   ];
 }
 
@@ -121,5 +137,5 @@ export function failureCaption(label: string, a: Analysis, states: readonly stri
 // ── Scene 4 ──────────────────────────────────────────────────────────
 
 export function textCaption(wordsCount: number, distinct: number, fresh: number, total: number): string {
-  return `${noun(wordsCount, 'word')} make ${noun(distinct, 'state')}: the chain's state is just the word it is on. ${fresh} of ${total} generated sentences are not in the corpus, because the chain recombines the transitions it has seen.`;
+  return `${noun(wordsCount, 'word')} make ${noun(distinct, 'state')}: the chain's state is just the word it is on. ${fresh} of ${total} generated sentences are not in the corpus${fresh > 0 ? ', because the chain recombines the transitions it has seen' : ''}.`;
 }

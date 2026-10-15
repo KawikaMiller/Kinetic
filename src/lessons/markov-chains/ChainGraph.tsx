@@ -1,6 +1,6 @@
 import { GraphView, type GraphEdge } from '../../components/GraphView';
 import type { Matrix } from './model';
-import { prob } from './text';
+import { edgeLabel, prob } from './text';
 
 const WIDTH = 360;
 const HEIGHT = 280;
@@ -24,7 +24,7 @@ export function ChainGraph({
   taken?: [number, number] | null;
   ariaLabel: string;
 }) {
-  const edges: GraphEdge<number>[] = P.flatMap((row, i) => row.flatMap((p, j) => (p > 0 ? [{ from: i, to: j, label: prob(p), weight: p, labelAt: i < j ? 0.3 : i > j ? 0.7 : 0.5 }] : [])));
+  const edges: GraphEdge<number>[] = P.flatMap((row, i) => row.flatMap((p, j) => (p > 0 ? [{ from: i, to: j, label: edgeLabel(p), weight: p, labelAt: i === j ? 0.5 : 0.3 }] : [])));
   return (
     <GraphView
       nodes={states.map((label, id) => ({ id, label }))}

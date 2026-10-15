@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { WEATHER, setEntry, withRow, type Matrix } from './model';
 
-/** The editable weather chain the first two scenes share, so an edit made in one shows in the other. */
+/** The editable weather chain of one scene; Stage mounts it fresh per scene, so every scene opens on the default matrix. */
 export function useChain() {
   const [P, setP] = useState<Matrix>(WEATHER);
   return {

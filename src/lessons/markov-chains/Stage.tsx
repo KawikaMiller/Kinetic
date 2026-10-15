@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useScenePicker } from '../../components/ScenePicker';
 import { ForgetScene } from './ForgetScene';
 import { NeverScene } from './NeverScene';
@@ -14,11 +15,15 @@ const SCENES: { value: Scene; label: string }[] = [
   { value: 'text', label: 'A text chain' },
 ];
 
+/** The weather chain's own state: mounted under a key per scene, so each scene opens on the default matrix, not on an edit made in the other. */
+function ChainScene({ scene, picker }: { scene: 'weather' | 'forget'; picker: ReactNode }) {
+  const chain = useChain();
+  return scene === 'forget' ? <ForgetScene picker={picker} chain={chain} /> : <WeatherScene picker={picker} chain={chain} />;
+}
+
 export function Stage() {
   const [scene, picker] = useScenePicker<Scene>({ label: 'Scene', options: SCENES, initial: 'weather' });
-  const chain = useChain();
-  if (scene === 'forget') return <ForgetScene picker={picker} chain={chain} />;
   if (scene === 'never') return <NeverScene picker={picker} />;
   if (scene === 'text') return <TextScene picker={picker} />;
-  return <WeatherScene picker={picker} chain={chain} />;
+  return <ChainScene key={scene} scene={scene} picker={picker} />;
 }

@@ -53,19 +53,19 @@ const lesson: LessonModule = {
     'In a Markov chain the next state depends on just the current state: the transition matrix row for where it is now, with nothing from earlier steps.',
     'A stationary distribution satisfies π P = π; a finite chain that is irreducible and aperiodic settles to it from any start.',
     `The distance to π shrinks by about the second-largest eigenvalue modulus each step: ${num3(LAMBDAS.slem)} for the default weather chain.`,
-    'A periodic chain flips forever, an absorbing state collects the mass, and a chain with two closed classes has a stationary distribution that depends on the start.',
+    'The distribution of a periodic chain at step t flips forever, though its long-run share of time still settles; an absorbing state collects the mass, and a chain with two closed classes has a stationary distribution that depends on the start.',
   ],
   quiz: [
     {
-      q: 'A chain alternates A to B to A to B with probability 1 each step, starting on A. What do the bars look like after a million steps?',
+      q: 'A chain alternates A to B to A to B with probability 1 each step, starting on A. What is the distribution of where it is at step one million (not the share of time so far)?',
       options: [
-        'They flip: all the mass is on A after an even number of steps and on B after an odd number',
-        'They settle at 50% and 50%, the stationary distribution, once enough steps have gone by',
-        'They settle on A, the start state, because a chain remembers exactly where it began',
-        'They settle after about 1 ÷ |λ₂| steps, the same speed as any other chain does',
+        'It flips: all the mass is on A after an even number of steps and on B after an odd number',
+        'It settles at 50% and 50%, the stationary distribution, once enough steps have gone by',
+        'It settles on A, the start state, because a chain remembers exactly where it began',
+        'It settles after about 1 ÷ |λ₂| steps, the same speed as any other chain does',
       ],
       answer: 0,
-      why: 'The stationary distribution (0.5, 0.5) exists, because π P = π holds, but the chain is periodic with period 2, so the distribution at step t depends on whether t is even. Settling needs aperiodicity as well. After a million steps, an even number, the mass is back on A.',
+      why: 'The stationary distribution (0.5, 0.5) exists, because π P = π holds, but the chain is periodic with period 2, so the distribution at step t depends on whether t is even. Settling needs aperiodicity as well. After a million steps, an even number, the mass is back on A. The share of time spent in each state, as in the first scene, does still reach (0.5, 0.5) for this chain, because each state gets half the steps; it is the distribution at step t that does not settle.',
     },
     {
       q: 'A text chain is on the word "the". Does the next word depend on the earlier words, such as "sat on"?',

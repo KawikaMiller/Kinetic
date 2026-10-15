@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { ChainGraph } from './ChainGraph';
 import { PRESETS, analyse, distributionAt, pointMass, reachableFrom, stationarySolve } from './model';
-import { conditionsOf, failureCaption, prob, verdictOf } from './text';
+import { conditionsOf, failureCaption, prob, verdictOf, verdictStat } from './text';
 
 /** How far the distribution is followed. */
 const MAX_STEPS = 30;
@@ -22,6 +22,7 @@ export function NeverScene({ picker }: { picker: ReactNode }) {
   const mu = distributionAt(preset.P, pointMass(n, s), t);
   const reached = useMemo(() => reachableFrom(preset.P, s), [preset, s]);
   const verdict = verdictOf(analysis, preset.states);
+  const verdictNote = verdictStat(analysis);
   const conditions = conditionsOf(analysis, preset.states);
   const caption = failureCaption(preset.label, analysis, preset.states, t, preset.states[s]);
 
@@ -33,7 +34,7 @@ export function NeverScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Chain" value={preset.label} sub={`${n} states`} />
-          <Stat label="Verdict" value={analysis.ergodic ? 'settles' : 'does not settle to one π'} color={verdict.tone === 'ok' ? 'var(--ok)' : 'var(--orange)'} sub={analysis.ergodic ? 'irreducible and aperiodic' : analysis.irreducible ? `period ${analysis.period}` : `${analysis.closedClasses.length} closed ${analysis.closedClasses.length === 1 ? 'class' : 'classes'}`} />
+          <Stat label="Verdict" value={verdictNote.value} color={verdict.tone === 'ok' ? 'var(--ok)' : 'var(--orange)'} sub={verdictNote.sub} />
           <Stat label="Stationary π" value={pi ? 'unique' : 'not unique'} color={pi ? 'var(--violet)' : 'var(--orange)'} sub={pi ? pi.map(prob).join(', ') : 'depends on where it starts'} />
         </Stats>
       }
@@ -61,7 +62,7 @@ export function NeverScene({ picker }: { picker: ReactNode }) {
         <>
           <Segmented label="Start" value={s} onChange={setStart} options={preset.states.map((name, i) => ({ value: i, label: name }))} />
           <Slider label="Step t" value={t} min={0} max={MAX_STEPS} onChange={setT} />
-          <Hint>Slide t one step at a time and watch whether the bars settle.</Hint>
+          <Hint>Slide t one step at a time and watch whether the bars settle. These bars are the distribution at step t, not a share of time: for the periodic chain they keep flipping while its share of time still reaches 50% and 50%.</Hint>
         </>,
       ]}
     >
@@ -82,8 +83,8 @@ export function NeverScene({ picker }: { picker: ReactNode }) {
         <div className="mc-visual mc-checks">
           <ul className="mc-conditions" aria-label="The three conditions">
             {conditions.map((c) => (
-              <li key={c.name} className={c.met ? 'is-met' : 'is-unmet'}>
-                <b>{c.met ? '✓' : '✗'} {c.name}</b> <span>{c.detail}</span>
+              <li key={c.name} className={!c.asked ? 'is-na' : c.met ? 'is-met' : 'is-unmet'}>
+                <b>{!c.asked ? '–' : c.met ? '✓' : '✗'} {c.name}</b> <span>{c.detail}</span>
               </li>
             ))}
           </ul>
