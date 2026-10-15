@@ -1,0 +1,27 @@
+.avl-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.avl-split { flex-flow: row wrap; align-items: flex-start; }
+.avl-main { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.avl-side { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.avl-svg { display: block; margin: 0 auto; }
+.avl-key { font: 700 10px var(--mono); text-anchor: middle; fill: var(--text); pointer-events: none; }
+.avl-bf { font: 600 10px var(--mono); text-anchor: middle; fill: var(--muted); pointer-events: none; }
+.avl-bf.is-bad { fill: var(--bad); }
+.tree-node.is-solid .avl-bf { fill: var(--muted); }
+.tree-node.is-solid .avl-bf.is-bad { fill: var(--bad); }
+.avl-ledger { margin: 0; padding-left: 20px; font: 13px var(--mono); }
+.avl-claim { margin: 0; font-size: 13px; }
+.avl-sketch { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.avl-sketch svg { width: 100%; max-width: 360px; display: block; }
+.avl-sketch figcaption { font-size: 13px; color: var(--muted); }
+.avl-sketch-edge { stroke: var(--line-2); stroke-width: 2; }
+.avl-sketch-node circle { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; }
+.avl-sketch-node text { font: 700 10px var(--mono); text-anchor: middle; fill: var(--text); }
+.avl-sketch-node.is-bad circle { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 22%, transparent); }
+.avl-sketch-sub polygon { fill: color-mix(in srgb, var(--violet) 16%, transparent); stroke: var(--violet); stroke-width: 1.5; }
+.avl-sketch-sub line { stroke: var(--line-2); stroke-width: 1.5; }
+.avl-sketch-sub text { font: 600 9px var(--mono); text-anchor: middle; fill: var(--text); }
+.avl-sketch-arrow { font: 700 18px var(--mono); text-anchor: middle; fill: var(--muted); }
+.avl-stage ~ .provenance-row { margin: 8px 16px 12px; }
+@media (max-width: 900px) {
+  .avl-main, .avl-side { flex-basis: 100%; }
+}
