@@ -1088,6 +1088,17 @@ circlePositions(ids, width, height, pad, radii?)                    // the same,
   tag is `<>{base}<Badge/></>` (topological-sort's in-degree badges, cycle-detection's S/F tags) rather than a copy of
   the ring/shape/label markup. `box={{ w, h, rx }}` sets the box's corner radius (default 10; the ring follows at rx + 4).
 - Natural size, shrinking on narrow screens; stretch it with `width: 100%` in lesson CSS (both migrated lessons do). Big graphs on phones belong in a `WideRegion`, as in ci-pipelines.
+- **`underlay` and `labelHalo` (K3-5).** `underlay={<>…</>}` is SVG drawn first inside the graph's own `<svg>`, in the
+  same coordinates and under the edges and nodes: module boxes, a VPC, a component hull. It scales with the drawing,
+  takes no pointer events (`.graph-underlay`) and is `aria-hidden`, so a lesson no longer stacks a second SVG with a
+  copied viewBox (coupling-cohesion, layered-hexagonal and architecture-diagrams-c4's two scenes did). Read the
+  graph's coordinate transform with `canvas.querySelector('svg.graph-view').getScreenCTM()` (coupling-cohesion's drag).
+  `labelHalo` adds the page colour round edge labels (`paint-order: stroke`, 4px, round joins); the kit default
+  `.graph-edge-label` only gains `paint-order: stroke`, so labels without the prop are unchanged. The halo rule has
+  specificity 0,2,0 so a lesson's own `.x-graph .graph-edge-label` wins (minimum-spanning-trees keeps `stroke-linejoin: miter`).
+  Migrated pixel-identically: coupling-cohesion, layered-hexagonal, architecture-diagrams-c4 (zoom frame and fix title) and
+  minimum-spanning-trees (`labelHalo`); frames at 1440 and 390, plus driven states (c4 fix chip and a zoom, the hexagon view, a
+  preset with a request and a selection). One change in motion only: c4's zoom frame now fades with the graph's own fade-in.
 - Node marks use TreeSvg's shape (`{ tone, fill: 'tint' | 'solid', tint? }`); edges take `{ tone, dashed?, width? }` (default 3.5), and the arrowhead follows the tone. `nodeColor` colours only unmarked nodes. Classes: `.graph-node`, `.graph-node-shape`, `.graph-node-label`, `.graph-edge` (+ `is-marked`, `is-dashed`), `.graph-edge-label`.
 - With `onNodeClick` / `onEdgeClick` / `editable` the graph is one tab stop (roving tabindex, starting top-left): arrows move to the nearest node or clickable edge in that direction (`spatialNext`), Home/End jump to the ends, Enter/Space press. `editable`: clicking empty space adds a node (at least `minGap` from the rest), dragging node to node adds an edge, and from the keyboard it's C on a node then Enter on another (Escape cancels). Adding a node from the keyboard stays a lesson button, since only the lesson knows where it goes.
 - Both lessons migrated pixel-identically: smoke frames plus ten driven states (presets, weights, a selected edge, a cycle, two-colouring; feature branch, 1 and 4 shards, a broken test, fail-fast). graph-representations' Tab path to the quiz went from 78 stops to 24 (L-7): the graph and the adjacency matrix are one stop each.

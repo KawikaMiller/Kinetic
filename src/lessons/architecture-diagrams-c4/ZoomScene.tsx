@@ -117,29 +117,6 @@ export function ZoomScene({ picker }: { picker: ReactNode }) {
           ))}
         </nav>
         <div className={`c4-canvas ${dim.whole ? 'is-dim' : ''} ${dim.tech ? 'hide-tech' : ''} ${dim.protocol ? 'hide-protocol' : ''}`}>
-          <svg className="c4-backdrop" viewBox={`0 0 ${VIEW_W} ${layout.h}`} aria-hidden="true">
-            {frame && view.focus && (
-              <g key={view.focus}>
-                <motion.rect
-                  className="c4-frame"
-                  rx={FRAME_RX}
-                  initial={from ? { ...rectAttrs(from), opacity: 1 } : { ...rectAttrs(frame), opacity: 0 }}
-                  animate={{ ...rectAttrs(frame), opacity: 1 }}
-                  transition={SPRING.soft}
-                />
-                <motion.text
-                  className="c4-frame-title"
-                  x={frame.title.x}
-                  y={frame.title.y}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: from ? 0.25 : 0, duration: FADE_S }}
-                >
-                  {frameTitle(view.focus)}
-                </motion.text>
-              </g>
-            )}
-          </svg>
           <motion.div key={level} className="c4-graph-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: FADE_S, delay: from ? 0.15 : 0 }}>
             <GraphView
               nodes={shown.map((e) => ({ id: e.id, at: layout.at[e.id], shape: 'box' as const, label: '' }))}
@@ -150,6 +127,32 @@ export function ZoomScene({ picker }: { picker: ReactNode }) {
                 labelAt: layout.labelAt[edgeKey(r)],
               }))}
               directed
+              labelHalo
+              underlay={
+                <>
+                  {frame && view.focus && (
+                    <g key={view.focus}>
+                      <motion.rect
+                        className="c4-frame"
+                        rx={FRAME_RX}
+                        initial={from ? { ...rectAttrs(from), opacity: 1 } : { ...rectAttrs(frame), opacity: 0 }}
+                        animate={{ ...rectAttrs(frame), opacity: 1 }}
+                        transition={SPRING.soft}
+                      />
+                      <motion.text
+                        className="c4-frame-title"
+                        x={frame.title.x}
+                        y={frame.title.y}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: from ? 0.25 : 0, duration: FADE_S }}
+                      >
+                        {frameTitle(view.focus)}
+                      </motion.text>
+                    </g>
+                  )}
+                </>
+              }
               width={VIEW_W}
               height={layout.h}
               box={BOX}

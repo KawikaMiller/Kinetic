@@ -1,8 +1,6 @@
 .lh { gap: 14px; }
-/* The hexagon and the bands are a second SVG with the same viewBox, stacked under the graph. */
-.lh-canvas { position: relative; width: 100%; max-width: 790px; margin: 0 auto; }
-.lh-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.lh-graph { position: relative; width: 100%; }
+.lh-canvas { width: 100%; max-width: 790px; margin: 0 auto; }
+.lh-graph { width: 100%; }
 .lh-graph .graph-node-label { font-size: 12px; }
 .lh-graph .lh-shown .graph-node-shape { stroke: var(--text); stroke-width: 2.5; }
 .lh-hex { fill: color-mix(in srgb, var(--violet) 8%, transparent); stroke: color-mix(in srgb, var(--violet) 60%, transparent); stroke-width: 2; }

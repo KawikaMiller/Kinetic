@@ -8,6 +8,8 @@
 .devkit-body > .resizable { align-self: stretch; }
 
 .devkit-bp { color: var(--bad); }
+.devkit-region { fill: color-mix(in srgb, var(--violet) 8%, transparent); stroke: color-mix(in srgb, var(--violet) 50%, transparent); stroke-width: 1.5; }
+.devkit-region-label { font: 700 11px var(--mono); fill: var(--violet); }
 
 .devkit-plots { display: flex; flex-wrap: wrap; gap: 16px; align-self: stretch; }
 .devkit-plots > .plot2d { flex: 0 1 356px; }

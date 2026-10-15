@@ -166,6 +166,7 @@ export function Stage() {
             width={W}
             height={H}
             radius={preset.names[0].length > 1 ? 24 : 20}
+            labelHalo
             className="mst-graph"
             ariaLabel={`Weighted graph, ${graph.n} nodes and ${graph.edges.length} edges`}
             startNode={algo === 'prim' ? start : undefined}
