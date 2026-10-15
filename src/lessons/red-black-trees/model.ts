@@ -45,7 +45,7 @@ export type RbStep =
   | { kind: 'place'; key: number; path: readonly number[]; tree: RbTree }
   /** Rule 3 broken at `child` and its red parent; the case is named by the uncle's colour. */
   | { kind: 'violation'; child: number; parent: number; grand: number; uncle: number | null; uncleColor: Color; case: FixCase; tree: RbTree }
-  | { kind: 'recolor'; nodes: readonly number[]; tree: RbTree; reason: FixCase | 'root' }
+  | { kind: 'recolor'; nodes: readonly number[]; tree: RbTree; reason: FixCase | 'root' | 'absorb' }
   | { kind: 'rotate'; rotation: Rotation; tree: RbTree }
   | { kind: 'remove'; key: number; removed: Color; successor: number | null; x: number | null; xParent: number | null; xSide: 'left' | 'right' | null; tree: RbTree }
   /** The fix-up looks at the extra-black position `x` (a nil child of `xParent` when x is null). */
@@ -329,7 +329,8 @@ class Work {
     if (x !== null && this.color(x) === 'R') {
       this.paint(x, 'B');
       const xs = x;
-      this.record((tree) => ({ kind: 'recolor', nodes: [xs], tree, reason: 'root' }));
+      const reason = xs === this.root ? 'root' : 'absorb';
+      this.record((tree) => ({ kind: 'recolor', nodes: [xs], tree, reason }));
     }
   }
 

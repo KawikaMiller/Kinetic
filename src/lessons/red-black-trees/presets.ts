@@ -54,7 +54,7 @@ export const DELETE_PRESETS: DeletePreset[] = [
   { id: 'chain', label: 'Delete 1: a long fix-up', key: 1, base: deleteBase },
   { id: 'far', label: 'Delete 4: far nephew red', key: 4, base: deleteBase },
   { id: 'near', label: 'Delete 5: near nephew red', key: 5, base: () => buildRb([10, 5, 15, 12]).tree },
-  { id: 'red', label: 'Delete 12: a red leaf', key: 12, base: deleteBase },
+  { id: 'red', label: 'Delete 12: a red node, no fix-up', key: 12, base: deleteBase },
 ];
 export const DELETE_DEFAULT_KEY = DELETE_PRESETS[0].key;
 

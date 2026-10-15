@@ -8,7 +8,7 @@ import { RADIUS, SIDE_PAD, TOP, treeBox, treeMinWidth } from './treeBox';
 const BADGE_DY = RADIUS + 10;
 const RING_GAP = 4;
 const GHOST_DX = 30;
-const GHOST_R = 10;
+const GHOST_R = 14;
 const HULL_PAD_X = 20;
 const HULL_PAD_Y = 21;
 const EMPHASIS = 1.12;
@@ -109,11 +109,14 @@ function ShortGhost({ parent, side, gap }: { parent: { x: number; y: number } | 
   if (!parent) return null;
   const x = parent.x + (side === 'left' ? -GHOST_DX : GHOST_DX);
   const y = parent.y + Math.min(gap, 44);
+  const dx = x - parent.x;
+  const dy = y - parent.y;
+  const reach = Math.hypot(dx, dy);
   return (
     <g className="rb-ghost">
-      <line x1={parent.x} y1={parent.y} x2={x} y2={y} />
+      <line x1={parent.x} y1={parent.y} x2={x - (dx * GHOST_R) / reach} y2={y - (dy * GHOST_R) / reach} />
       <circle cx={x} cy={y} r={GHOST_R} />
-      <text x={x} y={y + 3}>
+      <text x={x} y={y + 3.5}>
         nil
       </text>
     </g>

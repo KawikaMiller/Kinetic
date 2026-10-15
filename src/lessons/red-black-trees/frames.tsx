@@ -2,7 +2,7 @@ import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { checkRb, heightOf, insertKey, removeKey, sizeOf, type RbResult, type RbTree } from './model';
-import { CASE_TEXT, colorWord } from './text';
+import { CASE_TEXT, RECOLOR_TEXT, colorWord } from './text';
 
 export interface RbFrame extends Frame {
   tree: RbTree;
@@ -88,9 +88,11 @@ export function rbFrames(base: RbTree, op: 'insert' | 'delete', key: number): Rb
         rec.snap(
           step.reason === 'root' ? (
             <>The root must be black (rule 2): {names} is blackened.</>
+          ) : step.reason === 'absorb' ? (
+            <>Blacken {names}: {RECOLOR_TEXT.absorb}.</>
           ) : (
             <>
-              Recolour {names}: {step.reason === 'uncle-red' ? 'parent and uncle black, grandparent red; the trouble may have moved up to the grandparent' : 'the colours the rotation needs'}.
+              Recolour {names}: {RECOLOR_TEXT[step.reason]}.
             </>
           ),
           undefined,
@@ -109,11 +111,16 @@ export function rbFrames(base: RbTree, op: 'insert' | 'delete', key: number): Rb
         );
         break;
       case 'remove': {
+        const absorbed = step.removed === 'B' && step.x !== null && step.tree.nodes[step.x].color === 'R';
         const took = step.successor !== null ? <>{hl(key)} had two children, so its in-order successor {hl(step.successor)} took its place and its colour. </> : null;
         rec.snap(
           step.removed === 'R' ? (
             <>
               {took}The node that left its place was <span className="hl pink">red</span>, so no path lost a black node and no rule is broken.
+            </>
+          ) : absorbed ? (
+            <>
+              {took}The node that left its place was black, but the red node {hl(step.x as number)} now stands in its spot, so one recolour will pay back the missing black.
             </>
           ) : (
             <>
@@ -124,7 +131,7 @@ export function rbFrames(base: RbTree, op: 'insert' | 'delete', key: number): Rb
           {
             tree: step.tree,
             hi: step.successor,
-            short: step.removed === 'B' && step.xParent !== null && step.xSide ? { node: step.x, parent: step.xParent, side: step.xSide } : null,
+            short: step.removed === 'B' && !absorbed && step.xParent !== null && step.xSide ? { node: step.x, parent: step.xParent, side: step.xSide } : null,
           },
         );
         break;

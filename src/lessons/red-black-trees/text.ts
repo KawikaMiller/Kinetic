@@ -34,6 +34,19 @@ export const CASE_TEXT: Record<FixCase, string> = {
   'far-nephew-red': 'sibling black, far nephew red: give the sibling the parent colour, blacken parent and far nephew, rotate the parent',
 };
 
+/** The recolour step of a fix-up, worded from the reason the model recorded: only a case that rotates next says so. */
+export const RECOLOR_TEXT: Record<FixCase | 'root' | 'absorb', string> = {
+  'uncle-red': 'parent and uncle black, grandparent red; the trouble may have moved up to the grandparent',
+  triangle: 'the colours the rotation needs',
+  line: 'the parent turns black and the grandparent red, then the grandparent rotates',
+  'sibling-red': 'the sibling turns black and the parent red, so a rotation can make the sibling black',
+  'sibling-black-black': 'the sibling turns red, so both sides lose one black and the shortage moves up to the parent',
+  'near-nephew-red': 'the near nephew turns black and the sibling red, ready to rotate the red child to the far side',
+  'far-nephew-red': 'the sibling takes the parent colour, parent and far nephew turn black, then the parent rotates',
+  root: 'the root must be black (rule 2)',
+  absorb: 'this node is red, so blackening it pays back the missing black',
+};
+
 /** The verdict over the four rules: all hold, or the first that fails, named. */
 export function rulesCaption(rules: readonly RuleReport[]): string {
   const bad = rules.filter((r) => !r.ok);

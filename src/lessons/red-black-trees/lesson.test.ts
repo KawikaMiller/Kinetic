@@ -73,7 +73,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(lesson.tryThis[1]).toContain('uncle black, triangle, then uncle black, line, 2 rotations and 2 recolours');
   });
 
-  it('try-this 3: deleting 1 from sorted 1..15 runs sibling black-black, sibling red, sibling black-black with one rotation; deleting the red leaf 12 fixes nothing', () => {
+  it('try-this 3: deleting 1 from sorted 1..15 runs sibling black-black, sibling red, sibling black-black with one rotation; deleting the red node 12 fixes nothing (its successor 13, a red leaf, is what leaves)', () => {
     expect(FACTS.deleteCases).toEqual(['sibling-black-black', 'sibling-red', 'sibling-black-black']);
     expect(FACTS.deleteRotations).toBe(1);
     const run = rbFrames(deleteBase(), 'delete', 1);
@@ -81,10 +81,33 @@ describe('try-this entries, from the default state, as written', () => {
     expect(inOrder(run.tree)).toEqual(range(15).slice(1));
     expect(checkRb(run.tree)).toEqual([]);
     expect(deleteBase().nodes[12].color).toBe('R');
+    const twelve = deleteBase().nodes[12];
+    expect(twelve.left !== null && twelve.right !== null).toBe(true);
+    const successor = deleteBase().nodes[13];
+    expect(successor.color === 'R' && successor.left === null && successor.right === null).toBe(true);
     expect(FACTS.redLeafFixes).toBe(0);
     expect(FACTS.redLeafRecolors).toBe(0);
     expect(lesson.tryThis[2]).toContain('sibling black with two black children, then sibling red, then sibling black with two black children');
     expect(lesson.tryThis[2]).toContain('with 0 recolours and no fix-up');
+  });
+
+  it('delete recolour captions follow the case: root text only on the root, the absorb text elsewhere, no rotation promised after black-black', () => {
+    const run = rbFrames(deleteBase(), 'delete', 1);
+    const recolours = run.result.steps.filter((s) => s.kind === 'recolor');
+    expect(recolours.length).toBeGreaterThan(0);
+    const captions = run.frames.map((fr) => text(fr.say as Parameters<typeof text>[0]));
+    for (const s of recolours) {
+      if (s.reason === 'root') expect(s.nodes[0]).toBe(s.tree.root);
+      if (s.reason === 'absorb') expect(s.nodes[0]).not.toBe(s.tree.root);
+    }
+    const absorb = recolours.find((s) => s.reason === 'absorb');
+    expect(absorb).toBeDefined();
+    expect(captions.some((c) => c.includes(`Blacken ${absorb?.nodes[0]}: this node is red`))).toBe(true);
+    expect(captions.some((c) => c.includes('The root must be black') && absorb && c.includes(`${absorb.nodes[0]} is blackened`))).toBe(false);
+    const bb = recolours.find((s) => s.reason === 'sibling-black-black');
+    expect(bb).toBeDefined();
+    expect(captions.some((c) => c.includes('the sibling turns red, so both sides lose one black'))).toBe(true);
+    expect(captions.some((c) => c.includes('Recolour') && c.includes('the colours the rotation needs'))).toBe(false);
   });
 
   it('try-this 4: sorted 1..15 regroups into 8 2-nodes, 2 3-nodes and 1 4-node, leaf nodes 2 down; inserting 16 splits one 4-node with one rotation', () => {
@@ -96,7 +119,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(groups.filter((g) => g.keys.length === 3)).toHaveLength(1);
     expect(groupsOf(insertKey(tree, 16).tree).flatMap((g) => g.keys).sort((x, y) => x - y)).toEqual(range(16));
     expect(lesson.tryThis[3]).toContain('8 2-nodes, 2 3-nodes and 1 4-node, all leaf nodes 2 levels down');
-    expect(lesson.tryThis[3]).toContain('it splits 1 4-node and makes 1 rotation');
+    expect(lesson.tryThis[3]).toContain('it splits 1 4-node');
   });
 
   it('try-this 5: at seed 5 both trees end 12 tall; red-black rotates less per insert and its worst delete is 3 against 7; sorted order is 18 against 10', () => {
@@ -113,7 +136,7 @@ describe('try-this entries, from the default state, as written', () => {
     const c = text(compareCaption({ order: 'Random', rbHeight: 12, avlHeight: 12, rbDeleteMax: 3, avlDeleteMax: 7, rbInsertMean: 0.57, avlInsertMean: 0.67 }));
     expect(c).toContain('the same height as the AVL tree\'s 12');
     expect(c).toContain('fewer rotations on average (0.57 against 0.67)');
-    expect(lesson.tryThis[4]).toContain('both end 12 levels tall');
+    expect(lesson.tryThis[4]).toContain('the red-black tree ends 12 levels tall and the AVL tree 12');
     expect(lesson.tryThis[4]).toContain('18 levels tall against 10');
   });
 });

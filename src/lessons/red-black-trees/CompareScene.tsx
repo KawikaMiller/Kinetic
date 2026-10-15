@@ -37,7 +37,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Red-black height" value={c.rbHeight[last]} sub={`at ${COMPARE_N.toLocaleString('en-US')} keys; bound 2 log2(n + 1) = ${(2 * Math.log2(COMPARE_N + 1)).toFixed(0)}`} />
-          <Stat label="AVL height" value={c.avlHeight[last]} sub={`bound about 1.44 log2(n + 2) = ${(1.44 * Math.log2(COMPARE_N + 2)).toFixed(1)}`} />
+          <Stat label="AVL height" value={c.avlHeight[last]} sub={`textbook bound, about 1.44 log2(n + 2) = ${(1.44 * Math.log2(COMPARE_N + 2)).toFixed(1)}`} />
         </Stats>
       }
       legend={
