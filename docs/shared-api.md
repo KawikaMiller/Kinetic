@@ -1513,6 +1513,19 @@ type Value, Vars, Scope                                      // Scope = Vars[], 
   (the mutation lesson prints it into a `CodePanel`) is not here: that lesson writes it, as the second user, and files it if a third wants it.
 - The lesson's default shot is pixel-identical to the unmodified tree's.
 
+### `core/latencyLadder.ts` — memory-hierarchy, cpu-caches (test); later back-of-envelope
+```ts
+LEVELS      // Level[], fastest first: reg, l1, l2, l3, ram, nvme, dc (datacenter round trip), hdd, wan
+levelById('ram')   // { id, name, ns, range: [lo, hi], capacity: bytes | null, note }
+```
+- The ladder of typical latencies and capacities, from a register (0.3 ns) to a cross-continent round trip (150 ms): **typical orders of magnitude from the usual
+  "latency numbers" tables and vendor datasheets, not measurements** (real hardware varies). Each level's `range` is the documented span its figure must sit inside;
+  `core/latencyLadder.test.ts` holds every figure to it, checks the 3-5x steps inside the chip and the 500x from RAM to an SSD, that the ladder is sorted fastest first
+  and that bigger storage is slower. `capacity: null` marks a network hop, which stores nothing.
+- Extracted unchanged from memory-hierarchy's `model.ts`, which keeps what it computes over the ladder (`effectiveNs`, `ratio`, `HUMAN_SECONDS_PER_NS`) and its own
+  misconception test; cpu-caches' test imported `levelById` across lessons and now imports it from here. back-of-envelope reads `ns` and `capacity` instead of copying
+  the table. memory-hierarchy's shots at 1440 and 390 are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
