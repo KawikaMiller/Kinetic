@@ -1,4 +1,5 @@
 import type { Pt } from '../../components/GraphView';
+import type { Result } from '../../core/result';
 
 /** The editor's limits: at most this many nodes, integer weights in range, a rate range for the arbitrage preset. */
 export const MAX_NODES = 7;
@@ -26,8 +27,6 @@ export interface Graph {
   /** True for the currency market: weights are -ln(rate), and the editor nudges rates instead. */
   market?: boolean;
 }
-
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 const edge = (from: number, to: number, w: number): Edge => ({ from, to, w });
 const rateEdge = (from: number, to: number, rate: number): Edge => ({ from, to, w: -Math.log(rate), rate });

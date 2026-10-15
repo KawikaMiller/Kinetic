@@ -1832,6 +1832,24 @@ kraftSum(lengths);                           // > 1 oversubscribed (canonicalCod
 - Tests: `core/huffman.test.ts` (the textbook 5, 9, 12, 13, 16, 45 tree costs 224 bits per 100, the cost equals the sum of merge weights and lies in [entropy, entropy + 1) on probabilities, round trips and prefix property on 200 seeded texts with both tie-breaks, the RFC example, canonical order and prefix property on 300 seeded complete length sets, oversubscription refused). `huffman-coding`'s own tests are unchanged apart from their imports.
 - **Migrated:** `huffman-coding` (`model.ts` keeps only the lesson's rules and costs; frames, stage and tests import the tree from here). Its stage shots at the first, middle and last frames are pixel-identical.
 
+### `core/useGraphEdits.ts` (`graphEdits.ts`, `result.ts`) — shortest-paths-advanced, strongly-connected-components, network-flow, bipartite-matching, graph-coloring; later any lesson with an editable graph
+```ts
+import { useGraphEdits } from '../../core/useGraphEdits';
+const edits = useGraphEdits<Digraph, PresetId>({
+  presets: PRESETS, initial: 'tangle', graphOf: (id) => presetById(id).graph, edgeCount: (g) => g.edges.length,
+  scene,   // optional: a note belongs to the scene it was written in; omit for one shared note
+});
+edits.graph; edits.presetId; edits.note; edits.added;          // added = edges over the preset
+edits.load(id);                                                 // preset graph + "Loaded <label>."; returns the graph so the wrapper can reset what depends on it
+edits.edit(addEdge(edits.graph, a, b), 'Added a to b.');       // apply a model Result: new graph + note, or the refusal as the note; true when applied
+edits.set(graph, 'Removed a to b.'); edits.setNote('Selected a-b.');
+edits.undoAdded(removeLastEdge, 'Removed the last edge you added.');   // never removes a preset edge
+```
+- The graph is any value: the model keeps its own `addEdge`/`addNode`/`removeEdge` and their refusal sentences and bounds (`MAX_NODES`, no duplicates, no free spot), returning `Result<G>`. `Result<T>` (`{ ok: true, value } | { ok: false, error }`) now lives in `core/result.ts`; the five lessons' identical copies are gone.
+- Not in the hook, on purpose: what a lesson derives from the graph (a flow and its pushes, a matching and the search, the greedy order, the source node). That stays in the lesson's own editor hook, which wraps `load`/`edit` and resets it, as the five do.
+- The transitions are pure functions in `core/graphEdits.ts` (`loadPreset`, `applyResult`, `setGraph`, `noteFor`), tested in `graphEdits.test.ts` (preset load and baseline, accepted and refused edits, scene-keyed notes, the added-edge count); the hook is a thin `useState` over them (no React test renderer in this repo).
+- **Migrated:** the five B9 lessons' editors (`useGraphEditor`, `useSccEditor`, `useFlowEditor`, `useMatchEditor`, `useColorEditor`; about 65 fewer lines in all). Their tests pass unchanged and every scene's shots (all scenes, first, middle and last frame) are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

@@ -1,6 +1,9 @@
 import { SectionTitle } from '../components/Panel';
+import { Button, Hint } from '../components/ui';
 import { canonicalCodes, kraftSum } from '../core/huffman';
 import { eigen2x2, powerIteration, svdSmall } from '../core/linalg';
+import type { Result } from '../core/result';
+import { useGraphEdits } from '../core/useGraphEdits';
 import { DevKitSection as Section } from './DevKitSection';
 
 /** Dev-only demo of the Tier 3 kit round, wave 3 to 4, agent G (#/dev/kit). */
@@ -10,6 +13,7 @@ const ROTATION = [[0, -1], [1, 0]];
 const SHEAR = [[1, 1], [0, 1]];
 const STRIPES = [[1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]];
 const RFC_LENGTHS = [3, 3, 3, 3, 3, 2, 4, 4];
+const MAX_EDGES = 4;
 const POWER_STEPS = 5;
 const DIGITS = 3;
 
@@ -38,6 +42,42 @@ function HuffmanDemo() {
   );
 }
 
+interface EdgeList {
+  edges: string[];
+}
+const EDGE_PRESETS = [
+  { id: 'path', label: 'a path', edges: ['a-b', 'b-c'] },
+  { id: 'star', label: 'a star', edges: ['a-b', 'a-c', 'a-d'] },
+] as const;
+type EdgePresetId = (typeof EDGE_PRESETS)[number]['id'];
+const NEXT_EDGES = ['c-d', 'a-d', 'b-d'];
+
+function addNextEdge(g: EdgeList): Result<EdgeList> {
+  if (g.edges.length >= MAX_EDGES) return { ok: false, error: `At most ${MAX_EDGES} edges here: the drawing stays readable.` };
+  const edge = NEXT_EDGES.find((e) => !g.edges.includes(e));
+  return edge ? { ok: true, value: { edges: [...g.edges, edge] } } : { ok: false, error: 'Every edge already exists.' };
+}
+
+function GraphEditsDemo() {
+  const edits = useGraphEdits<EdgeList, EdgePresetId>({
+    presets: EDGE_PRESETS,
+    initial: 'path',
+    graphOf: (id) => ({ edges: [...EDGE_PRESETS.find((p) => p.id === id)!.edges] }),
+    edgeCount: (g) => g.edges.length,
+  });
+  return (
+    <div className="devkit-row">
+      {EDGE_PRESETS.map((p) => (
+        <Button key={p.id} onClick={() => edits.load(p.id)}>Load {p.label}</Button>
+      ))}
+      <Button onClick={() => edits.edit(addNextEdge(edits.graph), (g) => `Added ${g.edges[g.edges.length - 1]}.`)}>Add an edge</Button>
+      <Button onClick={() => edits.undoAdded((g, keep) => ({ edges: g.edges.slice(0, Math.max(keep, g.edges.length - 1)) }), 'Removed the last edge you added.')} disabled={edits.added === 0}>Undo</Button>
+      <span className="mono">{edits.graph.edges.join(' ')} · {edits.added} added</span>
+      <Hint tone="muted">{edits.note || 'Add edges until the bound refuses; Undo never removes a preset edge.'}</Hint>
+    </div>
+  );
+}
+
 export function DevKitTier3g() {
   return (
     <>
@@ -47,6 +87,9 @@ export function DevKitTier3g() {
       </Section>
       <Section title="core/huffman · canonical codes from code lengths (the RFC 1951 example)">
         <HuffmanDemo />
+      </Section>
+      <Section title="core/useGraphEdits · preset load, an edit that is refused at the bound, undo of added edges only">
+        <GraphEditsDemo />
       </Section>
     </>
   );

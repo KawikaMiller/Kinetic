@@ -1,5 +1,6 @@
 import type { Pt } from '../../components/GraphView';
 import { mulberry32, shuffle } from '../../core/random';
+import type { Result } from '../../core/result';
 
 export const MAX_NODES = 12;
 
@@ -11,8 +12,6 @@ export interface Graph {
   /** Unique undirected edges, each stored with the smaller node first. */
   edges: Edge[];
 }
-
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 const norm = (a: number, b: number): Edge => (a < b ? [a, b] : [b, a]);
 const pts = (xs: [number, number][]): Pt[] => xs.map(([x, y]) => ({ x, y }));

@@ -1,4 +1,5 @@
 import type { Pt } from '../../components/GraphView';
+import type { Result } from '../../core/result';
 
 export const MAX_NODES = 9;
 
@@ -10,8 +11,6 @@ export interface Digraph {
   /** Unique directed edges; a self-loop is allowed. */
   edges: Arc[];
 }
-
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 const at = (xs: [number, number][]): Pt[] => xs.map(([x, y]) => ({ x, y }));
 const letters = (n: number) => Array.from({ length: n }, (_, i) => String.fromCharCode(97 + i));

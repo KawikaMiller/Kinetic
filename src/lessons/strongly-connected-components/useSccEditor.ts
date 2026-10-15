@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { mulberry32 } from '../../core/random';
 import { shuffle } from '../../core/random';
-import { addEdge, addNode, edgeEffect, presetById, removeLastEdge, type Digraph, type EdgeEffect, type PresetId } from './model';
+import { useGraphEdits } from '../../core/useGraphEdits';
+import { addEdge, addNode, edgeEffect, PRESETS, presetById, removeLastEdge, type Digraph, type EdgeEffect, type PresetId } from './model';
 
 export const SHUFFLE_SEED = 3;
 
@@ -23,56 +24,38 @@ export interface LastEdge {
 
 /** The learner's graph, shared by every scene: a preset, edits, the pass-1 start order and the edge just added. */
 export function useSccEditor() {
-  const [presetId, setPresetId] = useState<PresetId>('tangle');
-  const [graph, setGraph] = useState<Digraph>(presetById('tangle').graph);
-  const [baseEdges, setBaseEdges] = useState(presetById('tangle').graph.edges.length);
-  const [order, setOrderState] = useState<number[]>(identity(presetById('tangle').graph.names.length));
+  const edits = useGraphEdits<Digraph, PresetId>({ presets: PRESETS, initial: 'tangle', graphOf: (id) => presetById(id).graph, edgeCount: (g) => g.edges.length });
+  const { graph } = edits;
+  const [order, setOrderState] = useState<number[]>(identity(graph.names.length));
   const [last, setLast] = useState<LastEdge | null>(null);
-  const [note, setNote] = useState('');
 
-  const load = (id: PresetId) => {
-    const g = presetById(id).graph;
-    setPresetId(id);
-    setGraph(g);
-    setBaseEdges(g.edges.length);
-    setOrderState(identity(g.names.length));
-    setLast(null);
-    setNote(`Loaded ${presetById(id).label}.`);
-  };
   return {
-    presetId,
+    presetId: edits.presetId,
     graph,
     order,
     last,
-    note,
+    note: edits.note,
     /** How many edges the learner has added on top of the preset. */
-    added: graph.edges.length - baseEdges,
-    load,
+    added: edits.added,
+    load: (id: PresetId) => {
+      const g = edits.load(id);
+      setOrderState(identity(g.names.length));
+      setLast(null);
+    },
     setOrder: setOrderState,
     addEdge: (from: number, to: number) => {
-      const r = addEdge(graph, from, to);
-      if (!r.ok) {
-        setNote(r.error);
-        return;
-      }
-      setLast({ from, to, effect: edgeEffect(graph, from, to) });
-      setGraph(r.value);
-      setNote(`Added ${graph.names[from]}→${graph.names[to]}.`);
+      const effect = edgeEffect(graph, from, to);
+      if (edits.edit(addEdge(graph, from, to), `Added ${graph.names[from]}→${graph.names[to]}.`)) setLast({ from, to, effect });
     },
     addNode: () => {
       const r = addNode(graph);
-      if (!r.ok) {
-        setNote(r.error);
-        return;
+      if (edits.edit(r, (g) => `Added node ${g.names[g.names.length - 1]}: drag from a node to another to join them.`) && r.ok) {
+        setOrderState([...order, r.value.names.length - 1]);
       }
-      setGraph(r.value);
-      setOrderState([...order, r.value.names.length - 1]);
-      setNote(`Added node ${r.value.names[r.value.names.length - 1]}: drag from a node to another to join them.`);
     },
     undo: () => {
-      setGraph(removeLastEdge(graph, baseEdges));
+      edits.undoAdded(removeLastEdge, 'Removed the last edge you added.');
       setLast(null);
-      setNote('Removed the last edge you added.');
     },
   };
 }
