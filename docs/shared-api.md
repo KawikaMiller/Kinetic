@@ -1793,6 +1793,30 @@ const [walk, setWalk] = useState(() => startWalk(SCENARIO));                // t
   and its provenance is a per-case honesty note and a per-choice "history, what-if or illustrative" basis, not the single "invented" chip (the Therac-25 case is history). Forcing it through would change every pixel.
 - Showcase: `#/dev/kit`, "Tier 3 kit · wave 1 round, agent E" (a small invented incident, plus the validator's output on that scenario broken four ways).
 
+## Tier 3 kit (kit round after wave 3: agent G)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 3 to 4 round, agent G" (`pages/DevKitTier3g.tsx`).
+
+### `core/linalg.ts` (K3-18) — markov-chains, eigen-pagerank, svd-pca, embeddings (migrated); later recommender-systems, attention-transformers, cnns-convolution, neural-networks-backprop
+```ts
+import { powerIteration, eigen2x2, jacobiEigen, svdSmall, pca, conv2d, softmax } from '../../core/linalg';
+const steps = powerIteration(A, { iters: 30, start: [1, 0], norm: 'l2' | 'l1' }); // steps[0] is the rescaled start
+steps[k].v; steps[k].lambda; steps[k].stretch; steps[k].change;        // iterate, Rayleigh quotient, |A v_prev|/|v_prev|, |v - v_prev|
+eigen2x2([[a, b], [c, d]]);   // { kind: 'real', values: [l1, l2], vectors } | { kind: 'complex', values: [{re, im} ...], vectors } | null (defective)
+jacobiEigen(sym);             // { values (descending), vectors[i] pairs with values[i] }; throws if not symmetric
+svdSmall(A);                  // { u, s, v }: A = U diag(s) V^T, thin, s non-increasing, <= 8 x 8
+svdReconstruct(svd, k);       // the rank-k sum of sigma_i u_i v_i^T
+pca(points, k); pcaProject(p, v); covariance(points); mean(points);
+conv2d(image, kernel, { stride, pad }); softmax(xs, temperature); matPow(A, k);
+```
+- Builds on `core/vec`: `matMul` and `transpose` are re-exported from there, vectors use `Vec`/`Mat`, and a direct linear solve is still `vec.solve`. Nothing mutates its inputs.
+- `powerIteration` returns every iterate so a lesson can animate it. `norm: 'l1'` keeps a probability vector summing to 1 (Markov chains, PageRank: pass `P^T` for a row-vector chain). It stops early at the zero vector. A negative dominant eigenvalue flips the iterate's sign each step, so `change` is large there.
+- `eigen2x2` is the closed form of the characteristic quadratic. Real eigenvalues come back largest `|lambda|` first with unit vectors (first non-zero component positive); a negative discriminant gives a conjugate pair (positive imaginary part first) with complex unit vectors; a repeated eigenvalue with one eigendirection (a shear) is `null`; a scalar matrix returns the axes. `jacobiEigen` is symmetric-only and general-size; `topEigen(m, k)` is the deflated power iteration `pca` uses (positive semi-definite input).
+- `svdSmall` is one-sided Jacobi, labelled small-matrix: it refuses more than 8 rows or columns (`SMALL_MATRIX_MAX`). Zero singular values get a completed orthonormal U column. Signs of singular vectors are arbitrary.
+- `conv2d` is deep-learning convolution (cross-correlation, kernel not flipped), single channel, zero padding; output side `floor((n + 2 pad - k) / stride) + 1`.
+- Tests: `A = U S V^T` and orthonormal U, V to 1e-9 on 200 seeded matrices (wide, tall, rank-deficient), the Eckart-Young error identity, `A v = lambda v` for `jacobiEigen` (300 seeded), `eigen2x2` (1,000 seeded, real and complex), power iteration vs Jacobi's dominant vector, PageRank (the pinned `A, B, C -> D, D -> A` example and 200 seeded graphs with dead ends) equal to the direct solve, `conv2d` equal to a naive padded loop on 300 seeded cases.
+- **Migrated:** `embeddings` (its local `covariance`/`topEigen`/`pca`/`centroid` moved here verbatim, so the map's numbers are bit-identical; the lesson keeps a two-number `project` wrapper over `pcaProject`). Its stage shots are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
