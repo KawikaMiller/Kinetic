@@ -21,3 +21,4 @@
 @media (max-width: 900px) {
   .spa-main, .spa-side { flex-basis: 100%; }
 }
+.spa-stage ~ .provenance-row { margin: 8px 16px 12px; }

@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
+import { useIntroCaption } from '../../core/caption';
 import { toneVar, type Tone } from '../../core/tone';
 import { EditControls, EditableGraph, PresetChips } from './Editor';
 import type { GraphEditor } from './useGraphEditor';
@@ -18,6 +19,7 @@ interface Row {
 export function CostScene({ picker, ed }: { picker: ReactNode; ed: GraphEditor }) {
   const g = ed.graph;
   const c = useMemo(() => costs(g, bellmanFord(g, ed.source), floydWarshall(g)), [g, ed.source]);
+  useIntroCaption(<>{costVerdict(c)}</>, [c.bellmanFordAll, c.floydWarshall, c.floydWarshallFull, c.nodes, c.edges]);
   const rows: Row[] = [
     { label: `Bellman-Ford from ${g.names[ed.source]}`, formula: 'rounds × edges', count: c.bellmanFordOne, tone: 'info' },
     { label: 'Bellman-Ford from every node', formula: 'added up over the sources', count: c.bellmanFordAll, tone: 'info' },
