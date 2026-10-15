@@ -18,7 +18,7 @@
   transition: stroke 0.3s, fill 0.3s;
 }
 .mm-container text { fill: var(--muted); font: 600 13px var(--mono); }
-.mm-container.deploy rect { stroke: var(--info); fill: color-mix(in srgb, var(--info) 6%, transparent); animation: mm-pulse 1s ease-in-out infinite; }
+.mm-container.deploy rect { stroke: var(--amber); fill: color-mix(in srgb, var(--amber) 6%, transparent); animation: mm-pulse 1s ease-in-out infinite; }
 .mm-container.down rect { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 6%, transparent); }
 
 .mm-box rect,
@@ -36,9 +36,9 @@
 .mm-box.deploy rect,
 .mm-box.deploy path,
 .mm-box.deploy ellipse {
-  stroke: var(--info);
+  stroke: var(--amber);
   stroke-dasharray: 6 4;
-  fill: color-mix(in srgb, var(--info) 12%, var(--cell));
+  fill: color-mix(in srgb, var(--amber) 12%, var(--cell));
   animation: mm-pulse 1s ease-in-out infinite;
 }
 .mm-box.slow rect,

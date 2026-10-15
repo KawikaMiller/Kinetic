@@ -48,7 +48,7 @@ export function Stage() {
           <Legend
             items={[
               { color: 'var(--ok)', label: 'healthy' },
-              { color: 'var(--info)', label: 'deploying' },
+              { color: 'var(--amber)', label: 'deploying' },
               { color: 'var(--orange)', label: 'degraded' },
               { color: 'var(--bad)', label: 'down' },
               { color: 'var(--violet)', label: 'in-process call', shape: 'dot' },

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import {
-  CART_ITEMS, countStatus, FULL_BUILD_MIN, FUNCTION_CALL_MS, isInternalHop, LAYOUT, NETWORK_CALL_MS, ONE_SERVICE_BUILD_MIN, requestSteps,
+  callersByDistance, CART_ITEMS, countStatus, EDGES, FULL_BUILD_MIN, FUNCTION_CALL_MS, isInternalHop, LAYOUT, NETWORK_CALL_MS, ONE_SERVICE_BUILD_MIN, requestSteps,
   requestTotals, RUNTIME, sharedDbUsers, type Arch, type MmFrame, type Scenario, type Status, type StepTag,
 } from './model';
 
@@ -38,10 +38,10 @@ const INTRO: Record<Arch, ReactNode> = {
 };
 
 const SAY: Record<StepTag, ReactNode> = {
-  'first-call': <>web calls orders: a plain <span className="hl violet">function call</span>, about {FUNCTION_CALL_MS} ms here and it can't get lost on the way.</>,
+  'first-call': <>web calls orders: a plain <span className="hl violet">function call</span>, about {FUNCTION_CALL_MS} ms here, with no network in between to lose it on.</>,
   'one-db': <>One database, so reading the cart is a local query (or a JOIN).</>,
   'one-tx': <>Payment and order are written in <b>one transaction</b>. All or nothing, for free.</>,
-  net: <>Every arrow is now a <span className="hl info">network call</span>: serialise, send, wait, parse. {NETWORK_CALL_MS} ms each in this model.</>,
+  net: <>Each call between services is now a <span className="hl info">network call</span>: serialise, send, wait, parse. {NETWORK_CALL_MS} ms each in this model.</>,
   'fail-modes': <>Each hop is also a new way to fail: timeouts, retries, a service mid-deploy.</>,
   'no-tx': <>Order and payment live in different databases: no single transaction any more.</>,
   'n-plus-one': <>Cart calls catalog <b>once per item</b> ({CART_ITEMS} items here). An N+1 query, except over the network.</>,
@@ -134,10 +134,27 @@ function bugFrames(arch: Arch) {
     push({ set: { catalog: 'down' }, say: <>Catalog crashes and restarts. Nothing else shares its memory.</> });
     push({ set: { catalog: 'down' }, active: 'gateway', blast: down({ ...status(), catalog: 'down' }), hold: 2, say: <>Checkout keeps working; product pages show a fallback. <span className="hl ok">Blast radius: 1</span>, if callers use timeouts.</> });
   } else {
+    // The blast radius is read off the drawn calls: whoever calls catalog, directly or through other services, and nobody else.
+    const levels = callersByDistance(EDGES.dist, RUNTIME.dist, 'catalog');
+    const chain = ['catalog', ...levels.flat()];
+    const spared = RUNTIME.dist.filter((id) => !chain.includes(id));
     push({ set: { catalog: 'slow' }, say: <>Catalog slows down…</> });
-    push({ set: { cart: 'slow' }, say: <>…cart waits on it <b>synchronously</b>, holding threads…</> });
-    push({ set: { orders: 'slow', gateway: 'slow' }, say: <>…orders waits on cart, gateway waits on orders…</> });
-    push({ set: all('down'), blast: down({ ...status(), ...all('down') }), hold: 2, say: <>Thread pools run out and the callers time out one after another. The failure <span className="hl bad">cascaded</span>.</> });
+    levels.forEach((ids, i) => {
+      const below = i === 0 ? 'catalog' : levels[i - 1].join(' and ');
+      push({
+        set: Object.fromEntries(ids.map((id) => [id, 'slow' as const])),
+        say: i === 0
+          ? <>…{ids.join(' and ')} call{ids.length === 1 ? 's' : ''} {below} and wait on it <b>synchronously</b>, holding threads…</>
+          : <>…{ids.join(' and ')} wait{ids.length === 1 ? 's' : ''} on {below}…</>,
+      });
+    });
+    const downSet = Object.fromEntries(chain.map((id) => [id, 'down' as const]));
+    push({
+      set: downSet,
+      blast: down({ ...status(), ...downSet }),
+      hold: 2,
+      say: <>Thread pools run out and the callers time out one after another. The failure <span className="hl bad">cascaded</span> up the call chain: {chain.length} of {total} services are down, and {spared.join(' and ')} stay up because nothing on their path calls catalog.</>,
+    });
   }
   return frames;
 }

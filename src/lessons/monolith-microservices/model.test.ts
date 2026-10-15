@@ -3,7 +3,7 @@ import { captionText } from '../../core/testing/captions';
 import { buildFrames } from './frames';
 import lesson from './index';
 import {
-  CART_ITEMS, DB_READ_MS, DB_WRITE_MS, EDGES, FULL_BUILD_MIN, FUNCTION_CALL_MS, LAYOUT, NETWORK_CALL_MS, ONE_SERVICE_BUILD_MIN, requestSteps,
+  callersByDistance, CART_ITEMS, DB_READ_MS, DB_WRITE_MS, EDGES, FULL_BUILD_MIN, FUNCTION_CALL_MS, LAYOUT, NETWORK_CALL_MS, ONE_SERVICE_BUILD_MIN, requestSteps,
   requestTotals, RUNTIME, SHARED_DB_CONTENTION, sharedDbUsers, TEAMS, type Arch, type MmFrame, type Scenario, type Status,
 } from './model';
 
@@ -129,11 +129,42 @@ describe('scenario frames', () => {
     expect(final('mono').blast).toBe('6 / 6 down');
     expect(count('micro', final('micro').status, 'down')).toBe(1);
     expect(final('micro').blast).toBe('1 / 6 down');
-    expect(count('dist', final('dist').status, 'down')).toBe(6);
-    expect(final('dist').blast).toBe('6 / 6 down');
+    // The distributed monolith's blast radius is the call chain above catalog, not everything: see the reachability test below.
+    expect(count('dist', final('dist').status, 'down')).toBe(4);
+    expect(final('dist').blast).toBe('4 / 6 down');
     // The cascade is gradual in the distributed monolith: it passes through degraded states first.
     const dist = buildFrames('dist', 'bug');
     expect(dist.some((f) => count('dist', f.status, 'slow') > 0)).toBe(true);
+  });
+
+  it('distributed monolith bug: exactly the services that can reach catalog by following calls go down, checked against a brute-force reachability search', () => {
+    const services = RUNTIME.dist;
+    const calls = EDGES.dist.filter(([from, to]) => services.includes(from) && services.includes(to));
+    // Forward search from each service: does any chain of calls starting there end at catalog?
+    const reaches = (start: string, goal: string, seen = new Set<string>()): boolean => {
+      if (start === goal) return true;
+      seen.add(start);
+      return calls.some(([from, to]) => from === start && !seen.has(to) && reaches(to, goal, seen));
+    };
+    const expectedDown = services.filter((id) => reaches(id, 'catalog')).sort();
+    expect(expectedDown).toEqual(['cart', 'catalog', 'gateway', 'orders']);
+    const final = last(buildFrames('dist', 'bug'));
+    expect(services.filter((id) => final.status[id] === 'down').sort()).toEqual(expectedDown);
+    expect(final.blast).toBe(`${expectedDown.length} / ${services.length} down`);
+    // users and payments are not on the chain, so they are never drawn down or slow, and the caption says why they are spared.
+    for (const f of buildFrames('dist', 'bug')) for (const id of ['users', 'payments']) expect(f.status[id], id).toBe('ok');
+    expect(text(final)).toContain('4 of 6 services are down');
+    expect(text(final)).toContain('users and payments stay up');
+  });
+
+  it('callersByDistance walks callers upstream, nearest first, and ignores units that never call the failing one', () => {
+    const edges: [string, string][] = [['a', 'b'], ['b', 'c'], ['d', 'c'], ['c', 'e'], ['f', 'g'], ['client', 'a'], ['c', 'db']];
+    const runtime = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    expect(callersByDistance(edges, runtime, 'c')).toEqual([['b', 'd'], ['a']]);
+    expect(callersByDistance(edges, runtime, 'e')).toEqual([['c'], ['b', 'd'], ['a']]);
+    expect(callersByDistance(edges, runtime, 'a')).toEqual([]);
+    // a cycle terminates
+    expect(callersByDistance([['a', 'b'], ['b', 'a']], ['a', 'b'], 'a')).toEqual([['b']]);
   });
 
   it('the bug storyline names who is down: checkout in the monolith, only catalog in microservices', () => {
@@ -196,6 +227,12 @@ describe('the lesson text', () => {
   it('has four try-this entries and quiz 4 says the database work is equal, which the steps confirm', () => {
     expect(lesson.tryThis).toHaveLength(4);
     expect(lesson.quiz[3].why).toContain('same four accesses');
+    // try-this 1 no longer claims the database work is equal everywhere: the shared database costs more in the distributed monolith.
+    const dbMs = (arch: Arch) => requestSteps(arch).filter((s) => s.hop === 'db').reduce((sum, s) => sum + s.ms, 0);
+    expect(dbMs('mono')).toBe(dbMs('micro'));
+    expect(dbMs('dist')).toBeCloseTo(dbMs('mono') * SHARED_DB_CONTENTION, 9);
+    expect(lesson.tryThis[0]).toContain(`${SHARED_DB_CONTENTION}×`);
+    expect(lesson.tryThis[0]).not.toContain('the same in each');
     expect(ARCHS.map((a) => requestSteps(a).filter((s) => s.hop === 'db').length)).toEqual([4, 4, 4]);
   });
 });

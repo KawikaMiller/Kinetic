@@ -122,6 +122,25 @@ export const RUNTIME: Record<Arch, string[]> = {
 /** How many services read and write the shared database's tables directly (the edges into it). */
 export const sharedDbUsers = () => EDGES.dist.filter(([, to]) => to === 'db').length;
 
+/**
+ * The services a failing one drags down: those that call it, directly or through other services, grouped by how many calls away
+ * they are (the first group calls it directly). Read off the call edges between runtime units, upstream.
+ * Units that never call it, however indirectly, are not in any group.
+ */
+export function callersByDistance(edges: [string, string][], runtime: string[], failing: string): string[][] {
+  const calls = edges.filter(([from, to]) => runtime.includes(from) && runtime.includes(to));
+  const seen = new Set([failing]);
+  const levels: string[][] = [];
+  let frontier = [failing];
+  while (frontier.length) {
+    const next = [...new Set(calls.filter(([, to]) => frontier.includes(to)).map(([from]) => from))].filter((id) => !seen.has(id));
+    next.forEach((id) => seen.add(id));
+    if (next.length) levels.push(next);
+    frontier = next;
+  }
+  return levels;
+}
+
 // ── The checkout request ────────────────────────────────────────────
 export type StepTag = 'first-call' | 'one-db' | 'one-tx' | 'net' | 'fail-modes' | 'no-tx' | 'n-plus-one' | 'shared-db' | 'chatty';
 
