@@ -37,23 +37,6 @@
 .dd-adr-edit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
 .dd-history { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
 
-.dd-scenario { display: flex; flex-direction: column; gap: 14px; }
-.dd-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.dd-meter { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
-.dd-meter .is-bad, .dd-preview.is-bad { color: var(--bad); }
-.dd-preview { font: 500 12px var(--mono); color: var(--muted); }
-.dd-prompt { margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; }
-.dd-choices { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-.dd-choice { text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--bg); color: var(--text); font: 500 14px var(--font); cursor: pointer; }
-.dd-choice.is-on { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
-.dd-because { font-size: 13px; line-height: 1.5; color: var(--muted); font-weight: 400; }
-.dd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.dd-ending-title { margin: 6px 0 0; font: 700 15px var(--font); }
-.dd-ending p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; }
-.dd-ledger ol { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
-.dd-ledger li { display: flex; flex-direction: column; gap: 4px; }
-.dd-effects { display: flex; flex-wrap: wrap; gap: 4px; }
-
 @media (max-width: 900px) {
-  .dd-split, .dd-meters { grid-template-columns: minmax(0, 1fr); }
+  .dd-split { grid-template-columns: minmax(0, 1fr); }
 }

@@ -1714,6 +1714,56 @@ const [model, setModel] = useState(() => buildLaneModel<Ev>(limits, [{ lane: 0, 
 - **Tier 2 equivalents checked, nothing migrated:** isolation-levels' schedule matrix is a fixed grid the learner plays, not one they build (no add, move or delete); CellGrid, GanttLanes and SequenceDiagram are read-only
   drawings; the scheduling lessons' Gantt lanes are computed, not edited. No Tier 2 lesson places items on lanes, so there was nothing to migrate.
 
+## Tier 3 kit (kit round after wave 1: agent E)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 1 round, agent E" (`pages/DevKitTier3e.tsx`).
+
+### `core/scenario.ts`, `components/ScenarioStory.tsx` (`scenarioStory.css`) (K3-15) — design-docs-rfcs, computing-ethics (engine only); later incident-response, postmortems, safe-config-rollout, technical-debt, estimation, mentoring-delegation, project-planning-critical-path, prioritization, product-thinking, ml-fairness-bias, threat-modeling
+
+A branching decision simulator: nodes with choices, meters the choices move, endings, and the reason for every choice. The engine is pure; the component draws it.
+```tsx
+import { ScenarioStory } from '../../components/ScenarioStory';
+import { startWalk, validateScenario, type Scenario } from '../../core/scenario';
+const SCENARIO: Scenario = {
+  start: 'alert',
+  meters: [{ id: 'users', label: 'Users affected', start: 2, min: 0, max: 10, bad: { above: 6 }, unit: '%' }],
+  nodes: [{ id: 'alert', prompt: 'Errors are climbing. What first?', choices: [
+    { id: 'rollback', label: 'Roll back', to: 'calm', effects: { users: -1 }, because: 'The cheapest move that is easy to undo.' }] }],
+  endings: [{ id: 'calm', title: 'Contained', text: '…' }],
+};
+const [walk, setWalk] = useState(() => startWalk(SCENARIO));                // the lesson owns the walk, for its stats and caption
+<ScenarioStory scenario={SCENARIO} walk={walk} onWalk={setWalk}
+  provenance="an invented incident: every effect is a made-up number"       // mandatory: the "invented" chip's note
+  notes={<ClaimLabel kind="view">…</ClaimLabel>} claimOf={(choiceId) => 'practice'}
+  endingHint={validateScenario(SCENARIO).length === 0 ? 'every ending is reachable' : undefined}
+  stepTitle={(n) => `Move ${n}`} />
+```
+- **Engine** (`core/scenario.ts`): `Scenario { start, nodes: { id, prompt, choices: { id, label, to, effects?, because }[] }[], meters, endings }`; a `Meter` is `{ id, label, start, min, max, bad: { below } | { above }, unit? }`
+  (in the red beyond the edge, `isBad`). `Walk { at, path, meters }`: `startWalk`, `choose(s, walk, choiceId)` (a choice not at this node changes nothing), `undo` (replays the rest of the path from the start, so
+  the meters can never drift from the choices), `ledger`, `redMeters`, `findNode`/`findEnding`/`isEnding`. Effects are summed as written, never clamped.
+- **`validateScenario(s, { allowCycles })`** returns `Problem { kind, detail }[]` (empty means fine): `start` (not a node), `duplicate-id`, `missing-target`, `unknown-meter` (an effect on something that is
+  not a meter), `unreachable-node`, `unreachable-ending`, `dead-end` (a node with no choices), `cycle` (a loop, or a path past `MAX_DEPTH` = 40 steps; `allowCycles: true` for a retry or review round that is meant to
+  loop, then paths are explored only until they first revisit a node), and `out-of-bounds` (a meter that starts outside its bounds, or **any path that takes a meter outside `min`..`max` at any step**, named
+  with the path and the sum). Run it in the lesson's test **and** let the lesson say what it proved (`endingHint`) only when it returns nothing.
+  `enumeratePaths(s)` lists every path to an ending with its meters (needs a scenario without cycles; the number of paths is the lesson's to assert).
+- **Component**: meters (a `Bar` each, with the red edge marked and, once a choice is picked, a "+n if chosen" preview), the prompt, the choices as a **keyboard radio group** (one tab stop, arrows move the pick;
+  the reason shows under the picked choice only), Continue / Undo, the ending (title, text, Undo, Replay), and the ledger of what was chosen, what it moved and why.
+  **After every step focus moves to the first choice of the new step, or to the ending's title**, because Continue, Undo and Replay disappear or disable with the step they acted on.
+  The component owns only the not-yet-continued pick; everything else is the caller's `walk`.
+- **Provenance is not optional**: `provenance` is the note on the `invented` chip rendered under the story (class `scn-notes`), so a scenario never ships without saying its numbers are invented
+  (AC-0/T3 #21, #24). `notes` adds `ClaimLabel`s to the same row. `claimOf(choiceId)` labels a picked choice's reason.
+- Styling: class names are `scn-*`, styled globally by `components/scenarioStory.css` (loaded from `main.tsx`). `classPrefix` (default `scn`) exists for a lesson that must keep its own prefix; it then supplies
+  the CSS for that prefix. Don't: a lesson-prefixed copy is the thing this component replaces. Wrap it in the lesson's `stage-pad` div inside a `StageFrame`; it renders its own row of chips as a sibling.
+- Tests: `core/scenario.test.ts` (each problem kind on a deliberately broken scenario, the bounds check on every path including a path that leaves the bounds and returns, `allowCycles`, path enumeration by hand, undo
+  equal to the replayed sum, both kinds of red edge). design-docs-rfcs' `scenario.test.ts` keeps its own scenario's claims (12 paths, every ending, one meter red on every path).
+- **Migrated:** `design-docs-rfcs` (its `scenario.ts` and `ScenarioView.tsx` moved here: the `dd-*` scenario CSS became `scn-*`, same rules; the stage shots for every step, undo and replay at 1440 and 390px are
+  pixel-identical, and the focus after Continue, Undo and Replay is the same). **`computing-ethics` uses the engine's validator and path enumeration only** (`toScenario(case)` in its `walk.ts` adapts a case to a
+  `Scenario` with no meters; its test runs `validateScenario` and checks `enumeratePaths` finds the same routes as its own walk). Its UI and walk stay local, and they do not fit `ScenarioStory`: a choice there
+  has no meter effect but three authored impact cards (users, team, you) with a tone each; choices are `ChipButton`s with a pick-then-Continue step where Back first clears the pick and then steps back (the shared
+  `undo` always removes a decided step); there is no ledger but an end card that summarises the path against the ACM principles, and a branch map (`GraphView`) with seen and unseen marks that outlives Start over;
+  and its provenance is a per-case honesty note and a per-choice "history, what-if or illustrative" basis, not the single "invented" chip (the Therac-25 case is history). Forcing it through would change every pixel.
+- Showcase: `#/dev/kit`, "Tier 3 kit · wave 1 round, agent E" (a small invented incident, plus the validator's output on that scenario broken four ways).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

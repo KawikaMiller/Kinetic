@@ -1,0 +1,22 @@
+/* ScenarioStory (K3-15). Loaded globally from main.tsx; `scn` is the component's default classPrefix. */
+.scn-scenario { display: flex; flex-direction: column; gap: 14px; }
+.scn-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.scn-meter { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.scn-meter .is-bad, .scn-preview.is-bad { color: var(--bad); }
+.scn-preview { font: 500 12px var(--mono); color: var(--muted); }
+.scn-prompt { margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; }
+.scn-choices { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.scn-choice { text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--bg); color: var(--text); font: 500 14px var(--font); cursor: pointer; }
+.scn-choice.is-on { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.scn-because { font-size: 13px; line-height: 1.5; color: var(--muted); font-weight: 400; }
+.scn-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.scn-ending-title { margin: 6px 0 0; font: 700 15px var(--font); }
+.scn-ending p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; }
+.scn-ledger ol { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.scn-ledger li { display: flex; flex-direction: column; gap: 4px; }
+.scn-effects { display: flex; flex-wrap: wrap; gap: 4px; }
+.scn-notes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+@media (max-width: 900px) {
+  .scn-meters { grid-template-columns: minmax(0, 1fr); }
+}
