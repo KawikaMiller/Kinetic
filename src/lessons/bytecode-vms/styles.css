@@ -1,0 +1,10 @@
+.bv { gap: 14px; }
+.bv-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.bv-machine { display: flex; flex-direction: column; gap: 10px; }
+.bv-popped { margin: 0; font: 500 12px var(--mono); color: var(--dim); }
+.bv-jump { color: var(--violet); font-weight: 700; }
+.bv-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.bv-listing-field textarea { min-height: 130px; }
+@media (max-width: 600px) {
+  .bv-grid { grid-template-columns: minmax(0, 1fr); }
+}
