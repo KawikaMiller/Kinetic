@@ -1,0 +1,12 @@
+.dm-stage { gap: 12px; align-items: center; }
+.dm-claims { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.dm-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 22px; width: 100%; max-width: 760px; }
+.dm-def { display: block; font: 500 11.5px var(--font); color: var(--muted); margin-bottom: 2px; }
+.dm-banner { display: block; text-align: center; max-width: 640px; }
+.dm-moved, .dm-lanes, .dm-log { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 8px; }
+.dm-table th, .dm-table td { white-space: nowrap; }
+.dm-table td { text-align: right; }
+.dm-gamed { color: var(--orange); font-weight: 700; }
+.dm-real { color: var(--info); font-weight: 700; }
+.dm-log-scroll { max-height: 340px; overflow: auto; }
+.dm-failed td { background: color-mix(in srgb, var(--bad) 10%, transparent); }
