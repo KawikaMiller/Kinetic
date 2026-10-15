@@ -99,3 +99,33 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | Request | Users | Round | Notes |
 |---|---|---|---|
 | `core/parse` `parseRows`: accept trailing `# comments` and exempt comment text from `maxLineChars`, or name the comment in the refusal ("a comment counts toward the 40/30 limit; comments must be whole lines") | turing-machines (40), bytecode-vms assembler (30), any lesson using `parseRows` | Phase 2 kit round | A comment over the limit is refused as "Line 8 is 63 characters; keep each rule to 40 or fewer." and a trailing `q1 1 -> 0 L q1 # carry` as "found 8 words", with no on-screen hint. B8 only states the limits in each editor's hint; the shared parser is untouched. |
+
+## From T3-B7, B8, B11 (builder reports)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Shared seeded k-means (assignment, centroids, iteration count, distance-computation count) | vector-search (local kmeans.ts) + clustering-kmeans (own copy): two users now | wave 4 to 5 round | extract and migrate both |
+| `core/testing/sqlite.ts` typed dynamic-import shim for `node:sqlite` | query-planning, join-algorithms (each carries ~8 lines) | before a third user | |
+| `Tray` with array children: `hasItems` treats an array with a `false` entry as non-empty so an empty tray never shows its empty text | B7 workaround | next kit round | tiny fix |
+| `parseRows` over-limit message always says 'rules'; allow a caller-supplied noun; comment-length and trailing `#` comment limits undocumented on screen | turing-machines, bytecode-vms assembler | next kit round (with K3-22 parseKit) | B8 review |
+| Responsive table-to-cards CSS (`data-label` + `::before`, under 600px) exists twice | halting-problem, lambda-calculus | next kit round | candidate for kit.css |
+| `ChipButton disabled` with `title` explaining why: document it | B8 | docs only | |
+| Share TM reference tables (halting-problem imports INCREMENT_REFERENCE/mustParse from turing-machines) | cross-lesson import | next kit round | |
+| `SequenceDiagram` filtered `toSequence` helper (`storyRows` drops heartbeats/empty fetches) | kafka-partitioned-log; any distSim lesson | next kit round | |
+| Shared distSim controller/metadata node (heartbeat-driven leader election) | kafka (local) | on second user | |
+| `Stat` `subTone` for a red/green line | B11 | optional | |
+
+## From T3-B12 (builder report)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Shared `parseKeyList`/`parseKey` (bounded integers, duplicates, node limit) and `refuseOp` | avl-trees, red-black-trees, skip-lists (copies exist) and later tree/heap lessons | wave 4 to 5 round | |
+| Shared binary-tree drawing helper (treeBox sizing + WideRegion per tree) | avl-trees, red-black-trees | wave 4 to 5 round | |
+| Shared stepper session hook (`useAvlSession`/`useRbSession` same shape) | avl-trees, red-black-trees | wave 4 to 5 round | |
+| Shared balanced-trees model: red-black-trees carries a local compact AVL (`avlRef.ts`) for its comparison scene | avl-trees, red-black-trees | wave 4 to 5 round | two lessons must agree on one AVL model |
+| `GraphView` layered layout `place` callback or columns-by-covered-range mode | persistent-data-structures (local SVG DAG) | on second user | |
+| `TreeSvg`: semi-transparent node tint lets thick edge ends show through the label | B12 | optional | |
+
+## From T3-B11 fix pass (Sentry review)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| `SeedField` resyncs its text to the `seed` prop when it differs and the field is not focused (it only reads the prop on mount, so a preset or "lowest seed that breaks it" leaves the old number showing) | kafka-partitioned-log (keyed workaround), any lesson that sets the seed from a preset | Phase 2 | lessons currently remount the field with a `key` |
+| `SequenceDiagram` text floor: ladder text renders 7.7px at 768 when `times` is on | kafka-partitioned-log scene 3 | Phase 2 | measured by the review, 8.0 at 390 |

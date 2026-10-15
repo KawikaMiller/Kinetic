@@ -1,0 +1,38 @@
+/* kafka-partitioned-log */
+.kp-stage { gap: 12px; min-width: 0; }
+.kp-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+
+/* Where each key goes */
+.kp-keys { max-height: 168px; overflow: auto; }
+.kp-keys .data-table td, .kp-keys .data-table th { font-size: 12.5px; }
+.kp-key { font: 600 12.5px var(--mono, monospace); color: var(--c); overflow-wrap: anywhere; }
+.kp-moved { color: var(--bad); }
+
+/* Consumer groups */
+.kp-groups { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; }
+.kp-consumers { display: flex; flex-wrap: wrap; gap: 8px; }
+.kp-consumer {
+  flex: 1 1 108px; max-width: 170px; min-width: 96px; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px;
+  border: 2px solid var(--line-2); background: color-mix(in srgb, var(--bg) 72%, transparent); font-size: 12px;
+}
+.kp-consumer b { font-size: 14px; }
+.kp-owns { color: var(--muted); font: 600 12px var(--mono, monospace); }
+.kp-doing { color: var(--text); min-height: 30px; overflow-wrap: anywhere; }
+.kp-consumer.is-idle { border-style: dashed; border-color: var(--dim); color: var(--muted); }
+.kp-consumer.is-idle .kp-doing { color: var(--muted); }
+.kp-consumer.is-risk { border-color: var(--hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hi) 35%, transparent); }
+.kp-consumer.is-leaving { opacity: 0.7; }
+.kp-lagrow { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 8px; align-items: center; margin-bottom: 8px; }
+.kp-lagname { font: 700 12px var(--mono, monospace); }
+.kp-lagbars { display: flex; flex-direction: column; gap: 4px; }
+.kp-lagnums { grid-column: 2; font: 500 11px var(--mono, monospace); color: var(--muted); overflow-wrap: anywhere; }
+.kp-pauselabel { display: block; margin-bottom: 4px; font-size: 12px; color: var(--muted); }
+
+/* Replication */
+.kp-hwm { stroke: var(--hi); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+.kp-records td, .kp-records th { font-size: 12.5px; }
+.kp-records tr.is-lost td { color: var(--bad); }
+
+@media (max-width: 900px) {
+  .kp-groups { grid-template-columns: minmax(0, 1fr); }
+}
