@@ -1,4 +1,5 @@
 import { SectionTitle } from '../components/Panel';
+import { canonicalCodes, kraftSum } from '../core/huffman';
 import { eigen2x2, powerIteration, svdSmall } from '../core/linalg';
 import { DevKitSection as Section } from './DevKitSection';
 
@@ -8,6 +9,7 @@ const SYMMETRIC = [[2, 1], [1, 2]];
 const ROTATION = [[0, -1], [1, 0]];
 const SHEAR = [[1, 1], [0, 1]];
 const STRIPES = [[1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]];
+const RFC_LENGTHS = [3, 3, 3, 3, 3, 2, 4, 4];
 const POWER_STEPS = 5;
 const DIGITS = 3;
 
@@ -27,12 +29,24 @@ function LinalgDemo() {
   );
 }
 
+function HuffmanDemo() {
+  const codes = canonicalCodes(RFC_LENGTHS);
+  return (
+    <p className="mono">
+      lengths {RFC_LENGTHS.join(',')} for A..H, Kraft sum {kraftSum(RFC_LENGTHS)} → {codes.map((c, i) => `${String.fromCharCode(65 + i)}=${c}`).join(' ')}
+    </p>
+  );
+}
+
 export function DevKitTier3g() {
   return (
     <>
       <SectionTitle>Tier 3 kit · wave 3 to 4 round, agent G</SectionTitle>
       <Section title="core/linalg · power iteration with every iterate, closed-form 2 x 2 eigen (real, complex, defective), small SVD">
         <LinalgDemo />
+      </Section>
+      <Section title="core/huffman · canonical codes from code lengths (the RFC 1951 example)">
+        <HuffmanDemo />
       </Section>
     </>
   );

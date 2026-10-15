@@ -1817,6 +1817,21 @@ conv2d(image, kernel, { stride, pad }); softmax(xs, temperature); matPow(A, k);
 - Tests: `A = U S V^T` and orthonormal U, V to 1e-9 on 200 seeded matrices (wide, tall, rank-deficient), the Eckart-Young error identity, `A v = lambda v` for `jacobiEigen` (300 seeded), `eigen2x2` (1,000 seeded, real and complex), power iteration vs Jacobi's dominant vector, PageRank (the pinned `A, B, C -> D, D -> A` example and 200 seeded graphs with dead ends) equal to the direct solve, `conv2d` equal to a naive padded loop on 300 seeded cases.
 - **Migrated:** `embeddings` (its local `covariance`/`topEigen`/`pca`/`centroid` moved here verbatim, so the map's numbers are bit-identical; the lesson keeps a two-number `project` wrapper over `pcaProject`). Its stage shots are pixel-identical.
 
+### `core/huffman.ts` — huffman-coding (migrated); entropy-information, lz-compression
+```ts
+import { buildHuffman, textWeights, encode, decode, canonicalCodes, kraftSum, averageLength } from '../../core/huffman';
+const h = buildHuffman(textWeights('mississippi'), 'old');   // or any [{ sym, weight }] (counts or probabilities)
+encode(h, text); decode(h, bits); decodeSteps(h, bits);       // h.codes: Map<symbol, '0101'>; h.merges: the build, step by step
+codeLengths(h); averageLength(h); mergeCost(weights); depthOf(h, id);
+canonicalCodes([3, 3, 3, 3, 3, 2, 4, 4]);   // DEFLATE rule (RFC 1951 3.2.2): ['010','011','100','101','110','00','1110','1111']
+kraftSum(lengths);                           // > 1 oversubscribed (canonicalCodes throws), 1 complete, < 1 incomplete
+```
+- `buildHuffman(entries, tie)` builds over any positive weights; leaf ids follow the order given (the creation order the tie-break uses), and `textWeights(text)` lists a text's symbols lightest first. A lone symbol gets the code `0`. `tie` is `'old'` or `'new'` (which of two equal-weight trees merges first): both build optimal trees, possibly different ones.
+- `canonicalCodes(lengths)` takes one length per symbol, 0 meaning unused (its entry is null). Only the lengths need sending, which is why DEFLATE ships lengths rather than trees.
+- The lesson keeps what is its own: the message rules (`parseMessage`), the cost comparison against fixed-width and ASCII codes, `forcedOneBitCost`, and a `Huffman` type that is core's tree plus the text.
+- Tests: `core/huffman.test.ts` (the textbook 5, 9, 12, 13, 16, 45 tree costs 224 bits per 100, the cost equals the sum of merge weights and lies in [entropy, entropy + 1) on probabilities, round trips and prefix property on 200 seeded texts with both tie-breaks, the RFC example, canonical order and prefix property on 300 seeded complete length sets, oversubscription refused). `huffman-coding`'s own tests are unchanged apart from their imports.
+- **Migrated:** `huffman-coding` (`model.ts` keeps only the lesson's rules and costs; frames, stage and tests import the tree from here). Its stage shots at the first, middle and last frames are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

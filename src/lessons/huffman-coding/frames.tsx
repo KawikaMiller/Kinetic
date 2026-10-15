@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { costs, decode, decodeSteps, encode, forcedOneBitCost, frequencies, showSym, type Huffman, type TieBreak } from './model';
+import { decode, decodeSteps, frequencies, type TieBreak } from '../../core/huffman';
+import { costs, encode, forcedOneBitCost, showSym, type Huffman } from './model';
 
 export type Mode = 'build' | 'decode';
 
