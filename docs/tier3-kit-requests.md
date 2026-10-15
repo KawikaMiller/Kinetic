@@ -51,3 +51,11 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | distSim register-history checkers (linearizable, sequential, causal, convergence) | consistency-models, quorums, R1 retrofit | kickoff (K3-8) | agent C |
 | distSim `latency(rnd, from, to)` for asymmetric links | physical-clocks-skew (NTP) | kickoff (K3-8) | agent C |
 | Shared lane editor (keyboard lanes, slots, add/move/select) | logical-clocks, consistency-models (same batch) | wave 1 to 2 round (blocks wave 2) | not yet assigned |
+
+## From T3-R1 (retrofit report)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| distSim `OpRecord` + `historyOf` (client-op log helper feeding the register-history checkers) | cap-theorem, replication (each wrote its own), consistency-models, quorums | wave 1 to 2 round (blocks wave 2) | add alongside the lane editor |
+| 2-D roving-tabindex grid hook (arrow keys between cells) | isolation-levels matrix (20 local lines), likely authz-models, query-planning tables | when a 2nd user appears in a batch | |
+| `ProvenanceRow` wrapper (the same flex-wrap chip row each lesson re-styles under its own class) | all R1 lessons and most D lessons | wave 1 to 2 round | tiny; avoids 50 copies |
+| Documented `WideRegion reveal` pattern for step timelines | isolation-levels | docs only | |
