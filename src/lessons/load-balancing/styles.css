@@ -4,7 +4,6 @@
   min-height: inherit;
 }
 
-.lb-prov { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 .lb-hint {
   position: absolute;

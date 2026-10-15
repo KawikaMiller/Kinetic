@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Provenance, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { SPRING } from '../../core/motion';
 import { useInterval } from '../../core/useInterval';
@@ -85,10 +85,10 @@ export function Stage() {
               { color: 'var(--hi)', label: 'time-travel cursor', shape: 'line' as const },
             ]}
           />
-          <div className="es-prov">
+          <ProvenanceRow>
             <Provenance kind="toy">one invented bank account; the dates are days of a year with 28 days in February</Provenance>
             <Provenance kind="illustrative">the read models' lag ({projections[0].delay} and {projections[1].delay} ticks per event) is set to be visible, not measured</Provenance>
-          </div>
+          </ProvenanceRow>
         </>
       }
       controls={

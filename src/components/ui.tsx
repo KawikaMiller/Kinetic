@@ -361,6 +361,15 @@ export function Provenance({
 }
 
 /**
+ * The row of `Provenance` (or `ClaimLabel`) chips under a stage's visual: wraps at any width,
+ * with a small gap and a little room above. One row per stage, a chip for each thing the learner
+ * should not take for real (the simulator, the scripted run, the made-up numbers).
+ */
+export function ProvenanceRow({ children }: { children: ReactNode }) {
+  return <div className="provenance-row">{children}</div>;
+}
+
+/**
  * Says how much weight a sentence can bear: a `standard` (a spec, a convention someone wrote
  * down), a `research` finding (named and hedged), `practice` (what many teams do) or `view`
  * (one person's opinion). Non-technical lessons label every claim with one (AC-0/T3 #24).

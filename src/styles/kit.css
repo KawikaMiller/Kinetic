@@ -943,6 +943,8 @@ button.gantt-instant:focus-visible { outline: 2px solid var(--text); outline-off
 .claim-label b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; }
 .provenance-seed { font-variant-numeric: tabular-nums; }
 .provenance-seed::before { content: '·'; margin-right: 6px; }
+/* ProvenanceRow (components/ui.tsx): the chips under a stage's visual. */
+.provenance-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 @media (max-width: 900px) {
   .stage-pad { padding: 16px; }

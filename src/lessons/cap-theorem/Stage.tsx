@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { Flyer } from '../../components/scene';
 import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
@@ -72,7 +72,7 @@ export function Stage() {
               { color: 'var(--bad)', label: 'error / lost', shape: 'dot' },
             ]}
           />
-          <div className="cap-prov">
+          <ProvenanceRow>
             <Provenance kind="simulated">
               three replicas on a network simulator; values, refusals and latencies are read back from the run
             </Provenance>
@@ -82,7 +82,7 @@ export function Stage() {
                 : 'the client requests and fixed message delays; the seeded search runs in the tests'}
             </Provenance>
             <Provenance kind="illustrative">{net === 'partition' ? PARTITION_ONE_WAY_MS : HEALTHY_ONE_WAY_MS} ms one-way delay</Provenance>
-          </div>
+          </ProvenanceRow>
         </>
       }
       controls={

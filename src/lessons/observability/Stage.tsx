@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { useRef, useState, type ReactNode } from 'react';
 import { Sparkline } from '../../components/Sparkline';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { mulberry32 } from '../../core/random';
 import { useInterval } from '../../core/useInterval';
@@ -119,10 +119,10 @@ export function Stage() {
               ...SERVICES.map((s) => ({ color: SVC_COLOR[s], label: s, shape: 'dot' as const })),
             ]}
           />
-          <div className="ob-prov">
+          <ProvenanceRow>
             <Provenance kind="simulated" seed={TRAFFIC_SEED}>seeded requests through a made-up checkout system; metrics, trace and logs all come from the same requests</Provenance>
             <Provenance kind="illustrative">service names, log messages, label counts and the failure and slowdown shares are invented</Provenance>
-          </div>
+          </ProvenanceRow>
         </>
       }
       controls={

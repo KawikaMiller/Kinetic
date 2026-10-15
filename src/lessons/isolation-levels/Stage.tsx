@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Provenance, Segmented } from '../../components/ui';
+import { Controls, Legend, Provenance, ProvenanceRow, Segmented } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
@@ -78,10 +78,10 @@ export function Stage() {
               { color: 'var(--violet)', label: 'T2 read this' },
             ]}
           />
-          <div className="iso-prov">
+          <ProvenanceRow>
             <Provenance kind="toy">a small multi-version engine with a stated rule for each level, not a real database</Provenance>
             <Provenance kind="scripted">the one interleaving of T1 and T2 that is played</Provenance>
-          </div>
+          </ProvenanceRow>
         </>
       }
       controls={

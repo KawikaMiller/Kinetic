@@ -1365,6 +1365,17 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
 - `kind="invented"` ("invented") is for scenarios, dialogues and case studies the author made up; the lead
   lessons put it on every one (AC-0/T3 #24). The kinds and labels live in `core/provenance.ts`.
 
+### `ProvenanceRow` (`components/ui.tsx`, `kit.css`) — cap-theorem, replication, isolation-levels, load-balancing, observability, event-sourcing; every **D** lesson after them
+```tsx
+<ProvenanceRow>
+  <Provenance kind="simulated" seed={TRAFFIC_SEED}>seeded random requests</Provenance>
+  <Provenance kind="illustrative">server speeds are made up, not measured</Provenance>
+</ProvenanceRow>
+```
+- The wrapping row of chips under a stage's visual: `display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px` (class `provenance-row`, in `kit.css`). One row per stage; it takes `Provenance` and `ClaimLabel` chips.
+  Don't give it a lesson class (`xx-prov`): the six lessons that each styled their own identical copy (`cap-prov`, `rep-prov`, `iso-prov`, `lb-prov`, `ob-prov`, `es-prov`) use it now and those rules are gone.
+  Their stage shots are pixel-identical.
+
 ### `ClaimLabel` (`components/ui.tsx`, `kit.css`) — design-docs-rfcs, technical-debt (T3-B2), the lead lessons in T3-B31
 ```tsx
 <ClaimLabel kind="research">named study, from memory</ClaimLabel>
@@ -1473,6 +1484,7 @@ const { actors, messages } = toSequence(verdict.trace, { label, timers, events, 
 ```
 - **Semantics worth knowing.** Time is simulated ms and events run in `(time, seq)` order; same seed and faults give the same trace, row for row. Network randomness (loss, latency, duplication) and `randomFaults` use separate seeded streams, and loss/duplicate/latency are always drawn per message, so changing `loss` never shifts another message's latency. A `partition` drops a crossing message that was in flight at any moment of the window (sent before `to`, arriving at or after `from`); messages inside a group are untouched. Crashed nodes drop deliveries (reason `down`) and lose timers; node state that must survive a crash lives outside `init`. Timer delays are in the node's *local* time (drift changes when they fire in true time).
 - **Trace rows** `{ id, t, kind, from?, to?, node?, msgId?, payload?, reason?, dup?, detail? }`; `kind` is `send | deliver | drop | timer | crash | restart | pause | resume | partition | heal`. `id` is the row's position: unique within a run and stable for the seed, so `` `${seed}:${row.id}` `` is a LogStream key. A message's send, deliver and drop rows share `msgId` (a duplicate copy too, with `dup: true`).
+- **Client-operation log** (`distSim/ops.ts`; cap-theorem, replication, and later consistency-models, quorums): a replica records one `OpRecord<V, N>` `{ op, kind, client, node, key?, invoke, response, outcome: 'ok' | 'refused' | 'open', value }` when a request reaches it and closes it with `settleOp(record, response, outcome, value?)` (a read's `value` is what it returned; `response` is null until it is answered or refused). `latencyOf(op)` is `response - invoke` or null. `historyOf(ops)` is the bridge to the checkers below: an answered request keeps its times, a refused or still-open *write* stays as one that never answered (`response: Infinity`, because it may have taken effect), a refused or open *read* is dropped (it told the client nothing). A lesson narrows the types (`type OpRecord = ClientOp<number, NodeId>`, or `interface OpRecord extends ClientOp<string, NodeId> { asked?: string }` for extras) and keeps its own `allOps` and stale-read helpers: how ops are ordered and what counts as stale is the lesson's claim, not the log's. Migrated pixel-identically: cap-theorem and replication (replication's `entry` field became `value`; both lessons' `latencyOf` and cap-theorem's `historyOf` moved here).
 - **Register histories** (consistency-models, quorums): record `RegisterOp`s `{ process, kind: 'write' | 'read', value, invoke, response, key? }` around client calls, then `linearizable(h)`, `sequential(h)`, `causal(h)`, `convergent(h, { settleMs })`: each returns `null` or a message, and `{ initial }` sets what a read returns before any write (default null). Strongest to weakest: linearizable (one order that respects real time) implies sequential (one order that respects each process's own order) implies causal (writes related by cause are seen in cause order; concurrent writes may be seen in different orders by different readers). `convergent` says only that, after the last write, late reads agree. At most 24 operations (the search is exhaustive, so bigger histories throw); `causal` needs each written value unique per key.
 - Self-tests (`distSim/*.test.ts`): same seed gives the same trace; partition drops exactly the crossing in-flight messages; skewed and drifting clocks differ from true time; pause holds and replays in order; asymmetric latency; a deliberately broken two-leader protocol is caught by `forSeeds` (lowest failing seed, trace cut at the violation, reproducible) and the fixed protocol passes 500 faulted seeds; each register model has a history that satisfies it but not the stronger model, and one that violates it.
 - Out of scope on purpose: nodes needing more than `send`/`setTimer`/`now`, disk models, byzantine nodes. Ask for them after wave 2.
@@ -1663,6 +1675,44 @@ levelById('ram')   // { id, name, ns, range: [lo, hi], capacity: bytes | null, n
 - Extracted unchanged from memory-hierarchy's `model.ts`, which keeps what it computes over the ladder (`effectiveNs`, `ratio`, `HUMAN_SECONDS_PER_NS`) and its own
   misconception test; cpu-caches' test imported `levelById` across lessons and now imports it from here. back-of-envelope reads `ns` and `capacity` instead of copying
   the table. memory-hierarchy's shots at 1440 and 390 are pixel-identical.
+
+## Tier 3 kit (wave 1 to 2 kit round: agent D)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 1 to 2 round, agent D" (`pages/DevKitTier3d.tsx`).
+
+### `core/laneEditor.ts`, `components/LaneEditor.tsx` (`laneGeometry.ts`) (T3-B4) — logical-clocks, consistency-models
+
+Lanes along a time axis where the learner places, selects, moves and deletes items: point events with messages between them (logical-clocks), or operation intervals with an
+invoke and a response slot (consistency-models). Only the lane and key mechanics are shared; what an item *means* and how it is drawn stays in the lesson.
+```tsx
+import { LaneEditor } from '../components/LaneEditor';
+import { buildLaneModel, createLaneModel, type LaneModel } from '../core/laneEditor';
+const limits = { lanes: 3, slots: 14, maxItems: 14 };                     // events; for intervals add minSpan: 1
+const [model, setModel] = useState(() => buildLaneModel<Ev>(limits, [{ lane: 0, slot: 1, data: ev }, …], [[0, 1]]));   // a preset: items, then messages by index
+<LaneEditor model={model} onChange={setModel} onRefuse={setReason} laneLabels={['P1', 'P2', 'P3']} newData={(lane, slot) => ev}
+  mode={linking ? 'link' : 'edit'} ariaLabel="Execution" describeItem={(it) => `event ${it.data.name}`}
+  renderItem={(item, geo, { selected }) => <svg stuff/>} />               // renderItem, renderLink, underlay: SVG in the editor's own coordinates
+```
+- **Model** (`LaneModel<T>`, pure and immutable): `items` `{ id, lane, start, end, data }` (a point has `start === end`; `end - start` is the span), `links` `{ from, to }`, `selected`,
+  `limits` `{ lanes, slots, maxItems?, minSpan?, maxSpan? }`. Every edit returns `{ ok: true, model, id? }` or `{ ok: false, reason }` with the reason in plain words
+  ("that place on the lane is taken", "a message can't arrive before it is sent"): `addItem`, `moveItem(id, dLane, dSlot)`, `resizeItem(id, 'start' | 'end', delta)`, `removeItem`
+  (its messages go too), `linkItems(from, to)`, plus the total functions `selectItem`, `setItemData`, `unlinkItems`. **Rules the model keeps for every reachable state**: items stay in
+  bounds, never overlap within a lane, and every message goes forward in time between two different lanes (so moving an event can be refused because it would break a message).
+  Ids come from a counter, so they are never reused after a delete. `activateCell(model, lane, slot, mode, newData)` is what Enter or a press does: edit mode adds on an empty
+  slot and selects an item; link mode picks the sender, then a press on a later slot of another lane adds the receive event and joins them (the receiver is then selected, so a chain is a run of presses).
+- **Undo** is the lesson's: models are immutable and `onChange` hands over the whole next model, so keep a stack of them (`onChange={(m) => { push(model); setModel(m); }}`). There is no shared undo hook yet.
+- **Keyboard path** (`laneKeyAction`, tested as a table): the grid is **one tab stop** (roving tabindex over its `role="gridcell"` cells, `aria-label` says lane, slot and what is there). Arrows move the
+  cursor (no wrapping), Home and End jump to the lane's ends, Enter or Space activates, **Shift + arrows move the selected item**, **Alt + Left/Right** moves an interval's end edge, Delete or Backspace removes it,
+  Escape deselects. **Pointer path**: press an empty slot to add, press an item to select it and drag it along its lane or across lanes (a drag step that would be refused is skipped silently). A row of
+  buttons under the grid (move four ways, Delete; `buttons={false}` hides it) is the touch path, since a scroll can cancel a drag.
+- `onRefuse(reason)` is the lesson's to show (a `role="status"` line next to the editor). The component draws no caption of its own besides a keyboard hint (`hint`, or `null` to hide it).
+- Drawing defaults: a dot for a point and a rounded bar for an interval in `toneOf(item)` (default `muted`; lanes are plain categories, so use `amber`/`sky`/`pink`, never `--bad`/`--ok`), `itemLabel` text,
+  the selected item ringed `--hi`, messages `--info` arrows. The grid keeps its natural width (`laneGeometry(limits, { slotW, laneH }).width`, 52 + 28 per slot by default) inside a built-in `WideRegion`, so on a phone it scrolls
+  sideways while the buttons and hint reflow. Lessons that draw timestamps keep their text at 9px or more and pass `slotWidth`/`laneHeight` to make room.
+- Tests: `core/laneEditor.test.ts` (every edit and refusal; messages; presets; `activateCell`; the key table; and 300 seeded random edit sequences of 60 edits that never leave an overlap, an out-of-bounds item or a
+  backwards message, checked by an independent verifier that is itself shown to catch a hand-built violation), `components/laneGeometry.test.ts`.
+- **Tier 2 equivalents checked, nothing migrated:** isolation-levels' schedule matrix is a fixed grid the learner plays, not one they build (no add, move or delete); CellGrid, GanttLanes and SequenceDiagram are read-only
+  drawings; the scheduling lessons' Gantt lanes are computed, not edited. No Tier 2 lesson places items on lanes, so there was nothing to migrate.
 
 ## Not built (deliberately)
 

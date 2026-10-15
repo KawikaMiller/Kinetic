@@ -5,9 +5,10 @@
  * entry landed, when an answer arrived), not at a typed time.
  */
 import type { ReactNode } from 'react';
+import { latencyOf } from '../../core/distSim';
 import type { Frame } from '../../core/types';
 import {
-  DETECT_MS, everSent, FLUSH_MS, landedAt, latencyOf, LAT, writeMs, type NodeId, type NodeView, type OpRecord, type Story,
+  DETECT_MS, everSent, FLUSH_MS, landedAt, LAT, writeMs, type NodeId, type NodeView, type OpRecord, type Story,
 } from './model';
 
 export type Place = 'C' | 'L' | 'F1' | 'F2';
@@ -67,15 +68,15 @@ function staleFrames(story: Story): RepFrame[] {
   const [write, read] = story.ops;
   const isAsync = story.mode === 'async';
   const before = story.script.initialLog[0];
-  const after = write.entry ?? '';
+  const after = write.value ?? '';
   const F1_LANDS = must(landedAt(story, 'F1', after));
   const F2_LANDS = must(landedAt(story, 'F2', after));
   const saved = `saved ✓ (${latencyOf(write)} ms)`;
   const r = recorder(story, { text: `profile: ${shown(before)}`, tone: '' });
   const writePkt: Pkt = { id: 'w', from: 'C', to: 'L', label: `SET ${after}`, kind: 'write' };
   const readPkt: Pkt = { id: 'rd', from: 'C', to: 'F2', label: 'GET profile', kind: 'read' };
-  const answer = (id: string): Pkt => ({ id, from: 'F2', to: 'C', label: shown(read.entry), kind: 'resp' });
-  const readClient = { text: `profile: ${shown(read.entry)}`, tone: read.entry === after ? ('ok' as const) : ('bad' as const) };
+  const answer = (id: string): Pkt => ({ id, from: 'F2', to: 'C', label: shown(read.value), kind: 'resp' });
+  const readClient = { text: `profile: ${shown(read.value)}`, tone: read.value === after ? ('ok' as const) : ('bad' as const) };
 
   r.push(0, {}, <>One leader takes all writes; two followers copy it. F2 is in another region, so its link is slow.</>);
   r.push(
@@ -118,7 +119,7 @@ function staleFrames(story: Story): RepFrame[] {
       must(read.response),
       { client: readClient, pkts: [{ id: 'r2', from: 'L', to: 'F2', label: shown(after), kind: 'repl', dur: 4 }, answer('rs')] },
       <>
-        F2 hasn't caught up, so it answers <span className="hl bad">{shown(read.entry)}</span>. You just saved {shown(after)}, and your own
+        F2 hasn't caught up, so it answers <span className="hl bad">{shown(read.value)}</span>. You just saved {shown(after)}, and your own
         change is gone: <b>read-your-writes</b> is broken.
       </>,
     );
@@ -174,7 +175,7 @@ function staleFrames(story: Story): RepFrame[] {
     must(read.response),
     { client: readClient, pkts: [answer('rs')] },
     <>
-      F2 answers <span className="hl ok">{shown(read.entry)}</span>. In this run every replica is up to date once a write is acknowledged, so a read
+      F2 answers <span className="hl ok">{shown(read.value)}</span>. In this run every replica is up to date once a write is acknowledged, so a read
       from any of them returns it.
     </>,
   );
@@ -189,7 +190,7 @@ function staleFrames(story: Story): RepFrame[] {
   return r.frames;
 }
 
-const orderName = (op: OpRecord) => op.entry ?? '';
+const orderName = (op: OpRecord) => op.value ?? '';
 const orderNo = (op: OpRecord) => orderName(op).replace('order ', '');
 
 function failoverFrames(story: Story): RepFrame[] {
@@ -201,7 +202,7 @@ function failoverFrames(story: Story): RepFrame[] {
   const orders = (nodes: Record<NodeId, NodeView>, id: NodeId) => nodes[id].log.length;
   const atPromotion = story.at(promotedAt - 1);
   const written = (op: OpRecord): Pkt => ({ id: `w${orderNo(op)}`, from: 'C', to: 'L', label: orderName(op), kind: 'write' });
-  const queryAnswer = query.entry === null ? { text: `${orderNo(second)}: not found ✗`, tone: 'bad' as const } : { text: `${orderNo(second)}: found ✓`, tone: 'ok' as const };
+  const queryAnswer = query.value === null ? { text: `${orderNo(second)}: not found ✗`, tone: 'bad' as const } : { text: `${orderNo(second)}: found ✓`, tone: 'ok' as const };
 
   r.push(0, {}, <>Everyone has orders #1 and #2. Now customers place two more orders, and then the leader dies.</>);
   r.push(first.invoke + 1, { pkts: [written(first)], client: { text: `placing ${orderNo(first)}…`, tone: 'wait' } }, <>Order {orderNo(first)} goes to the leader.</>);

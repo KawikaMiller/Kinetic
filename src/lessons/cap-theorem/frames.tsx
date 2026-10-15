@@ -4,6 +4,7 @@
  * and what the words around those facts say.
  */
 import type { ReactNode } from 'react';
+import { latencyOf } from '../../core/distSim';
 import type { Frame } from '../../core/types';
 import {
   INITIAL_VALUE, MAJORITY, NODE_IDS, OP_TIMEOUT_MS, PARTITION, PROCESS_MS, HEALTHY_ONE_WAY_MS, reachableAt, staleReads, type NodeId,
@@ -38,7 +39,6 @@ export interface CapFrame extends Frame {
 const IDLE = { text: 'idle', tone: '' } as const;
 
 export const valueLabel = (v: number) => `x=${v}`;
-const latencyOf = (op: OpRecord) => (op.response === null ? null : op.response - op.invoke);
 /** A read that returned something other than the latest acknowledged write is red; a current answer is green. */
 const toneOfRead = (story: Story, read: OpRecord): Tone => (staleReads(story.ops).includes(read) ? 'bad' : 'ok');
 const writing = (op: OpRecord): { text: string; tone: Tone } => ({ text: `writing ${valueLabel(op.value ?? 0)}…`, tone: 'wait' });

@@ -11,7 +11,9 @@
  * runs of these nodes; what is lost, stale, acknowledged or promoted is read back from the run.
  * The crash, the reads and the manager's timing are scripted (the lesson says so).
  */
-import { createCluster, type Cluster, type DistNode, type NodeCtx, type Safety, type TraceRow } from '../../core/distSim';
+import {
+  createCluster, latencyOf, settleOp, type Cluster, type DistNode, type NodeCtx, type OpRecord as ClientOp, type Safety, type TraceRow,
+} from '../../core/distSim';
 import { mulberry32 } from '../../core/random';
 
 export type Mode = 'async' | 'sync';
@@ -33,18 +35,10 @@ const MANAGER_LINK_MS = 1;
 
 export type Role = 'leader' | 'follower' | 'promoted' | 'manager';
 
-export interface OpRecord {
-  op: number;
-  kind: 'write' | 'read';
-  node: NodeId;
-  /** When the client sent it. */
-  invoke: number;
-  /** When the client was answered; null if it never was. */
-  response: number | null;
+/** One request as the client saw it; a write's `value` is its entry, a read's the entry it found (null: nothing found). */
+export interface OpRecord extends ClientOp<string, NodeId> {
   /** For a read of one named entry ("is order #4 there?"): the entry it asked for. */
   asked?: string;
-  /** A write's entry, or the entry a read found (null: nothing found). */
-  entry: string | null;
 }
 
 export interface NodeState {
@@ -84,7 +78,7 @@ function dataNode(mode: Mode, id: string, initialLog: readonly string[], leader:
     const slowest = Math.min(...Object.values(matched));
     for (const [index, rec] of [...waiting]) {
       if (index <= slowest) {
-        rec.response = now + LAT.client;
+        settleOp(rec, now + LAT.client, 'ok');
         waiting.delete(index);
       }
     }
@@ -109,11 +103,13 @@ function dataNode(mode: Mode, id: string, initialLog: readonly string[], leader:
       const m = msg.payload;
       switch (m.type) {
         case 'put': {
-          const rec: OpRecord = { op: m.op, kind: 'write', node: id as NodeId, invoke: ctx.trueNow - LAT.client, response: null, entry: m.entry };
+          const rec: OpRecord = {
+            op: m.op, kind: 'write', client: msg.from, node: id as NodeId, invoke: ctx.trueNow - LAT.client, response: null, outcome: 'open', value: m.entry,
+          };
           records.push(rec);
           log.push(m.entry);
           if (mode === 'async') {
-            rec.response = ctx.trueNow + LAT.client;
+            settleOp(rec, ctx.trueNow + LAT.client, 'ok');
           } else {
             waiting.set(log.length, rec);
             ship(ctx);
@@ -122,7 +118,10 @@ function dataNode(mode: Mode, id: string, initialLog: readonly string[], leader:
         }
         case 'get': {
           const found = m.entry === undefined ? (log[log.length - 1] ?? null) : (log.includes(m.entry) ? m.entry : null);
-          records.push({ op: m.op, kind: 'read', node: id as NodeId, invoke: ctx.trueNow - LAT.client, response: ctx.trueNow + LAT.client, entry: found, asked: m.entry });
+          records.push({
+            op: m.op, kind: 'read', client: msg.from, node: id as NodeId, invoke: ctx.trueNow - LAT.client, response: ctx.trueNow + LAT.client,
+            outcome: 'ok', value: found, asked: m.entry,
+          });
           return;
         }
         case 'append':
@@ -305,8 +304,8 @@ export function staleReads(ops: readonly OpRecord[], initial: string, until = In
   return ops.filter((r) => {
     if (r.kind !== 'read' || r.asked !== undefined || r.response === null || r.response > until) return false;
     const before = acked.filter((w) => w.response! < r.invoke).sort((a, b) => a.response! - b.response!);
-    const latest = before.length ? before[before.length - 1].entry : initial;
-    return r.entry !== latest;
+    const latest = before.length ? before[before.length - 1].value : initial;
+    return r.value !== latest;
   });
 }
 
@@ -374,7 +373,7 @@ export function runStory(scenario: Scenario, mode: Mode, seed = STORY_SEED): Sto
   };
   const missingAt = (t: number) => {
     const live = Object.values(at(t)).filter((n) => n.role !== 'dead');
-    return acknowledged(ops, t).map((w) => w.entry ?? '').filter((entry) => !live.some((n) => n.log.includes(entry)));
+    return acknowledged(ops, t).map((w) => w.value ?? '').filter((entry) => !live.some((n) => n.log.includes(entry)));
   };
   return {
     scenario, mode, ops, at, missingAt, script,
@@ -401,9 +400,6 @@ export function landedAt(story: Story, node: NodeId, entry: string): number | nu
 export function everSent(story: Story, entry: string): boolean {
   return story.trace.some((r) => r.kind === 'send' && r.from === 'L' && isAppend(r.payload, entry));
 }
-
-/** What the client waited for a write: sent to answered, ms. */
-export const latencyOf = (op: OpRecord): number | null => (op.response === null ? null : op.response - op.invoke);
 
 /** The write latency a mode gives in the "stale read" story (first write). */
 export const writeMs = (mode: Mode): number => latencyOf(runStory('stale', mode).ops[0]) ?? NaN;
@@ -435,8 +431,8 @@ export const noAcknowledgedWriteLost: Safety<NodeState> = (snap) => {
   const nodes = Object.values(snap.nodes);
   const promoted = nodes.find((n) => n.state?.role === 'promoted')?.state;
   if (!promoted) return null;
-  const lost = acknowledged(allOps(snap.nodes)).filter((w) => !promoted.log.includes(w.entry ?? ''));
-  return lost.length ? `the new leader lacks ${lost.map((w) => w.entry).join(', ')}, which the client was told succeeded` : null;
+  const lost = acknowledged(allOps(snap.nodes)).filter((w) => !promoted.log.includes(w.value ?? ''));
+  return lost.length ? `the new leader lacks ${lost.map((w) => w.value).join(', ')}, which the client was told succeeded` : null;
 };
 
 /** A follower's log is always a prefix of the leader's, so replicas only ever fall behind, never diverge. */

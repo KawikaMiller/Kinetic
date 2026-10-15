@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { Flyer } from '../../components/scene';
 import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
@@ -65,13 +65,13 @@ export function Stage() {
               { color: 'var(--bad)', label: 'lost', shape: 'dot' },
             ]}
           />
-          <div className="rep-prov">
+          <ProvenanceRow>
             <Provenance kind="simulated">
               a leader and two followers on a network simulator; logs, lag, loss and latency are read back from the run
             </Provenance>
             <Provenance kind="scripted">the crash, the failover manager's timing ({DETECT_MS} ms after it), which follower the read lands on and fixed link delays, so every seed plays the same; the seeded search for a schedule that loses a write runs in the tests</Provenance>
             <Provenance kind="illustrative">link delays and the {FLUSH_MS} ms background sender</Provenance>
-          </div>
+          </ProvenanceRow>
         </>
       }
       controls={
