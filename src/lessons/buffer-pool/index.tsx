@@ -40,7 +40,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'In this model a hit costs nothing and a miss costs a disk read, so the hit ratio is the number to watch.',
-    `LRU is not scan-proof: on average one full scan lowers the hit ratio of the requests that follow, because its pages push hot pages out, and the effect is on average, not on every seed. A scan ring confines the scan to a few frames and costs far less.`,
+    `LRU is not scan-proof: on average one full scan lowers the hit ratio of the requests that follow, because its pages push hot pages out, and the effect is an average, so some seeds go the other way. A scan ring confines the scan to a few frames and costs far less.`,
     'A pinned page is skipped when a victim is chosen, and a dirty page costs a write-back when it is evicted or checkpointed.',
     'A bigger pool helps until it holds the working set; past that knee the extra frames buy little.',
   ],
@@ -65,7 +65,7 @@ const lesson: LessonModule = {
         'It copies every scanned page to a second pool so that the first one is never touched',
       ],
       answer: 0,
-      why: `The scan reuses its own small set of frames instead of claiming a new one for each page. The hot pages in the other frames survive, which is why on average over ${SCAN_SEEDS} seeds the hit ratio after the scan moves by only ${points(ring.change).slice(1)} here, against ${points(lru.change).slice(1)} for LRU (an average, not every seed).`,
+      why: `The scan reuses its own small set of frames instead of claiming a new one for each page. The hot pages in the other frames survive, which is why on average over ${SCAN_SEEDS} seeds the hit ratio after the scan moves by just ${points(ring.change).slice(1)} here, against ${points(lru.change).slice(1)} for LRU (an average over seeds; single seeds scatter).`,
     },
     {
       q: 'The pool needs a frame and the page in one candidate is pinned. What happens?',

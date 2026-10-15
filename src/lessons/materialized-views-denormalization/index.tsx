@@ -44,7 +44,7 @@ const lesson: LessonModule = {
     'In this model a materialized view is as old as its last refresh, and the lesson reads off the rows that differ from the live query.',
     'In this model an incremental view stays equal to a full recomputation while its write rules are right; a forgotten refund rule drifts without any error.',
     'A denormalised copy leaves old values behind when the source changes, unless every copy is updated or the value is recomputed on read.',
-    `Which strategy touches the fewest rows depends on reads per write. Among the strategies whose answer stays right, the live join is cheapest below about ${sig(CROSS, 2)} reads per write and the incremental view above it. A copy is cheaper than either only while it is allowed to go stale.`,
+    `Which strategy touches the fewest rows depends on reads per write. Among the strategies whose answer stays right, the live join is cheapest below about ${sig(CROSS, 2)} reads per write and the incremental view above it. A copy is cheaper than either just while it is allowed to go stale.`,
   ],
   quiz: [
     {

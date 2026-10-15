@@ -41,7 +41,7 @@ describe('try-this entries, from the default state (LRU, seed 7, skew 1.1), as w
     expect(lesson.quiz[0].why).toContain(`${(Math.abs(lru.change) * 100).toFixed(1)} points`);
     expect(lesson.quiz[0].why).toContain(`${lru.hurt} of 30`);
     expect(lesson.quiz[0].options.join(' ')).not.toMatch(/mostly misses/i);
-    expect(lesson.quiz[1].why).toContain('an average, not every seed');
+    expect(lesson.quiz[1].why).toContain('an average over seeds; single seeds scatter');
   });
 
   it('try-this 3: after Run 50, pinning all eight frames makes a request for a page not in the pool fail', () => {
