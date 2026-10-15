@@ -32,8 +32,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
-  'cdn-edge': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'circuit-breakers': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'monolith-microservices': { ticket: TIER3, rules: ['quiz-length'] },
   'oauth-flows': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   // Tier 4

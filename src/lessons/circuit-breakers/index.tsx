@@ -32,7 +32,7 @@ const lesson: LessonModule = {
     {
       q: 'Service B is overloaded. What do immediate retries (up to 3 each) do to the load on B?',
       options: [
-        'Nothing: a request that already failed cannot add load',
+        'Nothing: a request that has already failed once cannot add any more load',
         'Up to 4 calls per request instead of 1, so the overload grows',
         'They cut the load, because the retries are spread over time',
         'They make B faster, since the repeated calls warm its cache',
@@ -43,7 +43,7 @@ const lesson: LessonModule = {
     {
       q: 'Why add random jitter to exponential backoff?',
       options: [
-        'So retries arrive sooner, which shortens the wait for users',
+        'So retries arrive sooner, which shortens the wait that users see for a response',
         'So the backoff can be skipped when the failure rate is low',
         'So each client picks a different server to retry against',
         'So clients that failed together don\'t all retry at the same instant',
@@ -54,7 +54,7 @@ const lesson: LessonModule = {
     {
       q: 'What does a circuit breaker do in the HALF-OPEN state?',
       options: [
-        'Sends all traffic through normally, to see how much B can take',
+        'Sends all traffic through normally for a short moment, to see how much B can take',
         'Lets a few probe requests through to test whether the dependency has recovered',
         'Rejects all traffic and serves the fallback until an operator resets it',
         'Retries every request that failed while it was open, in the original order',

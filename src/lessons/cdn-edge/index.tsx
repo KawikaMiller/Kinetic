@@ -32,7 +32,7 @@ const lesson: LessonModule = {
     {
       q: 'Why does a CDN make pages faster for a user in Sydney when your origin is in Virginia?',
       options: [
-        'It compresses the files so much that they download sooner',
+        'It compresses the files so much more than the origin that they download sooner',
         'A nearby edge answers cache hits, so most requests skip the long round trip',
         "It upgrades the user's connection to a faster internet link",
         'It skips the DNS lookup that a visit to the origin needs',
@@ -43,7 +43,7 @@ const lesson: LessonModule = {
     {
       q: 'You deploy a new logo but users keep seeing the old one. What is the likely cause?',
       options: [
-        'The origin is down, so the edges fall back to an older build',
+        'The origin is down, so the edges quietly fall back to an older build of the site',
         'DNS changes have not reached the visitor\'s resolver yet',
         'Edges keep serving the cached copy until its TTL runs out or it is purged',
         'The CDN was switched off, so the browser serves the old file',
@@ -54,10 +54,10 @@ const lesson: LessonModule = {
     {
       q: 'What does an origin shield mainly reduce?',
       options: [
-        'Latency on cache hits at the edge',
+        'The latency of cache hits, which are already answered at the edge',
         'The number of requests that reach the origin from many edges',
-        'The TLS handshake time for each new visitor',
-        'How often the browser has to look up DNS names',
+        'The TLS handshake time that each new visitor pays to the edge',
+        "How often the visitor's browser has to look up a DNS name",
       ],
       answer: 1,
       why: 'Edges fetch misses through one shield cache, so a file missing in nine cities costs one origin fetch instead of nine.',
@@ -65,10 +65,10 @@ const lesson: LessonModule = {
     {
       q: 'A team sets a TTL of a few seconds to avoid stale content and leaves the shield off. What happens to the origin?',
       options: [
-        'Nothing changes, since the hit ratio depends on file size, not TTL',
-        'It sees less traffic, since fresh copies are checked more often',
-        'The shield turns itself on, since short TTLs need one',
-        'It serves a large share of the traffic again, because copies expire before repeat requests arrive',
+        'Nothing changes, since the hit ratio depends on file size and not on the TTL setting',
+        'It sees less traffic, since each edge checks fresh copies against the origin more often',
+        'The shield turns itself on, because a short TTL is too much for the edges',
+        'It serves a large share of traffic again, since copies expire before repeats arrive',
       ],
       answer: 3,
       why: 'A short TTL expires entries before many repeat requests arrive. In this model a 3 s TTL leaves the hit ratio around 30% and the origin serving over half of the traffic; a longer TTL or a shield brings that down.',
