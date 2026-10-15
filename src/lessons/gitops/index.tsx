@@ -2,9 +2,10 @@ import type { LessonModule } from '../../core/types';
 import { DESIRED_START, LOAD_SPIKE, REPLICA_CAPACITY } from './reconcile';
 import { DOWN_FROM, DOWN_UNTIL, SCRIPT_END, runScript, verdict } from './script';
 import { Stage } from './Stage';
-import { failingShare, initWorld, manual, toNextRun } from './world';
+import { DRIFT_INTERVAL, TRAP_INTERVAL, failingShare, manual, startWorld, toNextRun } from './world';
 
-const driftWindow = toNextRun(manual(initWorld({ interval: 10 }), 'web-svc', null, 'x')).driftSeconds;
+/** What the Out of sync counter reads when the learner follows try-this 2 exactly: paused, reset, delete, then to the next sync. */
+const driftWindow = toNextRun(manual(startWorld('drift'), 'web-svc', null, 'x')).driftSeconds;
 const handScaled = 10;
 const reverted = failingShare(DESIRED_START, true);
 const ends = (handler: 'edge' | 'level') => {
@@ -30,9 +31,9 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'On The loop, press + on web twice and Commit: the diff shows web going from 3 replicas to 5, and within a second the controller updates it, one action per run.',
-    `On Drift, press Delete the service, then To the next sync: the service is recreated, and the Out of sync counter reads ${driftWindow} s because the sync interval is 10 seconds.`,
-    'On Drift, turn Auto-sync off and add a replica to web by hand: it stays drifted, and the log says out of sync once instead of fixing it.',
-    `On The incident trap, press Spike: ${Math.round(reverted * 100)}% of requests fail with ${DESIRED_START.web.replicas} replicas. Scale web to ${handScaled} by hand and none fail, until the controller’s next run puts web back and ${Math.round(reverted * 100)}% fail again. Commit web = ${handScaled} instead and none do.`,
+    `On Drift the clock is already running, so press Pause and then Reset first. Then press Delete the service and To the next sync: the service is recreated, and the Out of sync counter reads ${driftWindow} s, which is the ${DRIFT_INTERVAL} second sync interval minus the second it was deleted in. Without the pause the counter reads whatever is left of the interval when you press.`,
+    `On Drift, turn Auto-sync off and add a replica to web by hand: it stays drifted, and at the next run (within ${DRIFT_INTERVAL} s) the log says out of sync once instead of fixing it.`,
+    `On The incident trap, press Spike: ${Math.round(reverted * 100)}% of requests fail with ${DESIRED_START.web.replicas} replicas. Scale web to ${handScaled} by hand and none fail, until the controller’s next run (within ${TRAP_INTERVAL} s) puts web back and ${Math.round(reverted * 100)}% fail again. Press Reset and Spike, then Commit web = ${handScaled} instead: ${Math.round(reverted * 100)}% still fail until the next run applies it (within ${TRAP_INTERVAL} s), and then none do.`,
     `On Level-triggered, step to the last second with the edge-triggered controller restarting: it ends wrong (${edgeEnd.wrong.join(' and ')}). Switch to Level-triggered and step to the end again: it ends right.`,
   ],
   keyIdeas: [
@@ -58,11 +59,11 @@ const lesson: LessonModule = {
       options: [
         'It saves work, because comparing everything is always cheaper than reading a single event',
         'It is required by git, which has no way to send an event when one of its files changes',
-        'A missed event is never seen again, but a full comparison still finds the difference',
+        'A handler that only reacts to events never sees a missed one again, but a full comparison still does',
         'It lets the controller skip git altogether and read the desired state from the cluster itself',
       ],
       answer: 2,
-      why: `With the controller down from second ${DOWN_FROM} to ${DOWN_UNTIL - 1}, the edge-triggered handler ends wrong (${edgeEnd.wrong.join(' and ')}) and the level-triggered one ends right on the same events.`,
+      why: `With the controller down from second ${DOWN_FROM} to ${DOWN_UNTIL - 1}, the edge-triggered handler (built here with no periodic resync) ends wrong (${edgeEnd.wrong.join(' and ')}) and the level-triggered one ends right on the same events. Many real controllers add a periodic resync to an event handler, which is the same idea.`,
     },
     {
       q: 'A resource is removed from git, and pruning is off. What happens to it in the cluster?',
@@ -78,13 +79,13 @@ const lesson: LessonModule = {
     {
       q: 'What does the pull style of GitOps change about credentials?',
       options: [
-        'The cluster credentials stay inside the cluster, where an agent reads git and applies it',
-        'The pipeline holds the cluster credentials, because it has to reach in from outside to apply the change',
+        'In the usual pull setup the cluster credentials stay inside the cluster, where an agent reads git',
+        'The pipeline holds the cluster credentials in a pull setup, because it has to reach in to apply',
         'Git holds the cluster credentials, since it is the source of the desired state for everything',
         'There are no credentials, because the controller never changes anything',
       ],
       answer: 0,
-      why: 'A pull agent inside the cluster reads git, so git needs no way in. A push job from CI has to hold credentials for the cluster. Both are common practice; this lesson models neither product.',
+      why: 'In the usual pull setup an agent inside the cluster reads git, so git needs no way in, while a push job from CI usually holds credentials for the cluster (they can be short-lived and scoped). It is a common argument, not a guarantee: the pull agent is itself a privileged component with git read access, and anyone who can merge to the branch it watches can change the cluster. This lesson models neither product.',
     },
   ],
 };

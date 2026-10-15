@@ -9,6 +9,10 @@ export const INTERVAL_MAX = 60;
 /** Scene 3's sync interval, in seconds. */
 export const TRAP_INTERVAL = 5;
 export const LOG_LIMIT = 40;
+/** Scene 2's sync interval, in seconds. */
+export const DRIFT_INTERVAL = 10;
+
+export type Mode = 'loop' | 'drift' | 'trap';
 
 export interface LogEntry {
   id: number;
@@ -113,3 +117,6 @@ export function failingShare(live: State, spike: boolean): number {
   const capacity = REPLICAS_OF(live, 'web') * REPLICA_CAPACITY;
   return Math.max(0, 1 - capacity / load);
 }
+
+/** The world a live scene starts from, and resets to: scene 1 syncs every second, scene 2 every `DRIFT_INTERVAL` seconds, scene 3 every `TRAP_INTERVAL`. */
+export const startWorld = (mode: Mode): World => (mode === 'drift' ? initWorld({ interval: DRIFT_INTERVAL }) : mode === 'trap' ? initWorld({ interval: TRAP_INTERVAL }) : initWorld());

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { LogStream } from '../../components/LogStream';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -6,17 +6,14 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ClaimLabel, Hint, Legend, PauseButton, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { useInterval } from '../../core/useInterval';
-import { liveCaption, trapCaption, type Mode } from './captions';
+import { liveCaption, trapCaption } from './captions';
 import { ClusterView } from './ClusterView';
 import { DESIRED_START, IMAGE_TAGS, REPLICAS_MAX, diffLines, sameSpec, type Spec, type State } from './reconcile';
-import { INTERVAL_MAX, INTERVAL_MIN, TRAP_INTERVAL, commit, failingShare, initWorld, manual, secondsToRun, setPaused, tick, toNextRun, type World } from './world';
+import { INTERVAL_MAX, INTERVAL_MIN, commit, failingShare, manual, secondsToRun, setPaused, startWorld, tick, toNextRun, type Mode, type World } from './world';
 
 const TICK_MS = 400;
-const DRIFT_INTERVAL = 10;
 const SCALE_BY_HAND = 10;
 const DEPLOYMENTS = ['web', 'api', 'worker'] as const;
-
-const start = (mode: Mode): World => (mode === 'drift' ? initWorld({ interval: DRIFT_INTERVAL }) : mode === 'trap' ? initWorld({ interval: TRAP_INTERVAL }) : initWorld());
 
 const withReplicas = (s: State, key: string, n: number): State => ({ ...s, [key]: { ...s[key], replicas: Math.max(0, Math.min(REPLICAS_MAX, n)) } });
 const withImage = (s: State, key: string, tag: string): State => ({ ...s, [key]: { ...s[key], image: `${key}:${tag}` } });
@@ -24,10 +21,13 @@ const tagOf = (spec: Spec | undefined) => spec?.image?.split(':')[1] ?? '';
 
 export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
   const setCaption = useSetCaption();
-  const [w, setW] = useState<World>(() => start(mode));
+  const [w, setW] = useState<World>(() => startWorld(mode));
   const [draft, setDraft] = useState<State>(DESIRED_START);
   const [playing, setPlaying] = useState(true);
   const [spike, setSpike] = useState(false);
+  /** Pressing Commit or Delete disables that button, so focus first moves to the form around it instead of falling to the page. */
+  const commitFormRef = useRef<HTMLDivElement>(null);
+  const deleteRowRef = useRef<HTMLDivElement>(null);
 
   useInterval(() => setW(tick), TICK_MS, playing);
   const lines = useMemo(() => diffLines(w.desired, w.live, w.prune), [w.desired, w.live, w.prune]);
@@ -37,7 +37,7 @@ export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
   }, [setCaption, mode, w, spike]);
 
   const reset = () => {
-    setW(start(mode));
+    setW(startWorld(mode));
     setDraft(DESIRED_START);
     setSpike(false);
   };
@@ -113,7 +113,7 @@ export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
         {mode === 'loop' && (
           <Box>
             <SectionTitle hint="edit the draft, then commit it to git">Git: the desired state</SectionTitle>
-            <div className="go-form">
+            <div className="go-form" ref={commitFormRef} tabIndex={-1} aria-label="Draft of the desired state">
               {DEPLOYMENTS.map((key) => (
                 <div key={key} className="go-form-row" role="group" aria-label={`Draft for ${key}`}>
                   <b>{key}</b>
@@ -125,7 +125,16 @@ export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
                   ))}
                 </div>
               ))}
-              <Button variant="primary" disabled={!draftChanged} onClick={() => setW((x) => commit(x, draft))}>Commit</Button>
+              <Button
+                variant="primary"
+                disabled={!draftChanged}
+                onClick={() => {
+                  commitFormRef.current?.focus();
+                  setW((x) => commit(x, draft));
+                }}
+              >
+                Commit
+              </Button>
             </div>
           </Box>
         )}
@@ -144,9 +153,17 @@ export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
                   ))}
                 </div>
               ))}
-              <div className="go-form-row">
+              <div className="go-form-row" ref={deleteRowRef} tabIndex={-1} aria-label="The service">
                 <b>web-svc</b>
-                <Button onClick={() => setW((x) => manual(x, 'web-svc', null, 'delete web-svc'))} disabled={!('web-svc' in w.live)}>Delete the service</Button>
+                <Button
+                  onClick={() => {
+                    deleteRowRef.current?.focus();
+                    setW((x) => manual(x, 'web-svc', null, 'delete web-svc'));
+                  }}
+                  disabled={!('web-svc' in w.live)}
+                >
+                  Delete the service
+                </Button>
               </div>
             </div>
           </Box>
@@ -163,6 +180,7 @@ export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
           <Provenance kind="toy">a toy controller, not Kubernetes: no API server, no real manifests</Provenance>
           <Provenance kind="simulated">time passes in simulated seconds</Provenance>
           <ClaimLabel kind="standard">Kubernetes controllers are reconciliation loops; see kubernetes-basics</ClaimLabel>
+          {mode === 'trap' && <ClaimLabel kind="practice">committing the change, or pausing sync as a logged override, are the usual ways to keep an incident fix; teams differ on whether pausing is allowed at all</ClaimLabel>}
         </ProvenanceRow>
       </div>
     </StageFrame>

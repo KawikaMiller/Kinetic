@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { reconcile, sameSpec } from './reconcile';
 import { SCRIPT_END, verdict, type Handler, type ScriptFrame } from './script';
-import { failingShare, secondsToRun, describeAction, type World } from './world';
+import { failingShare, secondsToRun, describeAction, type Mode, type World } from './world';
 
-export type Mode = 'loop' | 'drift' | 'trap';
+export type { Mode };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 

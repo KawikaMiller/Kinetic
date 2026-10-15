@@ -15,8 +15,13 @@
 .go-form-row b { min-width: 64px; }
 .go-count { font: 500 12.5px var(--mono); min-width: 80px; text-align: center; }
 .go-notes { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; }
-.go-pullpush { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; font-size: 13px; line-height: 1.55; }
-.go-pullpush p { margin: 8px 0; }
 @media (max-width: 900px) {
-  .go-split, .go-pullpush { grid-template-columns: minmax(0, 1fr); }
+  .go-split, .go-pp-grid { grid-template-columns: minmax(0, 1fr); }
 }
+.go-pp { display: flex; flex-direction: column; gap: 8px; }
+.go-pp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.go-pp-side { display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.55; }
+.go-pp-side p { margin: 0; }
+.go-pp-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.go-pp-box { padding: 6px 10px; border: 1.5px solid var(--info); border-radius: 10px; background: color-mix(in srgb, var(--info) 12%, transparent); font-weight: 600; }
+.go-pp-arrow { font: 600 12px var(--mono); color: var(--muted); }
