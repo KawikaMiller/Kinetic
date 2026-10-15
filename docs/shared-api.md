@@ -1665,6 +1665,44 @@ levelById('ram')   // { id, name, ns, range: [lo, hi], capacity: bytes | null, n
   misconception test; cpu-caches' test imported `levelById` across lessons and now imports it from here. back-of-envelope reads `ns` and `capacity` instead of copying
   the table. memory-hierarchy's shots at 1440 and 390 are pixel-identical.
 
+## Tier 3 kit (wave 1 to 2 kit round: agent D)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 1 to 2 round, agent D" (`pages/DevKitTier3d.tsx`).
+
+### `core/laneEditor.ts`, `components/LaneEditor.tsx` (`laneGeometry.ts`) (T3-B4) — logical-clocks, consistency-models
+
+Lanes along a time axis where the learner places, selects, moves and deletes items: point events with messages between them (logical-clocks), or operation intervals with an
+invoke and a response slot (consistency-models). Only the lane and key mechanics are shared; what an item *means* and how it is drawn stays in the lesson.
+```tsx
+import { LaneEditor } from '../components/LaneEditor';
+import { buildLaneModel, createLaneModel, type LaneModel } from '../core/laneEditor';
+const limits = { lanes: 3, slots: 14, maxItems: 14 };                     // events; for intervals add minSpan: 1
+const [model, setModel] = useState(() => buildLaneModel<Ev>(limits, [{ lane: 0, slot: 1, data: ev }, …], [[0, 1]]));   // a preset: items, then messages by index
+<LaneEditor model={model} onChange={setModel} onRefuse={setReason} laneLabels={['P1', 'P2', 'P3']} newData={(lane, slot) => ev}
+  mode={linking ? 'link' : 'edit'} ariaLabel="Execution" describeItem={(it) => `event ${it.data.name}`}
+  renderItem={(item, geo, { selected }) => <svg stuff/>} />               // renderItem, renderLink, underlay: SVG in the editor's own coordinates
+```
+- **Model** (`LaneModel<T>`, pure and immutable): `items` `{ id, lane, start, end, data }` (a point has `start === end`; `end - start` is the span), `links` `{ from, to }`, `selected`,
+  `limits` `{ lanes, slots, maxItems?, minSpan?, maxSpan? }`. Every edit returns `{ ok: true, model, id? }` or `{ ok: false, reason }` with the reason in plain words
+  ("that place on the lane is taken", "a message can't arrive before it is sent"): `addItem`, `moveItem(id, dLane, dSlot)`, `resizeItem(id, 'start' | 'end', delta)`, `removeItem`
+  (its messages go too), `linkItems(from, to)`, plus the total functions `selectItem`, `setItemData`, `unlinkItems`. **Rules the model keeps for every reachable state**: items stay in
+  bounds, never overlap within a lane, and every message goes forward in time between two different lanes (so moving an event can be refused because it would break a message).
+  Ids come from a counter, so they are never reused after a delete. `activateCell(model, lane, slot, mode, newData)` is what Enter or a press does: edit mode adds on an empty
+  slot and selects an item; link mode picks the sender, then a press on a later slot of another lane adds the receive event and joins them (the receiver is then selected, so a chain is a run of presses).
+- **Undo** is the lesson's: models are immutable and `onChange` hands over the whole next model, so keep a stack of them (`onChange={(m) => { push(model); setModel(m); }}`). There is no shared undo hook yet.
+- **Keyboard path** (`laneKeyAction`, tested as a table): the grid is **one tab stop** (roving tabindex over its `role="gridcell"` cells, `aria-label` says lane, slot and what is there). Arrows move the
+  cursor (no wrapping), Home and End jump to the lane's ends, Enter or Space activates, **Shift + arrows move the selected item**, **Alt + Left/Right** moves an interval's end edge, Delete or Backspace removes it,
+  Escape deselects. **Pointer path**: press an empty slot to add, press an item to select it and drag it along its lane or across lanes (a drag step that would be refused is skipped silently). A row of
+  buttons under the grid (move four ways, Delete; `buttons={false}` hides it) is the touch path, since a scroll can cancel a drag.
+- `onRefuse(reason)` is the lesson's to show (a `role="status"` line next to the editor). The component draws no caption of its own besides a keyboard hint (`hint`, or `null` to hide it).
+- Drawing defaults: a dot for a point and a rounded bar for an interval in `toneOf(item)` (default `muted`; lanes are plain categories, so use `amber`/`sky`/`pink`, never `--bad`/`--ok`), `itemLabel` text,
+  the selected item ringed `--hi`, messages `--info` arrows. The grid keeps its natural width (`laneGeometry(limits, { slotW, laneH }).width`, 52 + 28 per slot by default) inside a built-in `WideRegion`, so on a phone it scrolls
+  sideways while the buttons and hint reflow. Lessons that draw timestamps keep their text at 9px or more and pass `slotWidth`/`laneHeight` to make room.
+- Tests: `core/laneEditor.test.ts` (every edit and refusal; messages; presets; `activateCell`; the key table; and 300 seeded random edit sequences of 60 edits that never leave an overlap, an out-of-bounds item or a
+  backwards message, checked by an independent verifier that is itself shown to catch a hand-built violation), `components/laneGeometry.test.ts`.
+- **Tier 2 equivalents checked, nothing migrated:** isolation-levels' schedule matrix is a fixed grid the learner plays, not one they build (no add, move or delete); CellGrid, GanttLanes and SequenceDiagram are read-only
+  drawings; the scheduling lessons' Gantt lanes are computed, not edited. No Tier 2 lesson places items on lanes, so there was nothing to migrate.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
