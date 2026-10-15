@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { sccFrames } from './frames';
 import lesson from './index';
-import { PRESETS, canonical, condense, edgeEffect, kosaraju, presetById } from './model';
+import { canonicalPartition, condense } from '../../core/scc';
+import { PRESETS, edgeEffect, kosaraju, presetById } from './model';
 import { edgeVerdict } from './text';
 import { ORDER_CHOICES } from './useSccEditor';
 
@@ -27,7 +28,7 @@ describe('try-this entries, from the default state, as written', () => {
 
   it('try-this 2: four components, a valid dependency order, and no edge of the collapsed graph points back', () => {
     const run = kosaraju(tangle);
-    const c = condense(tangle, run.comp, run.components.length);
+    const c = condense(tangle.edges, run.comp, run.components.length);
     expect(run.components).toHaveLength(4);
     const pos = new Map(c.order!.map((x, i) => [x, i]));
     expect(c.edges.every(([a, b]) => pos.get(a)! < pos.get(b)!)).toBe(true);
@@ -42,7 +43,7 @@ describe('try-this entries, from the default state, as written', () => {
     const baseFinish = base.finishOrder.map((v) => tangle.names[v]).join(', ');
     const finish = run.finishOrder.map((v) => tangle.names[v]).join(', ');
     expect(finish).not.toBe(baseFinish);
-    expect(canonical(run.components)).toBe(canonical(base.components));
+    expect(canonicalPartition(run.components)).toBe(canonicalPartition(base.components));
     expect(lesson.tryThis[2]).toContain(`changes from ${baseFinish} to ${finish}`);
   });
 
@@ -71,7 +72,7 @@ describe('every caption reads cleanly', () => {
         }
         const last = frames[frames.length - 1];
         expect(last.comp.every((c) => c >= 0)).toBe(true);
-        expect(canonical(run.components)).toBe(canonical(kosaraju(p.graph).components));
+        expect(canonicalPartition(run.components)).toBe(canonicalPartition(kosaraju(p.graph).components));
       }
     }
     expect(count).toBeGreaterThan(100);

@@ -1,0 +1,8 @@
+.tm { gap: 14px; }
+.tm-editor { display: flex; flex-direction: column; gap: 10px; }
+.tm-table textarea { min-height: 150px; }
+.tm-error { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--orange); }
+.tm-note { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.tm-line { display: block; font: 500 12.5px/1.6 var(--mono); overflow-wrap: anywhere; color: var(--text); }
+.tm-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tm-cards p { margin: 6px 0 8px; font-size: 13px; line-height: 1.55; color: var(--muted); }

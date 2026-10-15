@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { PresetChips } from './Controls';
 import { FlowGraph } from './FlowGraph';
 import { backEdges, crossingEdges, cutCapacity, isMaximum, reachableSet } from './model';
@@ -19,10 +18,11 @@ export function CutScene({ picker, ed }: { picker: ReactNode; ed: FlowEditor }) 
   const capacity = cutCapacity(net, side);
   const edgeName = (i: number) => `${net.names[net.edges[i].from]}→${net.names[net.edges[i].to]} ${net.edges[i].cap}`;
   const caption = cutCaption({ net, side, flowValue: ed.value, maximum, showing });
-  useIntroCaption(<>{caption}</>, [caption]);
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>

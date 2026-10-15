@@ -2,7 +2,6 @@ import { useMemo, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { ColourGraph } from './ColourGraph';
 import { colourVar } from './colors';
 import { EditRow, PresetChips } from './Controls';
@@ -15,10 +14,11 @@ export function HardScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor }
   const two = useMemo(() => twoColour(g), [g]);
   const exact = useMemo(() => chromatic(g).number, [g]);
   const caption = hardCaption(g);
-  useIntroCaption(<>{caption}</>, [caption]);
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={480}
       stats={
         <Stats>

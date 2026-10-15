@@ -1,9 +1,10 @@
 /**
  * Toy embeddings: a lesson-authored vocabulary of hand-made 8-dimensional vectors with named
  * dimensions (not a trained model), cosine nearest neighbours, phrase averaging, analogy
- * arithmetic, PCA by power iteration, keyword overlap and a brute-force document search.
+ * arithmetic, PCA (core/linalg), keyword overlap and a brute-force document search.
  */
-import { add, cosine, dot, norm, scale, sub, type Vec } from '../../core/vec';
+import { pca, pcaProject, type Pca } from '../../core/linalg';
+import { add, cosine, norm, scale, sub, type Vec } from '../../core/vec';
 
 export const DIMS = ['animal', 'food', 'vehicle', 'repair', 'size', 'young', 'cat ↔ dog', 'sweet'] as const;
 export const DIM_NOTE: Record<(typeof DIMS)[number], string> = {
@@ -158,66 +159,9 @@ export function analogy(x: Analogy) {
 
 // ── PCA ──────────────────────────────────────────────────────────────
 
-export const centroid = (vs: readonly Vec[]) => scale(vs.reduce<number[]>((s, v) => add(s, v), new Array(vs[0].length).fill(0)), 1 / vs.length);
-
-/** Covariance matrix (divided by n) of the vectors. */
-export function covariance(vs: readonly Vec[]): number[][] {
-  const m = centroid(vs);
-  const d = m.length;
-  const c = Array.from({ length: d }, () => new Array(d).fill(0));
-  for (const v of vs) {
-    const x = sub(v, m);
-    for (let i = 0; i < d; i++) for (let j = 0; j < d; j++) c[i][j] += (x[i] * x[j]) / vs.length;
-  }
-  return c;
-}
-
-const POWER_ITERATIONS = 500;
-
-/**
- * Top eigenvectors of a symmetric matrix by power iteration with deflation: multiply a start
- * vector by the matrix until it stops turning, take its Rayleigh quotient as the eigenvalue,
- * subtract that component and repeat.
- */
-export function topEigen(m: readonly Vec[], count: number): { vectors: number[][]; values: number[] } {
-  let a = m.map((r) => [...r]);
-  const vectors: number[][] = [];
-  const values: number[] = [];
-  for (let c = 0; c < count; c++) {
-    let v = a.map((_, i) => 1 + i * 0.01);
-    for (let it = 0; it < POWER_ITERATIONS; it++) {
-      const w = a.map((row) => dot(row, v));
-      // Re-orthogonalise against the vectors already found, so rounding can't drift back to them.
-      const ortho = vectors.reduce((acc, u) => sub(acc, scale(u, dot(acc, u))), w);
-      const n = norm(ortho);
-      if (n === 0) break;
-      v = scale(ortho, 1 / n);
-    }
-    const lambda = dot(v, a.map((row) => dot(row, v)));
-    vectors.push(v);
-    values.push(lambda);
-    a = a.map((row, i) => row.map((x, j) => x - lambda * v[i] * v[j]));
-  }
-  return { vectors, values };
-}
-
-export interface Pca {
-  mean: number[];
-  axes: number[][];
-  /** Variance along each axis, and the total. */
-  variances: number[];
-  total: number;
-}
-
-export function pca(vs: readonly Vec[], count = 2): Pca {
-  const cov = covariance(vs);
-  const { vectors, values } = topEigen(cov, count);
-  return { mean: centroid(vs), axes: vectors, variances: values, total: cov.reduce((s, r, i) => s + r[i], 0) };
-}
-
 export const project = (p: Pca, v: Vec): [number, number] => {
-  const x = sub(v, p.mean);
-  return [dot(x, p.axes[0]), dot(x, p.axes[1])];
+  const [x, y] = pcaProject(p, v);
+  return [x, y];
 };
 
 export const MAP = pca(VOCAB.map((w) => w.v));

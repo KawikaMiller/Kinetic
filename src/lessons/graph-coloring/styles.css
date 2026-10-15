@@ -19,7 +19,6 @@
 .gc-side .tray:not(.is-stacked) .section-title, .gc-stage > .tray:not(.is-stacked) .section-title { flex-basis: 100%; }
 .gc-claims { display: flex; flex-direction: column; gap: 8px; }
 .gc-line { margin: 0; font-size: 13px; line-height: 1.6; }
-.gc-stage ~ .provenance-row { margin: 8px 16px 12px; }
 @media (max-width: 900px) {
   .gc-main, .gc-side { flex-basis: 100%; }
 }

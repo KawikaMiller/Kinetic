@@ -1,3 +1,5 @@
+import type { Result } from '../../core/result';
+
 export const MAX_SIDE = 6;
 export const COST_MIN = 1;
 export const COST_MAX = 99;
@@ -8,8 +10,6 @@ export interface Bipartite {
   jobs: number;
   edges: [number, number][];
 }
-
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 const make = (workers: number, jobs: number, lists: number[][]): Bipartite => ({
   workers,

@@ -1,0 +1,22 @@
+/* mvcc */
+.mv-stage { gap: 12px; min-width: 0; }
+.mv-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.mv-table { min-width: 0; max-width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.mv-pager { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 500 12px var(--font); color: var(--muted); }
+.mv-size { display: flex; flex-direction: column; gap: 6px; }
+.mv-horizon { margin: 0; font: 500 12.5px var(--font); color: var(--violet); }
+
+/* messages */
+.mv-msg { margin: 0; font: 500 12.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.mv-msg:first-child { color: var(--text); }
+.mv-msg.is-refused, .mv-msg.is-aborted { color: var(--orange); }
+
+/* the chain of versions */
+.mv-chain { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+.mv-ver { position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 112px; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--line-2); background: color-mix(in srgb, var(--bg) 72%, transparent); font: 500 12.5px var(--mono); }
+.mv-ver b { font-size: 14px; }
+.mv-ver em { font: 500 11px var(--font); color: var(--muted); font-style: normal; }
+.mv-ver.is-ok { border-color: var(--ok); }
+.mv-ver.is-dim { border-color: var(--dim); border-style: dashed; }
+.mv-ver.is-bad { border-color: var(--bad); }
+.mv-arrow { position: absolute; right: -13px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--muted); }

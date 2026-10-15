@@ -1,0 +1,7 @@
+/* buffer-pool */
+.bp-stage { gap: 12px; min-width: 0; }
+.bp-frames, .bp-disk { min-width: 0; max-width: 100%; }
+.bp-label { display: block; font: 600 12px var(--font); color: var(--muted); margin-bottom: 4px; }
+.bp-scan-wrap { overflow-x: auto; max-width: 100%; }
+.bp-scan td, .bp-scan th { white-space: normal; }
+.bp-scan td.is-bad { color: var(--bad); }
