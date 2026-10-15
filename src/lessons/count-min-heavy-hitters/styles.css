@@ -1,0 +1,19 @@
+/* count-min-heavy-hitters */
+.cm-stage { gap: 12px; min-width: 0; }
+.cm-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.cm-plot { max-width: 420px; }
+.cm-table td, .cm-table th { font-size: 12.5px; }
+.cm-scroll { max-height: 200px; overflow: auto; }
+.cm-pick { background: none; border: none; padding: 0; font: 600 12.5px var(--mono, monospace); color: var(--info); cursor: pointer; text-decoration: underline; }
+.cm-table tr.is-picked td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.cm-true { color: var(--ok); }
+.cm-wrong { color: var(--bad); font-weight: 700; }
+.cm-top { color: var(--ok); font-weight: 700; }
+.cm-cand { color: var(--info); font-weight: 700; }
+.cm-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cm-events { margin: 0; padding-left: 18px; font-size: 12.5px; }
+.cm-evicted { color: var(--muted); }
+.cm-theorem { margin: 0 0 6px; font-size: 13.5px; }
+@media (max-width: 900px) {
+  .cm-pair { grid-template-columns: minmax(0, 1fr); }
+}
