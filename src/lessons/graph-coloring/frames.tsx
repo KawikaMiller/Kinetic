@@ -43,7 +43,7 @@ export function greedyFrames(g: Graph, run: GreedyRun): GreedyFrame[] {
   rec.close(
     excess > 0 ? (
       <>
-        Greedy used <span className="hl orange">{plural(run.used, 'colour')}</span>; the exact minimum is <span className="hl ok">{best}</span>, so this order wasted {plural(excess, 'colour')}. A different order can do better.
+        Greedy used <span className="hl bad">{plural(run.used, 'colour')}</span>; the exact minimum is <span className="hl ok">{best}</span>, so this order wasted {plural(excess, 'colour')}. A different order can do better.
       </>
     ) : (
       <>
