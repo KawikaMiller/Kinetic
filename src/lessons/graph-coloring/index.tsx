@@ -73,7 +73,7 @@ const lesson: LessonModule = {
       options: [
         '7, since a node has at most 6 neighbours blocking colours',
         '6, one colour for each neighbour of the busiest node',
-        '12, twice the largest degree',
+        '12, twice the largest degree, since each neighbour may block two colours',
         'There is no limit that depends on the degree',
       ],
       answer: 0,

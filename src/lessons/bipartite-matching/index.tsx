@@ -54,7 +54,7 @@ const lesson: LessonModule = {
       q: `Greedy matches ${GREEDY_PAIRS} and strands ${STRANDED}, whose only job is J1. Is there a matching of ${FINAL}?`,
       options: [
         'Yes: W1 can move to J2 and W4 to J4, freeing J1 for W2',
-        'No: W2 likes only J1, which W1 holds, so W2 stays out',
+        'No: W2 likes just J1 and W1 already holds it, so W2 has to stay out',
         'No: greedy always finds the largest matching it can',
         'Yes, but only by giving W2 a job it does not like',
       ],
@@ -76,7 +76,7 @@ const lesson: LessonModule = {
       q: `${VIOLATOR_WORKERS} all like only ${VIOLATOR_JOBS}. What does that show?`,
       options: [
         'No matching can cover all three workers: they have two jobs between them',
-        'Greedy picked the wrong order, and a better order places all three',
+        'Greedy picked the wrong order, and a better order places all three of them',
         'Each of the three can be placed, but only by changing their lists',
         'The graph is not bipartite, so matching does not apply to it',
       ],

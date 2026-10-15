@@ -4,7 +4,7 @@
 .gc-stage > .tray, .gc-stage > .hint { flex: 1 1 100%; min-width: 0; }
 .gc-note { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--muted); }
 .gc-graph { width: 100%; max-width: 640px; margin: 0 auto; }
-.gc-badge { font-size: 11px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.gc-badge { font-size: 13px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 .gc-palette { display: flex; flex-wrap: wrap; gap: 6px; }
 .gc-swatch { font-family: var(--mono); border-width: 3px; border-style: solid; background: transparent; min-width: 30px; text-align: center; }
 .gc-swatch.is-forbidden { color: var(--dim); text-decoration: line-through; border-style: dashed; }
