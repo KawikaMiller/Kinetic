@@ -1,0 +1,11 @@
+.bm-stage { gap: 12px; align-items: center; }
+.bm-stage > .plot2d, .bm-real .plot2d { max-width: 100%; height: auto; }
+.bm-real { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bm-note { display: block; text-align: center; max-width: 640px; }
+.bm-lanes, .bm-table-box { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 8px; }
+.bm-meters { display: flex; flex-wrap: wrap; gap: 12px 24px; width: 100%; max-width: 760px; }
+.bm-meters > * { flex: 1 1 260px; min-width: 0; }
+.bm-table th, .bm-table td { white-space: nowrap; }
+.bm-table td { text-align: right; }
+.bm-bad { color: var(--bad); font-weight: 700; }
+.bm-picked { outline: 1.5px solid var(--hi); outline-offset: -1.5px; }
