@@ -36,7 +36,7 @@ export const sizeText = (bits: number): string => `${bits} bits (${noun(bytesOf(
 export type InflateState = 'unavailable' | 'checking' | 'same' | 'different';
 export function inflateText(state: InflateState): string {
   switch (state) {
-    case 'unavailable': return 'This browser has no deflate-raw stream, so the check is skipped. The tests decode the same bytes with Node’s zlib.';
+    case 'unavailable': return 'This browser has no deflate-raw stream, so the check is skipped. The lesson’s own checks decode the same bytes with a real inflate.';
     case 'checking': return 'Checking with the browser’s own inflate…';
     case 'same': return 'The browser’s own inflate read our bytes and returned the same text.';
     case 'different': return 'The browser’s own inflate returned different text: the stream is wrong.';

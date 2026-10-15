@@ -80,7 +80,7 @@ export function CanonicalScene({ picker }: { picker: ReactNode }) {
         </ul>
       </div>
       <ProvenanceRow>
-        <Provenance kind="real">the codes are assigned live by core/huffman&apos;s canonical rule, which the tests check against the RFC 1951 section 3.2.2 example</Provenance>
+        <Provenance kind="real">the codes are assigned live by the canonical rule of RFC 1951 section 3.2.2, which the lesson checks against that section&apos;s worked example</Provenance>
       </ProvenanceRow>
     </StageFrame>
   );

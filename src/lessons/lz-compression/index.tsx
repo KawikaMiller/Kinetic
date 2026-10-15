@@ -1,5 +1,5 @@
 import type { LessonModule } from '../../core/types';
-import { encodeFixedBlock } from './deflate';
+import { MAX_DISTANCE, distanceCode, encodeFixedBlock } from './deflate';
 import { decodeAsBlock, parseLz77, type Token } from './lz77';
 import { kraftSum } from '../../core/huffman';
 import { LENGTH_PRESETS, RFC_LENGTHS, assignCodes, compress, kraftOutOf256, orderZeroBits } from './model';
@@ -15,7 +15,9 @@ const A10_BLOCK_WRONG = decodeAsBlock(A10_TOKENS);
 const AB50 = compress('ab'.repeat(50), OPTS);
 const RFC = assignCodes(RFC_LENGTHS)!;
 const OVER = LENGTH_PRESETS.find((p) => p.id === 'over')!.lengths;
-const FAR_MATCH = encodeFixedBlock([{ kind: 'match', distance: 30000, length: 3, pos: 30000 }]).items[1].bits.length;
+const FAR_DISTANCE = 30000;
+const FAR_MATCH = encodeFixedBlock([{ kind: 'match', distance: FAR_DISTANCE, length: 3, pos: FAR_DISTANCE }]).items[1].bits.length;
+const FAR_EXTRA_BITS = distanceCode(FAR_DISTANCE).extraBits;
 const THREE_LITERALS = encodeFixedBlock(Array.from('abc', (char, pos): Token => ({ kind: 'literal', char, pos, best: 0 }))).items.slice(1, 4).reduce((s, i) => s + i.bits.length, 0);
 const RANDOM_OVERHEAD = 10;
 
@@ -32,7 +34,7 @@ const lesson: LessonModule = {
       'Reading a compressed stream or a format spec, where "length codes", "distance codes" and "canonical Huffman" are the vocabulary',
     ],
     why: 'Compression is everywhere between your code and the network. Knowing the two ideas separately tells you what a compressor can and cannot do: it removes repeats and skew, it cannot beat the information in random data, and it can make a short input larger.',
-    watch: 'Grey cells are literals and violet cells are back-references with a violet arc to where they copy from. The blue band is the window, the yellow cells are the token being decided, and cells far behind are dimmed. In Decode the yellow cell is the character just written, blue the one read, violet one read from the copy\'s own output, dim cells are not written yet and red cells never get written by the wrong decoder. In Canonical codes the Kraft bar is red above 1, green at exactly 1 and orange below. In the bit view grey is a literal code, violet a length or distance code, amber extra bits and blue the header and end of block.',
+    watch: 'Grey cells are literals and violet cells are back-references with a violet arc to where they copy from. The blue band is the window, the yellow cells are the token being decided, and cells far behind are dimmed. In Decode the yellow cell is the character just written, blue the one read, violet one read from the copy\'s own output, dim cells are not written yet and red cells never get written by the wrong decoder. In Canonical codes the Kraft bar is red above 1, green at exactly 1 and orange below. In the bit view\'s byte grid yellow is the byte being filled and blue the bytes already written; grey is a literal code, violet a length or distance code, amber extra bits and blue the header and end of block.',
   },
   tryThis: [
     `In LZ77 tokens press play, or step to the end: ${ABRA} becomes ${ABRA_TOKENS.map(label).join(' ')}, ${ABRA_TOKENS.length} tokens for ${ABRA.length} characters.`,
@@ -60,7 +62,7 @@ const lesson: LessonModule = {
       why: `Without repeats there is nothing to point back to. Each letter costs 8 bits, so 40 letters cost 320 bits plus the ${RANDOM_OVERHEAD} bits of header and end-of-block code. A bigger window cannot create repeats that are not there, and a compressor cannot shrink random data unless it finds structure in it.`,
     },
     {
-      q: `In fixed-Huffman DEFLATE, a 3-character match 30,000 characters back costs ${FAR_MATCH} bits and the same three characters as literals cost ${THREE_LITERALS}. What does that show?`,
+      q: `In fixed-Huffman DEFLATE, a 3-character match ${FAR_DISTANCE.toLocaleString('en-US')} characters back costs ${FAR_MATCH} bits and the same three ASCII letters as literals cost ${THREE_LITERALS}. What does that show?`,
       options: [
         'A match is not automatically a saving: its length code, distance code and extra bits can cost as much as the literals',
         'Matches are always cheaper than literals, so the figure is a rounding error in the code table',
@@ -68,7 +70,7 @@ const lesson: LessonModule = {
         'Distances beyond 255 are not allowed in DEFLATE, so this match could not be written at all',
       ],
       answer: 0,
-      why: `The match costs a ${FAR_MATCH}-bit sequence of length code, distance code and 13 distance extra bits, against ${THREE_LITERALS} bits for the literals, so it adds ${FAR_MATCH - THREE_LITERALS}. The format allows distances up to 32,768, and real compressors weigh the coded cost, not just the match length.`,
+      why: `The match costs a ${FAR_MATCH}-bit sequence of length code, distance code and ${FAR_EXTRA_BITS} distance extra bits, against ${THREE_LITERALS} bits for the literals, so it adds ${FAR_MATCH - THREE_LITERALS}. The format allows distances up to ${MAX_DISTANCE.toLocaleString('en-US')}, and real compressors weigh the coded cost, not just the match length.`,
     },
     {
       q: 'A decoder reads the tokens a, then (1, 9). One implementation copies the match as a single slice of the output so far. What does it produce?',

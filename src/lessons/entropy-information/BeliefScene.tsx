@@ -86,7 +86,7 @@ export function BeliefScene({ picker }: { picker: ReactNode }) {
             ariaLabel={`Entropy ${bits3(hp)} bits plus ${bitsOrUnbounded(extra)} extra bits`}
           />
           <p className="ent-note">
-            Violet is the entropy, red the extra bits; the bar stops at {BITS_BAR_MAX} bits. With a one-hot p (the true label has probability 1), H(p, q) is −log2 of the probability the model gave the true label: binary log loss, in bits. It sits beside the threshold metrics of <Link to="/lesson/classification-metrics">classification metrics</Link>.
+            Violet is the entropy, red the extra bits; the bar stops at {BITS_BAR_MAX} bits. With a one-hot p (the true label has probability 1), H(p, q) is −log2 of the probability the model gave the true label: log loss, here in bits. Libraries often report it in natural logs (nats), which scales every number by 0.693. It sits beside the threshold metrics of <Link to="/lesson/classification-metrics">classification metrics</Link>.
           </p>
         </div>
       </div>

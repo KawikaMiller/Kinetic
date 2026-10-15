@@ -119,7 +119,7 @@ export function DeflateScene({ picker, s }: { picker: ReactNode; s: ParseSetting
         </div>
       </div>
       <ProvenanceRow>
-        <Provenance kind="real">our fixed-Huffman block is a valid raw DEFLATE stream (the tests decode it with Node&apos;s zlib); the compressor that makes its tokens is a greedy toy</Provenance>
+        <Provenance kind="real">our fixed-Huffman block is a valid raw DEFLATE stream (the lesson&apos;s own checks decode it with a real inflate); the compressor that makes its tokens is a greedy toy</Provenance>
       </ProvenanceRow>
     </StageFrame>
   );

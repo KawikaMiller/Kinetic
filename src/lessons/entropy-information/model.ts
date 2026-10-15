@@ -119,7 +119,7 @@ export const GENERATORS: readonly { id: string; label: string; length: number; a
 ];
 export const GENERATOR_DEFAULT = GENERATORS[0];
 
-/** The 2^bits possibilities as a short power of ten (for 71.45 bits: "3.7e21"). Always finite: bits is at most 64 x log2 8192 = 832. */
+/** The 2^bits possibilities as a short power of ten (for 71.45 bits: "3.2e21"). Always finite: bits is at most 64 x log2 8192 = 832. */
 export const possibilities = (bits: number): string => (2 ** bits).toExponential(1).replace('e+', 'e');
 
 // ── Cross-entropy ────────────────────────────────────────────────────

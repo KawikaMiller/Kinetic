@@ -60,8 +60,11 @@ export function lengthCode(length: number): { code: number; extraBits: number; e
 }
 
 /** The distance symbol for a distance 1..32768, and its extra bits. */
+/** The farthest distance the format can name: the last bucket's base plus all its extra-bit values. */
+export const MAX_DISTANCE = DISTANCE_BASE[DISTANCE_BASE.length - 1] + 2 ** DISTANCE_EXTRA[DISTANCE_EXTRA.length - 1] - 1;
+
 export function distanceCode(distance: number): { code: number; extraBits: number; extra: number } {
-  if (distance < 1 || distance > 32768) throw new RangeError('DEFLATE distances run from 1 to 32768');
+  if (distance < 1 || distance > MAX_DISTANCE) throw new RangeError(`DEFLATE distances run from 1 to ${MAX_DISTANCE}`);
   let i = DISTANCE_BASE.length - 1;
   while (DISTANCE_BASE[i] > distance) i--;
   return { code: i, extraBits: DISTANCE_EXTRA[i], extra: distance - DISTANCE_BASE[i] };

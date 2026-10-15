@@ -162,7 +162,7 @@ export function QuestionsScene({ picker }: { picker: ReactNode }) {
           <ChipButton tone="ok" onClick={() => replace(optimalTree(), "The tree Huffman's merge builds: the lightest two items share the deepest question.")}>
             Show the best tree
           </ChipButton>
-          <ChipButton tone="bad" ariaLabel="Start over" onClick={() => replace(newTree(), 'Started over.')}>
+          <ChipButton tone="bad" onClick={() => replace(newTree(), 'Started over.')}>
             Reset
           </ChipButton>
           <Hint>The best tree is the one <Link to="/lesson/huffman-coding">Huffman coding</Link> builds from these probabilities.</Hint>
