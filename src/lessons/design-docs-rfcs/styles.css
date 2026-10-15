@@ -1,0 +1,59 @@
+.dd { gap: 14px; }
+.dd-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.dd-notes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.dd-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; }
+.dd-row.is-dropped { opacity: 0.5; }
+.dd-handle { cursor: grab; color: var(--faint); font-size: 16px; line-height: 1; user-select: none; }
+.dd-name { flex: 1 1 140px; justify-content: flex-start; }
+.dd-words { font: 500 12px var(--mono); color: var(--muted); }
+.dd-buttons { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+
+.dd-readers { display: flex; flex-direction: column; gap: 10px; }
+.dd-reader { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.dd-reader .meter { width: 100%; }
+
+.dd-cell { font: 500 12.5px var(--mono); white-space: nowrap; }
+.dd-cell.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.dd-cell.is-hi { color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.dd-cell.is-dim { color: var(--dim); }
+.dd-cell.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); font-weight: 700; }
+
+.dd-lint ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dd-lint li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.dd-found { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }
+.dd-costs { display: flex; flex-direction: column; gap: 8px; }
+
+.dd-options th[scope='row'] { text-transform: none; letter-spacing: 0; font: 600 13px var(--font); color: var(--text); }
+.dd-options td { white-space: nowrap; }
+.dd-options tr.is-dim td, .dd-options tr.is-dim th { opacity: 0.55; }
+.dd-options tr.is-chosen th { box-shadow: inset 3px 0 0 var(--hi); }
+.dd-bad { color: var(--bad); }
+.dd-unit, .dd-scaled { color: var(--faint); font-size: 11.5px; }
+.dd-flip p, .dd-flip ul { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; padding-left: 0; list-style: none; }
+.dd-adr { display: flex; flex-direction: column; gap: 10px; }
+.dd-adr-edit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.dd-history { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+
+.dd-scenario { display: flex; flex-direction: column; gap: 14px; }
+.dd-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.dd-meter { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.dd-meter .is-bad, .dd-preview.is-bad { color: var(--bad); }
+.dd-preview { font: 500 12px var(--mono); color: var(--muted); }
+.dd-prompt { margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; }
+.dd-choices { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.dd-choice { text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--bg); color: var(--text); font: 500 14px var(--font); cursor: pointer; }
+.dd-choice.is-on { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.dd-because { font-size: 13px; line-height: 1.5; color: var(--muted); font-weight: 400; }
+.dd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dd-ending-title { margin: 6px 0 0; font: 700 15px var(--font); }
+.dd-ending p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; }
+.dd-ledger ol { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.dd-ledger li { display: flex; flex-direction: column; gap: 4px; }
+.dd-effects { display: flex; flex-wrap: wrap; gap: 4px; }
+
+@media (max-width: 900px) {
+  .dd-split, .dd-meters { grid-template-columns: minmax(0, 1fr); }
+}
