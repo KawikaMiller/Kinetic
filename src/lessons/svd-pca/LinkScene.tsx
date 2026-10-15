@@ -22,7 +22,7 @@ export function LinkScene({ picker }: { picker: ReactNode }) {
       introKey={[seed]}
       stats={
         <Stats>
-          <Stat label="Data" value={`${SMALL_ROWS} × ${SMALL_FEATURES}`} sub="centred, seeded" />
+          <Stat label="Data" value={`${SMALL_ROWS} × ${SMALL_FEATURES}`} sub="centred, seeded; 8 rows is the most the lesson's small SVD takes" />
           <Stat label="Largest difference" value={gap.toExponential(1)} color="var(--ok)" sub="between the two routes" />
         </Stats>
       }

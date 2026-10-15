@@ -4,7 +4,7 @@ import {
   rebuild, residualSumSquares, smallData, storageOfImage, storageOfRank, svdOf, svdVersusCovariance,
 } from './model';
 import { Stage } from './Stage';
-import { n3 } from './text';
+import { n3, sig2 } from './text';
 
 const NOISE = imageOf('noise');
 const NOISE_SVD = svdOf(NOISE);
@@ -18,6 +18,9 @@ const SKIP = applyMistakes(BODY, { ...DEFAULT_MISTAKES, centre: false });
 const STANDARDISED = applyMistakes(BODY, { ...DEFAULT_MISTAKES, standardise: true });
 const METRES = applyMistakes(BODY, DEFAULT_MISTAKES);
 const CENTIMETRES = applyMistakes(BODY, { ...DEFAULT_MISTAKES, units: 'cm' });
+const CENTIMETRES_SKIP = applyMistakes(BODY, { ...DEFAULT_MISTAKES, units: 'cm', centre: false });
+const [SPREAD_HEIGHT_M, SPREAD_WEIGHT] = METRES.spreads;
+const VARIANCE_RATIO = Math.round((SPREAD_WEIGHT / SPREAD_HEIGHT_M) ** 2).toLocaleString('en-US');
 const CLASSES = classData();
 const CLASS_PCA = pcaOf(CLASSES.map((c) => c.point));
 const CLASS_LABELS = CLASSES.map((c) => c.label);
@@ -38,13 +41,13 @@ const lesson: LessonModule = {
       'Spotting that two features carry almost the same information, because one axis holds nearly all the variance',
     ],
     why: 'Dimensionality reduction is everywhere in data work, and it fails in quiet ways: forgetting to centre, mixing units, or assuming the biggest direction is the useful one. Seeing the mechanism, and these failures computed, lets you trust or distrust a plot of "the first two components".',
-    watch: 'Grey cells are the original image, green the rebuild and the kept terms, and red the error and the discarded terms. In the point cloud, the yellow arrow is the first principal axis, the violet one the second, blue dots are projected points and orange lines are the residuals. A red ring is a wrong first axis from skipping the centring. The two classes are amber and sky blue, and the dashed grey arrow is the direction of the mean.',
+    watch: 'Grey cells are the original image, green the rebuild and the kept terms, and red the error and the discarded terms. In the point cloud, the yellow arrow is the first principal axis, the violet one the second, blue dots are projected points and orange lines are the residuals. In Ways to get it wrong the grey ring is the mean that centring subtracts and the hollow grey dots are the cloud before it moved. A red ring is a wrong first axis from skipping the centring. The two classes are amber and sky blue, and the dashed grey arrow is the direction of the mean.',
   },
   tryThis: [
     `In An image from its top terms press Stripes: the error is ${n3(STRIPES_ERROR_1)} from k = 1, because identical rows make a rank-1 image. Then press Noise and set k = 4: the error is still ${n3(NOISE_ERROR_4)} and the rank-4 form needs ${storageOfRank(4)} numbers against ${storageOfImage()}.`,
     `In PCA on a point cloud turn Project onto PC1 on: the squared residual reads ${n3(RESIDUAL)}, which is n × λ₂ = ${n3(CLOUD.length * CLOUD_PCA.values[1])}. Then drag Rotate to principal axes to 100% and the first axis lies along x.`,
-    `In Ways to get it wrong press Skip centring: the first axis points at ${SKIP.angle1.toFixed(1)}°, toward the mean at ${SKIP.meanAngle.toFixed(1)}°, instead of the correct ${METRES.angle1.toFixed(1)}°. Press Standardise and it sits at ${STANDARDISED.angle1.toFixed(1)}°.`,
-    `In Variance is not the question the best single cut sorts ${pct(PC1_ACC)} of the points on PC1 and ${pct(PC2_ACC)} on PC2, although PC1 holds ${pct(CLASS_PCA.explained ?? 0)} of the variance.`,
+    `In Ways to get it wrong the cloud starts centred on the origin and the first axis sits at ${METRES.angle1.toFixed(1)}°: in metres it follows the weight, whose spread is larger in these units. Press Skip centring: the cloud jumps back out to its mean, the axes still start at the origin, and the first axis swings to ${SKIP.angle1.toFixed(1)}°, toward the mean at ${SKIP.meanAngle.toFixed(1)}°; the move is small only because raw metres already point at the weight. Press centimetres: the same mistake now reads ${CENTIMETRES_SKIP.angle1.toFixed(1)}° where the centred axis is ${CENTIMETRES.angle1.toFixed(1)}°. Press Standardise and it sits at ${STANDARDISED.angle1.toFixed(1)}°.`,
+    `In Variance is not the question the best single cut (chosen on these same points) sorts ${pct(PC1_ACC)} of them on PC1 and ${pct(PC2_ACC)} on PC2, although PC1 holds ${pct(CLASS_PCA.explained ?? 0)} of the variance.`,
     `In SVD and PCA agree the first row reads σ² ÷ (n − 1) = ${n3(LINK[0].fromSvd)} on the SVD side and ${n3(LINK[0].fromCovariance)} on the covariance side; press New seed and the two columns still match.`,
   ],
   keyIdeas: [
@@ -57,7 +60,7 @@ const lesson: LessonModule = {
     {
       q: 'Two classes are spread widely along x but differ only along y, a small spread. You project onto PC1 and then PC2. Which keeps the classes apart?',
       options: [
-        `PC2: PCA keeps the direction of most spread, which is x, so PC1 mixes the classes (${pct(PC1_ACC)} against ${pct(PC2_ACC)} here)`,
+        `PC2: PCA keeps the widest direction, x, so PC1 mixes the classes (${pct(PC1_ACC)} against ${pct(PC2_ACC)} here)`,
         `PC1: the direction of most variance is always the most informative about the classes (${pct(PC1_ACC)} here)`,
         'Neither: a projection onto one axis cannot separate two classes whatever the data',
         'Both equally, since the two principal axes are perpendicular and carry the same information',
@@ -79,13 +82,13 @@ const lesson: LessonModule = {
     {
       q: 'Heights are in metres and weights in kilograms, and you run PCA on the raw columns. What does the first axis follow?',
       options: [
-        `Mostly the kilograms: the feature with the larger numbers dominates the variance (the axis sits at ${METRES.angle1.toFixed(0)}°)`,
-        `The height, because height and weight are the same size once both are centred`,
-        `The correlation line between height and weight, whatever the units are`,
-        `Nothing in particular: raw columns give a random axis that changes from run to run`,
+        `Mostly the kilograms: their spread (about ${sig2(SPREAD_WEIGHT)} kg) dwarfs the height's (about ${sig2(SPREAD_HEIGHT_M)} m), and raw PCA follows spread (axis at ${METRES.angle1.toFixed(0)}°)`,
+        'The height, because centring removes the units and leaves height and weight on an equal footing in the first axis, so the heights lead',
+        'The correlation line between height and weight, whatever the units are, since PCA looks only at how the two features move together',
+        'Nothing in particular: the units are arbitrary, so raw columns give a random axis that changes from run to run of the same data',
       ],
       answer: 0,
-      why: `The variance of the weights is thousands of times that of the heights in metres, so PC1 points almost along weight (${METRES.angle1.toFixed(1)}°); in centimetres it moves to ${CENTIMETRES.angle1.toFixed(1)}°. Standardising each feature gives ${STANDARDISED.angle1.toFixed(1)}°, whatever the units.`,
+      why: `Raw PCA compares the variances of the features in the units given: the weights' variance is about ${VARIANCE_RATIO} times the heights' in metres, so PC1 points almost along weight (${METRES.angle1.toFixed(1)}°). It is the spread that decides, not the size of the numbers: in centimetres the heights (about 170) are larger numbers than the weights (about 70), yet spreads of ${sig2(CENTIMETRES.spreads[0])} and ${sig2(CENTIMETRES.spreads[1])} put PC1 at ${CENTIMETRES.angle1.toFixed(1)}°, between the features. Standardising each feature gives ${STANDARDISED.angle1.toFixed(1)}°, whatever the units.`,
     },
     {
       q: 'For centred data with n rows, how do the singular values of the data matrix relate to the covariance eigenvalues?',
@@ -93,7 +96,7 @@ const lesson: LessonModule = {
         'Each singular value squared, divided by n − 1, is an eigenvalue of the sample covariance',
         'Each singular value itself equals the matching eigenvalue of the covariance matrix',
         'They are unrelated: the SVD is for images and PCA is for tables of features',
-        'The singular values are the square roots of the covariance eigenvalues, with no factor of n',
+        'The singular values are the square roots of the covariance eigenvalues, with no scaling factor at all',
       ],
       answer: 0,
       why: `If X is centred, XᵀX ÷ (n − 1) is the sample covariance, and the eigenvalues of XᵀX are the squared singular values of X. In the lesson's seeded 8 × 3 data the first pair reads ${n3(LINK[0].fromSvd)} and ${n3(LINK[0].fromCovariance)}.`,

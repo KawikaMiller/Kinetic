@@ -54,7 +54,7 @@ describe('try-this entries, from the default state, as written', () => {
     const p = pcaOf(pts);
     const [a1, a2] = p.axes.map((ax) => bestThresholdAccuracy(alongAxis(pts, p.mean, ax), labels));
     expect(a2).toBeGreaterThan(a1 + 0.2);
-    expect(lesson.tryThis[3]).toContain(`${(a1 * 100).toFixed(1)}% of the points on PC1`);
+    expect(lesson.tryThis[3]).toContain(`${(a1 * 100).toFixed(1)}% of them on PC1`);
     expect(lesson.tryThis[3]).toContain(`${(a2 * 100).toFixed(1)}% on PC2`);
   });
 

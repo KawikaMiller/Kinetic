@@ -165,21 +165,40 @@ export interface MistakeResult {
   meanAngle: number;
   /** Correlation of the two features. */
   rho: number;
+  /** Standard deviation (population) of each feature in the chosen units, before any standardising. */
+  spreads: [number, number];
+  /** The mean of each feature in the chosen units: what centring subtracts. */
+  means: [number, number];
 }
 
 const lineDegrees = (v: readonly number[]) => (((Math.atan2(v[1], v[0]) * 180) / Math.PI) % 180 + 180) % 180;
 
-export function applyMistakes(data: readonly P2[], o: Mistakes): MistakeResult {
+interface Prepared {
+  /** The features in the chosen units. */
+  scaled: P2[];
+  mean: P2;
+  sd: [number, number];
+  /** What PCA is run on: centred, standardised, or (the mistake) the scaled data as they are. */
+  prepared: P2[];
+}
+
+function prepare(data: readonly P2[], o: Mistakes): Prepared {
   const n = data.length;
   const scaled: P2[] = data.map(([x, y]) => [o.units === 'cm' ? x * CM_PER_M : x, y]);
   const m = meanOf(scaled);
-  const sd = [0, 1].map((j) => Math.sqrt(scaled.reduce((s, p) => s + (p[j] - m[j]) ** 2, 0) / n));
-  const rho = scaled.reduce((s, p) => s + ((p[0] - m[0]) * (p[1] - m[1])), 0) / n / (sd[0] * sd[1]);
+  const sd = [0, 1].map((j) => Math.sqrt(scaled.reduce((s, p) => s + (p[j] - m[j]) ** 2, 0) / n)) as [number, number];
   const prepared: P2[] = o.standardise
     ? scaled.map((p) => [(p[0] - m[0]) / sd[0], (p[1] - m[1]) / sd[1]])
     : o.centre
       ? scaled.map((p) => [p[0] - m[0], p[1] - m[1]])
       : scaled;
+  return { scaled, mean: [m[0], m[1]], sd, prepared };
+}
+
+export function applyMistakes(data: readonly P2[], o: Mistakes): MistakeResult {
+  const n = data.length;
+  const { scaled, mean: m, sd, prepared } = prepare(data, o);
+  const rho = scaled.reduce((s, p) => s + ((p[0] - m[0]) * (p[1] - m[1])), 0) / n / (sd[0] * sd[1]);
   // Second-moment matrix about the origin: the covariance when the data are centred, something else when not.
   const S = [[0, 0], [0, 0]];
   for (const p of prepared) for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) S[i][j] += (p[i] * p[j]) / n;
@@ -192,7 +211,30 @@ export function applyMistakes(data: readonly P2[], o: Mistakes): MistakeResult {
     explained: e.values[0] / (e.values[0] + e.values[1]),
     meanAngle: lineDegrees(meanVec),
     rho,
+    spreads: sd,
+    means: m,
   };
+}
+
+export interface MistakeCloud {
+  /** The points PCA runs on, drawn at a common scale so that angles are true. */
+  points: P2[];
+  /** The data before centring (not drawn when they are what PCA runs on, or when standardising changes the scale). */
+  before: P2[] | null;
+  /** Where the mean sits at that scale: the point that centring moves to the origin. */
+  mean: P2;
+}
+
+/** Everything scene 3 draws, scaled so the farthest coordinate of the unprepared data is 1 (the axes keep their true angle). */
+export function mistakeCloud(data: readonly P2[], o: Mistakes): MistakeCloud {
+  const { scaled, mean, prepared } = prepare(data, o);
+  if (o.standardise) {
+    const reach = Math.max(...prepared.flat().map(Math.abs));
+    return { points: prepared.map(([x, y]) => [x / reach, y / reach]), before: null, mean: [0, 0] };
+  }
+  const reach = Math.max(...scaled.flat().map(Math.abs));
+  const at = (p: P2): P2 => [p[0] / reach, p[1] / reach];
+  return { points: prepared.map(at), before: o.centre ? scaled.map(at) : null, mean: at(mean) };
 }
 
 // ── Scene 4: variance is not information about the question ──────────

@@ -6,6 +6,7 @@ import { MAX_POINTS, PLOT_DOMAIN, axisAngle, clampToDomain, cloudPoints, pcaOf, 
 import { cloudCaption, n3 } from './text';
 
 const ROTATE_STEPS = 100;
+const MEAN_RING = 7;
 
 export function CloudScene({ picker }: { picker: ReactNode }) {
   const [points, setPoints] = useState<P2[]>(() => cloudPoints());
@@ -33,7 +34,7 @@ export function CloudScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Explained variance" value={pca.explained === null ? '–' : `${(pca.explained * 100).toFixed(1)}%`} color="var(--hi)" sub="λ₁ ÷ (λ₁ + λ₂)" />
-          <Stat label="Eigenvalues" value={`${n3(pca.values[0])}, ${n3(pca.values[1])}`} color="var(--violet)" sub="of the covariance" />
+          <Stat label="Eigenvalues" value={`${n3(pca.values[0])}, ${n3(pca.values[1])}`} color="var(--violet)" sub="of the population covariance (divided by n)" />
           <Stat label="Squared residual" value={projected ? n3(residual) : '–'} color="var(--orange)" sub={projected ? `n × λ₂ = ${n3(points.length * pca.values[1])}` : 'turn on Project'} />
         </Stats>
       }
@@ -41,6 +42,7 @@ export function CloudScene({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--info)', label: 'a data point', shape: 'dot' },
+            { color: 'var(--muted)', label: 'the mean (ringed): PCA subtracts it first', shape: 'dot' },
             { color: 'var(--hi)', label: 'first axis PC1', shape: 'line' },
             { color: 'var(--violet)', label: 'second axis PC2', shape: 'line' },
             { color: 'var(--orange)', label: 'residual lines', shape: 'line' },
@@ -64,6 +66,7 @@ export function CloudScene({ picker }: { picker: ReactNode }) {
       <div className="sp-stage stage-pad">
         <Plot2D x={{ domain: PLOT_DOMAIN, ticks: 5 }} y={{ domain: PLOT_DOMAIN, ticks: 5 }} aspect="equal" width={356} ariaLabel={`${points.length} points with their principal axes`}>
           <PointerLayer onDown={(p) => add([p[0], p[1]])} />
+          {hasAxes && <Points data={[{ x: pca.mean[0], y: pca.mean[1], tone: 'muted', hollow: true }]} r={MEAN_RING} />}
           {projected && hasAxes && <Segments segments={shown.map((p, i) => ({ from: p, to: proj[i], tone: 'orange' as const }))} />}
           {hasAxes && <Arrow from={pca.mean} to={[pca.mean[0] + sd[0] * axes[0][0], pca.mean[1] + sd[0] * axes[0][1]]} tone="hi" label="PC1" />}
           {hasAxes && pca.degenerate === 'none' && <Arrow from={pca.mean} to={[pca.mean[0] + sd[1] * axes[1][0], pca.mean[1] + sd[1] * axes[1][1]]} tone="violet" label="PC2" />}
