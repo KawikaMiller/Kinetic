@@ -35,4 +35,5 @@
 .ja-cost tr.is-cheapest td { color: var(--ok); }
 .ja-cost tr.is-dearest td { color: var(--bad); }
 .ja-cost tr.is-refused td { color: var(--dim); }
-.ja-result .ja-tray { flex-wrap: wrap; overflow-x: visible; }
+.ja-result .tray:not(.is-stacked) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.ja-result .tray .section-title { flex-basis: 100%; }

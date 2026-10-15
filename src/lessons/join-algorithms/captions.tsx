@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ratioText } from '../../core/format';
+import { plural, ratioText } from '../../core/format';
 import { SHORT_LABEL, type Cond, type Tables, type VerdictRow } from './join';
 
 const names = (rows: readonly VerdictRow[], verdict: VerdictRow['verdict']): string => {
@@ -21,7 +21,7 @@ export function costCaption(rows: readonly VerdictRow[], t: Tables, cond: Cond):
   }
   return (
     <>
-      On {t.a.length} customers and {t.b.length} orders the cheapest is <span className="hl ok">{names(rows, 'cheapest')}</span> at {best.cost} {best.cost === 1 ? 'unit' : 'units'}
+      On {plural(t.a.length, 'customer')} and {plural(t.b.length, 'order')} the cheapest is <span className="hl ok">{names(rows, 'cheapest')}</span> at {best.cost} {best.cost === 1 ? 'unit' : 'units'}
       {worst ? <>; the dearest is <span className="hl bad">{names(rows, 'dearest')}</span> at {worst.cost}, {ratioText(worst.cost! / Math.max(1, best.cost!))}× as much</> : <>; every algorithm costs the same here</>}.
     </>
   );

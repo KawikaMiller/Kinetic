@@ -81,15 +81,15 @@ const lesson: LessonModule = {
       why: 'Rows with the same key land in the same batch on both sides, so each batch can be joined on its own. The spilled rows are written and read back, which is the extra cost the memory limit adds.',
     },
     {
-      q: 'When does a merge join beat a hash join in this lesson\'s unit?',
+      q: 'An index already supplies the order of both inputs to a merge join. Which part of its cost goes away?',
       options: [
-        'When both inputs already arrive sorted on the key, so no sorting is counted',
-        'When the tables are too big for memory, because sorting never needs memory',
-        'When the join condition is an inequality, since a sorted run answers ranges',
-        'When one table has duplicate keys, since a merge skips repeated keys',
+        'The sort of both sides: only the single pass over the two sorted inputs is left',
+        'The pass over both inputs, because an index already holds the pairs that match',
+        'The hash table, since a merge join builds one from the rows once they are sorted',
+        'The key comparisons, because rows that arrive in order never have to be compared',
       ],
       answer: 0,
-      why: 'Sorting both sides is the bulk of a merge join\'s cost. With an index supplying the order that cost is zero and just the single pass is left, which beats the build and probe operations.',
+      why: `Sorting is the bulk of a merge join's cost: on the default tables ${mergeSort.sortComparisons} of its ${mergeSort.work} units. With the order supplied it drops to ${mergePre.work}, which is still a little more than the hash join's ${unit('hash')}: the order saves the sort, it does not make merge beat hash.`,
     },
     {
       q: 'The customers table has a NULL key on one row and the orders table has a NULL key on another. Does an equality join pair them?',

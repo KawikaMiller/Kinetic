@@ -3,7 +3,7 @@ import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { costCaption } from './captions';
 import { hashFrames, mergeFrames, nestedFrames, type JoinFrame } from './frames';
-import { BUCKETS, SHORT_LABEL, bruteForce, cheapestAndDearest, costTable, hashJoin, hashPlan, mergeJoin, nestedLoop, withVerdicts, type Row, type Tables } from './join';
+import { BUCKETS, SHORT_LABEL, UNIT_SENTENCE, bruteForce, cheapestAndDearest, costTable, hashJoin, hashPlan, mergeJoin, nestedLoop, withVerdicts, type Row, type Tables } from './join';
 import { DEFAULT_SPEC, makeTables, type Shape, type TableSpec } from './tables';
 import lesson from './index';
 
@@ -177,6 +177,43 @@ describe('hidden controls (AC-0/T3 #17)', () => {
         }
       }
     }
+  });
+});
+
+describe('the unit and quiz Q4, against the cost table', () => {
+  it('the one unit names every kind of count a row of the cost table makes, index node visits included', () => {
+    expect(UNIT_SENTENCE).toContain('key comparisons');
+    expect(UNIT_SENTENCE).toContain('hash operations');
+    expect(UNIT_SENTENCE).toContain('sort comparisons');
+    expect(UNIT_SENTENCE).toContain('index node visits');
+  });
+
+  it('Q4: the sort is what an index-supplied order removes, the numbers quoted are the table\'s, and presorted merge does not beat hash at the defaults', () => {
+    const merge = cost(T, 'merge');
+    const presorted = cost(T, 'mergeSorted');
+    const hash = cost(T, 'hash');
+    expect(merge - presorted).toBe(mergeJoin(T, false).sortComparisons);
+    expect(presorted).toBeGreaterThan(hash);
+    const q = lesson.quiz[3];
+    expect(q.why).toContain(`${mergeJoin(T, false).sortComparisons} of its ${merge} units`);
+    expect(q.why).toContain(`drops to ${presorted}`);
+    expect(q.why).toContain(`hash join's ${hash}`);
+    expect(q.options[q.answer]).toContain('sort of both sides');
+  });
+
+  it('across every shape and size, presorted merge is cheaper than hash in a minority of combinations: "merge beats hash when presorted" is not a rule the lesson may teach', () => {
+    let cheaper = 0;
+    let total = 0;
+    for (const shape of ['default', 'manyToMany', 'nulls'] as Shape[]) {
+      for (let sizeA = 4; sizeA <= 16; sizeA++) {
+        for (let sizeB = 4; sizeB <= 16; sizeB++) {
+          const t = makeTables({ shape, sizeA, sizeB, oneCustomer: false });
+          total++;
+          if (cost(t, 'mergeSorted') < cost(t, 'hash')) cheaper++;
+        }
+      }
+    }
+    expect(cheaper / total).toBeLessThan(0.25);
   });
 });
 

@@ -2,8 +2,11 @@
  * The three join algorithms as pure code, each returning the joined pairs, the counters the lesson
  * teaches with and the events a step player replays. A row is `{ id, key }`; a NULL key never matches
  * (as in SQL), so the algorithms skip NULL-key rows where a real engine would too.
- * One unit of cost, defined once (AC-0/T3 #18): key comparisons plus hash operations plus sort comparisons.
+ * One unit of cost, defined once (AC-0/T3 #18): see UNIT_SENTENCE.
  */
+
+/** The one unit, stated once for every row of every table and caption. An index node visit is counted as one unit: a toy simplification. */
+export const UNIT_SENTENCE = 'key comparisons, plus hash operations, plus sort comparisons, plus index node visits (one per tree level of a probe)';
 
 export interface Row {
   /** The row's label within its table, 1-based, never changes when a key is edited. */

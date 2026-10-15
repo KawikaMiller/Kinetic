@@ -15,7 +15,7 @@ export function ResultPanel({ tables }: { tables: Tables }) {
       <p className={`ja-agree ${agree ? 'is-ok' : 'is-bad'}`} role="status">
         {agree ? `Nested loop, index nested loop, hash join (in memory and spilling) and merge join all return the same ${pairs.length} ${pairs.length === 1 ? 'pair' : 'pairs'}.` : 'The algorithms disagree on this input.'}
       </p>
-      <Tray className="ja-tray" label="Joined rows (customer, order)" empty="no pairs: no key in common" ariaLabel="Joined rows">{chips}</Tray>
+      <Tray label="Joined rows (customer, order)" empty="no pairs: no key in common" ariaLabel="Joined rows">{chips}</Tray>
     </div>
   );
 }

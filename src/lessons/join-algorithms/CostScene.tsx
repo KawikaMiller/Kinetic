@@ -5,7 +5,7 @@ import { useSortedRows } from '../../components/useSortedRows';
 import { useIntroCaption } from '../../core/caption';
 import { ratioText } from '../../core/format';
 import { JoinGrids } from './JoinGrids';
-import { SHORT_LABEL, cheapestAndDearest, costTable, withVerdicts, type Cond, type VerdictRow } from './join';
+import { SHORT_LABEL, UNIT_SENTENCE, cheapestAndDearest, costTable, withVerdicts, type Cond, type VerdictRow } from './join';
 import { TableControls } from './TableControls';
 import type { TableState } from './useTableState';
 import { costCaption } from './captions';
@@ -63,10 +63,10 @@ export function CostScene({ state, picker }: { state: TableState; picker: ReactN
             </tbody>
           </table>
         </div>
-        <p className="ja-note">One unit, applied to every row: key comparisons, plus hash operations, plus sort comparisons. Spilling is not in it, so the memory limit does not feed this table.</p>
+        <p className="ja-note">One unit, applied to every row: {UNIT_SENTENCE}. A node visit is counted as one unit, a toy simplification. Spilling is not in it, so the memory limit does not feed this table. SQLite, which this lesson&apos;s tests check the join&apos;s rows against, joins by nested loops and builds an automatic index when that helps (its EXPLAIN QUERY PLAN shows it); it has no hash or merge join.</p>
         <JoinGrids tables={state.tables} aMark={NO_MARKS} bMark={NO_MARKS} selected={state.selected} onSelect={state.select} />
         <ProvenanceRow>
-          <Provenance kind="toy">counts in one unit on small teaching tables, not seconds</Provenance>
+          <Provenance kind="toy">counts in one unit (comparisons, hash operations, sort comparisons and index node visits, each one) on small teaching tables, not seconds</Provenance>
           <Provenance kind="not-run">which algorithm PostgreSQL&apos;s planner would pick for these tables is shown by no run here: it weighs more than this unit</Provenance>
         </ProvenanceRow>
       </div>
