@@ -1490,6 +1490,29 @@ WIRE, WIRE_NAME, INT32_MIN/MAX, INT64_MIN/MAX
   new ones on sign extension. The lesson's remaining tests are unchanged and pass; its default-scene shot is identical to the unmodified tree's (pure logic moved, so no other
   scene was driven).
 
+### `core/expr.ts` — debugger-tools; later coverage-mutation-testing (compiler-optimisations, undefined-behavior may follow)
+```ts
+evaluate('total * 0.9', [locals, script])                    // { ok: true, value } | { ok: false, error, unsupported }
+evaluate('weight > 10 ? base + 1 : base', scope, { ternary: true })
+const tree = parseExpr(src, { ternary: true })               // ExprNode: lit | name | member | unary | binary | ternary
+runTree(tree, scope)                                         // throws Unsupported / EvalError; run a mutant by running an edited copy
+preview(value, bare?)                                        // the DevTools console's one-line preview
+type Value, Vars, Scope                                      // Scope = Vars[], innermost first
+```
+- A hand-written evaluator, no `eval` and no `new Function`: a lexer and a precedence-climbing parser for numbers, strings, `true false null undefined`, names,
+  `a.b`, `a[expr]`, `.length`, unary `! - +`, `* / % + -`, comparisons, `=== !== == !=`, `&& || ??` and parentheses, run with JavaScript's own operators so
+  the answers are real. Calls, assignment, `++`, arrows, templates, `new`, optional chaining and the rest are "not supported here" and never run; members read
+  own data only (nothing inherited, so nothing callable comes back); real globals are "unsupported", never "not defined".
+- **`{ ternary: true }` adds `test ? a : b`** (lowest precedence, right-associative, evaluates only the branch taken). It is an option, not the default, so
+  debugger-tools' watch, console and condition boxes keep the subset their `SUPPORTED` line documents (a ternary there is still "not supported here").
+- **The tree is exposed**: `ExprNode` and `parseExpr` are exported, with `runTree` to run a tree. A mutant is a copy with one node edited (an operator, a literal
+  off by one, swapped ternary branches, a negation), run against the same scope; `core/expr.test.ts` builds a `>` to `>=` mutant that is equivalent over an
+  integer domain and a swapped-branch one that is not, from the `cost(weight, express)` function the mutation lesson uses.
+- Extracted from `debugger-tools/expr.ts`; the lesson keeps `watch.ts` (its `SUPPORTED` text, `logLine`, `splitArgs`) and imports `Value` and `Vars` from here instead of `program.ts`.
+  Its evaluator tests stay with the lesson (they run against its real trace scope); `core/expr.test.ts` adds the ternary, tree and mutant tests. A pretty-printer for a tree
+  (the mutation lesson prints it into a `CodePanel`) is not here: that lesson writes it, as the second user, and files it if a third wants it.
+- The lesson's default shot is pixel-identical to the unmodified tree's.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

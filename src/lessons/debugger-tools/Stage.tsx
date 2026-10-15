@@ -9,10 +9,10 @@ import { Button, Hint, Legend, Segmented, Stat, Stats, TextField } from '../../c
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { changedVars, move, scopeOf, stepsToLineByStepInto, type Action, type Breakpoint, type BreakpointKind, type ConsoleEntry, type Move } from './debugger';
-import { evaluate, preview, type Scope } from './expr';
 import { INLINE_VARS, L, PAUSABLE, SOURCE, TRACE, fnOfLine, type FrameSnap, type Pause } from './program';
 import { BreakpointDot, CheatSheet, ScopePane, WatchPane, type ScopeSection } from './panels';
 import './styles.css';
+import { evaluate, preview, type Scope } from '../../core/expr';
 
 type Scene = 'debug' | 'sheet';
 const SCENES = [

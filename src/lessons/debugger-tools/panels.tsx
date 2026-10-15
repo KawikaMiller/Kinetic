@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Button, ChipButton, TextField } from '../../components/ui';
 import type { BreakpointKind } from './debugger';
-import { SUPPORTED, evaluate, preview, type Scope } from './expr';
-import type { Value, Vars } from './program';
+import { SUPPORTED } from './watch';
+import { evaluate, preview, type Scope, type Value, type Vars } from '../../core/expr';
 
 /** A breakpoint marker; shape as well as colour, so it reads without colour too. */
 export function BreakpointDot({ kind }: { kind: BreakpointKind | null }) {
