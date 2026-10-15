@@ -3,11 +3,11 @@ import type { Pt } from '../core/geometry';
 import { gridGeometry, gridKeyTarget, type Cell } from '../core/grid';
 import { paintImage } from './canvasImage';
 import { canvasFill, canvasInk, canvasStroke, cellFill, DEFAULT_TINT, textReadable, type CellSize, type GridCellSpec, type SizePreset } from './cellGridPaint';
-import { cellGridFrame, cellGridLayout, GRID_LABEL, type CellGridGeometry } from './cellGridLayout';
+import { BAND_PAD, cellGridFrame, cellGridLayout, GRID_LABEL, RAIL_WIDTH, type CellGridGeometry, type RowDecorFn } from './cellGridLayout';
 import type { Tone } from '../core/tone';
 
 export type { CellSize, GridCellSpec } from './cellGridPaint';
-export type { CellGridGeometry, CellGridShape } from './cellGridLayout';
+export type { CellGridGeometry, CellGridShape, RowDecor } from './cellGridLayout';
 export { MIN_TEXT_PX } from './cellGridPaint';
 
 export interface GridHighlight {
@@ -60,6 +60,11 @@ interface CellGridProps {
   gap?: number;
   /** Extra text after each row (ByteGrid's ASCII column): width in drawing units plus a renderer. */
   rowSuffix?: { width: number; render: (r: number) => ReactNode };
+  /**
+   * A tone for a whole row: `style: 'rail'` (default) draws a bar left of the cells, `'band'` a wash
+   * behind them, and `label` is text after the row. Works in SVG and canvas mode; omitted, nothing changes.
+   */
+  rowDecor?: RowDecorFn;
   /** SVG drawn over the cells (and rings), in the grid's coordinates; it doesn't take pointer events. */
   overlay?: (geometry: CellGridGeometry) => ReactNode;
   ariaLabel?: string;
@@ -68,9 +73,9 @@ interface CellGridProps {
 
 function CellGridImpl({
   rows, cols, cell, rowLabels, colLabels, onCellClick, cellTitle, cellAriaLabel, highlight = [], size = 'sm', gap,
-  rowSuffix, overlay, ariaLabel, className = '', at,
+  rowSuffix, rowDecor, overlay, ariaLabel, className = '', at,
 }: CellGridProps & { at?: Pt }) {
-  const { size: s, rowLabelWidth, geo, width } = cellGridFrame({ rows, cols, rowLabels, colLabels, size, gap, rowSuffix });
+  const { size: s, rowLabelWidth, railGutter, decors, decorLabelX, geo, width } = cellGridFrame({ rows, cols, rowLabels, colLabels, size, gap, rowSuffix, rowDecor });
   const canvasMode = rows * cols > CANVAS_THRESHOLD;
   const clickable = !!onCellClick;
   const [focus, setFocus] = useState<Cell>({ r: 0, c: 0 });
@@ -106,13 +111,23 @@ function CellGridImpl({
 
   const body = (
     <>
+      {decors.map((d, r) => {
+        if (!d) return null;
+        const { x, y } = geo.at(r, 0);
+        const tone = d.tone ? `tone-${d.tone}` : '';
+        return d.style === 'band' ? (
+          <rect key={`d${r}`} className={`cellgrid-band ${tone}`} x={geo.x0 - BAND_PAD} y={y - BAND_PAD} width={geo.width - geo.x0 + 2 * BAND_PAD} height={s.cell + 2 * BAND_PAD} rx={BAND_PAD} />
+        ) : (
+          <rect key={`d${r}`} className={`cellgrid-rail ${tone}`} x={x - railGutter} y={y} width={RAIL_WIDTH} height={s.cell} rx={RAIL_WIDTH / 2} />
+        );
+      })}
       {colLabels?.map((label, c) => (
         <text key={`c${c}`} className="cellgrid-label" x={geo.at(0, c).x + s.cell / 2} y={LABEL_FONT} textAnchor="middle">
           {label}
         </text>
       ))}
       {rowLabels?.map((label, r) => (
-        <text key={`r${r}`} className="cellgrid-label" x={rowLabelWidth - 6} y={geo.at(r, 0).y + s.cell / 2 + 3.5} textAnchor="end">
+        <text key={`r${r}`} className="cellgrid-label" x={rowLabelWidth - railGutter - 6} y={geo.at(r, 0).y + s.cell / 2 + 3.5} textAnchor="end">
           {label}
         </text>
       ))}
@@ -184,8 +199,16 @@ function CellGridImpl({
 
       {overlay && (
         <g className="cellgrid-overlay">
-          {overlay(cellGridLayout({ rows, cols, rowLabels, colLabels, size, gap, rowSuffix }))}
+          {overlay(cellGridLayout({ rows, cols, rowLabels, colLabels, size, gap, rowSuffix, rowDecor }))}
         </g>
+      )}
+
+      {decors.map((d, r) =>
+        d?.label == null ? null : (
+          <text key={`l${r}`} className="cellgrid-suffix" x={decorLabelX} y={geo.at(r, 0).y + s.cell / 2 + 3.5}>
+            {d.label}
+          </text>
+        ),
       )}
 
       {rowSuffix &&
