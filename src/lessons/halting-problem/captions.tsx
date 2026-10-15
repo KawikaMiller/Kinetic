@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { plural } from '../../core/format';
 import { dOnItself, dRow, firstDifference, GRID_SIZE, rowsEqualToD, type Cell, type Claims, type Stage } from './diagonal';
 import type { AnalyserRow } from './analyser';
 import { LIBRARY } from './machines';
