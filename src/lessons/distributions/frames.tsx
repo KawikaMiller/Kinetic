@@ -63,7 +63,7 @@ export function poissonCaption(s: ArrivalSummary): ReactNode {
   return (
     <>
       Mean arrivals per window {sig(s.mean)} (λ = {sig(s.lambda)}), variance {sig(s.variance)}: a dispersion index of{' '}
-      <span className={`hl ${verdict === 'poisson' ? 'ok' : 'bad'}`}>{sig(s.dispersion)}</span>, {DISPERSION_SAYS[verdict]}
+      <span className={`hl ${verdict === 'poisson' ? 'ok' : 'violet'}`}>{sig(s.dispersion)}</span>, {DISPERSION_SAYS[verdict]}
     </>
   );
 }

@@ -43,9 +43,9 @@ export function MeanScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Spread of the means" value={sig(report.spread)} sub={[`${REPLICATES.toLocaleString('en-US')} means of ${n.toLocaleString('en-US')} draws`]} />
           <Stat
-            label={<><span className="keep-case">σ</span>/√n predicts</>}
+            label={<><span className="keep-case">σ/√n</span> predicts</>}
             value={report.predicted === null ? '–' : sig(report.predicted)}
-            sub={[report.predicted === null ? (report.moments === 'infinite-mean' ? 'σ is infinite here' : 'σ is infinite here: the formula does not apply') : `from the exact σ and n = ${n}`]}
+            sub={[report.predicted === null ? (report.moments === 'infinite-mean' ? 'σ is infinite here' : 'σ is infinite here: the formula does not apply') : `from the exact σ and n = ${n.toLocaleString('en-US')}`]}
           />
           <Stat
             label="Ratio"

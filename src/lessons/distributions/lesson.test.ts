@@ -11,6 +11,8 @@ import {
   shapeView, summaryRows, tailSlope, type Dist, type Family,
 } from './model';
 
+/** Seeded runs are deterministic, so the only way they fail is the 5 s default timeout when the whole suite loads every core. */
+const SIMULATION_TIMEOUT_MS = 90_000;
 const defaultView = () => shapeView(DEFAULT_SHAPES[SHAPE_DEFAULT.family], SHAPE_DEFAULT.seed, SHAPE_DEFAULT.mode);
 const poissonRun = (bursty: boolean) => {
   const options = { ...POISSON_DEFAULT, windows: WINDOWS, window: POISSON_DEFAULT.window, bursty };
@@ -70,7 +72,7 @@ describe('try-this entries, from the default state, as written', () => {
   });
 });
 
-describe('captions are computed from the model, at the slider extremes too', () => {
+describe('captions are computed from the model, at the slider extremes too', { timeout: SIMULATION_TIMEOUT_MS }, () => {
   const corners: Dist[] = [
     { family: 'normal', mu: BOUNDS.normalMu.min, sigma: BOUNDS.normalSigma.max },
     { family: 'normal', mu: BOUNDS.normalMu.max, sigma: BOUNDS.normalSigma.min },

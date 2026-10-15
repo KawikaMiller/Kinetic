@@ -24,6 +24,11 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | SCC routine in `core` | strongly-connected-components, markov-chains | wave 3 to 4 round if there is room | part2 |
 | `core/flow.ts` | network-flow only so far; bipartite-matching redraws locally | only if a 3rd lesson needs max flow | part2 |
 
+## From the T3-B1 review (batch 1 statistics lessons)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Move `distributions/fmt.ts` (`sig`, `pctText`, number formatting), `distributions/SeedField` (+ `seed.ts`, `seedField.css`), `normalQuantile` and `drawSample` (from `distributions/model`) into `core/` and `components/` | distributions (origin), percentiles-statistics, queueing-theory, hypothesis-testing-ab; back-of-envelope uses `fmt` only | Phase 2 kit round after batch 1 | Four lessons import these across lesson folders today (documented in the batch). Batches never edit shared code, so nothing was moved; the lessons keep importing `../distributions/...` until the extraction migrates every caller pixel-identically (`smoke --frames` + `diff`). |
+
 ## Spec notes to carry into the plan
 - `markov-chains`: add registered `probability-basics` as a prerequisite (part2 recommendation).
 - `webassembly` is narrower than its backlog row: hand-assembled bytes run through the real engine; the compile step is "shown, not run".

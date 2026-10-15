@@ -65,7 +65,7 @@ export function PoissonScene({ picker }: { picker: ReactNode }) {
           <Stat
             label="Dispersion index"
             value={sig(summary.dispersion)}
-            color={verdict === 'poisson' ? 'var(--ok)' : 'var(--bad)'}
+            color={verdict === 'poisson' ? 'var(--ok)' : undefined}
             sub={['variance ÷ mean; Poisson gives 1']}
           />
         </Stats>
