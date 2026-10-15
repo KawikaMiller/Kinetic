@@ -138,7 +138,7 @@ export function Stage() {
             min={1}
             max={KEY_COUNT}
             onChange={(v) => setPicked(v - 1)}
-            format={(v) => `user:${v}`}
+            format={(v) => (picked === null ? 'none picked' : `user:${v}`)}
           />
         </Controls>
       }

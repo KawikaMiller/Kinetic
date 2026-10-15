@@ -4,7 +4,7 @@ import { cdnCaption, introCaption, missCaption, purgeCaption, shieldCaption, war
 import lesson from './index';
 import {
   ASSETS, Cdn, CDN_SEED, createWorld, DEFAULT_SETTINGS, EDGES, FIRST_MISSES, km, narrationDue, nearestEdge, ORIGIN, ORIGIN_WORK_MS,
-  rtt, ROUTE_STRETCH, type RequestRecord, type Settings, type Snapshot,
+  rtt, ROUTE_STRETCH, ttlBarMax, type RequestRecord, type Settings, type Snapshot,
 } from './sim';
 
 const DT = 0.05;
@@ -51,6 +51,26 @@ const quantile = (xs: number[], p: number) => {
   const sorted = [...xs].sort((a, b) => a - b);
   return sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : 0;
 };
+
+describe('the side panel TTL bars never overflow after the slider is lowered', () => {
+  it('copies cached under a 60 s TTL outlive a lowered 3 s TTL, and every bar still fits its track', () => {
+    const cdn = run(20, { ttl: 60 });
+    cdn.selected = 3;
+    run(1, { ttl: 3 }, CDN_SEED, cdn);
+    const { items } = cdn.snapshot().edge;
+    expect(items.length).toBeGreaterThan(0);
+    // The premise of the bug: some copy has more time left than the new TTL.
+    expect(Math.max(...items.map((it) => it.left))).toBeGreaterThan(3);
+    const max = ttlBarMax(3, items);
+    for (const it of items) expect(it.left / max).toBeLessThanOrEqual(1);
+  });
+
+  it('with no older copies the bars are scaled to the TTL itself', () => {
+    expect(ttlBarMax(30, [{ left: 12 }, { left: 29.5 }])).toBe(30);
+    expect(ttlBarMax(30, [])).toBe(30);
+    expect(ttlBarMax(3, [{ left: 40 }, { left: 2 }])).toBe(40);
+  });
+});
 
 describe('distance and round-trip time', () => {
   it('km matches closed forms: a quarter and half of the great circle on the equator', () => {

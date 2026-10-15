@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Edge compute (Cloudflare Workers, Lambda@Edge: from memory, check the vendors) running code close to users',
     ],
     why: "Teams decide what is cacheable, for how long and how it gets invalidated, and those choices shape latency for global users and the origin's bill. Getting cache headers or purges wrong causes stale-content bugs or a stampede of misses that can take the origin down.",
-    watch: "Dots are requests. Blue ones travel from a user to the nearest edge (the blue-outlined circles), green ones are served straight from that edge (hits), and red ones are misses that go on to the violet origin diamond in Virginia and back, through the orange shield dot when the shield is on. The green ring around each edge shows how full its cache is, and an edge glows green on a hit. The white-outlined edge is the one in the side panel, whose TTL bars drain from green to amber in their last quarter. The box in the corner is origin load, in violet, the same number as the Origin load stat. Latency counts one round trip per hop and ignores connection handshakes. The chips say users and files are seeded random and the geography and timings are illustrative.",
+    watch: "Dots are requests. Blue ones travel from a user to the nearest edge (the blue-outlined circles), green ones are served straight from that edge (hits), and red ones are misses that go on to the violet origin diamond in Virginia and back, through the orange shield dot when the shield is on. The green ring around each edge shows how full its cache is, and an edge glows green on a hit. The white-outlined edge is the one in the side panel, whose TTL bars drain from green to amber in their last quarter of the TTL (all bars share one length: the TTL, or the longest time left on a copy cached under an older, longer TTL after you lower the slider). The box in the corner is origin load, in violet, the same number as the Origin load stat. Latency counts one round trip per hop and ignores connection handshakes. The chips say users and files are seeded random and the geography and timings are illustrative.",
   },
   tryThis: [
     'Watch the first few seconds: the first request for each file at each edge is a miss, so the hit ratio starts low and climbs as the caches warm up.',
@@ -46,7 +46,7 @@ const lesson: LessonModule = {
         'The origin is down, so the edges quietly fall back to an older build of the site',
         'DNS changes have not reached the visitor\'s resolver yet',
         'Edges keep serving the cached copy until its TTL runs out or it is purged',
-        'The CDN was switched off, so the browser serves the old file',
+        'The browser cached the logo itself, so the request never even reaches the CDN',
       ],
       answer: 2,
       why: 'Edges keep serving the old file until it expires or you purge it. Many teams put a version in the file name (logo.v2.png) so each deploy gets a new URL.',
@@ -67,7 +67,7 @@ const lesson: LessonModule = {
       options: [
         'Nothing changes, since the hit ratio depends on file size and not on the TTL setting',
         'It sees less traffic, since each edge checks fresh copies against the origin more often',
-        'The shield turns itself on, because a short TTL is too much for the edges',
+        'The edges stop caching for good, because a short TTL marks the files as private',
         'It serves a large share of traffic again, since copies expire before repeats arrive',
       ],
       answer: 3,

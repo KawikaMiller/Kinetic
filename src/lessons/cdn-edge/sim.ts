@@ -139,6 +139,12 @@ export interface EdgeView {
   items: { asset: number; left: number }[];
 }
 
+/**
+ * The full length of the side panel's TTL bars: the current TTL, or the longest time still left on a listed copy when one was cached
+ * under a longer TTL and the slider has been lowered since (entries keep the expiry they were given).
+ */
+export const ttlBarMax = (ttl: number, items: readonly { left: number }[]) => Math.max(ttl, ...items.map((it) => it.left));
+
 export interface Snapshot {
   p50: number;
   p95: number;

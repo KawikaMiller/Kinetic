@@ -11,7 +11,7 @@ import { useSimulation } from '../../core/useSimulation';
 import { cdnCaption, introCaption, missCaption, purgeCaption, shieldCaption, warmCaption } from './captions';
 import { createRenderer, edgeAt } from './draw';
 import {
-  CDN_SEED, createWorld, DEFAULT_EDGE, DEFAULT_SETTINGS, EDGES, narrationDue, ORIGIN_WORK_MS, RATE_RANGE, ROUTE_STRETCH, TTL_RANGE, type Snapshot, type World,
+  CDN_SEED, createWorld, DEFAULT_EDGE, DEFAULT_SETTINGS, EDGES, narrationDue, ORIGIN_WORK_MS, RATE_RANGE, ROUTE_STRETCH, TTL_RANGE, ttlBarMax, type Snapshot, type World,
 } from './sim';
 import './styles.css';
 
@@ -81,6 +81,7 @@ export function Stage() {
   };
 
   const items = snap?.edge.items ?? [];
+  const barMax = ttlBarMax(ttl, items);
 
   return (
     <StageFrame minWidth={620}
@@ -147,7 +148,7 @@ export function Stage() {
               {items.slice(0, SIDE_ITEMS).map((it) => (
                 <li key={it.asset}>
                   <span className="cdn-asset">/img/{it.asset + 1}.jpg</span>
-                  <Bar value={it.left} max={ttl} height={6} tone={it.left < ttl * TTL_LOW ? 'amber' : 'ok'} />
+                  <Bar value={it.left} max={barMax} height={6} tone={it.left < ttl * TTL_LOW ? 'amber' : 'ok'} />
                   <span className="cdn-left">{Math.ceil(it.left)}s</span>
                 </li>
               ))}
