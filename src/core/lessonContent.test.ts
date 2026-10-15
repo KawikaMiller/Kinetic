@@ -36,7 +36,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   'circuit-breakers': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'consistent-hashing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'event-sourcing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'isolation-levels': { ticket: TIER3, rules: ['quiz-length'] },
   'load-balancing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'monolith-microservices': { ticket: TIER3, rules: ['quiz-length'] },
   'oauth-flows': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
@@ -61,7 +60,7 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  */
 const TIER3_AWAITING_RETROFIT = new Set([
   'load-balancing', 'consistent-hashing', 'circuit-breakers', 'monolith-microservices', 'event-sourcing',
-  'sharding', 'isolation-levels', 'cdn-edge', 'observability', 'oauth-flows',
+  'sharding', 'cdn-edge', 'observability', 'oauth-flows',
 ]);
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */
 const TIER3_EXISTING_COUNT = 12;
