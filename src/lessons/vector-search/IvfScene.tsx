@@ -70,7 +70,7 @@ export function IvfScene({ picker, s, set }: { picker: ReactNode; s: Settings; s
         <Box>
           <SectionTitle hint="shading: the cell of each centroid; stronger where probed">Cells and the query</SectionTitle>
           <div className="vs-plot">
-            <Plot2D x={{ domain: [0, DOMAIN] }} y={{ domain: [0, DOMAIN] }} aspect="equal" width={380} ariaLabel={`${s.nlist} cells; ${nprobe} probed, ${r.scanned.length} points scanned`}>
+            <Plot2D x={{ domain: [0, DOMAIN] }} y={{ domain: [0, DOMAIN] }} aspect="equal" width={356} ariaLabel={`${s.nlist} cells; ${nprobe} probed, ${r.scanned.length} points scanned`}>
               <Heat fn={heat} resolution={48} />
               <Points data={points.map((p, i) => ({
                 x: p[0], y: p[1],

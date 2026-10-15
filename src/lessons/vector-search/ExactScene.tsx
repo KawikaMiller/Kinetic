@@ -66,7 +66,7 @@ export function ExactScene({ picker, s, set }: { picker: ReactNode; s: Settings;
         <Box>
           <SectionTitle hint="400 seeded points in 5 clusters">Exact search costs N</SectionTitle>
           <div className="vs-plot">
-            <Plot2D x={{ domain: [0, domain] }} y={{ domain: [0, domain] }} aspect="equal" width={380} ariaLabel={`${points.length} points and a query; the ${s.k} nearest are highlighted`}>
+            <Plot2D x={{ domain: [0, domain] }} y={{ domain: [0, domain] }} aspect="equal" width={356} ariaLabel={`${points.length} points and a query; the ${s.k} nearest are highlighted`}>
               <Points data={points.map((p, i) => ({ x: p[0], y: p[1], tone: top.includes(i) ? 'ok' as const : 'dim' as const, r: top.includes(i) ? 5 : 3 }))} />
               <Points data={[{ x: q[0], y: q[1], tone: 'hi' as const, r: 7 }]} onDrag={(_i, [x, y]) => set({ query: [Math.max(0, x), Math.max(0, y)] })} pointLabel={() => 'Query'} />
             </Plot2D>
