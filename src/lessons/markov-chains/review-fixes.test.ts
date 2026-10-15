@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import stage from './Stage.tsx?raw';
 import lesson from './index';
 import { FORGET_STEPS, PRESETS, WALK_SEED, WEATHER, analyse, distributionAt, pointMass, secondEigenvalues, setEntry, stationarySolve, tvSeries, visitFractions, walk } from './model';
 import { conditionsOf, edgeLabel, forgetCaption, textCaption, verdictOf, verdictStat } from './text';
@@ -16,7 +16,6 @@ describe('try-this 3 starts from the default matrix even after try-this 2', () =
 
   it('Stage mounts the weather chain under a key per scene, so the edit does not follow the learner into the next scene', () => {
     // The repo has no DOM renderer: the key is pinned in source (without it, the hook state survives a scene switch).
-    const stage = readFileSync(new URL('./Stage.tsx', import.meta.url), 'utf8');
     expect(stage).toMatch(/<ChainScene key=\{scene\}/);
     expect(stage).toMatch(/function ChainScene[\s\S]*useChain\(\)/);
   });

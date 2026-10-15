@@ -123,13 +123,13 @@ export function eigenLines(A: Matrix2): EigenLine[] {
 export const SNAP_DEGREES = 3;
 
 /** The arrow moved onto an eigen-line (keeping its length) when within SNAP_DEGREES of one; otherwise unchanged. */
-export function snapToEigenLine(v: Vec, lines: readonly EigenLine[]): Vec {
+export function snapToEigenLine(v: readonly number[], lines: readonly EigenLine[]): [number, number] {
   const length = norm(v);
-  if (length === 0) return v;
+  if (length === 0) return [v[0], v[1]];
   for (const { direction } of lines) {
     const along = dot(v, direction);
     const gap = (Math.acos(Math.min(1, Math.abs(along) / length)) * 180) / Math.PI;
     if (gap <= SNAP_DEGREES) return [Math.sign(along) * length * direction[0], Math.sign(along) * length * direction[1]];
   }
-  return v;
+  return [v[0], v[1]];
 }

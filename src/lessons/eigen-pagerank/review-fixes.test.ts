@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import stage from './Stage.tsx?raw';
 import {
   DEFAULT_MATRIX, MATRIX_STEP, PRESETS as MATRICES, RESIDUAL_TOLERANCE, SNAP_DEGREES, behaviourOf, eigenLines, residual, snapToEigenLine, type Matrix2,
 } from './eigen';
@@ -24,7 +24,6 @@ describe('switching scenes opens each scene on its own start', () => {
   it('every scene has a setup, and Stage mounts each one under its own key so state cannot carry across a switch', () => {
     expect(SCENES.map((s) => s.value).sort()).toEqual(Object.keys(SCENE_SETUP).sort());
     // The repo has no DOM renderer, so the key is pinned in source: without it React reuses ArrowScene / RankScene and keeps the old state.
-    const stage = readFileSync(new URL('./Stage.tsx', import.meta.url), 'utf8');
     expect(stage.match(/key=\{scene\}/g)).toHaveLength(2);
   });
 });
