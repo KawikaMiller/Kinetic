@@ -33,12 +33,12 @@ const lesson: LessonModule = {
     merge
       ? `In "Windows", pick Session (gap 20 s) and move Events arrived up one step at a time: at arrival ${merge.at} two sessions merge, and the window count falls from ${merge.from} to ${merge.to}.`
       : 'In "Windows", pick Session and move Events arrived up one step at a time to watch sessions merge.',
-    `In "Watermarks and lateness", at the end of the stream ${lateness.dropped} events are dropped with an allowed lateness of 0 s and ${lateness.undercounted} windows come up short. Raise Allowed lateness to ${ROOMY_LATENESS} s: ${lateness.roomyDropped} are dropped. Then press "Send a straggler": it is ${fate(lateness.stragglerRoomy)}; set the lateness back to 0 s and it is ${fate(lateness.stragglerStrict)}.`,
-    `In "The broken way", counting by arrival is wrong in ${replay.wrong} of ${replay.minutes} minutes. Switch the job to event time and all of them match. Set Run to a replay read backwards: the event-time column ${replay.eventUnchanged ? 'does not change' : 'changes'} and the arrival column ${replay.arrivalChanged ? 'does' : 'does not'}.`,
+    `In "Watermarks and lateness", at the end of the stream ${lateness.dropped} events are dropped with an allowed lateness of 0 s and ${lateness.undercounted} ${lateness.undercounted === 1 ? 'window comes' : 'windows come'} up short. Raise Allowed lateness to ${ROOMY_LATENESS} s: ${lateness.roomyDropped} are dropped. Then press "Send a straggler": it is ${fate(lateness.stragglerRoomy)}; set the lateness back to 0 s and it is ${fate(lateness.stragglerStrict)}.`,
+    `In "The broken way", counting by arrival is wrong in ${replay.wrong} of ${replay.minutes} minutes. Switch the job to event time (here it keeps every event until the stream ends) and all of them match. Set Run to a replay read backwards: the event-time column ${replay.eventUnchanged ? 'does not change' : 'changes'} and the arrival column ${replay.arrivalChanged ? 'does' : 'does not'}.`,
   ],
   keyIdeas: [
     'Event time is when something happened and processing time is when the job saw it: in this model counting by arrival is wrong wherever a delay carries an event across a window edge.',
-    'A window is a half-open range [start, end): in this model a tumbling window holds each event once, a sliding one holds it in size divided by slide windows, and a session grows while events keep arriving less than a gap apart.',
+    'A window is a half-open range [start, end): in this model a tumbling window holds each event once, a sliding one holds it in size divided by slide windows when the slide divides the size (otherwise the next whole number up or down, and none or one when the slide is longer than the size), and a session grows while events keep arriving less than a gap apart.',
     'The watermark is a heuristic about how far the stream has got, so in this model an event behind it by more than the allowed lateness is dropped, and more lateness trades held state and delay for fewer drops.',
     'Event-time results do not depend on arrival order unless events are dropped, so a replay gives the same answer, while processing-time results depend on when the replay runs.',
   ],
@@ -77,7 +77,7 @@ const lesson: LessonModule = {
       why: 'Windows start at multiples of the slide and last the size, so a time lies in size divided by slide of them when slide divides size. A slide longer than the size leaves gaps where an event lands in none.',
     },
     {
-      q: 'Two sessions of one user are 25 s apart and the gap is 20 s, so they are separate. Both are still open when an event timed between them, 10 s from each, arrives. What happens?',
+      q: "Two sessions of one user are 25 s apart (last event of one to first event of the next) and the gap is 20 s, so they are separate. Both are still open when an event arrives timed 12 s after the first session's last event and 13 s before the second one's first. What happens?",
       options: [
         'They merge into one session that also holds the new event, since it is less than a gap from both',
         'The new event starts a third session, because it arrived after both of the others had been created',
@@ -93,7 +93,7 @@ const lesson: LessonModule = {
         'They change, because the replay delivers events at different times than the original run did',
         'They stay the same, because the replayed log holds exactly the same events as before',
         'They double, because each replayed event is counted once for the run and once for the replay',
-        'They stay the same, because arrival time is stored in the log along with each event',
+        'They stay the same, because every counting job gives the same totals for the same events, whatever clock it reads',
       ],
       answer: 0,
       why: 'Processing time is the moment the job sees an event, so a replay at another pace or order gives other counts. An event-time job reads the time inside the event and gets the same answer, provided it keeps events until the stream ends.',

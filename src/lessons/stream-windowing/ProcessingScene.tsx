@@ -80,7 +80,7 @@ export function ProcessingScene({ picker }: { picker: ReactNode }) {
           </table>
         </Box>
         <ProvenanceRow>
-          <Provenance kind="simulated" seed={seed}>the same seeded clicks as the other scenes; the event-time column keeps every event until the stream ends</Provenance>
+          <Provenance kind="simulated" seed={seed}>the same click generator as the other scenes (each scene opens on its own seed); the event-time column keeps every event until the stream ends</Provenance>
           <Provenance kind="scripted">the replay is one fixed rule: arrival times mirrored, so the last event arrives first and the gaps stay</Provenance>
         </ProvenanceRow>
       </div>

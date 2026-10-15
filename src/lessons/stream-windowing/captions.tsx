@@ -74,7 +74,7 @@ export function processingCaption(o: { rows: readonly MinuteRow[]; job: 'process
   const wrong = disagreeing(o.rows);
   const worst = [...wrong].sort((a, b) => Math.abs(b.processing - b.event) - Math.abs(a.processing - a.event))[0];
   if (o.job === 'event') {
-    return <>Counting by event time gives the same answer however the log arrives{o.replay ? ', even read backwards' : ''}: {hl('ok', 'every minute matches the truth')}.</>;
+    return <>An event-time job that keeps every event until the stream ends gives the same answer however the log arrives{o.replay ? ', even read backwards' : ''}: {hl('ok', 'every minute matches the truth')}. A real job cannot wait forever: the Watermarks scene shows what a finite wait drops.</>;
   }
   if (!worst) return <>With a delay bound of {o.maxDelay} s nothing crosses a minute on this seed, so counting by arrival happens to be right here.</>;
   return (

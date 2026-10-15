@@ -111,7 +111,7 @@ export function WindowsScene({ picker }: { picker: ReactNode }) {
           )}
         </Box>
         <ProvenanceRow>
-          <Provenance kind="simulated" seed={seed}>the same seeded clicks as the other scenes; windows keep every event until the end</Provenance>
+          <Provenance kind="simulated" seed={seed}>the same click generator as the other scenes (each scene opens on its own seed); windows keep every event until the end</Provenance>
           <Provenance kind="from-memory">some systems call sliding windows hopping windows, and each stream processor has its own names and options (check its documentation)</Provenance>
         </ProvenanceRow>
       </div>
