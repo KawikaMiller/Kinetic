@@ -3,10 +3,23 @@ import { fenAdd, fenBuild, fenRange } from './fenwick';
 import { buildTree, queryRange, setCell } from './model';
 
 /**
- * The one unit of scene 1, "cells touched": a query counts the cells it reads, an update the cells it
- * writes. Recomputing a node from its children is not counted again, for every design alike.
+ * The one unit of scene 1, "cells touched": one per cell or node an operation reads or writes. A prefix array
+ * counts the cells it reads (a query) or rewrites (an update), a Fenwick tree each cell on its hop path, and a
+ * segment tree every node its walk enters, partial nodes included: their aggregates are not read, but the walk
+ * has to stand on them to find the covered nodes. Recomputing a node from its children is not counted again.
  */
 export type Request = { kind: 'update'; index: number; value: number } | { kind: 'query'; l: number; r: number };
+
+export type CostRank = 'bad' | 'ok' | 'muted';
+
+/** Colour each total by where it ranks: the costliest is `bad`, the cheapest `ok`, the rest `muted`; all equal means no verdict. */
+export function rankCosts(costs: Costs): Record<keyof Costs, CostRank> {
+  const values = Object.values(costs);
+  const high = Math.max(...values);
+  const low = Math.min(...values);
+  const rank = (v: number): CostRank => (high === low ? 'muted' : v === high ? 'bad' : v === low ? 'ok' : 'muted');
+  return { prefix: rank(costs.prefix), segment: rank(costs.segment), fenwick: rank(costs.fenwick) };
+}
 
 export interface Costs {
   prefix: number;

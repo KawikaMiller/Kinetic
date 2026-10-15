@@ -23,6 +23,8 @@ export const COST_EDIT_DEFAULT = { index: 2, value: 6 };
 /** Scene 4's array has 16 cells, numbered from 1. */
 export const FENWICK_N = 16;
 export const FENWICK_DEFAULT = { query: 13, updateAt: 5, rangeL: 3, rangeR: 11 };
+/** The range the min demo opens on: cells 6 to 9 sit after the global minimum up to them, so the prefix recipe and a plain loop disagree. */
+export const FENWICK_MIN_RANGE = { l: 6, r: 9 };
 
 /** The size the chooser reports numbers stored for. */
 export const CHOOSER_N = 1024;

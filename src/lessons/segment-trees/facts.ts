@@ -2,7 +2,7 @@ import { recommend } from './chooser';
 import { WORKLOAD_SIZE, makeWorkload, runWorkload } from './cost';
 import { fenBuild, fenRange, minBuild, prefixHops, rangeMinWrong, updateHops } from './fenwick';
 import { addRange, buildTree, queryRange } from './model';
-import { ADD_DEFAULT, CHOOSER_N, DEFAULT_UPDATE_PCT, FENWICK_DEFAULT, FENWICK_VALUES, QUERY_DEFAULT, WORKLOAD_SEED, costStartValues, valuesFor } from './presets';
+import { ADD_DEFAULT, CHOOSER_N, DEFAULT_UPDATE_PCT, FENWICK_DEFAULT, FENWICK_MIN_RANGE, FENWICK_VALUES, QUERY_DEFAULT, WORKLOAD_SEED, costStartValues, valuesFor } from './presets';
 
 /** Every number the lesson's text quotes, measured from the model once. */
 const small = runWorkload(costStartValues(8), makeWorkload(8, WORKLOAD_SIZE, DEFAULT_UPDATE_PCT, WORKLOAD_SEED)).costs;
@@ -18,8 +18,8 @@ const afterQuery = queryRange(lazyAdd.tree, 3, 3, { record: true });
 const fen = fenBuild(FENWICK_VALUES, 'sum');
 const range = fenRange(fen, FENWICK_DEFAULT.rangeL, FENWICK_DEFAULT.rangeR, 'sum');
 const seg = queryRange(buildTree(FENWICK_VALUES, 'sum'), FENWICK_DEFAULT.rangeL - 1, FENWICK_DEFAULT.rangeR - 1);
-const minWrong = rangeMinWrong(minBuild(FENWICK_VALUES), FENWICK_DEFAULT.rangeR);
-const minTrue = Math.min(...FENWICK_VALUES.slice(FENWICK_DEFAULT.rangeL - 1, FENWICK_DEFAULT.rangeR));
+const minWrong = rangeMinWrong(minBuild(FENWICK_VALUES), FENWICK_MIN_RANGE.r);
+const minTrue = Math.min(...FENWICK_VALUES.slice(FENWICK_MIN_RANGE.l - 1, FENWICK_MIN_RANGE.r));
 
 export const FACTS = {
   workload: WORKLOAD_SIZE,
@@ -52,6 +52,8 @@ export const FACTS = {
   rangeCells: range.hopsR.length + range.hopsL.length,
   rangeSegTouched: seg.touched,
   rangeSegValue: seg.value as number,
+  minL: FENWICK_MIN_RANGE.l,
+  minR: FENWICK_MIN_RANGE.r,
   minWrong,
   minTrue,
   sparseNumbers: recommend({ op: 'min', updates: 'none', memory: false }, CHOOSER_N).structure.numbers(CHOOSER_N),

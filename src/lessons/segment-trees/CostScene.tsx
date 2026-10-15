@@ -5,12 +5,14 @@ import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { WORKLOAD_SIZE, makeWorkload, prefixUpdateCells, runWorkload } from './cost';
+import { WORKLOAD_SIZE, makeWorkload, prefixUpdateCells, rankCosts, runWorkload, type CostRank } from './cost';
 import { updateHops } from './fenwick';
 import { parseField, parseValue } from './keys';
 import { buildTree, setCell } from './model';
 import { COST_EDIT_DEFAULT, COST_SIZES, DEFAULT_COST_SIZE, DEFAULT_UPDATE_PCT, WORKLOAD_SEED, costStartValues, valuesFor } from './presets';
 import { costCaption } from './text';
+
+const rankColor: Record<CostRank, string | undefined> = { bad: 'var(--bad)', ok: 'var(--ok)', muted: undefined };
 
 export function CostScene({ picker }: { picker: ReactNode }) {
   const [n, setN] = useState<number>(DEFAULT_COST_SIZE);
@@ -39,8 +41,18 @@ export function CostScene({ picker }: { picker: ReactNode }) {
     totals: run.costs,
   });
   useIntroCaption(<>{caption}</>, [caption]);
+  const ranks = rankCosts(run.costs);
   const max = Math.max(run.costs.prefix, run.costs.segment, run.costs.fenwick, 1);
 
+  /** The edit controls only exist at the drawn size, so leaving it drops the edit instead of keeping it hidden. */
+  const changeSize = (next: number) => {
+    setN(next);
+    setCells(valuesFor(DEFAULT_COST_SIZE));
+    setEdit(COST_EDIT_DEFAULT);
+    setIndexText(String(COST_EDIT_DEFAULT.index));
+    setValueText(String(COST_EDIT_DEFAULT.value));
+    setNote(null);
+  };
   const change = () => {
     const i = parseField(indexText, 0, cells.length - 1, 'a cell number');
     const v = parseValue(valueText);
@@ -58,16 +70,17 @@ export function CostScene({ picker }: { picker: ReactNode }) {
       height={470}
       stats={
         <Stats>
-          <Stat label="Prefix sums" value={run.costs.prefix.toLocaleString('en-US')} color="var(--bad)" sub="cells touched by the workload" />
-          <Stat label="Segment tree" value={run.costs.segment.toLocaleString('en-US')} color="var(--ok)" sub="cells touched" />
-          <Stat label="Fenwick tree" value={run.costs.fenwick.toLocaleString('en-US')} color="var(--ok)" sub="cells touched" />
+          <Stat label="Prefix sums" value={run.costs.prefix.toLocaleString('en-US')} color={rankColor[ranks.prefix]} sub="cells touched by the workload" />
+          <Stat label="Segment tree" value={run.costs.segment.toLocaleString('en-US')} color={rankColor[ranks.segment]} sub="nodes touched" />
+          <Stat label="Fenwick tree" value={run.costs.fenwick.toLocaleString('en-US')} color={rankColor[ranks.fenwick]} sub="cells touched" />
         </Stats>
       }
       legend={
         <Legend
           items={[
             { color: 'var(--bad)', label: 'prefix cells rewritten by a change at the picked cell', shape: 'square' },
-            { color: 'var(--ok)', label: 'segment and Fenwick: a path', shape: 'square' },
+            { color: 'var(--bad)', label: 'bars and totals: the costliest design', shape: 'line' },
+            { color: 'var(--ok)', label: 'bars and totals: the cheapest design', shape: 'line' },
             { color: 'var(--hi)', label: 'the cell you changed', shape: 'square' },
           ]}
         />
@@ -75,7 +88,7 @@ export function CostScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="Cells n" value={n} onChange={setN} options={COST_SIZES.map((s) => ({ value: s, label: s.toLocaleString('en-US') }))} />
+          <Segmented label="Cells n" value={n} onChange={changeSize} options={COST_SIZES.map((s) => ({ value: s, label: s.toLocaleString('en-US') }))} />
           <Slider label="Updates in the mix" value={pct} min={0} max={100} step={10} onChange={setPct} format={(v) => `${v}%`} />
         </>,
         <>
@@ -108,16 +121,16 @@ export function CostScene({ picker }: { picker: ReactNode }) {
           </Tray>
         )}
         <div className="st-bars">
-          {([['Prefix sums', run.costs.prefix, 'bad'], ['Segment tree', run.costs.segment, 'ok'], ['Fenwick tree', run.costs.fenwick, 'ok']] as const).map(([label, value, tone]) => (
+          {([['Prefix sums', run.costs.prefix, ranks.prefix], ['Segment tree', run.costs.segment, ranks.segment], ['Fenwick tree', run.costs.fenwick, ranks.fenwick]] as const).map(([label, value, tone]) => (
             <div key={label} className="st-bar-row">
               <span>{label}</span>
-              <Bar value={value} max={max} tone={tone} ariaLabel={`${label}: ${value} cells touched`} />
+              <Bar value={value} max={max} tone={tone} ariaLabel={`${label}: ${value} touched`} />
               <b>{value.toLocaleString('en-US')}</b>
             </div>
           ))}
         </div>
         <Hint tone="muted" block>
-          One unit for every row: cells touched. A query counts the cells it reads, an update the cells it writes; recomputing a node from its children is not counted again.
+          One unit for every row: cells or nodes touched. A prefix array counts the cells a query reads or an update rewrites, a Fenwick tree the cells on its hop path, and a segment tree every node its walk enters, partial ones included, because the walk has to stand on them to find the covered nodes. Recomputing a node from its children is not counted again.
         </Hint>
       </div>
       <ProvenanceRow>

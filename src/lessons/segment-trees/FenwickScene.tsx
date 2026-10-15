@@ -10,7 +10,7 @@ import { minScaleNote } from './text';
 import { fenBuild, fenRange, lowbit, minBuild, prefixHops, rangeMinWrong, rangeStart, updateHops, type FenOp } from './fenwick';
 import { parseField, parseRange, parseValue } from './keys';
 import { buildTree, nodeCount, queryRange } from './model';
-import { FENWICK_DEFAULT, FENWICK_N, FENWICK_VALUES } from './presets';
+import { FENWICK_DEFAULT, FENWICK_MIN_RANGE, FENWICK_N, FENWICK_VALUES } from './presets';
 import { fenwickCaption } from './text';
 import type { Tone } from '../../core/tone';
 
@@ -63,6 +63,15 @@ export function FenwickScene({ picker }: { picker: ReactNode }) {
   const x = (i: number) => PAD + (i - 0.5) * COL;
   const levels = BITS;
   const height = TOP + CELL_H + levels * ROW + 16;
+  const chooseOp = (next: WideOp) => {
+    if (next !== op && (next === 'min' || op === 'min')) {
+      const [nl, nr] = next === 'min' ? [FENWICK_MIN_RANGE.l, FENWICK_MIN_RANGE.r] : [FENWICK_DEFAULT.rangeL, FENWICK_DEFAULT.rangeR];
+      setLText(String(nl));
+      setRText(String(nr));
+    }
+    setOp(next);
+    setNote(null);
+  };
   const apply = () => {
     if (!u.ok) return setNote(u.error);
     const v = parseValue(vText);
@@ -93,7 +102,7 @@ export function FenwickScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="Operation" value={op} onChange={(v) => { setOp(v); setNote(null); }} options={[{ value: 'sum', label: 'sum' }, { value: 'xor', label: 'xor' }, { value: 'min', label: 'min' }]} />
+          <Segmented label="Operation" value={op} onChange={chooseOp} options={[{ value: 'sum', label: 'sum' }, { value: 'xor', label: 'xor' }, { value: 'min', label: 'min' }]} />
         </>,
         <>
           <TextField label="Prefix query up to" value={qText} onChange={setQText} width={64} spellCheck={false} />
@@ -153,7 +162,7 @@ export function FenwickScene({ picker }: { picker: ReactNode }) {
                 <b>Refused: a Fenwick tree cannot answer a range minimum.</b> Its range query takes prefix(r) and removes prefix(l - 1), which needs an operation with an inverse. Sum and xor have one; min and max do not.
                 <p className="st-line">
                   The same hops give a correct prefix minimum, but for cells {l} to {r} the recipe can only answer {wrongMin} (the minimum up to {r}), while a plain loop says {naiveMin}
-                  {wrongMin === naiveMin ? ': they agree on this range by luck; widen the gap between l and the global minimum.' : ': they disagree.'}
+                  {wrongMin === naiveMin ? ': they agree on this range by luck; try l = 6 and r = 9.' : ': they disagree.'}
                 </p>
               </div>
             ) : (
