@@ -1,7 +1,7 @@
 // A small CDN simulation. Latency model: one round trip per hop, with light in
 // fibre covering ~200 km per ms one way and real routes ~1.4× longer than the
 // great circle. TCP/TLS handshakes are ignored (they would multiply the gap).
-import { weightedPick } from '../../core/random';
+import { mulberry32, weightedPick, type Rnd } from '../../core/random';
 import { createSampler, percentile } from '../../core/sim';
 import type { LonLat } from './map';
 
@@ -39,7 +39,7 @@ const USER_SPREAD = { lon: 8, lat: 6 };
 
 const RAD = Math.PI / 180;
 const EARTH_RADIUS_KM = 6371;
-const ROUTE_STRETCH = 1.4; // real routes vs the great circle
+export const ROUTE_STRETCH = 1.4; // real routes vs the great circle
 const KM_PER_MS_RTT = 100; // ~200 km/ms one way in fibre, so 100 km of distance per ms of round trip
 const BASE_RTT_MS = 2;
 
@@ -48,6 +48,20 @@ export function km(a: LonLat, b: LonLat) {
   const dLon = (b.lon - a.lon) * RAD;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.sin(dLon / 2) ** 2;
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
+}
+
+/** Index of the edge nearest a user by great-circle distance (a simplification: real routing is by DNS or anycast). */
+export function nearestEdge(u: LonLat): number {
+  let best = 0;
+  let bestKm = Infinity;
+  EDGES.forEach((e, i) => {
+    const d = km(u, e);
+    if (d < bestKm) {
+      bestKm = d;
+      best = i;
+    }
+  });
+  return best;
 }
 
 /** Round-trip time in ms between two points. */
@@ -92,6 +106,28 @@ export interface Settings {
   rate: number;
 }
 
+/** What the lesson loads with, and the ranges its sliders allow. */
+export const DEFAULT_SETTINGS: Settings = { cdn: true, shield: false, ttl: 30, rate: 18 };
+export const TTL_RANGE = { min: 3, max: 120 } as const;
+export const RATE_RANGE = { min: 4, max: 50 } as const;
+/** The seed the lesson loads with, shown on its Provenance chip. */
+export const CDN_SEED = 11;
+
+/** What happened to one request: where it went and what it cost, for tests and the audit trail. */
+export interface RequestRecord {
+  t: number;
+  /** Index into EDGES, or -1 when the CDN is off. */
+  edge: number;
+  asset: number;
+  /** Served by the edge's own fresh copy. */
+  hit: boolean;
+  /** Whether the shield had a fresh copy (null when the shield wasn't asked). */
+  shieldHit: boolean | null;
+  /** The request reached the origin. */
+  originFetch: boolean;
+  ms: number;
+}
+
 interface Sample {
   t: number;
   ms: number;
@@ -103,6 +139,12 @@ export interface EdgeView {
   items: { asset: number; left: number }[];
 }
 
+/**
+ * The full length of the side panel's TTL bars: the current TTL, or the longest time still left on a listed copy when one was cached
+ * under a longer TTL and the slider has been lowered since (entries keep the expiry they were given).
+ */
+export const ttlBarMax = (ttl: number, items: readonly { left: number }[]) => Math.max(ttl, ...items.map((it) => it.left));
+
 export interface Snapshot {
   p50: number;
   p95: number;
@@ -113,7 +155,9 @@ export interface Snapshot {
 
 export class Cdn {
   now = 0;
-  settings: Settings = { cdn: true, shield: false, ttl: 30, rate: 18 };
+  settings: Settings = { ...DEFAULT_SETTINGS };
+  /** Every request so far, when a test switches it on (it grows without bound, so the live lesson leaves it off). */
+  trace: RequestRecord[] | null = null;
   caches: Map<number, number>[] = EDGES.map(() => new Map());
   shieldCache = new Map<number, number>();
   particles: Particle[] = [];
@@ -125,6 +169,11 @@ export class Cdn {
   selected = DEFAULT_EDGE;
   misses = 0;
   private acc = 0;
+  private readonly rnd: Rnd;
+
+  constructor(seed: number) {
+    this.rnd = mulberry32(seed);
+  }
 
   purge() {
     this.caches.forEach((c) => c.clear());
@@ -132,21 +181,8 @@ export class Cdn {
   }
 
   private spawnUser(): LonLat {
-    const [lon, lat] = weightedPick(POPULATION, (p) => p[2]);
-    return { lon: lon + (Math.random() - 0.5) * USER_SPREAD.lon, lat: lat + (Math.random() - 0.5) * USER_SPREAD.lat };
-  }
-
-  private nearestEdge(u: LonLat) {
-    let best = 0;
-    let bestKm = Infinity;
-    EDGES.forEach((e, i) => {
-      const d = km(u, e);
-      if (d < bestKm) {
-        bestKm = d;
-        best = i;
-      }
-    });
-    return best;
+    const [lon, lat] = weightedPick(POPULATION, (p) => p[2], this.rnd);
+    return { lon: lon + (this.rnd() - 0.5) * USER_SPREAD.lon, lat: lat + (this.rnd() - 0.5) * USER_SPREAD.lat };
   }
 
   private originFetched(now: number) {
@@ -157,7 +193,7 @@ export class Cdn {
   private request() {
     const { cdn, shield, ttl } = this.settings;
     const user = this.spawnUser();
-    const asset = weightedPick(ASSET_IDS, assetWeight);
+    const asset = weightedPick(ASSET_IDS, assetWeight, this.rnd);
     const now = this.now;
     const legs: Leg[] = [];
     let t = now;
@@ -174,9 +210,10 @@ export class Cdn {
       go(ORIGIN, user, 'miss', rtt(user, ORIGIN) / 2);
       this.originFetched(now);
       this.samples.push({ t: now, ms, hit: false });
+      this.trace?.push({ t: now, edge: -1, asset, hit: false, shieldHit: null, originFetch: true, ms });
       this.misses++;
     } else {
-      const ei = this.nearestEdge(user);
+      const ei = nearestEdge(user);
       const edge = EDGES[ei];
       const cache = this.caches[ei];
       const toEdge = rtt(user, edge);
@@ -186,16 +223,21 @@ export class Cdn {
         go(edge, user, 'hit', toEdge / 2);
         this.flash[ei] = now;
         this.samples.push({ t: now, ms: toEdge + EDGE_WORK_MS, hit: true });
+        this.trace?.push({ t: now, edge: ei, asset, hit: true, shieldHit: null, originFetch: false, ms: toEdge + EDGE_WORK_MS });
       } else {
         this.misses++;
         let ms = toEdge;
+        let shieldHit: boolean | null = null;
+        let originFetch = false;
         if (shield) {
           const toShield = rtt(edge, SHIELD);
           ms += toShield;
           go(edge, SHIELD, 'miss', toShield / 2);
-          if ((this.shieldCache.get(asset) ?? -1) > now) {
+          shieldHit = (this.shieldCache.get(asset) ?? -1) > now;
+          if (shieldHit) {
             ms += EDGE_WORK_MS;
           } else {
+            originFetch = true;
             const up = rtt(SHIELD, ORIGIN);
             ms += up + ORIGIN_WORK_MS;
             go(SHIELD, ORIGIN, 'miss', up / 2);
@@ -209,11 +251,13 @@ export class Cdn {
           ms += up + ORIGIN_WORK_MS;
           go(edge, ORIGIN, 'miss', up / 2);
           go(ORIGIN, edge, 'miss', up / 2);
+          originFetch = true;
           this.originFetched(now);
         }
         go(edge, user, 'miss', toEdge / 2);
         cache.set(asset, now + ttl);
         this.samples.push({ t: now, ms, hit: false });
+        this.trace?.push({ t: now, edge: ei, asset, hit: false, shieldHit, originFetch, ms });
       }
     }
     this.particles.push({ legs, end: t });
@@ -268,4 +312,17 @@ export interface World {
   told: { miss: boolean; warm: boolean };
 }
 
-export const createWorld = (): World => ({ cdn: new Cdn(), told: { miss: false, warm: false } });
+export const createWorld = (seed = CDN_SEED): World => ({ cdn: new Cdn(seed), told: { miss: false, warm: false } });
+
+/** The one-off captions: a few misses after the first second, then warm caches later on. */
+export const FIRST_MISSES = 3;
+export const WARM_AFTER_S = 9;
+export const WARM_HIT_RATIO = 0.7;
+
+/** Which one-off caption is due now, if any. Pure: the caller records that it was told. */
+export function narrationDue(cdn: Cdn, told: World['told'], snap: Snapshot): 'miss' | 'warm' | null {
+  if (!cdn.settings.cdn) return null;
+  if (!told.miss && cdn.misses > FIRST_MISSES && cdn.now > 1) return 'miss';
+  if (told.miss && !told.warm && cdn.now > WARM_AFTER_S && (snap.hitRatio ?? 0) > WARM_HIT_RATIO) return 'warm';
+  return null;
+}

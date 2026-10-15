@@ -1,15 +1,19 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { Box } from '../../components/Panel';
 import { Packet, Pulse, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Stat, Stats, Toggle } from '../../components/ui';
-import type { Frame } from '../../core/types';
+import { WideRegion } from '../../components/WideRegion';
+import { ClaimLabel, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
+import { cssVar } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
+import { buildFrames } from './frames';
+import {
+  type Attack, countDefences, DEFAULT_OPTS, defencesInPlay, DEFENCE_NAMES, type Defences, type Held, ILLUSTRATIVE, type Kind, type Msg, type NodeId, type Opts, SCENE_EDGES,
+  type UrlView,
+} from './model';
+import { ATTACK_LABEL, ATTACKS, BINDINGS, cellText, COLUMNS, defenceMatrix, type MatrixRow, OUTCOME_LABEL } from './run';
 import './styles.css';
-
-type NodeId = 'browser' | 'app' | 'auth' | 'api' | 'attacker';
-type Kind = 'front' | 'back' | 'ok' | 'bad';
 
 const COLOR: Record<Kind, string> = { front: 'var(--info)', back: 'var(--violet)', ok: 'var(--ok)', bad: 'var(--bad)' };
 const POS: Record<NodeId, { x: number; y: number }> = {
@@ -24,183 +28,150 @@ const LABEL: Record<NodeId, [string, string]> = {
   app: ['🖨 PhotoPrint', 'client app'],
   auth: ['🔐 accounts.photos', 'authorization server'],
   api: ['🖼 Photos API', 'resource server'],
-  attacker: ['🕵 Malicious app', 'grabbed the redirect'],
+  attacker: ['🕵 Malicious party', ''],
 };
+/** What the attacker's box says it is doing, for each attack. */
+const ATTACKER_SUB: Record<Exclude<Attack, 'none'>, string> = { steal: 'read the redirect', forge: 'started its own flow', redirect: 'wrote the link' };
 
-interface Msg {
-  from: NodeId;
-  to: NodeId;
-  label: string;
-  kind: Kind;
-}
+/** The hues of the parameters and the things the app holds. None is a status colour or a channel colour. */
+const PARAM_COLOR = {
+  scope: cssVar('sky'),
+  state: cssVar('trkHw'),
+  pkce: cssVar('trkLang'),
+  code: cssVar('trkMath'),
+  redirect: cssVar('orange'),
+  token: cssVar('trkWeb'),
+} as const;
+const CHIP: Record<Held, { color: string; note: string }> = {
+  state: { color: PARAM_COLOR.state, note: 'ties the callback to this browser session' },
+  code_verifier: { color: PARAM_COLOR.pkce, note: 'secret, sent only at /token' },
+  code: { color: PARAM_COLOR.code, note: `single-use, short-lived (${ILLUSTRATIVE.codeSeconds} s here, made up)` },
+  access_token: { color: PARAM_COLOR.token, note: `photos.read · ${ILLUSTRATIVE.accessMinutes} min here, made up` },
+  refresh_token: { color: PARAM_COLOR.token, note: 'gets new access tokens' },
+  id_token: { color: PARAM_COLOR.token, note: 'JWT: who the user is' },
+};
+const DEFENCE_COLOR: Record<keyof Defences, string> = { state: PARAM_COLOR.state, pkce: PARAM_COLOR.pkce, exactRedirect: PARAM_COLOR.redirect };
 
-interface Opts {
-  pkce: boolean;
-  attacker: boolean;
-  oidc: boolean;
-}
+/** The narrowest width at which the scene's text stays readable; narrower screens scroll the scene sideways. */
+const SCENE_MIN_WIDTH = 880;
 
-interface OFrame extends Frame {
-  msg: Msg | null;
-  busy: NodeId | null;
-  url: string | null;
-  screen: 'none' | 'login' | 'consent';
-  app: string[];
-  att: string[];
-  signedIn: boolean;
-  outcome: 'ok' | 'bad' | 'blocked' | null;
-  photosLeaked: boolean;
-}
-
-const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
-
-function build({ pkce, attacker, oidc }: Opts): OFrame[] {
-  const out: OFrame[] = [];
-  let cur: OFrame = { msg: null, busy: null, url: null, screen: 'none', app: [], att: [], signedIn: false, outcome: null, photosLeaked: false };
-  const push = (p: Partial<OFrame> & { say: ReactNode }) => {
-    cur = { ...cur, msg: null, busy: null, screen: 'none', outcome: null, ...p };
-    out.push(cur);
-  };
-  const m = (from: NodeId, to: NodeId, label: string, kind: Kind): Msg => ({ from, to, label, kind });
-  const scope = oidc ? 'openid photos.read' : 'photos.read';
-  const authorize =
-    `https://accounts.photos/authorize?response_type=code&client_id=photoprint&redirect_uri=https://photoprint.app/cb&scope=${scope.replace(' ', '%20')}&state=xyz123` +
-    (pkce ? `&code_challenge=${CHALLENGE}&code_challenge_method=S256` : '');
-  const callback = 'https://photoprint.app/cb?code=SplxlOBeZQQYbYS6&state=xyz123';
-
-  push({ say: <><b>PhotoPrint</b> wants to print photos you keep at <b>Photos</b>. Handing it your Photos password would be insane. OAuth lets you grant <span className="hl">limited, revocable access</span> instead.</> });
-  push({ msg: m('browser', 'app', 'click "Connect Photos"', 'front'), say: <>You click <b>Connect Photos</b> in PhotoPrint.</> });
-  if (pkce) {
-    push({ busy: 'app', app: ['code_verifier'], say: <>PKCE: the app invents a one-time secret, the <span className="hl">code_verifier</span>, and keeps it. It will send only its hash, the <span className="hl">code_challenge</span>.</> });
-  }
-  push({ msg: m('app', 'browser', '302 → /authorize', 'front'), url: authorize, say: <>The app <b>redirects your browser</b> to the authorization server. Everything rides in the URL: which app, what access (<span className="hl info">scope</span>), a <span className="hl violet">state</span> value{pkce ? <>, and the challenge</> : null}.</> });
-  push({ msg: m('browser', 'auth', 'GET /authorize?…', 'front'), url: authorize, say: <>Your browser lands on <b>accounts.photos</b>. These redirects are the <span className="hl info">front channel</span>: visible, and easy to tamper with.</> });
-  push({ screen: 'login', busy: 'auth', url: 'https://accounts.photos/login', say: <>You log in <b>on accounts.photos itself</b>. PhotoPrint never sees your password.</> });
-  push({ screen: 'consent', busy: 'auth', url: 'https://accounts.photos/consent', hold: 1.3, say: <>Consent screen: "PhotoPrint wants to <b>view your photos</b>." Only what the scope asked for. You click Allow.</> });
-  push({ msg: m('auth', 'browser', '302 → /cb?code=…', 'front'), url: callback, say: <>The auth server redirects back with a short-lived, single-use <span className="hl ok">authorization code</span>. Not a token yet.</> });
-
-  if (attacker) {
-    push({ msg: m('browser', 'attacker', 'code=SplxlOB…', 'bad'), url: callback, att: ['code'],
-      say: <>But a <span className="hl bad">malicious app</span> on the device registered the same redirect and <b>grabs the code</b> first. PhotoPrint never gets it.</> });
-    push({ msg: m('attacker', 'auth', pkce ? 'POST /token code (no verifier)' : 'POST /token code', 'bad'), att: ['code'],
-      say: <>The attacker races to swap the code for tokens. PhotoPrint is a public client (no secret), so the code is all the auth server asks for…</> });
-    if (pkce) {
-      push({ busy: 'auth', att: ['code'], say: <>…unless PKCE is on. The server stored the challenge, so it demands the <span className="hl">code_verifier</span> that hashes to it. The attacker never had it.</> });
-      push({ msg: m('auth', 'attacker', '400 invalid_grant', 'ok'), att: ['code'], outcome: 'blocked', hold: 1.4,
-        say: <><span className="hl ok">Blocked.</span> A stolen code is useless without the verifier, which never left PhotoPrint.</> });
-      push({ hold: 2, say: <>That's why PKCE is required for mobile and single-page apps, and recommended for every OAuth client today.</> });
-    } else {
-      push({ msg: m('auth', 'attacker', '200 access_token', 'bad'), att: ['code', 'access_token'],
-        say: <><span className="hl bad">Tokens issued to the attacker.</span> Nothing tied the code to the app that started the flow.</> });
-      push({ msg: m('attacker', 'api', 'GET /photos  Bearer …', 'bad'), att: ['code', 'access_token'], say: <>The attacker calls the Photos API with your token…</> });
-      push({ msg: m('api', 'attacker', '200 · your photos', 'bad'), att: ['code', 'access_token'], outcome: 'bad', photosLeaked: true, hold: 1.4,
-        say: <><span className="hl bad">Your photos leak.</span> Turn PKCE on and replay this.</> });
-    }
-    return out;
-  }
-
-  push({ msg: m('browser', 'app', 'GET /cb?code=…&state=…', 'front'), app: pkce ? ['code_verifier', 'code'] : ['code'],
-    say: <>PhotoPrint receives the code and checks <span className="hl violet">state</span> matches what it sent, so nobody slipped it someone else's code (CSRF).</> });
-  push({ msg: m('app', 'auth', pkce ? 'POST /token code + verifier' : 'POST /token code', 'back'), app: pkce ? ['code_verifier', 'code'] : ['code'],
-    say: <>Now the <span className="hl violet">back channel</span>: a direct server-to-server call to swap the code for tokens{pkce ? <>, proving it's the same app with the <span className="hl">code_verifier</span></> : null}.</> });
-  if (pkce) {
-    push({ busy: 'auth', app: ['code_verifier', 'code'], say: <>The auth server hashes the verifier: SHA-256(verifier) = the challenge from earlier. <span className="hl ok">✓ Same app.</span></> });
-  }
-  const tokens = oidc ? ['access_token', 'refresh_token', 'id_token'] : ['access_token', 'refresh_token'];
-  push({ msg: m('auth', 'app', oidc ? '200 access + refresh + id_token' : '200 access + refresh', 'back'), app: tokens,
-    say: <>Tokens: a short-lived <span className="hl ok">access_token</span> (scope photos.read) and a <span className="hl violet">refresh_token</span> to get new ones later{oidc ? <>, plus an <span className="hl info">id_token</span></> : null}.</> });
-  if (oidc) {
-    push({ busy: 'app', app: tokens, signedIn: true, hold: 1.3,
-      say: <>The <span className="hl info">id_token</span> is OIDC: a signed JWT saying <b>who you are</b> (sub, email). That's <i>authentication</i>. The access token is only <i>authorization</i>.</> });
-  }
-  push({ msg: m('app', 'api', 'GET /photos  Bearer …', 'back'), app: tokens, say: <>PhotoPrint calls the Photos API with the access token.</> });
-  push({ msg: m('api', 'app', '200 · photos', 'ok'), app: tokens, outcome: 'ok', say: <>The API checks the token and that its scope includes <span className="hl info">photos.read</span>. <span className="hl ok">200.</span></> });
-  push({ msg: m('app', 'api', 'DELETE /photos/7', 'back'), app: tokens, say: <>Could PhotoPrint delete a photo?</> });
-  push({ msg: m('api', 'app', '403 insufficient_scope', 'bad'), app: tokens, say: <><span className="hl bad">403.</span> You only granted <b>read</b>. That's the whole point of scopes.</> });
-  push({ app: tokens, hold: 2,
-    say: <>OAuth 2 = <b>delegated authorization</b> ("this app may read my photos"). OIDC adds <b>authentication</b> ("this is Ada"). You can revoke PhotoPrint's access anytime without changing your password.</> });
-  return out;
-}
+const ATTACK_OPTIONS = (['none', ...ATTACKS] as Attack[]).map((a) => ({ value: a, label: ATTACK_LABEL[a] }));
 
 export function Stage() {
-  const [pkce, setPkce] = useState(true);
-  const [attacker, setAttacker] = useState(false);
-  const [oidc, setOidc] = useState(true);
-  const frames = useMemo(() => build({ pkce, attacker, oidc }), [pkce, attacker, oidc]);
+  const [opts, setOpts] = useState<Opts>(DEFAULT_OPTS);
+  const set = <K extends keyof Opts>(key: K) => (value: Opts[K]) => setOpts((o) => ({ ...o, [key]: value }));
+  const frames = useMemo(() => buildFrames(opts), [opts]);
   const player = usePlayer(frames, { interval: 1900 });
   const f = player.frame;
   const active = new Set<NodeId>(f.msg ? [f.msg.from, f.msg.to] : f.busy ? [f.busy] : []);
-  const nodes: NodeId[] = attacker ? ['browser', 'app', 'auth', 'api', 'attacker'] : ['browser', 'app', 'auth', 'api'];
+  const nodes: NodeId[] = opts.attack === 'none' ? ['browser', 'app', 'auth', 'api'] : ['browser', 'app', 'auth', 'api', 'attacker'];
+  const inPlay = defencesInPlay(opts.attack);
+  const off = inPlay.filter((k) => !opts[k]);
+  const redirectAttack = opts.attack === 'redirect';
+  const matrix = useMemo(() => defenceMatrix(), []);
 
   return (
-    <StageFrame minWidth={880}
+    <StageFrame
       player={player}
       height={520}
       stats={
         <Stats>
-          <Stat label="PKCE" value={pkce ? 'on' : 'off'} color={pkce ? 'var(--ok)' : 'var(--bad)'} />
-          <Stat label="Signed in as" value={f.signedIn ? 'Ada' : '·'} color="var(--info)" sub="from the id_token" />
+          <Stat
+            label="Defences on"
+            value={`${countDefences(opts, inPlay)}/${inPlay.length}`}
+            sub={off.length ? `${off.map((k) => DEFENCE_NAMES[k]).join(', ')} off` : inPlay.map((k) => DEFENCE_NAMES[k]).join(', ')}
+          />
+          <Stat label="Signed in as" value={f.signedIn ? 'Ada' : '·'} sub="from the id_token" />
           <Stat
             label="Outcome"
-            value={f.outcome === 'ok' ? 'photos printed' : f.outcome === 'bad' ? 'photos leaked' : f.outcome === 'blocked' ? 'attack blocked' : '·'}
-            color={f.outcome === 'bad' ? 'var(--bad)' : f.outcome ? 'var(--ok)' : 'var(--muted)'}
+            value={f.outcome ? OUTCOME_LABEL[f.outcome] : '·'}
+            color={f.outcome === 'leaked' || f.outcome === 'hijacked' ? 'var(--bad)' : f.outcome ? 'var(--ok)' : 'var(--muted)'}
           />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: COLOR.front, label: 'front channel (browser redirects)', shape: 'dot' },
-            { color: COLOR.back, label: 'back channel (server to server)', shape: 'dot' },
-            { color: COLOR.ok, label: 'success', shape: 'dot' },
-            { color: COLOR.bad, label: 'attack / denied', shape: 'dot' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: COLOR.front, label: 'front channel (browser redirects)', shape: 'dot' },
+              { color: COLOR.back, label: 'back channel (server to server)', shape: 'dot' },
+              { color: COLOR.ok, label: 'success', shape: 'dot' },
+              { color: COLOR.bad, label: 'attack / denied', shape: 'dot' },
+            ]}
+          />
+          <ProvenanceRow>
+            <Provenance kind="toy">PhotoPrint and its servers are made up; the server and app are a small model written for this lesson, not a real OAuth library</Provenance>
+            <Provenance kind="real">the PKCE challenge is a real SHA-256; codes, verifiers and tokens are fake values</Provenance>
+            <Provenance kind="scripted">an attacker who can read the redirect, and a forwarding page on photoprint.app, are scenario assumptions</Provenance>
+            <ClaimLabel kind="standard">RFC 6749 (OAuth 2.0) and RFC 7636 (PKCE) define these checks</ClaimLabel>
+            <ClaimLabel kind="practice">exact redirect_uri matching, PKCE for public clients (recommended for others too) and leaving the implicit flow are current guidance, from memory</ClaimLabel>
+            <ClaimLabel kind="practice">a server that refuses a code issued without a challenge (RFC 9700 expects this of one that supports PKCE), from memory; one that accepts it can be downgraded</ClaimLabel>
+          </ProvenanceRow>
+        </>
       }
       controls={
         <Controls>
-          <Toggle label="PKCE" value={pkce} onChange={setPkce} />
-          <Toggle label="Attacker on the device" value={attacker} onChange={setAttacker} off="No" on="Intercepts the code" />
-          <Toggle label="Scope" value={oidc} onChange={setOidc} off="photos.read" on="openid + photos.read" />
+          <Segmented label="Attacker" options={ATTACK_OPTIONS} value={opts.attack} onChange={set('attack')} />
+          {redirectAttack ? (
+            <span className="oa-unused">PKCE and State check: not used in this attack, the attacker wrote the request</span>
+          ) : (
+            <>
+              <Toggle label="PKCE" value={opts.pkce} onChange={set('pkce')} />
+              <Toggle label="State check" value={opts.state} onChange={set('state')} />
+            </>
+          )}
+          {opts.attack === 'forge' && opts.pkce && (
+            <Toggle label="Server requires PKCE" value={opts.requirePkce ?? true} onChange={set('requirePkce')} off="Optional" on="Required" />
+          )}
+          <Toggle label="redirect_uri matching" value={opts.exactRedirect} onChange={set('exactRedirect')} off="Any URL on the site" on="Exact" />
+          <Toggle label="Scope" value={opts.oidc} onChange={set('oidc')} off="photos.read" on="openid + photos.read" />
         </Controls>
       }
     >
       <div className="oa">
+        <WideRegion minWidth={SCENE_MIN_WIDTH}>
         <svg className="oa-scene" viewBox="0 0 940 340" role="img" aria-label="OAuth authorization code flow">
-          <line x1={POS.browser.x} y1={POS.browser.y} x2={POS.app.x} y2={POS.app.y} className="oa-edge front" />
-          <line x1={POS.browser.x} y1={POS.browser.y} x2={POS.auth.x} y2={POS.auth.y} className="oa-edge front" />
-          <line x1={POS.app.x} y1={POS.app.y} x2={POS.auth.x} y2={POS.auth.y} className="oa-edge back" />
-          <line x1={POS.app.x} y1={POS.app.y} x2={POS.api.x} y2={POS.api.y} className="oa-edge back" />
-          {attacker && (
-            <>
-              <line x1={POS.browser.x} y1={POS.browser.y} x2={POS.attacker.x} y2={POS.attacker.y} className="oa-edge bad" />
-              <line x1={POS.attacker.x} y1={POS.attacker.y} x2={POS.auth.x} y2={POS.auth.y} className="oa-edge bad" />
-              <line x1={POS.attacker.x} y1={POS.attacker.y} x2={POS.api.x} y2={POS.api.y} className="oa-edge bad" />
-            </>
-          )}
+          {SCENE_EDGES.filter(([a, b]) => opts.attack !== 'none' || (a !== 'attacker' && b !== 'attacker')).map(([a, b]) => (
+            <line key={`${a}-${b}`} x1={POS[a].x} y1={POS[a].y} x2={POS[b].x} y2={POS[b].y} className={`oa-edge ${a === 'attacker' || b === 'attacker' ? 'bad' : a === 'browser' ? 'front' : 'back'}`} />
+          ))}
           <text x={255} y={100} className="oa-channel" transform="rotate(-18 255 100)">front channel</text>
           <text x={484} y={132} className="oa-channel back">back channel</text>
 
           {nodes.map((n) => (
-            <Node key={n} id={n} on={active.has(n)} busy={f.busy === n} extra={n === 'api' && f.photosLeaked ? 'leaked!' : undefined} />
+            <Node
+              key={n}
+              id={n}
+              on={active.has(n)}
+              busy={f.busy === n}
+              sub={n === 'attacker' && opts.attack !== 'none' ? ATTACKER_SUB[opts.attack] : undefined}
+              extra={n === 'api' && f.photosLeaked ? 'leaked!' : undefined}
+            />
           ))}
 
           <AnimatePresence>
             {f.screen !== 'none' && (
               <motion.g key={f.screen} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                <rect x={POS.auth.x - 120} y={POS.auth.y - 118} width={240} height={78} rx={12} className="oa-popup" />
-                {f.screen === 'login' ? (
+                <rect x={POS.auth.x - 120} y={POS.auth.y - 118} width={240} height={78} rx={12} className={`oa-popup ${f.screen === 'error' ? 'bad' : ''}`} />
+                {f.screen === 'login' && (
                   <>
                     <text x={POS.auth.x} y={POS.auth.y - 95} textAnchor="middle" className="oa-popup-title">Sign in to Photos</text>
                     <text x={POS.auth.x} y={POS.auth.y - 74} textAnchor="middle" className="oa-popup-body">ada@ex.com · ••••••••</text>
                     <text x={POS.auth.x} y={POS.auth.y - 55} textAnchor="middle" className="oa-popup-note">typed on accounts.photos only</text>
                   </>
-                ) : (
+                )}
+                {f.screen === 'consent' && (
                   <>
                     <text x={POS.auth.x} y={POS.auth.y - 95} textAnchor="middle" className="oa-popup-title">PhotoPrint wants to:</text>
                     <text x={POS.auth.x} y={POS.auth.y - 74} textAnchor="middle" className="oa-popup-body">✓ View your photos</text>
                     <rect x={POS.auth.x - 30} y={POS.auth.y - 64} width={60} height={18} rx={6} className="oa-allow" />
                     <text x={POS.auth.x} y={POS.auth.y - 51} textAnchor="middle" className="oa-allow-text">Allow</text>
+                  </>
+                )}
+                {f.screen === 'error' && (
+                  <>
+                    <text x={POS.auth.x} y={POS.auth.y - 95} textAnchor="middle" className="oa-popup-title">Can't continue</text>
+                    <text x={POS.auth.x} y={POS.auth.y - 74} textAnchor="middle" className="oa-popup-body bad">redirect_uri is not registered</text>
+                    <text x={POS.auth.x} y={POS.auth.y - 55} textAnchor="middle" className="oa-popup-note">no redirect, no code issued</text>
                   </>
                 )}
               </motion.g>
@@ -209,6 +180,7 @@ export function Stage() {
 
           {f.msg && <MessagePill key={player.index} msg={f.msg} />}
         </svg>
+        </WideRegion>
 
         <Box className="oa-url">
           <span className="oa-url-label">URL bar</span>
@@ -217,22 +189,59 @@ export function Stage() {
 
         <div className="oa-holds">
           <Holds title="PhotoPrint holds" items={f.app} />
-          {attacker && <Holds title="Attacker holds" items={f.att} bad />}
+          {opts.attack !== 'none' && <Holds title="Attacker holds" items={f.att} bad />}
         </div>
+
+        <Box className="oa-bind">
+          <span className="oa-url-label">Which parameter binds which party</span>
+          <ul className="oa-bind-list">
+            {BINDINGS.map((b) => (
+              <li key={b.param}>
+                <i className="oa-swatch" style={{ background: DEFENCE_COLOR[b.defence] }} aria-hidden="true" />
+                <code>{b.param}</code> ties {b.binds}; checked by {b.checkedBy}.
+              </li>
+            ))}
+          </ul>
+          <div className="oa-matrix-wrap" tabIndex={0} role="region" aria-label="What each defence stops, a table you can scroll sideways">
+          <table className="oa-matrix">
+            <caption>What each defence stops: every cell is a run of the same model, and each column switches on only the defences it names. The forged-callback attacker leaves the challenge out, so that attack has a row for a server that requires PKCE and one for a server that does not</caption>
+            <thead>
+              <tr>
+                <th scope="col">Attack</th>
+                {COLUMNS.map((c) => (
+                  <th key={c.id} scope="col" className={sameDefences(c.defences, opts) ? 'now' : ''}>{c.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {matrix.map((row) => (
+                <tr key={row.label} className={rowIsCurrent(row, opts) ? 'now' : ''}>
+                  <th scope="row">{row.label}</th>
+                  {row.cells.map((cell) => {
+                    const col = COLUMNS.find((c) => c.id === cell.column)!;
+                    return (
+                      <td key={cell.column} className={`${cell.summary.outcome === 'blocked' ? 'good' : 'bad'} ${rowIsCurrent(row, opts) && sameDefences(col.defences, opts) ? 'now' : ''}`}>
+                        {cellText(cell.summary)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        </Box>
       </div>
     </StageFrame>
   );
 }
 
-const CHIP: Record<string, { color: string; note: string }> = {
-  code_verifier: { color: 'var(--hi)', note: 'secret, never sent until /token' },
-  code: { color: 'var(--ok)', note: 'single-use, ~1 min' },
-  access_token: { color: 'var(--ok)', note: 'photos.read · ~1 h' },
-  refresh_token: { color: 'var(--violet)', note: 'gets new access tokens' },
-  id_token: { color: 'var(--info)', note: 'JWT: who the user is' },
-};
+/** The matrix row for the current attack; the forged-callback attack has one row per server setting. */
+const rowIsCurrent = (row: MatrixRow, o: Opts) => row.attack === o.attack && (row.attack !== 'forge' || row.requirePkce === (o.requirePkce ?? true));
 
-function Holds({ title, items, bad = false }: { title: string; items: string[]; bad?: boolean }) {
+const sameDefences = (a: Defences, b: Defences) => a.pkce === b.pkce && a.state === b.state && a.exactRedirect === b.exactRedirect;
+
+function Holds({ title, items, bad = false }: { title: string; items: Held[]; bad?: boolean }) {
   return (
     <Box className={`oa-hold ${bad ? 'bad' : ''}`}>
       <span className="oa-url-label">{title}</span>
@@ -258,15 +267,14 @@ function Holds({ title, items, bad = false }: { title: string; items: string[]; 
   );
 }
 
-function Url({ url }: { url: string }) {
-  const [base, query] = url.split('?');
-  if (!query) return <span>{base}</span>;
+/** The URL with each parameter in its own hue: the same hues as the chips and the table above. */
+function Url({ url }: { url: UrlView }) {
+  if (!url.params.length) return <span>{url.base}</span>;
   return (
     <>
-      <span>{base}?</span>
-      {query.split('&').map((pair, i) => {
-        const [k, v] = pair.split('=');
-        const cls = k.startsWith('code_challenge') ? 'pkce' : k === 'state' ? 'state' : k === 'scope' ? 'scope' : k === 'code' ? 'code' : '';
+      <span>{url.base}?</span>
+      {url.params.map(([k, v], i) => {
+        const cls = k.startsWith('code_challenge') ? 'pkce' : k === 'state' ? 'state' : k === 'scope' ? 'scope' : k === 'code' ? 'code' : k === 'redirect_uri' ? 'redirect' : '';
         return (
           <span key={k} className={`oa-param ${cls}`}>
             {i > 0 ? '&' : ''}
@@ -282,8 +290,8 @@ function Url({ url }: { url: string }) {
 const NODE = { w: 184, h: 54, rx: 12, subDy: 14 } as const;
 const BUSY_RIPPLE = { from: 44, to: 92 } as const;
 
-function Node({ id, on, busy, extra }: { id: NodeId; on: boolean; busy: boolean; extra?: string }) {
-  const [title, sub] = LABEL[id];
+function Node({ id, on, busy, sub, extra }: { id: NodeId; on: boolean; busy: boolean; sub?: string; extra?: string }) {
+  const [title, defaultSub] = LABEL[id];
   return (
     <>
       {busy && <Pulse at={POS[id]} from={BUSY_RIPPLE.from} to={BUSY_RIPPLE.to} />}
@@ -291,7 +299,7 @@ function Node({ id, on, busy, extra }: { id: NodeId; on: boolean; busy: boolean;
         at={POS[id]}
         {...NODE}
         title={title}
-        sub={extra ? <tspan className="oa-node-alert">{extra}</tspan> : sub}
+        sub={extra ? <tspan className="oa-node-alert">{extra}</tspan> : (sub ?? defaultSub)}
         on={on}
         className={id === 'attacker' ? 'oa-attacker' : undefined}
       />

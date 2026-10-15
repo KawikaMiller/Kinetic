@@ -7,7 +7,7 @@ import { ASSETS, EDGES, ORIGIN, ORIGIN_HISTORY, SHIELD, type Cdn, type LegKind }
 
 type Ctx = CanvasRenderingContext2D;
 
-export const LEG_COLOR: Record<LegKind, string> = { req: C.info, hit: C.ok, miss: C.hi };
+export const LEG_COLOR: Record<LegKind, string> = { req: C.info, hit: C.ok, miss: C.bad };
 export const SHIELD_COLOR = C.orange;
 
 const TRAIL_ALPHA = 0x44 / 255; // the faint line behind each request

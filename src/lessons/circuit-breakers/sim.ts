@@ -2,6 +2,7 @@
 // B gets slower and flakier as it gets overloaded, and keeps working on
 // requests A has already given up on (timeouts don't cancel remote work).
 // That's what turns retries into a storm.
+import { mulberry32, type Rnd } from '../../core/random';
 import { createSampler, percentile } from '../../core/sim';
 
 export type Mode = 'naive' | 'backoff' | 'breaker';
@@ -13,10 +14,25 @@ export const B_CAP = 15; // concurrent calls B handles before degrading
 export const MAX_RETRIES = 3;
 export const BASE_BACKOFF = 0.2;
 export const OPEN_FOR = 3;
-const WINDOW = 20;
-const MIN_CALLS = 8;
-const TRIP_RATIO = 0.5;
-const PROBES = 3;
+/** The breaker looks at the last WINDOW calls, and trips once at least MIN_CALLS are in it and TRIP_RATIO of them failed. */
+export const WINDOW = 20;
+export const MIN_CALLS = 8;
+export const TRIP_RATIO = 0.5;
+/** Probe calls the half-open breaker lets through; all of them must succeed to close it. */
+export const PROBES = 3;
+/** B's load, as a multiple of the user traffic, that counts as a retry storm. */
+export const STORM_RATIO = 1.8;
+/**
+ * A retry storm is also under way when retries make up more than this share of B's load while B carries more than the users send.
+ * The thread pool caps B's load, so at high user traffic the ratio alone never reaches STORM_RATIO even when most of the load is retries.
+ */
+export const STORM_RETRY_SHARE = 0.5;
+/** The seed the lesson loads with: a seed whose fault schedule breaks naive retries by a wide margin, not a bare one (see sim.test.ts). */
+export const BROKEN_SEED = 1;
+/** Seconds over which "load on B" is measured. */
+export const LOAD_WINDOW = 2;
+/** However overloaded B is, a call still succeeds this often. */
+export const MAX_FAIL_CHANCE = 0.98;
 export const NET = 0.12; // one-way network hop, seconds (slowed down to watch)
 
 export interface Req {
@@ -63,8 +79,9 @@ export class Sim {
   reqs: Req[] = [];
   calls: Call[] = [];
   done: Done[] = [];
-  bArrivals: number[] = [];
-  retryDelays: { t: number; delay: number }[] = [];
+  /** Calls arriving at B, newest last; `retry` is true for every attempt after a request's first. */
+  bArrivals: { t: number; retry: boolean }[] = [];
+  retryDelays: { t: number; delay: number; attempt: number }[] = [];
   sparks: Spark[] = [];
   threads: (Req | null)[] = Array(THREADS).fill(null);
   breaker: BreakerState = 'closed';
@@ -73,7 +90,15 @@ export class Sim {
   probesSent = 0;
   probeOk = 0;
   transitions: { t: number; to: BreakerState }[] = [];
+  /** Calls sent to B, and requests that got a thread, since the start (never pruned). */
+  callsSent = 0;
+  admitted = 0;
   private nextId = 1;
+  private readonly rnd: Rnd;
+
+  constructor(seed: number) {
+    this.rnd = mulberry32(seed);
+  }
 
   get bConcurrency() {
     return this.calls.filter((c) => c.scheduled && this.now < c.bDoneAt).length;
@@ -83,6 +108,16 @@ export class Sim {
   bLoad(conc: number) {
     const over = Math.max(0, conc - B_CAP) / B_CAP;
     return { mult: Math.min(8, 1 + over * 4), extraFail: Math.min(0.6, over * 0.8) };
+  }
+
+  /** The failure chance a call arriving at B right now would face: it counts itself among the calls B is working on. */
+  get nextCallFailChance() {
+    return this.failChance(this.bConcurrency + 1);
+  }
+
+  /** The chance that a call B picks up at this concurrency fails: the base failure rate plus what overload adds, capped. */
+  failChance(conc: number) {
+    return Math.min(MAX_FAIL_CHANCE, this.failRate + this.bLoad(conc).extraFail);
   }
 
   arrive() {
@@ -99,6 +134,7 @@ export class Sim {
     }
     const req: Req = { id: this.nextId++, born: now, attempt: 0, thread: free, retryAt: null, done: false };
     this.threads[free] = req;
+    this.admitted++;
     this.reqs.push(req);
     this.send(req);
   }
@@ -114,6 +150,7 @@ export class Sim {
         probe = true;
       }
     }
+    this.callsSent++;
     this.calls.push({
       id: this.nextId++, req, attempt: req.attempt, probe, sentAt: now, arriveB: now + NET,
       bDoneAt: Infinity, respAt: Infinity, ok: false, resolved: false, timedOut: false, scheduled: false,
@@ -168,8 +205,8 @@ export class Sim {
     if (req.done) return;
     if (req.attempt >= MAX_RETRIES) return this.release(req, 'error');
     req.attempt++;
-    const delay = this.mode === 'naive' ? 0 : Math.random() * BASE_BACKOFF * 2 ** (req.attempt - 1);
-    this.retryDelays.push({ t: this.now, delay });
+    const delay = this.mode === 'naive' ? 0 : this.rnd() * BASE_BACKOFF * 2 ** (req.attempt - 1);
+    this.retryDelays.push({ t: this.now, delay, attempt: req.attempt });
     req.retryAt = this.now + delay;
   }
 
@@ -183,11 +220,13 @@ export class Sim {
       // B picks the call up and decides how long it will take and whether it fails
       if (!c.scheduled && now >= c.arriveB) {
         c.scheduled = true;
-        this.bArrivals.push(now);
-        const { mult, extraFail } = this.bLoad(this.bConcurrency);
-        c.bDoneAt = c.arriveB + this.latency * mult * (0.7 + Math.random() * 0.6);
+        this.bArrivals.push({ t: now, retry: c.attempt > 0 });
+        // The call counts itself: it is scheduled (and so in flight at B) from this moment.
+        const conc = this.bConcurrency;
+        const { mult } = this.bLoad(conc);
+        c.bDoneAt = c.arriveB + this.latency * mult * (0.7 + this.rnd() * 0.6);
         c.respAt = c.bDoneAt + NET;
-        c.ok = Math.random() >= Math.min(0.98, this.failRate + extraFail);
+        c.ok = this.rnd() >= this.failChance(conc);
       }
       if (c.resolved) continue;
       if (now >= c.sentAt + TIMEOUT && c.respAt > c.sentAt + TIMEOUT) {
@@ -216,7 +255,7 @@ export class Sim {
     this.reqs = this.reqs.filter((r) => !r.done);
     const cut = now - 30;
     this.done = this.done.filter((d) => d.t > cut);
-    this.bArrivals = this.bArrivals.filter((t) => t > now - 5);
+    this.bArrivals = this.bArrivals.filter((a) => a.t > now - 5);
     this.retryDelays = this.retryDelays.filter((r) => r.t > now - 4);
     this.sparks = this.sparks.filter((s) => now - s.t < 0.8);
     this.transitions = this.transitions.filter((t) => t.t > cut);
@@ -227,13 +266,16 @@ export class Sim {
     const recent = this.done.filter((d) => d.t > now - 5);
     const errors = recent.filter((d) => d.result === 'error').length;
     const fallbacks = recent.filter((d) => d.result === 'fallback').length;
+    const lastTwo = this.bArrivals.filter((a) => a.t > now - LOAD_WINDOW);
     const lats = recent.map((d) => d.latency).sort((a, b) => a - b);
     return {
-      bLoad: this.bArrivals.filter((t) => t > now - 2).length / 2,
+      bLoad: lastTwo.length / LOAD_WINDOW,
+      bRetryLoad: lastTwo.filter((a) => a.retry).length / LOAD_WINDOW,
       bConc: this.bConcurrency,
       errorPct: recent.length ? (errors / recent.length) * 100 : 0,
       fallbackPct: recent.length ? (fallbacks / recent.length) * 100 : 0,
       p99: percentile(lats, 0.99),
+      bOrphans: this.calls.filter((c) => c.scheduled && this.now < c.bDoneAt && c.timedOut).length,
       busyThreads: this.threads.filter(Boolean).length,
       breaker: this.breaker,
     };
@@ -243,6 +285,9 @@ export class Sim {
 export type Stats = ReturnType<Sim['stats']>;
 
 /* ─── The lesson's world: the sim plus bursty user traffic and chart history ─── */
+
+/** Keeps the arrival stream's draws apart from the sim's, so changing one doesn't reshuffle the other. */
+const ARRIVAL_SEED_OFFSET = 1000;
 
 export const HISTORY = 60; // chart samples
 const SAMPLE_EVERY = 0.5; // seconds between chart samples
@@ -257,18 +302,21 @@ export interface World {
   sim: Sim;
   /** Users per second. */
   rate: number;
+  /** Draws the burstiness of user arrivals (separate from the sim's own draws). */
+  rnd: Rnd;
   /** Fractional arrivals carried between frames. */
   acc: number;
   history: ReturnType<typeof createSampler<HistoryPoint>>;
 }
 
-export function createWorld(rate: number): World {
-  return { sim: new Sim(), rate, acc: 0, history: createSampler<HistoryPoint>({ every: SAMPLE_EVERY, cap: HISTORY }) };
+export function createWorld(rate: number, seed = BROKEN_SEED): World {
+  const rnd = mulberry32(seed + ARRIVAL_SEED_OFFSET);
+  return { sim: new Sim(seed), rnd, rate, acc: 0, history: createSampler<HistoryPoint>({ every: SAMPLE_EVERY, cap: HISTORY }) };
 }
 
 /** Advance by dt: bursty arrivals at `rate`, the sim itself, then the chart sample. */
 export function advance(w: World, dt: number) {
-  w.acc += w.rate * dt * (0.5 + Math.random());
+  w.acc += w.rate * dt * (0.5 + w.rnd());
   while (w.acc >= 1) {
     w.acc -= 1;
     w.sim.arrive();
@@ -278,4 +326,33 @@ export function advance(w: World, dt: number) {
     const st = w.sim.stats();
     return { bLoad: st.bLoad, err: st.errorPct, breaker: st.breaker };
   });
+}
+
+/* ─── What the lesson narrates when the numbers cross a line ─── */
+
+export type Insight =
+  | { kind: 'cascade' }
+  | { kind: 'storm'; ratio: number }
+  | { kind: 'backlog'; conc: number; orphans: number };
+
+/** Whether B's load counts as a retry storm: far above the user traffic, or mostly retries on top of it. */
+export function isStorm(st: Pick<Stats, 'bLoad' | 'bRetryLoad'>, rate: number): boolean {
+  return st.bLoad > rate * STORM_RATIO || (st.bLoad > rate && st.bRetryLoad > st.bLoad * STORM_RETRY_SHARE);
+}
+
+/** A's error rate from which its stat turns red (percent). */
+export const ERROR_RED_PCT = 1;
+/** A's error rate above this, with every thread busy, is a cascade. */
+export const CASCADE_ERROR_PCT = 50;
+/** B is "healthy again" when its failure rate is below this (a fraction). */
+const HEALTHY_FAIL_BELOW = 0.1;
+/** B holds a backlog once it has this many times its capacity in flight. */
+const BACKLOG_FACTOR = 2;
+
+/** The one thing worth saying about these numbers, or null. Pure: the narrator rate-limits it. */
+export function insightFor(st: Stats, o: { rate: number; mode: Mode; failRate: number }): Insight | null {
+  if (st.busyThreads >= THREADS && st.errorPct > CASCADE_ERROR_PCT) return { kind: 'cascade' };
+  if (isStorm(st, o.rate) && o.mode !== 'breaker') return { kind: 'storm', ratio: st.bLoad / o.rate };
+  if (st.bConc > B_CAP * BACKLOG_FACTOR && o.failRate < HEALTHY_FAIL_BELOW) return { kind: 'backlog', conc: st.bConc, orphans: st.bOrphans };
+  return null;
 }

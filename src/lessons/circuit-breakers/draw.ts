@@ -12,6 +12,8 @@ const MAX_B_DOTS = 80;
 const B_DOT_COLS = 16;
 const RETRY_COLS = 60;
 const RETRY_STACK = 18;
+/** B's capacity bar is neutral grey from this share of its capacity up to the capacity line, then red. */
+const NEAR_CAP = 0.7;
 
 const TITLE = FONT.sans(13, 700);
 const LABEL = FONT.sans(11);
@@ -49,7 +51,7 @@ export function drawScene(ctx: Ctx, w: number, h: number, world: World) {
   for (const c of sim.calls) {
     if (now < c.arriveB) {
       const t = travel({ x: aRight, y: 0 }, { x: bLeft, y: 0 }, c.sentAt, c.arriveB - c.sentAt, now);
-      dot(ctx, t.x, L.y + ((c.id % 5) - 2) * 4, 3.5, c.probe ? C.hi : C.info);
+      dot(ctx, t.x, L.y + ((c.id % 5) - 2) * 4, 3.5, c.probe ? C.amber : C.info);
     } else if (now >= c.bDoneAt && now < c.respAt) {
       const t = travel({ x: bLeft, y: 0 }, { x: aRight, y: 0 }, c.bDoneAt, c.respAt - c.bDoneAt, now);
       const color = c.timedOut ? C.faint : c.ok ? C.ok : C.bad;
@@ -61,7 +63,7 @@ export function drawScene(ctx: Ctx, w: number, h: number, world: World) {
   for (const sp of sim.sparks) {
     const t = Math.min(1, (now - sp.t) / SPARK_FADE_S);
     ctx.globalAlpha = 1 - t;
-    dot(ctx, lerp(L.ax - 88, L.ux + 30, t), L.y + 20 + ((sp.id % 7) - 3) * 4, 3.5, sp.kind === 'fallback' ? C.hi : C.bad);
+    dot(ctx, lerp(L.ax - 88, L.ux + 30, t), L.y + 20 + ((sp.id % 7) - 3) * 4, 3.5, sp.kind === 'fallback' ? C.trkHw : C.bad);
     ctx.globalAlpha = 1;
   }
 
@@ -105,15 +107,15 @@ function drawServiceB(ctx: Ctx, x: number, y: number, sim: Sim) {
 
   // capacity bar with a tick at B's capacity
   const barW = 140;
-  const fill = overloaded ? C.bad : conc > B_CAP * 0.7 ? C.hi : C.ok;
+  const fill = overloaded ? C.bad : conc > B_CAP * NEAR_CAP ? C.muted : C.ok;
   bar(ctx, x - barW / 2, y + 30, barW, 6, conc / (B_CAP * 3), fill);
   rect(ctx, x - barW / 2 + barW / 3, y + 26, 1.5, 14, { fill: C.text });
   text(ctx, `${conc} busy · capacity ${B_CAP}`, x, y + 50, { color: overloaded ? C.bad : C.muted });
-  text(ctx, `${mult.toFixed(1)}× slower · ${Math.round(sim.failRate * 100)}% fail`, x, y + 66, { color: overloaded ? C.bad : C.faint });
+  text(ctx, `${mult.toFixed(1)}× slower · ${Math.round(sim.nextCallFailChance * 100)}% fail`, x, y + 66, { color: overloaded ? C.bad : C.faint });
 }
 
 function drawSwitch(ctx: Ctx, x: number, y: number, state: BreakerState | null, openFor: number) {
-  const color = state === null ? C.faint : state === 'closed' ? C.ok : state === 'open' ? C.bad : C.hi;
+  const color = state === null ? C.faint : state === 'closed' ? C.ok : state === 'open' ? C.bad : C.amber;
   // contacts
   dot(ctx, x - 24, y, 5, color);
   dot(ctx, x + 24, y, 5, color);
@@ -137,7 +139,7 @@ function drawSwitch(ctx: Ctx, x: number, y: number, state: BreakerState | null, 
   const nodes: { id: BreakerState; label: string; x: number; y: number; c: string }[] = [
     { id: 'closed', label: 'CLOSED', x: x - 58, y: sy, c: C.ok },
     { id: 'open', label: 'OPEN', x: x + 58, y: sy, c: C.bad },
-    { id: 'half', label: 'HALF-OPEN', x, y: sy + 56, c: C.hi },
+    { id: 'half', label: 'HALF-OPEN', x, y: sy + 56, c: C.amber },
   ];
   wire(
     ctx,
@@ -197,7 +199,7 @@ function drawChart(ctx: Ctx, x0: number, top: number, x1: number, bottom: number
   const slot = (x1 - x0) / (HISTORY - 1);
   hist.forEach((p, i) => {
     if (world.sim.mode !== 'breaker' && p.breaker === 'closed') return;
-    const fill = p.breaker === 'closed' ? C.ok : p.breaker === 'open' ? C.bad : C.hi;
+    const fill = p.breaker === 'closed' ? C.ok : p.breaker === 'open' ? C.bad : C.amber;
     rect(ctx, x0 + slot * (i + HISTORY - hist.length), bandY, slot + 0.5, 5, { fill });
   });
 }

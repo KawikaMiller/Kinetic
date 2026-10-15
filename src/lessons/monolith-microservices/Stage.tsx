@@ -1,10 +1,14 @@
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { pillWidth } from '../../core/geometry';
 import { usePlayer } from '../../core/usePlayer';
-import { buildFrames, EDGES, LAYOUT, TEAMS, type Arch, type Box, type Hop, type Scenario } from './scenarios';
+import { buildFrames } from './frames';
+import {
+  DB_READ_MS, DB_WRITE_MS, EDGES, FULL_BUILD_MIN, FUNCTION_CALL_MS, LAYOUT, NETWORK_CALL_MS, ONE_SERVICE_BUILD_MIN, TEAMS, countStatus,
+  type Arch, type Box, type Hop, type Scenario,
+} from './model';
 import './styles.css';
 
 const HOP_COLOR: Record<Hop, string> = { call: 'var(--violet)', net: 'var(--info)', db: 'var(--text)' };
@@ -33,24 +37,43 @@ export function Stage() {
       height={420}
       stats={
         <Stats>
-          <Stat label="Latency" value={f.latency === null ? '–' : `${f.latency.toFixed(f.latency < 1 ? 2 : 1)} ms`} color="var(--hi)" sub="internal only" />
+          <Stat label="Latency" value={f.latency === null ? '–' : `${f.latency.toFixed(f.latency < 1 ? 2 : 1)} ms`} sub="illustrative, internal only" />
           <Stat label="Network hops" value={f.hops} color="var(--info)" />
           <Stat label="Deploy unit" value={<span className="mm-small">{f.deployUnit}</span>} />
-          <Stat label="Blast radius" value={<span className="mm-small">{f.blast}</span>} color={f.blast.includes('down') ? 'var(--bad)' : undefined} />
+          <Stat label="Blast radius" value={<span className="mm-small">{f.blast}</span>} color={countStatus(arch, f.status, 'down') > 0 ? 'var(--bad)' : undefined} />
         </Stats>
       }
       legend={
-        <Legend
-          items={[
-            { color: 'var(--ok)', label: 'healthy' },
-            { color: 'var(--info)', label: 'deploying' },
-            { color: 'var(--hi)', label: 'degraded' },
-            { color: 'var(--bad)', label: 'down' },
-            { color: 'var(--violet)', label: 'in-process call', shape: 'dot' },
-            { color: 'var(--info)', label: 'network call', shape: 'dot' },
-            { color: 'var(--text)', label: 'DB query', shape: 'dot' },
-          ]}
-        />
+        <>
+          <Legend
+            items={[
+              { color: 'var(--ok)', label: 'healthy' },
+              { color: 'var(--amber)', label: 'deploying' },
+              { color: 'var(--orange)', label: 'degraded' },
+              { color: 'var(--bad)', label: 'down' },
+              { color: 'var(--violet)', label: 'in-process call', shape: 'dot' },
+              { color: 'var(--info)', label: 'network call', shape: 'dot' },
+              { color: 'var(--text)', label: 'DB query', shape: 'dot' },
+            ]}
+          />
+          <ProvenanceRow>
+            <Provenance kind="illustrative">
+              made-up round numbers: a function call {FUNCTION_CALL_MS} ms, a network call {NETWORK_CALL_MS} ms, a database read {DB_READ_MS} ms and write {DB_WRITE_MS} ms,
+              builds of {FULL_BUILD_MIN} min for the whole app and {ONE_SERVICE_BUILD_MIN} min for one service
+            </Provenance>
+            {scenario === 'request' ? (
+              <Provenance kind="toy">the same four database accesses in every architecture, so the difference is the network and the coupling</Provenance>
+            ) : (
+              <Provenance kind="scripted">this storyline is scripted, not simulated</Provenance>
+            )}
+            {scenario === 'teams' && (
+              <>
+                <ClaimLabel kind="practice">Conway's law: an observation about teams and systems, from memory</ClaimLabel>
+                <ClaimLabel kind="view">"a monolith suits one or two teams" is one view, not a rule</ClaimLabel>
+              </>
+            )}
+          </ProvenanceRow>
+        </>
       }
       controls={
         <Controls>
