@@ -3,13 +3,13 @@ import { WideRegion } from '../../components/WideRegion';
 import { minWidthForText } from '../../core/scale';
 import { FACTOR_SHAPE, factorOf } from './tree';
 
-export const TREE_W = 820;
-export const TREE_H = 300;
+const TREE_W = 820;
+const TREE_H = 300;
 const NODE_W = 104;
 const NODE_H = 38;
 const NODE_TEXT_PX = 11;
 /** The narrowest width at which the node text stays readable. */
-export const TREE_MIN_WIDTH = minWidthForText(TREE_W, NODE_TEXT_PX);
+const TREE_MIN_WIDTH = minWidthForText(TREE_W, NODE_TEXT_PX);
 
 /** The factors tree, drawn as pills of two short lines. Which nodes show, and how they are marked, is the scene's call. */
 export function FactorTree({ shown, mark, edge, faded, onPick, ariaLabel }: {
