@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { READERS, askCounts, keptOrder, lintDoc, reachOf, type AskOutcome, type DocContent, type Reach } from './designdoc';
 import { CRITERIA, rank, sweepFlips, type ConstraintId, type CriterionId, type Weights } from './decision';
-import { findEnding, findNode, ledger, redMeters, type Scenario, type Walk } from './scenario';
+import { findEnding, findNode, ledger, redMeters, type Scenario, type Walk } from '../../core/scenario';
 
 const REACH_WORD: Record<Reach | 'cut', string> = { full: 'reaches it', partly: 'is cut off partway through it', none: 'never reaches it', cut: 'is cut off' };
 

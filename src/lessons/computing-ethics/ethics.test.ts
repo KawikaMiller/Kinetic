@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { findTopic } from '../../core/curriculum';
+import { enumeratePaths, validateScenario } from '../../core/scenario';
 import { ACM_CODE, principle } from './acm';
 import { CASES, THERAC_FACTS, choiceBasis, type CaseNode, type EthicsCase } from './cases';
 import { CODE_PRINCIPLES, EFFECTS, LENSES, NOTICED, OPTIONS, STAKEHOLDERS, TENSION } from './lenses';
 import { IMPACT_TONE, IMPACT_WORD } from './tones';
 import { freshProgress, markEdge, markNode } from './progress';
-import { advance, back, edgeKey, isDecision, isEnding, mapOf, nodeOf, pick, startWalk, summarisePath, type Walk } from './walk';
+import { advance, back, edgeKey, isDecision, isEnding, mapOf, nodeOf, pick, startWalk, summarisePath, toScenario, type Walk } from './walk';
 
 const byId = (id: string) => CASES.find((c) => c.id === id)!;
 
@@ -77,18 +78,13 @@ describe('every case is a graph with no dead ends', () => {
     }
   });
 
-  it('every node is reachable from the start, and ends lead nowhere', () => {
+  it('passes the shared scenario validator, and its path enumeration finds the same routes as the lesson’s own walk', () => {
     for (const c of CASES) {
-      const seen = new Set<string>();
-      const stack = [c.start];
-      while (stack.length) {
-        const id = stack.pop()!;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        const n = nodeOf(c, id);
-        if (isDecision(n)) stack.push(...n.choices.map((x) => x.to));
-      }
-      expect([...seen].sort()).toEqual(c.nodes.map((n) => n.id).sort());
+      const scenario = toScenario(c);
+      expect(validateScenario(scenario), c.id).toEqual([]);
+      const shared = enumeratePaths(scenario).map((p) => `${p.choices.join('')}>${p.endingId}`).sort();
+      const own = allRoutes(c).map((r) => `${r.walk.path.map((s) => s.choice).join('')}>${r.end}`).sort();
+      expect(shared, c.id).toEqual(own);
     }
   });
 
