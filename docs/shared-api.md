@@ -476,6 +476,7 @@ toOptions(MODES)                                         // [{id,label}] → opt
 <Stat label={<>Tail <span className="keep-case">μ</span></>} value={3} />   // labels are uppercased by CSS: μ would show as Μ ("M")
 <PauseButton paused={paused} onToggle={togglePause} />
 <Button ref={startBtn} variant="primary" onClick={start}>Start</Button>   // ref is the <button>: move focus back to it (usability-laws)
+<Button softDisabled={!canUndo} onClick={undo}>Undo</Button>   // aria-disabled instead of disabled: a button that disables itself on press keeps keyboard focus
 <ChipButton tone="info" on={loaded === p.id} onClick={() => load(p)}>{p.label}</ChipButton>  // a preset chip; size="md" for word-sized labels
 <ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 <ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed

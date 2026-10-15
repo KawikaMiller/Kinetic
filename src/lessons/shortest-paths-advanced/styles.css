@@ -1,0 +1,24 @@
+.spa-stage { flex-flow: row wrap; align-items: flex-start; }
+.spa-main { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.spa-side { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.spa-note { margin: 0; min-height: 1.4em; font-size: 13px; color: var(--muted); }
+.spa-graph { width: 100%; max-width: 640px; margin: 0 auto; }
+.spa-graph .graph-edge-label { font-size: 13px; fill: var(--text); }
+.spa-graph .spa-selected .graph-edge { stroke-dasharray: 2 4; }
+.spa-graph .spa-selected .graph-edge-label { fill: var(--hi); }
+.spa-cell { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.spa-cell small { font-size: 10px; color: var(--muted); font-weight: 400; }
+.spa-edge { font-family: var(--mono); }
+.spa-side .tray:not(.is-stacked) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.spa-side .tray:not(.is-stacked) .section-title { flex-basis: 100%; }
+.spa-line { margin: 0 0 6px; font-size: 13px; line-height: 1.6; }
+.spa-costs { display: flex; flex-direction: column; gap: 10px; }
+.spa-cost-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 1fr) auto; align-items: center; gap: 8px; font-size: 13px; }
+.spa-cost-label { display: flex; flex-direction: column; }
+.spa-cost-label small { color: var(--muted); font-size: 11px; }
+.spa-cost-bar { display: block; height: 14px; background: var(--cell); border-radius: 4px; overflow: hidden; }
+.spa-cost-bar i { display: block; height: 100%; }
+@media (max-width: 900px) {
+  .spa-main, .spa-side { flex-basis: 100%; }
+}
+.spa-stage ~ .provenance-row { margin: 8px 16px 12px; }
