@@ -34,7 +34,7 @@ const lesson: LessonModule = {
   tryThis: [
     `In "SQL becomes a tree" (customer 4242, an index on customer_id), switch EXPLAIN to ANALYZE: the Index Scan reads 10 rows against an estimate of 10, and costs ${money(indexTen)}.`,
     `In "Indexes and statistics" (the customer query, no index) switch on the customer_id index: the Seq Scan at ${money(seq)} loses to an Index Scan at ${money(indexTen)}, ${sig(seq / indexTen, 3)} times cheaper.`,
-    `In "The crossover" the lines cross at ${crossSlow.toLocaleString('en-US')} rows (${pctText(crossSlow / ORDERS.rows, 2)} of the table). Press "1.1 (fast storage)" and they cross at ${crossFast.toLocaleString('en-US')} rows (${pctText(crossFast / ORDERS.rows, 1)}).`,
+    `In "The crossover" the lines cross at ${crossSlow.toLocaleString('en-US')} rows (${pctText(crossSlow / ORDERS.rows, 2)} of the table). Press "1.1 (fast storage)" and they cross at ${crossFast.toLocaleString('en-US')} rows (${pctText(crossFast / ORDERS.rows, 2)}).`,
     'In "Misestimates" (status refunded, an index on status) the planner uses the index. Switch the statistics to stale: it now thinks 25,000 rows match against 500 in the data, off by 50 times, and picks the seq scan.',
     `In "Sort elimination" (customer 4242, newest 10, no index) the plan is Limit, Sort, Seq Scan at ${money(SORT_TEN_ROWS)}. Switch on the (customer_id, created_at) index: the Sort disappears and the cost falls to ${money(indexTen)}.`,
   ],
@@ -42,7 +42,7 @@ const lesson: LessonModule = {
     'In this model the planner costs every candidate plan and runs the cheapest, so an index is a candidate and never an instruction.',
     `The index scan wins while few rows match; past the crossover (${crossSlow.toLocaleString('en-US')} rows here, ${crossFast.toLocaleString('en-US')} at random_page_cost ${FAST_STORAGE_RANDOM_PAGE_COST}) reading the table in order is cheaper.`,
     'An EXPLAIN plan is an estimate until ANALYZE runs it, and stale statistics can put the estimate off by 50 times in this lesson (25,000 rows against 500).',
-    'An index on the filter column and then the sort column lets the planner skip a Sort; an index on any other column does not.',
+    'In this toy an index on the filter column and then the sort column lets the planner skip a Sort, and an index on the sort column alone does not. A real planner can also walk a created_at index and filter as it goes (SQLite does here), trading the Sort for a longer scan.',
   ],
   quiz: [
     {

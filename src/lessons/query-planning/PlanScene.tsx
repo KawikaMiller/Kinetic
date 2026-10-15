@@ -187,7 +187,7 @@ export function PlanScene({ scene, picker }: { scene: PlanSceneId; picker: React
           {def.textPlan && <Provenance kind="not-run">the text plan is the EXPLAIN layout from memory: shown, not run</Provenance>}
           <Provenance kind="from-memory">cost constants are the PostgreSQL defaults as remembered: check the docs</Provenance>
         </ProvenanceRow>
-        <p className="qp-note">Plans here start from the WHERE clause: the toy considers an index only when the clause tests its first column, so it can differ from a real planner (SQLite also walks a created_at index just to get rows in order).</p>
+        <p className="qp-note">Plans here start from the WHERE clause: the toy considers an index only when the clause tests its first column, so it can differ from a real planner (SQLite also walks a created_at index just to get rows in order). SQLite&apos;s own choices here come with no ANALYZE run, so it works from fixed guesses instead of statistics and can decide differently from the toy.</p>
       </div>
     </StageFrame>
   );

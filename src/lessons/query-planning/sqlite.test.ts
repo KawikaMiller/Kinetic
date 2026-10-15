@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { INDEXES, NO_INDEXES, QUERIES, actualRows, planNodes, planQuery, predicateText, queryById, sqlLines, DEFAULT_COSTS, type IndexSet, type Params, type QueryDef } from './model';
 import { STATUSES, countRows, makeOrders, type TableShape } from './table';
+import lesson from './index';
 
 // SQLite is the independent oracle (AC-0/T3 #19) for the access paths it can tell us about. It is loaded at run time:
 // the app's tsconfig has no Node types, so this is the same dynamic-import shim core/testing uses for node:crypto.
@@ -92,6 +93,14 @@ describe('the toy planner agrees with SQLite where the two are comparable', () =
     const q = queryById('customerNewest');
     expect(planText(database(created), sqlOf(q, P))).toContain('SCAN orders USING INDEX');
     expect(toyPlan(q, P, created).usesIndex).toBe(false);
+  });
+
+  it('key idea 4 is scoped to the toy and names the counter-case this SQLite run shows (a created_at index can serve the order)', () => {
+    const idea = lesson.keyIdeas[3];
+    expect(idea).toMatch(/^In this toy/);
+    expect(idea).toContain('created_at index');
+    expect(idea).toContain('SQLite does here');
+    expect(planText(database({ ...NO_INDEXES, created: true }), sqlOf(queryById('customerNewest'), P))).not.toContain('USE TEMP B-TREE FOR ORDER BY');
   });
 });
 

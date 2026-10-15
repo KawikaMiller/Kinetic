@@ -39,10 +39,10 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(text(planCaption('indexes', after, false), { strict: true })).toContain('chose Index Scan: orders_customer_idx');
   });
 
-  it('try-this 3: the crossover is 813 rows (0.81%) and, at random_page_cost 1.1, 76,447 rows (76.4%)', () => {
+  it('try-this 3: the crossover is 813 rows (0.81%) and, at random_page_cost 1.1, 76,447 rows (76.45%)', () => {
     expect(crossoverRows(ORDERS, DEFAULT_COSTS)).toBe(813);
     expect(crossoverRows(ORDERS, { ...DEFAULT_COSTS, randomPage: FAST_STORAGE_RANDOM_PAGE_COST })).toBe(76_447);
-    for (const part of ['813 rows (0.81%', '76,447 rows (76.4%']) expect(lesson.tryThis[2]).toContain(part);
+    for (const part of ['813 rows (0.81%', '76,447 rows (76.45%']) expect(lesson.tryThis[2]).toContain(part);
     expect(text(crossoverCaption(ORDERS, DEFAULT_COSTS, 500), { strict: true })).toContain('813 rows (0.81% of the table)');
   });
 
