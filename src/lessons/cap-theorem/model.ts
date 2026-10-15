@@ -14,7 +14,7 @@
  * client requests are scripted (the lesson says so); the replicas' behaviour is not.
  */
 import {
-  createCluster, linearizable, type Cluster, type DistNode, type RegisterOp, type Safety,
+  createCluster, historyOf, linearizable, settleOp, type Cluster, type DistNode, type OpRecord as ClientOp, type Safety,
 } from '../../core/distSim';
 
 export type Policy = 'quorum' | 'all' | 'local';
@@ -52,18 +52,7 @@ export type Msg =
   | { type: 'gossip'; cell: Cell };
 
 /** What a client saw: one request and how it ended. */
-export interface OpRecord {
-  op: number;
-  kind: 'write' | 'read';
-  client: string;
-  node: NodeId;
-  invoke: number;
-  /** When the client was answered; null while the request is still open or when no answer ever came. */
-  response: number | null;
-  outcome: 'ok' | 'refused' | 'open';
-  /** A write's value, or what a read returned (null for a refused read). */
-  value: number | null;
-}
+export type OpRecord = ClientOp<number, NodeId>;
 
 export interface NodeState {
   value: number;
@@ -108,9 +97,7 @@ function registerNode(policy: Policy, id: string): DistNode<Msg, NodeState> {
       const p = pending.get(op);
       if (!p) return;
       const finish = (outcome: 'ok' | 'refused', value: number | null) => {
-        p.record.response = ctx.trueNow;
-        p.record.outcome = outcome;
-        p.record.value = value;
+        settleOp(p.record, ctx.trueNow, outcome, value);
         pending.delete(op);
         ctx.cancelTimer(`to:${op}`);
       };
@@ -182,9 +169,7 @@ function registerNode(policy: Policy, id: string): DistNode<Msg, NodeState> {
           p.acked.add(msg.from);
           const needed = policy === 'all' ? ctx.peers.length : MAJORITY;
           if (p.acked.size < needed) return;
-          p.record.response = ctx.trueNow;
-          p.record.outcome = 'ok';
-          p.record.value = p.record.kind === 'write' ? p.value : (p.result?.value ?? null);
+          settleOp(p.record, ctx.trueNow, 'ok', p.record.kind === 'write' ? p.value : (p.result?.value ?? null));
           pending.delete(m.op);
           ctx.cancelTimer(`to:${m.op}`);
         }
@@ -219,22 +204,6 @@ export function allOps(nodes: Record<string, { state?: NodeState | undefined }>)
 }
 
 /* ---------- invariants and measurements ---------- */
-
-/**
- * The register history clients saw, for distSim's `linearizable` checker. A refused or still-open
- * write may or may not have taken effect, so it stays in the history as one that never answered;
- * a refused or open read tells the client nothing and is left out.
- */
-export function historyOf(ops: readonly OpRecord[]): RegisterOp<number>[] {
-  return ops.flatMap((o): RegisterOp<number>[] => {
-    const value = o.value;
-    if (o.outcome === 'ok' && value !== null && o.response !== null) {
-      return [{ process: o.client, kind: o.kind, value, invoke: o.invoke, response: o.response }];
-    }
-    if (o.kind === 'write' && value !== null) return [{ process: o.client, kind: 'write', value, invoke: o.invoke, response: Infinity }];
-    return [];
-  });
-}
 
 /** Safety for the CP choice: what clients were told is consistent with one up-to-date copy. */
 export const clientsSeeOneRegister: Safety<NodeState> = (snap) => {

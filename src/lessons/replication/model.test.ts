@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { forSeeds } from '../../core/distSim';
+import { forSeeds, latencyOf } from '../../core/distSim';
 import { expectCaption } from '../../core/testing/captions';
 import { buildFrames } from './frames';
 import lesson from './index';
 import {
   acknowledged, allOps, BROKEN_SEED, buildCluster, DETECT_MS, everSent, failoverScenario, FLUSH_MS, followersArePrefixes, lagOf, landedAt,
-  latencyOf, LAT, noAcknowledgedWriteLost, runStory, SEARCH_END_MS, staleReads, writeMs, type Mode, type NodeView, type OpRecord, type Scenario,
+  LAT, noAcknowledgedWriteLost, runStory, SEARCH_END_MS, staleReads, writeMs, type Mode, type NodeView, type OpRecord, type Scenario,
 } from './model';
 
 const SEEDS = 300;
@@ -76,7 +76,7 @@ describe('the stale-read story', () => {
     const [write, read] = story.ops;
     expect(landedAt(story, 'F1', 'name=Ada')).toBe(FLUSH_MS + LAT.f1);
     expect(landedAt(story, 'F2', 'name=Ada')).toBe(FLUSH_MS + LAT.f2);
-    expect(read.entry).toBe('name=Ana');
+    expect(read.value).toBe('name=Ana');
     expect(story.staleAt(500)).toBe(1);
     expect(write.response).toBeLessThan(read.invoke);
     expect(story.at(read.response ?? 0).F2.log).toEqual(['name=Ana']);
@@ -89,7 +89,7 @@ describe('the stale-read story', () => {
     expect(landedAt(story, 'F1', 'name=Ada')).toBe(LAT.client + LAT.f1);
     expect(landedAt(story, 'F2', 'name=Ada')).toBe(LAT.client + LAT.f2);
     for (const node of Object.values(story.at(write.response ?? 0))) expect(node.log).toEqual(['name=Ana', 'name=Ada']);
-    expect(read.entry).toBe('name=Ada');
+    expect(read.value).toBe('name=Ada');
     expect(story.staleAt(500)).toBe(0);
   });
 });
@@ -98,7 +98,7 @@ describe('the leader-crash story', () => {
   it('async: order #4 is confirmed, never shipped, and is on no live node after the crash; F1 is promoted; the query finds nothing', () => {
     const story = runStory('failover', 'async');
     const [first, second, query] = story.ops;
-    expect(acknowledged(story.ops).map((w) => w.entry)).toEqual(['order #3', 'order #4']);
+    expect(acknowledged(story.ops).map((w) => w.value)).toEqual(['order #3', 'order #4']);
     expect(everSent(story, 'order #4')).toBe(false);
     expect(everSent(story, 'order #3')).toBe(true);
     const crashAt = story.script.crashAt ?? NaN;
@@ -110,7 +110,7 @@ describe('the leader-crash story', () => {
     expect(atPromotion.F2.log).toHaveLength(2);
     expect(story.at(400).F1.role).toBe('promoted');
     expect(story.at(400).F2.role).toBe('follower');
-    expect(query.entry).toBeNull();
+    expect(query.value).toBeNull();
     expect(first.response).toBeLessThan(second.response ?? 0);
     expect(story.promotedAt).toBeGreaterThan(crashAt + DETECT_MS);
   });
@@ -127,7 +127,7 @@ describe('the leader-crash story', () => {
     for (let t = 0; t <= 500; t += 7) expect(story.missingAt(t), `t=${t}`).toEqual([]);
     expect(story.at(450).F1.role).toBe('promoted');
     expect(story.at(450).F1.log).toContain('order #4');
-    expect(story.ops[2].entry).toBe('order #4');
+    expect(story.ops[2].value).toBe('order #4');
   });
 
   it('the failover manager promotes the longer log (a longer F2 would be chosen)', () => {
@@ -144,8 +144,12 @@ describe('the leader-crash story', () => {
 });
 
 describe('staleReads and lagOf, hand-worked', () => {
-  const write = (invoke: number, response: number, entry: string): OpRecord => ({ op: 0, kind: 'write', node: 'L', invoke, response, entry });
-  const read = (invoke: number, response: number, entry: string | null, asked?: string): OpRecord => ({ op: 1, kind: 'read', node: 'F2', invoke, response, entry, asked });
+  const write = (invoke: number, response: number, value: string): OpRecord => ({
+    op: 0, kind: 'write', client: 'C', node: 'L', invoke, response, outcome: 'ok', value,
+  });
+  const read = (invoke: number, response: number, value: string | null, asked?: string): OpRecord => ({
+    op: 1, kind: 'read', client: 'C', node: 'F2', invoke, response, outcome: 'ok', value, asked,
+  });
 
   it('a read that returns something older than the latest write acknowledged before it was sent is stale', () => {
     const ops = [write(0, 5, 'b'), read(10, 12, 'a')];

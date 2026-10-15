@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { checkInvariants, forSeeds, linearizable, type Cluster } from '../../core/distSim';
+import { checkInvariants, forSeeds, historyOf, linearizable, type Cluster } from '../../core/distSim';
 import { expectCaption } from '../../core/testing/captions';
 import lesson from './index';
 import { buildFrames } from './frames';
 import {
-  BROKEN_SEED, choiceAfterNetSwitch, clientsSeeOneRegister, faultScenario, HEALTHY_ONE_WAY_MS, partitionOnlyScenario, historyOf, INITIAL_VALUE, MAJORITY,
+  BROKEN_SEED, choiceAfterNetSwitch, clientsSeeOneRegister, faultScenario, HEALTHY_ONE_WAY_MS, partitionOnlyScenario, INITIAL_VALUE, MAJORITY,
   minorityRefuses, NODE_IDS, OP_TIMEOUT_MS, PARTITION, PROCESS_MS, reachableAt, runStory, SEARCH_END_MS, staleReads, writeLatencyMs,
   type Choice, type Msg, type Net, type NodeState, type OpRecord,
 } from './model';
