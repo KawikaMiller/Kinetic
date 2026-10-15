@@ -34,7 +34,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 3
   'cdn-edge': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'circuit-breakers': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'consistent-hashing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'monolith-microservices': { ticket: TIER3, rules: ['quiz-length'] },
   'oauth-flows': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'sharding': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
@@ -56,7 +55,7 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  * Every other Tier 3 lesson is held to the rules from its first commit.
  */
 const TIER3_AWAITING_RETROFIT = new Set([
-  'consistent-hashing', 'circuit-breakers', 'monolith-microservices',
+  'circuit-breakers', 'monolith-microservices',
   'sharding', 'cdn-edge', 'oauth-flows',
 ]);
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */
