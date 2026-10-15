@@ -169,7 +169,11 @@ export function fireDelay(s: Stream): { mean: number; longest: number; windows: 
   return { mean: waits.length ? waits.reduce((a, b) => a + b, 0) / waits.length : 0, longest: Math.max(0, ...waits), windows: waits.length };
 }
 
-export const droppedCount = (s: Stream): number => s.refusals.length;
+/** Events refused by at least one window: an event is one event however many sliding windows turn it away. */
+export const droppedCount = (s: Stream): number => new Set(s.refusals.map((r) => r.id)).size;
+
+/** (window, event) refusals: what the per-window bars add up to. A sliding event dropped from two windows is two of these. */
+export const refusedPlacements = (s: Stream): number => s.refusals.length;
 
 /** Safety: the watermark never moves backwards and is the largest event time minus the bound; no event sits twice in a window. Null while it holds. */
 export function checkStream(s: Stream): string | null {

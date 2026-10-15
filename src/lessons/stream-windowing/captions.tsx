@@ -2,7 +2,7 @@
  * stream-windowing: every caption, built from the model on screen.
  */
 import type { ReactNode } from 'react';
-import { droppedCount, heldWindows, type Stream } from './engine';
+import { droppedCount, heldWindows, refusedPlacements, type Stream } from './engine';
 import { EVENT_COUNT, MINUTE, type Evt } from './events';
 import { clockLabel } from './layout';
 import { disagreeing, type MinuteRow } from './processing';
@@ -65,7 +65,7 @@ export function watermarkCaption(v: WatermarkView): ReactNode {
     <>
       After {s.k} of {v.n} arrivals the watermark is {Number.isFinite(s.watermark) ? hl('hi', s.watermark) : hl('', 'not set yet')}: the largest event time seen minus the bound of {s.cfg.bound} s. {fired} {noun(fired, 'window')} {noun(fired, 'has', 'have')} fired
       and {heldWindows(s).length} {noun(heldWindows(s).length, 'window')} {noun(heldWindows(s).length, 'is', 'are')} still held. {late > 0 && <>{hl('info', `${late} late ${noun(late, 'event')}`)} counted after firing. </>}
-      {dropped > 0 ? <>{hl('bad', `${dropped} ${noun(dropped, 'event')} dropped`)} {s.cfg.sideOutput ? '(kept in the side output)' : '(gone)'}: too far behind the watermark for its window.</> : <>Nothing has been dropped.</>}
+      {dropped > 0 ? <>{hl('bad', `${dropped} ${noun(dropped, 'event')} dropped`)} {s.cfg.sideOutput ? '(kept in the side output)' : '(gone)'}{refusedPlacements(s) > dropped && <>, {refusedPlacements(s)} window placements lost in all</>}: too far behind the watermark for its window.</> : <>Nothing has been dropped.</>}
     </>
   );
 }

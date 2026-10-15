@@ -11,7 +11,7 @@ import { minWidthForText } from '../../core/scale';
 import type { Tone } from '../../core/tone';
 import { useInterval } from '../../core/useInterval';
 import { watermarkCaption } from './captions';
-import { BOUND_RANGE, DEFAULT_BOUND, DEFAULT_LATENESS, LATENESS_RANGE, STRAGGLER_BEHIND, droppedCount, fireDelay, heldWindows } from './engine';
+import { BOUND_RANGE, DEFAULT_BOUND, DEFAULT_LATENESS, LATENESS_RANGE, STRAGGLER_BEHIND, droppedCount, fireDelay, heldWindows, refusedPlacements } from './engine';
 import { DEFAULT_DELAY, WATERMARK_SEED, EVENT_COUNT, MAX_DELAY, MIN_DELAY, arrivalOrder, generate, type Evt } from './events';
 import { clockLabel, horizonOf, PLOT_W } from './layout';
 import { PLOT_FONT, drawnFrom, keyTone } from './plotModel';
@@ -45,6 +45,7 @@ export function WatermarkScene({ picker }: { picker: ReactNode }) {
   const rows = useMemo(() => resultRows(stream, arrivals), [stream, arrivals]);
   const horizon = horizonOf(arrivals);
   const dropped = droppedCount(stream);
+  const placements = refusedPlacements(stream);
   const wait = fireDelay(stream);
   const held = heldWindows(stream).length;
   const peak = Math.max(1, ...rows.map((r) => r.truth));
@@ -65,7 +66,7 @@ export function WatermarkScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Result delay" value={wait.windows === 0 ? '–' : `${wait.mean.toFixed(1)} s`} sub={wait.windows === 0 ? 'no window has fired' : ["mean, from a window's end to the arrival that fires it", `longest ${wait.longest} s`]} />
-          <Stat label="Dropped events" value={dropped} color={dropped > 0 ? 'var(--bad)' : 'var(--ok)'} sub={sideOutput ? `${stream.side.length} in the side output` : 'gone for good'} />
+          <Stat label="Dropped events" value={dropped} color={dropped > 0 ? 'var(--bad)' : 'var(--ok)'} sub={`${sideOutput ? `${stream.side.length} in the side output` : 'gone for good'}${placements > dropped ? `; ${placements} window placements lost` : ''}`} />
           <Stat label="State held" value={held} sub="windows kept for late events" />
         </Stats>
       }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { createTickSim } from '../../core/simTick';
-import { checkStream, compare, droppedCount, fireDelay, heldWindows, newStream, runTo, step, strayWindows, type Stream, type StreamCfg } from './engine';
+import { checkStream, compare, droppedCount, fireDelay, refusedPlacements, heldWindows, newStream, runTo, step, strayWindows, type Stream, type StreamCfg } from './engine';
 import { DEFAULT_DELAY, EVENT_COUNT, MAX_DELAY, arrivalOrder, generate, longestDelay, reversedArrival, type Evt } from './events';
 import { disagreeing, lowestDisagreeingSeed, perMinute, replayed } from './processing';
 import { makeSim } from './sim';
@@ -328,5 +328,15 @@ describe('processing time against event time', () => {
 
   it('uses the wildcard key only for windows that ignore who clicked', () => {
     expect(assign(5, { kind: 'tumbling', size: 10 })[0].key).toBe(ANY_KEY);
+  });
+});
+
+describe('dropped events are counted as events, not as (window, event) refusals', () => {
+  it('seed 17, D=30, bound 0, lateness 0, sliding 60/20: the stat is the number of events whose fate is dropped, and placements are counted apart', () => {
+    const events = arrivalOrder(generate(17, 30).events);
+    const s = runTo(newStream(events, cfg({ kind: 'sliding', size: 60, slide: 20 }, 0, 0)), events.length);
+    const droppedEvents = Object.values(s.fates).filter((f) => f === 'dropped').length;
+    expect(droppedCount(s)).toBe(droppedEvents);
+    expect(refusedPlacements(s)).toBeGreaterThan(droppedEvents);
   });
 });
