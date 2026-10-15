@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-import { alertRows, predictionTicket } from './alerts';
+import { alertRows, diskThresholdWarning, predictionTicket } from './alerts';
 import { ruleCaption, symptomCaption, triageCaption } from './captions';
-import { FOR_MAX, THRESHOLD_RANGE, incidentAt, judge, minutesToFull, neverClears, pageMinutes, predictionFires, PREDICT_HORIZON } from './rules';
+import { FOR_MAX, HORIZON_HOURS, THRESHOLD_RANGE, incidentAt, judge, minutesToFull, neverClears, pageMinutes, predictionFires, PREDICT_HORIZON } from './rules';
 import { ALERTS, allTo, byRubric, rubricRoute, totals } from './triage';
 import { BLIP_COUNT, BLIP_LEVEL, BASELINE_ERRORS, DISK_CLEANUP_AT, DISK_FULL_AT, INCIDENTS, LEAK_START, POD_RESTARTS, SPIKE_COUNT, WEEK, WEEK_MINUTES, buildWeek, incidentEnd } from './week';
 
@@ -25,7 +25,7 @@ function referenceVerdict(fires: readonly number[]) {
   let useful = 0;
   for (const f of fires) if (INCIDENTS.some((i) => f >= i.start && f < i.start + i.length)) useful++;
   const first = INCIDENTS.map((i) => {
-    for (let t = i.start; t < i.start + i.length; t++) if (fires.includes(t)) return t - i.start;
+    for (let t = i.start; t < i.start + i.length; t++) if (fires.includes(t)) return t - i.start + 1;
     return null;
   });
   return { pages: fires.length, useful, falsePages: fires.length - useful, missedIds: INCIDENTS.filter((_, k) => first[k] === null).map((i) => i.id), first };
@@ -83,10 +83,11 @@ describe('page counting against an independent per-minute state machine', () => 
     expect(at(2).missed.map((i) => i.id)).toEqual(['disk']);
   });
 
-  it('measures minutes to the first page from the incident start: for 5 minutes the first page is at minute 4, and a 12-minute incident is missed by a 15-minute wait', () => {
-    expect(judge(pageMinutes(WEEK.errors, 1, 5)).timeToPage).toEqual([4, 4, 4]);
-    expect(judge(pageMinutes(WEEK.errors, 1, 15)).timeToPage).toEqual([14, null, 14]);
-    expect(judge(pageMinutes(WEEK.errors, 1, 3)).timeToPage).toEqual([2, 2, 2]);
+  it('measures minutes to the first page from the incident start: a rule that waits N minutes pages after N, and a 12-minute incident is missed by a 15-minute wait', () => {
+    expect(judge(pageMinutes(WEEK.errors, 1, 5)).timeToPage).toEqual([5, 5, 5]);
+    expect(judge(pageMinutes(WEEK.errors, 1, 15)).timeToPage).toEqual([15, null, 15]);
+    expect(judge(pageMinutes(WEEK.errors, 1, 3)).timeToPage).toEqual([3, 3, 3]);
+    expect(judge(pageMinutes(WEEK.errors, 1, 0)).timeToPage).toEqual([1, 1, 1]);
   });
 
   it('treats a value equal to the threshold as not above it: 1.5% does not page the third incident', () => {
@@ -181,7 +182,7 @@ describe('the triage board', () => {
     for (const r of routes) expect(r.because.length).toBeGreaterThan(10);
   });
 
-  it('routes by the three questions: a page needs both urgency now and a hurt user (an independent restatement)', () => {
+  it('routes by the two questions that decide it: a page needs both urgency now and a hurt user (an independent restatement)', () => {
     for (const a of ALERTS) {
       const expected = a.urgency === 'now' && a.userHurt ? 'page' : a.urgency === 'none' ? 'dashboard' : 'ticket';
       expect(rubricRoute(a).route, a.id).toBe(expected);
@@ -194,5 +195,32 @@ describe('the triage board', () => {
     expect(t.pagesWithoutRunbook).toEqual(['latency-checkout']);
     expect(expectCaption(triageCaption(allTo('dashboard')))).toContain('0 alerts page');
     expect(expectCaption(triageCaption(byRubric()))).toContain('Every routing matches the rubric');
+  });
+});
+
+describe('the disk alert and the prediction horizon', () => {
+  it('finds the plain disk threshold’s earliest real warning a day before the fill, scored false only because it came before the incident window', () => {
+    const w = diskThresholdWarning()!;
+    // an independent walk: the run of minutes above 70% that contains the fill started this many minutes before it
+    let start = DISK_FULL_AT;
+    while (WEEK.disk[start - 1] > 70) start--;
+    expect(w.lead).toBe(DISK_FULL_AT - start);
+    expect(w.lead).toBeGreaterThan(20 * 60);
+    const disk = alertRows().find((r) => r.id === 'disk')!.verdict;
+    expect(w.others + 1).toBe(disk.pages);
+    expect(disk.useful).toBe(0);
+  });
+
+  it('walks every horizon on the slider: a ticket always exists and leads the fill by about the horizon, within 30 minutes either way', () => {
+    let previous = 0;
+    for (let h = HORIZON_HOURS.min; h <= HORIZON_HOURS.max; h++) {
+      const ticket = predictionTicket(h * 60);
+      expect(ticket, `${h} h`).not.toBeNull();
+      expect(ticket!.lead).toBeGreaterThan(h * 60 - 30);
+      expect(ticket!.lead).toBeLessThan(h * 60 + 30);
+      expect(ticket!.lead).toBeGreaterThanOrEqual(previous);
+      previous = ticket!.lead;
+    }
+    expect(predictionTicket(PREDICT_HORIZON)).toEqual(predictionTicket());
   });
 });

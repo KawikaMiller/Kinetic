@@ -62,7 +62,7 @@ const lesson: LessonModule = {
       why: `A human has to act now and users are hurt now: the symptom alert paged ${symptom.pages} times, ${symptom.useful} of them during an incident. The others can wait for working hours or need no one.`,
     },
     {
-      q: 'You raise the for-duration on the error-ratio rule from none to two minutes. What changes in this week?',
+      q: 'You raise the for-duration on the error-ratio rule (error ratio above 1%) from none to two minutes. What changes in this week?',
       options: [
         'The one-minute blips stop paging, and the real incidents still page',
         'The real incidents stop paging, because they are shorter than two minutes',
@@ -81,7 +81,7 @@ const lesson: LessonModule = {
         'It changes which metric the rule watches, so the threshold has to be reset to match it',
       ],
       answer: 1,
-      why: `A 15-minute wait pages at minute ${longWait.timeToPage[0]} of the first incident instead of ${noWait.timeToPage[0]}, and misses the ${shortest.name.toLowerCase()}, which lasts ${shortest.length} minutes.`,
+      why: `A 15-minute wait pages ${longWait.timeToPage[0]} minutes into the first incident instead of ${noWait.timeToPage[0]}, and misses the ${shortest.name.toLowerCase()}, which lasts ${shortest.length} minutes.`,
     },
   ],
 };

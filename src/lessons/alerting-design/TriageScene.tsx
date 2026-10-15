@@ -53,7 +53,7 @@ export function TriageScene({ picker }: { picker: ReactNode }) {
     >
       <div className="ad stage-pad">
         <Hint block>
-          The rubric asks three questions. Does a human need to act now? Is there a clear action? Is a user hurt now? Page when a human must act now and a user is hurt now; ticket when a human must act but not yet; otherwise a dashboard is enough.
+          Two questions decide the route: does a human need to act now, and is a user hurt now? Page when both are yes; ticket when a human must act but not yet; otherwise a dashboard is enough. Each alert also shows whether it has a clear action, because a page with nothing to do is hard to act on, but that does not change the route in this rubric.
         </Hint>
         <MetricMeter label="Pages in a week" value={t.pagesPerWeek} max={PAGE_METER_MAX} bands={PAGE_BANDS} />
         <ul className="ad-alerts">
@@ -82,7 +82,7 @@ export function TriageScene({ picker }: { picker: ReactNode }) {
         </ul>
         <ProvenanceRow>
           <Provenance kind="illustrative">twelve authored alerts, invented fire counts and an assumed night share</Provenance>
-          <ClaimLabel kind="practice">the three-question rubric is common practice, not a standard</ClaimLabel>
+          <ClaimLabel kind="practice">the two-question rubric is common practice, not a standard</ClaimLabel>
         </ProvenanceRow>
       </div>
     </StageFrame>

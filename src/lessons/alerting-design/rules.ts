@@ -40,7 +40,7 @@ export interface Verdict {
   falsePages: number;
   /** The incidents that no page fired inside. */
   missed: Incident[];
-  /** Per incident: minutes from its start to the first page inside it, or null when none. */
+  /** Per incident: minutes elapsed from its start until the first page inside it fires (a rule that waits 3 minutes pages after 3), or null when none. */
   timeToPage: (number | null)[];
 }
 
@@ -51,7 +51,7 @@ export function judge(fires: readonly number[]): Verdict {
   const useful = fires.filter((f) => incidentAt(f)).length;
   const timeToPage = INCIDENTS.map((i) => {
     const first = fires.filter((f) => f >= i.start && f < incidentEnd(i)).sort((a, b) => a - b)[0];
-    return first === undefined ? null : first - i.start;
+    return first === undefined ? null : first + 1 - i.start;
   });
   return {
     pages: fires.length,
@@ -78,6 +78,8 @@ export const DISK_CAUSE_THRESHOLD = 70;
 /** The disk-full prediction: extrapolate the last window's trend, and ticket when it fills within the horizon. */
 export const PREDICT_WINDOW = 360;
 export const PREDICT_HORIZON = 240;
+/** The prediction scene's horizon slider, in hours: the default is PREDICT_HORIZON. */
+export const HORIZON_HOURS = { min: 1, max: 8 } as const;
 
 /** Least-squares slope of `series[from..to]`, per minute. */
 function slope(series: readonly number[], from: number, to: number): number {
@@ -104,8 +106,8 @@ export function minutesToFull(disk: readonly number[], t: number): number {
 }
 
 /** The first minute the prediction says "fills within the horizon", per firing episode of that condition. */
-export function predictionFires(disk: readonly number[]): number[] {
-  const flags = Array.from({ length: disk.length }, (_, t) => minutesToFull(disk, t) < PREDICT_HORIZON);
+export function predictionFires(disk: readonly number[], horizon = PREDICT_HORIZON): number[] {
+  const flags = Array.from({ length: disk.length }, (_, t) => minutesToFull(disk, t) < horizon);
   const fires: number[] = [];
   flags.forEach((on, t) => {
     if (on && !flags[t - 1]) fires.push(t);
