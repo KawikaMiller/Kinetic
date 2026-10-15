@@ -23,6 +23,7 @@
 .ii-ranked { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .ii-ranked li { display: grid; grid-template-columns: 34px minmax(60px, 160px) 62px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 12.5px; }
 .ii-ranked b { font-family: var(--mono, monospace); }
+.ii-ranked li.ii-ranked-gap { display: block; color: var(--dim); text-align: center; }
 .ii-score { font: 600 12px var(--mono, monospace); }
 .ii-doctext { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ii-byte { display: inline-block; margin-right: 3px; padding: 0 5px; border-radius: 5px; font: 600 12px var(--mono, monospace); border: 1px solid var(--c); color: var(--c); }

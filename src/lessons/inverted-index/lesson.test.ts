@@ -9,7 +9,7 @@ import { mergeFrames } from './frames';
 import lesson from './index';
 import { buildIndex, docIds, termsOf } from './postings';
 import { evaluate, parseQuery, whyEmpty } from './query';
-import { DEFAULT_B, DEFAULT_K1, rankDocs } from './rank';
+import { DEFAULT_B, DEFAULT_K1, rankDocs, shownRows } from './rank';
 import { BIG_SEED, DEFAULT_EXPONENT, POSTINGS_SHOWN, seededIds, sizesOf } from './vbyte';
 
 const plain = (node: Parameters<typeof text>[0]) => text(node, { strict: true });
@@ -91,6 +91,23 @@ describe('the compression wording follows the sizes', () => {
     const saving = Math.round((1 - big.gaps / big.ids) * 100);
     expect(plain(compressCaption({ count: POSTINGS_SHOWN, sizes: big, source: 'x' }))).toContain(`gaps save ${saving}% against the variable-byte ids`);
     expect(plain(compressCaption({ count: 0, sizes: sizesOf([]), source: 'x' }))).toContain('nothing to encode');
+  });
+});
+
+describe('the results list always shows where a followed document landed', () => {
+  it('the repeater at k1 = 0 is outside the first 8 rows, so it is pinned with its true place; at the default it is inside and not repeated', () => {
+    const withRepeater = buildIndex([...DEFAULT_DOCS, REPEATER], ALL_STEPS);
+    const docs = evaluate(withRepeater, parseQuery('cat dog', ALL_STEPS), 'or', 'as-typed').docs;
+    const repeaterDoc = DEFAULT_DOCS.length + 1;
+    const flat = rankDocs(withRepeater, docs, ['cat', 'dog'], 'bm25', { k1: 0, b: DEFAULT_B });
+    const shownFlat = shownRows(flat, repeaterDoc);
+    expect(shownFlat.rows).toHaveLength(8);
+    expect(shownFlat.pinnedRow).toMatchObject({ place: docs.length });
+    expect(shownFlat.pinnedRow!.scored.doc).toBe(repeaterDoc);
+    const normal = shownRows(rankDocs(withRepeater, docs, ['cat', 'dog'], 'bm25', { k1: DEFAULT_K1, b: DEFAULT_B }), repeaterDoc);
+    expect(normal.pinnedRow).toBeNull();
+    expect(normal.rows.some((r) => r.scored.doc === repeaterDoc)).toBe(true);
+    expect(shownRows(flat, null).pinnedRow).toBeNull();
   });
 });
 

@@ -10,7 +10,7 @@ import { rankCaption } from './captions';
 import { DEFAULT_QUERY, REPEATER, docName } from './corpus';
 import { buildIndex, df, type Index } from './postings';
 import { evaluate, parseQuery } from './query';
-import { B_RANGE, DEFAULT_B, DEFAULT_K1, K1_RANGE, idfBm25, rankDocs, type Ranker, type Scored } from './rank';
+import { B_RANGE, DEFAULT_B, DEFAULT_K1, K1_RANGE, idfBm25, rankDocs, shownRows, type Ranker, type Scored } from './rank';
 import type { Corpus } from './useCorpus';
 
 const RANKER_OPTIONS = [{ value: 'bm25' as const, label: 'BM25' }, { value: 'tfidf' as const, label: 'TF-IDF' }];
@@ -29,9 +29,19 @@ export function RankScene({ picker, corpus }: { picker: ReactNode; corpus: Corpu
   const matches = useMemo(() => evaluate(index, q, 'or', 'as-typed').docs, [index, q]);
   const ranked = useMemo(() => rankDocs(index, matches, terms, ranker, { k1, b }), [index, matches, terms.join(' '), ranker, k1, b]);
   const top = ranked[0] ?? null;
+  const shown = shownRows(ranked, repeater ? docs.length : null);
   const best = Math.max(top?.score ?? 0, 1e-9);
 
   useIntroCaption(rankCaption({ ranker, top, matches: matches.length, k1, b }), [ranked, ranker, k1, b]);
+
+  const rankedItem = (s: Scored, place = '') => (
+    <li key={s.doc}>
+      <b>{docName(s.doc - 1)}</b>
+      <Bar value={s.score} max={best} tone="info" height={8} animate={false} ariaLabel={`${docName(s.doc - 1)} scores ${decimal(s.score, 4)}`} />
+      <span className="ii-score">{decimal(s.score, 4)}</span>
+      <span className="ii-doctext">{place}{docs[s.doc - 1].slice(0, 70)}{docs[s.doc - 1].length > 70 ? '…' : ''}</span>
+    </li>
+  );
 
   const lines = top && ranker === 'bm25' ? bm25Lines(top, index, k1, b) : tfidfLines(top);
 
@@ -76,14 +86,13 @@ export function RankScene({ picker, corpus }: { picker: ReactNode; corpus: Corpu
             <p className="empty-note">No document matches.</p>
           ) : (
             <ol className="ii-ranked">
-              {ranked.slice(0, 8).map((s) => (
-                <li key={s.doc}>
-                  <b>{docName(s.doc - 1)}</b>
-                  <Bar value={s.score} max={best} tone="info" height={8} animate={false} ariaLabel={`${docName(s.doc - 1)} scores ${decimal(s.score, 4)}`} />
-                  <span className="ii-score">{decimal(s.score, 4)}</span>
-                  <span className="ii-doctext">{docs[s.doc - 1].slice(0, 70)}{docs[s.doc - 1].length > 70 ? '…' : ''}</span>
-                </li>
-              ))}
+              {shown.rows.map(({ scored }) => rankedItem(scored))}
+              {shown.pinnedRow && (
+                <>
+                  <li className="ii-ranked-gap" aria-hidden="true">…</li>
+                  {rankedItem(shown.pinnedRow.scored, `number ${shown.pinnedRow.place} of ${ranked.length}: `)}
+                </>
+              )}
             </ol>
           )}
         </Box>

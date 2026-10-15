@@ -8,6 +8,25 @@
  */
 import { df, postingsOf, type Index } from './postings';
 
+/** How many ranked rows the results list shows before it cuts. */
+export const RANKED_SHOWN = 8;
+
+export interface RankedRow {
+  scored: Scored;
+  /** 1-based place in the full ranking. */
+  place: number;
+}
+
+/**
+ * The rows a results list shows: the first `limit`, plus the `pinned` document's row when it falls outside them, so a learner
+ * can always see where a document they are following landed.
+ */
+export function shownRows(ranked: readonly Scored[], pinned: number | null, limit = RANKED_SHOWN): { rows: RankedRow[]; pinnedRow: RankedRow | null } {
+  const rows = ranked.slice(0, limit).map((scored, i) => ({ scored, place: i + 1 }));
+  const at = pinned === null ? -1 : ranked.findIndex((s) => s.doc === pinned);
+  return { rows, pinnedRow: at >= limit ? { scored: ranked[at], place: at + 1 } : null };
+}
+
 export const K1_RANGE = { min: 0, max: 3, step: 0.1 } as const;
 export const B_RANGE = { min: 0, max: 1, step: 0.05 } as const;
 export const DEFAULT_K1 = 1.2;
