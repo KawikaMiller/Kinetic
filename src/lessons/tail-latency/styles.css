@@ -1,0 +1,10 @@
+.tl-stage { gap: 12px; align-items: center; }
+.tl-stage > .plot2d { max-width: 100%; height: auto; }
+.tl-note { display: block; text-align: center; max-width: 640px; }
+.tl-meter { width: 100%; max-width: 520px; }
+.tl-onerequest, .tl-row { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 8px; }
+.tl-table { width: 100%; }
+.tl-table th, .tl-table td { text-align: right; white-space: nowrap; }
+.tl-table th:first-child { text-align: left; }
+.tl-now { color: var(--hi); font-weight: 700; }
+.tl-row { overflow-x: auto; }
