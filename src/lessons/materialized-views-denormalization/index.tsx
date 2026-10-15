@@ -1,19 +1,18 @@
 import type { LessonModule } from '../../core/types';
 import { sig } from '../../core/format';
-import { STRATEGIES, differences, initState, seededWorld, write, type Config } from './shop';
-import { RATIO, STALENESS_REFRESH, WORKLOAD_CONFIG, WORLD_SEED, crossover, readFormula, workloadTotal, writeFormula } from './workload';
+import { differences, initState, seededWorld, write, type Config } from './shop';
+import { RATIO, STALENESS_REFRESH, WORKLOAD_CONFIG, WORLD_SEED, cheapestRight, contenderTotals, crossover, readFormula, renameWrite, writeFormula } from './workload';
 import { Stage } from './Stage';
 
 /** The numbers the try-this entries quote, all from the engine on the seeded shop. */
 const BASE = seededWorld(WORLD_SEED);
-const label = (id: string) => STRATEGIES.find((s) => s.value === id)!.label;
-const cheapestAt = (ratio: number) => STRATEGIES.map((s) => ({ s, t: workloadTotal(s.value, WORKLOAD_CONFIG, ratio).total })).reduce((a, b) => (b.t < a.t ? b : a)).s.value;
+const cheapestAt = (ratio: number) => cheapestRight(contenderTotals(ratio)).label;
 const CROSS = crossover('incremental', 'live', WORKLOAD_CONFIG, BASE)!;
 const LOW = RATIO.min;
 const HIGH = RATIO.max;
 const staleCfg: Config = { refreshEvery: STALENESS_REFRESH.initial, fix: 'none' };
 const productId = BASE.items[0].productId;
-const staleAfter = write('full', staleCfg, initState('full', BASE), { kind: 'rename', productId, name: 'Renamed' });
+const staleAfter = write('full', staleCfg, initState('full', BASE), renameWrite(BASE, productId, 1));
 const staleRow = differences('full', staleCfg, staleAfter.state)[0].what;
 const copies = BASE.items.filter((i) => i.productId === productId).length;
 const fixCost = writeFormula('copy', { ...staleCfg, fix: 'update' }, { items: BASE.items.length, copies }, 'rename');
@@ -36,8 +35,8 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `Press "Read the dashboard" on the live join: it touches ${readFormula('live', WORKLOAD_CONFIG, BASE)} rows, a scan of ${BASE.items.length} items, ${BASE.orders.length} orders and ${BASE.products.length} products.`,
-    `Switch the read strategy to "View, incremental" and press "Read the dashboard": ${readFormula('incremental', WORKLOAD_CONFIG, BASE)} rows. Then press "Place an order": it touches ${writeFormula('incremental', WORKLOAD_CONFIG, { items: BASE.items.length, copies: 0 }, 'place')} rows, against ${writeFormula('live', WORKLOAD_CONFIG, { items: BASE.items.length, copies: 0 }, 'place')} on the live join.`,
-    `Drag "Reads per write" to its left end (${sig(LOW, 2)}): ${label(cheapestAt(LOW))} is the cheapest. Drag it to the right end (${sig(HIGH, 3)}): ${label(cheapestAt(HIGH))} is.`,
+    `Switch the read strategy to "View, incremental" and press "Read the dashboard": ${readFormula('incremental', WORKLOAD_CONFIG, BASE)} rows. Then press "Place an order": it touches ${writeFormula('incremental', WORKLOAD_CONFIG, { items: BASE.items.length, copies: 0 }, 'place')} rows, against ${writeFormula('live', WORKLOAD_CONFIG, { items: BASE.items.length, copies: 0 }, 'place')} on the live join. Set "Refund rule" to "forgets to subtract" and press "Refund an item": the view drifts and nothing reports an error.`,
+    `Drag "Reads per write" to its left end (${sig(LOW, 2)}): ${cheapestAt(LOW)} is the cheapest row whose answer is right at the end (the copy that is never fixed costs less, and its answer differs). Drag it to the right end (${sig(HIGH, 3)}): ${cheapestAt(HIGH)} is.`,
     `In "Staleness" press "Rename a product": the view is 1 write behind and differs from the live query, on the row "${staleRow}".`,
     `In "The update anomaly" press "Rename a product": ${copies} ${copies === 1 ? 'copy has' : 'copies have'} an old name and the dashboard shows two names for one product. Switch the fix to "update every copy" and press it again: the rename then touches ${fixCost} rows.`,
   ],
@@ -45,7 +44,7 @@ const lesson: LessonModule = {
     'In this model a materialized view is as old as its last refresh, and the lesson reads off the rows that differ from the live query.',
     'In this model an incremental view stays equal to a full recomputation while its write rules are right; a forgotten refund rule drifts without any error.',
     'A denormalised copy leaves old values behind when the source changes, unless every copy is updated or the value is recomputed on read.',
-    'Which strategy touches the fewest rows depends on reads per write: the live join wins when writes dominate, and a view wins as reads grow.',
+    `Which strategy touches the fewest rows depends on reads per write. Among the strategies whose answer stays right, the live join is cheapest below about ${sig(CROSS, 2)} reads per write and the incremental view above it. A copy is cheaper than either only while it is allowed to go stale.`,
   ],
   quiz: [
     {

@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, SortTh, Stat, Stats } from '../../components/ui';
+import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, SortTh, Stat, Stats, Toggle } from '../../components/ui';
 import { useSortedRows } from '../../components/useSortedRows';
 import { useIntroCaption } from '../../core/caption';
 import { ratioText, sig } from '../../core/format';
@@ -10,11 +10,11 @@ import { crossoverCaption, playCaption } from './captions';
 import { DashboardTable } from './DashboardTable';
 import { STRATEGIES, Counter, liveDashboard, seededWorld, shown, type CopyFix, type Strategy } from './shop';
 import { usePlayground } from './usePlayground';
-import { RATIO, STALENESS_REFRESH, WORKLOAD_CONFIG, WORLD_SEED, crossover, cycleCost, workloadTotal } from './workload';
+import { BROKEN_SEED, CONTENDERS, RATIO, STALENESS_REFRESH, WORKLOAD_CONFIG, WORLD_SEED, cheapestRight, contenderTotals, crossover, cycleCost } from './workload';
 
 export type PlaySceneId = 'workload' | 'staleness' | 'anomaly';
 
-const STRATEGY_TONE: Record<Strategy, Tone> = { live: 'sky', full: 'amber', incremental: 'pink', copy: 'orange' };
+const CONTENDER_TONE: Record<string, Tone> = { live: 'sky', full: 'amber', incremental: 'pink', 'copy-update': 'orange' };
 const FIXES: { value: CopyFix; label: string }[] = [{ value: 'none', label: 'no fix' }, { value: 'update', label: 'update every copy' }, { value: 'recompute', label: 'recompute on read' }];
 /** The seeded shop the totals, the plot and the crossover are about: they do not follow the operations you press. */
 const BASE_WORLD = seededWorld(WORLD_SEED);
@@ -25,8 +25,8 @@ const RATIO_DECADES = Math.log10(RATIO.max / RATIO.min);
 const ratioAt = (position: number): number => Number((RATIO.min * 10 ** (position / RATIO_STEPS_PER_DECADE)).toPrecision(2));
 const positionOf = (ratio: number): number => Math.round(Math.log10(ratio / RATIO.min) * RATIO_STEPS_PER_DECADE);
 
-interface TotalRow { strategy: Strategy; label: string; total: number; reads: number; writes: number; times: number }
-type TotalKey = 'label' | 'total' | 'times';
+interface TotalRow { id: string; label: string; total: number; reads: number; writes: number; right: boolean; times: number }
+type TotalKey = 'label' | 'total' | 'times' | 'right';
 
 export function PlayScene({ scene, picker, ratio, setRatio }: { scene: PlaySceneId; picker: ReactNode; ratio: number; setRatio: (r: number) => void }) {
   const pinned: Strategy = scene === 'staleness' ? 'full' : scene === 'anomaly' ? 'copy' : 'live';
@@ -35,11 +35,11 @@ export function PlayScene({ scene, picker, ratio, setRatio }: { scene: PlayScene
   const view = shown(pg.strategy, pg.cfg, pg.state);
 
   const totals = useMemo<TotalRow[]>(() => {
-    const raw = STRATEGIES.map((s) => ({ strategy: s.value, label: s.label, ...workloadTotal(s.value, WORKLOAD_CONFIG, ratio) }));
-    const best = Math.min(...raw.map((r) => r.total));
+    const raw = contenderTotals(ratio);
+    const best = cheapestRight(raw).total;
     return raw.map((r) => ({ ...r, times: r.total / best }));
   }, [ratio]);
-  const { sorted, headerProps } = useSortedRows<TotalRow, TotalKey>(totals, { label: (r) => r.label, total: (r) => r.total, times: (r) => r.times }, { key: 'total' });
+  const { sorted, headerProps } = useSortedRows<TotalRow, TotalKey>(totals, { label: (r) => r.label, total: (r) => r.total, times: (r) => r.times, right: (r) => Number(r.right) }, { key: 'total' });
   const cross = crossover('incremental', 'live', WORKLOAD_CONFIG, BASE_WORLD);
 
   useIntroCaption(
@@ -76,6 +76,7 @@ export function PlayScene({ scene, picker, ratio, setRatio }: { scene: PlayScene
           {scene !== 'workload' && <span className="mv-pinned">Strategy in this scene: {STRATEGIES.find((s) => s.value === pinned)!.label}</span>}
         </>,
         <>
+          {scene === 'workload' && pg.strategy === 'incremental' && <Toggle label="Refund rule" value={!!pg.cfg.brokenRefund} onChange={(brokenRefund) => pg.setCfg({ brokenRefund })} off="correct" on="forgets to subtract" />}
           <Button variant="primary" onClick={pg.place}>Place an order</Button>
           <Button onClick={pg.refund} disabled={pg.state.world.items.length === 0}>Refund an item</Button>
           <Button onClick={pg.rename}>Rename a product</Button>
@@ -101,15 +102,17 @@ export function PlayScene({ scene, picker, ratio, setRatio }: { scene: PlayScene
                   <tr>
                     <SortTh {...headerProps('label')}>Strategy</SortTh>
                     <SortTh {...headerProps('total')}>Rows touched</SortTh>
-                    <SortTh {...headerProps('times')}>vs cheapest</SortTh>
+                    <SortTh {...headerProps('times')}>vs cheapest right</SortTh>
+                    <SortTh {...headerProps('right')}>Right at the end?</SortTh>
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((r) => (
-                    <tr key={r.strategy} className={r.times === 1 ? 'is-ok' : r.total === Math.max(...totals.map((t) => t.total)) ? 'is-bad' : ''}>
+                    <tr key={r.id} className={r.right && r.times === 1 ? 'is-ok' : r.total === Math.max(...totals.map((t) => t.total)) ? 'is-bad' : ''}>
                       <td>{r.label}</td>
                       <td>{r.total.toLocaleString('en-US')} ({r.reads.toLocaleString('en-US')} read, {r.writes.toLocaleString('en-US')} written)</td>
                       <td>{ratioText(r.times)}×</td>
+                      <td>{r.right ? 'yes' : 'no, it differs from the live query'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -120,9 +123,9 @@ export function PlayScene({ scene, picker, ratio, setRatio }: { scene: PlayScene
               y={{ domain: [1, 100000], log: true, label: 'rows per write and its reads' }}
               width={356}
               height={240}
-              ariaLabel="Rows touched per write and its reads against reads per write, for the four strategies"
+              ariaLabel="Rows touched per write and its reads against reads per write, for the live join, the two views and the copy that is fixed on rename"
             >
-              {STRATEGIES.map((s) => <Curve key={s.value} fn={(r) => cycleCost(s.value, WORKLOAD_CONFIG, BASE_WORLD, r)} tone={STRATEGY_TONE[s.value]} />)}
+              {CONTENDERS.filter((c) => c.id in CONTENDER_TONE).map((c) => <Curve key={c.id} fn={(r) => cycleCost(c.strategy, c.cfg, BASE_WORLD, r)} tone={CONTENDER_TONE[c.id]} />)}
               {cross !== null && cross >= RATIO.min && <VLine at={cross} tone="violet" label="crossover" />}
               <VLine at={ratio} tone="hi" />
             </Plot2D>
@@ -130,7 +133,8 @@ export function PlayScene({ scene, picker, ratio, setRatio }: { scene: PlayScene
         )}
         <ProvenanceRow>
           <Provenance kind="toy">a toy engine: counts are rows touched, not milliseconds; real refresh and trigger costs differ</Provenance>
-          {scene === 'workload' && <Provenance kind="simulated" seed={3}>a seeded workload of 20 writes; the full-refresh view rebuilds every {WORKLOAD_CONFIG.refreshEvery} operations</Provenance>}
+          {scene === 'workload' && <Provenance kind="simulated" seed={3}>a seeded workload of 20 writes; the full-refresh view rebuilds every {WORKLOAD_CONFIG.refreshEvery} operations; a row is right when its answer equals the live query after the last write</Provenance>}
+          {scene === 'workload' && pg.cfg.brokenRefund && pg.strategy === 'incremental' && <Provenance kind="toy">the refund bug is planted on purpose; the tests pin the seeded workload that first exposes it (seed {BROKEN_SEED})</Provenance>}
           {scene !== 'workload' && <Provenance kind="simulated" seed={3}>a seeded shop of 5 customers, 6 products and 12 orders</Provenance>}
         </ProvenanceRow>
       </div>

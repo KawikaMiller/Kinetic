@@ -1,5 +1,5 @@
 import { mulberry32 } from '../../core/random';
-import { initState, read, seededWorld, viewRows, write, type Config, type Strategy, type Write, type World } from './shop';
+import { differences, inconsistentCopies, initState, read, seededWorld, viewRows, write, type Config, type Strategy, type Write, type World } from './shop';
 
 export const WORLD_SEED = 3;
 /** Writes in the workload the totals table runs, and the reads-per-write slider range. */
@@ -15,6 +15,19 @@ export const STALENESS_REFRESH = { min: 1, max: 50, initial: 10 } as const;
 export const MIX = { place: 0.6, refund: 0.25, rename: 0.15 } as const;
 
 export const WORKLOAD_CONFIG: Config = { refreshEvery: WORKLOAD_REFRESH_EVERY, fix: 'none' };
+
+/** One row of the totals table: a strategy with the configuration it is priced under. The copy appears twice, left alone and with its rename fix, because the first is cheap and wrong. */
+export interface Contender { id: string; label: string; strategy: Strategy; cfg: Config }
+export const CONTENDERS: readonly Contender[] = [
+  { id: 'live', label: 'Live join', strategy: 'live', cfg: WORKLOAD_CONFIG },
+  { id: 'full', label: 'View, full refresh', strategy: 'full', cfg: WORKLOAD_CONFIG },
+  { id: 'incremental', label: 'View, incremental', strategy: 'incremental', cfg: WORKLOAD_CONFIG },
+  { id: 'copy-none', label: 'Copy, never fixed', strategy: 'copy', cfg: WORKLOAD_CONFIG },
+  { id: 'copy-update', label: 'Copy, fixed on rename', strategy: 'copy', cfg: { ...WORKLOAD_CONFIG, fix: 'update' } },
+];
+
+/** The write that renames a product for the n-th time: one name, shared by the workload, the scenes' button and the try-this text. */
+export const renameWrite = (w: World, productId: number, n: number): Write => ({ kind: 'rename', productId, name: `${w.products[productId - 1].name} v${n}` });
 
 /** `n` seeded writes against a world: orders placed, items refunded, products renamed. The same seed gives the same writes for every strategy. */
 export function seededWrites(w: World, seed: number, n: number): Write[] {
@@ -33,14 +46,14 @@ export function seededWrites(w: World, seed: number, n: number): Write[] {
       items.splice(at, 1);
     } else {
       const productId = 1 + Math.floor(rnd() * w.products.length);
-      out.push({ kind: 'rename', productId, name: `${w.products[productId - 1].name} v${k + 1}` });
+      out.push(renameWrite(w, productId, k + 1));
     }
   }
   return out;
 }
 
-/** Total rows touched by a workload: `writes` seeded writes, each followed by `ratio` dashboard reads, every operation counted where it happens. */
-export function workloadTotal(strategy: Strategy, cfg: Config, ratio: number, writes = WRITES, seed = WORLD_SEED): { reads: number; writes: number; total: number } {
+/** Total rows touched by a workload: `writes` seeded writes, each followed by `ratio` dashboard reads, every operation counted where it happens. `right` is whether the answer equals the live query once it ends. */
+export function workloadTotal(strategy: Strategy, cfg: Config, ratio: number, writes = WRITES, seed = WORLD_SEED): { reads: number; writes: number; total: number; right: boolean } {
   const world = seededWorld(seed);
   let state = initState(strategy, world);
   let readRows = 0;
@@ -58,8 +71,15 @@ export function workloadTotal(strategy: Strategy, cfg: Config, ratio: number, wr
       readRows += got.touched;
     }
   }
-  return { reads: readRows, writes: writeRows, total: readRows + writeRows };
+  const right = differences(strategy, cfg, state).length === 0 && (strategy !== 'copy' || inconsistentCopies(state.world) === 0);
+  return { reads: readRows, writes: writeRows, total: readRows + writeRows, right };
 }
+
+/** Every contender priced on the workload; `right` says its answer equals the live query after the last write. */
+export const contenderTotals = (ratio: number) => CONTENDERS.map((c) => ({ ...c, ...workloadTotal(c.strategy, c.cfg, ratio) }));
+
+/** The cheapest contender whose answer is right at the end: a cheaper wrong answer is not the same product. */
+export const cheapestRight = <T extends { total: number; right: boolean }>(rows: readonly T[]): T => rows.filter((r) => r.right).reduce((a, b) => (b.total < a.total ? b : a));
 
 // ── The rows-touched formulas, stated without running anything ─────────
 

@@ -18,7 +18,7 @@ const CARDS: Card[] = [
   {
     title: 'A table kept up by triggers',
     tradeOff: 'It is fresh after every write, but every write pays and a trigger bug drifts quietly.',
-    note: <>This is the incremental strategy of the lesson, written by hand. The refund bug in the tests is the kind of mistake it invites.</>,
+    note: <>This is the incremental strategy of the lesson, written by hand. The refund bug you can switch on in the workload scene is the kind of mistake it invites.</>,
   },
   {
     title: 'A cache',

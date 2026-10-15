@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CUSTOMERS, Counter, differences, initState, liveDashboard, read, seededWorld, write, type Config, type Dashboard, type Difference, type State, type Strategy, type Write } from './shop';
-import { WORLD_SEED } from './workload';
+import { WORLD_SEED, renameWrite } from './workload';
 
 export interface LastAction {
   kind: 'read' | 'write';
@@ -84,8 +84,7 @@ export function usePlayground(initial: Strategy, cfgInit: Config): Playground {
       if (!first) return;
       const n = counter.rename + 1;
       setCounter({ ...counter, rename: n });
-      const base = seededWorld(WORLD_SEED).products.find((p) => p.id === first.productId)!.name;
-      apply({ kind: 'rename', productId: first.productId, name: `${base} v${n}` }, 'renamed a product');
+      apply(renameWrite(seededWorld(WORLD_SEED), first.productId, n), 'renamed a product');
     },
     readDashboard: () => {
       const got = read(strategy, cfg, state);

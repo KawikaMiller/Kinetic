@@ -2,13 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { crossoverCaption, playCaption } from './captions';
-import { STRATEGIES, differences, initState, inconsistentCopies, read, seededWorld, write, type Config, type State, type Strategy } from './shop';
-import { RATIO, STALENESS_REFRESH, WORKLOAD_CONFIG, WORLD_SEED, crossover, readFormula, workloadTotal, writeFormula } from './workload';
+import { PRODUCTS, differences, initState, inconsistentCopies, read, seededWorld, write, type Config, type State, type Strategy } from './shop';
+import { CONTENDERS, RATIO, STALENESS_REFRESH, WORKLOAD_CONFIG, WORLD_SEED, cheapestRight, contenderTotals, crossover, readFormula, renameWrite, workloadTotal, writeFormula } from './workload';
 import lesson from './index';
 
 const base = seededWorld(WORLD_SEED);
-const cheapest = (ratio: number) => STRATEGIES.map((s) => ({ s: s.value, t: workloadTotal(s.value, WORKLOAD_CONFIG, ratio).total })).reduce((a, b) => (b.t < a.t ? b : a)).s;
-const label = (id: Strategy) => STRATEGIES.find((s) => s.value === id)!.label;
+const cheapest = (ratio: number) => cheapestRight(contenderTotals(ratio)).label;
 const caption = (strategy: Strategy, cfg: Config, state: State, last: { label: string; touched: number } | null) =>
   text(playCaption({ strategy, cfg, state, last, differences: differences(strategy, cfg, state) }), { strict: true });
 
@@ -33,20 +32,27 @@ describe('try-this entries, from the seeded shop, as written', () => {
     const low = cheapest(RATIO.min);
     const high = cheapest(RATIO.max);
     expect(low).not.toBe(high);
-    expect(lesson.tryThis[2]).toContain(`${label(low)} is the cheapest`);
-    expect(lesson.tryThis[2]).toContain(`${label(high)} is.`);
-    const totals = STRATEGIES.map((s) => ({ strategy: s.value, total: workloadTotal(s.value, WORKLOAD_CONFIG, RATIO.min).total }));
-    expect(text(crossoverCaption(base, WORKLOAD_CONFIG, RATIO.min, totals), { strict: true })).toContain(`the cheapest is ${label(low)} at ${Math.min(...totals.map((t) => t.total)).toLocaleString('en-US')} rows touched`);
+    expect(lesson.tryThis[2]).toContain(`${low} is the cheapest row whose answer is right`);
+    expect(lesson.tryThis[2]).toContain(`${high} is.`);
+    const totals = contenderTotals(RATIO.min);
+    const rightMin = Math.min(...totals.filter((t) => t.right).map((t) => t.total));
+    expect(text(crossoverCaption(base, WORKLOAD_CONFIG, RATIO.min, totals), { strict: true })).toContain(`the cheapest right answer is ${low} at ${rightMin.toLocaleString('en-US')} rows touched`);
   });
 
   it('try-this 4: a rename leaves the full-refresh view one write behind and differing on the named row', () => {
     const cfg: Config = { refreshEvery: STALENESS_REFRESH.initial, fix: 'none' };
     const productId = base.items[0].productId;
-    const after = write('full', cfg, initState('full', base), { kind: 'rename', productId, name: 'Renamed' });
+    // The page's "Rename a product" button builds this same write: renameWrite(world, id, 1) on the first item's product.
+    const after = write('full', cfg, initState('full', base), renameWrite(base, productId, 1));
     const diffs = differences('full', cfg, after.state);
     expect(after.state.writesSince).toBe(1);
     expect(diffs.length).toBeGreaterThan(0);
     expect(lesson.tryThis[3]).toContain(`"${diffs[0].what}"`);
+    // Independent of the engine: the live query has the new name, the stale view the old one.
+    const oldName = PRODUCTS[productId - 1].name;
+    expect(diffs.map((d) => d.what)).toEqual(expect.arrayContaining([`units of ${oldName} v1`, `units of ${oldName}`]));
+    expect(lesson.tryThis[3]).toContain(`units of ${oldName} v1`);
+    expect(lesson.tryThis[3]).not.toContain('Renamed');
     const c = caption('full', cfg, after.state, { label: 'renamed a product', touched: after.touched });
     expect(c).toContain('1 write behind');
     expect(c).toContain('differs from the live query');
@@ -56,11 +62,11 @@ describe('try-this entries, from the seeded shop, as written', () => {
     const productId = base.items[0].productId;
     const copies = base.items.filter((i) => i.productId === productId).length;
     const none: Config = { refreshEvery: 10, fix: 'none' };
-    const renamed = write('copy', none, initState('copy', base), { kind: 'rename', productId, name: 'Renamed' });
+    const renamed = write('copy', none, initState('copy', base), renameWrite(base, productId, 1));
     expect(inconsistentCopies(renamed.state.world)).toBe(copies);
     expect(caption('copy', none, renamed.state, null)).toContain(`${copies} ${copies === 1 ? 'copy has' : 'copies have'} an old name`);
     const update: Config = { ...none, fix: 'update' };
-    const fixed = write('copy', update, initState('copy', base), { kind: 'rename', productId, name: 'Renamed' });
+    const fixed = write('copy', update, initState('copy', base), renameWrite(base, productId, 1));
     expect(fixed.touched).toBe(1 + base.items.length + copies);
     expect(lesson.tryThis[4]).toContain(`touches ${fixed.touched} rows`);
     expect(caption('copy', update, fixed.state, null)).toContain('consistent');
@@ -96,10 +102,10 @@ describe('captions follow the engine for every strategy and fix, at every step o
   it('the crossover sentence quotes the same crossover the plot draws, at the slider extremes', () => {
     const x = crossover('incremental', 'live', WORKLOAD_CONFIG, base)!;
     for (const ratio of [RATIO.min, RATIO.initial, RATIO.max]) {
-      const totals = STRATEGIES.map((s) => ({ strategy: s.value, total: workloadTotal(s.value, WORKLOAD_CONFIG, ratio).total }));
+      const totals = contenderTotals(ratio);
       const c = text(crossoverCaption(base, WORKLOAD_CONFIG, ratio, totals), { strict: true });
       expect(c).toContain(`${x.toFixed(2)} reads per write`);
-      expect(c).toContain(`the cheapest is ${label(totals.reduce((a, b) => (b.total < a.total ? b : a)).strategy)}`);
+      expect(c).toContain(`the cheapest right answer is ${cheapestRight(totals).label}`);
     }
   });
 
@@ -110,6 +116,65 @@ describe('captions follow the engine for every strategy and fix, at every step o
     expect(WORKLOAD_CONFIG).toEqual({ refreshEvery: 10, fix: 'none' });
     expect(readFormula('copy', WORKLOAD_CONFIG, base)).toBe(base.items.length + base.orders.length);
     expect(writeFormula('copy', WORKLOAD_CONFIG, { items: base.items.length, copies: 2 }, 'rename')).toBe(1);
+  });
+});
+
+describe('the totals table and key idea 4 (the live join wins when writes dominate)', () => {
+  const ratios = [RATIO.min, 0.1, 0.2, 0.5, 1, RATIO.initial, 100, RATIO.max];
+  const byId = (ratio: number) => Object.fromEntries(contenderTotals(ratio).map((t) => [t.id, t]));
+
+  it('the copy that is never fixed is cheaper than the live join at every ratio and wrong at the end: the table says so instead of crowning it', () => {
+    for (const ratio of ratios) {
+      const t = byId(ratio);
+      expect(t['copy-none'].total, String(ratio)).toBeLessThan(t.live.total);
+      expect(t['copy-none'].right, String(ratio)).toBe(false);
+      expect(cheapestRight(Object.values(t)).id).not.toBe('copy-none');
+    }
+  });
+
+  it('the live join, the incremental view and the fixed copy are right at the end whatever the ratio', () => {
+    for (const ratio of ratios) {
+      const t = byId(ratio);
+      expect([t.live.right, t.incremental.right, t['copy-update'].right], String(ratio)).toEqual([true, true, true]);
+    }
+  });
+
+  it('among the right answers the live join wins at the left end and the incremental view at the right, flipping near the quoted crossover', () => {
+    const x = crossover('incremental', 'live', WORKLOAD_CONFIG, base)!;
+    expect(cheapestRight(contenderTotals(RATIO.min)).id).toBe('live');
+    expect(cheapestRight(contenderTotals(RATIO.max)).id).toBe('incremental');
+    const incrementalWins = (ratio: number) => byId(ratio).incremental.total < byId(ratio).live.total;
+    expect(incrementalWins(x / 2)).toBe(false);
+    expect(incrementalWins(x * 4)).toBe(true);
+    expect(lesson.keyIdeas[3]).toContain(`${x.toPrecision(2)} reads per write`);
+  });
+
+  it('a copy that is kept right costs more than the cheaper of the live join and the incremental view, at every sampled ratio', () => {
+    for (const ratio of ratios) {
+      const t = byId(ratio);
+      expect(t['copy-update'].total, String(ratio)).toBeGreaterThan(Math.min(t.live.total, t.incremental.total));
+    }
+  });
+
+  it('the rows are priced under the configurations the table names', () => {
+    expect(CONTENDERS.map((c) => c.id)).toEqual(['live', 'full', 'incremental', 'copy-none', 'copy-update']);
+    expect(workloadTotal('copy', { ...WORKLOAD_CONFIG, fix: 'update' }, 1).total).toBe(byId(1)['copy-update'].total);
+  });
+});
+
+describe('the broken refund rule is reachable from the scene (the "Refund rule" toggle sets cfg.brokenRefund)', () => {
+  it('with the toggle on, a refund leaves the incremental view differing from the live query, with no error, and the caption says why', () => {
+    const cfg: Config = { ...WORKLOAD_CONFIG, brokenRefund: true };
+    const state = write('incremental', cfg, initState('incremental', base), { kind: 'refund', itemId: base.items.at(-1)!.id }).state;
+    expect(differences('incremental', cfg, state).length).toBeGreaterThan(0);
+    const c = caption('incremental', cfg, state, { label: 'refunded an item', touched: 0 });
+    expect(c).toContain('planted bug');
+    expect(c).toContain('differs from the live query');
+  });
+
+  it('with the toggle off the same refund keeps the view equal to the live query', () => {
+    const state = write('incremental', WORKLOAD_CONFIG, initState('incremental', base), { kind: 'refund', itemId: base.items.at(-1)!.id }).state;
+    expect(differences('incremental', WORKLOAD_CONFIG, state)).toEqual([]);
   });
 });
 
