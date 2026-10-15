@@ -84,13 +84,17 @@ export function logCaption(merged: readonly LogLine[], offsetB: number): ReactNo
 
 /** Scene 3. */
 export function intervalCaption(a: { epsilonMs: number; share: number; waitMs: number; winner: number | null; errorMs: number; commitWait: boolean }): ReactNode {
+  const pastEpsilon = a.errorMs > a.epsilonMs;
   return (
     <>
       With ε = {a.epsilonMs} ms two events are ordered only when they are more than 2ε = {2 * a.epsilonMs} ms apart: {sig(a.share * 100, 3)}% of the sampled pairs. {a.commitWait ? <>Commit wait adds {a.waitMs} ms to every write. </> : <>Without commit wait writes pay nothing and keep their raw stamps. </>}
       {a.winner === null ? null : a.winner === 2 ? (
-        <>With A's clock {a.errorMs} ms off, write 2 <span className="hl ok">wins</span>.</>
+        <>With A's clock {a.errorMs} ms off, write 2 <span className="hl ok">wins</span>{pastEpsilon && a.commitWait ? <>, but A is past ε = {a.epsilonMs} ms, so the guarantee no longer covers it</> : null}.</>
       ) : (
-        <>With A's clock {a.errorMs} ms off, write 1 <span className="hl bad">wins</span> although it was acknowledged first.</>
+        <>
+          With A's clock {a.errorMs} ms off, write 1 <span className="hl bad">wins</span> although it was acknowledged first
+          {a.commitWait ? <>: A is off by more than ε = {a.epsilonMs} ms, and the guarantee holds only while every clock is within ε</> : <>: with commit wait off the raw stamps decide, and A's stamp is {a.errorMs} ms ahead of true time</>}.
+        </>
       )}
     </>
   );

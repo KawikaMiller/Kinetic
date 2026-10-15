@@ -1,6 +1,6 @@
 import type { LessonModule } from '../../core/types';
 import { DEFAULT_DRIFT, NODE_NAMES, driftView } from './drift';
-import { timeText } from './format';
+import { signedMs, timeText } from './format';
 import { Stage } from './Stage';
 
 const start = driftView(DEFAULT_DRIFT);
@@ -24,7 +24,7 @@ const lesson: LessonModule = {
       "The five nodes are plain categories (amber, pink, sky, orange and grey); the node you select is drawn in blue, true time is the faint line at zero, and yellow dots mark a sync step. In the bug scenes the sequence diagram shows the messages; in the lease timeline the two holders are amber and sky and the overlap where both believe is red; in the log, a line that sorts before its cause is red. In the interval scene green is an order that can be decided and violet one that cannot. Stats go green for what works and red for what fails. The chips say what is simulated, illustrative or from memory.",
   },
   tryThis: [
-    `With sync off, ${node} (${DEFAULT_DRIFT.clocks[DEFAULT_DRIFT.node].driftPpm} ppm) drifts ${timeText(Math.abs(start.perDayMs))} a day, so the plot shows it ${timeText(Math.abs(endSkew))} off after six hours.`,
+    `With sync off, ${node} (${DEFAULT_DRIFT.clocks[DEFAULT_DRIFT.node].driftPpm.toString().replace('-', '−')} ppm) drifts ${signedMs(start.perDayMs)} a day. It starts ${signedMs(DEFAULT_DRIFT.clocks[DEFAULT_DRIFT.node].offsetMs)} off, so after six hours the plot shows it at ${timeText(endSkew)}: the start offset plus a quarter of a day of drift.`,
     `Set Sync to Step and Poll every to 1,024 s: ${node}'s error grows to about its drift × poll = ${timeText(driftTimesPoll())} between syncs and snaps back. The first step moves the wall clock backwards; Slew gives a sawtooth without a jump.`,
     'Drag Forward delay to 10 ms and Return delay to 50 ms: the estimate error reads about −20 ms, which is (10 − 50) / 2, although the clocks are not the cause.',
     'Open "Bugs that time causes": A is 5 s fast, so write 2 loses and both replicas keep x = 1. Set A\'s offset to 0 and x = 2 wins. Then pick "A lease two hold": H believes until 13 s and overlaps N; switch on "H stops early" and the overlap goes.',
@@ -46,7 +46,7 @@ const lesson: LessonModule = {
         'Either, because the two differ only in what they are called',
       ],
       answer: 0,
-      why: 'A step by NTP can make the wall clock jump, even backwards, so a duration measured across it can come out negative. A monotonic clock is not stepped, which is why durations use it.',
+      why: 'A step by NTP can make the wall clock jump, even backwards, so a duration measured across it can come out negative. A monotonic clock is never stepped (NTP may still slew its rate by a small amount), which is why durations use it.',
     },
     {
       q: 'Replica A\'s clock is 5 s fast. A client writes x = 1 through A and, once that is acknowledged, a second client writes x = 2 through B. What does last-write-wins keep?',

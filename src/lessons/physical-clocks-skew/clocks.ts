@@ -120,7 +120,7 @@ export interface StepDemo {
   after: number;
   /** How far the wall clock moved: negative means it went backwards. */
   moved: number;
-  /** A monotonic clock over the same instant never steps: it only moves forward by the real elapsed time. */
+  /** A monotonic clock over the same instant is never stepped: it moves forward by the real elapsed time at the oscillator's rate (a real one may also be slewed by a small rate; this demo does not model that). */
   monotonicAdvance: number;
 }
 

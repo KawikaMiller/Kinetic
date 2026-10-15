@@ -126,7 +126,7 @@ export function DriftScene({ picker }: { picker: ReactNode }) {
         </Box>
         {v.demo && (
           <Hint tone="muted">
-            A program reading the wall clock sees {s.mode === 'step' ? 'the step as a jump' : 'only a change of rate'}: it read {v.demo.before.toFixed(1)} ms, then {v.demo.after.toFixed(1)} ms one millisecond of true time later. A monotonic clock, used for durations, advanced {timeText(v.demo.monotonicAdvance)} either way.
+            A program reading the wall clock sees {s.mode === 'step' ? 'the step as a jump' : 'only a change of rate'}: it read {v.demo.before.toFixed(1)} ms, then {v.demo.after.toFixed(1)} ms one millisecond of true time later. A monotonic clock, used for durations, is never stepped: here it advanced {timeText(v.demo.monotonicAdvance)} either way (a real one can still be slewed by a small rate, as on Linux).
           </Hint>
         )}
         <ProvenanceRow>

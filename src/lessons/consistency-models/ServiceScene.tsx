@@ -76,6 +76,9 @@ export function ServiceScene({ picker }: { picker: ReactNode }) {
     [run, view.subset, t],
   );
 
+  // Only the lanes the trace uses: fewer lanes keep the diagram's time notes at a readable size on a phone.
+  const lanes = useMemo(() => ACTORS.filter((a) => sequence.messages.some((m) => m.from === a.id || m.to === a.id)), [sequence]);
+
   useIntroCaption(
     serviceCaption({ design, seed, t, end: run.end, answered: answeredBy(run.ops, t), view, firstBreak }),
     [design, seed, t],
@@ -143,7 +146,7 @@ export function ServiceScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint="only the messages behind the ringed operations">The trace of the violation</SectionTitle>
           {view.subset ? (
-            <SequenceDiagram actors={ACTORS} messages={sequence.messages} ariaLabel="Messages behind the smallest violating set" />
+            <SequenceDiagram actors={lanes} messages={sequence.messages} ariaLabel="Messages behind the smallest violating set" />
           ) : (
             <Hint tone="muted">Every order model holds on the history up to {t} ms, so there is no violation to trace. Replay further, or try another design or seed.</Hint>
           )}

@@ -11,11 +11,11 @@ import { toSequence } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
 import { leaseCaption, logCaption, lwwCaption } from './captions';
 import { signedMs, timeText } from './format';
+import { BUG_SEEDS, type Bug } from './bugs';
 import { GRACE_MS, HOLDER, LEASE_END_MS, NEXT, believedUntil, runLease } from './lease';
-import { BROKEN_SEED, runLww, type LwwMsg } from './lww';
+import { runLww, type LwwMsg } from './lww';
 import { CAUSAL_CHAIN, REPLIER, SKEW_B_MAX, mergedByStamp, runLog } from './orderLog';
 
-type Bug = 'lww' | 'lease' | 'log';
 const BUG_OPTIONS: { value: Bug; label: string }[] = [
   { value: 'lww', label: 'Last write wins' },
   { value: 'lease', label: 'A lease two hold' },
@@ -33,7 +33,8 @@ const lwwLabel = (p: LwwMsg): string => (p.type === 'write' ? `write x=${p.value
 
 export function BugsScene({ picker }: { picker: ReactNode }) {
   const [bug, setBug] = useState<Bug>('lww');
-  const [seed, setSeed] = useState(BROKEN_SEED);
+  const [seeds, setSeeds] = useState<Record<Bug, number>>(BUG_SEEDS);
+  const seed = seeds[bug];
   const [offsetA, setOffsetA] = useState<number>(LWW_DEFAULTS.offsetA);
   const [offsetB, setOffsetB] = useState<number>(LWW_DEFAULTS.offsetB);
   const [holderOffset, setHolderOffset] = useState(-3000);
@@ -138,7 +139,7 @@ export function BugsScene({ picker }: { picker: ReactNode }) {
             </>
           )}
           {bug === 'log' && <Slider label="b's clock offset" value={logOffset} min={-SKEW_B_MAX} max={SKEW_B_MAX} step={10} format={(v) => `${v} ms`} onChange={setLogOffset} />}
-          <SeedField seed={seed} onSeed={setSeed} />
+          <SeedField key={bug} seed={seed} onSeed={(next) => setSeeds((old) => ({ ...old, [bug]: next }))} />
         </>,
       ]}
     >

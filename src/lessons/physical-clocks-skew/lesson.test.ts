@@ -5,8 +5,11 @@ import { driftCaption, exchangeCaption, intervalCaption, leaseCaption, logCaptio
 import { BAD_CLOCKS, DEFAULT_DRIFT, GOOD_CLOCKS, NODE_NAMES, driftView, type DriftState } from './drift';
 import lesson from './index';
 import { believedUntil, runLease } from './lease';
-import { BROKEN_SEED, runLww } from './lww';
-import { runLog } from './orderLog';
+import { BUG_SEEDS } from './bugs';
+import { BROKEN_SEED, RAW_SKEW_MAX, lwwScenario, runLww, writeTwoWins } from './lww';
+import { LOG_BROKEN_SEED, logScenario, causeBeforeEffect, runLog } from './orderLog';
+import { LEASE_BROKEN_SEED } from './lease';
+import { checkInvariants } from '../../core/distSim';
 import { decidableShare, sampleGaps } from './intervals';
 
 const view = (patch: Partial<DriftState> = {}) => {
@@ -23,8 +26,13 @@ describe('try-this entries, from the default state, as written', () => {
     expect(v.perDayMs).toBeCloseTo(-17_280, 6);
     expect(v.series[3].at(-1)!.skew).toBeCloseTo(800 - 200e-6 * 6 * 3_600_000, 6);
     expect(text(driftCaption(s, v))).toContain('after 6 hours its skew is');
-    expect(lesson.tryThis[0]).toContain('17.28 s a day');
-    expect(lesson.tryThis[0]).toContain('3.52 s off after six hours');
+    // Independent arithmetic: -200 ppm of one day (86,400,000 ms) is -17,280 ms; +800 ms start and 6 h of the same drift is 800 - 4,320 = -3,520 ms.
+    expect(-200e-6 * 86_400_000).toBe(-17_280);
+    const first = lesson.tryThis[0].replaceAll('−', '-');
+    expect(first).toContain('-17,280 ms a day');
+    expect(first).toContain('starts +800 ms off');
+    expect(first).toContain('-3.52 s');
+    expect(first).not.toContain('17.28 s');
   });
 
   it('try-this 2: step with a 1,024 s poll peaks near 200 ppm × 1,024 s = 204.8 ms and the first step moves the wall clock backwards; slew has no backward move', () => {
@@ -54,12 +62,12 @@ describe('try-this entries, from the default state, as written', () => {
     expect([won.finals.A.value, won.finals.B.value]).toEqual([2, 2]);
     expect(text(lwwCaption({ stamp1: lost.stamps[1], stamp2: lost.stamps[2], winner: 1, offsetA: 5000, offsetB: 0, held: false }))).toContain('x = 1');
     const clock = { offsetMs: -3000, driftPpm: 0 };
-    const overlap = runLease({ seed: BROKEN_SEED, holderClock: clock, marginMs: 0 });
+    const overlap = runLease({ seed: BUG_SEEDS.lease, holderClock: clock, marginMs: 0 });
     expect(believedUntil(clock, 0)).toBe(13_000);
     expect(overlap.overlap!.from).toBeGreaterThan(10_500);
     expect(overlap.overlap!.to).toBe(13_000);
     expect(text(leaseCaption(overlap, { offsetMs: -3000, marginMs: 0, believedEndMs: 13_000 }))).toContain('Two holders');
-    const margin = runLease({ seed: BROKEN_SEED, holderClock: clock, marginMs: 3500 });
+    const margin = runLease({ seed: BUG_SEEDS.lease, holderClock: clock, marginMs: 3500 });
     expect(margin.overlap).toBeNull();
     expect(text(leaseCaption(margin, { offsetMs: -3000, marginMs: 3500, believedEndMs: believedUntil(clock, 3500) }))).toContain('No two holders');
   });
@@ -72,6 +80,44 @@ describe('try-this entries, from the default state, as written', () => {
     expect(ok.commitWaitMs).toBe(20);
     const share = decidableShare(sampleGaps(), 10);
     expect(text(intervalCaption({ epsilonMs: 10, share, waitMs: 20, winner: 1, errorMs: 60, commitWait: true }))).toContain('write 1 wins');
+  });
+});
+
+describe('the interval caption names the true cause of a lost write', () => {
+  const lose = (errorMs: number, epsilonMs: number, commitWait: boolean) => {
+    const run = runLww({ seed: BROKEN_SEED, mode: commitWait ? 'commit-wait' : 'raw', epsilonMs, offsets: [errorMs, 0] });
+    const winner = run.finals.A.value === run.finals.B.value ? run.finals.A.value : null;
+    return { winner, c: text(intervalCaption({ epsilonMs, share: 0.5, waitMs: run.commitWaitMs ?? 0, winner, errorMs, commitWait }), { strict: true }) };
+  };
+  it('with commit wait on, write 2 wins whenever A is within epsilon, and a loss is only ever blamed on A being past epsilon', () => {
+    for (const epsilonMs of [1, 5, 10, 25, 50]) {
+      for (let errorMs = 0; errorMs <= 60; errorMs += 1) {
+        const { winner, c } = lose(errorMs, epsilonMs, true);
+        if (errorMs <= epsilonMs) expect(winner, `error ${errorMs} epsilon ${epsilonMs}`).toBe(2);
+        if (winner === 1) {
+          expect(errorMs, `error ${errorMs} epsilon ${epsilonMs}`).toBeGreaterThan(epsilonMs);
+          expect(c).toContain(`off by more than ε = ${epsilonMs} ms`);
+        }
+      }
+    }
+  });
+  it('with commit wait off the loss is blamed on the raw stamps, not on epsilon', () => {
+    const { winner, c } = lose(60, 10, false);
+    expect(winner).toBe(1);
+    expect(c).toContain('with commit wait off the raw stamps decide');
+    expect(c).not.toContain('more than ε');
+  });
+});
+
+describe('the seed each bug opens on is the pinned failing seed, and the pinned seeds fail on most seeds', () => {
+  it('opens on each test-pinned seed', () => {
+    expect(BUG_SEEDS).toEqual({ lww: BROKEN_SEED, lease: LEASE_BROKEN_SEED, log: LOG_BROKEN_SEED });
+    expect(LEASE_BROKEN_SEED).toBe(3);
+  });
+  it('raw stamping loses write 2 on 279 of the first 500 seeds and the merged log breaks on 498, so seed 0 is just the first of many', () => {
+    const failing = (make: (s: number) => Parameters<typeof checkInvariants>[0], inv: Parameters<typeof checkInvariants>[1][number]) => Array.from({ length: 500 }, (_, s) => s).filter((s) => !checkInvariants(make(s), [inv]).ok).length;
+    expect(failing(lwwScenario('raw', { within: RAW_SKEW_MAX }), writeTwoWins as never)).toBe(279);
+    expect(failing(logScenario, causeBeforeEffect as never)).toBe(498);
   });
 });
 
