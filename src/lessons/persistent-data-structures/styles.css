@@ -1,0 +1,15 @@
+.pds-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.pds-cost { flex-flow: row wrap; align-items: flex-start; }
+.pds-claims { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pds-line { margin: 0; font-size: 13px; line-height: 1.6; }
+.pds-dag { display: block; max-width: none; }
+.pds-edge { stroke: var(--line-2); stroke-width: 1.5; }
+.pds-edge.is-view { stroke: var(--info); stroke-width: 2.5; }
+.pds-value { font: 700 10px var(--mono); text-anchor: middle; fill: var(--text); pointer-events: none; }
+.pds-tag { font: 700 10px var(--mono); text-anchor: middle; fill: var(--info); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
+.pds-count { font: 700 10px var(--mono); text-anchor: middle; fill: var(--violet); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; pointer-events: none; }
+.pds-stage ~ .provenance-row { margin: 8px 16px 12px; }
+.pds-garbage { opacity: 0.45; }
+.pds-garbage circle { stroke-dasharray: 3 3; }
+.tree-node.is-solid .pds-tag { fill: var(--info); }
+.tree-node.is-solid .pds-count { fill: var(--violet); }
