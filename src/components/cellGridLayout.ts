@@ -6,7 +6,27 @@
 import type { ReactNode } from 'react';
 import { gridGeometry } from '../core/grid';
 import type { Pt } from '../core/geometry';
+import type { Tone } from '../core/tone';
 import { resolveSize, type CellSize, type SizePreset } from './cellGridPaint';
+
+/**
+ * A decoration for a whole row: a `rail` (a thin bar beside the cells) or a `band` (a wash
+ * behind them) in a tone, plus an optional label after the row. Returning nothing leaves the row plain.
+ */
+export interface RowDecor {
+  tone?: Tone;
+  /** Drawn after the row (and after a `rowSuffix`); strings and numbers set the width reserved for it. */
+  label?: ReactNode;
+  style?: 'rail' | 'band';
+}
+export type RowDecorFn = (r: number) => RowDecor | null | undefined;
+
+/** A rail is this wide, with `RAIL_GAP` between it and the first cell; rails reserve that gutter left of the cells. */
+export const RAIL_WIDTH = 4;
+export const RAIL_GAP = 4;
+export const RAIL_GUTTER = RAIL_WIDTH + RAIL_GAP;
+/** A band reaches this far past the cells on every side, so it shows around them. */
+export const BAND_PAD = 3;
 
 /** Where things are, for drawing an overlay (arrows between cells, a path) in the grid's coordinates. */
 export interface CellGridGeometry {
@@ -30,6 +50,7 @@ export interface CellGridShape {
   size?: SizePreset | CellSize;
   gap?: number;
   rowSuffix?: { width: number };
+  rowDecor?: RowDecorFn;
 }
 
 /** Row and column labels: 10px text, about 6.2 units a character. */
@@ -38,14 +59,22 @@ export const GRID_LABEL = { FONT: 10, CHAR_W: 6.2 } as const;
 const textOf = (node: ReactNode) => (typeof node === 'string' || typeof node === 'number' ? String(node) : null);
 const maxLabelChars = (labels: readonly ReactNode[]) => labels.reduce<number>((m, l) => Math.max(m, textOf(l)?.length ?? 2), 0);
 
-/** Everything the component needs: the resolved size, the label gutter, the cell geometry and the full width. */
+const isRail = (d: RowDecor | null | undefined) => !!d && (d.style ?? 'rail') === 'rail';
+
+/** Everything the component needs: the resolved size, the label gutter, the cell geometry, the row decorations and the full width. */
 export function cellGridFrame(p: CellGridShape) {
   const size = resolveSize(p.size ?? 'sm');
-  const rowLabelWidth = p.rowLabels ? maxLabelChars(p.rowLabels) * GRID_LABEL.CHAR_W + 8 : 0;
+  const decors = Array.from({ length: p.rowDecor ? p.rows : 0 }, (_, r) => p.rowDecor?.(r) ?? null);
+  const railGutter = decors.some(isRail) ? RAIL_GUTTER : 0;
+  const decorLabels = decors.flatMap((d) => (d?.label == null ? [] : [d.label]));
+  const decorLabelWidth = decorLabels.length ? maxLabelChars(decorLabels) * GRID_LABEL.CHAR_W + 8 : 0;
+  const labelWidth = p.rowLabels ? maxLabelChars(p.rowLabels) * GRID_LABEL.CHAR_W + 8 : 0;
+  const rowLabelWidth = labelWidth + railGutter;
   const colLabelHeight = p.colLabels ? GRID_LABEL.FONT + 8 : 0;
   const geo = gridGeometry({ rows: p.rows, cols: p.cols, cell: size.cell, gap: p.gap ?? size.gap, rowLabelWidth, colLabelHeight });
-  const width = geo.width + (p.rowSuffix ? p.rowSuffix.width + 8 : 0);
-  return { size, rowLabelWidth, geo, width };
+  const suffixWidth = p.rowSuffix ? p.rowSuffix.width + 8 : 0;
+  const width = geo.width + suffixWidth + decorLabelWidth;
+  return { size, rowLabelWidth, railGutter, decors, decorLabelX: geo.width + suffixWidth + 8, geo, width };
 }
 
 /**

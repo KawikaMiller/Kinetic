@@ -199,3 +199,100 @@ export function longestMatch(
   }
   return best ? { ...best, steps: i - from } : null;
 }
+
+/**
+ * One PDA move: in state `from`, reading `read` ('' = ε) with `pop` on top, go to `to` and push
+ * `push` (top first; '' pushes nothing). Every move pops one stack symbol, so a machine that never pops needs a bottom marker.
+ */
+export interface PdaRule {
+  from: State;
+  /** One input symbol, or '' for an ε-move. */
+  read: string;
+  /** The one stack symbol this move pops. */
+  pop: string;
+  to: State;
+  /** Symbols pushed in place of the popped one, the first becoming the new top. */
+  push: string;
+}
+
+export interface Pda {
+  kind: 'pda';
+  start: State;
+  /** The stack holds just this symbol at the start. */
+  bottom: string;
+  /** Accepting states, used by `accept: 'final-state'`. */
+  accept: readonly State[];
+  rules: readonly PdaRule[];
+}
+
+/** Where a PDA is: its state, how much input it has read, and its stack (top first, as a string). */
+export interface PdaConfig {
+  state: State;
+  pos: number;
+  stack: string;
+}
+
+export const pdaStart = (pda: Pda): PdaConfig => ({ state: pda.start, pos: 0, stack: pda.bottom });
+
+const configKey = (c: PdaConfig) => `${c.state}\u0000${c.pos}\u0000${c.stack}`;
+
+/** Every configuration one move away from `c` (one per applicable rule: this is where non-determinism lives). */
+export function pdaMoves(pda: Pda, input: string, c: PdaConfig): PdaConfig[] {
+  const top = c.stack[0];
+  if (top === undefined) return [];
+  const next = input[c.pos];
+  const out: PdaConfig[] = [];
+  for (const r of pda.rules) {
+    if (r.from !== c.state || r.pop !== top) continue;
+    if (r.read === '') out.push({ state: r.to, pos: c.pos, stack: r.push + c.stack.slice(1) });
+    else if (r.read === next) out.push({ state: r.to, pos: c.pos + 1, stack: r.push + c.stack.slice(1) });
+  }
+  return out;
+}
+
+/** One move of a whole set of configurations at once: the live set after it, de-duplicated and sorted for a stable display. */
+export function pdaStep(pda: Pda, input: string, configs: readonly PdaConfig[]): PdaConfig[] {
+  const seen = new Map<string, PdaConfig>();
+  for (const c of configs) for (const n of pdaMoves(pda, input, c)) seen.set(configKey(n), n);
+  return [...seen.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, c]) => c);
+}
+
+/** How a PDA accepts: in an accepting state with the input used up, or with the stack empty and the input used up. */
+export type PdaAcceptMode = 'final-state' | 'empty-stack';
+
+export function pdaAccepting(pda: Pda, input: string, c: PdaConfig, mode: PdaAcceptMode): boolean {
+  if (c.pos !== input.length) return false;
+  return mode === 'final-state' ? pda.accept.includes(c.state) : c.stack === '';
+}
+
+export type PdaOutcome = 'accepted' | 'rejected' | 'budget-exhausted';
+
+export interface PdaRun {
+  status: PdaOutcome;
+  /** The live set after each move (levels[0] is the start). Stops at acceptance, when the set empties or at the budget. */
+  levels: PdaConfig[][];
+  /** Distinct configurations generated, the budget's unit. */
+  explored: number;
+}
+
+/**
+ * Breadth-first over configuration sets. Accepts as soon as any live configuration accepts;
+ * 'rejected' means every path died; 'budget-exhausted' means `maxConfigs` distinct configurations
+ * were generated first, which says nothing about the answer (an ε-move that keeps pushing never ends).
+ */
+export function pdaRun(pda: Pda, input: string, o: { maxConfigs: number; accept?: PdaAcceptMode }): PdaRun {
+  const mode = o.accept ?? 'final-state';
+  const seen = new Set<string>();
+  let live = [pdaStart(pda)];
+  seen.add(configKey(live[0]));
+  const levels = [live];
+  while (live.length) {
+    if (live.some((c) => pdaAccepting(pda, input, c, mode))) return { status: 'accepted', levels, explored: seen.size };
+    const fresh = pdaStep(pda, input, live).filter((c) => !seen.has(configKey(c)));
+    for (const c of fresh) seen.add(configKey(c));
+    if (seen.size > o.maxConfigs) return { status: 'budget-exhausted', levels, explored: seen.size };
+    live = fresh;
+    if (live.length) levels.push(live);
+  }
+  return { status: 'rejected', levels, explored: seen.size };
+}

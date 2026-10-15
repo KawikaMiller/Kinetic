@@ -2,8 +2,8 @@ import { Fragment, type ReactNode } from 'react';
 import { ChipButton, ControlGroup, Segmented, Slider } from '../../components/ui';
 import type { Config } from './config';
 import { MAX_LENGTH, RANGES } from './generator';
-import { SeedField } from './SeedField';
 import { BUGS, PROPERTIES, type PropId } from './sorts';
+import { SeedField } from '../../components/SeedField';
 
 /** The function, property and generator controls that scenes 1 and 2 share: the same rows, the same state. */
 export function configRows(picker: ReactNode, config: Config, set: (patch: Partial<Config>) => void, extra?: ReactNode): ReactNode[] {

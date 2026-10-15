@@ -5,13 +5,13 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { useTickSim } from '../../core/useTickSim';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { loadCaption, msText, rps } from './frames';
 import {
   LEVEL_DEFAULT, LEVEL_RANGE, RAMP_LEVELS, SERVICE_DEFAULT, SERVICE_MS_RANGE, SLO_MS, TEST_JOBS, TIMEOUT_MS, WORKERS_RANGE, achievedLoad, capacity, createRamp, errorRate,
   kneeLoad, latencyQuantileMs, serviceOnlyP99Ms, simulateLoad, type RampState, type Service,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const LATENCY_MAX = SLO_MS * 4;
 const RAMP_TICK_SECONDS = 0.35;

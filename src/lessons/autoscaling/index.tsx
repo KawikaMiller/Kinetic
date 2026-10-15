@@ -1,9 +1,9 @@
 import type { LessonModule } from '../../core/types';
-import { sig } from '../distributions/fmt';
 import {
   CONTROLLER_DEFAULT, FLASH, INSTANCE_RPS, MAX_INSTANCES, SCENE_DEFAULT, ceilDiv, runFleet, type Controller,
 } from './model';
 import { Stage } from './Stage';
+import { sig } from '../../core/format';
 
 const run = (preset: Parameters<typeof runFleet>[0], over: Partial<Controller> = {}) => runFleet(preset, { ...CONTROLLER_DEFAULT, ...over }, SCENE_DEFAULT.seed);
 

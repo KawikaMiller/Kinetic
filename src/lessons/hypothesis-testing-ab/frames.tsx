@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { pctText, sig } from '../distributions/fmt';
 import {
   ALPHA, MIN_VISITORS, SLICES, firstCrossing, lookAlpha, lookVerdict, sampleSizePerArm, verdictKind, type Arms, type ExperimentSpec, type Look,
   type PeekRates, type SliceResult, type VerdictKind, type ZTest,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 /** A share written as percentage points: 0.0312 → "+3.12 pts". */
 export const pointsText = (share: number): string => `${share > 0 ? '+' : share < 0 ? '−' : ''}${Math.abs(share * 100).toFixed(2)} pts`;

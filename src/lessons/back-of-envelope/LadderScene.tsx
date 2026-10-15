@@ -5,9 +5,9 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { levelById } from '../../core/latencyLadder';
-import { sig } from '../distributions/fmt';
 import { ladderCaption } from './frames';
 import { LATENCY_TARGET_MS, PATH_DEFAULT, PATH_STEPS, pathBudget, stepMs, type PathStep } from './model';
+import { sig } from '../../core/format';
 
 const STEP_TONE: Record<PathStep, 'amber' | 'pink' | 'sky' | 'orange' | 'muted'> = { l1: 'muted', ram: 'amber', nvme: 'pink', dc: 'sky', wan: 'orange' };
 const MAX_COUNT: Record<PathStep, number> = { l1: 1000, ram: 1000, nvme: 20, dc: 100, wan: 5 };

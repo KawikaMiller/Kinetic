@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-import { pctText, sig } from '../distributions/fmt';
 import { hours, logCaption, logClock, minutes, perWeek, pipelineCaption } from './frames';
 import lesson from './index';
 import {
   DEFINITIONS_DEFAULT, FAILURE_DEFS, LEAD_STARTS, LOG_SEED, PIPELINE_DEFAULT, QA_GATE_HOURS, RESTORE_ENDS, SCENE1_SEED, SPLIT_FACTOR, GAMING_OPTIONS, leadTimeLabel,
   logMetrics, makeLog, reportedMetrics, runDelivery, type Definitions, type Pipeline,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const text = expectCaption;
 const real = (over: Partial<Pipeline> = {}) => runDelivery({ ...PIPELINE_DEFAULT, ...over }, SCENE1_SEED);

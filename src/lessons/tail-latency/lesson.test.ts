@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { captionText, expectCaption } from '../../core/testing/captions';
-import { pctText, sig } from '../distributions/fmt';
 import { FRAME_STEPS, fanoutCaption, hedgeFrames, hedgeIntro, hedgeSummary, hurtCaption, msText, sampleSelectionNote, timelineEnd, touchText } from './frames';
 import lesson from './index';
 import {
   BACKEND_DEFAULT, FANOUT_DEFAULT, FANOUT_STEPS, HEDGE_BACKEND, HEDGE_DEFAULT, MM1, MM1_DEFAULT_RHO, MM1_RHO, P99, SAMPLE_REQUESTS, callQuantile, callSurvival, crossoverRho,
   extraLoad, fanoutReport, fanoutRun, hedgeReport, hedgeRun, hedgedQuantile, hedgedShare, hedgingHurts, medianSlowWidth, mm1Hedging, p95DelayMs, thirdCopyEffect, touchesSlow, type Hedge,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const text = (node: Parameters<typeof captionText>[0]) => expectCaption(node);
 

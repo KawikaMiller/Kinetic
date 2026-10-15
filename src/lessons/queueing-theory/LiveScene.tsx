@@ -7,13 +7,13 @@ import type { Option } from '../../components/options';
 import { Hint, Legend, PauseButton, Provenance, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { useTickSim } from '../../core/useTickSim';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { liveCaption } from './frames';
 import {
   LIVE_DEFAULT, LIVE_MAX_TICKS_PER_FRAME, LIVE_TICK_REAL_SECONDS, MU, QUEUE_ICONS, RECENT_JOBS, RHO_RANGE, SHAPES, SHAPE_CV2, SHAPE_KENDALL, SHAPE_NAME,
   createQueueSim, measure, picture, theory, type Measured, type QueueState, type ServiceShape,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const SHAPE_OPTIONS: Option<ServiceShape>[] = SHAPES.map((s) => ({ value: s, label: SHAPE_NAME[s] }));
 const SNAPSHOT_SECONDS = 0.12;

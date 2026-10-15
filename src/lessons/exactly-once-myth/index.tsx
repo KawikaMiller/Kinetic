@@ -1,7 +1,7 @@
 import type { LessonModule } from '../../core/types';
-import { pctText } from '../distributions/fmt';
 import { DEFAULT_DEPTH, DEFAULT_LOSS, LOSS_MAX, pDisagree, pNobody } from './generals';
 import { Stage } from './Stage';
+import { pctText } from '../../core/format';
 
 const lesson: LessonModule = {
   Stage,

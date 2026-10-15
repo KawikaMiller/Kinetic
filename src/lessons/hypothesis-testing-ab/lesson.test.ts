@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
-import { pctText, sig } from '../distributions/fmt';
 import { ownCaption, peekCaption, pText, smallCountNote, pointsText, powerCaption, repeatCaption, runCaption, sliceCaption, verdictSays } from './frames';
 import lesson from './index';
 import {
@@ -8,6 +7,7 @@ import {
   firstCrossing, lookAlpha, parseArms, peekRates, peekRun, replicate, runExperiment, runSeed, sampleSizePerArm, significantSlices, sliceAlpha, slicePValues,
   sliceRun, tailRanges, verdictKind, visitorsAt, zTest, Z_AXIS,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const SIMULATION_TIMEOUT_MS = 90_000;
 /** Two-sided z cut-off for alpha 0.05 / 20 = 0.0025 (standard normal table: z at 0.99875). */

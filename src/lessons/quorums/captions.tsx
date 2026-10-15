@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { pctText, sig } from '../distributions/fmt';
 import { canGather, failuresTolerated, missProbability, missingPairs, type WaitStats } from './quorum';
 import { sharedNow, type SetsState } from './sets';
 import { TIMEOUT_MS, type StoreOp } from './store';
 import type { Schedule, StoreRun } from './storeView';
+import { pctText, sig } from '../../core/format';
 
 /** 1st, 2nd, 3rd, 4th. */
 const ordinal = (k: number): string => `${k}${['th', 'st', 'nd', 'rd'][k % 100 > 10 && k % 100 < 14 ? 0 : k % 10 < 4 ? k % 10 : 0]}`;

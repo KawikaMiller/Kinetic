@@ -239,3 +239,17 @@ export function logHistogram(xs: readonly number[], o: { bins: number; min: numb
   }
   return { edges, counts, outside };
 }
+
+/** Rounds away the 1e-16 noise in n·p/100 so ⌈7.000000000000001⌉ doesn't become 8. */
+const RANK_NOISE = 1e9;
+const roundNoise = (x: number) => Math.round(x * RANK_NOISE) / RANK_NOISE;
+
+/** The 1-based rank nearest-rank picks: the ⌈p·n⌉-th smallest, clamped into 1..n (`pct` is 0..100). */
+export function nearestRankIndex(n: number, pct: number): number {
+  return Math.min(n, Math.max(1, Math.ceil(roundNoise((n * pct) / 100))));
+}
+
+/** Nearest-rank percentile of an ascending sample: the ⌈p·n⌉-th smallest value; null for an empty sample. */
+export function nearestRank(sorted: readonly number[], pct: number): number | null {
+  return sorted.length ? sorted[nearestRankIndex(sorted.length, pct) - 1] : null;
+}

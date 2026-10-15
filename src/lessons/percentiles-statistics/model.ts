@@ -1,8 +1,7 @@
-import { quantile } from '../../core/distributions';
+import { quantile, distMean, distQuantile, distSample, drawSample, type Dist } from '../../core/distributions';
 import { mulberry32, type Rnd } from '../../core/random';
 import { mean, percentile } from '../../core/sim';
-import { stdDev } from '../../core/stats';
-import { distMean, distQuantile, distSample, drawSample, type Dist } from '../distributions/model';
+import { nearestRank, nearestRankIndex, stdDev } from '../../core/stats';
 
 /* ---------- scene 1: three definitions of a percentile ---------- */
 
@@ -15,20 +14,6 @@ export const RULE_NAME: Record<Rule, string> = {
   floor: 'floor(n·p) index',
   linear: 'linear interpolation',
 };
-
-/** Rounds away the 1e-16 noise in n·p/100 so ⌈7.000000000000001⌉ doesn't become 8. */
-const RANK_NOISE = 1e9;
-const roundNoise = (x: number) => Math.round(x * RANK_NOISE) / RANK_NOISE;
-
-/** The 1-based rank nearest-rank picks: the ⌈p·n⌉-th smallest, clamped into 1..n. */
-export function nearestRankIndex(n: number, pct: number): number {
-  return Math.min(n, Math.max(1, Math.ceil(roundNoise((n * pct) / 100))));
-}
-
-/** Nearest-rank: the ⌈p·n⌉-th smallest value; null for an empty sample. */
-export function nearestRank(sorted: readonly number[], pct: number): number | null {
-  return sorted.length ? sorted[nearestRankIndex(sorted.length, pct) - 1] : null;
-}
 
 /** The 0-based index core/sim `percentile` (the rule this app uses) picks: ⌊n·p⌋, capped at n − 1. */
 export const floorIndex = (n: number, pct: number): number => Math.min(n - 1, Math.floor(n * (pct / 100)));

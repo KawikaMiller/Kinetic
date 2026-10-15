@@ -5,11 +5,11 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
-import { SeedField } from '../distributions/SeedField';
 import { deliveryCaption } from './captions';
 import {
   BROKER, CONSUMER, DEFAULT_LOSS, DELIVERY_BROKEN_SEED, DELIVERY_MODES, HORIZON_MS, MESSAGES, MODE_LABEL, countersAt, deliveryCluster, linkTotals, type DeliveryMode, type DeliveryMsg,
 } from './delivery';
+import { SeedField } from '../../components/SeedField';
 
 const MODE_OPTIONS = DELIVERY_MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }));
 const LOSS_STEP = 0.05;

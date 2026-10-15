@@ -6,12 +6,11 @@ import { Hint, Legend, Provenance, Segmented, Slider, Stat, Stats } from '../../
 import { useIntroCaption } from '../../core/caption';
 import { barsFromHistogram } from '../../core/plot';
 import { histogram } from '../../core/stats';
-import { SeedField } from './SeedField';
-import { ratioText, sig } from './fmt';
 import { cltCaption } from './frames';
-import {
-  BINS, BOUNDS, FAMILIES, FAMILY_NAME, MEAN_DEFAULT, REPLICATES, SAMPLE_SIZES, cltDist, cltReport, meansDomain, replicateMeans, type Family,
-} from './model';
+import { BINS, BOUNDS, FAMILIES, FAMILY_NAME, MEAN_DEFAULT, REPLICATES, SAMPLE_SIZES, cltDist, cltReport, meansDomain, replicateMeans } from './model';
+import { SeedField } from '../../components/SeedField';
+import { ratioText, sig } from '../../core/format';
+import { type Family } from '../../core/distributions';
 
 const FAMILY_OPTIONS: Option<Family>[] = FAMILIES.map((f) => ({ value: f, label: FAMILY_NAME[f] }));
 const SIZE_OPTIONS: Option<number>[] = SAMPLE_SIZES.map((n) => ({ value: n, label: n.toLocaleString('en-US') }));

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { timeFrames, type TimedFrame } from '../../core/frames';
-import { pctText, sig } from '../distributions/fmt';
 import {
   GENERATOR_NAME, LOOP_OVERHEAD_US, SERVER_MS, SLO_P99_MS, STEADY_WINDOW, WINDOW_NAME, exactWindowMean, hidesStall, timelineRange,
   type GeneratorParams, type GeneratorReading, type NoiseReading, type NoiseSettings, type WarmupReading, type WindowMode,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 export const us = (x: number): string => `${sig(x)} µs`;
 export const msText = (x: number): string => `${sig(x)} ms`;

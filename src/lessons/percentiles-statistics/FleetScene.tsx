@@ -5,14 +5,13 @@ import { StageFrame } from '../../components/StageFrame';
 import type { Option } from '../../components/options';
 import { Hint, Legend, Provenance, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { plural } from '../../core/format';
+import { plural, pctText, sig } from '../../core/format';
 import { plainTone } from '../../core/tone';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { fleetCaption } from './frames';
 import {
   FLEET_DEFAULT, FLEET_PCT, MAX_HOSTS, MIN_HOSTS, fleetReport, presetHosts, seededHosts, type HostsMode,
 } from './model';
+import { SeedField } from '../../components/SeedField';
 
 const MODE_OPTIONS: Option<HostsMode>[] = [
   { value: 'understates', label: 'Understates (hand-made)' },

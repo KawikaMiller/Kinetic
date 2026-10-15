@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, decimal, duration, humanDuration, humanDurationLog10, latency, pct, plural, power, superscript } from './format';
+import { bytes, clock, decimal, duration, humanDuration, humanDurationLog10, latency, pct, pctText, plural, power, ratioText, sig, superscript } from './format';
 
 describe('superscript', () => {
   it('writes integers in superscript digits, including negatives', () => {
@@ -119,5 +119,33 @@ describe('decimal', () => {
   it('never prints a minus on something that rounds to zero', () => {
     expect(decimal(-0.0004, 3)).toBe('0');
     expect(decimal(-0, 2)).toBe('0');
+  });
+});
+
+describe('sig, pctText and ratioText', () => {
+  it('sig keeps three significant figures with thousands separators and a real minus', () => {
+    expect(sig(1234.5)).toBe('1,230');
+    expect(sig(0.012345)).toBe('0.0123');
+    expect(sig(-1234.4, 4)).toBe('−1,234');
+    expect(sig(0)).toBe('0');
+  });
+
+  it('sig and pctText show a dash for NaN and sig names the infinities', () => {
+    expect(sig(NaN)).toBe('–');
+    expect(sig(Infinity)).toBe('∞');
+    expect(sig(-Infinity)).toBe('−∞');
+    expect(pctText(NaN)).toBe('–');
+  });
+
+  it('pctText writes a share as a percentage with the decimals asked for', () => {
+    expect(pctText(0.691)).toBe('69.1%');
+    expect(pctText(0.5, 0)).toBe('50%');
+    expect(pctText(0.123456, 3)).toBe('12.346%');
+  });
+
+  it('ratioText keeps two decimals so a ratio near 1 never reads as a bare 1', () => {
+    expect(ratioText(0.9987)).toBe('1.00');
+    expect(ratioText(2.345)).toBe('2.35');
+    expect(ratioText(Infinity)).toBe('–');
   });
 });

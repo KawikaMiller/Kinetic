@@ -8,13 +8,13 @@ import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Togg
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
-import { SeedField } from '../distributions/SeedField';
 import { leaseCaption, logCaption, lwwCaption } from './captions';
 import { signedMs, timeText } from './format';
 import { BUG_SEEDS, type Bug } from './bugs';
 import { GRACE_MS, HOLDER, LEASE_END_MS, NEXT, believedUntil, runLease } from './lease';
 import { runLww, type LwwMsg } from './lww';
 import { CAUSAL_CHAIN, REPLIER, SKEW_B_MAX, mergedByStamp, runLog } from './orderLog';
+import { SeedField } from '../../components/SeedField';
 
 const BUG_OPTIONS: { value: Bug; label: string }[] = [
   { value: 'lww', label: 'Last write wins' },

@@ -1,20 +1,12 @@
 import {
-  exponential, exponentialCdf, exponentialPdf, lognormal, lognormalCdf, lognormalPdf, normal, normalCdf, normalPdf, pareto,
-  paretoCdf, paretoPdf, poissonPmf, quantile,
+  distCdf, distMean, distQuantile, distSample, distVariance, drawSample, exponential, normalCdf, poissonPmf, quantile,
+  type Dist, type Family,
 } from '../../core/distributions';
 import { leastSquares } from '../../core/fit';
 import { mulberry32, shuffle } from '../../core/random';
 import { histogram, logHistogram, stdDev, variance } from '../../core/stats';
 
 /* ---------- the four families ---------- */
-
-export type Family = 'normal' | 'exponential' | 'lognormal' | 'pareto';
-
-export type Dist =
-  | { family: 'normal'; mu: number; sigma: number }
-  | { family: 'exponential'; mean: number }
-  | { family: 'lognormal'; mu: number; sigma: number }
-  | { family: 'pareto'; xm: number; alpha: number };
 
 export const FAMILIES: readonly Family[] = ['normal', 'exponential', 'lognormal', 'pareto'];
 
@@ -56,88 +48,12 @@ const P999 = 0.999;
 /** The linear x axis ends at this exact quantile, so a heavy tail runs off the right edge instead of squashing the picture. */
 const AXIS_QUANTILE = 0.9995;
 
-/** Inverse of the normal cdf by bisection: the z with P(Z ≤ z) = p. */
-export function normalQuantile(p: number): number {
-  if (!(p > 0 && p < 1)) return p <= 0 ? -Infinity : Infinity;
-  let lo = -40;
-  let hi = 40;
-  for (let i = 0; i < 100; i++) {
-    const mid = (lo + hi) / 2;
-    if (normalCdf(mid) < p) lo = mid;
-    else hi = mid;
-  }
-  return (lo + hi) / 2;
-}
-
-/** The exact p-quantile: μ + zσ, −ln(1−p)·mean, exp(μ + zσ), xm·(1−p)^(−1/α). */
-export function distQuantile(d: Dist, p: number): number {
-  switch (d.family) {
-    case 'normal': return d.mu + normalQuantile(p) * d.sigma;
-    case 'exponential': return -Math.log(1 - p) * d.mean;
-    case 'lognormal': return Math.exp(d.mu + normalQuantile(p) * d.sigma);
-    case 'pareto': return d.xm * (1 - p) ** (-1 / d.alpha);
-  }
-}
-
-export function distCdf(d: Dist, x: number): number {
-  switch (d.family) {
-    case 'normal': return normalCdf(x, d.mu, d.sigma);
-    case 'exponential': return exponentialCdf(x, 1 / d.mean);
-    case 'lognormal': return lognormalCdf(x, d.mu, d.sigma);
-    case 'pareto': return paretoCdf(x, d.xm, d.alpha);
-  }
-}
-
-export function distPdf(d: Dist, x: number): number {
-  switch (d.family) {
-    case 'normal': return normalPdf(x, d.mu, d.sigma);
-    case 'exponential': return exponentialPdf(x, 1 / d.mean);
-    case 'lognormal': return lognormalPdf(x, d.mu, d.sigma);
-    case 'pareto': return paretoPdf(x, d.xm, d.alpha);
-  }
-}
-
-/** The exact mean; Infinity for a Pareto with α ≤ 1 (there is no finite mean). */
-export function distMean(d: Dist): number {
-  switch (d.family) {
-    case 'normal': return d.mu;
-    case 'exponential': return d.mean;
-    case 'lognormal': return Math.exp(d.mu + d.sigma ** 2 / 2);
-    case 'pareto': return d.alpha > 1 ? (d.alpha * d.xm) / (d.alpha - 1) : Infinity;
-  }
-}
-
-/** The exact variance; Infinity for a Pareto with α ≤ 2. */
-export function distVariance(d: Dist): number {
-  switch (d.family) {
-    case 'normal': return d.sigma ** 2;
-    case 'exponential': return d.mean ** 2;
-    case 'lognormal': return (Math.exp(d.sigma ** 2) - 1) * Math.exp(2 * d.mu + d.sigma ** 2);
-    case 'pareto': return d.alpha > 2 ? (d.xm ** 2 * d.alpha) / ((d.alpha - 1) ** 2 * (d.alpha - 2)) : Infinity;
-  }
-}
-
 /** Which moments exist, decided from the parameters alone (never from a sample). */
 export type Moments = 'finite' | 'infinite-variance' | 'infinite-mean';
 
 export function momentsOf(d: Dist): Moments {
   if (!Number.isFinite(distMean(d))) return 'infinite-mean';
   return Number.isFinite(distVariance(d)) ? 'finite' : 'infinite-variance';
-}
-
-/** One draw. */
-export function distSample(d: Dist, rnd: () => number): number {
-  switch (d.family) {
-    case 'normal': return normal(rnd, d.mu, d.sigma);
-    case 'exponential': return exponential(rnd, 1 / d.mean);
-    case 'lognormal': return lognormal(rnd, d.mu, d.sigma);
-    case 'pareto': return pareto(rnd, d.xm, d.alpha);
-  }
-}
-
-export function drawSample(d: Dist, seed: number, n: number): number[] {
-  const rnd = mulberry32(seed);
-  return Array.from({ length: n }, () => distSample(d, rnd));
 }
 
 /** The share of draws below the exact mean: P(X < mean). Φ(σ/2) for a log-normal; 1 when the mean is infinite. */

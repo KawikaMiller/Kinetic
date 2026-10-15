@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { calendarLabel } from '../../core/gantt';
-import { pctText, sig } from '../distributions/fmt';
 import {
   FAILURE_NAME, LOG_DEPLOYMENTS, LOG_START, LOG_WEEKS, RESTORE_END_NAME, SPLIT_FACTOR, leadTimeLabel, type Definitions, type DeliveryMetrics, type Gaming, type LogMetrics,
   type Pipeline, type Reported,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 export const hours = (x: number): string => `${sig(x)} h`;
 export const minutes = (x: number): string => `${sig(x)} min`;

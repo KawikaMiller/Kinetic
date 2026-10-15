@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ksStatistic, normalCdf, poissonPmf } from '../../core/distributions';
+import { ksStatistic, normalCdf, poissonPmf, distCdf, distMean, distPdf, distQuantile, distVariance, drawSample, normalQuantile, type Dist } from '../../core/distributions';
 import { stdDev } from '../../core/stats';
-import { nextSeed, parseSeed, SEED_MAX } from './seed';
-import {
-  BURST_MEAN, FAMILIES, MYSTERY_DISTS, cltDist, cltReport, countArrivals, dispersionIndex, distCdf, distMean, distPdf, distQuantile,
-  distVariance, drawSample, logBinsAllowed, lognormalShareBelowMean, momentsOf, mysteryDatasets, mysteryHints, normalQuantile, replicateMeans,
-  shapeView, shareBelowMean, summaryRows, tailSlope, totalVariation, type Dist,
-} from './model';
+import { BURST_MEAN, FAMILIES, MYSTERY_DISTS, cltDist, cltReport, countArrivals, dispersionIndex, logBinsAllowed, lognormalShareBelowMean, momentsOf, mysteryDatasets, mysteryHints, replicateMeans, shapeView, shareBelowMean, summaryRows, tailSlope, totalVariation } from './model';
 
 const SEEDS = [11, 222, 3333];
 
@@ -256,16 +251,6 @@ describe('the Pareto tail slope and the mystery game', () => {
 });
 
 describe('hostile input', () => {
-  it('the seed field refuses non-seeds and accepts the whole range', () => {
-    for (const bad of ['', '  ', 'abc', '-1', '1e3', '3.5', '+5', 'Infinity', String(SEED_MAX + 1), '<b>1</b>']) {
-      expect(parseSeed(bad).ok, JSON.stringify(bad)).toBe(false);
-    }
-    expect(parseSeed('0')).toEqual({ ok: true, value: 0 });
-    expect(parseSeed(String(SEED_MAX))).toEqual({ ok: true, value: SEED_MAX });
-    expect(nextSeed(SEED_MAX)).toBe(0);
-    expect(nextSeed(7)).toBe(8);
-  });
-
   it('log bins are refused for the normal (it has non-positive values) and honoured for the rest', () => {
     expect(logBinsAllowed({ family: 'normal', mu: 0, sigma: 1 })).toBe(false);
     expect(shapeView({ family: 'normal', mu: 100, sigma: 15 }, 1, 'log').mode).toBe('linear');

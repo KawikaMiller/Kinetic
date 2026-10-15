@@ -2,13 +2,13 @@ import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
 import { setsCaption } from './captions';
 import { N_RANGE, alwaysOverlap, missProbability, missingPairs } from './quorum';
 import {
   DEFAULT_SETS, disjointSets, latestVersion, read, readBlocked, sharedNow, toggleMember, withN, withSizes, write, writeBlocked, type SetsState,
 } from './sets';
 import { randomSet } from './storeView';
+import { pctText } from '../../core/format';
 
 const NAMES = 'ABCDEFG';
 const PICK_OPTIONS = [{ value: 'write' as const, label: 'Write set' }, { value: 'read' as const, label: 'Read set' }];

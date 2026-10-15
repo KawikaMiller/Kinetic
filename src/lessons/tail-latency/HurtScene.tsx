@@ -3,9 +3,9 @@ import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
 import { hurtCaption, msText } from './frames';
 import { MM1, MM1_DEFAULT_RHO, MM1_RHO, crossoverRho, hedgingHurts, mm1Hedging } from './model';
+import { pctText } from '../../core/format';
 
 const Y_MAX = 1000;
 const KEY_STEP = 0.01;

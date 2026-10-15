@@ -6,16 +6,13 @@ import type { Option } from '../../components/options';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { barsFromHistogram } from '../../core/plot';
-import { quantile } from '../../core/distributions';
+import { quantile, type Dist, type Family } from '../../core/distributions';
 import { histogram, logHistogram } from '../../core/stats';
 import type { Tone } from '../../core/tone';
-import { SeedField } from './SeedField';
-import { sig } from './fmt';
 import { mysteryCaption, revealCaption } from './frames';
-import {
-  BINS, FAMILIES, FAMILY_NAME, MYSTERY_DEFAULT, MYSTERY_DISTS, MYSTERY_LABELS, ccdf, mysteryDatasets, mysteryHints, tailSlope, type Dist, type Family,
-  type Mystery, type MysteryLabel,
-} from './model';
+import { BINS, FAMILIES, FAMILY_NAME, MYSTERY_DEFAULT, MYSTERY_DISTS, MYSTERY_LABELS, ccdf, mysteryDatasets, mysteryHints, tailSlope, type Mystery, type MysteryLabel } from './model';
+import { SeedField } from '../../components/SeedField';
+import { sig } from '../../core/format';
 
 const LABEL_OPTIONS: Option<MysteryLabel>[] = MYSTERY_LABELS.map((l) => ({ value: l, label: `Dataset ${l}` }));
 const HEADROOM = 1.12;

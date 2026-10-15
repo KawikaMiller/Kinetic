@@ -6,13 +6,13 @@ import type { Option } from '../../components/options';
 import { Button, Hint, Legend, Provenance, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { mulberry32 } from '../../core/random';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { coverageCaption, intervalCaption } from './frames';
 import {
   BOOTSTRAP_RESAMPLES, COVERAGE_RESAMPLES, INTERVAL_DEFAULT, SAMPLE_N, SHOWN_INTERVALS, SOURCES, SWEEP_SIZES, TAIL_PCT, coverageRun, drawSampleOf,
   experimentsFor, expectedAbove, intervalFor, sampleSeed, sweepIntervals, truth, type CoverageRun, type Interval, type SourceId, type Statistic,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const SOURCE_OPTIONS: Option<SourceId>[] = [
   { value: 'normal', label: 'Normal source' },
