@@ -60,7 +60,7 @@ export function OmissionScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Requests" value={schedule.intended.length.toLocaleString('en-US')} sub={[`one every ${msText(schedule.interval)}`, `${reading.recorded.length.toLocaleString('en-US')} samples recorded`]} />
           <Stat label="p99 the tool reports" value={msText(reading.reportedP99)} color={lies ? 'var(--bad)' : reading.kind === 'corrected' ? 'var(--ok)' : 'var(--info)'} sub={[GENERATOR_NAME[generator]]} />
-          <Stat label="p99 users saw" value={msText(reading.trueP99)} color="var(--ok)" sub={['from when each request was due', `${pctText(reading.overSlo, 0)} of requests over ${SLO_P99_MS} ms`]} />
+          <Stat label="p99 users saw" value={msText(reading.trueP99)} color={reading.trueP99 > SLO_P99_MS ? 'var(--bad)' : 'var(--ok)'} sub={['from when each request was due', `${pctText(reading.overSlo, 0)} of requests over ${SLO_P99_MS} ms`]} />
         </Stats>
       }
       legend={

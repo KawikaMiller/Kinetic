@@ -34,6 +34,15 @@ export const WINDOW_NAME: Record<WindowMode, string> = { first100: 'the first 10
 export const DISCARD_WINDOW = 1000;
 export const DISCARD_RANGE = { min: 0, max: 3000, step: 100 } as const;
 export const STEADY_WINDOW: readonly [number, number] = [5000, 10_000];
+/** The smallest k on the slider grid for which the discard window [k, k + DISCARD_WINDOW) reads B no slower than A in the noise-free model; null if none does. */
+export function discardCrossover(): number | null {
+  for (let k = DISCARD_RANGE.min; k <= DISCARD_RANGE.max; k += DISCARD_RANGE.step) {
+    const w = windowOf('discard', k);
+    if (exactWindowMean('B', w) <= exactWindowMean('A', w)) return k;
+  }
+  return null;
+}
+
 export const WARMUP_DEFAULT = { mode: 'first100' as WindowMode, discard: 500, useResult: true, seed: 1 };
 
 /** The window of iterations [from, to) a mode measures. */

@@ -6,12 +6,23 @@ import { sig } from '../distributions/fmt';
 import { generatorFrames, generatorIntro, generatorSummary, msText, noiseCaption, timelineEnd, timelineStart, us, warmupCaption } from './frames';
 import lesson from './index';
 import {
-  DISCARD_RANGE, GENERATORS, GENERATOR_DEFAULT, GENERATOR_NAME, LOOP_OVERHEAD_US, NOISE_DEFAULT, RATE_RANGE, STALL_AT_RANGE, STALL_MS_RANGE, STEADY_WINDOW, WARMUP_DEFAULT,
-  WINDOW_MODES, differenceInterval, exactWindowMean, hidesStall, readGenerator, readNoise, readWindow, timelineRange, warmupSeries, windowOf, type GeneratorParams, type Generator,
+  DISCARD_RANGE, DISCARD_WINDOW, GENERATORS, GENERATOR_DEFAULT, GENERATOR_NAME, LOOP_OVERHEAD_US, NOISE_DEFAULT, RATE_RANGE, STALL_AT_RANGE, STALL_MS_RANGE, STEADY_WINDOW, WARMUP_DEFAULT,
+  WINDOW_MODES, differenceInterval, discardCrossover, exactWindowMean, modelTime, hidesStall, readGenerator, readNoise, readWindow, timelineRange, warmupSeries, windowOf, type GeneratorParams, type Generator,
 } from './model';
 
 const text = expectCaption;
 const series = warmupSeries(WARMUP_DEFAULT.seed, true);
+
+describe('where the discard cut must fall', () => {
+  it('discardCrossover is the first slider cut at which B reads faster, checked by summing the model per iteration', () => {
+    const k = discardCrossover();
+    expect(k).not.toBeNull();
+    const sum = (id: 'A' | 'B', from: number) => Array.from({ length: DISCARD_WINDOW }, (_, i) => modelTime(id, from + i)).reduce((a, b) => a + b, 0);
+    expect(sum('B', k!)).toBeLessThanOrEqual(sum('A', k!));
+    expect(sum('B', k! - DISCARD_RANGE.step)).toBeGreaterThan(sum('A', k! - DISCARD_RANGE.step));
+    expect(k!).toBeGreaterThan(WARMUP_DEFAULT.discard);
+  });
+});
 
 describe('try-this entries, from the default state, as written', () => {
   it('try-this 1: the default window is the first 100 iterations, where A looks about 7.6× faster', () => {

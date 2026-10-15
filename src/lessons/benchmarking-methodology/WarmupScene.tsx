@@ -7,7 +7,7 @@ import { SeedField } from '../distributions/SeedField';
 import { sig } from '../distributions/fmt';
 import { us, warmupCaption } from './frames';
 import {
-  DISCARD_RANGE, IMPLS, SERIES_LENGTH, WARMUP_DEFAULT, WINDOW_MODES, WINDOW_NAME, logBinnedMeans, readWindow, startRealRun, stepRealRun, timerGranularityMs, warmupSeries,
+  DISCARD_RANGE, IMPLS, discardCrossover, SERIES_LENGTH, WARMUP_DEFAULT, WINDOW_MODES, WINDOW_NAME, logBinnedMeans, readWindow, startRealRun, stepRealRun, timerGranularityMs, warmupSeries,
   type Clock, type RealRun, type WindowMode,
 } from './model';
 
@@ -63,6 +63,7 @@ export function WarmupScene({ picker }: { picker: ReactNode }) {
   const [useResult, setUseResult] = useState(WARMUP_DEFAULT.useResult);
   const [seed, setSeed] = useState(WARMUP_DEFAULT.seed);
   const real = useRealRun();
+  const crossover = useMemo(() => discardCrossover(), []);
 
   const series = useMemo(() => warmupSeries(seed, useResult), [seed, useResult]);
   const reading = readWindow(series, mode, discard, useResult);
@@ -147,7 +148,8 @@ export function WarmupScene({ picker }: { picker: ReactNode }) {
           {real.result && <Provenance kind="real">timed here with performance.now, one run, not seeded</Provenance>}
         </ProvenanceRow>
         <Hint tone="muted" className="bm-note">
-          A is slower in steady state but warms up in about 20 iterations; B is faster in steady state and takes about 300. The measurement window picks the winner. The real-timing button
+          A is slower in steady state but warms up in about 20 iterations; B is faster in steady state and takes about 300. The measurement window picks the winner.
+          {crossover === null ? ' No discard on the slider reaches the point where B reads faster.' : ` Discarding the first ${crossover.toLocaleString('en-US')} iterations is the smallest cut on the slider where B reads faster; a smaller cut still measures B's warm-up.`} The real-timing button
           is off until you press it, runs for under a second and stops if you leave the page.
         </Hint>
       </div>
