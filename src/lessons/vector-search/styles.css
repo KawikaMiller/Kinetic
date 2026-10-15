@@ -1,0 +1,20 @@
+/* vector-search */
+.vs-stage { gap: 12px; min-width: 0; }
+.vs-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.vs-pair > .provenance-row, .vs-pair > .box:only-child { grid-column: 1 / -1; }
+.vs-plot { max-width: 420px; }
+.vs-layer { display: block; width: 100%; max-width: 420px; height: auto; }
+.vs-edges { fill: none; stroke-width: 0.8; }
+.vs-edges.is-base { stroke: var(--line-2); }
+.vs-edges.is-upper { stroke: var(--violet); stroke-width: 1.2; opacity: 0.8; }
+.vs-node { fill: var(--dim); }
+.vs-node.is-visited { fill: var(--info); }
+.vs-node.is-current { fill: var(--hi); stroke: var(--on-hi); stroke-width: 1; }
+.vs-hop { stroke: var(--hi); stroke-width: 2.5; }
+.vs-query { fill: none; stroke: var(--hi); stroke-width: 2.5; }
+.vs-table td, .vs-table th { font-size: 12.5px; }
+.vs-good { color: var(--ok); font-weight: 700; }
+.vs-cost { color: var(--bad); }
+@media (max-width: 900px) {
+  .vs-pair { grid-template-columns: minmax(0, 1fr); }
+}
