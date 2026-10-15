@@ -1,0 +1,28 @@
+.ent-stage { flex-flow: row wrap; align-items: flex-start; justify-content: center; gap: 12px 24px; }
+.ent-plot { flex: 0 1 356px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ent-plot .plot2d { max-width: 100%; height: auto; }
+.ent-panel { flex: 1 1 280px; max-width: 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ent-panel-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); }
+.ent-note { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); flex-basis: 100%; }
+.ent-panel .ent-note, .ent-plot .ent-note { flex-basis: auto; }
+.ent-empty { margin: 0; font-size: 13px; color: var(--muted); }
+.ent-hi { color: var(--hi); }
+.ent-list { margin: 0; padding: 0 0 0 16px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.ent-text-field textarea { width: min(100%, 520px); }
+
+.ent-table { border-collapse: collapse; font-size: 13px; flex: 1 1 320px; max-width: 520px; min-width: 0; }
+.ent-table th, .ent-table td { padding: 4px 8px; text-align: left; font-weight: 500; border-bottom: 1px solid var(--line); }
+.ent-table thead th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ent-table tr.is-focus td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ent-bar-cell { width: 34%; min-width: 80px; }
+
+.ent-tree { flex: 1 1 100%; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ent-qnode, .ent-open { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ent-qline { margin: 0; font-size: 13px; color: var(--text); }
+.ent-qnum { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 99px; font-size: 11px; font-weight: 700; color: var(--hi); border: 1px solid var(--hi); }
+.ent-qchildren { display: flex; flex-direction: column; gap: 6px; margin-left: 10px; padding-left: 12px; border-left: 2px solid var(--line-2); }
+.ent-qbranch { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px 10px; min-width: 0; }
+.ent-qanswer { flex: 0 0 auto; width: 28px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.ent-qbranch > :last-child { flex: 1 1 200px; min-width: 0; }
+.ent-leaf { margin: 0; font-size: 13px; color: var(--text); }
+.ent-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
