@@ -205,7 +205,19 @@ export interface Evolved {
   refusal?: string;
 }
 
-export const CHANGES: { id: ChangeId; label: string; usesNumber: boolean; usesReserved: boolean }[] = [
+export interface ChangeSpec {
+  id: ChangeId;
+  label: string;
+  usesNumber: boolean;
+  usesReserved: boolean;
+  /** A caution shown with a change whose green rows would otherwise mislead. */
+  caution?: string;
+}
+
+export const REUSE_DIFF_CAUTION =
+  'Both rows are green here only because the wire types differ: the old varint under a string field is skipped as unknown. Reusing a number with the same wire type (int32 to bool or enum, string to bytes) is the silent kind, and a service that re-serialises keeps the old unknown record beside its own field 3. List 3 as reserved either way (the toggle above).';
+
+export const CHANGES: ChangeSpec[] = [
   { id: 'add', label: 'Add a field', usesNumber: true, usesReserved: false },
   { id: 'remove', label: 'Remove qty', usesNumber: false, usesReserved: true },
   { id: 'rename', label: 'Rename name', usesNumber: false, usesReserved: false },
@@ -213,7 +225,7 @@ export const CHANGES: { id: ChangeId; label: string; usesNumber: boolean; usesRe
   { id: 'to-string', label: 'qty: int32 to string', usesNumber: false, usesReserved: false },
   { id: 'renumber', label: 'Change qty number', usesNumber: true, usesReserved: false },
   { id: 'reuse-same', label: 'Reuse 3 (same type)', usesNumber: false, usesReserved: true },
-  { id: 'reuse-diff', label: 'Reuse 3 (other type)', usesNumber: false, usesReserved: true },
+  { id: 'reuse-diff', label: 'Reuse 3 (other type)', usesNumber: false, usesReserved: true, caution: REUSE_DIFF_CAUTION },
 ];
 
 const without = (s: PSchema, concept: string): PField[] => s.fields.filter((f) => f.concept !== concept);

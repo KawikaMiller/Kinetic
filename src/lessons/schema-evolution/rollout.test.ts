@@ -79,9 +79,12 @@ describe('the invariant over every change and every order', () => {
     expect(neededOrder('rename-safely')).toBe('any');
   });
 
-  it('the safe rename is three schemas, and each hop is compatible both ways', () => {
+  it('the safe rename is three schemas, which is two deploy steps, and the chip says so', () => {
     const chain = changeById('rename-safely').chain;
     expect(chain).toHaveLength(3);
+    expect(chain.length - 1).toBe(2);
+    expect(changeById('rename-safely').label).toBe('Rename in two steps (add, then remove)');
+    expect(rollout('rename-safely', 'consumers-first').at(-1)!.hop).toBe(chain.length - 1);
     expect(directionHolds('rename-safely', 'backward')).toBe(true);
     expect(directionHolds('rename-safely', 'forward')).toBe(true);
     expect(directionHolds('rename', 'backward')).toBe(false);

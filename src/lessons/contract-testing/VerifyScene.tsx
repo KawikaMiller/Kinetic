@@ -65,7 +65,7 @@ export function VerifyScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <div className="ct-chips" role="group" aria-label="Changes to the provider">
-            {CHANGES.map((c) => <ChipButton key={c.id} tone="info" on={changes.has(c.id)} onClick={() => flip(c.id)}>{c.label}</ChipButton>)}
+            {CHANGES.map((c) => <ChipButton key={c.id} tone="info" on={changes.has(c.id)} disabled={target === 'pasted'} onClick={() => flip(c.id)}>{c.label}</ChipButton>)}
           </div>
         </>,
         <>
@@ -77,7 +77,11 @@ export function VerifyScene({ picker }: { picker: ReactNode }) {
     >
       <div className="stage-pad ct">
         <div className="ct-pair">
-          <CodePanel title="The provider's handler" lines={handlerLines(changes)} gutter="none" />
+          {target === 'provider' ? (
+            <CodePanel title="The provider's handler" lines={handlerLines(changes)} gutter="none" />
+          ) : (
+            <CodePanel title="The response you pasted (the provider's changes are not used)" lines={[pasted]} gutter="none" />
+          )}
           <CodePanel title="The consumer's contract" lines={contractJson(contract)} gutter="none" />
         </div>
         <Box className="ct-card">

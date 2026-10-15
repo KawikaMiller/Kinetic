@@ -13,8 +13,8 @@ const lesson: LessonModule = {
       'A frontend and its backend-for-frontend, replacing a shared staging environment',
       'Partner integrations, where the consumer\'s needs are written down instead of guessed',
     ],
-    why: 'End-to-end suites that deploy every service are slow and flaky, and a schema test on the whole response gives false alarms for fields nobody reads. A contract is the middle path: it tests the agreement and nothing else. It builds on `api-versioning`, and it complements the cheaper layers in `test-pyramid` and the doubles in `test-doubles`.',
-    watch: 'A field named in the contract is blue and one left out is grey. A green chip is a check that passes or a matcher the page survives; a red one is a failed check or a matcher that lets through a value that breaks the page, and the mismatch path is yellow. In the matrix a cell is green when that consumer version verifies against that provider version and red when it fails, and a blue chip marks what runs in production. In the last scene an orange line is a green check that is wrong: the contract passes while the page charges the wrong amount.',
+    why: 'End-to-end suites that deploy the whole system are often slow and flaky, and a schema test on the whole response gives false alarms for fields nobody reads. A contract is the middle path: it tests the agreement and nothing else. It builds on `api-versioning`, and it complements the cheaper layers in `test-pyramid` and the doubles in `test-doubles`.',
+    watch: 'A field named in the contract is blue and one left out is grey. A green chip is a check that passes or a matcher the page survives; a red one is a failed check or a matcher that lets through a value that breaks the page, and the mismatch path is yellow. In the matrix a cell is green when that consumer version verifies against that provider version and red when it fails, and a blue chip marks what runs in production. In the last scene an orange line and an orange chip are a green check that is wrong: the contract passes while the page charges the wrong amount.',
   },
   tryThis: [
     'Start with the default page, which reads id, name and amount, and a contract naming exactly those. Switch "The page shows the email" to yes: the contract now misses email, flagged in red.',
@@ -75,15 +75,15 @@ const lesson: LessonModule = {
       why: 'The gate looks at the consumer versions running in production, since old apps keep sending old requests. An unreleased version cannot block a deploy, and a sign-off does not make the failing contract pass.',
     },
     {
-      q: 'There are 8 services and 10 dependency edges. How does contract testing compare with one end-to-end run?',
+      q: 'A team has a contract for each of the 10 dependency edges between its 8 services and deletes its end-to-end suite. What does it lose?',
       options: [
-        '10 independent checks, each needing two services, against 8 deployed together',
-        '8 independent checks, one per service, against 10 deployed together',
-        '10 checks that must run together, against 8 run one at a time',
-        'The same 10 checks, since both need every service deployed',
+        'Checks of meaning and whole journeys that shape cannot see',
+        'Nothing, since 10 contract checks cover the 8 services',
+        'Only speed, since contracts test the same things faster',
+        'The record of which consumer versions are in production',
       ],
       answer: 0,
-      why: 'Contract verification is one check per edge and each runs alone, while an end-to-end run needs the services up together. The edges can outnumber the services; what matters is that no check needs the others.',
+      why: 'Contract verification is one independent check per edge, 10 here, each needing two services up, while an end-to-end run needs the 8 together, so contracts are cheaper. They see the shape of a message, not what a field means or whether a journey across services works, so a few end-to-end and behaviour tests stay.',
     },
   ],
 };

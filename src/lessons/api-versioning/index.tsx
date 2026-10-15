@@ -6,7 +6,7 @@ const lesson: LessonModule = {
   summary: {
     tldr: 'Whether an API change breaks anything depends on who calls it, so this lesson runs real client code against nine changes, then compares ways to carry a version and ways to retire an old one.',
     what: 'A tolerant reader takes the fields it uses and ignores the rest, a strict one rejects anything it does not know, and some clients lean on behaviour nobody wrote down, like a default sort order. A version in the URL, a header, a query parameter or a date tells the server which contract a client wants, but none of them reduces how many versions you keep running. Deprecation is an announcement, a sunset date and an honest look at who has not moved.',
-    analogy: 'A public power socket: you can fit a second socket beside it any day, but changing the voltage on the old one cuts off every device plugged in, including those whose owners never read your notice.',
+    analogy: 'A public power socket: you can fit a second socket beside it any day, but changing the voltage on the old one cuts off the devices plugged into it, including those whose owners did not read your notice.',
     useCases: [
       'Public REST APIs used by partners who upgrade on their own schedule',
       'Mobile apps, where an old version stays installed for months after a release',

@@ -36,7 +36,7 @@ export const CHANGES: { id: ChangeId; label: string; chain: ASchema[] }[] = [
   { id: 'rename', label: 'Rename name to title', chain: [BASE, [BASE[0], { name: 'title', type: 'string', hasDefault: false }]] },
   {
     id: 'rename-safely',
-    label: 'Rename in three deploys',
+    label: 'Rename in two steps (add, then remove)',
     chain: [
       BASE,
       [BASE[0], { ...BASE[1], hasDefault: true }, { name: 'title', type: 'string', hasDefault: true }],

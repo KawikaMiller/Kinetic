@@ -153,8 +153,8 @@ describe('the cost of contracts against end-to-end', () => {
   });
 
   it('end-to-end deploys n services together, contracts verify e edges independently', () => {
-    expect(costOf(6, 7)).toEqual({ e2eDeployed: 6, verifications: 7 });
-    expect(costOf(4, 100)).toEqual({ e2eDeployed: 4, verifications: 6 });
+    expect(costOf(6, 7)).toEqual({ e2eDeployed: 6, verifications: 7, servicesPerCheck: 2 });
+    expect(costOf(4, 100)).toEqual({ e2eDeployed: 4, verifications: 6, servicesPerCheck: 2 });
     expect(maxEdges(12)).toBe(66);
   });
 });

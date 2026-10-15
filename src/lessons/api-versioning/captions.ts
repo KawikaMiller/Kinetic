@@ -30,6 +30,9 @@ export function strategyCaption(strategy: StrategyId, change: Change, name: stri
         ? 'A shared cache keeps the two versions apart'
         : `A shared cache serves the v2 client the v1 body${versionInHeader(strategy) ? ', because the response does not say it varies by the version header' : ''}`;
   const live = liveVersions(strategy, releasesPerYear, migrationMonths);
+  if (strategy === 'additive') {
+    return `${label}. ${fate.text} ${cacheText}. One version stays live whatever the release rate or migration time, about ${yearlyCost(live)} engineer-days a year (an illustrative figure); the cost moves to fields that can never be removed.`;
+  }
   return `${label}. ${fate.text} ${cacheText}. With ${plural(releasesPerYear, 'release')} a year and ${plural(migrationMonths, 'month')} to migrate, up to ${plural(live, 'version')} stay live, about ${yearlyCost(live)} engineer-days a year (an illustrative figure).`;
 }
 

@@ -50,7 +50,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
       }
       stats={
         <Stats>
-          <Stat label="Versions live at once" value={live} sub={strategy === 'additive' ? 'one handler, every field kept' : `${plural(releases, 'release')} a year, ${plural(months, 'month')} to migrate`} />
+          <Stat label="Versions live at once" value={live} sub={strategy === 'additive' ? 'one handler, no field removed' : `${plural(releases, 'release')} a year, ${plural(months, 'month')} to migrate`} />
           <Stat label="Upkeep, illustrative" value={`${yearlyCost(live)} days/yr`} sub="engineer-days a year" />
         </Stats>
       }
@@ -68,10 +68,14 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
           </label>
           {versionInHeader(strategy) && <Toggle label="Response says Vary" value={sendVary} onChange={setSendVary} off="no Vary" on="Vary: Api-Version" />}
         </>,
-        <>
-          <Slider label="Releases a year" value={releases} min={RELEASE_RANGE.min} max={RELEASE_RANGE.max} onChange={setReleases} />
-          <Slider label="Months to migrate" value={months} min={MIGRATION_RANGE.min} max={MIGRATION_RANGE.max} onChange={setMonths} />
-        </>,
+        strategy === 'additive' ? (
+          <p key="no-sliders" className="muted">Release rate and migration time are not used here: additive-only keeps one version, so pick another strategy to use them.</p>
+        ) : (
+          <>
+            <Slider label="Releases a year" value={releases} min={RELEASE_RANGE.min} max={RELEASE_RANGE.max} onChange={setReleases} />
+            <Slider label="Months to migrate" value={months} min={MIGRATION_RANGE.min} max={MIGRATION_RANGE.max} onChange={setMonths} />
+          </>
+        ),
       ]}
     >
       <div className="stage-pad av">

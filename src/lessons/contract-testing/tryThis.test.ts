@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { START_CHOICE } from './choices';
-import { verify } from './contract';
+import { matchPattern, verdictTone, verify } from './contract';
 import { DEFAULT_CONSUMER, coverage, matcherFits } from './consumer';
 import { START_WORLD, deployProvider, providerGate, setConsumerLive, contractOf, verifyPair } from './deploy';
 import { FULL_SCHEMA, handle } from './provider';
@@ -50,5 +50,22 @@ describe('the try-this prompts work from the default state, as written', () => {
     expect(line).toContain('$0.25');
     expect(line === EXPECTED_LINE).toBe(false);
     expect(renderCheckout(handle(new Set()).body as Record<string, unknown>, DEFAULT_CONSUMER)).toBe(EXPECTED_LINE);
+  });
+
+  it('try-this 5: the contract chip is orange (a green check that is wrong) in dollars mode, green on cents, red when the contract fails', () => {
+    const tone = (changes: Parameters<typeof handle>[0]) => {
+      const response = handle(changes);
+      const mismatches = verify(contractOf(readsOf(DEFAULT_CONSUMER)), response);
+      return verdictTone(mismatches.length, renderCheckout(response.body as Record<string, unknown>, DEFAULT_CONSUMER) === EXPECTED_LINE);
+    };
+    expect(tone(new Set())).toBe('ok');
+    expect(tone(new Set(['amount-dollars'] as const))).toBe('orange');
+    expect(verdictTone(1, false)).toBe('bad');
+    expect(verdictTone(1, true)).toBe('bad');
+  });
+
+  it('an integer matcher catches 2550 cents turned into 25.5 dollars by luck, and misses 2500 turned into 25', () => {
+    expect(matchPattern({ kind: 'type', type: 'integer' }, 2550 / 100, '$')).not.toEqual([]);
+    expect(matchPattern({ kind: 'type', type: 'integer' }, 2500 / 100, '$')).toEqual([]);
   });
 });

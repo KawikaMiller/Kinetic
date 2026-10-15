@@ -50,5 +50,5 @@ export function meaningCaption(dollars: boolean, o: ConsumerOptions): string {
 
 export function costCaption(n: number, e: number): string {
   const c = costOf(n, e);
-  return `${plural(n, 'service')} and ${plural(c.verifications, 'dependency edge')}: an end-to-end run needs ${c.e2eDeployed} deployed together, while contracts are ${plural(c.verifications, 'independent check')}.`;
+  return `${plural(n, 'service')} and ${plural(c.verifications, 'dependency edge')}: an end-to-end run needs ${plural(c.e2eDeployed, 'service')} up together, while contracts are ${plural(c.verifications, 'independent check')}, each needing ${plural(c.servicesPerCheck, 'service')} up.`;
 }

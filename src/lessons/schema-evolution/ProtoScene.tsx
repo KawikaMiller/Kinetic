@@ -126,6 +126,7 @@ export function ProtoScene({ picker }: { picker: ReactNode }) {
             </div>
           </>
         )}
+        {spec.caution && format === 'binary' && <Hint block>{spec.caution}</Hint>}
         <div className="se-chips">
           <Provenance kind="real">encoders and decoders are this lesson's own, run here on real bytes</Provenance>
           <Provenance kind="from-memory">JSON names, the 19000-19999 range, protoc's refusal, parser strictness</Provenance>

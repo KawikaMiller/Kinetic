@@ -6,7 +6,7 @@ import { Hint, Legend, Provenance, Slider, Stat, Stats, Toggle } from '../../com
 import { useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { costCaption, meaningCaption } from './captions';
-import { verify } from './contract';
+import { verdictTone, verify } from './contract';
 import { DEFAULT_CONSUMER, EXPECTED_LINE, readsOf, renderCheckout } from './consumer';
 import { SERVICES, costOf, maxEdges, serviceEdges } from './cost';
 import { contractOf } from './deploy';
@@ -28,6 +28,7 @@ export function MeaningScene({ picker }: { picker: ReactNode }) {
   const mismatches = verify(contractOf(readsOf(DEFAULT_CONSUMER)), response);
   const line = renderCheckout(response.body as Record<string, unknown>, DEFAULT_CONSUMER);
   const behaviourOk = line === EXPECTED_LINE;
+  const contractTone = verdictTone(mismatches.length, behaviourOk);
   const cost = costOf(n, e);
   const edges = serviceEdges(n, e);
 
@@ -69,12 +70,12 @@ export function MeaningScene({ picker }: { picker: ReactNode }) {
           <>
             <Box className="ct-card">
               <SectionTitle weight="regular" hint="the contract: what the page reads, as types">Contract verification</SectionTitle>
-              <span className={`chip tone-${mismatches.length ? 'bad' : 'ok'} wrap`}>{mismatches.length ? `${plural(mismatches.length, 'mismatch', 'mismatches')}` : 'passes: amount is still an integer'}</span>
+              <span className={`chip tone-${contractTone} wrap`}>{mismatches.length ? `${plural(mismatches.length, 'mismatch', 'mismatches')}` : 'passes: amount is still an integer'}</span>
             </Box>
             <Box className="ct-card">
               <SectionTitle weight="regular">What the checkout page renders</SectionTitle>
               <code className={`ct-line tone-${behaviourOk ? 'ok' : 'orange'}`}>{line}</code>
-              <p className="muted">The shape is the same whole number, so the contract cannot tell 2500 cents from 25 dollars.</p>
+              <p className="muted">The shape is the same whole number, so the contract cannot tell 2500 cents from 25 dollars. This amount is chosen to slip through: 2550 cents would become 25.5 dollars, and an integer matcher would catch that by luck.</p>
             </Box>
             <Box className="ct-card">
               <SectionTitle weight="regular" hint={`expects "${EXPECTED_LINE}"`}>A behaviour test</SectionTitle>
@@ -97,8 +98,8 @@ export function MeaningScene({ picker }: { picker: ReactNode }) {
             </Box>
             <Box className="ct-card">
               <Stats>
-                <Stat label="End-to-end" value={`${cost.e2eDeployed} deployed together`} sub="every service up at once" />
-                <Stat label="Contracts" value={`${cost.verifications} checks`} sub="one per edge, each alone" />
+                <Stat label="End-to-end, one run" value={`${cost.e2eDeployed} services up`} sub="every service deployed together" />
+                <Stat label="Contracts, one check" value={`${cost.servicesPerCheck} services up`} sub={`${plural(cost.verifications, 'check')}, one per edge, each run alone`} />
               </Stats>
             </Box>
           </div>

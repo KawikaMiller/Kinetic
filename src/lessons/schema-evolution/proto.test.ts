@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BIG_QTY, CHANGES, DEFAULT_PARAMS, V1, V1_MESSAGE, crossBoth, decode, decodeJson, encode, encodeJson, evolve, jsonName, parseFieldNumber, protoLines,
+  BIG_QTY, CHANGES, REUSE_DIFF_CAUTION, DEFAULT_PARAMS, V1, V1_MESSAGE, crossBoth, decode, decodeJson, encode, encodeJson, evolve, jsonName, parseFieldNumber, protoLines,
   type ChangeId, type Verdict,
 } from './proto';
 
@@ -195,5 +195,28 @@ describe('reserved numbers', () => {
     const a = crossBoth('remove', { ...DEFAULT_PARAMS, reserved: true }, 'binary', true).crossing;
     const b = crossBoth('remove', DEFAULT_PARAMS, 'binary', true).crossing;
     expect(a).toEqual(b);
+  });
+});
+
+describe('reusing a number with another type', () => {
+  const wireType = (schema: Parameters<typeof encode>[0], msg: Parameters<typeof encode>[1], concept: string) => {
+    const { bytes, segments } = encode(schema, msg);
+    const tag = segments.find((x) => x.concept === concept && x.role === 'tag')!;
+    return bytes[tag.from] & 0b111;
+  };
+
+  it('is green in binary only because the wire types differ (0 for an int32, 2 for a string), so the lesson says so', () => {
+    const v2 = evolve('reuse-diff', DEFAULT_PARAMS);
+    expect(wireType(V1, V1_MESSAGE, 'qty')).toBe(0);
+    expect(wireType(v2.schema!, v2.message, 'label')).toBe(2);
+    const same = evolve('reuse-same', DEFAULT_PARAMS);
+    expect(wireType(same.schema!, same.message, 'discount')).toBe(wireType(V1, V1_MESSAGE, 'qty'));
+    expect(CHANGES.find((c) => c.id === 'reuse-diff')!.caution).toBe(REUSE_DIFF_CAUTION);
+    expect(REUSE_DIFF_CAUTION).toContain('wire types differ');
+    expect(REUSE_DIFF_CAUTION).toContain('reserved');
+  });
+
+  it('only that chip carries the caution', () => {
+    expect(CHANGES.filter((c) => c.caution).map((c) => c.id)).toEqual(['reuse-diff']);
   });
 });

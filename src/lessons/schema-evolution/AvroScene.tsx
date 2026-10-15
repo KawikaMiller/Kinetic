@@ -66,7 +66,7 @@ export function AvroScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--ok)', label: 'compatible, or decoded' },
             { color: 'var(--bad)', label: 'refused, or a decode error' },
-            { color: 'var(--orange)', label: 'the rules and the real decode disagree' },
+            { color: 'var(--orange)', label: 'rules and decode disagree (cannot happen here: the tests prove it)' },
           ]}
         />
       }

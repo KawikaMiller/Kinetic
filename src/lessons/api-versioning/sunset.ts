@@ -26,6 +26,9 @@ export const daysBetween = (from: string, to: string): number => dayNumber(to) -
 /** The `Sunset` header's value: an HTTP date at the start of the sunset day, in GMT (RFC 8594, from memory). */
 export const sunsetHeaderValue = (iso: string): string => new Date(dayNumber(iso) * MS_PER_DAY).toUTCString();
 
+/** The `Deprecation` header's value: a Structured Field Date, `@` and Unix seconds at the start of the day (RFC 9745). */
+export const deprecationHeaderValue = (iso: string): string => `@${dayNumber(iso) * (MS_PER_DAY / 1000)}`;
+
 export interface SunsetClient {
   id: ClientId;
   /** Days after the announcement that it finishes migrating; null means it never does (nobody owns it). */

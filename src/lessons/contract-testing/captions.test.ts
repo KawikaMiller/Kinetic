@@ -80,8 +80,11 @@ describe('deploy and meaning captions', () => {
     for (const n of [SERVICES.min, 8, SERVICES.max]) {
       for (const e of [1, n, maxEdges(n)]) {
         const c = costOf(n, e);
-        expect(expectCaption(costCaption(n, e))).toContain(`an end-to-end run needs ${c.e2eDeployed} deployed together`);
-        expect(costCaption(n, e)).toContain(`${c.verifications} dependency edge`);
+        const text = expectCaption(costCaption(n, e));
+        expect(text).toContain(`an end-to-end run needs ${n} services up together`);
+        expect(text).toContain(`each needing 2 services up`);
+        expect(c.e2eDeployed).toBe(n);
+        expect(text).toContain(`${c.verifications} dependency edge`);
       }
     }
   });

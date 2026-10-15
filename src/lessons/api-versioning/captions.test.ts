@@ -41,7 +41,13 @@ describe('strategy captions follow the model at every setting', () => {
         for (const months of [MIGRATION_RANGE.min, 18, MIGRATION_RANGE.max]) {
           const text = expectCaption(strategyCaption(s.id, CHANGES[3], DEFAULT_NAME, false, releases, months));
           const live = liveVersions(s.id, releases, months);
-          expect(text, `${s.id} ${releases} ${months}`).toContain(`up to ${live} version${live === 1 ? '' : 's'} stay live, about ${yearlyCost(live)} engineer-days`);
+          if (s.id === 'additive') {
+            expect(text, `${releases} ${months}`).toContain(`One version stays live whatever the release rate or migration time, about ${yearlyCost(live)} engineer-days`);
+            expect(text).not.toContain('months to migrate');
+            expect(text).not.toContain('up to');
+          } else {
+            expect(text, `${s.id} ${releases} ${months}`).toContain(`With ${releases} release${releases === 1 ? '' : 's'} a year and ${months} months to migrate, up to ${live} versions stay live, about ${yearlyCost(live)} engineer-days`);
+          }
         }
       }
     }
@@ -55,6 +61,14 @@ describe('strategy captions follow the model at every setting', () => {
         expect(wrong, `${s.id} ${vary}`).toBe((s.id === 'header' || s.id === 'dated') && !vary);
       }
     }
+  });
+
+  it('for additive-only, the caption is identical at every slider setting, because the sliders do nothing', () => {
+    const texts = new Set<string>();
+    for (const releases of [RELEASE_RANGE.min, 2, RELEASE_RANGE.max]) {
+      for (const months of [MIGRATION_RANGE.min, 18, MIGRATION_RANGE.max]) texts.add(strategyCaption('additive', CHANGES[3], DEFAULT_NAME, false, releases, months));
+    }
+    expect(texts.size).toBe(1);
   });
 
   it('pins two sentences', () => {

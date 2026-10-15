@@ -9,7 +9,7 @@ import { useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { CLIENTS } from './api';
 import { sunsetCaption } from './captions';
-import { ANNOUNCE_DATE, BROWNOUT_HOURS, CHOICES, WINDOW, addDays, dayToHours, simulate, sunsetHeaderValue, type Choice } from './sunset';
+import { ANNOUNCE_DATE, BROWNOUT_HOURS, CHOICES, WINDOW, addDays, dayToHours, deprecationHeaderValue, simulate, sunsetHeaderValue, type Choice } from './sunset';
 
 const GANTT_MIN_WIDTH = 480;
 const TABLE_MIN_WIDTH = 440;
@@ -98,7 +98,7 @@ export function SunsetScene({ picker }: { picker: ReactNode }) {
           />
         </WideRegion>
 
-        <CodePanel title="Sent with every v1 response from the announcement on" lines={[`Sunset: ${sunsetHeaderValue(sunsetDate)}`]} gutter="none" />
+        <CodePanel title="Sent with every v1 response from the announcement on" lines={[`Deprecation: ${deprecationHeaderValue(ANNOUNCE_DATE)}`, `Sunset: ${sunsetHeaderValue(sunsetDate)}`]} gutter="none" />
 
         <Box className="av-card">
           <SectionTitle weight="regular" hint="all three at this window">What each choice costs</SectionTitle>
@@ -126,7 +126,7 @@ export function SunsetScene({ picker }: { picker: ReactNode }) {
         </Box>
         <div className="av-chips">
           <Provenance kind="illustrative">invented clients, migration lags and reactions</Provenance>
-          <Provenance kind="from-memory">the Sunset header is RFC 8594; the Deprecation header has since been standardised too, so look up its RFC number before quoting it</Provenance>
+          <Provenance kind="from-memory">the Sunset header is RFC 8594 and the Deprecation header is RFC 9745 (2025), both recalled, so check the RFCs before quoting them</Provenance>
           <Provenance kind="real">the dates are real UTC day counts, leap days included</Provenance>
         </div>
         <Hint block>

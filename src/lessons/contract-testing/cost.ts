@@ -17,11 +17,16 @@ export function serviceEdges(n: number, e: number): { from: number; to: number }
   return edges;
 }
 
+/** One contract check replays a consumer against a provider: two services up, whatever the size of the system. */
+export const SERVICES_PER_CHECK = 2;
+
 export interface Cost {
   /** Services an end-to-end run needs deployed together. */
   e2eDeployed: number;
   /** Independent contract verifications, one per edge. */
   verifications: number;
+  /** Services that must be up for one contract check: the comparable figure to `e2eDeployed`. */
+  servicesPerCheck: number;
 }
 
-export const costOf = (n: number, e: number): Cost => ({ e2eDeployed: n, verifications: Math.min(e, maxEdges(n)) });
+export const costOf = (n: number, e: number): Cost => ({ e2eDeployed: n, verifications: Math.min(e, maxEdges(n)), servicesPerCheck: SERVICES_PER_CHECK });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ANNOUNCE_DATE, BROWNOUT_HOURS, BROWNOUT_LEADS, EXTENSION_DAYS, REACTION_DAYS, SUNSET_CLIENTS, WINDOW, addDays, dayNumber, daysBetween, simulate, sunsetHeaderValue, type Choice,
+  ANNOUNCE_DATE, BROWNOUT_HOURS, BROWNOUT_LEADS, EXTENSION_DAYS, REACTION_DAYS, SUNSET_CLIENTS, WINDOW, addDays, dayNumber, daysBetween, deprecationHeaderValue, simulate, sunsetHeaderValue, type Choice,
 } from './sunset';
 
 describe('date arithmetic counts whole UTC days', () => {
@@ -42,6 +42,14 @@ describe('date arithmetic counts whole UTC days', () => {
     expect(sunsetHeaderValue(ANNOUNCE_DATE)).toBe('Mon, 02 Nov 2026 00:00:00 GMT');
     expect(sunsetHeaderValue(addDays(ANNOUNCE_DATE, 90))).toBe('Sun, 31 Jan 2027 00:00:00 GMT');
     expect(sunsetHeaderValue('2028-02-29')).toBe('Tue, 29 Feb 2028 00:00:00 GMT');
+  });
+});
+
+describe('the Deprecation header', () => {
+  it('is @ and the Unix seconds of the day, an RFC 9745 Structured Field Date, matching Date.parse', () => {
+    expect(deprecationHeaderValue(ANNOUNCE_DATE)).toBe(`@${Date.parse('2026-11-02T00:00:00Z') / 1000}`);
+    expect(deprecationHeaderValue('1970-01-02')).toBe('@86400');
+    expect(deprecationHeaderValue('2023-07-01')).toBe('@1688169600');
   });
 });
 

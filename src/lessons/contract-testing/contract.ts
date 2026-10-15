@@ -20,6 +20,9 @@ export interface Mismatch {
   got: string;
 }
 
+/** The colour of a verification result: red when it fails, orange when it passes but the behaviour is wrong (a green check that is wrong), green when it passes and is right. */
+export const verdictTone = (mismatchCount: number, behaviourOk: boolean): 'bad' | 'orange' | 'ok' => (mismatchCount ? 'bad' : behaviourOk ? 'ok' : 'orange');
+
 export const mismatchText = (m: Mismatch) => `${m.path}: expected ${m.expected}, got ${m.got}`;
 
 /** The name a value goes by in a mismatch: "nothing" for a missing one. */
