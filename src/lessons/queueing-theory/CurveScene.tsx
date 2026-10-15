@@ -6,11 +6,9 @@ import { useIntroCaption } from '../../core/caption';
 import { pctText, sig } from '../distributions/fmt';
 import { SeedField } from '../distributions/SeedField';
 import { curveCaption } from './frames';
-import { CURVE_DEFAULT, CURVE_MARKS, MU, mm1Multiple, simulateQueue } from './model';
+import { CURVE_DEFAULT, CURVE_MARKS, MU, curveRunLength, measureCurve, mm1Multiple } from './model';
 
 const RHO = { min: 0.05, max: 0.99, step: 0.01 } as const;
-/** Jobs behind the measured point: one seeded run, noisy close to ρ = 1. */
-const MEASURED_JOBS = 20_000;
 const Y_DOMAIN: [number, number] = [1, 120];
 const KEY_STEP = 0.01;
 
@@ -18,10 +16,9 @@ export function CurveScene({ picker }: { picker: ReactNode }) {
   const [rho, setRho] = useState(CURVE_DEFAULT.rho);
   const [seed, setSeed] = useState(CURVE_DEFAULT.seed);
 
-  const measured = useMemo(() => {
-    const run = simulateQueue({ lambda: rho * MU, mu: MU, shape: 'exp', servers: 1, layout: 'pool', jobs: MEASURED_JOBS, seed });
-    return run.meanSystem * MU;
-  }, [rho, seed]);
+  const measured = useMemo(() => measureCurve(rho, seed), [rho, seed]);
+  const { warmup, jobs } = curveRunLength(rho);
+  const runText = `${jobs.toLocaleString('en-US')} jobs after ${warmup.toLocaleString('en-US')} of warm-up`;
   const theory = mm1Multiple(rho);
 
   useIntroCaption(curveCaption(rho), [rho]);
@@ -35,7 +32,7 @@ export function CurveScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label={<span className="keep-case">ρ = λ/μ</span>} value={pctText(rho, 0)} sub={[`λ = ${sig(rho * MU)}/s, μ = ${MU}/s`]} />
           <Stat label="Theory: W ÷ service time" value={`${sig(theory)}×`} color="var(--violet)" sub={['1 / (1 − ρ), analytic']} />
-          <Stat label="Measured" value={`${sig(measured)}×`} color="var(--info)" sub={[`${MEASURED_JOBS.toLocaleString('en-US')} jobs, one seeded run`]} />
+          <Stat label="Measured" value={`${sig(measured)}×`} color="var(--info)" sub={[`${runText}, one seed`]} />
         </Stats>
       }
       legend={
@@ -79,10 +76,10 @@ export function CurveScene({ picker }: { picker: ReactNode }) {
           />
         </Plot2D>
         <Hint tone="muted" className="qt-note">
-          The marks are the M/M/1 values at 50%, 80%, 90%, 95% and 99%. The measured dot is one seeded run, so it wobbles most near the top where waits are long and slow to average.
+          The marks are the M/M/1 values at 50%, 80%, 90%, 95% and 99%. The measured dot is one seeded run that starts with an empty queue, discards a warm-up so that start does not drag it low, and averages a run length that grows like 1/(1 − ρ)²: here {runText}. It is not biased, but it still moves from seed to seed, most near the top where waits are long and slow to average.
         </Hint>
         <div className="qt-chips">
-          <Provenance kind="simulated" seed={seed}>measured: {MEASURED_JOBS.toLocaleString('en-US')} seeded jobs at your ρ</Provenance>
+          <Provenance kind="simulated" seed={seed}>measured: {runText} at your ρ</Provenance>
           <Provenance kind="illustrative">μ = {MU}/s is made up; the curve is the same shape for any μ once time is measured in service times</Provenance>
         </div>
       </div>

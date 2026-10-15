@@ -5,7 +5,8 @@ import { curveCaption, littleCaption, liveCaption, poolCaption, sizingCaption } 
 import lesson from './index';
 import {
   CURVE_MARKS, LITTLE_DEFAULT, LIVE_DEFAULT, MU, POOL_DEFAULT, POOL_SERVERS, QUEUE_ICONS, RHO_RANGE, SHAPES, SHAPE_CV2, TOPOLOGIES, TOPOLOGY_NAME,
-  concurrency, createQueueSim, drainedRun, littleRun, measure, mm1Multiple, picture, simulateQueue, theory, topologyTheory, type ServiceShape,
+  concurrency, createQueueSim, curveRunLength, drainedRun, littleRun, measure, measureCurve, measurePool, mm1Multiple, parseRate, parseSeconds, picture, simulateQueue, theory,
+  topologyTheory, type ServiceShape,
 } from './model';
 
 const SIMULATION_TIMEOUT_MS = 90_000;
@@ -193,5 +194,82 @@ describe('hidden controls do not feed numbers', () => {
     sim.run(2000);
     const later = measure(sim.state);
     for (const v of [later.L, later.Lq, later.busy]) expect(Number.isFinite(v!)).toBe(true);
+  });
+});
+
+describe('The curve: the measured dot is not biased low', { timeout: SIMULATION_TIMEOUT_MS }, () => {
+  const SEEDS = 40;
+  const seeds = Array.from({ length: SEEDS }, (_, i) => i + 1);
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+  it('over 40 seeds the measured mean sits within 10% of 1/(1 − ρ) at 80%, 90%, 95% and 99%, and seeds fall on both sides of it', () => {
+    for (const rho of [0.8, 0.9, 0.95, 0.99]) {
+      const readings = seeds.map((seed) => measureCurve(rho, seed));
+      const analytic = 1 / (1 - rho);
+      expect(Math.abs(mean(readings) / analytic - 1), `ρ = ${rho}`).toBeLessThan(0.1);
+      const below = readings.filter((r) => r < analytic).length;
+      expect(below, `ρ = ${rho}: not nearly all seeds below theory`).toBeLessThan(0.8 * SEEDS);
+      expect(below, `ρ = ${rho}: not nearly all seeds above theory`).toBeGreaterThan(0.2 * SEEDS);
+    }
+  });
+
+  it('broken variant: a 20,000-job run from empty with nothing discarded reads far below theory at 99%, which is the bias the warm-up removes', () => {
+    const naive = seeds.map((seed) => simulateQueue({ lambda: 0.99 * MU, mu: MU, shape: 'exp', servers: 1, layout: 'pool', jobs: 20_000, seed }).meanSystem * MU);
+    expect(mean(naive) / 100).toBeLessThan(0.8);
+    expect(naive.filter((r) => r < 100).length).toBeGreaterThan(0.8 * SEEDS);
+  });
+
+  it('the run length grows like 1/(1 − ρ)², and is never shorter than the floor', () => {
+    const near = curveRunLength(0.99);
+    const mid = curveRunLength(0.95);
+    expect(near.jobs / mid.jobs).toBeCloseTo((0.05 / 0.01) ** 2, 0);
+    expect(curveRunLength(0.05).jobs).toBeGreaterThanOrEqual(20_000);
+    expect(near.warmup).toBeGreaterThan(near.jobs / 100);
+    expect(curveRunLength(0.5).warmup).toBeGreaterThanOrEqual(100);
+  });
+});
+
+describe('Pool scene: the three layouts see the same arrivals', { timeout: SIMULATION_TIMEOUT_MS }, () => {
+  it('the measured ordering agrees with the theory ordering on every one of 40 seeds at 70%, 90% and 95%', () => {
+    for (const rho of [0.7, 0.9, 0.95]) {
+      const theoryW = Object.fromEntries(TOPOLOGIES.map((t) => [t, topologyTheory(t, rho).W]));
+      const theoryWq = Object.fromEntries(TOPOLOGIES.map((t) => [t, topologyTheory(t, rho).Wq]));
+      for (let seed = 1; seed <= 40; seed++) {
+        const m = measurePool(rho, seed);
+        for (const [a, b] of [['split', 'pool'], ['pool', 'fast'], ['split', 'fast']] as const) {
+          expect(m[a].W > m[b].W, `W ${a} vs ${b}, ρ ${rho}, seed ${seed}`).toBe(theoryW[a] > theoryW[b]);
+        }
+        for (const [a, b] of [['split', 'fast'], ['fast', 'pool'], ['split', 'pool']] as const) {
+          expect(m[a].Wq > m[b].Wq, `Wq ${a} vs ${b}, ρ ${rho}, seed ${seed}`).toBe(theoryWq[a] > theoryWq[b]);
+        }
+      }
+    }
+  });
+
+  it('pool and fast server get identical arrival times, and the fast server serves each job in 1/c of the time', () => {
+    const lambda = POOL_SERVERS * 0.9 * MU;
+    const pool = simulateQueue({ lambda, mu: MU, shape: 'exp', servers: POOL_SERVERS, layout: 'pool', jobs: 500, seed: 7 });
+    const fast = simulateQueue({ lambda, mu: POOL_SERVERS * MU, shape: 'exp', servers: 1, layout: 'pool', jobs: 500, seed: 7 });
+    const split = simulateQueue({ lambda, mu: MU, shape: 'exp', servers: POOL_SERVERS, layout: 'split', jobs: 500, seed: 7 });
+    expect(Array.from(fast.arrival)).toEqual(Array.from(pool.arrival));
+    expect(Array.from(split.arrival), 'random routing must not shift the arrivals').toEqual(Array.from(pool.arrival));
+    for (let i = 0; i < 500; i++) {
+      expect((fast.departure[i] - fast.start[i]) * POOL_SERVERS).toBeCloseTo(pool.departure[i] - pool.start[i], 9);
+    }
+  });
+});
+
+describe('error strings start with a capital', () => {
+  it('Little sizing errors read as sentences', () => {
+    for (const bad of ['-1', '0', '1e3', '2000000', '']) {
+      const r = parseRate(bad);
+      if (!r.ok) expect(r.error, bad).toMatch(/^["A-Z]/);
+    }
+    for (const bad of ['-1', '0', '99999']) {
+      const r = parseSeconds(bad);
+      if (!r.ok) expect(r.error, bad).toMatch(/^["A-Z]/);
+    }
+    expect((parseRate('-1') as { error: string }).error).toBe("A request rate can't be negative.");
+    expect((parseSeconds('0') as { error: string }).error).toBe('A time per request has to be above 0.');
   });
 });

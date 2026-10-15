@@ -8,11 +8,9 @@ import { pctText, sig } from '../distributions/fmt';
 import { SeedField } from '../distributions/SeedField';
 import { poolCaption } from './frames';
 import {
-  MU, POOL_DEFAULT, POOL_RHO, POOL_SERVERS, TOPOLOGIES, TOPOLOGY_NAME, TOPOLOGY_SHORT, simulateQueue, topologyTheory, type Topology,
+  MU, POOL_DEFAULT, POOL_MEASURED_JOBS, POOL_RHO, POOL_SERVERS, TOPOLOGIES, TOPOLOGY_NAME, TOPOLOGY_SHORT, measurePool, topologyTheory, type Topology,
 } from './model';
 
-/** Jobs behind each measured number: enough to be steady at moderate ρ, one seed, noisy near 95%. */
-const MEASURED_JOBS = 40_000;
 const TONE: Record<Topology, PlainTone> = { split: plainTone(0), pool: plainTone(1), fast: plainTone(2) };
 const BOX = 14;
 const LANE = 22;
@@ -41,15 +39,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
   const [seed, setSeed] = useState(POOL_DEFAULT.seed);
 
   const analytic = Object.fromEntries(TOPOLOGIES.map((t) => [t, topologyTheory(t, rho)])) as Record<Topology, ReturnType<typeof topologyTheory>>;
-  const measured = useMemo(() => {
-    const lambda = POOL_SERVERS * rho * MU;
-    const runs = {
-      split: simulateQueue({ lambda, mu: MU, shape: 'exp', servers: POOL_SERVERS, layout: 'split', jobs: MEASURED_JOBS, seed }),
-      pool: simulateQueue({ lambda, mu: MU, shape: 'exp', servers: POOL_SERVERS, layout: 'pool', jobs: MEASURED_JOBS, seed: seed + 1 }),
-      fast: simulateQueue({ lambda, mu: POOL_SERVERS * MU, shape: 'exp', servers: 1, layout: 'pool', jobs: MEASURED_JOBS, seed: seed + 2 }),
-    };
-    return Object.fromEntries(TOPOLOGIES.map((t) => [t, { Wq: runs[t].meanWait, W: runs[t].meanSystem }])) as Record<Topology, { Wq: number; W: number }>;
-  }, [rho, seed]);
+  const measured = useMemo(() => measurePool(rho, seed), [rho, seed]);
 
   useIntroCaption(poolCaption(rho), [rho]);
 
@@ -93,7 +83,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
           ))}
         </div>
         <Box className="qt-compare">
-          <SectionTitle hint="mean seconds, same total capacity and the same arrivals">The same load, three layouts</SectionTitle>
+          <SectionTitle hint="mean seconds, same total capacity, the same arrival times and the same service draws">The same load, three layouts</SectionTitle>
           <table className="data-table">
             <thead>
               <tr>
@@ -118,11 +108,11 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
           </table>
           <Hint tone="muted" block>
             Pooling beats splitting because, in this model, no server sits idle while a job waits in the shared queue. Join-the-shortest-queue is a middle way that load balancing owns.
-            The measured columns are one seeded run of {MEASURED_JOBS.toLocaleString('en-US')} jobs each, so they wobble most at high ρ.
+            The measured columns are one seeded run of {POOL_MEASURED_JOBS.toLocaleString('en-US')} jobs per layout, all three fed the same arrivals and service draws (the fast server does each job in 1/{POOL_SERVERS} of the time), so they differ only by layout; each still wobbles from seed to seed, most at high ρ.
           </Hint>
         </Box>
         <div className="qt-chips">
-          <Provenance kind="simulated" seed={seed}>measured: {MEASURED_JOBS.toLocaleString('en-US')} seeded jobs per layout</Provenance>
+          <Provenance kind="simulated" seed={seed}>measured: {POOL_MEASURED_JOBS.toLocaleString('en-US')} seeded jobs per layout, same arrivals</Provenance>
           <Provenance kind="illustrative">c = {POOL_SERVERS} servers, μ = {MU}/s each: made-up numbers</Provenance>
           <Provenance kind="from-memory">M/M/1 and Erlang C formulas: verify against a queueing text</Provenance>
         </div>

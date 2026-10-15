@@ -267,6 +267,8 @@ export interface BatchOptions {
   layout: 'pool' | 'split';
   /** Jobs that arrive; the run then drains. */
   jobs: number;
+  /** Leading jobs left out of meanWait and meanSystem, so a queue that starts empty does not bias them low. Default 0. */
+  warmup?: number;
   seed: number;
 }
 
@@ -278,14 +280,19 @@ export interface BatchResult {
   meanSystem: number;
 }
 
+/** XORed into the seed for the random routing of the 'split' layout, so routing never consumes the arrival and service draws that layouts share. */
+const ROUTING_STREAM = 0x5bd1e995;
+
 /** Simulates FIFO queueing exactly: arrivals are Poisson, each job starts when it has arrived and a server is free. */
 export function simulateQueue(o: BatchOptions): BatchResult {
   const rnd = mulberry32(o.seed);
+  const routing = mulberry32(o.seed ^ ROUTING_STREAM);
   const free = new Array<number>(o.servers).fill(0);
   const arrival = new Float64Array(o.jobs);
   const start = new Float64Array(o.jobs);
   const departure = new Float64Array(o.jobs);
   let t = 0;
+  const warmup = o.warmup ?? 0;
   let waitSum = 0;
   let systemSum = 0;
   for (let i = 0; i < o.jobs; i++) {
@@ -293,7 +300,7 @@ export function simulateQueue(o: BatchOptions): BatchResult {
     const s = serviceTime(o.shape, o.mu, rnd);
     let server: number;
     if (o.layout === 'split') {
-      server = Math.floor(rnd() * o.servers);
+      server = Math.floor(routing() * o.servers);
     } else {
       server = 0;
       for (let k = 1; k < o.servers; k++) if (free[k] < free[server]) server = k;
@@ -303,10 +310,51 @@ export function simulateQueue(o: BatchOptions): BatchResult {
     arrival[i] = t;
     start[i] = begin;
     departure[i] = begin + s;
-    waitSum += begin - t;
-    systemSum += begin + s - t;
+    if (i >= warmup) {
+      waitSum += begin - t;
+      systemSum += begin + s - t;
+    }
   }
-  return { arrival, start, departure, meanWait: waitSum / o.jobs, meanSystem: systemSum / o.jobs };
+  const counted = o.jobs - warmup;
+  return { arrival, start, departure, meanWait: waitSum / counted, meanSystem: systemSum / counted };
+}
+
+/** M/M/1 mixing time in jobs: the queue forgets its start and its average settles on about 1 / (1 − ρ)² jobs. */
+const mixingJobs = (rho: number): number => 1 / (1 - rho) ** 2;
+/** Jobs averaged per mixing time, and warm-up jobs discarded per mixing time, in The curve's measured dot. */
+const CURVE_JOBS_PER_MIXING = 100;
+const CURVE_WARMUP_PER_MIXING = 5;
+const CURVE_MIN_JOBS = 20_000;
+const CURVE_MIN_WARMUP = 100;
+
+/** How long The curve's measured run is at ρ: the discarded warm-up and the averaged jobs, both growing like 1 / (1 − ρ)². */
+export function curveRunLength(rho: number): { warmup: number; jobs: number } {
+  const mixing = mixingJobs(rho);
+  return { warmup: Math.max(CURVE_MIN_WARMUP, Math.ceil(CURVE_WARMUP_PER_MIXING * mixing)), jobs: Math.max(CURVE_MIN_JOBS, Math.ceil(CURVE_JOBS_PER_MIXING * mixing)) };
+}
+
+/** Measured time in system ÷ service time for one seeded M/M/1 run at ρ, warm-up discarded. */
+export function measureCurve(rho: number, seed: number): number {
+  const { warmup, jobs } = curveRunLength(rho);
+  return simulateQueue({ lambda: rho * MU, mu: MU, shape: 'exp', servers: 1, layout: 'pool', jobs: warmup + jobs, warmup, seed }).meanSystem * MU;
+}
+
+/** Jobs behind each measured number in the pool scene: steady at moderate ρ, one seeded run, still a little noisy near 95%. */
+export const POOL_MEASURED_JOBS = 40_000;
+
+/**
+ * The three layouts under one seed. They share the arrival times and the service draws (common random numbers; the fast
+ * server does each job in 1/c of the time), so the measured columns differ only by the layout and agree with the theory ordering.
+ */
+export function measurePool(rho: number, seed: number, jobs = POOL_MEASURED_JOBS): Record<Topology, { Wq: number; W: number }> {
+  const lambda = POOL_SERVERS * rho * MU;
+  const run = (servers: number, mu: number, layout: 'pool' | 'split') => simulateQueue({ lambda, mu, shape: 'exp', servers, layout, jobs, seed });
+  const runs: Record<Topology, BatchResult> = {
+    split: run(POOL_SERVERS, MU, 'split'),
+    pool: run(POOL_SERVERS, MU, 'pool'),
+    fast: run(1, POOL_SERVERS * MU, 'pool'),
+  };
+  return Object.fromEntries(TOPOLOGIES.map((t) => [t, { Wq: runs[t].meanWait, W: runs[t].meanSystem }])) as Record<Topology, { Wq: number; W: number }>;
 }
 
 /** ∫ N(t) dt where each job is present over [enter, leave): a sweep over the merged events (never a per-job sum). */
@@ -418,17 +466,18 @@ export function populationSteps(enter: ArrayLike<number>, leave: ArrayLike<numbe
 export const SIZING_BOUNDS = { rate: { max: 1_000_000 }, seconds: { max: 3_600 } } as const;
 
 const positiveDecimal = (label: string, max: number, unit: string) => (text: string): FieldParse<number> => {
+  const sentenceStart = label.charAt(0).toUpperCase() + label.slice(1);
   const parsed = parseBoundedDecimal(text, {
     min: 0,
     max,
     messages: {
       empty: `Type ${label}.`,
       invalid: (typed) => `"${typed}" isn't a plain number like 200 or 0.05 (no exponents or units).`,
-      tooBig: () => `${label} can't be more than ${max.toLocaleString('en-US')} ${unit}.`,
-      tooSmall: () => `${label} can't be negative.`,
+      tooBig: () => `${sentenceStart} can't be more than ${max.toLocaleString('en-US')} ${unit}.`,
+      tooSmall: () => `${sentenceStart} can't be negative.`,
     },
   });
-  if (parsed.ok && parsed.value === 0) return { ok: false, error: `${label} has to be above 0.` };
+  if (parsed.ok && parsed.value === 0) return { ok: false, error: `${sentenceStart} has to be above 0.` };
   return parsed;
 };
 
