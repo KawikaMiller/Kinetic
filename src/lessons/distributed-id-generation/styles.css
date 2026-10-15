@@ -12,8 +12,6 @@
 .idg-table th { text-transform: none; letter-spacing: 0; font: 600 12px var(--font); white-space: nowrap; }
 .idg-table td { font: 500 12.5px var(--mono); }
 .idg-table .is-on td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
-.idg-sortbtn { all: unset; cursor: pointer; font: inherit; display: inline-flex; gap: 4px; align-items: center; }
-.idg-sortbtn:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 .idg-dup { color: var(--bad); font-weight: 700; }
 .idg-wait { color: var(--orange); }
 .idg-split { color: var(--bad); }

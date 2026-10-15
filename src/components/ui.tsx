@@ -282,6 +282,10 @@ export function PauseButton({ paused, onToggle }: { paused: boolean; onToggle: (
   return <Button onClick={onToggle}>{paused ? '▶ Resume' : '❚❚ Pause'}</Button>;
 }
 
+// ---- Sortable table heading (K3-4): the order itself comes from the useSortedRows hook (components/useSortedRows.ts) ----
+export { SortTh } from './SortTh';
+// ---- end sortable table heading ----
+
 /** Colour key for whatever the stage is drawing. */
 export function Legend({ items }: { items: { color: string; label: ReactNode; shape?: 'dot' | 'square' | 'line' }[] }) {
   return (

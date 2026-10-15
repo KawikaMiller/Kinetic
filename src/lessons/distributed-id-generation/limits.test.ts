@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { decodeSnowflake } from './formats';
 import { BURST_LIMIT, CLOCK_RUN, runBurst, runClock, runMachines } from './limits';
 import { formatCount, formatProbability, idsForOdds, probabilityOf, RANDOM_BITS } from './odds';
-import { sortRows, TRADEOFFS, type SortKey } from './tradeoffs';
+import { sortRows as sortBy } from '../../core/sortRows';
+import { TRADEOFF_COLUMNS, TRADEOFFS, type SortKey } from './tradeoffs';
 
 describe('a burst on one machine', () => {
   it('fits 4,096 IDs in a millisecond and waits for the next for the rest', () => {
@@ -125,6 +126,7 @@ describe('collision odds', () => {
 });
 
 describe('the trade-offs table', () => {
+  const sortRows = (rows: typeof TRADEOFFS, k: SortKey, ascending: boolean) => sortBy(rows, TRADEOFF_COLUMNS[k], ascending);
   const key = (k: SortKey, i: number) => TRADEOFFS[i][k as keyof (typeof TRADEOFFS)[number]];
   it('has the five formats with the sizes the layouts say', () => {
     expect(TRADEOFFS.map((r) => [r.id, r.size])).toEqual([['autoincrement', 64], ['uuidv4', 128], ['uuidv7', 128], ['ulid', 128], ['snowflake', 64]]);

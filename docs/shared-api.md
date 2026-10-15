@@ -1344,6 +1344,37 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
 
 ---
 
+## Tier 3 kit (kickoff round: extractions)
+
+Extractions and extensions for the Tier 3 batches (`docs/tier3-plan.md` §4), each migrating its Tier 2 source pixel-identically
+(`smoke --frames` + `diff`). Demos are on `#/dev/kit` under "Tier 3 kit · kickoff round, extractions" (`pages/DevKitTier3b.tsx`).
+The CodePanel (K3-6) and GraphView (K3-5) changes are noted in their own entries above.
+
+### `SortTh`, `useSortedRows` (K3-4) — distributed-id-generation; later api-versioning, query-planning, join-algorithms, consistency-models, authz-models, routing-algorithms, bgp, dora-metrics, kafka-partitioned-log
+```tsx
+const { sorted, sort, headerProps } = useSortedRows(rows, { name: (r) => r.name, cost: (r) => r.cost }, { key: 'cost' });
+<table className="data-table">
+  <thead><tr>
+    <SortTh {...headerProps('name')}>Plan</SortTh>   // <th scope="col" aria-sort><button class="sort-btn">Plan ▲</button></th>
+    <SortTh {...headerProps('cost')}>Cost</SortTh>
+  </tr></thead>
+  <tbody>{sorted.map((r) => …)}</tbody>
+</table>
+```
+- A column is a getter returning a number (compared numerically) or text (`localeCompare`, so "amy" sorts with "Bob"). The sort is **stable in both
+  directions**: ties keep the table's own order, also when reversed (`core/sortRows`: `sortRows`, `nextSort`, `sortDirection`, tested including a
+  broken-comparator case). Pressing a column sorts it ascending, pressing it again reverses it, and it keeps flipping; there is no "unsorted" third state.
+- With no third argument the rows start in table order and `sort` is null; with `{ key, ascending? }` it is never null (overloads), so
+  captions can read `sort.key`.
+- `aria-sort` is on the sorted column's `<th>` only; the ▲ / ▼ is `aria-hidden`. The heading is a native `<button>`, so Enter and Space work
+  (driven with real key presses: Tab, Enter, Tab, Space, Space ends on "Sorts by time ▼"). Keep the sorted order in the table, not in the
+  caption alone: a caption that names the order reads it from `sorted`.
+- `ui.tsx` re-exports `SortTh` in a delimited block; the hook is imported from `components/useSortedRows` (a value export from `ui.tsx`
+  trips oxlint's only-export-components). `SortTh` lives in `SortTh.tsx`. CSS: `.sort-btn` in `kit.css`. Name the generics when `initial` is
+  given (`useSortedRows<Row, Key>`), or TypeScript narrows the key type to the initial one.
+- distributed-id-generation's trade-offs table migrated: default, "Size" ascending and "Format" descending at 1440 and 390 are pixel-identical
+  (the 390 default shot differs by 0.09% between *any* two runs, caption cross-fade noise, same as two shots of the unchanged tree).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

@@ -156,6 +156,9 @@
   border-bottom: 1px solid var(--line);
 }
 .data-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
+/* SortTh (components/SortTh.tsx): the heading is a button that looks like the heading */
+.sort-btn { all: unset; cursor: pointer; font: inherit; display: inline-flex; gap: 4px; align-items: center; }
+.sort-btn:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 .log-row {
   padding: 5px 10px;
   border-left: 3px solid var(--c, var(--line-2));
