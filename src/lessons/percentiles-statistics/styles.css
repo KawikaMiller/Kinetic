@@ -1,0 +1,25 @@
+.ps-stage { gap: 12px; align-items: center; }
+.ps-stage > .plot2d, .ps-row .plot2d { max-width: 100%; height: auto; }
+.ps-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
+.ps-table, .ps-explain { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 8px; }
+.ps-explain p { margin: 0; font: 500 13px var(--font); color: var(--muted); }
+.ps-table .data-table td:last-child { font-family: var(--font); color: var(--muted); }
+.ps-chosen td { color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ps-chosen td:last-child { color: var(--hi); }
+.ps-note { display: block; text-align: center; }
+.ps-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; }
+
+.ps-hosts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ps-host {
+  min-width: 118px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-left: 4px solid var(--c);
+}
+.ps-host-p99 { font: 700 15px var(--mono); color: var(--text); }
+.ps-host-n { font: 500 12px var(--mono); color: var(--muted); }
+
+.ps-bars { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 8px; }
+.ps-bar-label { display: block; font: 600 12.5px var(--font); color: var(--text); margin-bottom: 3px; }
+.ps-bar-value { font: 700 12.5px var(--mono); color: var(--muted); }
