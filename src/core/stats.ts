@@ -198,3 +198,44 @@ export function confusionAt(examples: readonly { score: number; label: 0 | 1 }[]
   }
   return c;
 }
+
+/**
+ * The empirical CDF of a sample as step vertices: one `[x, p]` per distinct value, ascending,
+ * where p = share of values ≤ x. Ties collapse to one vertex. Empty for an empty sample.
+ * Draw it with Plot2D's `Steps` ("percentiles are read off the CDF").
+ */
+export function ecdf(xs: readonly number[]): [number, number][] {
+  const sorted = xs.filter((x) => !Number.isNaN(x)).sort((a, b) => a - b);
+  const out: [number, number][] = [];
+  sorted.forEach((x, i) => {
+    const p = (i + 1) / sorted.length;
+    if (out.length && out[out.length - 1][0] === x) out[out.length - 1][1] = p;
+    else out.push([x, p]);
+  });
+  return out;
+}
+
+/**
+ * Like `histogram`, but with log-spaced bins over [min, max] (min > 0): each edge is a fixed
+ * multiple of the one before, so a heavy-tailed sample (latencies, sizes) fills the bins
+ * evenly instead of piling into the first. Half-open bins, last one closed, as `histogram`.
+ */
+export function logHistogram(xs: readonly number[], o: { bins: number; min: number; max: number }): Histogram {
+  if (!(o.bins >= 1) || !(o.min > 0) || !(o.max > o.min)) throw new RangeError('logHistogram needs bins ≥ 1 and 0 < min < max');
+  const [lo, hi] = [Math.log(o.min), Math.log(o.max)];
+  const edges = Array.from({ length: o.bins + 1 }, (_, i) => (i === o.bins ? o.max : Math.exp(lo + ((hi - lo) * i) / o.bins)));
+  const counts = new Array<number>(o.bins).fill(0);
+  let outside = 0;
+  for (const x of xs) {
+    if (!(x >= o.min && x <= o.max)) {
+      outside++;
+      continue;
+    }
+    let bin = Math.min(o.bins - 1, Math.floor(((Math.log(x) - lo) / (hi - lo)) * o.bins));
+    // Rounding in the log can land one bin off at an edge: settle against the edges themselves.
+    while (bin > 0 && x < edges[bin]) bin--;
+    while (bin < o.bins - 1 && x >= edges[bin + 1]) bin++;
+    counts[bin]++;
+  }
+  return { edges, counts, outside };
+}

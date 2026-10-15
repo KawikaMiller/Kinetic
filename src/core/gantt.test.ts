@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barGeometry, barInDomain, barLabelPx, calendarTicks, domainFraction, ganttTicks, INSTANT_GAP_PX, INSTANT_SIZE_PX, instantX, isInstant, placeInstantLabels, spreadLabels } from './gantt';
+import { barAt, barGeometry, barInDomain, barLabelPx, barsAt, calendarTicks, domainFraction, ganttTicks, INSTANT_GAP_PX, INSTANT_SIZE_PX, instantX, isInstant, placeInstantLabels, spreadLabels, type TimedBar } from './gantt';
 
 describe('gantt geometry', () => {
   it('places bars as percentages of the domain', () => {
@@ -180,5 +180,46 @@ describe('instants (zero-length bars)', () => {
       expect(b.left).toBeGreaterThanOrEqual(-1e-9);
       expect(b.right).toBeLessThanOrEqual(400 + 1e-9);
     }
+describe('barAt / barsAt', () => {
+  const bar: TimedBar & { id: string } = { id: 'a', start: 10, end: 20 };
+
+  it('is null before the start', () => {
+    expect(barAt(bar, 9.999)).toBeNull();
+    expect(barAt(bar, -5)).toBeNull();
+  });
+
+  it('at the start the bar is running with no progress yet', () => {
+    expect(barAt(bar, 10)).toEqual({ ...bar, progress: 0 });
+  });
+
+  it('inside it carries the elapsed share and keeps its other fields', () => {
+    expect(barAt({ ...bar, tone: 'hi' }, 15)).toEqual({ id: 'a', start: 10, end: 20, tone: 'hi', progress: 0.5 });
+    expect(barAt(bar, 12.5)?.progress).toBeCloseTo(0.25, 12);
+  });
+
+  it('at its end and after it the bar is returned whole, untouched', () => {
+    expect(barAt(bar, 20)).toBe(bar);
+    expect(barAt(bar, 99)).toBe(bar);
+    const planned = { ...bar, progress: 0.4 };
+    expect(barAt(planned, 25)).toBe(planned);
+  });
+
+  it('does not mutate its input and replaces a progress it carried while running', () => {
+    const b = { ...bar, progress: 0.9 };
+    expect(barAt(b, 15)?.progress).toBe(0.5);
+    expect(b.progress).toBe(0.9);
+  });
+
+  it('a zero-length bar appears whole at its start', () => {
+    const z = { start: 5, end: 5 };
+    expect(barAt(z, 4.9)).toBeNull();
+    expect(barAt(z, 5)).toBe(z);
+  });
+
+  it('barsAt keeps order and drops the bars not started', () => {
+    const bars: (TimedBar & { id: string })[] = [{ id: 'x', start: 0, end: 4 }, { id: 'y', start: 6, end: 9 }, { id: 'z', start: 2, end: 8 }];
+    expect(barsAt(bars, 3).map((b) => [b.id, b.progress])).toEqual([['x', 0.75], ['z', 1 / 6]]);
+    expect(barsAt(bars, 100)).toEqual(bars);
+    expect(barsAt(bars, -1)).toEqual([]);
   });
 });

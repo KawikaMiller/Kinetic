@@ -1395,6 +1395,90 @@ unscopedAbsolutes(text); tryThisTestNumbers(testSource); DOMAIN_REVIEW_IDS
 - **try-this-tests**: every `tryThis` entry N needs a test named `try-this N: …` (`it` or `test`).
 - Tests that pin code to the plan read `core/testing/tier3Plan.ts` (`tier3PlanRows`), which is empty, and the
   tests skip, when `docs/tier3-plan.md` isn't in the tree.
+## Tier 3 kit (kickoff, agent C: distributions, tick sim, Stat sub, distSim, barAt)
+
+Demos for all of it live on `#/dev/kit` under "Tier 3 kit · distributions, tick sim, barAt, distSim".
+
+### `core/distributions.ts`, `Plot2D` Area/Steps/Band, `core/stats` ecdf/logHistogram (K3-1) — distributions, percentiles-statistics, hypothesis-testing-ab, queueing-theory, tail-latency, estimation, entropy-information, model-evals-drift, capacity-planning, benchmarking-methodology; fanout-feeds, hot-keys-skew (Zipf)
+```ts
+// Samplers take an Rnd first (mulberry32(seed)): same seed, same sample.
+normal(rnd, mean?, sd?)  exponential(rnd, rate?)  lognormal(rnd, mu?, sigma?)  pareto(rnd, xm, alpha)  poisson(rnd, lambda)
+// Densities and cumulative distributions, matching each sampler.
+normalPdf/normalCdf(x, mean?, sd?)   exponentialPdf/exponentialCdf(x, rate?)   lognormalPdf/lognormalCdf(x, mu?, sigma?)
+paretoPdf/paretoCdf(x, xm, alpha)    poissonPmf/poissonCdf(k, lambda)          erf(x)
+// Zipf (rank 1 hottest): the normaliser, the pmf, and a sampler built once and drawn many times.
+harmonic(n, s?)  zipfPmf(k, n, s?)  const draw = zipfSampler(n, s?);  draw(rnd)  // rank 1..n
+quantile(sorted, p)                  // linear interpolation (type 7); core/sim `percentile` picks an element instead
+ksStatistic(sample, cdf)  ksCritical(n)   // KS distance, and the 0.1% rejection level 1.95/sqrt(n)
+ecdf(xs)  // [x, p][] step vertices, ties merged (core/stats)
+logHistogram(xs, { bins, min, max })  // like histogram(), log-spaced edges (core/stats)
+```
+```tsx
+<Plot2D …>
+  <Area fn={pdf} from={1.96} to={4} tone="bad" />      {/* shade a tail, a p-value, an interval; rests on base (default 0) */}
+  <Steps data={ecdf(xs)} startY={0} tone="info" />     {/* a step function; startY = level before the first point; last level runs to the right edge */}
+  <Band lo={lowFn} hi={highFn} tone="violet" />        {/* edges are numbers or fns of x; from/to limit it; a confidence band or a flat interval */}
+  <Bars bars={barsFromHistogram(h, (bin) => bin.x0 >= p95 ? 'bad' : 'info')} />   {/* per-bar tone: bin = { index, x0, x1, count } */}
+</Plot2D>
+```
+- Existing `Bars` / `Curve` / `barsFromHistogram(h)` callers are untouched (`Bars` already took a per-bar `tone`; the new second argument of `barsFromHistogram` just fills it in for you). Path geometry is `core/plotAreas.ts`; Area/Steps/Band live in `components/PlotAreas.tsx` and are re-exported from `Plot2D`.
+- Accuracy: `erf`/`normalCdf` are good to about 1e-13 and keep the far tail (`normalCdf(-6)` is 9.87e-10, not 0). The Poisson sampler splits a large lambda into chunks (it is O(lambda)). Tests check each sampler's mean and variance on fixed seeds, that each pdf integrates to 1 and its cdf is the integral of the pdf, a KS check of each continuous sampler against its cdf (and that a wrong cdf fails it), Poisson and Zipf counts against their pmfs.
+- **Do not write a local Zipf or harmonic number** (fanout-feeds and hot-keys-skew both use these; AC-0/T3 #25).
+
+### `core/simTick.ts`, `core/useTickSim.ts` (K3-2) — queueing-theory, wifi-shared-medium, autoscaling, capacity-planning, thread-pools-work-stealing, graceful-degradation, cache-stampede, fanout-feeds, simd-gpu-parallelism, benchmarking-methodology
+```ts
+const sim = createTickSim<State>({
+  seed: 7,
+  init: (rnd) => ({ queue: 0 }),
+  step: (s, rnd, tick) => ({ queue: s.queue + (rnd() < 0.6 ? 1 : 0) }),   // returns the NEXT state; never mutate s
+  check: (s, tick) => (s.queue > 50 ? 'queue overflowed' : null),            // optional safety, also run on tick 0
+});
+sim.run(100)      // advance up to 100 ticks (stops at a violation); returns ticks run
+sim.at(40)        // the state after 40 ticks (runs forward if needed; a lookup if already run: scrubbing is free)
+sim.history       // [state after 0 ticks, after 1, …]   sim.ticks   sim.state   sim.violation  // { tick, message } | null
+sim.reset()       // same seed, same trace
+// In a component: fixed dt per tick, at most maxTicksPerFrame, the excess dropped (never queued).
+const live = useTickSim({ make: () => createTickSim(…), dt: 1 / 30, maxTicksPerFrame: 5, snapshot: (s) => ({ … }) });
+live.snap  live.setPaused  live.reset  live.world().sim   // useSimulation's result; world() only from handlers/effects
+```
+- Wall-clock time only decides *how many* ticks run, never what they do, so a test, a frame and the live view see one trace. Once `check` fails the sim stops advancing so the counterexample stays on screen. The history is kept in memory (one state per tick): a lesson running millions of ticks should snapshot, not store. `ticksDue(carry, frameDt, dt, max)` is the pure frame-to-ticks arithmetic.
+
+### `Stat` multi-line `sub` (K3-3) — queueing-theory, percentiles-statistics, hypothesis-testing-ab, capacity-planning, tail-latency, back-of-envelope, benchmarking-methodology
+`sub` takes a node (as before) or an array of nodes, drawn one line each (each wraps at 390 px): `<Stat label="p" value="0.031" sub={['95% interval 0.01 to 0.05', 'n = 400 per arm']} />`. A single node renders exactly as it always did.
+
+### `core/distSim/` — the distributed-sim harness (K3-8): physical-clocks-skew, logical-clocks, consistency-models, quorums, exactly-once-myth, leases-fencing, job-scheduling, transactional-outbox, merkle-trees, kafka-partitioned-log, change-data-capture, routing-algorithms, offline-first-sync; later gossip, paxos, flp
+**This is the enforcement point for AC-0/T3 #20.** A lesson that simulates nodes, messages, clocks or transactions runs its protocol here, injects faults here, and its test asserts a **safety** invariant after every event over N >= 200 seeds. Its "broken" mode must violate the invariant on some seed (a test names it); a staged failure the model doesn't produce is a lie. Liveness is a separate claim, asserted separately. `distSim/electionExample.ts` is the worked pattern (a broken and a fixed three-node election): copy its shape.
+```ts
+import { createCluster, checkInvariants, forSeeds, toSequence, linearizable } from '../core/distSim';
+const cluster = createCluster<Msg, State>({
+  seed,
+  nodes: { a: nodeA, b: nodeB, c: nodeC },            // id → { init(ctx), onMessage(ctx, msg), onTimer(ctx, timerId), snapshot?() }
+  latency: { min: 1, max: 15 },                        // uniform ms; or (rnd, from, to) => ms, so links can be asymmetric
+  loss: 0.1, duplicate: 0.15,                          // per-message probabilities
+  clocks: [{ offsetMs: 40 }, { driftPpm: 5000 }, {}],  // per node, in declaration order
+});
+// ctx: send(to, payload), setTimer(id, localMs), cancelTimer(id), now() (the node's SKEWED clock), peers, trueNow (tests/drawing only)
+cluster.partition('a', ['b', 'c'], 20, 60);   // cut links between the groups over [20, 60]
+cluster.crash('b', 30); cluster.restart('b', 50);   // init() runs again on restart: what init resets is volatile
+cluster.pause('b', 40, 90);                    // a stalled node (GC pause): handles nothing in [40, 90), then its held messages and timers in order; its clock kept running
+cluster.dropNext((m) => m.payload.type === 'ack');   // drop the next matching send, once
+cluster.inject(10, 'a', { type: 'write', v: 1 });    // an outside client request (no network faults apply)
+cluster.randomFaults({ horizonMs: 80, partitions: 1, crashes: 1, pauses: 1 });   // seeded
+cluster.run({ until: 200 }) / cluster.step() / cluster.snapshot() / cluster.trace / cluster.localTime(node, t)
+// Safety over every step; forSeeds returns the LOWEST failing seed with the trace cut at the violation.
+const safety: Safety<State>[] = [(snap) => leaders(snap) > 1 ? 'two leaders' : null];   // null = holds
+checkInvariants(cluster, safety, { until, maxEvents })   // { ok: true, steps } | { ok: false, step, time, message, rule, trace }
+forSeeds(500, (seed) => scenario(seed), safety)          // count (seeds 0..n-1) or { from, to }; { ok: true, seeds } | { ok: false, seed, … }
+const { actors, messages } = toSequence(verdict.trace, { label, timers, events, times });   // → <SequenceDiagram> (lost messages get the ✕)
+```
+- **Semantics worth knowing.** Time is simulated ms and events run in `(time, seq)` order; same seed and faults give the same trace, row for row. Network randomness (loss, latency, duplication) and `randomFaults` use separate seeded streams, and loss/duplicate/latency are always drawn per message, so changing `loss` never shifts another message's latency. A `partition` drops a crossing message that was in flight at any moment of the window (sent before `to`, arriving at or after `from`); messages inside a group are untouched. Crashed nodes drop deliveries (reason `down`) and lose timers; node state that must survive a crash lives outside `init`. Timer delays are in the node's *local* time (drift changes when they fire in true time).
+- **Trace rows** `{ id, t, kind, from?, to?, node?, msgId?, payload?, reason?, dup?, detail? }`; `kind` is `send | deliver | drop | timer | crash | restart | pause | resume | partition | heal`. `id` is the row's position: unique within a run and stable for the seed, so `` `${seed}:${row.id}` `` is a LogStream key. A message's send, deliver and drop rows share `msgId` (a duplicate copy too, with `dup: true`).
+- **Register histories** (consistency-models, quorums): record `RegisterOp`s `{ process, kind: 'write' | 'read', value, invoke, response, key? }` around client calls, then `linearizable(h)`, `sequential(h)`, `causal(h)`, `convergent(h, { settleMs })`: each returns `null` or a message, and `{ initial }` sets what a read returns before any write (default null). Strongest to weakest: linearizable (one order that respects real time) implies sequential (one order that respects each process's own order) implies causal (writes related by cause are seen in cause order; concurrent writes may be seen in different orders by different readers). `convergent` says only that, after the last write, late reads agree. At most 24 operations (the search is exhaustive, so bigger histories throw); `causal` needs each written value unique per key.
+- Self-tests (`distSim/*.test.ts`): same seed gives the same trace; partition drops exactly the crossing in-flight messages; skewed and drifting clocks differ from true time; pause holds and replays in order; asymmetric latency; a deliberately broken two-leader protocol is caught by `forSeeds` (lowest failing seed, trace cut at the violation, reproducible) and the fixed protocol passes 500 faulted seeds; each register model has a history that satisfies it but not the stronger model, and one that violates it.
+- Out of scope on purpose: nodes needing more than `send`/`setTimer`/`now`, disk models, byzantine nodes. Ask for them after wave 2.
+
+### `core/gantt.ts` `barAt` / `barsAt` (K3-10) — incident-response, postmortems, job-scheduling, etl-orchestration, mapreduce-batch, thread-pools-work-stealing, io-models, tail-latency, cache-stampede, project-planning-critical-path
+`barAt(bar, now)` is `null` before the bar starts; at its start it is the bar with `progress: 0` (only the dashed plan shows); while running it is the bar with `progress = (now - start) / (end - start)`; at or after its end it is the bar untouched. `barsAt(bars, now)` maps a list and drops the not-started ones, order kept. Works on any `{ start, end, progress? }`, so a `GanttBar` fits; `GanttLanes` itself is unchanged: `<GanttLanes bars={barsAt(plan, now)} now={now} … />`.
 
 ---
 

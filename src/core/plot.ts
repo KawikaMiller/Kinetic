@@ -1,5 +1,6 @@
 import { arrowStep } from './geometry';
 import { linearScale, logScale, type Scale } from './scale';
+import type { Tone } from './tone';
 
 /**
  * The maths behind Plot2D: the plot frame (two scales over an inner box), the samplers
@@ -175,9 +176,27 @@ export function sampleHeat<T>(fn: (x: number, y: number) => T, frame: PlotFrame,
   return out;
 }
 
-/** `{ edges, counts }` from core/stats `histogram` → one bar per bin. */
-export function barsFromHistogram(h: { edges: readonly number[]; counts: readonly number[] }): { x0: number; x1: number; y: number }[] {
-  return h.counts.map((y, i) => ({ x0: h.edges[i], x1: h.edges[i + 1], y }));
+/** A histogram bin as `barsFromHistogram` hands it to a tone function. */
+export interface HistogramBin {
+  index: number;
+  x0: number;
+  x1: number;
+  count: number;
+}
+
+/**
+ * `{ edges, counts }` from core/stats `histogram` (or `logHistogram`) → one bar per bin.
+ * `tone(bin)` colours each bar (a tail past p95 in `bad`); undefined leaves the layer's tone.
+ */
+export function barsFromHistogram(
+  h: { edges: readonly number[]; counts: readonly number[] },
+  tone?: (bin: HistogramBin) => Tone | undefined,
+): { x0: number; x1: number; y: number; tone?: Tone }[] {
+  return h.counts.map((y, i) => {
+    const bar = { x0: h.edges[i], x1: h.edges[i + 1], y };
+    const t = tone?.({ index: i, x0: bar.x0, x1: bar.x1, count: y });
+    return t ? { ...bar, tone: t } : bar;
+  });
 }
 
 const SUPERSCRIPT: Record<string, string> = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };

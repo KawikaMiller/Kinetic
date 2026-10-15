@@ -309,7 +309,8 @@ export function Stat({
   label: ReactNode;
   value: ReactNode;
   color?: string;
-  sub?: ReactNode;
+  /** A note under the value; an array draws one line each (every line wraps on a phone). */
+  sub?: ReactNode | readonly ReactNode[];
   className?: string;
   children?: ReactNode;
 }) {
@@ -319,7 +320,11 @@ export function Stat({
       <span className="stat-value" style={color ? { color } : undefined}>
         {value}
       </span>
-      {sub && <span className="stat-sub">{sub}</span>}
+      {sub && (
+        <span className="stat-sub">
+          {Array.isArray(sub) ? sub.map((line, i) => <span key={i} className="stat-sub-line">{line}</span>) : sub}
+        </span>
+      )}
       {children}
     </div>
   );

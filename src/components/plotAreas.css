@@ -1,0 +1,4 @@
+/* Plot2D's Area, Steps and Band layers. They colour themselves from their tone class (--c), like the layers in kit.css. */
+.plot-area { fill: color-mix(in srgb, var(--c) 30%, transparent); stroke: none; }
+.plot-band { fill: color-mix(in srgb, var(--c) 16%, transparent); stroke: none; }
+.plot-steps { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; }
