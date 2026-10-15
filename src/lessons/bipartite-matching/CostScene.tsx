@@ -3,7 +3,6 @@ import { CellGrid, type GridHighlight } from '../../components/CellGrid';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { parseBoundedInt } from '../../core/parse';
 import { COST_MAX, COST_MIN, DEFAULT_COSTS, assignmentCost, greedyAssignment, hungarian, jobName, setCost, workerName, type CostMatrix } from './model';
 import { costCaption } from './text';
@@ -18,7 +17,6 @@ export function CostScene({ picker }: { picker: ReactNode }) {
   const greedyCost = assignmentCost(costs, greedy);
   const bestCost = assignmentCost(costs, best);
   const caption = costCaption(costs, greedy, best);
-  useIntroCaption(<>{caption}</>, [caption]);
 
   const pick = (r: number, c: number) => {
     setCell({ r, c });
@@ -42,6 +40,8 @@ export function CostScene({ picker }: { picker: ReactNode }) {
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>

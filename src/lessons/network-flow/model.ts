@@ -1,4 +1,5 @@
 import type { Pt } from '../../components/GraphView';
+import type { Result } from '../../core/result';
 
 export const MAX_NODES = 8;
 export const CAP_MIN = 1;
@@ -17,8 +18,6 @@ export interface Network {
   source: number;
   sink: number;
 }
-
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 const at = (xs: [number, number][]): Pt[] => xs.map(([x, y]) => ({ x, y }));
 const edgeList = (xs: [number, number, number][]): Edge[] => xs.map(([from, to, cap]) => ({ from, to, cap }));

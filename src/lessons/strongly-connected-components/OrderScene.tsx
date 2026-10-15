@@ -5,7 +5,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { EditRow, PresetChips } from './Controls';
 import { useIntroCaption } from '../../core/caption';
-import { canonical, kosaraju } from './model';
+import { canonicalPartition } from '../../core/scc';
+import { kosaraju } from './model';
 import { SccGraph } from './SccGraph';
 import { edgeVerdict } from './text';
 import { ORDER_CHOICES, type SccEditor } from './useSccEditor';
@@ -15,7 +16,7 @@ export function OrderScene({ picker, ed }: { picker: ReactNode; ed: SccEditor })
   const n = g.names.length;
   const run = useMemo(() => kosaraju(g, ed.order), [g, ed.order]);
   const asGiven = useMemo(() => kosaraju(g), [g]);
-  const same = canonical(run.components) === canonical(asGiven.components);
+  const same = canonicalPartition(run.components) === canonicalPartition(asGiven.components);
   const finishChanged = run.finishOrder.join() !== asGiven.finishOrder.join();
   const choiceOn = (build: (n: number) => number[]) => build(n).join() === ed.order.join();
   const names = (vs: readonly number[]) => vs.map((v) => g.names[v]).join(' ');

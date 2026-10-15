@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { cosine, dot, norm } from '../../core/vec';
 import {
-  ANALOGIES, DIMS, DOCUMENTS, MAP, MAP_POINTS, TOP_K, VOCAB, analogy, covariance, keywordOverlap, lookup, misleadingPair, neighbours,
-  pca, phraseVector, project, rankDocuments, tokenize, topEigen,
+  ANALOGIES, DIMS, DOCUMENTS, MAP, MAP_POINTS, TOP_K, VOCAB, analogy, keywordOverlap, lookup, misleadingPair, neighbours,
+  phraseVector, project, rankDocuments, tokenize,
 } from './model';
+import { covariance, pca, topEigen } from '../../core/linalg';
 
 /** Reference: the cyclic Jacobi eigenvalue method for a symmetric matrix (independent of power iteration). */
 function jacobi(input: number[][]): { values: number[]; vectors: number[][] } {

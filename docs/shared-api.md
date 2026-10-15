@@ -1793,6 +1793,86 @@ const [walk, setWalk] = useState(() => startWalk(SCENARIO));                // t
   and its provenance is a per-case honesty note and a per-choice "history, what-if or illustrative" basis, not the single "invented" chip (the Therac-25 case is history). Forcing it through would change every pixel.
 - Showcase: `#/dev/kit`, "Tier 3 kit · wave 1 round, agent E" (a small invented incident, plus the validator's output on that scenario broken four ways).
 
+## Tier 3 kit (kit round after wave 3: agent G)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 3 to 4 round, agent G" (`pages/DevKitTier3g.tsx`).
+
+### `core/linalg.ts` (K3-18) — markov-chains, eigen-pagerank, svd-pca, embeddings (migrated); later recommender-systems, attention-transformers, cnns-convolution, neural-networks-backprop
+```ts
+import { powerIteration, eigen2x2, jacobiEigen, svdSmall, pca, conv2d, softmax } from '../../core/linalg';
+const steps = powerIteration(A, { iters: 30, start: [1, 0], norm: 'l2' | 'l1' }); // steps[0] is the rescaled start
+steps[k].v; steps[k].lambda; steps[k].stretch; steps[k].change;        // iterate, Rayleigh quotient, |A v_prev|/|v_prev|, |v - v_prev|
+eigen2x2([[a, b], [c, d]]);   // { kind: 'real', values: [l1, l2], vectors } | { kind: 'complex', values: [{re, im} ...], vectors } | null (defective)
+jacobiEigen(sym);             // { values (descending), vectors[i] pairs with values[i] }; throws if not symmetric
+svdSmall(A);                  // { u, s, v }: A = U diag(s) V^T, thin, s non-increasing, <= 8 x 8
+svdReconstruct(svd, k);       // the rank-k sum of sigma_i u_i v_i^T
+pca(points, k); pcaProject(p, v); covariance(points); mean(points);
+conv2d(image, kernel, { stride, pad }); softmax(xs, temperature); matPow(A, k);
+```
+- Builds on `core/vec`: `matMul` and `transpose` are re-exported from there, vectors use `Vec`/`Mat`, and a direct linear solve is still `vec.solve`. Nothing mutates its inputs.
+- `powerIteration` returns every iterate so a lesson can animate it. `norm: 'l1'` keeps a probability vector summing to 1 (Markov chains, PageRank: pass `P^T` for a row-vector chain). It stops early at the zero vector. A negative dominant eigenvalue flips the iterate's sign each step, so `change` is large there.
+- `eigen2x2` is the closed form of the characteristic quadratic. Real eigenvalues come back largest `|lambda|` first with unit vectors (first non-zero component positive); a negative discriminant gives a conjugate pair (positive imaginary part first) with complex unit vectors; a repeated eigenvalue with one eigendirection (a shear) is `null`; a scalar matrix returns the axes. `jacobiEigen` is symmetric-only and general-size; `topEigen(m, k)` is the deflated power iteration `pca` uses (positive semi-definite input).
+- `svdSmall` is one-sided Jacobi, labelled small-matrix: it refuses more than 8 rows or columns (`SMALL_MATRIX_MAX`). Zero singular values get a completed orthonormal U column. Signs of singular vectors are arbitrary.
+- `conv2d` is deep-learning convolution (cross-correlation, kernel not flipped), single channel, zero padding; output side `floor((n + 2 pad - k) / stride) + 1`.
+- Tests: `A = U S V^T` and orthonormal U, V to 1e-9 on 200 seeded matrices (wide, tall, rank-deficient), the Eckart-Young error identity, `A v = lambda v` for `jacobiEigen` (300 seeded), `eigen2x2` (1,000 seeded, real and complex), power iteration vs Jacobi's dominant vector, PageRank (the pinned `A, B, C -> D, D -> A` example and 200 seeded graphs with dead ends) equal to the direct solve, `conv2d` equal to a naive padded loop on 300 seeded cases.
+- **Migrated:** `embeddings` (its local `covariance`/`topEigen`/`pca`/`centroid` moved here verbatim, so the map's numbers are bit-identical; the lesson keeps a two-number `project` wrapper over `pcaProject`). Its stage shots are pixel-identical.
+
+### `core/huffman.ts` — huffman-coding (migrated); entropy-information, lz-compression
+```ts
+import { buildHuffman, textWeights, encode, decode, canonicalCodes, kraftSum, averageLength } from '../../core/huffman';
+const h = buildHuffman(textWeights('mississippi'), 'old');   // or any [{ sym, weight }] (counts or probabilities)
+encode(h, text); decode(h, bits); decodeSteps(h, bits);       // h.codes: Map<symbol, '0101'>; h.merges: the build, step by step
+codeLengths(h); averageLength(h); mergeCost(weights); depthOf(h, id);
+canonicalCodes([3, 3, 3, 3, 3, 2, 4, 4]);   // DEFLATE rule (RFC 1951 3.2.2): ['010','011','100','101','110','00','1110','1111']
+kraftSum(lengths);                           // > 1 oversubscribed (canonicalCodes throws), 1 complete, < 1 incomplete
+```
+- `buildHuffman(entries, tie)` builds over any positive weights; leaf ids follow the order given (the creation order the tie-break uses), and `textWeights(text)` lists a text's symbols lightest first. A lone symbol gets the code `0`. `tie` is `'old'` or `'new'` (which of two equal-weight trees merges first): both build optimal trees, possibly different ones.
+- `canonicalCodes(lengths)` takes one length per symbol, 0 meaning unused (its entry is null). Only the lengths need sending, which is why DEFLATE ships lengths rather than trees.
+- The lesson keeps what is its own: the message rules (`parseMessage`), the cost comparison against fixed-width and ASCII codes, `forcedOneBitCost`, and a `Huffman` type that is core's tree plus the text.
+- Tests: `core/huffman.test.ts` (the textbook 5, 9, 12, 13, 16, 45 tree costs 224 bits per 100, the cost equals the sum of merge weights and lies in [entropy, entropy + 1) on probabilities, round trips and prefix property on 200 seeded texts with both tie-breaks, the RFC example, canonical order and prefix property on 300 seeded complete length sets, oversubscription refused). `huffman-coding`'s own tests are unchanged apart from their imports.
+- **Migrated:** `huffman-coding` (`model.ts` keeps only the lesson's rules and costs; frames, stage and tests import the tree from here). Its stage shots at the first, middle and last frames are pixel-identical.
+
+### `core/useGraphEdits.ts` (`graphEdits.ts`, `result.ts`) — shortest-paths-advanced, strongly-connected-components, network-flow, bipartite-matching, graph-coloring; later any lesson with an editable graph
+```ts
+import { useGraphEdits } from '../../core/useGraphEdits';
+const edits = useGraphEdits<Digraph, PresetId>({
+  presets: PRESETS, initial: 'tangle', graphOf: (id) => presetById(id).graph, edgeCount: (g) => g.edges.length,
+  scene,   // optional: a note belongs to the scene it was written in; omit for one shared note
+});
+edits.graph; edits.presetId; edits.note; edits.added;          // added = edges over the preset
+edits.load(id);                                                 // preset graph + "Loaded <label>."; returns the graph so the wrapper can reset what depends on it
+edits.edit(addEdge(edits.graph, a, b), 'Added a to b.');       // apply a model Result: new graph + note, or the refusal as the note; true when applied
+edits.set(graph, 'Removed a to b.'); edits.setNote('Selected a-b.');
+edits.undoAdded(removeLastEdge, 'Removed the last edge you added.');   // never removes a preset edge
+```
+- The graph is any value: the model keeps its own `addEdge`/`addNode`/`removeEdge` and their refusal sentences and bounds (`MAX_NODES`, no duplicates, no free spot), returning `Result<G>`. `Result<T>` (`{ ok: true, value } | { ok: false, error }`) now lives in `core/result.ts`; the five lessons' identical copies are gone.
+- Not in the hook, on purpose: what a lesson derives from the graph (a flow and its pushes, a matching and the search, the greedy order, the source node). That stays in the lesson's own editor hook, which wraps `load`/`edit` and resets it, as the five do.
+- The transitions are pure functions in `core/graphEdits.ts` (`loadPreset`, `applyResult`, `setGraph`, `noteFor`), tested in `graphEdits.test.ts` (preset load and baseline, accepted and refused edits, scene-keyed notes, the added-edge count); the hook is a thin `useState` over them (no React test renderer in this repo).
+- **Migrated:** the five B9 lessons' editors (`useGraphEditor`, `useSccEditor`, `useFlowEditor`, `useMatchEditor`, `useColorEditor`; about 65 fewer lines in all). Their tests pass unchanged and every scene's shots (all scenes, first, middle and last frame) are pixel-identical.
+
+### `core/scc.ts` — strongly-connected-components (migrated); markov-chains (communicating classes)
+```ts
+import { stronglyConnectedComponents, condense, canonicalPartition, adjacency, type Arc } from '../../core/scc';
+const { components, comp } = stronglyConnectedComponents(n, edges);   // Tarjan; edges are [from, to] pairs on nodes 0..n-1
+const c = condense(edges, comp, components.length);                    // { edges between components, order: a topological order }
+const closed = components.filter((_, i) => !c.edges.some(([a]) => a === i));   // closed classes: nothing leaves them
+```
+- `components` are sorted node lists in the order the search closes them, so every edge between components goes to an earlier one (sinks first). A self-loop or lone node is a component of its own. `comp[v]` indexes `components`.
+- Takes plain node counts and edge pairs, so any lesson's graph type feeds it. The lesson's own Kosaraju trace (the animated two passes, with its events) stays in `strongly-connected-components`; it builds on `adjacency` and `reverseEdges` from here.
+- Tests: `core/scc.test.ts` (the textbook graph, the transitive-closure oracle on 2,000 seeded graphs, the sinks-first order on 500, condensation edges unique with a valid topological order, closed classes of a small chain). The lesson's tests compare Kosaraju with this routine and the closure oracle, unchanged apart from their imports.
+- **Migrated:** `strongly-connected-components` (its `tarjan`, `canonical`, `adjacency`, `condense` and `Arc` moved here; `canonical` is `canonicalPartition`, and `condense` takes the edge list instead of the lesson's graph). Its shots are pixel-identical.
+
+### `StageFrame intro` and the `ProvenanceRow` margin after a `stage-pad` (small tweaks) — every player-less scene; the five B9 lessons migrated
+```tsx
+<StageFrame intro={caption} introKey={[caption]} controls={...}>   // no player: the caption opens with this
+  <div className="xx-stage stage-pad">…</div>
+  <ProvenanceRow>…</ProvenanceRow>                                   // no lesson CSS for its margin
+</StageFrame>
+```
+- `intro` (with `introKey`, the values a computed sentence depends on; leave it out for a fixed sentence) sets the caption when a player-less stage mounts and again when `introKey` changes, so switching scene never leaves the previous scene's caption behind. It is `useIntroCaption` from inside the frame; a stage with a `player` ignores it (the frames own the caption). A scene that calls `useIntroCaption` itself keeps working.
+- `.stage-pad ~ .provenance-row` in `kit.css` gives a row that follows a padded stage the same 16px inset and 8px gap the stage content has. The five lesson-CSS copies (`.bm-stage ~ .provenance-row` and the other four) are gone; a row nested inside the `stage-pad` is unaffected (the gap already spaces it).
+- **Migrated:** the nine B9 scenes whose caption was `useIntroCaption(<>{caption}</>, [caption])` (network-flow augment and cut, bipartite-matching augment, cost, flow and Hall, graph-coloring bound, hard and timetable) now pass `intro`/`introKey`. The five other B9 scenes with a longer computed caption (`shortest-paths-advanced` cost, `strongly-connected-components` condense, order and why, network-flow models) still call `useIntroCaption` and are fine as they are. Shots and the opening caption of every scene are unchanged.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

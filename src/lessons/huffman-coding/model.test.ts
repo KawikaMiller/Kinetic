@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt, type Rnd } from '../../core/random';
 import { captionText } from '../../core/testing/captions';
 import { buildFrames, decodeFrames, framesFor, type Mode } from './frames';
-import {
-  buildHuffman, costs, decode, decodeSteps, DEFAULT_TEXT, depthOf, encode, forcedOneBitCost, frequencies, MAX_CHARS, parseMessage, type TieBreak,
-} from './model';
+import { decode, decodeSteps, depthOf, frequencies, type TieBreak } from '../../core/huffman';
+import { buildHuffman, costs, DEFAULT_TEXT, encode, forcedOneBitCost, MAX_CHARS, parseMessage } from './model';
 import lesson from './index';
 
 const TIES: TieBreak[] = ['old', 'new'];

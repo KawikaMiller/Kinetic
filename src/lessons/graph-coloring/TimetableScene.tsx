@@ -3,7 +3,6 @@ import { CellGrid } from '../../components/CellGrid';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { chromatic, greedyColour, identityOrder, presetById } from './model';
 import { timetable, timetableCaption } from './text';
 
@@ -16,13 +15,14 @@ export function TimetableScene({ picker }: { picker: ReactNode }) {
   const [slotOf, setSlotOf] = useState<number[]>(Array<number>(N).fill(0));
   const t = timetable(GRAPH, slotOf);
   const caption = timetableCaption(t);
-  useIntroCaption(<>{caption}</>, [caption]);
   const clash = (course: number) => GRAPH.edges.some(([a, b]) => (a === course || b === course) && slotOf[a] > 0 && slotOf[a] === slotOf[b]);
 
   const place = (slot: number, course: number) => setSlotOf(slotOf.map((s, c) => (c === course ? (s === slot + 1 ? 0 : slot + 1) : s)));
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>

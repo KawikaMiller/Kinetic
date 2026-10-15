@@ -7,10 +7,11 @@ import { TreeSvg, type TreeNodeMark, type TreeShape } from '../../components/Tre
 import { WideRegion } from '../../components/WideRegion';
 import { ChipButton, Hint, Legend, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import type { BitGroup } from '../../core/bits';
+import { depthOf, frequencies, type TieBreak } from '../../core/huffman';
 import { minWidthForText } from '../../core/scale';
 import { usePlayer } from '../../core/usePlayer';
 import { framesFor, type Mode } from './frames';
-import { buildHuffman, costs, depthOf, DEFAULT_TEXT, encode, frequencies, parseMessage, showSym, type Huffman, type TieBreak } from './model';
+import { buildHuffman, costs, DEFAULT_TEXT, encode, parseMessage, showSym, type Huffman } from './model';
 import './styles.css';
 
 const BUILD_MS = 1100;

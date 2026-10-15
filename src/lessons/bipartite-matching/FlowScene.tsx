@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { PresetChips } from './Controls';
 import { MatchGraph } from './MatchGraph';
 import { matchingSize } from './model';
@@ -13,10 +12,11 @@ export function FlowScene({ picker, ed }: { picker: ReactNode; ed: MatchEditor }
   const [asFlow, setAsFlow] = useState(true);
   const size = matchingSize(ed.matching);
   const caption = asFlow ? flowCaption(ed.matching, ed.found) : `Two columns again: ${size} matched pairs. Switch to the network to see the same matching as a flow.`;
-  useIntroCaption(<>{caption}</>, [caption]);
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>

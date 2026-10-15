@@ -13,4 +13,3 @@
 .nf-use { display: flex; flex-direction: column; gap: 6px; }
 .nf-line { margin: 0 0 6px; font-size: 13px; line-height: 1.6; }
 .nf-use-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.nf-stage ~ .provenance-row { margin: 8px 16px 12px; }

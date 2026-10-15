@@ -94,3 +94,8 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | SCC routine in `core` | strongly-connected-components (user one), markov-chains | on second user | |
 | Kit-level default caption for player-less StageFrames | B9 fixed it per scene with `useIntroCaption` in six scenes | wave 3 to 4 round | avoids repeating the fix |
 | `ProvenanceRow` margin inside the stage-pad (five lesson-CSS copies of `.xxx-stage ~ .provenance-row`) | B9 lessons | wave 3 to 4 round | tiny kit tweak |
+
+## From the T3-B8 review (turing-machines, bytecode-vms)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| `core/parse` `parseRows`: accept trailing `# comments` and exempt comment text from `maxLineChars`, or name the comment in the refusal ("a comment counts toward the 40/30 limit; comments must be whole lines") | turing-machines (40), bytecode-vms assembler (30), any lesson using `parseRows` | Phase 2 kit round | A comment over the limit is refused as "Line 8 is 63 characters; keep each rule to 40 or fewer." and a trailing `q1 1 -> 0 L q1 # carry` as "found 8 words", with no on-screen hint. B8 only states the limits in each editor's hint; the shared parser is untouched. |

@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { EditRow, PresetChips } from './Controls';
 import { MatchGraph } from './MatchGraph';
 import { hallViolator, matchingSize, maximumMatching, minimumVertexCover } from './model';
@@ -15,10 +14,11 @@ export function HallScene({ picker, ed }: { picker: ReactNode; ed: MatchEditor }
   const violator = hallViolator(g);
   const cover = showCover ? minimumVertexCover(g, best) : null;
   const caption = hallCaption(g, showCover);
-  useIntroCaption(<>{caption}</>, [caption]);
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={470}
       stats={
         <Stats>

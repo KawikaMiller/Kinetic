@@ -2,7 +2,6 @@ import { useMemo, type ReactNode } from 'react';
 import { Box, SectionTitle, Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { useIntroCaption } from '../../core/caption';
 import { ColourGraph } from './ColourGraph';
 import { EditRow, PresetChips } from './Controls';
 import { greedyColour, identityOrder, isInvented } from './model';
@@ -20,7 +19,6 @@ export function BoundScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor 
   const b = useMemo(() => boundOf({ graph: g, order: ed.order }), [g, ed.order]);
   const colours = useMemo(() => greedyColour(g, identityOrder(g.names.length)).colours, [g]);
   const caption = boundCaption(b);
-  useIntroCaption(<>{caption}</>, [caption]);
   const rows: Row[] = [
     { label: 'Greedy, order as given', value: b.yours, tone: 'orange' },
     { label: 'Greedy, smallest-last', value: b.smallestLast, tone: 'violet' },
@@ -32,6 +30,8 @@ export function BoundScene({ picker, ed }: { picker: ReactNode; ed: ColorEditor 
 
   return (
     <StageFrame
+      intro={caption}
+      introKey={[caption]}
       height={480}
       stats={
         <Stats>

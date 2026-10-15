@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { useGraphEdits } from '../../core/useGraphEdits';
 import {
-  addEdge, addNode, applyPath, arcBetween, bottleneck, edmondsKarp, flowValue, isMaximum, nudgeCap, presetById, reachableSet, removeEdge, shortestPath, zeroFlow, type Arc, type Augmentation, type Network,
-  type PresetId, type Result,
+  addEdge, addNode, applyPath, arcBetween, bottleneck, edmondsKarp, flowValue, isMaximum, nudgeCap, PRESETS, presetById, reachableSet, removeEdge, shortestPath, zeroFlow, type Arc, type Augmentation,
+  type Network, type PresetId,
 } from './model';
 
 const replay = (net: Network, steps: readonly Augmentation[]): number[] => steps.reduce((flow, s) => applyPath(flow, s.path, s.delta), zeroFlow(net));
@@ -11,18 +12,15 @@ const replay = (net: Network, steps: readonly Augmentation[]): number[] => steps
  * by pushing paths, the path being built, and the source side of the cut being dragged.
  */
 export function useFlowEditor(scene: string) {
-  const [presetId, setPresetId] = useState<PresetId>('textbook');
-  const [net, setNet] = useState<Network>(presetById('textbook').net);
+  const edits = useGraphEdits<Network, PresetId>({ presets: PRESETS, initial: 'textbook', graphOf: (id) => presetById(id).net, edgeCount: (n) => n.edges.length, scene });
+  const { graph: net, note } = edits;
   const [steps, setSteps] = useState<Augmentation[]>([]);
   const [walk, setWalk] = useState<number[]>([presetById('textbook').net.source]);
   const [selected, setSelected] = useState<number | null>(null);
   const [residual, setResidual] = useState(false);
   const [sideNodes, setSideNodes] = useState<number[]>([presetById('textbook').net.source]);
   const [showMinCut, setShowMinCut] = useState(false);
-  // A note belongs to the scene it was written in, so another scene never shows a stale one.
-  const [written, setWritten] = useState({ text: '', scene });
-  const note = written.scene === scene ? written.text : '';
-  const setNote = (text: string) => setWritten({ text, scene });
+  const { setNote } = edits;
 
   const flow = replay(net, steps);
   const pathArcs: Arc[] = [];
@@ -33,29 +31,24 @@ export function useFlowEditor(scene: string) {
   const complete = walk[walk.length - 1] === net.sink && pathArcs.length === walk.length - 1 && walk.length > 1;
 
   /** Everything that depends on the network's shape starts over when it changes. */
-  const fresh = (n: Network, message: string) => {
-    setNet(n);
+  const startOver = (n: Network) => {
     setSteps([]);
     setWalk([n.source]);
     setSideNodes([n.source]);
     setShowMinCut(false);
     setSelected(null);
-    setNote(message);
   };
-  const apply = (r: Result<Network>, done: string) => {
-    if (r.ok) fresh(r.value, done);
-    else setNote(r.error);
+  const fresh = (n: Network, message: string) => {
+    edits.set(n, message);
+    startOver(n);
   };
   const name = (v: number) => net.names[v];
 
   return {
-    presetId, net, flow, steps, walk, selected, residual, sideNodes, showMinCut, note, pathArcs, complete,
+    presetId: edits.presetId, net, flow, steps, walk, selected, residual, sideNodes, showMinCut, note, pathArcs, complete,
     value: flowValue(net, flow),
     delta: pathArcs.length ? bottleneck(pathArcs) : 0,
-    load: (id: PresetId) => {
-      setPresetId(id);
-      fresh(presetById(id).net, `Loaded ${presetById(id).label}.`);
-    },
+    load: (id: PresetId) => startOver(edits.load(id)),
     select: (i: number) => {
       setSelected(i);
       const e = net.edges[i];
@@ -76,15 +69,16 @@ export function useFlowEditor(scene: string) {
       if (selected === null) return;
       fresh(removeEdge(net, selected), 'Edge removed: the flow starts over from zero.');
     },
-    addNode: () => apply(addNode(net), 'Node added: drag from a node to another to join them.'),
+    addNode: () => {
+      const r = addNode(net);
+      if (edits.edit(r, 'Node added: drag from a node to another to join them.') && r.ok) startOver(r.value);
+    },
     addEdge: (from: number, to: number) => {
       const r = addEdge(net, from, to);
-      if (!r.ok) {
-        setNote(r.error);
-        return;
+      if (edits.edit(r, `Added ${name(from)}→${name(to)} with capacity 1: the flow starts over from zero.`) && r.ok) {
+        startOver(r.value);
+        setSelected(r.value.edges.length - 1);
       }
-      fresh(r.value, `Added ${name(from)}→${name(to)} with capacity 1: the flow starts over from zero.`);
-      setSelected(r.value.edges.length - 1);
     },
     /** Extend, shorten or restart the path being built by clicking a node. */
     clickNode: (v: number) => {
