@@ -1343,6 +1343,25 @@ signed(v, 32); unsigned(v, 8); hex(v); CONDITIONS.jg.test(flags)
   The chip renders `data-provenance="<kind>"`, the hook for tests that want the chip's kind.
 - Showcase: `#/dev/kit`, "Tier 3 kit".
 
+### `core/lessonContentT3.ts` — the Tier 3 content lint (K3-T2)
+```ts
+lintTier3Lesson(lesson, { domainReview, source, tryThisTests })  // → { rule, detail }[]
+unscopedAbsolutes(text); tryThisTestNumbers(testSource); DOMAIN_REVIEW_IDS
+```
+- Runs from `lessonContent.test.ts` on Tier 3 lessons only (the 12 pre-AC-0/T3 lessons are in
+  `TIER3_AWAITING_RETROFIT` there until T3-R1/R2 remove them; the 255 earlier lessons are untouched).
+  `source` is the lesson folder's non-test source, `tryThisTests` the `try-this N:` numbers from its tests.
+- **absolutes**: "never, always, every, all, only, must, guaranteed, most, typical(ly)" in a `keyIdeas` entry or
+  a quiz `why`, in a sentence with no scope phrase ("in this model", "by default", "unless", "except",
+  "in current …"). Exempt a string by putting `// allow-absolute: <reason>` on the source line where the
+  string starts (the same-line convention `allow-color` uses); the reason must be non-empty.
+- **provenance**: a lesson in `DOMAIN_REVIEW_IDS` (the 86 **D** rows) whose source has no `<Provenance`
+  outside a comment. It checks the lesson folder, not the Stage render, so it proves the chip is
+  written, not that it is on screen at every scene (AC-0/T3 #26 still covers that by eye).
+- **try-this-tests**: every `tryThis` entry N needs a test named `try-this N: …` (`it` or `test`).
+- Tests that pin code to the plan read `core/testing/tier3Plan.ts` (`tier3PlanRows`), which is empty, and the
+  tests skip, when `docs/tier3-plan.md` isn't in the tree.
+
 ---
 
 ## Not built (deliberately)
