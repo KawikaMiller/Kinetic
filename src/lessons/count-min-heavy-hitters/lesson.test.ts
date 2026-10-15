@@ -4,7 +4,7 @@ import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { breakCaption, gridCaption, heavyCaption, mergeCaption, sizeCaption } from './captions';
 import { breakFacts, gridFacts, heavyFacts, mergeFacts, sizeFacts, SMALL_WIDTH } from './facts';
-import { GRID_D, GRID_SEED, GRID_W, STREAM_BURST, MAX_ITEM_LENGTH, buildGrid, cleanItem, inspect, undercounted, wordStream } from './grid';
+import { GRID_D, GRID_SEED, GRID_W, STREAM_BURST, MAX_ITEM_LENGTH, buildGrid, cellRole, cleanItem, inspect, undercounted, wordStream } from './grid';
 import { heavyRun, quality } from './heavy';
 import lesson from './index';
 import { MERGE_DEPTH, MERGE_N, MERGE_WIDTH, mergeRun } from './merge';
@@ -13,6 +13,25 @@ import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDT
 
 const plain = (node: Parameters<typeof text>[0]) => text(node, { strict: true });
 const stream = zipfStream(DEFAULT_STREAM, DEFAULT_SKEW, DEFAULT_SEED);
+
+describe('the cells the grid draws red are the ones the try-this counts', () => {
+  it('try-this 1: red cells are cells other than the inspected item own cells that two or more distinct items hash to, counted by hand from the hash family', () => {
+    const f = gridFacts();
+    const items = wordStream(STREAM_BURST, 7, 0);
+    const distinct = [...new Set(items)];
+    const fam = makeFamily(GRID_SEED, GRID_D);
+    const sketch = newSketch(GRID_W, GRID_D, fam);
+    const hashed = distinct.map((item) => ({ item, cells: cellsOf(sketch, itemKey(item)).map((c) => `${c.row}:${c.col}`) }));
+    const own = new Set(hashed.find((h) => h.item === f.word)!.cells);
+    const holders = new Map<string, number>();
+    for (const h of hashed) for (const c of h.cells) holders.set(c, (holders.get(c) ?? 0) + 1);
+    expect([...holders].filter(([c, n]) => n > 1 && !own.has(c)).length).toBe(f.red);
+    expect([...own].filter((c) => holders.get(c)! > 1).length).toBe(f.ownShared);
+    expect(lesson.tryThis[0]).toContain(`${f.red} cells are red`);
+    const model = buildGrid(items);
+    expect(cellRole(model, inspect(model, f.word), 0, 0)).toBe(own.has('0:0') ? 'own' : (holders.get('0:0') ?? 0) > 1 ? 'shared' : 'plain');
+  });
+});
 
 describe('the grid opens on a collision', () => {
   it('GRID_SEED is the lowest hash seed for which the first burst of 30 items overcounts at least two items', () => {
@@ -39,13 +58,13 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(f.truth).toBe(truth);
     expect(f.estimate).toBeGreaterThan(f.truth);
     expect(f.below).toBe(0);
-    expect(f.shared).toBeGreaterThan(0);
+    expect(f.red).toBeGreaterThan(0);
     expect(lesson.tryThis[0]).toContain(`its estimate is ${f.estimate} against a true ${f.truth}`);
     const model = buildGrid(items);
     const look = inspect(model, f.word);
     const c = plain(gridCaption({ items: items.length, model, look }));
     expect(c).toContain(`the estimate is their minimum, ${f.estimate}, against a true ${f.truth}`);
-    expect(c).toContain(`The extra ${f.estimate - f.truth} come from other items`);
+    expect(c).toContain(`The extra ${f.estimate - f.truth} ${f.estimate - f.truth === 1 ? 'comes' : 'come'} from other items`);
     expect(c).toContain('No item is estimated below its true count');
   });
 

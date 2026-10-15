@@ -8,7 +8,7 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, T
 import { useIntroCaption } from '../../core/caption';
 import { minWidthForText } from '../../core/scale';
 import { gridCaption } from './captions';
-import { GRID_D, GRID_W, MAX_ITEMS, MAX_ITEM_LENGTH, STREAM_BURST, buildGrid, cleanItem, inspect, itemsByCount, polluted, undercounted, wordStream } from './grid';
+import { GRID_D, GRID_W, MAX_ITEMS, MAX_ITEM_LENGTH, STREAM_BURST, buildGrid, cellRole, cleanItem, inspect, itemsByCount, undercounted, wordStream } from './grid';
 
 const CELL_SIZE = 'sm';
 const CELL_FONT = 10;
@@ -24,7 +24,6 @@ export function GridScene({ picker }: { picker: ReactNode }) {
   const model = useMemo(() => buildGrid(items.slice(0, shown)), [items, shown]);
   const names = useMemo(() => itemsByCount(model), [model]);
   const look = shown === 0 ? null : inspect(model, picked && model.truth.has(picked) ? picked : items[shown - 1]);
-  const own = look ? new Set(look.cells.map((c) => `${c.row}:${c.col}`)) : new Set<string>();
   const shape = { rows: GRID_D, cols: GRID_W, size: CELL_SIZE, rowLabels: Array.from({ length: GRID_D }, (_, r) => `row ${r}`), colLabels: Array.from({ length: GRID_W }, (_, c) => c) } as const;
   const wrong = undercounted(model);
 
@@ -94,8 +93,9 @@ export function GridScene({ picker }: { picker: ReactNode }) {
               {...shape}
               cell={(r, c) => {
                 const v = model.sketch.counts[r * GRID_W + c];
-                if (own.has(`${r}:${c}`)) return { tone: 'hi', fill: 'solid', text: v };
-                if (polluted(model, r, c)) return { tone: 'bad', fill: 'tint', intensity: 0.3, text: v };
+                const role = cellRole(model, look, r, c);
+                if (role === 'own') return { tone: 'hi', fill: 'solid', text: v };
+                if (role === 'shared') return { tone: 'bad', fill: 'tint', intensity: 0.3, text: v };
                 return v > 0 ? { tone: 'muted', fill: 'tint', text: v } : { fill: 'none' };
               }}
               highlight={look ? [{ r: look.min.row, c: look.min.col, tone: 'ok' }] : []}

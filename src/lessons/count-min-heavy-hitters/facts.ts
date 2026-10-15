@@ -3,7 +3,7 @@
  * default state.
  */
 import { heavyRun, quality } from './heavy';
-import { GRID_D, GRID_W, STREAM_BURST, buildGrid, inspect, itemsByCount, polluted, undercounted, wordStream } from './grid';
+import { GRID_D, GRID_W, STREAM_BURST, buildGrid, cellRole, inspect, itemsByCount, polluted, undercounted, wordStream } from './grid';
 import { MERGE_DEPTH, MERGE_N, MERGE_WIDTH, mergeRun } from './merge';
 import { depthFor, epsilonOf, deltaOf, estimate, widthFor } from './sketch';
 import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, MIN_SCENE_WIDTH, PLAIN, UNIVERSE, errorRun, exactCounts, exactTop, keyOfRank, overCount, overLimit, underCount, zipfStream } from './stream';
@@ -18,9 +18,10 @@ export function gridFacts() {
   const model = buildGrid(items);
   const looks = itemsByCount(model).map((item) => inspect(model, item));
   const look = looks.reduce((a, b) => (b.estimate - b.truth > a.estimate - a.truth ? b : a));
-  let shared = 0;
-  for (let r = 0; r < GRID_D; r++) for (let c = 0; c < GRID_W; c++) if (polluted(model, r, c)) shared++;
-  return { word: look.item, truth: look.truth, estimate: look.estimate, below: undercounted(model), shared, distinct: model.truth.size };
+  let red = 0;
+  for (let r = 0; r < GRID_D; r++) for (let c = 0; c < GRID_W; c++) if (cellRole(model, look, r, c) === 'shared') red++;
+  const ownShared = look.cells.filter((c) => polluted(model, c.row, c.col)).length;
+  return { word: look.item, truth: look.truth, estimate: look.estimate, below: undercounted(model), red, ownShared, distinct: model.truth.size };
 }
 
 /** Try-this 2: the default size, then the epsilon = 0.05, delta = 0.05 chip. */

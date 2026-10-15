@@ -3,7 +3,7 @@
  */
 import type { ReactNode } from 'react';
 import { pctText, sig } from '../../core/format';
-import { undercounted, type GridModel, type Inspection } from './grid';
+import { GRID_D, GRID_W, undercounted, type GridModel, type Inspection } from './grid';
 import type { HeavyState, Quality } from './heavy';
 import type { MergeRun } from './merge';
 import { deltaOf, epsilonOf } from './sketch';
@@ -13,7 +13,7 @@ const hl = (tone: string, text: ReactNode) => <span className={`hl ${tone}`}>{te
 const noun = (n: number, one: string, many = `${one}s`): string => (n === 1 ? one : many);
 
 export function gridCaption(o: { items: number; model: GridModel; look: Inspection | null }): ReactNode {
-  if (o.items === 0) return <>An empty 4 by 16 grid. Each item is hashed once per row, and its estimate will be the smallest of the four cells it touches. Add an item, or stream 30.</>;
+  if (o.items === 0) return <>An empty {GRID_D} by {GRID_W} grid. Each item is hashed once per row, and its estimate will be the smallest of the {GRID_D} cells it touches. Add an item, or stream 30.</>;
   const look = o.look;
   const under = undercounted(o.model);
   return (
@@ -21,7 +21,7 @@ export function gridCaption(o: { items: number; model: GridModel; look: Inspecti
       {o.items} {noun(o.items, 'item')} counted in {o.model.truth.size} distinct. {look && (
         <>
           {hl('hi', look.item)} touches cells holding {look.cells.map((c) => c.value).join(', ')}: the estimate is their minimum, {hl('ok', look.estimate)}, against a true {hl('ok', look.truth)}.{' '}
-          {look.estimate === look.truth ? <>Here no other item shares its smallest cell, so the estimate is exact.</> : <>The extra {look.estimate - look.truth} come from other items sharing its smallest cell: collisions only add.</>}
+          {look.estimate === look.truth ? <>Here no other item shares its smallest cell, so the estimate is exact.</> : <>The extra {look.estimate - look.truth} {noun(look.estimate - look.truth, 'comes', 'come')} from other items sharing its smallest cell: collisions only add.</>}
         </>
       )}{' '}
       {under === 0 ? <>No item is estimated below its true count.</> : <>{hl('bad', `${under} ${noun(under, 'item')} below the truth`)}.</>}
@@ -57,7 +57,7 @@ export function mergeCaption(o: { run: MergeRun; sameSeeds: boolean; items: numb
   const { run } = o;
   return run.equal ? (
     <>
-      Three partitions each keep a sketch with the same hash seeds. Adding the three grids cell by cell gives {hl('ok', 'exactly the sketch of the combined stream')}: all {run.merged.counts.length} cells match.
+      Three partitions each keep a sketch with the same hash seeds. Adding the three grids cell by cell gives {hl('ok wrap', 'exactly the sketch of the combined stream')}: all {run.merged.counts.length} cells match.
     </>
   ) : (
     <>

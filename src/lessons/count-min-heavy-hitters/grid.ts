@@ -77,6 +77,14 @@ export function inspect(model: GridModel, item: string): Inspection {
 
 export const polluted = (model: GridModel, row: number, col: number): boolean => (model.occupants.get(cellKey(row, col))?.size ?? 0) > 1;
 
+/** How the grid draws a cell while an item is inspected: its own cell in some row, a cell other items share (red), or neither. */
+export type CellRole = 'own' | 'shared' | 'plain';
+
+export function cellRole(model: GridModel, look: Inspection | null, row: number, col: number): CellRole {
+  if (look?.cells.some((c) => c.row === row && c.col === col)) return 'own';
+  return polluted(model, row, col) ? 'shared' : 'plain';
+}
+
 /** Distinct items, most frequent first (ties by name). */
 export const itemsByCount = (model: GridModel): string[] => [...model.truth].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([item]) => item);
 
