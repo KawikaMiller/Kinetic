@@ -16,8 +16,8 @@ const SCENES: { value: Scene; label: string }[] = [
 
 export function Stage() {
   const [scene, picker] = useScenePicker<Scene>({ label: 'Scene', options: SCENES, initial: 'rules' });
-  if (scene === 'insert') return <StepScene picker={picker} mode="insert" />;
-  if (scene === 'delete') return <StepScene picker={picker} mode="delete" />;
+  if (scene === 'insert') return <StepScene key="insert" picker={picker} mode="insert" />;
+  if (scene === 'delete') return <StepScene key="delete" picker={picker} mode="delete" />;
   if (scene === 'groups') return <GroupsScene picker={picker} />;
   if (scene === 'compare') return <CompareScene picker={picker} />;
   return <RulesScene picker={picker} />;

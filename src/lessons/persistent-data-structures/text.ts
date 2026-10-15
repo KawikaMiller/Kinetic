@@ -18,6 +18,8 @@ export function pathCaption(f: {
   total: number;
   stored: number;
   corruptViewed: { version: number; cells: readonly number[] } | null;
+  /** For an in-place edit: the other versions that reach the overwritten leaf (oldest first). */
+  reached: readonly number[];
 }): string {
   if (f.parent === null || f.edit === null) {
     return `v0 is a perfect tree over ${f.n} cells: ${plural(f.stored, 'node')} on ${f.levels} levels. Pick a cell and a value and press Set: the update copies only the nodes on one path.`;
@@ -26,8 +28,13 @@ export function pathCaption(f: {
   if (f.copied === 0) {
     const broken = f.corruptViewed
       ? ` v${f.corruptViewed.version} now reads ${cellList(f.corruptViewed.cells)} differently from what it recorded when it was made.`
-      : ' Look at v0: its contents changed without anyone making a new v0.';
-    return `${what} in place allocated no nodes: it overwrote a leaf that every version through it shares.${broken}`;
+      : f.reached.length
+        ? ` Look at v${f.reached[0]}: its contents changed without anyone making a new v${f.reached[0]}.`
+        : '';
+    const sharers = f.reached.length
+      ? `a leaf that ${f.reached.map((v) => `v${v}`).join(', ')} and v${f.version} reach, so every one of them changed with it`
+      : `a leaf that only v${f.version} reaches`;
+    return `${what} in place allocated no nodes: it overwrote ${sharers}.${broken}`;
   }
   return `v${f.version} came from v${f.parent}. ${what} copied ${plural(f.copied, 'node')} (the leaf and its ${plural(f.copied - 1, 'ancestor')}), and ${f.shared} of v${f.version}'s ${f.total} nodes are shared with v${f.parent}, which is untouched.`;
 }

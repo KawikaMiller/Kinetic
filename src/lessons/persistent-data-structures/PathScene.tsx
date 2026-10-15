@@ -6,7 +6,7 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, T
 import { useIntroCaption } from '../../core/caption';
 import { Dag } from './Dag';
 import { parseIndex, parseValue, refuseVersion } from './keys';
-import { capacity, corruptCells, createStore, pathOf, reachable, setValue, updateMode, valuesOf, type Store } from './model';
+import { capacity, corruptCells, createStore, pathOf, reachable, setValue, updateMode, valuesOf, versionsSharingLeaf, type Store } from './model';
 import { SMALL_B, SMALL_VALUES, DEFAULT_EDIT_INDEX, DEFAULT_EDIT_VALUE } from './presets';
 import { pathCaption } from './text';
 
@@ -38,6 +38,7 @@ export function PathScene({ picker, broken }: { picker: ReactNode; broken: boole
     total: reachable(store, [last.id]).size,
     stored: store.nodes.length,
     corruptViewed: corrupt.length ? { version: view, cells: corrupt } : null,
+    reached: last.edit && last.copied.length === 0 ? versionsSharingLeaf(store, last.id, last.edit.index) : [],
   });
   useIntroCaption(<>{caption}</>, [caption]);
 
@@ -50,8 +51,9 @@ export function PathScene({ picker, broken }: { picker: ReactNode; broken: boole
       return;
     }
     setNote(null);
-    setStore(setValue(store, last.id, index.value, value.value, mode));
-    setView(mode === 'inplace' ? 0 : store.versions.length);
+    const next = setValue(store, last.id, index.value, value.value, mode);
+    setStore(next);
+    setView(mode === 'inplace' ? (versionsSharingLeaf(next, next.versions.length - 1, index.value)[0] ?? 0) : store.versions.length);
   };
   const reset = () => {
     setStore(createStore(SMALL_VALUES, SMALL_B));

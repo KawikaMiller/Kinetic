@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { COMPARE_SEED, compareRuns } from './compare';
 import { FACTS } from './facts';
 import { rbFrames } from './frames';
@@ -27,6 +28,13 @@ function blackCounts(t: RbTree): Set<number> {
   go(t.root, 0);
   return out;
 }
+
+describe('scene switches', () => {
+  it('the component two scenes share is keyed per scene, so the second scene opens on its own default', () => {
+    expect(sharedSceneComponents('red-black-trees')).toEqual(['StepScene']);
+    expect(sceneElements('red-black-trees').filter((e) => e.component === 'StepScene').every((e) => e.keyed)).toBe(true);
+  });
+});
 
 describe('try-this entries, from the default state, as written', () => {
   it('try-this 1: the opening tree is valid; flipping node 5 breaks rule 3 and rule 4 and names the nodes; flipping it back repairs it', () => {

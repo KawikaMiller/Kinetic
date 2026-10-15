@@ -16,8 +16,8 @@ const SCENES: { value: Scene; label: string }[] = [
 
 export function Stage() {
   const [scene, picker] = useScenePicker<Scene>({ label: 'Scene', options: SCENES, initial: 'cost' });
-  if (scene === 'tree') return <TreeScene picker={picker} mode="basic" />;
-  if (scene === 'lazy') return <TreeScene picker={picker} mode="lazy" />;
+  if (scene === 'tree') return <TreeScene key="tree" picker={picker} mode="basic" />;
+  if (scene === 'lazy') return <TreeScene key="lazy" picker={picker} mode="lazy" />;
   if (scene === 'fenwick') return <FenwickScene picker={picker} />;
   if (scene === 'pick') return <ChooserScene picker={picker} />;
   return <CostScene picker={picker} />;

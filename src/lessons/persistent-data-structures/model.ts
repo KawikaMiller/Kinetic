@@ -96,6 +96,13 @@ export function read(s: Store, versionId: number, index: number): number {
   return node.value as number;
 }
 
+/** Ids of the other versions whose cell `index` is the very same leaf node as `versionId`'s: the ones an in-place edit of that leaf changes too. */
+export function versionsSharingLeaf(s: Store, versionId: number, index: number): number[] {
+  const leafOf = (id: number) => pathOf(s, id, index)[s.depth];
+  const leaf = leafOf(versionId);
+  return s.versions.filter((v) => v.id !== versionId && leafOf(v.id) === leaf).map((v) => v.id);
+}
+
 /** Every cell of a version, read by walking the tree. */
 export function valuesOf(s: Store, versionId: number): number[] {
   return Array.from({ length: capacity(s) }, (_, i) => read(s, versionId, i));

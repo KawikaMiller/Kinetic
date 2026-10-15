@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { recommend } from './chooser';
 import { makeWorkload, runWorkload } from './cost';
 import { fenBuild, fenRange, minBuild, rangeMinWrong } from './fenwick';
@@ -12,6 +13,13 @@ import { ADD_DEFAULT, FENWICK_VALUES, SIZES, costStartValues, valuesFor } from '
 import { costCaption, fenwickCaption } from './text';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
+
+describe('scene switches', () => {
+  it('the component two scenes share is keyed per scene, so the second scene opens on its own default', () => {
+    expect(sharedSceneComponents('segment-trees')).toEqual(['TreeScene']);
+    expect(sceneElements('segment-trees').filter((e) => e.component === 'TreeScene').every((e) => e.keyed)).toBe(true);
+  });
+});
 
 describe('try-this entries, from the default state, as written', () => {
   it('try-this 1: on 8 cells prefix sums are not the worst (78 against 88 and 58); at 1,024 they are by far', () => {

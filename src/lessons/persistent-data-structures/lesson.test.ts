@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
+import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { expectCaption } from '../../core/testing/captions';
 import { COLUMN_PX, dagLayout } from './dagLayout';
 import { docStart } from './docState';
@@ -19,6 +20,7 @@ import {
   setValue,
   updateMode,
   valuesOf,
+  versionsSharingLeaf,
 } from './model';
 import { BRANCHING, COST_SIZES, DOC_B, DOC_VALUES, MAX_UPDATES, SMALL_B, SMALL_VALUES } from './presets';
 import { costCaption, docCaption, pathCaption } from './text';
@@ -41,6 +43,24 @@ function bfs(s: ReturnType<typeof createStore>, versions: number[]): Set<number>
   return seen;
 }
 
+describe('scene switches', () => {
+  it('a component that two scenes share is keyed per scene, so the second scene opens fresh', () => {
+    expect(sharedSceneComponents('persistent-data-structures')).toEqual(['PathScene']);
+    expect(sceneElements('persistent-data-structures').every((e) => e.keyed || !sharedSceneComponents('persistent-data-structures').includes(e.component))).toBe(true);
+  });
+
+  it('after a copy edit then an in-place edit of the same cell, the in-place caption names only the versions that reach the leaf, not v0', () => {
+    const copied = setValue(createStore(SMALL_VALUES, SMALL_B), 0, 5, 7, 'path');
+    const s = setValue(copied, 1, 5, 3, 'inplace');
+    expect(valuesOf(s, 0)[5]).toBe(SMALL_VALUES[5]);
+    expect(versionsSharingLeaf(s, 2, 5)).toEqual([1]);
+    expect(versionsSharingLeaf(setValue(createStore(SMALL_VALUES, SMALL_B), 0, 5, 7, 'inplace'), 1, 5)).toEqual([0]);
+    const caption = text(pathCaption({ n: 8, levels: 4, version: 2, parent: 1, edit: { index: 5, value: 3 }, copied: 0, shared: 15, total: 15, stored: 19, corruptViewed: null, reached: [1] }));
+    expect(caption).toContain('a leaf that v1 and v2 reach');
+    expect(caption).not.toContain('v0');
+  });
+});
+
 describe('try-this entries, from the default state, as written', () => {
   it('try-this 1: on 8 cells one update allocates depth + 1 = 4 nodes and shares 11 of the 15 in v1; v0 still reads what it did', () => {
     const v0 = createStore(SMALL_VALUES, SMALL_B);
@@ -55,7 +75,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(valuesOf(s, 0)).toEqual(SMALL_VALUES);
     expect(valuesOf(s, 1)[5]).toBe(7);
     expect(FACTS).toMatchObject({ pathNodes: 4, pathShared: 11, pathTotal: 15, pathStored: 19 });
-    const caption = text(pathCaption({ n: 8, levels: 4, version: 1, parent: 0, edit: { index: 5, value: 7 }, copied: 4, shared: 11, total: 15, stored: 19, corruptViewed: null }));
+    const caption = text(pathCaption({ n: 8, levels: 4, version: 1, parent: 0, edit: { index: 5, value: 7 }, copied: 4, shared: 11, total: 15, stored: 19, corruptViewed: null, reached: [] }));
     expect(caption).toContain('copied 4 nodes (the leaf and its 3 ancestors), and 11 of v1\'s 15 nodes are shared with v0, which is untouched');
     expect(lesson.tryThis[0]).toContain('4 nodes are allocated');
     expect(lesson.tryThis[0]).toContain('11 of the 15 nodes in v1');
@@ -69,7 +89,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(corruptCells(s, 0)).toEqual([5]);
     expect(FACTS.brokenWalked).toBe(7);
     expect(FACTS.oldValue).toBe(9);
-    const caption = text(pathCaption({ n: 8, levels: 4, version: 1, parent: 0, edit: { index: 5, value: 7 }, copied: 0, shared: 15, total: 15, stored: 15, corruptViewed: { version: 0, cells: [5] } }));
+    const caption = text(pathCaption({ n: 8, levels: 4, version: 1, parent: 0, edit: { index: 5, value: 7 }, copied: 0, shared: 15, total: 15, stored: 15, corruptViewed: { version: 0, cells: [5] }, reached: [0] }));
     expect(caption).toContain('allocated no nodes');
     expect(caption).toContain('v0 now reads cell 5 differently from what it recorded');
     expect(lesson.tryThis[1]).toContain('v0 now reads 7 at cell 5 although it recorded 9');
@@ -139,12 +159,12 @@ describe('every caption is computed from the model and reads cleanly', () => {
 
   it('the path caption never claims sharing for an in-place edit and says untouched only for a copy', () => {
     const base = { n: 8, levels: 4, version: 1, parent: 0, edit: { index: 2, value: 5 }, shared: 15, total: 15, stored: 15 };
-    const inPlace = text(pathCaption({ ...base, copied: 0, corruptViewed: null }));
+    const inPlace = text(pathCaption({ ...base, copied: 0, corruptViewed: null, reached: [0] }));
     expect(inPlace).not.toContain('untouched');
     expect(inPlace).toContain('Look at v0');
-    const copy = text(pathCaption({ ...base, copied: 4, shared: 11, stored: 19, corruptViewed: null }));
+    const copy = text(pathCaption({ ...base, copied: 4, shared: 11, stored: 19, corruptViewed: null, reached: [] }));
     expect(copy).toContain('untouched');
-    expect(text(pathCaption({ ...base, version: 0, parent: null, edit: null, copied: 0, corruptViewed: null }))).toContain('v0 is a perfect tree over 8 cells: 15 nodes on 4 levels');
+    expect(text(pathCaption({ ...base, version: 0, parent: null, edit: null, copied: 0, corruptViewed: null, reached: [] }))).toContain('v0 is a perfect tree over 8 cells: 15 nodes on 4 levels');
   });
 
   it('the document caption counts live, dropped and garbage from the state', () => {

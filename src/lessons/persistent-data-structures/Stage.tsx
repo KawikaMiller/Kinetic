@@ -14,8 +14,8 @@ const SCENES: { value: Scene; label: string }[] = [
 
 export function Stage() {
   const [scene, picker] = useScenePicker<Scene>({ label: 'Scene', options: SCENES, initial: 'path' });
-  if (scene === 'broken') return <PathScene picker={picker} broken />;
+  if (scene === 'broken') return <PathScene key="broken" picker={picker} broken />;
   if (scene === 'cost') return <CostScene picker={picker} />;
   if (scene === 'versions') return <VersionsScene picker={picker} />;
-  return <PathScene picker={picker} broken={false} />;
+  return <PathScene key="path" picker={picker} broken={false} />;
 }
