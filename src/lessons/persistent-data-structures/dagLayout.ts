@@ -39,8 +39,8 @@ function leafCells(s: Store): Map<number, number> {
 /**
  * Place every node of every version: leaves in columns grouped by the cell they hold (older variants
  * first), each internal node above the middle of its children, one row per level. Nodes of one level
- * are pushed apart when two would land closer than a column, so nothing overlaps and an edge never
- * runs through another node.
+ * are pushed apart when two would land closer than a column, so no two nodes overlap. An edge can
+ * still pass close to a node it does not join, most of all in a wide, many-version drawing.
  */
 export function dagLayout(s: Store): DagLayout {
   const cell = leafCells(s);

@@ -10,9 +10,7 @@ import { parseIndex, parseValue, refuseVersion } from './keys';
 import { capacity, childrenOf, memorySlots, pathOf, reachable, setValue, valuesOf } from './model';
 import { docStart, type DocState } from './docState';
 import { docCaption } from './text';
-
-const TREE_WIDTH = 360;
-const TREE_HEIGHT = 170;
+import { VERSION_TREE, versionDepth, versionTreeHeight } from './versionTree';
 
 export function VersionsScene({ picker }: { picker: ReactNode }) {
   const [doc, setDoc] = useState<DocState>(docStart);
@@ -117,12 +115,12 @@ export function VersionsScene({ picker }: { picker: ReactNode }) {
         <TreeSvg
           shape={shape}
           layout="tidy"
-          width={TREE_WIDTH}
-          height={TREE_HEIGHT}
-          pad={30}
-          top={26}
-          levelGap={44}
-          radius={15}
+          width={VERSION_TREE.width}
+          height={versionTreeHeight(versionDepth(store))}
+          pad={VERSION_TREE.pad}
+          top={VERSION_TREE.top}
+          levelGap={VERSION_TREE.levelGap}
+          radius={VERSION_TREE.radius}
           natural
           label={(id) => `v${id}`}
           nodeMark={(id) => (!live.includes(id) ? { tone: 'dim', fill: 'tint' } : id === current ? { tone: 'info', fill: 'solid' } : null)}

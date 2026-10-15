@@ -53,7 +53,7 @@ export function costCaption(f: {
   persistent: number;
   fullCopies: number;
 }): string {
-  const rounded = f.chosen === f.n ? '' : ` (${n(f.chosen)} rounded up to a power of ${f.b})`;
+  const rounded = f.chosen === f.n ? '' : ` (${n(f.chosen)} rounded up to a power of ${f.b}, and the full copy is padded to match)`;
   const one = `At n = ${n(f.n)}${rounded} and b = ${f.b} the tree is ${f.depth} ${f.depth === 1 ? 'level' : 'levels'} deep: one update copies ${plural(f.nodes, 'node')} (${plural(f.slots, 'slot')}) where a full copy writes ${n(f.fullCopy)} slots.`;
   const run =
     f.k === 0

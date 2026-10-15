@@ -4,6 +4,7 @@ import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKe
 import { expectCaption } from '../../core/testing/captions';
 import { COLUMN_PX, dagLayout } from './dagLayout';
 import { docStart } from './docState';
+import { VERSION_TREE, versionDepth, versionTreeHeight } from './versionTree';
 import { FACTS } from './facts';
 import lesson from './index';
 import { VERSION_LIMIT, parseIndex, parseValue, refuseVersion } from './keys';
@@ -42,6 +43,23 @@ function bfs(s: ReturnType<typeof createStore>, versions: number[]): Set<number>
   }
   return seen;
 }
+
+describe('the version tree is sized from its depth', () => {
+  it('a straight chain of 12 versions and a branched one both fit above the bottom edge, and the box grows with each level', () => {
+    let chain = createStore(SMALL_VALUES, SMALL_B);
+    for (let k = 0; k < VERSION_LIMIT - 1; k++) chain = setValue(chain, k, k % 8, 10 + k);
+    expect(chain.versions).toHaveLength(VERSION_LIMIT);
+    expect(versionDepth(chain)).toBe(VERSION_LIMIT);
+    // node y is top + levelGap x level (TreeSvg); the deepest node's bottom edge must sit inside the box
+    const deepestBottom = VERSION_TREE.top + VERSION_TREE.levelGap * (VERSION_LIMIT - 1) + VERSION_TREE.radius;
+    expect(versionTreeHeight(VERSION_LIMIT)).toBeGreaterThan(deepestBottom);
+    expect(versionTreeHeight(VERSION_LIMIT)).toBeGreaterThan(versionTreeHeight(5));
+    let branched = createStore(SMALL_VALUES, SMALL_B);
+    for (let k = 0; k < VERSION_LIMIT - 1; k++) branched = setValue(branched, 0, k % 8, 10 + k);
+    expect(versionDepth(branched)).toBe(2);
+    expect(versionTreeHeight(1)).toBeGreaterThan(VERSION_TREE.top + VERSION_TREE.radius);
+  });
+});
 
 describe('scene switches', () => {
   it('a component that two scenes share is keyed per scene, so the second scene opens fresh', () => {
