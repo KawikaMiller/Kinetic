@@ -7,7 +7,7 @@ import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
 import { dedupeCaption } from './captions';
 import {
-  AMOUNT, BROKER, CONSUMER, CRASH_LABEL, CRASH_POINTS, DESIGNS, DESIGN_LABEL, crashTable, runCrashPoint, type CrashPoint, type DedupeDesign, type DedupeMsg,
+  AMOUNT, BROKER, DEDUPE_BROKEN_SEED, CONSUMER, CRASH_LABEL, CRASH_POINTS, DESIGNS, DESIGN_LABEL, crashTable, runCrashPoint, type CrashPoint, type DedupeDesign, type DedupeMsg,
 } from './dedupe';
 
 const DESIGN_OPTIONS = DESIGNS.map((d) => ({ value: d, label: DESIGN_LABEL[d] }));
@@ -89,7 +89,7 @@ export function DedupeScene({ picker }: { picker: ReactNode }) {
           <SequenceDiagram actors={ACTORS} messages={sequence.messages} ariaLabel="The publish, the deliveries and acks, and the crash" />
         </Box>
         <ProvenanceRow>
-          <Provenance kind="simulated">a broker and a consumer on distSim with fixed delays; each table cell is a run, and the tests also run 500 seeded fault schedules</Provenance>
+          <Provenance kind="simulated">a broker and a consumer on distSim with fixed delays and no seed: each table cell is a run. Under 500 seeded fault schedules the separate design first breaks on seed {DEDUPE_BROKEN_SEED} and the same-step design never does (checked in the tests)</Provenance>
           <Provenance kind="toy">the consumer's balance and id set are in memory that survives a crash; steps take 20 ms each</Provenance>
         </ProvenanceRow>
       </div>

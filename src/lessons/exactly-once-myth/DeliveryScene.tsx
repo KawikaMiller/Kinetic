@@ -8,7 +8,7 @@ import { toSequence } from '../../core/distSim';
 import { SeedField } from '../distributions/SeedField';
 import { deliveryCaption } from './captions';
 import {
-  BROKER, CONSUMER, DEFAULT_LOSS, DELIVERY_BROKEN_SEED, DELIVERY_MODES, HORIZON_MS, MESSAGES, MODE_LABEL, countersOf, deliveryCluster, type DeliveryMode, type DeliveryMsg,
+  BROKER, CONSUMER, DEFAULT_LOSS, DELIVERY_BROKEN_SEED, DELIVERY_MODES, HORIZON_MS, MESSAGES, MODE_LABEL, countersAt, deliveryCluster, linkTotals, type DeliveryMode, type DeliveryMsg,
 } from './delivery';
 
 const MODE_OPTIONS = DELIVERY_MODES.map((m) => ({ value: m, label: MODE_LABEL[m] }));
@@ -28,25 +28,30 @@ export function DeliveryScene({ picker }: { picker: ReactNode }) {
   const run = useMemo(() => {
     const c = deliveryCluster({ seed, mode, loss, crash });
     c.run({ until: HORIZON_MS });
-    return { c, counters: countersOf(c) };
+    return c;
   }, [seed, mode, loss, crash]);
   const t = at === null ? HORIZON_MS : at;
+  const counters = countersAt(run, t);
+  const totals = linkTotals(run, t);
+  const ended = t >= HORIZON_MS;
   const sequence = useMemo(
-    () => toSequence(run.c.trace.filter((r) => r.t <= t), { actors: ACTORS, label, events: true, times: false }),
+    () => toSequence(run.trace.filter((r) => r.t <= t), { actors: ACTORS, label, events: true, times: false }),
     [run, t],
   );
 
-  useIntroCaption(deliveryCaption({ mode, loss, seed, c: run.counters, messages: MESSAGES }), [mode, loss, crash, seed]);
+  useIntroCaption(deliveryCaption({ mode, loss, seed, c: counters, messages: counters.published, at: t, ended, unsure: totals.unsure }), [mode, loss, crash, seed, t]);
 
   return (
     <StageFrame
       height={420}
       stats={
         <Stats>
-          <Stat label="Sent" value={run.counters.sent} sub="deliveries from the broker, retries included" />
-          <Stat label="Delivered" value={run.counters.delivered} color="var(--info)" sub="deliveries that reached the consumer" />
-          <Stat label="Duplicates" value={run.counters.duplicates} color={run.counters.duplicates > 0 ? 'var(--orange)' : undefined} sub="extra processings of a message" />
-          <Stat label="Lost" value={run.counters.lost} color={run.counters.lost > 0 ? 'var(--bad)' : 'var(--ok)'} sub={`of ${MESSAGES} messages never processed`} />
+          <Stat label="Sent" value={counters.sent} sub="deliveries from the broker, retries included" />
+          <Stat label="Delivered" value={counters.delivered} color="var(--info)" sub="deliveries that reached the consumer" />
+          <Stat label="Duplicates" value={counters.duplicates} color={counters.duplicates > 0 ? 'var(--orange)' : undefined} sub="extra processings of a message" />
+          <Stat label={ended ? 'Lost' : 'Not processed yet'} value={counters.lost} color={ended ? (counters.lost > 0 ? 'var(--bad)' : 'var(--ok)') : undefined} sub={ended ? `of ${MESSAGES} messages never processed` : `of ${counters.published} published by ${t} ms`} />
+          <Stat label="On the link" value={totals.messages} sub="deliveries, acks and confirms handed to it" />
+          {mode === 'exactly-once' && <Stat label="Consumer unsure" value={totals.unsure} color={totals.unsure > 0 ? 'var(--orange)' : undefined} sub="processed, no confirm heard yet" />}
         </Stats>
       }
       legend={

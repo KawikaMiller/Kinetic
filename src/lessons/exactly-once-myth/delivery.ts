@@ -184,3 +184,46 @@ export function lowestSeedBreaking(mode: DeliveryMode, loss: number, crash: bool
   }
   return null;
 }
+
+const SEND_TYPES = ['deliver', 'ack', 'confirm'] as const;
+
+/**
+ * The counters as they stood at `until` ms, read from the trace alone, so a replay that stops early shows the numbers of the diagram it
+ * draws. At the end of the run they equal `countersOf`. `lost` counts the messages published by then and not processed yet: only at the
+ * end of the run is that a loss rather than a message still on its way.
+ */
+export function countersAt(cluster: DeliveryCluster, until: number, messages = MESSAGES): Counters & { published: number } {
+  const rows = cluster.trace.filter((r) => r.t <= until);
+  const processed: Record<number, number> = {};
+  for (const r of rows) if (r.kind === 'deliver' && r.payload?.type === 'deliver') processed[r.payload.id] = (processed[r.payload.id] ?? 0) + 1;
+  const published = Array.from({ length: messages }, (_, i) => i + 1).filter((id) => id === 1 || (id - 1) * PUBLISH_EVERY_MS <= until);
+  return {
+    sent: rows.filter((r) => r.kind === 'send' && r.payload?.type === 'deliver').length,
+    delivered: rows.filter((r) => r.kind === 'deliver' && r.payload?.type === 'deliver').length,
+    duplicates: Object.values(processed).reduce((s, n) => s + Math.max(0, n - 1), 0),
+    lost: published.filter((id) => (processed[id] ?? 0) === 0).length,
+    published: published.length,
+  };
+}
+
+export interface LinkTotals {
+  /** Every deliver, ack and confirm the link was handed up to `until` (publishes are not on the lossy link). */
+  messages: number;
+  /** Messages the consumer has processed whose confirm has not reached it: it cannot tell whether the broker knows (acks of acks only). */
+  unsure: number;
+}
+
+export function linkTotals(cluster: DeliveryCluster, until: number): LinkTotals {
+  const rows = cluster.trace.filter((r) => r.t <= until);
+  const processed = new Set<number>();
+  const confirmed = new Set<number>();
+  for (const r of rows) {
+    if (r.kind !== 'deliver') continue;
+    if (r.payload?.type === 'deliver') processed.add(r.payload.id);
+    if (r.payload?.type === 'confirm') confirmed.add(r.payload.id);
+  }
+  return {
+    messages: rows.filter((r) => r.kind === 'send' && r.payload && (SEND_TYPES as readonly string[]).includes(r.payload.type)).length,
+    unsure: [...processed].filter((id) => !confirmed.has(id)).length,
+  };
+}

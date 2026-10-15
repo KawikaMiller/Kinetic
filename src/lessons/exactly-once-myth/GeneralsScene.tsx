@@ -8,7 +8,7 @@ import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '
 import { useIntroCaption } from '../../core/caption';
 import { pctText } from '../distributions/fmt';
 import { SeedField } from '../distributions/SeedField';
-import { generalsCaption } from './captions';
+import { generalsCaption, removalNote } from './captions';
 import { DEFAULT_DEPTH, DEFAULT_LOSS, DEPTH, GENERALS_SEED, LOSS_MAX, patternCounts, pBoth, pDisagree, pNobody, receiverOf, runSeeded, senderOf } from './generals';
 
 const PLOT_W = { wide: 520, narrow: 356 } as const;
@@ -47,6 +47,7 @@ export function GeneralsScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--ok)', label: 'agreement to attack' },
             { color: 'var(--bad)', label: 'disagreement' },
             { color: 'var(--dim)', label: 'nobody attacks' },
+            { color: 'var(--hi)', label: 'your depth, on the disagree curve', shape: 'dot' },
           ]}
         />
       }
@@ -81,7 +82,7 @@ export function GeneralsScene({ picker }: { picker: ReactNode }) {
           <Curve tone="dim" points={KS.map((x) => [x, pNobody(x, p)])} />
           <Points tone="hi" r={4} data={[{ x: k, y: pDisagree(k, p) }]} />
         </Plot2D>
-        <p className="eo-note">The argument that no depth works: take a protocol that always agrees, delete its last message (it might be captured, so the protocol had to cope without it), and the shorter protocol must agree too. Repeat until no messages are left.</p>
+        <p className="eo-note">{removalNote(k, p)}</p>
         <ProvenanceRow>
           <Provenance kind="toy">the rule (a general attacks if it received every message addressed to it, or sent the last one) illustrates the argument; the proof is in the literature</Provenance>
           <Provenance kind="simulated" seed={seed}>one seeded run of the messengers; the closed forms are checked against enumeration and 100,000 runs in the tests</Provenance>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkInvariants, forSeeds } from '../../core/distSim';
 import {
-  BROKER, CONSUMER, DEFAULT_LOSS, DELIVERY_BROKEN_SEED, HORIZON_MS, countersOf, deliveryCluster, deliveryScenario, doneMeansProcessed, lowestSeedBreaking, neverProcessedTwice,
+  BROKER, CONSUMER, DEFAULT_LOSS, DELIVERY_BROKEN_SEED, HORIZON_MS, countersAt, countersOf, deliveryCluster, deliveryScenario, doneMeansProcessed, linkTotals, lowestSeedBreaking, neverProcessedTwice,
   type DeliveryMode,
 } from './delivery';
 
@@ -111,5 +111,44 @@ describe('"exactly-once delivery" by acks of acks is Two Generals again', () => 
     const b = deliveryCluster({ seed: 3, mode: 'exactly-once', loss: 0.3, crash: true });
     b.run({ until: HORIZON_MS });
     expect(a.trace).toEqual(b.trace);
+  });
+});
+
+describe('the replayed counters match the diagram they sit beside', () => {
+  const MODES: DeliveryMode[] = ['at-most-once', 'at-least-once', 'exactly-once'];
+  const upTo = (mode: DeliveryMode, seed: number, crash: boolean, until: number) => {
+    const c = deliveryCluster({ seed, mode, loss: DEFAULT_LOSS, crash });
+    c.run({ until });
+    return c;
+  };
+  it('a run stopped at t gives the same sent, delivered and duplicate counts as a fresh run that ends at t (independent of the trace filter), for every mode and crash setting', () => {
+    for (const mode of MODES) {
+      for (const crash of [false, true]) {
+        for (const seed of [0, 1, 2, 3, 4, 5, 6, 7]) {
+          const full = upTo(mode, seed, crash, HORIZON_MS);
+          for (const t of [0, 60, 150, 300, HORIZON_MS]) {
+            const early = countersOf(upTo(mode, seed, crash, t));
+            const replay = countersAt(full, t);
+            expect([replay.sent, replay.delivered, replay.duplicates], `${mode} crash=${crash} seed ${seed} t=${t}`).toEqual([early.sent, early.delivered, early.duplicates]);
+          }
+          expect(countersAt(full, HORIZON_MS).lost).toBe(countersOf(full).lost);
+        }
+      }
+    }
+  });
+  it('the consumer is unsure of exactly the messages it processed without hearing a confirm, against the consumer\'s own record', () => {
+    for (const seed of [0, 1, 2, 3, 4, 5, 6, 7]) {
+      for (const t of [60, 150, 300, HORIZON_MS]) {
+        const early = upTo('exactly-once', seed, false, t);
+        const state = early.snapshot().nodes[CONSUMER].state!;
+        const expected = Object.keys(state.counts).filter((id) => state.counts[Number(id)] > 0 && !state.confirmed.includes(Number(id))).length;
+        expect(linkTotals(upTo('exactly-once', seed, false, HORIZON_MS), t).unsure, `seed ${seed} t=${t}`).toBe(expected);
+      }
+    }
+  });
+  it('acks of acks put more messages on the link than at-least-once on the same seed, though the delivery counters match', () => {
+    const alo = upTo('at-least-once', DELIVERY_BROKEN_SEED, false, HORIZON_MS);
+    const eo = upTo('exactly-once', DELIVERY_BROKEN_SEED, false, HORIZON_MS);
+    expect(linkTotals(eo, HORIZON_MS).messages).toBeGreaterThan(linkTotals(alo, HORIZON_MS).messages);
   });
 });
