@@ -32,7 +32,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
-  'monolith-microservices': { ticket: TIER3, rules: ['quiz-length'] },
   'oauth-flows': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   // Tier 4
   'backpressure': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
@@ -52,7 +51,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  * Every other Tier 3 lesson is held to the rules from its first commit.
  */
 const TIER3_AWAITING_RETROFIT = new Set([
-  'monolith-microservices',
   'oauth-flows',
 ]);
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */

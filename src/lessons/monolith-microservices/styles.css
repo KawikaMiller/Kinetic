@@ -43,7 +43,7 @@
 }
 .mm-box.slow rect,
 .mm-box.slow path,
-.mm-box.slow ellipse { stroke: var(--hi); fill: color-mix(in srgb, var(--hi) 14%, var(--cell)); }
+.mm-box.slow ellipse { stroke: var(--orange); fill: color-mix(in srgb, var(--orange) 14%, var(--cell)); }
 .mm-box.down rect,
 .mm-box.down path,
 .mm-box.down ellipse { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 16%, var(--cell)); }
