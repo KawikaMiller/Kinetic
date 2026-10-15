@@ -1,0 +1,17 @@
+.dist-stage { gap: 12px; }
+.dist-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 12px 24px; }
+.dist-row .plot2d, .dist-stage > .plot2d { max-width: 100%; height: auto; align-self: center; }
+.dist-table { flex: 1 1 280px; max-width: 460px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.dist-note { display: block; text-align: center; }
+.dist-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; }
+
+.dist-timeline-box { display: flex; flex-direction: column; gap: 6px; max-width: 460px; width: 100%; align-self: center; }
+.dist-timeline { width: 100%; max-width: 360px; height: auto; }
+.dist-window-edge { stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.dist-arrival { stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
+.dist-timeline-label { font: 500 10px var(--font); fill: var(--muted); }
+
+.dist-reveal { max-width: 640px; align-self: center; display: flex; flex-direction: column; gap: 6px; }
+.dist-reveal p { margin: 0; font: 500 13.5px var(--font); color: var(--text); }
+.dist-reveal .is-ok { color: var(--ok); }
+.dist-reveal .is-bad { color: var(--bad); }
