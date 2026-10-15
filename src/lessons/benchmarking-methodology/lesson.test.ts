@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { normal } from '../../core/distributions';
 import { mulberry32 } from '../../core/random';
 import { expectCaption } from '../../core/testing/captions';
-import { sig } from '../distributions/fmt';
 import { generatorFrames, generatorIntro, generatorSummary, msText, noiseCaption, timelineEnd, timelineStart, us, warmupCaption } from './frames';
 import lesson from './index';
 import {
   DISCARD_RANGE, DISCARD_WINDOW, GENERATORS, GENERATOR_DEFAULT, GENERATOR_NAME, LOOP_OVERHEAD_US, NOISE_DEFAULT, RATE_RANGE, STALL_AT_RANGE, STALL_MS_RANGE, STEADY_WINDOW, WARMUP_DEFAULT,
   WINDOW_MODES, differenceInterval, discardCrossover, exactWindowMean, modelTime, hidesStall, readGenerator, readNoise, readWindow, timelineRange, warmupSeries, windowOf, type GeneratorParams, type Generator,
 } from './model';
+import { sig } from '../../core/format';
 
 const text = expectCaption;
 const series = warmupSeries(WARMUP_DEFAULT.seed, true);

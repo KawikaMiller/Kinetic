@@ -7,12 +7,12 @@ import type { Option } from '../../components/options';
 import { Button, Hint, Legend, Provenance, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import type { Tone } from '../../core/tone';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { peekCaption, pText, verdictSays } from './frames';
 import {
   ALPHA, PEEK_DEFAULT, PEEK_LIFT_POINTS, PEEK_LOOKS, PEEK_TOTAL, firstCrossing, lookAlpha, lookVerdict, peekRates, peekRun, runSeed,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 type Policy = 'end' | 'first';
 const POLICY_OPTIONS: Option<Policy>[] = [

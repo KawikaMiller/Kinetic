@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { pctText, sig } from '../distributions/fmt';
 import {
   RULES, RULE_NAME, ruleDetail, ruleValue, countAbove, type CoverageRun, type FleetReport, type Interval, type Rule, type Statistic,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 /** p written the way a person says it: 99 → "p99", 99.9 → "p99.9". */
 export const pLabel = (pct: number): string => `p${Number(pct.toFixed(2))}`;

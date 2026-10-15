@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { percentile } from '../../core/sim';
-import { drawSample } from '../distributions/model';
-import {
-  BUCKET_EDGES, EXPERIMENTS, FLEET_PCT, SAMPLE_N, SOURCES, T_TABLE, averageOfHostPercentiles, averageVerdict, bootstrapInterval, bucketCounts,
-  bucketQuantile, clampPct, countAbove, coverageRun, ecdfAt, experimentsFor, fleetReport, meanInterval, mergeBuckets, nearestRank,
-  nearestRankIndex, presetHosts, presetValues, resampledPercentile, ruleDetail, ruleValue, seededHosts, sortedAscending, tCritical,
-  type Host,
-} from './model';
+import { BUCKET_EDGES, EXPERIMENTS, FLEET_PCT, SAMPLE_N, SOURCES, T_TABLE, averageOfHostPercentiles, averageVerdict, bootstrapInterval, bucketCounts, bucketQuantile, clampPct, countAbove, coverageRun, ecdfAt, experimentsFor, fleetReport, meanInterval, mergeBuckets, presetHosts, presetValues, resampledPercentile, ruleDetail, ruleValue, seededHosts, sortedAscending, tCritical, type Host } from './model';
+import { drawSample } from '../../core/distributions';
+import { nearestRank, nearestRankIndex } from '../../core/stats';
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => i + 1);
 

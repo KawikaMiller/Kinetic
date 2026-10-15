@@ -10,14 +10,14 @@ export function duration(seconds: number): string {
 }
 
 /** Whole numbers from 10 up, one decimal below, dropping a trailing '.0': 42, 4.8, 3. */
-const sig = (v: number) => (v >= 10 ? v.toFixed(0) : v.toFixed(1).replace(/\.0$/, ''));
+const shortNumber = (v: number) => (v >= 10 ? v.toFixed(0) : v.toFixed(1).replace(/\.0$/, ''));
 
 /** A very short time in nanoseconds, in the right unit: '0.3 ns', '50 µs', '5 ms', '2 s'. */
 export function latency(ns: number): string {
-  if (ns < 1e3) return `${sig(ns)} ns`;
-  if (ns < 1e6) return `${sig(ns / 1e3)} µs`;
-  if (ns < 1e9) return `${sig(ns / 1e6)} ms`;
-  return `${sig(ns / 1e9)} s`;
+  if (ns < 1e3) return `${shortNumber(ns)} ns`;
+  if (ns < 1e6) return `${shortNumber(ns / 1e3)} µs`;
+  if (ns < 1e9) return `${shortNumber(ns / 1e6)} ms`;
+  return `${shortNumber(ns / 1e9)} s`;
 }
 
 const MINUTE = 60;
@@ -62,7 +62,7 @@ export function humanDuration(seconds: number): string {
   if (seconds > 0 && seconds < MICROSECOND) return 'under a microsecond';
   if (seconds / YEAR >= SCIENTIFIC_YEARS) return `${scientific(seconds / YEAR)} years`;
   const [, size, one, many] = HUMAN_UNITS.find(([limit]) => seconds < limit)!;
-  const text = sig(seconds / size);
+  const text = shortNumber(seconds / size);
   return `${text} ${text === '1' ? one : many}`;
 }
 
@@ -151,6 +151,24 @@ export const power = (k: number, base = 2, options?: SuperscriptOptions) => `${b
 
 /** Two-digit zero padding: 7 → '07'. */
 export const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** `x` to `digits` significant figures with thousands separators: 1234.5 → "1,230", 0.012345 → "0.0123". NaN is "–", infinities "∞" / "−∞". */
+export function sig(x: number, digits = 3): string {
+  if (Number.isNaN(x)) return NA;
+  if (!Number.isFinite(x)) return x > 0 ? '∞' : '−∞';
+  const rounded = Number(x.toPrecision(digits));
+  const text = Math.abs(rounded).toLocaleString('en-US', { maximumFractionDigits: 20 });
+  return rounded < 0 ? `−${text}` : text;
+}
+
+/** A share 0..1 as a percentage with `dp` decimals: 0.691 → "69.1%"; NaN is "–". (`pct` is the other flavour: no NaN guard, 0 decimals.) */
+export function pctText(share: number, dp = 1): string {
+  if (Number.isNaN(share)) return NA;
+  return `${(share * 100).toFixed(dp)}%`;
+}
+
+/** A ratio to two decimals: 0.9987 → "1.00", so a ratio near 1 never reads as a bare "1". */
+export const ratioText = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : NA);
 
 /** Minutes since midnight as 'HH:MM' (wraps at 24h). */
 export function clock(totalMinutes: number): string {

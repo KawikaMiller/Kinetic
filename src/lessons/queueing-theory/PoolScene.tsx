@@ -4,12 +4,12 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { plainTone, type PlainTone } from '../../core/tone';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { poolCaption } from './frames';
 import {
   MU, POOL_DEFAULT, POOL_MEASURED_JOBS, POOL_RHO, POOL_SERVERS, TOPOLOGIES, TOPOLOGY_NAME, TOPOLOGY_SHORT, measurePool, topologyTheory, type Topology,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const TONE: Record<Topology, PlainTone> = { split: plainTone(0), pool: plainTone(1), fast: plainTone(2) };
 const BOX = 14;

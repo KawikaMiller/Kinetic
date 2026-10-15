@@ -5,13 +5,13 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { hours, minutes, perWeek, pipelineCaption } from './frames';
 import {
   AUTOMATION_RANGE, BANDS, BATCH_RANGE, CADENCE_RANGE, CHANGES_PER_DAY_RANGE, GAMING_NAME, GAMING_OPTIONS, PIPELINE_DEFAULT, SCENE1_SEED, WEEKS, reportedMetrics, runDelivery,
   type Gaming, type Pipeline, type ReleaseMode,
 } from './model';
+import { pctText } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const MODE_OPTIONS: { value: ReleaseMode; label: string }[] = [{ value: 'batch', label: 'a batch of changes' }, { value: 'train', label: 'a release train' }];
 const GAMING_CHOICES = GAMING_OPTIONS.map((g) => ({ value: g, label: GAMING_NAME[g] }));

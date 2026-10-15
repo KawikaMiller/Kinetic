@@ -1,4 +1,4 @@
-import { parseBoundedInt, type FieldParse } from '../../core/parse';
+import { parseBoundedInt, type FieldParse } from './parse';
 
 /** Largest seed a lesson accepts: 2³¹ − 1, so it stays a safe integer through mulberry32's `>>> 0`. */
 export const SEED_MAX = 2 ** 31 - 1;

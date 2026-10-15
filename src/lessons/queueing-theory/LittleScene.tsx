@@ -5,12 +5,12 @@ import { StageFrame } from '../../components/StageFrame';
 import type { Option } from '../../components/options';
 import { Hint, Legend, Provenance, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { boundaryNote, littleCaption, sizingCaption } from './frames';
 import {
   BOUNDARY_NAME, LITTLE_DEFAULT, concurrency, drainedRun, littleRun, parseRate, parseSeconds, populationSteps, type Boundary,
 } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const BOUNDARIES: Boundary[] = ['system', 'queue', 'server'];
 const BOUNDARY_OPTIONS: Option<Boundary>[] = BOUNDARIES.map((b) => ({ value: b, label: BOUNDARY_NAME[b] }));

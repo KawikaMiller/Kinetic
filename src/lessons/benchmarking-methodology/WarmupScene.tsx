@@ -3,13 +3,13 @@ import { Band, Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { SeedField } from '../distributions/SeedField';
-import { sig } from '../distributions/fmt';
 import { us, warmupCaption } from './frames';
 import {
   DISCARD_RANGE, IMPLS, discardCrossover, SERIES_LENGTH, WARMUP_DEFAULT, WINDOW_MODES, WINDOW_NAME, logBinnedMeans, readWindow, startRealRun, stepRealRun, timerGranularityMs, warmupSeries,
   type Clock, type RealRun, type WindowMode,
 } from './model';
+import { SeedField } from '../../components/SeedField';
+import { sig } from '../../core/format';
 
 const MODE_OPTIONS = WINDOW_MODES.map((m) => ({ value: m, label: WINDOW_NAME[m] }));
 const CURVE_BINS = 40;

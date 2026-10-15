@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { pctText, sig } from '../distributions/fmt';
 import {
   DB_NO_LIMIT, SLO_MS, capacity, firstCrossing, kneeLoad, latencyQuantileMs, optimised, orderByMonth, planCapacity, scaledCapacity,
   serviceOnlyP99Ms, yearFactor, type Crossing, type Plan, type Service,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 export const rps = (x: number): string => `${sig(x)}/s`;
 export const msText = (x: number): string => `${sig(x)} ms`;

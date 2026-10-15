@@ -1,10 +1,10 @@
 import type { LessonModule } from '../../core/types';
-import { sig } from '../distributions/fmt';
 import { msText, us } from './frames';
 import {
   GENERATOR_DEFAULT, LOOP_OVERHEAD_US, NOISE_DEFAULT, STEADY_WINDOW, WARMUP_DEFAULT, exactWindowMean, readGenerator, readNoise, readWindow, warmupSeries,
 } from './model';
 import { Stage } from './Stage';
+import { sig } from '../../core/format';
 
 const SERIES = warmupSeries(WARMUP_DEFAULT.seed, true);
 const FIRST = readWindow(SERIES, 'first100', 0, true);

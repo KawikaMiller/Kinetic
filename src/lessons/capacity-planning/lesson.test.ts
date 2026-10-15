@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { expectCaption } from '../../core/testing/captions';
-import { pctText } from '../distributions/fmt';
 import { forecastCaption, growthNote, loadCaption, msText, rps, scaleCaption } from './frames';
 import lesson from './index';
 import {
   DB_NO_LIMIT, KNEE_PER_INSTANCE, LEVEL_DEFAULT, LEVEL_RANGE, PLAN_DEFAULT, SERVICE_DEFAULT, SLO_MS, TEST_JOBS, TIMEOUT_MS, capacity, errorRate, firstCrossing, kneeLoad,
   latencyQuantileMs, optimised, orderByMonth, planCapacity, poolRows, scaledCapacity, simulateLoad, yearFactor, type Plan, type Service,
 } from './model';
+import { pctText } from '../../core/format';
 
 const text = expectCaption;
 

@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { pctText, sig } from '../distributions/fmt';
 import {
   BOUNDARY_NAME, MU, POOL_SERVERS, SHAPE_CV2, SHAPE_KENDALL, TOPOLOGIES, TOPOLOGY_NAME, mm1Multiple, theory, topologyTheory, type Boundary, type LittleRun,
   type ServiceShape, type Topology,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const pct0 = (rho: number) => pctText(rho, 0);
 

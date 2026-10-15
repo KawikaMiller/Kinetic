@@ -6,10 +6,10 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Sta
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
-import { SeedField } from '../distributions/SeedField';
 import { storeCaption } from './captions';
 import { STAND_INS, homesOf, type StoreMsg } from './store';
 import { DEFAULT_STORE, HORIZON_MS, SCHEDULES, SEARCH_SEEDS, STORE_N, cutUpAt, drawnActors, effectiveControls, lowestBrokenSeed, pinnedSeed, replicaRow, runStore, setupFor, sloppyApplies, type Schedule, type StoreControls } from './storeView';
+import { SeedField } from '../../components/SeedField';
 
 const SCHEDULE_OPTIONS = SCHEDULES.map((s) => ({ value: s.id, label: s.label }));
 const DOMAIN_NOTE: Record<Schedule, string> = {

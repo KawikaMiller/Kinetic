@@ -8,7 +8,7 @@
  * the tests hold them to each other: the pdf integrates to 1, the cdf equals the integral of
  * the pdf, and `ksStatistic(samples, cdf)` stays small.
  */
-import type { Rnd } from './random';
+import { mulberry32, type Rnd } from './random';
 
 const SQRT2 = Math.SQRT2;
 const SQRT_PI = Math.sqrt(Math.PI);
@@ -65,6 +65,43 @@ export function normal(rnd: Rnd, mean = 0, sd = 1): number {
   const u = 1 - rnd();
   const v = rnd();
   return mean + sd * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+const BISECT_LIMIT = 40;
+const BISECT_STEPS = 100;
+
+/** Inverse of the normal cdf by bisection: the z with P(Z ≤ z) = p. Exact to rounding but slow (100 cdf calls); use `fastNormalQuantile` to sample. */
+export function normalQuantile(p: number): number {
+  if (!(p > 0 && p < 1)) return p <= 0 ? -Infinity : Infinity;
+  let lo = -BISECT_LIMIT;
+  let hi = BISECT_LIMIT;
+  for (let i = 0; i < BISECT_STEPS; i++) {
+    const mid = (lo + hi) / 2;
+    if (normalCdf(mid) < p) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// Peter Acklam's rational approximation of the inverse normal cdf: relative error about 1e-9, plenty for sampling.
+const ACKLAM_A = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239];
+const ACKLAM_B = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+const ACKLAM_C = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+const ACKLAM_D = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+const ACKLAM_LOW = 0.02425;
+
+const horner = (coef: readonly number[], x: number) => coef.reduce((acc, c) => acc * x + c, 0);
+
+/** Φ⁻¹(p) for 0 < p < 1, fast: Acklam's rational approximation (no loop), for samplers; `normalQuantile` is the exact one. */
+export function fastNormalQuantile(p: number): number {
+  if (p < ACKLAM_LOW) {
+    const q = Math.sqrt(-2 * Math.log(p));
+    return horner(ACKLAM_C, q) / (horner(ACKLAM_D, q) * q + 1);
+  }
+  if (p > 1 - ACKLAM_LOW) return -fastNormalQuantile(1 - p);
+  const q = p - 0.5;
+  const r = q * q;
+  return (horner(ACKLAM_A, r) * q) / (horner(ACKLAM_B, r) * r + 1);
 }
 
 /* ---------- exponential ---------- */
@@ -155,6 +192,81 @@ export function zipfSampler(n: number, s = 1): (rnd: Rnd) => number {
     }
     return lo + 1;
   };
+}
+
+/* ---------- the four families as data ---------- */
+
+export type Family = 'normal' | 'exponential' | 'lognormal' | 'pareto';
+
+/** A distribution as plain data, so a lesson can store, compare and print it. */
+export type Dist =
+  | { family: 'normal'; mu: number; sigma: number }
+  | { family: 'exponential'; mean: number }
+  | { family: 'lognormal'; mu: number; sigma: number }
+  | { family: 'pareto'; xm: number; alpha: number };
+
+/** The exact p-quantile: μ + zσ, −ln(1−p)·mean, exp(μ + zσ), xm·(1−p)^(−1/α). */
+export function distQuantile(d: Dist, p: number): number {
+  switch (d.family) {
+    case 'normal': return d.mu + normalQuantile(p) * d.sigma;
+    case 'exponential': return -Math.log(1 - p) * d.mean;
+    case 'lognormal': return Math.exp(d.mu + normalQuantile(p) * d.sigma);
+    case 'pareto': return d.xm * (1 - p) ** (-1 / d.alpha);
+  }
+}
+
+export function distCdf(d: Dist, x: number): number {
+  switch (d.family) {
+    case 'normal': return normalCdf(x, d.mu, d.sigma);
+    case 'exponential': return exponentialCdf(x, 1 / d.mean);
+    case 'lognormal': return lognormalCdf(x, d.mu, d.sigma);
+    case 'pareto': return paretoCdf(x, d.xm, d.alpha);
+  }
+}
+
+export function distPdf(d: Dist, x: number): number {
+  switch (d.family) {
+    case 'normal': return normalPdf(x, d.mu, d.sigma);
+    case 'exponential': return exponentialPdf(x, 1 / d.mean);
+    case 'lognormal': return lognormalPdf(x, d.mu, d.sigma);
+    case 'pareto': return paretoPdf(x, d.xm, d.alpha);
+  }
+}
+
+/** The exact mean; Infinity for a Pareto with α ≤ 1 (there is no finite mean). */
+export function distMean(d: Dist): number {
+  switch (d.family) {
+    case 'normal': return d.mu;
+    case 'exponential': return d.mean;
+    case 'lognormal': return Math.exp(d.mu + d.sigma ** 2 / 2);
+    case 'pareto': return d.alpha > 1 ? (d.alpha * d.xm) / (d.alpha - 1) : Infinity;
+  }
+}
+
+/** The exact variance; Infinity for a Pareto with α ≤ 2. */
+export function distVariance(d: Dist): number {
+  switch (d.family) {
+    case 'normal': return d.sigma ** 2;
+    case 'exponential': return d.mean ** 2;
+    case 'lognormal': return (Math.exp(d.sigma ** 2) - 1) * Math.exp(2 * d.mu + d.sigma ** 2);
+    case 'pareto': return d.alpha > 2 ? (d.xm ** 2 * d.alpha) / ((d.alpha - 1) ** 2 * (d.alpha - 2)) : Infinity;
+  }
+}
+
+/** One draw. */
+export function distSample(d: Dist, rnd: Rnd): number {
+  switch (d.family) {
+    case 'normal': return normal(rnd, d.mu, d.sigma);
+    case 'exponential': return exponential(rnd, 1 / d.mean);
+    case 'lognormal': return lognormal(rnd, d.mu, d.sigma);
+    case 'pareto': return pareto(rnd, d.xm, d.alpha);
+  }
+}
+
+/** `n` draws from a `mulberry32(seed)` stream: the same seed gives the same sample. */
+export function drawSample(d: Dist, seed: number, n: number): number[] {
+  const rnd = mulberry32(seed);
+  return Array.from({ length: n }, () => distSample(d, rnd));
 }
 
 /* ---------- quantiles and goodness of fit ---------- */

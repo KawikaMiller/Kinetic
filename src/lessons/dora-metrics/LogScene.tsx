@@ -8,13 +8,13 @@ import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, S
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption } from '../../core/caption';
 import type { Tone } from '../../core/tone';
-import { SeedField } from '../distributions/SeedField';
-import { sig } from '../distributions/fmt';
 import { hours, logCaption, logClock, minutes, perWeek } from './frames';
 import {
   DEFINITIONS_DEFAULT, FAILURE_DEFS, FAILURE_NAME, HOURS_PER_WEEK, LEAD_STARTS, LEAD_START_NAME, LOG_SEED, LOG_START, LOG_WEEKS, RESTORE_ENDS, RESTORE_END_NAME, isFailure,
   leadStartOf, leadTimeLabel, logMetrics, makeLog, weekOf, type Definitions, type Deployment,
 } from './model';
+import { SeedField } from '../../components/SeedField';
+import { sig } from '../../core/format';
 
 const LEAD_OPTIONS = LEAD_STARTS.map((s) => ({ value: s, label: LEAD_START_NAME[s] }));
 const FAILURE_OPTIONS = FAILURE_DEFS.map((f) => ({ value: f, label: FAILURE_NAME[f] }));

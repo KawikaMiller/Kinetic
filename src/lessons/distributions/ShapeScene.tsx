@@ -6,13 +6,11 @@ import { ChipButton, ControlGroup, Hint, Legend, Provenance, Segmented, Slider, 
 import type { Option } from '../../components/options';
 import { useIntroCaption } from '../../core/caption';
 import { barsFromHistogram } from '../../core/plot';
-import { SeedField } from './SeedField';
-import { pctText, sig } from './fmt';
 import { shapeCaption } from './frames';
-import {
-  BOUNDS, DEFAULT_SHAPES, SHAPE_DEFAULT, FAMILIES, FAMILY_NAME, N_DRAWS, PRESETS, RUNNING_AT, distPdf, logBinsAllowed, momentsOf, shapeView,
-  summaryRows, type BinMode, type Dist, type Family, type ShapeDefaults, type ShapeView,
-} from './model';
+import { BOUNDS, DEFAULT_SHAPES, SHAPE_DEFAULT, FAMILIES, FAMILY_NAME, N_DRAWS, PRESETS, RUNNING_AT, logBinsAllowed, momentsOf, shapeView, summaryRows, type BinMode, type ShapeDefaults, type ShapeView } from './model';
+import { SeedField } from '../../components/SeedField';
+import { pctText, sig } from '../../core/format';
+import { distPdf, type Dist, type Family } from '../../core/distributions';
 
 const FAMILY_OPTIONS: Option<Family>[] = FAMILIES.map((f) => ({ value: f, label: FAMILY_NAME[f] }));
 /** Headroom above the tallest bar, as a multiple of it. */

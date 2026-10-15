@@ -5,12 +5,12 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { poissonPmf } from '../../core/distributions';
-import { SeedField } from './SeedField';
-import { sig } from './fmt';
 import { dispersionVerdict, poissonCaption } from './frames';
 import {
   BURST_MEAN, POISSON_DEFAULT, TIMELINE_WINDOWS, WINDOWS, arrivalSummary, countArrivals, countAxisMax, countShares, type ArrivalEvent,
 } from './model';
+import { SeedField } from '../../components/SeedField';
+import { sig } from '../../core/format';
 
 const HEADROOM = 1.15;
 const TIMELINE_W = 360;

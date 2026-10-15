@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-import { pctText, sig } from '../distributions/fmt';
 import { billCaption, capitalise, cheapestClean, clockText, joinList, minuteCaption, policyCaption } from './frames';
 import lesson from './index';
 import {
   CONTROLLER_DEFAULT, FLASH, FOCUS_MINUTE, INSTANCE_RPS, MAX_INSTANCES, MINUTES_PER_DAY, POLICIES, PRESETS, SCENE_DEFAULT, bill, ceilDiv, createFleetSim, desiredCount, loadCurve,
   policyTable, runFleet, type Controller, type Preset,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const text = expectCaption;
 const seed = SCENE_DEFAULT.seed;

@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
-import { pctText, ratioText, sig } from './fmt';
-import {
-  FAMILY_NAME, distMean, type ArrivalSummary, type CltReport, type Family, type Mystery, type ShapeView,
-} from './model';
+import { FAMILY_NAME, type ArrivalSummary, type CltReport, type Mystery, type ShapeView } from './model';
+import { pctText, ratioText, sig } from '../../core/format';
+import { distMean, type Family } from '../../core/distributions';
 
 /** Where the mean sits relative to the median, said from the two numbers (a 5% band counts as "at"). */
 const SKEW_BAND = 0.05;

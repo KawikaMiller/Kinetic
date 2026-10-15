@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Button, TextField } from '../../components/ui';
-import { nextSeed, parseSeed } from './seed';
+import { nextSeed, parseSeed } from '../core/seed';
+import { Button, TextField } from './ui';
 import './seedField.css';
 
 /**
- * The seed control shared by the Tier 3 statistics lessons (distributions, percentiles-statistics,
- * queueing-theory, hypothesis-testing-ab): a text field read through `parseSeed`, a "new seed"
- * button, and the refusal message when the typed text is not a seed (the old seed stays).
- * Phase 2: this belongs in `components/`; it lives here only because batches never edit shared code.
+ * The seed control of the statistics, queueing and distributed-systems lessons: a text field read
+ * through `parseSeed` (core/seed), a "new seed" button, and the refusal message when the typed
+ * text is not a seed (the old seed stays). Renders a fragment, so it sits inside the lesson's own
+ * controls row.
  */
 export function SeedField({ seed, onSeed }: { seed: number; onSeed: (seed: number) => void }) {
   const [text, setText] = useState(String(seed));
@@ -38,7 +38,7 @@ export function SeedField({ seed, onSeed }: { seed: number; onSeed: (seed: numbe
     <>
       <TextField label="Seed" value={text} onChange={type} onBlur={settle} width={110} spellCheck={false} />
       <Button onClick={fresh}>New seed</Button>
-      {error && <span className="dist-seed-error" role="status">{error} Keeping seed {seed}.</span>}
+      {error && <span className="seed-field-error" role="status">{error} Keeping seed {seed}.</span>}
     </>
   );
 }

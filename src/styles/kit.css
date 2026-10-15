@@ -468,6 +468,9 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
   border-radius: 5px;
 }
 .array-cell:is(.is-active, .is-info, .is-violet) .array-cell-ring { border-color: var(--on-c); }
+/* TapeStrip (components/TapeStrip.tsx): one tab stop around an ArrayStrip */
+.tape-strip { border-radius: 8px; }
+.tape-strip-away { margin: 4px 0 0; font: 500 11px var(--mono); color: var(--muted); }
 /* Lifted cells: active (--hi, being checked), info (a second pointer), violet (a third role). */
 .array-cell.is-active { --c: var(--hi); --on-c: var(--on-hi); }
 .array-cell.is-info { --c: var(--info); --on-c: var(--on-info); }
@@ -710,6 +713,8 @@ button.bit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .cellgrid-cell:focus-visible { outline: none; }
 .cellgrid-cell:focus-visible rect { stroke: var(--text); stroke-width: 2.5; }
 .cellgrid-overlay { pointer-events: none; }
+.cellgrid-rail { fill: var(--c, var(--line-2)); pointer-events: none; }
+.cellgrid-band { fill: color-mix(in srgb, var(--c, var(--line-2)) 14%, transparent); pointer-events: none; }
 .cellgrid-ring { fill: none; stroke: var(--c); stroke-width: 2; pointer-events: none; }
 .cellgrid-hitarea { fill: transparent; cursor: pointer; }
 .cellgrid-hitarea:focus-visible { outline: none; }

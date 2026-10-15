@@ -1,10 +1,10 @@
 import type { LessonModule } from '../../core/types';
-import { pctText, sig } from '../distributions/fmt';
 import { msText, rps } from './frames';
 import {
   LEVEL_DEFAULT, PLAN_DEFAULT, SERVICE_DEFAULT, SLO_MS, capacity, firstCrossing, kneeLoad, latencyQuantileMs, orderByMonth, yearFactor,
 } from './model';
 import { Stage } from './Stage';
+import { pctText, sig } from '../../core/format';
 
 const CAP = capacity(SERVICE_DEFAULT);
 const KNEE = kneeLoad(SERVICE_DEFAULT, SLO_MS)!;

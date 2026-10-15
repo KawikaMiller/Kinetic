@@ -1,10 +1,10 @@
 import type { LessonModule } from '../../core/types';
-import { pctText } from '../distributions/fmt';
 import { msText, touchText } from './frames';
 import {
   BACKEND_DEFAULT, FANOUT_DEFAULT, HEDGE_BACKEND, HEDGE_DEFAULT, MM1, MM1_DEFAULT_RHO, P99, callQuantile, crossoverRho, extraLoad, hedgedQuantile, medianSlowWidth, touchesSlow,
 } from './model';
 import { Stage } from './Stage';
+import { pctText } from '../../core/format';
 
 const DEFAULT_TOUCH = touchText(touchesSlow(BACKEND_DEFAULT.slowProb, FANOUT_DEFAULT));
 const HALF_WIDTH = medianSlowWidth(BACKEND_DEFAULT.slowProb);

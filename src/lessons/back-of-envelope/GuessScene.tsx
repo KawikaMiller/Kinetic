@@ -4,8 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import type { Option } from '../../components/options';
 import { Button, Hint, Legend, Provenance, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { power } from '../../core/format';
-import { sig } from '../distributions/fmt';
+import { power, sig } from '../../core/format';
 import { guessCaption } from './frames';
 import { GUESS_EXPONENTS, SCENARIOS, bigText, orderError, scenarioQps, withinTenfold } from './model';
 

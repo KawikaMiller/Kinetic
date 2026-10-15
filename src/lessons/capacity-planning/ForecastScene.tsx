@@ -4,12 +4,12 @@ import { Band, Curve, HLine, Plot2D, Points, VLine } from '../../components/Plot
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
 import { forecastCaption, growthNote, rps } from './frames';
 import {
   FORECAST_MONTHS, GROWTH_RANGE, HEADROOM_RANGE, INSTANCES_RANGE, KNEE_PER_INSTANCE, LEAD_WEEKS_RANGE, PLAN_DEFAULT, REDUNDANCY, REDUNDANCY_NAME, SPIKE_FACTOR_RANGE,
   SPIKE_MONTH_RANGE, firstCrossing, forecastPeak, orderByMonth, parsePeak, planCapacity, trendPeak, type Plan, type Redundancy,
 } from './model';
+import { pctText, sig } from '../../core/format';
 
 const REDUNDANCY_OPTIONS = REDUNDANCY.map((r) => ({ value: r, label: REDUNDANCY_NAME[r] }));
 const PLOT_HEADROOM = 1.25;

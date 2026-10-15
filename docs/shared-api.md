@@ -992,6 +992,7 @@ dsu.events                // with trace: find {node, path} · reparent {node, fr
 - `size` takes a custom `{ cell, gap?, font? }` beyond the presets (gap defaults to ~9% of the cell, font to ~38%, none under 16px cells). Pure rules (`resolveSize`, `textReadable`, `canvasFill`, `canvasInk`) live in `components/cellGridPaint.ts`, tested.
 - `overlay(geometry)` draws SVG over the cells and rings, in the grid's coordinates (`at`, `center`, `cell`, `gap`, `width`, `height`), with no pointer events: dependency arrows, a path through the grid. Not migrated yet: dynamic-programming's LCS table (an HTML grid of 40px cells with its own SVG arrow overlay) can now be expressed as `size={{ cell: 40 }}` + `overlay`, but moving it from HTML to SVG isn't pixel-identical, so it's left for that lesson's owner.
 - Inside a scene SVG (a grid with RefArrows to its cells): `<CellGridGroup at={{ x, y }} {...props} />` draws it as a `<g>` there, and `cellGridLayout(props, at)` (components/cellGridLayout, pure) returns the same geometry in scene coordinates (`at(r, c)`, `center(r, c)`, `cell`, `gap`, `width`, `height`) to aim arrows with. Keyboard, rings, overlay and canvas mode work the same.
+- **Row decoration (K3-16).** `rowDecor={(r) => ({ tone?, label?, style?: 'rail' | 'band' } | null)}` tones a whole row: a `rail` (the default) is a thin bar in a gutter left of the cells (the gutter is reserved only when some row has a rail, and `cellGridLayout` shifts `at`/`center` by it), a `band` is a wash behind the cells (no gutter), and `label` is text after the row (after a `rowSuffix`; strings and numbers set the width reserved). Same SVG in canvas mode. Omitted, or returning nothing for every row, the grid is pixel-identical to before. Intended for mvcc (visibility per transaction), buffer-pool, join-algorithms. Demo on `#/dev/kit`.
 
 ### `core/bytes.ts`, `ByteGrid.tsx` — endianness, grpc-protobuf, symmetric-ciphers, macs-hmac, packet-capture-debugging, file-systems
 ```tsx
@@ -1224,6 +1225,26 @@ edgesOf(dfaOrNfa)                 // { from, to, symbols[] }[]: one arrow per pa
 `, plus `[OTHER]`. lexing-tokens uses it instead of rewriting the source first. It's DFA-only.
 - Draw the machines with `GraphView` state mode. Minimisation is deliberately left out (T3 chomsky-hierarchy). Tests compare the subset DFA with the NFA and with a JS RegExp on every string up to length 10.
 
+### `core/automata.ts` PDA half, `core/tm.ts`, `TapeStrip.tsx`, `parseRows` — K3-17: turing-machines, halting-problem, pushdown-automata, chomsky-hierarchy
+```ts
+// PDA (core/automata): a move pops ONE stack symbol and pushes a string, top first; the stack is a string, top at index 0
+const pda: Pda = { kind: 'pda', start: 'q0', bottom: 'Z', accept: ['qf'], rules: [{ from: 'q0', read: 'a', pop: 'Z', to: 'q0', push: 'AZ' }, { from: 'q0', read: '', pop: 'Z', to: 'qf', push: 'Z' } /* '' = ε */] };
+pdaStart(pda)                              // { state, pos, stack: 'Z' }: a configuration is (state, input read so far, stack)
+pdaMoves(pda, input, config)               // every configuration one rule away (non-determinism lives here)
+pdaStep(pda, input, configs)               // one move of a whole SET: de-duplicated, sorted, dead ones gone
+pdaRun(pda, input, { maxConfigs, accept })  // { status: 'accepted' | 'rejected' | 'budget-exhausted', levels: PdaConfig[][], explored }; accept 'final-state' (default) | 'empty-stack'
+// Turing machine (core/tm): tape is a sparse Map (blank '_' unset), unbounded both ways; halting states default to halt / accept / reject
+const tm = parseTmTable('q0 1 -> 0 R q0\nq0 _ -> 1 S halt');   // { ok: true, value: Tm } | { ok: false, error: 'Line 2: …', line }
+tmStart(tm, '1011'); tmStep(tm, config)    // { status: 'moved', config, rule } | { status: 'halted' | 'stuck', config }; pure
+runTm(tm, '1011', { maxSteps: 5000 })      // { status: 'halted' | 'stuck' | 'budget-exhausted', steps, config }
+tapeText(config); symbolAt(config, i)      // '1100' (first to last written cell); one cell, blank '_' anywhere
+<TapeStrip symbol={(i) => symbolAt(config, i)} head={config.head} state={config.state} changed={[prevHead]} cells={13} />
+```
+- `budget-exhausted` is not a verdict: it never says "never halts" (say "did not halt within N steps"). A halting-problem certificate (a repeated configuration) is the lesson's own check.
+- `parseTmTable` refuses with the line named: a missing arrow, a wrong word count, an unknown move, a state name over 8 characters, a multi-character symbol, a rule for a halting state, a duplicate (state, symbol) ("Line 3: q0 0 already has a rule on line 1."), more than 40 rules, a line over 40 characters, an empty table. No `eval`. The row machinery is `parseRows(text, { maxRows, maxLineChars, row })` in `core/parse` (`RowParse`: every row with its line, or the first refusal); K3-22 `parseKit` may build on or replace it.
+- `TapeStrip` (on ArrayStrip): `cells` (default 17, odd) centred on the head, head cell lifted, blank cells dimmed, `changed` indices in --ok, the head marker labelled with `state`. It is ONE tab stop: Left/Right pan the view, Home or Escape recentre, and any head move recentres; a head panned off screen shows a hint. Pure window rules are in `components/tapeWindow.ts`.
+- Tests: balanced brackets, a^n b^n and w wᴿ (the guess) PDAs against closed-form oracles on every string up to length 10; the spec's increment and palindrome tables (every string up to 10 bits / length 10, hand-pinned step counts 8, 8, 3, 10, 21), an a^n b^n machine, loops stopped at the budget, `runTm` against an independent array simulator on 500 seeded random 4-state tables. Demo on `#/dev/kit`.
+
 ### `core/ipv4.ts` — subnetting-cidr, ethernet-arp, dhcp
 ```ts
 parseIPv4(' 192.168.1.10 ')       // FieldParse<number>: { ok, value: 0xc0a8010a } or { ok: false, error } with the reason
@@ -1435,6 +1456,13 @@ logHistogram(xs, { bins, min, max })  // like histogram(), log-spaced edges (cor
 - Existing `Bars` / `Curve` / `barsFromHistogram(h)` callers are untouched (`Bars` already took a per-bar `tone`; the new second argument of `barsFromHistogram` just fills it in for you). Path geometry is `core/plotAreas.ts`; Area/Steps/Band live in `components/PlotAreas.tsx` and are re-exported from `Plot2D`.
 - Accuracy: `erf`/`normalCdf` are good to about 1e-13 and keep the far tail (`normalCdf(-6)` is 9.87e-10, not 0). The Poisson sampler splits a large lambda into chunks (it is O(lambda)). Tests check each sampler's mean and variance on fixed seeds, that each pdf integrates to 1 and its cdf is the integral of the pdf, a KS check of each continuous sampler against its cdf (and that a wrong cdf fails it), Poisson and Zipf counts against their pmfs.
 - **Do not write a local Zipf or harmonic number** (fanout-feeds and hot-keys-skew both use these; AC-0/T3 #25).
+- **Kit round F extractions (K3 wave 2 to 3).** These used to live in lesson folders that other lessons imported across; never import across lesson folders for them again.
+  - `core/distributions`: `normalQuantile(p)` (bisection, exact, slow) and `fastNormalQuantile(p)` (Acklam, relative error about 1e-9, for samplers; 0 < p < 1); the four families as data: `Family`, `Dist` (`{ family: 'normal', mu, sigma } | …`), `distQuantile/distCdf/distPdf/distMean/distVariance(d, …)`, `distSample(d, rnd)` and `drawSample(d, seed, n)` (a `mulberry32(seed)` stream).
+  - `core/format`: `sig(x, digits?)` (3 significant figures, thousands separators, real minus), `pctText(share, dp?)` (0.691 → "69.1%"), `ratioText(x)` (two decimals). `pct` is the other flavour (0 decimals, '<0.1%' floor).
+  - `core/seed` + `components/SeedField`: `parseSeed(text)` (whole number 0..SEED_MAX with refusal messages), `nextSeed`, and `<SeedField seed onSeed />` (a fragment: text field, "New seed" button, refusal line that keeps the old seed) for any lesson with a seeded run.
+  - `core/queueing`: `erlangC(c, a)`, the chance an arrival waits in an M/M/c queue. `core/stats`: `nearestRank(sorted, pct)` and `nearestRankIndex(n, pct)` (the ⌈p·n⌉-th smallest, immune to the 7.000000000000001 trap).
+  - `core/testing/nodeCrypto` (tests only): `nodeDigest(alg, data, encoding?)`, `nodeHmac(alg, key, data, encoding?)`, `nodeRandomBytes(n)`, `nodeRandomBase64url(n)`; use it as the independent oracle for any hashing code, never `import('node:crypto')` by hand.
+  - A **synchronous SHA-256 in core was not added**: oauth-flows' `pkce.ts` is its only user (core/crypto's `sha256Hex` is async, and every other lesson awaits it). Extract on a second user that needs a sync hash.
 
 ### `core/simTick.ts`, `core/useTickSim.ts` (K3-2) — queueing-theory, wifi-shared-medium, autoscaling, capacity-planning, thread-pools-work-stealing, graceful-degradation, cache-stampede, fanout-feeds, simd-gpu-parallelism, benchmarking-methodology
 ```ts

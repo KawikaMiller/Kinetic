@@ -5,14 +5,14 @@ import type { MeterBand } from '../../components/meterBands';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { SeedField } from '../distributions/SeedField';
-import { sig } from '../distributions/fmt';
 import { FleetPlot, InstanceLanes } from './FleetPlot';
 import { clockText, minuteCaption } from './frames';
 import {
   CONTROLLER_DEFAULT, COOLDOWN_RANGE, COUNT_RANGE, FOCUS_MINUTE, INSTANCE_RPS, LATENCY_CAP, MAX_INSTANCES, MINUTES_PER_DAY, PRESETS, PRESET_NAME, RUN_MINUTES, SCENE_DEFAULT,
   TARGET_RANGE, VIOLATION_PCT, WARMUP_RANGE, runFleet, type Controller, type Preset,
 } from './model';
+import { SeedField } from '../../components/SeedField';
+import { sig } from '../../core/format';
 
 const PRESET_OPTIONS = PRESETS.map((p) => ({ value: p, label: PRESET_NAME[p] }));
 const METER_MAX = 300;

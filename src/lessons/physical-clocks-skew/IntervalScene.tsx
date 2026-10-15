@@ -7,11 +7,11 @@ import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { toSequence } from '../../core/distSim';
-import { pctText } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { intervalCaption } from './captions';
 import { EPSILON_MS, decidableShare, gapDensity, sampleGaps } from './intervals';
 import { BROKEN_SEED, runLww, type LwwMsg } from './lww';
+import { pctText } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const GAP_AXIS_MS = 60;
 const DEFAULT_EPSILON = 10;

@@ -1,15 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { captionText as text } from '../../core/testing/captions';
 import { mean } from '../../core/sim';
-import { pctText, sig } from '../distributions/fmt';
 import { coverageCaption, coverageVerdict, fleetCaption, intervalCaption, pLabel, ruleCaption } from './frames';
 import lesson from './index';
-import {
-  FLEET_DEFAULT, INTERVAL_DEFAULT, RULES, RULE_DEFAULT, SAMPLE_N, SHOWN_INTERVALS, countAbove, coverageRun, drawSampleOf,
-  experimentsFor, expectedAbove, fleetReport, intervalFor, nearestRank, presetHosts, presetValues, ruleValue, scene1Data,
-  seededHosts, sortedAscending, sampleSeed, truth, type Rule,
-} from './model';
+import { FLEET_DEFAULT, INTERVAL_DEFAULT, RULES, RULE_DEFAULT, SAMPLE_N, SHOWN_INTERVALS, countAbove, coverageRun, drawSampleOf, experimentsFor, expectedAbove, fleetReport, intervalFor, presetHosts, presetValues, ruleValue, scene1Data, seededHosts, sortedAscending, sampleSeed, truth, type Rule } from './model';
 import { mulberry32 } from '../../core/random';
+import { pctText, sig } from '../../core/format';
+import { nearestRank } from '../../core/stats';
 
 const defaultN = Math.round(10 ** INTERVAL_DEFAULT.exponent);
 const view = (sorted: number[], pct: number, rule: Rule) => ({ sorted, pct, rule });

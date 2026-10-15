@@ -8,13 +8,13 @@ import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider,
 import { WideRegion } from '../../components/WideRegion';
 import { useIntroCaption } from '../../core/caption';
 import { logHistogram } from '../../core/stats';
-import { sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { fanoutCaption, msText, touchText } from './frames';
 import {
   BACKEND_DEFAULT, CAUSES, FAMILIES, FAMILY_NAME, FANOUT_DEFAULT, FANOUT_STEPS, HISTOGRAM_BINS, P99_TARGET_MS, SLOW_FACTOR_RANGE, SLOW_PROB_RANGE,
   fanoutReport, fanoutRun, medianSlowWidth, requestCalls, touchesSlow, type Backend, type Family,
 } from './model';
+import { sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const HIST_MIN = 5;
 /** The slowest request p99 the sliders can reach (about 9,200 ms at a ×50 factor, 10% slow, N = 1000) fits under this. */

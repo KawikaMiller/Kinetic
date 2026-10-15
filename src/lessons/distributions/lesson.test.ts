@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { normalCdf } from '../../core/distributions';
+import { normalCdf, distMean, drawSample, type Dist, type Family } from '../../core/distributions';
 import { stdDev } from '../../core/stats';
 import { captionText as text } from '../../core/testing/captions';
 import { cltCaption, dispersionVerdict, meanPosition, poissonCaption, revealCaption, shapeCaption } from './frames';
-import { pctText, ratioText, sig } from './fmt';
 import lesson from './index';
-import {
-  BOUNDS, DEFAULT_SHAPES, FAMILIES, MEAN_DEFAULT, MYSTERY_DEFAULT, POISSON_DEFAULT, SAMPLE_SIZES, SHAPE_DEFAULT, WINDOWS,
-  arrivalSummary, cltDist, cltReport, countArrivals, dispersionIndex, distMean, drawSample, momentsOf, mysteryDatasets, replicateMeans,
-  shapeView, summaryRows, tailSlope, type Dist, type Family,
-} from './model';
+import { BOUNDS, DEFAULT_SHAPES, FAMILIES, MEAN_DEFAULT, MYSTERY_DEFAULT, POISSON_DEFAULT, SAMPLE_SIZES, SHAPE_DEFAULT, WINDOWS, arrivalSummary, cltDist, cltReport, countArrivals, dispersionIndex, momentsOf, mysteryDatasets, replicateMeans, shapeView, summaryRows, tailSlope } from './model';
+import { pctText, ratioText, sig } from '../../core/format';
 
 /** Seeded runs are deterministic, so the only way they fail is the 5 s default timeout when the whole suite loads every core. */
 const SIMULATION_TIMEOUT_MS = 90_000;

@@ -3,10 +3,10 @@ import { Curve, Plot2D, Points, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, Slider, Stat, Stats } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { pctText, sig } from '../distributions/fmt';
-import { SeedField } from '../distributions/SeedField';
 import { curveCaption } from './frames';
 import { CURVE_DEFAULT, CURVE_MARKS, MU, curveRunLength, measureCurve, mm1Multiple } from './model';
+import { pctText, sig } from '../../core/format';
+import { SeedField } from '../../components/SeedField';
 
 const RHO = { min: 0.05, max: 0.99, step: 0.01 } as const;
 const Y_DOMAIN: [number, number] = [1, 120];

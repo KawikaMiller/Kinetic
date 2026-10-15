@@ -7,11 +7,11 @@ import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats
 import { WideRegion } from '../../components/WideRegion';
 import { barsAt } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
-import { pctText } from '../distributions/fmt';
 import { generatorFrames, msText, timelineEnd, timelineStart } from './frames';
 import {
   GENERATORS, GENERATOR_DEFAULT, GENERATOR_NAME, RATE_RANGE, SLO_P99_MS, STALL_AT_RANGE, STALL_MS_RANGE, hidesStall, readGenerator, timelineRange, type Generator,
 } from './model';
+import { pctText } from '../../core/format';
 
 const STEP_MS = 420;
 const METER_MAX = 1200;

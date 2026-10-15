@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
-import { sig } from '../distributions/fmt';
 import { POLLS_SHOWN, UNSYNCED_HORIZON_MS, type SyncMode } from './clocks';
 import { NODE_NAMES, pollSecondsOf, type DriftState, type DriftView } from './drift';
 import { absTimeText, signedMs, timeText } from './format';
 import { LEASE_END_MS, type LeaseRun } from './lease';
 import type { LogLine } from './orderLog';
 import { CAUSAL_CHAIN } from './orderLog';
+import { sig } from '../../core/format';
 
 const HOUR_MS = 3_600_000;
 
