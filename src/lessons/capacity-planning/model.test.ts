@@ -174,6 +174,9 @@ describe('the forecast', () => {
     expect(usableInstances({ ...plan, redundancy: 'none' })).toBe(9);
     expect(usableInstances({ ...plan, redundancy: 'n+1' })).toBe(8);
     expect(usableInstances({ ...plan, redundancy: 'zone' })).toBe(6);
+    // 17 instances over three zones are 6 / 6 / 5: losing a zone of 6 keeps 11, always a whole number.
+    expect(usableInstances({ ...plan, instances: 17, redundancy: 'zone' })).toBe(11);
+    for (let n = 1; n <= 60; n++) expect(Number.isInteger(usableInstances({ ...plan, instances: n, redundancy: 'zone' }))).toBe(true);
     expect(planCapacity({ ...plan, redundancy: 'n+1', headroom: 0.25 })).toBeCloseTo(plan.kneePerInstance * 8 * 0.75, 9);
   });
 

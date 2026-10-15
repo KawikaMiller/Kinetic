@@ -110,6 +110,8 @@ describe('captions are computed from the model', () => {
     for (const g of [-0.2, 0, 0.05, 0.5]) {
       const c = text(growthNote(g));
       expect(c).toContain(`${pctText(g, 0)} a month`);
+      expect(c.includes('that adding it up gives'), `g=${g}`).toBe(1 + 12 * g > 0);
+      expect(c).not.toMatch(/-\d\.\d+ that adding/);
     }
     expect(yearFactor(0.05, 'compound')).toBeCloseTo(1.05 ** 12, 12);
   });

@@ -231,10 +231,10 @@ export const parsePeak = (text: string): FieldParse<number> =>
     },
   });
 
-/** Instances left after the redundancy rule: N + 1 keeps one spare, and losing one of three zones keeps two thirds. */
+/** Instances left after the redundancy rule: N + 1 keeps one spare, and losing one of three zones (split as evenly as whole instances allow, the biggest zone holding ⌈n ÷ 3⌉) keeps the rest. */
 export function usableInstances(plan: Plan): number {
   if (plan.redundancy === 'n+1') return Math.max(0, plan.instances - 1);
-  if (plan.redundancy === 'zone') return (plan.instances * 2) / 3;
+  if (plan.redundancy === 'zone') return plan.instances - Math.ceil(plan.instances / 3);
   return plan.instances;
 }
 

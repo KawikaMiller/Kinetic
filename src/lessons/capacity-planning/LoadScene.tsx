@@ -72,16 +72,16 @@ export function LoadScene({ picker }: { picker: ReactNode }) {
           />
           <Stat
             label="Errors (waited past the timeout)"
-            value={exactErrors === null ? '–' : pctText(exactErrors, 1)}
-            color="var(--bad)"
-            sub={[`timeout ${TIMEOUT_MS} ms, exact`, `the run reads ${pctText(run.errors, 1)}`]}
+            value={pctText(exactErrors ?? run.errors, 1)}
+            color={(exactErrors ?? run.errors) > 0 ? 'var(--bad)' : undefined}
+            sub={exactErrors === null ? [`timeout ${TIMEOUT_MS} ms`, `no steady state: the run's figure, which grows with its ${TEST_JOBS.toLocaleString('en-US')} jobs`] : [`timeout ${TIMEOUT_MS} ms, exact`, `the run reads ${pctText(run.errors, 1)}`]}
           />
         </Stats>
       }
       legend={
         <Legend
           items={[
-            { color: 'var(--info)', label: 'offered load', shape: 'line' },
+            { color: 'var(--info)', label: 'offered load (left), p50 (right)', shape: 'line' },
             { color: 'var(--ok)', label: 'achieved throughput', shape: 'line' },
             { color: 'var(--bad)', label: 'gap past capacity' },
             { color: 'var(--orange)', label: 'p99', shape: 'line' },

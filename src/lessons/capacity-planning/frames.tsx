@@ -61,7 +61,8 @@ export function forecastCaption(plan: Plan): ReactNode {
 export function growthNote(growth: number): ReactNode {
   return (
     <>
-      {pctText(growth, 0)} a month is a factor of {sig(yearFactor(growth, 'compound'), 4)} over a year compounded, not the {sig(yearFactor(growth, 'linear'), 4)} that adding it up gives.
+      {pctText(growth, 0)} a month is a factor of {sig(yearFactor(growth, 'compound'), 4)} over a year compounded
+      {yearFactor(growth, 'linear') > 0 ? <>, not the {sig(yearFactor(growth, 'linear'), 4)} that adding it up gives.</> : <>; adding it up instead would pass below zero, which a load cannot do.</>}
     </>
   );
 }

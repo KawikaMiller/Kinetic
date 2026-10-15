@@ -104,7 +104,7 @@ export function ForecastScene({ picker }: { picker: ReactNode }) {
           {order !== null && order >= 0 && order <= FORECAST_MONTHS && <VLine at={order} tone="hi" label="order by" dashed />}
         </Plot2D>
         <MetricMeter
-          label="Headroom today"
+          label="Room before the plan's capacity"
           value={(cap - plan.peak) / cap}
           max={1}
           format={(v) => pctText(v, 0)}
