@@ -6,13 +6,15 @@ import {
 } from './captions';
 import lesson from './index';
 import {
-  advance, BASE_BACKOFF, BROKEN_SEED, B_CAP, CASCADE_ERROR_PCT, createWorld, insightFor, MAX_RETRIES, MIN_CALLS, OPEN_FOR, PROBES,
-  STORM_RATIO, THREADS, TIMEOUT, TRIP_RATIO, type BreakerState, type Mode, type Stats, type World,
+  advance, BASE_BACKOFF, BROKEN_SEED, B_CAP, CASCADE_ERROR_PCT, createWorld, insightFor, isStorm, MAX_FAIL_CHANCE, MAX_RETRIES, MIN_CALLS, OPEN_FOR, PROBES,
+  Sim, STORM_RATIO, THREADS, TIMEOUT, TRIP_RATIO, type BreakerState, type Mode, type Stats, type World,
 } from './sim';
 
 const DT = 0.05;
 const SEEDS = Array.from({ length: 200 }, (_, i) => i);
 const RUN_SECONDS = 45;
+/** How far above STORM_RATIO the pinned seed's naive peak must sit, in multiples of the user traffic. */
+const BROKEN_SEED_MARGIN = 0.5;
 const DEFAULT_RATE = 15;
 
 interface Schedule {
@@ -227,9 +229,11 @@ describe('safety invariants over 200 seeded fault schedules (breaker mode)', () 
 });
 
 describe('naive retries are the broken mode: they break the load bound the breaker keeps', () => {
-  it('BROKEN_SEED is the lowest seed on which naive retries push B above STORM_RATIO times the user traffic', () => {
-    const lowest = SEEDS.find((seed) => worstLoad('naive', seed).ratio > STORM_RATIO);
-    expect(lowest).toBe(BROKEN_SEED);
+  it('BROKEN_SEED breaks the bound by a wide margin, so a small change to the model cannot quietly flip it (the lowest failing seed would pass by 0.01)', () => {
+    const margin = worstLoad('naive', BROKEN_SEED).ratio - STORM_RATIO;
+    expect(margin).toBeGreaterThanOrEqual(BROKEN_SEED_MARGIN);
+    // And the breaker, on the same schedule, keeps the bound.
+    expect(worstLoad('breaker', BROKEN_SEED).ratio).toBeLessThanOrEqual(STORM_RATIO);
   });
 
   it('on BROKEN_SEED the excess is the retries: first attempts alone stay under the bound, the total does not', () => {
@@ -237,7 +241,7 @@ describe('naive retries are the broken mode: they break the load bound the break
     const w = worstLoad('naive', BROKEN_SEED, sch);
     expect(w.ratio).toBeGreaterThan(STORM_RATIO);
     expect(w.firstAttempts).toBeLessThanOrEqual(STORM_RATIO);
-    expect(w.ratio - w.firstAttempts).toBeGreaterThan(0.5);
+    expect(w.ratio - w.firstAttempts).toBeGreaterThan(BROKEN_SEED_MARGIN);
     // The bad day is on at that moment, and the violation is not there before it starts.
     expect(w.at).toBeGreaterThan(sch.at);
     let before = 0;
@@ -275,6 +279,114 @@ describe('naive retries are the broken mode: they break the load bound the break
     }
     expect(1 + MAX_RETRIES).toBe(4);
     expect(worstPerRequest).toBe(1 + MAX_RETRIES);
+  });
+});
+
+/** Put `n` calls in flight at B for a long time, so B's concurrency is n. */
+function park(sim: Sim, n: number) {
+  for (let i = 0; i < n; i++) {
+    sim.calls.push({
+      id: -i, req: { id: -i, born: 0, attempt: 0, thread: 0, retryAt: null, done: true }, attempt: 0, probe: false, sentAt: 0, arriveB: 0,
+      bDoneAt: 1000, respAt: 1000, ok: true, resolved: true, timedOut: false, scheduled: true,
+    });
+  }
+}
+
+describe("the failure rate on B's box is the rate the model applies", () => {
+  /**
+   * Measure it rather than recompute it: park `parked` calls in flight at B, send one more through the real step(), and count how
+   * often it fails over many seeds. Nothing here calls failChance or the label's formula.
+   */
+  const measuredFailure = (failRate: number, parked: number, trials = 4000) => {
+    let failed = 0;
+    for (let seed = 0; seed < trials; seed++) {
+      const sim = new Sim(seed);
+      sim.failRate = failRate;
+      park(sim, parked);
+      const probe = { id: 1, req: { id: 1, born: 0, attempt: 0, thread: 1, retryAt: null, done: true }, attempt: 0, probe: false, sentAt: 0, arriveB: 0.001, bDoneAt: Infinity, respAt: Infinity, ok: false, resolved: false, timedOut: false, scheduled: false };
+      sim.calls.push(probe);
+      sim.step(0.002);
+      if (!probe.ok) failed++;
+    }
+    return failed / trials;
+  };
+
+  it('with B overloaded and a 3% base rate, the sim fails about the share the box shows, not the base 3%', () => {
+    for (const parked of [0, 14, 22, 30, 60]) {
+      const sim = new Sim(0);
+      sim.failRate = HEALTHY.fail / 100;
+      park(sim, parked);
+      const shown = Math.round(sim.nextCallFailChance * 100);
+      const measured = measuredFailure(HEALTHY.fail / 100, parked);
+      expect(Math.abs(measured * 100 - shown), `${parked} calls at B: shows ${shown}%, measured ${(measured * 100).toFixed(1)}%`).toBeLessThanOrEqual(2.5);
+    }
+  });
+
+  it('the box says "3% fail" only when B is not overloaded, and a heal during a backlog shows a far higher rate (try-this 2)', () => {
+    const healed = (parked: number) => {
+      const sim = new Sim(0);
+      sim.failRate = HEALTHY.fail / 100;
+      park(sim, parked);
+      return Math.round(sim.nextCallFailChance * 100);
+    };
+    expect(healed(5)).toBe(HEALTHY.fail);
+    expect(healed(40)).toBeGreaterThan(50);
+    // and the real run after Heal B reaches such a backlog
+    const w = createWorld(DEFAULT_RATE, BROKEN_SEED);
+    w.sim.failRate = BAD_DAY.fail / 100;
+    w.sim.latency = BAD_DAY.latency / 1000;
+    for (let i = 0; i < 12 / DT; i++) advance(w, DT);
+    w.sim.failRate = HEALTHY.fail / 100;
+    w.sim.latency = HEALTHY.latency / 1000;
+    advance(w, DT);
+    expect(w.sim.nextCallFailChance).toBeGreaterThan(0.2);
+    expect(w.sim.failRate).toBe(HEALTHY.fail / 100);
+  });
+
+  it('it never exceeds the cap, however deep the backlog', () => {
+    const sim = new Sim(0);
+    sim.failRate = 0.9;
+    park(sim, 100);
+    expect(sim.nextCallFailChance).toBe(MAX_FAIL_CHANCE);
+  });
+});
+
+describe('the storm stat fires on retry load, also at the busiest user traffic', () => {
+  it("isStorm: above STORM_RATIO times the users, or mostly retries on top of the users' load; a healthy trickle of retries is neither", () => {
+    expect(isStorm({ bLoad: 10 * STORM_RATIO + 1, bRetryLoad: 0 }, 10)).toBe(true);
+    expect(isStorm({ bLoad: 15, bRetryLoad: 8 }, 10)).toBe(true);
+    expect(isStorm({ bLoad: 15, bRetryLoad: 5 }, 10)).toBe(false);
+    expect(isStorm({ bLoad: 8, bRetryLoad: 6 }, 10)).toBe(false);
+    expect(isStorm({ bLoad: 10.3, bRetryLoad: 0.3 }, 10)).toBe(false);
+  });
+
+  it('at 25 users a second the thread pool keeps B under STORM_RATIO, yet most of its load is retries and the stat fires', () => {
+    const rate = 25;
+    const w = createWorld(rate, BROKEN_SEED);
+    w.sim.failRate = BAD_DAY.fail / 100;
+    w.sim.latency = BAD_DAY.latency / 1000;
+    let peakRatio = 0;
+    let fired = false;
+    let retryShare = 0;
+    for (let i = 0; i < 30 / DT; i++) {
+      advance(w, DT);
+      const st = w.sim.stats();
+      peakRatio = Math.max(peakRatio, st.bLoad / rate);
+      if (isStorm(st, rate)) {
+        fired = true;
+        retryShare = Math.max(retryShare, st.bRetryLoad / st.bLoad);
+      }
+    }
+    expect(peakRatio).toBeLessThan(STORM_RATIO);
+    expect(fired).toBe(true);
+    expect(retryShare).toBeGreaterThan(0.9);
+  });
+
+  it('never fires for a healthy B on any seed, with naive retries', () => {
+    for (const seed of SEEDS.slice(0, 60)) {
+      const none = { ...scheduleFor(seed), fail: HEALTHY.fail, latency: HEALTHY.latency };
+      runSchedule('naive', seed, none, { onStep: (w, _b, _c, st) => expect(isStorm(st, none.rate), `seed ${seed} t=${w.sim.now.toFixed(2)}`).toBe(false) });
+    }
   });
 });
 

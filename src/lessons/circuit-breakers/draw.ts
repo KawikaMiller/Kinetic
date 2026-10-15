@@ -111,7 +111,7 @@ function drawServiceB(ctx: Ctx, x: number, y: number, sim: Sim) {
   bar(ctx, x - barW / 2, y + 30, barW, 6, conc / (B_CAP * 3), fill);
   rect(ctx, x - barW / 2 + barW / 3, y + 26, 1.5, 14, { fill: C.text });
   text(ctx, `${conc} busy · capacity ${B_CAP}`, x, y + 50, { color: overloaded ? C.bad : C.muted });
-  text(ctx, `${mult.toFixed(1)}× slower · ${Math.round(sim.failRate * 100)}% fail`, x, y + 66, { color: overloaded ? C.bad : C.faint });
+  text(ctx, `${mult.toFixed(1)}× slower · ${Math.round(sim.nextCallFailChance * 100)}% fail`, x, y + 66, { color: overloaded ? C.bad : C.faint });
 }
 
 function drawSwitch(ctx: Ctx, x: number, y: number, state: BreakerState | null, openFor: number) {

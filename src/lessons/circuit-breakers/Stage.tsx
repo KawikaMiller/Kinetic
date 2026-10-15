@@ -9,16 +9,16 @@ import { useSimulation } from '../../core/useSimulation';
 import { BAD_DAY, badDayCaption, HEALTHY, healCaption, insightCaption, introCaption, MODE_LABEL, modeCaption, transitionCaption } from './captions';
 import { drawScene } from './draw';
 import {
-  advance, B_CAP, BROKEN_SEED, createWorld, insightFor, NET, STORM_RATIO, THREADS, TIMEOUT, type Mode, type Stats as SimStats, type World,
+  advance, B_CAP, BROKEN_SEED, createWorld, ERROR_RED_PCT, insightFor, isStorm, NET, STORM_RATIO, STORM_RETRY_SHARE, THREADS, TIMEOUT, type Mode, type Stats as SimStats, type World,
 } from './sim';
 
 const MODES: Mode[] = ['naive', 'backoff', 'breaker'];
 
 const STAGE_HEIGHT = 470;
 const INSIGHT_COOLDOWN_S = 8;
-/** A's error rate from which the stat turns red (percent). */
-const ERROR_RED_PCT = 1;
 const DEFAULT_RATE = 15;
+/** What turns the load stat red, said under it: the thread pool caps B's load, so at high traffic the second half is what fires. */
+const STORM_RULE = `red above ${STORM_RATIO}× the users, or when over ${Math.round(STORM_RETRY_SHARE * 100)}% of it is retries`;
 
 export function Stage() {
   const setCaption = useSetCaption();
@@ -93,8 +93,8 @@ export function Stage() {
           <Stat
             label="Load on B"
             value={snap ? perSec(snap.bLoad) : NA}
-            color={snap && snap.bLoad > rate * STORM_RATIO ? 'var(--bad)' : undefined}
-            sub={snap ? [`users send ${rate}/s`, `${perSec(snap.bRetryLoad)} are retries`] : `users send ${rate}/s`}
+            color={snap && isStorm(snap, rate) ? 'var(--bad)' : undefined}
+            sub={snap ? [`users send ${rate}/s`, `${perSec(snap.bRetryLoad)} are retries`, STORM_RULE] : [`users send ${rate}/s`, STORM_RULE]}
           />
           <Stat
             label="A error rate"

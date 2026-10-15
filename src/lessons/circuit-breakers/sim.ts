@@ -22,10 +22,17 @@ export const TRIP_RATIO = 0.5;
 export const PROBES = 3;
 /** B's load, as a multiple of the user traffic, that counts as a retry storm. */
 export const STORM_RATIO = 1.8;
-/** The seed the lesson loads with: the lowest seed whose fault schedule breaks naive retries (see sim.test.ts). */
-export const BROKEN_SEED = 0;
+/**
+ * A retry storm is also under way when retries make up more than this share of B's load while B carries more than the users send.
+ * The thread pool caps B's load, so at high user traffic the ratio alone never reaches STORM_RATIO even when most of the load is retries.
+ */
+export const STORM_RETRY_SHARE = 0.5;
+/** The seed the lesson loads with: a seed whose fault schedule breaks naive retries by a wide margin, not a bare one (see sim.test.ts). */
+export const BROKEN_SEED = 1;
 /** Seconds over which "load on B" is measured. */
 export const LOAD_WINDOW = 2;
+/** However overloaded B is, a call still succeeds this often. */
+export const MAX_FAIL_CHANCE = 0.98;
 export const NET = 0.12; // one-way network hop, seconds (slowed down to watch)
 
 export interface Req {
@@ -101,6 +108,16 @@ export class Sim {
   bLoad(conc: number) {
     const over = Math.max(0, conc - B_CAP) / B_CAP;
     return { mult: Math.min(8, 1 + over * 4), extraFail: Math.min(0.6, over * 0.8) };
+  }
+
+  /** The failure chance a call arriving at B right now would face: it counts itself among the calls B is working on. */
+  get nextCallFailChance() {
+    return this.failChance(this.bConcurrency + 1);
+  }
+
+  /** The chance that a call B picks up at this concurrency fails: the base failure rate plus what overload adds, capped. */
+  failChance(conc: number) {
+    return Math.min(MAX_FAIL_CHANCE, this.failRate + this.bLoad(conc).extraFail);
   }
 
   arrive() {
@@ -204,10 +221,12 @@ export class Sim {
       if (!c.scheduled && now >= c.arriveB) {
         c.scheduled = true;
         this.bArrivals.push({ t: now, retry: c.attempt > 0 });
-        const { mult, extraFail } = this.bLoad(this.bConcurrency);
+        // The call counts itself: it is scheduled (and so in flight at B) from this moment.
+        const conc = this.bConcurrency;
+        const { mult } = this.bLoad(conc);
         c.bDoneAt = c.arriveB + this.latency * mult * (0.7 + this.rnd() * 0.6);
         c.respAt = c.bDoneAt + NET;
-        c.ok = this.rnd() >= Math.min(0.98, this.failRate + extraFail);
+        c.ok = this.rnd() >= this.failChance(conc);
       }
       if (c.resolved) continue;
       if (now >= c.sentAt + TIMEOUT && c.respAt > c.sentAt + TIMEOUT) {
@@ -316,6 +335,13 @@ export type Insight =
   | { kind: 'storm'; ratio: number }
   | { kind: 'backlog'; conc: number; orphans: number };
 
+/** Whether B's load counts as a retry storm: far above the user traffic, or mostly retries on top of it. */
+export function isStorm(st: Pick<Stats, 'bLoad' | 'bRetryLoad'>, rate: number): boolean {
+  return st.bLoad > rate * STORM_RATIO || (st.bLoad > rate && st.bRetryLoad > st.bLoad * STORM_RETRY_SHARE);
+}
+
+/** A's error rate from which its stat turns red (percent). */
+export const ERROR_RED_PCT = 1;
 /** A's error rate above this, with every thread busy, is a cascade. */
 export const CASCADE_ERROR_PCT = 50;
 /** B is "healthy again" when its failure rate is below this (a fraction). */
@@ -326,7 +352,7 @@ const BACKLOG_FACTOR = 2;
 /** The one thing worth saying about these numbers, or null. Pure: the narrator rate-limits it. */
 export function insightFor(st: Stats, o: { rate: number; mode: Mode; failRate: number }): Insight | null {
   if (st.busyThreads >= THREADS && st.errorPct > CASCADE_ERROR_PCT) return { kind: 'cascade' };
-  if (st.bLoad > o.rate * STORM_RATIO && o.mode !== 'breaker') return { kind: 'storm', ratio: st.bLoad / o.rate };
+  if (isStorm(st, o.rate) && o.mode !== 'breaker') return { kind: 'storm', ratio: st.bLoad / o.rate };
   if (st.bConc > B_CAP * BACKLOG_FACTOR && o.failRate < HEALTHY_FAIL_BELOW) return { kind: 'backlog', conc: st.bConc, orphans: st.bOrphans };
   return null;
 }
