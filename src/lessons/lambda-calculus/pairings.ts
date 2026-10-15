@@ -29,7 +29,7 @@ export const PAIRINGS: Record<Example, Pairing> = {
   order: {
     label: 'Evaluation order',
     lambda: ['(λx.λy.y) Ω', 'normal order: λy.y in one step (the argument is dropped unevaluated)', 'applicative order: reduces Ω first, which reduces to itself'],
-    js: ['const omega = () => (x => x(x))(x => x(x));', 'const second = x => y => y;', '// second(omega())(1)  evaluates omega() first, before second is called'],
+    js: ['const omega = () => (x => x(x))(x => x(x));', 'const second = x => y => y;', '// second(omega())(1)  evaluates omega() first, before second is called: the stack overflows (RangeError), it never gets to second'],
     note: 'JavaScript evaluates the arguments of a call before the call, so the Ω-style argument is evaluated first and never returns. That is a statement about JavaScript only; other languages differ.',
   },
 };

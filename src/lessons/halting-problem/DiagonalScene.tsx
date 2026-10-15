@@ -68,7 +68,7 @@ export function DiagonalScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--orange)', label: 'L: it claims the program loops', shape: 'square' },
             { color: 'var(--hi)', label: 'the diagonal: a program on its own number', shape: 'square' },
             { color: 'var(--violet)', label: 'D’s row', shape: 'square' },
-            { color: 'var(--bad)', label: 'where a row differs from D', shape: 'square' },
+            { color: 'var(--bad)', label: 'a row differs from D at its own diagonal cell', shape: 'square' },
           ]}
         />
       }

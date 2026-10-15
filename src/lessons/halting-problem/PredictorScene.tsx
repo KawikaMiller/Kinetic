@@ -95,7 +95,7 @@ export function PredictorScene({ picker }: { picker: ReactNode }) {
                     <span className={`hp-verdict tone-${verdictTone(r.answer.verdict, r.outcome === 'right')}`}>
                       {r.outcome === 'right' ? 'right' : r.outcome === 'wrong' ? 'wrong' : 'no claim'}
                     </span>{' '}
-                    {answerPhrase(r.answer)}
+                    {answerPhrase(r.answer, { modelledD: r.id === 'd' })}
                   </td>
                 </tr>
               ))}

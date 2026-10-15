@@ -82,7 +82,7 @@ export function limitsCaption(rows: readonly AnalyserRow[], limit: number): Reac
   const maybe = rows.find((r) => r.verdict === 'maybe');
   return (
     <>
-      With a limit of {limit.toLocaleString('en-US')} steps the analyser says yes to {count('yes')}, no to {count('no')} and maybe to {count('maybe')} of the {LIBRARY.length} machines. It is never wrong about the yes and no answers, because each rests on a run or a repeated configuration.
+      With a limit of {limit.toLocaleString('en-US')} steps the analyser says yes to {count('yes')}, no to {count('no')} and maybe to {count('maybe')} of the {LIBRARY.length} machines. In this lesson it is never wrong about the yes and no answers, because each rests on a run or a repeated configuration.
       {maybe && <> {maybe.name}: it {cutoffPhrase(limit)}, which is not an answer.</>}
     </>
   );

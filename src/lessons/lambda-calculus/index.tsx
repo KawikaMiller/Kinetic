@@ -46,7 +46,7 @@ const lesson: LessonModule = {
     'Beta reduction replaces a variable by the argument where it is free in the body. It is not find-and-replace, because a free variable of the argument would be captured by a binder of the same name.',
     'Numerals and booleans are functions: a numeral applies f n times, a boolean picks one of two arguments, and add, mul and not are terms that rearrange them.',
     'A term can have a normal form that one strategy finds and another misses: normal order reaches λy.y where applicative order keeps reducing Ω.',
-    'When normal order and applicative order both reach a normal form they agree up to renaming; that is the Church-Rosser theorem, stated here and checked on a corpus, not proved.',
+    'When normal order and applicative order both reach a normal form they agree up to renaming; that follows from the Church-Rosser theorem (confluence), which is stated here and checked on a corpus, not proved.',
   ],
   quiz: [
     {

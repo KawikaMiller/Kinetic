@@ -59,7 +59,7 @@ export function ImportsScene({ picker }: { picker: ReactNode }) {
           <Stat label="Last call" value={last ? (last.result.ok ? `${last.label}${last.result.value === undefined ? '' : ` = ${last.result.value}`}` : `${last.label}: ${last.result.errorClass}`) : 'none yet'} color={last && !last.result.ok ? 'var(--bad)' : undefined} />
         </Stats>
       }
-      legend={<Legend items={[{ color: 'var(--orange)', label: 'a missing import: refused when linking', shape: 'square' }, { color: 'var(--ok)', label: 'instantiated', shape: 'square' }, { color: 'var(--bad)', label: 'a trap while running', shape: 'square' }]} />}
+      legend={<Legend items={[{ color: 'var(--orange)', label: 'a missing import: refused when instantiating', shape: 'square' }, { color: 'var(--ok)', label: 'instantiated', shape: 'square' }, { color: 'var(--bad)', label: 'a trap while running', shape: 'square' }]} />}
       controls={[
         <>
           {picker}

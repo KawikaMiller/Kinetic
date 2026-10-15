@@ -43,6 +43,7 @@ export function MemoryScene({ picker }: { picker: ReactNode }) {
 
   // Memoised: the caption effect below depends on it, and a fresh object every render would re-set the caption forever.
   // `grows` is not read inside sumArray but memory.grow changes what the call sees, so it must invalidate the result.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `grows` is the signal that memory.grow changed the memory sumArray reads
   const result = useMemo(() => sumArray(world, ptr, len), [world, ptr, len, grows]);
   const bytes = memoryBytes(world);
   const total = world.memory.buffer.byteLength;

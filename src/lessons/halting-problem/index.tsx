@@ -19,12 +19,12 @@ const lesson: LessonModule = {
     analogy: 'Like a referee who must call every game, handed a game whose result is "the opposite of whatever the referee calls": any call is wrong.',
     useCases: [
       'Judging a promise of a perfect checker for what arbitrary programs do, such as a perfect bug finder or a perfect equivalence checker',
-      'Understanding why linters and static analysers answer "maybe" for some code',
+      'Understanding why a sound static analyser has to answer "maybe" for some code',
       'Reading "did not halt within N steps" in a timeout or a test runner correctly',
       'Telling which questions about programs only need a bound, and so can be answered, from those that cannot',
     ],
     why: 'Engineers meet this as timeouts, as "maybe" from analysers, and as tools that promise too much. The theorem tells you which promises are impossible and which only need a bound.',
-    watch: 'In the table, H cells are green and L cells orange; the diagonal is ringed yellow, D’s row is purple, and a red ring marks the cells where a row differs from D. In the scoreboard a right verdict is green, a wrong one red, and UNKNOWN or "did not halt within N steps" grey: grey means not proved either way. In the card sort, green marks the right class and red a wrong one.',
+    watch: 'In the table, H cells are green and L cells orange; the diagonal is ringed yellow, D’s row is purple, and a red ring marks the cell where each row differs from D, at its own diagonal. In the scoreboard a right verdict is green, a wrong one red, and UNKNOWN or "did not halt within N steps" grey: grey means not proved either way. In the card sort, green marks the right class and red a wrong one.',
   },
   tryThis: [
     'On The diagonal table, press 2 Build D: D’s row appears in purple, every row differs from it at its own diagonal cell, and Rows equal to D reads 0 of 6, whatever the claims. Press Randomise and it still does.',
@@ -37,13 +37,13 @@ const lesson: LessonModule = {
     'The halting problem says no single program decides halting correctly for all programs and inputs; it does not say a given program’s halting cannot be shown.', // allow-absolute: states the theorem’s own quantifiers
     'Diagonalisation builds D, which differs from row i of any claimed table at input i, so D is in no row; asked about itself, any answer it is given is wrong.',
     'A budget run that stops proves nothing about later steps. A loop is shown by a certificate: a repeated configuration, or a recorded proof.',
-    'Rice’s theorem: every non-trivial semantic property of programs is undecidable, while syntactic and bounded properties stay decidable.', // allow-absolute: states the theorem
+    'Rice’s theorem: every non-trivial semantic property, a property of the function a program computes, is undecidable, while syntactic and bounded properties stay decidable.', // allow-absolute: states the theorem
   ],
   quiz: [
     {
       q: `A program was run for ${DEFAULT_BUDGET} steps and the budget stopped it. What did that run prove?`,
       options: [
-        'That the program loops, so it will never halt on that input, however large the budget',
+        'That the program loops, whatever the budget, so a larger one would change nothing',
         'That it did not halt within those steps, and nothing about the later ones',
         'That the program halts, just more slowly than the budget allows',
         'That the program has a bug, since a correct one halts quickly',

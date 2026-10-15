@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { ANALYSER_RANGE, analyseAll, DEFAULT_ANALYSER_LIMIT, type AnalyserRow } from './analyser';
 import { limitsCaption } from './captions';
@@ -67,7 +67,7 @@ export function LimitsScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
         </div>
-        <Hint tone="muted">Raise the limit and the maybes turn into answers. The walk-right machine stays a maybe at every limit: its recorded argument settles it, and this analyser does not read arguments.</Hint>
+        <Hint tone="muted">Raise the limit and the maybes turn into answers. The walk-right machine stays a maybe at every limit on this slider (10 to 500): its recorded argument settles it, and this analyser does not read arguments.</Hint>
         <div className="hp-cards-row">
           <Box>
             <SectionTitle>What the theorem says</SectionTitle>
@@ -75,11 +75,12 @@ export function LimitsScene({ picker }: { picker: ReactNode }) {
           </Box>
           <Box>
             <SectionTitle>What it does not say</SectionTitle>
-            <p className="hp-note">It does not say that you cannot analyse many programs, or that a particular program’s halting can’t be shown. Linters and static analysers answer yes, no or maybe: sound, but incomplete. A bounded question, such as halting within 1,000 steps, is always decidable by running.</p>
+            <p className="hp-note">It does not say that you cannot analyse many programs, or that a particular program’s halting can’t be shown. A sound analyser, one that never gives a wrong yes or no, has to say maybe for some programs; real linters often trade that guarantee away to be useful, and this toy is sound only because it runs the machine, where a real analyser reads code. A bounded question, such as halting within 1,000 steps, is always decidable by running.</p>
           </Box>
         </div>
         <ProvenanceRow>
           <Provenance kind="toy">a toy analyser over the eight library machines, not a real static analyser</Provenance>
+          <ClaimLabel kind="practice">real linters often give up soundness or completeness to be useful; this toy is sound only because it runs the machine, while a static analyser reads code</ClaimLabel>
         </ProvenanceRow>
       </div>
     </StageFrame>

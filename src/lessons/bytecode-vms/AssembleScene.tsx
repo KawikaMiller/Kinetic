@@ -26,6 +26,7 @@ export function AssembleScene({ picker }: { picker: ReactNode }) {
       above={
         <>
           {!assembled.ok && <Hint tone="muted"><span role="alert">{assembled.error}</span></Hint>}
+          <Hint tone="muted">Each line is at most {ASSEMBLE_LIMITS.maxLineChars} characters, comments included, and a # comment must sit on a line of its own.</Hint>
           {assembled.ok && <Hint tone="muted">Up to {ASSEMBLE_LIMITS.maxLines} instructions. PUSH takes a number, LOAD and STORE a slot 0 to 3, JMP and JZ an instruction number. Press play, then fix the listing and run again.</Hint>}
         </>
       }

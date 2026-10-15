@@ -41,19 +41,19 @@ const lesson: LessonModule = {
       'Reading an out-of-bounds or divide-by-zero trap from a module without guessing',
     ],
     why: 'WebAssembly turns up in browsers, build tools and plugin systems. Knowing that it is a validated stack machine with its own memory and only the imports it is given explains both what it can do and why it is not a way around the sandbox.',
-    watch: 'In the byte grid each section of the module has its own hue, named in the key under the grid (the colours are only labels), and the ringed yellow byte is the operator you can change. The instruction about to run is yellow, the top of the stack blue, and the engine’s real answer green. A trap is red and a missing import orange: it is refused when linking, which is not a crash. The memory the call reads is tinted blue, and a detached buffer is grey.',
+    watch: 'In the byte grid each section of the module has its own hue, named in the key under the grid (the colours are only labels), and the ringed yellow byte is the operator you can change. The instruction about to run is yellow, the top of the stack blue, and the engine’s real answer green. A trap is red and a missing import orange: it is refused when instantiating, which is not a crash. The memory the call reads is tinted blue, and a detached buffer is grey.',
   },
   tryThis: [
     `On From source to bytes, the add module is ${sizes[0]} bytes and the real engine says add(7, 3) = ${adds[0]}. Press i32.sub: the ringed byte changes from 0x6a to 0x6b and the engine says ${adds[1]}; i32.mul gives ${adds[2]}.`,
     `On A stack machine, stepped, press play on sum(5): the stack and the locals move one instruction at a time and the function returns ${sum(5)}, the same as the real engine. Drag n to 10: ${sum(10)}.`,
-    `On The boundary, ptr 0 and len 8 sum to ${fine.ok ? fine.value : '?'}. Press ptr 65530, len 4: the engine traps with a ${trap.ok ? 'value' : trap.errorClass}, because the read runs past the ${PAGE_BYTES.toLocaleString('en-US')} bytes of memory.`,
+    `On The boundary, ptr 0 and len 8 sum to ${fine.ok ? fine.value : '?'}. Press Reset first if you have grown memory, then ptr 65530, len 4: the engine traps with a ${trap.ok ? 'value' : trap.errorClass}, because the read runs past the ${PAGE_BYTES.toLocaleString('en-US')} bytes of memory.`,
     `Press Grow memory by one page: the first view’s byteLength reads ${grown.detached}, because it is detached, and memory is now ${grown.after.toLocaleString('en-US')} bytes.`,
     `On What the module may touch, it cannot be created while env.log is withheld: ${noEnv.ok ? 'it works' : noEnv.errorClass} when the whole env object is missing and ${noLog.ok ? 'it works' : noLog.errorClass} when only log is. Hand it over, press run(42), then div(1, 0): the engine traps with a ${divTrap && !divTrap.ok ? divTrap.errorClass : '?'}.`,
   ],
   keyIdeas: [
     'WebAssembly is a compact binary format for a stack machine: a compiler emits it, and the engine validates it before running a single instruction.',
     'Linear memory is a resizable array of bytes shared with JavaScript: just numbers cross a call, and growing memory detaches the old ArrayBuffer view.',
-    'A module reaches the page, the network or files through the imports the host hands it and by no other route, and a missing import is refused when linking.',
+    'A module reaches the page, the network or files through the imports the host hands it and, by design, no other route (a tight loop can still hang the tab), and a missing import is refused when instantiating.',
     'WebAssembly is not automatically faster than JavaScript: that depends on the workload, and this lesson measures nothing.',
   ],
   quiz: [
@@ -66,7 +66,7 @@ const lesson: LessonModule = {
         'It can read local files, since the engine gives every module a file system to use',
       ],
       answer: 1,
-      why: 'A module reaches the outside through the imports it declares, and the host chooses what they are. With none, it can compute and trap, and that is the extent of it.',
+      why: 'A module reaches the outside through the imports it declares, and the host chooses what they are. With none, it can compute and trap, and it cannot touch the page, though a tight loop or a memory.grow can still burn CPU or memory.',
     },
     {
       q: 'Is WebAssembly just faster JavaScript?',

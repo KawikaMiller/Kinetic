@@ -47,7 +47,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
             <Stat
               key={s}
               label={STRATEGY_LABEL[s]}
-              value={runs[s].end.kind === 'normal' ? `${stepsOf(runs[s])} steps` : runs[s].end.kind === 'loop' ? 'repeats' : runs[s].end.kind === 'too-big' ? 'too big' : 'no normal form'}
+              value={runs[s].end.kind === 'normal' ? `${stepsOf(runs[s])} steps` : runs[s].end.kind === 'loop' ? 'repeats' : runs[s].end.kind === 'too-big' ? 'too big' : `none within ${budget} steps`}
               color={runs[s].end.kind === 'normal' ? 'var(--ok)' : runs[s].end.kind === 'loop' ? 'var(--bad)' : 'var(--dim)'}
               sub={runs[s].end.kind === 'normal' ? 'reached a normal form' : runs[s].end.kind === 'budget' ? `within ${budget} steps` : undefined}
             />
@@ -81,7 +81,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
         </div>
-        <Hint tone="muted">Normal order reduces the leftmost outermost redex; applicative order reduces the leftmost innermost one, so it works on arguments first. A term that has a normal form is reached by normal order; applicative order can miss it. The size guard stops a term past {MAX_SIZE.toLocaleString('en-US')} nodes.</Hint>
+        <Hint tone="muted">Normal order reduces the leftmost outermost redex; applicative order reduces the leftmost innermost one, so it works on arguments first. Given enough steps, a term that has a normal form is reached by normal order; applicative order can miss it. The size guard stops a term past {MAX_SIZE.toLocaleString('en-US')} nodes.</Hint>
         <ProvenanceRow>
           <Provenance kind="toy">a budget stop is "did not reach a normal form within N steps", not a verdict; only a term that comes back alpha-equal is certified as repeating</Provenance>
         </ProvenanceRow>

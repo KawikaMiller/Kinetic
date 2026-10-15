@@ -3,6 +3,7 @@
  * the learner's tables' judging against oracles, the step-by-step frames and the steps-against-size
  * measurement. The machine itself (`Tm`, `runTm`, `parseTmTable`) is the shared `core/tm`.
  */
+import { plural } from '../../core/format';
 import { mulberry32, randInt } from '../../core/random';
 import {
   parseTmTable, runTm, symbolAt, tapeText, tmStart, tmStep, TM_BLANK,
@@ -211,14 +212,14 @@ export const shown = (s: string) => (s === '' ? '(empty tape)' : s);
 export function describeCase(c: CaseResult, task: TaskId): string {
   const { verdict: v, run } = c;
   const head = `Input ${shown(c.input)}:`;
-  if (v.kind === 'stuck') return `${head} stuck in ${v.state} reading ${v.read === TM_BLANK ? 'a blank' : v.read}, after ${run.steps} steps. No rule matches, so the machine stops without answering.`;
+  if (v.kind === 'stuck') return `${head} stuck in ${v.state} reading ${v.read === TM_BLANK ? 'a blank' : v.read}, after ${plural(run.steps, 'step')}. No rule matches, so the machine stops without answering.`;
   if (v.kind === 'budget') return `${head} did not halt within ${STEP_BUDGET.toLocaleString('en-US')} steps. That is not a verdict on later steps.`;
   if (v.kind === 'wrong') {
     return task === 'increment'
       ? `${head} halted with the tape ${v.got}, but the number plus one is ${v.expected}.`
       : `${head} halted in ${v.got}, but this input should end in ${v.expected}.`;
   }
-  return `${head} correct after ${run.steps} steps.`;
+  return `${head} correct after ${plural(run.steps, 'step')}.`;
 }
 
 // ---- stepping ----

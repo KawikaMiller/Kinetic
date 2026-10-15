@@ -7,7 +7,7 @@ import { TapeStrip } from '../../components/TapeStrip';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextArea, TextField } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { symbolAt, type Tm } from '../../core/tm';
+import { symbolAt, TM_LIMITS, type Tm } from '../../core/tm';
 import { stepCaption } from './captions';
 import {
   checkTable, describeCase, frameStatus, INCREMENT_NO_CARRY, INCREMENT_WRONG_WRITE, ruleIndex, TASKS, traceFrames,
@@ -119,6 +119,7 @@ export function TaskScene({ state, picker }: { state: TaskState; picker: ReactNo
         <TapeStrip symbol={(i) => symbolAt(f.config, i)} head={f.config.head} state={f.config.state} changed={f.changed} cells={phone ? PHONE_CELLS : DESKTOP_CELLS} />
         <div className="tm-editor">
           <TextArea label="Transition table: state symbol -> write move next" value={state.text} onChange={state.setText} rows={TABLE_ROWS} className="tm-table" />
+          <Hint tone="muted">Each line is at most {TM_LIMITS.maxLineChars} characters, comments included, and a # comment must sit on a line of its own.</Hint>
           {state.tableError && <p className="tm-error" role="alert">{state.tableError} The machine below is the last table that parsed.</p>}
           <CodePanel title="The machine as read" lines={machine.rules.map(ruleLine)} active={active >= 0 ? active : null} />
         </div>

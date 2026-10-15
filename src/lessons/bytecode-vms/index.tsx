@@ -99,7 +99,7 @@ const lesson: LessonModule = {
     {
       q: `A run was cut off at ${budget} steps. What does that show?`,
       options: [
-        'That the program loops, so it will never halt on any input at all',
+        'That the program loops, so no budget would ever see it stop, on any input at all',
         'That the VM has a bug somewhere in its dispatch loop or its stack',
         'That it did not halt within the budget, which settles nothing about later steps',
         'That the stack has overflowed and the machine is stuck at that point in the listing, so it stopped',

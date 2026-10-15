@@ -47,7 +47,7 @@ const lesson: LessonModule = {
     {
       q: `A table has run for ${budgetText} steps and the machine has not stopped. What can you conclude?`,
       options: [
-        'The machine is looping, so it will never halt, whatever input it is given',
+        'The machine is looping, so no budget would ever see it stop, whatever input it is given',
         'The machine is stuck, because no rule matched the symbol that was under the head at the end of the run',
         'Nothing about later steps: it did not halt within the budget, and may halt later',
         'The table has a mistake on the line whose number equals the step count',
