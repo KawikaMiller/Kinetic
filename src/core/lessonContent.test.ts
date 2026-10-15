@@ -32,17 +32,11 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
-  'cap-theorem': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'cdn-edge': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'circuit-breakers': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'consistent-hashing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'event-sourcing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'isolation-levels': { ticket: TIER3, rules: ['quiz-length'] },
-  'load-balancing': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'monolith-microservices': { ticket: TIER3, rules: ['quiz-length'] },
   'oauth-flows': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'observability': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
-  'replication': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   'sharding': { ticket: TIER3, rules: ['quiz-length', 'quiz-longest'] },
   // Tier 4
   'backpressure': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
@@ -62,9 +56,11 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
  * Every other Tier 3 lesson is held to the rules from its first commit.
  */
 const TIER3_AWAITING_RETROFIT = new Set([
-  'load-balancing', 'consistent-hashing', 'cap-theorem', 'circuit-breakers', 'monolith-microservices', 'event-sourcing',
-  'replication', 'sharding', 'isolation-levels', 'cdn-edge', 'observability', 'oauth-flows',
+  'consistent-hashing', 'circuit-breakers', 'monolith-microservices',
+  'sharding', 'cdn-edge', 'oauth-flows',
 ]);
+/** How many Tier 3 lessons were on the allowlist before the retrofits began. */
+const TIER3_EXISTING_COUNT = 12;
 
 /** Lesson folders' source, loaded on demand: only Tier 3 lessons are ever read. */
 const lessonSources = import.meta.glob<string>('../lessons/**/*.{ts,tsx}', { query: '?raw', import: 'default' });
@@ -275,7 +271,7 @@ describe('every built lesson', () => {
       expect(built.has(id), id).toBe(true);
       expect(tierOf.get(id), id).toBe(3);
     }
-    expect(TIER3_AWAITING_RETROFIT.size).toBe(12);
+    expect(TIER3_AWAITING_RETROFIT.size).toBeLessThanOrEqual(TIER3_EXISTING_COUNT);
   });
 
   it('reports the AC-0/T3 issues the allowlisted lessons still have', async () => {
