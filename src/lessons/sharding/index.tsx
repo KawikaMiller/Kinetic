@@ -20,17 +20,14 @@ const lesson: LessonModule = {
     'Play Range + created_at, the way it loads: every new order piles onto S4 and the busiest-shard number climbs to 4×.',
     'Switch to Hash and play again: the writes spread across the shards and none is hot, but "last hour" asks all 4 shards.',
     'Pick Range with the user_id key and compare the two queries: one asks all 4 shards, the other asks 1.',
-    'Press "Add a shard" on Range + created_at (splitting does not cool the hot shard), then on Hash (most orders move), then on Range + user_id (just the split range moves).',
-    'Pick Directory and user_id and play it: the writes spread, the Directory stat counts one table entry for each user, and each query pays a 1 ms lookup. Press "Add a shard": only the keys the directory moves go to the new shard.',
-    'Pick user_id and set Orders to "ada orders most", then try Range, Hash and Directory in turn: ada\'s orders share one key, so one shard is hot in all three.',
+    'Press "Add a shard" on Range + created_at (splitting does not cool the hot shard), then on Hash (most orders move), then on Range + user_id (just the split range moves), then on Directory + user_id (just the keys the directory moves go to the new shard).',
+    'Pick Directory and user_id and play it: the writes spread, the Directory stat counts one table entry for each user, and each query pays a 1 ms lookup. Then set Orders to "ada orders most" and try Range, Hash and Directory in turn: ada\'s orders share one key, so one shard is hot in all three.',
   ],
   keyIdeas: [
     'The shard key decides which queries go to one shard and which fan out to the whole cluster.',
-    'A sequential key (a timestamp, an auto-increment id) under range sharding sends new writes to one hot shard.',
-    'Hash sharding spreads the load but turns range queries into scatter-gather.',
+    'A sequential key (a timestamp, an auto-increment id) under range sharding sends new writes to one hot shard, and one very busy key makes a hot shard under any placement rule.',
+    'Hash sharding spreads the load but turns range queries into scatter-gather; a directory places keys anywhere its table says, at the price of a lookup on each request and one more component to keep up.',
     'hash % N reshuffles about N/(N+1) of the keys when N grows by one; consistent hashing or many small fixed partitions keep the moves small.',
-    'A directory places keys wherever its table says and moves only the keys you pick, but it adds a lookup to each request and a component that has to stay up.',
-    'Hash, range and a directory choose which shard holds a key; none of them can split one very busy key across shards.',
   ],
   quiz: [
     {

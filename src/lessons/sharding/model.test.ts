@@ -412,32 +412,38 @@ describe('try-this, from the lesson as it loads (Range + created_at)', () => {
     expect(isHot(Math.max(...hot.counts), hot.even)).toBe(true);
     expect(hash.moved.length / ORDERS.length).toBeGreaterThan(0.6);
     expect(user.moved.length).toBeLessThanOrEqual(3);
+    // Directory + user_id: just the keys the directory moves, a fair share for the new shard and nothing else.
+    const directory = rebalance('directory', 'user', place('directory', 'user'));
+    expect(directory.moved.length).toBe(Math.floor(ORDERS.length / (START_SHARDS + 1)));
+    expect(directory.moved.length).toBeLessThan(hash.moved.length);
   });
 });
 
-describe('try-this 5 and 6, from the lesson as it loads and then as written', () => {
-  it('try-this 5: Directory + user_id spreads the writes, counts one entry for each user, charges the lookup, and a new shard takes only the keys moved', () => {
-    const { frames } = buildFrames('directory', 'user', true);
+describe('try-this 5, as written: Directory + user_id, then the busy user on each layout', () => {
+  it('try-this 5: Directory + user_id spreads the writes, counts one entry for each user and charges the lookup; with the busy user every layout is left with a hot shard', () => {
+    const { frames } = buildFrames('directory', 'user', false);
     const lastWrite = frames.filter((f) => f.phase === 'write').at(-1)!;
     expect(loadOf(lastWrite.placed, START_SHARDS).busiest).toBe(1);
     expect(directoryEntries(lastWrite.placed, 'user')).toBe(ORDERS.length);
     for (const f of frames.filter((x) => x.query)) expect(f.query!.latency).toBeGreaterThanOrEqual(BASE_MS + DIRECTORY_LOOKUP_MS);
-    const re = frames.at(-1)!;
-    expect(re.moved.length).toBeLessThan(ORDERS.length / 2);
-    expect(captionText(re.say, { strict: true })).toContain(`${re.moved.length} of ${ORDERS.length}`);
-  });
-
-  it('try-this 6: with Orders set to the busy user, Range, Hash and Directory on user_id each leave a hot shard', () => {
     for (const s of STRATEGIES) {
       const { counts, even } = loadOf(placeOn(s, 'user', 'skewed'), START_SHARDS);
       expect(counts.some((c) => isHot(c, even)), s).toBe(true);
     }
   });
+
+  it('the re-shard caption for the directory quotes the moved count and the rewritten entries the model found', () => {
+    const { frames } = buildFrames('directory', 'user', true);
+    const re = rebalance('directory', 'user', place('directory', 'user'));
+    const t = captionText(frames.at(-1)!.say, { strict: true });
+    expect(t).toContain(`${re.moved.length} of ${ORDERS.length}`);
+    expect(t).toContain(`${re.movedKeys} directory entries rewritten`);
+  });
 });
 
 describe('the lesson text', () => {
-  it('has six try-this entries and a quiz that names the sequential-key misconception', () => {
-    expect(lesson.tryThis).toHaveLength(6);
+  it('has five try-this entries and a quiz that names the sequential-key misconception', () => {
+    expect(lesson.tryThis).toHaveLength(5);
     expect(lesson.quiz.some((q) => /auto-increment/.test(q.q))).toBe(true);
   });
 });

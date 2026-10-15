@@ -46,7 +46,7 @@ const lesson: LessonModule = {
         'Just the new one: each key that moves lands on it',
         'Every server gains a share, because the ring re-balances on a join',
         'The next server clockwise from the new one, which takes its keys',
-        'Only the servers that are busiest, since the ring hands their keys to the new one',
+        'Only the busiest servers, which hand keys to the new one',
       ],
       answer: 0,
       why: "In this model a key's owner is the first point clockwise from it. A new point becomes the first point for the keys in the arc just before it, so the new server gains keys and the older servers lose them.",
