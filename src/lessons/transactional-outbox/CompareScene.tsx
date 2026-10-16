@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Button, ClaimLabel, Hint, Provenance, ProvenanceRow, Toggle } from '../../components/ui';
@@ -13,7 +13,13 @@ const RULES: { id: RuleId; label: string }[] = [
 
 export function CompareScene({ picker }: { picker: ReactNode }) {
   const [state, setState] = useState(initialCompare);
-  const results = useMemo(() => compareAll(), []);
+  const [results, setResults] = useState<ReturnType<typeof compareAll> | null>(null);
+
+  // Running every design takes about a second: let the scene paint first, with a busy note, then compute.
+  useEffect(() => {
+    const id = setTimeout(() => setResults(compareAll()), 0);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
     <StageFrame
@@ -35,6 +41,8 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
       <div className="ob-stage stage-pad">
         <Box>
           <SectionTitle hint="computed by running each design, not typed">What each design guarantees</SectionTitle>
+          {results === null && <Hint tone="muted">Running {COMPARE_SEEDS} schedules per design, with and without the inbox...</Hint>}
+          {results !== null && (
           <div className="ob-scroll" role="region" aria-label="Guarantees of each design over the seeded schedules" tabIndex={0}>
             <table className="data-table ob-table table-cards">
               <thead>
@@ -73,6 +81,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
               </tbody>
             </table>
           </div>
+          )}
           <Hint tone="muted">The last two rows are named, not simulated.</Hint>
         </Box>
         <ProvenanceRow>

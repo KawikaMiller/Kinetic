@@ -6,7 +6,7 @@ import { usePlayer } from '../../core/usePlayer';
 import { bugIntro, outboxFrames, outcomeSummary } from './captions';
 import { bugSetup, initialBug, parseAmount } from './init';
 import { OUTBOX_LEGEND, OutboxPanels, OutboxStats } from './OutboxPanels';
-import { CASE_FAULTS, DUAL_DESIGNS, FAULT_LABEL, OUTCOME_WORD, caseTable, outcomeOf, runOutbox, type Design, type Fault, type Outcome } from './outbox';
+import { CASE_FAULTS, CONSUMER_DELAY_MS, DUAL_DESIGNS, FAULT_LABEL, OUTCOME_WORD, caseTable, outcomeOf, runOutbox, type Design, type Fault, type Outcome } from './outbox';
 
 const DESIGN_OPTIONS = [
   { value: 'dbfirst' as const, label: 'Database first, then publish' },
@@ -85,6 +85,7 @@ export function BugScene({ picker }: { picker: ReactNode }) {
             </table>
           </div>
           <p className="ob-note">The run on screen: {OUTCOME_WORD[outcomeOf(run)]}.</p>
+          <p className="ob-note">The consumer here handles an event {CONSUMER_DELAY_MS} ms after it arrives, which is why a ghost is settled by then. Publishing first puts the event on the broker a few tens of milliseconds before the commit, so a consumer that read at once would act on a ghost even with no crash at all.</p>
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">a service, a toy database, a broker and a consumer on the distSim harness; the crash instants are fixed so each case is one exact run</Provenance>
