@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'Decidable, since the three counts can be compared by a program that always stops',
       ],
       answer: 0,
-      why: `A PDA that matches a's with b's has an empty stack before the c's arrive, and the context-free pumping game on a^p b^p c^p is won for every p from ${F.csWonPs[0]} to ${F.csWonPs[F.csWonPs.length - 1]} that the game offers (for p = ${F.csP}, ${F.csCount} of ${F.csCount} decompositions leave). A Turing machine decides it, so it sits in the context-sensitive ring.`,
+      why: `A PDA that matches a's with b's has an empty stack before the c's arrive, and the context-free pumping game on a^p b^p c^p is won for the pumping lengths from ${F.csWonPs[0]} to ${F.csWonPs[F.csWonPs.length - 1]} that the game offers (for p = ${F.csP}, ${F.csCount} of ${F.csCount} decompositions leave). A Turing machine decides it, so it sits in the context-sensitive ring.`,
     },
     {
       q: 'A teammate says a language that is context-free is one a regular expression can handle. What is accurate?',

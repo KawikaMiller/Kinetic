@@ -38,7 +38,7 @@ export function PrecedenceScene({ picker }: { picker: ReactNode }) {
       introKey={`${tokenInput.tokens.join(' ')}|${Object.values(choices).join(',')}`}
       stats={
         <Stats>
-          <Stat label="This tree evaluates to" value={game.value ?? 'no tree'} color={game.value === null ? 'var(--muted)' : matchesUsual ? 'var(--ok)' : 'var(--bad)'} sub="ids are 2, 3, 4, ... left to right" />
+          <Stat label="This tree evaluates to" value={game.value ?? 'no tree'} color={game.value === null ? 'var(--muted)' : game.value === usual.value ? 'var(--ok)' : 'var(--bad)'} sub="ids are 2, 3, 4, ... left to right" />
           <Stat label="Usual precedence gives" value={usual.value ?? 'no tree'} color="var(--muted)" sub="shift before the tighter operator" />
         </Stats>
       }
