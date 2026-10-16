@@ -17,6 +17,8 @@ const GANTT_MIN_WIDTH = 540;
 export function ClusterPane({ run, now, onBarClick, hint }: { run: ClusterRun; now: number; onBarClick?: (id: string) => void; hint: string }) {
   const bars = useMemo(() => barsOf(run), [run]);
   const lanes = useMemo(() => lanesOf(run.plan), [run.plan]);
+  const end = jobEnd(run);
+  const failures = run.cfg.kills.filter((k) => k.tick <= Math.min(now, end)).map((k) => ({ at: k.tick, label: `worker ${k.worker + 1} fails`, tone: 'bad' as const }));
   const rows = worldAt(run, now).events.map((e) => ({ id: e.id, at: `t ${e.tick}`, tone: e.kind === 'fail' ? ('bad' as const) : undefined, text: e.text }));
   return (
     <>
@@ -26,8 +28,9 @@ export function ClusterPane({ run, now, onBarClick, hint }: { run: ClusterRun; n
           <GanttLanes
             lanes={lanes}
             bars={barsAt(bars, now)}
-            domain={[0, Math.max(jobEnd(run), MIN_DOMAIN)]}
+            domain={[0, Math.max(end, MIN_DOMAIN)]}
             now={now}
+            markers={failures}
             axis
             unit=" ticks"
             size="md"

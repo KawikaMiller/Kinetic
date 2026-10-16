@@ -19,7 +19,7 @@ export function flowCaption(p: Plan, words: number, truncatedFrom: number | null
     <>
       {hl('', num(words))} {words === 1 ? 'word' : 'words'} are split into {plural(p.mappers, 'piece')}; each word becomes one {hl('info', '(word, 1)')} pair, so {hl('info', num(p.shuffled))} pairs reach the shuffle.
       {' '}
-      {p.reducers === 1 ? 'The one reducer gets them all' : `Reducer ${heaviest + 1} gets the most, ${plural(loads[heaviest], 'pair')} of ${num(p.shuffled)}`}, each key landing on one reducer. The merged table {equal ? hl('ok', 'equals the plain single-process count') : hl('bad', 'differs from the plain count')}.
+      {p.reducers === 1 ? 'The one reducer gets them all' : `Reducer ${heaviest + 1} gets the most, ${plural(loads[heaviest], 'pair')} of ${num(p.shuffled)}`}, each key landing on one reducer. The merged table {equal ? hl('ok wrap', 'equals the plain single-process count') : hl('bad wrap', 'differs from the plain count')}.
       {truncatedFrom !== null && <> Only the first {num(words)} of the {num(truncatedFrom)} words are used.</>}
     </>
   );

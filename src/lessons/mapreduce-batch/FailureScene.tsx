@@ -45,7 +45,7 @@ export function FailureScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Workers up" value={`${w.alive.filter(Boolean).length} of ${WORKERS}`} color={w.alive.every(Boolean) ? undefined : 'var(--bad)'} sub={`at tick ${now}`} />
-          <Stat label="Tasks run again" value={rerunCount(w)} color={rerunCount(w) > 0 ? 'var(--bad)' : undefined} sub="started after a failure threw work away" />
+          <Stat label="Tasks run again" value={rerunCount(run.world)} color={rerunCount(run.world) > 0 ? 'var(--bad)' : undefined} sub="in the whole run, started after a failure threw work away" />
           <Stat label="Job ends" value={run.world.stalled ? 'never' : `tick ${end}`} color={run.world.stalled ? 'var(--bad)' : undefined} sub={run.world.stalled ? 'no worker left' : `${SIM_MAPPERS} maps, ${SIM_REDUCERS} reduces`} />
         </Stats>
       }

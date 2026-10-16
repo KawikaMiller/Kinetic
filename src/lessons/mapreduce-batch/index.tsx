@@ -48,7 +48,7 @@ const lesson: LessonModule = {
     {
       q: 'Someone says MapReduce is slow because it is old. What is the idea that mattered, apart from speed?',
       options: [
-        'Independent tasks over split data, so a failed or slow task can be run again on another machine',
+        'Independent tasks over split data, so a failed or slow task can just be run again on another machine',
         'A faster sorting step than a single machine can manage, which is why the shuffle sorts everything by key',
         'Keeping every intermediate result in memory, so that nothing is ever written to disk during a whole job',
         'A promise that no worker will fail during a job, so the scheduler never needs any rule for retrying',
@@ -59,7 +59,7 @@ const lesson: LessonModule = {
     {
       q: 'In the toy cluster a worker fails partway through a job. What happens to the job?',
       options: [
-        'Its running task and its finished map tasks run again elsewhere, and the final table is unchanged',
+        'Its running task and its finished map tasks run again elsewhere, and the final table comes out unchanged',
         'The job is lost and must start again from the first map task on whichever workers are still running',
         'Only its running task is repeated, because finished tasks have always saved their output to safe storage',
         'Nothing is repeated, since the other workers already hold a copy of everything that it was working on',
@@ -81,7 +81,7 @@ const lesson: LessonModule = {
     {
       q: 'One reducer runs far longer than the rest because one key is most of the input. Does a backup copy of it on an idle worker finish the job sooner?',
       options: [
-        'No: the copy gets the same pairs and is as slow; a backup helps when the machine is the slow part',
+        'No: the copy gets the same pairs and is as slow; a backup helps only when the machine itself is the slow part',
         'Yes: a second worker splits the key between the two copies, so each of them does about half of the work',
         'Yes: any backup finishes first, since an idle worker is always faster than a busy one running a long task',
         'No: backups are only ever started for map tasks, so a reducer is never copied onto another worker at all',

@@ -73,9 +73,9 @@ export function CounterScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint="each map task and how many times it ran">Map attempts</SectionTitle>
           <ul className="mr-partials">
             {attempts.map((list, i) => (
-              <li key={i} className={list.length > 1 ? 'mr-bad' : ''}>
+              <li key={i} className={list.length > 1 && sideEffect ? 'mr-bad' : ''}>
                 {taskName(mapId(i))}: {plural(list.length, 'attempt')}
-                {list.length > 1 ? ', so its records were handled more than once' : ''}
+                {list.length > 1 ? (sideEffect ? ', so its records were handled more than once' : ', and the repeat changes nothing outside: the map function is pure') : ''}
               </li>
             ))}
           </ul>

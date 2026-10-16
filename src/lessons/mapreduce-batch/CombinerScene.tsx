@@ -114,7 +114,7 @@ export function CombinerScene({ picker }: { picker: ReactNode }) {
         )}
         <ProvenanceRow>
           <Provenance kind="real">the records, the combiners and both answers are computed from the paragraph, not typed</Provenance>
-          <Provenance kind="toy">one fixed paragraph and two mappers of unequal size: with equal-sized pieces the averaging mistake can cancel out</Provenance>
+          <Provenance kind="toy">one fixed paragraph and two mappers of unequal size: when every mapper holds the same number of values for a key the averaging mistake cancels out</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

@@ -230,12 +230,22 @@ describe('the kill button', () => {
 });
 
 describe('no hidden control feeds a number', () => {
-  it('the map-function toggle changes only what is shown: one run per seed, whatever the toggle says', () => {
-    for (let seed = 0; seed < 10; seed++) {
-      const a = counterRun(seed);
-      const b = counterRun(seed);
-      expect(a.world.attempts).toEqual(b.world.attempts);
-      expect(a.correct).toBe(true);
+  it('the counter is the words every map attempt handled: a finished attempt handled its whole piece, a killed one only part, and it equals the input exactly when no map work was repeated', () => {
+    for (let seed = 0; seed < 40; seed++) {
+      const run = counterRun(seed);
+      const maps = run.world.attempts.filter((a) => a.kind === 'map');
+      for (const a of maps) {
+        const size = run.plan.splits[a.index].length;
+        if (a.status === 'done') expect(a.processed, `seed ${seed} attempt ${a.id}`).toBe(size);
+        if (a.status === 'killed') expect(a.processed, `seed ${seed} attempt ${a.id}`).toBeLessThan(size);
+      }
+      // counted per attempt by the test itself: what each attempt got through, summed
+      const handled = maps.reduce((n, a) => n + (a.status === 'done' ? run.plan.splits[a.index].length : a.processed), 0);
+      expect(sideEffectCount(run.world), `seed ${seed}`).toBe(handled);
+      const tasksWithWork = new Set(maps.filter((a) => a.processed > 0).map((a) => a.index));
+      const repeated = maps.filter((a) => a.processed > 0).length > tasksWithWork.size;
+      expect(sideEffectCount(run.world) === inputRecords(run.plan), `seed ${seed}`).toBe(!repeated);
+      expect(run.correct, `seed ${seed}`).toBe(true);
     }
   });
 
