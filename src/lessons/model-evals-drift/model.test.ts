@@ -85,21 +85,22 @@ describe('the model and the shifts', () => {
     expect(drifted.map((e) => e.x)).toEqual(base.map((e) => e.x));
     expect(drifted.some((e, i) => e.y !== base[i].y)).toBe(true);
     const s = simulate({ kind: 'concept', day: 20, sizePct: 60, seed: 5, labelDelay: 7 });
-    expect(alarms(s, 7).input).toBeNull();
-    expect(alarms(s, 7).accuracy).toBe(27);
-    expect(alarms(s, 0).accuracy).toBe(20);
+    expect(alarms(s, 7, 20).input).toBeNull();
+    expect(alarms(s, 7, 20).accuracy).toBe(27);
+    expect(alarms(s, 0, 20).accuracy).toBe(20);
   });
 
   it('covariate shift trips the input monitors on the shift day and before it they stay quiet', () => {
     const s = simulate({ kind: 'covariate', day: 20, sizePct: 80, seed: 5, labelDelay: 0 });
-    const a = alarms(s, 0);
+    const a = alarms(s, 0, 20);
     expect(a.input).toBe(20);
+    expect(a.falseInputDays).toBe(0);
     expect(s.days.slice(0, 19).every((d) => d.ks <= s.ksCritical && d.psi <= 0.25)).toBe(true);
   });
 
   it('broken variant: a detector that sets its baseline from post-shift data alarms only at chance level after the shift', () => {
     const setting = { kind: 'covariate' as const, day: 20, sizePct: 80, seed: 5, labelDelay: 0 };
-    expect(alarms(simulate(setting), 0).input).not.toBeNull();
+    expect(alarms(simulate(setting), 0, 20).input).not.toBeNull();
     const broken = simulate(setting, 'post-shift');
     // from the shift day on its readings are those of a clean stream: alerts only at chance level (at most 1 of the 21 days here)
     const alerts = (st: ReturnType<typeof simulate>) => st.days.filter((d) => d.day >= setting.day && (d.psi > 0.25 || d.ks > st.ksCritical)).length;

@@ -25,6 +25,9 @@ function baselineSample(seed: number): number[] {
 
 const cache = new Map<number, CleanReadings>();
 
+/** The readings already computed for `streams` clean streams, or null: lets a scene skip its "computing" state on a revisit. */
+export const peekCleanReadings = (streams = CLEAN_STREAMS): CleanReadings | null => cache.get(streams) ?? null;
+
 /** Readings of `streams` clean streams (each with its own training sample and 40 days), no shift anywhere. */
 export function cleanReadings(streams = CLEAN_STREAMS): CleanReadings {
   const hit = cache.get(streams);
@@ -46,9 +49,24 @@ export function cleanReadings(streams = CLEAN_STREAMS): CleanReadings {
 export const falseAlarmRate = (c: CleanReadings, metric: Metric, threshold: number): number =>
   c.readings.filter((r) => r[metric] > threshold).length / c.readings.length;
 
+export interface StreamSpread {
+  streams: number;
+  /** Streams with no alerting day at all. */
+  zero: number;
+  median: number;
+  max: number;
+}
+
+/** How the alerting days spread over streams: every stream shares one baseline, so the spread is far wider than the mean suggests. */
+export function streamSpread(c: CleanReadings, metric: Metric, threshold: number): StreamSpread {
+  const counts = Array.from({ length: c.streams }, (_, s) => c.readings.slice(s * DAYS, (s + 1) * DAYS).filter((r) => r[metric] > threshold).length);
+  const sorted = [...counts].sort((a, b) => a - b);
+  return { streams: c.streams, zero: counts.filter((n) => n === 0).length, median: sorted[Math.floor(c.streams / 2)], max: sorted[sorted.length - 1] };
+}
+
 export const THRESHOLDS: Record<Metric, { min: number; max: number; step: number; start: number }> = {
   ks: { min: 0.04, max: 0.2, step: 0.01, start: 0.08 },
-  psi: { min: 0.02, max: 0.3, step: 0.02, start: 0.1 },
+  psi: { min: 0.02, max: 0.3, step: 0.01, start: 0.1 },
 };
 
 /** The KS threshold that a 5% two-sample test would use with these sample sizes. */

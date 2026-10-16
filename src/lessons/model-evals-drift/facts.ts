@@ -3,7 +3,7 @@ import { cleanReadings, falseAlarmRate, ksFivePercent } from './falseAlarm';
 import { TEST_SIZES, evaluate, gate } from './gate';
 import { leakExperiment } from './leak';
 import { DELAY_DEFAULT, DELAY_SHIFT, DRIFT_DEFAULT, DRIFT_LABEL_DELAY, FALSE_DEFAULT, GATE_DEFAULT } from './settings';
-import { alarms, simulate, type DriftSetting, type Stream } from './stream';
+import { alarms, shiftDayOf, simulate, type DriftSetting, type Stream } from './stream';
 import { meanOf } from './gate';
 
 export const driftSetting = (over: Partial<DriftSetting> = {}): DriftSetting => ({
@@ -25,8 +25,8 @@ export function driftFacts() {
   const stream = simulate(setting);
   const conceptStream = simulate(driftSetting({ kind: 'concept' }));
   return {
-    setting, stream, ...accuracySplit(stream, setting.day), alarms: alarms(stream, setting.labelDelay),
-    concept: { ...accuracySplit(conceptStream, setting.day), alarms: alarms(conceptStream, setting.labelDelay) },
+    setting, stream, ...accuracySplit(stream, setting.day), alarms: alarms(stream, setting.labelDelay, shiftDayOf(setting)),
+    concept: { ...accuracySplit(conceptStream, setting.day), alarms: alarms(conceptStream, setting.labelDelay, shiftDayOf(setting)) },
   };
 }
 
@@ -37,9 +37,9 @@ export function delayFacts() {
   return {
     stream,
     ...accuracySplit(stream, concept.day),
-    seven: alarms(stream, 7),
-    zero: alarms(stream, 0),
-    covariate: alarms(covariate, 7),
+    seven: alarms(stream, 7, concept.day),
+    zero: alarms(stream, 0, concept.day),
+    covariate: alarms(covariate, 7, concept.day),
   };
 }
 

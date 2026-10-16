@@ -1,12 +1,15 @@
 import type { LessonModule } from '../../core/types';
 import { pct1 } from './captions';
-import { KS_STEP_NEAR_CRITICAL, delayFacts, driftFacts, falseFacts, gateFacts, leakFacts } from './facts';
+import { KS_STEP_NEAR_CRITICAL, delayFacts, driftFacts, gateFacts, leakFacts } from './facts';
+import { PINNED_SEEDS, pinnedFalseRates } from './pinned';
+import { DETECT_WITHIN_DAYS } from './seedStats';
 import { DELAY_SHIFT, DRIFT_DEFAULT } from './settings';
 import { Stage } from './Stage';
 
 const drift = driftFacts();
 const delay = delayFacts();
-const fa = falseFacts();
+// Measured figures, pinned (a test recomputes them) so the lesson does not simulate 200 streams when it loads.
+const fa = pinnedFalseRates();
 const gt = gateFacts();
 const leak = leakFacts();
 const n = (v: number) => v.toLocaleString('en-US');
@@ -31,14 +34,14 @@ const lesson: LessonModule = {
       'Plots show accuracy, PSI and KS per day. The yellow rule is the shift day, green dots healthy days and red dots days below the accuracy alarm line, violet curves the monitors against their baseline, a red dashed rule the input alert, and an orange dashed rule the accuracy alarm that fires late by the label delay. In the gate table orange is segment A and blue segment B; green is a gain and red a regression. The violet curve in the false-alarm plot is the measured rate and the yellow rule your threshold.',
   },
   tryThis: [
-    `In "Drift", the default shifts the inputs from day ${DRIFT_DEFAULT.day}: mean accuracy falls from ${pct1(drift.before)} to ${pct1(drift.after)} and the input monitors fire on ${dayOf(drift.alarms.input)}. Switch Kind to Concept drift: the input monitors stay ${drift.concept.alarms.input === null ? 'silent' : 'on'} while mean accuracy falls to ${pct1(drift.concept.after)}.`,
+    `In "Drift", the default shifts the inputs from day ${DRIFT_DEFAULT.day}: mean accuracy falls from ${pct1(drift.before)} to ${pct1(drift.after)} and the input monitors fire on ${dayOf(drift.alarms.input)}. Switch Kind to Concept drift: at this seed the input monitors stay ${drift.concept.alarms.input === null ? 'silent' : 'on'} while mean accuracy falls to ${pct1(drift.concept.after)}. Then change the seed: the covariate shift trips an input monitor within ${DETECT_WITHIN_DAYS} days on ${PINNED_SEEDS.covariateDetected} of ${PINNED_SEEDS.streams} seeds, while under concept drift ${PINNED_SEEDS.conceptInputAlert} of ${PINNED_SEEDS.streams} streams still raise an input alert, a false alarm, because the inputs are unchanged.`,
     `In "Labels arrive late", concept drift starts on day ${DELAY_SHIFT.day} and labels take 7 days: the input monitors stay silent and the accuracy alarm fires on ${dayOf(delay.seven.accuracy)}. Set Label delay to 0 and it fires on ${dayOf(delay.zero.accuracy)}. Switch Kind to Covariate shift and the input monitors fire on ${dayOf(delay.covariate.input)}.`,
     `In "False alarms", a KS threshold of 0.08 alerts on ${rate(fa.start)} of days in streams where nothing changed, about ${fa.days.toFixed(1)} days in 40. Raise it to ${KS_STEP_NEAR_CRITICAL.toFixed(2)}, the 5% critical value: ${rate(fa.ksAt011)}. Switch to PSI at 0.10: ${rate(fa.psiWatch)}; at 0.25: ${rate(fa.psiAlert)}.`,
     `In "The eval gate", with ${n(gt.open.n)} test examples v2 is ${sign(gt.open.difference)} points better with an interval of ${gt.open.interval.lo.toFixed(1)} to ${gt.open.interval.hi.toFixed(1)}, which includes 0, and the overall-only gate ships it. Switch to the slice-aware gate: it blocks, because segment B falls ${gt.sliceDrop(gt.open).toFixed(1)} points. At ${n(gt.big.n)} examples the interval is ${gt.big.interval.lo.toFixed(1)} to ${gt.big.interval.hi.toFixed(1)} and the slice-aware gate still blocks.`,
     `In "Leakage", with the test items held out the memoriser scores ${pct1(leak.off.memoriser.test)} on the test set and ${pct1(leak.off.memoriser.fresh)} on fresh data. Switch to Leaked: ${pct1(leak.on.memoriser.test)} on the test set, ${pct1(leak.on.memoriser.fresh)} on fresh data.`,
   ],
   keyIdeas: [
-    'Input monitors need no labels and fire on the day of a covariate shift, but in this model they stay silent under concept drift, where accuracy against labels is what shows the damage.',
+    `Input monitors need no labels and, in this model, trip within ${DETECT_WITHIN_DAYS} days of a covariate shift on ${PINNED_SEEDS.covariateDetected} of ${PINNED_SEEDS.streams} seeds, but under concept drift the inputs are unchanged, so they cannot tell it from no drift at all: accuracy against labels is what shows the damage.`,
     'Accuracy can be computed once labels arrive and not before, so its alarm trails the damage by the label delay; monitor inputs, outputs and labels together.',
     'Each alert threshold trades speed against false alarms, and the false-alarm rate on a clean stream is something to measure, not assume.',
     'A better average can hide a slice that got worse, and a gain smaller than its bootstrap interval is within noise; a held-out test set that leaks into training measures memory, not skill.',
@@ -47,13 +50,13 @@ const lesson: LessonModule = {
     {
       q: 'Labels arrive 7 days late. After a shift, which monitor fires first, and what kind of drift can it miss?',
       options: [
-        'The input monitors, on the day of the shift; they can miss concept drift, where the inputs look unchanged',
+        'The input monitors, within days of a covariate shift; they cannot see concept drift, where the inputs look unchanged',
         'The accuracy alarm, on the day of the shift, because labels are the earliest signal; it misses covariate shift',
         'The input monitors, but only after 7 days, because every monitor waits for the labels of the same batch',
         'The accuracy alarm, 7 days after the shift; it misses concept drift, where the labels were the same all along',
       ],
       answer: 0,
-      why: `With a 7-day delay under concept drift the input monitors stayed ${delay.seven.input === null ? 'silent' : 'on'} and the accuracy alarm fired on ${dayOf(delay.seven.accuracy)}, ${delay.seven.accuracy === null ? 'never' : delay.seven.accuracy - DELAY_SHIFT.day} days after the damage began. Under covariate shift the input monitors fired on ${dayOf(delay.covariate.input)}.`,
+      why: `With a 7-day delay under concept drift the input monitors stayed ${delay.seven.input === null ? 'silent' : 'on'} and the accuracy alarm fired on ${dayOf(delay.seven.accuracy)}, ${delay.seven.accuracy === null ? 'never' : delay.seven.accuracy - DELAY_SHIFT.day} days after the damage began. Under covariate shift the input monitors fired on ${dayOf(delay.covariate.input)}. That is the default seed: across ${PINNED_SEEDS.streams} seeds, ${PINNED_SEEDS.conceptInputAlert} concept-drift streams still raised an input alert after the shift, a false alarm, since the inputs are untouched.`,
     },
     {
       q: 'You lower the KS alert threshold to catch drift sooner. What does it cost?',

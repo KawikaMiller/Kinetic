@@ -1,12 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { DriftPlots, DayMeters } from './DriftPlots';
 import { KIND_LABEL, driftCaption, pct1 } from './captions';
 import { accuracySplit, driftSetting } from './facts';
+import { PINNED_SEEDS } from './pinned';
+import { DETECT_WITHIN_DAYS } from './seedStats';
 import { DAY_FIRST, DAY_LAST, DRIFT_DEFAULT, SIZE_STEPS } from './settings';
-import { alarms, simulate } from './stream';
+import { alarms, shiftDayOf, simulate } from './stream';
 import type { Kind } from './world';
 
 const KINDS = (Object.keys(KIND_LABEL) as Kind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }));
@@ -19,7 +21,7 @@ export function DriftScene({ picker }: { picker: ReactNode }) {
   const [shownDay, setShownDay] = useState<number>(DRIFT_DEFAULT.shownDay);
   const setting = useMemo(() => driftSetting({ kind, day, sizePct, seed }), [kind, day, sizePct, seed]);
   const stream = useMemo(() => simulate(setting), [setting]);
-  const a = alarms(stream, setting.labelDelay);
+  const a = alarms(stream, setting.labelDelay, shiftDayOf(setting));
   const { before, after } = accuracySplit(stream, day);
   const caption = driftCaption(kind, day, sizePct, before, after, a);
 
@@ -63,6 +65,9 @@ export function DriftScene({ picker }: { picker: ReactNode }) {
       <div className="med-stage stage-pad">
         <DriftPlots stream={stream} marks={{ shiftDay: sizePct > 0 ? day : null, alarms: a }} />
         <DayMeters stream={stream} day={shownDay} />
+        <Hint tone="muted" block>
+          Seeds matter. Over {PINNED_SEEDS.streams} seeds, an 80% covariate shift sets off an input monitor within {DETECT_WITHIN_DAYS} days on {PINNED_SEEDS.covariateDetected} of them; a 60% concept drift leaves the inputs exactly as they would be with no drift, and still {PINNED_SEEDS.conceptInputAlert} streams raise an input alert after the shift day, by ordinary false alarm (see False alarms). {PINNED_SEEDS.falseBeforeShift} of {PINNED_SEEDS.streams} streams raise one before the shift too. Accuracy falls under covariate shift because the rule is unchanged but the points now sit where it is least certain, so any model's accuracy falls; real covariate shift can also hurt a model that never saw the new region. Label shift, where the class mix itself changes, is a third kind not modelled here.
+        </Hint>
         <ProvenanceRow>
           <Provenance kind="toy">toy logistic regression on seeded blobs, about 90% accurate before the shift</Provenance>
           <Provenance kind="simulated" seed={seed}>shifts and daily batches are simulated</Provenance>

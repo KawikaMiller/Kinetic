@@ -23,14 +23,15 @@ export function GateScene({ picker }: { picker: ReactNode }) {
       introKey={caption}
       stats={
         <Stats>
-          <Stat label="v2 minus v1" value={`${e.difference >= 0 ? '+' : ''}${e.difference.toFixed(1)} pts`} color={within ? 'var(--orange)' : e.difference > 0 ? 'var(--ok)' : 'var(--bad)'} sub={[`95% interval ${e.interval.lo.toFixed(1)} to ${e.interval.hi.toFixed(1)}`, within ? 'includes 0: within noise' : 'excludes 0']} />
+          <Stat label="v2 minus v1" value={`${e.difference >= 0 ? '+' : ''}${e.difference.toFixed(1)} pts`} color={within ? 'var(--violet)' : e.difference > 0 ? 'var(--ok)' : 'var(--bad)'} sub={[`95% interval ${e.interval.lo.toFixed(1)} to ${e.interval.hi.toFixed(1)}`, within ? 'includes 0: within noise' : 'excludes 0']} />
           <Stat label="Release gate" value={verdict.ship ? 'ships v2' : 'blocks v2'} color={verdict.ship ? 'var(--ok)' : 'var(--bad)'} sub={verdict.reason} />
         </Stats>
       }
       legend={
         <Legend
           items={[
-            { color: 'var(--orange)', label: 'segment A and an interval that includes 0', shape: 'square' },
+            { color: 'var(--orange)', label: 'segment A', shape: 'square' },
+            { color: 'var(--violet)', label: 'an interval that includes 0: within noise', shape: 'square' },
             { color: 'var(--info)', label: 'segment B', shape: 'square' },
             { color: 'var(--ok)', label: 'ships', shape: 'square' },
             { color: 'var(--bad)', label: 'blocks, or a slice that regressed', shape: 'square' },
@@ -70,7 +71,7 @@ export function GateScene({ picker }: { picker: ReactNode }) {
               })}
             </tbody>
           </table>
-          <Hint tone="muted" block>{VERSIONS.map((v) => `${v.label}: ${v.note}`).join('. ')}. Both are toy logistic models. Evaluating an LLM (golden sets, a judge model) is named here only: no real LLM evaluation is shown.</Hint>
+          <Hint tone="muted" block>{VERSIONS.map((v) => `${v.label}: ${v.note}`).join('. ')}. Both are toy logistic models, one training run each (seeds 8 and 42): other seed pairs tell the story less reliably, so read it as one worked example. A larger test set only reveals more of one fixed pool of examples. Evaluating an LLM (golden sets, a judge model) is named here only: no real LLM evaluation is shown.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="toy">toy logistic regression on seeded blobs</Provenance>

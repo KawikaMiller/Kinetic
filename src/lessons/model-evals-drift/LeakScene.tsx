@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { leakCaption, pct1 } from './captions';
 import { LEAK_FRESH, LEAK_TEST, LEAK_TRAIN, leakExperiment } from './leak';
 import { LEAK_DEFAULT } from './settings';
@@ -45,6 +45,7 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
               <Bar key={row.label} value={row.value} max={1} tone={row.tone} label={<span className="med-leak-label">{row.label}: {pct1(row.value)}</span>} ariaLabel={`${row.label} ${pct1(row.value)}`} />
             ))}
           </div>
+          <Hint tone="muted" block>Held out, the memoriser's score on the test set and on fresh data can differ by several points with no leak at all: {LEAK_TEST} test items carry a standard error of about two points, so a gap of that size can be sampling noise alone.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="toy">a 1-nearest-neighbour memoriser and a logistic model on seeded blobs ({LEAK_TRAIN} training examples)</Provenance>

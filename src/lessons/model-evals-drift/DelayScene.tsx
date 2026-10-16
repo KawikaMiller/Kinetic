@@ -17,7 +17,7 @@ export function DelayScene({ picker }: { picker: ReactNode }) {
   const [seed, setSeed] = useState<number>(DELAY_DEFAULT.seed);
   const setting = useMemo(() => delaySetting({ kind, labelDelay: delay, seed }), [kind, delay, seed]);
   const stream = useMemo(() => simulate(setting), [setting]);
-  const a = alarms(stream, delay);
+  const a = alarms(stream, delay, DELAY_SHIFT.day);
   const caption = delayCaption(kind, delay, DELAY_SHIFT.day, a);
 
   return (

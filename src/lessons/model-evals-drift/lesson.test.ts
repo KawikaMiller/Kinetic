@@ -6,12 +6,12 @@ import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { delayCaption, driftCaption, falseCaption, gateCaption, leakCaption } from './captions';
-import { cleanReadings, falseAlarmRate } from './falseAlarm';
+import { THRESHOLDS, cleanReadings, falseAlarmRate, streamSpread } from './falseAlarm';
 import { KS_STEP_NEAR_CRITICAL, accuracySplit, delayFacts, delaySetting, driftFacts, driftSetting, falseFacts, gateFacts, leakFacts } from './facts';
 import { TEST_SIZES, evaluate, gate } from './gate';
 import lesson from './index';
 import { DELAY_DEFAULT, DELAY_SHIFT, DRIFT_DEFAULT, DRIFT_LABEL_DELAY, FALSE_DEFAULT, GATE_DEFAULT, LEAK_DEFAULT } from './settings';
-import { alarms, simulate } from './stream';
+import { alarms, shiftDayOf, simulate } from './stream';
 
 describe('scene switches', () => {
   it('every scene is its own keyed component', () => {
@@ -87,7 +87,7 @@ describe('captions follow the controls', () => {
       for (const sizePct of [0, 20, 40, 60, 80, 100]) {
         const setting = driftSetting({ kind, sizePct });
         const stream = simulate(setting);
-        const a = alarms(stream, DRIFT_LABEL_DELAY);
+        const a = alarms(stream, DRIFT_LABEL_DELAY, shiftDayOf(setting));
         const { before, after } = accuracySplit(stream, setting.day);
         const c = expectCaption(driftCaption(kind, setting.day, sizePct, before, after, a));
         if (sizePct === 0) expect(c).toContain('No shift is applied');
@@ -100,11 +100,13 @@ describe('captions follow the controls', () => {
     for (const kind of ['covariate', 'concept'] as const) {
       for (const delay of [0, 1, 7, 14]) {
         const stream = simulate(delaySetting({ kind, labelDelay: delay }));
-        const a = alarms(stream, delay);
+        const a = alarms(stream, delay, DELAY_SHIFT.day);
         const c = expectCaption(delayCaption(kind, delay, DELAY_SHIFT.day, a));
         if (a.accuracy !== null) expect(c).toContain(`${a.accuracy - DELAY_SHIFT.day} day`);
         else expect(c).toContain('does not fire');
-        expect(c.includes('inputs look unchanged')).toBe(kind === 'concept' && a.input === null);
+        expect(c.includes('inputs look unchanged')).toBe(kind === 'concept');
+        expect(c.includes('only the labels reveal')).toBe(kind === 'concept');
+        expect(c.includes('ordinary false alarm')).toBe(kind === 'concept' && a.input !== null);
       }
     }
   });
@@ -113,7 +115,7 @@ describe('captions follow the controls', () => {
     const c = cleanReadings();
     for (const [metric, t] of [['ks', 0.04], ['ks', 0.2], ['psi', 0.02], ['psi', 0.3]] as const) {
       const rate = falseAlarmRate(c, metric, t);
-      expect(expectCaption(falseCaption(metric, t, rate, c.streams))).toContain(`${(rate * 100).toFixed(1)}%`);
+      expect(expectCaption(falseCaption(metric, t, rate, streamSpread(c, metric, t)))).toContain(`${(rate * 100).toFixed(1)}%`);
     }
   });
 
@@ -167,5 +169,43 @@ describe('lesson content', () => {
   it('quiz 2 says over a quarter of clean days alert at 0.08, which the measurement supports', () => {
     expect(falseFacts().start).toBeGreaterThan(0.25);
     expect(lesson.quiz[1].options[lesson.quiz[1].answer]).toContain('over a quarter');
+  });
+});
+
+describe('the controls can reach the numbers the text quotes', () => {
+  const onGrid = (metric: 'ks' | 'psi', value: number) => {
+    const t = THRESHOLDS[metric];
+    const steps = (value - t.min) / t.step;
+    return value >= t.min && value <= t.max && Math.abs(steps - Math.round(steps)) < 1e-9;
+  };
+
+  it('try-this 3: KS 0.08 and 0.11 and PSI 0.10 and 0.25 are all slider positions (M-EV2: PSI 0.25 used to snap to 0.26)', () => {
+    expect(onGrid('ks', 0.08)).toBe(true);
+    expect(onGrid('ks', KS_STEP_NEAR_CRITICAL)).toBe(true);
+    expect(onGrid('psi', 0.1)).toBe(true);
+    expect(onGrid('psi', 0.25)).toBe(true);
+    expect(lesson.tryThis[2]).toContain('at 0.25');
+  });
+});
+
+describe('early false alarms are reported apart from detection (M-EV1)', () => {
+  it('seed 6, concept drift, 7-day delay: an input alert before the shift is a false alarm, and the caption still says only the labels reveal the damage', () => {
+    const setting = delaySetting({ seed: 6 });
+    const a = alarms(simulate(setting), setting.labelDelay, DELAY_SHIFT.day);
+    expect(a.falseInputDays).toBeGreaterThan(0);
+    const c = expectCaption(delayCaption('concept', setting.labelDelay, DELAY_SHIFT.day, a));
+    expect(c).toContain('only the labels reveal');
+    expect(c).toContain('false alarms on');
+    if (a.input !== null) expect(a.input).toBeGreaterThanOrEqual(DELAY_SHIFT.day);
+  });
+
+  it('no alert is ever dated before the shift day, over 50 seeds and both kinds', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      for (const kind of ['covariate', 'concept'] as const) {
+        const setting = driftSetting({ kind, seed });
+        const a = alarms(simulate(setting), 0, shiftDayOf(setting));
+        for (const day of [a.input, a.psi, a.ks]) if (day !== null) expect(day).toBeGreaterThanOrEqual(setting.day);
+      }
+    }
   });
 });

@@ -1,10 +1,10 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { falseCaption } from './captions';
-import { CLEAN_STREAMS, THRESHOLDS, cleanReadings, falseAlarmRate, ksFivePercent, type Metric } from './falseAlarm';
+import { CLEAN_STREAMS, THRESHOLDS, cleanReadings, falseAlarmRate, ksFivePercent, peekCleanReadings, streamSpread, type CleanReadings, type Metric } from './falseAlarm';
 import { FALSE_DEFAULT } from './settings';
 
 const METRICS = [{ value: 'ks' as Metric, label: 'KS statistic' }, { value: 'psi' as Metric, label: 'PSI' }];
@@ -13,14 +13,32 @@ const grid = (m: Metric) => {
   return Array.from({ length: Math.round((t.max - t.min) / t.step) + 1 }, (_, i) => Math.round((t.min + i * t.step) * 1000) / 1000);
 };
 
+/** The 200 clean streams take about half a second to simulate, so the scene paints first and measures on the next tick. */
 export function FalseScene({ picker }: { picker: ReactNode }) {
+  const [clean, setClean] = useState<CleanReadings | null>(peekCleanReadings);
+  useEffect(() => {
+    if (clean) return;
+    const id = setTimeout(() => setClean(cleanReadings()), 0);
+    return () => clearTimeout(id);
+  }, [clean]);
+  if (!clean) {
+    return (
+      <StageFrame height={430} intro={`Measuring ${CLEAN_STREAMS} seeded clean streams of 40 days each: this takes a moment.`} introKey="measuring" controls={[picker]}>
+        <div className="med-stage stage-pad"><Box><SectionTitle hint="computing">Measured false-alarm rate against threshold</SectionTitle></Box></div>
+      </StageFrame>
+    );
+  }
+  return <FalseBody picker={picker} clean={clean} />;
+}
+
+function FalseBody({ picker, clean }: { picker: ReactNode; clean: CleanReadings }) {
   const [metric, setMetric] = useState<Metric>(FALSE_DEFAULT.metric);
   const [threshold, setThreshold] = useState<number>(FALSE_DEFAULT.threshold);
-  const clean = useMemo(() => cleanReadings(), []);
   const curve = useMemo(() => grid(metric).map((t) => [t, falseAlarmRate(clean, metric, t) * 100] as [number, number]), [clean, metric]);
   const rate = falseAlarmRate(clean, metric, threshold);
   const t = THRESHOLDS[metric];
-  const caption = falseCaption(metric, threshold, rate, clean.streams);
+  const spread = streamSpread(clean, metric, threshold);
+  const caption = falseCaption(metric, threshold, rate, spread);
   const change = (m: Metric) => {
     setMetric(m);
     setThreshold(THRESHOLDS[m].start);

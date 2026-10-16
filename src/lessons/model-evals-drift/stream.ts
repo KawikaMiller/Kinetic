@@ -53,9 +53,14 @@ export function simulate(s: DriftSetting, baselineFrom: BaselineSource = 'traini
   return { model, baseline, days, ksCritical: ksCritical2(BATCH, baseline.sample.length) };
 }
 
+/** The day the shift starts, or null when no shift is applied (size 0). */
+export const shiftDayOf = (s: Pick<DriftSetting, 'sizePct' | 'day'>): number | null => (s.sizePct > 0 ? s.day : null);
+
 export interface Alarms {
-  /** First day an input monitor (PSI above its alert band or KS above its critical value) fires, or null. */
+  /** First day from the shift day on that an input monitor (PSI above its alert band or KS above its critical value) fires, or null. */
   input: number | null;
+  /** Days before the shift (every day, when none is applied) on which an input monitor fired anyway: ordinary false alarms. */
+  falseInputDays: number;
   /** First day the accuracy alarm fires once labels have arrived, or null. */
   accuracy: number | null;
   psi: number | null;
@@ -66,17 +71,21 @@ export interface Alarms {
  * Accuracy for day d can be computed on day d + labelDelay, so the alarm for it fires then; the input
  * monitors need no labels and fire on the day of the batch.
  */
-export function alarms(stream: Stream, labelDelay: number, horizon = DAYS): Alarms {
+export function alarms(stream: Stream, labelDelay: number, shiftDay: number | null, horizon = DAYS): Alarms {
   const firstDay = (hit: (d: Day) => boolean, delay = 0): number | null => {
     const d = stream.days.find(hit);
     return d && d.day + delay <= horizon ? d.day + delay : null;
   };
-  const psiDay = firstDay((d) => d.psi > PSI_ALERT);
-  const ksDay = firstDay((d) => d.ks > stream.ksCritical);
+  const inputAlert = (d: Day) => d.psi > PSI_ALERT || d.ks > stream.ksCritical;
+  // An input alert only counts as detection from the shift day on; earlier ones are false alarms, reported apart.
+  const fromShift = (hit: (d: Day) => boolean) => (d: Day) => shiftDay !== null && d.day >= shiftDay && hit(d);
+  const psiDay = firstDay(fromShift((d) => d.psi > PSI_ALERT));
+  const ksDay = firstDay(fromShift((d) => d.ks > stream.ksCritical));
   const input = [psiDay, ksDay].filter((d): d is number => d !== null);
   return {
     psi: psiDay,
     ks: ksDay,
+    falseInputDays: stream.days.filter((d) => (shiftDay === null || d.day < shiftDay) && inputAlert(d)).length,
     input: input.length ? Math.min(...input) : null,
     accuracy: firstDay((d) => d.accuracy < ACCURACY_ALARM, labelDelay),
   };
