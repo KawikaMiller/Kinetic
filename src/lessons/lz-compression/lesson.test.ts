@@ -3,7 +3,8 @@ import { mulberry32 } from '../../core/random';
 import { deflateFrames, decodeFrames, parseFrames, type DecodeMode } from './frames';
 import lesson from './index';
 import { MIN_MATCH_OPTIONS, WINDOW_BOUNDS, decodeAsBlock, decodeTokens, parseLz77, tokenLength } from './lz77';
-import { LENGTH_PRESETS, RFC_LENGTHS, TEXT_PRESETS, compress, huffmanOnlyBits, orderZeroBits, rawBits } from './model';
+import { LENGTH_PRESETS, RFC_LENGTHS, TEXT_PRESETS, compress, huffmanOnlyBits, rawBits } from './model';
+import { orderZeroBits } from '../../core/entropy';
 import { canonicalCaption, comparisonCaption, inflateStateOf, inflateText, sizeVerdict, type Comparison } from './text';
 
 const OPTS = { window: 32, minMatch: 3 };

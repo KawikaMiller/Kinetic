@@ -1,5 +1,6 @@
 import type { LessonModule } from '../../core/types';
-import { BELIEF_PRESETS, GENERATORS, TRUE_DIST, binaryEntropy, blockBitsPerFlip, entropy, excessBits, generatedBits, textEntropy } from './model';
+import { BELIEF_PRESETS, GENERATORS, TRUE_DIST, blockBitsPerFlip, excessBits, generatedBits } from './model';
+import { binaryEntropy, entropy, textEntropy } from '../../core/entropy';
 import { ITEM_ENTROPY, OPTIMAL_QUESTIONS, ITEMS, evenByCount, expectedQuestions } from './questions';
 import { Stage } from './Stage';
 

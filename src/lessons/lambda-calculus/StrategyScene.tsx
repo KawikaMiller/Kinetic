@@ -68,7 +68,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
       <div className="ld stage-pad">
         <p className="ld-note">{spec.note}</p>
         <div className="ld-scroll" role="region" aria-label="Both strategies" tabIndex={0}>
-          <table className="ld-table">
+          <table className="ld-table table-cards">
             <thead><tr><th scope="col">Strategy</th><th scope="col">What happened</th><th scope="col">Where it ended</th></tr></thead>
             <tbody>
               {STRATEGIES.map((s) => (

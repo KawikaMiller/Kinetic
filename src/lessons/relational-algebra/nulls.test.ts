@@ -1,24 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { openSqlite, type SqliteDb } from '../../core/testing/sqlite';
 import {
   NULL_QUERIES, and, cmpEq, inList, not, nullCourses, nullEnrolments, or, runNullQuery, students, type Cell, type Tri,
 } from './nulls';
 
-interface Db {
-  exec(sql: string): void;
-  prepare(sql: string): { all(): Record<string, Cell>[] };
-}
-const SQLITE = 'node:sqlite';
-const open = async (): Promise<Db> => {
-  const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => Db };
-  return new DatabaseSync(':memory:');
-};
+type Db = SqliteDb<Record<string, Cell>>;
+const open = (): Db => openSqlite<Record<string, Cell>>();
 const lit = (v: Cell) => (v === null ? 'NULL' : typeof v === 'number' ? String(v) : `'${v}'`);
 const tri = (v: Cell): Tri => (v === null ? 'UNKNOWN' : v ? 'TRUE' : 'FALSE');
 const TRIS: Tri[] = ['TRUE', 'FALSE', 'UNKNOWN'];
 const sqlOf = (t: Tri) => ({ TRUE: '1', FALSE: '0', UNKNOWN: 'NULL' })[t];
 
-async function dbWith(unknownStudent: boolean): Promise<Db> {
-  const db = await open();
+function dbWith(unknownStudent: boolean): Db {
+  const db = open();
   db.exec('CREATE TABLE Students (sid INTEGER, name TEXT, year INTEGER)');
   db.exec('CREATE TABLE Courses (cid TEXT, title TEXT, teacher TEXT)');
   db.exec('CREATE TABLE Enrolments (sid INTEGER, cid TEXT)');
@@ -32,8 +26,8 @@ async function dbWith(unknownStudent: boolean): Promise<Db> {
 const sorted = (rows: Cell[][]) => rows.map((r) => JSON.stringify(r)).sort();
 
 describe('three-valued logic matches SQLite', () => {
-  it('NOT, AND and OR over TRUE, FALSE and UNKNOWN', async () => {
-    const db = await open();
+  it('NOT, AND and OR over TRUE, FALSE and UNKNOWN', () => {
+    const db = open();
     for (const a of TRIS) {
       expect(not(a)).toBe(tri(db.prepare(`SELECT NOT ${sqlOf(a)} AS v`).all()[0].v));
       for (const b of TRIS) {
@@ -43,8 +37,8 @@ describe('three-valued logic matches SQLite', () => {
     }
   });
 
-  it('= and IN, for every value and list drawn from {1, 2, NULL} (lists up to 3 long)', async () => {
-    const db = await open();
+  it('= and IN, for every value and list drawn from {1, 2, NULL} (lists up to 3 long)', () => {
+    const db = open();
     const vals: Cell[] = [1, 2, null];
     const lists: Cell[][] = [[]];
     for (let len = 1; len <= 3; len++) for (const l of lists.filter((x) => x.length === len - 1)) for (const v of vals) lists.push([...l, v]);
@@ -66,8 +60,8 @@ describe('every NULL query, both variants, with and without the unknown student'
   for (const q of NULL_QUERIES)
     for (const v of ['trap', 'fix'] as const)
       for (const unknown of [false, true])
-        it(`${q.id} ${v}${unknown ? ' (+ NULL sid)' : ''} returns what SQLite returns`, async () => {
-          const db = await dbWith(unknown);
+        it(`${q.id} ${v}${unknown ? ' (+ NULL sid)' : ''} returns what SQLite returns`, () => {
+          const db = dbWith(unknown);
           const run = runNullQuery(q.id, v, unknown);
           const got = db.prepare(run.sql.join('\n')).all().map((r) => Object.values(r));
           expect(sorted(run.result.rows)).toEqual(sorted(got));

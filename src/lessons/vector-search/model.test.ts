@@ -6,7 +6,6 @@ import { CURSE_K, DIMS, concentrationRatio, curseRows, ivfRecallAt } from './con
 import { DEFAULT_K, DEFAULT_QUERY, DEFAULT_SEED, MAX_K, DOMAIN, POINTS_2D, bruteForce, clusteredPoints, dist, dragQuery, hits, missed, recallAt, seededQueries, uniformPoints, type Point } from './data';
 import { DEFAULT_EF_CONSTRUCTION, DEFAULT_M, buildHnsw, reachableFromStart, searchHnsw } from './hnsw';
 import { DEFAULT_NLIST, DEFAULT_NPROBE, buildIvf, searchIvf } from './ivf';
-import { kmeans } from './kmeans';
 
 const seeds = Array.from({ length: 10 }, (_, i) => i);
 
@@ -132,8 +131,8 @@ describe('k-means and IVF', () => {
   const pts = clusteredPoints(DEFAULT_SEED);
 
   it('k-means is deterministic, every point sits in its nearest centroid at the end, and the cells partition the points', () => {
-    const c = kmeans(pts, 8, 3);
-    expect(kmeans(pts, 8, 3)).toEqual(c);
+    const c = buildIvf(pts, 8, 3);
+    expect(buildIvf(pts, 8, 3)).toEqual(c);
     pts.forEach((p, i) => {
       const nearest = c.centroids.reduce((best, cen, k) => (dist(p, cen) < dist(p, c.centroids[best]) ? k : best), 0);
       expect(dist(p, c.centroids[c.assign[i]])).toBeCloseTo(dist(p, c.centroids[nearest]), 12);

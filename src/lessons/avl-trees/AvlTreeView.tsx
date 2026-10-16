@@ -1,10 +1,11 @@
-import { WideRegion } from '../../components/WideRegion';
-import { TreeSvg, type TreeEdgeMark, type TreeNodeMark, type TreeShape } from '../../components/TreeSvg';
-import { balanceOf, type Tree } from './model';
+import { balanceOf, heightOf, type Tree } from '../../core/avl';
+import { BinaryTreeView, TREE_NODE_RADIUS } from '../../components/BinaryTreeView';
+import type { TreeEdgeMark, TreeNodeMark } from '../../components/TreeSvg';
 import { signed } from './text';
-import { RADIUS, SIDE_PAD, TOP, treeBox, treeMinWidth } from './treeBox';
 
-const BADGE_DY = RADIUS + 10;
+const BADGE_DY = TREE_NODE_RADIUS + 10;
+const TOP = 30;
+const MAX_LEVEL_GAP = 48;
 
 export interface AvlTreeViewProps {
   tree: Tree;
@@ -21,9 +22,7 @@ export interface AvlTreeViewProps {
 
 /** A binary tree on TreeSvg in-order layout, with each node's balance factor (and height) written under it. */
 export function AvlTreeView({ tree, showBalance = true, showHeight = false, nodeMark, edgeMark, nodeScale, onNodeClick, ariaLabel }: AvlTreeViewProps) {
-  const { nodes, root } = tree;
-  const box = treeBox(tree);
-  const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, nodes[id].right] };
+  const { nodes } = tree;
   const badge = (id: number) => {
     const bf = balanceOf(tree, id);
     const parts = [showHeight ? `h${nodes[id].h}` : '', showBalance ? signed(bf) : ''].filter(Boolean).join(' ');
@@ -34,22 +33,15 @@ export function AvlTreeView({ tree, showBalance = true, showHeight = false, node
     );
   };
   return (
-    <WideRegion minWidth={treeMinWidth(tree)} label={`Tree: scroll sideways to see all ${Object.keys(nodes).length} nodes`}>
-    <TreeSvg
-      shape={shape}
-      layout="inorder"
-      width={box.width}
-      height={box.height}
-      pad={SIDE_PAD}
+    <BinaryTreeView
+      tree={tree}
+      levels={heightOf(tree)}
       top={TOP}
-      levelGap={box.gap}
-      radius={RADIUS}
-      natural
+      maxGap={MAX_LEVEL_GAP}
       className="avl-svg"
-      label={(id) => id}
       renderNode={(id) => (
         <>
-          <circle r={RADIUS} />
+          <circle r={TREE_NODE_RADIUS} />
           <text className="avl-key" y={3.5}>
             {id}
           </text>
@@ -63,6 +55,5 @@ export function AvlTreeView({ tree, showBalance = true, showHeight = false, node
       nodeAriaLabel={(id) => `Node ${id}, balance factor ${signed(balanceOf(tree, id))}`}
       ariaLabel={ariaLabel}
     />
-    </WideRegion>
   );
 }

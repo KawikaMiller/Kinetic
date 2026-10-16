@@ -1873,6 +1873,103 @@ const closed = components.filter((_, i) => !c.edges.some(([a]) => a === i));   /
 - `.stage-pad ~ .provenance-row` in `kit.css` gives a row that follows a padded stage the same 16px inset and 8px gap the stage content has. The five lesson-CSS copies (`.bm-stage ~ .provenance-row` and the other four) are gone; a row nested inside the `stage-pad` is unaffected (the gap already spaces it).
 - **Migrated:** the nine B9 scenes whose caption was `useIntroCaption(<>{caption}</>, [caption])` (network-flow augment and cut, bipartite-matching augment, cost, flow and Hall, graph-coloring bound, hard and timetable) now pass `intro`/`introKey`. The five other B9 scenes with a longer computed caption (`shortest-paths-advanced` cost, `strongly-connected-components` condense, order and why, network-flow models) still call `useIntroCaption` and are fine as they are. Shots and the opening caption of every scene are unchanged.
 
+## Tier 3 kit (kit round after wave 4: agent H)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 4 to 5 round, agent H" (`pages/DevKitTier3h.tsx`).
+
+### `core/nn.ts` (K3-19) — neural-networks-backprop, cnns-convolution, attention-transformers, training-vs-inference, recommender-systems
+```ts
+import { createMlp, createConvNet, createAttentionHead, createFactorisation, createSgd, gradCheck, attention } from '../../core/nn';
+const net = createMlp({ inputs: 2, hidden: [4], activation: 'tanh' | 'sigmoid' | 'relu', output: 'sigmoid' | 'linear', seed, l2, fault });
+const batch = { xs: [[0, 0], [0, 1]], ys: [0, 1] };            // full batch; labels in {0, 1} for a sigmoid output
+const sgd = createSgd({ learningRate: 0.5, momentum: 0.9 });
+const loss = sgd.step(net, batch);                              // one epoch; returns the loss before the update
+net.trace(x);          // { z, a }: every pre-activation and activation (a[0] is the input, the last entry the output)
+net.predict(x); net.deadUnits(xs); net.layerGradientNorms(net.gradient(batch)); net.layers; net.sizes;
+gradCheck(net, batch); // { maxRelError, worstIndex, checked, skipped, numericForwardPasses: 2 * checked, backpropPasses: 2 }
+attention(Q, K, V, { mask: 'causal' | boolean[][] });           // { scores, masked, weights, output }; weights rows sum to 1
+```
+- Every model is a `Trainable<Batch>`: a flat mutable `params` array, `loss(batch)` and an analytic `gradient(batch)`. `createSgd` and `gradCheck` take any of them, so a lesson-specific model gets both for free. Nothing here reads the clock or `Math.random`: the seed is an argument and the same seed gives the same curve. A diverged run is the caller's to detect (`Number.isFinite(loss)`): it keeps stepping.
+- `createMlp`: one or two hidden layers of 1 to 16 units (`RangeError` otherwise), one output unit. Sigmoid output pairs with cross-entropy (output error `p - y`), linear with half squared error. `l2` decays weights, not biases. Parameters are laid out per layer as the weight rows (one per output unit) then the biases; `layers[i]` gives the range.
+- `createConvNet({ size, kernelSize, kernels: 1 | 2, seed })`: valid convolution, ReLU, global max pool per kernel, logistic output, trained on `{ images, ys }`. `kernel(k)` and `featureMap(image, k)` give what the lesson draws. `convBackward(image, kernel, dOut, { stride, pad })` is the general conv layer gradient (`dKernel`, `dImage`) for stacked layers.
+- `createAttentionHead({ inputs, keyDim, valueDim, seed })`: trainable `W_q`, `W_k`, `W_v` around `attention`, loss = half squared error of the output. Batch `{ queries, keys, targets, mask?, values? }`; pass `values` to look up fixed value rows (then `W_v` gets a zero gradient, the lookup scene of attention-transformers). `forward(batch)` returns the weights to draw. `attentionBackward` is the raw backward for `Q, K, V`.
+- `createFactorisation({ users, items, factors, seed, lambda })`: `r̂ = p_u · q_i` over a ratings list `{ user, item, rating }`; `rmse(ratings)` for the train and held-out curves. Step it with `createSgd` on the observed ratings (a mini-batch is just a shorter list).
+- `gradCheck` compares the analytic gradient with central differences (`epsilon` 1e-5), reports the worst relative error `|a - n| / max(|a| + |n|, floor)` (`floor` 1e-4 so two near-zero gradients do not report noise), and **skips** parameters sitting on a ReLU or max-pool kink (detected from the loss's second difference, so it never depends on the gradient being checked); `skipped` says how many. `numericForwardPasses` against `backpropPasses` is the cost comparison the backprop lesson shows.
+- `fault` (`dropDerivative`, `transposeWeights`, `flipSign` on the MLP; `noFlip` on `convBackward`; `dropScale` on the attention head) builds a deliberately wrong backward for a "break the backward pass" toggle and for the tests that prove `gradCheck` catches it. `transposeWeights` only bites a square hidden-to-hidden layer.
+- Tests: `core/nn.test.ts` (`gradCheck` below 1e-6 for tanh, sigmoid and ReLU on 20 seeded nets each, linear output, the conv net, `convBackward` for kernel and input, the attention head for `W_q`, `W_k`, `W_v` plain and causal, factorisation; every wrong backward fails it above 1e-2; the single-neuron hand vector `p = 0.7311`, loss 0.3133, `dL/dw = -0.5379`; the hand-built ReLU XOR net returns exactly 0, 1, 1, 0; XOR loss falls on a fixed seed; one hidden unit never beats 3 of 4 on 50 seeds; the attention lookup reaches weight 0.8 on at least 15 of 20 seeds; factorisation RMSE falls).
+
+### `core/kmeans.ts` — clustering-kmeans, vector-search (both migrated)
+```ts
+import { kmeans, lloydPasses, updateCentroids, assignAll, nearest, sqDist, inertia, initRandom, initShuffled, initPlusPlus } from '../../core/kmeans';
+const start = initPlusPlus(points, k, mulberry32(seed));          // or initRandom (Forgy) / initShuffled (first k of a full shuffle)
+const run = kmeans(points, start, { maxIterations: 15, empty: 'keep' });   // { centroids, assign, iterations, computations }
+for (const pass of lloydPasses(points, start, { empty: 'reseed' })) {      // one assign pass at a time, for a lesson that animates it
+  pass.assign; pass.changed; pass.settled; pass.update;                    // update: { centroids, reseeded } or null when nothing moved
+}
+```
+- Any dimension (`Vec` points; a tuple type such as `readonly [number, number]` is kept through the generics). `lloydPasses` is the one loop: assign every point to its nearest centroid (a tie goes to the lower index), and if anything moved, recompute the centroids. `kmeans` runs it to the end; a run that hits `maxIterations` unsettled is finished with one more assignment, counted, so `assign` always agrees with `centroids`.
+- `computations` is the unit the lessons report: points x centroids per assign pass, the final pass that found nothing moving included. `iterations` counts those passes.
+- `empty`: `'keep'` leaves a cluster nobody joined where it was (vector-search's IVF cells), `'reseed'` moves it to the point farthest from its own centre and reports it in `update.reseeded` (clustering-kmeans, which draws it). `kmeans` defaults to `'keep'`, `lloydPasses` and `updateCentroids` to `'reseed'`.
+- Three starts, each seeded by the caller's `Rnd`: `initRandom` (Forgy, a partial forward shuffle), `initPlusPlus` (D-squared weighting) and `initShuffled` (first `min(k, n)` of a full Fisher-Yates from the end). The last two lessons used different shuffles, so both are kept: switching one would move the other's cells.
+- Tests: `core/kmeans.test.ts` (a hand-worked 1-D run: assignments `[0,1,1,1]`, `[0,0,1,1]`, `[0,0,1,1]`, centroids `[0.5]`, `[10.5]`, 3 passes and 24 computations; the unsettled finish; every point in its nearest centroid and determinism on 20 seeds x 3 starts; keep versus reseed). The vector-search clustering was also compared against the old local implementation on 60 seeded runs (clustered and 8-D uniform points, nlist 4 to 32): centroids, assignments, iterations and computations equal.
+- **Migrated:** `vector-search` (its `kmeans.ts` and `sqDist` are gone; `buildIvf` calls the shared `kmeans` with `initShuffled` and 15 iterations) and `clustering-kmeans` (`model.ts` keeps its starts-by-name, steps, restarts, elbow and silhouette; `lloyd` turns each pass into frame steps). Shots are pixel-identical.
+
+### `core/entropy.ts` — entropy-information, lz-compression (both migrated)
+```ts
+import { entropy, binaryEntropy, surprise, textEntropy, orderZeroBits, orderZeroBitsPerChar } from '../../core/entropy';
+entropy([0.5, 0.25, 0.25]);     // 1.5 bits; entropyTerm(p) is one -p log2 p term, 0 for p = 0
+binaryEntropy(0.1);             // 0.469; surprise(0.25) = 2, surprise(0) = Infinity
+textEntropy('mississippi');     // { n, symbols: [{ sym, count, probability, surprise }], bitsPerChar, totalBits, nonAscii } | null when empty
+orderZeroBits(text);            // n x H, 0 for an empty text; orderZeroBitsPerChar(text) is H alone
+```
+- Order 0 means each character is treated as an independent draw from the text's own counts: an estimate from one sample, never the source's true entropy (lessons say so on screen). Symbols come heaviest first (`core/huffman` `frequencies`), characters are code points.
+- `orderZeroBits` is `textEntropy(text)?.totalBits ?? 0`, the same arithmetic both lessons had before (each term is `0 - p log2 p`, summed in the same order), so the figures they print are unchanged to the last bit.
+- Not here: `crossEntropy`/`excessBits` (entropy-information only; they move when a second lesson wants them) and the Huffman code costs (`core/huffman`).
+- Tests: `core/entropy.test.ts` (fair coin 1 bit, uniform over 8 is 3, (1/2, 1/4, 1/4) is 1.5, `H(0.1)` = 0.4690 and symmetric, mississippi against its closed form, `ab` x 50 is 100 bits, empty and non-ASCII). The two lessons' own tests are unchanged apart from their imports.
+- **Migrated:** `entropy-information` (`model.ts` keeps coin block codes, passwords and cross-entropy) and `lz-compression` (`orderZeroBits`, `orderZeroBitsPerChar` removed from its `model.ts`).
+
+### `core/avl.ts`, `core/keyInput.ts`, `core/opSession.ts` (`useOpSession`), `BinaryTreeView` — avl-trees, red-black-trees (migrated); skip-lists (`parseKey`); later heap, trie and other tree lessons
+```ts
+import { insertKey, removeKey, buildAvl, checkAvl, heightOf, inOrder, type Tree } from '../../core/avl';
+import { parseKey, parseKeyList, refuseOp, TREE_NODE_LIMIT } from '../../core/keyInput';
+import { useOpSession } from '../../core/useOpSession';
+import { BinaryTreeView, binaryTreeBox, TREE_NODE_RADIUS } from '../../components/BinaryTreeView';
+
+const r = insertKey(tree, 20, { record: true });   // { tree, steps, rotations, fixes }; record: false skips the snapshots (big seeded runs)
+buildAvl([1, 2, 3]);                                // { tree, rotations, fixes } over a whole insert order
+checkAvl(tree);                                     // [] when valid: reachability, BST order, stored heights, |balance| <= 1
+parseKeyList('30 10, 20');                          // { ok, value } | { ok: false, error }; distinct keys, in range, at most TREE_NODE_LIMIT (31)
+refuseOp('insert', 5, size, has);                   // a sentence or null; the optional 5th argument is the drawing's node limit
+
+const OPS: OpSessionModel<Tree, Frame> = { run: ({ base, op, key }) => myFrames(base, op, key), sizeOf, hasKey };   // module-level
+const session = useOpSession(OPS, () => ({ base, op: 'insert', key: 5 }));   // session.tree, .frames, .note; .submit(op, keyText); .restart(start)
+<BinaryTreeView tree={tree} levels={heightOf(tree)} top={30} maxGap={48} className="xx-svg" renderNode={...} nodeMark edgeMark nodeScale onNodeClick nodeAriaLabel overlay ariaLabel />
+```
+- **One AVL model.** `core/avl.ts` is the full stepped AVL tree (heights in nodes, balance factor `h(right) - h(left)`, rotations counted one per left or right rotation, so a double rotation is two and one fix). `avl-trees` steps and breaks it (`broken` makes a double rotation single); `red-black-trees` counts its rotations and height against the red-black tree in the comparison scene, replacing its local `avlRef.ts`. `AvlWork` is exported for a lesson that applies a single chosen rotation (avl-trees' "you pick the rotation" game, which stays in the lesson's `model.ts`). Immutable trees: each operation copies the nodes, fine for a 1,023-key run.
+- **Key input.** `parseKey` is the one-key field (whole number from -999 to 999, typographic minus accepted); `parseKeyList` the typed list; `refuseOp` the insert/delete refusal for a tree. skip-lists uses `parseKey` and keeps its own `refuseOp`, because a list's sentences and its 64-key limit differ (and it has a search op).
+- **Drawing.** `BinaryTreeView` is `TreeSvg` in-order layout inside a `WideRegion`: `binaryTreeBox(size, levels, { top, maxGap })` gives one 30px column per node (330 to 960 wide) and squeezes the level gap to fit a chain, and a phone scrolls sideways before the 10px badge text (`TREE_BADGE_TEXT_PX`) drops under 8px. `top` and `maxGap` are the lesson's (avl-trees 30 and 48, red-black-trees 32 and 50): the two used to differ by those two numbers, and keeping them as props keeps both drawings pixel-identical.
+- **Session.** `useOpSession(model, initial)` is the stepper session both lessons wrote: the frames of the latest insert or delete, the tree they end with, and the note of the last refusal. The transitions are pure (`beginSession`, `submitOp` in `core/opSession.ts`) so they are tested without a renderer; `useAvlSession` and `useRbSession` are eight-line adapters that supply the lesson's frame builder.
+- Tests: `core/avl.test.ts`, `core/keyInput.test.ts` (every refusal sentence), `core/opSession.test.ts` (a fake tree: start, next op on the ended tree, refusals change only the note), `components/BinaryTreeView.test.ts` (hand-worked box sizes). avl-trees, red-black-trees and skip-lists tests are unchanged apart from their imports, except that red-black-trees' "compact AVL reference" test now runs the same 200-seed audit and the 11-rotation check on `core/avl`.
+- **Migrated:** `avl-trees` (`model.ts` keeps only the rotation game; `keys.ts` and `treeBox.ts` are gone), `red-black-trees` (`avlRef.ts`, `keys.ts`, `treeBox.ts` gone) and `skip-lists` (`parseKey`). Shots of the touched scenes are pixel-identical.
+
+### Small kit fixes — `Tray` array children, `core/testing/sqlite.ts`, `table-cards` CSS, `parseRows` noun
+```tsx
+<Tray label="Frontier" empty="empty">{items.map((x) => x.live && <Chip key={x.id} />)}</Tray>   // every entry false: shows "empty"
+```
+```ts
+import { openSqlite } from '../../core/testing/sqlite';                 // tests only: node:sqlite behind a typed dynamic import
+const db = openSqlite<Record<string, Cell>>();                           // in-memory; the type argument is the row shape the test reads
+db.exec('CREATE TABLE t (id INTEGER)'); db.prepare('SELECT 1 AS n').all(); stmt.run(1); stmt.setReturnArrays(true);
+parseRows(text, { maxRows: 60, maxLineChars: 30, noun: { one: 'instruction', many: 'instructions' }, row });   // default rule / rules
+```
+```html
+<table class="xx-table table-cards"> … <td data-label="Column name">…</td> …   <!-- under 600px: one bordered card per row -->
+```
+- **`Tray`** decides "has items" with `Children.toArray(children).length > 0`, so an array whose entries are all `false`, `null` or `undefined` (the `{cond && <Item />}` pattern over every item) shows the `empty` text like no children at all; any real entry, a `0` included, keeps it hidden. Test: `components/Panel.test.ts`.
+- **`core/testing/sqlite.ts`** is the same run-time `import()` shim `core/testing/node.ts` uses (no Node types in the app tsconfig), typed for what the tests call: `exec`, `prepare(...).all/run/setReturnArrays`. Test-only; never import it from app code. **Migrated:** query-planning, join-algorithms, normalization, orm-n-plus-one, relational-algebra (two files) and sql-aggregation-windows, which each carried their own 5 to 8 lines. Test: `core/testing/sqlite.test.ts`.
+- **`table-cards`** (in `kit.css`) is the responsive table: under 600px the header hides and each row becomes a bordered card whose cells read "Column name: value" from their `data-label`. A scroller around the table keeps its own `border: 0` in the lesson's CSS (one line), because a lesson's base border rule would outrank a kit one. The `table.table-cards` selector outranks a lesson's `.xx-table th, .xx-table td` padding. **Migrated:** halting-problem (both tables) and lambda-calculus; coverage-mutation-testing and computing-ethics use `data-label` for their own layouts and are untouched.
+- **`parseRows` `noun`** names a row in the over-limit sentences ("Line 8 is 63 characters; keep each instruction to 30 or fewer", "Line 61: more than 60 instructions; delete one first"). Default rule / rules, so turing-machines is unchanged; bytecode-vms passes instruction / instructions (its test now expects that wording). Not done: comment text still counts toward `maxLineChars` and a trailing `# comment` on a rule is still read as words; neither is explained on screen (queued request, left open).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

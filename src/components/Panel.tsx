@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode, Ref } from 'react';
+import { Children, type HTMLAttributes, type ReactNode, type Ref } from 'react';
 
 /**
  * Native attributes a wrapper forwards to its root element (aria-*, role, id, data-*, events).
@@ -51,7 +51,8 @@ export function SectionTitle({
 
 /**
  * A dashed tray that collects items (outputs, a call stack, extracted values). Shows
- * `empty` (as a faint mono note) when it has no children; pass your own element as a
+ * `empty` (as a faint mono note) when it has nothing to show: no children, or a list whose entries are
+ * all `false`, `null` or `undefined` (`{cond && <Item />}` over every item). Pass your own element as a
  * child instead if the empty text needs the lesson's own styling.
  *
  * The label flows inline with short content by default; `stack` puts it on its own line
@@ -68,7 +69,7 @@ export function Tray({
   ariaLabel?: string;
   children?: ReactNode;
 } & Forwarded<HTMLDivElement>) {
-  const hasItems = Array.isArray(children) ? children.length > 0 : children != null && children !== false;
+  const hasItems = Children.toArray(children).length > 0;
   return (
     <div {...rest} className={`tray ${stack ? 'is-stacked' : ''} ${className}`} aria-label={ariaLabel ?? rest['aria-label']}>
       {label && <SectionTitle weight={labelWeight}>{label}</SectionTitle>}

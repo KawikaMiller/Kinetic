@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { blobs } from '../../core/fixtures/datasets';
 import {
-  ELBOW_MAX_K, PRESET_IDS, agreement, assignAll, bestOfRestarts, elbowCurve, elbowK, finalStep, inertia, initCentroids, initPlusPlus,
-  lloyd, preset, silhouette, sqDist, standardise, updateCentroids,
+  ELBOW_MAX_K, PRESET_IDS, agreement, bestOfRestarts, elbowCurve, elbowK, finalStep, initCentroids,
+  lloyd, preset, silhouette, standardise,
   type P,
 } from './model';
+import { assignAll, inertia, initPlusPlus, sqDist, updateCentroids } from '../../core/kmeans';
 import { mulberry32 } from '../../core/random';
 
 /** 100 seeded runs: random and k-means++ starts, k from 1 to 6, on varied blobs. */

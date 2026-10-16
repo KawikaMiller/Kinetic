@@ -1,5 +1,5 @@
 import { mulberry32, shuffle } from '../../core/random';
-import { buildAvl, fibonacciTree, type Case, type Tree } from './model';
+import { buildAvl, fibonacciTree, type Case, type Tree } from '../../core/avl';
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 

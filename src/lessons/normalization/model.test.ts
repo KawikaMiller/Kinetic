@@ -1,18 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { openSqlite } from '../../core/testing/sqlite';
 import {
   CUSTOMERS, DELETED_ORDER, FDS, PRODUCTS, WIDE_COLS, WIDE_ROWS, candidateKeys, closure, factsHeld, inconsistencies, invoiceSql, isForeignKey,
   isSuperkey, joinAll, joinCount, money, normalForm, repeatedCells, runAnomaly, schemaAt, violations, type Fd, type Row, type StageId,
 } from './model';
 
-interface Db {
-  exec(sql: string): void;
-  prepare(sql: string): { all(): Row[] };
-}
-const SQLITE = 'node:sqlite';
-const open = async (): Promise<Db> => {
-  const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => Db };
-  return new DatabaseSync(':memory:');
-};
+const open = () => openSqlite<Row>();
 const lit = (v: unknown) => (v === null ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`);
 const asSet = (rows: readonly Row[], cols: readonly string[]) => rows.map((r) => JSON.stringify(cols.map((c) => r[c]))).sort();
 const STAGES: StageId[] = [0, 1, 2, 3];
@@ -94,8 +87,8 @@ describe('decompositions are lossless', () => {
       expect(asSet(joinAll(schemaAt(st)), WIDE_COLS)).toEqual(asSet(WIDE_ROWS, WIDE_COLS));
     });
 
-    it(`stage ${st}: the invoice query in SQLite returns every order line`, async () => {
-      const db = await open();
+    it(`stage ${st}: the invoice query in SQLite returns every order line`, () => {
+      const db = open();
       for (const t of schemaAt(st)) {
         db.exec(`CREATE TABLE ${t.name} (${t.cols.join(', ')})`);
         for (const r of t.rows) db.exec(`INSERT INTO ${t.name} VALUES (${t.cols.map((c) => lit(r[c])).join(', ')})`);
