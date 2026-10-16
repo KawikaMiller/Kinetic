@@ -1,9 +1,21 @@
 import { CellGrid, type GridCellSpec } from '../../components/CellGrid';
 import { ARROW } from './mdp';
 import type { StepRecord } from './qlearn';
-import { BONUS_CELL, COLS, ROWS, START, cellAt, colOf, isLive, rowOf, stateOf, type World } from './world';
+import { BONUS_CELL, COLS, ROWS, START, START_STATE, cellAt, colOf, isLive, rowOf, stateOf, type World } from './world';
 
 const SIZE = { cell: 40, gap: 3, font: 12 } as const;
+/** Where an arrow moves to in a cell that already carries a label (S, +0.2), so the two do not overdraw each other. */
+const CORNER = { dx: 12, dy: -12 } as const;
+
+/** Legend entries for the cells every grid can show. */
+export const WORLD_LEGEND = [
+  { color: 'var(--ok)', label: 'goal, +1', shape: 'square' as const },
+  { color: 'var(--bad)', label: 'pit, -1', shape: 'square' as const },
+  { color: 'var(--hi)', label: 'cookie, +0.3', shape: 'square' as const },
+  { color: 'var(--dim)', label: 'wall', shape: 'square' as const },
+];
+
+const isLabelled = (w: World, s: number): boolean => s === START_STATE || (w.bonus > 0 && s === stateOf(BONUS_CELL[0], BONUS_CELL[1]));
 
 export interface GridView {
   world: World;
@@ -11,6 +23,10 @@ export interface GridView {
   values?: readonly number[];
   /** One action per state, drawn as an arrow in live cells. */
   policy?: readonly number[];
+  /** Per state: has the policy anything to go on? An arrow in a cell with no evidence yet is drawn grey, not violet. */
+  decided?: readonly boolean[];
+  /** The scale the green wash is drawn on (default: the live cells of `values`), so two grids can share one. */
+  range?: { lo: number; hi: number };
   /** A latest episode, drawn as a path (random moves in orange). */
   path?: readonly StepRecord[];
 }
@@ -33,7 +49,7 @@ function spec(view: GridView, r: number, c: number, range: { lo: number; hi: num
 
 export function RlGrid({ view, onCellClick, ariaLabel }: { view: GridView; onCellClick?: (r: number, c: number) => void; ariaLabel: string }) {
   const liveValues = view.values ? Array.from({ length: ROWS * COLS }, (_, s) => s).filter((s) => isLive(view.world, s)).map((s) => view.values![s]) : [];
-  const range = { lo: Math.min(...liveValues), hi: Math.max(...liveValues) };
+  const range = view.range ?? { lo: Math.min(...liveValues), hi: Math.max(...liveValues) };
   return (
     <CellGrid
       rows={ROWS}
@@ -60,7 +76,9 @@ export function RlGrid({ view, onCellClick, ariaLabel }: { view: GridView; onCel
               .filter((s) => isLive(view.world, s))
               .map((s) => {
                 const p = center(rowOf(s), colOf(s));
-                return <text key={s} className="rl-arrow" x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central">{ARROW[view.policy![s]]}</text>;
+                const corner = isLabelled(view.world, s);
+                const undecided = view.decided !== undefined && !view.decided[s];
+                return <text key={s} className={`rl-arrow ${corner ? 'is-corner' : ''} ${undecided ? 'is-undecided' : ''}`} x={p.x + (corner ? CORNER.dx : 0)} y={p.y + (corner ? CORNER.dy : 0)} textAnchor="middle" dominantBaseline="central">{ARROW[view.policy![s]]}</text>;
               })}
         </>
       )}

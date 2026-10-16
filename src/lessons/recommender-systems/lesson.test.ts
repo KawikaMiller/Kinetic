@@ -6,7 +6,7 @@ import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { cellSpec } from './cells';
-import { LIKE_AT, ROUNDS, mostShown, ratingRank, simulateLoop } from './loop';
+import { ROUNDS, ratingRank } from './loop';
 import { PINNED_LOOP_SEEDS, measureLoopSeeds } from './loopSeeds';
 import { editsSummary, meanBaselineRmse, toggleHidden } from './problem';
 import { factoriseCaption, funnelCaption, loopCaption, matrixCaption, neighbourCaption } from './captions';

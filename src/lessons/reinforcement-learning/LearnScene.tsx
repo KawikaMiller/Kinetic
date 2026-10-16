@@ -6,14 +6,15 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Sta
 import { f2, learnCaption } from './captions';
 import { smooth, toPoints } from './curves';
 import { greedyPolicy } from './mdp';
-import { epsilonAt, greedyReturn, train } from './qlearn';
-import { RlGrid } from './RlGrid';
+import { DECAY_RULE, EPSILON_FLOOR, epsilonAt, greedyReturn, train } from './qlearn';
+import { RlGrid, WORLD_LEGEND } from './RlGrid';
+import { WorldStrip } from './WorldStrip';
 import { ALPHA_MAX, ALPHA_MIN, EPISODES_CAP, EPSILON_MAX, GAMMA_MAX, GAMMA_MIN, LEARN_DEFAULT, PER_PRESS, SMOOTH_WINDOW } from './settings';
 import { gammaRefusal, type World } from './world';
 
 const PER_PRESS_OPTIONS = PER_PRESS.map((n) => ({ value: n, label: n.toLocaleString('en-US') }));
 
-export function LearnScene({ picker, world }: { picker: ReactNode; world: World }) {
+export function LearnScene({ picker, world, setWorld }: { picker: ReactNode; world: World; setWorld: (w: World) => void }) {
   const [alpha, setAlpha] = useState<number>(LEARN_DEFAULT.alpha);
   const [gamma, setGamma] = useState<number>(LEARN_DEFAULT.gamma);
   const [epsilon, setEpsilon] = useState<number>(LEARN_DEFAULT.epsilon);
@@ -25,7 +26,7 @@ export function LearnScene({ picker, world }: { picker: ReactNode; world: World 
   const greedy = useMemo(() => greedyReturn(world, gamma, training.Q), [world, gamma, training]);
   const returns = useMemo(() => smooth(training.returns, SMOOTH_WINDOW), [training]);
   const steps = useMemo(() => smooth(training.steps, SMOOTH_WINDOW), [training]);
-  const caption = learnCaption({ alpha, gamma, epsilon, decay, seed: LEARN_DEFAULT.seed }, episodes, training, greedy, SMOOTH_WINDOW);
+  const caption = learnCaption({ alpha, gamma, epsilon, decay, seed: LEARN_DEFAULT.seed }, episodes, training, greedy, SMOOTH_WINDOW, world);
   const setGammaChecked = (v: number) => {
     const refusal = gammaRefusal(v, world.stepCost);
     setNote(refusal);
@@ -42,7 +43,7 @@ export function LearnScene({ picker, world }: { picker: ReactNode; world: World 
         <Stats>
           <Stat label="Episodes" value={episodes.toLocaleString('en-US')} />
           <Stat label="Epsilon now" value={f2(epsilonAt({ alpha, gamma, epsilon, decay, seed: LEARN_DEFAULT.seed }, episodes))} color="var(--orange)" sub={decay ? 'decaying' : 'fixed'} />
-          <Stat label="Greedy policy's return" value={f2(greedy)} color="var(--violet)" sub="expected, from the start, on the true model" />
+          <Stat label="Greedy policy's return" value={f2(greedy)} color="var(--violet)" sub={greedy === -Infinity ? 'the greedy route never ends: a loop at gamma 1' : 'expected, from the start, on the true model'} />
         </Stats>
       }
       legend={
@@ -52,6 +53,7 @@ export function LearnScene({ picker, world }: { picker: ReactNode; world: World 
             { color: 'var(--violet)', label: 'greedy policy arrows', shape: 'square' },
             { color: 'var(--info)', label: 'latest episode', shape: 'line' },
             { color: 'var(--orange)', label: 'a random (exploratory) move', shape: 'line' },
+            ...WORLD_LEGEND,
           ]}
         />
       }
@@ -71,11 +73,12 @@ export function LearnScene({ picker, world }: { picker: ReactNode; world: World 
       ]}
     >
       <div className="rl-stage stage-pad">
+        <WorldStrip world={world} setWorld={setWorld} />
         <Box>
           <SectionTitle hint="Q(s,a) += alpha (r + gamma max Q(s',a') - Q(s,a))">Q-learning, one table entry at a time</SectionTitle>
-          <RlGrid view={{ world, values: training.Q.map((row) => Math.max(...row)), policy: episodes > 0 ? greedyPolicy(training.Q) : undefined, path: training.lastEpisode }} ariaLabel="Best Q-value, greedy policy and the latest episode" />
+          <RlGrid view={{ world, values: training.Q.map((row) => Math.max(...row)), policy: episodes > 0 ? greedyPolicy(training.Q) : undefined, decided: training.Q.map((row) => row.some((v) => v !== 0)), path: training.lastEpisode }} ariaLabel="Best Q-value, greedy policy and the latest episode" />
           {note && <p role="alert" className="rl-note">{note}</p>}
-          <Hint tone="muted" block>The agent does not know where the walls, rewards or slips are: it learns only from the moves it plays.</Hint>
+          <Hint tone="muted" block>The agent does not know where the walls, rewards or slips are: it learns only from the moves it plays. Epsilon decay means {DECAY_RULE}, so a start below {EPSILON_FLOOR} stays where you set it. A grey arrow is a cell the agent has no evidence about yet.</Hint>
         </Box>
         <Box>
           <SectionTitle hint={`smoothed over ${SMOOTH_WINDOW} episodes`}>Return and steps per episode</SectionTitle>

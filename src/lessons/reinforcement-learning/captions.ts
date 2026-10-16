@@ -3,9 +3,9 @@ import { plural } from '../../core/format';
 import type { Destination, PresetRun } from './presets';
 import { epsilonAt, type QSettings, type Training } from './qlearn';
 import type { Solved } from './mdp';
-import { worldWarning, type World } from './world';
+import { cellAt, isDefaultWorld, isTerminal, worldWarning, type World } from './world';
 
-export const f2 = (v: number) => v.toFixed(2);
+export const f2 = (v: number) => (v === -Infinity ? '-infinity' : v.toFixed(2));
 export const pctOf = (v: number) => `${Math.round(v * 100)}%`;
 
 const count = (w: World, ch: string) => w.rows.reduce((n, row) => n + [...row].filter((c) => c === ch).length, 0);
@@ -17,14 +17,26 @@ export function worldCaption(w: World): string {
   return `${plural(count(w, '#'), 'wall')}, ${plural(count(w, 'G'), 'goal')}, ${plural(count(w, 'P'), 'pit')}, ${plural(count(w, 'C'), 'cookie')}; each step costs ${w.stepCost.toFixed(2)}. ${move}${warn ? ` ${warn}` : ''}`;
 }
 
-const END_TEXT = (t: Training, last: number) => (last < 0 ? '' : t.reachedGoal[last] ? 'the goal' : t.steps[last] >= 100 ? 'the step cap' : 'a pit or the cookie');
+/** One line saying whether the world painted in "The world" is the default, shown in every scene that trains in it. */
+export function worldSummary(w: World): string {
+  const walls = count(w, '#');
+  const parts = `slip ${Math.round(w.slip * 100)}%, step cost ${w.stepCost.toFixed(2)}, ${plural(walls, 'wall')}, ${plural(count(w, 'G'), 'goal')}, ${plural(count(w, 'P'), 'pit')}, ${plural(count(w, 'C'), 'cookie')}`;
+  return isDefaultWorld(w) ? `World from "The world": the default (${parts}).` : `World from "The world": edited (${parts}).`;
+}
 
-export function learnCaption(set: QSettings, episodes: number, t: Training, greedy: number, window: number): string {
+const END_CELL: Record<string, string> = { G: 'the goal', P: 'the pit', C: 'the cookie' };
+
+function endText(t: Training, w: World): string {
+  const last = t.lastEpisode.at(-1);
+  return last && isTerminal(w, last.to) ? END_CELL[cellAt(w, last.to)] : 'the step cap';
+}
+
+export function learnCaption(set: QSettings, episodes: number, t: Training, greedy: number, window: number, w: World): string {
   if (episodes === 0) return 'Nothing learned yet: every Q-value is 0. Press Run to play episodes.';
   const tail = t.returns.slice(-window);
   const mean = tail.reduce((a, b) => a + b, 0) / tail.length;
   const eps = epsilonAt(set, episodes);
-  return `After ${plural(episodes, 'episode')} (epsilon now ${f2(eps)}): mean return of the last ${plural(tail.length, 'episode')} ${f2(mean)}, and following the greedy policy from the start is worth ${f2(greedy)} on average. The latest episode took ${plural(t.steps.at(-1)!, 'step')} and ended at ${END_TEXT(t, t.steps.length - 1)}.`;
+  return `After ${plural(episodes, 'episode')} (epsilon now ${f2(eps)}): mean return of the last ${plural(tail.length, 'episode')} ${f2(mean)}, and following the greedy policy from the start is worth ${f2(greedy)} on average. The latest episode took ${plural(t.steps.at(-1)!, 'step')} and ended at ${endText(t, w)}.`;
 }
 
 export function exactCaption(computed: boolean, solved: Solved, episodes: number, gapNow: number, gapEarly: number, cells: number): string {
@@ -37,7 +49,10 @@ const DEST: Record<Destination, string> = { goal: 'the goal', cookie: 'the cooki
 export function exploreCaption(r: PresetRun): string {
   const g = r.preset.settings.gamma;
   const head = `${r.preset.label} (alpha ${f2(r.preset.settings.alpha)}, gamma ${f2(g)}, epsilon ${f2(r.preset.settings.epsilon)}${r.preset.settings.decay ? ' decaying' : ' fixed'}, ${plural(r.preset.episodes, 'episode')}): ${r.route.destination === 'loop' ? `the greedy route loops (still moving after ${plural(r.route.steps, 'step')})` : `the greedy route ends at ${DEST[r.route.destination]} after ${plural(r.route.steps, 'step')}`} and is worth ${f2(r.greedy)}, against ${f2(r.optimal)} for the best policy on this reward.`;
-  if (r.preset.bonus) return `${head} The loop is not a bug in the learner: it maximises the reward as written, and ${pctOf(r.goalShare)} of the last 100 episodes reached the goal.`;
+  if (r.preset.bonus) {
+    const verdict = r.route.destination === 'loop' ? 'The loop is not a bug in the learner: it maximises the reward as written' : 'The bonus tile did not trap the agent in this world, so there is no loop to explain';
+    return `${head} ${verdict}, and ${pctOf(r.goalShare)} of the last 100 episodes reached the goal.`;
+  }
   return `${head} ${pctOf(r.goalShare)} of the last 100 episodes reached the goal.`;
 }
 

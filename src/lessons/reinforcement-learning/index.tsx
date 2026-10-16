@@ -1,7 +1,8 @@
 import type { LessonModule } from '../../core/types';
 import { f2, pctOf } from './captions';
-import { approxFacts, exactFacts, exploreFacts, learnFacts } from './facts';
+import { FIXED_LOW_EPSILON, approxFacts, exactFacts, exploreFacts, learnFacts } from './facts';
 import { stateCount } from './approx';
+import { PINNED_FIXED_EPSILON, PINNED_RL_SEEDS } from './pinned';
 import { LEARN_DEFAULT } from './settings';
 import { Stage } from './Stage';
 import { BONUS_REWARD } from './world';
@@ -11,6 +12,8 @@ const exact = exactFacts();
 const explore = exploreFacts();
 const approx = approxFacts();
 const n = (v: number) => v.toLocaleString('en-US');
+const fixedAt = (epsilon: number) => PINNED_FIXED_EPSILON.find((f) => f.epsilon === epsilon)!;
+const FROM_DEFAULT = '(from the default world: press Reset the world if the strip says edited)';
 
 const lesson: LessonModule = {
   Stage,
@@ -30,28 +33,28 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `In "The world", the start is row 5, column 1. Set Paint with to wall and click row 4, column 1 and row 5, column 2: the goal is walled off and the stage says "Unreachable goal: the agent cannot learn it." Press Reset the world.`,
-    `In "Learn", press Run once (${n(LEARN_DEFAULT.perPress)} episodes): following the greedy policy from the start is worth ${f2(learn.one.greedy)}, because it heads for the cookie, and ${pctOf(learn.one.goalShare)} of the last 100 episodes reached the goal. Press Run nine more times (${n(10 * LEARN_DEFAULT.perPress)} episodes in all): ${f2(learn.many.greedy)} and ${pctOf(learn.many.goalShare)} reach the goal.`,
-    `In "The exact answer", press Compute the optimal values: value iteration converges in ${exact.solved.iterations} sweeps and the best possible return from the start is ${f2(exact.optimal)}. After ${n(exact.training.returns.length)} episodes Q-learning's largest gap to those values on the ${exact.target.states.length} cells the best policy visits is ${f2(exact.gapNow)}, from ${f2(exact.gapEarly)} after 100; over all cells it is ${f2(exact.gapAll)}, because cells the agent does not visit are not learned.`,
-    `In "Exploration and discounting", Greedy from the start (epsilon 0) ends at ${explore.open.route.destination === 'cookie' ? 'the cookie' : 'the goal'} after ${explore.open.route.steps} steps and is worth ${f2(explore.open.greedy)}, against ${f2(explore.open.optimal)} for the best policy. Press Gamma 0.5: it also heads for the cookie, now correctly (${f2(explore.runs.myopic.greedy)} against ${f2(explore.runs.myopic.optimal)}). Press Gamma 0.99: it reaches the goal. Press the reward edit: it loops on the +${BONUS_REWARD} tile.`,
+    `In "Learn" ${FROM_DEFAULT}, press Run once (${n(LEARN_DEFAULT.perPress)} episodes): following the greedy policy from the start is worth ${f2(learn.one.greedy)}, because it heads for the cookie, and ${pctOf(learn.one.goalShare)} of the last 100 episodes reached the goal. Press Run nine more times (${n(10 * LEARN_DEFAULT.perPress)} episodes in all): ${f2(learn.many.greedy)} and ${pctOf(learn.many.goalShare)} reach the goal. Then switch Epsilon decay to Fixed and set Epsilon to ${f2(FIXED_LOW_EPSILON)}: the same ${n(10 * LEARN_DEFAULT.perPress)} episodes replay and the greedy return falls back to ${f2(learn.fixedLow.greedy)}, with ${pctOf(learn.fixedLow.goalShare)} reaching the goal. A little random play is not enough here. Switch decay back on and set Epsilon to 0: it stays 0, not the 0.05 floor.`,
+    `In "The exact answer" ${FROM_DEFAULT}, press Compute the optimal values: value iteration converges in ${exact.solved.iterations} sweeps and the best possible return from the start is ${f2(exact.optimal)}. After ${n(exact.training.returns.length)} episodes Q-learning's largest gap to those values on the ${exact.target.states.length} cells the best policy visits is ${f2(exact.gapNow)}, from ${f2(exact.gapEarly)} after 100; over all cells it is ${f2(exact.gapAll)}, because cells off the best route are visited rarely. The note under the grids prints the measured rates over ${PINNED_RL_SEEDS.seeds} seeds and says why the two grids can show different arrows.`,
+    `In "Exploration and discounting" ${FROM_DEFAULT}, Greedy from the start (epsilon 0) ends at ${explore.open.route.destination === 'cookie' ? 'the cookie' : 'the goal'} after ${explore.open.route.steps} steps and is worth ${f2(explore.open.greedy)}, against ${f2(explore.open.optimal)} for the best policy. Press Gamma 0.5: it also heads for the cookie, now correctly (${f2(explore.runs.myopic.greedy)} against ${f2(explore.runs.myopic.optimal)}). Press Gamma 0.99: it reaches the goal. Press the reward edit: it loops on the +${BONUS_REWARD} tile.`,
     `In "When a table cannot scale", a straight-line value function trained for ${n(5000)} TD updates is off by ${f2(approx.open.rmse)} on the open grid and ${f2(approx.maze.rmse)} on the walled maze, where distance along a corridor is not a function a plane can follow.`,
   ],
   keyIdeas: [
-    'A greedy agent repeats the first good reward it finds, so in this world with epsilon 0 it heads for the near cookie and does not try the longer route to the goal.',
+    `A greedy agent repeats the first good reward it finds, so in this world with epsilon 0 it heads for the near cookie and does not try the longer route to the goal; a small fixed epsilon does not rescue it (0.1 and 0.3 still end at the cookie on ${fixedAt(0.1).cookie} and ${fixedAt(0.3).cookie} of ${fixedAt(0.1).seeds} seeds), whereas starting near 1 and decaying does.`,
     'Q-learning learns values from sampled experience and does not need the model; value iteration needs the transition probabilities and rewards of the world, and gives the exact answer to check against.',
     'The discount factor sets the horizon: a low gamma makes a near small reward the optimal choice, a high one makes a far large reward worth the trip.',
     'An agent optimises the reward as written, so a bonus for stepping on a tile produces a loop that is optimal for that reward; a table also stops scaling as states multiply.',
   ],
   quiz: [
     {
-      q: 'With epsilon 0 the agent keeps heading for the +0.3 cookie. What setting lets it find the +1 goal, and why does a greedy start fail?',
+      q: 'With epsilon 0 the agent keeps heading for the +0.3 cookie. Which setting lets it find the +1 goal nine moves away, and why does a little random play not do it?',
       options: [
-        'Epsilon above 0, because a greedy agent repeats its first positive reward and never tries a longer route',
+        'Heavy exploration early, then decay: a little random play seldom chains nine moves to the goal',
         'A larger learning rate alone, since faster updates let the agent notice the distant goal before the cookie',
         'A lower step cost, because cheaper steps make the long route the only one that the agent can afford',
         'Nothing, since the cookie is the optimal choice whatever gamma and epsilon are in a world of this size',
       ],
       answer: 0,
-      why: `At epsilon 0 the greedy route ends at the cookie after ${explore.open.route.steps} steps and is worth ${f2(explore.open.greedy)}, against ${f2(explore.open.optimal)} for the best policy at gamma ${f2(explore.open.preset.settings.gamma)}. With epsilon starting at 1 and decaying, Q-learning's greedy return after ${n(10 * LEARN_DEFAULT.perPress)} episodes is ${f2(learn.many.greedy)}, against a best of ${f2(learn.optimal)}.`,
+      why: `At epsilon 0 the greedy route ends at the cookie after ${explore.open.route.steps} steps and is worth ${f2(explore.open.greedy)}, against ${f2(explore.open.optimal)} for the best policy at gamma ${f2(explore.open.preset.settings.gamma)}. A fixed epsilon of 0.1, 0.3 or 0.5 still ends at the cookie on ${fixedAt(0.1).cookie}, ${fixedAt(0.3).cookie} and ${fixedAt(0.5).cookie} of ${fixedAt(0.1).seeds} seeds after ${n(fixedAt(0.1).episodes)} episodes, while a fixed 0.7 reaches the goal on ${fixedAt(0.7).goal} of ${fixedAt(0.7).seeds}. Starting at 1 and decaying, the greedy return after ${n(10 * LEARN_DEFAULT.perPress)} episodes is ${f2(learn.many.greedy)}, against a best of ${f2(learn.optimal)}.`,
     },
     {
       q: 'What does value iteration need that Q-learning does without?',
@@ -68,7 +71,7 @@ const lesson: LessonModule = {
       q: 'At gamma 0.5 the agent prefers the cookie two steps away to the goal nine steps away. Why?',
       options: [
         'A reward k steps away is worth gamma^k of its size, so at gamma 0.5 a distant goal is nearly worthless',
-        'The cookie pays more than the goal at that gamma, because discounting raises small rewards above large ones',
+        'The cookie\'s reward is larger than the goal\'s at that gamma, so the agent takes the bigger one',
         'Gamma 0.5 makes half of all moves slip, which makes the long route to the goal too dangerous to learn',
         'Value iteration breaks below gamma 0.9, so the learner falls back on the nearest reward it can find',
       ],

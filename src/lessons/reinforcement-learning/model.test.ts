@@ -127,13 +127,13 @@ describe('Q-learning', () => {
   const solved = valueIteration(DEFAULT_WORLD, GAMMA);
   const optimal = solved.V[START_STATE];
 
-  it('with a decaying epsilon reaches the optimal return on at least 19 of 20 seeds in 3,000 episodes', () => {
+  it('with a decaying epsilon reaches the optimal return (within 0.02) on at least 90% of 100 seeds in 3,000 episodes: the measured rate, not 19 of 20 on a lucky slice', () => {
     let reached = 0;
-    for (let seed = 1; seed <= 20; seed++) {
+    for (let seed = 1; seed <= 100; seed++) {
       const t = train(DEFAULT_WORLD, { alpha: 0.3, gamma: GAMMA, epsilon: 1, decay: true, seed }, 3000, gapTarget(DEFAULT_WORLD, solved));
       if (Math.abs(greedyReturn(DEFAULT_WORLD, GAMMA, t.Q) - optimal) < 0.02) reached++;
     }
-    expect(reached).toBeGreaterThanOrEqual(19);
+    expect(reached).toBeGreaterThanOrEqual(90);
   });
 
   it('on a deterministic world its start value converges to Q* (within 0.02) and the gap shrinks', () => {

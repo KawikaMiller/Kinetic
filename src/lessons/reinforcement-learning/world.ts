@@ -79,6 +79,10 @@ export function goalReachable(w: World): boolean {
   return false;
 }
 
+/** Is this the world the lesson opens with (rows, slip, step cost and no bonus)? */
+export const isDefaultWorld = (w: World): boolean =>
+  w.rows.join() === DEFAULT_WORLD.rows.join() && w.slip === DEFAULT_WORLD.slip && w.stepCost === DEFAULT_WORLD.stepCost && w.bonus === DEFAULT_WORLD.bonus;
+
 export const hasGoal = (w: World): boolean => w.rows.some((row) => row.includes('G'));
 
 /** The refusal for gamma 1 in a world with no step cost, or null: an endless loop is never worse, so the values do not converge. */

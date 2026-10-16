@@ -18,7 +18,11 @@ export interface QSettings {
 export const DECAY_RATE = 0.999;
 export const EPSILON_FLOOR = 0.05;
 
-export const epsilonAt = (s: QSettings, episode: number): number => (s.decay ? Math.max(EPSILON_FLOOR, s.epsilon * DECAY_RATE ** episode) : s.epsilon);
+/** A decaying epsilon falls towards EPSILON_FLOOR but a start below the floor stays where it is (epsilon 0 is greedy, decay or not). */
+export const epsilonAt = (s: QSettings, episode: number): number => (s.decay ? Math.min(s.epsilon, Math.max(EPSILON_FLOOR, s.epsilon * DECAY_RATE ** episode)) : s.epsilon);
+
+/** The decay rule in words, for the Learn scene. */
+export const DECAY_RULE = `x${DECAY_RATE} each episode, never below ${EPSILON_FLOOR}`;
 
 export interface StepRecord {
   from: number;

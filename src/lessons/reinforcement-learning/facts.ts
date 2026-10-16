@@ -6,6 +6,9 @@ import { APPROX_DEFAULT, EXACT_DEFAULT, EXPLORE_DEFAULT, LEARN_DEFAULT } from '.
 import { MAZE_ROWS, OPEN_ROWS, approxWorld, trainTd } from './approx';
 import { DEFAULT_WORLD, START_STATE, worldWarning } from './world';
 
+/** Try-this 2's last step: no decay and this small a fixed epsilon. */
+export const FIXED_LOW_EPSILON = 0.1;
+
 export const learnSettings = (over: Partial<QSettings> = {}): QSettings => ({
   alpha: LEARN_DEFAULT.alpha, gamma: LEARN_DEFAULT.gamma, epsilon: LEARN_DEFAULT.epsilon, decay: LEARN_DEFAULT.decay, seed: LEARN_DEFAULT.seed, ...over,
 });
@@ -18,11 +21,12 @@ export function worldFacts() {
 
 export function learnFacts() {
   const solved = valueIteration(DEFAULT_WORLD, LEARN_DEFAULT.gamma);
-  const at = (episodes: number) => {
-    const t = train(DEFAULT_WORLD, learnSettings(), episodes);
+  const at = (episodes: number, over: Partial<QSettings> = {}) => {
+    const t = train(DEFAULT_WORLD, learnSettings(over), episodes);
     return { training: t, greedy: greedyReturn(DEFAULT_WORLD, LEARN_DEFAULT.gamma, t.Q), goalShare: recentGoalShare(t) };
   };
-  return { optimal: solved.V[START_STATE], one: at(LEARN_DEFAULT.perPress), many: at(10 * LEARN_DEFAULT.perPress) };
+  const thousand = 10 * LEARN_DEFAULT.perPress;
+  return { optimal: solved.V[START_STATE], one: at(LEARN_DEFAULT.perPress), many: at(thousand), fixedLow: at(thousand, { epsilon: FIXED_LOW_EPSILON, decay: false }) };
 }
 
 export function exactFacts() {

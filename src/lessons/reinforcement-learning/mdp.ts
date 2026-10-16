@@ -78,19 +78,23 @@ export function valueIteration(w: World, gamma: number, tolerance = 1e-13, maxIt
 /** The action with the largest value in a state (the lowest index on a tie), for every state. */
 export const greedyPolicy = (Q: readonly (readonly number[])[]): number[] => Q.map((row) => row.reduce((best, v, a) => (v > row[best] ? a : best), 0));
 
-/** Exact value of following `policy` (state to action) from every state: iterative policy evaluation. */
+/**
+ * Exact value of following `policy` (state to action) from every state: iterative policy evaluation. A policy that
+ * never reaches an end at gamma 1 has value minus infinity from the states that still change at the iteration cap
+ * (with gamma below 1 the sweeps always converge), so those states report -Infinity instead of a cap artefact.
+ */
 export function policyValue(w: World, gamma: number, policy: readonly number[], tolerance = 1e-13, maxIterations = 20000): number[] {
   const live = liveStates(w);
   const V = new Array<number>(STATES).fill(0);
-  let change = Infinity;
-  for (let i = 0; i < maxIterations && change > tolerance; i++) {
-    change = 0;
+  const moved = new Array<number>(STATES).fill(Infinity);
+  for (let i = 0; i < maxIterations && Math.max(0, ...live.map((s) => moved[s])) > tolerance; i++) {
     for (const s of live) {
       const v = backup(w, V, gamma, s, policy[s]);
-      change = Math.max(change, Math.abs(v - V[s]));
+      moved[s] = Math.abs(v - V[s]);
       V[s] = v;
     }
   }
+  for (const s of live) if (moved[s] > tolerance) V[s] = -Infinity;
   return V;
 }
 

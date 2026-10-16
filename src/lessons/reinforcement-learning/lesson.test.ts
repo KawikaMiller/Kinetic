@@ -5,13 +5,15 @@ import { unscopedAbsolutes } from '../../core/lessonContentT3';
 import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { approxCaption, exactCaption, exploreCaption, learnCaption, worldCaption } from './captions';
+import { approxCaption, exactCaption, exploreCaption, f2, learnCaption, worldCaption, worldSummary } from './captions';
 import { approxFacts, exactFacts, exploreFacts, learnFacts, learnSettings, worldFacts } from './facts';
 import lesson from './index';
 import { PRESET_IDS, runPreset } from './presets';
-import { greedyReturn, train } from './qlearn';
+import { PINNED_FIXED_EPSILON, PINNED_RL_SEEDS } from './pinned';
+import { EPSILON_FLOOR, epsilonAt, greedyReturn, train } from './qlearn';
+import { measureFixedEpsilon, measureRlSeeds } from './seeds';
 import { APPROX_DEFAULT, EXACT_DEFAULT, EXPLORE_DEFAULT, LEARN_DEFAULT, SMOOTH_WINDOW, WORLD_BRUSH } from './settings';
-import { DEFAULT_WORLD, paint, worldWarning } from './world';
+import { DEFAULT_WORLD, isDefaultWorld, paint, worldWarning } from './world';
 
 describe('scene switches', () => {
   it('every scene is its own keyed component', () => {
@@ -83,7 +85,7 @@ describe('captions follow the controls', () => {
       for (const episodes of [0, 1, 10, 100]) {
         const set = learnSettings({ decay, epsilon: 0.5 });
         const t = train(DEFAULT_WORLD, set, episodes);
-        const c = expectCaption(learnCaption(set, episodes, t, greedyReturn(DEFAULT_WORLD, set.gamma, t.Q), SMOOTH_WINDOW));
+        const c = expectCaption(learnCaption(set, episodes, t, greedyReturn(DEFAULT_WORLD, set.gamma, t.Q), SMOOTH_WINDOW, DEFAULT_WORLD));
         if (episodes === 0) expect(c).toContain('Nothing learned yet');
         else expect(c).toContain(`After ${episodes === 1 ? '1 episode' : `${episodes} episodes`}`);
       }
@@ -102,7 +104,7 @@ describe('captions follow the controls', () => {
       const c = expectCaption(exploreCaption(run));
       const word = { goal: 'ends at the goal', cookie: 'ends at the cookie', pit: 'ends at a pit', loop: 'loops (still moving after' }[run.route.destination];
       expect(c).toContain(word);
-      expect(c.includes('maximises the reward as written')).toBe(id === 'bonus');
+      expect(c.includes('maximises the reward as written')).toBe(run.preset.bonus && run.route.destination === 'loop');
     }
   });
 
@@ -122,18 +124,96 @@ describe('captions follow the controls', () => {
 });
 
 describe('nothing hidden feeds a number', () => {
+  const slippery = { ...DEFAULT_WORLD, slip: 0.3, stepCost: 0.1 };
+
   it('the exact scene trains with the learn scene\'s fixed settings, so the same episodes give the same table', () => {
     const f = exactFacts();
     const again = train(DEFAULT_WORLD, learnSettings(), EXACT_DEFAULT.episodes);
     expect(again.Q).toEqual(f.training.Q);
   });
 
-  it('a different world changes the learned values and a world edit never changes the approximation scene', () => {
-    const edited = paint(DEFAULT_WORLD, 2, 2, 'wall');
-    const a = train(DEFAULT_WORLD, learnSettings(), 300).Q;
-    const b = train(edited.ok ? edited.world : DEFAULT_WORLD, learnSettings(), 300).Q;
-    expect(b).not.toEqual(a);
-    expect(approxFacts().open.rmse).toBe(approxFacts().open.rmse);
+  it('M6: the slip and step cost painted in "The world" change what Learn, Exact and Explore print, so their strip must name the world', () => {
+    const base = learnFacts();
+    const run = (w: typeof DEFAULT_WORLD) => greedyReturn(w, LEARN_DEFAULT.gamma, train(w, learnSettings(), 10 * LEARN_DEFAULT.perPress).Q);
+    expect(run(slippery)).not.toBeCloseTo(base.many.greedy, 1);
+    expect(runPreset(slippery, 'greedy').greedy).not.toBeCloseTo(runPreset(DEFAULT_WORLD, 'greedy').greedy, 1);
+    expect(isDefaultWorld(DEFAULT_WORLD)).toBe(true);
+    expect(isDefaultWorld(slippery)).toBe(false);
+    expect(isDefaultWorld({ ...DEFAULT_WORLD, bonus: 0.2 })).toBe(false);
+    const painted = paint(DEFAULT_WORLD, 2, 2, 'wall');
+    expect(painted.ok && isDefaultWorld(painted.world)).toBe(false);
+    expect(worldSummary(DEFAULT_WORLD)).toContain('the default (slip 10%, step cost 0.04, 6 walls');
+    expect(worldSummary(slippery)).toContain('edited (slip 30%, step cost 0.10');
+    for (const i of [1, 2, 3]) expect(lesson.tryThis[i]).toContain('Reset the world');
+  });
+
+  it('the approximation scene brings its own world, so a world edit never reaches it', () => {
+    expect(approxFacts().maze.rmse).toBeGreaterThan(approxFacts().open.rmse);
+  });
+});
+
+describe('epsilon (M5)', () => {
+  it('epsilon 0 with decay on is the fixed-0 run, not a 0.05 explorer', () => {
+    const decayed = train(DEFAULT_WORLD, learnSettings({ epsilon: 0, decay: true }), 500);
+    const fixed = train(DEFAULT_WORLD, learnSettings({ epsilon: 0, decay: false }), 500);
+    expect(decayed.Q).toEqual(fixed.Q);
+    expect(decayed.epsilonNow).toBe(0);
+    expect(f2(epsilonAt(learnSettings({ epsilon: 0, decay: true }), 400))).toBe('0.00');
+  });
+
+  it('a decaying epsilon never rises, never exceeds its start and never drops below the floor unless it started below it', () => {
+    for (const start of [0, 0.02, 0.05, 0.3, 1]) {
+      let last = Infinity;
+      for (let e = 0; e <= 6000; e += 100) {
+        const v = epsilonAt(learnSettings({ epsilon: start, decay: true }), e);
+        expect(v).toBeLessThanOrEqual(last);
+        expect(v).toBeLessThanOrEqual(start);
+        expect(v).toBeGreaterThanOrEqual(Math.min(start, EPSILON_FLOOR));
+        last = v;
+      }
+    }
+  });
+});
+
+describe('a policy that never ends (gamma 1, minor 2)', () => {
+  it('reports minus infinity instead of an iteration-cap number, and a normal run stays finite', () => {
+    const w = DEFAULT_WORLD;
+    const t = train(w, learnSettings({ gamma: 1, alpha: 0.5, epsilon: 0.5, decay: false }), 1);
+    expect(greedyReturn(w, 1, t.Q)).toBe(-Infinity);
+    expect(f2(greedyReturn(w, 1, t.Q))).toBe('-infinity');
+    const ok = train(w, learnSettings(), 1000);
+    expect(Number.isFinite(greedyReturn(w, LEARN_DEFAULT.gamma, ok.Q))).toBe(true);
+  });
+});
+
+describe('the measured claims (M4, M7), recomputed', () => {
+  it('quiz 1: a fixed epsilon of 0.1, 0.3 or 0.5 ends at the cookie on at least 39 of 40 seeds and 0.7 reaches the goal on all', () => {
+    for (const pinned of PINNED_FIXED_EPSILON) expect(measureFixedEpsilon(pinned.epsilon, pinned.seeds, pinned.episodes)).toEqual(pinned);
+    for (const eps of [0.1, 0.3, 0.5]) {
+      const row = PINNED_FIXED_EPSILON.find((f) => f.epsilon === eps)!;
+      expect(row.cookie).toBeGreaterThanOrEqual(39);
+      expect(row.goal).toBe(0);
+    }
+    expect(PINNED_FIXED_EPSILON.find((f) => f.epsilon === 0.7)!.goal).toBe(40);
+    expect(lesson.quiz[0].options[lesson.quiz[0].answer]).not.toMatch(/^Epsilon above 0/);
+    expect(lesson.quiz[0].why).toContain('0.1, 0.3 or 0.5 still ends at the cookie');
+  });
+
+  it('M7: the printed figures equal a fresh 200-seed measurement, and the real rate is about nine in ten, not 19 of 20', () => {
+    expect(measureRlSeeds(PINNED_RL_SEEDS.seeds, PINNED_RL_SEEDS.episodes)).toEqual(PINNED_RL_SEEDS);
+    expect(PINNED_RL_SEEDS.nearOptimal / PINNED_RL_SEEDS.seeds).toBeGreaterThan(0.9);
+    expect(PINNED_RL_SEEDS.sameOnRoute).toBeLessThan(PINNED_RL_SEEDS.nearOptimal);
+  });
+
+  it('the reward-edit caption says "no loop" when the bonus tile is walled off (computed, not typed)', () => {
+    const walled = paint(DEFAULT_WORLD, 3, 0, 'wall');
+    expect(walled.ok).toBe(true);
+    if (!walled.ok) return;
+    const run = runPreset(walled.world, 'bonus');
+    expect(run.route.destination).not.toBe('loop');
+    const c = expectCaption(exploreCaption(run));
+    expect(c).toContain('did not trap the agent');
+    expect(c).not.toContain('The loop is not a bug');
   });
 });
 
