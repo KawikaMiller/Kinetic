@@ -1,0 +1,20 @@
+/* zero-downtime-migrations */
+.zdm-stage { gap: 12px; min-width: 0; }
+.zdm-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.zdm-fleet { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.zdm-inst { padding: 2px 6px; border-radius: 6px; font: 600 11px var(--mono); border: 2px solid var(--line-2); }
+.zdm-inst.is-v1 { color: var(--info); border-color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
+.zdm-inst.is-v2 { color: var(--violet); border-color: var(--violet); background: color-mix(in srgb, var(--violet) 14%, transparent); }
+.zdm-verdict { margin: 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); }
+.zdm-verdict.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.zdm-verdict.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.zdm-table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.zdm-table th, .zdm-table td { text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--line-2); }
+.zdm-v1 { color: var(--info); }
+.zdm-v2 { color: var(--violet); }
+.zdm-ok { color: var(--ok); }
+.zdm-bad { color: var(--bad); }
+
+@media (max-width: 700px) {
+  .zdm-two { grid-template-columns: minmax(0, 1fr); }
+}
