@@ -1,4 +1,4 @@
-import { breakEven, chainParenthesis, chainStateCounts, chainTable, greedyByRatio, isSubsequence, knapsackPrefixOnly, knapsackRolling, knapsackTable, lisEndingAt, lisTails, nominalStates, tourCount, tspBitmask, tspLastOnly, tspMaskOnly } from './dp';
+import { breakEven, countedBreakEven, tableStates, chainParenthesis, chainStateCounts, chainTable, greedyByRatio, isSubsequence, knapsackPrefixOnly, knapsackRolling, knapsackTable, lisEndingAt, lisTails, nominalStates, tourCount, tspBitmask, tspLastOnly, tspMaskOnly } from './dp';
 import { distances, KNAPSACK_DEFAULT, LIS_DEFAULT, CHAIN_DEFAULT, TSP_DEFAULT } from './presets';
 
 const { items, cap } = KNAPSACK_DEFAULT;
@@ -39,7 +39,9 @@ export const FACTS = {
   tspBest: tsp.best,
   tspMask: tspMaskOnly(dist).best,
   tspLast: tspLastOnly(dist).best,
-  tspCells: nominalStates(TSP_DEFAULT.n),
+  tspStates: tableStates(TSP_DEFAULT.n),
+  tspNominal: nominalStates(TSP_DEFAULT.n),
   tspTours: tourCount(TSP_DEFAULT.n),
   breakEven: breakEven(20),
+  countedBreakEven: countedBreakEven(20),
 };

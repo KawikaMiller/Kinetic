@@ -3,7 +3,7 @@ import { ArrayStrip } from '../../components/ArrayStrip';
 import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { Hint, Segmented, Slider, Stat } from '../../components/ui';
-import { breakEven, MAX_DIST, MIN_DIST, nominalStates, tourCount, tourLength, transitionBound, tspBitmask, type Matrix } from './dp';
+import { breakEven, countedBreakEven, MAX_DIST, MIN_DIST, nominalStates, tourCount, tableStates, tourLength, transitionBound, tspBitmask, type Matrix } from './dp';
 import { DpTab, type TabLines } from './DpTab';
 import { CITIES_MAX, CITIES_MIN, distances, OPENING, tspCounterexamples } from './presets';
 import { tspRun, type TspState } from './runs';
@@ -82,6 +82,7 @@ export function TspScene({ picker }: { picker: ReactNode }) {
   const wrongRun = useMemo(() => tspRun(distances(wrongNote.n, wrongNote.seed), state), [wrongNote, state]);
   const wrongTruth = useMemo(() => tspBitmask(distances(wrongNote.n, wrongNote.seed)).best, [wrongNote]);
   const be = breakEven(PLOT_MAX_N);
+  const countedBe = countedBreakEven(PLOT_MAX_N);
 
   const verdict =
     state === 'ml' ? (
@@ -113,15 +114,15 @@ export function TspScene({ picker }: { picker: ReactNode }) {
       }
       extraStats={
         <>
-          <Stat label="Table cells" value={nominalStates(n)} color="var(--info)" sub={`n x 2^n; counted transitions: ${exact.transitions}`} />
-          <Stat label="Tours checked by brute force" value={tourCount(n)} color="var(--bad)" sub={`(n-1)! with city 0 fixed; the bound n^2 x 2^n passes below it at n = ${be}`} />
+          <Stat label="States in the table" value={exact.states.length} color="var(--info)" sub={`(n-1) x 2^(n-2) here; the loose size n x 2^n is ${nominalStates(n)}; counted transitions: ${exact.transitions}`} />
+          <Stat label="Tours checked by brute force" value={tourCount(n)} color="var(--bad)" sub={`(n-1)! with city 0 fixed; the counted transitions pass below it at n = ${countedBe}, the loose bound n^2 x 2^n at n = ${be}`} />
         </>
       }
       below={
         <>
           {verdict}
           <GrowthPlot n={n} />
-          <p className="dp-note">Curves are computed for every n, not run: table cells n x 2^n (blue), transition bound n^2 x 2^n (green), tours (n-1)! (red). The exact table explodes too: by n = {PLOT_MAX_N} it holds {nominalStates(PLOT_MAX_N).toLocaleString('en-US')} cells.</p>
+          <p className="dp-note">Curves are computed for every n, not run: loose table size n x 2^n (blue), transition bound n^2 x 2^n (green), tours (n-1)! (red). The exact table explodes too: by n = {PLOT_MAX_N} it holds {tableStates(PLOT_MAX_N).toLocaleString('en-US')} states.</p>
           <span className="dp-note">The best tour, city by city:</span>
           <ArrayStrip values={exact.tour} cellMax={36} cellState={() => 'done'} pointers={[]} />
         </>

@@ -28,7 +28,7 @@ const lesson: LessonModule = {
     `Name the state first: dp[i] alone gave ${F.knapsackPrefix} on the default knapsack where the real best is ${F.knapsackExact}, because it forgot the capacity.`,
     `Fill order is part of the algorithm: capacity upward turns 0/1 knapsack into unbounded knapsack (${F.knapsackUnbounded} against ${F.knapsackExact} here), and a row-by-row interval table read ${F.chainRowUnfilled} cells before they existed.`,
     `Interval tables are filled by increasing length because a cell needs shorter intervals: ${F.chainCells} cells stand in for ${F.chainGroupings} groupings on the textbook chain.`,
-    `A bitmask table is exact but grows as n x 2^n: ${F.tspCells} cells at ${F.tspCities} cities against ${F.tspTours} tours, and the transition bound drops below the tour count from n = ${F.breakEven} on.`,
+    `A bitmask table is exact but grows exponentially: ${F.tspStates} states at ${F.tspCities} cities (the loose size n x 2^n says ${F.tspNominal}) against ${F.tspTours} tours. The counted transitions drop below the tour count from n = ${F.countedBreakEven} on, and the loose bound n^2 x 2^n from n = ${F.breakEven}.`,
   ],
   quiz: [
     {

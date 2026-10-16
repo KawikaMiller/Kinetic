@@ -475,6 +475,18 @@ export const tourCount = (n: number): number => {
 export const nominalStates = (n: number): number => n * 2 ** n;
 export const transitionBound = (n: number): number => n * n * 2 ** n;
 
+/** States the bitmask table really holds: (n-1) cities, a non-empty set of them, one of its cities last, so (n-1) 2^(n-2). */
+export const tableStates = (n: number): number => (n - 1) * 2 ** (n - 2);
+
+/** Transitions the table really evaluates: a state of size k >= 2 reads k - 1 predecessors, which sums to (n-1)(n-2) 2^(n-3). */
+export const countedTransitions = (n: number): number => (n - 1) * (n - 2) * 2 ** (n - 3);
+
+/** The smallest n at which the counted transitions drop below the tour count, or null. */
+export function countedBreakEven(maxN: number): number | null {
+  for (let n = 4; n <= maxN; n++) if (countedTransitions(n) < tourCount(n)) return n;
+  return null;
+}
+
 /** The smallest n at which the transition bound drops below the tour count (the break-even the plot shows), or null. */
 export function breakEven(maxN: number): number | null {
   for (let n = 3; n <= maxN; n++) if (transitionBound(n) < tourCount(n)) return n;

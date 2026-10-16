@@ -3,7 +3,7 @@ import { mulberry32 } from '../../core/random';
 import {
   breakEven, chainIntervals, chainParenthesis, chainPrefixOnly, chainStateCounts, chainTable, citiesOf, greedyByRatio, isSubsequence,
   knapsackChosen, knapsackPath, knapsackPrefixOnly, knapsackRolling, knapsackTable, lisEndingAt, lisPrefixOnly, lisReconstruct, lisStartingAt,
-  lisTails, nominalStates, seededDistances, tourCount, tourLength, transitionBound, tspBitmask, tspLastOnly, tspMaskOnly, type Item,
+  lisTails, nominalStates, tableStates, countedTransitions, countedBreakEven, seededDistances, tourCount, tourLength, transitionBound, tspBitmask, tspLastOnly, tspMaskOnly, type Item,
 } from './dp';
 
 import { bruteKnapsack01, bruteLis, bruteTsp, bruteUnbounded, catalan, parenthesisationCosts } from './oracles.test';
@@ -241,5 +241,18 @@ describe('bitmask travelling salesman', () => {
     expect(tourCount(10)).toBe(362880);
     expect(breakEven(20)).toBe(10);
     expect(transitionBound(9) < tourCount(9)).toBe(false);
+  });
+
+  it('the table really holds (n-1) 2^(n-2) states and evaluates (n-1)(n-2) 2^(n-3) transitions, so the counted break-even is n = 7', () => {
+    const countedBreak: number[] = [];
+    for (let n = 4; n <= 9; n++) {
+      const run = tspBitmask(seededDistances(n, mulberry32(7)));
+      expect(run.states.length, `states n=${n}`).toBe(tableStates(n));
+      expect(run.transitions, `transitions n=${n}`).toBe(countedTransitions(n));
+      if (run.transitions < (n - 1 <= 1 ? 1 : Array.from({ length: n - 1 }, (_, i) => i + 1).reduce((a, b) => a * b))) countedBreak.push(n);
+    }
+    expect(countedBreak[0]).toBe(7);
+    expect(countedBreakEven(20)).toBe(7);
+    expect(tspBitmask(seededDistances(5, mulberry32(7))).states.length).toBe(32);
   });
 });
