@@ -1,0 +1,29 @@
+.ub-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.ub-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.ub-two > * { flex: 1 1 280px; min-width: 0; }
+.ub-code { font-size: 13px; }
+.ub-bits { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+.ub-bits-label { font: 12px var(--mono); color: var(--muted); }
+.ub-steps { display: flex; flex-direction: column; gap: 6px; }
+.ub-step-text { margin: 0; font-size: 13px; line-height: 1.6; }
+.ub-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ub-strip { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow-x: auto; }
+.ub-table { width: 100%; }
+.ub-table caption { text-align: left; padding-bottom: 4px; font-size: 12px; color: var(--muted); }
+.ub-current td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.ub-label { font: 12px var(--mono); color: var(--muted); }
+.ub-outcomes { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.ub-board { display: flex; flex-direction: column; gap: 10px; }
+.ub-items { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.ub-item { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--cell-line); border-radius: 8px; }
+.ub-item.is-right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.ub-item.is-wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.ub-snippet { font: 13px var(--mono); overflow-wrap: anywhere; }
+.ub-bins { display: flex; flex-wrap: wrap; gap: 6px; }
+.ub-bin { min-height: 36px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--cell-line); background: none; color: inherit; font: 12px var(--mono); cursor: pointer; }
+.ub-bin.is-on { border-color: var(--info); background: color-mix(in srgb, var(--info) 18%, transparent); }
+.ub-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.ub-why { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ub-board-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ub-score { font: 13px var(--mono); }
+.ub-stage ~ .provenance-row { margin: 8px 16px 12px; }
