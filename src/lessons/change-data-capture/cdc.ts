@@ -304,7 +304,11 @@ const dbOf = (snap: Parameters<Safety<CdcState>>[0]) => snap.nodes[DB].state as 
 const connOf = (snap: Parameters<Safety<CdcState>>[0]) => snap.nodes[CONNECTOR].state as Extract<CdcState, { kind: 'conn' }>;
 const consOf = (snap: Parameters<Safety<CdcState>>[0], id: string) => snap.nodes[id].state as Extract<CdcState, { kind: 'cons' }>;
 
-/** S1: the saved position never passes a committed change that some consumer has neither applied nor still holds to apply. */
+/**
+ * S1: the saved position never passes a committed change that some consumer has neither applied nor still holds to apply.
+ * It is state-based (a row at or past the change's LSN counts as having it), so a loss that a later write to the same key covers is not
+ * reported once covered; the spec's S1, "reaches every consumer at least once", is the stricter delivery rule this approximates.
+ */
 export const s1NoLoss: Safety<CdcState> = (snap) => {
   const saved = connOf(snap).saved;
   const log = dbOf(snap).log;
@@ -370,6 +374,13 @@ export function convergence(snap: Parameters<Safety<CdcState>>[0]): string | nul
     if (st.counter !== totalOf(src)) return `${CONSUMER_LABEL[c]} counts a total of ${st.counter}, the source holds ${totalOf(src)}`;
   }
   return null;
+}
+
+/** How the consumers differ from the source once the scenario has run to `until` with no early stop at a violation; null when they all match. */
+export function endDivergence(s: Scenario, until = END_MS): string | null {
+  const cluster = buildCluster(s);
+  cluster.run({ until });
+  return convergence(cluster.snapshot());
 }
 
 /** Runs a scenario to its end: the first safety violation, else a failed convergence, else none. */
@@ -440,3 +451,5 @@ export function seededScenario(seed: number, flags: Flags, network: Network = 'n
 
 export const SEEDS = Array.from({ length: 200 }, (_, i) => i);
 export const lowestFailing = (flags: Flags, network: Network = 'noisy'): number | undefined => SEEDS.find((seed) => evaluate(seededScenario(seed, flags, network)).rule !== null);
+/** The first seed whose first broken rule is this one (blind apply on a clean network: S2 from seed 0, but S3 alone, the counter, only from seed 7). */
+export const lowestFailingAt = (flags: Flags, network: Network, rule: 'S1' | 'S2' | 'S3'): number | undefined => SEEDS.find((seed) => evaluate(seededScenario(seed, flags, network)).rule === rule);

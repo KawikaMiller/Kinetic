@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  APPLY_DELAY_MS, CONSUMERS, END_MS, SAFE_FLAGS, SEEDS, buildCluster, evaluate, lowestFailing, oracleRows, seededScenario, totalOf, type Fault, type Flags, type Scenario,
+  APPLY_DELAY_MS, CONSUMERS, endDivergence, END_MS, SAFE_FLAGS, SEEDS, buildCluster, evaluate, lowestFailing, oracleRows, seededScenario, totalOf, type Fault, type Flags, type Scenario,
 } from './cdc';
-import { replay, REPLAY_OPS, syncedCount, dbOf, consOf } from './view';
+import { replay, REPLAY_OPS, syncedCount, dbOf, consOf, redeliveries, reorderedArrivals } from './view';
 
 const withFlags = (patch: Partial<Flags>): Flags => ({ ...SAFE_FLAGS, ...patch });
 
@@ -67,12 +67,20 @@ describe('the broken modes violate the invariant on the pinned lowest seed, for 
     expect(evaluate(seededScenario(2, SAFE_FLAGS)).rule).toBeNull();
   });
 
+  it('the pinned ack-before seed 2 heals by the end (a later write to the same key covers the lost change), and seeds that stay wrong exist on the clean network', () => {
+    const flags = withFlags({ ackBeforeApply: true });
+    expect(evaluate(seededScenario(2, flags)).rule).toBe('S1');
+    expect(endDivergence(seededScenario(2, flags))).toBeNull();
+    const persisting = SEEDS.filter((seed) => evaluate(seededScenario(seed, flags, 'clean')).rule === 'S1' && endDivergence(seededScenario(seed, flags, 'clean')) !== null);
+    expect(persisting.length).toBeGreaterThan(0);
+  });
+
   it('blind apply: the lowest failing seed is pinned on a clean and on a noisy network', () => {
     expect(lowestFailing(withFlags({ idempotent: false }), 'clean')).toBe(0);
     expect(lowestFailing(withFlags({ idempotent: false }), 'noisy')).toBe(0);
   });
 
-  it('trace: after a restart an older event reached the blind consumer after a newer one for the same stream; idempotent apply on the same seed is clean', () => {
+  it('trace of seed 0 (clean network): an older event arrived after a newer one for the same consumer, with no repeated delivery; idempotent apply on the same seed is clean', () => {
     const s = seededScenario(0, withFlags({ idempotent: false }), 'clean');
     expect(s.loss + s.duplicate).toBe(0);
     const ev = evaluate(s);
@@ -80,8 +88,31 @@ describe('the broken modes violate the invariant on the pinned lowest seed, for 
     const who = CONSUMERS.find((c) => ev.message!.includes(c === 'search' ? 'search index' : c))!;
     const lsns = ev.cluster.trace.filter((r) => r.kind === 'deliver' && r.to === who && r.payload?.type === 'event').map((r) => (r.payload as { ev: { lsn: number } }).ev.lsn);
     expect(lsns.some((l, i) => lsns.slice(0, i).some((earlier) => earlier > l))).toBe(true);
-    expect(ev.cluster.trace.some((r) => r.kind === 'restart')).toBe(true);
+    expect(new Set(lsns).size).toBe(lsns.length);
+    expect(redeliveries(ev.cluster.trace)).toBe(0);
+    expect(reorderedArrivals(ev.cluster.trace)).toBeGreaterThan(0);
     expect(evaluate(seededScenario(0, SAFE_FLAGS, 'clean')).rule).toBeNull();
+  });
+
+  it('counterfactual for seed 0: with every fault removed (no crash, a clean network) blind apply still fails S2, so restarts are not the cause', () => {
+    const calm = { ...seededScenario(0, withFlags({ idempotent: false }), 'clean'), faults: [] as Fault[] };
+    const ev = evaluate(calm);
+    expect(ev.rule).toBe('S2');
+    expect(redeliveries(ev.cluster.trace)).toBe(0);
+    expect(ev.cluster.trace.some((r) => r.kind === 'restart')).toBe(false);
+  });
+
+  it('the restart effect is a separate demonstration, in the counter: the first seed where blind apply fails only at S3 (rows equal or not, the total is wrong) is pinned, and it needs a repeat', () => {
+    const s3Only = SEEDS.find((seed) => evaluate(seededScenario(seed, withFlags({ idempotent: false }), 'clean')).rule === 'S3');
+    expect(s3Only).toBe(7);
+    const s = seededScenario(7, withFlags({ idempotent: false }), 'clean');
+    const ev = evaluate(s);
+    expect(ev.message).toContain('counts a total of');
+    expect(redeliveries(ev.cluster.trace)).toBeGreaterThan(0);
+    expect(ev.cluster.trace.some((r) => r.kind === 'restart')).toBe(true);
+    const noCrash = evaluate({ ...s, faults: s.faults.filter((f) => f.kind !== 'crash-connector') });
+    expect(redeliveries(noCrash.cluster.trace)).toBe(0);
+    expect(noCrash.rule).not.toBe('S3');
   });
 
   it('blind apply survives some runs with no fault at all: it breaks when delivery reorders or repeats, not by being blind alone', () => {

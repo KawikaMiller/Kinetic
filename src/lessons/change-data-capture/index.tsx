@@ -2,6 +2,7 @@ import type { LessonModule } from '../../core/types';
 import { plural } from './captions';
 import { insertFacts, pollFacts, replayFacts, rollbackFacts, seedPins, snapshotFacts, KILL_AT } from './facts';
 import { Stage } from './Stage';
+import { TAIL_OPEN } from './view';
 
 const ins = insertFacts();
 const rb = rollbackFacts();
@@ -28,14 +29,14 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `In "The tail" press Insert row 3, then drag Time to 60 ms: ${ins.synced} of 3 consumers are in sync, the log holds ${plural(ins.records, 'record')} (the insert and its commit) and the saved position is LSN ${ins.saved}.`,
-    `Press Reset, then Insert row 3, move Row id to 4 and press Insert row 4, move Row id back to 3 and press "Two updates, roll back", then drag Time to 60: the log holds ${plural(rb.records, 'record')}, the changes of the rolled-back transaction are dim and marked never emitted, and the consumers still hold the two inserted rows (${rb.synced} of 3 in sync).`,
+    `Press Reset, then Insert row 3, move Row id to 4 and press Insert row 4, set Status to paid and Amount to 99, move Row id back to 3 and press "Two updates, roll back", then drag Time to 60: the log holds ${plural(rb.records, 'record')}, the changes of the rolled-back transaction are dim and marked never emitted, and every consumer still holds the two inserted rows as ${TAIL_OPEN.status} ${TAIL_OPEN.amount}, never paid 99 (${rb.synced} of 3 in sync).`,
     `In "Crash and replay" drag Time to ${KILL_AT} ms and press "Kill the connector now", then drag Time to 500: the restarted connector re-reads from its saved position and ${plural(rp.idem.repeated, 'delivery', 'deliveries')} repeat. With "By key and LSN" ${rp.idem.synced} of 3 consumers are in sync; switch Apply to Blind and ${rp.blind.synced} of 3 are.`,
-    `In the seeded run of the same scene (it opens on seed ${pins.blindNoisy} with idempotent apply and acknowledging after applying, and the invariants hold) set Apply to Blind: S2 breaks on seed ${pins.blindNoisy}. Press "Load seed ${pins.ackBefore}", set Apply back to By key and LSN and the consumer to acknowledge Before applying: S1 breaks, a committed change is lost.`,
+    `In the seeded run of the same scene (it opens on seed ${pins.blindNoisy} with idempotent apply and acknowledging after applying, and the invariants hold) set Apply to Blind: S2 breaks on seed ${pins.blindNoisy}, and the verdict says why: ${plural(pins.blindCause.reordered, 'event')} arrived after a newer one for the same consumer (message latency reorders them; set Network to Clean and seed ${pins.blind} still breaks, so loss and duplication are not the cause). Press "Load seed ${pins.ackBefore}", set Apply back to By key and LSN and the consumer to acknowledge Before applying: S1 breaks, a committed change is lost.`,
     `In "Snapshot then stream" press "Row 7, just after the scan read it" and drag Time to 500: the new consumer equals the source. Switch Start streaming to "From where the log is now" and it differs: ${snap.badMissing}. In the Poller table row ${poll.late[0].key} is missing; drag "Slow transaction commits at" to 13 ms and the copy is right.`,
   ],
   keyIdeas: [
     'In this model the connector reads the log in commit order and emits only committed changes, so a rolled-back transaction is logged but never appears in a consumer.',
-    'In this model the saved position moves once all consumers have acknowledged, so a restart delivers some events again: this is at-least-once, and applying each event by key and LSN makes the repeats harmless.',
+    'In this model the saved position moves once all consumers have acknowledged, so a restart delivers some events again: this is at-least-once, and applying each event by key and LSN makes the repeats, and any reordering by the network, harmless.',
     'In this model a new consumer has to stream from the log position where its snapshot began, because streaming from the position at the end of the scan skips the changes made in between.',
     'Polling an updated_at column cannot see a hard delete, and in this model a transaction that commits late with an older timestamp is skipped; a reader that stops pins the log it has not read.',
   ],
@@ -71,7 +72,7 @@ const lesson: LessonModule = {
         'No: it delivers each change at most once, so a crash can lose some of them for good',
       ],
       answer: 0,
-      why: `In this model delivery is at least once. The repeats are what an idempotent consumer absorbs; a blind consumer breaks on seed ${pins.blindNoisy}.`,
+      why: `In this model delivery is at least once, and message latency can also reorder events. Repeats and reordering are what an idempotent consumer absorbs; a blind consumer breaks on seed ${pins.blindNoisy} because an older event arrived after a newer one, with no restart involved.`,
     },
     {
       q: 'Why must a new consumer stream from the log position where its snapshot began?',

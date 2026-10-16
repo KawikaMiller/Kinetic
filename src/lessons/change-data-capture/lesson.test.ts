@@ -4,7 +4,7 @@ import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { SAFE_FLAGS, type Scenario, type Stmt } from './cdc';
 import { pollingText, replayCaption, retentionText, seedVerdict, snapshotText, tailCaption, traceLine } from './captions';
-import { insertFacts, pollFacts, replayFacts, retentionFacts, rollbackFacts, seedPins, snapshotFacts } from './facts';
+import { ROLLBACK_ROW, insertFacts, pollFacts, replayFacts, retentionFacts, rollbackFacts, seedPins, snapshotFacts } from './facts';
 import lesson from './index';
 import { retentionAt } from './retention';
 import {
@@ -42,6 +42,12 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
   it('try-this 2: the rollback leaves 7 log records, no consumer applies it, and 3 of 3 stay in sync', () => {
     const f = rollbackFacts();
     expect(f).toMatchObject({ synced: 3, records: 7, rolledBackApplied: false, rolledBackTx: [3] });
+    // a real counterfactual: the rolled-back values differ from what the rows hold, so a leak would show
+    expect(ROLLBACK_ROW).not.toEqual({ status: TAIL_OPEN.status, amount: TAIL_OPEN.amount });
+    for (const rows of f.held) for (const r of rows) expect(r).toMatchObject({ status: TAIL_OPEN.status, amount: TAIL_OPEN.amount });
+    expect(lesson.tryThis[1]).toContain('Amount to 99');
+    // the same two updates committed do reach every consumer, so the rollback check can fail
+    for (const rows of rollbackFacts('commit').held) for (const r of rows) expect(r).toMatchObject(ROLLBACK_ROW);
     expect(lesson.tryThis[1]).toContain('holds 7 records');
   });
 
@@ -57,7 +63,8 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
 
   it('try-this 4: the scene opens on the pinned seed and the pins are named in the text', () => {
     const pins = seedPins();
-    expect(pins).toEqual({ blind: 0, blindNoisy: 0, ackBefore: 2 });
+    expect(pins).toMatchObject({ blind: 0, blindNoisy: 0, ackBefore: 2 });
+    expect(pins.blindCause.reordered).toBeGreaterThan(0);
     expect(lesson.tryThis[3]).toContain('opens on seed 0');
     expect(lesson.tryThis[3]).toContain('S2 breaks on seed 0');
     expect(lesson.tryThis[3]).toContain('Load seed 2');
@@ -154,6 +161,9 @@ describe('captions are computed from the model', () => {
     expect(text(pollingText({ source: {}, copy: {}, misses: [], lastSeen: 0 }))).toContain('equals the source');
     expect(text(snapshotText('now', 'x'))).toContain('Streaming from where the log is when the snapshot ends: at the end x.');
     expect(text(snapshotText('snapshot', null))).toContain('ends equal to the source');
+    expect(text(snapshotText('now', null, 'streaming passed LSN 5 (key 7) but the new consumer never received that change'))).toContain('a later write to the same key covered it');
+    expect(text(seedVerdict(2, 'S1', 'm', { reordered: 0, repeated: 0, endsEqual: true }))).toContain('match again');
+    expect(text(seedVerdict(0, 'S2', 'm', { reordered: 2, repeated: 0, endsEqual: false }))).toContain('2 events arrived after a newer one');
     const r = retentionFacts();
     expect(text(retentionText(r.late, true))).toContain('over the disk budget');
     expect(text(retentionText(r.open, true))).not.toContain('over the disk budget');

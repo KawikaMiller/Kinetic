@@ -22,10 +22,20 @@ export function replayCaption(snap: Snapshot<CdcState>, now: number, trace: read
   return `At ${now} ms (${apply}): saved position LSN ${c.saved}, ${plural(again, 'event delivery', 'event deliveries')} repeated so far, ${lagging.length === 0 ? 'every consumer matches the source' : `behind: ${lagging.join(', ')}`}.`;
 }
 
-export function seedVerdict(seed: number, rule: string | null, message: string | null): string {
-  return rule === null
-    ? `Seed ${seed}: S1, S2 and S3 hold: no committed change was lost, each key was applied in LSN order, and every consumer equals the source once the stream drained.`
-    : `Seed ${seed}: ${rule} is broken: ${message}.`;
+/** What the trace shows behind a broken rule: events that arrived after a newer one (the network reordered them) and events handed over again (a retry, restart or duplicate). */
+export interface SeedCause {
+  reordered: number;
+  repeated: number;
+  /** Do the consumers match the source at the end of the run, whatever broke on the way (a later write to the same key can cover a lost change)? */
+  endsEqual: boolean;
+}
+
+export function seedVerdict(seed: number, rule: string | null, message: string | null, cause: SeedCause | null = null): string {
+  if (rule === null) return `Seed ${seed}: S1, S2 and S3 hold: no committed change was lost, each key was applied in LSN order, and every consumer equals the source once the stream drained.`;
+  let tail = '';
+  if (cause !== null && rule === 'S1') tail = cause.endsEqual ? ' The tables match again by the end of the run, because a later write to the same key covered the lost change: the loss was in delivery, not in the final state.' : ' The tables still differ at the end of the run.';
+  else if (cause !== null) tail = ` In the trace, ${plural(cause.reordered, 'event')} arrived after a newer one for the same consumer (the network reorders) and ${plural(cause.repeated, 'delivery', 'deliveries')} ${cause.repeated === 1 ? 'was a repeat' : 'were repeats'}.`;
+  return `Seed ${seed}: ${rule} is broken: ${message}.${tail}`;
 }
 
 export function pollingText(r: PollResult): string {

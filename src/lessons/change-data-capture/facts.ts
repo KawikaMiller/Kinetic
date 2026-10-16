@@ -1,9 +1,9 @@
 /** The numbers the try-this entries quote, computed from each scene's default state by the same models the scenes draw. */
-import { SAFE_FLAGS, lowestFailing, type Fault, type Scenario, type TimedTx } from './cdc';
+import { SAFE_FLAGS, evaluate, lowestFailing, seededScenario, type Fault, type Scenario, type TimedTx } from './cdc';
 import { SLOW_COMMIT_DEFAULT, pollingRun, pollTimesEvery, twoInterleaved, POLL_END_MS, POLL_EVERY_MS, type PollTx } from './polling';
 import { retentionAt, type RetentionConfig } from './retention';
 import { evaluateSnapshot, lowestSnapshotFailure, scanTimeOf } from './snapshot';
-import { REPLAY_OPEN, REPLAY_OPS, RETENTION_OPEN, TAIL_OPEN, connOf, consOf, dbOf, redeliveries, replay, syncedCount } from './view';
+import { REPLAY_OPEN, REPLAY_OPS, RETENTION_OPEN, TAIL_OPEN, connOf, consOf, dbOf, redeliveries, reorderedArrivals, replay, syncedCount } from './view';
 
 const scenario = (ops: TimedTx[], faults: Fault[] = [], flags = SAFE_FLAGS): Scenario => ({ seed: TAIL_OPEN.seed, ops, faults, flags, loss: 0, duplicate: 0 });
 const ins = (txid: number, key: number): TimedTx => ({ at: 0, tx: { txid, outcome: 'commit', stmts: [{ op: 'insert', key, row: { status: TAIL_OPEN.status, amount: TAIL_OPEN.amount } }] } });
@@ -14,16 +14,20 @@ export function insertFacts() {
   return { synced: syncedCount(r.snap), saved: connOf(r.snap).saved, records: dbOf(r.snap).log.length };
 }
 
-/** Scene 1: Insert rows 3 and 4, then "Two updates, roll back" on rows 3 and 4, then Time 60. */
-export function rollbackFacts() {
+/** The values the rolled-back updates carry: unlike the inserted default (new, 40), they would change every consumer's row if they leaked. */
+export const ROLLBACK_ROW = { status: 'paid', amount: 99 } as const;
+
+/** Scene 1: Insert rows 3 and 4, set Status paid and Amount 99, then "Two updates, roll back" on rows 3 and 4, then Time 60. */
+export function rollbackFacts(outcome: 'commit' | 'rollback' = 'rollback') {
   const ops: TimedTx[] = [
     ins(1, 3),
     ins(2, 4),
-    { at: 0, tx: { txid: 3, outcome: 'rollback', stmts: [3, 4].map((key) => ({ op: 'update' as const, key, row: { status: TAIL_OPEN.status, amount: TAIL_OPEN.amount } })) } },
+    { at: 0, tx: { txid: 3, outcome, stmts: [3, 4].map((key) => ({ op: 'update' as const, key, row: { ...ROLLBACK_ROW } })) } },
   ];
   const r = replay(scenario(ops), 60);
   const applied = (['search', 'cache', 'warehouse'] as const).flatMap((c) => consOf(r.snap, c).applied);
-  return { synced: syncedCount(r.snap), records: dbOf(r.snap).log.length, rolledBackApplied: applied.includes(3), rolledBackTx: dbOf(r.snap).rolledBack };
+  const held = (['search', 'cache', 'warehouse'] as const).map((c) => [3, 4].map((k) => consOf(r.snap, c).rows[k]));
+  return { synced: syncedCount(r.snap), records: dbOf(r.snap).log.length, rolledBackApplied: applied.includes(3), rolledBackTx: dbOf(r.snap).rolledBack, held };
 }
 
 /** Scene 2: no faults, Time 500; then the connector killed at 50 ms. */
@@ -41,9 +45,17 @@ export function replayFacts() {
   };
 }
 
+/** What the trace of the first failing blind-apply seed shows: events that arrived out of order, and deliveries that were repeats. */
+function blindCause(network: 'noisy' | 'clean') {
+  const seed = lowestFailing({ ...SAFE_FLAGS, idempotent: false }, network)!;
+  const trace = evaluate(seededScenario(seed, { ...SAFE_FLAGS, idempotent: false }, network)).cluster.trace;
+  return { reordered: reorderedArrivals(trace), repeated: redeliveries(trace) };
+}
+
 export const seedPins = () => ({
   blind: lowestFailing({ ...SAFE_FLAGS, idempotent: false }, 'clean'),
   blindNoisy: lowestFailing({ ...SAFE_FLAGS, idempotent: false }, 'noisy'),
+  blindCause: blindCause('noisy'),
   ackBefore: lowestFailing({ ...SAFE_FLAGS, ackBeforeApply: true }, 'noisy'),
 });
 

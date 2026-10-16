@@ -64,7 +64,7 @@ export function RetentionScene({ picker }: { picker: ReactNode }) {
             <HLine at={DISK_BUDGET_BYTES / MIB} label="budget" tone="bad" />
             <VLine at={now} label={`${now}`} tone="violet" />
           </Plot2D>
-          <Hint tone="muted" block>The log is kept in segments, so the figure steps up a segment at a time. A schema change (an added column) is one more record in the same stream, delivered in order with the row changes.</Hint>
+          <Hint tone="muted" block>The log is kept in segments, so the figure steps up a segment at a time. A schema change (the "Add a column" button in The tail) is one more record in the same stream, delivered in order with the row changes.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="illustrative">the write rate, record size and disk budget are made up round numbers</Provenance>

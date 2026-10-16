@@ -7,10 +7,10 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, PauseButton, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { toSequence } from '../../core/distSim';
 import { useInterval } from '../../core/useInterval';
-import { CONSUMERS, CONSUMER_LABEL, CONNECTOR, DUPLICATE, LOSS, RESTART_MS, evaluate, lowestFailing, seededScenario, SAFE_FLAGS, type ConsumerId, type Fault, type Flags, type Network, type Scenario } from './cdc';
+import { CONSUMERS, CONSUMER_LABEL, CONNECTOR, DUPLICATE, LOSS, RESTART_MS, endDivergence, evaluate, lowestFailing, lowestFailingAt, seededScenario, SAFE_FLAGS, type ConsumerId, type Fault, type Flags, type Network, type Scenario } from './cdc';
 import { replayCaption, seedVerdict, traceLine } from './captions';
 import { TableGrids } from './Grids';
-import { END_MS, REPLAY_OPEN, REPLAY_OPS, STEP_MS, connOf, labelOf, redeliveries, replay, syncedCount } from './view';
+import { END_MS, REPLAY_OPEN, REPLAY_OPS, STEP_MS, connOf, labelOf, redeliveries, reorderedArrivals, replay, syncedCount } from './view';
 
 const PLAY_MS = 120;
 const SLOW_OPTIONS: { value: ConsumerId | 'none'; label: string }[] = [{ value: 'none', label: 'None' }, ...CONSUMERS.map((c) => ({ value: c as ConsumerId | 'none', label: CONSUMER_LABEL[c] }))];
@@ -43,10 +43,12 @@ export function ReplayScene({ picker }: { picker: ReactNode }) {
   }, [trace]);
 
   const seeded = useMemo(() => {
-    const ev = evaluate(seededScenario(seed, flags, network));
-    return { rule: ev.rule, message: ev.message, rows: ev.cluster.trace.filter((r) => r.kind !== 'timer' && !(r.payload && ['read', 'batch'].includes(r.payload.type))).slice(-TRACE_TAIL).map((r) => ({ id: `t${r.id}`, text: traceLine(r), tone: r.kind === 'crash' ? ('bad' as const) : r.kind === 'drop' ? ('orange' as const) : undefined })) };
+    const scenario = seededScenario(seed, flags, network);
+    const ev = evaluate(scenario);
+    return { rule: ev.rule, message: ev.message, cause: { reordered: reorderedArrivals(ev.cluster.trace), repeated: redeliveries(ev.cluster.trace), endsEqual: ev.rule === 'S1' && endDivergence(scenario) === null }, rows: ev.cluster.trace.filter((r) => r.kind !== 'timer' && !(r.payload && ['read', 'batch'].includes(r.payload.type))).slice(-TRACE_TAIL).map((r) => ({ id: `t${r.id}`, text: traceLine(r), tone: r.kind === 'crash' ? ('bad' as const) : r.kind === 'drop' ? ('orange' as const) : undefined })) };
   }, [seed, flags, network]);
   const ackSeed = useMemo(() => lowestFailing({ ...SAFE_FLAGS, ackBeforeApply: true }, network), [network]);
+  const counterSeed = useMemo(() => lowestFailingAt({ ...SAFE_FLAGS, idempotent: false }, network, 'S3'), [network]);
   const naiveSeed = useMemo(() => lowestFailing({ ...SAFE_FLAGS, idempotent: false }, network), [network]);
 
   const addFault = (f: Fault) => setFaults([...faults, f]);
@@ -104,14 +106,14 @@ export function ReplayScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint={`a seeded fault schedule: ${Math.round(LOSS * 100)}% loss and ${Math.round(DUPLICATE * 100)}% duplication when the network is noisy, crashes of the connector and a consumer`}>Seeded run, seed {seed}</SectionTitle>
           <div className="cdc-seed">
             <SeedField seed={seed} onSeed={setSeed} />
-            <Button onClick={() => setSeed(naiveSeed ?? 0)}>Load seed {naiveSeed}</Button>
+            {seed !== naiveSeed && <Button onClick={() => setSeed(naiveSeed ?? 0)}>Load seed {naiveSeed}</Button>}
             <Button onClick={() => setSeed(ackSeed ?? 0)}>Load seed {ackSeed}</Button>
             <Toggle label="Network" value={network === 'noisy'} onChange={(v) => setNetwork(v ? 'noisy' : 'clean')} off="Clean" on="Noisy" />
           </div>
-          <p className={`cdc-verdict ${seeded.rule ? 'is-bad' : 'is-ok'}`} role="status">{seedVerdict(seed, seeded.rule, seeded.message)}</p>
+          <p className={`cdc-verdict ${seeded.rule ? 'is-bad' : 'is-ok'}`} role="status">{seedVerdict(seed, seeded.rule, seeded.message, seeded.cause)}</p>
           <LogStream label="The trace up to the end of the run" rows={seeded.rows} maxHeight={150} follow live="off" empty="No trace." />
           <Hint tone="muted" block>
-            Over seeds 0 to 199 with this network: blind apply fails first on seed {naiveSeed}; acknowledging before applying fails first on seed {ackSeed}; with idempotent apply and acknowledging after applying, no seed fails.
+            Over seeds 0 to 199 with this network: blind apply fails first on seed {naiveSeed} (message latency reorders events, and blind apply trusts arrival order); the restart effect shows at the end, as S3 (a row or the counter differs once the stream drained), first on {counterSeed === undefined ? 'no seed' : `seed ${counterSeed}`}; acknowledging before applying fails first on seed {ackSeed}; with idempotent apply and acknowledging after applying, no seed fails.
           </Hint>
         </Box>
         <ProvenanceRow>

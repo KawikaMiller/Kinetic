@@ -125,6 +125,22 @@ export function redeliveries(trace: readonly TraceRow<Msg>[]): number {
   return again;
 }
 
+/** First deliveries that arrived after a newer event for the same consumer: the network reordered them (a repeat of an old event is counted by `redeliveries`). */
+export function reorderedArrivals(trace: readonly TraceRow<Msg>[]): number {
+  const seen = new Set<string>();
+  const newest = new Map<string, number>();
+  let late = 0;
+  for (const row of trace) {
+    if (row.kind !== 'deliver' || !row.payload || row.payload.type !== 'event') continue;
+    const { lsn } = row.payload.ev;
+    const key = `${row.to}:${lsn}`;
+    if (!seen.has(key) && lsn < (newest.get(row.to!) ?? 0)) late += 1;
+    seen.add(key);
+    newest.set(row.to!, Math.max(lsn, newest.get(row.to!) ?? 0));
+  }
+  return late;
+}
+
 export const labelOf = (p: Msg): string => {
   switch (p.type) {
     case 'event': return p.ev.op === 'ddl' ? `event: schema change (LSN ${p.ev.lsn})` : `event ${p.ev.op} key ${p.ev.key} (LSN ${p.ev.lsn})`;
