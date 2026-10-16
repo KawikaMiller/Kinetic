@@ -78,8 +78,7 @@ export function generate(o: Obj): { fields: string[]; serialise: (o: Obj) => str
 /** Hand-written: each field is named in the code, and a new field needs a new line (the `edited` flags stand for those edits). */
 export const handWritten = (edited: readonly FieldId[]) => (o: Obj): string => {
   const parts = [`"name":${JSON.stringify(o.name)}`, `"age":${JSON.stringify(o.age)}`];
-  if (edited.includes('email')) parts.push(`"email":${JSON.stringify(o.email)}`);
-  if (edited.includes('admin')) parts.push(`"admin":${JSON.stringify(o.admin)}`);
-  if (edited.includes('score')) parts.push(`"score":${JSON.stringify(o.score)}`);
+  // A new line goes where the field sits in the object, so the edited fields come out in the object's own order.
+  for (const key of Object.keys(o)) if (FIELD_IDS.includes(key as FieldId) && edited.includes(key as FieldId)) parts.push(`${JSON.stringify(key)}:${JSON.stringify(o[key])}`);
   return `{${parts.join(',')}}`;
 };

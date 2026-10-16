@@ -76,6 +76,30 @@ export function PhasesScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
         </WideRegion>
+        <SectionTitle>The toy rules behind the table</SectionTitle>
+        <WideRegion minWidth={TABLE_MIN_WIDTH} label="Rules table: scroll sideways to see all of it">
+          <table className="data-table mm-rules">
+            <thead>
+              <tr>
+                <th>Technique</th>
+                <th>Looks at the schema</th>
+                <th>Checks names</th>
+                <th>Checks types</th>
+              </tr>
+            </thead>
+            <tbody>
+              {TECHNIQUES.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.label}</td>
+                  <td>{PHASES.find((p) => p.id === t.phase)!.label}</td>
+                  <td>{t.checks.names ? 'yes' : 'no'}</td>
+                  <td>{t.checks.types ? 'yes' : 'no'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </WideRegion>
+        <p className="mm-note">These are the lesson's own rules: a technique that does not check a kind of mistake lets it through to be found later, which the table above shows as silent. The rules say what this toy checks, not what every macro system, generator or proxy does.</p>
         <SectionTitle>All three mistakes at once</SectionTitle>
         <WideRegion minWidth={TABLE_MIN_WIDTH} label="Mistake table: scroll sideways to see all of it">
           <table className="data-table mm-all">

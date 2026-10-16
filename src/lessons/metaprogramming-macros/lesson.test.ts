@@ -50,7 +50,10 @@ describe('try-this entries, each from the default state', () => {
 
   it('try-this 5: a misspelled field is caught by 4 techniques and missed by 1; a field added later is caught by none and missed by 3', () => {
     expect([FACTS.misspelledCatches, FACTS.misspelledSilent, FACTS.laterCatches, FACTS.laterSilent]).toEqual([4, 1, 0, 3]);
-    expect([FACTS.wrongTypeCatches, FACTS.wrongTypeSilent]).toEqual([4, 1]);
+    const a = OPENING.macro.a;
+    expect(FACTS.textWorked).toBe(`${a} + (1 * ${a}) + 1`);
+    expect(a + 1 * a + 1).toBe(FACTS.textValue);
+    expect([FACTS.wrongTypeCatches, FACTS.wrongTypeSilent]).toEqual([3, 2]);
   });
 });
 

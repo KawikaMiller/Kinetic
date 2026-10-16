@@ -15,7 +15,7 @@ const lesson: LessonModule = {
       'Knowing what ORMs and dependency-injection containers use reflection or proxies for, and what they cannot check early',
     ],
     why: 'Code that writes code moves errors to different times: some surface at expansion or build time, some only when the program runs, and some never. Knowing which phase a technique checks in tells you where its bugs will hide.',
-    watch: 'In the expanded source and tree, pieces from the caller are blue (--info) and pieces from the template violet (--violet). A piece that was captured, or regrouped by the template's operators, is red (--bad), and a binder the hygienic expander renamed is green (--ok). The result is yellow (--hi), a stale serialiser is orange (--orange), and a Proxy trap that fired is yellow in the log. In the phase table the phase where a mistake surfaces is yellow, the earlier phases that ran are blue, a mistake that never raises an error is orange and a field that is picked up is green.',
+    watch: 'In the expanded source and tree, pieces from the caller are blue (--info) and pieces from the template violet (--violet). A piece that was captured, or regrouped by operators of the template, is red (--bad), and a binder the hygienic expander renamed is green (--ok). The result is yellow (--hi), a stale serialiser is orange (--orange), and a Proxy trap that fired is yellow in the log. In the phase table the phase where a mistake surfaces is yellow, the earlier phases that ran are blue, a mistake that never raises an error is orange and a field that is picked up is green.',
   },
   tryThis: [
     `Expand a macro, on the defaults (SQUARE(a + 1), text substitution, a = 4): the call expands to ${F.textSource}, which evaluates to ${F.textValue}. Switch to Syntax tree: it expands to ${F.treeSource} and evaluates to ${F.treeValue}.`,
@@ -35,7 +35,7 @@ const lesson: LessonModule = {
       q: 'The macro SQUARE(x) is x * x, and the call is SQUARE(a + 1) with textual substitution at a = 4. What value results?',
       options: ['9', '25', '16', '5'],
       answer: 0,
-      why: `Text substitution gives ${F.textSource}, and multiplication binds tighter than addition: 4 + (1 * 4) + 1 = ${F.textValue}. Substituting the tree keeps the argument together and gives ${F.treeValue}.`,
+      why: `Text substitution gives ${F.textSource}, and multiplication binds tighter than addition: ${F.textWorked} = ${F.textValue}. Substituting the tree keeps the argument together and gives ${F.treeValue}.`,
     },
     {
       q: 'A macro\'s helper variable is called tmp and the caller also has a tmp. What does hygiene do?',

@@ -1,7 +1,7 @@
 /** Every number the lesson text quotes, computed from the model. */
 import { EXPANSION_LIMIT } from './expand';
 import { parseCall, parseMacroDef } from './macroLang';
-import { MACRO_PRESETS } from './opening';
+import { MACRO_PRESETS, OPENING } from './opening';
 import { MISTAKES, TECHNIQUES, runPipeline } from './phases';
 import { BASE, PROBES, generate, handWritten, objectWith, probe, reflective } from './reflection';
 import { runMacro } from './run';
@@ -32,6 +32,8 @@ export const FACTS = {
   limit: EXPANSION_LIMIT,
   textSource: text.source!,
   textValue: value(text),
+  /** The text expansion `a + 1 * a + 1` with the opening value of a put in, and the grouping multiplication gives it. */
+  textWorked: `${OPENING.macro.a} + (1 * ${OPENING.macro.a}) + 1`,
   treeSource: tree.source!,
   treeValue: value(tree),
   counterSource: counter.source!,

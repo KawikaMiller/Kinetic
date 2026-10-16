@@ -335,6 +335,23 @@ describe('the reflection panel, real JavaScript', () => {
     expect(generate(o).serialise(o)).toBe(JSON.stringify(o));
     expect(handWritten([])(o)).not.toBe(JSON.stringify(o));
     expect(handWritten(['email'])(o)).toBe(JSON.stringify(o));
+  });
+
+  it('once every added field is edited in, the hand-written serialiser matches JSON.stringify for every order of adding', () => {
+    const orders: FieldId[][] = [[]];
+    for (const a of FIELD_IDS) {
+      orders.push([a]);
+      for (const b of FIELD_IDS.filter((x) => x !== a)) {
+        orders.push([a, b]);
+        for (const c of FIELD_IDS.filter((x) => x !== a && x !== b)) orders.push([a, b, c]);
+      }
+    }
+    expect(orders).toHaveLength(16);
+    for (const added of orders) {
+      const o = objectWith(added);
+      expect(handWritten(added)(o), added.join(',')).toBe(JSON.stringify(o));
+      expect(generate(o).serialise(o), added.join(',')).toBe(JSON.stringify(o));
+    }
     expect(EXTRA.email).toBe('ada@example.com');
   });
 });
@@ -342,11 +359,11 @@ describe('the reflection panel, real JavaScript', () => {
 describe('the phase table', () => {
   /** Typed once, by hand, from the rules in the spec: the pipeline's answers must equal it. */
   const expected = {
-    macro: { misspelled: 'expansion', 'wrong-type': 'expansion', 'added-later': 'never' },
-    codegen: { misspelled: 'generation', 'wrong-type': 'generation', 'added-later': 'never' },
+    macro: { misspelled: 'expansion', 'wrong-type': 'never', 'added-later': 'never' },
+    codegen: { misspelled: 'generation', 'wrong-type': 'never', 'added-later': 'never' },
     decorator: { misspelled: 'definition', 'wrong-type': 'definition', 'added-later': 'never' },
     reflection: { misspelled: 'never', 'wrong-type': 'first-call', 'added-later': 'fine' },
-    proxy: { misspelled: 'access', 'wrong-type': 'never', 'added-later': 'fine' },
+    proxy: { misspelled: 'access', 'wrong-type': 'access', 'added-later': 'fine' },
   } as const;
 
   it('every cell is what the pipeline produced, and the phases that ran are the ones before and including the one that caught it', () => {

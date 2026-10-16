@@ -21,16 +21,16 @@ export interface Technique {
   label: string;
   /** The phase in which it reads the schema. */
   phase: PhaseId;
-  /** What its check can catch when it looks. */
+  /** What its check can catch when it looks: the lesson's toy rules, shown on screen in the rules table. */
   checks: { names: boolean; types: boolean };
 }
 
 export const TECHNIQUES: Technique[] = [
-  { id: 'macro', label: 'Macro (expansion time)', phase: 'expansion', checks: { names: true, types: true } },
-  { id: 'codegen', label: 'Code generation (build time)', phase: 'generation', checks: { names: true, types: true } },
+  { id: 'macro', label: 'Macro (expansion time)', phase: 'expansion', checks: { names: true, types: false } },
+  { id: 'codegen', label: 'Code generation (build time)', phase: 'generation', checks: { names: true, types: false } },
   { id: 'decorator', label: 'Decorator or annotation (definition time)', phase: 'definition', checks: { names: true, types: true } },
   { id: 'reflection', label: 'Reflection (run time)', phase: 'first-call', checks: { names: false, types: true } },
-  { id: 'proxy', label: 'Proxy (access time)', phase: 'access', checks: { names: true, types: false } },
+  { id: 'proxy', label: 'Proxy (access time)', phase: 'access', checks: { names: true, types: true } },
 ];
 
 export const MISTAKES: { id: MistakeId; label: string }[] = [
