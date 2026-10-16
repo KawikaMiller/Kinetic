@@ -27,7 +27,8 @@ export function RatingGrid({ problem, mode, showTruth, onCellClick, ariaLabel }:
         cellAriaLabel={(u, i) => {
           const who = u === NEW_USER ? 'The new user' : `User ${u + 1}`;
           const seen = problem.seen(u, i);
-          return `${who}, ${FILM_TITLES[i]}, ${seen === null ? 'not rated' : `rated ${seen}`}`;
+          const state = seen !== null ? `rated ${seen}` : mode.kind === 'predictions' ? `predicted ${mode.run.predict(u, i).toFixed(1)}` : 'not rated';
+          return `${who}, ${FILM_TITLES[i]}, ${state}`;
         }}
         cellTitle={(u, i) => `${u === NEW_USER ? 'New user' : `User ${u + 1}`}: ${FILM_TITLES[i]}`}
         ariaLabel={ariaLabel}

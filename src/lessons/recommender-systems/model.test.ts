@@ -54,6 +54,7 @@ describe('the gradient', () => {
 });
 
 describe('Eckart-Young as the oracle on a fully observed matrix', () => {
+  // 6 x 8 because svdSmall refuses anything above 8 x 8; the same oracle was also checked by hand against an independent SVD at the lesson's full 12 x 15.
   const small = generate(7, 6, 8, 0.3);
   const matrix = small.truth.map((r) => [...r]);
   const sigma = svdSmall(matrix).s;
