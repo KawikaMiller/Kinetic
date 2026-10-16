@@ -8,7 +8,10 @@
 //   npm run smoke -- --frames --label=base   # deterministic: seeded Math.random, and
 //                                            # step players shot paused at first/middle/last
 //                                            # frame (<id>@0.png ...); live sims get <id>@live.png
-//   npm run smoke -- --mobile                # 390x844 phone: also fails on content the stage
+//   npm run smoke -- --scenes [ids...] [--shard=2/4] [--idle=3000] [--selftest]
+//                                            # click every scene tab, sit idle, fail on any console
+//                                            # error (render loops included); see scripts/scenes.mjs
+//   npm run smoke -- --mobile              # 390x844 phone: also fails on content the stage
 //                                            # frame clips, and on scene (SVG) text rendered
 //                                            # below MIN_SCENE_TEXT_PX (fix: StageFrame minWidth)
 import { BASE_URL, frameCount, lessonIds, openPage, outPath, parseArgs, seekFrame, shootElement, sleep, visit } from './lib/browser.mjs';
@@ -20,6 +23,8 @@ const PHONE = { width: 390, height: 844 };
 const MIN_SCENE_TEXT_PX = 8;
 
 const { flags, positional } = parseArgs();
+// `--scenes` is its own pass (every scene tab of every lesson that has a picker, idle, console watched): scenes.mjs.
+if (flags.scenes) await import('./scenes.mjs');
 const ids = positional.length ? positional : lessonIds();
 const mobile = !!flags.mobile;
 const label = typeof flags.label === 'string' ? flags.label : mobile ? 'mobile' : 'latest';

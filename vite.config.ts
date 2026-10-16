@@ -41,8 +41,8 @@ export default defineConfig({
     // dev-script rules (scripts/lib) are tested too, not just app code
     include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     environment: 'node',
-    // Exhaustive lesson tests run a few seconds each; under a loaded machine (several
-    // checkouts testing at once) the 5 s default fails them at random.
-    testTimeout: 15_000,
+    // Exhaustive lesson tests run a few seconds each; with 300+ lessons and several
+    // checkouts testing at once, a heavy seeded-schedule check can pass 15 s under load.
+    testTimeout: 45_000,
   },
 })

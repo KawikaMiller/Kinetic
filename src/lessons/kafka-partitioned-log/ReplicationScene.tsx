@@ -46,8 +46,6 @@ export function ReplicationScene({ picker }: { picker: ReactNode }) {
   const [following, setFollowing] = useState(true);
   const [at, setAt] = useState<number | null>(null);
   const [note, setNote] = useState('');
-  /** Bumped when the program moves the seed, so the SeedField (which only reads its prop on mount) shows the seed that is running. */
-  const [seedKey, setSeedKey] = useState(0);
   const phone = useMediaQuery(PHONE_QUERY);
 
   const set = (patch: Partial<ReplControls>) => {
@@ -61,7 +59,6 @@ export function ReplicationScene({ picker }: { picker: ReactNode }) {
   };
   const preset = (patch: Partial<ReplControls>, seeded: boolean) => {
     setFollowing(true);
-    setSeedKey((k) => k + 1);
     setC((old) => {
       const next = { ...old, ...patch, schedule: seeded ? ('seeded' as const) : ('scripted' as const) };
       return seeded ? { ...next, seed: pinnedSeed(next.config, next.seededFaults) } : next;
@@ -95,7 +92,6 @@ export function ReplicationScene({ picker }: { picker: ReactNode }) {
     if (found === null) setNote(`No seed below ${SEED_COUNT} breaks these settings.`);
     else {
       setFollowing(true);
-      setSeedKey((k) => k + 1);
       set({ schedule: 'seeded', seed: found });
     }
   };
@@ -180,7 +176,7 @@ export function ReplicationScene({ picker }: { picker: ReactNode }) {
           </>
         ) : (
           <>
-            <SeedField key={seedKey} seed={c.seed} onSeed={(seed) => { setFollowing(false); set({ seed }); }} />
+            <SeedField seed={c.seed} onSeed={(seed) => { setFollowing(false); set({ seed }); }} />
             <Toggle label="Faults" value={c.seededFaults} onChange={(seededFaults) => set({ seededFaults })} off="Delay only" on="Loss, duplication, crashes, stalls, cuts" />
             <Button onClick={findSeed}>Lowest seed that breaks it</Button>
           </>

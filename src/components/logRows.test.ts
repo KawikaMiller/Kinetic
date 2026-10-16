@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lastRows, rowTone } from './logRows';
+import { lastRows, rowTabStop, rowTone } from './logRows';
 
 describe('rowTone', () => {
   it('a tone the row names wins over its level', () => {
@@ -32,5 +32,18 @@ describe('lastRows', () => {
   it('a max of 0 keeps nothing and does not touch its input', () => {
     expect(lastRows(rows, 0)).toEqual([]);
     expect(rows).toEqual([1, 2, 3, 4, 5]);
+  });
+});
+
+describe('rowTabStop', () => {
+  const shown = [{ id: 'a' }, { id: 2 }, { id: 'c' }];
+  it('is the row with that id, numeric ids included', () => {
+    expect(rowTabStop(shown, 'c')).toBe(2);
+    expect(rowTabStop(shown, 2)).toBe(1);
+  });
+  it('falls back to the first row when nothing is chosen or the row scrolled out of `max`', () => {
+    expect(rowTabStop(shown, null)).toBe(0);
+    expect(rowTabStop(shown, 'gone')).toBe(0);
+    expect(rowTabStop([], 'a')).toBe(0);
   });
 });

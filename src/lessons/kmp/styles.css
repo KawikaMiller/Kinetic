@@ -1,0 +1,12 @@
+.km-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.km-strips { display: flex; flex-direction: column; gap: 4px; }
+.km-row { display: flex; }
+.km-rowlabel { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.km-blank { opacity: 0; pointer-events: none; }
+.km-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.km-bars { display: flex; flex-direction: column; gap: 8px; }
+.km-lps { display: flex; flex-flow: row wrap; gap: 6px; align-items: center; }
+.km-lpscell { display: inline-flex; flex-direction: column; align-items: center; min-width: 30px; padding: 3px 6px; border: 1px solid var(--cell-line); border-radius: 6px; font: 700 13px var(--mono); }
+.km-lpscell i { font: 600 11px var(--mono); font-style: normal; color: var(--muted); }
+.km-lpscell.is-j { border-color: var(--violet); background: color-mix(in srgb, var(--violet) 18%, transparent); }
+.km-stage ~ .provenance-row { margin: 8px 16px 12px; }

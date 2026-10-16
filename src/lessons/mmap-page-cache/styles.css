@@ -1,0 +1,15 @@
+/* mmap-page-cache */
+.mp-stage { gap: 12px; min-width: 0; }
+.mp-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.mp-procs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.mp-proc { flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--line-2); font-size: 12.5px; }
+.mp-proc.is-shared { border-color: var(--violet); }
+.mp-seed { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.mp-seeded { margin: 8px 0 0; font-size: 13px; }
+.mp-verdict { margin: 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); }
+.mp-verdict.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.mp-verdict.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+
+@media (max-width: 700px) {
+  .mp-two { grid-template-columns: minmax(0, 1fr); }
+}

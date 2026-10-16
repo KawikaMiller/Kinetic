@@ -1,0 +1,10 @@
+.ch-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.ch-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ch-chip { font: 600 12px var(--mono); padding: 2px 8px; border: 1px solid var(--cell-line); border-radius: 999px; background: color-mix(in srgb, var(--info) 14%, transparent); }
+.ch-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ch-table caption { text-align: left; color: var(--muted); padding-bottom: 6px; line-height: 1.6; }
+.ch-table th, .ch-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+.ch-table td { font-family: var(--mono); }
+.ch-bad { color: var(--bad); font-weight: 700; }
+.ch-ok { color: var(--ok); font-weight: 700; }
+.ch-stage ~ .provenance-row { margin: 8px 16px 12px; }
