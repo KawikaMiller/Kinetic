@@ -101,8 +101,8 @@ export function digitsCorrect(result: number, oracle: number): number {
 export interface Reading {
   oracle: number;
   oracleDigits: string;
-  naive: { value: number; digits: string; correct: number };
-  stable: { value: number; digits: string; correct: number };
+  naive: { value: number; digits: string; correct: number; matching: number };
+  stable: { value: number; digits: string; correct: number; matching: number };
 }
 
 /** Everything the scene shows for one function at one k. */
@@ -110,6 +110,17 @@ export function read(id: FunctionId, k: number): Reading {
   const c = candidates(id, k);
   const o = oracleScaled(id, k);
   const oracle = oracleNumber(o);
-  const compare = (value: number) => ({ value, digits: doubleDigits(value).digits, correct: digitsCorrect(value, oracle) });
-  return { oracle, oracleDigits: oracleDigits(o).digits, naive: compare(c.naive), stable: compare(c.stable) };
+  const oracleText = oracleDigits(o).digits;
+  const compare = (value: number) => {
+    const digits = doubleDigits(value).digits;
+    return { value, digits, correct: digitsCorrect(value, oracle), matching: matchingPrefix(oracleText, digits) };
+  };
+  return { oracle, oracleDigits: oracleText, naive: compare(c.naive), stable: compare(c.stable) };
+}
+
+/** How many leading characters two digit strings share: the strip's green cells. */
+export function matchingPrefix(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return i;
 }

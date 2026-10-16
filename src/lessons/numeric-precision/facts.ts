@@ -47,6 +47,7 @@ export const FACTS = {
   sqrtNaiveDigits: sqrt16.naive.correct,
   sqrtStableDigits: sqrt16.stable.correct,
   sqrt8NaiveDigits: sqrt8.naive.correct,
+  sqrt8NaiveMatching: sqrt8.naive.matching,
   quad8NaiveDigits: quad8.naive.correct,
   items: K.items,
   rate: (K.bp / 100).toFixed(2),

@@ -36,7 +36,7 @@ export function sumCaption(ev: Evaluation, precision: Precision, n: number): Rea
 export function cancelCaption(naiveLabel: string, k: number, r: Reading): ReactNode {
   return (
     <>
-      At {power(k, 10)}, {naiveLabel} gives {show(r.naive.value)}, which has {r.naive.correct} of {STRIP_DIGITS} digits right against the 80-digit oracle. The rewrite gives {show(r.stable.value)} with {r.stable.correct} of {STRIP_DIGITS} right.
+      At {power(k, 10)}, {naiveLabel} gives {show(r.naive.value)}, which is right to {r.naive.correct} of {STRIP_DIGITS} digits by value against the 80-digit oracle. The rewrite gives {show(r.stable.value)}, right to {r.stable.correct} of {STRIP_DIGITS}.
     </>
   );
 }

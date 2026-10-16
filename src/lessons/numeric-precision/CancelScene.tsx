@@ -20,7 +20,7 @@ export function CancelScene({ picker }: { picker: ReactNode }) {
   const x = tenToThe(k);
   const lost = x + 1 === x;
   const rows = [r.oracleDigits, r.naive.digits, r.stable.digits];
-  const correct = [STRIP_DIGITS, r.naive.correct, r.stable.correct];
+  const matching = [STRIP_DIGITS, r.naive.matching, r.stable.matching];
 
   return (
     <StageFrame
@@ -29,8 +29,8 @@ export function CancelScene({ picker }: { picker: ReactNode }) {
       introKey={`${id}-${k}`}
       stats={
         <Stats>
-          <Stat label="Naive: digits right" value={`${r.naive.correct} of ${STRIP_DIGITS}`} color={r.naive.correct === STRIP_DIGITS ? 'var(--ok)' : 'var(--bad)'} sub={fn.naive} />
-          <Stat label="Rewrite: digits right" value={`${r.stable.correct} of ${STRIP_DIGITS}`} color={r.stable.correct === STRIP_DIGITS ? 'var(--ok)' : 'var(--bad)'} sub={fn.stable} />
+          <Stat label="Naive: digits right (by value)" value={`${r.naive.correct} of ${STRIP_DIGITS}`} color={r.naive.correct === STRIP_DIGITS ? 'var(--ok)' : 'var(--bad)'} sub={fn.naive} />
+          <Stat label="Rewrite: digits right (by value)" value={`${r.stable.correct} of ${STRIP_DIGITS}`} color={r.stable.correct === STRIP_DIGITS ? 'var(--ok)' : 'var(--bad)'} sub={fn.stable} />
           <Stat label={`x + 1 === x at ${power(k, 10)}`} value={lost ? 'true' : 'false'} color="var(--info)" sub="real JavaScript, run in your browser" />
         </Stats>
       }
@@ -38,8 +38,8 @@ export function CancelScene({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--info)', label: 'the oracle: 80-digit BigInt arithmetic', shape: 'square' },
-            { color: 'var(--ok)', label: 'a correct digit', shape: 'square' },
-            { color: 'var(--bad)', label: 'the first wrong digit and all after it', shape: 'square' },
+            { color: 'var(--ok)', label: "a digit equal to the oracle's", shape: 'square' },
+            { color: 'var(--bad)', label: 'the first digit that differs, and all after it', shape: 'square' },
           ]}
         />
       }
@@ -63,15 +63,16 @@ export function CancelScene({ picker }: { picker: ReactNode }) {
             rowLabels={ROW_LABELS}
             cell={(row, col) => ({
               text: rows[row][col],
-              tone: row === 0 ? 'info' : col < correct[row] ? 'ok' : 'bad',
+              tone: row === 0 ? 'info' : col < matching[row] ? 'ok' : 'bad',
               fill: row === 0 ? 'outline' : 'tint',
             })}
-            ariaLabel={`First ${STRIP_DIGITS} digits of the oracle, the naive result and the rewrite; correct digits green, wrong digits red`}
+            ariaLabel={`First ${STRIP_DIGITS} digits of the oracle, the naive result and the rewrite; green digits equal the oracle digit, red ones start at the first difference`}
           />
         </WideRegion>
         <p className="np-note">
           The strips show the first {STRIP_DIGITS} significant digits; the decimal point is not drawn.
           {r.naive.value === 0 ? ' The naive result is exactly 0, so its digits are all zero.' : ''}
+          {' '}Colour compares the digit text, so 4.9999 against 5.0000 turns red at once; "right by value" in the stats counts the relative error, which sees that those two agree to about 4 digits.
         </p>
       </div>
       <ProvenanceRow>

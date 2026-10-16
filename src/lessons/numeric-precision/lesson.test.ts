@@ -45,6 +45,7 @@ describe('try-this entries, each from the default state', () => {
   it('try-this 3: at 10^16 the naive difference has 0 digits and the rewrite 16; at k = 8 the naive keeps 7; the quadratic root keeps 0', () => {
     expect([FACTS.k, FACTS.sqrtNaiveDigits, FACTS.sqrtStableDigits]).toEqual([16, 0, 16]);
     expect([FACTS.sqrt8NaiveDigits, FACTS.quad8NaiveDigits]).toEqual([7, 0]);
+    expect(FACTS.sqrt8NaiveMatching).toBe(0);
     expect(lesson.tryThis[2]).toContain('0 of 16 digits right');
   });
 

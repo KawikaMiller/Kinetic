@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
-import { candidates, digitsCorrect, isqrt, oracleNumber, oracleScaled, read, tenToThe } from './cancellation';
+import { candidates, digitsCorrect, matchingPrefix, isqrt, oracleNumber, oracleScaled, read, tenToThe } from './cancellation';
 import { centsTax, exactTax, floatTax, makeCart, MODES, roundDiv, taxView, type Granularity } from './cart';
 import {
   bigToNumber, BLIND_SPOT, commonExponent, decompose, evaluate, exactSum, generate, kahanSum, MAX_N, naiveSum, neumaierSum, pairwiseSum, scaled, sortedSum, ulp,
@@ -199,5 +199,28 @@ describe('the cart', () => {
     expect(0.1 + 0.2).toBe(0.30000000000000004);
     expect((1.005).toFixed(2)).toBe('1.00');
     expect(Math.round(1.005 * 100)).toBe(100);
+  });
+});
+
+describe('the digit strip colours by agreement of the digit text', () => {
+  it('for k = 1..20 and both functions, every cell the strip paints green holds the oracle digit, and the first red cell holds a different one', () => {
+    for (const id of ['sqrt-difference', 'quadratic-root'] as const) {
+      for (let k = 1; k <= 20; k++) {
+        const r = read(id, k);
+        for (const m of [r.naive, r.stable]) {
+          expect(m.digits.length).toBe(r.oracleDigits.length);
+          for (let col = 0; col < m.matching; col++) expect(m.digits[col], `${id} k=${k} col ${col}`).toBe(r.oracleDigits[col]);
+          if (m.matching < m.digits.length) expect(m.digits[m.matching], `${id} k=${k} first red`).not.toBe(r.oracleDigits[m.matching]);
+        }
+      }
+    }
+  });
+
+  it('a result right by value can still differ in text from the first digit: 4.99999 against 5.00000 (k = 8)', () => {
+    expect(matchingPrefix('4999999', '5000000')).toBe(0);
+    expect(matchingPrefix('5000', '5000')).toBe(4);
+    const r = read('sqrt-difference', 8);
+    expect(r.naive.matching).toBe(0);
+    expect(r.naive.correct).toBeGreaterThan(5);
   });
 });
