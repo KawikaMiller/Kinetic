@@ -162,7 +162,8 @@ export function TopDownScene({ picker }: { picker: ReactNode }) {
         ) : null}
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy">LL(1) as in the textbook; hand-written recursive descent and Pratt parsing dominate in practice (from memory)</Provenance>
+        <Provenance kind="toy">LL(1) as in the textbook; real generators use stronger lookahead</Provenance>
+        <Provenance kind="from-memory">hand-written recursive descent and Pratt parsing dominate in practice: check before relying on it</Provenance>
       </ProvenanceRow>
     </StageFrame>
   );
