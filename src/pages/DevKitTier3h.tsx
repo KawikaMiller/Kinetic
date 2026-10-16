@@ -1,4 +1,5 @@
 import { SectionTitle } from '../components/Panel';
+import { binaryEntropy, orderZeroBitsPerChar } from '../core/entropy';
 import { initPlusPlus, kmeans } from '../core/kmeans';
 import { attention, createMlp, createSgd, gradCheck } from '../core/nn';
 import { mulberry32 } from '../core/random';
@@ -43,6 +44,17 @@ function KmeansDemo() {
   );
 }
 
+const ENTROPY_COIN = 0.1;
+const ENTROPY_TEXT = 'mississippi';
+
+function EntropyDemo() {
+  return (
+    <p className="mono">
+      H(coin, p = {ENTROPY_COIN}) = {binaryEntropy(ENTROPY_COIN).toFixed(DIGITS)} bits · order-0 entropy of &quot;{ENTROPY_TEXT}&quot; = {orderZeroBitsPerChar(ENTROPY_TEXT).toFixed(DIGITS)} bits per character
+    </p>
+  );
+}
+
 export function DevKitTier3h() {
   return (
     <>
@@ -52,6 +64,9 @@ export function DevKitTier3h() {
       </Section>
       <Section title="core/kmeans · one Lloyd loop for clustering-kmeans and vector-search: passes, distance computations, cells">
         <KmeansDemo />
+      </Section>
+      <Section title="core/entropy · entropy of a distribution and the order-0 entropy of a text, shared by entropy-information and lz-compression">
+        <EntropyDemo />
       </Section>
     </>
   );

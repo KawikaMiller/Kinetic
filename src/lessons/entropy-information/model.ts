@@ -4,19 +4,8 @@
  * wrong belief (cross-entropy and its excess over the entropy, the KL divergence). The question-tree
  * scene has its own file, `questions.ts`.
  */
-import { averageLength, buildHuffman, frequencies, type SymbolWeight } from '../../core/huffman';
-
-/** One term of the entropy, -p log2 p, with the convention 0 log 0 = 0. */
-export const entropyTerm = (p: number): number => (p > 0 ? 0 - p * Math.log2(p) : 0);
-
-/** Entropy in bits of a probability distribution: the average surprise. */
-export const entropy = (probs: readonly number[]): number => probs.reduce((s, p) => s + entropyTerm(p), 0);
-
-/** H(p) for a coin that lands heads with probability p. */
-export const binaryEntropy = (p: number): number => entropy([p, 1 - p]);
-
-/** The surprise of an outcome of probability p: -log2 p bits (unbounded for an impossible outcome). */
-export const surprise = (p: number): number => (p > 0 ? 0 - Math.log2(p) : Infinity);
+import { entropy } from '../../core/entropy';
+import { averageLength, buildHuffman, type SymbolWeight } from '../../core/huffman';
 
 // ── The biased coin and block codes ──────────────────────────────────
 
@@ -58,36 +47,6 @@ export const MAX_TEXT = 500;
 
 /** The text cut to MAX_TEXT code points (so a pasted essay cannot stall the page). */
 export const clampText = (text: string, max = MAX_TEXT): string => Array.from(text).slice(0, max).join('');
-
-export interface SymbolStat {
-  sym: string;
-  count: number;
-  probability: number;
-  /** -log2 of the probability: how surprising this symbol is in this text. */
-  surprise: number;
-}
-
-export interface TextEntropy {
-  /** Characters (code points). */
-  n: number;
-  symbols: SymbolStat[];
-  /** Order-0 entropy in bits per character: the average surprise under the text's own frequencies. */
-  bitsPerChar: number;
-  /** n x bitsPerChar: the order-0 bound on the text's length in bits. */
-  totalBits: number;
-  /** Whether any character is outside ASCII (so 8 bits per character is not what UTF-8 spends on it). */
-  nonAscii: boolean;
-}
-
-/** Order-0 entropy of a text from its character counts; null for an empty text (no symbols). */
-export function textEntropy(text: string): TextEntropy | null {
-  const chars = Array.from(text);
-  if (chars.length === 0) return null;
-  const n = chars.length;
-  const symbols = frequencies(text).map(({ sym, count }) => ({ sym, count, probability: count / n, surprise: surprise(count / n) }));
-  const bitsPerChar = entropy(symbols.map((s) => s.probability));
-  return { n, symbols, bitsPerChar, totalBits: n * bitsPerChar, nonAscii: chars.some((c) => (c.codePointAt(0) ?? 0) > 127) };
-}
 
 export const TEXT_PRESETS: readonly { id: string; label: string; text: string }[] = [
   { id: 'a', label: 'aaaaaaaa', text: 'aaaaaaaa' },

@@ -2,7 +2,8 @@ import type { LessonModule } from '../../core/types';
 import { MAX_DISTANCE, distanceCode, encodeFixedBlock } from './deflate';
 import { decodeAsBlock, parseLz77, type Token } from './lz77';
 import { kraftSum } from '../../core/huffman';
-import { LENGTH_PRESETS, RFC_LENGTHS, assignCodes, compress, kraftOutOf256, orderZeroBits } from './model';
+import { LENGTH_PRESETS, RFC_LENGTHS, assignCodes, compress, kraftOutOf256 } from './model';
+import { orderZeroBits } from '../../core/entropy';
 import { Stage } from './Stage';
 
 const OPTS = { window: 32, minMatch: 3 };

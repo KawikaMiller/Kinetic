@@ -1914,6 +1914,20 @@ for (const pass of lloydPasses(points, start, { empty: 'reseed' })) {      // on
 - Tests: `core/kmeans.test.ts` (a hand-worked 1-D run: assignments `[0,1,1,1]`, `[0,0,1,1]`, `[0,0,1,1]`, centroids `[0.5]`, `[10.5]`, 3 passes and 24 computations; the unsettled finish; every point in its nearest centroid and determinism on 20 seeds x 3 starts; keep versus reseed). The vector-search clustering was also compared against the old local implementation on 60 seeded runs (clustered and 8-D uniform points, nlist 4 to 32): centroids, assignments, iterations and computations equal.
 - **Migrated:** `vector-search` (its `kmeans.ts` and `sqDist` are gone; `buildIvf` calls the shared `kmeans` with `initShuffled` and 15 iterations) and `clustering-kmeans` (`model.ts` keeps its starts-by-name, steps, restarts, elbow and silhouette; `lloyd` turns each pass into frame steps). Shots are pixel-identical.
 
+### `core/entropy.ts` — entropy-information, lz-compression (both migrated)
+```ts
+import { entropy, binaryEntropy, surprise, textEntropy, orderZeroBits, orderZeroBitsPerChar } from '../../core/entropy';
+entropy([0.5, 0.25, 0.25]);     // 1.5 bits; entropyTerm(p) is one -p log2 p term, 0 for p = 0
+binaryEntropy(0.1);             // 0.469; surprise(0.25) = 2, surprise(0) = Infinity
+textEntropy('mississippi');     // { n, symbols: [{ sym, count, probability, surprise }], bitsPerChar, totalBits, nonAscii } | null when empty
+orderZeroBits(text);            // n x H, 0 for an empty text; orderZeroBitsPerChar(text) is H alone
+```
+- Order 0 means each character is treated as an independent draw from the text's own counts: an estimate from one sample, never the source's true entropy (lessons say so on screen). Symbols come heaviest first (`core/huffman` `frequencies`), characters are code points.
+- `orderZeroBits` is `textEntropy(text)?.totalBits ?? 0`, the same arithmetic both lessons had before (each term is `0 - p log2 p`, summed in the same order), so the figures they print are unchanged to the last bit.
+- Not here: `crossEntropy`/`excessBits` (entropy-information only; they move when a second lesson wants them) and the Huffman code costs (`core/huffman`).
+- Tests: `core/entropy.test.ts` (fair coin 1 bit, uniform over 8 is 3, (1/2, 1/4, 1/4) is 1.5, `H(0.1)` = 0.4690 and symmetric, mississippi against its closed form, `ab` x 50 is 100 bits, empty and non-ASCII). The two lessons' own tests are unchanged apart from their imports.
+- **Migrated:** `entropy-information` (`model.ts` keeps coin block codes, passwords and cross-entropy) and `lz-compression` (`orderZeroBits`, `orderZeroBitsPerChar` removed from its `model.ts`).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

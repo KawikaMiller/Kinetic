@@ -1,7 +1,6 @@
 /** Every number a caption or stat shows comes from the model through these, so tests can pin the sentences. */
-import {
-  ASCII_BITS, MAX_BLOCK, binaryEntropy, blockBitsPerFlip, crossEntropy, entropy, excessBits, generatedBits, possibilities, surprise, type TextEntropy,
-} from './model';
+import { ASCII_BITS, MAX_BLOCK, blockBitsPerFlip, crossEntropy, excessBits, generatedBits, possibilities } from './model';
+import { binaryEntropy, entropy, surprise, type TextEntropy } from '../../core/entropy';
 
 /** A whole number with thousands separators (7,776). */
 export const count = (n: number): string => n.toLocaleString('en-US');

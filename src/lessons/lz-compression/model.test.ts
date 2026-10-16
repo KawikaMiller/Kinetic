@@ -4,9 +4,8 @@ import { distanceCode, deflateTokens, encodeFixedBlock, fixedLiteralCode, inflat
 import {
   DEFLATE_MIN_MATCH, MAX_MATCH, MAX_TEXT, MIN_MATCH_OPTIONS, WINDOW_BOUNDS, checkText, decodeAsBlock, decodeTokens, longestMatch, parseLz77, tokenLength, type Token,
 } from './lz77';
-import {
-  LENGTH_PRESETS, RFC_LENGTHS, TEXT_PRESETS, assignCodes, bytesOf, compress, isPrefixFree, kraftOutOf256, kraftState, orderZeroBits, orderZeroBitsPerChar, rawBits,
-} from './model';
+import { LENGTH_PRESETS, RFC_LENGTHS, TEXT_PRESETS, assignCodes, bytesOf, compress, isPrefixFree, kraftOutOf256, kraftState, rawBits } from './model';
+import { orderZeroBits, orderZeroBitsPerChar } from '../../core/entropy';
 
 // Node's real inflate is the oracle. A variable specifier keeps TypeScript and Vite from resolving it at build time.
 interface NodeZlib {
