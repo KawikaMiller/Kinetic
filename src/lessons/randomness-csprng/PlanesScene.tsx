@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ClaimLabel, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { decimal, integer } from '../../core/format';
 import { planesCaption } from './captions';
-import { EDGE_ON_DEGREES, RANDU, lcgSequence, planeIndex, project, randuIdentity, randuPlaneIndices, triples } from './lcg';
+import { EDGE_ON_DEGREES, RANDU, SAMPLE_STATES, hyperplaneBound, lcgSequence, planeIndex, project, randuIdentity, randuPlaneIndices, triples } from './lcg';
 import { OPENING } from './opening';
 
 const PLOT = { width: 356, height: 300 } as const;
@@ -32,7 +32,7 @@ export function PlanesScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="x(n+2) from the identity" value={integer(check)} color={check === states[2] ? 'var(--ok)' : 'var(--bad)'} sub={`6 x(n+1) - 9 x(n) mod 2^31, against the real ${integer(states[2])}`} />
-          <Stat label="Planes used" value={`${distinct} of ${allPlanes.length}`} sub={`${integer(100_000)} seeded triples use all ${allPlanes.length}`} />
+          <Stat label="Planes used" value={`${distinct} of ${allPlanes.length}`} sub={`${integer(SAMPLE_STATES)} seeded triples use all ${allPlanes.length}; Marsaglia's bound for triples is ${integer(hyperplaneBound(3, RANDU.m))}`} />
           <Stat label="Angle" value={`${degrees}°`} color={edgeOn ? 'var(--bad)' : undefined} sub={`edge on at ${decimal(EDGE_ON_DEGREES, 1)}°`} />
         </Stats>
       }

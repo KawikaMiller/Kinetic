@@ -18,7 +18,7 @@ const TWO_31 = 2 ** 31;
 export const PRESETS: readonly LcgParams[] = [
   { id: 'toy', label: 'A toy with a small m', text: 'x(n+1) = (5 x(n) + 1) mod 64: small enough to see every point', a: 5, c: 1, m: 64 },
   { id: 'randu', label: 'RANDU, a famous bad one', text: 'x(n+1) = 65539 x(n) mod 2^31, a historically poor generator', a: 65539, c: 0, m: TWO_31 },
-  { id: 'minstd', label: 'A good-looking one', text: 'x(n+1) = 16807 x(n) mod (2^31 - 1), the Park-Miller multiplier', a: 16807, c: 0, m: TWO_31 - 1 },
+  { id: 'minstd', label: 'A good-looking one', text: 'x(n+1) = 16807 x(n) mod (2^31 - 1), the Park-Miller multiplier: it looks fine, but it is still not secure, because one output is its whole state', a: 16807, c: 0, m: TWO_31 - 1 },
 ];
 
 export const presetById = (id: LcgParams['id']) => PRESETS.find((p) => p.id === id)!;
@@ -89,7 +89,7 @@ export function project(t: { u: number; v: number; w: number }, degrees: number)
   return { x: t.u * Math.cos(a) + t.v * Math.sin(a), y: t.w };
 }
 
-const SAMPLE_STATES = 100_000;
+export const SAMPLE_STATES = 100_000;
 const SAMPLE_SEED = 1;
 
 /** The distinct plane indices among 100,000 consecutive RANDU triples: how many planes the points use. */

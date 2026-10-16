@@ -21,7 +21,6 @@ function realPairs(count: number): { x: number; y: number }[] {
   return Array.from({ length: count }, (_, i) => ({ x: raw[i] / 2 ** 32, y: raw[i + 1] / 2 ** 32 }));
 }
 
-const TONE: Record<LcgParams['id'], 'bad' | 'info'> = { toy: 'bad', randu: 'bad', minstd: 'info' };
 
 /** Scene 1: consecutive pairs of a toy generator fall on lines; the same plot from the real source is a cloud. */
 export function PairsScene({ picker }: { picker: ReactNode }) {
@@ -64,7 +63,7 @@ export function PairsScene({ picker }: { picker: ReactNode }) {
           <figure className="rn-figure">
             <figcaption>The toy generator: x(n) against x(n+1)</figcaption>
             <Plot2D x={{ ...UNIT, label: 'x(n)' }} y={{ ...UNIT, label: 'x(n+1)' }} width={PLOT.width} height={PLOT.height} ariaLabel={`Consecutive pairs of the ${p.label} generator`}>
-              <Points data={mine} r={POINT_RADIUS} tone={TONE[id]} />
+              <Points data={mine} r={POINT_RADIUS} tone={lines <= 12 ? 'bad' : 'info'} />
             </Plot2D>
           </figure>
           <figure className="rn-figure">

@@ -47,7 +47,7 @@ export function recoverCaption(revealed: number, counts: readonly number[], pred
   if (left === 1) {
     return <>After {plural(revealed, 'output')} exactly one state fits. Every later output is now known: the next {NEXT_COUNT} predictions are below{predicted ? ', next to the real ones' : ''}. A generator whose state can be inferred from its outputs is not secret, however random it looks.</>;
   }
-  return <>After {plural(revealed, 'output')}, {integer(left)} of {integer(STATES)} states still fit (the brute force over this toy's states counted them). Each output cuts the number by about a factor of {2 ** OUTPUT_BITS}.</>;
+  return <>After {plural(revealed, 'output')}, {integer(left)} of {integer(STATES)} states still fit (the brute force over this toy's states counted them). On average each output cuts the number by a factor of about {2 ** OUTPUT_BITS}; a single step can cut more or less.</>;
 }
 
 /** Scene 4: the seeds an observer who knows roughly when it was made would try. */
