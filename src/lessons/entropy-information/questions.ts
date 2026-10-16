@@ -6,7 +6,7 @@
  */
 import { buildHuffman } from '../../core/huffman';
 import type { Result } from '../../core/result';
-import { entropy } from './model';
+import { entropy } from '../../core/entropy';
 
 export const ITEMS: readonly { label: string; p: number }[] = [
   { label: 'A', p: 0.35 },

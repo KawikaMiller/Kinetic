@@ -6,60 +6,14 @@
 import { blobs, moons } from '../../core/fixtures/datasets';
 import { stdDev } from '../../core/stats';
 import { mean } from '../../core/sim';
-import { mulberry32, type Rnd } from '../../core/random';
+import { inertia, initPlusPlus, initRandom, lloydPasses, sqDist } from '../../core/kmeans';
+import { mulberry32 } from '../../core/random';
 
 export type P = readonly [number, number];
-
-export const sqDist = (a: P, b: P) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
-
-/** Index of the nearest centroid; a tie goes to the lower index. */
-export function nearest(p: P, centroids: readonly P[]): number {
-  let best = 0;
-  for (let j = 1; j < centroids.length; j++) if (sqDist(p, centroids[j]) < sqDist(p, centroids[best])) best = j;
-  return best;
-}
-
-export const assignAll = (points: readonly P[], centroids: readonly P[]) => points.map((p) => nearest(p, centroids));
-
-/** Sum of squared distances from each point to the centroid of its cluster. */
-export const inertia = (points: readonly P[], centroids: readonly P[], assign: readonly number[]) =>
-  points.reduce((s, p, i) => s + sqDist(p, centroids[assign[i]]), 0);
 
 // ── Starts ───────────────────────────────────────────────────────────
 
 export type InitMethod = 'random' | 'plusplus' | 'fixed';
-
-/** Forgy: k distinct points picked uniformly at random. */
-export function initRandom(points: readonly P[], k: number, rnd: Rnd): P[] {
-  const idx = points.map((_, i) => i);
-  for (let i = 0; i < k; i++) {
-    const j = i + Math.floor(rnd() * (idx.length - i));
-    [idx[i], idx[j]] = [idx[j], idx[i]];
-  }
-  return idx.slice(0, k).map((i) => points[i]);
-}
-
-/**
- * k-means++: the first centre uniformly at random, then each next one with probability
- * proportional to D², its squared distance to the nearest centre chosen so far. If every
- * remaining D² is 0 (fewer distinct points than k), it falls back to a uniform pick.
- */
-export function initPlusPlus(points: readonly P[], k: number, rnd: Rnd): P[] {
-  const centres: P[] = [points[Math.floor(rnd() * points.length)]];
-  while (centres.length < k) {
-    const d2 = points.map((p) => Math.min(...centres.map((c) => sqDist(p, c))));
-    const total = d2.reduce((s, v) => s + v, 0);
-    if (total === 0) { centres.push(points[Math.floor(rnd() * points.length)]); continue; }
-    let r = rnd() * total;
-    let pick = d2.length - 1;
-    for (let i = 0; i < d2.length; i++) {
-      r -= d2[i];
-      if (r < 0) { pick = i; break; }
-    }
-    centres.push(points[pick]);
-  }
-  return centres;
-}
 
 export function initCentroids(points: readonly P[], k: number, method: Exclude<InitMethod, 'fixed'>, seed: number): P[] {
   const rnd = mulberry32(seed);
@@ -67,35 +21,6 @@ export function initCentroids(points: readonly P[], k: number, method: Exclude<I
 }
 
 // ── Lloyd's algorithm ────────────────────────────────────────────────
-
-/** The update half-step: each centroid moves to the mean of its points; an empty one is reseeded. */
-export function updateCentroids(points: readonly P[], assign: readonly number[], centroids: readonly P[]): { centroids: P[]; reseeded: { cluster: number; point: number }[] } {
-  const k = centroids.length;
-  const sums = Array.from({ length: k }, () => [0, 0, 0]);
-  points.forEach((p, i) => {
-    const s = sums[assign[i]];
-    s[0] += p[0];
-    s[1] += p[1];
-    s[2]++;
-  });
-  const next: P[] = sums.map(([x, y, n], j) => (n ? [x / n, y / n] : centroids[j]));
-  const reseeded: { cluster: number; point: number }[] = [];
-  const used = new Set<number>();
-  sums.forEach(([, , n], j) => {
-    if (n) return;
-    // Reseed to the point farthest from its own cluster's centre (each point used at most once).
-    let far = -1;
-    points.forEach((p, i) => {
-      if (used.has(i)) return;
-      if (far < 0 || sqDist(p, next[assign[i]]) > sqDist(points[far], next[assign[far]])) far = i;
-    });
-    if (far < 0) return;
-    used.add(far);
-    next[j] = points[far];
-    reseeded.push({ cluster: j, point: far });
-  });
-  return { centroids: next, reseeded };
-}
 
 export type Phase = 'init' | 'assign' | 'update' | 'done';
 
@@ -117,23 +42,18 @@ export interface Step {
 
 export const MAX_ITERATIONS = 100;
 
-/** Runs Lloyd's algorithm from the given centres until an assign step changes nothing. */
+/** Runs Lloyd's algorithm from the given centres until an assign step changes nothing, one frame step per half-step. */
 export function lloyd(points: readonly P[], start: readonly P[]): Step[] {
   const steps: Step[] = [{ phase: 'init', iteration: 0, centroids: [...start], previous: null, assign: null, inertia: null, changed: points.length, reseeded: [] }];
-  let centroids: P[] = [...start];
-  let assign: number[] | null = null;
-  for (let it = 1; it <= MAX_ITERATIONS && points.length; it++) {
-    const next = assignAll(points, centroids);
-    const changed = assign ? next.filter((c, i) => c !== assign![i]).length : points.length;
-    assign = next;
-    if (changed === 0) {
-      steps.push({ phase: 'done', iteration: it - 1, centroids, previous: null, assign, inertia: inertia(points, centroids, assign), changed: 0, reseeded: [] });
-      return steps;
+  if (!points.length) return steps;
+  for (const pass of lloydPasses(points, start, { maxIterations: MAX_ITERATIONS, empty: 'reseed' })) {
+    const { centroids, assign, changed, update } = pass;
+    if (!update) {
+      steps.push({ phase: 'done', iteration: pass.iteration - 1, centroids, previous: null, assign, inertia: inertia(points, centroids, assign), changed: 0, reseeded: [] });
+      break;
     }
-    steps.push({ phase: 'assign', iteration: it, centroids, previous: null, assign, inertia: inertia(points, centroids, assign), changed, reseeded: [] });
-    const u = updateCentroids(points, assign, centroids);
-    steps.push({ phase: 'update', iteration: it, centroids: u.centroids, previous: centroids, assign, inertia: inertia(points, u.centroids, assign), changed: 0, reseeded: u.reseeded });
-    centroids = u.centroids;
+    steps.push({ phase: 'assign', iteration: pass.iteration, centroids, previous: null, assign, inertia: inertia(points, centroids, assign), changed, reseeded: [] });
+    steps.push({ phase: 'update', iteration: pass.iteration, centroids: update.centroids, previous: centroids, assign, inertia: inertia(points, update.centroids, assign), changed: 0, reseeded: update.reseeded });
   }
   return steps;
 }

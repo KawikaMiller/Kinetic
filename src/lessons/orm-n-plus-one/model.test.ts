@@ -1,18 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { openSqlite, type SqliteDb } from '../../core/testing/sqlite';
 import {
   FIXTURE, INT_BYTES, MAX_COMMENTS_PER_POST, MAX_POSTS, MS_PER_BYTE, NULL_BYTES, PAGE_MAX, ROW_BYTES, STRATEGIES, WORK_BASE_MS, fixTone, pageComments, repeatedAuthorQueries, rowBytes,
   runStrategy, snippet, stopsFor, timeline, workMs, type PostView, type Query, type Row, type Scene, type Strategy, type Value,
 } from './model';
 
-interface Db {
-  exec(sql: string): void;
-  prepare(sql: string): { all(): Record<string, Value>[]; setReturnArrays(on: boolean): void };
-}
-const SQLITE = 'node:sqlite';
-let db: Db;
-beforeAll(async () => {
-  const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => Db };
-  db = new DatabaseSync(':memory:');
+let db: SqliteDb<Record<string, Value>>;
+beforeAll(() => {
+  db = openSqlite<Record<string, Value>>();
   db.exec('CREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT); CREATE TABLE commenters (id INTEGER PRIMARY KEY, name TEXT);');
   db.exec('CREATE TABLE posts (id INTEGER PRIMARY KEY, author_id INTEGER, title TEXT, body TEXT); CREATE TABLE comments (id INTEGER PRIMARY KEY, post_id INTEGER, user_id INTEGER, body TEXT);');
   const q = (s: string) => `'${s.replace(/'/g, "''")}'`;

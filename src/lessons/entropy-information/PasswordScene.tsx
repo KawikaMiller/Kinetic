@@ -2,7 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
 import { parseBoundedInt } from '../../core/parse';
-import { ALPHABET_BOUNDS, GENERATORS, GENERATOR_DEFAULT, LENGTH_BOUNDS, clampText, generatedBits, possibilities, textEntropy } from './model';
+import { ALPHABET_BOUNDS, GENERATORS, GENERATOR_DEFAULT, LENGTH_BOUNDS, clampText, generatedBits, possibilities } from './model';
+import { textEntropy } from '../../core/entropy';
 import { bits2, generatedCaption, sampleCaption } from './text';
 
 /** The sample string is short: a password, not an essay. */

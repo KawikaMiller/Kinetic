@@ -3,7 +3,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { KEY_MAX, KEY_MIN, NODE_LIMIT, parseKey, parseKeyList, refuseOp } from './keys';
+import { KEY_MAX, KEY_MIN, TREE_NODE_LIMIT, parseKey, parseKeyList, refuseOp } from '../../core/keyInput';
 import { buildRb, groupsOf, hasKey, insertKey, removeKey, sizeOf, type RbTree } from './model';
 import { DEFAULT_SEED, GROUP_PRESETS, groupKeys } from './presets';
 import { RbTreeView } from './RbTreeView';
@@ -115,7 +115,7 @@ export function GroupsScene({ picker }: { picker: ReactNode }) {
           </Button>
           <Button onClick={() => operate('delete')}>Delete</Button>
           <Hint>
-            <span role="status">{note ?? `Whole numbers from ${KEY_MIN} to ${KEY_MAX}, each once, up to ${NODE_LIMIT} nodes.`}</span>
+            <span role="status">{note ?? `Whole numbers from ${KEY_MIN} to ${KEY_MAX}, each once, up to ${TREE_NODE_LIMIT} nodes.`}</span>
           </Hint>
         </>,
       ]}

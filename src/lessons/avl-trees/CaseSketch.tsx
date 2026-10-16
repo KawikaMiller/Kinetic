@@ -1,4 +1,4 @@
-import type { Case } from './model';
+import type { Case } from '../../core/avl';
 import { CASE_FIX, CASE_NAME } from './text';
 
 type Name = 'z' | 'y' | 'x';

@@ -6,7 +6,7 @@ import { AvlTreeView } from './AvlTreeView';
 import { CaseSketch } from './CaseSketch';
 import { KeyOps } from './KeyOps';
 import { AVL_LEGEND, frameEdgeMark, frameNodeMark, frameScale } from './marks';
-import { levelsOf, sizeOf } from './model';
+import { levelsOf, sizeOf } from '../../core/avl';
 import { CASE_PRESETS, REPAIR_DEFAULT, caseBase, casePreset, type CasePreset } from './presets';
 import { useAvlSession } from './useAvlSession';
 

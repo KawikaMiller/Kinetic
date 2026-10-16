@@ -1,5 +1,6 @@
 import { plural } from '../../core/format';
-import { CORRECT_CHOICE, balanceOf, type Case, type Choice, type PickOutcome, type PickState, type Rotation } from './model';
+import { CORRECT_CHOICE, type Choice, type PickOutcome, type PickState } from './model';
+import { balanceOf, type Case, type Rotation } from '../../core/avl';
 
 /** The signed balance factor as the badges and captions write it: +1, 0, −1. */
 export const signed = (bf: number): string => (bf > 0 ? `+${bf}` : bf < 0 ? `−${-bf}` : '0');

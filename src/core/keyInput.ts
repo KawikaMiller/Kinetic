@@ -1,9 +1,14 @@
-import { parseBoundedInt, type FieldParse } from '../../core/parse';
+/**
+ * Keys a learner types into a tree or list lesson (avl-trees, red-black-trees, skip-lists): one
+ * whole number in range, a list of distinct ones, and the sentence that refuses an insert or delete
+ * the drawing cannot take. Pure; every refusal is a sentence to show, never a thrown error.
+ */
+import { parseBoundedInt, type FieldParse } from './parse';
 
 export const KEY_MIN = -999;
 export const KEY_MAX = 999;
-/** What the drawing holds: 31 nodes is a perfect tree of height 5. */
-export const NODE_LIMIT = 31;
+/** What a tree drawing holds: 31 nodes is a perfect tree of height 5. */
+export const TREE_NODE_LIMIT = 31;
 
 const keyMessages = {
   empty: 'Type a whole number.',
@@ -12,14 +17,15 @@ const keyMessages = {
   tooBig: () => `Keys go from ${KEY_MIN} to ${KEY_MAX}.`,
 };
 
-/** One key typed into the Key field, or the sentence that refuses it. */
-export const parseKey = (text: string): FieldParse<number> => parseBoundedInt(text, { min: KEY_MIN, max: KEY_MAX, typographicMinus: true, messages: keyMessages });
+/** One key typed into a field, or the sentence that refuses it. */
+export const parseKey = (text: string): FieldParse<number> =>
+  parseBoundedInt(text, { min: KEY_MIN, max: KEY_MAX, typographicMinus: true, messages: keyMessages });
 
 /**
  * A key list typed by the learner ("30 10, 20"): every token a whole number in range, no key twice,
  * at most `limit` of them. A refused list says which token and why; nothing is applied.
  */
-export function parseKeyList(text: string, limit = NODE_LIMIT): FieldParse<number[]> {
+export function parseKeyList(text: string, limit = TREE_NODE_LIMIT): FieldParse<number[]> {
   const tokens = text.split(/[\s,]+/).filter(Boolean);
   if (tokens.length === 0) return { ok: false, error: 'Type some keys, like 30 10 20.' };
   const keys: number[] = [];
@@ -33,11 +39,11 @@ export function parseKeyList(text: string, limit = NODE_LIMIT): FieldParse<numbe
   return { ok: true, value: keys };
 }
 
-/** Why a single insert or delete is refused on this tree, or null when it can go ahead. */
-export function refuseOp(op: 'insert' | 'delete', key: number, size: number, has: boolean): string | null {
+/** Why a single insert or delete is refused on a tree of `size` nodes, or null when it can go ahead. */
+export function refuseOp(op: 'insert' | 'delete', key: number, size: number, has: boolean, limit = TREE_NODE_LIMIT): string | null {
   if (op === 'insert') {
     if (has) return `${key} is already in the tree.`;
-    if (size >= NODE_LIMIT) return `The tree already has ${NODE_LIMIT} nodes, the most the drawing holds.`;
+    if (size >= limit) return `The tree already has ${limit} nodes, the most the drawing holds.`;
     return null;
   }
   if (size === 0) return 'The tree is empty: there is nothing to delete.';

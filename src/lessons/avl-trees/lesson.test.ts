@@ -4,24 +4,9 @@ import { opFrames } from './frames';
 import { FACTS } from './facts';
 import { avlBound, growthSeries } from './growth';
 import lesson from './index';
-import { KEY_MAX, KEY_MIN, NODE_LIMIT, parseKey, parseKeyList, refuseOp } from './keys';
-import {
-  applyChoice,
-  balanceOf,
-  buildAvl,
-  buildBalanced,
-  buildBst,
-  checkAvl,
-  fibonacciTree,
-  heightOf,
-  inOrder,
-  insertKey,
-  levelsOf,
-  removeKey,
-  sizeOf,
-  stopAtImbalance,
-  type Choice,
-} from './model';
+import { KEY_MAX, KEY_MIN, TREE_NODE_LIMIT, parseKey, parseKeyList, refuseOp } from '../../core/keyInput';
+import { applyChoice, stopAtImbalance, type Choice } from './model';
+import { balanceOf, buildAvl, buildBalanced, buildBst, checkAvl, fibonacciTree, heightOf, inOrder, insertKey, levelsOf, removeKey, sizeOf } from '../../core/avl';
 import { CASE_PRESETS, COMPARE_PRESETS, DEFAULT_SEED, FIB_HEIGHTS, SORTED_KEYS, caseBase, deleteBase, presetKeys, randomKeys } from './presets';
 import { CASE_NAME, compareCaption, pickCaption, worstCaption } from './text';
 
@@ -196,9 +181,9 @@ describe('hostile input', () => {
     const dup = parseKeyList('5 3 5');
     expect(dup).toMatchObject({ ok: false });
     expect(dup.ok ? '' : dup.error).toContain('already in the tree');
-    const many = Array.from({ length: NODE_LIMIT + 1 }, (_, i) => i).join(' ');
+    const many = Array.from({ length: TREE_NODE_LIMIT + 1 }, (_, i) => i).join(' ');
     expect(parseKeyList(many)).toMatchObject({ ok: false });
-    expect(parseKeyList(many.split(' ').slice(0, NODE_LIMIT).join(' '))).toMatchObject({ ok: true });
+    expect(parseKeyList(many.split(' ').slice(0, TREE_NODE_LIMIT).join(' '))).toMatchObject({ ok: true });
     expect(parseKeyList('30, 10 ,20')).toEqual({ ok: true, value: [30, 10, 20] });
     expect(parseKeyList(`${KEY_MIN} ${KEY_MAX} −7`)).toEqual({ ok: true, value: [KEY_MIN, KEY_MAX, -7] });
   });
@@ -212,7 +197,7 @@ describe('hostile input', () => {
 
   it('insert and delete refuse duplicates, a full tree, a missing key and an empty tree, each with its own words', () => {
     expect(refuseOp('insert', 5, 3, true)).toContain('already in the tree');
-    expect(refuseOp('insert', 5, NODE_LIMIT, false)).toContain(`${NODE_LIMIT} nodes`);
+    expect(refuseOp('insert', 5, TREE_NODE_LIMIT, false)).toContain(`${TREE_NODE_LIMIT} nodes`);
     expect(refuseOp('insert', 5, 3, false)).toBeNull();
     expect(refuseOp('delete', 5, 0, false)).toContain('empty');
     expect(refuseOp('delete', 5, 3, false)).toContain('not in the tree');
@@ -248,7 +233,7 @@ describe('hidden controls do not feed the numbers', () => {
   });
 
   it('the height picker offers only trees the drawing holds', () => {
-    for (const h of FIB_HEIGHTS) expect(sizeOf(fibonacciTree(h))).toBeLessThanOrEqual(NODE_LIMIT);
+    for (const h of FIB_HEIGHTS) expect(sizeOf(fibonacciTree(h))).toBeLessThanOrEqual(TREE_NODE_LIMIT);
   });
 });
 

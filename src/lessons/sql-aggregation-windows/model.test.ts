@@ -1,18 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { openSqlite, type SqliteDb } from '../../core/testing/sqlite';
 import {
   AGGS, FILTERS, FRAMES, GROUP_COLS, RANK_SQL, SALES, WINDOW_ORDER, aggregate, groupSql, queryError, runGroup, runRanking, runWindow, windowSql,
   type Cell, type GroupQuery,
 } from './model';
 
-interface Db {
-  exec(sql: string): void;
-  prepare(sql: string): { all(): Record<string, Cell>[] };
-}
-const SQLITE = 'node:sqlite';
-let db: Db;
-beforeAll(async () => {
-  const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => Db };
-  db = new DatabaseSync(':memory:');
+let db: SqliteDb<Record<string, Cell>>;
+beforeAll(() => {
+  db = openSqlite<Record<string, Cell>>();
   db.exec('CREATE TABLE sales (id INTEGER, region TEXT, rep TEXT, month TEXT, amount INTEGER)');
   for (const s of SALES) db.exec(`INSERT INTO sales VALUES (${s.id}, '${s.region}', '${s.rep}', '${s.month}', ${s.amount ?? 'NULL'})`);
 });

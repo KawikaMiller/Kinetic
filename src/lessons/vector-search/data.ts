@@ -5,6 +5,7 @@
  * returned point is a true neighbour when it is no farther than the k-th true neighbour.
  */
 import { blobs } from '../../core/fixtures/datasets';
+import { sqDist } from '../../core/kmeans';
 import { mulberry32 } from '../../core/random';
 
 export type Point = readonly number[];
@@ -48,14 +49,6 @@ export function uniformPoints(seed: number, n: number, d: number): Point[] {
   return Array.from({ length: n }, () => Array.from({ length: d }, () => rnd()));
 }
 
-export const sqDist = (a: Point, b: Point): number => {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) {
-    const t = a[i] - b[i];
-    s += t * t;
-  }
-  return s;
-};
 export const dist = (a: Point, b: Point): number => Math.sqrt(sqDist(a, b));
 
 export interface Neighbour {

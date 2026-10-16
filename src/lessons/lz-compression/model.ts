@@ -1,25 +1,15 @@
 /**
- * What the compression scenes measure, pure: the order-0 entropy bound, a symbol-only Huffman size, the
+ * What the compression scenes measure, pure: a symbol-only Huffman size, the
  * size of the lesson's own fixed-Huffman DEFLATE block, and the code-length editor's rules (Kraft
  * sum, canonical codes, the prefix property).
  */
-import { averageLength, buildHuffman, canonicalCodes, frequencies, kraftSum, textWeights } from '../../core/huffman';
+import { averageLength, buildHuffman, canonicalCodes, kraftSum, textWeights } from '../../core/huffman';
 import { mulberry32 } from '../../core/random';
 import { deflateTokens, encodeFixedBlock, type Block } from './deflate';
 import { parseLz77, type ParseOptions, type Token } from './lz77';
 
 /** Bits in a plain byte of text. */
 export const BITS_PER_BYTE = 8;
-
-/** Order-0 entropy of the text in bits per character: -sum p log2 p over its characters (0 for an empty text). */
-export function orderZeroBitsPerChar(text: string): number {
-  const n = Array.from(text).length;
-  if (n === 0) return 0;
-  return frequencies(text).reduce((s, { count }) => s - (count / n) * Math.log2(count / n), 0);
-}
-
-/** n x H: the order-0 bound on the text, in bits. */
-export const orderZeroBits = (text: string): number => Array.from(text).length * orderZeroBitsPerChar(text);
 
 /** Bits of the text under one Huffman code over its own characters, not counting the table that describes it. */
 export function huffmanOnlyBits(text: string): number {

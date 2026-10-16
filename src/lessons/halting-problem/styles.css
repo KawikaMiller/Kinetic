@@ -16,11 +16,7 @@
 .hp-feedback.is-bad b { color: var(--bad); }
 .hp-bins { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
 .hp-cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+/* The table turns into cards under 600px through the kit's `table-cards`; only the scroller's border is the lesson's. */
 @media (max-width: 600px) {
   .hp-scroll { border: 0; }
-  .hp-table thead { display: none; }
-  .hp-table, .hp-table tbody, .hp-table tr, .hp-table th, .hp-table td { display: block; }
-  .hp-table tr { padding: 6px 0; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
-  .hp-table th, .hp-table td { border-bottom: 0; padding: 2px 10px; white-space: normal; }
-  .hp-table td[data-label]::before { content: attr(data-label) ': '; font-weight: 600; color: var(--faint); }
 }

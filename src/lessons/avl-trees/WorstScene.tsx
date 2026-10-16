@@ -7,7 +7,7 @@ import { ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats }
 import { useIntroCaption } from '../../core/caption';
 import { AvlTreeView } from './AvlTreeView';
 import { avlBound, growthSeries } from './growth';
-import { buildBalanced, fibonacciSize, fibonacciTree, heightOf, inOrder, sizeOf } from './model';
+import { buildBalanced, fibonacciSize, fibonacciTree, heightOf, inOrder, sizeOf } from '../../core/avl';
 import { FIB_DEFAULT_HEIGHT, FIB_HEIGHTS, PLOT_MAX_N, PLOT_SEED } from './presets';
 import { worstCaption } from './text';
 
