@@ -53,7 +53,7 @@ const lesson: LessonModule = {
         'It survives, because the lock service stops the clock of a frozen client',
       ],
       answer: 1,
-      why: 'A longer TTL only moves the point at which a pause starts to matter. Once the pause is longer than the TTL the lease lapses, and nothing in the lock service knows the client is frozen rather than slow.',
+      why: 'A longer TTL just moves the point at which a pause starts to matter. Once the pause is longer than the TTL the lease lapses, and nothing in the lock service knows the client is frozen rather than slow.',
     },
     {
       q: 'The lock service restarts and forgets its counter, so the next grant is token 1 again. What does that break?',

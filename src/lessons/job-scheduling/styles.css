@@ -1,0 +1,24 @@
+/* job-scheduling */
+.js-stage { gap: 12px; min-width: 0; }
+.js-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.js-hint { color: var(--muted); font-size: 12.5px; }
+.js-refusal { margin: 0; color: var(--orange); font: 600 13px var(--font); }
+.js-scroll { overflow-x: auto; border: 0; max-height: 240px; overflow-y: auto; }
+.js-table td, .js-table th { vertical-align: top; font-size: 12.5px; }
+.js-wheel-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.js-dial { width: min(100%, 300px); height: auto; flex: 0 1 300px; }
+.js-slot { fill: color-mix(in srgb, var(--dim) 14%, transparent); stroke: var(--line-2); stroke-width: 1; }
+.js-slot.is-pointer { fill: color-mix(in srgb, var(--hi) 22%, transparent); stroke: var(--hi); stroke-width: 2; }
+.js-slot-no { fill: var(--muted); font: 600 12px var(--font); }
+.js-job { fill: var(--dim); font: 600 12px var(--mono); }
+.js-job.is-fired { fill: var(--ok); }
+.js-rounds { fill: var(--info); }
+.js-more { fill: var(--muted); font: 11px var(--mono); }
+.js-pointer { stroke: var(--hi); stroke-width: 3; stroke-linecap: round; }
+.js-hub { fill: var(--hi); }
+.js-order { flex: 1 1 160px; min-width: 150px; }
+.js-list { margin: 4px 0 10px; padding-left: 22px; font: 12.5px var(--mono); color: var(--dim); }
+.js-list li.is-done { color: var(--ok); }
+.js-list li.is-flip { color: var(--orange); }
+.js-dimtext { color: var(--muted); }
+.js-fires { margin: 0; padding-left: 22px; font: 13px var(--mono); line-height: 1.7; }
