@@ -1,0 +1,12 @@
+/* model-evals-drift */
+.med-stage { gap: 12px; min-width: 0; }
+.med-plots { display: grid; gap: 8px; max-width: 420px; }
+.med-plot { max-width: 420px; }
+.med-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 8px 0; }
+.med-table th, .med-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.med-a { color: var(--orange); }
+.med-b { color: var(--info); }
+.med-up { color: var(--ok); font-weight: 700; }
+.med-down { color: var(--bad); font-weight: 700; }
+.med-leak { display: grid; gap: 10px; margin-top: 8px; }
+.med-leak-label { font-size: 12.5px; color: var(--muted); }
