@@ -12,7 +12,7 @@ import { initialScheduleScene } from './init';
 import { PAUSE_FROM, PAUSE_TO, SCHEDULE_DAYS, SCHEDULE_START, createdBy, logicalDate, triggers } from './schedule';
 
 const TRACK_MIN_WIDTH = 640;
-const DOMAIN_HOURS = 24 * SCHEDULE_DAYS + 24;
+const DOMAIN_HOURS = 24 * SCHEDULE_DAYS + 48;
 const LANES = [{ id: 'interval', label: 'data interval' }, { id: 'runs', label: 'run created' }];
 
 export function ScheduleScene({ picker }: { picker: ReactNode }) {
@@ -55,7 +55,7 @@ export function ScheduleScene({ picker }: { picker: ReactNode }) {
           {picker}
           <Slider label="Now" value={now} min={0} max={DOMAIN_HOURS} format={(h) => hourLabel(SCHEDULE_START, h)} onChange={(h) => setState((s) => ({ ...s, now: h }))} />
           <Toggle label="Pipeline" value={paused} onChange={(p) => setState((s) => ({ ...s, paused: p }))} off="Running" on={`Paused ${hourLabel(SCHEDULE_START, PAUSE_FROM)} to ${hourLabel(SCHEDULE_START, PAUSE_TO)}`} />
-          <Toggle label="Catch-up" value={catchup} onChange={(c) => setState((s) => ({ ...s, catchup: c }))} off="Off: latest only" on="On: every missed day" />
+          {paused && <Toggle label="Catch-up" value={catchup} onChange={(c) => setState((s) => ({ ...s, catchup: c }))} off="Off: latest only" on="On: every missed day" />}
         </>
       }
     >
@@ -98,7 +98,7 @@ export function ScheduleScene({ picker }: { picker: ReactNode }) {
           </div>
         </Box>
         <ProvenanceRow>
-          <Provenance kind="from-memory">how Airflow-style schedulers commonly define it: the run for a logical date starts after that interval ends; verify against your scheduler&rsquo;s documentation</Provenance>
+          <Provenance kind="from-memory">how Airflow-style schedulers commonly define it: the run for a logical date starts after that interval ends, and with catch-up off only the latest closed interval runs after a pause (every missed one with it on); verify both against your scheduler&rsquo;s documentation</Provenance>
           <Provenance kind="scripted">fixed lesson dates in UTC, not today&rsquo;s date; the pause window is set by the lesson</Provenance>
         </ProvenanceRow>
       </div>

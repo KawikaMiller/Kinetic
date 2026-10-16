@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DAYS, DURATION, HORIZON_HOURS, LATE_ROWS, SOURCE_ROWS, TASKS, UPSTREAM, createPipeline, dayStatus, keyOf, runPipeline, triggerHour, type Config, type Op, type World,
 } from './engine';
-import { BROKEN_SEED, chaos, opsForSeed } from './scenario';
+import { BROKEN_SEED, chaos, nextOpHour, opsForSeed, opsFull } from './scenario';
 import { BACKFILL_MAX_DAYS, PAUSE_FROM, PAUSE_TO, SCHEDULE_DAYS, backfillDates, createdBy, eligibleHour, logicalDate, triggers } from './schedule';
 import { PIPELINES, dailyRun, rerunAfterRuleChange } from './shape';
 
@@ -207,6 +207,22 @@ describe('schedule semantics', () => {
     expect(triggers(false, false).every((t) => t.kind === 'on-time')).toBe(true);
   });
 
+  it('the pause starts and ends mid-day, and with catch-up off the single run at the resume is for the latest interval closed by then', () => {
+    expect(PAUSE_FROM % 24).not.toBe(0);
+    expect(PAUSE_TO % 24).not.toBe(0);
+    const off = triggers(true, false);
+    const atResume = off.filter((t) => t.at === PAUSE_TO);
+    expect(atResume).toHaveLength(1);
+    // the latest interval closed at or before the resume: the one whose midnight is the last one before PAUSE_TO
+    expect(atResume[0].day).toBe(Math.floor(PAUSE_TO / 24) - 1);
+    // an interval that closed before the pause began has its on-time run, not a missed one
+    expect(off.filter((t) => t.kind === 'on-time').every((t) => 24 * (t.day + 1) < PAUSE_FROM || 24 * (t.day + 1) >= PAUSE_TO)).toBe(true);
+    // with catch-up on the same latest day is among the runs at the resume, together with every other missed day
+    const on = triggers(true, true).filter((t) => t.at === PAUSE_TO).map((t) => t.day);
+    expect(on).toContain(atResume[0].day);
+    expect(on).toHaveLength(Array.from({ length: SCHEDULE_DAYS }, (_, d) => 24 * (d + 1)).filter((e) => e > PAUSE_FROM && e < PAUSE_TO).length);
+  });
+
   it('every day has at most one run, and a run is never created before its interval closes', () => {
     for (const paused of [false, true]) {
       for (const catchup of [false, true]) {
@@ -217,6 +233,32 @@ describe('schedule semantics', () => {
         }
       }
     }
+  });
+});
+
+describe('adding operations in the load scene', () => {
+  it('every operation the learner can add runs to its load: ten reruns of one day give eleven loads, and then the calendar says it is full', () => {
+    let ops: Op[] = [];
+    while (!opsFull(ops)) ops = [...ops, { at: nextOpHour(ops), kind: 'rerun', day: 0 }];
+    expect(ops).toHaveLength(10);
+    const final = last({ ...base, ops });
+    expect(final.loads[0]).toBe(1 + ops.length);
+    const appended = last({ ...base, mode: 'append', ops });
+    expect(appended.output[0]).toBe(SOURCE_ROWS[0] * (1 + ops.length));
+    expect(nextOpHour(ops) + 6).toBeGreaterThan(HORIZON_HOURS - 6);
+    // every operation starts after the seven daily runs are done
+    for (const o of ops) expect(o.at).toBeGreaterThan(triggerHour(DAYS - 1) + 5);
+  });
+  it('a backfill of all seven days at the first free slot runs every day again', () => {
+    const at = nextOpHour([]);
+    const ops: Op[] = Array.from({ length: DAYS }, (_, d) => ({ at, kind: 'rerun' as const, day: d }));
+    const final = last({ ...base, ops });
+    for (let d = 0; d < DAYS; d++) expect(final.loads[d], `day ${d}`).toBe(2);
+  });
+  it('with late data and then a rerun of that day, overwrite ends equal to the source', () => {
+    const final = last({ ...base, ops: [{ at: 100, kind: 'late', day: 2 }, { at: 180, kind: 'rerun', day: 2 }] });
+    expect(final.output).toEqual(final.source);
+    expect(final.source[2]).toBe(SOURCE_ROWS[2] + LATE_ROWS);
   });
 });
 

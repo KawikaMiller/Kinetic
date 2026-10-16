@@ -92,7 +92,8 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect([f.offRuns, f.onRuns, f.missedDays]).toEqual([1, 4, 4]);
     expect(lesson.tryThis[4]).toContain('Mar 1 12:00');
     expect(lesson.tryThis[4]).toContain('its interval closes Mar 2 00:00');
-    expect(lesson.tryThis[4]).toContain('1 run is created when it resumes for 4 missed days');
+    expect(lesson.tryThis[4]).toContain('drag Now past Mar 5 09:00');
+    expect(lesson.tryThis[4]).toContain('1 run is created for 4 missed days');
     expect(lesson.tryThis[4]).toContain('and it is 4');
     const s = initialScheduleScene();
     expect(plain(scheduleCaption(s.now, s.paused, s.catchup))).toContain('Mar 1 12:00 UTC');

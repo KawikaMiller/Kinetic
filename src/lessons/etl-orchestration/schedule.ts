@@ -1,14 +1,15 @@
 /**
  * etl-orchestration, scene 5: schedule semantics. A daily run's logical date names the interval of data it processes, and the run
  * happens after that interval has closed. All dates are fixed in the lesson and in UTC. A pause that spans several closed
- * intervals either creates every missed run when it ends (catchup on) or only the latest one (off).
+ * intervals either creates every missed run when it ends (catchup on) or only the run for the latest closed interval (off). The pause
+ * starts and ends mid-day, so no interval closes at the instant it starts or ends and "the latest closed interval at the resume" is unambiguous.
  */
 
 export const SCHEDULE_START = '2026-02-25T00:00:00Z';
 export const SCHEDULE_DAYS = 12;
-/** The pipeline is paused from the start of day index PAUSE_FROM_DAY up to the start of PAUSE_TO_DAY (hours since SCHEDULE_START). */
-export const PAUSE_FROM = 24 * 4;
-export const PAUSE_TO = 24 * 8;
+/** The pipeline is paused from PAUSE_FROM up to PAUSE_TO (hours since SCHEDULE_START), both at 09:00. */
+export const PAUSE_FROM = 24 * 4 + 9;
+export const PAUSE_TO = 24 * 8 + 9;
 export const DAY_MS = 86_400_000;
 export const BACKFILL_MAX_DAYS = 14;
 
@@ -31,7 +32,7 @@ export interface Trigger {
   kind: 'on-time' | 'caught-up' | 'skipped';
 }
 
-/** Every day's trigger under the pause, with or without catchup. A day whose interval closes inside the pause is "missed". */
+/** Every day's trigger under the pause, with or without catchup. A day whose interval closes inside the pause is "missed"; without catchup only the latest missed one (the latest closed interval at the resume) gets a run. */
 export function triggers(paused: boolean, catchup: boolean): Trigger[] {
   const closes = (d: number) => 24 * (d + 1);
   const missed = (d: number) => paused && closes(d) >= PAUSE_FROM && closes(d) < PAUSE_TO;

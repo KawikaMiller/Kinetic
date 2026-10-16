@@ -35,13 +35,13 @@ const lesson: LessonModule = {
     `In "Failure and retry" day ${fail.day} and clean are selected. Press Fail this task: join and load_report do not run (${fail.blocked.map((s) => s.replace('_', ' ')).join(' and ')}) and the report holds ${fail.stuckRows} rows for ${fail.date}. Set Retries to ${MAX_RETRIES}: it still fails after ${plural(fail.retriedAttempts, 'attempt')}. Press Clear and rerun it: the report then holds ${fail.clearedRows} rows, the ${fail.source} in the source.`,
     `In "Idempotent loads" the load appends and seed ${load.seed}'s ${plural(load.ops.length, 'operation')} leave ${load.appendRows} rows for ${load.sourceRows} in the source, ${plural(load.appendDuplicated, 'date')} duplicated. Switch Load to overwrite: ${load.overwriteDuplicated} duplicated, and the report holds ${load.overwriteRows}.`,
     `In "ETL vs ELT as a pipeline" press Change the cleaning rule: ETL runs ${shape.etl.steps.length} steps again and reads the source ${shape.etl.extractRuns} times. Switch Pipeline to ELT: ${shape.elt.steps.length} steps and ${shape.elt.extractRuns} source reads.`,
-    `In "Schedule semantics" the cursor is at ${sched.openLabel} and there is no run for logical date ${sched.date} yet: its interval closes ${sched.closesLabel}, when the run is created. Turn the Pipeline to Paused: with catch-up off, ${plural(sched.offRuns, 'run')} is created when it resumes for ${plural(sched.missedDays, 'missed day')}; turn Catch-up on and it is ${sched.onRuns}.`,
+    `In "Schedule semantics" the cursor is at ${sched.openLabel} and there is no run for logical date ${sched.date} yet: its interval closes ${sched.closesLabel}, when the run is created. Turn the Pipeline to Paused and drag Now past ${sched.pauseToLabel}, when it resumes: with catch-up off, ${plural(sched.offRuns, 'run')} is created for ${plural(sched.missedDays, 'missed day')}; turn Catch-up on and it is ${sched.onRuns}.`,
   ],
   keyIdeas: [
     'A task starts when every task it depends on has succeeded, and a failed task blocks the tasks after it; in this model they are marked upstream failed and do not run until the failure is cleared.',
     'A load is idempotent when running it twice leaves the same result: in this model overwriting a date\'s partition is, and appending is not, so a rerun or a backfill doubles appended rows.',
     'In this model late-arriving rows reach the report when that date is rerun, so a safe rerun is also how a correction is applied.',
-    'In common schedulers the run for a logical date happens after its interval has closed, and a paused schedule either creates a run for each missed day or skips to the latest, depending on catch-up.',
+    'In Airflow-style schedulers the run for a logical date happens after its interval has closed, and a paused schedule either creates a run for each missed day or skips to the latest, depending on catch-up.',
   ],
   quiz: [
     {
@@ -58,9 +58,9 @@ const lesson: LessonModule = {
     {
       q: 'Why is rerunning a day safe with an overwrite-by-date load and unsafe with an append load?',
       options: [
-        "Overwrite replaces that date's rows, so reruns leave the same table; append adds the rows again",
-        'Overwrite is faster, so there is less time for a second run to start before the first has finished running',
-        'Append refuses a second run of the same date, and so the rerun silently does nothing at all to the table',
+        "Overwrite replaces that date's rows, so a rerun leaves the same table; append adds the rows again on top of the old ones",
+        'Overwrite is faster, so there is less time for a second run to start before the first one has finished running',
+        'Append refuses a second run of the same date, and so the rerun silently does nothing at all to the report table',
         'Overwrite keeps a copy of each earlier run, so a rerun can always be undone by choosing the older copy again',
       ],
       answer: 0,
@@ -69,7 +69,7 @@ const lesson: LessonModule = {
     {
       q: 'A daily schedule has a run for logical date 2026-03-01. When is that run created?',
       options: [
-        'Shortly after midnight on 2026-03-02, once the interval it covers has closed',
+        'Shortly after midnight on 2026-03-02: the run covers the interval of 2026-03-01 and starts once that has closed',
         'At the start of 2026-03-01, since a run belongs to the day it is named after and begins with it',
         'At the end of 2026-03-02, after a full extra day so that every late row has had time to arrive first',
         'Whenever someone presses the trigger, because the logical date only labels the data and does not schedule',
@@ -78,23 +78,23 @@ const lesson: LessonModule = {
       why: 'In common schedulers a logical date names the interval of data and the run happens once that interval is over. Check your scheduler\'s documentation, as the semantics are a convention.',
     },
     {
-      q: 'A pipeline is paused for four days and then resumed with catch-up off. How many runs does it create for the missed days?',
+      q: 'In an Airflow-style scheduler a pipeline is paused for four days and then resumed with catch-up off. How many runs does it create for the missed days?',
       options: [
-        'One, for the latest missed day, and the earlier days are skipped',
-        'Four, one for each missed day, created together at the moment it resumes',
-        'None, because a run that was missed cannot be created again after the pause has ended',
-        'Four, one a day over the next four days, so the backlog is cleared at the normal pace',
+        'One, for the latest closed interval at the moment it resumes, and the earlier missed days are skipped',
+        'Four, one for each missed day, all created together at the moment it resumes, as with catch-up on',
+        'None, because a run that was missed cannot be created again after the pause has ended, catch-up or not',
+        'Four, one a day over the next four days, so the backlog is cleared at the normal pace of the schedule',
       ],
       answer: 0,
-      why: 'Catch-up decides whether the missed intervals each get a run. With it off the scheduler skips to the latest, so earlier dates have no run unless someone backfills them.',
+      why: 'Catch-up decides whether the missed intervals each get a run. In an Airflow-style scheduler, with it off, the scheduler skips to the latest closed interval, so earlier dates have no run unless someone backfills them; check your scheduler\'s documentation.',
     },
     {
       q: 'The cleaning rule changes. Why does the ELT pipeline re-run fewer steps than the ETL one?',
       options: [
-        "Raw and intermediate tables stay in the warehouse, so only cleaning and what follows run again",
+        "Raw and intermediate tables stay in the warehouse, so only the cleaning step and what follows it run again",
         'ELT never cleans data, so there is no cleaning step in the pipeline that could have to run again at all',
-        'ELT reads the source faster, so it can afford to repeat the extracts without anyone noticing them',
-        'The warehouse applies the new rule to the old results by itself, with no step needing to run again',
+        'ELT reads the source faster, so it can afford to repeat every extract without anyone noticing the extra time',
+        'The warehouse applies the new rule to the old results by itself, so no step needs to run again at all',
       ],
       answer: 0,
       why: 'ETL kept nothing between steps, so the inputs of a re-run step are made again, including reading the source. ELT keeps raw and intermediate tables, so it re-runs the changed step and its descendants.',

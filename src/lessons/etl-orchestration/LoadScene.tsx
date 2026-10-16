@@ -10,11 +10,9 @@ import { CALENDAR_START, DAYS, HORIZON_HOURS, LATE_ROWS, dayStatus, runPipeline,
 import { baseConfig } from './facts';
 import { initialLoadScene } from './init';
 import { CalendarTime, DayTable, RunChart } from './RunChart';
-import { opsForSeed } from './scenario';
+import { nextOpHour, opsForSeed, opsFull } from './scenario';
 import { DAY_MS, isoDate } from './schedule';
 
-/** New operations go after everything already scheduled (and after the seven runs), so they never interrupt a run. */
-const nextHour = (ops: readonly Op[]) => Math.max(HORIZON_HOURS - 24, ...ops.map((o) => o.at)) + 6;
 const OPS_SHOWN = 12;
 
 const opText = (o: Op) => (o.kind === 'rerun' ? `rerun ${weekDate(o.day)}` : o.kind === 'late' ? `${LATE_ROWS} late rows for ${weekDate(o.day)}` : 'clear');
@@ -34,7 +32,8 @@ export function LoadScene({ picker }: { picker: ReactNode }) {
   useIntroCaption(loadCaption(mode, final), [mode, final]);
 
   const add = (op: Op) => setState((s) => ({ ...s, ops: [...s.ops, op] }));
-  const when = nextHour(ops);
+  const when = nextOpHour(ops);
+  const full = opsFull(ops);
 
   return (
     <StageFrame
@@ -62,9 +61,9 @@ export function LoadScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Segmented label="Day" value={day} onChange={(d) => setState((s) => ({ ...s, day: d }))} options={Array.from({ length: DAYS }, (_, d) => ({ value: d, label: weekDate(d).slice(5) }))} />
-          <Button onClick={() => add({ at: when, kind: 'rerun', day })}>Rerun this day</Button>
-          <Button onClick={() => setState((s) => ({ ...s, ops: [...s.ops, ...Array.from({ length: DAYS }, (_, d) => ({ at: nextHour(s.ops), kind: 'rerun' as const, day: d }))] }))}>Backfill all {DAYS} days</Button>
-          <Button onClick={() => add({ at: when, kind: 'late', day })}>Late data for this day</Button>
+          <Button onClick={() => add({ at: when, kind: 'rerun', day })} softDisabled={full}>Rerun this day</Button>
+          <Button onClick={() => setState((s) => ({ ...s, ops: [...s.ops, ...Array.from({ length: DAYS }, (_, d) => ({ at: nextOpHour(s.ops), kind: 'rerun' as const, day: d }))] }))} softDisabled={full}>Backfill all {DAYS} days</Button>
+          <Button onClick={() => add({ at: when, kind: 'late', day })} softDisabled={full}>Late data for this day</Button>
         </>,
         <>
           <SeedField seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v, ops: opsForSeed(v) }))} />
@@ -86,6 +85,7 @@ export function LoadScene({ picker }: { picker: ReactNode }) {
               {ops.length > OPS_SHOWN && <li>and {ops.length - OPS_SHOWN} more</li>}
             </ul>
           )}
+          {full && <p className="eo-note" role="status">The calendar ends {hourLabel(CALENDAR_START, HORIZON_HOURS)}, so there is no room for another operation. Press No operations to start again.</p>}
         </Box>
         <RunChart finalWorld={final} now={now} hint="every green load bar writes that date's rows" />
         <Box>

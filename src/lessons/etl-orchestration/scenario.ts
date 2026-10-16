@@ -1,6 +1,6 @@
 /** etl-orchestration: seeded operation schedules (scene 3's replay, and the tests' chaos), and the pinned seed that breaks append loads. */
 import { mulberry32, randInt } from '../../core/random';
-import { DAYS, HORIZON_HOURS, MAX_RETRIES, TASKS, triggerHour, type Config, type Fail, type Mode, type Op, keyOf } from './engine';
+import { DAYS, HORIZON_HOURS, LAST_OP_HOUR, MAX_RETRIES, OP_ROOM_HOURS, TASKS, triggerHour, type Config, type Fail, type Mode, type Op, keyOf } from './engine';
 
 export const MAX_OPS = 12;
 
@@ -10,10 +10,19 @@ export function opsForSeed(seed: number): Op[] {
   const n = randInt(1, MAX_OPS, rnd);
   return Array.from({ length: n }, () => {
     const day = randInt(0, DAYS - 1, rnd);
-    const at = randInt(triggerHour(day) + 6, HORIZON_HOURS - 6, rnd);
+    const at = randInt(triggerHour(day) + 6, LAST_OP_HOUR, rnd);
     return rnd() < 0.6 ? { at, kind: 'rerun' as const, day } : { at, kind: 'late' as const, day };
   }).sort((a, b) => a.at - b.at);
 }
+
+/**
+ * When the next operation the learner adds starts: OP_ROOM_HOURS after the latest scheduled one, and not before the seven daily runs are
+ * done (the last is triggered at triggerHour(DAYS - 1) and takes 5 hours), so it never interrupts a run.
+ */
+export const nextOpHour = (ops: readonly Op[]): number => Math.max(triggerHour(DAYS - 1) + OP_ROOM_HOURS, ...ops.map((o) => o.at)) + OP_ROOM_HOURS;
+
+/** True when another operation would start after the last hour that still runs to its load inside the calendar. */
+export const opsFull = (ops: readonly Op[]): boolean => nextOpHour(ops) > LAST_OP_HOUR;
 
 /** A rougher schedule for the invariant tests: injected failures of both kinds, retries, reruns, late data, clears and flaky workers. */
 export function chaos(seed: number, mode: Mode): Config {

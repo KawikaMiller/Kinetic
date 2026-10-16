@@ -27,6 +27,10 @@ export const MAX_RETRIES = 3;
 export const SOURCE_ROWS: readonly number[] = [10, 12, 9, 14, 11, 13, 8];
 export const LATE_ROWS = 3;
 export const HORIZON_HOURS = 24 * (DAYS + 3);
+/** A rerun needs 5 hours (extract 1, clean 2, join 1, load 1) and a retry adds more: an operation must start at least this long before the calendar ends. */
+export const OP_ROOM_HOURS = 6;
+/** The latest hour an operation can start and still run to its load inside the calendar. */
+export const LAST_OP_HOUR = HORIZON_HOURS - OP_ROOM_HOURS;
 /** Chance an attempt fails when the workers are flaky. */
 export const FLAKY_RATE = 0.2;
 
