@@ -1,0 +1,29 @@
+.at-stage { gap: 12px; align-items: center; }
+.at-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.at-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.at-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 300px; }
+.at-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 600px; text-align: center; }
+.at-note b { font-family: var(--mono); color: var(--hi); }
+.at-readout { font: 500 13px var(--font); color: var(--text); }
+.at-readout b { font-family: var(--mono); color: var(--hi); }
+
+.at-arcs { width: 100%; max-width: 440px; height: auto; }
+.at-arc { fill: none; stroke: var(--c); opacity: 0.8; stroke-linecap: round; }
+.at-arc-label { font: 600 11px var(--mono); fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.at-token { fill: var(--cell); stroke: var(--c); stroke-width: 2; }
+.at-token-text { font: 700 13px var(--mono); fill: var(--text); }
+.at-token-self { font: 500 11px var(--mono); fill: var(--muted); }
+.at-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font: 500 12.5px var(--mono); flex: 1 1 260px; max-width: 360px; overflow-wrap: anywhere; }
+.at-steps b { color: var(--info); }
+
+.at-shuffled { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.at-shuffled li { display: flex; gap: 6px; align-items: center; border: 1px solid var(--line-2); border-radius: 8px; padding: 3px 8px; font: 600 12.5px var(--mono); }
+.at-shuffled .is-same b { color: var(--ok); }
+.at-shuffled .is-changed b { color: var(--bad); }
+
+.at-bars { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 330px; }
+.at-field { display: flex; flex-direction: column; gap: 2px; }
+.at-refusal { font: 500 12.5px var(--font); color: var(--bad); max-width: 220px; }
+.at-block { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; counter-reset: step; }
+.at-block li { border: 1.5px solid var(--info); border-radius: 8px; padding: 6px 12px; font: 600 12.5px var(--font); }
+.at-block li.is-add { border-style: dashed; border-color: var(--violet); }

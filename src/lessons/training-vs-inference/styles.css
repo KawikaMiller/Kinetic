@@ -1,0 +1,17 @@
+.tv-stage { gap: 12px; align-items: center; }
+.tv-split { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.tv-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.tv-panel { flex: 1 1 300px; max-width: 460px; display: flex; flex-direction: column; gap: 8px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.tv-panel .section-title { margin: 0; text-align: center; }
+.tv-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.tv-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 300px; }
+.tv-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 600px; text-align: center; }
+.tv-readout { margin: 0; font: 500 13px var(--font); color: var(--text); text-align: center; }
+.tv-readout b { font-family: var(--mono); color: var(--hi); }
+.tv-wide { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 6px; align-items: stretch; text-align: center; }
+.tv-stage > .tv-panel { flex: 0 1 auto; width: 100%; }
+.tv-loop { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.tv-requests { display: flex; flex-direction: column; gap: 4px; width: 100%; max-width: 360px; }
+.tv-backlog { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.tv-table { max-width: 560px; }
+.tv-table td, .tv-table th { text-align: left; }
