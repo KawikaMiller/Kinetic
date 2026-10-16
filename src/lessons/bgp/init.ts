@@ -1,7 +1,7 @@
 /** The state each scene opens in (pure, so a test can switch through all of them and check none leaks into another) and the learner's edits. */
 import { GRAPH, LEAKER, ORIGIN, neighboursOf, type Asn } from './asgraph';
 import { DEFAULT_PREF, PREF_RANGE, finalRound, prefKey, propagate, type Config, type Policy } from './bgp';
-import { DEFAULT_HIJACK, parseAnnounced, type Announced, type HijackSetup } from './hijack';
+import { DEFAULT_HIJACK, parseAnnounced, prefixLabel, type Announced, type HijackSetup } from './hijack';
 
 export const baseConfig = (over: Partial<Config> = {}): Config => ({ graph: GRAPH, origins: [{ asn: ORIGIN }], policy: 'valley-free', leaker: LEAKER, prefs: {}, ...over });
 
@@ -67,6 +67,6 @@ export const announcedOf = (s: HijackSetup): Announced => {
 export function announcePrefix(s: HijackState, text: string = s.field): HijackState {
   const r = parseAnnounced(text);
   if (!r.ok) return { ...s, field: text, note: `${r.error} Keeping ${s.setup.prefixText}.` };
-  const clean = text.trim();
+  const clean = prefixLabel(r.value);
   return { ...s, field: clean, setup: { ...s.setup, prefixText: clean }, note: `Announcing ${clean}.` };
 }

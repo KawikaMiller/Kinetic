@@ -197,6 +197,16 @@ describe('scene 4: the whole control cross product', () => {
     expect(ok.setup.prefixText).toBe('203.0.113.128/26');
     expect(ok.field).toBe('203.0.113.128/26');
     expect(announcedOf(ok.setup)).toMatchObject({ len: 26 });
+    // stray spaces inside the prefix are normalised, so the chip lights and the note reads cleanly
+    expect(announcePrefix(h, '203.0.113.0 /25').setup.prefixText).toBe('203.0.113.0/25');
+  });
+
+  it('equal /24 with AS64497 as the second announcer: four ASes choose the origin although the announcer is the shorter path (hand-checked by a separate independent model), so the caption must not say "shorter path"', () => {
+    const { s, r } = result({ announcer: 64497 }, '203.0.113.0/24');
+    for (const a of [64496, 64499, 64501, 64503]) expect(r.reach[a].outcome, `AS${a}`).toBe('origin');
+    const t = clean(hijackIntro(s, r));
+    expect(t).not.toMatch(/follows the shorter path/);
+    expect(t).toContain('local preference first');
   });
 
   it('the opening state of each scene is its own', () => {

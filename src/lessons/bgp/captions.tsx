@@ -92,8 +92,8 @@ export function leakIntro(policy: 'valley-free' | 'leak', best: Record<Asn, Rout
   if (policy === 'valley-free') {
     return (
       <>
-        Valley-free: customer routes go to everyone, peer and provider routes go to customers only. {asName(64499)} reaches {asName(ORIGIN)} through its peer ({pathText(p99?.path ?? [])}), and neither access link of {asName(LEAKER)} is
-        overloaded.
+        Valley-free, the common commercial export convention: customer routes go to everyone, peer and provider routes go to customers only. {asName(64499)} reaches {asName(ORIGIN)} through its {p99?.rel ?? 'neighbour'} ({pathText(p99?.path ?? [])}), and{' '}
+        {over.length === 0 ? `neither access link of ${asName(LEAKER)} is overloaded` : `${plural(over.length, 'access link')} of ${asName(LEAKER)} ${over.length === 1 ? 'is' : 'are'} overloaded`}.
       </>
     );
   }
@@ -122,7 +122,7 @@ export function hijackIntro(s: HijackSetup, r: HijackResult): ReactNode {
       {second} announces {prefixLabel(r.announced)}
       {s.kind === 'anycast' ? ', and the ROA lists it as a legitimate origin' : s.forged ? ', with the true origin forged at the end of its path' : ''}. Packets to {ipText(r.destination)} from the eight ASes (themselves included): {c.origin}{' '}
       end at {asName(ORIGIN)}, {c.second} at {second}
-      {c.lost > 0 ? `, ${c.lost} are lost` : ''}. {equal ? 'Same length: each AS follows the shorter path to one of the two origins.' : 'A more specific prefix wins the longest-prefix match wherever it is heard, whatever the path length.'}{' '}
+      {c.lost > 0 ? `, ${c.lost} are lost` : ''}. {equal ? 'Same length: each AS runs its normal decision (local preference first, then path length) on the two origins, so the map splits, and an AS can pick the longer path when a relationship says so.' : 'A more specific prefix wins the longest-prefix match wherever it is heard, whatever the path length.'}{' '}
       {r.validating.length > 0 ? `${plural(r.validating.length, 'AS', 'ASes')} validate origins.` : 'No AS validates origins.'}
     </>
   );

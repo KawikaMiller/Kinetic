@@ -51,13 +51,13 @@ const lesson: LessonModule = {
     `In "Announcements" press play: the route spreads from ${asName(ORIGIN)} and settles after ${announce.roundsToConverge} rounds with ${holding} of ${GRAPH.ases.length} ASes holding a route. The table of ${asName(initialAnnounce().selected)} lists ${loopsAt} path discarded as a loop: its provider passed its own route back.`,
     `In "Choosing a path" ${asName(p0.as)} sends through ${asName(chosen0?.from ?? 0)} (local preference ${chosen0?.pref}, path length ${chosen0?.path.length}). Drag its "Pref for 64497" slider to 350: it switches to ${asName(chosen1?.from ?? 0)} although that path is ${chosen1?.path.length} long, and "Paths changed by your edits" reads ${changed1.length}.`,
     `In "Who may tell whom" switch "Export policy" to the leak: ${asName(64499)} now sends through ${asName(LEAKER)} because a customer route beats a peer route, and ${overLinks} of the 2 thin access links overflow.`,
-    `In "Hijack and anycast" (a hijacker, /25 inside the /24, no validators) ${slash25.second} of 8 ASes end at the hijacker and ${slash25.origin} at the real origin, whatever the path lengths. Press "/24, the same prefix": the map splits, ${slash24.origin} to the origin and ${slash24.second} to the hijacker, by shorter path.`,
+    `In "Hijack and anycast" (a hijacker, /25 inside the /24, no validators) ${slash25.second} of 8 ASes end at the hijacker and ${slash25.origin} at the real origin, whatever the path lengths. Press "/24, the same prefix": the map splits, ${slash24.origin} to the origin and ${slash24.second} to the hijacker, each AS applying its normal decision (local preference, then path length) to the two origins.`,
     `Set "ASes that validate origins" to ${VALIDATOR_MAX} of ${VALIDATOR_MAX} on the /24: the hijack is dropped (${slash24All.second} end at the second AS, itself). Switch "Forge the origin" on: the announcement reads valid and ${slash24Forged.second} end at it again. With the /25 and everyone validating, ${slash25All.second} end at it.`,
   ],
   keyIdeas: [
     'In this model BGP applies local preference, which encodes business relationships, before AS_PATH length, and nothing in the decision measures latency: the chosen path is policy first, not fastest.',
     'A router discards a received path that already contains its own AS number: that is how announcements avoid loops without any router seeing the whole map.',
-    'Export rules decide who hears a route: customer routes go to everyone and peer and provider routes go to customers. A route leak is an AS breaking that rule, and the traffic it pulls lands on links that were not sized for it.',
+    'Export rules decide who hears a route; under the common valley-free convention (a business practice, not part of the protocol), customer routes go to everyone and peer and provider routes go to customers. A route leak is an AS breaking that rule, and the traffic it pulls lands on links that were not sized for it.',
     'A more specific prefix wins the longest-prefix match wherever it is heard, whatever the AS_PATH length, so announcing a /25 inside someone else\'s /24 attracts the traffic. Origin validation drops announcements the signed records do not allow; a forged origin passes the origin check but not the length limit.',
   ],
   quiz: [
@@ -97,13 +97,13 @@ const lesson: LessonModule = {
     {
       q: 'The hijacker announces the same /24 as the origin, with an equal-length route. What does each AS do?',
       options: [
-        'It follows the shorter path, so the map splits between the two origins',
+        'It applies its normal decision to both origins, so the map splits between them',
         'It sends to the origin, because the signed record names it',
         'It sends to the hijacker, because the newest announcement replaces the old',
         'It drops both and has no route until someone withdraws one',
       ],
       answer: 0,
-      why: 'With equal prefixes there is nothing to prefer a hijacker over an origin except the decision process, so the shorter path wins at each AS. This is also how anycast spreads clients over sites when the second origin is legitimate.',
+      why: 'With equal prefixes there is nothing to prefer a hijacker over an origin except the decision process, so the usual decision (local preference, then path length) picks one origin at each AS, and a longer path can win when its relationship ranks higher. This is also how anycast spreads clients over sites when the second origin is legitimate.',
     },
     {
       q: 'A hijacker puts the true origin\'s number at the end of its AS_PATH. What does origin validation make of an equal-length /24?',

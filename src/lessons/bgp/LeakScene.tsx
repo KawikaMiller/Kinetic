@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, ClaimLabel, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { AsMap } from './AsMap';
 import { GRAPH, LEAKER, ORIGIN, asName, capacityOf, edgeId } from './asgraph';
 import { finalRound, linkLoads, pathLinks, propagate } from './bgp';
@@ -87,6 +87,7 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">eight made-up ASes; no real incident is modelled or named</Provenance>
+          <ClaimLabel kind="practice">valley-free export is a common commercial convention (Gao and Rexford, 2001, from memory; verify), not part of BGP itself; convergence is only shown for networks that follow it</ClaimLabel>
           <Provenance kind="illustrative">link capacities and one flow per AS are made up</Provenance>
         </ProvenanceRow>
       </div>

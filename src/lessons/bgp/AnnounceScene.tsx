@@ -75,6 +75,7 @@ export function AnnounceScene({ picker }: { picker: ReactNode }) {
         <ProvenanceRow>
           <Provenance kind="simulated">eight made-up ASes; the real internet has many tens of thousands (from memory)</Provenance>
           <Provenance kind="not-run">shown, not run: no BGP session exists here (real ones run over TCP port 179)</Provenance>
+          <Provenance kind="toy">this model also sends a route back to the AS it came from, so the loop check has something to catch; many real routers skip that (from memory)</Provenance>
           <Provenance kind="from-memory">AS numbers 64496-64511 are reserved for documentation (RFC 5398: verify)</Provenance>
         </ProvenanceRow>
       </div>

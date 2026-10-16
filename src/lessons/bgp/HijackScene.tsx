@@ -38,7 +38,7 @@ export function HijackScene({ picker }: { picker: ReactNode }) {
       introKey={[s.announcer, s.kind, s.prefixText, s.forged, s.validators]}
       stats={
         <Stats>
-          <Stat label="End at the real origin" value={counts.origin} sub={`of ${ASES.length} ASes, the origin itself included`} color="var(--ok)" />
+          <Stat label="End at the real origin" value={counts.origin} sub={`of ${ASES.length} ASes; the origin's own router also follows the longest prefix here`} color="var(--ok)" />
           <Stat label={hijack ? 'End at the hijacker' : 'End at the second site'} value={counts.second} color={counts.second > 0 && hijack ? 'var(--bad)' : undefined} sub={`${asName(s.announcer)} itself included`} />
           <Stat label="Lost" value={counts.lost} sub="a loop or no route at some AS" />
           <Stat label="Origin validation says" value={result.validity} color={result.validity === 'invalid' ? 'var(--bad)' : undefined} sub={`for ${prefixLabel(result.announced)} from ${s.forged && hijack ? asName(ORIGIN) : asName(s.announcer)}`} />
