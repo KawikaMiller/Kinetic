@@ -1,0 +1,10 @@
+.ra-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.ra-two { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+.ra-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ra-h { margin: 6px 0 0; font: 600 13px var(--mono); }
+.ra-bars { display: flex; flex-direction: column; gap: 8px; }
+.ra-rounds { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font: 13px var(--mono); }
+.ra-rounds li { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--cell-line); }
+.ra-rounds li.is-liar { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, transparent); }
+.ra-rounds li.is-witness { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.ra-stage ~ .provenance-row { margin: 8px 16px 12px; }

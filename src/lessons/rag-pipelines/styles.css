@@ -1,0 +1,30 @@
+/* rag-pipelines */
+.rag-stage { gap: 12px; min-width: 0; }
+.rag-text { margin: 6px 0; line-height: 1.9; font-size: 13.5px; }
+.rag-w { padding: 1px 0; border-radius: 3px; }
+.rag-w.is-sky { background: color-mix(in srgb, var(--sky) 24%, transparent); }
+.rag-w.is-pink { background: color-mix(in srgb, var(--pink) 24%, transparent); }
+.rag-w.is-amber { background: color-mix(in srgb, var(--amber) 24%, transparent); }
+.rag-w.is-shared { border-bottom: 2px dashed var(--muted); }
+.rag-w.is-gold { outline: 2px solid var(--hi); outline-offset: 0; }
+.rag-w.is-split { outline: 2px solid var(--orange); outline-offset: 0; }
+.rag-ranked, .rag-prompt { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.rag-hit { display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; }
+.rag-hit .meter { grid-column: 2; }
+.rag-hit.is-ok { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.rag-hit.is-bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 8%, transparent); }
+.rag-rank { font-weight: 700; color: var(--muted); }
+.rag-score, .rag-budget { font-size: 12px; color: var(--muted); }
+.rag-part { font-size: 12.5px; padding: 3px 8px; border-left: 3px solid var(--line-2); overflow-wrap: anywhere; }
+.rag-part.is-source.is-ok { border-left-color: var(--ok); }
+.rag-part.is-source.is-bad { border-left-color: var(--bad); }
+.rag-part.is-cut { text-decoration: line-through; color: var(--dim); }
+.rag-empty { font-size: 13px; color: var(--muted); }
+.rag-answer { padding: 10px 12px; border: 2px solid var(--line-2); border-radius: 10px; margin: 8px 0; }
+.rag-answer.is-correct { border-color: var(--ok); }
+.rag-answer.is-wrong { border-color: var(--bad); }
+.rag-answer.is-abstained, .rag-answer.is-nothing { border-color: var(--orange); border-style: dashed; }
+.rag-answer-text { margin: 0 0 6px; font-size: 14px; }
+.rag-cite { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--violet); color: var(--violet); overflow-wrap: anywhere; }
+.rag-plot { max-width: 420px; }
+.rag-questions { flex-wrap: wrap; }
