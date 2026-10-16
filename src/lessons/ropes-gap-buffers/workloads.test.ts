@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WORKLOADS, SIZES, operationsFor, runWorkload, type WorkloadId } from './workloads';
+import { cachedWorkload } from './useWorkloadRows';
 
 /** The workload on a plain string and a plain cursor, as the independent reference for the final length. */
 function referenceLength(id: WorkloadId, size: number): number {
@@ -79,5 +80,20 @@ describe('workloads', () => {
     const undo = runWorkload('undo', 1_000_000);
     expect(undo.rope.touches).toBeLessThan(undo.array.touches / 1000);
     expect(runWorkload('type', 1_000_000).ropeRebuilds).toBeGreaterThan(0);
+  });
+});
+
+describe('cachedWorkload', () => {
+  it('returns exactly what a fresh run returns, and runs each (workload, size) once', () => {
+    for (const w of WORKLOADS) {
+      const first = cachedWorkload(w.id, 1000);
+      expect(first, w.id).toEqual(runWorkload(w.id, 1000));
+      expect(cachedWorkload(w.id, 1000)).toBe(first);
+    }
+  });
+
+  it('keeps sizes apart', () => {
+    expect(cachedWorkload('type', 1000)).not.toBe(cachedWorkload('type', 10_000));
+    expect(cachedWorkload('type', 10_000).ops).toBe(runWorkload('type', 10_000).ops);
   });
 });
