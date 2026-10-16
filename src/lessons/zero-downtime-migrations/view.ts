@@ -100,7 +100,7 @@ export function verdictText(run: Run): string {
   return parts.length === 0 ? 'Clean: every request succeeded, every read was current and no write was lost.' : `Not clean: ${parts.join('; ')}.`;
 }
 
-export const cleanCount = (deploy: number, seed: number) => cleanOrderCount(deploy, seed);
+export const cleanCount = (deploy: number) => cleanOrderCount(deploy);
 
 export const presetOrder = (id: string): StepId[] => [...PRESETS.find((p) => p.id === id)!.order];
 export const runOf = (order: readonly StepId[], deploy: number, seed: number) => runMigration(order, deploy, seed);

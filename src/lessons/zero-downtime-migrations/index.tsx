@@ -1,9 +1,9 @@
 import { humanDuration } from '../../core/format';
 import type { LessonModule } from '../../core/types';
 import { DEFAULT_BATCH, MAX_BATCH } from './lock';
-import { ALL_ORDERS } from './model';
+import { ALL_ORDERS, PANEL_SIZE } from './model';
 import { CLOCKS_OPEN } from './view';
-import { cleanAtOpen, clocksFacts, lockFacts, presetFacts } from './facts';
+import { cleanAtOpen, cleanStarts, clocksFacts, lockFacts, presetFacts } from './facts';
 import { Stage } from './Stage';
 
 const correct = presetFacts('correct');
@@ -12,6 +12,7 @@ const early = presetFacts('contractEarly');
 const clocks = clocksFacts();
 const lock = lockFacts();
 const total = ALL_ORDERS.length;
+const firstCleanStart = cleanStarts()[0];
 const secs = (n: number) => `${n.toFixed(1)} s`;
 
 const lesson: LessonModule = {
@@ -31,16 +32,16 @@ const lesson: LessonModule = {
       'Fleet: blue chips are instances on v1 (old column), violet chips are v2. Table: the old column is blue until it is dropped and then a dim empty outline, the new column is a dim outline before it exists, green once it holds the last value written and orange where it holds an older one; a rail beside a row says copied or stale. Requests: red rows failed on a missing column, orange rows read an older value. In the lock chart blue is the long-running query, yellow the waiting ALTER and the requests queued behind it, red a DDL that gave up or requests past the client timeout. Chips say what is a toy, illustrative, real SQLite, or from memory.',
   },
   tryThis: [
-    `In "The six steps" press the preset "Correct order", then drag the timeline to the far right: ${correct.errors} failed requests, ${correct.stale} stale reads and ${correct.lost} rows wrong. Only ${cleanAtOpen()} of the ${total} orderings is clean at this setting.`,
+    `In "The six steps" press the preset "Correct order", then drag the timeline to the far right: ${correct.errors} failed requests, ${correct.stale} stale reads and ${correct.lost} rows wrong. Only ${cleanAtOpen()} of the ${total} orderings is clean at this setting (clean on all ${PANEL_SIZE} request mixes, seeds 0 to ${PANEL_SIZE - 1}, not just the shown seed).`,
     `Press the preset "Skip dual-write" and go to the end: ${skip.errors} failed requests but ${skip.stale} stale reads and ${skip.lost} rows that end without the last value written. Nothing threw an error and data was still lost.`,
     `Press the preset "Contract too early" and go to the end: ${early.errors} requests failed on a missing column.`,
-    `In "Two clocks" (the fleet already ${CLOCKS_OPEN.deploy}% on v2) the textbook order is ${clocks.open.textbookClean ? 'clean' : 'not clean'} and ${clocks.open.clean} of ${total} orderings run clean. Drag the slider to 0%: the textbook order is ${clocks.none.textbookClean ? 'clean' : 'not clean'} and ${clocks.none.clean} of ${total} are.`,
+    `In "Two clocks" (the fleet already ${CLOCKS_OPEN.deploy}% on v2) the textbook order is ${clocks.open.textbookClean ? 'clean' : 'not clean'} and ${clocks.open.clean} of ${total} orderings run clean on all ${PANEL_SIZE} request mixes. Drag the slider to 0%: the textbook order is ${clocks.none.textbookClean ? 'clean' : 'not clean'} and ${clocks.none.clean} of ${total} are.`,
     `In "Locks and batches" (a big table, no lock timeout): the ALTER blocks new requests for ${secs(lock.wait.longestBlockS)}, ${lock.wait.peakQueue} queue up and ${lock.wait.timedOut} wait past the client timeout. Turn Lock timeout on: the longest block drops to ${secs(lock.short.longestBlockS)} over ${lock.short.attempts.length} attempts. A backfill batch of ${DEFAULT_BATCH} rows takes ${humanDuration(lock.batch100.totalS)} in total and ${MAX_BATCH} rows takes ${humanDuration(lock.batch1000.totalS)}; type 0 and it is refused.`,
   ],
   keyIdeas: [
     'During a rolling deploy two app versions run at once, so in this model a rename done as one step breaks whichever version has not updated yet, and expand and contract keeps both working.',
-    'In this model exactly one of the 720 orderings of the six steps is clean, and only when enough of the fleet has already upgraded: a step run ahead of the fleet fails requests or serves stale reads.',
-    'Skipping dual-write throws no error: writes made by v1 after the backfill do not reach the new column, so the table quietly ends up wrong, which is why the data check matters as much as the error count.',
+    `In this model exactly one of the ${total} orderings of the six steps is clean on all ${PANEL_SIZE} request mixes the lesson tries, and only when at least ${firstCleanStart}% of the fleet has already upgraded: a step run ahead of the fleet fails requests or serves stale reads. A single request mix can miss a hazard, which is why the count uses ${PANEL_SIZE}.`,
+    'Skipping dual-write throws no error: v2 still sends only the old column, so writes made after the backfill never reach the new column and the table quietly ends up wrong, which is why the data check matters as much as the error count. A v1 instance still running during the backfill is a separate hazard, and the reason a start at 0% or 20% on v2 is never clean.',
     'In this lesson\'s PostgreSQL-flavoured model an ALTER that waits for a lock makes later queries queue behind it, so a lock timeout with a retry and a backfill in batches keep each lock short.',
   ],
   quiz: [
@@ -69,8 +70,8 @@ const lesson: LessonModule = {
     {
       q: 'The dual-write step is skipped but everything else runs in order. What does the lesson show?',
       options: [
-        'No request errors, yet rows end up without the last value written, since v1 writes miss the new column',
-        'A burst of failed requests, because the new column is read before any app version has written to it at all, so every read fails',
+        'No request errors, yet rows end up without the last value written, since v2 keeps writing only the old column',
+        'A burst of failed requests, because the new column is read before any app version has written to it',
         'Nothing wrong, because the backfill copies every row once and so covers all later writes as well',
         'A failed backfill, since it cannot copy into a column that the app versions are not writing yet',
       ],

@@ -275,9 +275,16 @@ export function permutations<T>(items: readonly T[]): T[][] {
 
 export const ALL_ORDERS: readonly StepId[][] = permutations(STEP_IDS);
 
-/** How many of the 720 orderings of the six steps run clean at this deploy position and seed. */
-export function cleanOrderCount(deployPercent: number, seed: number): number {
-  return ALL_ORDERS.filter((o) => runMigration(o, deployPercent, seed).clean).length;
+/** The request mixes an ordering is judged on: one seed's 20 requests can dodge a step's hazard, so "clean" means clean on every one of these. */
+export const PANEL_SIZE = 20;
+export const PANEL_SEEDS: readonly number[] = Array.from({ length: PANEL_SIZE }, (_, i) => i);
+
+/** Does this ordering run clean on every request mix of the panel at this deploy position? */
+export const cleanOnPanel = (order: readonly StepId[], deployPercent: number): boolean => PANEL_SEEDS.every((seed) => runMigration(order, deployPercent, seed).clean);
+
+/** How many of the 720 orderings of the six steps run clean on every request mix of the panel at this deploy position. */
+export function cleanOrderCount(deployPercent: number): number {
+  return ALL_ORDERS.filter((o) => cleanOnPanel(o, deployPercent)).length;
 }
 
 export interface Preset {

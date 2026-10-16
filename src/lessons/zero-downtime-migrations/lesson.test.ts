@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { clocksCaption, correctRun, deployStarts, lockCaption } from './clocks';
+import { clocksCaption, correctRuns, deployStarts, lockCaption, textbookClean } from './clocks';
 import { cleanAtOpen, clocksFacts, lockFacts, presetFacts } from './facts';
 import lesson from './index';
 import {
   BATCH_OVERHEAD_MS, BATCH_PAUSE_MS, CLIENT_TIMEOUT_S, DDL_AT_S, DDL_HOLD_S, DEFAULT_BATCH, MAX_BATCH, MAX_LOCK_TIMEOUT_S, MIN_LOCK_TIMEOUT_S, QUERY_BIG_S, QUERY_SMALL_S, REQUESTS_PER_S, ROW_MS, TABLE_ROWS, batchRun, lockRun,
 } from './lock';
-import { ALL_ORDERS, INSTANCES, PRESETS, STEP_IDS } from './model';
+import { ALL_ORDERS, INSTANCES, PANEL_SIZE, PRESETS, STEP_IDS, cleanOnPanel, runMigration } from './model';
 import { CLOCKS_OPEN, LOCKS_OPEN, MIGRATION_OPEN, codeState, eventsOf, fleetOf, frameCaption, lockBars, rowRail, runOf, tableCell, verdictText } from './view';
 
 const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n);
@@ -53,7 +53,7 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     const c = clocksFacts();
     expect(c.open).toEqual({ clean: 1, textbookClean: true });
     expect(c.none).toEqual({ clean: 0, textbookClean: false });
-    expect(lesson.tryThis[3]).toContain('the textbook order is clean and 1 of 720 orderings run clean');
+    expect(lesson.tryThis[3]).toContain('the textbook order is clean and 1 of 720 orderings run clean on all 20 request mixes');
     expect(lesson.tryThis[3]).toContain('not clean and 0 of 720 are');
   });
 
@@ -195,10 +195,10 @@ describe('captions are computed from the model', () => {
 
   it('the two-clocks caption quotes the clean count and names the first step followed by trouble, at every start', () => {
     for (const d of deployStarts()) {
-      const r = correctRun(d);
-      const c = text(clocksCaption(d, r, 3));
+      const runs = correctRuns(d);
+      const c = text(clocksCaption(d, runs, 3));
       expect(c).toContain(`${d}% of the fleet on v2`);
-      expect(c.includes('not clean')).toBe(!r.clean);
+      expect(c.includes('not clean')).toBe(!textbookClean(d));
       expect(c).toContain(`3 of ${ALL_ORDERS.length} orderings`);
     }
   });
@@ -213,6 +213,49 @@ describe('captions are computed from the model', () => {
         expect(c.includes(big ? 'a big table' : 'a small table')).toBe(true);
       }
     }
+  });
+});
+
+describe('"clean" is a property of the ordering, not of one request mix', () => {
+  const ordersClean = (deploy: number, seeds: number) => ALL_ORDERS.filter((o) => Array.from({ length: seeds }, (_, s) => s).every((s) => runMigration(o, deploy, s).clean)).map((o) => o.join());
+
+  it('the clean set is identical on seeds 0..49 and on the panel, at every start', () => {
+    for (const d of deployStarts()) expect(ordersClean(d, 50), `deploy ${d}`).toEqual(ordersClean(d, PANEL_SIZE));
+  });
+
+  it('where an ordering is clean, it is the textbook one alone, and none is clean from a start of 0% to 40%', () => {
+    for (const d of deployStarts()) {
+      const set = ordersClean(d, PANEL_SIZE);
+      expect(set.length === 0 || (set.length === 1 && set[0] === STEP_IDS.join()), `deploy ${d}`).toBe(true);
+      expect(cleanOnPanel(STEP_IDS, d)).toBe(set.length === 1);
+    }
+    for (const d of [0, 20, 40]) expect(ordersClean(d, PANEL_SIZE)).toEqual([]);
+  });
+
+  it('a single request mix can call an unsound ordering clean (seed 0 at 60%), which is why one seed is not the definition', () => {
+    const lucky = ALL_ORDERS.filter((o) => runMigration(o, 60, 0).clean);
+    expect(lucky.length).toBeGreaterThan(1);
+    expect(lucky.filter((o) => cleanOnPanel(o, 60))).toHaveLength(1);
+  });
+});
+
+describe('skipping dual-write: whose writes are lost', () => {
+  const skip = PRESETS.find((p) => p.id === 'skipDual')!.order;
+  const lastWriter = (run: ReturnType<typeof runMigration>, row: number) => run.events.filter((e) => e.op === 'write' && e.ok && e.params.at(-1) === row + 1).at(-1)!.who;
+
+  it('the last successful writer of every lost row is v2, for several seeds', () => {
+    for (const seed of [0, 7, 21]) {
+      const run = runMigration(skip, 60, seed);
+      expect(run.lostRows.length).toBeGreaterThan(0);
+      for (const row of run.lostRows) expect(lastWriter(run, row), `seed ${seed} row ${row}`).toBe('v2');
+    }
+  });
+
+  it('with the whole fleet on v2 from the start there is no v1 at all, and the table is still wrong', () => {
+    const run = runMigration(skip, 100, 7);
+    expect(run.events.some((e) => e.who === 'v1')).toBe(false);
+    expect(run.staleReads).toBeGreaterThan(0);
+    expect(run.lostRows.length).toBeGreaterThan(0);
   });
 });
 

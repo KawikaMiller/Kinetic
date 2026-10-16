@@ -8,7 +8,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
-import { ALL_ORDERS, INSTANCES, NEW_COLUMN, OLD_COLUMN, PRESETS, ROWS, STEP_IDS, type StepId } from './model';
+import { ALL_ORDERS, INSTANCES, NEW_COLUMN, OLD_COLUMN, PANEL_SIZE, PRESETS, ROWS, STEP_IDS, type StepId } from './model';
 import { CODE_LINES, MIGRATION_OPEN, STEP_LABEL, cleanCount, codeState, eventsOf, fleetOf, frameCaption, presetOrder, requestRows, rowRail, runOf, tableCell, verdictText } from './view';
 
 const ROW_NUMBERS = Array.from({ length: ROWS }, (_, i) => i + 1);
@@ -30,7 +30,7 @@ export function MigrationScene({ picker }: { picker: ReactNode }) {
   const player = usePlayer(frames, { interval: STEP_MS, autoplayOnChange: false });
   const i = player.frame.index;
   const s = run.frames[i];
-  const clean = useMemo(() => cleanCount(deploy, seed), [deploy, seed]);
+  const clean = useMemo(() => cleanCount(deploy), [deploy]);
   const events = useMemo(() => requestRows(eventsOf(run, i)), [run, i]);
   const atEnd = i === run.frames.length - 1;
   const press = (id: StepId) => {
@@ -47,7 +47,7 @@ export function MigrationScene({ picker }: { picker: ReactNode }) {
           <Stat label="Failed requests" value={run.errors} color={run.errors > 0 ? 'var(--bad)' : undefined} sub="named a column that is not there" />
           <Stat label="Stale reads" value={run.staleReads} color={run.staleReads > 0 ? 'var(--orange)' : undefined} sub="not the last value written" />
           <Stat label="Rows left wrong" value={run.lostRows.length} color={run.lostRows.length > 0 ? 'var(--bad)' : undefined} sub={`of ${ROWS}, at the end`} />
-          <Stat label="Clean orderings" value={`${clean} of ${ALL_ORDERS.length}`} color="var(--ok)" sub={`at ${deploy}% of the fleet on v2 at the start, seed ${seed}`} />
+          <Stat label="Clean orderings" value={`${clean} of ${ALL_ORDERS.length}`} color="var(--ok)" sub={`clean on all ${PANEL_SIZE} request mixes (seeds 0 to ${PANEL_SIZE - 1}), at ${deploy}% on v2 at the start; not this seed alone`} />
         </Stats>
       }
       legend={
