@@ -31,7 +31,10 @@ export const DEFAULT_PLAN: Plan = { method: 'snapshots-log', snapshotH: 24, logM
 /** A plan with the three things the spec's broken modes break. */
 export const WEAK_PLAN: Plan = { method: 'replica', snapshotH: 24, logMin: 15, copies: 1, where: 'disk', immutableDays: 0, tests: 'never', keyWith: false };
 
-/** A scenario of the incident: when the attacker's credentials are noticed, an object lock of at least this many days has held. */
+/**
+ * A scenario of the incident: when the attacker's credentials are noticed, an object lock of at least this many days has held.
+ * Assumptions, stated on screen: the lock is one nobody (the account owner included) can shorten, and "another region" is still the same account.
+ */
 export const DETECTION_DAYS = 3;
 /** Illustrative: a replica trails the primary by about a minute, and failing over to it takes about five. */
 export const REPLICA_LAG_MIN = 1;
@@ -55,7 +58,8 @@ export interface Verdict {
   why: string;
 }
 
-const copiesOffDisk = (p: Plan) => (p.copies >= 2 ? p.where : null);
+/** The place the extra copies sit, or null when there is none off the database's disk: two copies on the same disk are one failure domain. */
+const copiesOffDisk = (p: Plan) => (p.copies >= 2 && p.where !== 'disk' ? p.where : null);
 const reaches = (p: Plan, ...places: Where[]) => copiesOffDisk(p) !== null && places.includes(p.where);
 
 /** Is there a backup, or a replica, that survives this scenario? */
@@ -75,6 +79,7 @@ function survives(p: Plan, id: ScenarioId): { ok: boolean; why: string } {
   if (id === 'ransomware') {
     if (p.method === 'replica') return { ok: false, why: 'a replica is reachable with the same credentials and was encrypted too' };
     if (p.copies < 2) return { ok: false, why: 'the only copy was on the host the attacker controls' };
+    if (p.where === 'disk') return { ok: false, why: 'the copies were on the same disk, within the attacker reach, and a lock on that disk protects nothing' };
     if (p.where === 'separate') return { ok: true, why: '' };
     return p.immutableDays >= DETECTION_DAYS ? { ok: true, why: '' } : { ok: false, why: `the copies were in the same account and not locked for the ${DETECTION_DAYS} days it takes to notice` };
   }
@@ -99,7 +104,9 @@ export function verdict(p: Plan, id: ScenarioId, seed: number): Verdict {
   const r = restore(input, target);
   const lost = INCIDENT_AT - r.reached;
   const down = Math.round(restoreTime(input, target, DEFAULT_THROUGHPUT).totalS / 60);
-  return { ok: true, lostMin: lost, downtimeMin: down, why: `restored to ${clock(r.reached)}${r.reason ? `: ${r.reason}` : ''}` };
+  // With a log archive and no gaps the only reason is the unshipped last segment: the plan scene explains that once, under the table.
+  const reason = p.method === 'snapshots-log' ? null : r.reason;
+  return { ok: true, lostMin: lost, downtimeMin: down, why: `restored to ${clock(r.reached)}${reason ? `: ${reason}` : ''}` };
 }
 
 // ── hidden faults ─────────────────────────────────────────────────────

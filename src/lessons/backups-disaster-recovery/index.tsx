@@ -83,13 +83,13 @@ const lesson: LessonModule = {
     {
       q: `A restore takes about ${minutesText(tl.on.seconds / 60)}. Which change shortens it most in this model?`,
       options: [
-        'A faster restore throughput, or a more recent backup so less log has to be replayed',
+        'A faster restore throughput, since the same data moves in proportionally less time',
         'More copies of the backup in other regions, since each copy restores part of the data',
         'A shorter log archive interval, since smaller segments replay faster than large ones',
-        'A longer interval between backups, since fewer backups mean fewer files to restore',
+        'More frequent backups, since a more recent backup leaves less log to be replayed',
       ],
       answer: 0,
-      why: 'Restore time is the backup chain over the throughput plus the replay of the log since the base, so throughput and the age of the latest backup both move it; the segment interval changes data lost, not the replay volume.',
+      why: 'Restore time is the backup chain over the throughput plus the replay of the log since the base, so doubling the throughput halves it. A more recent backup does not reliably help: in this toy every incremental is 20 GB and the whole chain is restored, so more frequent backups lengthen the restore. The segment interval changes data lost, not the restore time.',
     },
   ],
 };

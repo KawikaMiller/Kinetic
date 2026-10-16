@@ -10,10 +10,10 @@ import { PLAN_OPEN, minutesText } from './view';
 
 const METHODS = [{ value: 'replica' as const, label: 'A replica only' }, { value: 'snapshots' as const, label: 'Snapshots' }, { value: 'snapshots-log' as const, label: 'Snapshots and log archive' }];
 const COPIES = [{ value: 1 as const, label: '1 copy' }, { value: 2 as const, label: '2 copies' }, { value: 3 as const, label: '3 copies' }];
-const WHERE: { value: Where; label: string }[] = [{ value: 'disk', label: 'Same disk' }, { value: 'account', label: 'Same account' }, { value: 'region', label: 'Another region' }, { value: 'separate', label: 'Another account' }];
+const WHERE: { value: Where; label: string }[] = [{ value: 'disk', label: 'Same disk' }, { value: 'account', label: 'Same account' }, { value: 'region', label: 'Another region, same account' }, { value: 'separate', label: 'Another account' }];
 const TESTS: { value: Tests; label: string }[] = [{ value: 'never', label: 'Never' }, { value: 'quarterly', label: 'Quarterly' }, { value: 'weekly', label: 'Weekly' }];
 const LOCK_MAX_DAYS = 30;
-const WHERE_NAME: Record<Where, string> = { disk: 'same disk', account: 'same account', region: 'another region', separate: 'another account' };
+const WHERE_NAME: Record<Where, string> = { disk: 'same disk', account: 'same account', region: 'another region, same account', separate: 'another account' };
 
 export function PlanScene({ picker }: { picker: ReactNode }) {
   const [plan, setPlan] = useState<Plan>(DEFAULT_PLAN);
@@ -57,7 +57,7 @@ export function PlanScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Segmented label="Protection" value={plan.method} onChange={(method) => set({ method })} options={METHODS} />
-          <Slider label="Snapshot every" value={plan.snapshotH} min={MIN_SNAPSHOT_H} max={MAX_SNAPSHOT_H} step={6} onChange={(snapshotH) => set({ snapshotH })} format={(v) => `${v} h`} />
+          {plan.method === 'replica' ? <Hint tone="muted">A replica takes no snapshots, so there is no snapshot interval to set.</Hint> : <Slider label="Snapshot every" value={plan.snapshotH} min={MIN_SNAPSHOT_H} max={MAX_SNAPSHOT_H} step={6} onChange={(snapshotH) => set({ snapshotH })} format={(v) => `${v} h`} />}
           {plan.method === 'snapshots-log' && <Slider label="Log segment every" value={plan.logMin} min={MIN_LOG_MIN} max={MAX_LOG_MIN} step={5} onChange={(logMin) => set({ logMin })} format={(v) => `${v} min`} />}
         </>,
         <>
@@ -102,6 +102,7 @@ export function PlanScene({ picker }: { picker: ReactNode }) {
             </table>
           </div>
           <Hint tone="muted" block>{chosen.story}</Hint>
+          <Hint tone="muted" block>With a log archive, a restore to the incident minute reaches the last segment that was shipped, so a few minutes of data are lost whatever the scenario. The model counts every copy beyond the second the same as the second, and any restore test, quarterly or weekly, the same as the other: it asks only whether a test ever ran.</Hint>
         </Box>
         <Box>
           <SectionTitle>Rules of thumb</SectionTitle>
@@ -109,6 +110,7 @@ export function PlanScene({ picker }: { picker: ReactNode }) {
         </Box>
         <ProvenanceRow>
           <Provenance kind="toy" seed={seed}>a plan scored by simple rules over a toy week; the hidden fault comes from the seed</Provenance>
+          <Provenance kind="from-memory">object-lock semantics differ by product and mode. The model assumes a lock nobody, the account owner included, can shorten, and treats another region as the same account for the stolen-credential rule; verify both against your store's documentation</Provenance>
           <Provenance kind="illustrative">restore times, a one-minute replica lag, a five-minute failover and the three days it takes to notice an attacker are made-up round numbers; no vendor limits are quoted</Provenance>
         </ProvenanceRow>
       </div>

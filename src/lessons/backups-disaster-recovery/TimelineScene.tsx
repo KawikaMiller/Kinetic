@@ -41,7 +41,7 @@ export function TimelineScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Data lost (RPO)" value={minutesText(lost)} color={lost > 0 ? 'var(--bad)' : 'var(--ok)'} sub={`recoverable to ${clock(latestRecoverable(input))}`} />
           <Stat label="Time to restore (RTO)" value={minutesText(time.totalS / 60)} color="var(--orange)" sub={[`${secondsText(time.restoreS)} restoring ${time.restoreGB} GB`, `${secondsText(time.replayS)} replaying ${time.replayGB.toFixed(0)} GB of log`]} />
-          <Stat label="Restored database" value={restored === null ? 'no target' : matchesOracle(historyOf(), restored) ? 'matches' : 'differs'} color={restored === null ? undefined : matchesOracle(historyOf(), restored) ? 'var(--ok)' : 'var(--bad)'} sub={restored === null ? 'type a valid time' : `the never-failed database at ${clock(restored.reached)}`} />
+          <Stat label="Restored database" value={restored === null ? 'no target' : matchesOracle(historyOf(), restored) ? `matches at ${clock(restored.reached)}` : 'differs'} color={restored === null ? undefined : matchesOracle(historyOf(), restored) ? 'var(--ok)' : 'var(--bad)'} sub={restored === null ? 'type a valid time' : 'the never-failed database at that minute'} />
         </Stats>
       }
       legend={
@@ -81,7 +81,7 @@ export function TimelineScene({ picker }: { picker: ReactNode }) {
           <WideRegion minWidth={GANTT_MIN_WIDTH} label="Backup timeline: scroll sideways to see all of it">
             <GanttLanes lanes={gantt.lanes} bars={gantt.bars} domain={gantt.domain} axis={axis} hideEmptyLanes size="md" labelWidth={96} ariaLabel="Backups, log archive, disaster and recovery over one week" />
           </WideRegion>
-          <Hint tone="muted" block>Restore = the latest backup before the target, then replay the log up to it. Without a log archive the nearest point is the last backup.</Hint>
+          <Hint tone="muted" block>Restore = the latest backup before the target, then replay the log up to it. Without a log archive the nearest point is the last backup. Every incremental is 20 GB in this toy, however long since the last backup, and the restore applies the whole chain, so more frequent backups lengthen a restore.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={HISTORY_SEED}>a toy database of 8 keys with a seeded week of writes, and a drop at Thursday 14:07</Provenance>

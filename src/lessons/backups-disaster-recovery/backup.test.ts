@@ -160,3 +160,18 @@ describe('segments and gaps', () => {
     expect(snapshotsFor(24)[1].t).toBe(FULL_AT + 24 * 60);
   });
 });
+
+describe('what shortens a restore (the quiz asks)', () => {
+  const input = (snapshotH: number): RestoreInput => ({ history: seededHistory(0), snapshots: snapshotsFor(snapshotH), logMin: 15, gaps: new Set(), disasterAt: INCIDENT_AT });
+  const seconds = (snapshotH: number, mbPerS: number) => restoreTime(input(snapshotH), BAD_DEPLOY_AT - 1, mbPerS).totalS;
+
+  it('the time is inversely proportional to the throughput: doubling it halves the restore', () => {
+    for (const h of [6, 24, 48]) expect(seconds(h, 1000)).toBeCloseTo(seconds(h, 500) / 2, 6);
+  });
+
+  it('a more frequent backup does not shorten the restore: the cumulative incremental chain at a flat size makes 6 h slower than 24 h', () => {
+    expect(seconds(6, DEFAULT_THROUGHPUT)).toBeGreaterThan(seconds(24, DEFAULT_THROUGHPUT));
+    // the interval alone is not monotone either: 48 h is slower than 42 h
+    expect(seconds(48, DEFAULT_THROUGHPUT)).toBeGreaterThan(seconds(42, DEFAULT_THROUGHPUT));
+  });
+});

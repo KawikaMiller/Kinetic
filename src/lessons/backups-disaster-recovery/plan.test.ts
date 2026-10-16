@@ -46,7 +46,7 @@ describe('the scenario verdicts over every plan, restated independently', () => 
   it('survival follows the stated rules for each of 864 plans', () => {
     for (const method of METHODS) for (const copies of [1, 2, 3] as const) for (const where of WHERES) for (const immutableDays of [0, 2, 3, 7]) for (const tests of ['never', 'quarterly', 'weekly'] as Tests[]) for (const keyWith of [true, false]) {
       const p = plan({ method, copies, where, immutableDays, tests, keyWith });
-      const off = copies >= 2;
+      const off = copies >= 2 && where !== 'disk';
       const id = JSON.stringify([method, copies, where, immutableDays]);
       expect(ok(p, 'migration'), id).toBe(method !== 'replica');
       expect(ok(p, 'disk'), id).toBe(method === 'replica' || off);
@@ -68,6 +68,31 @@ describe('the scenario verdicts over every plan, restated independently', () => 
       expect(verdict(plan({ method: 'snapshots', logMin: 5 }), id, 4)).toEqual(verdict(plan({ method: 'snapshots', logMin: 60 }), id, 4));
       expect(verdict(plan({ method: 'replica', snapshotH: 6 }), id, 4)).toEqual(verdict(plan({ method: 'replica', snapshotH: 48 }), id, 4));
     }
+  });
+});
+
+describe('copies x location x fault, stated from the failure domains rather than the code', () => {
+  const WHERES: Where[] = ['disk', 'account', 'region', 'separate'];
+  it('a copy on the same disk is one failure domain: it never survives a disk failure or ransomware, locked or not', () => {
+    for (const method of ['snapshots', 'snapshots-log'] as Method[]) for (const copies of [1, 2, 3] as const) for (const immutableDays of [0, 7, 30]) {
+      const p = plan({ method, copies, where: 'disk', immutableDays });
+      expect(ok(p, 'disk'), JSON.stringify([method, copies, immutableDays])).toBe(false);
+      expect(ok(p, 'ransomware')).toBe(false);
+      expect(ok(p, 'region')).toBe(false);
+    }
+  });
+
+  it('with two or more copies off the disk: disk failure is survived everywhere, region loss only by another region or account, ransomware by another account or a long enough lock', () => {
+    for (const copies of [2, 3] as const) for (const where of WHERES.filter((w) => w !== 'disk')) for (const immutableDays of [0, DETECTION_DAYS - 1, DETECTION_DAYS, 30]) {
+      const p = plan({ method: 'snapshots', copies, where, immutableDays });
+      expect(ok(p, 'disk')).toBe(true);
+      expect(ok(p, 'region')).toBe(where === 'region' || where === 'separate');
+      expect(ok(p, 'ransomware')).toBe(where === 'separate' || immutableDays >= DETECTION_DAYS);
+    }
+  });
+
+  it('the shared-domain fault is possible exactly when a copy shares the database disk', () => {
+    for (const copies of [1, 2, 3] as const) for (const where of WHERES) expect(possibleFaults(plan({ copies, where })).includes('domain'), `${copies} ${where}`).toBe(copies === 1 || where === 'disk');
   });
 });
 
