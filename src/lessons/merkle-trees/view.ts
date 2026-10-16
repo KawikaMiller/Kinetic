@@ -136,9 +136,12 @@ export function bytesSent(n: number, comparisons: number, transferred: number) {
 
 export const sizeText = (n: number) => bytes(n, { iec: true, dp: 1 });
 
-/** Comparisons for each tree size at k differences placed from a seed, for the n-versus-comparisons plot. */
-export function comparisonSeries(k: number, seed: number, sizes: readonly number[]): { n: number; comparisons: number }[] {
-  return sizes.map((n) => ({ n, comparisons: expectedComparisons(n, pickPositions(seed, k, n)) }));
+/**
+ * Comparisons for each tree size at k differences, for the n-versus-comparisons plot. The k positions come from the seed, except at the
+ * replica's own size (16), where they are the ranges the learner marked, so that point is the very run shown above it.
+ */
+export function comparisonSeries(edits: ReadonlySet<number>, seed: number, sizes: readonly number[]): { n: number; comparisons: number }[] {
+  return sizes.map((n) => ({ n, comparisons: expectedComparisons(n, n === REPLICA_LEAVES ? edits : pickPositions(seed, edits.size, n)) }));
 }
 
 export type Tamper = 'none' | 'leaf' | 'sibling' | 'index';

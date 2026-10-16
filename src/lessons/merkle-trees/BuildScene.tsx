@@ -45,7 +45,7 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Root" value={shortHash(tree.hash)} sub="first 4 of 64 hex characters" />
-          <Stat label="Hashes changed" value={changedNodes(tree, changed)} color={changed.size > 0 ? 'var(--bad)' : undefined} sub={`of ${flatten(tree).length} hashes in the tree`} />
+          <Stat label="Nodes changed" value={changedNodes(tree, changed)} color={changed.size > 0 ? 'var(--bad)' : undefined} sub={`of ${flatten(tree).length} nodes drawn in the tree (a duplicated node is drawn twice)`} />
         </Stats>
       }
       legend={
@@ -89,6 +89,7 @@ export function BuildScene({ picker }: { picker: ReactNode }) {
               ))}
             </tbody>
           </table>
+          <Hint tone="muted" block>The 0x00 and 0x01 prefixes keep the two kinds of node apart: without them a leaf holding the bytes of two child hashes would hash like their parent, and a block could pose as an inner node.</Hint>
           <Hint tone="muted" block>With duplication, three leaves and four leaves ending in the same block share one root, so a verifier must also be told the leaf count. {plural(leaves.length, 'leaf', 'leaves')} are drawn above.</Hint>
         </Box>
         <ProvenanceRow>

@@ -33,7 +33,7 @@ const lesson: LessonModule = {
     `In "A toy that fails" (seed ${toy.lowest}, toy 8-bit hash): the descent misses ${plural(toy.missed.length, 'range')} of the ${toy.truth.length} that differ, and ${toy.missSeeds} of 200 seeds miss something. Switch Hash to SHA-256: it finds all ${toy.truth.length}.`,
   ],
   keyIdeas: [
-    'In this model changing one leaf changes exactly the hashes on its path to the root, so two trees with equal roots hold equal data, and unequal roots can be narrowed to the blocks that differ.',
+    'In this model changing one leaf changes exactly the hashes on its path to the root, so two trees of the same shape built with a collision-resistant hash have equal roots only if they hold equal data, and unequal roots can be narrowed to the blocks that differ.',
     'In this model anti-entropy compares roots and then descends into the children whose hashes differ, so for k differing blocks among n it makes no more than 1 + 2 k log2 n comparisons, not n.',
     'An inclusion proof is the sibling hashes along one path, about log2 n of them, and a verifier that trusts the root alone recomputes it, so one block is checked without downloading the rest.',
     'In this lesson a toy 8-bit hash collides on some seeds and the descent skips a differing subtree, which shows that hash width, and not the idea that hashes are unique, is what makes a match mean equal.',

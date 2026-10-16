@@ -173,6 +173,8 @@ export function findDiffs(kind: HashKind, a: readonly string[], b: readonly stri
   return { found: found.sort((x, y) => x - y), comparisons };
 }
 
-export const SYNC_SEEDS =Array.from({ length: 200 }, (_, i) => i);
+export const SYNC_SEEDS = Array.from({ length: 200 }, (_, i) => i);
+/** On how many of the 200 seeds the descent with this hash misses a real difference. */
+export const missSeedCount = (kind: HashKind): number => SYNC_SEEDS.filter((s) => { const r = seededReplicas(s); return findDiffs(kind, r.a, r.b).found.length !== directDiff(r.a, r.b).length; }).length;
 /** The lowest seed of 0..199 on which the descent with this hash misses a real difference. */
 export const lowestMiss = (kind: HashKind): number | undefined => SYNC_SEEDS.find((seed) => { const r = seededReplicas(seed); return runSync(kind, r.a, r.b).missed.length > 0; });

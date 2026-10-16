@@ -6,9 +6,9 @@ import { buildCaption, proofCaption, syncCaption, syncVerdict, toyCaption } from
 import { buildFacts, proofFacts, syncFacts, toyFacts } from './facts';
 import lesson from './index';
 import { auditPath, buildTree, rootHash, utf8, verifyInclusion } from './merkle';
-import { REPLICA_LEAVES, baseLeaves, runSync } from './sync';
+import { REPLICA_LEAVES, SYNC_SEEDS, baseLeaves, missSeedCount, runSync, seededReplicas } from './sync';
 import {
-  BUILD_OPEN, PROOF_OPEN, SYNC_OPEN, TOY_OPEN, buildLeaves, changeMark, collisionNodes, pickPositions, replicaB, syncFrames, syncMark, tamperedProof, toggleEdit,
+  BUILD_OPEN, PROOF_OPEN, SIZES, SYNC_OPEN, TOY_OPEN, buildLeaves, changeMark, collisionNodes, comparisonSeries, pickPositions, replicaB, syncFrames, syncMark, tamperedProof, toggleEdit,
 } from './view';
 
 const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n);
@@ -144,6 +144,31 @@ describe('captions are computed from the model', () => {
   it('the toy caption names the hash, the counts and the number of seeds that miss', () => {
     expect(text(toyCaption(true, [12, 14], [7, 11, 12, 14], 10, 7))).toContain('found 2 and missed 2 ranges (12, 14). 7 of 200 seeds miss something with this hash');
     expect(text(toyCaption(false, [], [7, 11, 12, 14], 10, 0))).toContain('all 4 differences found');
+  });
+});
+
+describe('the anti-entropy plot agrees with the run above it', () => {
+  it('at n = 16 the plotted point uses the ranges that were marked, not seeded ones (ranges 0 and 1: the run makes 9 comparisons)', () => {
+    const marked = new Set([0, 1]);
+    const point = comparisonSeries(marked, 0, SIZES).find((p) => p.n === REPLICA_LEAVES)!;
+    expect(point.comparisons).toBe(runSync('sha256', baseLeaves(REPLICA_LEAVES), replicaB(marked)).comparisons);
+    expect(point.comparisons).toBe(9);
+  });
+
+  it('for every pair of marked ranges the n = 16 point is the real run, whatever the seed', () => {
+    for (let i = 0; i < REPLICA_LEAVES; i++) for (let j = i + 1; j < REPLICA_LEAVES; j++) {
+      const marked = new Set([i, j]);
+      const run = runSync('sha256', baseLeaves(REPLICA_LEAVES), replicaB(marked));
+      for (const seed of [0, 7]) expect(comparisonSeries(marked, seed, SIZES).find((p) => p.n === REPLICA_LEAVES)!.comparisons, `${i},${j} seed ${seed}`).toBe(run.comparisons);
+    }
+  });
+});
+
+describe('the seeds that miss are counted, not typed', () => {
+  it('SHA-256 misses no difference on any of the 200 seeds, and the toy hash misses on some', () => {
+    expect(missSeedCount('sha256')).toBe(0);
+    expect(missSeedCount('toy8')).toBe(SYNC_SEEDS.filter((s) => { const r = seededReplicas(s); return runSync('toy8', r.a, r.b).missed.length > 0; }).length);
+    expect(missSeedCount('toy8')).toBeGreaterThan(0);
   });
 });
 

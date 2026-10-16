@@ -42,6 +42,6 @@ export function proofCaption(v: Verification, index: number, size: number): stri
 
 export function toyCaption(toy: boolean, missed: number[], truth: number[], seed: number, missCount: number): string {
   const hash = toy ? 'the toy 8-bit hash' : 'the 256-bit hash';
-  if (missed.length === 0) return `Seed ${seed}, ${hash}: all ${plural(truth.length, 'difference')} found (range ${truth.join(', ')}).`;
+  if (missed.length === 0) return `Seed ${seed}, ${hash}: all ${plural(truth.length, 'difference')} found (${truth.length === 1 ? 'range' : 'ranges'} ${truth.join(', ')}).`;
   return `Seed ${seed}, ${hash}: ${plural(truth.length, 'range')} differ, the descent found ${truth.length - missed.length} and missed ${plural(missed.length, 'range')} (${missed.join(', ')}). ${missCount} of 200 seeds miss something with this hash.`;
 }

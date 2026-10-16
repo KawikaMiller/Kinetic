@@ -6,7 +6,7 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } 
 import { toyCaption, plural } from './captions';
 import { HashTree } from './HashTree';
 import { buildTree, type HashKind } from './merkle';
-import { SYNC_SEEDS, directDiff, findDiffs, lowestMiss, runSync, seededReplicas } from './sync';
+import { SYNC_SEEDS, lowestMiss, missSeedCount, runSync, seededReplicas } from './sync';
 import { TOY_OPEN, collisionNodes, syncFrames, syncMark } from './view';
 
 export function ToyScene({ picker }: { picker: ReactNode }) {
@@ -19,8 +19,8 @@ export function ToyScene({ picker }: { picker: ReactNode }) {
   const final = useMemo(() => syncFrames(kind, a, b, () => '').at(-1)!, [kind, a, b]);
   const tree = useMemo(() => buildTree(kind, a)!, [kind, a]);
   const collisions = useMemo(() => collisionNodes(kind, a, b), [kind, a, b]);
-  const misses = useMemo(() => ({ toy8: SYNC_SEEDS.filter((s) => { const r = seededReplicas(s); return findDiffs('toy8', r.a, r.b).found.length !== directDiff(r.a, r.b).length; }).length, lowest: lowestMiss('toy8') }), []);
-  const missCount = toy ? misses.toy8 : 0;
+  const misses = useMemo(() => ({ toy8: missSeedCount('toy8'), sha256: missSeedCount('sha256'), lowest: lowestMiss('toy8') }), []);
+  const missCount = misses[kind];
   const caption = toyCaption(toy, result.missed, result.truth, seed, missCount);
 
   return (
@@ -33,7 +33,7 @@ export function ToyScene({ picker }: { picker: ReactNode }) {
           <Stat label="Ranges that differ" value={result.truth.length} sub={`seed ${seed}`} />
           <Stat label="Found by the descent" value={result.found.length} color={result.missed.length > 0 ? 'var(--bad)' : 'var(--ok)'} sub={`${result.comparisons} comparisons`} />
           <Stat label="Missed" value={result.missed.length} color={result.missed.length > 0 ? 'var(--bad)' : 'var(--ok)'} sub={result.missed.length > 0 ? `ranges ${result.missed.join(', ')}` : 'none'} />
-          <Stat label="Seeds that miss, of 200" value={missCount} sub={toy ? `the lowest is seed ${misses.lowest}` : 'a 256-bit hash misses none'} />
+          <Stat label={`Seeds that miss, of ${SYNC_SEEDS.length}`} value={missCount} sub={toy ? `the lowest is seed ${misses.lowest}` : `counted over all ${SYNC_SEEDS.length} seeds with a 256-bit hash`} />
         </Stats>
       }
       legend={
@@ -51,7 +51,7 @@ export function ToyScene({ picker }: { picker: ReactNode }) {
           {picker}
           <Toggle label="Hash" value={toy} onChange={setToy} off="SHA-256 (256 bits)" on="Toy 8-bit hash" />
           <SeedField seed={seed} onSeed={setSeed} label="Seed (which ranges differ)" />
-          <Button onClick={() => setSeed(misses.lowest ?? 0)}>Load seed {misses.lowest}</Button>
+          {seed !== misses.lowest && <Button onClick={() => setSeed(misses.lowest ?? 0)}>Load seed {misses.lowest}</Button>}
         </>,
       ]}
     >

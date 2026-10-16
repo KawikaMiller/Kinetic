@@ -5,6 +5,7 @@ import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { toSequence } from '../../core/distSim';
 import { usePlayer } from '../../core/usePlayer';
@@ -16,6 +17,8 @@ import { SIZES, SYNC_OPEN, bytesSent, comparisonSeries, pickPositions, replicaB,
 
 const STEP_MS = 900;
 const LEAF_CELL = { cell: 34 };
+/** The narrowest width at which the 16 cells keep their 34 px size, so their labels stay at 8 px or more. */
+const LEAF_STRIP_MIN_WIDTH = REPLICA_LEAVES * LEAF_CELL.cell + 60;
 const SIZE_OPTIONS = SIZES.map((n) => ({ value: n, label: n.toLocaleString('en-US') }));
 const LABEL = (p: SyncMsg) => (p.type === 'hashes' ? `hashes of ${p.ids.length} node${p.ids.length === 1 ? '' : 's'}` : p.type === 'reply' ? `${Object.keys(p.hashes).length} hash${Object.keys(p.hashes).length === 1 ? '' : 'es'}` : p.type === 'fetch' ? `fetch ${p.leaves.length} range${p.leaves.length === 1 ? '' : 's'}` : `${Object.keys(p.blocks).length} range${Object.keys(p.blocks).length === 1 ? '' : 's'}`);
 
@@ -34,7 +37,7 @@ export function SyncScene({ picker }: { picker: ReactNode }) {
   const atEnd = f.index === frames.length - 1;
   const sizes = useMemo(() => bytesSent(REPLICA_LEAVES, result.comparisons, result.found.length), [result]);
   const sequence = useMemo(() => toSequence(result.cluster.trace.filter((r) => r.payload && (r.kind === 'send' || r.kind === 'drop')), { label: LABEL, actors: [{ id: 'a', label: 'replica A' }, { id: 'b', label: 'replica B' }] }), [result]);
-  const series = useMemo(() => comparisonSeries(edits.size, seed, SIZES), [edits, seed]);
+  const series = useMemo(() => comparisonSeries(edits, seed, SIZES), [edits, seed]);
   const here = series.find((p) => p.n === size)!;
   const yMax = Math.max(...SIZES);
   const change = (k: number) => setEdits(pickPositions(seed, k));
@@ -51,8 +54,8 @@ export function SyncScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Hash comparisons" value={f.comparisons} sub={`naive: ${REPLICA_LEAVES} range by range`} />
           <Stat label="Ranges to transfer" value={f.phase === 'start' ? '?' : f.found.length} sub={`of ${REPLICA_LEAVES}`} />
-          <Stat label="Naive sends" value={sizeText(sizes.naive)} sub="every range" />
-          <Stat label="Anti-entropy sends" value={sizeText(sizes.smart)} color={sizes.saved > 0 ? 'var(--ok)' : 'var(--hi)'} sub={`${sizes.saved >= 0 ? 'saves' : 'costs'} ${sizeText(Math.abs(sizes.saved))} at this size`} />
+          <Stat label="Naive transfer" value={sizeText(sizes.naive)} sub="every range crosses the wire" />
+          <Stat label="Anti-entropy transfer" value={sizeText(sizes.smart)} color={sizes.saved > 0 ? 'var(--ok)' : 'var(--hi)'} sub={`B's hash replies and the fetched ranges, A's requests not counted; ${sizes.saved >= 0 ? 'saves' : 'costs'} ${sizeText(Math.abs(sizes.saved))} once finished`} />
         </Stats>
       }
       legend={
@@ -77,6 +80,7 @@ export function SyncScene({ picker }: { picker: ReactNode }) {
       <div className="mkl-stage stage-pad">
         <Box>
           <SectionTitle hint="replica B's 16 key ranges: click to edit or restore one">B differs from A at</SectionTitle>
+          <WideRegion minWidth={LEAF_STRIP_MIN_WIDTH} label="Key ranges of replica B: scroll sideways to see all 16">
           <CellGrid
             rows={1}
             cols={REPLICA_LEAVES}
@@ -86,6 +90,7 @@ export function SyncScene({ picker }: { picker: ReactNode }) {
             cellAriaLabel={(_, c) => `Key range ${c}, ${edits.has(c) ? 'edited on B' : 'same on both'}: press to toggle`}
             ariaLabel="Key ranges of replica B"
           />
+          </WideRegion>
         </Box>
         <Box>
           <SectionTitle hint="A's tree, marked with what each comparison with B found">The descent</SectionTitle>
@@ -97,7 +102,7 @@ export function SyncScene({ picker }: { picker: ReactNode }) {
           <SequenceDiagram actors={sequence.actors} messages={sequence.messages} />
         </Box>
         <Box>
-          <SectionTitle hint="computed from the tree shape, no hashing: n leaves, the same differences">Comparisons against tree size</SectionTitle>
+          <SectionTitle hint="computed from the tree shape, no hashing: n leaves, the same number of differences; at n = 16 the ranges you marked, otherwise seeded positions">Comparisons against tree size</SectionTitle>
           <Plot2D x={{ domain: [16, yMax], log: true, label: 'leaves n', tickValues: SIZES.filter((_, i) => i % 2 === 0) }} y={{ domain: [1, yMax], log: true, label: 'comparisons' }} ariaLabel="Hash comparisons against the number of leaves">
             <Curve points={SIZES.map((n) => [n, n])} tone="bad" dashed />
             <Curve points={series.map((p) => [p.n, p.comparisons])} tone="ok" />
