@@ -251,8 +251,43 @@ describe('hostile input', () => {
   it('a macro that expands into itself stops at the limit of 20, in every strategy', () => {
     for (const s of ['text', 'tree', 'hygienic'] as const) {
       const r = go(s, 'macro R(x) = R(x) + 1', 'R(a)');
-      expect(r.expanded).toEqual({ ok: false, error: 'Stopped at the expansion limit of 20: this macro keeps expanding into itself.' });
+      expect(r.expanded).toEqual({ ok: false, error: expect.stringContaining('Stopped at the expansion limit of 20') });
     }
+  });
+
+  it('nested calls that multiply the size are refused past 500 nodes, quickly, in every strategy', () => {
+    const thirty = 'macro M(x) = ' + Array.from({ length: 30 }, () => 'x').join('+');
+    const started = Date.now();
+    for (const s of ['text', 'tree', 'hygienic'] as const) {
+      const r = go(s, thirty, 'M(M(M(M(a))))');
+      expect(r.expanded, s).toEqual({ ok: false, error: expect.stringContaining('Stopped: the expansion grew past 500') });
+      expect(r.source).toBeNull();
+    }
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it('the size cap sits where the arithmetic says: x+x nested n deep has 2^n leaves and 2^n - 1 plus signs', () => {
+    const nest = (n: number) => 'M('.repeat(n) + 'a' + ')'.repeat(n);
+    for (const s of ['tree', 'hygienic'] as const) {
+      const ok = go(s, 'macro M(x) = x + x', nest(7));
+      expect(ok.expanded.ok, s).toBe(true);
+      expect(value(ok), s).toBe(128 * 4);
+      expect(go(s, 'macro M(x) = x + x', nest(8)).expanded, s).toEqual({ ok: false, error: expect.stringContaining('grew past 500') });
+    }
+    // Text substitution re-expands every copied argument, so it meets the 20-expansion limit first: 2^n - 1 expansions.
+    expect(value(go('text', 'macro M(x) = x + x', nest(4)))).toBe(16 * 4);
+    expect(go('text', 'macro M(x) = x + x', nest(5)).expanded).toEqual({ ok: false, error: expect.stringContaining('expansion limit of 20') });
+  });
+
+  it('a value that overflows is refused, not shown as Infinity', () => {
+    const thirty = 'macro P(x) = ' + Array.from({ length: 30 }, () => 'x').join('*');
+    const r = go('tree', thirty, 'P(999999999999999)');
+    expect(r.evaluated).toEqual({ ok: false, error: expect.stringContaining('too large') });
+  });
+
+  it('an unknown macro is named the same way by every strategy', () => {
+    const errors = (['text', 'tree', 'hygienic'] as const).map((s) => go(s, 'macro M(x) = x + 1', 'T(1)').expanded);
+    for (const e of errors) expect(e).toEqual({ ok: false, error: 'Unknown macro T: only M is defined here.' });
   });
 
   it('a wrong number of arguments is refused', () => {

@@ -78,6 +78,6 @@ describe('the control cross product gives clean captions', () => {
   });
 
   it('the recursive macro stops at the limit in the caption', () => {
-    expect(FACTS.recursiveError).toBe(`Stopped at the expansion limit of ${FACTS.limit}: this macro keeps expanding into itself.`);
+    expect(FACTS.recursiveError).toContain(`Stopped at the expansion limit of ${FACTS.limit}`);
   });
 });

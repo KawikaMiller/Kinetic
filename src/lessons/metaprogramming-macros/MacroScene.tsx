@@ -73,7 +73,7 @@ export function MacroScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--info)', label: 'from the caller', shape: 'square' },
             { color: 'var(--violet)', label: 'from the template', shape: 'square' },
-            { color: 'var(--bad)', label: 'captured or regrouped wrongly', shape: 'square' },
+            { color: 'var(--bad)', label: 'captured, or regrouped by the template', shape: 'square' },
             { color: 'var(--ok)', label: 'renamed binder (hygiene)', shape: 'square' },
           ]}
         />
@@ -175,7 +175,7 @@ export function MacroScene({ picker }: { picker: ReactNode }) {
               <tr key={s} className={s === strategy ? 'is-current' : ''}>
                 <td>{STRATEGY_LABEL[s]}</td>
                 <td>
-                  <code>{runs[s].source ?? 'stopped at the limit or refused'}</code>
+                  <code>{runs[s].source ?? (runs[s].expanded.ok ? '' : runs[s].expanded.error)}</code>
                 </td>
                 <td>{runs[s].expanded.ok ? valueText(runs[s].evaluated) : 'no value'}</td>
               </tr>

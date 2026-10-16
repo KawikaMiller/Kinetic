@@ -41,7 +41,7 @@ export function runMacro(strategy: Strategy, def: MacroDef, callTokens: readonly
 export function reasons(r: RunResult): string[] {
   if (!r.problems) return [];
   const out: string[] = [];
-  if (r.problems.regrouped.length) out.push(`${plural(r.problems.regrouped.length, 'operator')} of the argument were regrouped by the template's own operators: the argument did not stay one expression.`);
+  if (r.problems.regrouped.length) out.push(`${plural(r.problems.regrouped.length, 'operator')} of the argument ${r.problems.regrouped.length === 1 ? 'was' : 'were'} regrouped by the template's own operators: the argument did not stay one expression (the value may still come out the same).`);
   if (r.problems.captured.length) out.push(`${plural(r.problems.captured.length, 'use')} of the caller's name ${r.problems.captured.length === 1 ? 'was' : 'were'} captured by a binder of the template with the same name.`);
   return out;
 }
