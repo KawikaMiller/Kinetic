@@ -134,6 +134,7 @@ ideas and quiz `why`, exempted per line with `allow-absolute: <reason>`; a missi
 - `npm run smoke -- --mobile` must pass too: at 390x844 it fails on page overflow, content the
   stage frame clips, and scene (SVG) text rendered under 8px. Look at the 390px screenshots of
   anything you touched, and check 768px as well.
+- `npm run smoke -- --scenes <ids...>` (or `--shard=2/4`) clicks every scene tab of a lesson, sits idle ~3 s and fails on any console error, render loops included: plain smoke sees only the default scene. Run it on the lessons you touched, not all 330 in one process.
 - Look at the screenshots; "no errors" is not "looks right".
 - Refactors must be pixel-identical unless a change is deliberate. Capture a baseline on the
   untouched tree first (`npm run smoke -- --frames --label=base`: seeded `Math.random`, reduced
