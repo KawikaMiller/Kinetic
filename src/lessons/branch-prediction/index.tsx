@@ -14,12 +14,12 @@ const lesson: LessonModule = {
     what: 'A branch predictor remembers how branches behaved and guesses the next outcome. A 1-bit predictor repeats the last outcome. A 2-bit saturating counter has four states and needs two wrong outcomes in a row to change its guess, which suits a loop. A two-level predictor adds a short history of recent outcomes, so it can learn a repeating pattern. A wrong guess costs a pipeline flush: the instructions fetched down the wrong path are discarded, and each lost cycle is added to the total. The same loop can be fast or slow just because its data is sorted or not.',
     analogy: 'A waiter who sets the next table before you have said what you want. If he guessed right, dinner arrives sooner; if he guessed wrong, he clears the table and starts again.',
     useCases: [
-      'Why a loop over sorted data can run several times faster than over the same values shuffled',
+      `Why a loop over sorted data runs faster than over the same values shuffled: ${(sorted.unsortedCycles / sorted.sortedCycles).toFixed(1)}x in this model's cycles, and the gap on real hardware varies with the CPU`,
       'Why branch-free code (conditional moves, arithmetic selects) can win on unpredictable data and lose on predictable data',
       'Reading "branch-misses" in perf, VTune or Instruments',
       'Understanding why speculative execution became a security topic: discarded work can leave traces',
     ],
-    why: 'Pipelines are deep enough that a wrong guess wastes many cycles, so predictability of your branches is a performance property of your code, and speculation is the root of a family of security bugs. It builds on `cpu-pipelining`, which stops at "a taken branch throws away 2 instructions".',
+    why: 'Pipelines are reported to be deep enough on real CPUs that a wrong guess wastes many cycles, so predictability of your branches is a performance property of your code, and speculation is the root of a family of security bugs. It builds on `cpu-pipelining`, which stops at "a taken branch throws away 2 instructions".',
     watch:
       'Predictor lab: the stream grid shows each branch outcome in yellow (taken) or grey (not taken), and under each processed branch the predictor\'s guess in green if it was right and red if it was wrong; the current branch has a yellow ring on its outcome and a violet ring on its guess. The counter diagram ringed in blue is the counter\'s state now, and the yellow edge is the move just made. The plot draws each predictor as its own categorical line (orange, amber, pink, sky and grey), the selected one solid. Sorted versus unsorted: yellow is a taken branch, grey not taken, red a miss, dim a loop with no branch. Speculation: the branch is yellow, speculative instructions are dim outlines, then green when kept after a right guess or red when flushed after a wrong one. Chips say what is a toy, illustrative, simulated or from memory.',
   },
@@ -34,7 +34,7 @@ const lesson: LessonModule = {
     'A branch predictor guesses before the branch resolves; in this model a wrong guess discards the work fetched on it and total cycles are instructions plus misses times the penalty.',
     'A 2-bit counter needs two wrong outcomes in a row to change its guess, which helps at a loop exit, but a pattern like TTNN can make a 1-bit predictor miss fewer branches.',
     'Sorted data gives the same branch a stream with one change instead of a coin flip, so the same predictor misses a handful of branches instead of about half.',
-    'Real CPUs use far larger predictors than these textbook ones, and discarded speculative work can still leave traces in caches.',
+    'Real CPUs are reported to use far larger predictors than these textbook ones (see the from-memory chip in the predictor lab), and discarded speculative work can still leave traces in caches.',
   ],
   quiz: [
     {
@@ -46,7 +46,7 @@ const lesson: LessonModule = {
         'On none once warmed up, since a regular pattern is easy to predict',
       ],
       answer: 0,
-      why: `A 1-bit predictor guesses what the branch did last time, and an alternating branch does the opposite each time, so in this model it misses the whole run (${n(lab.altOneBit)} of ${n(lab.branches)} in the lab).`,
+      why: `A 1-bit predictor guesses what the branch did last time, and an alternating branch does the opposite each time, so in this model it misses the whole run (${n(lab.altOneBit)} of ${n(lab.branches)} in the lab with the initial state set to 1; at the opening state 2 it first guesses taken and misses one fewer).`,
     },
     {
       q: 'Why does sorting the array make the same `if (x >= 128)` loop faster?',

@@ -192,6 +192,12 @@ describe('honesty and quiz', () => {
     const f = labFacts();
     expect(lesson.quiz[0].why).toContain(`${f.altOneBit} of ${f.branches}`);
     expect(lesson.quiz[3].options[0]).toContain(`${f.pairsOneBit} against ${f.pairsTwoBit}`);
+    // hand oracle for the "one fewer at the opening state" claim: 1-bit guesses the last outcome, and 'taken' first when the counter is 2 or more
+    const alt = labOutcomes({ kind: 'pattern', pattern: PATTERN_PRESETS.find((p) => p.id === 'alternating')!.pattern });
+    const handMisses = (firstGuess: boolean) => alt.reduce((m, t, k) => m + ((k === 0 ? firstGuess : alt[k - 1]) === t ? 0 : 1), 0);
+    expect(handMisses(false)).toBe(f.altOneBit);
+    expect(handMisses(true)).toBe(f.altOneBit - 1);
+    expect(missCount(run({ kind: 'one-bit', initialCounter: 2, historyBits: 2 }, alt))).toBe(f.altOneBit - 1);
     expect(speculation(5, false).flushed).toBe(4);
     expect(lesson.quiz[4].answer).toBe(0);
     expect(lesson.quiz[4].options[0]).toBe('4');

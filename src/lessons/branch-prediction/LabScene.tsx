@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { CellGrid, type GridCellSpec } from '../../components/CellGrid';
 import { GraphView } from '../../components/GraphView';
@@ -71,6 +71,15 @@ export function LabScene({ picker }: { picker: ReactNode }) {
   );
   const curves = useMemo(() => accuracyCurves(initialCounter, historyBits), [initialCounter, historyBits]);
 
+  // The "Edit as a pattern" button unmounts when it works, so hand focus to the first outcome toggle.
+  const strip = useRef<HTMLDivElement>(null);
+  const focusStrip = useRef(false);
+  useEffect(() => {
+    if (sourceKind === 'pattern' && focusStrip.current) {
+      focusStrip.current = false;
+      strip.current?.querySelector('button')?.focus();
+    }
+  }, [sourceKind]);
   const editPattern = (index: number) => {
     const base = sourceKind === 'pattern' ? pattern : outcomes.slice(0, PATTERN_LENGTH);
     setPattern(base.map((b, k) => (k === index ? !b : b)));
@@ -169,7 +178,7 @@ export function LabScene({ picker }: { picker: ReactNode }) {
             ariaLabel={`Branch outcomes and the predictor's guesses${step ? `, now at branch ${step.index + 1}: guessed ${word(step.guess)}, was ${word(step.taken)}` : ''}`}
           />
           {sourceKind === 'pattern' ? (
-            <div className="bp-pattern">
+            <div className="bp-pattern" ref={strip}>
               <BitStrip
                 bits={pattern.map((b) => (b ? 1 : 0))}
                 size="sm"
@@ -181,7 +190,7 @@ export function LabScene({ picker }: { picker: ReactNode }) {
             </div>
           ) : (
             <Hint tone="muted" block>
-              This stream is not an editable pattern. <ChipButton tone="info" onClick={() => editPattern(0)}>Edit as a pattern</ChipButton> starts from its first 16 outcomes.
+              This stream is not an editable pattern. <ChipButton tone="info" onClick={() => { focusStrip.current = true; editPattern(0); }}>Edit as a pattern</ChipButton> starts from its first 16 outcomes.
             </Hint>
           )}
         </Box>
@@ -271,6 +280,7 @@ export function LabScene({ picker }: { picker: ReactNode }) {
           <Provenance kind="toy">textbook predictors, not what your CPU runs</Provenance>
           <Provenance kind="illustrative">miss penalty and branch frequency are chosen, not measured</Provenance>
           <Provenance kind="simulated" seed={LAB_SEED}>random streams are seeded; every count is model cycles</Provenance>
+          <Provenance kind="from-memory">modern cores are reported to use history-based predictors (the TAGE family or perceptron-style), a branch target buffer and a return-address stack; the designs are mostly unpublished, so verify against Hennessy and Patterson and the vendor manuals</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>
