@@ -89,6 +89,7 @@ describe('captions are computed from the model', () => {
             expect(text.includes('Causal mask'), 'mask sentence').toBe(causal);
             expect(text.includes('Head A'), 'head A sentence').toBe(two);
             expect(text.includes('no position code'), 'head A blind').toBe(two && !positions);
+            expect(text.includes('hand-built to read only the word dimensions'), 'head B note').toBe(positions && !two);
             if (two && positions) {
               const previous = layer.a.weights.slice(1).map((row, i) => row[i]);
               const mean = previous.reduce((a, b) => a + b, 0) / previous.length;
@@ -97,7 +98,9 @@ describe('captions are computed from the model', () => {
             }
             if (test) {
               const kept = test.filter((r) => r.same).length;
-              expect(text.includes('cannot tell the order'), 'order-blind').toBe(kept === N);
+              const headBOnly = positions && !two;
+              expect(text.includes('cannot tell the order'), 'order-blind').toBe(kept === N && !headBOnly);
+              expect(text.includes('ignores the position code by construction'), 'head B ignores position').toBe(kept === N && headBOnly);
               if (kept < N) expect(text).toContain(`${kept} of ${N} tokens kept their output`);
               expect(text.includes('mask itself carries order')).toBe(kept < N && causal && !positions);
             } else expect(text.includes('Shuffled')).toBe(false);
@@ -106,6 +109,12 @@ describe('captions are computed from the model', () => {
       }
     }
     expect(expectCaption(headsCaption({ causal: false, positions: false, twoHeads: false, aWeights: null, shuffle: null }))).toContain('Head B looks at tokens');
+  });
+
+  it('the lookup caption says the bars are blended only when Blend is above 0', () => {
+    const base = { epoch: 10, item: 0, weight: 0.4, start: 0.29, loss: 1, allLearned: false };
+    expect(expectCaption(lookupCaption({ ...base, blended: true }))).toContain('blended query');
+    expect(expectCaption(lookupCaption({ ...base, blended: false }))).not.toContain('blended query');
   });
 
   it('the lookup caption: untrained, partly trained and learned, from the run', () => {

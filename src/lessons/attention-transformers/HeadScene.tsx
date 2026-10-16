@@ -54,6 +54,7 @@ export function HeadScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="at-stage stage-pad">
+        <span className="hint">Click a token in the arcs, or use the Token buttons to pick it from the keyboard.</span>
         <TokenArcs from={token} weights={weights} onPick={setToken} ariaLabel={`Attention from ${TOKENS[token]} to each token`} />
         <div className="at-row">
           <figure className="at-figure">

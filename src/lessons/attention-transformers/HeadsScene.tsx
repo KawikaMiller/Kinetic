@@ -58,7 +58,7 @@ export function HeadsScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Heads" value={two ? '2' : '1'} sub={two ? 'A: previous token, B: same word' : 'B: same word'} />
-          <Stat label="Position code" value={positions ? 'on' : 'off'} sub="2-number sine and cosine, added to two reserved dimensions" />
+          <Stat label="Position code" value={positions ? 'on' : 'off'} sub={two ? '2-number sine and cosine, added to two reserved dimensions' : 'head B ignores it; only head A reads the position dimensions'} />
           {test && <Stat label="Tokens with the same output" value={`${test.filter((r) => r.same).length} of ${N}`} sub="after shuffling the input" />}
         </Stats>
       }

@@ -81,13 +81,13 @@ export function LookupScene({ picker }: { picker: ReactNode }) {
     <StageFrame
       height={540}
       intro={lookupCaption({
-        epoch: snap.epoch, item, weight: ownWeight, start: snap.diagonal[0][item], loss: snap.loss[snap.epoch], allLearned: snap.diagonal[snap.epoch].every((w) => w >= LEARNED_WEIGHT),
+        epoch: snap.epoch, item, weight: ownWeight, start: snap.diagonal[0][item], loss: snap.loss[snap.epoch], allLearned: snap.diagonal[snap.epoch].every((w) => w >= LEARNED_WEIGHT), blended: mix > 0,
       })}
       introKey={[snap.epoch, item, seed]}
       stats={
         <Stats>
           <Stat label="Epoch" value={snap.epoch} sub={`trains W_q and W_k only; the values are fixed`} />
-          <Stat label={`Weight on key ${ITEM_NAMES[item]}`} value={pctText(ownWeight, 0)} color={ownWeight >= LEARNED_WEIGHT ? 'var(--ok)' : undefined} sub={`before training ${pctText(snap.diagonal[0][item], 0)}`} />
+          <Stat label={`Weight on key ${ITEM_NAMES[item]}${mix > 0 ? ', pure query' : ''}`} value={pctText(ownWeight, 0)} color={ownWeight >= LEARNED_WEIGHT ? 'var(--ok)' : undefined} sub={`before training ${pctText(snap.diagonal[0][item], 0)}`} />
           <Stat label="Loss" value={sig(snap.loss[snap.epoch])} sub={`starts at ${sig(snap.loss[0])}`} />
         </Stats>
       }

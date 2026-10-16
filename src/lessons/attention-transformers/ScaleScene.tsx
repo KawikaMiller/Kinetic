@@ -8,6 +8,9 @@ import { scaleCaption } from './captions';
 import { DK_STOPS, HIST_LIMIT, HIST_SAMPLES, KEYS, WEIGHT_DRAWS, measureScaling, type ScalingResult } from './scaling';
 import { scaleOpening } from './openings';
 
+/** Lets the "drawing the samples" hint paint before the main thread is busy (d_k = 512 takes about a second). */
+const PAINT_DELAY_MS = 60;
+
 export function ScaleScene({ picker }: { picker: ReactNode }) {
   const open = scaleOpening();
   const [stop, setStop] = useState(open.stop);
@@ -17,7 +20,7 @@ export function ScaleScene({ picker }: { picker: ReactNode }) {
 
   // The samples for a new d_k are drawn after the slider has moved (the biggest takes about a second), then cached.
   useEffect(() => {
-    const timer = setTimeout(() => setResult(measureScaling(dk)), 0);
+    const timer = setTimeout(() => setResult(measureScaling(dk)), PAINT_DELAY_MS);
     return () => clearTimeout(timer);
   }, [dk]);
 

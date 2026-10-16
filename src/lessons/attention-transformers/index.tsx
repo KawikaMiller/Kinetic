@@ -46,7 +46,7 @@ const lesson: LessonModule = {
       options: [
         'They are the same rows as before, just in the shuffled order',
         'They change, because the layer reads the tokens from left to right',
-        'They are unchanged and stay in their original positions',
+        'They all collapse to one identical row, because the shuffle destroys the information',
         'They change, because softmax depends on the order of its inputs',
       ],
       answer: 0,
