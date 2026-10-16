@@ -1,0 +1,14 @@
+.classify-board { display: flex; flex-direction: column; gap: 10px; }
+.classify-items { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.classify-item { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--cell-line); border-radius: 8px; }
+.classify-item.is-right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.classify-item.is-wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.classify-label { overflow-wrap: anywhere; }
+.classify-label.is-mono { font: 13px var(--mono); }
+.classify-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.classify-cat { min-height: 36px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--cell-line); background: none; color: inherit; font: 12px var(--mono); cursor: pointer; }
+.classify-cat.is-on { border-color: var(--info); background: color-mix(in srgb, var(--info) 18%, transparent); }
+.classify-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.classify-why { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.classify-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.classify-score { font: 13px var(--mono); }

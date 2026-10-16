@@ -30,8 +30,3 @@ export const SNIPPETS: readonly Snippet[] = [
 ];
 
 export const KEY: Record<string, Category> = Object.fromEntries(SNIPPETS.map((s) => [s.id, s.category]));
-
-/** The score of a set of answers: how many items sit in their key bin. Unsorted items count as wrong. */
-export function score(items: readonly { id: string }[], answerKey: Record<string, string>, assigned: Record<string, string | null>): number {
-  return items.filter((i) => assigned[i.id] === answerKey[i.id]).length;
-}
