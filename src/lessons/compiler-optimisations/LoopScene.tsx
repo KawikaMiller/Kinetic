@@ -48,7 +48,7 @@ export function LoopScene({ picker }: { picker: ReactNode }) {
 
   const field = (text: string, set: (v: number) => void, setDraft: (s: string) => void, min: number, max: number, what: string) => {
     setDraft(text);
-    const parsed = parseBoundedInt(text, { min, max, messages: { tooSmall: () => `${what} is at least ${min.toLocaleString('en-US')}`, tooBig: () => `${what} is at most ${max.toLocaleString('en-US')}, which keeps the counting instant` } });
+    const parsed = parseBoundedInt(text, { min, max, messages: { tooSmall: () => `${what} is at least ${min.toLocaleString('en-US')}`, tooBig: () => `${what} is at most ${max.toLocaleString('en-US')}${what === 'n' ? ', which keeps the counting instant' : ''}` } });
     if (parsed.ok) {
       set(parsed.value);
       setError(null);
@@ -121,7 +121,7 @@ export function LoopScene({ picker }: { picker: ReactNode }) {
         </WideRegion>
         {options.deleteLoops && (
           <p className="co-note">
-            <Provenance kind="from-memory">C and C++ let a compiler assume a loop with no effects finishes (C11 6.8.5 and the C++ forward-progress rule); verify against the standards</Provenance>
+            <Provenance kind="from-memory">this loop is provably finite; for a loop it cannot prove finite, C and C++ let a compiler assume one with no effects finishes (C11 6.8.5 and the C++ forward-progress rule); verify against the standards</Provenance>
           </p>
         )}
       </div>

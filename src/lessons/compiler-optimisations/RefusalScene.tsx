@@ -143,7 +143,7 @@ function FloatCase({ chooser }: { chooser: ReactNode }) {
     setTy(next);
     setX(nextX);
     setDraft(show(nextX));
-    setError(null);
+    setError(nextX === x ? null : `${show(x)} is not a 32-bit integer, so x resets to ${show(nextX)}`);
   };
 
   return (
@@ -186,7 +186,7 @@ function FloatCase({ chooser }: { chooser: ReactNode }) {
         <table className="data-table co-table">
           <caption>x * 0 for the chips, in real JavaScript</caption>
           <thead>
-            <tr><th>x</th><th>x * 0</th><th>equals 0</th></tr>
+            <tr><th>x</th><th>x * 0</th><th>is +0 (Object.is)</th></tr>
           </thead>
           <tbody>
             {chips.map((v) => {

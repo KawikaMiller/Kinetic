@@ -19,13 +19,19 @@ export function SsaScene({ picker }: { picker: ReactNode }) {
   const phiPick = branchTaken ? 'x2 (control came from then)' : 'x1 (control came from entry)';
   const where = selected ? view.where(selected) : null;
 
+  const phiSentence = (
+    <>
+      With the branch {branchTaken ? 'taken' : 'not taken'}, both versions return {view.ssaResult}, and the phi in <code>x3</code> picks {phiPick}.
+    </>
+  );
+
   const describe = () => {
     if (!selected || !where) return null;
-    if (where.def === null) return <>{selected} is a parameter, so its single definition is the function's entry. It is read on {lineWord(where.uses)}.</>;
+    if (where.def === null) return <>{selected} is a parameter, so its single definition is the function's entry. It is read on {lineWord(where.uses)}. {phiSentence}</>;
     return (
       <>
         {selected} is assigned once, on {lineWord([where.def])}
-        {where.uses.length ? <>, and read on {lineWord(where.uses)}</> : <>, and never read</>}. A name that is assigned once answers "which assignment reaches this use" by itself.
+        {where.uses.length ? <>, and read on {lineWord(where.uses)}</> : <>, and never read</>}. A name that is assigned once answers "which assignment reaches this use" by itself. {phiSentence}
       </>
     );
   };
@@ -36,7 +42,7 @@ export function SsaScene({ picker }: { picker: ReactNode }) {
       intro={
         describe() ?? (
           <>
-            With the branch {branchTaken ? 'taken' : 'not taken'}, both versions return {view.ssaResult}. The phi in <code>x3</code> picks {phiPick}. Click a name in the SSA listing to ring its definition and its uses.
+            {phiSentence} Click a name in the SSA listing to ring its definition and its uses.
           </>
         )
       }
