@@ -1,0 +1,12 @@
+/* etl-orchestration */
+.eo-stage { gap: 12px; min-width: 0; }
+.eo-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.eo-note { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.eo-scroll { max-height: 230px; overflow: auto; }
+.eo-table td, .eo-table th { font-size: 12.5px; }
+.eo-ok { color: var(--ok); font-weight: 700; }
+.eo-bad { color: var(--bad); font-weight: 700; }
+.eo-late { color: var(--violet); font-weight: 700; }
+.eo-dim { color: var(--muted); }
+.eo-ops { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; font: 500 12px var(--mono, monospace); max-height: 160px; overflow: auto; }
+.eo-dag { overflow-x: auto; }

@@ -1,0 +1,26 @@
+/* mapreduce-batch */
+.mr-stage { gap: 12px; min-width: 0; }
+.mr-status { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.mr-note { margin: 8px 0 0; font: 500 12.5px var(--font); color: var(--muted); }
+.mr-bad-note { margin: 0; font: 600 12.5px var(--font); color: var(--bad); }
+.mr-scroll { max-height: 220px; overflow: auto; }
+.mr-table td, .mr-table th { font-size: 12.5px; }
+.mr-ok { color: var(--ok); font-weight: 700; }
+.mr-bad { color: var(--bad); font-weight: 700; }
+.mr-bars { display: flex; flex-direction: column; gap: 8px; }
+.mr-partials { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font: 500 12.5px var(--font); }
+.mr-text textarea { width: min(100%, 520px); }
+
+.mr-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.mr-task {
+  min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 10px;
+  border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 8%, transparent); font-size: 12px;
+}
+.mr-task b { font-size: 13px; color: var(--c); }
+.mr-words { color: var(--muted); overflow-wrap: anywhere; }
+.mr-pairs, .mr-lines { display: flex; flex-wrap: wrap; gap: 4px; }
+.mr-pair, .mr-line {
+  padding: 1px 5px; border-radius: 5px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 18%, transparent);
+  font: 500 11px var(--mono, monospace); overflow-wrap: anywhere;
+}
+.mr-more { font: 500 11px var(--font); color: var(--muted); }
