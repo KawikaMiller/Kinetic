@@ -1,0 +1,14 @@
+/* change-data-capture */
+.cdc-stage { gap: 12px; min-width: 0; }
+.cdc-grids { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+.cdc-grid { flex: 1 1 140px; min-width: 0; }
+.cdc-total { display: block; margin-top: 4px; font: 12px var(--mono); color: var(--muted); }
+.cdc-ok { color: var(--ok); }
+.cdc-behind { color: var(--hi); }
+.cdc-bad { color: var(--bad); }
+.cdc-seed { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.cdc-verdict { margin: 8px 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); }
+.cdc-verdict.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.cdc-verdict.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.cdc-table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.cdc-table th, .cdc-table td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--line-2); }

@@ -1,0 +1,4 @@
+.pp-stage { gap: 8px; align-items: center; }
+.pp-stage > .array-strip, .pp-level { width: 100%; max-width: 760px; }
+.pp-level { display: flex; flex-direction: column; gap: 4px; }
+.pp-grid { width: 100%; max-width: 760px; }
