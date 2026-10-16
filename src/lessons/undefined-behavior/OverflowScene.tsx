@@ -24,6 +24,17 @@ export function OverflowScene({ picker }: { picker: ReactNode }) {
   const { min, max } = rangeOf(type);
   const strip = type.width === 8 || type.width === 16 ? type.width : null;
   const bad = useMemo(() => (strip ? differingInputs(type) : []), [type, strip]);
+  /** The strip's cell tones depend only on the type, so they are not recomputed when x moves. */
+  const cells = useMemo(
+    () =>
+      strip
+        ? Array.from({ length: 2 ** strip }, (_, i) => {
+            const isBad = differs(rangeOf(type).min + i, type);
+            return { tone: isBad ? ('bad' as const) : ('ok' as const), fill: isBad ? ('solid' as const) : ('tint' as const) };
+          })
+        : [],
+    [type, strip],
+  );
 
   const change = (next: IntType) => {
     const r = retarget(x, type, next);
@@ -40,7 +51,6 @@ export function OverflowScene({ picker }: { picker: ReactNode }) {
     const i = v - min;
     return { r: Math.floor(i / side), c: i % side };
   };
-  const tone = (v: number) => (differs(v, type) ? 'bad' : 'ok');
   const sumBits = toBits(x + 1, type.width);
   const signBit = (i: number) => (i === 0 && type.signed ? ('orange' as const) : undefined);
   const returnLine = `${type.signed ? 'int' : 'unsigned'} overflows(${type.signed ? 'int' : 'unsigned'} x) { return x + 1 < x; }`;
@@ -60,7 +70,7 @@ export function OverflowScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--orange)', label: 'the sign bit', shape: 'square' },
+            ...(type.signed ? [{ color: 'var(--orange)', label: 'the sign bit', shape: 'square' as const }] : []),
             { color: 'var(--info)', label: 'as written', shape: 'square' },
             { color: 'var(--violet)', label: 'after the rewrite', shape: 'square' },
             { color: 'var(--bad)', label: 'the columns disagree', shape: 'square' },
@@ -102,7 +112,7 @@ export function OverflowScene({ picker }: { picker: ReactNode }) {
         {strip ? (
           <div className="ub-strip">
             <p className="ub-note">
-              Every {typeName(type)} input, {num(2 ** type.width)} cells from {num(min)} to {num(max)}: {bad.length === 0 ? 'none differs' : `${bad.length} differs, the one at ${num(bad[0])}`}, and it is outside the contract.
+              Every {typeName(type)} input, {num(2 ** type.width)} cells from {num(min)} to {num(max)}: {bad.length === 0 ? 'none differs.' : `${bad.length} differs, the one at ${num(bad[0])}, and it is outside the contract.`}
               {strip === 16 ? ' On a phone the cells shrink to a pixel or two, so the differing cell is ringed.' : ''}
             </p>
             <CellGrid
@@ -110,8 +120,7 @@ export function OverflowScene({ picker }: { picker: ReactNode }) {
               cols={STRIP_SIDE[strip]}
               size={{ cell: STRIP_CELL[strip], gap: strip === 8 ? 2 : 0 }}
               cell={(r, c) => {
-                const v = min + r * STRIP_SIDE[strip] + c;
-                return { tone: tone(v), fill: differs(v, type) ? 'solid' : 'tint' };
+                return cells[r * STRIP_SIDE[strip] + c];
               }}
               highlight={[{ ...cellOf(x), tone: 'hi' as const }, ...bad.map((v) => ({ ...cellOf(v), tone: 'bad' as const }))]}
               ariaLabel={`All ${num(2 ** type.width)} ${typeName(type)} inputs: green where both columns agree, red where they differ`}

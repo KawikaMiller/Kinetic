@@ -57,7 +57,7 @@ export function defenceCaption(id: DefenceId): ReactNode {
   const label = DEFENCES.find((d) => d.id === id)?.label ?? id;
   return (
     <>
-      {label} on x = {num(MAX)}: {o.outcome}. {o.defined ? 'The silent bug now has a defined result.' : 'The silent bug stays silent.'} Undefined behaviour belongs to an execution, not to a line of text, and an optimiser may use it even before the line that triggers it (shown as a possibility, not tested here).
+      {label} on x = {num(MAX)}: {o.outcome}. {o.status === 'defined' ? 'The silent bug now has a defined result.' : o.status === 'visible' ? 'The bug is still undefined behaviour, but it is no longer silent.' : 'The silent bug stays silent.'} Undefined behaviour belongs to an execution, not to a line of text, and an optimiser may use it even before the line that triggers it (shown as a possibility, not tested here).
     </>
   );
 }

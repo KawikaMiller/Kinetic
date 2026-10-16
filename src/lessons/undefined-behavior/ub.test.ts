@@ -124,9 +124,13 @@ describe('the defences', () => {
     expect(defenceOutcome('sanitize', max).result).toBeNull();
   });
 
-  it('the sanitizer message carries the numbers, and every defence but "nothing" restores defined behaviour', () => {
+  it('the sanitizer message carries the numbers, and only wrapv, checked arithmetic and a wrapping language define the overflow: the sanitizer makes it visible but it stays undefined', () => {
     expect(sanitizerMessage(max)).toBe("runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'");
-    expect(DEFENCES.filter((d) => defenceOutcome(d.id, max).defined).map((d) => d.id)).toEqual(['wrapv', 'sanitize', 'checked', 'language']);
+    const by = (s: string) => DEFENCES.filter((d) => defenceOutcome(d.id, max).status === s).map((d) => d.id);
+    expect(by('defined')).toEqual(['wrapv', 'checked', 'language']);
+    expect(by('visible')).toEqual(['sanitize']);
+    expect(by('silent')).toEqual(['none']);
+    expect(defenceOutcome('sanitize', max).outcome).toContain('-fno-sanitize-recover');
   });
 
   it('away from the maximum every defence agrees with plain execution', () => {

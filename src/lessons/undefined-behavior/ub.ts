@@ -58,7 +58,7 @@ export function retarget(x: number, from: IntType, to: IntType): Retarget {
   if (next === x) return { x, note: null };
   const toName = `${to.signed ? 'signed' : 'unsigned'} ${to.width}-bit`;
   const fromName = `${from.signed ? 'signed' : 'unsigned'} ${from.width}-bit`;
-  return { x: next, note: `The ${fromName} value ${x.toLocaleString('en-US')} does not fit a ${toName} integer, so it wraps to ${next.toLocaleString('en-US')}.` };
+  return { x: next, note: `The ${fromName} value ${x.toLocaleString('en-US')} does not fit ${to.signed ? 'a' : 'an'} ${toName} integer, so it wraps to ${next.toLocaleString('en-US')}.` };
 }
 
 /* ---------- the null check after the dereference ---------- */
@@ -105,13 +105,15 @@ export const DEFENCES: { id: DefenceId; label: string }[] = [
 ];
 
 export interface DefenceOutcome {
-  /** What the function returns (null when the run stops). */
+  /** What the function returns (null when the defence reports instead of returning a value). */
   result: number | null;
   /** The behaviour in a sentence. */
   outcome: string;
-  /** Does the defence turn the silent bug into defined behaviour? */
-  defined: boolean;
+  /** What the defence does to the silent bug: leaves it silent, makes it visible (still undefined), or defines it. */
+  status: DefenceStatus;
 }
+
+export type DefenceStatus = 'silent' | 'visible' | 'defined';
 
 const INT32: IntType = { width: 32, signed: true };
 
@@ -125,14 +127,14 @@ export function defenceOutcome(id: DefenceId, x: number): DefenceOutcome {
   const wrapped = asWritten(x, INT32);
   switch (id) {
     case 'none':
-      return { result: 0, outcome: overflowed ? 'the check was folded away, so the overflow goes unnoticed' : 'returns 0, which is right for this input', defined: false };
+      return { result: 0, outcome: overflowed ? 'the check was folded away, so the overflow goes unnoticed' : 'returns 0, which is right for this input', status: 'silent' };
     case 'wrapv':
-      return { result: wrapped, outcome: overflowed ? 'signed wrap is defined, so the check stays and fires' : 'returns 0, as written', defined: true };
+      return { result: wrapped, outcome: overflowed ? 'signed wrap is defined, so the check stays and fires' : 'returns 0, as written', status: 'defined' };
     case 'sanitize':
-      return { result: overflowed ? null : wrapped, outcome: overflowed ? sanitizerMessage(x) : 'no report: nothing overflowed', defined: true };
+      return { result: overflowed ? null : wrapped, outcome: overflowed ? `${sanitizerMessage(x)}; by default the run then continues, and with -fno-sanitize-recover it aborts (from memory)` : 'no report: nothing overflowed', status: 'visible' };
     case 'checked':
-      return { result: overflowed ? 1 : 0, outcome: overflowed ? 'the add reports overflow in its return value, so the program can handle it' : 'the add reports no overflow', defined: true };
+      return { result: overflowed ? 1 : 0, outcome: overflowed ? 'the add reports overflow in its return value, so the program can handle it' : 'the add reports no overflow', status: 'defined' };
     case 'language':
-      return { result: wrapped, outcome: overflowed ? 'wraps, as in Java and Go (Rust release builds wrap, debug builds panic)' : 'returns 0, as written', defined: true };
+      return { result: wrapped, outcome: overflowed ? 'wraps, as in Java and Go (Rust release builds wrap, debug builds panic)' : 'returns 0, as written', status: 'defined' };
   }
 }

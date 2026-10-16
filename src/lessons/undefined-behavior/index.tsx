@@ -17,7 +17,7 @@ const lesson: LessonModule = {
       'Telling undefined from implementation-defined and unspecified when reviewing C or C++',
     ],
     why: 'A bug that depends on undefined behaviour can pass every test in a debug build and fail in a release build, because the optimiser removes the very check you wrote. Knowing the rule is how you stop writing those checks and how you find them in someone else\'s code.',
-    watch: 'The sign bit of a number is orange (--orange), a category and not a status. The "as written" column is blue (--info) and the column after the toy rewrite is violet (--violet). In the strip of inputs and in the tables, a green cell or row (--ok) is an input where the two columns agree and a red one (--bad) is where they differ, which is outside the contract. In the classification board a right answer is green and a wrong one red, and in the defences a defence that restores defined behaviour is green while the silent bug is red. The current input has a yellow ring or wash (--hi).',
+    watch: 'The sign bit of a number is orange (--orange), a category and not a status. The "as written" column is blue (--info) and the column after the toy rewrite is violet (--violet). In the strip of inputs and in the tables, a green cell or row (--ok) is an input where the two columns agree and a red one (--bad) is where they differ, which is outside the contract. In the classification board a right answer is green and a wrong one red, and in the defences a defence that restores defined behaviour is green, one that only makes the bug visible (the sanitizer) is orange (--orange), and the silent bug is red. The current input has a yellow ring or wash (--hi).',
   },
   tryThis: [
     `Overflow, on the defaults (signed, 32-bit, x = ${n(F.max32)}): as written the function returns ${F.writtenAtMax} and the rewritten one ${F.assumedAtMax}. Set the width to 8: the note says the value wraps to ${F.wrapped32To8}, and the strip draws ${F.space8} inputs. Press the MAX chip: the one red cell is ${F.max8}, and ${F.differing8} cell differs. Switch the type to unsigned: ${F.differing8Unsigned} cells differ.`,
@@ -71,7 +71,7 @@ const lesson: LessonModule = {
         '-fwrapv, which defines signed wrap-around so the compiler cannot assume it away',
         '-O3, which optimises harder and so notices the overflow before folding the check',
         'A bigger int type, since the optimiser then no longer assumes anything',
-        'Compiling in debug mode, since the standard turns the undefined case into a defined one',
+        'Adding a comment above the check, since the compiler then keeps every line as written',
       ],
       answer: 0,
       why: `With -fwrapv the wrap is defined, so the check stays and fires: the call returns ${F.wrapvResult}, where "Nothing" returned ${F.noneResult}. The other options leave the case undefined, so the assumption is still allowed.`,
