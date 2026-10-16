@@ -15,7 +15,7 @@ export function accessCaption(r: StepResult): string {
   const bus = r.bus === null ? 'no bus traffic' : `a ${BUS_NAMES[r.bus]} (${r.source === 'memory' ? 'memory supplied the line' : r.source === 'cache' ? 'another cache supplied the line' : 'the other copies are told'})`;
   const reacted = r.reactions
     .filter((x) => x.from !== x.to || x.wroteBack || x.supplied)
-    .map((x) => `core ${x.core} ${x.from} to ${x.to}${x.wroteBack ? ' after writing back to memory' : ''}`);
+    .map((x) => (x.from === x.to ? `core ${x.core} ${x.from} (supplied the line${x.wroteBack ? ' and wrote back to memory' : ''})` : `core ${x.core} ${x.from} to ${x.to}${x.wroteBack ? ' after writing back to memory' : ''}`));
   const reactions = r.reactions.length === 0 ? '' : reacted.length === 0 ? ' The other copies are left as they were.' : ` Reactions: ${reacted.join('; ')}.`;
   const value = r.op.access === 'read'
     ? ` It read ${n(r.readValue ?? 0)}${r.stale ? `, but the latest write is ${n(r.machine.latest)}: stale.` : ', the latest write.'}`
@@ -26,7 +26,7 @@ export function accessCaption(r: StepResult): string {
 export const memoryNote = (m: Machine) => (m.memory === m.latest ? 'up to date' : `stale: the latest write is ${n(m.latest)}`);
 
 export function sharingCaption(cfg: SharingConfig, run: SharingRun): string {
-  const layout = layoutLabel(cfg.layout, cfg.lineBytes);
+  const layout = layoutLabel(cfg.layout, cfg.lineBytes, cfg);
   const tail = cfg.layout === 'merged' ? ` plus ${plural(run.readTransfers, 'line read')} to merge` : '';
   const { lines } = placement(cfg);
   const share = cfg.layout === 'atomic'

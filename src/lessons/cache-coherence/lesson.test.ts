@@ -6,7 +6,7 @@ import { accessCaption, memoryNote, n, sharingCaption } from './captions';
 import { COUNTEREXAMPLE } from './counterexample';
 import { brokenFacts, mesiFacts, sharingFacts } from './facts';
 import lesson from './index';
-import { allOps, freshMachine } from './mesi';
+import { allOps, freshMachine, step } from './mesi';
 import { LOG_LIMIT, mesiOpening, press, replayCounterexample, withProtocol } from './session';
 import {
   BURST_RANGE, LAYOUTS, WRITES_RANGE, counterSlots, placement, runSharing, sharingOpening, type SharingConfig,
@@ -128,11 +128,28 @@ describe('captions say what the model did', () => {
               if (say.includes('yet they share a line')) expect(lines[0]).toBe(lines[1]);
               if (say.includes('different lines')) expect(lines[0]).not.toBe(lines[1]);
               expect(say.includes('one counter, not two')).toBe(layout === 'adjacent' && offsetA === offsetB);
+              if (layout === 'adjacent') {
+                // independent oracle: byte offset / line size is the line number
+                const apart = Math.floor(offsetA / lineBytes) !== Math.floor(offsetB / lineBytes);
+                expect(say.includes('separate')).toBe(apart);
+                expect(say.includes(`in one ${lineBytes}-byte line`)).toBe(!apart);
+              }
             }
           }
         }
       }
     }
+  });
+
+  it('a cache that only supplied the line is not reported as a state change', () => {
+    let m = freshMachine();
+    m = step(m, { core: 0, access: 'read' }).machine;
+    m = step(m, { core: 1, access: 'read' }).machine;
+    const r = step(m, { core: 2, access: 'read' });
+    expect(r.reactions.some((x) => x.supplied && x.from === x.to)).toBe(true);
+    const say = accessCaption(r);
+    expect(say).toContain('supplied the line');
+    expect(say).not.toMatch(/core 0 (S|E) to /);
   });
 
   it('the counters are drawn where the model puts them', () => {

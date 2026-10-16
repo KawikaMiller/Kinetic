@@ -11,8 +11,12 @@ export const LAYOUT_LABELS: Record<Layout, string> = {
   atomic: 'One shared atomic counter',
   merged: 'Per-thread counters, merged at the end',
 };
-export const layoutLabel = (layout: Layout, lineBytes: LineBytes) =>
-  layout === 'adjacent' ? `Two counters in one ${lineBytes}-byte line` : LAYOUT_LABELS[layout];
+/** Names the layout; the adjacent one says "one line" or "separate lines" from where the offsets really put the counters. */
+export function layoutLabel(layout: Layout, lineBytes: LineBytes, offsets?: { offsetA: number; offsetB: number }): string {
+  if (layout !== 'adjacent') return LAYOUT_LABELS[layout];
+  const apart = offsets && Math.floor(offsets.offsetA / lineBytes) !== Math.floor(offsets.offsetB / lineBytes);
+  return apart ? `Two counters on separate ${lineBytes}-byte lines` : `Two counters in one ${lineBytes}-byte line`;
+}
 
 export const THREADS = 2;
 export const COUNTER_BYTES = 8;

@@ -74,7 +74,7 @@ export function SharingScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented ariaLabel="Counter layout" label="Layout" value={layout} onChange={setLayout} options={LAYOUTS.map((l) => ({ value: l, label: layoutLabel(l, lineBytes) }))} />
+          <Segmented ariaLabel="Counter layout" label="Layout" value={layout} onChange={setLayout} options={LAYOUTS.map((l) => ({ value: l, label: layoutLabel(l, lineBytes, { offsetA, offsetB }) }))} />
         </>,
         <>
           <Segmented label="Cache line size" value={lineBytes} onChange={setLineBytes} options={LINE_SIZES} />
@@ -131,7 +131,7 @@ export function SharingScene({ picker }: { picker: ReactNode }) {
             <Curve points={curve.map((p): [number, number] => [p.burst, p.cost])} tone="bad" />
             <VLine at={burst} label={`${burst}`} />
           </Plot2D>
-          <Legend items={[{ color: 'var(--bad)', label: layoutLabel(layout, lineBytes), shape: 'line' }, { color: 'var(--ok)', label: 'padded (dashed)', shape: 'line' }]} />
+          <Legend items={[{ color: 'var(--bad)', label: layoutLabel(layout, lineBytes, { offsetA, offsetB }), shape: 'line' }, { color: 'var(--ok)', label: 'padded (dashed)', shape: 'line' }]} />
         </Box>
         <Hint tone="muted" block>
           Padding separates two variables onto two lines. It cannot help two threads that really write one variable: the line still moves, and a shared atomic counter costs what the one-line layout costs.
