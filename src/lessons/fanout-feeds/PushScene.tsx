@@ -16,29 +16,28 @@ export function PushScene({ picker }: { picker: ReactNode }) {
   const [s, setS] = useState(initialPush);
   const followers = FOLLOWER_STEPS[s.followersIdx];
   const drain = useMemo(() => makeDrain(followers, s.workers, s.insertMs), [followers, s.workers, s.insertMs]);
-  const frames = useMemo(
-    () =>
-      timeFrames({
-        end: drain.totalMs,
-        steps: 30,
-        milestones: [
-          { t: Math.min(drain.totalMs, s.insertMs), say: <>After the first insert the first followers can see the post; the rest see it as the workers drain the queue, and until then their feeds are <span className="hl orange">stale</span>.</> },
-          { t: drain.totalMs / 2, say: <>Halfway through the drain: about {sig(followers / 2)} inboxes hold the post, and the rest of the followers still see a <span className="hl orange">stale feed</span>.</> },
-        ],
-        intro: (
-          <>
-            One author with {sig(followers)} followers posts once. A fan-out job writes the post id into every follower&apos;s inbox: {sig(followers)} inserts, spread over {s.workers} {s.workers === 1 ? 'worker' : 'workers'} at {s.insertMs} ms each. Press play.
-          </>
-        ),
-        summary: (
-          <>
-            All {sig(followers)} inboxes hold the post after {msText(drain.totalMs)}: ceil({sig(followers)} / {s.workers}) rounds of {s.insertMs} ms. A read costs one inbox read, whatever the author&apos;s follower count.
-          </>
-        ),
-        hold: 2.2,
-      }),
-    [drain, followers, s.insertMs, s.workers],
-  );
+  const frames = useMemo(() => {
+    const halfDone = doneAt(drain, drain.totalMs / 2);
+    return timeFrames({
+      end: drain.totalMs,
+      steps: 30,
+      milestones: [
+        { t: Math.min(drain.totalMs, s.insertMs), say: <>After the first insert the first followers can see the post; the rest see it as the workers drain the queue, and until then their feeds are <span className="hl orange">stale</span>.</> },
+        { t: drain.totalMs / 2, say: <>Halfway through the drain: {sig(halfDone)} of {sig(followers)} inboxes hold the post, and the other {sig(followers - halfDone)} followers still see a <span className="hl orange">stale feed</span>.</> },
+      ],
+      intro: (
+        <>
+          One author with {sig(followers)} followers posts once. A fan-out job writes the post id into every follower&apos;s inbox: {sig(followers)} inserts, spread over {s.workers} {s.workers === 1 ? 'worker' : 'workers'} at {s.insertMs} ms each. Press play.
+        </>
+      ),
+      summary: (
+        <>
+          All {sig(followers)} inboxes hold the post after {msText(drain.totalMs)}: ceil({sig(followers)} / {s.workers}) rounds of {s.insertMs} ms. A read costs one inbox read, whatever the author&apos;s follower count.
+        </>
+      ),
+      hold: 2.2,
+    });
+  }, [drain, followers, s.insertMs, s.workers]);
   const player = usePlayer(frames, { interval: PLAY_MS, autoplay: true });
   const now = player.frame.now;
   const done = doneAt(drain, now);
@@ -63,9 +62,8 @@ export function PushScene({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--ok)', label: 'an inbox that holds the post' },
-            { color: 'var(--dim)', label: 'an inbox still empty' },
-            { color: 'var(--info)', label: 'push work: an inbox write' },
-            { color: 'var(--orange)', label: 'a stale feed (not fanned out yet)' },
+            { color: 'var(--orange)', label: 'an inbox still empty: that follower feed is stale' },
+            { color: 'var(--info)', label: 'push work: the write-cost number' },
           ]}
         />
       }
@@ -89,7 +87,7 @@ export function PushScene({ picker }: { picker: ReactNode }) {
             cell={(r, c) => {
               const i = r * SAMPLE_COLS + c;
               if (i >= sampled) return { fill: 'none' };
-              return i < filled ? { tone: 'ok', fill: 'solid' } : { tone: 'dim', fill: 'tint', intensity: 0.25 };
+              return i < filled ? { tone: 'ok', fill: 'solid' } : { tone: 'orange', fill: 'tint', intensity: 0.35 };
             }}
             ariaLabel={`${filled} of ${sampled} sampled inboxes hold the post`}
           />

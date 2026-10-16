@@ -2,9 +2,10 @@
  * The state each scene opens in (pure functions, so a test can walk through every scene and check that none leaks into
  * another), and what the scenes compute from their controls.
  */
+import { integer } from '../../core/format';
 import { INSERT_MS, WORKERS } from './drain';
 import {
-  FEED_PAGE, THRESHOLDS, followerCount, makePopulation, mergeNewest, populationWork, pullCost, worstPostMs, type Population, type Post, type Work,
+  FEED_PAGE, THRESHOLDS, crossoverReads, followerCount, makePopulation, mergeNewest, populationWork, pullCost, worstPostMs, type Population, type Post, type Work,
 } from './feed';
 
 export const FOLLOWEE_STEPS: readonly number[] = [5, 10, 25, 50, 100, 250, 500, 1_000, 2_000];
@@ -46,6 +47,31 @@ export function measuredMerge(followees: number): { ops: number; estimate: numbe
   return { ops: mergeNewest(lists).ops, estimate: pullCost(followees) };
 }
 
+/** How far the heap's measured comparisons sit above the F + N log2 F estimate, over the Pull scene's follow counts: a binary heap compares about twice per level. */
+export function mergeOverEstimate(): { min: number; max: number } {
+  const ratios = FOLLOWEE_STEPS.map((f) => {
+    const m = measuredMerge(f);
+    return m.ops / m.estimate;
+  });
+  return { min: Math.min(...ratios), max: Math.max(...ratios) };
+}
+
+/** One author alone, read by readers who follow the population's average number of people. */
+export interface AuthorCrossover {
+  followers: number;
+  followees: number;
+  /** (followers - 1) / (C - 1), with C the cost of one pull read. */
+  exact: number;
+  /** followers / C. */
+  approx: number;
+}
+
+export function authorCrossover(p: Population): AuthorCrossover {
+  const followers = followerCount(p, topAuthor(p));
+  const followees = Math.round(p.followees.reduce((sum, f) => sum + f.length, 0) / p.users);
+  return { followers, followees, exact: crossoverReads(followers, followees), approx: followers / pullCost(followees) };
+}
+
 export interface HybridView {
   threshold: number;
   readsPerPost: number;
@@ -57,6 +83,7 @@ export interface HybridView {
   worstPushMs: number;
   worstHybridMs: number;
   celebrities: number;
+  author: AuthorCrossover;
 }
 
 /** Everything the hybrid scene shows, for one control state. Totals are linear in reads per post, so the crossover is solved from two evaluations. */
@@ -76,6 +103,7 @@ export function hybridView(p: Population, s: HybridState, workers = WORKERS.defa
     worstPushMs: worstPostMs(p, 'push', 0, workers, insertMs),
     worstHybridMs: worstPostMs(p, 'hybrid', threshold, workers, insertMs),
     celebrities: p.followers.filter((f) => f.length > threshold).length,
+    author: authorCrossover(p),
   };
 }
 
@@ -96,11 +124,11 @@ export function detailEffect(p: Population, detail: Detail): { title: string; ef
     const active = p.followers[a].filter((u) => !isInactive(u)).length;
     return {
       title: 'Inactive users',
-      effect: `Skip the push for readers who have not logged in lately (here ${INACTIVE_SHARE_TEXT} of users, by id) and fill their inbox when they return: the most-followed author's post writes ${active} inboxes instead of ${followers}.`,
+      effect: `Skip the push for readers who have not logged in lately (here ${INACTIVE_SHARE_TEXT} of users, by id) and fill their inbox when they return: the most-followed author's post writes ${integer(active)} inboxes instead of ${integer(followers)}.`,
     };
   }
   if (detail === 'deletes') {
-    return { title: 'Deletes and edits', effect: `Deleting that post is a second fan-out: ${followers} inboxes have to drop it, the same work as the post.` };
+    return { title: 'Deletes and edits', effect: `Deleting that post is a second fan-out: ${integer(followers)} inboxes have to drop it, the same work as the post.` };
   }
   if (detail === 'ordering') {
     const [x, y] = [{ id: 1, author: 0, time: 5 }, { id: 2, author: 1, time: 5 }];

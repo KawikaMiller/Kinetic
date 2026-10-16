@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { FOLLOWER_STEPS, INSERT_MS, WORKERS, makeDrain } from './drain';
-import { FEED_PAGE, THRESHOLDS, followerCount, makePopulation, populationWork, pullCost, worstPostMs } from './feed';
+import { FEED_PAGE, THRESHOLDS, USERS, followerCount, makePopulation, populationWork, pullCost, worstPostMs } from './feed';
 import lesson from './index';
 import {
-  FOLLOWEE_STEPS, POP_SEED, POSTS_PER_HOUR, RATIO_STEPS, detailEffect, hybridView, initialDetail, initialHybrid, initialPull, initialPush, isInactive, measuredMerge, populationFor,
-  topAuthor,
+  FOLLOWEE_STEPS, POP_SEED, POSTS_PER_HOUR, RATIO_STEPS, authorCrossover, detailEffect, hybridView, initialDetail, initialHybrid, initialPull, initialPush, isInactive, measuredMerge, mergeOverEstimate,
+  populationFor, topAuthor,
 } from './init';
 
 describe('try-this entries, from each scene\'s opening state, as written', () => {
@@ -21,7 +21,7 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect([WORKERS.default, INSERT_MS.default]).toEqual([10, 1]);
   });
 
-  it('try-this 2: the pull write cost is 1 at every follower count; the measured read cost grows with F and stays near the F + N log2 F estimate', () => {
+  it('try-this 2: the pull write cost is 1 at every follower count; the measured read cost grows with F and stays a steady factor above the F + N log2 F estimate', () => {
     const s = initialPull();
     expect(FOLLOWEE_STEPS[s.followeesIdx]).toBe(50);
     const small = measuredMerge(50);
@@ -29,8 +29,8 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(big.ops).toBeGreaterThan(small.ops * 10);
     for (const f of FOLLOWEE_STEPS) {
       const m = measuredMerge(f);
-      expect(m.ops / m.estimate, `F=${f}`).toBeGreaterThan(0.4);
-      expect(m.ops / m.estimate, `F=${f}`).toBeLessThan(2.6);
+      expect(m.ops / m.estimate, `F=${f}`).toBeGreaterThan(1.4);
+      expect(m.ops / m.estimate, `F=${f}`).toBeLessThan(2);
       expect(m.estimate).toBe(pullCost(f));
     }
   });
@@ -63,9 +63,9 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     const pop = populationFor(POP_SEED);
     const a = topAuthor(pop);
     const del = detailEffect(pop, 'deletes').effect;
-    expect(del).toContain(`${followerCount(pop, a)} inboxes`);
+    expect(del).toContain(`${followerCount(pop, a).toLocaleString('en-US')} inboxes`);
     const active = pop.followers[a].filter((u) => u % 5 >= 2).length;
-    expect(detailEffect(pop, 'inactive').effect).toContain(`writes ${active} inboxes instead of ${followerCount(pop, a)}`);
+    expect(detailEffect(pop, 'inactive').effect).toContain(`writes ${active.toLocaleString('en-US')} inboxes instead of ${followerCount(pop, a).toLocaleString('en-US')}`);
     expect(isInactive(0)).toBe(true);
     expect(isInactive(4)).toBe(false);
   });
@@ -117,5 +117,38 @@ describe('lesson content', () => {
     expect(lesson.tryThis).toHaveLength(5);
     expect(lesson.quiz).toHaveLength(5);
     expect(new Set(lesson.quiz.map((q) => q.answer)).size).toBeGreaterThan(2);
+  });
+});
+
+describe('what the scenes say matches what they compute', () => {
+  it('the measured merge runs a steady 1.5 to 1.9 times above the estimate, as the watch text and the Pull scene say (rounded to one decimal)', () => {
+    const gap = mergeOverEstimate();
+    expect(gap.min).toBeGreaterThan(1.45);
+    expect(gap.max).toBeLessThan(1.95);
+    expect(lesson.summary.watch).toContain(`${gap.min.toFixed(1)} to ${gap.max.toFixed(1)} times`);
+  });
+
+  it('the per-author crossover is (followers - 1) / (C - 1), solved independently from the two totals, and the approximation followers / C is close but not equal', () => {
+    const pop = makePopulation(POP_SEED);
+    const a = authorCrossover(pop);
+    expect(a.followers).toBe(Math.max(...pop.followers.map((f) => f.length)));
+    const C = pullCost(a.followees);
+    // Per post: push costs `followers` inserts plus r reads of 1; pull costs 1 store plus r reads of C. Equal at r:
+    const r = a.exact;
+    expect(a.followers + r * 1).toBeCloseTo(1 + r * C, 9);
+    expect(Math.abs(a.approx - a.exact) / a.exact).toBeLessThan(0.05);
+    expect(a.approx).not.toBe(a.exact);
+    expect(a.followees).toBe(Math.round(pop.followees.reduce((sum, f) => sum + f.length, 0) / USERS));
+  });
+
+  it('quiz 5 distractors are refuted by the numbers of the model: a post read only a few times is cheaper to pull for an author with millions of followers', () => {
+    const followers = 5_000_000;
+    const followees = 25;
+    const pushTotal = (reads: number) => followers + reads;
+    const pullTotal = (reads: number) => 1 + reads * pullCost(followees);
+    expect(pullTotal(5)).toBeLessThan(pushTotal(5));
+    expect(lesson.quiz[4].options[2]).toContain('millions of followers');
+    expect(lesson.quiz[4].options[3]).toContain('ranked at read time');
+    expect(detailEffect(makePopulation(POP_SEED), 'ranked').effect).toContain('not enough');
   });
 });

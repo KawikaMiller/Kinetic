@@ -15,11 +15,11 @@ const lesson: LessonModule = {
     ],
     why: 'The same product can be fast on a quiet day and fall over when one account posts. Knowing which side the cost lands on, and how the follower distribution moves it, is what the design is about.',
     watch:
-      'Blue is push work, an inbox write, and violet is pull work, a merge read. In the inbox grid green is an inbox that already holds the post and grey one still empty, and orange marks the stale feeds not yet fanned out. Yellow marks a celebrity author, the one the hybrid pulls, and in the totals green is the cheap side and red the costly one. In the read-cost plot violet points are measured merges and the grey dashed line is the estimate F + N log2 F. The chips say what is simulated, illustrative or scripted.',
+      'Blue is push work, an inbox write (the bars and the write-cost number), and violet is pull work, a merge read. In the inbox grid green is an inbox that already holds the post and orange one still empty, a stale feed not yet fanned out. Yellow is the number of celebrity authors the hybrid pulls, shown as a count only, and in the totals green is the cheap side and red the costly one. In the read-cost plot violet points are measured merges and the grey dashed line is the estimate F + N log2 F, which the measured points sit about 1.5 to 1.9 times above. The chips say what is simulated, illustrative or scripted.',
   },
   tryThis: [
-    'At the defaults in "Push: fan-out on write" (5,000 followers, 10 workers, 1 ms an insert) press play: the write cost is 5,000 inserts and the last follower sees the post after 500 ms. Drag Fan-out workers to 50 and it drops to 100 ms; drag Followers of the author to 100,000 at 10 workers and it is 10 s.',
-    'In "Pull: fan-out on read" the write cost stays 1 whatever you drag. Move "People the reader follows" from 50 to 2,000: the read cost grows with it, and the measured points stay near the grey estimate line.',
+    'At the defaults in "Push: fan-out on write" (5,000 followers, 10 workers, 1 ms an insert) press play: the write cost is 5,000 inserts and the last follower sees the post after 500 ms. Drag Fan-out workers to 50 and it drops to 100 ms; drag Followers of the author to 100,000, back at 10 workers, and it is 10 s.',
+    'In "Pull: fan-out on read" the write cost stays 1 whatever you drag. Move "People the reader follows" from 50 to 2,000: the read cost grows with it, and the measured points stay a steady factor (the "Measured / estimate" stat) above the grey estimate line.',
     'In "The hybrid" at the defaults one read per post makes pure push cheaper than pure pull. Drag Reads per post to 0.05 and pull is cheaper; the "Crossover" stat says where they meet.',
     'In the same scene drag the threshold to 0: the hybrid bar equals pure pull and the slowest post is a single store. Drag it to the end: it equals pure push, and the slowest post is the biggest author\'s fan-out.',
     'In "Details that bite" press "Deletes and edits": removing one post from the most-followed author\'s followers is a second fan-out, the same size as the first. Press "Inactive users" and the push shrinks to the readers who are active.',
@@ -54,7 +54,7 @@ const lesson: LessonModule = {
       why: 'Pull builds the feed at read time with a k-way merge, roughly F + N log F operations. The cost lands on the reader and grows with how many people they follow.',
     },
     {
-      q: 'What does a hybrid feed do?',
+      q: 'In the hybrid scene, what does the hybrid feed do?',
       options: [
         'It pushes the posts of accounts above a follower threshold and pulls the others',
         'It pulls the posts of accounts above a follower threshold and pushes the others',
@@ -80,8 +80,8 @@ const lesson: LessonModule = {
       options: [
         'When a post is read many times, because each read is one cheap inbox read',
         'When a post is read rarely, because the inboxes then stay mostly empty',
-        'When every follower follows many accounts, because merges then get expensive',
-        'When authors have very few followers, whatever the number of reads',
+        'When the author has millions of followers and each post is read only a few times',
+        'When the feed is ranked at read time, because the inbox then holds the final order',
       ],
       answer: 0,
       why: 'Push pays once at write time and saves on each read, so it wins when reads per post are high. With few reads per post the up-front inserts are wasted work.',
