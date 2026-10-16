@@ -56,7 +56,7 @@ export function mmioCaption(o: { space: Space; cached: boolean; machine: Machine
 export function ringCaption(s: RingState, c: RingConfig): string {
   const per = packetsPerInterrupt(s);
   const base = `Tick ${n(s.tick)}: ${n(s.produced)} ${s.produced === 1 ? 'packet' : 'packets'} DMAed, ${n(s.consumed)} consumed, ${n(s.dropped)} dropped, ${n(s.irqs)} ${s.irqs === 1 ? 'interrupt' : 'interrupts'}${per === null ? '' : ` (${per.toFixed(1)} packets each)`}, worst wait ${n(s.worstLatency)} ticks.`;
-  if (s.overwritten > 0) return `${base} Broken driver: packet ${s.lastOverwritten} was overwritten before it was consumed (seed ${c.seed}).`;
+  if (s.overwritten > 0) return `${base} Broken driver: it re-posted a descriptor that still held a packet, so packet ${s.lastOverwritten} was overwritten before it was consumed (seed ${c.seed}).`;
   const waiting = s.pending > 0 ? ` ${n(s.pending)} ${s.pending === 1 ? 'packet is' : 'packets are'} in the ring that no interrupt has announced.` : '';
   return `${base}${waiting}`;
 }

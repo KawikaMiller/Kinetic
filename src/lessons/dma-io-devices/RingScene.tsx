@@ -9,7 +9,7 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, T
 import { useInterval } from '../../core/useInterval';
 import type { Tone } from '../../core/tone';
 import { n, ringCaption } from './captions';
-import { BROKEN_CONFIG, DEFAULT_CONFIG, RING_SIZE, TIME_LIMIT_OFF, packetsPerInterrupt, runRing, type Phase, type RingConfig } from './ring';
+import { DEFAULT_CONFIG, RING_SIZE, TIME_LIMIT_OFF, packetsPerInterrupt, runRing, toggleBroken, type Phase, type RingConfig } from './ring';
 
 const PHASE_TONE: Record<Phase, Tone> = { free: 'dim', owned: 'info', filled: 'hi', processing: 'ok', processed: 'ok' };
 const PHASE_LABEL: Record<Phase, string> = { free: 'free', owned: 'device-owned', filled: 'filled', processing: 'handling', processed: 'processed' };
@@ -43,7 +43,7 @@ export function RingScene({ picker }: { picker: ReactNode }) {
   }, PLAY_MS, playing);
 
   const rows: LogRow[] = useMemo(
-    () => sim.history.slice(0, tick + 1).flatMap((h) => h.events.map((text, i) => ({ id: `${h.tick}-${i}`, at: `t${h.tick}`, text, tone: text.includes('overwritten') ? ('bad' as const) : text.includes('dropped') ? ('orange' as const) : undefined }))),
+    () => sim.history.slice(0, tick + 1).flatMap((h) => h.events.map((text, i) => ({ id: `${h.tick}-${i}`, at: `t${h.tick}`, text, tone: text.includes('overwritten') || text.includes('re-posts') ? ('bad' as const) : text.includes('dropped') ? ('orange' as const) : undefined }))),
     [sim, tick],
   );
   const per = packetsPerInterrupt(s);
@@ -86,7 +86,7 @@ export function RingScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <SeedField key={cfg.seed} seed={cfg.seed} onSeed={(seed) => edit({ seed })} />
-          <Toggle label="Driver" value={cfg.broken} onChange={(v) => { setCfg(v ? BROKEN_CONFIG : DEFAULT_CONFIG); setSelected(null); setPlaying(false); }} off="Correct" on="Re-posts a full ring (broken)" />
+          <Toggle label="Driver" value={cfg.broken} onChange={(v) => { setCfg((c) => toggleBroken(c, v)); setSelected(null); setPlaying(false); }} off="Correct" on="Re-posts a full ring (broken)" />
         </>,
         <>
           <Button variant="primary" onClick={play}>Play from tick 0</Button>

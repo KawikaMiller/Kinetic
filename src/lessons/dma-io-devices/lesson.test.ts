@@ -9,7 +9,7 @@ import lesson from './index';
 import {
   DEFAULT_ADDRESS, DEFAULT_SPACE, DEVICE_BASE, access, deviceStatus, freshMachine, registerAddress, type Outcome,
 } from './mmio';
-import { BROKEN_CONFIG, DEFAULT_CONFIG, RING_TICKS, createRing, runRing, type RingConfig } from './ring';
+import { BROKEN_CONFIG, DEFAULT_CONFIG, RING_TICKS, createRing, runRing, toggleBroken, type RingConfig } from './ring';
 import { BUS_MODES, DEFAULT_BUS, DEFAULT_MODE, DEFAULT_SIZE_INDEX, MODES, SIZES, plan } from './transfer';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
@@ -70,17 +70,20 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(four.produced).toBe(55);
   });
 
-  it('try-this 4: the broken toggle loads seed 8 with a 3-tick driver, the run stops with a packet overwritten, and the correct driver on the same seed only drops', () => {
+  it('try-this 4: the real toggle path (default, then broken, then back to correct) loads seed 8 with a 3-tick driver, stops with a packet overwritten, and switching back keeps that ring and only drops', () => {
     const f = brokenFacts();
     expect(f.seed).toBe(8);
-    const sim = runRing(BROKEN_CONFIG);
+    const on = toggleBroken(DEFAULT_CONFIG, true);
+    const sim = runRing(on);
     expect(sim.ticks).toBe(f.tick);
     expect(sim.ticks).toBeLessThan(RING_TICKS);
     expect(sim.state.overwritten).toBe(1);
-    const good = runRing({ ...BROKEN_CONFIG, broken: false }).state;
+    const good = runRing(toggleBroken(on, false)).state;
     expect(good.overwritten).toBe(0);
+    expect(good.dropped).toBe(f.dropsWhenCorrect);
     expect(good.dropped).toBeGreaterThan(0);
-    expect(lesson.tryThis[3]).toContain(`tick ${n(f.tick)} with packet ${f.lost} overwritten`);
+    expect(lesson.tryThis[3]).toContain(`tick ${n(f.tick)} the full ring has a packet waiting, so the driver re-posts descriptor ${f.descriptor} while it still holds packet ${f.lost}`);
+    expect(lesson.tryThis[3]).toContain(`drops ${n(f.dropsWhenCorrect)} packets instead`);
     expect(text(ringCaption(sim.state, BROKEN_CONFIG))).toContain(`packet ${f.lost} was overwritten`);
   });
 

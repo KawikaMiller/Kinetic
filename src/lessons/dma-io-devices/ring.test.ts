@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
-import { BROKEN_CONFIG, BROKEN_SEED, DEFAULT_CONFIG, RING_SIZE, RING_TICKS, TIME_LIMIT_OFF, createRing, packetsPerInterrupt, runRing, type RingConfig, type RingState } from './ring';
+import { BROKEN_CONFIG, BROKEN_SEED, DEFAULT_CONFIG, RING_SIZE, RING_TICKS, TIME_LIMIT_OFF, createRing, packetsPerInterrupt, runRing, toggleBroken, type RingConfig, type RingState } from './ring';
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => i);
 
@@ -63,7 +63,7 @@ function arrivalsOf(seed: number, ratePct: number, ticks: number): number {
   return hits;
 }
 
-describe('the broken driver: it re-posts a descriptor before the packet in it was consumed', () => {
+describe('the broken driver: when a packet is waiting and the ring is full it re-posts the head descriptor before the packet in it was consumed', () => {
   const lowest = () => {
     for (const seed of SEEDS) if (runRing({ ...BROKEN_CONFIG, seed }).violation) return seed;
     return -1;
@@ -98,8 +98,48 @@ describe('the broken driver: it re-posts a descriptor before the packet in it wa
     expect(after.ring[before.head].seq).toBe(lost);
   });
 
+  it('the trace shows the cause: a driver re-post of the head descriptor, naming the packet it still holds, comes before the overwrite on the violation tick and nowhere earlier', () => {
+    const broken = runRing(BROKEN_CONFIG);
+    const tick = broken.violation!.tick;
+    const held = broken.history[tick - 1].ring[broken.history[tick - 1].head];
+    const events = broken.history[tick].events;
+    const repost = events.findIndex((e) => e === `driver re-posts descriptor ${broken.history[tick - 1].head} while it still holds packet ${held.seq}`);
+    const overwrite = events.findIndex((e) => e.includes('is overwritten by packet'));
+    expect(repost).toBeGreaterThanOrEqual(0);
+    expect(overwrite).toBeGreaterThan(repost);
+    const earlier = broken.history.slice(0, tick).flatMap((h) => h.events);
+    expect(earlier.some((e) => e.includes('re-posts'))).toBe(false);
+  });
+
+  it('counterfactual: with the correct driver the same seed never logs a re-post, and the ring is never device-owned while holding a packet', () => {
+    const good = runRing({ ...BROKEN_CONFIG, broken: false });
+    expect(good.history.flatMap((h) => h.events).some((e) => e.includes('re-posts'))).toBe(false);
+    expect(good.state.overwritten).toBe(0);
+  });
+
   it('with healthy settings (a driver that keeps up) the broken driver never overwrites on any of 200 seeds, so the failure needs a full ring', () => {
     for (const seed of SEEDS) expect(runRing({ ...DEFAULT_CONFIG, seed, broken: true }).violation, `seed ${seed}`).toBeNull();
+  });
+});
+
+describe('the Driver toggle', () => {
+  const learner: RingConfig = { ...DEFAULT_CONFIG, seed: 77, ratePct: 55, driverTicks: 7, coalesceN: 3, timeLimit: 16 };
+
+  it('switching on loads the pinned failing setup, so the run really fails', () => {
+    const on = toggleBroken(learner, true);
+    expect(on).toEqual(BROKEN_CONFIG);
+    expect(runRing(on).violation).not.toBeNull();
+  });
+
+  it('switching off flips only the driver: the learner seed and sliders are kept, and on the broken seed the same ring only drops and counts packets', () => {
+    expect(toggleBroken(learner, false)).toEqual({ ...learner, broken: false });
+    const off = toggleBroken(BROKEN_CONFIG, false);
+    expect(off).toEqual({ ...BROKEN_CONFIG, broken: false });
+    const s = runRing(off).state;
+    expect(s.overwritten).toBe(0);
+    expect(s.dropped).toBeGreaterThan(0);
+    // an independent count: every arrival is either DMAed or dropped
+    expect(s.produced + s.dropped).toBe(arrivalsOf(off.seed, off.ratePct, RING_TICKS));
   });
 });
 

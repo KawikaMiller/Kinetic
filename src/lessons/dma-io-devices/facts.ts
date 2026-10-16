@@ -1,6 +1,6 @@
 /** The numbers the try-this entries quote, computed from each scene's default state by the same models the scenes draw. */
 import { DEFAULT_COHERENCE, dmaScenario } from './coherence';
-import { BROKEN_CONFIG, DEFAULT_CONFIG, runRing } from './ring';
+import { BROKEN_CONFIG, DEFAULT_CONFIG, runRing, toggleBroken } from './ring';
 import { DEFAULT_BUS, DEFAULT_MODE, DEFAULT_SIZE_INDEX, SIZES, plan } from './transfer';
 
 export function transferFacts() {
@@ -18,7 +18,15 @@ export function coalescingFacts() {
 
 export function brokenFacts() {
   const sim = runRing(BROKEN_CONFIG);
-  return { seed: BROKEN_CONFIG.seed, tick: sim.violation!.tick, lost: sim.state.lastOverwritten, driverTicks: BROKEN_CONFIG.driverTicks };
+  const tick = sim.violation!.tick;
+  return {
+    seed: BROKEN_CONFIG.seed,
+    tick,
+    lost: sim.state.lastOverwritten,
+    descriptor: sim.history[tick - 1].head,
+    driverTicks: BROKEN_CONFIG.driverTicks,
+    dropsWhenCorrect: runRing(toggleBroken(BROKEN_CONFIG, false)).state.dropped,
+  };
 }
 
 export function cacheFacts() {

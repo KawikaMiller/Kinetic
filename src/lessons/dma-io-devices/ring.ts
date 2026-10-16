@@ -32,7 +32,7 @@ export interface RingConfig {
   timeLimit: number;
   /** Ticks the driver spends on one packet. */
   driverTicks: number;
-  /** The broken driver: it re-posts a full ring's descriptor before the packet in it was consumed. */
+  /** The broken driver: when a packet is waiting and the ring is full it re-posts the head descriptor, still holding an unconsumed packet. */
   broken: boolean;
 }
 
@@ -77,6 +77,7 @@ const unconsumed = (d: Desc) => d.phase === 'filled' || d.phase === 'processing'
 
 function step(prev: RingState, rnd: Rnd, tick: number, c: RingConfig): RingState {
   const s: RingState = { ...prev, tick, ring: prev.ring.map((d) => ({ ...d })), events: [] };
+  const arrives = rnd() < c.ratePct / 100;
 
   // 1. The driver: post every free or processed descriptor, then work on the next announced packet.
   let posted = 0;
@@ -109,10 +110,23 @@ function step(prev: RingState, rnd: Rnd, tick: number, c: RingConfig): RingState
     }
   }
 
+  // The broken driver: a packet is waiting and the ring is full, so it re-posts the head descriptor as device-owned
+  // to make room, although that descriptor still holds a packet the driver has not consumed.
+  if (c.broken && arrives && unconsumed(s.ring[s.head])) {
+    const head = s.ring[s.head];
+    head.phase = 'owned';
+    s.events.push(`driver re-posts descriptor ${s.head} while it still holds packet ${head.seq}`);
+  }
+
   // 2. The wire: a packet may arrive, and the device DMAs it into the head descriptor if the device owns it.
-  if (rnd() < c.ratePct / 100) {
+  if (arrives) {
     const head = s.ring[s.head];
     if (head.phase === 'owned') {
+      if (head.seq >= 0) {
+        s.overwritten++;
+        s.lastOverwritten = head.seq;
+        s.events.push(`packet ${head.seq} is overwritten by packet ${s.produced} before the driver consumed it`);
+      }
       head.phase = 'filled';
       head.seq = s.produced++;
       head.arrivedAt = tick;
@@ -120,16 +134,6 @@ function step(prev: RingState, rnd: Rnd, tick: number, c: RingConfig): RingState
       if (s.pending === 0) s.pendingSince = tick;
       s.pending++;
       s.events.push(`packet ${head.seq} DMAs into descriptor ${s.head === 0 ? RING_SIZE - 1 : s.head - 1}`);
-    } else if (c.broken && unconsumed(head)) {
-      s.overwritten++;
-      s.lastOverwritten = head.seq;
-      head.phase = 'filled';
-      s.events.push(`packet ${head.seq} is overwritten by packet ${s.produced} before the driver consumed it`);
-      head.seq = s.produced++;
-      head.arrivedAt = tick;
-      s.head = (s.head + 1) % RING_SIZE;
-      if (s.pending === 0) s.pendingSince = tick;
-      s.pending++;
     } else {
       s.dropped++;
       s.events.push('the ring is full: the packet is dropped and counted');
@@ -172,6 +176,12 @@ export function runRing(c: RingConfig): TickSim<RingState> {
 /** The pinned lowest seed on which the broken driver overwrites an unconsumed packet in BROKEN_CONFIG (ring.test.ts proves it is the lowest of 0..199). */
 export const BROKEN_SEED = 8;
 /** A driver that barely keeps up, so the ring does fill; with the healthy settings the broken driver never gets the chance. */
+/**
+ * What the Driver toggle does. Switching the broken driver ON loads the pinned failing setup (the ring only fills with
+ * a driver that barely keeps up); switching it OFF flips only `broken`, so the learner gets the very same ring back.
+ */
+export const toggleBroken = (c: RingConfig, on: boolean): RingConfig => (on ? BROKEN_CONFIG : { ...c, broken: false });
+
 export const BROKEN_CONFIG: RingConfig = { seed: BROKEN_SEED, ratePct: 30, coalesceN: 1, timeLimit: TIME_LIMIT_OFF, driverTicks: 3, broken: true };
 
 /** Packets per interrupt, or null before the first interrupt. */
