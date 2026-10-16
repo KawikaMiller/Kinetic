@@ -41,7 +41,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'During a rolling deploy two app versions run at once, so in this model a rename done as one step breaks whichever version has not updated yet, and expand and contract keeps both working.',
     `In this model exactly one of the ${total} orderings of the six steps is clean on all ${PANEL_SIZE} request mixes the lesson tries, and only when at least ${firstCleanStart}% of the fleet has already upgraded: a step run ahead of the fleet fails requests or serves stale reads. A single request mix can miss a hazard, which is why the count uses ${PANEL_SIZE}.`,
-    'Skipping dual-write throws no error: v2 still sends only the old column, so writes made after the backfill never reach the new column and the table quietly ends up wrong, which is why the data check matters as much as the error count. A v1 instance still running during the backfill is a separate hazard, and the reason a start at 0% or 20% on v2 is never clean.',
+    'Skipping dual-write throws no error: v2 still sends just the old column, so writes made after the backfill do not reach the new column and the table quietly ends up wrong, which is why the data check matters as much as the error count. A v1 instance still running during the backfill is a separate hazard, and why a start at 0% or 20% on v2 is not clean in this model.',
     'In this lesson\'s PostgreSQL-flavoured model an ALTER that waits for a lock makes later queries queue behind it, so a lock timeout with a retry and a backfill in batches keep each lock short.',
   ],
   quiz: [
