@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { forSeeds } from '../../core/distSim';
 import {
-  DB, DEFAULT_SCHED, HOUR_MS, KILL_AT_MS, LEASE_TTL_MS, MIN_MS, MISS_AFTER_MS, PAUSE_FROM_MS, PINNED_SCHED_SEED, SCHED_BROKEN_SEED, SCHED_MODES, SWEEP_UNTIL_MS, j1AtMostOncePerFire, runSched, schedCluster,
+  DAY_MS, DB, DEFAULT_SCHED, HOUR_MS, KILL_AT_MS, LEASE_TTL_MS, MIN_MS, MISS_AFTER_MS, PAUSE_FROM_MS, PINNED_SCHED_SEED, SCHED_BROKEN_SEED, SCHED_MODES, SWEEP_UNTIL_MS, j1AtMostOncePerFire, runSched, schedCluster,
   schedScenario, schedStatsAt, schedSweep, type SchedMode, type SchedSetup,
 } from './sched';
 
@@ -31,7 +31,7 @@ describe('distributed cron: three replicas, one job at the top of the hour (one 
     expect(forSeeds(SEEDS, schedScenario('dedupe', { skew: true, duplicates: true }), [j1AtMostOncePerFire], { until: SWEEP_UNTIL_MS })).toEqual({ ok: true, seeds: SEEDS });
   });
 
-  it('PINNED_SCHED_SEED is the lowest failing seed of the base sweep (pause, kill, loss) for each mode: every 0, leader 0; fencing and the dedupe key have none', () => {
+  it('PINNED_SCHED_SEED is the lowest failing seed of the base sweep (pause, kill, loss) for each mode: every 0, leader 0, leader with fencing 118 (lost renewals, no pause); the dedupe key has none', () => {
     for (const mode of SCHED_MODES) expect(lowest(mode), mode).toBe(PINNED_SCHED_SEED[mode]);
     expect(PINNED_SCHED_SEED.every).toBe(SCHED_BROKEN_SEED);
     expect(DEFAULT_SCHED.seed).toBe(SCHED_BROKEN_SEED);
@@ -57,6 +57,34 @@ describe('distributed cron: three replicas, one job at the top of the hour (one 
     expect(forSeeds({ from: seed, to: seed + 1 }, () => schedCluster({ ...s, pauseMs: MIN_MS }), [j1AtMostOncePerFire], { until: SWEEP_UNTIL_MS }).ok).toBe(true);
     expect(forSeeds({ from: seed, to: seed + 1 }, () => schedCluster({ ...s, mode: 'leader-fenced' }), [j1AtMostOncePerFire], { until: SWEEP_UNTIL_MS }).ok).toBe(true);
     expect(forSeeds({ from: seed, to: seed + 1 }, () => schedCluster({ ...s, mode: 'dedupe' }), [j1AtMostOncePerFire], { until: SWEEP_UNTIL_MS }).ok).toBe(true);
+  });
+
+  it('leader with fencing, pinned seed: r1 loses the lease without hearing of it (lost renewals), fires the same slot, and its lower token lands first; counterfactuals: no loss, dedupe key', () => {
+    const seed = PINNED_SCHED_SEED['leader-fenced']!;
+    const s = schedSweep(seed, 'leader-fenced');
+    expect([s.fault, s.loss > 0]).toEqual(['kill', true]);
+    const run = runSched(s, SWEEP_UNTIL_MS);
+    const second = run.rows.find((r) => r.duplicate)!;
+    const first = run.rows.find((r) => r.fire === second.fire && r.applied && r.id !== second.id)!;
+    // the earlier run carries the LOWER token, so the fence has nothing to reject
+    expect(first.token).toBeLessThan(second.token);
+    expect(first.at).toBeLessThan(second.at);
+    // r1 no longer held the lease at the lock service when its run was sent
+    const r1Lease = run.grants.find((g) => g.to === first.by && g.token === first.token)!;
+    expect(r1Lease.until!).toBeLessThan(first.at);
+    const passes = (over: Partial<SchedSetup>) => forSeeds({ from: seed, to: seed + 1 }, () => schedCluster({ ...s, ...over }), [j1AtMostOncePerFire], { until: SWEEP_UNTIL_MS }).ok;
+    expect(passes({ loss: 0 })).toBe(true);
+    expect(passes({ mode: 'dedupe' })).toBe(true);
+  });
+
+  it('a replica that lost the lease contends again: with no fault and 10% loss the leader mode misses far fewer fires than the three first grants allow (40 seeds)', () => {
+    let missed = 0;
+    for (let seed = 0; seed < 40; seed++) missed += runSched(setup({ mode: 'leader', fault: 'none', loss: 0.1, seed }), DAY_MS + MIN_MS).missed.length;
+    // Without re-contending, each replica led once and then nobody did: 14.2 of 24 fires lost per day (measured before the fix; about 2.7 after).
+    expect(missed / 40).toBeLessThan(5);
+    const clean = runSched(setup({ mode: 'leader', fault: 'none', loss: 0 }), DAY_MS + MIN_MS);
+    expect(clean.missed).toEqual([]);
+    expect(clean.grants).toHaveLength(1);
   });
 
   it('with fencing the paused leader\'s late fire is rejected with a stale token, and the row says so', () => {

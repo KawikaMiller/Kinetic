@@ -139,4 +139,4 @@ export function fireLabel(ms: number): string {
 /** The lesson's fixed "now": a Monday, in UTC (not today's date). */
 export const CRON_NOW_MS = Date.UTC(2026, 2, 2, 0, 0, 0);
 export const CRON_DEFAULT = '0 * * * *';
-export const DOM_DOW_PRESET = '0 0 13 * 5';
+export const DOM_DOW_PRESET = '0 0 15 * 5';

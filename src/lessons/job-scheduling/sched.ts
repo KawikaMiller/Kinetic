@@ -174,6 +174,7 @@ function replicaNode(mode: SchedMode, index: number): DistNode<SMsg, SState> {
         ctx.setTimer('renew', RENEW_MS);
       } else if (m.type === 'lost') {
         leader = false;
+        ctx.setTimer('acquire', ACQUIRE_RETRY_MS);
       }
     },
     onTimer: (ctx, timerId) => {
@@ -283,7 +284,7 @@ export const schedScenario = (mode: SchedMode, extras: SweepExtras = {}) => (see
 export const SWEEP_UNTIL_MS = SWEEP_HOURS * HOUR_MS + MIN_MS;
 
 /** Pinned: the lowest seed of forSeeds(0..199) that breaks J1 in each mode (a test recomputes them); null: none does. */
-export const PINNED_SCHED_SEED: Record<SchedMode, number | null> = { every: 0, leader: 0, 'leader-fenced': null, dedupe: null };
+export const PINNED_SCHED_SEED: Record<SchedMode, number | null> = { every: 0, leader: 0, 'leader-fenced': 118, dedupe: null };
 
 /* ---------- reading a run ---------- */
 

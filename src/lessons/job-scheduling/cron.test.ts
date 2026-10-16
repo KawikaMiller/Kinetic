@@ -97,14 +97,22 @@ describe('the cron parser equals a brute-force minute-by-minute matcher', () => 
 });
 
 describe('the day-of-month versus day-of-week rule', () => {
-  it('0 0 13 * 5 fires on every Friday and every 13th, not only on Friday the 13th (hand-worked from the March 2026 calendar)', () => {
-    const fires = firesBetween(must(DOM_DOW_PRESET), CRON_NOW_MS, Date.UTC(2026, 3, 1));
-    const days = fires.map((t) => new Date(t).getUTCDate());
-    // Fridays in March 2026: 6, 13, 20, 27; the 13th is also one of them. April 1 is excluded.
-    expect(days).toEqual([6, 13, 20, 27]);
-    // April 2026: Fridays 3, 10, 17, 24 and the 13th (a Monday).
-    const april = firesBetween(must(DOM_DOW_PRESET), Date.UTC(2026, 3, 1), Date.UTC(2026, 4, 1)).map((t) => new Date(t).getUTCDate());
-    expect(april).toEqual([3, 10, 13, 17, 24]);
+  it('0 0 15 * 5 fires on every Friday and on every 15th, whatever weekday it is (oracle: the calendar through Date)', () => {
+    const oracle = (from: number, to: number) => {
+      const out: number[] = [];
+      for (let t = from; t < to; t += 86_400_000) {
+        const d = new Date(t);
+        if (d.getUTCDate() === 15 || d.getUTCDay() === 5) out.push(d.getUTCDate());
+      }
+      return out;
+    };
+    const days = (from: number, to: number) => firesBetween(must(DOM_DOW_PRESET), from, to).map((t) => new Date(t).getUTCDate());
+    // March 2026 from Monday the 2nd: Fridays 6, 13, 20, 27 and Sunday the 15th. April 1 is excluded.
+    expect(days(CRON_NOW_MS, Date.UTC(2026, 3, 1))).toEqual([6, 13, 15, 20, 27]);
+    expect(days(CRON_NOW_MS, Date.UTC(2026, 3, 1))).toEqual(oracle(CRON_NOW_MS, Date.UTC(2026, 3, 1)));
+    // April 2026: Fridays 3, 10, 17, 24 and the 15th (a Wednesday).
+    expect(days(Date.UTC(2026, 3, 1), Date.UTC(2026, 4, 1))).toEqual([3, 10, 15, 17, 24]);
+    expect(days(Date.UTC(2026, 3, 1), Date.UTC(2026, 4, 1))).toEqual(oracle(Date.UTC(2026, 3, 1), Date.UTC(2026, 4, 1)));
   });
 
   it('with a star in one day field the other alone decides, and */2 counts as a star (both have to match)', () => {
@@ -120,9 +128,9 @@ describe('the day-of-month versus day-of-week rule', () => {
     expect(five).toEqual([
       'Fri 6 Mar 2026 00:00 UTC',
       'Fri 13 Mar 2026 00:00 UTC',
+      'Sun 15 Mar 2026 00:00 UTC',
       'Fri 20 Mar 2026 00:00 UTC',
       'Fri 27 Mar 2026 00:00 UTC',
-      'Fri 3 Apr 2026 00:00 UTC',
     ]);
   });
 });

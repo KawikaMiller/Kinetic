@@ -14,7 +14,7 @@ const MONTH_NAME = 'March 2026';
 const WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const PRESETS = [
   { label: 'Every hour', text: '0 * * * *' },
-  { label: '13th or Friday', text: DOM_DOW_PRESET },
+  { label: '15th or Friday', text: DOM_DOW_PRESET },
   { label: 'Fridays only', text: '0 0 * * 5' },
   { label: 'Odd days and Friday', text: '0 0 */2 * 5' },
   { label: 'Weekdays 09:30', text: '30 9 * * 1-5' },

@@ -104,7 +104,7 @@ export function QueueScene({ picker }: { picker: ReactNode }) {
           <LogStream label="Queue and effects store events" rows={rows} maxHeight={150} live="off" empty="Nothing has happened yet." />
         </Box>
         <Box>
-          <SectionTitle hint={`${STORM_JOBS} jobs fail together, ${STORM_RETRIES} retries each, this backoff`}>Retries after a shared failure</SectionTitle>
+          <SectionTitle hint={`${STORM_JOBS} jobs fail together, ${STORM_RETRIES} retries each whatever Max attempts says, this backoff`}>Retries after a shared failure</SectionTitle>
           <Plot2D
             x={{ domain: [0, stormEnd], label: 'time of the retry (ms)', ticks: 4 }}
             y={{ domain: [0, Math.max(STORM_JOBS, lockstep.peak)], label: 'retries in a quarter second', ticks: 3 }}

@@ -5,7 +5,7 @@
 import { parseBoundedDecimal } from '../../core/parse';
 import { CRON_DEFAULT } from './cron';
 import { DEFAULT_QUEUE, type QueueSetup } from './queue';
-import { DEFAULT_SCHED, type SchedSetup } from './sched';
+import { DEFAULT_SCHED, type SchedMode, type SchedSetup } from './sched';
 import { DEFAULT_JOBS, DELAY_MAX_S, DELAY_MIN_S, DELAY_STEP_S, MAX_JOBS, type WheelJob } from './wheel';
 
 export interface WheelState {
@@ -51,3 +51,19 @@ export interface ExprState {
   text: string;
 }
 export const initialExpr = (): ExprState => ({ text: CRON_DEFAULT });
+
+const SKEW_AND_DUPLICATES = 'Clock skew and duplicated messages are separate ways to run a fire twice';
+const FENCE_LIMIT = 'a fence only rejects a lower token that arrives after a higher one, and an equal token is not a lower one';
+
+/** The line under the seed controls in the cron scene: what the pinned seed shows, and what each mode cannot stop. */
+export function cronSeedHint(mode: SchedMode, pinned: number | null): string {
+  if (pinned === null) {
+    return 'None of the 200 seeded schedules runs a fire twice in this mode, with kills, pauses, lost messages, clock skew or duplicated messages all in the draw: the unique key depends on no clock and no message count.';
+  }
+  const lowest = `Seed ${pinned} is the lowest of 200 seeded schedules that runs a fire twice in this mode.`;
+  if (mode === 'leader-fenced') {
+    return `${lowest} No pause is involved there: lost renewals left r1 believing it still led, and its run reached the database before the new leader's (${FENCE_LIMIT}). ${SKEW_AND_DUPLICATES} that fencing does not stop; only the dedupe key does.`;
+  }
+  if (mode === 'leader') return `${lowest} ${SKEW_AND_DUPLICATES}; only the dedupe key stops them.`;
+  return lowest;
+}

@@ -70,17 +70,17 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(lesson.tryThis[3]).toContain('03:10');
   });
 
-  it('try-this 5: "13th or Friday" runs on 6, 13, 20, 27 March and the next five fires start Friday 6 March; "Odd days and Friday" leaves the 13th and 27th', () => {
+  it('try-this 5: "15th or Friday" runs on 6, 13, 15, 20, 27 March, so the OR rule adds a day no Friday covers; "Odd days and Friday" leaves the 13th and 27th', () => {
     expect(initialExpr().text).toBe('0 * * * *');
     const c = fakeCron(DOM_DOW_PRESET);
     const march = dayCounts(c, 2026, 3);
-    expect(march).toMatchObject({ byDom: 1, byDow: 4, both: 1, runs: 4 });
+    expect(march).toMatchObject({ byDom: 1, byDow: 4, both: 0, runs: 5 });
     expect(nextFires(c, CRON_NOW_MS, 5)[0]).toBe(Date.UTC(2026, 2, 6));
     const odd = fakeCron('0 0 */2 * 5');
     expect(dayCounts(odd, 2026, 3).runs).toBe(2);
     const t = text(exprCaption(c, nextFires(c, CRON_NOW_MS, 5), 'March 2026', march), { strict: true });
     expect(t).toContain('runs when either matches');
-    expect(t).toContain('1 day by day-of-month and 4 by day-of-week, 4 in all (1 match both)');
+    expect(t).toContain('1 day by day-of-month and 4 by day-of-week, 5 in all (0 match both)');
   });
 });
 

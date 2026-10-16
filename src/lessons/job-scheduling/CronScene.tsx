@@ -9,7 +9,7 @@ import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented,
 import { barsAt } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
 import { schedFrames, schedSummary } from './captions';
-import { initialSched } from './init';
+import { cronSeedHint, initialSched } from './init';
 import {
   CAL_START, DAY_HOURS, FAULTS, FAULT_LABEL, HOUR_MS, MIN_MS, NET_RANGE, PAUSE_RANGE, PINNED_SCHED_SEED, SCHED_LABEL, SCHED_MODES, SKEW_RANGE, runSched, schedStatsAt, schedSweep, type SchedSetup,
 } from './sched';
@@ -78,7 +78,7 @@ export function CronScene({ picker }: { picker: ReactNode }) {
           </ChipButton>
           <Button onClick={() => setSetup(initialSched())}>Reset</Button>
           <Hint tone="muted">
-            {pinned === null ? 'None of the 200 seeded schedules runs a fire twice in this mode (kills, pauses and lost messages).' : `Seed ${pinned} is the lowest of 200 seeded schedules that runs a fire twice in this mode.`}
+            {cronSeedHint(setup.mode, pinned)}
           </Hint>
         </>,
       ]}

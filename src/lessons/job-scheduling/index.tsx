@@ -24,12 +24,12 @@ const lesson: LessonModule = {
     `At the defaults in "At-least-once and retries" (a 4 s window, job 2 takes 6 s, no key, seed ${QUEUE_BROKEN_SEED}) press play: job 2 is handed out again at 4 s and its second run applies the effect twice, so "Effects applied twice" reads 1. Switch the key to "One per job" and the repeat runs and does nothing. Raise the window to 10 s and the repeat disappears, until you drag "Job 2 takes" past it.`,
     'In the same scene turn Jitter to "Off": the note under the retry plot says all 30 failing jobs retry in the same quarter second, and with "Full jitter" it names a smaller number for the busiest quarter second.',
     `In "Distributed cron" the default fires every replica: each hour the job takes effect three times. Pick "Leader by lease" and the fault "Pause replica r1" (seed ${SCHED_BROKEN_SEED}): r1 freezes at 02:55, r2 takes the lease and runs 03:00, and r1 wakes at 03:10 and runs it again. Pick "Leader by lease, with fencing" and r1's late run is rejected.`,
-    'In "Cron expressions" press "13th or Friday: 0 0 13 * 5": the calendar tints every Friday and the 13th of March, and the next five fires start with Friday 6 March. Press "Odd days and Friday": a stepped star counts as a star in the Vixie rule, so only the 13th and 27th remain.',
+    'In "Cron expressions" press "15th or Friday: 0 0 15 * 5": the calendar tints every Friday and also Sunday the 15th of March, and the next five fires are Friday 6, Friday 13, Sunday 15, Friday 20 and Friday 27 March. Press "Odd days and Friday": a stepped star counts as a star in the Vixie rule, so only the 13th and 27th remain.',
   ],
   keyIdeas: [
     'In this model a queue with a visibility timeout runs a job at least once: a job that outruns the window, or whose worker dies, is handed out again and can take effect twice.',
     'An idempotency key makes a repeat harmless, while a bigger timeout just moves the point where a long job outruns the window; full jitter spreads the retries of jobs that failed together.',
-    'Three replicas with one cron schedule run the job three times unless something picks one: a lease holder (fenced against a paused ex-leader, and a gap when the leader dies) or a unique key on the (job, scheduled time) row, which needs no leader.',
+    'Three replicas with one cron schedule run the job three times unless something picks one: a lease holder (fenced against a paused ex-leader, with a gap when the leader dies, and no defence against clock skew or duplicated messages) or a unique key on the (job, scheduled time) row, which needs no leader and does not care about either.',
     'A timing wheel inserts in one step and fires within a tick of the due time, in insertion order inside a tick; in the Vixie cron rule (from memory, verify), a restricted day-of-month and day-of-week run on either match.',
   ],
   quiz: [
@@ -69,13 +69,13 @@ const lesson: LessonModule = {
     {
       q: 'In the Vixie cron rule as the lesson states it, what does `0 0 13 * 5` run on?',
       options: [
-        'Only on a Friday that happens to fall on the 13th of the month',
+        'Only on a Friday that is also the 13th',
         'On the 13th of the month and on Fridays',
         'On the 13th, shifted to the next Friday',
         'On Fridays, with the 13th ignored',
       ],
       answer: 1,
-      why: 'When both day fields are restricted, a match on either is enough, x. That surprises people who expect the two to be combined.',
+      why: 'When both day fields are restricted, a match on either is enough. That surprises people who expect the two to be combined.',
     },
     {
       q: 'A timing wheel inserts a delayed job in one step. What does it give up?',
