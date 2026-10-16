@@ -75,7 +75,7 @@ export function ReadScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Segmented label="Access pattern" value={pattern} onChange={setPattern} options={PATTERN_OPTIONS} />
-          <SeedField key={seed} seed={seed} onSeed={setSeed} label={pattern === 'random' ? 'Seed' : 'Seed (random only)'} />
+          <SeedField seed={seed} onSeed={setSeed} label={pattern === 'random' ? 'Seed' : 'Seed (random only)'} />
         </>,
         <>
           <Slider label="File size" value={filePages} min={MIN_FILE_PAGES} max={MAX_FILE_PAGES} step={8} onChange={setFilePages} format={(v) => `${v} pages`} />

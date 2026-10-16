@@ -104,12 +104,13 @@ export function pct(ratio: number, dp = 0): string {
 
 /**
  * Byte counts: '512 B', '1.5 KB', '8.0 MB', '2.1 GB'. Binary (1 KB = 1,024 B) by default;
- * `base: 1000` for decimal units, `dp` for decimals shown above bytes.
+ * `base: 1000` for decimal units, `dp` for decimals shown above bytes. `iec: true` names the binary
+ * units properly ('4.0 KiB', '8 MiB') for lessons that distinguish them; it has no effect with `base: 1000`.
  */
-export function bytes(n: number, o: { base?: 1000 | 1024; dp?: number } = {}): string {
-  const { base = 1024, dp = 1 } = o;
+export function bytes(n: number, o: { base?: 1000 | 1024; dp?: number; iec?: boolean } = {}): string {
+  const { base = 1024, dp = 1, iec = false } = o;
   if (n < base) return `${Math.round(n)} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
+  const units = iec && base === 1024 ? ['KiB', 'MiB', 'GiB', 'TiB'] : ['KB', 'MB', 'GB', 'TB'];
   let v = n / base;
   let u = 0;
   while (v >= base && u < units.length - 1) {

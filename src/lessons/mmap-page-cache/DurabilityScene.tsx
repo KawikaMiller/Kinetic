@@ -133,7 +133,7 @@ export function DurabilityScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint={`the same pull-the-plug test over a seeded schedule, in the policy you picked`}>Seeded crash, seed {seed}</SectionTitle>
           <div className="mp-seed">
-            <SeedField key={seed} seed={seed} onSeed={setSeed} />
+            <SeedField seed={seed} onSeed={setSeed} />
             <Button onClick={() => setSeed(BROKEN_ACK_SEED)}>Load seed {BROKEN_ACK_SEED}</Button>
           </div>
           <p className="mp-seeded">

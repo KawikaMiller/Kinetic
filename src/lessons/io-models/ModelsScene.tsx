@@ -64,7 +64,7 @@ export function ModelsScene({ picker }: { picker: ReactNode }) {
           <Slider label="Connections" value={connIndex} min={0} max={CONNECTION_STEPS.length - 1} onChange={setConnIndex} format={(i) => n(CONNECTION_STEPS[i])} />
           <Slider label="Ready per round" value={activeIndex} min={0} max={ACTIVE_STEPS.length - 1} onChange={setActiveIndex} format={(i) => `${ACTIVE_STEPS[i]}%`} />
           <Slider label="Work per request" value={work} min={1} max={20} onChange={setWork} format={(v) => `${v} ticks`} />
-          <SeedField key={seed} seed={seed} onSeed={setSeed} />
+          <SeedField seed={seed} onSeed={setSeed} />
         </>,
       ]}
     >

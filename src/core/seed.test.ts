@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextSeed, parseSeed, SEED_MAX } from './seed';
+import { nextSeed, parseSeed, resyncSeedText, SEED_MAX } from './seed';
 
 describe('seed field', () => {
   it('refuses non-seeds and accepts the whole range', () => {
@@ -10,5 +10,23 @@ describe('seed field', () => {
     expect(parseSeed(String(SEED_MAX))).toEqual({ ok: true, value: SEED_MAX });
     expect(nextSeed(SEED_MAX)).toBe(0);
     expect(nextSeed(7)).toBe(8);
+  });
+
+  it('resyncs the text to a seed set by the program, and leaves the typed text alone otherwise', () => {
+    expect(resyncSeedText('42', 42)).toBe('42');
+    expect(resyncSeedText('042', 42)).toBe('042');
+    expect(resyncSeedText('42', 7)).toBe('7');
+    expect(resyncSeedText('', 7)).toBe('7');
+    expect(resyncSeedText('abc', 0)).toBe('0');
+  });
+
+  it('typing 4 then 42 never rewrites the text: each keystroke is a seed change that agrees with it', () => {
+    let text = '';
+    for (const typed of ['4', '42']) {
+      text = typed;
+      const parsed = parseSeed(typed);
+      if (parsed.ok) text = resyncSeedText(text, parsed.value);
+      expect(text).toBe(typed);
+    }
   });
 });

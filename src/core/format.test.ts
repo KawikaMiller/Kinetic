@@ -93,6 +93,15 @@ describe('format', () => {
     expect(bytes(1500, { base: 1000 })).toBe('1.5 KB');
   });
 
+  it('bytes names IEC units (KiB, MiB) on request, and leaves every other call as it was', () => {
+    expect(bytes(512, { iec: true })).toBe('512 B');
+    expect(bytes(4096, { iec: true })).toBe('4.0 KiB');
+    expect(bytes(8 * 1024 ** 2, { iec: true, dp: 0 })).toBe('8 MiB');
+    expect(bytes(3 * 1024 ** 3, { iec: true })).toBe('3.0 GiB');
+    expect(bytes(4096, { iec: false })).toBe(bytes(4096));
+    expect(bytes(1500, { base: 1000, iec: true })).toBe('1.5 KB');
+  });
+
   it('plural picks the singular only for exactly one', () => {
     expect(plural(1, 'step')).toBe('1 step');
     expect(plural(0, 'step')).toBe('0 steps');

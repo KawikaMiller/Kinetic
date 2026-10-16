@@ -85,7 +85,7 @@ export function RingScene({ picker }: { picker: ReactNode }) {
           <Slider label="...or after waiting" value={cfg.timeLimit} min={4} max={TIME_LIMIT_OFF} step={4} onChange={(v) => edit({ timeLimit: v })} format={(v) => (v >= TIME_LIMIT_OFF ? 'no limit' : `${v} ticks`)} />
         </>,
         <>
-          <SeedField key={cfg.seed} seed={cfg.seed} onSeed={(seed) => edit({ seed })} />
+          <SeedField seed={cfg.seed} onSeed={(seed) => edit({ seed })} />
           <Toggle label="Driver" value={cfg.broken} onChange={(v) => { setCfg((c) => toggleBroken(c, v)); setSelected(null); setPlaying(false); }} off="Correct" on="Re-posts a full ring (broken)" />
         </>,
         <>

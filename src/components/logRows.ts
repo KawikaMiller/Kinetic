@@ -22,3 +22,6 @@ export const rowTone = (row: Pick<LogRow, 'tone' | 'level'>): Tone | undefined =
 
 /** The newest `max` rows (all of them without a `max`). */
 export const lastRows = <R,>(rows: readonly R[], max?: number): readonly R[] => (max === undefined ? rows : rows.slice(Math.max(0, rows.length - max)));
+
+/** The one selectable row in the tab order: the row with this id, or the first when it is null or no longer shown. */
+export const rowTabStop = (rows: readonly Pick<LogRow, 'id'>[], id: LogRow['id'] | null): number => Math.max(0, rows.findIndex((r) => r.id === id));
