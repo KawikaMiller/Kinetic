@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { ChipButton, Hint, Segmented, Slider, Stat, TextField } from '../../components/ui';
-import { bitLength, greedyByRatio, knapsackRolling, knapsackTable, type LoopDirection } from './dp';
+import { bitLength } from '../../core/bits';
+import { greedyByRatio, knapsackRolling, knapsackTable, type LoopDirection } from './dp';
 import { DpTab, type TabLines } from './DpTab';
 import { CAP_MAX, itemsText, KNAPSACK_DEFAULT, KNAPSACK_TRAP, knapsackCounterexample, OPENING, parseItems, VALUE_MAX, WEIGHT_MAX, type KnapsackInput } from './presets';
 import { knapsackRun, type KnapsackState } from './runs';

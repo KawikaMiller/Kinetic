@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { bitLength } from '../../core/bits';
 import { gcd, modInverse, modPow } from '../../core/numberTheory';
 import { mulberry32 } from '../../core/random';
 import {
-  bitLength, bitsOf, digitSeries, digitsOf, fermatCensus, naiveMultiplications, operationCount, popcount, powRun, unreducedDigits, type Direction,
+  bitsOf, digitSeries, digitsOf, fermatCensus, naiveMultiplications, operationCount, popcount, powRun, unreducedDigits, type Direction,
 } from './modpow';
 
 const DIRECTIONS: Direction[] = ['ltr', 'rtl'];
