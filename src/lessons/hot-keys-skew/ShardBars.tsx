@@ -1,24 +1,11 @@
 import { Bar } from '../../components/Bar';
 import { Legend } from '../../components/ui';
-import { loadFractions } from './shardMath';
+import { SHARD_LEGEND_ITEMS, loadFractions, pct } from './shardMath';
 import { SHARDS } from './skew';
 
 /** The bars stop at this share of one shard's capacity or the busiest shard, whichever is larger. */
 const MIN_SCALE = 1.5;
-const pct = (v: number) => `${Math.round(v * 100)}%`;
-
-export const SHARD_LEGEND = (
-  <Legend
-    items={[
-      { color: 'var(--ok)', label: 'a shard under its capacity (the mark)' },
-      { color: 'var(--bad)', label: 'a shard past its capacity' },
-      { color: 'var(--hi)', label: 'the hottest shard (outlined)' },
-      { color: 'var(--orange)', label: 'the hot key' },
-      { color: 'var(--violet)', label: 'salted sub-keys' },
-      { color: 'var(--info)', label: 'requests a cache absorbed' },
-    ]}
-  />
-);
+export const SHARD_LEGEND = <Legend items={SHARD_LEGEND_ITEMS} />;
 
 export interface BarSet {
   name: string;

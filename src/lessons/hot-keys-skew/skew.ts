@@ -29,7 +29,10 @@ export const SKETCH_WIDTH = { min: 4, max: 512 } as const;
 export const BURST_SHIFT = 137;
 
 export const shardOf = (key: number): number => hash32(`user:${key}`) % SHARDS;
-/** Sub-key j of a salted key, and replica j of a replicated one, sit on the next shards after the key's own: m of them are m different shards. */
+/**
+ * Sub-key j of a salted key, and replica j of a replicated one, sit on the next shards after the key's own: m of them are m different shards.
+ * This is the best case for salting: sub-keys named by a hashed suffix land on random shards and can collide (see `randomPlacementSpread`).
+ */
 const subShard = (key: number, j: number) => (shardOf(key) + j) % SHARDS;
 const replicaShard = subShard;
 
@@ -38,6 +41,9 @@ export const keyShare = (rank: number, s: number) => zipfPmf(rank, KEYS, s);
 
 /** The hottest key's share of the traffic: 1 / H(n, s), computed on screen rather than asserted. */
 export const hottestShare = (s: number) => 1 / harmonic(KEYS, s);
+
+/** One key stands out when it carries more than twice the share an even spread would give it (2 / KEYS). */
+export const keyStandsOut = (s: number): boolean => hottestShare(s) > 2 / KEYS;
 
 /** Utilisation at which the first shard saturates if the hottest key's shard also carries its even share of the rest (the lesson's formula). */
 export function saturationEstimate(s: number): number {
@@ -219,6 +225,7 @@ export function saltedReadResult(stream: readonly Req[], i: number, m: number, g
 export const hottestKeys = (n: number): Set<number> => new Set(Array.from({ length: n }, (_, i) => i + 1));
 
 export interface Summary {
+  /** The busiest shard's load over the PLAIN mean, requests / SHARDS: the same yardstick as the bars, so work a mitigation adds is not hidden in the denominator. */
   maxOverMean: number;
   hottestShard: number;
   /** Load on the hottest shard as a share of one shard's capacity, at total utilisation `u`. */
@@ -230,13 +237,65 @@ export interface Summary {
 /**
  * Shard load relative to capacity. Capacity is sized for the plain request count: at total utilisation `u` a shard that serves share_i of the
  * requests is at u * S * share_i, so work a mitigation adds (a gather, a replica write) counts against the shards and a cache hit counts for them.
- * `maxOverMean` is the imbalance of the loads as they are.
+ * `maxOverMean` divides by the plain mean (requests / SHARDS), not by the mean of the loads as mitigated: a gather or a replica write raises the
+ * second, which would make a mitigation that adds work look better balanced than the bars show. It equals `hottestLoad / u`.
  */
 export function summarise(l: Loads, u: number): Summary {
   const shares = l.loads.map((x) => x / l.requests);
   const max = Math.max(...shares);
-  const mean = l.loads.reduce((a, b) => a + b, 0) / SHARDS;
-  return { maxOverMean: Math.max(...l.loads) / mean, hottestShard: shares.indexOf(max), hottestLoad: u * SHARDS * max, saturatesAt: saturationAt(shares) };
+  return { maxOverMean: Math.max(...l.loads) / (l.requests / SHARDS), hottestShard: shares.indexOf(max), hottestLoad: u * SHARDS * max, saturatesAt: saturationAt(shares) };
+}
+
+/**
+ * Salting and replication place their m copies of a hot key on consecutive shards, so they never collide. Here each copy is placed on a random
+ * shard instead (what hashing a suffix amounts to), over `draws` seeded placements: how loaded the busiest shard is, as a share of its capacity at
+ * utilisation `u`, in the median placement, and in how many placements it is worse than `noneHottest` (the same figure with no mitigation).
+ * Returns null for a mitigation that has no copies to place.
+ */
+export interface PlacementSpread {
+  median: number;
+  /** Share of the placements whose busiest shard is above `noneHottest`. */
+  worseShare: number;
+  draws: number;
+}
+
+export const PLACEMENT_DRAWS = 500;
+const PLACEMENT_STREAM = 0x9e3779b1;
+
+/** Requests on each copy of each mitigated key (`copies`) and on every other key's shard (`base`), counted the way `shardLoads` counts them. */
+export function copyCounts(stream: readonly Req[], mit: Mitigation): { base: number[]; copies: Map<number, number[]> } | null {
+  if (mit.kind !== 'salt' && mit.kind !== 'replicate') return null;
+  const base = new Array<number>(SHARDS).fill(0);
+  const copies = new Map<number, number[]>([...mit.hot].map((k) => [k, new Array<number>(mit.m).fill(0)]));
+  for (const r of stream) {
+    const c = copies.get(r.key);
+    if (!c) {
+      base[shardOf(r.key)]++;
+    } else if (mit.kind === 'salt') {
+      if (r.read) c.forEach((_, j) => c[j]++);
+      else c[Math.floor(r.u1 * mit.m)]++;
+    } else if (r.read) {
+      c[Math.floor(r.u1 * mit.m)]++;
+    } else {
+      c.forEach((_, j) => c[j]++);
+    }
+  }
+  return { base, copies };
+}
+
+export function randomPlacementSpread(stream: readonly Req[], mit: Mitigation, u: number, noneHottest: number, seed: number, draws = PLACEMENT_DRAWS): PlacementSpread | null {
+  const counted = copyCounts(stream, mit);
+  if (!counted) return null;
+  const rnd = mulberry32(seed ^ PLACEMENT_STREAM);
+  const scale = (u * SHARDS) / stream.length;
+  const hottest: number[] = [];
+  for (let d = 0; d < draws; d++) {
+    const loads = counted.base.slice();
+    for (const c of counted.copies.values()) for (const n of c) loads[Math.floor(rnd() * SHARDS)] += n;
+    hottest.push(Math.max(...loads) * scale);
+  }
+  hottest.sort((a, b) => a - b);
+  return { median: hottest[Math.floor(draws / 2)], worseShare: hottest.filter((h) => h > noneHottest).length / draws, draws };
 }
 
 /* ---------- scene 3: finding the hot keys ---------- */

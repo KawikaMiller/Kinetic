@@ -2,13 +2,13 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
+import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { pctText, sig } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { FILL_TICKS, KEYS, SHARDS, SKEW, TICK_REQUESTS, UTILISATION, fillSim, hottestShare, saturationAt, saturationEstimate } from './skew';
+import { FILL_TICKS, KEYS, SHARDS, SKEW, TICK_REQUESTS, UTILISATION, fillSim, hottestShare, keyStandsOut, saturationAt, saturationEstimate } from './skew';
 import { initialMelt } from './init';
-import { SHARD_LEGEND, ShardBars } from './ShardBars';
-import { loadFractions } from './shardMath';
+import { ShardBars } from './ShardBars';
+import { SHARD_LEGEND_ITEMS, loadFractions } from './shardMath';
 
 const PLAY_MS = 110;
 
@@ -57,7 +57,8 @@ export function MeltScene({ picker }: { picker: ReactNode }) {
   const player = usePlayer(frames, { interval: PLAY_MS, autoplay: true });
   const tick = player.frame.tick;
   const at = sim.at(tick)!;
-  const culprit = p1 > 2 / KEYS ? `user:1 (${pctText(p1, 1)} of all requests)` : 'none: no single key stands out';
+  const standsOut = keyStandsOut(s.skew);
+  const culprit = standsOut ? `user:1 (${pctText(p1, 1)} of all requests)` : 'none: no single key stands out';
 
   return (
     <StageFrame
@@ -65,12 +66,12 @@ export function MeltScene({ picker }: { picker: ReactNode }) {
       player={player}
       stats={
         <Stats>
-          <Stat label="Hottest shard / mean" value={sig(Math.max(...finalShares) * SHARDS)} color={Math.max(...finalShares) * SHARDS > 1.5 ? 'var(--bad)' : undefined} sub="of all 20,000 requests" />
-          <Stat label="First shard saturates at" value={pctText(exact, 0)} color={exact < 0.7 ? 'var(--bad)' : 'var(--ok)'} sub={`total utilisation; the formula says ${pctText(saturationEstimate(s.skew), 0)}`} />
-          <Stat label="The culprit" value={s.skew === 0 ? 'none' : 'user:1'} color={s.skew === 0 ? undefined : 'var(--orange)'} sub={culprit} />
+          <Stat label="Hottest shard / plain mean" value={sig(Math.max(...finalShares) * SHARDS)} color={Math.max(...finalShares) * SHARDS > 1.5 ? 'var(--bad)' : undefined} sub="of all 20,000 requests" />
+          <Stat label="First shard saturates at" value={pctText(exact, 0)} color={exact < s.util ? 'var(--bad)' : 'var(--ok)'} sub={`total utilisation; the formula says ${pctText(saturationEstimate(s.skew), 0)}`} />
+          <Stat label="The culprit" value={standsOut ? 'user:1' : 'none'} color={standsOut ? 'var(--orange)' : undefined} sub={culprit} />
         </Stats>
       }
-      legend={SHARD_LEGEND}
+      legend={<Legend items={[...SHARD_LEGEND_ITEMS, { color: 'var(--orange)', label: 'the culprit key: the number, not a bar' }]} />}
       controls={[
         <>
           {picker}

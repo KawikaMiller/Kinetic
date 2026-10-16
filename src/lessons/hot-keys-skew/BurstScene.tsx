@@ -3,7 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { pctText, sig } from '../../core/format';
-import { SHARDS, UTILISATION, summarise } from './skew';
+import { READ_SHARE, SHARDS, UTILISATION, summarise } from './skew';
 import { BURST_KEYS, BURST_M, burstView, initialBurst } from './init';
 import { SHARD_LEGEND, ShardBars } from './ShardBars';
 
@@ -18,14 +18,14 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
       height={460}
       intro={
         <>
-          The {BURST_KEYS} hottest keys are salted with {BURST_M} suffixes. {s.burst ? <>Halfway through, a celebrity event moves the hot keys{s.adaptive ? ' and the salting follows them' : ' and the salting stays where it was'}: the busiest shard is at {sig(first.maxOverMean)} times the mean before and {sig(second.maxOverMean)} after.</> : <>The hot keys stay put, so both halves are balanced alike: {sig(first.maxOverMean)} and {sig(second.maxOverMean)} times the mean.</>}
+          The {BURST_KEYS} hottest keys are salted with {BURST_M} suffixes. {s.burst ? <>Halfway through, a celebrity event moves the hot keys{s.adaptive ? ' and the salting follows them' : ' and the salting stays where it was'}: the busiest shard is at {sig(first.maxOverMean)} times the plain mean before and {sig(second.maxOverMean)} after.</> : <>The hot keys stay put, so both halves look alike: {sig(first.maxOverMean)} and {sig(second.maxOverMean)} times the plain mean.</>}
         </>
       }
       introKey={[s.burst, s.adaptive]}
       stats={
         <Stats>
-          <Stat label="First half, hottest / mean" value={sig(first.maxOverMean)} color={first.maxOverMean > 1.5 ? 'var(--bad)' : 'var(--ok)'} sub="the salting was made for these keys" />
-          <Stat label="Second half, hottest / mean" value={sig(second.maxOverMean)} color={second.maxOverMean > 1.5 ? 'var(--bad)' : 'var(--ok)'} sub={s.burst ? (s.adaptive ? 'the salting followed the hot keys' : 'yesterday\'s salting, today\'s hot keys') : 'the hot keys did not move'} />
+          <Stat label="First half, hottest / plain mean" value={sig(first.maxOverMean)} color={first.hottestLoad > 1 ? 'var(--bad)' : 'var(--ok)'} sub="the salting was made for these keys" />
+          <Stat label="Second half, hottest / plain mean" value={sig(second.maxOverMean)} color={second.hottestLoad > 1 ? 'var(--bad)' : 'var(--ok)'} sub={s.burst ? (s.adaptive ? 'the salting followed the hot keys' : 'yesterday\'s salting, today\'s hot keys') : 'the hot keys did not move'} />
           <Stat label="Shards" value={SHARDS} sub="mod placement" />
         </Stats>
       }
@@ -50,7 +50,7 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">a seeded stream of 20,000 requests whose popularity ranking rotates by 137 keys halfway through when the toggle is on</Provenance>
-          <Provenance kind="illustrative">Zipf is a model of popularity, real skew varies; total utilisation is {pctText(UTILISATION.default, 0)} in both halves</Provenance>
+          <Provenance kind="illustrative">Zipf is a model of popularity, real skew varies; total utilisation is {pctText(UTILISATION.default, 0)} in both halves, with {pctText(READ_SHARE.default, 0)} reads and sub-keys on consecutive shards</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

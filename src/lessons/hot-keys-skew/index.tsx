@@ -15,18 +15,18 @@ const lesson: LessonModule = {
     ],
     why: 'Capacity planning by the average hides the shard that falls over first. Knowing that skew is about requests per key, which mitigation fixes reads and which fixes writes, and that the hot key can move, is what turns a mystery of one slow shard into a design choice.',
     watch:
-      'Each bar is one shard\'s load as a share of its own capacity: green below the dashed mark, red past it, and the hottest shard is outlined in yellow. Orange is the hot key, violet the salted sub-keys and the extra work a mitigation adds, and blue the requests a cache absorbed. In the sketch scene a green key was flagged, a grey struck-through key is a hot key the sketch missed, and an orange key was flagged although it is not hot. The chips say what is simulated, illustrative or scripted.',
+      'Each bar is one shard\'s load as a share of its own capacity: green below the dashed mark, red past it, and the hottest shard is outlined in yellow. The stats use three more colours for numbers, never for bars: orange is the hot key (the culprit card), violet the extra work a mitigation adds, and blue the requests a cache absorbed. In the sketch scene a green key was flagged, a grey struck-through key is a hot key the sketch missed, and an orange key was flagged although it is not hot. The chips say what is simulated, illustrative or scripted.',
   },
   tryThis: [
     'At the defaults in "The melt" press play: the hottest key carries about 13% of the requests, and "First shard saturates at" reads below 60% of total utilisation, so by the end the hottest shard sits past its dashed capacity mark while the cluster is 70% used. Drag the exponent to 0 (uniform keys) and the saturation point moves above 80%.',
-    'In "Mitigations" the default is salting with 4 suffixes at 20% reads: the busiest shard falls, and "Extra shard requests" counts the gather work each read of a salted key adds. Set "Reads in the mix" to 0% and the extra work is 0. Set it to 90% and salting leaves the busiest shard worse than no mitigation.',
+    'In "Mitigations" the default is salting with 4 suffixes at 20% reads: the busiest shard falls, and "Extra shard requests" counts the gather work each read of a salted key adds. Set "Reads in the mix" to 0% and the extra work is 0. Set it to 90% and salting leaves the busiest shard worse than no mitigation, on the bars and in "Hottest shard / plain mean" alike. The note under the bars says what random placement of the sub-keys would do instead.',
     'In the same scene pick "Cache in front" and set "Reads in the mix" to 0%: "Hottest shard / mean" is exactly the "no mitigation" figure, because a cache absorbs only reads. Set reads to 100% and it falls.',
     'In "Find the hot keys" the 32-counter sketch misses the hot key user:4 and flags 3 keys that are not hot. Drag "Sketch width" to its end, 512: all four hot keys are flagged and none is missed.',
     'In "Hot in time" the salting is made for the first half\'s hot keys and the hot keys move halfway: the second half is more unbalanced than the first. Set Salting to "Follows the hot keys" and it falls back.',
   ],
   keyIdeas: [
     'Hashing spreads keys, not requests: in this model the hottest key carries 1 / H of the traffic, and its shard saturates at a total utilisation well below 100%.',
-    'Salting spreads a hot key\'s writes over m sub-keys and makes each read gather the m sub-keys; a cache absorbs reads and does nothing for writes, so the read-to-write mix decides which one helps.',
+    'Salting spreads a hot key\'s writes over m sub-keys and makes each read gather the m sub-keys; a cache absorbs reads and does nothing for writes, so the read-to-write mix decides which one helps; and the sub-keys here sit on consecutive shards, the best case, which random placement can undo.',
     'A sketch with too little memory flags cold keys and misses hot ones, so salting just the flagged keys leaves the real hot key melting its shard.',
     'Hot keys can move in time: a split or salting made for yesterday\'s hot key does nothing for today\'s, so the fix has to follow the detection.',
   ],

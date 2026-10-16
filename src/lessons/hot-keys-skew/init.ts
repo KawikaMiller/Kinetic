@@ -3,8 +3,8 @@
  * and what the scenes compute from their controls.
  */
 import {
-  BURST_SHIFT, HIT, KEYS, READ_SHARE, SKEW, SPLIT_M, UTILISATION, detect, hottestKeys, makeStream, shardLoads, summarise,
-  type Detection, type Loads, type Mitigation, type MitigationKind, type PhaseLoads, type Summary,
+  BURST_SHIFT, HIT, KEYS, READ_SHARE, SKEW, SPLIT_M, UTILISATION, detect, hottestKeys, makeStream, randomPlacementSpread, shardLoads, summarise,
+  type Detection, type Loads, type Mitigation, type MitigationKind, type PhaseLoads, type PlacementSpread, type Summary,
 } from './skew';
 
 export const STREAM_SEED = 1;
@@ -35,12 +35,16 @@ export interface MitigateView {
   now: Loads;
   withoutSummary: Summary;
   nowSummary: Summary;
+  /** Salting and replication with each copy on a random shard instead of a consecutive one; null for the other mitigations. */
+  placement: PlacementSpread | null;
 }
 export function mitigateView(s: MitigateState): MitigateView {
   const stream = makeStream({ seed: s.seed, skew: SKEW.default, readShare: s.readShare });
   const without = shardLoads(stream, { ...mitigationOf(s), kind: 'none' }, SKEW.default);
   const now = shardLoads(stream, mitigationOf(s), SKEW.default);
-  return { without, now, withoutSummary: summarise(without, s.util), nowSummary: summarise(now, s.util) };
+  const withoutSummary = summarise(without, s.util);
+  const placement = randomPlacementSpread(stream, mitigationOf(s), s.util, withoutSummary.hottestLoad, s.seed);
+  return { without, now, withoutSummary, nowSummary: summarise(now, s.util), placement };
 }
 
 /** The detect scene opens on a sketch small enough to miss a hot key (width 8 of 4 rows: 32 counters). */
@@ -72,7 +76,7 @@ export const BURST_KEYS = 12;
 export const BURST_M = 8;
 
 export function burstView(s: BurstState, skew = SKEW.default): PhaseLoads & { salted: ReadonlySet<number>; secondSalted: ReadonlySet<number> } {
-  const stream = makeStream({ seed: STREAM_SEED, skew, readShare: 0.2, burst: s.burst });
+  const stream = makeStream({ seed: STREAM_SEED, skew, readShare: READ_SHARE.default, burst: s.burst });
   const first = hottestKeys(BURST_KEYS);
   const moved = new Set([...first].map((k) => ((k - 1 + BURST_SHIFT) % KEYS) + 1));
   const second = s.burst && s.adaptive ? moved : first;
