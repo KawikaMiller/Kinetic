@@ -92,7 +92,7 @@ const lesson: LessonModule = {
         'Exec copies the parent\'s memory in the background while the new program is loading',
       ],
       answer: 0,
-      why: 'Fork only builds table entries. Exec then replaces the mappings with the new program\'s pages and the shared frames drop back to a count of 1, so in the fork-then-exec run the lesson counts 0 pages copied.',
+      why: 'Fork builds table entries, not data. Exec then replaces the mappings with the new program\'s pages and the shared frames drop back to a count of 1, so in the fork-then-exec run the lesson counts 0 pages copied.',
     },
   ],
 };

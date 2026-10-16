@@ -38,9 +38,9 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'In this model read() copies each requested page from the cache into your buffer, while mmap copies nothing and pays a fault the first time a process touches a page.',
-    'A minor fault maps a page that is already cached and a major fault reads the disk first, so a second process reading the same file finds the pages cached and takes only minor faults.',
+    'A minor fault maps a page that is already cached and a major fault reads the disk first, so a second process reading the same file finds the pages cached and takes minor faults, not disk reads.',
     'Readahead turns later reads into hits by fetching a growing window while the access looks sequential, and it resets on a random jump, so it helps sequential reads and wastes little on random ones.',
-    'write() or a store through a mapping only dirties a cached page: in this model a power cut loses what was not flushed, killing the process loses nothing, and acknowledging after fsync loses no acknowledged write.',
+    'write() or a store through a mapping dirties a cached page without touching the disk: in this model a power cut loses what was not flushed, killing the process loses nothing, and acknowledging after fsync loses no acknowledged write.',
   ],
   quiz: [
     {
@@ -52,7 +52,7 @@ const lesson: LessonModule = {
         'All of it, because a write() that returned success is already on the disk by the time it returns',
       ],
       answer: 0,
-      why: 'The dirty pages belong to the page cache, not to the process, so the kill alone loses nothing and the kernel still writes them back later. The power cut then loses whatever was still only in RAM, which is why the lesson shows acknowledging before fsync losing a write.',
+      why: 'The dirty pages belong to the page cache, not to the process, so the kill alone loses nothing and the kernel still writes them back later. The power cut then loses whatever was still in RAM alone, which is why the lesson shows acknowledging before fsync losing a write.',
     },
     {
       q: 'A process maps a 1 GB file with mmap. How much of the file is read into memory at the moment of the mmap call?',
@@ -85,7 +85,7 @@ const lesson: LessonModule = {
         'It reads the disk again, since the first process\'s mappings are private to that process',
       ],
       answer: 0,
-      why: 'The page cache is one per file, shared by the processes that open it, but each process has its own page table, so it must still map each page once. That map-only fault is the minor fault the model counts.',
+      why: 'The page cache is one per file, shared by the processes that open it, but each process has its own page table, so it still has to map each page once. That fault, which maps without reading the disk, is the minor fault the model counts.',
     },
     {
       q: 'An application acknowledges each save as soon as write() returns and calls fsync afterwards. Under which condition can an acknowledged save still be lost?',
@@ -96,7 +96,7 @@ const lesson: LessonModule = {
         'If the file is larger than the page cache when the application tells the user',
       ],
       answer: 0,
-      why: 'Until fsync returns, the data may exist only in RAM. A kill does not lose it, since the cache belongs to the kernel, but a power cut does. In the lesson seeded run, acknowledging after fsync loses no acknowledged write on any of the 200 seeds.',
+      why: 'Until fsync returns, the data may exist in RAM alone. A kill does not lose it, since the cache belongs to the kernel, but a power cut does. In the lesson seeded run, acknowledging after fsync loses no acknowledged write on any of the 200 seeds.',
     },
   ],
 };
