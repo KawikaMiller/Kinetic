@@ -59,7 +59,7 @@ export function ChooseScene({ picker }: { picker: ReactNode }) {
               <th scope="col">Build (comparisons)</th>
               <th scope="col">Nearest: nodes / checks</th>
               <th scope="col">Range: nodes / checks</th>
-              <th scope="col">Index nodes</th>
+              <th scope="col">Tree nodes or cells</th>
               <th scope="col">Notes</th>
             </tr>
           </thead>
@@ -70,13 +70,13 @@ export function ChooseScene({ picker }: { picker: ReactNode }) {
                 <td data-label="Build (comparisons)">{r.build.toLocaleString('en-US')}</td>
                 <td data-label="Nearest: nodes / checks">{r.id === 'scan' ? `none / ${r.nnChecks}` : `${avg(r.nnNodes)} / ${avg(r.nnChecks)}`}</td>
                 <td data-label="Range: nodes / checks">{r.id === 'scan' ? `none / ${r.rangeChecks}` : `${avg(r.rangeNodes)} / ${avg(r.rangeChecks)}`}</td>
-                <td data-label="Index nodes">{r.memory}</td>
+                <td data-label="Tree nodes or cells">{r.treeNodes}</td>
                 <td data-label="Notes">{NOTES[r.id]}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="si-note">Geohash is left out of the table: it names a cell, so it answers "which cell" and a prefix range scan, not an exact nearest neighbour.</p>
+        <p className="si-note">Geohash is left out of the table: it names a cell, so it answers "which cell" and a prefix range scan, not an exact nearest neighbour. The last column counts different things: the k-d tree's nodes are the points themselves (no storage beyond the points), while the quadtree's cells are extra storage on top of the points, and the scan has none.</p>
         <Plot2D
           x={{ domain: [HD_MIN_DIM, HD_MAX_DIM], label: 'dimensions d', ticks: 8 }}
           y={{ domain: [0, 1], label: 'nodes visited', format: (v) => `${Math.round(v * 100)}%` }}
@@ -87,7 +87,7 @@ export function ChooseScene({ picker }: { picker: ReactNode }) {
           <Points data={[{ x: here.dims, y: here.fraction, tone: 'hi', r: 5 }]} />
         </Plot2D>
         <p className="si-note">
-          {HD_QUERIES} queries per dimension on {HD_POINTS.toLocaleString('en-US')} uniform random points, each run for real. The 1-nearest search is exact, so a high share means the tree stopped helping, not that it went wrong.
+          {HD_QUERIES} queries per dimension on {HD_POINTS.toLocaleString('en-US')} uniform random points, each run for real. The 1-nearest search is exact, so a high share means the tree stopped helping, not that it went wrong. The middle of the curve belongs to this size, {HD_POINTS.toLocaleString('en-US')} points: with more points the knee moves to higher d, and real data that has fewer effective dimensions than it has coordinates prunes better than uniform points do.
         </p>
       </div>
       <ProvenanceRow>

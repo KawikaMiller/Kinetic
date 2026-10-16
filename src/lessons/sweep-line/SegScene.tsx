@@ -105,7 +105,7 @@ export function SegScene({ picker }: { picker: ReactNode }) {
           {f.active.map((h) => <span key={h} className="sw-event">horizontal {h + 1}: y = {set.hs[h].y}</span>)}
         </Tray>
         <p className="sw-note">
-          Counts use one unit: a coordinate comparison. On your {set.hs.length} by {set.vs.length} segments the sweep makes {run.sweepComparisons} against {run.brute.comparisons} for checking every pair, so it {run.sweepComparisons < run.brute.comparisons ? 'already wins' : 'does not win yet: it pays for sorting the events'}. At {scale.n} horizontal and {scale.n} vertical segments (a seeded sparse input, model only, not drawn) it makes {scale.sweep.toLocaleString('en-US')} against {scale.brute.toLocaleString('en-US')} for {scale.pairs.toLocaleString('en-US')} pairs.
+          Counts use one unit: a key comparison. The sweep counts one for each step of its sort and its search of the active set (each compares a coordinate and, on a tie, an id), while checking every pair counts each coordinate comparison on its own, up to four per pair, so the unit is not exactly the same and the sweep's saving is shown a little larger than it is. On your {set.hs.length} by {set.vs.length} segments the sweep makes {run.sweepComparisons} against {run.brute.comparisons} for checking every pair, so it {run.sweepComparisons < run.brute.comparisons ? 'already wins' : 'does not win yet: it pays for sorting the events'}. At {scale.n} horizontal and {scale.n} vertical segments (a seeded sparse input with only {scale.crossings} crossings, model only, not drawn) it makes {scale.sweep.toLocaleString('en-US')} against {scale.brute.toLocaleString('en-US')} for {scale.pairs.toLocaleString('en-US')} pairs.
         </p>
       </div>
       <ProvenanceRow>

@@ -26,7 +26,7 @@ export type SegEvent =
 export interface SweepResult {
   crossings: Crossing[];
   events: SegEvent[];
-  /** Coordinate comparisons: ordering the events plus every y comparison on the active set. */
+  /** Key comparisons: one per step of the event sort and of the search of the active set (not the same unit as the pair check's coordinate comparisons). */
   comparisons: number;
 }
 

@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `A left turn is a positive cross product, with y up: ${F.left} on the default triangle, and half its size, ${F.leftArea}, is the triangle's area.`,
     `Graham, Andrew and Jarvis return the same hull on whole-number points, but at different cost: on the ${F.points}-point scatter they spend ${F.grahamTests}, ${F.andrewTests} and ${F.jarvisTests} orientation tests.`,
-    `Jarvis's march costs about n times h, where h is the hull size: on ${F.circleN} points on a circle it spent ${F.circleJarvis} tests against ${F.circleAndrew} for Andrew, and on a disc with ${F.discH} hull points ${F.discJarvis} against ${F.discAndrew}.`,
+    `Jarvis's march costs about n times h, where h is the hull size: on ${F.circleN} points on a circle it spent ${F.circleJarvis} tests against ${F.circleAndrew} for Andrew, and on a disc with ${F.discH} hull points ${F.discJarvis} against ${F.discAndrew}. These count orientation tests only: Andrew's sort by x is not counted, and counting it would narrow the disc gap.`,
     `A double cross product of exactly 0 does not prove collinear: in the lesson's search it is 0 for a point that is not on the line, so a hull vertex is popped (${F.demoDouble} points instead of ${F.demoExact}); whole numbers, or an exact test, avoid it.`,
   ],
   quiz: [
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'Jarvis: a circle has no collinear points, which is its slow case',
       ],
       answer: 0,
-      why: `Jarvis wraps once per hull point and scans the whole point set each time, so with h = n it is the worst case: ${F.circleJarvis} tests against ${F.circleAndrew} for Andrew at n = ${F.circleN}, measured. On a filled disc with ${F.discH} hull points the gap narrows to ${F.discJarvis} against ${F.discAndrew}, but Andrew is still ahead.`,
+      why: `Jarvis wraps once per hull point and scans the whole point set each time, so with h = n it is the worst case: ${F.circleJarvis} tests against ${F.circleAndrew} for Andrew at n = ${F.circleN}, measured. On a filled disc with ${F.discH} hull points the gap narrows to ${F.discJarvis} against ${F.discAndrew}, but Andrew is still ahead on orientation tests; Andrew's sort by x is not counted here, and counting it would narrow that gap.`,
     },
     {
       q: 'Why is "cross product equals 0" a risky test for collinear points when the coordinates are arbitrary doubles?',

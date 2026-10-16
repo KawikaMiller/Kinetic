@@ -18,8 +18,8 @@ export interface Row {
   nnChecks: number;
   rangeNodes: number;
   rangeChecks: number;
-  /** Index nodes beyond the points themselves. */
-  memory: number;
+  /** Tree nodes or cells in the index. A k-d tree's nodes are the points themselves (no extra storage); a quadtree's cells are extra storage; the scan has none. */
+  treeNodes: number;
 }
 
 export interface Workload {
@@ -46,7 +46,7 @@ export function compareStructures(points: readonly Pt[], capacity: number, w: Wo
   const quad = buildQuad(points, capacity);
   const n = points.length;
   return [
-    { id: 'scan', label: 'Linear scan', build: 0, nnNodes: 0, nnChecks: n, rangeNodes: 0, rangeChecks: n, memory: 0 },
+    { id: 'scan', label: 'Linear scan', build: 0, nnNodes: 0, nnChecks: n, rangeNodes: 0, rangeChecks: n, treeNodes: 0 },
     {
       id: 'kd',
       label: 'k-d tree',
@@ -55,7 +55,7 @@ export function compareStructures(points: readonly Pt[], capacity: number, w: Wo
       nnChecks: mean(w.nn.map((q) => knn(kd, q, COMPARE_K).visited.length)),
       rangeNodes: mean(w.ranges.map((r) => kdRange(kd, r).visited.length)),
       rangeChecks: mean(w.ranges.map((r) => kdRange(kd, r).visited.length)),
-      memory: kd.nodes.length,
+      treeNodes: kd.nodes.length,
     },
     {
       id: 'quad',
@@ -65,7 +65,7 @@ export function compareStructures(points: readonly Pt[], capacity: number, w: Wo
       nnChecks: mean(w.nn.map((q) => quadKnn(quad, q, COMPARE_K).checks)),
       rangeNodes: mean(w.ranges.map((r) => quadRange(quad, r).visited.length)),
       rangeChecks: mean(w.ranges.map((r) => quadRange(quad, r).checks)),
-      memory: quad.nodes.length,
+      treeNodes: quad.nodes.length,
     },
   ];
 }

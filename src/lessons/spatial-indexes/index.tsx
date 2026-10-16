@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     `An index sorted on x alone cannot answer a rectangle: on the defaults it reads ${F.rangeCandidates} points in the strip to find ${F.rangeHits}, because x says nothing about y.`,
-    `A k-d tree skips the far side of a splitting line once the query is at least as far from the line as the k-th best answer; on the default 31 points that is ${F.kdSkipped} skipped subtrees and ${F.kdVisited} of ${F.kdN} nodes visited.`,
+    `A k-d tree skips the far side of a splitting line once the query is at least as far from the line as the k-th best answer; on the default ${F.kdN} points that is ${F.kdSkipped} skipped subtrees and ${F.kdVisited} of ${F.kdN} nodes visited.`,
     `A shared geohash prefix means a shared cell, but the converse fails at cell edges: ${F.boundaryA} and ${F.boundaryB} are a few metres apart and share ${F.boundaryShared} characters, so a near-me query searches the neighbouring cells as well.`,
     `In this lesson's measured runs the k-d tree's pruning fades with dimension: ${F.lowDim} of the nodes are visited at 2 dimensions and ${F.highDim} at 16, which is where approximate neighbour search takes over.`,
   ],

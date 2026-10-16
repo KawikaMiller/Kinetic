@@ -83,7 +83,7 @@ export function RoomsScene({ picker }: { picker: ReactNode }) {
           ))}
         </Tray>
         <p className="sw-note">
-          {view === 'rooms' ? `Each meeting sits in its room: ${plural(rooms.rooms, 'room')}, and the most meetings live at once is ${run.max} with this tie rule.` : 'Half-open meetings that merely touch can share a room, so at an equal time the end must be taken off before the next start is counted.'}
+          {view === 'rooms' ? `Each meeting sits in its room: ${plural(rooms.rooms, 'room')}, and the most meetings live at once is ${run.max} with this tie rule.` : 'Half-open meetings that merely touch can share a room, so at an equal time the end must be taken off before the next start is counted. With closed intervals the other order is right: [9, 10] and [10, 11] do share the instant 10, so counting the start first gives the correct 3 there. The tie rule is a bug only under the half-open convention.'}
         </p>
       </div>
       <ProvenanceRow>

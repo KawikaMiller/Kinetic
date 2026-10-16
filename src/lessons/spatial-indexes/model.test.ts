@@ -295,7 +295,7 @@ describe('comparison table', () => {
     const [scan, kd, quad] = rows;
     expect(scan.nnChecks).toBe(300);
     expect(scan.rangeChecks).toBe(300);
-    expect(kd.memory).toBe(300);
+    expect(kd.treeNodes).toBe(300);
     expect(kd.build).toBeGreaterThan(300);
     expect(quad.build).toBeGreaterThan(0);
     for (const r of [kd, quad]) {
