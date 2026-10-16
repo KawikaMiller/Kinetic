@@ -168,6 +168,9 @@ export function pctText(share: number, dp = 1): string {
   return `${(share * 100).toFixed(dp)}%`;
 }
 
+/** A count with thousands separators and no rounding of a whole number: 23414 → "23,414". Use `sig` when 3 significant figures will do. */
+export const integer = (n: number): string => (Number.isFinite(n) ? n.toLocaleString('en-US', { maximumFractionDigits: 0 }) : NA);
+
 /** A ratio to two decimals: 0.9987 → "1.00", so a ratio near 1 never reads as a bare "1". */
 export const ratioText = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : NA);
 

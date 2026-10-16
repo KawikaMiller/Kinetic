@@ -130,6 +130,7 @@ pct(0.123)            // '12%'; pct(0.0004, 1) → '<0.1%'
 bytes(1536)           // '1.5 KB' (binary); bytes(12000, { base: 1000 }) → '12.0 KB'; { dp: 0 } → '12 KB'; bytes(4096, { iec: true }) → '4.0 KiB' (IEC names for lessons that tell KiB from KB; ignored with base 1000)
 times(3)              // '3×'
 plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
+integer(23414)        // '23,414' — an exact whole count with separators (sig() rounds to 3 figures)
 pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')

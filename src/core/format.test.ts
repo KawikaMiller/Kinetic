@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, decimal, duration, humanDuration, humanDurationLog10, latency, pct, pctText, plural, power, ratioText, sig, superscript } from './format';
+import { bytes, clock, decimal, duration, humanDuration, humanDurationLog10, latency, pct, integer, pctText, plural, power, ratioText, sig, superscript } from './format';
 
 describe('superscript', () => {
   it('writes integers in superscript digits, including negatives', () => {
@@ -156,5 +156,15 @@ describe('sig, pctText and ratioText', () => {
     expect(ratioText(0.9987)).toBe('1.00');
     expect(ratioText(2.345)).toBe('2.35');
     expect(ratioText(Infinity)).toBe('–');
+  });
+});
+
+describe('integer', () => {
+  it('prints a whole count exactly, with thousands separators', () => {
+    expect(integer(23414)).toBe('23,414');
+    expect(integer(1418)).toBe('1,418');
+    expect(integer(999)).toBe('999');
+    expect(integer(0)).toBe('0');
+    expect(integer(Number.NaN)).toBe('–');
   });
 });
