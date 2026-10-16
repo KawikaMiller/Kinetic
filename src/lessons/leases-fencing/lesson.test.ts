@@ -50,9 +50,11 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(run.grants[1].token).toBeLessThan(run.grants[0].token);
     expect(verdictOf(loaded)?.rule).toBe('F3');
     expect(statsAt(run, Infinity).refusedNewest).toBe(1);
+    expect(statsAt(run, Infinity).staleApplied).toBe(0);
+    expect(lesson.tryThis[2]).not.toContain('accepts the stale write');
   });
 
-  it('try-this 4: in the renewal scene the defaults lapse the lease and land a stale write; a 3 s pause is survived and B gets the lock only after A releases; a TTL below the heartbeat is refused', () => {
+  it('try-this 4: in the renewal scene the defaults lapse the lease and land a stale write; a 3 s pause is survived and B gets the lock only after A releases; a TTL at or below the heartbeat is refused', () => {
     const s = initialRenew();
     expect([s.ttlMs, s.heartbeatMs, s.pauseMs]).toEqual([9_000, 3_000, 12_000]);
     const lapsed = runLease(s);
@@ -161,9 +163,9 @@ describe('the outcome table is run through the simulator and says what the lesso
     expect(rows.find((r) => r.row.id === 'check-before')!.cells[0].outcome).toBe('stopped');
   });
 
-  it('the renewal refusal fires exactly when the TTL is below the heartbeat', () => {
+  it('the renewal refusal fires exactly when the TTL is not above the heartbeat', () => {
     for (let ttl = 1_000; ttl <= 30_000; ttl += 1_000) {
-      for (let hb = 500; hb <= 15_000; hb += 500) expect(validateRenew(ttl, hb) !== null, `${ttl}/${hb}`).toBe(ttl < hb);
+      for (let hb = 500; hb <= 15_000; hb += 500) expect(validateRenew(ttl, hb) !== null, `${ttl}/${hb}`).toBe(ttl <= hb);
     }
   });
 });

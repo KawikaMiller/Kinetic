@@ -42,7 +42,7 @@ export function needsReading(run: LeaseRun): NeedsReading {
 
 /** The lease must outlast one heartbeat interval, or it lapses between renewals; null when the pair is fine. */
 export function validateRenew(ttlMs: number, heartbeatMs: number): string | null {
-  return ttlMs < heartbeatMs ? 'The lease would lapse between renewals: the TTL has to be longer than the heartbeat interval.' : null;
+  return ttlMs <= heartbeatMs ? 'The lease would lapse between renewals: the TTL has to be longer than the heartbeat interval.' : null;
 }
 
 export const PAUSE_GRID_MS: readonly number[] = [0, 3_000, 6_000, 10_000, 15_000, 20_000];
