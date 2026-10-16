@@ -46,7 +46,12 @@ function readLine(text: string): FieldParse<{ op: Op; operand: string | null }> 
 
 /** Reads a listing, one instruction per line (`#` starts a comment). Refuses by line: an unknown opcode, a bad or missing operand, a slot outside 0 to 3, a jump target outside the program, more than 60 instructions. */
 export function assemble(text: string): Assembled {
-  const rows = parseRows(text, { maxRows: ASSEMBLE_LIMITS.maxLines * 4, maxLineChars: ASSEMBLE_LIMITS.maxLineChars, row: readLine });
+  const rows = parseRows(text, {
+    maxRows: ASSEMBLE_LIMITS.maxLines * 4,
+    maxLineChars: ASSEMBLE_LIMITS.maxLineChars,
+    noun: { one: 'instruction', many: 'instructions' },
+    row: readLine,
+  });
   if (!rows.ok) return { ok: false, error: rows.error, line: rows.line };
   if (rows.rows.length > ASSEMBLE_LIMITS.maxLines) {
     const line = rows.rows[ASSEMBLE_LIMITS.maxLines].line;

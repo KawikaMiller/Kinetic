@@ -185,7 +185,7 @@ describe('the assembler', () => {
     expect(e('JMP 3\nHALT')).toMatch(/jump target 3 is outside the program: use 0 to 2/);
     expect(e('JMP -1')).toMatch(/jump target -1 is outside/);
     expect(e('')).toMatch(/listing is empty/);
-    expect(e(`PUSH ${'1'.repeat(40)}`)).toMatch(/keep each rule to 30 or fewer/);
+    expect(e(`PUSH ${'1'.repeat(40)}`)).toMatch(/keep each instruction to 30 or fewer/);
   });
 
   it('accepts a jump to just past the end, lower-case opcodes, blank lines and # comments, and numbers the lines by instruction', () => {

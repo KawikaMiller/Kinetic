@@ -31,3 +31,22 @@ describe('panel wrappers forward native attributes to their root element', () =>
     expect(html(Tray({ ariaLabel: 'Output', children: 'x' }))).toContain('aria-label="Output"');
   });
 });
+
+describe("Tray's empty text", () => {
+  const showsEmpty = (children: Parameters<typeof Tray>[0]['children']) =>
+    html(Tray({ empty: 'nothing yet', children })).includes('nothing yet');
+
+  it('shows when there are no children, and when every entry of a list is false, null or undefined', () => {
+    expect(showsEmpty(undefined)).toBe(true);
+    expect(showsEmpty(null)).toBe(true);
+    expect(showsEmpty(false)).toBe(true);
+    expect(showsEmpty([])).toBe(true);
+    expect(showsEmpty([false, null, undefined])).toBe(true);
+  });
+
+  it('stays hidden when anything real is there, even among false entries', () => {
+    expect(showsEmpty('x')).toBe(false);
+    expect(showsEmpty([false, 'x'])).toBe(false);
+    expect(showsEmpty(0)).toBe(false);
+  });
+});

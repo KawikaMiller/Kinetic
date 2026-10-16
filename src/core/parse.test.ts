@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBoundedBigInt, parseBoundedDecimal, parseBoundedInt, parseInteger, parseIntegers } from './parse';
+import { parseBoundedBigInt, parseBoundedDecimal, parseBoundedInt, parseInteger, parseIntegers, parseRows } from './parse';
 
 /** Strings Number() turns into an integer that a learner never typed as one. */
 const NOT_PLAIN_DECIMAL = ['0x10', '0b11', '0o7', '1e1', '1E2', '+5', '5.', '.5', '3.5', 'Infinity', 'ten', '1_000', '٣'];
@@ -144,5 +144,25 @@ describe('parseBoundedDecimal', () => {
     const custom = parseBoundedDecimal('-0.5', { min: 0, max: 1, messages: { tooSmall: (v, t) => `${t} is below 0 (read ${v})` } });
     expect(custom).toEqual({ ok: false, error: '-0.5 is below 0 (read -0.5)' });
     expect(parseBoundedDecimal('-1', { ...field, messages: { negative: 'positive only' } })).toEqual({ ok: false, error: 'positive only' });
+  });
+});
+
+describe('parseRows over-limit messages', () => {
+  const row = (text: string) => ({ ok: true as const, value: text });
+  const limits = { maxRows: 2, maxLineChars: 5, row };
+
+  it('say rules by default', () => {
+    expect(parseRows('a\nb\nc', limits)).toEqual({ ok: false, line: 3, error: 'Line 3: more than 2 rules; delete one first.' });
+    expect(parseRows('abcdefg', limits)).toEqual({ ok: false, line: 1, error: 'Line 1 is 7 characters; keep each rule to 5 or fewer.' });
+  });
+
+  it('use the caller-supplied noun in both', () => {
+    const noun = { one: 'instruction', many: 'instructions' };
+    expect(parseRows('a\nb\nc', { ...limits, noun })).toMatchObject({ error: 'Line 3: more than 2 instructions; delete one first.' });
+    expect(parseRows('abcdefg', { ...limits, noun })).toMatchObject({ error: 'Line 1 is 7 characters; keep each instruction to 5 or fewer.' });
+  });
+
+  it('count neither blank lines nor comment lines against the row limit', () => {
+    expect(parseRows('a\n\n#note\nb', limits)).toMatchObject({ ok: true });
   });
 });

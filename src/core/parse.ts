@@ -159,6 +159,8 @@ export function parseBoundedDecimal(text: string, o: DecimalFieldOptions): Field
 /** A learner-edited table, one rule per line: every row that parsed, or the first refusal with its 1-based line. */
 export type RowParse<T> = { ok: true; rows: { line: number; value: T }[] } | { ok: false; error: string; line: number };
 
+const DEFAULT_ROW_NOUN = { one: 'rule', many: 'rules' };
+
 export interface RowParseOptions<T> {
   /** Refuse a table with more rules than this (blank and comment lines don't count). */
   maxRows: number;
@@ -166,6 +168,8 @@ export interface RowParseOptions<T> {
   maxLineChars: number;
   /** Lines starting with this (after trimming) are comments; default `#`. */
   comment?: string;
+  /** What one row is called in the over-limit messages ("keep each rule", "more than 40 rules"); default rule / rules. */
+  noun?: { one: string; many: string };
   /** Read one trimmed, non-empty line; return the value or the sentence to show. */
   row: (text: string, line: number) => FieldParse<T>;
 }
@@ -177,16 +181,17 @@ export interface RowParseOptions<T> {
  */
 export function parseRows<T>(text: string, o: RowParseOptions<T>): RowParse<T> {
   const comment = o.comment ?? '#';
+  const noun = o.noun ?? DEFAULT_ROW_NOUN;
   const rows: { line: number; value: T }[] = [];
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const line = i + 1;
     if (lines[i].length > o.maxLineChars) {
-      return { ok: false, line, error: `Line ${line} is ${lines[i].length} characters; keep each rule to ${o.maxLineChars} or fewer.` };
+      return { ok: false, line, error: `Line ${line} is ${lines[i].length} characters; keep each ${noun.one} to ${o.maxLineChars} or fewer.` };
     }
     const trimmed = lines[i].trim();
     if (!trimmed || trimmed.startsWith(comment)) continue;
-    if (rows.length >= o.maxRows) return { ok: false, line, error: `Line ${line}: more than ${o.maxRows} rules; delete one first.` };
+    if (rows.length >= o.maxRows) return { ok: false, line, error: `Line ${line}: more than ${o.maxRows} ${noun.many}; delete one first.` };
     const read = o.row(trimmed, line);
     if (!read.ok) return { ok: false, line, error: `Line ${line}: ${read.error}` };
     rows.push({ line, value: read.value });

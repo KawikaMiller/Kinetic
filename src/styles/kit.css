@@ -959,3 +959,15 @@ button.gantt-instant:focus-visible { outline: 2px solid var(--text); outline-off
   .bit-strip.size-sm { --bit-w: 16px; --bit-fs: 10px; }
   .bit-strip.size-lg { --bit-w: 24px; --bit-fs: 13px; }
 }
+
+/* A table that becomes a stack of cards on a phone (halting-problem, lambda-calculus): put `table-cards` on the
+   <table> and `data-label="Column name"` on each <td>. Under 600px the header hides and every row is a bordered
+   card whose cells read "Column name: value". A scroller around the table drops its own border there (a lesson's
+   `border: 0` on its wrapper). The `table.` prefix outranks a lesson's `.xx-table th, .xx-table td` padding. */
+@media (max-width: 600px) {
+  table.table-cards thead { display: none; }
+  table.table-cards, table.table-cards tbody, table.table-cards tr, table.table-cards th, table.table-cards td { display: block; }
+  table.table-cards tr { padding: 6px 0; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+  table.table-cards th, table.table-cards td { border-bottom: 0; padding: 2px 10px; white-space: normal; }
+  table.table-cards td[data-label]::before { content: attr(data-label) ': '; font-weight: 600; color: var(--faint); }
+}

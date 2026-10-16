@@ -1,10 +1,13 @@
-import { SectionTitle } from '../components/Panel';
+import { useState } from 'react';
 import { BinaryTreeView, TREE_NODE_RADIUS } from '../components/BinaryTreeView';
+import { SectionTitle, Tray } from '../components/Panel';
+import { Button } from '../components/ui';
 import { buildAvl, checkAvl, heightOf } from '../core/avl';
 import { binaryEntropy, orderZeroBitsPerChar } from '../core/entropy';
 import { parseKeyList } from '../core/keyInput';
 import { initPlusPlus, kmeans } from '../core/kmeans';
 import { attention, createMlp, createSgd, gradCheck } from '../core/nn';
+import { parseRows } from '../core/parse';
 import { mulberry32 } from '../core/random';
 import { DevKitSection as Section } from './DevKitSection';
 
@@ -89,6 +92,53 @@ function TreeDemo() {
   );
 }
 
+const TRAY_ITEMS = ['a', 'b', 'c'];
+
+function TrayDemo() {
+  const [shown, setShown] = useState(true);
+  return (
+    <div className="devkit-row">
+      <Button onClick={() => setShown((s) => !s)}>{shown ? 'Hide every item' : 'Show the items'}</Button>
+      <Tray label="Items" labelWeight="regular" empty="nothing to show: every entry is false">
+        {TRAY_ITEMS.map((x) => shown && <span key={x} className="mono">{x} </span>)}
+      </Tray>
+    </div>
+  );
+}
+
+const CARD_ROWS = [
+  { name: 'alpha', verdict: 'halts', why: 'the loop counter reaches its bound' },
+  { name: 'beta', verdict: 'loops', why: 'the counter never changes' },
+];
+
+function CardsDemo() {
+  return (
+    <table className="table-cards">
+      <thead>
+        <tr><th>Program</th><th>Verdict</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        {CARD_ROWS.map((r) => (
+          <tr key={r.name}>
+            <th scope="row">{r.name}</th>
+            <td data-label="Verdict">{r.verdict}</td>
+            <td data-label="Why">{r.why}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+const ROWS_NOUN = { one: 'instruction', many: 'instructions' };
+const ROWS_TEXT = 'PUSH 1\nPUSH 2\nADD';
+const ROWS_LIMIT = 2;
+
+function RowsDemo() {
+  const read = parseRows(ROWS_TEXT, { maxRows: ROWS_LIMIT, maxLineChars: 30, noun: ROWS_NOUN, row: (text) => ({ ok: true, value: text }) });
+  return <p className="mono">{read.ok ? `${read.rows.length} rows` : read.error}</p>;
+}
+
 export function DevKitTier3h() {
   return (
     <>
@@ -104,6 +154,15 @@ export function DevKitTier3h() {
       </Section>
       <Section title="core/avl, core/keyInput, BinaryTreeView · the one AVL model, typed key lists, the binary-tree drawing both tree lessons share">
         <TreeDemo />
+      </Section>
+      <Section title="Tray · an array of all-false children shows the empty text">
+        <TrayDemo />
+      </Section>
+      <Section title="table-cards (kit.css) · under 600px each row becomes a card labelled from data-label">
+        <CardsDemo />
+      </Section>
+      <Section title="parseRows · a caller-supplied noun in the over-limit message">
+        <RowsDemo />
       </Section>
     </>
   );

@@ -1952,6 +1952,24 @@ const session = useOpSession(OPS, () => ({ base, op: 'insert', key: 5 }));   // 
 - Tests: `core/avl.test.ts`, `core/keyInput.test.ts` (every refusal sentence), `core/opSession.test.ts` (a fake tree: start, next op on the ended tree, refusals change only the note), `components/BinaryTreeView.test.ts` (hand-worked box sizes). avl-trees, red-black-trees and skip-lists tests are unchanged apart from their imports, except that red-black-trees' "compact AVL reference" test now runs the same 200-seed audit and the 11-rotation check on `core/avl`.
 - **Migrated:** `avl-trees` (`model.ts` keeps only the rotation game; `keys.ts` and `treeBox.ts` are gone), `red-black-trees` (`avlRef.ts`, `keys.ts`, `treeBox.ts` gone) and `skip-lists` (`parseKey`). Shots of the touched scenes are pixel-identical.
 
+### Small kit fixes — `Tray` array children, `core/testing/sqlite.ts`, `table-cards` CSS, `parseRows` noun
+```tsx
+<Tray label="Frontier" empty="empty">{items.map((x) => x.live && <Chip key={x.id} />)}</Tray>   // every entry false: shows "empty"
+```
+```ts
+import { openSqlite } from '../../core/testing/sqlite';                 // tests only: node:sqlite behind a typed dynamic import
+const db = openSqlite<Record<string, Cell>>();                           // in-memory; the type argument is the row shape the test reads
+db.exec('CREATE TABLE t (id INTEGER)'); db.prepare('SELECT 1 AS n').all(); stmt.run(1); stmt.setReturnArrays(true);
+parseRows(text, { maxRows: 60, maxLineChars: 30, noun: { one: 'instruction', many: 'instructions' }, row });   // default rule / rules
+```
+```html
+<table class="xx-table table-cards"> … <td data-label="Column name">…</td> …   <!-- under 600px: one bordered card per row -->
+```
+- **`Tray`** decides "has items" with `Children.toArray(children).length > 0`, so an array whose entries are all `false`, `null` or `undefined` (the `{cond && <Item />}` pattern over every item) shows the `empty` text like no children at all; any real entry, a `0` included, keeps it hidden. Test: `components/Panel.test.ts`.
+- **`core/testing/sqlite.ts`** is the same run-time `import()` shim `core/testing/node.ts` uses (no Node types in the app tsconfig), typed for what the tests call: `exec`, `prepare(...).all/run/setReturnArrays`. Test-only; never import it from app code. **Migrated:** query-planning, join-algorithms, normalization, orm-n-plus-one, relational-algebra (two files) and sql-aggregation-windows, which each carried their own 5 to 8 lines. Test: `core/testing/sqlite.test.ts`.
+- **`table-cards`** (in `kit.css`) is the responsive table: under 600px the header hides and each row becomes a bordered card whose cells read "Column name: value" from their `data-label`. A scroller around the table keeps its own `border: 0` in the lesson's CSS (one line), because a lesson's base border rule would outrank a kit one. The `table.table-cards` selector outranks a lesson's `.xx-table th, .xx-table td` padding. **Migrated:** halting-problem (both tables) and lambda-calculus; coverage-mutation-testing and computing-ethics use `data-label` for their own layouts and are untouched.
+- **`parseRows` `noun`** names a row in the over-limit sentences ("Line 8 is 63 characters; keep each instruction to 30 or fewer", "Line 61: more than 60 instructions; delete one first"). Default rule / rules, so turing-machines is unchanged; bytecode-vms passes instruction / instructions (its test now expects that wording). Not done: comment text still counts toward `maxLineChars` and a trailing `# comment` on a rule is still read as words; neither is explained on screen (queued request, left open).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
