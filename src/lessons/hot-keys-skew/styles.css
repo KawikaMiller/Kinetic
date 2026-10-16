@@ -1,0 +1,14 @@
+/* hot-keys-skew */
+.hk-stage { gap: 12px; min-width: 0; }
+.hk-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.hk-bars { display: flex; flex-direction: column; gap: 8px; }
+.hk-shard { display: grid; grid-template-columns: 62px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; padding: 2px 4px; border-radius: 6px; }
+.hk-shard.is-hottest { outline: 2px solid var(--hi); outline-offset: 1px; }
+.hk-shard-name { color: var(--muted); font-family: var(--mono); }
+.hk-shard-bars { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hk-faint { opacity: 0.5; }
+.hk-shard-load { font: 600 12px var(--mono); text-align: right; }
+.hk-keys { margin: 0; padding-left: 20px; font: 13px var(--mono); line-height: 1.7; }
+.hk-keys .is-found { color: var(--ok); }
+.hk-keys .is-missed { color: var(--dim); text-decoration: line-through; }
+.hk-keys .is-false { color: var(--orange); }
