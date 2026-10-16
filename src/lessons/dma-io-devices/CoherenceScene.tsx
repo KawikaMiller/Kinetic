@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
@@ -9,14 +9,14 @@ const hex2 = (v: number) => `0x${v.toString(16).toUpperCase().padStart(2, '0')}`
 
 export function CoherenceScene({ picker }: { picker: ReactNode }) {
   const [input, setInput] = useState<CoherenceInput>(DEFAULT_COHERENCE);
-  const r = dmaScenario(input);
+  const r = useMemo(() => dmaScenario(input), [input]);
   const set = (patch: Partial<CoherenceInput>) => setInput((i) => ({ ...i, ...patch }));
 
   return (
     <StageFrame
       height={360}
       intro={coherenceCaption(r)}
-      introKey={[r]}
+      introKey={[input.coherent, input.driverInvalidates, input.iommu]}
       stats={
         <Stats>
           <Stat label="CPU read" value={hex2(r.cpuSaw)} color={r.stale ? 'var(--bad)' : 'var(--ok)'} sub={r.stale ? 'stale: from the cache line' : r.servedFromCache ? 'from the cache line' : 'refilled from RAM'} />
