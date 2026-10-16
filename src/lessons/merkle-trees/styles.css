@@ -1,0 +1,17 @@
+/* merkle-trees */
+.mkl-stage { gap: 12px; min-width: 0; }
+.mkl-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.mkl-hash { font: 700 9px var(--mono); fill: var(--text); pointer-events: none; }
+.mkl-index { font: 9px var(--mono); fill: var(--muted); pointer-events: none; }
+.tree-node.is-tint .mkl-box { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }
+.tree-node.is-solid .mkl-box { fill: var(--c); stroke: var(--c); }
+.tree-node.is-solid .mkl-hash { fill: var(--on-c); }
+.mkl-verdict { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); }
+.mkl-verdict.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.mkl-verdict.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.mkl-seed { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.mkl-table { border-collapse: collapse; font: 13px var(--mono); width: 100%; }
+.mkl-table th, .mkl-table td { text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--line-2); }
+.mkl-ok { color: var(--ok); }
+.mkl-bad { color: var(--bad); }
+.mkl-violet { color: var(--violet); }

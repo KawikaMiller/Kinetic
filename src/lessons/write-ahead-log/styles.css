@@ -1,0 +1,13 @@
+/* write-ahead-log */
+.wal-stage { gap: 12px; min-width: 0; }
+.wal-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.wal-verdict { margin: 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); }
+.wal-verdict.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.wal-verdict.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.wal-note { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+.wal-table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.wal-table th, .wal-table td { text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--line-2); }
+
+@media (max-width: 700px) {
+  .wal-two { grid-template-columns: minmax(0, 1fr); }
+}
