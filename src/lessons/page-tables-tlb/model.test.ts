@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
+import { highBitsHint, shootdownCaption, tlbSummary } from './captions';
 import {
   DEFAULT_MAPPINGS, FLAT_TABLE_BYTES, LEVELS, PAGE_BYTES, WALK_REFERENCES, buildSpace, canonicalise, chosenMappings, indexAt, isCanonical, mappingCovering, offsetOf,
   spaceFor, walk, type Level, type Mapping, type PageSize,
@@ -129,6 +130,29 @@ describe('canonical addresses', () => {
   });
 });
 
+describe('header hint and captions agree with the walker', () => {
+  const space = buildSpace(DEFAULT_MAPPINGS);
+  it('"copies bit 47" appears exactly when the walker accepts the address', () => {
+    for (const a of [0x1000000000000n, 0xffff7fffffffffffn, 0x8000000000000000n, 0x0000800000000000n, 0xffff800000000000n, 0x7fffffffffffn, 0n, DEFAULT_MAPPINGS[0].sample]) {
+      const accepted = !(walk(space, a) as { reason?: string }).reason?.includes('not-canonical');
+      expect(highBitsHint(a).includes('(copies bit 47)')).toBe(accepted);
+    }
+  });
+  it('wording at one core, one unmap and one page', () => {
+    const r = { rounds: 1, ipis: 0, cost: 0 };
+    expect(shootdownCaption({ cores: 1, unmaps: 1, batched: true }, r)).toContain('1 core runs the process');
+    expect(shootdownCaption({ cores: 1, unmaps: 1, batched: true }, r)).not.toContain('all 1 unmaps');
+    expect(shootdownCaption({ cores: 1, unmaps: 1, batched: false }, r)).not.toContain('1 round, one per unmap');
+  });
+  it('a scan with no page reused is called compulsory, not "evicted just before it is needed"', () => {
+    const c = { ...tlbOpening(), pattern: 'sequential' as const, workingSet: 128, entries: 16 };
+    const run = runTlb(c);
+    expect(run.hits).toBe(0);
+    expect(tlbSummary(c, run)).toContain('first touch');
+    expect(tlbSummary(c, run)).not.toContain('evicted just before');
+  });
+});
+
 describe('huge pages and unmapping', () => {
   const small = DEFAULT_MAPPINGS.find((m) => m.size === 'p4k')!;
   it('a 2 MiB mapping ends the walk at the PD in three references with a 21-bit offset, a 1 GiB one at the PDPT in two', () => {
@@ -222,6 +246,16 @@ describe('the TLB', () => {
     const curve = hitRateCurve(tlbOpening());
     expect(curve[7][1]).toBeGreaterThan(0.9);
     expect(curve[8][1]).toBe(0);
+  });
+
+  it('the curve point at the current working set equals the hit-rate stat (same run length)', () => {
+    for (const size of ['p4k', 'p2m'] as const) {
+      for (const pattern of ['sequential', 'random', 'stride'] as const) {
+        const c = cfg({ size, pattern, entries: 16 });
+        const curve = hitRateCurve(c);
+        for (const w of [1, 8, 16, 17, 64, 128]) expect(curve.find(([x]) => x === w)![1]).toBe(hitRate(runTlb({ ...c, workingSet: w })));
+      }
+    }
   });
 });
 

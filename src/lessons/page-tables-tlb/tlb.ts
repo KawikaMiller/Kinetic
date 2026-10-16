@@ -14,7 +14,6 @@ export const ENTRY_OPTIONS = [4, 8, 16, 32, 64] as const;
 export const WORKING_SET = { min: 1, max: 128, default: 10 } as const;
 export const STRIDE = { min: 1, max: 16, default: 4 } as const;
 export const ACCESSES = 128;
-export const CURVE_ACCESSES = 512;
 export const TLB_SEED = 9;
 /** Cycles for a TLB hit, and per memory reference of a walk: round numbers for the lesson, not measurements. */
 export const HIT_CYCLES = 1;
@@ -121,11 +120,11 @@ export function translationCost(run: { hits: number; misses: number }, size: Tlb
   return total === 0 ? 0 : (run.hits * HIT_CYCLES + run.misses * WALK_REFERENCES[size] * REFERENCE_CYCLES) / total;
 }
 
-/** Hit rate against working-set size for the other settings (a longer run, so the curve is smooth). */
+/** Hit rate against working-set size for the other settings, over the same ACCESSES-long run as the stat, so the point at the current working set equals the Hit rate stat. */
 export function hitRateCurve(cfg: TlbConfig): [number, number][] {
   return Array.from({ length: WORKING_SET.max - WORKING_SET.min + 1 }, (_, k) => {
     const workingSet = WORKING_SET.min + k;
-    return [workingSet, hitRate(runTlb({ ...cfg, workingSet }, CURVE_ACCESSES))];
+    return [workingSet, hitRate(runTlb({ ...cfg, workingSet }))];
   });
 }
 

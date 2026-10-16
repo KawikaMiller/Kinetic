@@ -6,7 +6,7 @@ import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segm
 import { parseBoundedBigInt } from '../../core/parse';
 import type { Tone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
-import { FLAT_TEXT, allocatedText, n } from './captions';
+import { FLAT_TEXT, allocatedText, highBitsHint, n } from './captions';
 import { walkFrames } from './frames';
 import {
   DEFAULT_MAPPINGS, LEVELS, PAGE_NAMES, PAGE_SIZES, canonicalise, hex, mappingCovering, spaceFor, walk, walkOpening, type AddressChoice, type PageSize,
@@ -119,7 +119,7 @@ export function WalkScene({ picker }: { picker: ReactNode }) {
     >
       <div className="ptt-stage stage-pad">
         <Box>
-          <SectionTitle hint={`bits 63-48: ${hex((address >> 48n) & 0xffffn, 4)}${(address >> 48n) === (canonicalise(address) >> 48n) ? ' (copies bit 47)' : ' (should copy bit 47)'}`}>The address, split</SectionTitle>
+          <SectionTitle hint={highBitsHint(address)}>The address, split</SectionTitle>
           <BitStrip
             bits={bitsOf(address)}
             size="sm"

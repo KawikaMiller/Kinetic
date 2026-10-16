@@ -8,9 +8,9 @@ import { bytes, pct } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { n } from './captions';
 import { tlbFrames } from './frames';
-import { PAGE_NAMES, hex } from './paging';
+import { PAGE_NAMES, WALK_REFERENCES, hex } from './paging';
 import {
-  ENTRY_OPTIONS, HIT_CYCLES, PATTERNS, PATTERN_LABELS, REFERENCE_CYCLES, STRIDE, WORKING_SET, hitRate, hitRateCurve, reachBytes, runTlb, tlbOpening, translationCost,
+  ACCESSES, ENTRY_OPTIONS, HIT_CYCLES, PATTERNS, PATTERN_LABELS, REFERENCE_CYCLES, STRIDE, WORKING_SET, hitRate, hitRateCurve, reachBytes, runTlb, tlbOpening, translationCost,
   type TlbPageSize,
 } from './tlb';
 
@@ -58,7 +58,7 @@ export function TlbScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Hit rate" value={i >= 0 ? pct(hitRate(shown), 1) : '-'} color="var(--ok)" sub={`whole run: ${pct(hitRate(run), 1)}`} />
-          <Stat label="Average translation" value={`${translationCost(run, size).toFixed(1)} cycles`} sub={`whole run; hit ${HIT_CYCLES}, walk ${size === 'p4k' ? 4 : 3} x ${REFERENCE_CYCLES} (illustrative)`} />
+          <Stat label="Average translation" value={`${translationCost(run, size).toFixed(1)} cycles`} sub={`whole run; hit ${HIT_CYCLES}, walk ${WALK_REFERENCES[size]} x ${REFERENCE_CYCLES} (illustrative)`} />
           <Stat label="TLB reach" value={bytes(reach, { iec: true })} sub={`${n(entries)} entries x ${PAGE_NAMES[size]}`} />
           <Stat label="Working set" value={bytes(workingSet * SMALL_PAGE, { iec: true })} color={workingSet * SMALL_PAGE > reach ? 'var(--bad)' : 'var(--ok)'} sub={workingSet * SMALL_PAGE > reach ? 'larger than the reach' : 'within the reach'} />
         </Stats>
@@ -103,7 +103,7 @@ export function TlbScene({ picker }: { picker: ReactNode }) {
             {step && step.evicted !== null && <p className="ptt-evicted">just evicted: page {hex(BigInt(step.evicted))}</p>}
           </Box>
           <Box>
-            <SectionTitle hint="the same pattern at every working-set size">Hit rate against working set</SectionTitle>
+            <SectionTitle hint={`the same ${ACCESSES}-access run at every working-set size`}>Hit rate against working set</SectionTitle>
             <Plot2D
               x={{ domain: [WORKING_SET.min, WORKING_SET.max], label: 'working set (4 KiB pages)' }}
               y={{ domain: [0, 1], label: 'hit rate', format: (v) => pct(v) }}

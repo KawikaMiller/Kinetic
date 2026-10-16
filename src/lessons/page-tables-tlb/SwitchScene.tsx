@@ -32,8 +32,8 @@ export function SwitchScene({ picker }: { picker: ReactNode }) {
       introKey={caption}
       stats={
         <Stats>
-          <Stat label="Misses, flush on switch" value={n(flush.misses)} color="var(--bad)" sub={`${pct(flush.misses / total, 1)} of ${n(total)} accesses`} />
-          <Stat label="Misses, address-space tags" value={n(asid.misses)} color="var(--ok)" sub={`${pct(asid.misses / total, 1)} of ${n(total)} accesses`} />
+          <Stat label="Misses, flush on switch" value={n(flush.misses)} color={flush.misses > asid.misses ? 'var(--bad)' : undefined} sub={`${pct(flush.misses / total, 1)} of ${n(total)} accesses`} />
+          <Stat label="Misses, address-space tags" value={n(asid.misses)} color={asid.misses < flush.misses ? 'var(--ok)' : undefined} sub={`${pct(asid.misses / total, 1)} of ${n(total)} accesses`} />
           <Stat label="Shootdown IPIs" value={n(shoot.ipis)} color={shoot.ipis > 0 ? 'var(--bad)' : undefined} sub={`${n(shoot.rounds)} ${shoot.rounds === 1 ? 'round' : 'rounds'} x ${n(cores - 1)} other cores`} />
           <Stat label="Shootdown cost" value={`${n(shoot.cost)} cycles`} sub={batched ? `unbatched: ${n(unbatched.cost)}` : 'illustrative'} />
         </Stats>

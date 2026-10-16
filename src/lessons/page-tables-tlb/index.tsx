@@ -21,7 +21,7 @@ const lesson: LessonModule = {
     ],
     why: 'Address translation is on the path of every memory access, so its cost shows up as slow loops, slow context switches and slow unmaps. It builds on `virtual-memory-paging`, which teaches a single-level table and page faults.',
     watch:
-      'Walk: the address bits are coloured by field, orange for the PML4 index, amber PDPT, pink PD and sky PT, with the offset in violet because it passes through untranslated (a huge page turns the lower index fields violet too). A table row with a green outline holds a present entry, a red one a missing entry or a failed canonical check, and the yellow ring is the entry being read. TLB: a green cell is a hit, a red solid cell a miss that just filled that entry, grey cells other valid entries and dim outlines empty ones; the rail beside a row marks the row just touched. Switches: red is the costly side, green the cheap side. Chips say what is a toy, illustrative, simulated or from memory.',
+      'Walk: the address bits are coloured by field, orange for the PML4 index, amber PDPT, pink PD and sky PT, with the offset in violet because it passes through untranslated (a huge page turns the lower index fields violet too). A table row with a green outline holds a present entry, a red one a missing entry (a non-canonical address reads no table, so the four rows stay dim and the red result line says so), and the yellow ring is the entry being read. TLB: a green cell is a hit, a red solid cell a miss that just filled that entry, grey cells other valid entries and dim outlines empty ones; the rail beside a row marks the row just touched. Switches: red is the costly side, green the cheap side. Chips say what is a toy, illustrative, simulated or from memory.',
   },
   tryThis: [
     `In "The four-level walk" as it opens (a 4 KiB page at ${walkF.address}), play it through: the walk makes ${n(walkF.refs)} memory references and ends at physical address ${walkF.physical}. This space holds ${n(walkF.tables)} tables, where a flat table would be ${FLAT_TEXT}.`,
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
     },
     {
       q: 'A program cycles over 10 pages and the TLB has 8 entries with LRU replacement. What is its hit rate once warmed up?',
-      options: ['0%', '80%', '20%', '100%'],
+      options: ['0%: no access hits', '80%: eight in ten hit', '20%: two in ten hit', '100%: every access hits'],
       answer: 0,
       why: `Each page is evicted just before it is needed again, so in this model each access misses: ${n(tlb.openingMisses)} misses in ${n(tlb.accesses)} accesses in the lab. At 8 pages the same scan misses just ${n(tlb.eightMisses)} times.`,
     },

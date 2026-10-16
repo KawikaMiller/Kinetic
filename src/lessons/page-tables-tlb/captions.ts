@@ -1,6 +1,6 @@
 /** Captions and stat text, every number taken from the model on screen. Plain strings, so tests can read them. */
 import { bytes, pct } from '../../core/format';
-import { FLAT_TABLE_BYTES, PAGE_NAMES, hex, type WalkResult, type WalkStep } from './paging';
+import { FLAT_TABLE_BYTES, PAGE_NAMES, WALK_REFERENCES, hex, isCanonical, type WalkResult, type WalkStep } from './paging';
 import {
   IPI_CYCLES, REFERENCE_CYCLES, hitRate, reachBytes, translationCost, type ShootdownConfig, type SwitchRun, type TlbConfig, type TlbRun, type TlbStep,
 } from './tlb';
@@ -27,12 +27,15 @@ export function walkSummary(r: WalkResult, tables: number): string {
   return `Page fault after ${cost}: the ${r.steps[r.steps.length - 1].name} entry is not present, so the OS would have to map the page or report an error.`;
 }
 
+/** Header hint for the top 16 bits: says 'copies bit 47' only when the walker would accept the address. */
+export const highBitsHint = (address: bigint) => `bits 63-48: ${hex((address >> 48n) & 0xffffn, 4)}${isCanonical(address) ? ' (copies bit 47)' : ' (should copy bit 47)'}`;
+
 export const allocatedText = (tables: number) => `${n(tables)} tables = ${iec(tables * 4096)}`;
 
 export function accessCaption(step: TlbStep, cfg: TlbConfig, run: TlbRun): string {
   const page = `page ${hex(BigInt(step.vpn))}`;
   if (step.hit) return `Access ${n(step.index + 1)}: ${page} is in entry ${n(step.slot)}: a TLB hit, no walk.`;
-  const refs = cfg.size === 'p4k' ? 4 : 3;
+  const refs = WALK_REFERENCES[cfg.size];
   const out = step.evicted === null ? 'it fills an empty entry' : `it replaces the least recently used entry, page ${hex(BigInt(step.evicted))}`;
   return `Access ${n(step.index + 1)}: ${page} is not in the TLB: a miss, a walk of ${plural(refs, 'reference')} (${n(refs * REFERENCE_CYCLES)} cycles), and ${out}. ${n(run.steps.slice(0, step.index + 1).filter((s) => s.hit).length)} hits so far.`;
 }
@@ -42,10 +45,11 @@ export function tlbSummary(cfg: TlbConfig, run: TlbRun): string {
   const reach = iec(reachBytes(cfg));
   const base = `${plural(cfg.entries, 'entry', 'entries')} of ${PAGE_NAMES[cfg.size]} pages reach ${reach}; the run hit ${rate} of the time (${n(run.hits)} of ${n(run.hits + run.misses)}), at an average ${translationCost(run, cfg.size).toFixed(1)} cycles per translation.`;
   const distinct = new Set(run.steps.map((s) => s.vpn)).size;
+  if (run.hits === 0 && distinct >= run.steps.length) return `${base} No page repeats, so every access misses, but only because each is the first touch of its page: a compulsory miss that no TLB size could avoid.`;
   if (run.hits === 0 && cfg.pattern === 'sequential' && distinct > cfg.entries) {
     return `${base} The scan touches ${n(distinct)} pages for ${n(cfg.entries)} entries, so under LRU each page is evicted just before it is needed again: every access misses.`;
   }
-  if (distinct <= cfg.entries) return `${base} The ${n(distinct)} pages touched all fit, so only the first touch of each misses.`;
+  if (distinct <= cfg.entries) return `${base} The pages touched (${n(distinct)}) all fit, so only the first touch of each misses.`;
   return base;
 }
 
@@ -55,6 +59,6 @@ export function switchCaption(flush: SwitchRun, asid: SwitchRun): string {
 }
 
 export function shootdownCaption(cfg: ShootdownConfig, r: { rounds: number; ipis: number; cost: number }): string {
-  const rounds = cfg.batched ? `one round for all ${n(cfg.unmaps)} unmaps` : `${plural(r.rounds, 'round')}, one per unmap`;
-  return `${plural(cfg.cores, 'core')} run the process, so a round interrupts ${plural(cfg.cores - 1, 'other core')}: ${rounds}, ${plural(r.ipis, 'IPI')} in all (illustrative ${n(IPI_CYCLES)} cycles each), ${n(r.cost)} cycles.`;
+  const rounds = cfg.batched ? (cfg.unmaps === 1 ? 'one round for the one unmap' : `one round for all ${n(cfg.unmaps)} unmaps`) : (r.rounds === 1 ? '1 round, for the one unmap' : `${plural(r.rounds, 'round')}, one per unmap`);
+  return `${plural(cfg.cores, 'core')} ${cfg.cores === 1 ? 'runs' : 'run'} the process, so a round interrupts ${plural(cfg.cores - 1, 'other core')}: ${rounds}, ${plural(r.ipis, 'IPI')} in all (illustrative ${n(IPI_CYCLES)} cycles each), ${n(r.cost)} cycles.`;
 }

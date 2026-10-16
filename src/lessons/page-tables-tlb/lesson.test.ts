@@ -157,7 +157,7 @@ describe('honesty and quiz', () => {
     expect(shootdown({ cores: 16, unmaps: 1, batched: false }).ipis).toBe(15);
     expect(lesson.quiz[4].options[0]).toBe('7');
     expect(runTlb({ ...tlbOpening(), entries: 8, workingSet: 10 }).hits).toBe(0);
-    expect(lesson.quiz[1].options[0]).toBe('0%');
+    expect(lesson.quiz[1].options[0]).toMatch(/^0%/);
     expect(lesson.quiz[3].options[0]).toBe('3 entries and 21 offset bits');
   });
 });
