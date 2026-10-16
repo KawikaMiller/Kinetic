@@ -67,7 +67,7 @@ export function LoadScene({ picker }: { picker: ReactNode }) {
           <Button onClick={() => add({ at: when, kind: 'late', day })}>Late data for this day</Button>
         </>,
         <>
-          <SeedField key={seed} seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v, ops: opsForSeed(v) }))} />
+          <SeedField seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v, ops: opsForSeed(v) }))} />
           <Button onClick={() => setState((s) => ({ ...s, ops: [] }))} softDisabled={ops.length === 0}>No operations</Button>
         </>,
         <CalendarTime key="time" now={now} onNow={setAt} />,

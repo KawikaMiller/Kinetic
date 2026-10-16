@@ -57,7 +57,7 @@ export function WorkloadScene({ picker }: { picker: ReactNode }) {
           <Segmented label="Scans go to" value={placement.scans} onChange={(s) => setState((st) => ({ ...st, placement: { ...st.placement, scans: s } }))} options={STORE_OPTIONS} />
         </>,
         <>
-          <SeedField key={seed} seed={seed} onSeed={(s) => setState((st) => ({ ...st, seed: s }))} />
+          <SeedField seed={seed} onSeed={(s) => setState((st) => ({ ...st, seed: s }))} />
         </>,
       ]}
     >

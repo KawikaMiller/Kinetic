@@ -53,7 +53,7 @@ export function RawScene({ picker }: { picker: ReactNode }) {
           {picker}
           <Slider label="Noise" value={noise} min={0} max={NOISE_MAX} step={0.1} format={(v) => decimal(v, 1)} onChange={(v) => setState((s) => ({ ...s, noise: v }))} />
           <Slider label="Spike height" value={spike} min={0} max={SPIKE_MAX} step={0.5} format={(v) => decimal(v, 1)} onChange={(v) => setState((s) => ({ ...s, spike: v }))} />
-          <SeedField key={seed} seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v }))} />
+          <SeedField seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v }))} />
         </>,
         <>
           <Slider label="Zoom from hour" value={from} min={0} max={23} format={(v) => `${v}:00`} onChange={setFrom} />

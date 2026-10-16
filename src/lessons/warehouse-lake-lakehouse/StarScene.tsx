@@ -70,7 +70,7 @@ export function StarScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Toggle label="Region" value={snowflake} onChange={(v) => setState((s) => ({ ...s, snowflake: v }))} off="Inside customer (star)" on="Its own table (snowflake)" />
-          <SeedField key={seed} seed={seed} onSeed={(s) => setState((st) => ({ ...st, seed: s }))} />
+          <SeedField seed={seed} onSeed={(s) => setState((st) => ({ ...st, seed: s }))} />
         </>,
       ]}
     >

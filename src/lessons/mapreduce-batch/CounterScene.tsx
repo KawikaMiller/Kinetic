@@ -62,7 +62,7 @@ export function CounterScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <Toggle label="Map function" value={sideEffect} onChange={(s) => change({ sideEffect: s })} off="Pure" on="Bumps an external counter" />
-          <SeedField key={seed} seed={seed} onSeed={(s) => change({ seed: s })} />
+          <SeedField seed={seed} onSeed={(s) => change({ seed: s })} />
         </>,
         <TimeControls key="time" run={run} now={now} onNow={(t) => setState((s) => ({ ...s, at: t }))} playing={playing} onPlaying={setPlaying} />,
       ]}

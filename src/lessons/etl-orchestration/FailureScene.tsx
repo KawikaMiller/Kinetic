@@ -77,7 +77,7 @@ export function FailureScene({ picker }: { picker: ReactNode }) {
         <>
           <Slider label="Retries" value={retries} min={0} max={MAX_RETRIES} onChange={(r) => setState((s) => ({ ...s, retries: r }))} />
           <Toggle label="Flaky workers" value={flaky} onChange={(f) => setState((s) => ({ ...s, flaky: f }))} off="Off" on="On (seeded)" />
-          {flaky && <SeedField key={seed} seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v }))} />}
+          {flaky && <SeedField seed={seed} onSeed={(v) => setState((s) => ({ ...s, seed: v }))} />}
         </>,
         <CalendarTime key="time" now={now} onNow={(h) => setState((s) => ({ ...s, at: h }))} />,
       ]}
