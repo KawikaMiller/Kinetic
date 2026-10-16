@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { choose, startWalk } from '../../core/scenario';
 import { diagramCaption, mitigateCaption, sprintCaption } from './captions';
@@ -117,12 +118,9 @@ describe('sprint option claims', () => {
 });
 
 describe('the lesson stays inside the simulation', () => {
-  /** Allow-list: calls that would reach the network or run learner text. Empty on purpose. */
-  const FORBIDDEN = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function/;
-
   it('has no network call and no eval in any source file', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(5);
-    for (const [file, text] of Object.entries(sources)) expect(text, file).not.toMatch(FORBIDDEN);
+    expect(forbiddenCalls(sources)).toEqual([]);
   });
 
   it('shows the Simulated chip on every scene that draws the system', () => {

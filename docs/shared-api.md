@@ -382,7 +382,9 @@ runNode(code | lines, opts?)         // node.ts: spawnSync(nodePath, ['-e', code
 nodePath                             // the Node binary running the tests
 tscErrors({ 'a.ts': src })           // tsc.ts: real `tsc --strict` over in-memory files -> [{ file, line, code, message }] (generics-polymorphism, null-option-adts)
 emitJs(src)                          // tsc.ts: what TypeScript emits for a snippet (types erased)
+forbiddenCalls(sources, { also?, allow? })  // forbidden.ts: ['file: call', ...] for network / eval calls in raw sources ([] = clean)
 ```
+`forbiddenCalls` is the "this lesson stays inside the page" check: the default set is `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `eval(`, `new Function`; `also: ['localStorage', 'sessionStorage', 'indexedDB', 'newUrl']` adds opt-in shapes and `allow` lifts a default. The lesson keeps its own `import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true })` (it also reads individual sources for its chip assertions) and asserts `expect(forbiddenCalls(sources)).toEqual([])`. Migrated: authz-models, threat-modeling, ssrf-access-control, envelope-encryption-kms, randomness-csprng. Lessons whose check is about clocks and timers (branch-prediction, cache-coherence, memory-allocators, page-tables-tlb, timing-side-channels) strip comments first and test different calls: left alone.
 - A glued sentence is what a JSX line break next to `{…}` produces: JSX drops a line break that
   touches an expression, so text ending a line in `…the port.` with `{n} s later` starting the next
   comes out as "port.60 s later" (fix: `{' '}` at the line end). The
