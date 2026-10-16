@@ -1,0 +1,10 @@
+/* reinforcement-learning */
+.rl-stage { gap: 12px; min-width: 0; }
+.rl-plot { max-width: 420px; display: grid; gap: 8px; margin-top: 8px; }
+.rl-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+.rl-path { stroke: var(--info); stroke-width: 3; stroke-linecap: round; opacity: 0.75; pointer-events: none; }
+.rl-path.is-explore { stroke: var(--orange); }
+.rl-arrow { fill: var(--violet); font-size: 17px; font-weight: 700; pointer-events: none; }
+.rl-note { margin: 8px 0 0; font-size: 12.5px; color: var(--orange); }
+.rl-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 8px 0; }
+.rl-table th, .rl-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
