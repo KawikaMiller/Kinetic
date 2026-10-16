@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CHECKPOINT_INTERVALS, FSYNC_HDD_MS, FSYNC_SSD_MS, HORIZON_MS, MAX_COMMITTERS, checkpointRun, commitCost, groupCommit, ungroupedCeiling, workloadOps,
+  CHECKPOINT_INTERVALS, FSYNC_HDD_MS, FSYNC_SSD_MS, HORIZON_MS, MAX_COMMITTERS, averageGroup, checkpointRun, commitCost, groupCommit, groupedEstimate, ungroupedCeiling, workloadOps,
 } from './cost';
 import { applyOp, fresh } from './wal';
 
@@ -77,5 +77,34 @@ describe('checkpoints and commit cost', () => {
     expect(force.pageWrites).toBeGreaterThan(0);
     expect(noForce.fsyncs).toBe(noForce.commits);
     expect(force.fsyncs).toBeGreaterThanOrEqual(noForce.fsyncs);
+  });
+});
+
+describe('what grouping really reaches in the closed loop (closed forms, stated independently of the simulation)', () => {
+  it('the average group is about half the committers: the loop alternates a batch of c - 1 with a batch of 1', () => {
+    for (const L of LATENCIES) {
+      for (let c = 2; c <= MAX_COMMITTERS; c++) {
+        const g = groupCommit(L, c, true);
+        expect(Math.abs(averageGroup(g) - c / 2), `L=${L} c=${c}`).toBeLessThanOrEqual(0.1 * Math.max(1, c / 2));
+      }
+    }
+  });
+
+  it('so the grouped rate is about committers / (2 x latency) and not committers / latency, and 8 committers at 0.5 ms give 4 per fsync', () => {
+    for (const L of [FSYNC_SSD_MS, FSYNC_HDD_MS]) {
+      for (const c of [3, 8, 17, 64]) {
+        const g = groupCommit(L, c, true);
+        expect(g.throughput / groupedEstimate(L, c), `L=${L} c=${c}`).toBeGreaterThan(0.9);
+        expect(g.throughput / groupedEstimate(L, c)).toBeLessThan(1.1);
+        expect(g.throughput).toBeLessThan(0.6 * c * ungroupedCeiling(L));
+      }
+    }
+    const g = groupCommit(FSYNC_SSD_MS, 8, true);
+    expect(averageGroup(g)).toBeCloseTo(4, 0);
+    expect(g.throughput).toBeCloseTo(8 / (2 * (FSYNC_SSD_MS / 1000)), -2);
+  });
+
+  it('with two committers there is nothing to gain (1 commit per fsync either way)', () => {
+    expect(groupCommit(FSYNC_SSD_MS, 2, true).throughput).toBeCloseTo(groupCommit(FSYNC_SSD_MS, 2, false).throughput, -1);
   });
 });

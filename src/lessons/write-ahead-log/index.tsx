@@ -94,7 +94,7 @@ const lesson: LessonModule = {
         'The log is split across several disks, and each client fsyncs a different one in parallel',
       ],
       answer: 0,
-      why: 'With one commit per fsync the ceiling is about 1 / latency, 100 a second at 10 ms. Sharing one fsync among g waiting committers lifts it to about g / latency in the toy\'s closed loop.',
+      why: 'With one commit per fsync the ceiling is about 1 / latency, 100 a second at 10 ms. Sharing one fsync among g waiting committers lifts it to about (the average group size) / latency. In the toy\'s closed loop the committers fall into alternating batches, so a group averages about half of them and the lift is about half of what all of them sharing one fsync would give.',
     },
   ],
 };

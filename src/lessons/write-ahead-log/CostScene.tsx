@@ -1,11 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useDeferredValue, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { checkpointCaption, groupCaption, plural } from './captions';
 import {
-  CHECKPOINT_INTERVALS, DEFAULT_INTERVAL_INDEX, FSYNC_HDD_MS, FSYNC_SSD_MS, MAX_COMMITTERS, MAX_FSYNC_MS, MIN_FSYNC_MS, WORKLOAD_TXS, checkpointRun, commitCost, groupCommit,
+  CHECKPOINT_INTERVALS, DEFAULT_INTERVAL_INDEX, FSYNC_HDD_MS, FSYNC_SSD_MS, MAX_COMMITTERS, MAX_FSYNC_MS, MIN_FSYNC_MS, WORKLOAD_TXS, checkpointRun, averageGroup, commitCost, groupCommit,
 } from './cost';
 import { COST_OPEN } from './view';
 
@@ -13,7 +13,8 @@ const SPEEDS = [
   { value: FSYNC_SSD_MS, label: `An SSD: ${FSYNC_SSD_MS} ms` },
   { value: FSYNC_HDD_MS, label: `A spinning disk: ${FSYNC_HDD_MS} ms` },
 ];
-const PLOT_COMMITTERS = Array.from({ length: MAX_COMMITTERS }, (_, i) => i + 1);
+/** The curves are sampled at these committer counts, not at all 64: every point is a full simulation, and the curve between them is smooth. */
+const PLOT_COMMITTERS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 56, MAX_COMMITTERS];
 
 export function CostScene({ picker }: { picker: ReactNode }) {
   const [latency, setLatency] = useState<number>(COST_OPEN.latencyMs);
@@ -22,8 +23,10 @@ export function CostScene({ picker }: { picker: ReactNode }) {
 
   const plain = useMemo(() => groupCommit(latency, committers, false), [latency, committers]);
   const grouped = useMemo(() => groupCommit(latency, committers, true), [latency, committers]);
-  const plainCurve = useMemo(() => PLOT_COMMITTERS.map((c) => ({ x: c, y: groupCommit(latency, c, false).throughput })), [latency]);
-  const groupedCurve = useMemo(() => PLOT_COMMITTERS.map((c) => ({ x: c, y: groupCommit(latency, c, true).throughput })), [latency]);
+  // the curves lag the slider by a render, so dragging Latency stays responsive while the sampled simulations catch up
+  const plotLatency = useDeferredValue(latency);
+  const plainCurve = useMemo(() => PLOT_COMMITTERS.map((c) => ({ x: c, y: groupCommit(plotLatency, c, false).throughput })), [plotLatency]);
+  const groupedCurve = useMemo(() => PLOT_COMMITTERS.map((c) => ({ x: c, y: groupCommit(plotLatency, c, true).throughput })), [plotLatency]);
   const yMax = useMemo(() => Math.max(...groupedCurve.map((p) => p.y)), [groupedCurve]);
   const run = useMemo(() => checkpointRun(CHECKPOINT_INTERVALS[intervalIndex]), [intervalIndex]);
   const noForce = useMemo(() => commitCost({ force: false }), []);
@@ -74,7 +77,7 @@ export function CostScene({ picker }: { picker: ReactNode }) {
             <Curve points={groupedCurve.map((p) => [p.x, p.y])} tone="ok" />
             <VLine at={committers} label={`${committers}`} tone="violet" />
           </Plot2D>
-          <Hint tone="muted" block>One fsync at a time: without grouping a commit needs its own, so the ceiling is about 1 / latency. With {committers} waiting, one fsync can serve them all.</Hint>
+          <Hint tone="muted" block>One fsync at a time: without grouping a commit needs its own, so the ceiling is about 1 / latency. With {committers} committers one fsync served {averageGroup(grouped).toFixed(1)} commits on average ({grouped.commits.toLocaleString('en-US')} commits over {plural(grouped.fsyncs, 'fsync')}): in this closed loop the committers fall into alternating batches, a big one and then a single, so a group averages about half of them.</Hint>
         </Box>
         <Box>
           <SectionTitle hint={`the same ${WORKLOAD_TXS} transactions, two pages each`}>What a commit costs: force or no-force</SectionTitle>

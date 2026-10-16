@@ -48,6 +48,15 @@ export function groupCommit(latencyMs: number, committers: number, grouped: bool
 /** The ceiling without grouping: one commit per fsync. */
 export const ungroupedCeiling = (latencyMs: number) => 1000 / latencyMs;
 
+/**
+ * What grouping reaches in this closed loop: the committers fall into alternating batches (all but one, then that one), so a group averages
+ * about half of them and the rate is about committers / (2 x latency), not committers / latency.
+ */
+export const groupedEstimate = (latencyMs: number, committers: number) => (committers >= 2 ? committers / 2 : 1) * ungroupedCeiling(latencyMs);
+
+/** Commits per fsync of a run, or 0 when it made none. */
+export const averageGroup = (r: GroupRun): number => (r.fsyncs === 0 ? 0 : r.commits / r.fsyncs);
+
 // ── Checkpoints ───────────────────────────────────────────────────────
 
 /** The checkpoint intervals the slider offers, in log records (0: never). */
