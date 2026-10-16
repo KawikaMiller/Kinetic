@@ -24,7 +24,7 @@ export function ScheduleScene({ picker }: { picker: ReactNode }) {
   const bars: GanttBar[] = useMemo(
     () => [
       ...all.map((t) => ({ id: `i${t.day}`, lane: 'interval', start: 24 * t.day, end: 24 * (t.day + 1), tone: 'info' as const, label: t.date.slice(5), minPx: 6 })),
-      ...all.filter((t) => t.at !== null).map((t) => ({ id: `r${t.day}`, lane: 'runs', start: t.at!, end: t.at!, tone: t.kind === 'caught-up' ? ('violet' as const) : ('ok' as const), label: t.date.slice(5) })),
+      ...all.filter((t) => t.at !== null).map((t) => ({ id: `r${t.day}`, lane: 'runs', start: t.at!, end: t.at!, tone: t.kind === 'caught-up' ? ('violet' as const) : ('ok' as const), label: t.kind === 'caught-up' ? t.date.slice(5) : undefined })),
     ],
     [all],
   );
@@ -45,8 +45,8 @@ export function ScheduleScene({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--info)', label: 'the data interval a logical date names', shape: 'square' },
-            { color: 'var(--ok)', label: 'a run created when its interval closed (diamond)', shape: 'square' },
-            { color: 'var(--violet)', label: 'a run created late, by catch-up', shape: 'square' },
+            { color: 'var(--ok)', label: 'a run created when its interval closed (diamond; the table below names each date)', shape: 'square' },
+            { color: 'var(--violet)', label: 'a run created late, by catch-up (labelled with its date)', shape: 'square' },
           ]}
         />
       }

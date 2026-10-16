@@ -86,7 +86,7 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
             <SectionTitle hint={`revenue by country, rule ${rule}`}>Curated table</SectionTitle>
             <table className="data-table wl-table">
               <thead>
-                <tr><th scope="col">Country</th><th scope="col">Revenue</th>{changed && <th scope="col">As ingested</th>}</tr>
+                <tr><th scope="col">Country</th><th scope="col">Revenue</th>{changed && <th scope="col">Ingested</th>}</tr>
               </thead>
               <tbody>
                 {COUNTRIES.map((c) => {

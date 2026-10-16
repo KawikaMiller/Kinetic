@@ -18,7 +18,7 @@
 
 .wl-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: stretch; }
 .wl-arrow { align-self: center; font-size: 20px; color: var(--muted); }
-.wl-node { border: 2px solid var(--c); min-width: 0; }
+.wl-node { border: 2px solid var(--c); min-width: 0; overflow-x: auto; }
 @media (max-width: 760px) {
   .wl-flow { grid-template-columns: minmax(0, 1fr); }
   .wl-arrow { justify-self: center; transform: rotate(90deg); }
