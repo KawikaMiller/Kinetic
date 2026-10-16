@@ -1,0 +1,17 @@
+/* backups-disaster-recovery */
+.bdr-stage { gap: 12px; min-width: 0; }
+.bdr-scroll { overflow-x: auto; max-width: 100%; }
+.bdr-table { border-collapse: collapse; font-size: 13px; width: 100%; }
+.bdr-table th, .bdr-table td { text-align: left; padding: 4px 10px; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+.bdr-table tr.is-chosen td { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.bdr-ok { color: var(--ok); }
+.bdr-bad { color: var(--bad); }
+.bdr-orange { color: var(--orange); }
+.bdr-note { margin: 0; font-size: 13px; }
+.bdr-verdict { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); }
+.bdr-verdict.is-bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.bdr-verdict.is-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.bdr-copies { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.bdr-copy { padding: 2px 8px; border-radius: 6px; border: 2px solid var(--line-2); font: 12px var(--mono); }
+.bdr-copy.is-away { color: var(--violet); border-color: var(--violet); background: color-mix(in srgb, var(--violet) 12%, transparent); }
+.bdr-copy.is-local { color: var(--muted); }
