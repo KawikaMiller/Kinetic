@@ -70,8 +70,8 @@ const lesson: LessonModule = {
     {
       q: 'The dual-write step is skipped but everything else runs in order. What does the lesson show?',
       options: [
-        'No request errors, yet rows end up without the last value written, since v2 keeps writing only the old column once the backfill has passed',
-        'A burst of failed requests, because the new column is read before any app version has written to it at all',
+        'No request errors, yet rows end up without the last value written, since v2 keeps writing only the old column',
+        'A burst of failed requests, because the new column is read before any app version has written to it at all, so every read fails',
         'Nothing wrong, because the backfill copies every row once and so covers all later writes as well',
         'A failed backfill, since it cannot copy into a column that the app versions are not writing yet',
       ],
