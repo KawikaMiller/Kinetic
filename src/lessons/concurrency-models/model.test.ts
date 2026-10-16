@@ -120,6 +120,15 @@ describe('CSP: workers, a channel and a sender', () => {
     expect(senderDoneAt(params({ runtime: 'csp', requests: 3, buffer: 0 }), [null, 0, 0, null])).toBe(null);
   });
 
+  it('the channel buffer K changes the sender figure the stat shows, and not the wall time', () => {
+    const run = (buffer: number) => simulate(params({ runtime: 'csp', workers: 4, cores: 4, requests: 100, buffer }));
+    const shown = [0, 5, 20].map((k) => run(k).senderDone);
+    expect(new Set(shown).size).toBe(3);
+    expect(shown[0]).toBeGreaterThan(shown[1]!);
+    expect(shown[1]).toBeGreaterThan(shown[2]!);
+    expect(new Set([0, 5, 20].map((k) => run(k).makespan)).size).toBe(1);
+  });
+
   it('refuses zero workers whatever the buffer, with the sentence the lesson shows', () => {
     expect(refusal(params({ runtime: 'csp', workers: 0, buffer: 0 }))).toBe('Nobody to receive: the sender would block forever. Add a worker.');
     expect(refusal(params({ runtime: 'csp', workers: 0, buffer: 3 }))).toContain('fills the buffer of 3');

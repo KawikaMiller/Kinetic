@@ -100,7 +100,7 @@ export const OUTCOMES: Record<Runtime, Record<Fault, { off: Outcome; on: Outcome
       on: { fails: 'none', delays: 'bystanders-on-the-core', text: `${HOG_MS} ms of CPU goes to one request, and the OS time-slices it, so the other threads carry on` },
     },
     crash: {
-      off: { fails: 'request', delays: 'nobody', text: 'the thread dies and its request fails; the pool is one thread smaller (a Java thread with an uncaught exception ends)' },
+      off: { fails: 'request', delays: 'nobody', text: 'the thread dies and its request fails; the pool is one thread smaller, and with a pool of one nothing is left to take the rest (a Java thread with an uncaught exception ends, though a ThreadPoolExecutor replaces it)' },
       on: { fails: 'request', delays: 'nobody', text: 'the exception is caught: its request fails, the thread lives on' },
     },
   },
@@ -118,19 +118,19 @@ export const OUTCOMES: Record<Runtime, Record<Fault, { off: Outcome; on: Outcome
   actors: {
     none: { off: PLAIN, on: PLAIN },
     hog: {
-      off: { fails: 'none', delays: 'same-mailbox', text: 'requests queued behind it in the same mailbox wait; other actors do not' },
-      on: { fails: 'none', delays: 'same-mailbox', text: 'requests queued behind it in the same mailbox wait; other actors do not' },
+      off: { fails: 'none', delays: 'same-mailbox', text: 'requests queued behind it in the same mailbox wait; other actors keep running while a core is free (with more actors than cores they queue for the core)' },
+      on: { fails: 'none', delays: 'same-mailbox', text: 'requests queued behind it in the same mailbox wait; other actors keep running while a core is free (with more actors than cores they queue for the core)' },
     },
     crash: {
       off: { fails: 'mailbox', delays: 'nobody', text: 'with no supervisor the actor dies and the requests queued for it are lost' },
-      on: { fails: 'request', delays: 'nobody', text: 'a supervisor restarts the actor; the failing request is dropped and, in this toy, its mailbox is kept' },
+      on: { fails: 'request', delays: 'nobody', text: 'a supervisor restarts the actor; the failing request is dropped and, in this toy, its mailbox is kept (Akka keeps the mailbox on a restart, an Erlang restart starts with an empty one)' },
     },
   },
   csp: {
     none: { off: PLAIN, on: PLAIN },
     hog: {
-      off: { fails: 'none', delays: 'bystanders-on-the-core', text: `one worker is busy for ${HOG_MS} ms; the other workers keep taking requests` },
-      on: { fails: 'none', delays: 'bystanders-on-the-core', text: `one worker is busy for ${HOG_MS} ms; the other workers keep taking requests` },
+      off: { fails: 'none', delays: 'bystanders-on-the-core', text: `one worker is busy for ${HOG_MS} ms; the other workers keep taking requests while a core is free` },
+      on: { fails: 'none', delays: 'bystanders-on-the-core', text: `one worker is busy for ${HOG_MS} ms; the other workers keep taking requests while a core is free` },
     },
     crash: {
       off: { fails: 'process', delays: 'nobody', text: 'an unrecovered panic in a goroutine ends the whole program (Go by default): every unfinished request fails' },

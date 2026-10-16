@@ -91,7 +91,7 @@ const lesson: LessonModule = {
         'The ones that arrive later, because a mailbox holds new messages until its handler ends',
       ],
       answer: 0,
-      why: 'An actor handles one message at a time, so its own mailbox waits behind a long handler, but other actors have their own mailboxes and run on other cores. They do not share one thread, and in this model a handler is not preempted by a new message.',
+      why: 'An actor handles one message at a time, so its own mailbox waits behind a long handler, but other actors have their own mailboxes and run on other cores while there are free cores (with more actors than cores they queue for a core). They do not share one thread, and in this model a handler is not preempted by a new message.',
     },
   ],
 };

@@ -74,7 +74,7 @@ export function RunScene({ scene, picker, setScene }: { scene: Scene; picker: Re
       <Stat
         label="Memory (illustrative)"
         value={run ? bytes(run.memoryMb * 1024 * 1024, { dp: 0 }) : '–'}
-        sub={run ? [`${plural(run.osThreads, 'OS thread')} × ${STACK_MB} MB reserved each`] : undefined}
+        sub={run ? [`${plural(run.osThreads, 'OS thread')} × ${STACK_MB} MB reserved each${p.runtime === 'csp' ? ' (goroutines multiplexed on them, in this toy)' : ''}`] : undefined}
       />
       <Stat
         label="Bystander latency"
@@ -86,6 +86,13 @@ export function RunScene({ scene, picker, setScene }: { scene: Scene; picker: Re
             : undefined
         }
       />
+      {p.runtime === 'csp' && (
+        <Stat
+          label="Sender hands over its last request"
+          value={run?.senderDone != null ? ms(run.senderDone) : '–'}
+          sub={run ? [p.buffer === 0 ? 'rendezvous: it waits for a free worker for every request' : `a buffer of ${p.buffer} lets it run ahead by ${p.buffer}`, 'wall time does not change: the workers are the bottleneck'] : undefined}
+        />
+      )}
       <Stat label="Context switches (toy)" value={run ? run.switches : '–'} sub={[switchRule(p)]} />
     </Stats>
   );
