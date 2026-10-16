@@ -1,0 +1,17 @@
+.ssrf-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.ssrf-graph { width: 100%; height: auto; }
+.ssrf-zone rect { fill: color-mix(in srgb, var(--violet) 8%, transparent); stroke: var(--violet); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.ssrf-zone text { fill: var(--muted); font-size: 12px; }
+.ssrf-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ssrf-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.ssrf-toggles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 14px; width: 100%; }
+.ssrf-label { font-size: 12px; color: var(--muted); }
+.ssrf-id { font: 600 16px var(--mono); min-width: 5ch; text-align: center; }
+.ssrf-step { min-width: 44px; min-height: 44px; }
+.ssrf-request, .ssrf-response { display: block; font: 13px var(--mono); padding: 6px 0; overflow-wrap: anywhere; }
+.ssrf-response.is-leak { color: var(--bad); }
+.ssrf-scroll { max-height: 280px; overflow: auto; }
+.ssrf-table { width: 100%; }
+.ssrf-current td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.ssrf-stage ~ .provenance-row { margin: 8px 16px 12px; }
+.ssrf-chips .chip { white-space: normal; text-align: left; max-width: 100%; }
