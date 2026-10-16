@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `A left turn is a positive cross product, with y up: ${F.left} on the default triangle, and half its size, ${F.leftArea}, is the triangle's area.`,
     `Graham, Andrew and Jarvis return the same hull on whole-number points, but at different cost: on the ${F.points}-point scatter they spend ${F.grahamTests}, ${F.andrewTests} and ${F.jarvisTests} orientation tests.`,
-    `Jarvis's march costs about n times h, where h is the hull size: on ${F.circleN} points on a circle it spent ${F.circleJarvis} tests against ${F.circleAndrew} for Andrew, and on a disc with ${F.discH} hull points ${F.discJarvis} against ${F.discAndrew}. These count orientation tests only: Andrew's sort by x is not counted, and counting it would narrow the disc gap.`,
+    `Jarvis's march costs about n times h, where h is the hull size: on ${F.circleN} points on a circle it spent ${F.circleJarvis} tests against ${F.circleAndrew} for Andrew, and on a disc with ${F.discH} hull points ${F.discJarvis} against ${F.discAndrew}. These count orientation tests: Andrew's sort by x is not counted, and counting it would narrow the disc gap.`,
     `A double cross product of exactly 0 does not prove collinear: in the lesson's search it is 0 for a point that is not on the line, so a hull vertex is popped (${F.demoDouble} points instead of ${F.demoExact}); whole numbers, or an exact test, avoid it.`,
   ],
   quiz: [
