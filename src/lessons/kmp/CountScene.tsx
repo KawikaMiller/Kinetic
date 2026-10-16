@@ -79,7 +79,7 @@ export function CountScene({ picker }: { picker: ReactNode }) {
           <VLine at={at} />
           <Points data={[{ x: at, y: series[at - SWEEP_MIN_N].naiveWorst, tone: 'bad' }, { x: at, y: series[at - SWEEP_MIN_N].kmpWorst, tone: 'ok' }]} />
         </Plot2D>
-        <p className="km-note">The curves are real runs on a worst-case pair (a^n against aaaab) and on a seeded random two-letter text against aaab; the marker sits at your text length (clamped to the plot).</p>
+        <p className="km-note">The curves are real runs on the worst case for the naive scan (a^n against aaaab; KMP stays under its own 2n bound there) and on a seeded random two-letter text against aaab; the marker sits at your text length (clamped to the plot).</p>
       </div>
       <ProvenanceRow>
         <Provenance kind="real">nothing simulated: both counts and every curve come from running the algorithms; a built-in indexOf may use other methods</Provenance>

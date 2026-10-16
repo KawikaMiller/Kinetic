@@ -62,7 +62,7 @@ export function GapScene({ picker }: { picker: ReactNode }) {
 
   const intro = last ? (
     <>
-      {last.what}: {last.moves} {last.moves === 1 ? 'character' : 'characters'} crossed the gap{last.grew ? `, and the buffer doubled to ${cap} cells, copying the text over` : ''}. In all: {gap.moves} moves, {gap.writes} writes, {gap.copies} copied when growing.
+      {last.what}: {last.moves} {last.moves === 1 ? 'character' : 'characters'} crossed the gap{last.grew ? `, and the buffer doubled to ${cap} cells, copying the text over` : ''}. In all: {plural(gap.moves, 'move')}, {plural(gap.writes, 'write')}, {gap.copies} copied when growing.
     </>
   ) : (
     <>

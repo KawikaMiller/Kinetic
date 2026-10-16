@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Stat, Stats } from '../../components/ui';
 import { cross, type P } from './hull';
 import { TURN_PRESETS, TURN_OPEN, TURN_DOMAIN, snapPoint, type TurnPreset } from './turn';
-import { TURN_WORDS, crossText, pt, turnOf } from './text';
+import { TURN_PHRASE, TURN_WORDS, crossText, pt, turnOf } from './text';
 
 const AXIS = { domain: [-TURN_DOMAIN, TURN_DOMAIN] as [number, number], label: '', ticks: 5 };
 const NAMES = ['a', 'b', 'c'];
@@ -21,7 +21,7 @@ export function TurnScene({ picker }: { picker: ReactNode }) {
 
   const intro = (
     <>
-      cross = {crossText(a, b, c)}: a {TURN_WORDS[turn]}. The absolute value, {Math.abs(value)}, is twice the area of the triangle, so the area is {Math.abs(value) / 2}.
+      cross = {crossText(a, b, c)}: {TURN_PHRASE[turn]}. The absolute value, {Math.abs(value)}, is twice the area of the triangle, so the area is {Math.abs(value) / 2}.
     </>
   );
 
@@ -60,7 +60,7 @@ export function TurnScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="ch-stage stage-pad">
-        <Plot2D x={AXIS} y={AXIS} aspect="equal" ariaLabel={`Three points a ${pt(a)}, b ${pt(b)}, c ${pt(c)}: a ${TURN_WORDS[turn]}`}>
+        <Plot2D x={AXIS} y={AXIS} aspect="equal" ariaLabel={`Three points a ${pt(a)}, b ${pt(b)}, c ${pt(c)}: ${TURN_PHRASE[turn]}`}>
           <Polygon points={tri.map((p) => [p.x, p.y] as [number, number])} tone={tone} />
           <Points
             data={tri.map((p) => ({ x: p.x, y: p.y, tone: 'hi', r: 6 }))}

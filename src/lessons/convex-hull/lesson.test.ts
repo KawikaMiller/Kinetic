@@ -11,6 +11,7 @@ import { circlePoints, discPoints, scaling, SCALING_SIZES } from './scaling';
 import { findMismatches, hullDemo } from './robust';
 import { TURN_OPEN, TURN_PRESETS, TURN_DOMAIN, snapPoint } from './turn';
 import { nudgePoint, plotFrame } from '../../core/plot';
+import { TURN_PHRASE } from './text';
 import { crossText, turnOf } from './text';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
@@ -210,5 +211,13 @@ describe('keyboard nudge on the whole-number grid', () => {
 
   it('a pointer resting inside a cell does not jump', () => {
     expect(snapPoint({ x: 2, y: 2 }, [2.3, 1.8])).toEqual({ x: 2, y: 2 });
+  });
+});
+
+describe('turn phrases', () => {
+  it('never put an article in front of "collinear"', () => {
+    expect(TURN_PHRASE.collinear.startsWith('a ')).toBe(false);
+    expect(TURN_PHRASE.left.startsWith('a ')).toBe(true);
+    expect(TURN_PHRASE.right.startsWith('a ')).toBe(true);
   });
 });

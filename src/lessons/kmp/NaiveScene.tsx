@@ -28,7 +28,7 @@ export function NaiveScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Comparisons" value={f.comparisons} color="var(--hi)" sub={`of ${run.comparisons} for this text and pattern`} />
           <Stat label="Matched again" value={f.rematches} color="var(--bad)" sub="matches against characters that had matched before" />
-          <Stat label="Found at" value={found.length ? found.join(', ') : 'nothing yet'} color="var(--ok)" />
+          <Stat label="Found at" value={found.length ? found.join(', ') : player.atEnd ? 'no match' : 'nothing yet'} color="var(--ok)" />
         </Stats>
       }
       legend={

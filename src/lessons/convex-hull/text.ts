@@ -20,4 +20,11 @@ export const TURN_WORDS: Record<Turn, string> = {
   collinear: 'collinear (on one line)',
 };
 
+/** TURN_WORDS as the end of a sentence: 'a left turn', but never 'a collinear'. */
+export const TURN_PHRASE: Record<Turn, string> = {
+  left: `a ${TURN_WORDS.left}`,
+  right: `a ${TURN_WORDS.right}`,
+  collinear: TURN_WORDS.collinear,
+};
+
 export const pt = (p: P) => `(${p.x}, ${p.y})`;

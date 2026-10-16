@@ -93,7 +93,7 @@ export function roomFrames(input: readonly Interval[], tie: TieRule) {
   rec.set({ now: null });
   rec.close(
     <>
-      The maximum is {hl(run.max, run.max === rooms.rooms ? 'ok' : 'bad')} with this tie rule. The heap greedy from greedy-algorithms needs {hl(rooms.rooms, 'ok')} rooms{run.max === rooms.rooms ? <>: equal to the maximum overlap.</> : <>: the tie rule counted {run.max - rooms.rooms} too many.</>}
+      The maximum is {hl(run.max, run.max === rooms.rooms ? 'ok' : 'bad')} with this tie rule. The heap greedy from greedy-algorithms needs {hl(rooms.rooms, 'ok')} {rooms.rooms === 1 ? 'room' : 'rooms'}{run.max === rooms.rooms ? <>: equal to the maximum overlap.</> : <>: the tie rule counted {run.max - rooms.rooms} too many.</>}
     </>,
     2,
   );

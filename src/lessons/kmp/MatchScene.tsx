@@ -34,7 +34,7 @@ export function MatchScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Comparisons" value={f.comparisons} color="var(--hi)" sub={`of ${run.comparisons} for this text and pattern`} />
           <Stat label="Text pointer i" value={f.i ?? '–'} color="var(--info)" sub="only ever moves forward" />
-          <Stat label="Found at" value={f.found.length ? f.found.join(', ') : 'nothing yet'} color="var(--ok)" />
+          <Stat label="Found at" value={f.found.length ? f.found.join(', ') : player.atEnd ? 'no match' : 'nothing yet'} color="var(--ok)" />
         </Stats>
       }
       legend={

@@ -3,7 +3,7 @@ import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { HULLS, dedupe, type Algo, type HullEvent, type P, type Policy, type Tally } from './hull';
-import { TURN_WORDS, crossText, pt, turnOf } from './text';
+import { TURN_PHRASE, crossText, pt, turnOf } from './text';
 
 export interface HullFrame extends Frame {
   pivot: P | null;
@@ -33,7 +33,7 @@ export interface HullRun {
 const hl = (v: ReactNode, tone = '') => <span className={`hl ${tone}`.trim()}>{v}</span>;
 const verdict = (value: number) => {
   const turn = turnOf(value);
-  return hl(TURN_WORDS[turn], turn === 'left' ? 'ok' : turn === 'right' ? 'bad' : 'dim');
+  return hl(TURN_PHRASE[turn], turn === 'left' ? 'ok' : turn === 'right' ? 'bad' : 'dim');
 };
 const WHAT: Record<Algo, string> = {
   graham: 'Graham scan',
@@ -81,7 +81,7 @@ export function hullFrames(algo: Algo, input: readonly P[], policy: Policy): Hul
         tests++;
         rec.snap(
           <>
-            Test {pt(e.a)}, {pt(e.b)}, then {hl(pt(e.c), 'hi')}: cross = {crossText(e.a, e.b, e.c).split(' = ').slice(1).join(' = ')}, a {verdict(e.value)}.{' '}
+            Test {pt(e.a)}, {pt(e.b)}, then {hl(pt(e.c), 'hi')}: cross = {crossText(e.a, e.b, e.c).split(' = ').slice(1).join(' = ')}, {verdict(e.value)}.{' '}
             {e.pop ? <>{hl('Pop', 'bad')} {pt(e.b)} off the stack.</> : <>Keep {pt(e.b)}.</>}
           </>,
           undefined,
@@ -99,7 +99,7 @@ export function hullFrames(algo: Algo, input: readonly P[], policy: Policy): Hul
         tests++;
         rec.snap(
           <>
-            From {pt(e.cur)}: is {hl(pt(e.p), 'hi')} to the right of the line to the best so far {pt(e.best)}? cross = {crossText(e.cur, e.best, e.p).split(' = ').slice(1).join(' = ')}, a {verdict(e.value)}.{' '}
+            From {pt(e.cur)}: is {hl(pt(e.p), 'hi')} to the right of the line to the best so far {pt(e.best)}? cross = {crossText(e.cur, e.best, e.p).split(' = ').slice(1).join(' = ')}, {verdict(e.value)}.{' '}
             {e.replace ? <>{hl(pt(e.p), 'info')} becomes the best.</> : <>The best stays.</>}
           </>,
           undefined,

@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Tray } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
+import { plural } from '../../core/format';
 import { plainTone } from '../../core/tone';
 import { usePlayer } from '../../core/usePlayer';
 import { NAMES, roomFrames } from './frames';
@@ -71,7 +72,7 @@ export function RoomsScene({ picker }: { picker: ReactNode }) {
             lanes={rooms.room}
             laneCount={rooms.rooms}
             tone={(i) => plainTone(rooms.room[i])}
-            ariaLabel={`${rooms.rooms} rooms, each meeting in its room`}
+            ariaLabel={`${plural(rooms.rooms, 'room')}, each meeting in its room`}
           />
         )}
         <Tray label="Events in order" labelWeight="regular" empty="no events" ariaLabel="Events">
@@ -82,7 +83,7 @@ export function RoomsScene({ picker }: { picker: ReactNode }) {
           ))}
         </Tray>
         <p className="sw-note">
-          {view === 'rooms' ? `Each meeting sits in its room: ${rooms.rooms} rooms, and the most meetings live at once is ${run.max} with this tie rule.` : 'Half-open meetings that merely touch can share a room, so at an equal time the end must be taken off before the next start is counted.'}
+          {view === 'rooms' ? `Each meeting sits in its room: ${plural(rooms.rooms, 'room')}, and the most meetings live at once is ${run.max} with this tie rule.` : 'Half-open meetings that merely touch can share a room, so at an equal time the end must be taken off before the next start is counted.'}
         </p>
       </div>
       <ProvenanceRow>

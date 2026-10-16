@@ -68,7 +68,7 @@ export function naiveFrames(text: string, pattern: string): NaiveRun {
   rec.set({ i: null, verdict: null });
   rec.close(
     <>
-      Done: {hl(plural(run.comparisons, 'comparison'), 'bad')} for a text of {text.length}, {hl(plural(run.rematches, 'match'), 'bad')} of them against characters that had already matched before.
+      Done: {hl(plural(run.comparisons, 'comparison'), 'bad')} for a text of {text.length}, {hl(plural(run.rematches, 'match', 'matches'), 'bad')} of them against characters that had already matched before.
       {run.matches.length ? <> The pattern was found at {run.matches.join(', ')}.</> : <> The pattern was not found.</>}
     </>,
     2,
