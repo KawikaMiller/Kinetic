@@ -125,10 +125,17 @@ export interface StarveResult {
   total: number;
 }
 
-export function runStarve(p: StarveParams): StarveResult {
+/** Run until the last task finishes or the pool stalls, one tick at a time, so `sim.ticks` is the real finish time and not a run limit. */
+export function runStarveToEnd(p: StarveParams): TickSim<StarveState> {
   const sim = createStarveSim(p);
-  const limit = taskCount(p.depth) * (LEAF_TICKS + 2) * 2 + 20;
-  sim.run(limit);
+  const total = taskCount(p.depth);
+  const limit = total * (LEAF_TICKS + 2) * 2 + 20;
+  while (sim.ticks < limit && sim.violation === null && sim.state.finished < total) sim.run(1);
+  return sim;
+}
+
+export function runStarve(p: StarveParams): StarveResult {
+  const sim = runStarveToEnd(p);
   const total = taskCount(p.depth);
   const stalled = sim.violation !== null;
   return { stalled, ticks: sim.ticks, finished: sim.state.finished, total };

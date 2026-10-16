@@ -4,18 +4,12 @@ import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '
 import { plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { starveFrames, type StarveFrame } from './frames';
-import { LEAF_TICKS, STARVE_DEPTH, STARVE_WORKERS, createStarveSim, isParent, taskCount } from './starve';
+import { LEAF_TICKS, STARVE_DEPTH, STARVE_WORKERS, isParent, runStarveToEnd, taskCount } from './starve';
 import { starveOpening } from './openings';
-
-const RUN_LIMIT = 400;
 
 export function StarveScene({ picker }: { picker: ReactNode }) {
   const [p, setP] = useState(starveOpening);
-  const sim = useMemo(() => {
-    const s = createStarveSim(p);
-    s.run(RUN_LIMIT);
-    return s;
-  }, [p]);
+  const sim = useMemo(() => runStarveToEnd(p), [p]);
   const frames = useMemo(() => starveFrames(sim, p), [sim, p]);
   const player = usePlayer<StarveFrame>(frames, { interval: 600, autoplayOnChange: false });
   const tick = Math.floor(player.frame.now);

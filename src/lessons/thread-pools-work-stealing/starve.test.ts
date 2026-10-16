@@ -51,7 +51,10 @@ describe('the starvation scene', () => {
     expect(stalled.stalled).toBe(true);
     const helped = runStarve(p({ helping: true }));
     expect(helped.stalled).toBe(false);
-    // 8 leaves of LEAF_TICKS ticks on 3 workers cannot finish faster than the leaf work over the workers
+    // finish times from an independent hand loop (review t3/b21): default 30 ticks, 1 worker 54, 8 workers 26
+    expect(helped.ticks).toBe(30);
+    expect(runStarve(p({ helping: true, workers: 1 })).ticks).toBe(54);
+    expect(runStarve(p({ helping: true, workers: 8 })).ticks).toBe(26);
     expect(helped.ticks).toBeGreaterThanOrEqual(Math.ceil((8 * LEAF_TICKS) / 3));
   });
 
