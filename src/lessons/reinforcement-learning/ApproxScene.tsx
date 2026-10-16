@@ -4,6 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { MAZE_ROWS, OPEN_ROWS, TABLE_ROWS, TD_UPDATES_MAX, approxWorld, stateCount, trainTd } from './approx';
 import { approxCaption, f2 } from './captions';
+import { liveStates } from './mdp';
 import { RlGrid } from './RlGrid';
 import { APPROX_DEFAULT } from './settings';
 
@@ -16,6 +17,12 @@ export function ApproxScene({ picker }: { picker: ReactNode }) {
   const fit = useMemo(() => trainTd(world, updates), [world, updates]);
   const start = useMemo(() => trainTd(world, 0), [world]);
   const caption = approxCaption(maze, updates, fit.rmse, start.rmse);
+  // One colour scale for both grids, so an estimate that is off looks off.
+  const range = useMemo(() => {
+    const live = liveStates(world);
+    const all = live.flatMap((s) => [fit.truth[s], fit.estimate[s]]);
+    return { lo: Math.min(...all), hi: Math.max(...all) };
+  }, [world, fit]);
 
   return (
     <StageFrame
@@ -42,13 +49,15 @@ export function ApproxScene({ picker }: { picker: ReactNode }) {
         <div className="rl-pair">
           <Box>
             <SectionTitle hint="exact, from value iteration">True values</SectionTitle>
-            <RlGrid view={{ world, values: fit.truth }} ariaLabel="True values of the optimal policy" />
+            <RlGrid view={{ world, values: fit.truth, range }} ariaLabel="True values of the optimal policy" />
           </Box>
           <Box>
             <SectionTitle hint="a plane over (x, y), by semi-gradient TD">Linear approximation</SectionTitle>
-            <RlGrid view={{ world, values: fit.estimate }} ariaLabel="The linear approximation's values" />
+            <RlGrid view={{ world, values: fit.estimate, range }} ariaLabel="The linear approximation's values" />
           </Box>
         </div>
+        <Hint tone="muted" block>Both grids share one colour scale. The values are those of the optimal policy found by value iteration, held fixed here. The best possible plane on this world is off by {f2(fit.planeRmse)} RMS; training after these updates is off by {f2(fit.rmse)}, and the distance between the two is training that has not finished, not the plane.
+        </Hint>
         <Box>
           <SectionTitle hint="a state is the cell times 2 for every yes/no flag">How many states a table needs</SectionTitle>
           <table className="rl-table table-cards">

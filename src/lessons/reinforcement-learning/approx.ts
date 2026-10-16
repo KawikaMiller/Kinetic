@@ -36,6 +36,31 @@ export const TD_RATE = 0.02;
 export const TD_UPDATES_MAX = 40000;
 export const approxWorld = (rows: readonly string[]): World => ({ rows, slip: 0, stepCost: 0.04, bonus: 0 });
 
+/**
+ * The best a plane over (x, y) can do on these values: the least-squares weights (normal equations, solved by
+ * Gaussian elimination with partial pivoting) and the RMS error they leave over the live cells.
+ */
+export function bestPlane(w: World, truth: readonly number[]): { weights: number[]; rmse: number } {
+  const live = liveStates(w);
+  const k = features(live[0]).length;
+  const a = Array.from({ length: k }, (_, i) => Array.from({ length: k }, (_, j) => live.reduce((sum, s) => sum + features(s)[i] * features(s)[j], 0)));
+  const b = Array.from({ length: k }, (_, i) => live.reduce((sum, s) => sum + features(s)[i] * truth[s], 0));
+  for (let col = 0; col < k; col++) {
+    const pivot = Array.from({ length: k - col }, (_, i) => col + i).reduce((best, r) => (Math.abs(a[r][col]) > Math.abs(a[best][col]) ? r : best), col);
+    [a[col], a[pivot]] = [a[pivot], a[col]];
+    [b[col], b[pivot]] = [b[pivot], b[col]];
+    for (let r = col + 1; r < k; r++) {
+      const f = a[r][col] / a[col][col];
+      for (let c = col; c < k; c++) a[r][c] -= f * a[col][c];
+      b[r] -= f * b[col];
+    }
+  }
+  const weights = new Array<number>(k).fill(0);
+  for (let r = k - 1; r >= 0; r--) weights[r] = (b[r] - a[r].slice(r + 1).reduce((sum, v, i) => sum + v * weights[r + 1 + i], 0)) / a[r][r];
+  const rmse = Math.sqrt(live.reduce((sum, s) => sum + (features(s).reduce((acc, f, i) => acc + f * weights[i], 0) - truth[s]) ** 2, 0) / live.length);
+  return { weights, rmse };
+}
+
 export interface TdResult {
   weights: number[];
   /** Estimated value of each state (0 for walls and terminals). */
@@ -44,6 +69,8 @@ export interface TdResult {
   truth: number[];
   /** Root-mean-square error over the live states. */
   rmse: number;
+  /** The RMS error of the best possible plane on this world: what no amount of training can beat. */
+  planeRmse: number;
 }
 
 export function trainTd(w: World, updates: number, seed = 1): TdResult {
@@ -66,7 +93,7 @@ export function trainTd(w: World, updates: number, seed = 1): TdResult {
   }
   const estimate = Array.from({ length: STATES }, (_, s) => (live.includes(s) ? model.value(s) : 0));
   const rmse = Math.sqrt(live.reduce((sum, s) => sum + (estimate[s] - solved.V[s]) ** 2, 0) / live.length);
-  return { weights: [...model.params], estimate, truth: solved.V, rmse };
+  return { weights: [...model.params], estimate, truth: solved.V, rmse, planeRmse: bestPlane(w, solved.V).rmse };
 }
 
 /** Table sizes: one entry per state, and a state is the cell times two for every yes/no flag the world carries. */

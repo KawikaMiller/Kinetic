@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gradCheck, type Trainable } from '../../core/nn';
 import { mulberry32 } from '../../core/random';
-import { MAZE_ROWS, OPEN_ROWS, approxWorld, createLinearValue, features, trainTd, type TdExample } from './approx';
+import { MAZE_ROWS, OPEN_ROWS, approxWorld, bestPlane, createLinearValue, features, trainTd, type TdExample } from './approx';
 import { MAX_POINTS, smooth, toPoints } from './curves';
 import { greedyPolicy, liveStates, outcomes, policyValue, reachableUnder, valueIteration } from './mdp';
 import { BROKEN_SEED, PRESETS, runPreset } from './presets';
@@ -226,5 +226,23 @@ describe('curves', () => {
     const pts = toPoints(Array.from({ length: 20000 }, (_, i) => i));
     expect(pts.length).toBeLessThanOrEqual(MAX_POINTS + 1);
     expect(pts.at(-1)).toEqual([20000, 19999]);
+  });
+});
+
+describe('the best possible plane (the floor under the approximation error)', () => {
+  it('satisfies the normal equations (residuals orthogonal to every feature) and no TD run beats it', () => {
+    for (const rows of [OPEN_ROWS, MAZE_ROWS]) {
+      const w = approxWorld(rows);
+      const td = trainTd(w, 5000);
+      const plane = bestPlane(w, td.truth);
+      for (let j = 0; j < 3; j++) {
+        const dot = liveStates(w).reduce((sum, s) => sum + features(s)[j] * (td.truth[s] - features(s).reduce((acc, f, i) => acc + f * plane.weights[i], 0)), 0);
+        expect(Math.abs(dot), `feature ${j}`).toBeLessThan(1e-9);
+      }
+      expect(plane.rmse).toBeLessThanOrEqual(td.rmse + 1e-12);
+      expect(td.planeRmse).toBe(plane.rmse);
+    }
+    expect(bestPlane(approxWorld(MAZE_ROWS), trainTd(approxWorld(MAZE_ROWS), 0).truth).rmse).toBeGreaterThan(0.05);
+    expect(bestPlane(approxWorld(OPEN_ROWS), trainTd(approxWorld(OPEN_ROWS), 0).truth).rmse).toBeLessThan(0.05);
   });
 });
