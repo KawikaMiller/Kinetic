@@ -1,0 +1,15 @@
+.az-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.az-graph { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.az-note, .az-why { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.az-why { color: var(--bad); }
+.az-path { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; color: var(--ok); }
+.az-row-label { font-size: 12px; color: var(--muted); }
+.az-table { width: 100%; }
+.az-table caption { text-align: left; padding-bottom: 4px; font-size: 12px; color: var(--muted); }
+.az-scroll { max-height: 400px; overflow: auto; }
+.az-scroll .az-table th:first-child, .az-scroll .az-table td:first-child { position: sticky; left: 0; background: var(--panel); }
+.az-disagree td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.az-disagree td:first-child { background: color-mix(in srgb, var(--hi) 10%, var(--panel)); }
+.az-wrong { color: var(--bad); font-weight: 600; }
+.az-current td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.az-stage ~ .provenance-row { margin: 8px 16px 12px; }
