@@ -1,0 +1,17 @@
+.tm-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.tm-graph { width: 100%; height: auto; }
+.tm-zone rect { fill: color-mix(in srgb, var(--zone) 10%, transparent); stroke: var(--zone); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.tm-zone text { fill: var(--muted); font-size: 12px; font-weight: 600; }
+.tm-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.tm-table { width: 100%; }
+.tm-threats { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+.tm-threat { display: grid; grid-template-columns: 1fr; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-2); background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.tm-threat b { color: var(--bad); }
+.tm-threat i { font-style: normal; color: var(--muted); font-size: 12px; }
+.tm-threat.is-mitigated b, .tm-threat.is-mitigated i { color: var(--ok); }
+.tm-threat.is-selected { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.tm-control { display: inline-flex; cursor: grab; }
+.tm-result { margin: 0; min-height: 1.4em; font-size: 13px; line-height: 1.5; }
+.tm-result.is-refused { color: var(--orange); }
+.tm-result.is-accepted { color: var(--ok); }
+.tm-stage ~ .provenance-row { margin: 8px 16px 12px; }
