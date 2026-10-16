@@ -1,0 +1,8 @@
+.gt-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.gt-center { align-items: center; }
+.gt-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.gt-h { margin: 6px 0 0; font: 600 13px var(--mono); align-self: flex-start; }
+.gt-value { font: 700 11px var(--mono); fill: var(--text); }
+.gt-window { font: 600 10px var(--mono); fill: var(--hi); }
+.gt-strike { stroke: var(--muted); stroke-width: 2; }
+.gt-stage ~ .provenance-row { margin: 8px 16px 12px; }
