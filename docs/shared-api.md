@@ -1570,6 +1570,7 @@ const { sorted, sort, headerProps } = useSortedRows(rows, { name: (r) => r.name,
 - The region is mounted whether or not there are rows (`live` is `polite` by default, `off` for a log the learner scrubs), so the first row is
   announced. `empty=""` shows nothing while empty. Callers that only render a log after some action (infrastructure-as-code's apply output)
   still mount it conditionally, to keep their layout; a new lesson should mount it always.
+- `onRowClick(row)` (with `selectedId`) makes the rows selectable (io-models: click a line to see its lane): each row is a `role="button"` (click, Enter, Space; `aria-pressed` and `.is-selected` on the chosen one), the list has ONE tab stop (selected row, else the last focused, else the first; `rowTabStop`) and Up/Down/Home/End move focus (`listKeyTarget`). A selectable log is not a tab stop itself, its rows are. Without `onRowClick` nothing changes.
 - `lastRows` and `rowTone` (`logRows.ts`) are pure and tested. The lesson keeps its own mapping from model to `LogRow` (structured-logging's
   `streamRows.ts` with `toLogRows` and `streamHighlight`, tested).
 - **Migrated pixel-identically** (frames at 1440 and 390, plus a driven click or apply): structured-logging (its local `LogStream.tsx` is gone),

@@ -177,6 +177,9 @@
 .log-stream.is-scroll { overflow: auto; padding-right: 4px; }
 .log-stream .log-row { overflow-wrap: anywhere; transition: opacity 0.2s; }
 .log-stream .log-row.is-dim { opacity: 0.35; }
+.log-stream .log-row.is-pick { cursor: pointer; border-radius: 4px; }
+.log-stream .log-row.is-pick:hover { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.log-stream .log-row.is-selected { background: color-mix(in srgb, var(--hi) 16%, transparent); }
 .log-at { color: var(--muted); white-space: pre; }
 .log-level, .log-source { font-weight: 700; }
 .log-source { color: var(--c, var(--text)); }
