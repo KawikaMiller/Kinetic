@@ -1,0 +1,19 @@
+.cn-stage { gap: 12px; align-items: center; }
+.cn-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.cn-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.cn-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 280px; }
+.cn-column { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.cn-column .section-title { margin: 0; }
+.cn-kernel { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.cn-kernel-grid { display: grid; grid-template-columns: repeat(3, auto); gap: 6px; }
+.cn-kernel-grid .text-field { margin: 0; }
+.cn-refusal { font: 500 12.5px var(--font); color: var(--bad); max-width: 260px; text-align: center; }
+.cn-readout { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
+.cn-readout b { font-family: var(--mono); color: var(--hi); }
+.cn-kernels { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.cn-gallery { display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; width: 100%; }
+.cn-good { color: var(--ok); }
+.cn-poor { color: var(--dim); }
+.cn-layers { max-width: 420px; }
+.cn-layers td, .cn-layers th { text-align: center; }
+.cn-closing { max-width: 640px; }
