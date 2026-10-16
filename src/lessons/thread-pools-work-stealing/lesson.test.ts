@@ -77,7 +77,7 @@ describe('try-this entries, from the default state, as written', () => {
     const open = forkOpening();
     const r = runForkJoin({ ...open.params, stealLatency: SLOW_STEAL_TICKS, seed: BROKEN_SEED });
     expect(r.makespan).toBeGreaterThan(brentBound(r, 4));
-    expect(lesson.tryThis[4]).toContain(`the run takes ${r.makespan} ticks`);
+    expect(lesson.tryThis[4]).toContain(`The run takes ${r.makespan} ticks`);
     expect(lesson.tryThis[4]).toContain(`every seed breaks the bound`);
   });
 });
