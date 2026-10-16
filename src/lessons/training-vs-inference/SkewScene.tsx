@@ -56,7 +56,7 @@ export function SkewScene({ picker }: { picker: ReactNode }) {
           <Points data={[{ x: drift, y: accuracy, tone: 'hi' }]} r={5} />
         </Plot2D>
         <p className="tv-note">
-          The weights never change here. With the pipeline missing, the model gets raw numbers it never saw; with other statistics it gets numbers rescaled by a mean {STALE_SHIFT} off and a spread {STALE_SPREAD} times too big. Drift (the live data
+          The weights never change here. With the pipeline missing, the model gets raw numbers it never saw; with other statistics it gets numbers rescaled by a mean {STALE_SHIFT} off and a spread {STALE_SPREAD} times too big. With the pipeline missing, every point gets the same class, so accuracy sits at 50% (chance for these two equal classes) and the curve is flat from a shift of -0.75 upward; only a larger downward shift moves some points across. Drift (the live data
           moving) is named, not taught: model evaluation and monitoring own that.
         </p>
         <ProvenanceRow>

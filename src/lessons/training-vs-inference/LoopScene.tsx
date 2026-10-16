@@ -63,7 +63,7 @@ export function LoopScene({ picker }: { picker: ReactNode }) {
       player={player}
       stats={
         <Stats>
-          <Stat label="Training" value={`${steps} of ${TRAIN_STEPS} steps`} sub={[`${sig(run.samplesPerSecond)} samples per second (model-based)`, `${run.stepsPerEpoch} steps make one epoch`]} />
+          <Stat label="Training" value={`${steps} of ${TRAIN_STEPS} steps`} sub={[`${sig(run.samplesPerSecond)} samples per second (model-based; the same for every minibatch size here, as this model has no per-step overhead)`, `${run.stepsPerEpoch} steps make one epoch`]} />
           <Stat label="Serving" value={`${lateNow} late`} color={lateNow > 0 ? 'var(--bad)' : 'var(--ok)'} sub={[`over ${LATENCY_BUDGET_MS} ms so far`, `${SERVE.lambda} requests per second, one forward pass each`]} />
         </Stats>
       }

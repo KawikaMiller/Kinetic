@@ -10,7 +10,7 @@ import { checkpointOpening, loopOpening, memoryOpening, servingOpening } from '.
 import {
   ARRIVAL_SEED, HORIZON_MS, LATENCY_BUDGET_MS, LOOP_HORIZON_MS, capacityPerSecond, kneeBatch, lateCount, makeArrivals, overloaded, queueingCheck, runServing, serviceMs, servingSim, servingStats, stateAtMs,
 } from './serving';
-import { TRAIN_STEPS, evaluationAccuracy, servedAccuracy, stepsDone, trainLoop } from './training';
+import { BATCH_SIZES, DRIFT_STEPS, TRAIN_STEPS, evaluationAccuracy, served, servedAccuracy, skewModel, stepsDone, trainLoop } from './training';
 
 describe('try-this entries, from the default state, as written', () => {
   it('try-this 1: calm, training reaches step 34 at 69.4 samples per second and 0 requests are late; frozen, step 26 and 31 late', () => {
@@ -183,5 +183,22 @@ describe('scenes', () => {
     const elements = sceneElements('training-vs-inference');
     expect(elements.map((e) => e.component)).toEqual(['MemoryScene', 'ServingScene', 'SkewScene', 'CheckpointScene', 'LoopScene']);
     for (const element of elements) expect(element.keyed, element.component).toBe(true);
+  });
+});
+
+describe('statements the scenes make about their own flat lines', () => {
+  it('samples per second is the same for every minibatch size in this model', () => {
+    const rates = BATCH_SIZES.map((b) => trainLoop(b).samplesPerSecond);
+    for (const r of rates) expect(r).toBeCloseTo(rates[0], 9);
+  });
+
+  it('with the pipeline missing, every point gets the same class and accuracy is 50% from drift -0.75 up; only a larger downward drift moves it', () => {
+    const m = skewModel();
+    for (const drift of DRIFT_STEPS.filter((d) => d >= -0.75)) {
+      const classes = new Set(m.test.map(({ x }) => (m.net.predict(served([x[0] + drift, x[1]], 'missing', m)) > 0.5 ? 1 : 0)));
+      expect(classes.size, `drift ${drift}`).toBe(1);
+      expect(servedAccuracy('missing', drift)).toBe(0.5);
+    }
+    expect(servedAccuracy('missing', -3)).toBeGreaterThan(0.6);
   });
 });
