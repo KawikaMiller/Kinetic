@@ -36,8 +36,11 @@ export function trustCaption(run: AgentRun, trust: 'naive' | 'separated'): strin
   const policy = trust === 'naive' ? 'The naive stand-in treats any text in its context as instructions' : 'The separated stand-in treats tool output as data';
   const result = executed
     ? 'It attempted a write the task never asked for, and the write ran: the fake outbox has a message.'
-    : attempted
-      ? 'It attempted a write the task never asked for, and the guardrail stopped it: nothing ran.'
-      : 'It made no write attempt.';
-  return `${policy}. ${result} The defence is the permissions and the gate around the model, not the wording of a prompt.`;
+    : run.outcome === 'paused'
+      ? 'It attempted a write the task never asked for and the gate is waiting for your decision: nothing has run yet.'
+      : attempted
+        ? 'It attempted a write the task never asked for, and the guardrail stopped it: nothing ran.'
+        : 'It made no write attempt.';
+  const stand = trust === 'separated' ? ' This stand-in is hard-coded to skip the instruction in the text; a real model gives no such guarantee.' : '';
+  return `${policy}. ${result}${stand} The defence is the permissions and the gate around the model, not the wording of a prompt.`;
 }

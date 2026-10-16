@@ -29,6 +29,7 @@ export function ContextScene({ picker }: { picker: ReactNode }) {
   const points = run.contextByStep.map((w, i) => [i + 1, w] as [number, number]);
   const yMax = Math.max(budgetWords, ...run.contextByStep, ...free.contextByStep) * 1.1;
   const correct = run.answer === AUDIT_ANSWER;
+  const peak = Math.max(...free.contextByStep);
 
   return (
     <StageFrame
@@ -74,7 +75,7 @@ export function ContextScene({ picker }: { picker: ReactNode }) {
             <b>goal</b> <span>{AUDIT_GOAL}</span>
             {run.goalDroppedAtStep !== null && <em> dropped from the context at step {run.goalDroppedAtStep}</em>}
           </p>
-          <Hint tone="muted" block>The scripted policy reads the goal from its context. When the goal is gone it reports the latest result instead: a rule, shown as such, not a model's behaviour.</Hint>
+          <Hint tone="muted" block>The scripted policy reads the goal from its context. When the goal is gone it reports the latest result instead: a rule, shown as such, not a model's behaviour. With this step budget the audit's context peaks at {peak} words, so a context budget of {peak} or more never overflows and both options then give the same run.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="scripted">scripted policy, not an LLM; truncation and summary are stubs</Provenance>

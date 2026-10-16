@@ -123,6 +123,9 @@ describe('captions follow the controls', () => {
             const attempted = run.events.some((e) => e.phase === 'act' && e.text.startsWith('send_email'));
             expect(c.includes('the write ran'), `${trust} ${email} ${approval} ${approvals}`).toBe(ran);
             expect(c.includes('made no write attempt')).toBe(!attempted);
+            expect(c.includes('waiting for your decision'), `${trust} ${email} ${approval} ${approvals}`).toBe(run.outcome === 'paused' && !ran);
+            if (run.outcome === 'paused') expect(c).not.toContain('guardrail stopped it');
+            expect(c.includes('real model gives no such guarantee')).toBe(trust === 'separated');
           }
         }
       }

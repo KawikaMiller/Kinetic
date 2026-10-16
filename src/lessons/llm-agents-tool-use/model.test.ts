@@ -187,9 +187,10 @@ describe('loop invariants over 1,000 seeded runs with failures and untrusted tex
       if (run.outcome === 'stopped') expect(run.events.at(-1)?.text).toBe('stopped: step budget reached');
       expect(run.events.some((e) => /forever|will not stop/i.test(e.text))).toBe(false);
       if (cfg.approval) {
-        for (const w of run.writes) expect(w.approved, `seed ${seed}`).toBe(true);
-        // every executed write has its own approval record (an approved call can still fail and not execute)
-        expect(run.approvals.filter((a) => a.decision === 'approve').length).toBeGreaterThanOrEqual(run.writes.length);
+        // independent of the `approved` flag: what actually landed in the world never exceeds the Approve decisions recorded
+        // (an approved call can still fail and not execute)
+        const effects = run.world.outbox.length + run.world.refunds.length;
+        expect(effects, `seed ${seed}`).toBeLessThanOrEqual(run.approvals.filter((a) => a.decision === 'approve').length);
       }
       if (!cfg.offered.includes('send_email')) expect(run.world.outbox).toEqual([]);
       if (!cfg.offered.includes('refund')) expect(run.world.refunds).toEqual([]);
