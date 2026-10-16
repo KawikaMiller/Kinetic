@@ -1,0 +1,33 @@
+.mm-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.mm-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.mm-two > * { flex: 1 1 280px; min-width: 0; }
+.mm-note code { overflow-wrap: anywhere; }
+.mm-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.mm-error { color: var(--bad); }
+.mm-status { display: block; min-height: 1.2em; }
+.mm-line { white-space: pre-wrap; }
+.mm-tok.tone-info { color: var(--info); }
+.mm-tok.tone-violet { color: var(--violet); }
+.mm-tok.tone-bad { color: var(--bad); font-weight: 700; }
+.mm-tok.tone-ok { color: var(--ok); }
+.mm-tok.tone-muted { color: var(--text); }
+.mm-pill rect { fill: color-mix(in srgb, var(--muted) 12%, transparent); stroke: var(--line-2); stroke-width: 1.5; }
+.mm-pill text { fill: var(--text); font: 600 11px var(--mono); }
+.mm-pill.tone-info rect { fill: color-mix(in srgb, var(--info) 16%, transparent); stroke: var(--info); }
+.mm-pill.tone-violet rect { fill: color-mix(in srgb, var(--violet) 16%, transparent); stroke: var(--violet); }
+.mm-pill.tone-bad rect { fill: color-mix(in srgb, var(--bad) 20%, transparent); stroke: var(--bad); }
+.mm-pill.tone-ok rect { fill: color-mix(in srgb, var(--ok) 18%, transparent); stroke: var(--ok); }
+.mm-compare tr.is-current td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.mm-compare caption { text-align: left; padding-bottom: 4px; font-size: 12px; color: var(--muted); }
+.mm-ok { color: var(--ok); }
+.mm-stale { color: var(--orange); }
+.mm-hit { background: color-mix(in srgb, var(--hi) 22%, transparent); }
+.mm-ran { background: color-mix(in srgb, var(--info) 14%, transparent); }
+.mm-skipped { color: var(--dim); }
+.mm-silent { color: var(--orange); }
+.mm-fine { color: var(--ok); }
+.mm-caught { color: var(--hi); }
+.mm-phases td, .mm-phases th, .mm-all td, .mm-all th { white-space: nowrap; }
+.mm-all th.is-current { color: var(--hi); }
+.mm-serialisers td code { overflow-wrap: anywhere; font-size: 12px; }
+.mm-stage ~ .provenance-row { margin: 8px 16px 12px; }
