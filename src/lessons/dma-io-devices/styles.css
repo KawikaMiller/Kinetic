@@ -1,0 +1,16 @@
+/* dma-io-devices */
+.dma-stage { gap: 12px; min-width: 0; }
+.dma-status { margin: 6px 0 0; font: 500 12.5px var(--font); color: var(--bad); }
+.dma-violation { margin: 0; padding: 8px 10px; border-radius: 8px; font: 600 13px var(--font); color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+
+.dma-mmio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.dma-mmio > .provenance-row { grid-column: 1 / -1; }
+
+.dma-ring { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+
+.dma-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+.dma-steps li.is-bad { color: var(--bad); font-weight: 600; }
+
+@media (max-width: 700px) {
+  .dma-mmio, .dma-ring { grid-template-columns: minmax(0, 1fr); }
+}
