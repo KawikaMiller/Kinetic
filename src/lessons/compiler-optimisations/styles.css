@@ -1,0 +1,19 @@
+.co-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.co-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.co-two > * { flex: 1 1 260px; min-width: 0; }
+.co-code { font-size: 13px; }
+.co-name { padding: 0 1px; border: 0; border-radius: 3px; background: none; font: inherit; color: inherit; cursor: pointer; }
+span.co-name { cursor: inherit; }
+.co-name.is-ring { outline: 2px solid var(--info); outline-offset: 1px; background: color-mix(in srgb, var(--info) 14%, transparent); }
+.co-hoisted { color: var(--violet); }
+.co-tray { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.co-pass { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.co-pass-count { flex: 1 1 140px; font: 12px var(--mono); color: var(--muted); }
+.co-move { min-height: 44px; min-width: 56px; }
+.co-rounds { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font: 12px var(--mono); color: var(--muted); }
+.co-refused { margin: 0; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--orange); background: color-mix(in srgb, var(--orange) 14%, transparent); font-size: 13px; line-height: 1.5; }
+.co-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.co-table { width: 100%; }
+.co-table caption { text-align: left; padding-bottom: 4px; font-size: 12px; color: var(--muted); }
+.co-current td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.co-stage ~ .provenance-row { margin: 8px 16px 12px; }
