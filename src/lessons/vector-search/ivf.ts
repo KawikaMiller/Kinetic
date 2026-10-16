@@ -2,8 +2,12 @@
  * vector-search, scene 2: an IVF index. K-means cuts the points into `nlist` cells; a query finds the `nprobe` nearest cells by their
  * centroids and scans only the points inside them. Pure.
  */
+import { initShuffled, kmeans, type Clustering } from '../../core/kmeans';
+import { mulberry32 } from '../../core/random';
 import { dist, type Found, type Neighbour, type Point } from './data';
-import { kmeans, type Clustering } from './kmeans';
+
+/** Lloyd passes the index build is allowed; a build that has not settled by then is finished with one more assignment. */
+export const KMEANS_MAX_ITERATIONS = 15;
 
 export const MIN_NLIST = 4;
 export const MAX_NLIST = 32;
@@ -11,14 +15,14 @@ export const DEFAULT_NLIST = 8;
 /** One cell: the default query sits near a border, so a miss shows from the start (the test proves it). */
 export const DEFAULT_NPROBE = 1;
 
-export interface Ivf extends Clustering {
+export interface Ivf extends Clustering<Point> {
   points: readonly Point[];
   /** Point ids in each cell. */
   members: number[][];
 }
 
 export function buildIvf(points: readonly Point[], nlist: number, seed: number): Ivf {
-  const c = kmeans(points, nlist, seed);
+  const c = kmeans(points, initShuffled(points, nlist, mulberry32(seed)), { maxIterations: KMEANS_MAX_ITERATIONS, empty: 'keep' });
   const members = c.centroids.map((_, cell) => c.assign.flatMap((a, id) => (a === cell ? [id] : [])));
   return { ...c, points, members };
 }

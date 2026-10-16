@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { insertFrames, removeFrames, type SkipFrame } from './frames';
-import { parseKey, refuseOp } from './keys';
+import { refuseOp } from './keys';
+import { parseKey } from '../../core/keyInput';
 import type { Entry, Rig, Snapshot } from './model';
 import { DEFAULT_COIN_SEED, DEFAULT_INSERT_KEY, DEFAULT_P, RIG_NOTE, coinFlips, defaultEntries } from './presets';
 

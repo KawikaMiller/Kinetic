@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { openSqlite, type SqliteDb } from '../../core/testing/sqlite';
 import { asMultiset, hashJoin, mergeJoin, nestedLoop, type Cond, type Pair, type Tables } from './join';
 import { DEFAULT_SPEC, makeTables, type Shape } from './tables';
 
-// SQLite, loaded at run time (the app's tsconfig has no Node types), is the independent oracle for the join's rows.
+// SQLite (core/testing/sqlite) is the independent oracle for the join's rows.
 // It has no hash join, so what is checked against it is the output; the three algorithms' counters are checked
 // against brute force and closed forms in join.test.ts.
-interface SqliteStatement { all: (...p: unknown[]) => Record<string, unknown>[]; run: (...p: unknown[]) => unknown }
-interface SqliteDb { exec: (sql: string) => void; prepare: (sql: string) => SqliteStatement }
-const SQLITE = 'node:sqlite';
-const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => SqliteDb };
-
 function load(t: Tables, indexOnB: boolean): SqliteDb {
-  const db = new DatabaseSync(':memory:');
+  const db = openSqlite();
   db.exec('CREATE TABLE customers (id INTEGER PRIMARY KEY, customer_id INTEGER); CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER)');
   const insertA = db.prepare('INSERT INTO customers VALUES (?, ?)');
   const insertB = db.prepare('INSERT INTO orders VALUES (?, ?)');

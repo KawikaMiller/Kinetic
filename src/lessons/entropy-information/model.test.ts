@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
-import {
-  BELIEF_PRESETS, BLOCK_LENGTHS, TRUE_DIST, binaryEntropy, blockBitsPerFlip, clampText, crossEntropy, entropy, excessBits, generatedBits,
-  possibilities, setBelief, surprise, textEntropy, MAX_TEXT,
-} from './model';
+import { BELIEF_PRESETS, BLOCK_LENGTHS, TRUE_DIST, blockBitsPerFlip, clampText, crossEntropy, excessBits, generatedBits, possibilities, setBelief, MAX_TEXT } from './model';
+import { binaryEntropy, entropy, surprise, textEntropy } from '../../core/entropy';
 import {
   ITEMS, ITEM_ENTROPY, ITEM_PROBS, OPTIMAL_QUESTIONS, balancedYesSet, evenByCount, expectedQuestions, hintSplit, leaves, mass, openSets, optimalTree, rootNode, split,
   type QNode, type QPath,

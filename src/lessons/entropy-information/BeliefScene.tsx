@@ -4,7 +4,8 @@ import { Bar } from '../../components/Bar';
 import { Bars, Plot2D } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
-import { BELIEF_LABELS, BELIEF_PRESETS, TRUE_DIST, crossEntropy, entropy, excessBits, setBelief } from './model';
+import { BELIEF_LABELS, BELIEF_PRESETS, TRUE_DIST, crossEntropy, excessBits, setBelief } from './model';
+import { entropy } from '../../core/entropy';
 import { beliefCaption, bits2, bits3, bitsOrUnbounded } from './text';
 
 const OUTCOMES = TRUE_DIST.length;

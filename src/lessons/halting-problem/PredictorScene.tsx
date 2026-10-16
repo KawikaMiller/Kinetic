@@ -82,7 +82,7 @@ export function PredictorScene({ picker }: { picker: ReactNode }) {
     >
       <div className="hp stage-pad">
         <div className="hp-scroll" role="region" aria-label="Scoreboard" tabIndex={0}>
-          <table className="hp-table">
+          <table className="hp-table table-cards">
             <thead>
               <tr><th scope="col">Machine</th><th scope="col">What it really does</th><th scope="col">The predictor says</th></tr>
             </thead>

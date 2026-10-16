@@ -5,7 +5,7 @@ import { COMPARE_SEED, compareRuns } from './compare';
 import { FACTS } from './facts';
 import { rbFrames } from './frames';
 import lesson from './index';
-import { KEY_MAX, KEY_MIN, NODE_LIMIT, parseKey, parseKeyList, refuseOp } from './keys';
+import { KEY_MAX, KEY_MIN, TREE_NODE_LIMIT, parseKey, parseKeyList, refuseOp } from '../../core/keyInput';
 import { buildRb, checkRb, checkRules, groupsOf, inOrder, insertKey, recolor, removeKey, sizeOf, type FixCase, type RbTree } from './model';
 import { DELETE_PRESETS, GROUP_PRESETS, INSERT_PRESETS, RULES_KEYS, deleteBase, groupKeys, insertStart, randomKeys } from './presets';
 import { caseList, compareCaption, groupsCaption, rulesCaption } from './text';
@@ -209,7 +209,7 @@ describe('hostile input', () => {
     expect(parseKeyList(`${KEY_MIN - 1}`)).toMatchObject({ ok: false });
     const dup = parseKeyList('5 3 5');
     expect(dup.ok ? '' : dup.error).toContain('already in the tree');
-    expect(parseKeyList(Array.from({ length: NODE_LIMIT + 1 }, (_, i) => i).join(' '))).toMatchObject({ ok: false });
+    expect(parseKeyList(Array.from({ length: TREE_NODE_LIMIT + 1 }, (_, i) => i).join(' '))).toMatchObject({ ok: false });
     expect(parseKeyList('30 10 20')).toEqual({ ok: true, value: [30, 10, 20] });
     expect(parseKey('42')).toEqual({ ok: true, value: 42 });
     expect(parseKey('x').ok).toBe(false);
@@ -217,7 +217,7 @@ describe('hostile input', () => {
 
   it('insert and delete refuse duplicates, a full tree, a missing key and an empty tree', () => {
     expect(refuseOp('insert', 5, 3, true)).toContain('already in the tree');
-    expect(refuseOp('insert', 5, NODE_LIMIT, false)).toContain(`${NODE_LIMIT} nodes`);
+    expect(refuseOp('insert', 5, TREE_NODE_LIMIT, false)).toContain(`${TREE_NODE_LIMIT} nodes`);
     expect(refuseOp('delete', 5, 0, false)).toContain('empty');
     expect(refuseOp('delete', 5, 3, false)).toContain('not in the tree');
   });

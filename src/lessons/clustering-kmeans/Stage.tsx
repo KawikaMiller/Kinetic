@@ -5,12 +5,13 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { clamp } from '../../core/math';
 import type { Point } from '../../core/plot';
+import { nearest, sqDist } from '../../core/kmeans';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
 import { CLUSTER_TONES, MAX_K, num } from './view';
 import { Centroids } from './layers';
 import {
-  ELBOW_MAX_K, PRESET_IDS, RESTARTS, agreement, bestOfRestarts, elbowCurve, elbowK, finalStep, initCentroids, lloyd, nearest, preset, sqDist, standardise,
+  ELBOW_MAX_K, PRESET_IDS, RESTARTS, agreement, bestOfRestarts, elbowCurve, elbowK, finalStep, initCentroids, lloyd, preset, standardise,
   type InitMethod, type P, type Preset, type PresetId,
 } from './model';
 import './styles.css';

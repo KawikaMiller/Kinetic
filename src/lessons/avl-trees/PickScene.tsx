@@ -5,7 +5,8 @@ import { useIntroCaption } from '../../core/caption';
 import type { TreeNodeMark } from '../../components/TreeSvg';
 import { AvlTreeView } from './AvlTreeView';
 import { CaseSketch } from './CaseSketch';
-import { applyChoice, heightOf, stopAtImbalance, unbalancedNodes, type Case, type Choice, type PickOutcome } from './model';
+import { applyChoice, stopAtImbalance, unbalancedNodes, type Choice, type PickOutcome } from './model';
+import { heightOf, type Case } from '../../core/avl';
 import { CASE_PRESETS, PICK_DEFAULT, caseBase, casePreset } from './presets';
 import { CHOICE_LABEL, pickCaption } from './text';
 

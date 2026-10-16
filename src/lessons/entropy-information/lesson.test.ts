@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import lesson from './index';
-import {
-  ALPHABET_BOUNDS, BELIEF_PRESETS, COIN_PRESETS, COIN_STEP, GENERATORS, LENGTH_BOUNDS, TEXT_PRESETS, TRUE_DIST, blockBitsPerFlip, entropy, generatedBits, setBelief, textEntropy,
-} from './model';
+import { ALPHABET_BOUNDS, BELIEF_PRESETS, COIN_PRESETS, COIN_STEP, GENERATORS, LENGTH_BOUNDS, TEXT_PRESETS, TRUE_DIST, blockBitsPerFlip, generatedBits, setBelief } from './model';
+import { entropy, textEntropy } from '../../core/entropy';
 import { ITEMS, ITEM_ENTROPY, OPTIMAL_QUESTIONS, evenByCount, expectedQuestions, hintSplit, openSets, optimalTree, rootNode, type QNode } from './questions';
 import { beliefCaption, coinCaption, generatedCaption, questionsCaption, questionsVerdict, sampleCaption, textCaption } from './text';
 

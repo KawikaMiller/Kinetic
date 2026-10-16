@@ -1,6 +1,6 @@
 import { logCheckpoints } from '../../core/stats';
 import { mulberry32, shuffle } from '../../core/random';
-import { EMPTY_TREE, heightOf, insertKey } from './model';
+import { EMPTY_TREE, heightOf, insertKey } from '../../core/avl';
 
 /** Samples per decade on the growth plot's log axis. */
 const SAMPLES_PER_DECADE = 12;
