@@ -144,6 +144,7 @@ export interface DigitPoint {
 export function digitSeries(base: bigint, e: bigint, n: bigint): DigitPoint[] {
   const bits = bitsOf(e);
   const b = mod(base, n);
+  const written = base < 0n ? -base : base;
   const out: DigitPoint[] = [];
   let prefix = 0n;
   let running = 1n % n;
@@ -154,7 +155,7 @@ export function digitSeries(base: bigint, e: bigint, n: bigint): DigitPoint[] {
       running = (running * running) % n;
       if (bits[i] === 1) running = (running * b) % n;
     }
-    out.push({ bits: i + 1, unreduced: unreducedDigits(b, prefix), reduced: digitsOf(running) });
+    out.push({ bits: i + 1, unreduced: unreducedDigits(written, prefix), reduced: digitsOf(running) });
   }
   return out;
 }

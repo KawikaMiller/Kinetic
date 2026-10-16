@@ -26,7 +26,7 @@ export function ReduceScene({ picker }: { picker: ReactNode }) {
       height={430}
       intro={
         <>
-          Without reducing, {base.toString()}^{exponent.toString()} would be written out with about {fmt(last.unreduced)} digits; with a reduction after every step the running value never needed more than {worstReduced} digit{worstReduced === 1 ? '' : 's'} (the modulus has {modulusDigits}).
+          Without reducing, {base.toString()}^{exponent.toString()} would be written out with about {fmt(last.unreduced)} digit{last.unreduced === 1 ? '' : 's'}; with a reduction after every step the running value never needed more than {worstReduced} digit{worstReduced === 1 ? '' : 's'} (the modulus has {modulusDigits}).
         </>
       }
       introKey={`${base}-${exponent}-${modulus}`}

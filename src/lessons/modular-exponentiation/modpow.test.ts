@@ -126,6 +126,17 @@ describe('the size of the numbers', () => {
     expect(series.at(-1)!.unreduced).toBe(845_099);
     for (let i = 3; i < series.length; i++) expect(series[i].unreduced / series[i - 1].unreduced).toBeGreaterThan(1.5);
   });
+
+  it('counts the digits of the base as typed: a negative base or one past the modulus is written out in full, not reduced first', () => {
+    for (const base of [-7n, 7n, -123n, 10n ** 20n + 3n, -(10n ** 20n + 3n), 1_000_004n]) {
+      const series = digitSeries(base, 1000n, 1_000_003n);
+      series.forEach((point, i) => {
+        const prefix = 1000n >> BigInt(series.length - 1 - i);
+        expect(point.unreduced, `${base}^${prefix}`).toBe(digitsOf((base < 0n ? -base : base) ** prefix));
+      });
+    }
+    expect(digitSeries(-7n, 1_000_000n, 1_000_003n).at(-1)!.unreduced).toBe(845_099);
+  });
 });
 
 describe('the same trick elsewhere', () => {

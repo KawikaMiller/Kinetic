@@ -19,7 +19,7 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `Square and multiply, on the defaults (${F.base}^${F.exponent} mod ${F.modulus}): play to the end. The exponent has ${F.bits} bits and ${F.ones} of them are 1, so it takes ${F.squarings} squarings and ${F.multiplications} multiplications, ${F.operations} in all, against ${F.naive} for repeated multiplication. The answer is ${F.result}.`,
-    `Why reduce, on the defaults: written out in full the power would have ${F.fullDigits} digits, while the reduced running value never has more than ${F.reducedDigits}, the size of the modulus (${F.modulusDigits} digits).`,
+    `Why reduce, on the defaults: written out in full the power would have ${F.fullDigits} digits, while the reduced running value never has more than the modulus's ${F.modulusDigits} digits (here ${F.reducedDigits}).`,
     `Two directions, set Scan to right to left: the answer ${F.result} and the count of ${F.operations} stay the same, but the method now holds ${F.rtlHeld} numbers instead of ${F.ltrHeld}.`,
     `The same trick elsewhere, on the defaults: a^(p-2) mod p for a = ${F.fermatA}, p = ${F.fermatP} gives ${F.fermatInverse}, the same inverse the Euclid table finds (${F.euclidInverse}). The plain Fermat test on ${F.carmichaelN} passes ${F.passing} of ${F.coprime} coprime bases, so it is fooled.`,
     `A note on timing, with the exponent set to 32768 and then 65535: both have 16 bits, but the first needs ${F.shortOps} multiplications and the second ${F.longOps}. The work follows the 1 bits.`,
