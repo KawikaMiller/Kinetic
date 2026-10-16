@@ -1,0 +1,39 @@
+.ch-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.ch-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.ch-error { color: var(--bad); }
+.ch-status { display: block; min-height: 1.2em; }
+.ch-rings { display: flex; }
+.ch-ring { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 2px solid var(--line-2); border-radius: 16px; min-width: 0; }
+.ch-ring.is-amber { border-color: var(--amber); }
+.ch-ring.is-pink { border-color: var(--pink); }
+.ch-ring.is-sky { border-color: var(--sky); }
+.ch-ring.is-orange { border-color: var(--orange); }
+.ch-ring.is-muted { border-color: var(--muted); }
+.ch-ring-head { font-size: 12px; }
+.ch-ring-type { color: var(--muted); }
+.ch-ring-cards { display: flex; flex-wrap: wrap; gap: 4px; min-height: 4px; }
+.ch-card { padding: 1px 8px; border: 1px solid var(--line-2); border-radius: 99px; font-size: 12px; }
+.ch-card.is-right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.ch-card.is-wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+@media (max-width: 600px) {
+  .ch-rings { flex-direction: column; gap: 6px; }
+  .ch-ring { flex-direction: column; padding: 6px 8px; }
+  .ch-ring .ch-ring { margin-top: 0; }
+}
+.ch-evidence { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.ch-evidence-row p { margin: 4px 0 0; }
+.ch-tester { display: flex; flex-direction: column; gap: 8px; }
+.ch-table-scroll { max-height: 340px; overflow: auto; }
+.ch-table td, .ch-table th { white-space: nowrap; }
+.ch-table tr.is-focus td { background: color-mix(in srgb, var(--hi) 8%, transparent); }
+.ch-leaves { background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.ch-stays { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.ch-pumped { color: var(--hi); }
+.ch-pumped-string { font-size: 11px; }
+.ch-row-btn { all: unset; cursor: pointer; padding: 2px 4px; border-radius: 6px; }
+.ch-row-btn:focus-visible { outline: 2px solid var(--hi); outline-offset: 1px; }
+.ch-loop { display: flex; flex-direction: column; gap: 6px; }
+.ch-graph .graph-node-label { font-size: 12px; }
+.ch-class { display: inline-block; margin: 0 4px 2px 0; padding: 1px 8px; border: 2px solid var(--line-2); border-radius: 8px; font: 12px var(--mono); }
+.ch-growth { max-width: 360px; }
+.ch-stage ~ .provenance-row { margin: 8px 16px 12px; }
