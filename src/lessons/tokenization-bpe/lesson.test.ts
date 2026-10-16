@@ -87,14 +87,17 @@ describe('try-this entries, from the default state, as written', () => {
     expect(expectCaption(costCaption({ tokens: 300, price: 2.5, cost: 0.00075, window: 256, share: 300 / 256 }))).toContain('over the window');
   });
 
-  it('try-this 5: "strawberry" has 3 r\'s and 9 ids; 2024202520262027 is 9 pieces: 202, 4, 202, 5, 202, 6, 202, 7 and the end marker', () => {
+  it('try-this 5: "tokenizer" has 2 e\'s and 1 id; 2024202520262027 is 9 pieces: 202, 4, 202, 5, 202, 6, 202, 7 and the end marker', () => {
     const open = costOpening();
     const bytes = paragraphTokenizer('bytes');
     const word = tokenViews(bytes, bytes.encode(open.word));
-    expect(word.length).toBe(9);
-    const truth = Array.from(open.word).filter((c) => c === 'r').length;
-    expect(truth).toBe(3);
-    expect(expectCaption(lettersCaption(open.word, word, 'r', truth))).toContain('has 3 copies of "r", but the model would receive 9 ids');
+    expect(word.length).toBe(1);
+    expect(open.word.length).toBe(9);
+    const truth = Array.from(open.word).filter((c) => c === 'e').length;
+    expect(truth).toBe(2);
+    expect(expectCaption(lettersCaption(open.word, word, 'e', truth))).toContain('has 2 copies of "e", but this toy tokenizer gives 1 id');
+    const strawberry = tokenViews(bytes, bytes.encode('strawberry'));
+    expect(strawberry.length, 'strawberry stays nearly one id per letter in this toy').toBe(9);
     const digits = bytes.encode(open.number);
     expect(digits.length).toBe(9);
     expect(digits.slice(0, 8).map((t) => tokenViews(bytes, [t])[0].text)).toEqual(['202', '4', '202', '5', '202', '6', '202', '7']);

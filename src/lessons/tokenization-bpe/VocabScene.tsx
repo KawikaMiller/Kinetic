@@ -4,7 +4,8 @@ import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, TextArea 
 import { TokenChips } from './TokenChips';
 import { vocabCaption } from './captions';
 import { pairText } from './bpe';
-import { MAX_CHARS, prepare } from './text';
+import { PreparedNote } from './PreparedNote';
+import { prepare } from './text';
 import { vocabOpening } from './openings';
 import { paragraphTokenizer, tokenStats, tokenViews } from './view';
 
@@ -67,12 +68,7 @@ export function VocabScene({ picker }: { picker: ReactNode }) {
             </ol>
           )}
         </section>
-        {(prepared.truncated || prepared.escaped > 0) && (
-          <Hint tone="muted">
-            {prepared.truncated ? `Only the first ${MAX_CHARS.toLocaleString('en-US')} characters are used. ` : ''}
-            {prepared.escaped > 0 ? `${prepared.escaped} control or lone-surrogate character${prepared.escaped === 1 ? '' : 's'} shown as a \\u escape.` : ''}
-          </Hint>
-        )}
+        <PreparedNote prepared={prepared} />
         <ProvenanceRow>
           <Provenance kind="toy">learned on a ~300-word paragraph written for this lesson, not any real model&apos;s tokenizer</Provenance>
           <Provenance kind="simulated">the merge list is computed once; the slider reads a prefix of it</Provenance>

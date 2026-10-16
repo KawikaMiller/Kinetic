@@ -81,7 +81,7 @@ export function costCaption(v: CostView): ReactNode {
 export function lettersCaption(word: string, views: readonly TokenView[], target: string, truth: number): ReactNode {
   return (
     <>
-      &quot;{word}&quot; has {truth} {truth === 1 ? 'copy' : 'copies'} of &quot;{target}&quot;, but the model would receive {views.length} {views.length === 1 ? 'id' : 'ids'}: {views.map((v) => `#${v.id}`).join(', ')}. An id says nothing about the
+      &quot;{word}&quot; has {truth} {truth === 1 ? 'copy' : 'copies'} of &quot;{target}&quot;, but this toy tokenizer gives {views.length} {views.length === 1 ? 'id' : 'ids'}: {views.map((v) => `#${v.id}`).join(', ')}. The end-of-word marker is part of the last id. An id says nothing about the
       letters inside its token; that is one reason, often cited, that letter questions are harder for a token model, and not the only one.
     </>
   );

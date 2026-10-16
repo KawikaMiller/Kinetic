@@ -1,13 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
-import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextArea, TextField } from '../../components/ui';
+import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextArea, TextField } from '../../components/ui';
 import { pctText } from '../../core/format';
 import { TokenChips } from './TokenChips';
 import { costCaption, lettersCaption } from './captions';
 import { ILLUSTRATIVE_PRICE_PER_MILLION, ILLUSTRATIVE_WINDOWS, tokenCost } from './corpus';
 import { costOpening } from './openings';
-import { MAX_CHARS, prepare } from './text';
+import { PreparedNote } from './PreparedNote';
+import { prepare } from './text';
 import { paragraphTokenizer, tokenViews } from './view';
 
 export function TokenCostScene({ picker }: { picker: ReactNode }) {
@@ -26,7 +27,7 @@ export function TokenCostScene({ picker }: { picker: ReactNode }) {
   const wordViews = useMemo(() => tokenViews(tokenizer, tokenizer.encode(wordPrepared.text)), [tokenizer, wordPrepared.text]);
   const numberPrepared = prepare(digits.replaceAll(' ', ''));
   const numberViews = useMemo(() => tokenViews(tokenizer, tokenizer.encode(numberPrepared.text)), [tokenizer, numberPrepared.text]);
-  const target = 'r';
+  const target = 'e';
   const truth = Array.from(wordPrepared.text).filter((c) => c === target).length;
 
   return (
@@ -37,7 +38,7 @@ export function TokenCostScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Toy tokens" value={tokens.toLocaleString('en-US')} sub={`${Array.from(prepared.text).length.toLocaleString('en-US')} characters, byte alphabet`} />
-          <Stat label="Cost" value={cost.toFixed(6)} sub={`${tokens.toLocaleString('en-US')} × ${ILLUSTRATIVE_PRICE_PER_MILLION} / 1,000,000`} />
+          <Stat label="Cost" value={cost.toFixed(6)} sub={`illustrative currency units: ${tokens.toLocaleString('en-US')} × ${ILLUSTRATIVE_PRICE_PER_MILLION} / 1,000,000`} />
           <Stat label="Of the window" value={pctText(share, 1)} color={share > 1 ? 'var(--bad)' : undefined} sub={`${windowSize.toLocaleString('en-US')} tokens (illustrative)`} />
         </Stats>
       }
@@ -65,10 +66,10 @@ export function TokenCostScene({ picker }: { picker: ReactNode }) {
     >
       <div className="tk-stage stage-pad">
         <Bar value={Math.min(tokens, windowSize)} max={windowSize} tone={share > 1 ? 'bad' : 'ok'} height={12} animate={false} label="Context budget used" trailing={pctText(share, 1)} />
-        {prepared.truncated && <Hint tone="muted">Only the first {MAX_CHARS.toLocaleString('en-US')} characters are counted.</Hint>}
+        <PreparedNote prepared={prepared} />
         <div className="tk-row">
           <section className="tk-panel" aria-label="Counting letters">
-            <h3 className="section-title">What the model receives for a word</h3>
+            <h3 className="section-title">What this toy tokenizer gives for a word</h3>
             <TokenChips views={wordViews} ariaLabel="Tokens of the word" />
             <p className="tk-note">{lettersCaption(wordPrepared.text, wordViews, target, truth)}</p>
           </section>

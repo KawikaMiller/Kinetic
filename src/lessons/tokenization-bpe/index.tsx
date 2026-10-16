@@ -21,12 +21,12 @@ const lesson: LessonModule = {
     'In Vocabulary size (60 merges) "the newest tokenizer splits rare words into pieces" is 19 tokens, 2.63 characters per token, with 2 of 8 words whole. Drag Merges to 0: 51 tokens. Drag to 200: 15.',
     'In Bytes, "café" in Characters mode has one <unk> among 5 tokens. Switch to UTF-8 bytes: 6 tokens, none unknown, and é is the two bytes c3 a9. The table shows the Greek sentence needing 43 tokens against 9 for English.',
     'In Cost and counting the first sentence is 42 toy tokens: 4.1% of the 1,024 window and 0.000105 at the illustrative price. Pick the 256 window: 16.4%.',
-    'In Cost and counting "strawberry" has 3 r\'s but the model would receive 9 ids, and the number 2024202520262027 comes out as 9 pieces (202, 4, 202, 5, 202, 6, 202, 7 and the end marker).',
+    'In Cost and counting "tokenizer" has 2 e\'s but this toy tokenizer gives it 1 id (all nine letters and the end marker in one token); the number 2024202520262027 comes out as 9 pieces (202, 4, 202, 5, 202, 6, 202, 7 and the end marker).',
   ],
   keyIdeas: [
     'A token is a learned fragment, not a word: byte-pair encoding merges the commonest adjacent pair again and again, so common words become one token and rare words split into pieces.',
     'The tokenizer is fitted to a corpus before training and does not change when the model learns; to encode, it applies its merges in the order it learned them, without counting.',
-    'A bigger vocabulary gives fewer tokens for the same text, and in this toy, text unlike the corpus, such as other languages, costs many more tokens.',
+    'A bigger vocabulary gives no more tokens for the same text, usually fewer. In this toy, text unlike the corpus, such as other languages, costs many more tokens.',
     'A model sees ids, not letters: an id says nothing about the characters in its token, which is one reason, often cited, that letter-level questions are harder.',
   ],
   quiz: [

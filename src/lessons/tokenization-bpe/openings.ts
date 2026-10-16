@@ -8,6 +8,6 @@ export const bytesOpening = () => ({ mode: 'chars' as Mode, text: 'café' });
 export const costOpening = () => ({
   doc: PARAGRAPH.split('. ')[0] + '.',
   window: ILLUSTRATIVE_WINDOWS[1] as number,
-  word: 'strawberry',
+  word: 'tokenizer',
   number: '2024202520262027',
 });

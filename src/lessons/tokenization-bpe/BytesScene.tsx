@@ -1,12 +1,13 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField } from '../../components/ui';
+import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { TokenChips } from './TokenChips';
 import { bytesCaption } from './captions';
 import type { Mode } from './bpe';
 import { SENTENCES } from './corpus';
 import { bytesOpening } from './openings';
-import { MAX_CHARS, prepare } from './text';
+import { PreparedNote } from './PreparedNote';
+import { prepare } from './text';
 import { byteLength, paragraphTokenizer, tokenViews } from './view';
 
 const MODES: { value: Mode; label: string }[] = [
@@ -73,12 +74,7 @@ export function BytesScene({ picker }: { picker: ReactNode }) {
     >
       <div className="tk-stage stage-pad">
         <TokenChips views={views} ariaLabel="Tokens of the typed text" />
-        {(prepared.truncated || prepared.escaped > 0) && (
-          <Hint tone="muted">
-            {prepared.truncated ? `Only the first ${MAX_CHARS.toLocaleString('en-US')} characters are used. ` : ''}
-            {prepared.escaped > 0 ? `${prepared.escaped} control or lone-surrogate character${prepared.escaped === 1 ? '' : 's'} shown as a \\u escape, so the bytes stay the ones shown.` : ''}
-          </Hint>
-        )}
+        <PreparedNote prepared={prepared} />
         <table className="data-table tk-table table-cards">
           <caption className="sr-only">The same sentence in three languages, tokenized by a toy that has only seen English</caption>
           <thead>

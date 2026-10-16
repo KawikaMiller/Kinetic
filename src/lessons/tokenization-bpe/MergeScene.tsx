@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { mergeCaption } from './captions';
@@ -18,7 +18,14 @@ export function MergeScene({ picker }: { picker: ReactNode }) {
   const lastSymbol = path.length > 0 ? path[path.length - 1].left + path[path.length - 1].right : null;
   const full = path.length >= MAX_PATH || pairs.length === 0;
 
+  const topButton = useRef<HTMLButtonElement>(null);
+
   const merge = (pair: Pair) => setPath((p) => [...p, pair]);
+  // A merged pair leaves the table, so its own button unmounts; focus moves to the always-present top button instead of the page.
+  const mergeFromTable = (pair: Pair) => {
+    merge(pair);
+    topButton.current?.focus();
+  };
   const isBase = (s: string) => s === END || Array.from(s).length === 1;
 
   return (
@@ -45,7 +52,7 @@ export function MergeScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Button variant="primary" softDisabled={full || !best} onClick={() => best && merge(best)}>
+          <Button ref={topButton} variant="primary" softDisabled={full || !best} onClick={() => best && merge(best)}>
             Merge the most frequent{best ? `: ${pairText(best)}` : ''}
           </Button>
           <Button softDisabled={path.length === 0} onClick={() => setPath((p) => p.slice(0, -1))}>Undo</Button>
@@ -75,13 +82,13 @@ export function MergeScene({ picker }: { picker: ReactNode }) {
                     <td>{pairText(p)}</td>
                     <td>{p.count}</td>
                     <td>
-                      <Button softDisabled={full} onClick={() => merge(p)}>{i === 0 ? 'merge (the most frequent)' : 'merge by hand'}</Button>
+                      <Button softDisabled={full} onClick={() => mergeFromTable(p)}>{i === 0 ? 'merge (the most frequent)' : 'merge by hand'}</Button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <span className="hint">Ties go to the lexicographically smaller pair: the original description does not fix a rule.</span>
+            <span className="hint">The table lists the {TOP_PAIRS} most frequent pairs, so a by-hand merge is one of those {TOP_PAIRS}. Ties go to the lexicographically smaller pair: the original description does not fix a rule.</span>
           </section>
           <section className="tk-panel" aria-label="Merges so far">
             <h3 className="section-title">Merge list</h3>
