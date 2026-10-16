@@ -28,7 +28,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'A write to a database and a publish to a broker cannot be made atomic from the service: in this model, database first can lose the event and publish first can send an event for an order that never exists.',
     'An outbox writes the order and an outbox row in one local transaction and publishes the rows afterwards: the event is not lost, but it can be published twice, so the consumer has to tolerate a repeat.',
-    'Polling by "id above the last one seen" can skip a row, because ids are handed out in one order and transactions commit in another; reading the commit log avoids it, and re-scanning a margin narrows it, but only for a late row within the margin.',
+    'Polling by "id above the last one seen" can skip a row, because ids are handed out in one order and transactions commit in another; reading the commit log avoids it, and re-scanning a margin narrows it, for a late row that lands within the margin (a row later than that is still skipped).',
     'An outbox gives at-least-once publishing, not exactly-once: an inbox of seen event ids on the consumer is what makes the effect happen once.',
   ],
   quiz: [
@@ -63,7 +63,7 @@ const lesson: LessonModule = {
         'It is rolled back, because the later id committed before it did',
       ],
       answer: 2,
-      why: 'The ids were handed out in one order and the transactions committed in another, so the row that commits late sits behind the cursor. Reading the commit log catches it, and so does re-scanning a margin, though only while the late row is within that margin.',
+      why: 'The ids were handed out in one order and the transactions committed in another, so the row that commits late sits behind the cursor. Reading the commit log catches it, and so does re-scanning a margin, for a late row within that margin (a row later than that is still skipped).',
     },
     {
       q: 'Why can publishing first, then writing the row, produce a ghost?',
