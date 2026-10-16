@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
-import { CATEGORIES, KEY, score, SNIPPETS, type Category } from './classification';
+import { classifyScore as score } from '../../core/classify';
+import { CATEGORIES, KEY, SNIPPETS, type Category } from './classification';
 import { asWritten, assumingNoOverflow, boundaryValues, defenceOutcome, DEFENCES, differingInputs, isDefined, MEMORY, NULL_OUTCOMES, POINTERS, rangeOf, retarget, sanitizerMessage, WIDTHS, withCheck, withoutCheck, wrap, type IntType } from './ub';
 
 const TYPES: IntType[] = WIDTHS.flatMap((width) => [true, false].map((signed) => ({ width, signed })));
