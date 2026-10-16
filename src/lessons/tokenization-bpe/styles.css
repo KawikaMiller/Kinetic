@@ -1,0 +1,24 @@
+.tk-stage { gap: 12px; align-items: center; }
+.tk-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.tk-panel { flex: 1 1 280px; max-width: 460px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.tk-panel .section-title { margin: 0; }
+.tk-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
+.tk-note b { font-family: var(--mono); color: var(--hi); }
+.tk-empty { margin: 0; font: 500 13px var(--font); color: var(--muted); }
+
+.tk-words { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 520px; }
+.tk-word { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.tk-count { font: 700 12px var(--mono); color: var(--muted); min-width: 34px; }
+.tk-sym { font: 600 13px var(--mono); }
+.tk-merges { margin: 0; padding-left: 22px; font: 500 13px var(--mono); display: flex; flex-direction: column; gap: 2px; }
+.tk-merges .is-hand { color: var(--bad); }
+.tk-merge-count { color: var(--muted); }
+
+.tk-chips { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 100%; }
+.tk-chip { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 8px; }
+.tk-chip-label { font: 700 13px var(--mono); }
+.tk-chip-text { font: 500 11px var(--font); color: var(--muted); }
+.tk-chip-id { font: 500 10.5px var(--mono); color: var(--muted); }
+
+.tk-table { max-width: 640px; }
+.tk-table td, .tk-table th { text-align: left; }
