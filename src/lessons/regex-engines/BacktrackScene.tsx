@@ -54,8 +54,8 @@ export function BacktrackScene({ picker }: { picker: ReactNode }) {
     () =>
       result.trace.slice(0, f.at + 1).map((e) => ({
         id: e.step,
-        tone: e.ok === null ? ('orange' as const) : e.ok ? ('ok' as const) : ('bad' as const),
-        text: `step ${e.step}: ${nodeText(byId.get(e.node)!)} at ${e.pos}: ${e.ok === null ? 'budget ran out' : e.ok ? 'went on to match' : 'failed, backed up'}`,
+        tone: e.ok === null ? undefined : e.ok ? ('ok' as const) : ('bad' as const),
+        text: `step ${e.step}: ${nodeText(byId.get(e.node)!)} at ${e.pos}: ${e.ok === null ? 'still running when the budget ran out' : e.ok ? 'went on to match' : 'failed, backed up'}`,
       })),
     [result.trace, f.at, byId],
   );

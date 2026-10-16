@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { subsetConstruct } from '../../core/automata';
 import { mulberry32, type Rnd } from '../../core/random';
 import { matchAt, searchLeftmost } from './backtrack';
-import { STEP_BUDGET, candidateMatches, dfaAccepts, growthTable, matchEndsFrom, runNfa, workSeries } from './engines';
-import { countParts, parsePattern, type ParsedRegex } from './regexParse';
+import { DFA_STATE_CAP, STEP_BUDGET, candidateMatches, dfaAccepts, growthTable, matchEndsFrom, runNfa, subsetSizes, whichAnswer, workSeries } from './engines';
+import { countParts, parsePattern, parseSubject, type ParsedRegex } from './regexParse';
 import { buildNfa, epsilonCount, patternAlphabet, predictedEpsilons, predictedStates, symbolOf } from './thompson';
 
 const BANK = [
@@ -298,5 +298,76 @@ describe('the dot treats every unnamed character as ELSE', () => {
     const c = construct('a.b');
     expect(runNfa(c, [...'azb'], 'full').accepted).toBe(true);
     expect(runNfa(c, [...'ab'], 'full').accepted).toBe(false);
+  });
+});
+
+describe('the DFA panel cannot be made to hang', () => {
+  it('a pattern whose DFA has millions of states is capped, quickly', () => {
+    const hostile = '.*a' + '.'.repeat(21);
+    expect(hostile).toHaveLength(24);
+    const t0 = Date.now();
+    const sizes = subsetSizes(construct(hostile));
+    expect(sizes.capped).toBe(true);
+    expect(sizes.dfaStates).toBe(DFA_STATE_CAP + 1);
+    expect(Date.now() - t0).toBeLessThan(2000);
+  });
+
+  it('under the cap the count equals the shared subset construction on every bank pattern', () => {
+    for (const p of BANK) {
+      const c = construct(p);
+      const sizes = subsetSizes(c);
+      expect(sizes.capped, p).toBe(false);
+      expect(sizes.dfaStates, p).toBe(subsetConstruct(c.nfa).dfa.states.length);
+    }
+  });
+
+  it('a small cap is honoured exactly', () => {
+    const c = construct('[ab]*a[ab][ab][ab]');
+    expect(subsetSizes(c, 5).capped).toBe(true);
+    expect(subsetSizes(c, 1000)).toEqual({ nfaStates: c.nfa.states.length, dfaStates: subsetConstruct(c.nfa).dfa.states.length, capped: false });
+  });
+});
+
+describe('the which-match scene does not call a given-up run "no match"', () => {
+  const a24 = Array.from({ length: 24 }, () => 'a');
+  it('(a*)*b|a on 24 a characters: the backtracker gives up, the NFA still finds a match', () => {
+    const answer = whichAnswer(construct('(a*)*b|a'), parse('(a*)*b|a'), a24);
+    expect(answer.firstExhausted).toBe(true);
+    expect(answer.first).toBeNull();
+    expect(answer.longest).toEqual({ start: 0, end: 1 });
+    expect(new RegExp('(a*)*b|a').exec('a'.repeat(24))?.[0]).toBe('a');
+  });
+
+  it('a pattern that really has no match is not marked as given up', () => {
+    const answer = whichAnswer(construct('b'), parse('b'), ['a', 'a']);
+    expect(answer.firstExhausted).toBe(false);
+    expect(answer.first).toBeNull();
+  });
+});
+
+describe('open attempts are not blamed for the budget', () => {
+  it('when the budget runs out, the first step is still open (ok null), not a failure', () => {
+    const r = matchAt(parse('(a*)*b').root, Array.from({ length: 24 }, () => 'a'), 0, { budget: 1000, mustEnd: true, traceLimit: 50 });
+    expect(r.status).toBe('budget');
+    expect(r.trace[0].ok).toBeNull();
+    expect(r.trace.every((e) => e.ok === null || typeof e.ok === 'boolean')).toBe(true);
+  });
+});
+
+describe('subjects and patterns the dialect refuses', () => {
+  it('line breaks in a subject are refused with a position, so the two engines never disagree about a dot', () => {
+    for (const ch of ['\n', '\r', String.fromCharCode(0x2028), String.fromCharCode(0x2029)]) {
+      const r = parseSubject('ab' + ch + 'c');
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toMatch(/^Position 3:/);
+    }
+  });
+
+  it('an unclosed group names the group, not an empty alternative', () => {
+    for (const p of ['(', '()', '(a|']) {
+      const r = parsePattern(p);
+      expect(r.ok, p).toBe(false);
+      if (!r.ok && p !== '()') expect(r.error, p).toMatch(/never closed/);
+    }
   });
 });

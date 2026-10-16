@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { growthTable, runNfa, subsetSizes, type RunMode } from './engines';
+import { DFA_STATE_CAP, growthTable, runNfa, subsetSizes, type RunMode } from './engines';
 import { runFrames } from './frames';
 import { NfaDrawing } from './NfaDrawing';
 import { OPENING, PRESETS } from './opening';
@@ -44,7 +44,12 @@ export function RunScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Lit states" value={f.set.length} color="var(--hi)" sub={`of ${states} in the machine`} />
           <Stat label="Work so far" value={f.work} color="var(--info)" sub={`${plural(n, 'character')} x ${plural(states, 'state')} is at most ${n * states}`} />
-          <Stat label="DFA states" value={sizes.dfaStates} color="var(--violet)" sub={`the same machine as a DFA (NFA: ${sizes.nfaStates})`} />
+          <Stat
+            label="DFA states"
+            value={sizes.capped ? `over ${DFA_STATE_CAP}` : sizes.dfaStates}
+            color="var(--violet)"
+            sub={sizes.capped ? `too big to build here (NFA: ${sizes.nfaStates})` : `the same machine as a DFA, dead state included (NFA: ${sizes.nfaStates})`}
+          />
           <Stat
             label="Verdict"
             value={f.verdict === null ? 'reading' : f.verdict ? 'match' : 'no match'}
@@ -105,7 +110,15 @@ export function RunScene({ picker }: { picker: ReactNode }) {
         <div className="re-subset">
           <SectionTitle>The same machine as a DFA</SectionTitle>
           <p className="re-note">
-            Subset construction turns this {sizes.nfaStates}-state NFA into a {sizes.dfaStates}-state DFA, which lights one state per character: faster per character. The DFA can be much bigger, as these patterns show (each adds one {'[ab]'} at the end):
+            {sizes.capped ? (
+              <>
+                Subset construction would turn this {sizes.nfaStates}-state NFA into a DFA of more than {DFA_STATE_CAP} states, so it stops here: the DFA is too big to draw or count. That blow-up is the point, as these patterns show (each adds one {'[ab]'} at the end):
+              </>
+            ) : (
+              <>
+                Subset construction turns this {sizes.nfaStates}-state NFA into a {sizes.dfaStates}-state DFA, which lights one state per character: faster per character. The DFA can be much bigger, as these patterns show (each adds one {'[ab]'} at the end):
+              </>
+            )}
           </p>
           <table className="data-table re-growth">
             <thead>

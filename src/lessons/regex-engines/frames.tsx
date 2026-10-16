@@ -129,7 +129,7 @@ export interface TraceFrame extends Frame {
   at: number;
 }
 
-const outcomeText = (ok: boolean | null) => (ok === null ? 'the budget ran out here' : ok ? 'it fit, and the rest of the pattern went on to match' : 'it failed, so the matcher backs up');
+const outcomeText = (ok: boolean | null) => (ok === null ? 'it was still running when the budget ran out (a deeper attempt was the one stopped)' : ok ? 'it fit, and the rest of the pattern went on to match' : 'it failed, so the matcher backs up');
 
 export function traceFrames(parsed: ParsedRegex, result: BacktrackResult, subject: readonly string[]): TraceFrame[] {
   const byId = new Map(nodesInOrder(parsed.root).map((n) => [n.id, n]));

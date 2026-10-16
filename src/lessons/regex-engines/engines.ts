@@ -2,7 +2,7 @@
  * What the two kinds of engine do with one pattern and one subject: the NFA simulation (a set of states
  * per character), the subset DFA it could become, and the backtracking matcher's step count beside them.
  */
-import { dfaStep, epsilonClosure, nfaStep, subsetConstruct, type Dfa, type State } from '../../core/automata';
+import { dfaStep, epsilonClosure, nfaStep, subsetName, type Dfa, type State } from '../../core/automata';
 import { matchAt, searchLeftmost, type BacktrackResult } from './backtrack';
 import { parsePattern, type ParsedRegex } from './regexParse';
 import { buildNfa, symbolOf, type Construction } from './thompson';
@@ -64,9 +64,34 @@ export function dfaAccepts(dfa: Dfa, symbols: readonly string[]): boolean {
   return state !== null && dfa.accept.includes(state);
 }
 
-/** The subset DFA's size next to the NFA's. */
-export function subsetSizes(c: Construction): { nfaStates: number; dfaStates: number } {
-  return { nfaStates: c.nfa.states.length, dfaStates: subsetConstruct(c.nfa).dfa.states.length };
+/** The most DFA states the Run scene builds: a typed pattern can need millions (`.*a` and 21 dots), so the construction stops here and says so. */
+export const DFA_STATE_CAP = 256;
+
+export interface SubsetSizes {
+  nfaStates: number;
+  /** The DFA's states, the dead (empty-set) state included; when `capped`, the count where the construction stopped. */
+  dfaStates: number;
+  /** True when the subset construction passed DFA_STATE_CAP and was abandoned. */
+  capped: boolean;
+}
+
+/** The subset DFA's size next to the NFA's. Counts the reachable subsets the way `subsetConstruct` does, but gives up past the cap. */
+export function subsetSizes(c: Construction, cap = DFA_STATE_CAP): SubsetSizes {
+  const { nfa } = c;
+  const start = subsetName(epsilonClosure(nfa, [nfa.start]));
+  const seen = new Set([start]);
+  const queue: State[][] = [epsilonClosure(nfa, [nfa.start])];
+  for (let i = 0; i < queue.length; i++) {
+    for (const symbol of nfa.alphabet) {
+      const to = nfaStep(nfa, queue[i], symbol);
+      const name = subsetName(to);
+      if (seen.has(name)) continue;
+      seen.add(name);
+      if (seen.size > cap) return { nfaStates: nfa.states.length, dfaStates: seen.size, capped: true };
+      queue.push(to);
+    }
+  }
+  return { nfaStates: nfa.states.length, dfaStates: seen.size, capped: false };
 }
 
 export const GROWTH_MAX_K = 4;
@@ -110,6 +135,8 @@ export function leftmostFirst(parsed: ParsedRegex, subject: readonly string[]): 
 export interface WhichAnswer {
   /** The span each rule picks, or null for no match. */
   first: { start: number; end: number } | null;
+  /** True when the backtracking matcher hit STEP_BUDGET: `first` is then null because it never finished, not because nothing matches. */
+  firstExhausted: boolean;
   longest: { start: number; end: number } | null;
   /** Every end the NFA allows from the leftmost start. */
   ends: number[];
@@ -120,6 +147,7 @@ export function whichAnswer(c: Construction, parsed: ParsedRegex, subject: reado
   const cand = candidateMatches(c, subject);
   const bt = leftmostFirst(parsed, subject);
   return {
+    firstExhausted: bt.status === 'budget',
     first: bt.status === 'match' ? { start: bt.start, end: bt.end } : null,
     longest: cand ? { start: cand.start, end: Math.max(...cand.ends) } : null,
     ends: cand?.ends ?? [],

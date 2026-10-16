@@ -101,7 +101,7 @@ function reader(): { read: (c: TokenCursor) => KitRead<ParsedRegex & { source: s
       case 'open': {
         const index = ++groups;
         const inner = readAlt(c);
-        if (!inner.ok) return inner;
+        if (!inner.ok) return c.peek() ? inner : c.failAt(t, 'the group opened here is never closed: add a ).');
         const end = c.accept('close');
         if (!end) return c.failAt(t, `the group opened here is never closed: add a ).`);
         closed.add(index);
@@ -184,11 +184,16 @@ export function parsePattern(text: string): PatternParse {
   return { ok: true, value: { ...parsed.value, source: text } };
 }
 
+/** The characters a `.` never matches in ECMAScript; subjects here cannot contain them, so both engines read a dot the same way. */
+export const LINE_TERMINATORS: ReadonlySet<string> = new Set(['\n', '\r', '\u2028', '\u2029']);
+
 export type SubjectParse = { ok: true; value: string[] } | { ok: false; error: string };
 
 /** The subject as code points, at most 24 of them. Any character is allowed: it is only ever matched, never read as a pattern. */
 export function parseSubject(text: string): SubjectParse {
   const chars = [...text];
+  const lineBreak = chars.findIndex((ch) => LINE_TERMINATORS.has(ch));
+  if (lineBreak >= 0) return { ok: false, error: `Position ${lineBreak + 1}: line breaks are not part of this lesson's subjects (the NFA and the backtracker would disagree about what a dot matches).` };
   if (chars.length > MAX_SUBJECT_CHARS) return { ok: false, error: `That subject is ${chars.length} characters; the limit is ${MAX_SUBJECT_CHARS}.` };
   return { ok: true, value: chars };
 }

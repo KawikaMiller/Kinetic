@@ -9,9 +9,9 @@
  * A STEP is one attempt of one tree node at one position. Step counts belong to this matcher; they say
  * nothing about the speed of any real engine.
  */
-import type { RegexNode } from './regexParse';
+import { LINE_TERMINATORS, type RegexNode } from './regexParse';
 
-/** One attempt of a node at a position. `ok` is true when the match went on to succeed, false when the attempt failed and the matcher backed up. */
+/** One attempt of a node at a position. `ok` is true when the match went on to succeed, false when the attempt failed and the matcher backed up, null when it was still running (an open ancestor of the attempt) when the budget ran out. */
 export interface TraceEvent {
   /** 1-based step number. */
   step: number;
@@ -40,7 +40,6 @@ export interface BacktrackResult {
   traceTruncated: boolean;
 }
 
-const LINE_TERMINATORS = new Set(['\n', '\r', ' ', ' ']);
 
 class BudgetExhausted extends Error {}
 

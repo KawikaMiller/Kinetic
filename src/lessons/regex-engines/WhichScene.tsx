@@ -4,7 +4,7 @@ import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { whichCaption } from './captions';
-import { runNfa, whichAnswer } from './engines';
+import { runNfa, STEP_BUDGET, whichAnswer } from './engines';
 import { NfaDrawing } from './NfaDrawing';
 import { OPENING, type WhichRule } from './opening';
 import { PresetChips, RegexFields } from './RegexFields';
@@ -41,7 +41,12 @@ export function WhichScene({ picker }: { picker: ReactNode }) {
       introKey={`${input.parsed.source}|${input.subject.join('')}|${rule}`}
       stats={
         <Stats>
-          <Stat label="Leftmost-first" value={describeSpan(textOf(answer.first))} color={rule === 'first' ? 'var(--hi)' : 'var(--muted)'} sub="alternatives tried in order" />
+          <Stat
+            label="Leftmost-first"
+            value={answer.firstExhausted ? 'gave up' : describeSpan(textOf(answer.first))}
+            color={answer.firstExhausted ? 'var(--orange)' : rule === 'first' ? 'var(--hi)' : 'var(--muted)'}
+            sub={answer.firstExhausted ? `did not finish within ${STEP_BUDGET.toLocaleString('en-US')} steps` : 'alternatives tried in order'}
+          />
           <Stat label="Longest" value={describeSpan(textOf(answer.longest))} color={rule === 'longest' ? 'var(--hi)' : 'var(--muted)'} sub="of every end the NFA allows" />
           <Stat label="Ends allowed" value={answer.ends.length ? answer.ends.join(', ') : 'none'} color="var(--info)" sub="end positions of accepting runs" />
         </Stats>
@@ -51,6 +56,7 @@ export function WhichScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--hi)', label: 'rule now in use', shape: 'square' },
             { color: 'var(--ok)', label: 'matched characters / accepting state lit', shape: 'square' },
+            { color: 'var(--orange)', label: 'backtracker gave up (step budget)', shape: 'square' },
           ]}
         />
       }
