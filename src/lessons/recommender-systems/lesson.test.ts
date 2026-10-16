@@ -6,12 +6,16 @@ import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { cellSpec } from './cells';
+import { LIKE_AT, ROUNDS, mostShown, ratingRank, simulateLoop } from './loop';
+import { PINNED_LOOP_SEEDS, measureLoopSeeds } from './loopSeeds';
+import { editsSummary, meanBaselineRmse, toggleHidden } from './problem';
 import { factoriseCaption, funnelCaption, loopCaption, matrixCaption, neighbourCaption } from './captions';
 import { DATA, factoriseFacts, funnelFacts, loopFacts, matrixFacts, mfFor, neighbourFacts, problemFor, referenceFor } from './facts';
 import lesson from './index';
 import { rank } from './funnel';
 import { scoreNeighbours } from './neighbours';
 import { EMPTY_EDITS, NEW_USER, rateNewUser } from './problem';
+import { ITEMS, USERS } from './data';
 import { FACTOR_DEFAULT, FUNNEL_DEFAULT, LOOP_DEFAULT, MATRIX_DEFAULT, NEIGHBOUR_DEFAULT, REFERENCE_MF } from './settings';
 
 describe('scene switches', () => {
@@ -50,11 +54,35 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(lesson.tryThis[1]).toContain(`has risen to ${f.over.test[f.epochs].toFixed(2)}`);
   });
 
+  it('try-this 2 (M3): the penalty fixes the rise and fewer factors alone do not; held-out error is not monotone in the factor count at lambda 0', () => {
+    const f = factoriseFacts();
+    const p = problemFor();
+    const E = FACTOR_DEFAULT.epochs;
+    expect(f.penalised.test[E]).toBeLessThan(f.over.test[E] - 0.05);
+    expect(f.penalised.test[E] - f.penalised.test[f.penalised.bestEpoch]).toBeLessThan(0.02);
+    expect(f.twoNoPenalty.test[E] - f.twoNoPenalty.test[f.twoNoPenalty.bestEpoch]).toBeGreaterThan(0.05);
+    const final = (factors: number) => mfFor(p, { factors }).test[E];
+    expect(final(2)).toBeGreaterThan(final(6));
+    expect(final(3)).toBeGreaterThan(final(6));
+    expect(lesson.tryThis[1]).toContain('The penalty, not fewer factors, is what stops it');
+    expect(lesson.tryThis[1]).toContain(`${f.penalised.test[E].toFixed(2)}`);
+    expect(lesson.keyIdeas[0]).not.toMatch(/many latent factors/);
+  });
+
   it('try-this 3: an overlap of 2 covers most held-out cells and 5 covers far fewer, and the factorisation beats the neighbours', () => {
     const f = neighbourFacts();
     expect(f.open.coverage).toBeGreaterThan(0.5);
     expect(f.strict.coverage).toBeLessThan(0.2);
     expect(f.mf).toBeLessThan(f.open.rmse);
+    // the overall-mean bar, from an independent count over the held-out cells
+    const p = problemFor();
+    const trainMean = p.train.reduce((s, r) => s + r.rating, 0) / p.train.length;
+    let sq = 0;
+    for (let u = 0; u < USERS; u++) for (let i = 0; i < ITEMS; i++) if (p.seen(u, i) === null) sq += (DATA.truth[u][i] - trainMean) ** 2;
+    expect(f.baseline).toBeCloseTo(Math.sqrt(sq / p.test.length), 12);
+    expect(f.open.rmse).toBeGreaterThan(f.baseline);
+    expect(expectCaption(neighbourCaption(f.open, f.mf, 2, f.baseline))).toContain('worse than predicting the overall mean');
+    expect(lesson.tryThis[2]).toContain(`${f.baseline.toFixed(2)} for just predicting the overall mean`);
     expect(lesson.tryThis[2]).toContain(`${Math.round(f.strict.coverage * 100)}% of cells are covered`);
   });
 
@@ -64,12 +92,21 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(lesson.tryThis[3]).toContain('Set Weight on popularity to 100%');
   });
 
-  it('try-this 5: no exploration puts all impressions on three films, 10% exploration lowers the Gini', () => {
+  it('try-this 5: the loop concentrates more than the same rule with no feedback, 10% exploration lowers the Gini, and the Gini rises over the rounds', () => {
     const f = loopFacts();
-    expect(f.topOff).toBe(1);
+    expect(f.giniOff).toBeGreaterThan(f.giniFree + 0.1);
     expect(f.giniOn).toBeLessThan(f.giniOff);
-    expect(f.topOn).toBeLessThan(f.topOff);
-    expect(lesson.tryThis[4]).toContain('the top three films take 100%');
+    expect(f.off.giniByRound.at(-1)!).toBeGreaterThan(f.off.giniByRound[0] + 0.1);
+    expect(new Set(f.off.giniByRound).size).toBeGreaterThan(ROUNDS / 2);
+    expect(f.topFilmOff).not.toBe(f.topFilmFree);
+    expect(lesson.tryThis[4]).toContain(`exposure Gini is ${f.giniOff.toFixed(2)}, against ${f.giniFree.toFixed(2)}`);
+  });
+
+  it('try-this 5 and quiz 4 quote seed rates that a fresh 200-seed measurement reproduces', () => {
+    expect(measureLoopSeeds(DATA.truth)).toEqual(PINNED_LOOP_SEEDS);
+    expect(PINNED_LOOP_SEEDS.winnerDiffers).toBeGreaterThan(PINNED_LOOP_SEEDS.streams * 0.3);
+    expect(lesson.tryThis[4]).toContain(`${PINNED_LOOP_SEEDS.winnerDiffers}`);
+    expect(lesson.quiz[3].why).toContain(`${PINNED_LOOP_SEEDS.giniHigher} of ${PINNED_LOOP_SEEDS.streams}`);
   });
 });
 
@@ -102,7 +139,7 @@ describe('captions follow the controls', () => {
     const mf = referenceFor(p).test[REFERENCE_MF.epochs];
     for (let m = 1; m <= 6; m++) {
       const s = scoreNeighbours(p, m);
-      expect(expectCaption(neighbourCaption(s, mf, m))).toContain(`${Math.round(s.coverage * 100)}% of held-out cells`);
+      expect(expectCaption(neighbourCaption(s, mf, m, meanBaselineRmse(p)))).toContain(`${Math.round(s.coverage * 100)}% of held-out cells`);
     }
   });
 
@@ -118,10 +155,32 @@ describe('captions follow the controls', () => {
     }
   });
 
-  it('the loop caption prints the Ginis it measured', () => {
+  it('the loop caption prints the Ginis it measured, names the films and says whether the two runs agree', () => {
     const f = loopFacts();
-    expect(expectCaption(loopCaption(false, f.giniOff, f.giniOn, f.topOff, 50))).toContain(f.giniOff.toFixed(2));
-    expect(expectCaption(loopCaption(true, f.giniOn, f.giniOff, f.topOn, 50))).toContain('10% random exploration');
+    const input = { exploration: false, gini: f.giniOff, giniFree: f.giniFree, top: f.topFilmOff, rank: f.rankOff, topFree: f.topFilmFree, rankFree: f.rankFree, rounds: 50 };
+    const c = expectCaption(loopCaption(input));
+    expect(c).toContain(f.giniOff.toFixed(2));
+    expect(c).toContain(f.giniFree.toFixed(2));
+    expect(c).toContain('The two runs favour different films');
+    expect(expectCaption(loopCaption({ ...input, top: f.topFilmFree, exploration: true }))).toContain('Here both runs favour the same film');
+    expect(expectCaption(loopCaption({ ...input, exploration: true }))).toContain('10% random exploration');
+    expect(f.rankOff).toBe(ratingRank(DATA.truth, f.topFilmOff));
+  });
+
+  it('the matrix edits reach scenes 2 to 4, so the edits strip must say so (M1)', () => {
+    // try-this 1's two clicks, then the numbers try-this 2 and 3 quote change: the strip is what tells the learner why
+    const [u, i] = DATA.observed.flatMap((row, r) => row.map((o, c) => (o ? [r, c] : null))).find((x) => x !== null) as [number, number];
+    const edited = rateNewUser(toggleHidden(DATA, EMPTY_EDITS, u, i), 0, MATRIX_DEFAULT.rateAs);
+    const base = problemFor();
+    const after = problemFor(edited);
+    const E = FACTOR_DEFAULT.epochs;
+    expect(mfFor(after).test[E]).not.toBeCloseTo(mfFor(base).test[E], 2);
+    expect(scoreNeighbours(after, 2).rmse).not.toBeCloseTo(scoreNeighbours(base, 2).rmse, 2);
+    expect(editsSummary(edited)).toContain('1 observed rating hidden and 1 rating given as the new user');
+    expect(editsSummary(EMPTY_EDITS)).toContain('not edited');
+    expect(editsSummary(toggleHidden(DATA, EMPTY_EDITS, u, i))).not.toContain('new user');
+    expect(lesson.tryThis[1]).toContain('Reset my edits');
+    expect(lesson.tryThis[2]).toContain('Reset my edits');
   });
 });
 

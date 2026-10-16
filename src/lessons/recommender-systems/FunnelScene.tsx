@@ -6,10 +6,11 @@ import { funnelCaption } from './captions';
 import { DEFAULT_SEED, FILM_TITLES, ITEMS, USERS } from './data';
 import { DATA, referenceFor } from './facts';
 import { CANDIDATES, SHOWN, candidates, itemFeatures, rank } from './funnel';
+import { EditsStrip } from './EditsStrip';
 import { buildProblem, type Edits } from './problem';
 import { FUNNEL_DEFAULT } from './settings';
 
-export function FunnelScene({ picker, edits }: { picker: ReactNode; edits: Edits }) {
+export function FunnelScene({ picker, edits, setEdits }: { picker: ReactNode; edits: Edits; setEdits: (e: Edits) => void }) {
   const [user, setUser] = useState<number>(FUNNEL_DEFAULT.user);
   const [weightPct, setWeightPct] = useState<number>(FUNNEL_DEFAULT.popularityPct);
   const problem = useMemo(() => buildProblem(DATA, edits), [edits]);
@@ -36,7 +37,7 @@ export function FunnelScene({ picker, edits }: { picker: ReactNode; edits: Edits
       legend={
         <Legend
           items={[
-            { color: 'var(--info)', label: 'candidate generation: exact dot product', shape: 'square' },
+            { color: 'var(--info)', label: 'candidate generation: exact dot product of the fixed 2-factor, regularisation 0.02 model (the one in the Neighbours scene), not the Factorise sliders', shape: 'square' },
             { color: 'var(--violet)', label: 'ranker: model plus invented popularity and freshness', shape: 'square' },
             { color: 'var(--hi)', label: 'the films shown', shape: 'square' },
           ]}
@@ -51,6 +52,7 @@ export function FunnelScene({ picker, edits }: { picker: ReactNode; edits: Edits
       ]}
     >
       <div className="rec-stage stage-pad">
+        <EditsStrip edits={edits} setEdits={setEdits} />
         <div className="rec-funnel">
           <Box>
             <SectionTitle hint="stage 1">Candidates by dot product</SectionTitle>
@@ -73,7 +75,7 @@ export function FunnelScene({ picker, edits }: { picker: ReactNode; edits: Edits
         </div>
         <ProvenanceRow>
           <Provenance kind="illustrative" seed={DATA.seed}>invented ratings; popularity and freshness are invented numbers, not measured</Provenance>
-          <Provenance kind="toy">15 films: the exact dot-product search here is approximate nearest-neighbour search at scale; counts like millions are illustrative</Provenance>
+          <Provenance kind="toy">15 films: real systems use approximate nearest-neighbour search at scale; counts like millions are illustrative</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

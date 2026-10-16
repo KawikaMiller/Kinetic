@@ -1,10 +1,10 @@
 /** The numbers the try-this entries, captions and quiz explanations quote, each computed from the model. */
 import { DEFAULT_SEED, ITEMS, dataset, countObserved } from './data';
 import { candidates, itemFeatures, rank } from './funnel';
-import { EXPLORATION, simulateLoop, topShare } from './loop';
+import { EXPLORATION, mostShown, ratingRank, simulateLoop } from './loop';
 import { runMf, type MfConfig, type MfRun } from './mf';
 import { scoreNeighbours } from './neighbours';
-import { EMPTY_EDITS, NEW_USER, buildProblem, rateNewUser, toggleHidden, type Edits, type Problem } from './problem';
+import { EMPTY_EDITS, NEW_USER, buildProblem, meanBaselineRmse, rateNewUser, toggleHidden, type Edits, type Problem } from './problem';
 import { FACTOR_DEFAULT, FUNNEL_DEFAULT, LOOP_DEFAULT, MATRIX_DEFAULT, NEIGHBOUR_DEFAULT, REFERENCE_MF } from './settings';
 
 export const DATA = dataset(DEFAULT_SEED);
@@ -28,9 +28,11 @@ export function factoriseFacts() {
   const p = problemFor();
   const over = mfFor(p);
   const small = mfFor(p, { factors: 2, lambda: 0.02 });
+  const penalised = mfFor(p, { lambda: 0.02 });
+  const twoNoPenalty = mfFor(p, { factors: 2 });
   const E = FACTOR_DEFAULT.epochs;
-  const spreadOf = (user: number) => Math.max(...Array.from({ length: ITEMS }, (_, i) => Math.abs(small.predict(user, i) - p.mean)));
-  return { coldSpread: spreadOf(NEW_USER), warmSpread: spreadOf(0), over, small, epochs: E, trainDrop: over.train[over.bestEpoch] - over.train[E], testRise: over.test[E] - over.test[over.bestEpoch] };
+  const spreadOf = (run: MfRun, user: number) => Math.max(...Array.from({ length: ITEMS }, (_, i) => Math.abs(run.predict(user, i) - p.mean)));
+  return { coldSpread: spreadOf(small, NEW_USER), warmSpread: spreadOf(small, 0), coldSpreadDefault: spreadOf(over, NEW_USER), over, small, penalised, twoNoPenalty, epochs: E, trainDrop: over.train[over.bestEpoch] - over.train[E], testRise: over.test[E] - over.test[over.bestEpoch] };
 }
 
 export function neighbourFacts() {
@@ -41,6 +43,7 @@ export function neighbourFacts() {
     strict: scoreNeighbours(p, 5),
     loose: scoreNeighbours(p, 1),
     mf: ref.test[REFERENCE_MF.epochs],
+    baseline: meanBaselineRmse(p),
   };
 }
 
@@ -56,5 +59,12 @@ export function funnelFacts() {
 export function loopFacts() {
   const off = simulateLoop(DATA.truth, LOOP_DEFAULT.seed, 0);
   const on = simulateLoop(DATA.truth, LOOP_DEFAULT.seed, EXPLORATION);
-  return { off, on, giniOff: off.giniByRound.at(-1)!, giniOn: on.giniByRound.at(-1)!, topOff: topShare(off.exposure), topOn: topShare(on.exposure) };
+  const free = simulateLoop(DATA.truth, LOOP_DEFAULT.seed, 0, 'everyone');
+  const last = (run: typeof off) => run.giniByRound.at(-1)!;
+  return {
+    off, on, free,
+    giniOff: last(off), giniOn: last(on), giniFree: last(free),
+    topFilmOff: mostShown(off.exposure), topFilmFree: mostShown(free.exposure),
+    rankOff: ratingRank(DATA.truth, mostShown(off.exposure)), rankFree: ratingRank(DATA.truth, mostShown(free.exposure)),
+  };
 }

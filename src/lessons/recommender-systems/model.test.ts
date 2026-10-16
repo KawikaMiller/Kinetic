@@ -5,7 +5,7 @@ import { mulberry32 } from '../../core/random';
 import { DEFAULT_SEED, ITEMS, USERS, countObserved, dataset, generate, observedMask } from './data';
 import { DATA, problemFor } from './facts';
 import { candidates, rank, itemFeatures, CANDIDATES } from './funnel';
-import { gini, simulateLoop, EXPLORATION, ROUNDS, SLATE } from './loop';
+import { gini, simulateLoop, EXPLORATION, LIKE_AT, ROUNDS, SLATE } from './loop';
 import { centred, fitFull, runMf } from './mf';
 import { predictCell, scoreNeighbours, similarity, userRatings, type UserRatings } from './neighbours';
 import { EMPTY_EDITS, NEW_USER, TOTAL_USERS, buildProblem, rateNewUser, toggleHidden } from './problem';
@@ -193,13 +193,35 @@ describe('the feedback loop', () => {
     }
   });
 
-  it('every round shows every user a slate of 3, and exploration lowers the final exposure Gini on 20 seeds', () => {
-    for (let seed = 1; seed <= 20; seed++) {
+  it('every round shows every user a slate of 3, and exploration lowers the final exposure Gini on at least 95% of 200 seeds', () => {
+    let lower = 0;
+    for (let seed = 1; seed <= 200; seed++) {
       const off = simulateLoop(DATA.truth, seed, 0);
       const on = simulateLoop(DATA.truth, seed, EXPLORATION);
       expect(off.exposure.reduce((a, b) => a + b, 0)).toBe(ROUNDS * USERS * SLATE);
       expect(on.exposure.reduce((a, b) => a + b, 0)).toBe(ROUNDS * USERS * SLATE);
-      expect(on.giniByRound.at(-1)!, `seed ${seed}`).toBeLessThan(off.giniByRound.at(-1)!);
+      if (on.giniByRound.at(-1)! < off.giniByRound.at(-1)!) lower++;
+    }
+    expect(lower / 200).toBeGreaterThanOrEqual(0.95);
+  });
+
+  it('the no-feedback run learns exactly rounds x true likes, the loop learns only from what it showed (independent count)', () => {
+    const trueLikes = Array.from({ length: ITEMS }, (_, i) => DATA.truth.filter((row) => row[i] >= LIKE_AT).length);
+    const free = simulateLoop(DATA.truth, 3, 0, 'everyone');
+    expect(free.likes).toEqual(trueLikes.map((n) => n * ROUNDS));
+    const loop = simulateLoop(DATA.truth, 3, 0);
+    loop.likes.forEach((l, i) => expect(l).toBeLessThanOrEqual(loop.exposure[i]));
+    // a film the loop never showed has no likes, however popular it is in truth
+    const unseen = loop.exposure.findIndex((e) => e === 0);
+    if (unseen >= 0) expect(loop.likes[unseen]).toBe(0);
+  });
+
+  it('the degenerate loop is gone: the Gini curve moves, and feedback ends more concentrated than no feedback on every one of 200 seeds', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const loop = simulateLoop(DATA.truth, seed, 0);
+      const free = simulateLoop(DATA.truth, seed, 0, 'everyone');
+      expect(new Set(loop.giniByRound).size, `seed ${seed}`).toBeGreaterThan(10);
+      expect(gini(loop.exposure), `seed ${seed}`).toBeGreaterThan(gini(free.exposure));
     }
   });
 });

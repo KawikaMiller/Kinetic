@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { matrixCaption } from './captions';
 import { DATA } from './facts';
-import { RATING_MAX, RATING_MIN, USERS } from './data';
+import { ITEMS, RATING_MAX, RATING_MIN, USERS } from './data';
 import { MATRIX_DEFAULT } from './settings';
 import { EMPTY_EDITS, NEW_USER, buildProblem, rateNewUser, toggleHidden, type Edits } from './problem';
 import { RatingGrid } from './RatingGrid';
@@ -26,7 +26,7 @@ export function MatrixScene({ picker, edits, setEdits }: { picker: ReactNode; ed
       introKey={caption}
       stats={
         <Stats>
-          <Stat label="Ratings the model can see" value={problem.train.length - Object.keys(edits.newUser).length} sub={`of ${USERS * 15} cells, plus ${Object.keys(edits.newUser).length} from the new user`} />
+          <Stat label="Ratings the model can see" value={problem.train.length - Object.keys(edits.newUser).length} sub={`of ${USERS * ITEMS} cells, plus ${Object.keys(edits.newUser).length} from the new user`} />
           <Stat label="Held-out cells" value={problem.test.length} color="var(--violet)" sub="their true rating is hidden from the model" />
           <Stat label="Hidden by you" value={edits.hidden.length} color={edits.hidden.length ? 'var(--dim)' : undefined} sub="click an observed rating to hide it" />
         </Stats>

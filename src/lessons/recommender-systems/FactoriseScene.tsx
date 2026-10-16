@@ -7,12 +7,13 @@ import { factoriseCaption, rmse2 } from './captions';
 import { DATA } from './facts';
 import { runMf, type MfConfig } from './mf';
 import { EPOCHS_MAX, FACTOR_DEFAULT, LAMBDA_MAX, RATE_MAX, RATE_MIN } from './settings';
+import { EditsStrip } from './EditsStrip';
 import { buildProblem, type Edits } from './problem';
 import { RatingGrid } from './RatingGrid';
 
 const FACTOR_OPTIONS = [1, 2, 3, 4, 5, 6].map((k) => ({ value: k, label: String(k) }));
 
-export function FactoriseScene({ picker, edits }: { picker: ReactNode; edits: Edits }) {
+export function FactoriseScene({ picker, edits, setEdits }: { picker: ReactNode; edits: Edits; setEdits: (e: Edits) => void }) {
   const [factors, setFactors] = useState<number>(FACTOR_DEFAULT.factors);
   const [lambda, setLambda] = useState<number>(FACTOR_DEFAULT.lambda);
   const [learningRate, setLearningRate] = useState<number>(FACTOR_DEFAULT.learningRate);
@@ -61,6 +62,7 @@ export function FactoriseScene({ picker, edits }: { picker: ReactNode; edits: Ed
       ]}
     >
       <div className="rec-stage stage-pad">
+        <EditsStrip edits={edits} setEdits={setEdits} />
         <Box>
           <SectionTitle hint="stochastic gradient descent, one rating per update">Error after each epoch</SectionTitle>
           <div className="rec-plot">
@@ -78,7 +80,7 @@ export function FactoriseScene({ picker, edits }: { picker: ReactNode; edits: Ed
         <ProvenanceRow>
           <Provenance kind="illustrative" seed={DATA.seed}>invented ratings, hidden rank-2 structure plus noise</Provenance>
           <Provenance kind="simulated" seed={FACTOR_DEFAULT.seed}>seeded factorisation trained live by SGD</Provenance>
-          <Provenance kind="toy">few observed ratings and many factors overfit; real systems use far more data</Provenance>
+          <Provenance kind="toy">few observed ratings and too much fitting capacity (epochs, factors, no penalty) overfit; real systems use far more data</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

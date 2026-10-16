@@ -6,17 +6,19 @@ import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '..
 import { neighbourCaption, rmse2 } from './captions';
 import { DATA, referenceFor } from './facts';
 import { MIN_OVERLAP_MAX, scoreNeighbours } from './neighbours';
-import { buildProblem, type Edits } from './problem';
+import { EditsStrip } from './EditsStrip';
+import { buildProblem, meanBaselineRmse, type Edits } from './problem';
 import { NEIGHBOUR_DEFAULT, REFERENCE_MF } from './settings';
 
 const BAR_MAX_RMSE = 1.5;
 
-export function NeighbourScene({ picker, edits }: { picker: ReactNode; edits: Edits }) {
+export function NeighbourScene({ picker, edits, setEdits }: { picker: ReactNode; edits: Edits; setEdits: (e: Edits) => void }) {
   const [minOverlap, setMinOverlap] = useState<number>(NEIGHBOUR_DEFAULT.minOverlap);
   const problem = useMemo(() => buildProblem(DATA, edits), [edits]);
   const score = useMemo(() => scoreNeighbours(problem, minOverlap), [problem, minOverlap]);
   const mf = useMemo(() => referenceFor(problem).test[REFERENCE_MF.epochs], [problem]);
-  const caption = neighbourCaption(score, mf, minOverlap);
+  const baseline = useMemo(() => meanBaselineRmse(problem), [problem]);
+  const caption = neighbourCaption(score, mf, minOverlap, baseline);
 
   return (
     <StageFrame
@@ -30,7 +32,7 @@ export function NeighbourScene({ picker, edits }: { picker: ReactNode; edits: Ed
           <Stat label="Factorisation: held-out RMSE" value={rmse2(mf)} color="var(--violet)" sub={`${REFERENCE_MF.factors} factors, lambda ${REFERENCE_MF.lambda}, ${REFERENCE_MF.epochs} epochs`} />
         </Stats>
       }
-      legend={<Legend items={[{ color: 'var(--info)', label: 'neighbours', shape: 'square' }, { color: 'var(--violet)', label: 'factorisation', shape: 'square' }]} />}
+      legend={<Legend items={[{ color: 'var(--info)', label: 'neighbours', shape: 'square' }, { color: 'var(--violet)', label: 'factorisation', shape: 'square' }, { color: 'var(--dim)', label: 'the overall mean', shape: 'square' }]} />}
       controls={[
         <>
           {picker}
@@ -39,13 +41,15 @@ export function NeighbourScene({ picker, edits }: { picker: ReactNode; edits: Ed
       ]}
     >
       <div className="rec-stage stage-pad">
+        <EditsStrip edits={edits} setEdits={setEdits} />
         <Box>
           <SectionTitle hint="same held-out cells, lower is better">Two ways to fill the gaps</SectionTitle>
           <div className="rec-bars">
             <Bar value={score.rmse} max={BAR_MAX_RMSE} tone="info" label={<span className="rec-bar-label">User-based neighbours: {rmse2(score.rmse)}</span>} ariaLabel={`Neighbours RMSE ${rmse2(score.rmse)}`} />
+            <Bar value={baseline} max={BAR_MAX_RMSE} tone="dim" label={<span className="rec-bar-label">Just predict the overall mean: {rmse2(baseline)}</span>} ariaLabel={`Overall-mean RMSE ${rmse2(baseline)}`} />
             <Bar value={mf} max={BAR_MAX_RMSE} tone="violet" label={<span className="rec-bar-label">Factorisation: {rmse2(mf)}</span>} ariaLabel={`Factorisation RMSE ${rmse2(mf)}`} />
           </div>
-          <Hint tone="muted" block>Neighbours need users who rated the same films: raise the minimum overlap and fewer cells have anyone to learn from. A factorisation shares what it learns through a few factors, and fails the other way: too few factors cannot express the tastes.</Hint>
+          <Hint tone="muted" block>Neighbours need users who rated the same films: raise the minimum overlap and fewer cells have anyone to learn from. A factorisation shares what it learns through a few factors and fails the other way when it has too few to express the tastes (try 1 factor in Factorise it). At this sparsity neighbours can be no better than the overall mean.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="illustrative" seed={DATA.seed}>invented ratings</Provenance>

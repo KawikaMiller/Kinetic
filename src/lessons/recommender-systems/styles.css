@@ -13,3 +13,4 @@
 @media (max-width: 600px) {
   .rec-funnel { grid-template-columns: minmax(0, 1fr); }
 }
+.rec-edits { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }

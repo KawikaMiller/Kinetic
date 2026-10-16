@@ -4,7 +4,7 @@ import { FILM_TITLES, ITEMS, USERS } from './data';
 import { CANDIDATES, SHOWN } from './funnel';
 import type { MfConfig, MfRun } from './mf';
 import type { NeighbourScore } from './neighbours';
-import { NEW_USER, type Problem } from './problem';
+import type { Problem } from './problem';
 
 export const rmse2 = (v: number) => v.toFixed(2);
 
@@ -27,8 +27,9 @@ export function factoriseCaption(run: MfRun, cfg: MfConfig): string {
   return `${head} Held-out error is ${run.bestEpoch === e ? 'at its lowest so far' : `within ${rmse2(rise)} of its lowest, ${rmse2(run.test[run.bestEpoch])} at epoch ${run.bestEpoch}`}.`;
 }
 
-export function neighbourCaption(score: NeighbourScore, mf: number, minOverlap: number): string {
-  return `Neighbours who share at least ${plural(minOverlap, 'film')}: held-out RMSE ${rmse2(score.rmse)} and ${Math.round(score.coverage * 100)}% of held-out cells have a neighbour who rated the film (the rest use the user's mean). The factorisation scores ${rmse2(mf)} on the same cells.`;
+export function neighbourCaption(score: NeighbourScore, mf: number, minOverlap: number, baseline: number): string {
+  const verdict = score.rmse > baseline ? `worse than predicting the overall mean (${rmse2(baseline)})` : `better than predicting the overall mean (${rmse2(baseline)})`;
+  return `Neighbours who share at least ${plural(minOverlap, 'film')}: held-out RMSE ${rmse2(score.rmse)}, ${verdict}, and ${Math.round(score.coverage * 100)}% of held-out cells have a neighbour who rated the film (the rest use the user's mean). The factorisation scores ${rmse2(mf)} on the same cells.`;
 }
 
 export function funnelCaption(user: number, shown: readonly number[], plain: readonly number[], weightPct: number): string {
@@ -38,8 +39,19 @@ export function funnelCaption(user: number, shown: readonly number[], plain: rea
   return `User ${user + 1}: the ${CANDIDATES} best of the unrated films by dot product go to the ranker, which weights popularity and freshness at ${weightPct}%, and the top ${SHOWN} are shown: ${names}. ${change}`;
 }
 
-export function loopCaption(exploration: boolean, giniSelected: number, giniOther: number, topShare: number, rounds: number): string {
-  return `After ${rounds} rounds ${exploration ? 'with 10% random exploration' : 'with no exploration'} the exposure Gini is ${giniSelected.toFixed(2)} (${exploration ? 'no exploration' : '10% exploration'}: ${giniOther.toFixed(2)}), and the top three films take ${Math.round(topShare * 100)}% of all impressions.`;
+export interface LoopCaptionInput {
+  exploration: boolean;
+  gini: number;
+  /** The same rule with no feedback (it sees every user's true likes). */
+  giniFree: number;
+  top: number;
+  rank: number;
+  topFree: number;
+  rankFree: number;
+  rounds: number;
 }
 
-export const newUserLabel = `User ${NEW_USER + 1} (new)`;
+export function loopCaption(c: LoopCaptionInput): string {
+  const same = c.top === c.topFree ? ' Here both runs favour the same film.' : ' The two runs favour different films.';
+  return `After ${c.rounds} rounds ${c.exploration ? 'with 10% random exploration' : 'with no exploration'} the exposure Gini is ${c.gini.toFixed(2)} against ${c.giniFree.toFixed(2)} for the same rule with no feedback. The loop shows ${FILM_TITLES[c.top]} most (rank ${c.rank} of ${ITEMS} by true mean rating); with no feedback it would be ${FILM_TITLES[c.topFree]} (rank ${c.rankFree}).${same}`;
+}

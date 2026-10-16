@@ -65,3 +65,20 @@ export function buildProblem(data: Dataset, edits: Edits): Problem {
   const lookup = new Map(train.map((r) => [cellKey(r.user, r.item), r.rating]));
   return { data, edits, train, test, mean, seen: (u, i) => lookup.get(cellKey(u, i)) ?? null };
 }
+
+/** RMSE on the held-out cells of predicting every one of them with the mean training rating: the bar any model has to clear. */
+export function meanBaselineRmse(problem: Problem): number {
+  const sum = problem.test.reduce((s, c) => s + (c.truth - problem.mean) ** 2, 0);
+  return Math.sqrt(sum / problem.test.length);
+}
+
+/** One line saying whether the learner's matrix edits are in effect, shown in every scene that reads them. */
+export function editsSummary(edits: Edits): string {
+  const hidden = edits.hidden.length;
+  const rated = Object.keys(edits.newUser).length;
+  if (hidden === 0 && rated === 0) return 'The matrix is as generated: you have not edited it.';
+  const parts = [hidden > 0 && `${hidden} observed ${hidden === 1 ? 'rating' : 'ratings'} hidden`, rated > 0 && `${rated} ${rated === 1 ? 'rating' : 'ratings'} given as the new user`].filter(Boolean);
+  return `Your edits from "The matrix" are in effect: ${parts.join(' and ')}.`;
+}
+
+export const isEdited = (edits: Edits): boolean => edits.hidden.length > 0 || Object.keys(edits.newUser).length > 0;
