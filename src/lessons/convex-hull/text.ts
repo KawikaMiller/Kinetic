@@ -6,7 +6,7 @@ const n = (v: number) => (v < 0 ? `(${v})` : String(v));
 export function crossText(a: P, b: P, c: P): string {
   const [d1x, d1y, d2x, d2y] = [b.x - a.x, b.y - a.y, c.x - a.x, c.y - a.y];
   const value = d1x * d2y - d1y * d2x;
-  return `(${b.x} - ${a.x})(${c.y} - ${a.y}) - (${b.y} - ${a.y})(${c.x} - ${a.x}) = ${n(d1x)} × ${n(d2y)} - ${n(d1y)} × ${n(d2x)} = ${value}`;
+  return `(${b.x} - ${n(a.x)})(${c.y} - ${n(a.y)}) - (${b.y} - ${n(a.y)})(${c.x} - ${n(a.x)}) = ${n(d1x)} × ${n(d2y)} - ${n(d1y)} × ${n(d2x)} = ${value}`;
 }
 
 export type Turn = 'left' | 'right' | 'collinear';
