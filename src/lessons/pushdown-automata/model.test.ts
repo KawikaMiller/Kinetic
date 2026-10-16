@@ -1,0 +1,195 @@
+/**
+ * Independent oracles: counting predicates, reversal, a stack-free scan, brute-force Myhill-Nerode classes of
+ * behaviour, and every string over a small alphabet.
+ */
+import { describe, expect, it } from 'vitest';
+import { accepts, pdaRun, type Dfa } from '../../core/automata';
+
+import { MAX_K, MIN_K, boundedCounter, duel, firstDisagreement, pigeonhole, wordAnBn } from './duel';
+import { CHECK_LENGTH, binaryStrings, checkTable, parseTable, runLearner } from './learner';
+import { MAX_SUBJECT, PRESETS, build, checkSubject, presetById, type Preset } from './machines';
+import { CONFIG_BUDGET, stepRun } from './stepper';
+
+function allStrings(alphabet: readonly string[], max: number): string[] {
+  const out = [''];
+  let layer = [''];
+  for (let n = 1; n <= max; n++) {
+    layer = layer.flatMap((s) => alphabet.map((a) => s + a));
+    for (const w of layer) out.push(w);
+  }
+  return out;
+}
+
+const alphabetOf = (p: Preset) => (p.id === 'brackets' ? ['(', ')'] : p.id === 'brackets2' ? ['(', ')', '[', ']'] : ['a', 'b']);
+/** Exhaustive to length 10 where the alphabet is two letters, to length 8 for four letters (4^10 strings is too many to run). */
+const maxLength = (p: Preset) => (alphabetOf(p).length === 2 ? 10 : 8);
+
+describe('the preset machines', () => {
+  for (const preset of PRESETS) {
+    it(`${preset.id} accepts exactly its language on every string up to length ${maxLength(preset)}, in both acceptance modes`, () => {
+      const final = build(preset, 'final-state');
+      const empty = build(preset, 'empty-stack');
+      for (const s of allStrings(alphabetOf(preset), maxLength(preset))) {
+        const f = stepRun(final.pda, s, final.accept).status === 'accepted';
+        const e = stepRun(empty.pda, s, empty.accept).status === 'accepted';
+        expect(f, `${preset.id} final-state on "${s}"`).toBe(preset.member(s));
+        expect(e, `${preset.id} empty-stack on "${s}"`).toBe(preset.member(s));
+      }
+    });
+  }
+
+  it('the reference predicates are what they say (hand-worked members and non-members)', () => {
+    const member = (id: Preset['id'], s: string) => presetById(id).member(s);
+    expect([member('anbn', 'aabb'), member('anbn', 'abab'), member('anbn', ''), member('anbn', 'aab')]).toEqual([true, false, true, false]);
+    expect([member('brackets', '(())()'), member('brackets', ')('), member('brackets2', '([])'), member('brackets2', '([)]')]).toEqual([true, false, true, false]);
+    expect([member('wwr', 'abba'), member('wwr', 'aba'), member('wwr', 'abab'), member('wwr', '')]).toEqual([true, false, false, true]);
+  });
+
+  it('the wwr machine guesses: on abba more than one configuration is live at once, and exactly one path accepts', () => {
+    const { pda, accept } = build(presetById('wwr'), 'final-state');
+    const run = stepRun(pda, 'abba', accept);
+    expect(run.status).toBe('accepted');
+    expect(Math.max(...run.frames.map((f) => f.configs.length))).toBeGreaterThan(1);
+    expect(run.frames[run.frames.length - 1].accepting).toBe(true);
+  });
+});
+
+describe('the DFA duel', () => {
+  /** Table-filling (Hopcroft and Ullman): mark every pair of states a suffix can tell apart, then count what is left unmarked as one class. */
+  const classes = (dfa: Dfa) => {
+    const accepting = new Set(dfa.accept);
+    const marked = new Set<string>();
+    const key = (p: string, q: string) => (p < q ? `${p}|${q}` : `${q}|${p}`);
+    for (const p of dfa.states) for (const q of dfa.states) if (accepting.has(p) !== accepting.has(q)) marked.add(key(p, q));
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const p of dfa.states) {
+        for (const q of dfa.states) {
+          if (marked.has(key(p, q))) continue;
+          if (dfa.alphabet.some((c) => marked.has(key(dfa.delta[p][c], dfa.delta[q][c])))) {
+            marked.add(key(p, q));
+            changed = true;
+          }
+        }
+      }
+    }
+    const rep = dfa.states.filter((p, i) => dfa.states.slice(0, i).every((q) => marked.has(key(p, q))));
+    return rep.length;
+  };
+
+  for (let k = MIN_K; k <= MAX_K; k++) {
+    it(`k = ${k}: accepts exactly {a^n b^n : n <= ${k}}, has ${2 * k + 2} states, none of them mergeable, and fails at n = ${k + 1} where the PDA accepts`, () => {
+      const dfa = boundedCounter(k);
+      expect(dfa.states).toHaveLength(2 * k + 2);
+      for (const s of allStrings(['a', 'b'], 12)) {
+        const a = [...s].filter((c) => c === 'a').length;
+        expect(accepts(dfa, s), s).toBe(s === wordAnBn(a) && a <= k);
+      }
+      expect(classes(dfa)).toBe(2 * k + 2);
+      const edge = duel(k, k + 1);
+      expect([edge.dfaAccepts, edge.pdaAccepts]).toEqual([false, true]);
+      expect(firstDisagreement(k)).toBe(k + 1);
+      for (let n = 0; n <= k; n++) expect(duel(k, n).dfaAccepts).toBe(true);
+    });
+  }
+
+  it('the pigeonhole step, from the numbers: two visits share a state, so a^i b^i and a^j b^i look the same to the DFA but not to the PDA', () => {
+    for (let k = MIN_K; k <= MAX_K; k++) {
+      const dfa = boundedCounter(k);
+      const { i, j } = pigeonhole(dfa);
+      expect(i).toBeLessThan(j);
+      const w1 = 'a'.repeat(i) + 'b'.repeat(i);
+      const w2 = 'a'.repeat(j) + 'b'.repeat(i);
+      expect(accepts(dfa, w1)).toBe(accepts(dfa, w2));
+      const pda = build(presetById('anbn'), 'final-state');
+      expect(stepRun(pda.pda, w1, pda.accept).status).toBe('accepted');
+      expect(stepRun(pda.pda, w2, pda.accept).status).toBe('rejected');
+    }
+  });
+});
+
+const CORRECT = ['q0 a Z -> q0 AAZ', 'q0 a A -> q0 AAA', 'q0 b A -> q1 -', 'q1 b A -> q1 -', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');
+const PUSHES_ONE = ['q0 a Z -> q0 AZ', 'q0 a A -> q0 AA', 'q0 b A -> q1 -', 'q1 b A -> q1 -', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');
+const FORGETS_TO_POP = ['q0 a Z -> q0 AAZ', 'q0 a A -> q0 AAA', 'q0 b A -> q1 -', 'q1 b A -> q1 A', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');
+
+const table = (text: string) => {
+  const r = parseTable(text);
+  if (!r.ok) throw new Error(r.error);
+  return r.pda;
+};
+
+describe('the learner table runner', () => {
+  it('the correct a^n b^2n table passes the whole length-9 sweep (1,023 strings)', () => {
+    expect(binaryStrings(CHECK_LENGTH)).toHaveLength(1023);
+    expect(checkTable(table(CORRECT))).toEqual({ checked: 1023, first: null });
+  });
+
+  it('the table that pushes one symbol fails first on "ab", accepted although it is not in the language', () => {
+    const r = checkTable(table(PUSHES_ONE));
+    expect(r.first).toMatchObject({ input: 'ab', inLanguage: false, verdict: 'accepted', reason: 'accepted a string that is not in the language' });
+  });
+
+  it('the table that forgets to pop fails first on "abb" with two symbols left on the stack', () => {
+    const r = checkTable(table(FORGETS_TO_POP));
+    expect(r.first).toMatchObject({ input: 'abb', inLanguage: true, verdict: 'rejected', reason: 'rejected: input finished with 2 symbols still on the stack' });
+  });
+
+  it('a string the machine rejects with input left over names the empty stack', () => {
+    const early = table(['q0 a Z -> q0 -', 'q0 - Z -> q1 -'].join('\n'));
+    expect(runLearner(early, 'ab').reason).toBe('rejected: stack empty but input remains');
+  });
+
+  it('an epsilon loop that pushes forever is stopped by the budget with the stated words, never "forever"', () => {
+    const loop = table('q0 - Z -> q0 ZZ');
+    const r = runLearner(loop, 'a');
+    expect(r.verdict).toBe('budget');
+    expect(r.reason).toBe('did not finish within 5,000 configurations');
+    const run = pdaRun(loop, 'a', { maxConfigs: CONFIG_BUDGET, accept: 'empty-stack' });
+    expect(run.status).toBe('budget-exhausted');
+    expect(run.levels.every((l) => l.length <= CONFIG_BUDGET)).toBe(true);
+    expect(r.reason).not.toMatch(/forever|infinite|never/i);
+  });
+});
+
+describe('hostile tables and subjects are refused with a position', () => {
+  const cases: [string, RegExp][] = [
+    ['q0 a Z q0 AZ', /^Line 1, column \d+: expected `->`/],
+    ['q0 a Z -> q0 AZ\nq0 a', /^Line 2.*expected: state input top/],
+    ['q0 ab Z -> q0 AZ', /^Line 1, column 4: the input is one character/],
+    ['q0 a ZZ -> q0 AZ', /^Line 1, column 6: the stack symbol is one character/],
+    ['q0 a Z -> q0 AAAAA', /^Line 1.*pushes at most 4 symbols/],
+    ['q0 a Z -> q0 A-', /cannot be mixed/],
+    ['q0 a Z -> q0', /^Line 1.*next state and what to push/],
+    ['q1 a Z -> q1 AZ', /No rule starts in q0/],
+    ['', /Write at least one rule/],
+    [Array.from({ length: 17 }, () => 'q0 a Z -> q0 AZ').join('\n'), /^Line 17: more than 16 rules/],
+  ];
+  it.each(cases)('%s', (text, message) => {
+    const r = parseTable(text);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(message);
+  });
+
+  it('a state with no rules of its own is allowed and noted', () => {
+    const r = parseTable(CORRECT);
+    expect(r.ok && r.warnings).toEqual(['q2 has no rules of its own: a run that reaches it can only stop there.']);
+  });
+
+  it('subjects over 14 characters or outside the alphabet are refused', () => {
+    expect(checkSubject('a'.repeat(MAX_SUBJECT)).ok).toBe(true);
+    expect(checkSubject('a'.repeat(MAX_SUBJECT + 1))).toEqual({ ok: false, error: 'That is 15 characters; the limit is 14.' });
+    expect(checkSubject('abc')).toEqual({ ok: false, error: '"c" is not one of a b ( ) [ ].' });
+  });
+});
+
+describe('no learner text reaches RegExp, eval or Function', () => {
+  const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
+  it('the lesson sources contain no new RegExp, RegExp( call, eval( or new Function', () => {
+    const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
+    expect(files.map(([name]) => name)).toContain('./learner.ts');
+    for (const [name, text] of files) {
+      const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+      expect(code, name).not.toMatch(/new\s+RegExp|RegExp\s*\(|\beval\s*\(|new\s+Function|\bFunction\s*\(/);
+    }
+  });
+});
