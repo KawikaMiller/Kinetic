@@ -3,7 +3,8 @@ import { mulberry32 } from '../../core/random';
 import {
   childrenOf, depthOf, firstLeaf, isLeaf, isMax, knuthMooreMinimum, leafCount, nodeCount, nodeValues, orderingFor, scorePrediction, search, subtreeOf, type Spec, type Variant,
 } from './tree';
-import { EMPTY_BOARD, evaluate, FULL_DEPTH, isOver, machineMove, moveScores, movesOf, openLines, other, play, searchBoard, sideToMove, winnerOf, type Mark } from './ttt';
+import { viewAt } from './view';
+import { EMPTY_BOARD, evaluate, FULL_DEPTH, isOver, machineMove, moveScores, movesOf, openLines, other, plainNodeCount, play, searchBoard, sideToMove, winnerOf, type Mark } from './ttt';
 
 /** Minimax written recursively on explicit nested arrays: the oracle the heap-numbered search is checked against. */
 const nested = (spec: Spec, leaves: readonly number[]): unknown => {
@@ -54,6 +55,26 @@ describe('minimax and alpha-beta', () => {
     expect(fast.bestChild).toBe(1);
     expect(fast.cutRoots.sort((a, b) => a - b)).toEqual([6, 10]);
     expect(oracle(nested(spec, leaves), true)).toBe(5);
+  });
+
+  it('a node that stopped early returns a bound on its true value, in the direction the board marks it (at least for max, at most for min)', () => {
+    const rnd = mulberry32(5);
+    let marked = 0;
+    for (let t = 0; t < 600; t++) {
+      const spec = { b: 2 + Math.floor(rnd() * 3), d: 2 + Math.floor(rnd() * 4) };
+      if (leafCount(spec) > 800) continue;
+      const leaves = randomLeaves(rnd, leafCount(spec), true);
+      const fast = search(spec, leaves, { prune: true });
+      const view = viewAt(spec, fast, fast.events.length);
+      const truth = nodeValues(spec, leaves);
+      for (const node of view.cutAt) {
+        marked++;
+        const returned = view.values.get(node)!;
+        if (isMax(node, spec.b)) expect(truth[node], `tree ${t} node ${node}`).toBeGreaterThanOrEqual(returned);
+        else expect(truth[node], `tree ${t} node ${node}`).toBeLessThanOrEqual(returned);
+      }
+    }
+    expect(marked).toBeGreaterThan(100);
   });
 
   it('on 2,000 seeded random trees (b 2 to 4, depth 1 to 6, many ties) alpha-beta returns the minimax value and never visits more than minimax does', () => {
@@ -166,6 +187,14 @@ describe('minimax and alpha-beta', () => {
 });
 
 describe('tic-tac-toe', () => {
+  it('the memoised plain-minimax node count equals the walked search, and the whole tree has 549,946 positions', () => {
+    const afterCentre = play(EMPTY_BOARD, 4, 'X');
+    for (const [board, mark] of [[afterCentre, 'O'], ['X...O...X', 'O'], ['XO.......', 'X'], ['XOXOXO...', 'O']] as const) {
+      expect(plainNodeCount(board, mark), board).toBe(searchBoard(board, mark, { prune: false }).nodes);
+    }
+    expect(plainNodeCount(EMPTY_BOARD, 'X')).toBe(549_946);
+  });
+
   /** An independent count of the whole game tree: every sequence of moves until a win or a full board. */
   const countTree = (board: string, mark: Mark): number => {
     if (isOver(board)) return 1;

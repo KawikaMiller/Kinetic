@@ -3,7 +3,7 @@ import { CellGrid } from '../../components/CellGrid';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { OPENING } from './presets';
-import { EMPTY_BOARD, movesOf, other, play, resultOf, searchBoard, type Mark } from './ttt';
+import { EMPTY_BOARD, movesOf, other, plainNodeCount, play, resultOf, searchBoard, type Mark } from './ttt';
 
 type First = 'you' | 'machine';
 
@@ -23,11 +23,10 @@ interface GameState {
 const fmt = (n: number) => n.toLocaleString('en-US');
 const CELL = { cell: 74, font: 30 };
 
-/** The machine's move for `mark`: both searches are run for the counters, the alpha-beta move is played. */
+/** The machine's move for `mark`: the alpha-beta search picks it; plain minimax's cost is counted, not re-run. */
 function machinePlays(board: string, mark: Mark): { board: string; cost: Cost } {
-  const plain = searchBoard(board, mark, { prune: false });
   const fast = searchBoard(board, mark, { prune: true });
-  return { board: play(board, fast.move!, mark), cost: { plain: plain.nodes, fast: fast.nodes, plies: movesOf(board).length, move: fast.move! } };
+  return { board: play(board, fast.move!, mark), cost: { plain: plainNodeCount(board, mark), fast: fast.nodes, plies: movesOf(board).length, move: fast.move! } };
 }
 
 const opening = (first: First): GameState => {

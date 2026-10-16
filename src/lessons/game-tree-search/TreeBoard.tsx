@@ -1,7 +1,7 @@
 import { TreeSvg, type TreeShape } from '../../components/TreeSvg';
 import type { Tone } from '../../core/tone';
-import { childrenOf, isLeaf, type Spec } from './tree';
-import { boundText, roleOf, type NodeView } from './view';
+import { childrenOf, isLeaf, isMax, type Spec } from './tree';
+import { boundText, pathName, roleOf, type NodeView } from './view';
 
 export const BOARD_WIDTH = 640;
 const BOARD_HEIGHT = 300;
@@ -34,6 +34,14 @@ export function TreeBoard({
     return view.values.has(id) ? String(view.values.get(id)) : '?';
   };
 
+  const nodeName = (id: number): string => {
+    const role = roleOf(id, spec);
+    return role === 'leaf' ? `Leaf ${id - first + 1}, path ${pathName(id, spec.b)}` : `${role === 'max' ? 'Max' : 'Min'} node ${pathName(id, spec.b)}`;
+  };
+  // A node that stopped early returns a bound: a max node's value is at least that, a min node's at most.
+  const boundSign = (id: number): string | null => (view.cutAt.has(id) && view.values.has(id) ? (isMax(id, spec.b) ? '>=' : '<=') : null);
+  const boundWord = (id: number): string => (boundSign(id) === '>=' ? 'at least ' : boundSign(id) === '<=' ? 'at most ' : '');
+
   return (
     <TreeSvg
       shape={shape}
@@ -58,7 +66,7 @@ export function TreeBoard({
         return view.chosen.get(parent) === child ? { tone: 'ok' } : null;
       }}
       onNodeClick={onNodeClick}
-      nodeAriaLabel={(id) => `${roleOf(id, spec) === 'leaf' ? 'Leaf' : roleOf(id, spec) === 'max' ? 'Max node' : 'Min node'} ${id}, value ${valueOf(id)}${view.struck.has(id) ? ', skipped' : ''}`}
+      nodeAriaLabel={(id) => `${nodeName(id)}, ${boundWord(id)}value ${valueOf(id)}${view.struck.has(id) ? ', skipped' : ''}`}
       renderNode={(id) => {
         const leaf = isLeaf(id, spec);
         const window = !leaf && showWindows ? view.windows.get(id) : undefined;
@@ -66,6 +74,7 @@ export function TreeBoard({
           <>
             <circle r={leaf ? LEAF_R : NODE_R} />
             <text y={4} textAnchor="middle" className="gt-value">{valueOf(id)}</text>
+            {boundSign(id) && <text className="gt-window" x={NODE_R + 2} y={-NODE_R + 6}>{boundSign(id)}</text>}
             {view.struck.has(id) && <line className="gt-strike" x1={-NODE_R} y1={-NODE_R} x2={NODE_R} y2={NODE_R} />}
             {window && <text className="gt-window" y={NODE_R + 14} textAnchor="middle">({boundText(window[0])}, {boundText(window[1])})</text>}
           </>

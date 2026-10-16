@@ -1,6 +1,6 @@
 import { DEFAULT_LEAVES, OPENING, SPEC } from './presets';
 import { knuthMooreMinimum, leafCount, nodeCount, orderingFor, search, type Ordering } from './tree';
-import { EMPTY_BOARD, moveScores, play, searchBoard, WIN } from './ttt';
+import { EMPTY_BOARD, movesOf, moveScores, plainNodeCount, play, searchBoard, WIN } from './ttt';
 import { pathName } from './view';
 
 const run = (ordering: Ordering, prune = true) => search(SPEC, DEFAULT_LEAVES, { prune, order: orderingFor(SPEC, DEFAULT_LEAVES, ordering, 7) });
@@ -9,9 +9,7 @@ const given = run('given');
 const best = run('best');
 const worst = run('worst');
 const afterCentre = play(EMPTY_BOARD, 4, 'X');
-const replyPlain = searchBoard(afterCentre, 'O', { prune: false });
 const replyFast = searchBoard(afterCentre, 'O', { prune: true });
-const openingPlain = searchBoard(EMPTY_BOARD, 'X', { prune: false });
 const cornersBoard = 'X...O...X';
 const cornersPerfect = moveScores(cornersBoard, 'O');
 const valueOf = (cell: number) => cornersPerfect.find((s) => s.cell === cell)!.value;
@@ -32,10 +30,10 @@ export const FACTS = {
   minimum: knuthMooreMinimum(SPEC),
   sameValue: given.value === plain.value && best.value === plain.value && worst.value === plain.value,
   centreMove: replyFast.move!,
-  centrePlain: replyPlain.nodes.toLocaleString('en-US'),
+  centrePlain: plainNodeCount(afterCentre, 'O').toLocaleString('en-US'),
   centreFast: replyFast.nodes.toLocaleString('en-US'),
-  centrePlies: 8,
-  fullTree: openingPlain.nodes.toLocaleString('en-US'),
+  centrePlies: movesOf(afterCentre).length,
+  fullTree: plainNodeCount(EMPTY_BOARD, 'X').toLocaleString('en-US'),
   shallowMove: shallow,
   shallowOutcome: outcome(valueOf(shallow)),
   deepMove: deep,

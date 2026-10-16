@@ -7,12 +7,14 @@ export interface NodeView {
   windows: Map<number, [number, number]>;
   current: number | null;
   struck: Set<number>;
+  /** Nodes that stopped early: the value they return is a bound on their true value, not the value itself. */
+  cutAt: Set<number>;
   /** For each node that has returned, the child that gave its value. */
   chosen: Map<number, number>;
 }
 
 export function viewAt(spec: Spec, result: SearchResult, k: number): NodeView {
-  const view: NodeView = { visited: new Set(), values: new Map(), windows: new Map(), current: null, struck: new Set(), chosen: new Map() };
+  const view: NodeView = { visited: new Set(), values: new Map(), windows: new Map(), current: null, struck: new Set(), cutAt: new Set(), chosen: new Map() };
   for (const e of result.events.slice(0, k)) {
     view.current = e.node;
     if (e.type === 'enter') {
@@ -24,6 +26,7 @@ export function viewAt(spec: Spec, result: SearchResult, k: number): NodeView {
       view.values.set(e.node, e.value);
       view.chosen.set(e.node, result.chosen.get(e.node)!);
     } else {
+      view.cutAt.add(e.node);
       for (const s of e.skipped) for (const n of subtreeOf(s, spec)) view.struck.add(n);
     }
   }

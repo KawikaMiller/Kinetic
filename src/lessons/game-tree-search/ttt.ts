@@ -82,6 +82,21 @@ export function searchBoard(board: string, mark: Mark, o: { prune: boolean; dept
   return { value: best + 0, move, nodes: counter.nodes };
 }
 
+const plainCounts = new Map<string, number>();
+
+/**
+ * How many positions plain minimax enters from this one (the root included), counted once per distinct position instead of
+ * by walking all 549,946 paths from the empty board: the same number as `searchBoard(board, mark, { prune: false }).nodes`.
+ */
+export function plainNodeCount(board: string, mark: Mark): number {
+  const key = board + mark;
+  const known = plainCounts.get(key);
+  if (known !== undefined) return known;
+  const count = isOver(board) ? 1 : 1 + movesOf(board).reduce((sum, cell) => sum + plainNodeCount(play(board, cell, mark), other(mark)), 0);
+  plainCounts.set(key, count);
+  return count;
+}
+
 /** The exact value of every legal move (each searched with a full window), from the mover's side: for showing candidate scores. */
 export function moveScores(board: string, mark: Mark, depth: number = FULL_DEPTH): { cell: number; value: number }[] {
   return movesOf(board).map((cell) => {

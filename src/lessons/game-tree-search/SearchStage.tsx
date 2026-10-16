@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { searchFrames } from './frames';
@@ -8,7 +9,6 @@ import { nodeCount, type SearchResult, type Spec } from './tree';
 import { viewAt, pathName } from './view';
 
 const STEP_MS = 450;
-const STAGE_MIN_WIDTH = BOARD_WIDTH;
 
 /** Content that may depend on whether the run has finished (a prediction is only checked at the end). */
 type Slot = ReactNode | ((state: { done: boolean }) => ReactNode);
@@ -40,7 +40,6 @@ export function SearchStage({
     <StageFrame
       player={player}
       height={520}
-      minWidth={STAGE_MIN_WIDTH}
       stats={
         <Stats>
           <Stat label="Root value" value={done ? result.value : '?'} color={done ? 'var(--ok)' : 'var(--dim)'} sub={done ? `best first move ${pathName(result.bestChild, spec.b)}` : 'filled in at the end'} />
@@ -62,7 +61,9 @@ export function SearchStage({
       controls={controls}
     >
       <div className="gt-stage stage-pad">
-        <TreeBoard spec={spec} leaves={leaves} view={view} showWindows={windows} marks={marks} onNodeClick={onNodeClick} ariaLabel={ariaLabel} />
+        <WideRegion minWidth={BOARD_WIDTH} label="Search tree: scroll sideways to see every node">
+          <TreeBoard spec={spec} leaves={leaves} view={view} showWindows={windows} marks={marks} onNodeClick={onNodeClick} ariaLabel={ariaLabel} />
+        </WideRegion>
         {resolve(below, done)}
       </div>
       <ProvenanceRow>
