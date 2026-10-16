@@ -4,7 +4,7 @@
  * runs one instruction and describes what moved, so the stage can show it. Values are JavaScript
  * numbers. A real VM's instruction set and error handling are its own.
  */
-import { parseRows, type FieldParse } from '../../core/parse';
+import { parseKitRows, type KitRead, type TokenCursor, type TokenRule } from '../../core/parseKit';
 import { formatInstr, type Instr, type Op } from './lang';
 
 export const STACK_LIMIT = 32;
@@ -36,8 +36,11 @@ export type Assembled = { ok: true; program: Instr[] } | { ok: false; error: str
 const isOp = (s: string): s is Op => s in OPCODES;
 const WHOLE = /^-?\d+$/;
 
-function readLine(text: string): FieldParse<{ op: Op; operand: string | null }> {
-  const parts = text.split(/\s+/);
+/** An opcode or an operand: any run of non-space characters; the assembler judges what each word means. */
+const WORDS: TokenRule[] = [{ kind: 'word', pattern: /\S+/ }];
+
+function readLine(cursor: TokenCursor): KitRead<{ op: Op; operand: string | null }> {
+  const parts = cursor.rest().map((t) => t.text);
   const name = parts[0].toUpperCase();
   if (!isOp(name)) return { ok: false, error: `unknown opcode "${parts[0]}". The opcodes are ${OP_NAMES.join(', ')}.` };
   if (parts.length > 2) return { ok: false, error: `${name} takes ${OPCODES[name].operand === 'none' ? 'no operand' : 'one operand'}, but this line has ${parts.length - 1} words after it.` };
@@ -46,7 +49,8 @@ function readLine(text: string): FieldParse<{ op: Op; operand: string | null }> 
 
 /** Reads a listing, one instruction per line (`#` starts a comment). Refuses by line: an unknown opcode, a bad or missing operand, a slot outside 0 to 3, a jump target outside the program, more than 60 instructions. */
 export function assemble(text: string): Assembled {
-  const rows = parseRows(text, {
+  const rows = parseKitRows(text, {
+    tokens: WORDS,
     maxRows: ASSEMBLE_LIMITS.maxLines * 4,
     maxLineChars: ASSEMBLE_LIMITS.maxLineChars,
     noun: { one: 'instruction', many: 'instructions' },
