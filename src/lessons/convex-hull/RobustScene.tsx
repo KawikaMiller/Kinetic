@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Hint, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { orientDouble, orientExact } from './robust';
-import { INTEGER_TRIPLE, MISMATCHES_SHOWN, SEARCH_CANDIDATES, SEARCH_SEED, SEG_FROM, SEG_TO, findMismatches, hullDemo } from './robust';
+import { INTEGER_TRIPLE, MISMATCHES_SHOWN, SEARCH_CANDIDATES, SEARCH_SEED, SEG_FROM, SEG_TO, hullDemo, searchMismatches } from './robust';
 import { pt } from './text';
 
 const DIGITS = 17;
@@ -11,7 +11,8 @@ const coord = (v: number) => v.toPrecision(DIGITS);
 
 /** Scene 4: three points too close to draw, and what the same cross product says in doubles and in exact arithmetic. */
 export function RobustScene({ picker }: { picker: ReactNode }) {
-  const found = useMemo(() => findMismatches(), []);
+  const search = useMemo(() => searchMismatches(), []);
+  const { found } = search;
   const [which, setWhich] = useState(0);
   const [integers, setIntegers] = useState(false);
   const [ran, setRan] = useState(false);
@@ -41,7 +42,10 @@ export function RobustScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="In doubles" value={double} color={agree ? undefined : 'var(--bad)'} sub={signWord(Math.sign(double))} />
           <Stat label="Exactly (BigInt)" value={exact.sign > 0 ? '+' : exact.sign < 0 ? '-' : '0'} color="var(--ok)" sub={signWord(exact.sign)} />
-          <Stat label="Found by search" value={found.length} sub={`first ${MISMATCHES_SHOWN} of ${SEARCH_CANDIDATES.toLocaleString('en-US')} seeded candidates, seed ${SEARCH_SEED}`} />
+          <Stat
+            label="Found by search"
+            value={integers ? '–' : found.length}
+            sub={integers ? 'the search is for the doubles case' : `seed ${SEARCH_SEED}: ${MISMATCHES_SHOWN} found within the first ${search.tried} random lattice points (up to ${SEARCH_CANDIDATES.toLocaleString('en-US')} allowed), so a wrong sign is common here`} />
         </Stats>
       }
       controls={[
@@ -70,6 +74,11 @@ export function RobustScene({ picker }: { picker: ReactNode }) {
           <p className="ch-note" role="status">
             Andrew's chain with the double test returns {demo.withDouble.length} {demo.withDouble.length === 1 ? 'point' : 'points'}: {demo.withDouble.map(pt).join(', ')}. With the exact test it returns {demo.withExact.length}: {demo.withExact.map(pt).join(', ')}.
             {lost.length ? <> The double test said "collinear" and popped {lost.map(pt).join(', ')}, a point that is a real hull vertex.</> : null}
+          </p>
+        )}
+        {!integers && (
+          <p className="ch-note">
+            Why the double test fails: p differs from q and r by amounts near 11.5 and 23.5, where neighbouring doubles are 2^-49 apart, so the subtractions q - p and r - p already round away the 2^-53 steps that separate the points. The two products are then rounded again, often to the very same double, and their difference comes out as 0 (or, less often, as a small value of the wrong sign) while the exact value is not zero.
           </p>
         )}
         <p className="ch-note">

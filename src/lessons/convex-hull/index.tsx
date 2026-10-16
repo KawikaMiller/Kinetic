@@ -72,7 +72,7 @@ const lesson: LessonModule = {
         'The product of two doubles overflows before the subtraction happens',
       ],
       answer: 0,
-      why: `The two products being subtracted are nearly equal, so their rounding errors can swallow the true difference. In the lesson a lattice point ${F.mismatchI} and ${F.mismatchJ} steps of 2^-53 above 0.5 gives ${F.mismatchDouble} in doubles but a positive exact value, and the hull then keeps ${F.demoDouble} points where ${F.demoExact} are right. With whole numbers below 2^53 the products are exact.`,
+      why: `The cross product subtracts coordinates and then two nearly equal products, and each step rounds: near 11.5 the doubles are 2^-49 apart, so the subtractions already lose the 2^-53 steps, and the rounded products can swallow the true difference. In the lesson a lattice point ${F.mismatchI} and ${F.mismatchJ} steps of 2^-53 above 0.5 gives ${F.mismatchDouble} in doubles but a positive exact value, and the hull then keeps ${F.demoDouble} points where ${F.demoExact} are right. With whole numbers below 2^53 the products are exact.`,
     },
   ],
 };

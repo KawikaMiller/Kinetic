@@ -82,7 +82,7 @@ export function WorkloadScene({ picker }: { picker: ReactNode }) {
           </tbody>
         </table>
         <p className="rg-note">
-          {sel ? `The rope rebuilt itself ${sel.ropeRebuilds} ${sel.ropeRebuilds === 1 ? 'time' : 'times'} on this workload under` : 'The rope rebuild count appears when the count finishes; it follows'} the simplified depth rule, and each rebuild is counted. Undo is nearly free for the rope because its old versions share nodes with the new one; an array or gap buffer has to apply the inverse edit. A piece table, another editor structure, keeps the original text and an append-only buffer and records edits as a list of pieces: named, not shown. Text above 60 characters is model only, not drawn.
+          {sel ? `The rope rebuilt itself ${sel.ropeRebuilds} ${sel.ropeRebuilds === 1 ? 'time' : 'times'} on this workload under` : 'The rope rebuild count appears when the count finishes; it follows'} the simplified depth rule, and each rebuild is counted. That is why the rope looks bad at typing here: every typed character becomes its own leaf and the rebuilds copy the whole tree again and again. A real rope merges small pieces into one leaf and rebalances lazily, so this cost belongs to the simplified rule, not to ropes. Undo is nearly free for the rope because its old versions share nodes with the new one; an array or gap buffer has to apply the inverse edit. A piece table, another editor structure, keeps the original text and an append-only buffer and records edits as a list of pieces: named, not shown. Text above 60 characters is model only, not drawn.
         </p>
       </div>
       <ProvenanceRow>

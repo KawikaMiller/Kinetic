@@ -41,8 +41,15 @@ export function orientExact(o: P, a: P, b: P): ExactOrientation {
   const all = [o.x, o.y, a.x, a.y, b.x, b.y].map(parts);
   const e0 = Math.min(...all.filter((p) => p.m !== 0n).map((p) => p.e), 0);
   const [ox, oy, ax, ay, bx, by] = all.map((p) => p.m << BigInt(p.e - e0));
-  const units = (ax - ox) * (by - oy) - (ay - oy) * (bx - ox);
-  return { sign: units > 0n ? 1 : units < 0n ? -1 : 0, units, exponent: 2 * e0 };
+  let units = (ax - ox) * (by - oy) - (ay - oy) * (bx - ox);
+  const sign = units > 0n ? 1 : units < 0n ? -1 : 0;
+  // Lowest terms: the units are odd (or zero), so 12 shows as 3 x 2^2, not as a thirty-digit number times a tiny power.
+  let exponent = 2 * e0;
+  while (units !== 0n && (units & 1n) === 0n) {
+    units >>= 1n;
+    exponent++;
+  }
+  return { sign, units, exponent };
 }
 
 export const orientExactSign = (o: P, a: P, b: P): number => orientExact(o, a, b).sign;
@@ -56,8 +63,17 @@ export interface Mismatch {
   exact: ExactOrientation;
 }
 
+export interface MismatchSearch {
+  found: Mismatch[];
+  /** Distinct candidates examined when the search stopped (it stops at `want` hits or at the candidate limit). */
+  tried: number;
+}
+
 /** The lesson's own seeded search: the first `want` lattice points whose double orientation disagrees in sign with the exact one. */
-export function findMismatches(seed = SEARCH_SEED, candidates = SEARCH_CANDIDATES, want = MISMATCHES_SHOWN): Mismatch[] {
+export const findMismatches = (seed = SEARCH_SEED, candidates = SEARCH_CANDIDATES, want = MISMATCHES_SHOWN): Mismatch[] => searchMismatches(seed, candidates, want).found;
+
+/** `findMismatches`, also saying how many candidates it took. */
+export function searchMismatches(seed = SEARCH_SEED, candidates = SEARCH_CANDIDATES, want = MISMATCHES_SHOWN): MismatchSearch {
   const rnd = mulberry32(seed);
   const found: Mismatch[] = [];
   const seen = new Set<number>();
@@ -71,7 +87,7 @@ export function findMismatches(seed = SEARCH_SEED, candidates = SEARCH_CANDIDATE
     const exact = orientExact(point, SEG_FROM, SEG_TO);
     if (Math.sign(double) !== exact.sign) found.push({ i, j, point, double, exact });
   }
-  return found;
+  return { found, tried: seen.size };
 }
 
 export interface HullDemo {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import { HULLS, andrew, cross, graham, jarvis, type Algo, type P, type Policy } from './hull';
-import { INTEGER_TRIPLE, LATTICE, ULP, SEG_FROM, SEG_TO, findMismatches, hullDemo, latticePoint, orientDouble, orientExact } from './robust';
+import { INTEGER_TRIPLE, LATTICE, ULP, SEG_FROM, SEG_TO, searchMismatches, findMismatches, hullDemo, latticePoint, orientDouble, orientExact } from './robust';
 
 const key = (p: P) => `${p.x},${p.y}`;
 const sortedKeys = (ps: readonly P[]) => ps.map(key).sort();
@@ -206,5 +206,19 @@ describe('orientation tests counted', () => {
   it('Jarvis loses on points on a circle and stays competitive on a filled disc (real runs)', () => {
     expect(andrew([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }]).length).toBe(3);
     expect(jarvis([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }]).length).toBe(3);
+  });
+});
+
+describe('the seeded mismatch search', () => {
+  it('finds its five wrong signs within the first 31 candidates (the review counted the fifth at candidate 30), not after a long hunt', () => {
+    const { found, tried } = searchMismatches();
+    expect(found).toHaveLength(5);
+    expect(tried).toBe(31);
+  });
+
+  it('shows the exact value in lowest terms', () => {
+    const e = orientExact(INTEGER_TRIPLE[0], INTEGER_TRIPLE[1], INTEGER_TRIPLE[2]);
+    expect(e.units % 2n !== 0n).toBe(true);
+    expect(Number(e.units) * 2 ** e.exponent).toBe(orientDouble(...INTEGER_TRIPLE));
   });
 });
