@@ -1,0 +1,4 @@
+/* quic */
+.qc-stage { gap: 12px; min-width: 0; }
+.qc-table td, .qc-table th { font-size: 12.5px; white-space: normal; }
+.qc-row-bad td { color: var(--bad); }
