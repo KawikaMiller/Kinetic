@@ -6,6 +6,7 @@
  * is feedback. Exposure inequality is the Gini coefficient of the show counts.
  */
 import { mulberry32 } from '../../core/random';
+import { gini } from '../../core/stats';
 import { ITEMS, USERS } from './data';
 import type { Matrix } from './data';
 
@@ -14,15 +15,6 @@ export const SLATE = 3;
 export const EXPLORATION = 0.1;
 /** A rating at or above this counts as a like. */
 export const LIKE_AT = 4;
-
-/** Gini coefficient of non-negative counts: 0 when equal, 1 - 1/n when one item holds everything. */
-export function gini(counts: readonly number[]): number {
-  const total = counts.reduce((a, b) => a + b, 0);
-  if (total === 0) return 0;
-  let sum = 0;
-  for (const a of counts) for (const b of counts) sum += Math.abs(a - b);
-  return sum / (2 * counts.length * total);
-}
 
 /** What the system learns each round: only the likes of the films it showed (the loop), or every user's like for every film (no feedback). */
 export type LearnsFrom = 'shown' | 'everyone';

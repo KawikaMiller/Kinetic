@@ -13,7 +13,6 @@ export function bitsOf(e: bigint): Bit[] {
 }
 
 export const popcount = (e: bigint): number => bitsOf(e).filter((b) => b === 1).length;
-export const bitLength = (e: bigint): number => (e === 0n ? 0 : e.toString(2).length);
 
 export interface PowStep {
   kind: 'square' | 'multiply';

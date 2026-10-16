@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkGroups, flipBit, fromBits, fromBitsSigned, placeValue, toBits, type Bit } from './bits';
+import { bitLength, chunkGroups, flipBit, fromBits, fromBitsSigned, placeValue, toBits, type Bit } from './bits';
 
 const str = (bits: readonly Bit[]) => bits.join('');
 
@@ -67,5 +67,41 @@ describe('bits', () => {
         if (i > 0) expect(g.from).toBe(groups[i - 1].to + 1);
       });
     }
+  });
+});
+
+describe('bitLength', () => {
+  it('matches the length of the binary spelling for every value to 2^16, as number and bigint', () => {
+    for (let x = 1; x <= 65536; x++) {
+      const want = x.toString(2).length;
+      expect(bitLength(x), `${x}`).toBe(want);
+      expect(bitLength(BigInt(x)), `${x}n`).toBe(want);
+    }
+  });
+
+  it('is exact at and around every power of two up to 2^53, where log2 would round', () => {
+    for (let k = 1; k <= 53; k++) {
+      const p = 2 ** k;
+      expect(bitLength(p), `2^${k}`).toBe(k + 1);
+      expect(bitLength(p - 1), `2^${k}-1`).toBe(k);
+      expect(bitLength(BigInt(p)), `2^${k}n`).toBe(k + 1);
+    }
+    expect(bitLength(Number.MAX_SAFE_INTEGER)).toBe(53);
+  });
+
+  it('counts a bigint past 64 bits', () => {
+    expect(bitLength(10n ** 30n)).toBe(100);
+    expect(bitLength(2n ** 200n - 1n)).toBe(200);
+    expect(bitLength(2n ** 200n)).toBe(201);
+  });
+
+  it('is 0 for zero, for negatives, and floors a fraction', () => {
+    expect(bitLength(0)).toBe(0);
+    expect(bitLength(0n)).toBe(0);
+    expect(bitLength(-5)).toBe(0);
+    expect(bitLength(-5n)).toBe(0);
+    expect(bitLength(0.9)).toBe(0);
+    expect(bitLength(255.9)).toBe(8);
+    expect(bitLength(NaN)).toBe(0);
   });
 });

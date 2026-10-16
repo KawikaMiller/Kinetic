@@ -9,9 +9,6 @@ export interface Item {
 
 export type LoopDirection = 'down' | 'up';
 
-/** Bits needed to write x in binary (0 for 0). */
-export const bitLength = (x: number): number => (x <= 0 ? 0 : Math.floor(Math.log2(x)) + 1);
-
 // ── 0/1 knapsack ───────────────────────────────────────────────────────────
 
 /** dp[i][w] for the first i items and capacity w (the two-dimensional table: row i reads only row i - 1). */

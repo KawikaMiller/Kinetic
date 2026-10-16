@@ -1,3 +1,4 @@
+import { bitLength } from '../../core/bits';
 import { egcd, gcd, mod, modInverse, modPow, type EuclidStep } from '../../core/numberTheory';
 
 // The Chinese remainder theorem on toy-sized numbers: the system, the gears' coincidence, the constructive formula, the
@@ -134,11 +135,8 @@ export function crtExponentiation(c: bigint, d: bigint, p: bigint, q: bigint): C
   return { dp, dq, mp, mq, qInv, h, result: mq + h * q };
 }
 
-/** Bits needed to write x (toy sizes, below 2^32). */
-const bitsIn = (x: bigint): number => 32 - Math.clz32(Number(x));
-
 /** The schoolbook cost model: each modular multiplication costs (bits of the modulus)^2 digit steps, and there are about (bits of the exponent) of them. */
-export const workUnits = (modulus: bigint, exponent: bigint): number => bitsIn(modulus) ** 2 * bitsIn(exponent);
+export const workUnits = (modulus: bigint, exponent: bigint): number => bitLength(modulus) ** 2 * bitLength(exponent);
 
 export interface Work {
   full: number;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  IPV4_BITS, blockSize, broadcastOf, contains, ipToString, ipv4, maskOf, networkOf, parseCidr, parseIPv4, parsePrefix, wildcardOf,
+  IPV4_BITS, blockSize, broadcastOf, contains, ipToString, ipv4, longestPrefixMatch, maskOf, networkOf, parseCidr, parseIPv4, parsePrefix, wildcardOf,
 } from './ipv4';
 import { mulberry32 } from './random';
 
@@ -147,5 +147,83 @@ describe('parsing hostile input (AC-0/T2 #5)', () => {
     expect(errorOf(parseCidr('10.0.0.0/1e400'))).toMatch(/whole number/);
     expect(errorOf(parseCidr(`10.0.0.0/${'1'.repeat(40)}`))).toMatch(/far too long/);
     expect(errorOf(parseCidr('300.0.0.0/8'))).toMatch(/0-255/);
+  });
+});
+
+describe('longestPrefixMatch', () => {
+  type Tagged = { net: number; prefix: number; via: string };
+  const route = (cidr: string, via: string): Tagged => {
+    const p = parseCidr(cidr);
+    if (!p.ok) throw new Error(p.error);
+    return { net: p.value.addr, prefix: p.value.prefix, via };
+  };
+
+  it('prefers the most specific block and falls back to the default route', () => {
+    const table = [route('0.0.0.0/0', 'default'), route('10.0.0.0/8', 'a'), route('10.1.0.0/16', 'b'), route('10.1.2.0/24', 'c')];
+    expect(longestPrefixMatch(table, ipv4('10.1.2.9'))?.via).toBe('c');
+    expect(longestPrefixMatch(table, ipv4('10.1.3.9'))?.via).toBe('b');
+    expect(longestPrefixMatch(table, ipv4('10.9.9.9'))?.via).toBe('a');
+    expect(longestPrefixMatch(table, ipv4('11.0.0.1'))?.via).toBe('default');
+  });
+
+  it('is independent of table order, and returns the route object itself', () => {
+    const table = [route('10.1.2.0/24', 'c'), route('10.0.0.0/8', 'a'), route('0.0.0.0/0', 'default')];
+    const hit = longestPrefixMatch(table, ipv4('10.1.2.200'));
+    expect(hit).toBe(table[0]);
+    expect(longestPrefixMatch([...table].reverse(), ipv4('10.1.2.200'))?.via).toBe('c');
+  });
+
+  it('returns null with no table, or no default route and no match', () => {
+    expect(longestPrefixMatch([], ipv4('1.2.3.4'))).toBeNull();
+    expect(longestPrefixMatch([route('10.0.0.0/8', 'a')], ipv4('11.0.0.0'))).toBeNull();
+  });
+
+  it('matches a /32 only on its exact address, and the edges of a block', () => {
+    const table = [route('192.168.1.0/24', 'lan'), route('192.168.1.7/32', 'host')];
+    expect(longestPrefixMatch(table, ipv4('192.168.1.7'))?.via).toBe('host');
+    expect(longestPrefixMatch(table, ipv4('192.168.1.6'))?.via).toBe('lan');
+    expect(longestPrefixMatch(table, ipv4('192.168.1.8'))?.via).toBe('lan');
+    expect(longestPrefixMatch(table, ipv4('192.168.1.0'))?.via).toBe('lan');
+    expect(longestPrefixMatch(table, ipv4('192.168.1.255'))?.via).toBe('lan');
+    expect(longestPrefixMatch(table, ipv4('192.168.2.0'))).toBeNull();
+  });
+
+  it('lets a /0 match the extreme addresses', () => {
+    const table = [route('0.0.0.0/0', 'default')];
+    expect(longestPrefixMatch(table, 0)?.via).toBe('default');
+    expect(longestPrefixMatch(table, 0xffffffff)?.via).toBe('default');
+  });
+
+  it('breaks a tie between routes for the same block by table order', () => {
+    const table = [route('10.0.0.0/8', 'first'), route('10.0.0.0/8', 'second')];
+    expect(longestPrefixMatch(table, ipv4('10.2.3.4'))?.via).toBe('first');
+  });
+
+  it('treats host bits set in a route as part of the host, not the network', () => {
+    expect(longestPrefixMatch([route('10.1.2.99/24', 'x')], ipv4('10.1.2.1'))?.via).toBe('x');
+  });
+
+  it('agrees with a brute-force scan over random route tables (bit strings, no masks)', () => {
+    const bitString = (a: number) => a.toString(2).padStart(32, '0');
+    const rnd = mulberry32(2024);
+    for (let t = 0; t < 300; t++) {
+      // A few clustered networks so that nested and equal blocks are common.
+      const bases = Array.from({ length: 3 }, () => Math.floor(rnd() * 2 ** 32));
+      const table: Tagged[] = Array.from({ length: Math.floor(rnd() * 12) }, (_, i) => {
+        const base = bases[Math.floor(rnd() * bases.length)];
+        const noise = rnd() < 0.5 ? Math.floor(rnd() * 2 ** 32) : base;
+        const prefix = rnd() < 0.1 ? 0 : rnd() < 0.1 ? 32 : Math.floor(rnd() * 33);
+        return { net: networkOf(rnd() < 0.7 ? base : noise, prefix), prefix, via: `r${i}` };
+      });
+      for (let q = 0; q < 40; q++) {
+        const addr = (rnd() < 0.6 ? bases[Math.floor(rnd() * bases.length)] ^ Math.floor(rnd() * 2 ** Math.floor(rnd() * 33)) : Math.floor(rnd() * 2 ** 32)) >>> 0;
+        let want: Tagged | null = null;
+        for (const r of table) {
+          const same = bitString(r.net).slice(0, r.prefix) === bitString(addr).slice(0, r.prefix);
+          if (same && (want === null || r.prefix > want.prefix)) want = r;
+        }
+        expect(longestPrefixMatch(table, addr), `table ${t}, address ${ipToString(addr)}`).toBe(want);
+      }
+    }
   });
 });

@@ -33,18 +33,27 @@ export function shardIds(ids, spec) {
   return ids.filter((_, i) => i % count === index - 1);
 }
 
-/** The scene picker of the page: the first radio group inside a stage frame, with its option labels, or null. */
-const findPicker = () => {
-  const group = document.querySelector('.stage-frame .segmented');
-  if (!group) return null;
-  const options = [...group.querySelectorAll('[role="radio"]')].map((b) => (b.textContent ?? '').trim());
-  return { name: group.getAttribute('aria-label') ?? '', options };
-};
+/**
+ * Which of a stage's radio groups (by accessible label, in page order) is the scene picker: the one labelled
+ * "Scene" (any case), else the first. A lesson can put step tabs or a speed control before its picker, and
+ * taking the first group blindly scanned those instead. -1 when there are no groups.
+ */
+export function pickerIndex(labels) {
+  const named = labels.findIndex((label) => label.trim().toLowerCase() === 'scene');
+  if (named >= 0) return named;
+  return labels.length ? 0 : -1;
+}
 
-/** Click option `index` of the picker called `name` (re-found every time: a scene switch re-renders the picker). */
-const clickOption = ({ name, index }) => {
-  const group = [...document.querySelectorAll('.stage-frame .segmented')].find((g) => (g.getAttribute('aria-label') ?? '') === name);
-  const button = group?.querySelectorAll('[role="radio"]')[index];
+/** Every radio group inside a stage frame, in page order, with its accessible label and option texts. */
+const findGroups = () =>
+  [...document.querySelectorAll('.stage-frame .segmented')].map((group) => ({
+    label: group.getAttribute('aria-label') ?? '',
+    options: [...group.querySelectorAll('[role="radio"]')].map((b) => (b.textContent ?? '').trim()),
+  }));
+
+/** Click option `index` of the `group`-th radio group (re-found every time: a scene switch re-renders the picker). */
+const clickOption = ({ group, index }) => {
+  const button = document.querySelectorAll('.stage-frame .segmented')[group]?.querySelectorAll('[role="radio"]')[index];
   if (!button) return false;
   button.click();
   return true;
@@ -56,7 +65,9 @@ const clickOption = ({ name, index }) => {
  * entry per scene ({ scene, problems }); a lesson without a picker yields a single entry for its default scene.
  */
 export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}) {
-  const picker = await page.evaluate(findPicker);
+  const groups = await page.evaluate(findGroups);
+  const group = pickerIndex(groups.map((g) => g.label));
+  const picker = group >= 0 ? groups[group] : null;
   const results = [];
   const listen = async (scene) => {
     await sleep(idleMs);
@@ -69,7 +80,7 @@ export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}
   }
   for (let index = 0; index < picker.options.length; index++) {
     errors.length = 0;
-    const clicked = await page.evaluate(clickOption, { name: picker.name, index });
+    const clicked = await page.evaluate(clickOption, { group, index });
     if (!clicked) {
       results.push({ scene: picker.options[index], problems: [`could not click scene tab "${picker.options[index]}"`] });
       continue;

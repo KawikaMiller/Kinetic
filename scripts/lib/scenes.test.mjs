@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isRenderLoop, sceneProblems, shardIds } from './scenes.mjs';
+import { isRenderLoop, pickerIndex, sceneProblems, shardIds } from './scenes.mjs';
 
 describe('the scene scan reads a render loop out of the console', () => {
   it('recognises React update-depth and re-render messages, and nothing else', () => {
@@ -33,5 +33,20 @@ describe('shardIds', () => {
     expect(() => shardIds(ids, '0/3')).toThrow();
     expect(() => shardIds(ids, '4/3')).toThrow();
     expect(() => shardIds(ids, 'x')).toThrow();
+  });
+});
+
+describe('pickerIndex', () => {
+  it('chooses the group labelled Scene even when step tabs come first', () => {
+    expect(pickerIndex(['Why it is legal', 'Scene', 'Playback speed'])).toBe(1);
+    expect(pickerIndex(['Step', ' scene '])).toBe(1);
+  });
+
+  it('falls back to the first group when none is called Scene', () => {
+    expect(pickerIndex(['Demo', 'Playback speed'])).toBe(0);
+  });
+
+  it('is -1 with no radio groups', () => {
+    expect(pickerIndex([])).toBe(-1);
   });
 });

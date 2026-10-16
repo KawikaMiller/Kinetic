@@ -157,7 +157,10 @@ export function parseBoundedDecimal(text: string, o: DecimalFieldOptions): Field
 }
 
 /** A learner-edited table, one rule per line: every row that parsed, or the first refusal with its 1-based line. */
-export type RowParse<T> = { ok: true; rows: { line: number; value: T }[] } | { ok: false; error: string; line: number };
+export type RowParse<T> = { ok: true; rows: { line: number; value: T }[] } | { ok: false; error: string; line: number; column?: number };
+
+/** A row reader's refusal; `column` (1-based, on the line as typed, indent included) makes the message "Line 3, column 7: ...". */
+export type RowFail = { ok: false; error: string; column?: number };
 
 const DEFAULT_ROW_NOUN = { one: 'rule', many: 'rules' };
 
@@ -170,8 +173,8 @@ export interface RowParseOptions<T> {
   comment?: string;
   /** What one row is called in the over-limit messages ("keep each rule", "more than 40 rules"); default rule / rules. */
   noun?: { one: string; many: string };
-  /** Read one trimmed, non-empty line; return the value or the sentence to show. */
-  row: (text: string, line: number) => FieldParse<T>;
+  /** Read one trimmed, non-empty line (`indent` is how many characters were trimmed off its front); return the value or the sentence to show. */
+  row: (text: string, line: number, indent: number) => { ok: true; value: T } | RowFail;
 }
 
 /**
@@ -192,8 +195,11 @@ export function parseRows<T>(text: string, o: RowParseOptions<T>): RowParse<T> {
     const trimmed = lines[i].trim();
     if (!trimmed || trimmed.startsWith(comment)) continue;
     if (rows.length >= o.maxRows) return { ok: false, line, error: `Line ${line}: more than ${o.maxRows} ${noun.many}; delete one first.` };
-    const read = o.row(trimmed, line);
-    if (!read.ok) return { ok: false, line, error: `Line ${line}: ${read.error}` };
+    const read = o.row(trimmed, line, lines[i].length - lines[i].trimStart().length);
+    if (!read.ok) {
+      if (read.column === undefined) return { ok: false, line, error: `Line ${line}: ${read.error}` };
+      return { ok: false, line, column: read.column, error: `Line ${line}, column ${read.column}: ${read.error}` };
+    }
     rows.push({ line, value: read.value });
   }
   return { ok: true, rows };

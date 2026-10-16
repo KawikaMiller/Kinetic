@@ -1,5 +1,7 @@
 /** Input monitors: the population stability index over baseline-decile bins, and the two-sample KS statistic. */
 
+import { ksAgainstSorted } from '../../core/distributions';
+
 /** A share of 0 is floored here so the logarithm stays finite. */
 export const PSI_FLOOR = 1e-4;
 /** Rule-of-thumb PSI bands: 0.1 and 0.25, from memory, not a standard. */
@@ -37,29 +39,6 @@ export function binShares(values: readonly number[], edges: readonly number[]): 
 }
 
 const byValue = (p: number, q: number) => p - q;
-
-/** Two-sample Kolmogorov-Smirnov statistic max |F1 - F2| by a merge, when the second sample is already sorted ascending. */
-export function ksAgainstSorted(a: readonly number[], sortedB: readonly number[]): number {
-  const x = [...a].sort(byValue);
-  const y = sortedB;
-  let i = 0;
-  let j = 0;
-  let d = 0;
-  while (i < x.length && j < y.length) {
-    const v = Math.min(x[i], y[j]);
-    while (i < x.length && x[i] <= v) i++;
-    while (j < y.length && y[j] <= v) j++;
-    d = Math.max(d, Math.abs(i / x.length - j / y.length));
-  }
-  return d;
-}
-
-/** Two-sample Kolmogorov-Smirnov statistic max |F1 - F2|. */
-export const ksTwoSample = (a: readonly number[], b: readonly number[]): number => ksAgainstSorted(a, [...b].sort(byValue));
-
-/** The asymptotic two-sample critical value c(alpha) sqrt((n + m) / (n m)); c(0.05) = 1.358 (from memory of the usual table). */
-export const KS_C_05 = 1.358;
-export const ksCritical2 = (n: number, m: number, c = KS_C_05): number => c * Math.sqrt((n + m) / (n * m));
 
 /** What a monitor compares each day with. */
 export interface Baseline {
