@@ -49,7 +49,7 @@ export const DEFENCES: readonly { id: DefenceId; label: string; text: string }[]
   { id: 'allowList', label: 'Allow-list of hosts', text: 'Only hosts on the list may be fetched.' },
   { id: 'denyList', label: 'Block private and link-local ranges', text: 'Refuse addresses in private and link-local ranges (a deny-list).' },
   { id: 'normalise', label: 'Normalise the address before checking', text: 'Turn every address form into one canonical form first.' },
-  { id: 'pin', label: 'Resolve once, connect to the address you checked', text: 'Use the address that was checked, not a second lookup.' },
+  { id: 'pin', label: 'Resolve once, connect to the address you checked', text: 'Use the address that was checked, not a second lookup. It only matters when a check is on.' },
   { id: 'recheck', label: 'Re-check every redirect hop', text: 'Run the same checks on each redirect target.' },
   { id: 'schemes', label: 'Restrict schemes and ports', text: 'Allow only web schemes on standard ports.' },
   { id: 'egress', label: 'Egress firewall from the server', text: 'Block the server from reaching internal ranges (it does not cover the link-local service in this model).' },
@@ -165,9 +165,16 @@ export function run(s: Scenario, d: DefenceSet): Result {
     return { status, blockedBy: null, connections, credential, refused, steps };
   };
 
-  const connect = (hop: Hop): Result | null => {
+  const anyCheck = d.allowList || d.denyList;
+  /** `checked`: a check ran on this hop, so there is an earlier answer to pin or to look up again. A bare address needs no lookup. */
+  const connect = (hop: Hop, checked: boolean): Result | null => {
     const zone = hop.connectZone(d);
-    steps.push({ stage: 'resolve', tone: 'info', text: d.pin ? `Connect to the address that was checked for ${hop.label}.` : `Look ${hop.label} up again to connect.` });
+    if (hop.name !== null) {
+      const text = checked
+        ? d.pin ? `Connect to the address that was checked for ${hop.label}.` : `Look ${hop.label} up again to connect.`
+        : d.pin ? `Look ${hop.label} up and connect to the first answer.` : `Look ${hop.label} up to connect.`;
+      steps.push({ stage: 'resolve', tone: 'info', text });
+    }
     if (d.egress && zone === 'internal') return blocked('egress', `the egress firewall refuses ${ZONE_WORD[zone]}`, 'connect');
     connections.push({ host: hop.label, zone });
     steps.push({ stage: 'connect', tone: 'orange', text: `The server connects to ${hop.label}: ${ZONE_WORD[zone]}.` });
@@ -178,8 +185,8 @@ export function run(s: Scenario, d: DefenceSet): Result {
   const first = hopOf(s.target);
   const refusal = runChecks(first, d);
   if (refusal) return blocked(refusal.layer, refusal.why, 'check');
-  steps.push({ stage: 'check', tone: 'info', text: d.allowList || d.denyList ? 'The checks you turned on passed.' : 'No check is turned on.' });
-  const stopped = connect(first);
+  steps.push({ stage: 'check', tone: 'info', text: anyCheck ? 'The checks you turned on passed.' : 'No check is turned on.' });
+  const stopped = connect(first, anyCheck);
   if (stopped) return stopped;
 
   if (s.redirect) {
@@ -189,7 +196,7 @@ export function run(s: Scenario, d: DefenceSet): Result {
       const again = runChecks(next, d);
       if (again) return blocked(again.layer, `the redirect hop: ${again.why}`, 'redirect');
     }
-    const stoppedAgain = connect(next);
+    const stoppedAgain = connect(next, d.recheck && anyCheck);
     if (stoppedAgain) return stoppedAgain;
   }
   return finish();

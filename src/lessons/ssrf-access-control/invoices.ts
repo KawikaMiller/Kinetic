@@ -86,6 +86,13 @@ export const readableWithKnownIds = (mode: Mode, userId: number): number => KNOW
 /** What a signed-in user can read in a mode: stepping numeric ids, or using the ids they already hold. */
 export const reachable = (mode: Mode, userId: number): number => (mode === 'unguessable' ? readableWithKnownIds(mode, userId) : readableForeign(mode, userId));
 
+/** The id after a +/- press. From an opaque id the stepper goes back to the numbered ids, so it is never stuck after a chip press. */
+export const stepKey = (key: number | string, delta: number): number =>
+  typeof key === 'number' ? Math.min(LAST_ID, Math.max(FIRST_ID, key + delta)) : FIRST_ID;
+
+/** The id to show after a mode change: an opaque id only makes sense in the unguessable mode, so other modes go back to numbered ids. */
+export const keyForMode = (key: number | string, mode: Mode): number | string => (mode !== 'unguessable' && typeof key !== 'number' ? FIRST_ID : key);
+
 // ── The admin export (function-level access) ─────────────────────────────
 
 export type Role = 'member' | 'admin';

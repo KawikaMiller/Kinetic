@@ -3,7 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { invoiceCaption } from './captions';
-import { FIRST_ID, INVOICES, KNOWN_FOREIGN, LAST_ID, MODES, SIGNED_IN, adminExport, ownerName, reachable, respond, type Mode, type Role } from './invoices';
+import { FIRST_ID, INVOICES, KNOWN_FOREIGN, LAST_ID, MODES, SIGNED_IN, adminExport, keyForMode, ownerName, reachable, respond, stepKey, type Mode, type Role } from './invoices';
 import { OPENING } from './opening';
 
 const OTHERS = INVOICES.filter((i) => i.ownerId !== SIGNED_IN.id).length;
@@ -17,7 +17,12 @@ export function InvoiceScene({ picker }: { picker: ReactNode }) {
   const r = respond(mode, SIGNED_IN.id, key);
   const ex = adminExport(role, roleCheck);
   const reach = reachable(mode, SIGNED_IN.id);
-  const step = (d: number) => setKey((k) => (typeof k === 'number' ? Math.min(LAST_ID, Math.max(FIRST_ID, k + d)) : FIRST_ID));
+  /** Stepping from an opaque id goes back to the numbered ids, so the stepper is never stuck after a chip press. */
+  const step = (d: number) => setKey((k) => stepKey(k, d));
+  const changeMode = (m: Mode) => {
+    setMode(m);
+    setKey((k) => keyForMode(k, m));
+  };
   const numeric = typeof key === 'number' ? key : null;
 
   return (
@@ -29,20 +34,20 @@ export function InvoiceScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Other people's invoices reachable" value={`${reach} of ${OTHERS}`} color={reach ? 'var(--bad)' : 'var(--ok)'} sub={mode === 'unguessable' ? 'only the ids already held' : 'by stepping the id'} />
           <Stat label="This request" value={r.status} color={r.status === 200 && r.invoice && r.invoice.ownerId !== SIGNED_IN.id ? 'var(--bad)' : 'var(--ok)'} sub={r.body} />
-          <Stat label="Admin export" value={ex.status} color={ex.status === 200 && role === 'member' ? 'var(--bad)' : 'var(--ok)'} sub={ex.status === 200 ? `${ex.rows} rows to a ${role}` : 'refused'} />
+          <Stat label="Admin export" value={ex.status} color={ex.status === 200 && role === 'member' ? 'var(--bad)' : 'var(--ok)'} sub={ex.status === 200 ? `${ex.rows} rows to ${role === 'admin' ? 'an admin' : 'a member'}` : 'refused'} />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--bad)', label: 'someone else\'s record returned', shape: 'square' }, { color: 'var(--ok)', label: 'refused, or your own record', shape: 'square' }]} />}
       controls={[
         <>
           {picker}
-          <Segmented label="Server mode" value={mode} options={MODES.map((m) => ({ value: m.id, label: m.label }))} onChange={setMode} />
+          <Segmented label="Server mode" value={mode} options={MODES.map((m) => ({ value: m.id, label: m.label }))} onChange={changeMode} />
         </>,
         <>
           <span className="ssrf-label">Invoice id</span>
-          <Button softDisabled={numeric === null || numeric <= FIRST_ID} onClick={() => step(-1)} className="ssrf-step" aria-label="Previous invoice id">−</Button>
+          <Button softDisabled={numeric !== null && numeric <= FIRST_ID} onClick={() => step(-1)} className="ssrf-step" aria-label="Previous invoice id">−</Button>
           <b className="ssrf-id">{numeric ?? 'opaque id'}</b>
-          <Button softDisabled={numeric === null || numeric >= LAST_ID} onClick={() => step(1)} className="ssrf-step" aria-label="Next invoice id">+</Button>
+          <Button softDisabled={numeric !== null && numeric >= LAST_ID} onClick={() => step(1)} className="ssrf-step" aria-label="Next invoice id">+</Button>
           <ChipButton tone="orange" on={key === KNOWN_FOREIGN[0].token} onClick={() => setKey(KNOWN_FOREIGN[0].token)}>An id from a shared link</ChipButton>
           <ChipButton tone="orange" on={key === KNOWN_FOREIGN[1].token} onClick={() => setKey(KNOWN_FOREIGN[1].token)}>An id from a log line</ChipButton>
         </>,
@@ -77,7 +82,7 @@ export function InvoiceScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
         </Box>
-        <p className="ssrf-note">Deny by default, check on every request, and do the check in one place: see the authorization models lesson. A random id is harder to guess, and it is not a check.</p>
+        <p className="ssrf-note">Deny by default, check on every request, and do the check in one place: see the authorization models lesson. A random id is harder to guess, and it is not a check. In owner mode an id that does not exist gets the same 404 as one that belongs to someone else, so the response does not say which ids exist.</p>
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated">a fictional invoices API with fake users and amounts; the ids that look random come from a seeded generator and are illustrative</Provenance>

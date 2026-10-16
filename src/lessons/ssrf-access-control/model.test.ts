@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
-import { INVOICES, KNOWN_FOREIGN, LAST_ID, PEOPLE, SIGNED_IN, adminExport, invoiceById, reachable, readableForeign, respond, respondBroken } from './invoices';
+import { FIRST_ID, INVOICES, KNOWN_FOREIGN, LAST_ID, keyForMode, stepKey, PEOPLE, SIGNED_IN, adminExport, invoiceById, reachable, readableForeign, respond, respondBroken } from './invoices';
 import { NO_HARDENING, blastRadius, exposure } from './metadata';
 import { DEFENCES, SCENARIOS, SUBSET_COUNT, subsetOf, run, unsafe, type DefenceId, type ScenarioId } from './ssrf';
 
@@ -94,6 +94,39 @@ describe('the pipeline over every subset of the nine defences and the six scenar
         if (r.credential) expect(r.credential.scope).toBe(on.has('leastPrivilege') ? 'narrow' : 'broad');
       }
     }
+  });
+
+  it('the invoice stepper recovers after an opaque id, and a mode change drops an opaque id outside the unguessable mode', () => {
+    const token = KNOWN_FOREIGN[0].token;
+    expect(stepKey(token, 1)).toBe(FIRST_ID);
+    expect(stepKey(token, -1)).toBe(FIRST_ID);
+    expect(stepKey(FIRST_ID, -1)).toBe(FIRST_ID);
+    expect(stepKey(LAST_ID, 1)).toBe(LAST_ID);
+    expect(stepKey(FIRST_ID + 3, 1)).toBe(FIRST_ID + 4);
+    expect(keyForMode(token, 'none')).toBe(FIRST_ID);
+    expect(keyForMode(token, 'owner')).toBe(FIRST_ID);
+    expect(keyForMode(token, 'unguessable')).toBe(token);
+    expect(keyForMode(FIRST_ID + 2, 'owner')).toBe(FIRST_ID + 2);
+  });
+
+  it('the other sets that block all six, named on the Fetch scene, do so (checked against the hand-typed groups, then run)', () => {
+    const sets: DefenceId[][] = [['allowList', 'recheck'], ['allowList', 'egress'], ['denyList', 'egress']];
+    for (const on of sets) {
+      for (const s of SCENARIOS) {
+        const groups = SAFE_WHEN[s.id];
+        expect(groups === 'always' || groups.some((g) => g.every((d) => on.includes(d))), `${on.join('+')} ${s.id}`).toBe(true);
+        expect(unsafe(run(s, subsetOf(on.reduce((m, d) => m | (1 << DEFENCES.findIndex((x) => x.id === d)), 0)))), `${on.join('+')} ${s.id}`).toBe(false);
+      }
+    }
+  });
+
+  it('the connect step says what happened: no lookup for a bare address, no "again" and no "checked" without a check', () => {
+    const texts = (id: ScenarioId, on: DefenceId[]) => run(SCENARIOS.find((s) => s.id === id)!, subsetOf(on.reduce((m, d) => m | (1 << DEFENCES.findIndex((x) => x.id === d)), 0))).steps.map((x) => x.text).join(' | ');
+    expect(texts('metadata', [])).not.toMatch(/Look .* up/);
+    expect(texts('rebinding', ['pin'])).not.toContain('was checked');
+    expect(texts('rebinding', [])).not.toContain('again');
+    expect(texts('rebinding', ['denyList'])).toContain('up again to connect');
+    expect(texts('rebinding', ['denyList', 'pin'])).toContain('was checked');
   });
 
   it('the fake credential is labelled fake and has no real credential shape', () => {

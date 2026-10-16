@@ -14,13 +14,13 @@ const lesson: LessonModule = {
       'Deciding what a machine\'s role can do if a request is ever turned against it',
       'Auditing an API where the id in the path picks the record',
     ],
-    why: 'These two bugs sit near the top of the usual lists of web risk, and both look fine in a happy-path test: the preview works and the invoice loads. The lesson shows why a deny-list is not enough alone, why a random id is not a check, and which layers do the real work.',
+    why: 'These two bugs have both appeared on lists of common web risks (from memory: check the current OWASP list), and both look fine in a happy-path test: the preview works and the invoice loads. The lesson shows why a deny-list is not enough alone, why a random id is not a check, and which layers do the real work.',
     watch: 'Your own request is blue (--info) and the server\'s own fetch is orange (--orange), a labelled actor and not a failure. A request that reached an internal or metadata service is red (--bad), a blocked request is a green dashed line (--ok), and the server turns violet (--violet) when a layer blocked it. The fake credential is red and says it is fake. In the invoices scene a record that is someone else\'s is red and a refusal or your own record is green. The company network is the violet dashed box.',
   },
   tryThis: [
-    `Preview, on the defaults (the public page, no defences): the preview ${F.defaultStatus === 'public' ? 'reaches a public page' : 'ends elsewhere'}. Pick the second card, the hostname that resolves inside: it reaches the internal wiki. Turn on "Block private and link-local ranges": blocked. Pick the redirect card: the wiki again, because the first hop looked public. Turn on "Re-check every redirect hop": blocked.`,
+    `Preview, on the defaults (the public page, no defences): the preview ${F.defaultStatus === 'public' ? 'reaches a public page' : 'ends elsewhere'}. Pick the second card, the hostname that resolves inside: it reaches an address inside the company network. Turn on "Block private and link-local ranges": blocked. Pick the redirect card: the wiki again, because the first hop looked public. Turn on "Re-check every redirect hop": blocked.`,
     `Preview, on the defaults: press the preset "Deny-list only": ${F.unsafeDeny} of ${F.scenarios} scenarios still reach inside. Press "Allow-list, pinning, re-check": ${F.unsafeTrio} of ${F.scenarios} do, and the public page card still reaches a public page.`,
-    `Metadata hardening, on the defaults: a fake credential comes back and its role could do ${F.broad} things. Turn on "Least-privilege role": ${F.narrow} thing. Turn on "Session token required": the request is refused and it is ${F.tokenRefused}.`,
+    `Metadata hardening, on the defaults: a fake credential comes back and its role could do ${F.broad} things. Turn on "Least-privilege role": ${F.narrow} thing. Turn on "Session token required": the request is refused and a leaked credential could do ${F.tokenRefused} things.`,
     `Invoices, on the defaults (no ownership check, invoice ${F.stepTo.id - 2}): press + twice. Invoice ${F.stepTo.id} comes back although it is not Alice's, and ${F.noneReach} of ${F.others} other invoices are reachable. Pick "Owner check": ${F.ownerReach}, and the same id answers 404. Pick "Unguessable ids only": ${F.unguessableReach}, and "An id from a shared link" returns an invoice again.`,
   ],
   keyIdeas: [
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'It runs on a public address, so a deny-list of private ranges cannot stop a request to it',
       ],
       answer: 0,
-      why: `A credential is only worth what its role can do: in this model an unrestricted role could do ${F.broad} things and a least-privilege one ${F.narrow}, and a session token makes the request refused (${F.tokenRefused}).`,
+      why: `A credential is only worth what its role can do: in this model an unrestricted role could do ${F.broad} things and a least-privilege one ${F.narrow}, and a session token makes the request refused, so a leak could do ${F.tokenRefused} things.`,
     },
     {
       q: 'Which scenario does an allow-list of hosts on its own fail to stop in this lesson?',

@@ -28,7 +28,7 @@ export function MetadataScene({ picker }: { picker: ReactNode }) {
       introKey={`${h.token}|${h.hopLimit}|${h.leastPrivilege}`}
       stats={
         <Stats>
-          <Stat label="Leaked credential could do" value={radius} color={radius ? 'var(--bad)' : 'var(--ok)'} sub={radius ? 'things, with the role it was issued for' : 'nothing: no credential came back'} />
+          <Stat label="Leaked credential could do" value={radius} color={radius ? 'var(--bad)' : 'var(--ok)'} sub={radius ? `${radius === 1 ? 'thing' : 'things'}, with the role it was issued for` : 'nothing: no credential came back'} />
           <Stat label="Credential" value={e.kind === 'credential' ? e.scope : 'none'} color={e.kind === 'credential' ? 'var(--bad)' : 'var(--ok)'} sub={e.kind === 'credential' ? 'fake, labelled as such' : 'the request was refused'} />
         </Stats>
       }
@@ -49,7 +49,7 @@ export function MetadataScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated">a toy machine; the credential is fake and nothing is requested from any service</Provenance>
-        <Provenance kind="from-memory">AWS's second-generation metadata service (IMDSv2) uses a session token and a hop limit for this; check the AWS documentation for the exact behaviour and defaults</Provenance>
+        <Provenance kind="from-memory">AWS's second-generation metadata service (IMDSv2) uses a session token and a hop limit for this; check the AWS documentation for the exact behaviour and defaults; the hop limit alone may behave differently from what is shown here</Provenance>
         <ClaimLabel kind="practice">taking the ask away and shrinking the answer are both done in real deployments</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>

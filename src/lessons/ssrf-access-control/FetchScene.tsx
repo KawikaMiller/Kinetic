@@ -71,7 +71,7 @@ export function FetchScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Outcome" value={result.status === 'blocked' ? 'blocked' : result.status === 'public' ? 'public page' : result.status} color={result.status === 'blocked' || result.status === 'public' ? 'var(--ok)' : 'var(--bad)'} sub={outcomeText(result)} />
-          <Stat label="Scenarios that reach inside" value={`${unsafeScenarios} of ${SCENARIOS.length}`} color={unsafeScenarios ? 'var(--bad)' : 'var(--ok)'} sub="under these defences, an internal or metadata service" />
+          <Stat label="Scenarios that reach inside" value={`${unsafeScenarios} of ${SCENARIOS.length}`} color={unsafeScenarios ? 'var(--bad)' : 'var(--ok)'} sub="under these defences, an internal or metadata service (a refused metadata reply still counts as reached)" />
           <Stat label="Defences on" value={`${on} of ${DEFENCES.length}`} />
         </Stats>
       }
@@ -106,7 +106,7 @@ export function FetchScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="ssrf-stage stage-pad">
-        <p className="ssrf-note">{s.text} The scheme and port restriction stops other kinds of request, and none of these six cards uses one, so it changes no outcome here.</p>
+        <p className="ssrf-note">{s.text} The scheme and port restriction stops other kinds of request, and none of these six cards uses one, so it changes no outcome here. In this model the preset "Allow-list, pinning, re-check" is not the only way to block all six: allow-list with re-check alone, allow-list with the egress firewall, or deny-list with the egress firewall do too; pinning only helps once a check is on.</p>
         <WideRegion minWidth={MIN_WIDTH} label="Network diagram: scroll sideways to see all of it">
           <GraphView
             nodes={NODES}
@@ -119,7 +119,7 @@ export function FetchScene({ picker }: { picker: ReactNode }) {
             underlay={
               <g className="ssrf-zone">
                 <rect x={390} y={112} width={220} height={176} rx={10} />
-                <text x={500} y={106} textAnchor="middle">Company network, not reachable from the internet</text>
+                <text x={500} y={106} textAnchor="middle">Company network</text>
               </g>
             }
             nodeMark={nodeMark}
@@ -134,7 +134,7 @@ export function FetchScene({ picker }: { picker: ReactNode }) {
         <Provenance kind="simulated">fictional hosts; no request is sent anywhere, and nothing you do is parsed as a URL</Provenance>
         <Provenance kind="toy">the DNS and redirect tables are small made-up tables; the second lookup of one name differs, which is what the rebinding card shows</Provenance>
         <Provenance kind="from-memory">cloud providers document a link-local metadata service for each machine; real defences also depend on your cloud, your HTTP library and your network, so check your provider's documentation</Provenance>
-        <ClaimLabel kind="practice">an allow-list is the strongest of these; a deny-list needs the other layers to be worth much</ClaimLabel>
+        <ClaimLabel kind="practice">an allow-list is commonly recommended as the first layer; a deny-list needs the other layers to be worth much</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
   );

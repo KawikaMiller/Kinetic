@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { INVOICES, MODES, adminExport, ownerName, reachable, respond, SIGNED_IN, type Mode, type Role } from './invoices';
 import { blastRadius, exposure, type Hardening } from './metadata';
-import { DEFENCES, SCENARIOS, run, scenarioById, unsafe, type DefenceSet, type Result, type ScenarioId } from './ssrf';
+import { DEFENCES, SCENARIOS, ZONE_WORD, run, scenarioById, unsafe, type DefenceSet, type Result, type ScenarioId } from './ssrf';
 
 /** One line saying where the request finally went and why. */
 export function outcomeText(r: Result): string {
-  if (r.status === 'blocked') return `blocked by ${DEFENCES.find((d) => d.id === r.blockedBy)!.label.toLowerCase()}`;
+  if (r.status === 'blocked') return `blocked (${DEFENCES.find((d) => d.id === r.blockedBy)!.label})`;
   if (r.status === 'public') return 'reached a public page';
-  if (r.status === 'internal') return 'reached the internal wiki';
+  if (r.status === 'internal') return `reached ${ZONE_WORD.internal}`;
   if (r.credential) return `reached the metadata service and a fake credential came back (${r.credential.scope} role)`;
   return r.refused ? 'reached the metadata service, which refused' : 'reached the metadata service';
 }
