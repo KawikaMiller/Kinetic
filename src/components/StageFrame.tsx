@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
-import type { CSSProperties, DependencyList, ReactNode } from 'react';
-import { useCaption, useIntroCaption } from '../core/caption';
+import type { CSSProperties, ReactNode } from 'react';
+import { useCaption, useIntroCaption, type IntroKey } from '../core/caption';
 import type { Player } from '../core/usePlayer';
 import type { Frame } from '../core/types';
 import { Transport } from './Transport';
@@ -38,7 +38,7 @@ export function StageFrame<F extends Frame>({
    * there is a `player`: its frames own the caption.
    */
   intro?: ReactNode;
-  introKey?: DependencyList;
+  introKey?: IntroKey;
 }) {
   const stageStyle = { minHeight: height, ...style };
   return (
@@ -75,7 +75,7 @@ export function StageFrame<F extends Frame>({
 }
 
 /** Sets the intro caption from inside the frame, so only a player-less stage that asked for one does. */
-function IntroCaption({ node, deps }: { node: ReactNode; deps?: DependencyList }) {
+function IntroCaption({ node, deps }: { node: ReactNode; deps?: IntroKey }) {
   useIntroCaption(node, deps);
   return null;
 }

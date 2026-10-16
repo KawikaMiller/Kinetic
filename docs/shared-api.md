@@ -127,7 +127,7 @@ duration(0.34)        // '340ms'; duration(1.26) → '1.3s'   (the 4 identical `
 ms(41.6)              // '42 ms'
 perSec(12)            // '12/s'
 pct(0.123)            // '12%'; pct(0.0004, 1) → '<0.1%'
-bytes(1536)           // '1.5 KB' (binary); bytes(12000, { base: 1000 }) → '12.0 KB'; { dp: 0 } → '12 KB'
+bytes(1536)           // '1.5 KB' (binary); bytes(12000, { base: 1000 }) → '12.0 KB'; { dp: 0 } → '12 KB'; bytes(4096, { iec: true }) → '4.0 KiB' (IEC names for lessons that tell KiB from KB; ignored with base 1000)
 times(3)              // '3×'
 plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 pad2(7), clock(605)   // '07', '10:05'
@@ -1970,6 +1970,19 @@ parseRows(text, { maxRows: 60, maxLineChars: 30, noun: { one: 'instruction', man
 - **`core/testing/sqlite.ts`** is the same run-time `import()` shim `core/testing/node.ts` uses (no Node types in the app tsconfig), typed for what the tests call: `exec`, `prepare(...).all/run/setReturnArrays`. Test-only; never import it from app code. **Migrated:** query-planning, join-algorithms, normalization, orm-n-plus-one, relational-algebra (two files) and sql-aggregation-windows, which each carried their own 5 to 8 lines. Test: `core/testing/sqlite.test.ts`.
 - **`table-cards`** (in `kit.css`) is the responsive table: under 600px the header hides and each row becomes a bordered card whose cells read "Column name: value" from their `data-label`. A scroller around the table keeps its own `border: 0` in the lesson's CSS (one line), because a lesson's base border rule would outrank a kit one. The `table.table-cards` selector outranks a lesson's `.xx-table th, .xx-table td` padding. **Migrated:** halting-problem (both tables) and lambda-calculus; coverage-mutation-testing and computing-ethics use `data-label` for their own layouts and are untouched.
 - **`parseRows` `noun`** names a row in the over-limit sentences ("Line 8 is 63 characters; keep each instruction to 30 or fewer", "Line 61: more than 60 instructions; delete one first"). Default rule / rules, so turing-machines is unchanged; bytecode-vms passes instruction / instructions (its test now expects that wording). Not done: comment text still counts toward `maxLineChars` and a trailing `# comment` on a rule is still read as words; neither is explained on screen (queued request, left open).
+
+### Kit round wave 5 to 6, agent I — `convexHull` in `core/geometry`, `bytes()` binary units, `StageFrame introKey`, `smoke --scenes`
+
+```ts
+import { convexHull, cross, orient, startAtLowestLeft, dedupePoints } from '../../core/geometry';
+convexHull(points)                          // Andrew's chain, corners only; keeps extra fields on the points
+convexHull(points, { policy: 'keep' })      // every point lying on an edge stays
+cross(o, a, b) // > 0 left turn, 0 collinear, < 0 right;  orient(o, a, b) // its sign: 1 / 0 / -1
+```
+- With y up the polygon is counter-clockwise from the lowest, leftmost point; with y down (SVG) the same numbers wind it clockwise on screen, the drawn shape is identical. Under 3 distinct points, or all collinear, the points themselves come back (the two ends under `'drop'`).
+- convex-hull's `hull.ts` imports `cross`, `dedupe`, `startAtLowestLeft` and the order helpers from here (and re-exports them); its graham/andrew/jarvis stay local because they push every orientation test into a `Tally` for the stepper. strongly-connected-components' local chain is gone: `hull.ts` wraps the shared `convexHull`. Frames of both lessons are pixel-identical. Tests: `core/geometryHull.test.ts` (500 seeded sets against a brute-force oracle, both policies).
+- **`bytes(n, { iec: true })`** names the binary units `KiB`/`MiB`/`GiB`/`TiB` (dma-io-devices, io-models, mmap-page-cache say KiB when the lesson cares); without `iec`, and with `base: 1000`, the output is exactly what it was. No caller was changed.
+- **`StageFrame introKey`** (and `useIntroCaption`'s second argument) is now `string | number | DependencyList` and compared BY VALUE (`sameIntroKey`, `core/caption`): a fresh array, or a fresh object or nested array inside it, with the same contents no longer sets the caption again. A caption set re-renders the stage, so a key that changed on every render was an infinite loop (webassembly's `result.engine`, dma's `introKey={[r]}`). Functions, class instances and JSX in a key still compare by identity, so key on text or counts: `introKey={caption}` or `introKey={[mode, n]}`. Existing callers behave the same.
 
 ## Not built (deliberately)
 

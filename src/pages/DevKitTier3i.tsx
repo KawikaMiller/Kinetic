@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { LogStream } from '../components/LogStream';
 import { SeedField } from '../components/SeedField';
 import { Button } from '../components/ui';
+import { bytes } from '../core/format';
+import { convexHull } from '../core/geometry';
 import { DevKitSection as Section } from './DevKitSection';
 
 /** Dev-only demo of the Tier 3 kit round, wave 5 to 6, agent I (#/dev/kit). */
@@ -32,9 +34,37 @@ function PickLogDemo() {
   );
 }
 
+const HULL_POINTS = [{ x: 4, y: 4 }, { x: 0, y: 0 }, { x: 2, y: 0 }, { x: 4, y: 0 }, { x: 2, y: 2 }, { x: 0, y: 4 }];
+
+const BYTES_DEMO = 4096;
+
+function BytesDemo() {
+  return (
+    <p className="mono">
+      bytes({BYTES_DEMO}) = {bytes(BYTES_DEMO)} · with {'{ iec: true }'} = {bytes(BYTES_DEMO, { iec: true })} · decimal = {bytes(BYTES_DEMO, { base: 1000 })}
+    </p>
+  );
+}
+
+function HullDemo() {
+  const show = (policy: 'drop' | 'keep') => convexHull(HULL_POINTS, { policy }).map((p) => `(${p.x},${p.y})`).join(' ');
+  return (
+    <>
+      <p className="mono">drop: {show('drop')}</p>
+      <p className="mono">keep: {show('keep')}</p>
+    </>
+  );
+}
+
 export function DevKitTier3i() {
   return (
     <>
+      <Section title="core/geometry convexHull · Andrew's chain with a collinear policy (drop keeps corners, keep keeps edge points)">
+        <HullDemo />
+      </Section>
+      <Section title="bytes() · IEC names (KiB, MiB) on request, existing output unchanged">
+        <BytesDemo />
+      </Section>
       <Section title="SeedField · follows a preset's seed with no remount, so typing keeps focus (no key={seed})">
         <SeedDemo />
       </Section>
