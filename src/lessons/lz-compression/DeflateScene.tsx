@@ -11,7 +11,8 @@ import { inflateRaw, realCompressedSize, streamsAvailable, type PartKind } from 
 import { deflateFrames } from './frames';
 import { parseControlRows } from './ParseControls';
 import { DEFLATE_MIN_MATCH } from './lz77';
-import { compress, orderZeroBits } from './model';
+import { compress } from './model';
+import { orderZeroBits } from '../../core/entropy';
 import { inflateStateOf, inflateText, sizeText, sizeVerdict } from './text';
 import type { ParseSettings } from './useParseSettings';
 

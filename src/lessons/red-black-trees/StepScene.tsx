@@ -6,7 +6,7 @@ import { usePlayer } from '../../core/usePlayer';
 import type { Tone } from '../../core/tone';
 import { buildRb, heightOf, sizeOf } from './model';
 import { DELETE_DEFAULT_KEY, DEFAULT_SEED, DELETE_PRESETS, INSERT_PRESETS, deleteBase, insertStart, type DeletePreset, type InsertPreset } from './presets';
-import { KEY_MAX, KEY_MIN, NODE_LIMIT, parseKeyList } from './keys';
+import { KEY_MAX, KEY_MIN, TREE_NODE_LIMIT, parseKeyList } from '../../core/keyInput';
 import { RbTreeView } from './RbTreeView';
 import { useRbSession } from './useRbSession';
 
@@ -127,7 +127,7 @@ export function StepScene({ picker, mode }: { picker: ReactNode; mode: 'insert' 
           </Button>
           <Button onClick={() => submit('delete')}>Delete</Button>
           <Hint>
-            <span role="status">{session.note ?? `Whole numbers from ${KEY_MIN} to ${KEY_MAX}, each once, up to ${NODE_LIMIT} nodes.`}</span>
+            <span role="status">{session.note ?? `Whole numbers from ${KEY_MIN} to ${KEY_MAX}, each once, up to ${TREE_NODE_LIMIT} nodes.`}</span>
           </Hint>
         </>,
         ...(mode === 'insert'

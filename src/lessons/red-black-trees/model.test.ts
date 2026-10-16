@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt, shuffle } from '../../core/random';
-import { AvlRef } from './avlRef';
+import { buildAvl, checkAvl, heightOf as avlHeightOf, inOrder as avlInOrder, insertKey as avlInsert, removeKey as avlRemove, EMPTY_TREE as EMPTY_AVL, type Tree as AvlTree } from '../../core/avl';
 import { COMPARE_SEED, compareRuns } from './compare';
 import {
   EMPTY_RB,
@@ -259,33 +259,31 @@ describe('broken variants', () => {
   });
 });
 
-describe('the compact AVL reference used by the comparison', () => {
+describe('the AVL model the comparison uses (core/avl)', () => {
   it('matches a Set and keeps every height real and every balance factor within one (200 seeds x 200 ops)', () => {
     for (let seed = 1; seed <= 200; seed++) {
       const rnd = mulberry32(seed);
-      const avl = new AvlRef();
+      let avl: AvlTree = EMPTY_AVL;
       const ref = new Set<number>();
       for (let op = 0; op < 200; op++) {
         const key = randInt(1, 70, rnd);
         if (ref.has(key) && rnd() < 0.5) {
-          avl.remove(key);
+          avl = avlRemove(avl, key).tree;
           ref.delete(key);
         } else if (!ref.has(key)) {
-          avl.insert(key);
+          avl = avlInsert(avl, key).tree;
           ref.add(key);
         }
-        const a = avl.audit();
-        expect(a.keys, `seed ${seed} op ${op}`).toEqual([...ref].sort((x, y) => x - y));
-        expect(a.valid, `seed ${seed} op ${op}`).toBe(true);
+        expect(avlInOrder(avl), `seed ${seed} op ${op}`).toEqual([...ref].sort((x, y) => x - y));
+        expect(checkAvl(avl), `seed ${seed} op ${op}`).toEqual([]);
       }
     }
   });
 
   it('sorted 1..15 takes 11 rotations, as the avl-trees lesson says (n minus log2(n + 1))', () => {
-    const avl = new AvlRef();
-    for (const k of range(15)) avl.insert(k);
-    expect(avl.rotations).toBe(11);
-    expect(avl.height).toBe(4);
+    const built = buildAvl(range(15));
+    expect(built.rotations).toBe(11);
+    expect(avlHeightOf(built.tree)).toBe(4);
   });
 });
 

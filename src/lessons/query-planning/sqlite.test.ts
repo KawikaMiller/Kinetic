@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { openSqlite, type SqliteDb } from '../../core/testing/sqlite';
 import { INDEXES, NO_INDEXES, QUERIES, actualRows, planNodes, planQuery, predicateText, queryById, sqlLines, DEFAULT_COSTS, type IndexSet, type Params, type QueryDef } from './model';
 import { STATUSES, countRows, makeOrders, type TableShape } from './table';
 import lesson from './index';
 
-// SQLite is the independent oracle (AC-0/T3 #19) for the access paths it can tell us about. It is loaded at run time:
-// the app's tsconfig has no Node types, so this is the same dynamic-import shim core/testing uses for node:crypto.
-interface SqliteStatement { all: (...p: unknown[]) => Record<string, unknown>[]; run: (...p: unknown[]) => unknown }
-interface SqliteDb { exec: (sql: string) => void; prepare: (sql: string) => SqliteStatement }
-const SQLITE = 'node:sqlite';
-const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => SqliteDb };
+// SQLite (core/testing/sqlite) is the independent oracle (AC-0/T3 #19) for the access paths it can tell us about.
 
 /** A 2,000-row table (10 rows a customer, 10 rows a page): the same seeded generator as the lesson, smaller. */
 const SHAPE: TableShape = { rows: 2000, pages: 200, customers: 200 };
@@ -23,7 +19,7 @@ const SQLITE_INDEX_SQL: Record<string, string> = {
 };
 
 function database(indexes: IndexSet): SqliteDb {
-  const db = new DatabaseSync(':memory:');
+  const db = openSqlite();
   db.exec('CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER, status TEXT, created_at INTEGER, total INTEGER)');
   const insert = db.prepare('INSERT INTO orders VALUES (?, ?, ?, ?, ?)');
   for (const o of orders) insert.run(o.id, o.customer_id, o.status, o.created_at, o.total);

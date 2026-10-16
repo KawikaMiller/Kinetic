@@ -1,5 +1,6 @@
 import { opFrames } from './frames';
-import { applyChoice, balanceOf, buildAvl, buildBalanced, buildBst, fibonacciSize, fibonacciTree, heightOf, inOrder, stopAtImbalance } from './model';
+import { applyChoice, stopAtImbalance } from './model';
+import { balanceOf, buildAvl, buildBalanced, buildBst, fibonacciSize, fibonacciTree, heightOf, inOrder } from '../../core/avl';
 import { DELETE_DEFAULT_KEY, FIB_DEFAULT_HEIGHT, PICK_DEFAULT, REPAIR_DEFAULT, SORTED_KEYS, ZIGZAG_KEYS, caseBase, casePreset, deleteBase } from './presets';
 
 /** Every number the lesson's text quotes, measured from the model once. */

@@ -1,26 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
-import {
-  CORRECT_CHOICE,
-  EMPTY_TREE,
-  applyChoice,
-  balanceOf,
-  buildAvl,
-  buildBalanced,
-  buildBst,
-  caseAt,
-  checkAvl,
-  fibonacciSize,
-  fibonacciTree,
-  heightOf,
-  inOrder,
-  insertKey,
-  removeKey,
-  sizeOf,
-  stopAtImbalance,
-  type Choice,
-  type Tree,
-} from './model';
+import { CORRECT_CHOICE, applyChoice, stopAtImbalance, type Choice } from './model';
+import { EMPTY_TREE, balanceOf, buildAvl, buildBalanced, buildBst, caseAt, checkAvl, fibonacciSize, fibonacciTree, heightOf, inOrder, insertKey, removeKey, sizeOf, type Tree } from '../../core/avl';
 
 /** An independent check, written without the model's helpers: BST order, real heights, balance factors. */
 function brute(t: Tree): { sorted: number[]; height: number; worstBalance: number; heightsStored: boolean } {

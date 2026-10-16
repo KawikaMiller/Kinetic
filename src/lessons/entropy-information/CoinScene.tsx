@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Bars, Curve, HLine, Plot2D, Points } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
-import { BLOCK_LENGTHS, COIN_DEFAULT, COIN_PRESETS, COIN_STEP, binaryEntropy, blockBitsPerFlip } from './model';
+import { BLOCK_LENGTHS, COIN_DEFAULT, COIN_PRESETS, COIN_STEP, blockBitsPerFlip } from './model';
+import { binaryEntropy } from '../../core/entropy';
 import { bits2, bits4, bitsOrUnbounded, coinCaption, coinReadout, coinSum } from './text';
 
 const PLOT_X = { domain: [0, 1] as const, label: 'p (chance of heads)', ticks: 5 };

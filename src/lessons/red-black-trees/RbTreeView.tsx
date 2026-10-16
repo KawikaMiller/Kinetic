@@ -1,11 +1,12 @@
-import { TreeSvg, type TreeGeometry, type TreeShape } from '../../components/TreeSvg';
-import { WideRegion } from '../../components/WideRegion';
+import { BinaryTreeView, TREE_NODE_RADIUS as RADIUS } from '../../components/BinaryTreeView';
+import type { TreeGeometry } from '../../components/TreeSvg';
 import type { Tone } from '../../core/tone';
-import { blackHeights, colorOf, type Group, type RbTree } from './model';
+import { blackHeights, colorOf, heightOf, type Group, type RbTree } from './model';
 import { colorWord } from './text';
-import { RADIUS, SIDE_PAD, TOP, treeBox, treeMinWidth } from './treeBox';
 
 const BADGE_DY = RADIUS + 10;
+const TOP = 32;
+const MAX_LEVEL_GAP = 50;
 const RING_GAP = 4;
 const GHOST_DX = 30;
 const GHOST_R = 14;
@@ -28,9 +29,7 @@ export interface RbTreeViewProps {
 
 /** A binary tree on TreeSvg: red nodes pink with an R, black nodes grey with a B, so colour is never the only cue. */
 export function RbTreeView({ tree, badge = 'color', rings, short, groups, onNodeClick, ariaLabel }: RbTreeViewProps) {
-  const { nodes, root } = tree;
-  const box = treeBox(tree);
-  const shape: TreeShape<number> = { root, children: (id) => [nodes[id].left, nodes[id].right] };
+  const { nodes } = tree;
   const bh = badge === 'blackHeight' ? blackHeights(tree) : null;
   const badgeText = (id: number) => {
     const letter = nodes[id].color;
@@ -65,43 +64,35 @@ export function RbTreeView({ tree, badge = 'color', rings, short, groups, onNode
     return rings?.(id) ?? null;
   };
   return (
-    <WideRegion minWidth={treeMinWidth(tree)} label={`Tree: scroll sideways to see all ${Object.keys(nodes).length} nodes`}>
-      <TreeSvg
-        shape={shape}
-        layout="inorder"
-        width={box.width}
-        height={box.height}
-        pad={SIDE_PAD}
-        top={TOP}
-        levelGap={box.gap}
-        radius={RADIUS}
-        natural
-        className="rb-svg"
-        label={(id) => id}
-        renderNode={(id) => {
-          const ring = ringOf(id);
-          return (
-            <>
-              {ring && <circle className={`rb-ring tone-${ring}`} r={RADIUS + RING_GAP} />}
-              <circle className={`rb-node ${nodes[id].color === 'R' ? 'is-red' : 'is-black'}`} r={RADIUS} />
-              <text className={`rb-key ${nodes[id].color === 'R' ? 'is-red' : 'is-black'}`} y={3.5}>
-                {id}
+    <BinaryTreeView
+      tree={tree}
+      levels={heightOf(tree)}
+      top={TOP}
+      maxGap={MAX_LEVEL_GAP}
+      className="rb-svg"
+      renderNode={(id) => {
+        const ring = ringOf(id);
+        return (
+          <>
+            {ring && <circle className={`rb-ring tone-${ring}`} r={RADIUS + RING_GAP} />}
+            <circle className={`rb-node ${nodes[id].color === 'R' ? 'is-red' : 'is-black'}`} r={RADIUS} />
+            <text className={`rb-key ${nodes[id].color === 'R' ? 'is-red' : 'is-black'}`} y={3.5}>
+              {id}
+            </text>
+            {badge !== 'none' && (
+              <text className="rb-badge" y={BADGE_DY}>
+                {badgeText(id)}
               </text>
-              {badge !== 'none' && (
-                <text className="rb-badge" y={BADGE_DY}>
-                  {badgeText(id)}
-                </text>
-              )}
-            </>
-          );
-        }}
-        nodeScale={(id) => (ringOf(id) === 'hi' ? EMPHASIS : 1)}
-        onNodeClick={onNodeClick}
-        nodeAriaLabel={(id) => `Node ${id}, ${colorWord(colorOf(tree, id))}${onNodeClick ? ', press to recolour' : ''}`}
-        overlay={overlay}
-        ariaLabel={ariaLabel}
-      />
-    </WideRegion>
+            )}
+          </>
+        );
+      }}
+      nodeScale={(id) => (ringOf(id) === 'hi' ? EMPHASIS : 1)}
+      onNodeClick={onNodeClick}
+      nodeAriaLabel={(id) => `Node ${id}, ${colorWord(colorOf(tree, id))}${onNodeClick ? ', press to recolour' : ''}`}
+      overlay={overlay}
+      ariaLabel={ariaLabel}
+    />
   );
 }
 

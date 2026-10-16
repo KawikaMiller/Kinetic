@@ -52,7 +52,7 @@ export function LimitsScene({ picker }: { picker: ReactNode }) {
     >
       <div className="hp stage-pad">
         <div className="hp-scroll" role="region" aria-label="Analyser results" tabIndex={0}>
-          <table className="hp-table">
+          <table className="hp-table table-cards">
             <thead>
               <tr><th scope="col">Machine</th><th scope="col">The analyser says</th><th scope="col">What it really does</th></tr>
             </thead>

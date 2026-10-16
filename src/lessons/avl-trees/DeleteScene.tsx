@@ -6,7 +6,7 @@ import { usePlayer } from '../../core/usePlayer';
 import { AvlTreeView } from './AvlTreeView';
 import { KeyOps } from './KeyOps';
 import { AVL_LEGEND, frameEdgeMark, frameNodeMark, frameScale } from './marks';
-import { buildAvl, levelsOf, sizeOf } from './model';
+import { buildAvl, levelsOf, sizeOf } from '../../core/avl';
 import { DELETE_DEFAULT_KEY, DELETE_TREE_HEIGHT, SORTED_KEYS, deleteBase } from './presets';
 import { useAvlSession, type AvlStart } from './useAvlSession';
 

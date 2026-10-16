@@ -1,21 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { mulberry32, pick, randInt, type Rnd } from '../../core/random';
+import { openSqlite, type SqliteDb } from '../../core/testing/sqlite';
 import {
   CMP_OPS, DB, PRESETS, REL_NAMES, REWRITES, TEACHERS, bin, eq, evaluate, intermediateRows, postOrder, proj, pushedPlan, rel, relabel, ren, resultOf,
   sameRows, schemaOf, sel, unpushedPlan, type Cond, type Expr, type Mode, type Relation, type Value,
 } from './model';
 import { toSql } from './sql';
 
-// ── Real SQLite (node:sqlite), loaded without pulling Node's types into the app build ──
-interface Db {
-  exec(sql: string): void;
-  prepare(sql: string): { all(): Record<string, Value>[] };
-}
-const SQLITE = 'node:sqlite';
-let db: Db;
-beforeAll(async () => {
-  const { DatabaseSync } = (await import(/* @vite-ignore */ SQLITE)) as { DatabaseSync: new (path: string) => Db };
-  db = new DatabaseSync(':memory:');
+// ── Real SQLite (node:sqlite, through core/testing/sqlite) ──
+let db: SqliteDb<Record<string, Value>>;
+beforeAll(() => {
+  db = openSqlite<Record<string, Value>>();
   for (const name of REL_NAMES) {
     const r = DB[name];
     db.exec(`CREATE TABLE ${name} (${r.cols.map((c, i) => `${c} ${r.types[i] === 'int' ? 'INTEGER' : 'TEXT'}`).join(', ')})`);

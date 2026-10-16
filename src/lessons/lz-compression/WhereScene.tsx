@@ -4,7 +4,8 @@ import { ChipButton, ClaimLabel, ControlGroup, Legend, Provenance, ProvenanceRow
 import { useAsyncValue } from '../../core/useAsyncValue';
 import { realCompressedSize } from './deflate';
 import { parseControlRows } from './ParseControls';
-import { TEXT_PRESETS, compress, huffmanOnlyBits, orderZeroBits, rawBits } from './model';
+import { TEXT_PRESETS, compress, huffmanOnlyBits, rawBits } from './model';
+import { orderZeroBits } from '../../core/entropy';
 import { comparisonCaption, type Comparison } from './text';
 import type { ParseSettings } from './useParseSettings';
 

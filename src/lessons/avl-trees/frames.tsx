@@ -1,6 +1,6 @@
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { balanceOf, checkAvl, insertKey, removeKey, sizeOf, heightOf, type Case, type OpResult, type Tree } from './model';
+import { balanceOf, checkAvl, insertKey, removeKey, sizeOf, heightOf, type Case, type OpResult, type Tree } from '../../core/avl';
 import { CASE_FIX, CASE_NAME, fixCount, rotationCount, rotationText, signed } from './text';
 
 export interface AvlFrame extends Frame {

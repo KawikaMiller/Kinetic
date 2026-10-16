@@ -2,7 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextArea } from '../../components/ui';
-import { ASCII_BITS, MAX_TEXT, TABLE_ROWS, TEXT_DEFAULT, TEXT_PRESETS, clampText, textEntropy } from './model';
+import { ASCII_BITS, MAX_TEXT, TABLE_ROWS, TEXT_DEFAULT, TEXT_PRESETS, clampText } from './model';
+import { textEntropy } from '../../core/entropy';
 import { bits2, bits3, showChar, textCaption } from './text';
 
 export function TextScene({ picker }: { picker: ReactNode }) {
