@@ -5,7 +5,7 @@ import { LogStream } from '../../components/LogStream';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import type { Frame } from '../../core/types';
 import { plural, recoveryCaption } from './captions';
