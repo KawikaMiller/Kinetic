@@ -1,17 +1,17 @@
 import { useState, type ReactNode } from 'react';
+import { ClassifyBoard, type ClassifyItem } from '../../components/ClassifyBoard';
 import { StageFrame } from '../../components/StageFrame';
+import { classifyScore, emptyClassify, sortedCount } from '../../core/classify';
 import { ClaimLabel, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { classifyCaption } from './captions';
-import { ClassifyBoard } from './ClassifyBoard';
 import { CATEGORIES, KEY, SNIPPETS } from './classification';
 
-const ITEMS = SNIPPETS.map((s) => ({ id: s.id, label: s.code }));
-const reasonOf = (id: string) => SNIPPETS.find((s) => s.id === id)?.reason ?? '';
-const labelOf = (id: string) => CATEGORIES.find((c) => c.id === id)?.label.toLowerCase() ?? id;
+const ITEMS: ClassifyItem[] = SNIPPETS.map((s) => ({ id: s.id, label: s.code, explanation: s.reason }));
 
 /** Scene 3: sort eight snippets by what ISO C says about them. */
 export function ClassifyScene({ picker }: { picker: ReactNode }) {
-  const [state, setState] = useState({ sorted: 0, checked: false, correct: 0 });
+  const [board, setBoard] = useState(() => emptyClassify(ITEMS));
+  const state = { sorted: sortedCount(ITEMS, board.answers), checked: board.checked, correct: classifyScore(ITEMS, KEY, board.answers) };
   return (
     <StageFrame
       height={560}
@@ -27,7 +27,7 @@ export function ClassifyScene({ picker }: { picker: ReactNode }) {
       controls={[picker]}
     >
       <div className="ub-stage stage-pad">
-        <ClassifyBoard items={ITEMS} bins={CATEGORIES} answerKey={KEY} explain={reasonOf} binLabel={labelOf} onChange={setState} />
+        <ClassifyBoard items={ITEMS} categories={CATEGORIES} answerKey={KEY} value={board} onChange={setBoard} labelFont="mono" />
       </div>
       <ProvenanceRow>
         <ClaimLabel kind="standard">per ISO C (C11 and C17 clause numbers quoted from memory); C++ differs in places</ClaimLabel>

@@ -2057,6 +2057,17 @@ Scorers only: tokenising, stopwords and chunking stay with the caller (rag-pipel
 ```
 Without `freedTone` nothing changes. (The existing `tone` prop is ignored for a freed block, and callers pass it there today, so it could not become the override.) The freed tag now takes the box colour instead of a hard-coded --bad. Migration for after t3/b22 merges: ownership-refcounting drops its local `.heap-obj.rc-ok` class and passes `freedTone="ok"`.
 
+### `ClassifyBoard` + `core/classify` — undefined-behavior (migrated); chomsky-hierarchy, randomness-csprng next
+```tsx
+const ITEMS: ClassifyItem[] = [{ id, label: ReactNode, text?: string, explanation?: ReactNode }];   // explanation => a "Why?" button
+const CATEGORIES: ClassifyCategory[] = [{ id, label }];                                              // 2 to 5 reads well; 5 wraps
+const [board, setBoard] = useState(() => emptyClassify(ITEMS));      // { answers: Record<id, categoryId | null>, checked }
+<ClassifyBoard items={ITEMS} categories={CATEGORIES} answerKey={KEY} value={board} onChange={setBoard}
+  labelFont="mono" verdict={({ right, sorted, correct }) => …} status="polite" groupLabel={(item) => …} />
+classifyScore(ITEMS, KEY, board.answers)   sortedCount(ITEMS, board.answers)   // for the stage's captions and stats
+```
+Controlled: the lesson owns `value`, so captions, `Stat`s and `introKey` read it directly; Check and Reset (which also closes every "Why?") go through `onChange`, and choosing a category un-checks the board (`pickCategory`). Each item is a `role="radiogroup"` with roving tabindex and arrow/Home/End keys (`useRadioGroup`), named `Category of <text | string label | id>` unless `groupLabel` says otherwise. Per-item verdicts are plain spans: the score line ("3 of 8 right", once per Check) is the only live region, so a screen reader hears one announcement, not eight; `status="off"` silences even that for a stage that announces through its caption. `verdict` defaults to "Right." / "Not quite: it is X." / "Not sorted: it is X." (X lower-cased). `labelFont="mono"` draws labels as `<code>` (snippets, grammars). Classes are `classify-*` in `components/classifyBoard.css`. threat-modeling's drop-a-control interaction differs and stays local. Pixel-identical for undefined-behavior (`--frames` diff plus a driven shot of the checked, revealed scene).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

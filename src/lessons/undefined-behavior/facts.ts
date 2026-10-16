@@ -1,5 +1,6 @@
 /** Numbers the try-this, key ideas and quiz quote, read off the model at the default state. */
-import { KEY, score, SNIPPETS } from './classification';
+import { classifyScore } from '../../core/classify';
+import { KEY, SNIPPETS } from './classification';
 import { OPENING } from './opening';
 import { asWritten, assumingNoOverflow, defenceOutcome, differingInputs, rangeOf, retarget, sanitizerMessage, withCheck, type IntType } from './ub';
 
@@ -20,7 +21,7 @@ export const FACTS = {
   differing8Unsigned: differingInputs(eightUnsigned).length,
   nullAgree: withCheck(OPENING.pointer.address),
   total: SNIPPETS.length,
-  firstOnlyRight: score(ids, KEY, firstOnly),
+  firstOnlyRight: classifyScore(ids, KEY, firstOnly),
   sanitizer: sanitizerMessage(OPENING.defence.x),
   wrapvResult: defenceOutcome('wrapv', OPENING.defence.x).result,
   noneResult: defenceOutcome('none', OPENING.defence.x).result,
