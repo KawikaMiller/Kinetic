@@ -129,3 +129,14 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 |---|---|---|---|
 | `SeedField` resyncs its text to the `seed` prop when it differs and the field is not focused (it only reads the prop on mount, so a preset or "lowest seed that breaks it" leaves the old number showing) | kafka-partitioned-log (keyed workaround), any lesson that sets the seed from a preset | Phase 2 | lessons currently remount the field with a `key` |
 | `SequenceDiagram` text floor: ladder text renders 7.7px at 768 when `times` is on | kafka-partitioned-log scene 3 | Phase 2 | measured by the review, 8.0 at 390 |
+
+## From T3-B15, B16 (builder reports)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Shared `core/geometry` `convexHull(points, { policy })` + `cross`, based on `convex-hull/hull.ts` (andrew, cross, dedupe, startAtLowestLeft; tested vs brute force) | convex-hull + strongly-connected-components' local hull.ts (same Andrew chain, screen coords y-down, no collinear policy): second user confirmed | wave 5 to 6 round | SCC calls it with y flipped or an orientation sign |
+| Typed 2-D integer-point / interval list parsers (`parseTypedPoint`, `parseIntervals`) into core/parse | convex-hull, sweep-line | on a third user | |
+| `SeedField` resync to its `seed` prop (lessons key it by seed as a workaround) | kafka, spatial-indexes, stream-windowing | wave 5 to 6 round | shared component fix |
+| Plot2D labelled-lane bars layer (draggable ends) | sweep-line | optional | GanttLanes can't do draggable ends |
+| `LogStream` `onRowClick` / selectable row | io-models | wave 5 to 6 round | |
+| `bytes()` KiB/MiB option for binary units | dma-io-devices, io-models, mmap-page-cache | wave 5 to 6 round | |
+| `ArrayStrip` `size="sm"` | specs assumed it | optional | |
