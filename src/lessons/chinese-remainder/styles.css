@@ -1,0 +1,24 @@
+.cr-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.cr-gears { display: flex; justify-content: space-around; gap: 4px; }
+.cr-gear { display: block; max-width: 100%; height: auto; }
+.cr-dial { fill: none; stroke: var(--dim); stroke-width: 3; }
+.cr-dial.is-lit { stroke: var(--ok); fill: color-mix(in srgb, var(--ok) 14%, transparent); }
+.cr-tooth { stroke: var(--muted); stroke-width: 2; }
+.cr-tooth.is-wanted { stroke: var(--info); stroke-width: 4; }
+.cr-wanted { fill: var(--info); }
+.cr-pointer { stroke: var(--hi); stroke-width: 3; stroke-linecap: round; }
+.cr-hub { fill: var(--hi); }
+.cr-label { font: 600 12px var(--mono); fill: var(--muted); }
+.cr-label.is-lit { fill: var(--ok); }
+.cr-label.cr-dim { fill: var(--muted); font-weight: 400; }
+.cr-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.cr-note b.ok { color: var(--ok); }
+.cr-h { margin: 6px 0 0; font: 600 13px var(--mono); }
+.cr-gear-controls { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.cr-formula { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font: 12px var(--mono); }
+.cr-formula li { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border: 1px solid var(--cell-line); border-radius: 6px; overflow-wrap: anywhere; }
+.cr-term-name { font-weight: 700; color: var(--violet); }
+.cr-euclid { border-collapse: collapse; font: 12px var(--mono); }
+.cr-euclid th, .cr-euclid td { padding: 3px 10px; border: 1px solid var(--cell-line); text-align: right; }
+.cr-recipe { margin: 0; padding-left: 20px; font: 12px/1.7 var(--mono); overflow-wrap: anywhere; }
+.cr-stage ~ .provenance-row { margin: 8px 16px 12px; }

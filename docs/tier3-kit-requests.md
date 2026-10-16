@@ -146,3 +146,13 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 |---|---|---|
 | **K3-T6: `npm run smoke -- --scenes`**: visit every scene of every lesson that has a scene picker (click each tab), listen to console/pageerror for ~3 s idle per scene, fail on any error (esp. 'Maximum update depth exceeded'); cap runtime by sharding by lesson id | Two infinite-render-loop blockers in one tier (webassembly 'boundary' scene, dma-io-devices scene 4) were invisible to smoke because it loads only the default scene | next kit round, before wave 6 |
 | `StageFrame` `introKey`: accept string/number only, or compare arrays by value, so a fresh array can't re-trigger the caption effect | same root cause (dma) | next kit round |
+
+## From T3-B19, B18 (builder reports)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| `core/tfidf` (TF-IDF and BM25 scoring) | rag-pipelines (both); llm-agents-tool-use deliberately keeps a simpler keyword rule | on second real user | |
+| Two-sample KS in `core/distributions` (`ksStatistic` is one-sample only) | model-evals-drift (local) + any drift/AB lesson | wave 6 to 7 round | |
+| `core/stats`: percentile-bootstrap interval of a mean; Gini coefficient | model-evals-drift, recommender-systems (each local) | wave 6 to 7 round | |
+| `core/bits.bitLength` | dp-patterns, modular-exponentiation, chinese-remainder (three copies) | on a fourth user or now | |
+| A bounded-list parser returning refusal messages (`parseIntegers` returns null only) | dp-patterns, randomized-algorithms (each ~6 lines of reasons) | wave 6 to 7 round (with K3-22 parseKit) | |
+| `svdSmall` limit 8x8 (oracle ran on 6x8) | recommender-systems | note only | |
