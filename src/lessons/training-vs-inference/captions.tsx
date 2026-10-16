@@ -33,6 +33,8 @@ export interface ServingView {
   maxBatch: number;
   maxWaitMs: number;
   stats: ServingStats;
+  /** Requests that have actually arrived so far, per second: the seeded stream is random, so it differs a little from `lambda`. */
+  arrivedPerSecond: number;
   capacity: number;
   overloaded: boolean;
   knee: number | null;
@@ -50,7 +52,7 @@ export function servingCaption(v: ServingView): ReactNode {
   }
   return (
     <>
-      Batches of up to {v.maxBatch} (waiting at most {v.maxWaitMs} ms) can drain {sig(v.capacity)}/s against {v.lambda}/s arriving: throughput <b>{sig(stats.throughput)}/s</b>, p50 {sig(stats.p50)} ms, p99{' '}
+      Batches of up to {v.maxBatch} (waiting at most {v.maxWaitMs} ms) can drain {sig(v.capacity)}/s against {v.lambda}/s arriving (this seeded random stream has delivered {sig(v.arrivedPerSecond)}/s so far): throughput <b>{sig(stats.throughput)}/s</b>, p50 {sig(stats.p50)} ms, p99{' '}
       <b>{sig(stats.p99)} ms</b>, mean batch {stats.meanBatch.toFixed(1)}, server busy {pctText(stats.utilisation, 0)} of the time.
     </>
   );

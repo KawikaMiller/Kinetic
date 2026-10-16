@@ -1,16 +1,17 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { GanttLanes, type GanttBar } from '../../components/GanttLanes';
 import { MetricMeter } from '../../components/MetricMeter';
 import { Curve, HLine, Plot2D, Points, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
-import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { barsAt } from '../../core/gantt';
 import { sig } from '../../core/format';
 import { servingCaption } from './captions';
 import { servingOpening } from './openings';
 import {
-  ARRIVAL_SEED, FIXED_MS, HORIZON_MS, LATENCY_BUDGET_MS, MAX_BATCH_LIMIT, PER_ITEM_MS, TICK_MS, capacityPerSecond, finishedBatches, kneeBatch, makeArrivals, overloaded, queuedCount, runServing, servingSim, servingStats,
+  ARRIVAL_SEED, FIXED_MS, HORIZON_MS, LATENCY_BUDGET_MS, MAX_BATCH_LIMIT, PER_ITEM_MS, TICK_MS, capacityPerSecond, finishedBatches, kneeBatch, makeArrivals, overloaded, queueingCheck, queuedCount, runServing, servingSim, servingStats,
   stateAtMs, type ServingState,
 } from './serving';
 
@@ -55,6 +56,8 @@ export function ServingScene({ picker }: { picker: ReactNode }) {
       }),
     [arrivals, lambda, maxWait],
   );
+  const check = useMemo(() => queueingCheck(arrivals, lambda, HORIZON_MS), [arrivals, lambda]);
+  const arrivedPerSecond = state.t === 0 ? 0 : (state.arrived * 1000) / state.t;
   const backlog = useMemo(() => {
     const out: [number, number][] = [];
     for (let t = 0; t <= HORIZON_MS; t += BACKLOG_EVERY_MS) out.push([t, queuedCount(stateAtMs(sim, t))]);
@@ -67,7 +70,7 @@ export function ServingScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={560}
-      intro={servingCaption({ lambda, maxBatch, maxWaitMs: maxWait, stats, capacity, overloaded: isOverloaded, knee })}
+      intro={servingCaption({ lambda, maxBatch, maxWaitMs: maxWait, stats, arrivedPerSecond, capacity, overloaded: isOverloaded, knee })}
       introKey={[lambda, maxBatch, maxWait, now]}
       stats={
         <Stats>
@@ -136,7 +139,7 @@ export function ServingScene({ picker }: { picker: ReactNode }) {
         )}
         <div className="tv-row">
           <figure className="tv-figure">
-            <figcaption>Throughput against max batch B (same arrivals, a run for each B)</figcaption>
+            <figcaption>Throughput against max batch B (same arrivals, a run for each B): once B keeps up, throughput is just the arrival rate</figcaption>
             <Plot2D x={{ domain: [1, MAX_BATCH_LIMIT], label: 'B', ticks: 4 }} y={{ domain: [0, Math.max(lambda * 1.2, 60)], label: 'per second', ticks: 4 }} width={300} height={180} ariaLabel="Throughput against max batch size">
               <HLine at={lambda} tone="dim" label={`arriving ${lambda}/s`} />
               <Curve points={sweep.map((r) => [r.b, r.throughput] as [number, number])} tone="info" />
@@ -145,7 +148,7 @@ export function ServingScene({ picker }: { picker: ReactNode }) {
             </Plot2D>
           </figure>
           <figure className="tv-figure">
-            <figcaption>p99 latency against max batch B</figcaption>
+            <figcaption>p99 latency against max batch B: it falls while B is below the knee, and rises with B only when the max wait T is long</figcaption>
             <Plot2D x={{ domain: [1, MAX_BATCH_LIMIT], label: 'B', ticks: 4 }} y={{ domain: [10, 10000], log: true, label: 'ms', ticks: 4 }} width={300} height={180} ariaLabel="p99 latency against max batch size">
               <HLine at={LATENCY_BUDGET_MS} tone="dim" label="budget" />
               <Curve points={sweep.map((r) => [r.b, Math.max(10, r.p99)] as [number, number])} tone="bad" />
@@ -153,6 +156,14 @@ export function ServingScene({ picker }: { picker: ReactNode }) {
             </Plot2D>
           </figure>
         </div>
+        <Hint tone="muted" className="tv-note">
+          A batch goes when B requests are queued or T ms after the oldest arrived, whichever is first. A bigger B adds capacity, but a request waits longer only when the timer, not the arrivals, fills the batch.
+          Queueing check at B = 1 and T = 0, an M/D/1 queue (random arrivals, fixed service time):{' '}
+          {check.closedFormMs === null
+            ? `${lambda}/s is past what one request at a time can drain (${sig(capacityPerSecond(1))}/s), so the formula has no steady state and the queue grows without bound`
+            : `the closed form 1/μ + ρ / (2μ(1 − ρ)) gives a mean of ${sig(check.closedFormMs)} ms and this short seeded stream gives ${sig(check.simulatedMs)} ms`}
+          . Why the queue explodes near capacity is the <Link to="/lesson/queueing-theory">queueing theory</Link> lesson; why the budget uses p99 and not the mean is <Link to="/lesson/percentiles-statistics">percentiles</Link>.
+        </Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={ARRIVAL_SEED}>seeded Poisson arrivals through a {TICK_MS} ms tick simulation; service takes {FIXED_MS} ms + {PER_ITEM_MS} ms per request in the batch</Provenance>
           <Provenance kind="illustrative">the 20 ms, 2 ms and 100 ms budget are made up; no real server was measured and no wall-clock latency is shown</Provenance>

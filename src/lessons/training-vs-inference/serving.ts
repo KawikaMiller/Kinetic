@@ -191,3 +191,32 @@ export function servingSim(arrivals: readonly number[], p: ServingParams, horizo
 
 /** The state at time `ms` of a sim made by `servingSim`. */
 export const stateAtMs = (sim: TickSim<ServingState>, ms: number): ServingState => sim.at(Math.round(ms / TICK_MS)) ?? sim.state;
+
+/**
+ * Mean latency in ms of an M/D/1 queue (random arrivals, one server, a fixed service time) at `lambda` per second with
+ * batch size 1: the service time plus the mean wait rho / (2 mu (1 - rho)). Null at or past capacity, where no steady state exists.
+ */
+export function md1MeanMs(lambda: number): number | null {
+  const service = serviceMs(1);
+  const rho = (lambda * service) / 1000;
+  return rho >= 1 ? null : service + (rho * service) / (2 * (1 - rho));
+}
+
+/** Mean of the finished requests' latencies in ms, or 0 before any finishes. */
+export function meanLatency(s: ServingState, arrivals: readonly number[]): number {
+  const l = latencies(s, arrivals);
+  return l.length === 0 ? 0 : l.reduce((a, b) => a + b, 0) / l.length;
+}
+
+export interface QueueingCheck {
+  /** The M/D/1 closed form, or null when the stream outpaces a batch size of 1. */
+  closedFormMs: number | null;
+  /** The mean latency this lesson's simulation gives with batch size 1 and no wait, on the same arrivals. */
+  simulatedMs: number;
+}
+
+/** The simulation at B = 1, T = 0 beside the M/D/1 formula it should approximate (the oracle the tests use, shown on screen). */
+export function queueingCheck(arrivals: readonly number[], lambda: number, horizonMs: number): QueueingCheck {
+  const s = runServing(arrivals, { lambda, maxBatch: 1, maxWaitMs: 0 }, horizonMs);
+  return { closedFormMs: md1MeanMs(lambda), simulatedMs: meanLatency(s, arrivals) };
+}

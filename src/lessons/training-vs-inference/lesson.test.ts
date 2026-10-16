@@ -8,7 +8,7 @@ import lesson from './index';
 import { DEVICE_BYTES, bytesPerParameter, memoryFigures, trainingRatio } from './memory';
 import { checkpointOpening, loopOpening, memoryOpening, servingOpening } from './openings';
 import {
-  ARRIVAL_SEED, HORIZON_MS, LATENCY_BUDGET_MS, LOOP_HORIZON_MS, capacityPerSecond, kneeBatch, lateCount, makeArrivals, overloaded, runServing, servingSim, servingStats, stateAtMs,
+  ARRIVAL_SEED, HORIZON_MS, LATENCY_BUDGET_MS, LOOP_HORIZON_MS, capacityPerSecond, kneeBatch, lateCount, makeArrivals, overloaded, queueingCheck, runServing, serviceMs, servingSim, servingStats, stateAtMs,
 } from './serving';
 import { TRAIN_STEPS, evaluationAccuracy, servedAccuracy, stepsDone, trainLoop } from './training';
 
@@ -55,9 +55,30 @@ describe('try-this entries, from the default state, as written', () => {
     expect(overloaded(120, 1)).toBe(true);
     expect(kneeBatch(120, 32)).toBe(4);
     const one = servingStats(runServing(arrivals, { lambda: 120, maxBatch: 1, maxWaitMs: 10 }, HORIZON_MS), arrivals);
-    const text = expectCaption(servingCaption({ lambda: 120, maxBatch: 1, maxWaitMs: 10, stats: one, capacity: capacityPerSecond(1), overloaded: true, knee: 4 }));
+    const text = expectCaption(servingCaption({ lambda: 120, maxBatch: 1, maxWaitMs: 10, stats: one, arrivedPerSecond: (one.arrived * 1000) / HORIZON_MS, capacity: capacityPerSecond(1), overloaded: true, knee: 4 }));
     expect(text).toContain('Overloaded: the queue is growing.');
     expect(text).toContain('A max batch of 4 or more would keep up.');
+  });
+
+  it('try-this 3, second part: from B = 2 with T = 50 ms and 40/s, dragging B to 8 takes p99 from 72 to 80 ms and p50 from 33 to 66 ms with throughput near 42/s', () => {
+    expect(lesson.tryThis[2]).toContain('p99 rises from 72 to 80 ms and p50 from 33 to 66 ms');
+    const arrivals = makeArrivals(ARRIVAL_SEED, 40, HORIZON_MS);
+    const at = (maxBatch: number) => servingStats(runServing(arrivals, { lambda: 40, maxBatch, maxWaitMs: 50 }, HORIZON_MS), arrivals);
+    expect([at(2).p99, at(8).p99].map(Math.round)).toEqual([72, 80]);
+    expect([at(2).p50, at(8).p50].map(Math.round)).toEqual([33, 66]);
+    expect(Math.round(at(8).throughput)).toBe(42);
+    const p99s = [2, 3, 4, 5, 6, 7, 8].map((b) => at(b).p99);
+    for (let i = 1; i < p99s.length; i++) expect(p99s[i], `B = ${i + 2}`).toBeGreaterThanOrEqual(p99s[i - 1]);
+  });
+
+  it('the queueing check: the M/D/1 closed form at 20/s is 22 + 0.44 x 22 / (2 x 0.56) = 30.64 ms, there is none at or past 1000/22 per second, and the simulation sits above the bare service time', () => {
+    expect(queueingCheck(makeArrivals(ARRIVAL_SEED, 20, HORIZON_MS), 20, HORIZON_MS).closedFormMs).toBeCloseTo(22 + (0.44 * 22) / (2 * 0.56), 9);
+    const arrivals = makeArrivals(ARRIVAL_SEED, 50, HORIZON_MS);
+    const past = queueingCheck(arrivals, 50, HORIZON_MS);
+    expect(past.closedFormMs).toBeNull();
+    expect(past.simulatedMs).toBeGreaterThan(serviceMs(1));
+    const light = queueingCheck(makeArrivals(ARRIVAL_SEED, 20, HORIZON_MS), 20, HORIZON_MS);
+    expect(light.simulatedMs).toBeGreaterThanOrEqual(serviceMs(1));
   });
 
   it('try-this 4: matching serves 92.8% like the offline evaluation; missing 50%; other statistics 73%', () => {
@@ -95,9 +116,12 @@ describe('captions are computed from the model', () => {
       const arrivals = makeArrivals(ARRIVAL_SEED, lambda, HORIZON_MS);
       for (const maxBatch of [1, 2, 4, 8, 16, 32]) {
         const stats = servingStats(runServing(arrivals, { lambda, maxBatch, maxWaitMs: 10 }, HORIZON_MS), arrivals);
-        const text = expectCaption(servingCaption({ lambda, maxBatch, maxWaitMs: 10, stats, capacity: capacityPerSecond(maxBatch), overloaded: overloaded(lambda, maxBatch), knee: kneeBatch(lambda, 32) }));
+        const text = expectCaption(servingCaption({ lambda, maxBatch, maxWaitMs: 10, stats, arrivedPerSecond: (stats.arrived * 1000) / HORIZON_MS, capacity: capacityPerSecond(maxBatch), overloaded: overloaded(lambda, maxBatch), knee: kneeBatch(lambda, 32) }));
         expect(text.includes('Overloaded'), `${lambda} B ${maxBatch}`).toBe(overloaded(lambda, maxBatch));
-        if (!overloaded(lambda, maxBatch)) expect(text).toContain(`throughput ${sig(stats.throughput)}/s`);
+        if (!overloaded(lambda, maxBatch)) {
+          expect(text).toContain(`throughput ${sig(stats.throughput)}/s`);
+          expect(text).toContain(`delivered ${sig((stats.arrived * 1000) / HORIZON_MS)}/s so far`);
+        }
         if (lambda === 400) expect(text).toContain('No batch size up to 32 would keep up.');
       }
     }
@@ -127,11 +151,19 @@ describe('captions are computed from the model', () => {
 });
 
 describe('quiz answers, from independent oracles', () => {
-  it('Q2: raising max batch raises capacity and can raise the wait at once: capacity grows with B while the wait for a batch to fill grows when arrivals are slow', () => {
+  it('Q2: at 40/s with a 50 ms timer, B from 2 to 8 raises capacity, leaves throughput at the arrival rate and raises p50 and p99 (so "lowers every latency" is false)', () => {
     for (let b = 1; b < 32; b++) expect(capacityPerSecond(b + 1)).toBeGreaterThan(capacityPerSecond(b));
-    const arrivals = makeArrivals(ARRIVAL_SEED, 30, HORIZON_MS);
-    const p50 = (maxBatch: number) => servingStats(runServing(arrivals, { lambda: 30, maxBatch, maxWaitMs: 50 }, HORIZON_MS), arrivals).p50;
-    expect(p50(32)).toBeGreaterThan(p50(1));
+    expect(lesson.quiz[1].q).toContain('40 requests per second');
+    expect(lesson.quiz[1].q).toContain('50 ms');
+    const arrivals = makeArrivals(ARRIVAL_SEED, 40, HORIZON_MS);
+    const run = (maxBatch: number) => servingStats(runServing(arrivals, { lambda: 40, maxBatch, maxWaitMs: 50 }, HORIZON_MS), arrivals);
+    const [small, big] = [run(2), run(8)];
+    expect(overloaded(40, 2)).toBe(false);
+    expect(Math.abs(big.throughput - small.throughput)).toBeLessThan(0.5);
+    expect(Math.abs(big.throughput - (small.arrived * 1000) / HORIZON_MS)).toBeLessThan(1);
+    expect(big.p50).toBeGreaterThan(small.p50);
+    expect(big.p99).toBeGreaterThan(small.p99);
+    expect([small.p50, big.p50, small.p99, big.p99].map(Math.round)).toEqual([33, 66, 72, 80]);
   });
 
   it('Q3: the memory options 2, 4 and 8 GB are the inference weights, a guess and the ratio; training state is 16 GB', () => {
