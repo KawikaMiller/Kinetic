@@ -1,0 +1,23 @@
+/* timing-side-channels */
+.tsc-stage { gap: 12px; min-width: 0; }
+.tsc-honesty { margin: 0; font: 600 12.5px var(--font); color: var(--muted); }
+.tsc-refused { margin: 8px 0 0; font: 600 13px var(--font); color: var(--bad); }
+.tsc-traces { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(0, 0.95fr); gap: 12px; align-items: start; }
+.tsc-trace ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; font: 500 12.5px var(--mono); }
+.tsc-trace li.is-diff { color: var(--bad); font-weight: 700; }
+.tsc-trace li.is-empty { color: var(--muted); list-style: none; margin-left: -22px; }
+.tsc-leaks { color: var(--bad); font-weight: 700; }
+.tsc-clean { color: var(--ok); font-weight: 700; }
+.tsc-row-on th, .tsc-row-on td:first-child { color: var(--hi); }
+.tsc-matrix-scroll { overflow-x: auto; }
+.tsc-matrix { min-width: 640px; }
+.tsc-matrix th.is-on, .tsc-matrix td.is-on { background: color-mix(in srgb, var(--violet) 16%, transparent); color: var(--violet); }
+.tsc-matrix th[scope='row'] { text-align: left; min-width: 150px; text-transform: none; }
+.tsc-verdict.is-covered { color: var(--ok); font-weight: 700; }
+.tsc-verdict.is-open { color: var(--bad); font-weight: 700; }
+.tsc-verdict.is-partly { color: var(--amber); font-weight: 700; }
+.tsc-costs { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+
+@media (max-width: 800px) {
+  .tsc-traces { grid-template-columns: minmax(0, 1fr); }
+}
