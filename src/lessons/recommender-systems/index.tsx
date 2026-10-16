@@ -66,7 +66,7 @@ const lesson: LessonModule = {
         'The ratings of the most similar existing user, which the model finds by comparing their histories',
       ],
       answer: 0,
-      why: `In the 2-factor model with regularisation 0.02 (the one the Neighbours and Funnel scenes use) a user with no ratings has factors the penalty pulls to zero, so p . q is 0 and every prediction is the mean rating (largest gap ${fac.coldSpread.toFixed(2)}), against up to ${fac.warmSpread.toFixed(2)} for a user with history. With no penalty, as in the default Factorise scene, the small starting factors stay and the largest gap is ${fac.coldSpreadDefault.toFixed(2)}. Either way the algorithm does not know what the new user likes.`,
+      why: `In the 2-factor model with regularisation 0.02 (the one the Neighbours and Funnel scenes use) a user with no ratings has factors the penalty pulls to zero, so p . q is 0 and each prediction is the mean rating (largest gap from it ${fac.coldSpread.toFixed(2)}), against up to ${fac.warmSpread.toFixed(2)} for a user with history. With no penalty, as in the default Factorise scene, the small starting factors stay and the largest gap is ${fac.coldSpreadDefault.toFixed(2)}. Either way the algorithm does not know what the new user likes.`,
     },
     {
       q: 'The minimum overlap for neighbours is raised from 2 films to 5. What happens?',
@@ -88,7 +88,7 @@ const lesson: LessonModule = {
         'It always puts the best-liked films on top, since a like can only come from a film users enjoy',
       ],
       answer: 0,
-      why: `In this model, after ${ROUNDS} rounds with no exploration the exposure Gini is ${loop.giniOff.toFixed(2)} against ${loop.giniFree.toFixed(2)} for the same rule told the true likes of the users, and it is higher on ${PINNED_LOOP_SEEDS.giniHigher} of ${PINNED_LOOP_SEEDS.streams} seeds. A different film is shown most on ${PINNED_LOOP_SEEDS.winnerDiffers} of them, so the winners are partly luck. With ${pctOf(EXPLORATION)} random slots the Gini is ${loop.giniOn.toFixed(2)}: lower, not gone.`,
+      why: `In this model, after ${ROUNDS} rounds with no exploration the exposure Gini is ${loop.giniOff.toFixed(2)} against ${loop.giniFree.toFixed(2)} for the same rule told the true likes of the users, and it is higher on ${PINNED_LOOP_SEEDS.giniHigher} of ${PINNED_LOOP_SEEDS.streams} seeds. A different film gets the top spot on ${PINNED_LOOP_SEEDS.winnerDiffers} of them, so the winners are partly luck. With ${pctOf(EXPLORATION)} random slots the Gini is ${loop.giniOn.toFixed(2)}: lower, not gone.`,
     },
     {
       q: `A catalogue is large, so the system takes the best ${CANDIDATES} by dot product and only then runs a ranker. Why two stages?`,
