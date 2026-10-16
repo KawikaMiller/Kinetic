@@ -4,7 +4,8 @@
  */
 import { gaussian } from '../../core/fixtures/datasets';
 import { mulberry32 } from '../../core/random';
-import { makeBaseline, readDay, ksCritical2, type MonitorReading } from './monitors';
+import { ksCritical2 } from '../../core/distributions';
+import { makeBaseline, readDay, type MonitorReading } from './monitors';
 import { BATCH, DAYS, MU, SPREAD, TRAIN_PER_CLASS, dayBatch } from './world';
 
 export const CLEAN_STREAMS = 200;

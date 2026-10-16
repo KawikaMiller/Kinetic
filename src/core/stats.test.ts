@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { mulberry32 } from './random';
 import {
   binomialPmf,
+  bootstrapMeanInterval,
+  gini,
   classificationMetrics,
   confusionAt,
   choose,
@@ -203,5 +206,77 @@ describe('classification metrics', () => {
     expect(confusionAt(ex, 0.5)).toEqual({ tp: 1, fp: 1, fn: 1, tn: 1 });
     expect(confusionAt(ex, 0)).toEqual({ tp: 2, fp: 2, fn: 0, tn: 0 });
     expect(confusionAt(ex, 1)).toEqual({ tp: 0, fp: 0, fn: 2, tn: 2 });
+  });
+});
+
+describe('bootstrapMeanInterval', () => {
+  const sample = Array.from({ length: 60 }, (_, i) => (i * 7919) % 13);
+  const mean = sample.reduce((a, b) => a + b, 0) / sample.length;
+
+  it('is repeatable for a seed and moves with it', () => {
+    expect(bootstrapMeanInterval(sample, 500, 4)).toEqual(bootstrapMeanInterval(sample, 500, 4));
+    expect(bootstrapMeanInterval(sample, 500, 4)).not.toEqual(bootstrapMeanInterval(sample, 500, 5));
+  });
+
+  it('brackets the sample mean, in order, narrower for a bigger sample', () => {
+    const small = bootstrapMeanInterval(sample.slice(0, 15), 800, 1);
+    const big = bootstrapMeanInterval(sample, 800, 1);
+    expect(big.lo).toBeLessThan(mean);
+    expect(big.hi).toBeGreaterThan(mean);
+    expect(big.hi - big.lo).toBeLessThan(small.hi - small.lo);
+  });
+
+  it('has no width for one value or equal values', () => {
+    expect(bootstrapMeanInterval([4], 100, 1)).toEqual({ lo: 4, hi: 4 });
+    expect(bootstrapMeanInterval([2, 2, 2], 100, 1)).toEqual({ lo: 2, hi: 2 });
+  });
+
+  it('covers the true mean (0.5) about 95% of the time on 200 seeded uniform samples of 30', () => {
+    const rnd = mulberry32(2025);
+    let covered = 0;
+    const trials = 200;
+    for (let t = 0; t < trials; t++) {
+      const draws = Array.from({ length: 30 }, rnd);
+      const { lo, hi } = bootstrapMeanInterval(draws, 400, t + 1);
+      if (lo <= 0.5 && 0.5 <= hi) covered++;
+    }
+    expect(covered / trials).toBeGreaterThan(0.88);
+    expect(covered / trials).toBeLessThan(0.995);
+  });
+
+  it('refuses an empty sample or no resamples', () => {
+    expect(() => bootstrapMeanInterval([], 100, 1)).toThrow(RangeError);
+    expect(() => bootstrapMeanInterval([1], 0, 1)).toThrow(RangeError);
+  });
+
+  it('defaults to 1000 resamples and seed 1', () => {
+    expect(bootstrapMeanInterval(sample)).toEqual(bootstrapMeanInterval(sample, 1000, 1));
+  });
+});
+
+describe('gini', () => {
+  it('is 0 for equal amounts, none, or all zeros', () => {
+    expect(gini([4, 4, 4, 4])).toBe(0);
+    expect(gini([])).toBe(0);
+    expect(gini([0, 0, 0])).toBe(0);
+    expect(gini([7])).toBe(0);
+  });
+
+  it('is 1 - 1/n when one holds everything', () => {
+    for (const n of [2, 5, 40]) expect(gini([9, ...Array<number>(n - 1).fill(0)])).toBeCloseTo(1 - 1 / n, 12);
+  });
+
+  it('matches the sorted-rank formula on seeded lists, and ignores order and scale', () => {
+    let seed = 12345;
+    const next = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    for (let t = 0; t < 100; t++) {
+      const xs = Array.from({ length: 2 + Math.floor(next() * 30) }, () => Math.floor(next() * 50));
+      const total = xs.reduce((a, b) => a + b, 0);
+      const sorted = [...xs].sort((a, b) => a - b);
+      const rankForm = total === 0 ? 0 : (2 * sorted.reduce((s, x, i) => s + (i + 1) * x, 0)) / (sorted.length * total) - (sorted.length + 1) / sorted.length;
+      expect(gini(xs)).toBeCloseTo(rankForm, 10);
+      expect(gini([...xs].reverse())).toBeCloseTo(gini(xs), 12);
+      expect(gini(xs.map((x) => x * 3))).toBeCloseTo(gini(xs), 12);
+    }
   });
 });

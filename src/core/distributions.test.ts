@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  distCdf, drawSample, erf, exponential, exponentialCdf, exponentialPdf, fastNormalQuantile, harmonic, ksCritical, ksStatistic, lognormal, lognormalCdf,
+  distCdf, drawSample, erf, exponential, exponentialCdf, exponentialPdf, fastNormalQuantile, harmonic, ksAgainstSorted, ksCritical, ksCritical2, ksStatistic, ksTwoSample, lognormal, lognormalCdf,
   lognormalPdf, normal, normalCdf, normalPdf, normalQuantile, pareto, paretoCdf, paretoPdf, poisson, poissonCdf, poissonPmf, quantile, zipfPmf, zipfSampler,
 } from './distributions';
 import { mulberry32 } from './random';
@@ -220,5 +220,60 @@ describe('drawSample', () => {
     const xs = drawSample(d, 3, 20_000);
     expect(mean(xs)).toBeCloseTo(5, 0);
     expect(ksStatistic(xs, (x) => distCdf(d, x))).toBeLessThan(ksCritical(xs.length));
+  });
+});
+
+describe('two-sample KS', () => {
+  const brute = (a: readonly number[], b: readonly number[]) => {
+    let d = 0;
+    for (const z of [...a, ...b]) {
+      const fa = a.filter((v) => v <= z).length / a.length;
+      const fb = b.filter((v) => v <= z).length / b.length;
+      d = Math.max(d, Math.abs(fa - fb));
+    }
+    return d;
+  };
+
+  it('equals a brute-force max gap over the pooled sample on seeded pairs with many ties', () => {
+    const rnd = mulberry32(31);
+    for (let t = 0; t < 300; t++) {
+      const a = Array.from({ length: 1 + Math.floor(rnd() * 40) }, () => Math.floor(rnd() * 12));
+      const b = Array.from({ length: 1 + Math.floor(rnd() * 40) }, () => Math.floor(rnd() * 12) + Math.floor(rnd() * 3));
+      expect(ksTwoSample(a, b), `pair ${t}`).toBeCloseTo(brute(a, b), 12);
+    }
+  });
+
+  it('is symmetric, 0 for identical samples and 1 for disjoint ones', () => {
+    const a = [3, 1, 2, 2];
+    const b = [10, 11, 12];
+    expect(ksTwoSample(a, [...a].reverse())).toBe(0);
+    expect(ksTwoSample(a, b)).toBe(1);
+    expect(ksTwoSample(b, a)).toBe(1);
+    expect(ksTwoSample([1, 2, 3, 9], [2, 3, 4])).toBeCloseTo(ksTwoSample([2, 3, 4], [1, 2, 3, 9]), 15);
+  });
+
+  it('gives the same answer through a presorted baseline, without touching it', () => {
+    const rnd = mulberry32(7);
+    const base = Array.from({ length: 50 }, () => rnd());
+    const sorted = [...base].sort((p, q) => p - q);
+    const frozen = [...sorted];
+    for (let t = 0; t < 20; t++) {
+      const day = Array.from({ length: 30 }, () => rnd() + 0.1 * t);
+      expect(ksAgainstSorted(day, sorted)).toBe(ksTwoSample(day, base));
+    }
+    expect(sorted).toEqual(frozen);
+  });
+
+  it('is 0 when either sample is empty, and does not reorder its inputs', () => {
+    expect(ksTwoSample([], [1, 2])).toBe(0);
+    expect(ksTwoSample([1, 2], [])).toBe(0);
+    const a = [3, 1, 2];
+    ksTwoSample(a, [2, 1]);
+    expect(a).toEqual([3, 1, 2]);
+  });
+
+  it('ksCritical2 is c * sqrt((n + m) / (n m)), 1.358 at the 5% level', () => {
+    expect(ksCritical2(100, 100)).toBeCloseTo(1.358 * Math.sqrt(0.02), 12);
+    expect(ksCritical2(40, 200, 1.628)).toBeCloseTo(1.628 * Math.sqrt(240 / 8000), 12);
   });
 });

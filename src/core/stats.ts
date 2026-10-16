@@ -3,6 +3,7 @@
  * expected-value, conditional-bayes, shuffle-reservoir, linear-time-sorting and
  * classification-metrics lessons. `mean` and `percentile` live in core/sim; use those.
  */
+import { mulberry32 } from './random';
 import { mean } from './sim';
 
 /** n! exactly. */
@@ -252,4 +253,40 @@ export function nearestRankIndex(n: number, pct: number): number {
 /** Nearest-rank percentile of an ascending sample: the ⌈p·n⌉-th smallest value; null for an empty sample. */
 export function nearestRank(sorted: readonly number[], pct: number): number | null {
   return sorted.length ? sorted[nearestRankIndex(sorted.length, pct) - 1] : null;
+}
+
+/** Resamples a bootstrap interval takes unless told otherwise. */
+export const BOOTSTRAP_DEFAULT_RESAMPLES = 1000;
+
+/**
+ * The 95% percentile-bootstrap interval of the mean of `values`: draw `resamples` samples of the same
+ * size with replacement (seeded, so the same inputs give the same interval), take each one's mean, and
+ * return the 2.5th and 97.5th percentile of those means. A sample of one value, or of equal values,
+ * gives a zero-width interval. Needs at least one value and one resample.
+ */
+export function bootstrapMeanInterval(values: readonly number[], resamples: number = BOOTSTRAP_DEFAULT_RESAMPLES, seed = 1): { lo: number; hi: number } {
+  if (!values.length || resamples < 1) throw new RangeError('a bootstrap needs at least one value and one resample');
+  const rnd = mulberry32(seed);
+  const n = values.length;
+  const means: number[] = [];
+  for (let r = 0; r < resamples; r++) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) sum += values[Math.floor(rnd() * n)];
+    means.push(sum / n);
+  }
+  means.sort((a, b) => a - b);
+  return { lo: means[Math.floor(0.025 * resamples)], hi: means[Math.ceil(0.975 * resamples) - 1] };
+}
+
+/**
+ * The Gini coefficient of non-negative amounts (shows per item, income per person): 0 when all are
+ * equal, 1 - 1/n when one holds everything, 0 for no amounts at all or all zeros. Sums every pairwise
+ * gap, so it costs n squared: fine for the tens or hundreds of items a lesson draws.
+ */
+export function gini(amounts: readonly number[]): number {
+  const total = amounts.reduce((a, b) => a + b, 0);
+  if (total === 0) return 0;
+  let sum = 0;
+  for (const a of amounts) for (const b of amounts) sum += Math.abs(a - b);
+  return sum / (2 * amounts.length * total);
 }

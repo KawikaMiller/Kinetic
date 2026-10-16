@@ -2,7 +2,8 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
-import { bitLength, operationCount, popcount, powRun } from './modpow';
+import { bitLength } from '../../core/bits';
+import { operationCount, popcount, powRun } from './modpow';
 import { OPENING, parseExponent, TIMING_PRESETS } from './presets';
 
 const TOY_BASE = 3n;

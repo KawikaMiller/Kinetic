@@ -77,3 +77,19 @@ export function chunkGroups(
   }
   return groups;
 }
+
+const TWO_POW_32 = 2 ** 32;
+
+/**
+ * Bits needed to write `x` in binary: 1 for 1, 3 for 5, 8 for 255, 9 for 256; 0 for 0 and for anything
+ * negative. Exact for every safe integer and every bigint (no floating-point `log2`, which rounds
+ * 2^40 - 1 up to 40); a fractional number is floored first.
+ */
+export function bitLength(x: number | bigint): number {
+  if (typeof x === 'bigint') return x > 0n ? x.toString(2).length : 0;
+  const whole = Math.floor(x);
+  if (!(whole > 0)) return 0;
+  const high = Math.floor(whole / TWO_POW_32);
+  return high > 0 ? 64 - Math.clz32(high) : 32 - Math.clz32(whole);
+}
+

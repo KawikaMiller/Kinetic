@@ -306,3 +306,34 @@ const KS_C_001 = 1.95;
 
 /** A KS distance above this, for a sample of n, rejects the fit at the 0.1% level. */
 export const ksCritical = (n: number) => KS_C_001 / Math.sqrt(n);
+
+const byValue = (p: number, q: number) => p - q;
+
+/**
+ * The two-sample Kolmogorov-Smirnov statistic max |F1 - F2| between the empirical cdfs of `a` and an
+ * already ascending-sorted `sortedB`, by a merge. Sorting a copy of `a` is all it costs, so a caller
+ * comparing many days against one baseline sorts the baseline once. 0 when either sample is empty.
+ */
+export function ksAgainstSorted(a: readonly number[], sortedB: readonly number[]): number {
+  const x = [...a].sort(byValue);
+  const y = sortedB;
+  let i = 0;
+  let j = 0;
+  let d = 0;
+  while (i < x.length && j < y.length) {
+    const v = Math.min(x[i], y[j]);
+    while (i < x.length && x[i] <= v) i++;
+    while (j < y.length && y[j] <= v) j++;
+    d = Math.max(d, Math.abs(i / x.length - j / y.length));
+  }
+  return d;
+}
+
+/** The two-sample Kolmogorov-Smirnov statistic max |F1 - F2| between any two samples. */
+export const ksTwoSample = (a: readonly number[], b: readonly number[]): number => ksAgainstSorted(a, [...b].sort(byValue));
+
+/** c(0.05) = 1.358 in the asymptotic two-sample critical value (from memory of the usual table). */
+export const KS_C_05 = 1.358;
+
+/** The asymptotic two-sample critical value c(alpha) sqrt((n + m) / (n m)) for samples of n and m; 5% level by default. */
+export const ksCritical2 = (n: number, m: number, c = KS_C_05): number => c * Math.sqrt((n + m) / (n * m));

@@ -1,4 +1,5 @@
-import { parseBoundedBigInt, parseIntegers } from '../../core/parse';
+import { parseBoundedBigInt } from '../../core/parse';
+import { parseBoundedList } from '../../core/parseKit';
 import type { Result } from '../../core/result';
 import { adversaryFor, MAX_N, shapeArray } from './sorting';
 import { N_MAX, N_MIN } from './primality';
@@ -39,15 +40,20 @@ export function inputFor(kind: InputKind, n: number, seed: number, custom: reado
 export const EMPTY_ARRAY_MESSAGE = 'Type two or more whole numbers separated by commas or spaces.';
 
 /** An array typed by the learner: 2 to 2,000 whole numbers, each between -9,999 and 9,999. */
-export function parseArray(text: string): Result<number[]> {
-  const xs = parseIntegers(text);
-  if (xs === null) return { ok: false, error: EMPTY_ARRAY_MESSAGE };
-  if (xs.length < 2) return { ok: false, error: `Two or more values, please: that is ${xs.length}.` };
-  if (xs.length > MAX_N) return { ok: false, error: `Up to ${MAX_N.toLocaleString('en-US')} values: that is ${xs.length}. Past that the quadratic count is shown from its formula, not run.` };
-  const bad = xs.find((x) => Math.abs(x) > CUSTOM_MAX_VALUE);
-  if (bad !== undefined) return { ok: false, error: `${bad} is outside -${CUSTOM_MAX_VALUE} to ${CUSTOM_MAX_VALUE}.` };
-  return { ok: true, value: xs };
-}
+export const parseArray = (text: string): Result<number[]> =>
+  parseBoundedList(text, {
+    min: 2,
+    max: MAX_N,
+    lo: -CUSTOM_MAX_VALUE,
+    hi: CUSTOM_MAX_VALUE,
+    noun: 'values',
+    messages: {
+      notNumbers: EMPTY_ARRAY_MESSAGE,
+      tooFew: (count) => `Two or more values, please: that is ${count}.`,
+      tooMany: (count) => `Up to ${MAX_N.toLocaleString('en-US')} values: that is ${count}. Past that the quadratic count is shown from its formula, not run.`,
+      outOfRange: (bad) => `${bad} is outside -${CUSTOM_MAX_VALUE} to ${CUSTOM_MAX_VALUE}.`,
+    },
+  });
 
 /** The n of the primality scene: a whole number from 2 to 10^9, refused with the reason otherwise. */
 export const parseN = (text: string) =>

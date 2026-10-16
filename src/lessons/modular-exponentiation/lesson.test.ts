@@ -5,7 +5,8 @@ import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKe
 import { FACTS } from './facts';
 import { currentOf, heldAt, powFrames } from './frames';
 import lesson from './index';
-import { bitLength, bitsOf, fermatCensus, fermatVerdict, naiveMultiplications, operationCount, popcount, powRun, type Direction } from './modpow';
+import { bitLength } from '../../core/bits';
+import { bitsOf, fermatCensus, fermatVerdict, naiveMultiplications, operationCount, popcount, powRun, type Direction } from './modpow';
 import { HEADLINE, LIMIT, N_PRESETS, OPENING, parseBase, parseExponent, parseModulus, parseN, parseP, PRESETS, TIMING_PRESETS } from './presets';
 import { isProbablePrime } from '../../core/numberTheory';
 

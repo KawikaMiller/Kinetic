@@ -1,4 +1,4 @@
-import { parseIntegers } from '../../core/parse';
+import { parseBoundedList } from '../../core/parseKit';
 import type { Result } from '../../core/result';
 import { mulberry32 } from '../../core/random';
 import {
@@ -40,31 +40,21 @@ export const OPENING = {
 } as const;
 
 // ── hostile input ──────────────────────────────────────────────────────────
-const NOT_NUMBERS = 'Type whole numbers separated by commas or spaces.';
-
-function listWithin(text: string, o: { min: number; max: number; lo: number; hi: number; noun: string }): Result<number[]> {
-  const xs = parseIntegers(text);
-  if (xs === null) return { ok: false, error: NOT_NUMBERS };
-  if (xs.length < o.min || xs.length > o.max) return { ok: false, error: `Use ${o.min} to ${o.max} ${o.noun}: that is ${xs.length}.` };
-  const bad = xs.find((x) => x < o.lo || x > o.hi);
-  if (bad !== undefined) return { ok: false, error: `${bad} is outside ${o.lo} to ${o.hi} for ${o.noun}.` };
-  return { ok: true, value: xs };
-}
 
 /** Weights and values typed as two lists: same length, 4 to 8 items, weights 1..12 (a weight of 0 or less is refused), values 0..99. */
 export function parseItems(weights: string, values: string): Result<Item[]> {
-  const w = listWithin(weights, { min: ITEMS_MIN, max: ITEMS_MAX, lo: 1, hi: WEIGHT_MAX, noun: 'weights' });
+  const w = parseBoundedList(weights, { min: ITEMS_MIN, max: ITEMS_MAX, lo: 1, hi: WEIGHT_MAX, noun: 'weights' });
   if (!w.ok) return w;
-  const v = listWithin(values, { min: ITEMS_MIN, max: ITEMS_MAX, lo: 0, hi: VALUE_MAX, noun: 'values' });
+  const v = parseBoundedList(values, { min: ITEMS_MIN, max: ITEMS_MAX, lo: 0, hi: VALUE_MAX, noun: 'values' });
   if (!v.ok) return v;
   if (w.value.length !== v.value.length) return { ok: false, error: `${w.value.length} weights but ${v.value.length} values: give each item one of each.` };
   return { ok: true, value: w.value.map((wt, i) => ({ w: wt, v: v.value[i] })) };
 }
 
-export const parseSequence = (text: string): Result<number[]> => listWithin(text, { min: LIS_MIN, max: LIS_MAX, lo: -LIS_ABS, hi: LIS_ABS, noun: 'values' });
+export const parseSequence = (text: string): Result<number[]> => parseBoundedList(text, { min: LIS_MIN, max: LIS_MAX, lo: -LIS_ABS, hi: LIS_ABS, noun: 'values' });
 
 /** Matrix dimensions p0..pn: 3 to 6 matrices means 4 to 7 numbers, each 1..30 (a zero dimension is refused). */
-export const parseDims = (text: string): Result<number[]> => listWithin(text, { min: MATRICES_MIN + 1, max: MATRICES_MAX + 1, lo: 1, hi: DIM_MAX, noun: 'dimensions' });
+export const parseDims = (text: string): Result<number[]> => parseBoundedList(text, { min: MATRICES_MIN + 1, max: MATRICES_MAX + 1, lo: 1, hi: DIM_MAX, noun: 'dimensions' });
 
 export const itemsText = (items: readonly Item[], pick: 'w' | 'v') => items.map((i) => i[pick]).join(', ');
 

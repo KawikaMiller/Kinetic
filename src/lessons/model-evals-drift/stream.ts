@@ -1,5 +1,6 @@
 /** A monitored stream: 40 daily batches through the trained model, with the input monitors and the delayed accuracy alarm. */
-import { makeBaseline, readDay, ksCritical2, PSI_ALERT, type Baseline } from './monitors';
+import { ksCritical2 } from '../../core/distributions';
+import { makeBaseline, readDay, PSI_ALERT, type Baseline } from './monitors';
 import { BATCH, DAYS, TRAIN_SEED, accuracy, dayBatch, trainModel, type Example, type Model, type Shift } from './world';
 
 export interface DriftSetting extends Shift {
