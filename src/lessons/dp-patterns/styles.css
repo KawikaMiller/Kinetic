@@ -1,0 +1,11 @@
+.dp-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.dp-lines { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; font-size: 13px; line-height: 1.5; }
+.dp-lines dt { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding-top: 2px; }
+.dp-lines dd { margin: 0; }
+.dp-lines dd.is-state { color: var(--hi); font-weight: 600; }
+.dp-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.dp-verdict { margin: 0; font-size: 13px; line-height: 1.6; }
+.dp-verdict b.ok { color: var(--ok); }
+.dp-verdict b.bad { color: var(--bad); }
+.dp-tails { display: flex; flex-direction: column; gap: 6px; }
+.dp-stage ~ .provenance-row { margin: 8px 16px 12px; }
