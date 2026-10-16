@@ -18,7 +18,7 @@ function readyPerRound(connections: number, pct: number, seed: number): number[]
   return counts;
 }
 
-describe('every model serves exactly the same events', () => {
+describe('every model finds exactly the same events, each through its own loop', () => {
   it('over 200 seeded schedules each event is handled once, none lost, none invented, in all five models', () => {
     for (const [connections, pct] of [[10, 50], [100, 5], [30, 100], [300, 1]] as const) {
       for (const seed of SEEDS) {
@@ -38,6 +38,32 @@ describe('every model serves exactly the same events', () => {
       for (const seed of SEEDS.slice(0, 20)) {
         expect(makeSchedule(connections, pct, seed).map((r) => r.length)).toEqual(readyPerRound(connections, pct, seed));
       }
+    }
+  });
+});
+
+describe('the served set comes out of each model run', () => {
+  it('its size is the independent per-round ready total and the events come out in schedule order, in every model', () => {
+    for (const [connections, pct] of [[10, 50], [100, 5], [300, 1]] as const) {
+      for (const seed of SEEDS.slice(0, 30)) {
+        const schedule = makeSchedule(connections, pct, seed);
+        const total = readyPerRound(connections, pct, seed).reduce((a, b) => a + b, 0);
+        for (const model of MODELS) {
+          const served = runModel(model, connections, schedule).served;
+          expect(served.length, `${model} C=${connections} seed ${seed}`).toBe(total);
+          const keys = served.map((s) => s.round * connections + s.conn);
+          expect(keys, `${model} order`).toEqual([...keys].sort((a, b) => a - b));
+        }
+      }
+    }
+  });
+
+  it('follows the schedule: take one request out of the schedule and every model serves one fewer, so the same-set check can fail', () => {
+    const schedule: number[][] = Array.from({ length: ROUNDS }, (_, r) => (r === 0 ? [0, 9] : []));
+    const fewer = schedule.map((r) => r.filter((fd) => fd !== 9));
+    for (const model of MODELS) {
+      expect(runModel(model, 10, schedule).served.map((s) => s.conn), model).toEqual([0, 9]);
+      expect(runModel(model, 10, fewer).served.map((s) => s.conn), model).toEqual([0]);
     }
   });
 });

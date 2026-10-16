@@ -1,6 +1,6 @@
 /**
  * Scene 1: one server, five I/O models. A seeded schedule says which connections have a request ready in each
- * round; every model serves the very same schedule and the counters are counted, never estimated. A request is an
+ * round; every model discovers that schedule's requests through its own loop (a thread wake, an fd scan, a ready list, a completion queue) and the counters are tallied inside those loops; the costs are illustrative. A request is an
  * echo: one read, one write. Costs are illustrative ticks. Pure; a simulated server, not a real kernel.
  */
 import { mulberry32 } from '../../core/random';
@@ -65,6 +65,18 @@ export interface Counters {
 
 export const stackOf = (threads: number) => threads * STACK_BYTES;
 
+/** Which of fds 0..connections-1 have a request ready this round: what a select scan, a busy poll or a thread wake-up each discovers for itself. */
+const readinessOf = (ready: readonly number[]) => {
+  const set = new Set(ready);
+  return (fd: number) => set.has(fd);
+};
+
+/**
+ * Each model finds its own work: a thread per connection wakes when its fd is readable, a busy poll reads every fd
+ * and gets EAGAIN on the idle ones, select scans every fd twice (kernel, then the program), epoll walks only the
+ * kernel's ready list, and a completion queue hands back finished requests. `served` is whatever that loop found, and
+ * the counters are tallied inside the loops rather than written as formulas.
+ */
 export function runModel(model: Model, connections: number, schedule: Schedule): Counters {
   const served: Served[] = [];
   let syscalls = 0;
@@ -74,28 +86,58 @@ export function runModel(model: Model, connections: number, schedule: Schedule):
   let wakes = 0;
   let busyRounds = 0;
   schedule.forEach((ready, round) => {
-    const k = ready.length;
-    for (const conn of ready) served.push({ round, conn });
+    const isReady = readinessOf(ready);
+    const serve = (conn: number) => served.push({ round, conn });
     if (model === 'blocking') {
-      syscalls += 2 * k;
-      wakes += k;
+      for (let thread = 0; thread < connections; thread++) {
+        if (!isReady(thread)) continue;
+        wakes++;
+        syscalls += 2;
+        serve(thread);
+      }
     } else if (model === 'busy') {
-      syscalls += connections + k;
-      entries += connections;
-      wasted += connections - k;
       busyRounds++;
-    } else if (k > 0) {
+      for (let fd = 0; fd < connections; fd++) {
+        syscalls++;
+        entries++;
+        if (!isReady(fd)) {
+          wasted++;
+          continue;
+        }
+        syscalls++;
+        serve(fd);
+      }
+    } else if (ready.length > 0) {
       busyRounds++;
       if (model === 'select') {
-        syscalls += 1 + 2 * k;
-        entries += connections;
-        userScan += connections;
+        syscalls++;
+        const flagged: number[] = [];
+        for (let fd = 0; fd < connections; fd++) {
+          entries++;
+          if (isReady(fd)) flagged.push(fd);
+        }
+        let next = 0;
+        for (let fd = 0; fd < connections; fd++) {
+          userScan++;
+          if (fd === flagged[next]) {
+            next++;
+            syscalls += 2;
+            serve(fd);
+          }
+        }
       } else if (model === 'epoll') {
-        syscalls += 1 + 2 * k;
-        entries += k;
+        syscalls++;
+        for (const fd of ready) {
+          entries++;
+          syscalls += 2;
+          serve(fd);
+        }
       } else {
-        syscalls += 1;
-        entries += k;
+        syscalls++;
+        for (const fd of ready) {
+          entries++;
+          serve(fd);
+        }
       }
     }
   });
