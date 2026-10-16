@@ -1,0 +1,37 @@
+.nn-stage { gap: 12px; align-items: center; }
+.nn-stage > .plot2d { max-width: 100%; height: auto; }
+.nn-formula { font: 500 13px var(--mono); color: var(--muted); text-align: center; overflow-wrap: anywhere; }
+.nn-note { display: block; text-align: center; max-width: 560px; }
+.nn-readout { margin: 0; font: 500 13px var(--font); color: var(--text); }
+.nn-readout b { font-family: var(--mono); color: var(--hi); }
+
+.nn-forward { display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: center; align-items: center; width: 100%; }
+.nn-diagram { width: 100%; max-width: 420px; height: auto; flex: 1 1 300px; }
+.nn-edge { stroke: var(--c); stroke-linecap: round; fill: none; opacity: 0.85; }
+.nn-edge-label { font: 600 12px var(--mono); fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.nn-node { fill: var(--cell); stroke: var(--c); stroke-width: 2; }
+.nn-node-main { font: 700 13px var(--mono); fill: var(--text); }
+.nn-node-name { font: 500 12px var(--mono); fill: var(--muted); }
+.nn-node-below { font: 500 12px var(--mono); fill: var(--muted); }
+.nn-arith { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font: 500 12.5px var(--mono); flex: 1 1 240px; max-width: 360px; }
+.nn-arith b { color: var(--info); }
+
+.nn-spaces { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%; }
+.nn-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 100%; }
+.nn-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; }
+.nn-figure .plot2d { max-width: 100%; height: auto; }
+.nn-corners { max-width: 420px; }
+.nn-corners td, .nn-corners th { text-align: center; }
+.nn-outcomes td, .nn-outcomes th { text-align: left; }
+
+.nn-panels { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%; }
+.nn-panel { flex: 1 1 280px; max-width: 420px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.nn-panel .section-title { margin: 0; }
+.nn-chips { max-width: 100%; }
+
+.nn-train { display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: center; align-items: flex-start; width: 100%; }
+.nn-train-plane, .nn-train-side { display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 100%; }
+.nn-train-plane .plot2d, .nn-train-side .plot2d { max-width: 100%; height: auto; }
+.nn-norms { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 330px; }
+.nn-sweep { max-width: 640px; text-align: center; font: 500 13px var(--font); color: var(--text); }
+.nn-sweep b { font-family: var(--mono); color: var(--hi); }
