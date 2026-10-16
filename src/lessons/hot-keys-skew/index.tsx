@@ -26,8 +26,8 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'Hashing spreads keys, not requests: in this model the hottest key carries 1 / H of the traffic, and its shard saturates at a total utilisation well below 100%.',
-    'Salting spreads a hot key\'s writes over m sub-keys and makes every read gather all m; a cache absorbs reads and does nothing for writes, so the read-to-write mix decides which one helps.',
-    'A sketch with too little memory flags cold keys and misses hot ones, so salting only the flagged keys leaves the real hot key melting its shard.',
+    'Salting spreads a hot key\'s writes over m sub-keys and makes each read gather the m sub-keys; a cache absorbs reads and does nothing for writes, so the read-to-write mix decides which one helps.',
+    'A sketch with too little memory flags cold keys and misses hot ones, so salting just the flagged keys leaves the real hot key melting its shard.',
     'Hot keys can move in time: a split or salting made for yesterday\'s hot key does nothing for today\'s, so the fix has to follow the detection.',
   ],
   quiz: [
@@ -40,7 +40,7 @@ const lesson: LessonModule = {
         'The cache is too large and evicts hot keys; salting makes reads wait for the cache to refill',
       ],
       answer: 0,
-      why: 'Hashing spreads the keys, but one key can carry a large share of the requests, and all of them go to its shard. Salting splits its writes over m sub-keys, so a read has to ask every one of them.',
+      why: 'Hashing spreads the keys, but one key can carry a large share of the requests, and its whole share goes to its shard. Salting splits its writes over m sub-keys, so a read has to ask each of them.',
     },
     {
       q: 'Why does hash sharding not spread the load evenly?',
@@ -73,7 +73,7 @@ const lesson: LessonModule = {
         'The sketch needs one more hash row for every key it fails to flag as hot',
       ],
       answer: 0,
-      why: 'A count-min estimate can only be too high, never too low, and a small sketch inflates cold keys with the counts of hot ones. The candidate list then fills with the wrong keys.',
+      why: 'A count-min estimate is too high or exact, not too low, and a small sketch inflates cold keys with the counts of hot ones. The candidate list then fills with the wrong keys.',
     },
     {
       q: 'The hot key changes halfway through the day. What happens to a fix that was set up on the first half\'s hot key?',

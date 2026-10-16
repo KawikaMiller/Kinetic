@@ -28,7 +28,7 @@ const lesson: LessonModule = {
     'Push does its work at write time, one insert per follower, and a read is one inbox read; pull stores a post once and pays a merge of about F + N log F on each read.',
     'Which one is cheaper depends on the read:write ratio and the follower distribution: an account with a huge following breaks push, and a reader who follows thousands breaks pull.',
     'In this model the hybrid does not beat the cheaper of push and pull on total work; it bounds the slowest post by pulling only the authors above a threshold.',
-    'All three strategies build the same newest-N feed (this lesson\'s tests check each against collect-sort-take-N); they differ in where and when the work happens.',
+    'The three strategies build the same newest-N feed (this lesson\'s tests check each against collect-sort-take-N); they differ in where and when the work happens.',
   ],
   quiz: [
     {
@@ -84,7 +84,7 @@ const lesson: LessonModule = {
         'When authors have very few followers, whatever the number of reads',
       ],
       answer: 0,
-      why: 'Push pays once at write time and saves at every read, so it wins when reads per post are high. With few reads per post the up-front inserts are wasted work.',
+      why: 'Push pays once at write time and saves on each read, so it wins when reads per post are high. With few reads per post the up-front inserts are wasted work.',
     },
   ],
 };
