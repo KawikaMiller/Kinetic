@@ -3,7 +3,7 @@ import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { DEFAULT_CAP_OFF, WINDOW_CAPS, finalOf, hitRatio, makeTrace, simulate, wastedPrefetch, type CacheConfig, type Method, type Pattern } from './cache';
-import { accessCaption, cacheFrames, durabilityCaption, percent, plural, readaheadCaption, size } from './captions';
+import { accessCaption, cacheFrames, durabilityCaption, percent, plural, powerVerdict, readaheadCaption, size } from './captions';
 import { BROKEN_ACK_SEED, DEFAULT_ACK_MODE, ack, advance, fsync, freshMachine, kill, powerCut, writePage } from './durability';
 import { powerFacts, readRun, readaheadDefaultCap, readaheadRun, seededFacts } from './facts';
 import lesson from './index';
@@ -71,6 +71,30 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(f.after).toEqual([]);
     expect(lesson.tryThis[4]).toContain(`seed ${f.seed}: acknowledging before fsync loses ${plural(f.before.length, 'acknowledged write')} there`);
     expect(lesson.tryThis[4]).toContain('it loses 0');
+  });
+});
+
+describe('the power-off verdict', () => {
+  it('says nothing was acknowledged when nothing was (ack-after, no fsync), instead of claiming everything saved is on disk', () => {
+    const written = writePage(freshMachine(), 2, 'write')!;
+    const cut = powerCut(written.m);
+    expect(cut.acked).toHaveLength(0);
+    expect(powerVerdict(cut)).toContain('Nothing had been acknowledged');
+    expect(powerVerdict(cut)).not.toContain('Everything');
+  });
+
+  it('names the lost writes when an acknowledged one is gone, and says everything is on disk only after an fsync', () => {
+    const w = writePage(freshMachine(), 2, 'write')!;
+    const acked = ack(w.m, w.ack);
+    expect(powerVerdict(powerCut(acked))).toContain('page 2 v1');
+    expect(powerVerdict(powerCut(fsync(acked, false)))).toContain('Everything the application said was saved is on disk');
+  });
+});
+
+describe('try-this wording matches the controls that exist', () => {
+  it('names the Timeline slider, never an end button the player does not have', () => {
+    for (const t of lesson.tryThis.slice(0, 2)) expect(text(t)).not.toMatch(/end button|go to the end/);
+    expect(text(lesson.tryThis[0])).toContain('Timeline');
   });
 });
 

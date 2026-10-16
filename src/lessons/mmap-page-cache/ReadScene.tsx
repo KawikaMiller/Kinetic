@@ -61,9 +61,9 @@ export function ReadScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--dim)', label: 'a page not cached (outlined)', shape: 'square' },
             { color: 'var(--ok)', label: 'cached, clean', shape: 'square' },
             { color: 'var(--violet)', label: 'a page mapped by both processes', shape: 'square' },
-            { color: 'var(--bad)', label: 'ring: a disk read (a major fault under mmap)', shape: 'square' },
+            { color: 'var(--bad)', label: 'ring: a disk read (a major fault under mmap; a read() miss also copies)', shape: 'square' },
             { color: 'var(--info)', label: 'ring: a minor fault', shape: 'square' },
-            { color: 'var(--orange)', label: 'ring: a copy to user space', shape: 'square' },
+            { color: 'var(--orange)', label: 'ring: a copy to user space from a page already cached', shape: 'square' },
             { color: 'var(--hi)', label: 'ring: a plain access of a mapped page', shape: 'square' },
           ]}
         />
@@ -75,7 +75,7 @@ export function ReadScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Segmented label="Access pattern" value={pattern} onChange={setPattern} options={PATTERN_OPTIONS} />
-          <SeedField key={seed} seed={seed} onSeed={setSeed} />
+          <SeedField key={seed} seed={seed} onSeed={setSeed} label={pattern === 'random' ? 'Seed' : 'Seed (random only)'} />
         </>,
         <>
           <Slider label="File size" value={filePages} min={MIN_FILE_PAGES} max={MAX_FILE_PAGES} step={8} onChange={setFilePages} format={(v) => `${v} pages`} />

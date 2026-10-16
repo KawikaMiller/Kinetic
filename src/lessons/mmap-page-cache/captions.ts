@@ -51,6 +51,13 @@ export function durabilityCaption(m: Machine, ackMode: 'before' | 'after'): stri
   return `Tick ${m.tick}, ${policy}: ${plural(dirty, 'dirty page')} in the cache, ${plural(m.acked.length, 'save')} acknowledged, next writeback wake in ${untilWake(m)} ${untilWake(m) === 1 ? 'tick' : 'ticks'}.${proc}`;
 }
 
+/** The verdict line under the cache after a power cut. */
+export function powerVerdict(m: Machine): string {
+  const lost = lostWrites(m);
+  if (lost.length > 0) return `The application said saved for ${lost.map((a) => `page ${a.page} v${a.version}`).join(', ')}, and none of it is on disk.`;
+  return m.acked.length === 0 ? 'Nothing had been acknowledged, so there was nothing to lose.' : 'Everything the application said was saved is on disk.';
+}
+
 export const stepText = (s: { kind: string; page?: number; via?: string; ticks?: number }) =>
   s.kind === 'write' ? `${s.via === 'mmap' ? 'store' : 'write()'} to page ${s.page}`
     : s.kind === 'tick' ? `${s.ticks} ticks pass`

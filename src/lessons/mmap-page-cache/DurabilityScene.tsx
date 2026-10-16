@@ -5,7 +5,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
-import { durabilityCaption, plural, stepText } from './captions';
+import { durabilityCaption, plural, powerVerdict, stepText } from './captions';
 import {
   BROKEN_ACK_SEED, DEFAULT_ACK_MODE, DIRTY_EXPIRE, DURABILITY_PAGES, ack, advance, dirtyCount, freshMachine, fsync, kill, lostWrites, powerCut, runSchedule, scheduleFor, planFor, touchAfterTruncate, untilWake,
   writePage, type AckMode, type Machine, type Via,
@@ -44,7 +44,7 @@ export function DurabilityScene({ picker }: { picker: ReactNode }) {
   };
   const touch = (method: 'read' | 'mmap') => {
     const r = touchAfterTruncate(method, FAR_PAGE, TRUNCATED_PAGES);
-    setTouched(r.kind === 'sigbus' ? `mmap: touching page ${FAR_PAGE} of a ${TRUNCATED_PAGES}-page file raises SIGBUS` : r.kind === 'eof' ? `read(): asking for page ${FAR_PAGE} returns 0 bytes, end of file` : 'inside the file: fine');
+    setTouched(r.kind === 'sigbus' ? `mmap: the mapping was made before the truncation, so touching page ${FAR_PAGE} of the now ${TRUNCATED_PAGES}-page file raises SIGBUS (scripted here)` : r.kind === 'eof' ? `read(): asking for page ${FAR_PAGE} returns 0 bytes, end of file` : 'inside the file: fine');
   };
   const live = m.poweredOn;
 
@@ -123,7 +123,7 @@ export function DurabilityScene({ picker }: { picker: ReactNode }) {
         </div>
         {!live && (
           <p className={`mp-verdict ${lost.length > 0 ? 'is-bad' : 'is-ok'}`} role="status">
-            {lost.length > 0 ? `The application said saved for ${lost.map((a) => `page ${a.page} v${a.version}`).join(', ')}, and none of it is on disk.` : 'Everything the application said was saved is on disk.'}
+            {powerVerdict(m)}
           </p>
         )}
         <Box>
@@ -150,6 +150,9 @@ export function DurabilityScene({ picker }: { picker: ReactNode }) {
             <Button onClick={() => touch('read')} softDisabled={!truncated}>read() page {FAR_PAGE}</Button>
           </div>
           {touched && <p className="mp-seeded" role="status">{touched}.</p>}
+          <ProvenanceRow>
+            <Provenance kind="scripted">the SIGBUS is a one-line rule here, not a signal the page raised</Provenance>
+          </ProvenanceRow>
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>an LRU toy; Linux uses per-device writeback and more elaborate lists</Provenance>
