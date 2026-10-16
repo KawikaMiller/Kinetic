@@ -1,0 +1,13 @@
+/* io-models */
+.iom-stage { gap: 12px; min-width: 0; }
+.iom-status { margin: 6px 0 0; font: 500 12.5px var(--font); color: var(--bad); }
+
+.iom-table-wrap { overflow-x: auto; }
+.iom-table th, .iom-table td { font-size: 12.5px; text-align: left; padding: 4px 8px; }
+.iom-table tr.is-on th, .iom-table tr.is-on td { color: var(--hi); font-weight: 700; }
+
+.iom-queues { display: flex; flex-direction: column; gap: 10px; }
+.iom-qname { display: block; margin-bottom: 4px; font: 600 12px var(--font); color: var(--muted); }
+.iom-slots { display: flex; flex-wrap: wrap; gap: 3px; }
+.iom-slot { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line-2); }
+.iom-slot.is-full { border-color: transparent; }

@@ -9,7 +9,7 @@ import './seedField.css';
  * text is not a seed (the old seed stays). Renders a fragment, so it sits inside the lesson's own
  * controls row.
  */
-export function SeedField({ seed, onSeed }: { seed: number; onSeed: (seed: number) => void }) {
+export function SeedField({ seed, onSeed, label = 'Seed' }: { seed: number; onSeed: (seed: number) => void; label?: string }) {
   const [text, setText] = useState(String(seed));
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +36,7 @@ export function SeedField({ seed, onSeed }: { seed: number; onSeed: (seed: numbe
 
   return (
     <>
-      <TextField label="Seed" value={text} onChange={type} onBlur={settle} width={110} spellCheck={false} />
+      <TextField label={label} value={text} onChange={type} onBlur={settle} width={110} spellCheck={false} />
       <Button onClick={fresh}>New seed</Button>
       {error && <span className="seed-field-error" role="status">{error} Keeping seed {seed}.</span>}
     </>

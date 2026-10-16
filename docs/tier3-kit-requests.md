@@ -140,3 +140,9 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | `LogStream` `onRowClick` / selectable row | io-models | wave 5 to 6 round | |
 | `bytes()` KiB/MiB option for binary units | dma-io-devices, io-models, mmap-page-cache | wave 5 to 6 round | |
 | `ArrayStrip` `size="sm"` | specs assumed it | optional | |
+
+## Tooling request (from T3-B8, T3-B16 blockers)
+| Request | Why | Round |
+|---|---|---|
+| **K3-T6: `npm run smoke -- --scenes`**: visit every scene of every lesson that has a scene picker (click each tab), listen to console/pageerror for ~3 s idle per scene, fail on any error (esp. 'Maximum update depth exceeded'); cap runtime by sharding by lesson id | Two infinite-render-loop blockers in one tier (webassembly 'boundary' scene, dma-io-devices scene 4) were invisible to smoke because it loads only the default scene | next kit round, before wave 6 |
+| `StageFrame` `introKey`: accept string/number only, or compare arrays by value, so a fresh array can't re-trigger the caption effect | same root cause (dma) | next kit round |
