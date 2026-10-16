@@ -63,7 +63,7 @@ const lesson: LessonModule = {
         'The result is an arbitrary value, but the program always keeps running',
       ],
       answer: 0,
-      why: 'Nothing is required of the execution, so a crash, a removed check or a garbage value are all allowed, and the null scene lists three of them. Behaviour that each compiler documents is implementation-defined, a different category.',
+      why: 'Nothing is required of the execution, so a crash, a removed check or a garbage value is allowed, and the null scene lists three of them. Behaviour that each compiler documents is implementation-defined, a different category.',
     },
     {
       q: 'Which defence lets the `x + 1 < x` check keep working at the maximum value?',

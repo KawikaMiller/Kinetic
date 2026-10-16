@@ -28,7 +28,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     `Rounding error piles up rather than averaging out: in this model a naive float32 sum of ${n(F.f32N)} copies of 0.1 is off by ${F.f32NaiveError} (about ${n(F.f32NaiveUlps)} ulps), where Kahan is off by ${F.f32KahanError}.`,
-    `A bigger type only moves the problem: the same naive sum in float64 is still off by ${F.f64NaiveError}, against ${F.f64KahanError} for Kahan.`,
+    `A bigger type moves the problem without removing it: the same naive sum in float64 is still off by ${F.f64NaiveError}, against ${F.f64KahanError} for Kahan.`,
     `Subtracting nearly equal numbers cancels the digits that agreed: at x = 10^${F.k} the naive sqrt(x + 1) - sqrt(x) has ${F.sqrtNaiveDigits} of 16 digits right, and the algebraically equal rewrite has ${F.sqrtStableDigits}.`,
     `Money is exact only with a stated rule: integer cents match exact arithmetic (${signed(F.centsDriftHalfUp)} cents of drift) while float dollars drift ${signed(F.floatDriftHalfUp)} cents in this model, and the facts 0.1 + 0.2 = ${F.addFact} and (1.005).toFixed(2) = "${F.toFixedFact}" are live JavaScript.`,
   ],
@@ -53,7 +53,7 @@ const lesson: LessonModule = {
         'The subtraction is exact for large values, so the error comes from the roots alone',
       ],
       answer: 0,
-      why: `Both roots carry the same leading digits, so the subtraction leaves only rounding noise: ${F.sqrtNaiveDigits} of 16 digits are right at 10^${F.k}, and the rewrite 1 / (sqrt(x + 1) + sqrt(x)) adds instead of subtracting and keeps ${F.sqrtStableDigits}.`,
+      why: `Both roots carry the same leading digits, so the subtraction leaves just rounding noise: ${F.sqrtNaiveDigits} of 16 digits are right at 10^${F.k}, and the rewrite 1 / (sqrt(x + 1) + sqrt(x)) adds instead of subtracting and keeps ${F.sqrtStableDigits}.`,
     },
     {
       q: 'A learner says "floating-point error is random noise, so it averages out over many operations". What is the accurate version?',
@@ -64,7 +64,7 @@ const lesson: LessonModule = {
         'Errors are noise in each step, and the final result is rounded to hide them',
       ],
       answer: 0,
-      why: `Every addition into a large total rounds the same way, so nothing cancels: the naive float32 sum is off by ${F.f32NaiveError}, about ${n(F.f32NaiveUlps)} ulps. A pairwise or compensated sum limits the pile-up.`,
+      why: `Each addition into a large total rounds the same way, so nothing cancels: the naive float32 sum is off by ${F.f32NaiveError}, about ${n(F.f32NaiveUlps)} ulps. A pairwise or compensated sum limits the pile-up.`,
     },
     {
       q: 'Does switching from float32 to float64 fix an accumulating sum?',
