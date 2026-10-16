@@ -3,61 +3,10 @@ import { mulberry32 } from '../../core/random';
 import {
   breakEven, chainIntervals, chainParenthesis, chainPrefixOnly, chainStateCounts, chainTable, citiesOf, greedyByRatio, isSubsequence,
   knapsackChosen, knapsackPath, knapsackPrefixOnly, knapsackRolling, knapsackTable, lisEndingAt, lisPrefixOnly, lisReconstruct, lisStartingAt,
-  lisTails, nominalStates, seededDistances, tourCount, tourLength, transitionBound, tspBitmask, tspLastOnly, tspMaskOnly, type Item, type Matrix,
+  lisTails, nominalStates, seededDistances, tourCount, tourLength, transitionBound, tspBitmask, tspLastOnly, tspMaskOnly, type Item,
 } from './dp';
 
-// Brute-force references, written separately from dp.ts.
-const bruteKnapsack01 = (items: readonly Item[], cap: number): number => {
-  let best = 0;
-  for (let mask = 0; mask < 1 << items.length; mask++) {
-    let w = 0;
-    let v = 0;
-    for (let i = 0; i < items.length; i++) if ((mask >> i) & 1) { w += items[i].w; v += items[i].v; }
-    if (w <= cap && v > best) best = v;
-  }
-  return best;
-};
-const bruteUnbounded = (items: readonly Item[], cap: number, from = 0): number => {
-  if (from === items.length) return 0;
-  let best = 0;
-  for (let count = 0; count * items[from].w <= cap; count++) {
-    best = Math.max(best, count * items[from].v + bruteUnbounded(items, cap - count * items[from].w, from + 1));
-  }
-  return best;
-};
-const bruteLis = (a: readonly number[]): number => {
-  let best = 0;
-  for (let mask = 0; mask < 1 << a.length; mask++) {
-    let last = -Infinity;
-    let ok = true;
-    let len = 0;
-    for (let i = 0; i < a.length && ok; i++) {
-      if (!((mask >> i) & 1)) continue;
-      if (a[i] <= last) ok = false;
-      last = a[i];
-      len++;
-    }
-    if (ok && len > best) best = len;
-  }
-  return best;
-};
-/** Every parenthesisation of matrices lo..hi as a cost, enumerated as explicit trees (Catalan many). */
-const parenthesisationCosts = (dims: readonly number[], lo: number, hi: number): { cost: number }[] => {
-  if (lo === hi) return [{ cost: 0 }];
-  const out: { cost: number }[] = [];
-  for (let k = lo; k < hi; k++) {
-    for (const l of parenthesisationCosts(dims, lo, k)) {
-      for (const r of parenthesisationCosts(dims, k + 1, hi)) out.push({ cost: l.cost + r.cost + dims[lo - 1] * dims[k] * dims[hi] });
-    }
-  }
-  return out;
-};
-const permutations = <T,>(xs: readonly T[]): T[][] => (xs.length <= 1 ? [xs.slice()] : xs.flatMap((x, i) => permutations([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p])));
-const bruteTsp = (d: Matrix): number => {
-  const cities = Array.from({ length: d.length - 1 }, (_, i) => i + 1);
-  return Math.min(...permutations(cities).map((p) => tourLength(d, [0, ...p, 0])));
-};
-const catalan = (n: number): number => (n <= 1 ? 1 : Array.from({ length: n }, (_, i) => catalan(i) * catalan(n - 1 - i)).reduce((a, b) => a + b, 0));
+import { bruteKnapsack01, bruteLis, bruteTsp, bruteUnbounded, catalan, parenthesisationCosts } from './oracles.test';
 
 const randomItems = (rnd: () => number, n: number): Item[] => Array.from({ length: n }, () => ({ w: 1 + Math.floor(rnd() * 12), v: Math.floor(rnd() * 100) }));
 const randomArray = (rnd: () => number, n: number): number[] => Array.from({ length: n }, () => Math.floor(rnd() * 30) - 10);
