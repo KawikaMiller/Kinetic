@@ -3,14 +3,14 @@ import { Plot2D, Points, Segments, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Tray } from '../../components/Panel';
 import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
+import type { DragSource } from '../../core/plot';
 import { usePlayer } from '../../core/usePlayer';
 import { segFrames } from './frames';
-import { GRID, MAX_SEGMENTS, SEG_OPEN, SEG_PRESETS, type SegSet } from './presets';
+import { GRID, MAX_SEGMENTS, SEG_OPEN, SEG_PRESETS, snapCell, type SegSet } from './presets';
 import { scaleNote } from './scale';
 
 const AXIS = { domain: [0, GRID] as [number, number], label: '', ticks: 6 };
 const STEP_MS = 800;
-const snap = (v: number) => Math.min(GRID, Math.max(0, Math.round(v)));
 
 /** Scene 3: crossings of horizontal and vertical segments by a left-to-right sweep over a sorted active set. */
 export function SegScene({ picker }: { picker: ReactNode }) {
@@ -22,18 +22,18 @@ export function SegScene({ picker }: { picker: ReactNode }) {
   const scale = useMemo(() => scaleNote(), []);
   const intersections = f.found.map((c) => ({ x: set.vs[c.v].x, y: set.hs[c.h].y }));
 
-  const setH = (i: number, k: 0 | 1, [px, py]: readonly [number, number]) => {
+  const setH = (i: number, k: 0 | 1, [px, py]: readonly [number, number], via?: DragSource) => {
     const h = set.hs[i];
-    const x = snap(px);
+    const x = snapCell(k === 0 ? h.x0 : h.x1, px, via);
     const [x0, x1] = k === 0 ? [x, h.x1] : [h.x0, x];
-    setSet({ ...set, hs: set.hs.map((s, n) => (n === i ? { y: snap(py), x0: Math.min(x0, x1), x1: Math.max(x0, x1) } : s)) });
+    setSet({ ...set, hs: set.hs.map((s, n) => (n === i ? { y: snapCell(h.y, py, via), x0: Math.min(x0, x1), x1: Math.max(x0, x1) } : s)) });
     setNote(null);
   };
-  const setV = (i: number, k: 0 | 1, [px, py]: readonly [number, number]) => {
+  const setV = (i: number, k: 0 | 1, [px, py]: readonly [number, number], via?: DragSource) => {
     const v = set.vs[i];
-    const y = snap(py);
+    const y = snapCell(k === 0 ? v.y0 : v.y1, py, via);
     const [y0, y1] = k === 0 ? [y, v.y1] : [v.y0, y];
-    setSet({ ...set, vs: set.vs.map((s, n) => (n === i ? { x: snap(px), y0: Math.min(y0, y1), y1: Math.max(y0, y1) } : s)) });
+    setSet({ ...set, vs: set.vs.map((s, n) => (n === i ? { x: snapCell(v.x, px, via), y0: Math.min(y0, y1), y1: Math.max(y0, y1) } : s)) });
     setNote(null);
   };
   const addH = () => {
@@ -77,7 +77,7 @@ export function SegScene({ picker }: { picker: ReactNode }) {
           <Button onClick={() => set.hs.length > 1 && setSet({ ...set, hs: set.hs.slice(0, -1) })}>Remove last horizontal</Button>
           <Button onClick={() => set.vs.length > 1 && setSet({ ...set, vs: set.vs.slice(0, -1) })}>Remove last vertical</Button>
           <Hint>
-            <span role="status">{note ?? `Drag an end (it snaps to the grid, and the segment stays horizontal or vertical), or use the arrow keys. Up to ${MAX_SEGMENTS} of each kind.`}</span>
+            <span role="status">{note ?? `Drag an end (it snaps to the grid, and the segment stays horizontal or vertical), or use the arrow keys (one grid step per press). Up to ${MAX_SEGMENTS} of each kind.`}</span>
           </Hint>
         </>,
       ]}
@@ -90,13 +90,13 @@ export function SegScene({ picker }: { picker: ReactNode }) {
           <Points data={intersections.map((p) => ({ x: p.x, y: p.y, tone: 'ok' as const, r: 5 }))} />
           <Points
             data={set.hs.flatMap((h) => [{ x: h.x0, y: h.y, tone: 'muted' as const, r: 3.4 }, { x: h.x1, y: h.y, tone: 'muted' as const, r: 3.4 }])}
-            onDrag={(k, p) => setH(k >> 1, (k % 2) as 0 | 1, p)}
+            onDrag={(k, p, via) => setH(k >> 1, (k % 2) as 0 | 1, p, via)}
             pointLabel={(k) => `${k % 2 === 0 ? 'Left' : 'Right'} end of horizontal ${(k >> 1) + 1}`}
             roving
           />
           <Points
             data={set.vs.flatMap((v) => [{ x: v.x, y: v.y0, tone: 'muted' as const, r: 3.4 }, { x: v.x, y: v.y1, tone: 'muted' as const, r: 3.4 }])}
-            onDrag={(k, p) => setV(k >> 1, (k % 2) as 0 | 1, p)}
+            onDrag={(k, p, via) => setV(k >> 1, (k % 2) as 0 | 1, p, via)}
             pointLabel={(k) => `${k % 2 === 0 ? 'Lower' : 'Upper'} end of vertical ${(k >> 1) + 1}`}
             roving
           />

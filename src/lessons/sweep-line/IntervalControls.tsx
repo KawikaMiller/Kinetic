@@ -16,7 +16,7 @@ export function IntervalControls({ state, presets }: { state: IntervalsState; pr
       {state.swapOffer && <Button onClick={state.acceptSwap}>Swap the ends</Button>}
       <Hint>
         <span role="status">
-          {state.note ?? `Each interval is [start, end): an interval that ends at 10 and one that starts at 10 do not overlap. Times run 0 to ${TIME_MAX}, up to ${MAX_INTERVALS} intervals; drag a handle (it snaps to half an hour) or type the list.`}
+          {state.note ?? `Each interval is [start, end): an interval that ends at 10 and one that starts at 10 do not overlap. Times run 0 to ${TIME_MAX}, up to ${MAX_INTERVALS} intervals; drag a handle (it snaps to half an hour; an arrow key moves it one half hour, Shift a few) or type the list.`}
         </span>
       </Hint>
     </>

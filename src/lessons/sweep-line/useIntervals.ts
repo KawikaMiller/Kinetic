@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import type { DragSource } from '../../core/plot';
 import type { Interval } from './intervals';
-import { MAX_INTERVALS, TIME_MAX, formatIntervals, parseIntervals, snapTime } from './presets';
+import { MAX_INTERVALS, TIME_MAX, formatIntervals, parseIntervals, dragInterval } from './presets';
 
 export interface IntervalsState {
   intervals: Interval[];
@@ -11,7 +12,7 @@ export interface IntervalsState {
   type: (t: string) => void;
   load: (list: readonly Interval[]) => void;
   /** A handle was dragged: index of the interval and which end. Zero-length and backwards drags are held at half a unit. */
-  drag: (index: number, end: 'start' | 'end', time: number) => void;
+  drag: (index: number, end: 'start' | 'end', time: number, via?: DragSource) => void;
   add: () => void;
   removeLast: () => void;
   acceptSwap: () => void;
@@ -48,11 +49,8 @@ export function useIntervals(initial: readonly Interval[]): IntervalsState {
       }
     },
     load: (list) => commit([...list]),
-    drag: (index, end, time) => {
-      const t = snapTime(time);
-      const cur = intervals[index];
-      const next = end === 'start' ? { start: Math.min(t, cur.end - 0.5), end: cur.end } : { start: cur.start, end: Math.max(t, cur.start + 0.5) };
-      commit(intervals.map((x, i) => (i === index ? next : x)));
+    drag: (index, end, time, via) => {
+      commit(intervals.map((x, i) => (i === index ? dragInterval(x, end, time, via) : x)));
     },
     add: () => {
       if (intervals.length >= MAX_INTERVALS) {

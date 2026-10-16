@@ -1,7 +1,7 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { alpha, TOKENS } from '../core/palette';
 import {
-  axisTickValues, clampPoint, equalAspectHeight, fitLabel, nudgePoint, PLOT_FONT, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+  axisTickValues, clampPoint, type DragSource, equalAspectHeight, fitLabel, nudgePoint, PLOT_FONT, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
   type AxisSpec, type Point,
 } from '../core/plot';
 import type { Tone } from '../core/tone';
@@ -402,7 +402,8 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
   tone?: Tone;
   r?: number;
   hollow?: boolean;
-  onDrag?: (i: number, p: Point) => void;
+  /** `via` is 'key' for an arrow-key nudge and omitted for the pointer. */
+  onDrag?: (i: number, p: Point, via?: DragSource) => void;
   /** Screen-reader name of a draggable point (default "point i"). */
   pointLabel?: (i: number) => string;
   labels?: (i: number) => PointLabel | null;
@@ -425,7 +426,7 @@ export function Points({ data, tone, r = 4.5, hollow = false, onDrag, pointLabel
     const p = nudgePoint([data[i].x, data[i].y], e.key, xs, ys, e.shiftKey);
     if (!p) return;
     e.preventDefault();
-    onDrag?.(i, p);
+    onDrag?.(i, p, 'key');
   };
   const keysHint = roving && data.length > 1 ? ' Arrow keys move it; Page Up and Page Down pick another point.' : ' Arrow keys move it.';
 

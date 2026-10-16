@@ -5,8 +5,9 @@ import { FACTS } from './facts';
 import { mergeFrames, roomFrames, segFrames, selectFrames } from './frames';
 import lesson from './index';
 import { assignRooms, mergeIntervals, sweepOverlap, type Interval } from './intervals';
-import { INTERVAL_PRESETS, MAX_INTERVALS, OPENING, ROOMS_PRESETS, SEG_OPEN, SEG_PRESETS, SELECT_PRESETS, formatIntervals, parseIntervals, snapTime } from './presets';
+import { GRID, TIME_MAX, dragInterval, snapCell, INTERVAL_PRESETS, MAX_INTERVALS, OPENING, ROOMS_PRESETS, SEG_OPEN, SEG_PRESETS, SELECT_PRESETS, formatIntervals, parseIntervals, snapTime } from './presets';
 import { scaleNote, sparseSet } from './scale';
+import { nudgePoint, plotFrame } from '../../core/plot';
 import { bruteCrossings, sweepCrossings } from './segments';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
@@ -165,5 +166,30 @@ describe('hostile input', () => {
     expect(snapTime(9.3)).toBe(9.5);
     expect(snapTime(-4)).toBe(0);
     expect(snapTime(99)).toBe(24);
+  });
+});
+
+describe('keyboard nudge on the snapped grids', () => {
+  it('one ArrowRight on an interval handle moves it exactly half an hour', () => {
+    const axis = { domain: [0, TIME_MAX] as [number, number] };
+    const { xs, ys } = plotFrame(680, 200, { top: 10, right: 10, bottom: 30, left: 40 }, axis, axis);
+    const cur = { start: 9, end: 12 };
+    const [x] = nudgePoint([cur.start, 1], 'ArrowRight', xs, ys)!;
+    expect(dragInterval(cur, 'start', x, 'key')).toEqual({ start: 9.5, end: 12 });
+    expect(dragInterval(cur, 'end', nudgePoint([cur.end, 1], 'ArrowLeft', xs, ys)![0], 'key')).toEqual({ start: 9, end: 11.5 });
+  });
+
+  it('holds a handle half a unit from the other end', () => {
+    expect(dragInterval({ start: 9, end: 9.5 }, 'end', 9.4, 'key')).toEqual({ start: 9, end: 9.5 });
+    expect(dragInterval({ start: 9, end: 10 }, 'start', 12)).toEqual({ start: 9.5, end: 10 });
+  });
+
+  it('one arrow press moves a segment end exactly one cell', () => {
+    const axis = { domain: [0, GRID] as [number, number] };
+    const { xs, ys } = plotFrame(420, 420, { top: 10, right: 10, bottom: 30, left: 40 }, axis, axis);
+    const [x, y] = nudgePoint([4, 6], 'ArrowUp', xs, ys)!;
+    expect(snapCell(4, x, 'key')).toBe(4);
+    expect(snapCell(6, y, 'key')).toBe(7);
+    expect(snapCell(GRID, GRID + 0.2, 'key')).toBe(GRID);
   });
 });

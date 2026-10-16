@@ -1,4 +1,5 @@
 import { parseBoundedDecimal } from '../../core/parse';
+import { snapDragged, type DragSource } from '../../core/plot';
 import type { Interval } from './intervals';
 import type { HSeg, VSeg } from './segments';
 
@@ -77,9 +78,23 @@ export function parseIntervals(text: string): IntervalParse {
 
 export const snapTime = (v: number) => Math.min(TIME_MAX, Math.max(0, Math.round(v / SNAP) * SNAP));
 
+/**
+ * One handle dragged to `time`: snapped to half an hour (an arrow key moves one half hour), and a
+ * zero-length or backwards result is held half a unit from the other end.
+ */
+export function dragInterval(cur: Interval, end: 'start' | 'end', time: number, via?: DragSource): Interval {
+  const t = snapDragged(cur[end], time, snapTime, SNAP, via);
+  return end === 'start' ? { start: Math.min(t, cur.end - SNAP), end: cur.end } : { start: cur.start, end: Math.max(t, cur.start + SNAP) };
+}
+
 // ── segments ─────────────────────────────────────────────────────────────
 
 export const GRID = 12;
+
+/** A segment end snapped to the grid (an arrow key moves one cell). */
+export function snapCell(prev: number, next: number, via?: DragSource): number {
+  return snapDragged(prev, next, (v) => Math.min(GRID, Math.max(0, Math.round(v))), 1, via);
+}
 
 export interface SegSet {
   hs: HSeg[];

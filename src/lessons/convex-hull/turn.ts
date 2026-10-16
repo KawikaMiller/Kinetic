@@ -1,3 +1,4 @@
+import { snapDragged, type DragSource } from '../../core/plot';
 import type { P } from './hull';
 
 /** The turn-test plane runs from -TURN_DOMAIN to TURN_DOMAIN on both axes. */
@@ -21,3 +22,10 @@ export const TURN_PRESETS: TurnPreset[] = [
 
 /** Scene 1 opens on the left-turn preset. */
 export const TURN_OPEN: P[] = TURN_PRESETS[0].points;
+
+const snapWhole = (v: number) => Math.round(v);
+
+/** A dragged point on the whole-number grid; an arrow key moves one whole number (Shift: a few). */
+export function snapPoint(prev: P, [x, y]: readonly [number, number], via?: DragSource): P {
+  return { x: snapDragged(prev.x, x, snapWhole, 1, via), y: snapDragged(prev.y, y, snapWhole, 1, via) };
+}

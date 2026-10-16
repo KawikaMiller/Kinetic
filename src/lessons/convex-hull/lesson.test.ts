@@ -9,7 +9,8 @@ import { HULLS, andrew, cross, graham, jarvis, type Algo, type P, type Policy } 
 import lesson from './index';
 import { circlePoints, discPoints, scaling, SCALING_SIZES } from './scaling';
 import { findMismatches, hullDemo } from './robust';
-import { TURN_OPEN, TURN_PRESETS } from './turn';
+import { TURN_OPEN, TURN_PRESETS, TURN_DOMAIN, snapPoint } from './turn';
+import { nudgePoint, plotFrame } from '../../core/plot';
 import { crossText, turnOf } from './text';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
@@ -181,5 +182,33 @@ describe('hostile input', () => {
     }
     const huge = parseTypedPoint('99999999999999999999', '1');
     expect(!huge.ok && huge.error).toContain('refused, not clamped');
+  });
+});
+
+describe('keyboard nudge on the whole-number grid', () => {
+  const axis = { domain: [-TURN_DOMAIN, TURN_DOMAIN] as [number, number] };
+  const { xs, ys } = plotFrame(420, 420, { top: 10, right: 10, bottom: 30, left: 40 }, axis, axis);
+  const press = (p: P, key: string, big = false): P => {
+    const n = nudgePoint([p.x, p.y], key, xs, ys, big)!;
+    return snapPoint(p, n, 'key');
+  };
+
+  it('one plain arrow press moves exactly one whole number', () => {
+    const a = TURN_OPEN[0];
+    expect(press(a, 'ArrowRight')).toEqual({ x: a.x + 1, y: a.y });
+    expect(press(a, 'ArrowLeft')).toEqual({ x: a.x - 1, y: a.y });
+    expect(press(a, 'ArrowUp')).toEqual({ x: a.x, y: a.y + 1 });
+    expect(press(a, 'ArrowDown')).toEqual({ x: a.x, y: a.y - 1 });
+  });
+
+  it('five presses move five, and Shift moves at least as far as one press', () => {
+    let p = TURN_OPEN[0];
+    for (let i = 0; i < 5; i++) p = press(p, 'ArrowRight');
+    expect(p.x).toBe(TURN_OPEN[0].x + 5);
+    expect(press(TURN_OPEN[0], 'ArrowRight', true).x).toBeGreaterThanOrEqual(TURN_OPEN[0].x + 1);
+  });
+
+  it('a pointer resting inside a cell does not jump', () => {
+    expect(snapPoint({ x: 2, y: 2 }, [2.3, 1.8])).toEqual({ x: 2, y: 2 });
   });
 });

@@ -1,4 +1,5 @@
 import { Plot2D, Points, Polygon, VLine } from '../../components/Plot2D';
+import type { DragSource } from '../../core/plot';
 import { WideRegion } from '../../components/WideRegion';
 import type { Tone } from '../../core/tone';
 import { NAMES } from './frames';
@@ -25,7 +26,7 @@ export function Timeline({
   laneCount?: number;
   tone: (i: number) => Tone;
   now?: number | null;
-  onDrag?: (index: number, end: 'start' | 'end', time: number) => void;
+  onDrag?: (index: number, end: 'start' | 'end', time: number, via?: DragSource) => void;
   extra?: readonly Interval[];
   extraTone?: Tone;
   ariaLabel: string;
@@ -54,7 +55,7 @@ export function Timeline({
           { x: x.end, y: y(lanes ? lanes[i] : i), tone: 'muted' as Tone, r: 4 },
         ])}
         labels={(k) => (k % 2 === 0 ? NAMES[k >> 1] : null)}
-        onDrag={onDrag ? (k, [px]) => onDrag(k >> 1, k % 2 === 0 ? 'start' : 'end', px) : undefined}
+        onDrag={onDrag ? (k, [px], via) => onDrag(k >> 1, k % 2 === 0 ? 'start' : 'end', px, via) : undefined}
         pointLabel={(k) => `${k % 2 === 0 ? 'Start' : 'End'} of ${NAMES[k >> 1]}`}
         roving
       />
