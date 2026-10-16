@@ -46,7 +46,7 @@ const lesson: LessonModule = {
       options: [
         'Its output depends on one linear combination, so its boundary is still a straight line',
         'It needs more epochs and would reach 100% if it kept training for long enough',
-        'It memorised three clusters and ignores the fourth, because that keeps the average loss lowest',
+        'Its hidden unit is dead, so no gradient flows and the weights froze at their starting values',
         'Its learning rate is too high, so the weights bounce between two good answers',
       ],
       answer: 0,

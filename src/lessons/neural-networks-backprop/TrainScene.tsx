@@ -7,7 +7,7 @@ import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Sta
 import { pctText, sig } from '../../core/format';
 import { useSimulation } from '../../core/useSimulation';
 import { DataPlot } from './DataPlot';
-import { trainCaption } from './captions';
+import { describeConfig, trainCaption } from './captions';
 import {
   CLASS_NAME, CLASS_TONE, DATASETS, DATA_SEED, DIVERGED_LOSS, EPOCHS_PER_FRAME, HIDDEN_RANGE, L2_OPTIONS, MAX_RECORDED_EPOCHS, MOMENTUM_RANGE, RATE_STOPS, STEP_EPOCHS,
   SWEEP_EPOCHS, SWEEP_SEEDS, VANISH_BELOW, trainOpening, createSweep, createTrainRun, curvePoints, trainSnapshot, datasetPoints,
@@ -42,9 +42,6 @@ interface SweepView {
   /** What the sweep trained: its settings, shown with the count so a later change cannot mislabel it. */
   label: string;
 }
-
-const describe = (c: TrainConfig) =>
-  `${DATASETS.find((d) => d.id === c.dataset)!.label}, ${c.hidden.join('+')} ${c.activation} units, rate ${sig(c.learningRate)}, momentum ${sig(c.momentum)}`;
 
 export function TrainScene({ picker }: { picker: ReactNode }) {
   const [config, setConfig] = useState<TrainConfig>(trainOpening().config);
@@ -106,7 +103,7 @@ export function TrainScene({ picker }: { picker: ReactNode }) {
     const handle = { cancelled: false };
     sweepRun.current = handle;
     const work = createSweep(config);
-    const label = describe(config);
+    const label = describeConfig(config);
     const tick = () => {
       if (handle.cancelled) return;
       work.advance(SWEEP_SLICE);
@@ -232,7 +229,7 @@ export function TrainScene({ picker }: { picker: ReactNode }) {
             sweep.done ? (
               <span>
                 <b>{sweep.solved} of {SWEEP_SEEDS}</b> seeds reached 100% accuracy within {SWEEP_EPOCHS} epochs{sweep.diverged > 0 ? `, ${sweep.diverged} diverged` : ''} ({sweep.label}). The others were
-                stuck or too slow, not wrong forever.
+                stuck or too slow within {SWEEP_EPOCHS} epochs; nothing here says they would never get there.
               </span>
             ) : (
               <span>Running seed {sweep.finished + 1} of {SWEEP_SEEDS}: {sweep.solved} reached 100% so far.</span>

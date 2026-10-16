@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSgd, gradCheck } from '../../core/nn';
 import { expectCaption } from '../../core/testing/captions';
 import { sceneElements } from '../../core/testing/sceneKeys';
-import { forwardCaption, neuronCaption, trainCaption } from './captions';
+import { describeConfig, forwardCaption, neuronCaption, trainCaption } from './captions';
 import { BACK_STEPS, LAST_STEP, backwardFrames, chainLines } from './frames';
 import lesson from './index';
 import {
@@ -14,6 +14,14 @@ import { sig } from '../../core/format';
 const SLOW = { timeout: 120_000 };
 
 describe('try-this entries, from the default state, as written', () => {
+  it('the sweep label names every setting that changes the count: units (singular for 1), layer count and L2', () => {
+    const base = trainOpening().config;
+    const one = describeConfig({ ...base, hidden: [1], l2: 0 });
+    for (const part of [`1 ${base.activation} unit in 1 hidden layer (1)`, 'L2 off']) expect(one).toContain(part);
+    const two = describeConfig({ ...base, hidden: [3, 2], l2: 0.01 });
+    for (const part of [`5 ${base.activation} units in 2 hidden layers (3+2)`, 'L2 0.01']) expect(two).toContain(part);
+  });
+
   it('try-this 1: default weights get 30% of the blobs; Fit reaches 100%; then on XOR Fit leaves the loss near 0.69 at 50%, below the 75% a line can reach', () => {
     const open = neuronOpening();
     expect(open.dataset).toBe('blobs');

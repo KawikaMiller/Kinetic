@@ -1,10 +1,18 @@
 import type { ReactNode } from 'react';
 import { pctText, sig } from '../../core/format';
 import {
-  DIVERGED_LOSS, FORWARD_CUT, type DatasetId, type NeuronStats, type NeuronWeights, type UnitNumbers,
+  DATASETS, DIVERGED_LOSS, FORWARD_CUT, type DatasetId, type TrainConfig, type NeuronStats, type NeuronWeights, type UnitNumbers,
 } from './model';
 
 const pct = (share: number) => pctText(share, 0);
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** The settings a sweep trained with, every one that changes its result, so a later change cannot mislabel the count. */
+export function describeConfig(c: TrainConfig): string {
+  const units = c.hidden.reduce((a, b) => a + b, 0);
+  return `${DATASETS.find((d) => d.id === c.dataset)!.label}, ${plural(units, `${c.activation} unit`)} in ${plural(c.hidden.length, 'hidden layer')} (${c.hidden.join('+')}), rate ${sig(c.learningRate)}, momentum ${sig(c.momentum)}, L2 ${c.l2 === 0 ? 'off' : sig(c.l2)}`;
+}
 
 export function neuronCaption(weights: NeuronWeights, dataset: DatasetId, stats: NeuronStats): ReactNode {
   const atCeiling = stats.accuracy >= stats.best - 1e-9;

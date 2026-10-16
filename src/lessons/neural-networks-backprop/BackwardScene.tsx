@@ -116,7 +116,8 @@ export function BackwardScene({ picker }: { picker: ReactNode }) {
     >
       <div className="nn-stage stage-pad">
         <NetworkDiagram edges={edges} nodes={nodes} edgeTone={step >= 1 ? 'violet' : 'info'} ariaLabel={`The 2-2-1 network at step ${step + 1} of ${LAST_STEP + 1}: ${BACK_STEPS[step]}`} />
-        <CodePanel title={`Chain rule on ${BACK_STEPS[step].toLowerCase()}`} lines={lines} active={step} gutter="arrow" />
+        <CodePanel title={`Chain rule, step ${step + 1}: ${BACK_STEPS[step].toLowerCase()}`} lines={lines} active={step} gutter="arrow" />
+        <p className="hint">Coordinates here are the corners at plus and minus 1; the forward scene uses 0 and 1 and training uses clusters near plus and minus 1.5, so numbers differ between scenes.</p>
         <div className="nn-panels">
           <section className="nn-panel" aria-label="Nudge and see">
             <h3 className="section-title">Nudge and see</h3>
