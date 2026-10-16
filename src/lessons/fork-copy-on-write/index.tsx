@@ -81,7 +81,7 @@ const lesson: LessonModule = {
         'It copies 8 times as much, since a huge page holds 8 ordinary pages in the lesson',
       ],
       answer: 0,
-      why: 'The copy unit is a page, and a huge page is 2 MB against 4 KB, a factor of 512. Transparent huge page behaviour varies between systems, so check the kernel docs for yours; the lesson shows the model, where a few random writes copy the whole 8 MB.',
+      why: 'The copy unit is a page, and a huge page is 2 MB against 4 KB, a factor of 512. Transparent huge page behaviour varies between systems (seen once on Linux 6.18: an anonymous huge page was split on the write and only 4 KB was copied), so check the kernel docs for yours; the lesson shows the model, where a few random writes copy the whole 8 MB.',
     },
     {
       q: 'Why is a shell\'s fork followed by exec cheap even for a large parent?',

@@ -82,7 +82,7 @@ export function UsesScene({ picker }: { picker: ReactNode }) {
         <ProvenanceRow>
           <Provenance kind="toy">scaled-down address spaces ({SERVER_PAGES} pages for the server, 8 MB for the snapshot); the model is the one in the first two scenes</Provenance>
           <Provenance kind="simulated" seed={21}>the snapshot parent writes to uniformly random pages</Provenance>
-          <Provenance kind="from-memory">Redis forks a child to write its snapshot while the parent keeps serving, pre-fork servers share loaded code, and transparent huge pages behave differently from system to system: check the Redis docs, man 2 fork and the kernel docs</Provenance>
+          <Provenance kind="from-memory">Redis forks a child to write its snapshot while the parent keeps serving, pre-fork servers share loaded code, and transparent huge pages behave differently from system to system: on one Linux 6.18 kernel (WSL2, anonymous huge pages, seen once) a write after fork split the huge page and copied 4 KB, not 2 MiB, while hugetlbfs pages and older kernels copy the whole page. Check the Redis docs, man 2 fork and the kernel docs</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

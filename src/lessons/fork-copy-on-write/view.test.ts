@@ -82,7 +82,7 @@ describe('scene 3: only the controls a preset shows reach its numbers', () => {
     const huge = usesView({ ...DEFAULT_USES, snapshotWrites: 1, huge: true });
     expect(small.stats[0].value).toBe('1');
     expect(small.stats[2]).toMatchObject({ value: '4.0 KB' });
-    expect(huge.stats[2]).toMatchObject({ value: '2.0 MB', sub: '512x a 4 KB page' });
+    expect(huge.stats[2]).toMatchObject({ value: '2.0 MB', sub: '512x a 4 KB page in this toy (Linux may split it, see the chip)' });
     expect(huge.caption).toContain('memory grew by 2.0 MB');
   });
 });

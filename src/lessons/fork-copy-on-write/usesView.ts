@@ -40,7 +40,7 @@ export function usesView(s: UsesState): UsesView {
       stats: [
         { label: 'Pages copied', value: r.copiedPages.toLocaleString('en-US'), sub: `of ${r.pages.toLocaleString('en-US')}, one per distinct page dirtied` },
         { label: 'Memory growth', value: size(r.growthBytes), sub: `on top of the ${size(r.baselineBytes)} data set` },
-        { label: 'One write copies', value: size(pageBytes), sub: s.huge ? `${copyRatio()}x a 4 KB page` : 'one 4 KB page' },
+        { label: 'One write copies', value: size(pageBytes), sub: s.huge ? `${copyRatio()}x a 4 KB page in this toy (Linux may split it, see the chip)` : 'one 4 KB page' },
         { label: 'Expected by formula', value: r.expectedPages.toFixed(1), sub: 'N x (1 - (1 - 1/N)^w), pages' },
       ],
       caption: `Snapshot: the parent takes ${s.snapshotWrites} writes while the child walks the data set, and ${pagesText(r.copiedPages)} of ${r.pages.toLocaleString('en-US')} had to be copied, so memory grew by ${size(r.growthBytes)}. A naive fork would have copied ${size(r.naiveForkBytes)} at once. The formula expects ${r.expectedPages.toFixed(1)} pages.`,
