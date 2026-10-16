@@ -118,7 +118,7 @@ export function SortScene({ picker }: { picker: ReactNode }) {
           {median.comparisons !== first.comparisons && <VLine at={median.comparisons} label="median of 3" tone="bad" />}
         </Plot2D>
         <p className="ra-note">
-          With a random pivot there is no bad input, only an unlucky run: the distribution of this histogram is the same whichever input you pick above (only the seeded draw changes). The worst of the 1,000 runs took {fmt(worstRun)} comparisons. A random pivot still has a worst case, which is astronomically unlikely rather than impossible. Past n = 2,000 nothing is run: at n = {fmt(PAST_LIMIT_N)} a fixed pivot on sorted input costs n(n-1)/2 = {fmt(fixedPivotWorst(PAST_LIMIT_N))} comparisons, and a random pivot is expected to take {fmt(expectedComparisons(PAST_LIMIT_N))} (both from formulas).
+          With a random pivot there is no bad input, only an unlucky run: the distribution of this histogram is the same whichever input you pick above (only the seeded draw changes). The worst of the 1,000 runs took {fmt(worstRun)} comparisons. A random pivot still has a worst case, which becomes astronomically unlikely only as n grows (for a handful of elements it is a real chance), and is never impossible. Past n = 2,000 nothing is run: at n = {fmt(PAST_LIMIT_N)} a fixed pivot on sorted input costs n(n-1)/2 = {fmt(fixedPivotWorst(PAST_LIMIT_N))} comparisons, and a random pivot is expected to take {fmt(expectedComparisons(PAST_LIMIT_N))} (both from formulas).
         </p>
       </div>
       <ProvenanceRow>

@@ -120,6 +120,6 @@ export interface Preset {
 export const PRESETS: Preset[] = [
   { id: 'clusters', label: 'Two triangles, two bridges', graph: { n: 6, edges: [[0, 1], [1, 2], [0, 2], [3, 4], [4, 5], [3, 5], [2, 3], [0, 5]] } },
   { id: 'cycle', label: 'A ring of 7', graph: { n: 7, edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0]] } },
-  { id: 'dense', label: 'Dense with a pendant', graph: { n: 7, edges: [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3], [2, 4], [3, 4], [4, 5], [5, 6], [4, 6], [1, 4]] } },
+  { id: 'dense', label: 'Dense core with a triangle tail', graph: { n: 7, edges: [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3], [2, 4], [3, 4], [4, 5], [5, 6], [4, 6], [1, 4]] } },
   { id: 'cubes', label: 'Two squares joined', graph: { n: 8, edges: [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [2, 6]] } },
 ];

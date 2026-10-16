@@ -40,7 +40,7 @@ const lesson: LessonModule = {
         'Pairs that agree mod 4, and the solution is unique modulo 24',
       ],
       answer: 0,
-      why: `The gcd of 4 and 6 is 2, so a1 and a2 have to agree mod 2: ${F.compatiblePairs} of the ${F.allPairs} pairs do. A compatible pair has one solution in 0 to ${F.sharedLcm - 1}, the lcm range, and two in 0 to ${F.sharedProduct - 1}; x = 2 mod 4 with x = 3 mod 6 has none.`,
+      why: `The gcd of 4 and 6 is 2, so a1 and a2 have to agree mod 2: ${F.compatiblePairs} of the ${F.allPairs} pairs do. A compatible pair has one solution in 0 to ${F.sharedLcm - 1}, the lcm range, and ${F.sharedProduct / F.sharedLcm} in 0 to ${F.sharedProduct - 1}; x = 2 mod 4 with x = 3 mod 6 has none.`,
     },
     {
       q: 'Why does the constructive formula need the moduli to be pairwise coprime?',

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { GraphView } from '../../components/GraphView';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
@@ -31,6 +31,9 @@ export function KargerScene({ picker }: { picker: ReactNode }) {
   const [batch, setBatch] = useState<Batch | null>(null);
   const [note, setNote] = useState('Click an edge to remove it, or drag from one vertex to another to add one.');
 
+  const stageRef = useRef<HTMLDivElement>(null);
+  const refocus = useRef(false);
+
   const { n } = graph;
   const run = useMemo(() => kargerRun(graph, mulberry32(seed + runIndex)), [graph, seed, runIndex]);
   const exact = useMemo(() => bruteMinCut(graph), [graph]);
@@ -51,6 +54,16 @@ export function KargerScene({ picker }: { picker: ReactNode }) {
     reset();
     setBatch(null);
     setNote(message);
+  };
+  // Removing the focused edge unmounts it, which would drop keyboard focus to <body>: hand it to the graph's tab stop.
+  useEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    stageRef.current?.querySelector<SVGElement>('[role="button"][tabindex="0"]')?.focus();
+  }, [graph]);
+  const removeEdgeAt = (index: number) => {
+    refocus.current = stageRef.current?.contains(document.activeElement) ?? false;
+    changeGraph(removeEdge(graph, index), `Removed edge ${graph.edges[index][0]}-${graph.edges[index][1]}.`);
   };
   const runBatch = () => setBatch({ key, runs: BATCH, hits: repeat(graph, BATCH, seed, exact.size).hits });
   const groupLetter = (v: number) => GROUP_NAMES[groups[v]] ?? '?';
@@ -100,7 +113,7 @@ export function KargerScene({ picker }: { picker: ReactNode }) {
       ]}
       minWidth={WIDTH}
     >
-      <div className="ra-stage stage-pad">
+      <div className="ra-stage stage-pad" ref={stageRef}>
         <GraphView
           nodes={Array.from({ length: n }, (_, v) => ({ id: v, label: `${v}${shown > 0 ? groupLetter(v) : ''}`, at: positions.get(v)! }))}
           edges={graph.edges.map(([from, to]) => ({ from, to }))}
@@ -114,7 +127,7 @@ export function KargerScene({ picker }: { picker: ReactNode }) {
             if (finished && run.cutEdges.includes(i)) return { tone: isMin ? 'ok' : 'bad', width: 5 };
             return null;
           }}
-          onEdgeClick={(_, i) => changeGraph(removeEdge(graph, i), `Removed edge ${graph.edges[i][0]}-${graph.edges[i][1]}.`)}
+          onEdgeClick={(_, i) => removeEdgeAt(i)}
           editable={{
             onAddEdge: (a, b) => {
               const added = addEdge(graph, a, b);

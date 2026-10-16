@@ -67,9 +67,9 @@ export function PrimalityScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label={`n = ${n.toString()}`} value={kind === 'prime' ? 'prime' : kind === 'even' ? 'even' : 'odd composite'} color="var(--info)" sub="by trial division, as a check" />
-          <Stat label="Verdict" value={verdict} color={wrong ? 'var(--bad)' : certain ? 'var(--ok)' : 'var(--hi)'} sub={certain ? 'certain: a witness was found' : wrong ? 'wrong: only liars were drawn' : 'probabilistic: a prime never fails a round'} />
+          <Stat label="Verdict" value={verdict} color={wrong ? 'var(--bad)' : certain ? 'var(--ok)' : 'var(--hi)'} sub={certain ? (kind === 'even' ? 'certain: 2 divides it' : tiny ? 'certain: too small to need random bases' : 'certain: a witness was found') : wrong ? 'wrong: only liars were drawn' : 'probabilistic: a prime never fails a round'} />
           {stats && (
-            <Stat label={stats.exact ? 'Liars among all bases' : `Liars in ${stats.bases.toLocaleString('en-US')} sampled bases`} value={`${stats.liars} of ${stats.bases}`} color="var(--orange)" sub={[pct(stats.fraction), 'the bound is at most 25.0%']} />
+            <Stat label={stats.exact ? 'Liars among all bases' : `Liars in ${stats.bases.toLocaleString('en-US')} sampled bases`} value={`${stats.liars} of ${stats.bases}`} color="var(--orange)" sub={[pct(stats.fraction), stats.exact ? 'the bound is at most 25.0%' : 'the 25.0% bound is for the exact count; a sample can read a little above it']} />
           )}
           {stats && <Stat label="Plain Fermat test fooled by" value={`${stats.fermat} of ${stats.bases}`} color="var(--orange)" sub={stats.fermat > stats.liars ? 'bases: more than Miller-Rabin lets through' : 'bases'} />}
         </Stats>
@@ -79,7 +79,7 @@ export function PrimalityScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--ok)', label: 'a witness: proves composite', shape: 'square' },
             { color: 'var(--orange)', label: 'a liar base: passes though n is composite', shape: 'square' },
-            { color: 'var(--info)', label: 'exact error (liar share)^k', shape: 'line' },
+            { color: 'var(--info)', label: 'error from the liar share, (liar share)^k', shape: 'line' },
             { color: 'var(--bad)', label: `measured over ${TRIALS.toLocaleString('en-US')} seeded trials`, shape: 'dot' },
             { color: 'var(--dim)', label: 'the bound (1/4)^k', shape: 'line' },
           ]}
@@ -127,7 +127,7 @@ export function PrimalityScene({ picker }: { picker: ReactNode }) {
               <Points data={KS.flatMap((x) => (trials[x - 1] > 0 ? [{ x, y: trials[x - 1], tone: 'bad' as const, hollow: x !== k }] : []))} r={3.5} />
             </Plot2D>
             <p className="ra-note">
-              At k = {k}: the exact chance of a wrong "prime" is {exactErrorAfter(stats.fraction, k).toExponential(2)}, measured {measuredAtK === 0 ? `0 in ${TRIALS.toLocaleString('en-US')} trials` : measuredAtK === null ? '' : measuredAtK!.toExponential(2)}, and the bound (1/4)^k is {boundAfter(k).toExponential(2)}. A bound of at most 1/4 per round is the standard result for odd composites (verify against a textbook such as Rabin 1980 or CLRS). Rounds with no measured errors are left off the log axis.
+              At k = {k}: the {stats.exact ? 'exact' : 'estimated'} chance of a wrong "prime" is {exactErrorAfter(stats.fraction, k).toExponential(2)}, measured {measuredAtK === 0 ? `0 in ${TRIALS.toLocaleString('en-US')} trials` : measuredAtK === null ? '' : measuredAtK!.toExponential(2)}, and the bound (1/4)^k is {boundAfter(k).toExponential(2)}. A bound of at most 1/4 per round is the standard result for odd composites (verify against a textbook such as Rabin 1980 or CLRS). Rounds with no measured errors are left off the log axis.
               {stats.exact ? '' : ` Above n = 20,000 the liar share is estimated from ${stats.bases.toLocaleString('en-US')} seeded bases, not counted over all of them.`}
             </p>
           </>

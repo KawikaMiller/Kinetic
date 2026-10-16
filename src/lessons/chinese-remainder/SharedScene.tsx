@@ -9,9 +9,11 @@ import { useSystem } from './useSystem';
 
 const GRID_CELL = { cell: 18, font: 0 };
 
+const SHARED_GEARS = 2;
+
 /** Scene 3: moduli that share a factor. Compatible remainders have one solution modulo the lcm; incompatible ones have none. */
 export function SharedScene({ picker }: { picker: ReactNode }) {
-  const state = useSystem(OPENING.shared.system, 2);
+  const state = useSystem(OPENING.shared.system, SHARED_GEARS);
   const { moduli, residues } = state.system;
   const [m1, m2] = moduli;
   const [a1, a2] = residues;
@@ -29,7 +31,7 @@ export function SharedScene({ picker }: { picker: ReactNode }) {
       height={480}
       intro={
         verdict.ok
-          ? <>x = {a1} (mod {m1}) and x = {a2} (mod {m2}) agree mod gcd = {g}, so there is exactly one solution in 0 to {lcm - 1} (x = {verdict.x}), unique modulo the lcm {lcm}, not the product {product}: the product range holds {inProduct.length} of them.</>
+          ? <>x = {a1} (mod {m1}) and x = {a2} (mod {m2}) agree mod gcd = {g}, so there is exactly one solution in 0 to {lcm - 1} (x = {verdict.x}), unique modulo the lcm {lcm}{lcm === product ? ` (here the lcm equals the product ${product})` : `, not the product ${product}`}: the product range holds {inProduct.length} of them.</>
           : <>x = {a1} (mod {m1}) forces x = {a1 % g} (mod {g}) and x = {a2} (mod {m2}) forces x = {a2 % g} (mod {g}): no x can satisfy both, and a search of 0 to {lcm - 1} finds {inLcm.length}.</>
       }
       introKey={`${m1}-${m2}-${a1}-${a2}`}
@@ -50,7 +52,7 @@ export function SharedScene({ picker }: { picker: ReactNode }) {
           ]}
         />
       }
-      controls={[picker, <SystemFields key="fields" state={state} />]}
+      controls={[picker, <SystemFields key="fields" state={state} maxGears={SHARED_GEARS} />]}
     >
       <div className="cr-stage stage-pad">
         <p className="cr-note">Every pair of remainders (a1 down, a2 across) for mod {m1} and mod {m2}. Click one, or use the arrow keys and Enter.</p>
