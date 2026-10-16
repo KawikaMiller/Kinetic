@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { pct } from '../../core/format';
 import { goodputText, hiddenIntro } from './captions';
-import { AP, FRAME_RANGE, PLANE, RANGE, circle, clampPoint, clampRange, exchange, hearing, isHidden, type Pt } from './hidden';
+import { AP, FRAME_RANGE, PLANE, RANGE, circle, clampPoint, clampRange, exchange, hearing, isHidden } from './hidden';
 import { initialHidden, type HiddenState } from './init';
 
 const LEGEND = (
@@ -19,8 +19,6 @@ const LEGEND = (
     ]}
   />
 );
-
-const label = (p: Pt) => `(${p.x}, ${p.y})`;
 
 export function HiddenScene({ picker }: { picker: ReactNode }) {
   const [st, setSt] = useState<HiddenState>(initialHidden);
@@ -77,8 +75,8 @@ export function HiddenScene({ picker }: { picker: ReactNode }) {
             {st.rtsCts && reach && <Arrow from={[AP.x, AP.y]} to={[st.a.x, st.a.y]} tone="violet" label="CTS" />}
             {st.rtsCts && reach && <Arrow from={[AP.x, AP.y]} to={[st.c.x, st.c.y]} tone="violet" />}
             <Points data={[{ x: AP.x, y: AP.y, tone: 'muted', r: 7, ring: hidden && !st.rtsCts ? 'bad' : st.rtsCts && reach ? 'violet' : undefined }]} labels={() => 'AP'} />
-            <Points data={[{ x: st.a.x, y: st.a.y, tone: aTone, r: 7 }]} labels={() => 'A'} onDrag={(_, p) => setSt((s) => ({ ...s, a: clampPoint(p) }))} pointLabel={() => `Station A at ${label(st.a)}`} />
-            <Points data={[{ x: st.c.x, y: st.c.y, tone: cTone, r: 7 }]} labels={() => 'C'} onDrag={(_, p) => setSt((s) => ({ ...s, c: clampPoint(p) }))} pointLabel={() => `Station C at ${label(st.c)}`} />
+            <Points data={[{ x: st.a.x, y: st.a.y, tone: aTone, r: 7 }]} labels={() => 'A'} onDrag={(_, p) => setSt((s) => ({ ...s, a: clampPoint(p) }))} pointLabel={() => 'Station A'} />
+            <Points data={[{ x: st.c.x, y: st.c.y, tone: cTone, r: 7 }]} labels={() => 'C'} onDrag={(_, p) => setSt((s) => ({ ...s, c: clampPoint(p) }))} pointLabel={() => 'Station C'} />
           </Plot2D>
         </Box>
         <ProvenanceRow>

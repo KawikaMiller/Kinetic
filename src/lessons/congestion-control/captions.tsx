@@ -71,7 +71,7 @@ export interface AlgoRun {
 }
 
 export function algoSummaryLine(r: AlgoRun): string {
-  return `${pct(r.summary.meanUtil)} used, round trip ${Math.round(r.summary.meanRttMs)} ms, ${plural(r.summary.lossEvents, 'loss event')}, ${plural(Math.round(r.dropped), 'segment')} dropped`;
+  return `${pct(r.summary.meanUtil)} used, round trip ${Math.round(r.summary.meanRttMs)} ms, ${plural(r.summary.lossEvents, 'loss')} reacted to, ${plural(Math.round(r.dropped), 'segment')} overflowed the buffer`;
 }
 
 export function compareIntro(link: LinkSetup, runs: readonly AlgoRun[]): ReactNode {
@@ -80,8 +80,8 @@ export function compareIntro(link: LinkSetup, runs: readonly AlgoRun[]): ReactNo
   const rtt = (a: Algo) => Math.round(by(a).summary.meanRttMs);
   return (
     <>
-      Buffer {buf} BDP, base round trip {link.rttMs} ms. Mean round trip: Reno {rtt('reno')} ms, CUBIC {rtt('cubic')} ms, BBR {rtt('bbr')} ms. Loss events: Reno {by('reno').summary.lossEvents}, CUBIC {by('cubic').summary.lossEvents}, BBR{' '}
-      {by('bbr').summary.lossEvents}; BBR's buffer overflows dropped {plural(Math.round(by('bbr').dropped), 'segment')} and it did not slow down for them. Mean use of the link: Reno {pct(by('reno').summary.meanUtil)}, CUBIC{' '}
+      Buffer {buf} BDP, base round trip {link.rttMs} ms. Mean round trip: Reno {rtt('reno')} ms, CUBIC {rtt('cubic')} ms, BBR {rtt('bbr')} ms. Losses the sender reacted to: Reno {by('reno').summary.lossEvents}, CUBIC {by('cubic').summary.lossEvents}, BBR{' '}
+      {by('bbr').summary.lossEvents}; BBR's buffer overflowed by {plural(Math.round(by('bbr').dropped), 'segment')}, which it did not react to. Mean use of the link: Reno {pct(by('reno').summary.meanUtil)}, CUBIC{' '}
       {pct(by('cubic').summary.meanUtil)}, BBR {pct(by('bbr').summary.meanUtil)}.
     </>
   );
@@ -95,7 +95,7 @@ export function fairnessIntro(rule: Rule, read: FairnessReading): ReactNode {
     <>
       {RULE_LABEL[rule]}: {RULE_TEXT[rule]}. The gap between the two flows goes from {seg(read.startGap)} to {seg(read.endGap)} points of capacity, and in the last 20 steps they use between {seg(read.lowSum)} and {seg(read.highSum)}
       {'%'} of the link.{' '}
-      {closes ? 'The two flows converge on equal shares.' : rule === 'miad' ? 'The gap widens: the bigger flow keeps its lead.' : 'The flows do not move toward equal shares.'}
+      {closes ? 'The two flows converge on equal shares.' : rule === 'miad' ? 'The gap widens: the bigger flow keeps its lead and the smaller one is squeezed toward 0.' : rule === 'mimd' ? 'The ratio between the two flows stays the same, so the gap does not close in ratio terms.' : 'The flows do not move toward equal shares.'}
     </>
   );
 }

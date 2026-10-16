@@ -52,7 +52,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           {runs.map((r) => (
-            <Stat key={r.algo} label={`${ALGO_LABEL[r.algo]} round trip`} value={`${Math.round(r.summary.meanRttMs)} ms`} sub={[`${pct(r.summary.meanUtil)} of the link used`, `${r.summary.lossEvents} loss events`]} />
+            <Stat key={r.algo} label={`${ALGO_LABEL[r.algo]} round trip`} value={`${Math.round(r.summary.meanRttMs)} ms`} sub={[`${pct(r.summary.meanUtil)} of the link used`, `${r.summary.lossEvents} losses reacted to`]} />
           ))}
         </Stats>
       }
@@ -80,6 +80,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
         <ProvenanceRow>
           <Provenance kind="simulated" seed={link.loss > 0 ? link.seed : undefined}>the same link and seed for all three; a per-round-trip fluid model</Provenance>
           <Provenance kind="from-memory">CUBIC C = 0.4 and beta = 0.7 (RFC 9438, earlier RFC 8312) and the BBR gains 2/ln 2, 0.75, 1.25 are from memory: verify</Provenance>
+          <Provenance kind="toy">CUBIC is the basic cubic curve only: no TCP-friendly region, fast convergence or HyStart, so the CUBIC against Reno numbers here are for this model, not a general result</Provenance>
           <Provenance kind="toy">BBRv1 is shown, from the 2016 ACM Queue paper; later versions changed the loss response. ProbeRTT is named, not simulated</Provenance>
         </ProvenanceRow>
       </div>

@@ -3,6 +3,8 @@ import { Slider } from '../../components/ui';
 import { pct } from '../../core/format';
 import { RANGES, bdpOf, type LinkSetup } from './model';
 
+const segmentsText = (n: number) => `${n} ${n === 1 ? 'segment' : 'segments'}`;
+
 /** The sliders every link scene shares: bandwidth, base round trip, buffer, random loss, and the seed. */
 export function LinkControls({
   link, onChange, show,
@@ -22,7 +24,7 @@ export function LinkControls({
           min={RANGES.bufferBdp.min}
           max={RANGES.bufferBdp.max}
           step={RANGES.bufferBdp.step}
-          format={(v) => `${v.toFixed(1)} BDP (${Math.max(1, Math.round(v * bdpOf(link)))} segments)`}
+          format={(v) => `${v.toFixed(1)} BDP (${segmentsText(Math.max(1, Math.round(v * bdpOf(link))))})`}
           onChange={(bufferBdp) => onChange({ bufferBdp })}
         />
       )}
