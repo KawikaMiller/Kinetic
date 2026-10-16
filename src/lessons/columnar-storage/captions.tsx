@@ -78,7 +78,7 @@ export function vectorCaption(n: number, perRow: number, perBatch: number): Reac
   const last = sizes.at(-1)!;
   return (
     <>
-      Summing {n.toLocaleString('en-US')} values: {hl('bad', `${perRow.toLocaleString('en-US')} calls`)} one row at a time, {hl('ok', `${plural(perBatch, 'call')}`)} in batches of {BATCH_VALUES.toLocaleString('en-US')}
+      Summing {n.toLocaleString('en-US')} values: {hl('bad', `${perRow.toLocaleString('en-US')} calls`)} one row at a time, {hl('ok', `${perBatch.toLocaleString('en-US')} ${perBatch === 1 ? 'call' : 'calls'}`)} in batches of {BATCH_VALUES.toLocaleString('en-US')}
       {last < BATCH_VALUES ? ` (the last batch holds ${last})` : ''}. That is counting calls, not seconds: the real speed depends on the engine and the CPU.
     </>
   );

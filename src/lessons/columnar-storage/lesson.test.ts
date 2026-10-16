@@ -159,7 +159,7 @@ describe('captions and stats are computed from the model over the whole control 
     for (const n of [1, 500, 1024, 1025, 99_999, 1_000_000, 1_000_000_000]) {
       const text = plain(vectorCaption(n, callsPerRow(n), callsPerBatch(n)));
       expect(text).toContain(`${callsPerRow(n).toLocaleString('en-US')} calls`);
-      expect(text).toContain(`${callsPerBatch(n)} ${callsPerBatch(n) === 1 ? 'call' : 'calls'} in batches`);
+      expect(text).toContain(`${callsPerBatch(n).toLocaleString('en-US')} ${callsPerBatch(n) === 1 ? 'call' : 'calls'} in batches`);
       expect(text.includes('the last batch holds'), String(n)).toBe(n % BATCH_VALUES !== 0);
     }
   });

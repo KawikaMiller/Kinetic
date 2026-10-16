@@ -46,8 +46,8 @@ export function SkipScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--ok)', label: 'tick: a row group the zone map rules out', shape: 'square' },
-            { color: 'var(--dim)', label: 'skipped rows (dim), never read', shape: 'square' },
+            { color: 'var(--ok)', label: 'tick in the zone-map list: a row group it rules out', shape: 'square' },
+            { color: 'var(--dim)', label: 'skipped rows (dim, "✓ skipped" on the rail), never read', shape: 'square' },
             { color: 'var(--hi)', label: 'rail: a group that is read', shape: 'line' },
           ]}
         />

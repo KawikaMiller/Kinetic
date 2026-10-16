@@ -63,7 +63,7 @@ const lesson: LessonModule = {
       q: 'A country column has 4 distinct values over 16 rows. Run-length encoding takes more bytes in insert order than sorted by country. What does that show?',
       options: [
         'Encoding depends on layout: sorting puts equal values side by side, so runs get long and few',
-        'Run-length encoding is a bad choice, since it made the column bigger than the raw data',
+        'Run-length encoding is always a bad choice on a country column, whatever order the rows are in',
         'Sorting changes the values, so the sorted column has fewer distinct countries to store',
         'Compression is a separate final step, so the order of the rows has no effect on how well it works',
       ],

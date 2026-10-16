@@ -50,7 +50,7 @@ function EncodedForm({ e }: { e: Encoded }) {
           {e.deltas.map((z, i) => (
             <span key={i} className="cs-token tone-sky">{signed(z) >= 0 ? '+' : ''}{signed(z)}</span>
           ))}
-          <span className="cs-formnote"> each step in {e.width} {e.width === 1 ? 'bit' : 'bits'} (the widest step sets the width)</span>
+          <span className="cs-formnote"> each step in {e.width} {e.width === 1 ? 'bit' : 'bits'} (a sign bit is folded in; the widest step sets the width)</span>
         </p>
       );
   }
