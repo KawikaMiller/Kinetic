@@ -61,14 +61,16 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(plain(workloadCaption(p, mixCost(MIX, p), BEST, costOf(BEST), runContention(p, start.seed)))).toContain('the lowest of the four placements');
   });
 
-  it('try-this 2: pressing Business rule changed makes ETL wrong in all 3 countries, and ELT right', () => {
+  it('try-this 2: pressing Business rule changed makes ETL differ from the as-ingested view in all 3 countries, and ELT match it', () => {
     const f = pipelineFacts();
-    expect(f.etlWrong).toBe(COUNTRIES.length);
-    expect(f.eltEqual).toBe(true);
-    expect(f.etlEqual).toBe(false);
-    expect(lesson.tryThis[1]).toContain('3 country totals of 3 come out wrong');
+    expect(f.etlDiffers).toBe(COUNTRIES.length);
+    expect(f.etlLost).toEqual(['DE']);
+    expect(f.eltMatches).toBe(true);
+    expect(f.etlMatches).toBe(false);
+    expect(lesson.tryThis[1]).toContain('3 country totals of 3 differ from the as-ingested view');
     expect(initialPipelineScene().mode).toBe('etl');
-    expect(plain(pipelineCaption('etl', 'v2', f.etl))).toContain('3 country totals differ from the truth: DE, FR, NL');
+    expect(plain(pipelineCaption('etl', 'v2', f.etl))).toContain('3 country totals differ from the as-ingested view: DE, FR, NL');
+    expect(plain(pipelineCaption('etl', 'v2', f.etl))).toContain('not simply a wrong one, except DE, whose rows were purged');
     expect(plain(pipelineCaption('elt', 'v2', f.elt))).toContain('equal what the new rule says');
   });
 
@@ -121,15 +123,15 @@ describe('captions are computed from the model over the control cross product', 
     }
   });
 
-  it('pipeline: every mode x rule says what is kept, how many reads, and which totals are wrong', () => {
+  it('pipeline: every mode x rule says what is kept, how many reads, and which totals differ', () => {
     for (const mode of ['etl', 'elt'] as const) {
       for (const rule of ['v1', 'v2'] as const) {
         const r = run(mode, rule);
         const text = plain(pipelineCaption(mode, rule, r));
         const id = `${mode} ${rule}`;
         expect(text.includes('not kept'), id).toBe(mode === 'etl' && rule === 'v1');
-        if (rule === 'v2' && mode === 'etl') expect(text).toContain(`${r.wrong.length} country totals differ`);
-        if (rule === 'v2' && mode === 'elt') expect(r.wrong).toEqual([]);
+        if (rule === 'v2' && mode === 'etl') expect(text).toContain(`${r.differs.length} country totals differ`);
+        if (rule === 'v2' && mode === 'elt') expect(r.differs).toEqual([]);
       }
     }
   });
@@ -163,6 +165,9 @@ describe('captions are computed from the model over the control cross product', 
         expect(/(is|are) read as part of the table/.test(text), id).toBe(orphans > 0 && !layer);
         expect(text).toContain(`${layer ? readTable(l).length : directoryRows(l).length} row`);
         expect(text.includes('none tears'), id).toBe(layer);
+        // no pointer, no compare-and-swap: with the table format off the caption must not claim anything about two writers' updates
+        expect(text.includes('loses an update') || text.includes('lose one'), id).toBe(layer);
+        expect(text.includes('no compare-and-swap'), id).toBe(!layer);
       }
     }
   });

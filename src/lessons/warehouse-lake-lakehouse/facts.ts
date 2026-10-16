@@ -1,7 +1,7 @@
 /** warehouse-lake-lakehouse: the numbers the try-this entries and captions quote, each computed from the model at the scene's default. */
 import { KINDS, capabilityTable, type Kind } from './capabilities';
 import { DEFAULT_CONTENTION_SEED, runContention } from './contention';
-import { run, equalToTruth } from './pipeline';
+import { run, matchesAsIngested } from './pipeline';
 import { DEFAULT_STAR_SEED, QUESTIONS, buildStar, joinCount, runStar } from './star';
 import { initialLake, race, readerVsWriter } from './tableformat';
 import { MIX, PLACEMENTS, bestPlacement, mixCost, samePlacement, type Placement } from './workload';
@@ -25,11 +25,11 @@ export function workloadFacts() {
   };
 }
 
-/** The pipeline scene: the revenue the ETL rerun gets against the truth. */
+/** The pipeline scene: the revenue the ETL rerun gets against the as-ingested view an ELT replay reproduces. */
 export function pipelineFacts() {
   const etl = run('etl', 'v2');
   const elt = run('elt', 'v2');
-  return { etl, elt, etlWrong: etl.wrong.length, eltEqual: equalToTruth(elt), etlEqual: equalToTruth(etl) };
+  return { etl, elt, etlDiffers: etl.differs.length, etlLost: etl.lost, eltMatches: matchesAsIngested(elt), etlMatches: matchesAsIngested(etl) };
 }
 
 /** The star scene: what the default question joins, and what the snowflake adds. */

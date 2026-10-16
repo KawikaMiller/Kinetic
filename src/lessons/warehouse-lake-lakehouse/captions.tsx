@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { KINDS, type Kind } from './capabilities';
 import type { ContentionResult } from './contention';
-import { equalToTruth, type Mode, type Rule, type Run } from './pipeline';
+import { matchesAsIngested, type Mode, type Rule, type Run } from './pipeline';
 import { questionOf, type QuestionId } from './star';
 import type { Lake, Race, ReaderVsWriter } from './tableformat';
 import { directoryRows, orphanFiles, readTable, readAfterCrash } from './tableformat';
@@ -35,13 +35,13 @@ export function pipelineCaption(mode: Mode, rule: Rule, r: Run): ReactNode {
       <>ELT: the raw extract is loaded first and kept ({hl('ok', `${r.rawKept} raw rows`)}), and the cleaning runs inside the store. {hl('', plural(r.extracts, 'read'))} of the source so far.</>
     );
   }
-  const right = equalToTruth(r);
+  const same = matchesAsIngested(r);
   return mode === 'elt' ? (
-    <>The rule changed. ELT replays the kept raw rows, so the new totals {hl('ok', 'equal what the new rule says about the data as it arrived')} and the source is read {r.extracts} time.</>
+    <>The rule changed. ELT replays the kept raw rows, so the new totals {hl('ok', 'equal what the new rule says about the data as it arrived')} and the source is read {r.extracts} time. Price corrections made in the source since are not in those raw rows, so ELT needs its own way to apply them.</>
   ) : (
     <>
       The rule changed and the raw rows are gone, so ETL reads the source {hl('', 'again')} ({plural(r.extracts, 'read')}); the source has since overwritten and purged rows, so{' '}
-      {right ? hl('ok', 'it happens to agree') : hl('bad wrap', `${plural(r.wrong.length, 'country total')} differ from the truth: ${r.wrong.join(', ')}`)}.
+      {same ? hl('ok', 'it happens to agree with the as-ingested view') : <>{hl('orange wrap', `${plural(r.differs.length, 'country total')} differ from the as-ingested view: ${r.differs.join(', ')}`)}; that is a newer view of the source, not simply a wrong one{r.lost.length > 0 && <>, except {hl('bad', r.lost.join(', '))}, whose rows were purged and cannot be rebuilt</>}</>}.
     </>
   );
 }
@@ -65,7 +65,10 @@ export function lakeCaption(lake: Lake, layer: boolean, viewing: number | null, 
       {layer ? `Through the pointer, a reader sees snapshot ${lake.current}` : 'With no table format, a reader lists the directory'}: {hl(crash && crash.kind !== 'committed' ? 'bad' : 'ok', plural(seen, 'row'))}
       {orphans > 0 && <>; {plural(orphans, 'orphan file')} from a crashed writer {layer ? (orphans === 1 ? 'sits unseen' : 'sit unseen') : hl('bad', orphans === 1 ? 'is read as part of the table' : 'are read as part of the table')}</>}.
       {viewing !== null && viewing !== lake.current && <> Time travel shows snapshot {hl('info', viewing)}.</>}{' '}
-      Of {rvw.total} interleavings of one writer and one reader, {rvw.torn === 0 ? hl('ok', 'none tears') : hl('bad', `${rvw.torn} tear`)}; of {rc.total} for two writers, {rc.lostUpdates === 0 ? hl('ok', 'none loses an update') : hl('bad', `${rc.lostUpdates} lose one`)}.
+      Of {rvw.total} interleavings of one writer and one reader, {rvw.torn === 0 ? hl('ok', 'none tears') : hl('bad', `${rvw.torn} tear`)}.{' '}
+      {layer
+        ? <>Of {rc.total} for two writers, {rc.lostUpdates === 0 ? hl('ok', 'none loses an update') : hl('bad', `${rc.lostUpdates} lose one`)}.</>
+        : <>With no pointer there is no compare-and-swap, so two writers cannot be ordered or checked.</>}
     </>
   );
 }

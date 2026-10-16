@@ -38,7 +38,7 @@ export function WorkloadScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Mix cost" value={mix.cost.toLocaleString('en-US')} color={isBest ? 'var(--ok)' : 'var(--bad)'} sub={[`${mix.values.toLocaleString('en-US')} values read`, `${mix.places} places visited`]} />
           <Stat label="Best placement" value={bestCost.toLocaleString('en-US')} color="var(--ok)" sub={`points on the ${STORE_NAMES[BEST.points]}, scans on the ${STORE_NAMES[BEST.scans]}`} />
-          <Stat label="Point wait" value={queue.shared ? `${queue.maxPointWait} ticks` : 'none'} color={queue.maxPointWait >= 1 ? 'var(--bad)' : undefined} sub={queue.shared ? `longest, behind a scan; mean ${decimal(queue.meanPointWait, 1)}` : 'separate stores'} />
+          <Stat label="Point wait" value={queue.shared ? `${queue.maxPointWait} ticks` : 'none'} color={queue.maxPointWait >= 1 ? 'var(--bad)' : undefined} sub={queue.shared ? `longest, behind a scan, counting those still queued; mean ${decimal(queue.meanPointWait, 1)}` : 'separate stores'} />
         </Stats>
       }
       legend={
@@ -88,7 +88,7 @@ export function WorkloadScene({ picker }: { picker: ReactNode }) {
           <Sparkline values={queue.queue} cap={queue.queue.length} minMax={1} align="left" pad={{ top: 3, bottom: 3 }} width={SPARK_W} height={SPARK_H} color={queue.shared ? 'var(--bad)' : 'var(--ok)'} />
           <p className="wl-note">
             {queue.shared
-              ? `One store serves both: a scan holds it, so up to ${queue.queue.reduce((m, v) => Math.max(m, v), 0)} point operations queued at once. ${plural(queue.pointsServed, 'point operation')} and ${plural(queue.scansServed, 'scan')} served.`
+              ? `One store serves both: a scan holds it, so up to ${queue.queue.reduce((m, v) => Math.max(m, v), 0)} point operations queued at once. ${plural(queue.pointsServed, 'point operation')} and ${plural(queue.scansServed, 'scan')} served, ${plural(queue.pointsQueued, 'point operation')} still queued at the end.`
               : `Separate stores: point operations were served as they arrived (${plural(queue.pointsServed, 'one')}), and the ${plural(queue.scansServed, 'scan')} ran on the other store.`}
           </p>
         </Box>

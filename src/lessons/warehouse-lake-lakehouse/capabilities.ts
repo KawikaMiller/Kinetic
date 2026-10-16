@@ -76,7 +76,10 @@ export function capabilityTable(): CapabilityRow[] {
     {
       id: 'bi',
       label: 'Dashboard (scan) performance',
-      cells: by((k) => ({ verdict: scanCost(k) === best ? 'good' : 'bad', text: `${scanCost(k).toLocaleString('en-US')} value-equivalents for one scan` })),
+      cells: by((k) => ({
+        verdict: scanCost(k) === best ? 'good' : 'bad',
+        text: PROPERTIES[k].columnar ? `${scanCost(k).toLocaleString('en-US')} value-equivalents for one scan` : `${scanCost(k).toLocaleString('en-US')} value-equivalents for one scan if the files are row-oriented (CSV, JSON); columnar files such as Parquet would cost ${best.toLocaleString('en-US')}`,
+      })),
     },
   ];
 }

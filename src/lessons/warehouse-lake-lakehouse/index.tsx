@@ -35,11 +35,11 @@ const lesson: LessonModule = {
     ],
     why: 'The words warehouse, lake and lakehouse sell products, but the differences are mechanical: where the data lives, whether a commit is atomic, and whether the raw data was kept. Knowing the mechanism lets you judge any product by what it does when two jobs touch the same table.',
     watch:
-      'Row stores are blue and column stores violet; the cost of the placement you chose is green when it is the cheapest and red when a dearer one. In the pipeline, source and ingest are blue, raw zone and curated tables violet, right totals green and wrong or purged data red. In the star schema a table or column the question uses is blue and an unused one dim. In the lake the pointer is yellow, files in the current snapshot green, orphan and older files dim, a time-travelled snapshot blue, and a failed commit or torn read red. In the comparison a green tick is a property an architecture has and a red cross one it lacks. Chips say what is simulated, a toy, illustrative or from memory.',
+      'Row stores are blue and column stores violet; the cost of the placement you chose is green when it is the cheapest and red when a dearer one. In the pipeline, source and ingest are blue, raw zone and curated tables violet, totals equal to the as-ingested view green, totals that differ because the source changed since orange, and totals that cannot be rebuilt because their source rows were purged red. In the star schema a table or column the question uses is blue and an unused one dim. In the lake the pointer is yellow, files in the current snapshot green, orphan and older files dim, a time-travelled snapshot blue, and a failed commit or torn read red. In the comparison a green tick is a property an architecture has and a red cross one it lacks. Chips say what is simulated, a toy, illustrative or from memory.',
   },
   tryThis: [
     `In "Two workloads" everything starts on the row store: the five-operation mix costs ${n(work.everyRow)}, and a point operation waits up to ${work.sharedWait.maxPointWait} ticks behind a scan (seed ${DEFAULT_CONTENTION_SEED}). Set Scans go to the Column store: the mix drops to ${n(work.split)} and the wait is ${work.splitWait.maxPointWait}.`,
-    `In "ETL vs ELT" press Business rule changed: ETL has to read the source again and ${plural(pipe.etlWrong, 'country total')} of ${COUNTRIES.length} come out wrong. Switch Pipeline to ELT: it replays the kept raw rows and all of them are right.`,
+    `In "ETL vs ELT" press Business rule changed: ETL has to read the source again and ${plural(pipe.etlDiffers, 'country total')} of ${COUNTRIES.length} differ from the as-ingested view, because the source purged rows and corrected prices since. Switch Pipeline to ELT: it replays the kept raw rows and all of them match that view.`,
     `In "Star schema" the revenue-by-region question joins ${star.joins} dimensions. Switch Region to its own table (the snowflake): it joins ${star.snowJoins}, and the answer is still equal to the flat table.`,
     `In "A table format over files" with Snapshots and a pointer, ${lake.on.torn} of ${lake.on.total} writer and reader interleavings tear. Switch Table format to None: ${lake.off.torn} of ${lake.off.total} do. Back on snapshots, press Crash after file A: a reader still sees ${n(seenOn)} rows; switch to None and it sees ${n(seenOff)}.`,
     `In "Pick a name" all ${checks} properties are counted: lakehouse has ${everyone.lakehouse}, warehouse ${everyone.warehouse} and lake ${everyone.lake}. Press Open file format and Cost of storing raw data to stop counting them: ${fewerLeaders.join(' and ')} tie.`,
@@ -65,18 +65,18 @@ const lesson: LessonModule = {
     {
       q: 'What does ELT mean, as opposed to the claim that it skips transformation?',
       options: [
-        'Load the raw data first and transform it inside the store, so a changed rule is replayed from raw',
+        'Load the raw data first and transform it inside the store, so a changed rule is replayed from the raw rows kept',
         'Load the data without cleaning it and never transform it, since the analysts can clean it up themselves later',
         'Transform on the way in and then load only the result, which saves the cost of keeping the raw data',
         'Extract and load in one step, so the transform is done by the source system before anything is sent on',
       ],
       answer: 0,
-      why: 'ELT still transforms: the transform runs after the load, inside the analytical store, over raw data that was kept. That is why the rerun after a rule change does not depend on what the source holds now.',
+      why: 'ELT still transforms: the transform runs after the load, inside the analytical store, over raw data that was kept. That is why the rerun after a rule change reproduces the as-ingested view whatever the source holds now; corrections made in the source since are not in the raw rows.',
     },
     {
       q: 'Why does a star schema keep order lines in one table and customers, products and dates in others?',
       options: [
-        'Order lines repeat but a description is stored once and found by key, so a question joins only what it needs',
+        'Order lines repeat but each description is stored once and found by key, so a question joins only the tables it needs',
         'Joins are free in an analytical store, so splitting the data costs nothing and each table can be edited alone',
         'A single wide table cannot hold more than one kind of key, so the dimensions have to be kept in separate tables',
         'Splitting makes the answers differ from a flat table in a useful way, because they are grouped before they are joined',
@@ -98,7 +98,7 @@ const lesson: LessonModule = {
     {
       q: 'Two writers both read snapshot 3 and each write a file. The first swaps the pointer. What happens to the second\'s swap?',
       options: [
-        'It fails the compare, so that writer re-reads, rebuilds its list on top of the new snapshot and swaps again',
+        'It fails the compare, so that writer re-reads the pointer, rebuilds its list on top of the new snapshot and swaps again',
         'It succeeds and replaces the first writer\'s snapshot, so the first writer\'s rows disappear until the next commit',
         'It waits for the first writer to finish and then merges the two lists by itself without reading the pointer again',
         'It fails and the second writer\'s file is deleted, because only one writer may ever add data in a given hour',

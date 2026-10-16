@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import { KINDS, PRICE_PER_TB, PROPERTIES, capabilityTable } from './capabilities';
 import { CONTENTION_TICKS, COST_PER_TICK, DEFAULT_CONTENTION_SEED, WAIT_TO_SHOW, createContention, runContention } from './contention';
-import { COUNTRIES, CORRECTED_PRICES, INGESTED, PURGED_IDS, SOURCE_NOW, equalToTruth, revenue, run } from './pipeline';
+import { COUNTRIES, CORRECTED_PRICES, INGESTED, PURGED_IDS, SOURCE_NOW, matchesAsIngested, revenue, run } from './pipeline';
 import { DAYS, QUESTIONS, RECENT_DAYS, answerFlat, buildStar, flatTable, joinCount, runStar, sameAnswer, type Star } from './star';
 import {
   FILE_ROWS, append, cleanOrphans, crashWriter, currentFiles, deleteRows, directoryRows, emptyLake, initialLake, interleavings, orphanFiles, race, readAfterCrash,
@@ -80,6 +80,20 @@ describe('scene 1: scans and point operations on one store', () => {
     expect(longest).toBeGreaterThanOrEqual(scanTicks - 1);
   });
 
+  it('the point wait counts operations still queued at the end at their wait so far, not only those that started', () => {
+    const p = { points: 'row', scans: 'row' } as const;
+    const sim = createContention(p, DEFAULT_CONTENTION_SEED);
+    sim.run(CONTENTION_TICKS);
+    const queued = sim.state.queues.row.filter((j) => !j.scan);
+    expect(queued.length).toBeGreaterThan(0);
+    const r = runContention(p, DEFAULT_CONTENTION_SEED);
+    expect(r.pointsQueued).toBe(queued.length);
+    expect(r.maxPointWait).toBeGreaterThanOrEqual(Math.max(...queued.map((j) => CONTENTION_TICKS - j.arrivedAt)));
+    expect(r.maxPointWait).toBeGreaterThanOrEqual(Math.max(...sim.state.served.filter((j) => !j.scan).map((j) => j.wait)));
+    const all = [...sim.state.served.filter((j) => !j.scan).map((j) => j.wait), ...queued.map((j) => CONTENTION_TICKS - j.arrivedAt)];
+    expect(r.meanPointWait).toBeCloseTo(all.reduce((a, b) => a + b, 0) / all.length, 9);
+  });
+
   it('the default seed is the lowest whose shared store makes a point operation wait at least WAIT_TO_SHOW ticks, while separate stores never wait', () => {
     const waits = (seed: number) => runContention({ points: 'row', scans: 'row' }, seed).maxPointWait;
     expect(seeds.find((s) => waits(s) >= WAIT_TO_SHOW)).toBe(DEFAULT_CONTENTION_SEED);
@@ -88,21 +102,23 @@ describe('scene 1: scans and point operations on one store', () => {
 });
 
 describe('scene 2: ETL and ELT when a rule changes', () => {
-  it('hand-worked: under the changed rule the truth is DE 40, FR 105, NL 100; the source now holds different prices and fewer rows', () => {
+  it('hand-worked: under the changed rule the as-ingested view is DE 40, FR 105, NL 100; the source now holds different prices and fewer rows', () => {
     expect([...revenue(INGESTED, 'v2')].sort()).toEqual([['DE', 40], ['FR', 105], ['NL', 100]]);
     expect([...revenue(INGESTED, 'v1')].sort()).toEqual([['DE', 110], ['FR', 105], ['NL', 145]]);
     expect([...revenue(SOURCE_NOW, 'v2')].sort()).toEqual([['FR', 115], ['NL', 83]]);
   });
 
-  it('ELT replays the retained raw rows and gets the truth; ETL has to read the source again and does not, in every country', () => {
+  it('ELT replays the retained raw rows and gets the as-ingested view; ETL reads the source again and differs from it in every country, losing DE entirely', () => {
     const elt = run('elt', 'v2');
     const etl = run('etl', 'v2');
-    expect(equalToTruth(elt)).toBe(true);
-    expect(elt.wrong).toEqual([]);
+    expect(matchesAsIngested(elt)).toBe(true);
+    expect(elt.differs).toEqual([]);
+    expect(elt.lost).toEqual([]);
     expect(elt.source).toBe('raw files');
     expect(elt.extracts).toBe(1);
-    expect(equalToTruth(etl)).toBe(false);
-    expect(etl.wrong).toEqual([...COUNTRIES]);
+    expect(matchesAsIngested(etl)).toBe(false);
+    expect(etl.differs).toEqual([...COUNTRIES]);
+    expect(etl.lost).toEqual(['DE']);
     expect(etl.extracts).toBe(2);
     expect(etl.rawKept).toBe(0);
     expect(elt.rawKept).toBe(INGESTED.length);
@@ -113,7 +129,7 @@ describe('scene 2: ETL and ELT when a rule changes', () => {
     for (const c of COUNTRIES) {
       const purged = INGESTED.filter((r) => r.country === c && r.status === 'paid' && PURGED_IDS.includes(r.id)).reduce((n, r) => n + r.qty * r.price, 0);
       const corrected = INGESTED.filter((r) => r.country === c && r.status === 'paid' && !PURGED_IDS.includes(r.id) && r.id in CORRECTED_PRICES).reduce((n, r) => n + r.qty * (CORRECTED_PRICES[r.id] - r.price), 0);
-      expect((etl.curated.get(c) ?? 0) - (etl.truth.get(c) ?? 0), c).toBe(corrected - purged);
+      expect((etl.curated.get(c) ?? 0) - (etl.asIngested.get(c) ?? 0), c).toBe(corrected - purged);
     }
   });
 

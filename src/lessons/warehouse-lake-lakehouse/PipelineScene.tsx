@@ -6,7 +6,7 @@ import { useIntroCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { pipelineCaption } from './captions';
 import { initialPipelineScene } from './init';
-import { COUNTRIES, INGESTED, PURGED_IDS, SOURCE_NOW, equalToTruth, run, sourceChange, type Mode } from './pipeline';
+import { COUNTRIES, INGESTED, PURGED_IDS, SOURCE_NOW, matchesAsIngested, run, sourceChange, type Mode } from './pipeline';
 
 const MODES: { value: Mode; label: string }[] = [
   { value: 'etl', label: 'ETL: transform, then load' },
@@ -31,7 +31,7 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Raw rows kept" value={r.rawKept} color={r.rawKept > 0 ? 'var(--ok)' : undefined} sub={mode === 'elt' ? 'in the lake, as extracted' : 'discarded after the transform'} />
           <Stat label="Source reads" value={r.extracts} sub="times the pipeline extracted" />
-          <Stat label="Totals right" value={changed ? (equalToTruth(r) ? 'yes' : `${r.wrong.length} wrong`) : 'yes'} color={changed && !equalToTruth(r) ? 'var(--bad)' : 'var(--ok)'} sub="against the rule applied to the data as it arrived" />
+          <Stat label="Matches as ingested" value={changed ? (matchesAsIngested(r) ? 'yes' : `${r.differs.length} differ`) : 'yes'} color={changed && !matchesAsIngested(r) ? (r.lost.length > 0 ? 'var(--bad)' : 'var(--orange)') : 'var(--ok)'} sub="against the rule applied to the data as it arrived" />
         </Stats>
       }
       legend={
@@ -39,8 +39,9 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--info)', label: 'source and ingest', shape: 'square' },
             { color: 'var(--violet)', label: 'raw zone and curated tables', shape: 'square' },
-            { color: 'var(--ok)', label: 'right totals', shape: 'square' },
-            { color: 'var(--bad)', label: 'wrong totals, a purged source row', shape: 'square' },
+            { color: 'var(--ok)', label: 'a total equal to the as-ingested view', shape: 'square' },
+            { color: 'var(--orange)', label: 'a total that differs: the source changed since', shape: 'square' },
+            { color: 'var(--bad)', label: 'a total that cannot be rebuilt, a purged source row', shape: 'square' },
           ]}
         />
       }
@@ -85,16 +86,16 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
             <SectionTitle hint={`revenue by country, rule ${rule}`}>Curated table</SectionTitle>
             <table className="data-table wl-table">
               <thead>
-                <tr><th scope="col">Country</th><th scope="col">Revenue</th>{changed && <th scope="col">Truth</th>}</tr>
+                <tr><th scope="col">Country</th><th scope="col">Revenue</th>{changed && <th scope="col">As ingested</th>}</tr>
               </thead>
               <tbody>
                 {COUNTRIES.map((c) => {
-                  const wrong = r.wrong.includes(c);
+                  const tone = r.lost.includes(c) ? 'wl-bad' : r.differs.includes(c) ? 'wl-diff' : '';
                   return (
                     <tr key={c}>
                       <th scope="row">{c}</th>
-                      <td className={wrong ? 'wl-bad' : ''}>{r.curated.get(c) ?? '–'}</td>
-                      {changed && <td>{r.truth.get(c) ?? '–'}</td>}
+                      <td className={tone}>{r.curated.get(c) ?? '–'}</td>
+                      {changed && <td>{r.asIngested.get(c) ?? '–'}</td>}
                     </tr>
                   );
                 })}
@@ -106,7 +107,7 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint="stated, not scored">Cost and risk</SectionTitle>
           <ul className="wl-list">
             <li>{mode === 'etl' ? 'ETL loads only the finished result: little to store, and the source is read once per run.' : `ELT stores the raw extract (${plural(first.rawKept, 'row')} here) and pays to transform inside the store.`}</li>
-            <li>{mode === 'etl' ? 'If the rule changes, the cleaned data cannot be re-cleaned: there is no raw left, so the source must be read again, and it may no longer hold the old data.' : 'If the rule changes, the transform runs again over the raw rows that were kept, whatever the source holds now.'}</li>
+            <li>{mode === 'etl' ? 'If the rule changes, the cleaned data cannot be re-cleaned: there is no raw left, so the source must be read again, and it may no longer hold the old data. What it holds now is newer, with corrections, and missing what it purged.' : 'If the rule changes, the transform runs again over the raw rows that were kept, whatever the source holds now. Corrections made in the source since are in the source but not in those raw rows, so ELT needs its own way to apply them.'}</li>
           </ul>
         </Box>
         <ProvenanceRow>

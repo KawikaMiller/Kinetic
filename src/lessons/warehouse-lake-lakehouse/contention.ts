@@ -90,10 +90,12 @@ export function createContention(p: Placement, seed: number): TickSim<Contention
 export interface ContentionResult {
   seed: number;
   shared: boolean;
-  /** Mean ticks a point operation waited before service began; 0 with none. */
+  /** Mean ticks a point operation waited before service began, counting those still queued at the end at their wait so far; 0 with none. */
   meanPointWait: number;
   maxPointWait: number;
   pointsServed: number;
+  /** Point operations still waiting in a queue when the run ended (their wait so far is in the mean and the max). */
+  pointsQueued: number;
   scansServed: number;
   /** Point operations in the queue at each tick, for the sparkline. */
   queue: number[];
@@ -104,12 +106,15 @@ export function runContention(p: Placement, seed: number = DEFAULT_CONTENTION_SE
   const sim = createContention(p, seed);
   sim.run(CONTENTION_TICKS);
   const pointWaits = sim.state.served.filter((j) => !j.scan).map((j) => j.wait);
+  const queued = [...sim.state.queues.row, ...sim.state.queues.column].filter((j) => !j.scan).map((j) => CONTENTION_TICKS - j.arrivedAt);
+  const waits = [...pointWaits, ...queued];
   return {
     seed,
     shared: sharesStore(p),
-    meanPointWait: pointWaits.length === 0 ? 0 : pointWaits.reduce((a, b) => a + b, 0) / pointWaits.length,
-    maxPointWait: pointWaits.length === 0 ? 0 : Math.max(...pointWaits),
+    meanPointWait: waits.length === 0 ? 0 : waits.reduce((a, b) => a + b, 0) / waits.length,
+    maxPointWait: waits.length === 0 ? 0 : Math.max(...waits),
     pointsServed: pointWaits.length,
+    pointsQueued: queued.length,
     scansServed: sim.state.served.length - pointWaits.length,
     queue: sim.history.map((s) => s.pointsWaiting),
     violation: sim.violation?.message ?? null,

@@ -9,6 +9,7 @@
 .wl-off { opacity: 0.45; }
 .wl-ok { color: var(--ok); font-weight: 700; }
 .wl-bad { color: var(--bad); font-weight: 700; }
+.wl-diff { color: var(--orange); font-weight: 700; }
 .wl-gone { color: var(--muted); text-decoration: line-through; }
 .wl-tag { padding: 1px 8px; border-radius: 999px; border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 18%, transparent); font: 600 12px var(--font); white-space: nowrap; }
 .wl-list, .wl-defs { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font: 500 12.5px var(--font); }

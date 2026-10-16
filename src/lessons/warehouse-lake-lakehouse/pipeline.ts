@@ -1,7 +1,8 @@
 /**
  * warehouse-lake-lakehouse, scene 2: ETL against ELT when a business rule changes. The operational database is the source:
  * by the time the rule changes it has overwritten some prices and purged some old rows. ELT kept the raw extract and replays
- * it; ETL threw it away after transforming, so it has to extract again from what the source holds now.
+ * it; ETL threw it away after transforming, so it has to extract again from what the source holds now. Neither is simply right: ELT
+ * reproduces the as-ingested view exactly (with the old prices), ETL sees today's source (with the corrected prices) minus what it purged.
  */
 
 export type Mode = 'etl' | 'elt';
@@ -54,42 +55,45 @@ export interface Run {
   rule: Rule;
   /** The curated table after this run. */
   curated: Map<string, number>;
-  /** What the rule says about the data as it was ingested: the answer a correct rerun should give. */
-  truth: Map<string, number>;
+  /** What the new rule says about the data as it was ingested: the view an exact replay reproduces. */
+  asIngested: Map<string, number>;
   /** Raw rows kept in the lake after the run (none for ETL). */
   rawKept: number;
   /** How many times the pipeline read the source. */
   extracts: number;
   /** Where the transform ran on this run. */
   source: 'raw files' | 'the source again' | 'the first extract';
-  /** Countries whose total differs from `truth`. */
-  wrong: string[];
+  /** Countries whose total differs from `asIngested`: the source has purged rows or corrected prices since. */
+  differs: string[];
+  /** The countries among `differs` with no total at all, because the source purged every row they were counted from. */
+  lost: string[];
 }
 
 const same = (a: ReadonlyMap<string, number>, b: ReadonlyMap<string, number>) => a.size === b.size && [...a].every(([k, v]) => b.get(k) === v);
 
 /** The first run (rule v1), or the rerun after the rule changed to v2. */
 export function run(mode: Mode, rule: Rule): Run {
-  const truth = revenue(INGESTED, rule);
+  const asIngested = revenue(INGESTED, rule);
   if (rule === 'v1') {
     const curated = revenue(INGESTED, 'v1');
-    return { mode, rule, curated, truth, rawKept: mode === 'elt' ? INGESTED.length : 0, extracts: 1, source: 'the first extract', wrong: [] };
+    return { mode, rule, curated, asIngested, rawKept: mode === 'elt' ? INGESTED.length : 0, extracts: 1, source: 'the first extract', differs: [], lost: [] };
   }
   const curated = mode === 'elt' ? revenue(INGESTED, 'v2') : revenue(SOURCE_NOW, 'v2');
-  const wrong = [...new Set([...truth.keys(), ...curated.keys()])].filter((k) => truth.get(k) !== curated.get(k)).sort();
+  const differs = [...new Set([...asIngested.keys(), ...curated.keys()])].filter((k) => asIngested.get(k) !== curated.get(k)).sort();
   return {
     mode,
     rule,
     curated,
-    truth,
+    asIngested,
     rawKept: mode === 'elt' ? INGESTED.length : 0,
     extracts: mode === 'elt' ? 1 : 2,
     source: mode === 'elt' ? 'raw files' : 'the source again',
-    wrong,
+    differs,
+    lost: differs.filter((k) => !curated.has(k)),
   };
 }
 
-export const equalToTruth = (r: Run): boolean => same(r.curated, r.truth);
+export const matchesAsIngested = (r: Run): boolean => same(r.curated, r.asIngested);
 
 /** Which source rows differ from what was ingested, for the stage to mark. */
 export const sourceChange = (id: number): 'purged' | 'corrected' | null => (PURGED_IDS.includes(id) ? 'purged' : id in CORRECTED_PRICES ? 'corrected' : null);

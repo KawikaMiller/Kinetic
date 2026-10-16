@@ -69,7 +69,7 @@ export function StarScene({ picker }: { picker: ReactNode }) {
           <Segmented label="Business question" value={question} onChange={(q) => setState((s) => ({ ...s, question: q }))} options={QUESTION_OPTIONS} />
         </>,
         <>
-          <Toggle label="Region" value={snowflake} onChange={(v) => setState((s) => ({ ...s, snowflake: v }))} off="Inside customer (star)" on="Its own table (snowflake)" />
+          <Toggle label="Region (matters for the region question)" value={snowflake} onChange={(v) => setState((s) => ({ ...s, snowflake: v }))} off="Inside customer (star)" on="Its own table (snowflake)" />
           <SeedField seed={seed} onSeed={(s) => setState((st) => ({ ...st, seed: s }))} />
         </>,
       ]}

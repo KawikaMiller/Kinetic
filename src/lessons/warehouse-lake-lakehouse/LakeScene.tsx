@@ -120,15 +120,21 @@ export function LakeScene({ picker }: { picker: ReactNode }) {
           )}
         </Box>
         <Box>
-          <SectionTitle hint={`all ${rc.total} interleavings of two writers, run`}>Two writers</SectionTitle>
-          <p className="wl-note">
-            {rc.withConflict} had a failed compare-and-swap (the loser re-read and retried on top of the winner); {rc.withoutConflict} did not overlap. {rc.lostUpdates === 0 ? <span className="wl-ok">None lost an update.</span> : <span className="wl-bad">{rc.lostUpdates} lost one.</span>}
-          </p>
-          <ol className="wl-steps" aria-label="Both writers read the same snapshot first">
-            {rc.bothReadFirst.order.map((s, i) => (
-              <li key={i} className={s.includes('fails') ? 'wl-bad' : ''}>{s}</li>
-            ))}
-          </ol>
+          <SectionTitle hint={layer ? `all ${rc.total} interleavings of two writers, run` : 'a pointer is what a writer compares and swaps'}>Two writers</SectionTitle>
+          {layer ? (
+            <>
+              <p className="wl-note">
+                {rc.withConflict} had a failed compare-and-swap (the loser re-read and retried on top of the winner); {rc.withoutConflict} did not overlap. {rc.lostUpdates === 0 ? <span className="wl-ok">None lost an update.</span> : <span className="wl-bad">{rc.lostUpdates} lost one.</span>}
+              </p>
+              <ol className="wl-steps" aria-label="Both writers read the same snapshot first">
+                {rc.bothReadFirst.order.map((s, i) => (
+                  <li key={i} className={s.includes('fails') ? 'wl-bad' : ''}>{s}</li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <p className="wl-note">With no table format there is no pointer and so no compare-and-swap: two writers cannot be ordered or checked against each other, and nothing here decides which one wins. Switch to Snapshots and a pointer to see all {rc.total} interleavings run.</p>
+          )}
         </Box>
         {note && <p className="wl-status" role="status">{note}</p>}
         <ProvenanceRow>
