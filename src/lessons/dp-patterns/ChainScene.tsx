@@ -78,7 +78,10 @@ export function ChainScene({ picker }: { picker: ReactNode }) {
       </p>
     ) : (
       <p className="dp-verdict">
-        Adding k to the state also works, since k is only the choice the minimum ranges over, but the table grows from {counts.interval} to {counts.withSplit} cells for n = {n} with nothing gained: <b className="ok">{exact.answer}</b> either way.
+        Adding k to the state also works, since k is only the choice the minimum ranges over, but the table grows from {counts.interval} to {counts.withSplit} cells for n = {n} with nothing gained over dp[i][j].{' '}
+        {order === 'row'
+          ? <>Filled row by row it still reads cells it had not filled: <b className={run.answer === String(exact.answer) ? 'ok' : 'bad'}>{run.answer}</b> against the real <b className="ok">{exact.answer}</b>.</>
+          : <>Filled by interval length it gives <b className="ok">{exact.answer}</b>, the same as dp[i][j].</>}
       </p>
     );
 

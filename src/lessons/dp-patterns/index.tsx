@@ -54,7 +54,7 @@ const lesson: LessonModule = {
       why: `A state has to hold what the future depends on. With dp[i] alone the lesson's best attempt scores ${F.knapsackPrefix} on the default instance where ${F.knapsackExact} is possible, and the table does not get smaller in a way that helps.`,
     },
     {
-      q: 'The tails array in the O(n log n) increasing-subsequence method ends as 1, 2, 3, 6 on the default input. What is it?',
+      q: `The tails array in the O(n log n) increasing-subsequence method ends as ${F.lisTails} on the default input. What is it?`,
       options: [
         'The smallest last value for each length, not a real subsequence',
         'One longest increasing subsequence of the input, in order',

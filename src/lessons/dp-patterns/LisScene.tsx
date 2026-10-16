@@ -75,7 +75,7 @@ export function LisScene({ picker }: { picker: ReactNode }) {
         </p>
         {state === 'end' && (
           <div className="dp-tails">
-            <span className="dp-note">tails after element {step ? step.i : '-'} (tails[k] is the smallest last value of any increasing subsequence of length k + 1)</span>
+            <span className="dp-note">tails after {step ? `index ${step.i} (value ${array[step.i]})` : 'no element'} (tails[k] is the smallest last value of any increasing subsequence of length k + 1)</span>
             <ArrayStrip values={step ? step.tails : []} cellMax={44} cellState={(k) => (step && k === step.at ? (step.replaced ? 'active' : 'done') : 'idle')} pointers={[]} />
             <p className="dp-note">
               {step ? <>{array[step.i]} {step.replaced ? 'replaced the value at' : 'was appended at'} position {step.at} after {step.probes} probe{step.probes === 1 ? '' : 's'}. Length so far: {step.tails.length}.</> : <>Nothing processed yet.</>}
