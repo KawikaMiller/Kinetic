@@ -1,0 +1,6 @@
+.sw-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.sw-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.sw-event { font: 600 12px var(--mono); padding: 2px 8px; border: 1px solid var(--cell-line); border-radius: 999px; background: color-mix(in srgb, var(--info) 10%, transparent); }
+.sw-event.is-now { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 22%, transparent); }
+.sw-event.is-bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 22%, transparent); }
+.sw-stage ~ .provenance-row { margin: 8px 16px 12px; }
