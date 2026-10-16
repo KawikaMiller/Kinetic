@@ -78,7 +78,7 @@ describe('try-this entries, from the default state, as written', () => {
     const r = runForkJoin({ ...open.params, stealLatency: SLOW_STEAL_TICKS, seed: BROKEN_SEED });
     expect(r.makespan).toBeGreaterThan(brentBound(r, 4));
     expect(lesson.tryThis[4]).toContain(`the run takes ${r.makespan} ticks`);
-    expect(lesson.tryThis[4]).toContain(`The seed becomes ${BROKEN_SEED}`);
+    expect(lesson.tryThis[4]).toContain(`every seed breaks the bound`);
   });
 });
 
@@ -124,8 +124,10 @@ describe('fork-join captions across the control cross product', () => {
               else expect(stealFrame!.now).toBe(firstSteal);
               const summary = text(forkSummary(p, res));
               expect(summary).toContain(`${res.makespan} ticks`);
-              expect(summary.includes('is within it')).toBe(res.makespan <= brentBound(res, workers));
-              expect(summary.includes('breaks it')).toBe(res.makespan > brentBound(res, workers));
+              // a no-stealing run is not greedy: the bound is not applied to it, so it is neither within nor broken
+              expect(summary.includes('is within it')).toBe(steal && res.makespan <= brentBound(res, workers));
+              expect(summary.includes('breaks it')).toBe(steal && res.makespan > brentBound(res, workers));
+              expect(summary.includes('not greedy and the bound does not apply')).toBe(!steal);
               runs++;
             }
           }
