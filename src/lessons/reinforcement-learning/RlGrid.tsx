@@ -7,14 +7,6 @@ const SIZE = { cell: 40, gap: 3, font: 12 } as const;
 /** Where an arrow moves to in a cell that already carries a label (S, +0.2), so the two do not overdraw each other. */
 const CORNER = { dx: 12, dy: -12 } as const;
 
-/** Legend entries for the cells every grid can show. */
-export const WORLD_LEGEND = [
-  { color: 'var(--ok)', label: 'goal, +1', shape: 'square' as const },
-  { color: 'var(--bad)', label: 'pit, -1', shape: 'square' as const },
-  { color: 'var(--hi)', label: 'cookie, +0.3', shape: 'square' as const },
-  { color: 'var(--dim)', label: 'wall', shape: 'square' as const },
-];
-
 const isLabelled = (w: World, s: number): boolean => s === START_STATE || (w.bonus > 0 && s === stateOf(BONUS_CELL[0], BONUS_CELL[1]));
 
 export interface GridView {
