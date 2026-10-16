@@ -21,7 +21,17 @@ export interface Policy {
 }
 export const DEFAULT_POLICY: Policy = { days: { raw: 2, minute: 14, hour: 365 }, keeps: 'average' };
 export const DAY_LIMITS: Record<Tier, [number, number]> = { raw: [1, 30], minute: [1, 90], hour: [1, 730] };
-export const NOW_DAY = 800;
+/** The axis of the retention drawing: "days back from now" on a log scale, so 2, 14 and 365 days are all readable on one row each. */
+export const AXIS_DAYS = Math.max(...TIERS.map((t) => DAY_LIMITS[t][1]));
+export const reach = (days: number): number => Math.log1p(days);
+export const AXIS_REACH = reach(AXIS_DAYS);
+export const AXIS_TICKS: { days: number; label: string }[] = [
+  { days: 1, label: '1 d' },
+  { days: 7, label: '1 wk' },
+  { days: 30, label: '1 mo' },
+  { days: 90, label: '3 mo' },
+  { days: 365, label: '1 yr' },
+];
 export const SPIKE_AGE_DAYS = 30;
 
 const perDay = (t: Tier) => (t === 'raw' ? POINTS_PER_DAY : t === 'minute' ? MINUTE_BUCKETS_PER_DAY : HOUR_BUCKETS_PER_DAY);
@@ -81,8 +91,18 @@ export const DEFAULT_LABELS: Labels = { service: 8, endpoint: 25, status: 5, hos
 export const LABEL_MAX: Labels = { service: 50, endpoint: 100, status: 10, host: 200 };
 export const USER_IDS = 10_000;
 
-/** Series count: one series per combination of label values. */
-export function seriesCount(l: Labels, withUser: boolean): number {
-  return l.service * l.endpoint * l.status * l.host * (withUser ? USER_IDS : 1);
+/**
+ * Share of the possible label combinations that actually occur. Real label sets are correlated (a host runs one service, a user touches
+ * a few endpoints), so the product of the label counts is only the upper bound, reached when every combination occurs.
+ */
+export const OCCURRENCE: { share: number; label: string }[] = [
+  { share: 1, label: 'Every combination' },
+  { share: 0.25, label: '1 in 4' },
+  { share: 0.01, label: '1 in 100' },
+];
+
+/** Series count: one series per combination of label values that occurs; with `share` 1 (the default) it is the product, the most it can be. */
+export function seriesCount(l: Labels, withUser: boolean, share = 1): number {
+  return Math.round(l.service * l.endpoint * l.status * l.host * (withUser ? USER_IDS : 1) * share);
 }
 export const bytesPerDay = (series: number): number => series * POINTS_PER_DAY * RAW_BYTES;

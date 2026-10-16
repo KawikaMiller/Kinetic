@@ -1,19 +1,18 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { GanttLanes, type GanttBar } from '../../components/GanttLanes';
+import { useState, type ReactNode } from 'react';
+import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { WideRegion } from '../../components/WideRegion';
 import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
+import type { Tone } from '../../core/tone';
 import { bytes, plural } from '../../core/format';
 import { retentionCaption } from './captions';
 import { initialRetentionScene } from './init';
 import { POINTS_PER_DAY } from './series';
-import { BUCKET_BYTES, DAY_LIMITS, HOUR_BUCKETS_PER_DAY, MINUTE_BUCKETS_PER_DAY, NOW_DAY, RAW_BYTES, SPIKE_AGE_DAYS, TIERS, TIER_LABELS, WINDOWS, spikeAfter, storage, tierCovering, type Tier } from './retention';
+import { AXIS_REACH, AXIS_TICKS, BUCKET_BYTES, DAY_LIMITS, HOUR_BUCKETS_PER_DAY, MINUTE_BUCKETS_PER_DAY, RAW_BYTES, SPIKE_AGE_DAYS, TIERS, TIER_LABELS, WINDOWS, reach, spikeAfter, storage, tierCovering, type Tier } from './retention';
 
-const CALENDAR = '2025-01-01T00:00:00Z';
 const TIER_TONE: Record<Tier, 'amber' | 'pink' | 'sky'> = { raw: 'amber', minute: 'pink', hour: 'sky' };
-const GANTT_MIN_WIDTH = 620;
+const AXIS_TICK_TONE: Tone = 'muted';
 
 export function RetentionScene({ picker }: { picker: ReactNode }) {
   const [state, setState] = useState(initialRetentionScene);
@@ -23,11 +22,7 @@ export function RetentionScene({ picker }: { picker: ReactNode }) {
   const win = WINDOWS.find((w) => w.id === windowId)!;
   const answers = tierCovering(policy, win.days);
   const spike = spikeAfter(policy, SPIKE_AGE_DAYS);
-
-  const bars: GanttBar[] = useMemo(
-    () => TIERS.map((t) => ({ id: t, lane: t, start: (NOW_DAY - policy.days[t]) * 24, end: NOW_DAY * 24, tone: TIER_TONE[t], label: `${policy.days[t]} d` })),
-    [policy],
-  );
+  const spikeHolder = spike.tier ?? 'hour';
 
   useIntroCaption(retentionCaption(policy, win.label, answers, stored.total, spike), [policy, windowId]);
 
@@ -51,6 +46,7 @@ export function RetentionScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--sky)', label: '1-hour tier', shape: 'square' },
             { color: 'var(--ok)', label: 'a spike that survives', shape: 'square' },
             { color: 'var(--bad)', label: 'a spike erased or gone', shape: 'square' },
+            { color: 'var(--dim)', label: 'a month ago on a tier no query uses', shape: 'square' },
           ]}
         />
       }
@@ -69,19 +65,26 @@ export function RetentionScene({ picker }: { picker: ReactNode }) {
     >
       <div className="ts-stage stage-pad">
         <Box>
-          <SectionTitle hint="each tier is kept for the last N days up to now (UTC)">What is kept</SectionTitle>
-          <WideRegion minWidth={GANTT_MIN_WIDTH} label="Retention tiers on a calendar: scroll sideways to see all of it">
-            <GanttLanes
-              lanes={TIERS.map((t) => ({ id: t, label: TIER_LABELS[t] }))}
-              bars={bars}
-              domain={[0, NOW_DAY * 24]}
-              axis={{ calendar: { start: CALENDAR, unit: 'week' } }}
-              markers={[{ at: (NOW_DAY - SPIKE_AGE_DAYS) * 24, label: 'spike', tone: spike.visible ? 'ok' : 'bad' }]}
-              size="md"
-              labelWidth={128}
-              ariaLabel="The span of time each retention tier covers, with a spike a month old marked"
-            />
-          </WideRegion>
+          <SectionTitle hint="how far back each tier reaches, now at the left; the scale is logarithmic so a 2-day tier stays readable next to a year">What is kept</SectionTitle>
+          <div className="ts-tiers">
+            <div className="ts-tier-row" aria-hidden="true">
+              <span className="ts-tier-name">days back from now</span>
+              <Bar value={0} max={AXIS_REACH} markers={AXIS_TICKS.map((t) => ({ at: reach(t.days), label: t.label, tone: AXIS_TICK_TONE }))} animate={false} />
+            </div>
+            {TIERS.map((t) => (
+              <div key={t} className="ts-tier-row">
+                <span className="ts-tier-name"><b>{TIER_LABELS[t]}</b> {plural(policy.days[t], 'day')}</span>
+                <Bar
+                  value={reach(policy.days[t])}
+                  max={AXIS_REACH}
+                  tone={TIER_TONE[t]}
+                  height={14}
+                  markers={[{ at: reach(SPIKE_AGE_DAYS), label: t === spikeHolder ? `spike, ${SPIKE_AGE_DAYS} d ago` : undefined, tone: t === spikeHolder ? (spike.visible ? 'ok' : 'bad') : 'dim' }]}
+                  ariaLabel={`${TIER_LABELS[t]}, kept for ${plural(policy.days[t], 'day')}`}
+                />
+              </div>
+            ))}
+          </div>
         </Box>
         <Box>
           <SectionTitle hint="a layout this lesson states, not any database's">How storage is counted</SectionTitle>

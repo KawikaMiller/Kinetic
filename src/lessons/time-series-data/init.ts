@@ -8,4 +8,4 @@ export type BucketChoice = 'minute' | 'hour';
 export const initialRollupScene = (): { bucket: BucketChoice; aggregate: Aggregate; gap: boolean } => ({ bucket: 'hour', aggregate: 'avg', gap: false });
 export const initialEncoderScene = (): { ts: TimestampPattern; vs: ValuePattern } => ({ ts: 'regular', vs: 'constant' });
 export const initialRetentionScene = (): { policy: Policy; window: 'hour' | 'week' | 'year' } => ({ policy: { days: { ...DEFAULT_POLICY.days }, keeps: DEFAULT_POLICY.keeps as Keeps }, window: 'week' });
-export const initialCardinalityScene = (): { labels: Labels; withUser: boolean } => ({ labels: { ...DEFAULT_LABELS }, withUser: false });
+export const initialCardinalityScene = (): { labels: Labels; withUser: boolean; share: number } => ({ labels: { ...DEFAULT_LABELS }, withUser: false, share: 1 });

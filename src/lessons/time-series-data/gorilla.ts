@@ -3,8 +3,11 @@
  * previous value. This follows Pelkonen et al., "Gorilla" (VLDB 2015), as the author remembers it; the lesson chips the exact bit
  * windows "from memory, verify", and says other systems differ.
  *
- *  timestamps: the first in 64 bits; the first delta in 14 bits; then the delta of delta D:
+ *  timestamps: the first in 64 bits (the paper keeps a block-start header and stores the first timestamp as a 14-bit delta from it);
+ *    the first delta in 14 bits; then the delta of delta D:
  *    D = 0: '0'   D in [-63, 64]: '10' + 7 bits   [-255, 256]: '110' + 9 bits   [-2047, 2048]: '1110' + 12 bits   else '1111' + 32 bits
+ *    The payload is D written as truncated two's complement in that many bits, so 64 is '1000000' and is read back as +64 (a value above
+ *    the window's top reads as negative), as common open-source implementations do.
  *  values: the first as 64 bits; then x = bits(v) XOR bits(previous):
  *    x = 0: '0'.  Otherwise '1', then '0' + the meaningful bits when they fit in the previous window of leading and trailing zeros,
  *    or '1' + 5 bits of leading zeros (capped at 31) + 6 bits of length (64 is written as 0) + the meaningful bits.
@@ -45,16 +48,19 @@ const fromBits = (b: bigint): number => {
 const MASK64 = (1n << 64n) - 1n;
 
 const bin = (value: bigint, width: number): string => (value & ((1n << BigInt(width)) - 1n)).toString(2).padStart(width, '0');
-const signed = (d: number, offset: number, width: number) => bin(BigInt(d + offset), width);
 
 /** The control prefix and field width for a delta of delta. */
-export function dodWindow(d: number): { prefix: string; width: number; offset: number } {
-  if (d === 0) return { prefix: '0', width: 0, offset: 0 };
-  if (d >= -63 && d <= 64) return { prefix: '10', width: 7, offset: 63 };
-  if (d >= -255 && d <= 256) return { prefix: '110', width: 9, offset: 255 };
-  if (d >= -2047 && d <= 2048) return { prefix: '1110', width: 12, offset: 2047 };
-  return { prefix: '1111', width: 32, offset: 0 };
+export function dodWindow(d: number): { prefix: string; width: number } {
+  if (d === 0) return { prefix: '0', width: 0 };
+  if (d >= -63 && d <= 64) return { prefix: '10', width: 7 };
+  if (d >= -255 && d <= 256) return { prefix: '110', width: 9 };
+  if (d >= -2047 && d <= 2048) return { prefix: '1110', width: 12 };
+  return { prefix: '1111', width: 32 };
 }
+
+/** Field width by the number of leading 1 bits of the prefix, and the largest positive value a field of that width holds (anything above reads as negative). */
+const DOD_WIDTHS = [0, 7, 9, 12, 32];
+const maxPositive = (width: number) => (width === 32 ? 2 ** 31 - 1 : 2 ** (width - 1));
 
 const leadingZeros = (x: bigint) => bin(x, 64).indexOf('1');
 const trailingZeros = (x: bigint) => 63 - bin(x, 64).lastIndexOf('1');
@@ -82,7 +88,7 @@ export function encode(points: readonly Point[]): Encoded {
       const dod = delta - prevDelta;
       const w = dodWindow(dod);
       if (w.width === 32 && (dod < -(2 ** 31) || dod >= 2 ** 31)) throw new RangeError('delta of delta does not fit 32 bits');
-      add('delta of delta', w.width === 0 ? w.prefix : w.prefix + signed(dod, w.offset, w.width));
+      add('delta of delta', w.width === 0 ? w.prefix : w.prefix + bin(BigInt(dod), w.width));
       prevDelta = delta;
     }
     const b = bitsOf(p.v);
@@ -133,11 +139,11 @@ export function decode(bits: string, count: number): Point[] {
     } else {
       let prefix = 0;
       while (prefix < 4 && read(1) === 1n) prefix++;
-      const [width, offset] = [[0, 0], [7, 63], [9, 255], [12, 2047], [32, 0]][prefix];
+      const width = DOD_WIDTHS[prefix];
       let dod = 0;
       if (width > 0) {
         const raw = Number(read(width));
-        dod = width === 32 ? (raw >= 2 ** 31 ? raw - 2 ** 32 : raw) : raw - offset;
+        dod = raw > maxPositive(width) ? raw - 2 ** width : raw;
       }
       prevDelta += dod;
       t = out[i - 1].t + prevDelta;

@@ -8,12 +8,10 @@ import { decimal } from '../../core/format';
 import { rollupCaption } from './captions';
 import { defaultSeries } from './facts';
 import { initialRollupScene } from './init';
-import { AGGREGATES, GAP_KEEP_EVERY, HOUR, MINUTE, SERIES_START, SPIKE_START, STEP_SECONDS, averageOfAverages, decimate, exactAverage, rollup, spikePeak, valueOf, withGap } from './series';
+import { AGGREGATES, GAP_FROM_MINUTE, GAP_KEEP_EVERY, GAP_TO_MINUTE, HOUR, MINUTE, SERIES_START, SPIKE_START, STEP_SECONDS, averageOfAverages, decimate, exactAverage, rollup, spikePeak, valueOf, withGap } from './series';
 
 const HOUR_S = 3_600;
 const BUCKETS = [{ value: 'minute' as const, label: '1-minute buckets' }, { value: 'hour' as const, label: '1-hour buckets' }];
-const GAP_FROM_MINUTE = 60;
-const GAP_TO_MINUTE = 100;
 const PLOT_COLUMNS = 340;
 const spikeT = SERIES_START + SPIKE_START * STEP_SECONDS;
 const middle = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];

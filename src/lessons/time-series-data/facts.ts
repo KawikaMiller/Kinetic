@@ -1,7 +1,7 @@
 /** time-series-data: the numbers the try-this entries and captions quote, each computed from the model at the scene's default. */
 import { bytes } from '../../core/format';
 import { encode, bitsPerPoint, encodedBytes, ratioAgainstRaw } from './gorilla';
-import { DEFAULT_LABELS, DEFAULT_POLICY, USER_IDS, bytesPerDay, seriesCount, spikeAfter, storage } from './retention';
+import { DEFAULT_LABELS, DEFAULT_POLICY, OCCURRENCE, USER_IDS, bytesPerDay, seriesCount, spikeAfter, storage } from './retention';
 import {
   DEFAULT_NOISE, DEFAULT_SEED, DEFAULT_SPIKE, HOUR, MINUTE, POINTS_PER_DAY, SPIKE_START, STEP_SECONDS, SERIES_START, averageOfAverages, buildSeries, exactAverage, patternSeries, rollup,
   spikePeak, valueOf, withGap, type Aggregate,
@@ -22,7 +22,7 @@ export function spikeFacts(bucketSeconds: number = HOUR) {
 
 /** The gap preset at one-minute buckets: the true average, the average of averages, and their difference. */
 export function gapFacts() {
-  const gapped = withGap(defaultSeries(), 60, 100);
+  const gapped = withGap(defaultSeries());
   const minutes = rollup(gapped, MINUTE);
   const exact = exactAverage(minutes);
   const naive = averageOfAverages(minutes);
@@ -45,5 +45,6 @@ export function retentionFacts() {
 export function cardinalityFacts() {
   const base = seriesCount(DEFAULT_LABELS, false);
   const withUser = seriesCount(DEFAULT_LABELS, true);
-  return { base, withUser, baseDay: bytesPerDay(base), userDay: bytesPerDay(withUser), users: USER_IDS, perDay: POINTS_PER_DAY };
+  const sparseShare = OCCURRENCE[OCCURRENCE.length - 1].share;
+  return { base, withUser, baseDay: bytesPerDay(base), userDay: bytesPerDay(withUser), users: USER_IDS, perDay: POINTS_PER_DAY, sparseWithUser: seriesCount(DEFAULT_LABELS, true, sparseShare) };
 }

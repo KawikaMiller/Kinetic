@@ -102,9 +102,13 @@ export function spikePeak(points: readonly Point[]): number {
 export const MINUTE = 60;
 export const HOUR = 3_600;
 
+/** The gap preset: minutes 120 to 600 of the day keep 1 point in 60, so most one-minute buckets there hold one point against six elsewhere. */
+export const GAP_FROM_MINUTE = 120;
+export const GAP_TO_MINUTE = 600;
+export const GAP_KEEP_EVERY = 60;
+
 /** The series with a stretch of points missing: `fromMinute` to `toMinute` of the day, except every `keepEvery`-th point. */
-export const GAP_KEEP_EVERY = 6;
-export function withGap(points: readonly Point[], fromMinute: number, toMinute: number, keepEvery = GAP_KEEP_EVERY): Point[] {
+export function withGap(points: readonly Point[], fromMinute: number = GAP_FROM_MINUTE, toMinute: number = GAP_TO_MINUTE, keepEvery: number = GAP_KEEP_EVERY): Point[] {
   const lo = SERIES_START + fromMinute * MINUTE;
   const hi = SERIES_START + toMinute * MINUTE;
   return points.filter((p, i) => p.t < lo || p.t >= hi || i % keepEvery === 0);

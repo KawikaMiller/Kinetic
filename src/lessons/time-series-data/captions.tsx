@@ -2,15 +2,15 @@
 import type { ReactNode } from 'react';
 import { bytes, decimal, plural } from '../../core/format';
 import { TIER_LABELS, type Policy, type SpikeView, type Tier } from './retention';
-import { POINTS_PER_DAY, type Aggregate, type TimestampPattern, type ValuePattern } from './series';
+import { POINTS_PER_DAY, SPIKE_POINTS, type Aggregate, type TimestampPattern, type ValuePattern } from './series';
 
 const hl = (tone: string, text: ReactNode) => <span className={`hl ${tone}`}>{text}</span>;
 const num = (n: number) => n.toLocaleString('en-US');
 
-export function rawCaption(inView: number, total: number, storedBytes: number, peak: number): ReactNode {
+export function rawCaption(inView: number, total: number, storedBytes: number, peak: number, spike: number): ReactNode {
   return (
     <>
-      {hl('', num(inView))} of {num(total)} points in view, {bytes(storedBytes)} at 16 bytes a point. The line is drawn one value per pixel column, the largest under it, and the data keeps every point. The spike peaks at {hl('hi', decimal(peak, 2))}.
+      {hl('', num(inView))} of {num(total)} points in view, {bytes(storedBytes)} at 16 bytes a point. The line is drawn one value per pixel column, the largest under it, and the data keeps every point. {spike === 0 ? <>The spike height is 0, so there is no spike: the same {SPIKE_POINTS} points are ordinary readings.</> : <>The spike peaks at {hl('hi', decimal(peak, 2))}.</>}
     </>
   );
 }
@@ -46,10 +46,12 @@ export function retentionCaption(p: Policy, windowLabel: string, answers: Tier |
   );
 }
 
-export function cardinalityCaption(series: number, withUser: boolean, perDay: number): ReactNode {
+/** `upper` is the product of the label counts; `occurs` names the share of combinations that occur (null: all of them, so `series` is the upper bound). */
+export function cardinalityCaption(upper: number, series: number, withUser: boolean, perDay: number, occurs: string | null): ReactNode {
   return (
     <>
-      {hl('', num(series))} series{withUser ? ', after a user id label multiplied the count' : ''}: {bytes(perDay)} of raw points a day, one series being {num(POINTS_PER_DAY)} points. Each label multiplies the count of series by the number of values it takes.
+      {occurs === null ? <>At most {hl('', num(series))} series (if every label combination occurs)</> : <>{hl('', num(series))} series ({occurs} of the {num(upper)} possible combinations occur)</>}
+      {withUser ? ', after a user id label' : ''}: {bytes(perDay)} of raw points a day, one series being {num(POINTS_PER_DAY)} points. Each label can multiply the count by the number of values it takes; labels that go together (a host runs one service) leave fewer combinations.
     </>
   );
 }

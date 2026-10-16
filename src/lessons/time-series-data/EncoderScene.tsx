@@ -90,7 +90,7 @@ export function EncoderScene({ picker }: { picker: ReactNode }) {
         </Box>
         <ProvenanceRow>
           <Provenance kind="real">a real encoder and decoder run in your browser: the round trip is checked bit for bit</Provenance>
-          <Provenance kind="from-memory">the scheme follows the Gorilla paper (Pelkonen et al., VLDB 2015) as remembered; verify the exact bit windows and control codes against it. Other systems differ in the details</Provenance>
+          <Provenance kind="from-memory">the scheme follows the Gorilla paper (Pelkonen et al., VLDB 2015) as remembered; verify the exact bit windows and control codes against it. Two simplifications: the paper keeps a block-start header timestamp and a 14-bit first delta from it, while here the first timestamp is stored whole and the 14 bits hold the first interval; and each delta of delta is written as truncated two's complement, a common choice the paper does not spell out. Other systems differ in the details</Provenance>
           <Provenance kind="simulated">seeded demo series, not one product&rsquo;s format or real metrics</Provenance>
         </ProvenanceRow>
       </div>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32, randInt } from '../../core/random';
 import { decode, dodWindow, encode, bitsPerPoint, ratioAgainstRaw, type Point } from './gorilla';
-import { DEFAULT_LABELS, DEFAULT_POLICY, USER_IDS, bytesPerDay, seriesCount, spikeAfter, spikeShown, spikeVisible, storage, tierCovering, WINDOWS } from './retention';
+import { AXIS_DAYS, AXIS_REACH, DEFAULT_LABELS, DEFAULT_POLICY, OCCURRENCE, USER_IDS, bytesPerDay, reach, seriesCount, spikeAfter, spikeShown, spikeVisible, storage, tierCovering, WINDOWS } from './retention';
 import {
   BASELINE, DEFAULT_NOISE, DEFAULT_SEED, DEFAULT_SPIKE, HOUR, MINUTE, POINTS_PER_DAY, SERIES_START, SPIKE_POINTS, SPIKE_START, averageOfAverages, buildSeries, decimate, exactAverage,
   patternSeries, rollup, rollupBuckets, valueOf, withGap, type TimestampPattern, type ValuePattern,
@@ -70,7 +70,7 @@ describe('Gorilla-style encoding', () => {
   });
 
   it('hand-worked: the control windows for delta of delta are 0, +-64, +-256, +-2048 and the rest', () => {
-    expect(dodWindow(0)).toEqual({ prefix: '0', width: 0, offset: 0 });
+    expect(dodWindow(0)).toEqual({ prefix: '0', width: 0 });
     expect(dodWindow(64).prefix).toBe('10');
     expect(dodWindow(-63).prefix).toBe('10');
     expect(dodWindow(65).prefix).toBe('110');
@@ -90,9 +90,32 @@ describe('Gorilla-style encoding', () => {
     expect(e.segments[1].map((s) => s.bits.length)).toEqual([14, 1]);
     for (let i = 2; i < 6; i++) expect(e.segments[i].map((s) => s.bits)).toEqual([['0'], ['0']].map((x) => x[0]));
     expect(e.perPoint).toEqual([128, 15, 2, 2, 2, 2]);
-    // the second delta of delta below: 10 -> 13 is D = 3, '10' + 7 bits = 9
-    const jump = encode([{ t: 0, v: 1 }, { t: 10, v: 1 }, { t: 23, v: 1 }]);
-    expect(jump.segments[2][0].bits).toBe('10' + (3 + 63).toString(2).padStart(7, '0'));
+  });
+
+  it('hand-written delta-of-delta bits: truncated twos-complement in the field width, from a table written out by hand', () => {
+    // [D, expected bits]: the 7-bit field holds -63..64 (64 is 1000000, read back as +64), the 9-bit one -255..256, the 12-bit one -2047..2048
+    const table: [number, string][] = [
+      [1, '10' + '0000001'],
+      [-1, '10' + '1111111'],
+      [3, '10' + '0000011'],
+      [64, '10' + '1000000'],
+      [-63, '10' + '1000001'],
+      [65, '110' + '001000001'],
+      [-64, '110' + '111000000'],
+      [256, '110' + '100000000'],
+      [-255, '110' + '100000001'],
+      [257, '1110' + '000100000001'],
+      [2048, '1110' + '100000000000'],
+      [-2047, '1110' + '100000000001'],
+      [2049, '1111' + '00000000000000000000100000000001'],
+      [-2048, '1111' + '11111111111111111111100000000000'],
+    ];
+    for (const [d, bits] of table) {
+      // timestamps 1000, 1010 (first delta 10), then 1010 + 10 + D: the second delta is 10 + D, so the delta of delta is D
+      const e = encode([{ t: 1000, v: 1 }, { t: 1010, v: 1 }, { t: 1020 + d, v: 1 }]);
+      expect(e.segments[2][0].bits, `D = ${d}`).toBe(bits);
+      expect(decode(e.bits, 3)[2].t, `D = ${d} decodes`).toBe(1020 + d);
+    }
   });
 
   it('a perfectly regular series is 1 bit of timestamp per point after the first two, and a constant value 1 bit per point after the first', () => {
@@ -114,22 +137,66 @@ describe('Gorilla-style encoding', () => {
     expect(cost('regular', 'noisy')).toBeLessThan(80);
   });
 
-  it('broken variants fail the round trip: dropping the control bit for a same value, and a decoder that reads the wrong window', () => {
-    const pts = patternSeries('regular', 'drifting').slice(0, 40);
-    const good = encode(pts);
-    // broken encoder: writes no '0' for a repeated value (the value field is empty)
-    const broken = good.segments.map((segs, i) => segs.map((s) => (i > 0 && s.label === 'value' && s.bits === '0' ? '' : s.bits)).join('')).join('');
-    expect(broken).not.toBe(good.bits);
-    let ok = true;
-    try {
-      ok = same(decode(broken, pts.length), pts);
-    } catch {
-      ok = false;
+  it('the stream says exactly one thing: different series never share a stream, a cut stream never decodes to the original, and no single flipped bit decodes to the original', () => {
+    const base = patternSeries('jittery', 'drifting').slice(0, 40);
+    const good = encode(base);
+    // different series, different streams: change each point's value in turn
+    for (let i = 0; i < base.length; i++) {
+      const other = base.map((p, k) => (k === i ? { t: p.t, v: p.v + 0.25 } : p));
+      expect(encode(other).bits, `value ${i}`).not.toBe(good.bits);
     }
-    expect(ok).toBe(false);
-    // broken decoder input: a flipped bit in a value field changes the series
-    const flipped = good.bits.slice(0, 200) + (good.bits[200] === '0' ? '1' : '0') + good.bits.slice(201);
-    expect(same(decode(flipped, pts.length), pts)).toBe(false);
+    // every strict prefix is too short to hold 40 points, so it must refuse rather than return a series
+    for (let cut = 0; cut < good.bits.length; cut += 7) expect(() => decode(good.bits.slice(0, cut), base.length), `cut at ${cut}`).toThrow();
+    // flipping any one bit either refuses or gives another series
+    for (let at = 0; at < good.bits.length; at++) {
+      const flipped = good.bits.slice(0, at) + (good.bits[at] === '0' ? '1' : '0') + good.bits.slice(at + 1);
+      let back: Point[] | null = null;
+      try {
+        back = decode(flipped, base.length);
+      } catch {
+        back = null;
+      }
+      expect(back !== null && same(back, base), `bit ${at}`).toBe(false);
+    }
+  });
+
+  it('the size matches a reference count made a different way: bits added up from the control rules, not by writing the stream', () => {
+    const dodBits = (d: number) => (d === 0 ? 1 : d >= -63 && d <= 64 ? 2 + 7 : d >= -255 && d <= 256 ? 3 + 9 : d >= -2047 && d <= 2048 ? 4 + 12 : 4 + 32);
+    for (let seed = 0; seed < 100; seed++) {
+      const rnd = mulberry32(seed);
+      const pts: Point[] = [];
+      let t = 5_000;
+      for (let i = 0; i < 30; i++) {
+        t += i === 1 ? randInt(1, 100, rnd) : [10, 10, 11, 9, 400, 10][randInt(0, 5, rnd)];
+        pts.push({ t, v: [1, 1, 1, 2, 2.5, 1][randInt(0, 5, rnd)] });
+      }
+      // the values are 1, 2 and 2.5 only, each a few mantissa bits: a change of value is '1' + '1' + 5 + 6 + meaningful bits the first time a window is
+      // needed and '1' + '0' + the window's bits after, which the reference reads off the XOR of the two doubles
+      let expected = 128;
+      let window: [number, number] | null = null;
+      const asBits = (v: number) => {
+        const view = new DataView(new ArrayBuffer(8));
+        view.setFloat64(0, v);
+        return view.getBigUint64(0);
+      };
+      pts.forEach((p, i) => {
+        if (i === 0) return;
+        expected += i === 1 ? 14 : dodBits(p.t - pts[i - 1].t - (pts[i - 1].t - (pts[i - 2]?.t ?? pts[i - 1].t)));
+        const x = asBits(p.v) ^ asBits(pts[i - 1].v);
+        if (x === 0n) expected += 1;
+        else {
+          const text = x.toString(2).padStart(64, '0');
+          const lead = Math.min(text.indexOf('1'), 31);
+          const trail = 63 - text.lastIndexOf('1');
+          if (window && lead >= window[0] && trail >= window[1]) expected += 2 + (64 - window[0] - window[1]);
+          else {
+            expected += 2 + 5 + 6 + (64 - lead - trail);
+            window = [lead, trail];
+          }
+        }
+      });
+      expect(encode(pts).bits.length, `seed ${seed}`).toBe(expected);
+    }
   });
 
   it('the first delta must fit 14 bits', () => {
@@ -167,12 +234,12 @@ describe('rollups', () => {
   });
 
   it('the average of bucket averages differs from the true average on the gap preset by the stated amount, and (sum, count) equals the raw average', () => {
-    const gapped = withGap(series(7, 0, 0), 60, 100);
+    const gapped = withGap(series(7, 0, 0));
     const minutes = rollup(gapped, MINUTE);
     const raw = gapped.reduce((a, p) => a + p.v, 0) / gapped.length;
     expect(exactAverage(minutes)).toBeCloseTo(raw, 9);
     const wrong = averageOfAverages(minutes);
-    expect(Math.abs(wrong - raw)).toBeGreaterThan(0.01);
+    expect(Math.abs(wrong - raw)).toBeGreaterThan(0.1);
     const counts = new Set(minutes.map((b) => b.count));
     expect(counts.size).toBeGreaterThan(1);
     // equal counts: the two agree
@@ -226,5 +293,23 @@ describe('retention and cardinality', () => {
     expect(bytesPerDay(1)).toBe(POINTS_PER_DAY * 16);
     expect(bytesPerDay(seriesCount(DEFAULT_LABELS, true)) / bytesPerDay(seriesCount(DEFAULT_LABELS, false))).toBe(USER_IDS);
     expect(seriesCount({ service: 1, endpoint: 1, status: 1, host: 1 }, false)).toBe(1);
+  });
+
+  it('the product is an upper bound: when only some label combinations occur the count is that share of it (hand-counted at the defaults)', () => {
+    expect(seriesCount(DEFAULT_LABELS, false, 0.25)).toBe(10_000);
+    expect(seriesCount(DEFAULT_LABELS, false, 0.01)).toBe(400);
+    expect(seriesCount(DEFAULT_LABELS, true, 0.01)).toBe(4_000_000);
+    for (const o of OCCURRENCE) expect(seriesCount(DEFAULT_LABELS, true, o.share)).toBeLessThanOrEqual(seriesCount(DEFAULT_LABELS, true));
+    expect(OCCURRENCE[0].share).toBe(1);
+  });
+
+  it('a log axis puts the default tiers 2, 14 and 365 days at readable, increasing positions inside the axis, and the spike age in between', () => {
+    const shares = [2, 14, 365].map((d) => reach(d) / AXIS_REACH);
+    expect(shares[0]).toBeGreaterThan(0.1);
+    expect(shares[0] < shares[1] && shares[1] < shares[2]).toBe(true);
+    expect(shares[2]).toBeLessThan(1);
+    expect(reach(0)).toBe(0);
+    expect(reach(AXIS_DAYS)).toBe(AXIS_REACH);
+    expect(AXIS_DAYS).toBe(730);
   });
 });

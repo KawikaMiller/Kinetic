@@ -42,7 +42,7 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(inView).toBe(720);
     expect(lesson.tryThis[0]).toContain('a day is 8,640 points, 135.0 KB at 16 bytes a point');
     expect(lesson.tryThis[0]).toContain('720 points are in view and the spike is a rise of 12 of them');
-    expect(plain(rawCaption(inView, s.length, inView * 16, 11))).toContain('720 of 8,640 points in view');
+    expect(plain(rawCaption(inView, s.length, inView * 16, 11, 4.5))).toContain('720 of 8,640 points in view');
   });
 
   it('try-this 2: the hour average is below the raw peak and the max equals it; the gap makes the average of averages differ from the exact one', () => {
@@ -82,7 +82,8 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(f.base).toBe(8 * 25 * 5 * 40);
     expect(f.withUser).toBe(f.base * 10_000);
     expect(f.userDay / f.baseDay).toBe(10_000);
-    expect(lesson.tryThis[4]).toContain('the four labels give 40,000 series');
+    expect(lesson.tryThis[4]).toContain('the four labels give at most 40,000 series');
+    expect(lesson.tryThis[4]).toContain('1 in 100: 4,000,000 series');
     expect(lesson.tryThis[4]).toContain('400,000,000');
   });
 });
@@ -144,7 +145,7 @@ describe('captions are computed from the model over the control cross product', 
     for (const withUser of [false, true]) {
       for (const labels of [{ service: 1, endpoint: 1, status: 1, host: 1 }, { service: 50, endpoint: 100, status: 10, host: 200 }]) {
         const c = seriesCount(labels, withUser);
-        expect(plain(cardinalityCaption(c, withUser, bytesPerDay(c)))).toContain(`${n(c)} series`);
+        expect(plain(cardinalityCaption(c, c, withUser, bytesPerDay(c), null))).toContain(`${n(c)} series`);
       }
     }
   });

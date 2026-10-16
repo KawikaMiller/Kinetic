@@ -8,3 +8,8 @@
 .ts-bits { padding: 2px 6px; border-radius: 6px; font: 500 11px var(--mono, monospace); overflow-wrap: anywhere; max-width: 100%; }
 .ts-bits.is-time { border: 1.5px solid var(--amber); background: color-mix(in srgb, var(--amber) 16%, transparent); }
 .ts-bits.is-value { border: 1.5px solid var(--sky); background: color-mix(in srgb, var(--sky) 16%, transparent); }
+.ts-tiers { display: flex; flex-direction: column; gap: 26px; }
+.ts-tier-row { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr); gap: 10px; align-items: center; }
+.ts-tier-name { font: 500 12.5px var(--font); color: var(--muted); }
+.ts-tier-name b { color: var(--text); font-weight: 600; }
+@media (max-width: 520px) { .ts-tier-row { grid-template-columns: minmax(0, 1fr); gap: 6px; } }

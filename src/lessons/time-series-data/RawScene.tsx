@@ -25,7 +25,7 @@ export function RawScene({ picker }: { picker: ReactNode }) {
   const peak = spikePeak(series);
   const top = Math.ceil(Math.max(...series.map((p) => p.v))) + 1;
 
-  useIntroCaption(rawCaption(view.length, series.length, view.length * RAW_POINT_BYTES, peak), [view.length, peak]);
+  useIntroCaption(rawCaption(view.length, series.length, view.length * RAW_POINT_BYTES, peak, spike), [view.length, peak, spike]);
 
   const setFrom = (v: number) => setState((s) => ({ ...s, from: v, to: Math.max(s.to, v + 1) }));
   const setTo = (v: number) => setState((s) => ({ ...s, to: v, from: Math.min(s.from, v - 1) }));
@@ -37,7 +37,7 @@ export function RawScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Points" value={POINTS_PER_DAY.toLocaleString('en-US')} sub={`${view.length.toLocaleString('en-US')} in view`} />
           <Stat label="Storage" value={bytes(series.length * RAW_POINT_BYTES)} sub={[`${RAW_POINT_BYTES} B a point:`, '8 B timestamp, 8 B value']} />
-          <Stat label="Spike peak" value={decimal(peak, 2)} color="var(--hi)" sub={`the highest of its ${SPIKE_POINTS} points`} />
+          <Stat label="Spike peak" value={decimal(peak, 2)} color="var(--hi)" sub={spike === 0 ? 'no spike at height 0' : `the highest of its ${SPIKE_POINTS} points`} />
         </Stats>
       }
       legend={
@@ -66,7 +66,7 @@ export function RawScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint="24 hours at one point every 10 seconds">The raw series</SectionTitle>
           <Plot2D x={{ domain: [from, to], label: 'hour of the day (UTC)' }} y={{ domain: [0, top], label: 'value' }} ariaLabel={`The series from hour ${from} to hour ${to}, with a spike at hour ${decimal(spikeHour, 1)}`}>
             <Curve points={drawn} tone="info" />
-            {spikeHour >= from && spikeHour <= to && <VLine at={spikeHour} label="spike" tone="hi" />}
+            {spike > 0 && spikeHour >= from && spikeHour <= to && <VLine at={spikeHour} label="spike" tone="hi" />}
           </Plot2D>
         </Box>
         <ProvenanceRow>
