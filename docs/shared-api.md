@@ -755,7 +755,7 @@ import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from
 
 <VarSlot at={{ x: 10, y: 70 }} name="a" isRef tone="violet" highlight={seesMutation} dead={framePopped} />
 <VarSlot at={{ x: 10, y: 30 }} name="count" value={3} />
-<HeapObject at={user} w={180} title="{ } user" variant="live | collectable | freed"
+<HeapObject at={user} w={180} title="{ } user" variant="live | collectable | freed" // a freed block is always --bad (its `tone` is ignored); `freedTone="ok"` makes a correct free read green
             fields={[{ name: 'name', value: '"Ada"' }, { name: 'tags', isRef: true }]} highlight={searching} />
 <RefArrow from={slotPort({ x: 10, y: 70 })} to={heapRect(user, 180, 2)} bend={-12} />
 <RefArrow from={heapFieldPort(user, 180, 1)} to={heapRect(tags, 180, 1)} dangling={freed} />
