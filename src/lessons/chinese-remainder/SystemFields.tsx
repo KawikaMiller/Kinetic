@@ -1,6 +1,6 @@
 import { ChipButton, Hint, Slider, TextField } from '../../components/ui';
-import { M_MAX, M_MIN } from './crt';
-import { GEAR_PRESETS, GEARS_MAX, formatSystem } from './presets';
+import { GEARS_MAX, M_MAX, M_MIN } from './crt';
+import { GEAR_PRESETS, formatSystem } from './presets';
 import type { SystemState } from './useSystem';
 
 /** One slider pair per gear (modulus 2 to 30, remainder 0 to m - 1), a typed field for the same system, preset chips and the status line. */
