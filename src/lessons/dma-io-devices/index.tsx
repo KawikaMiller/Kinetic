@@ -23,10 +23,10 @@ const lesson: LessonModule = {
     ],
     why: 'Every disk, network card and GPU talks to the CPU through these three ideas. Knowing that DMA moves the copy and not the responsibility explains driver cost, ring sizing, interrupt moderation and a family of stale-data bugs.',
     watch:
-      'Transfer: the CPU lane shows copying, polling and setup in yellow, the interrupt in pink, the useful job in green and the job stalled on the bus in orange (dashed); the bus lane shows the device holding the bus in blue (hatched when it only takes alternate cycles); a dim dashed bar is the device getting its block ready, and diamonds are the register write (violet) and the interrupt (pink). Address map: violet is the device register window, blue RAM, amber ROM, a dim outline nothing mapped, a yellow ring the address you picked, red a stale answer or a bus error. Ring: each descriptor row has a rail in dim (free), blue (device-owned), yellow (filled) or green (handled), pink is interrupts, orange a dropped packet, red an overwritten one. Cache panel: red steps are where the CPU or the machine goes wrong, green is correct. Chips say what is illustrative, a toy, simulated or from memory.',
+      'Transfer: the CPU lane shows copying, polling and setup in yellow, the interrupt in pink, the useful job in green and the job stalled on the bus in orange (dashed); the bus lane shows the device holding the bus in blue (hatched when it only takes alternate cycles); a grey bar is the CPU copying over the bus in programmed I/O, a dim dashed bar is the device getting its block ready, and diamonds are the register write (violet) and the interrupt (pink). Address map: violet is the device register window, blue RAM, amber ROM, a dim outline nothing mapped, a yellow ring the address you picked, orange a read served from the cache instead of the device, red a bus error or a stale answer. Ring: each descriptor row has a rail in dim (free), blue (device-owned), yellow (filled) or green (handled), pink is interrupts, orange a dropped packet, red an overwritten one. Cache panel: red steps are where the CPU or the machine goes wrong, green is correct. Chips say what is illustrative, a toy, simulated or from memory.',
   },
   tryThis: [
-    `In "Three ways to move a block" (programmed I/O, 64 KB): switch the mode to DMA. CPU ticks on the transfer fall from ${n(transfer.pioCpu)} to ${n(transfer.dmaCpu)}, and bus ticks lost to contention rise from ${n(transfer.pioContention)} to ${n(transfer.dmaContention)}: the copy loop is gone, the shared bus is not.`,
+    `In "Three ways to move a block" (programmed I/O, 64 KB): switch the mode to DMA. CPU ticks on the transfer fall from ${n(transfer.pioCpu)} to ${n(transfer.dmaCpu)}, and job ticks lost to the bus rise from ${n(transfer.pioContention)} to ${n(transfer.dmaContention)}: the copy loop is gone, the shared bus is not.`,
     'In "A device is an address", press Load (read) twice with STATUS selected: the answers are 0x00000001 then 0x00000000, because a STATUS read clears the READY flag. Then set the window to Cached, press Reset the device and Load twice again: both answers are 0x00000001 and the second one never reached the device.',
     `In "The descriptor ring", set "Interrupt every N packets" to 4: interrupts fall from ${n(coalescing.irqsOne)} to ${n(coalescing.irqsFour)} over the same ${n(coalescing.packets)} packets, and the worst wait rises from ${n(coalescing.waitOne)} to ${n(coalescing.waitFour)} ticks.`,
     `In "The descriptor ring", switch the driver to "Re-posts a full ring (broken)": it loads seed ${broken.seed} and a driver that takes ${broken.driverTicks} ticks per packet (replacing your slider settings), and at tick ${n(broken.tick)} the full ring has a packet waiting, so the driver re-posts descriptor ${broken.descriptor} while it still holds packet ${broken.lost} and the run stops with that packet overwritten. Switch back to "Correct" and the same ring, with your sliders as they are, drops ${n(broken.dropsWhenCorrect)} packets instead and counts them.`,
@@ -59,7 +59,7 @@ const lesson: LessonModule = {
         'It speeds up, because the CPU no longer has to wait for the slow device to finish the copy',
       ],
       answer: 0,
-      why: 'In this model the bus is one shared resource: a burst holds it for the whole window and the job makes no progress meanwhile. Cycle stealing spreads the same lost cycles out, at the price of a longer transfer.',
+      why: `In this model the bus is one shared resource: a burst holds it for the whole window and the job makes no progress meanwhile. Cycle stealing lets the job keep running at reduced speed instead of stalling, so here it loses fewer job ticks (${n(transfer.stealContention)} against ${n(transfer.dmaContention)} at 64 KB), at the price of a transfer that finishes later (tick ${n(transfer.stealFinish)} against ${n(transfer.burstFinish)}).`,
     },
     {
       q: 'Why is a device register window mapped uncached?',
@@ -81,7 +81,7 @@ const lesson: LessonModule = {
         'Two interrupts fire and the driver still sees the last two packets by polling the ring itself',
       ],
       answer: 0,
-      why: 'One interrupt is raised each time 4 packets are waiting, so 10 packets give floor(10 / 4) = 2 interrupts. Without a time limit nothing announces the rest, which is why real hardware pairs the count with a timer.',
+      why: 'One interrupt is raised each time 4 packets are waiting, so 10 packets give floor(10 / 4) = 2 interrupts. Without a time limit nothing announces the rest, which is the gap a timer threshold is there to close (a common pairing in NIC drivers, from memory: check the hardware documentation).',
     },
     {
       q: 'The CPU read a buffer, a device then wrote new data into it by DMA on a platform that is not cache-coherent, and the driver did not invalidate the cache. What does the next CPU read return?',

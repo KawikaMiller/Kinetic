@@ -7,7 +7,16 @@ export function transferFacts() {
   const bytes = SIZES[DEFAULT_SIZE_INDEX];
   const pio = plan(DEFAULT_MODE, bytes, DEFAULT_BUS);
   const dma = plan('dma', bytes, DEFAULT_BUS);
-  return { pioCpu: pio.cpuTransferTicks, dmaCpu: dma.cpuTransferTicks, pioContention: pio.contentionTicks, dmaContention: dma.contentionTicks };
+  const stealing = plan('dma', bytes, 'steal');
+  return {
+    pioCpu: pio.cpuTransferTicks,
+    dmaCpu: dma.cpuTransferTicks,
+    pioContention: pio.contentionTicks,
+    dmaContention: dma.contentionTicks,
+    stealContention: stealing.contentionTicks,
+    burstFinish: dma.finish,
+    stealFinish: stealing.finish,
+  };
 }
 
 export function coalescingFacts() {

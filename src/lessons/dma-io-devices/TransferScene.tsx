@@ -37,7 +37,7 @@ export function TransferScene({ picker }: { picker: ReactNode }) {
           <Stat label="CPU ticks on the transfer" value={n(p.cpuTransferTicks)} color="var(--hi)" sub={cpuBreakdown(p)} />
           <Stat label="Job ticks during it" value={n(p.jobTicksDuringTransfer)} color="var(--ok)" sub={[`job finishes at tick ${n(p.finish)}`, `of ${n(JOB_TICKS)} ticks of work`]} />
           <Stat label="Bytes delivered" value={n(p.bytesDelivered)} sub={`${n(p.words)} words of ${WORD_BYTES} bytes`} />
-          <Stat label="Bus ticks lost to contention" value={n(p.contentionTicks)} color={p.contentionTicks > 0 ? 'var(--orange)' : undefined} sub={p.busHeldTicks > 0 ? `device held the bus ${n(p.busHeldTicks)} ticks` : 'the CPU is the bus master here'} />
+          <Stat label="Job ticks lost to the bus" value={n(p.contentionTicks)} color={p.contentionTicks > 0 ? 'var(--orange)' : undefined} sub={p.busHeldTicks > 0 ? `device held the bus ${n(p.busHeldTicks)} ticks` : 'the CPU is the bus master here'} />
         </Stats>
       }
       legend={
@@ -47,6 +47,7 @@ export function TransferScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--pink)', label: 'interrupt', shape: 'square' },
             { color: 'var(--ok)', label: 'the useful job', shape: 'square' },
             { color: 'var(--orange)', label: 'job stalled on the bus', shape: 'square' },
+            { color: 'var(--muted)', label: 'CPU copying over the bus (programmed I/O)', shape: 'square' },
             { color: 'var(--info)', label: 'bus held by the device', shape: 'square' },
             { color: 'var(--dim)', label: 'device not ready yet (dashed)', shape: 'square' },
           ]}

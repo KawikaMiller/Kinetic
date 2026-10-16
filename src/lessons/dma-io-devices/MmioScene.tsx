@@ -110,7 +110,8 @@ export function MmioScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--amber)', label: 'ROM', shape: 'square' },
             { color: 'var(--dim)', label: 'nothing mapped', shape: 'square' },
             { color: 'var(--hi)', label: 'the address you picked (ring)', shape: 'square' },
-            { color: 'var(--bad)', label: 'a stale answer or a bus error', shape: 'square' },
+            { color: 'var(--orange)', label: 'an answer served by the cache, not the device', shape: 'square' },
+            { color: 'var(--bad)', label: 'a bus error, or a stale answer (the READY stat)', shape: 'square' },
           ]}
         />
       }
