@@ -1,0 +1,14 @@
+.sg-stage { gap: 12px; align-items: center; }
+.sg-pair { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; }
+.sg-grid { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.sg-predicate { display: flex; flex-direction: column; gap: 6px; align-items: center; max-width: 100%; }
+.sg-lanes { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; max-width: 100%; }
+.sg-lane {
+  min-width: 28px; height: 28px; padding: 0 4px; display: grid; place-items: center;
+  font: 600 11px var(--mono, monospace); border: 2px solid var(--line-2); border-radius: 6px; color: var(--text);
+}
+.sg-lane.is-on { background: var(--hi); border-color: var(--hi); color: var(--on-hi); }
+.sg-lane.is-tail { background: var(--violet); border-color: var(--violet); color: var(--on-violet); }
+.sg-lane.is-off { border-style: dashed; color: var(--dim); }
+.sg-stage > .plot2d { max-width: 100%; height: auto; }
+.sg-timeline { width: 100%; max-width: 760px; }
