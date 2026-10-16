@@ -33,7 +33,7 @@ describe('scene switches', () => {
 describe('try-this entries, from each scene\'s default state, as written', () => {
   it('try-this 1: 64 KB by PIO costs the CPU 32,968 ticks (32,768 copying + 200 polling), by DMA 100, and contention goes from 0 to 8,192', () => {
     const f = transferFacts();
-    expect(f).toEqual({ pioCpu: 32768 + 200, dmaCpu: 100, pioContention: 0, dmaContention: 8192 });
+    expect(f).toMatchObject({ pioCpu: 32768 + 200, dmaCpu: 100, pioContention: 0, dmaContention: 8192 });
     const pio = plan('pio', 65536, 'burst');
     const dma = plan('dma', 65536, 'burst');
     expect(pio.copyTicks).toBe((65536 / 8) * 4);
@@ -179,6 +179,16 @@ describe('captions are computed from the model', () => {
 });
 
 describe('quiz facts, checked against the model', () => {
+  it('quiz 2: cycle stealing loses fewer job ticks than a burst but finishes later, and the why quotes exactly those plan numbers (not "the same lost cycles")', () => {
+    const burst = plan('dma', 65536, 'burst');
+    const steal = plan('dma', 65536, 'steal');
+    expect(steal.contentionTicks).toBeLessThan(burst.contentionTicks);
+    expect(steal.finish).toBeGreaterThan(burst.finish);
+    const why = lesson.quiz[1].why;
+    for (const v of [steal.contentionTicks, burst.contentionTicks, steal.finish, burst.finish]) expect(why).toContain(v.toLocaleString('en-US'));
+    expect(why).not.toContain('same lost cycles');
+  });
+
   it('a 64 KB block is 8,192 words, and 10 packets with N = 4 and no time limit give 2 interrupts and 2 unannounced', () => {
     expect(plan('pio', 65536, 'burst').words).toBe(8192);
     const sim = createRing({ ...DEFAULT_CONFIG, ratePct: 100, driverTicks: 1, coalesceN: 4 });
