@@ -128,6 +128,24 @@ export function nudgePoint(p: Point, key: string, xs: Scale, ys: Scale, big = fa
 }
 
 /**
+ * Snap a dragged value to a grid. An arrow key moves a few drawing units, which a grid coarser
+ * than that rounds straight back to where the value was, so a key press that would not change
+ * the snapped value moves it exactly one grid `step` in the pressed direction instead.
+ * Pointer drags stay with the plain snap (a pointer resting inside a cell must not jump).
+ */
+export function snapDragged(prev: number, next: number, snap: (v: number) => number, step: number, via?: DragSource): number {
+  const snapped = snap(next);
+  if (via !== 'key' || snapped !== snap(prev) || Math.abs(next - prev) < AXIS_UNMOVED) return snapped;
+  return snap(snap(prev) + Math.sign(next - prev) * step);
+}
+
+/** An arrow key leaves the other axis alone up to the scale's float noise (invert(map(v)) is not exactly v). */
+const AXIS_UNMOVED = 1e-9;
+
+/** What moved a draggable point: an arrow key, or (omitted) the pointer. */
+export type DragSource = 'key';
+
+/**
  * Sample y = fn(x) evenly across the drawing width (so a log x axis is sampled evenly
  * on screen). Non-finite values break the curve into separate runs instead of
  * drawing a spike through them.

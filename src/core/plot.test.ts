@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   fitLabel,
-  axisTickValues, barsFromHistogram, clampPoint, equalAspectHeight, formatTick, nudgePoint, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+  axisTickValues, barsFromHistogram, clampPoint, equalAspectHeight, formatTick, nudgePoint, snapDragged, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
 } from './plot';
 import { linearScale, logScale } from './scale';
 import { histogram } from './stats';
@@ -191,5 +191,25 @@ describe('fitLabel', () => {
 
   it('starts a label wider than the box at its left edge', () => {
     expect(fitLabel([100], 400, 40, 300)).toEqual({ index: 0, dx: -60 });
+  });
+});
+
+describe('snapDragged', () => {
+  const whole = (v: number) => Math.round(v);
+
+  it('moves one grid step per arrow key even when the nudge rounds back', () => {
+    expect(snapDragged(3, 3.2, whole, 1, 'key')).toBe(4);
+    expect(snapDragged(3, 2.8, whole, 1, 'key')).toBe(2);
+    expect(snapDragged(3, 3.2, whole, 1)).toBe(3);
+  });
+
+  it('keeps the snapped value when it already changed, and when nothing moved', () => {
+    expect(snapDragged(3, 5.1, whole, 1, 'key')).toBe(5);
+    expect(snapDragged(3, 3, whole, 1, 'key')).toBe(3);
+  });
+
+  it('stays inside a clamped grid at the edge', () => {
+    const clamped = (v: number) => Math.min(10, Math.max(0, Math.round(v)));
+    expect(snapDragged(10, 10.2, clamped, 1, 'key')).toBe(10);
   });
 });

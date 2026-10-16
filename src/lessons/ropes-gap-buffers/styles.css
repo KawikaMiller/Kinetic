@@ -1,0 +1,23 @@
+.rg-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.rg-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.rg-gap { background-image: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--dim) 55%, transparent) 4px 6px); }
+.rg-end { border-style: dashed; opacity: 0.6; }
+.rg-box { fill: var(--cell); stroke: var(--cell-line); stroke-width: 2; transition: fill 0.25s, stroke 0.25s; }
+.rg-leaf { font: 600 11px var(--mono); fill: var(--text); pointer-events: none; }
+.tree-node.is-tint .rg-box { stroke: var(--c); fill: color-mix(in srgb, var(--c) var(--tree-tint, 16%), transparent); }
+.rg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rg-table caption { text-align: left; color: var(--muted); padding-bottom: 6px; line-height: 1.6; }
+.rg-table th, .rg-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rg-table td { font-family: var(--mono); }
+.rg-table tr.is-selected th { color: var(--hi); }
+.rg-sub { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.rg-ok, .rg-win { color: var(--ok); font-weight: 700; }
+.rg-bad, .rg-lose { color: var(--bad); font-weight: 700; }
+.rg-info { color: var(--text); }
+.rg-stage ~ .provenance-row { margin: 8px 16px 12px; }
+@media (max-width: 600px) {
+  .rg-table thead { position: absolute; left: -9999px; }
+  .rg-table tr { display: block; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .rg-table th, .rg-table td { display: block; border: 0; padding: 2px 4px; }
+  .rg-table td::before { content: attr(data-label) ': '; color: var(--muted); font-weight: 400; font-family: var(--sans); }
+}
