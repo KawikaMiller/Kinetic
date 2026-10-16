@@ -1,10 +1,14 @@
-/** A point with integer coordinates (exact in doubles while products stay below 2^53). */
-export interface P {
-  x: number;
-  y: number;
-}
+import { cross, dedupePoints, leftLow, lowestLeft, startAtLowestLeft, type CollinearPolicy, type Pt } from '../../core/geometry';
 
-export type Policy = 'drop' | 'keep';
+/** A point with integer coordinates (exact in doubles while products stay below 2^53). */
+export type P = Pt;
+
+export type Policy = CollinearPolicy;
+
+// The orientation test, dedupe and rotation are shared (core/geometry); the three algorithms below stay here because
+// they narrate every test and push into a Tally for the stepper.
+export { cross, startAtLowestLeft };
+export const dedupe = dedupePoints;
 export type Algo = 'graham' | 'andrew' | 'jarvis';
 
 /** An orientation predicate: positive for a left turn, negative for a right turn, zero for collinear. */
@@ -27,21 +31,13 @@ export type HullEvent =
   | { kind: 'wrap-test'; cur: P; best: P; p: P; value: number; replace: boolean }
   | { kind: 'wrap-edge'; from: P; to: P };
 
-/** Twice the signed area of the triangle o, a, b: positive when o -> a -> b turns left (counter-clockwise), zero when collinear. */
-export const cross = (o: P, a: P, b: P): number => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-
 const counted = (t: Tally | undefined, o: P, a: P, b: P): number => {
   if (t) t.orientations++;
   return cross(o, a, b);
 };
 
 const same = (a: P, b: P) => a.x === b.x && a.y === b.y;
-const lowestLeft = (a: P, b: P) => a.y - b.y || a.x - b.x;
-const leftLow = (a: P, b: P) => a.x - b.x || a.y - b.y;
 const dist2 = (a: P, b: P) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
-
-/** Distinct points only, in first-seen order. */
-export const dedupe = (pts: readonly P[]): P[] => pts.filter((p, i) => pts.findIndex((q) => same(p, q)) === i);
 
 /** Merge sort: each comparison in Graham's angle sort is an orientation test, counted by the comparator itself. */
 function sortCounted(items: P[], cmp: (a: P, b: P) => number): P[] {
@@ -57,16 +53,6 @@ function sortCounted(items: P[], cmp: (a: P, b: P) => number): P[] {
     else out.push(b[j++]);
   }
   return [...out, ...a.slice(i), ...b.slice(j)];
-}
-
-/** Rotate a counter-clockwise polygon so it starts at the lowest point, leftmost among ties. */
-export function startAtLowestLeft(poly: readonly P[]): P[] {
-  if (poly.length === 0) return [];
-  let at = 0;
-  poly.forEach((p, i) => {
-    if (lowestLeft(p, poly[at]) < 0) at = i;
-  });
-  return [...poly.slice(at), ...poly.slice(0, at)];
 }
 
 const allCollinear = (pts: readonly P[], orient: Orient) => pts.every((p) => orient(pts[0], pts[1], p) === 0);

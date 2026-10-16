@@ -70,3 +70,62 @@ export function segmentHitsBox(a: Pt, b: Pt, c: Pt, halfW: number, halfH: number
   }
   return true;
 }
+
+/**
+ * Twice the signed area of the triangle o, a, b: positive when o -> a -> b turns left, zero when collinear.
+ * "Left" is counter-clockwise with y pointing up; in screen coordinates (y down) the same number is positive
+ * for a turn that LOOKS clockwise, so a hull built from it winds the other way on screen.
+ */
+export const cross = (o: Pt, a: Pt, b: Pt): number => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+/** The sign of `cross`: 1 left, -1 right, 0 collinear. */
+export const orient = (o: Pt, a: Pt, b: Pt): number => Math.sign(cross(o, a, b));
+
+const samePoint = (a: Pt, b: Pt) => a.x === b.x && a.y === b.y;
+/** Order by y, then x: the "lowest, leftmost first" order (lowest = smallest y). */
+export const lowestLeft = (a: Pt, b: Pt) => a.y - b.y || a.x - b.x;
+/** Order by x, then y: the sweep order of the monotone chain. */
+export const leftLow = (a: Pt, b: Pt) => a.x - b.x || a.y - b.y;
+
+/** Distinct points only, in first-seen order. */
+export const dedupePoints = <T extends Pt>(pts: readonly T[]): T[] => pts.filter((p, i) => pts.findIndex((q) => samePoint(p, q)) === i);
+
+/** Rotate a polygon so it starts at its lowest point (smallest y), leftmost among ties. */
+export function startAtLowestLeft<T extends Pt>(poly: readonly T[]): T[] {
+  if (poly.length === 0) return [];
+  let at = 0;
+  poly.forEach((p, i) => {
+    if (lowestLeft(p, poly[at]) < 0) at = i;
+  });
+  return [...poly.slice(at), ...poly.slice(0, at)];
+}
+
+/** How a hull treats points lying on an edge: 'drop' keeps only the corners, 'keep' keeps every point on the outline. */
+export type CollinearPolicy = 'drop' | 'keep';
+
+/**
+ * Convex hull by Andrew's monotone chain (duplicates removed). It runs in the sign convention of `cross`, so with y up
+ * the polygon is counter-clockwise starting at the lowest, leftmost point (`startAtLowestLeft`); with y down (SVG) it
+ * is the same polygon wound the other way on screen. Fewer than three distinct points, or all on one line, come back
+ * as the points themselves (the two ends, or all of them under 'keep').
+ */
+export function convexHull<T extends Pt>(points: readonly T[], { policy = 'drop' }: { policy?: CollinearPolicy } = {}): T[] {
+  const pts = dedupePoints(points);
+  if (pts.length < 3) return [...pts].sort(lowestLeft);
+  const sorted = [...pts].sort(leftLow);
+  if (sorted.every((p) => cross(sorted[0], sorted[1], p) === 0)) return policy === 'keep' ? sorted : [sorted[0], sorted[sorted.length - 1]];
+  const chain = (list: readonly T[]) => {
+    const out: T[] = [];
+    for (const p of list) {
+      while (out.length >= 2) {
+        const c = cross(out[out.length - 2], out[out.length - 1], p);
+        if (policy === 'drop' ? c <= 0 : c < 0) out.pop();
+        else break;
+      }
+      out.push(p);
+    }
+    out.pop();
+    return out;
+  };
+  return startAtLowestLeft([...chain(sorted), ...chain([...sorted].reverse())]);
+}
