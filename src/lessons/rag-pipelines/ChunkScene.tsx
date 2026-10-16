@@ -68,7 +68,7 @@ export function ChunkScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint={p.doc.title}>One page, cut into chunks</SectionTitle>
           <p className="rag-text">{words}</p>
-          <Hint tone="muted" block>Words are the unit here, a stand-in for tokens. Every word belongs to at least one chunk; a dashed underline marks the words two chunks share.</Hint>
+          <Hint tone="muted" block>Words are the unit here, a stand-in for tokens. Every word belongs to at least one chunk; a dashed underline marks the words two chunks share. The vector-search lesson asked how to find the nearest stored vector fast; this lesson asks what each stored vector should be a vector of, and a chunk boundary decides that.</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="illustrative">invented documents: {PREPARED.length} help pages of a made-up brand, {WORD_RANGE[0]} to {WORD_RANGE[1]} words each</Provenance>

@@ -2,9 +2,9 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { PREPARED, SIZE_MAX, SIZE_MIN, SIZE_STEP } from './chunker';
-import { cos, retrieveCaption } from './captions';
+import { IDF_NOTE, cos, retrieveCaption } from './captions';
 import { CONTEXT_BUDGET_WORDS } from './generate';
 import { runPipeline } from './pipeline';
 import { PromptPanel } from './PromptPanel';
@@ -80,6 +80,9 @@ export function RetrieveScene({ picker }: { picker: ReactNode }) {
               })}
             </ol>
           )}
+          <Hint tone="muted" block>
+            N is the number of chunks and df the number holding a word. TF-IDF weights a word by {IDF_NOTE.tfidf} and ranks by cosine. BM25 weights it by {IDF_NOTE.bm25}: the non-negative form that Lucene-style engines use, not the textbook Robertson form, which can go negative for a word in most chunks.
+          </Hint>
         </Box>
         <PromptPanel prompt={run.prompt} mark={mark} question={question} />
         <ProvenanceRow>

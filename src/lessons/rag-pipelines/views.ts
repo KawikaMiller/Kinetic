@@ -46,14 +46,27 @@ export interface RecallCurve {
   scorer: Scorer;
   /** Recall@k in percent at each of SWEEP_SIZES. */
   percent: number[];
-  /** Smallest swept size with 100% recall, or null. */
-  firstFull: number | null;
+  /** Every swept size with 100% recall, in order (a one-size spike on 8 questions is noise, so the whole set matters). */
+  fullSizes: number[];
+}
+
+/** Where a curve touches 100%: "at no swept size", "only at 100 words" or "at 70 to 90 and 170 to 200 words". */
+export function fullPhrase(c: RecallCurve): string {
+  if (c.fullSizes.length === 0) return 'at no swept size';
+  if (c.fullSizes.length === 1) return `only at ${c.fullSizes[0]} words`;
+  const runs: string[] = [];
+  let from = 0;
+  for (let i = 1; i <= c.fullSizes.length; i++) {
+    if (i < c.fullSizes.length && c.fullSizes[i] - c.fullSizes[i - 1] === SIZE_STEP) continue;
+    runs.push(i - 1 === from ? `${c.fullSizes[from]}` : `${c.fullSizes[from]} to ${c.fullSizes[i - 1]}`);
+    from = i;
+  }
+  return `at ${runs.join(' and ')} words`;
 }
 
 export function recallCurve(scorer: Scorer, k: number, overlapPct: number): RecallCurve {
   const percent = SWEEP_SIZES.map((s) => Math.round(evalRecall(s, overlapPct, scorer, k).recall * 100));
-  const at = percent.findIndex((p) => p === 100);
-  return { scorer, percent, firstFull: at < 0 ? null : SWEEP_SIZES[at] };
+  return { scorer, percent, fullSizes: SWEEP_SIZES.filter((_, i) => percent[i] === 100) };
 }
 
 /** Smallest k (1 to `max`) at which a setting reaches 100% recall, or null. */

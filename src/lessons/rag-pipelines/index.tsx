@@ -1,4 +1,5 @@
 import type { LessonModule } from '../../core/types';
+import { fullPhrase } from './views';
 import { BIG_CHUNK_SIZE, BIG_K, OVERLAP_FIX_PCT, WIDE_SIZE, answerFacts, chunkFacts, measureFacts, retrieveFacts } from './facts';
 import { cos } from './captions';
 import { CONTEXT_BUDGET_WORDS } from './generate';
@@ -10,7 +11,6 @@ const retrieve = retrieveFacts();
 const answer = answerFacts();
 const measure = measureFacts();
 const pctOf = (share: number) => Math.round(share * 100);
-const full = (first: number | null) => (first === null ? 'at no size' : `from ${first} words`);
 const answerOverlap = pctOf(answer.overlap);
 
 const lesson: LessonModule = {
@@ -33,7 +33,7 @@ const lesson: LessonModule = {
     `In "Chunk it", the page for question ${chunk.question} is cut into ${CHUNK_DEFAULT.size}-word chunks with no overlap, and its gold sentence is split over ${chunk.open.touching} chunks so no chunk holds it. Set Overlap to ${OVERLAP_FIX_PCT}%: it sits inside one chunk, which scores ${cos(chunk.fixed.cosine ?? 0)} against the question. Then raise Chunk size to ${WIDE_SIZE}: the score falls to ${cos(chunk.wide.cosine ?? 0)}.`,
     `In "Retrieve and assemble", the default question ${RETRIEVE_DEFAULT.question.toUpperCase()} at ${RETRIEVE_DEFAULT.size} words and top-${RETRIEVE_DEFAULT.k} retrieves no chunk that holds the gold sentence. Set Chunk size to ${BIG_CHUNK_SIZE} and Top k to ${BIG_K}: the gold chunk is ranked ${retrieve.goldRank}, but ${retrieve.goldFits ? 'it still fits' : `the ${CONTEXT_BUDGET_WORDS}-word budget cuts it`}, so the model never sees it.`,
     `In "The stand-in answerer", question ${RETRIEVE_DEFAULT.question.toUpperCase()} retrieves the wrong chunks and the stand-in answers anyway, the best sentence sharing ${answerOverlap}% of the question's words: ${answer.off.verdict === 'wrong' ? 'a confident wrong answer' : 'an answer'}. Switch Grounding instruction on and it ${answer.on.verdict === 'abstained' ? 'abstains with "not found in the sources"' : 'still answers'}.`,
-    `In "Measure it", at ${MEASURE_DEFAULT.size} words and top-${MEASURE_DEFAULT.k} TF-IDF recall is ${measure.tfidfAtDefault}% and BM25 ${measure.bm25AtDefault}% on the eight questions. TF-IDF reaches 100% ${full(measure.curveAtDefaultK.firstFull)} at top-${MEASURE_DEFAULT.k}; set Top k to ${BIG_K} and it reaches it ${full(measure.curveAtBigK.firstFull)}.`,
+    `In "Measure it", at ${MEASURE_DEFAULT.size} words and top-${MEASURE_DEFAULT.k} TF-IDF recall is ${measure.tfidfAtDefault}% and BM25 ${measure.bm25AtDefault}% on the eight questions. TF-IDF reaches 100% ${fullPhrase(measure.curveAtDefaultK)} at top-${MEASURE_DEFAULT.k}; set Top k to ${BIG_K} and it reaches it ${fullPhrase(measure.curveAtBigK)}: a one-size spike on eight questions is noise, not a setting to trust.`,
   ],
   keyIdeas: [
     'The generator only sees what retrieval hands it and the prompt budget lets through, so in this model a missed or cut chunk cannot be recovered downstream.',

@@ -2,9 +2,10 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { OVERLAP_MAX_PCT, OVERLAP_STEP_PCT, SIZE_MAX, SIZE_MIN, SIZE_STEP } from './chunker';
 import { measureCaption } from './captions';
+import { CONTEXT_BUDGET_WORDS } from './generate';
 import { evalRecall } from './retrieval';
 import { K_MAX, K_MIN, MEASURE_DEFAULT } from './settings';
 import { QUESTION_COUNT } from './retrieval';
@@ -61,6 +62,7 @@ export function MeasureScene({ picker }: { picker: ReactNode }) {
               <VLine at={size} tone="hi" />
             </Plot2D>
           </div>
+          <Hint tone="muted" block>Recall@k counts retrieval only: it ignores the {CONTEXT_BUDGET_WORDS}-word prompt budget, so a setting with 100% recall can still have its gold chunk cut from the prompt (see Retrieve and assemble).</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">every point is a full run of chunk, index, retrieve and check; the curve is a result, not a drawing</Provenance>

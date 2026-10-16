@@ -5,14 +5,15 @@ import { unscopedAbsolutes } from '../../core/lessonContentT3';
 import { expectCaption } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { answerCaption, chunkCaption, measureCaption, retrieveCaption } from './captions';
+import { IDF_NOTE, answerCaption, chunkCaption, measureCaption, retrieveCaption } from './captions';
 import { EVAL_QUESTIONS } from './corpus';
 import { BIG_CHUNK_SIZE, BIG_K, OVERLAP_FIX_PCT, WIDE_SIZE, answerFacts, chunkFacts, measureFacts, retrieveFacts } from './facts';
 import lesson from './index';
 import { runPipeline } from './pipeline';
 import { evalRecall } from './retrieval';
 import { ANSWER_DEFAULT, ANSWER_OVERLAP_PCT, ANSWER_SCORER, CHUNK_DEFAULT, MEASURE_DEFAULT, RETRIEVE_DEFAULT } from './settings';
-import { chunkView, recallCurve } from './views';
+import { SWEEP_SIZES, chunkView, fullPhrase, recallCurve, type RecallCurve } from './views';
+import { indexFor } from './retrieval';
 
 const text = (q: string) => EVAL_QUESTIONS.find((e) => e.id === q)!.text;
 
@@ -70,13 +71,15 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
   it('try-this 4: recall at 60 words and top-2 matches a direct run, and the first size with 100% moves with k', () => {
     const f = measureFacts();
     expect(f.tfidfAtDefault).toBe(Math.round(evalRecall(60, 0, 'tfidf', 2).recall * 100));
-    expect(f.curveAtDefaultK.firstFull).toBeNull();
-    expect(f.curveAtBigK.firstFull).toBe(BIG_CHUNK_SIZE);
+    const full = (k: number) => SWEEP_SIZES.filter((size) => evalRecall(size, 0, 'tfidf', k).recall === 1);
+    expect(f.curveAtDefaultK.fullSizes).toEqual(full(2));
+    expect(f.curveAtBigK.fullSizes).toEqual(full(BIG_K));
+    expect(f.curveAtBigK.fullSizes).toContain(BIG_CHUNK_SIZE);
     expect(f.tfidfAtBig).toBe(100);
     expect(lesson.tryThis[3]).toContain(`${f.tfidfAtDefault}%`);
-    expect(lesson.tryThis[3]).toContain('at no size');
+    expect(lesson.tryThis[3]).toContain('at no swept size');
     const caption = expectCaption(measureCaption(f.curveAtDefaultK, recallCurve('bm25', 2, 0), 60, 2, 0, { tfidf: f.tfidfAtDefault, bm25: f.bm25AtDefault }));
-    expect(caption).toContain('never (TF-IDF)');
+    expect(caption).toContain('at no swept size (TF-IDF)');
   });
 });
 
@@ -141,5 +144,40 @@ describe('lesson content', () => {
   it('quiz 5 states a recall the model computes', () => {
     expect(measureFacts().tfidfAtBig).toBe(100);
     expect(BIG_K).toBe(3);
+  });
+});
+
+describe('where a recall curve reaches 100%', () => {
+  const curve = (fullSizes: number[]): RecallCurve => ({ scorer: 'tfidf', percent: [], fullSizes });
+  it('names a lone spike, a run and two runs by the sizes themselves, not "from N"', () => {
+    expect(fullPhrase(curve([]))).toBe('at no swept size');
+    expect(fullPhrase(curve([100]))).toBe('only at 100 words');
+    expect(fullPhrase(curve([70, 80, 90]))).toBe('at 70 to 90 words');
+    expect(fullPhrase(curve([70, 80, 90, 170, 180, 190, 200]))).toBe('at 70 to 90 and 170 to 200 words');
+    expect(fullPhrase(curve([60, 80, 90]))).toBe('at 60 and 80 to 90 words');
+  });
+
+  it('never says "from N words" for a curve that falls back below 100% afterwards (M-RAG1)', () => {
+    for (const scorer of ['tfidf', 'bm25'] as const) {
+      for (const k of [2, 3, 8]) {
+        const c = recallCurve(scorer, k, 0);
+        const lastFull = Math.max(-1, ...c.fullSizes);
+        const fellBack = c.percent.some((p, i) => SWEEP_SIZES[i] > lastFull && p < 100) && c.fullSizes.length > 0;
+        const caption = measureCaption(c, c, 60, k, 0, { tfidf: 0, bm25: 0 });
+        expect(caption).not.toMatch(/from \d+ words/);
+        if (fellBack && c.fullSizes.length === 1) expect(caption).toContain(`only at ${c.fullSizes[0]} words`);
+      }
+    }
+  });
+});
+
+describe('the idf forms stated on screen are the ones the scorers use', () => {
+  it('TF-IDF idf = ln(N / df) + 1 and the BM25 weight is the Lucene-style ln(1 + (N - df + 0.5) / (df + 0.5))', () => {
+    expect(IDF_NOTE.tfidf).toBe('idf = ln(N / df) + 1');
+    expect(IDF_NOTE.bm25).toBe('idf = ln(1 + (N - df + 0.5) / (df + 0.5))');
+    const index = indexFor(80, 0);
+    const n = index.chunks.length;
+    const id = index.df.findIndex((d) => d > 1);
+    expect(index.idf[id]).toBeCloseTo(Math.log(n / index.df[id]) + 1, 12);
   });
 });

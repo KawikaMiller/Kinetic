@@ -4,7 +4,7 @@ import { PREPARED } from './chunker';
 import { CONTEXT_BUDGET_WORDS, GROUNDING_THRESHOLD, type Verdict } from './generate';
 import type { PipelineRun } from './pipeline';
 import { SCORER_LABEL, type Scorer } from './retrieval';
-import type { ChunkView, RecallCurve } from './views';
+import { fullPhrase, type ChunkView, type RecallCurve } from './views';
 
 export const cos = (v: number) => v.toFixed(3);
 
@@ -32,7 +32,7 @@ export function retrieveCaption(run: PipelineRun, k: number, scorer: Scorer, cus
 
 const VERDICT_TEXT: Record<Verdict, string> = {
   correct: 'the gold sentence, so the answer is right',
-  wrong: 'a sentence that is not the gold one: a confident wrong answer',
+  wrong: 'a sentence that is not the whole gold sentence: a confident wrong answer',
   abstained: 'nothing: the rule abstained, which is a different failure from a wrong answer',
   nothing: 'nothing: there was no context',
 };
@@ -47,6 +47,11 @@ export function answerCaption(run: PipelineRun, grounded: boolean): string {
 }
 
 export function measureCaption(tfidf: RecallCurve, bm25: RecallCurve, size: number, k: number, overlapPct: number, atSize: { tfidf: number; bm25: number }): string {
-  const full = (c: RecallCurve) => (c.firstFull === null ? 'never' : `from ${c.firstFull} words`);
-  return `Recall@${k} with ${overlapPct}% overlap, computed by running the whole pipeline at each size. At ${size} words: TF-IDF ${atSize.tfidf}%, BM25 ${atSize.bm25}%. 100% is reached ${full(tfidf)} (TF-IDF) and ${full(bm25)} (BM25) on these 8 questions, a toy evaluation set.`;
+  return `Recall@${k} with ${overlapPct}% overlap, computed by running the whole pipeline at each size. At ${size} words: TF-IDF ${atSize.tfidf}%, BM25 ${atSize.bm25}%. 100% is reached ${fullPhrase(tfidf)} (TF-IDF) and ${fullPhrase(bm25)} (BM25). One question is 12.5 points of recall here, so a 100% at a size or two is noise, not a setting to trust.`;
 }
+
+/** The two weightings the Retrieve scene states on screen; retrieval.ts uses exactly these. */
+export const IDF_NOTE = {
+  tfidf: 'idf = ln(N / df) + 1',
+  bm25: 'idf = ln(1 + (N - df + 0.5) / (df + 0.5))',
+} as const;
