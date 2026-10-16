@@ -199,8 +199,10 @@ describe('the defender\'s trace test', () => {
 });
 
 describe('the mitigation matrix', () => {
-  it('each leak class is fully addressed by at least one mitigation, and each mitigation addresses at least one class', () => {
-    for (const c of LEAK_CLASSES) expect(MITIGATIONS.some((m) => coverageOf(m.id, c.id) === 'full'), c.id).toBe(true);
+  it('each leak class is addressed at least partly by some mitigation, each mitigation addresses a class, and only constant-time code and isolation are full', () => {
+    for (const c of LEAK_CLASSES) expect(MITIGATIONS.some((m) => coverageOf(m.id, c.id) !== 'none'), c.id).toBe(true);
+    const full = MITIGATIONS.flatMap((m) => LEAK_CLASSES.filter((c) => coverageOf(m.id, c.id) === 'full').map(() => m.id)).sort();
+    expect(full).toEqual(['constant-time', 'isolation']);
     for (const m of MITIGATIONS) expect(LEAK_CLASSES.some((c) => coverageOf(m.id, c.id) !== 'none'), m.id).toBe(true);
   });
 
@@ -209,8 +211,29 @@ describe('the mitigation matrix', () => {
     expect(openClasses([])).toHaveLength(LEAK_CLASSES.length);
     expect(openClasses(all)).toEqual([]);
     expect(classVerdict(['microcode'], 'indirect-branch')).toBe('partly');
-    expect(classVerdict(['microcode', 'retpoline'], 'indirect-branch')).toBe('covered');
+    expect(classVerdict(['microcode', 'retpoline', 'flush'], 'indirect-branch')).toBe('partly');
+    expect(classVerdict(['serialise', 'isolation'], 'bounds-bypass')).toBe('partly');
+    expect(classVerdict(['isolation'], 'cross-site')).toBe('covered');
     expect(classVerdict(['constant-time'], 'bounds-bypass')).toBe('open');
     expect(classVerdict(['constant-time'], 'crypto-timing')).toBe('covered');
+  });
+});
+
+describe('the quiz claims about traces and the early-exit count', () => {
+  const pairs = PAIR_PRESETS.map((p) => [secretBytes(p.a), secretBytes(p.b)] as const);
+  const leaksOn = (id: ProgramId) => pairs.map(([a, b]) => verdict(programOf(id), a, b).leaks);
+  it('only the masked select and the constant-time compare are identical on every preset pair; the broken compare is separated by the zero-byte pair', () => {
+    expect(leaksOn('masked-select')).toEqual([false, false, false]);
+    expect(leaksOn('ct-compare')).toEqual([false, false, false]);
+    expect(leaksOn('broken-compare')).toEqual([false, false, true]);
+    expect(leaksOn('secret-if')[0]).toBe(true);
+    expect(leaksOn('table-lookup').some(Boolean)).toBe(true);
+  });
+  it('early exit adds one comparison per correct leading byte only up to the length of the token, where 15 and 16 right both give 16', () => {
+    const len = SECRET_BYTES.length;
+    const count = (right: number) => earlyExitCompare(SECRET_BYTES, SECRET_BYTES.map((b, i) => (i < right ? b : (b + 1) % 256))).comparisons;
+    for (let right = 0; right < len - 1; right++) expect(count(right)).toBe(right + 1);
+    expect(count(len - 1)).toBe(len);
+    expect(count(len)).toBe(len);
   });
 });

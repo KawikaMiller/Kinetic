@@ -37,12 +37,17 @@ export const LEAK_CLASSES: readonly LeakClass[] = [
   { id: 'state-across-switch', label: 'Cache or predictor state left behind across a security-domain switch' },
 ];
 
-/** Which classes each mitigation addresses (from memory; hedged on screen): full, partly, or not at all. */
+/**
+ * Which classes each mitigation addresses (from memory; hedged on screen): full, partly, or not at all. Only the two
+ * mitigations that are complete by construction are `full` (constant-time code for the code written that way, isolation
+ * for same-process cross-site reads); the speculation and switch mitigations are `partial`, as the cost text and
+ * vendor practice say.
+ */
 export const COVERAGE: Record<MitigationId, Partial<Record<LeakClassId, Coverage>>> = {
-  serialise: { 'bounds-bypass': 'full' },
-  retpoline: { 'indirect-branch': 'full' },
+  serialise: { 'bounds-bypass': 'partial' },
+  retpoline: { 'indirect-branch': 'partial' },
   isolation: { 'cross-site': 'full', 'bounds-bypass': 'partial' },
-  flush: { 'state-across-switch': 'full', 'indirect-branch': 'partial' },
+  flush: { 'state-across-switch': 'partial', 'indirect-branch': 'partial' },
   'constant-time': { 'crypto-timing': 'full' },
   microcode: { 'indirect-branch': 'partial', 'state-across-switch': 'partial' },
 };

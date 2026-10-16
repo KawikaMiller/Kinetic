@@ -46,7 +46,7 @@ export const guessLimitNote = `A guess is up to ${MAX_GUESS_BYTES} UTF-8 bytes; 
 export function noiseCaption(s: NoiseSetting): string {
   const need = samplesNeeded(s);
   const quieter = samplesNeeded({ ...s, sigma: Math.max(1, s.sigma / 2) });
-  return `One more byte comparison adds ${n(delta(s))} time units on average (${n(meanTime(s, 1))} against ${n(meanTime(s, 2))}); the noise has a standard deviation of ${n(s.sigma)}. About ${n(need)} repeated observations per case separate the two at about 95% confidence and 80% power; halve the noise and it is ${n(quieter)}. Noise raises the cost of an observer; it does not remove the difference.`;
+  return `One more byte comparison adds ${plural(delta(s), 'time unit')} on average (${n(meanTime(s, 1))} against ${n(meanTime(s, 2))}); the noise has a standard deviation of ${n(s.sigma)}. About ${plural(need, 'repeated observation')} per case separate the two at about 95% confidence and 80% power; halve the noise and it is ${n(quieter)}. Noise raises the cost of an observer; it does not remove the difference.`;
 }
 
 export function verdictCaption(v: Verdict, programLabel: string): string {

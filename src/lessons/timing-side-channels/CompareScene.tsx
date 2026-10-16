@@ -116,9 +116,9 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
             rowLabels={['token', 'guess', 'order']}
             ariaLabel={`Token and guess bytes: ${early.lengthMismatch ? 'lengths differ' : `${chosen.comparisons} comparisons by ${fn === 'early' ? 'early exit' : 'constant time'}`}`}
           />
-          {error ? <p className="tsc-refused" role="alert">{error} The previous guess is kept.</p> : <Hint tone="muted" block>{guessLimitNote} The counts below come from an instrument inside the two functions, not from a clock.</Hint>}
+          {error ? <p className="tsc-refused" role="alert">{error} The previous guess is kept.</p> : <Hint tone="muted" block>{guessLimitNote} The counts below come from an instrument inside the two functions, not from a clock. This is the defender's reading: the early-exit count is exactly what must not reach an observer, and here the token is shown so nothing is being guessed.</Hint>}
         </Box>
-        <Honesty />
+        <Honesty simulated={false} toy="two lesson functions with a counter inside; no clock, no noise, no seed" />
       </div>
     </StageFrame>
   );

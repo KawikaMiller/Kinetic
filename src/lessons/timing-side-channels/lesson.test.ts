@@ -68,11 +68,17 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(lesson.tryThis[3]).toContain('differing at event 1');
   });
 
-  it('try-this 5: constant-time code covers its class and leaves 4 of 5 open; all six leave none', () => {
+  it('try-this 5: constant-time code covers its class and leaves 4 of 5 open; all six leave none open but only two covered', () => {
     const f = mitigationFacts();
-    expect(f).toMatchObject({ classes: 5, afterConstantTime: 4, constantTimeCovers: 'covered', afterAll: 0, mitigations: 6 });
+    expect(f).toMatchObject({ classes: 5, afterConstantTime: 4, constantTimeCovers: 'covered', afterAll: 0, afterAllCovered: 2, afterAllPartly: 3, mitigations: 6 });
     expect(lesson.tryThis[4]).toContain('its class is covered and 4 of 5 classes are still open');
-    expect(lesson.tryThis[4]).toContain('Switch on all 6: 0 open');
+    expect(lesson.tryThis[4]).toContain('Switch on all 6: 2 classes covered, 3 only partly and 0 open');
+  });
+
+  it('switching all six on never reads as everything covered', () => {
+    const say = text(mitigationCaption(MITIGATIONS.map((m) => m.id)));
+    expect(say).toContain('2 of 5 classes covered, 3 partly, 0 open');
+    expect(say).not.toContain('5 of 5 classes covered');
   });
 });
 
@@ -115,7 +121,7 @@ describe('captions say what the model did', () => {
       for (const sigma of [NOISE_RANGE.min, NOISE_RANGE.default, NOISE_RANGE.max]) {
         const s = { perComparison, sigma };
         const say = text(noiseCaption(s));
-        expect(say).toContain(`About ${n(samplesNeeded(s))} repeated observations`);
+        expect(say).toContain(`About ${n(samplesNeeded(s))} repeated observation${samplesNeeded(s) === 1 ? '' : 's'}`);
         expect(say).toContain(`halve the noise and it is ${n(samplesNeeded({ ...s, sigma: Math.max(1, sigma / 2) }))}`);
       }
     }
@@ -177,7 +183,7 @@ describe('quiz', () => {
     const f = noiseFacts();
     expect(lesson.quiz[0].why).toContain(`${n(f.tenTimes)} per case at ten times the signal, against ${n(f.opening)} at four times`);
     expect(traceFacts().farLeakCount).toBe(2);
-    expect(lesson.quiz[1].why).toContain('2 of 5 programs leak on the far pair');
+    expect(lesson.quiz[1].why).toContain('On the far pair alone, 2 of 5 programs leak');
     expect(lesson.quiz[2].why).toContain('16 comparisons for a guess that is entirely wrong');
   });
 });

@@ -1,6 +1,6 @@
 /** The numbers the try-this entries and the quiz quote, computed from each scene's opening state by the models the scenes draw. */
 import { COMPARE_FNS, DEFAULT_GUESS, SECRET_BYTES, SECRET_TEXT, parseGuess } from './compare';
-import { MITIGATIONS, classVerdict, openClasses, type MitigationId } from './mitigations';
+import { LEAK_CLASSES, MITIGATIONS, classVerdict, openClasses, type MitigationId } from './mitigations';
 import { noiseOpening, samplesNeeded } from './noise';
 import { PAIR_PRESETS, PROGRAMS, programOf, secretBytes, verdict, type ProgramId } from './traces';
 
@@ -58,6 +58,8 @@ export function mitigationFacts() {
     afterConstantTime: openClasses(['constant-time']).length,
     constantTimeCovers: classVerdict(['constant-time'], 'crypto-timing'),
     afterAll: openClasses(all).length,
+    afterAllCovered: LEAK_CLASSES.filter((c) => classVerdict(all, c.id) === 'covered').length,
+    afterAllPartly: LEAK_CLASSES.filter((c) => classVerdict(all, c.id) === 'partly').length,
     mitigations: all.length,
   };
 }

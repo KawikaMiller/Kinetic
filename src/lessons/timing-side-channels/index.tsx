@@ -22,17 +22,17 @@ const lesson: LessonModule = {
     ],
     why: 'Timing differences are a quiet way for a secret to leave a system, and the fixes are cheap when you know where to look: a library comparison, equal-length digests, code whose behaviour does not depend on secrets. It builds on `branch-prediction` and `cache-coherence`, which show that branch and cache state are shared and observable.',
     watch:
-      'Counting comparisons: a compared byte that matches is green, the first mismatch is red, and a byte never visited is a dim outline; the blue numbers give the order of the visits. The early-exit function\'s count is red because it carries the signal and the constant-time count is green. Noise: blue is the simulated time distribution when the first byte is wrong and violet when it is right. Traces: a leaking verdict is red and identical traces green, and the first differing event is red in the trace lists. Mitigations: a mitigation that is switched on is violet. Everything on this page is simulated, a toy or a fake token, and chips say which.',
+      'Counting comparisons: a compared byte that matches is green, the first mismatch is red, and a byte never visited is a dim outline; the blue numbers give the order of the visits. The early-exit function\'s count is red because it carries the signal and the constant-time count is green. Noise: blue is the simulated time distribution when the first byte is wrong and violet when it is right. Traces: a leaking verdict is red and identical traces green, and the first differing event is red in the trace lists. Mitigations: a mitigation that is switched on is violet, and a class is green when covered, amber when only partly covered and red when open. Everything on this page is simulated, a toy or a fake token, and chips say which.',
   },
   tryThis: [
     `In "Counting comparisons" as it opens (the early-exit function, the guess matching the first ${n(compare.opening.early - 1)} bytes): early exit executes ${n(compare.opening.early)} comparisons and constant time ${n(compare.opening.constant)}. Press "All wrong": early exit drops to ${n(compare.allWrong.early)} while constant time stays at ${n(compare.allWrong.constant)}; press "All right": both are ${n(compare.allRight.early)}.`,
     `In "Counting comparisons", press "Wrong length": the guess is ${n(compare.wrongLengthBytes)} bytes against the token's ${n(compare.tokenBytes)}, so both functions stop at the length check with ${n(compare.wrongLength.early)} byte comparisons.`,
     `In "The signal in the noise" (signal 10, noise 40) about ${n(noise.opening)} observations per case separate the two distributions. Set the noise to ${n(noise.tenTimesSigma)}, ten times the signal: ${n(noise.tenTimes)}. Then raise the signal to 20: ${n(noise.strongerSignal)}. The difference never goes away; it only costs more to see.`,
     `In "Do the traces differ?" (a secret-dependent if, the far pair) the program leaks, with the traces differing at event ${n(trace.openingFirstDifference)}. Choose the pair "Same parity, same line": no leak for that pair, though the program is the same. Choose "One has a zero byte" and the broken compare: it leaks, and the constant-time compare does not.`,
-    `In "Mitigations and what to use", switch on constant-time code: its class is ${mitigation.constantTimeCovers} and ${n(mitigation.afterConstantTime)} of ${n(mitigation.classes)} classes are still open. Switch on all ${n(mitigation.mitigations)}: ${n(mitigation.afterAll)} open in this table.`,
+    `In "Mitigations and what to use", switch on constant-time code: its class is ${mitigation.constantTimeCovers} and ${n(mitigation.afterConstantTime)} of ${n(mitigation.classes)} classes are still open. Switch on all ${n(mitigation.mitigations)}: ${n(mitigation.afterAllCovered)} classes covered, ${n(mitigation.afterAllPartly)} only partly and ${n(mitigation.afterAll)} open in this table, so the speculation and switch classes stay partial.`,
   ],
   keyIdeas: [
-    'In this model an early-exit comparison executes one more comparison for each byte of the guess that is right, and a constant-time comparison executes the same number for every guess of one length.',
+    'In this model an early-exit comparison executes one more comparison for each correct leading byte, up to the full token length, and a constant-time comparison executes the same number for every guess of one length.',
     'Noise raises how many observations are needed, roughly with the square of noise over signal, and does not remove the difference.',
     'A program is constant-time in this model when its branches and memory lines are identical for different secrets, and one passing pair is weak evidence.',
     'Use a library comparison for secrets, compare equal-length digests, and treat hardware mitigations as partial and priced.',
@@ -50,7 +50,7 @@ const lesson: LessonModule = {
       why: `The needed number of observations grows with the square of noise over signal: ${n(noise.tenTimes)} per case at ten times the signal, against ${n(noise.opening)} at four times. Noise raises the cost of an observer; it does not hide the leak.`,
     },
     {
-      q: 'Which of these programs gives identical traces for two different secrets in the lesson\'s model?',
+      q: 'Which of these programs gives identical traces for ANY two different secrets in the lesson\'s model?',
       options: [
         'The masked select, which takes the same branches and touches the same lines whatever the secret',
         'The lookup indexed by a secret byte, since a table read is a single instruction',
@@ -58,7 +58,7 @@ const lesson: LessonModule = {
         'The broken compare, since it still does some comparisons before it returns',
       ],
       answer: 0,
-      why: `The masked select does arithmetic on the secret but in this model it branches and loads the same way whatever the secret, so its traces match; the if, the lookup and the broken compare each make something an observer sees depend on the secret (${n(trace.farLeakCount)} of ${n(trace.programs)} programs leak on the far pair).`,
+      why: `The masked select does arithmetic on the secret but in this model it branches and loads the same way whatever the secret, so its traces match; the if and the lookup leak on some pairs, and the broken compare leaks on the zero-byte pair. On the far pair alone, ${n(trace.farLeakCount)} of ${n(trace.programs)} programs leak, which is why one pair proves little.`,
     },
     {
       q: 'Does "constant-time" mean the comparison is fast?',

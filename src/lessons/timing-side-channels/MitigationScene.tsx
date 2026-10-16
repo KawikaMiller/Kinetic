@@ -41,6 +41,7 @@ export function MitigationScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--violet)', label: 'mitigation switched on', shape: 'square' },
             { color: 'var(--ok)', label: 'class covered', shape: 'square' },
+            { color: 'var(--amber)', label: 'class only partly covered', shape: 'square' },
             { color: 'var(--bad)', label: 'class open', shape: 'square' },
           ]}
         />
@@ -59,7 +60,7 @@ export function MitigationScene({ picker }: { picker: ReactNode }) {
       <div className="tsc-stage stage-pad">
         <Box>
           <SectionTitle hint="a decision table in words: no demonstration here">Which class of leak each mitigation addresses</SectionTitle>
-          <div className="tsc-matrix-scroll">
+          <div className="tsc-matrix-scroll" tabIndex={0} role="region" aria-label="Mitigation matrix, scrolls sideways on a narrow screen">
             <table className="data-table tsc-matrix">
               <thead>
                 <tr>
@@ -85,7 +86,7 @@ export function MitigationScene({ picker }: { picker: ReactNode }) {
             </table>
           </div>
           <Hint tone="muted" block>
-            Cache state and branch-predictor state are shared between security domains, which is the root of the Spectre family and of cache timing leaks. The mitigations are partial and each has a price, listed below for the ones switched on. No gadget code, address pattern or probing procedure appears here.
+            Cache state and branch-predictor state are shared between security domains, which is the root of the Spectre family and of cache timing leaks. Most mitigations here are partial and each has a price, listed below for the ones switched on. No gadget code, address pattern or probing procedure appears here.
           </Hint>
         </Box>
         <Box>
@@ -108,11 +109,11 @@ export function MitigationScene({ picker }: { picker: ReactNode }) {
             ))}
           </ul>
           <Hint tone="muted" block>
-            To keep the length out of the comparison, compare HMACs of both values (equal-length digests) rather than the raw values, and leave cryptography to vetted libraries. One caution: a compiler can undo constant-time code, which is why libraries use assembly or barriers.
+            To keep the length out of the comparison, compare HMACs of both values (equal-length digests) rather than the raw values, and leave cryptography to vetted libraries. One caution: a compiler can undo constant-time code, which is why some libraries use assembly or barriers.
           </Hint>
         </Box>
         <ProvenanceRow>
-          <Provenance kind="from-memory">the mitigation list and what each addresses, after the Spectre paper (Kocher et al., 2018), the Meltdown paper (Lipp et al., 2018) and vendor guidance; verify against them</Provenance>
+          <Provenance kind="from-memory">the mitigation list and what each addresses, after the Spectre paper (Kocher et al., 2018) and vendor guidance; verify against them, and note that the table lists classes, not every known leak</Provenance>
           <Provenance kind="from-memory">the four library functions and their behaviour; verify each against its documentation</Provenance>
         </ProvenanceRow>
         <Honesty simulated={false} />
