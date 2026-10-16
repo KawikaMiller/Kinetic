@@ -1898,6 +1898,22 @@ attention(Q, K, V, { mask: 'causal' | boolean[][] });           // { scores, mas
 - `fault` (`dropDerivative`, `transposeWeights`, `flipSign` on the MLP; `noFlip` on `convBackward`; `dropScale` on the attention head) builds a deliberately wrong backward for a "break the backward pass" toggle and for the tests that prove `gradCheck` catches it. `transposeWeights` only bites a square hidden-to-hidden layer.
 - Tests: `core/nn.test.ts` (`gradCheck` below 1e-6 for tanh, sigmoid and ReLU on 20 seeded nets each, linear output, the conv net, `convBackward` for kernel and input, the attention head for `W_q`, `W_k`, `W_v` plain and causal, factorisation; every wrong backward fails it above 1e-2; the single-neuron hand vector `p = 0.7311`, loss 0.3133, `dL/dw = -0.5379`; the hand-built ReLU XOR net returns exactly 0, 1, 1, 0; XOR loss falls on a fixed seed; one hidden unit never beats 3 of 4 on 50 seeds; the attention lookup reaches weight 0.8 on at least 15 of 20 seeds; factorisation RMSE falls).
 
+### `core/kmeans.ts` — clustering-kmeans, vector-search (both migrated)
+```ts
+import { kmeans, lloydPasses, updateCentroids, assignAll, nearest, sqDist, inertia, initRandom, initShuffled, initPlusPlus } from '../../core/kmeans';
+const start = initPlusPlus(points, k, mulberry32(seed));          // or initRandom (Forgy) / initShuffled (first k of a full shuffle)
+const run = kmeans(points, start, { maxIterations: 15, empty: 'keep' });   // { centroids, assign, iterations, computations }
+for (const pass of lloydPasses(points, start, { empty: 'reseed' })) {      // one assign pass at a time, for a lesson that animates it
+  pass.assign; pass.changed; pass.settled; pass.update;                    // update: { centroids, reseeded } or null when nothing moved
+}
+```
+- Any dimension (`Vec` points; a tuple type such as `readonly [number, number]` is kept through the generics). `lloydPasses` is the one loop: assign every point to its nearest centroid (a tie goes to the lower index), and if anything moved, recompute the centroids. `kmeans` runs it to the end; a run that hits `maxIterations` unsettled is finished with one more assignment, counted, so `assign` always agrees with `centroids`.
+- `computations` is the unit the lessons report: points x centroids per assign pass, the final pass that found nothing moving included. `iterations` counts those passes.
+- `empty`: `'keep'` leaves a cluster nobody joined where it was (vector-search's IVF cells), `'reseed'` moves it to the point farthest from its own centre and reports it in `update.reseeded` (clustering-kmeans, which draws it). `kmeans` defaults to `'keep'`, `lloydPasses` and `updateCentroids` to `'reseed'`.
+- Three starts, each seeded by the caller's `Rnd`: `initRandom` (Forgy, a partial forward shuffle), `initPlusPlus` (D-squared weighting) and `initShuffled` (first `min(k, n)` of a full Fisher-Yates from the end). The last two lessons used different shuffles, so both are kept: switching one would move the other's cells.
+- Tests: `core/kmeans.test.ts` (a hand-worked 1-D run: assignments `[0,1,1,1]`, `[0,0,1,1]`, `[0,0,1,1]`, centroids `[0.5]`, `[10.5]`, 3 passes and 24 computations; the unsettled finish; every point in its nearest centroid and determinism on 20 seeds x 3 starts; keep versus reseed). The vector-search clustering was also compared against the old local implementation on 60 seeded runs (clustered and 8-D uniform points, nlist 4 to 32): centroids, assignments, iterations and computations equal.
+- **Migrated:** `vector-search` (its `kmeans.ts` and `sqDist` are gone; `buildIvf` calls the shared `kmeans` with `initShuffled` and 15 iterations) and `clustering-kmeans` (`model.ts` keeps its starts-by-name, steps, restarts, elbow and silhouette; `lloyd` turns each pass into frame steps). Shots are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

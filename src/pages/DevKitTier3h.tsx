@@ -1,5 +1,7 @@
 import { SectionTitle } from '../components/Panel';
+import { initPlusPlus, kmeans } from '../core/kmeans';
 import { attention, createMlp, createSgd, gradCheck } from '../core/nn';
+import { mulberry32 } from '../core/random';
 import { DevKitSection as Section } from './DevKitSection';
 
 /** Dev-only demo of the Tier 3 kit round, wave 4 to 5, agent H (#/dev/kit). */
@@ -28,12 +30,28 @@ function NnDemo() {
   );
 }
 
+const KMEANS_POINTS = [[0, 0], [0.4, 0.2], [0.1, 0.6], [6, 6], [6.3, 5.8], [5.7, 6.4], [0, 6], [0.3, 6.2]];
+const KMEANS_K = 3;
+const KMEANS_SEED = 2;
+
+function KmeansDemo() {
+  const run = kmeans(KMEANS_POINTS, initPlusPlus(KMEANS_POINTS, KMEANS_K, mulberry32(KMEANS_SEED)));
+  return (
+    <p className="mono">
+      {KMEANS_POINTS.length} points, k = {KMEANS_K}, k-means++ seed {KMEANS_SEED}: {run.iterations} passes, {run.computations} distance computations, cells {run.assign.join('')}
+    </p>
+  );
+}
+
 export function DevKitTier3h() {
   return (
     <>
       <SectionTitle>Tier 3 kit · wave 4 to 5 round, agent H</SectionTitle>
       <Section title="core/nn · a seeded MLP trained on XOR, gradCheck (right and deliberately wrong), attention weights">
         <NnDemo />
+      </Section>
+      <Section title="core/kmeans · one Lloyd loop for clustering-kmeans and vector-search: passes, distance computations, cells">
+        <KmeansDemo />
       </Section>
     </>
   );
