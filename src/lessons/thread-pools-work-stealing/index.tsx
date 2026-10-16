@@ -48,10 +48,10 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `In Pool sizing at the defaults (${POOL.cores} cores, w/c = ${RATIO}, a pool of ${POOL.pool}) the pool finishes ${sig(POOL_DEFAULT.throughput)} tasks per 100 ticks with the cores ${pctText(POOL_DEFAULT.coreUse, 0)} busy. Press pool = the rule of thumb (${RULE}): ${sig(POOL_RULE.throughput)} tasks per 100 ticks.`,
-    `In Fork-join and stealing at the defaults (4 workers, 50/50 split, grain 8, seed ${FORK.seed}) the ${TOTAL_WORK}-unit job takes ${FORK_DEFAULT.makespan} ticks with ${FORK_DEFAULT.steals} steals. Switch Stealing off: ${FORK_NO_STEAL.makespan} ticks, the whole work on worker 0.`,
+    `In Fork-join and stealing at the defaults (4 workers, 50/50 split, grain 8, seed ${FORK.seed}) the ${TOTAL_WORK}-unit job takes ${FORK_DEFAULT.makespan} ticks with ${FORK_DEFAULT.steals} steals. Switch Stealing off: ${FORK_NO_STEAL.makespan} ticks, the whole work on worker 0. The Brent card says so: with stealing off the run is not greedy, so the bound does not apply to it.`,
     `In Grain size at the defaults (grain ${GRAIN.grain}, 4 workers) the job takes ${GRAIN_HERE.makespan} ticks. Drag Grain down to 1: ${GRAIN_FINE.makespan} ticks, slower than the ${TOTAL_WORK} one worker needs.`,
     `In Starvation at the defaults (${STARVE.workers} workers, a tree of depth ${STARVE.depth}) the pool stalls after ${STARVE_RUN.ticks} ticks with ${STARVE_RUN.finished} of ${STARVE_RUN.total} tasks finished. Set Join to by helping: all ${STARVE_HELPED.total} finish in ${STARVE_HELPED.ticks} ticks.`,
-    `In Fork-join and stealing pick the steal model that takes ${SLOW_STEAL_TICKS} ticks. The seed becomes ${BROKEN_SEED}, the run takes ${FORK_BROKEN.makespan} ticks, and Brent's bound (${sig(FORK_BROKEN_BRENT)}) is broken.`,
+    `In Fork-join and stealing pick the steal model that takes ${SLOW_STEAL_TICKS} ticks. The lesson switches to seed ${BROKEN_SEED}, though the seed does not matter here: every seed breaks the bound at these settings. The run takes ${FORK_BROKEN.makespan} ticks, and Brent's bound (${sig(FORK_BROKEN_BRENT)}) is broken.`,
   ],
   keyIdeas: [
     `CPU-bound work stops gaining at about one thread per core: in this model ${POOL.cores} threads give ${sig(CPU_BOUND_AT_CORES.throughput)} tasks per 100 ticks and 64 give ${sig(CPU_BOUND_AT_64.throughput)}, while tasks that wait keep gaining toward cores × (1 + w/c).`,

@@ -50,8 +50,17 @@ export function forkSummary(p: Params, res: ForkResult): ReactNode {
   return (
     <>
       Done in <span className="hl ok">{res.makespan} ticks</span>: work T1 = {res.work}, span T∞ = {res.span}, so no schedule beats {sig(lower)}. {plural(res.steals, 'steal')}, workers{' '}
-      {pctText(res.utilisation, 0)} busy. Brent&apos;s bound for a greedy scheduler is {sig(brent)}: this run <span className={`hl ${held ? 'ok' : 'bad'}`}>{held ? 'is within it' : 'breaks it'}</span>
-      {p.stealLatency > 0 ? `, because a steal takes ${p.stealLatency} ticks here and the scheduler is no longer greedy` : ''}.
+      {pctText(res.utilisation, 0)} busy.{' '}
+      {p.steal ? (
+        <>
+          Brent&apos;s bound for a greedy scheduler is {sig(brent)}: this run <span className={`hl ${held ? 'ok' : 'bad'}`}>{held ? 'is within it' : 'breaks it'}</span>
+          {p.stealLatency > 0 ? `, because a steal takes ${p.stealLatency} ticks here and the scheduler is no longer greedy` : ''}.
+        </>
+      ) : (
+        <>
+          Brent&apos;s bound ({sig(brent)}) is for a greedy scheduler, and with stealing off workers sit idle while work waits on worker 0, so this run is <span className="hl wrap">not greedy and the bound does not apply to it</span>.
+        </>
+      )}
     </>
   );
 }
@@ -89,10 +98,10 @@ export function forkFrames(sim: TickSim<FJState>, p: Params, res: ForkResult): F
 export function grainCaption(grain: number, makespan: number, sequential: number, best: { grain: number; makespan: number }, workers: number): ReactNode {
   const verdict =
     makespan > sequential
-      ? <span className="hl bad">slower than running it on one worker ({sequential} ticks)</span>
+      ? <span className="hl bad wrap">slower than running it on one worker ({sequential} ticks)</span>
       : makespan === best.makespan
-        ? <span className="hl ok">the best grain in the sweep</span>
-        : <span className="hl">faster than one worker ({sequential} ticks), {makespan - best.makespan} ticks off the best</span>;
+        ? <span className="hl ok wrap">the best grain in the sweep</span>
+        : <span className="hl wrap">faster than one worker ({sequential} ticks), {makespan - best.makespan} ticks off the best</span>;
   return (
     <>
       At grain {grain} on {plural(workers, 'worker')} the job takes {makespan} ticks: {verdict}. The sweep&apos;s best grain is {best.grain} at {best.makespan} ticks.

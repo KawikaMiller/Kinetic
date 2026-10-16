@@ -57,8 +57,11 @@ export function ForkScene({ picker }: { picker: ReactNode }) {
           <Stat
             label="Brent bound T1/P + T∞"
             value={sig(brent)}
-            color={res.makespan <= brent ? 'var(--ok)' : 'var(--bad)'}
-            sub={[res.makespan <= brent ? 'this run is within it' : `this run breaks it (${res.makespan} > ${sig(brent)})`, model === 'greedy' ? 'model: greedy' : `model: a steal takes ${SLOW_STEAL_TICKS} ticks, not greedy`]}
+            color={p.steal ? (res.makespan <= brent ? 'var(--ok)' : 'var(--bad)') : undefined}
+            sub={[
+              !p.steal ? 'not greedy: stealing is off, so the bound does not apply' : res.makespan <= brent ? 'this run is within it' : `this run breaks it (${res.makespan} > ${sig(brent)})`,
+              !p.steal ? 'model: no stealing, idle workers while work waits' : model === 'greedy' ? 'model: greedy (a steal lands in the tick it is attempted)' : `model: a steal takes ${SLOW_STEAL_TICKS} ticks, not greedy`,
+            ]}
           />
         </Stats>
       }
