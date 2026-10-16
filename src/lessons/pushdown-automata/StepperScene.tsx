@@ -56,7 +56,7 @@ export function StepperScene({ picker }: { picker: ReactNode }) {
       height={520}
       stats={
         <Stats>
-          <Stat label="Live configurations" value={f.configs.length} color="var(--violet)" sub={`${run.explored} distinct so far in the whole run`} />
+          <Stat label="Live configurations" value={f.configs.length} color="var(--violet)" sub={`${run.explored} distinct configurations in the whole run`} />
           <Stat label="Stack" value={stack.length} color="var(--hi)" sub="symbols on the first configuration's stack" />
           <Stat
             label="Result"
@@ -149,7 +149,7 @@ export function StepperScene({ picker }: { picker: ReactNode }) {
           </ol>
         </div>
         <p className="pd-note">
-          Both ways of accepting recognise the same languages: a machine that accepts by final state can be rebuilt to empty its stack at the end, and the reverse, by a standard conversion. {preset.id === 'wwr' ? 'This machine has to guess where the middle is: every guess is a configuration, and a machine with one stack may guess. ' : ''}A real parser avoids guessing by restricting the grammar.
+          Both ways of accepting recognise the same languages: a machine that accepts by final state can be rebuilt to empty its stack at the end, and the reverse, by the textbook conversion (an extra bottom marker and an extra final state). {preset.id === 'wwr' ? 'This machine has to guess where the middle is: every guess is a configuration, and a machine with one stack may guess. ' : ''}A real parser avoids guessing by restricting the grammar.
         </p>
       </div>
       <ProvenanceRow>

@@ -53,12 +53,12 @@ const lesson: LessonModule = {
       why: `A machine reading left to right has no way to know where the middle is, so the ε-move that switches to popping is taken at each position as a separate configuration: up to ${F.wwrPeak} are live on ${F.wwrSample}, and the right guess alone ends in acceptance.`,
     },
     {
-      q: 'A DFA with 2k + 2 states handles brackets nested up to depth k. What does it do at depth k + 1?',
+      q: 'A DFA with 2k + 2 states counts the letters a of a^n b^n up to n = k. What does it do at n = k + 1?',
       options: [
-        'It falls into its dead state and rejects a balanced word the PDA accepts',
+        'It falls into its dead state and rejects a word the PDA accepts',
         'It grows an extra state on the fly and carries on, like a stack would',
         'It accepts anyway, because depth k + 1 looks like depth k to its counter',
-        'It crashes, because a DFA has no move defined for a word of that length',
+        'It crashes, because a DFA has no move defined for a word that long',
       ],
       answer: 0,
       why: `At n = ${F.firstDisagreement} with k = ${F.k} the counter has run out: the DFA ends in its dead state and rejects, while the PDA accepts. A fixed number of states cannot follow unbounded nesting.`,

@@ -86,7 +86,7 @@ export function DuelScene({ picker }: { picker: ReactNode }) {
           Every arrow not drawn goes to the dead state <code>✕</code>, which never leaves. The counters stop at {k}: a word with more a's has nowhere to go.
         </p>
         <p className="pd-note">
-          The pigeonhole step, from these numbers: reading a {dfa.states.length} times in a row visits {dfa.states.length + 1} states in a machine of {dfa.states.length}, so the visits after {pigeon.i} and {pigeon.j} a's share the state <code>{pigeon.state}</code>. The machine cannot tell <code>a^{pigeon.i} b^{pigeon.i}</code> from <code>a^{pigeon.j} b^{pigeon.i}</code>: it gives {accepts(dfa, w1) ? 'accept' : 'reject'} to both, while the PDA gives {pdaAccepts(w1) ? 'accept' : 'reject'} and {pdaAccepts(w2) ? 'accept' : 'reject'}.
+          The pigeonhole step, from these numbers: reading <code>a</code> {dfa.states.length} times in a row visits {dfa.states.length + 1} states in a machine of {dfa.states.length} states, so the visits after {pigeon.i} and {pigeon.j} a's share the state <code>{pigeon.state}</code>. The machine cannot tell <code>a^{pigeon.i} b^{pigeon.i}</code> from <code>a^{pigeon.j} b^{pigeon.i}</code>: it gives {accepts(dfa, w1) ? 'accept' : 'reject'} to both, while the PDA gives {pdaAccepts(w1) ? 'accept' : 'reject'} and {pdaAccepts(w2) ? 'accept' : 'reject'}.
         </p>
       </div>
       <ProvenanceRow>

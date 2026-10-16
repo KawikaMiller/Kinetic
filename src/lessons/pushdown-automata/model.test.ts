@@ -175,6 +175,20 @@ describe('hostile tables and subjects are refused with a position', () => {
     expect(r.ok && r.warnings).toEqual(['q2 has no rules of its own: a run that reaches it can only stop there.']);
   });
 
+  it('several undeclared target states give one warning, not one line each', () => {
+    const r = parseTable(['q0 a Z -> q3 AZ', 'q0 b Z -> q2 AZ'].join('\n'));
+    expect(r.ok && r.warnings).toEqual(['q3, q2 have no rules of their own: a run that reaches one of them can only stop there.']);
+  });
+
+  it('an arrow glued to the stack symbol still reads as an arrow', () => {
+    const spaced = parseTable('q0 a Z -> q0 AZ');
+    const glued = parseTable('q0 a Z->q0 AZ');
+    expect(glued.ok && spaced.ok && glued.pda.rules).toEqual(spaced.ok && spaced.pda.rules);
+    const bad = parseTable('q0 a Z->q0');
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.error).toMatch(/^Line 1.*next state and what to push/);
+  });
+
   it('subjects over 14 characters or outside the alphabet are refused', () => {
     expect(checkSubject('a'.repeat(MAX_SUBJECT)).ok).toBe(true);
     expect(checkSubject('a'.repeat(MAX_SUBJECT + 1))).toEqual({ ok: false, error: 'That is 15 characters; the limit is 14.' });

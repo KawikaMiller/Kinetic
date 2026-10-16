@@ -21,7 +21,7 @@ export const CHECK_LENGTH = 9;
 
 const TOKENS: TokenRule[] = [
   { kind: 'arrow', pattern: /->/ },
-  { kind: 'word', pattern: /[^\s]+/u },
+  { kind: 'word', pattern: /(?:(?!->)[^\s])+/u },
 ];
 
 export type TableParse = { ok: true; pda: Pda; warnings: string[] } | { ok: false; error: string };
@@ -56,7 +56,8 @@ export function parseTable(text: string): TableParse {
   const rules = read.rows.map((r) => r.value);
   if (!rules.some((r) => r.from === START_STATE)) return { ok: false, error: `No rule starts in ${START_STATE}, where the machine begins.` };
   const declared = new Set(rules.map((r) => r.from));
-  const warnings = [...new Set(rules.map((r) => r.to))].filter((s) => !declared.has(s)).map((s) => `${s} has no rules of its own: a run that reaches it can only stop there.`);
+  const ruleless = [...new Set(rules.map((r) => r.to))].filter((s) => !declared.has(s));
+  const warnings = ruleless.length ? [`${ruleless.join(', ')} ${ruleless.length === 1 ? 'has' : 'have'} no rules of ${ruleless.length === 1 ? 'its' : 'their'} own: a run that reaches ${ruleless.length === 1 ? 'it' : 'one of them'} can only stop there.`] : [];
   return { ok: true, pda: { kind: 'pda', start: START_STATE, bottom: BOTTOM, accept: [], rules }, warnings };
 }
 

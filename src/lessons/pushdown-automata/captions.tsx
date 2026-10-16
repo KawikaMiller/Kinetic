@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { plural } from '../../core/format';
 import type { DuelResult } from './duel';
 import type { CheckResult } from './learner';
 import { CHECK_LENGTH } from './learner';
@@ -22,10 +23,17 @@ export function duelCaption({ k, n, result, states }: { k: number; n: number; re
 export function buildCaption(check: CheckResult | null): ReactNode {
   if (check === null) return <>Change the table so the machine accepts a^n b^(2n) (hint: push two symbols per a), then press Check. Accepting means the input is used up and the stack is empty.</>;
   if (check.first === null) return <>All {check.checked.toLocaleString('en-US')} strings of a and b up to length {CHECK_LENGTH} agree with a^n b^(2n): your machine passes this sweep (a sweep to a length is evidence, not a proof).</>;
-  const { input, inLanguage, reason } = check.first;
+  const { input, inLanguage, reason, verdict } = check.first;
+  if (verdict === 'budget') {
+    return (
+      <>
+        The sweep stopped after {plural(check.checked, 'string')}: on <code>{input === '' ? 'ε' : input}</code> your machine {reason}. That is not a disagreement but a machine that may never stop (for example an ε-move that can repeat).
+      </>
+    );
+  }
   return (
     <>
-      First disagreement, after {check.checked.toLocaleString('en-US')} strings: <code>{input === '' ? 'ε' : input}</code> {inLanguage ? 'is' : 'is not'} in the language, and your machine says: {reason}.
+      First disagreement, after {plural(check.checked, 'string')}: <code>{input === '' ? 'ε' : input}</code> {inLanguage ? 'is' : 'is not'} in the language, and your machine says: {reason}.
     </>
   );
 }

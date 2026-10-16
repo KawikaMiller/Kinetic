@@ -87,4 +87,14 @@ describe('the control cross product gives clean captions', () => {
     clean(buildCaption(null));
     for (const text of [ANBN_TABLE, BUG_TABLE, SOLUTION_TABLE]) clean(buildCaption(checkTable(table(text))));
   });
+
+  it('a first-string disagreement says "1 string", and a budget stop is not called a disagreement', () => {
+    const rejectsAll = checkTable(table('q0 a Z -> q0 AZ'));
+    expect(rejectsAll.first?.input).toBe('');
+    expect(expectCaption(buildCaption(rejectsAll))).toContain('after 1 string:');
+    const loop = checkTable(table('q0 - Z -> q0 ZZ'));
+    const text = expectCaption(buildCaption(loop));
+    expect(text).toContain('not a disagreement');
+    expect(text).not.toContain('First disagreement');
+  });
 });
