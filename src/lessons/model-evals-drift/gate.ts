@@ -6,6 +6,7 @@
 import { gradientStep, linearPredict, logLossGradient, sigmoid } from '../../core/fit';
 import { gaussian } from '../../core/fixtures/datasets';
 import { mulberry32, type Rnd } from '../../core/random';
+import { bootstrapMeanInterval } from '../../core/stats';
 import { MU, SPREAD, TRAIN_ITERATIONS, TRAIN_RATE, TRUE_WEIGHTS, predict, type Model, type Vec2 } from './world';
 
 export type Segment = 'A' | 'B';
@@ -81,20 +82,6 @@ export interface Evaluation {
 
 export const meanOf = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length;
 
-/** Percentile bootstrap of the mean of `values`: the 2.5th and 97.5th percentile of `resamples` resampled means. */
-export function bootstrapInterval(values: readonly number[], resamples: number, seed: number): { lo: number; hi: number } {
-  const rnd = mulberry32(seed);
-  const n = values.length;
-  const means: number[] = [];
-  for (let r = 0; r < resamples; r++) {
-    let sum = 0;
-    for (let i = 0; i < n; i++) sum += values[Math.floor(rnd() * n)];
-    means.push(sum / n);
-  }
-  means.sort((a, b) => a - b);
-  return { lo: means[Math.floor(0.025 * resamples)], hi: means[Math.ceil(0.975 * resamples) - 1] };
-}
-
 let cache: { models: Record<Version['id'], Model>; pool: Labelled[] } | null = null;
 const world = () => (cache ??= { models: { v1: trainVersion(VERSIONS[0]), v2: trainVersion(VERSIONS[1]) }, pool: testPool() });
 
@@ -113,7 +100,7 @@ export function evaluate(n: number): Evaluation {
     slice: { A: sliceOf('A'), B: sliceOf('B') },
     difference: meanOf(diffs) * 100,
     interval: (() => {
-      const i = bootstrapInterval(diffs, BOOTSTRAP_RESAMPLES, BOOTSTRAP_SEED);
+      const i = bootstrapMeanInterval(diffs, BOOTSTRAP_RESAMPLES, BOOTSTRAP_SEED);
       return { lo: i.lo * 100, hi: i.hi * 100 };
     })(),
   };

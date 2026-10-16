@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { gaussian } from '../../core/fixtures/datasets';
 import { mulberry32 } from '../../core/random';
 import { CLEAN_STREAMS, cleanReadings, falseAlarmRate, ksFivePercent } from './falseAlarm';
-import { SEGMENT_B_BIAS, VERSIONS, bootstrapInterval, evaluate, gate, meanOf, testPool, trainVersion, correct } from './gate';
+import { SEGMENT_B_BIAS, VERSIONS, evaluate, gate, meanOf, testPool, trainVersion, correct } from './gate';
 import { leakExperiment } from './leak';
-import { BINS, binShares, decileEdges, ksTwoSample, psi } from './monitors';
+import { ksTwoSample } from '../../core/distributions';
+import { bootstrapMeanInterval } from '../../core/stats';
+import { BINS, binShares, decileEdges, psi } from './monitors';
 import { alarms, simulate } from './stream';
 import { accuracy, dayBatch, predict, trainModel, TRAIN_SEED, type Example } from './world';
 
@@ -148,7 +150,7 @@ describe('the eval gate', () => {
     const trials = 1000;
     for (let t = 0; t < trials; t++) {
       const diffs = Array.from({ length: n }, () => (rnd() < 0.85 ? 1 : 0) - (rnd() < 0.8 ? 1 : 0));
-      const { lo, hi } = bootstrapInterval(diffs, 1000, t);
+      const { lo, hi } = bootstrapMeanInterval(diffs, 1000, t);
       if (lo <= 0.05 && 0.05 <= hi) covered++;
     }
     expect(covered / trials).toBeGreaterThan(0.93);
