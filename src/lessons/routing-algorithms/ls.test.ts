@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkInvariants, forSeeds } from '../../core/distSim';
 import { scriptedSetup } from './init';
 import {
-  DEFAULT_LS, HORIZON_MS, LS_BROKEN_SEED, LS_DEAD_ROUTE_SEED, agrees, behind, components, frameAt, lsCluster, lsRun, monotoneSeq, routerView, settling, trueTopoAt,
+  DEFAULT_LS, HORIZON_MS, LS_BROKEN_SEED, LS_DEAD_ROUTE_SEED, agrees, behind, components, deadRouterOf, frameAt, lsCluster, lsRun, monotoneSeq, routerView, settling, trueTopoAt,
   viewOf, wrongRouters, type LsSetup,
 } from './ls';
 import { nextHops } from './paths';
@@ -71,6 +71,22 @@ describe('the broken rule (ignore sequence numbers) violates LS1', () => {
     };
     expect(dead(LS_DEAD_ROUTE_SEED)).toBe(true);
     for (let seed = 0; seed < LS_DEAD_ROUTE_SEED; seed++) expect(dead(seed), `seed ${seed}`).toBe(false);
+  });
+
+  it('the router the seed-70 chip opens on is B, which is really routing over the cut link', () => {
+    expect(deadRouterOf(LS_DEAD_ROUTE_SEED)).toBe('B');
+  });
+
+  it('loss is NOT repaired beyond one hop: at 10% loss on the ring the databases stay different on many seeds, which is why the chip says so', () => {
+    // Independent of the model's own summary: compare the final sequence numbers of every router directly.
+    let never = 0;
+    for (let seed = 0; seed < 100; seed++) {
+      const run = lsRun({ ...DEFAULT_LS, loss: 0.1, seed });
+      const last = run.frames[run.frames.length - 1];
+      const sigs = new Set(Object.values(last.db).map((db) => JSON.stringify(Object.keys(db).sort().map((o) => [o, db[o].seq]))));
+      if (sigs.size > 1) never++;
+    }
+    expect(never).toBeGreaterThan(10);
   });
 
   it('the run recorded for the screen reports the same first violation as checkInvariants', () => {

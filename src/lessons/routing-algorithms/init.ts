@@ -62,7 +62,7 @@ export const parseCost = (text: string): FieldParse<number> =>
     messages: {
       empty: `Type a cost from ${COST_MIN} to ${COST_MAX}.`,
       invalid: (typed) => `"${shorten(typed)}" is not a cost: use a whole number from ${COST_MIN} to ${COST_MAX}.`,
-      tooSmall: () => `A cost below ${COST_MIN} is refused: 0 would make the link free.`,
+      tooSmall: () => `A cost below ${COST_MIN} is refused: costs start at ${COST_MIN} (0 would make the link free).`,
       tooBig: () => `A cost above ${COST_MAX} is refused: costs run from ${COST_MIN} to ${COST_MAX}.`,
     },
   });

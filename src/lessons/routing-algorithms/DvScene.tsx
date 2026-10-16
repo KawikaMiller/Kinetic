@@ -71,7 +71,7 @@ export function DvScene({ picker }: { picker: ReactNode }) {
           <Button softDisabled={!selectedLink} onClick={() => setSt(applyCost)}>
             Set cost
           </Button>
-          <Button onClick={() => setSt(loadDvPreset(st.presetId, st.mode))}>Reset</Button>
+          <Button onClick={() => setSt(loadDvPreset(st.presetId, 'plain'))}>Reset</Button>
           <Hint tone="muted">
             <span role="status">{st.note ?? 'Click a link in the drawing to select it, then cut it or give it a cost from 1 to 9.'}</span>
           </Hint>

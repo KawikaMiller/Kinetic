@@ -3,8 +3,11 @@
  * (LSA: origin, sequence number, its links) to its neighbours. A router stores an LSA only when
  * its sequence number is higher than the one it holds, then forwards it to every neighbour except
  * the one it came from. After the flood settles, each router runs Dijkstra on its own copy of the
- * database. Loss is repaired by a periodic re-flood of a router's own LSA (a few times after each
- * change, then it stops). A real OSPF router also has areas, ageing and a database exchange on
+ * database. A router also re-sends its own LSA to its direct neighbours a few times after each
+ * change. That repairs a lost copy only on that one hop: a neighbour that already holds the
+ * sequence number ignores the re-send, so a loss further along is NOT repaired and with loss the
+ * databases can stay different for good (this model has no acknowledgements or database exchange
+ * except on a restored link). A real OSPF router also has areas, ageing and a database exchange on
  * every new adjacency; this is the core idea.
  */
 import { createCluster, toSequence, type Cluster, type DistNode, type NodeCtx, type Safety, type Snapshot } from '../../core/distSim';
@@ -351,6 +354,13 @@ export function wrongRouters(run: LsRun, t: number): string[] {
     const real = nextHops(truth, r);
     return Object.keys(truth).some((d) => (mine[d] ?? null) !== (real[d] ?? null));
   }).sort();
+}
+
+/** At the end of the run for `seed`, the first router whose tree still runs over a down link, or null. */
+export function deadRouterOf(seed: number, setup: LsSetup = { ...DEFAULT_LS, mode: 'ignore', seed }): string | null {
+  const run = lsRun({ ...setup, seed });
+  const end = run.endTime;
+  return Object.keys(adjacency(trueTopoAt(run.setup, end))).sort().find((r) => routerView(run, r, end).deadEdges.length > 0) ?? null;
 }
 
 /** Rounds plain distance vector needs to settle after the same link is cut (scene 2's model), or null when no link is cut. */

@@ -103,7 +103,11 @@ export function longestClimb(run: DvRun): { router: string; dest: string; rises:
   for (const router of Object.keys(last)) {
     for (const dest of Object.keys(last[router])) {
       let rises = 0;
-      for (let k = 1; k < run.tables.length; k++) if (run.tables[k][router][dest].cost > run.tables[k - 1][router][dest].cost) rises++;
+      for (let k = 1; k < run.tables.length; k++) {
+        const before = run.tables[k - 1][router][dest].cost;
+        const after = run.tables[k][router][dest].cost;
+        if (before < INFINITY_COST && after < INFINITY_COST && after > before) rises++;
+      }
       if (rises > 0 && (best === null || rises > best.rises)) best = { router, dest, rises, atInfinity: last[router][dest].cost >= INFINITY_COST };
     }
   }
@@ -129,6 +133,7 @@ const sample = (changes: readonly CellChange[]): ReactNode => {
         <span key={`${c.router}${c.dest}`}>
           {i > 0 && '; '}
           {dash(c.router, c.dest)}: {costText(c.from)} to <span className={c.to.cost >= INFINITY_COST ? 'hl bad' : 'hl'}>{costText(c.to)}</span>
+          {c.from.cost === c.to.cost && c.to.next !== null && ` (now via ${c.to.next})`}
         </span>
       ))}
       {changes.length > shown.length && <> and {changes.length - shown.length} more</>}
@@ -173,7 +178,7 @@ export function dvFrames(run: DvRun, start: 'change' | 'boot', change: string, m
         {climb && climb.rises >= 3 && (
           <>
             {' '}
-            {dash(climb.router, climb.dest)} rose in {climb.rises} separate rounds{climb.atInfinity ? ', until it hit 16 and the route was dropped' : ''}: that is counting to infinity.
+            {dash(climb.router, climb.dest)} rose in {climb.rises} separate rounds{climb.atInfinity ? ' and ended at 16, where the route is dropped' : ''}: that is counting to infinity.
           </>
         )}
       </>

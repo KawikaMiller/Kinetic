@@ -11,7 +11,7 @@ import {
   initialLs, loadLsPreset, brokenRandomSetup, scriptedSetup, linkEventOf, withDelay, withLinkEvent, type LinkEvent, type LsUi,
 } from './init';
 import {
-  DUPLICATE_RATE, LATENCY_RANGE, LOSS_RANGE, LS_BROKEN_SEED, LS_DEAD_ROUTE_SEED, SCRIPTED_FAST_MS, SCRIPTED_SLOW_MS, agrees, behind, dvRoundsFor, frameAt, lsRun, messageCounts, routerView,
+  DUPLICATE_RATE, LATENCY_RANGE, LOSS_RANGE, LS_BROKEN_SEED, LS_DEAD_ROUTE_SEED, SCRIPTED_FAST_MS, SCRIPTED_SLOW_MS, agrees, behind, deadRouterOf, dvRoundsFor, frameAt, lsRun, messageCounts, routerView,
   scriptedSlowLink, sequenceUpTo, settling, trueTopoAt, wrongRouters, type LsMode,
 } from './ls';
 import { RouterGraph } from './RouterGraph';
@@ -39,7 +39,7 @@ const LEGEND = (
       { color: 'var(--ok)', label: "a link in the chosen router's shortest-path tree" },
       { color: 'var(--bad)', label: 'a link that is down (dashed); a tree over it is a stale route' },
       { color: 'var(--orange)', label: 'a stale copy of an LSA (older than the newest anywhere); its router in the drawing' },
-      { color: 'var(--hi)', label: 'the router whose tree is drawn' },
+      { color: 'var(--hi)', label: 'the router whose tree is drawn (its own stale mark is not shown)' },
     ]}
   />
 );
@@ -86,7 +86,7 @@ export function LsScene({ picker }: { picker: ReactNode }) {
             label="Time to agree"
             value={settle.ms === null ? 'never' : msText(settle.ms)}
             sub={[
-              settle.ms === null ? 'in this run' : `after the last change, at ${msText(settle.changeAt)}`,
+              settle.ms === null ? 'in this run' : s.link === null ? 'after startup' : `after the last change, at ${msText(settle.changeAt)}`,
               dvRounds === null ? 'distance vector: no change to compare' : `distance vector, same cut: ${dvRounds} ${dvRounds === 1 ? 'round' : 'rounds'}`,
             ]}
           />
@@ -134,7 +134,7 @@ export function LsScene({ picker }: { picker: ReactNode }) {
           <ChipButton tone="bad" onClick={() => setUi((u) => ({ ...u, setup: brokenRandomSetup() }))}>
             Load the lowest failing seed ({LS_BROKEN_SEED})
           </ChipButton>
-          <ChipButton tone="bad" onClick={() => setUi((u) => ({ ...u, setup: { ...brokenRandomSetup(), seed: LS_DEAD_ROUTE_SEED } }))}>
+          <ChipButton tone="bad" onClick={() => setUi((u) => ({ ...u, setup: { ...brokenRandomSetup(), seed: LS_DEAD_ROUTE_SEED }, router: deadRouterOf(LS_DEAD_ROUTE_SEED) ?? u.router }))}>
             Seed {LS_DEAD_ROUTE_SEED}: a router keeps a dead route
           </ChipButton>
           <ChipButton tone="bad" onClick={() => setUi((u) => ({ ...u, setup: scriptedSetup('ignore') }))}>
@@ -157,7 +157,7 @@ export function LsScene({ picker }: { picker: ReactNode }) {
               !l.up ? { tone: 'bad', dashed: true, width: deadIds.has(l.id) ? 5 : 3.5 } : treeIds.has(l.id) ? { tone: 'ok', width: 4.5 } : null
             }
             nodeMark={(r) => (r === ui.router ? { tone: 'hi', fill: 'solid' } : late.includes(r) ? { tone: 'orange', fill: 'tint' } : null)}
-            onLinkClick={(l) => setUi((u) => ({ ...u, setup: { ...u.setup, link: l.id, restore: u.setup.restore } }))}
+            onLinkClick={(l) => setUi((u) => ({ ...u, setup: { ...u.setup, link: l.id, restore: u.setup.link === null ? false : u.setup.restore } }))}
             ariaLabel={`Network ${preset.label}; the shortest-path tree of router ${ui.router} from its own link-state database`}
           />
         </Box>
@@ -199,7 +199,7 @@ export function LsScene({ picker }: { picker: ReactNode }) {
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={s.delivery === 'random' ? s.seed : undefined}>
-            {s.delivery === 'random' ? `random delay, ${pct(DUPLICATE_RATE)} duplicated, ${pct(s.loss)} lost; a lost LSA is repaired by a periodic re-flood` : 'a scripted schedule, no randomness'}
+            {s.delivery === 'random' ? `random delay, ${pct(DUPLICATE_RATE)} duplicated, ${pct(s.loss)} lost; each router re-sends its own LSA to its neighbours a few times, but a loss further along is not repaired, so with loss the databases can stay different` : 'a scripted schedule, no randomness'}
           </Provenance>
           <Provenance kind="toy">real OSPF has areas, designated routers and LSA ageing; this is the core idea</Provenance>
           <Provenance kind="illustrative">link costs and delays are made up</Provenance>
