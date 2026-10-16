@@ -1,0 +1,13 @@
+.me-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.me-expr { font: 700 16px var(--mono); overflow-wrap: anywhere; }
+.me-expr b { color: var(--muted); }
+.me-expr b.is-done { color: var(--ok); }
+.me-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; font: 12px var(--mono); min-height: 108px; }
+.me-step { padding: 3px 8px; border-radius: 6px; border: 1px solid var(--cell-line); overflow-wrap: anywhere; }
+.me-step.is-square { border-color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
+.me-step.is-multiply { border-color: var(--violet); background: color-mix(in srgb, var(--violet) 12%, transparent); }
+.me-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.me-h { margin: 6px 0 0; font: 600 13px var(--mono); }
+.me-row { display: flex; flex-direction: column; gap: 4px; }
+.me-rowlabel { font: 600 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.me-stage ~ .provenance-row { margin: 8px 16px 12px; }
