@@ -45,13 +45,15 @@ export interface Firing {
 
 /**
  * Turn the wheel until every job has fired, the way a real wheel does: a pointer, slots holding lists,
- * rounds counted down. `slotsAt[t]` is what each slot held just before tick t (for drawing); `fired[t]` the ids fired at tick t.
+ * rounds counted down. `slotsAt[t]` is what each slot holds once the pointer has visited slot t (jobs that fired at
+ * tick t are already gone from it); `firedAt[t]` is the placements that fired at tick t, for drawing them one frame longer.
  */
-export function runWheel(jobs: readonly WheelJob[]): { firings: Firing[]; slotsAt: Placement[][][]; ticks: number } {
+export function runWheel(jobs: readonly WheelJob[]): { firings: Firing[]; slotsAt: Placement[][][]; firedAt: Placement[][]; ticks: number } {
   const slots: Placement[][] = Array.from({ length: WHEEL_SLOTS }, () => []);
   for (const p of place(jobs)) slots[p.slot].push({ ...p });
   const snap = () => slots.map((s) => s.map((p) => ({ ...p })));
   const slotsAt: Placement[][][] = [snap()];
+  const firedAt: Placement[][] = [[]];
   const firings: Firing[] = [];
   let left = jobs.length;
   let tick = 0;
@@ -59,9 +61,11 @@ export function runWheel(jobs: readonly WheelJob[]): { firings: Firing[]; slotsA
     tick++;
     const here = slots[tick % WHEEL_SLOTS];
     const keep: Placement[] = [];
+    const fired: Placement[] = [];
     for (const p of here) {
       if (p.rounds === 0) {
         firings.push({ id: p.id, tick });
+        fired.push({ ...p });
         left--;
       } else {
         keep.push({ ...p, rounds: p.rounds - 1 });
@@ -69,8 +73,16 @@ export function runWheel(jobs: readonly WheelJob[]): { firings: Firing[]; slotsA
     }
     slots[tick % WHEEL_SLOTS] = keep;
     slotsAt.push(snap());
+    firedAt.push(fired);
   }
-  return { firings, slotsAt, ticks: tick };
+  return { firings, slotsAt, firedAt, ticks: tick };
+}
+
+/** What the dial draws at `tick`: the wheel after the tick, with the jobs that just fired still in their slot. */
+export function dialSlots(result: ReturnType<typeof runWheel>, tick: number): Placement[][] {
+  const slots = result.slotsAt[tick].map((s) => [...s]);
+  for (const p of result.firedAt[tick]) slots[p.slot].unshift(p);
+  return slots;
 }
 
 /** The sorted queue's order: by exact due time, ties by insertion. */

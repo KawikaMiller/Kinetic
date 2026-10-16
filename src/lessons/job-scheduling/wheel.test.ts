@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
-import { DEFAULT_JOBS, DELAY_STEP_S, MAX_JOBS, TICK_S, WHEEL_SLOTS, heapOrder, inversions, place, runWheel, type WheelJob } from './wheel';
+import { DEFAULT_JOBS, DELAY_STEP_S, MAX_JOBS, TICK_S, WHEEL_SLOTS, dialSlots, heapOrder, inversions, place, runWheel, type WheelJob } from './wheel';
 
 const randomJobs = (seed: number): WheelJob[] => {
   const rnd = mulberry32(seed);
@@ -57,5 +57,28 @@ describe('the timing wheel against the heap oracle', () => {
     // First visit of its slot is at tick `slot`, i.e. 4 s, not 20 s.
     expect(forgetful.slot).toBeLessThan(20);
     expect(runWheel(jobs).firings[0].tick).toBe(20);
+  });
+});
+
+describe('the dial draws the jobs that fire at a tick', () => {
+  it('shows exactly the jobs that fire at tick t in their own slot, and every other waiting job once (100 seeded queues)', () => {
+    for (let seed = 0; seed < 100; seed++) {
+      const jobs = randomJobs(seed);
+      const result = runWheel(jobs);
+      for (let tick = 0; tick <= result.ticks; tick++) {
+        const drawn = dialSlots(result, tick);
+        const firedIds = result.firings.filter((f) => f.tick === tick).map((f) => f.id).sort();
+        const inPointerSlot = tick === 0 ? [] : drawn[tick % WHEEL_SLOTS].filter((p) => p.rounds === 0 && firedIds.includes(p.id)).map((p) => p.id).sort();
+        expect(inPointerSlot, `seed ${seed} tick ${tick}`).toEqual(firedIds);
+        const stillWaiting = jobs.length - result.firings.filter((f) => f.tick <= tick).length;
+        expect(drawn.flat().length, `seed ${seed} tick ${tick}`).toBe(stillWaiting + firedIds.length);
+      }
+    }
+  });
+
+  it('the default queue draws J1 firing at tick 3', () => {
+    const result = runWheel(DEFAULT_JOBS);
+    expect(dialSlots(result, 3)[3].map((p) => p.id)).toContain(1);
+    expect(dialSlots(result, 4)[3].map((p) => p.id)).not.toContain(1);
   });
 });

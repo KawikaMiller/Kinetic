@@ -6,7 +6,7 @@ import { usePlayer } from '../../core/usePlayer';
 import { wheelFrames } from './captions';
 import { addDelay, initialWheel } from './init';
 import { WheelDial } from './WheelDial';
-import { DELAY_MAX_S, DELAY_MIN_S, MAX_JOBS, TICK_S, WHEEL_SLOTS, heapOrder, inversions, place, runWheel } from './wheel';
+import { DELAY_MAX_S, DELAY_MIN_S, MAX_JOBS, TICK_S, WHEEL_SLOTS, dialSlots, heapOrder, inversions, place, runWheel } from './wheel';
 
 const PRESETS = [3, 9, 20];
 const PLAY_MS = 520;
@@ -22,6 +22,7 @@ export function WheelScene({ picker }: { picker: ReactNode }) {
   const player = usePlayer(frames, { interval: PLAY_MS, autoplay: true });
   const tick = player.frame.tick;
   const firedBy = result.firings.filter((f) => f.tick <= tick);
+  const dial = useMemo(() => dialSlots(result, tick), [result, tick]);
   const firedNow = result.firings.filter((f) => f.tick === tick).map((f) => f.id);
   const lateness = Math.max(0, ...result.firings.map((f) => f.tick * TICK_S - (jobs.find((j) => j.id === f.id)?.delay ?? 0)));
   const add = (value?: number) => setState((s) => addDelay(s, value));
@@ -70,10 +71,10 @@ export function WheelScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint={`${WHEEL_SLOTS} slots, one tick a second`}>The timing wheel at tick {tick}</SectionTitle>
           <div className="js-wheel-row">
             <WheelDial
-              slots={result.slotsAt[tick]}
+              slots={dial}
               pointer={tick === 0 ? null : tick % WHEEL_SLOTS}
               firedNow={firedNow}
-              ariaLabel={`Timing wheel at tick ${tick}: ${result.slotsAt[tick].flat().length} jobs waiting, ${firedBy.length} fired`}
+              ariaLabel={`Timing wheel at tick ${tick}: ${result.slotsAt[tick].flat().length} jobs waiting${firedNow.length > 0 ? `, ${firedNow.length} firing now` : ''}, ${firedBy.length} fired`}
             />
             <div className="js-order">
               <p className="js-note"><b>Wheel order</b> (insertion order inside a tick)</p>
