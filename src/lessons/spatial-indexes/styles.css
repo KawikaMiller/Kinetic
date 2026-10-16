@@ -1,0 +1,20 @@
+.si-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.si-pair { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.si-col { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.si-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.si-code { font-family: var(--mono); letter-spacing: 0.06em; }
+.si-bits { display: flex; flex-direction: column; gap: 2px; }
+.si-bitrow { display: flex; align-items: center; gap: 8px; }
+.si-bitrow .array-strip { flex: 0 1 auto; }
+.si-bitchar { font: 700 14px var(--mono); width: 16px; text-align: center; color: var(--text); }
+.si-bitval { font: 600 12px var(--mono); color: var(--muted); }
+.si-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.si-table caption { text-align: left; color: var(--muted); padding-bottom: 6px; line-height: 1.6; }
+.si-table th, .si-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.si-stage ~ .provenance-row { margin: 8px 16px 12px; }
+@media (max-width: 600px) {
+  .si-table thead { position: absolute; left: -9999px; }
+  .si-table tr { display: block; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .si-table th, .si-table td { display: block; border: 0; padding: 2px 4px; }
+  .si-table td::before, .si-table th[scope='row']::before { content: attr(data-label) ': '; color: var(--muted); font-weight: 400; }
+}
