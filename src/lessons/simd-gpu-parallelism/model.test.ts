@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
   BANDWIDTHS, BRANCH_PRESETS, BYTES_PER_ELEMENT, DEFAULT_PRED, DEFAULT_TRIPS, DEP_LENGTH, HIDE, PATH_A_COST, PATH_B_COST, REGISTER_BITS, STALL_CURVES, TRIP_PRESETS, WARMUP_TICKS,
-  WARP_SIZE, WINDOW_TICKS, branchReport, createHideSim, cycleReport, depInput, depVerdict, emit, hideSegments, lanesOf, nextWider, parseTrips, runScalar, runVector,
+  WARP_SIZE, WINDOW_TICKS, windowTicks, branchReport, createHideSim, cycleReport, depInput, depVerdict, emit, hideSegments, lanesOf, nextWider, parseTrips, runScalar, runVector,
   seededTrips, steadyUtilisation, tripReport, warpsToHide, windowUtilisation, type HideParams, type TailMode,
 } from './model';
 
@@ -242,11 +242,28 @@ describe('latency hiding', () => {
   const grid: HideParams[] = [];
   for (const warps of [1, 3, 6, 12]) for (const compute of [1, 2, 4, 8]) for (const stall of [10, 30, 60, 100]) grid.push({ warps, compute, stall });
 
+  it('steady utilisation equals min(1, W c / (c + L)) to rounding over every control combination: the window is a whole number of periods', () => {
+    let checked = 0;
+    for (let warps = 1; warps <= 16; warps++) {
+      for (const compute of [1, 3, 6, 8]) {
+        for (const stall of [10, 40, 90, 100]) {
+          const p = { warps, compute, stall };
+          const w = windowTicks(p);
+          expect(w % (compute + stall)).toBe(0);
+          expect(w).toBeGreaterThanOrEqual(WINDOW_TICKS);
+          expect(Math.abs(steadyUtilisation(p) - Math.min(1, (warps * compute) / (compute + stall))), `W${warps} c${compute} L${stall}`).toBeLessThan(1e-9);
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBe(256);
+  });
+
   it('steady utilisation is within 2% of min(1, W c / (c + L)) over a 4 x 4 x 4 grid', () => {
     expect(grid).toHaveLength(64);
     for (const p of grid) {
       const sim = createHideSim(p);
-      const measured = windowUtilisation(sim, WARMUP_TICKS, WARMUP_TICKS + WINDOW_TICKS);
+      const measured = windowUtilisation(sim, WARMUP_TICKS, WARMUP_TICKS + windowTicks(p));
       const expected = Math.min(1, (p.warps * p.compute) / (p.compute + p.stall));
       expect(Math.abs(measured - expected), `W=${p.warps} c=${p.compute} L=${p.stall}: ${measured} vs ${expected}`).toBeLessThan(0.02);
       expect(steadyUtilisation(p)).toBe(measured);

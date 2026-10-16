@@ -143,7 +143,7 @@ export function SchedScene({ variant, picker }: { variant: Variant; picker: Reac
           {fromSeed !== null && <Provenance kind="simulated" seed={fromSeed}>a scenario drawn from the seed; the schedule itself is deterministic</Provenance>}
           {pathfinder && (
             <Provenance kind="from-memory">
-              Mars Pathfinder, 1997, simplified: a high-priority bus-management task, a medium-priority communications task and a low-priority meteorological task shared a mutex, a watchdog reset the system, and enabling priority inheritance on that mutex was the fix; verify against Glenn Reeves&apos; account and the VxWorks documentation of its inversion-safe mutex option before repeating any detail
+              Mars Pathfinder, 1997, simplified: the high-priority bus-management task and the low-priority meteorological task shared a mutex (the medium-priority communications task did not; it only ran in between), a watchdog reset the system, and enabling priority inheritance on that mutex was the fix; verify against Glenn Reeves&apos; account and the VxWorks documentation of its inversion-safe mutex option before repeating any detail
             </Provenance>
           )}
           <ClaimLabel kind="practice">priority inheritance does not prevent deadlock (two locks taken in opposite order still deadlock), and with several locks blocking can chain</ClaimLabel>

@@ -17,7 +17,7 @@ function introOf(sch: Schedule, v: Variant): ReactNode {
   const s = sch.scenario;
   return (
     <>
-      One core runs the highest-priority task that can run: {n.H} (3), {n.M} (2), {n.L} (1). {n.H} and {n.L} share one lock, R. {n.L} locks R after {plural(L_BEFORE, 'tick')} and holds it for {plural(s.csL, 'tick')}; {n.H} arrives at {s.arrivalH}, {n.M} at {s.arrivalM}
+      One core runs the highest-priority task that can run: {n.H} (3), {n.M} (2), {n.L} (1). {n.H} and {n.L} share one lock, R. {n.L} locks R after {plural(L_BEFORE, 'tick')} and holds it for {plural(s.csL, 'tick')}; {n.H} arrives at {s.arrivalH}, {n.M} at {s.arrivalM}{' '}
       and needs {plural(s.lenM, 'tick')}. The rule in force: <span className="hl info">{PROTOCOL_LABEL[sch.options.protocol]}</span>. Ticks are abstract, not milliseconds.
     </>
   );

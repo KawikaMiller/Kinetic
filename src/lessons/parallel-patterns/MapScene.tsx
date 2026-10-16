@@ -57,7 +57,7 @@ export function MapScene({ picker }: { picker: ReactNode }) {
           key="input"
           input={input}
           presets={[
-            { id: 'eight', label: 'sum of 8 (1 to 8)', on: input.text === '1, 2, 3, 4, 5, 6, 7, 8', apply: () => input.load([1, 2, 3, 4, 5, 6, 7, 8]) },
+            { id: 'eight', label: '8 values (1 to 8)', on: input.text === '1, 2, 3, 4, 5, 6, 7, 8', apply: () => input.load([1, 2, 3, 4, 5, 6, 7, 8]) },
             { id: 'sixteen', label: '16 values', on: input.text === Array.from({ length: 16 }, (_, i) => i + 1).join(', '), apply: () => input.load(Array.from({ length: 16 }, (_, i) => i + 1)) },
           ]}
         />,

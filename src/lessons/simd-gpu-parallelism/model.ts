@@ -271,7 +271,13 @@ export const STALL_CURVES = [10, 40, 100] as const;
 /** The Gantt shows this many ticks; steady-state utilisation is read from the window after warm-up. */
 export const GANTT_TICKS = 60;
 export const WARMUP_TICKS = 200;
+/** The steady window is at least this long, rounded up to a whole number of (compute + stall) periods so the formula is exact. */
 export const WINDOW_TICKS = 1000;
+
+export const windowTicks = (p: HideParams): number => {
+  const period = p.compute + p.stall;
+  return period * Math.ceil(WINDOW_TICKS / period);
+};
 
 export interface HideParams {
   warps: number;
@@ -357,11 +363,12 @@ export function windowUtilisation(sim: TickSim<HideState>, from: number, to: num
 export function steadyUtilisation(p: HideParams): number {
   let s = hideInit(p);
   let atWarmup = 0;
-  for (let t = 1; t <= WARMUP_TICKS + WINDOW_TICKS; t++) {
+  const window = windowTicks(p);
+  for (let t = 1; t <= WARMUP_TICKS + window; t++) {
     s = hideStep(s, p);
     if (t === WARMUP_TICKS) atWarmup = s.issuedTicks;
   }
-  return (s.issuedTicks - atWarmup) / WINDOW_TICKS;
+  return (s.issuedTicks - atWarmup) / window;
 }
 
 /** The formula the run is checked against: a warp keeps the slot busy c of every c + L ticks, so W warps give W c / (c + L), up to 1. */

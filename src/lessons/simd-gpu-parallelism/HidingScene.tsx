@@ -8,7 +8,7 @@ import { barsAt } from '../../core/gantt';
 import { pctText } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { hideFrames, utilisationSoFar, type HideFrame } from './frames';
-import { GANTT_TICKS, HIDE, STALL_CURVES, WARMUP_TICKS, WINDOW_TICKS, createHideSim, hideSegments, idealUtilisation, steadyUtilisation, warpsToHide, type HideParams } from './model';
+import { GANTT_TICKS, HIDE, STALL_CURVES, WARMUP_TICKS, createHideSim, hideSegments, idealUtilisation, steadyUtilisation, warpsToHide, windowTicks, type HideParams } from './model';
 import { hidingOpening } from './openings';
 
 const CURVE_TONES = ['sky', 'amber', 'pink'] as const;
@@ -52,7 +52,7 @@ export function HidingScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Busy so far" value={so === null ? '–' : pctText(so, 0)} sub={[`issue slot used in ${Math.floor(now)} ticks`]} />
-          <Stat label="Busy in steady state" value={pctText(steady, 0)} color="var(--info)" sub={[`ticks ${WARMUP_TICKS} to ${WARMUP_TICKS + WINDOW_TICKS} of the run`, `formula min(1, W·c / (c + L)) gives ${pctText(ideal, 0)}`]} />
+          <Stat label="Busy in steady state" value={pctText(steady, 0)} color="var(--info)" sub={[`ticks ${WARMUP_TICKS} to ${WARMUP_TICKS + windowTicks(p)} of the run`, `formula min(1, W·c / (c + L)) gives ${pctText(ideal, 0)}`]} />
           <Stat label="Warps to hide the stall" value={need} sub={[`(c + L) / c = (${p.compute} + ${p.stall}) / ${p.compute}, rounded up`]} />
         </Stats>
       }
