@@ -2,6 +2,7 @@
 .tk-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
 .tk-panel { flex: 1 1 280px; max-width: 460px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
 .tk-panel .section-title { margin: 0; }
+.tk-stage > .tk-panel { flex: 0 1 auto; width: 100%; }
 .tk-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
 .tk-note b { font-family: var(--mono); color: var(--hi); }
 .tk-empty { margin: 0; font: 500 13px var(--font); color: var(--muted); }
