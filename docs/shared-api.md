@@ -1873,6 +1873,31 @@ const closed = components.filter((_, i) => !c.edges.some(([a]) => a === i));   /
 - `.stage-pad ~ .provenance-row` in `kit.css` gives a row that follows a padded stage the same 16px inset and 8px gap the stage content has. The five lesson-CSS copies (`.bm-stage ~ .provenance-row` and the other four) are gone; a row nested inside the `stage-pad` is unaffected (the gap already spaces it).
 - **Migrated:** the nine B9 scenes whose caption was `useIntroCaption(<>{caption}</>, [caption])` (network-flow augment and cut, bipartite-matching augment, cost, flow and Hall, graph-coloring bound, hard and timetable) now pass `intro`/`introKey`. The five other B9 scenes with a longer computed caption (`shortest-paths-advanced` cost, `strongly-connected-components` condense, order and why, network-flow models) still call `useIntroCaption` and are fine as they are. Shots and the opening caption of every scene are unchanged.
 
+## Tier 3 kit (kit round after wave 4: agent H)
+
+Demos on `#/dev/kit` under "Tier 3 kit · wave 4 to 5 round, agent H" (`pages/DevKitTier3h.tsx`).
+
+### `core/nn.ts` (K3-19) — neural-networks-backprop, cnns-convolution, attention-transformers, training-vs-inference, recommender-systems
+```ts
+import { createMlp, createConvNet, createAttentionHead, createFactorisation, createSgd, gradCheck, attention } from '../../core/nn';
+const net = createMlp({ inputs: 2, hidden: [4], activation: 'tanh' | 'sigmoid' | 'relu', output: 'sigmoid' | 'linear', seed, l2, fault });
+const batch = { xs: [[0, 0], [0, 1]], ys: [0, 1] };            // full batch; labels in {0, 1} for a sigmoid output
+const sgd = createSgd({ learningRate: 0.5, momentum: 0.9 });
+const loss = sgd.step(net, batch);                              // one epoch; returns the loss before the update
+net.trace(x);          // { z, a }: every pre-activation and activation (a[0] is the input, the last entry the output)
+net.predict(x); net.deadUnits(xs); net.layerGradientNorms(net.gradient(batch)); net.layers; net.sizes;
+gradCheck(net, batch); // { maxRelError, worstIndex, checked, skipped, numericForwardPasses: 2 * checked, backpropPasses: 2 }
+attention(Q, K, V, { mask: 'causal' | boolean[][] });           // { scores, masked, weights, output }; weights rows sum to 1
+```
+- Every model is a `Trainable<Batch>`: a flat mutable `params` array, `loss(batch)` and an analytic `gradient(batch)`. `createSgd` and `gradCheck` take any of them, so a lesson-specific model gets both for free. Nothing here reads the clock or `Math.random`: the seed is an argument and the same seed gives the same curve. A diverged run is the caller's to detect (`Number.isFinite(loss)`): it keeps stepping.
+- `createMlp`: one or two hidden layers of 1 to 16 units (`RangeError` otherwise), one output unit. Sigmoid output pairs with cross-entropy (output error `p - y`), linear with half squared error. `l2` decays weights, not biases. Parameters are laid out per layer as the weight rows (one per output unit) then the biases; `layers[i]` gives the range.
+- `createConvNet({ size, kernelSize, kernels: 1 | 2, seed })`: valid convolution, ReLU, global max pool per kernel, logistic output, trained on `{ images, ys }`. `kernel(k)` and `featureMap(image, k)` give what the lesson draws. `convBackward(image, kernel, dOut, { stride, pad })` is the general conv layer gradient (`dKernel`, `dImage`) for stacked layers.
+- `createAttentionHead({ inputs, keyDim, valueDim, seed })`: trainable `W_q`, `W_k`, `W_v` around `attention`, loss = half squared error of the output. Batch `{ queries, keys, targets, mask?, values? }`; pass `values` to look up fixed value rows (then `W_v` gets a zero gradient, the lookup scene of attention-transformers). `forward(batch)` returns the weights to draw. `attentionBackward` is the raw backward for `Q, K, V`.
+- `createFactorisation({ users, items, factors, seed, lambda })`: `r̂ = p_u · q_i` over a ratings list `{ user, item, rating }`; `rmse(ratings)` for the train and held-out curves. Step it with `createSgd` on the observed ratings (a mini-batch is just a shorter list).
+- `gradCheck` compares the analytic gradient with central differences (`epsilon` 1e-5), reports the worst relative error `|a - n| / max(|a| + |n|, floor)` (`floor` 1e-4 so two near-zero gradients do not report noise), and **skips** parameters sitting on a ReLU or max-pool kink (detected from the loss's second difference, so it never depends on the gradient being checked); `skipped` says how many. `numericForwardPasses` against `backpropPasses` is the cost comparison the backprop lesson shows.
+- `fault` (`dropDerivative`, `transposeWeights`, `flipSign` on the MLP; `noFlip` on `convBackward`; `dropScale` on the attention head) builds a deliberately wrong backward for a "break the backward pass" toggle and for the tests that prove `gradCheck` catches it. `transposeWeights` only bites a square hidden-to-hidden layer.
+- Tests: `core/nn.test.ts` (`gradCheck` below 1e-6 for tanh, sigmoid and ReLU on 20 seeded nets each, linear output, the conv net, `convBackward` for kernel and input, the attention head for `W_q`, `W_k`, `W_v` plain and causal, factorisation; every wrong backward fails it above 1e-2; the single-neuron hand vector `p = 0.7311`, loss 0.3133, `dL/dw = -0.5379`; the hand-built ReLU XOR net returns exactly 0, 1, 1, 0; XOR loss falls on a fixed seed; one hidden unit never beats 3 of 4 on 50 seeds; the attention lookup reaches weight 0.8 on at least 15 of 20 seeds; factorisation RMSE falls).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
