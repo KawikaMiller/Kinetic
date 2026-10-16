@@ -120,6 +120,18 @@ describe('ReBAC against an independent fixpoint', () => {
     expect(direct(org.users.find((u) => u.id === 'bob')!, 'read', DEFAULT_DOCS[1])).toBe(false);
   });
 
+  it('the cycle note appears only on a true back edge: never on a ladder (a DAG), on the loop when the walk meets it', () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const org = { ...randomOrg(seed), cycle: false };
+      const cfg = buildConfigs(org);
+      for (const u of org.users) for (const a of ACTIONS) for (const d of org.docs) expect(decide('rebac', org, cfg, u.id, a, d.id).note, `${seed} ${u.id} ${a} ${d.id}`).toBeNull();
+    }
+    const def = defaultOrg();
+    expect(decide('rebac', def, buildConfigs(def), 'dave', 'read', 'notes').note).toBeNull();
+    const looped = { ...def, cycle: true };
+    expect(decide('rebac', looped, buildConfigs(looped), 'dave', 'read', 'notes').note).toContain('cycle ignored');
+  });
+
   it('a broken checker without the visited set runs past the step budget on the loop, and the honest one does not', () => {
     const org = { ...defaultOrg(), cycle: true };
     const tuples = generateTuples(org);

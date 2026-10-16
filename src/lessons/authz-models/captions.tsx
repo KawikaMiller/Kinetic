@@ -17,6 +17,7 @@ export function askCaption(org: Org, model: ModelId, userId: string, action: Act
       {who} asks to {action} {what} under {modelLabel(model)}: <b>{d.granted ? 'granted' : 'denied'}</b>.{' '}
       {d.granted ? <>The lit path has {plural(hops, 'edge')}.</> : <>{d.why}</>}
       {d.note ? <> {d.note}.</> : null}
+      {org.cycle && model === 'rebac' ? <> The loop makes the clearance groups one group, so a member of a low group inherits the top group&apos;s access: the checker finished correctly, and the configuration is the bug.</> : null}
     </>
   );
 }
@@ -50,7 +51,7 @@ export function countCaption(departments: number, levels: number, req: Requireme
   return (
     <>
       Sharing one document with one person for a week adds {plural(shared.aclEntries - base.aclEntries, 'ACL entry', 'ACL entries')}, {plural(shared.rbacRoles - base.rbacRoles, 'RBAC role')} (with {plural(shared.rbacGrants - base.rbacGrants, 'grant')}),
-      {' '}{plural(shared.abacExceptionAttributes - base.abacExceptionAttributes, 'ABAC exception')}, and {plural(shared.rebacTuples - base.rebacTuples, 'ReBAC tuple')}. A one-off exception is a small change in an entry or a tuple, and neither model wins in general.
+      {' '}{plural(shared.abacExceptionAttributes - base.abacExceptionAttributes, 'ABAC exception')}, and {plural(shared.rebacTuples - base.rebacTuples, 'ReBAC tuple')}. A one-off exception is a small change in an entry or a tuple, and neither model wins in general.{shared.aclEntries === base.aclEntries ? ' At this size the person could already read it, so nothing changes.' : null}
     </>
   );
 }

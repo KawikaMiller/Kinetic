@@ -74,6 +74,8 @@ describe('the control cross product', () => {
     }
     const looped = { ...org, cycle: true };
     expect(expectCaption(askCaption(looped, 'rebac', 'dave', 'read', 'notes'))).toContain('cycle ignored');
+    expect(expectCaption(askCaption(looped, 'rebac', 'dave', 'read', 'notes'))).toContain('configuration is the bug');
+    expect(expectCaption(askCaption(org, 'rebac', 'dave', 'read', 'notes'))).not.toContain('cycle ignored');
   });
 
   it('every requirement and organisation edit gives a clean disagreement caption', () => {
@@ -92,6 +94,7 @@ describe('the control cross product', () => {
         expect(first).toContain(`flat RBAC needs ${d * l} roles`);
         expect(first).toContain(`${d * (l - 1)} inheritance edge`);
         expect(expectCaption(countCaption(d, l, 'dept-clearance-share'))).not.toMatch(/NaN|undefined|\[object/);
+        expect(expectCaption(countCaption(d, l, 'dept-clearance-share')).includes('nothing changes'), `${d}x${l}`).toBe(d === 1 && l === 1);
       }
     }
   });

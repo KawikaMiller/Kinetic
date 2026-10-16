@@ -22,6 +22,8 @@ export function CountScene({ picker }: { picker: ReactNode }) {
   const base = useMemo(() => countsOf(syntheticOrg(departments, levels, false)), [departments, levels]);
   const shared = useMemo(() => countsOf(syntheticOrg(departments, levels, true)), [departments, levels]);
   const req = which === 'share' ? 'dept-clearance-share' : 'dept-clearance';
+  const shown = which === 'share' ? shared : base;
+  const noChange = shared.aclEntries === base.aclEntries;
   const text = REQUIREMENTS.find((r) => r.id === req)!.text;
 
   return (
@@ -40,7 +42,7 @@ export function CountScene({ picker }: { picker: ReactNode }) {
         ) : (
           <Stats>
             <Stat label="ACL" value={`+${shared.aclEntries - base.aclEntries}`} sub="entry on the document" />
-            <Stat label="RBAC" value={`+${shared.rbacRoles - base.rbacRoles}`} sub={`role, with ${shared.rbacGrants - base.rbacGrants} grant and 1 assignment`} />
+            <Stat label="RBAC" value={`+${shared.rbacRoles - base.rbacRoles}`} sub={`role, with ${shared.rbacGrants - base.rbacGrants} grant, assigned to one person`} />
             <Stat label="ABAC" value={`+${shared.abacExceptionAttributes - base.abacExceptionAttributes}`} sub="exception attribute (and a rule that reads it)" />
             <Stat label="ReBAC" value={`+${shared.rebacTuples - base.rebacTuples}`} sub="tuple" />
           </Stats>
@@ -59,16 +61,16 @@ export function CountScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="az-stage stage-pad">
-        <p className="az-note">Requirement: {text}</p>
+        <p className="az-note">Requirement: {text}{which === 'share' ? (noChange ? ' At this size Erin can already read the Roadmap, so the share changes nothing: raise departments or levels.' : ' The table shows the totals with the share in place.') : null}</p>
         <Box className="az-panel">
           <table className="data-table az-table">
             <thead><tr><th>Model</th><th>What an administrator defines</th><th>Count</th></tr></thead>
             <tbody>
-              <tr><td>ACL</td><td>an entry for each person and document the rule allows</td><td>{base.aclEntries}</td></tr>
-              <tr><td>RBAC, flat</td><td>roles, and what each grants</td><td>{base.rbacRoles} roles, {base.rbacGrants} grants</td></tr>
-              <tr><td>RBAC, hierarchical</td><td>the same roles, each inheriting the one below</td><td>{base.rbacHierRoles} roles, {base.rbacHierEdges} edges</td></tr>
-              <tr><td>ABAC</td><td>policies over attributes</td><td>{base.abacPolicies}</td></tr>
-              <tr><td>ReBAC</td><td>groups, folders, tuples and rewrite rules</td><td>{base.rebacGroups} + {base.rebacFolders} objects, {base.rebacTuples} tuples, {base.rebacRules} rules</td></tr>
+              <tr><td>ACL</td><td>an entry for each person and document the rule allows</td><td>{shown.aclEntries}</td></tr>
+              <tr><td>RBAC, flat</td><td>roles, and what each grants</td><td>{shown.rbacRoles} roles, {shown.rbacGrants} grants</td></tr>
+              <tr><td>RBAC, hierarchical</td><td>the same roles, each inheriting the one below</td><td>{shown.rbacHierRoles} roles, {shown.rbacHierEdges} edges</td></tr>
+              <tr><td>ABAC</td><td>policies over attributes</td><td>{shown.abacPolicies}</td></tr>
+              <tr><td>ReBAC</td><td>groups, folders, tuples and rewrite rules</td><td>{shown.rebacGroups} + {shown.rebacFolders} objects, {shown.rebacTuples} tuples, {shown.rebacRules} rules</td></tr>
             </tbody>
           </table>
         </Box>

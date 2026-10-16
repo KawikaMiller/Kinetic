@@ -13,8 +13,8 @@ import { ACTIONS, docById, userById, type Action, type Org } from './org';
 import { OPENING } from './opening';
 
 const NODE_BOX = { w: 176, h: 42 };
-const LAYER_GAP = 250;
-const PAD_MAIN = 70;
+const LAYER_GAP = 215;
+const PAD_MAIN = 40;
 const KIND_TONE: Record<NodeKind, 'sky' | 'amber' | 'pink' | 'orange' | 'violet'> = { user: 'sky', group: 'amber', role: 'pink', resource: 'orange', rule: 'violet', perm: 'orange' };
 const STATE_MARK: Record<NodeState, GraphNodeMark['tone']> = { granted: 'ok', failed: 'bad', dim: 'dim' };
 const EDGE_WIDTH = 3;

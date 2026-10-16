@@ -25,8 +25,8 @@ const lesson: LessonModule = {
     `Combining, on the defaults (rule 1 ${F.rule1}, rule 2 ${F.rule2}, deny overrides): the decision is ${F.defaultDecision}. Choose permit overrides: ${F.permitOverrides}. Choose first applicable: ${F.firstApplicable}. Press "Swap the order": ${F.firstApplicableSwapped}.`,
   ],
   keyIdeas: [
-    `The same requirement can be written in each model, and in this lesson all four give the same ${F.questions} answers; what differs is what you write down: for ${F.departments} departments and ${F.levels} levels, ${F.roles} flat roles, ${F.policies} ABAC policy, or ${F.groups} groups and ${F.folders} folders.`,
-    `A model is right or wrong against a stated requirement, not by itself: with a loop in the clearance groups, ${F.wrongAfterLoop} rows differ from the rule in ReBAC, and the disagreement table shows where.`,
+    `The same requirement can be written in each model, and on the default organisation, with configurations generated from the rule, all four give the same ${F.questions} answers; what differs is what you write down: for ${F.departments} departments and ${F.levels} levels, ${F.roles} flat roles, ${F.policies} ABAC policy, or ${F.groups} groups and ${F.folders} folders.`,
+    `A model is right or wrong against a stated requirement, not by itself: with a loop in the clearance groups, the groups become one group and low-clearance members inherit the top group's access, so ${F.wrongAfterLoop} rows differ from the rule in ReBAC, and the disagreement table shows where.`,
     'A role is a named bundle of permissions that people are assigned, not a permission itself: flat roles grow as departments times levels, and the fair form adds inheritance edges between roles instead.',
     `A relationship checker needs a visited set: with a loop the broken version ran past ${F.budget} steps, and the honest one answered in ${F.honestSteps} and said the cycle was ignored.`,
   ],
@@ -51,7 +51,7 @@ const lesson: LessonModule = {
         'It merges the two groups into one and denies everyone who was in either of them',
       ],
       answer: 0,
-      why: `A visited set stops the walk: in this model the honest check answered in ${F.honestSteps} steps, while the version without one ${F.brokenExceeded ? 'ran past' : 'stayed under'} the ${F.budget}-step budget.`,
+      why: `A visited set stops the walk, and the answer is still correct for the data it was given: a loop makes the groups one group, so the data, not the checker, is what to fix. In this model the honest check answered in ${F.honestSteps} steps, while the version without one ${F.brokenExceeded ? 'ran past' : 'stayed under'} the ${F.budget}-step budget.`,
     },
     {
       q: 'In RBAC, what is a role?',

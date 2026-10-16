@@ -90,12 +90,15 @@ export function check(tuples: readonly Tuple[], userId: string, obj: string, rel
   let cycleIgnored = false;
   let exceeded = false;
 
+  /** Sets whose expansion is still in progress: meeting one again is a true back edge (a loop), not just a revisit. */
+  const inProgress = new Set<string>();
+
   const walk = (obj0: string, rel0: string): Hop[] | null => {
     if (exceeded) return null;
     const key = setName(obj0, rel0);
     if (useVisited) {
       if (seen.has(key)) {
-        cycleIgnored = true;
+        if (inProgress.has(key)) cycleIgnored = true;
         return null;
       }
       seen.add(key);
@@ -105,6 +108,13 @@ export function check(tuples: readonly Tuple[], userId: string, obj: string, rel
       exceeded = true;
       return null;
     }
+    inProgress.add(key);
+    const result = expand(obj0, rel0, key);
+    inProgress.delete(key);
+    return result;
+  };
+
+  const expand = (obj0: string, rel0: string, key: string): Hop[] | null => {
     const hop = (to: string, label: string): Hop => ({ from: key, to, label });
     for (const t of tuples) {
       if (t.obj !== obj0 || t.rel !== rel0) continue;
