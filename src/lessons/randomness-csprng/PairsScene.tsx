@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { integer } from '../../core/format';
 import { distinctLines, pairsCaption } from './captions';
-import { PRESETS, hyperplaneBound, pairs, presetById, type LcgParams } from './lcg';
+import { PRESETS, hyperplaneBound, pairs, presetById } from './lcg';
 import { OPENING } from './opening';
 import { SeedInput } from './SeedInput';
 

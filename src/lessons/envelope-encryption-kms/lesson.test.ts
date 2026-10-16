@@ -20,6 +20,7 @@ describe('scenes', () => {
     const inner = ['RotationScene', 'ShredScene', 'HierarchyScene'];
     expect(els.filter((e) => !inner.includes(e.component)).every((e) => e.keyed)).toBe(true);
     expect(els.map((e) => e.component).sort()).toEqual(['HierarchyScene', 'RotationScene', 'ShredScene', 'VaultScene', 'Waiting', 'WorkloadScene']);
+    expect(sharedSceneComponents('envelope-encryption-kms')).toEqual([]);
     expect(sources['./Stage.tsx']).toContain('<VaultScene key={scene}');
     expect(sources['./Stage.tsx'].split('buildVault()').length - 1).toBe(2);
   });
