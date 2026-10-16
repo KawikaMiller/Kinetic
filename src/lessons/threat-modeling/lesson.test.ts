@@ -102,6 +102,20 @@ describe('captions across the control cross product', () => {
   });
 });
 
+describe('sprint option claims', () => {
+  it('Do nothing costs the same days as Accepting and differs only in the owner, as its explanation says', () => {
+    const start = startWalk(SPRINT);
+    const accept = choose(SPRINT, start, 'transit-accept');
+    const ignore = choose(SPRINT, start, 'transit-ignore');
+    expect(ignore.meters.effort).toBe(accept.meters.effort);
+    expect(ignore.meters.risk).toBe(accept.meters.risk);
+    expect(ignore.meters.ownerless - accept.meters.ownerless).toBe(1);
+    const because = SPRINT.nodes[0].choices.find((c) => c.id === 'transit-ignore')!.because!;
+    expect(because).toContain('saves nothing');
+    expect(because).not.toContain('what it saves (days)');
+  });
+});
+
 describe('the lesson stays inside the simulation', () => {
   /** Allow-list: calls that would reach the network or run learner text. Empty on purpose. */
   const FORBIDDEN = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function/;

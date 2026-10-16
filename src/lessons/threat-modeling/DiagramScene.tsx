@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CellGrid, type GridCellSpec } from '../../components/CellGrid';
 import { GraphView, type GraphEdge, type GraphEdgeMark, type GraphNode, type GraphNodeMark } from '../../components/GraphView';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -61,6 +61,14 @@ export function DiagramScene({ picker, state, setState }: SharedScene) {
   const target = selected ? targetById(selected) : null;
   const rows = target ? categoriesOf(target) : [];
 
+  /** The threat cell to move focus to once it is revealed: the "Look at it" chip is replaced by text, so focus would fall to the page. */
+  const [focusCell, setFocusCell] = useState<string | null>(null);
+  useEffect(() => {
+    if (focusCell && state.revealed[focusCell]) {
+      document.getElementById(`tm-threat-${focusCell}`)?.focus();
+      setFocusCell(null);
+    }
+  }, [focusCell, state.revealed]);
   const look = (id: string) => setState((s) => reveal(s, id));
   const onCell = (r: number, c: number) => {
     const id = cellAt(r, c);
@@ -96,6 +104,7 @@ export function DiagramScene({ picker, state, setState }: SharedScene) {
             { color: 'var(--orange)', label: 'flow that crosses a boundary (dashed)', shape: 'line' },
             { color: 'var(--hi)', label: 'element or flow in focus', shape: 'square' },
             { color: 'var(--bad)', label: 'threat revealed', shape: 'square' },
+            { color: 'var(--ok)', label: 'threat mitigated (tick)', shape: 'square' },
             { color: 'var(--dim)', label: 'applicable cell not looked at', shape: 'square' },
           ]}
         />
@@ -113,6 +122,9 @@ export function DiagramScene({ picker, state, setState }: SharedScene) {
       ]}
     >
       <div className="tm-stage stage-pad">
+        <p className="tm-note">
+          The four questions of a threat model: what are we working on, what can go wrong, what are we going to do about it, and did we do a good job. This scene takes the first two; the scenes after it take the third.
+        </p>
         <WideRegion minWidth={DIAGRAM_MIN_WIDTH} label="Data-flow diagram: scroll sideways to see all of it">
           <GraphView
             nodes={nodes}
@@ -150,12 +162,12 @@ export function DiagramScene({ picker, state, setState }: SharedScene) {
                       <td>{categoryById(c).property}</td>
                       <td>
                         {state.revealed[id] ? (
-                          <span style={{ color: control ? 'var(--ok)' : 'var(--bad)' }}>
+                          <span id={`tm-threat-${id}`} tabIndex={-1} style={{ color: control ? 'var(--ok)' : 'var(--bad)' }}>
                             {threatSentence(id)}
                             {control ? ` (mitigated: ${controlById(control).label.toLowerCase()})` : ''}
                           </span>
                         ) : (
-                          <ChipButton tone="info" onClick={() => look(id)}>Look at it</ChipButton>
+                          <ChipButton tone="info" onClick={() => { setFocusCell(id); look(id); }}>Look at it</ChipButton>
                         )}
                       </td>
                     </tr>
@@ -191,7 +203,7 @@ export function DiagramScene({ picker, state, setState }: SharedScene) {
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated">an invented checkout system; the threat sentences are generic and name no technique</Provenance>
-        <Provenance kind="from-memory">the per-element STRIDE chart, as in Shostack's Threat Modeling: Designing for Security; check it against the book</Provenance>
+        <Provenance kind="from-memory">the per-element STRIDE chart and the four questions, as in Shostack's Threat Modeling: Designing for Security; check them against the book</Provenance>
         <ClaimLabel kind="practice">STRIDE helps you ask questions; it does not score risk or find every threat</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>

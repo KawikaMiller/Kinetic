@@ -6,7 +6,7 @@ import { Button, ChipButton, ClaimLabel, Legend, Provenance, ProvenanceRow, Stat
 import { mitigateCaption } from './captions';
 import type { SharedScene } from './DiagramScene';
 import {
-  CELLS, CONTROLS, FLOWS, applyControl, categoryById, controlById, flowStatus, metersOf, revealAll, startState, threatSentence, type ControlId, type FlowStatus,
+  CELLS, CONTROLS, FLOWS, applyControl, categoryById, controlById, flowStatus, metersOf, revealAll, startState, threatSentence, zoneLabel, type ControlId, type FlowStatus,
 } from './model';
 
 const FLOW_STATUS_TEXT: Record<FlowStatus, string> = {
@@ -27,7 +27,12 @@ export function MitigateScene({ picker, state, setState }: SharedScene) {
   const m = metersOf(state);
   const threats = CELLS.filter((c) => state.revealed[c.id]);
   const selectedIndex = threats.findIndex((c) => c.id === selected);
-  const radio = useRadioGroup(threats.length, selectedIndex, (i) => setSelected(threats[i].id));
+  /** Picking another threat clears the last result, so a refusal about the old one is not shown beside the new one. */
+  const select = (id: string) => {
+    setSelected(id);
+    setLast(null);
+  };
+  const radio = useRadioGroup(threats.length, selectedIndex, (i) => select(threats[i].id));
 
   const put = (cellId: string | null, control: ControlId) => {
     if (!cellId) {
@@ -43,7 +48,7 @@ export function MitigateScene({ picker, state, setState }: SharedScene) {
     e.preventDefault();
     const control = e.dataTransfer.getData(DRAG_TYPE) as ControlId;
     if (CONTROLS.some((c) => c.id === control)) {
-      setSelected(cellId);
+      select(cellId);
       put(cellId, control);
     }
   };
@@ -94,7 +99,7 @@ export function MitigateScene({ picker, state, setState }: SharedScene) {
                     type="button"
                     {...radio.itemProps(i)}
                     className={`tm-threat${c.id === selected ? ' is-selected' : ''}${control ? ' is-mitigated' : ''}`}
-                    onClick={() => setSelected(c.id)}
+                    onClick={() => select(c.id)}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => onDrop(e, c.id)}
                   >
@@ -119,6 +124,7 @@ export function MitigateScene({ picker, state, setState }: SharedScene) {
 
         <Box className="tm-panel">
           <SectionTitle hint="a crossing flow counts as covered once all three of its threats are mitigated">Flows</SectionTitle>
+          <p className="tm-note">Zones from the first scene: the orders database is in the {zoneLabel(state.placement.orders)} and the audit log in the {zoneLabel(state.placement.audit)}. Move them there to change which flows cross.</p>
           <table className="data-table tm-table">
             <thead><tr><th>Flow</th><th>Status</th></tr></thead>
             <tbody>

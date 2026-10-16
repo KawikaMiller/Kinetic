@@ -69,7 +69,7 @@ function choicesFor(t: SprintThreat, to: string): Choice[] {
     },
     {
       id: `${t.id}-ignore`, label: 'Do nothing', to,
-      because: `The ${reduction} points stay and nobody owns them. This is the option the lesson does not recommend: the meter shows what it saves (days) and what it costs (an owner).`,
+      because: `The ${reduction} points stay and nobody owns them. Accepting costs no more days than doing nothing, so doing nothing saves nothing: the only thing it changes on the meters is that nobody owns the risk.`,
     },
   ];
 }
