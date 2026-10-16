@@ -93,3 +93,22 @@ export const broadcastOf = (a: number, prefix: number) => (networkOf(a, prefix) 
 
 /** The membership test: do `a` and the network agree on every network bit? */
 export const contains = (net: number, prefix: number, a: number) => networkOf(a, prefix) === networkOf(net, prefix);
+
+/** A routing-table entry: the block `net`/`prefix` (host bits in `net` are ignored, as `contains` ignores them). Extra fields ride along. */
+export interface Route {
+  net: number;
+  prefix: number;
+}
+
+/**
+ * Longest-prefix match: of the routes whose block contains `addr`, the one with the longest prefix
+ * (a /0 default route matches everything but loses to any other match). Two routes for the same block
+ * tie, and the earlier one in `routes` wins. Null when nothing matches, as with no default route.
+ */
+export function longestPrefixMatch<R extends Route>(routes: readonly R[], addr: number): R | null {
+  let best: R | null = null;
+  for (const r of routes) {
+    if (contains(r.net, r.prefix, addr) && (best === null || r.prefix > best.prefix)) best = r;
+  }
+  return best;
+}
