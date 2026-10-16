@@ -1,0 +1,10 @@
+/* cache-stampede */
+.cs-stage { gap: 12px; min-width: 0; }
+.cs-charts { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cs-plots { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; min-width: 0; }
+.cs-plots > * { flex: 1 1 356px; min-width: 0; }
+.cs-plots .plot2d, .cs-stage .plot2d { max-width: 100%; height: auto; }
+.cs-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.cs-table-wrap { overflow-x: auto; }
+.cs-table th, .cs-table td { font-size: 12.5px; white-space: nowrap; }
+.cs-table td { text-align: right; }
