@@ -1,0 +1,10 @@
+.rn-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.rn-plots { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.rn-figure { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rn-figure figcaption { font-size: 12px; color: var(--muted); }
+.rn-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.rn-error { font-size: 12px; color: var(--orange); }
+.rn-mono { margin: 0; font: 13px var(--mono); overflow-wrap: anywhere; white-space: pre-wrap; }
+.rn-table { width: 100%; }
+.rn-current td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.rn-stage ~ .provenance-row { margin: 8px 16px 12px; }
