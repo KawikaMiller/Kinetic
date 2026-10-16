@@ -74,7 +74,7 @@ export function ProblemScene({ picker }: { picker: ReactNode }) {
           {picker}
           <Segmented label="Query" value={query.mode} onChange={query.setMode} options={[{ value: 'nn', label: 'Nearest point' }, { value: 'range', label: 'Rectangle' }]} />
           <TextField label="Points N" value={nText} onChange={commitCount} onBlur={() => { if (!parseCount(nText).ok) { setNText(String(n)); setNote(null); } }} width={80} spellCheck={false} />
-          <SeedField key={seed} seed={seed} onSeed={setSeed} />
+          <SeedField seed={seed} onSeed={setSeed} />
         </>,
         <>
           <Button onClick={() => query.setQ(cursor)}>Move the query point to the cursor</Button>
