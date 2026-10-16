@@ -2,10 +2,13 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Bar } from '../../components/Bar';
 import { ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { bytes, integer } from '../../core/format';
+import { bytes as rawBytes, integer } from '../../core/format';
 import { workloadCaption } from './captions';
 import { OPENING } from './opening';
 import { CALL_MS, DIRECT_LIMIT_BYTES, QUOTA_PER_SECOND, runWorkload, type WorkloadInput } from './workload';
+
+/** Every byte count on this scene is binary (KiB), to match the captions and the try-this. */
+const bytes = (n: number, o: { iec?: boolean } = {}) => rawBytes(n, { ...o, iec: true });
 
 const RATE = { min: 1, max: 2000 } as const;
 const SIZE = { min: 64, max: 16_384, step: 64 } as const;
@@ -36,7 +39,7 @@ export function WorkloadScene({ picker }: { picker: ReactNode }) {
           <Stat label="Envelope: KMS calls a second" value={integer(envelope.kmsCalls)} color={used(envelope) > 1 ? 'var(--bad)' : 'var(--ok)'} sub={`${bytes(envelope.kmsBytes)} sent to the KMS`}>
             <Bar value={Math.min(1, used(envelope))} max={1} tone={used(envelope) > 1 ? 'bad' : 'ok'} ariaLabel={`Envelope design uses ${integer(used(envelope) * 100)} percent of the illustrative quota`} />
           </Stat>
-          <Stat label="Waiting on the KMS" value={`${integer(envelope.kmsMs)} ms`} sub={`one after another, at ${CALL_MS} ms a call (direct: ${integer(direct.kmsMs)} ms)`} />
+          <Stat label="Waiting on the KMS" value={`${integer(envelope.kmsMs)} ms`} sub={`one after another, at ${CALL_MS} ms a call (direct: ${direct.refused ? 'n/a, refused' : `${integer(direct.kmsMs)} ms`})`} />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--bad)', label: 'the costly side: over quota, or refused', shape: 'square' }, { color: 'var(--ok)', label: 'the cheap side', shape: 'square' }]} />}
@@ -53,7 +56,7 @@ export function WorkloadScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="ek-stage stage-pad">
-        <p className="ek-note">Each record written is read {direct.reads / direct.writes} times a second, from old data whose keys are not already in memory. Direct encryption sends every record to the KMS. Envelope encryption sends only wrapped keys, and with one record per key the call counts match: what shrinks then is the bytes. The numbers per call are made up for the comparison.</p>
+        <p className="ek-note">Each record written is read {direct.reads / direct.writes} times a second, from old data whose keys are not already in memory. Direct encryption sends every record to the KMS. Envelope encryption sends only wrapped keys, and with one record per key the call counts nearly match (the cache saves a few): what shrinks then is the bytes. The earlier scenes use one data key for each record; sharing a data key across many records, as this scene does by default, is the setting that cuts the calls. The numbers per call are made up for the comparison.</p>
         <p className="ek-note">Random 96-bit IVs also limit how many messages one key should encrypt, which is one reason to use a key per object.</p>
       </div>
       <ProvenanceRow>

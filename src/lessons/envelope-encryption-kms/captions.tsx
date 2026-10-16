@@ -70,7 +70,11 @@ export function workloadCaption(direct: WorkloadResult, envelope: WorkloadResult
       {direct.refused
         ? <>Direct encryption cannot take records past {bytes(DIRECT_LIMIT_BYTES)} at all. </>
         : <>Direct encryption makes {integer(direct.kmsCalls)} KMS calls a second ({integer((direct.kmsCalls / QUOTA_PER_SECOND) * 100)}% of an illustrative quota of {integer(QUOTA_PER_SECOND)}). </>}
-      Envelope encryption with {plural(recordsPerKey, 'record')} per key makes {integer(envelope.kmsCalls)} and sends {bytes(envelope.kmsBytes)} instead of {bytes(direct.kmsBytes)}, at {CALL_MS} ms a call in sequence that is {integer(envelope.kmsMs)} ms of waiting instead of {integer(direct.kmsMs)}.
+      {direct.refused ? (
+        <>Envelope encryption with {plural(recordsPerKey, 'record')} per key makes {integer(envelope.kmsCalls)} calls and sends {bytes(envelope.kmsBytes)}, at {CALL_MS} ms a call in sequence that is {integer(envelope.kmsMs)} ms of waiting.</>
+      ) : (
+        <>Envelope encryption with {plural(recordsPerKey, 'record')} per key makes {integer(envelope.kmsCalls)} and sends {bytes(envelope.kmsBytes)} instead of {bytes(direct.kmsBytes)}, at {CALL_MS} ms a call in sequence that is {integer(envelope.kmsMs)} ms of waiting instead of {integer(direct.kmsMs)}.</>
+      )}
       {' '}One key encrypting {integer(direct.writes)} records a second would reach the bound of {power(Math.log2(RANDOM_IV_LIMIT))} messages in {decimal(days, 1)} days.
     </>
   );

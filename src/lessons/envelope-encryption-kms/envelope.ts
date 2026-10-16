@@ -72,6 +72,7 @@ export class Kms {
 
   /** A new KEK version; older versions stay so existing wrapped DEKs can still be unwrapped. */
   async rotate(tenant: string): Promise<number> {
+    if (this.destroyed.has(tenant)) throw new KmsError('kek-destroyed', `the key for ${tenant} was destroyed`);
     const kek = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['wrapKey', 'unwrapKey']);
     const version = (this.current.get(tenant) ?? 0) + 1;
     this.keys.get(tenant)!.set(version, kek);
@@ -111,8 +112,8 @@ export class Kms {
   }
 
   /** Unwrap a DEK with the KEK of `tenant` and version it was wrapped under. A wrong tenant or context fails authentication. */
-  async unwrap(tenant: string, context: string, w: Wrapped): Promise<CryptoKey> {
-    this.calls += 1;
+  async unwrap(tenant: string, context: string, w: Wrapped, count = true): Promise<CryptoKey> {
+    if (count) this.calls += 1;
     return this.unwrapInside(tenant, context, w);
   }
 
@@ -152,10 +153,16 @@ export interface Claim {
   context: string;
 }
 
-export async function decryptRecord(kms: Kms, env: Envelope, claim: Claim = { kekTenant: env.tenant, context: env.context }): Promise<DecryptResult> {
+/** `count: false` is for the page's own status probes, which are not calls the learner made, so the KMS call counter ignores them. */
+export async function decryptRecord(
+  kms: Kms,
+  env: Envelope,
+  claim: Claim = { kekTenant: env.tenant, context: env.context },
+  opts: { count?: boolean } = {},
+): Promise<DecryptResult> {
   let dek: CryptoKey;
   try {
-    dek = await kms.unwrap(claim.kekTenant, claim.context, env.wrapped);
+    dek = await kms.unwrap(claim.kekTenant, claim.context, env.wrapped, opts.count ?? true);
   } catch (e) {
     const name = e instanceof KmsError ? e.reason : (e as Error).name;
     return { ok: false, stage: 'kms', errorName: name, reason: e instanceof KmsError ? e.message : 'the KMS could not authenticate the wrapped key for that context' };

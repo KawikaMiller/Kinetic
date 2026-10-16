@@ -7,6 +7,7 @@ import { decryptRecord, type Envelope } from './envelope';
 import { DEFAULTS, FACTS } from './facts';
 import lesson from './index';
 import { OPENING } from './opening';
+import { readAll } from './ShredScene';
 import { TENANTS, addRecord, buildVault, checkText, destroyTenant, rotateTenant, MAX_TEXT, SEED_TEXT } from './vault';
 import { runWorkload } from './workload';
 
@@ -15,9 +16,44 @@ const sources = import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query:
 describe('scenes', () => {
   it('every scene component carries its own key and none is shared', () => {
     const els = sceneElements('envelope-encryption-kms');
-    expect(els).toHaveLength(5);
-    expect(els.every((e) => e.keyed)).toBe(true);
-    expect(sharedSceneComponents('envelope-encryption-kms')).toEqual([]);
+    // The three vault scenes sit inside one VaultScene that is keyed on the scene, so each scene mounts its own fresh vault.
+    const inner = ['RotationScene', 'ShredScene', 'HierarchyScene'];
+    expect(els.filter((e) => !inner.includes(e.component)).every((e) => e.keyed)).toBe(true);
+    expect(els.map((e) => e.component).sort()).toEqual(['HierarchyScene', 'RotationScene', 'ShredScene', 'VaultScene', 'Waiting', 'WorkloadScene']);
+    expect(sources['./Stage.tsx']).toContain('<VaultScene key={scene}');
+    expect(sources['./Stage.tsx'].split('buildVault()').length - 1).toBe(2);
+  });
+
+  it('a vault is rebuilt from the same seed on every scene mount: records added to one never appear in the next', async () => {
+    const first = await buildVault();
+    const changed = await addRecord(first, 'acme', 'made up');
+    expect(changed.records).toHaveLength(7);
+    const next = await buildVault();
+    expect(next.records.map((r) => r.id)).toEqual(['rec-1', 'rec-2', 'rec-3', 'rec-4', 'rec-5', 'rec-6']);
+    expect(next.records.filter((r) => r.tenant === 'acme')).toHaveLength(FACTS.recordsPerTenant);
+    expect(next.kms.version('acme')).toBe(1);
+  });
+
+  it('the status probes read real decryptions, count only copies that exist, and do not touch the KMS call counter', async () => {
+    const v = await addRecord(await buildVault(), 'acme', 'added after the backup');
+    const calls = v.kms.calls;
+    const before = await readAll(v);
+    expect(v.kms.calls).toBe(calls);
+    const acme = before.filter((r) => r.tenant === 'acme');
+    expect(acme.map((r) => [r.live, r.backup, r.dataSame])).toEqual([[true, true, true], [true, true, true], [true, null, null]]);
+    const shredded = destroyTenant(v, 'acme');
+    const after = (await readAll(shredded)).filter((r) => r.tenant === 'acme');
+    expect(after.map((r) => [r.live, r.backup, r.dataSame])).toEqual([[false, false, true], [false, false, true], [false, null, null]]);
+    expect(shredded.kms.calls).toBe(calls);
+  });
+
+  it('a destroyed tenant cannot be rotated, and text with a lone surrogate is refused', async () => {
+    const v = destroyTenant(await buildVault(), 'acme');
+    await expect(rotateTenant(v, 'acme')).rejects.toThrow('destroyed');
+    expect(v.kms.version('acme')).toBe(1);
+    expect(checkText('ab\uD800cd').ok).toBe(false);
+    expect(checkText('\uDC00').ok).toBe(false);
+    expect(checkText('pair \uD83D\uDE00 fine').ok).toBe(true);
   });
 
   it('each scene opens on fixed defaults', () => {
@@ -105,6 +141,7 @@ describe('captions across the control cross product', () => {
             const env = runWorkload('envelope', w);
             const text = expectCaption(workloadCaption(direct, env, recordsPerKey));
             expect(text).not.toMatch(/NaN|undefined|Infinity|\[object/);
+            if (direct.refused) expect(text).not.toContain('instead of');
             expect(text).toContain(direct.refused ? 'cannot take records past' : `${direct.kmsCalls.toLocaleString('en-US')} KMS calls a second`);
           }
         }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
+import { toHex } from '../../core/crypto';
 import { useAsyncValue } from '../../core/useAsyncValue';
 import { shredCaption } from './captions';
 import { decryptRecord, type Envelope } from './envelope';
@@ -9,11 +10,18 @@ import { OPENING } from './opening';
 import type { VaultSceneProps } from './props';
 import { TENANTS, destroyTenant, tenantLabel, type TenantId, type Vault } from './vault';
 
-type Reading = { id: string; tenant: string; live: boolean; backup: boolean };
+/** `backup` is null when the record was added after the backup was taken, so no copy exists; `dataSame` compares the live bytes with that copy. */
+type Reading = { id: string; tenant: string; live: boolean; backup: boolean | null; dataSame: boolean | null };
 
-async function readAll(v: Vault): Promise<Reading[]> {
-  const ok = async (e: Envelope | undefined) => (e ? (await decryptRecord(v.kms, e)).ok : false);
-  return Promise.all(v.records.map(async (r) => ({ id: r.id, tenant: r.tenant, live: await ok(r), backup: await ok(v.backup.find((b) => b.id === r.id)) })));
+export async function readAll(v: Vault): Promise<Reading[]> {
+  const ok = async (e: Envelope) => (await decryptRecord(v.kms, e, undefined, { count: false })).ok;
+  const sameBytes = (a: Envelope, b: Envelope) => toHex(a.iv) + toHex(a.ciphertext) === toHex(b.iv) + toHex(b.ciphertext);
+  return Promise.all(
+    v.records.map(async (r) => {
+      const copy = v.backup.find((b) => b.id === r.id);
+      return { id: r.id, tenant: r.tenant, live: await ok(r), backup: copy ? await ok(copy) : null, dataSame: copy ? sameBytes(r, copy) : null };
+    }),
+  );
 }
 
 /** Scene 3: destroy a tenant's KEK, and try a record under the wrong key or the wrong context. */
@@ -23,7 +31,9 @@ export function ShredScene({ picker, vault, run, reset, busy }: VaultSceneProps)
   const readings = useAsyncValue(() => readAll(vault), vault.rev, { keepPrevious: true });
 
   const mine = (readings ?? []).filter((r) => r.tenant === tenant);
-  const status = { live: mine.filter((r) => r.live).length, liveTotal: mine.length, backup: mine.filter((r) => r.backup).length, backupTotal: mine.length };
+  const status = { live: mine.filter((r) => r.live).length, liveTotal: mine.length, backup: mine.filter((r) => r.backup).length, backupTotal: mine.filter((r) => r.backup !== null).length };
+  const compared = mine.filter((r) => r.dataSame !== null);
+  const changed = compared.filter((r) => !r.dataSame).length;
   const destroyed = vault.kms.isDestroyed(tenant);
   const first = vault.records.find((r) => r.tenant === tenant);
   const other = TENANTS.find((t) => t.id !== tenant)!;
@@ -44,7 +54,7 @@ export function ShredScene({ picker, vault, run, reset, busy }: VaultSceneProps)
         <Stats>
           <Stat label="Readable now" value={`${status.live} of ${status.liveTotal}`} color={status.live ? 'var(--ok)' : 'var(--bad)'} sub={`${tenantLabel(tenant)}'s live records`} />
           <Stat label="Readable from backup" value={`${status.backup} of ${status.backupTotal}`} color={status.backup ? 'var(--ok)' : 'var(--bad)'} sub="the backup copy made when the vault was built" />
-          <Stat label="Ciphertext bytes" value="unchanged" sub="destroying a key changes no data" />
+          <Stat label="Ciphertext bytes" value={changed === 0 ? 'unchanged' : `${changed} changed`} sub={`${compared.length} compared with the backup copy`} />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--ok)', label: 'readable', shape: 'square' }, { color: 'var(--bad)', label: 'unreadable: key gone, or authentication failed', shape: 'square' }]} />}
@@ -52,7 +62,7 @@ export function ShredScene({ picker, vault, run, reset, busy }: VaultSceneProps)
         <>
           {picker}
           <Segmented label="Tenant" value={tenant} options={TENANTS.map((t) => ({ value: t.id, label: t.label }))} onChange={(t) => { setTenant(t); setNote(null); }} />
-          <Button softDisabled={busy || destroyed} onClick={() => { run(async (v) => destroyTenant(v, tenant)); setNote(`${tenantLabel(tenant)}'s KEK is destroyed.`); }}>Destroy {tenantLabel(tenant)}'s KEK</Button>
+          <Button softDisabled={busy || destroyed} onClick={() => { run(async (v) => destroyTenant(v, tenant)); setNote(null); }}>Destroy {tenantLabel(tenant)}'s KEK</Button>
           <Button softDisabled={busy} onClick={() => { reset(); setNote(null); }}>Rebuild the vault</Button>
         </>,
         <>
@@ -73,7 +83,7 @@ export function ShredScene({ picker, vault, run, reset, busy }: VaultSceneProps)
                   <td>{r.id}</td>
                   <td>{tenantLabel(r.tenant)}</td>
                   <td style={{ color: r.live ? 'var(--ok)' : 'var(--bad)' }}>{r.live ? 'readable' : 'unreadable'}</td>
-                  <td style={{ color: r.backup ? 'var(--ok)' : 'var(--bad)' }}>{r.backup ? 'readable' : 'unreadable'}</td>
+                  <td style={{ color: r.backup === null ? undefined : r.backup ? 'var(--ok)' : 'var(--bad)' }}>{r.backup === null ? 'no backup copy' : r.backup ? 'readable' : 'unreadable'}</td>
                 </tr>
               ))}
             </tbody>

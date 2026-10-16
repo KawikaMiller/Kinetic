@@ -27,7 +27,7 @@ const lesson: LessonModule = {
     `Rotating a key-encryption key re-wraps each ${F.wrapped}-byte wrapped key and leaves the data bytes identical: at ${F.records} records of 8 KiB that is ${F.rewrapText} against ${F.reencryptText} to re-encrypt the data.`,
     `Destroying a key does not delete the data, it makes the data unreadable: in this lesson the ciphertext stays, and ${F.unreadable} of ${F.recordsPerTenant} live records and backup copies can be read, which covers only data that was encrypted under that key all along.`,
     'A wrapped key is bound to its encryption context: wrapped for one tenant, it fails real AES-GCM authentication under another, so a mix-up cannot unwrap quietly.',
-    `A KMS call per record scales with traffic: at ${F.rate} records a second direct encryption makes ${F.directCalls} calls and envelope encryption ${F.envelopeCalls}, and with one record per key the counts match and the bytes are what shrink.`,
+    `A KMS call per record scales with traffic: at ${F.rate} records a second direct encryption makes ${F.directCalls} calls and envelope encryption ${F.envelopeCalls}, and with one record per key the counts nearly match (${F.perRecordKeyCalls} against ${F.directCalls}) and the bytes are what shrink.`,
   ],
   quiz: [
     {
@@ -67,12 +67,12 @@ const lesson: LessonModule = {
       q: 'Why encrypt records with data keys instead of sending every record to the master key?',
       options: [
         'Data keys encrypt faster than the master key can, which is why the master key is rarely used for data at all',
-        'The key service only ever sees small wrapped keys, so calls, bytes and payload limits all shrink',
+        'The key service sees only small wrapped keys, so bytes and payload limits shrink, and calls too when keys are shared',
         'A data key is a second copy of the master key, kept so that a lost master key can be rebuilt',
         'Records are too long for any single key, so each record must be split across several data keys',
       ],
       answer: 1,
-      why: `In this model direct encryption sends ${F.directBytes} a second to the key service and envelope encryption ${F.envelopeBytes}, and direct encryption refuses a record past ${F.limit}.`,
+      why: `In this model direct encryption sends ${F.directBytes} a second to the key service and envelope encryption ${F.envelopeBytes}, and direct encryption refuses a record past ${F.limit}. Calls fall from ${F.directCalls} to ${F.envelopeCalls} because ${F.perKey} records share each data key; with one record per key they stay near ${F.perRecordKeyCalls}.`,
     },
   ],
 };

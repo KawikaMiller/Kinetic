@@ -43,12 +43,16 @@ export async function buildVault(): Promise<Vault> {
   return { kms, records, backup: records.map(copy), nextId: n, rev: 0 };
 }
 
+/** Half of a surrogate pair: encoding would turn it into U+FFFD, so the record would not decrypt to what was typed. */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
 export type TextCheck = { ok: true; text: string } | { ok: false; error: string };
 
 /** Record text: not empty, at most MAX_TEXT characters (counted as the learner sees them). Anything else is data, never run. */
 export function checkText(raw: string): TextCheck {
   const text = raw.trim();
   if (text === '') return { ok: false, error: 'Type some text first.' };
+  if (LONE_SURROGATE.test(text)) return { ok: false, error: 'That text has a broken character; type it again.' };
   if ([...text].length > MAX_TEXT) return { ok: false, error: `At most ${MAX_TEXT} characters.` };
   return { ok: true, text };
 }
@@ -78,5 +82,5 @@ export function destroyTenant(v: Vault, tenant: TenantId): Vault {
 
 /** Can this envelope be read right now? Runs the real decryption. */
 export async function readable(v: Vault, e: Envelope): Promise<boolean> {
-  return (await decryptRecord(v.kms, e)).ok;
+  return (await decryptRecord(v.kms, e, undefined, { count: false })).ok;
 }

@@ -34,6 +34,13 @@ function Waiting({ picker, secure }: { picker: ReactNode; secure: boolean }) {
 
 export function Stage() {
   const [scene, picker] = useScenePicker<SceneId>({ label: 'Scene', options: SCENES, initial: OPENING.scene });
+  if (scene === 'workload') return <WorkloadScene key="workload" picker={picker} />;
+  // Each vault scene owns its own vault, keyed on the scene, so records added in one scene never show up in the next.
+  return <VaultScene key={scene} scene={scene} picker={picker} />;
+}
+
+/** A scene that works on the in-page vault. The vault is built fresh when the scene mounts, so every scene opens on the same seed records. */
+function VaultScene({ scene, picker }: { scene: Exclude<SceneId, 'workload'>; picker: ReactNode }) {
   const [vault, setVault] = useState<Vault | null>(null);
   const [busy, setBusy] = useState(false);
   const secure = hasSubtle();
@@ -56,6 +63,9 @@ export function Stage() {
       setBusy(true);
       change(vault)
         .then(setVault)
+        .catch(() => {
+          // A change the KMS refuses (a destroyed key) leaves the vault as it was; the scenes disable those buttons, this is the backstop.
+        })
         .finally(() => setBusy(false));
     },
     [busy, vault],
@@ -68,10 +78,9 @@ export function Stage() {
       .finally(() => setBusy(false));
   }, [busy]);
 
-  if (scene === 'workload') return <WorkloadScene key="workload" picker={picker} />;
   if (!vault) return <Waiting key="waiting" picker={picker} secure={secure} />;
   const props = { picker, vault, run, reset, busy };
-  if (scene === 'rotation') return <RotationScene key="rotation" {...props} />;
-  if (scene === 'shred') return <ShredScene key="shred" {...props} />;
-  return <HierarchyScene key="hierarchy" {...props} />;
+  if (scene === 'rotation') return <RotationScene {...props} />;
+  if (scene === 'shred') return <ShredScene {...props} />;
+  return <HierarchyScene {...props} />;
 }

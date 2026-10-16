@@ -32,6 +32,7 @@ export function RotationScene({ picker, vault, run, reset, busy }: VaultScenePro
   const [report, setReport] = useState<RotationReport | null>(null);
 
   const mine = vault.records.filter((r) => r.tenant === tenant);
+  const destroyed = vault.kms.isDestroyed(tenant);
   const records = 10 ** exponent;
   const recordBytes = kib * KIB;
   const rewrap = records * WRAPPED_BYTES;
@@ -71,8 +72,8 @@ export function RotationScene({ picker, vault, run, reset, busy }: VaultScenePro
         <>
           {picker}
           <Segmented label="Tenant" value={tenant} options={TENANTS.map((t) => ({ value: t.id, label: t.label }))} onChange={(t) => { setTenant(t); setReport(null); }} />
-          <Button softDisabled={busy || mine.length === 0} onClick={() => rotate('kek')}>Rotate {tenantLabel(tenant)}'s KEK</Button>
-          <Button softDisabled={busy || mine.length === 0} onClick={() => rotate('dek')}>Rotate one record's DEK</Button>
+          <Button softDisabled={busy || destroyed || mine.length === 0} onClick={() => rotate('kek')}>Rotate {tenantLabel(tenant)}'s KEK</Button>
+          <Button softDisabled={busy || destroyed || mine.length === 0} onClick={() => rotate('dek')}>Rotate one record's DEK</Button>
           <Button softDisabled={busy} onClick={() => { reset(); setReport(null); }}>Rebuild the vault</Button>
         </>,
         <>

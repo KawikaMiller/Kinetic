@@ -46,7 +46,9 @@ export function HierarchyScene({ picker, vault, run, reset, busy }: VaultScenePr
   const decrypted = last && selected && last.id === selected.id ? last : null;
   const shown = selected ? fieldsOf(selected) : null;
 
+  const destroyed = vault.kms.isDestroyed(tenant);
   const add = () => {
+    if (destroyed) return;
     const c = checkText(text);
     if (!c.ok) {
       setError(c.error);
@@ -95,9 +97,9 @@ export function HierarchyScene({ picker, vault, run, reset, busy }: VaultScenePr
         </>,
         <>
           <TextField label="New record" value={text} onChange={setText} onEnter={add} maxLength={MAX_TEXT} width={280} placeholder="made-up text, never a real secret" spellCheck={false} />
-          <Button softDisabled={busy} onClick={add}>Encrypt and store</Button>
+          <Button softDisabled={busy || destroyed} onClick={add}>Encrypt and store</Button>
           <Button softDisabled={busy || !selected} onClick={decrypt}>Decrypt the selected record</Button>
-          <Button softDisabled={busy} onClick={reset}>Rebuild the vault</Button>
+          <Button softDisabled={busy} onClick={() => { reset(); setLast(null); setPick(null); setError(null); }}>Rebuild the vault</Button>
         </>,
         <>
           <span className="ek-label">Records of {tenantLabel(tenant)}</span>
