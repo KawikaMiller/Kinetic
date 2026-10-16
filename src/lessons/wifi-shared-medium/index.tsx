@@ -61,7 +61,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'A radio cannot listen while it sends, so Wi-Fi avoids collisions with a random backoff counted down through idle slots and not busy ones, and infers a loss from a missing ACK.',
     'In this model each extra saturated station raises the share of attempts that collide; from about three stations upward the airtime that carries frames falls (two and three stations are within a point of each other), even though the channel is rarely idle for long.',
-    'A hidden node cannot sense the station it collides with; RTS/CTS lets the access point silence the other station, which costs fixed overhead and pays only when a hidden node exists and frames are long enough that a collision costs more than that overhead.',
+    'A hidden node cannot sense the station it collides with; RTS/CTS lets the access point silence the other station, which costs fixed overhead and pays off when a hidden node exists and frames are long enough that a collision costs more than that overhead.',
     'Stations get about equal turns, so one station at a low rate holds the air longer per frame and lowers everyone\'s throughput to match.',
   ],
   quiz: [
