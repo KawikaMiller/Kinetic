@@ -74,6 +74,7 @@ export function parseGrammar(text: string): GrammarParse {
     row: (c) => {
       const lhs = c.accept('word');
       if (!lhs) return c.fail('a rule starts with its nonterminal, like E -> id.');
+      if (lhs.text.includes('->')) return c.failAt(lhs, 'put spaces around ->, like E -> id.');
       if (!isNonterminal(lhs.text) || lhs.text.startsWith('$')) return c.failAt(lhs, `"${lhs.text}" must start with a capital letter to be a nonterminal.`);
       if (!c.accept('arrow')) return c.fail('expected "->" after the nonterminal.');
       const alts: string[][] = [];
@@ -97,6 +98,8 @@ export function parseGrammar(text: string): GrammarParse {
           continue;
         }
         if (t.text.startsWith('$')) return c.failAt(t, '$ is reserved for the end of input.');
+        if (t.text === 'ε') return c.failAt(t, 'write eps for the empty string.');
+        if (t.text.includes('->')) return c.failAt(t, 'put spaces around ->: a symbol cannot contain it.');
         current.push(t.text);
       }
       const failed = finish();

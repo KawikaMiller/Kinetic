@@ -1,12 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
-import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
+import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { precedenceCaption } from './captions';
 import { TokenField } from './GrammarEditor';
 import { OPENING, type ConflictPolicy } from './opening';
 import { ParseTree, TREE_MIN_WIDTH } from './ParseTree';
-import { CONFLICTS, choiceId, playGame, usualChoice, usualChoices, type Choices } from './precedence';
+import { CONFLICTS, TOKEN_PRESETS, choiceId, playGame, usualChoice, usualChoices, type Choices } from './precedence';
 import { useTokenInput } from './useGrammar';
 
 const OPTIONS: { value: ConflictPolicy; label: string }[] = [
@@ -65,13 +65,20 @@ export function PrecedenceScene({ picker }: { picker: ReactNode }) {
           ))}
         </>,
         <>
+          <ControlGroup label="Tokens that reach each choice">
+            {TOKEN_PRESETS.map((p) => (
+              <ChipButton key={p.choice} tone="info" on={tokenInput.text === p.text} onClick={() => tokenInput.load(p.text)}>
+                {p.text}
+              </ChipButton>
+            ))}
+          </ControlGroup>
           <TokenField input={tokenInput} />
         </>,
       ]}
     >
       <div className="pa-stage stage-pad">
         <p className="pa-detail">
-          The grammar <code>E -&gt; E + E | E * E | id</code> never says which operator binds tighter, so four table cells hold both a shift and a reduce. Your four choices are the precedence rule. The tree below is built by the real shift-reduce parser from them.
+          The grammar <code>E -&gt; E + E | E * E | id</code> never says which operator binds tighter, so four table cells hold both a shift and a reduce. Your four choices are the precedence rule, but a string only reaches the choices its operators meet: on <code>id + id * id</code> only the first one changes the value, and the token chips pick a string for each choice (the equal-operator ones change the tree's shape, not its value, because + and * are associative). The tree below is built by the real shift-reduce parser from them.
         </p>
         <WideRegion minWidth={TREE_MIN_WIDTH} label="Parse tree: scroll sideways to see all of it">
           <ParseTree nodes={game.run.nodes} roots={roots} hiddenFrom={game.run.nodes.length} marks={new Map()} tone="violet" ariaLabel="Parse tree built from your four choices" />

@@ -138,6 +138,9 @@ export function BottomUpScene({ picker }: { picker: ReactNode }) {
             }}
           />
         </WideRegion>
+        {conflicts.length ? (
+          <p className="pa-detail">Your choices are recorded here and recolour the cell; no parse is run from this table. The precedence scene runs them.</p>
+        ) : null}
         <ol className="pa-rules">
           {g.productions.map((p) => (
             <li key={p.id}>

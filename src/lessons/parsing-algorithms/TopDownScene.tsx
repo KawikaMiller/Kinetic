@@ -24,7 +24,8 @@ export function TopDownScene({ picker }: { picker: ReactNode }) {
   const tokenInput = useTokenInput(OPENING.topdown.tokens);
   const g = grammarInput.grammar;
   const model = useParsingModel(g);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [pick, setPick] = useState<{ cell: string; source: string } | null>(null);
+  const selected = pick && pick.source === g.source ? pick.cell : null;
   const [note, setNote] = useState<string | null>(null);
   const columns = useMemo(() => tableColumns(g), [g]);
   const conflicts = useMemo(() => conflictCells(model.ll), [model]);
@@ -36,7 +37,7 @@ export function TopDownScene({ picker }: { picker: ReactNode }) {
   const preset = (id: string) => {
     grammarInput.loadPreset(id);
     tokenInput.load(PRESETS.find((p) => p.id === id)!.sample);
-    setSelected(null);
+    setPick(null);
     setNote(null);
   };
   const removeRecursion = () => {
@@ -47,7 +48,7 @@ export function TopDownScene({ picker }: { picker: ReactNode }) {
       grammarInput.setText(r.text);
       setNote('Rewritten: each left-recursive rule became a rule that reads something first, plus a tail rule that may be empty.');
     }
-    setSelected(null);
+    setPick(null);
   };
 
   return (
@@ -127,7 +128,7 @@ export function TopDownScene({ picker }: { picker: ReactNode }) {
               return { text: ids.map((i) => i + 1).join(','), tone: ids.length > 1 ? 'bad' : 'info', fill: 'tint' };
             }}
             highlight={selected ? [{ r: g.nonterminals.indexOf(selected.split('\u0000')[0]), c: columns.indexOf(selected.split('\u0000')[1]), tone: 'hi' }] : []}
-            onCellClick={(r, c) => setSelected(cellKey(g.nonterminals[r], columns[c]))}
+            onCellClick={(r, c) => setPick({ cell: cellKey(g.nonterminals[r], columns[c]), source: g.source })}
             cellAriaLabel={(r, c) => {
               const ids = model.ll.get(cellKey(g.nonterminals[r], columns[c])) ?? [];
               return `${g.nonterminals[r]} on ${columns[c] === END ? 'end of input' : columns[c]}: ${ids.length ? `rule ${ids.map((i) => i + 1).join(' and ')}` : 'empty'}`;

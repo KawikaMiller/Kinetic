@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `A top-down parser predicts from one token and cannot handle left recursion: in this model the layered grammar has ${F.layeredConflictCells} conflicting cells and stops at the ${F.budget}-expansion budget, and rewriting it leaves ${F.rewrittenConflictCells}.`,
     `A bottom-up parser takes the left-recursive layered grammar as it is: the automaton has ${F.layeredStates} states and the SLR(1) table has ${F.layeredLrConflicts} conflicts, so the two methods accept different sets of grammars.`,
-    'Top-down grows the tree from the root and prints a leftmost derivation; bottom-up joins nodes from the leaves and prints the reverse of a rightmost derivation, so the two derivations of one tree list the same steps in opposite orders.',
+    'Top-down grows the tree from the root and prints a leftmost derivation; bottom-up joins nodes from the leaves and prints the reverse of a rightmost derivation, so the two derivations of one tree use the same rules, applied in different orders.',
     `Ambiguity appears as conflict cells: the ambiguous grammar has ${F.ambiguousLrConflicts}, and on 2 + 3 * 4 shifting after E + E gives ${F.oneClickValue} where reducing gives ${F.openingValue}.`,
   ],
   quiz: [

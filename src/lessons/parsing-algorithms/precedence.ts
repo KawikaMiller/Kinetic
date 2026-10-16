@@ -39,6 +39,18 @@ export const CONFLICTS: ConflictCell[] = lrConflicts(TABLE)
 /** What the usual precedence and left-associativity rules choose: shift when the next operator binds tighter, otherwise reduce. */
 export const usualChoice = (c: Pick<ConflictCell, 'op' | 'look'>): ConflictPolicy => (PRECEDENCE[c.look] > PRECEDENCE[c.op] ? 'shift' : 'reduce');
 
+/**
+ * Token strings that each put one of the four conflicts in play: on `id + id * id` only the first choice is reached with a
+ * different value; the other three need the shape of the input to match. `+` and `*` are associative, so the equal-operator
+ * choices change the tree's shape but never its value.
+ */
+export const TOKEN_PRESETS: { text: string; choice: string; changesValue: boolean }[] = [
+  { text: 'id + id * id', choice: '+*', changesValue: true },
+  { text: 'id * id + id', choice: '*+', changesValue: true },
+  { text: 'id + id + id', choice: '++', changesValue: false },
+  { text: 'id * id * id', choice: '**', changesValue: false },
+];
+
 export type Choices = Record<string, ConflictPolicy>;
 
 export const usualChoices = (): Choices => Object.fromEntries(CONFLICTS.map((c) => [choiceId(c), usualChoice(c)]));

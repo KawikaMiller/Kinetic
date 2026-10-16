@@ -300,6 +300,9 @@ describe('hostile grammars are refused with a position', () => {
     ['', /Write at least one rule/],
     ['E -> a $', /\$ is reserved/],
     ['E -> a -> b', /second "->"/],
+    ['E -> ε', /write eps for the empty string/],
+    ['E->id', /put spaces around ->/],
+    ['E -> a->b', /put spaces around ->/],
   ];
   it.each(cases)('%s', (text, message) => {
     const r = parseGrammar(text);

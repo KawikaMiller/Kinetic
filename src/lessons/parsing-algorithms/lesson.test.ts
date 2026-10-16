@@ -7,9 +7,9 @@ import { analyse, conflictCells, leftRecursive, predictiveTable, removeLeftRecur
 import lesson from './index';
 import { analyseLr, lrConflicts } from './lr';
 import { OPENING } from './opening';
-import { CONFLICTS, choiceId, playGame, usualChoices, type Choices } from './precedence';
+import { CONFLICTS, TOKEN_PRESETS, choiceId, playGame, usualChoices, type Choices } from './precedence';
 import { PRESETS, presetGrammar } from './presets';
-import { longestExpansionRun, runBottomUp, runTopDown } from './runs';
+import { derivationFromTree, longestExpansionRun, runBottomUp, runTopDown } from './runs';
 
 const words = (s: string) => s.split(' ').filter(Boolean);
 const clean = (node: Parameters<typeof expectCaption>[0]) => expect(expectCaption(node)).not.toMatch(/NaN|undefined|\[object|null/);
@@ -64,6 +64,38 @@ describe('try-this entries, each from the default state', () => {
     const opening: Choices = { '+*': 'reduce', '*+': 'reduce', '++': 'reduce', '**': 'reduce' };
     expect(playGame(words(OPENING.precedence.tokens), opening).value).toBe(20);
     expect(CONFLICTS.map(choiceId)).toEqual(['+*', '*+', '++', '**']);
+  });
+});
+
+describe('each precedence choice has a token string that moves it', () => {
+  const shape = (tokens: string, choices: Choices) => {
+    const game = playGame(words(tokens), choices);
+    return { value: game.value, steps: derivationFromTree(game.run.nodes, game.root!, 'rightmost').map((f) => f.join(' ')) };
+  };
+
+  it('the four presets cover the four choices once each', () => {
+    expect(TOKEN_PRESETS.map((p) => p.choice)).toEqual(CONFLICTS.map(choiceId));
+  });
+
+  it.each(TOKEN_PRESETS)('$text: flipping $choice changes the tree, and the value only when changesValue is set', (preset) => {
+    const usual = usualChoices();
+    const flipped: Choices = { ...usual, [preset.choice]: usual[preset.choice] === 'shift' ? 'reduce' : 'shift' };
+    const before = shape(preset.text, usual);
+    const after = shape(preset.text, flipped);
+    expect(after.steps).not.toEqual(before.steps);
+    expect(after.value !== before.value).toBe(preset.changesValue);
+    for (const other of CONFLICTS.map(choiceId).filter((id) => id !== preset.choice)) {
+      const alt: Choices = { ...usual, [other]: usual[other] === 'shift' ? 'reduce' : 'shift' };
+      expect(shape(preset.text, alt)).toEqual(before);
+    }
+  });
+
+  it('hand values with ids 2, 3, 4: 2 * 3 + 4 is 10 or 14, 2 + 3 + 4 is 9 either way', () => {
+    const usual = usualChoices();
+    expect(shape('id * id + id', usual).value).toBe(10);
+    expect(shape('id * id + id', { ...usual, '*+': 'shift' }).value).toBe(14);
+    expect(shape('id + id + id', usual).value).toBe(9);
+    expect(shape('id + id + id', { ...usual, '++': 'shift' }).value).toBe(9);
   });
 });
 

@@ -17,7 +17,7 @@ export function GrammarEditor({ input, analysis, onPreset }: { input: GrammarInp
           </ChipButton>
         ))}
       </ControlGroup>
-      <TextArea label={`Rules (up to ${MAX_RULES}, ${MAX_ALTERNATIVES} alternatives, ${MAX_SYMBOLS} symbols each; eps is empty)`} value={input.text} onChange={input.setText} rows={EDITOR_ROWS} />
+      <TextArea label={`Rules (up to ${MAX_RULES}, ${MAX_ALTERNATIVES} alternatives, ${MAX_SYMBOLS} symbols each; eps is empty; a line starting with # is a comment)`} value={input.text} onChange={input.setText} rows={EDITOR_ROWS} />
       <Hint tone="muted" block>
         <span role="status" className="pa-status">
           {input.error ? <span className="pa-error">{input.error} The last good grammar stays.</span> : null}
