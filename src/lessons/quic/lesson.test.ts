@@ -22,6 +22,15 @@ const slider = (r: { min: number; max: number; step: number }) => {
   return out;
 };
 
+describe('presets and sliders agree', () => {
+  it('every preset round trip lies on the Round trip slider (min + k * step), so the thumb shows what the model runs', () => {
+    for (const p of PRESETS) {
+      const k = (Math.min(p.rttMs, RTT_RANGE.max) - RTT_RANGE.min) / RTT_RANGE.step;
+      expect(Number.isInteger(k), `${p.id} ${p.rttMs} ms`).toBe(true);
+    }
+  });
+});
+
 describe('try-this entries, from each scene\'s opening state, as written', () => {
   it('try-this 1: at 100 ms and 20 ms the request leaves at 300, 200, 100, 0 ms and the first byte comes at 420, 320, 220, 120 ms; same city shrinks the gap to 45 ms', () => {
     const s = initialHandshake();
@@ -46,7 +55,7 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     const t = lesson.tryThis[1];
     expect(t).toContain('"Charges made" reads 2');
     expect(t).toContain('from 120 ms to 220 ms');
-    expect(t).toContain('1 charge and the first byte stays at 120 ms');
+    expect(t).toContain('1 charge and the first byte returns to 120 ms');
   });
 
   it('try-this 3: packet 6 lost delays 4 of 4 over TCP and 1 over QUIC; packet 2 lost delays 4 and 1 again', () => {

@@ -41,11 +41,11 @@ const lesson: LessonModule = {
     ],
     why: 'Latency is round trips. Knowing where the handshake spends them, and what 0-RTT trades away, lets you read a waterfall, choose which requests may be early data, and explain a migration that did not drop the call.',
     watch:
-      'Round trips: blue bars are the handshake flights before the request can leave, a yellow diamond is the first request, a green diamond is the first byte of the response, and the grey hatched bar is waiting for the answer. What 0-RTT costs: a red charge count or red table rows are work done more than once for a request that is not safe to repeat, green is the request handled once. Head-of-line blocking: amber, pink, blue and grey bars are streams A, B, C and D receiving data, an orange hatched bar is a stream waiting on an earlier hole, and a red marker is when a lost packet\'s resend arrives. Migration: blue bars are data flowing, a dashed red bar is a dead TCP connection, a blue-green bar is a new handshake, a green bar is QUIC\'s validated new path, and an amber hatched bar is QUIC waiting on a blocked UDP path. The chips say what is simulated, scripted, shown but not run, illustrative or from memory.',
+      'Round trips: cyan bars are the handshake flights before the request can leave, a yellow diamond is the first request, a green diamond is the first byte of the response, and the grey hatched bar is waiting for the answer. What 0-RTT costs: a red charge count or red table rows are work done more than once for a request that is not safe to repeat, green is the request handled once. Head-of-line blocking: amber, pink, light blue and grey bars are streams A, B, C and D receiving data, an orange hatched bar is a stream waiting on an earlier hole, and a red marker is when a lost packet\'s resend arrives. Migration: light blue bars are data flowing, a dashed red bar is a dead TCP connection, a cyan bar is a new handshake, a green bar is QUIC\'s validated new path, and an amber hatched bar is QUIC waiting on a blocked UDP path. The chips say what is simulated, scripted, shown but not run, illustrative or from memory.',
   },
   tryThis: [
     `In "Round trips" (${R} ms round trip, ${T} ms think time) press play: the request leaves after ${requestMs.map((m) => msText(m)).join(', ')} for TCP + TLS 1.2, TCP + TLS 1.3, QUIC and QUIC 0-RTT, and the first byte arrives at ${byte.map((m) => msText(m)).join(', ')}. Press "same city (RTT ${city} ms)": the gap between the first and last shrinks to ${msText(cityGap)}.`,
-    `In "What 0-RTT costs" (POST /charge, accept any early data) press "Replay the first flight" once: "Charges made" reads ${postAccept.applied}. Pick "early data only for safe requests": the charge happens once after a retry, and the first byte moves from ${msText(postAccept.firstByteMs)} to ${msText(postSafe.firstByteMs)}. Pick "an idempotency key": ${postKey.applied} charge and the first byte stays at ${msText(postKey.firstByteMs)}.`,
+    `In "What 0-RTT costs" (POST /charge, accept any early data) press "Replay the first flight" once: "Charges made" reads ${postAccept.applied}. Pick "early data only for safe requests": the charge happens once after a retry, and the first byte moves from ${msText(postAccept.firstByteMs)} to ${msText(postSafe.firstByteMs)}. Pick "an idempotency key": ${postKey.applied} charge and the first byte returns to ${msText(postKey.firstByteMs)}.`,
     `In "Head-of-line blocking" packet 6 (stream D only) is lost: TCP delays ${holDefault.tcpDelayed} of 4 streams and QUIC ${holDefault.quicDelayed}. Click packet 6 to put it back and packet 2 (stream C only) to lose it: TCP still delays ${holTwo.tcpDelayed} of 4 and QUIC ${holTwo.quicDelayed}.`,
     `In "Migration" (${R} ms round trip) the phone changes network: TCP stalls ${msText(tcp.stallMs)}, QUIC ${msText(quic.stallMs)}. Switch the new network to "blocks UDP": QUIC stalls ${msText(blocked.stallMs)}, because it waits and then pays the TCP handshake.`,
     `In "Round trips" press "satellite (RTT 600 ms; slider stops at 300)": the first byte arrives at ${msText(satBytes[0])} for TCP + TLS 1.2 and ${msText(satBytes[3])} for QUIC 0-RTT, ${msText(satBytes[0] - satBytes[3])} apart, all of it round trips.`,
@@ -80,7 +80,7 @@ const lesson: LessonModule = {
       why: 'Early data has no replay protection of its own: a copy of the first flight can be delivered again and the server may act on it twice. Allow safe requests early, or give the request an idempotency key.',
     },
     {
-      q: 'One packet that holds only stream 2\'s data is lost. What happens to streams 1, 3 and 4?',
+      q: 'One packet that holds only stream C\'s data is lost. What happens to streams A, B and D?',
       options: [
         'Over QUIC they carry on, while over TCP they wait for the resend',
         'They wait for the resend over both TCP and QUIC, since the connection is shared',
@@ -105,12 +105,12 @@ const lesson: LessonModule = {
       q: 'Which request can be sent as 0-RTT early data with no extra protection?',
       options: [
         'A payment that the server would reject if it were repeated',
-        'A request that deletes an order, because deleting twice does nothing more',
+        'A request that adds a line to an order, because a second copy is simply ignored',
         'A request to GET a public catalogue, which changes nothing when repeated',
         'A request that creates a new account from a form the user filled in',
       ],
       answer: 2,
-      why: 'Doing a GET of public data twice changes nothing, so a replay is harmless. A payment or an account creation is not safe to repeat without an idempotency key, and a delete may have other effects such as a later error.',
+      why: 'Doing a GET of public data twice changes nothing, so a replay is harmless. A payment, an account creation or a line added to an order is not safe to repeat without an idempotency key.',
     },
   ],
 };

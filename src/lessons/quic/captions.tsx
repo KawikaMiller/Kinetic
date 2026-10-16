@@ -64,11 +64,11 @@ export function earlyIntro(s: EarlyState, run: EarlyRun): ReactNode {
   const safe = isSafeToRepeat(s.request);
   return (
     <>
-      The client resumes with a stored ticket and puts <span className="hl">{req}</span> in its first flight, so the answer can start after {msText(run.firstByteMs)}.{' '}
+      The client resumes with a stored ticket and puts <span className="hl">{req}</span> in its first flight{run.retried ? '' : <>, so the answer can start after {msText(run.firstByteMs)}</>}.{' '}
       {s.replays === 0 ? 'Press "Replay the first flight" to deliver a copy of it again: early data has no replay protection of its own.' : `${plural(copies, 'copy', 'copies')} of the flight reached the server under "${POLICY_LABEL[s.policy]}".`}{' '}
       The server did the work <span className={run.applied > 1 && !safe ? 'hl bad' : 'hl'}>{run.applied} {run.applied === 1 ? 'time' : 'times'}</span> ({what})
       {run.applied > 1 && !safe ? ': a customer would be charged more than once' : run.applied > 1 ? ': harmless for a request that is safe to repeat' : ''}
-      {run.retried ? `. The refused request was sent again after the handshake, which is why the first byte comes at ${msText(run.firstByteMs)}` : ''}.
+      {run.retried ? `. The refused request was sent again after the handshake, so the first byte comes at ${msText(run.firstByteMs)}` : ''}.
     </>
   );
 }
@@ -88,8 +88,21 @@ export function holIntro(layout: Layout, s: HolState): ReactNode {
   }
   return (
     <>
-      Lost: {names.join(', ')}. Over TCP the bytes come out in order, so <span className="hl orange">{plural(sum.tcpDelayed, 'stream')} wait</span> for the resend of everything sent after the hole; over QUIC only{' '}
-      <span className="hl orange">{plural(sum.quicDelayed, 'stream')}</span> {sum.quicDelayed === 1 ? 'waits' : 'wait'}, the ones whose own data was in a lost packet. The resend costs one round trip ({msText(s.rttMs)}).
+      Lost: {names.join(', ')}.{' '}
+      {sum.tcpDelayed === 0 && sum.quicDelayed === 0 ? (
+        <>At this round trip ({msText(s.rttMs)}) the resend arrives no later than the next packet, so <span className="hl orange">0 streams wait</span> on either stack.</>
+      ) : (
+        <>
+          Over TCP the bytes come out in order, so <span className="hl orange">{plural(sum.tcpDelayed, 'stream')} {sum.tcpDelayed === 1 ? 'waits' : 'wait'}</span> for the resend of everything sent after the hole; over QUIC{' '}
+          {sum.quicDelayed === 0 ? (
+            <><span className="hl orange">0 streams wait</span>, since no stream's own data is held back.</>
+          ) : (
+            <>
+              only <span className="hl orange">{plural(sum.quicDelayed, 'stream')}</span> {sum.quicDelayed === 1 ? 'waits' : 'wait'}, {sum.quicDelayed === 1 ? 'the one' : 'the ones'} whose own data was in a lost packet.
+            </>
+          )} The resend costs one round trip ({msText(s.rttMs)}).
+        </>
+      )}
     </>
   );
 }

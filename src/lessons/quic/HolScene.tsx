@@ -43,7 +43,7 @@ export function HolScene({ picker }: { picker: ReactNode }) {
   const run = useMemo(() => holRun(DEFAULT_LAYOUT, st.lost, st.rttMs), [st]);
   const sum = summariseHol(run);
   const end = Math.max(...run.streams.map((s) => Math.max(s.tcp, s.quic, s.clean)), 1) * 1.05;
-  const markers = st.lost.map((k) => ({ at: run.arrivals[k], label: `packet ${k + 1} resent`, tone: 'bad' as const }));
+  const markers = st.lost.map((k, i) => ({ at: run.arrivals[k], label: i === 0 ? `packet ${k + 1} resent` : `p${k + 1}`, tone: 'bad' as const }));
 
   return (
     <StageFrame

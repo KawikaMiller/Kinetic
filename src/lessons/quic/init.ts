@@ -3,7 +3,7 @@ import { MAX_REPLAYS, type Policy, type RequestKind } from './earlyData';
 import type { Stack } from './flights';
 import { DEFAULT_LOST } from './hol';
 
-export const RTT_RANGE = { min: 10, max: 300, step: 10 } as const;
+export const RTT_RANGE = { min: 10, max: 300, step: 5 } as const;
 export const THINK_RANGE = { min: 0, max: 200, step: 10 } as const;
 export const DEFAULT_RTT = 100;
 export const DEFAULT_THINK = 20;
