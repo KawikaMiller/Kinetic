@@ -155,4 +155,4 @@ export function kmpSearch(text: string, pattern: string, bug: KmpBug = null, tab
 }
 
 /** Length-limited, printable-only text for the fields: control characters are dropped. */
-export const printable = (s: string): string => s.replace(/[\u0000-\u001f\u007f]/g, '');
+export const printable = (s: string): string => [...s].filter((c) => c.charCodeAt(0) >= 0x20 && c !== '\u007f').join('');
