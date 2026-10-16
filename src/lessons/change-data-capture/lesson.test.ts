@@ -152,7 +152,7 @@ describe('captions are computed from the model', () => {
     expect(text(pollingText({ source: {}, copy: {}, misses: p.late, lastSeen: 0 }))).toContain('row 1 never arrived');
     expect(text(pollingText({ source: {}, copy: {}, misses: p.withDelete, lastSeen: 0 }))).toContain('row 2 was deleted at the source and is still in the copy');
     expect(text(pollingText({ source: {}, copy: {}, misses: [], lastSeen: 0 }))).toContain('equals the source');
-    expect(text(snapshotText('now', 'x'))).toContain('Streaming from where the log is when the snapshot ends: x.');
+    expect(text(snapshotText('now', 'x'))).toContain('Streaming from where the log is when the snapshot ends: at the end x.');
     expect(text(snapshotText('snapshot', null))).toContain('ends equal to the source');
     const r = retentionFacts();
     expect(text(retentionText(r.late, true))).toContain('over the disk budget');

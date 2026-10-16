@@ -130,16 +130,31 @@ export const newbieNoLoss: Safety<SnapState> = (snap) => {
   return null;
 };
 
-export function evaluateSnapshot(s: SnapScenario): { ok: boolean; message: string | null; cluster: Cluster<Msg, SnapState> } {
+export interface SnapshotEvaluation {
+  ok: boolean;
+  /** The first failure: the loss when there is one, else the divergence at the end. */
+  message: string | null;
+  /** The first moment streaming passed a change the new consumer never received. Evaluation stops there, and a later write can cover the loss. */
+  loss: string | null;
+  /** How the new consumer differs from the source at SNAPSHOT_END_MS, from a run that does not stop at the loss; null when equal. */
+  end: string | null;
+  /** The cluster where evaluation stopped: at the loss, or at the end of the run. */
+  cluster: Cluster<Msg, SnapState>;
+}
+
+export function evaluateSnapshot(s: SnapScenario): SnapshotEvaluation {
   const cluster = buildSnapshotCluster(s);
   cluster.start();
-  let msg = newbieNoLoss(cluster.snapshot());
-  while (!msg && cluster.queued > 0 && cluster.nextTime() <= SNAPSHOT_END_MS) {
+  let loss = newbieNoLoss(cluster.snapshot());
+  while (!loss && cluster.queued > 0 && cluster.nextTime() <= SNAPSHOT_END_MS) {
     cluster.step();
-    msg = newbieNoLoss(cluster.snapshot());
+    loss = newbieNoLoss(cluster.snapshot());
   }
-  if (!msg) msg = snapshotDivergence(cluster.snapshot());
-  return { ok: msg === null, message: msg, cluster };
+  const atEnd = buildSnapshotCluster(s);
+  atEnd.run({ until: SNAPSHOT_END_MS });
+  const end = snapshotDivergence(atEnd.snapshot());
+  const message = loss ?? end;
+  return { ok: message === null, message, loss, end, cluster };
 }
 
 export function snapshotDivergence(snap: Parameters<Safety<SnapState>>[0]): string | null {

@@ -33,9 +33,11 @@ export function pollingText(r: PollResult): string {
   return `The poller's copy is wrong: ${r.misses.map((m) => (m.why === 'delete' ? `row ${m.key} was deleted at the source and is still in the copy, because a deleted row has no updated_at to find` : `row ${m.key} never arrived, because its transaction committed after the poller had moved past its timestamp`)).join('; ')}.`;
 }
 
-export function snapshotText(from: 'snapshot' | 'now', missing: string | null): string {
+/** `end` is the divergence at the end of the run, `loss` the first change streaming passed without delivering it (it can be covered by a later write). */
+export function snapshotText(from: 'snapshot' | 'now', end: string | null, loss: string | null = null): string {
   const how = from === 'snapshot' ? 'Streaming from the log position where the snapshot began' : 'Streaming from where the log is when the snapshot ends';
-  return missing === null ? `${how}: the new consumer ends equal to the source.` : `${how}: ${missing}.`;
+  const mid = loss === null ? '' : ` Mid-run, ${loss}${end === null ? ', and a later write to the same key covered it' : ''}.`;
+  return `${how}: ${end === null ? 'the new consumer ends equal to the source.' : `at the end ${end}.`}${mid}`;
 }
 
 export function retentionText(p: RetentionPoint, slot: boolean): string {

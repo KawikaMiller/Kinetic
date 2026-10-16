@@ -9,7 +9,7 @@ import { pollingText, snapshotText } from './captions';
 import {
   FAST_COMMIT, POLL_END_MS, POLL_EVERY_MS, SLOW_BEGIN, SLOW_COMMIT_DEFAULT, pollTimesEvery, pollingRun, twoInterleaved, type PollTx,
 } from './polling';
-import { SNAPSHOT_END_MS, SNAPSHOT_ROWS, buildSnapshotCluster, evaluateSnapshot, scanTimeOf, snapshotDivergence, type NewbieState, type SnapScenario, type StartFrom } from './snapshot';
+import { SNAPSHOT_END_MS, SNAPSHOT_ROWS, buildSnapshotCluster, evaluateSnapshot, scanTimeOf, type NewbieState, type SnapScenario, type StartFrom } from './snapshot';
 import { SNAPSHOT_OPEN, statusLetter, type CellLook } from './view';
 import type { CdcState } from './cdc';
 
@@ -34,8 +34,7 @@ export function SnapshotScene({ picker }: { picker: ReactNode }) {
   const scenario: SnapScenario = useMemo(() => ({ seed: 1, from, writes }), [from, writes]);
   const final = useMemo(() => evaluateSnapshot(scenario), [scenario]);
   const stateAtNow = useMemo(() => runTo(scenario, now), [scenario, now]);
-  const missing = snapshotDivergence(final.cluster.snapshot());
-  const caption = snapshotText(from, missing);
+  const caption = snapshotText(from, final.end, final.loss);
   useInterval(() => setNow((t) => Math.min(SNAPSHOT_END_MS, t + STEP)), PLAY_MS, playing && now < SNAPSHOT_END_MS);
 
   const txs: PollTx[] = useMemo(() => {
@@ -54,7 +53,7 @@ export function SnapshotScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Scan reads row" value={`${stateAtNow.scanned} of ${SNAPSHOT_ROWS}`} sub={`at ${now} ms`} />
           <Stat label="Writes during the scan" value={writes.length} sub={writes.length === 0 ? 'none yet' : 'each is a committed change'} />
-          <Stat label="New consumer at the end" value={missing === null ? 'equal' : 'differs'} color={missing === null ? 'var(--ok)' : 'var(--bad)'} sub={missing ?? 'every row matches the source'} />
+          <Stat label="New consumer at the end" value={final.end === null ? 'equal' : 'differs'} color={final.end === null ? 'var(--ok)' : 'var(--bad)'} sub={final.end ?? (final.loss === null ? 'every row matches the source' : 'a change was missed mid-run, then covered by a later write')} />
           <Stat label="Poller at the end" value={poll.misses.length === 0 ? 'equal' : `${poll.misses.length} wrong`} color={poll.misses.length === 0 ? 'var(--ok)' : 'var(--bad)'} sub={`updated_at polling every ${POLL_EVERY_MS} ms`} />
         </Stats>
       }

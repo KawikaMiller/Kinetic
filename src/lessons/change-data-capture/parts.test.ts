@@ -4,7 +4,7 @@ import {
 } from './polling';
 import { DISK_BUDGET_BYTES, MAX_TICKS, RECOVERY_RECORDS, RECORD_BYTES, SEGMENT_RECORDS, WRITES_PER_TICK, retentionAt, retentionSeries } from './retention';
 import {
-  SCAN_START_MS, SCAN_STEP_MS, SNAPSHOT_END_MS, SNAPSHOT_ROWS, SNAP_SEEDS, evaluateSnapshot, initialRows, lowestSnapshotFailure, scanTimeOf, seededWrites, snapshotDivergence,
+  SCAN_START_MS, SCAN_STEP_MS, buildSnapshotCluster, SNAPSHOT_END_MS, SNAPSHOT_ROWS, SNAP_SEEDS, evaluateSnapshot, initialRows, lowestSnapshotFailure, scanTimeOf, seededWrites, snapshotDivergence,
 } from './snapshot';
 
 describe('snapshot then stream, on the same harness', () => {
@@ -36,6 +36,30 @@ describe('snapshot then stream, on the same harness', () => {
     expect(snapshotDivergence(bad.cluster.snapshot())).toContain('key 7');
     expect(evaluateSnapshot({ seed: 1, from: 'snapshot', writes }).ok).toBe(true);
     expect(evaluateSnapshot({ seed: 1, from: 'now', writes: [] }).ok).toBe(true);
+  });
+
+  it('a mid-run loss is not the end state: two writes to row 7 (50 and 100 ms) leave a loss at the stop and equal rows at 500 ms', () => {
+    const writes = [{ at: 50, key: 7, row: { status: 'paid', amount: 101 } }, { at: 100, key: 7, row: { status: 'paid', amount: 102 } }];
+    const r = evaluateSnapshot({ seed: 1, from: 'now', writes });
+    expect(r.loss).toContain('key 7');
+    expect(r.end).toBeNull();
+    // independent read of the same run: both grids hold row 7 as S 102 at 500 ms
+    const full = buildSnapshotCluster({ seed: 1, from: 'now', writes });
+    full.run({ until: SNAPSHOT_END_MS });
+    const snap = full.snapshot();
+    const src = (snap.nodes.db.state as { rows: Record<number, { amount: number }> }).rows[7];
+    const mine = (snap.nodes.newbie.state as unknown as { rows: Record<number, { amount: number }> }).rows[7];
+    expect([src.amount, mine.amount]).toEqual([102, 102]);
+  });
+
+  it('writes to the same key are what let a loss heal: some seeded schedules have a loss mid-run and equal rows at the end', () => {
+    const healed = SNAP_SEEDS.filter((seed) => { const r = evaluateSnapshot({ seed, from: 'now', writes: seededWrites(seed) }); return r.loss !== null && r.end === null; });
+    expect(healed.length).toBeGreaterThan(0);
+    for (const seed of healed) {
+      const writes = seededWrites(seed);
+      const keys = writes.map((w) => w.key);
+      expect(keys.some((k, i) => keys.indexOf(k) !== i), `seed ${seed}`).toBe(true);
+    }
   });
 
   it('the scan reads one row every step and the snapshot holds the twelve rows', () => {

@@ -2,7 +2,7 @@
 import { SAFE_FLAGS, lowestFailing, type Fault, type Scenario, type TimedTx } from './cdc';
 import { SLOW_COMMIT_DEFAULT, pollingRun, pollTimesEvery, twoInterleaved, POLL_END_MS, POLL_EVERY_MS, type PollTx } from './polling';
 import { retentionAt, type RetentionConfig } from './retention';
-import { evaluateSnapshot, lowestSnapshotFailure, scanTimeOf, snapshotDivergence } from './snapshot';
+import { evaluateSnapshot, lowestSnapshotFailure, scanTimeOf } from './snapshot';
 import { REPLAY_OPEN, REPLAY_OPS, RETENTION_OPEN, TAIL_OPEN, connOf, consOf, dbOf, redeliveries, replay, syncedCount } from './view';
 
 const scenario = (ops: TimedTx[], faults: Fault[] = [], flags = SAFE_FLAGS): Scenario => ({ seed: TAIL_OPEN.seed, ops, faults, flags, loss: 0, duplicate: 0 });
@@ -53,7 +53,7 @@ export function snapshotFacts() {
   const writes = presetWrites();
   const good = evaluateSnapshot({ seed: 1, from: 'snapshot', writes });
   const bad = evaluateSnapshot({ seed: 1, from: 'now', writes });
-  return { goodMissing: snapshotDivergence(good.cluster.snapshot()), badMissing: snapshotDivergence(bad.cluster.snapshot()), pinNow: lowestSnapshotFailure('now'), pinGood: lowestSnapshotFailure('snapshot') };
+  return { goodMissing: good.end, badMissing: bad.end, pinNow: lowestSnapshotFailure('now'), pinGood: lowestSnapshotFailure('snapshot') };
 }
 
 export function pollFacts() {
