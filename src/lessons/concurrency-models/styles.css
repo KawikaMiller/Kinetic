@@ -1,0 +1,8 @@
+.cm-stage { gap: 12px; align-items: center; }
+.cm-timeline { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 6px; }
+.cm-compare { width: 100%; max-width: 760px; overflow-x: auto; }
+.cm-compare .data-table { width: 100%; }
+.cm-compare th, .cm-compare td { text-align: right; white-space: nowrap; }
+.cm-compare th:first-child { text-align: left; }
+.cm-now { color: var(--hi); font-weight: 700; }
+.cm-stage .hint b { color: var(--text); }
