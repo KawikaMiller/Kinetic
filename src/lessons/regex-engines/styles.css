@@ -1,0 +1,14 @@
+.re-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.re-graph .graph-node-label { font-size: 12px; }
+.re-strip { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.re-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.re-error { color: var(--bad); }
+.re-status { display: block; min-height: 1.2em; }
+.re-chip { display: inline-block; min-width: 28px; padding: 2px 8px; border: 1px solid var(--hi); border-radius: 99px; background: color-mix(in srgb, var(--hi) 14%, transparent); font: 600 12px var(--mono); text-align: center; }
+.re-chip.is-accept { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.re-subset { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.re-growth { max-width: 460px; }
+.re-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.re-two > * { flex: 1 1 280px; min-width: 0; }
+.re-plot { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow-x: auto; }
+.re-stage ~ .provenance-row { margin: 8px 16px 12px; }
