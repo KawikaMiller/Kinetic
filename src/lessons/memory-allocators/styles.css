@@ -1,0 +1,9 @@
+/* memory-allocators */
+.ma-stage { gap: 12px; min-width: 0; }
+.ma-failed { margin: 8px 0 0; font: 600 13px var(--font); color: var(--bad); }
+.ma-table .ma-row-on td { color: var(--hi); font-weight: 700; }
+.ma-plots { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+
+@media (max-width: 800px) {
+  .ma-plots { grid-template-columns: minmax(0, 1fr); }
+}
