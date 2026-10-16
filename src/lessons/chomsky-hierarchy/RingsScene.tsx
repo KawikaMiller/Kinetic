@@ -5,7 +5,7 @@ import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat
 import { classifyScore, emptyClassify, sortedCount } from '../../core/classify';
 import { ringsCaption } from './captions';
 import { evidenceFor } from './evidence';
-import { CARDS, KEY, RINGS, cardById, decide, type CardId, type RingId } from './languages';
+import { CARDS, KEY, RINGS, cardById, decide, inputError, type CardId, type RingId } from './languages';
 import { MAX_TEST_INPUT, OPENING } from './opening';
 import { RingsDiagram } from './RingsDiagram';
 
@@ -31,8 +31,9 @@ export function RingsScene({ picker }: { picker: ReactNode }) {
   const sorted = sortedCount(ITEMS, board.answers);
   const correct = classifyScore(ITEMS, KEY, board.answers);
   const card = cardById(cardId);
-  const decision = input.length <= MAX_TEST_INPUT ? decide(card, input) : null;
   const tooLong = input.length > MAX_TEST_INPUT;
+  const refusal = tooLong ? null : inputError(card, input);
+  const decision = tooLong || refusal ? null : decide(card, input);
 
   return (
     <StageFrame
@@ -58,7 +59,7 @@ export function RingsScene({ picker }: { picker: ReactNode }) {
     >
       <div className="ch-stage stage-pad">
         <RingsDiagram cards={CARDS} answers={board.answers} checked={board.checked} />
-        <ClassifyBoard items={ITEMS} categories={CATEGORIES} answerKey={KEY} value={board} onChange={setBoard} />
+        <ClassifyBoard items={ITEMS} categories={CATEGORIES} answerKey={KEY} value={board} onChange={setBoard} status="off" />
         {board.checked ? (
           <div className="ch-evidence" role="region" aria-label="What the runs show for the wrong placements">
             {CARDS.map((c) => {
@@ -90,6 +91,8 @@ export function RingsScene({ picker }: { picker: ReactNode }) {
             <span role="status" aria-live="polite">
               {tooLong ? (
                 <span className="ch-error">That is {input.length} characters; the limit is {MAX_TEST_INPUT}.</span>
+              ) : refusal ? (
+                <span className="ch-error">{refusal}</span>
               ) : decision ? (
                 <>
                   {decision.detail}: <b>{decision.verdict === 'accepted' ? 'accepted' : decision.verdict === 'rejected' ? 'rejected' : 'did not finish within its budget'}</b>.

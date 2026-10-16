@@ -194,7 +194,7 @@ export function MinimiseScene({ picker }: { picker: ReactNode }) {
             ))}
           </tbody>
         </table>
-        <p className="ch-note">Two prefixes behave alike when no suffix (tried up to a length shown by the test) separates them; a^i and a^j differ because b^i finishes only one of them. A DFA needs one state per behaviour, and the count keeps growing with every prefix added (the Myhill-Nerode view).</p>
+        <p className="ch-note">Two prefixes behave alike when no suffix (the table below tries suffixes up to one longer than the prefixes) separates them; a^i and a^j differ because b^i finishes only one of them. A DFA needs one state per behaviour, and the count keeps growing with every prefix added (the Myhill-Nerode view).</p>
       </div>
       <ProvenanceRow>
         <Provenance kind="toy">small machines built for this page; minimisation is partition refinement, checked against a brute-force count of behaviours</Provenance>

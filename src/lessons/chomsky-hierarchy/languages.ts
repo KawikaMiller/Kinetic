@@ -117,6 +117,17 @@ export interface Decision {
   detail: string;
 }
 
+/**
+ * Why `input` cannot be given to the card's machine, or null. Only the card's own alphabet is allowed: the Turing
+ * machines use marker symbols and the blank `_` on their tapes, and a string that contains one would be accepted for
+ * a reason that has nothing to do with the language.
+ */
+export function inputError(card: Card, input: string): string | null {
+  const at = [...input].findIndex((ch) => !card.alphabet.includes(ch));
+  if (at < 0) return null;
+  return `Position ${at + 1}: "${[...input][at]}" is not a symbol of this language; use ${card.alphabet.map((a) => `"${a}"`).join(', ')}.`;
+}
+
 /** Run the card's own machine on `input`. A machine that does not stop within its budget says so and nothing more. */
 export function decide(card: Card, input: string): Decision | null {
   const d = DFAS[card.id];

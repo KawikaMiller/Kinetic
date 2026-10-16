@@ -5,7 +5,7 @@ import { minimiseCaption, pumpingCaption, ringsCaption } from './captions';
 import { evidenceFor } from './evidence';
 import { FACTS } from './facts';
 import lesson from './index';
-import { CARDS, RINGS, cardById, decide } from './languages';
+import { CARDS, RINGS, cardById, decide, inputError } from './languages';
 import { EXAMPLES, distinguishing, refine } from './minimize';
 import { OPENING } from './opening';
 import { PUMP_LANGUAGES, MAX_P, MIN_P, chooseString, playGame, type PumpMode } from './pumping';
@@ -53,6 +53,29 @@ describe('try-this entries, each from the default state', () => {
     expect([FACTS.mod3States, FACTS.mod3Classes, FACTS.mod3Rounds]).toEqual([6, 3, 1]);
     expect(FACTS.mod3Equivalent).toBe(true);
     expect(FACTS.mod3Separator).toBe('a');
+  });
+});
+
+describe('quiz numbers come from the model', () => {
+  it('the counter, the context-free wins and the mod-3 classes match hand counts', () => {
+    expect([FACTS.counterK, FACTS.counterStates, FACTS.counterFails]).toEqual([3, 8, 4]);
+    expect(FACTS.csWonPs).toEqual([2, 3, 4, 5, 6]);
+    expect(FACTS.csCount).toBe(18 + 40 + 63);
+    expect(FACTS.mod3Groups).toEqual(['{s0,s3}', '{s1,s4}', '{s2,s5}']);
+  });
+});
+
+describe('the tester takes only the own alphabet of the machine', () => {
+  it('a marker symbol, the blank or a letter of another language is refused, whatever the card', () => {
+    for (const card of CARDS.filter((c) => c.machine !== null)) {
+      for (const bad of ['Y', 'YYZZ', 'AB', 'aa_aaa', 'abc_c', 'X', '_', ' ']) {
+        const alienToThisCard = [...bad].some((ch) => !card.alphabet.includes(ch));
+        if (alienToThisCard) expect(inputError(card, bad), `${card.id} ${bad}`).toMatch(/^Position \d+: /);
+      }
+      for (const s of card.samples) expect(inputError(card, s), `${card.id} ${s}`).toBeNull();
+    }
+    expect(inputError(cardById('anbncn'), 'abc_c')).toContain('Position 4');
+    expect(inputError(cardById('anbn'), '')).toBeNull();
   });
 });
 

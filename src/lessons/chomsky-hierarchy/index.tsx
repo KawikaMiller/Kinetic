@@ -50,7 +50,7 @@ const lesson: LessonModule = {
         'Decidable, since the three counts can be compared by a program that always stops',
       ],
       answer: 0,
-      why: `A PDA that matches a's with b's has an empty stack before the c's arrive, and the context-free pumping game on a^p b^p c^p is won for p = 2 to 4 (for p = 3, ${F.csCount} of ${F.csCount} decompositions leave). A Turing machine decides it, so it sits in the context-sensitive ring.`,
+      why: `A PDA that matches a's with b's has an empty stack before the c's arrive, and the context-free pumping game on a^p b^p c^p is won for every p from ${F.csWonPs[0]} to ${F.csWonPs[F.csWonPs.length - 1]} that the game offers (for p = ${F.csP}, ${F.csCount} of ${F.csCount} decompositions leave). A Turing machine decides it, so it sits in the context-sensitive ring.`,
     },
     {
       q: 'A teammate says a language that is context-free is one a regular expression can handle. What is accurate?',
@@ -61,10 +61,10 @@ const lesson: LessonModule = {
         'A regular expression can handle it with enough groups, because each group adds a state',
       ],
       answer: 0,
-      why: `A DFA that counts to 3 has 8 states and fails at n = 4, and a bigger counter just moves the failure out, while a PDA accepts each aⁿbⁿ. Regular is the inner ring.`,
+      why: `A DFA that counts to ${F.counterK} has ${F.counterStates} states and fails at n = ${F.counterFails}, and a bigger counter just moves the failure out, while a PDA accepts each aⁿbⁿ. Regular is the inner ring.`,
     },
     {
-      q: 'Partition refinement runs on the counter that tracks a\'s mod 3 with 6 states. What does it end with?',
+      q: `Partition refinement runs on the counter that tracks the letters a modulo ${F.mod3Classes}, with ${F.mod3States} states. What does it end with?`,
       options: [
         'Three classes, one per remainder, which are the states of the smallest DFA',
         'Six classes, because every state of the original machine is reachable',
@@ -72,7 +72,7 @@ const lesson: LessonModule = {
         'One class, because all six states read the same two symbols',
       ],
       answer: 0,
-      why: `The classes are {s0,s3}, {s1,s4} and {s2,s5}: ${F.mod3Classes} of the ${F.mod3States} states after round ${F.mod3Rounds}, and the first round just separates accepting from rejecting states.`,
+      why: `The classes are ${F.mod3Groups.join(', ')}: ${F.mod3Classes} of the ${F.mod3States} states after round ${F.mod3Rounds}, and the first round just separates accepting from rejecting states.`,
     },
   ],
 };
