@@ -36,7 +36,7 @@ export function LearnScene({ picker }: { picker: ReactNode }) {
   const [config, setConfig] = useState<LearnConfig>(open.config);
   const [image, setImage] = useState(open.image);
   const [curve, setCurve] = useState<CurveKind>('loss');
-  const [gallery, setGallery] = useState<GalleryEntry[] | null>(null);
+  const [gallery, setGallery] = useState<{ entries: GalleryEntry[]; epoch: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const imageRef = useRef(image);
 
@@ -87,21 +87,23 @@ export function LearnScene({ picker }: { picker: ReactNode }) {
   const trainGalleryNow = () => {
     setBusy(true);
     setTimeout(() => {
-      setGallery(trainGallery(config.kernels, config.seed));
+      setGallery({ entries: trainGallery(config.kernels, config.seed), epoch: snap?.epoch ?? 0 });
       setBusy(false);
     }, 0);
   };
 
   if (!snap) return null;
-  const learned = gallery ? learnedShare(gallery) : 0;
+  const learned = gallery ? learnedShare(gallery.entries) : 0;
+  // The gallery caption describes the seeds just trained; once the live run moves on, the live numbers need their own caption.
+  const galleryCurrent = gallery !== null && gallery.epoch === snap.epoch;
   const lossTop = Math.max(1, ...snap.lossHistory);
   const applyView = snap.p > 0.5 ? CLASS_NAME[1] : CLASS_NAME[0];
 
   return (
     <StageFrame
       height={560}
-      intro={gallery ? galleryCaption(gallery, learned) : learnCaption({ epoch: snap.epoch, loss: snap.loss, trainAccuracy: snap.trainAccuracy, heldOut: snap.heldOut, kernels: config.kernels })}
-      introKey={[snap.epoch, gallery, config]}
+      intro={gallery && galleryCurrent ? galleryCaption(gallery.entries, learned) : learnCaption({ epoch: snap.epoch, loss: snap.loss, trainAccuracy: snap.trainAccuracy, heldOut: snap.heldOut, kernels: config.kernels })}
+      introKey={[snap.epoch, galleryCurrent, config]}
       stats={
         <Stats>
           <Stat label="Epoch" value={snap.epoch} sub={`${TRAIN_COUNT} noisy training images`} />
@@ -163,15 +165,23 @@ export function LearnScene({ picker }: { picker: ReactNode }) {
           <figure className="cn-figure">
             <figcaption>Your image: click to paint</figcaption>
             <ImageGrid image={image} size="sm" ariaLabel="Your image: click a cell to paint it" onPaint={(y, x) => setImage((im) => paintCell(im, y, x))} />
+          </figure>
+          <figure className="cn-figure">
+            <figcaption>{config.kernels === 1 ? 'Your image through the learned kernel' : 'Your image through each learned kernel'} (ReLU map)</figcaption>
+            <div className="cn-kernels">
+              {snap.maps.map((m, i) => (
+                <MapGrid key={i} map={m} size="sm" digits={1} ariaLabel={`Your image through learned kernel ${i + 1}`} />
+              ))}
+            </div>
             <Hint tone="muted">
-              The net says <b>{pctText(snap.p > 0.5 ? snap.p : 1 - snap.p, 0)}</b> {applyView}. A toy: it only ever saw single bars.
+              The toy's score for this image: <b>{pctText(snap.p > 0.5 ? snap.p : 1 - snap.p, 0)}</b> {applyView}. It only ever saw single bars.
             </Hint>
           </figure>
         </div>
         <p className="cn-readout">{parameterSentence(config.kernels, IMAGE_SIZE)}</p>
         {gallery && (
           <div className="cn-gallery" aria-label="Kernels learned from different seeds">
-            {gallery.map((g) => (
+            {gallery.entries.map((g) => (
               <figure key={g.seed} className="cn-figure">
                 <figcaption>
                   seed {g.seed}: <b className={g.heldOut >= LEARNED_AT ? 'cn-good' : 'cn-poor'}>{pctText(g.heldOut, 0)}</b>

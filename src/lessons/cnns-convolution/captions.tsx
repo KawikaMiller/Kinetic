@@ -63,13 +63,16 @@ export function parameterSentence(kernels: number, side: number): ReactNode {
   );
 }
 
+/** "an" before a number read aloud with a vowel sound (8, 11, 18, 80 to 89), else "a". */
+const indefiniteArticle = (n: number) => (/^(8[0-9]?|11|18)$/.test(String(n)) ? 'an' : 'a');
+
 export function stackCaption(layers: readonly LayerKind[], rows: readonly LayerRow[], mode: 'field' | 'pixel', agree: boolean | null): ReactNode {
   if (rows.length === 0) return <>No layers yet: each output cell is one input pixel, so its receptive field is 1 x 1. Add a convolution or a pool.</>;
   const last = rows[rows.length - 1];
   const chain = layers.map((l) => LAYER_SPEC[l].label).join(', then ');
   return (
     <>
-      {chain}: the output is {last.side} x {last.side} and each output cell sees a <b>{last.field} x {last.field}</b> patch of the input (receptive field), a step of {last.jump} input{' '}
+      {chain}: the output is {last.side} x {last.side} and each output cell sees {indefiniteArticle(last.field)} <b>{last.field} x {last.field}</b> patch of the input (receptive field), a step of {last.jump} input{' '}
       {last.jump === 1 ? 'pixel' : 'pixels'} between neighbours.{' '}
       {mode === 'pixel' && agree !== null && (agree ? 'The cells that moved when one pixel changed are exactly the ones its receptive field predicts.' : 'The moved cells and the prediction disagree.')}
     </>

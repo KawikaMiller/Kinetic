@@ -144,6 +144,7 @@ describe('captions are computed from the model', () => {
       }
       const last = rows.at(-1)!;
       expect(text).toContain(`${last.field} x ${last.field} patch`);
+      expect(text, 'a/an before the field size').toContain(`${[8, 11, 18].includes(last.field) ? 'an' : 'a'} ${last.field} x`);
       expect(text).toContain(`the output is ${last.side} x ${last.side}`);
       expect(text.includes('moved')).toBe(false);
     }
