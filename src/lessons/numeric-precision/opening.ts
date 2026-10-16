@@ -9,7 +9,7 @@ export type SceneId = 'summation' | 'cancellation' | 'cents';
 export const SUM_PRESETS: { id: string; label: string; generator: GeneratorId; n: number; precision: Precision }[] = [
   { id: 'ten-dimes', label: 'Ten dimes', generator: 'dimes', n: 10, precision: 'f64' },
   { id: 'million-steps', label: 'A million small steps (200,000 in float32)', generator: 'dimes', n: 200_000, precision: 'f32' },
-  { id: 'blind-spot', label: "Kahan's blind spot", generator: 'blind-spot', n: 4, precision: 'f64' },
+  { id: 'blind-spot', label: "Kahan's blind spot, float64", generator: 'blind-spot', n: 4, precision: 'f64' },
 ];
 
 export const OPENING = {

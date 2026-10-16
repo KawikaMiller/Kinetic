@@ -63,7 +63,7 @@ export function SumScene({ picker }: { picker: ReactNode }) {
       introKey={`${generator}-${count}-${seed}-${precision}`}
       stats={
         <Stats>
-          <Stat label="Exact sum" value={ev ? show(ev.exact) : 'overflow to infinity'} color="var(--info)" sub={`${count.toLocaleString('en-US')} values, summed as BigInt`} />
+          <Stat label="Exact sum" value={ev ? ev.exactText : 'overflow to infinity'} color="var(--info)" sub={`${count.toLocaleString('en-US')} values, summed as BigInt`} />
           {ev && <Stat label="Naive error" value={showError(ev.runs[0].error)} color="var(--bad)" sub={ev.runs[0].ulps === null ? 'exact sum is 0' : `${ev.runs[0].ulps.toFixed(2)} ulps of the exact sum`} />}
           {ev && <Stat label="Kahan error" value={showError(ev.runs[3].error)} color="var(--ok)" sub={ev.runs[3].ulps === null ? 'exact sum is 0' : `${ev.runs[3].ulps.toFixed(2)} ulps of the exact sum`} />}
         </Stats>
@@ -75,7 +75,8 @@ export function SumScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--sky)', label: 'sorted ascending', shape: 'line' },
             { color: 'var(--violet)', label: 'pairwise', shape: 'line' },
             { color: 'var(--ok)', label: 'Kahan and Neumaier (Neumaier dashed)', shape: 'line' },
-            { color: 'var(--info)', label: 'the exact sum', shape: 'square' },
+            { color: 'var(--info)', label: 'the exact sum (the stat and the table row, not drawn on the plot)', shape: 'square' },
+            { color: 'var(--dim)', label: 'a hollow dot on the floor line: an error of exactly 0', shape: 'dot' },
           ]}
         />
       }
@@ -116,7 +117,7 @@ export function SumScene({ picker }: { picker: ReactNode }) {
                     <td>{r.ulps === null ? 'n/a' : r.ulps.toFixed(2)}</td>
                   </tr>
                 ))}
-                <tr className="np-exact"><td style={{ color: 'var(--info)' }}>Exact (BigInt)</td><td>{show(ev.exact)}</td><td>0</td><td>0</td></tr>
+                <tr className="np-exact"><td style={{ color: 'var(--info)' }}>Exact (BigInt)</td><td>{ev.exactText}</td><td>0</td><td>0</td></tr>
               </tbody>
             </table>
           </WideRegion>

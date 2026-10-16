@@ -30,7 +30,7 @@ const view = (mode: 'half-up' | 'half-even' | 'truncate', granularity: 'line' | 
 export const FACTS = {
   dimesNaive: show(dimes.by('naive').result),
   dimesKahan: show(dimes.by('kahan').result),
-  dimesExact: show(dimes.ev.exact),
+  dimesExact: dimes.ev.exactText,
   f32N: million.n,
   f32Naive: show(f32.by('naive').result),
   f32NaiveError: showError(f32.by('naive').error),
@@ -42,7 +42,7 @@ export const FACTS = {
   blindNaive: show(blind.by('naive').result),
   blindKahan: show(blind.by('kahan').result),
   blindNeumaier: show(blind.by('neumaier').result),
-  blindExact: show(blind.ev.exact),
+  blindExact: blind.ev.exactText,
   k: C.k,
   sqrtNaiveDigits: sqrt16.naive.correct,
   sqrtStableDigits: sqrt16.stable.correct,

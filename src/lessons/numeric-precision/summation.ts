@@ -186,6 +186,30 @@ export function bigToNumber(n: bigint, exp: number): number {
   return negative ? -v : v;
 }
 
+/** Significant digits the exact sum is printed to: more than a double holds, so a rounding error in a result is visible. */
+const EXACT_DIGITS = 20;
+
+/**
+ * n * 2^exp written as an exact decimal, cut to EXACT_DIGITS significant digits (a trailing ellipsis marks a cut).
+ * A dyadic rational has a terminating decimal expansion, so no rounding happens before the cut.
+ */
+export function exactDecimal(n: bigint, exp: number): string {
+  if (n === 0n) return '0';
+  const sign = n < 0n ? '-' : '';
+  const a = n < 0n ? -n : n;
+  const k = Math.max(0, -exp);
+  const all = (exp >= 0 ? a << BigInt(exp) : a * 5n ** BigInt(k)).toString();
+  const cut = all.slice(EXACT_DIGITS).replace(/0+$/, '') !== '';
+  const digits = all.slice(0, EXACT_DIGITS).replace(/0+$/, '') || '0';
+  const e10 = all.length - k - 1;
+  const tail = cut ? '…' : '';
+  if (e10 >= 21 || e10 < -6) return `${sign}${digits[0]}${digits.length > 1 ? `.${digits.slice(1)}` : ''}${tail}e${e10 >= 0 ? '+' : '-'}${Math.abs(e10)}`;
+  if (e10 < 0) return `${sign}0.${'0'.repeat(-e10 - 1)}${digits}${tail}`;
+  const intPart = digits.padEnd(e10 + 1, '0').slice(0, e10 + 1);
+  const frac = digits.slice(e10 + 1);
+  return `${sign}${intPart}${frac ? `.${frac}` : ''}${tail}`;
+}
+
 /** The spacing of numbers at the magnitude of v, in the working precision. */
 export function ulp(v: number, p: Precision): number {
   const a = Math.abs(v);
@@ -214,6 +238,8 @@ export interface MethodRun {
 
 export interface Evaluation {
   exact: number;
+  /** The exact sum as a decimal string, so it never reads as a rounded double. */
+  exactText: string;
   runs: MethodRun[];
   /** Error by method at each checkpoint of the running count, for the plot. */
   curves: Record<MethodId, { n: number; error: number }[]>;
@@ -251,5 +277,5 @@ export function evaluate(values: readonly number[], p: Precision): Evaluation {
   const curves = Object.fromEntries(
     METHODS.map(({ id }) => [id, points.map((k, i) => ({ n: k, error: errorOf(results[i][id], prefixSums.get(k) as bigint, emin) }))]),
   ) as Evaluation['curves'];
-  return { exact, runs, curves };
+  return { exact, exactText: exactDecimal(total, emin), runs, curves };
 }

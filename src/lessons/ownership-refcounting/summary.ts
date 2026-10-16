@@ -28,6 +28,6 @@ export function summaryColumns(): Column[] {
   return [
     { id: 'counting', title: 'Reference counting', when: `At the instant a count reaches zero. On the cycle script that freed: ${names(freedList(counting.fates))}.`, cost: `${counted} count updates, and leaked: ${names(strays)} (a cycle keeps itself alive).` },
     { id: 'tracing', title: 'Tracing collection', when: `Only when a collect runs. On the same script that freed: ${names(freedList(tracing.fates))}, cycle included.`, cost: 'Nothing is freed between collects, and the collector has to find the reachable objects.' },
-    { id: 'ownership', title: 'Ownership (compile-time rules)', when: `At a known line: ${freed.why} in the accepted program "${accepted.label}" (${verdict.accepted ? 'accepted' : 'rejected'}).`, cost: 'No count and no collector, but some correct programs are rejected.' },
+    { id: 'ownership', title: 'Ownership (compile-time rules)', when: `At a known point: ${freed.why} in the accepted program "${accepted.label}" (${verdict.accepted ? 'accepted' : 'rejected'}).`, cost: 'No count and no collector, but some correct programs are rejected.' },
   ];
 }

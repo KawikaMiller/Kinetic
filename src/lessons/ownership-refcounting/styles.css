@@ -2,8 +2,6 @@
 .rc-svg { display: block; width: 100%; height: auto; max-width: 720px; }
 .rc-badge circle { fill: var(--hi); }
 .rc-badge text { fill: var(--on-hi); font: 700 12px var(--mono); }
-.heap-obj.rc-ok { --c: var(--ok); --on-c: var(--on-ok); }
-.heap-obj.rc-ok.is-freed .heap-obj-tag { fill: var(--ok); }
 .rc-log { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 18px; font: 12px var(--mono); color: var(--muted); }
 .rc-empty { list-style: none; }
 .rc-table { width: 100%; }
@@ -19,3 +17,4 @@
 .rc-col-title { margin: 0 0 6px; font-size: 14px; }
 .rc-col-text { margin: 0 0 8px; font-size: 13px; line-height: 1.6; }
 .rc-stage ~ .provenance-row { margin: 8px 16px 12px; }
+.rc-chip-full { opacity: 0.45; cursor: not-allowed; }

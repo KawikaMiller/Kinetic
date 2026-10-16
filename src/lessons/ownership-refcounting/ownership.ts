@@ -213,7 +213,10 @@ export const PRESETS: Preset[] = [
 /** Where x's memory goes back: the line of an explicit drop, or the end of the program when it is never dropped or moved. */
 export function freedAt(program: readonly Line[]): { line: number | null; why: string } {
   const drop = program.findIndex((l) => l.op === 'drop');
-  if (drop >= 0) return { line: drop, why: `at the drop on line ${drop + 1}` };
+  if (drop >= 0) {
+    const later = program.slice(drop + 1).some((l) => l.op === 'new');
+    return { line: drop, why: `at the drop on line ${drop + 1}${later ? ' (a later x goes back at the end of the program)' : ''}` };
+  }
   if (program.some((l) => l.op === 'move')) return { line: null, why: 'when its new owner y goes out of scope, at the end of the program' };
   return { line: null, why: 'when x goes out of scope, at the end of the program' };
 }

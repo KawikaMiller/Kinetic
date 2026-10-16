@@ -33,7 +33,7 @@ export function CartScene({ picker }: { picker: ReactNode }) {
           <Stat label="Subtotal" value={`$${dollars(subtotal(cart))}`} sub={`${items} items, made-up prices`} />
           <Stat label="Tax" value={`$${dollars(view.tax)}`} color="var(--info)" sub={representation === 'float' ? 'float64 dollars' : 'integer cents'} />
           <Stat label="Exact tax" value={`$${dollars(view.exact)}`} color="var(--info)" sub="BigInt rational arithmetic" />
-          <Stat label="Drift" value={`${drift(view.drift)} cents`} color={view.drift === 0 ? 'var(--ok)' : 'var(--bad)'} sub="against the exact answer" />
+          <Stat label="Drift" value={`${drift(view.drift)} ${Math.abs(view.drift) === 1 ? 'cent' : 'cents'}`} color={view.drift === 0 ? 'var(--ok)' : 'var(--bad)'} sub="against the exact answer" />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--ok)', label: 'no drift', shape: 'square' }, { color: 'var(--bad)', label: 'drifted from the exact answer', shape: 'square' }, { color: 'var(--amber)', label: 'half up', shape: 'square' }, { color: 'var(--pink)', label: 'half to even', shape: 'square' }, { color: 'var(--sky)', label: 'truncate', shape: 'square' }]} />}

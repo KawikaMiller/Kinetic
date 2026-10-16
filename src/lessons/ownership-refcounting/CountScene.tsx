@@ -65,6 +65,7 @@ export function CountScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--ok)', label: 'freed', shape: 'square' },
             { color: 'var(--bad)', label: 'leaked: unreachable, never freed', shape: 'square' },
             { color: 'var(--violet)', label: 'a weak reference', shape: 'line' },
+            { color: 'var(--info)', label: 'unreachable, waiting for a collect (tracing view)', shape: 'square' },
           ]}
         />
       }

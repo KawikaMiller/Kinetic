@@ -26,8 +26,8 @@ export function sumCaption(ev: Evaluation, precision: Precision, n: number): Rea
   const tie = best.length === METHODS.length;
   return (
     <>
-      Summing {n.toLocaleString('en-US')} {precision === 'f32' ? 'float32' : 'float64'} values, the exact sum is {show(ev.exact)}. The naive fold returns {show(naive.result)}, off by {showError(naive.error)}; Kahan returns {show(kahan.result)}, off by {showError(kahan.error)}.{' '}
-      {tie ? 'Every method lands on the same error here.' : `The smallest error here is ${best.map((b) => LABEL[b]).join(' and ')}.`}
+      Summing {n.toLocaleString('en-US')} {precision === 'f32' ? 'float32' : 'float64'} values, the exact sum is {ev.exactText}. The naive fold returns {show(naive.result)}, off by {showError(naive.error)}; Kahan returns {show(kahan.result)}, off by {showError(kahan.error)}.{' '}
+      {tie ? 'Every method lands on the same error here.' : `The smallest error here is ${new Intl.ListFormat('en', { style: 'long', type: 'conjunction' }).format(best.map((b) => LABEL[b]))}.`}
     </>
   );
 }
@@ -46,7 +46,7 @@ const MODE_LABEL = Object.fromEntries(MODES.map((m) => [m.id, m.label.toLowerCas
 /** The caption under the cents scene. */
 export function cartCaption(view: TaxView, mode: Mode, granularity: Granularity): ReactNode {
   const where = granularity === 'line' ? 'rounding each line' : 'rounding the total';
-  const drift = view.drift === 0 ? 'exactly the exact answer' : `${Math.abs(view.drift)} cent${Math.abs(view.drift) === 1 ? '' : 's'} ${view.drift > 0 ? 'over' : 'under'} it`;
+  const drift = view.drift === 0 ? 'the exact answer' : `${Math.abs(view.drift)} cent${Math.abs(view.drift) === 1 ? '' : 's'} ${view.drift > 0 ? 'over' : 'under'} it`;
   return (
     <>
       Tax with {MODE_LABEL[mode]}, {where}: {view.representation === 'float' ? 'float64 dollars' : 'integer cents'} give ${dollars(view.tax)}, the exact rational answer is ${dollars(view.exact)}, so the result is {drift}.

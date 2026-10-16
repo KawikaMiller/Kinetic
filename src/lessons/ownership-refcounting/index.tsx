@@ -9,7 +9,7 @@ const lesson: LessonModule = {
     what: 'Every object carries a count of the references to it. When the count reaches zero the object is freed, and its own references are released in turn, so a chain frees in order. Two objects that point at each other never reach zero even when nothing else can reach them: they leak, where a tracing collector would find them unreachable and free them at its next collect. A weak reference does not count, which breaks the cycle. Ownership takes a different road: a value has one owner, any number of shared borrows or one mutable borrow may be live, a borrow lives until its last use, and the compiler rejects a program that breaks those rules, so the free is at a known line.',
     analogy: 'Counting is a library where each borrower signs the sheet and the book is pulled when the sheet is empty: two borrowers who only ever borrow from each other keep every book on the shelf forever. Ownership is a rule that only one person holds the book at a time.',
     useCases: [
-      'Understanding why Python, Swift and C++ shared pointers can leak a cycle, and what weak references fix',
+      'Understanding why C++ shared_ptr and Swift ARC can leak a cycle (CPython adds a cycle collector on top of its counts, from memory), and what weak references fix',
       'Reading Rust borrow-checker errors as rules about who may use a value and when',
       'Choosing between counting, tracing and ownership for a language runtime or a long-lived service',
       'Judging what thread-safe counts cost when many threads share an object',

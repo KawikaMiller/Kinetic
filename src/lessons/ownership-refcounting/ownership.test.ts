@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkByIntervals, checkSequential, formatLine, MAX_LINES, PALETTE, PRESETS, type Line, type RangePolicy, type Rule } from './ownership';
+import { checkByIntervals, checkSequential, formatLine, freedAt, MAX_LINES, PALETTE, PRESETS, type Line, type RangePolicy, type Rule } from './ownership';
 
 const preset = (id: string) => PRESETS.find((p) => p.id === id)!.program;
 const summary = (program: Line[], policy?: RangePolicy) => checkSequential(program, policy).problems.map((p) => [p.line, p.rule]);
@@ -16,7 +16,7 @@ function* programs(length: number, firstIsNew: boolean): Generator<Line[]> {
   }
 }
 
-describe('the two checkers agree', () => {
+describe('the two checkers agree (they share the last-use rule, so this checks the live-set bookkeeping, not the rule itself)', () => {
   it('on every program of up to 5 lines from the palette (exhaustive: pairwise live intervals against a sequential state machine)', () => {
     let count = 0;
     for (let length = 1; length <= 5; length++) {
@@ -91,5 +91,19 @@ describe('broken checkers', () => {
   it('a checker whose borrow ends at its creation accepts the rejected "shared, then &mut" preset', () => {
     expect(checkSequential(preset('shared-then-mut')).accepted).toBe(false);
     expect(checkSequential(preset('shared-then-mut'), 'creation-only').accepted).toBe(true);
+  });
+});
+
+describe('where memory goes back', () => {
+  const NEW: Line = { op: 'new' };
+  const DROP: Line = { op: 'drop' };
+  it('new, drop, new: the first x goes back at the drop and the text says the later x waits for the end', () => {
+    const f = freedAt([NEW, DROP, NEW]);
+    expect(f.line).toBe(1);
+    expect(f.why).toContain('on line 2');
+    expect(f.why).toContain('a later x goes back at the end');
+  });
+  it('new, drop: no later x, so no extra clause', () => {
+    expect(freedAt([NEW, DROP]).why).toBe('at the drop on line 2');
   });
 });

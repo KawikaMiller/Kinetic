@@ -65,7 +65,7 @@ export function HeapDiagram({ heap, mode, fates }: { heap: Heap; mode: Mode; fat
               tag={tag}
               tagPlacement={stranded && mode === 'tracing' ? 'above' : 'corner'}
               tagSize={TAG_PX}
-              className={freed ? 'rc-ok' : undefined}
+              freedTone={freed ? 'ok' : undefined}
               fields={[{ name: 'next', value: nextIdx === null ? 'null' : undefined, isRef: nextIdx !== null, port: arrow?.port }]}
             />
             {arrow && nextIdx !== null && <RefArrow from={arrow.from} to={arrow.to} bend={bendFor(nextIdx)} color={o.weak ? 'var(--violet)' : undefined} dashed={o.weak} thin={o.weak} />}

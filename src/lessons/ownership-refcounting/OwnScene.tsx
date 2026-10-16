@@ -37,7 +37,7 @@ export function OwnScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Verdict" value={program.length === 0 ? 'empty' : verdict.accepted ? 'accepted' : 'rejected'} color={program.length === 0 ? undefined : verdict.accepted ? 'var(--ok)' : 'var(--bad)'} sub={verdict.accepted ? 'every rule holds' : `${verdict.problems.length} problem${verdict.problems.length === 1 ? '' : 's'} found`} />
-          <Stat label="Memory goes back" value={program.length === 0 ? 'nothing yet' : freed.line === null ? 'at scope end' : `line ${freed.line + 1}`} color="var(--ok)" sub="no count, no collector" />
+          <Stat label="Memory goes back" value={program.length === 0 ? 'nothing yet' : !verdict.accepted ? 'n/a: rejected' : freed.line === null ? 'at scope end' : `line ${freed.line + 1}`} color="var(--ok)" sub="no count, no collector" />
           <Stat label="Lines" value={`${program.length} of ${MAX_LINES}`} sub="click a line to remove it" />
         </Stats>
       }
@@ -62,7 +62,7 @@ export function OwnScene({ picker }: { picker: ReactNode }) {
         <>
           <span className="rc-label">Add a line</span>
           {PALETTE.map((l, i) => (
-            <ChipButton key={i} tone="violet" disabled={full} onClick={() => add(l)}>{formatLine(l)}</ChipButton>
+            <ChipButton key={i} tone="violet" className={full ? 'rc-chip-full' : ''} onClick={() => add(l)}>{formatLine(l)}</ChipButton>
           ))}
           <Hint><span role="status">{full ? `The program is full at ${MAX_LINES} lines.` : 'Pick lines in order; each press adds one at the end.'}</span></Hint>
         </>,

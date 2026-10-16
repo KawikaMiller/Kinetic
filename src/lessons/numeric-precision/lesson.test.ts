@@ -53,7 +53,9 @@ describe('try-this entries, each from the default state', () => {
     expect(FACTS.floatDriftHalfUp).not.toBe(0);
     expect(FACTS.centsDriftHalfUp).toBe(0);
     expect([FACTS.addFact, FACTS.toFixedFact, FACTS.roundFact]).toEqual(['0.30000000000000004', '1.00', 100]);
-    expect(lesson.tryThis[3]).toContain(`drift ${FACTS.floatDriftHalfUp} cents`);
+    expect(FACTS.floatDriftHalfUp).toBe(-1);
+    expect(lesson.tryThis[3]).toContain("drift -1 cent from");
+    expect(lesson.tryThis[3]).not.toContain("-1 cents");
   });
 });
 

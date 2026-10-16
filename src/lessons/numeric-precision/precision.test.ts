@@ -3,7 +3,7 @@ import { mulberry32 } from '../../core/random';
 import { candidates, digitsCorrect, matchingPrefix, isqrt, oracleNumber, oracleScaled, read, tenToThe } from './cancellation';
 import { centsTax, exactTax, floatTax, makeCart, MODES, roundDiv, taxView, type Granularity } from './cart';
 import {
-  bigToNumber, BLIND_SPOT, commonExponent, decompose, evaluate, exactSum, generate, kahanSum, MAX_N, naiveSum, neumaierSum, pairwiseSum, scaled, sortedSum, ulp,
+  bigToNumber, BLIND_SPOT, commonExponent, decompose, evaluate, exactDecimal, exactSum, generate, kahanSum, MAX_N, naiveSum, neumaierSum, pairwiseSum, scaled, sortedSum, ulp,
 } from './summation';
 
 /** The exact sum of rationals k/2^20 by plain integer arithmetic: an oracle for the oracle. */
@@ -222,5 +222,32 @@ describe('the digit strip colours by agreement of the digit text', () => {
     const r = read('sqrt-difference', 8);
     expect(r.naive.matching).toBe(0);
     expect(r.naive.correct).toBeGreaterThan(5);
+  });
+});
+
+describe('the exact sum is printed as a decimal, not a rounded double', () => {
+  it('exactDecimal matches hand-worked dyadic values', () => {
+    expect(exactDecimal(3n, -1)).toBe('1.5');
+    expect(exactDecimal(1n, -3)).toBe('0.125');
+    expect(exactDecimal(5n, 2)).toBe('20');
+    expect(exactDecimal(-3n, -1)).toBe('-1.5');
+    expect(exactDecimal(0n, -5)).toBe('0');
+    expect(exactDecimal(9007199254741003n, 0)).toBe('9007199254741003');
+    // 2^-30 = 9.31322574615478515625e-10 exactly (21 digits): cut to 20 and marked
+    expect(exactDecimal(1n, -30)).toBe('9.3132257461547851562…e-10');
+  });
+
+  it('ten copies of the double 0.1 sum to 1.000000000000000055511151231257827..., which is not 1 (hand-worked: 0.1 = 3602879701896397 / 2^55)', () => {
+    const ev = evaluate(Array(10).fill(0.1), 'f64');
+    expect(ev.exactText).toBe('1.0000000000000000555…');
+    expect(ev.exact).toBe(1);
+    // and Kahan's error is non-zero while its result prints as the nearest double: the two no longer read as equal
+    expect(ev.runs.find((r) => r.id === 'kahan')!.error).toBeGreaterThan(0);
+  });
+
+  it('one large value then 1s: the exact sum is the integer 9007199254741003 even though the nearest double is 9007199254741004', () => {
+    const ev = evaluate([2 ** 53, ...Array(11).fill(1)], 'f64');
+    expect(ev.exactText).toBe('9007199254741003');
+    expect(ev.exact).toBe(9007199254741004);
   });
 });
