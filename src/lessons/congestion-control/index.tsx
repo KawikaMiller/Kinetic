@@ -44,10 +44,10 @@ const lesson: LessonModule = {
     `In "Random loss" (${pct(DEFAULT_LOSS, 2)} loss) Reno's mean window is ${seg(lossSim)} segments, the Mathis relation says ${seg(mathisWindow(DEFAULT_LOSS))}, and the link is ${pct(Math.min(1, lossSim / bdpOf(lossLink)))} used, against ${pct(Math.min(1, lossFree / bdpOf(lossLink)))} with no random loss.`,
   ],
   keyIdeas: [
-    'The sender infers the network\'s limit from loss and delay: congestion control is the sender\'s job, and flow control, the receiver\'s window, only protects the receiver\'s own buffer.',
+    'The sender infers the network\'s limit from loss and delay: congestion control is the sender\'s job, and flow control, the receiver\'s window, protects the receiver\'s own buffer.',
     'In this model Reno doubles its window each round trip in slow start, adds one a round afterwards, and halves it on a loss; the window peaks where the pipe plus the buffer overflows, so a deep buffer shows up as round-trip delay.',
     'A lost segment is not always congestion: in this model a chance loss halves Reno\'s window just as an overflow does, so the mean window falls roughly as one over the square root of the loss rate.',
-    'Additive increase with multiplicative decrease narrows the gap between two competing flows at every decrease, while additive decrease keeps it and multiplicative increase can widen it.',
+    'Additive increase with multiplicative decrease narrows the gap between two competing flows at each decrease, while additive decrease keeps it and multiplicative increase can widen it.',
   ],
   quiz: [
     {
@@ -103,7 +103,7 @@ const lesson: LessonModule = {
         'A longer round trip, because it keeps growing until the buffer is full',
       ],
       answer: 3,
-      why: 'Reno grows until the buffer overflows, so a deep buffer fills before a loss tells it to stop, and every packet waits behind the queue. The extra delay is bufferbloat; BBR paces to the measured rate and keeps the queue short.',
+      why: 'Reno grows until the buffer overflows, so a deep buffer fills before a loss tells it to stop, and each packet waits behind the queue. The extra delay is bufferbloat; BBR paces to the measured rate and keeps the queue short.',
     },
   ],
 };

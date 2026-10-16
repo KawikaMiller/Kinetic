@@ -59,7 +59,7 @@ const lesson: LessonModule = {
     `In "One slow station" (3 stations, S3 at 6 Mbit/s) each station gets ${slowShares.stations[0].mbps.toFixed(1)} Mbit/s. Press S3 to make it fast: each gets ${allFast.stations[0].mbps.toFixed(1)} Mbit/s.`,
   ],
   keyIdeas: [
-    'A radio cannot listen while it sends, so Wi-Fi avoids collisions with a random backoff counted down only through idle slots, and infers a loss from a missing ACK.',
+    'A radio cannot listen while it sends, so Wi-Fi avoids collisions with a random backoff counted down through idle slots and not busy ones, and infers a loss from a missing ACK.',
     'In this model every extra saturated station raises the share of attempts that collide, so the airtime that carries frames falls even though the channel is never idle for long.',
     'A hidden node cannot sense the station it collides with; RTS/CTS lets the access point silence the other station, which costs fixed overhead and pays when frames are long or hidden nodes exist.',
     'Stations get about equal turns, so one station at a low rate holds the air longer per frame and lowers everyone\'s throughput to match.',
@@ -74,7 +74,7 @@ const lesson: LessonModule = {
         'Collisions on radio links are corrected automatically by the receiver without any resend',
       ],
       answer: 1,
-      why: 'A transmitting radio cannot hear the channel, and a hidden station cannot hear the sender at all. So the sender infers a loss from a missing ACK and backs off, rather than detecting the collision as it happens.',
+      why: 'A transmitting radio cannot hear the channel, and a hidden station cannot hear the sender. So the sender infers a loss from a missing ACK and backs off, rather than detecting the collision as it happens.',
     },
     {
       q: 'Twelve stations all want to send all the time, instead of two. What happens to the total throughput of the channel?',
@@ -96,7 +96,7 @@ const lesson: LessonModule = {
         'The access point sends an ACK for both frames, so neither station retransmits',
       ],
       answer: 0,
-      why: 'Carrier sensing only works between stations that hear each other. Hidden stations see an idle medium and send, and their frames overlap at the access point, where both are lost.',
+      why: 'Carrier sensing works between stations that hear each other. Hidden stations see an idle medium and send, and their frames overlap at the access point, where both are lost.',
     },
     {
       q: 'What does the CTS from the access point do once RTS/CTS is on?',
@@ -107,7 +107,7 @@ const lesson: LessonModule = {
         'It doubles the contention window of every station that happens to hear it',
       ],
       answer: 2,
-      why: 'Every station within range of the access point hears the CTS and sets its NAV, a timer during which it does not send. A station hidden from the sender is silenced this way, so the data frame does not collide.',
+      why: 'Each station within range of the access point hears the CTS and sets its NAV, a timer during which it does not send. A station hidden from the sender is silenced this way, so the data frame does not collide.',
     },
     {
       q: 'One station on a 3-station network drops to 6 Mbit/s while the others stay at 54. What happens to the fast stations?',
@@ -118,7 +118,7 @@ const lesson: LessonModule = {
         'They also drop to 6 Mbit/s, because the access point sets one single rate for all of its stations',
       ],
       answer: 0,
-      why: 'Stations get about equal numbers of turns, and a frame at 6 Mbit/s occupies the air much longer than one at 54. Every station sends one frame per round, so the round gets long and everyone\'s throughput falls with it.',
+      why: 'Stations get about equal numbers of turns, and a frame at 6 Mbit/s occupies the air much longer than one at 54. Each station sends one frame per round, so the round gets long and everyone\'s throughput falls with it.',
     },
   ],
 };

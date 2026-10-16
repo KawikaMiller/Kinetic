@@ -52,8 +52,8 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'In this model QUIC is faster because it combines the transport and cryptographic handshakes, so the request leaves after one round trip instead of two or three; it is not faster because UDP is.',
-    '0-RTT puts the request in the first flight and saves a round trip, but early data can be delivered again, so it is safe only for requests that do no harm twice or that carry an idempotency key.',
-    'Over TCP a lost packet holds back every stream behind it, because bytes are delivered in order; QUIC delivers each stream in order on its own, so only the streams whose data was lost wait.',
+    '0-RTT puts the request in the first flight and saves a round trip, but early data can be delivered again, so it suits requests that do no harm twice or that carry an idempotency key.',
+    'Over TCP a lost packet holds back each stream behind it, because bytes are delivered in order; QUIC delivers each stream in order on its own, so just the streams whose data was lost wait.',
     'A TCP connection is named by its addresses and ports and a QUIC connection by a connection ID, so QUIC can continue after a network change once the new path is validated, which takes one round trip.',
   ],
   quiz: [
@@ -77,7 +77,7 @@ const lesson: LessonModule = {
         'The response may arrive before the request, confusing the client',
       ],
       answer: 2,
-      why: 'Early data has no replay protection of its own: a copy of the first flight can be delivered again and the server may act on it twice. Allow only safe requests early, or give the request an idempotency key.',
+      why: 'Early data has no replay protection of its own: a copy of the first flight can be delivered again and the server may act on it twice. Allow safe requests early, or give the request an idempotency key.',
     },
     {
       q: 'One packet that holds only stream 2\'s data is lost. What happens to streams 1, 3 and 4?',

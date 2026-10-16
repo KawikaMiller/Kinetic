@@ -57,7 +57,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'In this model BGP applies local preference, which encodes business relationships, before AS_PATH length, and nothing in the decision measures latency: the chosen path is policy first, not fastest.',
     'A router discards a received path that already contains its own AS number: that is how announcements avoid loops without any router seeing the whole map.',
-    'Export rules decide who hears a route: customer routes go to everyone and peer and provider routes go to customers. A route leak is an AS breaking that rule, and the traffic it pulls lands on links that were never sized for it.',
+    'Export rules decide who hears a route: customer routes go to everyone and peer and provider routes go to customers. A route leak is an AS breaking that rule, and the traffic it pulls lands on links that were not sized for it.',
     'A more specific prefix wins the longest-prefix match wherever it is heard, whatever the AS_PATH length, so announcing a /25 inside someone else\'s /24 attracts the traffic. Origin validation drops announcements the signed records do not allow; a forged origin passes the origin check but not the length limit.',
   ],
   quiz: [
@@ -70,7 +70,7 @@ const lesson: LessonModule = {
         'The customer route, because it was announced first in the round',
       ],
       answer: 1,
-      why: 'Local preference is set by business relationship and comes first: routes from customers earn money, so they beat peer routes. Path length only breaks a tie in local preference, and there is no latency in the decision.',
+      why: 'Local preference is set by business relationship and comes first: routes from customers earn money, so they beat peer routes. Path length decides when local preference is tied, and there is no latency in the decision.',
     },
     {
       q: 'Why does BGP choose a path that is slower than another one that was available?',
@@ -114,7 +114,7 @@ const lesson: LessonModule = {
         'It accepts the route, because the prefix has no covering record',
       ],
       answer: 2,
-      why: 'Origin validation compares the prefix, its length and the last AS of the path with the signed records. A forged last AS looks like the real origin, so only signing the path itself, as BGPsec and ASPA do, would catch it.',
+      why: 'Origin validation compares the prefix, its length and the last AS of the path with the signed records. A forged last AS looks like the real origin, so signing the path itself, as BGPsec and ASPA do, would catch it.',
     },
   ],
 };
