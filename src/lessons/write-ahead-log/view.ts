@@ -14,6 +14,9 @@ export const MACHINE_TXS = [1, 2, 3] as const;
 export const WAL_OFF_SEED = 1;
 /** The lowest seed of 0..199 whose run breaks when commits are acknowledged before the fsync. */
 export const ACK_EARLY_SEED = 3;
+/** The step a second crash can fall after: recovery has `recoverySteps` steps, so the slider stops there and a stale value is pulled back to it. */
+export const clampSecondCrash = (step: number, recoverySteps: number): number => Math.max(0, Math.min(step, recoverySteps));
+
 export const CRASH_OPEN = { seed: WAL_OFF_SEED, enforceWal: true, ackBeforeFsync: false, secondCrash: false, secondCrashStep: 3 } as const;
 
 /** Scene 3 opens on an SSD-speed fsync, 8 committers and no checkpoints. */
@@ -41,14 +44,14 @@ export function presetMachine(id: string): Machine {
 export const setPolicy = withPolicy;
 
 /** The log as rows: durable ones coloured by what their transaction became, the volatile tail dim, a violet rule between. */
-export function logRows(m: Machine, torn: Rec | null = null): LogRow[] {
+export function logRows(m: Machine, torn: Rec | null = null, crashed = false): LogRow[] {
   const committed = new Set(m.log.slice(0, m.durable).filter((r) => r.kind === 'commit').map((r) => r.tx));
   const rows: LogRow[] = [];
   const durableRows = m.log.slice(0, m.durable);
   const tail = m.log.slice(m.durable);
   for (const r of durableRows) rows.push({ id: `r${r.lsn}`, source: `LSN ${r.lsn}`, tone: recTone(m, r, committed), text: recText(r) });
   rows.push({ id: 'boundary', tone: 'violet', text: m.durable === 0 ? 'durable boundary: nothing is on disk yet' : `durable boundary: LSN 1 to ${m.durable} survive a crash` });
-  for (const r of tail) rows.push({ id: `r${r.lsn}`, source: `LSN ${r.lsn}`, tone: torn?.lsn === r.lsn ? 'orange' : 'dim', text: `${recText(r)}${torn?.lsn === r.lsn ? ' (torn: ignored)' : ' (in memory)'}` });
+  for (const r of tail) rows.push({ id: `r${r.lsn}`, source: `LSN ${r.lsn}`, tone: torn?.lsn === r.lsn ? 'orange' : 'dim', text: `${recText(r)}${torn?.lsn === r.lsn ? ' (torn: ignored)' : crashed ? ' (lost with memory)' : ' (in memory)'}` });
   return rows;
 }
 
@@ -80,7 +83,7 @@ export function imageRows(image: Image): LogRow[] {
     tone: r.kind === 'checkpoint' ? ('info' as const) : committed.has(r.tx) ? ('ok' as const) : losers.has(r.tx) ? ('bad' as const) : ('dim' as const),
     text: recText(r),
   }));
-  if (image.torn) rows.push({ id: `torn${image.torn.lsn}`, source: `LSN ${image.torn.lsn}`, tone: 'orange', text: 'a record cut off mid-write: its checksum fails, so it is ignored' });
+  if (image.torn) rows.push({ id: `torn${image.torn.lsn}`, source: `LSN ${image.torn.lsn}`, tone: 'orange', text: 'a record cut off mid-write, ignored (the toy marks this record as torn; it models no checksum that would detect it)' });
   return rows;
 }
 

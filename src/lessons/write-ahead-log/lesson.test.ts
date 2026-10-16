@@ -6,7 +6,7 @@ import { checkpointCaption, crashReport, eventText, groupCaption, machineCaption
 import { CHECKPOINT_INTERVALS, DEFAULT_INTERVAL_INDEX, checkpointRun, groupCommit } from './cost';
 import { checkpointFacts, costFacts, lowestFailing, presetCrash, seedFacts } from './facts';
 import lesson from './index';
-import { ACK_EARLY_SEED, COST_OPEN, CRASH_OPEN, MACHINE_OPEN, PRESETS, WAL_OFF_SEED, logRows, presetMachine } from './view';
+import { ACK_EARLY_SEED, COST_OPEN, CRASH_OPEN, MACHINE_OPEN, PRESETS, WAL_OFF_SEED, clampSecondCrash, logRows, presetMachine } from './view';
 import { applyOp, fresh, recoveryTimeline, runSeed } from './wal';
 
 const text = (n: Parameters<typeof expectCaption>[0]) => expectCaption(n);
@@ -67,7 +67,14 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
   it('try-this 5: about 1,998 against 7,988 commits a second, and the worst-case scan falls from 24 to 8 records for 16 page writes', () => {
     const c = costFacts();
     expect([c.plain, c.grouped]).toEqual([1998, 7988]);
+    // closed forms, independent of the simulation: 1 / latency without grouping, committers / (2 x latency) with it (alternating batches of c - 1 and 1)
+    const latencyS = COST_OPEN.latencyMs / 1000;
+    expect(c.plain).toBeGreaterThan(0.99 * (1 / latencyS));
+    expect(c.plain).toBeLessThanOrEqual(1 / latencyS);
+    expect(Math.abs(c.grouped - COST_OPEN.committers / (2 * latencyS))).toBeLessThan(0.01 * (COST_OPEN.committers / (2 * latencyS)));
     const p = checkpointFacts();
+    // with no checkpoint the worst scan is every update record: 12 transactions x 2 writes
+    expect(p.none.worstScanned).toBe(12 * 2);
     expect([p.none.worstScanned, p.every12.worstScanned, p.every12.pageWrites]).toEqual([24, 8, 16]);
     expect(lesson.tryThis[4]).toContain('about 1,998 commits a second');
     expect(lesson.tryThis[4]).toContain('about 7,988');
@@ -155,5 +162,31 @@ describe('lesson content', () => {
   });
   it('the correct quiz option is the strictly longest in at most half of the questions', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
+});
+
+describe('minor wording and controls', () => {
+  it('after a crash the lost volatile records read "lost with memory", not "in memory"', () => {
+    const m = applyOp(fresh(), { kind: 'write', tx: 1, page: 3, value: 7 });
+    expect(text(logRows(m).map((r) => r.text).join(' '))).toContain('(in memory)');
+    const after = logRows(m, null, true).map((r) => r.text).join(' ');
+    expect(after).toContain('(lost with memory)');
+    expect(after).not.toContain('(in memory)');
+  });
+
+  it('the second-crash slider is clamped to the recovery length', () => {
+    expect(clampSecondCrash(20, 7)).toBe(7);
+    expect(clampSecondCrash(3, 7)).toBe(3);
+    expect(clampSecondCrash(5, 0)).toBe(0);
+  });
+
+  it('the verdict says that undo changes nothing on disk under no-steal, and only then', () => {
+    const base = presetMachine('loser');
+    const noSteal = crashReport({ ...base, policy: { ...base.policy, steal: false } }, false);
+    expect(noSteal.steal).toBe(false);
+    const withSteal = crashReport(base, false);
+    expect(withSteal.steal).toBe(true);
+    expect(text(verdictText(withSteal, base.acked))).not.toContain('no-steal');
+    if (noSteal.undone > 0) expect(text(verdictText(noSteal, base.acked))).toContain('with no-steal');
   });
 });

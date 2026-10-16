@@ -20,19 +20,22 @@ export interface CrashReport {
   redone: number;
   skipped: number;
   undone: number;
+  /** The policy had steal on: a loser's dirty pages could reach the disk. */
+  steal: boolean;
 }
 
 export function crashReport(m: Machine, torn: boolean): CrashReport {
   const image = crash(m, torn);
   const r = recoverySteps(image);
   const count = (k: RecoveryEvent['kind']) => r.events.filter((e) => e.kind === k).length;
-  return { image, recovered: r.image, events: r.events, violations: violations(m, image, r.image.disk), redone: count('redo'), skipped: count('skip'), undone: count('undo') };
+  return { image, recovered: r.image, events: r.events, violations: violations(m, image, r.image.disk), redone: count('redo'), skipped: count('skip'), undone: count('undo'), steal: m.policy.steal };
 }
 
 export function verdictText(r: CrashReport, acked: number[]): string {
   const winners = committedIn(r.image.log);
   const losers = losersIn(r.image.log);
-  const head = `Recovery redid ${plural(r.redone, 'record')}, skipped ${plural(r.skipped, 'record')} whose page was already up to date and undid ${plural(r.undone, 'write')} of ${plural(losers.length, 'loser')}. ${plural(winners.length, 'transaction')} committed on disk, ${acked.length} acknowledged.`;
+  const noSteal = !r.steal && r.undone > 0 ? ' (with no-steal the pages of a loser never reached disk, so these undos change nothing on disk)' : '';
+  const head = `Recovery redid ${plural(r.redone, 'record')}, skipped ${plural(r.skipped, 'record')} whose page was already up to date and undid ${plural(r.undone, 'write')} of ${plural(losers.length, 'loser')}${noSteal}. ${plural(winners.length, 'transaction')} committed on disk, ${acked.length} acknowledged.`;
   if (r.violations.length === 0) return `${head} The recovered pages equal a serial replay of the committed transactions: nothing acknowledged was lost and nothing uncommitted survived.`;
   return `${head} ${r.violations.map((v) => `${v.rule === 'D' ? 'Durability broken' : v.rule === 'A' ? 'Atomicity broken' : 'Mismatch'}: ${v.message}`).join('. ')}.`;
 }
@@ -59,5 +62,5 @@ export function groupCaption(latencyMs: number, committers: number, plain: Group
 
 export function checkpointCaption(run: CheckpointRun): string {
   const every = run.interval === 0 ? 'No checkpoint' : `A checkpoint every ${run.interval} records`;
-  return `${every}: ${plural(run.checkpoints, 'checkpoint')} cost ${plural(run.pageWrites, 'page write')}; wherever the crash falls, recovery scans at most ${plural(run.worstScanned, 'record')} of ${run.records} (${run.averageScanned} on average over ${run.crashPoints} crash points).`;
+  return `${every}: ${plural(run.checkpoints, 'checkpoint')} cost ${plural(run.pageWrites, 'page write')}; at the ${run.crashPoints} crash points tried (after every operation of the workload), recovery scans at most ${plural(run.worstScanned, 'record')} of ${run.records} (${run.averageScanned} on average).`;
 }

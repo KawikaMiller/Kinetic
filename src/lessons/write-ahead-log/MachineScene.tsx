@@ -26,7 +26,7 @@ export function MachineScene({ picker }: { picker: ReactNode }) {
 
   const parsed = useMemo(() => parseBoundedInt(valueText, { min: MIN_VALUE, max: MAX_VALUE, messages: { empty: 'Type a value.', invalid: (t) => `"${t}" isn't a whole number.`, tooSmall: () => `Keep it from ${MIN_VALUE} to ${MAX_VALUE}.`, tooBig: () => `Keep it from ${MIN_VALUE} to ${MAX_VALUE}.` } }), [valueText]);
   const crashed = report !== null;
-  const rows = useMemo(() => logRows(m, report?.image.torn ?? null), [m, report]);
+  const rows = useMemo(() => logRows(m, report?.image.torn ?? null, report !== null), [m, report]);
   const caption = report ? verdictText(report, m.acked) : machineCaption(m);
 
   const run = (f: (m: Machine) => Result) => {
@@ -135,7 +135,7 @@ export function MachineScene({ picker }: { picker: ReactNode }) {
         </div>
         <ProvenanceRow>
           <Provenance kind="simulated">a toy of 8 pages and a {MAX_RECORDS}-record log; no real file is written</Provenance>
-          <Provenance kind="toy">simplified ARIES: a sharp checkpoint, no analysis pass, one log, a lock on each page until its writer finishes</Provenance>
+          <Provenance kind="toy">simplified ARIES: a sharp checkpoint, no analysis pass, one log, a lock on each page until its writer finishes; a torn record is shown and ignored, but no checksum is modelled to detect it</Provenance>
           <Provenance kind="from-memory">Postgres calls its log the WAL, InnoDB has a redo log and an undo log, SQLite has a WAL mode: the names and details differ, check your database</Provenance>
         </ProvenanceRow>
       </div>

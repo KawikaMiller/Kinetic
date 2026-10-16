@@ -5,11 +5,11 @@ import { LogStream } from '../../components/LogStream';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import type { Frame } from '../../core/types';
 import { plural, recoveryCaption } from './captions';
-import { ACK_EARLY_SEED, CRASH_OPEN, PAGE_NUMBERS, WAL_OFF_SEED, imageRows } from './view';
+import { ACK_EARLY_SEED, CRASH_OPEN, PAGE_NUMBERS, WAL_OFF_SEED, clampSecondCrash, imageRows } from './view';
 import { MAX_OPS, PAGES, SEEDS, planFor, recoverySteps, recoveryTimeline, runSeed, type Policy, type RecoveryFrame } from './wal';
 
 const RECOVERY_CODE = [
@@ -23,7 +23,6 @@ const RECOVERY_CODE = [
 ];
 const LINE_OF = { redo: 2, skip: 3, undo: 5, end: 6 } as const;
 const STEP_MS = 450;
-const MAX_SECOND_CRASH = 20;
 const CELL = { cell: 30 };
 
 interface RFrame extends Frame {
@@ -44,7 +43,9 @@ export function CrashScene({ picker }: { picker: ReactNode }) {
   const policy: Partial<Policy> = useMemo(() => ({ enforceWal, ackBeforeFsync: ackBefore }), [enforceWal, ackBefore]);
   const crashAfter = crashAt ?? plan.crashAfter;
   const tornEnd = torn ?? plan.torn;
-  const recrashAfter = second ? secondStep : null;
+  // how many steps recovery takes on this crash: the second-crash slider ends there, since past it recovery has already finished
+  const recoveryLength = useMemo(() => recoverySteps(runSeed(seed, policy, { crashAfter, torn: tornEnd, recrashAfter: null }).image).events.length, [seed, policy, crashAfter, tornEnd]);
+  const recrashAfter = second ? clampSecondCrash(secondStep, recoveryLength) : null;
   const effective = { crashAfter, torn: tornEnd, recrashAfter };
   const run = useMemo(() => runSeed(seed, policy, { crashAfter, torn: tornEnd, recrashAfter }), [seed, policy, crashAfter, tornEnd, recrashAfter]);
   const timeline = useMemo(() => recoveryTimeline(run.image, recrashAfter), [run, recrashAfter]);
@@ -89,7 +90,7 @@ export function CrashScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--bad)', label: 'a loser, or a page that disagrees with the replay', shape: 'square' },
             { color: 'var(--hi)', label: 'the recovery step now', shape: 'square' },
             { color: 'var(--orange)', label: 'a torn record, ignored', shape: 'square' },
-            { color: 'var(--violet)', label: 'a page LSN', shape: 'square' },
+            { color: 'var(--info)', label: 'a page LSN', shape: 'square' },
           ]}
         />
       }
@@ -108,7 +109,7 @@ export function CrashScene({ picker }: { picker: ReactNode }) {
         <>
           <Slider label="Crash after operation" value={effective.crashAfter} min={1} max={plan.ops.length} onChange={setCrashAt} />
           <Toggle label="Second crash" value={second} onChange={setSecond} off="None" on="During recovery" />
-          {second && <Slider label="after recovery step" value={secondStep} min={0} max={MAX_SECOND_CRASH} onChange={setSecondStep} />}
+          {second && (recoveryLength > 0 ? <Slider label="after recovery step" value={recrashAfter ?? 0} min={0} max={recoveryLength} onChange={setSecondStep} /> : <Hint tone="muted">Recovery has nothing to do on this crash, so there is nothing to interrupt.</Hint>)}
         </>,
       ]}
     >
@@ -128,7 +129,7 @@ export function CrashScene({ picker }: { picker: ReactNode }) {
               colLabels={['value', 'LSN']}
               cell={(r, c) => {
                 const bad = atEnd && run.violations.some((x) => x.message.startsWith(`page ${r} `));
-                return c === 0 ? { text: String(cur.disk[r]), tone: bad ? 'bad' : 'ok', fill: 'tint' } : { text: String(cur.diskLsn[r]), tone: 'violet', fill: 'outline' };
+                return c === 0 ? { text: String(cur.disk[r]), tone: bad ? 'bad' : 'ok', fill: 'tint' } : { text: String(cur.diskLsn[r]), tone: 'info', fill: 'outline' };
               }}
               highlight={cur.event && cur.event.kind !== 'end' ? [{ r: cur.event.page, c: 0, tone: 'hi' }] : []}
               ariaLabel="Pages on disk during recovery"
