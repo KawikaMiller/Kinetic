@@ -1928,6 +1928,30 @@ orderZeroBits(text);            // n x H, 0 for an empty text; orderZeroBitsPerC
 - Tests: `core/entropy.test.ts` (fair coin 1 bit, uniform over 8 is 3, (1/2, 1/4, 1/4) is 1.5, `H(0.1)` = 0.4690 and symmetric, mississippi against its closed form, `ab` x 50 is 100 bits, empty and non-ASCII). The two lessons' own tests are unchanged apart from their imports.
 - **Migrated:** `entropy-information` (`model.ts` keeps coin block codes, passwords and cross-entropy) and `lz-compression` (`orderZeroBits`, `orderZeroBitsPerChar` removed from its `model.ts`).
 
+### `core/avl.ts`, `core/keyInput.ts`, `core/opSession.ts` (`useOpSession`), `BinaryTreeView` — avl-trees, red-black-trees (migrated); skip-lists (`parseKey`); later heap, trie and other tree lessons
+```ts
+import { insertKey, removeKey, buildAvl, checkAvl, heightOf, inOrder, type Tree } from '../../core/avl';
+import { parseKey, parseKeyList, refuseOp, TREE_NODE_LIMIT } from '../../core/keyInput';
+import { useOpSession } from '../../core/useOpSession';
+import { BinaryTreeView, binaryTreeBox, TREE_NODE_RADIUS } from '../../components/BinaryTreeView';
+
+const r = insertKey(tree, 20, { record: true });   // { tree, steps, rotations, fixes }; record: false skips the snapshots (big seeded runs)
+buildAvl([1, 2, 3]);                                // { tree, rotations, fixes } over a whole insert order
+checkAvl(tree);                                     // [] when valid: reachability, BST order, stored heights, |balance| <= 1
+parseKeyList('30 10, 20');                          // { ok, value } | { ok: false, error }; distinct keys, in range, at most TREE_NODE_LIMIT (31)
+refuseOp('insert', 5, size, has);                   // a sentence or null; the optional 5th argument is the drawing's node limit
+
+const OPS: OpSessionModel<Tree, Frame> = { run: ({ base, op, key }) => myFrames(base, op, key), sizeOf, hasKey };   // module-level
+const session = useOpSession(OPS, () => ({ base, op: 'insert', key: 5 }));   // session.tree, .frames, .note; .submit(op, keyText); .restart(start)
+<BinaryTreeView tree={tree} levels={heightOf(tree)} top={30} maxGap={48} className="xx-svg" renderNode={...} nodeMark edgeMark nodeScale onNodeClick nodeAriaLabel overlay ariaLabel />
+```
+- **One AVL model.** `core/avl.ts` is the full stepped AVL tree (heights in nodes, balance factor `h(right) - h(left)`, rotations counted one per left or right rotation, so a double rotation is two and one fix). `avl-trees` steps and breaks it (`broken` makes a double rotation single); `red-black-trees` counts its rotations and height against the red-black tree in the comparison scene, replacing its local `avlRef.ts`. `AvlWork` is exported for a lesson that applies a single chosen rotation (avl-trees' "you pick the rotation" game, which stays in the lesson's `model.ts`). Immutable trees: each operation copies the nodes, fine for a 1,023-key run.
+- **Key input.** `parseKey` is the one-key field (whole number from -999 to 999, typographic minus accepted); `parseKeyList` the typed list; `refuseOp` the insert/delete refusal for a tree. skip-lists uses `parseKey` and keeps its own `refuseOp`, because a list's sentences and its 64-key limit differ (and it has a search op).
+- **Drawing.** `BinaryTreeView` is `TreeSvg` in-order layout inside a `WideRegion`: `binaryTreeBox(size, levels, { top, maxGap })` gives one 30px column per node (330 to 960 wide) and squeezes the level gap to fit a chain, and a phone scrolls sideways before the 10px badge text (`TREE_BADGE_TEXT_PX`) drops under 8px. `top` and `maxGap` are the lesson's (avl-trees 30 and 48, red-black-trees 32 and 50): the two used to differ by those two numbers, and keeping them as props keeps both drawings pixel-identical.
+- **Session.** `useOpSession(model, initial)` is the stepper session both lessons wrote: the frames of the latest insert or delete, the tree they end with, and the note of the last refusal. The transitions are pure (`beginSession`, `submitOp` in `core/opSession.ts`) so they are tested without a renderer; `useAvlSession` and `useRbSession` are eight-line adapters that supply the lesson's frame builder.
+- Tests: `core/avl.test.ts`, `core/keyInput.test.ts` (every refusal sentence), `core/opSession.test.ts` (a fake tree: start, next op on the ended tree, refusals change only the note), `components/BinaryTreeView.test.ts` (hand-worked box sizes). avl-trees, red-black-trees and skip-lists tests are unchanged apart from their imports, except that red-black-trees' "compact AVL reference" test now runs the same 200-seed audit and the 11-rotation check on `core/avl`.
+- **Migrated:** `avl-trees` (`model.ts` keeps only the rotation game; `keys.ts` and `treeBox.ts` are gone), `red-black-trees` (`avlRef.ts`, `keys.ts`, `treeBox.ts` gone) and `skip-lists` (`parseKey`). Shots of the touched scenes are pixel-identical.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

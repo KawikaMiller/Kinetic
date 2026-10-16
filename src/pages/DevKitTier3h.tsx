@@ -1,5 +1,8 @@
 import { SectionTitle } from '../components/Panel';
+import { BinaryTreeView, TREE_NODE_RADIUS } from '../components/BinaryTreeView';
+import { buildAvl, checkAvl, heightOf } from '../core/avl';
 import { binaryEntropy, orderZeroBitsPerChar } from '../core/entropy';
+import { parseKeyList } from '../core/keyInput';
 import { initPlusPlus, kmeans } from '../core/kmeans';
 import { attention, createMlp, createSgd, gradCheck } from '../core/nn';
 import { mulberry32 } from '../core/random';
@@ -55,6 +58,37 @@ function EntropyDemo() {
   );
 }
 
+const TREE_KEYS = '30 10 20 40 50 25 5';
+const TREE_TOP = 30;
+const TREE_MAX_GAP = 48;
+
+function TreeDemo() {
+  const parsed = parseKeyList(TREE_KEYS);
+  if (!parsed.ok) return <p className="mono">{parsed.error}</p>;
+  const built = buildAvl(parsed.value);
+  return (
+    <>
+      <p className="mono">
+        keys {TREE_KEYS} → AVL of height {heightOf(built.tree)}, {built.rotations} rotations, {checkAvl(built.tree).length === 0 ? 'every rule holds' : 'broken'} · typed &quot;7 7&quot;: {String(parseKeyList('7 7').ok === false)}
+      </p>
+      <BinaryTreeView
+        tree={built.tree}
+        levels={heightOf(built.tree)}
+        top={TREE_TOP}
+        maxGap={TREE_MAX_GAP}
+        className="devkit-tree"
+        renderNode={(id) => (
+          <>
+            <circle r={TREE_NODE_RADIUS} fill="none" stroke="currentColor" />
+            <text y={3.5} textAnchor="middle" fill="currentColor">{id}</text>
+          </>
+        )}
+        ariaLabel="An AVL tree built from the demo keys"
+      />
+    </>
+  );
+}
+
 export function DevKitTier3h() {
   return (
     <>
@@ -67,6 +101,9 @@ export function DevKitTier3h() {
       </Section>
       <Section title="core/entropy · entropy of a distribution and the order-0 entropy of a text, shared by entropy-information and lz-compression">
         <EntropyDemo />
+      </Section>
+      <Section title="core/avl, core/keyInput, BinaryTreeView · the one AVL model, typed key lists, the binary-tree drawing both tree lessons share">
+        <TreeDemo />
       </Section>
     </>
   );

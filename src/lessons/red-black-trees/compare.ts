@@ -1,7 +1,7 @@
+import { EMPTY_TREE as EMPTY_AVL, heightOf as avlHeightOf, insertKey as avlInsert, removeKey as avlRemove, type Tree as AvlTree } from '../../core/avl';
 import { logCheckpoints } from '../../core/stats';
 import { mulberry32, shuffle } from '../../core/random';
 import { mean } from '../../core/sim';
-import { AvlRef } from './avlRef';
 import { EMPTY_RB, heightOf, insertKey, removeKey, type RbTree } from './model';
 
 /** Keys inserted, then deleted again: 1,023 is a perfect tree of height 10. */
@@ -37,7 +37,7 @@ export function compareRuns(order: Order, seed: number, size = COMPARE_N): Compa
   const deleteOrder = shuffle(keys, mulberry32(seed + 1));
   const at = new Set(logCheckpoints(size, 12));
   let rb: RbTree = EMPTY_RB;
-  const avl = new AvlRef();
+  let avl: AvlTree = EMPTY_AVL;
   const n: number[] = [];
   const rbHeight: number[] = [];
   const avlHeight: number[] = [];
@@ -49,11 +49,13 @@ export function compareRuns(order: Order, seed: number, size = COMPARE_N): Compa
     rb = r.tree;
     rbIns.push(r.rotations.length);
     rbInsRecolors += r.recolors;
-    avlIns.push(avl.insert(key));
+    const inserted = avlInsert(avl, key);
+    avl = inserted.tree;
+    avlIns.push(inserted.rotations.length);
     if (at.has(i + 1)) {
       n.push(i + 1);
       rbHeight.push(heightOf(rb));
-      avlHeight.push(avl.height);
+      avlHeight.push(avlHeightOf(avl));
     }
   });
   const rbDel: number[] = [];
@@ -64,7 +66,9 @@ export function compareRuns(order: Order, seed: number, size = COMPARE_N): Compa
     rb = r.tree;
     rbDel.push(r.rotations.length);
     rbDelRecolors += r.recolors;
-    avlDel.push(avl.remove(key));
+    const removed = avlRemove(avl, key);
+    avl = removed.tree;
+    avlDel.push(removed.rotations.length);
   }
   return {
     n,

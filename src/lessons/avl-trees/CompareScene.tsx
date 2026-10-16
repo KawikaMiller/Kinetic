@@ -5,8 +5,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
 import { AvlTreeView } from './AvlTreeView';
-import { parseKeyList } from './keys';
-import { buildAvl, buildBst, deepestPath, heightOf } from './model';
+import { parseKeyList } from '../../core/keyInput';
+import { buildAvl, buildBst, deepestPath, heightOf } from '../../core/avl';
 import { COMPARE_PRESETS, DEFAULT_SEED, presetKeys, type ComparePreset } from './presets';
 import { compareCaption } from './text';
 

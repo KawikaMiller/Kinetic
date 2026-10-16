@@ -6,7 +6,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { searchFrames } from './frames';
-import { parseKey } from './keys';
+import { parseKey } from '../../core/keyInput';
 import { buildList } from './model';
 import { DEFAULT_KEYS, DEFAULT_TARGET, LIST_SEED, defaultEntries } from './presets';
 import { SkipDrawing } from './SkipDrawing';
