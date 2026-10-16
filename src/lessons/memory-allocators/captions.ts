@@ -1,7 +1,7 @@
 /** Captions and stat text, every number taken from the model on screen. Plain strings, so tests can read them. */
 import { bytes, pct } from '../../core/format';
 import { POLICY_LABELS, metrics, type Arena, type Policy } from './arena';
-import { SPACING_LABELS, WORST_FROM, type PageSetup, type PageSummary, type Spacing } from './classes';
+import { SPACING_LABELS, WORKED_REQUEST, WORST_FROM, classOf, classTable, type PageSetup, type PageSummary, type Spacing } from './classes';
 import type { LastEvent } from './session';
 
 export const n = (v: number) => v.toLocaleString('en-US');
@@ -14,7 +14,7 @@ const WHY: Record<Policy, (rover: number) => string> = {
   first: () => 'the lowest-address hole that fits',
   best: () => 'the smallest hole that fits',
   worst: () => 'the largest hole that fits',
-  next: (rover) => `the first hole that fits at or after unit ${n(rover)}, where the last allocation ended`,
+  next: (rover) => `the first hole that fits when the search resumes at unit ${n(rover)}, where the last allocation ended (a hole that starts before it is skipped, and the search wraps to the lowest fitting hole if none starts after it)`,
 };
 
 export function arenaCaption(last: LastEvent, arena: Arena): string {
@@ -39,7 +39,9 @@ export function arenaCaption(last: LastEvent, arena: Arena): string {
 }
 
 export function classesCaption(spacing: Spacing, classes: number, waste: number, worst: number): string {
-  return `With ${SPACING_LABELS[spacing].toLowerCase()} spacing there are ${n(classes)} size classes. Over the seeded requests, ${pct(waste, 1)} of the bytes handed out are internal waste, and a single request of ${n(WORST_FROM)} bytes or more can waste as much as ${pct(worst, 1)}. Same-size slots are interchangeable, so a freed slot is reusable by the next request of its class: external fragmentation shrinks and internal waste appears instead.`;
+  const cls = classOf(classTable(spacing), WORKED_REQUEST);
+  const example = `A request of ${n(WORKED_REQUEST)} bytes is rounded up to the ${n(cls)}-byte class, wasting ${n(cls - WORKED_REQUEST)}. `;
+  return `${example}With ${SPACING_LABELS[spacing].toLowerCase()} spacing there are ${n(classes)} size classes. Over the seeded requests, ${pct(waste, 1)} of the bytes handed out are internal waste, and a single request of ${n(WORST_FROM)} bytes or more can waste as much as ${pct(worst, 1)}. Same-size slots are interchangeable, so a freed slot is reusable by the next request of its class: external fragmentation shrinks and internal waste appears instead.`;
 }
 
 export function pagesCaption(s: PageSetup, sum: PageSummary): string {

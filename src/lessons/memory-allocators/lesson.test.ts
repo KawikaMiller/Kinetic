@@ -9,7 +9,7 @@ import {
 } from './classes';
 import { classFacts, coalesceFacts, fragmentedFacts, pageFacts, scriptFacts } from './facts';
 import lesson from './index';
-import { allocate, freeBlock, playScript, reset, sessionOpening, type ArenaSession } from './session';
+import { allocate, freeBlock, playScript, reset, sessionOpening, setCoalesce, type ArenaSession } from './session';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
 const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
@@ -32,13 +32,15 @@ describe('scene switches', () => {
 });
 
 describe('try-this entries, from each scene\'s opening state, as written', () => {
-  it('try-this 1: the script leaves 3 holes and 25.8% fragmentation under first fit, and every policy fails some allocations', () => {
+  it('try-this 1: the script leaves 3 holes and 25.8% fragmentation under first fit, and the numbers quoted are the two table columns', () => {
     const f = scriptFacts();
     expect([f.policy, f.holes, f.fragmentation]).toEqual(['first', 3, '25.8%']);
-    expect(f.failures).toEqual({ first: 6, next: 7, best: 6, worst: 9 });
-    for (const p of POLICIES) expect(f.failures[p]).toBeGreaterThan(0);
+    // independent values from a separate list-based allocator in review: fragmented 2/3/2/5, out of memory 4 each
+    expect(f.fragmentedFailures).toEqual({ first: 2, next: 3, best: 2, worst: 5 });
+    expect(f.fullFailures).toEqual({ first: 4, next: 4, best: 4, worst: 4 });
     expect(lesson.tryThis[0]).toContain('3 holes remain and external fragmentation is 25.8%');
-    expect(lesson.tryThis[0]).toContain('worst fit 9, next fit 7, first fit 6 and best fit 6');
+    expect(lesson.tryThis[0]).toContain('"Failed: fragmented" reads worst fit 5, next fit 3, first fit 2 and best fit 2');
+    expect(lesson.tryThis[0]).toContain('"Failed: out of memory" reads 4, 4, 4 and 4');
   });
 
   it('try-this 2: the written presses leave 40 units free in 4 holes, the largest 12, and alloc(16) fails as fragmented', () => {
@@ -167,7 +169,45 @@ describe('honesty and quiz', () => {
     const a = arenaFrom([[10, false], [8, true], [10, false], [8, true], [10, false], [8, true], [10, false]]);
     expect(metrics(a)).toMatchObject({ freeTotal: 40, largestFree: 10, holes: 4 });
     expect(lesson.quiz[0].why).toContain('40 units are free in the lab example, with the largest hole 12');
-    expect(lesson.quiz[1].why).toContain('112 of 256 pages in the lab, against 230');
+    expect(lesson.quiz[1].why).toContain('112 of 256 pages in the lab (44% of the pages');
+    expect(lesson.quiz[1].why).toContain('against 230');
+    expect(lesson.quiz[1].q).not.toContain('barely');
     expect(lesson.quiz[3].why).toContain('powers of two waste 28.0% of the bytes handed out with 10 classes');
+  });
+});
+
+describe('review fixes: next fit wording, coalescing toggle, worked size class', () => {
+  it('next fit caption says where the search resumed, and the hole it names is the one the policy chose (a straddling hole is skipped)', () => {
+    // alloc 8, alloc 8 (rover 16), free block 2 (holes at 8-16 and 16-64 coalesce), alloc 4 under next fit
+    let s: ArenaSession = { ...sessionOpening(), policy: 'next' };
+    s = press(s, [8, 8]);
+    s = freeBlock(s, 2);
+    s = allocate(s, 4);
+    const say = text(arenaCaption(s.last, s.arena));
+    expect(say).toContain('when the search resumes at unit 16');
+    expect(say).toContain('a hole that starts before it is skipped');
+    // hand oracle: holes are [8, 56 units] merged = one hole starting at 8, which starts before the rover 16, so the search wraps to it
+    expect(s.last?.kind === 'alloc' && s.last.result.placed?.start).toBe(8);
+  });
+
+  it('switching coalescing on merges holes that are already adjacent; off, and a no-op switch, leave the arena alone', () => {
+    let s: ArenaSession = { ...sessionOpening(), coalesce: false };
+    s = press(s, [8, 8, 8]);
+    s = freeBlock(freeBlock(s, 1), 2);
+    expect(holesOf(s.arena).map((h) => [h.start, h.size])).toEqual([[0, 8], [8, 8], [24, 40]]);
+    const on = setCoalesce(s, true);
+    expect(on.coalesce).toBe(true);
+    expect(holesOf(on.arena).map((h) => [h.start, h.size])).toEqual([[0, 16], [24, 40]]);
+    expect(setCoalesce(on, true)).toEqual(on);
+    expect(setCoalesce(on, false).arena).toEqual(on.arena);
+  });
+
+  it('the size-class caption works one request through: 100 bytes rounds up to the smallest class that holds it', () => {
+    for (const spacing of SPACINGS) {
+      const table = classTable(spacing);
+      const smallest = table.find((c) => c >= 100)!;
+      const say = text(classesCaption(spacing, table.length, 0.1, 0.2));
+      expect(say).toContain(`A request of 100 bytes is rounded up to the ${smallest}-byte class, wasting ${smallest - 100}.`);
+    }
   });
 });

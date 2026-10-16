@@ -11,15 +11,16 @@ export function scriptFacts() {
   const open = sessionOpening();
   const played = playScript(open);
   const m = metrics(played.arena);
-  const failures = (p: Policy) => {
-    const r = runScript(p, open.coalesce);
-    return r.failedFragmented + r.failedFull;
-  };
+  const each = (pick: (r: ReturnType<typeof runScript>) => number) => Object.fromEntries(POLICIES.map((p) => [p, pick(runScript(p, open.coalesce))])) as Record<Policy, number>;
+  const fragmented = each((r) => r.failedFragmented);
   return {
     policy: open.policy,
     holes: m.holes,
     fragmentation: pct(m.fragmentation, 1),
-    failures: Object.fromEntries(POLICIES.map((p) => [p, failures(p)])) as Record<Policy, number>,
+    fragmentedFailures: fragmented,
+    fullFailures: each((r) => r.failedFull),
+    fragmentedMin: Math.min(...Object.values(fragmented)),
+    fragmentedMax: Math.max(...Object.values(fragmented)),
   };
 }
 
@@ -53,5 +54,5 @@ export function pageFacts() {
   const open = pagesOpening();
   const random = summarisePages(open);
   const oldest = summarisePages({ ...open, pattern: 'oldest' });
-  return { k: open.objectsPerPage, freed: pct(open.freed), randomReturnable: random.returnable, oldestReturnable: oldest.returnable, pages: random.kinds.length };
+  return { k: open.objectsPerPage, freed: pct(open.freed), randomReturnable: random.returnable, randomShare: pct(random.returnable / random.kinds.length), oldestReturnable: oldest.returnable, pages: random.kinds.length };
 }

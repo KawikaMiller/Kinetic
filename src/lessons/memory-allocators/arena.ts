@@ -94,19 +94,23 @@ export function alloc(a: Arena, n: number, policy: Policy): AllocResult {
   return { arena: { segs, rover: placed.start + n, nextId: a.nextId + 1 }, outcome: 'placed', size: n, placed, hole };
 }
 
-/** Free a live block; with coalescing on, adjacent holes merge. Freeing a block that is not live is refused. */
-export function free(a: Arena, id: number, coalesce: boolean): Arena {
-  const target = a.segs.find((s) => s.id === id);
-  if (!target) throw new RangeError(`block ${id} is not live: it was never allocated or is already freed`);
-  const opened = a.segs.map((s) => (s === target ? { ...s, id: null } : s));
-  if (!coalesce) return { ...a, segs: opened };
+/** Merge every run of adjacent holes into one. */
+export function mergeHoles(a: Arena): Arena {
   const merged: Seg[] = [];
-  for (const s of opened) {
+  for (const s of a.segs) {
     const last = merged[merged.length - 1];
     if (last && last.id === null && s.id === null) merged[merged.length - 1] = { ...last, size: last.size + s.size };
     else merged.push({ ...s });
   }
   return { ...a, segs: merged };
+}
+
+/** Free a live block; with coalescing on, adjacent holes merge. Freeing a block that is not live is refused. */
+export function free(a: Arena, id: number, coalesce: boolean): Arena {
+  const target = a.segs.find((s) => s.id === id);
+  if (!target) throw new RangeError(`block ${id} is not live: it was never allocated or is already freed`);
+  const opened = a.segs.map((s) => (s === target ? { ...s, id: null } : s));
+  return coalesce ? mergeHoles({ ...a, segs: opened }) : { ...a, segs: opened };
 }
 
 /** An arena built from a list of [size, live] segments (for tests and worked examples). */

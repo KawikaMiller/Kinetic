@@ -1,5 +1,5 @@
 /** The arena scene's state as pure transitions, so each opening state and each press can be tested. */
-import { ARENA_UNITS, alloc, arenaOpening, free, holesOf, runScript, SCRIPT, type AllocResult, type Arena, type Policy } from './arena';
+import { ARENA_UNITS, alloc, arenaOpening, free, holesOf, mergeHoles, runScript, SCRIPT, type AllocResult, type Arena, type Policy } from './arena';
 
 export type LastEvent =
   | { kind: 'alloc'; result: AllocResult; policy: Policy; rover: number }
@@ -33,6 +33,9 @@ export function playScript(s: ArenaSession): ArenaSession {
   const run = runScript(s.policy, s.coalesce);
   return { ...s, arena: run.arena, last: { kind: 'script', policy: s.policy, coalesce: s.coalesce, operations: SCRIPT.length, failedFragmented: run.failedFragmented, failedFull: run.failedFull } };
 }
+
+/** Switching coalescing on merges the holes that are already adjacent, so the arena never shows two touching holes while it reads On. */
+export const setCoalesce = (s: ArenaSession, on: boolean): ArenaSession => (on && !s.coalesce ? { ...s, coalesce: true, arena: mergeHoles(s.arena) } : { ...s, coalesce: on });
 
 export const reset = (s: ArenaSession): ArenaSession => ({ ...s, arena: sessionOpening().arena, last: null });
 

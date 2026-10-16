@@ -15,6 +15,8 @@ export const REQUEST_COUNT = 2000;
 export const REQUEST_SEED = 23;
 /** Requests at or above this size are where spacing, not the alignment step, sets the waste. */
 export const WORST_FROM = 128;
+/** The request the size-class caption rounds up as a worked example. */
+export const WORKED_REQUEST = 100;
 
 const roundUp = (v: number, to: number) => Math.ceil(v / to) * to;
 

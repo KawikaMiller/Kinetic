@@ -34,7 +34,7 @@ export function ClassesScene({ picker }: { picker: ReactNode }) {
       introKey={caption}
       stats={
         <Stats>
-          <Stat label="Size classes" value={n(current.classes)} sub="more classes, more partly filled slabs" />
+          <Stat label="Size classes" value={n(current.classes)} sub="finer spacing needs more classes to keep" />
           <Stat label="Internal waste" value={pct(current.waste, 1)} color="var(--violet)" sub="(class - request) summed over the requests, as a share of the classes" />
           <Stat label="Worst single request" value={pct(current.worst, 1)} color="var(--violet)" sub="for requests of 128 bytes and up" />
         </Stats>

@@ -38,7 +38,7 @@ export function PagesScene({ picker }: { picker: ReactNode }) {
           <Stat label="Returnable pages" value={`${n(sum.returnable)} of ${n(PAGES)}`} color="var(--ok)" sub="every object on the page is free" />
           <Stat label="Freed" value={iec(sum.freedBytes)} sub={`${pct(freed)} of the objects`} />
           <Stat label="Back to the OS" value={iec(sum.returnedBytes)} color={sum.returnedBytes < sum.freedBytes ? 'var(--bad)' : 'var(--ok)'} sub={`${pct(sum.freedBytes === 0 ? 0 : sum.returnedBytes / sum.freedBytes)} of what was freed`} />
-          <Stat label="Stuck in partly used pages" value={iec(sum.stuckBytes)} color={sum.stuckBytes > 0 ? 'var(--bad)' : undefined} sub={`${n(sum.partial)} pages`} />
+          <Stat label="Stuck in partly used pages" value={iec(sum.stuckBytes)} color={sum.stuckBytes > 0 ? 'var(--bad)' : undefined} sub={`${n(sum.partial)} ${sum.partial === 1 ? 'page' : 'pages'}`} />
         </Stats>
       }
       legend={
@@ -74,7 +74,7 @@ export function PagesScene({ picker }: { picker: ReactNode }) {
           />
         </Box>
         <Hint tone="muted" block>
-          A page can go back to the operating system only if every object on it is free. A garbage-collected heap can move survivors together (copying collection) and release whole pages; an allocator behind C pointers cannot, because pointers to the objects are held elsewhere. Tuning knobs exist (<code>malloc_trim</code> in glibc, decay-based purging in jemalloc), but they can only return pages that are already empty.
+          In this model a page can go back to the operating system only if every object on it is free. A garbage-collected heap can move survivors together (copying collection) and release whole pages; an ordinary C allocator cannot relocate live objects, because pointers to them are held elsewhere. Tuning knobs exist (<code>malloc_trim</code> in glibc, decay-based purging in jemalloc), but they can only return pages that are already empty.
         </Hint>
         <ProvenanceRow>
           <Provenance kind="toy">equal objects packed into 4 KiB pages; a real heap mixes sizes and keeps its own metadata</Provenance>

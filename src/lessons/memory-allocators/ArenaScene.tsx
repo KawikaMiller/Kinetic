@@ -7,7 +7,7 @@ import { pct } from '../../core/format';
 import { plainTone } from '../../core/tone';
 import { ALLOC_CHIPS, ARENA_UNITS, POLICIES, POLICY_LABELS, SCRIPT, SCRIPT_SEED, UNIT_BYTES, metrics, runScript, type Policy } from './arena';
 import { arenaCaption, n } from './captions';
-import { ROWS, UNITS_PER_ROW, allocate, freeBlock, playScript, reset, sessionOpening, unitOf } from './session';
+import { ROWS, UNITS_PER_ROW, allocate, freeBlock, playScript, reset, sessionOpening, setCoalesce, unitOf } from './session';
 
 const CELL = { cell: 20, gap: 2, font: 10 } as const;
 const POLICY_OPTIONS = POLICIES.map((p) => ({ value: p, label: POLICY_LABELS[p] }));
@@ -56,7 +56,7 @@ export function ArenaScene({ picker }: { picker: ReactNode }) {
           items={[
             { color: 'var(--amber)', label: 'a live block, one hue per block id', shape: 'square' },
             { color: 'var(--dim)', label: 'free hole (outlined)', shape: 'square' },
-            { color: 'var(--hi)', label: 'the hole just used', shape: 'square' },
+            { color: 'var(--hi)', label: 'the block just placed', shape: 'square' },
             { color: 'var(--bad)', label: 'fragmented: enough bytes, no hole', shape: 'square' },
           ]}
         />
@@ -65,7 +65,7 @@ export function ArenaScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <Segmented label="Placement policy" value={policy} onChange={(p: Policy) => setSession((s) => ({ ...s, policy: p }))} options={POLICY_OPTIONS} />
-          <Toggle label="Coalescing on free" value={coalesce} onChange={(on) => setSession((s) => ({ ...s, coalesce: on }))} off="Off" on="On" />
+          <Toggle label="Coalescing on free" value={coalesce} onChange={(on) => setSession((s) => setCoalesce(s, on))} off="Off" on="On" />
         </>,
         <>
           <ControlGroup label="alloc(n), in units" inline>
@@ -117,7 +117,7 @@ export function ArenaScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
           <Hint tone="muted" block>
-            Frees name objects, not addresses, so the script is valid under every policy; a free of an object whose allocation failed is skipped.
+            Frees name objects, not addresses, so the script is valid under every policy; a free of an object whose allocation failed is skipped. This is one seeded script: another seed can reorder the rows, so read it as an example, not a ranking.
           </Hint>
         </Box>
         <ProvenanceRow>
