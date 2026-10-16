@@ -1,0 +1,14 @@
+.tp-stage { gap: 12px; align-items: center; }
+.tp-stage > .plot2d { max-width: 100%; height: auto; }
+.tp-timeline { width: 100%; max-width: 760px; }
+.tp-deques, .tp-workers { width: 100%; max-width: 760px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.tp-deque, .tp-worker, .tp-queue { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border: 1px dashed var(--line-2); border-radius: 8px; min-width: 96px; }
+.tp-worker.is-stalled { border-color: var(--bad); }
+.tp-queue { width: 100%; max-width: 760px; }
+.tp-deque-name { font: 700 10px var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.tp-cards { display: flex; flex-wrap: wrap; gap: 3px; min-height: 24px; align-items: center; }
+.tp-card { min-width: 26px; height: 24px; padding: 0 4px; display: grid; place-items: center; font: 600 11px var(--mono); border-radius: 5px; }
+.tp-empty { font: 11px var(--mono); color: var(--faint); }
+.tp-leaves, .tp-tasks { width: 100%; max-width: 760px; display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.tp-leaf { min-width: 22px; height: 22px; padding: 0 3px; display: grid; place-items: center; font: 600 10px var(--mono); border-radius: 5px; }
+.tp-leaf.is-hidden { border: 1px dashed var(--line); color: var(--faint); }
