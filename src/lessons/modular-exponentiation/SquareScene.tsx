@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { bitLength } from '../../core/bits';
 import { OPENING } from './presets';
 import { PowerPlayer } from './PowerPlayer';
 import { TripleFields } from './TripleFields';
@@ -13,7 +14,7 @@ export function SquareScene({ picker }: { picker: ReactNode }) {
       triple={state.triple}
       direction="ltr"
       controls={<TripleFields state={state} />}
-      note={<p className="me-note">Reduce after every operation: the running value never grows past the modulus. The exponent has {state.triple.exponent === 0n ? 0 : state.triple.exponent.toString(2).length} bits, and the work follows the number of bits, not the size of the exponent.</p>}
+      note={<p className="me-note">Reduce after every operation: the running value never grows past the modulus. The exponent has {bitLength(state.triple.exponent)} bits, and the work follows the number of bits, not the size of the exponent.</p>}
     />
   );
 }

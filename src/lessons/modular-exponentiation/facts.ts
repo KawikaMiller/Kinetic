@@ -1,5 +1,6 @@
 import { modInverse, modPow } from '../../core/numberTheory';
-import { bitLength, digitSeries, fermatCensus, naiveMultiplications, operationCount, popcount, powRun, unreducedDigits } from './modpow';
+import { bitLength } from '../../core/bits';
+import { digitSeries, fermatCensus, naiveMultiplications, operationCount, popcount, powRun, unreducedDigits } from './modpow';
 import { HEADLINE, OPENING } from './presets';
 
 const { base, exponent, modulus } = HEADLINE;

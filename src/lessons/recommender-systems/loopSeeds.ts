@@ -1,6 +1,7 @@
 /** The loop across many seeds: what feedback changes is which films win, and how much exposure concentrates. */
 import type { Matrix } from './data';
-import { EXPLORATION, gini, mostShown, simulateLoop } from './loop';
+import { gini } from '../../core/stats';
+import { EXPLORATION, mostShown, simulateLoop } from './loop';
 
 export const LOOP_SEED_STREAMS = 200;
 

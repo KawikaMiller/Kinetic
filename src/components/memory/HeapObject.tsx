@@ -29,7 +29,9 @@ const VARIANT_TAG: Record<HeapVariant, string | null> = { live: null, collectabl
  * (`heapHeight`), so a lesson lays things out with `heapRect`.
  *
  * - `variant`: `live`; `collectable` (unreachable, dim and dashed, awaiting GC);
- *   `freed` (manual memory, dashed in --bad: any arrow into it is a use-after-free).
+ *   `freed` (manual memory, dashed in --bad: any arrow into it is a use-after-free). `tone` is
+ *   ignored for a freed block, which is always --bad; pass `freedTone` to override that (a block
+ *   that was freed correctly reads `ok`, not as an error).
  * - `highlight` rings it ("this box is being searched", "just mutated").
  * - The corner tag shares the title row, so the title and tag must fit in `w`; if they
  *   don't, use `tagPlacement="above"` rather than widening the box.
@@ -37,13 +39,15 @@ const VARIANT_TAG: Record<HeapVariant, string | null> = { live: null, collectabl
  * - `fields=[]` keeps one empty row (an empty object); `collapseEmpty` makes it a title-only box.
  */
 export function HeapObject({
-  at, w, title, fields, tone = 'info', variant = 'live', highlight = false, tag, tagPlacement = 'corner', tagSize, collapseEmpty = false, className = '',
+  at, w, title, fields, tone = 'info', freedTone, variant = 'live', highlight = false, tag, tagPlacement = 'corner', tagSize, collapseEmpty = false, className = '',
 }: {
   at: Pt;
   w: number;
   title: ReactNode;
   fields: readonly HeapField[];
   tone?: Tone;
+  /** The tone of a `freed` block instead of the forced `bad`; has no effect on other variants. */
+  freedTone?: Tone;
   variant?: HeapVariant;
   highlight?: boolean;
   /** Overrides the variant's corner tag ('collectable', 'freed'). */
@@ -58,7 +62,7 @@ export function HeapObject({
   const reduce = useReducedMotion();
   const h = heapHeight(fields.length, collapseEmpty);
   const cornerTag = tag ?? VARIANT_TAG[variant];
-  const cls = `heap-obj tone-${variant === 'freed' ? 'bad' : tone} is-${variant} ${highlight ? 'is-highlight' : ''} ${className}`;
+  const cls = `heap-obj tone-${variant === 'freed' ? (freedTone ?? 'bad') : tone} is-${variant} ${highlight ? 'is-highlight' : ''} ${className}`;
 
   return (
     <motion.g className={cls} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>

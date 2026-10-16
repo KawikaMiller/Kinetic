@@ -130,6 +130,7 @@ pct(0.123)            // '12%'; pct(0.0004, 1) → '<0.1%'
 bytes(1536)           // '1.5 KB' (binary); bytes(12000, { base: 1000 }) → '12.0 KB'; { dp: 0 } → '12 KB'; bytes(4096, { iec: true }) → '4.0 KiB' (IEC names for lessons that tell KiB from KB; ignored with base 1000)
 times(3)              // '3×'
 plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
+integer(23414)        // '23,414' — an exact whole count with separators (sig() rounds to 3 figures)
 pad2(7), clock(605)   // '07', '10:05'
 latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
@@ -755,7 +756,7 @@ import { HeapObject, RefArrow, VarSlot, heapFieldPort, heapRect, slotPort } from
 
 <VarSlot at={{ x: 10, y: 70 }} name="a" isRef tone="violet" highlight={seesMutation} dead={framePopped} />
 <VarSlot at={{ x: 10, y: 30 }} name="count" value={3} />
-<HeapObject at={user} w={180} title="{ } user" variant="live | collectable | freed"
+<HeapObject at={user} w={180} title="{ } user" variant="live | collectable | freed" // a freed block is always --bad (its `tone` is ignored); `freedTone="ok"` makes a correct free read green
             fields={[{ name: 'name', value: '"Ada"' }, { name: 'tags', isRef: true }]} highlight={searching} />
 <RefArrow from={slotPort({ x: 10, y: 70 })} to={heapRect(user, 180, 2)} bend={-12} />
 <RefArrow from={heapFieldPort(user, 180, 1)} to={heapRect(tags, 180, 1)} dangling={freed} />
@@ -1242,7 +1243,7 @@ tapeText(config); symbolAt(config, i)      // '1100' (first to last written cell
 <TapeStrip symbol={(i) => symbolAt(config, i)} head={config.head} state={config.state} changed={[prevHead]} cells={13} />
 ```
 - `budget-exhausted` is not a verdict: it never says "never halts" (say "did not halt within N steps"). A halting-problem certificate (a repeated configuration) is the lesson's own check.
-- `parseTmTable` refuses with the line named: a missing arrow, a wrong word count, an unknown move, a state name over 8 characters, a multi-character symbol, a rule for a halting state, a duplicate (state, symbol) ("Line 3: q0 0 already has a rule on line 1."), more than 40 rules, a line over 40 characters, an empty table. No `eval`. The row machinery is `parseRows(text, { maxRows, maxLineChars, row })` in `core/parse` (`RowParse`: every row with its line, or the first refusal); K3-22 `parseKit` may build on or replace it.
+- `parseTmTable` refuses with the line named: a missing arrow, a wrong word count, an unknown move, a state name over 8 characters, a multi-character symbol, a rule for a halting state, a duplicate (state, symbol) ("Line 3: q0 0 already has a rule on line 1."), more than 40 rules, a line over 40 characters, an empty table. No `eval`. The row machinery is `parseRows(text, { maxRows, maxLineChars, row })` in `core/parse` (`RowParse`: every row with its line, or the first refusal); K3-22 `core/parseKit` builds on it (see the wave 7 to 8 section); `parseTmTable` is unchanged.
 - `TapeStrip` (on ArrayStrip): `cells` (default 17, odd) centred on the head, head cell lifted, blank cells dimmed, `changed` indices in --ok, the head marker labelled with `state`. It is ONE tab stop: Left/Right pan the view, Home or Escape recentre, and any head move recentres; a head panned off screen shows a hint. Pure window rules are in `components/tapeWindow.ts`.
 - Tests: balanced brackets, a^n b^n and w wᴿ (the guess) PDAs against closed-form oracles on every string up to length 10; the spec's increment and palindrome tables (every string up to 10 bits / length 10, hand-pinned step counts 8, 8, 3, 10, 21), an a^n b^n machine, loops stopped at the budget, `runTm` against an independent array simulator on 500 seeded random 4-state tables. Demo on `#/dev/kit`.
 
@@ -1983,7 +1984,78 @@ cross(o, a, b) // > 0 left turn, 0 collinear, < 0 right;  orient(o, a, b) // its
 - convex-hull's `hull.ts` imports `cross`, `dedupe`, `startAtLowestLeft` and the order helpers from here (and re-exports them); its graham/andrew/jarvis stay local because they push every orientation test into a `Tally` for the stepper. strongly-connected-components' local chain is gone: `hull.ts` wraps the shared `convexHull`. Frames of both lessons are pixel-identical. Tests: `core/geometryHull.test.ts` (500 seeded sets against a brute-force oracle, both policies).
 - **`bytes(n, { iec: true })`** names the binary units `KiB`/`MiB`/`GiB`/`TiB` (dma-io-devices, io-models, mmap-page-cache say KiB when the lesson cares); without `iec`, and with `base: 1000`, the output is exactly what it was. No caller was changed.
 - **`StageFrame introKey`** (and `useIntroCaption`'s second argument) is now `string | number | DependencyList` and compared BY VALUE (`sameIntroKey`, `core/caption`): a fresh array, or a fresh object or nested array inside it, with the same contents no longer sets the caption again. A caption set re-renders the stage, so a key that changed on every render was an infinite loop (webassembly's `result.engine`, dma's `introKey={[r]}`). Functions, class instances and JSX in a key still compare by identity, so key on text or counts: `introKey={caption}` or `introKey={[mode, n]}`. Existing callers behave the same.
-- **`npm run smoke -- --scenes`** (`scripts/scenes.mjs`, logic and tests in `scripts/lib/scenes.mjs`): for each lesson, finds the first radio group inside the stage frame (the `useScenePicker` / `Segmented` scene tabs), clicks each option in turn, listens to `console.error` and `pageerror` for `--idle` ms (default 3000), and fails on anything, naming a React "Maximum update depth exceeded" / "Too many re-renders" as `RENDER LOOP`. Flags: lesson ids as positional args, `--shard=2/4` (every 4th id from the 2nd, so shards cover every lesson once), `--idle=ms`, `--selftest`. Output is one `ok`/`FAIL` line per lesson plus `SCENES_SUMMARY {json}` for merging shards; exit 1 on a failure. Cost is scenes x idle per lesson (webassembly: 5 x 3 s), so run it on the lessons a change touched or in shards. `--selftest` loads a fixture page whose second tab spams the loop message and exits 0 only if that scene is caught as a render loop and the calm one is clean (the negative proof; `scenes.test.mjs` tests the verdict logic). It reads the whole page's console, so a lesson whose first radio group is not a scene picker is still exercised, just under a different name.
+- **`npm run smoke -- --scenes`** (`scripts/scenes.mjs`, logic and tests in `scripts/lib/scenes.mjs`): for each lesson, finds the scene picker: the radio group inside the stage frame labelled "Scene" (any case), else the first one (the `useScenePicker` / `Segmented` scene tabs; step tabs or a speed control placed before it are no longer mistaken for it), clicks each option in turn, listens to `console.error` and `pageerror` for `--idle` ms (default 3000), and fails on anything, naming a React "Maximum update depth exceeded" / "Too many re-renders" as `RENDER LOOP`. Flags: lesson ids as positional args, `--shard=2/4` (every 4th id from the 2nd, so shards cover every lesson once), `--idle=ms`, `--selftest`. Output is one `ok`/`FAIL` line per lesson plus `SCENES_SUMMARY {json}` for merging shards; exit 1 on a failure. Cost is scenes x idle per lesson (webassembly: 5 x 3 s), so run it on the lessons a change touched or in shards. `--selftest` loads a fixture page whose second tab spams the loop message and exits 0 only if that scene is caught as a render loop and the calm one is clean (the negative proof; `scenes.test.mjs` tests the verdict logic). It reads the whole page's console, so a lesson whose first radio group is not a scene picker is still exercised, just under a different name.
+
+## Tier 3 kit (kit round after wave 7: agent J)
+
+### `core/parseKit.ts` (K3-22) — regex-engines, parsing-algorithms, pushdown-automata, metaprogramming-macros (wave 8); bytecode-vms, dp-patterns, randomized-algorithms (migrated)
+```ts
+import { cursorOf, parseBoundedList, parseKitLine, parseKitRows, tokenize, type TokenRule } from '../../core/parseKit';
+
+const TOKENS: TokenRule[] = [{ kind: 'arrow', pattern: /->/ }, { kind: 'word', pattern: /[\p{L}\p{N}_]+/u }];   // tried in order, first match wins; whitespace is skipped
+
+// One rule per line (limits, comments, nouns as parseRows). Each line is tokenized, then read with a cursor.
+const read = parseKitRows(text, {
+  tokens: TOKENS, maxRows: 40, maxLineChars: 40, noun: { one: 'transition', many: 'transitions' }, empty: 'Write at least one transition.',
+  row: (c) => {
+    const from = c.accept('word'); const input = c.accept('word');
+    if (!from || !input) return c.fail('expected: state input -> state');      // refuses at the next token, or just past the last
+    if (!c.accept('arrow')) return c.fail('expected "->"');
+    const to = c.accept('word');
+    return to ? { ok: true, value: { from: from.text, input: input.text, to: to.text } } : c.fail('a rule needs a next state');
+  },
+});
+// { ok: true, rows: [{ line, value }] } | { ok: false, line, column?, error: 'Line 3, column 7: expected "->"' }
+
+// One single-line field (a regex, a macro body): "Column 3: nothing to repeat" (place: 'position' says "Position 3: ...").
+parseKitLine(text, { tokens, maxChars: 24, empty: 'Type a pattern.', place: 'position', read: (c) => ... });
+// { ok: true, value } | { ok: false, error, column? }
+
+// A typed list with a count and a value range, refused by reason (parseIntegers returns only null):
+parseBoundedList(text, { min: 4, max: 8, lo: 1, hi: 12, noun: 'weights', messages: { notNumbers, tooFew: (n) => '', tooMany: (n) => '', outOfRange: (v) => '' } });
+// { ok: true, value: number[] } | { ok: false, error }
+```
+- **No `eval`, `RegExp` on learner text or `new Function`**: the token rules are lesson-authored patterns, matched sticky and unicode-aware at the cursor; the learner's text is only ever the subject. A source test asserts parseKit never evaluates.
+- **Columns** are 1-based, count Unicode code points (one emoji is one column, a tab is one) and refer to the line as typed, indent included. Line length limits still count UTF-16 units, as `parseRows` does. A rule that is wrong as a whole can refuse with a plain `{ ok: false, error }` and gets "Line 3: ..." with no column.
+- **Cursor**: `peek`, `next`, `accept(...kinds)`, `rest()`, `atEnd()`, `fail(msg)` (at the next token), `failAt(token, msg)`. Tokens left over after a row returns are refused for you ("unexpected \"x\": nothing can follow here"). A token rule must never match the empty string (it is skipped as a non-match).
+- **Built on `parseRows`**, which gained an `indent` argument for the row reader and an optional `column` on a refusal ("Line N, column C: ..."); a reader that returns no column behaves exactly as before, so `parseTmTable` and its tests are untouched. `parseTmTable` may adopt `parseKitRows` later.
+- **Migrated**: bytecode-vms' assembler reads its words through `parseKitRows` (same limits and messages, no columns: its wording is pinned); dp-patterns' `parseItems` / `parseSequence` / `parseDims` and randomized-algorithms' `parseArray` use `parseBoundedList` with their own sentences, character-identical. Test: `core/parseKit.test.ts` (every refusal kind, unicode, tabs, NBSP, CRLF, empty, over-limit, a 1 MB line).
+
+### `longestPrefixMatch` in `core/ipv4` — routing-algorithms, bgp, cloud-networking-vpc, vpns-tunneling (waves 8 and 10)
+```ts
+longestPrefixMatch(routes, addr)   // routes: { net, prefix, ...anything }[]; the matching route object itself, or null
+```
+The route with the longest prefix whose block contains `addr`; a /0 default matches everything but loses to any other hit; two routes for the same block tie and the earlier one wins; host bits set in `net` are ignored (as `contains` does). Linear scan, order-independent apart from the tie rule. Test against a bit-string brute force over 300 random tables.
+
+### Two-sample KS (`core/distributions`), `bootstrapMeanInterval` and `gini` (`core/stats`) — model-evals-drift, recommender-systems (migrated)
+```ts
+ksTwoSample(a, b)             // max |F1 - F2| of two samples (ties merged), 0 if either is empty
+ksAgainstSorted(day, sortedBaseline)   // same, sorting only `day`: sort the baseline once
+ksCritical2(n, m, c = KS_C_05)         // c * sqrt((n + m) / (n m)); 1.358 is the 5% constant, from memory
+bootstrapMeanInterval(values, 1000, seed)   // { lo, hi }: 95% percentile bootstrap of the mean, seeded
+gini(amounts)                 // 0 equal ... 1 - 1/n when one holds all; O(n^2)
+```
+`ksStatistic` (one sample against a cdf) is unchanged. Migrated results are identical (the lessons' pinned tests pass; only their import lines moved).
+
+### `bitLength` in `core/bits` — dp-patterns, modular-exponentiation, chinese-remainder (migrated)
+```ts
+bitLength(255) // 8     bitLength(2 ** 40 - 1) // 40 (exact: no log2)     bitLength(10n ** 30n) // 100     bitLength(0) // 0, and 0 for negatives
+```
+Number or bigint; exact for every safe integer; a fraction is floored. Replaces three copies (log2, `toString(2).length`, `Math.clz32(Number(x))`, the last of which was only right below 2^32).
+
+### `core/tfidf.ts` — rag-pipelines (migrated)
+```ts
+const index = buildTermIndex(docsAsTermLists);   // vocab, df, idf = ln(N/df)+1, counts, lengths, unit TF-IDF vectors
+tfidfScores(index, queryTerms)                   // cosine per document; query terms must be in index.vocab
+bm25Scores(index, queryTerms, k1 = BM25_K1, b = BM25_B)   // Okapi BM25 per document; repeated query terms count once
+```
+Scorers only: tokenising, stopwords and chunking stay with the caller (rag-pipelines' `Index` is `TermIndex` plus its chunks). llm-agents-tool-use keeps its documented simpler keyword rule on purpose. Tests: hand-worked scores and a per-document recomputation on 60 seeded corpora.
+
+### `HeapObject freedTone`
+```tsx
+<HeapObject … variant="freed" freedTone="ok" />   // a freed block is --bad whatever `tone` says; freedTone overrides that (a correct free reads green)
+```
+Without `freedTone` nothing changes. (The existing `tone` prop is ignored for a freed block, and callers pass it there today, so it could not become the override.) The freed tag now takes the box colour instead of a hard-coded --bad. Migration for after t3/b22 merges: ownership-refcounting drops its local `.heap-obj.rc-ok` class and passes `freedTone="ok"`.
 
 ## Not built (deliberately)
 

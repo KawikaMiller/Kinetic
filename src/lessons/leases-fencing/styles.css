@@ -1,0 +1,13 @@
+/* leases-fencing */
+.lf-stage { gap: 12px; min-width: 0; }
+.lf-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.lf-scroll { overflow-x: auto; border: 0; }
+.lf-table td, .lf-table th { vertical-align: top; font-size: 12.5px; }
+.lf-cell { padding: 0; }
+.lf-cell-btn { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12.5px; }
+.lf-cell-btn:focus-visible { outline: 2px solid var(--hi); outline-offset: -2px; }
+.lf-cell.is-fine { color: var(--ok); }
+.lf-cell.is-rejected { color: var(--ok); }
+.lf-cell.is-stopped { color: var(--muted); }
+.lf-cell.is-stale { color: var(--bad); }
+.lf-cell.is-here { outline: 2px solid var(--violet); outline-offset: -2px; }

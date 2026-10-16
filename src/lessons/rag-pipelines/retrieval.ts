@@ -1,18 +1,15 @@
 /**
  * Retrieval by word overlap: TF-IDF cosine and BM25 over the chunks, a top-k selection, and recall@k
- * against the gold sentence of each evaluation question. Neither scorer knows what a word means.
+ * against the gold sentence of each evaluation question. Neither scorer knows what a word means; both live in
+ * core/tfidf, and this file adds the lesson's chunks, tokeniser and stopword list on top.
  */
-import { cosine, norm } from '../../core/vec';
+import { BM25_B, BM25_K1, bm25Scores, buildTermIndex, tfidfScores, type TermIndex } from '../../core/tfidf';
 import { EVAL_QUESTIONS } from './corpus';
 import { buildChunks, chunkWords, GOLD, holdsGold, type Chunk, type ChunkFault, type GoldSpan } from './chunker';
 
 export type Scorer = 'tfidf' | 'bm25';
 export const SCORERS: readonly Scorer[] = ['tfidf', 'bm25'];
 export const SCORER_LABEL: Record<Scorer, string> = { tfidf: 'TF-IDF cosine', bm25: 'BM25' };
-
-/** BM25's two usual defaults (from memory: verify against the original papers or a textbook). */
-export const BM25_K1 = 1.2;
-export const BM25_B = 0.75;
 
 export const STOPWORDS: ReadonlySet<string> = new Set(
   ('a an the of to in on at for and or is are was were be been it its you your i my me we our us do does did how what who whom ' +
@@ -23,46 +20,13 @@ export const STOPWORDS: ReadonlySet<string> = new Set(
 /** Lowercase words and digits, stopwords dropped. */
 export const tokenise = (text: string): string[] => (text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((t) => !STOPWORDS.has(t));
 
-export interface Index {
+export interface Index extends TermIndex {
   chunks: readonly Chunk[];
-  vocab: ReadonlyMap<string, number>;
-  /** Number of chunks containing each term. */
-  df: readonly number[];
-  /** ln(N / df) + 1 */
-  idf: readonly number[];
-  /** Term counts of each chunk, by vocabulary index. */
-  counts: readonly ReadonlyMap<number, number>[];
-  /** Content words in each chunk. */
-  lengths: readonly number[];
-  avgLength: number;
-  /** L2-normalised TF-IDF vectors over the whole vocabulary. */
-  vectors: readonly (readonly number[])[];
 }
 
-/** TF-IDF over any list of already tokenised chunks. */
+/** TF-IDF and BM25 statistics over any list of already tokenised chunks. */
 export function indexTokens(chunks: readonly Chunk[], tokens: readonly (readonly string[])[]): Index {
-  const vocab = new Map<string, number>();
-  const counts = tokens.map((terms) => {
-    const m = new Map<number, number>();
-    for (const t of terms) {
-      if (!vocab.has(t)) vocab.set(t, vocab.size);
-      const id = vocab.get(t)!;
-      m.set(id, (m.get(id) ?? 0) + 1);
-    }
-    return m;
-  });
-  const df = new Array<number>(vocab.size).fill(0);
-  for (const m of counts) for (const id of m.keys()) df[id]++;
-  const n = chunks.length;
-  const idf = df.map((d) => Math.log(n / d) + 1);
-  const vectors = counts.map((m) => {
-    const v = new Array<number>(vocab.size).fill(0);
-    for (const [id, tf] of m) v[id] = tf * idf[id];
-    const length = norm(v);
-    return length === 0 ? v : v.map((x) => x / length);
-  });
-  const lengths = tokens.map((t) => t.length);
-  return { chunks, vocab, df, idf, counts, lengths, avgLength: lengths.reduce((a, b) => a + b, 0) / Math.max(1, n), vectors };
+  return { chunks, ...buildTermIndex(tokens) };
 }
 
 export function buildIndex(size: number, overlapPct: number, fault: ChunkFault = 'none'): Index {
@@ -85,30 +49,7 @@ export function indexFor(size: number, overlapPct: number, fault: ChunkFault = '
 /** The distinct words of a question that the index has seen. */
 export const queryTerms = (index: Index, question: string): string[] => [...new Set(tokenise(question))].filter((t) => index.vocab.has(t));
 
-export function tfidfScores(index: Index, terms: readonly string[]): number[] {
-  const counts = new Array<number>(index.vocab.size).fill(0);
-  for (const t of terms) counts[index.vocab.get(t)!] += 1;
-  const q = counts.map((tf, id) => tf * index.idf[id]);
-  if (norm(q) === 0) return index.chunks.map(() => 0);
-  return index.vectors.map((v) => (norm(v) === 0 ? 0 : cosine(q, v)));
-}
-
-export function bm25Scores(index: Index, terms: readonly string[], k1 = BM25_K1, b = BM25_B): number[] {
-  const n = index.chunks.length;
-  const unique = [...new Set(terms)];
-  return index.chunks.map((_, c) => {
-    let score = 0;
-    for (const t of unique) {
-      const id = index.vocab.get(t);
-      if (id === undefined) continue;
-      const tf = index.counts[c].get(id) ?? 0;
-      if (tf === 0) continue;
-      const idf = Math.log(1 + (n - index.df[id] + 0.5) / (index.df[id] + 0.5));
-      score += (idf * tf * (k1 + 1)) / (tf + k1 * (1 - b + (b * index.lengths[c]) / index.avgLength));
-    }
-    return score;
-  });
-}
+export { BM25_B, BM25_K1, bm25Scores, tfidfScores };
 
 export const scoresFor = (index: Index, scorer: Scorer, question: string): number[] => {
   const terms = queryTerms(index, question);

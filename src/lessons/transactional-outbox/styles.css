@@ -1,0 +1,18 @@
+/* transactional-outbox */
+.ob-stage { gap: 12px; min-width: 0; }
+.ob-tables { display: flex; flex-wrap: wrap; gap: 12px; }
+.ob-tables > * { flex: 1 1 200px; min-width: 0; }
+.ob-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.ob-empty { margin: 0; color: var(--muted); font-size: 12.5px; }
+.ob-refusal { color: var(--orange); font-size: 12.5px; }
+.ob-scroll { overflow-x: auto; border: 0; }
+.ob-table td, .ob-table th { vertical-align: top; font-size: 12.5px; }
+.ob-cell { padding: 0; }
+.ob-cell.is-ok, .ob-cell.is-bad { padding: 6px 8px; }
+.ob-cell.is-ok { color: var(--ok); }
+.ob-cell.is-bad { color: var(--bad); }
+.ob-text { color: var(--muted); }
+.ob-cell-btn { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12.5px; }
+.ob-cell-btn:focus-visible { outline: 2px solid var(--hi); outline-offset: -2px; }
+.ob-cell.is-orange { color: var(--orange); }
+.ob-cell.is-here { outline: 2px solid var(--violet); outline-offset: -2px; }
