@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { nextSeed, parseSeed } from '../core/seed';
+import { nextSeed, parseSeed, resyncSeedText } from '../core/seed';
 import { Button, TextField } from './ui';
 import './seedField.css';
 
@@ -7,11 +7,22 @@ import './seedField.css';
  * The seed control of the statistics, queueing and distributed-systems lessons: a text field read
  * through `parseSeed` (core/seed), a "new seed" button, and the refusal message when the typed
  * text is not a seed (the old seed stays). Renders a fragment, so it sits inside the lesson's own
- * controls row.
+ * controls row. The text follows `seed` when the lesson changes it (a preset, "find the seed") with
+ * no remount, so the field never needs a `key`, keeps focus while typing, and keeps what was typed
+ * while it still means the current seed.
  */
 export function SeedField({ seed, onSeed, label = 'Seed' }: { seed: number; onSeed: (seed: number) => void; label?: string }) {
   const [text, setText] = useState(String(seed));
   const [error, setError] = useState<string | null>(null);
+  const [shown, setShown] = useState(seed);
+  if (seed !== shown) {
+    setShown(seed);
+    const synced = resyncSeedText(text, seed);
+    if (synced !== text) {
+      setText(synced);
+      setError(null);
+    }
+  }
 
   const type = (typed: string) => {
     setText(typed);

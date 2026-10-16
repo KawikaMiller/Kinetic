@@ -18,3 +18,13 @@ export const parseSeed = (text: string): FieldParse<number> =>
 
 /** The seed after pressing "new seed": the next one, wrapping at SEED_MAX so it stays valid. */
 export const nextSeed = (seed: number): number => (seed >= SEED_MAX ? 0 : seed + 1);
+
+/**
+ * The text a seed field shows after its `seed` prop changed: the typed text stays when it already
+ * means that seed ("042" for 42), so a keystroke never rewrites what the learner is typing; any
+ * other text (a preset, a new seed, an unrelated edit) gives way to the seed itself.
+ */
+export const resyncSeedText = (text: string, seed: number): string => {
+  const parsed = parseSeed(text);
+  return parsed.ok && parsed.value === seed ? text : String(seed);
+};
