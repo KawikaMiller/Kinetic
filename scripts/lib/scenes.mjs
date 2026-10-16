@@ -51,9 +51,15 @@ const findGroups = () =>
     options: [...group.querySelectorAll('[role="radio"]')].map((b) => (b.textContent ?? '').trim()),
   }));
 
-/** Click option `index` of the `group`-th radio group (re-found every time: a scene switch re-renders the picker). */
-const clickOption = ({ group, index }) => {
-  const button = document.querySelectorAll('.stage-frame .segmented')[group]?.querySelectorAll('[role="radio"]')[index];
+/**
+ * Click option `index` of the scene picker, re-found every time by its label: a scene switch re-renders the
+ * stage, and a scene with its own radio group before the picker moves the picker's position in the page.
+ * `fallback` is the group's position when the page has no group labelled "Scene".
+ */
+const clickOption = ({ fallback, index }) => {
+  const groups = [...document.querySelectorAll('.stage-frame .segmented')];
+  const group = groups.find((g) => (g.getAttribute('aria-label') ?? '').trim().toLowerCase() === 'scene') ?? groups[fallback];
+  const button = group?.querySelectorAll('[role="radio"]')[index];
   if (!button) return false;
   button.click();
   return true;
@@ -80,7 +86,7 @@ export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}
   }
   for (let index = 0; index < picker.options.length; index++) {
     errors.length = 0;
-    const clicked = await page.evaluate(clickOption, { group, index });
+    const clicked = await page.evaluate(clickOption, { fallback: group, index });
     if (!clicked) {
       results.push({ scene: picker.options[index], problems: [`could not click scene tab "${picker.options[index]}"`] });
       continue;
