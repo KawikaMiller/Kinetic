@@ -48,7 +48,7 @@ export interface ReduceFrame extends Frame {
 export function reduceVerdictSentence(v: ReduceVerdict, op: OpId): ReactNode {
   const tree = showValue(v.tree.result, 14);
   const fold = showValue(v.fold.result, 14);
-  if (v.agree) return <><span className="hl ok">The tree agrees with the fold: {fold}.</span></>;
+  if (v.agree) return <><span className="hl ok">The tree agrees with the fold: {fold}.</span>{op === 'subtract' ? ' Agreeing on this input does not make subtract associative: try more values.' : ''}</>;
   if (v.reason === 'regrouping') {
     return (
       <>
@@ -127,7 +127,7 @@ export function scanFrames(vals: readonly Value[], trace: ScanTrace, op: OpId, m
       row: 1,
       say: (
         <>
-          A {mode} scan of {plural(n, 'value')} with {OPS[op].label}, by {kindName(trace.kind)}
+          An {mode} scan of {plural(n, 'value')} with {OPS[op].label}, by {kindName(trace.kind)}
           {trace.padding > 0 ? `, padded to ${nextPow2(n)} cells with ${trace.padding} copies of the identity` : ''}. The loop needs {plural(n - 1, 'step')}; this takes {plural(cost.span, 'step')} and {plural(cost.work, 'operation')}.
         </>
       ),

@@ -56,7 +56,7 @@ export function ReduceScene({ picker }: { picker: ReactNode }) {
             color={verdict.agree ? 'var(--ok)' : 'var(--bad)'}
             sub={[`${tc.span} levels, ${tc.work} operations`, verdict.agree ? 'agrees with the fold' : verdict.reason === 'regrouping' ? 'regrouping changes the answer' : 'reordering changes the answer']}
           />
-          <Stat label={`On ${p} processors`} value={`${sig(range.low)} to ${sig(range.high)}`} sub={['ceil(work / p) to work / p + span']} />
+          <Stat label={`On ${p} processors`} value={`${sig(range.low)} to ${sig(range.high)}`} sub={['max(ceil(work / p), span) to work / p + span']} />
         </Stats>
       }
       legend={

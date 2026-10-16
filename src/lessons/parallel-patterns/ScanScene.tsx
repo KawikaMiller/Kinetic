@@ -5,6 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, ClaimLabel } from '../../components/ui';
 import { WideRegion } from '../../components/WideRegion';
 import { usePlayer } from '../../core/usePlayer';
+import { plural } from '../../core/format';
 import { costOf, estimateText, kindName, scanFrames, type ScanFrame } from './frames';
 import { InputBar } from './InputBar';
 import { scanOpening, type UseCase } from './openings';
@@ -76,8 +77,8 @@ export function ScanScene({ picker }: { picker: ReactNode }) {
       height={480}
       stats={
         <Stats>
-          <Stat label={`Work (${kindName(kind)})`} value={cost.work} color="var(--info)" sub={[`the loop does ${loopCost.work}`, kind === 'hillis-steele' ? 'more additions than the loop' : `2 × (${trace.width} − 1)`]} />
-          <Stat label="Span" value={`${cost.span} steps`} sub={[`the loop takes ${loopCost.span}`, estimateText(cost, p)]} />
+          <Stat label={`Work (${kindName(kind)})`} value={cost.work} color="var(--info)" sub={[`the loop does ${loopCost.work}`, kind === 'hillis-steele' ? (cost.work > loopCost.work ? 'more additions than the loop' : 'as many additions as the loop') : `2 × (${trace.width} − 1)`]} />
+          <Stat label="Span" value={plural(cost.span, 'step')} sub={[`the loop takes ${loopCost.span}`, estimateText(cost, p)]} />
           <Stat label="Result" value={matches ? 'matches the loop' : 'differs'} color={matches ? 'var(--ok)' : 'var(--bad)'} sub={[matches ? 'checked element by element' : `${OPS[op].label} is not associative: the scan regroups`]} />
         </Stats>
       }

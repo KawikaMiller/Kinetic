@@ -230,15 +230,11 @@ export function blelloch(vals: readonly Value[], op: Op, mode: ScanMode): ScanTr
 export const scan = (kind: ScanKind, vals: readonly Value[], op: Op, mode: ScanMode): ScanTrace =>
   kind === 'hillis-steele' ? hillisSteele(vals, op, mode) : blelloch(vals, op, mode);
 
-/** The loop: the prefix computed one element at a time. */
+/** The loop: the prefix computed one element at a time, a true left fold that starts from the first element (no identity is needed, which matters for subtract, whose 0 is not an identity). Only the exclusive scan's first slot is the identity. */
 export function sequentialScan(vals: readonly Value[], op: Op, mode: ScanMode): Value[] {
-  const out: Value[] = [];
-  let acc: Value = op.identity;
-  vals.forEach((v) => {
-    out.push(mode === 'exclusive' ? acc : op.apply(acc, v));
-    acc = op.apply(acc, v);
-  });
-  return out;
+  const inclusive: Value[] = [];
+  vals.forEach((v, i) => inclusive.push(i === 0 ? v : op.apply(inclusive[i - 1], v)));
+  return mode === 'inclusive' || vals.length === 0 ? inclusive : [op.identity, ...inclusive.slice(0, -1)];
 }
 
 // ── cost: work, span, and the estimate on p processors ───────────────────
@@ -261,9 +257,9 @@ export const blellochCost = (n: number): Cost => {
   return { work: 2 * (m - 1), span: 2 * log2ceil(m) };
 };
 
-/** On p processors the time lies between ceil(work / p) and work / p + span (Brent). */
+/** On p processors no schedule beats max(ceil(work / p), span), and a greedy one stays within work / p + span (Brent). */
 export function brentRange(c: Cost, p: number): { low: number; high: number } {
-  return { low: Math.max(Math.ceil(c.work / p), c.span === 0 ? 0 : 1), high: c.work / p + c.span };
+  return { low: Math.max(Math.ceil(c.work / p), c.span), high: c.work / p + c.span };
 }
 
 // ── what a scan is for ───────────────────────────────────────────────────

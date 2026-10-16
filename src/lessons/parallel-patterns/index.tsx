@@ -43,7 +43,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     `Map is as parallel as it gets: ${N} independent elements take ${mapSteps(N, DEFAULT_P)} steps on ${DEFAULT_P} processors and 1 step with enough of them.`,
-    `A tree reduces n values in about log2 n levels, but it only agrees with the loop if the operator allows regrouping: in this model subtract gives ${SUB4.fold.result} by fold and ${SUB4.tree.result} by tree on 8, 4, 2, 1, and concatenation in arrival order gives ${CONCAT_ORDER.tree.result} for ${CONCAT_ORDER.fold.result}.`,
+    `A tree reduces n values in about log2 n levels, but it can only be relied on to agree with the loop if the operator allows regrouping (agreeing on one input proves nothing): in this model subtract gives ${SUB4.fold.result} by fold and ${SUB4.tree.result} by tree on 8, 4, 2, 1, and concatenation in arrival order gives ${CONCAT_ORDER.tree.result} for ${CONCAT_ORDER.fold.result}.`,
     `Parallel prefix sums do more work than the loop: for 8 values Hillis-Steele does ${HILLIS.work} additions and Blelloch ${BLELLOCH.work} against ${LOOP.work}, in exchange for ${HILLIS.span} to ${BLELLOCH.span} steps instead of ${LOOP.span}.`,
     `A scan is a general tool: an exclusive scan of 0/1 flags gives each kept element its output slot, so compaction keeps ${COMPACTED.out.join(', ')} from 5, 2, 8, 3, 6, 7, 4, 1 with the writes independent.`,
   ],
@@ -57,7 +57,7 @@ const lesson: LessonModule = {
         'Neither, since subtract cannot be applied to a list of four values in any order',
       ],
       answer: 0,
-      why: `The loop defines the answer: (8 - 4) - 2 - 1 = ${SUB4.fold.result}. The tree computes (8 - 4) - (2 - 1) = ${SUB4.tree.result}, and since regrouping changed the result, subtract is not associative: it cannot be reduced in parallel. Both are computations, one of them is the one asked for, and subtract does work on a list.`,
+      why: `The loop defines the answer: (8 - 4) - 2 - 1 = ${SUB4.fold.result}. The tree computes (8 - 4) - (2 - 1) = ${SUB4.tree.result}, and since regrouping changed the result, subtract is not associative: a plain tree of subtracts cannot reproduce the loop (the loop's a0 - (a1 + a2 + ...) form can be reduced in parallel). Both are computations, one of them is the one asked for, and subtract does work on a list.`,
     },
     {
       q: 'For 8 values, how many additions does the Hillis-Steele scan do compared with the plain loop?',

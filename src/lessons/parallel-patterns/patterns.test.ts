@@ -43,10 +43,18 @@ describe('scan equals the sequential prefix', () => {
     expect(hillisSteele(vals, OPS.plus, 'inclusive').result).toEqual([3, 4, 8, 9, 14]);
   });
 
-  it('a non-associative operator scans wrongly, and the comparison shows it', () => {
+  it('a non-associative operator scans wrongly, and the comparison shows it: the loop is the true left fold', () => {
+    // hand-worked left fold with no identity seed: 3, 3 - 1, (3 - 1) - 4
+    const small = [3, 1, 4];
+    expect(sequentialScan(small, OPS.subtract, 'inclusive')).toEqual([3, 2, -2]);
+    expect(sequentialScan(small, OPS.subtract, 'exclusive')).toEqual([0, 3, 2]);
+    expect(hillisSteele(small, OPS.subtract, 'inclusive').result).toEqual([3, 2, 6]);
     const vals = [8, 4, 2, 1, 7];
     const loop = sequentialScan(vals, OPS.subtract, 'inclusive');
-    expect(hillisSteele(vals, OPS.subtract, 'inclusive').result).not.toEqual(loop);
+    expect(loop).toEqual([8, 4, 2, 1, -6]);
+    const hs = hillisSteele(vals, OPS.subtract, 'inclusive').result;
+    expect(hs).not.toEqual(loop);
+    expect(hs[0]).toBe(loop[0]);
   });
 
   it('the padding cells are the identity and sit after the inputs', () => {
@@ -119,8 +127,10 @@ describe('operation and step counts equal an instrumented count', () => {
     expect(mapSteps(16, 16)).toBe(1);
   });
 
-  it('the p-processor estimate lies from ceil(work / p) to work / p + span', () => {
-    expect(brentRange({ work: 14, span: 6 }, 4)).toEqual({ low: 4, high: 14 / 4 + 6 });
+  it('the p-processor estimate lies from max(ceil(work / p), span) to work / p + span, never below the span', () => {
+    expect(brentRange({ work: 14, span: 6 }, 4)).toEqual({ low: 6, high: 14 / 4 + 6 });
+    expect(brentRange(treeCost(8), 4)).toEqual({ low: 3, high: 4.75 });
+    expect(brentRange(treeCost(16), 16).low).toBe(4);
     expect(brentRange({ work: 7, span: 7 }, 1)).toEqual({ low: 7, high: 14 });
   });
 });
