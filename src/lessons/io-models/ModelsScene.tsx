@@ -74,7 +74,7 @@ export function ModelsScene({ picker }: { picker: ReactNode }) {
           <div className="iom-table-wrap">
             <table className="data-table iom-table">
               <thead>
-                <tr><th scope="col">Model</th><th scope="col">Calls</th><th scope="col">fd entries</th><th scope="col">Wasted</th><th scope="col">Threads</th><th scope="col">Served</th></tr>
+                <tr><th scope="col">Model</th><th scope="col">Calls</th><th scope="col">fd entries scanned or returned</th><th scope="col">Wasted</th><th scope="col">Threads</th><th scope="col">Served</th></tr>
               </thead>
               <tbody>
                 {all.map((row) => (
@@ -86,6 +86,7 @@ export function ModelsScene({ picker }: { picker: ReactNode }) {
               </tbody>
             </table>
           </div>
+          <Hint tone="muted" block>Select and busy poll scan every fd, so for them the column counts fds scanned; epoll and io_uring only return the ready fds, so for them it counts fds returned. They are different kinds of work, so do not compare the numbers as like with like.</Hint>
         </Box>
         <Box>
           <SectionTitle hint={`always ${TRACE_CONNECTIONS} connections, however many the counters use`}>One round trip on the lanes: {MODEL_LABEL[model]}</SectionTitle>

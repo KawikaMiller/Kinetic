@@ -70,7 +70,7 @@ export function FilesScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint="completion: hand over the work, collect the result">Two queues, submit and complete</SectionTitle>
           <div className="iom-queues">
             <div><span className="iom-qname">Submission queue ({rings.queued} of {SQ_DEPTH})</span><div className="iom-slots">{queueBoxes(rings.queued, SQ_DEPTH, 'var(--hi)')}</div></div>
-            <div><span className="iom-qname">In flight in the kernel ({rings.inflight})</span><div className="iom-slots">{queueBoxes(rings.inflight, SQ_DEPTH, 'var(--info)')}</div></div>
+            <div><span className="iom-qname">In flight in the kernel ({rings.inflight}{rings.inflight > SQ_DEPTH ? `, the first ${SQ_DEPTH} drawn` : ''})</span><div className="iom-slots">{queueBoxes(rings.inflight, SQ_DEPTH, 'var(--info)')}</div></div>
             <div><span className="iom-qname">Completion queue ({rings.cq} of {CQ_DEPTH})</span><div className="iom-slots">{queueBoxes(rings.cq, CQ_DEPTH, 'var(--hi)')}</div></div>
             <div><span className="iom-qname">Collected: {rings.reaped}</span></div>
           </div>

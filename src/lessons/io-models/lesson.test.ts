@@ -75,7 +75,7 @@ describe('try-this entries, from each scene\'s default state, as written', () =>
     expect(text(last.say!)).toBe('Hung: 200 of 300 bytes sit unread after 1 notification and 1 read, and epoll will not mention them again.');
     expect(connectionWord(edgeStateAt(run, last.now))).toBe('hung');
     expect(lesson.tryThis[3]).toContain('200 of 300 bytes unread after 1 notification and 1 read');
-    expect(lesson.tryThis[3]).toContain('4 reads');
+    expect(lesson.tryThis[3]).toContain('4 reads (3 that return data and a last one that returns EAGAIN)');
   });
 
   it('try-this 5: a regular file shows EPERM, and 4 queued reads entered in one call put 4 in flight', () => {

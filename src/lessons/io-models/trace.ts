@@ -17,7 +17,7 @@ export const TRACE_WORK = 4;
 /** The strace scene opens on epoll. */
 export const DEFAULT_TRACE_MODEL: Model = 'epoll';
 const FIRST_ARRIVAL = 2;
-/** The listening socket is fd 3 (and the epoll fd), the connections are fds 4 to 6. */
+/** fd 3 is the epoll (or io_uring) instance itself, the connections are fds 4 to 6; the listening socket and its accept calls are not shown. */
 const FIRST_FD = 4;
 const FIRST_PID = 101;
 const PAYLOAD = '"ping"';

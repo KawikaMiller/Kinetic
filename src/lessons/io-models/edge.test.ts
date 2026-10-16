@@ -6,7 +6,7 @@ import { MESSAGE_BYTES, parseReadSize, runEdge, type Trigger } from './edge';
  * one read of 100: epoll_wait then returned 0 events; level-triggered returned 1 event after each partial read; an edge-triggered
  * handler that read until EAGAIN received all 300 bytes. The model must reproduce those three observations.
  */
-describe('level versus edge, checked for every read size from 1 to 300', () => {
+describe('level versus edge, checked for every read size from 1 to 300 (edge with one read per notification hangs for 1 to 299 only)', () => {
   const sizes = Array.from({ length: MESSAGE_BYTES }, (_, i) => i + 1);
 
   it('edge-triggered with one read per notification hangs exactly when the read is shorter than the message, and says hung, not idle', () => {
@@ -17,6 +17,10 @@ describe('level versus edge, checked for every read size from 1 to 300', () => {
       expect(r.remaining).toBe(Math.max(0, MESSAGE_BYTES - n));
       expect(r.verdict).toBe(n < MESSAGE_BYTES ? 'hung' : 'done');
     }
+    const hungSizes = sizes.filter((n) => runEdge({ trigger: 'edge', readBytes: n, drain: false }).verdict === 'hung');
+    expect(hungSizes).toHaveLength(299);
+    expect([hungSizes[0], hungSizes.at(-1)]).toEqual([1, 299]);
+    expect(runEdge({ trigger: 'edge', readBytes: 300, drain: false }).verdict).toBe('done');
   });
 
   it('the same schedule drained to EAGAIN completes for every size: ceil(300 / n) data reads plus one EAGAIN', () => {

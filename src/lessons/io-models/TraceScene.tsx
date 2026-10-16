@@ -61,7 +61,7 @@ export function TraceScene({ picker }: { picker: ReactNode }) {
     >
       <div className="iom-stage stage-pad">
         <Box>
-          <SectionTitle hint="the highlighted line is the call the lanes are drawn up to">An strace-style log of an echo server</SectionTitle>
+          <SectionTitle hint="the highlighted line is the call the lanes are drawn up to; the scene opens on the last call, so press Previous call or drag Call to replay from the start">An strace-style log of an echo server</SectionTitle>
           <LogStream
             label="System calls of the simulated echo server"
             rows={rows}

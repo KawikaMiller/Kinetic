@@ -85,7 +85,7 @@ export function TriggerScene({ picker }: { picker: ReactNode }) {
           <ArrayStrip values={CELL_VALUES} cellTone={cellTone} renderValue={() => ''} cellTitle={(i) => `bytes ${i * CELL_BYTES} to ${(i + 1) * CELL_BYTES - 1}`} />
           {error && <p className="iom-status" role="status">{error}</p>}
           <Hint tone="muted" block>
-            Level-triggered epoll reports an fd for as long as bytes remain. Edge-triggered reports it once per arrival, so a handler that reads less than the whole message and stops will not hear about the rest.
+            Level-triggered epoll reports an fd for as long as bytes remain. Edge-triggered reports it once per arrival, so a handler that reads less than the whole message and stops will not hear about the rest: with one read per notification that is every read size from 1 to 299 bytes, and at 300 the single read takes everything.
           </Hint>
         </Box>
         <ProvenanceRow>
