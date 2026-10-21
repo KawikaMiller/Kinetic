@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toHex } from '../../core/crypto';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { envelopeBytes, hierarchyCaption, rotationCaption, shredCaption, workloadCaption } from './captions';
 import { decryptRecord, type Envelope } from './envelope';
@@ -176,11 +177,9 @@ describe('captions across the control cross product', () => {
 });
 
 describe('the lesson stays inside the page and carries no real secret', () => {
-  const FORBIDDEN = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|localStorage|sessionStorage|indexedDB/;
-
   it('makes no network call, runs no eval and stores nothing in any source file', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(10);
-    for (const [file, text] of Object.entries(sources)) expect(text, file).not.toMatch(FORBIDDEN);
+    expect(forbiddenCalls(sources, { also: ['localStorage', 'sessionStorage', 'indexedDB'] })).toEqual([]);
   });
 
   it('chips the KMS as simulated and the cipher as real, and the records are marked made-up', () => {

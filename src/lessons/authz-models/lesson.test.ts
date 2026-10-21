@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { ALGORITHMS, RESULTS, combine } from './combine';
 import { askCaption, combineCaption, countCaption, disagreeCaption } from './captions';
@@ -109,11 +110,9 @@ describe('the control cross product', () => {
 });
 
 describe('the lesson stays inside the simulation', () => {
-  const FORBIDDEN = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function/;
-
   it('has no network call and no eval in any source file', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(8);
-    for (const [file, text] of Object.entries(sources)) expect(text, file).not.toMatch(FORBIDDEN);
+    expect(forbiddenCalls(sources)).toEqual([]);
   });
 
   it('chips every scene as simulated or a toy', () => {
