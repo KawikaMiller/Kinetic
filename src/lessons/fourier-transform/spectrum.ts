@@ -3,6 +3,7 @@
  * counted work of the DFT against the FFT. A real signal's spectrum is mirrored: bin N-k holds the complex conjugate of
  * bin k, so removing a bin means removing its partner too.
  */
+import { power } from '../../core/format';
 import { mulberry32 } from '../../core/random';
 import { cAbs, cx, conjugatePartner, dft, fft, fromReal, ifft, newOpCount, type Complex } from '../../core/signal';
 
@@ -107,4 +108,11 @@ export function workCounts(n: number): Work {
   dft(x, slow);
   fft(x, fast);
   return { n, dft: slow.complexMuls, fft: fast.complexMuls };
+}
+
+/** 4.1e-16 as "4.1 × 10⁻¹⁶" with a real superscript (an e-notation on screen reads like a number-formatting bug); 0 is "0". */
+export function scientific(x: number): string {
+  if (x === 0) return '0';
+  const [mantissa, exponent] = x.toExponential(1).split('e');
+  return `${mantissa} × ${power(Number(exponent), 10)}`;
 }
