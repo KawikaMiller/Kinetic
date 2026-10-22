@@ -39,6 +39,8 @@ export function lossCaption(r: RoundRec, link: LinkSetup): ReactNode {
 
 /** Rounds after the last shown loss before the "window regrows" caption is worth a frame of its own. */
 const REGROW_MIN_ROUNDS = 4;
+/** Evenly spaced "window regrows" captions between the last shown loss and the next one (or the end). */
+const REGROW_CAPTIONS = 4;
 /** How many loss events get a caption of their own. */
 const SHOWN_LOSSES = 4;
 
@@ -47,17 +49,20 @@ function regrowMilestone(recs: readonly RoundRec[], shown: readonly RoundRec[]):
   const last = shown[shown.length - 1];
   if (!last) return [];
   const next = recs.find((r) => r.round > last.round && r.event !== null)?.round ?? recs.length - 1;
-  const round = Math.floor((last.round + next) / 2);
-  if (round - last.round < REGROW_MIN_ROUNDS) return [];
-  const now = recs[round];
-  return [{
-    t: round,
-    say: (
-      <>
-        Round {round}: the window has regrown to {seg(now.sent)} segments since the loss at round {last.round}, <span className="hl ok">{now.phase === 'slow-start' ? 'back in slow start' : 'in congestion avoidance'}</span>, probing for the limit again.
-      </>
-    ),
-  }];
+  const rounds = Array.from({ length: REGROW_CAPTIONS }, (_, k) => Math.floor(last.round + ((next - last.round) * (k + 1)) / (REGROW_CAPTIONS + 1)));
+  return rounds
+    .filter((round, k) => round - (k === 0 ? last.round : rounds[k - 1]) >= REGROW_MIN_ROUNDS)
+    .map((round) => {
+      const now = recs[round];
+      return {
+        t: round,
+        say: (
+          <>
+            Round {round}: the window has regrown to {seg(now.sent)} segments since the loss at round {last.round}, <span className="hl ok">{now.phase === 'slow-start' ? 'back in slow start' : 'in congestion avoidance'}</span>, probing for the limit again.
+          </>
+        ),
+      };
+    });
 }
 
 /** The frames of Reno's story: `now` is the round. */
