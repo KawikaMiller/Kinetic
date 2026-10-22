@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Finding where a hiring loop loses the people it was built to find',
       'Pricing a debrief choice, such as deciding on the average, against the days and goodwill it costs',
     ],
-    why: 'Hiring decisions feel like judgements about people, which hides that they are measurements with error. Writing the noise per interview, the number of independent opinions and the size of the cut as inputs shows how much of the answer is the instrument and how much is the candidate.',
+    why: 'In this toy, a hiring decision is a measurement with error. Writing the noise per interview, the number of independent opinions and the size of the cut as inputs shows how much of the answer is the instrument and how much is the candidate.',
     watch: 'On One panel, one decision each dot is a candidate: green for one hired from the true top group, red for one in the true top group who was missed, orange for a false hire (hired, outside the true top group) and grey for the rest, with a grey dashed hire line. On Design the loop each card has a grey bar for the share of the pool alive and a blue bar for the share of the true top group alive. On Calibrate the interviewers a blue bar is an interviewer\'s mean score, with a grey dashed line at the average of the eight. On the debrief a meter is blue while fine and red past its edge.',
   },
   tryThis: [
@@ -47,11 +47,11 @@ const lesson: LessonModule = {
       options: [
         'It depends on whether their errors are independent of the rest of the panel',
         'When the other four have small errors, since precise scores gain the most from a fifth',
-        'When the panel has fewer than four people, because the correlation stops improving after four',
+        'Never: the correlation with skill stops improving once a panel has four people in it',
         'When the fifth is more senior than the other four, because rank sharpens a score',
       ],
       answer: 0,
-      why: `Independence is what makes an extra score count: four interviewers at an error of 1 correlate ${F.fourR} with skill, but with errors correlated at 0.5 they are worth ${F.fourAgreeingEffective} independent interviewers. The correlation keeps rising past four (${F.rK9} at nine at an error of 1.2 against ${F.rDefault} at three), noisier scores gain more from a fifth than precise ones, and rank is not in the model.`,
+      why: `Independence is what makes an extra score count: four interviewers at an error of 1 correlate ${F.fourR} with skill, but with errors correlated at 0.5 they are worth ${F.fourAgreeingEffective} independent interviewers. The correlation keeps rising past four (${F.rK9} at nine at an error of 1.2 against ${F.rDefault} at three), noisier scores gain more correlation from a fifth than precise ones (a statement about r: the gain in recall is not steady in the error), and rank is not in the model.`,
     },
     {
       q: 'Why does the lesson say it shows the arithmetic, not evidence that rubrics work?',
@@ -78,13 +78,13 @@ const lesson: LessonModule = {
     {
       q: 'In the debrief, deciding by the average now is chosen. When is that defensible in the scenario?',
       options: [
-        'When a wrong call is cheap to undo and the scores are independent of one another',
+        'When the scores are independent of one another and the bar for hiring is clear to all',
         'When the dissenter is the most junior person, because a junior no counts for less',
         'When the average is high, since a high average means no concern is hiding in it',
         'When the panel has argued for a long time, since more talk adds no information',
       ],
       answer: 0,
-      why: 'An average is a fair summary of independent scores and a wrong call that is cheap to undo costs little, which is the scenario\'s own condition; with one strong dissent the average hides the reason, so a high average does not rule out a concern. Rank and the length of the argument are not what makes the average fair.',
+      why: 'An average is a fair summary of independent scores against a clear bar, which is the condition the scenario states for it; the scenario has no meter for how cheap a call is to undo. With one strong dissent the average hides the reason, so a high average does not rule out a concern. Rank and the length of the argument are not what makes the average fair.',
     },
   ],
 };

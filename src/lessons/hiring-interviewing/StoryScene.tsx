@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ScenarioStory } from '../../components/ScenarioStory';
 import { StageFrame } from '../../components/StageFrame';
-import { ClaimLabel, Legend, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Legend, Provenance, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { redMeters, startWalk, validateScenario } from '../../core/scenario';
 import { storyCaption } from './captions';
@@ -41,7 +41,7 @@ export function StoryScene({ picker }: SceneProps) {
           onWalk={setWalk}
           provenance={PROVENANCE_NOTE}
           claimOf={(id) => CLAIM_OF[id]}
-          notes={<ClaimLabel kind="view">no ending here is marked correct: each one shows what it cost, and a fast average is defensible when a wrong call is cheap to undo</ClaimLabel>}
+          notes={<><Provenance kind="invented">every effect in this scene is an authored number, not a measurement; two were set so that no option is beaten on every meter (letting the strong no decide costs regret 8, and a follow-up after thin evidence lowers it by 2), and the goodwill edge of 4 is authored too</Provenance><ClaimLabel kind="view">no ending here is marked correct: each one shows what it cost, and a fast average is defensible when the scores are independent and the bar is clear</ClaimLabel></>}
           endingHint={ENDING_HINT}
         />
       </div>

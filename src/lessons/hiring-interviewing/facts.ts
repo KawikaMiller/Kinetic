@@ -52,7 +52,7 @@ export const FACTS = {
   spreadTight: d2(spreadTight),
   expectedLoose: d2(expectedSpread(SIGMA_B)),
   expectedTight: d2(expectedSpread(SIGMA_B_ANCHORED)),
-  lenientChance: decimal(passChance(SINGLE_CANDIDATE_SKILL, LENIENT) * 100, 1),
-  neutralChance: decimal(passChance(SINGLE_CANDIDATE_SKILL, 0) * 100, 1),
-  strictChance: decimal(passChance(SINGLE_CANDIDATE_SKILL, -LENIENT) * 100, 1),
+  lenientChance: pctWhole(passChance(SINGLE_CANDIDATE_SKILL, LENIENT)),
+  neutralChance: pctWhole(passChance(SINGLE_CANDIDATE_SKILL, 0)),
+  strictChance: pctWhole(passChance(SINGLE_CANDIDATE_SKILL, -LENIENT)),
 } as const;

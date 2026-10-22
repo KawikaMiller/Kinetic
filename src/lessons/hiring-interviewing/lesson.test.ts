@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { choose, dominatedChoices, enumeratePaths, redMeters, startWalk, validateScenario } from '../../core/scenario';
 import { expectCaption } from '../../core/testing/captions';
@@ -74,12 +75,12 @@ describe('try-this entries, in written order from the default state', () => {
     expect(Number(FACTS.funnelNoPhoneRecall)).toBeLessThan(Number(FACTS.funnelRecall));
   });
 
-  it('try-this 5: the anchored rubric shrinks the spread of the eight means on seed 1; the same candidate clears the bar 66.6% against 3.2%', () => {
+  it('try-this 5: the anchored rubric shrinks the spread of the eight means on seed 1; the same candidate clears the bar 67% against 3%, the whole numbers the table shows', () => {
     const draws = makeInterviewerDraws(DEFAULT_SEED);
     expect(spreadOf(interviewerRows(draws, SIGMA_B_ANCHORED))).toBeLessThan(spreadOf(interviewerRows(draws, SIGMA_B)));
     expect(Number(FACTS.spreadTight)).toBeLessThan(Number(FACTS.spreadLoose));
-    expect([FACTS.lenientChance, FACTS.neutralChance, FACTS.strictChance]).toEqual(['66.6', '23.8', '3.2']);
-    expect(lesson.tryThis[4]).toContain('66.6% with a lenient interviewer against 3.2% with a strict one');
+    expect([FACTS.lenientChance, FACTS.neutralChance, FACTS.strictChance]).toEqual([67, 24, 3]);
+    expect(lesson.tryThis[4]).toContain('67% with a lenient interviewer against 3% with a strict one');
   });
 });
 
@@ -130,7 +131,7 @@ describe('the debrief story', () => {
   const paths = () => enumeratePaths(DEBRIEF);
   const final = (ids: string[]) => walkTo(ids).meters;
 
-  it('has the fixture graph and meters; two effects are retuned from it (veto regret 8, not 12; still_followup regret -2, not -1) and the rest are the fixture\'s', () => {
+  it('has the fixture graph and meters; the fixture carries the two retunes (veto regret 8, not 12; still_followup regret -2, not -1)', () => {
     expect(DEBRIEF.start).toBe(HIRING.start);
     expect(DEBRIEF.meters.map((m) => [m.id, m.start, m.min, m.max, m.bad])).toEqual(HIRING.meters.map((m) => [m.id, m.start, m.min, m.max, m.bad]));
     const differences: string[] = [];
@@ -138,7 +139,7 @@ describe('the debrief story', () => {
       expect(node.choices.map((c) => [c.id, c.to])).toEqual(HIRING.nodes[i].choices.map((c) => [c.id, c.to]));
       node.choices.forEach((c, j) => { if (JSON.stringify(c.effects) !== JSON.stringify(HIRING.nodes[i].choices[j].effects)) differences.push(c.id); });
     }
-    expect(differences).toEqual(['veto', 'still_followup']);
+    expect(differences).toEqual([]);
     expect(DEBRIEF.endings.map((e) => e.id)).toEqual(HIRING.endings.map((e) => e.id));
   });
 
@@ -147,7 +148,10 @@ describe('the debrief story', () => {
     expect(validateScenario(DEBRIEF, { tradeoffs: true, crossEndings: true })).toEqual([]);
     for (const destinations of ['same', 'equal-or-better', 'ignore'] as const) expect(dominatedChoices(DEBRIEF, { destinations }), destinations).toEqual([]);
     expect(paths()).toHaveLength(6);
-    expect(validateScenario(HIRING, { tradeoffs: true }).map((p) => p.kind)).toEqual(['dominated-path']);
+    expect(validateScenario(HIRING, { tradeoffs: true })).toEqual([]);
+    // At the spec's original numbers the evidence > still_followup > hire_after path is beaten by followup > hire_after to the same ending.
+    const original = { ...DEBRIEF, nodes: DEBRIEF.nodes.map((n) => (n.id === 'h2' ? { ...n, choices: n.choices.map((c) => (c.id === 'still_followup' ? { ...c, effects: { ...c.effects, regret: -1 } } : c)) } : n)) };
+    expect(validateScenario(original, { tradeoffs: true }).map((p) => p.kind)).toEqual(['dominated-path']);
   });
 
   it('has the hand-worked ending ledgers (start regret 15, days 0, goodwill 7)', () => {
@@ -177,12 +181,21 @@ describe('the debrief story', () => {
     expect(METERS).toHaveLength(3);
   });
 
-  it('has no ending in the red, with goodwill at the edge on the evidence ending, and every path worsens a meter', () => {
-    for (const p of paths()) {
-      expect(redMeters(DEBRIEF, p.meters), p.choices.join(' > ')).toEqual([]);
-      expect(p.meters[METER.regret] > 15 || p.meters[METER.days] > 0 || p.meters[METER.goodwill] < 7, p.choices.join(' > ')).toBe(true);
-    }
+  it('puts exactly one ending in the red, the evidence ending (goodwill 3, below the edge of 4), so the goodwill edge fires; the rest stay out, and every path worsens a meter', () => {
+    const inRed = paths().filter((p) => redMeters(DEBRIEF, p.meters).length > 0);
+    expect(inRed.map((p) => p.choices.join(' > '))).toEqual(['evidence > decide_evidence']);
+    expect(redMeters(DEBRIEF, inRed[0].meters).map((m) => m.id)).toEqual([METER.goodwill]);
+    for (const p of paths()) expect(p.meters[METER.regret] > 15 || p.meters[METER.days] > 0 || p.meters[METER.goodwill] < 7, p.choices.join(' > ')).toBe(true);
     expect(final(['evidence', 'decide_evidence'])[METER.goodwill]).toBe(3);
+    expect(final(['evidence', 'still_followup', 'hire_after'])[METER.goodwill]).toBe(4);
+    expect(expectCaption(storyCaption(DEBRIEF, walkTo(['evidence', 'decide_evidence'])))).toContain('In the red: panel goodwill');
+  });
+
+  it('labels the two retuned numbers as authored and invented in their own because text, and the story scene says the effects are authored', () => {
+    const because = (id: string) => DEBRIEF.nodes.flatMap((n) => n.choices).find((c) => c.id === id)!.because;
+    expect(because('veto')).toContain('invented');
+    expect(because('still_followup')).toContain('invented');
+    expect(fs.readFileSync(new URL('./StoryScene.tsx', import.meta.url), 'utf8')).toContain('authored');
   });
 
   it('has no ending marked correct, states every reason as a condition, and the fast ending is defensible with its cost visible', () => {
