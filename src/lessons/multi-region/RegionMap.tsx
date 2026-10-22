@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import type { KeyboardEvent } from 'react';
 import { Pulse } from '../../components/scene';
 import { CONTINENTS } from './continents';
 import {
@@ -134,7 +135,19 @@ export function RegionMap({
         const role = mode === 'passive' ? (primary === r ? 'primary' : r === 'eu' ? 'standby' : r === 'us' ? 'old primary' : '') : '';
         const cls = isDead ? 'dead' : serving ? 'serving' : inUse.includes(r) ? 'standby' : 'unused';
         return (
-          <g key={r} className={`mr-region ${cls}`} onClick={() => onToggleRegion(r)}>
+          <g
+            key={r}
+            className={`mr-region ${cls}`}
+            role="button"
+            tabIndex={0}
+            aria-label={`${R.name}, ${isDead ? 'down. Press Enter to restore it' : 'up. Press Enter to take it down'}`}
+            onClick={() => onToggleRegion(r)}
+            onKeyDown={(e: KeyboardEvent<SVGGElement>) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              onToggleRegion(r);
+            }}
+          >
             <title>{isDead ? 'Click to restore' : 'Click to kill this region'}</title>
             {serving && !isDead && <Pulse className="mr-pulse" at={R} from={16} to={30} color="var(--ok)" opacity={0.6} duration={1.8} />}
             <rect x={R.x - REGION_HALF} y={R.y - REGION_HALF} width={REGION_HALF * 2} height={REGION_HALF * 2} rx={8} />

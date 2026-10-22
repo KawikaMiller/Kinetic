@@ -4,6 +4,7 @@
 // - motionView: message dots, election-timer rings and heartbeat pulses. Every
 //   frame, but only the small layer that draws them re-renders.
 import { clamp01 } from '../../core/math';
+import type { SafetyMonitor, SafetyViolation } from './safety';
 import { HEARTBEAT, N, type Entry, type Msg, type Raft, type RaftEvent, type Role } from './sim';
 
 /* ─── Cluster geometry (SVG units) ─── */
@@ -43,9 +44,10 @@ export interface ClusterView {
   msgCount: number;
   events: RaftEvent[]; // newest first
   minority: number[] | null;
+  safety: { violation: SafetyViolation | null; events: number; committed: number };
 }
 
-export function clusterView(r: Raft): ClusterView {
+export function clusterView(r: Raft, monitor: SafetyMonitor): ClusterView {
   return {
     nodes: r.nodes.map((n) => ({
       id: n.id, role: n.role, term: n.term, alive: n.alive, log: n.log.slice(), commit: n.commit, votes: n.votes.size,
@@ -53,6 +55,7 @@ export function clusterView(r: Raft): ClusterView {
     msgCount: r.msgs.length,
     events: r.events.slice(-EVENTS_SHOWN).reverse(),
     minority: r.minority ? [...r.minority] : null,
+    safety: { violation: monitor.violation, events: monitor.events, committed: monitor.committedCount },
   };
 }
 
@@ -103,8 +106,9 @@ export function motionView(r: Raft): MotionView {
       const a = pos(m.from);
       const b = pos(m.to);
       const raw = (r.now - m.sentAt) / (m.arriveAt - m.sentAt);
-      const fizzling = m.lost && raw > LOST_AT;
-      const p = m.lost ? Math.min(raw, LOST_AT) : raw;
+      const stop = m.stopAt ?? LOST_AT; // a message cut past halfway freezes where it was, it never jumps back
+      const fizzling = m.lost && raw > stop;
+      const p = m.lost ? Math.min(raw, stop) : raw;
       const style = msgStyle(m);
       return {
         id: m.id,
@@ -112,7 +116,7 @@ export function motionView(r: Raft): MotionView {
         y: a.y + (b.y - a.y) * p,
         r: style.r,
         color: fizzling ? 'var(--bad)' : style.color,
-        opacity: fizzling ? Math.max(0, 1 - (raw - LOST_AT) * 2) : 1,
+        opacity: fizzling ? Math.max(0, 1 - (raw - stop) * 2) : 1,
         vote: m.type === 'vote',
       };
     }),

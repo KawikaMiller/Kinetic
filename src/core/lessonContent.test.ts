@@ -19,7 +19,6 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const T4_R1 = 'T4-R1 retrofit (docs/tier4-technical.md §5)';
 const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
 
 /**
@@ -28,8 +27,12 @@ const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
  * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
 const TIER4_AWAITING_RETROFIT = new Set<string>([
-  'raft', 'distributed-transactions', 'crdts', 'multi-region', 'backpressure', // T4-R1
   'lsm-trees', 'probabilistic-structures', 'slos-error-budgets', 'zero-trust', // T4-R2
+]);
+/** The nine existing Tier 4 lessons, fixed: the D-row cross-check needs them after each one leaves the allowlist above. */
+const TIER4_RETROFIT_IDS: ReadonlySet<string> = new Set([
+  'raft', 'distributed-transactions', 'crdts', 'multi-region', 'backpressure', 'lsm-trees', 'probabilistic-structures',
+  'slos-error-budgets', 'zero-trust',
 ]);
 /** How many Tier 4 lessons were on the allowlist before the retrofits began. */
 const TIER4_EXISTING_COUNT = 9;
@@ -51,13 +54,8 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   // Tier 4
-  'backpressure': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
-  'crdts': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
-  'distributed-transactions': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
   'lsm-trees': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
-  'multi-region': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
   'probabilistic-structures': { ticket: T4_R2, rules: ['quiz-length'] },
-  'raft': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
   'slos-error-budgets': { ticket: T4_R2, rules: ['quiz-length'] },
   'zero-trust': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
 };
@@ -385,7 +383,7 @@ describe('AC-0/T4 rules', () => {
   it.skipIf(!tier4PlanRows.length)('flag exactly the D rows of the plan', () => {
     const planned = tier4PlanRows.filter((r) => r.domainReview).map((r) => r.id);
     expect(planned).toHaveLength(29);
-    const newlyFlagged = [...DOMAIN_REVIEW_IDS_T4].filter((id) => !TIER4_AWAITING_RETROFIT.has(id));
+    const newlyFlagged = [...DOMAIN_REVIEW_IDS_T4].filter((id) => !TIER4_RETROFIT_IDS.has(id));
     expect(newlyFlagged.sort()).toEqual(planned.sort());
   });
 

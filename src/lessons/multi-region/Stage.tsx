@@ -1,16 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
+import { Button, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA, pad2 } from '../../core/format';
 import { useInterval } from '../../core/useInterval';
 import {
-  ASYNC_LAG_S, CLOCK_LIMIT_S, latencyStats, MODE_INFO, phaseOf, primaryRegion, REGIONS, replicaPairs, routesFor, WRITES_PER_S,
+  ASYNC_LAG_S, CLOCK_LIMIT_S, costFactor, DETECT_S, DNS_S, PROMOTE_S, latencyStats, MODE_LABEL, phaseOf, primaryRegion, REGIONS, replicaPairs, routesFor, rpoText, RTT, rtoText, toggleRegion as applyToggle, type FailureLoss, type ToggleEvent, WRITES_PER_S,
   type Mode, type RegionId, type Replication,
 } from './model';
 import { RegionMap } from './RegionMap';
 import './styles.css';
 
+const WIDE_MIN_PX = 700;
 const SIM_SPEED = 60; // 1 real second = 1 simulated minute during failover
 const TICK_MS = 100;
 /** A worst-case round trip above this reads as "slow" (red). */
@@ -21,7 +23,7 @@ const CONFLICT_VERDICT_MS = 1500;
 const INTRO: Record<Mode, ReactNode> = {
   single: (
     <>
-      <b>Single region</b>: everyone talks to us-east. Cheap and simple, but Asia pays <span className="hl bad">~220 ms</span> per round
+      <b>Single region</b>: everyone talks to us-east. Cheap and simple, but Asia pays <span className="hl bad">{RTT.apu.us} ms</span> per round
       trip, and one region outage is a total outage.
     </>
   ),
@@ -42,6 +44,56 @@ const INTRO: Record<Mode, ReactNode> = {
 /** Simulated seconds as 'M:SS'. */
 const minSec = (s: number) => `${Math.floor(s / 60)}:${pad2(Math.floor(s % 60))}`;
 
+const ORDERS_LOST = Math.round(ASYNC_LAG_S * WRITES_PER_S);
+
+/** What a failure lost, from the replicas that were alive just before it (the RPO stat describes the exposure from now on). */
+function lossSentence(loss: FailureLoss): ReactNode {
+  switch (loss.kind) {
+    case 'backup':
+      return <>Anything since the last backup is at risk, and there's nowhere to fail over to.</>;
+    case 'lag':
+      return (
+        <>
+          Its last <span className="hl bad wrap">~{ASYNC_LAG_S} s</span> of unreplicated writes (≈ {ORDERS_LOST} orders) are lost: that's the <b>RPO</b>.
+        </>
+      );
+    case 'zero':
+      return (
+        <>
+          Sync replication: each committed write already existed in another live region, so this failure lost <span className="hl ok">nothing (RPO = 0)</span>.
+          The RPO stat now shows what the next failure would cost.
+        </>
+      );
+    case 'no-replica':
+      return loss.replication === 'async' ? (
+        <>
+          No other region was alive, so nothing was replicating: <span className="hl bad wrap">everything written since the last replica died</span> is
+          lost, far more than the ~{ASYNC_LAG_S} s lag.
+        </>
+      ) : (
+        <>Sync replication, but no other region was alive: the committed writes existed only here, so they are <span className="hl bad">lost</span>.</>
+      );
+  }
+}
+
+/** The caption a click on a region sets, or null when the failover phase text describes the new state. */
+function toggleCaption(mode: Mode, r: RegionId, event: ToggleEvent): ReactNode {
+  switch (event.kind) {
+    case 'restored':
+      return event.stillDown.length === 0 ? (
+        <>{REGIONS[r].name} is back. Traffic fails back to the original setup.</>
+      ) : (
+        <>{REGIONS[r].name} is back; {event.stillDown.map((x) => REGIONS[x].name).join(' and ')} still down.</>
+      );
+    case 'standby-died':
+      return <>The standby died. Users don't notice, but you've <span className="hl bad">lost your safety net</span> until it's rebuilt.</>;
+    case 'unused':
+      return <>Nothing runs in {REGIONS[r].name} in this setup ({MODE_LABEL[mode]}), so nothing happens.</>;
+    case 'failed':
+      return null;
+  }
+}
+
 export function Stage() {
   const setCaption = useSetCaption();
   const [mode, setMode] = useState<Mode>('single');
@@ -50,6 +102,8 @@ export function Stage() {
   const [clock, setClock] = useState<number | null>(null);
   const [residency, setResidency] = useState(false);
   const [conflict, setConflict] = useState(0);
+  /** The replication setting at the moment of the last Concurrent edit press: toggling it later does not re-judge that edit. */
+  const [conflictReplication, setConflictReplication] = useState<Replication>('async');
   const [lossNote, setLossNote] = useState<ReactNode>(null);
 
   const phase = phaseOf(mode, dead, clock);
@@ -64,7 +118,7 @@ export function Stage() {
     if (!phaseText) return;
     setCaption(
       <>
-        <span className={`hl ${phaseDone ? 'ok' : ''}`}>{phaseText}</span> {lossNote}
+        <span className={`hl wrap ${phaseDone ? 'ok' : ''}`}>{phaseText}</span> {lossNote}
       </>,
     );
   }, [phaseText, phaseDone, lossNote, setCaption]);
@@ -73,7 +127,7 @@ export function Stage() {
     if (!conflict) return;
     const id = setTimeout(() => {
       setCaption(
-        replication === 'sync' ? (
+        conflictReplication === 'sync' ? (
           <>
             With <b>sync</b> replication the second write had to wait for the first to commit everywhere, so no conflict, at the cost of
             a slower write.
@@ -87,7 +141,7 @@ export function Stage() {
       );
     }, CONFLICT_VERDICT_MS);
     return () => clearTimeout(id);
-  }, [conflict, replication, setCaption]);
+  }, [conflict, conflictReplication, setCaption]);
 
   const routes = routesFor(mode, dead, phaseDone);
   const stats = latencyStats(routes, mode, replication, dead);
@@ -101,34 +155,12 @@ export function Stage() {
   };
 
   const toggleRegion = (r: RegionId) => {
-    if (dead.includes(r)) {
-      setDead(dead.filter((x) => x !== r));
-      setClock(null);
-      setLossNote(null);
-      setCaption(<>{REGIONS[r].name} is back. Traffic fails back to the original setup.</>);
-      return;
-    }
-    setDead([...dead, r]);
-    const serving = mode === 'active' || r === 'us' || (mode === 'passive' && r === 'eu' && dead.includes('us'));
-    if (serving) setClock(0);
-    if (mode === 'passive' && r === 'eu' && !dead.includes('us')) {
-      setCaption(<>The standby died. Users don't notice, but you've <span className="hl bad">lost your safety net</span> until it's rebuilt.</>);
-    } else if (mode === 'single' && r !== 'us') {
-      setCaption(<>Nothing runs in {REGIONS[r].name} in this setup, so nothing happens.</>);
-    } else if (mode !== 'single' && serving) {
-      setLossNote(
-        replication === 'async' ? (
-          <>
-            Its last <span className="hl bad">~{ASYNC_LAG_S} s</span> of unreplicated writes (≈ {Math.round(ASYNC_LAG_S * WRITES_PER_S)} orders)
-            are lost: that's the <b>RPO</b>.
-          </>
-        ) : (
-          <>Sync replication: every committed write already exists in another region, so <span className="hl ok">RPO = 0</span>.</>
-        ),
-      );
-    } else if (mode === 'single') {
-      setLossNote(<>Anything since the last backup is at risk, and there's nowhere to fail over to.</>);
-    }
+    const { state, event } = applyToggle(mode, replication, { dead, clock }, r);
+    setDead(state.dead);
+    setClock(state.clock);
+    setLossNote(event.kind === 'failed' ? lossSentence(event.loss) : null);
+    const caption = toggleCaption(mode, r, event);
+    if (caption) setCaption(caption);
   };
 
   const reset = () => {
@@ -140,19 +172,18 @@ export function Stage() {
   };
 
   const downtime = clock !== null && phase ? clock : null;
-  const info = MODE_INFO[mode];
 
   return (
-    <StageFrame minWidth={700}
-      height={470}
+    <StageFrame
+      height={0}
       stats={
         <Stats>
           <Stat label="Avg read latency" value={stats.anyServed ? `${Math.round(stats.avgRead)} ms` : NA} color="var(--info)" sub="round trip, by users" />
           <Stat label="Worst user" value={stats.worst === null ? NA : `${stats.worst} ms`} color={stats.worst !== null && stats.worst > SLOW_RTT_MS ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="Avg write latency" value={stats.avgWrite === null ? NA : `${Math.round(stats.avgWrite)} ms`} color="var(--violet)" sub={replication === 'sync' && mode !== 'single' ? 'waits for replicas' : 'local commit'} />
+          <Stat label="Avg write latency" value={stats.avgWrite === null ? NA : `${Math.round(stats.avgWrite)} ms`} color="var(--violet)" sub={stats.waitsForReplicas ? 'waits for replicas' : 'local commit'} />
           <Stat label="Users down" value={`${Math.round(stats.downShare * 100)}%`} color={stats.downShare ? 'var(--bad)' : 'var(--ok)'} sub={downtime !== null ? `downtime ${minSec(downtime)}` : undefined} />
-          <Stat label="RPO / RTO" value={<span className="mr-small">{info.rpo(replication)}</span>} sub={info.rto} />
-          <Stat label="Cost" value={info.cost} sub="vs one region" />
+          <Stat label="RPO now / RTO" value={<span className="mr-small">{rpoText(mode, replication, dead)}</span>} sub={rtoText(mode)} />
+          <Stat label="Cost" value={`${costFactor(mode)}×`} sub="regions, vs one region" />
         </Stats>
       }
       legend={
@@ -173,9 +204,9 @@ export function Stage() {
             value={mode}
             onChange={changeMode}
             options={[
-              { value: 'single', label: 'Single region' },
-              { value: 'passive', label: 'Active-passive' },
-              { value: 'active', label: 'Active-active' },
+              { value: 'single', label: MODE_LABEL.single },
+              { value: 'passive', label: MODE_LABEL.passive },
+              { value: 'active', label: MODE_LABEL.active },
             ]}
           />
           <Segmented
@@ -193,6 +224,7 @@ export function Stage() {
           {mode === 'active' && (
             <Button
               onClick={() => {
+                setConflictReplication(replication);
                 setConflict((c) => c + 1);
                 setCaption(<>A US user and an EU user edit the <b>same cart</b> at the same moment…</>);
               }}
@@ -205,18 +237,29 @@ export function Stage() {
         </Controls>
       }
     >
-      <RegionMap
-        mode={mode}
-        replication={replication}
-        residency={residency}
-        conflict={conflict}
-        dead={dead}
-        routes={routes}
-        primary={primaryRegion(mode, dead, phaseDone)}
-        pairs={replicaPairs(mode, dead)}
-        phase={phase}
-        onToggleRegion={toggleRegion}
-      />
+      <WideRegion minWidth={WIDE_MIN_PX}>
+        <RegionMap
+          mode={mode}
+          replication={replication}
+          residency={residency}
+          conflict={conflict}
+          dead={dead}
+          routes={routes}
+          primary={primaryRegion(mode, dead, phaseDone)}
+          pairs={replicaPairs(mode, dead)}
+          phase={phase}
+          onToggleRegion={toggleRegion}
+        />
+      </WideRegion>
+      <ProvenanceRow>
+        <Provenance kind="simulated">
+          failover and replication are a model on a made-up clock: one real second is one simulated minute, and a region fails when you click it
+        </Provenance>
+        <Provenance kind="illustrative">
+          round-trip times, user shares, the {DETECT_S} s, {PROMOTE_S} s and {DNS_S} s failover phases, the {ASYNC_LAG_S} s replication lag and {WRITES_PER_S} writes a second are invented; cost counts regions only
+        </Provenance>
+        <Provenance kind="from-memory">light covers about 200 km per millisecond in fibre (so 1 ms of round trip per 100 km): verify against a physics reference</Provenance>
+      </ProvenanceRow>
     </StageFrame>
   );
 }
