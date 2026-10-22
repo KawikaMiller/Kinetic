@@ -10,12 +10,13 @@
 //   npm run sweep -- --all-tier=4             # every built lesson of a tier
 //   npm run sweep -- <ids...> --fast          # extremes and one click per control, 1 s idle
 //   npm run sweep -- --selftest               # fixture pages: each detector fires, a clean page stays clean
-//   flags: --idle=<ms> (3000)  --max-actions=<n> (400 per lesson)  --json=<file>
+//   flags: --idle=<ms> (3000)  --max-actions=<n> (400 per scene)  --budget=<s> (300 per lesson)  --json=<file>
+// A scene or lesson that uses up its budget is reported with a BUDGET REACHED line, never cut silently.
 //
 // Output: one line per lesson (findings indented under it), then SWEEP_SUMMARY {json}. Exit 1 on any finding.
 import fs from 'node:fs';
 import { TOPICS } from '../src/core/curriculum.ts';
-import { BASE_URL, lessonIds, loadFresh, openPage, parseArgs } from './lib/browser.mjs';
+import { BASE_URL, lessonIds, loadFresh, newPage, openPage, parseArgs } from './lib/browser.mjs';
 import { shardIds } from './lib/scenes.mjs';
 import { DEFAULT_OPTIONS, sweepLesson } from './lib/sweep/engine.mjs';
 import { observePage } from './lib/sweep/observe.mjs';
@@ -75,6 +76,7 @@ async function main() {
     mobile,
     idleMs: numberFlag('idle', flags.fast ? 1000 : DEFAULT_OPTIONS.idleMs),
     maxActions: numberFlag('max-actions', DEFAULT_OPTIONS.maxActions),
+    budgetMs: numberFlag('budget', DEFAULT_OPTIONS.budgetMs / 1000) * 1000,
   };
   let { browser, page } = await openPage({ seed: SEED, ...(mobile ? PHONE : {}) });
   let obs = observePage(page, BASE_URL);
@@ -85,11 +87,10 @@ async function main() {
     results.push(result);
     console.log(formatLesson(result));
     if (result.aborted) {
-      // A hung page cannot be reused: open a fresh one for the next lesson (unseeded: Math.random is not replaced there).
+      // A hung page cannot be reused: open a fresh, identically seeded one for the next lesson.
       obs.stop();
       await page.close({ runBeforeUnload: false }).catch(() => {});
-      page = await browser.newPage();
-      await page.setViewport(mobile ? PHONE : { width: 1440, height: 1000 });
+      page = await newPage(browser, { seed: SEED, ...(mobile ? PHONE : {}) });
       obs = observePage(page, BASE_URL);
     }
   }

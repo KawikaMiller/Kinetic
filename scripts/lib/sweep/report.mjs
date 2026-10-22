@@ -15,7 +15,7 @@ export function createResult(id) {
     actions: 0,
     keyPresses: 0,
     captions: 0,
-    truncated: false,
+    budget: null,
     ms: 0,
     seen: new Set(),
     captionSet: new Set(),
@@ -49,10 +49,11 @@ export function formatLesson(result) {
   const clean = result.findings.length === 0;
   const tally = `scenes=${result.scenes} controls=${result.controls} actions=${result.actions} keys=${result.keyPresses} captions=${result.captions}`;
   const secs = `${(result.ms / 1000).toFixed(1)}s`;
-  const head = `${clean ? 'ok  ' : 'FAIL'} ${result.id.padEnd(30)} ${tally} ${secs}${result.truncated ? ' (action cap hit)' : ''}`;
-  if (clean) return head;
+  const head = `${clean ? 'ok  ' : 'FAIL'} ${result.id.padEnd(30)} ${tally} ${secs}`;
+  const budget = result.budget ? [`    BUDGET REACHED after ${result.budget}: later controls were not exercised (raise it, or shard the lesson's scenes)`] : [];
+  if (clean) return [head, ...budget].join('\n');
   const sorted = [...result.findings].sort((a, b) => kindOrder(a.kind) - kindOrder(b.kind));
-  const lines = sorted.slice(0, SHOWN_PER_LESSON).map(formatFinding);
+  const lines = [...budget, ...sorted.slice(0, SHOWN_PER_LESSON).map(formatFinding)];
   if (sorted.length > SHOWN_PER_LESSON) lines.push(`    ... and ${sorted.length - SHOWN_PER_LESSON} more (use --json=<file> for all)`);
   return [head, ...lines].join('\n');
 }
@@ -67,6 +68,7 @@ export function summarize(results) {
     lessons: results.length,
     clean: results.length - failed.length,
     failed: failed.map((r) => r.id),
+    budgetReached: results.filter((r) => r.budget).map((r) => r.id),
     findings: results.reduce((n, r) => n + r.findings.length, 0),
     byKind,
     scenes: sum('scenes'),

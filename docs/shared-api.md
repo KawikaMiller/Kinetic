@@ -2157,6 +2157,54 @@ All moved unchanged from the lessons that owned them; nothing else in `src/lesso
 - **`tmTables`**: `INCREMENT_REFERENCE` and `PALINDROME_REFERENCE` (table text in the syntax a learner types, parse with `mustParseTm`, which throws on a mistake and now lives in `core/tm`), and the generated machines `ANBNCN`, `WW`, `PRIME` (a^n with n prime; steps grow fast: 1,304 at n = 11, 10,420 at n = 23 and 20,204 at n = 29 (measured), so pass a `maxSteps` above the chomsky card's 20,000 for inputs past about 28). `lessons/turing-machines/model.ts` keeps its starters and the broken variants of the increment table.
 - Tests: `core/automataMinimize.test.ts` (brute-force Myhill-Nerode on 200 seeded random DFAs), `core/pdaPresets.test.ts` (exhaustive vs the reference predicates in both acceptance modes), `core/automataDuel.test.ts`, `core/tmTables.test.ts` (BigInt increment, palindrome, a^n b^n c^n, ww and primality oracles). `core/testing/strings.ts` `stringsUpTo(alphabet, max)` is the exhaustive-input helper these use (older lesson tests still carry local copies; see docs/tier3-kit-requests.md).
 
+## Dev tooling (`scripts/`)
+
+All of these need the dev server (`npm run dev`, stopped afterwards) and refuse to run against another checkout's server.
+They share `scripts/lib/browser.mjs`: a 90 s navigation timeout, one warm-up navigation before the first measured one, and
+`gotoUrl`/`loadFresh`/`visit`, which retry once (with a log line, never silently) on a cold-server timeout or a Vite reload
+(`Execution context was destroyed`). `smoke --scenes` still waits up to 4 s for a scene picker (`readPicker` in `lib/scenes.mjs`).
+
+**`npm run sweep -- <ids...>`** (T4-T4) drives every control of a lesson with extremes and checks the page after each action.
+Per scene it clicks the scene tab, idles, then exercises every Toggle/Segmented radio, Slider (min, max, middle, a step either
+side, one beyond; then Home/End/PageUp/PageDown and five arrow presses each way), text field (the hostile list: empty, blank, -1,
+0, a 23-digit number, 1e400, NaN, an emoji, markup, a gapped list), select, checkbox, `summary`, Button/ChipButton and tab (a click,
+then Enter and Space on the focused control; a second pass clicks buttons in reverse order from a fresh load), and plays any step
+player. Findings, with the control and the value that triggered them (first offence per control):
+
+- `react-warning`, `render-loop`, `console`: every console `error` AND `warning` and every uncaught exception (duplicate key,
+  `Maximum update depth`, `Cannot update a component`, NaN/Infinity attribute, invalid prop).
+- `error-boundary`: the crash panel ("This lesson hit an error"); the sweep reloads and carries on.
+- `residue`: visible text, SVG `<text>`, `title` and `aria-label` containing NaN, Infinity, undefined, `[object`, `null` before a
+  unit, `-0%`, `0.000000`, digits after the point beyond nine, or an `e-1x` exponent. Put `data-sci` on a legitimate scientific
+  display to exempt it. `undefined behaviour` is allowed.
+- `focus-dropped`: the control had focus before the action and focus is on `<body>` (or a disabled/hidden node) after it.
+- `frozen-player`: Play, three seconds, and the frame counter did not move (and it is not at the last frame).
+- `off-page-request`: any http(s)/ws(s) request to a host other than the dev server (Google Fonts excepted).
+- `glued-caption`, `caption-placeholder`: every caption seen goes through `gluedSentences`, and a scene whose caption still says
+  "Press play, or poke" after interaction fails.
+- `small-text`, `phone-layout`: at 390 px, text under 8 px, content clipped by the stage frame, horizontal overflow (the sweep
+  narrows the viewport itself; `--mobile` runs everything at 390).
+- `unresponsive`: one call into the page took over 20 s (an infinite loop); the lesson is aborted and the sweep continues.
+
+```
+npm run sweep -- <ids...> [--mobile] [--fast] [--shard=2/4] [--all-tier=4] [--idle=<ms>] [--max-actions=<n>] [--json=<file>]
+npm run sweep -- --selftest        # fixture pages: each detector fires, the clean page stays clean
+```
+
+One line per lesson, findings indented under it, then `SWEEP_SUMMARY {json}`; exit 1 on any finding. `--fast` keeps extremes and one
+click per control with a 1 s idle. `npm test` runs the same fixtures in a real browser (`scripts/lib/sweep/selftest.test.mjs`,
+skipped when no Chromium browser is installed) beside unit tests of the pure detectors (`scan.mjs`), plans (`actions.mjs`) and
+report. A lesson that needs a new detector adds a fixture to `scripts/lib/sweep/fixtures.mjs`.
+
+**`npm run captions`** steps through the step-player lessons only (its stale-caption check needs a recorded frame sequence). Lessons
+without a step player are listed as `skip <id> (no step player: covered by npm run sweep)` with a count; the sweep reads every
+caption their controls produce and applies the same glued-sentence rule.
+
+**Parallel agents** (T4-T6): `vite.config.ts` ignores `<root>/.claude/worktrees/**`, `.smoke` and `dist` in the dev server's watcher
+(`scripts/lib/watch-ignore.ts`; absolute and anchored to the config's own folder, so a server rooted inside a worktree still
+watches its own files; the globs are added to Vite's defaults), and `.oxlintrc.json` has `ignorePatterns` for `.claude/**`, `.smoke/**`
+and `dist/**`, so a lint in one checkout never reads another agent's half-edited copy.
+
 ## Not built (deliberately)
 `
 `- **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

@@ -21,7 +21,8 @@ export const KINDS = [
 
 // --- text residue ---------------------------------------------------------------------------------------------
 
-const UNITS = String.raw`(?:ms|µs|us|ns|s|sec|min|h|kb|mb|gb|tb|kib|mib|gib|b|bytes?|%|x|px|rps|qps|req)`;
+// Multi-letter units only: a lone `b`, `s` or `x` after "null" is a variable name in a lesson ("a null b null c").
+const UNITS = String.raw`(?:ms|µs|us|ns|sec|min|kb|mb|gb|tb|kib|mib|gib|bytes?|px|rps|qps|req)`;
 /**
  * Shapes a number-formatting bug leaves on screen. `undefined behaviour` (C and C++ lessons) is real prose, and
  * `null` is only residue straight before a unit ("null ms"): lessons teach null pointers.
@@ -31,7 +32,7 @@ const RESIDUE = [
   ['Infinity', /-?\bInfinity\b/],
   ['undefined', /\bundefined\b(?!\s+behaviou?r)/],
   ['[object', /\[object \w+\]/],
-  ['null before a unit', new RegExp(String.raw`\bnull ?${UNITS}\b`, 'i')],
+  ['null before a unit', new RegExp(String.raw`\bnull ?(?:${UNITS}\b|%)`, 'i')],
   ['-0%', /(?:^|[^\d.\w])-0(?:\.0+)?%/],
   ['0.000000', /(?:^|[^\d])0\.000000/],
   ['float residue (digits after the point beyond nine)', /\d\.\d{10,}/],
@@ -51,6 +52,9 @@ export function scanResidue(text) {
   }
   return hits;
 }
+
+/** `text` with every echo of the given typed values removed (a field that reports "'NaN' isn't a number" is not residue). */
+export const withoutTypedResidue = (text, typed) => [...typed].reduce((out, value) => out.split(value).join(' '), text);
 
 // --- console --------------------------------------------------------------------------------------------------
 

@@ -30,6 +30,13 @@ describe('formatLesson and summarize', () => {
     expect(text).toContain('[residue] scene "Calm" / button Add / click: NaN');
   });
 
+  it('a spent budget is a loud line, even on a clean lesson, and shows in the summary', () => {
+    const r = createResult('graph-coloring');
+    r.budget = '400 actions in scene "A" (--max-actions)';
+    expect(formatLesson(r)).toContain('BUDGET REACHED after 400 actions');
+    expect(summarize([r]).budgetReached).toEqual(['graph-coloring']);
+  });
+
   it('totals findings and names the failed lessons', () => {
     const a = createResult('a');
     const b = createResult('b');

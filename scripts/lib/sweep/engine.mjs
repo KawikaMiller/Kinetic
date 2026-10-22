@@ -8,13 +8,15 @@ import { gluedSentences, CODE_PLACEHOLDER } from '../../../src/core/testing/glue
 import { describeAction, isKeyPress, planActions } from './actions.mjs';
 import { CALL_TIMEOUT_MS, createPageApi } from './controls.mjs';
 import { addFinding, createResult } from './report.mjs';
-import { classifyConsole, focusDropped, frozenPlayer, MIN_TEXT_PX, scanResidue } from './scan.mjs';
+import { classifyConsole, focusDropped, frozenPlayer, MIN_TEXT_PX, scanResidue, withoutTypedResidue } from './scan.mjs';
 
 export const DEFAULT_OPTIONS = {
   /** Idle time per scene with the console watched (render loops need seconds to hit React's limit). */
   idleMs: 3000,
-  /** Actions per lesson before the sweep stops and says so. */
+  /** Actions per scene before the sweep stops exercising it and says so. */
   maxActions: 400,
+  /** Wall time per lesson before the control passes stop and the report says so (never a silent cut). */
+  budgetMs: 300_000,
   /** Wait after each action before reading the page back. */
   settleMs: 120,
   /** Extremes and one click per control, a short idle: a pre-push check. */
@@ -67,7 +69,7 @@ export async function sweepLesson({ page, obs, id, load, options = {} }) {
       add('error-boundary', snap.crash);
       return { crashed: true, snap };
     }
-    for (const hit of scanResidue(snap.text)) add('residue', `${hit.rule}: "${hit.context}"`);
+    for (const hit of scanResidue(withoutTypedResidue(snap.text, typedResidue))) add('residue', `${hit.rule}: "${hit.context}"`);
     const caption = snap.caption.text;
     if (caption && !result.captionSet.has(caption)) {
       result.captionSet.add(caption);
@@ -79,8 +81,11 @@ export async function sweepLesson({ page, obs, id, load, options = {} }) {
 
   let scenes = [];
   let group = -1;
+  /** Hostile inputs that look like residue themselves ("NaN") and so are legitimately echoed back ("'NaN' isn't a seed"). */
+  const typedResidue = new Set();
   /** Load the lesson fresh and select scene `index`. */
   async function fresh(index) {
+    typedResidue.clear();
     await load();
     if (scenes.length > 1 && !(await selectScene(page, group, index))) add('driver', `could not click scene tab "${scenes[index]}"`);
   }
@@ -101,11 +106,20 @@ export async function sweepLesson({ page, obs, id, load, options = {} }) {
     else if (action.type === 'set') await api.call('set', control, group, action.value);
     else if (action.type === 'select') await api.call('select', control, group, action.value);
     else if (action.type === 'text') {
+      if (scanResidue(action.value).length) typedResidue.add(action.value);
       await api.call('set', control, group, action.value);
       await page.keyboard.press('Enter');
     }
     return check(prep);
   }
+
+  let sceneStartActions = 0;
+  /** Which budget (actions per scene, or wall time per lesson) (actions or wall time) is used up, as the report words it; null while within both. */
+  const budgetSpent = () => {
+    if (result.actions - sceneStartActions >= o.maxActions) return `${o.maxActions} actions in scene "${where.scene}" (--max-actions)`;
+    if (Date.now() - started >= o.budgetMs) return `${Math.round(o.budgetMs / 1000)} s (--budget)`;
+    return null;
+  };
 
   async function exercise(index, { reverse }) {
     const first = await api.call('enumerate', group);
@@ -116,8 +130,9 @@ export async function sweepLesson({ page, obs, id, load, options = {} }) {
       if (!control) break;
       if (!reverse) result.controls++;
       for (const action of planActions(control, { fast: o.fast, reverse })) {
-        if (result.actions >= o.maxActions) {
-          result.truncated = true;
+        const spent = budgetSpent();
+        if (spent) {
+          result.budget ??= spent;
           return;
         }
         let outcome;
@@ -196,6 +211,7 @@ export async function sweepLesson({ page, obs, id, load, options = {} }) {
     group = hasPicker ? read.group : -1;
     for (let s = 0; s < scenes.length; s++) {
       where.scene = scenes[s];
+      sceneStartActions = result.actions;
       where.control = '(load)';
       where.action = 'select scene';
       await fresh(s);

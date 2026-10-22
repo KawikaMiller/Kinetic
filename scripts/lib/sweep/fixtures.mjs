@@ -72,6 +72,14 @@ export const FIXTURES = [
     }),
   },
   {
+    name: 'an SVG role=button (no click method) is still pressed',
+    expect: ['residue'],
+    html: lessonPage({
+      body: withBody('<svg width="80" height="30"><g role="button" tabindex="0" id="node"><rect width="60" height="20"></rect><text x="4" y="14" style="font-size:12px">node</text></g></svg><span id="r"></span>'),
+      script: onClick('node', "document.getElementById('r').textContent = 'NaN%';"),
+    }),
+  },
+  {
     name: 'the End key on a slider prints Infinity',
     expect: ['residue'],
     options: { fast: false },

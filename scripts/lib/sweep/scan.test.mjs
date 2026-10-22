@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyConsole, focusDropped, frozenPlayer, isCrashText, isOffPage, scanResidue } from './scan.mjs';
+import { classifyConsole, focusDropped, frozenPlayer, isCrashText, isOffPage, scanResidue, withoutTypedResidue } from './scan.mjs';
 
 const rules = (text) => scanResidue(text).map((h) => h.rule);
 
@@ -19,6 +19,17 @@ describe('scanResidue', () => {
   it('leaves legitimate text alone', () => {
     expect(scanResidue('A null pointer is not a string, and null is falsy. Undefined behaviour in C. 1e-5 and 3.14159, 0.5%.')).toEqual([]);
     expect(scanResidue('Round trip 12.5 ms, -0.5% change, port 8080, 2^128.')).toEqual([]);
+  });
+
+  it('a variable named b or s after null is not a unit', () => {
+    expect(scanResidue('stack heap a null b null c null obj 0 freed, nulls, null x')).toEqual([]);
+    expect(rules('lag null%')).toContain('null before a unit');
+  });
+
+  it('does not blame a lesson for echoing back what the sweep typed', () => {
+    const echoed = withoutTypedResidue('New seed "NaN" isn\'t a seed. Estimate 4', new Set(['NaN']));
+    expect(scanResidue(echoed)).toEqual([]);
+    expect(rules(withoutTypedResidue('Estimate NaN', new Set(['1e400'])))).toContain('NaN');
   });
 
   it('keeps the text around the hit', () => {

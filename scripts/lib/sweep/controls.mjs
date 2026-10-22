@@ -113,13 +113,14 @@ export function installSweepHelpers() {
       const ctm = t.ownerSVGElement?.getScreenCTM();
       if (!ctm || !t.textContent.trim() || !t.getBoundingClientRect().width) return;
       const px = parseFloat(getComputedStyle(t).fontSize) * Math.hypot(ctm.a, ctm.b);
-      if (px < minPx) found.push({ px: Math.round(px * 10) / 10, text: words(t.textContent).slice(0, 24) });
+      const shown = Math.round(px * 10) / 10; // compared as printed, like smoke --mobile: 7.96 is "8px"
+      if (shown < minPx) found.push({ px: shown, text: words(t.textContent).slice(0, 24) });
     });
     document.querySelectorAll('.stage-frame *:not(svg *)').forEach((el) => {
       const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
       if (!own || el.closest('.sr-only') || !visible(el)) return;
       const px = parseFloat(getComputedStyle(el).fontSize);
-      if (px < minPx) found.push({ px, text: words(el.textContent).slice(0, 24) });
+      if (Math.round(px * 10) / 10 < minPx) found.push({ px, text: words(el.textContent).slice(0, 24) });
     });
     return found.sort((a, b) => a.px - b.px).slice(0, 3);
   };
@@ -138,7 +139,9 @@ export function installSweepHelpers() {
     },
     click: ({ kind, index }, fallback) => {
       const el = target(kind, index, fallback);
-      el?.click();
+      // SVG elements with role=button have no click(): send the event a real click would.
+      if (typeof el?.click === 'function') el.click();
+      else el?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       return Boolean(el);
     },
     set: ({ kind, index }, fallback, value) => {

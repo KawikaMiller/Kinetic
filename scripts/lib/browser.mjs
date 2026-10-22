@@ -82,6 +82,28 @@ async function assertServesThisCheckout() {
   }
 }
 
+/** A page of `browser` with the navigation timeout, viewport, reduced motion and seeded Math.random openPage describes. */
+export async function newPage(browser, { width = 1440, height = 1000, seed, reducedMotion = false } = {}) {
+  const page = await browser.newPage();
+  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
+  await page.setViewport({ width, height });
+  if (reducedMotion) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  if (seed != null) {
+    await page.evaluateOnNewDocument((s) => {
+      let state = s >>> 0;
+      Math.random = () => {
+        // mulberry32
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }, seed);
+  }
+  return page;
+}
+
 /**
  * Launch a headless browser with one page that records console errors.
  * `seed` replaces Math.random with a seeded generator before any app code runs,
@@ -101,23 +123,7 @@ export async function openPage({ width = 1440, height = 1000, seed, reducedMotio
     headless: true,
     args: ['--no-sandbox', '--hide-scrollbars'],
   });
-  const page = await browser.newPage();
-  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
-  await page.setViewport({ width, height });
-  if (reducedMotion) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
-  if (seed != null) {
-    await page.evaluateOnNewDocument((s) => {
-      let state = s >>> 0;
-      Math.random = () => {
-        // mulberry32
-        state = (state + 0x6d2b79f5) >>> 0;
-        let t = state;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }, seed);
-  }
+  const page = await newPage(browser, { width, height, seed, reducedMotion });
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text().slice(0, 200)));
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 200)}`));
