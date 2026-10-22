@@ -11,11 +11,13 @@ export const drawRnd = (seed: number, n: number): Rnd => mulberry32(seed + n * D
 
 // ── Bloom filter ────────────────────────────────────────────────────
 
-/** k bit positions via double hashing: h1 + i·h2 (mod m). */
+/**
+ * k bit positions from k salted hashes (hash i of "word#i"), so the positions behave close to independent draws, which is what
+ * the false-positive formula assumes. A double hash h1 + i·h2 would be cheaper but, with m a power of two, it correlates the
+ * positions and the measured rate then sits far above the formula (0.67 against 0.36 at m = 32, 12 words, k = 4).
+ */
 export function bloomPositions(word: string, k: number, m: number) {
-  const h1 = fmix32(fnv1a(word));
-  const h2 = fmix32(fnv1a(`${word}\u0001`)) | 1;
-  return Array.from({ length: k }, (_, i) => (h1 + Math.imul(i, h2)) >>> 0).map((h) => h % m);
+  return Array.from({ length: k }, (_, i) => fmix32(fnv1a(`${word}#${i}`)) % m);
 }
 
 export function buildBloom(words: string[], k: number, m: number) {
@@ -28,12 +30,16 @@ export const bloomHas = (bits: Uint8Array, word: string, k: number) =>
   bloomPositions(word, k, bits.length).every((p) => bits[p] === 1);
 
 /** Theoretical false-positive rate: (1 - e^(-kn/m))^k */
+/** One standard error of a rate `p` measured over `PROBE_COUNT` probes: how far probe sampling alone moves the measured figure. */
+export const bloomProbeNoise = (p: number) => Math.sqrt((p * (1 - p)) / PROBE_COUNT);
+
 export const bloomFpTheory = (n: number, k: number, m: number) => (n === 0 ? 0 : Math.pow(1 - Math.exp((-k * n) / m), k));
 
 /** The k that minimises the false-positive rate for n items in m bits, rounded: (m/n)·ln 2, at least 1. */
 export const optimalK = (n: number, m: number) => Math.max(1, Math.round((m / n) * Math.LN2));
 
-const PROBES = Array.from({ length: 1000 }, (_, i) => `probe-${i}-x`);
+export const PROBE_COUNT = 1000;
+const PROBES = Array.from({ length: PROBE_COUNT }, (_, i) => `probe-${i}-x`);
 export function bloomFpMeasured(bits: Uint8Array, k: number) {
   return PROBES.filter((w) => bloomHas(bits, w, k)).length / PROBES.length;
 }

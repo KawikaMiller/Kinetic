@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { fmix32, fnv1a } from '../../core/hash';
 import { mulberry32, randInt } from '../../core/random';
 import {
   DEFAULT_SEED, WORDS, bloomFpMeasured, bloomFpTheory, bloomHas, bloomPositions, buildBloom, drawRnd, hllAdd, hllBuild, hllBytes,
-  hllEstimate, hllSplit, hllStdErr, itemHash, nextWord, optimalK, unseenWord,
+  PROBE_COUNT, bloomProbeNoise, hllEstimate, hllSplit, hllStdErr, itemHash, nextWord, optimalK, unseenWord,
 } from './sketches';
 
 /** Fresh words that no other test word collides with: a different `tag` is an independent sample. */
@@ -64,6 +65,64 @@ describe('Bloom filter', () => {
       const noise = 4 * Math.sqrt((theory * (1 - theory)) / samples);
       expect(Math.abs(rate - theory), `m=${m} n=${n} k=${k}: measured ${rate}, formula ${theory}`).toBeLessThanOrEqual(noise + 0.15 * theory + 0.002);
     }
+  });
+
+  describe('toy hash against ideal independent hashes (the measured stat vs the theory stat)', () => {
+    /** The double hash the lesson used before: h1 + i·h2 (mod m), with m a power of two. Kept here as the counter-example. */
+    const doubleHash = (word: string, k: number, m: number) => {
+      const h1 = fmix32(fnv1a(word));
+      const h2 = fmix32(fnv1a(`${word}\u0001`)) | 1;
+      return Array.from({ length: k }, (_, i) => ((h1 + Math.imul(i, h2)) >>> 0) % m);
+    };
+    /** What the stage prints as "measured": the first n WORDS inserted, 1,000 fixed probes, positions from `positions`. */
+    const stageMeasured = (positions: (w: string, k: number, m: number) => number[], n: number, k: number, m: number) => {
+      const bits = new Uint8Array(m);
+      for (const w of WORDS.slice(0, n)) for (const p of positions(w, k, m)) bits[p] = 1;
+      let hits = 0;
+      for (let i = 0; i < PROBE_COUNT; i++) if (positions(`probe-${i}-x`, k, m).every((p) => bits[p] === 1)) hits++;
+      return hits / PROBE_COUNT;
+    };
+    /** Ideal independent positions: every position a fresh uniform draw from a seeded stream, averaged over many filters. */
+    const ideal = (n: number, k: number, m: number) => {
+      const rnd = mulberry32(m * 7919 + n * 31 + k);
+      let positives = 0;
+      const trials = 4000;
+      for (let t = 0; t < trials; t++) {
+        const bits = new Uint8Array(m);
+        for (let i = 0; i < n * k; i++) bits[randInt(0, m - 1, rnd)] = 1;
+        let all = true;
+        for (let i = 0; i < k; i++) all = all && bits[randInt(0, m - 1, rnd)] === 1;
+        if (all) positives++;
+      }
+      return positives / trials;
+    };
+
+    it('ideal independent hashes agree with the formula within 0.04 at the try-this 3 cell (m = 32, 12 words)', () => {
+      for (let k = 1; k <= 6; k++) {
+        expect(Math.abs(ideal(12, k, 32) - bloomFpTheory(12, k, 32)), `k=${k}`).toBeLessThan(0.04);
+      }
+    });
+
+    it('the old double hash sat far above the formula there (0.67 against 0.36 at k = 4), which is why it was replaced', () => {
+      expect(stageMeasured(doubleHash, 12, 4, 32) - bloomFpTheory(12, 4, 32)).toBeGreaterThan(0.25);
+      const mean = (f: (k: number) => number) => [1, 2, 3, 4, 5, 6].reduce((a, k) => a + f(k), 0) / 6;
+      expect(mean((k) => stageMeasured(doubleHash, 12, k, 32) - bloomFpTheory(12, k, 32))).toBeGreaterThan(0.1);
+    });
+
+    it('the salted hashes the lesson uses stay close to the formula there: gap under 0.1 per k and under 0.03 on average', () => {
+      for (let k = 1; k <= 6; k++) {
+        expect(Math.abs(stageMeasured(bloomPositions, 12, k, 32) - bloomFpTheory(12, k, 32)), `k=${k}`).toBeLessThan(0.1);
+      }
+      const mean = [1, 2, 3, 4, 5, 6].reduce((a, k) => a + stageMeasured(bloomPositions, 12, k, 32) - bloomFpTheory(12, k, 32), 0) / 6;
+      expect(Math.abs(mean)).toBeLessThan(0.03);
+    });
+
+    it('the measured figure on stage is bloomFpMeasured, and the noise it prints is the binomial standard error of 1,000 probes', () => {
+      const bits = buildBloom(WORDS.slice(0, 12), 4, 32);
+      expect(bloomFpMeasured(bits, 4)).toBe(stageMeasured(bloomPositions, 12, 4, 32));
+      expect(bloomProbeNoise(0.5)).toBeCloseTo(Math.sqrt(0.25 / 1000), 12);
+      expect(bloomProbeNoise(0)).toBe(0);
+    });
   });
 
   it('the formula is 0 for an empty filter and tends to 1 as the filter fills', () => {
@@ -215,6 +274,15 @@ describe('HyperLogLog', () => {
   it('try-this 4 from the default view: 64 registers, the same million items, stays within three standard errors', () => {
     const regs = hllBuild(1_000_000, 6);
     expect(Math.abs(hllEstimate(regs) / 1_000_000 - 1)).toBeLessThan(3 * hllStdErr(64));
+  });
+});
+
+describe('HyperLogLog try-this 4 note', () => {
+  const err = (count: number) => (hllEstimate(hllBuild(count, 8)) - count) / count;
+
+  it('the 1,000,000-item run is a roughly 2-sigma draw (the red Error stat), and +100 / +100,000 from a fresh Reset land closer', () => {
+    expect(Math.abs(err(1_000_000)) / hllStdErr(256)).toBeGreaterThan(2);
+    for (const n of [100, 100_000]) expect(Math.abs(err(n)) / hllStdErr(256), `n=${n}`).toBeLessThan(1);
   });
 });
 

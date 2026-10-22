@@ -20,7 +20,7 @@ const lesson: LessonModule = {
     'Press Insert next word until most bits are violet, then press Query an unseen word until you hit a false positive.',
     'Keep the words, drag m from 16 to 64: the false-positive rate collapses.',
     'With about a dozen words in 32 bits, try k = 1, k = 2 and k = 6. The best k is about (m/n)·ln 2.',
-    'HyperLogLog: press +1,000,000 with 256 registers (192 bytes). The error stat shows how far this run lands from the 6.5% standard error; one run can miss by twice that.',
+    'HyperLogLog: press +1,000,000 with 256 registers (192 bytes). The error stat shows how far this one fixed stream lands from the 6.5% standard error: it happens to land about two standard errors away (red), so try +100 or +100,000 on a fresh Reset to see draws that land much closer.',
   ],
   keyIdeas: [
     'Bloom filter: a "no" is certain for a filter that has had inserts and no deletes; a "yes" might be a false positive.',

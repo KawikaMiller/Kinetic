@@ -109,6 +109,7 @@ export function HllView({ switcher, seed, onSeed }: { switcher: ReactNode; seed:
 
   const reset = () => {
     setH(empty(h.p));
+    setBatches(0);
     setCaption(INTRO);
   };
 
@@ -213,10 +214,13 @@ export function HllView({ switcher, seed, onSeed }: { switcher: ReactNode; seed:
           <Provenance kind="illustrative">
             {HLL_BITS_PER_REGISTER}-bit registers and {BYTES_PER_ID}-byte ids are assumptions for the memory figures, not measurements
           </Provenance>
-          <Provenance kind="simulated" seed={seed}>the items are the ids 0, 1, 2, … and only the duplicate batches use the seed</Provenance>
+          <Provenance kind="simulated" seed={seed}>
+            the items are always the ids 0, 1, 2, …, so the error shown is one fixed draw, not an average: change the registers or add a different count to
+            see the draws vary. Only the duplicate batches use the seed
+          </Provenance>
           <Provenance kind="from-memory">
-            Redis uses 16,384 registers (12 KB, 0.81% standard error) and real sketches use 64-bit hashes: verify against the Redis docs and the
-            HyperLogLog paper (Flajolet et al., 2007)
+            Redis uses 16,384 registers (12 KB, 0.81% standard error), real sketches use 64-bit hashes, and BigQuery's APPROX_COUNT_DISTINCT is built on a
+            HyperLogLog variant: verify against the Redis docs and the HyperLogLog paper (Flajolet et al., 2007)
           </Provenance>
         </ProvenanceRow>
       </div>

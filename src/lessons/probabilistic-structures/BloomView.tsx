@@ -8,7 +8,8 @@ import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
 import { pick } from '../../core/random';
 import {
-  bloomFpMeasured, bloomFpTheory, bloomHas, bloomPositions, buildBloom, drawRnd, nextWord, optimalK, unseenWord,
+  PROBE_COUNT, bloomFpMeasured, bloomFpTheory, bloomHas, bloomPositions, bloomProbeNoise, buildBloom, drawRnd, nextWord, optimalK,
+  unseenWord,
 } from './sketches';
 
 const COLS = 16;
@@ -47,6 +48,8 @@ export function BloomView({ switcher, seed, onSeed }: { switcher: ReactNode; see
   const setCount = bits.reduce((a, b) => a + b, 0);
   const theory = bloomFpTheory(words.length, k, m);
   const measured = useMemo(() => bloomFpMeasured(bits, k), [bits, k]);
+  const gapPts = (measured - theory) * 100;
+  const noisePts = 2 * bloomProbeNoise(theory) * 100;
   const bestK = words.length ? optimalK(words.length, m) : null;
 
   useIntroCaption(
@@ -106,6 +109,7 @@ export function BloomView({ switcher, seed, onSeed }: { switcher: ReactNode; see
   const clear = () => {
     setWords([]);
     setAct(null);
+    setActions(0);
     setCaption(<>Cleared: no words are stored and all {m} bits are 0. Insert a word to start again.</>);
   };
 
@@ -121,7 +125,7 @@ export function BloomView({ switcher, seed, onSeed }: { switcher: ReactNode; see
           <Stat label="Words inserted" value={words.length} />
           <Stat label="Bits set" value={`${setCount}/${m}`} color="var(--violet)" />
           <Stat label="FP rate (theory)" value={rate(theory)} color="var(--hi)" sub="(1 − e^(−kn/m))^k, approximate" />
-          <Stat label="FP rate (measured)" value={rate(measured)} color="var(--bad)" sub="1,000 unseen probes" />
+          <Stat label="FP rate (measured)" value={rate(measured)} color="var(--bad)" sub={`${gapPts >= 0 ? '+' : '−'}${Math.abs(gapPts).toFixed(1)} pts vs theory; probe noise alone ±${noisePts.toFixed(1)}`} />
           {bestK && <Stat label="Best k here" value={bestK} sub={bestK > K_MAX ? `(m/n)·ln 2; slider stops at ${K_MAX}` : '(m/n)·ln 2'} />}
         </Stats>
       }
@@ -223,9 +227,15 @@ export function BloomView({ switcher, seed, onSeed }: { switcher: ReactNode; see
           ))}
         </div>
         <ProvenanceRow>
-          <Provenance kind="toy">a 32-bit FNV-1a hash with double hashing: fine for watching, not a tuned production hash</Provenance>
+          <Provenance kind="toy">k salted 32-bit FNV-1a hashes, close to independent bit positions: fine for watching, not a tuned production hash</Provenance>
           <Provenance kind="simulated" seed={seed}>
-            the measured rate probes 1,000 fixed unseen words, so it wobbles around the formula; the unseen and stored words you query come from the seed
+            the theory figure is the average over all possible hash choices; the measured one is this single filter probed with {PROBE_COUNT.toLocaleString()} fixed
+            unseen words. The stat shows the gap in points next to the noise the probes alone cause, and a gap beyond that is this filter's own fill
+            differing from the average (large when m is small). The unseen and stored words you query come from the seed
+          </Provenance>
+          <Provenance kind="from-memory">
+            Cassandra, RocksDB and similar LSM engines keep a Bloom filter per file, and browsers and CDNs have used them to screen known-bad URLs: verify
+            against each project's documentation
           </Provenance>
         </ProvenanceRow>
       </div>
