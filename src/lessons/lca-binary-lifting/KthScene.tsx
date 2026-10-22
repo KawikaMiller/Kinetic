@@ -71,7 +71,7 @@ export function KthScene({ picker }: { picker: ReactNode }) {
           <TreeControls tree={tree} note="Click a node in the tree to choose where to start." />
         </>,
         <>
-          <TextField label="k (steps up)" value={kText} onChange={setKText} width={90} spellCheck={false} />
+          <TextField label="k (steps up)" value={kText} onChange={(text) => { setKText(text); setPlayed(null); }} width={90} spellCheck={false} />
           {Array.from({ length: table.levels }, (_, level) => (
             <Button key={level} softDisabled={game === null} onClick={() => jump(level)} aria-label={`Jump 2 to the power ${level}, ${2 ** level} steps`}>
               Jump 2^{level} = {2 ** level}
@@ -92,6 +92,7 @@ export function KthScene({ picker }: { picker: ReactNode }) {
             setNode(id);
             setPlayed(null);
           }}
+          reveal={game ? [game.at, node] : [node]}
           ariaLabel="The tree: click a node to start from it"
         />
         <ol className="lc-log" aria-label="Jumps taken">

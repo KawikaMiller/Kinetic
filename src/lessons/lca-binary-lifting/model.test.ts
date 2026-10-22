@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
   MAX_NODES, PATH_SIZES, SHORT_TABLE_WITNESS, T0_PARENTS, addLeaf, allTrees, brokenReport, buildTable, decide, depthsOf, isTree, judgeGrandparent,
-  kthAncestor, kthJump, lca, lcaWithMode, levelsFor, liftJump, naiveKth, naiveLca, pathParents, pathStats, popcount, startKth, startLca,
+  kthAncestor, kthJump, lca, lcaWithMode, levelsFor, liftJump, naiveKth, naiveLca, pathParents, pathStats, popcount, shortFailsOnPaths, shortestWitness, startKth, startLca,
 } from './model';
 
 const table = buildTable(T0_PARENTS);
@@ -228,5 +228,22 @@ describe('broken modes', () => {
     for (const parents of allTrees(7)) {
       for (let x = 0; x < 7; x += 1) for (let y = 0; y < 7; y += 1) expect(lcaWithMode(parents, x, y, 'full').answer).toBe(lcaByPaths(parents, x, y));
     }
+  });
+});
+
+describe('shortest witnesses and the root clamp', () => {
+  it('the shortest no-equalise witness fails and no smaller tree fails, by the root-path oracle', () => {
+    const w = shortestWitness('noEqualise')!;
+    expect(lcaWithMode(w.parents, w.query[0], w.query[1], 'noEqualise').answer).not.toBe(lcaByPaths(w.parents, w.query[0], w.query[1]));
+    expect(lcaWithMode(w.parents, w.query[0], w.query[1], 'full').answer).toBe(lcaByPaths(w.parents, w.query[0], w.query[1]));
+    for (let n = 1; n < w.parents.length; n += 1) {
+      for (const parents of allTrees(n)) {
+        for (let x = 0; x < n; x += 1) for (let y = 0; y < n; y += 1) expect(lcaWithMode(parents, x, y, 'noEqualise').answer, `${parents} (${x}, ${y})`).toBe(lcaByPaths(parents, x, y));
+      }
+    }
+  });
+  it('the short table is never wrong on a path of 2 to 16 nodes, and 146 of the 5,040 eight-node trees fail it', () => {
+    expect(shortFailsOnPaths(16)).toEqual({ paths: 15, fails: 0 });
+    expect(brokenReport(8).shortFails).toBe(146);
   });
 });

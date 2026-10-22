@@ -101,6 +101,7 @@ export function TableScene({ picker }: { picker: ReactNode }) {
         <TreeView
           parents={parents}
           nodeMark={(id) => (id === target ? { tone: 'hi', fill: 'solid' } : null)}
+          reveal={target === undefined ? undefined : [target, table.up[1][target]]}
           onNodeClick={complete ? undefined : answer}
           ariaLabel="The tree: click the node that is two parents above the highlighted node"
         />
@@ -113,6 +114,7 @@ export function TableScene({ picker }: { picker: ReactNode }) {
           }}
           highlight={p.explain ? [{ r: p.explain[0], c: p.explain[1], tone: 'violet' }] : []}
           onCellClick={click}
+          revealColumn={target}
         />
         <p className="lc-note">
           Row k holds the 2^k-th ancestor of each node: up[k][v] = up[k-1][up[k-1][v]], two jumps of 2^(k-1) make one of 2^k.

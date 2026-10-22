@@ -6,7 +6,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'Binary lifting stores, for each node, its 1st, 2nd, 4th, 8th ancestor and so on, so any climb up a tree is a few jumps and the lowest common ancestor of two nodes takes about log n of them.',
-    what: `Walking from a node to its ancestor costs one step per level. Binary lifting trades memory for speed: a table up[k][v] holds the 2^k-th ancestor of v (the root stands in when the tree is not that tall), and each row is built from the one below, up[k][v] = up[k-1][up[k-1][v]]. A climb of d levels is the binary digits of d, one jump for each 1. For the lowest common ancestor, first lift the deeper node to the other's depth. Then, from the top level down, jump both nodes when their landing nodes differ, because that keeps both below the LCA, and skip the jump when they are equal, because it reached or passed the LCA. The answer is the parent of the nodes that remain. The table needs about n log n entries, built once, and each query then costs about log n jumps instead of up to n steps.`,
+    what: `Walking from a node to its ancestor costs one step per level. Binary lifting trades memory for speed: a table up[k][v] holds the 2^k-th ancestor of v (the root stands in when the tree is not that tall), and each row is built from the one below, up[k][v] = up[k-1][up[k-1][v]]. A climb of d levels is the binary digits of d, one jump for each 1. For the lowest common ancestor, first lift the deeper node to the other's depth. Then, from the top level down, jump both nodes when their landing nodes differ, because that keeps both below the LCA, and skip the jump when they are equal, because it reached or passed the LCA. The answer is the parent of the nodes that remain, or the node itself when the lift already made them one. The table needs about n log n entries, built once, and each query then costs about log n jumps instead of up to n steps.`,
     analogy: 'Finding where two family lines meet by hopping up the generations in sizes of 1, 2, 4, 8, ... instead of one parent at a time: overshoot, and you simply do not take that hop.',
     useCases: [
       'Path queries on a fixed tree, such as the distance between two nodes in a file-system or an organisation chart',
@@ -51,7 +51,7 @@ const lesson: LessonModule = {
         'So that the table needs only one level instead of about log n levels',
       ],
       answer: 0,
-      why: `The skip-or-jump test compares two landing nodes, which means something just when both start at one depth. Without the lift the test is wrong on ${F.noEqualiseFails} of the ${F.trees} seven-node trees.`,
+      why: `The skip-or-jump test compares two landing nodes, which means something just when both start at one depth. Without the lift the test gives a wrong LCA for at least one pair of nodes on ${F.noEqualiseFails} of the ${F.trees} seven-node trees.`,
     },
     {
       q: 'Both nodes are at the same depth and the jump of size 2^2 lands them on the same node. What do you do with that jump?',

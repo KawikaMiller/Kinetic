@@ -281,3 +281,33 @@ export function pathStats(n: number): PathStats {
   const table = buildTable(parents);
   return { n, levels: table.levels, jumps: lca(table, n - 1, 0).jumps, steps: naiveLca(parents, n - 1, 0).steps, entries: n * table.levels };
 }
+
+export interface Witness {
+  parents: number[];
+  query: readonly [number, number];
+}
+
+/** The first broken-mode failure in size order (fewest nodes, then tree order, then query order): the shortest witness. */
+export function shortestWitness(mode: Exclude<TableMode, 'full'>, maxNodes = 8): Witness | null {
+  for (let n = 2; n <= maxNodes; n += 1) {
+    for (const parents of allTrees(n)) {
+      for (let x = 0; x < n; x += 1) {
+        for (let y = x + 1; y < n; y += 1) {
+          if (lcaWithMode(parents, x, y, mode).answer !== naiveLca(parents, x, y).answer) return { parents, query: [x, y] };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** How many paths of 2 to maxNodes nodes the one-level-short table gets wrong for some pair (the root clamp rescues them). */
+export function shortFailsOnPaths(maxNodes: number): { paths: number; fails: number } {
+  let fails = 0;
+  for (let n = 2; n <= maxNodes; n += 1) {
+    const parents = pathParents(n);
+    const bad = Array.from({ length: n }, (_, x) => x).some((x) => Array.from({ length: n }, (_, y) => y).some((y) => lcaWithMode(parents, x, y, 'short').answer !== naiveLca(parents, x, y).answer));
+    if (bad) fails += 1;
+  }
+  return { paths: maxNodes - 1, fails };
+}

@@ -75,6 +75,7 @@ export function WorkScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="real">nothing simulated: each count is from running the algorithm and the walk on a real path</Provenance>
+        <Provenance kind="from-memory">uses such as file-system trees, org charts and phylogenies: verify against a textbook treatment of lowest common ancestors</Provenance>
         <ClaimLabel kind="standard">O(n log n) space, O(log n) per query: here read off the levels and jumps above</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
