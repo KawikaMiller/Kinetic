@@ -105,7 +105,7 @@ export function Stage() {
               </text>
             ))}
             <line x1={x(0)} y1={y(100)} x2={x(30)} y2={y(0)} className="slo-ideal" />
-            <text x={x(30) - 6} y={y(0) + 22} textAnchor="end" className="slo-ideal-label">
+            <text x={x(30) - 6} y={y(-70)} textAnchor="end" className="slo-ideal-label">
               1× burn: budget lasts exactly 30 days
             </text>
             <path d={path} className="slo-line" />
