@@ -1,0 +1,18 @@
+/* nat-traversal-webrtc */
+.nat-stage { gap: 12px; min-width: 0; }
+.nat-topology { display: block; width: 100%; height: auto; }
+.nat-edge.is-direct { stroke: var(--ok); stroke-width: 3.5; stroke-dasharray: none; }
+.nat-edge.is-relay { stroke: var(--orange); stroke-width: 3.5; stroke-dasharray: none; }
+.nat-type { fill: var(--muted); font: 600 10px var(--mono); }
+.nat-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.nat-tables { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.nat-table-wrap { overflow-x: auto; }
+.nat-table caption { text-align: left; font-size: 12px; color: var(--muted); padding: 0 0 6px; caption-side: top; }
+.nat-table td, .nat-table th { font-size: 12.5px; vertical-align: top; white-space: normal; padding: 6px 4px; }
+.nat-row.is-new td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.nat-pair.is-untried td { color: var(--dim); }
+.nat-pair.is-failed td:last-child { color: var(--bad); }
+.nat-pair.is-answered td:last-child { color: var(--ok); }
+.nat-pair.is-nominated td { background: color-mix(in srgb, var(--ok) 14%, transparent); box-shadow: inset 0 1px 0 var(--ok), inset 0 -1px 0 var(--ok); }
+.nat-pair.is-now td { background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.nat-matrix { overflow-x: auto; }
