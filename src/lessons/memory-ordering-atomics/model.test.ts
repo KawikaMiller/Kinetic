@@ -3,7 +3,7 @@ import { MODELS, outcomes, regsKeys, type Instr, type Litmus, type Model } from 
 import { mulberry32 } from '../../core/random';
 import { allMoves, applyMove, blockedReason, initialState, reachableOutcomes, type MState, type Quirks } from './manual';
 import {
-  BASES, FACTS, LOAD_TAGS, STORE_TAGS, buildLitmus, emptyEdit, manipulationNote, outcomeText, outcomeUniverse, scCountText, scInterleavings, setFence, setTag, table, targetKey,
+  BASES, FACTS, LOAD_TAGS, STORE_TAGS, buildLitmus, emptyEdit, manipulationNote, outcomeText, replayStartText, scStrongerCells, scTagNote, outcomeUniverse, scCountText, scInterleavings, setFence, setTag, table, targetKey,
   targetReach, tagsFor, type Base, type BaseId, type Edit,
 } from './model';
 
@@ -294,5 +294,49 @@ describe('numbers the lesson text quotes', () => {
     visit(initialState(l));
     expect(seen.size).toBe(13);
     expect(FACTS.sbScStates).toBe(13);
+  });
+});
+
+describe('fix pass: the weak model\'s limits and seq_cst corners are stated from the model', () => {
+  const mp = BASES.mp;
+  const withEdit = (f: (e: Edit) => Edit) => f(emptyEdit(mp));
+  const note = (e: Edit) => manipulationNote(mp, e, 'relaxed', targetReach(mp, e).relaxed);
+
+  it('M1: a fence on the reader alone makes 1,0 unreachable in Weak and the page says that is this model, not C++ or ARM/POWER', () => {
+    const e = withEdit((x) => setFence(x, 1, 0, true));
+    expect(reachable(mp, e, 'relaxed')).toBe(false);
+    expect(note(e)).toContain('fence on the reader alone is enough in this model');
+    expect(note(e)).toContain('C++ or on ARM/POWER');
+    // with a fence in the writer too, the claim "alone" is not made
+    expect(note(setFence(e, 0, 0, true))).toBeNull();
+  });
+
+  it('M2: a fence in the writer plus an acquire flag load still reaches 1,0 and the page names this as a limit of the model', () => {
+    const e = setTag(withEdit((x) => setFence(x, 0, 0, true)), 1, 0, 'acq');
+    expect(reachable(mp, e, 'relaxed')).toBe(true);
+    expect(note(e)).toContain('does not turn the writer\'s next store into a release');
+    expect(note(e)).toContain('limit of the model');
+  });
+
+  it('M3: the stronger-than-C++ list is computed: every cell is forbidden by the model, the reviewer\'s corners are in it, and the pair C++ also forbids is not', () => {
+    const cells = scStrongerCells();
+    const texts = (id: BaseId) => cells.filter((c) => c.baseId === id).map((c) => c.text);
+    expect(texts('mp')).toEqual(['T1 r1 = y as seq_cst', 'T1 r2 = x as seq_cst']);
+expect(texts('mp')).toContain('T1 r1 = y as seq_cst');
+    expect(texts('mp')).toContain('T1 r2 = x as seq_cst');
+    expect(texts('mp')).not.toContain('T0 y = 1 as seq_cst with T1 r1 = y as seq_cst');
+    expect(texts('sb').some((t) => t.includes('with') && t.includes('seq_cst'))).toBe(true);
+    expect(texts('sb').some((t) => t.startsWith('a fence in T0 with T1') || t.includes('a fence in T'))).toBe(true);
+    // every listed cell really is forbidden by the model (replay the cell from its text)
+    expect(cells.length).toBeGreaterThan(5);
+    for (const c of cells) expect(c.text).toMatch(/as seq_cst/);
+    expect(scTagNote()).toContain(texts('mp')[0]);
+    // one seq_cst load of the flag alone: weak forbids, sc-flag-store-and-load pair is the C++-valid one
+    const one = setTag(emptyEdit(mp), 1, 0, 'sc');
+    expect(reachable(mp, one, 'relaxed')).toBe(false);
+  });
+
+  it('the replay caption keeps the verdict', () => {
+    expect(replayStartText('V.', 'r1 = 1')).toBe('V. Replaying the shortest schedule that ends with r1 = 1.');
   });
 });

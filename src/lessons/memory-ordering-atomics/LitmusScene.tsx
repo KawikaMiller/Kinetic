@@ -11,7 +11,7 @@ import { explorePathSteps } from '../../core/traceFrames';
 import { MachineView } from './MachineView';
 import { ManualPanel } from './ManualPanel';
 import {
-  BASES, MODEL_LABEL, buildLitmus, editKey, emptyEdit, manipulationNote, reachLine, scCountText, setFence, setTag, table, targetKey, targetReach, verdict,
+  BASES, MODEL_LABEL, buildLitmus, editKey, emptyEdit, manipulationNote, reachLine, replayStartText, scCountText, setFence, setTag, table, targetKey, targetReach, verdict,
   type BaseId, type Edit,
 } from './model';
 import { OutcomeList } from './OutcomeList';
@@ -49,7 +49,7 @@ function memoryChips(kind: SceneKind): ReactNode {
     return <Provenance kind="from-memory">store buffering&apos;s 0 and 0 is allowed on x86 and is the textbook x86-TSO example (Sewell et al., CACM 2010); x86&apos;s full fence is mfence and Arm&apos;s is dmb. Verify against the paper and the architecture manuals</Provenance>;
   }
   if (kind === 'mp') {
-    return <Provenance kind="from-memory">message passing&apos;s flag 1, data 0 is forbidden on x86 and allowed on ARM and POWER without barriers or ordered accesses (the Maranget, Sarkar and Sewell litmus catalogues); seq_cst store buffering forbids 0 and 0 in C++. Verify each against its source</Provenance>;
+    return <Provenance kind="from-memory">message passing&apos;s flag 1, data 0 is forbidden on x86 and allowed on ARM and POWER without barriers or ordered accesses (the Maranget, Sarkar and Sewell litmus catalogues); seq_cst store buffering forbids 0 and 0 in C++. A fence on the reader alone restores message passing in this model but not in C++ or on ARM/POWER, and a writer fence with an acquire load is forbidden there but shown reachable here. Verify each against its source</Provenance>;
   }
   return <Provenance kind="from-memory">reading one location backwards (CoRR) is forbidden by the mainstream models; Dekker-style entry needs a full fence between the flag store and the check on x86-like machines. Verify against the litmus catalogues</Provenance>;
 }
@@ -124,6 +124,7 @@ export function LitmusScene({ picker, config }: { picker: ReactNode; config: Sce
               <TracePlayer<Snapshot>
                 initial={t.start}
                 steps={steps}
+                startText={replayStartText(sentence, row.label)}
                 label={`Steps of the shortest schedule ending with ${row.label}`}
                 renderState={(snap) => <MachineView litmus={litmus} snap={snap} model={s.model} />}
               />
@@ -142,7 +143,7 @@ export function LitmusScene({ picker, config }: { picker: ReactNode; config: Sce
         )}
         {config.kind === 'bites' && (
           <p className="moa-note">
-            Coherence is per location, ordering is across locations: even the weak model never reads x backwards.
+            Coherence is per location, ordering is across locations: in this model, even the weak mode never reads x backwards.
             Hardware does this because a store buffer hides the wait for a cache line (ownership transfer is in <Link to="/lesson/cache-coherence">cache coherence</Link>; the pipeline side is in <Link to="/lesson/cpu-pipelining">CPU pipelining</Link>). A fence costs cycles; this lesson does not put a number on them.
           </p>
         )}

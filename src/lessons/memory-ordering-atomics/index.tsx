@@ -5,7 +5,7 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'Coherence keeps each memory location sensible, but nothing orders your accesses across locations: with store buffers or weak ordering two threads can end in a state no interleaving of your lines explains, unless you add a fence or release/acquire.',
+    tldr: 'Coherence keeps each memory location sensible, but plain accesses to different locations carry no order: with store buffers or weak ordering two threads can end in a state no interleaving of your lines explains, unless you add a fence or release/acquire.',
     what: `Take tiny two-thread programs (litmus tests) and ask which final register values are possible. Under sequential consistency (SC) the answer is whatever the interleavings of the instructions give. Add a store buffer per core (an x86-style model) and a new outcome appears; add per-thread views of memory (a weak model) and stale reads appear too. The lesson runs the full set of schedules of each model, lists each outcome with its shortest schedule, and lets you add fences and release/acquire tags to see which ones remove it. It is a simulated memory model, not your CPU, and it names what it leaves out.`,
     analogy: 'Two colleagues who each pin a note on their own private board and copy it to the shared office board later: each can read the shared board before the other\'s note has arrived, although both boards are individually consistent.',
     useCases: [
@@ -15,7 +15,7 @@ const lesson: LessonModule = {
       'Explaining a rare production bug that no interleaving of the source lines can reproduce',
     ],
     why: 'Concurrency bugs that vanish under a debugger often come from reordering, not from a missing lock. It starts where `cache-coherence` stops (it states that real cores reorder), builds on `race-conditions` and `cpu-pipelining`, and leads to `lock-free-cas`, where every step is assumed ordered.',
-    watch: 'A thread card lists its instructions, with the next one ringed in blue-green (the colour for what happens now). A store sitting in a buffer is drawn in blue (secondary, not yet visible to the other core); a value in memory is grey. Fences and order tags are violet (structure). In the outcome list an outcome that SC cannot produce has a red border, one SC also produces is grey, and one the model does not reach is dashed and dim.',
+    watch: 'A thread card lists its instructions, with the next one ringed in yellow (the colour for what happens now). A store sitting in a buffer is drawn in blue (secondary, not yet visible to the other core); a value in memory is grey. Fences and order tags are violet (structure). In the outcome list an outcome that SC cannot produce has a red border, one SC also produces is grey, and one the model does not reach is dashed and dim.',
   },
   tryThis: [
     `In Store buffering (SC is the default) ${FACTS.sbScOutcomes} outcomes are listed and r0 = 0, r1 = 0 is not reachable (all ${FACTS.sbScStates} states explored). Switch to x86-style: a fourth outcome appears, and "show it" replays both stores sitting in their buffers while both loads read 0 from memory.`,
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `Coherence is per location and ordering is across locations: in the model, reading one variable backwards is not reachable in any model, yet store buffering reaches 0 and 0 as soon as each core has a store buffer (${FACTS.sbScOutcomes} outcomes under SC, ${FACTS.sbTsoOutcomes} under x86-style).`,
     'One fence is not enough where two threads race: with a fence in just one thread, the other thread\'s store can still sit in its buffer, and 0 and 0 stays reachable until both threads fence.',
-    'Release and acquire work as a pair in the weak model: a release flag store with a plain flag load, or a plain store with an acquire load, still leaves the stale-data outcome reachable; both together remove it.',
+    'In this weak model release and acquire work as a pair: a release flag store with a plain flag load, or a plain store with an acquire load, still leaves the stale-data outcome reachable; both together remove it. A fence is not a stand-in for either here, and the model differs from C++ and ARM on that (the page says where).',
     'A table here says what the model allows, not what your CPU does. Nothing is measured, and compiler reordering, load buffering, IRIW, 2+2W, out-of-thin-air values and consume are not modelled.',
   ],
   quiz: [

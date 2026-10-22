@@ -3,7 +3,7 @@
  * `core/memModel`, and the sentences computed from them. No JSX. Everything on screen is "allowed by the
  * model" (AC-0/T4 #31): nothing here is measured on any machine.
  */
-import { outcomes, parseLitmus, MODELS, type Instr, type Litmus, type Model, type Ord, type Snapshot, type Step } from '../../core/memModel';
+import { instrText, outcomes, parseLitmus, MODELS, type Instr, type Litmus, type Model, type Ord, type Snapshot, type Step } from '../../core/memModel';
 
 export type BaseId = 'sb' | 'mp' | 'dekker' | 'corr';
 
@@ -130,9 +130,73 @@ export const NOT_COVERED: readonly string[] = [
   'compiler reordering (a separate source of reordering)', 'every detail of any real instruction set',
 ];
 
-/** The weak model's seq_cst is a fence before the access: stronger than C++ in two corners. */
-export const SC_TAG_NOTE =
-  'The seq_cst tag here is a fence before the access, release or acquire as the access needs. In C++, seq_cst on only the stores, or only the loads, of store buffering still allows 0 and 0; this model forbids it, so it is stronger than C++ in that corner.';
+/** What the weak model does not capture (printed in the weak model's rules; a richer relaxed mode is a Phase 2 request). */
+export const WEAK_LIMITS =
+  'Only reading goes stale here: a thread\'s stores reach each location in program order, and a fence moves only the fencing thread\'s own view. So in this model a fence on the reader alone restores message passing, and a fence in the writer does not turn its next store into a release. Real C++ and ARM/POWER differ on both (from memory): a reader-only fence still allows the stale read there, and a writer fence with an acquire load forbids it.';
+
+// ── Where the model's seq_cst is stronger than C++'s, computed ────────────────────────────────
+
+interface Element { kind: 'sc' | 'fence'; t: number; i: number }
+const bareText = (ins: Instr): string => instrText(ins.op === 'fence' ? ins : { ...ins, ord: undefined });
+
+function elementsOf(base: Base): Element[] {
+  return base.litmus.threads.flatMap((prog, t) => prog.flatMap((ins, i): Element[] => [
+    ...(ins.op === 'fence' ? [] : [{ kind: 'sc' as const, t, i }]),
+    ...(hasGap(base, t, i) ? [{ kind: 'fence' as const, t, i }] : []),
+  ]));
+}
+
+function editOf(base: Base, els: readonly Element[]): Edit {
+  return els.reduce((e, el) => (el.kind === 'sc' ? setTag(e, el.t, el.i, 'sc') : setFence(e, el.t, el.i, true)), emptyEdit(base));
+}
+
+const weakForbids = (base: Base, els: readonly Element[]): boolean => !targetReach(base, editOf(base, els)).relaxed.reachable;
+
+export interface StrongerCell { baseId: BaseId; text: string }
+let strongerCache: StrongerCell[] | null = null;
+
+/**
+ * The cells (a program with only seq_cst tags and fences, at most two of them) where the weak model forbids the
+ * surprising outcome with the smallest possible edit, although C++ would allow it because seq_cst there orders only
+ * against other seq_cst accesses. The one pair C++ also forbids (message passing with a seq_cst flag store AND flag
+ * load: release and acquire) is left out. The C++ side is from memory; the model side is computed.
+ */
+export function scStrongerCells(): StrongerCell[] {
+  if (strongerCache) return strongerCache;
+  const out: StrongerCell[] = [];
+  for (const id of ['sb', 'mp', 'dekker'] as const) {
+    const base = BASES[id];
+    const els = elementsOf(base);
+    const flag = base.flag;
+    const isFlag = (e: Element) => (e.t === flag?.store[0] && e.i === flag.store[1]) || (e.t === flag?.load[0] && e.i === flag.load[1]);
+    const sets: Element[][] = [...els.map((e) => [e]), ...els.flatMap((e, k) => els.slice(k + 1).map((f) => [e, f]))];
+    const found: Element[][] = [];
+    const forbidden: Element[][] = [];
+    for (const set of sets) {
+      if (forbidden.some((f) => f.every((e) => set.includes(e)))) continue;
+      if (flag && set.length === 2 && set.every((e) => e.kind === 'sc' && isFlag(e))) continue;
+      if (!weakForbids(base, set)) continue;
+      forbidden.push(set);
+      if (set.some((e) => e.kind === 'sc')) found.push(set);
+    }
+    for (const set of found) {
+      const text = set.map((e) => (e.kind === 'sc' ? 'T' + e.t + ' ' + bareText(base.litmus.threads[e.t][e.i]) + ' as seq_cst' : 'a fence in T' + e.t)).join(' with ');
+      out.push({ baseId: id, text });
+    }
+  }
+  strongerCache = out;
+  return out;
+}
+
+/** The note under the weak model's rules: what seq_cst is here, and exactly which cells it makes stronger than C++. */
+export function scTagNote(): string {
+  const cells = scStrongerCells();
+  const by = (id: BaseId) => cells.filter((c) => c.baseId === id).map((c) => c.text).join('; ');
+  return 'The seq_cst tag here is a full fence before the access, so one seq_cst access orders everything its thread did before it; C++ seq_cst orders only against other seq_cst accesses (from memory). Computed from this model, with no other tag set, it forbids the surprising outcome in these cells where C++ would still allow it. Store buffering: ' + by('sb') + '. Message passing: ' + by('mp') + '. Dekker-style entry: ' + by('dekker') + '.';
+}
+
+/** The replay player's first caption: the verdict stays on screen while the trace plays. */
+export const replayStartText = (verdictLine: string, outcomeLabel: string): string => verdictLine + ' Replaying the shortest schedule that ends with ' + outcomeLabel + '.';
 
 // ── Reading the explorer ────────────────────────────────────────────────
 
@@ -296,20 +360,31 @@ const fencedThreads = (edit: Edit): number[] => edit.fences.flatMap((row, t) => 
  * null when no note applies to this edit and model.
  */
 export function manipulationNote(base: Base, edit: Edit, model: Model, reach: Reach): string | null {
-  if (!reach.reachable || reach.truncated) return null;
-  if ((base.id === 'sb' || base.id === 'dekker') && model !== 'sc' && fencedThreads(edit).length === 1) {
-    return model === 'tso'
-      ? 'One fence is not enough: the other thread\'s store can still sit in its buffer while the load reads memory.'
-      : 'One fence is not enough: the thread without a fence can still read an old write.';
-  }
+  if (reach.truncated) return null;
   const flag = base.flag;
+  const fenced = fencedThreads(edit);
   if (base.id === 'mp' && flag && model === 'relaxed') {
     const store = edit.tags[flag.store[0]][flag.store[1]];
     const load = edit.tags[flag.load[0]][flag.load[1]];
     const released = store === 'rel' || store === 'sc';
     const acquired = load === 'acq' || load === 'sc';
-    if (released && !acquired && fencedThreads(edit).length === 0) return 'Release alone does not order the reader: its load has to be acquire to take over what the writer had done.';
-    if (acquired && !released && fencedThreads(edit).length === 0) return 'Acquire alone has nothing to take over: the writer\'s flag store has to be release.';
+    const writerFenced = fenced.includes(flag.store[0]);
+    const readerFenced = fenced.includes(flag.load[0]);
+    if (!reach.reachable && readerFenced && !writerFenced && !released) {
+      return 'A fence on the reader alone is enough in this model, because only reading goes stale here. It is not enough in C++ or on ARM/POWER, where the writer\'s stores can also become visible out of order (from memory).';
+    }
+    if (reach.reachable && writerFenced && !readerFenced && acquired && !released) {
+      return 'A fence in the writer plus an acquire flag load still reads stale data here: in this model a fence does not turn the writer\'s next store into a release. C++ and ARM forbid this outcome (from memory), so this cell is a limit of the model.';
+    }
+    if (reach.reachable && released && !acquired && fenced.length === 0) return 'Release alone does not order the reader: its load has to be acquire to take over what the writer had done.';
+    if (reach.reachable && acquired && !released && fenced.length === 0) return 'Acquire alone has nothing to take over: the writer\'s flag store has to be release.';
+    return null;
+  }
+  if (!reach.reachable) return null;
+  if ((base.id === 'sb' || base.id === 'dekker') && model !== 'sc' && fenced.length === 1) {
+    return model === 'tso'
+      ? 'One fence is not enough: the other thread\'s store can still sit in its buffer while the load reads memory.'
+      : 'One fence is not enough: the thread without a fence can still read an old write.';
   }
   return null;
 }
