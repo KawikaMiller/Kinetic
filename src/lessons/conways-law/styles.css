@@ -1,0 +1,10 @@
+.cw-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.cw-table caption { text-align: left; font: 600 12.5px var(--font); color: var(--text); padding-bottom: 4px; }
+.cw-table { table-layout: auto; }
+.cw-yours td { font-weight: 700; color: var(--hi); }
+.cw-note { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.cw-pick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cw-h { margin: 0 0 4px; font: 600 12.5px var(--font); color: var(--text); }
+.cw-contracts { margin: 0; padding-left: 18px; font: 500 12.5px var(--font); color: var(--muted); }
+.cw-reference { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px dashed var(--line-2); border-radius: 8px; }
+.cw-reference ul { margin: 0; padding-left: 18px; font: 500 12.5px var(--font); color: var(--text); }

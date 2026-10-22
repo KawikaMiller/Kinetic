@@ -1,0 +1,18 @@
+.sf-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.sf-split { height: 14px; border-radius: 7px; background: var(--dim); overflow: hidden; }
+.sf-split-new { display: block; height: 100%; background: var(--info); }
+.sf-rule { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
+.sf-banner { margin: 0; padding: 8px 12px; border: 1px solid var(--bad); border-radius: 8px; color: var(--bad); font: 600 13px var(--font); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+.sf-notice { margin: 0; font: 500 12.5px var(--font); color: var(--text); }
+.sf-routes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.sf-route { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line-2); border-radius: 8px; min-width: 0; }
+.sf-route-head { display: flex; flex-direction: column; gap: 2px; }
+.sf-route-head b { font: 600 14px var(--font); color: var(--text); }
+.sf-route-head span { font: 500 12px var(--font); color: var(--muted); }
+.sf-route-controls { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.sf-ledger { min-width: 600px; }
+.sf-ledger caption { text-align: left; font: 600 12.5px var(--font); color: var(--text); padding-bottom: 4px; }
+.sf-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font: 500 12px var(--font); color: var(--muted); }
+.sf-key div { display: flex; gap: 6px; }
+.sf-key dt { font-weight: 700; color: var(--text); }
+.sf-key dd { margin: 0; }
