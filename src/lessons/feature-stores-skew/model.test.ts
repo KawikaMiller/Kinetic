@@ -5,7 +5,7 @@ import {
   NO_SOURCES, NULL_IMPUTED, SHARED, SOURCES, buildRows, divergence, explainFirst, featureValue, only, perSource, pipelines, type Source,
 } from './feature';
 import { LABEL_TIMES, LOG, asOf, asOfBinary, fitLogistic, join, labelledRows, measureLeak, type LogEntry } from './join';
-import { parseLength } from './length';
+import { parseBoundedIntField as parseLength } from '../../components/boundedIntParse';
 import { mulberry32 } from '../../core/random';
 
 // The seeded sweeps are exact but slow when the whole suite runs in parallel.

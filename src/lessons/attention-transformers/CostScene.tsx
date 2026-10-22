@@ -3,7 +3,8 @@ import { CellGrid } from '../../components/CellGrid';
 import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { CostField } from './CostField';
+import { BoundedIntField } from '../../components/BoundedIntField';
+import { costFieldMessages } from './fieldMessages';
 import { costCaption } from './captions';
 import { DRAW_LIMIT, FEED_FORWARD_RATIO, LIMITS, costs, count, linear, quadratic, type CostInput } from './cost';
 import { costOpening } from './openings';
@@ -59,10 +60,10 @@ export function CostScene({ picker }: { picker: ReactNode }) {
           </ControlGroup>
         </>,
         <>
-          <CostField key={`n${fieldKey}`} label="n (tokens)" value={input.n} {...LIMITS.n} onValue={(n) => set({ n })} />
-          <CostField label="d (width)" value={input.d} {...LIMITS.d} onValue={(d) => set({ d })} />
-          <CostField label="heads" value={input.heads} {...LIMITS.heads} onValue={(heads) => set({ heads })} />
-          <CostField label="layers L" value={input.layers} {...LIMITS.layers} onValue={(layers) => set({ layers })} />
+          <BoundedIntField messages={costFieldMessages} className="at-field" key={`n${fieldKey}`} label="n (tokens)" value={input.n} {...LIMITS.n} onValue={(n) => set({ n })} />
+          <BoundedIntField messages={costFieldMessages} className="at-field" label="d (width)" value={input.d} {...LIMITS.d} onValue={(d) => set({ d })} />
+          <BoundedIntField messages={costFieldMessages} className="at-field" label="heads" value={input.heads} {...LIMITS.heads} onValue={(heads) => set({ heads })} />
+          <BoundedIntField messages={costFieldMessages} className="at-field" label="layers L" value={input.layers} {...LIMITS.layers} onValue={(layers) => set({ layers })} />
         </>,
       ]}
     >

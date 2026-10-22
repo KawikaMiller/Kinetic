@@ -22,8 +22,8 @@
 .at-shuffled .is-changed b { color: var(--bad); }
 
 .at-bars { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 330px; }
-.at-field { display: flex; flex-direction: column; gap: 2px; }
-.at-refusal { font: 500 12.5px var(--font); color: var(--bad); max-width: 220px; }
+.at-field.int-field { gap: 2px; }
+.at-field .int-field-refusal { font: 500 12.5px var(--font); color: var(--bad); max-width: 220px; }
 .at-block { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; counter-reset: step; }
 .at-block li { border: 1.5px solid var(--info); border-radius: 8px; padding: 6px 12px; font: 600 12.5px var(--font); }
 .at-block li.is-add { border-style: dashed; border-color: var(--violet); }

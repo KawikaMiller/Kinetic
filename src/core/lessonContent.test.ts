@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TOPICS } from './curriculum';
 import { tier3PlanRows } from './testing/tier3Plan';
 import { tier4PlanRows } from './testing/tier4Plan';
-import { lintLesson, longestTally, SHORT_OPTION_CHARS, TIER_LONGEST_SHARE, type ContentRule } from './lessonContent';
+import { lintLesson, longestQuestionRefs, longestTally, SHORT_OPTION_CHARS, TIER_LONGEST_SHARE, type ContentRule } from './lessonContent';
 import {
   DOMAIN_REVIEW_IDS, lintTier3Lesson, tryThisTestNumbers, unscopedAbsolutes, type Tier3Evidence,
 } from './lessonContentT3';
@@ -94,7 +94,7 @@ const tierOf = new Map(TOPICS.map((t) => [t.id, t.tier]));
 /** The lessons the tier-wide quiz-longest share counts (not awaiting a retrofit, not baselined for quiz-longest), and their tally. */
 const tierTally = (tier: number) => {
   const counted = lessons.filter(({ id }) => tierOf.get(id) === tier && !PENDING_RETROFIT.has(id) && !BASELINE[id]?.rules.includes('quiz-longest'));
-  return { ids: counted.map(({ id }) => id), ...longestTally(counted.map(({ lesson }) => lesson)) };
+  return { ids: counted.map(({ id }) => id), ...longestTally(counted.map(({ lesson }) => lesson)), refs: longestQuestionRefs(counted) };
 };
 
 // ── Each rule fails on a planted bad fixture ─────────────────────────────
@@ -165,6 +165,12 @@ describe('lesson-content rules', () => {
     expect(rulesOf({ ...GOOD, quiz: [tell(0), GOOD.quiz[1], GOOD.quiz[2]] })).not.toContain('quiz-longest');
   });
 
+ it('names which questions have the strictly-longest correct option, in the per-lesson message and the tier-wide list', () => {
+    const tell = q(['Short arrays', 'Unique items', 'Sorted inputs'], 2);
+    const flagged = lintLesson({ ...GOOD, quiz: [tell, GOOD.quiz[1], tell] }, topicIds).find((i) => i.rule === 'quiz-longest');
+    expect(flagged?.detail).toBe('correct option is strictly longest in 2 of 3 (max 1): Q1, Q3');
+    expect(longestQuestionRefs([{ id: 'one', lesson: { ...GOOD, quiz: [tell, GOOD.quiz[1], tell] } }, { id: 'two', lesson: GOOD }])).toEqual(['one Q1', 'one Q3']);
+  });
   it('fail on "all/none of the above"', () => {
     expect(rulesOf({ ...GOOD, quiz: [q(['Sorted input', 'None of the above', 'Short arrays']), ...GOOD.quiz.slice(1)] })).toContain('quiz-of-the-above');
   });
@@ -492,10 +498,10 @@ describe('every built lesson', () => {
   it(`keeps the correct option strictly longest in at most ${TIER_LONGEST_SHARE * 100}% of each tier's questions`, () => {
     for (const tier of [1, 2, 3, 4]) {
       if (TIERS_AWAITING_KICKOFF.has(tier)) continue;
-      const { longest, total, ids } = tierTally(tier);
+      const { longest, total, ids, refs } = tierTally(tier);
       if (!ids.length) continue;
       if (total < MIN_QUESTIONS_FOR_SHARE) continue; // the per-lesson quiz-longest rule still applies from the first commit
-      expect(longest / total, `tier ${tier}: ${longest}/${total}`).toBeLessThanOrEqual(TIER_LONGEST_SHARE);
+      expect(longest / total, `tier ${tier}: ${longest}/${total}; the correct option is strictly longest in ${refs.join(', ')}: lengthen the wrong options of some of these`).toBeLessThanOrEqual(TIER_LONGEST_SHARE);
     }
   });
 });

@@ -235,15 +235,17 @@ export function ControlGroup({
  * more, `bad` for a refusal or error message (a rejected input: say why and what it keeps); `block` gives it a line of its own.
  */
 export function Hint({
-  tone = 'faint', block = false, className = '', children,
+  tone = 'faint', block = false, className = '', id, children,
 }: {
   tone?: 'faint' | 'muted' | 'bad';
   block?: boolean;
   className?: string;
+  /** So a control can point at this text with riaDescribedBy. */
+  id?: string;
   children: ReactNode;
 }) {
   const classes = ['hint', tone === 'muted' && 'is-muted', tone === 'bad' && 'is-bad', block && 'is-block', className].filter(Boolean).join(' ');
-  return <span className={classes}>{children}</span>;
+  return <span id={id} className={classes}>{children}</span>;
 }
 
 /**
@@ -257,7 +259,7 @@ export function Hint({
  *   answer rather than a hover; the default `tint` matches the hover.
  */
 export function ChipButton({
-  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, disabled = false, softDisabled = false, className = '', onClick, children,
+  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, ariaDescribedBy, disabled = false, softDisabled = false, className = '', onClick, children,
 }: {
   tone?: Tone;
   on?: boolean;
@@ -267,6 +269,8 @@ export function ChipButton({
   title?: string;
   /** Accessible name when the label alone isn't enough (an icon like "×"). */
   ariaLabel?: string;
+  /** The id of the text that explains this chip (why it is switched off); read after the name, unlike 	itle, which touch and keyboard users never see. */
+  ariaDescribedBy?: string;
   /** Greyed out and not pressable (a sandbox that's full until Reset). */
   disabled?: boolean;
   /** Looks greyed out and ignores presses but stays focusable (`aria-disabled`): use it where a press can switch the chip off, so keyboard focus stays put. */
@@ -280,7 +284,7 @@ export function ChipButton({
     'chip', 'chip-button', `tone-${tone}`, size === 'md' && 'is-md', on && 'is-on', on && onStyle === 'solid' && 'is-solid', className,
   ].filter(Boolean).join(' ');
   return (
-    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} title={title} disabled={disabled} aria-disabled={softDisabled || undefined} onClick={softDisabled ? undefined : onClick}>
+    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} aria-describedby={ariaDescribedBy} title={title} disabled={disabled} aria-disabled={softDisabled || undefined} onClick={softDisabled ? undefined : onClick}>
       {children}
     </button>
   );

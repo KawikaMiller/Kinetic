@@ -5,7 +5,7 @@ import {
 } from './crypto';
 import { mul, P256 } from './ecc';
 import { mulberry32 } from './random';
-import { nodeAesGcmSeal, nodeEcdhPublic, nodeEcdhSecret, nodeHkdf } from './testing/nodeCrypto';
+import { nodeAesGcmOpen, nodeAesGcmSeal, nodeEcdhPublic, nodeEcdhSecret, nodeHkdf } from './testing/nodeCrypto';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -55,6 +55,17 @@ describe('AES-GCM', () => {
     }
     const noAad = (await aesGcmEncrypt(key, iv, message))!;
     expect(toHex((await aesGcmDecrypt(key, iv, noAad))!)).toBe(toHex(message));
+  });
+
+  it('the node:crypto open oracle returns the plaintext for the real seal and null for a wrong key, wrong aad or a flipped bit', () => {
+    const sealed = nodeAesGcmSeal(key, iv, message, aad);
+    expect(toHex(nodeAesGcmOpen(key, iv, sealed, aad)!)).toBe(toHex(message));
+    expect(nodeAesGcmOpen(key.map((b) => b ^ 1), iv, sealed, aad)).toBeNull();
+    expect(nodeAesGcmOpen(key, iv, sealed, new Uint8Array(aad.length + 1))).toBeNull();
+    expect(nodeAesGcmOpen(key, iv, sealed)).toBeNull();
+    const flipped = Uint8Array.from(sealed);
+    flipped[0] ^= 1;
+    expect(nodeAesGcmOpen(key, iv, flipped, aad)).toBeNull();
   });
 
   it('REJECTS a flipped bit anywhere in ciphertext or tag (200 seeded flips) with the real OperationError', async () => {

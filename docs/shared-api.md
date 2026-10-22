@@ -170,6 +170,14 @@
 `own wording goes in `messages`. Fields that parse lists (adders-alu) or other bases (binary-hex's octal
 `and `#`) keep their own parsers.
 `
+`### `BoundedIntField` (components/) and `parseBoundedIntField` (components/boundedIntParse) — llm-serving, fine-tuning-quantization, feature-stores-skew, finops-cloud-cost, attention-transformers
+````tsx
+`<BoundedIntField label="Prompt tokens" value={n} min={1} max={8192} onValue={setN} />
+`<BoundedIntField label="heads" value={heads} min={1} max={16} onValue={setHeads} messages={costFieldMessages} className="at-field" />   // own wording / own spacing
+`parseBoundedIntField('8,192', 'Prompt tokens', 1, 8192)   // { ok: true, value: 8192 }; the pure half, for a test or a form that is not a TextField
+````
+`A typed whole number (thousands commas accepted, shown grouped) over `parseBoundedInt`. A refused entry keeps the old value and shows the sentence plus `Keeping <old>.` in a `role="status"` line under the field (`.int-field-refusal` in kit.css); the text follows `value` when a slider or chip changes it (no remount key needed for that); leaving the field puts the value back; `onValue` fires only for a valid entry that changes the value. Default wording is `standardIntMessages` (`Label: the largest allowed value is 8,192.`); a lesson with its own sentences passes `messages: (label, min, max) => ({ empty, invalid, tooSmall, tooBig })`. Pins in `boundedIntParse.test.ts`: the four copies' refusals byte for byte, plus attention-transformers' `costFieldMessages`.
+`
 ````ts
 `parseBoundedDecimal(text, { min: 0, max: 1e6, typographicMinus: true, messages: { tooSmall: () => "a weight can't be negative" } })
 ````
@@ -492,6 +500,7 @@
 `<ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
 `<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
 `<ChipButton tone="info" softDisabled={added.includes(f)} onClick={() => add(f)}>{f}</ChipButton>   // aria-disabled, stays focusable: use it where the press itself switches the chip off
+`<ChipButton softDisabled={reason !== null} ariaDescribedBy={reason !== null ? 'why-off' : undefined} onClick={go}>run</ChipButton>   // ariaDescribedBy: id of the text explaining why the chip is off (finops-cloud-cost's spot chip; pair with <Hint id="why-off">); unlike `title`, keyboard and touch users get it
 `<ChipButton onClick={(e) => { refocusAfterRemove(e.currentTarget, { group: '.my-list', items: 'button', fallback: '.add-row button' }); remove(); }}>×</ChipButton>   // core/refocus: focus the control now in the removed one's place, else the fallback (persistent-data-structures, schema-evolution, cloud-networking-vpc, lambda-calculus)
 `<ChipButton tone="bad" onClick={(e) => { refocusAfter(e.currentTarget); remove(); }}>×</ChipButton>  // onClick receives the click event: hand focus on from e.currentTarget, never document.activeElement (cloud-networking-vpc, offline-first-sync)
 `const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
@@ -511,7 +520,7 @@
 `  shows something other than the raw number ("no limit", "1.2/day").
 `- `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
 `  `noun="table"` renames what it scrolls in the default label and hint ("Table: scroll sideways to see all of it", "swipe to see the whole table"); the default stays "diagram", so
-`  existing output is unchanged. `label` / `hint` still override the whole sentence. No lesson passes `noun` yet: a lesson that wraps a table, timeline or listing should (`wideRegionWords` in `components/wideReveal.ts` builds both).
+`  existing output is unchanged. `label` / `hint` still override the whole sentence. Several lessons pass it (`"table"`, `"timeline"`, `"map"`: flp-impossibility, lock-free-cas, hiring-interviewing, influence-without-authority, paxos, hybrid-logical-clocks, distributed-sql-truetime); a lesson that wraps a table, timeline or listing should (`wideRegionWords` in `components/wideReveal.ts` builds both).
 `  A straight clickable `GraphView` edge's hit area is now a 14-unit quad (`edgeHitArea`, `EDGE_HIT_WIDTH` in `core/graphLayout`) instead of a bare line, so a horizontal or vertical edge has area to click (automation could not press it before); the drawing and the pointer region are unchanged.
 `  `reveal={{ from, to, within? }}` keeps a stretch on screen while it overflows: whenever it changes,
 `  the region scrolls sideways just enough to show it (plus a 24px margin), smoothly, or instantly under
@@ -1431,8 +1440,8 @@
 `- **`kind="theorem"` (K4-8, AC-0/T4 #27)**: a theorem-shaped statement the lesson argues but does not run (FLP, 3f + 1, the
 `  2-approximation, perfect secrecy, soundness). `children` names the result: `<ClaimLabel kind="theorem">FLP: no deterministic protocol decides under one crash</ClaimLabel>`.
 `  Use it only where no exhaustive or seeded check of the statement ran on the page; a checked statement says what was checked and its bound instead.
-`  Existing kinds are unchanged; the new one only adds a `.claim-label.is-theorem` rule (groove border) and a map entry. Users: flp-impossibility, byzantine-faults, np-reductions,
-`  approximation-algorithms, secret-sharing, zero-knowledge-proofs, plus linear-programming, online-algorithms, game-theory. Showcase: `#/dev/kit`, the ClaimLabel row of "Tier 3 kit · kickoff".
+`  Existing kinds are unchanged; the new one only adds a `.claim-label.is-theorem` rule (groove border) and a map entry. Users: flp-impossibility, byzantine-faults, failure-detectors, np-reductions,
+`  approximation-algorithms, secret-sharing, zero-knowledge-proofs, elliptic-curves, post-quantum-crypto, e2ee-forward-secrecy, plus linear-programming, online-algorithms, game-theory. Showcase: `#/dev/kit`, the ClaimLabel row of "Tier 3 kit · kickoff".
 `
 `### `core/lessonContentT3.ts` — the Tier 3 content lint (K3-T2)
 ````ts
@@ -1455,7 +1464,8 @@
 `  given an array literal, a `?? []` fallback or a direct call other than `useMemo`/`String`/`JSON.stringify`/`.join`; `// allow-fresh: <reason>`), `pinned-seed-zero` (a `BROKEN_SEED`, `FAILING_SEED`, `LOWEST_*SEED*` or
 `  `COUNTEREXAMPLE_*SEED*` constant equal to 0 in source or tests, unless the line says `allow-seed-zero: <reason with the fail count>` or the lesson declares a `*_WITNESS*` constant: decisions §3 witness clause),
 `  `seed-visible` (`createCluster`, `createTickSim` or `mulberry32` with no `seed=` prop and no `<SeedField`; `// allow-no-seed: <reason>`) and `manipulation-tests` (a `PROOF_SHAPED_IDS` lesson needs two distinct `manipulation N:` tests).
-`- Wiring in `lessonContent.test.ts`: a `TIER_LINT` table loops tiers 3 and 4 over one evidence builder. The nine retrofits sit on `TIER4_AWAITING_RETROFIT` (also in `PENDING_RETROFIT`, so the tier-wide quiz-longest share does not count them);
+`- **Quiz-share failures name the questions** (core/lessonContent `longestQuestionRefs`): the per-lesson `quiz-longest` detail ends `: Q1, Q3`, and the tier-wide share test lists `lesson-id Qn` for every strictly-longest correct option in the counted lessons, so a fixer knows which to lengthen. The rule and the 30% threshold are unchanged.
+- Wiring in `lessonContent.test.ts`: a `TIER_LINT` table loops tiers 3 and 4 over one evidence builder. The nine retrofits sit on `TIER4_AWAITING_RETROFIT` (also in `PENDING_RETROFIT`, so the tier-wide quiz-longest share does not count them);
 `  `TIERS_AWAITING_KICKOFF` is empty and the tier share test waits for `MIN_QUESTIONS_FOR_SHARE` = 30 counted questions (the per-lesson `quiz-longest` rule applies from the first commit). A retrofit batch removes its lessons from BASELINE,
 `  `TIER4_AWAITING_RETROFIT` and `PENDING_RETROFIT` together. `core/testing/tier4Plan.ts` parses the plan's §2 table (test-only) and pins `DOMAIN_REVIEW_IDS_T4` and the 41 registered topics to it.
 `- **absolutes**: "never, always, every, all, only, must, guaranteed, most, typical(ly)" in a `keyIdeas` entry or
@@ -1816,14 +1826,14 @@
 `  not a meter), `unreachable-node`, `unreachable-ending`, `dead-end` (a node with no choices), `cycle` (a loop, or a path past `MAX_DEPTH` = 40 steps; `allowCycles: true` for a retry or review round that is meant to
 `  loop, then paths are explored only until they first revisit a node), and `out-of-bounds` (a meter that starts outside its bounds, or **any path that takes a meter outside `min`..`max` at any step**, named
 `  with the path and the sum). Run it in the lesson's test **and** let the lesson say what it proved (`endingHint`) only when it returns nothing.
-`- **`tradeoffs: true` (K4-9, AC-0/T4 #35)** adds two opt-in kinds for opinion lessons, where a scenario that recommends one answer by construction is a defect (the lead lessons call it and expect `[]`):
+`- **`tradeoffs: true` (K4-9, AC-0/T4 #35)** adds three opt-in kinds for opinion lessons, where a scenario that recommends one answer by construction is a defect (the lead lessons call it and expect `[]`):
 `  - `dominated-choice`: at one node, choice X is dominated by a sibling Y when Y is no worse than X on every meter and strictly better on at least one (the good direction of a meter is read from its
 `    `bad` edge: `below` means higher is better, `above` means lower), and Y leads somewhere as good. "As good" is the `destinations` rule of `dominatedChoices(s, { destinations })`: `same` (same destination only,
 `    the narrow reading), `equal-or-better` (the default and what `tradeoffs` uses: the same destination, or one that reaches every ending X's destination reaches at no greater cost on any meter; two different endings
 `    are never equal, because the meters cannot say whether "hire" beats "no hire"), and `ignore` (strictest). Exported for tests that want the strict reading.
 `  - `free-path` (`freePaths(s)`): a path from the start to an ending on which no meter is ever in the red and none ends worse than it started.
 `  - `dominated-path` (`dominatedPaths(s, { trapPaths, crossEndings })`, part of `tradeoffs`): over every complete path (looping ones cut at the first revisit), a path whose final meters are no worse on every meter and strictly worse on one than another path **to the same ending**; one problem per beaten path, naming both (`the path B > B2 is dominated by A > A2: ...`; path id = `pathId(choices)`, the choice ids joined with ' > '). `crossEndings: true` also compares paths to different endings (strictest; off because the meters cannot say whether one ending beats another, as for `dominated-choice`). `trapPaths: string[]` exempts labelled trap paths (they may still dominate others). Catches what the per-node check cannot: a route that is only a worse order of the same steps, or a detour. `duplicate-path` (`duplicatePaths(s)`; through `validateScenario` only with `duplicatePaths: true`) is informational: two paths with identical final meters.
-`  - Lead fixtures need `trapPaths` only for influence-without-authority (`push > concede > pilot`, `push > concede > fullrollout`) and hiring-interviewing (`evidence > still_followup > hire_after`): `LEAD_TRAP_PATHS` in `core/testing/leadScenarios.ts`. Under `crossEndings` the part1 scenarios have 3 (strangler-fig-migrations, none beaten by a path to the same ending), build-vs-buy's two labelled traps, technical-strategy 2. Tier 3 scenarios under the default reading: incident-response (all three causes) and threat-modeling's sprint fail, because many steps commute (see docs/tier4-kickoff-decisions.md §8); the option is opt-in and those lessons are untouched.
+`  - No lead scenario needs `trapPaths` now (`LEAD_TRAP_PATHS` in `core/testing/leadScenarios.ts` is empty): the T4-B9 retunes (influence: one week for conceding after pushing; hiring: veto regret 8, still_followup regret -2) made their would-be trap paths real trade-offs, and no part1 path is beaten by a path to the same ending (build-vs-buy's two labelled traps are beaten only by paths to a different ending, which `crossEndings: true` also compares). Tier 3 scenarios under the default reading: incident-response (all three causes) and threat-modeling's sprint fail, because many steps commute (see docs/tier4-kickoff-decisions.md §8); the option is opt-in and those lessons are untouched.
 `  - Off by default (a technical scenario may have one right answer); loops are cut at the first revisit so it never hangs. Passing is necessary, not sufficient: a reviewer still asks whether one path looks obviously right.
 `  - Fixtures: `core/testing/leadScenarios.ts` encodes the six spec scenarios (strangler-fig-migrations, build-vs-buy, technical-strategy, reversible-decisions, influence-without-authority, hiring-interviewing); all pass, with their path counts and hand-worked ledgers pinned in `core/scenarioTradeoffs.test.ts`, as does the Tier 3 `design-docs-rfcs` scenario (not exempt).
 `    Under `ignore` only hiring-interviewing's `veto` is flagged (worse than `avg` on all three meters, but "no hire" is a different ending); that is why the default does not compare different endings.
@@ -2404,7 +2414,7 @@ await aesGcmEncrypt(key, iv12, plaintext, aad?)   // ciphertext || 16-byte tag; 
 await aesGcmDecrypt(key, iv12, sealed, aad?)      // plaintext, or REJECTS with the real OperationError
 ```
 - Every helper resolves to `null` without `crypto.subtle`, like the rest of `crypto.ts`. For `aesGcmDecrypt` null means only that: a wrong key, a flipped bit in ciphertext, tag or aad, or a wrong nonce rejects (`catch` it and show "the tag does not match: the message is refused"). Length validation (`hkdf` length, key and nonce sizes) throws a positioned RangeError.
-- Test oracles in `core/testing/nodeCrypto`: `nodeEcdhPublic(curve, scalar)` (uncompressed `04||x||y` hex), `nodeEcdhSecret(curve, scalar, peerPublicHex)`, `nodeHkdf(ikm, salt, info, length)`, `nodeAesGcmSeal(key, iv, plaintext, aad?)`. `curve` is `'prime256v1' | 'secp256k1'`.
+- Test oracles in `core/testing/nodeCrypto`: `nodeEcdhPublic(curve, scalar)` (uncompressed `04||x||y` hex), `nodeEcdhSecret(curve, scalar, peerPublicHex)`, `nodeHkdf(ikm, salt, info, length)`, `nodeAesGcmSeal(key, iv, plaintext, aad?)`, `nodeAesGcmOpen(key, iv, sealed, aad?)` (the plaintext, or null when the tag does not authenticate: use it to ask "does this key open it?" instead of re-sealing and comparing bytes; e2ee-forward-secrecy's clone-readable check). `curve` is `'prime256v1' | 'secp256k1'`.
 - Tests (`cryptoAdvanced.test.ts`): RFC 5869 test case 1 (typed from memory, verified against node `hkdfSync` in the same test), HKDF equal to node on 100 seeded inputs, AES-GCM equal to node's seal for 16/24/32-byte keys, 200 seeded bit flips and a wrong key, nonce and aad all rejected with `OperationError`, ECDH agreeing both ways and with node on imported seeded scalars, and every null path.
 
 ## Dev tooling (`scripts/`)

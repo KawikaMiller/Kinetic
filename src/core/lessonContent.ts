@@ -104,7 +104,7 @@ export function lintLesson(lesson: LessonModule, topicIds: ReadonlySet<string>):
     if (counts[key] < min || counts[key] > max) issues.push({ rule: 'counts', detail: `${key} has ${counts[key]}, expected ${min}-${max}` });
   }
 
-  let longest = 0;
+  const longestAt: string[] = [];
   lesson.quiz.forEach((q, i) => {
     const n = `Q${i + 1}`;
     if (!q.why?.trim()) issues.push({ rule: 'quiz-why', detail: `${n} has no why` });
@@ -120,11 +120,11 @@ export function lintLesson(lesson: LessonModule, topicIds: ReadonlySet<string>):
       issues.push({ rule: 'quiz-length', detail: `${n} correct option is ${ratio.toFixed(2)}× the mean distractor length` });
     }
     if (q.options.some((o) => OF_THE_ABOVE.test(o))) issues.push({ rule: 'quiz-of-the-above', detail: `${n} uses "of the above/these"` });
-    if (correctIsLongest(q)) longest++;
+    if (correctIsLongest(q)) longestAt.push(n);
   });
   const allowedLongest = Math.floor(lesson.quiz.length / 2);
-  if (longest > allowedLongest) {
-    issues.push({ rule: 'quiz-longest', detail: `correct option is strictly longest in ${longest} of ${lesson.quiz.length} (max ${allowedLongest})` });
+  if (longestAt.length > allowedLongest) {
+    issues.push({ rule: 'quiz-longest', detail: `correct option is strictly longest in ${longestAt.length} of ${lesson.quiz.length} (max ${allowedLongest}): ${longestAt.join(', ')}` });
   }
 
   for (const token of backtickedIds(lesson)) {
@@ -133,6 +133,12 @@ export function lintLesson(lesson: LessonModule, topicIds: ReadonlySet<string>):
     if (near) issues.push({ rule: 'links', detail: `\`${token}\` looks like a broken link to \`${near}\`` });
   }
   return issues;
+}
+
+/** Where the strictly-longest correct options are, as `lesson-id Q3` (1-based): what a fixer has to lengthen to bring the tier share down. */
+export function longestQuestionRefs(entries: readonly { id: string; lesson: LessonModule }[]): string[] {
+  return entries.flatMap(({ id, lesson }) =>
+    lesson.quiz.flatMap((q, i) => (Number.isInteger(q.answer) && q.options[q.answer] !== undefined && correctIsLongest(q) ? [`${id} Q${i + 1}`] : [])));
 }
 
 /** Count of questions whose correct option is strictly the longest, and the total. */
