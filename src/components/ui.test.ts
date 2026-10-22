@@ -13,6 +13,23 @@ describe('ChipButton onClick', () => {
   });
 });
 
+describe('ChipButton softDisabled', () => {
+  const html = (softDisabled: boolean) => renderToStaticMarkup(createElement(ChipButton, { softDisabled, onClick: () => undefined, children: 'x' }));
+
+  it('uses aria-disabled and no native disabled, so a press that switches the chip off keeps keyboard focus on it', () => {
+    expect(html(true)).toContain('aria-disabled="true"');
+    expect(html(true)).not.toMatch(/\sdisabled/);
+    expect(html(false)).not.toContain('aria-disabled');
+  });
+
+  it('ignores presses while soft-disabled', () => {
+    let pressed = 0;
+    const chip = ChipButton({ softDisabled: true, onClick: () => pressed++, children: 'x' });
+    expect(chip.props.onClick).toBeUndefined();
+    expect(pressed).toBe(0);
+  });
+});
+
 describe('Segmented with boolean values', () => {
   const html = (value: boolean) =>
     renderToStaticMarkup(createElement(Segmented<boolean>, { value, onChange: () => undefined, options: [{ value: true, label: 'Right' }, { value: false, label: 'Wrong' }] }));

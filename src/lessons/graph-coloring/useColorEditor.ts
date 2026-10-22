@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGraphEdits } from '../../core/useGraphEdits';
 import { ORDERS, addEdge, addNode, identityOrder, isPermutation, PRESETS, presetById, removeLastEdge, type Graph, type OrderId, type PresetId } from './model';
 
@@ -13,7 +13,10 @@ export function useColorEditor(scene: string) {
   const [picked, setPicked] = useState<number | null>(null);
   const n = graph.names.length;
   /** A node added after the order was set joins its end, so the order is always a permutation of the nodes. */
-  const order = isPermutation(rawOrder, n) ? rawOrder : [...rawOrder.filter((v) => v < n), ...identityOrder(n).filter((v) => !rawOrder.includes(v))];
+  const order = useMemo(
+    () => (isPermutation(rawOrder, n) ? rawOrder : [...rawOrder.filter((v) => v < n), ...identityOrder(n).filter((v) => !rawOrder.includes(v))]),
+    [rawOrder, n],
+  );
 
   const setOrder = (next: number[]) => {
     if (!isPermutation(next, n)) {

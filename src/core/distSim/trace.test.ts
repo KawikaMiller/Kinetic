@@ -68,6 +68,14 @@ describe('toSequence', () => {
     expect(toSequence(c.trace.slice(0, 2)).messages).toHaveLength(1);
   });
 
+  it('rounds the times in a note to one decimal place, so a fractional latency never prints 65.925117517123ms', () => {
+    const c = createCluster<Msg>({ seed: 5, latency: { min: 4.123456, max: 4.123456 }, nodes: { a: talker('b', 1), b: quiet } });
+    c.run();
+    const note = toSequence(c.trace, { times: true }).messages[0].note!;
+    expect(note).toBe('sent 0ms, arrived 4.1ms');
+    expect(note).not.toMatch(/\d\.\d{2,}/);
+  });
+
   it('feeds SequenceDiagram: its layout accepts the output', () => {
     const c = createCluster<Msg>({ seed: 6, nodes: { a: talker('b', 4), b: quiet } });
     c.run();

@@ -4,6 +4,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
+import { refocusAfterRemove } from '../../core/refocus';
 import { stepperCaption } from './captions';
 import { CAPTURE_PRESETS, STEPPER_PRESETS } from './presets';
 import { BUDGET_RANGE, nextRedex, redexPaths, type Mode, type Strategy } from './reduce';
@@ -107,7 +108,10 @@ export function StepperScene({ picker, capture }: { picker: ReactNode; capture: 
           {redexes.slice(0, MAX_REDEX_CHIPS).map((p, i) => {
             const text = print(getAt(s.current, p));
             return (
-              <ChipButton key={p} tone="info" title={text} on={p === next} onClick={() => s.reduceAt(p, mode)}>
+              <ChipButton key={p} tone="info" title={text} on={p === next} onClick={(e) => {
+                refocusAfterRemove(e.currentTarget, { group: '.ld-redex-list', root: '.stage-frame', fallback: '.controls-stack .btn' });
+                s.reduceAt(p, mode);
+              }}>
                 {i + 1}: {text.length > REDEX_LABEL_CHARS ? `${text.slice(0, REDEX_LABEL_CHARS)}…` : text}
               </ChipButton>
             );

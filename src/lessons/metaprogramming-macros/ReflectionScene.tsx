@@ -80,7 +80,7 @@ export function ReflectionScene({ picker }: { picker: ReactNode }) {
         <>
           <ControlGroup label="Add a field to the definition">
             {FIELD_IDS.map((f) => (
-              <ChipButton key={f} tone="orange" disabled={added.includes(f)} onClick={() => {
+              <ChipButton key={f} tone="orange" softDisabled={added.includes(f)} onClick={() => {
                   setAdded([...added, f]);
                   setProbed(null);
                 }}>

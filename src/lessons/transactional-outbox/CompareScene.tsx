@@ -41,7 +41,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
       <div className="ob-stage stage-pad">
         <Box>
           <SectionTitle hint="computed by running each design, not typed">What each design guarantees</SectionTitle>
-          {results === null && <Hint tone="muted">Running {COMPARE_SEEDS} schedules per design, with and without the inbox...</Hint>}
+          {results === null && <Hint tone="muted" block>Running {COMPARE_SEEDS} schedules per design, with and without the inbox...</Hint>}
           {results !== null && (
           <div className="ob-scroll" role="region" aria-label="Guarantees of each design over the seeded schedules" tabIndex={0}>
             <table className="data-table ob-table table-cards">

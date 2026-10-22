@@ -9,14 +9,13 @@ import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { useIntroCaption } from '../../core/caption';
-import { toSequence } from '../../core/distSim';
 import { minWidthForText } from '../../core/scale';
 import { replicationCaption } from './captions';
 import {
   BROKERS, BROKEN_CONFIG, BROKEN_SEED, HORIZON_MS, SAFE_CONFIG, SEED_COUNT, SCRIPTED_CRASH_AT, UNCLEAN_CONFIG, type Acks, type MinIsr, type ReplConfig, type ScriptedFault,
 } from './replication';
 import {
-  DEFAULT_REPL, cellFor, effectiveConfig, frameAt, liveLeader, lowestBrokenSeed, messageLabel, pinnedSeed, runRepl, storyRows, tapeColumns,
+  DEFAULT_REPL, cellFor, effectiveConfig, frameAt, liveLeader, lowestBrokenSeed, pinnedSeed, runRepl, storySequence, tapeColumns,
   type ReplControls,
 } from './replView';
 
@@ -29,13 +28,6 @@ const FAULT_LABEL: Record<ScriptedFault, string> = {
   'slow-b3': 'Slow follower b3',
 };
 const SCRIPTED_FAULTS = Object.keys(FAULT_LABEL) as ScriptedFault[];
-const LANES = [
-  { id: 'producer', label: 'producer' },
-  { id: 'b1', label: 'b1' },
-  { id: 'b2', label: 'b2' },
-  { id: 'b3', label: 'b3' },
-  { id: 'ctl', label: 'controller' },
-];
 const ROWS = [...BROKERS, 'lost'] as const;
 const CELL_FONT = 10;
 
@@ -81,11 +73,7 @@ export function ReplicationScene({ picker }: { picker: ReactNode }) {
 
   useIntroCaption(replicationCaption({ config, run, t }), [run, t]);
 
-  const sequence = useMemo(() => {
-    const rows = storyRows(run.cluster.trace, t);
-    const used = new Set(rows.flatMap((r) => [r.from, r.to, r.node]));
-    return toSequence(rows, { actors: LANES.filter((l) => used.has(l.id)), label: messageLabel, events: true, times: !phone });
-  }, [run, t, phone]);
+  const sequence = useMemo(() => storySequence(run.cluster.trace, t, !phone), [run, t, phone]);
 
   const findSeed = () => {
     const found = lowestBrokenSeed(config, c.seededFaults);

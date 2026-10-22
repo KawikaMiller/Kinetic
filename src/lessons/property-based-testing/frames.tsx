@@ -38,6 +38,15 @@ export interface ShrinkFrame extends Frame {
 
 const LOG_TAIL = 6;
 
+/** What the player holds while no case fails: one idle frame. */
+const NO_FRAMES: ShrinkFrame[] = [{ current: [], candidate: null, verdict: 'start', tried: 0, accepted: 0, log: [] }];
+
+/**
+ * The frames to hand `usePlayer`: the real ones, or the same idle frame array every time. `usePlayer` rewinds when the
+ * array's identity changes, so a fresh fallback array on each render would loop forever.
+ */
+export const playerFrames = (frames: ShrinkFrame[]): ShrinkFrame[] => (frames.length > 0 ? frames : NO_FRAMES);
+
 /** One frame per candidate the shrinker evaluated, plus the start and the end. */
 export function shrinkFrames(result: ShrinkResult, caseNumber: number): ShrinkFrame[] {
   const r = createRecorder<ShrinkFrame>({ current: result.original, candidate: null, verdict: 'start', tried: 0, accepted: 0, log: [] });

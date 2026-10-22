@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
   KNEE_PER_INSTANCE, PEAK_BOUNDS, PLAN_DEFAULT, POOL_SIZES, RAMP_LEVELS, SERVICE_DEFAULT, SLO_MS, TIMEOUT_MS, TEST_JOBS,
-  capacity, createRamp, errorRate, firstCrossing, forecastPeak, kneeLoad, latencyQuantileMs, meanWaitMs, mmcSurvival, optimised, orderByMonth, parsePeak, planCapacity,
+  capacity, createRamp, errorRate, firstCrossing, forecastPeak, kneeLoad, latencyQuantileMs, meanWaitMs, mmcSurvival, optimised, orderByMonth, parsePeak, planCapacity, roomBeforeCapacity,
   poolRows, safeUtilisation, scaledCapacity, simulateLoad, trendCrossing, trendPeak, usableInstances, yearFactor, type Plan, type Service,
 } from './model';
 
@@ -159,6 +159,17 @@ describe('the knee is defined by the objective', () => {
     expect(scaledCapacity(SERVICE_DEFAULT, 40, 1500)).toBe(1500);
     expect(scaledCapacity(SERVICE_DEFAULT, 20, 1500)).toBe(1500);
     expect(scaledCapacity(SERVICE_DEFAULT, 1, 1500)).toBeCloseTo(base, 6);
+  });
+});
+
+describe('the room before the plan capacity', () => {
+  it('is the hand-worked share of the capacity left, and null (not minus infinity) when N + 1 on one instance leaves nothing usable', () => {
+    const plan: Plan = { ...PLAN_DEFAULT, redundancy: 'n+1', instances: 5, headroom: 0.3, peak: 1000 };
+    const cap = plan.kneePerInstance * 4 * 0.7;
+    expect(roomBeforeCapacity(plan)).toBeCloseTo((cap - 1000) / cap, 12);
+    const alone: Plan = { ...plan, instances: 1 };
+    expect(usableInstances(alone)).toBe(0);
+    expect(roomBeforeCapacity(alone)).toBeNull();
   });
 });
 

@@ -17,7 +17,7 @@ export function PresetChips({ ed }: { ed: ColorEditor }) {
 export function EditRow({ ed }: { ed: ColorEditor }) {
   return (
     <>
-      <Button onClick={ed.addNode} disabled={ed.graph.names.length >= MAX_NODES}>
+      <Button onClick={ed.addNode} softDisabled={ed.graph.names.length >= MAX_NODES}>
         Add node
       </Button>
       <Button onClick={ed.undo} softDisabled={ed.added === 0}>

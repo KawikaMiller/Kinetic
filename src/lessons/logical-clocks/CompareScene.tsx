@@ -104,7 +104,7 @@ export function CompareScene({ picker, exec }: { picker: ReactNode; exec: Execut
           <Box>
             <SectionTitle hint="L(a) < L(b) although a did not happen before b">Pairs where Lamport misleads</SectionTitle>
             {shown.length === 0 ? (
-              <Hint tone="muted">None in this drawing: every pair with a smaller Lamport stamp really is ordered. Draw two events with no message path between them to make one.</Hint>
+              <Hint tone="muted" block>None in this drawing: every pair with a smaller Lamport stamp really is ordered. Draw two events with no message path between them to make one.</Hint>
             ) : (
               <div className="lc-pairs" role="group" aria-label="Pairs where Lamport misleads">
                 {shown.map((p) => (

@@ -257,7 +257,7 @@ export function Hint({
  *   answer rather than a hover; the default `tint` matches the hover.
  */
 export function ChipButton({
-  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, disabled = false, className = '', onClick, children,
+  tone = 'violet', on, onStyle = 'tint', size = 'sm', title, ariaLabel, disabled = false, softDisabled = false, className = '', onClick, children,
 }: {
   tone?: Tone;
   on?: boolean;
@@ -269,6 +269,8 @@ export function ChipButton({
   ariaLabel?: string;
   /** Greyed out and not pressable (a sandbox that's full until Reset). */
   disabled?: boolean;
+  /** Looks greyed out and ignores presses but stays focusable (`aria-disabled`): use it where a press can switch the chip off, so keyboard focus stays put. */
+  softDisabled?: boolean;
   className?: string;
   /** Receives the click: `e.currentTarget` is the chip, for a handler that hands focus on when the press removes it. */
   onClick: (e: MouseEvent<HTMLButtonElement>) => void;
@@ -278,7 +280,7 @@ export function ChipButton({
     'chip', 'chip-button', `tone-${tone}`, size === 'md' && 'is-md', on && 'is-on', on && onStyle === 'solid' && 'is-solid', className,
   ].filter(Boolean).join(' ');
   return (
-    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} title={title} disabled={disabled} onClick={onClick}>
+    <button type="button" className={classes} aria-pressed={on} aria-label={ariaLabel} title={title} disabled={disabled} aria-disabled={softDisabled || undefined} onClick={softDisabled ? undefined : onClick}>
       {children}
     </button>
   );

@@ -3,6 +3,7 @@
  * diagram. A trace is plain data: the same seed always produces the same rows, so a test, a
  * step-player frame and a counterexample shown on screen all read one trace.
  */
+import { decimal } from '../format';
 import type { SeqActor, SeqMessage } from '../sequenceLayout';
 
 export type TraceKind =
@@ -111,7 +112,7 @@ export function toSequence<M>(trace: readonly TraceRow<M>[], o: ToSequenceOption
       } else if (!m) {
         add({ id: `m${row.msgId}`, from: row.from!, to: row.to!, label: label(row.payload as M) }, row.msgId);
       } else if (o.times) {
-        m.note = `sent ${sentAt.get(row.msgId!)}ms, arrived ${row.t}ms`;
+        m.note = `sent ${decimal(sentAt.get(row.msgId!)!, 1)}ms, arrived ${decimal(row.t, 1)}ms`;
       }
     } else if ((events && row.kind in SELF_EVENT_LABEL) || (o.timers && row.kind === 'timer')) {
       see(row.node);

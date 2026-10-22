@@ -19,16 +19,16 @@ export function EditRow({ ed }: { ed: MatchEditor }) {
   const g = ed.graph;
   return (
     <>
-      <Button onClick={ed.addWorker} disabled={g.workers >= MAX_SIDE}>
+      <Button onClick={ed.addWorker} softDisabled={g.workers >= MAX_SIDE}>
         Add worker
       </Button>
-      <Button onClick={ed.removeWorker} disabled={g.workers <= 1}>
+      <Button onClick={ed.removeWorker} softDisabled={g.workers <= 1}>
         Remove last worker
       </Button>
-      <Button onClick={ed.addJob} disabled={g.jobs >= MAX_SIDE}>
+      <Button onClick={ed.addJob} softDisabled={g.jobs >= MAX_SIDE}>
         Add job
       </Button>
-      <Button onClick={ed.removeJob} disabled={g.jobs <= 1}>
+      <Button onClick={ed.removeJob} softDisabled={g.jobs <= 1}>
         Remove last job
       </Button>
       <Hint>Click a worker, then a job, to add or remove the edge between them (up to {MAX_SIDE} of each).</Hint>

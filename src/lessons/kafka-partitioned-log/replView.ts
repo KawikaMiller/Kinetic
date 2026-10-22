@@ -2,7 +2,7 @@
  * kafka-partitioned-log, scene 3: a replication run as frames (one per event) for the replay slider, and the
  * rules for how each log cell is toned. Pure.
  */
-import type { TraceRow } from '../../core/distSim';
+import { toSequence, type TraceRow } from '../../core/distSim';
 import type { Tone } from '../../core/tone';
 import {
   BROKERS, HORIZON_MS, SEED_COUNT, brokersOf, controllerOf, lostRecords, missingSentRecords, lowestViolatingSeed, producerOf, replCluster, runChecked, scriptedSetup, seededSetup,
@@ -160,6 +160,26 @@ export const messageLabel = (m: ReplMsg): string => {
     default: return m.type;
   }
 };
+
+/** Every lane the ladder can draw, in order. */
+export const LANES = [
+  { id: 'producer', label: 'producer' },
+  { id: 'b1', label: 'b1' },
+  { id: 'b2', label: 'b2' },
+  { id: 'b3', label: 'b3' },
+  { id: 'ctl', label: 'controller' },
+];
+
+/**
+ * The ladder of the story up to `until`: only the lanes its rows use, so a short replay stays narrow, or every lane
+ * while nothing has happened yet (a diagram with no lanes cannot be laid out).
+ */
+export function storySequence(trace: readonly TraceRow<ReplMsg>[], until: number, times: boolean) {
+  const rows = storyRows(trace, until);
+  const used = new Set(rows.flatMap((r) => [r.from, r.to, r.node]));
+  const drawn = LANES.filter((l) => used.has(l.id));
+  return toSequence(rows, { actors: drawn.length > 0 ? drawn : LANES, label: messageLabel, events: true, times });
+}
 
 /* ---------- the seeds ---------- */
 

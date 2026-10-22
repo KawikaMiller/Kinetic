@@ -151,7 +151,7 @@ export function ServiceScene({ picker }: { picker: ReactNode }) {
           {view.subset ? (
             <SequenceDiagram actors={lanes} messages={sequence.messages} ariaLabel="Messages behind the smallest violating set" />
           ) : (
-            <Hint tone="muted">Every order model holds on the history up to {t} ms, so there is no violation to trace. Replay further, or try another design or seed.</Hint>
+            <Hint tone="muted" block>Every order model holds on the history up to {t} ms, so there is no violation to trace. Replay further, or try another design or seed.</Hint>
           )}
         </Box>
         <ProvenanceRow>

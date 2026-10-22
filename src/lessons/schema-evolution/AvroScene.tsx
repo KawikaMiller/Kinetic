@@ -6,6 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Provenance, Segmented, TextField } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import type { ByteField } from '../../core/bytes';
+import { refocusAfterRemove } from '../../core/refocus';
 import { plainTone } from '../../core/tone';
 import {
   ATYPES, LESSON_HISTORY, MODES, NARROWING_HISTORY, PROMOTION_HISTORY, avroLines, defaultValue, encodeRecord, nameProblem, register, sampleRecord, sampleValue,
@@ -104,7 +105,10 @@ export function AvroScene({ picker }: { picker: ReactNode }) {
                   <ChipButton tone="info" on={f.hasDefault} ariaLabel={`${f.name} has a default`} onClick={() => edit((s) => s.map((x, j) => (j === i ? { ...x, hasDefault: !x.hasDefault } : x)))}>
                     {f.hasDefault ? `default ${showValue(defaultValue(f.type))}` : 'no default'}
                   </ChipButton>
-                  <ChipButton tone="bad" ariaLabel={`Remove ${f.name}`} onClick={() => edit((s) => s.filter((_, j) => j !== i))}>remove</ChipButton>
+                  <ChipButton tone="bad" ariaLabel={`Remove ${f.name}`} onClick={(e) => {
+                    refocusAfterRemove(e.currentTarget, { group: '.se-fields', items: 'button[aria-label^="Remove"]', root: '.se-editor', fallback: 'input' });
+                    edit((s) => s.filter((_, j) => j !== i));
+                  }}>remove</ChipButton>
                 </li>
               ))}
               {schema.length === 0 && <li className="empty-note">An empty record is allowed: it is zero bytes.</li>}
