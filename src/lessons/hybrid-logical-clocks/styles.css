@@ -1,0 +1,18 @@
+/* hybrid-logical-clocks */
+.hl-stage { gap: 12px; min-width: 0; }
+.hl-timeline { display: block; max-width: 100%; }
+.hl-lane { font: 700 13px var(--mono); }
+.hl-offset { font: 500 9px var(--mono); fill: var(--muted); }
+.hl-event { font: 700 10px var(--mono); fill: var(--text); }
+.hl-stamp { font: 600 9px var(--mono); fill: var(--hi); font-variant-numeric: tabular-nums; }
+.hl-items { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.hl-line { font-size: 13px; line-height: 1.6; color: var(--muted); }
+.hl-line b { color: var(--text); }
+.hl-line .chip { margin-left: 6px; }
+.hl-table-wrap { overflow-x: auto; }
+.hl-physical { color: var(--muted); }
+.hl-lamport { color: var(--info); }
+.hl-hybrid { color: var(--hi); font-weight: 700; }
+.hl-rule { color: var(--muted); font-family: var(--font); font-size: 12px; }
+.is-inverted td:first-child { color: var(--bad); font-weight: 700; }
+.hl-bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--violet); margin-right: 6px; vertical-align: middle; }
