@@ -23,7 +23,7 @@ export function SourceScene({ picker, dispatch }: { picker: ReactNode; dispatch:
     return (
       <Box>
         <SectionTitle hint={running ? `about to run ${formatInstr(running)}` : 'the loop that runs each instruction'}>The dispatch loop</SectionTitle>
-        {showLoop ? <CodePanel lines={DISPATCH_LINES} active={active} gutter="none" /> : <Hint tone="muted">The loop is hidden: switch it on to read it.</Hint>}
+        {showLoop ? <CodePanel lines={DISPATCH_LINES} active={active} gutter="none" /> : <Hint tone="muted" block>The loop is hidden: switch it on to read it.</Hint>}
       </Box>
     );
   };
