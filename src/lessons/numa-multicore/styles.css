@@ -1,0 +1,20 @@
+.numa-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.numa-note { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.numa-sockets { display: flex; flex-flow: row wrap; gap: 10px; margin-top: 8px; }
+.numa-socket { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--cell-line); border-radius: 8px; }
+.numa-socket.tone-sky { border-color: var(--sky); }
+.numa-socket.tone-amber { border-color: var(--amber); }
+.numa-threads { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.numa-thread.is-local { color: var(--ok); }
+.numa-thread.is-remote { color: var(--bad); }
+.numa-bank { display: flex; flex-flow: row wrap; gap: 6px; align-items: center; }
+.numa-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.numa-empty { color: var(--dim); font-size: 12px; }
+.numa-page { min-width: 34px; padding: 3px 8px; border: 1px solid var(--cell-line); border-radius: 6px; background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: center; }
+button.numa-page { cursor: pointer; }
+.numa-page.tone-sky { border-color: var(--sky); color: var(--sky); }
+.numa-page.tone-amber { border-color: var(--amber); color: var(--amber); }
+.numa-link { flex: 1 1 100%; text-align: center; font-size: 12px; color: var(--bad); border-top: 1px dashed var(--bad); padding-top: 6px; }
+.numa-bars { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.numa-bar-label { font-size: 12px; color: var(--muted); }
+.numa-pages { flex: 1 1 100%; display: flex; flex-flow: row wrap; gap: 6px; align-items: center; }
