@@ -174,3 +174,16 @@ export const LEAD_SCENARIOS: Readonly<Record<string, Scenario>> = {
   'influence-without-authority': INFLUENCE,
   'hiring-interviewing': HIRING,
 };
+
+/**
+ * Paths that are deliberately beaten on every meter by another path to the same ending, handed to `validateScenario`
+ * as `trapPaths` (on screen each must be a labelled, defensible-looking mistake, not an accident):
+ * influence-without-authority: pushing first and then conceding costs trust and scope that asking first would not have;
+ * hiring-interviewing: a second dissenter round before the follow-up is slower and no better than going to the follow-up directly.
+ * The part1 scenarios need none: no path of theirs is beaten by a path to the same ending (build-vs-buy's two trap paths,
+ * build then plan or nothing, are beaten only by a path to a different ending, which `crossEndings: true` compares too).
+ */
+export const LEAD_TRAP_PATHS: Readonly<Record<string, readonly string[]>> = {
+  'influence-without-authority': ['push > concede > pilot', 'push > concede > fullrollout'],
+  'hiring-interviewing': ['evidence > still_followup > hire_after'],
+};

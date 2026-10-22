@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutTree, treeKeyTarget, treeX, type TreeShape } from './treeLayout';
+import { layoutTree, treeExitFocus, treeKeyTarget, treeX, type TreeShape } from './treeLayout';
 
 /** A BST built from keys, as [left, right] children keyed by value. */
 function bst(keys: number[]): TreeShape<number> {
@@ -131,6 +131,24 @@ describe('treeX', () => {
     expect(treeX(4, 5, 900, 40)).toBe(860);
     expect(treeX(2, 5, 900, 40)).toBe(450);
     expect(treeX(0, 1, 900, 40)).toBe(450);
+  });
+});
+
+describe('treeExitFocus', () => {
+  const tree = bst([5, 3, 8, 1, 4, 9]);
+  const { place } = layoutTree(tree, 'inorder');
+
+  it('hands focus to the parent of a leaving node', () => {
+    expect(treeExitFocus(4, tree, place, () => true)).toBe(3);
+  });
+
+  it('climbs past ancestors that are leaving too', () => {
+    expect(treeExitFocus(1, tree, place, (n) => n !== 3)).toBe(5);
+  });
+
+  it('is null for a root or when the whole branch above is leaving (the caller uses the container)', () => {
+    expect(treeExitFocus(5, tree, place, () => true)).toBeNull();
+    expect(treeExitFocus(9, tree, place, () => false)).toBeNull();
   });
 });
 

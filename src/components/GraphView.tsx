@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import {
-  circlePositions, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type GraphKey, type LayeredSpacing, type LayoutEdge,
+  circlePositions, edgeHitArea, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type GraphKey, type LayeredSpacing, type LayoutEdge,
   type LoopSide, type NodeBox, type Pt, type Radii,
 } from '../core/graphLayout';
 import { TONES, toneVar, type Tone } from '../core/tone';
@@ -350,7 +350,7 @@ export function GraphView<K extends GraphKey>({
             )}
             {clickable &&
               (r.kind === 'line' ? (
-                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="graph-edge-hit" data-edge={i} />
+                <polygon points={edgeHitArea(a, b)} className="graph-edge-hit is-area" data-edge={i} />
               ) : (
                 <path d={r.d} className="graph-edge-hit" data-edge={i} />
               ))}

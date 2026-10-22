@@ -403,6 +403,25 @@ function selfLoop(p: Pt, n: NodeBox, side: LoopSide = 'top'): EdgeRoute {
   };
 }
 
+/* ---------- pointer ---------- */
+
+/** Thickness of a clickable edge's invisible hit area, in SVG units (the `.graph-edge-hit` stroke-width in kit.css). */
+export const EDGE_HIT_WIDTH = 14;
+
+/**
+ * The hit area of a straight edge as a quad (four corners, butt ends, `width` thick): a bare `<line>` has a zero-area
+ * box when it is horizontal or vertical, so a synthetic or automated click cannot target it, while a quad always
+ * has area. A zero-length edge gets a `width` square. Points are the SVG `points` attribute.
+ */
+export function edgeHitArea(a: Pt, b: Pt, width = EDGE_HIT_WIDTH): string {
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const half = width / 2;
+  const nx = len === 0 ? 0 : (-(b.y - a.y) / len) * half;
+  const ny = len === 0 ? half : ((b.x - a.x) / len) * half;
+  const tx = len === 0 ? half : 0;
+  return [[a.x - tx + nx, a.y + ny], [b.x + tx + nx, b.y + ny], [b.x + tx - nx, b.y - ny], [a.x - tx - nx, a.y - ny]].map(([x, y]) => `${x},${y}`).join(' ');
+}
+
 /* ---------- keyboard ---------- */
 
 export interface NavItem {
