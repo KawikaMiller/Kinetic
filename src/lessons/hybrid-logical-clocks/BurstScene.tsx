@@ -1,9 +1,13 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { burstCaption, counterHint } from './captions';
 import { BURST, RESOLUTION_MS, RULE_TEXT, burstRows, hlcText } from './hlc';
+
+/** Narrowest width, in px, where the five-column burst table keeps each stamp on one line. */
+const BURST_TABLE_W = 480;
 
 const RESOLUTIONS = RESOLUTION_MS.map((value) => ({ value, label: `${value} ms` }));
 
@@ -40,8 +44,8 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
       <div className="hl-stage stage-pad">
         <Box>
           <SectionTitle hint="one node, one event per millisecond, a clock that reads multiples of the resolution">A burst inside one clock reading</SectionTitle>
-          <div className="hl-table-wrap">
-            <table className="data-table">
+          <WideRegion minWidth={BURST_TABLE_W} noun="table">
+            <table className="data-table hl-table">
               <thead><tr><th>true t</th><th>physical</th><th>hybrid (l, c)</th><th>counter</th><th>rule</th></tr></thead>
               <tbody>
                 {rows.map((r) => (
@@ -53,7 +57,7 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
           <Hint block>{counterHint({ largest, returns })}</Hint>
         </Box>
         <ProvenanceRow>

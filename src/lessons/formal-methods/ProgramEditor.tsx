@@ -15,7 +15,7 @@ export function ProgramEditor({ spec, onChange, refusal, onRefuse }: { spec: Spe
         {spec.steps.map((s, k) => (
           <li key={k} className="fm-row">
             <span className="fm-k mono">{k}</span>
-            <TextField label="guard" value={s.guard} onChange={(guard) => { onRefuse(null); onChange(setStep(spec, k, { guard })); }} spellCheck={false} width={220} />
+            <TextField label="guard" value={s.guard} onChange={(guard) => { onRefuse(null); onChange(setStep(spec, k, { guard })); }} spellCheck={false} className="fm-guard-field" />
             <label className="fm-effect">
               <span>effect</span>
               <select className="fm-select" value={s.effect} aria-label={`Effect of step ${k}`} onChange={(e) => { onRefuse(null); onChange(setEffect(spec, k, e.target.value as Effect)); }}>

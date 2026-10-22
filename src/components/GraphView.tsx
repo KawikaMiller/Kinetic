@@ -70,7 +70,8 @@ type Item<K extends GraphKey> = { kind: 'node'; id: K } | { kind: 'edge'; index:
  *   different edge set than it draws, so adding an edge (one that closes a cycle) doesn't
  *   rearrange the drawing.
  * - Edges are straight (trimmed at the target when `directed`), or `edgeStyle="curve"`
- *   for layered S-curves. In a layered layout a straight edge that would cross a node
+ *   for layered S-curves (an edge between two nodes of one layer has no S, so it draws straight and
+ *   bends round the nodes between). In a layered layout a straight edge that would cross a node
  *   (a back edge closing a cycle) bends round it. Self-loops draw above the node (or on its `loopSide`); `labelAt` slides an edge label along it; a→b with b→a bends both apart.
  * - `nodeMark` / `edgeMark` highlight with tones; `nodeColor` gives unmarked nodes a
  *   colour (a component, a side); `nodeClass` / `edgeClass` add lesson classes.
@@ -170,18 +171,22 @@ export function GraphView<K extends GraphKey>({
   const boxOf = (id: K): NodeBox => ({ shape: byId.get(id)?.shape ?? 'circle', r: radius, w: box.w, h: box.h });
   const pairs = new Set(edges.map((e) => `${e.from}\u0000${e.to}`));
 
-  const detour = layout === 'layered' && edgeStyle === 'straight';
   const routes = edges.map((e) => {
     const a = at.get(e.from);
     const b = at.get(e.to);
     if (!a || !b) return null;
-    const parallel = directed && edgeStyle === 'straight' && e.from !== e.to && pairs.has(`${e.to}\u0000${e.from}`);
+    // An S-curve runs between layers. An edge inside one layer (a conflict drawn over a layout that ignores it)
+    // has no S to draw, so it goes straight and bends round the nodes between its ends.
+    const sameLayer = layout === 'layered' && a !== b && (sp.direction === 'right' ? a.x === b.x : a.y === b.y);
+    const curved = edgeStyle === 'curve' && !sameLayer;
+    const detour = layout === 'layered' && !curved;
+    const parallel = directed && !curved && e.from !== e.to && pairs.has(`${e.to}\u0000${e.from}`);
     // Layered drawings bend a straight edge round any node it would cross (a back edge).
     const obstacles = detour
       ? ids.flatMap((id) => (id === e.from || id === e.to || !at.has(id) ? [] : [{ at: at.get(id)!, box: boxOf(id) }]))
       : undefined;
     return routeEdge(a, b, boxOf(e.from), boxOf(e.to), {
-      directed, arrowGap, parallel, curve: edgeStyle === 'curve' ? sp.direction : undefined, obstacles,
+      directed, arrowGap, parallel, curve: curved ? sp.direction : undefined, obstacles,
       loopSide: byId.get(e.from)?.loopSide, labelAt: e.labelAt,
     });
   });

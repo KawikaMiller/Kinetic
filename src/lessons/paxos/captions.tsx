@@ -46,6 +46,19 @@ export function duelHint(a: { stopped: boolean; refused: number; chosen: readonl
 export const counterexampleStart = (a: { bugLabel: string | null; steps: number; message: string }): string =>
   `Shortest counterexample${a.bugLabel ? ` under the planted bug "${a.bugLabel}"` : ''}: ${a.steps} steps end in "${a.message}". Step through it.`;
 
+/**
+ * The seeded schedule's precomputed result under scene 1's pool. It says outright that the run was played to the
+ * end beforehand, so at step 0 it cannot read as contradicting the live state ("chosen: none") shown above it.
+ */
+export function seededRunLine(a: { seed: number; planted: boolean; violation: string | null; decidedAt: number | null; value: string | null }): ReactNode {
+  const outcome = a.violation
+    ? <span className="hl bad wrap">{a.violation}</span>
+    : a.decidedAt === null
+      ? 'no value chosen by the end of the run'
+      : `${a.value} chosen at ${Math.round(a.decidedAt)} ms, and at most one value chosen after every event`;
+  return <>Seeded schedule {a.seed}{a.planted ? ' with the planted bug' : ''}, played to the end beforehand and separate from the session above: {outcome}.</>;
+}
+
 /** Scene 3: the counting model. */
 export function multiCaption(a: { values: number; single: number; stable: number; crashAfter: number | null; rerun: boolean }): ReactNode {
   return (

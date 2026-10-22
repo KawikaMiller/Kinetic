@@ -3,11 +3,10 @@ import { ConsolePanel } from '../../components/ConsolePanel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
-import { humanDuration, power } from '../../core/format';
-import { parseBoundedInt } from '../../core/parse';
+import { humanDuration, integer, power } from '../../core/format';
 import { mulberry32 } from '../../core/random';
 import {
-  DEFAULT_R, DEFAULT_X, GROUPS, ILLUSTRATIVE_RATE, REAL_COST, commit, guessRun, publicKey, respond, searchSecret, verify, workings, type Group,
+  DEFAULT_R, DEFAULT_X, GROUPS, ILLUSTRATIVE_RATE, REAL_COST, commit, guessRun, publicKey, readExponent, respond, searchSecret, verify, workings, type Group,
 } from './schnorr';
 
 const GROUP_OPTIONS = [
@@ -17,7 +16,6 @@ const GROUP_OPTIONS = [
 const DEFAULT_SEED = 7;
 const GUESS_ROUNDS = 1000;
 const DEFAULT_C = 3n;
-const fmt = (n: number) => n.toLocaleString('en-US');
 
 /** Scene 2: a working proof of knowledge of a discrete logarithm (Schnorr identification) in a toy group, with the cheats against it. */
 export function SchnorrScene({ picker }: { picker: ReactNode }) {
@@ -54,10 +52,10 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
   };
   const typeX = (text: string) => {
     setXText(text);
-    const parsed = parseBoundedInt(text, { min: 1, max: Number(G.q - 1n), messages: { tooBig: () => `Keep x between 1 and ${G.q - 1n}.`, tooSmall: () => `Keep x between 1 and ${G.q - 1n}.` } });
+    const parsed = readExponent(text, 'x', 1n, G.q - 1n);
     if (!parsed.ok) return setError(parsed.error);
     setError(null);
-    setX(BigInt(parsed.value));
+    setX(parsed.value);
     setSearched(null);
     setGuess(null);
   };
@@ -114,8 +112,8 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
         <div className="zk-cheats">
           <div className="zk-cheat">
             <b>Cheat (a): guess the challenge.</b> Without x, fix a guessed c', pick s at random, and send t = g^s y^(-c'); it passes exactly when the verifier's c equals c'.{' '}
-            <Button onClick={() => setGuess(guessRun(G, y, seed, GUESS_ROUNDS))}>Run {fmt(GUESS_ROUNDS)} seeded rounds</Button>{' '}
-            {guess && <span>{guess.passed} of {fmt(GUESS_ROUNDS)} passed (seed {seed}); the formula 1/q = 1/{String(G.q)} predicts about {guess.expected.toFixed(1)} (sigma {guess.sigma.toFixed(1)}).</span>}
+            <Button onClick={() => setGuess(guessRun(G, y, seed, GUESS_ROUNDS))}>Run {integer(GUESS_ROUNDS)} seeded rounds</Button>{' '}
+            {guess && <span>{guess.passed} of {integer(GUESS_ROUNDS)} passed (seed {seed}); the formula 1/q = 1/{String(G.q)} predicts about {guess.expected.toFixed(1)} (sigma {guess.sigma.toFixed(1)}).</span>}
           </div>
           <div className="zk-cheat is-bad">
             <b>Cheat (b): a predictable verifier.</b> If the verifier always picks c = 0, any t = g^s passes.{' '}
@@ -125,13 +123,13 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
           <div className="zk-cheat">
             <b>Cheat (c): search.</b> In a toy group the discrete logarithm takes at most {String(G.q)} tries.{' '}
             <Button onClick={() => setSearched(searchSecret(G, y))}>Try every s</Button>{' '}
-            {searched && <span>found x = {String(searched.x)} after {searched.tries} {searched.tries === 1 ? 'try' : 'tries'}: that is exactly why a toy proves nothing. For a group of order about {power(256)} the best generic method needs about {power(REAL_COST.log2)} steps, about {humanDuration(REAL_COST.seconds)} at a made-up {fmt(ILLUSTRATIVE_RATE)} steps per second.</span>}
+            {searched && <span>found x = {String(searched.x)} after {searched.tries} {searched.tries === 1 ? 'try' : 'tries'}: that is exactly why a toy proves nothing. For a group of order about {power(256)} the best generic method needs about {power(REAL_COST.log2)} steps, about {humanDuration(REAL_COST.seconds)} at a made-up {integer(ILLUSTRATIVE_RATE)} steps per second.</span>}
           </div>
         </div>
       </div>
       <ProvenanceRow>
         <Provenance kind="toy" seed={seed}>a {G.bits}-bit toy group (group A is 5 bits, group B is 11 bits), seeded randomness, not constant-time: proves nothing about any real system. Never copy this code</Provenance>
-        <Provenance kind="illustrative">the {fmt(ILLUSTRATIVE_RATE)} steps per second is a made-up rate for the real-size cost line</Provenance>
+        <Provenance kind="illustrative">the {integer(ILLUSTRATIVE_RATE)} steps per second is a made-up rate for the real-size cost line</Provenance>
         <Provenance kind="from-memory">Schnorr identification is the protocol shape (Schnorr, around 1989 to 1991: verify the citation)</Provenance>
         <ClaimLabel kind="theorem">a prover who answers two challenges for one commitment must know x: argued here, shown on the next scene by the extractor</ClaimLabel>
       </ProvenanceRow>

@@ -6,7 +6,7 @@
  * The one-week figure is authored to satisfy the trade-off validator, and the page says so.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
+import { READ_THE_LEDGER, type Choice, type Ending, type Meter, type Node, type Scenario } from '../../core/scenario';
 
 export const METER = { support: 'support', trust: 'trust', weeks: 'weeks', scope: 'scope', risk: 'risk' } as const;
 
@@ -59,7 +59,6 @@ const nodes: Node[] = [
   },
 ];
 
-const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
   { id: 'E_escalated', title: 'Escalated', text: `Support rose at once, and the relationship took the hit. ${READ_THE_LEDGER}` },
   { id: 'E_lost', title: 'The room is lost', text: `Repeating the case moved nobody, and support is lower than when you started. ${READ_THE_LEDGER}` },

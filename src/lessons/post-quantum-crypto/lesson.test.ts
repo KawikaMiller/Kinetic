@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { FACTS } from './facts';
+import lweSource from './LweScene.tsx?raw';
+import shorSource from './ShorScene.tsx?raw';
 import lesson from './index';
 import { BAD, DEFAULT_TARGET, GOOD, babai } from './lattice';
 import { BROKEN_SEED, DEFAULT_PARAMS, DEFAULT_SEED, FAILING_PARAMS, sweep } from './lwe';
@@ -51,5 +53,14 @@ describe('the lesson text agrees with the model', () => {
     expect(FACTS.hybridShare).toBe('1,249');
     expect(FACTS.hybridFactor).toBe(19);
     expect(lesson.keyIdeas[3]).toContain('1,249-byte client share against 65 bytes');
+  });
+});
+
+describe('toy BigInt arithmetic is labelled', () => {
+  it('the learning-with-errors and Shor scenes carry a toy chip that says not constant-time, never copy this', () => {
+    for (const source of [lweSource, shorSource]) {
+      const chips = [...source.matchAll(/<Provenance kind="toy"[^>]*>([^<]*)<\/Provenance>/g)].map((m) => m[1]);
+      expect(chips.some((text) => /not constant-time: never copy this code|Not constant-time: never copy this code/.test(text))).toBe(true);
+    }
   });
 });

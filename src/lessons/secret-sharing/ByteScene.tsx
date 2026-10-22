@@ -145,7 +145,7 @@ export function ByteScene({ picker }: { picker: ReactNode }) {
         )}
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy" seed={seed}>GF(257) is 9 bits: a toy field; nothing here splits a real key, and every word is a lesson-authored fake</Provenance>
+        <Provenance kind="toy" seed={seed}>GF(257) is 9 bits: a toy field; nothing here splits a real key, every word is a lesson-authored fake, and this arithmetic is not constant-time: never copy this code</Provenance>
         <Provenance kind="from-memory">some secrets-management products split an unseal or master key with Shamir shares, and real implementations commonly work over GF(2^8) bytewise (no product named; verify before relying on it)</Provenance>
       </ProvenanceRow>
     </StageFrame>

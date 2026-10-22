@@ -9,10 +9,10 @@
 .hl-line { font-size: 13px; line-height: 1.6; color: var(--muted); }
 .hl-line b { color: var(--text); }
 .hl-line .chip { margin-left: 6px; }
-.hl-table-wrap { overflow-x: auto; }
+.hl-table th { white-space: nowrap; }
 .hl-physical { color: var(--muted); }
 .hl-lamport { color: var(--info); }
-.hl-hybrid { color: var(--hi); font-weight: 700; }
+.hl-hybrid { color: var(--hi); font-weight: 700; white-space: nowrap; }
 .hl-rule { color: var(--muted); font-family: var(--font); font-size: 12px; }
 .is-inverted td:first-child { color: var(--bad); font-weight: 700; }
 .hl-bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--violet); margin-right: 6px; vertical-align: middle; }

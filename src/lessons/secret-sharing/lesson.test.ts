@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
+import byteSource from './ByteScene.tsx?raw';
+import failSource from './FailScene.tsx?raw';
+import polySource from './PolyScene.tsx?raw';
 import { FACTS } from './facts';
 import lesson from './index';
 import { BAD_SOURCE_CASE, BYTE_PRIME, HAND_COEFFS, HAND_SECRET, SOURCE_SUPPORT, consistentCounts, interpolateAnyway, makeShares, possibleSecrets, rebuild, reconstructChecked, shareBytes, signed } from './shamir';
@@ -53,5 +56,15 @@ describe('the lesson text agrees with the model', () => {
     expect(FACTS.checks).toBe('5,145');
     expect(lesson.keyIdeas[0]).toContain('735 pairs');
     expect(lesson.keyIdeas[2]).toContain('43 instead of 42');
+  });
+});
+
+describe('toy BigInt arithmetic is labelled', () => {
+  it('every toy chip says the arithmetic is not constant-time and never to copy it', () => {
+    for (const source of [byteSource, failSource, polySource]) {
+      const chips = [...source.matchAll(/<Provenance kind="toy"[^>]*>([^<]*)<\/Provenance>/g)].map((m) => m[1]);
+      expect(chips.length).toBeGreaterThan(0);
+      for (const text of chips) expect(text).toMatch(/not constant-time: never copy this code/);
+    }
   });
 });

@@ -3,11 +3,11 @@ import { choose, dominatedChoices, enumeratePaths, redMeters, startWalk, validat
 import { BUILD_VS_BUY } from '../../core/testing/leadScenarios';
 import { expectCaption } from '../../core/testing/captions';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { breakEvenLines, costCaption, placeCaption, storyCaption } from './captions';
+import { breakEvenLines, costCaption, placeCaption, placementStatus, storyCaption } from './captions';
 import { FACTS } from './facts';
 import lesson from './index';
 import {
-  BENEFIT, GROWTH, HORIZON, MAINTENANCE, REFERENCE, crossoverYear, defaultAssumptions, componentOf, placementOf, type Assumptions, type ComponentId, type StageId,
+  BENEFIT, COMPONENTS, DEFAULT_PLACEMENT, GROWTH, HORIZON, MAINTENANCE, REFERENCE, crossoverYear, defaultAssumptions, componentOf, placementOf, type Assumptions, type ComponentId, type StageId,
 } from './model';
 import { OPENING } from './opening';
 import { METER, METERS, PRICE_RISE, TRAP_NOTE } from './scenario';
@@ -109,6 +109,13 @@ describe('captions across the controls', () => {
     expect(none).toContain('No component is placed as something that sets you apart');
     const some = expectCaption(placeCaption([{ id: 'email', label: 'email delivery', stage: 'custom' }, { id: 'search', label: 'search', stage: 'commodity' }]));
     expect(some).toContain('1 component counts a benefit: email delivery');
+  });
+
+  it('the placement status counts what the learner moved: the opening Product placement is not "3 of 3 placed"', () => {
+    const open = placementStatus(COMPONENTS.map((c) => ({ id: c.id, stage: DEFAULT_PLACEMENT[c.id] })));
+    expect(open).toBe('0 of 3 moved off the opening Product placement');
+    expect(open).not.toContain('placed');
+    expect(placementStatus([{ id: 'email', stage: 'commodity' }, { id: 'search', stage: 'product' }, { id: 'engine', stage: 'custom' }])).toContain('2 of 3 moved');
   });
 
   it('the story caption reads the meters and the red ones', () => {

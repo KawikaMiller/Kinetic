@@ -1,6 +1,13 @@
 import { isqrt, mod, modInverse, modPow } from '../../core/numberTheory';
+import { parseBoundedBigInt, type FieldParse } from '../../core/parse';
 import { mulberry32 } from '../../core/random';
 import { sha256 } from '../../core/sha256';
+
+/** A learner-typed exponent (x or r) within [min, max]: the value to keep, or a refusal naming the field and both bounds. */
+export function readExponent(text: string, label: string, min: bigint, max: bigint): FieldParse<bigint> {
+  const range = () => `Keep ${label} between ${min} and ${max}.`;
+  return parseBoundedBigInt(text, { min, max, messages: { tooBig: range, tooSmall: range } });
+}
 
 /** A toy Schnorr group: p = 2q + 1, g of prime order q. Both are toys (5 and 11 bits) and prove nothing about any real system. */
 export interface Group {

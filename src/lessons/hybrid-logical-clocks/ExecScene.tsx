@@ -11,6 +11,9 @@ import {
 } from './hlc';
 import { TIMELINE_W, Timeline } from './Timeline';
 
+/** Narrowest width, in px, where the six-column event table keeps each stamp on one line. */
+const EVENT_TABLE_W = 600;
+
 const NODE_OPTIONS = NODES.map((n, i) => ({ value: i, label: n }));
 const SCHEME_LABEL: Record<Scheme, string> = { physical: 'physical clock', lamport: 'Lamport', hlc: 'hybrid' };
 const EMPTY: Execution = { offsets: CHAIN.offsets, messages: [], locals: [] };
@@ -113,8 +116,8 @@ export function ExecScene({ picker }: { picker: ReactNode }) {
         </div>
         <Box>
           <SectionTitle hint="in true-time order; the rule that fired is named">Every event, three stamps</SectionTitle>
-          <div className="hl-table-wrap">
-            <table className="data-table">
+          <WideRegion minWidth={EVENT_TABLE_W} noun="table">
+            <table className="data-table hl-table">
               <thead><tr><th>event</th><th>true t</th><th>physical</th><th>Lamport</th><th>hybrid (l, c)</th><th>rule that fired</th></tr></thead>
               <tbody>
                 {stamps.map((s, i) => (
@@ -125,7 +128,7 @@ export function ExecScene({ picker }: { picker: ReactNode }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
         </Box>
         <Box>
           <SectionTitle hint="the events sorted by each stamp">Sorted three ways</SectionTitle>

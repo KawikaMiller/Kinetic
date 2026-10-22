@@ -86,6 +86,11 @@ interface ClassifyExploreProps extends ClassifyBoardBaseProps {
    * item, beside a "one view, not the answer" claim label; it never marks the learner's placement right or wrong.
    */
   reference?: Record<string, string>;
+  /**
+   * The status line, when "3 of 3 placed" would mislead: a board whose items open already placed on a neutral
+   * default (the learner has done nothing yet) says what the count means. Default `${placed} of ${total} placed`.
+   */
+  statusText?: (info: { placed: number; total: number }) => string;
 }
 
 export type ClassifyBoardProps = ClassifyCheckProps | ClassifyExploreProps;
@@ -159,7 +164,7 @@ export function ClassifyBoard(props: ClassifyBoardProps) {
         <Button onClick={reset}>Reset</Button>
         <span {...(status === 'polite' ? { role: 'status' } : {})} className="classify-score">
           {explore
-            ? `${placed} of ${items.length} placed${reference !== undefined && !everythingPlaced ? ': place every item to see a reference' : ''}`
+            ? `${props.mode === 'explore' && props.statusText ? props.statusText({ placed, total: items.length }) : `${placed} of ${items.length} placed`}${reference !== undefined && !everythingPlaced ? ': place every item to see a reference' : ''}`
             : checked ? `${classifyScore(items, answerKey ?? {}, answers)} of ${items.length} right` : `${placed} of ${items.length} sorted`}
         </span>
         {showReference && <ClaimLabel kind="view">not the answer</ClaimLabel>}

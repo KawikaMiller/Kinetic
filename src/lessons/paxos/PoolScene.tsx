@@ -7,7 +7,7 @@ import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow
 import { integer } from '../../core/format';
 import { refocusAfterRemove } from '../../core/refocus';
 import { toneVar } from '../../core/tone';
-import { counterexampleStart, poolCaption } from './captions';
+import { counterexampleStart, poolCaption, seededRunLine } from './captions';
 import { exhaustiveText, sampledText, truncatedText } from '../../core/checkPhrases';
 import type { NetState } from '../../core/pureProtocol';
 import { ACCEPTORS, BUGS, PROPOSERS, RETRY_BALLOTS, chosenText, configFor, describeMessage, isAcceptor, isProposer, type Bug, type PaxosMsg, type PaxosState } from './protocol';
@@ -176,7 +176,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
           </div>
         </Box>
         <Hint block>
-          Seeded schedule {seed}{bug === 'none' ? '' : ' with the planted bug'}: {run.violation ? <span className="hl bad wrap">{run.violation}</span> : run.decidedAt === null ? 'no value chosen by the end of the run' : `${run.value} chosen at ${Math.round(run.decidedAt)} ms, and at most one value chosen after every event`}.
+          {seededRunLine({ seed, planted: bug !== 'none', violation: run.violation, decidedAt: run.decidedAt, value: run.value })}
         </Hint>
         {exhaustive && sweep && searched && (
           <Box>

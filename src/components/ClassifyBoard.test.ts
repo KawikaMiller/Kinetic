@@ -98,7 +98,7 @@ describe('ClassifyBoard verdicts and live region', () => {
 });
 
 describe('ClassifyBoard explore mode (K4-10): no key, no score, no verdict', () => {
-  const renderExplore = (value: ClassifyState, props: { reference?: Record<string, string>; status?: 'polite' | 'off' } = {}) =>
+  const renderExplore = (value: ClassifyState, props: { reference?: Record<string, string>; status?: 'polite' | 'off'; statusText?: (info: { placed: number; total: number }) => string } = {}) =>
     renderToStaticMarkup(createElement(ClassifyBoard, { mode: 'explore', items: ITEMS, categories: CATS, value, onChange: () => {}, ...props }));
   const placedAll: ClassifyState = { answers: { one: 'cs', two: 'reg', three: 'cf' }, checked: false };
 
@@ -111,6 +111,12 @@ describe('ClassifyBoard explore mode (K4-10): no key, no score, no verdict', () 
     expect(html).toContain('0 of 3 placed');
     expect(html).not.toMatch(/right|sorted|Not quite|Not sorted/);
     expect(renderExplore(placedAll)).toContain('3 of 3 placed');
+  });
+
+  it('statusText replaces the status line, and the default stays "N of M placed"', () => {
+    const html = renderExplore(placedAll, { statusText: ({ placed, total }) => `${placed} of ${total} moved` });
+    expect(html).toContain('3 of 3 moved');
+    expect(html).not.toContain('3 of 3 placed');
   });
 
   it('never marks a row right or wrong, not even when a stale checked flag is passed in', () => {

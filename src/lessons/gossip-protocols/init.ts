@@ -2,7 +2,7 @@
  * What each scene opens in (pure, so a test can check no scene leaks into another), the layout of the node grid,
  * and the sentences the captions are built from.
  */
-import { decimal, integer, pctText } from '../../core/format';
+import { decimal, integer, pctText, plural } from '../../core/format';
 import {
   HORIZON_ROUNDS, MEMBER_SAFETY_CHECK, SPREAD_SAFETY_CHECK, SWEEP_SEEDS, defaultMember, defaultSpread, roundsBelow, type MemberSetup, type MembershipReadout, type MembershipRun,
   type SpreadRun, type SpreadSetup, type SpreadSweep,
@@ -48,12 +48,11 @@ export function spreadCaption(run: SpreadRun, round: number): string {
   return `After round ${at}: ${known} of ${n} nodes know the rumour (${n - known} do not yet).`;
 }
 
-const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 
 export function membershipCaption(setup: MemberSetup, readout: MembershipReadout): string {
   const falsePart =
     readout.falsePairs > 0
-      ? `${readout.falsePairs} (observer, node) pair${plural(readout.falsePairs, '', 's')} suspected a node that is up, at T_fail = ${setup.tFail} and fanout ${setup.f}${setup.cut ? ' (the cut may account for some of them)' : ''}.`
+      ? `${plural(readout.falsePairs, '(observer, node) pair')} suspected a node that is up, at T_fail = ${setup.tFail} and fanout ${setup.f}${setup.cut ? ' (the cut may account for some of them)' : ''}.`
       : '';
   if (setup.crash && readout.detection !== null) {
     return `Node 0 crashed at round 40. The first node suspected it ${readout.firstSuspicion} rounds later and every up node did after ${readout.detection}, with T_fail = ${setup.tFail}. ${falsePart}`.trim();
@@ -80,7 +79,7 @@ export function undrawnSuspicions(run: MembershipRun, round: number, shown = MAT
 }
 
 export const matrixCapText = (n: number, hidden: number, shown = MATRIX_MAX_NODES): string =>
-  `Drawn: the first ${shown} of ${n} nodes (rows and columns). The other ${n - shown} are counted, not drawn: ${integer(hidden)} suspicion${plural(hidden, '', 's')} involving them at this round.`;
+  `Drawn: the first ${shown} of ${n} nodes (rows and columns). The other ${n - shown} are counted, not drawn: ${integer(hidden)} suspicion${hidden === 1 ? '' : 's'} involving them at this round.`;
 
 export const memberSafetyText = (): string => {
   const c = MEMBER_SAFETY_CHECK;

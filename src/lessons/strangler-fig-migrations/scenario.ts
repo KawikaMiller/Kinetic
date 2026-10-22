@@ -3,7 +3,7 @@
  * made. The structure (ids, effects, destinations) is pinned to the fixture in core/testing/leadScenarios.ts.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
+import { READ_THE_LEDGER, type Choice, type Ending, type Meter, type Node, type Scenario } from '../../core/scenario';
 import { routeOf, type RouteId } from './model';
 
 const traffic = (id: RouteId): number => routeOf(id).traffic;
@@ -55,7 +55,6 @@ const nodes: Node[] = [
   },
 ];
 
-const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
   { id: 'bigbang', title: 'One weekend, one cutover', text: `The monolith is gone and no early warning came before it. ${READ_THE_LEDGER}` },
   { id: 'tailPeeled', title: 'Monolith retired, slowly', text: `Every route was peeled off, tail included; whether the old system can be switched off depends on where its data now lives. ${READ_THE_LEDGER}` },

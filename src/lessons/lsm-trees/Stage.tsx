@@ -4,6 +4,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { NA } from '../../core/format';
+import { SPRING } from '../../core/motion';
 import { usePlayer } from '../../core/usePlayer';
 import { blankState, compactFrames, readFrames, writeFrames, type LsmFrame } from './frames';
 import {
@@ -19,7 +20,6 @@ interface Run {
   step: number;
 }
 
-const FILE_SPRING = { type: 'spring', stiffness: 260, damping: 26 } as const;
 
 function idle(s: Lsm): LsmFrame[] {
   return [{
@@ -221,7 +221,7 @@ function Level({ name, note, tables, f }: { name: string; note: string; tables: 
                 initial={{ opacity: 0, y: -16, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.35 } }}
-                transition={FILE_SPRING}
+                transition={SPRING.firm}
               >
                 <div className="lsm-file-head">
                   SST {t.id}

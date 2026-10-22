@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { joinList, plural } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import {
-  CROSSOVER_SCAN, OPTIONS, PAIRS, STAGES, amount, benefitCounts, breakEven, cheapest, cheapestFlip, crossoverYear, rows, type Assumptions, type Component, type ComponentId, type OptionId, type StageId,
+  CROSSOVER_SCAN, DEFAULT_PLACEMENT, OPTIONS, PAIRS, STAGES, amount, benefitCounts, breakEven, cheapest, cheapestFlip, crossoverYear, rows, type Assumptions, type Component, type ComponentId, type OptionId, type StageId,
 } from './model';
 import { METER } from './scenario';
 
@@ -18,6 +18,12 @@ export function placeCaption(items: readonly { id: ComponentId; label: string; s
       {' '}{items.map((i) => `${i.label} is ${stageLabel(i.stage)}`).join(', ')}. Only Genesis and Custom-built count a benefit.
     </>
   );
+}
+
+/** The board's status line: every component opens placed in Product, so "3 of 3 placed" at the start would claim work the learner has not done; this counts what they moved. */
+export function placementStatus(items: readonly { id: ComponentId; stage: StageId }[]): string {
+  const moved = items.filter((i) => i.stage !== DEFAULT_PLACEMENT[i.id]).length;
+  return `${moved} of ${items.length} moved off the opening ${stageLabel(DEFAULT_PLACEMENT.email)} placement`;
 }
 
 /** The sentence that names where the lowest-net option changes as the horizon grows. */

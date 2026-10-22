@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { integer } from '../../core/format';
 import { StageFrame } from '../../components/StageFrame';
 import { SeedField } from '../../components/SeedField';
 import { ChipButton, ClaimLabel, ControlGroup, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
@@ -7,7 +8,6 @@ import {
   candidateSearch, encryptByte, keyFor, messageBits, sweep, trialStream, type LweParams,
 } from './lwe';
 
-const fmt = (n: number) => n.toLocaleString('en-US');
 
 /** Scene 3: a Regev-style toy over Z_98: encrypt a byte bit by bit, watch the noise, and sweep 1,000 seeded encryptions. */
 export function LweScene({ picker }: { picker: ReactNode }) {
@@ -24,8 +24,8 @@ export function LweScene({ picker }: { picker: ReactNode }) {
 
   const intro =
     result.failures === 0
-      ? `With n = ${p.n}, m = ${p.m} and noise bound B = ${p.B}, decryption failed on 0 of ${fmt(SWEEP_TRIALS)} seeded encryptions: the noise sum is at most m x B = ${worst}${worst <= NOISE_LIMIT ? `, which cannot pass ${NOISE_LIMIT}` : ', and it did not pass 24 on these seeds'}.`
-      : `Decryption failed on ${fmt(result.failures)} of ${fmt(SWEEP_TRIALS)} seeded encryptions (${((100 * result.failures) / SWEEP_TRIALS).toFixed(1)}%): the noise passed ${NOISE_LIMIT}, the first such case being a centred noise of ${result.firstFailure!.epsCentred}.`;
+      ? `With n = ${p.n}, m = ${p.m} and noise bound B = ${p.B}, decryption failed on 0 of ${integer(SWEEP_TRIALS)} seeded encryptions: the noise sum is at most m x B = ${worst}${worst <= NOISE_LIMIT ? `, which cannot pass ${NOISE_LIMIT}` : ', and it did not pass 24 on these seeds'}.`
+      : `Decryption failed on ${integer(result.failures)} of ${integer(SWEEP_TRIALS)} seeded encryptions (${((100 * result.failures) / SWEEP_TRIALS).toFixed(1)}%): the noise passed ${NOISE_LIMIT}, the first such case being a centred noise of ${result.firstFailure!.epsCentred}.`;
 
   const setParam = (patch: Partial<LweParams>) => setP({ ...p, ...patch });
 
@@ -67,7 +67,7 @@ export function LweScene({ picker }: { picker: ReactNode }) {
         </p>
         {isFailingPreset && (
           <p className="pq-note">
-            About this preset: seed {BROKEN_SEED} is the lowest seed on which at least {SEVERE_FAILURES} of the {fmt(SWEEP_TRIALS)} encryptions fail (5%), chosen to show a failure. Across seeds 0 to 999 this preset fails on at least one encryption for {fmt(FAILING_SEEDS_WITH_ANY_FAILURE)} of 1,000 seeds and averages {FAILING_MEAN_PERCENT.toFixed(1)}% of encryptions, so seed {BROKEN_SEED} is a worse draw than typical, not the usual rate.
+            About this preset: seed {BROKEN_SEED} is the lowest seed on which at least {SEVERE_FAILURES} of the {integer(SWEEP_TRIALS)} encryptions fail (5%), chosen to show a failure. Across seeds 0 to 999 this preset fails on at least one encryption for {integer(FAILING_SEEDS_WITH_ANY_FAILURE)} of 1,000 seeds and averages {FAILING_MEAN_PERCENT.toFixed(1)}% of encryptions, so seed {BROKEN_SEED} is a worse draw than typical, not the usual rate.
           </p>
         )}
         <div className="pq-bits" role="list" aria-label="One byte, each bit encrypted on its own">
@@ -84,15 +84,15 @@ export function LweScene({ picker }: { picker: ReactNode }) {
           <b>Toy search meter</b>{' '}
           {search ? (
             <span>
-              all {fmt(SEARCH_SPACE)} secrets for n = {SEARCH_N} were tried: {search.candidates} fit the {p.m} public rows within +-{p.B}{search.containsTrue ? ', the true secret among them' : ''}. This brute force works only because the toy is tiny.
+              all {integer(SEARCH_SPACE)} secrets for n = {SEARCH_N} were tried: {search.candidates} fit the {p.m} public rows within +-{p.B}{search.containsTrue ? ', the true secret among them' : ''}. This brute force works only because the toy is tiny.
             </span>
           ) : (
-            <span>offered for n = {SEARCH_N} only ({fmt(SEARCH_SPACE)} secrets); set n to {SEARCH_N} to see how many secrets fit.</span>
+            <span>offered for n = {SEARCH_N} only ({integer(SEARCH_SPACE)} secrets); set n to {SEARCH_N} to see how many secrets fit.</span>
           )}
         </div>
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy" seed={seed}>q = {Q}, n = {p.n}: a {Math.ceil(Math.log2(Q))}-bit modulus and not a real parameter set; a real system uses a CSPRNG and a real scheme, and this is not ML-KEM</Provenance>
+        <Provenance kind="toy" seed={seed}>q = {Q}, n = {p.n}: a {Math.ceil(Math.log2(Q))}-bit modulus and not a real parameter set; a real system uses a CSPRNG and a real scheme, and this is not ML-KEM. Not constant-time: never copy this code</Provenance>
         <Provenance kind="from-memory">that noisy linear equations stay hard at large size is a claim from the literature; this page shows noise and failure, not hardness</Provenance>
         <ClaimLabel kind="research">learning with errors is the problem behind lattice schemes such as ML-KEM (from memory, verify against FIPS 203 and its references)</ClaimLabel>
       </ProvenanceRow>

@@ -3,6 +3,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { NA } from '../../core/format';
+import { SPRING } from '../../core/motion';
 import { cssVar } from '../../core/palette';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
@@ -14,7 +15,6 @@ const SHARD_COLORS = [cssVar('sky'), cssVar('trkHw'), cssVar('trkMath'), cssVar(
 /** More orders moving than this in a rebalance is a bad sign (half of them). */
 const MANY_MOVED = ORDERS.length / 2;
 /** Order chips glide between shards on this spring. */
-const CHIP_SPRING = { type: 'spring', stiffness: 260, damping: 26 } as const;
 
 export function Stage() {
   const [strategy, setStrategy] = useState<Strategy>('range');
@@ -180,7 +180,7 @@ export function Stage() {
                         key={o.id}
                         layoutId={`o-${o.id}`}
                         className={`sh-chip ${f.moved.includes(o.id) ? 'moved' : ''}`}
-                        transition={CHIP_SPRING}
+                        transition={SPRING.firm}
                       >
                         {key === 'time' ? o.time : o.user}
                         <small>{key === 'time' ? o.user : o.time}</small>

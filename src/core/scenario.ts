@@ -5,6 +5,9 @@
  * keeps an authored scenario honest (reachable, no dead end, meters in bounds on every path).
  */
 
+/** The closing sentence of every ending in a story whose paths all cost something (the K4 lead lessons). */
+export const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
+
 /** A number the choices move. It reads `bad` once it crosses `bad`; until then it is fine. */
 export interface Meter {
   id: string;

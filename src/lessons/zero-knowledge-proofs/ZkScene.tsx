@@ -3,10 +3,9 @@ import { ConsolePanel } from '../../components/ConsolePanel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
-import { parseBoundedInt } from '../../core/parse';
 import { mulberry32 } from '../../core/random';
 import {
-  DEFAULT_R, DEFAULT_X, GROUP_A, commit, compareTriples, extract, publicKey, realTriples, respond, simulatedTriples, verify, type Triple,
+  DEFAULT_R, DEFAULT_X, GROUP_A, commit, compareTriples, extract, publicKey, readExponent, realTriples, respond, simulatedTriples, verify, type Triple,
 } from './schnorr';
 
 const G = GROUP_A;
@@ -47,10 +46,10 @@ export function ZkScene({ picker }: { picker: ReactNode }) {
 
   const typeX = (text: string) => {
     setXText(text);
-    const parsed = parseBoundedInt(text, { min: 1, max: Number(G.q - 1n), messages: { tooBig: () => `Keep x between 1 and ${G.q - 1n}.`, tooSmall: () => `Keep x between 1 and ${G.q - 1n}.` } });
+    const parsed = readExponent(text, 'x', 1n, G.q - 1n);
     if (!parsed.ok) return setError(parsed.error);
     setError(null);
-    setX(BigInt(parsed.value));
+    setX(parsed.value);
     setRewound(false);
   };
 

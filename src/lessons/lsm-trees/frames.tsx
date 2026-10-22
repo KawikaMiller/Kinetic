@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import {
@@ -33,7 +34,6 @@ function recorder(s0: Lsm) {
 type Rec = ReturnType<typeof recorder>;
 
 const tombCount = (dropped: Dropped[]) => dropped.filter((d) => d.why === 'tombstone').length;
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 function flush(r: Rec) {
   const { s, sst } = flushMem(r.get().s);
@@ -57,8 +57,8 @@ function compact(r: Rec, reason: ReactNode) {
   r.set({ compacting: c.s.l1.map((t) => t.id), dropped: c.dropped });
   r.snap(
     <>One sorted merge pass: keep the <b>newest</b> version of each key, drop{' '}
-      <span className="hl bad">{c.dropped.length} dead {plural(c.dropped.length, 'entry', 'entries')}</span> (
-      {tombCount(c.dropped)} {plural(tombCount(c.dropped), 'tombstone', 'tombstones')}; this model drops a tombstone because L1 is
+      <span className="hl bad">{plural(c.dropped.length, 'dead entry', 'dead entries')}</span> (
+      {plural(tombCount(c.dropped), 'tombstone')}; this model drops a tombstone because L1 is
       its bottom level), and rewrite {c.inCount} entries as {c.outCount} in L1. Rewriting is the price of fast writes.</>,
     1.8,
   );
@@ -94,7 +94,7 @@ export function writeFrames(s0: Lsm, k: string, del: boolean): { frames: LsmFram
 export function compactFrames(s0: Lsm): { frames: LsmFrame[]; next: Lsm } {
   const r = recorder(s0);
   r.snap(<>Manual compaction: merge every L0 file into L1.</>);
-  compact(r, <>Merging {s0.l0.length} L0 {plural(s0.l0.length, 'file', 'files')} with L1…</>);
+  compact(r, <>Merging {plural(s0.l0.length, 'L0 file')} with L1…</>);
   r.snap(undefined);
   const f = r.frames;
   return { frames: f, next: f[f.length - 1].s };
@@ -145,7 +145,7 @@ export function readFrames(s0: Lsm, k: string): LsmFrame[] {
   if (path.found && path.where) done(result(k, path.found, path.where, path.read, path.skipped));
   else {
     done(
-      <><span className="hl bad">{k} not found</span> after reading {path.read} {plural(path.read, 'file', 'files')} ({path.skipped} skipped by
+      <><span className="hl bad">{k} not found</span> after reading {plural(path.read, 'file')} ({path.skipped} skipped by
         bloom filters). Reads pay for fast writes: data can be in many places.</>,
     );
   }

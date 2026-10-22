@@ -1,10 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { integer } from '../../core/format';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { ENUM_MAX_PAYOFF, PRISONERS_DILEMMA, enumerateGames, falseEquilibria, type Finder } from './model';
 
-const fmt = (n: number) => n.toLocaleString('en-US');
 const percent = (part: number, whole: number) => `${((part / whole) * 100).toFixed(1)}%`;
 
 /** Scene 3: every 2 x 2 game with payoffs 0 to 3, enumerated on opening: how many pure equilibria each has, and whether the no-pure ones all have a mixed one. */
@@ -20,16 +20,16 @@ export function EnumScene({ picker }: { picker: ReactNode }) {
       height={500}
       intro={
         <>
-          Over all {fmt(result.total)} games of 2 x 2 with payoffs from 0 to {ENUM_MAX_PAYOFF}: {fmt(result.noPure)} have no pure equilibrium, and {fmt(result.mixedValid)} of those have a mixed one, with both probabilities strictly between 0 and 1 and both players exactly indifferent.
+          Over all {integer(result.total)} games of 2 x 2 with payoffs from 0 to {ENUM_MAX_PAYOFF}: {integer(result.noPure)} have no pure equilibrium, and {integer(result.mixedValid)} of those have a mixed one, with both probabilities strictly between 0 and 1 and both players exactly indifferent.
         </>
       }
       introKey={`enum|${finder}`}
       stats={
         <Stats>
-          <Stat label="Games checked" value={fmt(result.total)} color="var(--info)" sub={`4^8: payoffs 0 to ${ENUM_MAX_PAYOFF}, eight numbers`} />
-          <Stat label="No pure equilibrium" value={fmt(result.noPure)} color="var(--violet)" sub={percent(result.noPure, result.total)} />
-          <Stat label="With a mixed one" value={fmt(result.mixedValid)} color="var(--ok)" sub={`of those ${fmt(result.noPure)}`} />
-          {finder === 'rowOnly' && <Stat label="Broken finder differs" value={fmt(result.brokenDiffers)} color="var(--bad)" sub={`of ${fmt(result.total)} (${percent(result.brokenDiffers, result.total)})`} />}
+          <Stat label="Games checked" value={integer(result.total)} color="var(--info)" sub={`4^8: payoffs 0 to ${ENUM_MAX_PAYOFF}, eight numbers`} />
+          <Stat label="No pure equilibrium" value={integer(result.noPure)} color="var(--violet)" sub={percent(result.noPure, result.total)} />
+          <Stat label="With a mixed one" value={integer(result.mixedValid)} color="var(--ok)" sub={`of those ${integer(result.noPure)}`} />
+          {finder === 'rowOnly' && <Stat label="Broken finder differs" value={integer(result.brokenDiffers)} color="var(--bad)" sub={`of ${integer(result.total)} (${percent(result.brokenDiffers, result.total)})`} />}
         </Stats>
       }
       legend={
@@ -51,17 +51,17 @@ export function EnumScene({ picker }: { picker: ReactNode }) {
         <div className="gt-bars" role="list" aria-label="Number of games by number of pure equilibria">
           {histogram.map((count, k) => (
             <div key={k} role="listitem">
-              <Bar value={count} max={top} tone={finder === 'correct' ? 'ok' : 'bad'} label={`${k} pure ${k === 1 ? 'equilibrium' : 'equilibria'}`} trailing={`${fmt(count)} (${percent(count, result.total)})`} />
+              <Bar value={count} max={top} tone={finder === 'correct' ? 'ok' : 'bad'} label={`${k} pure ${k === 1 ? 'equilibrium' : 'equilibria'}`} trailing={`${integer(count)} (${percent(count, result.total)})`} />
             </div>
           ))}
         </div>
         <p className="gt-note">
-          Checked on all {fmt(result.total)} games with payoffs 0 to {ENUM_MAX_PAYOFF}, by trying every cell against every unilateral deviation. That is a check of these games, not a proof for every game: the general statement is the theorem named below.
+          Checked on all {integer(result.total)} games with payoffs 0 to {ENUM_MAX_PAYOFF}, by trying every cell against every unilateral deviation. That is a check of these games, not a proof for every game: the general statement is the theorem named below.
           Ties are not a reason to move, so an equilibrium needs no strictly profitable deviation; counting ties as moves would change the histogram.
         </p>
         {finder === 'rowOnly' && (
           <div className="gt-witness" role="note">
-            <b>The finder that checks only Row fails on {fmt(result.brokenDiffers)} of {fmt(result.total)} games.</b> An example from the matrix scene: {witness.message} Row has nothing to gain there, but Column does.
+            <b>The finder that checks only Row fails on {integer(result.brokenDiffers)} of {integer(result.total)} games.</b> An example from the matrix scene: {witness.message} Row has nothing to gain there, but Column does.
           </div>
         )}
       </div>

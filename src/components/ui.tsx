@@ -119,7 +119,7 @@ export function Toggle({
 /** Single-line text or number input with the shared look. Enter does nothing unless you pass onEnter. */
 export function TextField({
   label, value, onChange, onEnter, onBlur, sanitize, type = 'text', min, max, width, maxLength, placeholder, disabled, ariaLabel,
-  spellCheck, className = '',
+  spellCheck, invalid, ariaDescribedBy, className = '',
 }: {
   label?: string;
   value: string;
@@ -139,6 +139,10 @@ export function TextField({
   ariaLabel?: string;
   /** Off for code-like input (paths, JSON), so the browser doesn't underline it. */
   spellCheck?: boolean;
+  /** Marks the current text as refused (aria-invalid), so a screen reader says so on the field itself. */
+  invalid?: boolean;
+  /** The id of the text that explains the field (a refusal message), as aria-describedby. */
+  ariaDescribedBy?: string;
   /** Extra class on the wrapper, for lesson sizing (e.g. a wider body field). */
   className?: string;
 }) {
@@ -155,6 +159,8 @@ export function TextField({
         disabled={disabled}
         spellCheck={spellCheck}
         aria-label={ariaLabel ?? label}
+        aria-invalid={invalid || undefined}
+        aria-describedby={ariaDescribedBy}
         style={width !== undefined ? { width } : undefined}
         onChange={(e) => onChange(sanitize ? sanitize(e.target.value) : e.target.value)}
         onBlur={onBlur}

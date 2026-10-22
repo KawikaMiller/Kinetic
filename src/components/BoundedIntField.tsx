@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { parseBoundedIntField, groupInt, standardIntMessages, type BoundedIntMessages } from './boundedIntParse';
 import { TextField } from './ui';
 
@@ -43,19 +43,49 @@ export function BoundedIntField({
   };
 
   return (
+    <IntFieldView
+      label={label}
+      text={text}
+      error={error}
+      className={className}
+      onType={type}
+      onBlur={() => {
+        setText(groupInt(value));
+        setError(null);
+      }}
+    />
+  );
+}
+
+/**
+ * The field and its refusal, drawn from state. A refused entry marks the input `aria-invalid` and points
+ * `aria-describedby` at the refusal, so a screen reader reads the reason with the field and not only when the
+ * status region happens to be announced.
+ */
+export function IntFieldView({
+  label, text, error, className = '', onType, onBlur,
+}: {
+  label: string;
+  text: string;
+  error: string | null;
+  className?: string;
+  onType: (typed: string) => void;
+  onBlur: () => void;
+}) {
+  const refusalId = `int-field-refusal-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  return (
     <div className={`int-field ${className}`}>
       <TextField
         label={label}
         value={text}
         width={FIELD_WIDTH}
         spellCheck={false}
-        onChange={type}
-        onBlur={() => {
-          setText(groupInt(value));
-          setError(null);
-        }}
+        invalid={error !== null}
+        ariaDescribedBy={error !== null ? refusalId : undefined}
+        onChange={onType}
+        onBlur={onBlur}
       />
-      {error && <span className="int-field-refusal" role="status">{error}</span>}
+      {error && <span id={refusalId} className="int-field-refusal" role="status">{error}</span>}
     </div>
   );
 }

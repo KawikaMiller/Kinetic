@@ -111,6 +111,7 @@ export function ShorScene({ picker }: { picker: ReactNode }) {
         </WideRegion>
       </div>
       <ProvenanceRow>
+        <Provenance kind="toy">BigInt modular arithmetic on small numbers, not constant-time: never copy this code</Provenance>
         <Provenance kind="not-run">a quantum computer is described, not run: the order comes from a classical loop on a number of at most {N_MAX}</Provenance>
         <ClaimLabel kind="theorem">for an odd N with two distinct prime factors, at least half of the phi(N) bases a work (a standard result, from memory, verify); checked here on all {ADMITTED_COUNT} admitted N up to {N_MAX}, where the smallest share is exactly one half (N = 21), which is a bounded check and not a proof</ClaimLabel>
       </ProvenanceRow>

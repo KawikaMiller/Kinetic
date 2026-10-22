@@ -96,7 +96,7 @@ export function verifierCaption(kind: ProverKind, rounds: readonly Round[], acce
       : '';
     return `${accepted ? 'You accepted' : 'You rejected'}: the prover ${kind === 'knows' ? 'knew the passphrase' : 'was a cheater'}, so you were ${v.correct ? 'right' : 'wrong'}.${tail}`;
   }
-  if (n === 0) return 'Call a side each round; a prover who knows the passphrase can always come out of it. Then accept or reject.';
+  if (n === 0) return 'Call a side each round. In this model a prover who knows the passphrase passes every round you call. Then accept or reject.';
   if (caught) return `Round ${m.failedAt}: the prover could not come out of the ${SIDE_NAME[caught.call]} path, so it does not know the passphrase. Calls stop at the catch (Reset starts a new run); you can still accept or reject.`;
   const base = `${n} round${n === 1 ? '' : 's'} passed: the meter reads ${m.value}`;
   return m.struck

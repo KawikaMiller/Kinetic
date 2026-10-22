@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { integer } from '../../core/format';
 import { CellGrid, type GridHighlight } from '../../components/CellGrid';
 import { StageFrame } from '../../components/StageFrame';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
@@ -10,7 +11,6 @@ import {
   type FieldCurveSpec, type GroupCheck, type Picks,
 } from './model';
 
-const fmt = (n: number) => n.toLocaleString('en-US');
 const PRIME_OPTIONS = FIELD_PRIMES.map((p) => ({ value: p, label: `p = ${p}` }));
 const DESKTOP_CELL = 24;
 const PHONE_GRID_PX = 300;
@@ -134,7 +134,7 @@ export function FieldScene({ picker }: { picker: ReactNode }) {
             {shownCheck && (
               <p className={shownCheck.ok ? 'ec-check is-ok' : 'ec-check is-bad'} role="status">
                 {shownCheck.ok
-                  ? `Holds for all ${fmt(shownCheck.triples)} triples of the ${shownCheck.order} points: closure, identity, inverses and associativity (checked exhaustively, nothing sampled).`
+                  ? `Holds for all ${integer(shownCheck.triples)} triples of the ${shownCheck.order} points: closure, identity, inverses and associativity (checked exhaustively, nothing sampled).`
                   : `Fails: ${shownCheck.failure!.kind}. ${shownCheck.failure!.text}.`}
               </p>
             )}

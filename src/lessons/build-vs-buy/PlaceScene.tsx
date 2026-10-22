@@ -1,7 +1,7 @@
 import { ClassifyBoard, type ClassifyCategory, type ClassifyItem } from '../../components/ClassifyBoard';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
-import { placeCaption, stageLabel } from './captions';
+import { placeCaption, placementStatus, stageLabel } from './captions';
 import { COMPONENTS, REFERENCE, STAGES, benefitCounts, placementOf } from './model';
 import type { SceneProps } from './opening';
 
@@ -35,7 +35,7 @@ export function PlaceScene({ picker, board, onBoard }: SceneProps) {
     >
       <div className="bb-stage stage-pad">
         <Hint tone="muted" block>Where does each component sit on the evolution axis? All three open in Product, the neutral stage. Placing one in Genesis or Custom-built says it sets you apart, and only then does its yearly benefit count.</Hint>
-        <ClassifyBoard mode="explore" items={ITEMS} categories={CATEGORIES} value={board} onChange={onBoard} reference={REFERENCE} groupLabel={(item) => `Stage of ${item.text}`} />
+        <ClassifyBoard mode="explore" items={ITEMS} categories={CATEGORIES} value={board} onChange={onBoard} reference={REFERENCE} statusText={() => placementStatus(items)} groupLabel={(item) => `Stage of ${item.text}`} />
         <ProvenanceRow>
           <Provenance kind="invented">the components, the product and every figure are made up; no real product, price or salary appears</Provenance>
           <ClaimLabel kind="view">placing components on an evolution axis, from Genesis to Commodity, follows Wardley-style maps and is one way to think about what to build</ClaimLabel>
