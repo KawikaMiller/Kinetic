@@ -23,5 +23,7 @@ export const CLAIM_LABEL = {
   research: 'research finding',
   practice: 'common practice',
   view: 'one view',
+  /** A theorem-shaped statement that is argued in the lesson, not computed by it (AC-0/T4 #27, K4-8). */
+  theorem: 'theorem (argued, not run here)',
 } as const;
 export type ClaimKind = keyof typeof CLAIM_LABEL;

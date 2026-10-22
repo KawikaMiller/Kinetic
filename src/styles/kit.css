@@ -947,11 +947,13 @@ button.gantt-instant:focus-visible { outline: 2px solid var(--text); outline-off
 }
 .provenance.is-real { border-style: solid; }
 /* ClaimLabel (components/ui.tsx): the same muted chip; border style tells the kinds apart
-   alongside the printed label: solid = standard, double = research, dashed = practice, dotted = one view. */
+   alongside the printed label: solid = standard, double = research, dashed = practice, dotted = one view, groove = theorem. */
 .claim-label.is-standard { border-style: solid; }
 .claim-label.is-research { border-style: double; border-width: 3px; }
 .claim-label.is-practice { border-style: dashed; }
 .claim-label.is-view { border-style: dotted; }
+/* theorem (K4-8): a groove border, the one style the four kinds above do not use. */
+.claim-label.is-theorem { border-style: groove; border-width: 3px; }
 .provenance b,
 .claim-label b { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px; }
 .provenance-seed { font-variant-numeric: tabular-nums; }

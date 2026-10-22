@@ -6,12 +6,22 @@ import { CLAIM_LABEL, PROVENANCE_LABEL, type ClaimKind, type ProvenanceKind } fr
 
 const provenanceKinds = Object.keys(PROVENANCE_LABEL) as ProvenanceKind[];
 const claimKinds = Object.keys(CLAIM_LABEL) as ClaimKind[];
-
 describe('Provenance and ClaimLabel kinds', () => {
   it('has the kinds the plan names', () => {
     expect(provenanceKinds).toEqual(['simulated', 'illustrative', 'toy', 'scripted', 'from-memory', 'not-run', 'invented', 'real']);
-    expect(claimKinds).toEqual(['standard', 'research', 'practice', 'view']);
+    expect(claimKinds).toEqual(['standard', 'research', 'practice', 'view', 'theorem']);
   });
+
+  it('prints the theorem kind as "theorem (argued, not run here)" with the same note, role and aria shape as the others', () => {
+    expect(CLAIM_LABEL.theorem).toBe('theorem (argued, not run here)');
+    const html = renderToStaticMarkup(createElement(ClaimLabel, { kind: 'theorem' }, 'FLP'));
+    expect(html).toContain('data-claim="theorem"');
+    expect(html).toContain('role="note"');
+    expect(html).toContain('class="chip claim-label is-theorem"');
+    expect(html).toContain('aria-label="theorem (argued, not run here): FLP"');
+    expect(renderToStaticMarkup(createElement(ClaimLabel, { kind: 'theorem' }))).toContain('aria-label="theorem (argued, not run here)"');
+  });
+
 
   it('gives every kind its own non-empty printed label, so meaning never rides on colour alone', () => {
     for (const labels of [Object.values(PROVENANCE_LABEL), Object.values(CLAIM_LABEL)]) {
