@@ -77,3 +77,22 @@
   font-size: 13px;
   white-space: nowrap;
 }
+.dt-check {
+  padding: 4px 14px 8px;
+  font-size: 13px;
+}
+.dt-check p {
+  margin: 6px 0 0;
+}
+.dt-verdict {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+}
+.dt-rules {
+  color: var(--muted);
+}
+.dt-report {
+  color: var(--text);
+}
