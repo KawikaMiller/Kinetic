@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Spotting two policies, or two items, that cannot both hold',
       'Explaining why a roadmap, a goal or a mission is not a strategy',
     ],
-    why: 'A roadmap tells teams what to do and a strategy tells them why and what to leave out. Tracing each action to a policy and each policy to a diagnosis makes gaps and contradictions visible before they become arguments between teams.',
+    why: 'In one view a roadmap tells teams what to do and a strategy tells them why and what to leave out. Tracing each action to a policy and each policy to a diagnosis makes gaps and contradictions visible before they become arguments between teams.',
     watch: 'On The canvas the blue boxes are diagnoses, the violet boxes guiding policies and the grey boxes actions, read left to right; a red box is an orphaned action (no policy supports it), an orange box is an uncovered diagnosis, a faded box is removed, and a dashed red line joins two items that conflict. The lists under the canvas hold the Remove and Restore buttons. On the storage story a meter is blue while fine and red past its edge.',
   },
   tryThis: [
@@ -27,7 +27,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `A roadmap alone is a list of actions: in this model removing the policy P1 leaves ${F.p1Orphans} with no policy behind them, and an orphan is an item that needs a new reason or should go (one view of strategy, from one author).`,
     `A diagnosis with no policy is an unanswered problem: removing P3 leaves ${F.p3Uncovered} uncovered and ${F.p3Orphans} orphaned, while removing a policy that shares its diagnosis with others, such as P4, leaves the diagnosis covered.`,
-    `Conflicts are part of the picture and not an error to hide: P2 and P4 cannot both hold, and after P4 is removed ${F.p4Conflicts} conflict remains because an orphaned action is still on the roadmap until it is removed too.`,
+    `Conflicts are part of the picture and not an error to hide: P2 and P4 cannot both hold as written, and after P4 is removed ${F.p4Conflicts} conflict remains because an orphaned action is still on the roadmap until it is removed too.`,
     `No path through the storage story wins on each of the three meters at once: hybrid then exception ends at autonomy ${F.hybridAutonomy}, effort ${F.hybridEffort}, drag ${F.hybridDrag}, consolidate then a hard rule at ${F.consolidateAutonomy}, ${F.consolidateEffort}, ${F.consolidateDrag} and team choice then advice at ${F.teamChoiceAutonomy}, ${F.teamChoiceEffort}, ${F.teamChoiceDrag}; which is right depends on who pays the coordination cost.`,
   ],
   quiz: [
@@ -67,8 +67,8 @@ const lesson: LessonModule = {
     {
       q: 'Should an organisation consolidate on one datastore family or let teams choose?',
       options: [
-        'Consolidate, because having fewer technologies is the cheaper way to run in all cases',
-        'Let teams choose, because autonomy beats standardisation in the long run in all cases',
+        'Consolidate, because a storage choice made by one team never affects another team',
+        'Let teams choose, because one shared datastore family can never be migrated',
         'It depends on who pays the coordination cost and how teams\' data needs differ',
         'Whichever option the biggest team in the organisation happens to prefer the most',
       ],

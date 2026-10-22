@@ -31,8 +31,8 @@ const nodes: Node[] = [
     id: 'enforce',
     prompt: 'How is the policy enforced?',
     choices: [
-      { id: 'hard-rule', label: 'A hard rule', to: 'hardrule', effects: fx(-2, 2, -1), because: 'If a past exception caused an incident, a hard rule is easy to explain and to audit; teams with a real need are blocked.' },
-      { id: 'exception', label: 'A written exception process', to: 'exception', effects: fx(0, 2, 0), because: 'If needs vary but a reviewer can decide in days, a written exception keeps the rule honest; the reviewers\' time is a cost.' },
+      { id: 'hard-rule', label: 'A hard rule', to: 'hardrule', effects: fx(-2, 1, -1), because: 'If a past exception caused an incident, a hard rule is cheap to run because nobody reviews anything, and easy to explain and to audit; teams with a real need are blocked.' },
+      { id: 'exception', label: 'A written exception process', to: 'exception', effects: fx(1, 2, 0), because: 'If needs vary but a reviewer can decide in days, a written exception lets a team with a real need proceed and keeps the rule honest; the reviewers\' time is a cost.' },
       { id: 'advice', label: 'Advice only', to: 'advice', effects: fx(1, 0, 1), because: 'If trust is high and the cost of a mistake is small, advice costs nothing; the policy may be ignored.' },
     ],
   },

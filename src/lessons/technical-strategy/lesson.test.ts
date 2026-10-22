@@ -55,11 +55,11 @@ describe('try-this entries, in written order from the default state', () => {
     expect(lesson.tryThis[3]).toContain('D2 is uncovered and A5 is orphaned');
   });
 
-  it('try-this 5: hybrid then exception reads autonomy 5, effort 6, drag 4 with no meter red', () => {
+  it('try-this 5: hybrid then exception reads autonomy 6, effort 6, drag 4 with no meter red', () => {
     const w = walkTo(['hybrid', 'exception']);
-    expect([w.meters[METER.autonomy], w.meters[METER.effort], w.meters[METER.drag]]).toEqual([5, 6, 4]);
+    expect([w.meters[METER.autonomy], w.meters[METER.effort], w.meters[METER.drag]]).toEqual([6, 6, 4]);
     expect(redMeters(STORAGE, w.meters)).toEqual([]);
-    expect(lesson.tryThis[4]).toContain('autonomy 5, migration effort 6, delivery drag 4');
+    expect(lesson.tryThis[4]).toContain('autonomy 6, migration effort 6, delivery drag 4');
   });
 });
 
@@ -87,15 +87,15 @@ describe('captions across the states', () => {
   it('the story caption reads the meters and the red ones', () => {
     expect(expectCaption(storyCaption(STORAGE, startWalk(STORAGE)))).toContain('Nothing is in the red');
     const text = expectCaption(storyCaption(STORAGE, walkTo(['consolidate', 'hard-rule'])));
-    expect(text).toContain('Autonomy 2, migration effort 7, delivery drag 2');
+    expect(text).toContain('Autonomy 2, migration effort 6, delivery drag 2');
     expect(text).toContain('In the red: autonomy.');
   });
 });
 
 describe('the storage story', () => {
-  it('has the structure of the fixture the kit was proven against', () => {
+  it('has the graph and meters of the fixture the kit was proven against (effects are retuned so no whole path is dominated)', () => {
     expect(STORAGE.meters).toEqual(TECHNICAL_STRATEGY.meters);
-    for (const [i, node] of STORAGE.nodes.entries()) expect(node.choices.map((c) => [c.id, c.to, c.effects])).toEqual(TECHNICAL_STRATEGY.nodes[i].choices.map((c) => [c.id, c.to, c.effects]));
+    for (const [i, node] of STORAGE.nodes.entries()) expect(node.choices.map((c) => [c.id, c.to])).toEqual(TECHNICAL_STRATEGY.nodes[i].choices.map((c) => [c.id, c.to]));
     expect(STORAGE.endings.map((e) => e.id)).toEqual(TECHNICAL_STRATEGY.endings.map((e) => e.id));
   });
 
@@ -106,9 +106,10 @@ describe('the storage story', () => {
     expect(METERS).toHaveLength(3);
   });
 
-  it('has the spec\'s ledgers: hybrid-exception (5, 6, 4) with no red, consolidate-hard-rule (2, 7, 2) autonomy red, team-choice-advice (8, 2, 7) drag red', () => {
+  it('has the spec\'s ledgers: hybrid-exception (6, 6, 4) with no red, consolidate-hard-rule (2, 6, 2) autonomy red, team-choice-advice (8, 2, 7) drag red', () => {
     const red = (ids: string[]) => redMeters(STORAGE, walkTo(ids).meters).map((m) => m.id);
-    expect(walkTo(['consolidate', 'hard-rule']).meters).toEqual({ autonomy: 2, effort: 7, drag: 2 });
+    expect(walkTo(['consolidate', 'hard-rule']).meters).toEqual({ autonomy: 2, effort: 6, drag: 2 });
+    expect(walkTo(['hybrid', 'exception']).meters).toEqual({ autonomy: 6, effort: 6, drag: 4 });
     expect(walkTo(['team-choice', 'advice']).meters).toEqual({ autonomy: 8, effort: 2, drag: 7 });
     expect(red(['hybrid', 'exception'])).toEqual([]);
     expect(red(['consolidate', 'hard-rule'])).toEqual(['autonomy']);
@@ -124,6 +125,16 @@ describe('the storage story', () => {
     };
     const sets = [best(METER.autonomy, true), best(METER.effort, false), best(METER.drag, false)];
     expect(sets.reduce((common, s) => common.filter((k) => s.includes(k)))).toEqual([]);
+  });
+
+  it('has no complete path that another path beats on every meter (whole-path dominance, an oracle written from the story own sums)', () => {
+    // start 6/2/5 plus the two picked effects; higher autonomy is better, lower effort and drag are better.
+    const paths = enumeratePaths(STORAGE).map((p) => ({ id: p.choices.join('-'), v: [p.meters[METER.autonomy], p.meters[METER.effort], p.meters[METER.drag]] }));
+    expect(paths).toHaveLength(9);
+    const beats = (q: number[], p: number[]) => q[0] >= p[0] && q[1] <= p[1] && q[2] <= p[2] && q.some((x, i) => x !== p[i]);
+    const dominated = paths.flatMap((p) => paths.filter((q) => beats(q.v, p.v)).map((q) => `${p.id} is beaten by ${q.id}`));
+    expect(dominated).toEqual([]);
+    expect(new Set(paths.map((p) => p.v.join())).size).toBe(9);
   });
 
   it('has no ending marked correct, and states every reason as a condition', () => {
