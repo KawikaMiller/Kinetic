@@ -72,6 +72,18 @@ export function modInverse(a: bigint, m: bigint): bigint | null {
   return g === 1n ? mod(x, m) : null;
 }
 
+/** floor(√n) for n ≥ 0, exact (Newton's method on integers). */
+export function isqrt(n: bigint): bigint {
+  if (n < 0n) throw new RangeError('isqrt takes a non-negative integer');
+  if (n < 2n) return n;
+  let x = 1n << BigInt((n.toString(2).length + 1) >> 1);
+  for (;;) {
+    const next = (x + n / x) >> 1n;
+    if (next >= x) return x;
+    x = next;
+  }
+}
+
 /** The first 13 primes. As Miller-Rabin bases they decide primality exactly below MR_DETERMINISTIC_BOUND. */
 const MR_BASES = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n, 41n];
 

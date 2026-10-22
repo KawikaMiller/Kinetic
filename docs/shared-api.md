@@ -2313,6 +2313,66 @@ cluster.inject(10, 'b', payload, 'client');                           // legacy:
 - **Tests (`clusterV2.test.ts`):** with `fifo`, arrival order equals send order over 500 random-latency seeds and without it at least one seed reorders; a loss function drops exactly the picked messages, receives the send time, and leaves every surviving latency untouched; one-way partition drops only the crossing direction; a network inject is dropped by a partition and an unconstrained one is not; legacy inject to a crashed node is dropped while a durable one arrives at the restart.
 
 
+## Tier 4 kit: advanced cryptography (kit round, agent G)
+
+Showcased on `#/dev/kit` (`pages/DevKitTier4d.tsx`). Used by elliptic-curves, post-quantum-crypto, e2ee-forward-secrecy, secret-sharing, zero-knowledge-proofs (batch T4-B6). Everything here is teaching code: BigInt arithmetic is not constant-time, and a lesson using it says "never copy this". Toy parameters wear `Provenance kind="toy"`.
+
+### `core/field.ts` (K4-6) — secret-sharing, zero-knowledge-proofs, elliptic-curves
+```ts
+const F = Fp(257n);                       // refuses a non-prime modulus (RangeError "Fp: modulus 15 is not prime")
+F.add/sub/mul/neg/inv/div/pow/legendre/sqrt   // elements are bigints in [0, p); anything else throws
+F.norm(-1n)                               // reduce on purpose; the only way to feed an unreduced value in
+F.evalPoly([42n, 100n, 57n], 2n)          // Horner: the share y at x = 2 → 213n
+F.lagrangeAtZero([1n, 2n, 3n])            // basis values L_i(0) → [3n, 254n (= -3), 1n]
+F.interpolateAtZero([[1n, 199n], [2n, 213n], [3n, 84n]])   // → 42n (Shamir reconstruction)
+F.solveLinear(matrix, rhs)                // Gaussian elimination mod p: the solution, or null when singular
+```
+- Out-of-range input is refused with a positioned message: `add: argument 2 = 17 is outside 0..16 (reduce it with norm first)`, `inv: argument 1 = 0 has no inverse`, `interpolateAtZero: point 3 repeats the x-value 1 of point 1`.
+- `sqrt` is Tonelli-Shanks (any odd prime) and returns `null` for a non-square; the other root is `p - r`. `legendre` is -1, 0 or 1.
+- `interpolateAtZero` is the decision of `tier4-kickoff-decisions` §4: secret-sharing does not write its own elimination. `solveLinear` on the Vandermonde system is the independent oracle the tests use (1,000 seeded cases agree with Lagrange).
+- `core/numberTheory` gained `isqrt(n)` (exact floor square root, for the Hasse bound and the "about sqrt(n) steps" cost line).
+
+### `core/ecc.ts` (K4-6) — elliptic-curves, post-quantum-crypto, e2ee-forward-secrecy
+```ts
+const c = weierstrass('F23', 23n, 1n, 1n);        // y^2 = x^3 + ax + b over F23; refuses p <= 3 or composite, a/b out of range, and a singular curve
+weierstrass('cusp', 17n, 0n, 0n, { allowSingular: true })   // the failing case the lesson shows on purpose
+isSingular(p, a, b)                                // 4a^3 + 27b^2 = 0 mod p
+
+TOY_F17      // TOY: y^2 = x^3 + 2x + 2 over F17, G = (5, 1), n = 19, h = 1, bits 5
+SECP256K1, P256   // real parameters {p, a, b, G, n, h, bits, toy: false}, typed from memory and proved by the tests
+
+// A Point is {x, y} or null (the point at infinity O); INFINITY === null.
+onCurve(c, P); neg(c, P); add(c, P, Q); double(c, P)
+addWithWorking(c, P, Q)    // { result, rule: 'identity-left' | 'identity-right' | 'inverse' | 'vertical-tangent' | 'double' | 'add', num, den, inverse, slope }
+mul(c, k, P)               // { point, steps, doublings, additions }; steps = [{ op: 'start' | 'double' | 'add', bitIndex, bit, result }]
+curveSides(c, P)           // { lhs: y^2, rhs: x^3 + ax + b } for "(5, 2): y^2 = 4 but x^3 + ax + b = 1 mod 17"
+formatPoint(P); samePoint(P, Q)
+// Toy fields only (p <= TOY_FIELD_LIMIT = 100003; anything bigger is refused):
+allPoints(c); pointCount(c); orderOf(c, P)
+hasseBound(p); hasseHolds(p, N)   // |N - (p + 1)| <= 2 sqrt(p), exact integers (hasseBound(17n) = 8n)
+await crossCheckP256()     // P256CrossCheck | null: fresh crypto.subtle key, our d·G vs the browser's public point
+```
+- Double-and-add runs left to right: `start` loads P at the leading bit, then each lower bit doubles and, for a 1 bit, adds P. k = 13 on the toy curve is `start G, double 2G, add 3G, double 6G, double 12G, add 13G` = 3 doublings and 2 additions, 13G = (16, 4). k = 0 gives O with no steps; k above the group order repeats (20G = G).
+- A point off the curve, or with a coordinate outside 0..p-1, is refused in every operation with its position; a negative scalar is refused. `onCurve` is the predicate (false, never throws).
+- `crossCheckP256` returns only summary fields (`equal`, `bits`, `doublings`, `additions`, first 8 hex digits of the public x): the lesson must not show the key. The key is never used for anything.
+- Tests (`ecc.test.ts`): constants self-consistent for all three curves (G on the curve, n·G = O, p and n prime by Miller-Rabin, h = 1 within Hasse); `mul` equals `node:crypto` `createECDH` on 50 seeded scalars on each real curve plus 1, 2, 3, 7, n-1; P-256 2G and 3G x from node and the 255/165 and 2/2 step counts; the F17 group exhaustively (19 elements, closure, identity, inverses, 6,859 associativity triples, every order divides 19, Hasse); every (p, a, b) of the lesson picker (p in 11..23) has the singular test and brute-force counts agreeing; orders divide the group order over every curve of F11 and F13.
+- **Unverified by design:** the constants were typed from memory; they are verified by the tests above, not by a copy-paste from a standard.
+
+### `core/crypto.ts` additions (K4-7) — e2ee-forward-secrecy, post-quantum-crypto (hybrid), elliptic-curves (cross-check)
+```ts
+await ecdhKeyPair({ extractable?: false })        // CryptoKeyPair | null, ECDH P-256
+await ecdhDerive(privateKey, publicKey)           // 32-byte shared secret (the shared point's x)
+await exportPublicPoint(publicKey)                // { x, y } bigints
+await exportPrivateScalar(privateKey)             // bigint d; rejects unless the key was made extractable
+await ecdhImportPrivate(d, { x, y }); await ecdhImportPublicPoint({ x, y })   // seeded scalars through the browser
+await hkdf(ikm, salt, info, length)               // HKDF-SHA256, 1..8160 bytes (RangeError outside)
+await aesGcmEncrypt(key, iv12, plaintext, aad?)   // ciphertext || 16-byte tag; key 16, 24 or 32 bytes, nonce exactly 12
+await aesGcmDecrypt(key, iv12, sealed, aad?)      // plaintext, or REJECTS with the real OperationError
+```
+- Every helper resolves to `null` without `crypto.subtle`, like the rest of `crypto.ts`. For `aesGcmDecrypt` null means only that: a wrong key, a flipped bit in ciphertext, tag or aad, or a wrong nonce rejects (`catch` it and show "the tag does not match: the message is refused"). Length validation (`hkdf` length, key and nonce sizes) throws a positioned RangeError.
+- Test oracles in `core/testing/nodeCrypto`: `nodeEcdhPublic(curve, scalar)` (uncompressed `04||x||y` hex), `nodeEcdhSecret(curve, scalar, peerPublicHex)`, `nodeHkdf(ikm, salt, info, length)`, `nodeAesGcmSeal(key, iv, plaintext, aad?)`. `curve` is `'prime256v1' | 'secp256k1'`.
+- Tests (`cryptoAdvanced.test.ts`): RFC 5869 test case 1 (typed from memory, verified against node `hkdfSync` in the same test), HKDF equal to node on 100 seeded inputs, AES-GCM equal to node's seal for 16/24/32-byte keys, 200 seeded bit flips and a wrong key, nonce and aad all rejected with `OperationError`, ECDH agreeing both ways and with node on imported seeded scalars, and every null path.
+
 ## Dev tooling (`scripts/`)
 
 All of these need the dev server (`npm run dev`, stopped afterwards) and refuse to run against another checkout's server.
