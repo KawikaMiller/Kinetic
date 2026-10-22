@@ -1,0 +1,9 @@
+.es-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.es-table { width: 100%; max-width: 560px; align-self: center; }
+.es-quantities { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.es-quantity { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 12px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 8px; }
+.es-quantity-label { flex: 1 1 220px; font: 600 13px var(--font); color: var(--text); }
+.es-refusal { flex-basis: 100%; font: 500 12.5px var(--font); color: var(--orange); }
+.es-hit, .es-miss { flex-basis: 100%; font: 600 12.5px var(--font); }
+.es-hit { color: var(--ok); }
+.es-miss { color: var(--bad); }

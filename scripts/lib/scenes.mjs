@@ -6,6 +6,8 @@ import { sleep } from './browser.mjs';
 
 /** Idle time per scene: long enough for an effect loop to hit React's update-depth limit. */
 export const DEFAULT_IDLE_MS = 3000;
+/** How long to wait for a lesson's scene picker to appear before treating the lesson as single-scene. */
+const PICKER_WAIT_MS = 4000;
 
 /** React's two messages for a state-update loop. */
 const LOOP_PATTERN = /maximum update depth exceeded|too many re-renders/i;
@@ -71,6 +73,10 @@ const clickOption = ({ fallback, index }) => {
  * entry per scene ({ scene, problems }); a lesson without a picker yields a single entry for its default scene.
  */
 export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}) {
+  // A lesson that computes before it first renders can show its picker a moment after load: wait for a real
+  // picker (2+ options) before concluding the lesson has a single scene.
+  const hasPicker = () => document.querySelectorAll('.stage-frame .segmented [role="radio"]').length >= 2;
+  await page.waitForFunction(hasPicker, { timeout: PICKER_WAIT_MS }).catch(() => {});
   const groups = await page.evaluate(findGroups);
   const group = pickerIndex(groups.map((g) => g.label));
   const picker = group >= 0 ? groups[group] : null;
