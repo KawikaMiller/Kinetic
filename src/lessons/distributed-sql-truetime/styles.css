@@ -1,0 +1,19 @@
+/* distributed-sql-truetime */
+.tt-stage { gap: 12px; min-width: 0; }
+.tt-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tt-lane { display: block; max-width: 100%; }
+.tt-label { font: 700 10px var(--mono); }
+.tt-shard { font: 700 12px var(--mono); }
+.tt-verdict { font: 700 12px var(--mono); }
+.tt-picked td { color: var(--hi); font-weight: 700; }
+.tt-group { border-top: 3px solid var(--c); }
+.tt-replicas { display: flex; gap: 10px; margin-top: 8px; }
+.tt-replica {
+  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%;
+  font: 700 12px var(--mono); border: 2px dashed var(--dim); color: var(--muted);
+}
+.tt-replica.is-leader { border-color: var(--c); color: var(--text); }
+
+@media (max-width: 600px) {
+  .tt-pair { grid-template-columns: minmax(0, 1fr); }
+}
