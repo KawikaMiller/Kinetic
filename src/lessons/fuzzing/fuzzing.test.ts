@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bucketCrashes, runFuzz, SEED_INPUT, type FuzzerKind } from './fuzzer';
+import { SEEDS_THAT_CRASH } from './opening';
 import { MAX_HEX_CHARS, parseHexBytes } from './hexInput';
 import { listing, tagsIn } from './listing';
 import { crashesAt, minimise } from './minimise';
@@ -167,13 +168,18 @@ describe('the fuzzers', () => {
   it('guided gets the magic accepted on 0 of 200 seeds when the check is one 4-byte comparison, and on most when it is byte by byte', () => {
     let single = 0;
     let bytewise = 0;
+    let crashing = 0;
     for (let seed = 0; seed < SEEDS; seed++) {
       if (runFuzz({ kind: 'guided', seed, executions: EXECUTIONS, target: SINGLE }).magicAt !== null) single++;
-      if (runFuzz({ kind: 'guided', seed, executions: EXECUTIONS, target: BYTEWISE }).magicAt !== null) bytewise++;
+      const run = runFuzz({ kind: 'guided', seed, executions: EXECUTIONS, target: BYTEWISE });
+      if (run.magicAt !== null) bytewise++;
+      if (run.firstCrashAt !== null) crashing++;
     }
     expect(single).toBe(0);
-    // Measured when the lesson was built: 163 of 200 seeds crash within 20,000 executions (every one of them accepted the magic first).
-    expect(bytewise).toBeGreaterThanOrEqual(163);
+    // Measured (the review counted the same 163 with its own harness): the lesson quotes this figure on screen as a named constant.
+    expect(bytewise).toBe(SEEDS_THAT_CRASH.guided);
+    expect(crashing).toBe(SEEDS_THAT_CRASH.guided);
+    expect(SEEDS_THAT_CRASH.of).toBe(SEEDS);
   }, 240_000);
 
   it('picks as the default the lowest seed whose guided run first crashes between 5,000 and 8,000 executions', () => {
@@ -241,6 +247,15 @@ describe('the minimiser and the buckets', () => {
       }
     }
     expect(checked).toBeGreaterThanOrEqual(4);
+  });
+
+  it('a 1-minimal b8 result is not always the smallest: a 5-byte input also crashes at b8 (hence the label "1-minimal", not "smallest")', () => {
+    expect(crashesAt([75, 78, 84, 67, 0], BRANCH.checksumRead, BYTEWISE)).toBe(true);
+    const run = runFuzz({ kind: 'guided', seed: 13, executions: 20_000, target: BYTEWISE });
+    const largest = largestCrash(run.crashes, BRANCH.checksumRead)!;
+    const { result } = minimise(largest.bytes, (b) => crashesAt(b, BRANCH.checksumRead, BYTEWISE));
+    expect(result.length).toBeGreaterThan(5);
+    for (let i = 0; i < result.length; i++) expect(crashesAt(result.filter((_, j) => j !== i), BRANCH.checksumRead, BYTEWISE)).toBe(false);
   });
 
   it('shrinks a b6 crash to the 5 bytes the format needs: the magic, then a length byte above zero (the minimiser may promote a payload byte to be the length)', () => {

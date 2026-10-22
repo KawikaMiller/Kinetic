@@ -100,15 +100,11 @@ export function CorpusScene({ picker }: { picker: ReactNode }) {
           </div>
           <div className="fz-block">
             <SectionTitle>What it added</SectionTitle>
-            {selected.newEdges.length === 0 ? (
-              <p className="fz-note">Nothing: the seed is the starting point.</p>
-            ) : (
-              <ul className="fz-list">
-                {selected.newEdges.map((e) => (
-                  <li key={e}>{edgeName(e)}</li>
-                ))}
-              </ul>
-            )}
+            <ul className="fz-list">
+              {selected.newEdges.map((e) => (
+                <li key={e}>{edgeName(e)}</li>
+              ))}
+            </ul>
             {selected.mutations.length > 0 && <p className="fz-note">Mutations applied: {selected.mutations.join(', ')}.</p>}
           </div>
         </div>

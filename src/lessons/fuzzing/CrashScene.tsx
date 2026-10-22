@@ -6,7 +6,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { noCrashCaption } from './captions';
+import { minimalNote, noCrashCaption } from './captions';
 import { minimiseFrames, type MinimiseFrame } from './frames';
 import { MAX_EXECUTIONS, MIN_EXECUTIONS, bucketCrashes, runFuzz } from './fuzzer';
 import { formatHex } from './hexInput';
@@ -55,7 +55,7 @@ export function CrashScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Crashing inputs" value={n(run.crashes.length)} color={run.crashes.length > 0 ? 'var(--bad)' : 'var(--muted)'} sub={`in ${n(executions)} executions`} />
           <Stat label="Buckets" value={buckets.length} color="var(--violet)" sub={buckets.length > 0 ? 'one per branch that threw' : 'nothing to sort'} />
-          <Stat label="Smallest crash" value={picked ? `${picked.min.result.length} bytes` : '-'} color="var(--ok)" sub={picked ? `down from ${picked.largest.bytes.length}, at b${picked.site}` : undefined} />
+          <Stat label="Shrunk to (1-minimal)" value={picked ? `${picked.min.result.length} bytes` : '-'} color="var(--ok)" sub={picked ? `from ${picked.largest.bytes.length}, at b${picked.site}; not always the smallest` : undefined} />
         </Stats>
       }
       legend={
@@ -97,6 +97,7 @@ export function CrashScene({ picker }: { picker: ReactNode }) {
         ) : (
           <p className="fz-note">{noCrashCaption(run)}</p>
         )}
+        {picked && <p className="fz-note">{minimalNote(picked.min.result.length, picked.site)}</p>}
         <div className="fz-two">
           <div className="fz-block">
             <SectionTitle>Crash buckets</SectionTitle>

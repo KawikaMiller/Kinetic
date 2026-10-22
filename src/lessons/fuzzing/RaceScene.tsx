@@ -10,7 +10,7 @@ import { CfgGraph } from './CfgGraph';
 import { MAX_EXECUTIONS, MIN_EXECUTIONS, runFuzz } from './fuzzer';
 import { listing } from './listing';
 import { coverageCurve, newestNodes, reachedNodes, totalEdges } from './model';
-import { initialRace } from './opening';
+import { DEFAULT_SEED, SEEDS_THAT_CRASH, initialRace } from './opening';
 import type { BranchId } from './target';
 
 const EXECUTIONS_STEP = 100;
@@ -101,7 +101,7 @@ export function RaceScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated" seed={seed}>no real program runs: everything here is the lesson's own toy</Provenance>
-        <Provenance kind="toy">an invented record format and toy mutators; a thrown error stands for a crash</Provenance>
+        <Provenance kind="toy">an invented record format and toy mutators; a thrown error stands for a crash. Seed {DEFAULT_SEED} was picked because it crashes early: {SEEDS_THAT_CRASH.guided} of {SEEDS_THAT_CRASH.of} seeds crash within {n(MAX_EXECUTIONS)} executions with these mutators, and an independent fuzzer crashed on {SEEDS_THAT_CRASH.independent}, so the figure measures this toy, not fuzzers</Provenance>
         <Provenance kind="from-memory">real fuzzers run many thousands of executions per second per core and get the byte-by-byte feedback from comparison instrumentation or dictionaries: check the AFL++ and libFuzzer documentation</Provenance>
       </ProvenanceRow>
     </StageFrame>

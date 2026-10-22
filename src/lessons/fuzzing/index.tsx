@@ -27,7 +27,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     `Feedback is what separates guided from random: in this model guided covers ${F.guidedEdges} of ${F.total} edges and blind ${F.blindEdges}, and with a single 4-byte comparison guided covers ${F.guidedSingleEdges} of ${F.totalSingle}, because partial progress through the magic bytes is invisible.`,
-    `Coverage is a signal, not a goal: a kept input is one that reached an edge nothing before it did, and this run's corpus of ${F.corpusSize} inputs found a crash at execution ${n(F.guidedFirstCrash)}.`,
+    `Coverage is a signal, not a goal: a kept input is one that reached an edge nothing before it did, and a corpus that ends at ${F.corpusSize} inputs found a crash at execution ${n(F.guidedFirstCrash)} on seed ${F.seed}, a seed picked because it crashes early (${F.seedsThatCrash.guided} of ${F.seedsThatCrash.of} seeds crash within ${n(F.executions)} executions with this lesson's mutators; an independent fuzzer crashed on ${F.seedsThatCrash.independent}).`,
     `A crash is the start of triage: ${n(F.crashes)} crashing inputs fall into ${F.bucketCount} buckets, and the largest input of ${`b${F.bucketSites[0]}`} shrinks from ${F.largestLength} bytes to ${F.minimisedLength}.`,
     `A fuzzer reports what something checks for: in this model, with the bounds check off this run finds ${F.oracleOffCrashes} crashes while ${n(F.oracleOffOverReads)} executions still read past the end.`,
   ],
@@ -74,7 +74,7 @@ const lesson: LessonModule = {
         'The minimiser has no way to run the target, so it reuses the crash that was saved earlier',
       ],
       answer: 1,
-      why: `Dropping bytes can move a crash from one branch to another, and the buckets are keyed by that branch (${sites} here). The result of ${F.minimisedLength} bytes is 1-minimal: removing any one byte stops the crash at ${`b${F.bucketSites[0]}`}.`,
+      why: `Dropping bytes can move a crash from one branch to another, and the buckets are keyed by that branch (${sites} here). The result of ${F.minimisedLength} bytes is 1-minimal: removing any one byte stops the crash at ${`b${F.bucketSites[0]}`}, though a smaller input may exist.`,
     },
   ],
 };

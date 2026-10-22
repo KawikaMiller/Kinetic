@@ -6,6 +6,12 @@ export type SceneId = 'race' | 'corpus' | 'crash' | 'oracle';
 /** The seed every scene opens on: the lowest of the 200 tested seeds whose guided run first crashes between 5,000 and 8,000 executions, so the climb is visible across the plot (a test pins the choice). */
 export const DEFAULT_SEED = 13;
 
+/**
+ * Seeds (of 200, at 20,000 guided byte-by-byte executions) that crash. Measured and pinned by a test: 163 with this
+ * lesson's mutators, 79 with an independent fuzzer written for the review, so the figure measures this toy's tuning.
+ */
+export const SEEDS_THAT_CRASH = { guided: 163, independent: 79, of: 200 } as const;
+
 export interface RaceState {
   seed: number;
   executions: number;

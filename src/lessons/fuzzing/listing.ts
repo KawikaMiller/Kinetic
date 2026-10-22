@@ -26,8 +26,8 @@ const MAGIC_BYTEWISE: ListingLine[] = [
 
 const MAGIC_SINGLE: ListingLine[] = [
   code('  // magic: 75 78 84 67, compared as one'),
-  tag('  /* b4 */ if (!sameFour(bytes)) return reject();', BRANCH.magicOk),
-  code('  if (bytes.length < 5) return reject();'),
+  code('  if (!sameFour(bytes)) return reject();'),
+  tag('  /* b4 */ if (bytes.length < 5) return reject();', BRANCH.magicOk),
 ];
 
 export function listing(magic: TargetOptions['magic']): ListingLine[] {

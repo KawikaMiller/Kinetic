@@ -3,7 +3,7 @@ import { bucketCrashes, describeOutcome, runFuzz } from './fuzzer';
 import { parseHexBytes } from './hexInput';
 import { crashesAt, minimise } from './minimise';
 import { edgeName, largestCrash, totalEdges } from './model';
-import { initialCorpus, initialCrash, initialOracle, initialRace } from './opening';
+import { SEEDS_THAT_CRASH, initialCorpus, initialCrash, initialOracle, initialRace } from './opening';
 import { DEFAULT_TARGET, runTarget } from './target';
 
 const race = initialRace();
@@ -34,6 +34,7 @@ const probeOff = runTarget(probe.value, { magic: 'bytewise', boundsCheck: false 
 export const n = (v: number) => v.toLocaleString('en-US');
 
 export const FACTS = {
+  seedsThatCrash: SEEDS_THAT_CRASH,
   seed: race.seed,
   executions: race.executions,
   total: totalEdges('bytewise'),

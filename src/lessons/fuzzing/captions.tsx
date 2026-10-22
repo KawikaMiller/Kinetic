@@ -64,10 +64,17 @@ export function minimiseStepCaption(from: number, to: number, kept: boolean, len
   );
 }
 
+/** What "minimised" does and does not promise: the result is 1-minimal, not necessarily the smallest input that crashes at the site. */
+export const minimalNote = (length: number, site: number): ReactNode => (
+  <>
+    The minimiser stops when dropping any one byte of the {plural(length, 'byte')} stops the crash at b{site} (1-minimal). A different, smaller input might still crash there, so this is a local minimum, not a proof of the smallest.
+  </>
+);
+
 export function minimiseDoneCaption(before: number, minimised: Minimised, site: number): ReactNode {
   return (
     <>
-      Done: {plural(before, 'byte')} down to {plural(minimised.result.length, 'byte')} ({formatHex(minimised.result)}), after {plural(minimised.steps.length, 'try', 'tries')}. Removing any single byte of it stops the crash at b{site}.
+      Done: {plural(before, 'byte')} down to {plural(minimised.result.length, 'byte')} ({formatHex(minimised.result)}), after {plural(minimised.steps.length, 'try', 'tries')}. It is 1-minimal: removing any single byte of it stops the crash at b{site}.
     </>
   );
 }
