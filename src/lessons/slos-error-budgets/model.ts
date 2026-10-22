@@ -30,7 +30,7 @@ export const INCIDENTS: Incident[] = [
   { id: 'deploy', name: 'Bad deploy', start: 4 + 9 / 24, durMin: 25, err: 0.2, color: 'var(--amber)' },
   { id: 'failover', name: 'Database failover', start: 11 + 14 / 24, durMin: 8, err: 1, color: 'var(--pink)' },
   { id: 'leak', name: 'Slow memory leak', start: 17, durMin: 60 * 60, err: 0.0015, color: 'var(--violet)' },
-  { id: 'region', name: 'Region outage', start: 23 + 2 / 24, durMin: 45, err: 0.6, color: 'var(--bad)' },
+  { id: 'region', name: 'Region outage', start: 23 + 2 / 24, durMin: 45, err: 0.6, color: 'var(--orange)' },
 ];
 
 const overlapMin = (inc: Incident, tDays: number) => {
@@ -50,20 +50,84 @@ export const incidentBadMinutes = (inc: Incident) => inc.err * inc.durMin;
 export type AlertKind = 'page' | 'ticket' | null;
 
 /**
- * Multiwindow burn-rate alerting (Google SRE Workbook, 30-day SLO):
- *   page   if burn ≥ 14.4 over 1 h   (2% of budget in an hour)
- *   page   if burn ≥ 6    over 6 h   (5% of budget in 6 hours)
- *   ticket if burn ≥ 1    over 3 days (10% of budget in 3 days)
- * Burn rate = observed error rate / error rate the SLO allows.
+ * The burn-rate thresholds this lesson uses, from the Google SRE Workbook's 30-day example as recalled from memory.
+ * Simplified: the published rules pair each long window with a short one (5 min, 30 min, 6 h) so an alert stops soon
+ * after recovery; this model checks the long window only.
  */
-export function alertFor(inc: Incident, slo: number): { kind: AlertKind; burn1h: number; burn6h: number; burn3d: number } {
-  const allowed = 1 - slo / 100;
-  const avg = (windowMin: number) => (inc.err * Math.min(inc.durMin, windowMin) + BACKGROUND * windowMin) / windowMin / allowed;
-  const burn1h = avg(60);
-  const burn6h = avg(360);
-  const burn3d = avg(TICKET_WINDOW_DAYS * MIN_PER_DAY);
-  const kind: AlertKind = burn1h >= 14.4 || burn6h >= 6 ? 'page' : burn3d >= 1 ? 'ticket' : null;
-  return { kind, burn1h, burn6h, burn3d };
+export const ALERT_RULES = [
+  { kind: 'page', burn: 14.4, windowMin: 60, label: '1 h' },
+  { kind: 'page', burn: 6, windowMin: 360, label: '6 h' },
+  { kind: 'ticket', burn: 1, windowMin: TICKET_WINDOW_DAYS * MIN_PER_DAY, label: '3 days' },
+] as const;
+export type AlertRule = (typeof ALERT_RULES)[number];
+
+/** The share of the whole error budget a burn of `rule.burn` spends in `rule.windowMin`: burn × window ÷ SLO window. */
+export const budgetShare = (rule: AlertRule) => (rule.burn * rule.windowMin) / WINDOW_MIN;
+
+export interface AlertResult {
+  kind: AlertKind;
+  burn1h: number;
+  burn6h: number;
+  burn3d: number;
+  /** The first rule that fired, or null. */
+  rule: AlertRule | null;
+}
+
+/** Observed burn over a window: an incident of length `durMin` at error rate `err` plus the background rate, divided by the rate the SLO allows. */
+const windowBurn = (err: number, durMin: number, windowMin: number, slo: number) =>
+  (err * Math.min(durMin, windowMin) + BACKGROUND * windowMin) / windowMin / (1 - slo / 100);
+
+/**
+ * Burn-rate alerting over three long windows (see ALERT_RULES for what is simplified). Burn rate = observed
+ * error rate / error rate the SLO allows. The incident is assumed to sit entirely inside each window.
+ */
+export function alertFor(inc: Incident, slo: number): AlertResult {
+  const [fast, slow, ticket] = ALERT_RULES;
+  const burn1h = windowBurn(inc.err, inc.durMin, fast.windowMin, slo);
+  const burn6h = windowBurn(inc.err, inc.durMin, slow.windowMin, slo);
+  const burn3d = windowBurn(inc.err, inc.durMin, ticket.windowMin, slo);
+  const rule = burn1h >= fast.burn ? fast : burn6h >= slow.burn ? slow : burn3d >= ticket.burn ? ticket : null;
+  return { kind: rule?.kind ?? null, burn1h, burn6h, burn3d, rule };
+}
+
+export const fmtBurn = (b: number) => `${b < 10 ? +b.toFixed(1) : Math.round(b).toLocaleString()}×`;
+
+/** The burn rate `result` measured over the window of `rule`. */
+export const burnOver = (result: AlertResult, rule: AlertRule) =>
+  rule === ALERT_RULES[0] ? result.burn1h : rule === ALERT_RULES[1] ? result.burn6h : result.burn3d;
+
+/** Why an incident paged, ticketed or stayed quiet, in the numbers the rule compared. */
+export function alertReason(result: AlertResult): string {
+  if (result.rule) {
+    const { rule } = result;
+    return `${fmtBurn(burnOver(result, rule))} over ${rule.label} is at or above the ${rule.burn}× ${rule.kind} threshold`;
+  }
+  const [fast, slow, ticket] = ALERT_RULES;
+  return `${fmtBurn(result.burn1h)} over 1 h, ${fmtBurn(result.burn6h)} over 6 h and ${fmtBurn(result.burn3d)} over 3 days stay under ${fast.burn}×, ${slow.burn}× and ${ticket.burn}×`;
+}
+
+/** The first moment the budget is gone (day, fractional), or null when the month ends with budget left. badMinutes is monotone, so bisect. */
+export function exhaustionDay(slo: number): number | null {
+  const budget = budgetMinutes(slo);
+  if (badMinutes(WINDOW_DAYS) < budget) return null;
+  let lo = 0;
+  let hi = WINDOW_DAYS;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (badMinutes(mid) < budget) lo = mid;
+    else hi = mid;
+  }
+  return hi;
+}
+
+/** Whether the background rate alone has fired the slow-burn ticket by day `t`: it burns at 1× or more and the 3-day window has filled. */
+export const backgroundTicketFires = (slo: number, t: number) => backgroundBurn(slo) >= ALERT_RULES[2].burn && t > TICKET_WINDOW_DAYS;
+
+/** Pages and tickets that have fired by day `t`: incidents that started, plus one ticket once the background rate alone has burned at 1× or more for the ticket window. */
+export function alertCounts(slo: number, t: number): { pages: number; tickets: number } {
+  const fired = INCIDENTS.filter((inc) => inc.start <= t).map((inc) => alertFor(inc, slo).kind);
+  const background = backgroundTicketFires(slo, t) ? 1 : 0;
+  return { pages: fired.filter((k) => k === 'page').length, tickets: fired.filter((k) => k === 'ticket').length + background };
 }
 
 // Rounded so float noise (99.99 / 100 = 0.99989999…) can't turn an exact 1× burn into 0.9999999×.
