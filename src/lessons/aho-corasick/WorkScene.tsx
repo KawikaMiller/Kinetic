@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
+import { plural } from '../../core/format';
 import { naiveScan, runMachine } from './model';
 import { PatternEditor } from './PatternEditor';
 import { usePatterns } from './usePatterns';
@@ -35,7 +36,7 @@ export function WorkScene({ picker }: { picker: ReactNode }) {
           <Stat label="Letters read" value={run.reads} color="var(--hi)" sub="each letter once" />
           <Stat label="Failure follows" value={run.follows} color="var(--info)" sub={`at most the letters read: ${run.reads}`} />
           <Stat label="Matches" value={run.matches.length} color="var(--ok)" sub={`the naive scan finds ${naive.matches.length}`} />
-          <Stat label="Naive: characters compared" value={naive.compared} color="var(--bad)" sub={`${patterns.length} scans of the text`} />
+          <Stat label="Naive: characters compared" value={naive.compared} color="var(--bad)" sub={`${plural(patterns.length, 'scan')} of the text`} />
         </Stats>
       }
       legend={
@@ -77,6 +78,7 @@ export function WorkScene({ picker }: { picker: ReactNode }) {
       <ProvenanceRow>
         <Provenance kind="real">nothing simulated: both counts come from running the two matchers on the text above</Provenance>
         <ClaimLabel kind="standard">Aho and Corasick, 1975, named from memory</ClaimLabel>
+        <Provenance kind="from-memory">uses such as fixed-string search tools, intrusion detection and content filters: verify against the tools' own documentation</Provenance>
       </ProvenanceRow>
     </StageFrame>
   );

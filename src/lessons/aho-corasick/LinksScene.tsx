@@ -32,7 +32,7 @@ export function LinksScene({ picker }: { picker: ReactNode }) {
   const name = (id: number) => (id === ROOT ? 'the root' : `'${states[id].string}' (state ${id})`);
 
   const shown: LinkMark[] = order.filter((id) => links[id] !== undefined && links[id] !== ROOT).map((id) => ({ from: id, to: links[id], tone: 'violet' }));
-  const prompt = next === undefined ? 'Every failure link is set; the output links are in the table.' : `Click the state that the failure link of ${name(next)} points to.`;
+  const prompt = order.length === 0 ? 'There is only the root: add a pattern to get failure links to set.' : next === undefined ? 'Every failure link is set; the output links are in the table.' : `Click the state that the failure link of ${name(next)} points to.`;
 
   const click = (target: number) => {
     const result = clickTarget(machine, links, target);
@@ -79,6 +79,7 @@ export function LinksScene({ picker }: { picker: ReactNode }) {
           machine={machine}
           links={shown}
           nodeMark={(id) => (id === next ? { tone: 'hi', fill: 'solid' } : null)}
+          reveal={next === undefined ? undefined : [next]}
           onNodeClick={next === undefined ? undefined : click}
           ariaLabel="The trie: click the state a failure link should point to"
         />

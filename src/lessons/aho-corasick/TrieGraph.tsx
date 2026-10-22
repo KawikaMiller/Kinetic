@@ -13,7 +13,7 @@ const LINK_WIDTH = 2;
 
 /** Hand-built trie drawing: pattern ends are double outlines, trie edges carry their letter, extra links are dashed. */
 export function TrieGraph({
-  machine, links, nodeMark, edgeMark, onNodeClick, ariaLabel,
+  machine, links, nodeMark, edgeMark, onNodeClick, ariaLabel, reveal,
 }: {
   machine: Machine;
   links: readonly LinkMark[];
@@ -22,6 +22,8 @@ export function TrieGraph({
   edgeMark?: (from: number, to: number) => GraphEdgeMark | null | undefined;
   onNodeClick?: (id: number) => void;
   ariaLabel: string;
+  /** States to keep on screen when the trie is wider than the view (the token, the link being followed, the next state to set). */
+  reveal?: readonly number[];
 }) {
   const { trie } = machine;
   const nodes = useMemo(
@@ -34,8 +36,13 @@ export function TrieGraph({
   );
   const edges = useMemo(() => [...trieEdges, ...links.map((l): GraphEdge<number> => ({ from: l.from, to: l.to }))], [trieEdges, links]);
   const maxDepth = Math.max(...trie.states.map((s) => s.depth));
+  const minWidth = Math.max(MIN_GRAPH_WIDTH, maxDepth * LAYER_GAP + BOX.w + GRAPH_PAD);
+  const depths = (reveal ?? []).map((id) => trie.states[id]?.depth).filter((d): d is number => d !== undefined);
+  const span = depths.length
+    ? { from: (GRAPH_PAD / 2 + Math.min(...depths) * LAYER_GAP) / minWidth, to: (GRAPH_PAD / 2 + Math.max(...depths) * LAYER_GAP + BOX.w) / minWidth }
+    : null;
   return (
-    <WideRegion minWidth={Math.max(MIN_GRAPH_WIDTH, maxDepth * LAYER_GAP + BOX.w + GRAPH_PAD)} label="The trie: scroll sideways to see all of it">
+    <WideRegion minWidth={minWidth} label="The trie: scroll sideways to see all of it" reveal={span}>
       <GraphView
         nodes={nodes}
         edges={edges}

@@ -75,6 +75,7 @@ export function StreamScene({ picker }: { picker: ReactNode }) {
           links={links}
           nodeMark={(id) => (id === f.state ? { tone: 'hi', fill: 'solid' } : step && step.kind === 'follow' && id === step.from ? { tone: 'info', fill: 'tint' } : null)}
           edgeMark={(from, to) => (step?.kind === 'move' && step.from === from && step.to === to ? { tone: 'hi' } : null)}
+          reveal={step?.kind === 'follow' ? [f.state, step.from] : [f.state]}
           ariaLabel="The trie with the token and the link being followed"
         />
         <WideRegion minWidth={width} label="The text: scroll sideways to see all of it" gutter={{ top: 8, bottom: 30, x: 4 }} reveal={{ from: Math.max(0, f.i) / text.length, to: (Math.max(0, f.i) + 1) / text.length }}>

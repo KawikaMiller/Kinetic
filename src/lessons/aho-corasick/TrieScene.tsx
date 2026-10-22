@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
+import { plural } from '../../core/format';
 import { PatternEditor } from './PatternEditor';
 import type { LinkMark } from './links';
 import { TrieGraph } from './TrieGraph';
@@ -21,7 +22,7 @@ export function TrieScene({ picker }: { picker: ReactNode }) {
       height={420}
       intro={
         <>
-          The trie of {patterns.length} {patterns.length === 1 ? 'pattern' : 'patterns'} has {states.length} states: the root plus one per distinct prefix.
+          The trie of {plural(patterns.length, 'pattern')} has {plural(states.length, 'state')}: the root plus one per distinct prefix.{patterns.length === 0 && ' Add a pattern to grow it.'}
           States are numbered in the order the patterns insert them, and a double outline marks the end of a pattern.
         </>
       }

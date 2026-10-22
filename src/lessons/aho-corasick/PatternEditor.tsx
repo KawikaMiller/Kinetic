@@ -4,6 +4,8 @@ import { DEFAULT_PATTERNS, MAX_LETTERS, MAX_PATTERNS } from './model';
 import type { PatternState } from './usePatterns';
 
 const SECOND_PATTERNS: readonly string[] = ['a', 'ab', 'bab', 'bc', 'bca', 'c'];
+/** The second preset leaves out the spec's seventh pattern, caa: the cap is six. */
+const SECOND_PRESET_NOTE = ' This set stops at six patterns: a seventh, caa, would not fit the cap and changes nothing on the text abccab.';
 const PRESETS: { id: string; label: string; patterns: readonly string[] }[] = [
   { id: 'he', label: 'he, she, his, hers', patterns: DEFAULT_PATTERNS },
   { id: 'abc', label: 'a, ab, bab, bc, bca, c', patterns: SECOND_PATTERNS },
@@ -38,7 +40,7 @@ export function PatternEditor({ state, note }: { state: PatternState; note?: str
       ))}
       <Hint tone={state.error ? 'bad' : 'faint'}>
         <span role="status">
-          {state.error ?? note ?? `${state.patterns.length} of ${MAX_PATTERNS} patterns, ${letters} of ${MAX_LETTERS} letters. States are renumbered after every edit.`}
+          {state.error ?? note ?? `${state.patterns.length} of ${MAX_PATTERNS} patterns, ${letters} of ${MAX_LETTERS} letters. States are renumbered after every edit. Each scene keeps its own patterns.${state.patterns.join() === SECOND_PATTERNS.join() ? SECOND_PRESET_NOTE : ''}`}
         </span>
       </Hint>
     </>
