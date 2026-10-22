@@ -3,14 +3,14 @@ import { GanttLanes, type GanttBar } from '../../components/GanttLanes';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
-import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { timeFrames } from '../../core/frames';
 import { barsAt } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
 import { money, staleIntro, staleMilestones, staleSummary } from './captions';
 import { initialStale, type StaleState } from './init';
 import {
-  CACHE_RANGES, PRICE, TIMELINE_END_MIN, checkout, livePriceAt, originUpAt, runTimeline, segments, type CacheConfig, type MinuteServed, type Served,
+  CACHE_RANGES, PRICE, TIMELINE_END_MIN, bugProbeMinute, checkout, livePriceAt, originUpAt, runTimeline, segments, type CacheConfig, type MinuteServed, type Served,
 } from './model';
 
 const PLAY_MS = 120;
@@ -31,14 +31,14 @@ export function StaleScene({ picker }: { picker: ReactNode }) {
   const c = s.cache;
   const rows = useMemo(() => runTimeline(c), [c]);
   const frames = useMemo(() => {
-    const probe = Math.min(TIMELINE_END_MIN, Math.max(0, c.outageStart + c.outageLength - 1));
+    const probe = bugProbeMinute(c, rows);
     const row = rows[probe];
     return timeFrames({
       end: TIMELINE_END_MIN,
       steps: FRAME_STEPS,
       milestones: staleMilestones(c, rows),
       intro: staleIntro(c),
-      summary: staleSummary(c, rows, s.rule, checkout(s.rule, probe, row.originUp, row.fetchedAt)),
+      summary: staleSummary(c, rows, s.rule, checkout(s.rule, probe, row.originUp, row.fetchedAt), probe),
       hold: 2,
     });
   }, [c, rows, s.rule]);
@@ -118,6 +118,9 @@ export function StaleScene({ picker }: { picker: ReactNode }) {
           <p className="gd-note">
             The price changes from {money(PRICE.before)} to {money(PRICE.after)} at minute {PRICE.changeAtMin}. A page may show the cached price with its age. A checkout that cannot read the live price should refuse; one that trusts the cache charges the old price.
           </p>
+          <ProvenanceRow>
+            <ClaimLabel kind="practice">many shops refuse a charge they cannot confirm; some treat the price shown as binding, so this is one common rule, not the only one</ClaimLabel>
+          </ProvenanceRow>
         </Box>
         <Hint tone="muted" block>
           Press play, or drag the scrubber. The stale-if-error idea is a cache-control extension (RFC 5861, from memory; check the RFC): it lets a cache reuse an expired copy for a stated time when the origin errors.

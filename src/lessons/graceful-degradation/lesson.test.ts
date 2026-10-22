@@ -5,7 +5,7 @@ import lesson from './index';
 import { PRESETS, applyPreset, initialBrownout, initialStale, initialWidgets } from './init';
 import {
   BROKEN_SEED, CACHE_DEFAULT, CACHE_RANGES, DEFAULT_POLICY, FULL_RATE, LOAD_RANGE, NO_BUGS, PRICE, QUEUE_BOUND, SERVICES, THRESHOLD_RANGE,
-  allUp, brownoutPoint, checkout, firstMinute, journey, pageMs, runQueue, runTimeline, softSweep, tagVerdicts, withHealth, widgetStates,
+  allUp, brownoutPoint, bugProbeMinute, checkout, firstMinute, journey, pageMs, runQueue, runTimeline, softSweep, tagVerdicts, withHealth, widgetStates,
 } from './model';
 
 const text = expectCaption;
@@ -61,10 +61,16 @@ describe('try-this entries, from the default state, as written', () => {
     expect(firstMinute(rows, 'stale')).toBe(12);
     expect(rows[12].age).toBe(6);
     expect(firstMinute(rows, 'error')).toBe(42);
-    const last = CACHE_DEFAULT.outageStart + CACHE_DEFAULT.outageLength - 1;
-    const bug = checkout('stale-price', last, false, rows[last].fetchedAt);
+    // Hand check: the copy is refetched at minute 6 (before the price change at 10), stale-if-error ends 30 minutes after the TTL, so minute 41 (age 35) is the last stale minute.
+    expect(bugProbeMinute(CACHE_DEFAULT, rows)).toBe(41);
+    expect(rows[41].served).toBe('stale');
+    expect(rows[42].served).toBe('error');
+    const bug = checkout('stale-price', 41, false, rows[41].fetchedAt);
     expect(bug.charged).toBe(19.99);
     expect(bug.livePrice).toBe(24.99);
+    // At the end of the run the origin is up, so the stat there reads the live price: the try-this says to scrub to minute 41.
+    expect(checkout('stale-price', 90, true, rows[90].fetchedAt).charged).toBe(24.99);
+    expect(lesson.tryThis[4]).toContain('scrubber to minute 41');
     expect(lesson.tryThis[4]).toContain('from minute 12 the user sees a copy 6 minutes old');
     expect(lesson.tryThis[4]).toContain('from minute 42');
     expect(lesson.tryThis[4]).toContain('charges $19.99 while the live price is $24.99');
@@ -196,11 +202,12 @@ describe('captions say what the model computed', () => {
       expect(ms.some((m) => m.t === error && text(m.say).includes('an error'))).toBe(error !== null);
       ms.forEach((m) => text(m.say));
       text(staleIntro(cache));
-      const probe = Math.min(90, Math.max(0, cache.outageStart + cache.outageLength - 1));
+      const probe = bugProbeMinute(cache, rows);
       for (const rule of ['fail-closed', 'stale-price'] as const) {
-        const t = text(staleSummary(cache, rows, rule, checkout(rule, probe, rows[probe].originUp, rows[probe].fetchedAt)));
+        const t = text(staleSummary(cache, rows, rule, checkout(rule, probe, rows[probe].originUp, rows[probe].fetchedAt), probe));
+        expect(t).toContain(`At minute ${probe}`);
         expect(t).toContain(`${rows.filter((r) => r.served === 'stale').length} stale minute`);
-        expect(t).toContain(rule === 'fail-closed' ? (rows[probe].originUp ? 'charged the live' : 'refused') : 'Checkout');
+        expect(t).toContain(rule === 'fail-closed' ? (rows[probe].originUp ? 'charged the live' : 'refused') : 'checkout');
       }
     }
   });

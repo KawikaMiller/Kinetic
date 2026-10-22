@@ -8,7 +8,7 @@ import { integer, pct } from '../../core/format';
 import { jitterCaption, msText } from './captions';
 import { SLOW_QUERY_MS, VIRAL_LAMBDA, initialMitigation, type MitigationState } from './init';
 import {
-  BETAS, EARLY_STUDY_SEEDS, JITTER_RANGE, KEYS, LOAD_RANGE, NO_MITIGATION, RECOMPUTE_RANGE, busiestSecond, expiryCounts, runStampede, waitShare, type Mitigations,
+  BETAS, EARLY_STUDY_SEEDS, EXPIRE_MS, JITTER_RANGE, KEYS, LOAD_RANGE, NO_MITIGATION, RECOMPUTE_RANGE, busiestSecond, expiryCounts, runStampede, waitShare, type Mitigations,
 } from './model';
 import { RunCharts, RunStats } from './RunView';
 import { useRunPlayer } from './useRunPlayer';
@@ -98,7 +98,7 @@ export function MitigationScene({ picker }: { picker: ReactNode }) {
         </Box>
         {shares && (
           <Hint tone="muted" block>
-            Early refresh, share of {EARLY_STUDY_SEEDS} seeds on which at least one request waited at the expiry: {shares.map((x) => `β ${x.beta}: ${pct(x.share)}`).join(', ')}.
+            Early refresh, share of {EARLY_STUDY_SEEDS} seeds on which at least one request waited at the expiry: {shares.map((x) => `β ${x.beta}: ${pct(x.share)}`).join(', ')}. The run opens only {msText(EXPIRE_MS)} before the expiry, so a recompute longer than that cannot start early enough, and the share stays high for slow recomputes.
           </Hint>
         )}
         <Box>

@@ -3,7 +3,7 @@ import { sig } from '../../core/format';
 import { money } from './captions';
 import { initialStale } from './init';
 import {
-  BROKEN_SEED, CORE_RATE, DEFAULT_LOAD, FULL_RATE, PRICE, QUEUE_BOUND, SERVICES, brownoutPoint, checkout, firstMinute, runQueue, runTimeline,
+  BROKEN_SEED, CORE_RATE, DEFAULT_LOAD, FULL_RATE, PRICE, QUEUE_BOUND, SERVICES, brownoutPoint, bugProbeMinute, checkout, firstMinute, runQueue, runTimeline,
 } from './model';
 import { Stage } from './Stage';
 
@@ -18,8 +18,8 @@ const ROWS = runTimeline(STALE);
 const STALE_FROM = firstMinute(ROWS, 'stale');
 const ERROR_FROM = firstMinute(ROWS, 'error');
 const STALE_AGE = STALE_FROM === null ? 0 : (ROWS[STALE_FROM].age ?? 0);
-const LAST_DOWN = STALE.outageStart + STALE.outageLength - 1;
-const BUGGY = checkout('stale-price', LAST_DOWN, false, ROWS[LAST_DOWN].fetchedAt);
+const PROBE = bugProbeMinute(STALE, ROWS);
+const BUGGY = checkout('stale-price', PROBE, false, ROWS[PROBE].fetchedAt);
 
 const lesson: LessonModule = {
   Stage,
@@ -41,13 +41,13 @@ const lesson: LessonModule = {
     'Back to A page of widgets with Reset: the Price card is selected. Tag Pricing as soft with the toggle, and the stage flags 1 tag the journey disagrees with, because it breaks without Pricing.',
     'With Reset, set the Buy button to "also waits on recommendations": the sweep of soft failures now names {recs}, because failing recommendations alone breaks the journey.',
     `In Brownout at the defaults, the core page alone carries ${DEFAULT_LOAD}/s at ${CORE_PCT}%. Press "threshold too high" (${TOO_HIGH * 100}% of the full page): no tier switches off, ${DEFAULT_LOAD}/s is ${FULL_PCT}% of capacity, and on seed ${BROKEN_SEED} the queue passes ${QUEUE_BOUND} requests after ${BROKEN_AT} s.`,
-    `In Stale on error, press play: from minute ${STALE_FROM} the user sees a copy ${STALE_AGE} minutes old instead of an error, and from minute ${ERROR_FROM} the window has ended and they get one. Set Checkout to "trusts the cache" and play to the end: it charges ${money(BUGGY.charged ?? 0)} while the live price is ${money(BUGGY.livePrice)}.`,
+    `In Stale on error, press play: from minute ${STALE_FROM} the user sees a copy ${STALE_AGE} minutes old instead of an error, and from minute ${ERROR_FROM} the window has ended and they get one. Set Checkout to "trusts the cache" and drag the scrubber to minute ${PROBE}, the last minute a stale copy is still served: it charges ${money(BUGGY.charged ?? 0)} while the live price is ${money(BUGGY.livePrice)} (at the end of the run the origin is back, so the stat reads live; the closing caption describes minute ${PROBE}).`,
   ],
   keyIdeas: [
-    `Sort each dependency into hard or soft before an outage, and give each soft widget a fallback. In this model the core journey completes with all ${SERVICES.length - 3} soft services failed, checked over all ${2 ** SERVICES.length} failure subsets.`,
-    `A brownout lowers the work per request instead of dropping requests: in this model the core page alone runs ${DEFAULT_LOAD}/s at ${CORE_PCT}%, where the full page would need ${FULL_PCT}%. A line set above saturation switches nothing off, and the queue still passes its bound.`,
+    `Sort each dependency into hard or soft before an outage, and give each soft widget a fallback. In this model the core journey completes with all ${SERVICES.length - 3} soft services failed, checked over the ${2 ** (SERVICES.length - 3)} subsets of those services.`,
+    `A brownout lowers the work per request instead of dropping requests: in this model the core page alone runs ${DEFAULT_LOAD}/s at ${CORE_PCT}%, where the full page would need ${FULL_PCT}%. A line set far above the load (here ${TOO_HIGH * 100}% of the full page against a load of ${FULL_PCT}%) switches nothing off, and the queue still passes its bound.`,
     'Stale data is a degraded answer, not a safe one. Show it with its age and give it a window, after which the cache returns an error: in this model a copy past the window is not served.',
-    `What moves money fails closed. A stale price may be shown, but a charge reads the live price or refuses: in this model a checkout that trusts the cache charges ${money(BUGGY.charged ?? 0)} against a live ${money(BUGGY.livePrice)}.`,
+    `In many shops what moves money fails closed. A stale price may be shown, but a charge reads the live price or refuses: in this model a checkout that trusts the cache charges ${money(BUGGY.charged ?? 0)} against a live ${money(BUGGY.livePrice)}.`,
   ],
   quiz: [
     {
@@ -56,7 +56,7 @@ const lesson: LessonModule = {
         'Hide the reviews or show a cached copy, and let the purchase continue',
         'Fail the whole page fast, so the shopper knows something is broken',
         'Retry the reviews call until it answers, since a retry is a fallback',
-        'Show a spinner in the reviews slot and wait for the service to return',
+        'Show a spinner in the reviews slot and keep waiting for the service to return',
       ],
       answer: 0,
       why: 'Reviews are a soft dependency: the journey does not need them, so the page degrades that one widget and keeps the sale. Failing the request suits a hard dependency, not a soft one, and a retry is not a fallback: it adds load to a service that is already failing.',
@@ -65,7 +65,7 @@ const lesson: LessonModule = {
       q: 'Pricing is down and the page holds a cached price. What should checkout do?',
       options: [
         'Refuse the charge, because a price it cannot confirm may be wrong',
-        'Charge the cached price, since it was the one the shopper saw',
+        'Charge the cached price without checking whether it changed, then correct it later',
         'Charge the static list price from the fallback, then correct it later',
         'Let the payment service pick the amount, since it is also a backend',
       ],
@@ -84,15 +84,15 @@ const lesson: LessonModule = {
       why: 'Stale data suits values where a slightly old figure harms nobody, such as counts and suggestions. An amount to charge is a decision, so the safe choices are the live value or a refusal.',
     },
     {
-      q: 'A brownout threshold is set above the load that saturates the worker. What happens at that load?',
+      q: 'A brownout threshold is set far above the load the full page needs. What happens at that load?',
       options: [
         'No tier switches off, capacity stays below the load, and the queue grows',
-        'Every tier switches off at once, so response time stays flat',
+        'Every tier switches off at once when the load passes the line, so response time stays flat',
         'The site drops requests instead of tiers, which keeps the queue short',
         'The queue stays bounded, because a brownout always lowers the work',
       ],
       answer: 0,
-      why: `A brownout acts when utilisation crosses its line, and it lowers the work per request rather than dropping requests. With the line above saturation nothing changes, so the queue passes its bound: in this model seed ${BROKEN_SEED} passes it after ${BROKEN_AT} s at ${DEFAULT_LOAD}/s.`,
+      why: `A brownout acts when utilisation crosses its line, and it lowers the work per request rather than dropping requests. With the line far above the load nothing changes, so the queue passes its bound: in this model seed ${BROKEN_SEED} passes it after ${BROKEN_AT} s at ${DEFAULT_LOAD}/s.`,
     },
     {
       q: 'Which dependency should fail the request fast instead of degrading?',

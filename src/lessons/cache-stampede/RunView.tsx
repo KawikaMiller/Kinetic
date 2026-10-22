@@ -13,7 +13,8 @@ const GANTT_MIN_WIDTH = 480;
 
 /** The five numbers every run is judged by, each computed from the run on screen. */
 export function RunStats({ run }: { run: StampedeRun }) {
-  const { lambda, recomputeMs } = run.config;
+  const { lambda, recomputeMs, mitigations: m } = run.config;
+  const guarded = m.coalesce || m.stale || m.lock || m.beta > 0;
   const s = run.summary;
   return (
     <>
@@ -21,7 +22,7 @@ export function RunStats({ run }: { run: StampedeRun }) {
       <Stat
         label="Piled up before the first finished"
         value={integer(s.herd)}
-        sub={[`λ × R = ${sig(littleEstimate(lambda, recomputeMs))}`, dbKeepsUp(lambda, recomputeMs) ? 'the database keeps up' : `past ${DB_CAPACITY} at once it slows down`]}
+        sub={guarded ? [`${integer(s.waited)} requests waited for a recompute`, 'a protection is on, so λ × R does not predict this'] : [`λ × R = ${sig(littleEstimate(lambda, recomputeMs))}`, dbKeepsUp(lambda, recomputeMs) ? 'the database keeps up' : `past ${DB_CAPACITY} at once it slows down`]}
       />
       <Stat label="99th-percentile latency" value={msText(s.p99Ms)} color={s.p99Ms >= CLIENT_TIMEOUT_MS ? 'var(--orange)' : undefined} sub={[`clients give up after ${msText(CLIENT_TIMEOUT_MS)}`]} />
       <Stat label="Timeouts" value={integer(s.outcomes.timeout)} color={s.outcomes.timeout > 0 ? 'var(--orange)' : undefined} sub={[`${integer(s.retries)} retries sent`]} />

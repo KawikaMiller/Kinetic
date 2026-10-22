@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { plural, sig } from '../../core/format';
 import {
-  BASE_PAGE_MS, QUEUE_BOUND, SERVICES, SERVICE_NAME, TIERS, WIDGETS, WIDGET_NAME, firstMinute, journey, pageMs, staleAgeMin, stateWord, widgetStates,
+  BASE_PAGE_MS, QUEUE_BOUND, SIM_SECONDS, SERVICES, SERVICE_NAME, TIERS, WIDGETS, WIDGET_NAME, firstMinute, journey, pageMs, staleAgeMin, stateWord, widgetStates,
   type BrownoutPoint, type CacheConfig, type Checkout, type HealthMap, type MinuteServed, type Options, type Policies, type QueueRun,
 } from './model';
 
@@ -43,12 +43,12 @@ export function brownoutCaption(lambda: number, threshold: number, degrade: bool
   const saturated = point.rho >= 1;
   return (
     <>
-      At {lambda}/s, with the brownout line at {sig(threshold)} of the full page&apos;s capacity: {offText}, so a worker serves {sig(point.mu)}/s and runs at {sig(point.rho * 100)}%.{' '}
+      At {lambda}/s, with the brownout line at {sig(threshold * 100)}% of the full page&apos;s capacity: {offText}, so a worker serves {sig(point.mu)}/s and runs at {sig(point.rho * 100)}%.{' '}
       {saturated ? (
         <>
           That is above 100%, so{' '}
           <span className="hl bad wrap">
-            the queue grows without bound{run.brokeAtS === null ? '' : `: seed ${seed} passed ${QUEUE_BOUND} requests after ${sig(run.brokeAtS)} s`}
+            the queue grows without bound{run.brokeAtS === null ? ` (within the ${SIM_SECONDS} s run on seed ${seed} it peaked at ${run.maxQueued} and had not passed ${QUEUE_BOUND})` : `: seed ${seed} passed ${QUEUE_BOUND} requests after ${sig(run.brokeAtS)} s, where the run stops`}
           </span>
           .
         </>
@@ -87,12 +87,12 @@ export function staleIntro(c: CacheConfig): ReactNode {
   return <>A copy cached at minute 0 is fresh for {c.ttl} {c.ttl === 1 ? 'minute' : 'minutes'}. After that, if the origin errors, it may still be served for {c.staleIfError} more. Press play to run the outage from minute {c.outageStart}.</>;
 }
 
-export function staleSummary(c: CacheConfig, rows: readonly MinuteServed[], rule: 'fail-closed' | 'stale-price', ch: Checkout): ReactNode {
+export function staleSummary(c: CacheConfig, rows: readonly MinuteServed[], rule: 'fail-closed' | 'stale-price', ch: Checkout, probe: number): ReactNode {
   const staleMinutes = rows.filter((r) => r.served === 'stale').length;
   const errorMinutes = rows.filter((r) => r.served === 'error').length;
   return (
     <>
-      Over the run the user saw {plural(staleMinutes, 'stale minute')} and {plural(errorMinutes, 'error minute')} during a {c.outageLength}-minute outage. Checkout{' '}
+      Over the run the user saw {plural(staleMinutes, 'stale minute')} and {plural(errorMinutes, 'error minute')} during a {c.outageLength}-minute outage. At minute {probe}, {rows[probe].served === 'stale' ? 'the last minute a stale copy is still served' : 'the last minute of the outage'}, checkout{' '}
       {rule === 'fail-closed'
         ? ch.outcome === 'refused'
           ? 'refused rather than charge a price it could not confirm: degrade what is shown, never what moves money.'

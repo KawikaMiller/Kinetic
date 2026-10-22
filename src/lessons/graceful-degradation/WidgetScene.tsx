@@ -144,10 +144,10 @@ export function WidgetScene({ picker }: { picker: ReactNode }) {
           {sweep.failing && <p className="gd-warning">Failing {sweep.failing.map((f) => SERVICE_NAME[f]).join(' and ')} alone breaks the journey, though {sweep.failing.length === 1 ? 'it is' : 'they are'} tagged soft.</p>}
         </Box>
         <Hint tone="muted" block>
-          Click or press Enter on a service in the graph: up, then slow, then down. A dashed line is a soft dependency, a solid one hard. Money fails closed: a stale price may be shown, but a charge needs the live one.
+          Click or press Enter on a service in the graph: up, then slow, then down. A dashed line is a soft dependency, a solid one hard. Money fails closed: a stale price may be shown, but a charge needs the live one (many shops, not all). Which services are soft is this shop's choice: adding to the cart on a stale stock level is fine for a shop that tolerates overselling, and one that must not oversell treats inventory as hard.
         </Hint>
         <ProvenanceRow>
-          <Provenance kind="illustrative">an invented shop: the services, which widget reads which, the page times and the 30-minute outage range are made up</Provenance>
+          <Provenance kind="illustrative">an invented shop: the services, which widget reads which, the page times and the 30-minute outage range are made up, and so is which services count as hard or soft</Provenance>
           <Provenance kind="simulated">the journey and the sweep are computed from the model; no randomness here</Provenance>
         </ProvenanceRow>
       </div>

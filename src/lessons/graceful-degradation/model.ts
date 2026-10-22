@@ -409,6 +409,16 @@ export function segments(rows: readonly MinuteServed[]): Segment[] {
 /** The first minute at which the user sees `kind`, or null. */
 export const firstMinute = (rows: readonly MinuteServed[], kind: Served): number | null => rows.find((r) => r.served === kind)?.t ?? null;
 
+/**
+ * The minute where the checkout bug is shown: the last minute a stale copy is still served (so the page
+ * itself shows the old price with its age), or, with no stale minute, the last minute of the outage.
+ */
+export function bugProbeMinute(c: CacheConfig, rows: readonly MinuteServed[]): number {
+  const stale = rows.filter((r) => r.served === 'stale');
+  if (stale.length > 0) return stale[stale.length - 1].t;
+  return Math.min(rows.length - 1, Math.max(0, c.outageStart + c.outageLength - 1));
+}
+
 export const PRICE = { before: 19.99, after: 24.99, changeAtMin: 10 } as const;
 
 export type CheckoutRule = 'fail-closed' | 'stale-price';

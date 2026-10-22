@@ -38,7 +38,7 @@ export function BrownoutScene({ picker }: { picker: ReactNode }) {
           <Stat label="Tiers on" value={`${point.on.filter(Boolean).length} of ${TIERS.length}`} sub={[`${sig(TIERS.reduce((a, t, i) => a + (point.on[i] ? t.costMs : 0), 0))} ms of work per request`]} />
           <Stat label="Capacity" value={`${sig(point.mu)}/s`} sub={[`against ${s.lambda}/s arriving`]} />
           <Stat label="Mean time in system" value={saturated ? 'grows without bound' : msText(point.responseS * 1000)} color={saturated ? 'var(--bad)' : 'var(--ok)'} sub={['from 1 / (capacity − load)']} />
-          <Stat label="Longest queue" value={run.maxQueued} color={run.brokeAtS !== null ? 'var(--bad)' : undefined} sub={[`over ${SIM_SECONDS} s on seed ${s.seed}`]} />
+          <Stat label="Longest queue" value={run.maxQueued} color={run.brokeAtS !== null ? 'var(--bad)' : undefined} sub={[run.brokeAtS === null ? `over ${SIM_SECONDS} s on seed ${s.seed}` : `until it passed the bound, at ${sig(run.brokeAtS)} s on seed ${s.seed}`]} />
         </Stats>
       }
       legend={
