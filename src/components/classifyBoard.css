@@ -12,3 +12,4 @@
 .classify-why { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
 .classify-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .classify-score { font: 13px var(--mono); }
+.classify-ref { font: 12px var(--mono); color: var(--muted); }

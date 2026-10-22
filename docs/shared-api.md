@@ -2109,6 +2109,16 @@
 ````
 `Controlled: the lesson owns `value`, so captions, `Stat`s and `introKey` read it directly; Check and Reset (which also closes every "Why?") go through `onChange`, and choosing a category un-checks the board (`pickCategory`). Each item is a `role="radiogroup"` with roving tabindex and arrow/Home/End keys (`useRadioGroup`), named `Category of <text | string label | id>` unless `groupLabel` says otherwise. Per-item verdicts are plain spans: the score line ("3 of 8 right", once per Check) is the only live region, so a screen reader hears one announcement, not eight; `status="off"` silences even that for a stage that announces through its caption. `verdict` defaults to "Right." / "Not quite: it is X." / "Not sorted: it is X." (X lower-cased). `labelFont="mono"` draws labels as `<code>` (snippets, grammars). Classes are `classify-*` in `components/classifyBoard.css`. threat-modeling's drop-a-control interaction differs and stays local. Pixel-identical for undefined-behavior (`--frames` diff plus a driven shot of the checked, revealed scene).
 `
+### `ClassifyBoard mode="explore"` (K4-10) — build-vs-buy, conways-law (T4-B8), reversible-decisions (T4-B9)
+```tsx
+const [board, setBoard] = useState(() => emptyClassify(ITEMS));
+<ClassifyBoard mode="explore" items={ITEMS} categories={STAGES} value={board} onChange={setBoard}
+  reference={{ email: 'commodity', search: 'product' }} />       // `reference` optional; answerKey / verdict are not accepted in this mode
+const groups = placementsByCategory(ITEMS, STAGES, board.answers);   // { genesis: ['search'], custom: [], ... }, items in order, empty categories listed
+allSorted(ITEMS, board.answers)                                   // true once every item has a category
+```
+The same radio rows as the keyed board (roving tabindex, arrows/Home/End, `groupLabel`, "Why?" explanations), but there is no right answer: no Check button, no score, no per-item verdict, no `is-right`/`is-wrong` rows, and a stale `checked` flag is ignored. The status line (the only live region, silenced by `status="off"`) reads "n of N placed". `onChange` hands the lesson the same `ClassifyState`; the lesson's pure model reads `answers` (or `placementsByCategory`) and derives its numbers. With a `reference` the board shows a "Show one reference" button (`softDisabled`: `aria-disabled`, still focusable, never drops focus) that does nothing until every item is placed, and says "place every item to see a reference". Once placed, it reveals "Reference: <category>" under each item next to a `ClaimLabel kind="view"` ("one view, not the answer"); the button becomes "Hide the reference" in place, so focus never leaves it, and Reset hides it again. It never marks the learner's placement as matching or not. The keyed (default) mode renders byte-identical markup to before (checked by comparing server markup before and after the change, plus `smoke --frames` and `diff` on undefined-behavior, chomsky-hierarchy and randomness-csprng). Tests: `ClassifyBoard.test.ts` (explore markup) and `classify.test.ts` (the no-key path). `#/dev/kit` shows it with the 7-point map and the DPLL stepper.
+
 `### `core/signal.ts`, `core/dct.ts` (K3-21) — fourier-transform, lossy-compression (wave 9)
 ````ts
 `import { cx, dft, idft, fft, ifft, newOpCount, magnitudes, phases, conjugatePartner, window, applyWindow, aliasOf, mse, psnr, energy } from '../../core/signal';
@@ -2186,6 +2196,64 @@ All moved unchanged from the lessons that owned them; nothing else in `src/lesso
 - **`automataDuel`**: `boundedCounter(k)` is the 2k + 2 state DFA for {a^n b^n : n <= k} (states a0..ak, b(k-1)..b0, dead), `placeCounter` its drawing positions, `wordAnBn(n)`, `pdaAccepts(word)` (the a^n b^n PDA), `duel(k, n)`, `firstDisagreement(k)` (k + 1 by construction, within n <= `MAX_N` = 12), `pigeonhole(dfa)` (the first repeated state reading a's).
 - **`tmTables`**: `INCREMENT_REFERENCE` and `PALINDROME_REFERENCE` (table text in the syntax a learner types, parse with `mustParseTm`, which throws on a mistake and now lives in `core/tm`), and the generated machines `ANBNCN`, `WW`, `PRIME` (a^n with n prime; steps grow fast: 1,304 at n = 11, 10,420 at n = 23 and 20,204 at n = 29 (measured), so pass a `maxSteps` above the chomsky card's 20,000 for inputs past about 28). `lessons/turing-machines/model.ts` keeps its starters and the broken variants of the increment table.
 - Tests: `core/automataMinimize.test.ts` (brute-force Myhill-Nerode on 200 seeded random DFAs), `core/pdaPresets.test.ts` (exhaustive vs the reference predicates in both acceptance modes), `core/automataDuel.test.ts`, `core/tmTables.test.ts` (BigInt increment, palindrome, a^n b^n c^n, ww and primality oracles). `core/testing/strings.ts` `stringsUpTo(alphabet, max)` is the exhaustive-input helper these use (older lesson tests still carry local copies; see docs/tier3-kit-requests.md).
+
+### `core/sat.ts` (K4-4) — np-reductions, sat-solvers (wave 1); formal-methods (bounded-check toy)
+```ts
+import { parseCnf, dpll, bruteForce, replayTrace, startDpll, unitStep, decide, backtrack, autoStep, pickVariable,
+  encodePackages, unsatCore, randomCnf, formatCnf, clauseText, clauseStatus, type Cnf } from '../../core/sat';
+
+const F2: Cnf = { vars: 5, names: ['a','b','c','d','e'], clauses: [[-1,2],[-2,3],[-3,4],[-4,-1],[1,5],[-5,-2]] };   // literal +v / -v, variables 1-based
+const r = dpll(F2, { heuristic: 'first' });   // or 'most-occurring'
+// r = { sat, model: boolean[] | null (model[v-1]), trace: SatEvent[], stats: { branches, propagations, conflicts } }
+// trace events: decide {var,value,flipped} | propagate {var,value,clause} | conflict {clause} | backtrack {var} | sat {model} | unsat
+replayTrace(F2, r.trace);                       // { ok: true, sat, model } or { ok: false, error, at }: re-checks every event, no heuristic
+bruteForce(F2);                                 // { satisfiable, count, model }: the oracle; models(cnf) is a generator of every model
+parseCnf('a or not b\n(c) and (d or -a)', { clauseLength: { min: 3, max: 3 }, variables: ['x1','x2'], refuseTautology: true });
+// { ok: true, cnf } | { ok: false, line, column?, error: 'Line 2, column 6: ...' }
+```
+- **Counting convention (pinned):** a *branch* is each tried value of a decision variable (flipping counts again); a *propagation* is each forced assignment; a *conflict* is each falsified clause found. Propagation scans clauses in order and stops at the first clause that is falsified (conflict) or unit (force), then rescans from clause 1. Values are tried true first; backtracking is chronological (flip the latest decision not yet flipped). The search stops the moment every clause is satisfied; unassigned variables read false in the model. Hand-checked vectors in `sat.test.ts`: F2 gives 3 branches, 6 propagations, 1 conflict; the sat-solvers formula H gives 106 / 67 / 54 (first-unassigned) and 2 / 2 / 2 (most-occurring); a unit chain gives 0 branches.
+- **Heuristics:** `'first'` = lowest unassigned variable; `'most-occurring'` = most occurrences (both signs) in not-yet-satisfied clauses, ties to the lowest index.
+- **Stepping by hand** (the learner drives): `startDpll(cnf)` gives a `DpllState` (`values[v]`, `trail` with the forcing clause, `stats`, `trace`, `conflict` clause or null, `outcome`). `unitStep(s)` does one propagation or finds the conflict (null when neither); `decide(s, v, value)` returns `{ ok, state }` or `{ ok: false, reason: 'assigned' | 'pending-conflict' | 'unknown-variable' | 'finished', error }` (use it for the "b is already forced" refusal); `backtrack(s)` flips the latest unflipped decision or ends in `unsat`; `autoStep(s, heuristic)` is what `dpll` loops. A "broken: never flips" mode is a three-line loop over these (on conflict, stop with unsat): the kit does not ship a flag for it. Iterative, so depth is no concern.
+- **Limits** (`SAT_LIMITS`: 16 variables, 64 clauses, 8 literals per clause; `checkCnf(cnf)` names the problem). `bruteForce`, `models`, `startDpll` and `dpll` throw `RangeError` above them; `parseCnf` refuses with a position and cannot be raised above them (its `maxVars` / `maxClauses` only lower them). Lessons cap their own editors lower (10 variables; np-reductions 4 variables and 5 clauses).
+- **`parseCnf`** goes through `core/parseKit`: `or` / `|` joins literals, `and` / `&` joins clauses on a line, `not` / `!` / `~` / `-` negates, parentheses optional, `#` comments. `variables` fixes the table (an unknown name is refused: `"x5" is not one of the allowed variables (x1, x2, x3, x4).`), `clauseLength` enforces 3-SAT (`a clause needs exactly 3 literals, and this one has 2.`), `refuseTautology` gives `x1 and not x1 in one clause is always true: leave it out.` Nothing is evaluated. `formatCnf(cnf)` prints what it reads.
+- **Packages:** `encodePackages({ packages: { lib: { '1.0.0': { util: '*' }, ... } }, root: { lib: '*' } })` gives `{ cnf, variables, origins }`: one variable per (package, version), root ranges as "one of the matches", pairwise "at most one version", and "not this version, or a matching one" per requirement (ranges via `core/semver`; an invalid range throws). `origins[i]` says why clause i exists, for plain-words glosses. `unsatCore(cnf)` is the deletion core (indices of the clauses that remain; null when satisfiable).
+- `randomCnf(rnd, vars, clauses, k = 3)` is the seeded random k-SAT generator (distinct variables per clause, ascending). Gate in `sat.test.ts`: DPLL equals brute force on 1,000 seeded formulas of 3 to 10 variables for both heuristics (satisfiability, model validity by an independent evaluator, and every trace replays to the same verdict), with more than 150 satisfiable and more than 150 unsatisfiable so the agreement is not trivial.
+
+### `core/tsp.ts` (K4-5) — approximation-algorithms, local-search-annealing (wave 1)
+```ts
+import { distanceMatrix, randomPoints, tourLength, primMst, heldKarp, twoOptStep, twoOpt, doubleTreeTour, christofidesTour,
+  minWeightPerfectMatching, eulerCircuit, shortcut, MAX_HELD_KARP, MAX_MATCHING_VERTICES } from '../../core/tsp';
+
+const dist = distanceMatrix(points);                 // number[][]; or hand-edit a matrix to break the triangle inequality
+primMst(dist)            // { edges: [parent, child][] in the order Prim added them, weight }
+heldKarp(dist)           // { length, tour } the exact optimum from vertex 0; throws RangeError above 12 points
+twoOptStep(dist, tour)   // the first improving move, or null: { i, j, delta, tour }
+twoOpt(dist, tour, { maxMoves? })   // { tour, moves: TwoOptMove[], length }: the step trace, each move with its delta
+doubleTreeTour(dist)     // { tour, length, mst }: preorder of the MST from 0, children in index order
+christofidesTour(dist)   // { tour, length, mst, odd, matching: { pairs, weight }, circuit }
+```
+- **Everything reads a distance matrix**, so the lesson owns the geometry: Euclidean points via `distanceMatrix`, or a matrix edited cell by cell (the spec's star at M = 100). `randomPoints(rnd, n, size = 100)` is the seeded map. A tour is a permutation read as a closed cycle; `tourLength` closes it.
+- **2-opt move** reverses positions `i + 1 .. j` of the tour, replacing edges (tour[i], tour[i+1]) and (tour[j], tour[j+1]) by (tour[i], tour[j]) and (tour[i+1], tour[j+1]); `delta` is new minus old length (negative = shorter). `twoOptStep` scans i ascending then j ascending and takes the first move that beats 0 by more than `IMPROVE_EPSILON` (1e-9), so a Step button shows exactly the move and delta the model made. Crossed square 0, 2, 1, 3 goes 9.6569 to 8 in one move of -1.6569.
+- **Pinned tie-breaks** (so a lesson's hand-worked tour reproduces): Prim adds the lowest-index nearest vertex via the lowest-index parent; the doubling tour visits children in index order; the matching DP keeps the first of equal-weight pairings; the **Euler circuit takes the unused edge to the smallest-index neighbour first** (Hierholzer, returned in traversal order, closed), and Christofides shortcuts it to first visits. On the spec's 7-point map: circuit `0 5 4 1 2 3 2 6 0`, tour `0 5 4 1 2 3 6`, 29.2517 against the optimum 26.7612 (ratio 1.0931), doubling 35.3858 (1.3223), tree 20.8972.
+- **Limits:** `heldKarp` 12 points (2^11 subsets); `minWeightPerfectMatching(dist, vertices)` an even count of at most 12 (a map of at most 12 points never exceeds that). Both throw `RangeError` naming the limit.
+- **The guarantees need the triangle inequality.** The bounds are asserted on 1,000 seeded Euclidean maps (doubling at most 2x the optimum, Christofides at most 1.5x, tree at most the optimum) as "a bound on those maps, not a proof", and a planted non-metric star at M = 100 gives ratio 31.31 so that test can fail. Held-Karp equals brute force for n up to 8, Prim equals Kruskal (`core/disjointSet`), the matching equals the best of all pairings, and after `twoOpt` no segment reversal shortens the tour (recomputed tour by tour).
+
+### `core/vertexCover.ts` (kickoff decisions §4) — np-reductions, approximation-algorithms (T4-B3)
+```ts
+import { minVertexCover, maximalMatching, canAddToMatching, isMaximalMatching, matchedVertices, isVertexCover, uncoveredEdges,
+  type Edge } from '../../core/vertexCover';
+
+const K33: Edge[] = [[0,3],[0,4],[0,5],[1,3],[1,4],[1,5],[2,3],[2,4],[2,5]];      // n vertices 0..n-1, an edge is named by its index
+minVertexCover(6, K33)                  // { size: 3, cover: [0, 1, 2] }: exact, ascending, deterministic
+maximalMatching(K33)                    // { edges: [0, 4, 8] (indices), vertices: [0..5] }: scan edges smallest index first
+maximalMatching(edges, [1, 0, 2])       // same greedy in another order: the result depends on it (maximal, not maximum)
+canAddToMatching(K33, [0], 1)           // { ok: false, vertex: 0 } for "vertex 0 is already matched", or { ok: true }
+isMaximalMatching(K33, [0, 4])          // false: edge 8 could still be added
+isVertexCover(edges, set)   uncoveredEdges(edges, set)   // edge indices left uncovered (the broken one-endpoint witness)
+```
+- **Exact:** branch and bound on the highest-degree vertex (ties to the lowest index): take it, or take all its neighbours; pruned by a maximal-matching lower bound. The first optimum reached is returned, taking the vertex first, so K3,3 gives {0, 1, 2} and the star gives its centre. Throws `RangeError` above `MAX_EXACT_VERTICES` (30), on a loop, or on an out-of-range endpoint. np-reductions' gadget graph for 4 variables and 5 clauses has 23 vertices.
+- **2-approximation:** `maximalMatching(edges).vertices` (both endpoints of every matching edge) is a cover of at most twice the optimum. It is not the learner's click order: for a learner-built matching use `canAddToMatching` per click and `isMaximalMatching` before "Done", then `matchedVertices(edges, chosen)`.
+- **Tests (`vertexCover.test.ts`)**: against a separately written bitmask brute force on EVERY graph with up to 6 vertices (each labelled edge subset: 1 + 1 + 2 + 8 + 64 + 1,024 + 32,768) and 500 seeded graphs of 7 to 11 vertices; the bound `|matching vertices| <= 2 * OPT` on both, reached exactly (ratio 2) on a 1,000-graph seeded set; the spec fixtures (K3,3, path, triangle, star); and the reduction's own property, minimum cover at most K = n + 2m exactly when `core/sat` brute force says the formula is satisfiable, on 100 seeded gadget graphs.
 
 ## Not built (deliberately)
 `
