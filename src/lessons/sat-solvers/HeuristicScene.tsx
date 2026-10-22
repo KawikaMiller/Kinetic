@@ -7,7 +7,7 @@ import { layoutTree } from '../../core/treeLayout';
 import { dpll, startDpll, type DpllState } from '../../core/sat';
 import { H, buildSearchTree, drawnTree, finishWith, pickBranch, type DrawnNode } from './model';
 import { Chips, Counters } from './parts';
-import { searchCaption, statsLine } from './text';
+import { HEURISTIC_IDLE, searchCaption, statsLine } from './text';
 
 const START: DpllState = startDpll(H);
 const REFERENCE_FIRST = dpll(H, { heuristic: 'first' }).stats;
@@ -32,7 +32,7 @@ const FRESH: Run = { state: START, note: null };
 export function HeuristicScene({ picker }: { picker: ReactNode }) {
   const [run, setRun] = useState<Run>(FRESH);
   const { state } = run;
-  const caption = searchCaption(state, 'correct');
+  const caption = searchCaption(state, 'correct', HEURISTIC_IDLE);
   const drawn = useMemo(() => drawnTree(buildSearchTree(state.trace), H), [state.trace]);
   const shape = useMemo(() => ({ root: 'n0', children: (id: string) => drawn.get(id)?.children ?? [] }), [drawn]);
   const geometry = useMemo(() => layoutTree(shape, 'tidy'), [shape]);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { startDpll, type DpllState } from '../../core/sat';
 import lesson from './index';
 import { DEFAULT_WINDOW_START, F2, H, backtrackWith, finishWith, pickBranch, runWindow, summariseWindow, tryDecide, tryStep, type Move } from './model';
-import { searchCaption, statsLine, windowCaption } from './text';
+import { HEURISTIC_IDLE, searchCaption, statsLine, windowCaption } from './text';
 
 const must = (m: Move): DpllState => {
   if (!m.ok) throw new Error(m.text);
@@ -75,5 +75,14 @@ describe('what the stage prints', () => {
     const s = summariseWindow(runWindow(DEFAULT_WINDOW_START));
     expect(windowCaption(s, 'broken', DEFAULT_WINDOW_START)).toContain(`on ${s.brokenWrong} of 200 formulas (first at seed ${s.lowestBrokenSeed}`);
     expect(windowCaption(s, 'correct', DEFAULT_WINDOW_START)).toContain('right verdict on 200 of 200 formulas');
+  });
+});
+
+describe('captions only name controls the scene has', () => {
+  it('the heuristic scene (no Step button) idles on a caption that never says Step, while the propagate scene keeps its own', () => {
+    const idle = searchCaption(startDpll(H), 'correct', HEURISTIC_IDLE);
+    expect(idle).toBe(HEURISTIC_IDLE);
+    expect(idle).not.toMatch(/\bStep\b/);
+    expect(searchCaption(startDpll(F2), 'correct')).toContain('press Step');
   });
 });

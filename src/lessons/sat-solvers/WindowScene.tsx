@@ -32,7 +32,7 @@ export function WindowScene({ picker }: { picker: ReactNode }) {
       introKey={caption}
       stats={
         <Stats>
-          <Stat label="Verdicts right" value={`${summary.verdictsAgree} of ${summary.size}`} color={summary.verdictsAgree === summary.size ? 'var(--ok)' : 'var(--bad)'} sub={`${summary.satisfiable} satisfiable, by brute force`} />
+          <Stat label="Both heuristics right" value={`${summary.verdictsAgree} of ${summary.size}`} color={summary.verdictsAgree === summary.size ? 'var(--ok)' : 'var(--bad)'} sub={`${summary.satisfiable} satisfiable, by brute force; the two correct rules only`} />
           <Stat label="Mean branches, first" value={summary.meanFirst.toFixed(2)} sub="first unassigned" />
           <Stat label="Mean branches, most" value={summary.meanMost.toFixed(2)} sub="most occurring" />
           {mode === 'broken' && <Stat label="Wrong UNSAT" value={`${summary.brokenWrong} of ${summary.size}`} color="var(--bad)" sub={summary.lowestBrokenSeed === null ? 'none in this window' : `first at seed ${summary.lowestBrokenSeed}`} />}

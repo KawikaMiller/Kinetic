@@ -21,7 +21,10 @@ export function describeEvent(cnf: Cnf, e: SatEvent): string {
 }
 
 /** The one sentence under the stage for a search state: what just happened, the counts, and what to do next. */
-export function searchCaption(state: DpllState, mode: SolverMode): string {
+/** The idle caption of the scene where the learner picks the branches: that scene has no Step button. */
+export const HEURISTIC_IDLE = 'Nothing is decided yet. Pick a variable to branch on; the counters compare your branches with the two reference rules.';
+
+export function searchCaption(state: DpllState, mode: SolverMode, idle = 'Nothing is decided yet. Decide a variable, or press Step to see whether anything is forced.'): string {
   const { cnf } = state;
   const counts = statsLine(state.stats);
   if (state.outcome === 'sat') return `SAT: ${modelText(cnf, state.model!)}. ${counts}.`;
@@ -37,7 +40,7 @@ export function searchCaption(state: DpllState, mode: SolverMode): string {
     return `Clause ${state.conflict + 1} ${clauseText(cnf, cnf.clauses[state.conflict])} is falsified. ${next} ${counts}.`;
   }
   const last = state.trace[state.trace.length - 1];
-  if (!last) return 'Nothing is decided yet. Decide a variable, or press Step to see whether anything is forced.';
+  if (!last) return idle;
   return `${describeEvent(cnf, last)}. ${counts}.`;
 }
 
