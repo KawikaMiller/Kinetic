@@ -1,0 +1,29 @@
+/* vpns-tunneling */
+.vpn-stage { gap: 12px; min-width: 0; }
+.vpn-split { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.vpn-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.vpn-proportion { display: flex; gap: 2px; height: 34px; }
+.vpn-block { display: block; border: 1px solid; border-radius: 3px; }
+.vpn-scroll { overflow-x: auto; }
+.vpn-table td, .vpn-table th { font-size: 12.5px; vertical-align: top; white-space: normal; padding: 6px 4px; }
+.vpn-table tr.is-off td { color: var(--dim); }
+.vpn-total { color: var(--hi); font-weight: 600; }
+.vpn-swatch { display: inline-block; width: 10px; height: 10px; border: 1px solid; border-radius: 2px; vertical-align: -1px; }
+.vpn-mtu { display: grid; gap: 10px; }
+.vpn-mtu-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center; }
+.vpn-mtu-label { font: 600 12px var(--mono); color: var(--muted); }
+.vpn-mtu-track { display: flex; height: 26px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--dim) 18%, transparent); }
+.vpn-mtu-seg { display: block; height: 100%; font: 600 11px var(--mono); line-height: 26px; padding-left: 6px; white-space: nowrap; overflow: hidden; }
+.vpn-mtu-seg.is-ok { background: color-mix(in srgb, var(--ok) 35%, transparent); color: var(--ok); }
+.vpn-mtu-seg.is-hi { background: color-mix(in srgb, var(--hi) 55%, transparent); }
+.vpn-mtu-seg.is-info { background: color-mix(in srgb, var(--info) 45%, transparent); }
+.vpn-mtu-seg.is-bad { background: color-mix(in srgb, var(--bad) 55%, transparent); }
+.vpn-route.is-tunnel td:nth-child(3) { color: var(--violet); }
+.vpn-route.is-direct td:nth-child(3) { color: var(--info); }
+.vpn-route.is-winner td { background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.vpn-route.is-tie td:last-child { color: var(--bad); }
+.vpn-strip { margin: 12px 0; }
+.vpn-form { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: flex-end; margin: 10px 0; }
+.vpn-log { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font: 12.5px var(--mono); }
+.vpn-log li.is-ok { color: var(--ok); }
+.vpn-log li.is-bad { color: var(--bad); }
