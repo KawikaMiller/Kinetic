@@ -426,7 +426,10 @@
 `### Focus
 `Every keyboard-focused control gets the shared accent ring from a global `:focus-visible` rule
 `(sliders and the scrubber included). Don't set `outline: none` without a replacement focus style.
-`Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape.
+`Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape. A node that is fading out is `inert`
+`(`tabindex=-1`, `aria-hidden`) from the first frame of its exit; if it held focus, focus moves to its nearest remaining
+`ancestor (`treeExitFocus` in `core/treeLayout`), else to the `svg` itself (`tabindex=-1` when nodes are clickable). A lesson no longer
+`needs to remount a tree to keep focus off vanishing nodes (lca-binary-lifting's `key` workaround is gone).
 `
 `### Radio groups (`useRadioGroup.ts`, `core/radio.ts`)
 ``Segmented` (so `Toggle` and `useScenePicker`) and the player's speed buttons follow the WAI-ARIA radio
