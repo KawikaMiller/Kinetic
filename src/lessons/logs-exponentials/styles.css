@@ -31,6 +31,5 @@
 
 .le-bits { gap: 14px; }
 .le-range { margin: 0; font: 600 14px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
-.le-error { color: var(--bad); }
 
 /* the superscript in 2<sup>k</sup> */

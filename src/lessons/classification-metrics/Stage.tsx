@@ -137,7 +137,7 @@ export function Stage() {
           <Button onClick={() => moveThreshold(best.threshold)}>Jump to the cheapest</Button>
         </>,
         ...(!fpErr.ok || !fnErr.ok
-          ? [<Hint key="err" tone="muted" className="cm-error">{!fpErr.ok ? `False alarm: ${fpErr.error} ` : ''}{!fnErr.ok ? `Miss: ${fnErr.error} ` : ''}Using the last valid costs.</Hint>]
+          ? [<Hint key="err" tone="bad">{!fpErr.ok ? `False alarm: ${fpErr.error} ` : ''}{!fnErr.ok ? `Miss: ${fnErr.error} ` : ''}Using the last valid costs.</Hint>]
           : []),
       ]}
     >

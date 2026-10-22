@@ -112,7 +112,7 @@ function AddressScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="Address/prefix" value={draft} onChange={setDraft} onEnter={submit} width={190} maxLength={MAX_FIELD_CHARS} spellCheck={false} />
           <Button onClick={submit} disabled={!draft.trim()}>Set</Button>
-          {error && <Hint tone="muted" className="sc-error">{error}</Hint>}
+          {error && <Hint tone="bad">{error}</Hint>}
         </>,
         <ControlGroup key="presets" label="Presets">
           {PRESETS.map((p) => (
@@ -122,7 +122,7 @@ function AddressScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="Does it belong?" value={probeDraft} onChange={setProbeDraft} onEnter={check} width={170} maxLength={MAX_FIELD_CHARS} spellCheck={false} />
           <Button onClick={check} disabled={!probeDraft.trim()}>Check</Button>
-          {probeError && <Hint tone="muted" className="sc-error">{probeError}</Hint>}
+          {probeError && <Hint tone="bad">{probeError}</Hint>}
         </>,
       ]}
     >
@@ -286,14 +286,14 @@ function SplitScene({ picker }: { picker: ReactNode }) {
       <>
         <TextField label="Hosts per team" value={teamsDraft} onChange={setTeamsDraft} onEnter={submitTeams} width={150} maxLength={MAX_FIELD_CHARS * 2} spellCheck={false} />
         <Button onClick={submitTeams} disabled={!teamsDraft.trim()}>Allocate</Button>
-        {teamsMessage && <Hint tone="muted" className="sc-error">{teamsMessage}</Hint>}
+        {teamsMessage && <Hint tone="bad">{teamsMessage}</Hint>}
       </>
     ) : (
       <>
         <TextField label="Block" value={handDraft} onChange={setHandDraft} onEnter={add} width={170} maxLength={MAX_FIELD_CHARS} spellCheck={false} />
         <Button onClick={add} disabled={!handDraft.trim()}>Add</Button>
         <Button onClick={() => { setPlaced([]); setHandError(null); }} disabled={!placed.length}>Clear</Button>
-        {handError && <Hint tone="muted" className="sc-error">{handError}</Hint>}
+        {handError && <Hint tone="bad">{handError}</Hint>}
       </>
     );
 
@@ -323,7 +323,7 @@ function SplitScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="Parent block" value={parentDraft} onChange={setParentDraft} onEnter={submitParent} width={170} maxLength={MAX_FIELD_CHARS} spellCheck={false} />
           <Button onClick={submitParent} disabled={!parentDraft.trim()}>Set</Button>
-          {parentNote && <Hint tone="muted" className="sc-error">{parentNote}</Hint>}
+          {parentNote && <Hint tone="bad">{parentNote}</Hint>}
         </>,
         modeRow,
       ]}

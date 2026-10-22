@@ -1,7 +1,6 @@
 .pf-sieve { gap: 8px; }
 .pf-sieve > .cellgrid { align-self: center; }
 .pf-note { text-align: center; }
-.pf-error { color: var(--bad); }
 
 .pf-factor { gap: 12px; }
 .pf-mult { display: flex; flex-direction: column; gap: 6px; }

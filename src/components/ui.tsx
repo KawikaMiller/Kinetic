@@ -232,17 +232,17 @@ export function ControlGroup({
 
 /**
  * Explanatory text inside a controls row: faint by default, `muted` when it matters
- * more; `block` gives it a line of its own.
+ * more, `bad` for a refusal or error message (a rejected input: say why and what it keeps); `block` gives it a line of its own.
  */
 export function Hint({
   tone = 'faint', block = false, className = '', children,
 }: {
-  tone?: 'faint' | 'muted';
+  tone?: 'faint' | 'muted' | 'bad';
   block?: boolean;
   className?: string;
   children: ReactNode;
 }) {
-  const classes = ['hint', tone === 'muted' && 'is-muted', block && 'is-block', className].filter(Boolean).join(' ');
+  const classes = ['hint', tone === 'muted' && 'is-muted', tone === 'bad' && 'is-bad', block && 'is-block', className].filter(Boolean).join(' ');
   return <span className={classes}>{children}</span>;
 }
 

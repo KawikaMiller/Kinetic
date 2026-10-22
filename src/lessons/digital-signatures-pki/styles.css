@@ -1,5 +1,4 @@
 .dsp-muted { margin: 0; font: 500 12.5px var(--font); color: var(--muted); }
-.dsp-error { color: var(--bad); }
 
 /* Sign & verify */
 .dsp-sign { gap: 12px; }

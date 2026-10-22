@@ -477,6 +477,7 @@
 `           sanitize={(s) => s.replace(/\W/g, '')} width={120} spellCheck={false} className="xx-field" disabled={off} />
 `<ControlGroup label="Presets" inline className="xx-presets">{buttons}</ControlGroup>   // inline: label left of the group
 `<Hint>…or click a number</Hint>                          // tone="muted", block (its own line), className
+`<Hint tone="bad">{error} Still showing 12.</Hint>       // a refused input: red, same size as any Hint (18 lessons; a lesson-local `xx-error` class is no longer needed for the colour)
 `<Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
 `<Stat label={<>Tail <span className="keep-case">μ</span></>} value={3} />   // labels are uppercased by CSS: μ would show as Μ ("M")
 `<PauseButton paused={paused} onToggle={togglePause} />

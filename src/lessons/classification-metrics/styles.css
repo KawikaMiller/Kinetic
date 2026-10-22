@@ -7,4 +7,3 @@
 .cm-notes { max-width: 380px; display: flex; flex-direction: column; gap: 6px; }
 .cm-notes p { margin: 0; font: 500 13px var(--font); color: var(--text); }
 .cm-note { display: block; text-align: center; }
-.cm-error { color: var(--bad); }

@@ -110,7 +110,7 @@ export function NumbersScene({ picker }: { picker: ReactNode }) {
         <>
           {(['p', 'g', 'a', 'b'] as const).map(field)}
           <Button variant="primary" onClick={() => apply()}>Apply</Button>
-          {error && <Hint className="dh-error">{error} Still showing p = {group(params.p)}, g = {group(params.g)}.</Hint>}
+          {error && <Hint tone="bad">{error} Still showing p = {group(params.p)}, g = {group(params.g)}.</Hint>}
         </>,
         <ControlGroup key="presets" label="Try">
           {PRESETS.map((pr) => (

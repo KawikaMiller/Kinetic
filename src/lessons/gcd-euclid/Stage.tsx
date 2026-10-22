@@ -70,7 +70,7 @@ function PairInputs({ pair, setPair }: { pair: Pair; setPair: (p: Pair) => void 
           </ChipButton>
         ))}
       </ControlGroup>
-      {error && <Hint className="ge-error">{error} Still showing {group(pair.a)}, {group(pair.b)}.</Hint>}
+      {error && <Hint tone="bad">{error} Still showing {group(pair.a)}, {group(pair.b)}.</Hint>}
     </>
   );
 }
@@ -348,7 +348,7 @@ function InversePanel() {
         ))}
       </div>
       <p className="ge-inverse-result" aria-live="polite">{inverseCaption(shown.a, shown.m)}</p>
-      {error && <Hint className="ge-error">{error} Still showing {group(shown.a)} mod {group(shown.m)}.</Hint>}
+      {error && <Hint tone="bad">{error} Still showing {group(shown.a)} mod {group(shown.m)}.</Hint>}
       <Hint>
         It's the x from extended Euclid on (a, m), reduced mod m. RSA's private exponent d is exactly this: the inverse of the
         public exponent e mod φ(n). Real keys use numbers hundreds of digits long.

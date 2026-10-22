@@ -92,7 +92,7 @@ export function Stage() {
               <TextField label={`Cell ${editing}`} value={draft} onChange={setDraft} onEnter={applyEdit} width={170} spellCheck={false} />
               <Button variant="primary" onClick={applyEdit}>Write & rerun</Button>
               <Button onClick={() => setEditing(null)}>Done</Button>
-              {error && <Hint className="fde-error">{error}</Hint>}
+              {error && <Hint tone="bad">{error}</Hint>}
             </>
           )}
           <Button onClick={() => load(program)}>Reset memory</Button>

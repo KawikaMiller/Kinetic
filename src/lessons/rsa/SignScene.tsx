@@ -58,8 +58,8 @@ export function SignScene({ picker, rsaKey }: { picker: ReactNode; rsaKey: RsaKe
           <TextField label="Message m" value={text} onChange={setText} onEnter={apply} width={120} spellCheck={false} />
           <Button variant="primary" onClick={apply} disabled={!typed.ok}>Sign</Button>
           <Toggle label="Verifier receives" value={tampered} onChange={flip} off="m as signed" on="m edited by one" />
-          {!typed.ok && <Hint className="rsa-error">{typed.error} Still signing {group(msg)}.</Hint>}
-          {msg !== m && <Hint className="rsa-error">{group(m)} isn't below this key's n = {group(rsaKey.n)}, so this signs {group(m)} mod n = {group(msg)}.</Hint>}
+          {!typed.ok && <Hint tone="bad">{typed.error} Still signing {group(msg)}.</Hint>}
+          {msg !== m && <Hint tone="bad">{group(m)} isn't below this key's n = {group(rsaKey.n)}, so this signs {group(m)} mod n = {group(msg)}.</Hint>}
         </>,
       ]}
     >

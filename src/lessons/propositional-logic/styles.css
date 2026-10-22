@@ -16,4 +16,4 @@
 
 .pl-slot { display: flex; flex-direction: column; gap: 4px; }
 .pl-field.is-active input { border-color: var(--violet); }
-.pl-error { color: var(--bad); max-width: 260px; }
+.pl-error { max-width: 260px; }

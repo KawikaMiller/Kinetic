@@ -3,7 +3,6 @@
 .fde-side { flex: 1 1 100%; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .fde-side .code-panel code { white-space: pre; }
 .fde-note { margin: 0; font-size: 12.5px; color: var(--faint); }
-.fde-error { color: var(--bad); }
 
 .fde-path { stroke: var(--hi); stroke-width: 2.5; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 60%, transparent)); }
 .fde-path.is-address { stroke-dasharray: 6 4; }

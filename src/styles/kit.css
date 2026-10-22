@@ -136,6 +136,7 @@
 .keep-case, .data-table th.keep-case { text-transform: none; }
 .hint { font-size: 13px; color: var(--faint); align-self: center; }
 .hint.is-muted { color: var(--muted); }
+.hint.is-bad { color: var(--bad); }
 .hint.is-block { flex-basis: 100%; }
 .focus-ring { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--hi)) 20%, transparent); }
 

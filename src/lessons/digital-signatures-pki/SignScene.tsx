@@ -86,7 +86,7 @@ export function SignScene({ picker }: { picker: ReactNode }) {
         ) : (
           <>
             <TextArea label="Release note" value={note} onChange={setNote} rows={2} mono={false} />
-            {note.length > NOTE_MAX && <Hint className="dsp-error">Keep the note under {NOTE_MAX} characters.</Hint>}
+            {note.length > NOTE_MAX && <Hint tone="bad">Keep the note under {NOTE_MAX} characters.</Hint>}
             {noteEdited && <p className="dsp-muted">Signed text: <q className="dsp-signed">{signed!.text}</q></p>}
             <div className="dsp-keys">
               <Box className="dsp-key tone-violet">

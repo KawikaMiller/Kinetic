@@ -9,7 +9,6 @@
 .ge-note { text-align: center; }
 .ge-zero { margin: 0; font: 600 14px var(--mono); color: var(--muted); }
 .ge-fib { display: block; }
-.ge-error { color: var(--bad); }
 
 .ge-table td, .ge-table th { white-space: nowrap; }
 .ge-table tr.is-now td { background: color-mix(in srgb, var(--hi) 16%, transparent); color: var(--hi); }

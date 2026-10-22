@@ -30,7 +30,6 @@
 .en-stack.en-narrow { max-width: 300px; }
 .en-header { display: flex; flex-direction: column; gap: 8px; }
 .en-note { margin: 0; font-size: 13px; color: var(--text); }
-.en-error { color: var(--bad); }
 @media (max-width: 900px) {
   .en-addr { font-size: 9px; }
 }

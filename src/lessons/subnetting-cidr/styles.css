@@ -1,5 +1,4 @@
 .sc { gap: 14px; }
-.sc-error { color: var(--bad); }
 .sc-muted { color: var(--muted); }
 
 .sc-readouts { max-width: 460px; }

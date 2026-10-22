@@ -1,6 +1,5 @@
 .v6 { gap: 14px; }
 .v6 .section-title { display: block; }
-.v6-error { color: var(--bad); }
 .v6-canon { font-family: var(--mono); font-size: 0.8em; overflow-wrap: anywhere; }
 .v6-type { font-size: 12px; }
 .v6-text { font: 700 20px/1.4 var(--mono); display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 4px; }
