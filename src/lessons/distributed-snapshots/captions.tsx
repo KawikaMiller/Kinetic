@@ -6,7 +6,7 @@ import type { Offence, Result } from './sim';
 /** The offending message of a failed closure check, in words that name both cuts. */
 export function offenceText(o: Offence): string {
   if (o.kind === 'marker') return `a marker sent by ${o.from} after ${o.from}'s cut was received by ${o.to} before ${o.to}'s cut`;
-  return `${plural(o.amount, 'token')} sent by ${o.from} after ${o.from}'s cut, received by ${o.to} before ${o.to}'s cut: ${o.to}'s record includes tokens ${o.from}'s record still holds`;
+  return `${plural(o.amount ?? 0, 'token')} sent by ${o.from} after ${o.from}'s cut, received by ${o.to} before ${o.to}'s cut: ${o.to}'s record includes tokens ${o.from}'s record still holds`;
 }
 
 /** What the two independent checks say about a finished snapshot. */
