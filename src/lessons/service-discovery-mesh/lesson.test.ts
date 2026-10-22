@@ -99,7 +99,7 @@ describe('hidden controls do not feed visible numbers', () => {
   it('the seed changes the lost heartbeats and nothing else when there is no loss', () => {
     const a = runRegistry(registryConfig({ ...initialRegistry(), seed: 1 }));
     const b = runRegistry(registryConfig({ ...initialRegistry(), seed: 2 }));
-    expect([a.evictedAfterMs, a.stopAfterMs, a.sentToDead]).toEqual([b.evictedAfterMs, b.stopAfterMs, b.sentToDead]);
+    expect([a.evictedAfterMs, a.stoppedAfterMs, a.lastHitAfterMs, a.sentToDead]).toEqual([b.evictedAfterMs, b.stoppedAfterMs, b.lastHitAfterMs, b.sentToDead]);
   });
 });
 

@@ -51,7 +51,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(lesson.tryThis[1]).toContain('Switch the bulkhead on: it loses 0%');
     const fair = iso('expensive', { fair: true }).tenants[1];
     expect(Math.round(fair.errorRate * 100)).toBe(0);
-    expect(Math.round(fair.p99Ms)).toBe(201);
+    expect(Math.round(fair.p99Ms ?? -1)).toBe(201);
     expect(lesson.tryThis[1]).toContain('With fair queueing instead: 0% lost and a 201 ms p99, still over the 100 ms line');
   });
 

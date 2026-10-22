@@ -23,7 +23,6 @@ const CERTS = certTimeline(C0.lifetimeMin, OUTAGE);
 const FIRST_EXPIRY = Math.min(...CERTS.gaps.map((g) => g.from));
 const FAILING_NOW = failingAt(CERTS, C0.nowMin);
 
-const DNS_STUBBORN = runRegistry({ ...registryConfig(R0), refreshMs: STYLE_REFRESH.dns, stubbornFactor: 2 });
 const learned = (r: ReturnType<typeof runRegistry>) => (r.stoppedAfterMs === null ? '?' : secText(r.stoppedAfterMs));
 const lastHit = (r: ReturnType<typeof runRegistry>) => (r.lastHitAfterMs === null ? '?' : secText(r.lastHitAfterMs));
 
