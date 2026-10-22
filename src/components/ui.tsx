@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode, Ref } from 'react';
 import { CLAIM_LABEL, PROVENANCE_LABEL, type ClaimKind, type ProvenanceKind } from '../core/provenance';
 import type { Tone } from '../core/tone';
 import type { Option } from './options';
@@ -270,7 +270,8 @@ export function ChipButton({
   /** Greyed out and not pressable (a sandbox that's full until Reset). */
   disabled?: boolean;
   className?: string;
-  onClick: () => void;
+  /** Receives the click: `e.currentTarget` is the chip, for a handler that hands focus on when the press removes it. */
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
 }) {
   const classes = [

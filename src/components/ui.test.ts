@@ -1,7 +1,17 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
-import { Hint, Segmented } from './ui';
+import { ChipButton, Hint, Segmented } from './ui';
+
+describe('ChipButton onClick', () => {
+  it('hands the click event to the handler, so it can read e.currentTarget instead of document.activeElement', () => {
+    const seen: unknown[] = [];
+    const chip = ChipButton({ onClick: (e) => seen.push(e.currentTarget), children: 'x' });
+    const target = { id: 'chip' };
+    chip.props.onClick({ currentTarget: target });
+    expect(seen).toEqual([target]);
+  });
+});
 
 describe('Segmented with boolean values', () => {
   const html = (value: boolean) =>

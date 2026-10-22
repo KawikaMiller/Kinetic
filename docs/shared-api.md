@@ -488,6 +488,7 @@
 `<ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 `<ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
 `<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
+`<ChipButton tone="bad" onClick={(e) => { refocusAfter(e.currentTarget); remove(); }}>×</ChipButton>  // onClick receives the click event: hand focus on from e.currentTarget, never document.activeElement (cloud-networking-vpc, offline-first-sync)
 `const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 `<StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 `<StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage

@@ -87,8 +87,8 @@ export function LiveScene({ picker }: { picker: ReactNode }) {
                     <ChipButton tone="info" onClick={() => setSt((s) => liveEdit(s, d, { kind: 'tick', pick }))}>tick</ChipButton>
                     <ChipButton
                       tone="bad"
-                      onClick={() => {
-                        refocusCard(document.activeElement);
+                      onClick={(e) => {
+                        refocusCard(e.currentTarget);
                         setSt((s) => liveEdit(s, d, { kind: 'delete', pick }));
                       }}
                     >

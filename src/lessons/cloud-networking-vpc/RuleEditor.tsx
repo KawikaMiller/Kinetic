@@ -92,8 +92,8 @@ export function RuleEditor({ st, setSt }: { st: RulesState; setSt: (f: (s: Rules
               <tr key={index}>
                 <td>{ruleText(ref, rule)}</td>
                 <td>
-                  <ChipButton tone="bad" ariaLabel={`Remove ${ruleText(ref, rule)}`} onClick={() => {
-                      refocusAfterRemove(document.activeElement);
+                  <ChipButton tone="bad" ariaLabel={`Remove ${ruleText(ref, rule)}`} onClick={(e) => {
+                      refocusAfterRemove(e.currentTarget);
                       setSt((s) => removeRule(s, index));
                     }}
                   >
