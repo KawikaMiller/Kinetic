@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `A request is one possible solution to a need: climbing to the need finds that the ${F.bestName} covers the whole behaviour in ${F.bestEffort} days, while the requested CSV export takes ${F.requestEffort} and covers ${F.requestParts} of ${F.behaviourParts} parts of it, and an outcomes tree is a common way to plan (common practice).`,
     `A vanity metric can rise while the outcome stays flat: signups are +${F.signupsChange}% and weekly active teams ${F.activeChange}%. Pushing one number hard degrades guardrails (tickets +${F.pushedTickets}%), as Goodhart's law (common practice) describes.`,
-    `Whether a test can detect a lift is arithmetic: ${F.n.toLocaleString('en-US')} visitors per arm for a 2-point lift from 10% (a standard formula), about four times that for a 1-point lift, so small user bases cannot detect small lifts and need a bigger bet or other evidence.`,
+    `Whether a test can detect a lift is arithmetic: ${F.n.toLocaleString('en-US')} visitors per arm for a 2-point lift from 10% (the common textbook formula, to within a few visitors), about four times that for a 1-point lift, so small user bases cannot detect small lifts and need a bigger bet or other evidence.`,
     `A statistic that is repeated widely is not evidence until you can trace it, and its measurement decides the answer: here ${F.badShare}% or ${F.fairShare}% depending on what is logged, over what window, for which accounts. The unused-features claim itself is folklore from memory.`,
   ],
   quiz: [

@@ -1,7 +1,7 @@
 /**
  * Scene 3: can we even measure this? The standard two-proportion sample size, the time to reach it, and a seeded
- * Monte Carlo of the test at that size. Counts are drawn exactly for small n and from the normal approximation of the
- * binomial for large n (stated on screen).
+ * Monte Carlo of the test at that size. Counts come from the normal approximation of the binomial (stated on screen): the
+ * smallest sample size the controls can reach is 75 per arm, so an exact draw is never needed.
  */
 import { normal, normalCdf, normalQuantile } from '../../core/distributions';
 import { parseBoundedInt, type FieldParse } from '../../core/parse';
@@ -17,9 +17,6 @@ export const TRAFFIC = { min: 100, max: 1_000_000 };
 export const POWER_DEFAULT = { baseline: 10, lift: 2, alpha: 0.05 as number, power: 0.8 as number, traffic: '2,000' };
 /** A test that needs longer than this many days is called long in the caption. */
 export const LONG_WINDOW_DAYS = 90;
-/** Largest n for which counts are drawn exactly; above it the normal approximation is used. */
-const EXACT_LIMIT = 40;
-
 export const parseTraffic = (text: string): FieldParse<number> =>
   parseBoundedInt(text, {
     ...TRAFFIC,
@@ -35,7 +32,7 @@ export const parseTraffic = (text: string): FieldParse<number> =>
 /** The lift must keep both rates inside 0 to 100%; the refusal says which side fails. */
 export function checkLift(baseline: number, lift: number): string | null {
   if (baseline + lift > 100) return `${baseline}% plus a ${lift}-point lift would pass 100%: lower the lift or the baseline.`;
-  if (baseline - lift < 0) return `${baseline}% minus ${lift} points would go below 0%: lower the lift or raise the baseline.`;
+  if (baseline - lift < 0) return `${baseline}% minus ${lift} points would go below 0%: the page only tests lifts no larger than the baseline, so that a drop of the same size is also possible.`;
   return null;
 }
 
@@ -61,11 +58,6 @@ export function sampleSize(s: PowerSpec): number {
 export const daysToReach = (nPerArm: number, perDay: number): number => (2 * nPerArm) / perDay;
 
 function binomial(rnd: Rnd, n: number, p: number): number {
-  if (n <= EXACT_LIMIT) {
-    let c = 0;
-    for (let i = 0; i < n; i++) if (rnd() < p) c++;
-    return c;
-  }
   const draw = Math.round(n * p + Math.sqrt(n * p * (1 - p)) * normal(rnd));
   return Math.min(n, Math.max(0, draw));
 }

@@ -86,6 +86,17 @@ describe('can we even measure this?', () => {
     expect(half / full).toBeLessThan(4.2);
   });
 
+  it('the smallest sample size any control combination can reach is 75 per arm (hand value 2 x 2.8016^2 x 0.95 x 0.05 / 0.01 = 74.6), so no exact small-n draw is ever needed', () => {
+    let smallest = Infinity;
+    for (let baseline = 1; baseline <= 90; baseline++) {
+      for (let lift = LIFT.min; lift <= LIFT.max; lift += LIFT.step) {
+        if (checkLift(baseline, lift) !== null) continue;
+        for (const alpha of ALPHAS) for (const power of POWERS) smallest = Math.min(smallest, sampleSize({ baseline, lift, alpha, power }));
+      }
+    }
+    expect(smallest).toBe(75);
+  });
+
   it('a 5,000-run Monte Carlo at that size shows power within 0.03 of the target, for both powers', () => {
     for (const power of POWERS) {
       const spec = { baseline: 10, lift: 2, alpha: 0.05, power };

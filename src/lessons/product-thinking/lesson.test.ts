@@ -93,6 +93,21 @@ describe('captions across the control cross product', () => {
     }
   });
 
+  it('a calm release with no breach quotes the real moves of signups, active teams and retention (computed by hand from the series), not a typed claim', () => {
+    const series = generateSeries(21, false);
+    const pct = (xs: number[]) => {
+      const before = xs.slice(0, 7).reduce((a, b) => a + b, 0) / 7;
+      const after = xs.slice(7).reduce((a, b) => a + b, 0) / (xs.length - 7);
+      const v = Math.round((after / before - 1) * 100);
+      return `${v >= 0 ? '+' : '-'}${Math.abs(v)}%`;
+    };
+    const g = { tickets: 120, latency: 700 };
+    expect(firstBreach(series, g)).toBeNull();
+    const text = expectCaption(seriesCaption(series, 'signups', false, null, g));
+    expect(text).toContain(`signups ${pct(series.signups)} while weekly active teams moved ${pct(series.active)} and retention ${pct(series.retention)}`);
+    expect(text).not.toContain('did not move');
+  });
+
   it('the power caption is clean, long windows say small user bases cannot detect small lifts, and refusals say nothing is computed', () => {
     const spec: PowerSpec = { baseline: 10, lift: 0.5, alpha: 0.05, power: 0.8 };
     const n = sampleSize(spec);

@@ -83,13 +83,13 @@ export interface Check {
 export function checks(d: Design): Check[] {
   return [
     d.log === 'uses'
-      ? { ok: true, text: 'Counts finished uses, which is what "used" usually means for this feature.' }
+      ? { ok: true, text: 'Counts finished uses, the reference definition of "used" in this lesson (one view; a team could reasonably define it otherwise).' }
       : { ok: false, text: 'Counts page views too, so opening the page counts as use; a different definition of "used" gives a different answer.' },
     d.window >= CYCLE_DAYS
       ? { ok: true, text: `The window covers the feature's ${CYCLE_DAYS}-day cycle, so a monthly user is seen.` }
       : { ok: false, text: `The window is ${d.window} days against the feature's ${CYCLE_DAYS}-day cycle, so a monthly user has about a ${Math.round((100 * d.window) / CYCLE_DAYS)}% chance of being caught in it.` },
     d.cohort === 'active'
       ? { ok: true, text: 'Counts accounts that still use the product, the people the feature is for.' }
-      : { ok: false, text: 'Counts accounts that never came back, which cannot use any feature and drag the share down.' },
+      : { ok: false, text: 'Counts accounts that never came back; in this invented data they never use anything, which pulls the share down.' },
   ];
 }

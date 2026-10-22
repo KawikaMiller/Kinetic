@@ -40,10 +40,10 @@ export function FolkloreScene({ picker }: { picker: ReactNode }) {
       <div className="pt-stage stage-pad">
         <blockquote className="pt-claim">&quot;Most features are rarely or never used.&quot; <ClaimLabel kind="view">a popular claim with a hard-to-trace source (from memory): treat it as folklore until you find the data</ClaimLabel></blockquote>
         <p className="pt-note">
-          Your product has a monthly usage report ({CYCLE_DAYS}-day cycle). Design the measurement that would settle the claim for it. This design counts {log.counts} among {cohort.counts}, over {design.window} days.
+          Your product has a monthly usage report ({CYCLE_DAYS}-day cycle). Design the measurement that would settle the claim for it. This design counts {log.counts} among {cohort.counts}, over {design.window} days. The data covers a single cycle, so a window longer than {CYCLE_DAYS} days gives the same answer as {CYCLE_DAYS}.
         </p>
         <ul className="pt-checks">
-          {checkList.map((c, i) => <li key={i} className={c.ok ? 'pt-check-ok' : 'pt-check-flag'}>{c.ok ? 'Counts what it should: ' : 'Changes the count: '}{c.text}</li>)}
+          {checkList.map((c, i) => <li key={i} className={c.ok ? 'pt-check-ok' : 'pt-check-flag'}>{c.ok ? 'Matches the reference design: ' : 'Changes the count: '}{c.text}</li>)}
         </ul>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={POPULATION_SEED}>{SIGNUPS} invented accounts, {ACTIVE} of them still active</Provenance>

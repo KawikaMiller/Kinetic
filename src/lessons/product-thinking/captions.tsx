@@ -34,7 +34,7 @@ export function seriesCaption(series: Series, metric: MetricId, pushed: boolean,
       {m.label} ({KIND_WORD[m.kind]}) changed by {pctOf(change(series[metric]))} after the release in week {RELEASE_WEEK}. Across all five: {METRICS.map((x) => `${x.label.toLowerCase()} ${pctOf(change(series[x.id]))}`).join(', ')}.{' '}
       {breach
         ? <>Release flagged: {breach.metric === 'tickets' ? `support tickets crossed ${g.tickets} a week` : `page latency crossed ${g.latency} ms`} in week {breach.week}.</>
-        : <>No guardrail was crossed{pushed ? '' : ': one number rose and the outcome metrics did not move'}.</>}
+        : <>No guardrail was crossed{pushed ? '' : `: signups ${pctOf(change(series.signups))} while weekly active teams moved ${pctOf(change(series.active))} and retention ${pctOf(change(series.retention))}`}.</>}
     </>
   );
 }
@@ -53,7 +53,7 @@ export function powerCaption(r: PowerReading | null, refusal: string | null): Re
   const long = r.days > LONG_WINDOW_DAYS;
   return (
     <>
-      To detect a {r.spec.lift}-point lift from {r.spec.baseline}% at alpha {r.spec.alpha} and power {r.spec.power} you need {r.n.toLocaleString('en-US')} visitors in each arm, and at {r.perDay.toLocaleString('en-US')} visitors a day that takes {sig(r.days, 3)} days.
+      To detect a {r.spec.lift}-point lift from {r.spec.baseline}% at alpha {r.spec.alpha} and power {r.spec.power} you need about {r.n.toLocaleString('en-US')} visitors in each arm, and at {r.perDay.toLocaleString('en-US')} visitors a day that takes {sig(r.days, 3)} days.
       A simulation of {RUNS.toLocaleString('en-US')} such tests finds the lift in {Math.round(r.simulated * 100)}% of them.{' '}
       {long ? <>That is longer than {LONG_WINDOW_DAYS} days: small user bases cannot detect small lifts. Options: a bigger bet, qualitative research, or a longer window.</> : <>That fits inside {LONG_WINDOW_DAYS} days.</>}
     </>

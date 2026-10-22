@@ -3,7 +3,7 @@ import { Curve, HLine, Plot2D, Points, VLine } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
-import { ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { sig } from '../../core/format';
 import type { Tone } from '../../core/tone';
 import { seriesCaption } from './captions';
@@ -84,6 +84,7 @@ export function SeriesScene({ picker }: { picker: ReactNode }) {
           <thead><tr><th>Metric</th><th>Kind</th><th>Change</th></tr></thead>
           <tbody>{METRICS.map((x) => <tr key={x.id}><td>{x.label}</td><td>{KIND_WORD[x.kind]}</td><td>{pctOf(change(series[x.id]))}</td></tr>)}</tbody>
         </table>
+        <Hint tone="muted" block>A tight guardrail flags a calm release too: weekly numbers wobble by a few percent on their own, so a limit set close to the usual level is crossed by noise. Raise the limit and the calm release passes.</Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>{WEEKS} weeks of seeded numbers; the default seed is {SERIES_SEED}</Provenance>
           <Provenance kind="invented">the product, the release and every trend are invented</Provenance>
