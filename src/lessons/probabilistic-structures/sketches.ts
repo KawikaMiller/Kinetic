@@ -1,13 +1,23 @@
 // A Bloom filter and HyperLogLog, small enough to watch.
 import { fmix32, fnv1a } from '../../core/hash';
+import { mulberry32, pick, type Rnd } from '../../core/random';
+
+/** The seed the stage opens with. */
+export const DEFAULT_SEED = 7;
+/** Added to the seed per draw, so draw n uses its own stream and the nth press is the same on every run. */
+const DRAW_STRIDE = 0x9e3779b1;
+/** The random source of the `n`-th draw under `seed`. */
+export const drawRnd = (seed: number, n: number): Rnd => mulberry32(seed + n * DRAW_STRIDE);
 
 // ── Bloom filter ────────────────────────────────────────────────────
 
-/** k bit positions via double hashing: h1 + i·h2 (mod m). */
+/**
+ * k bit positions from k salted hashes (hash i of "word#i"), so the positions behave close to independent draws, which is what
+ * the false-positive formula assumes. A double hash h1 + i·h2 would be cheaper but, with m a power of two, it correlates the
+ * positions and the measured rate then sits far above the formula (0.67 against 0.36 at m = 32, 12 words, k = 4).
+ */
 export function bloomPositions(word: string, k: number, m: number) {
-  const h1 = fmix32(fnv1a(word));
-  const h2 = fmix32(fnv1a(`${word}\u0001`)) | 1;
-  return Array.from({ length: k }, (_, i) => (h1 + Math.imul(i, h2)) >>> 0).map((h) => h % m);
+  return Array.from({ length: k }, (_, i) => fmix32(fnv1a(`${word}#${i}`)) % m);
 }
 
 export function buildBloom(words: string[], k: number, m: number) {
@@ -20,9 +30,16 @@ export const bloomHas = (bits: Uint8Array, word: string, k: number) =>
   bloomPositions(word, k, bits.length).every((p) => bits[p] === 1);
 
 /** Theoretical false-positive rate: (1 - e^(-kn/m))^k */
+/** One standard error of a rate `p` measured over `PROBE_COUNT` probes: how far probe sampling alone moves the measured figure. */
+export const bloomProbeNoise = (p: number) => Math.sqrt((p * (1 - p)) / PROBE_COUNT);
+
 export const bloomFpTheory = (n: number, k: number, m: number) => (n === 0 ? 0 : Math.pow(1 - Math.exp((-k * n) / m), k));
 
-const PROBES = Array.from({ length: 1000 }, (_, i) => `probe-${i}-x`);
+/** The k that minimises the false-positive rate for n items in m bits, rounded: (m/n)·ln 2, at least 1. */
+export const optimalK = (n: number, m: number) => Math.max(1, Math.round((m / n) * Math.LN2));
+
+export const PROBE_COUNT = 1000;
+const PROBES = Array.from({ length: PROBE_COUNT }, (_, i) => `probe-${i}-x`);
 export function bloomFpMeasured(bits: Uint8Array, k: number) {
   return PROBES.filter((w) => bloomHas(bits, w, k)).length / PROBES.length;
 }
@@ -32,6 +49,15 @@ export const WORDS = [
   'mango', 'nectar', 'ocean', 'panda', 'quartz', 'raven', 'salmon', 'tiger', 'umbra', 'violet', 'walrus', 'xenon',
   'yak', 'zebra', 'amber', 'basil', 'cedar', 'delta', 'ember', 'fjord', 'glacier', 'hazel', 'iris', 'juniper',
 ];
+
+/** The first word not yet inserted, in list order (the "Insert next word" button). */
+export const nextWord = (words: readonly string[]) => WORDS.find((w) => !words.includes(w)) ?? `word${words.length}`;
+
+/** A word never inserted, drawn from `rnd` (the "Query an unseen word" button). */
+export const unseenWord = (words: readonly string[], rnd: Rnd) => {
+  const pool = WORDS.filter((w) => !words.includes(w));
+  return pool.length ? pick(pool, rnd) : `word${words.length}`;
+};
 
 // ── HyperLogLog ─────────────────────────────────────────────────────
 
@@ -66,10 +92,18 @@ export function hllEstimate(regs: Uint8Array) {
   return raw;
 }
 
-export function hllBuild(count: number, p: number) {
+/** Registers after adding the ids start .. start+count-1 (a different `start` is an independent stream of items). */
+export function hllBuild(count: number, p: number, start = 0) {
   const regs = new Uint8Array(1 << p);
-  for (let i = 0; i < count; i++) hllAdd(regs, i, p);
+  for (let i = start; i < start + count; i++) hllAdd(regs, i, p);
   return regs;
 }
+
+/** HyperLogLog's relative standard error with m registers: 1.04/√m. One run lands within it about two times in three. */
+export const hllStdErr = (m: number) => 1.04 / Math.sqrt(m);
+
+/** Register memory when each register takes 6 bits (ranks stay below 64); the demo's arrays are plain bytes. */
+export const HLL_BITS_PER_REGISTER = 6;
+export const hllBytes = (m: number) => (m * HLL_BITS_PER_REGISTER) / 8;
 
 export const bits32 = (h: number) => (h >>> 0).toString(2).padStart(32, '0');

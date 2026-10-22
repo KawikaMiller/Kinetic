@@ -1,19 +1,22 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
+import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { NA } from '../../core/format';
-import { pick } from '../../core/random';
 import { usePlayer } from '../../core/usePlayer';
+import { blankState, compactFrames, readFrames, writeFrames, type LsmFrame } from './frames';
 import {
-  BLOOM_BITS, KEYS, MEM_CAP, MISSING, blankState, compactFrames, diskEntries, liveKeys, readFrames, seeded, writeFrames,
-  type Entry, type LsmFrame, type SST, type Lsm,
+  BLOOM_BITS, DEFAULT_SEED, L0_TRIGGER, L1_FILE, MEM_CAP, actionKey, actionRnd, lastDeletedKey, lastWrittenKey, liveKeys, seeded, spaceAmp,
+  type Action, type Entry, type Lsm, type SST,
 } from './lsm';
 import './styles.css';
 
 interface Run {
   s: Lsm;
   frames: LsmFrame[];
+  /** Actions taken so far: action n draws its key from the seed's n-th stream. */
+  step: number;
 }
 
 const FILE_SPRING = { type: 'spring', stiffness: 260, damping: 26 } as const;
@@ -26,33 +29,48 @@ function idle(s: Lsm): LsmFrame[] {
 }
 
 export function Stage() {
+  const [seed, setSeed] = useState(DEFAULT_SEED);
   const [run, setRun] = useState<Run>(() => {
     const s = seeded();
-    return { s, frames: idle(s) };
+    return { s, frames: idle(s), step: 0 };
   });
   const player = usePlayer(run.frames, { interval: 1300 });
   const f = player.frame;
   const s = f.s;
   // Live keys of the tree the next action starts from, and of the frame on screen.
   const runLive = useMemo(() => liveKeys(run.s), [run.s]);
+  const runDeleted = useMemo(() => lastDeletedKey(run.s), [run.s]);
+  const runLast = useMemo(() => lastWrittenKey(run.s), [run.s]);
   const live = useMemo(() => liveKeys(s).length, [s]);
 
-  const write = (del: boolean, overwrite = false) => {
-    const k = del || overwrite ? pick(runLive.length ? runLive : KEYS) : pick(KEYS);
-    const { frames, next } = writeFrames(run.s, k, del);
-    setRun({ s: next, frames });
+  const keyFor = (action: Action) => actionKey(action, runLive, actionRnd(seed, run.step));
+  const write = (action: 'put' | 'overwrite' | 'delete') => {
+    const { frames, next } = writeFrames(run.s, keyFor(action), action === 'delete');
+    setRun({ s: next, frames, step: run.step + 1 });
   };
-  const read = (missing: boolean) => {
-    const k = missing ? pick(MISSING) : pick(runLive.length ? runLive : KEYS);
-    setRun({ s: run.s, frames: readFrames(run.s, k) });
+  const read = (action: 'get-existing' | 'get-missing') => {
+    setRun({ s: run.s, frames: readFrames(run.s, keyFor(action)), step: run.step + 1 });
+  };
+  const readDeleted = () => {
+    if (runDeleted === undefined) return;
+    setRun({ s: run.s, frames: readFrames(run.s, runDeleted), step: run.step + 1 });
+  };
+  const readLast = () => {
+    if (runLast === undefined) return;
+    setRun({ s: run.s, frames: readFrames(run.s, runLast), step: run.step + 1 });
   };
   const compact = () => {
+    if (!run.s.l0.length) return;
     const { frames, next } = compactFrames(run.s);
-    setRun({ s: next, frames });
+    setRun({ s: next, frames, step: run.step });
   };
 
+  // Why a button is greyed out, shown as its tooltip and in the hint under the controls.
+  const deletedWhy = runDeleted === undefined ? 'GET deleted key is off: no tombstone is stored (compaction drops tombstones)' : undefined;
+  const compactWhy = run.s.l0.length ? undefined : 'Compact now is off: L0 has no files to merge';
+
   const wa = s.userWrites ? s.diskWrites / s.userWrites : 0;
-  const sa = live ? diskEntries(s) / live : 0;
+  const sa = spaceAmp(s);
 
   return (
     <StageFrame
@@ -61,8 +79,8 @@ export function Stage() {
       stats={
         <Stats>
           <Stat label="User writes" value={s.userWrites} />
-          <Stat label="Write amp" value={`${wa.toFixed(2)}×`} color="var(--bad)" sub="disk writes ÷ user writes" />
-          <Stat label="Space amp" value={`${sa.toFixed(2)}×`} color="var(--hi)" sub="entries on disk ÷ live keys" />
+          <Stat label="Write amp" value={s.userWrites ? `${wa.toFixed(2)}×` : NA} color="var(--bad)" sub="disk writes ÷ user writes" />
+          <Stat label="Space amp" value={live ? `${sa.toFixed(2)}×` : NA} color="var(--hi)" sub="entries stored (RAM + disk) ÷ live keys" />
           <Stat
             label="Last read"
             value={f.lastRead ? `${f.lastRead.read} read` : NA}
@@ -84,12 +102,20 @@ export function Stage() {
       }
       controls={
         <Controls>
-          <Button variant="primary" onClick={() => write(false)}>PUT random key</Button>
-          <Button onClick={() => write(false, true)}>Overwrite a key</Button>
-          <Button variant="danger" onClick={() => write(true)} disabled={!runLive.length}>DELETE a key</Button>
-          <Button onClick={() => read(false)}>GET existing key</Button>
-          <Button onClick={() => read(true)}>GET missing key</Button>
-          <Button onClick={compact} disabled={!run.s.l0.length}>Compact now</Button>
+          <Button variant="primary" onClick={() => write('put')}>PUT random key</Button>
+          <Button onClick={() => write('overwrite')}>Overwrite a key</Button>
+          <Button variant="danger" onClick={() => write('delete')} softDisabled={!runLive.length}>DELETE a key</Button>
+          <Button onClick={() => read('get-existing')}>GET existing key</Button>
+          <Button onClick={readLast} softDisabled={runLast === undefined}>GET last written key</Button>
+          <Button onClick={readDeleted} softDisabled={runDeleted === undefined} title={deletedWhy}>GET deleted key</Button>
+          <Button onClick={() => read('get-missing')}>GET missing key</Button>
+          <Button onClick={compact} softDisabled={!run.s.l0.length} title={compactWhy}>Compact now</Button>
+          <SeedField seed={seed} onSeed={setSeed} />
+          <Hint block>
+            Buttons act on the tree as it stands when the animation ends.
+            {deletedWhy && ` ${deletedWhy}.`}
+            {compactWhy && ` ${compactWhy}.`}
+          </Hint>
         </Controls>
       }
     >
@@ -146,6 +172,17 @@ export function Stage() {
             files and compaction rewrites data again and again.
           </div>
         </div>
+        <ProvenanceRow>
+          <Provenance kind="simulated" seed={seed}>
+            a two-level model: the memtable holds {MEM_CAP} keys, L0 compacts at {L0_TRIGGER} files, an L1 file holds {L1_FILE}, filters are
+            {' '}{BLOOM_BITS} bits with 2 hash positions; each button press draws its key from the seed
+          </Provenance>
+          <Provenance kind="illustrative">write and space amplification count entries, not bytes, so the figures show the shape and not a real engine's numbers</Provenance>
+          <Provenance kind="from-memory">
+            the engines named in the lesson use LSM storage, and real engines keep a tombstone until it reaches the bottom level: verify against each
+            project's documentation
+          </Provenance>
+        </ProvenanceRow>
       </div>
     </StageFrame>
   );
