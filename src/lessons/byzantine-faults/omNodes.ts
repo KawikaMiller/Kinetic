@@ -89,6 +89,8 @@ export const ic2: Safety<OmNodeState> = (snap) => {
   return rest.filter((s) => !s.traitor && s.decision !== null).every((s) => s.decision === commander.order) ? null : 'IC2 broken: a loyal lieutenant did not obey the loyal commander';
 };
 export const RULES: readonly Safety<OmNodeState>[] = [ic1, ic2];
+/** The names of `RULES`, in the same order. */
+export const RULE_NAMES = ['IC1', 'IC2'] as const;
 
 export interface OmSeedRun {
   setup: SeededSetup;

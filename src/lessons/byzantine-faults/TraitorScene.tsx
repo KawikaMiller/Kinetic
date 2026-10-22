@@ -50,7 +50,8 @@ export function TraitorScene({ picker }: { picker: ReactNode }) {
   };
   const audience = state.traitor === null ? [] : lieutenantsOf(state.n).filter((l) => l !== state.traitor);
 
-  const caption = traitorCaption({ setup, behaviour, ran, refusal });
+  const every = panel === 'behaviours' && behaviours ? { total: behaviours.total, breaking: behaviours.breaking.length } : null;
+  const caption = traitorCaption({ setup, behaviour, ran, refusal, every });
   return (
     <StageFrame
       height={480}
@@ -135,7 +136,7 @@ export function TraitorScene({ picker }: { picker: ReactNode }) {
             <SectionTitle hint="exhaustive: one traitor, binary values, OM(1)">Every traitor behaviour</SectionTitle>
             <div className="bz-line"><b className="mono">n = {behaviours.n}: {behaviours.total} behaviours, {behaviours.breaking.length} break a rule</b></div>
             <div className="bz-line">
-              {behaviours.breaking.length === 0 ? 'None breaks IC1 or IC2: every traitor choice at this size is covered.' : `The breaking ones: ${behaviours.breaking.map((b) => `${generalName(b.traitor)} says ${b.bits.join(' ')} with order ${orderName(b.order)}`).join('; ')}.`}
+              {behaviours.breaking.length === 0 ? 'None breaks IC1 or IC2: every behaviour of one traitor with binary values is covered at this size (OM(1)).' : `The breaking ones: ${behaviours.breaking.map((b) => `${generalName(b.traitor)} says ${b.bits.join(' ')} with order ${orderName(b.order)}`).join('; ')}.`}
             </div>
             <div className="bz-line">Sampled, on distSim with random lies: {sampled.failing.length === 0 ? sampledText(SEEDS_TOTAL, SEEDS_TOTAL, SEED_RANGE.from, SEED_RANGE.to - 1) : `IC1 or IC2 failed on ${sampled.failing.length} of ${SEEDS_TOTAL} seeds (lowest ${sampled.lowestFailing}); sampled, not exhaustive`}.</div>
           </Box>
@@ -147,7 +148,7 @@ export function TraitorScene({ picker }: { picker: ReactNode }) {
               <b className="mono">{rules.survivors.length} of {integer(rules.rules)}</b> rules satisfy IC1 and IC2 on all {rules.behaviours} behaviours
               {rules.survivors.length === 1 && rules.survivors[0] === majorityRuleNumber(state.n - 1) ? ': the majority rule.' : '.'}
             </div>
-            <Hint block>This is a bounded instance of the impossibility, for one relay round at this size. It is not the theorem.</Hint>
+            <Hint block>{state.n === 3 ? 'This is a bounded instance of the impossibility, for one relay round at this size. It is not the theorem.' : 'This is a bounded search for one relay round at this size: one rule survives, so it is not an impossibility, and it is not the theorem either.'}</Hint>
           </Box>
         )}
         <ProvenanceRow>

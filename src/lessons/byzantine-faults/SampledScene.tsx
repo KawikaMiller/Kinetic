@@ -6,7 +6,7 @@ import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, S
 import { sampledCaption } from './captions';
 import { sampledText } from './checkText';
 import { COMMANDER, generalName, orderName } from './om';
-import { OM2_TRAITORS, SEED_RANGE, SEEDS_TOTAL, runOmSeed, sweepOm } from './omNodes';
+import { OM2_TRAITORS, RULE_NAMES, SEED_RANGE, SEEDS_TOTAL, runOmSeed, sweepOm } from './omNodes';
 
 const SIZES = [{ value: 6, label: '6 generals (below 3f + 1)' }, { value: 7, label: '7 generals (3f + 1)' }];
 
@@ -53,7 +53,7 @@ export function SampledScene({ picker }: { picker: ReactNode }) {
         <Hint block>
           {sweep.failing.length === 0
             ? sampledText(SEEDS_TOTAL, SEEDS_TOTAL, SEED_RANGE.from, SEED_RANGE.to - 1)
-            : `IC1 or IC2 failed on ${sweep.failing.length} of ${SEEDS_TOTAL} seeds (${SEED_RANGE.from} to ${SEED_RANGE.to - 1}), lowest failing seed ${sweep.lowestFailing}, first broken rule index ${sweep.rule}; sampled, not exhaustive`}.
+            : `IC1 or IC2 failed on ${sweep.failing.length} of ${SEEDS_TOTAL} seeds (${SEED_RANGE.from} to ${SEED_RANGE.to - 1}), lowest failing seed ${sweep.lowestFailing}, first broken rule ${sweep.rule === null ? 'none' : RULE_NAMES[sweep.rule]}; sampled, not exhaustive`}.
           The enumeration at this size is too large to run here, so this scene never says it holds for all lies.
         </Hint>
         <ProvenanceRow>

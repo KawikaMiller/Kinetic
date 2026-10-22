@@ -1,12 +1,13 @@
 import type { LessonModule } from '../../core/types';
 import { integer } from '../../core/format';
-import { breakText, behaviourOfState, DEFAULT_TRAITOR_STATE, runOm, setupOfState, tryEveryBehaviour, tryEveryRule } from './om';
+import { breakText, behaviourOfState, DEFAULT_TRAITOR_STATE, rulesBrokenIn, runOm, setupOfState, tryEveryBehaviour, tryEveryRule } from './om';
 import { SIGNED_N } from './signed';
 import { Stage } from './Stage';
 
 const three = tryEveryBehaviour(3);
 const four = tryEveryBehaviour(4);
 const rules3 = tryEveryRule(3);
+const rulesBroken3 = rulesBrokenIn(three);
 const rules4 = tryEveryRule(4);
 const defaultBreak = breakText(3, behaviourOfState({ ...DEFAULT_TRAITOR_STATE, traitor: 2 }));
 const defaultRun = runOm(setupOfState(DEFAULT_TRAITOR_STATE));
@@ -16,7 +17,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'With oral messages three generals cannot tolerate one traitor and four can: a loyal lieutenant that hears two different stories has no way to tell who lied. For f traitors the number needed is 3f + 1 (argued, not run here), and signatures change the game.',
-    what: `A commander sends an order, its lieutenants relay what they heard, and each loyal lieutenant takes the majority of what it holds, retreating on a tie. You choose what the traitor says on each edge and watch two rules break at three generals: IC1 (the loyal lieutenants agree) and IC2 (they obey a loyal commander). The lesson then tries each traitor behaviour (${three.total} at three generals, ${four.total} at four), each decision rule (${rules3.rules} and ${integer(rules4.rules)}), enumerates quorum overlaps, adds signatures, and samples a larger cluster.`,
+    what: `A commander sends an order, its lieutenants relay what they heard, and each loyal lieutenant takes the majority of what it holds, retreating on a tie. You choose what the traitor says on each edge and watch ${rulesBroken3.join(' and ')} (the loyal lieutenants obey a loyal commander) break at three generals, while IC1 (the loyal lieutenants agree) is the rule the six-general scene breaks. The lesson then tries each traitor behaviour (${three.total} at three generals, ${four.total} at four), each decision rule (${rules3.rules} and ${integer(rules4.rules)}), enumerates quorum overlaps, adds signatures, and samples a larger cluster.`,
     analogy: 'Three people pass notes to agree on a plan. When one of them lies, each of the other two holds a pair of notes that disagree, with nothing to say which note is true. A fourth person\'s note breaks the tie.',
     useCases: [
       'Reading why Byzantine-tolerant replication asks for 3f + 1 replicas',
@@ -33,7 +34,7 @@ const lesson: LessonModule = {
     'Switch to 4 generals (L2 stays the traitor and tells each lieutenant 0) and press Run: L1 and L3 both decide 1, and both rules hold.',
     `Press Try every traitor behaviour at 3 generals, then at 4: "${three.total} behaviours, ${three.breaking.length} break a rule" and "${four.total} behaviours, ${four.breaking.length} break a rule".`,
     `Press Try every decision rule at 3 generals: ${rules3.survivors.length} of ${rules3.rules} satisfy both rules. At 4 generals: ${rules4.survivors.length} of ${integer(rules4.rules)}, the majority rule.`,
-    `Open Signatures change the game at ${SIGNED_N} generals with the commander as the traitor, signing attack for L1 and retreat for L2: the signed column shows both lieutenants holding both orders and retreating together.`,
+    `Open Signatures change the game at ${SIGNED_N} generals: with L1 as the traitor, a loyal attack order and an oral relay of 0, the oral column breaks IC2 and the signed column holds. Then make the Commander the traitor, signing attack for L1 and retreat for L2: both lieutenants hold both signed orders and retreat together.`,
   ],
   keyIdeas: [
     `A third general cannot save oral messages: a loyal lieutenant that holds one order and one contradicting relay cannot tell the liar, and ${three.breaking.length} of ${three.total} traitor behaviours break a rule at three generals against ${four.breaking.length} of ${four.total} at four.`,

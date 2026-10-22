@@ -5,12 +5,16 @@ import { choose } from '../../core/stats';
 import { SEED_MAX } from '../../core/seed';
 import { quorumCaption, signedCaption, traitorCaption } from './captions';
 import lesson from './index';
+import captionsSource from './captions.tsx?raw';
+import sampledSource from './SampledScene.tsx?raw';
+import signedSource from './SignedScene.tsx?raw';
+import traitorSource from './TraitorScene.tsx?raw';
 import {
   ATTACK, COMMANDER, DEFAULT_TRAITOR_STATE, ONE_TRAITOR_REFUSAL, RETREAT, behaviourOfState, behaviours, breakText, chooseTraitor, held, judge, majorityRuleNumber,
-  runOm, seededSetup, setupOf, setupOfState, tryEveryBehaviour, tryEveryRule, type Bit,
+  rulesBrokenIn, runOm, seededSetup, setupOf, setupOfState, tryEveryBehaviour, tryEveryRule, type Bit,
 } from './om';
 import {
-  BROKEN_SEED_OM1, BROKEN_SEED_OM2, RULES, SEED_RANGE, SEEDS_TOTAL, omScenario, referenceDecisions, runOmSeed, sweepOm,
+  BROKEN_SEED_OM1, BROKEN_SEED_OM2, RULES, RULE_NAMES, SEED_RANGE, SEEDS_TOTAL, omScenario, referenceDecisions, runOmSeed, sweepOm,
 } from './omNodes';
 import { F_RANGE, MAX_NODES, nodeRange, quorumOverlap } from './quorums';
 import { decideSigned, runSigned, signedBehaviours, trySignedBehaviours, type SignedBehaviour } from './signed';
@@ -221,6 +225,17 @@ describe('signed orders (scene 3)', () => {
     expect(trySignedBehaviours()).toMatchObject({ total: 17, breaking: [] });
   });
 
+  it('try-this 5, first half: the default (L1 traitor, loyal attack, oral relay 0) breaks oral IC2 and leaves signed holding', () => {
+    const oralSetup = setupOf(3, { traitor: 1, order: ATTACK, bits: [RETREAT] });
+    const oral = judge(oralSetup, runOm(oralSetup));
+    expect(oral.ic2).toBe(false);
+    const signed = runSigned({ traitor: 1, given: [ATTACK, ATTACK], order: ATTACK, withhold: false });
+    expect(signed.ic1 && signed.ic2).toBe(true);
+    expect(signed.decisions.get(2)).toBe(ATTACK);
+    expect(lesson.tryThis[4]).toContain('the oral column breaks IC2 and the signed column holds');
+    expect(signedSource).toContain('traitor: 1, given: [ATTACK, RETREAT], order: ATTACK, relay: RETREAT');
+  });
+
   it('try-this 5: signing attack for L1 and retreat for L2 leaves both holding both orders, retreating together', () => {
     const b: SignedBehaviour = { traitor: 0, given: [ATTACK, RETREAT], order: RETREAT, withhold: false };
     const r = runSigned(b);
@@ -228,7 +243,7 @@ describe('signed orders (scene 3)', () => {
     expect(r.holds.get(2)).toEqual([RETREAT, ATTACK]);
     expect([r.decisions.get(1), r.decisions.get(2)]).toEqual([0, 0]);
     expect(r.ic1 && r.ic2).toBe(true);
-    expect(lesson.tryThis[4]).toContain('retreating together');
+    expect(lesson.tryThis[4]).toContain('retreat together');
   });
 
   it('a withheld relay leaves one signed value, which a loyal lieutenant obeys', () => {
@@ -254,6 +269,8 @@ describe('signed orders (scene 3)', () => {
     const signed = trySignedBehaviours();
     const text = expectCaption(signedCaption({ oral: { ic1: true, ic2: false }, signed: { ic1: true, ic2: true }, oralTotal: oral.total, oralBreaking: oral.breaking.length, signedTotal: signed.total, signedBreaking: signed.breaking.length }));
     expect(text).toContain('oral 2 of 12 break a rule, signed 0 of 17');
+    expect(text).toContain('oral messages break and signed orders hold');
+    expect(text).not.toMatch(/messages holds|orders holds|orders breaks/);
   });
 });
 
@@ -392,5 +409,42 @@ describe('manipulations: the learner has to set the lie', () => {
       if (m.from !== COMMANDER) expect(m.value as Bit).toBe(received);
     }
     expect(run.messages.filter((m) => m.traitor).length).toBeGreaterThan(0);
+  });
+});
+
+describe('fix pass T4-B4: summary, captions and chips follow the model', () => {
+  it('M6: at three generals only IC2 breaks, and the summary says so instead of promising an IC1 break', () => {
+    const three = tryEveryBehaviour(3);
+    expect(rulesBrokenIn(three)).toEqual(['IC2']);
+    for (const b of three.breaking) {
+      const setup = setupOf(3, b);
+      expect(judge(setup, runOm(setup)).ic1).toBe(true);
+    }
+    expect(lesson.summary.what).toContain('watch IC2 (the loyal lieutenants obey a loyal commander) break at three generals');
+    expect(lesson.summary.what).not.toMatch(/two rules break at three generals/);
+  });
+
+  it('IC1 breaks in the six-general scene, which is where the summary sends the learner', () => {
+    const six = sweepOm(6, 2, 2);
+    expect(six.rule).toBe(RULES.findIndex((_, k) => RULE_NAMES[k] === 'IC1'));
+    expect(RULE_NAMES).toHaveLength(RULES.length);
+    expect(sampledSource).toContain('RULE_NAMES[sweep.rule]');
+  });
+
+  it('after Try every behaviour the caption reports the enumeration, not a single run, at 3 and 4 generals', () => {
+    for (const n of [3, 4]) {
+      const e = tryEveryBehaviour(n);
+      const state = { ...DEFAULT_TRAITOR_STATE, n, bits: {} };
+      const text = expectCaption(traitorCaption({ setup: setupOfState(state), behaviour: behaviourOfState({ ...state, traitor: 2 }), ran: true, refusal: null, every: { total: e.total, breaking: e.breaking.length } }));
+      expect(text).toContain(`Every traitor behaviour at ${n} generals`);
+      expect(text).toContain(e.breaking.length === 0 ? `none of the ${e.total} breaks` : `${e.breaking.length} of ${e.total} break a rule`);
+      expect(text).not.toContain('until you try every behaviour');
+    }
+  });
+
+  it('every highlighted caption span can wrap', () => {
+    for (const [name, source] of [['captions', captionsSource], ['TraitorScene', traitorSource], ['SignedScene', signedSource], ['SampledScene', sampledSource]] as const) {
+      for (const m of source.matchAll(/className=(?:"|{`)(hl[^"`]*)/g)) expect(m[1], name).toContain('wrap');
+    }
   });
 });

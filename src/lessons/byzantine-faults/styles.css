@@ -6,6 +6,7 @@
 .bz-line { font-size: 13px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
 .bz-line b { color: var(--text); }
 .bz-line .chip { margin-right: 6px; }
+.bz-verdict .chip { white-space: normal; }
 .bz-verdict { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .bz-nodes { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .bz-node {

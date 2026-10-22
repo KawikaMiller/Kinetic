@@ -199,6 +199,14 @@ export function tryEveryBehaviour(n: number): Enumeration {
   return { n, total: all.length, breaking };
 }
 
+/** The rules (by name) that at least one behaviour of an enumeration breaks. */
+export const rulesBrokenIn = (e: Enumeration): ('IC1' | 'IC2')[] =>
+  (['IC1', 'IC2'] as const).filter((name) => e.breaking.some((b) => {
+    const s = setupOf(e.n, b);
+    const v = judge(s, runOm(s));
+    return name === 'IC1' ? !v.ic1 : !v.ic2;
+  }));
+
 /** Which rule broke for a behaviour, in words naming the pair of values the first loyal lieutenant holds. */
 export function breakText(n: number, b: Behaviour): string {
   const s = setupOf(n, b);

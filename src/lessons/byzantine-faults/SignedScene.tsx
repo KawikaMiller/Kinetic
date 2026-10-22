@@ -13,7 +13,8 @@ interface Choice {
   relay: Bit;
   withhold: boolean;
 }
-const DEFAULT_CHOICE: Choice = { traitor: COMMANDER, given: [ATTACK, RETREAT], order: ATTACK, relay: RETREAT, withhold: false };
+/** A traitor lieutenant relaying retreat against a loyal attack order: the case where oral messages break and signed orders hold. */
+const DEFAULT_CHOICE: Choice = { traitor: 1, given: [ATTACK, RETREAT], order: ATTACK, relay: RETREAT, withhold: false };
 
 const TRAITORS = [{ value: COMMANDER, label: 'Commander' }, { value: 1, label: 'L1' }, { value: 2, label: 'L2' }];
 const GIVEN: { value: string; label: string }[] = [{ value: 'none', label: 'nothing' }, { value: '0', label: 'retreat' }, { value: '1', label: 'attack' }];
