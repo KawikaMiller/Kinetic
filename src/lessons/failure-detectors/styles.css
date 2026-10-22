@@ -1,0 +1,20 @@
+/* failure-detectors */
+.fd-stage { gap: 12px; min-width: 0; }
+.fd-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.fd-lane { display: block; width: 100%; height: auto; }
+.fd-axis { stroke: var(--line-2); stroke-width: 1; }
+.fd-axis-text { font: 500 11px var(--mono); fill: var(--muted); }
+.fd-lane-text { font: 600 11px var(--mono); fill: var(--muted); }
+.fd-arrival { stroke: var(--info); stroke-width: 1.5; }
+.fd-bar-false { fill: var(--bad); }
+.fd-bar-true { fill: var(--ok); }
+.fd-pause { fill: color-mix(in srgb, var(--violet) 35%, transparent); stroke: var(--violet); stroke-width: 1; stroke-dasharray: 3 3; }
+.fd-crash { stroke: var(--dim); stroke-width: 2; }
+.fd-mark { stroke: var(--violet); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.fd-pair { display: grid; gap: 10px; }
+.fd-pair-title { font: 600 12px var(--mono); color: var(--muted); margin-bottom: 4px; }
+.fd-verdict { margin: 0; font-size: 13px; line-height: 1.5; }
+.fd-verdict.is-guess { color: var(--bad); }
+.fd-plots { display: flex; flex-wrap: wrap; gap: 14px; }
+.fd-plot { min-width: 0; }
+.fd-swim-grid { display: grid; gap: 4px; font: 500 12.5px var(--mono); }
