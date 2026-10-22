@@ -177,6 +177,6 @@ Item 6 sweep: after the moves `grep -rnE "from '\.\./[a-z0-9-]+/" src/lessons` f
 Left over, cheap but not done here:
 | Request | Where | Why parked |
 |---|---|---|
-| Replace the local exhaustive-string helpers with `core/testing/strings` `stringsUpTo` | `allStrings` / `strings` in core/automata.test.ts, core/automata.pda.test.ts, core/tm.test.ts, lessons/dfa-nfa, grammars-parsing, parsing-algorithms, chomsky-hierarchy and turing-machines tests | test-only duplication; the new helper is used by the moved tests |
+| Replace the local exhaustive-string helpers with `core/testing/strings` `stringsUpTo` | local `allStrings` / `strings` helpers (`grep -rn "function allStrings|function strings" src`) | test-only duplication; the new helper is used by the moved tests |
 | `lessons/regex-engines/engines.ts` `STEP_BUDGET` (100,000) as an option default in `core/regex` | regex-engines, redos | a ReDoS lesson will pick its own budget; revisit when it lands |
 | Per-lesson copies of "no RegExp / eval on learner text" source scans | regex-engines, pushdown-automata, chomsky-hierarchy model tests | one `core/testing` scan helper would serve all three; `core/testing/forbiddenCalls` (kit-L) is the home |
