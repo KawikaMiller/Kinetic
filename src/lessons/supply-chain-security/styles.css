@@ -1,0 +1,12 @@
+.sc-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.sc-block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sc-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.sc-two > * { flex: 1 1 300px; min-width: 0; }
+.sc-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); overflow-wrap: anywhere; }
+.sc-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--muted); }
+.sc-scroll { overflow-x: auto; }
+.sc-matrix th.sc-on { color: var(--violet); }
+.sc-warn { margin: 0; font-size: 13px; color: var(--orange); }
+.sc-error { color: var(--bad); }
+.sc-status { display: block; min-height: 1.2em; }
+.sc-stage ~ .provenance-row { margin: 8px 16px 12px; }
