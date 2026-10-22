@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Hint, Stat, Stats } from '../../components/ui';
 import { layoutCaption, placeAll } from './captions';
 import { CHANGES, PRESETS, SERVICES, TEAMS, isPlaced, layoutFrom, metrics, type Metrics } from './model';
 import type { SceneProps } from './opening';
 import { CapSlider, ConwayChips, PresetChips } from './parts';
 
-const PRESET_KEYS = Object.keys(PRESETS) as (keyof typeof PRESETS)[];
+/** The narrowest width at which the five-column preset table reads; narrower screens scroll it sideways. */
+const PRESET_TABLE_MIN_WIDTH = 440;
+const PRESET_KEYS =Object.keys(PRESETS) as (keyof typeof PRESETS)[];
 
 /** Scene 2: what the numbers say, per team and per change, beside the three presets. */
 export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps) {
@@ -66,6 +69,7 @@ export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps)
             })}
           </tbody>
         </table>
+        <WideRegion minWidth={PRESET_TABLE_MIN_WIDTH}>
         <table className="data-table cw-table">
           <caption>The three presets on four axes: none is best on all of them</caption>
           <thead><tr><th>Layout</th><th>Handoffs</th><th>Interfaces</th><th>Largest load</th><th>Skill peers</th></tr></thead>
@@ -86,6 +90,7 @@ export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps)
             )}
           </tbody>
         </table>
+        </WideRegion>
         <p className="cw-note">
           Skill peers are the fourth axis on purpose: a layered split keeps people with the same skill together, which is why teams are often drawn that way, so it is not a straw man here. It costs handoffs and interfaces instead.
         </p>
