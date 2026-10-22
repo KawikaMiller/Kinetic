@@ -34,7 +34,7 @@ export const cookieFor = (tuple: string, slot: number): number => hash32(`${TOY_
 export const cookieValid = (tuple: string, ackedCookie: number, nowSlot: number): boolean => ackedCookie === cookieFor(tuple, nowSlot) || ackedCookie === cookieFor(tuple, nowSlot - 1);
 
 export interface Entry {
-  kind: 'legit' | 'spoofed';
+  kind: 'legit' | 'flood';
   expires: number;
   /** For a legitimate entry: when its ACK arrives. */
   ackAt: number;
@@ -52,6 +52,9 @@ export interface SynState {
   floodRefused: number;
   /** Legitimate ACKs in flight under cookies (no table entry): when each arrives and when its SYN was sent. */
   acks: { at: number; sent: number }[];
+  /** Cookies put in a SYN-ACK, and ACKs whose cookie the server then checked. Zero without cookies. */
+  cookiesIssued: number;
+  cookiesChecked: number;
 }
 
 export interface SynConfig {
@@ -66,15 +69,26 @@ const free = (table: readonly Entry[], tick: number) => table.filter((e) => e.ex
 export function createSynSim(c: SynConfig): TickSim<SynState> {
   return createTickSim<SynState>({
     seed: c.seed,
-    init: () => ({ tick: 0, table: [], started: 0, completed: 0, dropped: 0, floodSeen: 0, floodRefused: 0, acks: [] }),
+    init: () => ({ tick: 0, table: [], started: 0, completed: 0, dropped: 0, floodSeen: 0, floodRefused: 0, acks: [], cookiesIssued: 0, cookiesChecked: 0 }),
     step: (s, rnd, tick) => {
       let table = free(s.table, tick);
-      let { started, completed, dropped, floodSeen, floodRefused } = s;
+      let { started, completed, dropped, floodSeen, floodRefused, cookiesIssued, cookiesChecked } = s;
       let acks = [...s.acks];
       const cookies = c.mode === 'cookies';
+      // The bug: the cookie handshake is on, but every SYN takes a table entry before any cookie is checked.
+      const allocateFirst = c.mode === 'broken';
 
-      const due = table.filter((e) => e.kind === 'legit' && e.ackAt <= tick).length;
-      completed += due;
+      const dueEntries = table.filter((e) => e.kind === 'legit' && e.ackAt <= tick);
+      for (const e of dueEntries) {
+        if (!allocateFirst) {
+          completed++;
+          continue;
+        }
+        // The held entry makes the ACK checkable, and the cookie is checked only now, after the slot was spent.
+        cookiesChecked++;
+        const tuple = `client-${e.ackAt - RTT_TICKS}`;
+        if (cookieValid(tuple, cookieFor(tuple, Math.floor((e.ackAt - RTT_TICKS) / COOKIE_SLOT_TICKS)), Math.floor(tick / COOKIE_SLOT_TICKS))) completed++;
+      }
       table = table.filter((e) => !(e.kind === 'legit' && e.ackAt <= tick));
       for (const a of acks.filter((x) => x.at <= tick)) {
         const tuple = `client-${a.sent}`;
@@ -87,17 +101,22 @@ export function createSynSim(c: SynConfig): TickSim<SynState> {
       floodSeen += floods;
       for (let i = 0; i < floods; i++) {
         if (cookies) continue;
-        if (table.length < SLOTS) table = [...table, { kind: 'spoofed', expires: tick + HOLD_TICKS, ackAt: Infinity }];
+        if (table.length < SLOTS) table = [...table, { kind: 'flood', expires: tick + HOLD_TICKS, ackAt: Infinity }];
         else floodRefused++;
       }
       if (rnd() < LEGIT_PER_TICK) {
         started++;
-        if (cookies) acks = [...acks, { at: tick + RTT_TICKS, sent: tick }];
-        else if (table.length < SLOTS) table = [...table, { kind: 'legit', expires: tick + HOLD_TICKS, ackAt: tick + RTT_TICKS }];
-        else dropped++;
+        if (cookies) {
+          cookiesIssued++;
+          acks = [...acks, { at: tick + RTT_TICKS, sent: tick }];
+        } else if (table.length < SLOTS) {
+          if (allocateFirst) cookiesIssued++;
+          table = [...table, { kind: 'legit', expires: tick + HOLD_TICKS, ackAt: tick + RTT_TICKS }];
+        } else dropped++;
       }
-      return { tick, table, started, completed, dropped, floodSeen, floodRefused, acks };
+      return { tick, table, started, completed, dropped, floodSeen, floodRefused, acks, cookiesIssued, cookiesChecked };
     },
+    // The invariant for cookies: the table holds nothing. (Not checked in the bug mode: the run must play to the end, and the tests read its history.)
     check: c.mode === 'cookies' ? (s) => (s.table.length > 0 ? `${s.table.length} half-open entries held under cookies` : null) : undefined,
   });
 }

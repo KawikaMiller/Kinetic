@@ -44,6 +44,9 @@ export interface PopsResult {
   overloaded: number[];
 }
 
+/** Legitimate traffic a site served: it drops in proportion when over capacity. */
+const legitServedAt = (legit: number, load: number, capacity: number): number => (load <= capacity ? legit : (legit * capacity) / load);
+
 export function pops(attack: number, legit: number, skewPct: number, extra: number): PopsResult {
   const caps = capacities(extra);
   const w = catchment(skewPct, caps);
@@ -51,11 +54,12 @@ export function pops(attack: number, legit: number, skewPct: number, extra: numb
     const a = attack * w[i];
     const l = legit * w[i];
     const load = a + l;
-    return { capacity, attack: a, legit: l, load, legitServed: load <= capacity ? l : (l * capacity) / load };
+    return { capacity, attack: a, legit: l, load, legitServed: legitServedAt(l, load, capacity) };
   });
   return {
     sites,
-    legitDropped: legit - sites.reduce((acc, s) => acc + s.legitServed, 0),
+    // Summed per site so an uncongested site contributes exactly 0 (a total-minus-served subtraction leaves float residue).
+    legitDropped: sites.reduce((acc, s) => acc + (s.legit - s.legitServed), 0),
     overloaded: sites.flatMap((s, i) => (s.load > s.capacity ? [i] : [])),
   };
 }
@@ -95,8 +99,8 @@ export function createPopsSim(c: PopsRunConfig): TickSim<PopsState> {
   const state = (tick: number, rnd: () => number): PopsState => {
     const { attack, legit } = at(tick, rnd);
     const loads = w.map((share) => (attack + legit) * share);
-    const served = loads.reduce((acc, load, i) => acc + (load <= caps[i] ? legit * w[i] : (legit * w[i] * caps[i]) / load), 0);
-    return { tick, attack, legit, loads, legitDropped: legit - served };
+    const legitDropped = loads.reduce((acc, load, i) => acc + (legit * w[i] - legitServedAt(legit * w[i], load, caps[i])), 0);
+    return { tick, attack, legit, loads, legitDropped };
   };
   return createTickSim<PopsState>({
     seed: c.seed,

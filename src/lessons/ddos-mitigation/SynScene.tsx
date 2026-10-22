@@ -36,8 +36,8 @@ export function SynScene({ picker }: { picker: ReactNode }) {
       actors: [{ id: 'client', label: 'client' }, { id: 'server', label: 'server' }],
       messages: [
         { id: 'syn', from: 'client', to: 'server', label: 'SYN' },
-        { id: 'synack', from: 'server', to: 'client', label: u.mode === 'cookies' ? `SYN-ACK, cookie ${cookie}` : 'SYN-ACK' },
-        { id: 'ack', from: 'client', to: 'server', label: u.mode === 'cookies' ? 'ACK, cookie + 1' : 'ACK' },
+        { id: 'synack', from: 'server', to: 'client', label: u.mode !== 'plain' ? `SYN-ACK, cookie ${cookie}` : 'SYN-ACK' },
+        { id: 'ack', from: 'client', to: 'server', label: u.mode !== 'plain' ? 'ACK, cookie + 1' : 'ACK' },
       ],
     }),
     [u.mode, cookie],
@@ -82,21 +82,21 @@ export function SynScene({ picker }: { picker: ReactNode }) {
           <div className="dd-slots" role="img" aria-label={`${s.table.length} of ${SLOTS} half-open slots in use`}>
             {Array.from({ length: SLOTS }, (_, i) => {
               const e = s.table[i];
-              return <span key={i} className={`dd-slot ${e ? (e.kind === 'spoofed' ? 'is-flood' : 'is-legit') : u.mode === 'cookies' ? 'is-cookie' : 'is-free'}`}>{e ? (e.kind === 'spoofed' ? 'flood' : 'legit') : u.mode === 'cookies' ? 'none kept' : 'free'}</span>;
+              return <span key={i} className={`dd-slot ${e ? (e.kind === 'flood' ? 'is-flood' : 'is-legit') : u.mode === 'cookies' ? 'is-cookie' : 'is-free'}`}>{e ? (e.kind === 'flood' ? 'flood' : 'legit') : u.mode === 'cookies' ? 'none kept' : 'free'}</span>;
             })}
           </div>
         </Box>
         <Box>
-          <SectionTitle hint={u.mode === 'cookies' ? 'the server keeps no state after the SYN-ACK' : 'the server keeps an entry from the SYN'}>The handshake</SectionTitle>
+          <SectionTitle hint={u.mode === 'cookies' ? 'the server keeps no state after the SYN-ACK' : u.mode === 'broken' ? 'cookies are sent, but an entry is taken from the SYN anyway' : 'the server keeps an entry from the SYN'}>The handshake</SectionTitle>
           <WideRegion minWidth={360} label="Handshake ladder: scroll sideways to see all of it">
             <SequenceDiagram actors={ladder.actors} messages={ladder.messages} ariaLabel="A legitimate three-way handshake" />
           </WideRegion>
           <p className="dd-note">
-            Under cookies the sequence number in the SYN-ACK is a toy keyed hash of the four-tuple and a {COOKIE_SLOT_TICKS}-tick time slot; the server recomputes it from the ACK and accepts the current slot or the one before. A source that never answers has no ACK to check, so no state is ever created.
+            Under cookies the sequence number in the SYN-ACK is a toy keyed hash of the four-tuple and a {COOKIE_SLOT_TICKS}-tick time slot; the server recomputes it from the ACK and accepts the current slot or the one before. A source that never answers has no ACK to check, so no state is created, unless a slot is taken before the cookie is checked (the bug mode).
           </p>
         </Box>
         <Hint tone="muted" block>
-          Without cookies, every SYN takes a slot for {HOLD_TICKS} ticks. A flood above {sig(DRAIN_RATE)} a tick keeps the table full and a legitimate SYN finds no room. The flood here is only a rate: nothing is sent.
+          Without cookies, every SYN takes a slot for {HOLD_TICKS} ticks. A flood above {sig(DRAIN_RATE)} a tick leaves the table full much of the time, and the higher it goes the more legitimate SYNs find no room. The flood here is only a rate: nothing is sent.
         </Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={u.seed}>{RUN_TICKS} ticks on core/simTick; the run for this seed ended with {final.dropped} legitimate handshakes refused</Provenance>

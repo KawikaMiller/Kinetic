@@ -5,7 +5,8 @@ import { originCaption, popsCaption, scrubCaption, synCaption } from './captions
 import lesson from './index';
 import { initialOrigin, initialPops, initialSyn } from './init';
 import { DEFENCES, LEGIT_RATE, LOAD_CLASSES, NO_DEFENCE, PRESETS, defaultInput, origin } from './origin';
-import { LEGIT_TOTAL, pops, scoreSet, scrubAt } from './pops';
+import { sig } from '../../core/format';
+import { LEGIT_TOTAL, pops, runPops, scoreSet, scrubAt } from './pops';
 import { MODE_NAME, runSyn, type Mode } from './syn';
 
 const text = expectCaption;
@@ -50,9 +51,14 @@ describe('try-this entries, from the default state, as written', () => {
     const r = pops(p.attack, LEGIT_TOTAL, p.skewPct, p.extra);
     expect(r.overloaded).toEqual([0]);
     expect(Math.round(r.legitDropped)).toBe(165);
-    expect(Math.round(pops(p.attack, LEGIT_TOTAL, 0, p.extra).legitDropped)).toBe(0);
+    // Exactly zero, not a float residue such as 5.68e-14 that would print as 0.0000000000000568.
+    expect(pops(p.attack, LEGIT_TOTAL, 0, p.extra).legitDropped).toBe(0);
+    expect(pops(0, LEGIT_TOTAL, p.skewPct, p.extra).legitDropped).toBe(0);
+    expect(pops(p.attack, LEGIT_TOTAL, p.skewPct, 1000).legitDropped).toBe(0);
+    expect(runPops({ seed: 0, attack: p.attack, skewPct: 0, extra: 0 }).worstDropped).toBe(0);
     expect(lesson.tryThis[2]).toContain('drops 165 Mbit/s');
-    expect(lesson.tryThis[2]).toContain('"Rebalance the catchment": 0');
+    expect(lesson.tryThis[2]).toMatch(/"Rebalance the catchment": 0 Mbit\/s\.$/);
+    expect(sig(0)).toBe('0');
   });
 
   it('try-this 4: a threshold of 0.5 removes 92% of unwanted flows and drops 10% of legitimate ones; 0 drops 100% of both', () => {
@@ -130,6 +136,13 @@ describe('captions say what the model computed', () => {
     const t = text(scrubCaption(p));
     expect(t).toContain(`${p.confusion.tp} caught`);
     expect(t).toContain(`${p.confusion.fp} legitimate flows lost`);
+  });
+
+  it('the origin caption uses the right article and keeps CPU upper-case', () => {
+    const t = text(originCaption(defaultInput('app'), origin(defaultInput('app'))));
+    expect(t).toContain('An application layer stream');
+    expect(t).toMatch(/CPU and database budget saturated/);
+    expect(text(originCaption(defaultInput('volumetric'), origin(defaultInput('volumetric'))))).toContain('A volumetric stream');
   });
 
   it('the handshake caption follows the state at the tick: room, full, refused, or stateless', () => {

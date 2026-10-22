@@ -214,7 +214,31 @@ describe('SYN cookies', () => {
     expect(low.dropped).toBeLessThanOrEqual(1);
   });
 
-  it('plain and broken agree: the bug is that cookies buy nothing when an entry is held anyway', () => {
-    for (let seed = 0; seed < 20; seed++) expect(mode('plain', seed).final).toEqual(mode('broken', seed).final);
+  it('broken mode is a real third path: cookies are issued and checked after the slot is spent, unlike no cookies; same seed, validate-first has none of it', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      const broken = mode('broken', seed).final;
+      const plain = mode('plain', seed).final;
+      const cookies = mode('cookies', seed).final;
+      // The traces differ: only the bug and the fix touch cookies, and only the bug also holds entries.
+      expect(plain.cookiesIssued).toBe(0);
+      expect(plain.cookiesChecked).toBe(0);
+      expect(broken.cookiesIssued).toBeGreaterThan(0);
+      expect(broken.cookiesChecked).toBeGreaterThan(0);
+      expect(broken.cookiesChecked).toBeLessThanOrEqual(broken.cookiesIssued);
+      expect(broken).not.toEqual(plain);
+      // Counterfactual: validating before allocating (cookies) refuses nothing and holds nothing, so the allocation order is the cause.
+      expect(cookies.dropped).toBe(0);
+      expect(broken.dropped).toBeGreaterThan(0);
+      expect(mode('cookies', seed).sim.history.every((x) => x.table.length === 0)).toBe(true);
+      // Every legitimate handshake that got a slot in the bug mode completes, because its cookie is valid: the loss is the refused SYNs.
+      expect(broken.completed + inFlight(broken)).toBe(broken.started - broken.dropped);
+    }
+  });
+
+  it('the bug mode holds entries (violating the held-nothing invariant) on every seed, lowest seed 0', () => {
+    const failing: number[] = [];
+    for (let seed = 0; seed < 200; seed++) if (mode('broken', seed).sim.history.some((x) => x.table.length > 0)) failing.push(seed);
+    expect(failing).toHaveLength(200);
+    expect(failing[0]).toBe(0);
   });
 });
