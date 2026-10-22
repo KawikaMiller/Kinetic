@@ -56,7 +56,9 @@ export function ChangeScene({ picker }: { picker: ReactNode }) {
           <li>The cell (Cooperate, Cooperate) is an equilibrium exactly when both hold: R = {d.R} against T = {d.T}.</li>
         </ul>
         <p className="gt-note">
-          The payoffs are symmetric: the same R, T, S and P for both players. Raising R to {d.T} or more removes the reason to defect from a cooperating partner; (Defect, Defect) then stays an equilibrium while P is at least S, so the game gains a second one.
+          The payoffs are symmetric: the same R, T, S and P for both players. {d.R >= d.T
+            ? `R = ${d.R} is already at or above T = ${d.T}, so a cooperating partner has no reason to defect and (Cooperate, Cooperate) is an equilibrium; (Defect, Defect) stays one while P is at least S, so the game then has a second equilibrium.`
+            : `Raising R to ${d.T} or more would remove the reason to defect from a cooperating partner and make (Cooperate, Cooperate) an equilibrium too.`}
         </p>
       </div>
       <ProvenanceRow>

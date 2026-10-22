@@ -61,7 +61,7 @@ export function EnumScene({ picker }: { picker: ReactNode }) {
         </p>
         {finder === 'rowOnly' && (
           <div className="gt-witness" role="note">
-            <b>The finder that checks only Row fails on {fmt(result.brokenDiffers)} of {fmt(result.total)} games.</b> Smallest instance: {witness.message} Row has nothing to gain there, but Column does.
+            <b>The finder that checks only Row fails on {fmt(result.brokenDiffers)} of {fmt(result.total)} games.</b> An example from the matrix scene: {witness.message} Row has nothing to gain there, but Column does.
           </div>
         )}
       </div>
