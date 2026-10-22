@@ -113,7 +113,7 @@ export function Stage() {
         <Stats>
           <Stat label="Utilisation" value={`${Math.round(rho * 100)}%`} color={rho >= 1 ? 'var(--bad)' : rho >= 0.8 ? 'var(--hi)' : 'var(--ok)'} sub={`${perSec(rate)} in · ${perSec(MU)} capacity`} />
           <Stat label="In queue" value={snap?.queue ?? 0} color={snap && snap.queue > CAP ? 'var(--bad)' : 'var(--info)'} sub={policy === 'bounded' && snap?.pending ? `${snap.pending} waiting upstream` : ' '} />
-          <Stat label="p99 latency" value={snap ? duration(snap.p99) : NA} color={snap && snap.p99 > P99_BAD_S ? 'var(--bad)' : 'var(--ok)'} sub={snap ? `p50 ${duration(snap.p50)}` : ''} />
+          <Stat label="p99 latency" value={snap ? duration(snap.p99) : NA} color={snap && snap.p99 > P99_BAD_S ? 'var(--bad)' : 'var(--ok)'} sub={snap ? `p50 ${duration(snap.p50)} · inside the service` : ''} />
           <Stat label="Crashes" value={snap?.crashes ?? 0} color="var(--bad)" sub={`${snap?.lost ?? 0} requests lost`} />
           <Stat label="Shed (503)" value={snap ? snap.rejectedLow + snap.rejectedHigh : 0} color="var(--violet)" sub={snap ? `${snap.rejectedHigh} high-priority` : ''} />
         </Stats>

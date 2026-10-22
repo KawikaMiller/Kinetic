@@ -65,6 +65,8 @@ export class Pipeline {
   rejectedLow = 0;
   rejectedHigh = 0;
   failedWhileDown = 0;
+  /** When the current policy took over: counters and the stats window start here, so one policy is never measured with another's history. */
+  windowStart = 0;
   completions: { t: number; latency: number }[] = [];
   lSamples: { t: number; n: number; dt: number }[] = [];
   events: ('oom' | 'restart' | 'shedStart' | 'blocked')[] = [];
@@ -202,11 +204,17 @@ export class Pipeline {
     // measure the new policy on its own, not mixed with the old one
     this.completions = [];
     this.lSamples = [];
+    this.crashes = 0;
+    this.lost = 0;
+    this.rejectedLow = 0;
+    this.rejectedHigh = 0;
+    this.failedWhileDown = 0;
+    this.windowStart = this.now;
   }
 
   stats() {
     const now = this.now;
-    const win = Math.min(L_WINDOW_S, Math.max(1, now));
+    const win = Math.min(L_WINDOW_S, Math.max(1, now - this.windowStart));
     const recent = this.completions.filter((c) => c.t > now - win);
     const lats = recent.map((c) => c.latency).sort((a, b) => a - b);
     const total = this.lSamples.reduce((a, s) => a + s.dt, 0);

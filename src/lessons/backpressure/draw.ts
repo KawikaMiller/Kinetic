@@ -6,7 +6,7 @@ import { duration } from '../../core/format';
 import type { Pt } from '../../core/geometry';
 import { clamp01 } from '../../core/math';
 import { alpha, TOKENS as C } from '../../core/palette';
-import { arrivalRate, CAP, HISTORY, ITEM_FADE_S, littleCheck, MEM_LIMIT, mm1Latency, MU, SHED_AT, type Item, type Pipeline, type World } from './sim';
+import { arrivalRate, CAP, HISTORY, ITEM_FADE_S, littleCheck, MEM_LIMIT, mm1Latency, MU, SHED_AT, type Item, type Pipeline, type Policy, type World } from './sim';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -77,7 +77,7 @@ export function createRenderer() {
     positions = next;
 
     drawPipeline(ctx, L, world, positions);
-    drawCurve(ctx, 20, L.bottomTop, Math.max(280, w * 0.46), h - 12, arrivalRate(world) / MU);
+    drawCurve(ctx, 20, L.bottomTop, Math.max(280, w * 0.46), h - 12, arrivalRate(world) / MU, world.p.policy);
     drawLittle(ctx, Math.max(320, w * 0.52), L.bottomTop, w - 20, h - 12, world);
   };
 }
@@ -158,7 +158,7 @@ function drawMemory(ctx: Ctx, L: Layout, p: Pipeline) {
 }
 
 /** The M/M/1 latency curve with a "you are here" dot at the current utilisation. */
-function drawCurve(ctx: Ctx, x0: number, top: number, x1: number, bottom: number, rho: number) {
+function drawCurve(ctx: Ctx, x0: number, top: number, x1: number, bottom: number, rho: number, policy: Policy) {
   text(ctx, 'avg latency vs utilisation (M/M/1 queue)', x0, top, { font: LABEL, align: 'left' });
   const pl = x0 + 34;
   const pt = top + 18;
@@ -196,10 +196,14 @@ function drawCurve(ctx: Ctx, x0: number, top: number, x1: number, bottom: number
   const W = mm1Latency(MU, rho * MU);
   const color = rho >= 1 ? C.bad : rho >= DANGER_UTILISATION ? C.hi : C.ok;
   dot(ctx, xOf(r), yOf(W), 6, color, { glow: 10 });
-  const label = rho >= 1 ? 'you: ∞ (queue grows forever)' : `you: ${Math.round(rho * 100)}% → ${duration(W)}`;
+  const label = rho >= 1 ? saturatedLabel(policy) : `you: ${Math.round(rho * 100)}% → ${duration(W)}`;
   const right = rho > 0.6;
   text(ctx, label, xOf(r) + (right ? -10 : 10), Math.max(pt + 6, yOf(W) - 12), { color, align: right ? 'right' : 'left' });
 }
+
+/** The curve is the unbounded M/M/1 one: under a bounded or shedding policy the queue is capped, so it does not grow forever. */
+export const saturatedLabel = (policy: Policy) =>
+  policy === 'unbounded' ? 'you: ∞ (queue grows forever)' : `you: ∞ on this curve, but the queue is capped at ${CAP}`;
 
 /** Little's Law measured live, plus the p99 history chart. */
 function drawLittle(ctx: Ctx, x0: number, top: number, x1: number, bottom: number, world: World) {

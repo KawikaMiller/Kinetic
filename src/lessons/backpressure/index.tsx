@@ -20,7 +20,7 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `On Unbounded queue, drag Arrival rate to 15/s (the worker does ${MU}/s). Watch the queue, the memory bar and p99: the process runs out of memory within about half a minute.`,
-    `Switch to Bounded + backpressure at the same rate: the producer is told to wait (the In queue stat counts how many wait upstream), the queue stops at ${CAP}, and p99 stays under 5 s instead of climbing.`,
+    `Switch to Bounded + backpressure at the same rate: the producer is told to wait (the In queue stat counts how many wait upstream), the queue stops at ${CAP}, and p99 stays under 5 s instead of climbing (p99 is measured from the moment an item is admitted, so it leaves out the wait upstream that the counter shows).`,
     `Try Load shedding and press Spike ×3. Low-priority work gets a 503 from the moment the queue passes ${SHED_AT}; high-priority work is refused once the queue is full at ${CAP}, and on seed ${DEFAULT_SEED} that does not happen: the Shed stat's high-priority count stays at 0.`,
     'Set the rate to 5, 8 and then 9/s and watch the dot climb the curve to 0.2, 0.5 and 1.0 s. The Little\'s Law line reads λ × W ≈ L with a green tick most of the time; a short 10 s window is noisy, so an occasional miss is noise, not a broken law.',
   ],

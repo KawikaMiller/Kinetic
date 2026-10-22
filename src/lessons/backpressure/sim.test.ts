@@ -255,3 +255,42 @@ describe('the lesson text', () => {
     expect(lesson.summary.what).toContain('queueing-theory');
   });
 });
+
+describe('switching policy measures the new policy on its own', () => {
+  it('clears the crash, loss and shed counters, so Bounded never shows the Unbounded run\'s crash', () => {
+    const w = createWorld(15, 'unbounded', DEFAULT_SEED);
+    advance(w, 60);
+    expect(w.p.stats().crashes, 'the unbounded run at 15/s crashed').toBeGreaterThan(0);
+    expect(w.p.stats().lost).toBeGreaterThan(0);
+    w.p.setPolicy('shed');
+    expect(w.p.stats()).toMatchObject({ crashes: 0, lost: 0 });
+    advance(w, 5);
+    const after = w.p.stats();
+    expect(after.crashes, 'shedding at 15/s never runs out of memory').toBe(0);
+    expect(after.rejectedLow + after.rejectedHigh, 'only what shedding refused since the switch').toBeLessThanOrEqual(Math.ceil(15 * 5 * 2));
+    w.p.setPolicy('bounded');
+    expect(w.p.stats()).toMatchObject({ crashes: 0, lost: 0, rejectedLow: 0, rejectedHigh: 0 });
+  });
+
+  it('reads throughput over the time since the switch, not a full 10 s window that is mostly empty', () => {
+    const w = createWorld(8, 'bounded', DEFAULT_SEED);
+    advance(w, 30);
+    w.p.setPolicy('bounded');
+    advance(w, 4);
+    const throughput = w.p.stats().throughput;
+    // 4 s at 8 arrivals/s into a 10/s worker: about 8/s, and certainly not the ~3/s a 10 s divisor would print.
+    expect(throughput).toBeGreaterThan(5);
+    expect(throughput).toBeLessThan(11);
+  });
+});
+
+describe('the latency-curve dot label', () => {
+  it('says the queue is capped under bounded and shed, and only says it grows forever when it is unbounded', async () => {
+    const { saturatedLabel } = await import('./draw');
+    expect(saturatedLabel('unbounded')).toContain('grows forever');
+    for (const p of ['bounded', 'shed'] as const) {
+      expect(saturatedLabel(p)).not.toContain('grows forever');
+      expect(saturatedLabel(p)).toContain(`capped at ${CAP}`);
+    }
+  });
+});
