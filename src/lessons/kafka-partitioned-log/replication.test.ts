@@ -5,7 +5,8 @@ import {
   replCluster, runChecked, scriptedSetup, seededSetup,
   type ReplConfig, type ReplMsg, type ReplSnapshot, type ReplState, type ScriptedFault,
 } from './replication';
-import { DEFAULT_REPL, effectiveConfig, runRepl, setupFor } from './replView';
+import { sequenceLayout } from '../../core/sequenceLayout';
+import { DEFAULT_REPL, effectiveConfig, runRepl, setupFor, storySequence } from './replView';
 
 const bounds = { until: HORIZON_MS };
 const seeds = (from: number, to: number, config: ReplConfig, faults = true) =>
@@ -201,5 +202,28 @@ describe('acks=0 loses silently, and the lesson says so', () => {
     let losing = 0;
     for (let s = 0; s < 100; s++) if (missingAt({ acks: 0, minIsr: 1, unclean: false }, s) > 0) losing++;
     expect(losing).toBeGreaterThan(50);
+  });
+});
+
+describe('the ladder diagram at every replay time', () => {
+  const STEP_MS = 50;
+  const laidOut = (trace: readonly TraceRow<ReplMsg>[], t: number) => {
+    const seq = storySequence(trace, t, true);
+    return sequenceLayout(seq.actors, seq.messages);
+  };
+
+  it('can always be laid out, including at time 0 before any message has been sent (the Replay to slider at its minimum)', () => {
+    const run = runRepl(DEFAULT_REPL);
+    expect(() => laidOut(run.cluster.trace, 0)).not.toThrow();
+    expect(storySequence(run.cluster.trace, 0, true).actors.length).toBeGreaterThan(0);
+  });
+
+  it('can be laid out at every replay time of every scripted fault set and ack setting', () => {
+    for (const faults of FAULT_SETS) {
+      for (const acks of ACKS) {
+        const run = runRepl({ ...DEFAULT_REPL, schedule: 'scripted', faults, config: { ...DEFAULT_REPL.config, acks } });
+        for (let t = 0; t <= HORIZON_MS; t += STEP_MS) expect(() => laidOut(run.cluster.trace, t), `faults ${faults.join('+')} acks ${acks} t=${t}`).not.toThrow();
+      }
+    }
   });
 });
