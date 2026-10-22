@@ -43,9 +43,9 @@ export type Effect = 'blocks' | 'limits';
 
 /** Per class, the defences that block it and the ones that limit it. A defence not listed does nothing about the class. */
 export const RULES: Record<ClassId, Partial<Record<DefenceId, Effect>>> = {
-  typosquat: { provenance: 'blocks', cooldown: 'limits', 'scripts-off': 'limits', sbom: 'limits' },
+  typosquat: { provenance: 'limits', cooldown: 'limits', 'scripts-off': 'limits', sbom: 'limits' },
   confusion: { scopes: 'blocks', 'pin-lock': 'limits', integrity: 'limits' },
-  maintainer: { provenance: 'blocks', cooldown: 'limits', 'pin-lock': 'limits', sbom: 'limits' },
+  maintainer: { provenance: 'limits', cooldown: 'limits', 'pin-lock': 'limits', sbom: 'limits' },
   'install-script': { 'scripts-off': 'blocks', cooldown: 'limits', 'pin-lock': 'limits' },
   build: { provenance: 'limits', cooldown: 'limits', sbom: 'limits', 'pin-lock': 'limits' },
   'ci-credentials': { provenance: 'limits', sbom: 'limits' },
@@ -53,9 +53,9 @@ export const RULES: Record<ClassId, Partial<Record<DefenceId, Effect>>> = {
 
 /** One line on what a limiting defence does for a class, for the cell's tooltip. */
 export const LIMIT_NOTE: Record<ClassId, Partial<Record<DefenceId, string>>> = {
-  typosquat: { cooldown: 'a brand-new package waits out the window', 'scripts-off': 'nothing runs at install time, though it can still run when used', sbom: 'you can find where it landed afterwards' },
+  typosquat: { provenance: 'an attestation naming an unexpected source repository stands out, but a look-alike built honestly from its own repository has a valid attestation of its own', cooldown: 'a brand-new package waits out the window', 'scripts-off': 'nothing runs at install time, though it can still run when used', sbom: 'you can find where it landed afterwards' },
   confusion: { 'pin-lock': 'the lock keeps the source it resolved from until a deliberate update', integrity: 'a different artifact has a different hash' },
-  maintainer: { cooldown: 'the release waits out the window, and may be pulled first', 'pin-lock': 'the locked version stays until a deliberate update', sbom: 'you can find who has the release' },
+  maintainer: { provenance: 'it says who built the artifact, and a release published through a stolen account can still verify', cooldown: 'the release waits out the window, and may be pulled first', 'pin-lock': 'the locked version stays until a deliberate update', sbom: 'you can find who has the release' },
   'install-script': { cooldown: 'the release waits out the window', 'pin-lock': 'the locked version stays until a deliberate update' },
   build: { provenance: 'it says who built the artifact from which commit, not that the result is benign', cooldown: 'the release waits out the window', sbom: 'you can find who has it', 'pin-lock': 'the locked version stays until a deliberate update' },
   'ci-credentials': { provenance: 'an artifact without an attestation from the real pipeline stands out', sbom: 'you can find who has what was published' },

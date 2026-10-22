@@ -58,13 +58,13 @@ describe('try-this entries, each from the default state', () => {
     expect(lesson.tryThis[1]).toContain('the install is refused');
   });
 
-  it('try-this 3: 0 blocked, 4 limited, 2 open; scopes make 1 blocked; all seven give 4 blocked and 2 limited; tiny-pas is 1 edit from tiny-pad', () => {
+  it('try-this 3: 0 blocked, 4 limited, 2 open; scopes make 1 blocked; all seven give 2 blocked and 4 limited; tiny-pas is 1 edit from tiny-pad', () => {
     expect(FACTS.matrixOpening).toEqual({ blocked: 0, limited: 4, open: 2 });
     expect(FACTS.matrixScopes).toEqual({ blocked: 1, limited: 3, open: 2 });
-    expect(FACTS.matrixAll).toEqual({ blocked: 4, limited: 2, open: 0 });
+    expect(FACTS.matrixAll).toEqual({ blocked: 2, limited: 4, open: 0 });
     expect([FACTS.nameTyped, FACTS.nameNear, FACTS.nameDistance]).toEqual(['tiny-pas', 'tiny-pad', 1]);
     expect(expectCaption(matrixCaption(initialMatrix().defences, initialMatrix().name))).toContain('is 1 edit from tiny-pad');
-    expect(lesson.tryThis[2]).toContain('4 are blocked and 2 only limited');
+    expect(lesson.tryThis[2]).toContain('2 are blocked and 4 only limited');
   });
 
   it('try-this 4: the genuine build passes, a repackaged artifact fails the artifact hash, and 3 of 3 services contain tiny-pad', async () => {
@@ -117,6 +117,11 @@ describe('captions across the control cross product', () => {
         const text = expectCaption(provenanceCaption(checks, passes(checks), query, holders(boms, query), null));
         expect(text).not.toMatch(CLEAN);
         expect(text.includes('Every check passes')).toBe(passes(checks));
+        // a failed check is named as one that did not hold, never printed as if its positive label were the finding
+        for (const c of checks.filter((x) => !x.ok)) {
+          expect(text).toContain('Did not hold: ');
+          expect(text).toContain(c.label);
+        }
       }
     }
     expect(expectCaption(provenanceCaption(null, false, '', [], null))).toContain('Checking');

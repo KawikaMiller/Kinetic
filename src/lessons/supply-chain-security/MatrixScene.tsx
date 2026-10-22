@@ -31,6 +31,9 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
   const { sorted, headerProps } = useSortedRows(rows, { label: (r) => r.label, result: (r) => VERDICT_RANK[r.verdict] });
   const counts = { blocked: rows.filter((r) => r.verdict === 'blocked').length, limited: rows.filter((r) => r.verdict === 'limited').length, open: rows.filter((r) => r.verdict === 'open').length };
   const toggle = (id: DefenceId, value: boolean) => setState((s) => ({ ...s, defences: DEFENCE_ORDER.filter((d) => (d === id ? value : s.defences.includes(d))) }));
+  const limitNotes = CLASS_ORDER.flatMap((cls) =>
+    DEFENCE_ORDER.filter((d) => on.has(d) && RULES[cls][d] === 'limits' && LIMIT_NOTE[cls][d] !== undefined).map((d) => ({ cls, defence: d, note: LIMIT_NOTE[cls][d]! })),
+  );
   const parsed = parseName(state.name);
   const verdict = parsed.ok ? checkName(parsed.value) : null;
   const near = parsed.ok && parsed.value !== '' ? nearest(parsed.value) : [];
@@ -77,17 +80,17 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
       <div className="sc-stage stage-pad">
         <div className="sc-block">
           <SectionTitle>Which defence stops which class (computed from the rules)</SectionTitle>
-          <div className="sc-scroll">
+          <div className="sc-scroll" role="region" aria-label="Defence matrix, scrolls sideways" tabIndex={0}>
             <table className="data-table sc-matrix">
               <thead>
                 <tr>
                   <SortTh {...headerProps('label')}>Class</SortTh>
+                  <SortTh {...headerProps('result')}>Result</SortTh>
                   {DEFENCE_ORDER.map((d) => (
                     <th key={d} className={on.has(d) ? 'sc-on' : undefined}>
                       {DEFENCE_LABEL[d]}
                     </th>
                   ))}
-                  <SortTh {...headerProps('result')}>Result</SortTh>
                 </tr>
               </thead>
               <tbody>
@@ -96,6 +99,10 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
                   return (
                     <tr key={r.id}>
                       <td title={CLASS_IDEA[r.id]}>{r.label}</td>
+                      <td style={{ color: VERDICT_COLOUR[r.verdict] }}>
+                        {r.verdict}
+                        {causes.length > 0 ? ` (${causes.map((c) => DEFENCE_LABEL[c]).join(', ')})` : ''}
+                      </td>
                       {DEFENCE_ORDER.map((d) => {
                         const effect = RULES[r.id][d];
                         const lit = on.has(d) && effect !== undefined;
@@ -105,16 +112,24 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
                           </td>
                         );
                       })}
-                      <td style={{ color: VERDICT_COLOUR[r.verdict] }}>
-                        {r.verdict}
-                        {causes.length > 0 ? ` (${causes.map((c) => DEFENCE_LABEL[c]).join(', ')})` : ''}
-                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+          {limitNotes.length > 0 && (
+            <>
+              <SectionTitle>What the limits that are on do</SectionTitle>
+              <ul className="sc-list">
+                {limitNotes.map((l) => (
+                  <li key={`${l.cls}-${l.defence}`}>
+                    <b>{CLASS_LABEL[l.cls]}</b>, {DEFENCE_LABEL[l.defence]}: {l.note}.
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <ul className="sc-list">
             {CLASS_ORDER.map((c) => (
               <li key={c}>

@@ -53,8 +53,11 @@ export function SpreadScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <Segmented<Policy> label="Policy" value={policy} onChange={(v) => setState((s) => ({ ...s, policy: v }))} options={POLICIES} />
-          <Toggle label="Lockfile written" value={lockWhen === 'after'} onChange={(v) => setState((s) => ({ ...s, lockWhen: v ? 'after' : 'before' }))} off="Before the bad release" on="After it" />
-          <Hint tone="muted">used by the lockfile policy only</Hint>
+          {policy === 'lockfile' ? (
+            <Toggle label="Lockfile written" value={lockWhen === 'after'} onChange={(v) => setState((s) => ({ ...s, lockWhen: v ? 'after' : 'before' }))} off="Before the bad release" on="After it" />
+          ) : (
+            <Hint tone="muted">When the lockfile was written matters only for the lockfile policy: pick it to see the control.</Hint>
+          )}
         </>,
       ]}
     >

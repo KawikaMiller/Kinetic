@@ -6,7 +6,7 @@ import { satisfies } from '../../core/semver';
 import { ancestorsOf, reachableFrom, type Adjacency } from './graph';
 import { TARBALL_BYTES, bytesText, fakeTarball, flipByte, hashBytes, installOutcome } from './integrity';
 import {
-  CLASS_ORDER, DEFENCE_ORDER, RULES, allDefenceSets, causesOf, defenceSet, verdictOf, type ClassId, type DefenceId,
+  CLASS_ORDER, DEFENCE_ORDER, LIMIT_NOTE, RULES, allDefenceSets, causesOf, defenceSet, verdictOf, type ClassId, type DefenceId,
 } from './matrix';
 import { KNOWN_NAMES, MAX_NAME_CHARS, WARN_DISTANCE, checkName, distance, nearest, parseName } from './names';
 import { SCENARIO_ORDER, buildCase, passes, verify, type Attestation } from './provenance';
@@ -157,7 +157,7 @@ describe('integrity with the real SHA-256', () => {
 describe('the defence matrix', () => {
   /** The oracle: per defence, the classes it blocks and the classes it limits. */
   const BLOCKS: Record<DefenceId, ClassId[]> = {
-    'pin-lock': [], integrity: [], scopes: ['confusion'], 'scripts-off': ['install-script'], cooldown: [], provenance: ['typosquat', 'maintainer'], sbom: [],
+    'pin-lock': [], integrity: [], scopes: ['confusion'], 'scripts-off': ['install-script'], cooldown: [], provenance: [], sbom: [],
   };
   const LIMITS: Record<DefenceId, ClassId[]> = {
     'pin-lock': ['confusion', 'maintainer', 'install-script', 'build'],
@@ -165,7 +165,7 @@ describe('the defence matrix', () => {
     scopes: [],
     'scripts-off': ['typosquat'],
     cooldown: ['typosquat', 'maintainer', 'install-script', 'build'],
-    provenance: ['build', 'ci-credentials'],
+    provenance: ['typosquat', 'maintainer', 'build', 'ci-credentials'],
     sbom: ['typosquat', 'maintainer', 'build', 'ci-credentials'],
   };
 
@@ -186,6 +186,23 @@ describe('the defence matrix', () => {
       expect(new Set(CLASS_ORDER.filter((c) => RULES[c][d] === 'blocks'))).toEqual(new Set(BLOCKS[d]));
       expect(new Set(CLASS_ORDER.filter((c) => RULES[c][d] === 'limits'))).toEqual(new Set(LIMITS[d]));
     }
+  });
+
+  it('matches an oracle written per class from what each attack is, not from the rule table: only a source-level fix blocks a class, and a signature never does', () => {
+    // Per class, the defences that can stop it outright, from the class's idea: dependency confusion is a resolution problem
+    // (single-source scopes), a hostile install script is a run-at-install problem (scripts off). A look-alike name, a stolen
+    // maintainer account, a tampered build and a leaked CI credential all produce artifacts that can carry a valid
+    // attestation, so no switch in the list stops them outright.
+    const CAN_BLOCK: Record<ClassId, DefenceId[]> = { typosquat: [], confusion: ['scopes'], maintainer: [], 'install-script': ['scripts-off'], build: [], 'ci-credentials': [] };
+    for (const cls of CLASS_ORDER) {
+      const blockers = DEFENCE_ORDER.filter((d) => RULES[cls][d] === 'blocks');
+      expect(blockers, cls).toEqual(CAN_BLOCK[cls]);
+    }
+    for (const cls of ['typosquat', 'maintainer'] as const) expect(verdictOf(cls, defenceSet('provenance')), cls).toBe('limited');
+  });
+
+  it('every limiting rule has an on-screen explanation, so no limit is explained by a hover tooltip alone', () => {
+    for (const cls of CLASS_ORDER) for (const d of DEFENCE_ORDER) if (RULES[cls][d] === 'limits') expect(LIMIT_NOTE[cls][d], `${cls}/${d}`).toBeTruthy();
   });
 
   it('is monotone: adding a defence never un-blocks or un-limits a class', () => {

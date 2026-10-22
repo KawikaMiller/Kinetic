@@ -36,7 +36,7 @@ export function IntegrityScene({ picker }: { picker: ReactNode }) {
       height={470}
       intro={
         <>
-          {integrityCaption(flipped, checkOn, recorded, actual)} {cooldownCaption(installDay, cooldown)}
+          {integrityCaption(flipped, checkOn, recorded, actual)} Cooldown row, a separate demo that does not change the service counts of scene 1: {cooldownCaption(installDay, cooldown)}
         </>
       }
       introKey={[flipped ?? -1, checkOn, recorded ?? '', actual ?? '', installDay, cooldown]}

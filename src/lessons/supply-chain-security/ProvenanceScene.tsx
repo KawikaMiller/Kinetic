@@ -87,6 +87,7 @@ export function ProvenanceScene({ picker }: { picker: ReactNode }) {
               </tbody>
             </table>
             {result?.artifactHash && <p className="sc-note">Attested artifact hash {shortHash(result.artifactHash)}; the signature is an HMAC under a fake demo key, standing in for a public-key signature.</p>}
+            <p className="sc-note">Real systems of this kind include SLSA build levels, Sigstore signing and npm provenance (see the note below the scene).</p>
             <p className="sc-note">A passing attestation says who built the artifact from which commit. It does not say the code is benign.</p>
           </div>
           <div className="sc-block">

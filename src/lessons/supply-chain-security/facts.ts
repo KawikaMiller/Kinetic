@@ -35,6 +35,7 @@ export const FACTS = {
   openingStatus: releaseStatus({ day: integrity.installDay, cooldown: integrity.cooldown }),
   heldBackStatus: releaseStatus({ day: integrity.installDay, cooldown: 3 }),
   withdrawnStatus: releaseStatus({ day: WITHDRAWN_DAY, cooldown: 0 }),
+  classCount: CLASS_ORDER.length,
   matrixDefences: matrix.defences.length,
   matrixOpening: counts(matrix.defences),
   matrixScopes: counts([...matrix.defences, 'scopes']),

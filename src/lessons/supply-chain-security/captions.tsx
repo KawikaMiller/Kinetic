@@ -109,7 +109,7 @@ export function provenanceCaption(checks: readonly Check[] | null, ok: boolean, 
     ) : ok ? (
       <>Every check passes: this says who built the artifact from which commit, not that the code is benign.</>
     ) : (
-      <>{plural(checks.filter((c) => !c.ok).length, 'check')} failed: {checks.filter((c) => !c.ok).map((c) => c.label).join('; ')}.</>
+      <>{plural(checks.filter((c) => !c.ok).length, 'check')} failed. Did not hold: {checks.filter((c) => !c.ok).map((c) => c.label).join('; ')}.</>
     );
   const sbom = queryError ? (
     <> The name is refused: {queryError}</>
