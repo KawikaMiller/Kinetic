@@ -143,7 +143,7 @@ export function FieldScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="toy">a {p.toString(2).length}-bit field; the group has {singular ? 'no group law' : `${facts.count} points`}: broken instantly. Never copy this code: BigInt arithmetic is not constant-time</Provenance>
-        <ClaimLabel kind="theorem">Hasse: |N - (p + 1)| is at most 2 sqrt(p) (argued, not run here; the page counts N for each curve in the picker)</ClaimLabel>
+        <ClaimLabel kind="theorem">Hasse: |N - (p + 1)| is at most 2 sqrt(p) (argued, not run here; the page counts N for the curve you select, and the tests count it for every curve in the picker)</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
   );

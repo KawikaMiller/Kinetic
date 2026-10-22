@@ -3,7 +3,7 @@ import { Curve, Plot2D, Points, Segments } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import {
-  A_MAX, A_MIN, B_MAX, B_MIN, DEFAULT_REAL, REAL_X, REAL_Y, SINGULAR_REFUSAL, discriminant, integerPoints, isSingularReal, realAdd, realNeg, realOrder,
+  A_MAX, A_MIN, B_MAX, B_MIN, DEFAULT_REAL, REAL_X, REAL_Y, SINGULAR_REFUSAL, discriminant, integerPoints, isSingularReal, realAdd, realNeg, realOrder, REAL_ORDER_LIMIT,
   realPointFloat, realPointText, realWorkingText, type RealCurve, type RealPoint,
 } from './model';
 
@@ -48,6 +48,11 @@ export function RealScene({ picker }: { picker: ReactNode }) {
 
   const intro = singular ? SINGULAR_REFUSAL : P && Q ? realWorkingText(curve, P, Q) : 'This curve has fewer than one integer point in the window: pick another curve.';
   const f = (x: number) => x ** 3 + curve.a * x + curve.b;
+  // labels go to the side away from the other points, so close points do not print on top of each other
+  const px = P ? realPointFloat(P)[0] : 0;
+  const qx = Q ? realPointFloat(Q)[0] : 0;
+  const rx = R ? realPointFloat(R)[0] : 0;
+  const ends = { pLeft: px < qx, qLeft: qx < px, sumLeft: rx < Math.max(px, qx) };
 
   return (
     <StageFrame
@@ -58,7 +63,7 @@ export function RealScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="4a^3 + 27b^2" value={discriminant(curve)} color={singular ? 'var(--bad)' : undefined} sub={singular ? 'zero: refused' : 'not zero: a real elliptic curve'} />
           <Stat label="P + Q" value={singular || !sum ? '–' : realPointText(R)} color={R === null && sum ? 'var(--hi)' : 'var(--ok)'} sub={sum && R === null ? 'the point at infinity O, the identity' : 'exact fractions'} />
-          <Stat label="Order of P" value={order === null ? 'not found' : order} sub={order === null ? 'no multiple up to 12 is O' : 'the smallest m with mP = O'} />
+          <Stat label="Order of P" value={order === null ? 'not found' : order} sub={order === null ? `no multiple up to ${REAL_ORDER_LIMIT + 1} is O: a rational point can have infinite order` : 'the smallest m with mP = O'} />
         </Stats>
       }
       legend={
@@ -123,12 +128,12 @@ export function RealScene({ picker }: { picker: ReactNode }) {
           {R && third && <Segments segments={[{ from: realPointFloat(R), to: realPointFloat(third) }]} tone="dim" dashed />}
           {third && <Points data={[{ x: realPointFloat(third)[0], y: realPointFloat(third)[1] }]} tone="dim" hollow />}
           {pts.length > 0 && <Points data={pts.map((c) => ({ x: realPointFloat(c)[0], y: realPointFloat(c)[1], tone: 'muted' as const, hollow: true, r: 3 }))} />}
-          {R && <Points data={[{ x: realPointFloat(R)[0], y: realPointFloat(R)[1] }]} tone="ok" labels={() => 'P + Q'} />}
-          {Q && <Points data={[{ x: realPointFloat(Q)[0], y: realPointFloat(Q)[1] }]} tone="violet" labels={() => 'Q'} onDrag={snap((k) => setKeys({ ...keys, q: k }))} pointLabel={() => 'Q, drag along the curve'} />}
-          {P && <Points data={[{ x: realPointFloat(P)[0], y: realPointFloat(P)[1] }]} tone="info" labels={() => 'P'} onDrag={snap((k) => setKeys({ ...keys, p: k }))} pointLabel={() => 'P, drag along the curve'} />}
+          {R && <Points data={[{ x: realPointFloat(R)[0], y: realPointFloat(R)[1] }]} tone="ok" labels={() => ({ text: 'P + Q', left: ends.sumLeft })} />}
+          {Q && <Points data={[{ x: realPointFloat(Q)[0], y: realPointFloat(Q)[1] }]} tone="violet" labels={() => ({ text: 'Q', left: ends.qLeft })} onDrag={snap((k) => setKeys({ ...keys, q: k }))} pointLabel={() => 'Q, drag along the curve'} />}
+          {P && <Points data={[{ x: realPointFloat(P)[0], y: realPointFloat(P)[1] }]} tone="info" labels={() => ({ text: 'P', left: ends.pLeft })} onDrag={snap((k) => setKeys({ ...keys, p: k }))} pointLabel={() => 'P, drag along the curve'} />}
         </Plot2D>
         <p className="ec-note">
-          The drawing is a float rendering; every number above and in the caption is an exact fraction from the group-law code. P and Q snap to the curve's points with whole-number coordinates inside the window, so the page can stay exact. Drag a point, press a chip, or use the arrow keys on a focused point.
+          The drawing is a float rendering; every number above and in the caption is an exact fraction from the group-law code. P and Q snap to the curve's points with whole-number coordinates inside the window, so the page can stay exact. The two axes use different scales (y is squeezed about {Math.round((PLOT_W / (REAL_X[1] - REAL_X[0])) / (PLOT_H / (REAL_Y[1] - REAL_Y[0])))} to 1), so slopes look flatter than their stated values. Drag a point, press a chip, or use the arrow keys on a focused point.
         </p>
       </div>
       <ProvenanceRow>

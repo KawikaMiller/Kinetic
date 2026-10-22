@@ -97,13 +97,19 @@ export function realWorkingText(c: RealCurve, P: RealPointOrO, Q: RealPointOrO):
       return `${realPointText(P)} has y = 0, so its tangent is vertical: 2P = O, and P has order 2.`;
     case 'double':
       return `Tangent at ${realPointText(P)}: slope (3x^2 + a) / 2y = ${ratText(s.slope!)}. The line meets the curve again at the reflection of ${sum}, so 2P = ${sum}.`;
-    default:
-      return `Chord through ${realPointText(P)} and ${realPointText(Q)}: slope ${ratText(s.slope!)}. The line meets the curve a third time at the reflection of ${sum}, so P + Q = ${sum}.`;
+    default: {
+      const base = `Chord through ${realPointText(P)} and ${realPointText(Q)}: slope ${ratText(s.slope!)}. The line meets the curve a third time at the reflection of ${sum}, so P + Q = ${sum}.`;
+      const third = realPointText(realNeg(s.result!));
+      const touched = third === realPointText(P) ? 'P' : third === realPointText(Q) ? 'Q' : null;
+      return touched ? `${base} Here that third point is ${touched} itself ${third}: the line is tangent to the curve at ${touched}, so the three intersections are ${touched} twice and the point drawn on the line.` : base;
+    }
   }
 }
 
 /** Order of a real point by repeated addition, or null when no multiple up to `limit` is O (rational points can have infinite order). */
-export function realOrder(c: RealCurve, P: RealPoint, limit = 12): number | null {
+/** The largest multiple tried is REAL_ORDER_LIMIT + 1: realOrder tests mP for m = 1..13. */
+export const REAL_ORDER_LIMIT = 12;
+export function realOrder(c: RealCurve, P: RealPoint, limit = REAL_ORDER_LIMIT): number | null {
   let R: RealPointOrO = P;
   for (let m = 1; m <= limit; m++) {
     if (R === null) return m;
@@ -421,4 +427,40 @@ export const KNOWN_MULTIPLES: readonly bigint[] = [2n, 3n];
 export function p256XPrefix(k: bigint): string {
   const P = mul(P256, k, P256.G).point;
   return P ? P.x.toString(16).padStart(64, '0').slice(0, 8) : 'O';
+}
+
+/* ── the scalar scene's words, derived from the model state ───────────────── */
+
+export const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`;
+
+export interface ScalarText {
+  intro: string;
+  doublings: { value: string | number; sub: string };
+  additions: { value: string | number; sub: string };
+  /** The forward cost line. */
+  forward: string;
+  /** A hint for the broken-rule toggle when it changes nothing (k below 2). */
+  note: string | null;
+}
+
+/** Every sentence and count of the scalar scene for one (rule, k): a failed doubling blanks the counts of the correct rule instead of printing them beside "not on the curve". */
+export function scalarText(rule: DoublingRule, k: bigint): ScalarText {
+  const view = scalarView(k);
+  const broken = mulChecked(rule, k).failure !== null;
+  if (broken) {
+    return {
+      intro: `With the 2 forgotten, ${k}G is not on the curve: the first doubling already goes wrong (shown below).`,
+      doublings: { value: '–', sub: 'the broken rule fails at the first doubling' },
+      additions: { value: '–', sub: 'the broken rule fails at the first doubling' },
+      forward: 'with the broken tangent slope the multiplication stops at its first doubling, so there is no cost to count',
+      note: null,
+    };
+  }
+  return {
+    intro: `${k}G = ${formatPoint(view.point)}: ${plural(view.doublings, 'doubling')} and ${plural(view.additions, 'addition')}, and ${k} mod ${TOY.n} = ${view.reduced} gives the same point.`,
+    doublings: { value: view.doublings, sub: 'left to right over the bits' },
+    additions: { value: view.additions, sub: 'one per 1 bit after the first' },
+    forward: `${plural(view.doublings + view.additions, 'group operation')} for k = ${k}`,
+    note: rule === 'forgot-factor-2' ? 'k = 0 or 1 needs no doubling, so this rule cannot go wrong here: try k = 2 or more.' : null,
+  };
 }

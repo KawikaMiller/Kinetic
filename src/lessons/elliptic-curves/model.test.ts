@@ -5,7 +5,7 @@ import { nodeEcdhPublic } from '../../core/testing/nodeCrypto';
 import {
   FIELD_PRIMES, FORGOT_FACTOR_2_WITNESS, P256_COST, SINGULAR_REFUSAL, claimField, checkGroupLaw, commutativityChecks, curveFacts, discriminant,
   fieldCurve, fieldSum, genericCost, integerPoints, isSingularField, isSingularReal, mulChecked, onRealCurve, p256XPrefix, p256Years, realAdd, realOrder,
-  realPointFloat, realPointText, realWorkingText, scalarView, traceLines, walkToReverse, WALK_REFUSAL, type FieldCurveSpec, type RealCurve,
+  realPointFloat, realPointText, realWorkingText, scalarText, scalarView, plural, REAL_ORDER_LIMIT, traceLines, walkToReverse, WALK_REFUSAL, type FieldCurveSpec, type RealCurve,
 } from './model';
 import { rat, ratText } from './rational';
 
@@ -281,5 +281,52 @@ describe('integer points of the default curve', () => {
   });
   it('the F17 field curve object has the picker values', () => {
     expect(fieldCurve({ p: 17, a: 2, b: 2 }).p).toBe(17n);
+  });
+});
+
+describe('the scalar scene words follow the model state (every k and both rules)', () => {
+  it('walking k = 0..40 x both rules: counts appear only when no doubling failed, the grammar is right, and the toggle note appears exactly when it changes nothing', () => {
+    let states = 0;
+    for (let k = 0n; k <= 40n; k++) {
+      for (const rule of ['correct', 'forgot-factor-2'] as const) {
+        const text = scalarText(rule, k);
+        const failed = mulChecked(rule, k).failure !== null;
+        const all = [text.intro, text.forward, String(text.doublings.value), String(text.additions.value), text.doublings.sub, text.additions.sub, text.note ?? ''].join(' | ');
+        if (failed) {
+          expect(rule).toBe('forgot-factor-2');
+          expect(k >= 2n, `k = ${k}`).toBe(true);
+          expect([text.doublings.value, text.additions.value], `k = ${k}`).toEqual(['–', '–']);
+          expect(text.forward).not.toMatch(/\d+ group operation/);
+          expect(text.intro).toContain('not on the curve');
+        } else {
+          const v = scalarView(k);
+          expect(text.doublings.value).toBe(v.doublings);
+          expect(text.additions.value).toBe(v.additions);
+          expect(text.forward).toBe(`${plural(v.doublings + v.additions, 'group operation')} for k = ${k}`);
+          expect(text.note !== null, `k = ${k} ${rule}`).toBe(rule === 'forgot-factor-2' && k < 2n);
+        }
+        // grammar: never "1 doublings", "1 additions" or "1 group operations"
+        expect(all, `k = ${k} ${rule}`).not.toMatch(/\b1 (doublings|additions|group operations)\b/);
+        states++;
+      }
+    }
+    expect(states).toBe(82);
+    expect(scalarText('correct', 2n).intro).toContain('1 doubling and 0 additions');
+  });
+
+  it('realOrder with limit L finds orders up to L + 1 and not beyond, so the caption says "up to 13" for the default limit of 12', () => {
+    const curve = { a: -2, b: 1 };
+    const P = { x: rat(0n), y: rat(1n) };
+    expect(realOrder(curve, P, 3)).toBe(4);
+    expect(realOrder(curve, P, 2)).toBeNull();
+    expect(REAL_ORDER_LIMIT + 1).toBe(13);
+  });
+
+  it('the opening chord is tangent at P: the caption says so instead of drawing a third point under P', () => {
+    const curve = { a: -2, b: 1 };
+    const text = realWorkingText(curve, { x: rat(0n), y: rat(1n) }, { x: rat(1n), y: rat(0n) });
+    expect(text).toContain('tangent to the curve at P');
+    // by hand: the chord y = 1 - x meets y^2 = x^3 - 2x + 1 where x^3 - x^2 = x^2 (x - 1) = 0: x = 0 twice and x = 1
+    expect(realWorkingText({ a: -1, b: 0 }, { x: rat(0n), y: rat(0n) }, { x: rat(1n), y: rat(0n) })).toContain('P + Q');
   });
 });

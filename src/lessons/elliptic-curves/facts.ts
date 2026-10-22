@@ -13,6 +13,8 @@ const sum = realAdd(real, { x: rat(0n), y: rat(1n) }, { x: rat(1n), y: rat(0n) }
 export const FACTS = {
   toyCount: toy.count,
   toyBits: groupBits(TOY.n),
+  /** The generic square-root method on the toy group: about sqrt(19) = 4.4, rounded. */
+  toyGeneric: Math.round(Math.sqrt(Number(TOY.n))),
   hasseWidth: toy.hasse.width,
   doubleG: formatPoint(add(TOY_F17, g, g)),
   tripleG: formatPoint(mul(TOY_F17, 3n, g).point),

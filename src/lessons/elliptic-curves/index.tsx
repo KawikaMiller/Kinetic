@@ -20,13 +20,13 @@ const lesson: LessonModule = {
   tryThis: [
     `Open Finite field (p = 17, a = 2, b = 2). Click (5, 1), then the same cell again: the page doubles it to ${F.doubleG} and shows slope 13. Click (5, 1), then ${F.doubleG}: the sum is ${F.tripleG}.`,
     `Open Scalar multiplication. The default k = 13 gives ${F.doublings13} doublings, ${F.additions13} additions and ${F.point13}. Press 19: the point at infinity. Press 20: ${F.point20}.`,
-    `Still in Scalar multiplication, read the cost lines: the walk back to k takes at most ${F.toyCount} steps here, while the P-256 line shows about ${F.p256Steps} steps and about ${F.p256Time} at the made-up rate.`,
+    `Still in Scalar multiplication, read the cost lines: the naive walk back to k takes at most ${F.toyCount} steps here (the best generic method about ${F.toyGeneric}), while the P-256 line shows about ${F.p256Steps} steps by that same best method and about ${F.p256Time} at the made-up rate.`,
     `In Chord and tangent, the opening scene with a = -2, b = 1, P = (0, 1) and Q = (1, 0): P + Q is ${F.realSum}. Then set a = 0 and b = 0: the page refuses the curve because it has a sharp point.`,
   ],
   keyIdeas: [
     `One chord-and-tangent rule works over the reals and over a finite field: on the toy curve 2G is ${F.doubleG}, and G + 18G is the point at infinity because the two share an x and have opposite y.`,
     `Scalar multiplication costs about log2(k) doublings and additions (13G takes ${F.doublings13} and ${F.additions13}), while the best generic walk back takes about the square root of the group size.`,
-    `The toy curve is broken at once: its ${F.toyCount} points need up to ${F.toyCount} steps, where the P-256 line shows about ${F.p256Steps}. It shows the law and is not for use.`,
+    `The toy curve is broken at once: its ${F.toyCount} points need up to ${F.toyCount} steps by a naive walk and about ${F.toyGeneric} by the generic method, where P-256 needs about ${F.p256Steps}. It shows the law and is not for use.`,
     `The group law was checked over the ${F.toyCount ** 3} triples of the toy curve (nothing sampled); that covers this curve, and Hasse's bound is a theorem the page names and does not prove.`,
   ],
   quiz: [
