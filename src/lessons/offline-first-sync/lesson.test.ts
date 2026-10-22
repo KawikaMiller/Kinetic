@@ -105,25 +105,25 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(t).toContain('the laptop shows 1 rolled-back edit, and the counter stays 2');
   });
 
-  it('try-this 5: the laptop pushes, most of them lost to the outage with growing gaps; a cap of 30 s sends fewer pushes', () => {
+  it('try-this 5: from the defaults, a 40 s outage with a 2 s cap pushes more and recovers sooner than a 30 s cap', () => {
     const l = initialLoop();
     expect([l.outageSec, l.edits, l.capSec]).toEqual([20, 3, 8]);
     const edits = loopScript(l.edits).map((x) => x.at);
-    const run = runConfig(loopConfig(l, l.seed), loopUntil(l));
-    const attempts = pushAttempts(run.trace, 'laptop', edits);
-    const lost = attempts.filter((a) => a.lost);
-    expect(lost.length).toBeGreaterThan(3);
-    const timerGaps = attempts.filter((a) => a.why === 'timer' && a.lost && a.gap !== null).map((a) => a.gap!);
-    expect(timerGaps[timerGaps.length - 1]).toBeGreaterThan(timerGaps[0]);
-    const acked = ackedAfter(run.trace, 'laptop', LOOP_OUTAGE_FROM_MS + l.outageSec * 1000);
-    expect(acked).not.toBeNull();
-    const run30 = runConfig(loopConfig({ ...l, capSec: 30 }, l.seed), loopUntil({ ...l, capSec: 30 }));
-    const a30 = pushAttempts(run30.trace, 'laptop', edits);
-    expect(a30.length).toBeLessThan(attempts.length);
+    const at = (capSec: number) => {
+      const c = { ...l, outageSec: 40, capSec };
+      const run = runConfig(loopConfig(c, c.seed), loopUntil(c));
+      return { attempts: pushAttempts(run.trace, 'laptop', edits), acked: ackedAfter(run.trace, 'laptop', LOOP_OUTAGE_FROM_MS + 40_000) };
+    };
+    const low = at(2);
+    const high = at(30);
+    expect(low.attempts.length).toBeGreaterThan(high.attempts.length);
+    expect(low.acked!).toBeLessThan(high.acked!);
+    // independent oracle: a push that left the laptop during the outage window is lost, afterwards it is delivered
+    for (const a of low.attempts) expect(a.lost).toBe(a.at >= LOOP_OUTAGE_FROM_MS && a.at < LOOP_OUTAGE_FROM_MS + 40_000);
     const t = lesson.tryThis[4];
-    expect(t).toContain(`pushes ${attempts.length} times and ${lost.length} are lost`);
-    expect(t).toContain(`acknowledged at ${(acked! / 1000).toFixed(1)} s`);
-    expect(t).toContain(`${a30.length} pushes, ${a30.filter((a) => a.lost).length} lost`);
+    expect(t).toContain('set the network outage to 40 s and the retry cap to 2 s');
+    expect(t).toContain(`pushes ${low.attempts.length} times, ${low.attempts.filter((a) => a.lost).length} of them lost`);
+    expect(t).toContain(`acknowledged at ${(low.acked! / 1000).toFixed(1)} s. Raise the cap to 30 s: ${high.attempts.length} pushes, ${high.attempts.filter((a) => a.lost).length} lost, acknowledged at ${(high.acked! / 1000).toFixed(1)} s`);
   });
 });
 
@@ -239,6 +239,37 @@ describe('captions are clean and true for every strategy, example and fault sett
     expect(t).toContain('20 s outage');
     expect(t).toContain('since log position 4');
   });
+  it('the loop caption says the retry waits grew only when the listed waits are non-decreasing, over 100 seeds, four outages and two caps', () => {
+    let grew = 0;
+    let jittery = 0;
+    for (let seed = 0; seed < 100; seed++) for (const outageSec of [10, 20, 30, 40]) for (const capSec of [8, 30]) {
+      const l = { ...initialLoop(), seed, outageSec, capSec };
+      const run = runConfig(loopConfig(l, l.seed), loopUntil(l));
+      const editTimes = loopScript(l.edits).map((x) => x.at);
+      const attempts = pushAttempts(run.trace, 'laptop', editTimes);
+      // oracle from the raw trace: laptop pushes not at an edit time, timer to timer, for the pushes that were dropped
+      const dropped = new Set(run.trace.filter((r) => r.kind === 'drop' && !r.dup).map((r) => r.msgId));
+      const timers = run.trace.filter((r) => r.kind === 'send' && r.from === 'laptop' && r.payload?.type === 'push' && !editTimes.some((e) => Math.abs(e - r.t) < 1));
+      const gaps = timers.flatMap((r, i) => (i > 0 && dropped.has(r.msgId) ? [r.t - timers[i - 1].t] : []));
+      const text = clean(loopCaption(attempts, outageSec, 1000, 0));
+      const listed = text.match(/retries (?:grew|rose only on average[^:]*): ((?:\d+\.\d s(?:, )?)+)/)?.[1]?.split(', ').filter(Boolean) ?? [];
+      expect(listed, `seed ${seed} outage ${outageSec} cap ${capSec}`).toEqual((gaps.length > 1 ? gaps.slice(0, 6) : []).map((g) => `${(g / 1000).toFixed(1)} s`));
+      const nonDecreasing = gaps.every((g, i) => i === 0 || g >= gaps[i - 1]);
+      if (gaps.length > 1) {
+        expect(text.includes('retries grew'), `grew ${seed} ${outageSec} ${capSec}`).toBe(nonDecreasing);
+        if (nonDecreasing) grew++; else jittery++;
+      }
+    }
+    expect(grew).toBeGreaterThan(0);
+    expect(jittery).toBeGreaterThan(0);
+  });
+  it('with no outage the loop caption says none was lost and never mentions a 0 s outage', () => {
+    const l = { ...initialLoop(), outageSec: 0 };
+    const run = runConfig(loopConfig(l, l.seed), loopUntil(l));
+    const t = clean(loopCaption(pushAttempts(run.trace, 'laptop', loopScript(l.edits).map((x) => x.at)), 0, 1000, 0));
+    expect(t).toContain('none was lost');
+    expect(t).not.toContain('0 s outage');
+  });
 });
 
 describe('typed text and limits', () => {
@@ -315,5 +346,40 @@ describe('quiz facts come from the model', () => {
   });
   it('no more than half of the quiz questions have the correct option strictly longest', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
+});
+
+describe('an edit that names an item the device does not hold yet is not turned into something else', () => {
+  const titles = (r: ReturnType<typeof runConfig>) => ['phone', 'laptop', 'server'].flatMap((n) => r.views[n as 'phone'].items.map((i) => i.title));
+
+  it('the blank rename, over the delay, reordering and loss sliders and several seeds: either it is rolled back or it is reported as not made, and no stray item appears', () => {
+    let skippedRuns = 0;
+    let rolledRuns = 0;
+    for (const delay of [10, 500, 1500]) for (const reorder of [0, 750, 1500]) for (const lossPct of [0, 20, 60]) for (const seed of [1, 3, 7, 11]) {
+      const r = runConfig(faultConfig({ ...initialFaults(), delay, reorder, lossPct, blank: true, seed }, seed), FAULTS_UNTIL_MS);
+      const accountedFor = r.laptop.notices.length + r.laptop.skipped.length;
+      expect(accountedFor, `delay ${delay} reorder ${reorder} loss ${lossPct} seed ${seed}`).toBe(1);
+      skippedRuns += r.laptop.skipped.length;
+      rolledRuns += r.laptop.notices.length;
+      expect(titles(r).filter((t) => t !== 'Milk'), 'only Milk was ever added').toEqual([]);
+    }
+    expect(skippedRuns, 'the slow settings do reach the not-made case').toBeGreaterThan(0);
+    expect(rolledRuns, 'and the quick ones the rolled-back case').toBeGreaterThan(0);
+  });
+
+  it('the not-made case says what happened in words and the card shows it', () => {
+    const r = runConfig(faultConfig({ ...initialFaults(), delay: 10, reorder: 1500, lossPct: 20, blank: true, seed: 3 }, 3), FAULTS_UNTIL_MS);
+    const note = r.laptop.skipped[0] ?? r.laptop.notices[0];
+    expect(note).toMatch(/no item to rename yet|rolled back/);
+  });
+
+  it('the random schedules never invent an "Item N" row: an edit with nothing to edit is skipped and counted', () => {
+    let skipped = 0;
+    for (let seed = 0; seed < 200; seed++) {
+      const r = runConfig(scheduleConfig(seed, 'merge', true, 0), HORIZON_MS);
+      expect(titles(r).filter((t) => /^Item \d+$/.test(t ?? ''))).toEqual([]);
+      skipped += r.phone.skipped.length + r.laptop.skipped.length;
+    }
+    expect(skipped).toBeGreaterThan(0);
   });
 });

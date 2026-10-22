@@ -10,13 +10,15 @@ const MARK_WORD: Record<Mark, string> = { pending: 'pending', inflight: 'in flig
  * item; its second argument is the item's position among the live items, which is what an edit names.
  */
 export function ReplicaCard({
-  name, view, mark, offline = false, rolledBack = [], actions, children,
+  name, view, mark, offline = false, rolledBack = [], skipped = [], actions, children,
 }: {
   name: string;
   view: View;
   mark?: (itemId: string) => Mark;
   offline?: boolean;
   rolledBack?: readonly string[];
+  /** Edits the device never made because it had no item to edit yet: shown plainly, not as an error. */
+  skipped?: readonly string[];
   actions?: (item: ItemView, position: number) => ReactNode;
   children?: ReactNode;
 }) {
@@ -56,6 +58,13 @@ export function ReplicaCard({
         <ul className="ofs-conflicts" aria-label={`Conflicts listed on the ${name}`}>
           {view.conflicts.map((c) => (
             <li key={c.text}>{c.text}</li>
+          ))}
+        </ul>
+      )}
+      {skipped.length > 0 && (
+        <ul className="ofs-skipped" aria-label={`Edits not made on the ${name}`}>
+          {skipped.map((n, i) => (
+            <li key={i}>{n}</li>
           ))}
         </ul>
       )}

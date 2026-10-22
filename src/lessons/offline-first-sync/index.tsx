@@ -39,12 +39,13 @@ const faultsOff = runConfig(faultConfig({ ...f0, dedupe: false }, f0.seed), FAUL
 const faultsBlank = runConfig(faultConfig({ ...f0, blank: true }, f0.seed), FAULTS_UNTIL_MS);
 
 const l0 = initialLoop();
-const loopRun = runConfig(loopConfig(l0, l0.seed), loopUntil(l0));
-const loopAttempts = pushAttempts(loopRun.trace, 'laptop', loopScript(l0.edits).map((t) => t.at));
-const loopAcked = ackedAfter(loopRun.trace, 'laptop', LOOP_OUTAGE_FROM_MS + l0.outageSec * 1000);
-const loopCap30 = { ...l0, capSec: 30 };
-const loopRun30 = runConfig(loopConfig(loopCap30, l0.seed), loopUntil(loopCap30));
-const loopAttempts30 = pushAttempts(loopRun30.trace, 'laptop', loopScript(l0.edits).map((t) => t.at));
+const loopAt = (l: typeof l0) => {
+  const run = runConfig(loopConfig(l, l.seed), loopUntil(l));
+  return { attempts: pushAttempts(run.trace, 'laptop', loopScript(l.edits).map((t) => t.at)), acked: ackedAfter(run.trace, 'laptop', LOOP_OUTAGE_FROM_MS + l.outageSec * 1000) };
+};
+const loopLong = { ...l0, outageSec: 40 };
+const loopCap2 = loopAt({ ...loopLong, capSec: 2 });
+const loopCap30 = loopAt({ ...loopLong, capSec: 30 });
 
 const f1 = (ms: number) => (ms / 1000).toFixed(1);
 const items = (r: typeof backRun) => listText(r.views.server);
@@ -71,12 +72,12 @@ const lesson: LessonModule = {
     `In "Conflict strategies" (last write wins, both rename the same item) the replicas ${lww.converged ? 'agree' : 'differ'} on ${listText(lww.views.server)} and ${lww.lost.length} acknowledged edit is lost with ${lww.views.server.conflicts.length} conflicts listed. Press "merge": ${merged.views.server.conflicts.length} conflict listed in orange and ${merged.lost.length} lost. Press "manual": the title reads ${listText(manual.views.server)}. Press "arrival order (broken)": it switches to the seeded random schedule on seed ${BROKEN_SEED_ARRIVAL}, and the replicas end ${arrival.converged ? 'the same' : 'different'}.`,
     `In "Conflict strategies" pick last write wins and press "clock skew 5 minutes": the laptop renamed first, but its clock is ${SKEW_PRESET_S} s ahead, so ${listText(skewed.views.server)} wins. Drag "Laptop clock ahead by" to nothing: the later edit wins, ${listText(unskewed.views.server)}. Switch to merge: the same result either way.`,
     `In "Delivery faults" (20% loss, 40% duplication, deduplicate by id) the counter reads ${faultsOn.views.phone.counter}, ${faultsOn.views.laptop.counter}, ${faultsOn.views.server.counter} for ${new Set(faultsOn.accepted.filter((o) => o.kind === 'inc').map((o) => o.id)).size} increments. Turn deduplication off: ${faultsOff.views.phone.counter}, ${faultsOff.views.laptop.counter}, ${faultsOff.views.server.counter}. Turn it back on and set "Laptop also sends" to a blank rename: the server refuses it, the laptop shows ${faultsBlank.laptop.notices.length} rolled-back edit, and the counter stays ${faultsBlank.views.server.counter}.`,
-    `In "The sync loop" (a ${l0.outageSec} s outage, ${l0.edits} edits, a ${l0.capSec} s cap) the laptop pushes ${loopAttempts.length} times and ${loopAttempts.filter((a) => a.lost).length} are lost; the first push after the outage is acknowledged at ${f1(loopAcked ?? 0)} s. Raise the retry cap to 30 s: ${loopAttempts30.length} pushes, ${loopAttempts30.filter((a) => a.lost).length} lost.`,
+    `In "The sync loop" set the network outage to ${loopLong.outageSec} s and the retry cap to 2 s: the laptop pushes ${loopCap2.attempts.length} times, ${loopCap2.attempts.filter((a) => a.lost).length} of them lost, and the first push after the outage is acknowledged at ${f1(loopCap2.acked ?? 0)} s. Raise the cap to 30 s: ${loopCap30.attempts.length} pushes, ${loopCap30.attempts.filter((a) => a.lost).length} lost, acknowledged at ${f1(loopCap30.acked ?? 0)} s. A high cap sends fewer pushes and notices the network later.`,
   ],
   keyIdeas: [
     'Offline-first is more than caching reads: the device keeps its own copy and an outbox of operations, applies edits at once and syncs later, so the list on screen is the device\'s own.',
     'Last write wins by device clock keeps replicas equal but can drop an edit nothing lists, and with a skewed clock it keeps the device with the later clock, not the later edit.',
-    'In this model, a merge that gives each operation a unique id, orders by causality and lists what it cannot resolve converged and lost no acknowledged edit on 200 seeded schedules; a text merge can still produce words that neither person wrote.',
+    'In this model, a merge that gives each operation a unique id, orders by causality and lists what it cannot resolve gave the same list on the phone, the laptop and the server and lost no acknowledged edit on 200 seeded schedules (the check is that the same operations give the same list, with delivery tested separately); a text merge can still produce words that neither person wrote.',
     'Delivery is at least once, so retries and duplicates are normal: operation ids make a second copy harmless, and a refused operation is rolled back with a notice instead of being quietly reverted.',
   ],
   quiz: [
@@ -103,7 +104,7 @@ const lesson: LessonModule = {
       why: 'The rule compares the timestamps the devices wrote, not real time. A skewed clock makes an earlier edit look later, so it wins and the phone\'s edit is lost.',
     },
     {
-      q: 'A merge keeps every operation under a unique id and lists conflicts. Which problem can still be left?',
+      q: 'A merge keeps each operation under a unique id, the server checks every id, and conflicts are listed. Which problem can still be left?',
       options: [
         'Two edits to one text can both be kept and still read as something neither person wrote',
         'The replicas can end with different lists even after every operation has been delivered',

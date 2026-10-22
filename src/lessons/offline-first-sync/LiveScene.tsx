@@ -67,6 +67,7 @@ export function LiveScene({ picker }: { picker: ReactNode }) {
                 offline={offline(d)}
                 mark={(id) => itemMark(dev, id)}
                 rolledBack={dev.notices}
+                skipped={dev.skipped}
                 actions={(_, pick) => (
                   <>
                     <ChipButton tone="info" onClick={() => setSt((s) => liveRename(s, d, pick))}>rename</ChipButton>

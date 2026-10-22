@@ -55,6 +55,21 @@ export function pushAttempts(trace: readonly TraceRow<Msg>[], device: DeviceId, 
   }));
 }
 
+/**
+ * The waits between one retry-timer push and the next, for the timer pushes the outage swallowed: what backoff changes.
+ * A push set off by an edit is not a retry, so it is left out and the wait is measured timer to timer.
+ */
+export function retryGaps(attempts: readonly Attempt[]): number[] {
+  const gaps: number[] = [];
+  let previous: Attempt | null = null;
+  for (const a of attempts) {
+    if (a.why !== 'timer') continue;
+    if (previous !== null && a.lost) gaps.push(a.at - previous.at);
+    previous = a;
+  }
+  return gaps;
+}
+
 /** The `since` of the first pull a device sent at or after `from`, or null. */
 export function firstPullSince(trace: readonly TraceRow<Msg>[], device: DeviceId, from: number): number | null {
   const r = trace.find((x) => x.kind === 'send' && x.from === device && x.t >= from && x.payload?.type === 'pull');

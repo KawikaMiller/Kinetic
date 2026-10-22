@@ -68,8 +68,8 @@ export function FaultScene({ picker }: { picker: ReactNode }) {
     >
       <div className="ofs-stage stage-pad">
         <div className="ofs-devices ofs-three">
-          <ReplicaCard name="Phone" view={run.views.phone} rolledBack={run.phone.notices} />
-          <ReplicaCard name="Laptop" view={run.views.laptop} rolledBack={run.laptop.notices} />
+          <ReplicaCard name="Phone" view={run.views.phone} rolledBack={run.phone.notices} skipped={run.phone.skipped} />
+          <ReplicaCard name="Laptop" view={run.views.laptop} rolledBack={run.laptop.notices} skipped={run.laptop.skipped} />
           <ReplicaCard name="Server" view={run.views.server} />
         </div>
         <Box>

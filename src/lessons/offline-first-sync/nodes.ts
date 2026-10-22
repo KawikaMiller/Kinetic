@@ -46,6 +46,8 @@ export interface DeviceState {
   sent: ReadonlySet<string>;
   acked: ReadonlySet<string>;
   notices: readonly string[];
+  /** Edits that were never made because the device had no item to edit yet. */
+  skipped: readonly string[];
   rolledBack: readonly Op[];
   airplane: boolean;
   naive: NaiveState;
@@ -94,6 +96,7 @@ function deviceNode(me: DeviceId, o: NodeOptions): DistNode<Msg, NodeState> {
   const sent = new Set<string>();
   const acked = new Set<string>();
   const notices: string[] = [];
+  const skipped: string[] = [];
   const rolledBack: Op[] = [];
   let naive = emptyNaive();
   let airplane = false;
@@ -121,14 +124,15 @@ function deviceNode(me: DeviceId, o: NodeOptions): DistNode<Msg, NodeState> {
     }
     ctx.send('server', { type: 'pull', since: cursor });
   };
-  const makeOp = (action: Action, wall: number): Op => {
+  /** The operation an edit makes, or null when it names an item and this device has none yet (nothing to edit). */
+  const makeOp = (action: Action, wall: number): Op | null => {
+    const visible = localView(o.strategy, log, naive).items.filter((i) => !i.deleted);
+    if (action.kind !== 'add' && action.kind !== 'inc' && visible.length === 0) return null;
     seq++;
     lamport++;
-    const visible = localView(o.strategy, log, naive).items.filter((i) => !i.deleted);
     const head = { id: `${me}:${seq}`, device: me, seq, lamport, wall, observed: idsOf(log) };
     if (action.kind === 'inc') return { ...head, kind: 'inc' };
     if (action.kind === 'add') return { ...head, kind: 'add', title: action.title };
-    if (visible.length === 0) return { ...head, kind: 'add', title: `Item ${seq}` };
     const item = visible[action.pick % visible.length];
     if (action.kind === 'rename') return { ...head, kind: 'rename', item: item.id, title: action.title };
     if (action.kind === 'tick') return { ...head, kind: 'tick', item: item.id, done: !item.done };
@@ -142,6 +146,10 @@ function deviceNode(me: DeviceId, o: NodeOptions): DistNode<Msg, NodeState> {
       if (m.type === 'edit') {
         airplane = offlineAt(ctx.trueNow);
         const op = makeOp(m.action, ctx.now());
+        if (op === null) {
+          skipped.push(`the ${me} had no item to ${m.action.kind === 'rename' ? 'rename' : m.action.kind === 'tick' ? 'tick' : 'delete'} yet, so that edit was not made`);
+          return;
+        }
         take(op);
         outbox.push(op.id);
         flush(ctx);
@@ -182,7 +190,7 @@ function deviceNode(me: DeviceId, o: NodeOptions): DistNode<Msg, NodeState> {
       }
       ctx.setTimer('sync', delayFor(airplane ? 0 : attempt));
     },
-    snapshot: (): DeviceState => ({ role: 'device', id: me, log, ids, outbox, sent, acked, notices, rolledBack, airplane, naive, attempt, cursor }),
+    snapshot: (): DeviceState => ({ role: 'device', id: me, log, ids, outbox, sent, acked, notices, skipped, rolledBack, airplane, naive, attempt, cursor }),
   };
 }
 

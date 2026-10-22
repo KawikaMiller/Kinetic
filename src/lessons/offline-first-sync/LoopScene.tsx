@@ -62,14 +62,14 @@ export function LoopScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Slider label="Network outage" value={st.outageSec} min={LOOP_LIMITS.outageSec.min} max={LOOP_LIMITS.outageSec.max} step={LOOP_LIMITS.outageSec.step} format={(n) => (n === 0 ? 'none' : `${n} s`)} onChange={(outageSec) => patch({ outageSec })} />
-          <Slider label="Edits made during it" value={st.edits} min={LOOP_LIMITS.edits.min} max={LOOP_LIMITS.edits.max} step={LOOP_LIMITS.edits.step} onChange={(edits) => patch({ edits })} />
+          <Slider label="Edits the laptop makes" value={st.edits} min={LOOP_LIMITS.edits.min} max={LOOP_LIMITS.edits.max} step={LOOP_LIMITS.edits.step} onChange={(edits) => patch({ edits })} />
           <Slider label="Retry cap" value={st.capSec} min={LOOP_LIMITS.capSec.min} max={LOOP_LIMITS.capSec.max} step={LOOP_LIMITS.capSec.step} format={(n) => `${n} s`} onChange={(capSec) => patch({ capSec })} />
         </>,
       ]}
     >
       <div className="ofs-stage stage-pad">
         <Box>
-          <SectionTitle hint="the laptop's pushes, from the trace: the first retry waits about a second and each wait doubles until the cap, with jitter">Retry with backoff</SectionTitle>
+          <SectionTitle hint="the laptop's pushes, from the trace: the first retry waits about a second; the longest a wait can be doubles until the cap, and jitter takes up to half of it off">Retry with backoff</SectionTitle>
           <div className="ofs-scroll" role="region" aria-label="The laptop's push attempts" tabIndex={0}>
             <table className="data-table ofs-table">
               <thead>

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { STRATEGIES, type Strategy, type View } from './ops';
 import type { Attempt } from './status';
-import { countMarks } from './status';
+import { countMarks, retryGaps } from './status';
 import type { Run } from './runs';
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -108,11 +108,13 @@ export function faultCaption(run: Run, dedupe: boolean): ReactNode {
 export function loopCaption(attempts: Attempt[], outageSec: number, ackedAt: number | null, since: number | null): ReactNode {
   if (attempts.length === 0) return <>The laptop never pushed: it made no edit.</>;
   const lost = attempts.filter((a) => a.lost).length;
-  const gaps = attempts.filter((a) => a.gap !== null && a.why === 'timer' && a.lost).map((a) => s1(a.gap as number));
+  const gaps = retryGaps(attempts);
+  const grew = gaps.every((g, i) => i === 0 || g >= gaps[i - 1]);
+  const shown = `${gaps.slice(0, 6).map(s1).join(', ')}${gaps.length > 6 ? ', ...' : ''}`;
   return (
     <>
-      The laptop pushed {plural(attempts.length, 'time')}; <span className="hl bad">{lost} {lost === 1 ? 'was' : 'were'} lost</span> to the {outageSec} s outage
-      {gaps.length > 0 ? <>, and the retry gaps grew: {gaps.slice(0, 6).join(', ')}{gaps.length > 6 ? ', ...' : ''}</> : null}.{' '}
+      The laptop pushed {plural(attempts.length, 'time')}
+      {outageSec === 0 ? <>; with no outage <span className="hl ok">none was lost</span>.</> : <>; <span className="hl bad">{lost} {lost === 1 ? 'was' : 'were'} lost</span> to the {outageSec} s outage{gaps.length > 1 ? (grew ? <>, and the waits between retries grew: {shown}</> : <>, and the waits between retries rose only on average, because jitter takes up to half of each: {shown}</>) : null}.</>}{' '}
       {ackedAt === null ? 'No push was acknowledged in this run.' : <>The first push after the outage was <span className="hl ok">acknowledged at {s1(ackedAt)}</span>{since !== null ? <>, and the next pull asked for everything since log position {since}</> : null}.</>}
     </>
   );
