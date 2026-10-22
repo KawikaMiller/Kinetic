@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { CodePanel } from '../../components/CodePanel';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
@@ -18,6 +18,7 @@ export function OwnScene({ picker }: { picker: ReactNode }) {
   const bad = new Set(verdict.problems.map((p) => p.line));
   const freed = freedAt(program);
   const full = program.length >= MAX_LINES;
+  const codeRef = useRef<HTMLDivElement>(null);
 
   const add = (l: Line) => {
     if (full) return;
@@ -27,6 +28,8 @@ export function OwnScene({ picker }: { picker: ReactNode }) {
   const remove = (i: number) => {
     setProgram(program.filter((_, k) => k !== i));
     setPreset(null);
+    // The last line's button unmounts with it: hand focus to the line now last, not the body.
+    if (i === program.length - 1 && i > 0) requestAnimationFrame(() => codeRef.current?.querySelectorAll<HTMLElement>('.code-line')[i - 1]?.focus());
   };
 
   return (
@@ -68,7 +71,7 @@ export function OwnScene({ picker }: { picker: ReactNode }) {
         </>,
       ]}
     >
-      <div className="rc-stage stage-pad">
+      <div className="rc-stage stage-pad" ref={codeRef}>
         <CodePanel
           className="rc-code"
           title="A toy program (shown, not run)"

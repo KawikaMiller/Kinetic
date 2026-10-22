@@ -117,7 +117,7 @@ export function Stage() {
               ]}
             />
           )}
-          <Button variant="primary" onClick={addShard} disabled={added}>
+          <Button variant="primary" onClick={addShard} softDisabled={added}>
             + Add a shard
           </Button>
         </Controls>
