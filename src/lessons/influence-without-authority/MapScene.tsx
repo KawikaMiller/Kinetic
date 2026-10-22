@@ -3,10 +3,10 @@ import { GraphView } from '../../components/GraphView';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
-import { ledgerLine, mapCaption, outcomeText, signed } from './captions';
+import { againstSub, ledgerLine, mapCaption, outcomeText, signed } from './captions';
 import {
   ANGLES, EMPTY_PLAN, FOURTH_REFUSED, MAX_CONVERSATIONS, NATURAL_PLANS, POSITION_MAX, SIX_SLOT_PLAN, STAKEHOLDERS, SUPPORT_TO_PASS, VETO_INFLUENCE, VETO_POSITION,
-  isUsed, planText, runPlan, searchPlans, stakeholderOf, startPositions,
+  isUsed, matchedPlan, planNames, planText, runPlan, searchPlans, stakeholderOf, startPositions,
   type Angle, type Outcome, type Slot, type StakeholderId,
 } from './model';
 import type { PlanState, SceneProps } from './opening';
@@ -24,6 +24,8 @@ const NONE = 'none';
 const PERSON_OPTIONS = [{ value: NONE, label: 'Nobody' }, ...STAKEHOLDERS.map((s) => ({ value: s.id as string, label: s.name }))];
 const ANGLE_OPTIONS = [{ value: NONE, label: 'No angle' }, ...ANGLES.map((a) => ({ value: a.id as string, label: a.label }))];
 const START = startPositions();
+/** The best plan's three people with Dana first: shows how much order alone is worth. */
+const DANA_FIRST = matchedPlan(['dana', 'eli', 'gus']);
 
 const toneOf = (position: number) => (position >= 1 ? 'ok' : position <= VETO_POSITION ? 'bad' : 'dim');
 const resultText = (out: Outcome): string => (out.pass ? 'passes' : 'fails');
@@ -39,7 +41,8 @@ export function MapScene({ picker, state, onState }: SceneProps & { state: PlanS
   const rows = [
     { id: 'none', label: 'No conversations', plan: EMPTY_PLAN, note: '' },
     ...NATURAL_PLANS.map((p) => ({ id: p.id, label: p.label, plan: p.plan, note: '' })),
-    { id: 'best', label: `The best of all ${search.total.toLocaleString('en-US')} three-slot plans`, plan: search.bestPlans[0], note: `${search.bestPlans.length} plans reach it; ${search.passing} of ${search.total.toLocaleString('en-US')} plans pass` },
+    { id: 'best', label: `The best of all ${search.total.toLocaleString('en-US')} three-slot plans (one of ${search.bestPlans.length} that tie)`, plan: search.bestPlans[0], note: `the tie is ${search.bestPlans.map(planNames).join('; ')}; ${search.passing} of ${search.total.toLocaleString('en-US')} plans pass` },
+    { id: 'order', label: `The same three people as the best plan, Dana first: order alone costs ${search.best - runPlan(DANA_FIRST).score} points`, plan: DANA_FIRST, note: '' },
     { id: 'six', label: 'Extension: all six people, each on their own concern', plan: SIX_SLOT_PLAN, note: `${SIX_SLOT_PLAN.length} conversations, more than the ${MAX_CONVERSATIONS} you have` },
   ];
 
@@ -51,7 +54,7 @@ export function MapScene({ picker, state, onState }: SceneProps & { state: PlanS
       stats={
         <Stats>
           <Stat label="Weighted support" value={state.ran ? out.score : '–'} color={state.ran ? (out.score >= SUPPORT_TO_PASS ? 'var(--ok)' : 'var(--bad)') : undefined} sub={`needs ${SUPPORT_TO_PASS}: the sum of influence x position`} />
-          <Stat label="Against" value={state.ran ? (out.vetoes.length ? out.vetoes.map((id) => stakeholderOf(id).name).join(', ') : 'nobody') : '–'} sub={`influence ${VETO_INFLUENCE} or more at −1 or below`} />
+          <Stat label="Room leaders against" value={state.ran ? (out.vetoes.length ? out.vetoes.map((id) => stakeholderOf(id).name).join(', ') : 'nobody') : '–'} sub={state.ran ? againstSub(out) : `influence ${VETO_INFLUENCE} or more at −1 or below`} />
           <Stat label="The meeting" value={state.ran ? resultText(out) : 'not run'} color={state.ran ? (out.pass ? 'var(--ok)' : 'var(--bad)') : undefined} sub={state.ran ? 'by the rules below' : 'press Run the meeting'} />
         </Stats>
       }

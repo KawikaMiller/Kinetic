@@ -3,12 +3,12 @@ import { choose, dominatedChoices, enumeratePaths, redMeters, startWalk, validat
 import { expectCaption } from '../../core/testing/captions';
 import { INFLUENCE } from '../../core/testing/leadScenarios';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { ledgerLine, mapCaption, outcomeText, storyCaption } from './captions';
+import { againstSub, ledgerLine, mapCaption, outcomeText, storyCaption } from './captions';
 import { FACTS } from './facts';
 import lesson from './index';
 import { LEAVES_OUT } from './leaves';
 import {
-  ANGLES, EMPTY_PLAN, FOURTH_REFUSED, MAX_CONVERSATIONS, NATURAL_PLANS, STAKEHOLDERS, matchedPlan, openingStats, runPlan, searchPlans, type Slot,
+  ANGLES, EMPTY_PLAN, FOURTH_REFUSED, MAX_CONVERSATIONS, NATURAL_PLANS, STAKEHOLDERS, matchedPlan, openingStats, orderingScores, planNames, runPlan, searchPlans, type Slot,
 } from './model';
 import { OPENING } from './opening';
 import { MEETING, METER, METERS } from './scenario';
@@ -114,7 +114,7 @@ describe('the meeting story', () => {
   const paths = () => enumeratePaths(MEETING);
   const final = (ids: string[]) => walkTo(ids).meters;
 
-  it('has the fixture graph and meters; one effect is retuned from it (concede takes 1 week, not 2) and the rest are the fixture\'s', () => {
+  it('has the fixture graph, meters and effects exactly (the fixture carries the one-week concede retune)', () => {
     expect(MEETING.start).toBe(INFLUENCE.start);
     expect(MEETING.meters.map((m) => [m.id, m.start, m.min, m.max, m.bad])).toEqual(INFLUENCE.meters.map((m) => [m.id, m.start, m.min, m.max, m.bad]));
     const differences: string[] = [];
@@ -122,7 +122,8 @@ describe('the meeting story', () => {
       expect(node.choices.map((c) => [c.id, c.to])).toEqual(INFLUENCE.nodes[i].choices.map((c) => [c.id, c.to]));
       node.choices.forEach((c, j) => { if (JSON.stringify(c.effects) !== JSON.stringify(INFLUENCE.nodes[i].choices[j].effects)) differences.push(c.id); });
     }
-    expect(differences).toEqual(['concede']);
+    expect(differences).toEqual([]);
+    expect(MEETING.nodes[1].choices[1].effects).toEqual({ support: 3, trust: 1, weeks: 1, scope: -20 });
     expect(MEETING.endings.map((e) => e.id)).toEqual(INFLUENCE.endings.map((e) => e.id));
   });
 
@@ -133,13 +134,15 @@ describe('the meeting story', () => {
     expect(paths()).toHaveLength(8);
   });
 
-  it('the fixture\'s two beaten paths are beaten only because concede took two weeks: with the retune push > concede saves a week and costs trust and scope', () => {
+  it('push > concede > pilot is a real trade against ask > pilot: it saves a week and costs trust and scope (at two weeks it was beaten on every meter)', () => {
     const viaPush = final(['push', 'concede', 'pilot']);
     const viaAsk = final(['ask', 'pilot']);
     expect(viaPush[METER.weeks]).toBeLessThan(viaAsk[METER.weeks]);
     expect(viaPush[METER.trust]).toBeLessThan(viaAsk[METER.trust]);
     expect(viaPush[METER.scope]).toBeLessThan(viaAsk[METER.scope]);
-    expect(validateScenario(INFLUENCE, { tradeoffs: true }).map((p) => p.kind)).toEqual(['dominated-path', 'dominated-path']);
+    const atTwoWeeks = { ...MEETING, nodes: MEETING.nodes.map((n) => (n.id === 'm2' ? { ...n, choices: n.choices.map((c) => (c.id === 'concede' ? { ...c, effects: { ...c.effects, weeks: 2 } } : c)) } : n)) };
+    expect(validateScenario(atTwoWeeks, { tradeoffs: true }).map((p) => p.kind)).toEqual(['dominated-path', 'dominated-path']);
+    expect(validateScenario(INFLUENCE, { tradeoffs: true })).toEqual([]);
   });
 
   it('has the hand-worked ending ledgers (start 12 / 6 / 0 / 100 / 10)', () => {
@@ -203,8 +206,8 @@ describe('the text quotes what the model computes', () => {
     expect(NATURAL_PLANS).toHaveLength(2);
   });
 
-  it('has an "it depends" question that names who listens to whom, and the numeric answer is 15', () => {
-    expect(lesson.quiz[1].options[lesson.quiz[1].answer]).toContain('It depends on who listens to whom');
+  it('has a question on what must come before Dana, and the numeric answer is 15', () => {
+    expect(lesson.quiz[1].options[lesson.quiz[1].answer]).toContain('because Dana listens to him');
     expect(lesson.quiz[3].options[lesson.quiz[3].answer]).toContain('15, which is enough');
     expect(FACTS.six).toBe(28);
   });
@@ -212,5 +215,64 @@ describe('the text quotes what the model computes', () => {
   it('the leaves-out panel says what the numbers are, and nothing in it is a claim about real people', () => {
     expect(LEAVES_OUT.plain).toContain('arithmetic of ordering, not evidence about people');
     expect(LEAVES_OUT.missing).toHaveLength(4);
+  });
+});
+
+describe('who you talk to versus the order (the headline claim, walked on the model)', () => {
+  const GDE = ['gus', 'dana', 'eli'] as const;
+  it('the six orderings of Gus, Dana and Eli score 15, 15, 13, 13, 15, 13 and all pass: order is worth 2 points, and Gus before Dana is what reaches 15', () => {
+    const scores = Object.fromEntries(orderingScores([...GDE]).map((o) => [o.order.join('>'), [o.score, o.pass]]));
+    expect(scores).toEqual({
+      'gus>dana>eli': [15, true], 'gus>eli>dana': [15, true], 'dana>gus>eli': [13, true], 'dana>eli>gus': [13, true], 'eli>gus>dana': [15, true], 'eli>dana>gus': [13, true],
+    });
+    expect([FACTS.orderMin, FACTS.orderMax, FACTS.ordersPassing, FACTS.ordersAtBest, FACTS.gusBeforeDanaIsBest]).toEqual([13, 15, 6, 3, true]);
+  });
+
+  it('swapping Fay for Gus, a change of who, moves 5 to 15; 844 of the 856 passing plans contain Gus', () => {
+    expect([FACTS.natural, FACTS.gusPlan]).toEqual([5, 15]);
+    expect(FACTS.withGus).toBe(844);
+    const text = [lesson.summary.tldr, ...lesson.keyIdeas].join(' ');
+    expect(text).not.toMatch(/order of three conversations changes/);
+    expect(lesson.keyIdeas[1]).toContain('844 of the 856');
+    expect(lesson.keyIdeas[1]).toContain('Order is worth 2 points');
+    expect(lesson.summary.tldr).toContain('swapping Fay for Gus takes a plan from 5 to 15');
+  });
+
+  it('the page row of the best plan names the whole tie, which includes an Eli-first plan, so "Gus first" is not claimed of the best', () => {
+    expect(searchPlans().bestPlans.map(planNames).sort()).toEqual(['Eli, Gus, Dana', 'Gus, Dana, Eli', 'Gus, Eli, Dana']);
+    expect(lesson.keyIdeas.join(' ')).not.toMatch(/open with Gus/);
+  });
+});
+
+describe('a mismatched pitch (the claim, walked on the model)', () => {
+  it('does not move that person, but any conversation spares them R3 (Dana on cost x3 is -17, not -22) and Gus on the wrong angle still lifts Dana and Eli', () => {
+    const wrong = runPlan([dana('cost'), dana('cost'), dana('cost')]);
+    expect(wrong.final.dana).toBe(-1);
+    expect(wrong.score).toBe(-17);
+    expect(runPlan(EMPTY_PLAN).final.dana).toBe(-2);
+    const gus = runPlan([{ who: 'gus', angle: 'cost' }]);
+    expect([gus.before.dana, gus.before.eli]).toEqual([0, 1]);
+    expect(FACTS.gusDanaEliAllCost).toBe(2);
+    const text = [lesson.summary.tldr, lesson.summary.why, ...lesson.summary.useCases, ...lesson.keyIdeas, ...lesson.tryThis].join(' ');
+    expect(text).not.toMatch(/moves nobody\.|moves nobody:|spent for nothing|nothing moves for her|conversations are spent/);
+    expect(lesson.keyIdeas[2]).toContain('anyone you spoke with escapes the surprise drop');
+  });
+
+  it('most passing plans include a mismatched slot, so a wrong-angle conversation is not a wasted one', () => {
+    const options = STAKEHOLDERS.flatMap((s) => ANGLES.map((a) => ({ who: s.id, angle: a.id })));
+    let mismatchedPassing = 0;
+    for (const a of options) for (const b of options) for (const c of options) {
+      const plan = [a, b, c];
+      if (runPlan(plan).pass && plan.some((x) => x.angle !== STAKEHOLDERS.find((t) => t.id === x.who)!.concern)) mismatchedPassing += 1;
+    }
+    expect(mismatchedPassing).toBe(804);
+  });
+});
+
+describe('the "Room leaders against" label', () => {
+  it('names Hana and Ivo at -1 after the passing Gus, Dana, Eli run, when no room leader is against', () => {
+    const out = runPlan(matchedPlan(['gus', 'dana', 'eli']));
+    expect(out.vetoes).toEqual([]);
+    expect(againstSub(out)).toBe('influence 4 or more at −1 or below; also at −1 or below: Hana and Ivo');
   });
 });

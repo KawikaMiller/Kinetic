@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ScenarioStory } from '../../components/ScenarioStory';
 import { StageFrame } from '../../components/StageFrame';
-import { ClaimLabel, Legend, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Legend, Provenance, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { redMeters, startWalk, validateScenario } from '../../core/scenario';
 import { storyCaption } from './captions';
@@ -43,7 +43,7 @@ export function StoryScene({ picker }: SceneProps) {
           onWalk={setWalk}
           provenance={PROVENANCE_NOTE}
           claimOf={(id) => CLAIM_OF[id]}
-          notes={<ClaimLabel kind="view">no ending here is marked correct: each one shows what it cost, and escalating or waiting are defensible when speed or time is the point</ClaimLabel>}
+          notes={<><Provenance kind="invented">every effect in this scene is an authored number, not a measurement; one was set so that no path is beaten on every meter (conceding after pushing takes one week, not the two that asking first takes), and the support meter is a separate invented scale from the plan score in the first scene</Provenance><ClaimLabel kind="view">no ending here is marked correct: each one shows what it cost, and escalating or waiting are defensible when speed or time is the point</ClaimLabel></>}
           endingHint={ENDING_HINT}
         />
       </div>

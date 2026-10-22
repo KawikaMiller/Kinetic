@@ -192,6 +192,34 @@ export function openingStats(): Record<StakeholderId, { best: number; passing: n
   return stats;
 }
 
+/** Every ordering of the same people, each on their own concern, with its score. */
+export function orderingScores(ids: readonly StakeholderId[]): { order: StakeholderId[]; score: number; pass: boolean }[] {
+  const out: { order: StakeholderId[]; score: number; pass: boolean }[] = [];
+  const walk = (rest: StakeholderId[], done: StakeholderId[]): void => {
+    if (rest.length === 0) {
+      const o = runPlan(matchedPlan(done));
+      out.push({ order: done, score: o.score, pass: o.pass });
+      return;
+    }
+    rest.forEach((id, i) => walk([...rest.slice(0, i), ...rest.slice(i + 1)], [...done, id]));
+  };
+  walk([...ids], []);
+  return out;
+}
+
+/** Among the passing three-slot plans: how many include a conversation with this person, anywhere. */
+export function passingWith(id: StakeholderId): number {
+  const options: Slot[] = STAKEHOLDERS.flatMap((s) => ANGLES.map((a) => ({ who: s.id, angle: a.id })));
+  let n = 0;
+  for (const a of options) for (const b of options) for (const c of options) {
+    if ((a.who === id || b.who === id || c.who === id) && runPlan([a, b, c]).pass) n += 1;
+  }
+  return n;
+}
+
+/** The people in a plan, in order: "Gus, Dana, Eli". */
+export const planNames = (plan: readonly Slot[]): string => plan.filter(isUsed).map((s) => stakeholderOf(s.who).name).join(', ');
+
 /** A plan in words: "Gus on credibility, then Dana on workload". */
 export function planText(plan: readonly Slot[]): string {
   const used = plan.filter(isUsed);

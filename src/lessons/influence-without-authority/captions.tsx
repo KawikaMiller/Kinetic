@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { joinList, plural } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import {
-  MAX_CONVERSATIONS, SUPPORT_TO_PASS, VETO_INFLUENCE, angleLabel, isUsed, planText, runPlan, stakeholderOf, type LedgerEntry, type Move, type Outcome, type Slot, type StakeholderId,
+  MAX_CONVERSATIONS, STAKEHOLDERS, SUPPORT_TO_PASS, VETO_INFLUENCE, VETO_POSITION, angleLabel, isUsed, planText, runPlan, stakeholderOf, type LedgerEntry, type Move, type Outcome, type Slot, type StakeholderId,
 } from './model';
 import { METER } from './scenario';
 
@@ -16,6 +16,13 @@ export function outcomeText(out: Outcome): string {
   if (out.pass) return `${support}, and nobody of influence ${VETO_INFLUENCE} or more stands against it: the meeting passes.`;
   if (out.vetoes.length > 0) return `${support}; ${names(out.vetoes)} (influence ${VETO_INFLUENCE} or more) stand at −1 or below and the room follows them: the meeting fails.`;
   return `${support}: the meeting fails for too little support, with nobody of influence ${VETO_INFLUENCE} or more against it.`;
+}
+
+/** The sub-label of the "Room leaders against" stat: the rule, and anyone else at −1 or below, who cannot block alone. */
+export function againstSub(out: Outcome): string {
+  const rule = `influence ${VETO_INFLUENCE} or more at −1 or below`;
+  const others = STAKEHOLDERS.filter((s) => s.influence < VETO_INFLUENCE && out.final[s.id] <= VETO_POSITION).map((s) => s.id);
+  return others.length ? `${rule}; also at −1 or below: ${names(others)}` : rule;
 }
 
 const moveText = (m: Move): string => `${stakeholderOf(m.who).name} ${signed(m.from)} to ${signed(m.to)}`;

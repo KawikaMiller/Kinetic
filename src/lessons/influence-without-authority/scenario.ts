@@ -1,8 +1,9 @@
 /**
  * Scene 2: Dana objects live. Invented: every effect is a made-up number, shown with its price before the choice is made.
- * The graph (ids, destinations) is pinned to the fixture in core/testing/leadScenarios.ts. One effect is retuned from the
- * fixture: after pushing, conceding takes one week and not two (she has already heard the case), so pushing first and then
- * conceding is not beaten on every meter by asking first; it saves a week and costs trust and scope.
+ * The graph (ids, destinations) is pinned to the fixture in core/testing/leadScenarios.ts. One effect is retuned (and the
+ * fixture in core/testing now carries it): after pushing, conceding takes one week and not two (she has already heard the case),
+ * so pushing first and then conceding is not beaten on every meter by asking first; it saves a week and costs trust and scope.
+ * The one-week figure is authored to satisfy the trade-off validator, and the page says so.
  */
 import type { ClaimKind } from '../../core/provenance';
 import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
@@ -27,7 +28,7 @@ const nodes: Node[] = [
     prompt: 'In the meeting, Dana objects: "we are not ready". What do you do?',
     choices: [
       { id: 'push', label: 'Answer with the data on the spot', to: 'm2', effects: fx(-2, -2, 0, 0, 0), because: 'If the objection is about readiness, data answers the wrong question and can read as dismissal.' },
-      { id: 'ask', label: 'Ask what would change her mind', to: 'm3', effects: fx(1, 1, 2, -10, 0), because: 'If she has a specific concern, asking surfaces it; it takes two weeks and some scope.' },
+      { id: 'ask', label: 'Ask what would change her mind', to: 'm3', effects: fx(1, 1, 2, -10, 0), because: 'If she has a specific concern, asking surfaces it; asked cold it takes two weeks, and some scope.' },
       { id: 'defer', label: 'Offer a one-to-one first', to: 'm4', effects: fx(0, 0, 3, 0, 0), because: 'If the room is not the place to settle it, a conversation can, at the cost of time.' },
       { id: 'escalate', label: 'Go to her manager', to: 'E_escalated', effects: fx(3, -4, 1, 0, 15), because: 'If speed matters more than the relationship, support rises now and trust pays for it later.' },
     ],
@@ -37,7 +38,7 @@ const nodes: Node[] = [
     prompt: 'The data did not land. The room is quiet.',
     choices: [
       { id: 'hold', label: 'Repeat your case', to: 'E_lost', effects: fx(-3, -1, 1, 0, 0), because: 'If you are sure and the room is not, repeating costs support.' },
-      { id: 'concede', label: 'Ask what she needs', to: 'm3', effects: fx(3, 1, 1, -20, 0), because: 'If you can still change course, conceding scope buys her support, and a week is enough because she has already heard the case.' },
+      { id: 'concede', label: 'Ask what she needs', to: 'm3', effects: fx(3, 1, 1, -20, 0), because: 'If you can still change course, conceding scope buys her support; it takes one week here because she has already heard the case (a figure the author chose, invented).' },
     ],
   },
   {
