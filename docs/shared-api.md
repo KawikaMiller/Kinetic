@@ -2179,6 +2179,25 @@ parseCnf('a or not b\n(c) and (d or -a)', { clauseLength: { min: 3, max: 3 }, va
 - **Packages:** `encodePackages({ packages: { lib: { '1.0.0': { util: '*' }, ... } }, root: { lib: '*' } })` gives `{ cnf, variables, origins }`: one variable per (package, version), root ranges as "one of the matches", pairwise "at most one version", and "not this version, or a matching one" per requirement (ranges via `core/semver`; an invalid range throws). `origins[i]` says why clause i exists, for plain-words glosses. `unsatCore(cnf)` is the deletion core (indices of the clauses that remain; null when satisfiable).
 - `randomCnf(rnd, vars, clauses, k = 3)` is the seeded random k-SAT generator (distinct variables per clause, ascending). Gate in `sat.test.ts`: DPLL equals brute force on 1,000 seeded formulas of 3 to 10 variables for both heuristics (satisfiability, model validity by an independent evaluator, and every trace replays to the same verdict), with more than 150 satisfiable and more than 150 unsatisfiable so the agreement is not trivial.
 
+### `core/tsp.ts` (K4-5) — approximation-algorithms, local-search-annealing (wave 1)
+```ts
+import { distanceMatrix, randomPoints, tourLength, primMst, heldKarp, twoOptStep, twoOpt, doubleTreeTour, christofidesTour,
+  minWeightPerfectMatching, eulerCircuit, shortcut, MAX_HELD_KARP, MAX_MATCHING_VERTICES } from '../../core/tsp';
+
+const dist = distanceMatrix(points);                 // number[][]; or hand-edit a matrix to break the triangle inequality
+primMst(dist)            // { edges: [parent, child][] in the order Prim added them, weight }
+heldKarp(dist)           // { length, tour } the exact optimum from vertex 0; throws RangeError above 12 points
+twoOptStep(dist, tour)   // the first improving move, or null: { i, j, delta, tour }
+twoOpt(dist, tour, { maxMoves? })   // { tour, moves: TwoOptMove[], length }: the step trace, each move with its delta
+doubleTreeTour(dist)     // { tour, length, mst }: preorder of the MST from 0, children in index order
+christofidesTour(dist)   // { tour, length, mst, odd, matching: { pairs, weight }, circuit }
+```
+- **Everything reads a distance matrix**, so the lesson owns the geometry: Euclidean points via `distanceMatrix`, or a matrix edited cell by cell (the spec's star at M = 100). `randomPoints(rnd, n, size = 100)` is the seeded map. A tour is a permutation read as a closed cycle; `tourLength` closes it.
+- **2-opt move** reverses positions `i + 1 .. j` of the tour, replacing edges (tour[i], tour[i+1]) and (tour[j], tour[j+1]) by (tour[i], tour[j]) and (tour[i+1], tour[j+1]); `delta` is new minus old length (negative = shorter). `twoOptStep` scans i ascending then j ascending and takes the first move that beats 0 by more than `IMPROVE_EPSILON` (1e-9), so a Step button shows exactly the move and delta the model made. Crossed square 0, 2, 1, 3 goes 9.6569 to 8 in one move of -1.6569.
+- **Pinned tie-breaks** (so a lesson's hand-worked tour reproduces): Prim adds the lowest-index nearest vertex via the lowest-index parent; the doubling tour visits children in index order; the matching DP keeps the first of equal-weight pairings; the **Euler circuit takes the unused edge to the smallest-index neighbour first** (Hierholzer, returned in traversal order, closed), and Christofides shortcuts it to first visits. On the spec's 7-point map: circuit `0 5 4 1 2 3 2 6 0`, tour `0 5 4 1 2 3 6`, 29.2517 against the optimum 26.7612 (ratio 1.0931), doubling 35.3858 (1.3223), tree 20.8972.
+- **Limits:** `heldKarp` 12 points (2^11 subsets); `minWeightPerfectMatching(dist, vertices)` an even count of at most 12 (a map of at most 12 points never exceeds that). Both throw `RangeError` naming the limit.
+- **The guarantees need the triangle inequality.** The bounds are asserted on 1,000 seeded Euclidean maps (doubling at most 2x the optimum, Christofides at most 1.5x, tree at most the optimum) as "a bound on those maps, not a proof", and a planted non-metric star at M = 100 gives ratio 31.31 so that test can fail. Held-Karp equals brute force for n up to 8, Prim equals Kruskal (`core/disjointSet`), the matching equals the best of all pairings, and after `twoOpt` no segment reversal shortens the tour (recomputed tour by tour).
+
 ## Not built (deliberately)
 `
 `- **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
