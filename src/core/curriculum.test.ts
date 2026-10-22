@@ -149,10 +149,11 @@ describe('curriculum', () => {
       const planned = tier4.filter((t) => !isBuilt(t.id));
       expect(built.length + planned.length).toBe(50);
       for (const id of EXISTING_TIER4) expect(isBuilt(id), id).toBe(true);
-      // The nine existing lessons are built; every other Tier 4 topic is planned until its batch merges.
+      // The nine existing lessons are built; every other Tier 4 topic is planned until its batch merges, and once
+      // the last batch has merged nothing is planned and the toggle has nothing to collapse.
       expect(planned.every((t) => !EXISTING_TIER4.has(t.id))).toBe(true);
-      expect(planned.length, 'collapsed behind the toggle while it exceeds the threshold').toBeGreaterThan(0);
       if (planned.length > PLANNED_COLLAPSE_AT) expect(`Show ${planned.length} planned topics`).toMatch(/^Show \d+ planned topics$/);
+      if (planned.length === 0) expect(built.length, 'tier complete: every Tier 4 card is built').toBe(50);
     });
 
     it.skipIf(!tier4PlanRows.length)('matches the plan table row for row (id, track, title)', () => {
