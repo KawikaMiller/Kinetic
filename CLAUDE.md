@@ -89,7 +89,8 @@ shown, a `Provenance kind="toy"` chip, never "secure" about a toy, no key or sec
 `Math.random`, `Date.now`, `performance.now` or `new Date` (seeded `mulberry32` only, seed shown). And `npm run sweep`
 is clean for the batch's lessons. `lessonContentT4.ts` lints the mechanical rules (chips, claim labels on the seven lead
 lessons, the clock and random ban, fresh arrays into `usePlayer`/`introKey`, a pinned failing seed of 0,
-a visible seed, `manipulation N:` tests for proof-shaped lessons) from a lesson's first commit.
+a visible seed, `manipulation N:` tests for proof-shaped lessons) from a lesson's first commit. Domain-reviewed
+lessons are reviewed per `docs/tier4-review-protocol.md`.
 
 ## Shared kit
 
