@@ -1,0 +1,5 @@
+.ls-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.ls-note { margin: 0; font-size: 13px; color: var(--muted); }
+.ls-table { width: 100%; font-size: 13px; }
+.ls-table th { white-space: nowrap; }
+.ls-table .is-selected { background: color-mix(in srgb, var(--hi) 14%, transparent); }
