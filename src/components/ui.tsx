@@ -381,6 +381,8 @@ export function ProvenanceRow({ children }: { children: ReactNode }) {
  * Says how much weight a sentence can bear: a `standard` (a spec, a convention someone wrote
  * down), a `research` finding (named and hedged), `practice` (what many teams do) or `view`
  * (one person's opinion). Non-technical lessons label every claim with one (AC-0/T3 #24).
+ * `theorem` marks a theorem-shaped statement the lesson argues but does not run (AC-0/T4 #27);
+ * `children` then names the result ("FLP: no deterministic protocol ...").
  * `children` is the short text ("Dunning 2002, from memory"); it is read out with the kind,
  * "research finding: Dunning 2002, from memory". Muted like Provenance, never a status colour.
  */

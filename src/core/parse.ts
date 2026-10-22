@@ -171,11 +171,23 @@ export interface RowParseOptions<T> {
   maxLineChars: number;
   /** Lines starting with this (after trimming) are comments; default `#`. */
   comment?: string;
+  /**
+   * Also drop a trailing comment: everything from the first `comment` marker on a line to its end is neither read nor
+   * counted toward `maxLineChars`. Off by default, so a marker inside a rule stays part of the rule (turing-machines).
+   * Only for rule syntaxes in which the marker cannot be a symbol.
+   */
+  trailingComments?: boolean;
   /** What one row is called in the over-limit messages ("keep each rule", "more than 40 rules"); default rule / rules. */
   noun?: { one: string; many: string };
   /** Read one trimmed, non-empty line (`indent` is how many characters were trimmed off its front); return the value or the sentence to show. */
   row: (text: string, line: number, indent: number) => { ok: true; value: T } | RowFail;
 }
+
+/** The line up to its first `comment` marker, trailing blanks included. */
+const withoutTrailingComment = (line: string, comment: string): string => {
+  const at = line.indexOf(comment);
+  return at < 0 ? line : line.slice(0, at);
+};
 
 /**
  * Reads a table of rules, one per line, with the bounds checked first and refusals that name the
@@ -189,13 +201,14 @@ export function parseRows<T>(text: string, o: RowParseOptions<T>): RowParse<T> {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const line = i + 1;
-    if (lines[i].length > o.maxLineChars) {
-      return { ok: false, line, error: `Line ${line} is ${lines[i].length} characters; keep each ${noun.one} to ${o.maxLineChars} or fewer.` };
+    const rule = o.trailingComments ? withoutTrailingComment(lines[i], comment) : lines[i];
+    if (rule.length > o.maxLineChars) {
+      return { ok: false, line, error: `Line ${line} is ${rule.length} characters; keep each ${noun.one} to ${o.maxLineChars} or fewer.` };
     }
-    const trimmed = lines[i].trim();
+    const trimmed = rule.trim();
     if (!trimmed || trimmed.startsWith(comment)) continue;
     if (rows.length >= o.maxRows) return { ok: false, line, error: `Line ${line}: more than ${o.maxRows} ${noun.many}; delete one first.` };
-    const read = o.row(trimmed, line, lines[i].length - lines[i].trimStart().length);
+    const read = o.row(trimmed, line, rule.length - rule.trimStart().length);
     if (!read.ok) {
       if (read.column === undefined) return { ok: false, line, error: `Line ${line}: ${read.error}` };
       return { ok: false, line, column: read.column, error: `Line ${line}, column ${read.column}: ${read.error}` };

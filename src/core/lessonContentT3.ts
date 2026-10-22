@@ -4,7 +4,8 @@ import type { LessonModule } from './types';
  * Tier 3 content lint (docs/tier3-plan.md AC-0/T3, ticket K3-T2): the rules that can be
  * checked mechanically on top of the K-2 lint in lessonContent.ts. Pure functions, so
  * lessonContent.test.ts can prove each rule fails on a bad fixture and then run them over
- * the Tier 3 lessons. They apply to Tier 3 lessons only.
+ * the Tier 3 lessons. They apply to Tier 3 lessons only; Tier 4 (lessonContentT4.ts) wraps
+ * `lintTier3Lesson` and reuses `unscopedAbsolutes`, `isAllowed` and `withoutComments`.
  */
 
 export type Tier3Rule = 'absolutes' | 'provenance' | 'try-this-tests';
@@ -59,11 +60,14 @@ const ANCHOR_CHARS = 24;
 
 const plain = (s: string) => s.replace(/\\/g, '');
 
-/** The absolute words in a text, one entry per unscoped sentence that carries one. */
-export function unscopedAbsolutes(text: string): string[] {
+/**
+ * The absolute words in a text, one entry per unscoped sentence that carries one. `extraScope` adds
+ * scope phrases of its own (Tier 4's theorem wording); without it the Tier 3 behaviour is unchanged.
+ */
+export function unscopedAbsolutes(text: string, extraScope?: RegExp): string[] {
   return text
     .split(/(?<=[.!?])\s+/)
-    .filter((sentence) => !SCOPE.test(sentence))
+    .filter((sentence) => !SCOPE.test(sentence) && !extraScope?.test(sentence))
     .flatMap((sentence) => [...sentence.matchAll(ABSOLUTE)].map((m) => m[1].toLowerCase()));
 }
 
@@ -72,14 +76,14 @@ export function unscopedAbsolutes(text: string): string[] {
  * The line is found by the first characters of the text, so the marker sits next to the
  * string literal it exempts, like `allow-color` does for a colour.
  */
-function isAllowed(text: string, source: string): boolean {
+export function isAllowed(text: string, source: string): boolean {
   const anchor = plain(text).slice(0, ANCHOR_CHARS);
   if (!anchor) return false;
   return source.split('\n').some((line) => plain(line).includes(anchor) && ALLOW_MARKER.test(line));
 }
 
 /** Source without block comments and whole-line comments, so a mention of the chip doesn't count as one. */
-const withoutComments = (source: string) =>
+export const withoutComments = (source: string) =>
   source.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((line) => !line.trimStart().startsWith('//')).join('\n');
 
 /** The N of every test named `try-this N: ...` in a test file's source. */

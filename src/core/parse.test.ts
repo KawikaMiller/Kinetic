@@ -147,6 +147,32 @@ describe('parseBoundedDecimal', () => {
   });
 });
 
+describe('parseRows trailing comments (opt-in)', () => {
+  const row = (text: string) => ({ ok: true as const, value: text });
+  const limits = { maxRows: 5, maxLineChars: 8, row };
+
+  it('keep today\'s behaviour by default: a trailing marker is part of the rule and counts toward the limit', () => {
+    expect(parseRows('a b # note', limits)).toMatchObject({ ok: false, error: 'Line 1 is 10 characters; keep each rule to 8 or fewer.' });
+    expect(parseRows('a b # n', { ...limits, maxLineChars: 20 })).toMatchObject({ ok: true, rows: [{ value: 'a b # n' }] });
+  });
+
+  it('drop the comment before the length check and before the row reader when asked', () => {
+    expect(parseRows('a b # a long note here', { ...limits, trailingComments: true })).toEqual({ ok: true, rows: [{ line: 1, value: 'a b' }] });
+    expect(parseRows('abcdefghi # x', { ...limits, trailingComments: true })).toMatchObject({ ok: false, error: 'Line 1 is 10 characters; keep each rule to 8 or fewer.' });
+  });
+
+  it('skip a line that is only a comment, whole or trailing, and keep the indent of the rule', () => {
+    const seen: [string, number][] = [];
+    const record = (text: string, _line: number, indent: number) => {
+      seen.push([text, indent]);
+      return { ok: true as const, value: text };
+    };
+    const parsed = parseRows('  # whole\n   x # y', { ...limits, trailingComments: true, row: record });
+    expect(parsed).toMatchObject({ ok: true, rows: [{ line: 2, value: 'x' }] });
+    expect(seen).toEqual([['x', 3]]);
+  });
+});
+
 describe('parseRows over-limit messages', () => {
   const row = (text: string) => ({ ok: true as const, value: text });
   const limits = { maxRows: 2, maxLineChars: 5, row };

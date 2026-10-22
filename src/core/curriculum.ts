@@ -502,6 +502,61 @@ export const TOPICS: Topic[] = [
   { id: 'probabilistic-structures', tier: 4, track: 'dsa', title: 'Bloom Filters & HyperLogLog', tagline: 'Trading certainty for massive savings' },
   { id: 'slos-error-budgets', tier: 4, track: 'ops', title: 'SLOs & Error Budgets', tagline: 'Deciding how reliable is reliable enough' },
   { id: 'zero-trust', tier: 4, track: 'sec', title: 'Zero Trust Networks', tagline: 'Never trust the network, verify every request' },
+
+  // Tier 4 roadmap: planned (docs/tier4-plan.md §2), grouped by track. `leases-fencing` stays Tier 3.
+  // hw
+  { id: 'numa-multicore', tier: 4, track: 'hw', title: 'Multicore, NUMA & Memory Locality', tagline: 'Not all RAM is equally close' },
+  // os
+  { id: 'memory-ordering-atomics', tier: 4, track: 'os', title: 'Memory Ordering & Atomics', tagline: 'Your CPU reorders your code' },
+  { id: 'lock-free-cas', tier: 4, track: 'os', title: 'Compare-and-Swap & Lock-Free Structures', tagline: 'Concurrency without locks' },
+  // lang
+  { id: 'np-reductions', tier: 4, track: 'lang', title: 'Reductions', tagline: 'If you can solve this, you can solve everything' },
+  { id: 'sat-solvers', tier: 4, track: 'lang', title: 'SAT & Constraint Solvers', tagline: 'Throw your hard problem at a solver' },
+  // math
+  { id: 'linear-programming', tier: 4, track: 'math', title: 'Linear Programming & Optimization', tagline: 'Best answer under constraints' },
+  { id: 'game-theory', tier: 4, track: 'math', title: 'Game Theory Basics', tagline: 'Strategy when others react' },
+  // dsa
+  { id: 'approximation-algorithms', tier: 4, track: 'dsa', title: 'Approximation Algorithms', tagline: 'Provably close enough, in polynomial time' },
+  { id: 'local-search-annealing', tier: 4, track: 'dsa', title: 'Local Search & Simulated Annealing', tagline: 'Climb hills, and sometimes jump off them' },
+  { id: 'suffix-arrays', tier: 4, track: 'dsa', title: 'Suffix Arrays & Suffix Trees', tagline: 'Index every substring at once' },
+  { id: 'aho-corasick', tier: 4, track: 'dsa', title: 'Aho-Corasick Multi-Pattern Matching', tagline: 'Search for a thousand words in one pass' },
+  { id: 'lca-binary-lifting', tier: 4, track: 'dsa', title: 'Lowest Common Ancestor & Binary Lifting', tagline: 'Jump up the tree in powers of two' },
+  { id: 'online-algorithms', tier: 4, track: 'dsa', title: 'Online Algorithms & Competitive Analysis', tagline: 'Decide now, without seeing the future' },
+  // arch
+  { id: 'failure-detectors', tier: 4, track: 'arch', title: 'Failure Detectors & Heartbeats', tagline: "Dead, or just slow? You can't know" },
+  { id: 'gossip-protocols', tier: 4, track: 'arch', title: 'Gossip Protocols', tagline: 'Rumours spread in O(log n) rounds' },
+  { id: 'metastable-failures', tier: 4, track: 'arch', title: 'Retry Storms & Metastable Failures', tagline: 'The outage that keeps itself alive' },
+  { id: 'paxos', tier: 4, track: 'arch', title: 'Paxos', tagline: 'The original consensus: prepare, then accept' },
+  { id: 'byzantine-faults', tier: 4, track: 'arch', title: 'Byzantine Faults & BFT', tagline: "When nodes don't just crash, they lie" },
+  { id: 'flp-impossibility', tier: 4, track: 'arch', title: 'FLP Impossibility', tagline: "Consensus can't be guaranteed" },
+  { id: 'distributed-snapshots', tier: 4, track: 'arch', title: 'Distributed Snapshots (Chandy-Lamport)', tagline: 'A consistent photo of a moving system' },
+  { id: 'hybrid-logical-clocks', tier: 4, track: 'arch', title: 'Hybrid Logical Clocks', tagline: 'Physical time plus a logical tiebreaker' },
+  // data
+  { id: 'distributed-sql-truetime', tier: 4, track: 'data', title: 'Distributed SQL & TrueTime (Spanner)', tagline: 'Global transactions with bounded clocks' },
+  // sec
+  { id: 'elliptic-curves', tier: 4, track: 'sec', title: 'Elliptic Curve Cryptography', tagline: 'Smaller keys, same fortress' },
+  { id: 'post-quantum-crypto', tier: 4, track: 'sec', title: 'Post-Quantum Cryptography', tagline: 'Preparing for Shor' },
+  { id: 'e2ee-forward-secrecy', tier: 4, track: 'sec', title: 'End-to-End Encryption & Forward Secrecy', tagline: "Even the server can't read it" },
+  { id: 'secret-sharing', tier: 4, track: 'sec', title: 'Secret Sharing & Threshold Crypto', tagline: 'Any 3 of 5 keys open the vault' },
+  { id: 'zero-knowledge-proofs', tier: 4, track: 'sec', title: 'Zero-Knowledge Proofs', tagline: 'Prove you know it without revealing it' },
+  // ops
+  { id: 'chaos-engineering', tier: 4, track: 'ops', title: 'Chaos Engineering', tagline: 'Break it on purpose, on a Tuesday' },
+  { id: 'finops-cloud-cost', tier: 4, track: 'ops', title: 'Cloud Cost & FinOps', tagline: 'Every request has a price tag' },
+  // craft
+  { id: 'deterministic-simulation-testing', tier: 4, track: 'craft', title: 'Deterministic Simulation Testing', tagline: 'Replaying chaos with a seed' },
+  { id: 'formal-methods', tier: 4, track: 'craft', title: 'Formal Methods & Model Checking (TLA+)', tagline: 'Proving the design before building it' },
+  // ml
+  { id: 'llm-serving', tier: 4, track: 'ml', title: 'LLM Serving: Tokens, KV Cache & Batching', tagline: 'Why the first token is slow and the rest are fast' },
+  { id: 'fine-tuning-quantization', tier: 4, track: 'ml', title: 'Fine-Tuning, LoRA & Quantization', tagline: 'Adapting and shrinking models' },
+  { id: 'feature-stores-skew', tier: 4, track: 'ml', title: 'Feature Stores & Training/Serving Skew', tagline: 'Same feature, two pipelines, different answers' },
+  // lead
+  { id: 'strangler-fig-migrations', tier: 4, track: 'lead', title: 'Large Migrations & the Strangler Fig', tagline: "Replace the plane while it's flying" },
+  { id: 'conways-law', tier: 4, track: 'lead', title: "Conway's Law & Team Topologies", tagline: 'You ship your org chart' },
+  { id: 'build-vs-buy', tier: 4, track: 'lead', title: 'Build vs Buy', tagline: "Your core, or someone else's commodity?" },
+  { id: 'technical-strategy', tier: 4, track: 'lead', title: 'Technical Strategy & Roadmaps', tagline: 'Diagnosis, guiding policy, coherent action' },
+  { id: 'reversible-decisions', tier: 4, track: 'lead', title: 'One-Way vs Two-Way Door Decisions', tagline: 'Move fast where you can undo' },
+  { id: 'influence-without-authority', tier: 4, track: 'lead', title: 'Influence Without Authority', tagline: 'Leading when nobody reports to you' },
+  { id: 'hiring-interviewing', tier: 4, track: 'lead', title: 'Hiring & Technical Interviewing', tagline: 'Building the team you need' },
 ];
 
 export const tierOf = (topic: Topic) => TIERS[topic.tier - 1];

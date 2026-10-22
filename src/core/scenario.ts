@@ -106,7 +106,11 @@ export const redMeters = (s: Scenario, values: Values): Meter[] => s.meters.filt
 
 // ── Validation ───────────────────────────────────────────────────────────
 
-export type ProblemKind = 'start' | 'duplicate-id' | 'missing-target' | 'unreachable-node' | 'unreachable-ending' | 'dead-end' | 'cycle' | 'out-of-bounds' | 'unknown-meter';
+export type ProblemKind =
+  | 'start' | 'duplicate-id' | 'missing-target' | 'unreachable-node' | 'unreachable-ending' | 'dead-end' | 'cycle'
+  | 'out-of-bounds' | 'unknown-meter'
+  /** Trade-off checks (`tradeoffs: true`): a straw-man choice, and a path that costs nothing. */
+  | 'dominated-choice' | 'free-path';
 
 export interface Problem {
   kind: ProblemKind;
@@ -122,15 +126,22 @@ export interface ValidateOptions {
    * until they first revisit a node, so the meter bounds are checked on the first lap and no further.
    */
   allowCycles?: boolean;
+  /**
+   * Also check that the scenario has no obviously-correct path (AC-0/T4 #35, K4-9): `dominated-choice` for a
+   * straw-man choice and `free-path` for a path that costs nothing. For opinion lessons, where a scenario that
+   * recommends one answer by construction is a defect. Off by default: a technical scenario may well have one right answer.
+   */
+  tradeoffs?: boolean;
 }
 
 /**
  * Check a scenario: ids unique, every choice leads somewhere that exists, every node and every
  * ending is reachable from the start, no node is a dead end, there are no cycles (so the paths
  * can be enumerated, unless `allowCycles` says a looping scenario is meant), and on every path from the start to an ending the meters stay inside their
- * bounds at every step with the effects applied as written, with no clamping.
+ * bounds at every step with the effects applied as written, with no clamping. With `tradeoffs` it also
+ * runs `dominatedChoices` and `freePaths`.
  */
-export function validateScenario(s: Scenario, { allowCycles = false }: ValidateOptions = {}): Problem[] {
+export function validateScenario(s: Scenario, { allowCycles = false, tradeoffs = false }: ValidateOptions = {}): Problem[] {
   const problems: Problem[] = [];
   const add = (kind: ProblemKind, detail: string) => problems.push({ kind, detail });
 
@@ -176,6 +187,109 @@ export function validateScenario(s: Scenario, { allowCycles = false }: ValidateO
     }
   };
   walk(s.start, startValues(s), []);
+  if (tradeoffs) problems.push(...dominatedChoices(s), ...freePaths(s));
+  return problems;
+}
+
+// ── Trade-off checks (K4-9) ──────────────────────────────────────────────
+
+/** +1 when a higher value is better for the meter, -1 when a lower one is (read from its `bad` edge). */
+const betterSign = (m: Meter): 1 | -1 => ('below' in m.bad ? 1 : -1);
+
+/** How much better `a` is than `b` on one meter, in the meter's own good direction (negative when worse). */
+const gain = (m: Meter, a: number, b: number): number => betterSign(m) * (a - b);
+
+/** Is `a` at least as good as `b` on every meter? Meters a vector does not mention count as 0. */
+const atLeastAsGood = (s: Scenario, a: Values, b: Values): boolean => s.meters.every((m) => gain(m, a[m.id] ?? 0, b[m.id] ?? 0) >= 0);
+
+/** One way a story can end from some point: which ending, and the total effects of the choices on the way. */
+interface Outcome {
+  ending: string;
+  delta: Values;
+}
+
+/**
+ * Every way the story can still unfold from `id`, deduplicated. An ending has exactly one outcome (itself, with no
+ * effects). A path that loops back (or runs past MAX_DEPTH) is not a way to finish and is left out.
+ */
+function outcomesFrom(s: Scenario, id: string, trail: readonly string[] = []): Outcome[] {
+  if (isEnding(s, id)) return [{ ending: id, delta: {} }];
+  const node = findNode(s, id);
+  if (!node || trail.includes(id) || trail.length >= MAX_DEPTH) return [];
+  const seen = new Map<string, Outcome>();
+  for (const c of node.choices) {
+    for (const rest of outcomesFrom(s, c.to, [...trail, id])) {
+      const delta = Object.fromEntries(s.meters.map((m) => [m.id, (c.effects?.[m.id] ?? 0) + (rest.delta[m.id] ?? 0)]));
+      seen.set(`${rest.ending}|${JSON.stringify(delta)}`, { ending: rest.ending, delta });
+    }
+  }
+  return [...seen.values()];
+}
+
+/**
+ * How two choices at one node are compared by where they lead:
+ * - `same`: only choices with the same destination (the narrow reading of a straw man);
+ * - `equal-or-better`: the default. Y's destination is the same as X's, or an equally good one: every ending that
+ *   X's destination can reach, Y's destination reaches too, at a cost no worse on any meter. Two different endings
+ *   are never equally good, because the meters cannot say whether "hire" beats "no hire";
+ * - `ignore`: destinations play no part (the strictest reading; flags the most).
+ */
+export type DestinationRule = 'same' | 'equal-or-better' | 'ignore';
+
+export interface DominatedOptions {
+  destinations?: DestinationRule;
+}
+
+/**
+ * Straw-man choices. At one node, choice X is dominated by a sibling Y when Y's effects are no worse than X's on
+ * every meter (the good direction of each meter comes from its `bad` edge) and strictly better on at least one,
+ * and Y leads somewhere at least as good (see `DestinationRule`). Nothing is a reason to pick X, so the node is
+ * not a real decision.
+ */
+export function dominatedChoices(s: Scenario, { destinations = 'equal-or-better' }: DominatedOptions = {}): Problem[] {
+  const problems: Problem[] = [];
+  const leadsAtLeastAsWell = (x: Choice, y: Choice): boolean => {
+    if (destinations === 'ignore' || x.to === y.to) return true;
+    if (destinations === 'same') return false;
+    const yOutcomes = outcomesFrom(s, y.to);
+    return outcomesFrom(s, x.to).every((ox) => yOutcomes.some((oy) => oy.ending === ox.ending && atLeastAsGood(s, oy.delta, ox.delta)));
+  };
+  for (const node of s.nodes) {
+    for (const x of node.choices) {
+      for (const y of node.choices) {
+        if (x === y) continue;
+        const gains = s.meters.map((m) => gain(m, y.effects?.[m.id] ?? 0, x.effects?.[m.id] ?? 0));
+        if (gains.every((g) => g >= 0) && gains.some((g) => g > 0) && leadsAtLeastAsWell(x, y)) {
+          problems.push({ kind: 'dominated-choice', detail: `${node.id}/${x.id} is dominated by ${node.id}/${y.id}: no better on any meter, worse on at least one` });
+        }
+      }
+    }
+  }
+  return problems;
+}
+
+/**
+ * Paths that cost nothing: from the start to an ending, no meter is ever in the red and no meter ends worse than it
+ * started. Such a path would be recommended by default. A looping path is cut where it revisits a node, so only
+ * complete paths count and a scenario with cycles never hangs here.
+ */
+export function freePaths(s: Scenario): Problem[] {
+  const problems: Problem[] = [];
+  const begin = startValues(s);
+  const go = (id: string, values: Values, everRed: boolean, trail: readonly string[], choices: readonly string[]) => {
+    if (isEnding(s, id)) {
+      const noWorse = s.meters.every((m) => gain(m, values[m.id], begin[m.id]) >= 0);
+      if (!everRed && noWorse) problems.push({ kind: 'free-path', detail: `${choices.join(' > ')} ends at ${id} with no meter ever in the red and none worse than it started` });
+      return;
+    }
+    const node = findNode(s, id);
+    if (!node || trail.includes(id) || trail.length >= MAX_DEPTH) return;
+    for (const c of node.choices) {
+      const next = applyEffects(values, c.effects);
+      go(c.to, next, everRed || redMeters(s, next).length > 0, [...trail, id], [...choices, c.id]);
+    }
+  };
+  go(s.start, begin, redMeters(s, begin).length > 0, [], []);
   return problems;
 }
 
