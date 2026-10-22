@@ -1,0 +1,23 @@
+.llm-stage { gap: 12px; align-items: center; }
+.llm-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.llm-panel { flex: 1 1 300px; max-width: 520px; display: flex; flex-direction: column; gap: 8px; align-items: stretch; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.llm-panel .section-title { margin: 0; text-align: center; }
+.llm-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.llm-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 340px; }
+.llm-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
+.llm-wide { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 8px; }
+.llm-bar-label { font: 500 12px var(--font); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.llm-bar-label b { font-family: var(--mono); color: var(--text); }
+.llm-field { display: flex; flex-direction: column; gap: 4px; }
+.llm-refusal { font: 500 12px var(--font); color: var(--bad); max-width: 260px; }
+.llm-table { border-collapse: collapse; font: 500 12px var(--mono); }
+.llm-table th, .llm-table td { padding: 3px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.llm-table th { color: var(--muted); font-weight: 600; }
+.llm-table td.llm-bad { color: var(--bad); }
+.llm-table td.llm-ok { color: var(--ok); }
+.llm-regime { font: 600 12px var(--font); }
+.llm-regime.is-compute { color: var(--hi); }
+.llm-regime.is-memory { color: var(--info); }
+.llm-grid-wrap { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.llm-device { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font: 500 12px var(--mono); color: var(--muted); }
+.llm-device b { color: var(--text); font-weight: 600; text-align: right; }
