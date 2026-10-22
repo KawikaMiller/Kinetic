@@ -2,7 +2,7 @@
 import { sig } from '../../core/format';
 import {
   CONE_PHASES, OUTCOME_MODELS, RUNS, SUM_DEFAULT, THREE_POINT_DEFAULT, bandRatio, chanceBy, outcomePoints, outsideCone, simulateTotal, sumFacts, sumSpec,
-  threePointResult, QUANTITIES,
+  threePointResult, QUANTITIES, lowScoreChance,
 } from './model';
 import { MANAGER, RISK } from './scenario';
 
@@ -48,6 +48,7 @@ export const FACTS = {
   pertP80: sig(tp.pert.p80, 3),
   fitP80: sig(tp.fit.p80, 3),
   calibrationRows: QUANTITIES.length,
+  calibrationOneIn: Math.round(1 / lowScoreChance(QUANTITIES.length, 4, 0.9)),
   mibValue: QUANTITIES[0].value.toLocaleString('en-US'),
   riskDate: RISK.date,
   riskRange: RISK.range,

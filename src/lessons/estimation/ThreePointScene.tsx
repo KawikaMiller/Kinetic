@@ -96,7 +96,7 @@ export function ThreePointScene({ picker }: { picker: ReactNode }) {
           </WideRegion>
         )}
         <Hint tone="muted" block>
-          Reading the three values as the 5th and 95th percentiles is this lesson&apos;s assumption for the fit; PERT instead treats them as nearly the extremes.
+          Reading the three values as the 5th and 95th percentiles is this lesson&apos;s assumption for the fit; PERT instead treats them as nearly the extremes. The most likely value does not enter the fit at all: changing it moves only PERT and the yellow line.
         </Hint>
         <ProvenanceRow>
           <ClaimLabel kind="standard">the PERT mean (O + 4M + P) / 6 and spread (P - O) / 6 are the standard formulas</ClaimLabel>

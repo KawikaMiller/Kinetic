@@ -5,7 +5,7 @@ import { choose } from '../../core/stats';
 import {
   CONE_PHASES, MAX_TASKS, POINTS_PER_PHASE, QUANTITIES, RUNS, SUM_DEFAULT, TASK_MEDIANS, chanceBy, checkOrder, coneAt, fitLogNormal, independentSd, meanOf, modeOf,
   outcomePoints, outsideCone, parseDays, parseGuess, percentileOf, pert, readGuess, scoreCalibration, simulateTotal, sumFacts, sumSpec, taskRelativeSpread,
-  threePointResult,
+  threePointResult, lowScoreChance,
 } from './model';
 
 const SEEDS = Array.from({ length: 50 }, (_, i) => i + 1);
@@ -192,4 +192,14 @@ describe('calibration', () => {
     expect([s.answered, s.hits, s.refused]).toEqual([2, 1, 1]);
     expect(s.expected).toBeCloseTo(1.8, 12);
   });
+
+describe('the chance of a low calibration score', () => {
+  it('4 or fewer of 8 at p = 0.9 is 0.00502 (hand sum of the binomial terms), about 1 in 199', () => {
+    // 8C0 .1^8 + 8C1 .9 .1^7 + 8C2 .9^2 .1^6 + 8C3 .9^3 .1^5 + 8C4 .9^4 .1^4, with the binomial coefficients 1, 8, 28, 56, 70
+    const hand = 1e-8 + 8 * 0.9 * 1e-7 + 28 * 0.81 * 1e-6 + 56 * 0.729 * 1e-5 + 70 * 0.6561 * 1e-4;
+    expect(lowScoreChance(8, 4, 0.9)).toBeCloseTo(hand, 12);
+    expect(lowScoreChance(8, 4, 0.9)).toBeCloseTo(0.00502, 5);
+    expect(lowScoreChance(8, 8, 0.9)).toBeCloseTo(1, 12);
+  });
+});
 });

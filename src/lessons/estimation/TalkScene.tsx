@@ -25,8 +25,8 @@ export function TalkScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Trust" value={`${walk.meters[METER.trust]} of 10`} color={red.includes(METER.trust) ? 'var(--bad)' : undefined} sub="invented" />
-          <Stat label="Chance of missing the planned day" value={`${walk.meters[METER.risk]}%`} color={red.includes(METER.risk) ? 'var(--bad)' : undefined} sub="computed from the simulation" />
-          <Stat label="Slack" value={`${walk.meters[METER.slack]} days`} color={red.includes(METER.slack) ? 'var(--bad)' : undefined} sub="planned day minus the sum of medians" />
+          <Stat label="Chance of missing the planned day" value={`${walk.meters[METER.risk]}%`} color={red.includes(METER.risk) ? 'var(--bad)' : undefined} sub="computed for your first answer; week-four changes are invented" />
+          <Stat label="Slack" value={`${walk.meters[METER.slack]} days`} color={red.includes(METER.slack) ? 'var(--bad)' : undefined} sub="planned day minus the medians of the work kept" />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--info)', label: 'a meter while it is fine', shape: 'square' }, { color: 'var(--bad)', label: 'a meter in the red', shape: 'square' }]} />}

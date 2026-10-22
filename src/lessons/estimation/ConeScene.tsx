@@ -24,13 +24,13 @@ export function ConeScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={420}
-      intro={coneCaption(points)}
+      intro={coneCaption(points, show === 'cone')}
       introKey={show}
       stats={
         <Stats>
           <Stat label="Band at the concept" value={`${sig(bandRatio(CONE_PHASES[0]), 3)}x wide`} sub={`${CONE_PHASES[0].low}x to ${CONE_PHASES[0].high}x the outcome`} />
           <Stat label="Band at detailed design" value={`${sig(bandRatio(CONE_PHASES[last]), 3)}x wide`} sub={`${CONE_PHASES[last].low}x to ${CONE_PHASES[last].high}x the outcome`} />
-          <Stat label="Outside their band" value={points ? `${outside} of ${points.length}` : '–'} color={points && outside > 0 ? 'var(--bad)' : undefined} sub={points ? 'invented outcomes' : 'pick an outcome model'} />
+          <Stat label="Outside their band" value={points ? `${outside} of ${points.length}` : '–'} color={points && outside > 0 ? 'var(--bad)' : undefined} sub={points ? (show === 'cone' ? 'invented, drawn inside their band' : 'invented outcomes') : 'pick an outcome model'} />
         </Stats>
       }
       legend={

@@ -13,13 +13,13 @@ const pctOf = (share: number) => `${Math.round(share * 100)}%`;
 const days = (x: number) => `${sig(x, 3)} days`;
 
 /** Scene 1: the numbers in the cone, kept apart from whether a project follows them. */
-export function coneCaption(points: readonly OutcomePoint[] | null): ReactNode {
+export function coneCaption(points: readonly OutcomePoint[] | null, drawnInside = false): ReactNode {
   return (
     <>
       The numbers in the cone: at the initial concept an estimate can sit anywhere from {first.low}x to {first.high}x the final outcome, a band {sig(bandRatio(first), 3)} times wide; at
       detailed design it is {last.low}x to {last.high}x, {sig(bandRatio(last), 3)} times wide.{' '}
       {points
-        ? <>In this toy, {outsideCone(points)} of {points.length} invented outcomes fall outside their own phase&apos;s band. </>
+        ? <>In this toy, {outsideCone(points)} of {points.length} invented outcomes fall outside their own phase&apos;s band{drawnInside ? <> (by construction: each is drawn inside its band, so this is not a finding)</> : null}. </>
         : <>Pick an outcome model to scatter invented projects over the cone. </>}
       Whether your project follows the cone is a separate question: the picture does not narrow anything by itself.
     </>
@@ -36,7 +36,7 @@ export function sumCaption(spec: SumSpec, facts: SumFacts, run: SumRun, stat: St
     <>
       Adding the {n} {STAT_WORD[stat]} gives day {sig(yourSum, 3)}, and {pctOf(byYours)} of the {RUNS.toLocaleString('en-US')} simulated runs finish by it. The median of the total (P50) is {days(facts.p50)}, against
       {' '}{days(facts.sumMedians)} for the sum of medians; P80 is {days(facts.p80)} and P90 {days(facts.p90)}. A deadline of day {deadline} is met in {pctOf(chanceBy(run, deadline))} of runs.{' '}
-      The spread of the total is {days(run.sd)} (standard deviation){spec.rho > 0 ? <>; independent tasks would give {days(independentSd)}, so shared causes widen it</> : <>, the independent-task value</>}.
+      The spread of the total is {days(run.sd)} (standard deviation){spec.rho > 0 ? <>; independent tasks would give {days(independentSd)}, so shared causes widen it</> : <>, close to the independent closed form ({days(independentSd)}; the gap is simulation noise)</>}.
     </>
   );
 }

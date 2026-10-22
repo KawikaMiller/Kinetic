@@ -350,3 +350,14 @@ export function scoreCalibration(rows: readonly RowState[]): CalibrationScore {
     expected: answered.length * CALIBRATION_LEVEL,
   };
 }
+
+/** Chance of `held` or fewer of `rows` ranges holding the truth when each holds it with probability `p` (binomial lower tail). */
+export function lowScoreChance(rows: number, held: number, p: number): number {
+  let total = 0;
+  let coefficient = 1;
+  for (let k = 0; k <= Math.min(held, rows); k++) {
+    total += coefficient * p ** k * (1 - p) ** (rows - k);
+    coefficient = (coefficient * (rows - k)) / (k + 1);
+  }
+  return total;
+}

@@ -25,7 +25,7 @@ const lesson: LessonModule = {
     `The conversation, from a fresh load: pick "Give one date", then Continue. The chance of missing the planned day reads ${F.riskDate}% and slack reads 0 days; pick "Give a range" instead and the chance reads ${F.riskRange}%.`,
   ],
   keyIdeas: [
-    `An estimate is a range: in the cone the band is ${F.conceptRatio} times wide at the initial concept and ${F.detailedRatio} times wide at detailed design, a research finding from memory that describes a best case, and nothing in it narrows a band on its own.`,
+    `An estimate is a range: in the cone the band is ${F.conceptRatio} times wide at the initial concept and ${F.detailedRatio} times wide at detailed design, a research finding from memory (one published critique reads it as a best case), and nothing in it narrows a band on its own.`,
     `Adding estimates is not estimating the total: in this model with ${F.tasks} tasks the sum of medians is day ${F.sumMedians}, yet ${F.chanceAtMedians}% of runs finish by it and the P50 of the total is day ${F.p50}. More independent tasks narrow the relative spread as 1/√n, but a shared cause keeps it wide: ${F.sdIndependent} days independently and ${F.sdCorrelated} days at ρ = 0.8.`,
     `PERT and a fitted log-normal read the same three numbers differently (${F.pertMean} against ${F.fitMean} days for the mean at 3, 5 and 13): PERT is a convention in common use, not a law. Stated 90% ranges tend to contain the truth less often than 90% of the time (a research finding, from memory), so score your own before you quote one.`,
     `Each answer to "when will it be done?" has a price in the story: the single date leaves a ${F.riskDate}% chance of missing, the range lowers that to ${F.riskRange}% and costs the manager's trust, and no answer is free.`,
@@ -67,13 +67,13 @@ const lesson: LessonModule = {
     {
       q: 'You score 4 of 8 on your own 90% ranges. What does the lesson suggest?',
       options: [
-        'Your ranges were too narrow for the confidence you claimed, so widening them is the usual fix',
+        'Your ranges were too narrow for the confidence you claimed, so widening them is the fix to try',
         'You were unlucky, because eight ranges are too few to say anything about calibration, so the score tells you nothing',
         'Your ranges were too wide, because a calibrated person would score 8 of 8 here',
         'Your knowledge of the quantities is weak, and no change of range width could help',
       ],
       answer: 0,
-      why: `If the ranges were truly 90%, about ${(0.9 * F.calibrationRows).toFixed(1)} of ${F.calibrationRows} would hold the truth. Scoring 4 suggests overconfidence, a research finding from memory; eight rows is a small sample, so repeat it before concluding.`,
+      why: `If the ranges were truly 90%, about ${(0.9 * F.calibrationRows).toFixed(1)} of ${F.calibrationRows} would hold the truth. Scoring 4 or fewer of ${F.calibrationRows} would happen about 1 time in ${F.calibrationOneIn} by chance if the ranges were truly 90%, so it points to overconfidence (a research finding, from memory); eight rows is still a small sample, so repeat it.`,
     },
   ],
 };
