@@ -123,7 +123,7 @@ describe('stepping the search by hand (the learner drives sat-solvers scene 1)',
       s = next;
     }
     expect(s.conflict).toBe(3);
-    expect(clauseText(F2, F2.clauses[s.conflict])).toBe('(not d or not a)');
+    expect(clauseText(F2, F2.clauses[s.conflict!])).toBe('(not d or not a)');
     expect(unitStep(s)).toBeNull();
     s = backtrack(s);
     expect(s.conflict).toBeNull();

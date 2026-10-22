@@ -22,7 +22,7 @@
  *  - The search stops as soon as every clause is satisfied; variables left unassigned read false in the model.
  */
 import type { Rnd } from './random';
-import { cursorOf, parseKitRows, type KitRead, type TokenRule } from './parseKit';
+import { parseKitRows, type KitRead, type TokenRule } from './parseKit';
 import { parseRange, satisfies } from './semver';
 
 // ── Formulas ────────────────────────────────────────────────────────────
