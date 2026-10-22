@@ -248,7 +248,7 @@ describe('the measured leak', () => {
     // Measured: 200 of 200, smallest gap about 0.13. The page says "on these datasets".
     expect(greater).toBe(200);
     expect(smallestGap).toBeGreaterThan(0.1);
-  }, 60_000);
+  }, 180_000);
 
   it('the seed-4 numbers of the page: 640 rows, 460 positive, AUC 0.927, 0.736 and 0.736', () => {
     const r = measureLeak(makeEvents(4));

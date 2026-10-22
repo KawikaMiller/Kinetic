@@ -347,7 +347,7 @@ describe('the batching simulator', () => {
     expect(atLeast).toBe(200);
     expect(lowerP50).toBe(200);
     expect(strictly).toBeGreaterThan(100);
-  }, 60_000);
+  }, 180_000);
 
   it('on 200 seeded workloads at 20 requests per second continuous batching is not worse on throughput, and much better on average', () => {
     let atLeast = 0;

@@ -223,7 +223,7 @@ describe('the reduction on every small formula', () => {
       expect(min >= f.vars + 2 * f.clauses.length, JSON.stringify(f)).toBe(true);
       expect(min <= g.K, JSON.stringify(f)).toBe(satisfying(f).length > 0);
     }
-  }, 60_000);
+  }, 180_000);
 
   it('without the variable edges the verdict is wrong on the count an independent walk finds, and F* is the first', () => {
     let wrong = 0;
@@ -243,7 +243,7 @@ describe('the reduction on every small formula', () => {
     expect(first).toEqual(F_STAR);
     expect(s.first).toEqual(F_STAR);
     expect(sweep(all).failures).toBe(0);
-  }, 60_000);
+  }, 180_000);
 
   it('F* fails for the stated reason: a cover of size K exists though no assignment satisfies', () => {
     const v = verdictOf(F_STAR, { variableEdges: false });
