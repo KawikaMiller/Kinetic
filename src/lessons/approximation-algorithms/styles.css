@@ -1,7 +1,7 @@
 .aa-stage { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
 .aa-graph { width: 100%; max-width: 640px; margin: 0 auto; --graph-tint: 45%; }
 .aa-optimum { fill: none; stroke: var(--ok); stroke-width: 3; pointer-events: none; }
-.aa-note { min-height: 1.4em; }
+.aa-note { min-height: 1.4em; display: flex; flex-direction: column; gap: 6px; }
 .aa-proof { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .aa-proof-text { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
 .aa-meters { display: flex; flex-direction: column; gap: 6px; }

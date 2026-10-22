@@ -43,7 +43,7 @@ describe('try-this entries, from the default state, as written', () => {
     const f = starFacts(100);
     expect(starBanner(f)).toContain('The guarantee no longer applies');
     expect(f.ratio.toFixed(2)).toBe('31.31');
-    expect(starCaption(f)).toBe('The triangle inequality fails at M = 100. MST doubling costs 203.5 against an optimum of 6.5: a ratio of 31.31.');
+    expect(starCaption(f)).toBe('The triangle inequality fails at M = 100. MST doubling (children in index order) costs 203.5 against an optimum of 6.5: a ratio of 31.31.');
     expect(lesson.tryThis[3]).toContain('ratio reads 31.31');
   });
 

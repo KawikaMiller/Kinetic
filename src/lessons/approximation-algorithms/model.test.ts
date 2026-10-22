@@ -6,7 +6,8 @@ import { maximalMatching, type Edge } from '../../core/vertexCover';
 /** K3,3 by hand: vertices 0 to 2 on the left, 3 to 5 on the right, edges in the order the lesson lists them. */
 const K33_EDGES: readonly Edge[] = [[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [1, 5], [2, 3], [2, 4], [2, 5]];
 import { ONE_ENDPOINT_WITNESS, VC_PRESETS, coverResult, finishMatching, presetGraph, toggleMatchingEdge } from './vc';
-import { ADVERSARY_SEED, ADVERSARY_STEPS, ADVERSARY_UNIT, M7, PLANE, adversary, edgesOf, toursOf } from './tours';
+import { ADVERSARY_SEED, ADVERSARY_STEPS, ADVERSARY_UNIT, M7, PLANE, adversary, edgesOf, orderNote, toursOf } from './tours';
+import { MAX_ORDERS, visitingOrders } from './orders';
 import { CENTRE_LEG, CHEAP_PAIR, DETOUR, STAR_M, clampM, starBanner, starFacts, starMatrix } from './star';
 
 // Independent oracles, written here and not taken from the kit.
@@ -330,3 +331,53 @@ describe('the non-metric star, by hand', () => {
 
 /** How many of those 200 seeded graphs the one-endpoint rule leaves an edge uncovered on (found by running the loop above; over 90%, so the page shows a witness instead). */
 const BROKEN_OF_200 = 192;
+
+describe('the pinned visiting order is one valid order, not the method', () => {
+  const matrixCost = (d: readonly (readonly number[])[], tour: readonly number[]) => tour.reduce((sum, v, i) => sum + d[v][tour[(i + 1) % tour.length]], 0);
+  const perms = (xs: readonly number[]): number[][] => (xs.length <= 1 ? [[...xs]] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((r) => [x, ...r])));
+
+  it('star at M = 100: trying all 24 leaf orders by hand, the best costs 1 + 1.5 + 1.5 + 1.5 + 1 = 6.5, the optimum, so the ratio is 1', () => {
+    for (const m of [1.5, 2, 4.75, 100, 200]) {
+      const d = starMatrix(m);
+      const costs = perms([1, 2, 3, 4]).map((p) => matrixCost(d, [0, ...p]));
+      expect(Math.min(...costs)).toBeCloseTo(6.5, 9);
+      const f = starFacts(m);
+      expect(f.bestOrderLength).toBeCloseTo(Math.min(...costs), 9);
+      expect(f.bestOrderRatio).toBeCloseTo(1, 9);
+    }
+    // The pinned index order O, L1, L2, L3, L4 costs 1 + M + 1.5 + M + 1 = 3.5 + 2M.
+    expect(matrixCost(starMatrix(100), [0, 1, 2, 3, 4])).toBeCloseTo(203.5, 9);
+    expect(starFacts(100).doublingLength).toBeCloseTo(203.5, 9);
+  });
+
+  it('M7: the tree has two valid orders; the pinned one is 35.3858 and the other is the optimum 26.7612', () => {
+    const d = distanceMatrix(M7);
+    const tree = toursOf(M7).mst.edges;
+    const parent = new Map(tree.map(([p, c]) => [c, p]));
+    // Valid preorder: every vertex comes after its parent and each subtree is one contiguous block (checked by brute force over all 720 orders).
+    const subtree = (v: number): Set<number> => new Set([v, ...tree.filter(([p]) => p === v).flatMap(([, c]) => [...subtree(c)])]);
+    const valid = perms([1, 2, 3, 4, 5, 6]).map((p) => [0, ...p]).filter((t) =>
+      t.every((v, i) => {
+        if (v !== 0 && t.indexOf(parent.get(v) as number) > i) return false;
+        const block = subtree(v);
+        return t.slice(i, i + block.size).every((u) => block.has(u));
+      }));
+    expect(valid).toHaveLength(2);
+    const costs = valid.map((t) => matrixCost(d, t)).sort((a, b) => a - b);
+    expect(costs[0]).toBeCloseTo(26.7612, 3);
+    expect(costs[1]).toBeCloseTo(35.3858, 3);
+    const summary = visitingOrders(d);
+    expect(summary.count).toBe(2);
+    expect(summary.best?.length).toBeCloseTo(26.7612, 3);
+    expect(toursOf(M7).doubling.length).toBeCloseTo(35.3858, 3);
+  });
+
+  it('a hub with 9 leaves (possible only off the plane) has 9! orders, over the cap, so the best is reported as not computed', () => {
+    const d = Array.from({ length: 10 }, (_, a) => Array.from({ length: 10 }, (_, b) => (a === b ? 0 : a === 0 || b === 0 ? 1 : 5)));
+    const s = visitingOrders(d);
+    expect(s.count).toBe(362880);
+    expect(s.count).toBeGreaterThan(MAX_ORDERS);
+    expect(s.best).toBeNull();
+    expect(orderNote(toursOf(M7), s)).toContain('not computed');
+  });
+});

@@ -7,9 +7,10 @@ import { Button, ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance,
 import type { Tone } from '../../core/tone';
 import type { Point } from '../../core/tsp';
 import {
-  ADVERSARY_SEED, ADVERSARY_STEPS, BOUND_CHRISTOFIDES, BOUND_DOUBLING, M7, PLANE, POINT_LIMITS, adversary, adversaryText, clampToPlane, edgesOf, lengthOf, toursCaption, toursOf,
+  ADVERSARY_SEED, ADVERSARY_STEPS, BOUND_CHRISTOFIDES, BOUND_DOUBLING, M7, PLANE, POINT_LIMITS, adversary, adversaryText, clampToPlane, edgesOf, lengthOf, orderNote, toursCaption, toursOf,
   type AdversaryResult, type TourKind,
 } from './tours';
+import { visitingOrders } from './orders';
 
 const PHONE_WIDTH = 356;
 const DESKTOP_WIDTH = 480;
@@ -48,6 +49,7 @@ export function TourScene({ picker }: { picker: ReactNode }) {
   const [seed, setSeed] = useState(ADVERSARY_SEED);
   const [found, setFound] = useState<AdversaryResult | null>(null);
   const tours = useMemo(() => toursOf(points), [points]);
+  const orders = useMemo(() => visitingOrders(tours.dist), [tours]);
   const drawn = KINDS.filter((k) => k === 'optimum' || shown.includes(k));
   const caption = found ? `${adversaryText(found, points.length)} ${toursCaption(tours)}` : toursCaption(tours);
 
@@ -67,7 +69,7 @@ export function TourScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Optimum tour" value={tours.optimum.length.toFixed(2)} color="var(--ok)" sub="exact, Held-Karp" />
           <Stat label="Spanning tree" value={tours.mst.weight.toFixed(2)} sub={tours.mst.weight <= tours.optimum.length ? 'at most the optimum' : 'above the optimum'} />
-          <Stat label="MST doubling" value={tours.doubling.length.toFixed(2)} sub={`ratio ${tours.ratioDoubling.toFixed(2)}`} />
+          <Stat label="MST doubling" value={tours.doubling.length.toFixed(2)} sub={`ratio ${tours.ratioDoubling.toFixed(2)}, index order`} />
           <Stat label="Christofides" value={tours.christofides.length.toFixed(2)} sub={`ratio ${tours.ratioChristofides.toFixed(2)}`} />
         </Stats>
       }
@@ -126,6 +128,7 @@ export function TourScene({ picker }: { picker: ReactNode }) {
           <Meter label="MST doubling" ratio={tours.ratioDoubling} bound={BOUND_DOUBLING} tone="info" />
           <Meter label="Christofides" ratio={tours.ratioChristofides} bound={BOUND_CHRISTOFIDES} tone="violet" />
           <Hint block>The bars run from ratio 1 to 2.2; the marks are the proved ceilings 1.5 and 2. The spanning tree weighs {lengthOf(tours, "mst").toFixed(2)}, at most the optimum {tours.optimum.length.toFixed(2)}, because a tour with one edge removed is a spanning tree.</Hint>
+          <Hint block>{orderNote(tours, orders)}</Hint>
         </div>
         <div className="aa-proof">
           <ClaimLabel kind="theorem">MST doubling is within 2 of the optimum, and Christofides within 1.5, when distances obey the triangle inequality</ClaimLabel>

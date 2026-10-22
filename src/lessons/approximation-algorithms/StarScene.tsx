@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { minWidthForText } from '../../core/scale';
-import { STAR_AT, STAR_M, STAR_NAMES, clampM, starBanner, starCaption, starEdges, starFacts } from './star';
+import { STAR_AT, STAR_M, STAR_NAMES, clampM, starBanner, starCaption, starEdges, starFacts, starOrderNote } from './star';
 
 const GRAPH_W = 560;
 const GRAPH_H = 300;
@@ -36,7 +36,7 @@ export function StarScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Optimum tour" value={facts.optimumLength} color="var(--ok)" sub="exact, Held-Karp" />
-          <Stat label="MST doubling" value={facts.doublingLength} sub={`tree weight ${facts.mstWeight}, doubled tour 3.5 + 2M`} />
+          <Stat label="MST doubling" value={facts.doublingLength} sub={`index order; tree weight ${facts.mstWeight}, tour 3.5 + 2M`} />
           <Stat label="Ratio" value={facts.ratio.toFixed(2)} color={facts.violates ? 'var(--bad)' : undefined} sub={facts.violates ? 'bound of 2 no longer applies' : 'within the metric bound'} />
         </Stats>
       }
@@ -82,7 +82,9 @@ export function StarScene({ picker }: { picker: ReactNode }) {
           />
         </WideRegion>
         <div role="status" className="aa-note">
-          {banner ? <Hint tone="bad" block>{banner}</Hint> : <Hint block>Christofides is not drawn here: its tour depends on the Euler-circuit tie-break and would look better than it should. The three expensive pairs are L1-L2, L1-L4 and L3-L4; the three cheap pairs cost 1.5.</Hint>}
+          {banner && <Hint tone="bad" block>{banner}</Hint>}
+          <Hint block>{starOrderNote(facts)}</Hint>
+          <Hint block>Christofides is not drawn here: its tour depends on the Euler-circuit tie-break and would look better than it should. The three expensive pairs are L1-L2, L1-L4 and L3-L4; the three cheap pairs cost 1.5.</Hint>
         </div>
         <div className="aa-proof">
           <ClaimLabel kind="theorem">on a metric, shortcutting never lengthens a tour; without the triangle inequality that step fails, as the ratio growing with M shows</ClaimLabel>

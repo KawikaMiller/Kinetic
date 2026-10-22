@@ -1,5 +1,6 @@
 import type { Pt } from '../../core/graphLayout';
 import { doubleTreeTour, heldKarp, primMst, type Edge } from '../../core/tsp';
+import { visitingOrders } from './orders';
 
 /**
  * The non-metric star: centre O joined to the leaves L1 to L4 by distance 1; the leaf pairs (L1, L3), (L3, L2), (L2, L4)
@@ -45,6 +46,9 @@ export interface StarFacts {
   optimumTour: number[];
   mstWeight: number;
   ratio: number;
+  /** The shortest tour among the tree's valid visiting orders, and its ratio to the optimum. */
+  bestOrderLength: number;
+  bestOrderRatio: number;
   /** M exceeds the detour: the triangle inequality fails on the expensive pairs. */
   violates: boolean;
 }
@@ -53,6 +57,7 @@ export function starFacts(m: number): StarFacts {
   const d = starMatrix(m);
   const doubling = doubleTreeTour(d);
   const optimum = heldKarp(d);
+  const bestOrder = visitingOrders(d).best ?? doubling;
   return {
     m,
     doublingLength: doubling.length,
@@ -61,6 +66,8 @@ export function starFacts(m: number): StarFacts {
     optimumTour: optimum.tour,
     mstWeight: primMst(d).weight,
     ratio: doubling.length / optimum.length,
+    bestOrderLength: bestOrder.length,
+    bestOrderRatio: bestOrder.length / optimum.length,
     violates: m > DETOUR,
   };
 }
@@ -76,7 +83,13 @@ export function starBanner(f: StarFacts): string | null {
   return `The guarantee no longer applies: d(L1, L2) = ${f.m} exceeds the detour d(L1, O) + d(O, L2) = ${DETOUR}, so shortcutting can lengthen the tour. Ratio here: ${f.ratio.toFixed(1)}.`;
 }
 
+/** What the numbers above are, and what the guarantee is: a bound over every valid visiting order, not over this one. */
+export function starOrderNote(f: StarFacts): string {
+  const another = `Another valid order costs ${f.bestOrderLength} here, a ratio of ${f.bestOrderRatio.toFixed(2)}`;
+  return `These numbers are for the pinned visiting order: the tree's children in index order (L1, L2, L3, L4). The guarantee is a bound over every valid order, and failing means some order is that bad. ${another}.`;
+}
+
 export function starCaption(f: StarFacts): string {
   const holds = f.violates ? 'The triangle inequality fails' : f.m === DETOUR ? 'The triangle inequality holds with equality' : 'The triangle inequality holds';
-  return `${holds} at M = ${f.m}. MST doubling costs ${f.doublingLength} against an optimum of ${f.optimumLength}: a ratio of ${f.ratio.toFixed(2)}.`;
+  return `${holds} at M = ${f.m}. MST doubling (children in index order) costs ${f.doublingLength} against an optimum of ${f.optimumLength}: a ratio of ${f.ratio.toFixed(2)}.`;
 }

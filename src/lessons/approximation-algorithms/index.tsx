@@ -16,7 +16,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'An approximation algorithm runs in polynomial time and comes with a proved worst-case ratio against the optimum: you build a matching whose cover is no more than twice the minimum, then watch a tour guarantee fail when distances stop obeying the triangle inequality.',
-    what: `Exact answers to NP-hard problems are slow, so an approximation algorithm settles for an answer provably within a factor of the best. For vertex cover, pick a maximal matching and take both endpoints of each matching edge: the cover is no more than twice the minimum. For a metric travelling-salesman tour, doubling a minimum spanning tree stays within 2 of the best tour and Christofides' method within 1.5. These are proofs, which the lesson checks against exact optima on small inputs, and the tour guarantee depends on the triangle inequality: on the lesson's star the same method is ${STAR_FAR.ratio.toFixed(1)} times the optimum at M = ${STAR_FAR.m}.`,
+    what: `Exact answers to NP-hard problems are slow, so an approximation algorithm settles for an answer provably within a factor of the best. For vertex cover, pick a maximal matching and take both endpoints of each matching edge: the cover is no more than twice the minimum. For a metric travelling-salesman tour, doubling a minimum spanning tree stays within 2 of the best tour and Christofides' method within 1.5. These are proofs, which the lesson checks against exact optima on small inputs, and the tour guarantee depends on the triangle inequality: on the lesson's star, with the tree's leaves visited in index order, the same method is ${STAR_FAR.ratio.toFixed(1)} times the optimum at M = ${STAR_FAR.m}, while another valid visiting order costs ${STAR_FAR.bestOrderLength}.`,
     analogy: 'Quoting a taxi fare with a ceiling: you may not find the cheapest route, but you can prove the route you picked costs no more than twice the cheapest one.',
     useCases: [
       'Choosing a fast method with a proved ceiling when the exact problem (cover, routing, scheduling) is NP-hard',
@@ -31,14 +31,14 @@ const lesson: LessonModule = {
     `In Vertex cover on ${VC_PRESETS[0].label}, press the edges (0, 3), (1, 4) and (2, 5), then Done: the cover has ${K33_RESULT.cover.length} vertices, the optimum ${K33_RESULT.optimum.size}, and the ratio is exactly ${K33_RESULT.ratio?.toFixed(2)}.`,
     'Press the edge (0, 4): it is refused because vertex 0 is already matched.',
     `Open Metric tour and press Load M7: MST doubling has ratio ${M7_TOURS.ratioDoubling.toFixed(2)}, Christofides ${M7_TOURS.ratioChristofides.toFixed(2)}, and the spanning tree weighs ${M7_TOURS.mst.weight.toFixed(2)}, below the optimum ${M7_TOURS.optimum.length.toFixed(2)}.`,
-    `Open Break the metric and set M to ${STAR_FAR.m}: the red banner says the guarantee no longer applies and the ratio reads ${STAR_FAR.ratio.toFixed(2)}.`,
-    `Set M back to ${STAR_METRIC.m}: the banner is gone and the ratio reads ${STAR_METRIC.ratio.toFixed(2)}, because the triangle inequality holds with equality.`,
+    `Open Break the metric and set M to ${STAR_FAR.m}: the red banner says the guarantee no longer applies and the ratio reads ${STAR_FAR.ratio.toFixed(2)} for the index visiting order; the note beneath says another order costs ${STAR_FAR.bestOrderLength}.`,
+    `Set M back to ${STAR_METRIC.m}: the banner is gone because the triangle inequality holds with equality, and the ratio reads ${STAR_METRIC.ratio.toFixed(2)}: the tour costs ${STAR_METRIC.doublingLength} against ${STAR_METRIC.optimumLength}.`,
   ],
   keyIdeas: [
     'An approximation algorithm runs in polynomial time and proves a worst-case ratio against the optimum on any input; a fast method with no such proof is a heuristic.',
     `Taking both endpoints of a maximal matching gives a vertex cover no more than twice the minimum (a theorem argued in the lesson: the matching edges are disjoint, so the optimum needs one endpoint of each); on K3,3 the cover is ${K33_RESULT.cover.length} against ${K33_RESULT.optimum.size}, so the factor 2 is reached.`,
-    `For metric TSP the proof that MST doubling is within 2 and Christofides within 1.5 rests on the tree weighing no more than the optimum; on the 7-point map the ratios are ${M7_TOURS.ratioDoubling.toFixed(2)} and ${M7_TOURS.ratioChristofides.toFixed(2)}, and one map is an example, not the guarantee.`,
-    `Each ingredient of a guarantee matters: with the triangle inequality broken the same tour is ${STAR_FAR.ratio.toFixed(2)} times the optimum at M = ${STAR_FAR.m}, and keeping one endpoint per matching edge leaves an edge uncovered, as the 3-vertex path shows.`,
+    `For metric TSP the proof that MST doubling is within 2 and Christofides within 1.5 rests on the tree weighing no more than the optimum; on the 7-point map the ratios are ${M7_TOURS.ratioDoubling.toFixed(2)} (children in index order) and ${M7_TOURS.ratioChristofides.toFixed(2)}, and one map and one visiting order are an example, not the guarantee.`,
+    `Each ingredient of a guarantee matters: with the triangle inequality broken the doubling tour that visits the leaves in index order is ${STAR_FAR.ratio.toFixed(2)} times the optimum at M = ${STAR_FAR.m} (the guarantee is a bound over the valid visiting orders of the tree, and failing means some order is that bad; another order here costs ${STAR_FAR.bestOrderLength}), and keeping one endpoint per matching edge leaves an edge uncovered, as the 3-vertex path shows.`,
   ],
   quiz: [
     {
@@ -72,7 +72,7 @@ const lesson: LessonModule = {
         `It no longer applies; on the lesson's star the tour is ${Math.round(STAR_FAR.ratio)} times the optimum`,
       ],
       answer: 3,
-      why: `The proof needs shortcuts to be no longer than the detours they replace, and that is the triangle inequality. On the star at M = ${STAR_FAR.m} the tour costs ${STAR_FAR.doublingLength} against an optimum of ${STAR_FAR.optimumLength}, a ratio of ${STAR_FAR.ratio.toFixed(2)}; the tree is unchanged, but the shortcut argument is not.`,
+      why: `The proof needs shortcuts to be no longer than the detours they replace, and that is the triangle inequality. On the star at M = ${STAR_FAR.m} the tour that visits the leaves in index order costs ${STAR_FAR.doublingLength} against an optimum of ${STAR_FAR.optimumLength}, a ratio of ${STAR_FAR.ratio.toFixed(2)}; the tree is unchanged, but the shortcut argument is not. A different visiting order of the same tree costs ${STAR_FAR.bestOrderLength} here, which is why the guarantee is a bound over the valid visiting orders of the tree.`,
     },
     {
       q: `On the lesson's 7-point map the tree weighs ${M7_TOURS.mst.weight.toFixed(1)} and the best tour ${M7_TOURS.optimum.length.toFixed(1)}. Why can the spanning tree not weigh more than the best tour?`,
