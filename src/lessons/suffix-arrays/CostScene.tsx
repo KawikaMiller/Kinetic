@@ -72,12 +72,13 @@ export function CostScene({ picker }: { picker: ReactNode }) {
           <Points data={[{ x: n, y: Math.max(PLOT_Y_MIN, random.comparisons), tone: 'info' }, { x: n, y: Math.max(PLOT_Y_MIN, random.charsCompared), tone: 'ok' }, { x: n, y: Math.max(PLOT_Y_MIN, worst.charsCompared), tone: 'bad' }]} />
         </Plot2D>
         <p className="sa-note">
-          A random string differs from its neighbours after a few letters, so each comparator call stops early. In a^n two suffixes agree until the shorter one ends, so a call looks at a long stretch of characters (the per-call figure above) and the whole sort is far costlier.
+          A random string differs from its neighbours after a few letters, so each comparator call stops early. In a^n two suffixes agree until the shorter one ends, so a call looks at a long stretch of characters (the per-call figure above) and the whole sort looks at far more characters.
           Linear-time constructions exist and are named, not built, here: <Provenance kind="from-memory">SA-IS (Nong, Zhang and Chan, 2009) and DC3</Provenance> (verify against the original papers).
         </p>
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated" seed={seed}>a seeded random string; every count comes from a real merge sort of the suffixes</Provenance>
+        <Provenance kind="from-memory">uses such as genome indexes and the Burrows-Wheeler transform: verify against Gusfield, Algorithms on Strings, Trees and Sequences</Provenance>
       </ProvenanceRow>
     </StageFrame>
   );

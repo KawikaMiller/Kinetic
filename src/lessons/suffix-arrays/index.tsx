@@ -45,7 +45,7 @@ const lesson: LessonModule = {
     {
       q: 'Someone says a suffix array stores every substring of the text. What is the accurate picture?',
       options: [
-        'It holds only n start positions; any substring is a prefix of some suffix, found by binary search',
+        'It holds only n start positions; a substring is a prefix of some suffix',
         'It stores all n(n+1)/2 substrings, sorted, which is why it needs so much memory',
         'It stores one string per distinct letter and rebuilds the rest on demand later',
         'It stores only the repeated substrings, which it finds with the LCP column',
@@ -79,7 +79,7 @@ const lesson: LessonModule = {
       q: `How many different substrings does ${F.text} have?`,
       options: [
         '21, because a word of 6 letters has 6 times 7 over 2 substrings',
-        '15: the 21 start-and-length pairs minus 6 repeats',
+        '15, because the 21 start-and-length pairs include 6 repeats',
         '6, one substring for each of the six starting positions in the word',
         '12, one for each start position paired with each possible length',
       ],
