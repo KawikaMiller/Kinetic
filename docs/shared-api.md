@@ -488,6 +488,8 @@
 `<ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 `<ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
 `<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
+`<ChipButton tone="info" softDisabled={added.includes(f)} onClick={() => add(f)}>{f}</ChipButton>   // aria-disabled, stays focusable: use it where the press itself switches the chip off
+`<ChipButton onClick={(e) => { refocusAfterRemove(e.currentTarget, { group: '.my-list', items: 'button', fallback: '.add-row button' }); remove(); }}>×</ChipButton>   // core/refocus: focus the control now in the removed one's place, else the fallback (persistent-data-structures, schema-evolution, cloud-networking-vpc, lambda-calculus)
 `<ChipButton tone="bad" onClick={(e) => { refocusAfter(e.currentTarget); remove(); }}>×</ChipButton>  // onClick receives the click event: hand focus on from e.currentTarget, never document.activeElement (cloud-networking-vpc, offline-first-sync)
 `const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 `<StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
