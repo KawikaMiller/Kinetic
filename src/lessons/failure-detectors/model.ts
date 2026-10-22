@@ -198,6 +198,14 @@ export function isFalseSuspicion(t: number, setup: Pick<DetectorSetup, 'crashAt'
 
 export const falseSuspicions = (d: Detector): number[] => d.monitor.suspicions.filter((t) => isFalseSuspicion(t, d.setup));
 
+/** The silence M waited before its first false suspicion: the timeout actually in force then (the phi rule's estimate grows with the gaps it has seen). Null without one. */
+export function waitAtFirstFalse(d: Detector): number | null {
+  const first = falseSuspicions(d)[0];
+  if (first === undefined) return null;
+  const last = d.monitor.arrivals.filter((a) => a < first).at(-1) ?? 0;
+  return first - last;
+}
+
 /** After a crash: how long M took to suspect for good (the suspicion that follows the last arrival), or null if it never did. */
 export function detectionTime(d: Detector): number | null {
   const { crashAt } = d.setup;
@@ -357,10 +365,13 @@ export interface Verdict {
   indistinguishable: boolean;
   /** Which worlds the answer is right in. */
   rightIn: ('A' | 'B')[];
+  /** Which run the answer is right in, as a sentence. */
+  scope: string;
   text: string;
 }
 
 const fmtMs = (ms: number) => String(Math.round(ms));
+const answerScope = (guess: Guess): string => `Your answer, "${guess}", is right in run ${guess === 'crashed' ? 'A' : 'B'} only.`;
 
 /** Scoring a "say crashed" / "say paused" answer at decision time `decideAt`, in both worlds (A: crash, B: pause). */
 export function judge(twin: TwinRuns, decideAt: number, guess: Guess): Verdict {
@@ -373,10 +384,10 @@ export function judge(twin: TwinRuns, decideAt: number, guess: Guess): Verdict {
       guess === 'paused'
         ? `In run A the peer is dead. M's observations were the same until ${x} ms, so this answer was a guess.`
         : `In run B the peer was only paused. M's observations were the same until ${x} ms, so this answer was a guess.`;
-    return { indistinguishable: true, rightIn, text };
+    return { indistinguishable: true, rightIn, scope: answerScope(guess), text };
   }
   const text = `By ${fmtMs(decideAt)} ms the runs have parted: a heartbeat reached M at ${fmtMs(parts)} ms in run B and nothing did in run A, so a detector can tell them apart now. "Paused" fits the list with that heartbeat, "crashed" fits the list without it.`;
-  return { indistinguishable: false, rightIn, text };
+  return { indistinguishable: false, rightIn, scope: answerScope(guess), text };
 }
 
 /* ---------- scene 4: SWIM, ask a friend ---------- */

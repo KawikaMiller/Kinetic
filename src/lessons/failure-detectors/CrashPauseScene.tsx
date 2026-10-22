@@ -68,12 +68,12 @@ export function CrashPauseScene({ picker }: { picker: ReactNode }) {
           <div className="fd-pair">
             <div>
               <div className="fd-pair-title">Run A: P crashes at 5.0 s</div>
-              <Lane d={twin.crash} from={LANE_FROM_MS} to={to} mark={parts === null ? undefined : { at: parts, label: 'runs part' }} label="Run A, heartbeats and suspicions with P crashing at 5 seconds" />
+              <Lane d={twin.crash} from={LANE_FROM_MS} to={to} mark={parts === null ? undefined : { at: parts, label: 'runs part' }} decide={s.decideAt} label="Run A, heartbeats and suspicions with P crashing at 5 seconds" />
               <p className="fd-note">Heartbeats by {ms(s.decideAt)}: ...{lastArrivals(twin.crash.monitor.arrivals, s.decideAt)}</p>
             </div>
             <div>
               <div className="fd-pair-title">Run B: P paused for {s.pauseMs} ms from 5.0 s</div>
-              <Lane d={twin.pause} from={LANE_FROM_MS} to={to} mark={parts === null ? undefined : { at: parts, label: 'runs part' }} label={`Run B, heartbeats and suspicions with P paused for ${s.pauseMs} milliseconds`} />
+              <Lane d={twin.pause} from={LANE_FROM_MS} to={to} mark={parts === null ? undefined : { at: parts, label: 'runs part' }} decide={s.decideAt} label={`Run B, heartbeats and suspicions with P paused for ${s.pauseMs} milliseconds`} />
               <p className="fd-note">Heartbeats by {ms(s.decideAt)}: ...{lastArrivals(twin.pause.monitor.arrivals, s.decideAt)}</p>
             </div>
           </div>
@@ -86,6 +86,7 @@ export function CrashPauseScene({ picker }: { picker: ReactNode }) {
           <Box>
             <SectionTitle hint={`you said "${s.answered?.guess}" at ${ms(s.answered?.decideAt ?? 0)}`}>The verdict</SectionTitle>
             <p className={`fd-verdict ${verdict.indistinguishable ? 'is-guess' : ''}`}>{verdict.text}</p>
+            <p className="fd-note">{verdict.scope}</p>
           </Box>
         )}
         <ProvenanceRow>

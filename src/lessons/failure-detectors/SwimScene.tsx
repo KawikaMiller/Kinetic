@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { toSequence } from '../../core/distSim';
 import { integer, pctText } from '../../core/format';
-import { initialSwim, swimCaption } from './init';
+import { initialSwim, swimCaption, swimExactSub } from './init';
 import {
   SWIM_HELPERS, SWIM_K, SWIM_LOSS, SWIM_PERIOD_MS, SWIM_END_MS, runSwim, swimEnumerated, swimFalseSuspicions, swimPatternCount, type SwimCut, type SwimMsg, type SwimSetup,
 } from './model';
@@ -53,7 +53,7 @@ export function SwimScene({ picker }: { picker: ReactNode }) {
       legend={legend}
       stats={
         <Stats>
-          <Stat label="Wrongly suspected" value={pctText(exact, 2)} color={exact > 0 ? 'var(--bad)' : 'var(--ok)'} sub={`exact: all ${integer(swimPatternCount(s.k))} loss patterns of the ${2 + 4 * s.k} messages, per period`} />
+          <Stat label="Wrongly suspected" value={pctText(exact, 2)} color={exact > 0 ? 'var(--bad)' : 'var(--ok)'} sub={swimExactSub(s, swimPatternCount(s.k))} />
           <Stat label="Measured" value={`${missed} of ${s.periods}`} sub={`periods without an ack, sampled over ${integer(s.periods)} periods (${pctText(missed / s.periods, 2)})`} />
         </Stats>
       }

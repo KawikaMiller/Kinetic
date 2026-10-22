@@ -64,12 +64,34 @@ describe('closed forms (hand-worked, then checked by scipy and by integration)',
 });
 
 describe('the monitor on distSim measures what the closed forms say', () => {
-  it('false suspicions per minute sit just under the send-order closed form (M sees heartbeats in ARRIVAL order, where a late one can be overtaken)', () => {
-    for (const t of [150, 185]) {
-      const m = measurePoint(base(), t);
-      const closed = falsePerMinute(t, JITTER.default);
-      expect(m.falsePerMin / closed).toBeGreaterThan(0.85);
-      expect(m.falsePerMin / closed).toBeLessThan(1.03);
+  it('false suspicions per minute fall under the send-order closed form as T grows, at every jitter, and match an independent arrival-order simulation', () => {
+    // Own event simulation (own generator, no distSim): heartbeat i leaves at 100 i and arrives after a delay; M sees the arrival ORDER,
+    // so a late heartbeat that is overtaken never produces its long gap. Measured over 3,000 simulated minutes per point.
+    const ownRate = (t: number, s: number): number => {
+      const rnd = mulberry32(777);
+      const n = 3_000 * 600;
+      const arrive = new Float64Array(n);
+      for (let i = 0; i < n; i++) arrive[i] = i * HEARTBEAT_MS + Math.min(LATENCY_CAP_MS, 1 - s * Math.log(1 - rnd()));
+      arrive.sort();
+      let over = 0;
+      for (let i = 1; i < n; i++) if (arrive[i]! - arrive[i - 1]! > t) over++;
+      return over / 3_000;
+    };
+    const ratio = (t: number, s: number) => measurePoint(base({ jitterMs: s }), t).falsePerMin / falsePerMinute(t, s);
+    // The page states these ratios: close to 1 at short T, about 0.4 at T = 210 and a few per cent at 250 (20 ms jitter), lower still at 40 and 60 ms.
+    expect(ratio(150, 20)).toBeGreaterThan(0.85);
+    expect(ratio(185, 20)).toBeGreaterThan(0.85);
+    expect(ratio(185, 20)).toBeLessThan(1.03);
+    expect(ratio(210, 20)).toBeGreaterThan(0.3);
+    expect(ratio(210, 20)).toBeLessThan(0.55);
+    expect(ratio(250, 20)).toBeLessThan(0.1);
+    expect(ratio(185, 60)).toBeGreaterThan(0.6);
+    expect(ratio(185, 60)).toBeLessThan(0.8);
+    expect(ratio(250, 60)).toBeLessThan(0.35);
+    for (const s of [20, 40, 60]) expect(ratio(250, s)).toBeLessThan(ratio(150, s));
+    for (const [t, s] of [[210, 20], [185, 40], [185, 60], [250, 60]] as const) {
+      const own = ownRate(t, s) / falsePerMinute(t, s);
+      expect(Math.abs(ratio(t, s) - own), `T ${t} s ${s}`).toBeLessThan(0.1);
     }
   });
 

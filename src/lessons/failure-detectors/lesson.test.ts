@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
-import { DEFAULT_DECIDE_AT, crashPauseCaption, initialCrashPause, initialPhi, initialSwim, initialTimeout, swimCaption, timeoutCaption } from './init';
+import {
+  CUT_NAMES, DEFAULT_DECIDE_AT, closedFormNote, crashPauseCaption, dotRatios, initialCrashPause, initialPhi, initialSwim, initialTimeout, phiMeasuredSub, phiTailHint, seedSweepText,
+  swimCaption, swimExactSub, timeoutCaption,
+} from './init';
 import lesson from './index';
 import {
-  BROKEN_SEED, defaultSetup, detectionMean, detectionTime, expectedFalseInRun, falseSuspicions, judge, runDetector, runSwim, setupFor, swimEnumerated,
-  swimFalseSuspicions, twinRuns,
+  BROKEN_SEED, SWEEP_SEEDS, SWEEP_TIMEOUTS, defaultSetup, detectionMean, detectionTime, expectedFalseInRun, failingSeeds, falseSuspicions, judge, measurePoint, phiReadout,
+  runDetector, runSwim, setupFor, swimEnumerated, swimFalseSuspicions, twinRuns, waitAtFirstFalse,
 } from './model';
 
 const fmt = (x: number, dp: number) => x.toFixed(dp);
@@ -83,5 +86,102 @@ describe('every scene opens from a pure state, and its caption is built from the
 describe('quiz balance', () => {
   it('the correct option is strictly the longest in at most one question of five', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('on-screen claims are computed from the model (review fixes)', () => {
+  const bad = (timeoutMs: number, jitterMs: number, rule: 'fixed' | 'phi' = 'fixed', phi = 8) => {
+    const out: number[] = [];
+    for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
+      if (falseSuspicions(runDetector({ ...defaultSetup(), seed, timeoutMs, jitterMs, rule, phi }, 10_000)).length > 0) out.push(seed);
+    }
+    return out;
+  };
+
+  it('the seed-sweep line prints k of 200, the lowest failing seed and the sampled label, counted by a second route (end-of-run suspicions)', () => {
+    const c = defaultSetup();
+    const text = seedSweepText(c, failingSeeds(c));
+    const own = bad(c.timeoutMs, c.jitterMs);
+    expect(text).toContain(`fails on ${own.length} of 200 seeds`);
+    expect(text).toContain(`lowest failing seed ${own[0]}`);
+    expect(own[0]).toBe(BROKEN_SEED);
+    expect(text).toContain('Sampled over seeds 1 to 200, not exhaustive');
+    const calm = { ...c, timeoutMs: 400 };
+    expect(seedSweepText(calm, failingSeeds(calm))).toContain('fails on 0 of 200 seeds');
+    const phiSetup = { ...c, rule: 'phi' as const, phi: 3 };
+    expect(seedSweepText(phiSetup, failingSeeds(phiSetup))).toContain(`fails on ${bad(c.timeoutMs, c.jitterMs, 'phi', 3).length} of 200 seeds`);
+  });
+
+  it('the closed-form note states the measured ratios (not "a few per cent") and they match the dots', () => {
+    const points = SWEEP_TIMEOUTS.map((t) => measurePoint(defaultSetup(), t));
+    const note = closedFormNote(points, 20);
+    expect(note).not.toContain('a few per cent');
+    const r = dotRatios(points, 20)!;
+    expect(note).toContain(`${Math.round(r.to.ratio * 100)}% at T = ${r.to.timeoutMs} ms`);
+    expect(r.from.ratio).toBeGreaterThan(0.9);
+    expect(r.to.ratio).toBeLessThan(0.1);
+    expect(closedFormNote(null, 20)).toContain('Measure to see');
+  });
+
+  it('the phi hint says above, below or equal from the closed form: below at phi 1, above at phi 8', () => {
+    const lowPhi = phiReadout(BROKEN_SEED, 20, 1);
+    const highPhi = phiReadout(BROKEN_SEED, 20, 8);
+    expect(phiTailHint(lowPhi, 1)).toContain('below the model');
+    expect(phiTailHint(highPhi, 8)).toContain('above the model');
+    expect(phiTailHint(highPhi, 8)).not.toContain('far above');
+    // Measured phi 1 is under 10% (review: 5.86%), so "below" is what the learner's own number shows.
+    expect(lowPhi.exceeded / lowPhi.gaps).toBeLessThan(0.1);
+  });
+
+  it('the measured phi stat sub reports the expected count and says when there are too few events to compare', () => {
+    const highPhi = phiReadout(BROKEN_SEED, 20, 8);
+    expect(phiMeasuredSub(highPhi)).toContain('too few to compare');
+    const midPhi = phiReadout(BROKEN_SEED, 20, 3);
+    expect(phiMeasuredSub(midPhi)).toMatch(/so arrival order gives \d+% of it/);
+  });
+
+  it('phi mode: the wait at the first false suspicion is the silence M actually waited, and it is named in the caption', () => {
+    const setup = { ...defaultSetup(), rule: 'phi' as const, phi: 1 };
+    const d = runDetector(setup, 10_000);
+    const n = falseSuspicions(d).length;
+    expect(n).toBeGreaterThan(0);
+    const first = falseSuspicions(d)[0]!;
+    const lastArrival = d.monitor.arrivals.filter((a) => a < first).at(-1) ?? 0;
+    expect(waitAtFirstFalse(d)).toBe(first - lastArrival);
+    const caption = timeoutCaption({ ...initialTimeout(), controls: setup, ran: 'quiet' }, n, waitAtFirstFalse(d));
+    expect(caption).toContain(`after only ${Math.round(first - lastArrival)} ms of silence`);
+  });
+
+  it('the swim caption names the cut that is on, and the exact stat says the direct messages cannot succeed under a cut', () => {
+    for (const cut of ['both', 'm-to-b', 'b-to-m'] as const) {
+      const s = { ...initialSwim(), cut };
+      expect(swimCaption(s, swimEnumerated(s.loss, s.k, cut))).toContain(CUT_NAMES[cut]);
+      expect(swimExactSub(s, 4)).toContain('cannot succeed');
+    }
+    expect(swimCaption(initialSwim(), 0.19)).not.toContain('cut');
+    expect(swimExactSub(initialSwim(), 4)).not.toContain('cannot succeed');
+  });
+
+  it('after the runs part, "crashed" and "paused" get different verdicts, each naming the run it is right in', () => {
+    const twin = twinRuns(BROKEN_SEED, 600);
+    const late = twin.partsAt! + 100;
+    const c = judge(twin, late, 'crashed');
+    const p = judge(twin, late, 'paused');
+    expect(c.indistinguishable).toBe(false);
+    expect(c.scope).toContain('right in run A only');
+    expect(p.scope).toContain('right in run B only');
+    expect(c.scope).not.toBe(p.scope);
+  });
+
+  it('quiz: the correct option is the longest (ties included) in at most one question', () => {
+    const tied = lesson.quiz.filter((q) => {
+      const len = q.options.map((o) => o.length);
+      return len[q.answer] === Math.max(...len);
+    }).length;
+    expect(tied).toBeLessThanOrEqual(1);
+  });
+
+  it('no try-this prints "null" or "undefined"', () => {
+    for (const t of lesson.tryThis) expect(t).not.toMatch(/\bnull\b|undefined/);
   });
 });

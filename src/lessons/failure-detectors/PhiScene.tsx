@@ -4,12 +4,11 @@ import { Curve, HLine, Plot2D, VLine } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
-import { decimal, integer, power } from '../../core/format';
-import { initialPhi, type PhiState } from './init';
-import { HEARTBEAT_MS, JITTER, PHI, PHI_DISPLAY_CAP, SWEEP_SEEDS, TIMEOUT, WINDOW, phiAt, phiReadout } from './model';
+import { decimal, power } from '../../core/format';
+import { initialPhi, oneInText, phiMeasuredSub, phiTailHint, type PhiState } from './init';
+import { JITTER, PHI, PHI_DISPLAY_CAP, TIMEOUT, WINDOW, phiAt, phiReadout } from './model';
 
 const PLOT_T_MAX = 600;
-const PERCENT = 100;
 
 const legend = (
   <Legend
@@ -21,13 +20,10 @@ const legend = (
   />
 );
 
-const oneIn = (p: number): string => `1 in ${integer(1 / p)}`;
-
 export function PhiScene({ picker }: { picker: ReactNode }) {
   const [s, setS] = useState<PhiState>(initialPhi);
   const set = (p: Partial<PhiState>) => setS((x) => ({ ...x, ...p }));
   const r = useMemo(() => phiReadout(s.seed, s.jitterMs, s.phi), [s.seed, s.jitterMs, s.phi]);
-  const share = r.gaps === 0 ? 0 : r.exceeded / r.gaps;
 
   return (
     <StageFrame
@@ -39,8 +35,8 @@ export function PhiScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Implied timeout" value={`${decimal(r.timeoutMs, 0)} ms`} color="var(--violet)" sub={`mean + spread x z, from phi = ${s.phi}`} />
           <Stat label="Model says" value={`1 in ${power(s.phi, 10)}`} sub="chance a gap beats the timeout, if gaps were normal" />
-          <Stat label="This jitter's gaps" value={oneIn(r.actual)} color="var(--bad)" sub="closed form for the gaps the simulation makes" />
-          <Stat label="Measured" value={`${r.exceeded} of ${r.gaps}`} sub={`gaps over the timeout, sampled over ${SWEEP_SEEDS} seeds (${decimal(share * PERCENT, 2)}%)`} />
+          <Stat label="This jitter's gaps" value={oneInText(r.actual)} color="var(--bad)" sub="closed form, counting gaps in send order" />
+          <Stat label="Measured" value={`${r.exceeded} of ${r.gaps}`} sub={phiMeasuredSub(r)} />
         </Stats>
       }
       controls={[
@@ -67,7 +63,7 @@ export function PhiScene({ picker }: { picker: ReactNode }) {
           <p className="fd-note">The timeout moves when the jitter moves; a fixed timeout does not. Try jitter {JITTER.min} ms and {JITTER.max} ms.</p>
         </Box>
         <Hint tone="muted" block>
-          Phi is the model's statement, not a promise: real gaps are not normal. Here a gap is {HEARTBEAT_MS} ms plus the difference of two exponential delays, which has a heavier tail than a normal curve, so the chance a gap beats the timeout is far above one in {power(s.phi, 10)}.
+          {phiTailHint(r, s.phi)}
         </Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={s.seed}>the gaps come from the heartbeat simulation on distSim</Provenance>

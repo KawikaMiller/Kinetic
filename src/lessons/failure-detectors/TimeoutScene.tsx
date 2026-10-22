@@ -5,11 +5,11 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { decimal } from '../../core/format';
-import { CLOSED_FORM_NOTE, initialTimeout, timeoutCaption, type TimeoutState } from './init';
+import { closedFormNote, initialTimeout, seedSweepText, timeoutCaption, type TimeoutState } from './init';
 import { Lane } from './Lane';
 import {
   BROKEN_SEED, CLOSED_FORM_MAX_JITTER, JITTER, PHI, SCENE_RUN_MS, SWEEP_SEEDS, SWEEP_TIMEOUTS, TIMEOUT, accuracyMessage, detectionMean, detectionTime,
-  expectedFalseInRun, falsePerMinute, falseSuspicions, measurePoint, runDetector, setupFor, waitAfterArrival, type DetectorRule, type RunKind,
+  expectedFalseInRun, failingSeeds, falsePerMinute, falseSuspicions, measurePoint, runDetector, setupFor, waitAfterArrival, waitAtFirstFalse, type DetectorRule, type RunKind,
 } from './model';
 
 const RULES: { value: DetectorRule; label: string }[] = [
@@ -45,7 +45,8 @@ export function TimeoutScene({ picker }: { picker: ReactNode }) {
   const falseDots = useMemo(() => (dotsHere ?? []).filter((p) => p.falsePerMin > 0).map((p) => ({ x: p.timeoutMs, y: p.falsePerMin, tone: 'info' as const })), [dotsHere]);
   const detectDots = useMemo(() => (dotsHere ?? []).map((p) => ({ x: p.timeoutMs, y: p.detectionMs, tone: 'info' as const })), [dotsHere]);
   const measure = () => setS((x) => ({ ...x, dots: { jitterMs: x.controls.jitterMs, points: SWEEP_TIMEOUTS.map((t) => measurePoint(x.controls, t)) } }));
-  const caption = timeoutCaption(s, falseCount);
+  const failing = useMemo(() => failingSeeds({ ...controls, crashAt: null, pause: null }), [controls]);
+  const caption = timeoutCaption(s, falseCount, d === null ? null : waitAtFirstFalse(d));
 
   return (
     <StageFrame
@@ -58,7 +59,7 @@ export function TimeoutScene({ picker }: { picker: ReactNode }) {
           <Stat label="False suspicions" value={falseCount ?? '–'} color={falseCount ? 'var(--bad)' : undefined} sub={fixed ? `closed form expects ${decimal(expectedFalseInRun(controls.timeoutMs, controls.jitterMs, SCENE_RUN_MS), 2)} per 10 s` : 'a live peer suspected'} />
           <Stat label="Detection time" value={took === null ? '–' : `${Math.round(took)} ms`} color={took === null ? undefined : 'var(--ok)'} sub={fixed ? `closed form: ${decimal(detectionMean(controls.timeoutMs, controls.jitterMs), 0)} ms on average` : 'crash to a lasting suspicion'} />
           <Stat label={fixed ? 'M waits' : 'Implied timeout'} value={`${decimal(waitMs, 0)} ms`} sub={fixed ? 'fixed, whatever the jitter' : 'moves when the jitter moves'} />
-          <Stat label="Rule 0 (accuracy)" value={d === null ? 'not run' : broken === null ? 'holds in this run' : 'broken'} color={broken === null ? undefined : 'var(--bad)'} sub={broken ?? 'a live peer is not suspected'} />
+          <Stat label="Rule 0 (accuracy)" value={d === null ? 'not run' : broken === null ? 'holds in this run' : 'broken'} color={broken === null ? undefined : 'var(--bad)'} sub={broken === null ? 'a live peer is not suspected' : controls.rule === 'phi' && d !== null && waitAtFirstFalse(d) !== null ? `${broken}, after waiting ${decimal(waitAtFirstFalse(d) ?? 0, 0)} ms` : broken} />
         </Stats>
       }
       controls={[
@@ -85,7 +86,9 @@ export function TimeoutScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint="a tick is a heartbeat arriving; a bar is M suspecting P">One run, seed {controls.seed}</SectionTitle>
           {d === null ? <Hint tone="muted" block>Nothing has run yet. Press a button below.</Hint> : <Lane d={d} from={0} to={SCENE_RUN_MS} label={`Heartbeats and suspicions over ${SCENE_RUN_MS / 1000} seconds`} />}
-          {controls.jitterMs > CLOSED_FORM_MAX_JITTER && fixed && <Hint tone="muted" block>Above {CLOSED_FORM_MAX_JITTER} ms of jitter the delay is cut at 300 ms often enough that the closed form is approximate here.</Hint>}
+          <Hint tone="muted" block>{seedSweepText(controls, failing)}</Hint>
+          {controls.jitterMs > CLOSED_FORM_MAX_JITTER && fixed && <Hint tone="muted" block>Above {CLOSED_FORM_MAX_JITTER} ms of jitter the 300 ms cut on the delay also makes the closed form slightly approximate; most of the drop below the curve is the overtaking described under the plot.</Hint>}
+          {!fixed && <Hint tone="muted" block>The trade-off plots are for the fixed rule; switch Rule to fixed timeout to see them.</Hint>}
         </Box>
         {fixed && (
           <Box>
@@ -107,7 +110,7 @@ export function TimeoutScene({ picker }: { picker: ReactNode }) {
                 </Plot2D>
               </div>
             </div>
-            <p className="fd-note">{CLOSED_FORM_NOTE} Dots at zero are not drawn on a log axis.</p>
+            <p className="fd-note">{closedFormNote(dotsHere, controls.jitterMs)} Dots at zero are not drawn on a log axis.</p>
             <Button onClick={measure}>Measure {SWEEP_SEEDS} runs at each T (about 2 s)</Button>
             {dots !== null && dotsHere === null && <Hint tone="muted">These dots were measured at {dots.jitterMs} ms of jitter. Measure again for {controls.jitterMs} ms.</Hint>}
           </Box>

@@ -15,7 +15,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A monitor that hears nothing cannot tell a crashed process from a paused or slow one. A detector trades false alarms against how long a real crash goes unnoticed.',
-    what: 'A failure detector turns silence into a guess: no heartbeat for T milliseconds means "suspect". A short T catches a crash fast but cries wolf when delays jitter; a long T is calm but slow. Smarter detectors adapt, either by modelling the gaps they have seen (phi accrual) or by asking other nodes to probe the target before giving up on it (SWIM). In an asynchronous system no rule gets both completeness and accuracy.',
+    what: 'A failure detector turns silence into a guess: no heartbeat for T milliseconds means "suspect". A short T catches a crash fast but cries wolf when delays jitter; a long T is calm but slow. Smarter detectors adapt, either by modelling the gaps they have seen (phi accrual) or by asking other nodes to probe the target before giving up on it (SWIM). In an asynchronous system no rule gets both completeness and accuracy (a classical result, argued here and not run).',
     analogy: 'A neighbour who has not replied to your texts for a day. They might be away, asleep, or in trouble, and the silence itself looks the same in each of the three. Asking a mutual friend to knock on the door is a better test than waiting longer.',
     useCases: [
       'Cluster membership in databases and service meshes that need to decide who is up',
@@ -36,7 +36,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'A monitor that hears silence cannot tell a crashed peer from a paused or slow one: in this model the two runs give M the same heartbeat list until the first heartbeat after the pause.',
-    'A fixed timeout trades false suspicions against detection time: raising it from 185 ms to 400 ms removes the false alarms in this model and makes a real crash take longer to notice.',
+    'A fixed timeout trades false suspicions against detection time: raising it from 185 ms to 400 ms removes the false alarms in this model at 20 ms of jitter and makes a real crash take longer to notice.',
     'Phi accrual sets the timeout from the gaps it has seen, so the wait moves with the jitter; phi is the model\'s statement about a normal curve, not a promise, because these gaps are not normal.',
     'SWIM asks other nodes to probe the target through a different path, so one lossy or cut link no longer makes the monitor give up: the chance of a wrong suspicion falls geometrically with each helper added.',
   ],
@@ -68,7 +68,7 @@ const lesson: LessonModule = {
       options: [
         'It sends heartbeats faster whenever the network looks busy',
         'It asks other nodes to confirm every suspicion before acting',
-        'Its implied timeout moves with the jitter it has recently seen',
+        'Its implied timeout moves with the jitter it recently saw',
         'It measures the true crash time, so it can avoid a false alarm',
       ],
       answer: 2,
@@ -77,7 +77,7 @@ const lesson: LessonModule = {
     {
       q: 'M cannot reach B, but a helper H can. What does a ping-req through H tell M?',
       options: [
-        'Whether B is alive, over a path M\'s own cut does not touch',
+        'Whether B is alive, over a path M\'s cut does not touch',
         'Whether H is alive, because H forwards the probe to B',
         'Nothing useful, because H shares the same cut with M',
         'That B has crashed, because the direct ping already failed',
