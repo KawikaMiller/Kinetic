@@ -25,7 +25,7 @@ const lesson: LessonModule = {
     `Choosing a metric, from a fresh load: pick "Report demographic parity" and Continue. Group B approved reads ${F.parityApprovedB}% (it was ${F.startApprovedB}%), creditworthy denied reads ${F.parityDenied} (it was ${F.startDenied}), and defaulters approved reads ${F.parityDefaulters}. No ending is marked correct.`,
   ],
   keyIdeas: [
-    `Each criterion is a measurable gap: at a cut-off of 0.50 group A is approved at ${F.selectionA} and group B at ${F.selectionB}, and ${F.holding} of ${F.criteria} criteria hold within 3 points. They are standard definitions, and which one matters is a values and legal question.`,
+    `Each criterion is a measurable gap: at a cut-off of 0.50 group A is approved at ${F.selectionA} and group B at ${F.selectionB}, and ${F.holding} of ${F.criteria} criteria hold (rates within 3 points, a chosen tolerance; calibration within its sampling noise). They are standard definitions, and which one matters is a values and legal question.`,
     `In this model with different base rates and an imperfect scorer, the criteria conflict: no worthwhile pair of cut-offs gets closer than ${F.worstDefault} points on true-positive rate, false-positive rate and precision together, against ${F.worstEqual} with equal base rates and ${F.worstPerfect} with a perfect scorer (a result from the research literature, from memory).`,
     `Dropping the group column does not remove a gap when another feature reveals the group: the approval gap is ${F.unawareApprovalGap} points with no proxy and ${F.unawareProxyGap} with a strong one, against ${F.plainApprovalGap} for the plain scorer. Equalising approval rates costs accuracy (${F.plainAccuracy} to ${F.selectionAccuracy}) and moves other gaps.`,
     `Bias can enter before any threshold: a group that is ${F.repShare}% of the training data has a ${F.repSmallB} error in the toy, noisier labels make a group look ${F.apparentB} accurate when it is ${F.actualB}, and a feedback loop took its training share from ${F.loopStart} to ${F.loopEnd}. These are toys that show mechanisms.`,
@@ -54,11 +54,11 @@ const lesson: LessonModule = {
       why: `At the same cut-off the true-positive rates are ${F.tprGap} points apart between the groups. Accuracy is one number over everyone, and criteria compare groups separately.`,
     },
     {
-      q: 'Equal approval rates and equal precision are both attractive. Can a scorer have both, with different base rates and an imperfect model?',
+      q: 'Equal true-positive rates, equal false-positive rates and equal precision are all attractive. Can a scorer have all three, with different base rates and an imperfect model?',
       options: [
         'Yes, if the team tunes the cut-offs carefully enough, because each criterion has its own dial to adjust and the dials do not interact',
         'No, it is a bug in the data, because a well-built model satisfies every criterion at once',
-        'Not in general: the criteria conflict, and the closest any pair of cut-offs gets in the lesson is a few points',
+        `Not in general: the criteria conflict, and the closest any worthwhile pair of cut-offs gets here is about ${F.worstDefault} points`,
         'Only if the scorer is retrained on more data, because the conflict goes away as the training set grows',
       ],
       answer: 2,

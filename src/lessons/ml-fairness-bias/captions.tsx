@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
-import { CRITERIA, holds, type Criterion, type GroupStats, type Gaps } from './model';
+import { CRITERIA, holds, type CalibrationCheck, type Criterion, type GroupStats, type Gaps } from './model';
 import { METER } from './scenario';
 import type { OptionResult } from './options';
 
@@ -13,12 +13,12 @@ const points = (x: number) => (Number.isNaN(x) ? '–' : `${(x * 100).toFixed(1)
 export const heldNames = (gaps: Gaps): string[] => CRITERIA.filter((c) => holds(gaps[c.id])).map((c) => c.label.toLowerCase());
 
 /** Scene 1: the cut-off, the selection rates and which criteria hold. */
-export function thresholdCaption(t: number, a: GroupStats, b: GroupStats, gaps: Gaps, calibrationHolds: boolean): ReactNode {
+export function thresholdCaption(t: number, a: GroupStats, b: GroupStats, gaps: Gaps, cal: CalibrationCheck): ReactNode {
   const held = heldNames(gaps);
   return (
     <>
       At a cut-off of {t.toFixed(2)}, group A is approved at {pctText(a.selection)} and group B at {pctText(b.selection)}. The true-positive rates are {pctText(a.tpr)} and {pctText(b.tpr)}, the false-positive rates {pctText(a.fpr)} and {pctText(b.fpr)}, the precisions {pctText(a.precision)} and {pctText(b.precision)}.{' '}
-      {held.length === 0 ? <>No rate is equal within 3 points.</> : <>Equal within 3 points: {joinNames(held)}.</>} Calibration within groups {calibrationHolds ? 'holds' : 'does not hold'} at this scale.
+      {held.length === 0 ? <>No rate is equal within 3 points.</> : <>Equal within 3 points: {joinNames(held)}.</>} Calibration within groups {cal.holds ? 'holds' : 'does not hold'}: the bins are {(cal.error[0] * 100).toFixed(1)} and {(cal.error[1] * 100).toFixed(1)} points off for A and B, against {(cal.noise[0] * 100).toFixed(1)} and {(cal.noise[1] * 100).toFixed(1)} that sampling noise alone gives at these group sizes.
     </>
   );
 }

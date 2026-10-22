@@ -6,7 +6,7 @@ import { ClaimLabel, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } fr
 import { NA } from '../../core/format';
 import { pctText, thresholdCaption } from './captions';
 import { DataControls } from './DataControls';
-import { CRITERIA, GROUPS, HOLD_TOLERANCE, calibrationError, fitModel, gapsOf, generate, groupStats, holds, predict, reliability, type Group, type Params } from './model';
+import { CALIBRATION_MARGIN, CRITERIA, GROUPS, calibrationCheck, fitModel, gapsOf, generate, groupStats, holds, predict, reliability, type Group, type Params } from './model';
 import { OPENING } from './opening';
 
 const LABELS = { positive: 'repaid', negative: 'defaulted' };
@@ -23,20 +23,20 @@ export function ThresholdScene({ picker }: { picker: ReactNode }) {
   }, [params]);
   const stats = [groupStats(rows, probs, t, 0), groupStats(rows, probs, t, 1)] as const;
   const gaps = gapsOf(stats[0], stats[1]);
-  const cal = ([0, 1] as Group[]).map((g) => calibrationError(rows, probs, g));
-  const calHolds = cal.every((c) => c <= HOLD_TOLERANCE);
+  const cal = useMemo(() => calibrationCheck(rows, probs), [rows, probs]);
+  const calHolds = cal.holds;
   const bins = ([0, 1] as Group[]).map((g) => reliability(rows, probs, g));
 
   return (
     <StageFrame
       height={820}
-      intro={thresholdCaption(t, stats[0], stats[1], gaps, calHolds)}
+      intro={thresholdCaption(t, stats[0], stats[1], gaps, cal)}
       introKey={[JSON.stringify(params), t]}
       stats={
         <Stats>
           <Stat label="Group A approved" value={rate(stats[0].selection)} color="var(--amber)" sub={`${stats[0].n.toLocaleString('en-US')} applicants`} />
           <Stat label="Group B approved" value={rate(stats[1].selection)} color="var(--sky)" sub={`${stats[1].n.toLocaleString('en-US')} applicants`} />
-          <Stat label="Criteria that hold" value={`${CRITERIA.filter((c) => holds(gaps[c.id])).length + (calHolds ? 1 : 0)} of ${CRITERIA.length + 1}`} sub="within 3 points" />
+          <Stat label="Criteria that hold" value={`${CRITERIA.filter((c) => holds(gaps[c.id])).length + (calHolds ? 1 : 0)} of ${CRITERIA.length + 1}`} sub="rates within 3 points; calibration within its noise" />
         </Stats>
       }
       legend={
@@ -70,7 +70,7 @@ export function ThresholdScene({ picker }: { picker: ReactNode }) {
           ))}
         </div>
         <table className="data-table fb-table">
-          <caption>Each criterion, computed on the rows (equal means within 3 points)</caption>
+          <caption>Each criterion, computed on the rows (equal means within 3 points, a chosen tolerance; calibration holds when its error is under {CALIBRATION_MARGIN} times the error that sampling noise alone gives at this group size)</caption>
           <thead><tr><th>Criterion</th><th>Group A</th><th>Group B</th><th>Gap</th><th>Holds?</th></tr></thead>
           <tbody>
             {CRITERIA.map((c) => (
@@ -82,7 +82,7 @@ export function ThresholdScene({ picker }: { picker: ReactNode }) {
             ))}
             <tr>
               <td>Calibration within groups</td>
-              <td>{(cal[0] * 100).toFixed(1)} pts off</td><td>{(cal[1] * 100).toFixed(1)} pts off</td><td>{NA}</td>
+              <td>{(cal.error[0] * 100).toFixed(1)} pts off ({(cal.noise[0] * 100).toFixed(1)} from noise)</td><td>{(cal.error[1] * 100).toFixed(1)} pts off ({(cal.noise[1] * 100).toFixed(1)} from noise)</td><td>{NA}</td>
               <td className={calHolds ? 'fb-yes' : 'fb-no'}>{calHolds ? 'holds' : 'does not hold'}</td>
             </tr>
           </tbody>

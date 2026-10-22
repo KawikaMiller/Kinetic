@@ -2,7 +2,7 @@
 import { choose, startWalk } from '../../core/scenario';
 import { pctText } from './captions';
 import {
-  CRITERIA, DEFAULT, calibrationError, equaliseB, fitModel, gapsOf, generate, groupStats, holds, predict, smallestWorstGap, thresholdGrid, type Params,
+  CRITERIA, DEFAULT, calibrationCheck, equaliseB, fitModel, gapsOf, generate, groupStats, holds, predict, smallestWorstGap, thresholdGrid, type Params,
 } from './model';
 import { OPENING } from './opening';
 import { runOptions } from './options';
@@ -16,8 +16,7 @@ const atT = (t: number) => {
   const a = groupStats(rows, probs, t, 0);
   const b = groupStats(rows, probs, t, 1);
   const gaps = gapsOf(a, b);
-  const cal = ([0, 1] as const).every((g) => calibrationError(rows, probs, g) <= 0.03);
-  return { a, b, gaps, holding: CRITERIA.filter((c) => holds(gaps[c.id])).length + (cal ? 1 : 0) };
+  return { a, b, gaps, holding: CRITERIA.filter((c) => holds(gaps[c.id])).length + (calibrationCheck(rows, probs).holds ? 1 : 0) };
 };
 const half = atT(0.5);
 const high = atT(0.8);
@@ -26,7 +25,7 @@ const worstFor = (p: Params) => {
   const r = generate(p);
   return smallestWorstGap(thresholdGrid(r, predict(fitModel(r, 'aware'), r)));
 };
-const tB = equaliseB(rows, probs, 0.5, 'tpr');
+const tB = equaliseB(rows, probs, 0.5, 'tpr')!;
 const found = gapsOf(groupStats(rows, probs, 0.5, 0), groupStats(rows, probs, tB, 1));
 
 const options = runOptions(DEFAULT).options;

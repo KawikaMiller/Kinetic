@@ -66,7 +66,7 @@ export function OptionsScene({ picker }: { picker: ReactNode }) {
         </div>
         {picked === 'unaware' && (
           <Hint tone="muted" block>
-            With the proxy at {params.proxy.toFixed(1)}, the model that never sees the group has an approval gap of {pts(chosen.gaps.selection)} points; the plain scorer, which does see it, has {pts(base.gaps.selection)}.
+            With the proxy at {params.proxy.toFixed(1)}, the model that never sees the group has an approval gap of {pts(chosen.gaps.selection)} points; the plain scorer, which does see it, has {pts(base.gaps.selection)}. Part of that gap is already there with no proxy at all, because the two groups&apos; scores and base rates differ in this data; the proxy adds to it.
           </Hint>
         )}
         <Hint tone="muted" block>

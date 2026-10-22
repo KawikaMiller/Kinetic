@@ -6,7 +6,7 @@ import { chooseCaption, optionCaption, sourcesCaption, thresholdCaption, tradeof
 import { FACTS } from './facts';
 import lesson from './index';
 import {
-  CRITERIA, DEFAULT, calibrationError, equaliseB, fitModel, gapsOf, generate, groupStats, predict, smallestWorstGap, thresholdGrid, type Criterion,
+  CRITERIA, DEFAULT, calibrationCheck, equaliseB, fitModel, gapsOf, generate, groupStats, predict, smallestWorstGap, thresholdGrid, type Criterion,
 } from './model';
 import { OPENING } from './opening';
 import { runOptions } from './options';
@@ -43,22 +43,24 @@ describe('scenes', () => {
 });
 
 describe('try-this entries, each from the default state', () => {
-  it('try-this 1: 78.4% against 52.3%, a 16.7-point true-positive gap, 0 of 5 criteria hold at 0.50 and 1 of 5 at 0.80', () => {
+  it('try-this 1: 78.4% against 52.3%, a 16.7-point true-positive gap, 1 of 5 criteria hold at 0.50 (only calibration, calibrated by construction) and 2 of 5 at 0.80', () => {
     const rows = generate(DEFAULT);
     const probs = predict(fitModel(rows, 'aware'), rows);
     const a = groupStats(rows, probs, 0.5, 0);
     const b = groupStats(rows, probs, 0.5, 1);
     expect([(a.selection * 100).toFixed(1), (b.selection * 100).toFixed(1), (gapsOf(a, b).tpr * 100).toFixed(1)]).toEqual(['78.4', '52.3', '16.7']);
-    expect([FACTS.holding, FACTS.holdingHigh, FACTS.criteria]).toEqual([0, 1, 5]);
+    expect(CRITERIA.filter((c) => gapsOf(a, b)[c.id] <= 0.03)).toEqual([]);
+    expect(calibrationCheck(rows, probs).holds).toBe(true);
+    expect([FACTS.holding, FACTS.holdingHigh, FACTS.criteria]).toEqual([1, 2, 5]);
     expect(lesson.tryThis[0]).toContain('78.4%');
-    expect(lesson.tryThis[0]).toContain('0 of 5 criteria hold');
-    expect(lesson.tryThis[0]).toContain('and 1 of 5 hold');
+    expect(lesson.tryThis[0]).toContain('1 of 5 criteria hold');
+    expect(lesson.tryThis[0]).toContain('and 2 of 5 hold');
   });
 
   it('try-this 2: finding B\'s cut-off leaves a 0.1-point true-positive gap and an 18.1-point precision gap; the closest pair is 9.1 points, 0.0 for a perfect scorer', () => {
     const rows = generate(DEFAULT);
     const probs = predict(fitModel(rows, 'aware'), rows);
-    const tB = equaliseB(rows, probs, OPENING.tradeoff.tA, OPENING.tradeoff.criterion);
+    const tB = equaliseB(rows, probs, OPENING.tradeoff.tA, OPENING.tradeoff.criterion)!;
     const g = gapsOf(groupStats(rows, probs, OPENING.tradeoff.tA, 0), groupStats(rows, probs, tB, 1));
     expect([(g.tpr * 100).toFixed(1), (g.precision * 100).toFixed(1)]).toEqual(['0.1', '18.1']);
     expect([FACTS.worstDefault, FACTS.worstPerfect]).toEqual(['9.1', '0.0']);
@@ -99,8 +101,7 @@ describe('captions across the control cross product', () => {
         for (const t of [0, 0.01, 0.5, 0.99, 1]) {
           const a = groupStats(rows, probs, t, 0);
           const b = groupStats(rows, probs, t, 1);
-          const cal = ([0, 1] as const).every((g) => calibrationError(rows, probs, g) <= 0.03);
-          const text = expectCaption(thresholdCaption(t, a, b, gapsOf(a, b), cal));
+          const text = expectCaption(thresholdCaption(t, a, b, gapsOf(a, b), calibrationCheck(rows, probs)));
           expect(text, `${nB} ${gap} ${t}`).not.toMatch(NO_JUNK);
           expect(text).toContain(`At a cut-off of ${t.toFixed(2)}`);
         }

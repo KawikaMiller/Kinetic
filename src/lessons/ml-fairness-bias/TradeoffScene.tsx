@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Plot2D, Points } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
+import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { NA } from '../../core/format';
 import { tradeoffCaption } from './captions';
 import {
@@ -30,6 +30,7 @@ export function TradeoffScene({ picker }: { picker: ReactNode }) {
   const [tA, setTA] = useState(OPENING.tradeoff.tA);
   const [tB, setTB] = useState(OPENING.tradeoff.tB);
   const [criterion, setCriterion] = useState<Criterion>(OPENING.tradeoff.criterion);
+  const [undefinedAt, setUndefinedAt] = useState<{ tA: number; criterion: Criterion } | null>(null);
 
   const { rows, probs, grid } = useMemo(() => {
     const data = generate({ ...DEFAULT, gap: population === 'equal' ? 0 : DEFAULT.gap, shift: population === 'equal' ? 0 : DEFAULT.shift, separation: scorer === 'perfect' ? 20 : DEFAULT.separation });
@@ -65,11 +66,23 @@ export function TradeoffScene({ picker }: { picker: ReactNode }) {
           <Slider label="Group A cut-off" value={tA} min={0} max={1} step={GRID_STEP} format={(v) => v.toFixed(3)} onChange={setTA} />
           <Slider label="Group B cut-off" value={tB} min={0} max={1} step={GRID_STEP} format={(v) => v.toFixed(3)} onChange={setTB} />
           <Segmented label="Equalise" options={CRITERIA.map((c) => ({ value: c.id, label: c.label }))} value={criterion} onChange={setCriterion} />
-          <Button variant="primary" onClick={() => setTB(equaliseB(rows, probs, tA, criterion))}>Find group B&apos;s cut-off</Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              const found = equaliseB(rows, probs, tA, criterion);
+              if (found !== null) setTB(found);
+              setUndefinedAt(found === null ? { tA, criterion } : null);
+            }}
+          >
+            Find group B&apos;s cut-off
+          </Button>
         </>,
       ]}
     >
       <div className="fb-stage stage-pad">
+        {undefinedAt && undefinedAt.tA === tA && undefinedAt.criterion === criterion && (
+          <Hint tone="muted" block>The {CRITERIA.find((c) => c.id === criterion)!.label.toLowerCase()} is undefined at group A&apos;s cut-off of {tA.toFixed(3)}, so there is nothing to match and group B&apos;s cut-off stays where it is.</Hint>
+        )}
         <Plot2D
           x={{ domain: [0, PLOT_MAX], ticks: 5, label: 'false-positive-rate gap', format: (v) => `${Math.round(v * 100)}` }}
           y={{ domain: [0, PLOT_MAX], ticks: 5, label: 'precision gap (points)', format: (v) => `${Math.round(v * 100)}` }}

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { numericGradient } from '../../core/fit';
+import { mulberry32 } from '../../core/random';
 import { runOptions } from './options';
 import {
-  BINS, DEFAULT, HOLD_TOLERANCE, MIN_GROUP, N_TOTAL, RANGES, equaliseBExact, fitModel, gapsOf, generate, groupStats, holds, predict, reliability, reweighingWeights,
+  BINS, CALIBRATION_MARGIN, DEFAULT, HOLD_TOLERANCE, MIN_GROUP, N_TOTAL, RANGES, calibrationCheck, calibrationError, calibrationNoise, equaliseB, equaliseBExact, fitModel, gapsOf, generate, groupStats, holds, predict, reliability, reweighingWeights,
   smallestWorstGap, thresholdGrid, weightedGradient, weightedLoss, type Row,
 } from './model';
 import { feedbackLoop, labelBias, representation, ROUNDS } from './sources';
@@ -149,6 +150,67 @@ describe('the scorer and reweighing', () => {
   it('the fitted scorer is calibrated overall: mean predicted equals the mean outcome', () => {
     const { rows, probs } = defaults();
     expect(probs.reduce((s, p) => s + p, 0) / probs.length).toBeCloseTo(rows.reduce((s, r) => s + r.repaid, 0) / rows.length, 2);
+  });
+});
+
+describe('calibration is judged against its own sampling noise', () => {
+  /** Outcomes redrawn from the scorer's own probabilities: perfectly calibrated by construction, so any error is noise. */
+  const redraw = (rows: readonly Row[], probs: readonly number[], seed: number): Row[] => {
+    const rnd = mulberry32(seed);
+    return rows.map((r, i) => ({ ...r, repaid: rnd() < probs[i] ? 1 : 0 }));
+  };
+  const small = (n: number) => generate({ ...DEFAULT, nB: n });
+
+  it('the noise level matches the mean calibration error of 300 perfectly calibrated redraws, within 10%', () => {
+    for (const nB of [100, 800]) {
+      const rows = small(nB);
+      const probs = predict(fitModel(rows, 'aware'), rows);
+      for (const g of [0, 1] as const) {
+        let sum = 0;
+        for (let k = 0; k < 300; k++) sum += calibrationError(redraw(rows, probs, 1000 + k), probs, g);
+        const mc = sum / 300;
+        expect(Math.abs(calibrationNoise(rows, probs, g) - mc) / mc, `nB ${nB} group ${g}`).toBeLessThan(0.1);
+      }
+    }
+  });
+
+  it('a calibrated-by-construction scorer is flagged on at most 15% of draws at every group size, where a fixed 3 points flagged it 76% to 100% of the time', () => {
+    for (const nB of [100, 400, 800, 1500]) {
+      const rows = small(nB);
+      const probs = predict(fitModel(rows, 'aware'), rows);
+      let flagged = 0;
+      const draws = 150;
+      for (let k = 0; k < draws; k++) if (!calibrationCheck(redraw(rows, probs, 5000 + k), probs).holds) flagged++;
+      expect(flagged / draws, `nB ${nB}`).toBeLessThanOrEqual(0.15);
+    }
+  });
+
+  it('a scorer that is 15 points too confident about everyone is flagged at every group size', () => {
+    for (const nB of [400, 800, 1500]) {
+      const rows = small(nB);
+      const probs = predict(fitModel(rows, 'aware'), rows);
+      const off = probs.map((p) => Math.min(1, p + 0.15));
+      expect(calibrationCheck(redraw(rows, probs, 77), off).holds, `nB ${nB}`).toBe(false);
+    }
+    expect(CALIBRATION_MARGIN).toBeGreaterThan(1);
+  });
+});
+
+describe('the label-bias toy', () => {
+  it('random label flips barely move the real accuracy of group B (under 3 points over the slider) while the measured accuracy falls far more', () => {
+    const low = labelBias(0, 3);
+    const high = labelBias(0.4, 3);
+    expect(Math.abs(high.actual.b - low.actual.b)).toBeLessThan(0.03);
+    expect(low.apparent.b - high.apparent.b).toBeGreaterThan(0.1);
+  });
+});
+
+describe('finding the cut-off for group B', () => {
+  it('returns nothing when the criterion is undefined at the cut-off of group A (A approves nobody, so its precision is undefined), instead of a silent cut-off of 0', () => {
+    const { rows, probs } = defaults();
+    expect(groupStats(rows, probs, 1, 0).selection).toBe(0);
+    expect(equaliseB(rows, probs, 1, 'precision')).toBeNull();
+    expect(equaliseB(rows, probs, 0.5, 'tpr')).not.toBeNull();
   });
 });
 

@@ -46,7 +46,7 @@ export function SourcesScene({ picker }: { picker: ReactNode }) {
         </section>
         <section className="fb-toy">
           <h3>Toy 2: label bias</h3>
-          <p className="fb-note">The labels are a noisy proxy for what really happened, and noisier for group B ({Math.round(LABEL_NOISE.a * 100)}% of group A&apos;s labels are wrong, {Math.round(noise * 100)}% of group B&apos;s).</p>
+          <p className="fb-note">The labels are a noisy proxy for what really happened, and noisier for group B ({Math.round(LABEL_NOISE.a * 100)}% of group A&apos;s labels are wrong, {Math.round(noise * 100)}% of group B&apos;s). The flips are random, so group B&apos;s real accuracy barely moves; mostly the measured accuracy does. This toy shows noisy evaluation, not a biased model.</p>
           <table className="data-table fb-table">
             <thead><tr><th>Accuracy</th><th>Group A</th><th>Group B</th></tr></thead>
             <tbody>

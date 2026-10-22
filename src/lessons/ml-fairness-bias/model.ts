@@ -150,7 +150,7 @@ export const CRITERIA: { id: Criterion; label: string; name: string }[] = [
   { id: 'fpr', label: 'False-positive rate', name: 'with the true-positive rate, equalised odds' },
   { id: 'precision', label: 'Precision', name: 'predictive parity' },
 ];
-/** Two rates are called equal when they differ by no more than this (sampling noise at about 1,000 per group). */
+/** Two rates are called equal when they differ by no more than this: a chosen tolerance, not a statistical test (the sampling noise of a gap between two rates at about 1,000 per group is roughly 1.5 to 3 points). */
 export const HOLD_TOLERANCE = 0.03;
 
 export type Gaps = Record<Criterion, number>;
@@ -197,6 +197,49 @@ export function calibrationError(rows: readonly Row[], probs: readonly number[],
   return bins.reduce((s, b) => s + (b.n ? b.n * Math.abs(b.meanPredicted - b.observed) : 0), 0) / n;
 }
 
+/**
+ * How much calibration error sampling noise alone would produce for this group and these bin sizes, if the scorer were
+ * perfectly calibrated: in each bin the observed repay rate is a sum of independent yes/no outcomes, so it wanders around
+ * the predicted rate by a standard deviation of sqrt(sum p(1-p)) / n, and the mean absolute wander of a normal is that
+ * times sqrt(2/pi). Weighted by bin size like `calibrationError`.
+ */
+export function calibrationNoise(rows: readonly Row[], probs: readonly number[], group: Group, bins = BINS): number {
+  let total = 0;
+  let n = 0;
+  for (let b = 0; b < bins; b++) {
+    const lo = b / bins;
+    const hi = (b + 1) / bins;
+    let count = 0;
+    let variance = 0;
+    rows.forEach((r, i) => {
+      if (r.group === group && probs[i] >= lo && (probs[i] < hi || (b === bins - 1 && probs[i] <= hi))) {
+        count++;
+        variance += probs[i] * (1 - probs[i]);
+      }
+    });
+    if (count) total += Math.sqrt(variance) * Math.sqrt(2 / Math.PI);
+    n += count;
+  }
+  return n ? total / n : NaN;
+}
+
+/** Calibration is called out of line when the error is this many times what noise alone gives. */
+export const CALIBRATION_MARGIN = 1.5;
+
+export interface CalibrationCheck {
+  /** Calibration error of each group, and the error sampling noise alone would give at that group size. */
+  error: [number, number];
+  noise: [number, number];
+  holds: boolean;
+}
+
+/** Calibration within groups, judged against the noise level of the bins rather than a fixed number of points. */
+export function calibrationCheck(rows: readonly Row[], probs: readonly number[]): CalibrationCheck {
+  const error: [number, number] = [calibrationError(rows, probs, 0), calibrationError(rows, probs, 1)];
+  const noise: [number, number] = [calibrationNoise(rows, probs, 0), calibrationNoise(rows, probs, 1)];
+  return { error, noise, holds: error.every((e, g) => e <= CALIBRATION_MARGIN * noise[g]) };
+}
+
 /** The accuracy over everyone at one threshold per group. */
 export function overallAccuracy(rows: readonly Row[], probs: readonly number[], thresholds: readonly [number, number]): number {
   return rows.reduce((s, r, i) => s + ((probs[i] >= thresholds[r.group] ? 1 : 0) === r.repaid ? 1 : 0), 0) / rows.length;
@@ -231,10 +274,10 @@ export function smallestWorstGap(grid: readonly PairGaps[]): number {
   return Math.min(...grid.filter(isMeaningful).map((p) => Math.max(p.gaps.tpr, p.gaps.fpr, p.gaps.precision)).filter((v) => !Number.isNaN(v)));
 }
 
-/** The group-B threshold that brings one criterion closest to equal, given group A's threshold; candidates are the grid. */
-export function equaliseB(rows: readonly Row[], probs: readonly number[], tA: number, criterion: Criterion): number {
+/** The group-B threshold that brings one criterion closest to equal, given group A's threshold; candidates are the grid. Null when the criterion is undefined at every candidate (for example precision when group A approves nobody). */
+export function equaliseB(rows: readonly Row[], probs: readonly number[], tA: number, criterion: Criterion): number | null {
   const a = groupStats(rows, probs, tA, 0);
-  let best = GRID[0];
+  let best: number | null = null;
   let bestGap = Infinity;
   for (const t of GRID) {
     const gap = gapsOf(a, groupStats(rows, probs, t, 1))[criterion];

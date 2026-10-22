@@ -44,7 +44,7 @@ export const CHOICES = [
   { id: 'parity', criterion: 'selection' as Criterion, label: 'Report demographic parity: equal approval rates', tB: equaliseBExact(rows, probs, BASE_THRESHOLD, 'selection') },
   { id: 'opportunity', criterion: 'tpr' as Criterion, label: 'Report equal opportunity: equal approval of creditworthy applicants', tB: equaliseBExact(rows, probs, BASE_THRESHOLD, 'tpr') },
   { id: 'odds', criterion: 'fpr' as Criterion, label: 'Report equalised odds: equal rates for creditworthy and for defaulting applicants', tB: equalisedOddsThreshold() },
-  { id: 'precision', criterion: 'precision' as Criterion, label: 'Report predictive parity: an approval means the same in both groups', tB: equaliseB(rows, probs, BASE_THRESHOLD, 'precision') },
+  { id: 'precision', criterion: 'precision' as Criterion, label: 'Report predictive parity: an approval means the same in both groups', tB: equaliseB(rows, probs, BASE_THRESHOLD, 'precision')! },
 ];
 
 export const START: Outcome = outcomeAt(BASE_THRESHOLD);
