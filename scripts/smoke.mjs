@@ -14,7 +14,7 @@
 //   npm run smoke -- --mobile              # 390x844 phone: also fails on content the stage
 //                                            # frame clips, and on scene (SVG) text rendered
 //                                            # below MIN_SCENE_TEXT_PX (fix: StageFrame minWidth)
-import { BASE_URL, frameCount, lessonIds, openPage, outPath, parseArgs, seekFrame, shootElement, sleep, visit } from './lib/browser.mjs';
+import { frameCount, lessonIds, loadFresh, openPage, outPath, parseArgs, seekFrame, shootElement, sleep, visit } from './lib/browser.mjs';
 
 const SETTLE_MS = 1500;
 const LIVE_MS = 2500;
@@ -92,9 +92,7 @@ for (const id of ids) {
   errors.length = 0;
   if (framesMode) {
     // Full document load per lesson, so the seeded Math.random restarts every time.
-    await page.goto('about:blank');
-    await page.goto(`${BASE_URL}/#/lesson/${id}`, { waitUntil: 'networkidle0' });
-    await sleep(SETTLE_MS);
+    await loadFresh(page, `/lesson/${id}`, SETTLE_MS);
   } else {
     await visit(page, `/lesson/${id}`, 1200);
   }

@@ -6,8 +6,9 @@
 //
 //   npm run captions                 # all lessons
 //   npm run captions -- tcp-udp      # just these
+// Lessons without a step player are listed as skipped: `npm run sweep` covers their captions.
 import { CODE_PLACEHOLDER, gluedSentences } from '../src/core/testing/glue.ts';
-import { BASE_URL, lessonIds, openPage, parseArgs, sleep, stepForward } from './lib/browser.mjs';
+import { lessonIds, loadFresh, openPage, parseArgs, stepForward } from './lib/browser.mjs';
 
 const MAX_STEPS = 70;
 const FLAG_RUN = 6;
@@ -17,12 +18,15 @@ const ids = positional.length ? positional : lessonIds();
 // Seeded, with a full reload per lesson, so lessons with random inputs give the same frames every run.
 const { browser, page } = await openPage({ seed: 1 });
 const glued = [];
+const skipped = [];
 
 for (const id of ids) {
-  await page.goto('about:blank');
-  await page.goto(`${BASE_URL}/#/lesson/${id}`, { waitUntil: 'networkidle0' });
-  await sleep(900);
-  if (!(await page.$('.tbtn-play'))) continue;
+  await loadFresh(page, `/lesson/${id}`, 900);
+  if (!(await page.$('.tbtn-play'))) {
+    skipped.push(id);
+    console.log(`skip ${id} (no step player: covered by npm run sweep)`);
+    continue;
+  }
 
   const seen = [];
   let lastCounter = '';
@@ -57,6 +61,9 @@ for (const id of ids) {
   );
 }
 await browser.close();
+// A live simulation has no frame sequence for the stale-run check; the sweep reads every caption its controls
+// produce and applies the same glue rule and a "no caption after interaction" check.
+console.log(`\n${ids.length - skipped.length} step-player lessons checked, ${skipped.length} skipped (no step player: npm run sweep covers them)`);
 if (glued.length) {
   console.error(`\nGlued sentences (a JSX line break after {…} swallowed the space):\n  ${glued.join('\n  ')}`);
   process.exitCode = 1;

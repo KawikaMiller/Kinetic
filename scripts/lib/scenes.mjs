@@ -3,6 +3,7 @@
 // render loop that lives in scene three never shows up there. Pure helpers are tested
 // (scenes.test.mjs); `scanScenes` drives a real page.
 import { sleep } from './browser.mjs';
+import { retryOnce } from './retry.mjs';
 
 /** Idle time per scene: long enough for an effect loop to hit React's update-depth limit. */
 export const DEFAULT_IDLE_MS = 3000;
@@ -77,7 +78,8 @@ export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}
   // picker (2+ options) before concluding the lesson has a single scene.
   const hasPicker = () => document.querySelectorAll('.stage-frame .segmented [role="radio"]').length >= 2;
   await page.waitForFunction(hasPicker, { timeout: PICKER_WAIT_MS }).catch(() => {});
-  const groups = await page.evaluate(findGroups);
+  // A Vite reload can land between the picker wait and this read: re-run once on a destroyed context.
+  const groups = await retryOnce(() => page.evaluate(findGroups), 'reading the scene picker');
   const group = pickerIndex(groups.map((g) => g.label));
   const picker = group >= 0 ? groups[group] : null;
   const results = [];
