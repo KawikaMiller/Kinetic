@@ -25,7 +25,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     `Each message key comes from a chain key by a one-way HMAC, so a state copied after message 4 opens later messages of that chain and none before it: the page tries ${F.symmetricTries} derivable keys on each earlier message in this model and opens 0.`,
-    `After a theft in AABBAB, one fixed key opens ${F.modeFixed}, a symmetric ratchet opens ${F.modeSymmetric} and the full ratchet opens ${F.modeFull}. Forward secrecy comes from the chain, and healing from the Diffie-Hellman step.`,
+    `After Alice's state is copied after message 1 in AABBAB (the Healing default), one fixed key opens ${F.modeFixed}, a symmetric ratchet opens ${F.modeSymmetric} and the full ratchet opens ${F.modeFull}. Forward secrecy comes from the chain, and healing from the Diffie-Hellman step.`,
     `Healing needs a reply: in a one-way chat a copied state reads each later message because no fresh key is ever made, while alternating messages heal after one.`,
     `End-to-end encryption hides content from the relay and not who talks, when or how much, and one flipped bit, even in the authenticated header, makes AES-GCM refuse the message.`,
   ],
@@ -53,7 +53,7 @@ const lesson: LessonModule = {
       why: 'The relay forwards ciphertext and headers, so it sees sender, size, time and the public ratchet key, but it holds no message key. The claim "the server learns nothing" overreaches.',
     },
     {
-      q: 'Why can a thief with the chain key after message 4 not open message 2?',
+      q: 'In the chain scene all eight messages come from Alice. Why can a thief with the chain key after message 4 not open message 2?',
       options: [
         'Message 2 was sent by the other party, whose chain the thief cannot reach from the copied state, so it stays sealed',
         'The thief\'s copy of the chain key was reset to zero right after message 2',

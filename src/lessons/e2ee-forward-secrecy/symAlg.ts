@@ -42,7 +42,8 @@ export class SymGraph {
     ck: this.make(`rkck:${rk}:${d}`, 'ck', [rk, d], []),
   });
   kdfCk = (ck: number) => ({ mk: this.make(`mk:${ck}`, 'mk', [ck], []), ck: this.make(`ck:${ck}`, 'ck', [ck], []) });
-  chains = (root: number) => ({ ab: this.make(`ab:${root}`, 'ck', [root], []), ba: this.make(`ba:${root}`, 'ck', [root], []) });
+  /** Mirrors the real chains: the A to B start is a fixed demo constant that does not depend on the root, the B to A start is an HMAC of the root. */
+  chains = (root: number) => ({ ab: this.make('ab', 'ck', [], []), ba: this.make(`ba:${root}`, 'ck', [root], []) });
 
   /** Every node reachable through a node's inputs (its ancestors), the node itself excluded. */
   ancestors(id: number): Set<number> {

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { FACTS } from './facts';
 import lesson from './index';
+import { messageTone, shownOutcome, type Outcome } from './relayView';
+import type { TamperTarget } from './thief';
 import { CHAIN_MESSAGES, DEFAULT_SEED, analyse, buildRun, compareModes, opensText, parsePattern, textFor, triesText } from './model';
 
 const texts = (n: number) => Array.from({ length: n }, (_, i) => textFor(i, []));
@@ -78,10 +80,41 @@ describe('manipulations', () => {
 });
 
 describe('the lesson text agrees with the model', () => {
-  it('the mode comparison for AABBAB stolen after message 2 matches the typed key idea', async () => {
-    const rows = await compareModes(parsePattern('AABBAB'), 'A', 2);
+  it('the mode comparison for AABBAB with Alice stolen after message 1 (the Healing default) matches the typed key idea', async () => {
+    const rows = await compareModes(parsePattern('AABBAB'), 'A', 1);
     expect(rows.map((r) => opensText(r.opens))).toEqual([FACTS.modeFixed, FACTS.modeSymmetric, FACTS.modeFull]);
-    expect(lesson.keyIdeas[1]).toContain(FACTS.modeFull);
+    expect(lesson.keyIdeas[1]).toContain('after message 1');
+    for (const text of [FACTS.modeFixed, FACTS.modeSymmetric, FACTS.modeFull]) expect(lesson.keyIdeas[1]).toContain(text);
+    // the key idea is the Healing scene's default state: the same sets as the try-this 3 default
+    expect(rows[2].opens).toEqual([2, 3, 4]);
     expect(FACTS.patternSize).toBe(6);
+  });
+});
+
+describe('the relay scene: diagram colour, stat and legend say the same thing', () => {
+  const targets: TamperTarget[] = ['ciphertext', 'tag', 'header'];
+  it('walking every message, target, bit and result: a refused flip is green (ok), an opened one red (bad), and a changed control blanks the diagram with the stat', () => {
+    let states = 0;
+    for (let message = 1; message <= 6; message++) {
+      for (const target of targets) {
+        for (const bit of [0, 7, 8, 100, 127]) {
+          for (const opened of [false, true]) {
+            const outcome: Outcome = { message, target, bit, where: 'x', opened };
+            const shown = shownOutcome(outcome, message, target, bit);
+            expect(shown, 'unchanged controls show the outcome').toBe(outcome);
+            for (let i = 0; i < 6; i++) expect(messageTone(shown, i)).toBe(i + 1 === message ? (opened ? 'bad' : 'ok') : undefined);
+            // the legend: green is refused, red is opened (RelayScene Legend); the stat reads the same flag
+            // a changed message, target or bit: no outcome, so no tone anywhere
+            for (const [w, t, b] of [[message % 6 + 1, target, bit], [message, targets[(targets.indexOf(target) + 1) % 3], bit], [message, target, (bit + 1) % 128]] as const) {
+              const stale = shownOutcome(outcome, w, t, b);
+              expect(stale).toBeNull();
+              for (let i = 0; i < 6; i++) expect(messageTone(stale, i)).toBeUndefined();
+            }
+            states++;
+          }
+        }
+      }
+    }
+    expect(states).toBe(6 * 3 * 5 * 2);
   });
 });

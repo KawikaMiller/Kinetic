@@ -2,12 +2,14 @@ import { useState, type ReactNode } from 'react';
 import { SeedField } from '../../components/SeedField';
 import { SequenceDiagram, type SequenceMessage } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Button, ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { hasSubtle } from '../../core/crypto';
 import { useAsyncValue } from '../../core/useAsyncValue';
 import { DEFAULT_PATTERN, DEFAULT_SEED, NAMES, NEEDS_SECURE, buildRun, parsePattern, pubTag, textFor } from './model';
 import { headerBytes, openWith } from './realAlg';
-import { TAMPER_REFUSAL, tamper, type TamperTarget } from './thief';
+import { messageTone, shownOutcome, type Outcome } from './relayView';
+import { TAMPER_REFUSAL, flipSite, tamper, type TamperTarget } from './thief';
 
 const PATTERN = parsePattern(DEFAULT_PATTERN);
 const TEXTS = PATTERN.map((_, i) => textFor(i, []));
@@ -22,13 +24,7 @@ const TARGETS = [
   { value: 'header' as const, label: 'a header bit' },
 ];
 const BIT_MAX = 127;
-
-interface Outcome {
-  message: number;
-  target: TamperTarget;
-  bit: number;
-  opened: boolean;
-}
+const RELAY_TABLE_MIN_WIDTH = 520;
 
 /** Scene 3: what the relay sees, and a tampered message refused by real AES-GCM. */
 export function RelayScene({ picker }: { picker: ReactNode }) {
@@ -49,36 +45,35 @@ export function RelayScene({ picker }: { picker: ReactNode }) {
     if (!run) return;
     const m = run.messages[which - 1];
     const r = await tamper(m.mk, m, target, bit);
-    setOutcome({ message: which, target, bit, opened: r.opened });
+    setOutcome({ message: which, target, bit, where: flipSite(target, bit, m.sealed.length).text, opened: r.opened });
   };
 
+  const shown = shownOutcome(outcome, which, target, bit);
   const messages: SequenceMessage[] = PATTERN.map((sender, i) => ({
     id: `m${i}`,
     from: sender,
     to: sender === 'A' ? 'B' : 'A',
     label: `m${i + 1}`,
     note: run ? `${run.messages[i].sealed.length} bytes` : undefined,
-    tone: outcome && outcome.message === i + 1 ? (outcome.opened ? 'ok' : 'bad') : undefined,
+    tone: messageTone(shown, i),
   }));
-
-  const shown = outcome && outcome.message === which && outcome.target === target && outcome.bit === bit ? outcome : null;
   const intro = !secure
     ? NEEDS_SECURE
     : shown
       ? shown.opened
         ? `One bit of message ${shown.message} was flipped and Bob still opened it: that should not happen.`
-        : `${TAMPER_REFUSAL}. Message ${shown.message} had one bit flipped (${shown.target}, bit ${shown.bit}).`
+        : `${TAMPER_REFUSAL}. Message ${shown.message} had one bit flipped (${shown.where}).`
       : 'The relay stores the header and the ciphertext, nothing else. Flip one bit and let Bob try to open the message.';
 
   return (
     <StageFrame
       height={620}
       intro={intro}
-      introKey={`relay|${secure}|${shown ? `${shown.message}${shown.target}${shown.bit}${shown.opened}` : 'none'}`}
+      introKey={`relay|${secure}|${shown ? `${shown.message}${shown.where}${shown.opened}` : 'none'}`}
       stats={
         <Stats>
           <Stat label="Untampered message opens" value={base === null ? '–' : base ? 'yes' : 'no'} color={base ? 'var(--ok)' : undefined} sub={`message ${which}, real AES-GCM`} />
-          <Stat label="After the flip" value={shown ? (shown.opened ? 'opened' : 'refused') : '–'} color={shown ? (shown.opened ? 'var(--bad)' : 'var(--ok)') : undefined} sub={shown ? `${shown.target}, bit ${shown.bit}` : 'press the button'} />
+          <Stat label="After the flip" value={shown ? (shown.opened ? 'opened' : 'refused') : '–'} color={shown ? (shown.opened ? 'var(--bad)' : 'var(--ok)') : undefined} sub={shown ? shown.where : 'press the button'} />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--ok)', label: 'refused: the tag does not match', shape: 'square' }, { color: 'var(--bad)', label: 'opened after a flip', shape: 'square' }, { color: 'var(--info)', label: 'the ratchet key in the header', shape: 'square' }]} />}
@@ -96,6 +91,7 @@ export function RelayScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="stage-pad e2-stage">
+        <WideRegion minWidth={RELAY_TABLE_MIN_WIDTH} label="What the relay stores: scroll sideways to see all of it" hint="swipe to see the whole table">
         <table className="e2-relay" aria-label="What the relay stores for each message">
           <thead>
             <tr><th>message</th><th>sender</th><th>size</th><th>ratchet key</th><th>counter</th><th>header bytes</th></tr>
@@ -113,9 +109,10 @@ export function RelayScene({ picker }: { picker: ReactNode }) {
             ))}
           </tbody>
         </table>
+        </WideRegion>
         <SequenceDiagram actors={ACTORS} messages={messages} ariaLabel="The relay sees each message's size and header, never its content" />
         <p className="e2-note">
-          The relay learns who talks to whom, when, and how much, but not what. Checking that the key you were given belongs to the right person (safety numbers) is a separate problem, named in <code>digital-signatures-pki</code>.
+          The relay learns who talks to whom, when, and how much, and in this model not what. Checking that the key you were given belongs to the right person (safety numbers) is a separate problem, named in <code>digital-signatures-pki</code>.
         </p>
       </div>
       <ProvenanceRow>

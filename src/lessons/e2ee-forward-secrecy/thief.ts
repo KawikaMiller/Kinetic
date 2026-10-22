@@ -144,18 +144,34 @@ export interface TamperResult {
   text: string | null;
 }
 
+export interface FlipSite {
+  region: 'ciphertext' | 'tag' | 'header counter';
+  /** Byte index inside the region. */
+  byte: number;
+  /** Bit 0 to 7 inside that byte. */
+  bit: number;
+  /** Words for the page: the bit that is actually flipped, not the slider value. */
+  text: string;
+}
+
+/** Where the slider value `bit` lands for a message whose sealed bytes are `sealedLength` long: the body and tag indices wrap, the header flips one bit of its one counter byte. */
+export function flipSite(target: TamperTarget, bit: number, sealedLength: number): FlipSite {
+  const inByte = bit % 8;
+  if (target === 'header') return { region: 'header counter', byte: 0, bit: inByte, text: `header counter byte, bit ${inByte}` };
+  const span = target === 'tag' ? 16 : sealedLength - 16;
+  const byte = Math.floor(bit / 8) % span;
+  return { region: target, byte, bit: inByte, text: `${target} byte ${byte}, bit ${inByte}` };
+}
+
 /** Flips one bit of the ciphertext body, of the 16-byte tag or of the header's counter byte, then tries a real open with the right key. */
 export async function tamper(mk: Bytes, m: RealMessage, target: TamperTarget, bit: number): Promise<TamperResult> {
   const sealed = Uint8Array.from(m.sealed) as Bytes;
   let header = m.header;
+  const site = flipSite(target, bit, sealed.length);
   if (target === 'header') {
-    header = { pub: m.header.pub, n: m.header.n ^ (1 << (bit % 8)) };
+    header = { pub: m.header.pub, n: m.header.n ^ (1 << site.bit) };
   } else {
-    const bodyLength = sealed.length - 16;
-    const offset = target === 'tag' ? bodyLength : 0;
-    const span = target === 'tag' ? 16 : bodyLength;
-    const index = offset + (Math.floor(bit / 8) % span);
-    sealed[index] ^= 1 << (bit % 8);
+    sealed[(target === 'tag' ? sealed.length - 16 : 0) + site.byte] ^= 1 << site.bit;
   }
   const text = await openWith(mk, header, sealed);
   return { opened: text !== null, text };

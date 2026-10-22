@@ -2,13 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { aesGcmDecrypt, aesGcmEncrypt, hexToBytes, hkdf, toHex } from '../../core/crypto';
 import { mulberry32 } from '../../core/random';
 import { nodeAesGcmSeal, nodeDigest, nodeEcdhPublic, nodeEcdhSecret, nodeHkdf, nodeHmac } from '../../core/testing/nodeCrypto';
-import { CLONE_SALT, analyse, buildRun, compareModes, DEFAULT_SEED, parsePattern, textFor } from './model';
-import { chainStep, demoChainKey, headerBytes, openWith, realAlgebra, scalarFor, utf8, type Bytes } from './realAlg';
-import { other, runConversation, type Party, type RatchetMode } from './ratchet';
-import { dependsOnFreshKey, reading, stolenSecrets, symbolicRun, type SymAlgebra } from './symAlg';
-import { cloneReadable, fixedKeyRun, fixedOpens, tamper } from './thief';
+import { CLONE_SALT, analyse, buildRun, compareModes, DEFAULT_SEED, parsePattern } from './model';
+import { chainStep, demoChainKey, headerBytes, openWith, realAlgebra, type Bytes } from './realAlg';
+import { runConversation, type Party, type RatchetMode } from './ratchet';
+import { dependsOnFreshKey, reading, symbolicRun, type SymAlgebra } from './symAlg';
+import { cloneReadable, fixedKeyRun, fixedOpens, flipSite, tamper } from './thief';
 
-/* ── an independent implementation of the same protocol straight on node:crypto (test-local) ─────────────── */
+/* ── a second implementation of the same protocol straight on node:crypto (test-local) ───────────────────────
+ * What is independent: every primitive (HMAC, HKDF, ECDH, SHA-256, AES-GCM come from node:crypto), the key-choice rule
+ * (retyped below, not imported), the UTF-8 encoding, the byte layout of the header and the demo texts. What is NOT
+ * independent: the protocol shape itself (info strings, 0x01 / 0x02 constants, the order of the DH steps), which the
+ * same author wrote twice. So this checks the lesson's implementation of that shape, not the shape against Signal's
+ * specification. The only lesson imports left are the functions under test (realAlgebra, headerBytes, the model run). */
+
+const utf8 = (text: string): Bytes => new Uint8Array(new TextEncoder().encode(text));
+const DEMO_SALTS: Record<'A' | 'B', number> = { A: 104729, B: 1299709 };
+const P256_ORDER = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+/** The demo key-choice rule, retyped: a seeded mulberry32 stream of eight 32-bit words, reduced into 1..n-1. */
+const scalarFor = (seed: number, party: 'A' | 'B', n: number): bigint => {
+  const rnd = mulberry32((seed * 7919 + DEMO_SALTS[party] + n * 15485863) >>> 0);
+  let k = 0n;
+  for (let i = 0; i < 8; i++) k = (k << 32n) | BigInt(Math.floor(rnd() * 2 ** 32));
+  return (k % (P256_ORDER - 1n)) + 1n;
+};
+const other = (p: Party): Party => (p === 'A' ? 'B' : 'A');
 
 const bytesOf = (hex: string): Uint8Array => hexToBytes(hex);
 const hmacNode = (key: Uint8Array, byte: number): Uint8Array => bytesOf(nodeHmac('sha256', key, Uint8Array.of(byte), 'hex'));
@@ -130,7 +147,7 @@ function nodeCloneReadable(run: ReturnType<typeof nodeRun>, party: Party, k: num
   });
 }
 
-const texts = (n: number) => Array.from({ length: n }, (_, i) => textFor(i, []));
+const texts = (n: number) => Array.from({ length: n }, (_, i) => `test line ${i + 1} of ${n}`);
 const patternOf = (n: number, length: number): Party[] => Array.from({ length }, (_, i) => (((n >> i) & 1) === 1 ? 'B' : 'A'));
 const ids = (readable: readonly boolean[]) => readable.flatMap((r, i) => (r ? [i + 1] : []));
 
@@ -224,6 +241,11 @@ describe('who can read what: the spec sets, by derivation closure', () => {
   it('the mode comparison for AABBAB stolen after message 2: fixed key opens all 6, symmetric only m3 to m6, full ratchet m3 and m4', async () => {
     const rows = await compareModes(parsePattern('AABBAB'), 'A', 2);
     expect(rows.map((r) => [r.protection, r.opens])).toEqual([['fixed', [1, 2, 3, 4, 5, 6]], ['symmetric', [3, 4, 5, 6]], ['full', [3, 4]]]);
+  });
+
+  it('the same comparison with Alice stolen after message 1 (what the key idea quotes): fixed all 6, symmetric m2 to m6, full m2 to m4', async () => {
+    const rows = await compareModes(parsePattern('AABBAB'), 'A', 1);
+    expect(rows.map((r) => [r.protection, r.opens])).toEqual([['fixed', [1, 2, 3, 4, 5, 6]], ['symmetric', [2, 3, 4, 5, 6]], ['full', [2, 3, 4]]]);
   });
 
   it('the healing point of AABBAB after message 1 is message 5 (index 4), and it depends on a key made after the theft', async () => {
@@ -334,17 +356,41 @@ describe('forward secrecy and recovery, computed', () => {
     }
   });
 
-  it('counterfactual: a DH step that reuses the old key pair (every post-theft private key is the stolen one) never heals in the alternating pattern', async () => {
-    const sym = await symbolicRun(parsePattern('ABABAB'), 'full');
-    const k = 1;
-    const state = sym.run.after[k - 1].A;
-    const postTheftPrivs = sym.graph.nodes.filter((n) => n.kind === 'priv' && n.id >= sym.sizeAfter[k - 1]).map((n) => n.id);
-    expect(postTheftPrivs.length).toBeGreaterThan(0);
-    const sound = sym.graph.closure(stolenSecrets(state));
-    const reused = sym.graph.closure([...stolenSecrets(state), ...postTheftPrivs]);
-    const sealed = (known: Set<number>) => sym.run.messages.slice(k).map((m) => !known.has(m.mk));
-    expect(sealed(sound)[1]).toBe(true);
-    expect(sealed(reused).every((s) => !s)).toBe(true);
+  it('counterfactual: a ratchet whose new private keys are derived from the previous one (no fresh randomness) never heals, and reads exactly what the symmetric-only ratchet reads', async () => {
+    // The wrapped algebra changes the protocol: every key pair after the first is a one-way function of the party's previous private key,
+    // so a thief holding that key can compute them all. The graph decides, nothing is added to the thief's knowledge by hand.
+    const predictable = (alg: SymAlgebra): SymAlgebra => {
+      const latest: Partial<Record<Party, number>> = {};
+      return {
+        ...alg,
+        keyPair: async (party, n) => {
+          if (n === 0 || latest[party] === undefined) {
+            const base = await alg.keyPair(party, n);
+            latest[party] = base.priv;
+            return base;
+          }
+          const priv = (await alg.kdfCk(latest[party]!)).ck;
+          latest[party] = priv;
+          return { priv, pub: { of: priv } };
+        },
+      };
+    };
+    for (const text of ['ABABAB', 'AABBAB', 'ABBABA']) {
+      const pattern = parsePattern(text);
+      const broken = await symbolicRun(pattern, 'full', predictable);
+      const sound = await symbolicRun(pattern, 'full');
+      const symmetric = await symbolicRun(pattern, 'symmetric');
+      for (const party of ['A', 'B'] as const) {
+        for (let k = 1; k < pattern.length; k++) {
+          const b = reading(broken, party, k);
+          expect(b.healing, `${text} ${party} k=${k}: predictable keys never heal`).toBeNull();
+          expect(ids(b.readable), `${text} ${party} k=${k}`).toEqual(Array.from({ length: pattern.length - k }, (_, i) => k + 1 + i));
+          expect(ids(b.readable)).toEqual(ids(reading(symmetric, party, k).readable));
+        }
+      }
+      // and the sound protocol does heal in the alternating pattern, so the two runs really differ
+      expect(reading(sound, 'A', 1).healing).not.toBeNull();
+    }
   });
 
   it('counterfactual: a KDF that returns the chain key unchanged fails forward secrecy (the thief reads earlier messages of the chain)', async () => {
@@ -360,6 +406,36 @@ describe('forward secrecy and recovery, computed', () => {
     expect(reading(sym, 'A', 3).readable[0]).toBe(true);
     const sound = await symbolicRun(parsePattern('AAAAAA'), 'full');
     expect(reading(sound, 'A', 3).readable[0]).toBe(false);
+  });
+});
+
+describe('the bit the page names is the bit that flips', () => {
+  it('for every target, every slider value 0..127 and every message length, exactly one bit differs, at the named byte and bit', async () => {
+    const run = (await buildRun(parsePattern('AB'), texts(2), 'full', 3))!;
+    for (const m of run.messages) {
+      for (const target of ['ciphertext', 'tag', 'header'] as const) {
+        for (let bit = 0; bit <= 127; bit++) {
+          const site = flipSite(target, bit, m.sealed.length);
+          const sealed = Uint8Array.from(m.sealed);
+          let header = m.header;
+          if (target === 'header') header = { pub: m.header.pub, n: m.header.n ^ (1 << site.bit) };
+          else sealed[(target === 'tag' ? sealed.length - 16 : 0) + site.byte] ^= 1 << site.bit;
+          // exactly one bit differs from the original message, and it is the one named
+          const diff = [...sealed].flatMap((b, i) => (b === m.sealed[i] ? [] : [[i, b ^ m.sealed[i]]]));
+          if (target === 'header') {
+            expect(diff).toEqual([]);
+            expect(header.n ^ m.header.n).toBe(1 << site.bit);
+          } else {
+            expect(diff).toEqual([[(target === 'tag' ? sealed.length - 16 : 0) + site.byte, 1 << site.bit]]);
+          }
+          expect(site.text).toContain(`bit ${site.bit}`);
+          expect(site.byte).toBeLessThan(target === 'tag' ? 16 : target === 'ciphertext' ? sealed.length - 16 : 1);
+        }
+      }
+    }
+    // the old caption said "header, bit 100" for a flip of counter bit 4 (100 % 8)
+    expect(flipSite('header', 100, 40).text).toBe('header counter byte, bit 4');
+    expect(flipSite('ciphertext', 100, 40).text).toBe('ciphertext byte 12, bit 4');
   });
 });
 

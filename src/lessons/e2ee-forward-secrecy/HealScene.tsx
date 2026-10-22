@@ -87,7 +87,7 @@ export function HealScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Readable" value={analysis ? analysis.readable.filter(Boolean).length : '–'} color="var(--bad)" sub={`of ${pattern.length} messages`} />
           <Stat label="Healing point" value={analysis ? (healing === null ? 'none' : `message ${healing + 1}`) : '–'} color={healing === null ? undefined : 'var(--hi)'} sub={healing === null ? 'no reply made a fresh key' : 'first sealed after the theft'} />
-          <Stat label="Closure vs replay" value={analysis ? (analysis.agree ? 'agree' : 'differ') : '–'} color={analysis ? (analysis.agree ? 'var(--ok)' : 'var(--bad)') : undefined} sub="two independent computations" />
+          <Stat label="Closure vs replay" value={analysis ? (analysis.agree ? 'agree' : 'differ') : '–'} color={analysis ? (analysis.agree ? 'var(--ok)' : 'var(--bad)') : undefined} sub="one ratchet, run symbolically and on real bytes" />
         </Stats>
       }
       legend={
@@ -134,13 +134,13 @@ export function HealScene({ picker }: { picker: ReactNode }) {
           ))}
         </ul>
         {pattern.length > 0 && <ModeComparison pattern={pattern} party={party} k={k} />}
-        <p className="e2-note">A stolen key here is a state in a simulation of fictional users: there is no recovery procedure for anything real. Never type a real secret into a demo; nothing is stored.</p>
+        <p className="e2-note">A stolen key here is a state in a simulation of fictional users: there is no recovery procedure for anything real. The thief is passive: a copy that kept answering as Alice, an active attacker, is not modelled. Never type a real secret into a demo; nothing is stored.</p>
       </div>
       <ProvenanceRow>
         <Provenance kind="real">HKDF-SHA256, HMAC-SHA256 and AES-256-GCM from Web Crypto; P-256 from this page&apos;s own arithmetic, cross-checked against node:crypto in the tests</Provenance>
         <Provenance kind="simulated" seed={seed}>fictional users and a simulated theft: a model, not a forensic tool</Provenance>
         <Provenance kind="toy">simplified, in the spirit of Signal&apos;s double ratchet, not compatible with it, not constant-time, seeded keys: demo only</Provenance>
-        <ClaimLabel kind="theorem">forward secrecy and healing hold in this model for the keys tried: argued from the derivation rules, checked on 256 patterns, not proved for the real protocol</ClaimLabel>
+        <ClaimLabel kind="theorem">forward secrecy and healing hold in this model for the keys tried: argued from the derivation rules, checked on 256 patterns against a passive thief, not proved for the real protocol</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
   );

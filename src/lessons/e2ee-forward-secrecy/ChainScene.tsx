@@ -28,7 +28,7 @@ export function ChainScene({ picker }: { picker: ReactNode }) {
     ? NEEDS_SECURE
     : analysis === null
       ? 'Deriving the keys and trying them with real AES-GCM...'
-      : `The thief copies Alice's state after message ${k} and can read ${readableCount} of the ${CHAIN_MESSAGES} messages (${PROTECTION_LABEL[protection].toLowerCase()}). Each earlier message was tried with ${analysis.candidates} derivable keys: ${analysis.tries.slice(0, k).every((t) => t.openedBy === null) ? '0 opened' : 'some opened'}.`;
+      : `The thief copies Alice's state after message ${k} and can read ${readableCount} of the ${CHAIN_MESSAGES} messages (${PROTECTION_LABEL[protection].toLowerCase()}). Each earlier message was tried with ${analysis.candidates} derivable key${analysis.candidates === 1 ? '' : 's'}: ${analysis.tries.slice(0, k).every((t) => t.openedBy === null) ? '0 opened' : 'some opened'}.`;
 
   return (
     <StageFrame

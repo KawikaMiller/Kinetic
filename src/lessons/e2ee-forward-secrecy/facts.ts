@@ -10,8 +10,9 @@ export const FACTS = {
   healingDefault: 5,
   readableDefault: 'messages 2, 3 and 4',
   sealedDefault: 'messages 5 and 6',
+  /** The mode comparison for AABBAB with Alice's state copied after message 1: the Healing scene's default. */
   modeFixed: 'm1 m2 m3 m4 m5 m6',
-  modeSymmetric: 'm3 m4 m5 m6',
-  modeFull: 'm3 m4',
+  modeSymmetric: 'm2 m3 m4 m5 m6',
+  modeFull: 'm2 m3 m4',
   patternSize: 6,
 };
