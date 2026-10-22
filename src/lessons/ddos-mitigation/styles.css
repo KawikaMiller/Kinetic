@@ -1,0 +1,23 @@
+/* ddos-mitigation */
+.dd-stage { gap: 12px; min-width: 0; }
+.dd-resources { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; min-width: 0; }
+.dd-resources .box.is-saturated { border-color: var(--bad); }
+.dd-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.dd-note.is-bad { color: var(--bad); }
+.dd-table-wrap { overflow-x: auto; }
+.dd-table th, .dd-table td { font-size: 12px; }
+.dd-table .is-current { color: var(--orange); }
+.dd-table tr.is-on th { color: var(--violet); }
+.dd-sites { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.dd-site { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center; font-size: 12.5px; }
+.dd-site-name { color: var(--muted); }
+.dd-site-note { font: 600 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.dd-site-note.is-bad { color: var(--bad); }
+.dd-scrub { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; min-width: 0; }
+.dd-scrub > * { flex: 1 1 300px; min-width: 0; }
+.dd-scrub .plot2d { max-width: 100%; height: auto; }
+.dd-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; margin-top: 8px; }
+.dd-slot { padding: 8px 4px; text-align: center; font: 600 12px var(--mono); border-radius: 8px; border: 1.5px solid var(--line-2); color: var(--muted); }
+.dd-slot.is-flood { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 16%, transparent); color: var(--orange); }
+.dd-slot.is-legit { border-color: var(--info); background: color-mix(in srgb, var(--info) 16%, transparent); color: var(--info); }
+.dd-slot.is-cookie { border-color: var(--ok); color: var(--ok); }

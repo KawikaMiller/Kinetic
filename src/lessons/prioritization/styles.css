@@ -1,0 +1,11 @@
+.pz-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.pz-table { width: 100%; }
+.pz-table caption { text-align: left; font: 600 12.5px var(--font); color: var(--text); padding-bottom: 4px; }
+.pz-linked td { color: var(--violet); }
+.pz-move { display: flex; gap: 6px; }
+.pz-bar-cell { min-width: 140px; }
+.pz-line { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pz-line li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; }
+.pz-out { opacity: 0.7; border-style: dashed; }
+.pz-line-label { flex: 1 1 180px; font: 600 13px var(--font); color: var(--text); }
+.pz-line-meta { font: 500 12px var(--font); color: var(--muted); }
