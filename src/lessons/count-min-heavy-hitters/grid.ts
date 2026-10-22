@@ -75,6 +75,9 @@ export function inspect(model: GridModel, item: string): Inspection {
   return { item, truth: model.truth.get(item) ?? 0, estimate: estimate(model.sketch, key), cells, min: { row: min.row, col: min.col } };
 }
 
+/** The "Items shown" slider can reach exactly the items held: never one past them. */
+export const shownRange = (held: number): { min: number; max: number } => ({ min: 0, max: held });
+
 export const polluted = (model: GridModel, row: number, col: number): boolean => (model.occupants.get(cellKey(row, col))?.size ?? 0) > 1;
 
 /** How the grid draws a cell while an item is inspected: its own cell in some row, a cell other items share (red), or neither. */

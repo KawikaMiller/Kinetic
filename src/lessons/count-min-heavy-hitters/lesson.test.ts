@@ -4,7 +4,7 @@ import { captionText as text } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { breakCaption, gridCaption, heavyCaption, mergeCaption, sizeCaption } from './captions';
 import { breakFacts, gridFacts, heavyFacts, mergeFacts, sizeFacts, SMALL_WIDTH } from './facts';
-import { GRID_D, GRID_SEED, GRID_W, STREAM_BURST, MAX_ITEM_LENGTH, buildGrid, cellRole, cleanItem, inspect, undercounted, wordStream } from './grid';
+import { GRID_D, GRID_SEED, GRID_W, STREAM_BURST, MAX_ITEM_LENGTH, buildGrid, cellRole, cleanItem, inspect, shownRange, undercounted, wordStream } from './grid';
 import { heavyRun, quality, cellsOf, deltaOf, epsilonOf, estimate, itemKey, makeFamily, newSketch, update, UNIVERSE, zipfStream } from '../../core/countMin';
 import lesson from './index';
 import { MERGE_DEPTH, MERGE_N, MERGE_WIDTH, mergeRun } from './merge';
@@ -176,5 +176,16 @@ describe('lesson content', () => {
   });
   it('the correct quiz option is the strictly longest in at most half of the questions', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
+});
+
+describe('the Items shown slider', () => {
+  it.each([0, 1, 2, 5])('with %i items held, no slider value points past the items (the scene reads items[shown - 1])', (held) => {
+    const items = wordStream(held, 7, 0);
+    const { min, max } = shownRange(held);
+    for (let shown = min; shown <= max; shown++) {
+      if (shown > 0) expect(items[shown - 1]).toBeDefined();
+    }
+    expect(max).toBe(held);
   });
 });
