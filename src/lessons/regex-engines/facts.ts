@@ -1,9 +1,7 @@
 /** Every number the lesson text quotes, computed from the model once (the try-this entries, key ideas and quiz explanations read these). */
-import { matchAt } from './backtrack';
-import { STEP_BUDGET, growthTable, runNfa, workSeries, whichAnswer } from './engines';
+import { matchAt, runNfa, countParts, parsePattern, type ParsedRegex, constructionOf, epsilonCount } from '../../core/regex';
+import { STEP_BUDGET, growthTable, workSeries, whichAnswer } from './engines';
 import { OPENING, NESTED_REPEAT } from './opening';
-import { countParts, parsePattern, type ParsedRegex } from './regexParse';
-import { constructionOf, epsilonCount } from './thompson';
 import { realResultFor } from './realExamples';
 
 const parse = (p: string): ParsedRegex => {

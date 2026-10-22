@@ -5,9 +5,8 @@ import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
 import { NfaDrawing } from './NfaDrawing';
 import { OPENING, PRESETS } from './opening';
-import { countParts } from './regexParse';
+import { countParts, constructionOf, placeNfa } from '../../core/regex';
 import { PresetChips, RegexFields } from './RegexFields';
-import { constructionOf, placeNfa } from './thompson';
 import { useRegexInput } from './useRegexInput';
 
 const BUILD_INTERVAL_MS = 900;

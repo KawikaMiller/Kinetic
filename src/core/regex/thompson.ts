@@ -10,9 +10,9 @@
  *   `+`                  the same without the skip arrow
  *   `?`                  the same without the loop-back arrow
  */
-import { EPSILON, type Nfa, type State } from '../../core/automata';
-import { layeredLayout, layeredPositions, type Pt } from '../../core/graphLayout';
-import { nodesInOrder, type ParsedRegex, type RegexNode } from './regexParse';
+import { EPSILON, type Nfa, type State } from '../automata';
+import { layeredLayout, layeredPositions, type Pt } from '../graphLayout';
+import { nodesInOrder, type ParsedRegex, type RegexNode } from './parse';
 
 /** Stands for "any character the pattern does not name": what `.` also matches. */
 export const ELSE = 'else';

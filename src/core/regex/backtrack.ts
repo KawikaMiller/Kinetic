@@ -1,15 +1,17 @@
 /**
  * A backtracking regex matcher with a step counter and a trace. Pure: it knows the dialect's tree and nothing
- * else, so a later lesson can take it as it stands.
+ * else (parse it with `./parse`).
  *
- * It follows the ECMAScript rules for the dialect: alternatives are tried in order, quantifiers are greedy,
+ * It follows the ECMAScript rules for the dialect, with two exceptions: a back-reference to a group that is not
+ * closed yet is refused by the parser (ECMAScript allows forward and self references), and `.` refuses the four
+ * line terminators in `LINE_TERMINATORS` (subjects cannot contain them, so the NFA and this matcher agree). The rules: alternatives are tried in order, quantifiers are greedy,
  * an iteration that matched nothing is rejected once the minimum is met, captures inside a repeated group are
  * cleared at the start of each iteration, and a back-reference to a group that has not matched matches "".
  *
  * A STEP is one attempt of one tree node at one position. Step counts belong to this matcher; they say
  * nothing about the speed of any real engine.
  */
-import { LINE_TERMINATORS, type RegexNode } from './regexParse';
+import { LINE_TERMINATORS, type RegexNode } from './parse';
 
 /** One attempt of a node at a position. `ok` is true when the match went on to succeed, false when the attempt failed and the matcher backed up, null when it was still running (an open ancestor of the attempt) when the budget ran out. */
 export interface TraceEvent {
@@ -25,6 +27,8 @@ export interface BacktrackOptions {
   budget: number;
   /** Keep the first this many attempts (the count keeps going). Default 0: no trace. */
   traceLimit?: number;
+  /** Keep the LAST this many attempts instead: the trace of where a blow-up ended. Ignored when `traceLimit` is set. Default 0. */
+  traceTail?: number;
   /** The match must reach the end of the subject, as `^(?:…)$` does. */
   mustEnd?: boolean;
 }
@@ -38,6 +42,10 @@ export interface BacktrackResult {
   steps: number;
   trace: TraceEvent[];
   traceTruncated: boolean;
+  /** Steps spent at each start position tried, in order; on 'budget' the last entry is the start that ran out. */
+  perStart: { start: number; steps: number }[];
+  /** On a match: index 0 is the whole span, index g the span of group g (null when it did not take part). Empty otherwise. */
+  captures: ([number, number] | null)[];
 }
 
 
@@ -70,7 +78,7 @@ export function matchAt(root: RegexNode, subject: readonly string[], from: numbe
   return run(root, subject, [from], o);
 }
 
-/** Leftmost-first search: the first start position, left to right, where some alternative order succeeds (what `RegExp.exec` returns). The budget is shared across starts. */
+/** Leftmost-first search: the first start position, left to right, where some alternative order succeeds (what `RegExp.exec` returns). The budget is shared across starts; `perStart` says how it was spent. */
 export function searchLeftmost(root: RegexNode, subject: readonly string[], o: BacktrackOptions): BacktrackResult {
   return run(root, subject, Array.from({ length: subject.length + 1 }, (_, i) => i), o);
 }
@@ -78,6 +86,8 @@ export function searchLeftmost(root: RegexNode, subject: readonly string[], o: B
 function run(root: RegexNode, subject: readonly string[], starts: readonly number[], o: BacktrackOptions): BacktrackResult {
   const n = subject.length;
   const traceLimit = o.traceLimit ?? 0;
+  const traceTail = traceLimit > 0 ? 0 : (o.traceTail ?? 0);
+  const perStart: BacktrackResult['perStart'] = [];
   const trace: TraceEvent[] = [];
   let steps = 0;
   let caps: Caps = Array.from({ length: groupCount(root) + 1 }, () => null);
@@ -85,8 +95,11 @@ function run(root: RegexNode, subject: readonly string[], starts: readonly numbe
   const attempt = (node: RegexNode, pos: number, body: (k: Cont) => boolean, k: Cont): boolean => {
     steps++;
     if (steps > o.budget) throw new BudgetExhausted();
-    const event: TraceEvent | null = trace.length < traceLimit ? { step: steps, node: node.id, pos, ok: null } : null;
-    if (event) trace.push(event);
+    const event: TraceEvent | null = trace.length < traceLimit || traceTail > 0 ? { step: steps, node: node.id, pos, ok: null } : null;
+    if (event) {
+      trace.push(event);
+      if (traceTail > 0 && trace.length > traceTail) trace.shift();
+    }
     const ok = body(k);
     if (event) event.ok = ok;
     return ok;
@@ -168,18 +181,25 @@ function run(root: RegexNode, subject: readonly string[], starts: readonly numbe
 
   let status: BacktrackResult['status'] = 'fail';
   let span: [number, number] = [-1, -1];
+  let captures: BacktrackResult['captures'] = [];
+  let startedAt = 0;
+  let startedFrom = -1;
   try {
     for (const from of starts) {
       caps = caps.map(() => null);
+      startedAt = steps;
+      startedFrom = from;
       let end = -1;
       const found = match(root, from, (pos) => {
         if (o.mustEnd && pos !== n) return false;
         end = pos;
         return true;
       });
+      perStart.push({ start: from, steps: steps - startedAt });
       if (found) {
         status = 'match';
         span = [from, end];
+        captures = [[from, end], ...caps.slice(1)];
         break;
       }
     }
@@ -187,6 +207,7 @@ function run(root: RegexNode, subject: readonly string[], starts: readonly numbe
     if (!(e instanceof BudgetExhausted)) throw e;
     status = 'budget';
     steps = o.budget;
+    perStart.push({ start: startedFrom, steps: steps - startedAt });
   }
-  return { status, start: span[0], end: span[1], steps, trace, traceTruncated: steps > trace.length && traceLimit > 0 };
+  return { status, start: span[0], end: span[1], steps, trace, traceTruncated: steps > trace.length && traceLimit + traceTail > 0, perStart, captures };
 }
