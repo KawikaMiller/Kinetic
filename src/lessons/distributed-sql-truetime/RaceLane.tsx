@@ -3,6 +3,11 @@ import type { Race } from './truetime';
 import { RACE_LANE_W } from './layout';
 
 const H = 230;
+
+function laneVerdict(r: Race): string {
+  if (r.ordered) return r.s2 === r.s1 ? 's2 equals s1: ordered only by the strict wait' : 's2 is above s1: ordered';
+  return r.s2 === r.s1 ? 's2 equals s1: a tie is a violation' : 's2 is below s1: violation';
+}
 const PAD_X = 70;
 const LANE = { t1: 60, t2: 150 } as const;
 const BAR_H = 14;
@@ -40,7 +45,7 @@ export function RaceLane({ race, epsilon, e1, e2 }: { race: Race; epsilon: numbe
       {tick(race.t2, LANE.t2, `T2 starts ${decimal(race.t2, 1)}`, 'var(--sky)', -22)}
       {tick(race.s2, LANE.t2, `s2 ${decimal(race.s2, 1)}`, verdict, 36)}
       <line x1={x(race.ackAt)} x2={x(race.t2)} y1={LANE.t1 + 12} y2={LANE.t2 - 12} stroke="var(--dim)" strokeDasharray="4 3" />
-      <text x={RACE_LANE_W / 2} y={H - 8} textAnchor="middle" className="tt-verdict" fill={verdict}>{race.ordered ? 's2 is above s1: ordered' : 's2 is not above s1: violation'}</text>
+      <text x={RACE_LANE_W / 2} y={H - 8} textAnchor="middle" className="tt-verdict" fill={verdict}>{laneVerdict(race)}</text>
     </svg>
   );
 }

@@ -5,8 +5,9 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
+import { WideRegion } from '../../components/WideRegion';
 import { decimal } from '../../core/format';
-import { raceCaption } from './captions';
+import { commitWaitSub, plotTop, raceCaption } from './captions';
 import { sampledText } from './checkText';
 import { BROKEN_SEED, DEFAULT_OPTIONS, cachedSweep, raceInput, sweepModel, type Options } from './seeded';
 import { DELTA_MS, EPSILON_MS, ERROR_MS, GAP_MS, SEEDS_TOTAL, SEED_RANGE, breakProbability, hotKeyBound, latencyBillMs, race } from './truetime';
@@ -47,14 +48,13 @@ export function RaceScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={540}
-      minWidth={RACE_LANE_W}
       intro={raceCaption({ race: run, epsilon, delta, commitWait, e1: input.e1, e2: input.e2, fraction: sweep.failing.length / SEEDS_TOTAL, failing: sweep.failing.length, seeds: SEEDS_TOTAL, closed })}
       introKey={`${JSON.stringify(options)}|${seed}`}
       stats={
         <Stats>
           <Stat label="T2 timestamp above T1's" value={run.ordered ? 'yes' : 'no'} color={run.ordered ? 'var(--ok)' : 'var(--bad)'} sub={`${decimal(run.s2, 1)} against ${decimal(run.s1, 1)}`} />
           <Stat label="T2's read sees T1's write" value={run.sees ? 'yes' : 'no'} color={run.sees ? 'var(--ok)' : 'var(--bad)'} sub="a snapshot read at T2's timestamp" />
-          <Stat label="Commit wait" value={`${decimal(run.waitMs, 0)} ms`} sub={`the latency bill is 2ε = ${decimal(bill, 0)} ms${hot === null ? '' : `; one hot key commits at most ${decimal(hot, 1)} writes a second`}`} />
+          <Stat label="Commit wait" value={`${decimal(run.waitMs, 0)} ms`} sub={commitWaitSub({ commitWait, bill, hot })} />
         </Stats>
       }
       legend={
@@ -75,7 +75,9 @@ export function RaceScene({ picker }: { picker: ReactNode }) {
           {picker}
           <Toggle label="Commit wait" value={commitWait} onChange={setCommitWait} />
           <Slider label="Assumed bound ε" value={epsilon} min={EPSILON_MS.min} max={EPSILON_MS.max} format={(v) => `${v} ms`} onChange={setEpsilon} />
-          <Slider label="Actual clock error δ" value={delta} min={DELTA_MS.min} max={DELTA_MS.max} format={(v) => `${v} ms`} onChange={setDelta} />
+          {errors === 'seed'
+            ? <Slider label="Actual clock error δ" value={delta} min={DELTA_MS.min} max={DELTA_MS.max} format={(v) => `${v} ms`} onChange={setDelta} />
+            : <Hint tone="muted">Actual clock error δ is not used while the errors are set.</Hint>}
           <Slider label="Gap up to G" value={gapMax} min={GAP_MS.min} max={GAP_MS.max} format={(v) => `${v} ms`} onChange={setGapMax} />
         </>,
         <>
@@ -93,15 +95,17 @@ export function RaceScene({ picker }: { picker: ReactNode }) {
       <div className="tt-stage stage-pad">
         <Box>
           <SectionTitle hint="true time on the axis; each leader's clock is off by its own error">T1 on shard 1, then T2 on shard 2</SectionTitle>
-          <RaceLane race={run} epsilon={epsilon} e1={input.e1} e2={input.e2} />
+          <WideRegion minWidth={RACE_LANE_W} noun="timeline">
+            <RaceLane race={run} epsilon={epsilon} e1={input.e1} e2={input.e2} />
+          </WideRegion>
           <Hint block>
             {errors === 'seed' ? `Seed ${seed} drew the errors ${decimal(input.e1, 2)} ms and ${decimal(input.e2, 2)} ms and a gap of ${decimal(input.gap, 2)} ms.` : `The errors are set to ${e1} and ${e2} ms; the seed draws the gap, ${decimal(input.gap, 2)} ms.`}{' '}
-            T2 is ordered after T1 exactly when the wait plus the gap plus e2 minus e1 is above zero: {decimal(run.waitMs, 1)} + {decimal(input.gap, 2)} + {decimal(input.e2, 2)} - {decimal(input.e1, 2)} = {decimal(run.waitMs + input.gap + input.e2 - input.e1, 2)}.
+            T2 is ordered after T1 exactly when the wait plus the gap plus e2 minus e1 is above zero: {decimal(run.waitMs, 1)} + {decimal(input.gap, 2)} + {decimal(input.e2, 2)} - {decimal(input.e1, 2)} = {decimal(run.waitMs + input.gap + input.e2 - input.e1, 2)}. Without the wait, a sum of zero is a tie (s2 equal to s1) and a tie is a violation; with it, the acknowledgement lands one clock tick after 2ε, so a sum of zero is ordered.
           </Hint>
         </Box>
         <Box>
           <SectionTitle hint="the share of races that break external consistency, against ε">How often the order breaks</SectionTitle>
-          <Plot2D width={narrow ? PLOT_W.narrow : PLOT_W.wide} height={220} x={{ domain: [0, EPSILON_MS.max], label: 'assumed bound ε (ms)', ticks: 5 }} y={{ domain: [0, 50], label: 'races that break (%)', ticks: 5 }} ariaLabel="The share of races that break the order against the assumed bound">
+          <Plot2D width={narrow ? PLOT_W.narrow : PLOT_W.wide} height={220} x={{ domain: [0, EPSILON_MS.max], label: 'assumed bound ε (ms)', ticks: 5 }} y={{ domain: [0, plotTop([...measured.map((p) => p.y), ...(closed === null ? [] : curve.map((eps) => 100 * breakProbability({ delta, epsilon: eps, gapMax, commitWait })))])], label: 'races that break (%)', ticks: 5 }} ariaLabel="The share of races that break the order against the assumed bound">
             {closed !== null && <Curve fn={(eps) => 100 * breakProbability({ delta, epsilon: eps, gapMax, commitWait })} tone="dim" dashed />}
             <Points data={measured} r={3.5} />
             <VLine at={epsilon} label={`ε = ${epsilon}`} tone="violet" />

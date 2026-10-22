@@ -71,7 +71,7 @@ export function TwoShardScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Hint block>A different design, in words: a database that uses hybrid logical clocks (the previous lesson) with a configured maximum offset can skip the commit wait and instead restarts a read whose timestamp falls inside the uncertainty of a newer write. Both descriptions are from memory.</Hint>
         <ProvenanceRow>
-          <Provenance kind="not-run">each shard is a group of three replicas; the paper's groups use Paxos, and CockroachDB uses Raft, both from memory</Provenance>
+          <Provenance kind="not-run">each shard is a group of three replicas; Spanner's groups use Paxos (the Spanner paper, Corbett et al., 2012) and CockroachDB uses Raft, both from memory; verify against the paper and the CockroachDB docs</Provenance>
           <Provenance kind="from-memory">CockroachDB uses hybrid logical clocks, Raft and uncertainty restarts; check its documentation</Provenance>
           <Provenance kind="illustrative">the clock readings are made up</Provenance>
           <ClaimLabel kind="practice">the commit timestamp is the maximum of the participants' prepare timestamps</ClaimLabel>

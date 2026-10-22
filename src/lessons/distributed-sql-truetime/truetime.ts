@@ -8,8 +8,12 @@
  */
 
 export const T1_START_MS = 100;
-/** The strict inequality of "TT.now().earliest > s", as a tiny extra delay in the simulation. */
-export const WAIT_EPSILON_MS = 0.001;
+/**
+ * The strict inequality of "TT.now().earliest > s", as a tiny extra delay: the acknowledgement lands one tick after
+ * start + 2 eps, never at it. A tick is far below the 0.001 ms grid every drawn or set quantity sits on, so no sum on that
+ * grid can land within a tick of zero by accident, and the model, the closed form and the simulation harness agree.
+ */
+export const WAIT_EPSILON_MS = 1e-6;
 
 export const EPSILON_MS = { min: 0, max: 20, default: 7 } as const;
 export const DELTA_MS = { min: 0, max: 25, default: 7 } as const;
@@ -41,14 +45,19 @@ export interface Race {
   t2: number;
   /** T2's timestamp. */
   s2: number;
-  /** T2's timestamp is strictly larger than T1's (a tie is a violation). */
+  /** The strict-wait tick that delays T2's start past the nominal acknowledgement (0 without commit wait). */
+  tickMs: number;
+  /** T2's timestamp is strictly larger than T1's, counting the strict-wait tick; without commit wait a tie is a violation. */
   ordered: boolean;
-  /** T2's snapshot read at s2 sees T1's write (the latest version at or below s2). */
+  /** T2's snapshot read at its timestamp sees T1's write (the latest version at or below it). */
   sees: boolean;
 }
 
 /** The commit wait as the lesson states it: until TT.now().earliest > s, which is 2 eps after the start. */
 export const commitWaitMs = (epsilon: number, commitWait: boolean): number => (commitWait ? 2 * epsilon : 0);
+
+/** The one-tick strict wait: present only when the wait is on. */
+export const waitTickMs = (commitWait: boolean): number => (commitWait ? WAIT_EPSILON_MS : 0);
 
 export function race(i: RaceInput): Race {
   const t1 = T1_START_MS;
@@ -57,11 +66,12 @@ export function race(i: RaceInput): Race {
   const ackAt = t1 + waitMs;
   const t2 = ackAt + i.gap;
   const s2 = t2 + i.e2 + i.epsilon;
-  return { t1, s1, waitMs, ackAt, t2, s2, ordered: s2 > s1, sees: s1 <= s2 };
+  const tickMs = waitTickMs(i.commitWait);
+  return { t1, s1, waitMs, ackAt, t2, s2, tickMs, ordered: s2 + tickMs > s1, sees: s1 <= s2 + tickMs };
 }
 
-/** The race rule in one line: T2 is ordered after T1 exactly when w + g + e2 - e1 > 0. */
-export const orderedByFormula = (i: RaceInput): boolean => commitWaitMs(i.epsilon, i.commitWait) + i.gap + i.e2 - i.e1 > 0;
+/** The race rule in one line: T2 is ordered after T1 exactly when w + tick + g + e2 - e1 > 0 (the tick only with the wait on). */
+export const orderedByFormula = (i: RaceInput): boolean => commitWaitMs(i.epsilon, i.commitWait) + waitTickMs(i.commitWait) + i.gap + i.e2 - i.e1 > 0;
 
 /** The seeded draw: the clock errors uniform in [-delta, delta] and the gap uniform in [0, G]. */
 export function drawRace(rnd: () => number, delta: number, gapMax: number): { e1: number; e2: number; gap: number } {
@@ -74,12 +84,14 @@ export function drawRace(rnd: () => number, delta: number, gapMax: number): { e1
 /**
  * The share of races that break external consistency, in closed form. e1 and e2 are independent uniform on [-delta, delta], so
  * D = e1 - e2 is triangular with P(D >= x) = (2 delta - x)^2 / (8 delta^2) for 0 <= x <= 2 delta; the gap is uniform on [0, G].
- * A race breaks when D >= w + g (a tie is a violation): P = (1/G) * integral_0^G P(D >= w + g) dg.
+ * A race breaks when D >= w + g + tick (the tick is 0 without the wait, so a tie is a violation there, and one tick with it, so a
+ * tie at exactly 2 eps is ordered): P = (1/G) * integral_0^G P(D >= w + g + tick) dg. With a continuous D and g the tick changes
+ * nothing; it matters only at the atoms, perfect clocks (delta = 0) and no gap.
  */
 export function breakProbability(o: { delta: number; epsilon: number; gapMax: number; commitWait: boolean }): number {
   const w = commitWaitMs(o.epsilon, o.commitWait);
   const a = 2 * o.delta - w;
-  if (o.delta === 0) return w === 0 && o.gapMax === 0 ? 1 : 0;
+  if (o.delta === 0) return !o.commitWait && o.gapMax === 0 ? 1 : 0;
   if (a <= 0) return 0;
   if (o.gapMax === 0) return (a * a) / (8 * o.delta * o.delta);
   const m = Math.min(o.gapMax, a);

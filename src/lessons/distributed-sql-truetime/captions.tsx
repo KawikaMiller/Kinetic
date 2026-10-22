@@ -22,6 +22,24 @@ export function snapshotCaption(a: { at: number; x: readonly Version[]; y: reado
   );
 }
 
+/** The verdict on the pair: ordered, ordered only by the strict-wait tick, a tie (a violation) or earlier. */
+export function orderWords(r: Race): ReactNode {
+  const tie = r.s2 === r.s1;
+  if (r.ordered) return tie ? <span className="hl ok">T2 is ordered after T1 by one clock tick: the wait ends strictly after s1 has passed</span> : <span className="hl ok">T2 is ordered after T1</span>;
+  return tie ? <span className="hl bad">T2 ties T1, and a tie is a violation</span> : <span className="hl bad">T2 is timestamped earlier than T1</span>;
+}
+
+/** The sub-line of the Commit wait stat: the bill is quoted as paid only while the wait is on. */
+export function commitWaitSub(a: { commitWait: boolean; bill: number; hot: number | null }): string {
+  const hot = a.hot === null ? '' : `; one hot key would commit at most ${decimal(a.hot, 1)} writes a second`;
+  return a.commitWait ? `the latency bill is 2ε = ${decimal(a.bill, 0)} ms${hot.replace('would commit', 'commits')}` : `off: with the wait on the bill would be 2ε = ${decimal(a.bill, 0)} ms${hot}`;
+}
+
+/** The top of the plot's y axis: the largest plotted percentage rounded up to a multiple of 10, at least 10 and at most 100. */
+export function plotTop(ys: readonly number[]): number {
+  return Math.min(100, Math.max(10, Math.ceil(Math.max(0, ...ys) / 10) * 10));
+}
+
 /** Scene 2: the race, in words from the model. */
 export function raceCaption(a: { race: Race; epsilon: number; delta: number; commitWait: boolean; e1: number; e2: number; fraction: number; failing: number; seeds: number; closed: number | null }): ReactNode {
   const r = a.race;
@@ -29,7 +47,7 @@ export function raceCaption(a: { race: Race; epsilon: number; delta: number; com
   return (
     <>
       {when}. T1 took timestamp {decimal(r.s1, 1)} and T2 {decimal(r.s2, 1)}:{' '}
-      {r.ordered ? <span className="hl ok">T2 is ordered after T1</span> : <span className="hl bad">T2 is timestamped earlier than T1</span>}
+      {orderWords(r)}
       {r.sees ? ', and its read sees the write' : <>, and its read <span className="hl bad">misses the acknowledged write</span></>}.{' '}
       {a.commitWait ? `Commit wait cost ${decimal(r.waitMs, 0)} ms.` : 'There is no commit wait.'} Over seeds 1 to {a.seeds}: {a.failing} of {a.seeds} break the order{a.closed === null ? '' : `, against ${decimal(a.closed * 100, 1)}% in closed form`}.
     </>

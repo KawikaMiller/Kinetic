@@ -3,7 +3,7 @@ import { expectCaption } from '../../core/testing/captions';
 import { forSeeds } from '../../core/distSim';
 import { mulberry32 } from '../../core/random';
 import { SEED_MAX } from '../../core/seed';
-import { raceCaption, snapshotCaption, twoShardCaption } from './captions';
+import { commitWaitSub, plotTop, raceCaption, snapshotCaption, twoShardCaption } from './captions';
 import lesson from './index';
 import {
   BROKEN_SEED, BROKEN_SEED_EPSILON, DEFAULT_OPTIONS, drawFor, externalConsistency, raceInput, raceScenario, runRaceSeed, sweepModel, sweepRace,
@@ -159,7 +159,7 @@ describe('the seeded leg on distSim: the harness and the model agree, external c
         const r = runRaceSeed(o, seed);
         expect(r.observed.ts1!).toBeCloseTo(r.model.s1, 2);
         expect(r.observed.ts2!).toBeCloseTo(r.model.s2, 2);
-        expect(r.observed.seen).toBe(r.model.s1 <= r.model.s2);
+        expect(r.observed.seen).toBe(r.model.sees);
         expect(r.violation === null).toBe(r.model.ordered || r.model.s2 === r.model.s1 ? r.model.ordered : false);
       }
     }
@@ -333,5 +333,99 @@ describe('try-this entries, from the default state, as written', () => {
     expect(text).toContain('T2 is timestamped earlier than T1');
     expect(text).toContain('misses the acknowledged write');
     expect(text).toContain('71 of 200 break the order, against 34.3% in closed form');
+  });
+});
+
+describe('the boundary: the pure model, a stepped clock and the distSim harness agree on the full integer grid (M4)', () => {
+  /** An independent stepped simulation: true time moves in ticks of 0.1 ms; the wait ends at the first tick where earliest > s1. */
+  function stepped(i: { epsilon: number; e1: number; e2: number; gap: number; commitWait: boolean }): boolean {
+    const U = 10;
+    const t1 = 100 * U;
+    const s1 = t1 + (i.e1 + i.epsilon) * U;
+    let ack = t1;
+    if (i.commitWait) {
+      let t = t1;
+      while (t + i.e1 * U - i.epsilon * U <= s1) t += 1;
+      ack = t;
+    }
+    const s2 = ack + i.gap * U + (i.e2 + i.epsilon) * U;
+    return s2 > s1;
+  }
+
+  it('wait on, eps 7, G 0, e1 = +7 and e2 = -7 (exactly 2 eps apart): ordered, by one tick, and the lane and caption say so', () => {
+    const input = { epsilon: 7, e1: 7, e2: -7, gap: 0, commitWait: true };
+    const r = race(input);
+    expect(r.s2).toBe(r.s1);
+    expect(r.ordered).toBe(true);
+    expect(orderedByFormula(input)).toBe(true);
+    expect(stepped(input)).toBe(true);
+    const o: Options = { epsilon: 7, delta: 7, gapMax: 0, commitWait: true, fixedErrors: { e1: 7, e2: -7 } };
+    expect(sweepRace(o).failing).toEqual([]);
+    expect(sweepModel(o)).toBe(0);
+    expect(expectCaption(raceCaption({ race: r, epsilon: 7, delta: 7, commitWait: true, e1: 7, e2: -7, fraction: 0, failing: 0, seeds: 200, closed: null }))).toContain('by one clock tick');
+    // The wait off, the same errors: a real tie, a violation, worded as a tie and not as "earlier".
+    const off = race({ epsilon: 7, e1: 4, e2: 4, gap: 0, commitWait: false });
+    expect(off.ordered).toBe(false);
+    const text = expectCaption(raceCaption({ race: off, epsilon: 7, delta: 7, commitWait: false, e1: 4, e2: 4, fraction: 1, failing: 200, seeds: 200, closed: null }));
+    expect(text).not.toContain('timestamped earlier');
+    expect(text).toContain('ties T1');
+  });
+
+  it('model = formula = stepped simulation for every integer eps 0..20, e1, e2 -25..25, wait on and off, gap in {0, 1, 7, 20}: 21 x 51 x 51 x 4 x 2', () => {
+    let cases = 0;
+    for (const commitWait of [false, true]) {
+      for (let epsilon = 0; epsilon <= 20; epsilon++) {
+        for (let e1 = -25; e1 <= 25; e1++) {
+          for (let e2 = -25; e2 <= 25; e2++) {
+            for (const gap of [0, 1, 7, 20]) {
+              const input = { epsilon, e1, e2, gap, commitWait };
+              const m = race(input).ordered;
+              if (m !== orderedByFormula(input)) throw new Error(`formula ${JSON.stringify(input)}`);
+              // The stepped simulation is the slow one, so it runs on the boundary band e1 - e2 within 2 of w + g, plus a thin sample.
+              const near = Math.abs(e1 - e2 - (commitWait ? 2 * epsilon : 0) - gap) <= 2;
+              if ((near || (e1 + e2 + epsilon) % 11 === 0) && m !== stepped(input)) throw new Error(`stepped ${JSON.stringify(input)}`);
+              cases++;
+            }
+          }
+        }
+      }
+    }
+    expect(cases).toBe(21 * 51 * 51 * 4 * 2);
+  });
+
+  it('the distSim harness agrees with the model at the boundary band: G 0, eps 0..8 (every 2) and 7, e1 and e2 -16..16, wait on and off', () => {
+    let cases = 0;
+    for (const commitWait of [false, true]) {
+      for (const epsilon of [0, 2, 4, 6, 7, 8]) {
+        for (let e1 = -16; e1 <= 16; e1++) {
+          for (let e2 = -16; e2 <= 16; e2++) {
+            if (Math.abs(e1 - e2 - (commitWait ? 2 * epsilon : 0)) > 2) continue;
+            const o: Options = { epsilon, delta: 7, gapMax: 0, commitWait, fixedErrors: { e1, e2 } };
+            const harness = runRaceSeed(o, 1).violation === null;
+            if (harness !== race(raceInput(1, o)).ordered) throw new Error(`harness ${JSON.stringify(o)}`);
+            cases++;
+          }
+        }
+      }
+    }
+    expect(cases).toBeGreaterThan(500);
+  });
+
+  it('the closed form agrees at the atoms: perfect clocks with a wait and no gap are ordered, without a wait they tie', () => {
+    expect(breakProbability({ delta: 0, epsilon: 0, gapMax: 0, commitWait: true })).toBe(0);
+    expect(sweepModel({ ...DEFAULT_OPTIONS, epsilon: 0, delta: 0, gapMax: 0, commitWait: true })).toBe(0);
+    expect(sweepRace({ ...DEFAULT_OPTIONS, epsilon: 0, delta: 0, gapMax: 0, commitWait: true }).failing).toEqual([]);
+    expect(breakProbability({ delta: 0, epsilon: 0, gapMax: 0, commitWait: false })).toBe(1);
+  });
+
+  it('the Commit wait sub-line quotes the bill as paid only with the wait on; the plot axis follows the data', () => {
+    expect(commitWaitSub({ commitWait: false, bill: 14, hot: 71.4 })).toContain('off');
+    expect(commitWaitSub({ commitWait: false, bill: 14, hot: 71.4 })).toContain('would be');
+    expect(commitWaitSub({ commitWait: true, bill: 14, hot: 71.4 })).toContain('latency bill is 2ε = 14 ms');
+    expect(plotTop([0, 100])).toBe(100);
+    expect(plotTop([0, 34])).toBe(40);
+    expect(plotTop([])).toBe(10);
+    const all = sweepModel({ ...DEFAULT_OPTIONS, epsilon: 0, delta: 0, gapMax: 0 });
+    expect(plotTop([(100 * all) / SEEDS_TOTAL])).toBeGreaterThanOrEqual(100);
   });
 });
