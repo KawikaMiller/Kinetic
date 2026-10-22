@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { TOPICS } from './curriculum';
 import { tier3PlanRows } from './testing/tier3Plan';
+import { tier4PlanRows } from './testing/tier4Plan';
 import { lintLesson, longestTally, SHORT_OPTION_CHARS, TIER_LONGEST_SHARE, type ContentRule } from './lessonContent';
 import {
   DOMAIN_REVIEW_IDS, lintTier3Lesson, tryThisTestNumbers, unscopedAbsolutes, type Tier3Evidence,
 } from './lessonContentT3';
+import {
+  DOMAIN_REVIEW_IDS_T4, LEAD_IDS, lintTier4Lesson, manipulationTestNumbers, PROOF_SHAPED_IDS, REQUIRED_CHIPS, THEOREM_SCOPE,
+  type Tier4Evidence,
+} from './lessonContentT4';
 import type { LessonModule, QuizQuestion } from './types';
 
 /**
@@ -14,33 +19,47 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
+const T4_R1 = 'T4-R1 retrofit (docs/tier4-technical.md §5)';
+const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
 
 /**
- * Existing Tier 2 lessons not yet held to the Tier 2 standard (docs/rollout-plan.md §3.1.6).
- * They don't count towards the tier-wide share until their retrofit batch merges; existing
- * Tier 4 lessons wait for their tier's kickoff.
+ * The nine existing Tier 4 lessons (docs/tier4-technical.md §5). They are exempt from the AC-0/T4
+ * rules until their retrofit batch (T4-R1, T4-R2) merges; each leaves this list, BASELINE and
+ * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
-const PENDING_RETROFIT = new Set<string>([
-  // none: T2-R1 and T2-R2 have both landed
+const TIER4_AWAITING_RETROFIT = new Set<string>([
+  'raft', 'distributed-transactions', 'crdts', 'multi-region', 'backpressure', // T4-R1
+  'lsm-trees', 'probabilistic-structures', 'slos-error-budgets', 'zero-trust', // T4-R2
 ]);
-/** Tiers whose lessons are not yet held to the per-tier quiz-longest cap (Tier 4 awaits its kickoff). */
-const TIERS_AWAITING_KICKOFF = new Set([4]);
+/** How many Tier 4 lessons were on the allowlist before the retrofits began. */
+const TIER4_EXISTING_COUNT = 9;
+
+/**
+ * Existing lessons not yet held to their tier's standard. They don't count towards the tier-wide
+ * quiz-longest share until their retrofit batch merges. The Tier 4 set must hold every Tier 4
+ * lesson that is not on BASELINE for quiz-longest: probabilistic-structures and slos-error-budgets
+ * only have quiz-length there, so counting them would put the tier at 2 of 6 (33%), over the cap.
+ */
+const PENDING_RETROFIT = new Set<string>(TIER4_AWAITING_RETROFIT);
+/** Tiers whose lessons are not yet held to the per-tier quiz-longest cap (none: Tier 4 counts now). */
+const TIERS_AWAITING_KICKOFF = new Set<number>();
+/** A tier-wide share over a handful of questions is noise: skip the aggregate until this many are counted. */
+const MIN_QUESTIONS_FOR_SHARE = 30;
 
 const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   // Tier 4
-  'backpressure': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
-  'crdts': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
-  'distributed-transactions': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
-  'lsm-trees': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
-  'multi-region': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
-  'probabilistic-structures': { ticket: TIER4, rules: ['quiz-length'] },
-  'raft': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
-  'slos-error-budgets': { ticket: TIER4, rules: ['quiz-length'] },
-  'zero-trust': { ticket: TIER4, rules: ['quiz-length', 'quiz-longest'] },
+  'backpressure': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
+  'crdts': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
+  'distributed-transactions': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
+  'lsm-trees': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
+  'multi-region': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
+  'probabilistic-structures': { ticket: T4_R2, rules: ['quiz-length'] },
+  'raft': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
+  'slos-error-budgets': { ticket: T4_R2, rules: ['quiz-length'] },
+  'zero-trust': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
 };
 
 /**
@@ -52,21 +71,30 @@ const TIER3_AWAITING_RETROFIT = new Set<string>();
 /** How many Tier 3 lessons were on the allowlist before the retrofits began. */
 const TIER3_EXISTING_COUNT = 12;
 
-/** Lesson folders' source, loaded on demand: only Tier 3 lessons are ever read. */
+/** Lesson folders' source, loaded on demand: only Tier 3 and Tier 4 lessons are ever read. */
 const lessonSources = import.meta.glob<string>('../lessons/**/*.{ts,tsx}', { query: '?raw', import: 'default' });
 const IS_TEST_FILE = /\.test\.tsx?$/;
 
-/** What the Tier 3 lint needs to know about a lesson beyond its module: its source and its tests. */
-async function tier3Evidence(id: string): Promise<Tier3Evidence> {
+/** What the AC-0/T3 and AC-0/T4 lints need to know about a lesson beyond its module: its source and its tests. */
+async function tierEvidence(id: string, domainSet: ReadonlySet<string>): Promise<Tier4Evidence> {
   const files = Object.entries(lessonSources).filter(([path]) => path.startsWith(`../lessons/${id}/`));
   const read = async (tests: boolean) =>
     Promise.all(files.filter(([path]) => IS_TEST_FILE.test(path) === tests).map(([, load]) => load()));
+  const testFiles = await read(true);
   return {
-    domainReview: DOMAIN_REVIEW_IDS.has(id),
+    id,
+    domainReview: domainSet.has(id),
     source: (await read(false)).join('\n'),
-    tryThisTests: (await read(true)).flatMap(tryThisTestNumbers),
+    tryThisTests: testFiles.flatMap(tryThisTestNumbers),
+    testSource: testFiles.join('\n'),
   };
 }
+
+/** One row per tier that has a content lint: who is on the retrofit allowlist, who is domain-reviewed, which lint runs. */
+const TIER_LINT = [
+  { tier: 3, awaiting: TIER3_AWAITING_RETROFIT, existing: TIER3_EXISTING_COUNT, domain: DOMAIN_REVIEW_IDS, lint: lintTier3Lesson },
+  { tier: 4, awaiting: TIER4_AWAITING_RETROFIT, existing: TIER4_EXISTING_COUNT, domain: DOMAIN_REVIEW_IDS_T4, lint: lintTier4Lesson },
+] as const;
 
 const modules = import.meta.glob<{ default: LessonModule }>('../lessons/*/index.tsx', { eager: true });
 const lessons = Object.entries(modules).map(([path, mod]) => ({ id: path.split('/')[2], lesson: mod.default }));
@@ -232,6 +260,142 @@ describe('AC-0/T3 rules', () => {
   });
 });
 
+// ── AC-0/T4 rules (T4-T2) fail on planted bad fixtures ───────────────────
+
+const CLEAN4: Tier4Evidence = { ...CLEAN, id: 'some-lesson', testSource: '' };
+const t4Rules = (l: LessonModule, ev: Partial<Tier4Evidence> = {}) =>
+  lintTier4Lesson(l, { ...CLEAN4, ...ev }).map((i) => i.rule);
+const withSummary = (patch: Partial<LessonModule['summary']>): LessonModule => ({ ...GOOD, summary: { ...GOOD.summary, ...patch } });
+
+describe('AC-0/T4 rules', () => {
+  it('pass a well-formed lesson', () => {
+    expect(t4Rules(GOOD)).toEqual([]);
+  });
+
+  it('keep the Tier 3 absolutes scan unchanged when no extra scope is passed', () => {
+    expect(unscopedAbsolutes('Every deterministic protocol fails, as the theorem says.')).toEqual(['every']);
+    expect(unscopedAbsolutes('Every deterministic protocol fails, as the theorem says.', THEOREM_SCOPE)).toEqual([]);
+  });
+
+  it('scan the summary as well as key ideas and quiz why, with the theorem scope', () => {
+    for (const field of ['tldr', 'what', 'why', 'analogy'] as const) {
+      expect(t4Rules(withSummary({ [field]: 'A cache always helps.' })), field).toContain('absolutes');
+    }
+    expect(t4Rules(withKeyIdea('Retries always make things worse.'))).toContain('absolutes');
+    expect(t4Rules(withSummary({ what: 'Under the assumption of one crash, every protocol blocks.' }))).not.toContain('absolutes');
+    const marked = "    tldr: 'A cache always helps.', // allow-absolute: pinned by sim.test.ts";
+    expect(t4Rules(withSummary({ tldr: 'A cache always helps.' }), { source: marked })).not.toContain('absolutes');
+  });
+
+  it('still apply the Tier 3 provenance and try-this rules', () => {
+    expect(t4Rules(GOOD, { domainReview: true, source: 'export const x = 1;' })).toContain('provenance');
+    expect(t4Rules(GOOD, { tryThisTests: [1] })).toContain('try-this-tests');
+  });
+
+  it('chip-required: fail a lesson missing the chip kind its id requires, and one using crypto.subtle without a real chip', () => {
+    const toy = '<Provenance kind="toy">a toy</Provenance>';
+    expect(t4Rules(GOOD, { id: 'elliptic-curves', source: 'export const x = 1;' })).toContain('chip-required');
+    expect(t4Rules(GOOD, { id: 'elliptic-curves', source: toy })).not.toContain('chip-required');
+    expect(t4Rules(GOOD, { id: 'llm-serving', source: toy }), 'llm-serving needs illustrative too').toContain('chip-required');
+    expect(t4Rules(GOOD, { id: 'llm-serving', source: `${toy}<Provenance kind="illustrative">x</Provenance>` })).not.toContain('chip-required');
+    expect(t4Rules(GOOD, { source: 'await crypto.subtle.digest(a, b);' })).toContain('chip-required');
+    expect(t4Rules(GOOD, { source: "import { hmac } from '../../core/crypto';" })).toContain('chip-required');
+    expect(t4Rules(GOOD, { source: 'crypto.subtle.digest(a, b); <Provenance kind="real">live</Provenance>' })).not.toContain('chip-required');
+    expect(t4Rules(GOOD, { source: '// crypto.subtle is mentioned in a comment' })).not.toContain('chip-required');
+  });
+
+  it('claim-label: fail a lead lesson without a ClaimLabel, or a ScenarioStory without claimOf= or notes=', () => {
+    const lead = { id: 'build-vs-buy' };
+    expect(t4Rules(GOOD, { ...lead, source: 'export const x = 1;' })).toContain('claim-label');
+    expect(t4Rules(GOOD, { ...lead, source: '<ClaimLabel kind="view">x</ClaimLabel>' })).not.toContain('claim-label');
+    expect(t4Rules(GOOD, { ...lead, source: '<ClaimLabel kind="view" /><ScenarioStory scenario={s} />' })).toContain('claim-label');
+    expect(t4Rules(GOOD, { ...lead, source: '<ClaimLabel kind="view" /><ScenarioStory scenario={s} claimOf={c} />' })).not.toContain('claim-label');
+    expect(t4Rules(GOOD, { ...lead, source: '<ScenarioStory scenario={s} notes={<ClaimLabel kind="view" />} />' })).not.toContain('claim-label');
+    expect(t4Rules(GOOD, { id: 'paxos', source: 'export const x = 1;' }), 'a non-lead needs none').not.toContain('claim-label');
+  });
+
+  it('no-clock-or-random: fail Math.random, Date.now, performance.now and new Date, unless the line says allow-random', () => {
+    for (const call of ['Math.random()', 'Date.now()', 'performance.now()', 'new Date()']) {
+      expect(t4Rules(GOOD, { source: `const x = ${call};` }), call).toContain('no-clock-or-random');
+    }
+    expect(t4Rules(GOOD, { source: 'const x = Math.random(); // allow-random: decorative jitter, never feeds a stat' })).not.toContain('no-clock-or-random');
+    expect(t4Rules(GOOD, { source: 'const x = Math.random(); // allow-random:' })).toContain('no-clock-or-random');
+    expect(t4Rules(GOOD, { source: '// never call Math.random here\nconst r = mulberry32(1);' })).not.toContain('no-clock-or-random');
+  });
+
+  it('fresh-array-hook: fail an array literal, a direct call or a `?? []` fallback handed to usePlayer or introKey', () => {
+    const bad = [
+      'const p = usePlayer([a, b], { interval: 5 });',
+      'const p = usePlayer(buildFrames(x), { interval: 5 });',
+      'const p = usePlayer(frames ?? [], { interval: 5 });',
+      'const p = usePlayer(rec.frames || [], { interval: 5 });',
+      '<StageFrame introKey={[input]}>',
+      '<StageFrame introKey={makeKey(r)}>',
+    ];
+    for (const source of bad) expect(t4Rules(GOOD, { source }), source).toContain('fresh-array-hook');
+    const fine = [
+      'const p = usePlayer(frames, { interval: 5 });',
+      'const p = usePlayer(useMemo(() => build(x), [x]), { interval: 5 });',
+      '<StageFrame introKey={caption}>',
+      '<StageFrame introKey={`${a}|${b}`}>',
+      '<StageFrame introKey={xs.join(\',\')}>',
+      '<StageFrame introKey={String(n)}>',
+      'const p = usePlayer([a, b], { interval: 5 }); // allow-fresh: constants, never changes',
+    ];
+    for (const source of fine) expect(t4Rules(GOOD, { source }), source).not.toContain('fresh-array-hook');
+  });
+
+  it('pinned-seed-zero: fail a failing-seed constant of 0 unless it is marked, or the lesson declares a witness', () => {
+    expect(t4Rules(GOOD, { source: 'export const BROKEN_SEED = 0;' })).toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { testSource: 'const LOWEST_FAILING_SEED = 0;' })).toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { source: 'const COUNTEREXAMPLE_SEED = 0' })).toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { source: 'export const BROKEN_SEED = 7;' })).not.toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { source: 'export const BROKEN_SEED = 0.5;' })).not.toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { source: 'export const BROKEN_SEED = 0; // allow-seed-zero: fails on 41 of 200 seeds, seed 0 is the first of them' })).not.toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { source: 'export const BROKEN_SEED = 0; // allow-seed-zero: it is fine' }), 'the reason must carry the fail count').toContain('pinned-seed-zero');
+    expect(t4Rules(GOOD, { source: 'export const BROKEN_SEED = 0;\nexport const SHORTEST_WITNESS = { clauses: 2 };' }), 'a declared witness exempts it').not.toContain('pinned-seed-zero');
+  });
+
+  it('seed-visible: fail a lesson that builds a cluster, tick sim or Rnd without showing a seed', () => {
+    for (const call of ['createCluster(cfg)', 'createTickSim(cfg)', 'mulberry32(seed)']) {
+      expect(t4Rules(GOOD, { source: `const s = ${call};` }), call).toContain('seed-visible');
+    }
+    expect(t4Rules(GOOD, { source: 'const s = createCluster(cfg); <Provenance kind="simulated" seed={seed} />' })).not.toContain('seed-visible');
+    expect(t4Rules(GOOD, { source: 'const s = mulberry32(seed); <SeedField seed={seed} onChange={set} />' })).not.toContain('seed-visible');
+    expect(t4Rules(GOOD, { source: 'const s = mulberry32(1); // allow-no-seed: fixed decorative layout' })).not.toContain('seed-visible');
+  });
+
+  it('manipulation-tests: fail a proof-shaped lesson with fewer than two distinct manipulation N: tests', () => {
+    const one = "it('manipulation 1: picking a cover of size K-1 is refused', () => {});";
+    const two = `${one}\ntest("manipulation 2: an unsatisfiable formula has no cover", () => {});`;
+    expect(t4Rules(GOOD, { id: 'np-reductions', testSource: '' })).toContain('manipulation-tests');
+    expect(t4Rules(GOOD, { id: 'np-reductions', testSource: one })).toContain('manipulation-tests');
+    expect(t4Rules(GOOD, { id: 'np-reductions', testSource: `${one}\n${one}` }), 'a repeated number is not a second test').toContain('manipulation-tests');
+    expect(t4Rules(GOOD, { id: 'np-reductions', testSource: two })).not.toContain('manipulation-tests');
+    expect(t4Rules(GOOD, { id: 'paxos', testSource: '' }), 'only proof-shaped ids need them').not.toContain('manipulation-tests');
+    expect(manipulationTestNumbers(`${two}\nit('manipulation: no number', () => {});`)).toEqual([1, 2]);
+  });
+
+  it('flag 38 registered Tier 4 topics as D: the nine retrofits plus the 29 D rows of the plan', () => {
+    expect(DOMAIN_REVIEW_IDS_T4.size).toBe(38);
+    for (const id of DOMAIN_REVIEW_IDS_T4) expect(tierOf.get(id), id).toBe(4);
+    for (const id of TIER4_AWAITING_RETROFIT) expect(DOMAIN_REVIEW_IDS_T4.has(id), id).toBe(true);
+  });
+
+  it.skipIf(!tier4PlanRows.length)('flag exactly the D rows of the plan', () => {
+    const planned = tier4PlanRows.filter((r) => r.domainReview).map((r) => r.id);
+    expect(planned).toHaveLength(29);
+    const newlyFlagged = [...DOMAIN_REVIEW_IDS_T4].filter((id) => !TIER4_AWAITING_RETROFIT.has(id));
+    expect(newlyFlagged.sort()).toEqual(planned.sort());
+  });
+
+  it('name only registered Tier 4 topics in the proof-shaped, lead and required-chip tables', () => {
+    expect(PROOF_SHAPED_IDS.size).toBe(8);
+    expect(LEAD_IDS.size).toBe(7);
+    for (const id of [...PROOF_SHAPED_IDS, ...LEAD_IDS, ...Object.keys(REQUIRED_CHIPS)]) expect(tierOf.get(id), id).toBe(4);
+  });
+});
+
 // ── Every built lesson ───────────────────────────────────────────────────
 
 describe('every built lesson', () => {
@@ -246,34 +410,56 @@ describe('every built lesson', () => {
     expect(unexpected).toEqual([]);
   });
 
-  it('passes the AC-0/T3 rules if it is a Tier 3 lesson, apart from any still on the retrofit allowlist', async () => {
-    const unexpected: string[] = [];
-    for (const { id, lesson } of lessons) {
-      if (tierOf.get(id) !== 3 || TIER3_AWAITING_RETROFIT.has(id)) continue;
-      for (const issue of lintTier3Lesson(lesson, await tier3Evidence(id))) unexpected.push(`${id}: ${issue.rule}: ${issue.detail}`);
-    }
-    expect(unexpected).toEqual([]);
+  for (const { tier, awaiting, existing, domain, lint } of TIER_LINT) {
+    it(`passes the AC-0/T${tier} rules if it is a Tier ${tier} lesson, apart from any still on the retrofit allowlist`, async () => {
+      const unexpected: string[] = [];
+      for (const { id, lesson } of lessons) {
+        if (tierOf.get(id) !== tier || awaiting.has(id)) continue;
+        for (const issue of lint(lesson, await tierEvidence(id, domain))) unexpected.push(`${id}: ${issue.rule}: ${issue.detail}`);
+      }
+      expect(unexpected).toEqual([]);
+    });
+
+    it(`allowlists only built Tier ${tier} lessons, and every one of them is checked once it leaves the list`, () => {
+      const built = new Set(lessons.map((l) => l.id));
+      for (const id of awaiting) {
+        expect(built.has(id), id).toBe(true);
+        expect(tierOf.get(id), id).toBe(tier);
+      }
+      expect(awaiting.size).toBeLessThanOrEqual(existing);
+    });
+
+    it(`reports the AC-0/T${tier} issues the allowlisted lessons still have`, async () => {
+      // Information for the retrofit tickets, not a failure: each entry leaves the allowlist when its retrofit merges.
+      const rows: string[] = [];
+      for (const { id, lesson } of lessons) {
+        if (!awaiting.has(id)) continue;
+        const rules = new Set(lint(lesson, await tierEvidence(id, domain)).map((i) => i.rule));
+        rows.push(`${id}: ${[...rules].join(', ') || 'clean'}`);
+      }
+      console.info(`AC-0/T${tier} issues in the allowlisted Tier ${tier} lessons:\n  ${rows.join('\n  ')}`);
+      expect(rows).toHaveLength(awaiting.size);
+    });
+  }
+
+  it('keeps every retrofit allowlist entry in PENDING_RETROFIT, so a half-retrofitted tier never skews the share', () => {
+    for (const id of TIER4_AWAITING_RETROFIT) expect(PENDING_RETROFIT.has(id), id).toBe(true);
   });
 
-  it('allowlists only built Tier 3 lessons, and every one of them is checked once it leaves the list', () => {
-    const built = new Set(lessons.map((l) => l.id));
-    for (const id of TIER3_AWAITING_RETROFIT) {
-      expect(built.has(id), id).toBe(true);
-      expect(tierOf.get(id), id).toBe(3);
-    }
-    expect(TIER3_AWAITING_RETROFIT.size).toBeLessThanOrEqual(TIER3_EXISTING_COUNT);
-  });
-
-  it('reports the AC-0/T3 issues the allowlisted lessons still have', async () => {
-    // Information for T3-R1/T3-R2, not a failure: each entry leaves the allowlist when its retrofit merges.
-    const rows: string[] = [];
-    for (const { id, lesson } of lessons) {
-      if (!TIER3_AWAITING_RETROFIT.has(id)) continue;
-      const rules = new Set(lintTier3Lesson(lesson, await tier3Evidence(id)).map((i) => i.rule));
-      rows.push(`${id}: ${[...rules].join(', ') || 'clean'}`);
-    }
-    console.info(`AC-0/T3 issues in the allowlisted Tier 3 lessons:\n  ${rows.join('\n  ')}`);
-    expect(rows).toHaveLength(TIER3_AWAITING_RETROFIT.size);
+  it('guards the Tier 4 quiz-share trap twice (technical doc §6.2): the pending set and the minimum question count', () => {
+    // Trap one: these two are baselined for quiz-length only, so without PENDING_RETROFIT they would be counted, and they alone break the cap.
+    const trap = lessons.filter(({ id }) => id === 'probabilistic-structures' || id === 'slos-error-budgets').map(({ lesson }) => lesson);
+    const { longest, total } = longestTally(trap);
+    expect(trap).toHaveLength(2);
+    expect(longest / total, `${longest}/${total}`).toBeGreaterThan(TIER_LONGEST_SHARE);
+    expect(BASELINE['probabilistic-structures'].rules).not.toContain('quiz-longest');
+    // Trap two: a handful of questions is noise; the aggregate waits for MIN_QUESTIONS_FOR_SHARE.
+    expect(total).toBeLessThan(MIN_QUESTIONS_FOR_SHARE);
+    // The shortest real case: one new lesson, three questions, one strictly-longest correct option (33%).
+    const oneLongest = { ...GOOD, quiz: [{ ...q(['Short arrays', 'Unique items', 'Sorted inputs'], 2) }, GOOD.quiz[1], GOOD.quiz[2]] };
+    const lone = longestTally([oneLongest]);
+    expect(lone.longest / lone.total).toBeGreaterThan(TIER_LONGEST_SHARE);
+    expect(lone.total).toBeLessThan(MIN_QUESTIONS_FOR_SHARE);
   });
 
   it('has a baseline that only names built lessons, each with a ticket', () => {
@@ -307,6 +493,7 @@ describe('every built lesson', () => {
         .map(({ lesson }) => lesson);
       if (!counted.length) continue;
       const { longest, total } = longestTally(counted);
+      if (total < MIN_QUESTIONS_FOR_SHARE) continue; // the per-lesson quiz-longest rule still applies from the first commit
       expect(longest / total, `tier ${tier}: ${longest}/${total}`).toBeLessThanOrEqual(TIER_LONGEST_SHARE);
     }
   });
