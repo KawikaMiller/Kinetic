@@ -4,6 +4,7 @@ import { L_CODE, VARIANTS, type Design, type PrincipleId, type Variant } from '.
 import { changedLines, impact, stubCount, touchedCount, type Impact } from './model';
 import { PRINCIPLES } from './principles';
 import { isBaseline, runAll, substitutions, type RunResult } from './run';
+import { joinList } from '../../core/format';
 
 /** A frame's mark on a class: the change ripple, or the L run's verdict. */
 export type UnitMark = 'hi' | 'bad' | 'orange' | 'ok';
@@ -18,7 +19,6 @@ export interface SpFrame extends Frame {
   console: { text: string; tone: Tone }[];
 }
 
-const list = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 const NONE: ReadonlySet<number> = new Set();
 const other = (d: Design): Design => (d === 'violating' ? 'fixed' : 'violating');
 const designWord = (d: Design) => (d === 'violating' ? 'violating' : 'fixed');
@@ -54,7 +54,7 @@ function changeFrames(p: Exclude<PrincipleId, 'L'>, d: Design): SpFrame[] {
   const done: Record<string, UnitMark> = { ...retest, ...Object.fromEntries(im.untouched.map((u) => [u, 'ok'])) };
   const n = touchedCount(im);
   const m = touchedCount(impactOf(p, other(d)));
-  const parts = [im.edited.length && `edits ${list(im.edited)}`, im.added.length && `adds ${list(im.added)}`].filter(Boolean).join(' and ');
+  const parts = [im.edited.length && `edits ${joinList(im.edited)}`, im.added.length && `adds ${joinList(im.added)}`].filter(Boolean).join(' and ');
   return [
     { ...base, say: `"${pr.request}", against the ${designWord(d)} design: ${d === 'violating' ? pr.violating : pr.fixed}. Press play.`, variant: before, marks: {}, changed: NONE },
     { ...base, say: `The change starts in ${start}.`, variant: before, marks: { [start]: 'hi' }, changed: NONE },
@@ -62,7 +62,7 @@ function changeFrames(p: Exclude<PrincipleId, 'L'>, d: Design): SpFrame[] {
     {
       ...base,
       say: im.retest.length
-        ? `${list(im.retest)} ${im.retest.length === 1 ? 'depends' : 'depend'} on edited code, so ${im.retest.length === 1 ? 'it has' : 'they have'} to be re-tested.`
+        ? `${joinList(im.retest)} ${im.retest.length === 1 ? 'depends' : 'depend'} on edited code, so ${im.retest.length === 1 ? 'it has' : 'they have'} to be re-tested.`
         : 'Nothing depends on the edited code, so nothing else needs re-testing.',
       variant: after,
       marks: retest,

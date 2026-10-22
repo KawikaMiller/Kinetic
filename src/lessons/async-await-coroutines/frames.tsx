@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import { DURATION, MACHINE, REQS, predict, shapeRun, type Combinator, type MachineStep, type Pitfall, type ReqId, type ReqSetting, type Settled, type Shape } from './model';
+import { joinList } from '../../core/format';
 
-const list = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 export interface ShapeFrame extends Frame {
   now: number;
@@ -17,8 +17,8 @@ export function shapeFrames(shape: Shape): ShapeFrame[] {
     const ended = run.requests.filter((r) => r.end === t).map((r) => `${r.id}()`);
     const wait = run.waits.find((w) => w.start <= t && t < w.end);
     const parts: string[] = [];
-    if (ended.length) parts.push(`${list(ended)} ${ended.length > 1 ? 'finish' : 'finishes'}`);
-    if (started.length) parts.push(`${list(started)} ${started.length > 1 ? 'start' : 'starts'}`);
+    if (ended.length) parts.push(`${joinList(ended)} ${ended.length > 1 ? 'finish' : 'finishes'}`);
+    if (started.length) parts.push(`${joinList(started)} ${started.length > 1 ? 'start' : 'starts'}`);
     if (wait) parts.push(`load() is suspended at ${wait.on === 'Promise.all' ? 'await Promise.all' : `await ${wait.on}`}, so the thread is free for other work`);
     return { now: t, say: <>At {t} ms: {parts.join('; ')}.</>, hold: 1.3 };
   });
@@ -48,7 +48,7 @@ export function combinatorCaption(c: Combinator, s: Record<ReqId, ReqSetting>): 
   return (
     <>
       <code>Promise.{c}</code> {fmtSettled(r)}.
-      {stillRunning.length > 0 && <> {list(stillRunning.map((id) => `${id}()`))} {stillRunning.length > 1 ? 'keep' : 'keeps'} running anyway: a combinator doesn&apos;t cancel anything.</>}
+      {stillRunning.length > 0 && <> {joinList(stillRunning.map((id) => `${id}()`))} {stillRunning.length > 1 ? 'keep' : 'keeps'} running anyway: a combinator doesn&apos;t cancel anything.</>}
     </>
   );
 }

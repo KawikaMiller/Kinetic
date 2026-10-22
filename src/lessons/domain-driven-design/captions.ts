@@ -1,16 +1,15 @@
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { interleavingName, MAX_LINES, START_LINES, tally, type Design, type Run } from './aggregate';
 import { statsOf, type MapState } from './contextMap';
 import { ATTRIBUTES, TEAMS, blastRadius, teamsTouched, widelyShared, type Request } from './monolith';
 
 /** Captions as plain text, computed from the same numbers the stats show. */
 
-const list = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 const teamLabel = (id: string) => TEAMS.find((t) => t.id === id)!.label;
 
 export function monolithCaption(r: Request): string {
   const n = blastRadius(r);
-  return `${r.label}: it touches ${plural(r.attributes.length, 'attribute')} of one Customer with ${ATTRIBUTES.length}, and ${plural(n, 'team')} of ${TEAMS.length} must change their code (${list(teamsTouched(r).map(teamLabel))}). ${plural(widelyShared().length, 'attribute')} here ${widelyShared().length === 1 ? 'is' : 'are'} used by three or more teams.`;
+  return `${r.label}: it touches ${plural(r.attributes.length, 'attribute')} of one Customer with ${ATTRIBUTES.length}, and ${plural(n, 'team')} of ${TEAMS.length} must change their code (${joinList(teamsTouched(r).map(teamLabel))}). ${plural(widelyShared().length, 'attribute')} here ${widelyShared().length === 1 ? 'is' : 'are'} used by three or more teams.`;
 }
 
 export function mapCaption(state: MapState): string {

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import {
   CELLS, FLOWS, KIND_WORD, THREAT_TEXT, categoriesOf, categoryById, crossingFlows, metersOf, targetById, zoneLabel, zoneOf,
@@ -7,7 +7,6 @@ import {
 } from './model';
 import { METER, SPRINT_DAYS, slipOf } from './sprint';
 
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** Scene 1: the crossings, the coverage so far and, when one is picked, what STRIDE says about it. */
 export function diagramCaption(s: ThreatState, selected: string | null): ReactNode {
@@ -16,7 +15,7 @@ export function diagramCaption(s: ThreatState, selected: string | null): ReactNo
   const where = selected ? targetById(selected) : null;
   return (
     <>
-      {crossing.length === 0 ? <>No flow crosses a trust boundary. </> : <>{crossing.length} of {FLOWS.length} flows cross a boundary ({joinNames(crossing.map((f) => f.label))}) and are drawn dashed: they get the most scrutiny. </>}
+      {crossing.length === 0 ? <>No flow crosses a trust boundary. </> : <>{crossing.length} of {FLOWS.length} flows cross a boundary ({joinList(crossing.map((f) => f.label))}) and are drawn dashed: they get the most scrutiny. </>}
       {where ? (
         <>
           {where.label} is a {KIND_WORD[where.kind]}
@@ -51,7 +50,7 @@ export function sprintCaption(s: Scenario, w: Walk): ReactNode {
       {ending ? <>{ending.title}. </> : null}
       Known residual risk {w.meters[METER.risk]} points, effort {plural(w.meters[METER.effort], 'day')} of {SPRINT_DAYS}
       {slip > 0 ? <> (a slip of {plural(slip, 'day')})</> : null}, {plural(w.meters[METER.ownerless], 'threat')} with no owner.
-      {red.length ? <> In the red: {joinNames(red)}.</> : <> Nothing is in the red.</>}
+      {red.length ? <> In the red: {joinList(red)}.</> : <> Nothing is in the red.</>}
     </>
   );
 }

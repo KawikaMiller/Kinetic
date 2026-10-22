@@ -1,3 +1,4 @@
+import { joinList } from '../../core/format';
 import type { LessonModule } from '../../core/types';
 import { RAISED_CONSUMERS, acksFacts, raiseFacts, repartitionFacts, retentionFacts } from './facts';
 import { Stage } from './Stage';
@@ -6,7 +7,6 @@ const repartition = repartitionFacts();
 const raise = raiseFacts();
 const acks = acksFacts();
 const retention = retentionFacts();
-const listOffsets = (offsets: readonly number[]) => `${offsets.slice(0, -1).join(', ')} and ${offsets.at(-1)}`;
 
 const lesson: LessonModule = {
   Stage,
@@ -29,7 +29,7 @@ const lesson: LessonModule = {
     `In "Consumer groups", raise Consumers from 2 to ${RAISED_CONSUMERS} and press "Step one tick" once: the rebalance runs, ${raise.busy} consumers get a partition (the log says "assign P2 to c3") and the other ${raise.idle} sit idle.`,
     'In "Consumer groups", press "Crash c1 at the worst moment" and then Run: with Commit after processing, "Processed twice" reaches 1. Switch Commit to "before processing" and do the same: "Skipped" reaches 1 instead.',
     `In "Replication", replay to the end: record r4 was acknowledged at offset 3 and then lost when the leader crashed (the check fails at ${acks.at} ms). Set acks to all and min.insync.replicas to 2: the same crash loses nothing, because r4 is never acknowledged.`,
-    `In "Retention and compaction", press "Run retention": the log start moves to ${retention.logStart} and the consumer at offset ${retention.position} gets "offset out of range". Switch to Compaction and press "Run the cleaner": ${retention.kept.length} of the ${retention.sent} records stay, at offsets ${listOffsets(retention.kept)}.`,
+    `In "Retention and compaction", press "Run retention": the log start moves to ${retention.logStart} and the consumer at offset ${retention.position} gets "offset out of range". Switch to Compaction and press "Run the cleaner": ${retention.kept.length} of the ${retention.sent} records stay, at offsets ${joinList(retention.kept.map(String))}.`,
   ],
   keyIdeas: [
     'In this model a key always hashes to one partition, so its records keep their order, while records of different keys interleave freely and no order exists across partitions.',

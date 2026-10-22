@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { decimal } from '../../core/format';
+import { decimal, joinList } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { HOPS, MIN_BUDGET, hopOf, type ChainRun, type HopId, type HopRun } from './model';
 
@@ -39,7 +39,7 @@ const stillWorking = (run: ChainRun, t: number) => run.hops.filter((h) => h.reac
 
 const list = (ids: readonly HopId[]) => {
   const names = ids.map((id) => (id === 'DB' ? 'the database' : id));
-  return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  return joinList(names);
 };
 
 function reachCaption(run: ChainRun, h: HopRun): ReactNode {

@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
-import { plural, sig } from '../../core/format';
+import { plural, sig, joinList } from '../../core/format';
 import { type BrooksParams, type BrooksReading } from './brooks';
 import { type Plan, type Schedule } from './cpm';
 import { type Placement } from './schedule';
 import { gapSplit, type Uncertainty } from './uncertainty';
 
 const labelOf = (plan: Plan, id: string) => plan.tasks.find((t) => t.id === id)!.label;
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 const days = (n: number) => plural(n, 'day');
 
 /** Scene 1: the longest chain, how many tasks have no slack, and what the selected task can absorb. */
@@ -14,7 +13,7 @@ export function pathCaption(plan: Plan, s: Schedule, selected: string | null, no
   const chain = [...s.critical].sort((a, b) => s.es[a] - s.es[b]).map((id) => labelOf(plan, id));
   return (
     <>
-      The longest chain takes {days(s.length)}: {joinNames(chain)}. {s.critical.length} of {plan.tasks.length} tasks have zero slack, so a slip in any of them moves the end.{' '}
+      The longest chain takes {days(s.length)}: {joinList(chain)}. {s.critical.length} of {plan.tasks.length} tasks have zero slack, so a slip in any of them moves the end.{' '}
       {selected
         ? s.slack[selected] > 0
           ? <>{labelOf(plan, selected)} has {days(s.slack[selected])} of slack: it can start up to {days(s.slack[selected])} late (day {s.es[selected]} to day {s.ls[selected]}) without moving the end. </>
@@ -45,7 +44,7 @@ export function crashCaption(plan: Plan, c: Crash): ReactNode {
       <>
         {lead} leaves the end at day {c.after.length}.{' '}
         {c.delta > 0 ? <>It has {days(slack)} of slack and used {days(c.delta)} of it.</> : slack > 0 ? <>It was off the longest chain (slack {days(slack)}), so shortening it saves nothing.</> : <>Another chain is as long, so the date holds.</>}
-        {c.newlyCritical.length > 0 ? <> {joinNames(c.newlyCritical.map((id) => labelOf(plan, id)))} became critical.</> : null}
+        {c.newlyCritical.length > 0 ? <> {joinList(c.newlyCritical.map((id) => labelOf(plan, id)))} became critical.</> : null}
       </>
     );
   }
@@ -53,7 +52,7 @@ export function crashCaption(plan: Plan, c: Crash): ReactNode {
   return (
     <>
       {lead} {change}
-      {c.delta < 0 && -moved < -c.delta ? <>, not the {days(-c.delta)} you cut: a second chain ({c.newlyCritical.length ? joinNames(c.newlyCritical.map((id) => labelOf(plan, id))) : "another path"}) took over as the longest</> : null}
+      {c.delta < 0 && -moved < -c.delta ? <>, not the {days(-c.delta)} you cut: a second chain ({c.newlyCritical.length ? joinList(c.newlyCritical.map((id) => labelOf(plan, id))) : "another path"}) took over as the longest</> : null}
       {c.delta > 0 && slack > 0 ? <>: its {days(slack)} of slack absorbed part of the slip, and the other {days(c.delta - slack)} reached the end</> : null}.
     </>
   );

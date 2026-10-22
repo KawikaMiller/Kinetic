@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { pct } from '../../core/format';
+import { joinList, pct } from '../../core/format';
 import { timeFrames, type TimedFrame } from '../../core/frames';
 import type { Frame } from '../../core/types';
 import { ACK_SLOTS, DIFS_SLOTS, type BackoffSlot, type BackoffStory } from './backoff';
@@ -11,7 +11,7 @@ import { shares, type Shares } from './rates';
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const stationName = (i: number) => `S${i + 1}`;
 /** "S2", "S2 and S4", "S2, S4 and S5". */
-export const names = (xs: readonly number[]): string => (xs.length <= 1 ? xs.map(stationName).join('') : `${xs.slice(0, -1).map(stationName).join(', ')} and ${stationName(xs[xs.length - 1])}`);
+export const names = (xs: readonly number[]): string => joinList(xs.map(stationName));
 
 // ---- scene 1: one station's backoff ------------------------------------------------------------------
 

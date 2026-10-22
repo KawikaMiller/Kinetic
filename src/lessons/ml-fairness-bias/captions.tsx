@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import { CRITERIA, holds, type CalibrationCheck, type Criterion, type GroupStats, type Gaps } from './model';
 import { METER } from './scenario';
 import type { OptionResult } from './options';
 
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 export const pctText = (x: number) => (Number.isNaN(x) ? '–' : `${(x * 100).toFixed(1)}%`);
 const points = (x: number) => (Number.isNaN(x) ? '–' : `${(x * 100).toFixed(1)} points`);
 
@@ -18,7 +17,7 @@ export function thresholdCaption(t: number, a: GroupStats, b: GroupStats, gaps: 
   return (
     <>
       At a cut-off of {t.toFixed(2)}, group A is approved at {pctText(a.selection)} and group B at {pctText(b.selection)}. The true-positive rates are {pctText(a.tpr)} and {pctText(b.tpr)}, the false-positive rates {pctText(a.fpr)} and {pctText(b.fpr)}, the precisions {pctText(a.precision)} and {pctText(b.precision)}.{' '}
-      {held.length === 0 ? <>No rate is equal within 3 points.</> : <>Equal within 3 points: {joinNames(held)}.</>} Calibration within groups {cal.holds ? 'holds' : 'does not hold'}: the bins are {(cal.error[0] * 100).toFixed(1)} and {(cal.error[1] * 100).toFixed(1)} points off for A and B, against {(cal.noise[0] * 100).toFixed(1)} and {(cal.noise[1] * 100).toFixed(1)} that sampling noise alone gives at these group sizes.
+      {held.length === 0 ? <>No rate is equal within 3 points.</> : <>Equal within 3 points: {joinList(held)}.</>} Calibration within groups {cal.holds ? 'holds' : 'does not hold'}: the bins are {(cal.error[0] * 100).toFixed(1)} and {(cal.error[1] * 100).toFixed(1)} points off for A and B, against {(cal.noise[0] * 100).toFixed(1)} and {(cal.noise[1] * 100).toFixed(1)} that sampling noise alone gives at these group sizes.
     </>
   );
 }
@@ -72,7 +71,7 @@ export function chooseCaption(s: Scenario, w: Walk): ReactNode {
     <>
       {ending ? <>{ending.title}. </> : null}
       Group B approved {w.meters[METER.approved]}%, {plural(w.meters[METER.denied], 'creditworthy applicant')} denied in error, {plural(w.meters[METER.defaulters], 'defaulting applicant')} approved, trust {w.meters[METER.trust]} of 10.
-      {red.length ? <> In the red: {joinNames(red)}.</> : <> Nothing is in the red.</>}
+      {red.length ? <> In the red: {joinList(red)}.</> : <> Nothing is in the red.</>}
     </>
   );
 }

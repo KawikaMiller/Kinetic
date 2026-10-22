@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { joinList } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { CHAIN, COMBOS, N, opLabel, replay, SCRIPT, totals, type Op, type Opts, type Step } from './model';
@@ -22,7 +23,6 @@ export interface UfFrame extends Frame {
   done: number;
 }
 
-const list = (xs: readonly number[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 const hopWord = (k: number) => `${k} hop${k === 1 ? '' : 's'}`;
 const comboText = (o: Opts) => COMBOS.find((c) => c.opts.byRank === o.byRank && c.opts.compress === o.compress)!.label;
 
@@ -74,7 +74,7 @@ function detailStep(rec: ReturnType<typeof createRecorder<UfFrame>>, step: Step,
       }
       if (moved.length) {
         rec.snap(
-          <>Path compression: point {list(moved)} straight at {root}. From now on, find from {moved.length === 1 ? 'it' : 'any of them'} is 1 hop.</>,
+          <>Path compression: point {joinList(moved.map(String))} straight at {root}. From now on, find from {moved.length === 1 ? 'it' : 'any of them'} is 1 hop.</>,
           undefined,
           { parents, reparented: moved, path: [], height: heightOf(parents) },
         );
@@ -114,7 +114,7 @@ function compactStep(rec: ReturnType<typeof createRecorder<UfFrame>>, step: Step
   rec.snap(
     <>
       {index + 1}/{total} {opLabel(step.op)}: {what} · {hopWord(step.hops)}
-      {moved.length > 0 && <> · compressed {list(moved)}</>} · tallest tree {step.height}
+      {moved.length > 0 && <> · compressed {joinList(moved.map(String))}</>} · tallest tree {step.height}
     </>,
     undefined,
     {

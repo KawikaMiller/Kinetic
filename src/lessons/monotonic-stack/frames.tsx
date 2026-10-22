@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { plural } from '../../core/format';
+import { joinList, plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import {
@@ -45,7 +45,6 @@ const blank = (n: number): Omit<MsFrame, 'say' | 'hold'> => ({
 
 const recorder = (n: number) => createRecorder<MsFrame>(blank(n), { transient: { popped: null, arrow: null, rect: null } });
 
-const list = (xs: readonly number[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 const top = (stack: readonly number[]) => stack[stack.length - 1];
 
 /** The work counters, as the closing captions state them. */
@@ -137,7 +136,7 @@ export function warmerFrames(v: readonly number[]): MsFrame[] {
       <>One day only: it's pushed once and never popped, because nothing comes after it. 1 push + 0 pops = 1, within 2n = 2.</>
     ) : (
       <>
-        Done. {tally(r, n)} {left.length === n ? 'No day ever sees a warmer one.' : left.length ? <>{left.length === 1 ? <>Day {left[0]} never sees</> : <>Days {list(left)} never see</>} a warmer day.</> : 'Every day found a warmer one.'}{' '}
+        Done. {tally(r, n)} {left.length === n ? 'No day ever sees a warmer one.' : left.length ? <>{left.length === 1 ? <>Day {left[0]} never sees</> : <>Days {joinList(left.map(String))} never see</>} a warmer day.</> : 'Every day found a warmer one.'}{' '}
         {versus(r.get().cmps, bruteNextComparisons(v), n, <>which this input happens to make cheap</>, <>on a run of {n} days that never warms up it makes n(n−1)/2 = {bruteNextWorst(n)}</>)}
       </>
     ),

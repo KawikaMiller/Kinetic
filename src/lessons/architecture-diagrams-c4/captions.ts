@@ -1,17 +1,16 @@
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { checklist, FIX_LABELS, score, type Diagram, type FixId } from './diagram';
 import { LEVEL_NAMES, elementOf, viewAt, type Audience, type Level } from './model';
 
 /** Captions as plain text, computed from the model so they cannot outlive the state they describe. */
 
-const list = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** What a zoom level shows: its boxes, its arrows, and who it is for. */
 export function levelCaption(level: Level): string {
   const v = viewAt(level);
   const inside = v.focus ? ` inside ${elementOf(v.focus).name}` : '';
   const outside = v.surroundings.length ? `, with ${plural(v.surroundings.length, 'neighbour')} outside` : '';
-  return `${LEVEL_NAMES[level]} level${inside}: ${plural(v.children.length, 'box', 'boxes')} (${list(v.children.map((c) => c.name))}) and ${plural(v.relations.length, 'arrow')}${outside}.`;
+  return `${LEVEL_NAMES[level]} level${inside}: ${plural(v.children.length, 'box', 'boxes')} (${joinList(v.children.map((c) => c.name))}) and ${plural(v.relations.length, 'arrow')}${outside}.`;
 }
 
 /** How the current level reads for an audience. */

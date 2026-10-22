@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { INITRD_PATH, KERNEL_PATH, type BootConfig, type BootResult, type StageRun } from './model';
+import { joinList } from '../../core/format';
 
 export interface BootFrame extends Frame {
   /** Boot clock, ms since power on. */
@@ -13,7 +14,6 @@ export interface BootFrame extends Frame {
 }
 
 export const secText = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
-const join = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 /** The illustrative boot log, one batch of lines per stage reached. */
 export function consoleFor(c: BootConfig, r: BootResult): { stage: number; text: string; tone?: 'bad' | 'orange' | 'ok' }[] {
@@ -154,11 +154,11 @@ export function bootFrames(c: BootConfig, r: BootResult): BootFrame[] {
         if (starting.length === 0 && failedNow.length === 0 && skipped.length === 0) continue;
         rec.snap(
           <>
-            {failedNow.length > 0 && <><span className="hl orange">{join(failedNow)} failed.</span> </>}
-            {skipped.length > 0 && <>{join(skipped)} {skipped.length === 1 ? 'requires' : 'require'} it, so systemd won't start {skipped.length === 1 ? 'it' : 'them'}. </>}
+            {failedNow.length > 0 && <><span className="hl orange">{joinList(failedNow)} failed.</span> </>}
+            {skipped.length > 0 && <>{joinList(skipped)} {skipped.length === 1 ? 'requires' : 'require'} it, so systemd won't start {skipped.length === 1 ? 'it' : 'them'}. </>}
             {starting.length > 0 && (
               <>
-                At {secText(s.start + w)}: {starting.length > 1 ? <>starting {join(starting)} in parallel</> : <>starting {starting[0]}</>}
+                At {secText(s.start + w)}: {starting.length > 1 ? <>starting {joinList(starting)} in parallel</> : <>starting {starting[0]}</>}
                 {w === 0 ? <>: nothing has to come first</> : <>: everything they're ordered after has finished</>}.
               </>
             )}
@@ -171,7 +171,7 @@ export function bootFrames(c: BootConfig, r: BootResult): BootFrame[] {
       rec.snap(
         degraded ? (
           <>
-            Reached multi-user.target in {secText(s.end - s.start)}, but degraded: {join(r.degraded)} {r.degraded.length === 1 ? "isn't" : "aren't"} running. A unit that's only
+            Reached multi-user.target in {secText(s.end - s.start)}, but degraded: {joinList(r.degraded)} {r.degraded.length === 1 ? "isn't" : "aren't"} running. A unit that's only
             wanted leaves the boot degraded; a failed required mount (local-fs.target) would drop systemd to emergency mode instead.
           </>
         ) : (

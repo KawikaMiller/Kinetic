@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { bytes as fmtBytes } from '../../core/format';
+import { bytes as fmtBytes, joinList } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { BASE, hex, signedHex, type Input, type LinkResult, type Mode } from './link';
@@ -34,7 +34,6 @@ export interface LinkFrame extends Frame {
   done: boolean;
 }
 
-const list = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 const codeList = (xs: readonly string[]) => xs.map((x, i) => <span key={x}>{i ? (i === xs.length - 1 ? ' and ' : ', ') : ''}<code>{x}</code></span>);
 
 /** Step through ld's work, from the events and the result the pure linker produced. */
@@ -72,7 +71,7 @@ export function linkFrames(inputs: readonly Input[], r: LinkResult, mode: Mode):
       rec.snap(
         <>
           {where}. {e.k === 'read' && <>It defines {codeList(e.defines)}. </>}
-          {e.resolved.length > 0 && e.k === 'read' && <>That resolves {codeList(e.resolved)} for {list([...new Set(fresh.filter((a) => e.resolved.includes(a.symbol)).map((a) => a.from))])}. </>}
+          {e.resolved.length > 0 && e.k === 'read' && <>That resolves {codeList(e.resolved)} for {joinList([...new Set(fresh.filter((a) => e.resolved.includes(a.symbol)).map((a) => a.from))])}. </>}
           {already.length > 0 && <>It needs {codeList(already)}, already defined. </>}
           {stillOpen.length > 0 ? <>It needs {codeList(stillOpen)}: nothing defines {stillOpen.length > 1 ? 'them' : 'it'} yet, so {stillOpen.length > 1 ? 'they stay' : 'it stays'} undefined.</> : already.length === 0 && <>It needs nothing from other files.</>}
         </>,
