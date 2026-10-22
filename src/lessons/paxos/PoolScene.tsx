@@ -156,7 +156,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint="you are the network: deliver, drop or duplicate any message">Messages in flight</SectionTitle>
           <div className="px-pool">
-            {session.pool.length === 0 && <Hint>Nothing in flight: press a proposer's start button.</Hint>}
+            {session.pool.length === 0 && <Hint block>Nothing in flight: press a proposer's start button.</Hint>}
             {session.pool.map((m) => (
               <div key={m.id} className="px-msg">
                 <span className="chip tone-info mono">{m.from} to {m.to}: {describeMessage(m.payload)}</span>
