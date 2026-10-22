@@ -53,7 +53,7 @@ export function dataCaption(model: Isolation, ran: boolean, tenant: string, resu
   return (
     <>
       {ISOLATION_NAME[model]}, as {tenant}, with the filter forgotten: {plural(result.rows.length, 'row')} came back, {result.leaked === 0 ? <span className="hl ok wrap">none from another tenant</span> : <span className="hl bad wrap">{result.leaked} from other tenants</span>}
-      {model === 'pooled' ? (rowLevelSecurity ? ', because row-level security applies the filter inside the database.' : ', because the filter was the application\'s job.') : ', because this connection reaches only this tenant\'s data.'}
+      {model === 'pooled' ? (rowLevelSecurity ? ', because row-level security applies the filter inside the database (here the policy is on, the role is covered and the tenant is set).' : ', because the filter was the application\'s job.') : ', because this connection reaches only this tenant\'s data.'}
     </>
   );
 }

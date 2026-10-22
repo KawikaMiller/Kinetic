@@ -194,7 +194,7 @@ describe('invariant: fair queueing serves the max-min fair allocation, on 200 se
     expect(overloaded).toBeGreaterThan(100);
   });
 
-  it('broken mode: with a FIFO shared queue, a tenant below its fair share still loses requests on every overloaded vector that has one; the lowest such seed is the one shown', () => {
+  it('broken mode: with a FIFO shared queue, a tenant below its fair share still loses requests on every overloaded vector (1.3x demand and up) that has one; the lowest such seed is the one shown', () => {
     const cases: number[] = [];
     for (let seed = 0; seed < 200; seed++) {
       const tenants = vector(seed, 1.3 + (seed % 5) * 0.2);
@@ -208,7 +208,8 @@ describe('invariant: fair queueing serves the max-min fair allocation, on 200 se
         expect(below.some((t) => t.servedWork < 0.97 * t.demandWork), `seed ${seed}`).toBe(true);
       }
     }
-    expect(cases.length).toBeGreaterThan(150);
+    // 196 of the 200 vectors are overloaded with a below-fair tenant (the rest have no tenant below its fair share); counted by the bisection-fill oracle above.
+    expect(cases.length).toBe(196);
     expect(cases[0]).toBe(0);
   });
 });

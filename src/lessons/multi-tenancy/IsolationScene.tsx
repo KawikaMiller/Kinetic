@@ -29,7 +29,7 @@ export function IsolationScene({ picker }: { picker: ReactNode }) {
       legend={
         <Legend
           items={[
-            { color: 'var(--orange)', label: 'Tenant 1, the noisy one' },
+            { color: 'var(--orange)', label: 'Tenant 1, the actor (noisy in the noisy modes)' },
             { color: 'var(--bad)', label: 'a neighbour that got hurt' },
             { color: 'var(--ok)', label: 'a tenant that kept its latency' },
             { color: 'var(--hi)', label: 'a throttled request' },

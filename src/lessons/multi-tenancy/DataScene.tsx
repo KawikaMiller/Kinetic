@@ -98,12 +98,12 @@ export function DataScene({ picker }: { picker: ReactNode }) {
           </div>
         </Box>
         <Hint tone="muted" block>
-          Row-level security (as in PostgreSQL, from memory) makes the database apply the tenant filter whatever the query says, so a forgotten filter is safe. A schema or database per tenant removes the mistake, and costs more to run.
+          Row-level security (as in PostgreSQL, from memory) makes the database apply the tenant filter whatever the query says, so a forgotten filter is safe, but only once a policy exists on the table, the application connects as a role the policy covers (a table owner or superuser can skip it) and the tenant is set on the connection for the policy to read. A schema or database per tenant removes the mistake, and costs more to run.
         </Hint>
         <ProvenanceRow>
           <Provenance kind="invented">the shops and their orders are made up; no real company is meant</Provenance>
           <Provenance kind="illustrative">the costs, the effort and the number of tenants are made up; check your own platform</Provenance>
-          <Provenance kind="from-memory">row-level security as PostgreSQL describes it; verify against its documentation</Provenance>
+          <Provenance kind="from-memory">row-level security as PostgreSQL describes it; the table owner and superusers can bypass a policy unless it is forced, and the tenant must be set on the connection; verify against its documentation</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

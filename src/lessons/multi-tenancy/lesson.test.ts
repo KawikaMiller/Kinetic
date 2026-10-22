@@ -47,8 +47,12 @@ describe('try-this entries, from the default state, as written', () => {
     expect(iso('expensive', { rateLimit: true }).tenants[0].throttled).toBe(0);
     expect(lesson.tryThis[1]).toContain('Tenant 2 loses 30%');
     expect(lesson.tryThis[1]).toContain('it loses 0%. Now pick');
-    expect(lesson.tryThis[1]).toContain('loses 17% again');
+    expect(lesson.tryThis[1]).toContain('loses 17% (the expensive stream is under the limit)');
     expect(lesson.tryThis[1]).toContain('Switch the bulkhead on: it loses 0%');
+    const fair = iso('expensive', { fair: true }).tenants[1];
+    expect(Math.round(fair.errorRate * 100)).toBe(0);
+    expect(Math.round(fair.p99Ms)).toBe(201);
+    expect(lesson.tryThis[1]).toContain('With fair queueing instead: 0% lost and a 201 ms p99, still over the 100 ms line');
   });
 
   it('try-this 3: siloing Tenant 1 leaves no neighbour on its shard hurt, and Tenant 1 still loses 18% of its own requests', () => {
@@ -56,6 +60,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(run.blast(0)).toBe(0);
     expect(run.tenants.filter((t) => t.shard === run.tenants[0].shard)).toHaveLength(1);
     expect(Math.round(run.tenants[0].errorRate * 100)).toBe(18);
+    expect(lesson.tryThis[2]).toContain('press Reset first');
     expect(lesson.tryThis[2]).toContain('still loses 18%');
   });
 

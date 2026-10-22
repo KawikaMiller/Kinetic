@@ -17,6 +17,7 @@ const CHEAP_OPEN = isolation('cheap');
 const CHEAP_LIMITED = isolation('cheap', { rateLimit: true });
 const EXPENSIVE_LIMITED = isolation('expensive', { rateLimit: true });
 const EXPENSIVE_BULKHEAD = isolation('expensive', { bulkhead: true });
+const EXPENSIVE_FAIR = isolation('expensive', { fair: true });
 const CHEAP_SILO = isolation('cheap', {}, true);
 
 const S0 = initialShuffle();
@@ -44,16 +45,16 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `In The noisy neighbour, Tenant 1 is selected. Press "make Tenant 1 noisy (${NOISY_CHEAP.rate}/s)": shard 1 asks for ${wantedPct(NOISY, 0)}% of its capacity, Tenant 2 on it loses ${lossText(NOISY, 1)} of its requests and sees a ${msText(NOISY.tenants[1].p99Ms)} p99, and the six tenants on other shards are unaffected.`,
-    `In Isolation, Tenant 1 sends many cheap requests and Tenant 2 loses ${lossText(CHEAP_OPEN, 1)}. Switch the rate limit on: it loses ${lossText(CHEAP_LIMITED, 1)}. Now pick "a few expensive requests" with the rate limit still on: Tenant 2 loses ${lossText(EXPENSIVE_LIMITED, 1)} again, because ${NOISY_EXPENSIVE.rate}/s is under the ${RATE_LIMIT.rate}/s limit. Switch the bulkhead on: it loses ${lossText(EXPENSIVE_BULKHEAD, 1)}.`,
-    `In Isolation, set Tenant 1's shard to "its own (siloed)": Tenant 2 no longer shares a shard with it and recovers, while Tenant 1 still loses ${lossText(CHEAP_SILO, 0)} of its own requests.`,
+    `In Isolation, from its opening state, Tenant 1 sends many cheap requests and Tenant 2 loses ${lossText(CHEAP_OPEN, 1)}. Switch the rate limit on: it loses ${lossText(CHEAP_LIMITED, 1)}. Now pick "a few expensive requests" with the rate limit still on: Tenant 2 loses ${lossText(EXPENSIVE_LIMITED, 1)} (the expensive stream is under the limit), because ${NOISY_EXPENSIVE.rate}/s is under the ${RATE_LIMIT.rate}/s limit. Switch the bulkhead on: it loses ${lossText(EXPENSIVE_BULKHEAD, 1)}. With fair queueing instead: ${lossText(EXPENSIVE_FAIR, 1)} lost and a ${msText(EXPENSIVE_FAIR.tenants[1].p99Ms)} p99, still over the 100 ms line.`,
+    `In Isolation, press Reset first (many cheap requests, no protection), then set Tenant 1's shard to "its own (siloed)": Tenant 2 no longer shares a shard with it and recovers, while Tenant 1 still loses ${lossText(CHEAP_SILO, 0)} of its own requests.`,
     `In Shuffle sharding at N = ${S0.n} and k = ${S0.k}: another tenant shares a worker with the noisy one in ${SHARING.sharing} of ${SHARING.total} assignments (${pct(exactShare(S0.n, S0.k), 1)}) and loses every worker in ${SHARING.identical}. Raise k to ${K3}: sharing rises to ${pct(exactShare(S0.n, K3), 1)} and losing every worker falls to ${pct(exactIdentical(S0.n, K3), 1)}.`,
-    `In Data isolation, press "Run the query that forgets the tenant filter": ${LEAKED} of the ${ORDERS.length} rows that come back belong to other tenants. Turn row-level security on and run it again: 0.`,
+    `In Data isolation, press "Run the query that forgets the tenant filter": ${LEAKED} of the ${ORDERS.length} rows that come back belong to other tenants. Turn row-level security on and run it again: 0 (when the policy is defined, the role is not exempt and the tenant is set on the connection).`,
   ],
   keyIdeas: [
     `A shared shard is shared fate: in this model one tenant asking for ${wantedPct(NOISY, 0)}% of a shard's capacity makes its neighbour lose ${lossText(NOISY, 1)} of its requests, while tenants on other shards keep their latency.`,
     `A rate limit counts requests, not work. In this model a limit of ${RATE_LIMIT.rate}/s stops ${NOISY_CHEAP.rate} cheap requests a second and does nothing to ${NOISY_EXPENSIVE.rate} expensive ones, which ask for the same work; a bulkhead of ${CONC_LIMIT} of ${SLOTS} workers does stop them.`,
     `Shuffle sharding gives each tenant its own k of N workers: with ${S0.n} and ${S0.k}, a neighbour shares a worker in ${pct(exactShare(S0.n, S0.k), 0)} of assignments but loses its whole set in ${pct(exactIdentical(S0.n, S0.k), 1)}, from ${integer(assignments(S0.n, S0.k))} possible pairs.`,
-    `A pooled table relies on each query carrying the tenant filter. In this model a query that forgets it returns ${LEAKED} rows of other tenants, and row-level security returns 0.`,
+    `A pooled table relies on each query carrying the tenant filter. In this model a query that forgets it returns ${LEAKED} rows of other tenants, and row-level security, where a policy covers the application's role and the tenant is set on the connection, returns 0.`,
   ],
   quiz: [
     {
@@ -83,7 +84,7 @@ const lesson: LessonModule = {
       options: [
         'It picks who goes next, but a request already running cannot be interrupted',
         'It favours the tenant with the most requests queued, so that tenant runs first and longest',
-        'It works when every request costs the same, and not otherwise',
+        'It only ever serves the tenant with the fewest requests, whatever they cost',
         'It drops the neighbour\'s requests first to protect the big tenant',
       ],
       answer: 0,
@@ -94,7 +95,7 @@ const lesson: LessonModule = {
       options: [
         `1 in ${assignments(S0.n, S0.k)}, only when it has exactly the same pair`,
         `${SHARING.sharing} in ${SHARING.total}, whenever it shares any worker with the noisy tenant`,
-        `1 in ${S0.n}, the same as plain sharding`,
+        `1 in ${S0.n}, the same chance as plain sharding gives`,
         `1 in ${S0.n / 2}, since each shard holds two workers`,
       ],
       answer: 0,
@@ -109,7 +110,7 @@ const lesson: LessonModule = {
         'Running each query twice and comparing the row counts',
       ],
       answer: 0,
-      why: 'An index speeds a filter up and does not impose one, and a stronger password protects the account, not the rows it can read. Row-level security puts the filter in the database, so a query that forgets it still sees just the caller\'s rows.',
+      why: 'An index speeds a filter up and does not impose one, and a stronger password protects the account, not the rows it can read. Row-level security puts the filter in the database, so where a policy covers the application\'s role and the tenant is set on the connection, a query that forgets the filter still sees just the caller\'s rows. The table owner and superusers can bypass a policy unless it is forced.',
     },
   ],
 };
