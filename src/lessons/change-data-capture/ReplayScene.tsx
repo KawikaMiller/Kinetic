@@ -5,17 +5,15 @@ import { SeedField } from '../../components/SeedField';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, PauseButton, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { toSequence } from '../../core/distSim';
 import { useInterval } from '../../core/useInterval';
-import { CONSUMERS, CONSUMER_LABEL, CONNECTOR, DUPLICATE, LOSS, RESTART_MS, endDivergence, evaluate, lowestFailing, lowestFailingAt, seededScenario, SAFE_FLAGS, type ConsumerId, type Fault, type Flags, type Network, type Scenario } from './cdc';
+import { CONSUMERS, CONSUMER_LABEL, DUPLICATE, LOSS, RESTART_MS, endDivergence, evaluate, lowestFailing, lowestFailingAt, seededScenario, SAFE_FLAGS, type ConsumerId, type Fault, type Flags, type Network, type Scenario } from './cdc';
 import { replayCaption, seedVerdict, traceLine } from './captions';
 import { TableGrids } from './Grids';
-import { END_MS, REPLAY_OPEN, REPLAY_OPS, STEP_MS, connOf, labelOf, redeliveries, reorderedArrivals, replay, syncedCount } from './view';
+import { END_MS, REPLAY_OPEN, REPLAY_OPS, STEP_MS, connOf, redeliveries, reorderedArrivals, replay, replaySequence, syncedCount } from './view';
 
 const PLAY_MS = 120;
 const SLOW_OPTIONS: { value: ConsumerId | 'none'; label: string }[] = [{ value: 'none', label: 'None' }, ...CONSUMERS.map((c) => ({ value: c as ConsumerId | 'none', label: CONSUMER_LABEL[c] }))];
 const KILL_OPTIONS = CONSUMERS.map((c) => ({ value: c as ConsumerId, label: CONSUMER_LABEL[c] }));
-const SHOWN_MESSAGES = 10;
 const TRACE_TAIL = 12;
 /** The seed the scene opens on: the lowest seed of 0..199 that breaks a blind consumer, and a clean pass for the safe settings. */
 export const REPLAY_SEED = 0;
@@ -37,10 +35,7 @@ export function ReplayScene({ picker }: { picker: ReactNode }) {
   const caption = replayCaption(snap, now, trace, flags);
   useInterval(() => setNow((t) => Math.min(END_MS, t + STEP_MS)), PLAY_MS, playing && now < END_MS);
 
-  const sequence = useMemo(() => {
-    const rows = trace.filter((r) => (r.kind === 'send' || r.kind === 'deliver' || r.kind === 'drop') && r.payload && ['event', 'ack', 'dup'].includes(r.payload.type));
-    return toSequence(rows.slice(-SHOWN_MESSAGES), { label: labelOf, actors: [CONNECTOR, ...CONSUMERS].map((id) => ({ id, label: id === CONNECTOR ? 'connector' : CONSUMER_LABEL[id as ConsumerId] })) });
-  }, [trace]);
+  const sequence = useMemo(() => replaySequence(trace), [trace]);
 
   const seeded = useMemo(() => {
     const scenario = seededScenario(seed, flags, network);

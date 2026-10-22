@@ -1,6 +1,6 @@
 /** What the scenes draw, as pure functions of the simulation, plus each scene's opening state. */
 import type { LogRow } from '../../components/logRows';
-import type { Snapshot, TraceRow } from '../../core/distSim';
+import { toSequence, type Snapshot, type TraceRow } from '../../core/distSim';
 import type { Tone } from '../../core/tone';
 import {
   CONNECTOR, CONSUMERS, CONSUMER_LABEL, DB, END_MS, MAX_EVENTS_IN_FLIGHT, SAFE_FLAGS, buildCluster, totalOf, type CdcState, type ConsumerId, type Fault, type Flags, type LogRec, type Msg, type Row, type Scenario, type Stmt, type TimedTx, type Tx,
@@ -139,6 +139,23 @@ export function reorderedArrivals(trace: readonly TraceRow<Msg>[]): number {
     newest.set(row.to!, Math.max(lsn, newest.get(row.to!) ?? 0));
   }
   return late;
+}
+
+/** The harness that injects a fault (the learner's "Duplicate the last event") sends from this id. */
+const INJECTOR = 'client';
+const SHOWN_MESSAGES = 10;
+
+/**
+ * The ladder of scene 2: the last few events, acks and duplicate injections between the connector and the consumers.
+ * A lane for the learner's own button press appears only while a drawn message comes from it.
+ */
+export function replaySequence(trace: readonly TraceRow<Msg>[]) {
+  const rows = trace
+    .filter((r) => (r.kind === 'send' || r.kind === 'deliver' || r.kind === 'drop') && r.payload && ['event', 'ack', 'dup'].includes(r.payload.type))
+    .slice(-SHOWN_MESSAGES);
+  const lanes = [CONNECTOR, ...CONSUMERS].map((id) => ({ id: id as string, label: id === CONNECTOR ? 'connector' : CONSUMER_LABEL[id as ConsumerId] }));
+  const actors = rows.some((r) => r.from === INJECTOR) ? [{ id: INJECTOR, label: 'you' }, ...lanes] : lanes;
+  return toSequence(rows, { label: labelOf, actors });
 }
 
 export const labelOf = (p: Msg): string => {
