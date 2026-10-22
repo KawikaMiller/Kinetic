@@ -1,16 +1,18 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
-import { strategyCaption } from './captions';
-import { HORIZON_MS, scheduleConfig, randomScript } from './check';
+import { toSequence } from '../../core/distSim';
+import { messageLabel, strategyCaption } from './captions';
+import { HORIZON_MS, SEED_COUNT, convergence, noSilentLoss, scheduleConfig, randomScript } from './check';
 import { initialStrategy, pickSchedule, pickStrategy, SKEW_STEP } from './init';
-import { opText, STRATEGIES, type Strategy } from './ops';
+import { lostEdits, opText, STRATEGIES, type Strategy } from './ops';
 import { ReplicaCard } from './ReplicaCard';
 import { runConfig } from './runs';
 import { PRESET_UNTIL_MS, PRESETS, SKEW_MAX_S, presetById, presetConfig } from './scenarios';
-import { BROKEN_SEED_ARRIVAL } from './seeds';
+import { BROKEN_FACTS, BROKEN_SEED_ARRIVAL, BROKEN_SEED_LWW } from './seeds';
 import type { Timed } from './nodes';
 
 const LEGEND = (
@@ -27,10 +29,19 @@ const SHORT: Record<Strategy, string> = { lww: 'last write wins', field: 'per-fi
 const STRATEGY_OPTIONS = STRATEGIES.map((s) => ({ value: s.id, label: SHORT[s.id] }));
 const SCHEDULE_NOTE_RANDOM = 'A seeded random schedule: ten edits from both devices over twenty seconds, the phone offline for eleven, on a slow, lossy, duplicating network with a partition, a crash and a pause.';
 
+const TRACE_CAP = 14;
+const BROKEN_SEEDS = { arrival: BROKEN_SEED_ARRIVAL, lww: BROKEN_SEED_LWW } as const;
+
+/** What breaks, in words, for one of the two broken modes; every number is from the pinned facts. */
+const brokenCause = (strategy: 'arrival' | 'lww'): string =>
+  strategy === 'arrival'
+    ? `It fails on ${BROKEN_FACTS.arrival.fails} of ${SEED_COUNT} seeded schedules, and on ${BROKEN_FACTS.arrival.failsOnQuietNetwork} of ${SEED_COUNT} even on a quiet network with no loss, duplication or reordering. So reordering is not the cause: with no ids and no merge, a copy that arrives twice is applied twice, and concurrent edits are applied in a different order on each replica.`
+    : `It fails on ${BROKEN_FACTS.lww.fails} of ${SEED_COUNT} seeded schedules, ${BROKEN_FACTS.lww.failsWithoutCounter} of them with the counter taken out of the script. The whole item (and the counter, a last-write-wins register here) takes the value with the latest device clock, so a concurrent edit is dropped with nothing listed.`;
+
 const describe = (t: Timed) => {
   const a = t.action;
   const what =
-    a.kind === 'add' ? `adds "${a.title}"` : a.kind === 'rename' ? `renames item ${a.pick + 1} to "${a.title}"` : a.kind === 'tick' ? `ticks item ${a.pick + 1}` : a.kind === 'delete' ? `deletes item ${a.pick + 1}` : 'presses +1 on the counter';
+    a.kind === 'add' ? `adds "${a.title}"` : a.kind === 'rename' ? `renames an item to "${a.title}"` : a.kind === 'tick' ? 'ticks an item' : a.kind === 'delete' ? 'deletes an item' : 'presses +1 on the counter';
   return `${(t.at / 1000).toFixed(1)} s: the ${t.device} ${what}`;
 };
 
@@ -43,7 +54,12 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
     [st, preset],
   );
   const script = preset === null ? randomScript(st.seed) : presetById(preset).script;
-  const lostCount = run.lost.length;
+  const lostCount = lostEdits(run.lost);
+  const broken = st.strategy === 'arrival' || st.strategy === 'lww' ? st.strategy : null;
+  const snap = { time: run.snap.time, nodes: run.snap.nodes };
+  const violation = !random || broken === null ? null : broken === 'arrival' ? convergence('arrival')(snap) : noSilentLoss('lww')(snap);
+  const ladder = useMemo(() => toSequence(run.trace.filter((r) => r.payload && ['push', 'ack', 'reject'].includes(r.payload.type)), { label: messageLabel }), [run]);
+  const ladderMessages = ladder.messages.slice(0, TRACE_CAP);
 
   return (
     <StageFrame
@@ -108,10 +124,29 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
             </ul>
           )}
         </Box>
+        {broken !== null && (
+          <Box>
+            <SectionTitle hint="the checker's verdict on this run, and what the pinned seed means">Where the invariant breaks</SectionTitle>
+            {random ? (
+              <>
+                <p className="ofs-note">
+                  {violation === null ? `The invariant holds on seed ${st.seed}. ` : <b className="ofs-violation">Violated on seed {st.seed}: {violation}. </b>}
+                  Seed {BROKEN_SEEDS[broken]} is the lowest failing seed of {SEED_COUNT}, and it is pinned only because every smaller seed passes: nearly every seed fails, so the number is not special. {brokenCause(broken)}
+                </p>
+                {ladderMessages.length > 0 && (
+                  <SequenceDiagram actors={ladder.actors} messages={ladderMessages} fit="all" ariaLabel="The first pushes, acknowledgements and rejections of this run, lost ones marked" />
+                )}
+                <p className="ofs-note">The ladder shows the first {Math.min(TRACE_CAP, ladder.messages.length)} of {ladder.messages.length} pushes and replies; the violation is read at the end of the run, once everything is delivered.</p>
+              </>
+            ) : (
+              <p className="ofs-note">The pinned seed belongs to the seeded random schedule. Pick it to see the checker's verdict and the trace. {brokenCause(broken)}</p>
+            )}
+          </Box>
+        )}
         <ProvenanceRow>
           <Provenance kind="simulated" seed={random ? st.seed : undefined}>{random ? 'a seeded fault schedule on the distributed-sim harness' : 'a scripted example on a quiet simulated network'}</Provenance>
           <Provenance kind="toy">a replicated list, not Automerge or Yjs; the merge rules are this lesson's own simplification</Provenance>
-          {st.strategy === 'arrival' && <Provenance kind="scripted">broken on purpose: the lowest seed on which it fails is {BROKEN_SEED_ARRIVAL}</Provenance>}
+          {broken !== null && <Provenance kind="simulated">broken on purpose, and found by the checker: lowest failing seed {BROKEN_SEEDS[broken]}, failing on {BROKEN_FACTS[broken].fails} of {SEED_COUNT}</Provenance>}
         </ProvenanceRow>
       </div>
     </StageFrame>

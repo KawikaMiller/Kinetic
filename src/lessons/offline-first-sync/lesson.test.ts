@@ -209,6 +209,18 @@ describe('captions are clean and true for every strategy, example and fault sett
       clean(strategyCaption(runConfig(scheduleConfig(1, strategy, true, 0), HORIZON_MS), strategy));
     }
   });
+  it('the caption counts a short counter by increments, not by entries (the counter preset under last write wins)', () => {
+    const r = rename('lww');
+    expect(clean(strategyCaption(r, 'lww'))).toContain('1 acknowledged edit lost');
+    const c = runConfig(presetConfig('counter', 'lww', 0), PRESET_UNTIL_MS);
+    const incs = new Set(c.accepted.filter((o) => o.kind === 'inc').map((o) => o.id)).size;
+    const missing = incs - c.views.server.counter;
+    expect(missing).toBe(1);
+    expect(c.lost.length).toBe(1);
+    expect(clean(strategyCaption(c, 'lww'))).toContain(`${missing} acknowledged edit lost`);
+    const two = { ...c, lost: [{ ...c.lost[0], count: 2 }] };
+    expect(clean(strategyCaption(two, 'lww'))).toContain('2 acknowledged edits lost');
+  });
   it('fault captions at the slider extremes name the counters from the replicas', () => {
     for (const dedupe of [true, false]) for (const lossPct of [FAULT_LIMITS.lossPct.min, FAULT_LIMITS.lossPct.max]) for (const dupPct of [0, FAULT_LIMITS.dupPct.max]) for (const delay of [FAULT_LIMITS.delay.min, FAULT_LIMITS.delay.max]) {
       const f = { ...initialFaults(), dedupe, lossPct, dupPct, delay, reorder: FAULT_LIMITS.reorder.max };
@@ -224,10 +236,22 @@ describe('captions are clean and true for every strategy, example and fault sett
     s = toggleAirplane(s, 'laptop');
     s = liveEdit(s, 'laptop', { kind: 'tick', pick: 0 });
     const run = runConfig(liveConfig(s.script, airplaneWindows(s)), s.clock);
-    const t = clean(liveIntro(run));
+    const t = clean(liveIntro(run, ['laptop']));
     expect(t).toContain('Laptop: 1 edit pending');
     expect(t).toContain('(the laptop offline)');
+    expect(clean(liveIntro(run))).not.toContain('offline');
     expect(countMarks(run.laptop).pending).toBe(1);
+  });
+  it('the live caption takes offline from the scene state and names the counter when only the counters differ', () => {
+    let s = initialLive();
+    s = toggleAirplane(s, 'laptop');
+    s = liveEdit(s, 'laptop', { kind: 'inc' });
+    s = toggleAirplane(s, 'laptop');
+    const run = runConfig(liveConfig(s.script, airplaneWindows(s)), s.clock);
+    expect(run.converged).toBe(false);
+    const t = clean(liveIntro(run, []));
+    expect(t).not.toContain('offline');
+    expect(t).toContain('the lists match but the counters differ: counter phone 0, laptop 1');
   });
   it('the loop caption reads the attempts, and says so when there were none', () => {
     expect(clean(loopCaption([], 20, null, null))).toContain('made no edit');

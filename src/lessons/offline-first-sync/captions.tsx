@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { STRATEGIES, type Strategy, type View } from './ops';
+import { STRATEGIES, lostEdits, type Strategy, type View } from './ops';
 import type { Attempt } from './status';
 import { countMarks, retryGaps } from './status';
 import type { Run } from './runs';
+import type { Msg } from './nodes';
+import type { DeviceId } from './ops';
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 export const strategyLabel = (s: Strategy) => STRATEGIES.find((x) => x.id === s)!.label;
@@ -17,12 +19,23 @@ export function listText(v: View): string {
 
 // ---- scene 1 ----------------------------------------------------------------------------------
 
-export function liveIntro(run: Run): ReactNode {
+/** Which part of the replicas differs: the lists, the counters, or both. */
+function differenceText(run: Run): string {
+  const v = run.views;
+  const lists = new Set([listText(v.phone), listText(v.laptop), listText(v.server)]).size > 1;
+  const counters = new Set([v.phone.counter, v.laptop.counter, v.server.counter]).size > 1;
+  const list = `phone ${listText(v.phone)}, laptop ${listText(v.laptop)}`;
+  const counter = `counter phone ${v.phone.counter}, laptop ${v.laptop.counter}`;
+  return lists && counters ? `${list}; ${counter}` : lists ? list : counters ? `the lists match but the counters differ: ${counter}` : 'the conflict lists differ';
+}
+
+/** `offline` names the devices currently in airplane mode (the scene's own state, not a flag the device sets when it next runs). */
+export function liveIntro(run: Run, offline: readonly DeviceId[] = []): ReactNode {
   const p = countMarks(run.phone);
   const l = countMarks(run.laptop);
   const waiting = p.pending + l.pending;
   const flying = p.inflight + l.inflight;
-  const offline = [run.phone.airplane && 'the phone', run.laptop.airplane && 'the laptop'].filter(Boolean).join(' and ');
+  const away = offline.map((d) => `the ${d}`).join(' and ');
   return (
     <>
       Phone: {plural(p.pending, 'edit')} <span className="hl">pending</span>, {p.inflight} <span className="hl info">in flight</span>. Laptop: {plural(l.pending, 'edit')} pending, {l.inflight} in flight.{' '}
@@ -34,8 +47,8 @@ export function liveIntro(run: Run): ReactNode {
         <>The replicas already agree, with edits still on their way.</>
       ) : (
         <>
-          The replicas <span className="hl orange">differ for now</span>: phone {listText(run.views.phone)}, laptop {listText(run.views.laptop)}
-          {offline ? ` (${offline} offline)` : ''}.
+          The replicas <span className="hl orange">differ for now</span>: {differenceText(run)}
+          {away ? ` (${away} offline)` : ''}.
         </>
       )}
     </>
@@ -63,7 +76,7 @@ export function strategyCaption(run: Run, strategy: Strategy): ReactNode {
         <>No acknowledged edit was lost.</>
       ) : (
         <>
-          <span className="hl bad">{plural(run.lost.length, 'acknowledged edit')} lost</span> with nothing listed.
+          <span className="hl bad">{plural(lostEdits(run.lost), 'acknowledged edit')} lost</span> with nothing listed.
         </>
       )}{' '}
       {conflicts === 0 ? 'No conflict is listed.' : <><span className="hl orange">{plural(conflicts, 'conflict')} listed</span> for the user.</>}
@@ -85,6 +98,10 @@ export function traceCounts(run: Run): TraceCounts {
     duplicates: run.trace.filter((r) => r.kind === 'deliver' && r.dup).length,
   };
 }
+
+/** A ladder label for the pushes and replies the lesson draws. */
+export const messageLabel = (m: Msg): string =>
+  m.type === 'push' ? `push ${m.ops.map((o) => o.id).join(' ')}` : m.type === 'ack' ? `ack ${m.ids.join(' ')}` : m.type === 'reject' ? `reject ${m.id}` : m.type;
 
 export function faultCaption(run: Run, dedupe: boolean): ReactNode {
   const c = run.views;

@@ -23,6 +23,19 @@ const LEGEND = (
 );
 const NAMES: Record<DeviceId, string> = { phone: 'Phone', laptop: 'Laptop' };
 
+/**
+ * Deleting an item removes its buttons (a tombstone has none), so keyboard focus would fall to the page. Once the card has
+ * redrawn, put it on the next item's first button, or on Add item when no live item is left.
+ */
+function refocusCard(from: Element | null): void {
+  const card = from?.closest('section') ?? null;
+  requestAnimationFrame(() => {
+    const next = card?.querySelector<HTMLElement>('.ofs-actions button');
+    const add = [...(card?.querySelectorAll<HTMLElement>('.ofs-card-controls button') ?? [])].find((b) => b.textContent === 'Add item');
+    (next ?? add)?.focus();
+  });
+}
+
 export function LiveScene({ picker }: { picker: ReactNode }) {
   const [st, setSt] = useState(initialLive);
   const run = useMemo(() => runConfig(liveConfig(st.script, airplaneWindows(st)), st.clock), [st]);
@@ -34,7 +47,7 @@ export function LiveScene({ picker }: { picker: ReactNode }) {
     <StageFrame
       height={620}
       legend={LEGEND}
-      intro={liveIntro(run)}
+      intro={liveIntro(run, DEVICES.filter(offline))}
       introKey={`${st.clock}|${st.script.length}|${st.closed.length}|${st.open.phone}|${st.open.laptop}`}
       stats={
         <Stats>
@@ -72,13 +85,21 @@ export function LiveScene({ picker }: { picker: ReactNode }) {
                   <>
                     <ChipButton tone="info" onClick={() => setSt((s) => liveRename(s, d, pick))}>rename</ChipButton>
                     <ChipButton tone="info" onClick={() => setSt((s) => liveEdit(s, d, { kind: 'tick', pick }))}>tick</ChipButton>
-                    <ChipButton tone="bad" onClick={() => setSt((s) => liveEdit(s, d, { kind: 'delete', pick }))}>delete</ChipButton>
+                    <ChipButton
+                      tone="bad"
+                      onClick={() => {
+                        refocusCard(document.activeElement);
+                        setSt((s) => liveEdit(s, d, { kind: 'delete', pick }));
+                      }}
+                    >
+                      delete
+                    </ChipButton>
                   </>
                 )}
               >
                 <div className="ofs-card-controls">
                   <Toggle label="Network" value={offline(d)} off="online" on="airplane mode" onChange={() => setSt((s) => toggleAirplane(s, d))} />
-                  <TextField ariaLabel={`${NAMES[d]} title`} label="Title" value={st.drafts[d]} onChange={(t) => setSt((s) => setDraft(s, d, t))} onEnter={() => setSt((s) => liveAdd(s, d))} width={150} maxLength={MAX_TITLE} placeholder="up to 40 characters" spellCheck={false} />
+                  <TextField ariaLabel={`${NAMES[d]} title`} label="Title" value={st.drafts[d]} onChange={(t) => setSt((s) => setDraft(s, d, t))} onEnter={() => setSt((s) => liveAdd(s, d))} width={150} maxLength={MAX_TITLE} placeholder="a new title" spellCheck={false} />
                   <Button onClick={() => setSt((s) => liveAdd(s, d))}>Add item</Button>
                   <Button onClick={() => setSt((s) => liveEdit(s, d, { kind: 'inc' }))}>+1 counter</Button>
                 </div>
@@ -90,6 +111,7 @@ export function LiveScene({ picker }: { picker: ReactNode }) {
         <ProvenanceRow>
           <Provenance kind="simulated">two devices and a server on the distributed-sim harness; every edit and message is a simulated event</Provenance>
           <Provenance kind="toy">a replicated list with an operation log, not Automerge or Yjs (named only)</Provenance>
+          <Provenance kind="simulated">airplane mode here is a partition plus a flag the device reads: it knows it is offline and holds its edits. The sync loop's outage is different: the device does not know, so it keeps retrying</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

@@ -204,7 +204,11 @@ export const viewKey = (v: View): string => JSON.stringify({ i: v.items.map((x) 
 export interface Lost {
   op: Op;
   reason: string;
+  /** Edits this entry stands for: 1, or the number of increments missing from a counter. */
+  count: number;
 }
+/** The acknowledged edits that disappeared: an entry for a counter counts every increment it is short by. */
+export const lostEdits = (lost: readonly Lost[]): number => lost.reduce((n, l) => n + l.count, 0);
 
 const kindWord: Record<OpKind, string> = { add: 'adding', rename: 'renaming to', tick: 'ticking', delete: 'deleting', inc: 'incrementing' };
 export const opText = (o: Op): string => `${o.device} ${kindWord[o.kind]}${o.title !== undefined ? ` "${o.title}"` : o.kind === 'tick' ? ` ${o.done ? 'done' : 'not done'}` : ''}`;
@@ -223,16 +227,16 @@ export function lostUpdates(accepted: readonly Op[], view: View): Lost[] {
     if (o.kind === 'inc') continue;
     const item = view.items.find((i) => i.id === (o.kind === 'add' ? o.id : o.item));
     if (!item) {
-      if (o.kind === 'add') lost.push({ op: o, reason: 'the item is gone from the list' });
+      if (o.kind === 'add') lost.push({ op: o, reason: 'the item is gone from the list', count: 1 });
       continue;
     }
-    if (o.kind === 'rename' && item.title !== o.title && !overwritten(o, 'title') && !listed.has(o.id)) lost.push({ op: o, reason: `the title shows ${item.title === null ? 'nothing' : quote(item.title)} and no conflict lists this rename` });
-    if (o.kind === 'tick' && item.done !== o.done && !overwritten(o, 'done') && !listed.has(o.id)) lost.push({ op: o, reason: 'the tick state shows the other value and no conflict lists this edit' });
-    if (o.kind === 'delete' && !item.deleted && !listed.has(o.id)) lost.push({ op: o, reason: 'the item is still showing and no conflict lists this delete' });
+    if (o.kind === 'rename' && item.title !== o.title && !overwritten(o, 'title') && !listed.has(o.id)) lost.push({ op: o, reason: `the title shows ${item.title === null ? 'nothing' : quote(item.title)} and no conflict lists this rename`, count: 1 });
+    if (o.kind === 'tick' && item.done !== o.done && !overwritten(o, 'done') && !listed.has(o.id)) lost.push({ op: o, reason: 'the tick state shows the other value and no conflict lists this edit', count: 1 });
+    if (o.kind === 'delete' && !item.deleted && !listed.has(o.id)) lost.push({ op: o, reason: 'the item is still showing and no conflict lists this delete', count: 1 });
   }
   const incs = ops.filter((o) => o.kind === 'inc');
   if (incs.length > view.counter) {
-    lost.push({ op: incs[incs.length - 1], reason: `${incs.length - view.counter} of ${incs.length} increments are missing from the counter (${view.counter})` });
+    lost.push({ op: incs[incs.length - 1], reason: `${incs.length - view.counter} of ${incs.length} increments are missing from the counter (${view.counter})`, count: incs.length - view.counter });
   }
   return lost;
 }

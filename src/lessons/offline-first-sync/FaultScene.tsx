@@ -3,12 +3,11 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
-import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { toSequence } from '../../core/distSim';
 import { delivered } from './check';
-import { faultCaption, traceCounts } from './captions';
+import { faultCaption, messageLabel, traceCounts } from './captions';
 import { initialFaults } from './init';
-import type { Msg } from './nodes';
 import { FAULTS_UNTIL_MS, FAULT_LIMITS, faultConfig } from './scenarios';
 import { ReplicaCard } from './ReplicaCard';
 import { runConfig } from './runs';
@@ -17,14 +16,13 @@ const LEGEND = (
   <Legend
     items={[
       { color: 'var(--ok)', label: 'a counter that is right' },
-      { color: 'var(--bad)', label: 'a counter that over-counts, or a rolled-back edit' },
+      { color: 'var(--bad)', label: 'a counter that is wrong (over- or under-counted), or a rolled-back edit' },
       { color: 'var(--info)', label: 'a message that crossed' },
     ]}
   />
 );
 const SEQUENCE_CAP = 16;
 
-const labelOf = (m: Msg): string => (m.type === 'push' ? `push ${m.ops.map((o) => o.id).join(' ')}` : m.type === 'ack' ? `ack ${m.ids.join(' ')}` : m.type === 'reject' ? `reject ${m.id}` : m.type);
 
 export function FaultScene({ picker }: { picker: ReactNode }) {
   const [st, setSt] = useState(initialFaults);
@@ -32,7 +30,7 @@ export function FaultScene({ picker }: { picker: ReactNode }) {
   const counts = traceCounts(run);
   const expected = new Set(run.accepted.filter((o) => o.kind === 'inc').map((o) => o.id)).size;
   const rows = useMemo(() => run.trace.filter((r) => r.payload && ['push', 'ack', 'reject'].includes(r.payload.type)).slice(0, 80), [run]);
-  const seq = useMemo(() => toSequence(rows, { label: labelOf }), [rows]);
+  const seq = useMemo(() => toSequence(rows, { label: messageLabel }), [rows]);
   const messages = seq.messages.slice(0, SEQUENCE_CAP);
   const patch = (p: Partial<typeof st>) => setSt((s) => ({ ...s, ...p }));
   const wrong = [run.views.phone.counter, run.views.laptop.counter, run.views.server.counter].some((n) => n !== expected);
@@ -57,6 +55,7 @@ export function FaultScene({ picker }: { picker: ReactNode }) {
           <Toggle label="Operation ids" value={st.dedupe} off="no deduplication" on="deduplicate by id" onChange={(dedupe) => patch({ dedupe })} />
           <Toggle label="Laptop also sends" value={st.blank} off="nothing more" on="a blank rename" onChange={(blank) => patch({ blank })} />
           <SeedField seed={st.seed} onSeed={(seed) => patch({ seed })} />
+          <Hint tone="muted">With ids off every copy counts, and each pull reply re-sends the operations past the device's cursor, so a counter can read far above the increments. With ids on, a counter below the target means an increment has not arrived yet.</Hint>
         </>,
         <>
           <Slider label="Delay" value={st.delay} min={FAULT_LIMITS.delay.min} max={FAULT_LIMITS.delay.max} step={FAULT_LIMITS.delay.step} format={(n) => `${n} ms`} onChange={(delay) => patch({ delay })} />

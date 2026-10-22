@@ -7,7 +7,8 @@ import {
 import { SYNC, backoffDelay, buildCluster, type NodeState } from './nodes';
 import { applyNaive, concurrent, emptyNaive, lostUpdates, uniqueById, viewKey, viewOf, naiveView, type MergeStrategy, type Op, type Strategy } from './ops';
 import { PRESET_UNTIL_MS, SKEW_PRESET_S, presetConfig } from './scenarios';
-import { BROKEN_SEED_ARRIVAL, BROKEN_SEED_LWW } from './seeds';
+import { BROKEN_FACTS, BROKEN_SEED_ARRIVAL, BROKEN_SEED_LWW } from './seeds';
+import { QUIET } from './check';
 
 const MERGES: MergeStrategy[] = ['lww', 'field', 'merge', 'manual'];
 
@@ -242,6 +243,33 @@ describe('invariants over 200 seeded fault schedules', () => {
       }
     }
     expect(conflicting).toBeGreaterThan(3);
+  });
+
+  it('the pinned seed is lowest only because nearly every seed fails: the counts shown on screen are the checker counts, and the causes are isolated by counterfactuals', () => {
+    const failing = (make: (seed: number) => ReturnType<typeof scheduleConfig>, safety: ReturnType<typeof convergence>) => {
+      const seeds: number[] = [];
+      for (let seed = 0; seed < SEED_COUNT; seed++) if (!checkInvariants(buildCluster(make(seed)), [safety], { until: HORIZON_MS }).ok) seeds.push(seed);
+      return seeds;
+    };
+    const arrival = failing((s) => scheduleConfig(s, 'arrival'), convergence('arrival'));
+    expect(arrival.length).toBe(BROKEN_FACTS.arrival.fails);
+    expect(arrival[0]).toBe(BROKEN_SEED_ARRIVAL);
+    // counterfactual 1: take away loss, duplication, reordering, partitions and faults, and it still breaks, so those are not the cause
+    const quiet = failing((s) => ({ ...scheduleConfig(s, 'arrival'), ...QUIET, randomFaults: false, airplane: [] }), convergence('arrival'));
+    expect(quiet.length).toBe(BROKEN_FACTS.arrival.failsOnQuietNetwork);
+    // counterfactual 2: the same schedules under the merge view, with the same network, converge on all seeds
+    expect(failing((s) => scheduleConfig(s, 'merge'), convergence('merge'))).toEqual([]);
+    // counterfactual 3: ids alone are not the whole fix either, but a log view keyed by id is: arrival with a deduplicated log is the merge
+    const lww = failing((s) => scheduleConfig(s, 'lww'), noSilentLoss('lww'));
+    expect(lww.length).toBe(BROKEN_FACTS.lww.fails);
+    expect(lww[0]).toBe(BROKEN_SEED_LWW);
+    const noCounter = failing((s) => {
+      const c = scheduleConfig(s, 'lww');
+      return { ...c, script: c.script.filter((t) => t.action.kind !== 'inc') };
+    }, noSilentLoss('lww'));
+    expect(noCounter.length).toBe(BROKEN_FACTS.lww.failsWithoutCounter);
+    expect(noCounter[0]).toBe(BROKEN_FACTS.lww.lowestWithoutCounter);
+    expect(noCounter.length, 'the counter is not the only reason').toBeGreaterThan(SEED_COUNT / 2);
   });
 
   it('a broken mode that never violated would fail: a copy of last write wins that also lists its losers passes the same check', () => {
