@@ -70,14 +70,33 @@ export function rtoText(mode: Mode): string {
   return `${humanDuration(s)} (${mode === 'passive' ? 'failover' : 'reroute'})`;
 }
 
-/** True while at least two regions in use are alive, so a write can exist in a second place. */
-export const hasLiveReplica = (mode: Mode, dead: RegionId[]): boolean => regionsInUse(mode).filter((r) => !dead.includes(r)).length >= 2;
+const liveInUse = (mode: Mode, dead: RegionId[]): RegionId[] => regionsInUse(mode).filter((r) => !dead.includes(r));
 
-/** What a region failure can lose, as the stat prints it: the replication lag, nothing, or a single unreplicated copy. */
+/** True while at least two regions in use are alive, so a write can exist in a second place. */
+export const hasLiveReplica = (mode: Mode, dead: RegionId[]): boolean => liveInUse(mode, dead).length >= 2;
+
+/**
+ * The RPO stat: what losing the serving region *right now* would cost, given the regions alive now. (The caption after a kill
+ * describes the loss of that failure, computed from the regions alive just before it: see `failureLoss`.)
+ */
 export function rpoText(mode: Mode, replication: Replication, dead: RegionId[]): string {
   if (mode === 'single') return 'up to last backup';
-  if (replication === 'async') return `~${ASYNC_LAG_S} s of writes`;
-  return hasLiveReplica(mode, dead) ? '0 (sync)' : 'unreplicated: no live replica';
+  if (liveInUse(mode, dead).length === 0) return 'all regions down';
+  if (!hasLiveReplica(mode, dead)) return 'no live replica: one copy';
+  return replication === 'async' ? `~${ASYNC_LAG_S} s of writes` : '0 (sync)';
+}
+
+/** What one region failure lost, judged from the regions that were alive just before it. */
+export type FailureLoss =
+  | { kind: 'backup' }
+  | { kind: 'lag' }
+  | { kind: 'zero' }
+  | { kind: 'no-replica'; replication: Replication };
+
+export function failureLoss(mode: Mode, replication: Replication, deadBefore: RegionId[]): FailureLoss {
+  if (mode === 'single') return { kind: 'backup' };
+  if (!hasLiveReplica(mode, deadBefore)) return { kind: 'no-replica', replication };
+  return { kind: replication === 'async' ? 'lag' : 'zero' };
 }
 
 export const nearest = (u: UserId, alive: RegionId[]) =>
@@ -91,25 +110,67 @@ export interface Route {
   region: RegionId | null;
   state: RouteState;
 }
+export type PhaseKind = 'outage' | 'failover' | 'reroute';
 export interface Phase {
   text: string;
   done: boolean;
+  /** Which timeline the clock is measuring: a total outage, an active-passive failover or an active-active reroute. */
+  kind: PhaseKind;
 }
 
 /** Where the failover stands, `clock` simulated seconds after the outage (null: nothing happening). */
 export function phaseOf(mode: Mode, dead: RegionId[], clock: number | null): Phase | null {
   if (clock === null || dead.length === 0) return null;
-  if (mode === 'single') return dead.includes('us') ? { text: 'Outage: there is no other region to fail over to', done: false } : null;
+  if (mode === 'single') return dead.includes('us') ? { text: 'Outage: there is no other region to fail over to', done: false, kind: 'outage' } : null;
   if (mode === 'passive') {
     if (!dead.includes('us')) return null;
-    if (dead.includes('eu')) return { text: 'Primary and standby both down: total outage', done: false };
-    if (clock < DETECTED_AT_S) return { text: 'Detecting: health checks to us-east failing', done: false };
-    if (clock < PROMOTED_AT_S) return { text: 'Promoting the eu-west standby to primary', done: false };
-    if (clock < RECOVERED_AT_S) return { text: 'DNS TTL expiring: clients reconnecting to eu-west', done: false };
-    return { text: 'Recovered: eu-west is the new primary', done: true };
+    if (dead.includes('eu')) return { text: 'Primary and standby both down: total outage', done: false, kind: 'outage' };
+    if (clock < DETECTED_AT_S) return { text: 'Detecting: health checks to us-east failing', done: false, kind: 'failover' };
+    if (clock < PROMOTED_AT_S) return { text: 'Promoting the eu-west standby to primary', done: false, kind: 'failover' };
+    if (clock < RECOVERED_AT_S) return { text: 'DNS TTL expiring: clients reconnecting to eu-west', done: false, kind: 'failover' };
+    return { text: 'Recovered: eu-west is the new primary', done: true, kind: 'failover' };
   }
-  if (clock < REROUTE_S) return { text: 'Health checks failing: rerouting users to the next-nearest region', done: false };
-  return { text: 'Rerouted: surviving regions absorb the traffic', done: true };
+  if (dead.length === ALL_REGIONS.length) return { text: 'Every region is down: total outage', done: false, kind: 'outage' };
+  if (clock < REROUTE_S) return { text: 'Health checks failing: rerouting users to the next-nearest region', done: false, kind: 'reroute' };
+  return { text: 'Rerouted: surviving regions absorb the traffic', done: true, kind: 'reroute' };
+}
+
+/** The scene state the clicks drive: which regions are dead and the simulated seconds since the current outage or failover began. */
+export interface OutageState {
+  dead: RegionId[];
+  clock: number | null;
+}
+
+/** What a click on a region did, for the caption. */
+export type ToggleEvent =
+  | { kind: 'restored'; region: RegionId; stillDown: RegionId[] }
+  | { kind: 'standby-died' }
+  | { kind: 'unused' }
+  | { kind: 'failed'; region: RegionId; loss: FailureLoss };
+
+/** True when killing `r` takes down a region that is serving users (or is about to be the one that does). */
+function isServing(mode: Mode, dead: RegionId[], r: RegionId): boolean {
+  return mode === 'active' || r === 'us' || (mode === 'passive' && r === 'eu' && dead.includes('us'));
+}
+
+/**
+ * The one state machine for Kill/Restore clicks. The clock is non-null exactly while some user is affected (an outage or a
+ * failover is under way or finished but not repaired), restarts whenever the timeline being measured changes (a failover
+ * becoming a total outage and back, or a serving region dying) and stops when nothing is affected.
+ */
+export function toggleRegion(mode: Mode, replication: Replication, state: OutageState, r: RegionId): { state: OutageState; event: ToggleEvent } {
+  const wasDead = state.dead.includes(r);
+  const dead = wasDead ? state.dead.filter((x) => x !== r) : [...state.dead, r];
+  const before = phaseOf(mode, state.dead, 0);
+  const after = phaseOf(mode, dead, 0);
+  const restartsClock = !wasDead && isServing(mode, state.dead, r) && regionsInUse(mode).includes(r);
+  let clock: number | null = null;
+  if (after) clock = restartsClock || before?.kind !== after.kind || state.clock === null ? 0 : state.clock;
+  const next = { dead, clock };
+  if (wasDead) return { state: next, event: { kind: 'restored', region: r, stillDown: dead } };
+  if (!regionsInUse(mode).includes(r)) return { state: next, event: { kind: 'unused' } };
+  if (mode === 'passive' && r === 'eu' && !state.dead.includes('us')) return { state: next, event: { kind: 'standby-died' } };
+  return { state: next, event: { kind: 'failed', region: r, loss: failureLoss(mode, replication, state.dead) } };
 }
 
 /** Which region serves user population `u`, given the topology, the outages and whether failover finished. */
@@ -165,6 +226,8 @@ export interface LatencyStats {
   /** Share of users currently down (0..1). */
   downShare: number;
   anyServed: boolean;
+  /** True when at least one served user's write waits on a cross-region replica. */
+  waitsForReplicas: boolean;
 }
 
 export function latencyStats(routes: Record<UserId, Route>, mode: Mode, replication: Replication, dead: RegionId[]): LatencyStats {
@@ -179,5 +242,6 @@ export function latencyStats(routes: Record<UserId, Route>, mode: Mode, replicat
       : null,
     downShare: ALL_USERS.filter((u) => routes[u].state !== 'ok').reduce((s, u) => s + USERS[u].share, 0),
     anyServed: served.length > 0,
+    waitsForReplicas: served.some((u) => syncPenalty(routes[u].region!, mode, replication, dead) > 0),
   };
 }

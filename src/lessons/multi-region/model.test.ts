@@ -157,11 +157,28 @@ describe('the stats, on hand-worked vectors', () => {
     expect(rpoText('single', 'sync', [])).toBe('up to last backup');
     expect(rpoText('passive', 'async', [])).toBe('~1.2 s of writes');
     expect(rpoText('passive', 'sync', [])).toBe('0 (sync)');
-    expect(rpoText('passive', 'sync', ['eu'])).toBe('unreplicated: no live replica');
-    expect(rpoText('passive', 'sync', ['us'])).toBe('unreplicated: no live replica');
+    expect(rpoText('passive', 'sync', ['eu'])).toBe('no live replica: one copy');
+    expect(rpoText('passive', 'sync', ['us'])).toBe('no live replica: one copy');
     expect(rpoText('active', 'sync', ['us'])).toBe('0 (sync)');
-    expect(rpoText('active', 'sync', ['us', 'eu'])).toBe('unreplicated: no live replica');
+    expect(rpoText('active', 'sync', ['us', 'eu'])).toBe('no live replica: one copy');
     expect(hasLiveReplica('active', ['us', 'eu', 'ap'])).toBe(false);
+  });
+
+  it('RPO with async replication and no live replica is not the lag: all 8 dead sets, both settings, against an explicit count of live copies', () => {
+    const used: Record<Mode, RegionId[]> = { single: ['us'], passive: ['us', 'eu'], active: ['us', 'eu', 'ap'] };
+    for (const mode of MODES) {
+      for (const replication of REPLICATIONS) {
+        for (const dead of DEAD_SETS) {
+          const copies = used[mode].filter((r) => !dead.includes(r)).length;
+          const text = rpoText(mode, replication, dead);
+          const label = mode + '/' + replication + '/' + (dead.join('+') || 'none') + ': ' + text;
+          if (mode === 'single') expect(text, label).toBe('up to last backup');
+          else if (copies === 0) expect(text, label).toBe('all regions down');
+          else if (copies === 1) expect(text, label).toBe('no live replica: one copy');
+          else expect(text, label).toBe(replication === 'async' ? '~1.2 s of writes' : '0 (sync)');
+        }
+      }
+    }
   });
 });
 
