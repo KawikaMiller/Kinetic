@@ -95,8 +95,8 @@ export function TraitorScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <Button variant="primary" onClick={() => setRan(true)}>Run</Button>
-          <Button onClick={() => setPanel('behaviours')}>Try every traitor behaviour</Button>
-          <Button onClick={() => setPanel('rules')}>Try every decision rule</Button>
+          <Button onClick={() => { setRefusal(null); setPanel('behaviours'); }}>Try every traitor behaviour</Button>
+          <Button onClick={() => { setRefusal(null); setPanel('rules'); }}>Try every decision rule</Button>
           <Button onClick={() => { setState(DEFAULT_TRAITOR_STATE); setRan(false); setRefusal(null); setPanel(null); }}>Reset</Button>
         </>,
       ]}
