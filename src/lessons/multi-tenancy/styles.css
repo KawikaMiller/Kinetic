@@ -1,0 +1,30 @@
+/* multi-tenancy */
+.mt-stage { gap: 12px; min-width: 0; }
+.mt-shards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; min-width: 0; }
+.mt-shard { min-width: 0; }
+.mt-cells { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.mt-cell {
+  all: unset; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; padding: 6px 10px; border-radius: 10px;
+  border: 1.5px solid var(--c, var(--line)); background: color-mix(in srgb, var(--c, var(--line)) 14%, transparent); font-size: 12px; color: var(--muted);
+}
+button.mt-cell { cursor: pointer; }
+.mt-cell:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.mt-cell[aria-checked='true'] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--info); }
+.mt-cell b { color: var(--text); font-size: 12.5px; }
+.mt-table-wrap { overflow-x: auto; }
+.mt-table th, .mt-table td { font-size: 12.5px; white-space: nowrap; }
+.mt-table td { text-align: right; }
+.mt-table tr.is-hurt td, .mt-table tr.is-hurt th { color: var(--bad); }
+.mt-table tr.is-ok td, .mt-table tr.is-ok th { color: var(--ok); }
+.mt-table tr.is-actor td, .mt-table tr.is-actor th { color: var(--orange); }
+.mt-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.mt-sql { margin: 8px 0 0; padding: 8px 10px; background: color-mix(in srgb, var(--bg) 70%, transparent); border-radius: 8px; overflow-x: auto; font-size: 12.5px; }
+.mt-shuffle { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; min-width: 0; }
+.mt-shuffle > * { flex: 1 1 300px; min-width: 0; }
+.mt-ring { display: block; max-width: 100%; height: auto; margin: 6px auto 0; }
+.mt-ring-track { fill: none; stroke: var(--line-2); stroke-width: 2; stroke-dasharray: 4 6; }
+.mt-worker { stroke-width: 3; }
+.mt-worker.is-up { fill: color-mix(in srgb, var(--ok) 18%, transparent); stroke: var(--ok); }
+.mt-worker.is-down { fill: var(--bad); stroke: var(--bad); }
+.mt-worker.is-other { stroke: var(--violet); stroke-width: 5; }
+.mt-worker-label { font: 700 12px var(--mono); fill: var(--text); pointer-events: none; }
