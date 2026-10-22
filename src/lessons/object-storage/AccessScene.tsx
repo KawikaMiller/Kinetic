@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { dollars } from '../../core/format';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Segmented, Slider } from '../../components/ui';
@@ -12,7 +13,6 @@ const ISSUED_AT = 1_800_000_000;
 const KEYS = [FILE_KEY, 'reports/2026/q2.csv'];
 type Tamper = 'none' | 'key' | 'expiry' | 'method';
 
-const money = (d: number) => `$${d.toFixed(2)}`;
 const VERDICT_TEXT: Record<Verdict, string> = {
   ok: 'The store honours it: 200 OK',
   expired: 'The store refuses it: the link has expired (403)',
@@ -127,11 +127,11 @@ function CostPanel() {
       </div>
       <table className="data-table">
         <tbody>
-          <tr><td>Storage</td><td>{money(bill.storage)}</td></tr>
-          <tr><td>Requests</td><td>{money(bill.requests)}</td></tr>
-          <tr><td>Retrieval from the class</td><td>{money(bill.retrieval)}</td></tr>
-          <tr><td>Egress to the internet</td><td>{money(bill.egress)}</td></tr>
-          <tr className="os-total"><td>Total per month</td><td>{money(bill.total)}</td></tr>
+          <tr><td>Storage</td><td>{dollars(bill.storage)}</td></tr>
+          <tr><td>Requests</td><td>{dollars(bill.requests)}</td></tr>
+          <tr><td>Retrieval from the class</td><td>{dollars(bill.retrieval)}</td></tr>
+          <tr><td>Egress to the internet</td><td>{dollars(bill.egress)}</td></tr>
+          <tr className="os-total"><td>Total per month</td><td>{dollars(bill.total)}</td></tr>
         </tbody>
       </table>
       <p className="hint">Colder classes cost less to keep and more to read; storing is rarely the whole bill. Only data read back can leave, so Sent to internet never exceeds Read back; Standard has no retrieval charge, so Read back changes the bill only through egress there. Real prices also add minimum storage periods and per-region differences, and archive tiers often need a restore wait before you can read at all (this panel treats them as instant).</p>

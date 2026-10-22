@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { pad2, pctText, sig } from '../../core/format';
+import { dollars, joinList, pad2, pctText, sig } from '../../core/format';
 import {
   INSTANCE_RPS, desiredCount, MINUTES_PER_DAY, POLICY_NAME, PRESET_NAME, PRICE_PER_INSTANCE_HOUR, VIOLATION_PCT, type Bill, type Controller, type FleetRun, type FleetSummary, type MinuteRow, type Policy,
   type Preset,
@@ -17,9 +17,7 @@ export function clockText(minute: number): string {
 export const capitalise = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** "a", "a and b", "a, b and c". */
-export const joinList = (items: readonly string[]): string => (items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
 
-export const money =(x: number): string => `$${x.toFixed(2)}`;
 
 /** What the controller saw and did in one minute, from that minute's own row. */
 export function minuteCaption(row: MinuteRow, c: Controller, run: FleetRun): ReactNode {
@@ -75,4 +73,4 @@ export function billCaption(preset: Preset, b: Bill): ReactNode {
   );
 }
 
-export const priceNote = `${money(PRICE_PER_INSTANCE_HOUR)} per instance-hour`;
+export const priceNote = `${dollars(PRICE_PER_INSTANCE_HOUR)} per instance-hour`;

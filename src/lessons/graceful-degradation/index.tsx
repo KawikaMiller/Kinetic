@@ -1,6 +1,6 @@
 import type { LessonModule } from '../../core/types';
+import { dollars } from '../../core/format';
 import { sig } from '../../core/format';
-import { money } from './captions';
 import { initialStale } from './init';
 import {
   BROKEN_SEED, CORE_RATE, DEFAULT_LOAD, FULL_RATE, PRICE, QUEUE_BOUND, SERVICES, brownoutPoint, bugProbeMinute, checkout, firstMinute, runQueue, runTimeline,
@@ -41,13 +41,13 @@ const lesson: LessonModule = {
     'Back to A page of widgets with Reset: the Price card is selected. Tag Pricing as soft with the toggle, and the stage flags 1 tag the journey disagrees with, because it breaks without Pricing.',
     'With Reset, set the Buy button to "also waits on recommendations": the sweep of soft failures now names {recs}, because failing recommendations alone breaks the journey.',
     `In Brownout at the defaults, the core page alone carries ${DEFAULT_LOAD}/s at ${CORE_PCT}%. Press "threshold too high" (${TOO_HIGH * 100}% of the full page): no tier switches off, ${DEFAULT_LOAD}/s is ${FULL_PCT}% of capacity, and on seed ${BROKEN_SEED} the queue passes ${QUEUE_BOUND} requests after ${BROKEN_AT} s.`,
-    `In Stale on error, press play: from minute ${STALE_FROM} the user sees a copy ${STALE_AGE} minutes old instead of an error, and from minute ${ERROR_FROM} the window has ended and they get one. Set Checkout to "trusts the cache" and drag the scrubber to minute ${PROBE}, the last minute a stale copy is still served: it charges ${money(BUGGY.charged ?? 0)} while the live price is ${money(BUGGY.livePrice)} (at the end of the run the origin is back, so the stat reads live; the closing caption describes minute ${PROBE}).`,
+    `In Stale on error, press play: from minute ${STALE_FROM} the user sees a copy ${STALE_AGE} minutes old instead of an error, and from minute ${ERROR_FROM} the window has ended and they get one. Set Checkout to "trusts the cache" and drag the scrubber to minute ${PROBE}, the last minute a stale copy is still served: it charges ${dollars(BUGGY.charged ?? 0)} while the live price is ${dollars(BUGGY.livePrice)} (at the end of the run the origin is back, so the stat reads live; the closing caption describes minute ${PROBE}).`,
   ],
   keyIdeas: [
     `Sort each dependency into hard or soft before an outage, and give each soft widget a fallback. In this model the core journey completes with all ${SERVICES.length - 3} soft services failed, checked over the ${2 ** (SERVICES.length - 3)} subsets of those services.`,
     `A brownout lowers the work per request instead of dropping requests: in this model the core page alone runs ${DEFAULT_LOAD}/s at ${CORE_PCT}%, where the full page would need ${FULL_PCT}%. A line set far above the load (here ${TOO_HIGH * 100}% of the full page against a load of ${FULL_PCT}%) switches nothing off, and the queue still passes its bound.`,
     'Stale data is a degraded answer, not a safe one. Show it with its age and give it a window, after which the cache returns an error: in this model a copy past the window is not served.',
-    `In many shops what moves money fails closed. A stale price may be shown, but a charge reads the live price or refuses: in this model a checkout that trusts the cache charges ${money(BUGGY.charged ?? 0)} against a live ${money(BUGGY.livePrice)}.`,
+    `In many shops what moves money fails closed. A stale price may be shown, but a charge reads the live price or refuses: in this model a checkout that trusts the cache charges ${dollars(BUGGY.charged ?? 0)} against a live ${dollars(BUGGY.livePrice)}.`,
   ],
   quiz: [
     {
@@ -70,7 +70,7 @@ const lesson: LessonModule = {
         'Let the payment service pick the amount, since it is also a backend',
       ],
       answer: 0,
-      why: `A stale price may be shown with its age, but a charge changes what someone owes, so it reads the live price or fails closed. In this model a checkout that trusts the cache charges ${money(PRICE.before)} against a live ${money(PRICE.after)}.`,
+      why: `A stale price may be shown with its age, but a charge changes what someone owes, so it reads the live price or fails closed. In this model a checkout that trusts the cache charges ${dollars(PRICE.before)} against a live ${dollars(PRICE.after)}.`,
     },
     {
       q: 'Which value is unsafe to serve stale when its service errors?',

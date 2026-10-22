@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, clock, decimal, duration, humanDuration, humanDurationLog10, latency, pct, integer, pctText, plural, power, ratioText, sig, superscript } from './format';
+import { bytes, clock, decimal, dollars, joinList, duration, humanDuration, humanDurationLog10, latency, pct, integer, pctText, plural, power, ratioText, sig, superscript } from './format';
 
 describe('superscript', () => {
   it('writes integers in superscript digits, including negatives', () => {
@@ -156,6 +156,24 @@ describe('sig, pctText and ratioText', () => {
     expect(ratioText(0.9987)).toBe('1.00');
     expect(ratioText(2.345)).toBe('2.35');
     expect(ratioText(Infinity)).toBe('–');
+  });
+});
+
+describe('joinList', () => {
+  it('reads as prose for any length', () => {
+    expect(joinList([])).toBe('');
+    expect(joinList(['a'])).toBe('a');
+    expect(joinList(['a', 'b'])).toBe('a and b');
+    expect(joinList(['a', 'b', 'c'])).toBe('a, b and c');
+    expect(joinList(['a', 'b', 'c', 'd'])).toBe('a, b, c and d');
+  });
+});
+
+describe('dollars', () => {
+  it('rounds to the cent with a dollar sign', () => {
+    expect(dollars(12.5)).toBe('$12.50');
+    expect(dollars(0)).toBe('$0.00');
+    expect(dollars(0.125)).toBe('$0.13');
   });
 });
 

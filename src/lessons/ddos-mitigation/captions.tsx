@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { integer, pct, plural, sig } from '../../core/format';
+import { integer, joinList, pct, plural, sig } from '../../core/format';
 import { CLASS_NAME, DEFENCES, DEFENCE_NAME, LEGIT_RATE, RESOURCE, TARGET, UNIT_NAME, type OriginInput, type OriginResult } from './origin';
 import { LEGIT_TOTAL, type PopsResult, type ScrubPoint } from './pops';
 import { MODE_NAME, SLOTS, type SynState, type Mode } from './syn';
 
-export const listWords = (items: readonly string[]): string => (items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
 
 const article = (word: string): string => (/^[aeiou]/i.test(word) ? 'An' : 'A');
 /** Lower-cases a resource name but keeps an acronym such as CPU. */
@@ -16,12 +15,12 @@ export function originCaption(input: OriginInput, r: OriginResult): ReactNode {
   if (input.rate === 0) return <>No unwanted load: all {LEGIT_RATE} legitimate requests a second are served.</>;
   return (
     <>
-      {article(CLASS_NAME[input.cls])} {CLASS_NAME[input.cls]} stream of {integer(input.rate)} {UNIT_NAME[input.cls]} (an abstract rate, nothing is sent) {on.length ? `with ${listWords(on)}` : 'with no defence'}: {integer(Math.round(r.admittedRate))} {UNIT_NAME[input.cls]} gets through.{' '}
+      {article(CLASS_NAME[input.cls])} {CLASS_NAME[input.cls]} stream of {integer(input.rate)} {UNIT_NAME[input.cls]} (an abstract rate, nothing is sent) {on.length ? `with ${joinList(on)}` : 'with no defence'}: {integer(Math.round(r.admittedRate))} {UNIT_NAME[input.cls]} gets through.{' '}
       {r.saturated.length === 0 ? (
         <span className="hl ok wrap">{noun(res.name)} holds, and all {LEGIT_RATE} legitimate requests a second are served</span>
       ) : (
         <span className="hl bad wrap">
-          {listWords(r.saturated.map((id) => noun(RESOURCE[id].name)))} saturated: {sig(r.goodput)} of {LEGIT_RATE} legitimate requests a second are served ({pct(r.goodputShare, 0)})
+          {joinList(r.saturated.map((id) => noun(RESOURCE[id].name)))} saturated: {sig(r.goodput)} of {LEGIT_RATE} legitimate requests a second are served ({pct(r.goodputShare, 0)})
         </span>
       )}
       .

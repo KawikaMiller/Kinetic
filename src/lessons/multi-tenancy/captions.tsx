@@ -1,14 +1,11 @@
 import type { ReactNode } from 'react';
-import { integer, pct, plural, sig } from '../../core/format';
+import { integer, joinList, pct, plural, sig } from '../../core/format';
 import { assignments, enumerateOverlap, exactIdentical, exactShare, type Estimate } from './combos';
 import { ISOLATION_NAME, type Isolation, type QueryResult } from './data';
 import { P99_LIMIT_MS, SHARD_CAPACITY, type Policy, type Run } from './shardSim';
 
 export const tenantName = (i: number): string => `Tenant ${i + 1}`;
 export const msText = (ms: number | null): string => (ms === null ? 'none served' : ms >= 1000 ? `${sig(ms / 1000)} s` : `${sig(ms)} ms`);
-
-/** "a", "a and b", "a, b and c". */
-export const listWords = (items: readonly string[]): string => (items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
 
 export function policyNames(p: Policy): string[] {
   return [p.rateLimit && 'a per-tenant rate limit', p.bulkhead && 'a bulkhead', p.fair && 'fair queueing'].filter((x): x is string => x !== false);
@@ -24,13 +21,13 @@ export function noisyCaption(run: Run, actor: number): ReactNode {
   return (
     <>
       {tenantName(actor)} asks its shard for {sig(a.demandWork)} ms of work a second; the shard has {integer(SHARD_CAPACITY)}, and {sig((shard.demandWork / SHARD_CAPACITY) * 100)}% of it is wanted.{' '}
-      {neighbours.length === 0 ? <>Nobody else shares shard {a.shard + 1}.</> : <>It shares shard {a.shard + 1} with {listWords(neighbours.map((t) => tenantName(t.tenant)))}.</>}{' '}
-      {names.length ? <>Protection on: {listWords(names)}. </> : <>No protection is on. </>}
+      {neighbours.length === 0 ? <>Nobody else shares shard {a.shard + 1}.</> : <>It shares shard {a.shard + 1} with {joinList(neighbours.map((t) => tenantName(t.tenant)))}.</>}{' '}
+      {names.length ? <>Protection on: {joinList(names)}. </> : <>No protection is on. </>}
       {hurt.length === 0 ? (
         <span className="hl ok wrap">no neighbour is hurt</span>
       ) : (
         <span className="hl bad wrap">
-          {plural(hurt.length, 'neighbour')} hurt: {listWords(hurt.map((t) => tenantName(t.tenant)))}
+          {plural(hurt.length, 'neighbour')} hurt: {joinList(hurt.map((t) => tenantName(t.tenant)))}
         </span>
       )}
       .
