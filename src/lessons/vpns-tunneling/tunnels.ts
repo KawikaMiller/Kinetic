@@ -114,7 +114,7 @@ export function layoutOf(tunnel: TunnelId, innerLen: number, o: TunnelOptions = 
       outerIp(o.outer),
       udp,
       { name: 'VXLAN header', bytes: SIZE.vxlan, tone: 'sky', note: 'flags 1, reserved 3, network identifier 3, reserved 1' },
-      { name: 'inner Ethernet header', bytes: SIZE.ethernet, tone: 'sky', note: 'VXLAN carries whole Ethernet frames, so the inner frame\'s header travels too' },
+      { name: 'inner Ethernet header', bytes: SIZE.ethernet, tone: 'sky', note: 'VXLAN carries whole Ethernet frames, so the inner frame\'s header travels too. The total is 50 either way: the textbook count (outer Ethernet 14 + IP + UDP + VXLAN) gives the same figure as this one, counted against the IP MTU' },
     ],
     after: [],
   };

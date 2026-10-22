@@ -82,6 +82,12 @@ export interface Step {
 const RETRANSMISSIONS = 3;
 
 /** The simulated TCP transfer: a ping and a handshake and a small request work, then the full-size segments. */
+/** The line under "Large transfer": what the ladder shows happened, derived from the steps (a lost segment is not "every step got through"). */
+export function transferSub(t: { steps: readonly Step[]; result: MtuResult; stalls: boolean }): string {
+  if (t.stalls) return 'pings and small pages still work';
+  return t.steps.some((s) => s.lost) ? `completes after the sender retries at ${t.result.tunnelMtu} bytes` : 'no step above was lost';
+}
+
 export function transferSteps(i: MtuInput): { steps: Step[]; result: MtuResult; stalls: boolean } {
   const r = decide(i);
   const steps: Step[] = [

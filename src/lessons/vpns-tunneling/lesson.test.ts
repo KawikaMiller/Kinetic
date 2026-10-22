@@ -8,7 +8,7 @@ import {
 } from './init';
 import lesson from './index';
 import { LADDERS } from './ladders';
-import { DEFAULT_MTU_INPUT, LINK_MTU, PACKET_SIZE, decide, transferSteps, tunnelMtuOf } from './mtu';
+import { DEFAULT_MTU_INPUT, LINK_MTU, PACKET_SIZE, decide, transferSteps, transferSub, tunnelMtuOf } from './mtu';
 import { MAX_NUMBER, WINDOW, receive } from './replay';
 import { PRESETS, lookup, presetRows, split } from './routing';
 import { DEFAULT_OPTIONS, TUNNELS, fixedOverheadOf, overheadOf, type Suite } from './tunnels';
@@ -244,5 +244,25 @@ describe('quiz facts come from the model', () => {
 
   it('no more than half of the quiz questions have the correct option strictly longest', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
+});
+
+describe('the large-transfer line under the MTU ladder', () => {
+  it('says what the ladder shows: a retry when a segment was lost and recovered, nothing lost when none was, a stall when it never gets through', () => {
+    const seen = new Set<string>();
+    for (const df of [true, false]) for (const icmp of [true, false]) for (const clamp of [true, false]) for (const linkMtu of [1280, 1500, 9000]) for (const packet of [200, 1400, 1500, 4000]) {
+      const t = transferSteps({ ...DEFAULT_MTU_INPUT, df, icmp, clamp, linkMtu, packet });
+      const sub = transferSub(t);
+      const lostStep = t.steps.some((s) => s.lost);
+      // independent oracle from the inputs: the segment is lost only when it does not fit, DF is set, and nothing clamped it
+      const tunnelMtu = tunnelMtuOf(DEFAULT_MTU_INPUT.tunnel, linkMtu);
+      const lostByRule = df && !(clamp ? true : packet <= tunnelMtu) && true;
+      expect(lostStep, JSON.stringify({ df, icmp, clamp, linkMtu, packet })).toBe(lostByRule);
+      if (!lostByRule) expect(sub).toBe('no step above was lost');
+      else if (icmp) expect(sub).toContain('completes after the sender retries');
+      else expect(sub).toBe('pings and small pages still work');
+      seen.add(sub.split(' ')[0]);
+    }
+    expect(seen.size).toBe(3);
   });
 });

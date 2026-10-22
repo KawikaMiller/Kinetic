@@ -3,7 +3,7 @@ import type { LessonModule } from '../../core/types';
 import { initialRoutes, initialReplay, sendAhead, sendNext, sendNumber, sendReplayOfLast, WRAP_PAYLOAD } from './init';
 import { DEFAULT_MTU_INPUT, decide, transferSteps } from './mtu';
 import { WINDOW } from './replay';
-import { lookup, presetRows, split } from './routing';
+import { SAMPLES, lookup, presetRows, split } from './routing';
 import { Stage } from './Stage';
 import { DEFAULT_OPTIONS, innerPacket, overheadOf, wrap, fixedOverheadOf } from './tunnels';
 
@@ -54,17 +54,17 @@ const lesson: LessonModule = {
       'The inner packet is blue. Outer headers are plain categories: amber is the outer IP header, pink the UDP or ESP header, sky the tunnel\'s own header, orange the tag; the overhead in bytes is yellow. In the MTU scene green is the tunnel MTU (room for the inner packet), yellow the overhead, blue a packet that fits and red the part that does not, and a lost packet in the ladder is marked with a cross. In the route table violet is the tunnel path, blue is the direct path, the yellow row is the route that carries the destination and red marks two routes that tie. In the replay window a violet cell is a number already seen. The chips say what is built for real, a toy, simulated, not run, or from memory.',
   },
   tryThis: [
-    `In "Wrap a packet" (WireGuard, a ${WRAP_PAYLOAD.initial}-byte payload, so a ${innerLen}-byte inner packet) press play: the tunnel adds ${wgOverhead} bytes, ${wgWire} on the wire. Switch Outer header to IPv6: ${wgV6} bytes.`,
+    `In "Wrap a packet" (WireGuard, a ${WRAP_PAYLOAD.initial}-byte payload, so a ${innerLen}-byte inner packet) press play (or restart): the tunnel adds ${wgOverhead} bytes, ${wgWire} on the wire. Switch Outer header to IPv6: ${wgV6} bytes.`,
     `Still in "Wrap a packet", pick IPsec ESP: the overhead is ${espGcm} bytes with AES-GCM. Switch the cipher suite to AES-CBC + HMAC: ${espCbc} bytes (the padding row grows). Turn NAT traversal on: ${espNat}.`,
     `In "MTU and the black hole" (WireGuard over a ${DEFAULT_MTU_INPUT.linkMtu}-byte link, ${DEFAULT_MTU_INPUT.packet}-byte packets, don't fragment set, ICMP blocked) the ping, SYN and request pass and the data segment is ${mtu0.outcome === 'dropped-silent' ? 'dropped silently' : 'not dropped'}, so the transfer ${stalls ? 'stalls' : 'completes'}. Turn MSS clamping on: it is cut to ${clamped.sent} bytes and delivered. Turn it off and allow ICMP instead: the sender is told ${icmp.tunnelMtu}.`,
-    `In "What enters the tunnel" (full tunnel, ${r0.text}) the destination goes ${fullDest === 'tunnel' ? 'through the tunnel' : 'direct'}. Press "split tunnel": it goes ${splitDest === 'tunnel' ? 'through the tunnel' : 'direct'} and ${splitCount.tunnel} of 6 sample destinations enter. Press "overlapping private ranges" and then the 192.168.1.20 chip: ${tie.ties.length} routes tie and "On a tie, prefer" the direct route picks ${tie.winner?.goes}; prefer the tunnel route and it picks ${tieTunnel.winner?.goes}.`,
+    `In "What enters the tunnel" (full tunnel, ${r0.text}) the destination goes ${fullDest === 'tunnel' ? 'through the tunnel' : 'direct'}. Press "split tunnel": it goes ${splitDest === 'tunnel' ? 'through the tunnel' : 'direct'} and ${splitCount.tunnel} of ${SAMPLES.length} sample destinations enter. Press "overlapping private ranges" and then the 192.168.1.20 chip: ${tie.ties.length} routes tie and "On a tie, prefer" the direct route picks ${tie.winner?.goes}; prefer the tunnel route and it picks ${tieTunnel.winner?.goes}.`,
     `In "Keys and replay" press "next in order" three times, then "replay the last accepted": ${replayVerdict.kind === 'replay' ? 'it is dropped as already seen' : 'it is not dropped'}. Press "${WINDOW} above the top" and type 3 as the packet number: ${staleVerdict.kind === 'too-old' ? 'it is dropped as below the window' : 'it is not dropped'}.`,
   ],
   keyIdeas: [
     `A tunnel carries the whole inner packet inside a new one, so it adds bytes: in this model WireGuard adds ${fixedOverheadOf('wireguard')} over an IPv4 outer header and ${fixedOverheadOf('wireguard', { ...DEFAULT_OPTIONS, outer: 6 })} over IPv6, and the tunnel MTU is the link MTU minus that.`,
     'When don\'t-fragment is set and ICMP "fragmentation needed" is blocked, an oversized packet vanishes without a word: pings and small requests work while large transfers stall. Allowing ICMP, or clamping the MSS to the tunnel MTU minus 40, fixes it.',
     'The route list, longest prefix first, decides what enters the tunnel. Full and split tunnels are routing choices with trade-offs, and two networks using the same private range leave a tie that the lookup alone cannot settle.',
-    'A receiver keeps a sliding window of sequence numbers: a number it has seen, or one below the window, is dropped, so a recorded packet replayed later does not get through.',
+    'A receiver keeps a sliding window of sequence numbers (in this ESP-style window of 64): a number it has seen, or one below the window, is dropped, so a recorded packet replayed later does not get through.',
   ],
   quiz: [
     {

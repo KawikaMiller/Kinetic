@@ -21,7 +21,7 @@
  *   outside to instance:  public IP on the receiver, receiver-subnet ACL in, receiver group in;
  *                         reply: route lookup for the outside address (must be the internet gateway),
  *                         receiver-subnet ACL out.
- * The NAT gateway's own subnet ACL is not evaluated (a simplification, said on screen).
+ * The NAT gateway's own subnet ACL is not evaluated (a simplification, said in the NAT hop).
  */
 import { contains, ipv4, ipToString, longestPrefixMatch, type Route } from '../../core/ipv4';
 
@@ -150,11 +150,11 @@ const LOCAL: LocalRoute = { net: VPC_NET, prefix: VPC_PREFIX, target: 'local' };
 export const tableOf = (cfg: VpcConfig, subnet: SubnetId): (LocalRoute | RouteEntry)[] => [LOCAL, ...cfg.routes[subnet]];
 export const lookup = (cfg: VpcConfig, subnet: SubnetId, addr: number) => longestPrefixMatch(tableOf(cfg, subnet), addr);
 
-/** What the subnet's table does with a default route, which decides what the subnet really is. */
+/** What the subnet's table does with its default route (0.0.0.0/0), which decides what the subnet is called. */
 export type Behaviour = 'public' | 'private' | 'isolated';
 export function behaviourOf(cfg: VpcConfig, subnet: SubnetId): Behaviour {
-  const hit = lookup(cfg, subnet, OUTSIDE_IP.updates);
-  return hit?.target === 'igw' ? 'public' : hit?.target === 'nat' ? 'private' : 'isolated';
+  const target = tableOf(cfg, subnet).find((r) => r.prefix === 0)?.target;
+  return target === 'igw' ? 'public' : target === 'nat' ? 'private' : 'isolated';
 }
 
 // ---- rule evaluation ------------------------------------------------------------------------------
@@ -331,7 +331,7 @@ export function traceFlow(cfg: VpcConfig, flow: Flow): Trace {
       visit('nat');
       const next = lookup(cfg, 'public', dst.ip);
       if (next?.target !== 'igw') return drop('request', 'nat', 'nat-no-igw', 'NAT gateway', 'Dropped: the NAT gateway lives in the public subnet, and that subnet has no route to an internet gateway for this destination.', 'public');
-      pass('request', 'nat', 'NAT gateway', `Translates to its own public address ${ipLabel(NAT_PUBLIC_IP)} and hands the packet to the internet gateway.`, 'public');
+      pass('request', 'nat', 'NAT gateway', `Translates to its own public address ${ipLabel(NAT_PUBLIC_IP)} and hands the packet to the internet gateway. This model does not check the network ACL of the gateway's own subnet.`, 'public');
       visit('igw');
     } else {
       return drop('request', srcInst, 'no-route', `route table of ${a}`, `Dropped: the local route is the only match and ${ipLabel(dst.ip)} is outside the VPC.`, a);

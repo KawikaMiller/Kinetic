@@ -6,7 +6,7 @@ import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Segmented,
 import { usePlayer } from '../../core/usePlayer';
 import { mtuFrames, outcomeLabel } from './captions';
 import { initialMtu } from './init';
-import { LINK_MTU, PACKET_SIZE, transferSteps } from './mtu';
+import { LINK_MTU, PACKET_SIZE, transferSteps, transferSub } from './mtu';
 import { TUNNEL_OPTIONS } from './options';
 
 const ACTORS = [
@@ -72,7 +72,7 @@ export function MtuScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Tunnel MTU" value={`${r.tunnelMtu} bytes`} color="var(--ok)" sub={`${st.linkMtu} - ${r.overhead} of overhead`} />
           <Stat label="The big packet" value={outcomeLabel(r.outcome)} color={r.outcome === 'dropped-silent' ? 'var(--bad)' : undefined} sub={`${r.sent} bytes sent${r.clamped ? ', cut by MSS clamping' : ''}`} />
-          <Stat label="Large transfer" value={stalls ? 'stalls' : 'completes'} color={stalls ? 'var(--bad)' : 'var(--ok)'} sub={stalls ? 'pings and small pages still work' : 'every step above got through'} />
+          <Stat label="Large transfer" value={stalls ? 'stalls' : 'completes'} color={stalls ? 'var(--bad)' : 'var(--ok)'} sub={transferSub({ steps, result: r, stalls })} />
         </Stats>
       }
       controls={[

@@ -73,7 +73,7 @@ export function WrapScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Inner packet" value={`${inner.length} bytes`} color="var(--info)" sub={`${SIZE.innerIpv4} header + ${st.payload} payload`} />
-          <Stat label="Overhead" value={`${overhead} bytes`} color="var(--hi)" sub={`${fields.length} fields, ${running[running.length - 1].total} by the table`} />
+          <Stat label="Overhead" value={`${overhead} bytes`} color="var(--hi)" sub={`${fields.length} fields, ${running[running.length - 1].total} by the table; padding is included and changes with the payload`} />
           <Stat label="On the wire" value={`${total} bytes`} sub={`${Math.round((overhead / total) * 100)}% of it is overhead`} />
         </Stats>
       }

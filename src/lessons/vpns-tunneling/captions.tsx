@@ -176,7 +176,7 @@ export function verdictText(v: Verdict): string {
   if (v.kind === 'accepted') return v.slid > 0 ? `accepted, the window slides up by ${v.slid}` : 'accepted, inside the window';
   if (v.kind === 'replay') return 'dropped: already seen (a replay)';
   if (v.kind === 'too-old') return `dropped: below the window (numbers up to ${v.floor} are too old to check)`;
-  return 'dropped: numbers start at 1';
+  return 'dropped: in this ESP-style window numbers start at 1';
 }
 
 export function replayIntro(w: ReplayWindow, last: { n: number; verdict: Verdict } | null): ReactNode {
