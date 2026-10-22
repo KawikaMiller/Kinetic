@@ -1182,7 +1182,7 @@
 ````
 `- Labels wrap to two lines before the lanes widen. Notes stay on one line (widening the lanes) while that drawing renders at `ROOMY_MIN_SCALE` (85%) or more of its size in its container; narrower than that (a phone) they wrap to two lines too. SequenceDiagram measures its container and picks; desktop drawings look as they always did.
 `- A self-message on the last lifeline gets extra right margin for its label (wrapped to two balanced lines) instead of running off the drawing.
-`- The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
+`- The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its smallest text still renders at 8px or more: the 12px labels, or the 11px notes (`SEQ.NOTE_FONT`) when any message has a `note`, so a diagram with notes is never under 8px and needs no wrapper (the old `PhoneLadder` / `core/ladderWidth` are gone). Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
 `- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER", "Laptop to Relay (broadcast): …").
 `- Example addresses in network demos come from the documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32) or RFC 1918 ranges.
 `
