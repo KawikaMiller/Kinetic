@@ -2311,6 +2311,10 @@ regsKeys(r);                                      // sorted distinct register ou
 - **Honesty:** outcome tables are "allowed by the model", never "observed"; the pinned SB/MP/CoRR/Dekker tables were typed from memory of the published litmus results (Sewell et al. x86-TSO; ARM/POWER catalogues) and need a reviewer's check.
 - **Tests (`memModel.test.ts`):** SC outcomes equal an all-interleavings recursion and TSO outcomes equal BOTH a separately written event-order replay and the spec's store-swap oracle (fixtures in the swap fragment) on the fixtures and 200 seeded random 2-thread programs of 3 to 4 instructions; SC ⊆ TSO ⊆ relaxed holds on those 200 programs (untagged, fences allowed; verified, no counterexample); SC ⊆ relaxed also holds with every tag, while TSO ⊆ relaxed does NOT hold once `@sc` tags are present (they fence in relaxed and TSO ignores them); counterfactuals; budget truncation; parser refusals and size limits.
 
+### `core/checkPhrases.ts` — flp-impossibility, paxos, byzantine-faults, distributed-snapshots, hybrid-logical-clocks, distributed-sql-truetime
+
+The four fixed phrasings of what a check covered (AC-0/T4 #27, #28), built from a result, never typed: `exhaustiveText(states, bounds)` ("holds in all 2,905 reachable states of this model (2 ballots)"), `truncatedText(states)` ("no violation in the first N states explored; not exhaustive"), `sampledText(held, total, from, to)` ("held on 200 of 200 seeded schedules (seeds 1 to 200); sampled, not exhaustive"), `livenessText(undecided, total, by)`. Extracted from six byte-identical per-lesson `checkText.ts` copies; the test pins the strings captured from the old copies. Use it for the next lesson that reports an exhaustive, truncated, seeded or liveness check.
+
 ### `core/rocAuc.ts` (K4-11) — classification-metrics (migrated), feature-stores-skew (T4-B7)
 
 ```ts

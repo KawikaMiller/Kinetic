@@ -8,7 +8,7 @@ import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { decimal } from '../../core/format';
 import { boundCaption, farAheadNote } from './captions';
 import { cachedSweep, EPSILON_MS, FAR_AHEAD_MS, MODES, RUN_UNTIL_MS, RULES_TEXT, runHlcSeed, SEED_RANGE, SEEDS_TOTAL, followMode, seedFor, STEP_BACK_MS, STEP_SHARE, type Mode } from './seeded';
-import { sampledText } from './checkText';
+import { sampledText } from '../../core/checkPhrases';
 
 const PLOT_W = { wide: 520, narrow: 356 } as const;
 const PLOT_H = 220;

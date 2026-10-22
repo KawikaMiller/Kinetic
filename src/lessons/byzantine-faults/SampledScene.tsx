@@ -4,7 +4,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { sampledCaption } from './captions';
-import { sampledText } from './checkText';
+import { sampledText } from '../../core/checkPhrases';
 import { COMMANDER, generalName, orderName } from './om';
 import { OM2_TRAITORS, RULE_NAMES, SEED_RANGE, SEEDS_TOTAL, runOmSeed, sweepOm } from './omNodes';
 

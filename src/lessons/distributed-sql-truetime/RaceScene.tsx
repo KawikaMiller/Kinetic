@@ -8,7 +8,7 @@ import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { WideRegion } from '../../components/WideRegion';
 import { decimal } from '../../core/format';
 import { commitWaitSub, plotTop, raceCaption } from './captions';
-import { sampledText } from './checkText';
+import { sampledText } from '../../core/checkPhrases';
 import { BROKEN_SEED, DEFAULT_OPTIONS, cachedSweep, raceInput, sweepModel, type Options } from './seeded';
 import { DELTA_MS, EPSILON_MS, ERROR_MS, GAP_MS, SEEDS_TOTAL, SEED_RANGE, breakProbability, hotKeyBound, latencyBillMs, race } from './truetime';
 import { RACE_LANE_W } from './layout';
