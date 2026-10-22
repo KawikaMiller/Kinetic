@@ -59,7 +59,7 @@ const lesson: LessonModule = {
   ],
   keyIdeas: [
     'Streaming is small files over plain HTTP: the video is cut into segments, each kept at several bitrates, and the player picks one per segment from its own measurements.',
-    `The highest bitrate is not the best experience: on a steady 4 Mbit/s network a player that asks for the top rendition every time stalls on ${naiveSteady.stallCount} of ${naiveSteady.count} segments, because a segment that takes longer to download than to play drains the buffer.`,
+    `The highest bitrate is not the best experience: on a steady 4 Mbit/s network a player that asks for the top rendition for each segment stalls on ${naiveSteady.stallCount} of ${naiveSteady.count} segments, because a segment that takes longer to download than to play drains the buffer.`,
     `Rate-based players follow the throughput they measured and buffer-based players follow how much video is queued. In this model, on the drop trace, the buffer-based one stalled ${f1(bufferDrop.stallTime)} s against ${f1(rateDrop.stallTime)} s, and paid for it in bitrate.`,
     'Because segments are ordinary cacheable files, a CDN serves popular titles from the edge and the origin sees mostly the long tail; more renditions serve better quality at a storage cost.',
   ],
@@ -106,7 +106,7 @@ const lesson: LessonModule = {
         'The CDN rewrites the manifest so that the players choose a lower quality and need less data',
       ],
       answer: 0,
-      why: 'A cache needs repeatable requests for the same bytes, and segments are exactly that. Popular titles hit almost every time; long-tail titles still reach the origin.',
+      why: 'A cache needs repeatable requests for the same bytes, and segments are exactly that. Popular titles hit on the great bulk of their requests; long-tail titles still reach the origin.',
     },
     {
       q: `A live stream has 6 s segments, the player holds back ${LIVE.segmentsBuffered} of them, and it takes ${LIVE.pipelineSeconds} s to encode and deliver a segment. About how far behind real time is the viewer?`,

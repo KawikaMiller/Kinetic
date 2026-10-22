@@ -52,7 +52,7 @@ const lesson: LessonModule = {
     `In "ICE" (both home routers) the nominated pair is ${kinds(iceHome.win)} after ${iceHome.n} checks, because the host pair fails first. Press "same LAN (host candidate wins)": ${kinds(iceLan.win)} after ${iceLan.n} check. Press "both symmetric (relay needed)": ${kinds(iceHard.win)} after ${iceHard.n} checks.`,
   ],
   keyIdeas: [
-    'STUN only reports the public address a server saw; it relays nothing. A NAT that makes a new mapping per destination makes that address useless to the other peer.',
+    'STUN just reports the public address a server saw; it relays nothing. A NAT that makes a new mapping per destination makes that address useless to the other peer.',
     'Hole punching works because each side sends first: an outgoing packet opens the sender\'s NAT for the reply. In this model it works for every pair of NATs except a symmetric one against a port-restricted or another symmetric one.',
     'A TURN relay carries the media when punching fails: it is a public address that answers, but the path is longer and the relay pays for the bandwidth. Peer to peer still needs signalling, STUN and often TURN.',
     'ICE gathers host, server-reflexive and relayed candidates, orders the pairs by a priority formula, checks them from the top and nominates the first that works.',

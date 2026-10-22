@@ -74,7 +74,7 @@ const lesson: LessonModule = {
     `In "The sync loop" (a ${l0.outageSec} s outage, ${l0.edits} edits, a ${l0.capSec} s cap) the laptop pushes ${loopAttempts.length} times and ${loopAttempts.filter((a) => a.lost).length} are lost; the first push after the outage is acknowledged at ${f1(loopAcked ?? 0)} s. Raise the retry cap to 30 s: ${loopAttempts30.length} pushes, ${loopAttempts30.filter((a) => a.lost).length} lost.`,
   ],
   keyIdeas: [
-    'Offline-first is more than caching reads: the device keeps its own copy and an outbox of operations, applies edits at once and syncs later, so the list on screen is always the device\'s own.',
+    'Offline-first is more than caching reads: the device keeps its own copy and an outbox of operations, applies edits at once and syncs later, so the list on screen is the device\'s own.',
     'Last write wins by device clock keeps replicas equal but can drop an edit nothing lists, and with a skewed clock it keeps the device with the later clock, not the later edit.',
     'In this model, a merge that gives each operation a unique id, orders by causality and lists what it cannot resolve converged and lost no acknowledged edit on 200 seeded schedules; a text merge can still produce words that neither person wrote.',
     'Delivery is at least once, so retries and duplicates are normal: operation ids make a second copy harmless, and a refused operation is rolled back with a notice instead of being quietly reverted.',

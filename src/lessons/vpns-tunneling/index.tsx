@@ -87,7 +87,7 @@ const lesson: LessonModule = {
         'The tunnel encrypts small packets and passes large ones through without encrypting them',
       ],
       answer: 0,
-      why: 'Small packets fit and large ones do not. With ICMP blocked the sender never learns the limit and keeps resending the same size, so a working ping says nothing about big packets.',
+      why: 'Small packets fit and large ones do not. With ICMP blocked the sender does not learn the limit and keeps resending the same size, so a working ping says nothing about big packets.',
     },
     {
       q: 'A colleague says split tunnelling makes a VPN weaker. What is the accurate answer?',
