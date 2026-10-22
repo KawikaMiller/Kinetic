@@ -5,7 +5,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: "Zero trust drops the idea of a trusted internal network. Requests, from a person or a service, are authenticated and authorised on their own merits, each time.",
-    what: "The classic 'castle and moat' model protects the edge with firewalls and VPNs, then trusts anything inside. Zero trust assumes the attacker is already in. Users reach apps through an identity-aware proxy and policy engine that checks identity (SSO + MFA), device health and context on each request. Services prove who they are to each other with mutual TLS and workload identities. Access is least-privilege and continuously re-evaluated, and decisions are logged. In the replay, one decision function applies each model's policy to the same scripted attack.",
+    what: "The classic 'castle and moat' model protects the edge with firewalls and VPNs, then trusts anything inside. Zero trust assumes the attacker is already in. Users reach apps through an identity-aware proxy and policy engine that checks identity (SSO + MFA), device health and context on each request. Services prove who they are to each other with mutual TLS and workload identities. Access is least-privilege and continuously re-evaluated, and decisions are logged. In the replay, one decision function applies each model's policy to a scripted attacker who follows one stated rule.",
     analogy: "An office where your badge opens just the rooms your job needs, gets re-checked at each door, and stops working the moment security notices something off, versus one where a single front-door guard waves people inside and the doors behind it are unlocked.",
     useCases: [
       "Replacing a VPN with an identity-aware proxy (the BeyondCorp model: Cloudflare Access, Zscaler, Google IAP)",
@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       "Limiting the blast radius of phishing, stolen credentials and ransomware",
     ],
     why: "Many breaches start with a phished laptop or a leaked credential, then move laterally through a network that trusts itself. Staff-level engineers shape the identity, network and service-to-service architecture that decides whether that becomes one bad day or a company-wide incident, and they explain the trade-offs to security and leadership.",
-    watch: "Toggle between the two network models and replay the same scripted attack. In Castle & moat, the orange bar is the firewall/VPN and the dashed box is the trusted inside. In Zero trust, user requests pass through the yellow access proxy. Blue pills are legitimate user requests, violet ones are service-to-service mTLS, and red ones are the attacker's. Systems glow red when they're breached, and a green ✕ is a request correctly denied. The log below lists each policy decision with the checks that failed (Zero trust only).",
+    watch: "Toggle between the two network models and replay the scripted attack. In Castle & moat, the orange bar is the firewall/VPN and the dashed box is the trusted inside. In Zero trust, user requests pass through the yellow access proxy. Blue pills are legitimate user requests, violet ones are service-to-service mTLS, and red ones are the attacker's. Systems glow red when they're breached, and a green ✕ is a request correctly denied. The log below lists each policy decision with the checks that failed (Zero trust only).",
   },
   tryThis: [
     "Play Castle & moat and follow the hops from one phishing email to the customer database: laptop, wiki, payments, database.",

@@ -145,8 +145,10 @@ export function Stage() {
         </Box>
         <ProvenanceRow>
           <Provenance kind="scripted">
-            the attack is one fixed script of attempts, the same for both models; each attempt's outcome, what the attacker owns and the counts above are computed by one
-            decision function from the request's identity, device, role, certificate and where it came from
+            the attack opens the same way in both models, then the attacker follows one stated rule (stolen session from their own machine if the laptop is denied; the admin
+            password only if the runbooks were readable), so the attempts differ by model. Two facts are the author's: the infected laptop is flagged by the endpoint agent (EDR alert) and
+            the attacker's own machine is unenrolled. Each outcome, what the attacker owns and the counts above are computed by one decision function from the request's identity,
+            device, role, certificate and where it came from
           </Provenance>
           <Provenance kind="invented">the people, the systems and the access table (who may reach what) are made up for this lesson</Provenance>
           <Provenance kind="from-memory">

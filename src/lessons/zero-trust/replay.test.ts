@@ -2,7 +2,7 @@ import { createElement, Fragment } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { buildFrames, type ZFrame } from './frames';
-import { CHECK_NAME, type Model } from './policy';
+import { CHECK_NAME, decide, type Model } from './policy';
 import { ALERT_DENIALS, LOG_ROWS, SERVICES, breachedSystems, replay, type NodeId, type Step } from './replay';
 
 const text = (f: ZFrame) => renderToStaticMarkup(createElement(Fragment, null, f.say)).replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&quot;/g, '"');
@@ -190,12 +190,45 @@ describe('captions are read from the decisions', () => {
     }
   });
 
-  it('the intro frames claim no outcome and say the attack is a fixed script', () => {
+  it('the intro frames claim no outcome and state the script rule, the stolen-session rule and the two author-set facts', () => {
     for (const model of MODELS) {
       const intro = text(buildFrames(model)[0]);
-      expect(intro).toContain('fixed script');
       expect(intro).not.toContain('breached');
+      expect(intro).not.toContain('same fixed script');
+      expect(intro).toContain('the same opening');
+      expect(intro).toContain('one rule');
+      expect(intro).toContain("replay Bob's stolen session from their own machine");
+      expect(intro).toContain('admin password only if the runbooks were readable');
+      expect(intro).toContain('EDR alert');
+      expect(intro).toContain('unenrolled');
     }
+  });
+
+  it('what the intro says is true: the opening is identical, the rest of the script differs by model, and the EDR flag decides the laptop', () => {
+    const [moat, zt] = [replay('moat'), replay('zt')];
+    // Same opening: the first four requests are equal across models.
+    expect(moat.slice(0, 4).map((s) => s.request)).toEqual(zt.slice(0, 4).map((s) => s.request));
+    // The attempts differ: HR uses a different subject, the password step is skipped, alert and retry appear only in zero trust.
+    expect(moat.find((s) => s.id === 'hr')!.request!.subject).not.toEqual(zt.find((s) => s.id === 'hr')!.request!.subject);
+    expect(moat.map((s) => s.id)).toContain('password');
+    expect(zt.map((s) => s.id)).not.toContain('password');
+    expect(zt.map((s) => s.id)).toEqual(expect.arrayContaining(['alert', 'retry']));
+    expect(moat.map((s) => s.id)).not.toContain('alert');
+    // The author-set fact: the same laptop with no EDR flag passes zero trust's wiki check; with the flag it is denied.
+    const laptop = zt.find((s) => s.id === 'runbooks')!.request!;
+    expect(laptop.subject).toMatchObject({ device: 'edr-alert' });
+    expect(decide(laptop, { model: 'zt' }).allow).toBe(false);
+    expect(decide({ ...laptop, subject: { ...laptop.subject, device: 'healthy' } as typeof laptop.subject }, { model: 'zt' }).allow).toBe(true);
+  });
+
+  it('the alert caption says monitoring checks once after the database attempt and quotes the denials and the threshold', () => {
+    const frames = buildFrames('zt');
+    const steps = replay('zt');
+    const caption = text(frames[steps.findIndex((s) => s.id === 'alert') + 1]);
+    expect(caption).toContain('checks once, after the database attempt');
+    expect(caption).toContain(`${steps.find((s) => s.id === 'alert')!.state.denials} requests denied`);
+    expect(caption).toContain(`threshold of ${ALERT_DENIALS}`);
+    expect(caption).not.toContain('burst');
   });
 
   it('each frame carries the state after its step, and a packet is denied exactly when the decision was', () => {

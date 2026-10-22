@@ -8,7 +8,7 @@ export type PillKind = 'user' | 'svc' | 'bad';
 export const SERVICES: readonly Resource[] = ['wiki', 'hr', 'pay', 'db'];
 /** The customer database is shown as `customer-db` in the decision log; the other systems keep their node names. */
 export const RESOURCE_NAME: Record<Resource, string> = { wiki: 'wiki', hr: 'hr', pay: 'pay', db: 'customer-db' };
-/** Denials the zero-trust model has seen before its monitoring raises an alert and revokes the stolen session. */
+/** Denials needed for zero-trust monitoring to raise an alert. It is evaluated once, at one point of the script (after the database attempt), not after each denial. */
 export const ALERT_DENIALS = 3;
 /** The decision log keeps this many rows. */
 export const LOG_ROWS = 6;
@@ -73,9 +73,9 @@ const paymentsService = (label: string): Subject => ({ kind: 'workload', label, 
 const unknownWorkload: Subject = { kind: 'workload', label: 'unknown', origin: 'internet', cert: null };
 
 /**
- * Run the attack against one model. The attacker's script is the same for both: an authored order of attempts,
- * with one rule for where they attack from (the compromised laptop while it works, their own machine with Bob's
- * stolen session when it does not). Every outcome is `decide(request, policy)`; what the attacker owns,
+ * Run the attack against one model. The opening is the same for both (internet probe, phish, runbooks); after that the
+ * attacker follows one rule (the compromised laptop while it works, their own machine with Bob's stolen session when it
+ * does not; the admin password only if the runbooks were readable), so the two models' lists of attempts differ. Every outcome is `decide(request, policy)`; what the attacker owns,
  * what leaks and how many requests were denied follow from those decisions, never from a flag set by hand.
  */
 export function replay(model: Model): Step[] {

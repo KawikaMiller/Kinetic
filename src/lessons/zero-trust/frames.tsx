@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import { CHECK_NAME, type Model } from './policy';
-import { INITIAL_STATE, breachedSystems, replay, SERVICES, type AttackState, type NodeId, type PillKind, type Step } from './replay';
+import { ALERT_DENIALS, INITIAL_STATE, breachedSystems, replay, SERVICES, type AttackState, type NodeId, type PillKind, type Step } from './replay';
 
 export interface Msg {
   path: NodeId[];
@@ -59,16 +59,25 @@ function lead(step: Step, state: AttackState): ReactNode {
       ? <>The attacker tries the customer database directly.</>
       : <>The payments service is under the attacker's control, so they query the customer database through it.</>;
     case 'exfil': return <><span className="hl bad">Data exfiltrated</span> out of the customer database.</>;
-    case 'alert': return <>{state.denials} requests denied is a burst. Monitoring raises an alert and security <b>revokes Bob's sessions and quarantines the laptop</b>.</>;
+    case 'alert': return <>Monitoring checks once, after the database attempt: {state.denials} requests denied is at or over the alert threshold of {ALERT_DENIALS}. It raises an alert and security <b>revokes Bob's sessions and quarantines the laptop</b>.</>;
     case 'retry': return <>The compromised laptop tries the wiki again.</>;
   }
 }
 
+/** The attacker's script rules and the two author-set facts, stated before any step runs so no result depends on something unseen. */
+const SCRIPT_RULES: ReactNode = (
+  <> <b>The attacker script:</b> the same opening in both models (probe the wiki from the internet, phish Bob, read the runbooks from his laptop), then
+    <b> one rule</b>: if the laptop is denied, they replay Bob's stolen session from their own machine; they try the admin password only if the runbooks
+    were readable; in zero trust, monitoring checks once, after the database attempt. <b>Two facts the author set:</b> Bob's endpoint agent flags the
+    infected laptop (<span className="hl">EDR alert</span>; with no such flag the device check would pass it), and the attacker's own machine is{' '}
+    <span className="hl">unenrolled</span>.</>
+);
+
 const framesIntro = (model: Model): ReactNode =>
   model === 'moat' ? (
-    <><b>Castle and moat.</b> A firewall and VPN guard the edge. Once you're <b>inside</b>, the network trusts you. The attack below is a fixed script of attempts; whether each one succeeds is decided by the network's policy.</>
+    <><b>Castle and moat.</b> A firewall and VPN guard the edge. Once you're <b>inside</b>, the network trusts you. Whether each attempt succeeds is decided by the network's policy.{SCRIPT_RULES}</>
   ) : (
-    <><b>Zero trust:</b> there is no trusted inside. Every request goes through an <span className="hl">access proxy + policy engine</span> that checks <b>who</b>, <b>which device</b>, and <b>context</b> every time. The attack is the same fixed script of attempts; the policy decides each one.</>
+    <><b>Zero trust:</b> there is no trusted inside. Every request goes through an <span className="hl">access proxy + policy engine</span> that checks <b>who</b>, <b>which device</b>, and <b>context</b> every time; the policy decides each attempt.{SCRIPT_RULES}</>
   );
 
 function summary(model: Model, state: AttackState): ReactNode {
@@ -79,7 +88,7 @@ function summary(model: Model, state: AttackState): ReactNode {
       <span className={`hl ${state.exfil ? 'bad' : 'ok'}`}>{state.exfil ? 'exfiltrated' : 'not exfiltrated'}</span>, {state.denials}{' '}
       {state.denials === 1 ? 'request' : 'requests'} denied.{' '}
       {model === 'moat'
-        ? <>Switch to <span className="hl ok">Zero trust</span> and replay the same attack script.</>
+        ? <>Switch to <span className="hl ok">Zero trust</span> and replay the attack: same opening and same rule, different policy.</>
         : breached === 0
           ? <>One laptop, zero systems: the policy contained the compromise.</>
           : <>Zero trust limited the spread here but did not stop it.</>}
