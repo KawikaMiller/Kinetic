@@ -14,6 +14,7 @@ const CHART_W = 500;
 const CHART_H = 150;
 const BAR_W = 16;
 const BAR_GAP = 4;
+const SPOT_NOTE_ID = 'fin-spot-note';
 
 const WORKS: { value: Work; label: string }[] = [
   { value: 'user', label: 'user-facing requests' },
@@ -124,7 +125,7 @@ export function DayScene({ picker }: { picker: ReactNode }) {
           <BoundedIntField label="Committed instances" value={committed} min={0} max={peak} onValue={setCommitted} />
           <Slider label="Committed" value={committed} min={0} max={peak} onChange={setCommitted} />
           <Segmented label="Burst work" value={work} onChange={chooseWork} options={WORKS} />
-          <ChipButton tone="violet" on={spot} onStyle="solid" softDisabled={reason !== null} title={reason ?? undefined} onClick={() => { if (reason === null) setSpot(!spot); }}>run the burst on interruptible capacity</ChipButton>
+          <ChipButton tone="violet" on={spot} onStyle="solid" softDisabled={reason !== null} ariaDescribedBy={reason !== null ? SPOT_NOTE_ID : undefined} onClick={() => { if (reason === null) setSpot(!spot); }}>run the burst on interruptible capacity</ChipButton>
         </>,
       ]}
     >
@@ -132,7 +133,7 @@ export function DayScene({ picker }: { picker: ReactNode }) {
         <WideRegion minWidth={420} label="The 24-hour profile: scroll sideways to see all of it">
           <Hours profile={profile} committed={committed} spot={spot} />
         </WideRegion>
-        <Hint tone={reason ? 'muted' : 'faint'} className="fin-note">
+        <Hint id={SPOT_NOTE_ID} tone={reason ? 'muted' : 'faint'} className="fin-note">
           {reason ?? 'Interruptible capacity is cheaper per hour but can be reclaimed, so a lost hour is redone: the page prices a useful hour at the interruptible price over (1 minus the interruption chance).'}
         </Hint>
         <figure className="fin-figure">

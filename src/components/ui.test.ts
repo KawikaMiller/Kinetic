@@ -54,3 +54,19 @@ describe('Hint tone', () => {
     expect(classOf({ tone: 'bad', block: true, className: 'mine', children: 'x' })).toEqual(['hint', 'is-bad', 'is-block', 'mine']);
   });
 });
+
+describe('ChipButton ariaDescribedBy', () => {
+  const html = (props: Partial<Parameters<typeof ChipButton>[0]>) => renderToStaticMarkup(createElement(ChipButton, { onClick: () => undefined, children: 'x', ...props }));
+
+  it('points the chip at the explaining text, and writes nothing when it is not given', () => {
+    expect(html({ ariaDescribedBy: 'why-off', softDisabled: true })).toContain('aria-describedby="why-off"');
+    expect(html({})).not.toContain('aria-describedby');
+  });
+});
+
+describe('Hint id', () => {
+  it('carries the id a control describes itself by, and has none by default', () => {
+    expect(renderToStaticMarkup(createElement(Hint, { id: 'note', children: 'x' }))).toContain('id="note"');
+    expect(renderToStaticMarkup(createElement(Hint, { children: 'x' }))).not.toContain('id=');
+  });
+});

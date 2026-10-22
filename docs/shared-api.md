@@ -500,6 +500,7 @@
 `<ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
 `<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
 `<ChipButton tone="info" softDisabled={added.includes(f)} onClick={() => add(f)}>{f}</ChipButton>   // aria-disabled, stays focusable: use it where the press itself switches the chip off
+`<ChipButton softDisabled={reason !== null} ariaDescribedBy={reason !== null ? 'why-off' : undefined} onClick={go}>run</ChipButton>   // ariaDescribedBy: id of the text explaining why the chip is off (finops-cloud-cost's spot chip; pair with <Hint id="why-off">); unlike `title`, keyboard and touch users get it
 `<ChipButton onClick={(e) => { refocusAfterRemove(e.currentTarget, { group: '.my-list', items: 'button', fallback: '.add-row button' }); remove(); }}>×</ChipButton>   // core/refocus: focus the control now in the removed one's place, else the fallback (persistent-data-structures, schema-evolution, cloud-networking-vpc, lambda-calculus)
 `<ChipButton tone="bad" onClick={(e) => { refocusAfter(e.currentTarget); remove(); }}>×</ChipButton>  // onClick receives the click event: hand focus on from e.currentTarget, never document.activeElement (cloud-networking-vpc, offline-first-sync)
 `const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
