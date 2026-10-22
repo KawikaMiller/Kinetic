@@ -2,7 +2,7 @@
 import { USER_MAP, memoryOutcome, pidsOutcome, cpuShare, OTHER_CPU_WEIGHT, NAMESPACE_ORDER } from './isolation';
 import { initialKernel, initialRings, initialSeccomp, initialViews } from './opening';
 import { ACTION_ORDER, RING_LABEL, RING_ORDER, decide, ringSet, strength, type Decision } from './rings';
-import { NEEDED, SYSCALLS, TRACE, checkMinimal, grantedExtras, replay } from './seccomp';
+import { NEEDED, SYSCALLS, TRACE, checkMinimal, distinctGrants, grantedExtras, replay } from './seccomp';
 import { FILTER_SIZE, HOST_SYSCALL_COUNT, HYPERVISOR_INTERFACE, SURFACES } from './surface';
 
 const rings = initialRings();
@@ -17,7 +17,8 @@ const views = initialViews();
 const memory = memoryOutcome(views.memoryLimitMiB, views.allocateMiB);
 const pids = pidsOutcome(views.pidsLimit, views.forks);
 
-const blockedBy = (ring: (typeof RING_ORDER)[number]) => ACTION_ORDER.filter((a) => strength(decide(a, ringSet(ring))) === 2).length;
+const countBy = (rings: Parameters<typeof ringSet>, level: number) => ACTION_ORDER.filter((a) => strength(decide(a, ringSet(...rings))) === level).length;
+const blockedBy = (ring: (typeof RING_ORDER)[number]) => countBy([ring], 2);
 
 export const num = (v: number) => v.toLocaleString('en-US');
 
@@ -28,7 +29,13 @@ export const FACTS = {
   kernelBugVerdict: decide('kernel-bug', on).kind,
   kernelBugWithMicrovm: `${decide('kernel-bug', ringSet(...rings.rings, 'microvm')).kind} by ${by(decide('kernel-bug', ringSet(...rings.rings, 'microvm')))}`,
   bestSingleBlocked: Math.max(...RING_ORDER.map(blockedBy)),
+  microvmBlocked: countBy(['microvm'], 2),
+  microvmLimited: countBy(['microvm'], 1),
+  microvmAllowed: countBy(['microvm'], 0),
+  allSixKernelBugVerdict: decide('kernel-bug', ringSet(...RING_ORDER)).kind,
   seccompBlocks: blockedBy('seccomp'),
+  limitedNow: countBy(rings.rings, 1),
+  allowedNow: countBy(rings.rings, 0),
   blockedOutright: ACTION_ORDER.filter((a) => strength(decide(a, on)) === 2).length,
   actionCount: ACTION_ORDER.length,
   listSize: seccomp.allowed.length,
@@ -37,7 +44,7 @@ export const FACTS = {
   deniedCall: opening.firstDenied! + 1,
   deniedName: TRACE[opening.firstDenied!],
   needed: NEEDED.length,
-  everythingExtras: grantedExtras(everything).length,
+  everythingExtras: distinctGrants(grantedExtras(everything)),
   everythingRuns: checkMinimal(everything).runs,
   namespaceCount: views.namespaces.length,
   namespaceKinds: NAMESPACE_ORDER.length,

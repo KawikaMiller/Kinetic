@@ -30,7 +30,7 @@ export function ViewsScene({ picker }: { picker: ReactNode }) {
       introKey={[state.namespaces.join(','), state.memoryLimitMiB, state.allocateMiB, state.pidsLimit, state.forks, state.cpuWeight]}
       stats={
         <Stats>
-          <Stat label="Namespaces on" value={`${on.size} of ${NAMESPACE_ORDER.length}`} color="var(--violet)" sub={rootIsHostRoot(on) ? 'root inside is root on the host' : 'root inside is an unprivileged host id'} />
+          <Stat label="Namespaces on" value={`${on.size} of ${NAMESPACE_ORDER.length}`} color="var(--violet)" sub={rootIsHostRoot(on) ? 'uid 0 inside is uid 0 on the host' : 'root inside is an unprivileged host id'} />
           <Stat label="Memory" value={mem.killed ? 'killed' : 'within the limit'} color={mem.killed ? 'var(--bad)' : 'var(--ok)'} sub={mem.killed ? `at byte ${mem.killedAtByte!.toLocaleString('en-US')}` : `${bytes(mem.requested, { iec: true })} of ${bytes(mem.limit, { iec: true })}`} />
           <Stat label="Forks" value={`${pids.started} of ${pids.attempted} started`} color={pids.failed > 0 ? 'var(--bad)' : 'var(--ok)'} sub={pids.failed > 0 ? `fork ${pids.firstFailure} and after fail` : `limit ${pids.limit} processes`} />
         </Stats>
@@ -92,6 +92,8 @@ export function ViewsScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated">no process is isolated: the views are lesson-authored text and the limits are exact functions of the sliders</Provenance>
+        <Provenance kind="from-memory">the same user id is not the same power: a container runtime usually also drops capabilities from root, and a user namespace is one separate step. Verify against your runtime's documentation</Provenance>
+        <Provenance kind="illustrative">the memory kill at the first byte over is a simplification: a real kernel counts pages and tries to reclaim memory first</Provenance>
         <Provenance kind="from-memory">the namespace kinds, the uid map form and cgroup CPU weights come from memory: check the kernel and container runtime documentation</Provenance>
       </ProvenanceRow>
     </StageFrame>

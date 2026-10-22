@@ -18,6 +18,8 @@ export function RingsScene({ picker }: { picker: ReactNode }) {
   const toggle = (ring: RingId, value: boolean) => setState((s) => ({ ...s, rings: RING_ORDER.filter((r) => (r === ring ? value : s.rings.includes(r))) }));
   const rows = ACTION_ORDER.map((a) => ({ a, d: decide(a, on) }));
   const stoppedCount = rows.filter((r) => strength(r.d) === 2).length;
+  const limitedCount = rows.filter((r) => strength(r.d) === 1).length;
+  const allowedCount = rows.length - stoppedCount - limitedCount;
 
   return (
     <StageFrame
@@ -27,7 +29,7 @@ export function RingsScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="The action" value={decisionText(d)} color={DECISION_TONE[d.kind]} sub={ACTION_LABEL[action]} />
-          <Stat label="Blocked outright" value={`${stoppedCount} of ${ACTION_ORDER.length}`} color="var(--ok)" sub={`with ${rings.length} of ${RING_ORDER.length} rings on`} />
+          <Stat label="Blocked outright (limits not counted)" value={`${stoppedCount} of ${ACTION_ORDER.length}`} color="var(--ok)" sub={[`${limitedCount} limited, ${allowedCount} allowed`, `with ${rings.length} of ${RING_ORDER.length} rings on`]} />
         </Stats>
       }
       legend={

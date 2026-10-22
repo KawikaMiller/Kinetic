@@ -39,7 +39,7 @@ export const ACTION_ORDER: readonly ActionId[] = ['file', 'net', 'fork', 'memory
 
 export const ACTION_LABEL: Record<ActionId, string> = {
   file: 'read a file outside its folder',
-  net: 'open a network connection',
+  net: 'reach the outside network',
   fork: 'start very many child processes',
   memory: 'use a very large amount of memory',
   syscall: 'call a system call that is not on the list',

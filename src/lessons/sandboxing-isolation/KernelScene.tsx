@@ -44,7 +44,7 @@ export function KernelScene({ picker }: { picker: ReactNode }) {
     >
       <div className="sb-stage stage-pad">
         <div className="sb-block">
-          <SectionTitle>Exposed attack surface (named, illustrative constants)</SectionTitle>
+          <SectionTitle>Exposed attack surface (named, illustrative constants; different units, for scale only)</SectionTitle>
           {SURFACE_MODES.map((m) => (
             <Bar
               key={m.value}

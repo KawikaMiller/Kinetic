@@ -49,7 +49,7 @@ describe('try-this entries, each from the default state', () => {
     expect(lesson.tryThis[0]).toContain('limited by microVM');
   });
 
-  it('try-this 2: 9 of 20 calls allowed kills the resizer at call 3 (mmap); mmap and munmap make the list minimal; everything grants 8 capabilities', () => {
+  it('try-this 2: 9 of 20 calls allowed kills the resizer at call 3 (mmap); mmap and munmap make the list minimal; everything grants 7 distinct capabilities from 8 risky calls', () => {
     const start = initialSeccomp();
     expect(start.allowed).toHaveLength(9);
     const r = replay(new Set(start.allowed), start.otherwise);
@@ -60,7 +60,7 @@ describe('try-this entries, each from the default state', () => {
     expect(replay(fixed, 'kill').ending).toBe('completed');
     const all = checkMinimal(new Set(SYSCALL_NAMES));
     expect([all.runs, all.minimal, all.extra.length]).toEqual([true, false, 9]);
-    expect(FACTS.everythingExtras).toBe(8);
+    expect(FACTS.everythingExtras).toBe(7); // socket and connect share one grant
     expect(expectCaption(seccompCaption(start.allowed, start.otherwise))).toContain('Call 3 of 14');
     expect(lesson.tryThis[1]).toContain('killed at call 3 of 14, mmap');
   });
@@ -126,7 +126,7 @@ describe('captions across the control cross product', () => {
       expect(text).not.toMatch(CLEAN);
       expect(text.includes('kills the plugin')).toBe(memoryOutcome(limit, alloc).killed);
       expect(text.includes('fail')).toBe(pidsOutcome(pids, forks).failed > 0);
-      expect(text.includes('is root on the host too')).toBe(!spaces.includes('user'));
+      expect(text.includes('is uid 0 on the host too')).toBe(!spaces.includes('user'));
     }
   });
 });
@@ -148,5 +148,21 @@ describe('the lesson stays inside the simulation', () => {
       expect(text, file).not.toMatch(/\bescape technique|\bexploit(?:ed|s|ing)?\b(?! )|\/bin\/(?:sh|bash)|nsenter|unshare\b|docker run|chroot\(/i);
       expect(text, file).not.toMatch(/\b(?:\d{1,3}\.){3}\d{1,3}\b(?<!10\.0\.0\.5)/);
     }
+  });
+});
+
+describe('the "no single boundary" claim follows the model', () => {
+  it('the microVM alone allows none of the 8 actions: 3 are blocked and 5 only limited (hand-counted from the rule table in the review), and no ring set blocks the kernel bug', () => {
+    expect([FACTS.microvmBlocked, FACTS.microvmLimited, FACTS.microvmAllowed]).toEqual([3, 5, 0]);
+    expect(FACTS.bestSingleBlocked).toBe(4);
+    expect(FACTS.allSixKernelBugVerdict).toBe('limited');
+    expect(allRingSets().some((s) => decide('kernel-bug', s).kind === 'blocked')).toBe(false);
+    expect(lesson.keyIdeas[0]).toContain('limits 5 of them');
+  });
+
+  it('a limited action names every limiting ring that is on, so the microVM is credited next to the seccomp filter', () => {
+    const text = expectCaption(ringsCaption('kernel-bug', ['seccomp', 'microvm']));
+    expect(text).toContain('seccomp filter: fewer system calls');
+    expect(text).toContain('microVM: it reaches the guest kernel');
   });
 });

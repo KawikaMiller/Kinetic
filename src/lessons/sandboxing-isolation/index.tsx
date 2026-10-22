@@ -20,13 +20,13 @@ const lesson: LessonModule = {
   tryThis: [
     `Concentric boundaries, on the defaults (${F.ringsOn} on, the action is to read a file outside its folder): the result is ${F.fileVerdict}. Pick "trigger a kernel bug (abstract)": it is ${F.kernelBugVerdict}, since nothing switched on stands between the plugin and the host kernel. Then switch microVM on: ${F.kernelBugWithMicrovm}.`,
     `A seccomp allow-list, on the defaults (${F.listSize} of ${F.catalogue} calls allowed): the toy resizer is killed at call ${F.deniedCall} of ${F.traceLength}, ${F.deniedName}. Tick mmap and munmap: it runs to the end, and the stage says the list is the smallest that still works. Then press Everything: it still runs, now granting ${F.everythingExtras} capabilities it never uses.`,
-    `Namespaces and cgroups, on the defaults (${F.namespaceCount} of ${F.namespaceKinds} namespaces on): root inside the sandbox is root on the host too. Turn user on: uid 0 inside becomes uid ${F.userOutside} on the host (map ${F.userMap}). Allocating ${F.allocate} MiB against the ${F.memoryLimit} MiB limit kills the plugin at byte ${F.killedAtByte}, and ${F.forks} forks against the limit of ${F.pidsLimit} processes start ${F.started}.`,
+    `Namespaces and cgroups, on the defaults (${F.namespaceCount} of ${F.namespaceKinds} namespaces on): uid 0 inside the sandbox is uid 0 on the host too. Turn user on: uid 0 inside becomes uid ${F.userOutside} on the host (map ${F.userMap}). Allocating ${F.allocate} MiB against the ${F.memoryLimit} MiB limit kills the plugin at byte ${F.killedAtByte}, and ${F.forks} forks against the limit of ${F.pidsLimit} processes start ${F.started}.`,
     `What is shared, on the defaults (a process or plain container): the plugin faces ${F.host} system calls (illustrative, 300 or more in practice) with the host kernel under them. Pick With a seccomp filter: ${F.filter} calls, same kernel. Pick In a microVM: ${F.hypervisor} interfaces and a guest kernel in between.`,
   ],
   keyIdeas: [
-    `No single boundary covers everything: in this model the best one ring blocks ${F.bestSingleBlocked} of ${F.actionCount} actions, and with ${F.ringsOn} on the kernel-bug action is ${F.kernelBugVerdict}.`,
+    `No single boundary blocks everything: in this model the best one ring blocks ${F.bestSingleBlocked} of ${F.actionCount} actions outright. The microVM alone lets none through but limits ${F.microvmLimited} of them (a limit caps an action, it does not stop it), and even with ${F.ringCount} rings on the kernel-bug action is ${F.allSixKernelBugVerdict}.`,
     `A seccomp filter judges calls, not files: it blocks ${F.seccompBlocks} of ${F.actionCount} actions in this model, but reading a file outside the folder is not one of them, because that is a job for a private view of files.`,
-    `Root inside a container is root on the host unless a user namespace maps it away: with user on, uid 0 inside is uid ${F.userOutside} outside (map ${F.userMap}), and with it off the two are the same id.`,
+    `Root inside a container has the host root's user id unless a user namespace maps it away (a runtime may also drop its capabilities): with user on, uid 0 inside is uid ${F.userOutside} outside (map ${F.userMap}), and with it off the two are the same id.`,
     `A container is a process on the host kernel with restricted views, so in this model a kernel bug sits under every ring except the microVM, at the price of trusting a hypervisor interface of ${F.hypervisor} instead.`,
   ],
   quiz: [
@@ -61,7 +61,7 @@ const lesson: LessonModule = {
         'It cannot deny a call, only log it, so another layer must do the stopping when something is wrong',
       ],
       answer: 1,
-      why: `In this model seccomp blocks ${F.seccompBlocks} of ${F.actionCount} actions but not the file read, and the best single ring blocks ${F.bestSingleBlocked}. Stacked rings cover different actions.`,
+      why: `In this model seccomp blocks ${F.seccompBlocks} of ${F.actionCount} actions but not the file read, and the best single ring blocks ${F.bestSingleBlocked}. The microVM alone blocks ${F.microvmBlocked} and limits ${F.microvmLimited}, and a limit is not a stop. Stacked rings cover different actions.`,
     },
     {
       q: 'The allow-list is too tight and omits mmap. What happens to the toy resizer?',

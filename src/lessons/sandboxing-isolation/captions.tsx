@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { OTHER_CPU_WEIGHT, cpuShare, memoryOutcome, pidsOutcome, rootIsHostRoot, type NamespaceId, NAMESPACE_ORDER } from './isolation';
-import { ACTION_LABEL, LIMIT_NOTE, RING_LABEL, RING_ORDER, decide, decisionText, type ActionId, type RingId } from './rings';
+import { ACTION_LABEL, LIMIT_NOTE, RING_LABEL, RING_ORDER, RULES, decide, decisionText, type ActionId, type RingId } from './rings';
 import { checkMinimal, grantedExtras, replay, TRACE, type DefaultAction } from './seccomp';
 import { SURFACES, type SurfaceMode } from './surface';
 
@@ -16,7 +16,10 @@ export function ringsCaption(action: ActionId, rings: readonly RingId[]): ReactN
     </>
   );
   if (d.kind === 'allowed') return <>{head} Nothing that is switched on stops it, so it succeeds against the host: the outcome a sandbox exists to prevent.</>;
-  if (d.kind === 'limited') return <>{head} {LIMIT_NOTE[d.by][action] ? `That means ${LIMIT_NOTE[d.by][action]}.` : ''}</>;
+  if (d.kind === 'limited') {
+    const notes = RING_ORDER.filter((r) => rings.includes(r) && RULES[r][action] === 'limited' && LIMIT_NOTE[r][action]).map((r) => `${RING_LABEL[r]}: ${LIMIT_NOTE[r][action]}`);
+    return <>{head} {notes.length > 0 ? `What each limit means: ${notes.join('; ')}.` : ''}</>;
+  }
   return <>{head} The action stops at that ring and goes no further.</>;
 }
 
@@ -53,7 +56,7 @@ export function viewsCaption(namespaces: readonly NamespaceId[], memoryLimitMiB:
   const pids = pidsOutcome(pidsLimit, forks);
   return (
     <>
-      {plural(namespaces.length, 'namespace')} of {NAMESPACE_ORDER.length} on; root inside the sandbox {rootIsHostRoot(on) ? 'is root on the host too (no user namespace)' : 'is an unprivileged id on the host'}.{' '}
+      {plural(namespaces.length, 'namespace')} of {NAMESPACE_ORDER.length} on; root inside the sandbox {rootIsHostRoot(on) ? 'is uid 0 on the host too, the same user id as host root (no user namespace)' : 'is an unprivileged id on the host'}.{' '}
       {mem.killed ? <>Allocating {allocateMiB} MiB against a limit of {memoryLimitMiB} MiB kills the plugin at the first byte over, byte {mem.killedAtByte!.toLocaleString('en-US')}.</> : <>Allocating {allocateMiB} MiB stays within the {memoryLimitMiB} MiB limit.</>}{' '}
       {pids.failed > 0 ? <>{plural(forks, 'fork')} against a limit of {pidsLimit} processes: {pids.started} started, fork {pids.firstFailure} and after fail.</> : <>{plural(forks, 'fork')} fit under the limit of {pidsLimit} processes.</>}{' '}
       Under CPU contention a weight of {cpuWeight} against {OTHER_CPU_WEIGHT} gets {Math.round(cpuShare(cpuWeight, OTHER_CPU_WEIGHT) * 100)}%.
@@ -67,7 +70,7 @@ export function kernelCaption(mode: SurfaceMode): ReactNode {
   return (
     <>
       The plugin faces {s.label}: {s.exposed} {s.unit}. Under it: {s.under}.{' '}
-      {mode === 'microvm' ? 'In this model a bug in the host kernel is out of its reach, but the hypervisor is now the surface to trust.' : 'In this model a bug in that kernel is a bug under the plugin.'} The numbers are illustrative.
+      {mode === 'microvm' ? 'In this model a bug in the host kernel is reached only through the hypervisor, which is now the surface to trust.' : 'In this model a bug in that kernel is a bug under the plugin.'} The numbers are illustrative.
     </>
   );
 }

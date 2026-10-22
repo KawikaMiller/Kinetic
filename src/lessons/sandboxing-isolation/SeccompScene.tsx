@@ -8,7 +8,7 @@ import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Segmented,
 import { plural } from '../../core/format';
 import { seccompCaption } from './captions';
 import { initialSeccomp } from './opening';
-import { NEEDED, SYSCALLS, SYSCALL_NAMES, TRACE, checkMinimal, grantedExtras, replay, type DefaultAction } from './seccomp';
+import { NEEDED, SYSCALLS, SYSCALL_NAMES, TRACE, checkMinimal, distinctGrants, grantedExtras, replay, type DefaultAction } from './seccomp';
 
 const LOG_HEIGHT = 230;
 
@@ -48,7 +48,7 @@ export function SeccompScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="The toy resizer" value={endingText} color={run.ending === 'completed' ? 'var(--ok)' : 'var(--bad)'} sub={`script of ${TRACE.length} calls`} />
           <Stat label="List" value={`${allowed.length} of ${SYSCALLS.length}`} color="var(--violet)" sub={check.minimal ? 'the smallest that still runs' : check.runs ? `${check.extra.length} more than the script needs` : `${plural(check.missing.length, 'needed call')} missing`} />
-          <Stat label="Capabilities granted" value={extras.length} color={extras.length > 0 ? 'var(--orange)' : 'var(--muted)'} sub="risky calls allowed that the script never makes" />
+          <Stat label="Capabilities granted" value={distinctGrants(extras)} color={extras.length > 0 ? 'var(--orange)' : 'var(--muted)'} sub={`from ${extras.length} risky calls allowed that the script never makes`} />
         </Stats>
       }
       legend={

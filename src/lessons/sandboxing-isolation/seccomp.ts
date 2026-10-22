@@ -85,6 +85,9 @@ export function grantedExtras(allowed: Allowed): { name: string; grants: string 
   return SYSCALLS.filter((s) => allowed.has(s.name) && s.grants !== null && !NEEDED.includes(s.name)).map((s) => ({ name: s.name, grants: s.grants! }));
 }
 
+/** How many different capabilities a list of extras grants: socket and connect both read "can open connections", so they count once. */
+export const distinctGrants = (extras: readonly { grants: string }[]): number => new Set(extras.map((e) => e.grants)).size;
+
 export interface MinimalCheck {
   runs: boolean;
   /** Needed calls the list lacks. */
