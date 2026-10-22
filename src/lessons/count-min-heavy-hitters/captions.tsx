@@ -4,10 +4,9 @@
 import type { ReactNode } from 'react';
 import { pctText, sig } from '../../core/format';
 import { GRID_D, GRID_W, undercounted, type GridModel, type Inspection } from './grid';
-import type { HeavyState, Quality } from './heavy';
+import { type HeavyState, type Quality, deltaOf, epsilonOf, TOP_K, UNIVERSE } from '../../core/countMin';
 import type { MergeRun } from './merge';
-import { deltaOf, epsilonOf } from './sketch';
-import { TOP_K, UNIVERSE, overCount, overLimit, underCount, type ErrorRun } from './stream';
+import { overCount, overLimit, underCount, type ErrorRun } from './stream';
 
 const hl = (tone: string, text: ReactNode) => <span className={`hl ${tone}`}>{text}</span>;
 const noun = (n: number, one: string, many = `${one}s`): string => (n === 1 ? one : many);

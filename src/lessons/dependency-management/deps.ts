@@ -1,4 +1,4 @@
-import { maxSatisfying, satisfies } from './semver';
+import { maxSatisfying, satisfies } from '../../core/semver';
 
 /** A version as published to the registry, with the month it appeared (1 = January). */
 export interface Release {

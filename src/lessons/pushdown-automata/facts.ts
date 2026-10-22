@@ -1,9 +1,9 @@
 /** Every number the lesson text quotes, computed from the model. */
-import { boundedCounter, duel, firstDisagreement } from './duel';
+import { boundedCounter, duel, firstDisagreement } from '../../core/automataDuel';
 import { CHECK_LENGTH, checkTable, parseTable } from './learner';
-import { build, presetById } from './machines';
+import { build, presetById } from '../../core/pdaPresets';
 import { ANBN_TABLE, BUG_TABLE, OPENING, SOLUTION_TABLE } from './opening';
-import { describeRejection, stepRun } from './stepper';
+import { describeRejection, stepRun } from '../../core/pdaStepper';
 
 const table = (text: string) => {
   const r = parseTable(text);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
-// Test-only cross-lesson import: dependency-management owns the semver rule this lesson must agree with.
-import { satisfies } from '../dependency-management/semver';
+// dependency-management and this lesson share the semver rule from core/semver.
+import { satisfies } from '../../core/semver';
 import { releaseCaption } from './captions';
 import { affectedSet } from './graph';
 import {

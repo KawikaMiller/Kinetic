@@ -1,0 +1,28 @@
+/* graceful-degradation */
+.gd-stage { gap: 12px; min-width: 0; }
+.gd-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; min-width: 0; }
+.gd-top > * { min-width: 0; }
+.gd-widgets { flex: 1 1 300px; }
+.gd-top > .wide-region { flex: 0 1 440px; }
+.gd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.gd-card {
+  all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; cursor: pointer;
+  border: 1.5px solid var(--c, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--c, var(--line)) 12%, transparent);
+}
+.gd-card:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
+.gd-card.is-selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--info); }
+.gd-card.is-hidden { border-style: dashed; opacity: 0.7; }
+.gd-card-name { font-weight: 700; font-size: 12.5px; }
+.gd-card-state { font: 600 12px var(--mono); color: var(--c); }
+.gd-card-rung { font-size: 11px; color: var(--muted); line-height: 1.35; }
+.gd-journey { display: flex; flex-direction: column; gap: 6px; }
+.gd-steps { margin: 4px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.gd-steps .is-ok { color: var(--ok); }
+.gd-steps .is-blocked { color: var(--bad); }
+.gd-warning { margin: 0; font-size: 12.5px; color: var(--hi); line-height: 1.45; }
+.gd-tiers { display: flex; flex-wrap: wrap; gap: 6px; }
+.gd-tier { font-size: 12px; }
+.gd-plots { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; min-width: 0; }
+.gd-plots > * { flex: 1 1 356px; min-width: 0; }
+.gd-plots .plot2d { max-width: 100%; height: auto; }
+.gd-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }

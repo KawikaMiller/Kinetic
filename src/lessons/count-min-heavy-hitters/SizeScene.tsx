@@ -7,8 +7,8 @@ import { useIntroCaption } from '../../core/caption';
 import { pctText, sig } from '../../core/format';
 import { sizeCaption } from './captions';
 import { ErrorPlot } from './ErrorPlot';
-import { MAX_DEPTH, MAX_WIDTH, MIN_DEPTH, deltaOf, depthFor, epsilonOf, widthFor } from './sketch';
-import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, MIN_SCENE_WIDTH, MAX_SKEW, MAX_STREAM, MIN_SKEW, MIN_STREAM, STREAM_STEP, UNIVERSE, errorRun, overLimit, zipfStream } from './stream';
+import { MAX_DEPTH, MAX_WIDTH, MIN_DEPTH, deltaOf, depthFor, epsilonOf, widthFor, UNIVERSE, zipfStream } from '../../core/countMin';
+import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, MIN_SCENE_WIDTH, MAX_SKEW, MAX_STREAM, MIN_SKEW, MIN_STREAM, STREAM_STEP, errorRun, overLimit } from './stream';
 
 const PRESETS = [
   { label: 'ε = 0.01, δ = 0.01', epsilon: 0.01, delta: 0.01 },

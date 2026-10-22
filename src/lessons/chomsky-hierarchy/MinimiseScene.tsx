@@ -9,7 +9,7 @@ import { circlePositions } from '../../core/graphLayout';
 import { plainTone, toneVar } from '../../core/tone';
 import { minimiseCaption } from './captions';
 import { cardById } from './languages';
-import { EXAMPLES, distinguishing, prefixClasses, quotient, refine } from './minimize';
+import { EXAMPLES, distinguishing, prefixClasses, quotient, refine } from '../../core/automataMinimize';
 import { OPENING } from './opening';
 
 const GRAPH_W = 380;

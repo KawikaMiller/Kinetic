@@ -9,7 +9,7 @@
  *   too large                          true, but not the smallest ring
  */
 import { pdaRun, type Pda } from '../../core/automata';
-import { boundedCounter, firstDisagreement } from '../pushdown-automata/duel';
+import { boundedCounter, firstDisagreement } from '../../core/automataDuel';
 import { ringIndex, RINGS, type Card, type RingId } from './languages';
 import { playGame, regularCount, cfCount } from './pumping';
 

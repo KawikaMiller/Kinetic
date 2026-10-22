@@ -2,11 +2,10 @@
  * count-min-heavy-hitters: the numbers the try-this entries quote, computed from the same models the scenes run, from each scene's
  * default state.
  */
-import { heavyRun, quality } from './heavy';
+import { heavyRun, quality, depthFor, epsilonOf, deltaOf, estimate, widthFor, UNIVERSE, exactCounts, exactTop, keyOfRank, zipfStream } from '../../core/countMin';
 import { GRID_D, GRID_W, STREAM_BURST, buildGrid, cellRole, inspect, itemsByCount, polluted, undercounted, wordStream } from './grid';
 import { MERGE_DEPTH, MERGE_N, MERGE_WIDTH, mergeRun } from './merge';
-import { depthFor, epsilonOf, deltaOf, estimate, widthFor } from './sketch';
-import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, MIN_SCENE_WIDTH, PLAIN, UNIVERSE, errorRun, exactCounts, exactTop, keyOfRank, overCount, overLimit, underCount, zipfStream } from './stream';
+import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, MIN_SCENE_WIDTH, PLAIN, errorRun, overCount, overLimit, underCount } from './stream';
 
 /** The chip the size entry presses, and the width the heavy-hitters entry drags down to. */
 export const CHIP = { epsilon: 0.05, delta: 0.05 } as const;

@@ -4,7 +4,7 @@
  */
 import { zipfSampler } from '../../core/distributions';
 import { mulberry32 } from '../../core/random';
-import { cellsOf, estimate, itemKey, makeFamily, newSketch, update, type Sketch } from './sketch';
+import { cellsOf, estimate, itemKey, makeFamily, newSketch, update, type Sketch } from '../../core/countMin';
 
 export const GRID_W = 16;
 export const GRID_D = 4;

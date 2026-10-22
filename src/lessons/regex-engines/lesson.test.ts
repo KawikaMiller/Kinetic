@@ -2,16 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { nfaRun } from '../../core/automata';
 import { expectCaption } from '../../core/testing/captions';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { matchAt } from './backtrack';
+import { matchAt, runNfa, type RunMode, parsePattern, parseSubject, buildNfa, constructionOf } from '../../core/regex';
 import { whichCaption } from './captions';
-import { STEP_BUDGET, runNfa, whichAnswer, type RunMode } from './engines';
+import { STEP_BUDGET, whichAnswer } from './engines';
 import { FACTS } from './facts';
 import { TRACE_LIMIT, buildFrames, runFrames, traceFrames } from './frames';
 import lesson from './index';
 import { BACKTRACK_PRESETS, OPENING, PRESETS } from './opening';
-import { parsePattern, parseSubject } from './regexParse';
 import { WHICH_EXAMPLES } from './realExamples';
-import { buildNfa, constructionOf } from './thompson';
 
 const parsed = (p: string) => {
   const r = parsePattern(p);

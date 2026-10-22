@@ -2,10 +2,8 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
 import { EPSILON, type State } from '../../core/automata';
-import { STEP_BUDGET, type NfaRun, type RunMode } from './engines';
-import type { BacktrackResult, TraceEvent } from './backtrack';
-import { countParts, nodeText, nodesInOrder, type ParsedRegex, type RegexNode } from './regexParse';
-import { edgeKey, symbolOf, type Construction } from './thompson';
+import { STEP_BUDGET } from './engines';
+import { type NfaRun, type RunMode, type BacktrackResult, type TraceEvent, countParts, nodeText, nodesInOrder, type ParsedRegex, type RegexNode, edgeKey, symbolOf, type Construction } from '../../core/regex';
 
 const quote = (s: string) => <code>{s}</code>;
 

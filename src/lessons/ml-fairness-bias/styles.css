@@ -1,0 +1,19 @@
+.fb-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.fb-matrices { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: center; }
+.fb-group { min-width: 0; }
+.fb-group h3 { margin: 0 0 6px; font: 700 13px var(--font); }
+.fb-amber h3, .fb-amber { color: var(--amber); }
+.fb-sky h3, .fb-sky { color: var(--sky); }
+td.fb-amber, td.fb-sky { font-weight: 700; }
+.fb-table { width: 100%; }
+.fb-table caption { text-align: left; font: 600 12.5px var(--font); color: var(--text); padding-bottom: 4px; }
+.fb-name { color: var(--muted); font-weight: 400; }
+.fb-yes { color: var(--ok); }
+.fb-no { color: var(--bad); }
+.fb-scroll { overflow-x: auto; max-width: 100%; }
+.fb-options { min-width: 640px; }
+.fb-picked td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.fb-who { display: flex; flex-direction: column; gap: 4px; font: 500 13px/1.5 var(--font); color: var(--text); }
+.fb-who span { color: var(--muted); }
+.fb-note { margin: 0; font: 500 13px/1.6 var(--font); color: var(--muted); }
+.fb-toy h3 { margin: 0 0 4px; font: 700 13.5px var(--font); }
