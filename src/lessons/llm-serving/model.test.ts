@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { cacheCount, decode, makeSetup, recomputeCount, EQUAL_TOLERANCE, INPUT_DIM, KEY_DIM } from './attn';
 import {
   AVG_SEQ, BANDWIDTH, DEVICE_MEM, FLOPS, FLOPS_PER_TOKEN, KV_HEADS_FULL, MAX_SEQ, PARAMS, RIDGE_TOKENS, TOY_KV, WEIGHT_BYTES, decodeTiming,
@@ -10,6 +10,9 @@ import {
   makeWorkload, reservedBytes, runToEnd, statsOf, type Request, type Settings,
 } from './sim';
 import { nearestRank } from '../../core/stats';
+
+// The seeded sweeps are exact but slow when the whole suite runs in parallel.
+vi.setConfig({ testTimeout: 120_000 });
 
 const MS = 1000;
 

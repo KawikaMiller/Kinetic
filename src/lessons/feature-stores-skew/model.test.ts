@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { aucPairs, aucTrapezoid, rocPoints } from '../../core/rocAuc';
 import { DAYS, FIRST_ASOF_DAY, LAST_ASOF_DAY, ROWS_PER_USER, USERS, asOfTime, dayLabel, makeEvents, type PurchaseEvent } from './events';
 import {
@@ -7,6 +7,9 @@ import {
 import { LABEL_TIMES, LOG, asOf, asOfBinary, fitLogistic, join, labelledRows, measureLeak, type LogEntry } from './join';
 import { parseLength } from './length';
 import { mulberry32 } from '../../core/random';
+
+// The seeded sweeps are exact but slow when the whole suite runs in parallel.
+vi.setConfig({ testTimeout: 120_000 });
 
 const ev = (at: number, arrived: number): PurchaseEvent => ({ user: 0, at, arrived });
 

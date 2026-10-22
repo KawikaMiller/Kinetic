@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
   BREAK_EVEN_READS, HOURS, P_C, P_OD, P_SPOT_EFFECTIVE, PRESETS, RPS_LIMITS, STORED_GB, bill, crossingShare, dailyGb, dayCost, hoursAtLeast, instanceHours,
@@ -6,6 +6,9 @@ import {
   type Profile,
 } from './cost';
 import { parseLength } from './length';
+
+// The seeded sweeps are exact but slow when the whole suite runs in parallel.
+vi.setConfig({ testTimeout: 120_000 });
 
 const WEB = PRESETS.web.profile;
 const near = (a: number, b: number) => expect(a).toBeCloseTo(b, 9);

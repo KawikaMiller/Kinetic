@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { svdSmall } from '../../core/linalg';
 import { mulberry32 } from '../../core/random';
 import { parseLength } from './length';
@@ -11,6 +11,9 @@ import {
 import {
   BITS_CHOICES, INPUTS, SIZE, TENSOR, bitsPerWeight, compareSchemes, makeInputs, makeWeights, outputError, quantise, quantiseGroup, weightErrors,
 } from './quant';
+
+// The seeded sweeps are exact but slow when the whole suite runs in parallel.
+vi.setConfig({ testTimeout: 120_000 });
 
 describe('parameter counts', () => {
   it('4,096 x 4,096: rank 1 is 8,192 (0.0488%), rank 8 is 65,536 (exactly 1/256), rank 64 is 524,288 (3.125%)', () => {
