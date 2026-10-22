@@ -6,7 +6,7 @@ import { Button, ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Se
 import { integer } from '../../core/format';
 import { spectrumCaption, workCaption } from './captions';
 import {
-  NOISE_SEED, SIGNAL_SIZES, WORK_SIZES, amplitudes, bandPass, filtered, initialSpectrum, lowPass, notch, removedBins, spectrumOf, toggleBin, twoToneSignal, workCounts,
+  NOISE_SEED, SIGNAL_SIZES, WORK_SIZES, amplitudes, bandPass, filtered, initialSpectrum, lowPass, notch, removedBins, scientific, spectrumOf, toggleBin, twoToneSignal, workCounts,
   type SignalSize, type SpectrumState,
 } from './spectrum';
 
@@ -49,7 +49,7 @@ export function SpectrumScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Bin pairs removed" value={removedBins(s).length} />
-          <Stat label="Largest imaginary part left" value={out.imagMax.toExponential(1)} sub="zero up to rounding: still a real signal" />
+          <Stat label="Largest imaginary part left" value={scientific(out.imagMax)} sub="zero up to rounding: still a real signal" />
         </Stats>
       }
       controls={[
