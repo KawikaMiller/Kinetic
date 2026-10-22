@@ -14,7 +14,15 @@ export function RulesPanel({ model }: { model: Model }) {
         {RULES[model].map((r) => <li key={r}>{r}</li>)}
       </ul>
       <p className="moa-note">Not covered by any of the three models: {joinList(NOT_COVERED)}.</p>
-      {model === 'relaxed' && <p className="moa-note">{WEAK_LIMITS} {scTagNote()}</p>}
+      {model === 'relaxed' && (
+        <>
+          <p className="moa-note">{WEAK_LIMITS}</p>
+          <details className="moa-note">
+            <summary>Where this model's seq_cst is stronger than C++ (computed from the model)</summary>
+            {scTagNote()}
+          </details>
+        </>
+      )}
     </Box>
   );
 }

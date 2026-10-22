@@ -92,3 +92,12 @@ describe('the lesson text agrees with the model', () => {
 function sb() {
   return BASES.sb;
 }
+
+describe('fix pass: the weak rules panel keeps the long computed list collapsed', () => {
+  it('the computed seq_cst list sits in a details element, the limits stay visible', () => {
+    const panel = import.meta.glob('./RulesPanel.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    const src = panel['./RulesPanel.tsx'];
+    expect(src).toContain('<details');
+    expect(src).toContain('{WEAK_LIMITS}');
+  });
+});
