@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { revealScrollLeft, type RevealSpan } from './wideReveal';
+import { revealScrollLeft, wideRegionWords, type RevealSpan } from './wideReveal';
 
 export type { RevealSpan } from './wideReveal';
 

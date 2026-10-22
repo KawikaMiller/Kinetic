@@ -238,13 +238,13 @@ describe('free-path', () => {
 describe('dominated-path', () => {
   const choice = (id: string, to: string, effects: Record<string, number>) => ({ id, label: id, to, effects, because: 'x' });
   /** Every choice is a real trade-off at its node, yet the path B > B2 ends worse than A > A2 on both meters (m: lower is better, q: higher). */
-  const wholePathOnly = (bEnding = 'done'): Scenario => ({
+  const wholePathOnly = (bEnding = 'done', b2: Record<string, number> = { m: 3, q: 1 }, meters: Meter[] = [meterUp, meterDown]): Scenario => ({
     start: 'a',
-    meters: [meterUp, meterDown],
+    meters,
     nodes: [
       { id: 'a', prompt: '?', choices: [choice('A', 'b', { m: 2, q: 2 }), choice('B', 'c', { m: 0, q: 0 })] },
       { id: 'b', prompt: '?', choices: [choice('A2', 'done', { m: 0, q: 0 })] },
-      { id: 'c', prompt: '?', choices: [choice('B2', bEnding, { m: 3, q: 1 })] },
+      { id: 'c', prompt: '?', choices: [choice('B2', bEnding, b2)] },
     ],
     endings: [end('done'), end('other')],
   });
@@ -257,23 +257,20 @@ describe('dominated-path', () => {
   });
 
   it('passes a scenario whose paths all trade one meter for another', () => {
-    const good = wholePathOnly();
-    good.nodes[2] = { id: 'c', prompt: '?', choices: [choice('B2', 'done', { m: 3, q: 4 })] }; // B > B2 ends m 3, q 4: better on q
+    const good = wholePathOnly('done', { m: 3, q: 4 }); // B > B2 ends m 3, q 4: better on q
     expect(dominated(good)).toEqual([]);
     expect(validateScenario(good, { tradeoffs: true }).map((p) => p.kind)).not.toContain('dominated-path');
   });
 
   it('needs a strict difference: equal final meters are not dominated (they are duplicates)', () => {
-    const tie = wholePathOnly();
-    tie.nodes[2] = { id: 'c', prompt: '?', choices: [choice('B2', 'done', { m: 2, q: 2 })] };
+    const tie = wholePathOnly('done', { m: 2, q: 2 });
     expect(dominated(tie)).toEqual([]);
     expect(duplicatePaths(tie).map((p) => p.kind)).toEqual(['duplicate-path']);
     expect(duplicatePaths(tie)[0].detail).toBe('the paths A > A2 and B > B2 end on identical meters');
   });
 
   it('reports duplicates through validateScenario only when asked', () => {
-    const tie = wholePathOnly();
-    tie.nodes[2] = { id: 'c', prompt: '?', choices: [choice('B2', 'done', { m: 2, q: 2 })] };
+    const tie = wholePathOnly('done', { m: 2, q: 2 });
     expect(kinds(tie)).not.toContain('duplicate-path');
     expect(validateScenario(tie, { tradeoffs: true, duplicatePaths: true }).map((p) => p.kind)).toContain('duplicate-path');
   });
@@ -291,9 +288,8 @@ describe('dominated-path', () => {
     expect(dominatedPaths(different, { crossEndings: true })).toHaveLength(1);
   });
 
-  it('honours the good direction of each meter', () => {
-    const s = wholePathOnly();
-    s.meters = [{ ...meterUp, bad: { below: 2 } }, meterDown]; // m is now higher-is-better: B > B2 (m 3, q 1) beats A > A2 (m 2, q 2) on m only
+  it('honours the good direction of each meter (m higher-is-better: B > B2 at m 3, q 1 beats A > A2 at m 2, q 2 on m)', () => {
+    const s = wholePathOnly('done', { m: 3, q: 1 }, [{ ...meterUp, bad: { below: 2 } }, meterDown]);
     expect(dominated(s)).toEqual([]);
   });
 

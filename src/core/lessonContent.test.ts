@@ -388,7 +388,7 @@ describe('AC-0/T4 rules', () => {
   });
 
   it('name only registered Tier 4 topics in the proof-shaped, lead and required-chip tables', () => {
-    expect(PROOF_SHAPED_IDS.size).toBe(8);
+    expect(PROOF_SHAPED_IDS.size).toBe(9);
     expect(LEAD_IDS.size).toBe(7);
     for (const id of [...PROOF_SHAPED_IDS, ...LEAD_IDS, ...Object.keys(REQUIRED_CHIPS)]) expect(tierOf.get(id), id).toBe(4);
   });
