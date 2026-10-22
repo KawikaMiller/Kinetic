@@ -1,4 +1,5 @@
-// Three regions, three user populations, realistic-ish round-trip times.
+// Three regions, three user populations, and invented round-trip times that stay above the speed-of-light floor (model.test.ts checks that).
+import { humanDuration } from '../../core/format';
 
 export type RegionId = 'us' | 'eu' | 'ap';
 export type UserId = 'na' | 'euu' | 'apu';
@@ -31,27 +32,57 @@ export const REGION_RTT: Record<RegionId, Record<RegionId, number>> = {
   ap: { us: 220, eu: 165, ap: 0 },
 };
 
-/** Failover timeline for active-passive, in simulated seconds after the primary dies. */
+/**
+ * Failover of an active-passive pair, in simulated seconds: how long each of the three phases lasts after the primary
+ * dies. The phases run one after another, so the downtime (the RTO) is their sum.
+ */
 export const DETECT_S = 30;
-export const PROMOTE_S = 120;
-export const DNS_S = 300;
+export const PROMOTE_S = 90;
+export const DNS_S = 180;
+/** Seconds after the outage at which each phase ends: detected, standby promoted, clients all on the new primary. */
+export const DETECTED_AT_S = DETECT_S;
+export const PROMOTED_AT_S = DETECT_S + PROMOTE_S;
+export const RECOVERED_AT_S = DETECT_S + PROMOTE_S + DNS_S;
 /** Active-active only needs health checks to steer traffic elsewhere. */
 export const REROUTE_S = 30;
 
 export const ASYNC_LAG_S = 1.2;
 export const WRITES_PER_S = 30;
 
-export const MODE_INFO: Record<Mode, { label: string; cost: string; rto: string; rpo: (r: Replication) => string }> = {
-  single: { label: 'Single region', cost: '1×', rto: 'hours (until the region recovers)', rpo: () => 'up to last backup' },
-  passive: { label: 'Active-passive', cost: '~2×', rto: `~${DNS_S / 60} min (failover)`, rpo: (r) => (r === 'sync' ? '0 (sync)' : `~${ASYNC_LAG_S} s of writes`) },
-  active: { label: 'Active-active', cost: '~3×+', rto: `~${REROUTE_S} s (reroute)`, rpo: (r) => (r === 'sync' ? '0 (sync)' : `~${ASYNC_LAG_S} s of writes`) },
-};
+export const MODE_LABEL: Record<Mode, string> = { single: 'Single region', passive: 'Active-passive', active: 'Active-active' };
+
+export const ALL_REGIONS: RegionId[] = ['us', 'eu', 'ap'];
+export const ALL_USERS: UserId[] = ['na', 'euu', 'apu'];
+
+/** The regions a topology runs in. */
+export const regionsInUse = (mode: Mode): RegionId[] => (mode === 'single' ? ['us'] : mode === 'passive' ? ['us', 'eu'] : ALL_REGIONS);
+
+/** Cost relative to one region: one region's worth per region in use (replication traffic and operations are not counted). */
+export const costFactor = (mode: Mode): number => regionsInUse(mode).length;
+
+/** Downtime after the serving region dies, in seconds; null for a single region, which has nothing to fail over to. */
+export const rtoSeconds = (mode: Mode): number | null => (mode === 'single' ? null : mode === 'passive' ? RECOVERED_AT_S : REROUTE_S);
+
+/** The RTO as the stat prints it, from the model's timeline. */
+export function rtoText(mode: Mode): string {
+  const s = rtoSeconds(mode);
+  if (s === null) return 'until the region recovers (no failover)';
+  return `${humanDuration(s)} (${mode === 'passive' ? 'failover' : 'reroute'})`;
+}
+
+/** True while at least two regions in use are alive, so a write can exist in a second place. */
+export const hasLiveReplica = (mode: Mode, dead: RegionId[]): boolean => regionsInUse(mode).filter((r) => !dead.includes(r)).length >= 2;
+
+/** What a region failure can lose, as the stat prints it: the replication lag, nothing, or a single unreplicated copy. */
+export function rpoText(mode: Mode, replication: Replication, dead: RegionId[]): string {
+  if (mode === 'single') return 'up to last backup';
+  if (replication === 'async') return `~${ASYNC_LAG_S} s of writes`;
+  return hasLiveReplica(mode, dead) ? '0 (sync)' : 'unreplicated: no live replica';
+}
 
 export const nearest = (u: UserId, alive: RegionId[]) =>
   alive.slice().sort((a, b) => RTT[u][a] - RTT[u][b])[0] ?? null;
 
-export const ALL_REGIONS: RegionId[] = ['us', 'eu', 'ap'];
-export const ALL_USERS: UserId[] = ['na', 'euu', 'apu'];
 /** Stop the failover clock after a simulated hour even if nothing recovers. */
 export const CLOCK_LIMIT_S = 3600;
 
@@ -72,9 +103,9 @@ export function phaseOf(mode: Mode, dead: RegionId[], clock: number | null): Pha
   if (mode === 'passive') {
     if (!dead.includes('us')) return null;
     if (dead.includes('eu')) return { text: 'Primary and standby both down: total outage', done: false };
-    if (clock < DETECT_S) return { text: 'Detecting: health checks to us-east failing', done: false };
-    if (clock < PROMOTE_S) return { text: 'Promoting the eu-west standby to primary', done: false };
-    if (clock < DNS_S) return { text: 'DNS TTL expiring: clients reconnecting to eu-west', done: false };
+    if (clock < DETECTED_AT_S) return { text: 'Detecting: health checks to us-east failing', done: false };
+    if (clock < PROMOTED_AT_S) return { text: 'Promoting the eu-west standby to primary', done: false };
+    if (clock < RECOVERED_AT_S) return { text: 'DNS TTL expiring: clients reconnecting to eu-west', done: false };
     return { text: 'Recovered: eu-west is the new primary', done: true };
   }
   if (clock < REROUTE_S) return { text: 'Health checks failing: rerouting users to the next-nearest region', done: false };
@@ -115,8 +146,6 @@ export function replicaPairs(mode: Mode, dead: RegionId[]): [RegionId, RegionId]
   for (const a of alive) for (const b of alive) if (a !== b) pairs.push([a, b]);
   return pairs;
 }
-
-export const regionsInUse = (mode: Mode): RegionId[] => (mode === 'single' ? ['us'] : mode === 'passive' ? ['us', 'eu'] : ALL_REGIONS);
 
 /** Extra wait a synchronous write in region `r` pays for its slowest replica. */
 function syncPenalty(r: RegionId, mode: Mode, replication: Replication, dead: RegionId[]): number {

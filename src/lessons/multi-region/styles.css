@@ -42,3 +42,4 @@
 .mr-phase text { fill: var(--hi); font: 600 13px var(--font); }
 .mr-phase.done rect { stroke: var(--ok); }
 .mr-phase.done text { fill: var(--ok); }
+.mr-region:focus-visible rect { stroke-width: 5; }

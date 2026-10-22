@@ -1,16 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
+import { Button, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA, pad2 } from '../../core/format';
 import { useInterval } from '../../core/useInterval';
 import {
-  ASYNC_LAG_S, CLOCK_LIMIT_S, latencyStats, MODE_INFO, phaseOf, primaryRegion, REGIONS, replicaPairs, routesFor, WRITES_PER_S,
+  ASYNC_LAG_S, CLOCK_LIMIT_S, costFactor, DETECT_S, DNS_S, PROMOTE_S, latencyStats, MODE_LABEL, phaseOf, primaryRegion, REGIONS, replicaPairs, regionsInUse, routesFor, rpoText, RTT, rtoText, WRITES_PER_S,
   type Mode, type RegionId, type Replication,
 } from './model';
 import { RegionMap } from './RegionMap';
 import './styles.css';
 
+const WIDE_MIN_PX = 700;
 const SIM_SPEED = 60; // 1 real second = 1 simulated minute during failover
 const TICK_MS = 100;
 /** A worst-case round trip above this reads as "slow" (red). */
@@ -21,7 +23,7 @@ const CONFLICT_VERDICT_MS = 1500;
 const INTRO: Record<Mode, ReactNode> = {
   single: (
     <>
-      <b>Single region</b>: everyone talks to us-east. Cheap and simple, but Asia pays <span className="hl bad">~220 ms</span> per round
+      <b>Single region</b>: everyone talks to us-east. Cheap and simple, but Asia pays <span className="hl bad">{RTT.apu.us} ms</span> per round
       trip, and one region outage is a total outage.
     </>
   ),
@@ -122,8 +124,10 @@ export function Stage() {
             Its last <span className="hl bad">~{ASYNC_LAG_S} s</span> of unreplicated writes (≈ {Math.round(ASYNC_LAG_S * WRITES_PER_S)} orders)
             are lost: that's the <b>RPO</b>.
           </>
+        ) : regionsInUse(mode).some((x) => x !== r && !dead.includes(x)) ? (
+          <>Sync replication: each committed write already exists in another live region, so <span className="hl ok">RPO = 0</span>.</>
         ) : (
-          <>Sync replication: every committed write already exists in another region, so <span className="hl ok">RPO = 0</span>.</>
+          <>Sync replication, but no other region is alive: the committed writes existed only here, so they are <span className="hl bad">lost</span>.</>
         ),
       );
     } else if (mode === 'single') {
@@ -140,19 +144,18 @@ export function Stage() {
   };
 
   const downtime = clock !== null && phase ? clock : null;
-  const info = MODE_INFO[mode];
 
   return (
-    <StageFrame minWidth={700}
-      height={470}
+    <StageFrame
+      height={0}
       stats={
         <Stats>
           <Stat label="Avg read latency" value={stats.anyServed ? `${Math.round(stats.avgRead)} ms` : NA} color="var(--info)" sub="round trip, by users" />
           <Stat label="Worst user" value={stats.worst === null ? NA : `${stats.worst} ms`} color={stats.worst !== null && stats.worst > SLOW_RTT_MS ? 'var(--bad)' : 'var(--ok)'} />
           <Stat label="Avg write latency" value={stats.avgWrite === null ? NA : `${Math.round(stats.avgWrite)} ms`} color="var(--violet)" sub={replication === 'sync' && mode !== 'single' ? 'waits for replicas' : 'local commit'} />
           <Stat label="Users down" value={`${Math.round(stats.downShare * 100)}%`} color={stats.downShare ? 'var(--bad)' : 'var(--ok)'} sub={downtime !== null ? `downtime ${minSec(downtime)}` : undefined} />
-          <Stat label="RPO / RTO" value={<span className="mr-small">{info.rpo(replication)}</span>} sub={info.rto} />
-          <Stat label="Cost" value={info.cost} sub="vs one region" />
+          <Stat label="RPO / RTO" value={<span className="mr-small">{rpoText(mode, replication, dead)}</span>} sub={rtoText(mode)} />
+          <Stat label="Cost" value={`${costFactor(mode)}×`} sub="regions, vs one region" />
         </Stats>
       }
       legend={
@@ -173,9 +176,9 @@ export function Stage() {
             value={mode}
             onChange={changeMode}
             options={[
-              { value: 'single', label: 'Single region' },
-              { value: 'passive', label: 'Active-passive' },
-              { value: 'active', label: 'Active-active' },
+              { value: 'single', label: MODE_LABEL.single },
+              { value: 'passive', label: MODE_LABEL.passive },
+              { value: 'active', label: MODE_LABEL.active },
             ]}
           />
           <Segmented
@@ -205,18 +208,29 @@ export function Stage() {
         </Controls>
       }
     >
-      <RegionMap
-        mode={mode}
-        replication={replication}
-        residency={residency}
-        conflict={conflict}
-        dead={dead}
-        routes={routes}
-        primary={primaryRegion(mode, dead, phaseDone)}
-        pairs={replicaPairs(mode, dead)}
-        phase={phase}
-        onToggleRegion={toggleRegion}
-      />
+      <WideRegion minWidth={WIDE_MIN_PX}>
+        <RegionMap
+          mode={mode}
+          replication={replication}
+          residency={residency}
+          conflict={conflict}
+          dead={dead}
+          routes={routes}
+          primary={primaryRegion(mode, dead, phaseDone)}
+          pairs={replicaPairs(mode, dead)}
+          phase={phase}
+          onToggleRegion={toggleRegion}
+        />
+      </WideRegion>
+      <ProvenanceRow>
+        <Provenance kind="simulated">
+          failover and replication are a model on a made-up clock: one real second is one simulated minute, and a region fails when you click it
+        </Provenance>
+        <Provenance kind="illustrative">
+          round-trip times, user shares, the {DETECT_S} s, {PROMOTE_S} s and {DNS_S} s failover phases, the {ASYNC_LAG_S} s replication lag and {WRITES_PER_S} writes a second are invented; cost counts regions only
+        </Provenance>
+        <Provenance kind="from-memory">light covers about 200 km per millisecond in fibre (so 1 ms of round trip per 100 km): verify against a physics reference</Provenance>
+      </ProvenanceRow>
     </StageFrame>
   );
 }
