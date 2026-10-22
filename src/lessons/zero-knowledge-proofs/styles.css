@@ -1,0 +1,24 @@
+.zk-stage { gap: 12px; }
+.zk-note { margin: 0; font: 500 12.5px var(--font); line-height: 1.6; color: var(--muted); }
+.zk-cave { width: 100%; max-width: 360px; height: auto; }
+.zk-path { fill: none; stroke: var(--dim); stroke-width: 10; stroke-linecap: round; }
+.zk-path.is-called { stroke: var(--hi); }
+.zk-door { fill: none; stroke: var(--violet); stroke-width: 2; }
+.zk-label { fill: var(--muted); font: 600 11px var(--font); }
+.zk-prover { fill: var(--violet); }
+.zk-prover.is-caught { fill: var(--bad); }
+.zk-rounds { display: flex; flex-flow: row wrap; gap: 6px; }
+.zk-round { padding: 3px 8px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 12px var(--font); color: var(--muted); }
+.zk-round.is-ok { border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+.zk-round.is-bad { border-color: color-mix(in srgb, var(--bad) 70%, transparent); background: color-mix(in srgb, var(--bad) 9%, transparent); }
+.zk-cheats { display: flex; flex-direction: column; gap: 8px; }
+.zk-cheat { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 13px var(--font); line-height: 1.7; }
+.zk-cheat.is-bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.zk-lists { display: flex; flex-flow: row wrap; gap: 12px; }
+.zk-lists > div { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 6px; font: 600 12.5px var(--font); }
+.zk-scroll { max-height: 220px; overflow: auto; border-radius: 8px; }
+.zk-refusal { margin: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--bad) 60%, transparent); background: color-mix(in srgb, var(--bad) 10%, transparent); font: 600 13px var(--font); line-height: 1.5; }
+.zk-fakes { display: flex; flex-flow: row wrap; gap: 6px; margin-top: 6px; }
+.zk-fake { padding: 3px 8px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 12px var(--mono); }
+.zk-fake.is-real { border-color: var(--sky); }
+.zk-fake.is-sim { border-color: var(--amber); }
