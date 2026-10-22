@@ -48,7 +48,7 @@ const lesson: LessonModule = {
     `In "Who am I from outside?" press play (or restart): each peer sends one binding request and the server answers with the address it saw. A learns ${reflexiveA} and B learns ${reflexiveB}; each NAT ends with one mapping, and no packet goes from A to B.`,
     `In "Hole punching" (both home routers: ${NAT_NAME[p0.a]} NATs) press play (or restart): A's first probe is dropped by NAT B, B's first probe gets through, and the pair is connected with ${home.dropped} dropped probe of ${home.probes.length}. Set the NAT of peer B to symmetric: all ${bothHard.probes.length} probes are dropped. Then set the NAT of peer A to restricted cone: it connects again (${softA.probes.length} probes).`,
     `Below the ladder, press the symmetric-by-symmetric cell of the matrix: it reads relay. ${punching} of ${NAT_TYPES.length * NAT_TYPES.length} pairs punch a hole, and moving "Peer B starts" to 3 ticks late changes none of them.`,
-    `In "The relay" (${NAT_NAME[r0.a]} against ${NAT_NAME[r0.b]}) the pair cannot punch, so the path in use is the relay: ${lat.relayed} ms one way instead of ${lat.direct}, ${lat.extra} ms more. At ${CALLS.initial.toLocaleString('en-US')} calls with ${SHARE.initial}% relayed the relay sends ${load.egressMbps} Mbit/s, ${load.gbPerHour} GB an hour. Move the share to 0: the relay sends nothing.`,
+    `In "The relay" (${NAT_NAME[r0.a]} against ${NAT_NAME[r0.b]}) the pair cannot punch, so the path in use is the relay: ${lat.relayed} ms one way instead of ${lat.direct}, ${lat.extra} ms more. At ${CALLS.initial.toLocaleString('en-US')} calls with ${SHARE.initial}% relayed the relay sends ${load.egressMbps} Mbit/s, ${load.gbPerHour} GB an hour. Move the share to 0: the fleet cost falls to $0 and the relay sends nothing.`,
     `In "ICE" (both home routers) the nominated pair is ${kinds(iceHome.win)} after ${iceHome.n} checks, because the host pair fails first. Press "same LAN (host candidate wins)": ${kinds(iceLan.win)} after ${iceLan.n} check. Press "both symmetric (relay needed)": ${kinds(iceHard.win)} after ${iceHard.n} checks.`,
   ],
   keyIdeas: [
@@ -89,7 +89,7 @@ const lesson: LessonModule = {
         'The host\'s operating system refuses packets from ports it has not listened on',
       ],
       answer: 0,
-      why: 'Blocking unsolicited packets is a side effect of the translation table, not a firewall rule: without a mapping and a filter entry made by an outgoing packet there is nothing to translate the packet to.',
+      why: 'In this model, blocking unsolicited packets is a side effect of the translation table rather than a separate firewall rule (real routers often build the filtering on a stateful firewall): without a mapping and a filter entry made by an outgoing packet there is nothing to translate the packet to.',
     },
     {
       q: 'Which pair of NATs cannot punch a hole in this lesson\'s model?',

@@ -8,9 +8,9 @@
  *                   and D the controlled agent's. It does not fit a double (up to 2^63), so it is a bigint.
  * Peer A is the controlling agent. A pair works when a connectivity check on it would get through, from the NAT
  * simulation: a host address is private, a server-reflexive address is reachable through the NATs only if punching
- * works, and a relayed address is public.
+ * works, a relayed address is public, and a packet from the relay reaches a mapped address only through a NAT that lets any sender in.
  */
-import { punch, type NatType, SCENE, epText, type Endpoint } from './nat';
+import { makeNat, punch, type NatType, SCENE, epText, type Endpoint } from './nat';
 
 export type CandKind = 'host' | 'srflx' | 'relay';
 export const KINDS: readonly CandKind[] = ['host', 'srflx', 'relay'];
@@ -49,14 +49,26 @@ export function candidatesOf(peer: 'A' | 'B', sc: Scenario): Candidate[] {
   const host = sc.sameLan ? { ip: SCENE.inside.A.ip + (peer === 'A' ? 0 : 1), port: SCENE.inside[peer].port } : SCENE.inside[peer];
   const reflexive = punch(sc.a, sc.b).reflexive[peer];
   const relay = { ip: SCENE.turn.ip, port: RELAY_PORT[peer] };
-  const addr: Record<CandKind, Endpoint> = { host, srflx: sc.sameLan ? { ip: SCENE.natIp.A, port: reflexive.port } : reflexive, relay };
+  // one router on a shared LAN: both peers' mapped addresses are on NAT A, each on its own port
+  const shared = { ip: SCENE.natIp.A, port: SCENE.firstPort.A + (peer === 'A' ? 0 : 1) };
+  const addr: Record<CandKind, Endpoint> = { host, srflx: sc.sameLan ? shared : reflexive, relay };
   return KINDS.map((kind) => ({ kind, addr: addr[kind], priority: candidatePriority(kind) }));
+}
+
+/**
+ * Does a packet from A's relayed address reach B's server-reflexive address? B's NAT made that mapping for its contact
+ * with the STUN server only, so it lets the relay in exactly when its filtering lets in any sender.
+ */
+function relayReachesMapped(sc: Scenario): boolean {
+  const nat = makeNat('B', sc.sameLan ? sc.a : sc.b);
+  const mapped = nat.outbound(SCENE.inside.B, SCENE.stun);
+  return nat.inbound({ ip: SCENE.turn.ip, port: RELAY_PORT.A }, mapped.port).ok;
 }
 
 /** Would a check from a candidate of this kind to a remote candidate of that kind get through? */
 export function pairWorks(local: CandKind, remote: CandKind, sc: Scenario): boolean {
   if (remote === 'relay') return true;
-  if (local === 'relay') return remote === 'srflx';
+  if (local === 'relay') return remote === 'srflx' && relayReachesMapped(sc);
   if (remote === 'host') return local === 'host' && sc.sameLan;
   return !sc.sameLan && punch(sc.a, sc.b).connected;
 }
@@ -93,7 +105,10 @@ export const pairLabel = (p: Pair) => `${KIND_NAME[p.local.kind]} ${epText(p.loc
 /** Why a check on this kind of pair works or does not, in words that follow `pairWorks` rule for rule. */
 export function pairNote(local: CandKind, remote: CandKind, sc: Scenario): string {
   if (remote === 'relay') return 'the relayed address is public, so it answers';
-  if (local === 'relay') return remote === 'srflx' ? 'the relay can reach the peer\'s mapped address' : 'a private address cannot be reached from the relay';
+  if (local === 'relay') {
+    if (remote !== 'srflx') return 'a private address cannot be reached from the relay';
+    return relayReachesMapped(sc) ? 'this NAT lets in a packet from any sender, so the relay reaches the peer\'s mapped address' : 'this NAT drops a packet from the relay, which the peer never sent to';
+  }
   if (remote === 'host') return local === 'host' && sc.sameLan ? 'both are on one LAN, so the private address answers' : 'a private address on another network cannot be reached';
   if (sc.sameLan) return 'both sit behind one router and this model does not do hairpinning';
   return punch(sc.a, sc.b).connected ? 'the probes cross both NATs: the hole is punched' : 'a NAT drops the probes, so no hole opens';

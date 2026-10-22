@@ -367,3 +367,25 @@ describe('the relay readouts equal their formulas', () => {
     }
   });
 });
+
+describe('relay and same-LAN candidates follow the NAT simulation', () => {
+  it('a packet from the relay reaches the mapped address of the peer only through a full cone NAT (hand rule: only an open filter lets in a sender the peer never contacted)', () => {
+    for (const b of NAT_TYPES) {
+      const sc: Scenario = { a: 'full', b, sameLan: false };
+      expect(pairWorks('relay', 'srflx', sc), `B ${b}`).toBe(b === 'full');
+      expect(pairWorks('relay', 'host', sc)).toBe(false);
+      expect(pairWorks('relay', 'relay', sc)).toBe(true);
+      expect(pairWorks('host', 'relay', sc)).toBe(true);
+    }
+  });
+
+  it('on one LAN both mapped addresses are on NAT A, on different ports, and the A candidate is unchanged', () => {
+    const sc: Scenario = { a: 'port-restricted', b: 'port-restricted', sameLan: true };
+    const a = candidatesOf('A', sc)[1].addr;
+    const b = candidatesOf('B', sc)[1].addr;
+    expect(a.ip).toBe(b.ip);
+    expect(ipToString(a.ip)).toBe('198.51.100.20');
+    expect(a.port).not.toBe(b.port);
+    expect(a.port).toBe(40000);
+  });
+});
