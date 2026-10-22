@@ -1,0 +1,8 @@
+.npr-stage { display: flex; flex-direction: column; gap: 8px; }
+.npr-graph { width: 100%; max-width: 640px; margin: 0 auto; --graph-tint: 45%; }
+.npr-note, .npr-results { min-height: 1.4em; display: flex; flex-direction: column; gap: 4px; }
+.npr-formula { margin: 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.npr-formula-field { flex: 1 1 260px; min-width: 0; max-width: 480px; }
+.npr-formula-field input { width: 100%; min-width: 0; box-sizing: border-box; }
+.npr-table { width: 100%; font-size: 13px; }
+.npr-table .is-selected td { background: color-mix(in srgb, var(--hi) 14%, transparent); }
