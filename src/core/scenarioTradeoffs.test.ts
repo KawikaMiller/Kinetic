@@ -47,12 +47,10 @@ describe('the lead-lesson scenarios of the specs pass every trade-off check', ()
     }
   });
 
-  it('flags hiring-interviewing veto only when destinations are ignored: "no hire" and "hire" are different endings', () => {
-    // veto (regret +12, days +1, goodwill -2) is worse than avg (regret +10) on every meter, but it ends
-    // somewhere else. The meters cannot say whether "no hire" is as good as "hire", so the default does not call it a straw man.
-    expect(dominatedChoices(HIRING, { destinations: 'ignore' }).map((p) => p.detail)).toEqual([
-      'h1/veto is dominated by h1/avg: no better on any meter, worse on at least one',
-    ]);
+  it('keeps hiring-interviewing veto a real trade against avg even when destinations are ignored (T4-B9 retune: veto regret 8, not 12)', () => {
+    // veto (regret +8, days +1, goodwill -2) is better than avg (regret +10) on regret and worse on days and goodwill.
+    // At the spec's original +12 it was worse on every meter and only a different ending kept it from being a straw man.
+    expect(dominatedChoices(HIRING, { destinations: 'ignore' })).toEqual([]);
     expect(dominatedChoices(HIRING)).toEqual([]);
   });
 
@@ -85,7 +83,7 @@ describe('the lead-lesson scenarios of the specs pass every trade-off check', ()
     expect(finalMeters(REVERSIBLE_DECISIONS, ['r1', 'migrate'])).toEqual({ slack: 6, regret: 30, undo: 5, upkeep: 0 });
     expect(finalMeters(REVERSIBLE_DECISIONS, ['r2', 'extend'])).toEqual({ slack: 6, regret: 25, undo: 4, upkeep: 6 });
     expect(finalMeters(REVERSIBLE_DECISIONS, ['r3', 'more'])).toEqual({ slack: 2, regret: 8, undo: 10, upkeep: 0 });
-    expect(finalMeters(INFLUENCE, ['push', 'concede', 'pilot'])).toEqual({ support: 17, trust: 6, weeks: 3, scope: 55, risk: 10 });
+    expect(finalMeters(INFLUENCE, ['push', 'concede', 'pilot'])).toEqual({ support: 17, trust: 6, weeks: 2, scope: 55, risk: 10 });
     expect(finalMeters(INFLUENCE, ['ask', 'fullrollout'])).toEqual({ support: 18, trust: 5, weeks: 2, scope: 90, risk: 55 });
     expect(finalMeters(HIRING, ['evidence', 'decide_evidence'])).toEqual({ regret: 12, days: 1, goodwill: 3 });
     expect(finalMeters(HIRING, ['followup', 'hire_after'])).toEqual({ regret: 9, days: 8, goodwill: 7 });
