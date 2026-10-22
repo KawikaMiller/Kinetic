@@ -1,7 +1,7 @@
 /** Captions for every scene, built from the model so each number is the one on screen. Plain strings. */
 import { decimal, plural } from '../../core/format';
 import { blend, probePixel, type BlendState, type Region } from './blend';
-import { rgbText } from './paint';
+import { rgbText } from '../../components/canvasImage';
 import { echo } from './shader';
 import { overdraw, type OverdrawState } from './overdraw';
 import { GRID, type Fragment } from './render';

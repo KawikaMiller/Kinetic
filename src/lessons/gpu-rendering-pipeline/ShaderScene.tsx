@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { shaderCaption } from './captions';
 import { MESH_IDS, meshOf } from './mesh';
-import { paintPixels, tokenRgb } from './paint';
+import { paintPixels, tokenRgb } from '../../components/canvasImage';
 import { IMAGE, matrices, shadeImage } from './render';
 import { FUNCTIONS, INPUT_NAMES, MAX_CHARS, MAX_TOKENS, SHADER_PRESETS, compileChannels } from './shader';
 import { SHADER_TURN, activePreset, choosePreset, initialShader, typeField, type ShaderState } from './shaderState';

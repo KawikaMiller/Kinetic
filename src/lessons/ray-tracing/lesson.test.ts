@@ -6,7 +6,7 @@ import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { acneCaption, bvhCaption, pixelCaption, shadingCaption } from './captions';
 import lesson from './index';
-import { rgbText } from './paint';
+import { rgbText } from '../../components/canvasImage';
 import {
   BIAS_CHOICES, CLEAN_BIAS, DEFAULT_PIXEL, IMAGE, MANY, MAX_BOUNCES, PRESETS, compareBvh, differsFromClean, initialTrace, manySpheres, moveBody, pixelTrail, render, sceneOf, settingsOf,
   type TraceState,

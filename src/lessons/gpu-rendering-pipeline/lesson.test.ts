@@ -9,7 +9,7 @@ import { blendCaption, overdrawCaption, pipelineCaption, shaderCaption, slantCap
 import lesson from './index';
 import { meshOf } from './mesh';
 import { ORDERS, initialOverdraw, overdraw } from './overdraw';
-import { rgbText } from './paint';
+import { rgbText } from '../../components/canvasImage';
 import { IMAGE, matrices, shadeImage } from './render';
 import { MAX_CHARS, SHADER_PRESETS, compileChannels, parseChannel } from './shader';
 import { activePreset, choosePreset, initialShader, typeField } from './shaderState';

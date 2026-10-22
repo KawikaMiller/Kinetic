@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { decimal, integer } from '../../core/format';
 import { shadingCaption } from './captions';
-import { paintPixels } from './paint';
+import { paintPixels } from '../../components/canvasImage';
 import { RENDER_SCALE, RenderView } from './RenderView';
 import { IMAGE, MAX_BOUNCES, PRESETS, initialTrace, moveBody, render, sceneOf, settingsOf, type TraceState } from './scene';
 import { TopDown } from './TopDown';

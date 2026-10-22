@@ -5,7 +5,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { decimal } from '../../core/format';
 import { pixelCaption } from './captions';
-import { paintPixels, rgbText } from './paint';
+import { paintPixels, rgbText } from '../../components/canvasImage';
 import { RENDER_SCALE, RenderView } from './RenderView';
 import { DEFAULT_PIXEL, IMAGE, initialTrace, moveBody, pixelRay, render, sceneOf, settingsOf, trailOf, type TraceState } from './scene';
 import { TopDown } from './TopDown';

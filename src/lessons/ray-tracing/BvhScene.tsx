@@ -4,7 +4,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { integer } from '../../core/format';
 import { bvhCaption } from './captions';
-import { mixRgb, paintPixels, tokenRgb } from './paint';
+import { mixRgb } from './paint';
+import { paintPixels, tokenRgb } from '../../components/canvasImage';
 import { RENDER_SCALE, RenderView } from './RenderView';
 import { IMAGE, MANY, compareBvh, manySpheres } from './scene';
 

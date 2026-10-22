@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { pct } from '../../core/format';
 import { slantCaption } from './captions';
-import { paintPixels, tokenRgb } from './paint';
+import { paintPixels, tokenRgb } from '../../components/canvasImage';
 import { IMAGE } from './render';
 import { bentPixels, quadImage } from './slant';
 

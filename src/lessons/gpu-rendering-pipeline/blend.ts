@@ -1,7 +1,7 @@
 /** Scene 5: two translucent triangles blended with src-alpha, one-minus-src-alpha, and the order that changes the colour. */
 import { coveredPixels, blendOver, type Triangle } from '../../core/raster';
 import type { Vec3 } from '../../core/raster3d';
-import { tokenRgb } from './paint';
+import { tokenRgb } from '../../components/canvasImage';
 
 export const BLEND_GRID = { w: 32, h: 24 } as const;
 export const BACKGROUND: Vec3 = [...tokenRgb('bg2')];

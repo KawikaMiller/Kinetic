@@ -132,6 +132,8 @@
 `plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 `integer(23414)        // '23,414' — an exact whole count with separators (sig() rounds to 3 figures)
 `pad2(7), clock(605)   // '07', '10:05'
+`joinList(['a', 'b', 'c'])  // 'a, b and c' ('a and b' for two, the item alone for one): the list-in-a-caption sentence
+`dollars(12.5)         // '$12.50' — a dollar amount to the cent (autoscaling, graceful-degradation, object-storage, serverless-cold-starts)
 `latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 `humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
 `                      // past a million years a power of ten, never a raw float: '3.2 × 10²⁹² years' (no-break spaces round ×)
@@ -1052,6 +1054,7 @@
 `  use them, and its depth probe moves with `gridKeyTarget`, so it now also takes Home/End and Page Up/Down.
 `- `Arrow dashed` dashes the shaft. `VLine onDrag` is a slider (`role="slider"`, a grip, pointer drag anywhere in the box; arrows call `onStep(±1)`, or nudge 4 units through `onDrag` without one): classification-metrics' threshold.
 `- `paintImage(w, h, draw)` (`components/canvasImage.ts`) is the shared paint-to-data-URL step behind Heat and CellGrid's canvas mode.
+`- Per-pixel images from the same file: `paintPixels(w, h, colourAt, scale)` (row-major, `colourAt(i)` returns an `Rgb` in 0..1), `tokenRgb(token)` (a palette token as `Rgb`), `rgbText(c)` ('(255, 128, 0)' for on-screen numbers) and the `Rgb` type / `CHANNEL_MAX`. Used by ray-tracing, gpu-rendering-pipeline and lossy-compression; their `paint.ts` keep only what is theirs (`paintRings`, `mixRgb`, `grey`).
 `
 `### `core/graphLayout.ts`, `GraphView.tsx` — topological-sort, union-find, minimum-spanning-trees, relations-orders, cycle-detection, dfa-nfa, lexing-tokens, deadlocks, garbage-collection, memory-leaks, build-systems, bundlers-code-splitting, coupling-cohesion, test-doubles, dependency-injection, behavioral-patterns, mobile-app-lifecycle, sockets-api, software-licensing; graph-representations, ci-pipelines
 ````tsx
