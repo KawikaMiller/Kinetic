@@ -4,7 +4,7 @@
  * why the candidates are kept at all. Pure.
  */
 import { estimate, makeFamily, newSketch, update, type Sketch } from './sketch';
-import { exactCounts, exactTop, keyOfRank, TOP_K } from './stream';
+import { exactCounts, exactTop, keyOfRank, TOP_K } from './ranks';
 
 export interface Candidate {
   item: number;

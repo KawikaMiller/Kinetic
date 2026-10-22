@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
-import type { DuelResult } from './duel';
+import { type DuelResult } from '../../core/automataDuel';
 import type { CheckResult } from './learner';
 import { CHECK_LENGTH } from './learner';
 

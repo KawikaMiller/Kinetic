@@ -4,8 +4,8 @@
  * and the estimate of an item is the smallest of its d cells. `update` writes into the grid it is given (a sketch is a big mutable array
  * by nature); everything else is pure.
  */
-import { fnv1a } from '../../core/hash';
-import { mulberry32 } from '../../core/random';
+import { fnv1a } from '../hash';
+import { mulberry32 } from '../random';
 
 export const PRIME = 2 ** 31 - 1;
 export const MIN_WIDTH = 4;

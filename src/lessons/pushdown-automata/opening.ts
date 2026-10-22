@@ -1,5 +1,5 @@
 import type { PdaAcceptMode } from '../../core/automata';
-import type { PresetId } from './machines';
+import { type PresetId } from '../../core/pdaPresets';
 
 export type SceneId = 'stepper' | 'duel' | 'build';
 

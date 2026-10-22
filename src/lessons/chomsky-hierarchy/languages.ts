@@ -7,8 +7,11 @@
  */
 import { dfaRun, pdaRun, type Dfa } from '../../core/automata';
 import { runTm, type Tm } from '../../core/tm';
-import { build, presetById } from '../pushdown-automata/machines';
-import { PRIME, ANBNCN, WW, TM_STEP_BUDGET } from './turing';
+import { ANBNCN, PRIME, WW } from '../../core/tmTables';
+import { build, presetById } from '../../core/pdaPresets';
+
+/** Steps a card's machine may take before the tester says it did not finish. */
+const TM_STEP_BUDGET = 20_000;
 
 export type RingId = 'regular' | 'cf' | 'cs' | 'decidable' | 're';
 

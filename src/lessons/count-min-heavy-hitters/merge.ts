@@ -2,8 +2,7 @@
  * count-min-heavy-hitters, scene 4: one sketch per Kafka partition, added cell by cell. With the same hash seeds the sum is exactly the
  * sketch of the combined stream; with different seeds the cells mean different things and the sum is wrong. Pure.
  */
-import { addSketches, sameGrid, type Sketch } from './sketch';
-import { sketchOf } from './stream';
+import { addSketches, sameGrid, type Sketch, sketchOf } from '../../core/countMin';
 
 export const PARTITIONS = 3;
 export const MERGE_N = 6_000;

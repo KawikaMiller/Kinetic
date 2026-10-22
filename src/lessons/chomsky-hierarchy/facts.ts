@@ -1,8 +1,8 @@
 /** Every number the lesson text quotes, computed from the model. */
-import { boundedCounter, firstDisagreement } from '../pushdown-automata/duel';
+import { boundedCounter, firstDisagreement } from '../../core/automataDuel';
 import { EVIDENCE, evidenceFor } from './evidence';
 import { cardById, decide, KEY } from './languages';
-import { EXAMPLES, distinguishing, finalPartition, refine } from './minimize';
+import { EXAMPLES, distinguishing, finalPartition, refine } from '../../core/automataMinimize';
 import { OPENING } from './opening';
 import { MAX_P, MIN_P, cfCount, chooseString, playGame, pumpLanguage } from './pumping';
 

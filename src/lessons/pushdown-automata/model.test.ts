@@ -1,112 +1,12 @@
 /**
- * Independent oracles: counting predicates, reversal, a stack-free scan, brute-force Myhill-Nerode classes of
- * behaviour, and every string over a small alphabet.
+ * The lesson's own checks (the learner table runner, hostile tables). The preset machines and the DFA duel are
+ * tested in core/pdaPresets.test.ts and core/automataDuel.test.ts.
  */
 import { describe, expect, it } from 'vitest';
-import { accepts, pdaRun, type Dfa } from '../../core/automata';
-
-import { MAX_K, MIN_K, boundedCounter, duel, firstDisagreement, pigeonhole, wordAnBn } from './duel';
+import { pdaRun } from '../../core/automata';
 import { CHECK_LENGTH, binaryStrings, checkTable, parseTable, runLearner } from './learner';
-import { MAX_SUBJECT, PRESETS, build, checkSubject, presetById, type Preset } from './machines';
-import { CONFIG_BUDGET, stepRun } from './stepper';
-
-function allStrings(alphabet: readonly string[], max: number): string[] {
-  const out = [''];
-  let layer = [''];
-  for (let n = 1; n <= max; n++) {
-    layer = layer.flatMap((s) => alphabet.map((a) => s + a));
-    for (const w of layer) out.push(w);
-  }
-  return out;
-}
-
-const alphabetOf = (p: Preset) => (p.id === 'brackets' ? ['(', ')'] : p.id === 'brackets2' ? ['(', ')', '[', ']'] : ['a', 'b']);
-/** Exhaustive to length 10 where the alphabet is two letters, to length 8 for four letters (4^10 strings is too many to run). */
-const maxLength = (p: Preset) => (alphabetOf(p).length === 2 ? 10 : 8);
-
-describe('the preset machines', () => {
-  for (const preset of PRESETS) {
-    it(`${preset.id} accepts exactly its language on every string up to length ${maxLength(preset)}, in both acceptance modes`, () => {
-      const final = build(preset, 'final-state');
-      const empty = build(preset, 'empty-stack');
-      for (const s of allStrings(alphabetOf(preset), maxLength(preset))) {
-        const f = stepRun(final.pda, s, final.accept).status === 'accepted';
-        const e = stepRun(empty.pda, s, empty.accept).status === 'accepted';
-        expect(f, `${preset.id} final-state on "${s}"`).toBe(preset.member(s));
-        expect(e, `${preset.id} empty-stack on "${s}"`).toBe(preset.member(s));
-      }
-    });
-  }
-
-  it('the reference predicates are what they say (hand-worked members and non-members)', () => {
-    const member = (id: Preset['id'], s: string) => presetById(id).member(s);
-    expect([member('anbn', 'aabb'), member('anbn', 'abab'), member('anbn', ''), member('anbn', 'aab')]).toEqual([true, false, true, false]);
-    expect([member('brackets', '(())()'), member('brackets', ')('), member('brackets2', '([])'), member('brackets2', '([)]')]).toEqual([true, false, true, false]);
-    expect([member('wwr', 'abba'), member('wwr', 'aba'), member('wwr', 'abab'), member('wwr', '')]).toEqual([true, false, false, true]);
-  });
-
-  it('the wwr machine guesses: on abba more than one configuration is live at once, and exactly one path accepts', () => {
-    const { pda, accept } = build(presetById('wwr'), 'final-state');
-    const run = stepRun(pda, 'abba', accept);
-    expect(run.status).toBe('accepted');
-    expect(Math.max(...run.frames.map((f) => f.configs.length))).toBeGreaterThan(1);
-    expect(run.frames[run.frames.length - 1].accepting).toBe(true);
-  });
-});
-
-describe('the DFA duel', () => {
-  /** Table-filling (Hopcroft and Ullman): mark every pair of states a suffix can tell apart, then count what is left unmarked as one class. */
-  const classes = (dfa: Dfa) => {
-    const accepting = new Set(dfa.accept);
-    const marked = new Set<string>();
-    const key = (p: string, q: string) => (p < q ? `${p}|${q}` : `${q}|${p}`);
-    for (const p of dfa.states) for (const q of dfa.states) if (accepting.has(p) !== accepting.has(q)) marked.add(key(p, q));
-    for (let changed = true; changed; ) {
-      changed = false;
-      for (const p of dfa.states) {
-        for (const q of dfa.states) {
-          if (marked.has(key(p, q))) continue;
-          if (dfa.alphabet.some((c) => marked.has(key(dfa.delta[p][c], dfa.delta[q][c])))) {
-            marked.add(key(p, q));
-            changed = true;
-          }
-        }
-      }
-    }
-    const rep = dfa.states.filter((p, i) => dfa.states.slice(0, i).every((q) => marked.has(key(p, q))));
-    return rep.length;
-  };
-
-  for (let k = MIN_K; k <= MAX_K; k++) {
-    it(`k = ${k}: accepts exactly {a^n b^n : n <= ${k}}, has ${2 * k + 2} states, none of them mergeable, and fails at n = ${k + 1} where the PDA accepts`, () => {
-      const dfa = boundedCounter(k);
-      expect(dfa.states).toHaveLength(2 * k + 2);
-      for (const s of allStrings(['a', 'b'], 12)) {
-        const a = [...s].filter((c) => c === 'a').length;
-        expect(accepts(dfa, s), s).toBe(s === wordAnBn(a) && a <= k);
-      }
-      expect(classes(dfa)).toBe(2 * k + 2);
-      const edge = duel(k, k + 1);
-      expect([edge.dfaAccepts, edge.pdaAccepts]).toEqual([false, true]);
-      expect(firstDisagreement(k)).toBe(k + 1);
-      for (let n = 0; n <= k; n++) expect(duel(k, n).dfaAccepts).toBe(true);
-    });
-  }
-
-  it('the pigeonhole step, from the numbers: two visits share a state, so a^i b^i and a^j b^i look the same to the DFA but not to the PDA', () => {
-    for (let k = MIN_K; k <= MAX_K; k++) {
-      const dfa = boundedCounter(k);
-      const { i, j } = pigeonhole(dfa);
-      expect(i).toBeLessThan(j);
-      const w1 = 'a'.repeat(i) + 'b'.repeat(i);
-      const w2 = 'a'.repeat(j) + 'b'.repeat(i);
-      expect(accepts(dfa, w1)).toBe(accepts(dfa, w2));
-      const pda = build(presetById('anbn'), 'final-state');
-      expect(stepRun(pda.pda, w1, pda.accept).status).toBe('accepted');
-      expect(stepRun(pda.pda, w2, pda.accept).status).toBe('rejected');
-    }
-  });
-});
+import { MAX_SUBJECT, checkSubject } from '../../core/pdaPresets';
+import { CONFIG_BUDGET } from '../../core/pdaStepper';
 
 const CORRECT = ['q0 a Z -> q0 AAZ', 'q0 a A -> q0 AAA', 'q0 b A -> q1 -', 'q1 b A -> q1 -', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');
 const PUSHES_ONE = ['q0 a Z -> q0 AZ', 'q0 a A -> q0 AA', 'q0 b A -> q1 -', 'q1 b A -> q1 -', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');

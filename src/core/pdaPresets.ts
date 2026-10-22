@@ -6,7 +6,7 @@
  * finishing move for either way of accepting: an ε-move to the accepting state qf that keeps Z (accept by
  * final state), or an ε-move that pops Z and leaves the stack empty (accept by empty stack).
  */
-import type { Pda, PdaAcceptMode, PdaRule } from '../../core/automata';
+import type { Pda, PdaAcceptMode, PdaRule } from './automata';
 
 export const BOTTOM = 'Z';
 export const FINAL_STATE = 'qf';

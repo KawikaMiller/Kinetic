@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { GraphView, type GraphEdge, type GraphEdgeMark, type GraphNode, type GraphNodeMark } from '../../components/GraphView';
 import { WideRegion } from '../../components/WideRegion';
 import { EPSILON, type State } from '../../core/automata';
-import { edgeKey, edgeLabel, type Construction, type Placement } from './thompson';
+import { edgeKey, edgeLabel, type Construction, type Placement } from '../../core/regex';
 
 const MIN_DRAWING_WIDTH = 480;
 

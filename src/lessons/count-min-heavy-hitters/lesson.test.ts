@@ -5,11 +5,10 @@ import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { breakCaption, gridCaption, heavyCaption, mergeCaption, sizeCaption } from './captions';
 import { breakFacts, gridFacts, heavyFacts, mergeFacts, sizeFacts, SMALL_WIDTH } from './facts';
 import { GRID_D, GRID_SEED, GRID_W, STREAM_BURST, MAX_ITEM_LENGTH, buildGrid, cellRole, cleanItem, inspect, undercounted, wordStream } from './grid';
-import { heavyRun, quality } from './heavy';
+import { heavyRun, quality, cellsOf, deltaOf, epsilonOf, estimate, itemKey, makeFamily, newSketch, update, UNIVERSE, zipfStream } from '../../core/countMin';
 import lesson from './index';
 import { MERGE_DEPTH, MERGE_N, MERGE_WIDTH, mergeRun } from './merge';
-import { cellsOf, deltaOf, epsilonOf, estimate, itemKey, makeFamily, newSketch, update } from './sketch';
-import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, PLAIN, UNIVERSE, errorRun, overCount, overLimit, underCount, zipfStream } from './stream';
+import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, PLAIN, errorRun, overCount, overLimit, underCount } from './stream';
 
 const plain = (node: Parameters<typeof text>[0]) => text(node, { strict: true });
 const stream = zipfStream(DEFAULT_STREAM, DEFAULT_SKEW, DEFAULT_SEED);

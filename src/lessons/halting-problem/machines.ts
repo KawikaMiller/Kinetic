@@ -5,7 +5,8 @@
  * found by running, or the recorded argument on the one machine that has one.
  */
 import { tmStep, tmStart, TM_BLANK, type Tm, type TmConfig, type TmRule } from '../../core/tm';
-import { INCREMENT_REFERENCE, mustParse } from '../turing-machines/model';
+import { INCREMENT_REFERENCE } from '../../core/tmTables';
+import { mustParseTm } from '../../core/tm';
 
 const HALT = 'halt';
 
@@ -40,7 +41,7 @@ export interface LibraryMachine {
   argument?: Argument;
 }
 
-const rules = (text: string) => mustParse(text);
+const rules = (text: string) => mustParseTm(text);
 
 export const WALK_RIGHT_ARGUMENT: Argument = {
   text: 'The only rule fires on a blank and moves right, and every cell to the right of the head is blank, so the same rule fires at every step and never enters a halting state. The tape gets one cell longer each time, so no configuration repeats.',
@@ -66,7 +67,7 @@ export const libraryMachine = (id: string): LibraryMachine => {
 /** The machine D runs when it is told "HALTS": it flips one cell back and forth, repeating a configuration. */
 export const D_LOOPS: Tm = LIBRARY[2].tm;
 /** The machine D runs otherwise: it halts at once. */
-export const D_HALTS: Tm = mustParse('q0 _ -> _ S halt');
+export const D_HALTS: Tm = mustParseTm('q0 _ -> _ S halt');
 
 export const onesOn = (c: TmConfig) => [...c.tape.values()].filter((s) => s === '1').length;
 

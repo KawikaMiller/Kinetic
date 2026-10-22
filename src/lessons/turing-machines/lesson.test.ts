@@ -3,11 +3,9 @@ import { expectCaption } from '../../core/testing/captions';
 import { parseTmTable, runTm, symbolAt, tapeText, TM_LIMITS, type Tm } from '../../core/tm';
 import { sizeCaption, stepCaption } from './captions';
 import lesson from './index';
-import {
-  allStrings, ALPHABET, checkInputs, checkTable, CHECK_EXTRA, CHECK_EXHAUSTIVE, decodeTable, doublingRatio, encodeTable, FRAME_CAP, frameStatus,
-  growthWord, INCREMENT_NO_CARRY, INCREMENT_REFERENCE, INCREMENT_STARTER, INCREMENT_WRONG_WRITE, LINEAR_BELOW, MAX_INPUT, mustParse,
-  PALINDROME_STARTER, parseTapeInput, QUADRATIC_FROM, REFERENCE_MACHINES, runCase, STEP_BUDGET, stepsBySize, traceFrames,
-} from './model';
+import { allStrings, ALPHABET, checkInputs, checkTable, CHECK_EXTRA, CHECK_EXHAUSTIVE, decodeTable, doublingRatio, encodeTable, FRAME_CAP, frameStatus, growthWord, INCREMENT_NO_CARRY, INCREMENT_STARTER, INCREMENT_WRONG_WRITE, LINEAR_BELOW, MAX_INPUT, PALINDROME_STARTER, parseTapeInput, QUADRATIC_FROM, REFERENCE_MACHINES, runCase, STEP_BUDGET, stepsBySize, traceFrames } from './model';
+import { INCREMENT_REFERENCE } from '../../core/tmTables';
+import { mustParseTm } from '../../core/tm';
 
 /** An independent simulator: the tape is an array that grows at either end, rules live in an object. */
 function referenceRun(tm: Tm, input: string, maxSteps: number) {
@@ -67,14 +65,14 @@ describe('binary increment against BigInt', () => {
 
 describe('the two named mutants', () => {
   it('deleting the carry rule leaves the input 1 stuck in q1 reading 1', () => {
-    const report = checkTable('increment', mustParse(INCREMENT_NO_CARRY));
+    const report = checkTable('increment', mustParseTm(INCREMENT_NO_CARRY));
     expect(report.first?.input).toBe('1');
     expect(report.first?.verdict).toEqual({ kind: 'stuck', state: 'q1', read: '1' });
     expect(report.failures.length).toBeGreaterThan(1);
   });
 
   it('writing 0 instead of 1 leaves 0 unchanged: it halts with the wrong tape', () => {
-    const report = checkTable('increment', mustParse(INCREMENT_WRONG_WRITE));
+    const report = checkTable('increment', mustParseTm(INCREMENT_WRONG_WRITE));
     expect(report.first?.input).toBe('0');
     expect(report.first?.run.status).toBe('halted');
     expect(report.first?.verdict).toEqual({ kind: 'wrong', got: '0', expected: '1' });
@@ -112,8 +110,8 @@ describe('palindrome check against string reversal', () => {
 
 describe('runTm against an independent array simulator', () => {
   const machines: [string, Tm][] = [
-    ['increment', INCREMENT], ['no carry', mustParse(INCREMENT_NO_CARRY)], ['wrong write', mustParse(INCREMENT_WRONG_WRITE)],
-    ['increment starter', mustParse(INCREMENT_STARTER)], ['palindrome', PALINDROME], ['palindrome starter', mustParse(PALINDROME_STARTER)],
+    ['increment', INCREMENT], ['no carry', mustParseTm(INCREMENT_NO_CARRY)], ['wrong write', mustParseTm(INCREMENT_WRONG_WRITE)],
+    ['increment starter', mustParseTm(INCREMENT_STARTER)], ['palindrome', PALINDROME], ['palindrome starter', mustParseTm(PALINDROME_STARTER)],
   ];
   it.each(machines)('%s: same outcome, final state, tape and step count on every string up to 8 symbols', (_name, tm) => {
     for (const s of allStrings(tm === PALINDROME || _name.startsWith('palindrome') ? AB : BINARY, 8)) {
@@ -158,14 +156,14 @@ describe('the Check input lists', () => {
   });
 
   it('flag a palindrome machine that always accepts, and one that always rejects, on a named first input', () => {
-    const always = (verdict: string) => mustParse(`q0 a -> a R q0\nq0 b -> b R q0\nq0 _ -> _ S ${verdict}`);
+    const always = (verdict: string) => mustParseTm(`q0 a -> a R q0\nq0 b -> b R q0\nq0 _ -> _ S ${verdict}`);
     expect(checkTable('palindrome', always('accept')).first?.input).toBe('ab');
     expect(checkTable('palindrome', always('reject')).first?.input).toBe('');
     expect(checkTable('palindrome', always('halt')).first?.verdict).toEqual({ kind: 'wrong', got: 'halt', expected: 'accept' });
   });
 
   it('report a machine that runs past the budget as not halting within it, never as wrong', () => {
-    const spin = mustParse('q0 _ -> 1 R q0\nq0 0 -> 0 R q0\nq0 1 -> 1 R q0');
+    const spin = mustParseTm('q0 _ -> 1 R q0\nq0 0 -> 0 R q0\nq0 1 -> 1 R q0');
     const report = checkTable('increment', spin);
     expect(report.first?.verdict).toEqual({ kind: 'budget' });
     expect(report.first?.run.steps).toBe(STEP_BUDGET);
@@ -222,13 +220,13 @@ describe('stepping frames', () => {
   });
 
   it('a stuck table ends in a stuck frame with no further frames', () => {
-    const frames = traceFrames(mustParse(INCREMENT_STARTER), '1011');
+    const frames = traceFrames(mustParseTm(INCREMENT_STARTER), '1011');
     expect(frames[frames.length - 1].end).toBe('stuck');
     expect(frameStatus(frames[frames.length - 1], 'increment', '1011')).toBe('stuck');
   });
 
   it('a run past the frame cap jumps to the end and says budget when the budget runs out', () => {
-    const spin = mustParse('q0 _ -> 1 R q0');
+    const spin = mustParseTm('q0 _ -> 1 R q0');
     const frames = traceFrames(spin, '');
     expect(frames).toHaveLength(FRAME_CAP + 2);
     const last = frames[frames.length - 1];
@@ -250,12 +248,12 @@ describe('stepping frames', () => {
 
 describe('captions say what the run did and never claim a loop', () => {
   const cases = [
-    ['stuck', traceFrames(mustParse(INCREMENT_STARTER), '1011'), 'increment', '1011'],
+    ['stuck', traceFrames(mustParseTm(INCREMENT_STARTER), '1011'), 'increment', '1011'],
     ['halted right', traceFrames(INCREMENT, '1011'), 'increment', '1011'],
-    ['halted wrong', traceFrames(mustParse(INCREMENT_WRONG_WRITE), '0'), 'increment', '0'],
+    ['halted wrong', traceFrames(mustParseTm(INCREMENT_WRONG_WRITE), '0'), 'increment', '0'],
     ['palindrome accept', traceFrames(PALINDROME, 'aba'), 'palindrome', 'aba'],
     ['palindrome reject', traceFrames(PALINDROME, 'ab'), 'palindrome', 'ab'],
-    ['budget', traceFrames(mustParse('q0 _ -> 1 R q0'), ''), 'increment', ''],
+    ['budget', traceFrames(mustParseTm('q0 _ -> 1 R q0'), ''), 'increment', ''],
   ] as const;
   it.each(cases)('%s: every frame caption passes the glue check and never says "never halts" or "runs forever"', (_n, frames, task, input) => {
     for (const f of frames) {
@@ -265,14 +263,14 @@ describe('captions say what the run did and never claim a loop', () => {
   });
 
   it('the stuck caption names the state and the symbol, and calls it a different failure from a wrong answer', () => {
-    const frames = traceFrames(mustParse(INCREMENT_STARTER), '1011');
+    const frames = traceFrames(mustParseTm(INCREMENT_STARTER), '1011');
     const text = expectCaption(stepCaption(frames[frames.length - 1], 'increment', '1011'));
     expect(text).toContain('stuck in q1 reading 1');
     expect(text).toContain('different failure from a wrong answer');
   });
 
   it('the budget caption says "did not halt within 5,000 steps"', () => {
-    const frames = traceFrames(mustParse('q0 _ -> 1 R q0'), '');
+    const frames = traceFrames(mustParseTm('q0 _ -> 1 R q0'), '');
     expect(expectCaption(stepCaption(frames[frames.length - 1], 'increment', ''))).toContain('did not halt within 5,000 steps');
   });
 
@@ -312,7 +310,7 @@ describe('steps against size', () => {
   });
 
   it('a table that is stuck leaves the plot empty and the caption says so without claiming a loop', () => {
-    const stuck = stepsBySize('increment', mustParse(INCREMENT_STARTER));
+    const stuck = stepsBySize('increment', mustParseTm(INCREMENT_STARTER));
     expect(stuck.every((p) => p.steps === null && p.status === 'stuck')).toBe(true);
     const text = expectCaption(sizeCaption('increment', stuck));
     expect(text).toContain('does not reach a halting state');
@@ -320,7 +318,7 @@ describe('steps against size', () => {
   });
 
   it('a table that outruns the budget on long inputs drops those points and counts them', () => {
-    const slow = mustParse('q0 1 -> 1 L q0\nq0 _ -> 1 L q0');
+    const slow = mustParseTm('q0 1 -> 1 L q0\nq0 _ -> 1 L q0');
     const points = stepsBySize('increment', slow);
     expect(points.every((p) => p.status === 'budget-exhausted')).toBe(true);
   });
@@ -339,14 +337,14 @@ describe('a table is data', () => {
 
 describe('try-this entries, from the default state', () => {
   it('try-this 1: the starter on 1011 ends stuck in q1 reading 1 after 5 steps', () => {
-    const c = runCase('increment', mustParse(INCREMENT_STARTER), '1011');
+    const c = runCase('increment', mustParseTm(INCREMENT_STARTER), '1011');
     expect(c.run.steps).toBe(5);
     expect(c.verdict).toEqual({ kind: 'stuck', state: 'q1', read: '1' });
     expect(lesson.tryThis[0]).toContain('after 5 steps');
   });
 
   it('try-this 2: Check on the starter fails first on the empty tape, stuck in q1 after 1 step; the reference then gives 1100 in 8', () => {
-    const first = checkTable('increment', mustParse(INCREMENT_STARTER)).first;
+    const first = checkTable('increment', mustParseTm(INCREMENT_STARTER)).first;
     expect(first?.input).toBe('');
     expect(first?.run.steps).toBe(1);
     expect(first?.verdict).toMatchObject({ kind: 'stuck', state: 'q1' });
@@ -356,9 +354,9 @@ describe('try-this entries, from the default state', () => {
   });
 
   it('try-this 3: no carry rule: 1 stuck in q1 reading 1; wrong write: 0 halts with 0', () => {
-    const noCarry = checkTable('increment', mustParse(INCREMENT_NO_CARRY)).first;
+    const noCarry = checkTable('increment', mustParseTm(INCREMENT_NO_CARRY)).first;
     expect([noCarry?.input, noCarry?.verdict]).toEqual(['1', { kind: 'stuck', state: 'q1', read: '1' }]);
-    const wrong = checkTable('increment', mustParse(INCREMENT_WRONG_WRITE)).first;
+    const wrong = checkTable('increment', mustParseTm(INCREMENT_WRONG_WRITE)).first;
     expect([wrong?.input, tapeText(wrong!.run.config)]).toEqual(['0', '0']);
   });
 
@@ -366,7 +364,7 @@ describe('try-this entries, from the default state', () => {
     const run = runTm(PALINDROME, 'aba', { maxSteps: STEP_BUDGET });
     expect([run.config.state, run.steps]).toEqual(['accept', 10]);
     expect(lesson.tryThis[3]).toContain('after 10 steps');
-    expect(checkTable('palindrome', mustParse(PALINDROME_STARTER)).first).not.toBeNull();
+    expect(checkTable('palindrome', mustParseTm(PALINDROME_STARTER)).first).not.toBeNull();
   });
 
   it('try-this 5: 42 and 231 steps at length 20, ratios 1.91 and 3.50', () => {
