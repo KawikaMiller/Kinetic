@@ -21,10 +21,21 @@
  * Fault semantics (all decided at send time, so they are exact and reproducible):
  * - `loss`, `duplicate`: per-message probabilities. A duplicate is a second delivery with its
  *   own latency.
- * - `partition(a, b, from, to)`: a message between the two groups is dropped when it was in
- *   flight at any moment of [from, to]: sent before `to` and delivered at or after `from`.
+ * - `partition(a, b, from, to, { oneWay })`: a message between the two groups is dropped when it
+ *   was in flight at any moment of [from, to]: sent before `to` and delivered at or after `from`.
  *   Messages inside a group, and ones that cleared the link before `from`, are untouched.
- * - `dropNext(pred)`: drops the next message sent that matches, once.
+ *   `oneWay` cuts only the a-to-b direction: messages from b to a still get through.
+ * - `dropNext(pred)`: drops the next message sent that matches, once. `dropWhere(pred, from, to)`
+ *   drops EVERY message sent in [from, to) that matches (a window, not once).
+ * - `loss` may be a function of (message, send time): a per-message probability (K4-1).
+ * - `fifo`: arrival on each link (sender to receiver) follows send order, so a later message
+ *   never overtakes an earlier one on the same link (K4-1). A network duplicate is an extra copy
+ *   that arrives no earlier than the link's previous arrival, so it too can land after later sends.
+ * - `inject(at, to, payload, from)`: legacy (a string `from`, or none): delivered at `at` straight
+ *   to the node, network faults do not apply, and it is dropped if the node is down. With an
+ *   options object `{ from: nodeId }` it is a send by `from` at `at`: latency, loss, partition and
+ *   dropWhere all apply, and `from` must be a node. `{ durable: true }` makes the input survive a
+ *   crashed target: it is held and delivered when the node restarts (an environment input, not a message).
  * - `crash(node, at)` / `restart(node, at)`: a crashed node handles nothing; deliveries to it
  *   are dropped ("down"), its timers are gone, and `init` runs again at restart.
  * - `pause(node, from, to)`: a stalled node (a GC pause, a VM freeze). It neither sends nor
@@ -85,12 +96,30 @@ export interface ClusterConfig<M, S> {
   nodes: Record<string, DistNode<M, S>>;
   /** Default: uniform 1 to 10 ms. */
   latency?: Latency;
-  /** Probability a message is lost, 0..1 (default 0). */
-  loss?: number;
+  /**
+   * Probability a message is lost, 0..1 (default 0): a number, or a function of the message and
+   * its send time. The network stream is drawn once per send either way, so the rule never shifts
+   * another message's latency.
+   */
+  loss?: number | ((msg: Message<M>, now: number) => number);
+  /** Per-link FIFO: a message never arrives before an earlier one on the same link (default false). */
+  fifo?: boolean;
   /** Probability a delivered message is delivered twice (default 0). */
   duplicate?: number;
   /** Per node, in declaration order; missing entries are perfect clocks. */
   clocks?: readonly ClockSpec[];
+}
+
+export interface PartitionOptions {
+  /** Cut only the a-to-b direction (default: both). */
+  oneWay?: boolean;
+}
+
+export interface InjectOptions {
+  /** A node: the input is sent by it, through the network. Omit for an outside input that bypasses the network. */
+  from?: string;
+  /** If the target is down when the input arrives, deliver it at its next restart instead of dropping it. */
+  durable?: boolean;
 }
 
 export interface NodeSnapshot<S> {
@@ -131,16 +160,25 @@ export interface Cluster<M, S> {
   nextTime: () => number;
   /** Events waiting in the queue. */
   readonly queued: number;
-  /** Cut every link between group `a` and group `b` (a node id or a list) from `from` to `to`. */
-  partition: (a: string | readonly string[], b: string | readonly string[], from: number, to: number) => void;
+  /**
+   * Cut every link between group `a` and group `b` (a node id or a list) from `from` to `to`.
+   * `oneWay` cuts only messages from `a` to `b`; b can still reach a.
+   */
+  partition: (a: string | readonly string[], b: string | readonly string[], from: number, to: number, o?: PartitionOptions) => void;
   crash: (node: string, at: number) => void;
   restart: (node: string, at: number) => void;
   /** Stall `node` over [from, to). */
   pause: (node: string, from: number, to: number) => void;
   /** Drop the next message sent that satisfies `pred`, once. */
   dropNext: (pred: (msg: Message<M>) => boolean) => void;
-  /** Deliver `payload` to `to` at time `at` from outside the cluster (a client request); faults on the network don't apply. */
-  inject: (at: number, to: string, payload: M, from?: string) => void;
+  /** Drop every message sent in [from, to) that satisfies `pred`. */
+  dropWhere: (pred: (msg: Message<M>) => boolean, from: number, to: number) => void;
+  /**
+   * Deliver `payload` to `to` at time `at` from outside the cluster (a client request).
+   * A string `from` (default "client") is the legacy form: network faults don't apply, and a down node drops it.
+   * `{ from: nodeId }` sends it through the network as that node; `{ durable: true }` holds it for a crashed target until restart.
+   */
+  inject: (at: number, to: string, payload: M, from?: string | InjectOptions) => void;
   /** Schedule seeded random partitions, crashes (each followed by a restart) and pauses. */
   randomFaults: (o: RandomFaultOptions) => void;
   /** Run every node's `init` (done by the first `step`/`run` anyway). Idempotent. */
@@ -163,10 +201,11 @@ const MIN_FAULT_FRACTION = 0.25;
 const DEFAULT_MAX_EVENTS = 1_000_000;
 
 type Event<M> =
-  | { time: number; seq: number; kind: 'deliver'; msg: Message<M>; dup: boolean }
+  | { time: number; seq: number; kind: 'deliver'; msg: Message<M>; dup: boolean; durable?: boolean }
+  | { time: number; seq: number; kind: 'inject'; msg: Message<M>; durable: boolean }
   | { time: number; seq: number; kind: 'timer'; node: string; timerId: string; gen: number }
   | { time: number; seq: number; kind: 'crash' | 'restart' | 'pause' | 'resume'; node: string }
-  | { time: number; seq: number; kind: 'partition' | 'heal'; label: string };
+  | { time: number; seq: number; kind: 'partition' | 'heal'; label: string; oneWay: boolean };
 
 /** An event before it is given its creation order. */
 type Draft<E> = E extends unknown ? Omit<E, 'seq'> : never;
@@ -174,6 +213,13 @@ type Draft<E> = E extends unknown ? Omit<E, 'seq'> : never;
 interface Cut {
   a: ReadonlySet<string>;
   b: ReadonlySet<string>;
+  from: number;
+  to: number;
+  oneWay: boolean;
+}
+
+interface DropWindow<M> {
+  pred: (msg: Message<M>) => boolean;
   from: number;
   to: number;
 }
@@ -185,7 +231,8 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
   const net = mulberry32(config.seed);
   const faultRnd = mulberry32(config.seed ^ FAULT_STREAM);
   const latency = config.latency ?? DEFAULT_LATENCY;
-  const lossP = config.loss ?? 0;
+  const lossRule = config.loss ?? 0;
+  const fifo = config.fifo ?? false;
   const dupP = config.duplicate ?? 0;
 
   const queue: Event<M>[] = [];
@@ -195,6 +242,11 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
   const pauses = new Map<string, { from: number; to: number }[]>(ids.map((id) => [id, []]));
   const cuts: Cut[] = [];
   const dropRules: ((msg: Message<M>) => boolean)[] = [];
+  const dropWindows: DropWindow<M>[] = [];
+  /** fifo: the latest arrival time scheduled on each link. */
+  const lastArrival = new Map<string, number>();
+  /** Durable inputs that reached a down node, delivered at its restart. */
+  const held = new Map<string, Event<M>[]>(ids.map((id) => [id, []]));
   let clock = 0;
   let seq = 0;
   let steps = 0;
@@ -234,11 +286,12 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
   };
 
   const cutAt = (from: string, to: string, sentAt: number, arrivesAt: number) =>
-    cuts.some((c) => ((c.a.has(from) && c.b.has(to)) || (c.b.has(from) && c.a.has(to))) && sentAt < c.to && arrivesAt >= c.from);
+    cuts.some((c) => ((c.a.has(from) && c.b.has(to)) || (!c.oneWay && c.b.has(from) && c.a.has(to))) && sentAt < c.to && arrivesAt >= c.from);
 
   /** Put a message on the wire, or drop it; the one place network faults are decided. */
-  const route = (msg: Message<M>, dup: boolean, ms: number, loseIt: boolean) => {
-    const arrivesAt = clock + ms;
+  const route = (msg: Message<M>, dup: boolean, ms: number, loseIt: boolean, durable = false) => {
+    const link = `${msg.from}\u0000${msg.to}`;
+    const arrivesAt = fifo ? Math.max(clock + ms, lastArrival.get(link) ?? 0) : clock + ms;
     let reason: DropReason | null = null;
     if (!dup) {
       const i = dropRules.findIndex((pred) => pred(msg));
@@ -247,26 +300,28 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
         reason = 'dropNext';
       }
     }
+    if (!reason && dropWindows.some((w) => clock >= w.from && clock < w.to && w.pred(msg))) reason = 'dropWhere';
     if (!reason && cutAt(msg.from, msg.to, clock, arrivesAt)) reason = 'partition';
     if (!reason && loseIt) reason = 'loss';
     if (reason) {
       record({ kind: 'drop', from: msg.from, to: msg.to, msgId: msg.id, payload: msg.payload, reason, dup: dup || undefined });
       return;
     }
+    if (fifo) lastArrival.set(link, arrivesAt);
     inFlight++;
-    push({ time: arrivesAt, kind: 'deliver', msg, dup });
+    push({ time: arrivesAt, kind: 'deliver', msg, dup, ...(durable ? { durable } : {}) });
   };
 
-  const send = (from: string, to: string, payload: M) => {
+  const send = (from: string, to: string, payload: M, durable = false) => {
     need(to);
     const msg: Message<M> = { id: msgSeq++, from, to, payload };
     // Always draw loss, latency and duplication, so changing `loss` never shifts another message's latency.
-    const lost = net() < lossP;
+    const lost = net() < (typeof lossRule === 'function' ? lossRule(msg, clock) : lossRule);
     const ms = draw(from, to);
     const doubled = net() < dupP;
     record({ kind: 'send', from, to, msgId: msg.id, payload });
-    route(msg, false, ms, lost);
-    if (doubled) route(msg, true, draw(from, to), false);
+    route(msg, false, ms, lost, durable);
+    if (doubled) route(msg, true, draw(from, to), false, durable);
   };
 
   const ctxFor = (node: string): NodeCtx<M> => ({
@@ -308,6 +363,10 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
         }
         inFlight--;
         if (!up.get(msg.to)) {
+          if (ev.durable) {
+            held.get(msg.to)!.push(ev);
+            return;
+          }
           record({ kind: 'drop', from: msg.from, to: msg.to, msgId: msg.id, payload: msg.payload, reason: 'down', dup: ev.dup || undefined });
           return;
         }
@@ -315,6 +374,9 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
         config.nodes[msg.to].onMessage(ctxFor(msg.to), msg);
         return;
       }
+      case 'inject':
+        send(ev.msg.from, ev.msg.to, ev.msg.payload, ev.durable);
+        return;
       case 'timer': {
         if (timers.get(timerKey(ev.node, ev.timerId)) !== ev.gen || !up.get(ev.node)) return;
         const resume = pausedUntil(ev.node, ev.time);
@@ -336,6 +398,10 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
         up.set(ev.node, true);
         record({ kind: 'restart', node: ev.node });
         config.nodes[ev.node].init(ctxFor(ev.node));
+        for (const input of held.get(ev.node)!.splice(0)) {
+          inFlight++;
+          push({ ...input, time: clock } as Draft<Event<M>>);
+        }
         return;
       case 'pause':
       case 'resume':
@@ -344,7 +410,7 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
       case 'partition':
       case 'heal': {
         const [from, to] = ev.label.split('|');
-        record({ kind: ev.kind, from, to });
+        record({ kind: ev.kind, from, to, ...(ev.oneWay ? { detail: 'one-way' } : {}) });
         return;
       }
     }
@@ -365,13 +431,14 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
     push({ time: at, kind, node });
   };
 
-  const addPartition: Cluster<M, S>['partition'] = (a, b, from, to) => {
+  const addPartition: Cluster<M, S>['partition'] = (a, b, from, to, o = {}) => {
     const [ga, gb] = [asSet(a), asSet(b)];
     [...ga, ...gb].forEach(need);
-    cuts.push({ a: ga, b: gb, from, to });
+    const oneWay = o.oneWay ?? false;
+    cuts.push({ a: ga, b: gb, from, to, oneWay });
     const label = `${[...ga].join('+')}|${[...gb].join('+')}`;
-    push({ time: from, kind: 'partition', label });
-    push({ time: to, kind: 'heal', label });
+    push({ time: from, kind: 'partition', label, oneWay });
+    push({ time: to, kind: 'heal', label, oneWay });
   };
 
   const addPause: Cluster<M, S>['pause'] = (node, from, to) => {
@@ -420,10 +487,24 @@ export function createCluster<M, S = unknown>(config: ClusterConfig<M, S>): Clus
     dropNext: (pred) => {
       dropRules.push(pred);
     },
+    dropWhere: (pred, from, to) => {
+      dropWindows.push({ pred, from, to });
+    },
     inject: (at, to, payload, from = 'client') => {
       need(to);
-      inFlight++;
-      push({ time: at, kind: 'deliver', msg: { id: msgSeq++, from, to, payload }, dup: false });
+      if (typeof from === 'string') {
+        inFlight++;
+        push({ time: at, kind: 'deliver', msg: { id: msgSeq++, from, to, payload }, dup: false });
+        return;
+      }
+      const durable = from.durable ?? false;
+      if (from.from === undefined) {
+        inFlight++;
+        push({ time: at, kind: 'deliver', msg: { id: msgSeq++, from: 'client', to, payload }, dup: false, ...(durable ? { durable } : {}) });
+        return;
+      }
+      need(from.from);
+      push({ time: at, kind: 'inject', msg: { id: msgSeq++, from: from.from, to, payload }, durable });
     },
     randomFaults,
     start,
