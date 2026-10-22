@@ -14,13 +14,12 @@
 //   npm run smoke -- --mobile              # 390x844 phone: also fails on content the stage
 //                                            # frame clips, and on scene (SVG) text rendered
 //                                            # below MIN_SCENE_TEXT_PX (fix: StageFrame minWidth)
+import { checkPhone, MIN_SCENE_TEXT_PX } from './lib/phone.mjs';
 import { frameCount, lessonIds, loadFresh, openPage, outPath, parseArgs, seekFrame, shootElement, sleep, visit } from './lib/browser.mjs';
 
 const SETTLE_MS = 1500;
 const LIVE_MS = 2500;
 const PHONE = { width: 390, height: 844 };
-/** Smallest scene text a phone should render: the smallest size lessons use on desktop. */
-const MIN_SCENE_TEXT_PX = 8;
 
 const { flags, positional } = parseArgs();
 // `--scenes` is its own pass (every scene tab of every lesson that has a picker, idle, console watched): scenes.mjs.
@@ -51,41 +50,6 @@ async function checkStructure() {
     ideas: document.querySelectorAll('.idea-list li').length,
     overflowX: document.documentElement.scrollWidth > window.innerWidth,
   }));
-}
-
-/** Phone-only checks: content cut off by the stage frame, and unreadably small scene text. */
-async function checkPhone() {
-  return page.evaluate(() => {
-    const frame = document.querySelector('.stage-frame');
-    if (!frame) return { clipped: [], smallText: null };
-    const right = frame.getBoundingClientRect().right + 1;
-    const clipped = [];
-    for (const el of frame.querySelectorAll('*')) {
-      if (el.closest('.stage-wide')) continue; // scrolls sideways on purpose
-      const box = el.getBoundingClientRect();
-      if (!box.width || box.right <= right || el.parentElement.getBoundingClientRect().right > right) continue;
-      // clipped on purpose by its own overflow container, which itself fits
-      let a = el.parentElement;
-      let deliberate = false;
-      for (; a && a !== frame; a = a.parentElement) {
-        if (getComputedStyle(a).overflowX !== 'visible' && a.getBoundingClientRect().right <= right) {
-          deliberate = true;
-          break;
-        }
-      }
-      if (!deliberate) clipped.push(`${el.tagName.toLowerCase()}.${String(el.className?.baseVal ?? el.className).split(' ')[0]}`);
-    }
-    let smallText = null;
-    for (const text of frame.querySelectorAll('.stage svg text')) {
-      // The drawing's own scale (viewBox → screen), not per-element animation transforms
-      // like a packet scaling in, which would make the check depend on timing.
-      const ctm = text.ownerSVGElement?.getScreenCTM();
-      if (!ctm || !text.textContent.trim() || !text.getBoundingClientRect().width) continue;
-      const px = parseFloat(getComputedStyle(text).fontSize) * Math.hypot(ctm.a, ctm.b);
-      if (!smallText || px < smallText.px) smallText = { px: Math.round(px * 10) / 10, text: text.textContent.trim().slice(0, 24) };
-    }
-    return { clipped: clipped.slice(0, 3), smallText };
-  });
 }
 
 for (const id of ids) {
@@ -124,7 +88,7 @@ for (const id of ids) {
   if (info.tries < 3 || info.ideas < 3) problems.push(`tryThis=${info.tries} keyIdeas=${info.ideas}`);
   if (info.overflowX) problems.push('horizontal overflow');
   if (mobile) {
-    const phone = await checkPhone();
+    const phone = await checkPhone(page);
     if (phone.clipped.length) problems.push(`clipped by the frame: ${phone.clipped.join(', ')}`);
     if (phone.smallText && phone.smallText.px < MIN_SCENE_TEXT_PX) {
       problems.push(`scene text ${phone.smallText.px}px ("${phone.smallText.text}") < ${MIN_SCENE_TEXT_PX}px: set StageFrame minWidth`);

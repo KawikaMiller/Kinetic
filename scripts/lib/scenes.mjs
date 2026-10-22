@@ -69,19 +69,30 @@ const clickOption = ({ fallback, index }) => {
 };
 
 /**
+ * The scene picker of the loaded lesson: `group` is its position among the stage's radio groups (-1: none) and
+ * `picker` its label and option texts (null: none). A lesson that computes before it first renders can show its
+ * picker a moment after load, so this waits for a real picker (2+ options) before concluding the lesson has a
+ * single scene.
+ */
+export async function readPicker(page, waitMs = PICKER_WAIT_MS) {
+  const hasPicker = () => document.querySelectorAll('.stage-frame .segmented [role="radio"]').length >= 2;
+  await page.waitForFunction(hasPicker, { timeout: waitMs }).catch(() => {});
+  // A Vite reload can land between the picker wait and this read: re-run once on a destroyed context.
+  const groups = await retryOnce(() => page.evaluate(findGroups), 'reading the scene picker');
+  const group = pickerIndex(groups.map((g) => g.label));
+  return { group, picker: group >= 0 ? groups[group] : null };
+}
+
+/** Click option `index` of the scene picker found by readPicker (`group` is its `group`). False when there is no such tab. */
+export const selectScene = (page, group, index) => page.evaluate(clickOption, { fallback: group, index });
+
+/**
  * With the lesson already loaded: click each scene tab in turn, wait `idleMs`, and collect the errors heard
  * in that window. `errors` is the array openPage() fills from console.error and pageerror. Returns one
  * entry per scene ({ scene, problems }); a lesson without a picker yields a single entry for its default scene.
  */
 export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}) {
-  // A lesson that computes before it first renders can show its picker a moment after load: wait for a real
-  // picker (2+ options) before concluding the lesson has a single scene.
-  const hasPicker = () => document.querySelectorAll('.stage-frame .segmented [role="radio"]').length >= 2;
-  await page.waitForFunction(hasPicker, { timeout: PICKER_WAIT_MS }).catch(() => {});
-  // A Vite reload can land between the picker wait and this read: re-run once on a destroyed context.
-  const groups = await retryOnce(() => page.evaluate(findGroups), 'reading the scene picker');
-  const group = pickerIndex(groups.map((g) => g.label));
-  const picker = group >= 0 ? groups[group] : null;
+  const { group, picker } = await readPicker(page);
   const results = [];
   const listen = async (scene) => {
     await sleep(idleMs);
@@ -94,7 +105,7 @@ export async function scanScenes(page, errors, { idleMs = DEFAULT_IDLE_MS } = {}
   }
   for (let index = 0; index < picker.options.length; index++) {
     errors.length = 0;
-    const clicked = await page.evaluate(clickOption, { fallback: group, index });
+    const clicked = await selectScene(page, group, index);
     if (!clicked) {
       results.push({ scene: picker.options[index], problems: [`could not click scene tab "${picker.options[index]}"`] });
       continue;

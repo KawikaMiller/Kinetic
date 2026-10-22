@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke.mjs",
     "captions": "node scripts/captions.mjs",
+    "sweep": "node scripts/sweep.mjs",
     "shot": "node scripts/shot.mjs",
     "diff": "node scripts/diff.mjs",
     "check-tokens": "node scripts/check-tokens.mjs",
