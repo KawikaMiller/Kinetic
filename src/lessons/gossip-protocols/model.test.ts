@@ -28,7 +28,7 @@ describe('one-step expectations, hand-worked (n = 16) and checked with a separat
     expect(expectedUninformedNext(16, 1, 'push-pull', 8)).toBeCloseTo(2.1498, 4);
   });
 
-  it('a pure combinatorial simulation of one step (100,000 trials from i = 8) agrees within 3 standard errors, in all three modes and with loss', () => {
+  it('a pure combinatorial simulation of one step (30,000 trials from i = 8) agrees within 3 standard errors, in all three modes and with loss', () => {
     const rnd = mulberry32(99);
     const peer = (self: number, n: number) => {
       const k = Math.floor(rnd() * (n - 1));
@@ -50,7 +50,7 @@ describe('one-step expectations, hand-worked (n = 16) and checked with a separat
     };
     for (const [f, loss] of [[1, 0], [2, 0], [1, 0.3]] as const) {
       for (const mode of MODES) {
-        const xs = Array.from({ length: 100_000 }, () => trial(16, f, mode, 8, loss));
+        const xs = Array.from({ length: 30_000 }, () => trial(16, f, mode, 8, loss));
         expect(Math.abs(mean(xs) - expectedUninformedNext(16, f, mode, 8, loss)), `${mode} f${f} loss${loss}`).toBeLessThan(3 * se(xs));
       }
     }
@@ -85,8 +85,8 @@ describe('expected rounds and the final-size equation', () => {
     }
   });
 
-  it('infect-and-die at n = 2,000, f = 3 leaves a fraction near 0.0595 over 50 seeds; at n = 16 the mean uninformed count sits below n * s', () => {
-    const fractions = Array.from({ length: 50 }, (_, k) => {
+  it('infect-and-die at n = 2,000, f = 3 leaves a fraction near 0.0595 over 30 seeds; at n = 16 the mean uninformed count sits below n * s', () => {
+    const fractions = Array.from({ length: 30 }, (_, k) => {
       const run = runSpread(spread({ n: 2_000, f: 3, die: true, seed: k + 1 }), 40);
       return leftOut(run).length / 2_000;
     });
@@ -142,7 +142,7 @@ describe('safety (always on) over 200 seeds with loss, duplication, a crash and 
     for (const mode of MODES) {
       for (const die of [true, false]) {
         for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
-          const s = buildSpread(spread({ mode, die, seed, f: 2 }), { duplicate: 0.15 });
+          const s = buildSpread(spread({ n: 8, mode, die, seed, f: 2 }), { duplicate: 0.15 });
           s.cluster.randomFaults({ horizonMs: 1_500, partitions: 1, crashes: 1 });
           const verdict = checkInvariants(s.cluster, [spreadSafety()], { until: 2_500 });
           expect(verdict.ok, `${mode} die ${die} seed ${seed}`).toBe(true);

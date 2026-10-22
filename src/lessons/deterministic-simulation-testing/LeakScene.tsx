@@ -79,7 +79,7 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint="trace hash of each press of Replay seed, newest last">Replays</SectionTitle>
           <div className="dst-hashes">
-            {s.replays.length === 0 && <Hint tone="muted">Press Replay seed.</Hint>}
+            {s.replays.length === 0 && <Hint tone="muted" block>Press Replay seed.</Hint>}
             {s.replays.map((hash, i) => (
               <span key={i} className={`dst-hash ${i > 0 && hash === s.replays[i - 1] ? 'is-same' : i > 0 ? 'is-diff' : ''}`}>
                 <code>{hash}</code>
