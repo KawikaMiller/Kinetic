@@ -16,8 +16,8 @@ const lesson: LessonModule = {
       'Deciding how many processes or steps a model can have before the state space is too large to list',
       'Reading about TLA+ and its model checker in published engineering accounts with a sense of what a pass covers',
     ],
-    why: 'Concurrency bugs that appear once in a million runs are hard to find by testing, and a model checker finds them in a small model on demand. It builds on `induction-invariants` (a proof by hand), `proof-techniques` and `property-based-testing` (sampling inputs), and says what each of those leaves open.',
-    watch: 'The step a process is about to run is ringed blue-green. A guard is violet (structure). A state on the counterexample path is blue; the violating state, and the processes sitting in the critical section together, are red. A green count means the search finished and the numbers cover the whole model; a dim count means it was cut off. In the growth scene the green line is the explorer\'s count and the blue one is the closed form.',
+    why: 'Concurrency bugs that appear once in a million runs are hard to find by testing, and a model checker finds them on demand in a small model, if the model captures them. It builds on `induction-invariants` (a proof by hand), `proof-techniques` and `property-based-testing` (sampling inputs), and says what each of those leaves open.',
+    watch: 'The step a process is about to run is ringed in yellow. A guard is violet (structure). A state on the counterexample path is blue; the violating state, and the processes sitting in the critical section together, are red. A green count means the search finished and the numbers cover the whole model; a dim count means it was cut off. In the growth scene the thick green line is the explorer count and the dashed blue line on top of it is the closed form; they coincide.',
   },
   tryThis: [
     `Open Check a lock (the default is Peterson's algorithm with mutual exclusion) and press Check: "holds in all ${F.petersonStates} reachable states of this model".`,
@@ -30,7 +30,7 @@ const lesson: LessonModule = {
     `A model checker visits each reachable state of the model, so a failure comes with the shortest path to it: Peterson's lock holds in ${F.petersonStates} states, while the naive lock fails in ${F.naiveSteps} steps.`,
     `A pass is a statement about the model at its size: it holds in the ${F.petersonStates} states of this model and does not cover the real code or a larger number of processes, and the lesson says so beside each pass.`,
     `Unsafe and stuck are different failures: removing the turn clause from Peterson's guard leaves mutual exclusion intact but deadlocks after ${F.noTurnSteps} steps, while a guard of true violates it in ${F.trueGuardSteps}.`,
-    `State counts grow fast: the atomic lock has ${growth} states for 2 to 6 processes, which is why real checkers abstract and sample, and why random testing of ${F.naiveRandomFailing} of 200 seeds finding the naive bug (lowest failing seed ${F.naiveRandomLowest}) says nothing about the other schedules.`,
+    `State counts grow fast: the atomic lock has ${growth} states for 2 to 6 processes, which is why real checkers abstract and sample. Sampling has its own gap: random testing reached the naive bug on ${F.naiveRandomFailing} of 200 seeds (lowest failing seed ${F.naiveRandomLowest}), so ${F.naiveRandomPassing} schedules looked fine, while the exhaustive check found it without any seed.`,
   ],
   quiz: [
     {
@@ -53,7 +53,7 @@ const lesson: LessonModule = {
         'It shrinks a random input until the bug is as small as it can possibly be made to be',
       ],
       answer: 2,
-      why: `Random testing samples schedules: in the model, 200 seeded schedules reach the naive lock's bug on ${F.naiveRandomFailing} seeds and say nothing about the rest. The checker lists the reachable states of the model, so it also gives the shortest path (${F.naiveSteps} steps). Shrinking is property-based testing's idea.`,
+      why: `Random testing samples schedules: in the model, 200 seeded schedules reach the naive lock's bug on ${F.naiveRandomFailing} seeds and the other ${F.naiveRandomPassing} look fine, so a clean run says only that those schedules were clean. The checker lists the reachable states of the model, so it also gives the shortest path (${F.naiveSteps} steps). Shrinking is property-based testing's idea.`,
     },
     {
       q: 'Removing "turn == me" from the wait guard of Peterson\'s algorithm produces what?',

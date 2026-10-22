@@ -119,3 +119,31 @@ describe('editing the program', () => {
     expect(r.spec.steps[r.spec.critical].effect).toBe('flagMe = 0');
   });
 });
+
+describe('fix pass: text derives from the model', () => {
+  it('key idea 4 and quiz 2 quote both counts of the random leg, and no sentence says a 93%-failing sampler "says nothing"', () => {
+    const r = randomTest(NAIVE);
+    if ('error' in r) throw new Error(r.error);
+    expect(lesson.keyIdeas[3]).toContain(`${r.failing} of 200 seeds`);
+    expect(lesson.keyIdeas[3]).toContain(`${r.total - r.failing} schedules looked fine`);
+    expect(lesson.quiz[1].why).toContain(`${r.failing} seeds`);
+    expect(lesson.quiz[1].why).toContain(`${r.total - r.failing} look fine`);
+    expect(`${lesson.keyIdeas[3]} ${lesson.quiz[1].why}`).not.toContain('says nothing about the other');
+    expect(randomText(r)).toContain(`${r.total - r.failing} did not`);
+  });
+
+  it('the pass line names the invariant it checked (a typed crit0 + crit1 <= 1 passing at 3 processes is visible)', () => {
+    const three: Spec = { ...ATOMIC, n: 3, invariant: 'crit0 + crit1 <= 1' };
+    const r = check(three);
+    expect(checkText(r, three)).toContain('The property checked: crit0 + crit1 <= 1');
+    expect(checkText(check(PETERSON), PETERSON)).toContain('The property checked: crit0 + crit1 <= 1');
+  });
+
+  it('the watch text names the colours drawn: yellow for now, and a dashed blue closed-form line that the growth scene draws', () => {
+    expect(lesson.summary.watch).not.toContain('blue-green');
+    expect(lesson.summary.watch).toContain('ringed in yellow');
+    expect(lessonSources['./GrowthScene.tsx']).toContain('<Curve points={CLOSED} tone="info" dashed />');
+    expect(lessonSources['./GrowthScene.tsx']).not.toContain('not shown');
+    expect(lesson.summary.why).toContain('if the model captures them');
+  });
+});

@@ -17,5 +17,6 @@ export const FACTS = {
   growth: [2, 3, 4, 5, 6].map((n) => atomicLockStates(n).states),
   closed: (n: number) => `${power(n)} + ${n} x ${power(n - 1)} = ${atomicLockClosedForm(n)}`,
   naiveRandomFailing: 'error' in naiveRandom ? 0 : naiveRandom.failing,
+  naiveRandomPassing: 'error' in naiveRandom ? 0 : naiveRandom.total - naiveRandom.failing,
   naiveRandomLowest: 'error' in naiveRandom ? 0 : (naiveRandom.lowestFailingSeed ?? 0),
 };

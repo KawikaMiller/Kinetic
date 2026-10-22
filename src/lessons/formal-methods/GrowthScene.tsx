@@ -11,11 +11,12 @@ const OPTIONS = COUNTS.map((n) => ({ value: n, label: `${n}` }));
 const PLOT_WIDTH = 356;
 const ROWS = COUNTS.map((n) => ({ n, explored: atomicLockStates(n).states, closed: atomicLockClosedForm(n) }));
 const CURVE = ROWS.map((r): [number, number] => [r.n, r.explored]);
+const CLOSED = ROWS.map((r): [number, number] => [r.n, r.closed]);
 const legend = (
   <Legend
     items={[
       { color: 'var(--ok)', label: 'the explorer finished: the count is the whole model' },
-      { color: 'var(--info)', label: 'the closed form: free-lock states plus held-lock states' },
+      { color: 'var(--info)', label: 'the closed form (the dashed line on top of the green one: they coincide)' },
       { color: 'var(--hi)', label: 'the N you picked' },
     ]}
   />
@@ -51,7 +52,8 @@ export function GrowthScene({ picker }: { picker: ReactNode }) {
             width={PLOT_WIDTH}
             ariaLabel="Reachable states of the atomic lock on a log scale against the number of processes, rising from 3 at one process to 256 at six"
           >
-            <Curve points={CURVE} tone="ok" />
+            <Curve points={CURVE} tone="ok" width={5} />
+            <Curve points={CLOSED} tone="info" dashed />
             <Points data={point} />
           </Plot2D>
           <table className="fm-table">
@@ -62,7 +64,7 @@ export function GrowthScene({ picker }: { picker: ReactNode }) {
           </table>
           <p className="fm-note">All idle or waiting with the lock free is {power(n)} states; one process critical, the lock held and the rest idle or waiting is {n} x {power(n - 1)}.</p>
         </Box>
-        <Hint block tone="muted">The exhaustive claim is for this model at this N. A real system, N = 1000 or an unbounded counter is not covered; checkers cope with such sizes by abstraction, symmetry and partial-order reduction (one sentence each, not shown) and by sampling.</Hint>
+        <Hint block tone="muted">The exhaustive claim is for this model at this N. A real system, N = 1000 or an unbounded counter is not covered; checkers cope with such sizes by abstraction, symmetry and partial-order reduction and by sampling.</Hint>
         <ProvenanceRow>
           <Provenance kind="toy">at most {MAX_PROCESSES} processes: the state count roughly doubles with each one, so the page stops where the explorer is still instant</Provenance>
         </ProvenanceRow>

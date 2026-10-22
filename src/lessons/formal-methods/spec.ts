@@ -118,7 +118,8 @@ export function compile(spec: Spec): Compile {
   if (spec.steps.length < 1) return { ok: false, error: 'The program needs at least 1 step.' };
   if (spec.steps.length > MAX_STEPS) return { ok: false, error: `At most ${MAX_STEPS} steps: that is ${spec.steps.length}.` };
   if (spec.critical < 0 || spec.critical >= spec.steps.length) return { ok: false, error: `The critical step is a step number from 0 to ${spec.steps.length - 1}.` };
-  if (spec.n !== 2 && spec.steps.some((s) => s.effect === 'turn = other')) return { ok: false, error: `turn = other: ${TWO_ONLY}.` };
+  const twoOnly = spec.n !== 2 ? spec.steps.findIndex((s) => s.effect === 'turn = other') : -1;
+  if (twoOnly >= 0) return { ok: false, error: `Effect of step ${twoOnly}: turn = other: ${TWO_ONLY}.` };
   const guards: ExprNode[] = [];
   for (const [k, s] of spec.steps.entries()) {
     const g = parse(s.guard, `Guard of step ${k}`, guardNames(spec.n), spec.n);
@@ -250,7 +251,12 @@ export function atomicLockStates(n: number): { states: number; truncated: boolea
 
 export const SEEDS_FROM = 1;
 export const SEEDS_TO = 200;
-export const RANDOM_STEPS = 30;
+/**
+ * Short on purpose: a schedule this long reaches the bug on some seeds and misses it on others (the naive lock fails
+ * on 46 of 200 seeds), which is the contrast with the exhaustive leg. Thirty steps made every broken mode fail on
+ * over 90% of the seeds, which shows nothing about sampling (kickoff decisions, rule 29).
+ */
+export const RANDOM_STEPS = 6;
 
 export interface RandomRun { failing: number; total: number; lowestFailingSeed: number | null }
 
@@ -262,9 +268,12 @@ export function randomTest(spec: Spec): RandomRun | { error: string } {
   let failing = 0;
   let lowest: number | null = null;
   try {
+    const initial = initialState(spec.n);
+    const failsAtStart = checkState(c, initial) !== null;
     for (let seed = SEEDS_FROM; seed <= SEEDS_TO; seed++) {
+      if (failsAtStart) { failing += 1; lowest ??= seed; continue; }
       const next = mulberry32(seed);
-      let s = initialState(spec.n);
+      let s = initial;
       for (let i = 0; i < RANDOM_STEPS; i++) {
         const moves = transitions(c, s);
         if (moves.length === 0) break;

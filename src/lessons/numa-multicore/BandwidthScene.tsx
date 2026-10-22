@@ -6,7 +6,7 @@ import { Hint, Provenance, ProvenanceRow, Stat, Stats } from '../../components/u
 import { pct } from '../../core/format';
 import type { Tone } from '../../core/tone';
 import { ModelNotes, NumaLegend } from './Notes';
-import { DEFAULT_SOCKETS, LINK_GBPS, NODE_GBPS, THREAD_GBPS, bandwidth, gbps, initNote, place, type Init, type Policy } from './numa';
+import { DEFAULT_SOCKETS, LINK_GBPS, NODE_GBPS, THREAD_GBPS, bandwidth, gbps, initNote, place, placementCause, type Init, type Policy } from './numa';
 import { PlacementControls } from './PlacementControls';
 
 interface Meter { id: string; label: string; load: number; tone: Tone }
@@ -31,7 +31,7 @@ export function BandwidthScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={520}
-      intro={`Total ${gbps(bw.total)} of the ${gbps(bw.demand)} the four threads ask for.${saturated.length ? ` ${saturated.map((m) => m.label).join(' and ')} ${saturated.length > 1 ? 'are' : 'is'} past capacity.` : ' Nothing is past capacity.'}`}
+      intro={`${placementCause(policy, init)} Total ${gbps(bw.total)} of the ${gbps(bw.demand)} the four threads ask for.${saturated.length ? ` ${saturated.map((m) => m.label).join(' and ')} ${saturated.length > 1 ? 'are' : 'is'} past capacity.` : ' Nothing is past capacity.'}`}
       introKey={`bw|${policy}|${init}`}
       legend={<NumaLegend />}
       stats={
@@ -50,7 +50,7 @@ export function BandwidthScene({ picker }: { picker: ReactNode }) {
               <Bar key={m.id} value={Math.min(m.load, 1)} tone={m.tone} ariaLabel={`${m.label}: ${pct(m.load)} of capacity`} label={<span className="numa-bar-label">{m.label}: {pct(m.load)} of {m.id.startsWith('n') ? gbps(NODE_GBPS) : gbps(LINK_GBPS)}</span>} />
             ))}
           </div>
-          <Hint block tone="faint">{initNote(policy)} The model: each thread asks for {gbps(THREAD_GBPS)} spread over its own pages; demand that crosses the interconnect is scaled by capacity over demand, then each controller serves what reaches it, scaled the same way.</Hint>
+          <Hint block tone="faint">{initNote(policy)} The model: each thread asks for {gbps(THREAD_GBPS)} spread over its own pages; demand that crosses the interconnect is scaled by capacity over demand when it exceeds the link's capacity (otherwise it passes whole), then each controller serves what reaches it, scaled the same way when it is over capacity.</Hint>
         </Box>
         <ModelNotes />
         <ProvenanceRow>

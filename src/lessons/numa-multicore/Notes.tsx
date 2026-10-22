@@ -8,7 +8,7 @@ export function NumaLegend() {
       { color: 'var(--sky)', label: 'node 0 and its pages' },
       { color: 'var(--amber)', label: 'node 1 and its pages' },
       { color: 'var(--ok)', label: 'a thread whose accesses are all local' },
-      { color: 'var(--bad)', label: 'a remote access, the interconnect, a saturated bar' },
+      { color: 'var(--bad)', label: 'a remote access, a saturated bar' },
     ]}
   />
   );

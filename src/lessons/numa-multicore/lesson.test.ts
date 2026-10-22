@@ -3,7 +3,7 @@ import { forbiddenCalls, NO_CLOCK_OR_TIMER } from '../../core/testing/forbidden'
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { FACTS } from './facts';
 import lesson from './index';
-import { DEFAULT_SOCKETS, bandwidth, defaultMachine, latency, place, type Machine, type Node } from './numa';
+import { DEFAULT_SOCKETS, bandwidth, defaultMachine, latency, place, placementCause, sharedDataNote, type Machine, type Node } from './numa';
 
 const sources = import.meta.glob('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 const lessonSources = Object.fromEntries(Object.entries(sources).filter(([file]) => !file.includes('.test.')));
@@ -70,5 +70,45 @@ describe('the lesson text agrees with the model', () => {
   it('key ideas quote the model\'s numbers', () => {
     expect(lesson.keyIdeas[1]).toContain('110 ns, 50% remote');
     expect(lesson.keyIdeas[3]).toContain('40 GB/s of the 64 GB/s');
+  });
+});
+
+describe('fix pass: captions derive from the model state', () => {
+  it('shared data is "not local to everyone" only when threads sit on both sockets; with every thread on socket 0 and every page on node 0 the model says 80 ns and 0% remote', () => {
+    const allOnZero: Machine = { sockets: [0, 0, 0, 0], homes: Array.from({ length: 8 }, () => 0 as Node) };
+    const l = latency(allOnZero, 'all');
+    expect([l.mean, l.remoteShare]).toEqual([80, 0]);
+    expect(sharedDataNote(allOnZero.sockets)).not.toContain('cannot be local');
+    expect(sharedDataNote(allOnZero.sockets)).toContain('local to all of them');
+    expect(sharedDataNote([0, 0, 1, 1])).toContain('cannot be local to everyone');
+    // the scene uses it
+    expect(sources['./PinScene.tsx']).toContain('sharedDataNote(machine.sockets)');
+  });
+
+  it('manipulation 2: under everyone-reads-everything no placement policy gets below 110 ns, reachable from the first-touch scene (it has the pattern picker)', () => {
+    for (const policy of ['first-touch', 'interleave', 'bind0'] as const) {
+      for (const init of ['serial', 'parallel'] as const) {
+        expect(latency(withHomes(place(policy, init, DEFAULT_SOCKETS)), 'all').mean).toBeCloseTo(110, 9);
+      }
+    }
+    expect(sources['./TouchScene.tsx']).toContain('PATTERN_OPTIONS');
+  });
+
+  it('the bandwidth scene opening says why nothing is saturated, and says "local" exactly when no access is remote', () => {
+    expect(placementCause('first-touch', 'parallel')).toContain('local');
+    for (const policy of ['first-touch', 'interleave', 'bind0'] as const) {
+      for (const init of ['serial', 'parallel'] as const) {
+        const remote = latency(withHomes(place(policy, init, DEFAULT_SOCKETS)), 'own').remoteShare;
+        expect(placementCause(policy, init).startsWith('Every page is local')).toBe(remote === 0);
+      }
+    }
+  });
+
+  it('quiz 3: every number in the options is arithmetic the model confirms (80 + a quarter of 140 is 115, the mean is 95)', () => {
+    const q = lesson.quiz[2];
+    expect(q.options.join(' ')).not.toContain('105 ns');
+    expect(q.options[2]).toContain(`${80 + 140 / 4} ns`);
+    expect(80 * 0.75 + 140 * 0.25).toBe(95);
+    expect(q.options[1]).toContain('95 ns');
   });
 });

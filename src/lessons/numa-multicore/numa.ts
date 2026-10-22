@@ -155,3 +155,29 @@ export const nsText = (ns: number): string => `${decimal(ns, 1)} ns`;
 
 /** Why the initialiser may not matter. */
 export const initNote = (policy: Policy): string => (policy === 'first-touch' ? 'Under first touch, whoever writes a page first decides where it lives.' : 'This policy places pages without looking at who writes them, so the initialiser changes nothing here.');
+
+export const PATTERN_OPTIONS = (Object.keys(PATTERN_LABEL) as Pattern[]).map((value) => ({ value, label: PATTERN_LABEL[value] }));
+
+/** The latency rule in one line, for the scenes that show a mean latency. */
+export const latencyFormula = (): string =>
+  `The rule: a thread with remote share r pays ${LOCAL_NS} x (1 - r) + ${REMOTE_NS} x r ns, and the mean is taken over the four threads.`;
+
+/**
+ * The sentence for "everyone reads everything", derived from where the threads run: shared data cannot be local to
+ * everyone only when threads sit on both sockets.
+ */
+export function sharedDataNote(sockets: readonly Node[]): string {
+  if (sockets.includes(0) && sockets.includes(1)) return 'Every thread reads every page, so shared data cannot be local to everyone: locality needs data that each thread owns.';
+  const home = sockets[0];
+  return `Every thread reads every page and all ${sockets.length} threads run on socket ${home}, so the pages on node ${home} are local to all of them (a thread on the other socket would find them remote).`;
+}
+
+/** Why the bandwidth scene's starting point looks the way it does, derived from the placement it builds. */
+export function placementCause(policy: Policy, init: Init): string {
+  const homes = place(policy, init, DEFAULT_SOCKETS);
+  const { remoteShare } = latency({ sockets: [...DEFAULT_SOCKETS], homes }, 'own');
+  if (remoteShare === 0) return 'Every page is local to the thread that streams it (each worker filled its own chunk, so nothing crosses the interconnect).';
+  if (policy === 'bind0') return 'Every page is bound to node 0, so the socket-1 threads cross the interconnect and all four share one controller.';
+  if (policy === 'interleave') return 'Pages alternate between the two nodes, so half of each thread\'s reads cross the interconnect, spread over two controllers.';
+  return 'The main thread on socket 0 filled every page, so they all live on node 0 and the socket-1 threads cross the interconnect.';
+}

@@ -5,10 +5,10 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { decimal, pct } from '../../core/format';
 import { TwoSockets } from './Machine';
-import { LOCAL_NS, PATTERN_LABEL, REMOTE_NS, THREADS, defaultMachine, latency, nsText, type Machine, type Node, type Pattern } from './numa';
+import { LOCAL_NS, PATTERN_OPTIONS, REMOTE_NS, THREADS, defaultMachine, latency, latencyFormula, nsText, sharedDataNote, type Machine, type Node, type Pattern } from './numa';
 import { ModelNotes, NumaLegend } from './Notes';
 
-const PATTERNS = (Object.keys(PATTERN_LABEL) as Pattern[]).map((value) => ({ value, label: PATTERN_LABEL[value] }));
+
 const SOCKET_OPTIONS = [{ value: 0 as Node, label: 'socket 0' }, { value: 1 as Node, label: 'socket 1' }];
 const PLOT_WIDTH = 356;
 const CURVE_ENDS: [number, number][] = [[0, LOCAL_NS], [1, REMOTE_NS]];
@@ -25,7 +25,7 @@ export function PinScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={620}
-      intro={`${pattern === 'all' ? 'Every thread reads every page, so shared data cannot be local to everyone: locality needs data that each thread owns. ' : ''}Mean latency ${nsText(lat.mean)}, ${pct(lat.remoteShare)} of accesses remote, ${decimal(lat.slowdown, 3)}x the all-local ${nsText(LOCAL_NS)}.`}
+      intro={`${pattern === 'all' ? `${sharedDataNote(machine.sockets)} ` : ''}Mean latency ${nsText(lat.mean)}, ${pct(lat.remoteShare)} of accesses remote, ${decimal(lat.slowdown, 3)}x the all-local ${nsText(LOCAL_NS)}.`}
       introKey={`pin|${pattern}|${machine.sockets.join('')}|${machine.homes.join('')}`}
       legend={<NumaLegend />}
       stats={
@@ -38,7 +38,7 @@ export function PinScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="Access pattern" value={pattern} onChange={setPattern} options={PATTERNS} />
+          <Segmented label="Access pattern" value={pattern} onChange={setPattern} options={PATTERN_OPTIONS} />
           <Button onClick={() => { setMachine(defaultMachine()); setPattern('own'); }}>Reset</Button>
         </>,
         <>
@@ -50,7 +50,7 @@ export function PinScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint={`${THREADS} threads, 8 pages: press a page to move it to the other node`}>Threads and pages</SectionTitle>
           <TwoSockets machine={machine} latency={lat} onTogglePage={togglePage} />
-          <Hint block tone="faint">{pattern === 'own' ? 'Own pages: thread i uses P(2i) and P(2i+1) equally.' : pattern === 'hot' ? 'One hot page: every thread reads P0.' : 'Everyone reads everything: each thread spreads its reads equally over the 8 pages.'}</Hint>
+          <Hint block tone="faint">{pattern === 'own' ? 'Own pages: thread i uses P(2i) and P(2i+1) equally.' : pattern === 'hot' ? 'One hot page: every thread reads P0.' : 'Everyone reads everything: each thread spreads its reads equally over the 8 pages.'} {latencyFormula()}</Hint>
         </Box>
         <Box>
           <SectionTitle hint="mean latency against the share of accesses that are remote">The cost of a remote share</SectionTitle>

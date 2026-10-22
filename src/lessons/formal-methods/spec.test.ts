@@ -230,7 +230,7 @@ describe('typed text: nothing evaluates, everything is refused with a reason', (
     const three: Spec = { ...ATOMIC, n: 3, invariant: 'crit <= 1' };
     expect(refused(withGuard(three, 0, 'flagOther == 0'))).toBe('Guard of step 0: flagOther: this name exists only for two processes.');
     expect(refused(withGuard(three, 0, 'other == 0'))).toBe('Guard of step 0: other: this name exists only for two processes.');
-    expect(refused({ ...three, steps: three.steps.map((s, i) => (i === 0 ? { ...s, effect: 'turn = other' as Effect } : s)) })).toBe('turn = other: this name exists only for two processes.');
+    expect(refused({ ...three, steps: three.steps.map((s, i) => (i === 0 ? { ...s, effect: 'turn = other' as Effect } : s)) })).toBe('Effect of step 0: turn = other: this name exists only for two processes.');
   });
 });
 
@@ -295,5 +295,29 @@ describe('the counterexample as a test case', () => {
     expect(stepText(PETERSON, 1, 0)).toBe('step 1: turn = 1');
     expect(stepText(PETERSON, 0, 1)).toBe('step 0: flag1 = 1');
     expect(stepText(PETERSON, 2, 0)).toBe('step 2: pass when flagOther == 0 || turn == me');
+  });
+});
+
+describe('random testing is a fair contrast (kickoff rule 29) and checks the initial state', () => {
+  const peterWith = (guard: string): Spec => setStepGuard(guard);
+  function setStepGuard(guard: string): Spec { return { ...PETERSON, steps: PETERSON.steps.map((s, k) => (k === 2 ? { ...s, guard } : s)) }; }
+
+  it('every broken mode the lesson shows fails on at most 90% of the 200 seeds, with a lowest failing seed above 0, while the exhaustive check fails it', () => {
+    for (const spec of [NAIVE, peterWith('true'), peterWith('flagOther == 0')]) {
+      const r = randomTest(spec);
+      if ('error' in r) throw new Error(r.error);
+      expect(r.failing).toBeGreaterThan(0);
+      expect(r.failing / r.total).toBeLessThanOrEqual(0.9);
+      expect(r.lowestFailingSeed).toBeGreaterThan(0);
+      expect(check(spec).kind === 'violation' || check(spec).kind === 'deadlock').toBe(true);
+    }
+  });
+
+  it('a failing initial state fails every seed (and the exhaustive leg says so in 0 steps)', () => {
+    const noStart = { ...NAIVE, steps: NAIVE.steps.map((s, k) => (k === 0 ? { ...s, guard: 'false' } : s)) };
+    expect(randomTest(noStart)).toEqual({ failing: 200, total: 200, lowestFailingSeed: 1 });
+    const c = check(noStart);
+    expect(c.kind === 'deadlock' && c.steps).toBe(0);
+    expect(randomTest({ ...PETERSON, invariant: 'pc0 > 0' })).toEqual({ failing: 200, total: 200, lowestFailingSeed: 1 });
   });
 });

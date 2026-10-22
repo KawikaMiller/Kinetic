@@ -9,12 +9,12 @@ const lesson: LessonModule = {
     what: `Each socket has its own memory bank and the sockets are joined by an interconnect, so an access is local or remote. The lesson uses a small model with named, illustrative constants (a local access ${F.local}, a remote one ${F.remote}, and per-resource bandwidths): you pin four threads to sockets and eight pages to nodes, see how a first-touch placement policy follows whoever initialises the array, and watch a controller and a link saturate when everything lives on one node. No real machine was measured: each number is a formula over those constants.`,
     analogy: 'A two-office company where each office keeps its own filing cabinet: your own cabinet is a few steps away, the other office\'s needs a trip across town, and a single busy cabinet makes a queue however many people want to read from it.',
     useCases: [
-      'Pinning threads and memory together in databases and caches so that a worker reads data on its own socket',
-      'Spotting why a program that scales on one socket stops scaling on two when its data sits on one node',
+      'Pinning threads and memory together in a latency-sensitive service so that a worker can read data on its own socket',
+      'Asking whether a program that scales on one socket stops scaling on two because its data sits on one node',
       'Choosing between interleaving pages for bandwidth and keeping data local for latency',
       'Reading performance numbers from a two-socket server without assuming memory is one uniform pool',
     ],
-    why: 'Memory placement is a silent factor in tail latency and in scaling cliffs on large servers. It starts where `cache-coherence` stops (it lists NUMA as out of scope), above the levels drawn in `memory-hierarchy` and `cpu-caches`, and below the translation covered in `page-tables-tlb`.',
+    why: 'Memory placement can be a silent factor in tail latency and in scaling cliffs on large servers, which is why it is worth modelling. It starts where `cache-coherence` stops (it lists NUMA as out of scope), above the levels drawn in `memory-hierarchy` and `cpu-caches`, and below the translation covered in `page-tables-tlb`.',
     watch: 'Node 0 and node 1 are two plain categories (sky and amber), used for the sockets and for the pages that live on each; they do not mean good or bad. A thread whose accesses are all local is green and one with remote accesses is red, and a bar past 100% of its capacity turns red. A bar under capacity keeps its node\'s colour. The plot is a straight line from the local to the remote latency, with the current placement as a point.',
   },
   tryThis: [
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     `Memory is not one distance away: in this model a local read costs ${F.local} and a remote one ${F.remote}, so a thread's mean latency is 80 + 60 x its remote share (illustrative constants, nothing measured).`,
     `Under first touch the first writer of a page decides where it lives: a main thread filling the array puts each page on its own node (${F.serial}, ${F.serialRemote}% remote), while workers filling their own chunks keep each thread's pages local (${F.parallel}).`,
-    `Shared data cannot be local to the four threads at once: when each of them reads the whole table the mean is ${F.everyone} however the pages are placed, because each page is remote to the two threads on the other socket.`,
+    `Shared data cannot be local to the four threads at once: when each of them reads the whole table the mean is ${F.everyone} however the pages are placed (with two threads on each socket), because each page is remote to the two threads on the other socket.`,
     `Bandwidth is capped by the controller and the link: bound to node 0, four threads get ${F.boundTotal} of the ${F.demand} they ask for, while interleaved (or with each thread's pages local) they get ${F.interleavedTotal}.`,
   ],
   quiz: [
@@ -57,7 +57,7 @@ const lesson: LessonModule = {
       options: [
         '110 ns, the plain average of the two latencies',
         '95 ns, which is 80 plus a quarter of the 60 ns gap',
-        '105 ns, which is 80 plus a quarter of the 140 ns',
+        '115 ns, which is 80 plus a quarter of the 140 ns',
         '80 ns, because three quarters of the reads stay local',
       ],
       answer: 1,
