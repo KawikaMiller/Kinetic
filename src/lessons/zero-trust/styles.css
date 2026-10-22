@@ -53,3 +53,8 @@
 .zt-row.deny { background: color-mix(in srgb, var(--bad) 6%, transparent); }
 .zt-row code { color: var(--info); font-size: 11.5px; }
 .zt-row i { color: var(--muted); font-style: normal; font-family: var(--mono); font-size: 11px; }
+
+@media (max-width: 640px) {
+  .zt-row { grid-template-columns: 52px 1fr; }
+  .zt-row span, .zt-row i { grid-column: 2; }
+}

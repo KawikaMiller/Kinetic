@@ -19,16 +19,13 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
 
 /**
  * The nine existing Tier 4 lessons (docs/tier4-technical.md §5). They are exempt from the AC-0/T4
  * rules until their retrofit batch (T4-R1, T4-R2) merges; each leaves this list, BASELINE and
  * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
-const TIER4_AWAITING_RETROFIT = new Set<string>([
-  'zero-trust', // T4-R2
-]);
+const TIER4_AWAITING_RETROFIT = new Set<string>();
 /** The nine existing Tier 4 lessons, fixed: the D-row cross-check needs them after each one leaves the allowlist above. */
 const TIER4_RETROFIT_IDS: ReadonlySet<string> = new Set([
   'raft', 'distributed-transactions', 'crdts', 'multi-region', 'backpressure', 'lsm-trees', 'probabilistic-structures',
@@ -54,7 +51,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   // Tier 4
-  'zero-trust': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
 };
 
 /**
