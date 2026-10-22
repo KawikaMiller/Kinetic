@@ -59,7 +59,7 @@ export function ClipScene({ picker }: { picker: ReactNode }) {
           <div className="td-col">
             <Box>
               <SectionTitle hint="200 by 150 pixels">The picture</SectionTitle>
-              <svg className="td-view" viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="img" aria-label={broken ? 'Triangle drawn wrongly: a corner behind the camera is mirrored through the screen' : 'Triangle after clipping'}>
+              <svg className="td-view" viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} role="img" aria-label={broken ? (result.rows.some((r) => r.clip[3] === 0) ? 'Nothing drawn: a corner has w exactly 0, so it has no screen position' : 'Triangle drawn wrongly: a corner behind the camera is mirrored through the screen') : 'Triangle after clipping'}>
                 {result.polygon.length >= 3 && <polygon className={`td-poly ${broken ? 'is-bad' : 'is-plain'}`} points={points} />}
                 {result.rows.filter((r) => r.created && r.screen).map((r, i) => <circle key={i} className="td-new" cx={r.screen?.[0]} cy={r.screen?.[1]} r={3} />)}
               </svg>

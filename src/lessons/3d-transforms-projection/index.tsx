@@ -56,7 +56,7 @@ const lesson: LessonModule = {
     'The projection matrix does not give screen coordinates by itself: it leaves the distance in w, and the divide by w, a separate non-linear step, is what makes far things small.',
     'A point has w = 1 and a direction has w = 0, which is why coordinates carry a fourth component: a translation moves the point and leaves the direction alone.',
     'Clipping happens in clip space, before the divide. A corner behind the camera has a negative w, so without clipping it divides to a mirrored, stretched triangle.',
-    'Depth is stored non-linearly, so the ratio of far to near sets the precision, not far by itself; pushing the near plane out is the cheap fix for z-fighting.',
+    'Depth is stored non-linearly, so the near plane sets how finely distant depth is kept; once far is well beyond the surfaces, raising it changes almost nothing, and pushing the near plane out is the cheap fix for z-fighting.',
   ],
   quiz: [
     {

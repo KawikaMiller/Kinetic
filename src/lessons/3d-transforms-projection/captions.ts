@@ -47,6 +47,7 @@ export function clipCaption(s: ClipState): string {
   }
   if (r.behindInput === 0) return `Clipping is off, but all three corners are in front of the camera (apex at z = ${decimal(s.apexZ, 1)}), so the picture is right anyway.`;
   const apex = r.rows.find((x) => x.behind);
+  if (r.rows.some((x) => x.clip[3] === 0)) return `Clipping is off: ${plural(r.behindInput, 'corner has', 'corners have')} w <= 0 (w = ${decimal(apex?.clip[3] ?? 0, 2)}). At w exactly 0 there is nothing to divide by, so that corner has no screen position and the triangle cannot be drawn at all.`;
   return `Clipping is off: ${plural(r.behindInput, 'corner has', 'corners have')} w <= 0 (w = ${decimal(apex?.clip[3] ?? 0, 2)}). The divide by a negative w mirrors it through the screen centre and stretches it, so the triangle is drawn wrong.`;
 }
 

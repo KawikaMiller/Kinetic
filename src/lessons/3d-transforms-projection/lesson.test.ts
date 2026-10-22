@@ -146,8 +146,19 @@ describe('every control combination gives a clean caption', () => {
     for (const apexZ of range(APEX_RANGE)) for (const clipping of [true, false]) {
       const text = clean(expectCaption(clipCaption({ clipping, apexZ })));
       const r = clipScene({ clipping, apexZ });
-      expect(text.includes('mirrors')).toBe(!clipping && r.behindInput > 0);
+      const wZero = r.rows.some((x) => x.clip[3] === 0);
+      expect(text.includes('mirrors')).toBe(!clipping && r.behindInput > 0 && !wZero);
+      expect(text.includes('cannot be drawn')).toBe(!clipping && wZero);
     }
+  });
+
+  it('scene 3: with clipping off the apex at depth 0 has w exactly 0, draws nothing, and says so', () => {
+    const r = clipScene({ clipping: false, apexZ: 0 });
+    expect(r.rows.find((x) => x.behind)?.clip[3]).toBe(0);
+    expect(r.polygon.length).toBeLessThan(3);
+    const text = clean(expectCaption(clipCaption({ clipping: false, apexZ: 0 })));
+    expect(text).toContain('cannot be drawn');
+    expect(text).not.toContain('mirrors');
   });
 
   it('scene 4: every near, far, gap and three distances', () => {
