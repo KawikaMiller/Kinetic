@@ -182,8 +182,8 @@ describe('the fixes, run over the same programs', () => {
       visit(initialState(programs));
       expect(seen.size).toBe(r.states);
     }
-    expect(run('reuse', 'tagged').states).toBe(166);
-    expect(run('reuse', 'hazard').states).toBe(536);
+    expect(run('reuse', 'tagged').states).toBe(116);
+    expect(run('reuse', 'hazard').states).toBe(305);
   });
 
   it('ABA by re-push: tagged passes, hazard pointers do not, and the page says why', () => {
@@ -316,5 +316,48 @@ describe('lock-free is not wait-free', () => {
     // After round one T1's CAS failed; T1 then retries (loads again), so a second round continues the same pattern.
     expect(r.state.failed).toBe(1);
     expect(r.state.ok).toBe(1);
+  });
+});
+
+describe('fix pass: an operation on an empty register is refused, never run on a null node', () => {
+  const NULL_TEXT = ['free null', 'allocate null', 'null is pushed', 'null.next', 'push null'];
+  const programsList: Op[][][] = [
+    [['pop', 'pop'], ['pop', 'pop', 'free r2']],
+    [['pop', 'pop', 'free r2', 'push r1'], ['pop', 'pop', 'push r2']],
+    [['pop', 'pop'], ['pop', 'pop', 'free r2'], ['pop', 'free r1', 'new']],
+  ];
+
+  it('over every reachable state and step of every mode, no step text mentions a null node and no list holds a null', () => {
+    for (const programs of programsList) {
+      for (const mode of MODES) {
+        const seen = new Set<string>();
+        const texts = new Set<string>();
+        const visit = (s: StackState): void => {
+          const k = JSON.stringify(s);
+          if (seen.has(k)) return;
+          seen.add(k);
+          expect([...s.free, ...s.retired].includes(null as never)).toBe(false);
+          for (const a of actions(programs, { mode }, s)) { texts.add(a.label.text); visit(a.next); }
+        };
+        visit(initialState(programs));
+        for (const text of texts) for (const bad of NULL_TEXT) expect(text).not.toContain(bad);
+      }
+    }
+  });
+
+  it('the repro (T1 pop; pop, T2 pop; pop; free r2) shows the refusal text in the replay instead of "free null"', () => {
+    const programs = programsList[0];
+    const r = replay(programs, { mode: 'plain' }, [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    const text = r.steps.map((s) => s.text).join('\n');
+    expect(text).toContain('free r2: r2 is empty');
+    expect(text).not.toContain('free null');
+    expect(r.broken).toBeNull();
+  });
+
+  it('a retry forgets the remembered head and next, so a card never shows values the thread will reload', () => {
+    // poppers, picks 0,0,1,1,1,0: T2 wins the CAS, T1's CAS fails.
+    const r = replay(preset('poppers'), { mode: 'plain' }, [0, 0, 1, 1, 1, 0]);
+    expect(r.state.threads[0].phase).toBe('p0');
+    expect([r.state.threads[0].h, r.state.threads[0].nx, r.state.threads[0].ht]).toEqual([null, null, 0]);
   });
 });

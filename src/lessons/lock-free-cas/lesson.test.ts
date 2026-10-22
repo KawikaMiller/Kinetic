@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { forbiddenCalls, NO_CLOCK_OR_TIMER } from '../../core/testing/forbidden';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { ADVERSARY_ROUNDS, adversaryRun, casRun, firstAttempt } from './counter';
+import { ADVERSARY_ROUNDS, adversaryRun, casRun, firstAttempt, progressVerdict, suspendedRun } from './counter';
 import { FACTS } from './facts';
 import lesson from './index';
 import { PRESETS, search } from './stack';
@@ -49,13 +49,13 @@ describe('try-this entries, in written order from the default state', () => {
     expect(lesson.tryThis[1]).toContain('B is on the stack and on the free list');
   });
 
-  it('try-this 3: the same program is clean under tagged (166 states) and hazard pointers (536 states), exhaustively', () => {
+  it('try-this 3: the same program is clean under tagged (116 states) and hazard pointers (305 states), exhaustively', () => {
     const tagged = search(reuse, { mode: 'tagged' });
     const hazard = search(reuse, { mode: 'hazard' });
     expect([tagged.violation, hazard.violation]).toEqual([null, null]);
     expect([tagged.truncated, hazard.truncated]).toEqual([false, false]);
-    expect(lesson.tryThis[2]).toContain('166 states');
-    expect(lesson.tryThis[2]).toContain('536 states');
+    expect(lesson.tryThis[2]).toContain('116 states');
+    expect(lesson.tryThis[2]).toContain('305 states');
   });
 
   it('try-this 4: the adversary run fails T1 12 times in 12 rounds while T2 completes 12; fetch_add finishes T1 in one step', () => {
@@ -74,5 +74,28 @@ describe('the lesson text agrees with the model', () => {
     expect(lesson.keyIdeas[3]).toContain('failed 12 times in 12 rounds');
     expect(lesson.quiz[4].why).toContain('4 of the 6');
     expect(FACTS.lockT2).toBe(0);
+  });
+});
+
+describe('fix pass: captions and text derive from the model', () => {
+  it('scene 3 never says a fetch_add is suspended "in the middle of its increment"; a CAS loop is suspended between its load and its CAS', () => {
+    expect(progressVerdict('fetch_add', 'suspend', suspendedRun('fetch_add'))).not.toContain('middle of its increment');
+    expect(progressVerdict('fetch_add', 'suspend', suspendedRun('fetch_add'))).toContain('one atomic step');
+    expect(progressVerdict('cas', 'suspend', suspendedRun('cas'))).toContain('between its load and its CAS');
+    expect(sources['./ProgressScene.tsx']).toContain('from-memory');
+  });
+
+  it('the scripted adversary never lets T1 win a round (the removed branch was unreachable)', () => {
+    const a = adversaryRun('cas');
+    expect(a.completed[0]).toBe(0);
+    expect(a.steps.filter((s) => s.thread === 1 && s.kind === 'ok')).toHaveLength(0);
+  });
+
+  it('watch names yellow for what happens now, quiz 5 does not say "in both", the CAS tables scroll on a phone, and the replay keeps the result line', () => {
+    expect(lesson.summary.watch).toContain('ringed in yellow');
+    expect(lesson.summary.watch).not.toContain('blue-green');
+    expect(lesson.quiz[4].why).not.toContain('in both');
+    expect((sources['./CasScene.tsx'].match(/<WideRegion minWidth=\{TABLE_MIN_WIDTH\} noun="table"><table/g) ?? [])).toHaveLength(2);
+    expect(sources['./StackScene.tsx']).toContain('startText={resultLine ?? undefined}');
   });
 });

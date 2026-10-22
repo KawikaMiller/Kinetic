@@ -15,7 +15,7 @@ const lesson: LessonModule = {
       'Explaining a rare corruption that needs one thread to pause at exactly the wrong moment',
     ],
     why: 'Lock-free code removes the suspended-lock-holder problem and adds a harder one, memory reclamation. It builds on `race-conditions` (locks and unlocked updates), `thread-pools-work-stealing` and `memory-ordering-atomics`, whose ordering questions are set aside here: every step is assumed ordered.',
-    watch: 'The thread whose step just ran is ringed blue-green. A successful CAS is green and a failed CAS is red; a value a thread still remembers is blue. In the heap drawing the free list and retired nodes are violet, a node a thread holds is blue, and a node in the wrong place (two places, or none) is red. In the progress scene a green cell is a completed increment, a red cell a failed CAS, a dashed cell a wait for the lock, and a blue cell a load.',
+    watch: 'The thread whose step just ran is ringed in yellow. A successful CAS is green and a failed CAS is red; a value a thread still remembers is blue. In the heap drawing the free list and retired nodes are violet, a node a thread holds is blue, and a node in the wrong place (two places, or none) is red. In the progress scene a green cell is a completed increment, a red cell a failed CAS, a dashed cell a wait for the lock, and a blue cell a load.',
   },
   tryThis: [
     `In The CAS loop (2 threads), press run T1 next twice (load, CAS) and then run T2 next twice: no retry. Press Reset, run T1 next, run T2 next (both load), then run T1 next and run T2 next: T2's CAS fails ("x is now 1, you expected 0") and it retries. The table says ${F.retrying2} of the ${F.interleavings2} first-attempt interleavings retry.`,
@@ -83,7 +83,7 @@ const lesson: LessonModule = {
         'None: a CAS on a shared counter cannot fail, by its definition',
       ],
       answer: 2,
-      why: `${F.retrying2} of the ${F.interleavings2} retry: in both, the thread that loaded before the other's update lands is the one that is stale. The two runs with no overlap retry nothing. A failed CAS is the update an unlocked counter would have lost.`,
+      why: `${F.retrying2} of the ${F.interleavings2} retry: in each, the thread that loaded before the other's update lands is the one that is stale. The two runs with no overlap retry nothing. A failed CAS is the update an unlocked counter would have lost.`,
     },
   ],
 };

@@ -20,8 +20,8 @@ const MODE_OPTIONS: { value: Mode; label: string }[] = [
 ];
 const MODE_NOTE: Record<Mode, string> = {
   plain: 'plain CAS: the head is a node, and a CAS succeeds when the head is the node it saw.',
-  tagged: 'tagged head: the head is a pair (node, counter), every successful CAS adds 1, and a CAS must match both.',
-  hazard: 'hazard pointers: a thread publishes the node it is about to read, re-checks the head, and a free of a published node is deferred (epoch-based reclamation is named, not modelled).',
+  tagged: 'tagged head: the head is a pair (node, counter), every successful CAS adds 1, and a CAS must match both. In this model the counter never wraps.',
+  hazard: 'hazard pointers: a thread publishes the node it is about to read, re-checks the head, and a free of a published node is deferred (epoch-based reclamation is named, not modelled). Modelling choices: clearing the hazard pointer is folded into the CAS step (win or lose) and the retry, the scan of retired nodes runs at every free, and a retired node stays retired until some later free runs.',
 };
 const THREAD_COUNTS = [2, 3].map((n) => ({ value: n, label: `${n} threads` }));
 const TRACE_MIN_WIDTH = 420;
@@ -131,14 +131,14 @@ export function StackScene({ picker }: { picker: ReactNode }) {
             {why && <div className="lfc-witness" role="status">{why}</div>}
             {result.violation ? (
               <WideRegion minWidth={TRACE_MIN_WIDTH}>
-                <TracePlayer<StackState> initial={initial} steps={steps} label="Steps of the shortest corrupting schedule" renderState={(s) => <StackView state={s} programs={programs} tagged={mode === 'tagged'} />} />
+                <TracePlayer<StackState> initial={initial} steps={steps} startText={resultLine ?? undefined} label="Steps of the shortest corrupting schedule" renderState={(s) => <StackView state={s} programs={programs} tagged={mode === 'tagged'} />} />
               </WideRegion>
             ) : (
               <p className="lfc-note">{result.truncated ? 'The search ran out of budget before it finished.' : 'No state of this bounded model breaks the invariant. Real programs have far larger state spaces.'}</p>
             )}
           </Box>
         )}
-        <p className="lfc-note">The allocator hands back the most recently freed node first: that is a modelled choice, common in real allocators (from memory). A tag of 8 bits wraps after {power(8)} = {TAG_WRAP_8} successful CASes, so a narrow tag only narrows the window and a wide one closes it for practical purposes (from memory).</p>
+        <p className="lfc-note">State counts here count a thread's remembered head, tag and next pointer only while it will still use them (a retry forgets them). The allocator hands back the most recently freed node first: that is a modelled choice, common in real allocators (from memory). A tag of 8 bits wraps after {power(8)} = {TAG_WRAP_8} successful CASes, so a narrow tag only narrows the window and a wide one closes it for practical purposes (from memory).</p>
         <ProvenanceRow>
           <Provenance kind="simulated">simulated schedules on a sequentially consistent model; real programs have far larger state spaces</Provenance>
           <Provenance kind="from-memory">the Treiber stack (1986 IBM report), the ABA problem, hazard pointers (Michael, 2004), epoch-based reclamation and the Michael-Scott queue are named from memory; verify against the papers</Provenance>

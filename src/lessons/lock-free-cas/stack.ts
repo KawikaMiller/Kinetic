@@ -53,6 +53,9 @@ export interface StackState {
   threads: Thread[];
 }
 
+/** What a thread no longer remembers once its CAS has run (won or lost): the head it read, its tag and the next pointer. */
+const FORGET = { h: null, ht: 0, nx: null } as const;
+
 const phaseFor = (op: Op | undefined): string => (op === undefined ? 'done' : op === 'pop' ? 'p0' : op.startsWith('push') ? 'u0' : op.startsWith('free') ? 'f0' : 'n0');
 const regIndex = (op: Op): 0 | 1 => (op.endsWith('r2') ? 1 : 0);
 
@@ -126,6 +129,9 @@ function scan(s: StackState): { free: NodeId[]; retired: NodeId[]; released: Nod
   return { free, retired, released };
 }
 
+/** Refusal text for a push or free whose register is empty because the pop that should have filled it found the stack empty. */
+export const emptyRegisterText = (op: Op): string => `${op}: r${regIndex(op) + 1} is empty (its pop found the stack empty), so there is no node to ${op.startsWith('push') ? 'push' : 'free'}: skipped`;
+
 /** The one step thread `t` can take, or null when it has finished its program. */
 export function stepThread(programs: readonly (readonly Op[])[], cfg: Config, s: StackState, t: number): Transition<StackState, StackLabel> | null {
   const th = s.threads[t];
@@ -149,7 +155,7 @@ export function stepThread(programs: readonly (readonly Op[])[], cfg: Config, s:
     case 'p2':
       return s.head.node === th.h
         ? out(`re-check head: still ${th.h}`, { ...s, threads: setThread(s, t, { phase: 'p3' }) })
-        : out(`re-check head: it is now ${place(s.head.node)}, retry`, { ...s, threads: setThread(s, t, { hp: null, phase: 'p0' }) });
+        : out(`re-check head: it is now ${place(s.head.node)}, retry`, { ...s, threads: setThread(s, t, { ...FORGET, hp: null, phase: 'p0' }) });
     case 'p3':
       return out(`load ${th.h}.next, reads ${place(s.next[th.h!])}`, { ...s, threads: setThread(s, t, { nx: s.next[th.h!], phase: 'p4' }) });
     case 'p4': {
@@ -157,10 +163,10 @@ export function stepThread(programs: readonly (readonly Op[])[], cfg: Config, s:
         const reg = th.regs[0] === null ? 0 : 1;
         const regs: [Slot, Slot] = reg === 0 ? [th.h, th.regs[1]] : [th.regs[0], th.h];
         return out(`cas(head, ${th.h}${tagText} to ${place(th.nx)}) succeeds: pops ${th.h} into r${reg + 1}`, {
-          ...s, head: newHead(th.nx), threads: setThread(s, t, { regs, hp: null, h: null, nx: null, ...advance(programs, s, t) }),
+          ...s, head: newHead(th.nx), threads: setThread(s, t, { regs, hp: null, ...FORGET, ...advance(programs, s, t) }),
         });
       }
-      return out(`cas(head, ${th.h}${tagText} to ${place(th.nx)}) fails: head changed, retry`, { ...s, threads: setThread(s, t, { hp: null, phase: 'p0' }) });
+      return out(`cas(head, ${th.h}${tagText} to ${place(th.nx)}) fails: head changed, retry`, { ...s, threads: setThread(s, t, { ...FORGET, hp: null, phase: 'p0' }) });
     }
     case 'n0': {
       if (s.free.length === 0) return out('allocate: the free list is empty, nothing to push', { ...s, threads: setThread(s, t, advance(programs, s, t)) });
@@ -168,6 +174,7 @@ export function stepThread(programs: readonly (readonly Op[])[], cfg: Config, s:
       return out(`allocate ${node} from the free list`, { ...s, free: rest, threads: setThread(s, t, { tmp: node, phase: 'u0' }) });
     }
     case 'u0':
+      if (th.tmp === null && th.regs[regIndex(op)] === null) return out(emptyRegisterText(op), { ...s, threads: setThread(s, t, advance(programs, s, t)) });
       return out(`load head, reads ${place(s.head.node)}${tagged ? ` (tag ${s.head.tag})` : ''}`, { ...s, threads: setThread(s, t, { h: s.head.node, ht: s.head.tag, phase: 'u1' }) });
     case 'u1': {
       const node = th.tmp ?? th.regs[regIndex(op)]!;
@@ -177,12 +184,13 @@ export function stepThread(programs: readonly (readonly Op[])[], cfg: Config, s:
       const node = th.tmp ?? th.regs[regIndex(op)]!;
       if (casHolds(th.h, th.ht)) {
         const regs: [Slot, Slot] = op.startsWith('push') ? (regIndex(op) === 0 ? [null, th.regs[1]] : [th.regs[0], null]) : th.regs;
-        return out(`cas(head, ${place(th.h)}${tagText} to ${node}) succeeds: ${node} is pushed`, { ...s, head: newHead(node), threads: setThread(s, t, { regs, tmp: null, h: null, ...advance(programs, s, t) }) });
+        return out(`cas(head, ${place(th.h)}${tagText} to ${node}) succeeds: ${node} is pushed`, { ...s, head: newHead(node), threads: setThread(s, t, { regs, tmp: null, ...FORGET, ...advance(programs, s, t) }) });
       }
-      return out(`cas(head, ${place(th.h)}${tagText} to ${node}) fails: head changed, retry`, { ...s, threads: setThread(s, t, { phase: 'u0' }) });
+      return out(`cas(head, ${place(th.h)}${tagText} to ${node}) fails: head changed, retry`, { ...s, threads: setThread(s, t, { ...FORGET, phase: 'u0' }) });
     }
     case 'f0': {
       const k = regIndex(op);
+      if (th.regs[k] === null) return out(emptyRegisterText(op), { ...s, threads: setThread(s, t, advance(programs, s, t)) });
       const node = th.regs[k]!;
       const regs: [Slot, Slot] = k === 0 ? [null, th.regs[1]] : [th.regs[0], null];
       const threads = setThread(s, t, { regs, ...advance(programs, s, t) });

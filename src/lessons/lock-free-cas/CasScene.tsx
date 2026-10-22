@@ -2,9 +2,11 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
 import { integer } from '../../core/format';
 import { CAS_PRESETS, MAX_THREADS, MIN_THREADS, casRun, casStep, executionStats, firstAttempt, type CasState } from './counter';
 
+const TABLE_MIN_WIDTH = 400;
 const COUNTS = [MIN_THREADS, MAX_THREADS].map((n) => ({ value: n, label: `${n} threads` }));
 const legend = (
   <Legend
@@ -79,7 +81,7 @@ export function CasScene({ picker }: { picker: ReactNode }) {
         </ol>
         <Box>
           <SectionTitle hint="every schedule of the CAS loop, from the explorer">All executions</SectionTitle>
-          <table className="lfc-table">
+          <WideRegion minWidth={TABLE_MIN_WIDTH} noun="table"><table className="lfc-table">
             <thead><tr><th>Threads</th><th>Executions</th><th>0 retries</th><th>1</th><th>2</th><th>3</th><th>x at the end</th></tr></thead>
             <tbody>
               {stats.map((r) => (
@@ -90,12 +92,12 @@ export function CasScene({ picker }: { picker: ReactNode }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></WideRegion>
           <p className="lfc-note">Exhaustive: {stats.map((r) => `${r.threads} threads, ${integer(r.states)} states`).join('; ')}, none cut off. The count of executions is for this step size (a load and a CAS are separate steps, the add is a local step), which is a different step size from the six-step read-add-write in race conditions, so its numbers differ.</p>
         </Box>
         <Box>
           <SectionTitle hint="each thread tries once: the CAS retries are the lost updates of an unlocked counter">First attempts against an unlocked counter</SectionTitle>
-          <table className="lfc-table">
+          <WideRegion minWidth={TABLE_MIN_WIDTH} noun="table"><table className="lfc-table">
             <thead><tr><th>Threads</th><th>Interleavings</th><th>CAS fails at least once</th><th>No retry</th><th>Unlocked keeps every update</th><th>Same set</th></tr></thead>
             <tbody>
               {first.map((r) => (
@@ -104,7 +106,7 @@ export function CasScene({ picker }: { picker: ReactNode }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></WideRegion>
           <p className="lfc-note">For 2 threads, {first[0].retrying} of the {first[0].interleavings} interleavings retry once, and they are the {first[0].retrying} where an unlocked read-add-write loses an update. A failed CAS is the update the unlocked version would have lost, noticed in time.</p>
         </Box>
         <Hint block tone="muted">Every step here is atomic and in order: the ordering of the CAS itself is a memory ordering question, not this lesson&apos;s.</Hint>

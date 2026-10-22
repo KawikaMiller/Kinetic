@@ -213,8 +213,21 @@ export function adversaryRun(kind: CounterKind): Progress {
       add(1, 'work', `T1 loads x, reads ${old1}`);
       add(2, 'work', `T2 loads x, reads ${x}`);
       x += 1; p.completed[1] += 1; add(2, 'ok', `T2 cas succeeds: x is ${x}`);
-      if (x === old1) { x += 1; p.completed[0] += 1; add(1, 'ok', `T1 cas succeeds: x is ${x}`); } else { p.failed[0] += 1; add(1, 'failed', `T1 cas fails: x is now ${x}, it expected ${old1}`); }
+      // The script puts T2's whole increment between T1's load and CAS, so T1's CAS always fails.
+      p.failed[0] += 1; add(1, 'failed', `T1 cas fails: x is now ${x}, it expected ${old1}`);
     }
   }
   return p;
+}
+
+export type Schedule = 'suspend' | 'adversary';
+
+/** The sentence of scene 3 for a counter kind and a schedule, derived from the run. */
+export function progressVerdict(kind: CounterKind, schedule: Schedule, p: Progress): string {
+  if (schedule === 'suspend') {
+    if (kind === 'lock') return `T1 holds the lock and is suspended. After ${SUSPEND_STEPS} steps T2 has completed ${p.completed[1]} increments: it did not complete within ${SUSPEND_STEPS} steps.`;
+    return `${kind === 'cas' ? 'T1 is suspended between its load and its CAS' : 'T1 is suspended (a fetch_add is one atomic step, so there is no middle to be stuck in)'}. T2 completed ${p.completed[1]} increments in ${SUSPEND_STEPS} steps.`;
+  }
+  if (kind === 'cas') return `In ${ADVERSARY_ROUNDS} rounds T1 failed ${p.failed[0]} times and completed ${p.completed[0]} increments, while T2 completed ${p.completed[1]}. A thread completed in each round, and T1 got nothing in ${ADVERSARY_ROUNDS} rounds.`;
+  return `On the same schedule each fetch_add (modelled as one atomic instruction) finishes in one step: T1 needed ${p.t1Steps} step for its first increment and completed ${p.completed[0]} in ${ADVERSARY_ROUNDS} rounds, T2 ${p.completed[1]}.`;
 }
