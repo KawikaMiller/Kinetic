@@ -4,12 +4,12 @@ import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { whichCaption } from './captions';
-import { runNfa, STEP_BUDGET, whichAnswer } from './engines';
+import { STEP_BUDGET, whichAnswer } from './engines';
+import { runNfa, constructionOf, placeNfa } from '../../core/regex';
 import { NfaDrawing } from './NfaDrawing';
 import { OPENING, type WhichRule } from './opening';
 import { PresetChips, RegexFields } from './RegexFields';
 import { realResultFor, WHICH_EXAMPLES } from './realExamples';
-import { constructionOf, placeNfa } from './thompson';
 import { useRegexInput } from './useRegexInput';
 
 const WHOLE_MACHINE = Number.MAX_SAFE_INTEGER;

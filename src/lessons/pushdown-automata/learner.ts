@@ -8,8 +8,8 @@
  */
 import { pdaRun, type Pda, type PdaRule } from '../../core/automata';
 import { parseKitRows, type TokenRule } from '../../core/parseKit';
-import { BOTTOM } from './machines';
-import { CONFIG_BUDGET, describeRejection } from './stepper';
+import { BOTTOM } from '../../core/pdaPresets';
+import { CONFIG_BUDGET, describeRejection } from '../../core/pdaStepper';
 
 export const MAX_RULES = 16;
 export const MAX_LINE_CHARS = 40;

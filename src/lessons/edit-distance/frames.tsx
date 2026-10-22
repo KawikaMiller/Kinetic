@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { plural } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
-import { editTable, hamming, replay, traceback, type Candidates, type Costs, type Op, type Source, type Tinted } from './model';
+import { hamming, replay, traceback, type Op, type Tinted } from './model';
+import { editTable, type Candidates, type Costs, type Source } from '../../core/editDistance';
 
 export type EdPhase = 'fill' | 'trace' | 'replay' | 'done';
 

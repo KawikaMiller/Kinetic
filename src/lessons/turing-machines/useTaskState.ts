@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { parseTmTable, type Tm } from '../../core/tm';
-import { ALPHABET, mustParse, parseTapeInput, TASKS, type TaskId } from './model';
+import { ALPHABET, parseTapeInput, TASKS, type TaskId } from './model';
+import { mustParseTm } from '../../core/tm';
 
 /** What survives a switch of scene: the learner's table, tape and whether they have tried Check yet. */
 export interface TaskState {
@@ -23,7 +24,7 @@ export interface TaskState {
 export function useTaskState(task: TaskId): TaskState {
   const spec = TASKS[task];
   const [text, setTextState] = useState(spec.starter);
-  const [machine, setMachine] = useState<Tm>(() => mustParse(spec.starter));
+  const [machine, setMachine] = useState<Tm>(() => mustParseTm(spec.starter));
   const [raw, setRawState] = useState(spec.defaultInput);
   const [input, setInput] = useState(spec.defaultInput);
   const [attempted, setAttempted] = useState(false);

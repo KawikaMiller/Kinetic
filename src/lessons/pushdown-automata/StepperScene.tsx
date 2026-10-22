@@ -7,9 +7,9 @@ import { ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segm
 import type { PdaAcceptMode } from '../../core/automata';
 import { usePlayer } from '../../core/usePlayer';
 import { playFrames } from './frames';
-import { MAX_SUBJECT, PRESETS, build, checkSubject, presetById, ruleText, type PresetId } from './machines';
+import { MAX_SUBJECT, PRESETS, build, checkSubject, presetById, ruleText, type PresetId } from '../../core/pdaPresets';
 import { OPENING } from './opening';
-import { stepRun } from './stepper';
+import { stepRun } from '../../core/pdaStepper';
 
 const STEP_MS = 900;
 const MAX_VISIBLE_CONFIGS = 8;

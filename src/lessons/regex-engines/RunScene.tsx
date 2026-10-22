@@ -5,12 +5,12 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { plural } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
-import { DFA_STATE_CAP, growthTable, runNfa, subsetSizes, type RunMode } from './engines';
+import { growthTable } from './engines';
+import { DFA_STATE_CAP, runNfa, subsetSizes, type RunMode, constructionOf, placeNfa } from '../../core/regex';
 import { runFrames } from './frames';
 import { NfaDrawing } from './NfaDrawing';
 import { OPENING, PRESETS } from './opening';
 import { PresetChips, RegexFields } from './RegexFields';
-import { constructionOf, placeNfa } from './thompson';
 import { useRegexInput } from './useRegexInput';
 
 const RUN_INTERVAL_MS = 900;

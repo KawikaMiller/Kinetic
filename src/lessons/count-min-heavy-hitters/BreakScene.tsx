@@ -7,8 +7,8 @@ import { useIntroCaption } from '../../core/caption';
 import { sig } from '../../core/format';
 import { breakCaption } from './captions';
 import { ErrorPlot } from './ErrorPlot';
-import { epsilonOf, type Estimator } from './sketch';
-import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, errorRun, overCount, underCount, zipfStream } from './stream';
+import { epsilonOf, type Estimator, zipfStream } from '../../core/countMin';
+import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_STREAM, DEFAULT_WIDTH, GHOST_DELETES, errorRun, overCount, underCount } from './stream';
 
 const TINY_WIDTH = 4;
 

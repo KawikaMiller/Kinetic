@@ -1,4 +1,4 @@
-import type { RunMode } from './engines';
+import { type RunMode } from '../../core/regex';
 
 export type SceneId = 'build' | 'run' | 'which' | 'backtrack';
 export type WhichRule = 'first' | 'longest';

@@ -4,7 +4,7 @@
  * states of the minimal DFA. Also the shortest string that tells two states apart, and the Myhill-Nerode count
  * of prefix classes for a language given only by its membership test.
  */
-import { dfaStep, type Dfa, type State } from '../../core/automata';
+import { dfaStep, type Dfa, type State } from './automata';
 
 export interface Partition {
   /** Class number per state, numbered in order of first appearance. */

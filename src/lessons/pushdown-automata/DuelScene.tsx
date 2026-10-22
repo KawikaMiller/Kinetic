@@ -6,7 +6,7 @@ import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../co
 import { WideRegion } from '../../components/WideRegion';
 import { accepts, type State } from '../../core/automata';
 import { duelCaption } from './captions';
-import { DEAD, MAX_K, MAX_N, MIN_K, boundedCounter, duel, pdaAccepts, pigeonhole, placeCounter, wordAnBn } from './duel';
+import { DEAD, MAX_K, MAX_N, MIN_K, boundedCounter, duel, pdaAccepts, pigeonhole, placeCounter, wordAnBn } from '../../core/automataDuel';
 import { OPENING } from './opening';
 
 const GAP = 56;

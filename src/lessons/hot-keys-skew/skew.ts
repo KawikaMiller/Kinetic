@@ -9,7 +9,7 @@ import { harmonic, zipfPmf, zipfSampler } from '../../core/distributions';
 import { hash32 } from '../../core/hash';
 import { mulberry32 } from '../../core/random';
 import { createTickSim, type TickSim } from '../../core/simTick';
-import { heavyRun } from '../count-min-heavy-hitters/heavy';
+import { heavyRun } from '../../core/countMin';
 
 export const SHARDS = 8;
 export const KEYS = 1_000;

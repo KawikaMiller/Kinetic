@@ -7,13 +7,11 @@ import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
-import { matchAt } from './backtrack';
-import { STEP_BUDGET, runNfa, workSeries } from './engines';
+import { matchAt, runNfa, nodeText, nodesInOrder, buildNfa } from '../../core/regex';
+import { STEP_BUDGET, workSeries } from './engines';
 import { TRACE_LIMIT, finalText, traceFrames } from './frames';
 import { BACKTRACK_PRESETS, OPENING } from './opening';
 import { PresetChips, RegexFields } from './RegexFields';
-import { nodeText, nodesInOrder } from './regexParse';
-import { buildNfa } from './thompson';
 import { useRegexInput } from './useRegexInput';
 
 const TRACE_INTERVAL_MS = 350;

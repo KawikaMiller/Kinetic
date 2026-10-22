@@ -1,12 +1,13 @@
 /**
  * Pure logic for the turing-machines lesson: the two tasks (binary increment, palindrome check),
  * the learner's tables' judging against oracles, the step-by-step frames and the steps-against-size
- * measurement. The machine itself (`Tm`, `runTm`, `parseTmTable`) is the shared `core/tm`.
+ * measurement. The machine itself (`Tm`, `runTm`, `mustParseTm`) is the shared `core/tm`, and the reference tables are `core/tmTables`.
  */
 import { plural } from '../../core/format';
+import { INCREMENT_REFERENCE, PALINDROME_REFERENCE } from '../../core/tmTables';
 import { mulberry32, randInt } from '../../core/random';
 import {
-  parseTmTable, runTm, symbolAt, tapeText, tmStart, tmStep, TM_BLANK,
+  mustParseTm, runTm, symbolAt, tapeText, tmStart, tmStep, TM_BLANK,
   type Tm, type TmConfig, type TmRule, type TmRun,
 } from '../../core/tm';
 
@@ -30,14 +31,6 @@ export const ALPHABET: Record<TaskId, readonly string[]> = { increment: ['0', '1
 export const CHECK_EXHAUSTIVE: Record<TaskId, number> = { increment: 4, palindrome: 6 };
 export const CHECK_LONGEST = 10;
 
-export const INCREMENT_REFERENCE = `# Right end first, then carry leftwards
-q0 0 -> 0 R q0
-q0 1 -> 1 R q0
-q0 _ -> _ L q1
-q1 1 -> 0 L q1
-q1 0 -> 1 S halt
-q1 _ -> 1 S halt`;
-
 export const INCREMENT_STARTER = `# Binary increment; head on the left end
 q0 0 -> 0 R q0
 q0 1 -> 1 R q0
@@ -50,26 +43,6 @@ const WRITE_RULE = 'q1 0 -> 1 S halt';
 export const INCREMENT_NO_CARRY = INCREMENT_REFERENCE.split('\n').filter((l) => l !== CARRY_RULE).join('\n');
 /** `q1 0` writes 0 instead of 1: a 0 stays 0. */
 export const INCREMENT_WRONG_WRITE = INCREMENT_REFERENCE.replace(WRITE_RULE, 'q1 0 -> 0 S halt');
-
-export const PALINDROME_REFERENCE = `# Erase the first letter, match the last
-q0 a -> _ R qA
-q0 b -> _ R qB
-q0 _ -> _ S accept
-qA a -> a R qA
-qA b -> b R qA
-qA _ -> _ L cA
-cA a -> _ L back
-cA b -> b S reject
-cA _ -> _ S accept
-qB a -> a R qB
-qB b -> b R qB
-qB _ -> _ L cB
-cB b -> _ L back
-cB a -> a S reject
-cB _ -> _ S accept
-back a -> a L back
-back b -> b L back
-back _ -> _ R q0`;
 
 export const PALINDROME_STARTER = `# Accept palindromes, reject the rest.
 # Erase the first letter, walk right,
@@ -99,16 +72,10 @@ export const TASKS: Record<TaskId, TaskSpec> = {
   },
 };
 
-export const mustParse = (text: string): Tm => {
-  const p = parseTmTable(text);
-  if (!p.ok) throw new Error(p.error);
-  return p.value;
-};
-
 /** The author's tables, parsed once. */
 export const REFERENCE_MACHINES: Record<TaskId, Tm> = {
-  increment: mustParse(INCREMENT_REFERENCE),
-  palindrome: mustParse(PALINDROME_REFERENCE),
+  increment: mustParseTm(INCREMENT_REFERENCE),
+  palindrome: mustParseTm(PALINDROME_REFERENCE),
 };
 
 // ---- the oracles ----
@@ -319,5 +286,5 @@ export function decodeTable(text: string): Tm {
     const [state, read, write, move, next] = part.split(',');
     return `${state} ${read} -> ${write} ${move} ${next}`;
   });
-  return mustParse(rules.join('\n'));
+  return mustParseTm(rules.join('\n'));
 }

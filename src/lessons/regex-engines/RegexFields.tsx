@@ -1,5 +1,5 @@
 import { ChipButton, ControlGroup, Hint, TextField } from '../../components/ui';
-import { MAX_PATTERN_CHARS, MAX_SUBJECT_CHARS } from './regexParse';
+import { MAX_PATTERN_CHARS, MAX_SUBJECT_CHARS } from '../../core/regex';
 import type { RegexInput } from './useRegexInput';
 
 const FIELD_ROOM = 60;

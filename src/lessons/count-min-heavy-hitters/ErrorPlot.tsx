@@ -1,5 +1,6 @@
 import { HLine, Plot2D, Points } from '../../components/Plot2D';
-import { UNIVERSE, type ErrorRun } from './stream';
+import { type ErrorRun } from './stream';
+import { UNIVERSE } from '../../core/countMin';
 
 const PLOT_WIDTH = 356;
 const PLOT_HEIGHT = 240;

@@ -3,7 +3,7 @@
  * how the run ended. Built on core/automata's configuration sets, so a machine that guesses (wwᴿ) shows every
  * guess at once.
  */
-import { pdaAccepting, pdaMoves, pdaRun, type Pda, type PdaAcceptMode, type PdaConfig, type PdaRun } from '../../core/automata';
+import { pdaAccepting, pdaMoves, pdaRun, type Pda, type PdaAcceptMode, type PdaConfig, type PdaRun } from './automata';
 
 /** Distinct configurations a run may generate before the lesson stops and says so. */
 export const CONFIG_BUDGET = 5000;
