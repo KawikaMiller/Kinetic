@@ -1,4 +1,6 @@
+import { isValidElement } from 'react';
 import { describe, expect, it } from 'vitest';
+import { RuleEditor } from './RuleEditor';
 import { captionText } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { ipv4 } from '../../core/ipv4';
@@ -200,6 +202,23 @@ describe('typed rules: hostile input is refused with the field named and changes
     const over = addRule(editDraft(editDraft(s, { from: '4000' }), { peer: '10.0.0.0/16' }));
     expect(rulesOf(over.cfg, over.list)).toHaveLength(MAX_RULES);
     expect(over.note).toContain(`already has ${MAX_RULES} entries`);
+    expect(s.note, 'the 20th add already says the list is full').toContain(`now has ${MAX_RULES} entries`);
+  });
+
+  it('the Add rule button stays pressable when the list is full, so the refusal can be seen (it is not soft-disabled)', () => {
+    let s = initialRules();
+    for (let i = 0; i < MAX_RULES; i++) s = addRule(editDraft(editDraft(s, { from: String(1000 + i) }), { peer: '10.0.0.0/16' }));
+    const buttons: { props: { softDisabled?: boolean; onClick?: unknown; children?: unknown } }[] = [];
+    const walk = (n: unknown): void => {
+      if (Array.isArray(n)) n.forEach(walk);
+      else if (isValidElement<{ children?: unknown; softDisabled?: boolean }>(n)) {
+        if (n.props.children === 'Add rule') buttons.push(n as never);
+        walk(n.props.children);
+      }
+    };
+    walk(RuleEditor({ st: s, setSt: () => {} }));
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].props.softDisabled).toBeFalsy();
   });
 
   it('hidden controls feed nothing: with "all traffic" the port fields are ignored, and a route ignores protocol and ports', () => {

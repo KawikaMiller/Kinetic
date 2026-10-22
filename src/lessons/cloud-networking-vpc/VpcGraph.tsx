@@ -12,6 +12,8 @@ import {
 /** The narrowest container at which the drawing's smallest text stays at 9px or more. */
 export const VPC_MIN_WIDTH = 600;
 const PACKET_LIFT = 34;
+/** Half the packet's width plus the node it sits over, in drawing units: the stretch kept on screen around it. */
+const PACKET_REVEAL_HALF_WIDTH = 60;
 
 const BEHAVES: Record<Behaviour, string> = { public: 'public', private: 'private', isolated: 'isolated' };
 
@@ -95,7 +97,11 @@ export function VpcGraph({ cfg, flow, hops, shown, ariaLabel }: { cfg: VpcConfig
   };
 
   return (
-    <WideRegion minWidth={VPC_MIN_WIDTH} label="The VPC drawing: scroll sideways to see all of it">
+    <WideRegion
+      minWidth={VPC_MIN_WIDTH}
+      label="The VPC drawing: scroll sideways to see all of it"
+      reveal={{ from: (packetAt.x - PACKET_REVEAL_HALF_WIDTH) / CANVAS.width, to: (packetAt.x + PACKET_REVEAL_HALF_WIDTH) / CANVAS.width }}
+    >
       <GraphView
         nodes={NODES.map((id) => ({ id, label: NODE_LABEL[id], at: positionOf(cfg, id), shape: 'box' as const }))}
         edges={links.map(([from, to]) => ({ from, to }))}

@@ -37,6 +37,21 @@ const listTitle = (ref: ListRef) => {
   return `Network ACL of the ${ref.subnet} subnet, ${ref.dir === 'in' ? 'inbound (source)' : 'outbound (destination)'}: lowest number first, then deny`;
 };
 
+/**
+ * Removing a rule unmounts its button, which would drop keyboard focus to the page. Once the table has redrawn, focus the
+ * remove button now in that position (the next rule, or the last one), or the Add rule button when none is left.
+ */
+function refocusAfterRemove(removed: Element | null): void {
+  const table = removed?.closest('table') ?? null;
+  const editor = removed?.closest('.vpc-editor') ?? null;
+  const position = table ? [...table.querySelectorAll('tbody button')].indexOf(removed as Element) : -1;
+  requestAnimationFrame(() => {
+    const buttons = [...(table?.querySelectorAll<HTMLElement>('tbody button') ?? [])];
+    const add = [...(editor?.querySelectorAll<HTMLElement>('.vpc-form button') ?? [])].find((b) => b.textContent === 'Add rule');
+    (buttons[Math.min(Math.max(position, 0), buttons.length - 1)] ?? add)?.focus();
+  });
+}
+
 /** Pick a list, read its rules, add one or remove one. Every refusal names the field. */
 export function RuleEditor({ st, setSt }: { st: RulesState; setSt: (f: (s: RulesState) => RulesState) => void }) {
   const ref = st.list;
@@ -44,7 +59,6 @@ export function RuleEditor({ st, setSt }: { st: RulesState; setSt: (f: (s: Rules
   const shown = ref.kind === 'nacl' ? [...rules].sort((a, b) => (a.rule as NaclRule).num - (b.rule as NaclRule).num) : rules;
   const draft = st.draft;
   const set = (patch: Partial<typeof draft>) => setSt((s) => editDraft(s, patch));
-  const full = rules.length >= MAX_RULES;
 
   return (
     <div className="vpc-editor">
@@ -78,7 +92,13 @@ export function RuleEditor({ st, setSt }: { st: RulesState; setSt: (f: (s: Rules
               <tr key={index}>
                 <td>{ruleText(ref, rule)}</td>
                 <td>
-                  <ChipButton tone="bad" ariaLabel={`Remove ${ruleText(ref, rule)}`} onClick={() => setSt((s) => removeRule(s, index))}>×</ChipButton>
+                  <ChipButton tone="bad" ariaLabel={`Remove ${ruleText(ref, rule)}`} onClick={() => {
+                      refocusAfterRemove(document.activeElement);
+                      setSt((s) => removeRule(s, index));
+                    }}
+                  >
+                    ×
+                  </ChipButton>
                 </td>
               </tr>
             ))}
@@ -118,7 +138,7 @@ export function RuleEditor({ st, setSt }: { st: RulesState; setSt: (f: (s: Rules
             />
           </>
         )}
-        <Button variant="primary" softDisabled={full} onClick={() => setSt(addRule)}>Add rule</Button>
+        <Button variant="primary" onClick={() => setSt(addRule)}>Add rule</Button>
         {ref.kind === 'nacl' && (
           <ChipButton tone="info" onClick={() => set({ proto: 'tcp', from: String(EPHEMERAL_RANGE.lo), to: String(EPHEMERAL_RANGE.hi) })}>
             fill ephemeral ports {EPHEMERAL_RANGE.lo}-{EPHEMERAL_RANGE.hi}

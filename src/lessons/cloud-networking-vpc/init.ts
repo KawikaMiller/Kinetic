@@ -2,7 +2,7 @@
 import { EMPTY_DRAFT, buildRule, type RuleDraft } from './rules';
 import { DEFAULT_ROWS, MAX_SUBNET_ROWS, type CarveRow } from './planner';
 import {
-  FLOWS, naclRuleText, presetConfig, rulesOf, sgRuleText, withRules, cidrText,
+  FLOWS, MAX_RULES, naclRuleText, presetConfig, rulesOf, sgRuleText, withRules, cidrText,
   type AnyRule, type Flow, type ListRef, type NaclRule, type PresetId, type RouteEntry, type SgRule, type VpcConfig,
 } from './vpc';
 
@@ -54,7 +54,7 @@ export function addRule(s: RulesState): RulesState {
   const built = buildRule(s.cfg, s.list, s.draft);
   if (!built.ok) return { ...s, note: built.error };
   const next = [...rulesOf(s.cfg, s.list), built.value];
-  return { ...s, cfg: withRules(s.cfg, s.list, next), note: `Added: ${ruleText(s.list, built.value)}.`, draft: { ...EMPTY_DRAFT } };
+  return { ...s, cfg: withRules(s.cfg, s.list, next), note: `Added: ${ruleText(s.list, built.value)}.${next.length >= MAX_RULES ? ` The list now has ${MAX_RULES} entries, the most the lesson allows.` : ''}`, draft: { ...EMPTY_DRAFT } };
 }
 
 export function removeRule(s: RulesState, index: number): RulesState {

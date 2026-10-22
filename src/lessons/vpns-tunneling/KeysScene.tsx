@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { BitStrip } from '../../components/BitStrip';
 import { Box, SectionTitle } from '../../components/Panel';
-import { SequenceDiagram } from '../../components/SequenceDiagram';
+import { PhoneLadder } from '../../components/PhoneLadder';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { chunkGroups } from '../../core/bits';
@@ -55,7 +55,7 @@ export function KeysScene({ picker }: { picker: ReactNode }) {
       <div className="vpn-stage stage-pad">
         <Box>
           <SectionTitle hint="message names and timers from memory">{ladder.name}: how the keys are agreed</SectionTitle>
-          <SequenceDiagram actors={actors} messages={messages} step={player.frame.index} fit="shown" ariaLabel={`The ${ladder.name} key exchange as a ladder diagram`} />
+          <PhoneLadder actors={actors} messages={messages} step={player.frame.index} fit="shown" ariaLabel={`The ${ladder.name} key exchange as a ladder diagram`} />
           <p className="vpn-note">Keys are replaced {ladder.rekey}.</p>
         </Box>
         <Box>

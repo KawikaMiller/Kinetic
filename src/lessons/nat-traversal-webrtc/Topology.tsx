@@ -39,9 +39,11 @@ export function Topology({
     if (server && route === 'relay') classes.push('is-relay');
     return classes.join(' ');
   };
+  const xs = packet ? packet.path.map((k) => POS[k].x) : [];
+  const reveal = packet ? { from: (Math.min(...xs) - NODE.w / 2) / W, to: (Math.max(...xs) + NODE.w / 2) / W } : null;
   const tone = middle === 'TURN relay' ? 'orange' : 'info';
   return (
-    <WideRegion minWidth={TOPOLOGY_MIN_WIDTH} label="The two peers, their NATs and the server in the middle: scroll sideways to see all of it">
+    <WideRegion minWidth={TOPOLOGY_MIN_WIDTH} label="The two peers, their NATs and the server in the middle: scroll sideways to see all of it" reveal={reveal}>
       <svg className="nat-topology" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel}>
         {LINKS.map(([x, y]) => (
           <line key={`${x}${y}`} className={edgeClass(x, y)} x1={POS[x].x} y1={POS[x].y} x2={POS[y].x} y2={POS[y].y} />
