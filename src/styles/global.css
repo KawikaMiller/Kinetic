@@ -893,10 +893,10 @@ kbd {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.tbtn:hover:not(:disabled) { border-color: var(--line-2); background: var(--panel-2); }
-.tbtn:disabled { opacity: 0.35; cursor: default; }
+.tbtn:hover:not([aria-disabled='true']) { border-color: var(--line-2); background: var(--panel-2); }
+.tbtn[aria-disabled='true'] { opacity: 0.35; cursor: default; }
 .tbtn-play { width: 42px; background: var(--accent); border-color: transparent; color: white; }
-.tbtn-play:hover:not(:disabled) { background: #8b6dff; border-color: transparent; }
+.tbtn-play:hover { background: #8b6dff; border-color: transparent; }
 .scrub {
   flex: 1;
   min-width: 80px;
