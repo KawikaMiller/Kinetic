@@ -11,6 +11,8 @@ import { LEASE_LANES, barsUpTo, domainEndMs, leaseBars, storeRows } from './even
 import { CLIENT_A, CLIENT_B, LOCK, STORE, statsAt, type LeaseRun, type Msg, type Verdict } from './model';
 
 const GANTT_MIN_WIDTH = 520;
+/** Bars narrower than this drop their label (it stays the tooltip) instead of showing it clipped: the longest labels are about 200px. */
+const LABEL_MIN_PX = 90;
 const ACTORS = [
   { id: LOCK, label: 'lock service' },
   { id: CLIENT_A, label: 'client A' },
@@ -99,7 +101,7 @@ export function RunPanels({ run, now, verdict }: { run: LeaseRun; now: number; v
 function WideGantt({ run, now, bars, markers }: { run: LeaseRun; now: number; bars: GanttBar[]; markers: GanttMarker[] }) {
   return (
     <WideRegion minWidth={GANTT_MIN_WIDTH} label="Lease timeline: scroll sideways to see all of it">
-      <GanttLanes lanes={LEASE_LANES} bars={bars} domain={[0, domainEndMs(run) / 1000]} now={now / 1000} markers={markers} unit=" s" axis size="md" labelWidth={84} labelMinPx={40} ariaLabel="Leases, pauses and writes of the two clients and the storage server" />
+      <GanttLanes lanes={LEASE_LANES} bars={bars} domain={[0, domainEndMs(run) / 1000]} now={now / 1000} markers={markers} unit=" s" axis size="md" labelWidth={84} labelMinPx={LABEL_MIN_PX} ariaLabel="Leases, pauses and writes of the two clients and the storage server" />
     </WideRegion>
   );
 }

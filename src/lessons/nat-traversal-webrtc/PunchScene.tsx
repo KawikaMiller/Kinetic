@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { CellGrid } from '../../components/CellGrid';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -9,6 +10,9 @@ import { punchFrames, punchMessages } from './captions';
 import { initialPunch } from './init';
 import { NatPair } from './NatPair';
 import { NAT_NAME, NAT_TYPES, OFFSET_MAX, matrix, punch } from './nat';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const ACTORS = [
   { id: 'a', label: 'peer A' },
@@ -71,7 +75,7 @@ export function PunchScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Box>
           <SectionTitle hint="rows: peer A's NAT, columns: peer B's NAT. Press a cell to try that pair">Which pairs punch</SectionTitle>
-          <div className="nat-matrix">
+          <WideRegion minWidth={TABLE_MIN_WIDTH} hint="swipe to see the whole table">
             <CellGrid
               rows={NAT_TYPES.length}
               cols={NAT_TYPES.length}
@@ -84,7 +88,7 @@ export function PunchScene({ picker }: { picker: ReactNode }) {
               cellAriaLabel={(r, c) => `A ${NAT_NAME[NAT_TYPES[r]]}, B ${NAT_NAME[NAT_TYPES[c]]}: ${m[r][c] ? 'punches a hole' : 'needs the relay'}`}
               ariaLabel="Outcome of hole punching for every pair of NAT types"
             />
-          </div>
+          </WideRegion>
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">computed packet by packet from the NAT model: a probe is dropped or forwarded by each NAT's own table; no connection is opened by this page</Provenance>

@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -9,6 +10,9 @@ import { routesIntro } from './captions';
 import { initialRoutes, typeDestination } from './init';
 import { TIE_OPTIONS } from './options';
 import { PRESETS, SAMPLES, lookup, presetRows, split, type RouteRow } from './routing';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const LEGEND = (
   <Legend
@@ -83,7 +87,7 @@ export function RoutesScene({ picker }: { picker: ReactNode }) {
       <div className="vpn-stage stage-pad">
         <Box>
           <SectionTitle hint={preset?.note}>The route list: WireGuard calls the tunnel's part "allowed IPs"</SectionTitle>
-          <div className="vpn-scroll" role="region" aria-label="The route list" tabIndex={0}>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="The route list: scroll sideways to see all of it" hint="swipe to see the whole table">
             <table className="data-table vpn-table">
               <thead>
                 <tr>
@@ -109,7 +113,7 @@ export function RoutesScene({ picker }: { picker: ReactNode }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
           <p className="vpn-note">Longest prefix wins. Sending only the office ranges through the tunnel (split) and sending everything (full) are both routing choices with trade-offs, not a stronger and a weaker VPN: full sends all your traffic through the far network, split sends only what has to go there.</p>
         </Box>
         <ProvenanceRow>

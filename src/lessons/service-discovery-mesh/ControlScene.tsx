@@ -10,6 +10,8 @@ import { initialControl, type ControlUi } from './init';
 import { HORIZON_MIN, LIFETIME_RANGE, NEW_INSTANCE_MIN, OUTAGE_RANGE, WORKLOADS, actualEndpoints, certTimeline, failingAt, knownEndpoints } from './mesh';
 
 const GANTT_MIN_WIDTH = 560;
+/** Bars narrower than this drop their label (it stays the tooltip) instead of showing it clipped. */
+const GANTT_LABEL_MIN_PX = 72;
 
 export function ControlScene({ picker }: { picker: ReactNode }) {
   const [u, setU] = useState<ControlUi>(initialControl);
@@ -72,7 +74,7 @@ export function ControlScene({ picker }: { picker: ReactNode }) {
               axis
               size="sm"
               labelWidth={104}
-              ariaLabel="The control plane outage and each workload's certificates"
+              labelMinPx={GANTT_LABEL_MIN_PX} ariaLabel="The control plane outage and each workload's certificates"
             />
           </WideRegion>
         </Box>

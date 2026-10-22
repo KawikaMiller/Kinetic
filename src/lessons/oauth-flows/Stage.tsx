@@ -15,6 +15,9 @@ import {
 import { ATTACK_LABEL, ATTACKS, BINDINGS, cellText, COLUMNS, defenceMatrix, type MatrixRow, OUTCOME_LABEL } from './run';
 import './styles.css';
 
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
+
 const COLOR: Record<Kind, string> = { front: 'var(--info)', back: 'var(--violet)', ok: 'var(--ok)', bad: 'var(--bad)' };
 const POS: Record<NodeId, { x: number; y: number }> = {
   browser: { x: 120, y: 170 },
@@ -202,7 +205,7 @@ export function Stage() {
               </li>
             ))}
           </ul>
-          <div className="oa-matrix-wrap" tabIndex={0} role="region" aria-label="What each defence stops, a table you can scroll sideways">
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="What each defence stops, a table you can scroll sideways: scroll sideways to see all of it" hint="swipe to see the whole table">
           <table className="oa-matrix">
             <caption>What each defence stops: every cell is a run of the same model, and each column switches on only the defences it names. The forged-callback attacker leaves the challenge out, so that attack has a row for a server that requires PKCE and one for a server that does not</caption>
             <thead>
@@ -229,7 +232,7 @@ export function Stage() {
               ))}
             </tbody>
           </table>
-          </div>
+          </WideRegion>
         </Box>
       </div>
     </StageFrame>

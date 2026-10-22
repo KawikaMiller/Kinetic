@@ -4,7 +4,6 @@
 .dd-resources .box.is-saturated { border-color: var(--bad); }
 .dd-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
 .dd-note.is-bad { color: var(--bad); }
-.dd-table-wrap { overflow-x: auto; }
 .dd-table th, .dd-table td { font-size: 12px; }
 .dd-table .is-current { color: var(--orange); }
 .dd-table tr.is-on th { color: var(--violet); }

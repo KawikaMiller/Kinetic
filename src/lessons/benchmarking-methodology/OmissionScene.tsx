@@ -13,6 +13,9 @@ import {
 } from './model';
 import { pctText } from '../../core/format';
 
+/** Narrowest width where the generator table still reads; below it the table scrolls sideways. */
+const TABLE_MIN_WIDTH = 440;
+
 const STEP_MS = 420;
 const METER_MAX = 1200;
 const MIN_BAR_PX = 3;
@@ -128,6 +131,7 @@ export function OmissionScene({ picker }: { picker: ReactNode }) {
         </div>
         <Box className="bm-table-box">
           <SectionTitle hint="same stall, three tools">What each generator reports</SectionTitle>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="What each generator reports: scroll sideways to see all of it" hint="swipe to see the whole table">
           <table className="data-table bm-table">
             <thead>
               <tr>
@@ -146,6 +150,7 @@ export function OmissionScene({ picker }: { picker: ReactNode }) {
               ))}
             </tbody>
           </table>
+          </WideRegion>
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">a made-up server (one request at a time, {GENERATOR_DEFAULT.stallMs} ms stall by default); no randomness, so no seed</Provenance>

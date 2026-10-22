@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { ByteGrid, type ByteField } from '../../components/ByteGrid';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -9,6 +10,9 @@ import { wrapFacts, wrapFrames } from './captions';
 import { WRAP_PAYLOAD, initialWrap } from './init';
 import { OUTER_OPTIONS, SUITE_OPTIONS, TUNNEL_OPTIONS } from './options';
 import { INNER_DST, INNER_SRC, SIZE, runningOverhead, type Field, type Suite } from './tunnels';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const LEGEND = (
   <Legend
@@ -117,7 +121,7 @@ export function WrapScene({ picker }: { picker: ReactNode }) {
           </Box>
           <Box>
             <SectionTitle hint="sizes from the table">Fields and running overhead</SectionTitle>
-            <div className="vpn-scroll" role="region" aria-label="The fields the tunnel adds" tabIndex={0}>
+            <WideRegion minWidth={TABLE_MIN_WIDTH} label="The fields the tunnel adds: scroll sideways to see all of it" hint="swipe to see the whole table">
               <table className="data-table vpn-table">
                 <thead>
                   <tr>
@@ -138,7 +142,7 @@ export function WrapScene({ picker }: { picker: ReactNode }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </WideRegion>
           </Box>
         </div>
         <ProvenanceRow>

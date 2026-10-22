@@ -90,7 +90,7 @@ export function MoneyScene({ picker }: { picker: ReactNode }) {
             <Stat label="Exact total" value={formatMoney(BigInt(n) * BigInt(PAYMENT_CENTS))} />
             <Stat label="Drift, in dollars" value={sum.drift} color={sum.equal ? 'var(--ok)' : 'var(--bad)'} />
           </Stats>
-          <span className={`chip tone-${sum.equal ? 'ok' : 'bad'}`}>{sum.equal ? 'balance check passes' : 'balance check fails: sum is not the expected total'}</span>
+          <span className={`chip dl-check tone-${sum.equal ? 'ok' : 'bad'}`}>{sum.equal ? 'balance check passes' : 'balance check fails: sum is not the expected total'}</span>
         </Box>
 
         <div className="dl-pair">

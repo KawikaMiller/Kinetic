@@ -12,6 +12,8 @@ import { initialMesh, meshActive, type MeshUi } from './init';
 import { APP_CALL_MS, CANARY_RANGE, FAIL_RATE_RANGE, HORIZON_MIN, LIFETIME_RANGE, RETRY_RANGE, attempts, callMs, certTimeline, extraHopMs, observedSplit } from './mesh';
 
 const GANTT_MIN_WIDTH = 520;
+/** Bars narrower than this drop their label (it stays the tooltip) instead of showing it clipped. */
+const GANTT_LABEL_MIN_PX = 72;
 const NO_OUTAGE = { start: 0, length: 0 };
 
 export function MeshScene({ picker }: { picker: ReactNode }) {
@@ -66,7 +68,7 @@ export function MeshScene({ picker }: { picker: ReactNode }) {
           <Box>
             <SectionTitle hint={`certificates of ${minText(u.lifetimeMin)}, renewed at half their life`}>mTLS: short-lived identities</SectionTitle>
             <WideRegion minWidth={GANTT_MIN_WIDTH} label="Certificate timeline: scroll sideways to see all of it">
-              <GanttLanes lanes={['orders', 'payments', 'search'].map((w) => ({ id: w, label: w }))} bars={bars} domain={[0, HORIZON_MIN]} unit=" min" axis size="sm" labelWidth={92} ariaLabel="Certificate lifetimes of each workload" />
+              <GanttLanes lanes={['orders', 'payments', 'search'].map((w) => ({ id: w, label: w }))} bars={bars} domain={[0, HORIZON_MIN]} unit=" min" axis size="sm" labelWidth={92} labelMinPx={GANTT_LABEL_MIN_PX} ariaLabel="Certificate lifetimes of each workload" />
             </WideRegion>
           </Box>
         ) : (

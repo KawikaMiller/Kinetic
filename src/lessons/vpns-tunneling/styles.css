@@ -4,7 +4,6 @@
 .vpn-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
 .vpn-proportion { display: flex; gap: 2px; height: 34px; }
 .vpn-block { display: block; border: 1px solid; border-radius: 3px; }
-.vpn-scroll { overflow-x: auto; }
 .vpn-table td, .vpn-table th { font-size: 12.5px; vertical-align: top; white-space: normal; padding: 6px 4px; }
 .vpn-table tr.is-off td { color: var(--dim); }
 .vpn-total { color: var(--hi); font-weight: 600; }

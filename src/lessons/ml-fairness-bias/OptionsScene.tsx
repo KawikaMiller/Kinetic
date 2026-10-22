@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
@@ -7,6 +8,9 @@ import { DataControls } from './DataControls';
 import { CRITERIA, RANGES, holds, type Params } from './model';
 import { OPENING } from './opening';
 import { runOptions, whoLine, type OptionId } from './options';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const pts = (x: number) => (Number.isNaN(x) ? NA : (x * 100).toFixed(1));
 const SHORT: Record<OptionId, string> = { one: 'One threshold', tpr: 'Equal true-positive rate', selection: 'Equal approval rate', reweigh: 'Reweigh', unaware: 'Drop the group column' };
@@ -43,7 +47,7 @@ export function OptionsScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="fb-stage stage-pad">
-        <div className="fb-scroll">
+        <WideRegion minWidth={TABLE_MIN_WIDTH} hint="swipe to see the whole table">
           <table className="data-table fb-table fb-options">
             <caption>Every option on the same data, none marked as the default (gaps in percentage points)</caption>
             <thead>
@@ -58,7 +62,7 @@ export function OptionsScene({ picker }: { picker: ReactNode }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </WideRegion>
         <div className="fb-who">
           <b>{chosen.label}</b>
           <span>How it works: {chosen.how}.</span>
