@@ -6,7 +6,7 @@ import { useSetCaption } from '../../core/caption';
 import { usePlayer } from '../../core/usePlayer';
 import { genOf, type Config } from './config';
 import { configRows } from './ConfigControls';
-import { shrinkFrames, show } from './frames';
+import { playerFrames, shrinkFrames, show } from './frames';
 import { replayIdentical } from './replay';
 import { DEFAULT_CASES } from './generator';
 import { SHRINK_STEP_LIMIT, findAndShrink } from './runner';
@@ -14,13 +14,12 @@ import { bugOf } from './sorts';
 import { Values } from './Values';
 
 const SHRINK_INTERVAL_MS = 260;
-
 export function ShrinkScene({ picker, config, set }: { picker: ReactNode; config: Config; set: (patch: Partial<Config>) => void }) {
   const bug = bugOf(config.fn);
   const found = useMemo(() => findAndShrink(bug.fn, config.props, genOf(config)), [bug, config]);
   const frames = useMemo(() => (found ? shrinkFrames(found.shrunk, found.run.failure!.k) : []), [found]);
   const setCaption = useSetCaption();
-  const player = usePlayer(frames.length ? frames : [{ current: [], candidate: null, verdict: 'start' as const, tried: 0, accepted: 0, log: [] }], { interval: SHRINK_INTERVAL_MS, autoplay: false });
+  const player = usePlayer(playerFrames(frames), { interval: SHRINK_INTERVAL_MS, autoplay: false });
   const f = player.frame;
 
   useEffect(() => {
