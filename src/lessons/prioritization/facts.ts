@@ -47,6 +47,8 @@ export const FACTS = {
   closePts: Math.round(CLOSE_CALL * 100),
   wideGapPts: Math.round(wideTop.gap * 100),
   wideClose: wideTop.close,
+  wideTopPct: Math.round(wideRanks.first[wideTop.top] * 100),
+  wideSecondPct: Math.round(wideRanks.first[wideTop.second] * 100),
   capacity: CAPACITY.default,
   lineItems: withinCapacity(ITEMS, CAPACITY.default).length,
   lineValue: line.value,

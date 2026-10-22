@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ClaimLabel, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { costCaption } from './captions';
 import { DEPENDENCY, ITEMS, bestOrder, delayCost, finishTimes, orderBy, swapsToRatioOrder, violation } from './model';
@@ -50,6 +51,7 @@ export function CostScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="pz-stage stage-pad">
+        <WideRegion minWidth={460} label="Your order: scroll sideways to reach the move buttons">
         <table className="data-table pz-table">
           <caption>Your order, one worker, one item after another</caption>
           <thead><tr><th>#</th><th>Item</th><th>Cost of delay a week</th><th>Weeks</th><th>Finishes</th><th>Move</th></tr></thead>
@@ -69,6 +71,7 @@ export function CostScene({ picker }: { picker: ReactNode }) {
             })}
           </tbody>
         </table>
+        </WideRegion>
         {extra ? (
           <table className="data-table pz-table">
             <caption>Swapping neighbours into the ratio order, cost removed by each swap (first {Math.min(SHOWN_SWAPS, swaps.length)} of {swaps.length})</caption>

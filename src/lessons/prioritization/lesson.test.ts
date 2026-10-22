@@ -13,6 +13,16 @@ import { BASE_VALUE, METER, OUTCOMES, STAKEHOLDER, SWAP_OUT, TRUST } from './sce
 
 const NO_JUNK = /NaN|undefined|\[object|Infinity/;
 
+describe('the quiz stem on first-place shares', () => {
+  it('quotes two shares that can coexist: they come from the model and sum to at most 100%', () => {
+    const w = simulateRanks(ITEMS, 0.6, OPENING.ranges.seed);
+    const total = Object.values(w.first).reduce((s, v) => s + v, 0);
+    expect(total).toBeCloseTo(1, 9);
+    expect(FACTS.wideTopPct + FACTS.wideSecondPct).toBeLessThanOrEqual(100);
+    expect(lesson.quiz[3].q).toContain(`${FACTS.wideTopPct}% and ${FACTS.wideSecondPct}%`);
+  });
+});
+
 describe('scenes', () => {
   it('every scene component carries its own key and none is shared', () => {
     const els = sceneElements('prioritization');
@@ -53,7 +63,7 @@ describe('try-this entries, each from the default state', () => {
     expect(lesson.tryThis[1]).toContain('costs 885');
   });
 
-  it('try-this 3: signup 55% and CSV 34%, a gap of 21 points; at spread 0.6 the gap is 7 and within noise', () => {
+  it('try-this 3: signup 55% and CSV 34%, a gap of 21 points; at spread 0.6 the gap is 7, a close call', () => {
     const s = simulateRanks(ITEMS, OPENING.ranges.sigma, OPENING.ranges.seed);
     const t = topTwo(s);
     expect([Math.round(s.first[t.top] * 100), Math.round(s.first[t.second] * 100), Math.round(t.gap * 100), t.close]).toEqual([55, 34, 21, false]);
@@ -103,13 +113,13 @@ describe('captions across the control cross product', () => {
     expect(broken).toContain('885');
   });
 
-  it('the ranges caption is clean at every spread and says "within noise" exactly when the gap is under 10 points', () => {
+  it('the ranges caption is clean at every spread and says "close call" exactly when the gap is under 10 points', () => {
     for (const sigma of [SPREAD.min, 0.3, SPREAD.max]) {
       const stats = simulateRanks(ITEMS, sigma, 12, 1000);
       const top = topTwo(stats);
       const text = expectCaption(rangesCaption(stats, top, sigma));
       expect(text).not.toMatch(NO_JUNK);
-      expect(text.includes('within noise')).toBe(top.gap < 0.1);
+      expect(text.includes('That is a close call')).toBe(top.gap < 0.1);
     }
   });
 

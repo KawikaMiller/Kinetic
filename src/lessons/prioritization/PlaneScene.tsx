@@ -65,8 +65,8 @@ export function PlaneScene({ picker }: { picker: ReactNode }) {
               roving
               labels={(k) => items[k].label}
               pointLabel={(k) => `${items[k].label}: ${QUADRANT_WORD[quadrantOf(items[k].impact, items[k].effort)]}`}
-              onDrag={(k, [x, y]) => {
-                const p = placeItem(x, y);
+              onDrag={(k, [x, y], via) => {
+                const p = placeItem(x, y, items[k], via);
                 setNote(p.refusal);
                 setItems((all) => all.map((it, n) => (n === k ? { ...it, impact: p.impact, effort: p.effort } : it)));
               }}
@@ -75,7 +75,7 @@ export function PlaneScene({ picker }: { picker: ReactNode }) {
         </WideRegion>
         <table className="data-table pz-table">
           <caption>Rank under each rule (1 is first)</caption>
-          <thead><tr><th>Item</th><th>Group</th><th>Impact</th><th>Effort</th><th>Ratio</th></tr></thead>
+          <thead><tr><th>Item</th><th>Group</th><th>Impact rank</th><th>Effort rank</th><th>Ratio rank</th></tr></thead>
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>

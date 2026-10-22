@@ -15,20 +15,20 @@ const lesson: LessonModule = {
       'Showing what a "not this quarter" actually costs',
     ],
     why: 'Prioritisation is where a team spends its only fixed resource, time. A ranking without prices hides what is lost; cost of delay gives a unit for the price of waiting, and a range shows when two items are too close to argue about.',
-    watch: 'On The 2 by 2, each backlog item is a sky-blue dot, the grey lines split the plane at 5 and 5, and the three value curves are violet (highest impact first), orange (lowest effort first) and green (impact over effort), with a yellow line for the week you picked. On Cost of delay the yellow figure is your order, the green figure the best order and the red figure the extra you pay; an item tied by a dependency is violet. On Ranges the blue bars are the chance of ranking first and an orange gap is within noise. On The capacity line a chosen item is green and one left out is grey and dashed, and red marks work over capacity or the price of what is cut. In the urgent request, a meter is blue while fine and red past its edge.',
+    watch: 'On The 2 by 2, each backlog item is a sky-blue dot, the grey lines split the plane at 5 and 5, and the three value curves are violet (highest impact first), orange (lowest effort first) and green (impact over effort), with a yellow line for the week you picked. On Cost of delay the yellow figure is your order, the green figure the best order and the red figure the extra you pay; an item tied by a dependency is violet. On Ranges the blue bars are the chance of ranking first and an orange gap is a close call (under 10 points). On The capacity line a chosen item is green and one left out is grey and dashed, and red marks work over capacity or the price of what is cut. In the urgent request, a meter is blue while fine and red past its edge.',
   },
   tryThis: [
     `The 2 by 2, from a fresh load: by week ${F.week} highest impact first has delivered ${F.valueImpact}, lowest effort first ${F.valueEffort} and impact over effort ${F.valueRatio}. Drag "Value delivered by week" to ${F.lateWeek}: the three are ${F.lateImpact}, ${F.lateEffort} and ${F.lateRatio}, and impact over effort leads.`,
     `Cost of delay, from a fresh load (highest impact first): your order costs ${F.yourCost} and the best costs ${F.bestCost}, so you pay ${F.extraCost} extra and ${F.swaps} neighbour swaps remove it. Press "Sort by cost of delay over duration", then turn Dependency on: ${F.dependencyAfter} needs ${F.dependencyBefore} first, the sorted order is refused, and the best allowed order costs ${F.boundCost}.`,
-    `Ranges, from a fresh load: ${F.topName} ranks first in ${F.topPct}% of runs and ${F.secondName} in ${F.secondPct}%, a gap of ${F.gapPts} points. Drag the spread to 0.6 and the gap falls to ${F.wideGapPts} points, within noise.`,
+    `Ranges, from a fresh load: ${F.topName} ranks first in ${F.topPct}% of runs and ${F.secondName} in ${F.secondPct}%, a gap of ${F.gapPts} points. Drag the spread to 0.6 and the gap falls to ${F.wideGapPts} points, a close call by this lesson's ${F.closePts}-point threshold.`,
     `The capacity line, from a fresh load (${F.capacity} weeks): ${F.lineItems} items fit, worth ${F.lineValue} a week, and the rest cost ${F.lineCut} a week in delay. Drag the capacity to 20: ${F.wideItems} items fit and ${F.wideCut} a week is cut.`,
     `An urgent request, from a fresh load: pick "Swap it for ${F.swapOut}" and Continue. Value delivered reads ${F.swapValue} against ${F.baseValue} at the start, and trust reads ${F.swapTrust}.`,
   ],
   keyIdeas: [
     `A 2 by 2 groups items; it does not order them, and neither highest impact nor lowest effort first wins at both horizons: by week ${F.week} lowest effort leads at ${F.valueEffort} against ${F.valueRatio}, while by week ${F.lateWeek} impact over effort leads.`,
     `For one worker and independent items, ordering by cost of delay over duration gives the lowest total delay cost (a standard result, from memory): ${F.bestCost} against ${F.yourCost} for highest impact first. A dependency changes that, and the best allowed order, ${F.boundCost}, has to be searched for.`,
-    `Estimates are ranges, so rankings are too: at a spread of 0.6 the top two items are ${F.wideGapPts} points apart and within noise, which is a reason to stop debating that pair (one view).`,
-    `A visible capacity line makes "no" concrete: at ${F.capacity} weeks the ${F.lineItems} items in cost ${F.lineCut} a week to leave out, and each way of answering an urgent request shows what it gives up.`,
+    `Estimates are ranges, so rankings are too: at a spread of 0.6 the top two items are ${F.wideGapPts} points apart, under this lesson's ${F.closePts}-point threshold for a close call, which is a reason to stop debating that pair (one view).`,
+    `A visible capacity line makes "no" concrete: at ${F.capacity} weeks ${F.lineItems} items fit and leaving out the rest costs ${F.lineCut} a week, and each way of answering an urgent request shows what it gives up.`,
   ],
   quiz: [
     {
@@ -65,15 +65,15 @@ const lesson: LessonModule = {
       why: `Here highest impact first costs ${F.yourCost} against ${F.bestCost}: ${F.swaps} adjacent swaps remove the ${F.extraCost} difference, each by a positive amount.`,
     },
     {
-      q: 'Two items rank first in 55% and 48% of simulated runs. What is a sensible reading?',
+      q: `Two items rank first in ${F.wideTopPct}% and ${F.wideSecondPct}% of simulated runs. What is a sensible reading?`,
       options: [
         'The first is clearly better, because a higher percentage always means a better item and so should simply be done first',
         'The simulation is broken, because two items cannot both rank first so often',
-        'Neither item is ahead by more than noise, so the order between them is not worth much debate',
+        'The two are a close call, so the order between them is not worth much debate',
         'Both items should be dropped, because uncertain items cost more than they deliver',
       ],
       answer: 2,
-      why: `A gap under ${F.closePts} points is within noise in this lesson: at a spread of 0.6 the top two are ${F.wideGapPts} points apart. "Do not agonise over close calls" is one view, and a larger gap would say more.`,
+      why: `This lesson calls a gap under ${F.closePts} points a close call (a chosen threshold, not a statistical test): at a spread of 0.6 the top two are ${F.wideGapPts} points apart. Shares of first place sum to 100%, so two shares can be this size. "Do not agonise over close calls" is one view, and a larger gap would say more.`,
     },
   ],
 };

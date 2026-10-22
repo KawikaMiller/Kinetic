@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { plural, sig } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
-import { ITEMS, RULES, orderBy, valueBy, type Dependency, type Item, type Line, type RankStats, type Rule, type Swap } from './model';
+import { CLOSE_CALL, ITEMS, RULES, orderBy, valueBy, type Dependency, type Item, type Line, type RankStats, type Rule, type Swap } from './model';
 import { METER } from './scenario';
 
 const label = (id: string, items: readonly Item[] = ITEMS) => items.find((i) => i.id === id)!.label;
@@ -51,7 +51,7 @@ export function rangesCaption(stats: RankStats, top: { top: string; second: stri
   return (
     <>
       With each impact and effort spread by {sigma}, {label(top.top)} ranks first in {Math.round(stats.first[top.top] * 100)}% of runs and {label(top.second)} in {Math.round(stats.first[top.second] * 100)}%.{' '}
-      {top.close ? <>These two are within noise: the order between them is not worth agonising over (one view).</> : <>The gap is {Math.round(top.gap * 100)} points, wider than noise at this spread.</>}
+      {top.close ? <>That is a close call by this lesson&apos;s own threshold ({Math.round(CLOSE_CALL * 100)} points, a chosen cut-off): the order between them is not worth agonising over (one view).</> : <>The gap is {Math.round(top.gap * 100)} points, at or above this lesson&apos;s {Math.round(CLOSE_CALL * 100)}-point threshold for a close call.</>}
     </>
   );
 }

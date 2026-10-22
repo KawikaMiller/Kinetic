@@ -4,7 +4,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { rangesCaption } from './captions';
-import { ITEMS, RUNS, SPREAD, orderBy, simulateRanks, topTwo } from './model';
+import { CLOSE_CALL, ITEMS, RUNS, SPREAD, orderBy, simulateRanks, topTwo } from './model';
 import { OPENING } from './opening';
 
 const label = (id: string) => ITEMS.find((i) => i.id === id)!.label;
@@ -26,10 +26,10 @@ export function RangesScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Most likely to rank first" value={label(top.top)} sub={`${Math.round(stats.first[top.top] * 100)}% of ${RUNS.toLocaleString('en-US')} runs`} />
           <Stat label="Runner-up" value={label(top.second)} sub={`${Math.round(stats.first[top.second] * 100)}% of runs`} />
-          <Stat label="Gap" value={`${Math.round(top.gap * 100)} points`} color={top.close ? 'var(--orange)' : undefined} sub={top.close ? 'within noise' : 'wider than noise'} />
+          <Stat label="Gap" value={`${Math.round(top.gap * 100)} points`} color={top.close ? 'var(--orange)' : undefined} sub={top.close ? `a close call: under ${Math.round(CLOSE_CALL * 100)} points` : `a clear gap: ${Math.round(CLOSE_CALL * 100)} points or more`} />
         </Stats>
       }
-      legend={<Legend items={[{ color: 'var(--info)', label: 'chance of ranking first' }, { color: 'var(--orange)', label: 'a gap within noise' }]} />}
+      legend={<Legend items={[{ color: 'var(--info)', label: 'chance of ranking first' }, { color: 'var(--orange)', label: 'a close call (a gap under 10 points)' }]} />}
       controls={[<>{picker}<Slider label="Spread of impact and effort" value={sigma} {...SPREAD} format={(v) => v.toFixed(1)} onChange={setSigma} /><SeedField seed={seed} onSeed={setSeed} /></>]}
     >
       <div className="pz-stage stage-pad">

@@ -111,6 +111,17 @@ describe('placing an item', () => {
     expect(placeItem(0.1, 4)).toMatchObject({ effort: 0.5, refusal: expect.stringContaining('zero-length item has no ratio') });
     expect(placeItem(99, -4)).toMatchObject({ effort: 10, impact: 0.5 });
   });
+
+  it('an arrow-key nudge smaller than the snap still moves exactly one step, and a pointer drag keeps the plain snap', () => {
+    const from = { impact: 6, effort: 1 };
+    expect(placeItem(1.08, 6, from, 'key')).toMatchObject({ effort: 1.5, impact: 6 });
+    expect(placeItem(0.92, 6, from, 'key')).toMatchObject({ effort: 0.5, impact: 6 });
+    expect(placeItem(1, 6.08, from, 'key')).toMatchObject({ effort: 1, impact: 6.5 });
+    expect(placeItem(1, 5.92, from, 'key')).toMatchObject({ effort: 1, impact: 5.5 });
+    expect(placeItem(1.08, 6, from)).toMatchObject({ effort: 1, impact: 6 });
+    // at the lower edge a key press cannot go under the minimum effort
+    expect(placeItem(0.42, 6, { impact: 6, effort: 0.5 }, 'key')).toMatchObject({ effort: 0.5 });
+  });
 });
 
 describe('when the numbers are ranges', () => {

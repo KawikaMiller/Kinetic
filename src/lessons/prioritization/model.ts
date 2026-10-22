@@ -4,6 +4,7 @@
  * Pure and seeded.
  */
 import { normal } from '../../core/distributions';
+import { snapDragged, type DragSource } from '../../core/plot';
 import { mulberry32 } from '../../core/random';
 
 export interface Item {
@@ -50,13 +51,16 @@ export interface Placed {
   refusal: string | null;
 }
 
-/** Turn a dropped point (x is effort in weeks, y is impact) into a legal item: half-step values, effort at least the scale's minimum. */
-export function placeItem(x: number, y: number): Placed {
+/** Turn a dropped point (x is effort in weeks, y is impact) into a legal item: half-step values, effort at least the scale's minimum. With `prev` and `via: 'key'` an arrow nudge moves one step. */
+export function placeItem(x: number, y: number, prev?: { impact: number; effort: number }, via?: DragSource): Placed {
   const snap = (v: number) => Math.round(v / SCALE.step) * SCALE.step;
   const clamp = (v: number) => Math.min(SCALE.max, Math.max(SCALE.min, v));
-  const effort = clamp(snap(x));
-  const impact = clamp(snap(y));
-  const refusal = snap(x) < SCALE.min ? `A zero-length item has no ratio: the effort is kept at ${SCALE.min} weeks.` : null;
+  // An arrow key moves one step per press even though its nudge is smaller than the half-step snap.
+  const pick = (next: number, before: number | undefined) => (before === undefined ? snap(next) : snapDragged(before, next, snap, SCALE.step, via));
+  const rawEffort = pick(x, prev?.effort);
+  const effort = clamp(rawEffort);
+  const impact = clamp(pick(y, prev?.impact));
+  const refusal = rawEffort < SCALE.min ? `A zero-length item has no ratio: the effort is kept at ${SCALE.min} weeks.` : null;
   return { impact, effort, refusal };
 }
 
@@ -175,7 +179,7 @@ export function swapsToRatioOrder(items: readonly Item[], order: readonly string
 export const RUNS = 5000;
 export const SPREAD = { min: 0, max: 0.6, step: 0.1 };
 export const RANGES_DEFAULT = { sigma: 0.3, seed: 12 };
-/** Two top items are "within noise" when their chances of ranking first differ by less than this. */
+/** Two top items are a "close call" when their chances of ranking first differ by less than this. */
 export const CLOSE_CALL = 0.1;
 
 export interface RankStats {
@@ -214,7 +218,7 @@ export function simulateRanks(items: readonly Item[], sigma: number, seed: numbe
   return { probability, interval, first: Object.fromEntries(items.map((i) => [i.id, probability[i.id][0]])) };
 }
 
-/** The two items most likely to rank first, and whether they are within noise. */
+/** The two items most likely to rank first, and whether they are a close call. */
 export function topTwo(stats: RankStats): { top: string; second: string; gap: number; close: boolean } {
   const ranked = Object.entries(stats.first).sort((a, b) => b[1] - a[1]);
   const gap = ranked[0][1] - ranked[1][1];
