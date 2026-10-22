@@ -24,7 +24,8 @@ const PRECISIONS = [
 ];
 const CHART_W = 860;
 const CHART_H = 150;
-const BAR_SPRING = { type: 'spring', stiffness: 200, damping: 24 } as const;
+/** Overdamped (critical damping is about 28), so a bar shrinking to 0 never overshoots into a negative height. */
+const BAR_SPRING = { type: 'spring', stiffness: 200, damping: 30 } as const;
 /** What an exact set pays per 64-bit id, before any hash-table overhead. */
 const BYTES_PER_ID = 8;
 
