@@ -28,7 +28,7 @@ const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
  * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
 const TIER4_AWAITING_RETROFIT = new Set<string>([
-  'crdts', 'multi-region', 'backpressure', // T4-R1
+  'multi-region', 'backpressure', // T4-R1
   'lsm-trees', 'probabilistic-structures', 'slos-error-budgets', 'zero-trust', // T4-R2
 ]);
 /** The nine existing Tier 4 lessons, fixed: the D-row cross-check needs them after each one leaves the allowlist above. */
@@ -57,7 +57,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 3
   // Tier 4
   'backpressure': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
-  'crdts': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
   'lsm-trees': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
   'multi-region': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
   'probabilistic-structures': { ticket: T4_R2, rules: ['quiz-length'] },

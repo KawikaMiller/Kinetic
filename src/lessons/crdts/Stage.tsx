@@ -1,53 +1,25 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
 import { Flyer } from '../../components/scene';
+import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Hint, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { plural } from '../../core/format';
 import { TOKENS } from '../../core/palette';
-import { shuffle } from '../../core/random';
 import {
-  COLORS, ITEMS, RIDS, add, emptyRep, inc, merge, remove, setReg, setValue, valueKey,
+  COLORS, ITEMS, RIDS, add, inc, remove, setReg, setValue,
   type Kind, type Mode, type Rep, type Rid,
 } from './crdt';
+import { checkLaws, checkSchedules, describeSchedules, runSchedule, SCHEDULE_SEEDS } from './schedule';
+import {
+  agree, DEFAULT_SEED, freshWorld, landMessage, lostIncrements, partitionAll, setOnline, startSync, syncOrder, valuesOf, localEdit,
+  type Msg, type World,
+} from './world';
 import './styles.css';
 
-interface Msg {
-  id: number;
-  from: Rid;
-  to: Rid;
-  snap: Rep;
-  delay: number;
-}
-
-/** A local edit, recorded by the same state update that applied it (so its caption can't go stale). */
-interface LocalEdit {
-  seq: number;
-  r: Rid;
-  wasOnline: boolean;
-  what: ReactNode;
-}
-
-interface World {
-  reps: Record<Rid, Rep>;
-  online: Record<Rid, boolean>;
-  msgs: Msg[];
-  nextMsg: number;
-  /** total local updates made anywhere (for spotting lost updates) */
-  made: number;
-  syncing: boolean;
-  syncsDone: number;
-  preSync: Record<Rid, Rep> | null;
-  lastEdit: LocalEdit | null;
-}
-
-const fresh = (): World => ({
-  reps: { A: emptyRep(), B: emptyRep(), C: emptyRep() },
-  online: { A: true, B: true, C: true },
-  msgs: [], nextMsg: 1, made: 0, syncing: false, syncsDone: 0, preSync: null, lastEdit: null,
-});
+const CHECK_PAINT_MS = 40;
 
 /** Horizontal centre of each replica column, as a fraction of the stage width. */
 const X: Record<Rid, number> = { A: 1 / 6, B: 3 / 6, C: 5 / 6 };
@@ -58,20 +30,16 @@ const MSG_ARC = 22;
 const WIRE_STYLE = { '--cr-wire-left': `${X.A * 100}%`, '--cr-wire-right': `${(1 - X.C) * 100}%` } as CSSProperties;
 const KIND_NAME: Record<Kind, string> = { counter: 'G-Counter', set: 'OR-Set', register: 'LWW-Register' };
 
-function allPairs(): [Rid, Rid][] {
-  const out: [Rid, Rid][] = [];
-  for (const a of RIDS) for (const b of RIDS) if (a !== b) out.push([a, b]);
-  return out;
-}
-
 export function Stage() {
   const [kind, setKind] = useState<Kind>('counter');
   const [mode, setMode] = useState<Mode>('crdt');
-  const [w, setW] = useState<World>(fresh);
+  const [seed, setSeed] = useState(DEFAULT_SEED);
+  const [w, setW] = useState<World>(freshWorld);
+  const [report, setReport] = useState<{ key: string; text: string } | null>(null);
+  const [running, setRunning] = useState(false);
   const setCaption = useSetCaption();
 
-  const values = RIDS.map((r) => valueKey(w.reps[r], kind, mode));
-  const converged = w.msgs.length === 0 && values.every((v) => v === values[0]);
+  const converged = agree(w, kind, mode);
 
   useIntroCaption(
     <>Three replicas of the same G-Counter. Take a replica offline, make edits on both sides of the partition, then
@@ -96,12 +64,11 @@ export function Stage() {
   useEffect(() => {
     if (!w.syncsDone || reported.current === w.syncsDone) return;
     reported.current = w.syncsDone;
-    const vals = RIDS.map((r) => valueKey(w.reps[r], kind, mode));
-    const same = vals.every((v) => v === vals[0]);
+    const same = valuesOf(w, kind, mode).every((v, _, all) => v === all[0]);
     if (mode === 'crdt') {
       setCaption(
-        <><span className="hl ok">Converged</span>: every replica merged every other replica's state and landed on the
-          same answer, in whatever order the messages arrived.</>,
+        <><span className="hl ok">Converged</span>: each replica merged the others' states and landed on the same
+          answer, in whatever order the messages arrived.</>,
       );
     } else if (!same) {
       setCaption(
@@ -113,10 +80,10 @@ export function Stage() {
         <>They agree, but only by luck of arrival order. {kind === 'counter' ? <>Check the counter against the updates made: <span className="hl bad">updates were lost</span>.</> : <>Some edits were silently overwritten.</>}</>,
       );
     }
-  }, [w.syncsDone, w.reps, kind, mode, setCaption]);
+  }, [w, kind, mode, setCaption]);
 
   const reset = (k = kind, m = mode) => {
-    setW(fresh());
+    setW(freshWorld());
     reported.current = 0; // the fresh world counts syncs from zero again
     setCaption(
       <>Three replicas of the same {KIND_NAME[k]}, using a {m === 'crdt' ? <b>CRDT merge</b> : <b>naive overwrite</b>}.
@@ -124,24 +91,11 @@ export function Stage() {
     );
   };
 
-  const local = (r: Rid, fn: (s: Rep) => Rep, what: ReactNode, counts = true) => {
-    setW((prev) => {
-      const rep = fn(prev.reps[r]);
-      const reps = { ...prev.reps, [r]: rep };
-      const wasOnline = prev.online[r];
-      const msgs = wasOnline
-        ? RIDS.filter((x) => x !== r && prev.online[x]).map((to, i) => ({ id: prev.nextMsg + i, from: r, to, snap: rep, delay: 0 }))
-        : [];
-      return {
-        ...prev, reps, msgs: [...prev.msgs, ...msgs], nextMsg: prev.nextMsg + msgs.length, made: prev.made + (counts ? 1 : 0),
-        lastEdit: { seq: (prev.lastEdit?.seq ?? 0) + 1, r, wasOnline, what },
-      };
-    });
-  };
+  const local = (r: Rid, fn: (s: Rep) => Rep, what: string) => setW((prev) => localEdit(prev, r, fn, what));
 
   const toggleOnline = (r: Rid) => {
     const going = !w.online[r];
-    setW((prev) => ({ ...prev, online: { ...prev.online, [r]: going } }));
+    setW((prev) => setOnline(prev, r, going));
     setCaption(
       going ? (
         <>{r} is back online. Hit <b>Reconnect &amp; sync</b> to exchange state.</>
@@ -152,29 +106,33 @@ export function Stage() {
   };
 
   const sync = (from?: Record<Rid, Rep>) => {
-    setW((prev) => {
-      const reps = from ?? prev.reps;
-      const order = shuffle(allPairs());
-      const msgs = order.map(([a, b], i) => ({ id: prev.nextMsg + i, from: a, to: b, snap: reps[a], delay: i * 0.3 }));
-      return {
-        ...prev, reps, online: { A: true, B: true, C: true }, preSync: reps, syncing: true,
-        msgs: [...prev.msgs, ...msgs], nextMsg: prev.nextMsg + msgs.length,
-      };
-    });
-    setCaption(<>Everyone exchanges full state, in a <span className="hl">random order</span>: 6 messages.</>);
+    const order = syncOrder(seed, w.syncCount);
+    setW((prev) => startSync(prev, order, from));
+    setCaption(<>Everyone exchanges full state, in the <span className="hl">order seed {seed} gives this sync</span>: 6 messages.</>);
   };
 
-  const land = (m: Msg) => {
-    setW((prev) => {
-      if (!prev.msgs.some((x) => x.id === m.id)) return prev;
-      const reps = { ...prev.reps, [m.to]: merge(prev.reps[m.to], m.snap, kind, mode) };
-      const msgs = prev.msgs.filter((x) => x.id !== m.id);
-      const finished = prev.syncing && msgs.length === 0;
-      return { ...prev, reps, msgs, syncing: finished ? false : prev.syncing, syncsDone: prev.syncsDone + (finished ? 1 : 0) };
-    });
+  const land = (m: Msg) => setW((prev) => landMessage(prev, m, kind, mode));
+
+  /** Load the end state of this seed's random schedule, so the stage shows what the check counted. */
+  const loadSchedule = () => {
+    const run = runSchedule(seed, kind, mode);
+    setW(run.world);
+    reported.current = run.world.syncsDone;
+    setCaption(
+      <>Seed {seed}: {run.actions.length} random actions (edits, partitions, syncs, late messages), then two full syncs.{' '}
+        {run.problem ? <><span className="hl bad">{run.problem}.</span></> : <><span className="hl ok">All three replicas read the expected value.</span></>}</>,
+    );
   };
 
-  const counterValue = (s: Rep) => (mode === 'crdt' ? s.vec.A + s.vec.B + s.vec.C : s.n);
+  const reportKey = `${kind}-${mode}`;
+  const runCheck = () => {
+    setRunning(true);
+    setTimeout(() => {
+      setReport({ key: reportKey, text: describeSchedules(checkSchedules(kind, mode), checkLaws(kind, mode)) });
+      setRunning(false);
+    }, CHECK_PAINT_MS);
+  };
+  const shownReport = report?.key === reportKey ? report.text : null;
 
   return (
     <StageFrame
@@ -190,7 +148,7 @@ export function Stage() {
           {kind === 'counter' && (
             <Stat
               label="Lost increments"
-              value={w.msgs.length ? '…' : Math.max(0, w.made - Math.min(...RIDS.map((r) => counterValue(w.reps[r]))))}
+              value={w.msgs.length ? '…' : lostIncrements(w, mode)}
               color="var(--bad)"
               sub="once synced"
             />
@@ -208,8 +166,8 @@ export function Stage() {
           ]}
         />
       }
-      controls={
-        <Controls>
+      controls={[
+        <>
           <Segmented
             label="Data type"
             value={kind}
@@ -237,27 +195,34 @@ export function Stage() {
           />
           <Button
             onClick={() => {
-              setW((p) => ({ ...p, online: { A: false, B: false, C: false } }));
+              setW(partitionAll);
               setCaption(<>Full partition: every replica is on its own. Make different edits on each.</>);
             }}
           >
             Partition all
           </Button>
-          <Button variant="primary" onClick={() => sync()} disabled={w.msgs.length > 0}>
+          <Button variant="primary" onClick={() => sync()} softDisabled={w.msgs.length > 0}>
             Reconnect &amp; sync
           </Button>
-          <Button onClick={() => w.preSync && sync(w.preSync)} disabled={!w.preSync || w.msgs.length > 0}>
+          <Button onClick={() => w.preSync && sync(w.preSync)} softDisabled={!w.preSync || w.msgs.length > 0}>
             Replay sync, new order
           </Button>
           <Button onClick={() => reset()}>Reset</Button>
           {kind === 'register' && mode === 'crdt' && (
             <Hint tone="muted" block>
-              Higher timestamp wins. On a tie, the higher replica id wins (C &gt; B &gt; A), so every replica picks the same
-              value: deterministic, but the other write is silently lost.
+              Higher timestamp wins. On a tie, the higher replica id wins (C &gt; B &gt; A), so the replicas pick the same
+              value: deterministic, but the other write is lost.
             </Hint>
           )}
-        </Controls>
-      }
+        </>,
+        <>
+          <SeedField seed={seed} onSeed={setSeed} />
+          <Button onClick={loadSchedule}>Random edits for this seed</Button>
+          <Button onClick={runCheck} softDisabled={running}>
+            {running ? 'Checking…' : `Check ${SCHEDULE_SEEDS} seeds`}
+          </Button>
+        </>,
+      ]}
     >
       <div className="cr">
         <div className="cr-lane" aria-hidden="true">
@@ -295,13 +260,25 @@ export function Stage() {
               kind={kind}
               mode={mode}
               onToggle={() => toggleOnline(r)}
-              onInc={() => local(r, (s) => inc(s, r), <>adds +1</>)}
-              onAdd={(e) => local(r, (s) => add(s, r, e), <>adds {e}</>)}
-              onRemove={(e) => local(r, (s) => remove(s, e), <>removes {e}</>)}
-              onSet={(c) => local(r, (s) => setReg(s, r, c), <>sets the colour</>)}
+              onInc={() => local(r, (s) => inc(s, r), 'adds +1')}
+              onAdd={(e) => local(r, (s) => add(s, r, e), `adds ${e}`)}
+              onRemove={(e) => local(r, (s) => remove(s, e), `removes ${e}`)}
+              onSet={(c) => local(r, (s) => setReg(s, r, c), 'sets the colour')}
             />
           ))}
         </div>
+        {shownReport && <p className="cr-report">{shownReport}</p>}
+        <ProvenanceRow>
+          <Provenance kind="simulated" seed={seed}>
+            three replicas in this page; the order of each sync's six messages comes from the seed (the next sync uses the next order)
+          </Provenance>
+          <Provenance kind="simulated">
+            the check samples {SCHEDULE_SEEDS} seeded random schedules and three merge laws; it is not an exhaustive search
+          </Provenance>
+          <Provenance kind="from-memory">
+            Automerge, Yjs, Riak and Redis Enterprise as CRDT users: verify against each project's docs
+          </Provenance>
+        </ProvenanceRow>
       </div>
     </StageFrame>
   );
