@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { forbiddenCalls, NO_CLOCK_OR_TIMER, stripComments, type ForbiddenCall } from './forbidden';
+import { forbiddenCalls, NO_CLOCK_OR_TIMER, NO_REGEXP_OR_FUNCTION, stripComments, type ForbiddenCall } from './forbidden';
 
 const one = (text: string) => ({ './a.ts': text });
 
@@ -38,6 +38,15 @@ describe('forbiddenCalls', () => {
     expect(forbiddenCalls(one(text), { also: NO_CLOCK_OR_TIMER })).toEqual(['./a.ts: clock', './a.ts: timer']);
     expect(forbiddenCalls(one(text), { also: NO_CLOCK_OR_TIMER, ignoreComments: true })).toEqual(['./a.ts: clock']);
     expect(stripComments('a\n  // b\nc /* d */ e')).toBe('a\nc  e');
+  });
+
+  it('RegExp and a bare Function( call are opt-in (NO_REGEXP_OR_FUNCTION), and spacing before the paren does not hide a call', () => {
+    const text = 'const r = new RegExp(p); RegExp (q); Function ("return 1"); new  Function(x); eval (y);';
+    expect(forbiddenCalls(one(text))).toEqual(['./a.ts: eval', './a.ts: newFunction']);
+    expect(forbiddenCalls(one(text), { also: NO_REGEXP_OR_FUNCTION })).toEqual(['./a.ts: eval', './a.ts: newFunction', './a.ts: regExp', './a.ts: functionCall']);
+    for (const call of ['new RegExp(p)', 'RegExp(p)', 'new  RegExp (p)']) expect(forbiddenCalls(one(call), { also: ['regExp'] })).toEqual(['./a.ts: regExp']);
+    expect(forbiddenCalls(one('Function(code)'), { also: ['functionCall'] })).toEqual(['./a.ts: functionCall']);
+    expect(forbiddenCalls(one('const f = function (a) {}; type F = ReadonlyFunction(1); const re = /a+/;'), { also: NO_REGEXP_OR_FUNCTION })).toEqual([]);
   });
 
   it('storage and new URL are opt-in, and `allow` lifts a default', () => {

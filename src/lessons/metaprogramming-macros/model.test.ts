@@ -11,6 +11,7 @@ import { BASE, EXTRA, FIELD_IDS, PROBES, generate, handWritten, objectWith, prob
 import { runMacro, varsFor } from './run';
 import type { Strategy } from './expand';
 import { MISTAKES, PHASES, TECHNIQUES, runPipeline } from './phases';
+import { forbiddenCalls, NO_REGEXP_OR_FUNCTION } from '../../core/testing/forbidden';
 
 const def = (text: string): MacroDef => {
   const r = parseMacroDef(text);
@@ -384,9 +385,6 @@ describe('no learner text reaches RegExp, eval or Function', () => {
   it('the lesson sources contain no new RegExp, RegExp( call, eval( or new Function', () => {
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
     expect(files.map(([name]) => name)).toContain('./expand.ts');
-    for (const [name, text] of files) {
-      const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-      expect(code, name).not.toMatch(/new\s+RegExp|RegExp\s*\(|\beval\s*\(|new\s+Function|\bFunction\s*\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(files), { also: NO_REGEXP_OR_FUNCTION, ignoreComments: true })).toEqual([]);
   });
 });

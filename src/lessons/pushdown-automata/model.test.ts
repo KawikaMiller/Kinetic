@@ -7,6 +7,7 @@ import { pdaRun } from '../../core/automata';
 import { CHECK_LENGTH, binaryStrings, checkTable, parseTable, runLearner } from './learner';
 import { MAX_SUBJECT, checkSubject } from '../../core/pdaPresets';
 import { CONFIG_BUDGET } from '../../core/pdaStepper';
+import { forbiddenCalls, NO_REGEXP_OR_FUNCTION } from '../../core/testing/forbidden';
 
 const CORRECT = ['q0 a Z -> q0 AAZ', 'q0 a A -> q0 AAA', 'q0 b A -> q1 -', 'q1 b A -> q1 -', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');
 const PUSHES_ONE = ['q0 a Z -> q0 AZ', 'q0 a A -> q0 AA', 'q0 b A -> q1 -', 'q1 b A -> q1 -', 'q0 - Z -> q2 -', 'q1 - Z -> q2 -'].join('\n');
@@ -101,9 +102,6 @@ describe('no learner text reaches RegExp, eval or Function', () => {
   it('the lesson sources contain no new RegExp, RegExp( call, eval( or new Function', () => {
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
     expect(files.map(([name]) => name)).toContain('./learner.ts');
-    for (const [name, text] of files) {
-      const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-      expect(code, name).not.toMatch(/new\s+RegExp|RegExp\s*\(|\beval\s*\(|new\s+Function|\bFunction\s*\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(files), { also: NO_REGEXP_OR_FUNCTION, ignoreComments: true })).toEqual([]);
   });
 });

@@ -11,8 +11,12 @@ export const FORBIDDEN_PATTERNS = {
   xhr: /XMLHttpRequest/,
   webSocket: /WebSocket/,
   beacon: /sendBeacon/,
-  eval: /\beval\(/,
-  newFunction: /new Function/,
+  eval: /\beval\s*\(/,
+  newFunction: /new\s+Function/,
+  /** A bare `Function(...)` call, which builds code from text without `new`. Opt-in. */
+  functionCall: /\bFunction\s*\(/,
+  /** Building a pattern at runtime (`new RegExp`, `RegExp(`): a lesson that teaches its own matcher must not lean on the real one. Opt-in. */
+  regExp: /new\s+RegExp|RegExp\s*\(/,
   localStorage: /localStorage/,
   sessionStorage: /sessionStorage/,
   indexedDB: /indexedDB/,
@@ -30,6 +34,9 @@ export const NETWORK_AND_EVAL: readonly ForbiddenCall[] = ['fetch', 'xhr', 'webS
 
 /** The `also` set of a lesson that must be deterministic: no clock, no timer (on top of the default network and eval ban). */
 export const NO_CLOCK_OR_TIMER: readonly ForbiddenCall[] = ['clock', 'timer'];
+
+/** The `also` set of a lesson that implements its own matcher or evaluator: no `RegExp`, and no bare `Function(` on top of the default `eval` and `new Function` ban. */
+export const NO_REGEXP_OR_FUNCTION: readonly ForbiddenCall[] = ['regExp', 'functionCall'];
 
 export interface ForbiddenOptions {
   /** Further calls to forbid on top of the default set (browser storage, `new URL(`, `NO_CLOCK_OR_TIMER`). */
