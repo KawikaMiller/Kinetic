@@ -135,6 +135,9 @@ export interface ClaimResult {
 
 const cellName = (g: Game, r: number, c: number) => `(${g.rowNames[r]}, ${g.colNames[c]})`;
 
+/** The matrix scene's standing prompt. The dots already mark the best replies, so it asks the learner to test a cell, not to find the answer. */
+export const MATRIX_PROMPT = 'The dots mark each best reply. Click a cell to test whether it is an equilibrium: a cell where neither player gains by changing only their own strategy.';
+
 /** The learner's claim that a cell is an equilibrium: accepted with the numbers, or refused naming the first profitable deviation. */
 export function claimCell(g: Game, r: number, c: number, finder: Finder = 'correct'): ClaimResult {
   if (isEquilibrium(g, r, c, finder)) {

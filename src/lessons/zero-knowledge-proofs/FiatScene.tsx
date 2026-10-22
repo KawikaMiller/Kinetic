@@ -2,8 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ConsolePanel } from '../../components/ConsolePanel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField } from '../../components/ui';
-import { parseBoundedInt } from '../../core/parse';
-import { DEFAULT_R, DEFAULT_X, GROUPS, challengeText, editsThatPass, proveFiatShamir, verifyFiatShamir, type Group } from './schnorr';
+import { DEFAULT_R, DEFAULT_X, GROUPS, challengeText, editsThatPass, proveFiatShamir, readExponent, verifyFiatShamir, type Group } from './schnorr';
 
 const GROUP_OPTIONS = [
   { value: 'A' as const, label: 'Group A (5 bits)' },
@@ -29,21 +28,20 @@ export function FiatScene({ picker }: { picker: ReactNode }) {
   const edited = shownT !== proof.t;
   const slip = editsThatPass(G, x, r);
 
-  const read = (text: string, label: string, max: bigint, min: bigint) => parseBoundedInt(text, { min: Number(min), max: Number(max), messages: { tooBig: () => `Keep ${label} between ${min} and ${max}.`, tooSmall: () => `Keep ${label} between ${min} and ${max}.` } });
   const typeX = (text: string) => {
     setXText(text);
-    const p = read(text, 'x', G.q - 1n, 1n);
+    const p = readExponent(text, 'x', 1n, G.q - 1n);
     if (!p.ok) return setError(p.error);
     setError(null);
-    setX(BigInt(p.value));
+    setX(p.value);
     setEdit(null);
   };
   const typeR = (text: string) => {
     setRText(text);
-    const p = read(text, 'r', G.q - 1n, 0n);
+    const p = readExponent(text, 'r', 0n, G.q - 1n);
     if (!p.ok) return setError(p.error);
     setError(null);
-    setR(BigInt(p.value));
+    setR(p.value);
     setEdit(null);
   };
   const switchGroup = (next: Group['id']) => {

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import {
-  PRISONERS_DILEMMA, claimCell, dominanceText, falseEquilibria, noEquilibriumVerdict, pureEquilibria, strictlyDominated, type Cell, type Finder,
+  MATRIX_PROMPT, PRISONERS_DILEMMA, claimCell, dominanceText, falseEquilibria, noEquilibriumVerdict, pureEquilibria, strictlyDominated, type Cell, type Finder,
 } from './model';
 import { PayoffControls, PayoffFields } from './PayoffEditor';
 import { PayoffMatrix } from './PayoffMatrix';
@@ -36,7 +36,7 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={560}
-      intro={<>{shown ? `${shown.message} ` : ''}Click a cell to claim it is an equilibrium: a cell where neither player gains by changing only their own strategy.</>}
+      intro={<>{shown ? `${shown.message} ` : ''}{MATRIX_PROMPT}</>}
       introKey={`matrix|${key}|${shown?.message ?? ''}`}
       stats={
         <Stats>

@@ -5,7 +5,7 @@ import { forSeeds } from '../../core/distSim';
 import { networkExplorer, type NetState } from '../../core/pureProtocol';
 import { choose } from '../../core/stats';
 import { SEED_MAX } from '../../core/seed';
-import { counterexampleStart, duelCaption, duelHint, multiCaption, poolCaption } from './captions';
+import { counterexampleStart, duelCaption, duelHint, multiCaption, poolCaption, seededRunLine } from './captions';
 import captionsSource from './captions.tsx?raw';
 import duelSource from './DuelScene.tsx?raw';
 import multiSource from './MultiScene.tsx?raw';
@@ -374,6 +374,15 @@ describe('fix pass T4-B4: duel and counting captions are functions of the state'
       expect(text).toContain('No crash happens here');
     }
     expect(expectCaption(multiCaption({ values: 1, single: 6, stable: 6, crashAfter: null, rerun: false }))).toContain('the same');
+  });
+
+  it('the seeded-run line says it is a precomputed run, so it cannot contradict the live "chosen: none"', () => {
+    const run = runPaxosSeed(DEFAULT_OPTIONS, 1);
+    const text = expectCaption(seededRunLine({ seed: 1, planted: false, ...run }));
+    expect(text).toContain('played to the end beforehand');
+    expect(text).toContain('separate from the session above');
+    expect(text).toContain(`${run.value} chosen at ${Math.round(run.decidedAt!)} ms`);
+    expect(expectCaption(seededRunLine({ seed: 2, planted: true, violation: null, decidedAt: null, value: null }))).toContain('with the planted bug');
   });
 
   it('the trace player opens on a sentence about the counterexample, never "start"', () => {

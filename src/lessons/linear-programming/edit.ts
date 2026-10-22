@@ -1,3 +1,4 @@
+import { clamp } from '../../core/math';
 import { DEFAULT_CONSTRAINTS, LIMITS, MAX_CONSTRAINTS, TOL, type Constraint } from './lp2d';
 import { polygon } from './simplex';
 
@@ -35,7 +36,6 @@ export function addRow(rows: readonly Row[]): Edit {
   return { ok: true, rows: [...rows, { id, a: 1, b: 1, c: 10 }] };
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const snap = (v: number, step: number) => Math.round(v / step) * step;
 
 /** Where the constraint's drag handle sits: the point of its line nearest the middle of the plot, kept inside the plot. */

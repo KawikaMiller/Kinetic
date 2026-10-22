@@ -4,7 +4,7 @@ import { mulberry32 } from '../../core/random';
 import { nodeDigest } from '../../core/testing/nodeCrypto';
 import {
   DEFAULT_R, DEFAULT_X, GROUP_A, GROUP_B, REAL_COST, SEARCH_REFUSAL, challengeText, commit, compareTriples, editsThatPass, extract, fiatShamirChallenge, guessAttempt, proveFiatShamir, publicKey,
-  realTriples, realYears, respond, searchSecret, simulate, simulatedTriples, verify, verifyFiatShamir, type Group,
+  readExponent, realTriples, realYears, respond, searchSecret, simulate, simulatedTriples, verify, verifyFiatShamir, type Group,
 } from './schnorr';
 
 // An independent power function with plain repeated multiplication (no shared code with core/numberTheory).
@@ -237,4 +237,24 @@ describe('Fiat-Shamir', () => {
     expect(extract(GROUP_A, 4n, 0n, 3n, 4n)).toBe(7n);
   });
 
+});
+
+describe('readExponent: the one reader behind the x and r fields of three scenes', () => {
+  it('keeps a value inside the bounds as a bigint', () => {
+    expect(readExponent('7', 'x', 1n, 10n)).toEqual({ ok: true, value: 7n });
+    expect(readExponent(' 10 ', 'x', 1n, 10n)).toEqual({ ok: true, value: 10n });
+    expect(readExponent('0', 'r', 0n, 10n)).toEqual({ ok: true, value: 0n });
+  });
+
+  it('refuses out-of-range values with the sentence the scenes showed before, naming the field and both bounds', () => {
+    expect(readExponent('0', 'x', 1n, 10n)).toEqual({ ok: false, error: 'Keep x between 1 and 10.' });
+    expect(readExponent('11', 'x', 1n, 10n)).toEqual({ ok: false, error: 'Keep x between 1 and 10.' });
+    expect(readExponent('-1', 'r', 0n, 10n)).toEqual({ ok: false, error: 'Keep r between 0 and 10.' });
+  });
+
+  it('refuses empty, decimal, exponent, sign and markup text, and a 400-digit run, without throwing', () => {
+    for (const text of ['', '  ', '1.5', '1e3', '+7', '<b>7</b>', 'x'.repeat(3), '9'.repeat(400)]) {
+      expect(readExponent(text, 'x', 1n, 10n).ok, text).toBe(false);
+    }
+  });
 });

@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { integer } from '../../core/format';
 import { Bar } from '../../components/Bar';
 import { CellGrid } from '../../components/CellGrid';
 import { SeedField } from '../../components/SeedField';
@@ -7,7 +8,6 @@ import { Button, ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance,
 import { Fp } from '../../core/field';
 import { bits, consistentCounts, drawCoeffs, exhaustiveSecrecy, MAX_SMALL_SHARES, SECRECY_WORK_LIMIT, SMALL_PRIMES, secrecyButtonText, secrecyWork, sharesLeaveText, type Secrecy, type Share } from './shamir';
 
-const fmt = (n: number) => n.toLocaleString('en-US');
 const PRIME_OPTIONS = SMALL_PRIMES.map((p) => ({ value: p, label: `GF(${p})` }));
 const K_OPTIONS = [{ value: 2, label: 'k = 2' }, { value: 3, label: 'k = 3' }];
 const DEFAULTS = { p: 7, k: 3, s: 2, a1: 3, a2: 1 };
@@ -115,20 +115,20 @@ export function PolyScene({ picker }: { picker: ReactNode }) {
         <div className="ss-bars" role="list" aria-label="How many polynomials fit each candidate secret">
           {counts.map((c, s) => (
             <div key={s} role="listitem">
-              <Bar value={c} max={top || 1} tone={possible === 1 && c > 0 ? 'ok' : equal ? 'muted' : 'info'} label={`secret ${s}`} trailing={`${fmt(c)} ${c === 1 ? 'polynomial' : 'polynomials'}`} height={6} />
+              <Bar value={c} max={top || 1} tone={possible === 1 && c > 0 ? 'ok' : equal ? 'muted' : 'info'} label={`secret ${s}`} trailing={`${integer(c)} ${c === 1 ? 'polynomial' : 'polynomials'}`} height={6} />
             </div>
           ))}
         </div>
         {shown && (
           <p className={shown.exactlyOne ? 'ss-proof is-ok' : 'ss-proof is-bad'} role="status">
             {shown.exactlyOne
-              ? `GF(${p}), k = ${k}: all ${fmt(shown.cases)} sets of ${k - 1} share${k === 2 ? '' : 's'} (every choice of x-values and y-values) were tried; each of the ${p} secrets had exactly one polynomial each time (${fmt(shown.checks)} checks).`
+              ? `GF(${p}), k = ${k}: all ${integer(shown.cases)} sets of ${k - 1} share${k === 2 ? '' : 's'} (every choice of x-values and y-values) were tried; each of the ${p} secrets had exactly one polynomial each time (${integer(shown.checks)} checks).`
               : 'Some set of shares narrowed the secret down.'}
           </p>
         )}
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy" seed={seed}>GF({p}) is {bits(p)} bits: a toy field; a real system would use a much larger field, a CSPRNG, and authenticated shares. Nothing here splits a real key</Provenance>
+        <Provenance kind="toy" seed={seed}>GF({p}) is {bits(p)} bits: a toy field; a real system would use a much larger field, a CSPRNG, and authenticated shares. Nothing here splits a real key, and this BigInt arithmetic is not constant-time: never copy this code</Provenance>
         <ClaimLabel kind="theorem">with uniformly random coefficients, any k - 1 shares are independent of the secret: argued, not run here for large fields; {secrecyButtonText(p, k)}</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>

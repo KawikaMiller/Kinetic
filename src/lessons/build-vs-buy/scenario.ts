@@ -3,7 +3,7 @@
  * is made. The structure (ids, effects, destinations) is pinned to the fixture in core/testing/leadScenarios.ts.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
+import { READ_THE_LEDGER, type Choice, type Ending, type Meter, type Node, type Scenario } from '../../core/scenario';
 
 export const METER = { extra: 'extra', weeks: 'weeks', lockin: 'lockin' } as const;
 
@@ -41,7 +41,6 @@ const nodes: Node[] = [
   },
 ];
 
-const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
   { id: 'adapter-end', title: 'A seam in place', text: `The vendor can be swapped with a bounded change, and the weeks went into the seam. ${READ_THE_LEDGER}` },
   { id: 'plan-end', title: 'An exit plan on paper', text: `The way out is written down and the export has been tested, with little else changed. ${READ_THE_LEDGER}` },

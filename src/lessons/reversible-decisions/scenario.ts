@@ -4,7 +4,7 @@
  * core/testing/leadScenarios.ts.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
+import { READ_THE_LEDGER, type Choice, type Ending, type Meter, type Node, type Scenario } from '../../core/scenario';
 
 export const METER = { slack: 'slack', regret: 'regret', undo: 'undo', upkeep: 'upkeep' } as const;
 
@@ -55,7 +55,6 @@ const nodes: Node[] = [
   },
 ];
 
-const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
   { id: 'E_migrated', title: 'Migrated early', text: `The other teams moved before more of them came to depend on it, and the slack went into the move. ${READ_THE_LEDGER}` },
   { id: 'E_frozen', title: 'Frozen as it is', text: `Nothing more was spent, and the price of changing later went up. ${READ_THE_LEDGER}` },

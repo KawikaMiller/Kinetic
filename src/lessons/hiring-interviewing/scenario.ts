@@ -9,7 +9,7 @@
  * in the red and the edge fires. All of these numbers are authored, not measured, and the page says so.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
+import { READ_THE_LEDGER, type Choice, type Ending, type Meter, type Node, type Scenario } from '../../core/scenario';
 
 export const METER = { regret: 'regret', days: 'days', goodwill: 'goodwill' } as const;
 
@@ -52,7 +52,6 @@ const nodes: Node[] = [
   },
 ];
 
-const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
   { id: 'E_hire_now', title: 'Hired on the average', text: `Fast, and the dissent is not on the record. ${READ_THE_LEDGER}` },
   { id: 'E_nohire_now', title: 'Not hired, on the strong no', text: `Fast, with the candidate lost on one voice. ${READ_THE_LEDGER}` },

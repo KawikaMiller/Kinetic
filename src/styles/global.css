@@ -833,7 +833,8 @@ kbd {
 
 /* Wide visuals (StageFrame minWidth): the content keeps a readable width and the stage
    scrolls sideways inside itself on narrow screens; wide screens see no difference. */
-.stage-shell { position: relative; }
+/* max-width keeps the shell inside a centred flex parent: otherwise its min-width content centres and overflows both sides, out of reach of the scroller. */
+.stage-shell { position: relative; max-width: 100%; }
 .stage-wide { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin; }
 .stage-content { position: relative; min-height: inherit; }
 .stage-wide.more-right { mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent); }

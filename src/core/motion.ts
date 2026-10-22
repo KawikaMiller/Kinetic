@@ -3,6 +3,8 @@
 
 export const SPRING = {
   soft: { type: 'spring', stiffness: 170, damping: 24 },
+  /** Between soft and snappy: file and chip tiles that glide to a new slot. */
+  firm: { type: 'spring', stiffness: 260, damping: 26 },
   snappy: { type: 'spring', stiffness: 300, damping: 28 },
   stiff: { type: 'spring', stiffness: 450, damping: 32 },
 } as const;

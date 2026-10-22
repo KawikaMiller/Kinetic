@@ -84,7 +84,7 @@ export function FailScene({ picker }: { picker: ReactNode }) {
         <p className="ss-note">The guess chance from k - 1 shares is 1/7 per guess in GF(7) and 1/257 for a byte in GF(257).</p>
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy">GF(257) is 9 bits and GF(7) is 3 bits: toy fields; a real system would use a much larger field, a CSPRNG and authenticated shares. Nothing here splits a real key</Provenance>
+        <Provenance kind="toy">GF(257) is 9 bits and GF(7) is 3 bits: toy fields; a real system would use a much larger field, a CSPRNG and authenticated shares. Nothing here splits a real key, and this BigInt arithmetic is not constant-time: never copy this code</Provenance>
         <ClaimLabel kind="theorem">secrecy of k - 1 shares needs uniformly random coefficients: argued, not run here for large fields; this scene shows what a tiny coefficient support does to the hand case</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>

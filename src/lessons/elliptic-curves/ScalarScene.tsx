@@ -3,7 +3,7 @@ import { ConsolePanel } from '../../components/ConsolePanel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, TextField, Toggle } from '../../components/ui';
 import { formatPoint } from '../../core/ecc';
-import { humanDuration, power } from '../../core/format';
+import { humanDuration, integer, power } from '../../core/format';
 import { parseBoundedBigInt } from '../../core/parse';
 import {
   FORGOT_FACTOR_2_WITNESS, ILLUSTRATIVE_RATE, P256_COST, SCALAR_MAX, TOY, commutativityChecks, groupBits, mulChecked, scalarText, scalarView, traceLines, walkToReverse, type DoublingRule,
@@ -12,8 +12,7 @@ import {
 const SLIDER_MAX = 40;
 const DEFAULT_K = 13n;
 const PRESET_KS = [13n, 19n, 20n];
-const fmt = (n: number | bigint) => n.toLocaleString('en-US');
-const READ_K = { min: 0n, max: BigInt(SCALAR_MAX), messages: { tooBig: () => `Keep k between 0 and ${fmt(SCALAR_MAX)}.`, tooSmall: () => `Keep k between 0 and ${fmt(SCALAR_MAX)}.` } };
+const READ_K = { min: 0n, max: BigInt(SCALAR_MAX), messages: { tooBig: () => `Keep k between 0 and ${integer(SCALAR_MAX)}.`, tooSmall: () => `Keep k between 0 and ${integer(SCALAR_MAX)}.` } };
 
 /** Scene 3: kG by double-and-add with its trace, the broken doubling, and the easy-forward, hard-to-reverse costs. */
 export function ScalarScene({ picker }: { picker: ReactNode }) {
@@ -106,7 +105,7 @@ export function ScalarScene({ picker }: { picker: ReactNode }) {
             {walk && !broken && <span>Found k = {String(walk.k)} after {walk.steps} steps (instant).</span>}
           </div>
           <div className="ec-cost is-bad">
-            <b>Back, on P-256 (a 256-bit group order):</b> the best generic method, the same square-root method as the toy's {Math.sqrt(Number(TOY.n)).toFixed(1)} steps, takes about {power(P256_COST.log2)} steps: at a made-up {fmt(ILLUSTRATIVE_RATE)} steps per second that is about {humanDuration(P256_COST.seconds)}.
+            <b>Back, on P-256 (a 256-bit group order):</b> the best generic method, the same square-root method as the toy's {Math.sqrt(Number(TOY.n)).toFixed(1)} steps, takes about {power(P256_COST.log2)} steps: at a made-up {integer(ILLUSTRATIVE_RATE)} steps per second that is about {humanDuration(P256_COST.seconds)}.
           </div>
           <div className="ec-cost">
             <Button onClick={() => setCommute(commutativityChecks())}>Check all 19 x 19 pairs</Button>{' '}
@@ -116,7 +115,7 @@ export function ScalarScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="toy">{TOY.bits}-bit field; the group has {String(TOY.n)} points, about {groupBits(TOY.n)} bits: a walk of {String(TOY.n)} steps breaks it. Never copy this code: BigInt arithmetic is not constant-time</Provenance>
-        <Provenance kind="illustrative">the {fmt(ILLUSTRATIVE_RATE)} steps per second is a made-up rate; the P-256 line shows the generic cost, not a safety claim</Provenance>
+        <Provenance kind="illustrative">the {integer(ILLUSTRATIVE_RATE)} steps per second is a made-up rate; the P-256 line shows the generic cost, not a safety claim</Provenance>
         <Provenance kind="from-memory">NIST SP 800-57 compares a 256-bit curve key with an RSA modulus of about 3,072 bits for similar strength: key-size comparison from memory, verify against the current edition</Provenance>
         <Provenance kind="from-memory">no known attack on well-chosen curves beats the generic one (verify against a current survey)</Provenance>
       </ProvenanceRow>

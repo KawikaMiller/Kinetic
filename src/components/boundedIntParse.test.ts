@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import { costFieldMessages } from '../lessons/attention-transformers/fieldMessages';
-import { BoundedIntField } from './BoundedIntField';
+import { BoundedIntField, IntFieldView } from './BoundedIntField';
 import { parseBoundedIntField } from './boundedIntParse';
 
 const refusal = (text: string, label: string, min: number, max: number, messages?: Parameters<typeof parseBoundedIntField>[4]) => {
@@ -50,5 +50,32 @@ describe('BoundedIntField', () => {
 
   it('adds a lesson class to the wrapper', () => {
     expect(html(5, 'x-field')).toContain('class="int-field x-field"');
+  });
+
+  it('a field with nothing refused carries no aria-invalid and no aria-describedby', () => {
+    const out = html(7);
+    expect(out).not.toContain('aria-invalid');
+    expect(out).not.toContain('aria-describedby');
+  });
+});
+
+describe('IntFieldView refusal wiring', () => {
+  const view = (error: string | null) => renderToStaticMarkup(
+    createElement(IntFieldView, { label: 'Users', text: '99999', error, onType: () => undefined, onBlur: () => undefined }),
+  );
+
+  it('a refusal marks the input invalid and links it to the refusal message by id', () => {
+    const out = view('Users: the largest allowed value is 40,000. Keeping 7.');
+    expect(out).toContain('aria-invalid="true"');
+    const described = /aria-describedby="([^"]+)"/.exec(out)?.[1];
+    expect(described).toBeTruthy();
+    expect(out).toContain(`id="${described}" class="int-field-refusal" role="status"`);
+  });
+
+  it('no refusal leaves neither attribute and no message', () => {
+    const out = view(null);
+    expect(out).not.toContain('aria-invalid');
+    expect(out).not.toContain('aria-describedby');
+    expect(out).not.toContain('int-field-refusal');
   });
 });

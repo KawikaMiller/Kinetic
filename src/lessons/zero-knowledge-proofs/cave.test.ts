@@ -21,6 +21,14 @@ describe('the confidence meter', () => {
 describe('the cave as verifier', () => {
   const cheater = seedOf('cheater');
 
+  it('the opening caption scopes its claim to the model and says no "always"', () => {
+    for (const kind of ['knows', 'cheater'] as const) {
+      const text = verifierCaption(kind, [], null);
+      expect(text).toContain('In this model');
+      expect(text).not.toMatch(/\balways\b/i);
+    }
+  });
+
   it('a prover who knows the passphrase passes every round whatever you call', () => {
     const k = seedOf('knows');
     for (const policy of ['manual', 'always-left', 'alternate', 'random'] as const) {

@@ -3,7 +3,7 @@
  * before the choice is made. The structure (ids, effects, destinations) is pinned to the fixture in core/testing/leadScenarios.ts.
  */
 import type { ClaimKind } from '../../core/provenance';
-import type { Choice, Ending, Meter, Node, Scenario } from '../../core/scenario';
+import { READ_THE_LEDGER, type Choice, type Ending, type Meter, type Node, type Scenario } from '../../core/scenario';
 
 export const METER = { autonomy: 'autonomy', effort: 'effort', drag: 'drag' } as const;
 
@@ -38,7 +38,6 @@ const nodes: Node[] = [
   },
 ];
 
-const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
   { id: 'hardrule', title: 'Enforced by a hard rule', text: `The policy is easy to audit and exceptions are closed. ${READ_THE_LEDGER}` },
   { id: 'exception', title: 'Enforced through exceptions', text: `Reviewers decide each exception against a written reason. ${READ_THE_LEDGER}` },

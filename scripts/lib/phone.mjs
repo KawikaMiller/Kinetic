@@ -11,6 +11,14 @@ export function checkPhone(page) {
     if (!frame) return { clipped: [], smallText: null };
     const right = frame.getBoundingClientRect().right + 1;
     const clipped = [];
+    // A WideRegion that sticks out of its own parent (a centred flex column centres min-width content and
+    // overflows both sides) sits outside its scroller's reach; an ancestor's overflow:hidden then hides it
+    // from the check below, so look at the shell against its parent directly.
+    for (const shell of frame.querySelectorAll('.stage-shell')) {
+      const box = shell.getBoundingClientRect();
+      const parent = shell.parentElement.getBoundingClientRect();
+      if (box.width && (box.left < parent.left - 1 || box.right > parent.right + 1)) clipped.push('stage-shell (sticks out of its parent)');
+    }
     for (const el of frame.querySelectorAll('*')) {
       if (el.closest('.stage-wide')) continue; // scrolls sideways on purpose
       const box = el.getBoundingClientRect();

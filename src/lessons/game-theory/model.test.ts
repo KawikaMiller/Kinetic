@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseBoundedInt } from '../../core/parse';
 import { mulberry32 } from '../../core/random';
 import {
-  BATTLE_OF_THE_SEXES, CLASSIC_DILEMMA, MATCHING_PENNIES, PAYOFF_MAX, PAYOFF_MESSAGES, PAYOFF_MIN, PRISONERS_DILEMMA, STAG_HUNT, bestReplies, claimCell,
+  BATTLE_OF_THE_SEXES, CLASSIC_DILEMMA, MATCHING_PENNIES, MATRIX_PROMPT, PAYOFF_MAX, PAYOFF_MESSAGES, PAYOFF_MIN, PRISONERS_DILEMMA, STAG_HUNT, bestReplies, claimCell,
   colPayoff, cooperationCondition, dilemmaGame, dominanceText, enumerateGames, falseEquilibria, flips, fracText, fracValue, gameFromIndex, indifferent, mixed2x2,
   noEquilibriumVerdict, pureEquilibria, resizeGame, rowPayoff, setPayoff, strictlyDominated, type Game, type Matrix,
 } from './model';
@@ -231,5 +231,13 @@ describe('controls at their extremes and one beyond', () => {
       const g = dilemmaGame({ ...CLASSIC_DILEMMA, R });
       expect(pureEquilibria(g).some(([r, c]) => r === 0 && c === 0)).toBe(R >= CLASSIC_DILEMMA.T);
     }
+  });
+});
+
+describe('the matrix scene prompt', () => {
+  it('does not ask the learner to find what the dots already show: it asks them to test a cell', () => {
+    expect(MATRIX_PROMPT).toContain('dots mark each best reply');
+    expect(MATRIX_PROMPT).toContain('test whether it is an equilibrium');
+    expect(MATRIX_PROMPT).not.toMatch(/claim it is/i);
   });
 });
