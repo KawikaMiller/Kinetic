@@ -1,0 +1,49 @@
+import { dollars, pctText } from '../../core/format';
+import {
+  BREAK_EVEN_READS, HOURS, PRESETS, bill, dayCost, optimumByScan, peakNeed, requestsPerDay, spotAllowed, transfer, type Profile, type Tier, type Work, type Zones,
+} from './cost';
+
+export const OPENING = { preset: 'web', committed: 0, work: 'user', spot: false, hour: 0, rps: 100 } as const;
+export const WEB: Profile = PRESETS.web.profile;
+/** Scenes 2 and 3 take their request volume from the web profile and their compute reference from its cheapest commitment. */
+export const WEB_OPTIMUM = optimumByScan(WEB);
+export const BYTES_OPENING = { zones: 3 as Zones, sameZone: 0 };
+export const BILL_OPENING = { committed: 4, zones: 3 as Zones, sameZone: 0, tier: 'standard' as Tier, readsTenths: 12 };
+
+const money = (x: number) => dollars(x);
+
+export function dayCaption(profile: Profile, committed: number, spot: boolean): string {
+  const peak = peakNeed(profile);
+  if (requestsPerDay(profile) === 0) {
+    return `No traffic: there is no cost per request to show. Paid capacity costs ${money(dayCost(profile, committed, spot).total)} per illustrative day.`;
+  }
+  const here = dayCost(profile, committed, spot);
+  const none = dayCost(profile, 0, spot).total;
+  const best = optimumByScan(profile, spot);
+  const head = `Committing ${committed} of ${peak} instances costs ${money(here.total)} per day, ${money(here.perMillion ?? 0)} per million requests, with ${pctText(here.utilisation ?? 0, 1)} of the paid capacity used.`;
+  const against = committed > 0 && here.total > none + 1e-9 ? ` This costs more than committing nothing (${money(none)}).` : '';
+  return `${head}${against} The cheapest level for this profile is ${best}.`;
+}
+
+export function bytesCaption(requests: number, zones: Zones, sameZone: number): string {
+  const t = transfer(requests, zones, sameZone);
+  const compute = dayCost(WEB, WEB_OPTIMUM).total;
+  const versus = t.cost > compute
+    ? `more than the ${money(compute)} of compute at the cheapest commitment`
+    : `${pctText(t.cost / compute, 0)} of the ${money(compute)} of compute at the cheapest commitment`;
+  return `At ${zones} zones with ${pctText(sameZone, 0)} of calls kept in-zone, ${Math.round(t.crossingGb).toLocaleString('en-US')} of ${t.gb.toLocaleString('en-US')} GB cross a zone boundary per day, costing ${money(t.cost)}: ${versus}.`;
+}
+
+export function billCaption(committed: number, zones: Zones, sameZone: number, tier: Tier, fullReads: number): string {
+  const b = bill(WEB, committed, zones, sameZone, tier, fullReads);
+  const gap = fullReads - BREAK_EVEN_READS;
+  const side = Math.abs(gap) < 1e-9 ? 'two tiers cost the same' : gap < 0 ? 'colder tier is cheaper' : 'standard tier is cheaper';
+  return `Compute ${money(b.compute)} + transfer ${money(b.transfer)} + storage ${money(b.storage)} = ${money(b.total)} per day, ${b.perMillion === null ? 'no traffic' : `${money(b.perMillion)} per million requests`}. At ${fullReads.toFixed(1)} full reads per GB-month the ${side} (they tie at ${BREAK_EVEN_READS.toFixed(2)}).`;
+}
+
+export const spotReason = (work: Work): string | null => {
+  const s = spotAllowed(work);
+  return s.ok ? null : s.reason;
+};
+
+export const HOURS_LABEL = `${HOURS} hours`;
