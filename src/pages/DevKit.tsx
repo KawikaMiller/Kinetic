@@ -29,6 +29,7 @@ import { DevKitTier3k } from './DevKitTier3k';
 import { DevKitTier3l } from './DevKitTier3l';
 import { DevKitTier4a } from './DevKitTier4a';
 import { DevKitTier4b } from './DevKitTier4b';
+import { DevKitTier4c } from './DevKitTier4c';
 
 /**
  * Dev-only showcase of the Tier 1 shared components (#/dev/kit). Not linked from
@@ -83,6 +84,7 @@ export function DevKit() {
       <DevKitTier3l />
       <DevKitTier4a />
       <DevKitTier4b />
+      <DevKitTier4c />
     </div>
   );
 }
