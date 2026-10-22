@@ -41,7 +41,7 @@ const lesson: LessonModule = {
       why: 'In this model a round trip from Sydney to Virginia takes over 200 ms, while an edge in Sydney answers a hit in about ten ms.',
     },
     {
-      q: 'You deploy a new logo but users keep seeing the old one. What is the likely cause?',
+      q: 'You deploy a new logo, but the CDN\'s edges still return the old one. What is the likely cause?',
       options: [
         'The origin is down, so the edges quietly fall back to an older build of the site',
         'DNS changes have not reached the visitor\'s resolver yet',

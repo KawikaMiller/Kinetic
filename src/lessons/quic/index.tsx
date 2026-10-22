@@ -30,7 +30,7 @@ const blocked = recover('quic', R, true);
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'QUIC is faster than TCP plus TLS because it needs fewer round trips and does not block one stream behind another, not because UDP is quicker. A resumed 0-RTT request goes in the first flight but can be replayed.',
+    tldr: 'In this model QUIC is faster than TCP plus TLS because it needs fewer round trips and does not block one stream behind another, not because UDP is quicker. A resumed 0-RTT request goes in the first flight but can be replayed.',
     what: 'A TCP connection with TLS needs its own handshake and then TLS\'s, so the request cannot leave for two or three round trips. QUIC runs the cryptographic handshake inside its own, so a first request leaves after one, and a resumed connection can put the request in the very first flight (0-RTT). That early data can be copied and delivered again by someone on the path, so it is safe only for requests that do no harm twice, or with an idempotency key. QUIC also tracks each stream separately, so a lost packet delays only the streams whose data it held, where TCP delays every stream behind the hole. And a connection is named by a connection ID, not by addresses and ports, so it can survive a phone changing network after one round trip of path validation.',
     analogy: 'Posting a letter that needs a signature. TCP plus TLS is phoning to agree a courier, then agreeing a lock, then sending. QUIC does both in one call, and with a pre-agreed lock (0-RTT) the letter goes with the first call, which means a copied letter can be delivered twice.',
     useCases: [

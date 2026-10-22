@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Answering "which of our services contain this package?" within minutes of an advisory',
       'Reading a build-provenance claim and knowing what it does and does not prove',
     ],
-    why: 'Most of the code you run was written by people you never chose, and one change deep in the tree reaches every service that depends on it. Knowing which defence covers which class of problem, and which ones only reduce it, lets you spend effort where the gaps are.',
+    why: 'Much of the code you run was written by people you never chose, and one change deep in the tree reaches every service that depends on it. Knowing which defence covers which class of problem, and which ones only reduce it, lets you spend effort where the gaps are.',
     watch: 'In the graph a package or service that runs the compromised release is red (--bad), the compromised package itself solid red, a dependent that held back green (--ok) and a package that does not depend on it grey (--dim). In the matrix a defence that is switched on has a violet heading (--violet), the layer that blocks a class is green, a layer that limits it blue (--info) and a class that is open red. A name-similarity warning is orange (--orange). Integrity and attestation checks pass in green and fail in red; the day strip is green where the release is held back, red where it is installed and grey once it is pulled.',
   },
   tryThis: [

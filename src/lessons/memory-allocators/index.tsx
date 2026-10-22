@@ -53,7 +53,7 @@ const lesson: LessonModule = {
     {
       q: 'You free 90% of a process\'s objects, picked at random. Why does the process\'s memory fall far less than 90%?',
       options: [
-        'A page goes back only when every object on it is free, and random freeing leaves a live object on many pages',
+        'In this model a page goes back only when every object on it is free, and random freeing leaves a live object on many pages',
         'The operating system waits a fixed time before it takes freed memory back, so the drop is delayed',
         'Freed objects are kept by the allocator as a cache, so none of them is ever handed back',
         'Random frees damage the free list, so the allocator can no longer tell which pages are empty',

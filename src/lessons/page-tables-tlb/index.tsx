@@ -10,7 +10,7 @@ const sw = switchFacts();
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'A flat table of every page in a 48-bit address space is impossible, so the page table is a tree walked in four steps, and a small cache of recent translations, the TLB, keeps most accesses from paying for the walk.',
+    tldr: 'A flat table of every page in a 48-bit address space is impractical (hundreds of GiB per process), so the page table is a tree walked in four steps, and a small cache of recent translations, the TLB, keeps most accesses from paying for the walk.',
     what: 'A 48-bit virtual address is cut into four 9-bit indexes and a 12-bit offset. Each index picks one of 512 entries in a 4 KiB table, and each entry points at the next table, until the last one points at the frame. Tables exist only where something is mapped, so the tree is small even though the space is huge. A huge page ends the walk a level early. The TLB remembers recent page-to-frame translations; when the pages in use outnumber its entries, a cyclic scan misses every time. Switching processes, and unmapping a page that other cores may have cached, cost extra TLB work.',
     analogy: 'Finding a flat in a city by country, then city, then street, then number, instead of keeping one list of every flat on Earth. The TLB is the sticky note of the few addresses you keep using.',
     useCases: [
