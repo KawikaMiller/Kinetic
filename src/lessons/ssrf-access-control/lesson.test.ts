@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { fetchCaption, invoiceCaption, metadataCaption, outcomeText } from './captions';
 import { FACTS } from './facts';
@@ -93,14 +94,13 @@ describe('captions across the control cross product', () => {
 });
 
 describe('the lesson stays inside the simulation and carries no payload', () => {
-  const FORBIDDEN = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|new URL\(/;
   /** Address-shaped text: the only ones allowed are documentation ranges and RFC 1918 (and none appear today). */
   const ADDRESS = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g;
   const ALLOWED_PREFIXES = ['192.0.2.', '198.51.100.', '203.0.113.', '10.', '172.16.', '192.168.'];
 
   it('has no network call, no eval and no URL parsing of learner text in any source file', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(8);
-    for (const [file, text] of Object.entries(sources)) expect(text, file).not.toMatch(FORBIDDEN);
+    expect(forbiddenCalls(sources, { also: ['newUrl'] })).toEqual([]);
   });
 
   it('holds no address beyond the documentation ranges and RFC 1918, and no link-local or loopback literal', () => {
