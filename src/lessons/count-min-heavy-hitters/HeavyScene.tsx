@@ -6,9 +6,8 @@ import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../co
 import { useIntroCaption } from '../../core/caption';
 import { pctText } from '../../core/format';
 import { heavyCaption } from './captions';
-import { heavyRun, memory, quality } from './heavy';
-import { MAX_DEPTH, MAX_WIDTH, MIN_DEPTH } from './sketch';
-import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_WIDTH, MAX_SKEW, MIN_SCENE_WIDTH, MIN_SKEW, TOP_K, exactCounts, itemName, zipfStream } from './stream';
+import { heavyRun, memory, quality, MAX_DEPTH, MAX_WIDTH, MIN_DEPTH, TOP_K, exactCounts, itemName, zipfStream } from '../../core/countMin';
+import { DEFAULT_DEPTH, DEFAULT_SEED, DEFAULT_SKEW, DEFAULT_WIDTH, MAX_SKEW, MIN_SCENE_WIDTH, MIN_SKEW } from './stream';
 
 const HEAVY_N = 20_000;
 const HEAVY_STEP = 250;

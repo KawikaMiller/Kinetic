@@ -6,8 +6,8 @@ import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '
 import { useIntroCaption } from '../../core/caption';
 import { mergeCaption } from './captions';
 import { MERGE_DEPTH, MERGE_MAX_WIDTH, MERGE_N, MERGE_WIDTH, PARTITIONS, mergeRun } from './merge';
-import { MAX_DEPTH, MIN_DEPTH, estimate } from './sketch';
-import { DEFAULT_SEED, DEFAULT_SKEW, MIN_SCENE_WIDTH, TOP_K, exactCounts, exactTop, itemName, keyOfRank, zipfStream } from './stream';
+import { MAX_DEPTH, MIN_DEPTH, estimate, TOP_K, exactCounts, exactTop, itemName, keyOfRank, zipfStream } from '../../core/countMin';
+import { DEFAULT_SEED, DEFAULT_SKEW, MIN_SCENE_WIDTH } from './stream';
 
 
 export function MergeScene({ picker }: { picker: ReactNode }) {
