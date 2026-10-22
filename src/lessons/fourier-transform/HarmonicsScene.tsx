@@ -52,7 +52,7 @@ export function HarmonicsScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="RMS error" value={decimal(rms, 2)} color={rms > 0.05 ? 'var(--bad)' : 'var(--ok)'} sub="at the 64 samples" />
-          <Stat label="Peak of your sum" value={decimal(Math.max(peak, 0), 2)} sub={h.target === 'square' ? `${pct(overshootShare(peak))} of the jump above the plateau` : 'highest sample'} />
+          <Stat label="Peak of your sum" value={decimal(Math.max(peak, 0), 2)} sub={h.target === 'square' ? (overshootShare(peak) >= 0.001 ? `${pct(overshootShare(peak), 1)} of the jump above the plateau, at the 64 samples` : 'none above the plateau, at the 64 samples') : 'highest of the 64 samples'} />
         </Stats>
       }
       controls={[
@@ -74,7 +74,7 @@ export function HarmonicsScene({ picker }: { picker: ReactNode }) {
           <div className="ft-col">
             <Box>
               <SectionTitle hint={drawn ? `click to add a point (at most ${MAX_DRAWN})` : 'one period, 64 samples'}>The target and your sum</SectionTitle>
-              <Plot2D x={{ domain: [0, 1], label: 'time (one period)' }} y={{ domain: [-Y_LIMIT, Y_LIMIT] }} ariaLabel="The target waveform, the sum of the harmonics and the error at each sample">
+              <Plot2D className={drawn ? 'ft-drawn-plot' : ''} x={{ domain: [0, 1], label: 'time (one period)' }} y={{ domain: [-Y_LIMIT, Y_LIMIT] }} ariaLabel="The target waveform, the sum of the harmonics and the error at each sample">
                 {drawn && <PointerLayer onDown={(p) => add(p)} />}
                 <Curve points={targetLine} tone="dim" width={2} />
                 <Segments segments={residuals} tone="bad" />

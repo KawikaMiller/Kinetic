@@ -1,7 +1,7 @@
 /** Captions for every scene, built from the model so each number is the one on screen. Plain strings. */
 import { decimal, integer, pct, plural } from '../../core/format';
 import { circlesOf, shapeError, shapeSamples, SAMPLES as SHAPE_SAMPLES, type ShapeId } from './epicycles';
-import { HARMONICS, TARGETS, rmsError, snapToDft, type HarmonicsState } from './harmonics';
+import { HARMONICS, TARGETS, rmsError, snapToDft, targetSamples, type HarmonicsState } from './harmonics';
 import { removedBins, type SpectrumState, type Work } from './spectrum';
 import { aliasHz, analyse, binWidth, cyclesInWindow, isWholeCycles, nyquist, type SamplingState } from './sampling';
 
@@ -10,8 +10,16 @@ const n2 = (v: number) => decimal(v, 2);
 const NEGLIGIBLE = 0.1;
 /** Two errors this close are the same to the two decimals shown. */
 const SAME_ERROR = 0.005;
-/** How many removed bin pairs the caption names before it says "and N more". */
+/** How many removed bin groups the caption names before it says "and N more". */
 const MAX_LISTED = 4;
+
+const targetMean = (s: HarmonicsState): number => {
+  const t = targetSamples(s.target, s.drawn);
+  return t.reduce((a, b) => a + b, 0) / t.length;
+};
+
+/** A share to one decimal that never rounds a partial share up to a full 100%. */
+export const shareText = (kept: number): string => (kept < 1 && pct(kept, 1) === '100.0%' ? 'just under 100%' : pct(kept, 1));
 
 export function harmonicsCaption(s: HarmonicsState): string {
   const label = TARGETS.find((t) => t.value === s.target)?.label ?? s.target;
@@ -23,7 +31,9 @@ export function harmonicsCaption(s: HarmonicsState): string {
   const lead = `Target ${label}, ${plural(used, 'harmonic')} in use out of ${HARMONICS}: the RMS error is ${n2(here)}.`;
   const cause = s.mode === 'sine' && freeBest < best / 2
     ? 'the sine mode has no phase, so it cannot make a shape that is not a sum of sines'
-    : `${HARMONICS} harmonics are too few for a target this sharp`;
+    : Math.abs(targetMean(s)) > Math.max(best * 0.5, NEGLIGIBLE)
+      ? 'none of the sliders can add a constant offset, and this target has one'
+      : `${HARMONICS} harmonics are too few for a target this sharp`;
   const atBest = here <= best + SAME_ERROR;
   const tail = best < NEGLIGIBLE
     ? atBest
@@ -43,7 +53,7 @@ export function epicycleCaption(shape: ShapeId, used: number): string {
   const kept = circles.slice(0, used).reduce((sum, c) => sum + c.radius ** 2, 0) / total;
   const name = shape === 'letter' ? 'letter L' : shape;
   if (used >= SHAPE_SAMPLES) return `The ${name} from all ${SHAPE_SAMPLES} circles: the error at the ${SHAPE_SAMPLES} samples is ${n2(err)}, so the circles redraw it exactly.`;
-  return `The ${name} from the ${used} largest of ${SHAPE_SAMPLES} circles: the error is ${n2(err)} (the shape is about 2 across), and these circles hold ${pct(kept)} of its energy.`;
+  return `The ${name} from the ${used} largest of ${SHAPE_SAMPLES} circles: the error is ${decimal(err, 3)} (the shape is about 2 across), and these circles hold ${shareText(kept)} of its energy.`;
 }
 
 export function spectrumCaption(s: SpectrumState, imagMax: number): string {
@@ -51,7 +61,8 @@ export function spectrumCaption(s: SpectrumState, imagMax: number): string {
   if (bins.length === 0) return `Nothing removed: the filtered signal is the original. Click a bar in the spectrum, or pick a bin with the slider, to remove it; its mirror bin ${s.n} minus k goes too.`;
   const named = bins.map((k) => (k === 0 || k === s.n / 2 ? `${k}` : `${k} and ${s.n - k}`));
   const list = named.length > MAX_LISTED ? `${named.slice(0, MAX_LISTED).join(', ')}, and ${named.length - MAX_LISTED} more` : named.join(', ');
-  return `Removed ${plural(bins.length, 'bin pair')} (${list}): a real signal's bin ${s.n} minus k is the complex conjugate of bin k, so both go together. The largest imaginary part left in the filtered signal is ${imagMax.toExponential(1)}, rounding only, so it stays real.`;
+  const total = bins.reduce((sum, k) => sum + (k === 0 || k === s.n / 2 ? 1 : 2), 0);
+  return `Removed ${plural(total, 'bin')} (${list}): a real signal's bin ${s.n} minus k is the complex conjugate of bin k, so both go together; bins 0 and ${s.n / 2} are their own mirror. The largest imaginary part left in the filtered signal is ${imagMax.toExponential(1)}, rounding only, so it stays real.`;
 }
 
 export function workCaption(w: Work): string {
@@ -64,9 +75,16 @@ export function samplingCaption(s: SamplingState): string {
   const lead = `Tone ${n2(s.f)} Hz sampled at ${s.fs} Hz (half of that, ${nyquist(s)} Hz, is the highest frequency it can show).`;
   if (r.silent) return `${lead} Every sample is zero: a sine at a multiple of half the sampling rate is sampled only where it crosses zero, so the spectrum is empty.`;
   const alias = aliasHz(s);
+  const peak = r.peakBin * binWidth(s);
+  const nearest = `the strongest bin is the one nearest it, at ${n2(peak)} Hz (the bins are ${n2(binWidth(s))} Hz apart)`;
+  const whole = isWholeCycles(s);
   const where = s.f > nyquist(s)
-    ? ` It is above that, so it folds back and the strongest bin is at ${n2(alias)} Hz, the distance from ${n2(s.f)} to the nearest multiple of ${s.fs}.`
-    : ` The strongest bin is at ${n2(r.peakBin * binWidth(s))} Hz, the tone itself.`;
+    ? whole
+      ? ` It is above that, so it folds back and the strongest bin is at ${n2(alias)} Hz, the distance from ${n2(s.f)} to the nearest multiple of ${s.fs}.`
+      : ` It is above that, so it folds back to an alias at ${n2(alias)} Hz, the distance from ${n2(s.f)} to the nearest multiple of ${s.fs}; ${nearest}.`
+    : whole
+      ? ` The strongest bin is at ${n2(peak)} Hz, the tone itself.`
+      : ` The tone falls between bins, so ${nearest.replace('nearest it', 'nearest the tone')}.`;
   const cycles = cyclesInWindow(s);
   const withoutWindow = analyse({ ...s, window: 'rect' }).smearBins.length;
   const smear = isWholeCycles(s)

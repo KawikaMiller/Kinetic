@@ -8,10 +8,13 @@ import { epicycleCaption, harmonicsCaption, samplingCaption, spectrumCaption, wo
 import { SAMPLES as SHAPE_SAMPLES, SHAPES, circlesOf, shapeError, shapeSamples } from './epicycles';
 import { TARGETS, initialHarmonics, rmsError, snapToDft, type HarmonicsState } from './harmonics';
 import lesson from './index';
-import { FS_CHOICES, F_RANGE, WINDOWS, analyse, binWidth, initialSampling, type SamplingState } from './sampling';
+import { FS_CHOICES, F_RANGE, SAMPLES, WINDOWS, analyse, binWidth, initialSampling, type SamplingState } from './sampling';
 import { SIGNAL_SIZES, WORK_SIZES, amplitudes, filtered, initialSpectrum, lowPass, spectrumOf, toggleBin, toneBins, twoToneSignal, workCounts } from './spectrum';
 
 const sources = import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const styles = readFileSync(fileURLToPath(new URL('./styles.css', import.meta.url)), 'utf8').split('\r').join('');
 const clean = (s: string) => {
   expect(s).not.toMatch(/NaN|undefined|Infinity|\[object|null/);
   return s;
@@ -67,7 +70,8 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     const t = lesson.tryThis[1];
     expect(shapeError(z, circles, 3)).toBeGreaterThan(0.2);
     expect(shapeError(z, circles, SHAPE_SAMPLES)).toBeLessThan(1e-9);
-    expect(t).toContain(`the error is ${n2(shapeError(z, circles, 3))}`);
+    expect(t).toContain(`the error is ${decimal(shapeError(z, circles, 3), 3)}`);
+    expect(clean(epicycleCaption('letter', 3))).toContain(`the error is ${decimal(shapeError(z, circles, 3), 3)}`);
     expect(t).toContain('the error is 0 and the circles redraw the letter exactly');
   });
 
@@ -79,8 +83,8 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(after[lower]).toBeGreaterThan(0.7);
     const work = workCounts(1024);
     const t = lesson.tryThis[2];
-    expect(t).toContain(`bin ${upper} goes from ${n2(original[upper])} to ${n2(after[upper])}`);
-    expect(t).toContain(`bin ${lower} stays at ${n2(after[lower])}`);
+    expect(t).toContain(`the bar at bin ${upper} (a tone of amplitude ${n2(original[upper])} in the signal) drops to ${n2(after[upper])}`);
+    expect(t).toContain(`the bar at bin ${lower} stays`);
     expect(t).toContain(`${integer(work.dft)} multiplications and the FFT ${integer(work.fft)}`);
     expect(work.dft).toBe(1024 * 1024);
     expect(work.fft).toBe(512 * 10);
@@ -130,7 +134,7 @@ describe('every control combination gives a clean caption that matches the model
       const circles = circlesOf(z);
       for (const used of [1, 2, 6, 33, 63, 64]) {
         const text = clean(expectCaption(epicycleCaption(value, used)));
-        expect(text).toContain(`error ${used >= SHAPE_SAMPLES ? 'at the 64 samples is' : 'is'} ${n2(shapeError(z, circles, used))}`);
+        expect(text).toContain(`error ${used >= SHAPE_SAMPLES ? 'at the 64 samples is' : 'is'} ${(used >= SHAPE_SAMPLES ? n2 : (v: number) => decimal(v, 3))(shapeError(z, circles, used))}`);
       }
     }
   });
@@ -159,9 +163,62 @@ describe('every control combination gives a clean caption that matches the model
         const r = analyse(s);
         const text = clean(expectCaption(samplingCaption(s)));
         expect(text.includes('Every sample is zero')).toBe(r.silent);
-        if (!r.silent) expect(text).toContain(s.f > fs / 2 ? 'folds back' : 'the tone itself');
+        if (r.silent) continue;
+        expect(text).toContain(s.f > fs / 2 ? 'folds back' : 'the tone');
+        // Independent oracle: the alias is the distance to the nearest multiple of fs, and the strongest bin is within half a bin of it.
+        const alias = Math.abs(s.f - Math.round(s.f / fs) * fs);
+        const bw = fs / SAMPLES;
+        const peakHz = r.peakBin * bw;
+        expect(Math.abs(peakHz - alias)).toBeLessThanOrEqual(bw / 2 + 1e-9);
+        const whole = Math.abs((s.f * SAMPLES) / fs - Math.round((s.f * SAMPLES) / fs)) < 1e-9;
+        expect(text.includes('the tone itself')).toBe(whole && s.f <= fs / 2);
+        if (!whole) expect(text).toContain(`${n2(peakHz)} Hz`);
       }
     }
+  });
+});
+
+describe('sampling caption at off-bin tones (the strongest bin is the nearest bin, not the tone)', () => {
+  it('5.25 Hz at 32 Hz names the nearest bin and does not call it the tone itself', () => {
+    for (const window of ['rect', 'hann'] as const) {
+      const text = clean(expectCaption(samplingCaption({ fs: 32, f: 5.25, window })));
+      expect(text).not.toContain('the tone itself');
+      expect(text).toContain('nearest the tone');
+    }
+  });
+
+  it('20.25 Hz at 32 Hz names both the 11.75 Hz alias and the bin it lands on', () => {
+    for (const window of ['rect', 'hann'] as const) {
+      const s: SamplingState = { fs: 32, f: 20.25, window };
+      const text = clean(expectCaption(samplingCaption(s)));
+      expect(text).toContain('alias at 11.75 Hz');
+      expect(text).toContain(`${n2(analyse(s).peakBin * binWidth(s))} Hz (the bins`);
+    }
+  });
+});
+
+describe('spectrum caption counts bins, not pairs', () => {
+  it('removing bin 0 reports one bin and the mirror remark', () => {
+    const text = clean(expectCaption(spectrumCaption(toggleBin(initialSpectrum(64), 0), 0)));
+    expect(text).toContain('Removed 1 bin (0)');
+    expect(text).not.toContain('pair');
+  });
+});
+
+describe('harmonics caption cause', () => {
+  it('a flat drawn line (all offset, no shape) blames the missing constant, not sharpness', () => {
+    const h: HarmonicsState = { ...initialHarmonics(), target: 'drawn', drawn: [{ x: 0.5, y: 0.19 }] };
+    const text = clean(expectCaption(harmonicsCaption(h)));
+    expect(text).toContain('constant offset');
+    expect(text).not.toContain('too few');
+  });
+});
+
+describe('drawn-curve click layer', () => {
+  it('the curves, residuals and points above the click layer do not take pointer events', () => {
+    const rule = /\.ft-drawn-plot \.plot-curve,\s*\.ft-drawn-plot \.plot-segments,\s*\.ft-drawn-plot \.plot-points \{ pointer-events: none; \}/;
+    expect(styles).toMatch(rule);
+    expect(sources['./HarmonicsScene.tsx']).toContain("className={drawn ? 'ft-drawn-plot' : ''}");
   });
 });
 

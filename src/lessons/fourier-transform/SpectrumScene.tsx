@@ -39,7 +39,7 @@ export function SpectrumScene({ picker }: { picker: ReactNode }) {
   const line = (v: readonly number[]) => v.map((y, i) => [i, y] as [number, number]);
   const caption = spectrumCaption(s, out.imagMax);
   const toggle = (k: number) => setS((c) => toggleBin(c, Math.min(half, Math.max(0, Math.round(k)))));
-  const changeSize = (n: SignalSize) => { setS(initialSpectrum(n)); setCursor((k) => Math.min(k * (n / s.n), n / 2)); };
+  const changeSize = (n: SignalSize) => { setS(initialSpectrum(n)); setCursor((k) => Math.min(Math.round(k * (n / s.n)), n / 2)); };
   return (
     <StageFrame
       height={820}
@@ -91,7 +91,7 @@ export function SpectrumScene({ picker }: { picker: ReactNode }) {
         </div>
         <Box>
           <SectionTitle hint="counted from instrumented runs, not from the formula">Work: the definition against the FFT</SectionTitle>
-          <Segmented label="Samples" value={workN} onChange={setWorkN} options={WORK_SIZES.map((n) => ({ value: n, label: String(n) }))} />
+          <Segmented label="Samples (work table)" value={workN} onChange={setWorkN} options={WORK_SIZES.map((n) => ({ value: n, label: String(n) }))} />
           <Stats>
             <Stat label="DFT multiplications" value={integer(work.dft)} sub="N squared, counted" color="var(--bad)" />
             <Stat label="FFT multiplications" value={integer(work.fft)} sub="(N / 2) log2 N, counted" color="var(--ok)" />

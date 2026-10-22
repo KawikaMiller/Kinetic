@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
-import { decimal, pct } from '../../core/format';
+import { decimal } from '../../core/format';
 import { plainTone } from '../../core/tone';
-import { epicycleCaption } from './captions';
+import { epicycleCaption, shareText } from './captions';
 import { SAMPLES, SHAPES, chainAt, circlesOf, pathOf, shapeError, shapeSamples, type ShapeId } from './epicycles';
 
 /** The drawing is 3.4 units across, centred on the origin; the shapes are about 2 across. */
@@ -59,7 +59,7 @@ export function EpicycleScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Circles used" value={`${s.used} of ${SAMPLES}`} />
           <Stat label="Error" value={decimal(error, 3)} color={error < 1e-9 ? 'var(--ok)' : 'var(--bad)'} sub="RMS distance at the samples" />
-          <Stat label="Energy in these circles" value={pct(kept)} sub="of the whole shape" />
+          <Stat label="Energy in these circles" value={shareText(kept)} sub="of the whole shape" />
         </Stats>
       }
       controls={[

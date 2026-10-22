@@ -51,12 +51,12 @@ const lesson: LessonModule = {
       'Fast multiplication of big numbers and polynomials, which uses the FFT as a subroutine',
     ],
     why: 'Frequency space turns hard questions into easy ones: which tone is this, what is noise, how fast must I sample. Building a wave from harmonics, filtering a spectrum and aliasing a tone on purpose shows what a spectrum analyser or an audio filter is actually doing.',
-    watch: 'Harmonics: the dark grey line is the target, the yellow line is the sum of your harmonics, red segments are the error at each of the 64 samples, and thin lines in amber, pink, light blue and orange are harmonics 1 to 8. Epicycles: the dark grey outline is the shape, the yellow line the path the circles trace, and circles with arms in amber, pink, light blue and orange are the circles from largest to smallest. Spectrum: bars are blue when kept and dark grey when removed; the yellow line in the time plot is the filtered signal, and a yellow marker shows the bin the slider is on. Sampling: dark grey is the tone itself, blue dots are samples, orange is the alias and the strongest bin, and violet bars are leakage. The chips say what is real, simulated or illustrative.',
+    watch: 'Harmonics: the dark grey line is the target (for the square wave a second plot shows a blue curve, the peak of the odd harmonics, with a dim line at its limit), the yellow line is the sum of your harmonics, red segments are the error at each of the 64 samples, and thin lines in amber, pink, light blue and orange are harmonics 1 to 8. Epicycles: the first circle is the centre of the shape (its average), the dark grey outline is the shape, the yellow line the path the circles trace, and circles with arms in amber, pink, light blue and orange are the circles from largest to smallest. Spectrum: bars are blue when kept and dark grey when removed; the yellow line in the time plot is the filtered signal, and a yellow marker shows the bin the slider is on. Sampling: dark grey is the tone itself, blue dots are samples, orange marks the strongest bin, which is the alias when the tone is above half the sampling rate, and violet bars are leakage. The chips say what is real, simulated or illustrative.',
   },
   tryThis: [
     `In "Harmonics" (target square, only harmonic 1 at ${n2(H0.amps[0])}) the RMS error is ${n2(rmsError(H0))}. Press "Snap to the DFT": the odd harmonics 1, 3, 5 and 7 become ${oddAmps.join(', ')} and the error falls to ${n2(rmsError(H0Snap))}. Pick the triangle: snapping in the sine mode only reaches ${n2(triangleSine)}; switch to free phase and snap again and it reaches ${n2(triangleFree)}.`,
-    `In "Epicycles" (the letter L from its ${letterUsed} largest circles of ${SHAPE_SAMPLES}) the error is ${n2(letterError)}. Slide "Circles used" to ${SHAPE_SAMPLES}: the error is ${n2(shapeError(letter, letterCircles, SHAPE_SAMPLES))} and the circles redraw the letter exactly.`,
-    `In "Spectrum and filtering" press low-pass: the tone at bin ${upperTone} goes from ${n2(originalAmps[upperTone])} to ${n2(lowPassAmps[upperTone])} and the one at bin ${lowerTone} stays at ${n2(lowPassAmps[lowerTone])}, and the bins above 10 and their mirror bins are removed together. In the work panel pick 1024 samples: the definition needs ${integer(work.dft)} multiplications and the FFT ${integer(work.fft)}.`,
+    `In "Epicycles" (the letter L from its ${letterUsed} largest circles of ${SHAPE_SAMPLES}) the error is ${decimal(letterError, 3)}. Slide "Circles used" to ${SHAPE_SAMPLES}: the error is ${n2(shapeError(letter, letterCircles, SHAPE_SAMPLES))} and the circles redraw the letter exactly.`,
+    `In "Spectrum and filtering" press low-pass: the bar at bin ${upperTone} (a tone of amplitude ${n2(originalAmps[upperTone])} in the signal) drops to ${n2(lowPassAmps[upperTone])}, which is no bar at all, and the bar at bin ${lowerTone} stays, and the bins above 10 and their mirror bins are removed together. In the work panel pick 1024 samples: the definition needs ${integer(work.dft)} multiplications and the FFT ${integer(work.fft)}.`,
     `In "Sampling and leakage" (5 Hz at 32 Hz, no window) one bin is above 1% of the peak, at ${n2(atFive.peakBin * binWidth(S0))} Hz. Move the tone to 20 Hz, above half the sampling rate: the strongest bin is at ${n2(twentyBin * binWidth(S0))} Hz. Set it to 5.25 Hz: ${smearRect} bins leak, and with the Hann window ${smearHann}.`,
   ],
   keyIdeas: [
@@ -75,7 +75,7 @@ const lesson: LessonModule = {
         'The negative frequencies of noise, which a good filter drops without comment',
       ],
       answer: 1,
-      why: `For a real signal, bin N minus k is the complex conjugate of bin k. That is why the lesson removes the bins in pairs and the filtered signal keeps an imaginary part under 1e-9 (just rounding).`,
+      why: `For a real signal, bin N minus k is the complex conjugate of bin k. That is why the lesson removes each bin together with its mirror (bins 0 and N/2 are their own mirror) and the filtered signal keeps an imaginary part under 1e-9 (just rounding).`,
     },
     {
       q: 'How does the FFT relate to the discrete Fourier transform?',
@@ -108,7 +108,7 @@ const lesson: LessonModule = {
         'It splits into several smaller bumps of equal height along the plateau',
       ],
       answer: 2,
-      why: `The peak of the partial sum settles at ${decimal(GIBBS_LIMIT, 3)}, an overshoot of ${pct(overshootShare(GIBBS_LIMIT), 1)} of the jump. The spike gets narrower but not lower, and the sum is exact at the samples.`,
+      why: `The peak of the partial sum settles at ${decimal(GIBBS_LIMIT, 3)}, an overshoot of ${pct(overshootShare(GIBBS_LIMIT), 1)} of the jump. The spike gets narrower but not lower.`,
     },
     {
       q: 'A tone that does not fit the analysis window a whole number of times is transformed. What does the spectrum show?',

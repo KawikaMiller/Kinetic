@@ -6,7 +6,7 @@ import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Sta
 import { decimal } from '../../core/format';
 import { samplingCaption } from './captions';
 import {
-  DRAW_CYCLES_MAX, F_RANGE, FS_CHOICES, SAMPLES, WINDOWS, aliasHz, aliasSign, analyse, binWidth, cyclesInWindow, initialSampling, nyquist, samples, type SampleRate, type SamplingState,
+  DRAW_CYCLES_MAX, F_RANGE, FS_CHOICES, SAMPLES, WINDOWS, aliasHz, aliasSign, analyse, binWidth, cyclesInWindow, initialSampling, isWholeCycles, nyquist, samples, type SampleRate, type SamplingState,
   type WindowChoice,
 } from './sampling';
 
@@ -15,7 +15,7 @@ const LEGEND = (
     items={[
       { color: 'var(--dim)', label: 'the tone itself (drawn while it is slow enough to see)', shape: 'line' },
       { color: 'var(--info)', label: 'the samples, and a bin of the spectrum', shape: 'dot' },
-      { color: 'var(--orange)', label: 'the alias: the tone the samples fit, and the strongest bin', shape: 'line' },
+      { color: 'var(--orange)', label: 'the strongest bin (the alias when the tone is above half the sampling rate)', shape: 'line' },
       { color: 'var(--violet)', label: 'leakage: a bin above 1% of the peak', shape: 'square' },
     ]}
   />
@@ -46,7 +46,7 @@ export function SamplingScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Tone" value={`${decimal(s.f, 2)} Hz`} sub={`${decimal(cycles, 2)} cycles in the window`} />
-          <Stat label="Strongest bin" value={r.silent ? 'none' : `${decimal(r.peakBin * width, 2)} Hz`} sub={r.silent ? 'every sample is zero' : aliased ? `alias of ${decimal(s.f, 2)} Hz` : 'the tone itself'} color={r.silent || !aliased ? undefined : 'var(--orange)'} />
+          <Stat label="Strongest bin" value={r.silent ? 'none' : `${decimal(r.peakBin * width, 2)} Hz`} sub={r.silent ? 'every sample is zero' : aliased ? `alias of ${decimal(s.f, 2)} Hz` : isWholeCycles(s) ? 'the tone itself' : 'the bin nearest the tone'} color={r.silent || !aliased ? undefined : 'var(--orange)'} />
           <Stat label="Bins above 1% of the peak" value={r.silent ? 0 : r.smearBins.length} color={r.smearBins.length > 3 ? 'var(--violet)' : undefined} />
         </Stats>
       }
