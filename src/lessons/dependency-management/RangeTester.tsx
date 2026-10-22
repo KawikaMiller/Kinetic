@@ -5,7 +5,7 @@ import { ChipButton, ControlGroup, Hint, Legend, Stat, Stats, TextField } from '
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { NA, plural } from '../../core/format';
 import { PUBLISHED } from './deps';
-import { explainMatch, explainRange, maxSatisfying, parseVersion } from './semver';
+import { explainMatch, explainRange, maxSatisfying, parseVersion } from '../../core/semver';
 
 
 const PRESETS = ['^1.4.2', '~1.4.2', '1.x', '>=1.2 <2', '^0.3.1', '1.4.2', '^1.5.0-beta.1', '*'];

@@ -1,12 +1,10 @@
 import type { LessonModule } from '../../core/types';
 import { tapeText } from '../../core/tm';
 import { Stage } from './Stage';
-import {
-  DOUBLING_FROM, doublingRatio, INCREMENT_STARTER, mustParse, PLOT_LENGTHS, REFERENCE_MACHINES, runCase, STEP_BUDGET, stepsBySize,
-  TASKS,
-} from './model';
+import { DOUBLING_FROM, doublingRatio, INCREMENT_STARTER, PLOT_LENGTHS, REFERENCE_MACHINES, runCase, STEP_BUDGET, stepsBySize, TASKS } from './model';
+import { mustParseTm } from '../../core/tm';
 
-const starter = runCase('increment', mustParse(INCREMENT_STARTER), TASKS.increment.defaultInput);
+const starter = runCase('increment', mustParseTm(INCREMENT_STARTER), TASKS.increment.defaultInput);
 const reference = runCase('increment', REFERENCE_MACHINES.increment, TASKS.increment.defaultInput);
 const palindrome = runCase('palindrome', REFERENCE_MACHINES.palindrome, TASKS.palindrome.defaultInput);
 const incrementPoints = stepsBySize('increment', REFERENCE_MACHINES.increment);

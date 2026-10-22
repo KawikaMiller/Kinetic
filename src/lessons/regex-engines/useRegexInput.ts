@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { parsePattern, parseSubject, type ParsedRegex } from './regexParse';
-import { BACKREF_REFUSAL } from './thompson';
+import { parsePattern, parseSubject, type ParsedRegex, BACKREF_REFUSAL } from '../../core/regex';
 
 export interface RegexInput {
   patternText: string;

@@ -158,3 +158,10 @@ export function parseTmTable(text: string, o: { halting?: readonly State[] } = {
   const rules = read.rows.map((r) => r.value);
   return { ok: true, value: { start: rules[0].state, rules, ...(o.halting && { halting }) } };
 }
+
+/** Parse a table the author wrote (a lesson's reference machine); throws on a mistake, so a typo fails at load, not on screen. */
+export const mustParseTm = (text: string): Tm => {
+  const p = parseTmTable(text);
+  if (!p.ok) throw new Error(p.error);
+  return p.value;
+};

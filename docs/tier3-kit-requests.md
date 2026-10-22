@@ -164,3 +164,19 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | Share a bandwidth / RTT / buffer / loss / seed control group | congestion-control (`LinkControls`), quic (`NetControls`) | not built | The two are different controls (bandwidth, buffer, loss and seed vs RTT, think time and presets) each used inside one lesson only; bgp and wifi-shared-medium have no such group. Nothing to extract. |
 | `forbiddenCalls` clock/timer kinds (`performance.now`, `Date.now`, `setTimeout`...) with comment stripping | branch-prediction, cache-coherence, memory-allocators, page-tables-tlb, timing-side-channels (each carries the regex) | next kit round | Network/eval copies migrated in K3-20/21 round; these five differ (comment stripping, extra tokens), so they were left. |
 | Migrate `rasterization`'s 2D-only coverage helpers further (`coverage`, `boundingBox`) into `core/raster` | gpu-rendering-pipeline if it wants n-sample coverage | on second user | Only the edge function, winding, top-left rule and barycentrics moved (pixel-identical). |
+
+## Wave 8 to 9 extraction round (kit-M, t3/kit-m)
+Done, each with its users migrated pixel-identically (`smoke --frames` base vs after: 20/20 deterministic shots unchanged) and its tests moved with it:
+- `core/semver` (dependency-management, monorepo-polyrepo test); `core/editDistance` (edit-distance).
+- `core/regex/` (parse, backtrack with `perStart` / `traceTail` / `captures`, Thompson NFA, NFA/DFA runs): regex-engines migrated; API notes 1-7 of the t3/b24 review are in docs/shared-api.md. Not changed on purpose (behaviour identical): the matcher stays recursive (depth guard needed before long subjects); the parser still refuses forward and self back-references.
+- `core/countMin/` (count-min-heavy-hitters, hot-keys-skew).
+- `core/automataMinimize`, `core/pdaPresets`, `core/pdaStepper`, `core/automataDuel`, `core/tmTables` + `mustParseTm` in `core/tm` (chomsky-hierarchy, pushdown-automata, turing-machines, halting-problem).
+
+Item 6 sweep: after the moves `grep -rnE "from '\.\./[a-z0-9-]+/" src/lessons` finds no import of another lesson's folder (the remaining hits are layered-hexagonal's and reading-codebases' on-screen sample code, which is text, not imports).
+
+Left over, cheap but not done here:
+| Request | Where | Why parked |
+|---|---|---|
+| Replace the local exhaustive-string helpers with `core/testing/strings` `stringsUpTo` | local `allStrings` / `strings` helpers (`grep -rn "function allStrings|function strings" src`) | test-only duplication; the new helper is used by the moved tests |
+| `lessons/regex-engines/engines.ts` `STEP_BUDGET` (100,000) as an option default in `core/regex` | regex-engines, redos | a ReDoS lesson will pick its own budget; revisit when it lands |
+| Per-lesson copies of "no RegExp / eval on learner text" source scans | regex-engines, pushdown-automata, chomsky-hierarchy model tests | one `core/testing` scan helper would serve all three; `core/testing/forbiddenCalls` (kit-L) is the home |

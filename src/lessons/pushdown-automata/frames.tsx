@@ -1,8 +1,8 @@
 import type { Pda, PdaAcceptMode, PdaConfig } from '../../core/automata';
 import { plural } from '../../core/format';
 import type { Frame } from '../../core/types';
-import { ruleText } from './machines';
-import { CONFIG_BUDGET, describeRejection, type StepRun } from './stepper';
+import { ruleText } from '../../core/pdaPresets';
+import { CONFIG_BUDGET, describeRejection, type StepRun } from '../../core/pdaStepper';
 
 export interface PlayFrame extends Frame {
   /** The live configurations (empty on the closing frame of a rejected run). */

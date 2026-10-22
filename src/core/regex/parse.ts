@@ -6,7 +6,7 @@
  * Node ids are handed out in the order nodes are finished, which is the post-order the construction
  * scene walks.
  */
-import { parseKitLine, type KitRead, type TokenCursor, type TokenRule } from '../../core/parseKit';
+import { parseKitLine, type KitRead, type TokenCursor, type TokenRule } from '../parseKit';
 
 export const MAX_PATTERN_CHARS = 24;
 export const MAX_SUBJECT_CHARS = 24;
