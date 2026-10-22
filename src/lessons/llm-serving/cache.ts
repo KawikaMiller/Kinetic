@@ -1,6 +1,6 @@
 import { TOKENS, decode, makeSetup, type DecodeRun } from './attn';
 import { KV_HEADS_FULL, TOY_KV, heldTokens, ordinal, type Allocation, type KvConfig, type MemoryPlan } from './cost';
-import { decimalBytes } from './text';
+import { decimalBytes, distinctBytes } from './text';
 
 export const LAYER_LIMITS = { min: 1, max: 96 } as const;
 export const KV_HEAD_LIMITS = { min: 1, max: 64 } as const;
@@ -38,7 +38,8 @@ export function memoryCaption(plan: MemoryPlan, sequence: number, batch: number,
   const held = heldTokens(allocation, sequence);
   const per = `Each request holds ${held.toLocaleString('en-US')} tokens of cache, ${decimalBytes(plan.perSequence)}.`;
   if (plan.firstWaiting !== null) {
-    return `${per} A batch of ${batch.toLocaleString('en-US')} would need ${decimalBytes(plan.batchBytes)} against a ${decimalBytes(plan.budget)} cache budget: the ${ordinal(plan.firstWaiting)} request waits (${plan.fits.toLocaleString('en-US')} fit).`;
+    const [need, budget] = distinctBytes(plan.batchBytes, plan.budget);
+    return `${per} A batch of ${batch.toLocaleString('en-US')} would need ${need} against a ${budget} cache budget: the ${ordinal(plan.firstWaiting)} request waits (${plan.fits.toLocaleString('en-US')} fit).`;
   }
   return `${per} A batch of ${batch.toLocaleString('en-US')} takes ${decimalBytes(plan.batchBytes)} of the ${decimalBytes(plan.budget)} budget, and ${plan.fits.toLocaleString('en-US')} requests would fit.`;
 }

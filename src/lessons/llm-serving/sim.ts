@@ -279,11 +279,11 @@ export function createSim(seed: number, rate: number, settings: Settings = DEFAU
   return createSimOn(makeWorkload(seed, clampRate(rate)), seed, clampSettings(settings));
 }
 
-/** Run to completion (every request finished or rejected), within the iteration cap. */
+/** Run to completion (every request finished or rejected), within the iteration cap. One iteration at a time, so no padding ticks follow the end. */
 export function runToEnd(sim: Sim): SimState {
   let ran = 0;
   while (!sim.tick.state.done && !sim.tick.violation && ran < MAX_ITERATIONS) {
-    ran += sim.tick.run(512);
+    ran += sim.tick.run(1);
   }
   return sim.tick.state;
 }
@@ -336,7 +336,8 @@ export function statsOf(sim: Sim, s: SimState): SimStats {
 
 /** What the head of the queue is waiting for at a state, or null when nothing waits or it can be admitted. */
 export interface Blocked {
-  reason: 'slots' | 'cache';
+  /** 'batch': a static batch is running, so nothing joins it even though slots may be free. */
+  reason: 'slots' | 'cache' | 'batch';
   needBytes: number;
   freeBytes: number;
 }
@@ -346,12 +347,17 @@ export function blockedAt(sim: Sim, s: SimState): Blocked | null {
   const need = reservedFor(sim.workload[s.head], sim.kvPerToken, sim.settings.reservation);
   const free = sim.budget - reservedTotal(s.running);
   if (need > sim.budget) return null;
+  if (sim.settings.policy === 'static' && s.running.length > 0) return { reason: 'batch', needBytes: need, freeBytes: free };
   if (s.running.length >= sim.settings.slots) return { reason: 'slots', needBytes: need, freeBytes: free };
   if (need > free) return { reason: 'cache', needBytes: need, freeBytes: free };
-  return sim.settings.policy === 'static' && s.running.length > 0 ? { reason: 'slots', needBytes: need, freeBytes: free } : null;
+  return null;
 }
 
 export const reservedBytes = (s: SimState): number => reservedTotal(s.running);
+
+/** The most cache one request can be set aside (reserving the maximum sequence), and the smallest budget a control reaches: the rejection guard never fires between them. */
+export const LARGEST_RESERVATION_BYTES = Math.max(MAX_SEQ, PROMPT_MAX + OUTPUT_MAX) * kvBytesPerToken(TOY_KV);
+export const SMALLEST_BUDGET_BYTES = budgetFor(MEM_MIN_GB);
 
 /** Token-slots a lockstep batch keeps busy: sum of outputs over (members x longest). The hand case (10, 10, 10, 200) is 230 / 800. */
 export function lockstepUtilisation(outputs: readonly number[]): number {

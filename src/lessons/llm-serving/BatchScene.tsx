@@ -5,13 +5,17 @@ import { Curve, Plot2D, VLine } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
+import { pctText } from '../../core/format';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import {
-  AHEAD_SECONDS, BATCH_LIMITS, BATCH_OPENING, LANES_SHOWN, SCRUB_STEPS, WINDOW_SECONDS, batchCaption, cacheLine, ganttBars, runBatching, tickAt,
+  AHEAD_SECONDS, BATCH_LIMITS, BATCH_OPENING, HAND_OUTPUTS, LANES_SHOWN, SCRUB_STEPS, WINDOW_SECONDS, batchCaption, cacheLine, ganttBars, handBatchUse, runBatching, tickAt,
 } from './batching';
-import { HORIZON_SECONDS, STATIC_WAIT_SECONDS, lockstepUtilisation, type Policy, type Reservation } from './sim';
+import { HORIZON_SECONDS, LARGEST_RESERVATION_BYTES, SMALLEST_BUDGET_BYTES, STATIC_WAIT_SECONDS, type Policy, type Reservation } from './sim';
+import { StepPanel } from './StepPanel';
 import { MAX_SEQ } from './cost';
 import { decimalBytes, plainSeconds, share } from './text';
+
+const HAND_USE = handBatchUse();
 
 const POLICIES: { value: Policy; label: string }[] = [
   { value: 'static', label: 'static (batch, then wait)' },
@@ -21,7 +25,6 @@ const RESERVATIONS: { value: Reservation; label: string }[] = [
   { value: 'need', label: "the request's own length" },
   { value: 'max', label: `${MAX_SEQ.toLocaleString('en-US')} tokens for every request` },
 ];
-const HAND_BATCH = [10, 10, 10, 200] as const;
 
 /** Scene 3: static against continuous batching on one seeded workload. One tick of the simulator is one scheduler iteration. */
 export function BatchScene({ picker }: { picker: ReactNode }) {
@@ -45,7 +48,6 @@ export function BatchScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={780}
-      minWidth={480}
       intro={batchCaption(run, state, tick, rate)}
       introKey={`batch|${seed}|${rate}|${policy}|${slots}|${deviceGb}|${reservation}|${position}`}
       stats={
@@ -118,22 +120,28 @@ export function BatchScene({ picker }: { picker: ReactNode }) {
             <h3 className="section-title">What this run counted</h3>
             <table className="llm-table">
               <tbody>
-                <tr><th scope="row">arrived in {HORIZON_SECONDS} s</th><td>{stats.arrivals}</td></tr>
-                <tr><th scope="row">finished</th><td>{stats.finished}</td></tr>
-                <tr><th scope="row">rejected: could never fit</th><td className={stats.rejected > 0 ? 'llm-bad' : ''}>{stats.rejected}</td></tr>
+                <tr><th scope="row">arrived in {HORIZON_SECONDS} s</th><td>{stats.arrivals.toLocaleString('en-US')}</td></tr>
+                <tr><th scope="row">finished</th><td>{stats.finished.toLocaleString('en-US')}</td></tr>
+                <tr><th scope="row">rejected: needs more than the whole budget</th><td className={stats.rejected > 0 ? 'llm-bad' : ''}>{stats.rejected}</td></tr>
                 <tr><th scope="row">scheduler iterations</th><td>{stats.iterations.toLocaleString('en-US')}</td></tr>
               </tbody>
             </table>
+            {stats.rejected === 0 && (
+              <Hint tone="muted">
+                The rejection guard never fires here: the most cache one request can be set aside is {decimalBytes(LARGEST_RESERVATION_BYTES)} and the smallest budget is {decimalBytes(SMALLEST_BUDGET_BYTES)}.
+              </Hint>
+            )}
           </div>
         </div>
+        <StepPanel />
         <Hint tone="muted" className="llm-note">
-          Static batching waits up to {STATIC_WAIT_SECONDS * 1000} ms to form a batch, then every sequence decodes in lockstep until the longest one ends, so a finished sequence keeps its slot. A batch whose outputs are {HAND_BATCH.join(', ')} keeps {HAND_BATCH.reduce((a, b) => a + b, 0)} of {HAND_BATCH.length * Math.max(...HAND_BATCH)} token-slots busy, {share(lockstepUtilisation(HAND_BATCH))}.
+          Static batching waits up to {STATIC_WAIT_SECONDS * 1000} ms to form a batch, then every sequence decodes in lockstep until the longest one ends, so a finished sequence keeps its slot. A batch whose outputs are {HAND_OUTPUTS.join(', ')} keeps {HAND_USE.tokenBusy} of {HAND_USE.tokenTotal} token-slots busy, {pctText(HAND_USE.tokenBusy / HAND_USE.tokenTotal, 2)}, counting the prefill token as a step; the Slot use meter counts decode steps only, {HAND_USE.decodeBusy} of {HAND_USE.decodeTotal}, {pctText(HAND_USE.decodeBusy / HAND_USE.decodeTotal, 2)}, and also counts slots no request ever held.
           Continuous batching refills a slot after any step. The same shape as the batch-or-wait model of the training-vs-inference lesson survives inside each step: one decode step for b sequences costs a + c b, now paid per token instead of per request.
-          One tick here is one scheduler iteration, not a fixed time: the simulated clock advances by the cost model. Both policies set aside a request&apos;s whole final length when they admit it, so nothing is evicted.
+          One tick here is one scheduler iteration, not a fixed time: the simulated clock advances by the cost model. Both policies set aside a request&apos;s whole final length when they admit it, so nothing is evicted; setting aside the request&apos;s own length assumes the server knows the output length in advance, which real servers do not.
         </Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>seeded Poisson arrivals, prompt lengths 64 to 1,024 and output lengths with a mean near 150, over {HORIZON_SECONDS} s</Provenance>
-          <Provenance kind="illustrative">continuous is not worse on these seeded workloads; the toy device&apos;s numbers show the shape of the effects, not any product&apos;s speed</Provenance>
+          <Provenance kind="illustrative">continuous is not worse on these seeded workloads (the tests ran 200 seeded workloads at 5 and at 20 requests per second); the toy device&apos;s numbers show the shape of the effects, not any product&apos;s speed</Provenance>
           <Provenance kind="from-memory">iteration-level scheduling is a published idea (the Orca paper, 2022) and chunked prefill, speculative decoding, FlashAttention and splitting prefill from decode are named, not modelled; verify against the papers</Provenance>
         </ProvenanceRow>
       </div>

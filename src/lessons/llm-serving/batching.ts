@@ -60,15 +60,44 @@ export function batchCaption(run: BatchRun, state: SimState, tick: number, rate:
   const policy = sim.settings.policy === 'continuous' ? 'Continuous batching' : 'Static batching';
   const ttft = stats.ttftP50 === null || stats.ttftP99 === null ? 'no request finished' : `time to first token p50 ${plainSeconds(stats.ttftP50)}, p99 ${plainSeconds(stats.ttftP99)}`;
   const refused = stats.rejected > 0 ? ` ${stats.rejected} ${stats.rejected === 1 ? 'request needed' : 'requests needed'} more cache than the whole budget (${decimalBytes(sim.budget)}) and ${stats.rejected === 1 ? 'was' : 'were'} rejected, not queued forever.` : '';
-  const head = `${policy} at ${rate} requests per second: ${stats.finished} of ${stats.arrivals} requests finished, ${Math.round(stats.tokensPerSecond).toLocaleString('en-US')} output tokens per second, ${ttft}.${refused}`;
+  const head = `${policy} at ${rate} requests per second: by the end of the run ${stats.finished.toLocaleString('en-US')} of ${stats.arrivals.toLocaleString('en-US')} requests finished, ${Math.round(stats.tokensPerSecond).toLocaleString('en-US')} output tokens per second, ${ttft}.${refused}`;
   const blocked = blockedAt(sim, state);
   const waiting = state.arrived - state.head;
   const where = `At iteration ${tick.toLocaleString('en-US')} (simulated time ${state.t.toFixed(2)} s) ${waiting} ${waiting === 1 ? 'request is' : 'requests are'} waiting and ${state.running.length} running.`;
   if (blocked?.reason === 'cache') {
     return `${head} ${where} The next request needs ${decimalBytes(blocked.needBytes)} of cache and ${decimalBytes(blocked.freeBytes)} is free: it waits.`;
   }
+  if (blocked?.reason === 'batch') {
+    const free = sim.settings.slots - state.running.length;
+    const idle = free > 0 ? `, even though ${free} ${free === 1 ? 'slot is' : 'slots are'} free` : '';
+    return `${head} ${where} A static batch is running, so the next request waits until it ends${idle}.`;
+  }
   if (blocked?.reason === 'slots') return `${head} ${where} Every slot is busy, so the next request waits for one.`;
   return `${head} ${where}`;
+}
+
+/** The batch of the page's hand case: four requests that arrive together under the static policy, one far longer than the rest. */
+export const HAND_OUTPUTS = [10, 10, 10, 200] as const;
+
+export interface HandBatchUse {
+  /** Token-slots busy over all token-slots, counting the prefill token as a step: the lockstep view. */
+  tokenBusy: number;
+  tokenTotal: number;
+  /** What the Slot use meter counts: sequences emitting in decode steps only, over slots x decode steps. */
+  decodeBusy: number;
+  decodeTotal: number;
+}
+
+export function handBatchUse(): HandBatchUse {
+  const workload: Request[] = HAND_OUTPUTS.map((output, id) => ({ id, arrive: 0, prompt: 100, output }));
+  const sim = createSimOn(workload, 1, { policy: 'static', slots: HAND_OUTPUTS.length, deviceGb: DEFAULT_SETTINGS.deviceGb, reservation: 'need' });
+  const end = runToEnd(sim);
+  return {
+    tokenBusy: HAND_OUTPUTS.reduce((a, b) => a + b, 0),
+    tokenTotal: HAND_OUTPUTS.length * Math.max(...HAND_OUTPUTS),
+    decodeBusy: end.busySlotSteps,
+    decodeTotal: HAND_OUTPUTS.length * end.decodeIterations,
+  };
 }
 
 export const cacheLine = (run: BatchRun, state: SimState) => ({ used: reservedBytes(state), budget: run.sim.budget });

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { decode, makeSetup } from './attn';
-import { batchCaption, runBatching, tickAt } from './batching';
+import { batchCaption, handBatchUse, runBatching, tickAt } from './batching';
 import { CACHE_OPENING, equalityCaption, equalityRun, memoryCaption } from './cache';
-import { KV_HEADS_FULL, TOY_KV, decodeTokensPerSecond, planMemory, prefillTiming, decodeTiming } from './cost';
+import { KV_HEADS_FULL, TOY_KV, decodeTokensPerSecond, planMemory, prefillTiming, decodeTiming, stepShape } from './cost';
 import lesson from './index';
 import { REQUEST_OPENING, requestCaption } from './request';
-import { DEFAULT_SETTINGS, lockstepUtilisation } from './sim';
+import { DEFAULT_SETTINGS, LARGEST_RESERVATION_BYTES, SMALLEST_BUDGET_BYTES, blockedAt, lockstepUtilisation, type Settings } from './sim';
+import { STEP_OPENING } from './StepPanel';
 import { decimalBytes, milliseconds } from './text';
 
 describe('scenes', () => {
@@ -78,11 +79,11 @@ describe('try-this entries, from the default state, as written', () => {
     expect(cont.finished.every((r) => r.freed === r.end)).toBe(true);
   });
 
-  it('try-this 5: reserving 4,096 per request with 64 sequences, 8 GB and 60 per second holds the queue head back for cache on 2,294 of 5,632 iterations', () => {
+  it('try-this 5: reserving 4,096 per request with 64 sequences, 8 GB and 60 per second holds the queue head back for cache on 2,294 of 5,203 iterations', () => {
     const run = runBatching(1, 60, { policy: 'continuous', slots: 64, deviceGb: 8, reservation: 'max' });
     expect(run.cacheBlocked).toBe(2294);
-    expect(run.stats.iterations).toBe(5632);
-    expect(lesson.tryThis[4]).toContain('2,294 of 5,632 iterations');
+    expect(run.stats.iterations).toBe(5203);
+    expect(lesson.tryThis[4]).toContain('2,294 of 5,203 iterations');
     const blocked = run.sim.tick.history.findIndex((_, i) => batchCaption(run, run.sim.tick.history[i], i, 60).includes('is free: it waits'));
     expect(blocked).toBeGreaterThanOrEqual(0);
   });
@@ -93,7 +94,7 @@ describe('manipulations: the wrong move and what the page says', () => {
     const plan = planMemory(TOY_KV, 2048, 438, 'exact');
     const text = memoryCaption(plan, 2048, 438, 'exact');
     expect(text).toContain('the 438th request waits (437 fit)');
-    expect(text).toContain('22.0 GB cache budget');
+    expect(text).toContain('22.05 GB against a 22.00 GB cache budget');
   });
 
   it('manipulation 2: the static policy at the same seed leaves idle slots that continuous does not, and says it holds them', () => {
@@ -139,5 +140,102 @@ describe('the lesson text agrees with the model', () => {
     expect(lesson.quiz[3].why).toContain('230 of 800 token-slots busy, 28.75%');
     expect(lesson.quiz[4].why).toContain('218');
     expect(lesson.quiz[4].why).toContain('1,472');
+  });
+});
+
+describe('try-this entries, followed in written order from one fresh load', () => {
+  it('the cache scene: try 3 names the reset it needs, and without it the page shows 54 and 368, not 218 and 1,472', () => {
+    // try 2 ends on full multi-head; try 3 as written first chooses toy-24 again
+    const afterTry2 = { ...TOY_KV, kvHeads: KV_HEADS_FULL };
+    expect(planMemory(afterTry2, 600, 438, 'reserve').fits).toBe(54);
+    expect(planMemory(afterTry2, 600, 438, 'blocks').fits).toBe(368);
+    expect(lesson.tryThis[2]).toContain('choose toy-24 again');
+    expect(planMemory(TOY_KV, 600, 438, 'reserve').fits).toBe(218);
+    expect(planMemory(TOY_KV, 600, 438, 'blocks').fits).toBe(1472);
+  });
+
+  it('the batching scene: try 4 ends on static, so try 5 as written chooses continuous again; the settings it ends on give 2,294 of 5,203', () => {
+    const afterTry4: Settings = { ...DEFAULT_SETTINGS, policy: 'static' };
+    const wrong = runBatching(1, 60, { ...afterTry4, slots: 64, deviceGb: 8, reservation: 'max' });
+    expect(wrong.cacheBlocked).not.toBe(2294);
+    expect(lesson.tryThis[4]).toContain('choose continuous again');
+    const right = runBatching(1, 60, { ...afterTry4, policy: 'continuous', slots: 64, deviceGb: 8, reservation: 'max' });
+    expect([right.cacheBlocked, right.stats.iterations]).toEqual([2294, 5203]);
+  });
+});
+
+describe('the iteration count is the real one', () => {
+  it('every run ends on exactly one done state, the last, and the count is the index of that state (no padding ticks)', () => {
+    for (const policy of ['continuous', 'static'] as const) {
+      for (const [seed, rate] of [[1, 20], [2, 5], [3, 60], [4, 1]] as const) {
+        const run = runBatching(seed, rate, { ...DEFAULT_SETTINGS, policy });
+        const history = run.sim.tick.history;
+        expect(history.filter((s) => s.done), `${policy} ${seed} ${rate}`).toHaveLength(1);
+        expect(history[history.length - 1].done).toBe(true);
+        expect(run.stats.iterations).toBe(history.length - 1);
+      }
+    }
+  });
+
+  it('seed 1 at 20 requests per second: 8,357 continuous and 12,994 static (an independent scheduler counted the same; neither is a multiple of 512)', () => {
+    expect(runBatching(1, 20, DEFAULT_SETTINGS).stats.iterations).toBe(8357);
+    expect(runBatching(1, 20, { ...DEFAULT_SETTINGS, policy: 'static' }).stats.iterations).toBe(12_994);
+  });
+});
+
+describe('the waiting caption is derived from the state', () => {
+  it('"every slot is busy" is printed only for a continuous run with every slot taken; a static batch gets its own sentence', () => {
+    let staticStates = 0;
+    for (const policy of ['continuous', 'static'] as const) {
+      for (const rate of [5, 20]) {
+        const run = runBatching(1, rate, { ...DEFAULT_SETTINGS, policy });
+        run.sim.tick.history.forEach((state, i) => {
+          const text = batchCaption(run, state, i, rate);
+          if (text.includes('Every slot is busy')) {
+            expect(policy).toBe('continuous');
+            expect(state.running.length).toBeGreaterThanOrEqual(run.sim.settings.slots);
+          }
+          if (blockedAt(run.sim, state)?.reason === 'batch') {
+            staticStates += 1;
+            expect(text).toContain('A static batch is running');
+            expect(text).not.toContain('the cache');
+            const free = run.sim.settings.slots - state.running.length;
+            expect(text.includes('even though')).toBe(free > 0);
+          }
+        });
+      }
+    }
+    expect(staticStates).toBeGreaterThan(1000);
+  });
+
+  it('the static caption at seed 1, 5 per second, iteration 248 names the free slots', () => {
+    const run = runBatching(1, 5, { ...DEFAULT_SETTINGS, policy: 'static' });
+    const text = batchCaption(run, run.sim.tick.history[248], 248, 5);
+    expect(text).toContain('even though 14 slots are free');
+  });
+
+  it('the caption says "by the end of the run" for the totals and uses thousands separators', () => {
+    const run = runBatching(1, 60, DEFAULT_SETTINGS);
+    expect(batchCaption(run, run.sim.tick.history[100], 100, 60)).toMatch(/by the end of the run 1,\d{3} of 1,\d{3} requests finished/);
+  });
+});
+
+describe('the step panel and the utilisation hint compute what the page quotes', () => {
+  it('the opening state is 64 sequences of 1,000 tokens: 1.76 times the step time, 36 times the tokens per second', () => {
+    const shape = stepShape(STEP_OPENING.batch, STEP_OPENING.context);
+    expect(shape.timeRatio.toFixed(2)).toBe('1.76');
+    expect(Math.round(shape.throughputRatio)).toBe(36);
+    expect(Math.round(shape.tokensPerSecond)).toBe(17_913);
+    expect(Math.round(shape.singleTokensPerSecond)).toBe(494);
+    expect(stepShape(1, 1000).throughputRatio).toBe(1);
+  });
+
+  it('the hand batch: 230 of 800 token-slots by the lockstep count, 226 of 796 by the meter', () => {
+    expect(handBatchUse()).toEqual({ tokenBusy: 230, tokenTotal: 800, decodeBusy: 226, decodeTotal: 796 });
+  });
+
+  it('the rejection guard cannot fire from the controls: the largest reservation fits the smallest budget', () => {
+    expect(LARGEST_RESERVATION_BYTES).toBeLessThan(SMALLEST_BUDGET_BYTES);
+    expect(runBatching(1, 60, { policy: 'static', slots: 64, deviceGb: 8, reservation: 'max' }).stats.rejected).toBe(0);
   });
 });

@@ -420,10 +420,21 @@ describe('typed lengths', () => {
     }
     const small = parseLength('0', 'prompt tokens', 1, 8192);
     const big = parseLength('8193', 'prompt tokens', 1, 8192);
-    expect(small.ok ? '' : small.error).toContain('start at 1');
-    expect(big.ok ? '' : big.error).toContain('stop at 8,192');
+    expect(small.ok ? '' : small.error).toContain('the smallest allowed value is 1');
+    expect(big.ok ? '' : big.error).toContain('the largest allowed value is 8,192');
     const empty = parseLength('', 'prompt tokens', 1, 8192);
     expect(empty.ok ? '' : empty.error).toContain('1 to 8,192');
+  });
+
+  it('every refusal reads as a sentence for any label, even a plural noun phrase or a symbol, and never splices the label into the middle of a phrase', () => {
+    for (const label of ['Batch (requests)', 'Prompt tokens', 'd_in']) {
+      for (const bad of ['', '0', '9000']) {
+        const r = parseLength(bad, label, 1, 8192);
+        const text = r.ok ? '' : r.error;
+        expect(text.startsWith(`${label}: `), `${label} "${bad}"`).toBe(true);
+        expect(text).not.toMatch(/whole number of|start at|stop at/);
+      }
+    }
   });
 });
 

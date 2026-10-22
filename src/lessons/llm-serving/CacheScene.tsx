@@ -49,7 +49,6 @@ export function CacheScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={700}
-      minWidth={420}
       intro={`${memoryCaption(plan, sequence, batch, allocation)} ${equalityCaption(run, forget)}`}
       introKey={`cache|${config.layers}|${config.kvHeads}|${config.headDim}|${config.bytes}|${sequence}|${batch}|${allocation}|${seed}|${forget}`}
       stats={
@@ -63,7 +62,7 @@ export function CacheScene({ picker }: { picker: ReactNode }) {
         <Legend
           items={[
             { color: 'var(--sky)', label: 'weights', shape: 'square' },
-            { color: 'var(--muted)', label: 'cache in use', shape: 'square' },
+            { color: 'var(--muted)', label: 'cache set aside', shape: 'square' },
             { color: 'var(--ok)', label: 'free', shape: 'square' },
             { color: 'var(--bad)', label: 'a cache that does not fit', shape: 'square' },
           ]}
@@ -121,7 +120,7 @@ export function CacheScene({ picker }: { picker: ReactNode }) {
             />
           </WideRegion>
           <Hint tone="muted">
-            One row per request, showing {rows} of {batch.toLocaleString('en-US')}. Each cell stands for about {tokensPerCell.toLocaleString('en-US')} tokens; a filled cell is cache in use, an empty outlined one is set aside but unused
+            One row per request, showing {rows} of {batch.toLocaleString('en-US')}. Each cell stands for about {tokensPerCell.toLocaleString('en-US')} tokens; a filled cell is cache in use, an empty outlined one is set aside but unused (rows use six colours, repeating every six requests)
             {allocation === 'exact' ? ' (none: this allocation holds only what is used)' : ''}.
           </Hint>
         </div>

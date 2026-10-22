@@ -159,3 +159,23 @@ export function ordinal(n: number): string {
 export function decodeTokensPerSecond(batch: number, contextPerSequence: number): number {
   return batch / decodeTiming(batch, batch * contextPerSequence).seconds;
 }
+
+export interface StepShape {
+  step: Timing;
+  tokensPerSecond: number;
+  /** The same step at a batch of 1 with the same context per sequence. */
+  single: Timing;
+  singleTokensPerSecond: number;
+  /** Step time over the single step's, and tokens per second over the single step's. */
+  timeRatio: number;
+  throughputRatio: number;
+}
+
+/** One decode step for `batch` sequences of `contextPerSequence` tokens each, against a batch of 1: the shape behind "more sequences per step". */
+export function stepShape(batch: number, contextPerSequence: number): StepShape {
+  const step = decodeTiming(batch, batch * contextPerSequence);
+  const single = decodeTiming(1, contextPerSequence);
+  const tokensPerSecond = decodeTokensPerSecond(batch, contextPerSequence);
+  const singleTokensPerSecond = decodeTokensPerSecond(1, contextPerSequence);
+  return { step, tokensPerSecond, single, singleTokensPerSecond, timeRatio: step.seconds / single.seconds, throughputRatio: tokensPerSecond / singleTokensPerSecond };
+}
