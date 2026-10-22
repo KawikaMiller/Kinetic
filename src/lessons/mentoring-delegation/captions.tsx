@@ -22,7 +22,7 @@ export function boardCaption(run: Run, paybacks: readonly PaybackRow[]): ReactNo
   const slowPerson = slowest ? TEAM.find((p) => p.id === slowest.personId)!.name : '';
   return (
     <>
-      Over {WEEKS} weeks the team finished {run.totals.completed} tasks and {run.totals.bounced} bounced back to you; your queue ends at {plural(last.queue, 'task')}
+      Over {WEEKS} weeks {run.totals.completed} tasks were finished and {run.totals.bounced} bounced back to you; your queue ends at {plural(last.queue, 'task')}
       {peak > QUEUE_WARN ? <>, peaking at {peak}: your hours stay within {CAPACITY_HOURS} a week, so the overflow shows up as queue, not extra hours</> : null}.
       {backlog > 0 ? <> {plural(backlog, 'task')} still wait with teammates.</> : null}
       {run.totals.unstarted > 0 ? <> {plural(run.totals.unstarted, 'task')} had no assignee and never started.</> : null}

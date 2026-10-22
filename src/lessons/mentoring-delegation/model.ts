@@ -174,7 +174,7 @@ export function simulate(plan: Plan, seed: number): Run {
       const task = TASKS.find((t) => t.id === head)!;
       const skill = skills[person.id][task.area];
       const need = overheadHours(task, skill, plan.level, plan.context);
-      if (need > left) {
+      if (need > left + 1e-9) {
         waiting++;
         return;
       }

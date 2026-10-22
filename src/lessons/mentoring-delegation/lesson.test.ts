@@ -53,6 +53,8 @@ describe('try-this entries, each from the default state', () => {
     const rows = rowsFor(OPENING.board.plan.assignments, OPENING.board.plan.level, OPENING.board.plan.context);
     expect(rows.map((r) => [r.taskId, r.payback.reps])).toEqual([['flaky', 4], ['ratelimit', 1], ['forms', 1], ['report', 1]]);
     expect(lesson.tryThis[2]).toContain('pays back after 4 repetitions');
+    expect([rows.filter((r) => r.payback.reps === 1).length, rows.length]).toEqual([3, 4]);
+    expect(lesson.keyIdeas[1]).toContain('3 of 4 delegated tasks already cost fewer hours the first time');
   });
 
   it('try-this 4: taking the task back reads 12 hours (in the red) and delivery 8', () => {
@@ -81,7 +83,7 @@ describe('captions across the control cross product', () => {
             const run = simulate(plan, seed);
             const text = expectCaption(boardCaption(run, rowsFor(plan.assignments, level, c.value)));
             expect(text).not.toMatch(NO_JUNK);
-            expect(text).toContain(`the team finished ${run.totals.completed} tasks and ${run.totals.bounced} bounced`);
+            expect(text).toContain(`${run.totals.completed} tasks were finished and ${run.totals.bounced} bounced`);
           }
         }
       }

@@ -107,7 +107,7 @@ export function BoardScene({ picker }: { picker: ReactNode }) {
             </Plot2D>
           </figure>
           <figure className="md-chart">
-            <figcaption>Team throughput (tasks a week)</figcaption>
+            <figcaption>Tasks finished a week (yours and the team's)</figcaption>
             <Plot2D x={{ domain: [1, WEEKS], ticks: 7, label: 'week' }} y={{ domain: [0, maxDone], ticks: 4 }} {...CHART} ariaLabel="Tasks finished and tasks bounced back, by week">
               <Curve points={week((w) => w.completed)} tone="ok" />
               <Curve points={week((w) => w.bounced)} tone="bad" dashed />
@@ -129,7 +129,7 @@ export function BoardScene({ picker }: { picker: ReactNode }) {
               <tr key={r.taskId}>
                 <td>{TASKS.find((t) => t.id === r.taskId)!.label}</td>
                 <td>{TEAM.find((p) => p.id === r.personId)!.name}</td>
-                <td>{r.payback.reps === null ? `not within ${r.payback.perRep.length} repetitions` : r.payback.reps === 1 ? 'the first repetition' : `${r.payback.reps} repetitions`}</td>
+                <td>{r.payback.reps === null ? `not within ${r.payback.perRep.length} repetitions` : r.payback.reps === 1 ? 'the first repetition: delegating already costs fewer hours' : `${r.payback.reps} repetitions`}</td>
               </tr>
             ))}
           </tbody>
