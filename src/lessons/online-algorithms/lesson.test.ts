@@ -67,3 +67,10 @@ describe('the lesson text agrees with the model', () => {
     expect(c.note).toContain('came down from 9 to 6');
   });
 });
+
+describe('quiz Q5 says the optimum misses about half of the 12 requests', () => {
+  it('the lesson sequence has the optimum missing 6 of 12', () => {
+    expect(FACTS.cyclicOpt * 2).toBe(12);
+    expect(FACTS.cyclicLru).toBe(12);
+  });
+});

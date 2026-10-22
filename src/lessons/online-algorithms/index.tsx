@@ -69,7 +69,7 @@ const lesson: LessonModule = {
       options: [
         'Nothing bad: buying at once is optimal for every season length',
         'It pays twice the optimum on every season length, short or long',
-        'On a one-day season it pays 10 times the optimum',
+        'On a one-day season it pays 10 times what hindsight would pay',
         'It is optimal for short seasons and ten times worse for long ones',
       ],
       answer: 2,
@@ -79,12 +79,12 @@ const lesson: LessonModule = {
       q: 'LRU with 3 cache slots serves 1, 2, 3, 4 repeated. How does it compare with the optimum?',
       options: [
         'LRU misses once per cycle of four, while the optimum never misses at all',
-        'LRU misses every request; the optimum misses about a third of them',
+        'LRU misses every request, while the optimum misses only about half of them',
         'Both miss on every request, so the ratio between them is exactly 1',
         'LRU is optimal here, since it evicts the page used least recently of all',
       ],
       answer: 1,
-      why: `Each request is for the page LRU just evicted, so over 12 requests it misses ${F.cyclicLru} times; the optimum misses ${F.cyclicOpt}, for a ratio of ${F.cyclicRatio}, and the ratio climbs towards k = 3 on longer runs (${F.thirtyLru} against ${F.thirtyOpt} over 30 requests).`,
+      why: `Each request is for the page LRU just evicted, so over 12 requests it misses ${F.cyclicLru} times; the optimum misses ${F.cyclicOpt} of the 12, half of them, for a ratio of ${F.cyclicRatio}, and the optimum's share shrinks towards a third on longer runs (${F.thirtyLru} against ${F.thirtyOpt} over 30 requests).`,
     },
   ],
 };

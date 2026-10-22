@@ -8,6 +8,8 @@ import {
 import { CostPlot, RatioPlot } from './Plots';
 
 const DEFAULT_N = 11;
+/** Above this share of failing season lengths a rate is itself informative; below it only the witness is. */
+const WITNESS_RATE_FLOOR = 0.9;
 const fixed2 = (x: number) => x.toFixed(2);
 const percent = (part: number, whole: number) => `${((part / whole) * 100).toFixed(1)}%`;
 
@@ -91,12 +93,14 @@ export function SkiScene({ picker }: { picker: ReactNode }) {
             Claim for break-even (argued as a theorem, see the chip below): its ratio stays at or under 2 - 1/B = {fixed2(bound)}. This strategy&apos;s worst ratio is {fixed2(worst.ratio)}, at N = {worst.N}, checked here for N up to {maxSeason(B)}.
           </p>
           {violations.violations === 0 ? (
-            <p className="oa-note">It stays within {fixed2(bound)} on all {violations.horizon} season lengths from 1 to {WITNESS_HORIZON}.</p>
+            <p className="oa-note">It stays within {fixed2(bound)} on all {violations.horizon} season lengths from 1 to {WITNESS_HORIZON}, a fixed horizon that does not move with B (the slider stops at {maxSeason(B)}).</p>
           ) : (
             <p className="oa-witness" role="note">
               <b>Witness: N = {violations.firstViolation?.N}, ratio {fixed2(violations.firstViolation?.ratio ?? 0)} against {fixed2(bound)}.</b>{' '}
-              It breaks the bound on {violations.violations} of the {violations.horizon} season lengths from 1 to {WITNESS_HORIZON} ({percent(violations.violations, violations.horizon)}),
-              so the smallest failing season is shown rather than a rate.
+              It breaks the bound on {violations.violations} of the {violations.horizon} season lengths from 1 to {WITNESS_HORIZON} ({percent(violations.violations, violations.horizon)}), a fixed horizon that does not move with B (the slider stops at {maxSeason(B)}).{' '}
+              {violations.violations / violations.horizon > WITNESS_RATE_FLOOR
+                ? 'So the smallest failing season is shown rather than a rate.'
+                : 'That rate changes with B and the horizon, so the smallest failing season is the claim, not the rate.'}
             </p>
           )}
         </section>
