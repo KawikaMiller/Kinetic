@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { buildFrames, type SloFrame } from './frames';
 import {
-  ALERT_RULES, BACKGROUND, INCIDENTS, MIN_PER_DAY, SLOS, WINDOW_DAYS, WINDOW_MIN, alertCounts, alertFor, alertReason, backgroundBurn,
+  ALERT_RULES, BACKGROUND, INCIDENTS, MIN_PER_DAY, SLOS, WINDOW_DAYS, WINDOW_MIN, alertCounts, alertFor, alertReason, backgroundBurn, backgroundTicketFires,
   badMinutes, budgetMinutes, budgetShare, exhaustionDay, fmtBurn, fmtMinutes, policyFor, type Incident,
 } from './model';
 
@@ -184,6 +184,25 @@ describe('captions are read from the month, not assumed', () => {
           }
         }
       }
+    }
+  });
+
+  it('the background ticket is explained on the frame it first counts, at 99.99% only', () => {
+    for (const slo of SLOS) {
+      const frames = buildFrames(slo);
+      const first = frames.findIndex((f) => backgroundTicketFires(slo, f.t));
+      const incidentTickets = (t: number) => INCIDENTS.filter((i) => i.start <= t && alertFor(i, slo).kind === 'ticket').length;
+      const withBackground = frames.filter((f) => alertCounts(slo, f.t).tickets > incidentTickets(f.t));
+      if (slo !== 99.99) {
+        expect(first, `${slo}%`).toBe(-1);
+        expect(withBackground, `${slo}%`).toHaveLength(0);
+        continue;
+      }
+      // The Alerts stat first shows the extra ticket on this frame; its own caption has to say where it comes from.
+      expect(frames[first].t).toBe(3.5);
+      expect(withBackground[0]).toBe(frames[first]);
+      expect(frames[first].say, 'the frame that adds the ticket has its own caption').toBeDefined();
+      expect(text(frames[first])).toMatch(/Background ticket.*burn.*3 days.*ticket rule/s);
     }
   });
 

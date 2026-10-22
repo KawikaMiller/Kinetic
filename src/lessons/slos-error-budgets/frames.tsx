@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { Frame } from '../../core/types';
 import {
-  alertFor, alertReason, backgroundBurn, badMinutes, budgetMinutes, exhaustionDay, fmtBurn, fmtMinutes, incidentBadMinutes, INCIDENTS,
-  MIN_PER_DAY, WINDOW_DAYS, type Incident, type Slo,
+  alertFor, alertReason, backgroundBurn, backgroundTicketFires, badMinutes, budgetMinutes, exhaustionDay, fmtBurn, fmtMinutes, incidentBadMinutes, INCIDENTS,
+  MIN_PER_DAY, TICKET_WINDOW_DAYS, WINDOW_DAYS, type Incident, type Slo,
 } from './model';
 
 export interface SloFrame extends Frame {
@@ -42,6 +42,7 @@ export function buildFrames(slo: Slo): SloFrame[] {
   const bgBurn = backgroundBurn(slo);
   let crossedHalf = false;
   let crossedZero = false;
+  let noted = false;
   /** The incidents the caption on screen is about. */
   let describes: Incident[] = [];
 
@@ -61,6 +62,16 @@ export function buildFrames(slo: Slo): SloFrame[] {
         </>
       );
       f.hold = 2;
+    }
+    if (!noted && backgroundTicketFires(slo, t)) {
+      noted = true;
+      notes.push(
+        <span key="bg">
+          {' '}
+          <b>Background ticket</b>: the 0.01% background error rate alone is a <span className="hl bad">{fmtBurn(bgBurn)}</span> burn, and a{' '}
+          {fmtBurn(bgBurn)} burn over {TICKET_WINDOW_DAYS} days is the ticket rule, so one <span className="hl">🎫 ticket</span> fires now with no incident running.
+        </span>,
+      );
     }
     if (!crossedHalf && remaining <= 0.5) {
       crossedHalf = true;

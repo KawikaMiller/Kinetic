@@ -15,7 +15,7 @@ import './styles.css';
 const W = 600;
 const H = 270;
 const X0 = 50;
-const X1 = W - 14;
+const X1 = W - 28;
 const Y_TOP = 18;
 const Y_BOT = H - 26;
 const MIN_PCT = -100;
@@ -105,7 +105,7 @@ export function Stage() {
               </text>
             ))}
             <line x1={x(0)} y1={y(100)} x2={x(30)} y2={y(0)} className="slo-ideal" />
-            <text x={x(30)} y={y(0) - 8} textAnchor="end" className="slo-ideal-label">
+            <text x={x(30) - 6} y={y(0) + 22} textAnchor="end" className="slo-ideal-label">
               1× burn: budget lasts exactly 30 days
             </text>
             <path d={path} className="slo-line" />

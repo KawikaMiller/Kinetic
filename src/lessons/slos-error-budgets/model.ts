@@ -120,10 +120,13 @@ export function exhaustionDay(slo: number): number | null {
   return hi;
 }
 
+/** Whether the background rate alone has fired the slow-burn ticket by day `t`: it burns at 1× or more and the 3-day window has filled. */
+export const backgroundTicketFires = (slo: number, t: number) => backgroundBurn(slo) >= ALERT_RULES[2].burn && t > TICKET_WINDOW_DAYS;
+
 /** Pages and tickets that have fired by day `t`: incidents that started, plus one ticket once the background rate alone has burned at 1× or more for the ticket window. */
 export function alertCounts(slo: number, t: number): { pages: number; tickets: number } {
   const fired = INCIDENTS.filter((inc) => inc.start <= t).map((inc) => alertFor(inc, slo).kind);
-  const background = backgroundBurn(slo) >= ALERT_RULES[2].burn && t > TICKET_WINDOW_DAYS ? 1 : 0;
+  const background = backgroundTicketFires(slo, t) ? 1 : 0;
   return { pages: fired.filter((k) => k === 'page').length, tickets: fired.filter((k) => k === 'ticket').length + background };
 }
 
