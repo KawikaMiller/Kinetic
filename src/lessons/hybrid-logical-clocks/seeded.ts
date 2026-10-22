@@ -31,7 +31,7 @@ export const TICK_MS = { min: 30, max: 70 } as const;
 /** Three messages are sent, 30 ms apart, from a random node to a random other one. */
 export const MESSAGES = { count: 3, first: 20, spacing: 30, jitter: 5 } as const;
 /** The share of seeds in which one clock steps back (when steps are on). */
-const STEP_SHARE = 0.35;
+export const STEP_SHARE = 0.35;
 /** A clock step back: the size of the jump, ms. */
 export const STEP_BACK_MS = 30;
 export const SEED_RANGE = { from: 1, to: 201 } as const;
@@ -224,6 +224,8 @@ export const RULES_TEXT = ['receive stamped after its send', 'stamps strictly in
 export const BROKEN_SEED = 1;
 export const BROKEN_SEED_BACKWARDS = 5;
 export const seedFor = (mode: Mode): number => (mode === 'backwards' ? BROKEN_SEED_BACKWARDS : mode === 'hlc' ? SEED_RANGE.from : BROKEN_SEED);
+/** After a mode change the seed moves to the new mode's own seed only while it still sat on the old mode's: a seed the learner chose stays. */
+export const followMode = (seed: number, from: Mode, to: Mode): number => (seed === seedFor(from) ? seedFor(to) : seed);
 
 export interface Sweep {
   failing: number[];

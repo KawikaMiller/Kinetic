@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
-import { burstCaption } from './captions';
+import { burstCaption, counterHint } from './captions';
 import { BURST, RESOLUTION_MS, RULE_TEXT, burstRows, hlcText } from './hlc';
 
 const RESOLUTIONS = RESOLUTION_MS.map((value) => ({ value, label: `${value} ms` }));
@@ -14,6 +14,7 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
   const distinctPhysical = new Set(rows.map((r) => r.pt)).size;
   const distinctHybrid = new Set(rows.map((r) => hlcText(r.hlc))).size;
   const largest = Math.max(...rows.map((r) => r.hlc.c));
+  const returns = rows.some((r, i) => i > 0 && rows[i - 1].hlc.c > 0 && r.hlc.c === 0);
 
   return (
     <StageFrame
@@ -24,7 +25,7 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Distinct physical stamps" value={`${distinctPhysical} of ${burst}`} color={distinctPhysical < burst ? 'var(--bad)' : 'var(--ok)'} sub="ties cannot order events" />
           <Stat label="Distinct hybrid stamps" value={`${distinctHybrid} of ${burst}`} color={distinctHybrid === burst ? 'var(--ok)' : 'var(--bad)'} sub="the counter breaks the ties" />
-          <Stat label="Largest counter" value={largest} sub="returns to 0 when the clock moves" />
+          <Stat label="Largest counter" value={largest} sub={returns ? 'returns to 0 when the clock reading moves' : 'never returns to 0 inside this burst'} />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--dim)', label: 'a physical reading' }, { color: 'var(--hi)', label: 'a hybrid stamp' }, { color: 'var(--violet)', label: 'its counter' }]} />}
@@ -53,7 +54,7 @@ export function BurstScene({ picker }: { picker: ReactNode }) {
               </tbody>
             </table>
           </div>
-          <Hint block>The counter stays small because it only counts events inside one reading: when the physical clock moves past l, l takes it and c returns to 0.</Hint>
+          <Hint block>{counterHint({ largest, returns })}</Hint>
         </Box>
         <ProvenanceRow>
           <Provenance kind="toy">a single node and a made-up burst, to show the counter</Provenance>

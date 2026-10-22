@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { refocusAfterRemove } from '../../core/refocus';
 import { execCaption } from './captions';
@@ -48,7 +49,6 @@ export function ExecScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={470}
-      minWidth={TIMELINE_W}
       intro={execCaption({ stamps, inv: counts, refusal })}
       introKey={`${JSON.stringify(exec)}|${refusal ?? ''}`}
       stats={
@@ -94,7 +94,9 @@ export function ExecScene({ picker }: { picker: ReactNode }) {
     >
       <div className="hl-stage stage-pad">
         {refusal && <Hint tone="bad" block>{refusal}</Hint>}
-        <Timeline exec={exec} stamps={stamps} inverted={inverted} />
+        <WideRegion minWidth={TIMELINE_W} noun="timeline">
+          <Timeline exec={exec} stamps={stamps} inverted={inverted} />
+        </WideRegion>
         <div className="hl-items">
           {exec.messages.map((m, i) => (
             <ChipButton key={`m${i}-${m.from}${m.to}${m.sendAt}`} tone="info" ariaLabel={`Remove the message from ${NODES[m.from]} to ${NODES[m.to]} sent at ${m.sendAt} ms`} onClick={(e) => { refocusAfterRemove(e.currentTarget, { group: '.hl-items' }); setExec({ ...exec, messages: exec.messages.filter((_, k) => k !== i) }); }}>

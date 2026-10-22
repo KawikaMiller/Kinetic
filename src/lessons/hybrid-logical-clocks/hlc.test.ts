@@ -3,15 +3,15 @@ import { expectCaption } from '../../core/testing/captions';
 import { forSeeds } from '../../core/distSim';
 import { mulberry32 } from '../../core/random';
 import { SEED_MAX } from '../../core/seed';
-import { boundCaption, burstCaption, execCaption } from './captions';
+import { boundCaption, burstCaption, counterHint, execCaption, farAheadNote } from './captions';
 import {
-  BURST, CHAIN, DELAY_MS, MAX_EVENTS, MAX_MESSAGES, TIME_MS, ZERO, addLocal, addMessage, burstRows, compareHlc, eventsOf, happenedBefore, hlcReceive, hlcSend, hlcText,
+  BURST, RESOLUTION_MS, CHAIN, DELAY_MS, MAX_EVENTS, MAX_MESSAGES, TIME_MS, ZERO, addLocal, addMessage, burstRows, compareHlc, eventsOf, happenedBefore, hlcReceive, hlcSend, hlcText,
   inversions, lamportReceive, lamportSend, sortedBy, stampExecution, type Execution, type Hlc,
 } from './hlc';
 import lesson from './index';
 import {
   BROKEN_SEED, BROKEN_SEED_BACKWARDS, DEFAULT_OPTIONS, EPSILON_MS, FAR_AHEAD_MS, RULES, SEED_RANGE, SEEDS_TOTAL, drawnOffsets, epsilonMax, hlcScenario, plan, runHlcSeed,
-  seedFor, sweepSeeds,
+  seedFor, sweepSeeds, STEP_SHARE, cachedSweep, followMode, type SeedOptions,
 } from './seeded';
 
 const h = (l: number, c: number): Hlc => ({ l, c });
@@ -354,5 +354,62 @@ describe('scene 3: the seeded leg, four stamping rules', () => {
     expect(runHlcSeed({ ...DEFAULT_OPTIONS, mode: 'physical' }, BROKEN_SEED).violation).toMatchObject({ rule: 0 });
     expect(lesson.tryThis[4]).toContain('132 of 200 seeds');
     expect(lesson.tryThis[4]).toContain('seed 1 is the pinned failing seed');
+  });
+});
+
+describe('captions derived from model state (each failed on the old wording)', () => {
+  const lines = (o: SeedOptions) => runHlcSeed(o, 1);
+
+  it('the far-ahead sentence is said only when no seed breaks the ordering rules: plain physical and the message-ignoring rule with a far clock never get "stay green"', () => {
+    for (const mode of ['physical', 'ignoreMessage', 'backwards', 'hlc'] as const) {
+      const o: SeedOptions = { ...DEFAULT_OPTIONS, mode, farAheadMs: 5000 };
+      const failing = cachedSweep(o).failing.length;
+      const note = farAheadNote(o.farAheadMs, failing);
+      if (failing > 0) expect(note, mode).not.toContain('stay green');
+      else expect(note, mode).toContain('stay green');
+    }
+    expect(cachedSweep({ ...DEFAULT_OPTIONS, mode: 'physical', farAheadMs: 5000 }).failing.length).toBeGreaterThan(0);
+    expect(farAheadNote(0, 0)).toBe('');
+  });
+
+  it('the bound caption says "of 200 seeds" with the count', () => {
+    const o: SeedOptions = { ...DEFAULT_OPTIONS, mode: 'physical' };
+    const text = expectCaption(boundCaption({ options: o, run: lines(o), sweepFailing: 0, outside: false }));
+    expect(text).toContain('fails on 0 of 200 seeds');
+  });
+
+  it('the counter hint and the Largest counter sub-line follow the table: peak named, "returns to 0" only when it does', () => {
+    for (const resolution of RESOLUTION_MS) {
+      for (let burst = BURST.min; burst <= BURST.max; burst++) {
+        const rows = burstRows(resolution, burst);
+        const largest = Math.max(...rows.map((r) => r.hlc.c));
+        const returns = rows.some((r, i) => i > 0 && rows[i - 1].hlc.c > 0 && r.hlc.c === 0);
+        const hint = counterHint({ largest, returns });
+        if (largest === 0) expect(hint).toContain('stays at 0');
+        else expect(hint).toContain(`peaks at ${largest}`);
+        if (!returns && largest > 0) expect(hint).toContain('only climbs');
+        if (returns) expect(hint).not.toContain('only climbs');
+      }
+    }
+    const rows = burstRows(50, 20);
+    expect(Math.max(...rows.map((r) => r.hlc.c))).toBe(19);
+    expect(rows.some((r, i) => i > 0 && rows[i - 1].hlc.c > 0 && r.hlc.c === 0)).toBe(false);
+  });
+
+  it('the burst caption says what the counter does at a clock fine enough that nothing ties', () => {
+    const text = expectCaption(burstCaption({ resolution: 1, burst: 5, distinctPhysical: 5, distinctHybrid: 5, largest: 0 }));
+    expect(text).toContain('stays at 0');
+    expect(text).toContain('gives the 5 events 5 distinct physical stamps');
+  });
+
+  it('changing the mode keeps a seed the learner chose, and only follows the default seed', () => {
+    expect(followMode(seedFor('hlc'), 'hlc', 'backwards')).toBe(BROKEN_SEED_BACKWARDS);
+    expect(followMode(77, 'hlc', 'backwards')).toBe(77);
+    expect(followMode(BROKEN_SEED_BACKWARDS, 'backwards', 'hlc')).toBe(seedFor('hlc'));
+  });
+
+  it('the backwards rule\'s 58 of 200 rests on the stated share: one clock steps back in STEP_SHARE of seeds', () => {
+    expect(STEP_SHARE).toBe(0.35);
+    expect(cachedSweep({ ...DEFAULT_OPTIONS, mode: 'backwards' }).failing).toHaveLength(58);
   });
 });

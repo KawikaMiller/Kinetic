@@ -6,8 +6,8 @@ import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle, ClaimLabel } from '../../components/ui';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { decimal } from '../../core/format';
-import { boundCaption } from './captions';
-import { cachedSweep, EPSILON_MS, FAR_AHEAD_MS, MODES, RUN_UNTIL_MS, RULES_TEXT, runHlcSeed, SEED_RANGE, SEEDS_TOTAL, seedFor, type Mode } from './seeded';
+import { boundCaption, farAheadNote } from './captions';
+import { cachedSweep, EPSILON_MS, FAR_AHEAD_MS, MODES, RUN_UNTIL_MS, RULES_TEXT, runHlcSeed, SEED_RANGE, SEEDS_TOTAL, followMode, seedFor, STEP_BACK_MS, STEP_SHARE, type Mode } from './seeded';
 import { sampledText } from './checkText';
 
 const PLOT_W = { wide: 520, narrow: 356 } as const;
@@ -32,13 +32,13 @@ export function BoundScene({ picker }: { picker: ReactNode }) {
 
   const chooseMode = (next: Mode) => {
     setMode(next);
-    setSeed(seedFor(next));
+    // The seed follows the mode only while it still sits on the old mode's own seed: a seed the learner typed stays.
+    setSeed(followMode(seed, mode, next));
   };
 
   return (
     <StageFrame
       height={520}
-      minWidth={PLOT_W.narrow + 40}
       intro={boundCaption({ options, run, sweepFailing: sweep.failing.length, outside })}
       introKey={`${mode}|${epsilon}|${farAheadMs}|${clockSteps}|${seed}`}
       stats={
@@ -57,7 +57,9 @@ export function BoundScene({ picker }: { picker: ReactNode }) {
         <>
           <Slider label="Skew bound ε" value={epsilon} min={EPSILON_MS.min} max={EPSILON_MS.max} format={(v) => `${v} ms`} onChange={setEpsilon} />
           <Slider label="One clock far ahead" value={farAheadMs} min={FAR_AHEAD_MS.min} max={FAR_AHEAD_MS.max} step={FAR_STEP_MS} format={(v) => `+${decimal(v / 1000, 1)} s`} onChange={setFarAhead} />
-          <Toggle label="A clock may step back" value={clockSteps} onChange={setClockSteps} />
+          {mode === 'backwards'
+            ? <Hint tone="muted">This rule always has a clock that steps back, by {STEP_BACK_MS} ms, in {Math.round(STEP_SHARE * 100)}% of seeds.</Hint>
+            : <Toggle label={`A clock may step back (by ${STEP_BACK_MS} ms, in ${Math.round(STEP_SHARE * 100)}% of seeds)`} value={clockSteps} onChange={setClockSteps} />}
           <SeedField seed={seed} onSeed={setSeed} />
         </>,
       ]}
@@ -78,9 +80,9 @@ export function BoundScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Hint block>
           {sweep.failing.length === 0
-            ? `${sampledText(SEEDS_TOTAL, SEEDS_TOTAL, SEED_RANGE.from, SEED_RANGE.to - 1)}: the checks below held on each of them.`
+            ? `${sampledText(SEEDS_TOTAL, SEEDS_TOTAL, SEED_RANGE.from, SEED_RANGE.to - 1)}: the rule checks above held on each of them.`
             : `This rule fails on ${sweep.failing.length} of ${SEEDS_TOTAL} seeds (${SEED_RANGE.from} to ${SEED_RANGE.to - 1}); lowest failing seed ${sweep.lowestFailing}, rule ${sweep.rule}: ${sweep.message}; sampled, not exhaustive.`}
-          {farAheadMs > 0 ? ' With a far-ahead clock the ordering checks stay green while closeness to real time is lost: the guarantee is only as good as the clock assumption.' : ''}
+          {farAheadNote(farAheadMs, sweep.failing.length)}
         </Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>three nodes on distSim, offsets within ±ε, 1 to 10 ms latency, three messages 30 ms apart</Provenance>
