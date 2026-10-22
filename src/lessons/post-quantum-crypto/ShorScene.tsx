@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
 import { parseBoundedInt } from '../../core/parse';
-import { N_MAX, baseTable, checkN, isRun, shorRun, type ShorRun } from './shor';
+import { ADMITTED_COUNT, N_MAX, baseTable, checkN, isRun, shorRun, type ShorRun } from './shor';
 
 const DEFAULT_N = 15;
 const DEFAULT_A = 7;
@@ -112,7 +112,7 @@ export function ShorScene({ picker }: { picker: ReactNode }) {
       </div>
       <ProvenanceRow>
         <Provenance kind="not-run">a quantum computer is described, not run: the order comes from a classical loop on a number of at most {N_MAX}</Provenance>
-        <ClaimLabel kind="standard">for an odd N with two distinct prime factors, at least half of the bases a work (from memory, verify); the table is evidence for the two numbers shown, not a proof</ClaimLabel>
+        <ClaimLabel kind="theorem">for an odd N with two distinct prime factors, at least half of the phi(N) bases a work (a standard result, from memory, verify); checked here on all {ADMITTED_COUNT} admitted N up to {N_MAX}, where the smallest share is exactly one half (N = 21), which is a bounded check and not a proof</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
   );

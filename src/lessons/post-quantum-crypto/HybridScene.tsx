@@ -55,7 +55,7 @@ export function HybridScene({ picker }: { picker: ReactNode }) {
     },
     `${round}|${seed}|${flip}|${bit}|${secret ? 'ready' : 'waiting'}`,
   );
-  const changed = result ? bitDistance(result.base, result.flipped) : null;
+  const changed = result && flip !== 'none' ? bitDistance(result.base, result.flipped) : null;
 
   const intro = !secure
     ? NEEDS_SECURE

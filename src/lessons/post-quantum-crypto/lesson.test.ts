@@ -18,8 +18,8 @@ describe('scenes', () => {
 
 describe('try-this entries, in written order from the default state', () => {
   it('try-this 1: 10, 5, 12 reads at risk with slack -3; x = 5 and y = 2 is not at risk with slack 5', () => {
-    expect(verdict(DEFAULT_MOSCA, 'secrecy')).toEqual({ exposure: 15, slack: -3, atRisk: true });
-    expect(verdict({ x: 5, y: 2, z: 12 }, 'secrecy')).toEqual({ exposure: 7, slack: 5, atRisk: false });
+    expect(verdict(DEFAULT_MOSCA)).toEqual({ exposure: 15, slack: -3, atRisk: true });
+    expect(verdict({ x: 5, y: 2, z: 12 })).toEqual({ exposure: 7, slack: 5, atRisk: false });
     expect(lesson.tryThis[0]).toContain('slack -3');
   });
 

@@ -78,3 +78,25 @@ export function inLattice(v: Vec): boolean {
 }
 
 export const distanceText = (distSq: number): string => (Number.isInteger(Math.sqrt(distSq)) ? String(Math.sqrt(distSq)) : `sqrt(${distSq})`);
+
+export interface BasisShare {
+  /** Whole-number targets in the slider window. */
+  targets: number;
+  /** Targets where the bad basis lands farther away than the nearest lattice point. */
+  worse: number;
+  /** Targets where it lands on the nearest point. */
+  equal: number;
+}
+
+/** Over every whole-number target the sliders reach: how often the bad basis does worse than the nearest point (the good basis never does, its vectors are at right angles). */
+export function badBasisShare(): BasisShare {
+  let targets = 0;
+  let worse = 0;
+  for (let x = T_MIN; x <= T_MAX; x++) {
+    for (let y = T_MIN; y <= T_MAX; y++) {
+      targets++;
+      if (babai(BAD, [x, y]).distSq > nearestPoint([x, y]).distSq) worse++;
+    }
+  }
+  return { targets, worse, equal: targets - worse };
+}

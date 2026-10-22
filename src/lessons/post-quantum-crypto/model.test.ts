@@ -6,14 +6,14 @@ import {
   HYBRID_INFO, ML_KEM_SETS, P256_SHARE_BYTES, bitDistance, ciphertextBytes, combine, decapsulate, encapsulate, flipBit, hybridInput, hybridShareBytes, publicKeyBytes,
 } from './kem';
 import {
-  BAD, DEFAULT_TARGET, GOOD, T_MAX, T_MIN, babai, distanceText, inLattice, latticePoints, nearestPoint, normSq, orthogonalityDefect, det,
+  BAD, DEFAULT_TARGET, GOOD, T_MAX, T_MIN, babai, badBasisShare, distanceText, inLattice, latticePoints, nearestPoint, normSq, orthogonalityDefect, det,
 } from './lattice';
 import {
-  BROKEN_SEED, DEFAULT_PARAMS, DEFAULT_SEED, FAILING_PARAMS, NOISE_LIMIT, Q, SEARCH_SPACE, SEVERE_FAILURES, accumulatedNoise, candidateSearch, centred, decodesCorrectly,
+  BROKEN_SEED, FAILING_MEAN_PERCENT, FAILING_SEEDS_WITH_ANY_FAILURE, DEFAULT_PARAMS, DEFAULT_SEED, FAILING_PARAMS, NOISE_LIMIT, Q, SEARCH_SPACE, SEVERE_FAILURES, accumulatedNoise, candidateSearch, centred, decodesCorrectly,
   decryptBit, encryptBit, encryptByte, keyFor, keygen, messageBits, sweep, trialStream, type LweParams,
 } from './lwe';
-import { MOSCA_PRESETS, X_MAX, Y_MAX, Z_MAX, slackText, verdict } from './mosca';
-import { N_MAX, baseTable, checkN, isPrimePower, isRun, orderByLoop, orderByModPow, shorRun } from './shor';
+import { MOSCA_PRESETS, X_MAX, Y_MAX, Z_MAX, harvestCells, slackText, verdict } from './mosca';
+import { ADMITTED_COUNT, N_MAX, baseTable, checkN, isPrimePower, isRun, orderByLoop, orderByModPow, shorRun } from './shor';
 
 describe('Mosca', () => {
   it('the verdict equals x + y > z over the whole slider grid (51 x 21 x 51), with the strict boundary', () => {
@@ -21,7 +21,7 @@ describe('Mosca', () => {
     for (let x = 0; x <= X_MAX; x++) {
       for (let y = 0; y <= Y_MAX; y++) {
         for (let z = 0; z <= Z_MAX; z++) {
-          const v = verdict({ x, y, z }, 'secrecy');
+          const v = verdict({ x, y, z });
           expect(v.atRisk).toBe(x + y > z);
           expect(v.slack).toBe(z - x - y);
           cases++;
@@ -32,16 +32,44 @@ describe('Mosca', () => {
   });
 
   it('hand cases: 10 + 5 > 12 (slack -3), 5 + 2 <= 12 (slack 5), and 10 + 5 = 15 is not at risk when z = 15', () => {
-    expect(verdict({ x: 10, y: 5, z: 12 }, 'secrecy')).toEqual({ exposure: 15, slack: -3, atRisk: true });
-    expect(verdict({ x: 5, y: 2, z: 12 }, 'secrecy')).toEqual({ exposure: 7, slack: 5, atRisk: false });
-    expect(verdict({ x: 10, y: 5, z: 15 }, 'secrecy')).toEqual({ exposure: 15, slack: 0, atRisk: false });
+    expect(verdict({ x: 10, y: 5, z: 12 })).toEqual({ exposure: 15, slack: -3, atRisk: true });
+    expect(verdict({ x: 5, y: 2, z: 12 })).toEqual({ exposure: 7, slack: 5, atRisk: false });
+    expect(verdict({ x: 10, y: 5, z: 15 })).toEqual({ exposure: 15, slack: 0, atRisk: false });
     expect(slackText(-3)).toBe('slack -3');
   });
 
-  it('a signature scheme ignores x: only the migration y has to beat z', () => {
-    for (let x = 0; x <= X_MAX; x += 10) expect(verdict({ x, y: 10, z: 12 }, 'signature').atRisk).toBe(false);
-    expect(verdict({ x: 0, y: 13, z: 12 }, 'signature').atRisk).toBe(true);
-    expect(MOSCA_PRESETS.map((p) => verdict(p.values, p.protects).atRisk)).toEqual([false, true, false]);
+  it('a signature is judged like secrecy, x + y > z: x is 0 only when it is checked at the moment it is made (the old model ignored x and called a fielded firmware root key safe)', () => {
+    // a signature checked once: only the migration counts
+    expect(verdict({ x: 0, y: 10, z: 12 })).toEqual({ exposure: 10, slack: 2, atRisk: false });
+    // the same migration with a key that stays trusted in fielded devices for 15 years is exposed
+    expect(verdict({ x: 15, y: 10, z: 12 })).toEqual({ exposure: 25, slack: -13, atRisk: true });
+    expect(MOSCA_PRESETS.map((p) => [p.protects, verdict(p.values).atRisk])).toEqual([['secrecy', false], ['secrecy', true], ['signature', false], ['signature', true]]);
+    // the page's four presets use only values the sliders reach
+    for (const p of MOSCA_PRESETS) expect([p.values.x <= X_MAX, p.values.y <= Y_MAX, p.values.z <= Z_MAX]).toEqual([true, true, true]);
+  });
+
+  it('the timeline cells are sorted by year over the whole slider grid, always contain today, the machine at z and the horizon at x + y, and a signature never reads "recorded"', () => {
+    let cases = 0;
+    for (let x = 0; x <= X_MAX; x += 5) {
+      for (let y = 0; y <= Y_MAX; y += 4) {
+        for (let z = 0; z <= Z_MAX; z += 5) {
+          for (const protects of ['secrecy', 'signature'] as const) {
+            const cells = harvestCells({ x, y, z }, protects);
+            expect(cells.map((c) => c.year), `${x} ${y} ${z}`).toEqual([...cells.map((c) => c.year)].sort((p, q) => p - q));
+            expect(cells.map((c) => c.role).sort()).toEqual(['horizon', 'machine', 'today']);
+            expect(cells.find((c) => c.role === 'machine')!.year).toBe(z);
+            expect(cells.find((c) => c.role === 'horizon')!.year).toBe(x + y);
+            expect(cells.find((c) => c.role === 'horizon')!.atRisk).toBe(verdict({ x, y, z }).atRisk);
+            if (protects === 'signature') expect(cells.map((c) => c.text).join(' ')).not.toMatch(/record/);
+            cases++;
+          }
+        }
+      }
+    }
+    expect(cases).toBe(11 * 6 * 11 * 2);
+    // x + y before z: the horizon comes before the machine
+    expect(harvestCells({ x: 2, y: 3, z: 12 }, 'secrecy').map((c) => c.role)).toEqual(['today', 'horizon', 'machine']);
+    expect(harvestCells({ x: 10, y: 5, z: 12 }, 'secrecy').map((c) => c.role)).toEqual(['today', 'machine', 'horizon']);
   });
 });
 
@@ -314,5 +342,52 @@ describe('the hybrid scene', () => {
   it('bitDistance and flipBit behave', () => {
     expect(bitDistance(Uint8Array.of(0xff, 0), Uint8Array.of(0x0f, 1))).toBe(5);
     expect(Array.from(flipBit(Uint8Array.of(0, 0), 9))).toEqual([0, 0x40]);
+  });
+});
+
+describe('numbers the page prints about its own pins and claims', () => {
+  it('the failing preset over seeds 0..999: 968 seeds fail at least once and the mean rate is 8.0%, as the page says; seed 4 is the lowest with at least 5%', () => {
+    let any = 0;
+    let total = 0;
+    let lowest = -1;
+    for (let seed = 0; seed < 1000; seed++) {
+      const failures = sweep(FAILING_PARAMS, seed).failures;
+      if (failures > 0) any++;
+      total += failures;
+      if (lowest < 0 && failures >= SEVERE_FAILURES) lowest = seed;
+    }
+    expect(any).toBe(FAILING_SEEDS_WITH_ANY_FAILURE);
+    expect(Number((total / 1000 / 1000 * 100).toFixed(1))).toBe(FAILING_MEAN_PERCENT);
+    expect(lowest).toBe(BROKEN_SEED);
+    // so the preset fails on nearly every seed: the threshold, not rarity, picks seed 4, and the page says so
+    expect(any / 1000).toBeGreaterThan(0.9);
+  }, 120_000);
+
+  it('the bad basis: worse than the nearest point on most whole-number targets and equal on the rest; the good basis is never worse', () => {
+    const share = badBasisShare();
+    expect(share.targets).toBe((T_MAX - T_MIN + 1) ** 2);
+    expect(share.worse + share.equal).toBe(share.targets);
+    expect(share.worse).toBeGreaterThan(share.targets / 2);
+    expect(share.equal).toBeGreaterThan(0);
+    let goodWorse = 0;
+    for (let x = T_MIN; x <= T_MAX; x++) for (let y = T_MIN; y <= T_MAX; y++) if (babai(GOOD, [x, y]).distSq > nearestPoint([x, y]).distSq) goodWorse++;
+    // the good basis is exactly orthogonal, so rounding is the nearest point everywhere
+    expect(goodWorse).toBe(0);
+  });
+
+  it('the Shor theorem label: at least half of the phi(N) bases work for every admitted N up to 999, counted over all of them (315), tight at N = 21', () => {
+    let admitted = 0;
+    let tight = 0;
+    for (let N = 3; N <= N_MAX; N += 2) {
+      if (!checkN(N).ok) continue;
+      admitted++;
+      const table = baseTable(N);
+      expect(table.works * 2, `N = ${N}`).toBeGreaterThanOrEqual(table.phi);
+      if (table.works * 2 === table.phi) tight++;
+    }
+    expect(admitted).toBe(ADMITTED_COUNT);
+    expect(ADMITTED_COUNT).toBe(315);
+    expect(tight).toBeGreaterThan(0);
+    expect(baseTable(21).works * 2).toBe(baseTable(21).phi);
   });
 });

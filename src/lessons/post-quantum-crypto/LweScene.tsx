@@ -3,7 +3,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { SeedField } from '../../components/SeedField';
 import { ChipButton, ClaimLabel, ControlGroup, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import {
-  B_RANGE, BROKEN_SEED, BITS, DEFAULT_PARAMS, DEFAULT_SEED, FAILING_PARAMS, HALF, M_RANGE, N_RANGE, NOISE_LIMIT, Q, SEARCH_N, SEARCH_SPACE, SWEEP_TRIALS,
+  B_RANGE, BROKEN_SEED, BITS, DEFAULT_PARAMS, DEFAULT_SEED, FAILING_MEAN_PERCENT, FAILING_PARAMS, FAILING_SEEDS_WITH_ANY_FAILURE, SEVERE_FAILURES, HALF, M_RANGE, N_RANGE, NOISE_LIMIT, Q, SEARCH_N, SEARCH_SPACE, SWEEP_TRIALS,
   candidateSearch, encryptByte, keyFor, messageBits, sweep, trialStream, type LweParams,
 } from './lwe';
 
@@ -20,6 +20,7 @@ export function LweScene({ picker }: { picker: ReactNode }) {
   const search = useMemo(() => (p.n === SEARCH_N ? candidateSearch(kp, p.B) : null), [kp, p]);
   const bad = rows.filter((r) => !r.ok).length;
   const worst = p.m * p.B;
+  const isFailingPreset = p.n === FAILING_PARAMS.n && p.m === FAILING_PARAMS.m && p.B === FAILING_PARAMS.B;
 
   const intro =
     result.failures === 0
@@ -40,7 +41,7 @@ export function LweScene({ picker }: { picker: ReactNode }) {
           <Stat label="Noise ceiling m x B" value={worst} color="var(--info)" sub={`a bit decodes right while |noise| <= ${NOISE_LIMIT} (q = ${Q})`} />
         </Stats>
       }
-      legend={<Legend items={[{ color: 'var(--info)', label: 'accumulated noise and the decoding band', shape: 'square' }, { color: 'var(--ok)', label: 'a correct bit', shape: 'square' }, { color: 'var(--bad)', label: 'a failed bit', shape: 'square' }]} />}
+      legend={<Legend items={[{ color: 'var(--info)', label: 'the noise ceiling m x B', shape: 'square' }, { color: 'var(--ok)', label: 'a correct bit', shape: 'square' }, { color: 'var(--bad)', label: 'a failed bit', shape: 'square' }]} />}
       controls={[
         <>
           {picker}
@@ -61,6 +62,14 @@ export function LweScene({ picker }: { picker: ReactNode }) {
         <p className="pq-note">
           Public key: {p.m} rows (a, b) with b = a . s + e mod {Q}, e drawn from -{p.B}..{p.B}. To encrypt a bit, add up a random subset of the rows and add {HALF} for a 1. To decrypt, subtract u . s: what is left is the noise sum, plus {HALF} for a 1. The bit is 1 exactly when the remainder is strictly closer to {HALF} than to 0.
         </p>
+        <p className="pq-note">
+          The modulus {Q} is not prime on purpose: {Q} / 4 = {Q / 4} is not a whole number, so no remainder sits exactly on the decoding boundary and the rule has no ties. (The ML-KEM modulus is prime and much larger.)
+        </p>
+        {isFailingPreset && (
+          <p className="pq-note">
+            About this preset: seed {BROKEN_SEED} is the lowest seed on which at least {SEVERE_FAILURES} of the {fmt(SWEEP_TRIALS)} encryptions fail (5%), chosen to show a failure. Across seeds 0 to 999 this preset fails on at least one encryption for {fmt(FAILING_SEEDS_WITH_ANY_FAILURE)} of 1,000 seeds and averages {FAILING_MEAN_PERCENT.toFixed(1)}% of encryptions, so seed {BROKEN_SEED} is a worse draw than typical, not the usual rate.
+          </p>
+        )}
         <div className="pq-bits" role="list" aria-label="One byte, each bit encrypted on its own">
           {rows.map((r) => (
             <div key={r.index} role="listitem" className={`pq-bit ${r.ok ? 'is-ok' : 'is-bad'}`}>

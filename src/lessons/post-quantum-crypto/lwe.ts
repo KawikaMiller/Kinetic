@@ -18,13 +18,16 @@ export interface LweParams {
   B: number;
 }
 export const DEFAULT_PARAMS: LweParams = { n: 4, m: 8, B: 2 };
-/** The preset that fails: about half of the encryptions go wrong, well under 90%. */
+/** The preset that fails: on average about 8% of the encryptions go wrong across seeds 0 to 999 (a few seeds reach 50% or more), never a failure on every encryption. */
 export const FAILING_PARAMS: LweParams = { n: 4, m: 16, B: 8 };
 export const DEFAULT_SEED = 7;
 /** A sweep counts as failing when at least 5% of its 1,000 encryptions decode wrongly. */
 export const SEVERE_FAILURES = 50;
-/** The lowest seed on which the failing preset is severe (re-pinned from a run over seeds 0..199; the test recomputes it). */
+/** The lowest seed on which the failing preset is severe, a severity-threshold pin (re-pinned from a run over seeds 0..199; the test recomputes it). */
 export const BROKEN_SEED = 4;
+/** The failing preset over seeds 0 to 999, shown on the page and recomputed by the test: share of seeds with at least one failure, and the mean failure rate in percent. */
+export const FAILING_SEEDS_WITH_ANY_FAILURE = 968;
+export const FAILING_MEAN_PERCENT = 8.0;
 
 export const mod = (v: number, q = Q): number => ((v % q) + q) % q;
 /** Reduce into -49..48: the signed residue of a noise sum. */

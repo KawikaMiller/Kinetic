@@ -28,6 +28,9 @@ export function checkN(n: number): { ok: true } | Refusal {
   return { ok: true };
 }
 
+/** How many N from 3 to N_MAX the page admits (odd, composite, not a prime power). */
+export const ADMITTED_COUNT = Array.from({ length: N_MAX - 2 }, (_, i) => i + 3).filter((n) => checkN(n).ok).length;
+
 /** The order of a mod N by repeated multiplication, with the step count; null when gcd(a, N) is not 1. */
 export function orderByLoop(a: number, N: number): { r: number; steps: number } | null {
   if (gcd(BigInt(a), BigInt(N)) !== 1n) return null;

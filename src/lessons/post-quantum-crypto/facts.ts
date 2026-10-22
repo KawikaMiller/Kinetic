@@ -5,7 +5,7 @@ import { DEFAULT_MOSCA, verdict } from './mosca';
 import { shorRun, isRun } from './shor';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
-const mosca = verdict(DEFAULT_MOSCA, 'secrecy');
+const mosca = verdict(DEFAULT_MOSCA);
 const shor = shorRun(15, 7);
 const shorBad = shorRun(15, 14);
 const good = babai(GOOD, DEFAULT_TARGET);

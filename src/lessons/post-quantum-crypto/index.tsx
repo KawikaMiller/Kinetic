@@ -15,7 +15,7 @@ const lesson: LessonModule = {
       'Planning crypto-agility, so that an algorithm can be swapped without redesigning the protocol',
     ],
     why: 'A migration takes years, so the question is not just whether a large quantum computer exists but whether the data being sent today needs to outlive the migration. It builds on `elliptic-curves`, `rsa` and `tls-handshake`, and it is the lesson that owns the post-quantum side of those: `tls-handshake` does not show it.',
-    watch: 'In the first scene a green bar is not at risk and a red bar is at risk, and the blue tick is z. In the second scene green marks a base that works and red a base that fails, with the order r in blue. In the lattice-scheme scene a green card is a correct bit and a red card a failed one, with the noise in blue. In the two-bases scene the good basis and its result are green, the bad basis and its result red, and the target is yellow. In the hybrid scene the classical secret is blue, the toy secret violet and the combined key yellow.',
+    watch: 'In the first scene a green bar is not at risk and a red bar is at risk, and the blue tick is z. In the second scene green marks a base that works and red a base that fails, with the order r in blue. In the lattice-scheme scene a green card is a correct bit and a red card a failed one, and the noise ceiling is blue. In the two-bases scene the good basis and its result are green, the bad basis and its result red, and the target is yellow. In the hybrid scene the classical secret is blue, the toy secret violet and the combined key yellow.',
   },
   tryThis: [
     `Open Who needs to worry now (defaults x = 10, y = 5, z = 12): it reads at risk with slack -${F.moscaSlack}. Drag x down to 5 and y down to 2: not at risk, slack 5.`,
@@ -39,7 +39,7 @@ const lesson: LessonModule = {
         'It only affects data sent after the machine exists, so traffic recorded today stays safe from it indefinitely',
       ],
       answer: 0,
-      why: 'Shor\'s algorithm attacks the structure behind RSA and elliptic-curve keys, while symmetric ciphers are affected by a smaller, generic speedup. Recorded data is exposed too, which is the point of the first scene. The symmetric claim is from memory and chipped on the page.',
+      why: 'Shor\'s algorithm attacks the structure behind RSA and elliptic-curve keys, while symmetric ciphers are affected by a smaller, generic speedup. Recorded data is exposed too, which is the point of the first scene. The symmetric claim is from memory and chipped in the first scene (the Mosca timeline).',
     },
     {
       q: 'With x = 10, y = 5 and z = 12, is the data at risk?',
