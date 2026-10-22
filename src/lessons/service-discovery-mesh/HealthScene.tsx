@@ -9,14 +9,16 @@ import { useIntroCaption } from '../../core/caption';
 import { integer } from '../../core/format';
 import { healthCaption, secText } from './captions';
 import { healthConfig, initialHealth, type HealthUi } from './init';
-import { HORIZON_MS, READY_AGAIN_MS, UNREADY_AT_MS, VICTIM } from './registry';
-import { runRegistry } from './run';
+import { BROKEN_SEED, HORIZON_MS, READY_AGAIN_MS, UNREADY_AT_MS, VICTIM } from './registry';
+import { notReadyViolation, runRegistry } from './run';
 
 const GANTT_MIN_WIDTH = 520;
 
 export function HealthScene({ picker }: { picker: ReactNode }) {
   const [u, setU] = useState<HealthUi>(initialHealth);
-  const run = useMemo(() => runRegistry(healthConfig(u)), [u]);
+  const config = useMemo(() => healthConfig(u), [u]);
+  const run = useMemo(() => runRegistry(config), [config]);
+  const violation = useMemo(() => (u.freshLookups ? notReadyViolation(config) : null), [config, u.freshLookups]);
   useIntroCaption(healthCaption(run), [JSON.stringify(u)]);
 
   const bars = useMemo<GanttBar[]>(() => {
@@ -51,7 +53,7 @@ export function HealthScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Toggle label="Registry" value={u.honourReadiness} onChange={(honourReadiness) => setU((x) => ({ ...x, honourReadiness }))} off="ignores readiness" on="leaves not-ready instances out" />
+          <Toggle label="Registry" value={u.honourReadiness} onChange={(honourReadiness) => setU((x) => ({ ...x, honourReadiness, ...(honourReadiness ? {} : { seed: BROKEN_SEED }) }))} off="ignores readiness" on="leaves not-ready instances out" />
           <Toggle label="Client" value={u.freshLookups} onChange={(freshLookups) => setU((x) => ({ ...x, freshLookups }))} off="caches the listing" on="looks up on every request" />
           <SeedField seed={u.seed} onSeed={(seed) => setU((x) => ({ ...x, seed }))} />
           <Button onClick={() => setU(initialHealth())}>Reset</Button>
@@ -65,6 +67,15 @@ export function HealthScene({ picker }: { picker: ReactNode }) {
             <GanttLanes lanes={[{ id: 'ready', label: VICTIM }, { id: 'route', label: 'requests to it' }]} bars={bars} domain={[0, HORIZON_MS]} unit=" ms" axis size="md" labelWidth={110} ariaLabel="When the instance was ready and when requests still reached it while it was not" />
           </WideRegion>
         </Box>
+        <Hint tone="muted" block>
+          {!u.freshLookups ? (
+            'The registry invariant is "no listing contains an instance marked not ready". A cached listing is a copy that lags, so it is checked on lookups: turn on "looks up on every request" to see it.'
+          ) : violation ? (
+            <span className="hl bad wrap">{`Invariant broken (seed ${u.seed}; the lowest failing seed is ${BROKEN_SEED}): ${violation.message}, at ${secText(violation.time)}.`}</span>
+          ) : (
+            `Invariant holds on seed ${u.seed}: no listing contained ${VICTIM} while it was marked not ready.`
+          )}
+        </Hint>
         <Hint tone="muted" block>
           A not-ready instance is still running: it keeps heartbeating and tells the registry it is not ready. With readiness honoured it leaves rotation without a restart and comes back by itself. A cached listing still sends requests until its next refresh; a lookup on every request does not.
         </Hint>

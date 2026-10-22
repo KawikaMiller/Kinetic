@@ -25,8 +25,11 @@ const START_STAGGER_MS = 37;
 /** One run lasts this long; the scripted crash and readiness change fall inside it. */
 export const HORIZON_MS = 40_000;
 export const CRASH_AT_MS = 10_000;
-export const UNREADY_AT_MS = 10_000;
+/** Not on the 10 s boundary: a request to the victim must fall between this and the cache's next refresh, so a cached listing visibly lags. */
+export const UNREADY_AT_MS = 10_700;
 export const READY_AGAIN_MS = 25_000;
+/** The pinned lowest failing seed of the broken modes (a registry that never evicts; one that ignores readiness): checked over 200 seeds in the tests. */
+export const BROKEN_SEED = 0;
 export const INSTANCE_MAX = 12;
 export const DEFAULT_COUNT = 3;
 export const TTL_BEATS = { min: 1, max: 6, default: 3 } as const;
@@ -114,6 +117,12 @@ export const effectiveRefreshMs = (c: RegistryConfig): number => c.refreshMs * c
 
 /** How long after an instance stops that a request may still be routed to it: TTL, then the cache, then the registry's sweep and the wire. */
 export const staleBound = (c: RegistryConfig): number => ttlMs(c) + effectiveRefreshMs(c) + SWEEP_MS + 2 * (LATENCY_MS + c.jitterMs);
+
+/**
+ * How often a heartbeat starts an eviction: it is received (1 - p) and the next k are all lost (p^k),
+ * where k is the TTL in heartbeat intervals. (A run of k losses after a lost beat is part of the same silence.)
+ */
+export const evictionRate = (loss: number, ttlBeats: number): number => (1 - loss) * loss ** ttlBeats;
 
 export interface RegistryLog {
   /** Every eviction the registry made: when, and which instance. */

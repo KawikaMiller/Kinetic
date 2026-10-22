@@ -21,7 +21,7 @@ export function MeshScene({ picker }: { picker: ReactNode }) {
   const split = useMemo(() => (active.split ? observedSplit(u.seed, u.canaryPct) : null), [active.split, u.seed, u.canaryPct]);
   const att = attempts(u.failProb, u.appRetries, active.meshRetries);
   const certs = useMemo(() => certTimeline(u.lifetimeMin, NO_OUTAGE), [u.lifetimeMin]);
-  const bars = useMemo<GanttBar[]>(() => certs.certs.map((c, i) => ({ id: `${c.workload}${i}`, lane: c.workload, start: c.issuedAt, end: Math.min(c.expiresAt, HORIZON_MIN), tone: 'violet', label: 'cert' })), [certs]);
+  const bars = useMemo<GanttBar[]>(() => certs.certs.map((c, i) => ({ id: `${c.workload}${i}`, lane: c.workload, start: c.issuedAt, end: Math.min(c.expiresAt, HORIZON_MIN), tone: 'violet', label: '' })), [certs]);
 
   useIntroCaption(meshCaption(u.mesh, split, att, u.appRetries, active.meshRetries), [JSON.stringify(u)]);
 
@@ -35,7 +35,7 @@ export function MeshScene({ picker }: { picker: ReactNode }) {
           <Stat label="Canary share" value={split ? pct(split.observedPct / 100, 1) : 'no mesh'} sub={split ? [`set ${split.expectedPct}%, ±${sig(split.threeSePct)} points`, `${integer(split.canary)} of ${integer(split.canary + split.stable)}`] : ['needs a sidecar to split traffic']} />
         </Stats>
       }
-      legend={<Legend items={[{ color: 'var(--violet)', label: 'a sidecar, and a short-lived certificate it holds' }, { color: 'var(--orange)', label: 'retries that multiply' }]} />}
+      legend={<Legend items={[{ color: 'var(--violet)', label: 'a short-lived certificate a sidecar holds (the sidecar is not drawn)' }, { color: 'var(--orange)', label: 'a stat where retries multiply' }]} />}
       controls={[
         <>
           {picker}
@@ -52,10 +52,10 @@ export function MeshScene({ picker }: { picker: ReactNode }) {
           <Hint tone="muted">Turn the mesh on to get mTLS, traffic splitting and mesh retries.</Hint>
         ),
         <>
-          <Slider label="Certificate lifetime" value={u.lifetimeMin} {...LIFETIME_RANGE} format={minText} onChange={(lifetimeMin) => set({ lifetimeMin })} />
-          <Slider label="Canary weight" value={u.canaryPct} {...CANARY_RANGE} format={(v) => `${v}%`} onChange={(canaryPct) => set({ canaryPct })} />
+          {active.mtls && <Slider label="Certificate lifetime" value={u.lifetimeMin} {...LIFETIME_RANGE} format={minText} onChange={(lifetimeMin) => set({ lifetimeMin })} />}
+          {active.split && <Slider label="Canary weight" value={u.canaryPct} {...CANARY_RANGE} format={(v) => `${v}%`} onChange={(canaryPct) => set({ canaryPct })} />}
           <Slider label="App retries" value={u.appRetries} {...RETRY_RANGE} onChange={(appRetries) => set({ appRetries })} />
-          <Slider label="Mesh retries" value={u.meshRetries} {...RETRY_RANGE} onChange={(meshRetries) => set({ meshRetries })} />
+          {u.mesh && u.retries && <Slider label="Mesh retries" value={u.meshRetries} {...RETRY_RANGE} onChange={(meshRetries) => set({ meshRetries })} />}
           <Slider label="Backend fails" value={u.failProb} {...FAIL_RATE_RANGE} format={(v) => pct(v, 0)} onChange={(failProb) => set({ failProb })} />
           <SeedField seed={u.seed} onSeed={(seed) => set({ seed })} />
         </>,

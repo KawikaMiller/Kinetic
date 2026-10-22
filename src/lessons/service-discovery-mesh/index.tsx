@@ -3,7 +3,7 @@ import { sig } from '../../core/format';
 import { secText } from './captions';
 import { STYLE_REFRESH, healthConfig, initialControl, initialHealth, initialMesh, initialRegistry, registryConfig } from './init';
 import { APP_CALL_MS, actualEndpoints, attempts, callMs, certTimeline, extraHopMs, failingAt, knownEndpoints } from './mesh';
-import { HEARTBEAT_MS, staleBound, ttlMs } from './registry';
+import { HEARTBEAT_MS, HORIZON_MS, UNREADY_AT_MS, staleBound, ttlMs } from './registry';
 import { runRegistry } from './run';
 import { Stage } from './Stage';
 
@@ -12,6 +12,7 @@ const DEFAULT = runRegistry(registryConfig(R0));
 const DNS = runRegistry({ ...registryConfig(R0), refreshMs: STYLE_REFRESH.dns });
 const BOUND = staleBound(registryConfig(R0));
 const HEALTH = runRegistry(healthConfig(initialHealth()));
+const FRESH = runRegistry(healthConfig({ ...initialHealth(), freshLookups: true }));
 const IGNORED = runRegistry(healthConfig({ ...initialHealth(), honourReadiness: false }));
 const M0 = initialMesh();
 const ATT_OFF = attempts(M0.failProb, M0.appRetries, 0);
@@ -22,7 +23,9 @@ const CERTS = certTimeline(C0.lifetimeMin, OUTAGE);
 const FIRST_EXPIRY = Math.min(...CERTS.gaps.map((g) => g.from));
 const FAILING_NOW = failingAt(CERTS, C0.nowMin);
 
-const stop = (r: ReturnType<typeof runRegistry>) => (r.stopAfterMs === null ? '?' : secText(r.stopAfterMs));
+const DNS_STUBBORN = runRegistry({ ...registryConfig(R0), refreshMs: STYLE_REFRESH.dns, stubbornFactor: 2 });
+const learned = (r: ReturnType<typeof runRegistry>) => (r.stoppedAfterMs === null ? '?' : secText(r.stoppedAfterMs));
+const lastHit = (r: ReturnType<typeof runRegistry>) => (r.lastHitAfterMs === null ? '?' : secText(r.lastHitAfterMs));
 
 const lesson: LessonModule = {
   Stage,
@@ -37,17 +40,17 @@ const lesson: LessonModule = {
       'Planning for a control plane outage and short-lived certificates',
     ],
     why: 'Discovery turns the question "where is it" into a cache with a delay, and a mesh moves that logic into proxies you have to operate. Knowing the delays and the failure modes tells you what to tune, and what an outage of the control plane will and will not break.',
-    watch: 'Scenes 1 and 2: green is a healthy, registered instance, a red bar a dead instance still in the registry, an orange bar a stale client cache that is still routing to it, and grey an instance that is stopped or not ready (not restarted). In the ladder, a cross is a message to a stopped node. Scene 3: violet is a sidecar and the short-lived certificate it holds, and orange marks retries that multiply. Scene 4: an orange bar is the control plane being away, violet bars are valid certificates and a red bar is a certificate that has expired.',
+    watch: 'Scenes 1 and 2: green is a healthy, registered instance, a red bar a dead instance still in the registry, an orange bar a stale client cache that is still routing to it, and grey an instance that is stopped or not ready (not restarted). In the ladder, a cross is a message to a stopped node. Scene 3: violet bars are the short-lived certificates the sidecars hold (the sidecars themselves are not drawn; their hop and retries show in the stats), and an orange stat marks retries that multiply. Scene 4: an orange bar is the control plane being away, violet bars are valid certificates and a red bar is a certificate that has expired.',
   },
   tryThis: [
-    `In A registry at the defaults, orders-1 crashes at 10 s: the registry evicts it ${DEFAULT.evictedAfterMs === null ? '?' : secText(DEFAULT.evictedAfterMs)} later, the last request still goes to it ${stop(DEFAULT)} after the crash, and ${DEFAULT.sentToDead} requests go to the dead instance, all inside the ${secText(BOUND)} bound.`,
-    `Pick "DNS records with a TTL": the refresh becomes ${secText(STYLE_REFRESH.dns)}, ${DNS.sentToDead} requests go to the dead instance, and the last one goes ${stop(DNS)} after the crash.`,
-    `In Health feeds the registry, orders-1 fails readiness at 10 s and ${HEALTH.sentWhileUnready} requests reach it. Set the registry to "ignores readiness": ${IGNORED.sentWhileUnready} do, and ${IGNORED.errors} error answers come back.`,
-    `In Add a mesh, turn on "Sidecar proxy beside every service": a call goes from ${callMs(false)} ms to ${callMs(true)} ms, and a failing backend sees ${sig(ATT_ON.expected)} calls per request instead of ${sig(ATT_OFF.expected)}, because the ${M0.appRetries} app retries and ${M0.meshRetries} mesh retries multiply.`,
+    `In A registry at the defaults, orders-1 crashes at 10 s: the registry evicts it ${DEFAULT.evictedAfterMs === null ? '?' : secText(DEFAULT.evictedAfterMs)} later, the clients' cache drops it ${learned(DEFAULT)} after the crash, the last request that hit it was ${lastHit(DEFAULT)} after, and ${DEFAULT.sentToDead} requests go to the dead instance, all inside the ${secText(BOUND)} bound (only heartbeats are lost in this model; lookups always arrive).`,
+    `Pick "DNS records with a TTL": the refresh becomes ${secText(STYLE_REFRESH.dns)}, ${DNS.sentToDead} requests go to the dead instance, and the clients' cache drops it ${learned(DNS)} after the crash (the last hit was ${lastHit(DNS)} after). Turn on "caches twice as long": the cache has not refreshed when the run ends at ${secText(HORIZON_MS)}, so clients are still sending.`,
+    `In Health feeds the registry, orders-1 fails readiness at ${secText(UNREADY_AT_MS)} and ${HEALTH.sentWhileUnready} requests reach it through the cached listing, which lags until its next refresh (with "looks up on every request": ${FRESH.sentWhileUnready}). Set the registry to "ignores readiness": ${IGNORED.sentWhileUnready} do, and ${IGNORED.errors} error answers come back.`,
+    `In Add a mesh, turn on "Sidecar proxy beside every service": a call goes from ${callMs(false)} ms to ${callMs(true)} ms, and a failing backend sees up to ${ATT_ON.worst} calls per request instead of ${ATT_OFF.worst} (${sig(ATT_ON.expected)} on average instead of ${sig(ATT_OFF.expected)}), because the ${M0.appRetries} app retries and ${M0.meshRetries} mesh retries multiply.`,
     `In The control plane goes down at the defaults, at minute ${C0.nowMin} the proxies know ${knownEndpoints(OUTAGE, C0.nowMin)} of the ${actualEndpoints(C0.nowMin)} endpoints, and the certificates of ${FAILING_NOW.join(' and ')} have expired, the first at minute ${FIRST_EXPIRY}.`,
   ],
   keyIdeas: [
-    `A registry notices a crash after about the TTL plus the cache refresh: in this model a TTL of ${secText(ttlMs(registryConfig(R0)))} and a ${secText(R0.refreshMs)} refresh stop requests ${stop(DEFAULT)} after the crash, inside a bound of ${secText(BOUND)}.`,
+    `A registry notices a crash after about the TTL plus the cache refresh: in this model a TTL of ${secText(ttlMs(registryConfig(R0)))} and a ${secText(R0.refreshMs)} refresh stop requests ${learned(DEFAULT)} after the crash, inside a bound of ${secText(BOUND)}, when only heartbeats are lost and lookups always arrive.`,
     `A shorter TTL notices sooner and evicts live instances when heartbeats are lost: in this model it takes ${registryConfig(R0).ttlBeats} lost heartbeats in a row at a TTL of ${registryConfig(R0).ttlBeats} intervals of ${secText(HEARTBEAT_MS)}.`,
     `A mesh is not free: in this model it adds ${extraHopMs(true)} ms to a ${APP_CALL_MS} ms call, and its retries stack on the app's, so ${M0.appRetries} and ${M0.meshRetries} retries make ${ATT_ON.worst} backend calls when everything fails.`,
     `When the control plane is away, the data plane in this model keeps its last configuration: it does not learn of new instances, and calls fail once a certificate expires, which here is at minute ${FIRST_EXPIRY}.`,
@@ -62,7 +65,7 @@ const lesson: LessonModule = {
         'The instance restarts itself and registers again, so it is never gone',
       ],
       answer: 0,
-      why: `Nobody tells the registry the instance died; it learns by silence once the TTL has passed, and clients copy the listing at set intervals. In this model the last request went to it ${stop(DEFAULT)} after the crash, inside the ${secText(BOUND)} bound.`,
+      why: `Nobody tells the registry the instance died; it learns by silence once the TTL has passed, and clients copy the listing at set intervals. In this model the clients' cache dropped it ${learned(DEFAULT)} after the crash, inside the ${secText(BOUND)} bound, with heartbeats the only messages lost; if listings could be lost too, the stale window would have no bound.`,
     },
     {
       q: 'What is the cost of setting the registry TTL to one heartbeat interval?',

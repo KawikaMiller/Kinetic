@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { integer, pct, plural, sig } from '../../core/format';
 import { actualEndpoints, callMs, extraHopMs, failingAt, knownEndpoints, type CertRun, type Outage, type Split } from './mesh';
-import { CRASH_AT_MS, READY_AGAIN_MS, UNREADY_AT_MS, VICTIM, staleBound, ttlMs } from './registry';
+import { CRASH_AT_MS, HORIZON_MS, READY_AGAIN_MS, UNREADY_AT_MS, VICTIM, staleBound, ttlMs } from './registry';
 import { emptyServices, type RegistryRun } from './run';
 
 export const secText = (ms: number): string => `${sig(ms / 1000)} s`;
@@ -18,10 +18,16 @@ export function registryCaption(run: RegistryRun): ReactNode {
       {empty.length > 0 && <span className="hl bad wrap">no endpoints for {empty.join(' and ')}: {integer(run.noEndpoint)} requests had nowhere to go. </span>}
       {c.crash && c.counts.orders > 0 ? (
         run.evictedAfterMs === null ? (
-          <span className="hl bad wrap">{VICTIM} stopped at {secText(CRASH_AT_MS)} and the registry never evicted it</span>
+          <span className="hl bad wrap">{VICTIM} stopped at {secText(CRASH_AT_MS)} and the registry never evicted it: {plural(run.sentToDead, 'request')} went to the dead instance{run.lastHitAfterMs === null ? '' : `, the last ${secText(run.lastHitAfterMs)} after the crash`}</span>
         ) : (
           <>
-            {VICTIM} stopped at {secText(CRASH_AT_MS)}; the registry evicted it {secText(run.evictedAfterMs)} later, and the last request still went to it {run.stopAfterMs === null ? 'never' : `${secText(run.stopAfterMs)} after the crash`}, within the {secText(bound)} bound. {plural(run.sentToDead, 'request')} went to the dead instance.
+            {VICTIM} stopped at {secText(CRASH_AT_MS)}; the registry evicted it {secText(run.evictedAfterMs)} later.{' '}
+            {run.stoppedAfterMs === null ? (
+              <span className="hl orange wrap">The client cache had not refreshed by the time the run ended at {secText(HORIZON_MS)}, so clients were still sending (the bound is {secText(bound)})</span>
+            ) : (
+              <>The client cache dropped it {secText(run.stoppedAfterMs)} after the crash, {run.stoppedAfterMs <= bound ? 'within' : 'beyond'} the {secText(bound)} bound</>
+            )}
+            . {plural(run.sentToDead, 'request')} went to the dead instance{run.lastHitAfterMs === null ? '' : `, the last ${secText(run.lastHitAfterMs)} after the crash`}.
           </>
         )
       ) : (

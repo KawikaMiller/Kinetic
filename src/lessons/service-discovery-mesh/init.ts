@@ -21,6 +21,8 @@ export interface RegistryUi {
   crash: boolean;
   /** A DNS resolver that caches twice as long as the record says. */
   stubborn: boolean;
+  /** The bug: a registry that never evicts. */
+  neverEvict: boolean;
   seed: number;
 }
 
@@ -32,6 +34,7 @@ export const initialRegistry = (): RegistryUi => ({
   loss: 0,
   crash: true,
   stubborn: false,
+  neverEvict: false,
   seed: 0,
 });
 
@@ -42,6 +45,7 @@ export const registryConfig = (u: RegistryUi): RegistryConfig => ({
   refreshMs: u.refreshMs,
   loss: u.loss,
   crash: u.crash,
+  neverEvict: u.neverEvict,
   cacheOwner: u.style === 'lb' ? 'lb' : 'client',
   stubbornFactor: u.style === 'dns' && u.stubborn ? 2 : 1,
 });

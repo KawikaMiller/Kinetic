@@ -6,7 +6,7 @@ import {
   actualEndpoints, attempts, callMs, certTimeline, certValidAt, extraHopMs, failingAt, inOutage, knownEndpoints, observedSplit, type Outage,
 } from './mesh';
 import {
-  HEARTBEAT_MS, HORIZON_MS, LATENCY_MS, READY_AGAIN_MS, SERVICES, SWEEP_MS, UNREADY_AT_MS, VICTIM, baseConfig, buildCluster, effectiveRefreshMs, instanceIds, noNotReadyListed,
+  HEARTBEAT_MS, HORIZON_MS, LATENCY_MS, READY_AGAIN_MS, SERVICES, SWEEP_MS, UNREADY_AT_MS, VICTIM, baseConfig, buildCluster, effectiveRefreshMs, evictionRate, instanceIds, noNotReadyListed,
   noStaleRoute, staleBound, ttlMs, type RegistryConfig,
 } from './registry';
 import { emptyServices, runRegistry } from './run';
@@ -37,8 +37,36 @@ describe('the registry on distSim', () => {
     expect(r.evictedAfterMs as number).toBeLessThanOrEqual(ttlMs(cfg()) + SWEEP_MS + LATENCY_MS);
     expect(r.falseEvictions).toBe(0);
     expect(r.sentToDead).toBeGreaterThan(0);
-    expect(r.stopAfterMs as number).toBeLessThanOrEqual(staleBound(cfg()));
+    expect(r.stoppedAfterMs as number).toBeLessThanOrEqual(staleBound(cfg()));
     expect(r.requests).toBeGreaterThan(150);
+  });
+
+  it('clients stop when the cache first lacks the victim: never before the eviction or the last request that hit it, and at the first refresh the registry answers after the eviction', () => {
+    for (const over of [{}, { cacheOwner: 'lb' as const, refreshMs: 1000 }, { refreshMs: 8000 }, { ttlBeats: 5, refreshMs: 3500 }, { ttlBeats: 1 }]) {
+      for (let seed = 0; seed < 5; seed++) {
+        const c = cfg(over, seed);
+        const r = runRegistry(c);
+        expect(r.evictedAfterMs, JSON.stringify(over)).not.toBeNull();
+        const evictAt = c.crashAtMs + (r.evictedAfterMs as number);
+        // Refreshes are sent at 500 ms + k x T; the registry answers one hop later, the listing arrives one more hop after that.
+        let refresh = 500;
+        while (refresh + LATENCY_MS <= evictAt) refresh += c.refreshMs;
+        if (refresh + 2 * LATENCY_MS > HORIZON_MS) expect(r.stoppedAfterMs).toBeNull();
+        else {
+          expect(r.stoppedAfterMs, JSON.stringify(over)).toBe(refresh + 2 * LATENCY_MS - c.crashAtMs);
+          expect(r.stoppedAfterMs as number).toBeGreaterThanOrEqual(r.evictedAfterMs as number);
+          expect(r.lastHitAfterMs ?? 0).toBeLessThanOrEqual(r.stoppedAfterMs as number);
+        }
+      }
+    }
+  });
+
+  it('a resolver that caches twice as long can outlast the run: the clients never stopped, though the last hit was inside the bound', () => {
+    const r = runRegistry(cfg({ refreshMs: 30_000, stubbornFactor: 2 }));
+    expect(r.stoppedAfterMs).toBeNull();
+    expect(r.lastHitAfterMs as number).toBeLessThanOrEqual(staleBound(cfg({ refreshMs: 30_000, stubbornFactor: 2 })));
+    // The run ends 30 s after the crash; the last hit was within one hit period (900 ms) of the end.
+    expect(HORIZON_MS - 10_000 - (r.lastHitAfterMs as number)).toBeLessThanOrEqual(900);
   });
 
   it('a longer cache refresh keeps sending to the dead instance longer, on 20 seeds', () => {
@@ -62,7 +90,7 @@ describe('the registry on distSim', () => {
       for (let seed = 0; seed < 10; seed++) {
         const c = cfg(over, seed);
         const r = runRegistry(c);
-        expect(r.stopAfterMs ?? 0, JSON.stringify(over)).toBeLessThanOrEqual(staleBound(c));
+        expect(r.stoppedAfterMs ?? 0, JSON.stringify(over)).toBeLessThanOrEqual(staleBound(c));
       }
     }
   });
@@ -87,8 +115,8 @@ describe('invariant: no request is routed to an instance later than TTL + T (and
   it('is not vacuous: the bound is tight enough that a tenth of it is broken by a registry that waits too long to evict', () => {
     const c = cfg();
     const run = runRegistry(c);
-    expect(run.stopAfterMs as number).toBeGreaterThan(ttlMs(c) / 2);
-    expect(staleBound(c)).toBeLessThan(2 * (run.stopAfterMs as number) + 6000);
+    expect(run.stoppedAfterMs as number).toBeGreaterThan(ttlMs(c) / 2);
+    expect(staleBound(c)).toBeLessThan(2 * (run.stoppedAfterMs as number) + 6000);
   });
 
   it('broken mode: a registry that never evicts breaks it on every seed that has a crash; the lowest is seed 0, and the trace shows the late request', () => {
@@ -145,6 +173,23 @@ describe('false evictions: a live instance is evicted exactly when its heartbeat
         const c = cfg({ ttlBeats, loss: 0.3, crash: false }, seed);
         expect(runRegistry(c).falseEvictions, `ttl ${ttlBeats} seed ${seed}`).toBe(expectedEvictions(c, HORIZON_MS));
       }
+    }
+  });
+
+  it('the eviction rate per heartbeat is (1 - p) p^k, as the trace recount shows, and not p^k', () => {
+    for (const [loss, ttlBeats] of [[0.5, 3], [0.3, 3], [0.5, 1], [0.4, 2]] as const) {
+      let evictions = 0;
+      let beats = 0;
+      for (let seed = 0; seed < 100; seed++) {
+        const c = cfg({ ttlBeats, loss, crash: false }, seed);
+        evictions += expectedEvictions(c, HORIZON_MS);
+        beats += runRegistry(c).heartbeats;
+      }
+      const measured = evictions / beats;
+      expect(measured, `p ${loss} k ${ttlBeats}`).toBeGreaterThan(evictionRate(loss, ttlBeats) * 0.85);
+      expect(measured, `p ${loss} k ${ttlBeats}`).toBeLessThan(evictionRate(loss, ttlBeats) * 1.15);
+      // The old label, p^k, is off by 1 / (1 - p): at 50% loss it said 12.5% against about 6.25%.
+      expect(Math.abs(measured - loss ** ttlBeats)).toBeGreaterThan(Math.abs(measured - evictionRate(loss, ttlBeats)));
     }
   });
 
