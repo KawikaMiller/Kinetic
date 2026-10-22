@@ -1,17 +1,22 @@
 import { motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
+import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Legend, Slider, Stat, Stats, TextField } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
+import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
-import { randInt } from '../../core/random';
-import { WORDS, bloomFpMeasured, bloomFpTheory, bloomHas, bloomPositions, buildBloom } from './sketches';
+import { pick } from '../../core/random';
+import {
+  bloomFpMeasured, bloomFpTheory, bloomHas, bloomPositions, buildBloom, drawRnd, nextWord, optimalK, unseenWord,
+} from './sketches';
 
 const COLS = 16;
 const CELL = 30;
 const GAP = 6;
 const ROW_GAP = 20;
 const TOP = 78;
+const BOARD_GUTTER = 8;
 const GRID_W = COLS * (CELL + GAP) - GAP;
 const cellXY = (i: number) => ({ x: (i % COLS) * (CELL + GAP) + CELL / 2, y: TOP + Math.floor(i / COLS) * (CELL + ROW_GAP) + CELL / 2 });
 
@@ -24,12 +29,17 @@ interface BloomAction {
 }
 
 const rate = (x: number) => pct(x, 1);
+/** The largest k the slider offers; the best k can be higher for a roomy filter. */
+const K_MAX = 6;
+const START_WORDS = ['apple', 'banana', 'cherry'];
 
-export function BloomView({ switcher }: { switcher: ReactNode }) {
+export function BloomView({ switcher, seed, onSeed }: { switcher: ReactNode; seed: number; onSeed: (seed: number) => void }) {
   const [m, setM] = useState(32);
   const [k, setK] = useState(3);
-  const [words, setWords] = useState<string[]>(['apple', 'banana', 'cherry']);
+  const [words, setWords] = useState<string[]>(START_WORDS);
   const [act, setAct] = useState<BloomAction | null>(null);
+  /** Actions taken so far: each unseen-word or stored-word draw and each arrow animation gets its own number. */
+  const [actions, setActions] = useState(0);
   const [draft, setDraft] = useState('');
   const setCaption = useSetCaption();
 
@@ -37,7 +47,7 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
   const setCount = bits.reduce((a, b) => a + b, 0);
   const theory = bloomFpTheory(words.length, k, m);
   const measured = useMemo(() => bloomFpMeasured(bits, k), [bits, k]);
-  const bestK = words.length ? Math.max(1, Math.round((m / words.length) * Math.LN2)) : null;
+  const bestK = words.length ? optimalK(words.length, m) : null;
 
   useIntroCaption(
     <>A Bloom filter is just a row of bits. Each word sets <b>k</b> of them; a query checks those same k bits. Try
@@ -49,10 +59,12 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
     if (!word) return;
     const positions = bloomPositions(word, k, m);
     setWords((ws) => (ws.includes(word) ? ws : [...ws, word]));
-    setAct({ word, kind: 'insert', positions, id: Date.now() });
+    setAct({ word, kind: 'insert', positions, id: actions });
+    setActions(actions + 1);
     setCaption(
-      <>Insert <span className="hl">{word}</span>: hash it {k} ways → bits {positions.join(', ')}. Set them all to 1. The
-        word itself is <b>not stored</b> anywhere.</>,
+      <>Insert <span className="hl">{word}</span>: hash it {k} ways → bits {positions.join(', ')}. Set them all to 1
+        {words.includes(word) ? ' (it was already inserted, so nothing changes)' : ''}. The
+        word itself is <b>not stored</b> in the filter.</>,
     );
   };
 
@@ -62,7 +74,8 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
     const positions = bloomPositions(word, k, m);
     const maybe = bloomHas(bits, word, k);
     const verdict = !maybe ? 'no' : words.includes(word) ? 'maybe' : 'fp';
-    setAct({ word, kind: 'query', positions, verdict, id: Date.now() });
+    setAct({ word, kind: 'query', positions, verdict, id: actions });
+    setActions(actions + 1);
     setCaption(
       verdict === 'no' ? (
         <>Query <span className="hl">{word}</span>: bit {positions.find((p) => !bits[p])} is 0, so it is{' '}
@@ -77,16 +90,23 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
     );
   };
 
-  const unseen = () => {
-    const pool = WORDS.filter((w) => !words.includes(w));
-    return pool.length ? pool[randInt(0, pool.length - 1)] : `word${randInt(100, 999)}`;
-  };
-  const nextWord = () => WORDS.find((w) => !words.includes(w)) ?? `word${words.length}`;
+  const rnd = () => drawRnd(seed, actions);
+  const queryStored = () => query(pick(words, rnd()));
 
   const rebuild = (nm: number, nk: number) => {
     setM(nm);
     setK(nk);
     setAct(null);
+    const rebuilt = buildBloom(words, nk, nm);
+    setCaption(
+      <>Rebuilt with m = {nm} bits and k = {nk}: the {words.length} stored {words.length === 1 ? 'word' : 'words'} set{' '}
+        {rebuilt.reduce((a, b) => a + b, 0)} of {nm} bits. Insert or query a word.</>,
+    );
+  };
+  const clear = () => {
+    setWords([]);
+    setAct(null);
+    setCaption(<>Cleared: no words are stored and all {m} bits are 0. Insert a word to start again.</>);
   };
 
   const rows = m / COLS;
@@ -94,15 +114,15 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
   const boardH = TOP + rows * (CELL + ROW_GAP);
 
   return (
-    <StageFrame minWidth={470}
+    <StageFrame
       height={380}
       stats={
         <Stats>
           <Stat label="Words inserted" value={words.length} />
           <Stat label="Bits set" value={`${setCount}/${m}`} color="var(--violet)" />
-          <Stat label="FP rate (theory)" value={rate(theory)} color="var(--hi)" sub="(1 − e^(−kn/m))^k" />
+          <Stat label="FP rate (theory)" value={rate(theory)} color="var(--hi)" sub="(1 − e^(−kn/m))^k, approximate" />
           <Stat label="FP rate (measured)" value={rate(measured)} color="var(--bad)" sub="1,000 unseen probes" />
-          {bestK && <Stat label="Best k here" value={bestK} sub="(m/n)·ln 2" />}
+          {bestK && <Stat label="Best k here" value={bestK} sub={bestK > K_MAX ? `(m/n)·ln 2; slider stops at ${K_MAX}` : '(m/n)·ln 2'} />}
         </Stats>
       }
       legend={
@@ -119,7 +139,7 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
         <>
           {switcher}
           <Slider label="Bits m" value={m} min={16} max={64} step={16} onChange={(v) => rebuild(v, k)} />
-          <Slider label="Hashes k" value={k} min={1} max={6} onChange={(v) => rebuild(m, v)} />
+          <Slider label="Hashes k" value={k} min={1} max={K_MAX} onChange={(v) => rebuild(m, v)} />
         </>,
         <>
           <div className="pb-form">
@@ -135,14 +155,16 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
             <Button onClick={() => insert(draft)} disabled={!draft.trim()}>Insert</Button>
             <Button onClick={() => query(draft)} disabled={!draft.trim()}>Query</Button>
           </div>
-          <Button variant="primary" onClick={() => insert(nextWord())}>Insert next word</Button>
-          <Button onClick={() => query(words[randInt(0, words.length - 1)])} disabled={!words.length}>Query a stored word</Button>
-          <Button onClick={() => query(unseen())}>Query an unseen word</Button>
-          <Button onClick={() => { setWords([]); setAct(null); }}>Clear</Button>
+          <Button variant="primary" onClick={() => insert(nextWord(words))}>Insert next word</Button>
+          <Button onClick={queryStored} softDisabled={!words.length}>Query a stored word</Button>
+          <Button onClick={() => query(unseenWord(words, rnd()))}>Query an unseen word</Button>
+          <Button onClick={clear}>Clear</Button>
+          <SeedField seed={seed} onSeed={onSeed} />
         </>,
       ]}
     >
       <div className="pb">
+        <WideRegion minWidth={GRID_W + 2 * BOARD_GUTTER} gutter={{ top: 0, bottom: 14, x: BOARD_GUTTER }}>
         <div className="pb-board" style={{ width: GRID_W, height: boardH }}>
           <div className="pb-word-row">
             {act ? (
@@ -193,12 +215,19 @@ export function BloomView({ switcher }: { switcher: ReactNode }) {
             );
           })}
         </div>
+        </WideRegion>
         <div className="pb-words">
           <span>stored words (the filter itself never keeps these):</span>
           {words.map((w) => (
             <span key={w} className="pb-chip">{w}</span>
           ))}
         </div>
+        <ProvenanceRow>
+          <Provenance kind="toy">a 32-bit FNV-1a hash with double hashing: fine for watching, not a tuned production hash</Provenance>
+          <Provenance kind="simulated" seed={seed}>
+            the measured rate probes 1,000 fixed unseen words, so it wobbles around the formula; the unseen and stored words you query come from the seed
+          </Provenance>
+        </ProvenanceRow>
       </div>
     </StageFrame>
   );

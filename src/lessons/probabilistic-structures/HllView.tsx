@@ -1,11 +1,12 @@
 import { motion } from 'motion/react';
 import { useState, type ReactNode } from 'react';
+import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { bytes, NA } from '../../core/format';
 import { randInt } from '../../core/random';
-import { bits32, hllAdd, hllBuild, hllEstimate, itemHash } from './sketches';
+import { HLL_BITS_PER_REGISTER, bits32, drawRnd, hllAdd, hllBuild, hllBytes, hllEstimate, hllStdErr, itemHash } from './sketches';
 
 interface Hll {
   p: number;
@@ -24,8 +25,6 @@ const PRECISIONS = [
 const CHART_W = 860;
 const CHART_H = 150;
 const BAR_SPRING = { type: 'spring', stiffness: 200, damping: 24 } as const;
-/** HLL registers hold a rank up to ~50, so 6 bits each. */
-const BITS_PER_REGISTER = 6;
 /** What an exact set pays per 64-bit id, before any hash-table overhead. */
 const BYTES_PER_ID = 8;
 
@@ -34,20 +33,24 @@ const bytesSI = (b: number) => bytes(b, { base: 1000 });
 
 const empty = (p: number): Hll => ({ p, regs: new Uint8Array(1 << p), count: 0, last: null, updated: null });
 
-export function HllView({ switcher }: { switcher: ReactNode }) {
+const INTRO = (
+  <>HyperLogLog counts <b>distinct</b> items in a few bytes. Each item is hashed; long runs of leading zeros are rare,
+    so the longest run seen hints at how many items there were. Add one to see how.</>
+);
+
+export function HllView({ switcher, seed, onSeed }: { switcher: ReactNode; seed: number; onSeed: (seed: number) => void }) {
   const [h, setH] = useState<Hll>(() => empty(6));
+  /** Duplicate batches drawn so far: batch n picks its ids from the seed's n-th stream. */
+  const [batches, setBatches] = useState(0);
   const setCaption = useSetCaption();
 
-  useIntroCaption(
-    <>HyperLogLog counts <b>distinct</b> items in a few bytes. Each item is hashed; long runs of leading zeros are rare,
-      so the longest run seen hints at how many items there were. Add one to see how.</>,
-  );
+  useIntroCaption(INTRO);
 
   const m = h.regs.length;
   const est = h.count ? hllEstimate(h.regs) : 0;
   const err = h.count ? (est - h.count) / h.count : 0;
-  const stdErr = 1.04 / Math.sqrt(m);
-  const hllBytes = (m * BITS_PER_REGISTER) / 8;
+  const stdErr = hllStdErr(m);
+  const regBytes = hllBytes(m);
   const exactBytes = h.count * BYTES_PER_ID;
 
   const addOne = () => {
@@ -71,35 +74,47 @@ export function HllView({ switcher }: { switcher: ReactNode }) {
     const e = hllEstimate(regs);
     setCaption(
       <>Added {n.toLocaleString()} new items. True distinct count <b>{count.toLocaleString()}</b>, estimate{' '}
-        <span className="hl">{Math.round(e).toLocaleString()}</span> ({((e / count - 1) * 100).toFixed(1)}% off), using just{' '}
-        {bytesSI(hllBytes)}.</>,
+        <span className="hl">{Math.round(e).toLocaleString()}</span> ({((e / count - 1) * 100).toFixed(1)}% off; one standard error here is {(hllStdErr(h.regs.length) * 100).toFixed(1)}%), using just{' '}
+        {bytesSI(regBytes)}.</>,
     );
   };
 
   const addDupes = () => {
     if (!h.count) return;
     const regs = h.regs.slice();
-    for (let i = 0; i < 1000; i++) hllAdd(regs, randInt(0, h.count - 1), h.p);
+    const rnd = drawRnd(seed, batches);
+    for (let i = 0; i < 1000; i++) hllAdd(regs, randInt(0, h.count - 1, rnd), h.p);
     const same = regs.every((r, i) => r === h.regs[i]);
+    setBatches(batches + 1);
     setH({ ...h, regs, last: null, updated: null });
     setCaption(
       <>Re-added 1,000 items we'd already seen. Same hash → same register, same rank, so{' '}
-        <span className="hl ok">{same ? 'nothing changed' : 'nothing should change'}</span>. Duplicates can't inflate the count.</>,
+        {same ? (
+          <>the registers did not change and the estimate stays <span className="hl ok">{Math.round(hllEstimate(regs)).toLocaleString()}</span></>
+        ) : (
+          <span className="hl bad">the registers changed (this should not happen)</span>
+        )}
+        . Duplicates can't inflate the count.</>,
     );
   };
 
   const setP = (p: number) => {
     setH({ p, regs: hllBuild(h.count, p), count: h.count, last: null, updated: null });
     setCaption(
-      <>{1 << p} registers: expected error ≈ 1.04/√m = <span className="hl">{((1.04 / Math.sqrt(1 << p)) * 100).toFixed(1)}%</span>.
-        Four times the registers halves the error. Redis uses 16,384 (0.81%, 12 KB).</>,
+      <>{1 << p} registers: standard error 1.04/√m = <span className="hl">{(hllStdErr(1 << p) * 100).toFixed(1)}%</span>, so one run can miss by about twice that.
+        Four times the registers halves the error.</>,
     );
+  };
+
+  const reset = () => {
+    setH(empty(h.p));
+    setCaption(INTRO);
   };
 
   const bitsStr = h.last ? bits32(itemHash(h.last.id)) : null;
   const maxRank = Math.max(8, ...h.regs);
   const bw = CHART_W / m;
-  const memMax = Math.log10(Math.max(hllBytes, exactBytes) + 1);
+  const memMax = Math.log10(Math.max(regBytes, exactBytes) + 1);
   const memW = (b: number) => `${Math.max(1, (Math.log10(b + 1) / memMax) * 100)}%`;
 
   return (
@@ -109,8 +124,8 @@ export function HllView({ switcher }: { switcher: ReactNode }) {
         <Stats>
           <Stat label="True distinct" value={h.count.toLocaleString()} />
           <Stat label="HLL estimate" value={Math.round(est).toLocaleString()} color="var(--hi)" />
-          <Stat label="Error" value={h.count ? `${(err * 100).toFixed(1)}%` : NA} color={Math.abs(err) > 2 * stdErr ? 'var(--bad)' : 'var(--ok)'} sub={`typical ±${(stdErr * 100).toFixed(1)}%`} />
-          <Stat label="HLL memory" value={bytesSI(hllBytes)} color="var(--ok)" sub={`${m} registers × ${BITS_PER_REGISTER} bits`} />
+          <Stat label="Error" value={h.count ? `${(err * 100).toFixed(1)}%` : NA} color={Math.abs(err) > 2 * stdErr ? 'var(--bad)' : 'var(--ok)'} sub={`std. error ${(stdErr * 100).toFixed(1)}%`} />
+          <Stat label="HLL memory" value={bytesSI(regBytes)} color="var(--ok)" sub={`${m} registers × ${HLL_BITS_PER_REGISTER} bits`} />
           <Stat label="Exact set" value={bytesSI(exactBytes)} color="var(--bad)" sub={`≈ ${BYTES_PER_ID} bytes per id, before overhead`} />
         </Stats>
       }
@@ -132,8 +147,9 @@ export function HllView({ switcher }: { switcher: ReactNode }) {
           <Button onClick={() => addMany(100)}>+100</Button>
           <Button onClick={() => addMany(10_000)}>+10,000</Button>
           <Button onClick={() => addMany(1_000_000)}>+1,000,000</Button>
-          <Button onClick={addDupes} disabled={!h.count}>Re-add 1,000 duplicates</Button>
-          <Button onClick={() => setH(empty(h.p))}>Reset</Button>
+          <Button onClick={addDupes} softDisabled={!h.count}>Re-add 1,000 duplicates</Button>
+          <Button onClick={reset}>Reset</Button>
+          <SeedField seed={seed} onSeed={onSeed} />
         </Controls>
       }
     >
@@ -185,12 +201,23 @@ export function HllView({ switcher }: { switcher: ReactNode }) {
 
         <div className="hll-mem">
           <span>Memory</span>
-          <div className="hll-mem-bar"><motion.i className="ok" animate={{ width: memW(hllBytes) }} /></div>
-          <b className="ok">{bytesSI(hllBytes)}</b>
+          <div className="hll-mem-bar"><motion.i className="ok" animate={{ width: memW(regBytes) }} /></div>
+          <b className="ok">{bytesSI(regBytes)}</b>
           <div className="hll-mem-bar"><motion.i className="bad" animate={{ width: h.count ? memW(exactBytes) : '0%' }} /></div>
           <b className="bad">{bytesSI(exactBytes)}</b>
           <em>log scale: HLL stays fixed while an exact set grows with every new item</em>
         </div>
+        <ProvenanceRow>
+          <Provenance kind="toy">a 32-bit hash with only the small-range correction: counts past roughly a hundred million are outside what this demo supports</Provenance>
+          <Provenance kind="illustrative">
+            {HLL_BITS_PER_REGISTER}-bit registers and {BYTES_PER_ID}-byte ids are assumptions for the memory figures, not measurements
+          </Provenance>
+          <Provenance kind="simulated" seed={seed}>the items are the ids 0, 1, 2, … and only the duplicate batches use the seed</Provenance>
+          <Provenance kind="from-memory">
+            Redis uses 16,384 registers (12 KB, 0.81% standard error) and real sketches use 64-bit hashes: verify against the Redis docs and the
+            HyperLogLog paper (Flajolet et al., 2007)
+          </Provenance>
+        </ProvenanceRow>
       </div>
     </StageFrame>
   );

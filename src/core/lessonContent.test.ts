@@ -27,7 +27,7 @@ const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
  * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
 const TIER4_AWAITING_RETROFIT = new Set<string>([
-  'probabilistic-structures', 'slos-error-budgets', 'zero-trust', // T4-R2
+  'slos-error-budgets', 'zero-trust', // T4-R2
 ]);
 /** The nine existing Tier 4 lessons, fixed: the D-row cross-check needs them after each one leaves the allowlist above. */
 const TIER4_RETROFIT_IDS: ReadonlySet<string> = new Set([
@@ -54,7 +54,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   // Tier 4
-  'probabilistic-structures': { ticket: T4_R2, rules: ['quiz-length'] },
   'slos-error-budgets': { ticket: T4_R2, rules: ['quiz-length'] },
   'zero-trust': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
 };
@@ -444,12 +443,13 @@ describe('every built lesson', () => {
   });
 
   it('guards the Tier 4 quiz-share trap twice (technical doc §6.2): the pending set and the minimum question count', () => {
-    // Trap one: these two are baselined for quiz-length only, so without PENDING_RETROFIT they would be counted, and they alone break the cap.
-    const trap = lessons.filter(({ id }) => id === 'probabilistic-structures' || id === 'slos-error-budgets').map(({ lesson }) => lesson);
+    // Trap one: a lesson baselined for quiz-length only would be counted without PENDING_RETROFIT, and two such lessons alone can break the cap.
+    // (Fixtures: the real lessons that once stood here left the allowlist in T4-R2.)
+    const longer = (n: number) => ({ ...GOOD, quiz: Array.from({ length: 3 }, (_, i) => (i < n ? q(['Short', 'Brief', 'A noticeably longer correct option'], 2) : GOOD.quiz[1])) });
+    const trap = [longer(2), longer(2)];
     const { longest, total } = longestTally(trap);
     expect(trap).toHaveLength(2);
     expect(longest / total, `${longest}/${total}`).toBeGreaterThan(TIER_LONGEST_SHARE);
-    expect(BASELINE['probabilistic-structures'].rules).not.toContain('quiz-longest');
     // Trap two: a handful of questions is noise; the aggregate waits for MIN_QUESTIONS_FOR_SHARE.
     expect(total).toBeLessThan(MIN_QUESTIONS_FOR_SHARE);
     // The shortest real case: one new lesson, three questions, one strictly-longest correct option (33%).
