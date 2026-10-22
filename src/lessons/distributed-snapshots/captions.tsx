@@ -19,9 +19,9 @@ export function verdictWords(r: Result): ReactNode {
       The record sums to {total}
       {r.difference === 0 ? '' : r.difference < 0 ? `: ${-r.difference} missing` : `: ${r.difference} counted twice`}.{' '}
       {r.closure.offence
-        ? <span className="hl bad">{offenceText(r.closure.offence)}</span>
+        ? <span className="hl bad wrap">{offenceText(r.closure.offence)}</span>
         : r.mismatched.length > 0
-          ? <span className="hl bad">The channel from {r.mismatched[0].from} to {r.mismatched[0].to} held {r.mismatched[0].inFlight} tokens at the cut but the record has {r.mismatched[0].recorded}: a marker overtook them</span>
+          ? <span className="hl bad wrap">The channel from {r.mismatched[0].from} to {r.mismatched[0].to} held {r.mismatched[0].inFlight} tokens at the cut but the record has {r.mismatched[0].recorded}: a marker overtook them</span>
           : r.method === 'naive'
             ? <>The cut is closed, but a naive cut records no channel contents: tokens in flight at the cut are in nobody&apos;s record{r.lostInCut > 0 ? `, and C dropped ${plural(r.lostInCut, 'token')} inside it` : ''}.</>
             : <>The recorded channel contents match what was in flight at the cut, so on these channels the difference is not a recording artefact.</>}
@@ -50,7 +50,7 @@ export function bugCaption(a: { bug: boolean; method: 'naive' | 'markers'; resul
     if (result.difference === 0) {
       return <>The naive cut records {result.total} of {TOTAL_TOKENS} on this seed, but only because its errors cancel (C dropped {result.lostInCut} inside the cut): that is luck, not a pass. Try another seed.</>;
     }
-    return <>The naive cut records {result.total} of {TOTAL_TOKENS}. Part of the {Math.abs(result.difference)} difference is tokens in flight and part is what C dropped ({result.lostInCut} inside the cut), and nothing in the record tells them apart.</>;
+    return <>The naive cut records {result.total} of {TOTAL_TOKENS}. The {Math.abs(result.difference)} difference mixes tokens in flight, double counts and what C dropped ({result.lostInCut} inside the cut), and nothing in the record tells them apart.</>;
   }
   return <>C drops some of the tokens it receives, but this run lost none inside the cut. {verdictWords(result)}</>;
 }
