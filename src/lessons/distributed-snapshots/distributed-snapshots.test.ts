@@ -4,7 +4,8 @@ import { forSeeds, type Safety, type TraceRow } from '../../core/distSim';
 import { SEED_MAX } from '../../core/seed';
 import { bugCaption, fifoCaption, offenceText, verdictWords } from './captions';
 import { buildRun } from './frames';
-import lesson from './index';
+import lesson, { SMALL_RECORDED } from './index';
+import { BUG_MARKERS_SEED, NAIVE_SEED, followSeed, photoSeedFor } from './demoSeeds';
 import { BROKEN_SEED, BROKEN_SEED_CLOSURE } from './pins';
 import {
   DEFAULT_OPTIONS, NAMES, RATES, SEED_RANGE, SEEDS_TOTAL, TIME_MS, closureOf, runSeed, snapshotScenario, sweepSeeds, viewsOf, type Name, type Rate, type SimOptions, type SnapMsg,
@@ -250,39 +251,126 @@ describe('try-this entries, from the default state, as written', () => {
     expect(lesson.tryThis[0]).toContain('reads 300 of 300');
   });
 
-  it('try-this 2: the naive cut at the default times reads 300 by luck for seed 1, and closure names a message', () => {
-    const r = runSeed({ ...DEFAULT_OPTIONS, method: 'naive' }, 1).result;
-    expect(r.total).toBe(300);
+  it('try-this 2: the naive cut opens on the computed failing seed: a wrong total and a closure failure that names a message', () => {
+    const r = runSeed({ ...DEFAULT_OPTIONS, method: 'naive' }, NAIVE_SEED).result;
+    expect(r.conservation).toBe(false);
     expect(r.closure.closed).toBe(false);
+    for (let seed = 1; seed < NAIVE_SEED; seed++) {
+      const e = runSeed({ ...DEFAULT_OPTIONS, method: 'naive' }, seed).result;
+      expect(!e.conservation && !e.closure.closed, `seed ${seed} is lower and also fails`).toBe(false);
+    }
     expect(lesson.tryThis[1]).toContain(offenceText(r.closure.offence!));
-    expect(lesson.tryThis[1]).toContain('the total reads 300 for this seed');
+    expect(lesson.tryThis[1]).toContain(`the total reads ${r.total} of 300`);
+    expect(lesson.tryThis[1]).toContain(`the seed moves to ${NAIVE_SEED}`);
   });
 
-  it('try-this 3: B recording at 0 ms gives 318 (double counted) and at 200 ms gives 291 (missing)', () => {
+  it('try-this 2 (second half): B recording at 0 ms and at 200 ms read what the page says, on the naive demo seed', () => {
     const naive = { ...DEFAULT_OPTIONS, method: 'naive' as const };
-    expect(runSeed({ ...naive, recordMs: [100, 0, 120] }, 1).result.total).toBe(318);
-    expect(runSeed({ ...naive, recordMs: [100, 200, 120] }, 1).result.total).toBe(291);
-    expect(lesson.tryThis[2]).toContain('reads 318');
-    expect(lesson.tryThis[2]).toContain('291');
+    const early = runSeed({ ...naive, recordMs: [100, 0, 120] }, NAIVE_SEED).result.total;
+    const late = runSeed({ ...naive, recordMs: [100, 200, 120] }, NAIVE_SEED).result.total;
+    expect(early).not.toBe(late);
+    expect(lesson.tryThis[1]).toContain(`reads ${early}.`);
+    expect(lesson.tryThis[1]).toContain(`${late}.`);
   });
 
-  it('try-this 4: markers without FIFO on seed 1 read 293 of 300 and name the channel that held tokens nobody recorded', () => {
+  it('try-this 3: markers without FIFO on seed 1 read 293 of 300 and name the channel that held tokens nobody recorded', () => {
     const r = runSeed({ ...DEFAULT_OPTIONS, fifo: false }, 1).result;
     expect(r.total).toBe(293);
     expect(r.mismatched.length).toBeGreaterThan(0);
     const m = r.mismatched[0];
-    expect(lesson.tryThis[3]).toContain(`reads 293 of 300`);
-    expect(lesson.tryThis[3]).toContain(`from ${m.from} to ${m.to}, which held ${m.inFlight} tokens`);
+    expect(lesson.tryThis[2]).toContain(`reads 293 of 300`);
+    expect(lesson.tryThis[2]).toContain(`from ${m.from} to ${m.to}, which held ${m.inFlight} tokens`);
     expect(expectCaption(verdictWords(r))).toContain(`held ${m.inFlight} tokens at the cut but the record has ${m.recorded}`);
   });
 
-  it('try-this 5: at 2 transfers each FIFO conserves in 416 states and the non-FIFO counterexample is 4 steps', () => {
-    expect(lesson.tryThis[4]).toContain('416 states');
-    expect(lesson.tryThis[4]).toContain('counterexample of 4 steps');
-    expect(lesson.tryThis[4]).toContain('3 of 4');
+  it('try-this 4: at 2 transfers each FIFO conserves in 416 states and the non-FIFO counterexample is 4 steps and sums to 3 of 4 (computed from its last state)', () => {
+    expect(lesson.tryThis[3]).toContain('416 states');
+    expect(lesson.tryThis[3]).toContain('counterexample of 4 steps');
+    expect(SMALL_RECORDED).toBe(3);
+    expect(lesson.tryThis[3]).toContain(`sums to ${SMALL_RECORDED} of 4`);
+  });
+
+  it('try-this 5: scene 3 opens on a seed where C dropped tokens inside the cut and the markers record falls short by exactly that', () => {
+    const r = runSeed({ ...DEFAULT_OPTIONS, bug: true }, BUG_MARKERS_SEED).result;
+    expect(r.lostInCut).toBeGreaterThan(0);
+    expect(-r.difference).toBe(r.lostInCut);
+    expect(lesson.tryThis[4]).toContain(`C dropped ${r.lostInCut} tokens inside the cut`);
+    expect(lesson.tryThis[4]).toContain(`reads ${r.total} of 300`);
+    for (let seed = 1; seed < BUG_MARKERS_SEED; seed++) expect(runSeed({ ...DEFAULT_OPTIONS, bug: true }, seed).result.lostInCut, `seed ${seed}`).toBe(0);
   });
 
   it('the rates are the spec\'s ranges', () => {
     expect([RATES.calm, RATES.busy, RATES.veryBusy].map((r) => [r.min, r.max])).toEqual([[20, 40], [5, 15], [2, 6]]);
+  });
+});
+
+describe('verdict and caption text over every reachable state (these failed on the old wording)', () => {
+  const grid: SimOptions[] = [];
+  for (const method of ['markers', 'naive'] as const) for (const fifo of [true, false]) for (const rate of Object.keys(RATES) as Rate[]) for (const bug of [false, true]) {
+    grid.push({ ...DEFAULT_OPTIONS, method, fifo, rate, bug });
+    if (method === 'naive') for (const t of [0, 100, 200]) grid.push({ ...DEFAULT_OPTIONS, method, fifo, rate, bug, recordMs: [t, t, t] });
+  }
+
+  it('a closed naive cut with a wrong total never says the difference is not a recording artefact: it says the tokens in flight are in nobody records', () => {
+    let seen = 0;
+    for (const o of grid.filter((g) => g.method === 'naive')) {
+      for (let seed = 1; seed <= 40; seed++) {
+        const r = runSeed(o, seed).result;
+        if (!r.closure.closed || r.conservation) continue;
+        seen++;
+        const text = expectCaption(verdictWords(r));
+        expect(text, JSON.stringify(o) + seed).not.toContain('not a recording artefact');
+        expect(text).toContain('naive cut records no channel contents');
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it('"not a recording artefact" is said only when the marker audit found no mismatched channel', () => {
+    for (const o of grid) for (let seed = 1; seed <= 40; seed++) {
+      const r = runSeed(o, seed).result;
+      const text = expectCaption(verdictWords(r));
+      if (text.includes('not a recording artefact')) {
+        expect(r.method).toBe('markers');
+        expect(r.mismatched).toEqual([]);
+        expect(r.closure.closed).toBe(true);
+        expect(r.conservation).toBe(false);
+      }
+    }
+  });
+
+  it('the offence text says "1 token", never "1 tokens"', () => {
+    expect(offenceText({ kind: 'token', from: 'A', to: 'B', amount: 1, sendAt: 1, receiveAt: 1 } as never)).toContain('1 token sent by');
+    expect(offenceText({ kind: 'token', from: 'A', to: 'B', amount: 1, sendAt: 1, receiveAt: 1 } as never)).not.toContain('1 tokens');
+    for (const o of grid) for (let seed = 1; seed <= 40; seed++) {
+      const r = runSeed(o, seed).result;
+      expect(expectCaption(verdictWords(r))).not.toMatch(/1 tokens/);
+    }
+  });
+
+  it('the scene 3 naive caption never says "0 difference"', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const r = runSeed({ ...DEFAULT_OPTIONS, method: 'naive', bug: true }, seed).result;
+      const text = expectCaption(bugCaption({ bug: true, method: 'naive', result: r }));
+      expect(text, `seed ${seed}`).not.toMatch(/0 difference/);
+      if (r.difference === 0) expect(text).toContain('errors cancel');
+    }
+  });
+
+  it('the demo seeds: naive opens failing, a method change moves the seed only off the old default, and seed 1 markers is unchanged', () => {
+    expect(photoSeedFor('markers')).toBe(1);
+    expect(photoSeedFor('naive')).toBe(NAIVE_SEED);
+    expect(NAIVE_SEED).not.toBe(1);
+    expect(followSeed(1, 'markers', 'naive', photoSeedFor)).toBe(NAIVE_SEED);
+    expect(followSeed(NAIVE_SEED, 'naive', 'markers', photoSeedFor)).toBe(1);
+    expect(followSeed(77, 'markers', 'naive', photoSeedFor)).toBe(77);
+  });
+
+  it('the key ideas and Q4 scope the trust in a closed cut to FIFO channels, and the non-FIFO seed shows why', () => {
+    const loose = runSeed({ ...DEFAULT_OPTIONS, fifo: false }, BROKEN_SEED).result;
+    expect(loose.closure.closed).toBe(true);
+    expect(loose.conservation).toBe(false);
+    expect(lesson.keyIdeas[3]).toContain('On FIFO channels');
+    expect(lesson.quiz[3].q).toContain('FIFO');
   });
 });

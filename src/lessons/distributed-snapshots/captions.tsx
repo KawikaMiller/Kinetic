@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { integer } from '../../core/format';
+import { integer, plural } from '../../core/format';
 import { TOTAL_TOKENS } from './snapshot';
 import type { Offence, Result } from './sim';
 
 /** The offending message of a failed closure check, in words that name both cuts. */
 export function offenceText(o: Offence): string {
   if (o.kind === 'marker') return `a marker sent by ${o.from} after ${o.from}'s cut was received by ${o.to} before ${o.to}'s cut`;
-  return `${o.amount} tokens sent by ${o.from} after ${o.from}'s cut, received by ${o.to} before ${o.to}'s cut: ${o.to}'s record includes tokens ${o.from}'s record still holds`;
+  return `${plural(o.amount, 'token')} sent by ${o.from} after ${o.from}'s cut, received by ${o.to} before ${o.to}'s cut: ${o.to}'s record includes tokens ${o.from}'s record still holds`;
 }
 
 /** What the two independent checks say about a finished snapshot. */
@@ -22,7 +22,9 @@ export function verdictWords(r: Result): ReactNode {
         ? <span className="hl bad">{offenceText(r.closure.offence)}</span>
         : r.mismatched.length > 0
           ? <span className="hl bad">The channel from {r.mismatched[0].from} to {r.mismatched[0].to} held {r.mismatched[0].inFlight} tokens at the cut but the record has {r.mismatched[0].recorded}: a marker overtook them</span>
-          : <>The cut is closed, so the difference is not a recording artefact.</>}
+          : r.method === 'naive'
+            ? <>The cut is closed, but a naive cut records no channel contents: tokens in flight at the cut are in nobody&apos;s record{r.lostInCut > 0 ? `, and C dropped ${plural(r.lostInCut, 'token')} inside it` : ''}.</>
+            : <>The recorded channel contents match what was in flight at the cut, so on these channels the difference is not a recording artefact.</>}
     </>
   );
 }
@@ -42,10 +44,13 @@ export function bugCaption(a: { bug: boolean; method: 'naive' | 'markers'; resul
   const { result } = a;
   if (!a.bug) return <>No bug in this run. {verdictWords(result)}</>;
   if (a.method === 'markers' && result.closure.closed && result.difference < 0) {
-    return <>C drops some of the tokens it receives. The cut passed the closure check, so the shortfall of {-result.difference} tokens is <span className="hl bad">real</span>: they are missing, not in flight.</>;
+    return <>C drops some of the tokens it receives. On these FIFO channels a cut that passes the closure check makes the shortfall of {plural(-result.difference, 'token')} <span className="hl bad">real</span>: they are missing, not in flight.</>;
   }
   if (a.method === 'naive') {
-    return <>The naive cut records {result.total} of {TOTAL_TOKENS}. Part of the {result.difference < 0 ? -result.difference : result.difference} difference is tokens in flight and part is what C dropped ({result.lostInCut} inside the cut), and nothing in the record tells them apart.</>;
+    if (result.difference === 0) {
+      return <>The naive cut records {result.total} of {TOTAL_TOKENS} on this seed, but only because its errors cancel (C dropped {result.lostInCut} inside the cut): that is luck, not a pass. Try another seed.</>;
+    }
+    return <>The naive cut records {result.total} of {TOTAL_TOKENS}. Part of the {Math.abs(result.difference)} difference is tokens in flight and part is what C dropped ({result.lostInCut} inside the cut), and nothing in the record tells them apart.</>;
   }
   return <>C drops some of the tokens it receives, but this run lost none inside the cut. {verdictWords(result)}</>;
 }

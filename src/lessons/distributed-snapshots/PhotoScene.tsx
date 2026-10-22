@@ -6,6 +6,7 @@ import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider,
 import { usePlayer } from '../../core/usePlayer';
 import { plainTone, toneVar } from '../../core/tone';
 import { verdictWords } from './captions';
+import { followSeed, photoSeedFor } from './demoSeeds';
 import { buildRun } from './frames';
 import { BROKEN_SEED } from './pins';
 import { DEFAULT_OPTIONS, NAMES, RATES, TIME_MS, type Method, type Name, type Rate, type SimOptions } from './sim';
@@ -23,6 +24,10 @@ export function PhotoScene({ picker }: { picker: ReactNode }) {
   const [options, setOptions] = useState<SimOptions>(DEFAULT_OPTIONS);
   const [seed, setSeed] = useState(1);
   const change = (patch: Partial<SimOptions>) => setOptions({ ...options, ...patch });
+  const changeMethod = (method: Method) => {
+    setSeed(followSeed(seed, options.method, method, photoSeedFor));
+    change({ method });
+  };
   const run = useMemo(() => buildRun(options, seed), [options, seed]);
   const player = usePlayer(run.frames, { interval: PLAYER_INTERVAL_MS, autoplayOnChange: false });
   const frame = player.frame;
@@ -55,7 +60,7 @@ export function PhotoScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="Method" options={METHODS} value={options.method} onChange={(method: Method) => change({ method })} />
+          <Segmented label="Method" options={METHODS} value={options.method} onChange={changeMethod} />
           <Segmented label="Transfers" options={RATE_OPTIONS} value={options.rate} onChange={(rate) => change({ rate })} />
           <Toggle label="FIFO channels" value={options.fifo} onChange={(fifo) => change({ fifo })} />
           <SeedField seed={seed} onSeed={setSeed} />
@@ -114,7 +119,7 @@ export function PhotoScene({ picker }: { picker: ReactNode }) {
           <Provenance kind="from-memory">Chandy and Lamport, Distributed Snapshots (1985); check the title and year</Provenance>
           <ClaimLabel kind="practice">stable-property detection, such as termination and deadlock, is the classic use</ClaimLabel>
         </ProvenanceRow>
-        {seed === BROKEN_SEED && !options.fifo && options.method === 'markers' && <Hint block>This is the pinned failing seed for markers on non-FIFO channels.</Hint>}
+        {seed === BROKEN_SEED && !options.fifo && options.method === 'markers' && (!run.result.conservation || !run.result.closure.closed) && <Hint block>This seed fails here: it is the pinned failing seed for markers on non-FIFO channels with these settings.</Hint>}
       </div>
     </StageFrame>
   );

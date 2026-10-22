@@ -1,21 +1,26 @@
 import type { LessonModule } from '../../core/types';
 import { integer } from '../../core/format';
 import { offenceText } from './captions';
+import { BUG_MARKERS_SEED, BUG_NAIVE_SEED, NAIVE_SEED } from './demoSeeds';
 import { BROKEN_SEED } from './pins';
 import { DEFAULT_OPTIONS, runSeed } from './sim';
-import { SENDS, SMALL, TOTAL_TOKENS, searchSmall } from './snapshot';
+import { SENDS, SMALL, TOTAL_TOKENS, recordedTotals, searchSmall } from './snapshot';
 import { Stage } from './Stage';
 
 const markers = runSeed(DEFAULT_OPTIONS, 1).result;
 const naiveOptions = { ...DEFAULT_OPTIONS, method: 'naive' as const };
-const naive = runSeed(naiveOptions, 1).result;
-const bEarly = runSeed({ ...naiveOptions, recordMs: [100, 0, 120] }, 1).result;
-const bLate = runSeed({ ...naiveOptions, recordMs: [100, 200, 120] }, 1).result;
+const naive = runSeed(naiveOptions, NAIVE_SEED).result;
+const bEarly = runSeed({ ...naiveOptions, recordMs: [100, 0, 120] }, NAIVE_SEED).result;
+const bLate = runSeed({ ...naiveOptions, recordMs: [100, 200, 120] }, NAIVE_SEED).result;
+const bugged = runSeed({ ...DEFAULT_OPTIONS, bug: true }, BUG_MARKERS_SEED).result;
+const bugNaive = runSeed({ ...naiveOptions, bug: true }, BUG_NAIVE_SEED).result;
 const loose = runSeed({ ...DEFAULT_OPTIONS, fifo: false }, BROKEN_SEED).result;
 const SENDS_DEFAULT = SENDS.min + 1;
 const fifoSmall = searchSmall(true, SENDS_DEFAULT);
 const looseSmall = searchSmall(false, SENDS_DEFAULT);
 const missing = loose.mismatched[0];
+const lastStep = looseSmall.violation?.steps[looseSmall.violation.steps.length - 1];
+export const SMALL_RECORDED = lastStep ? recordedTotals(lastStep.state.nodes).total : null;
 
 const lesson: LessonModule = {
   Stage,
@@ -29,22 +34,23 @@ const lesson: LessonModule = {
       'Debugging a distributed run from a recorded global state',
       'Reasoning about why an offset commit is a snapshot of one process, not of the system',
     ],
-    why: 'A global state assembled from local readings can contradict itself, and the contradiction looks like a bug in the system. A consistent cut tells a real fault, such as lost tokens, from an artefact of when each process looked.',
+    why: 'A global state assembled from local readings can contradict itself, and the contradiction looks like a bug in the system. On FIFO channels a consistent cut tells a real fault, such as lost tokens, from an artefact of when each process looked.',
     watch:
       'The three processes are plain categories (amber, pink, sky). A token in flight is blue, a marker is violet, and a recorded process state is yellow with a dashed outline. A recorded channel content is blue and outlined. A check that holds is green, a lost or double-counted amount and an offending message are red. The chips say what is simulated, illustrative or from memory.',
   },
   tryThis: [
     `Press play and let the run finish (or drag the player to the last frame): the recorded total reads ${markers.total} of ${TOTAL_TOKENS} and both checks hold.`,
-    `Switch the method to Everyone records at a chosen time and play to the end: the total reads ${naive.total} for this seed, but the closure check fails and names the message: ${offenceText(naive.closure.offence!)}.`,
-    `Still with the naive cut, set B's record time to 0 ms and play: the total reads ${bEarly.total}. Set it to 200 ms: ${bLate.total}. It moves in both directions.`,
+    `Switch the method to Everyone records at a chosen time (the seed moves to ${NAIVE_SEED}, a seed where it fails) and play to the end: the total reads ${naive.total} of ${TOTAL_TOKENS} for this seed, and the closure check fails and names the message: ${offenceText(naive.closure.offence!)}. 
+Then set B's record time to 0 ms and play: the total reads ${bEarly.total}. Set it to 200 ms: ${bLate.total}. The total moves with the moment each process looks, and none of the readings counts the tokens in flight.`,
     `Back on Markers, turn FIFO off (seed ${BROKEN_SEED} is the pinned failing seed) and play to the end: the total reads ${loose.total} of ${TOTAL_TOKENS}, and the page names the channel from ${missing.from} to ${missing.to}, which held ${missing.inFlight} tokens that nobody recorded.`,
-    `Open the second scene at ${SENDS_DEFAULT} transfers each: with FIFO the total is conserved in ${integer(fifoSmall.states)} states, and without it a counterexample of ${looseSmall.violation?.steps.length} steps loads in the trace player. Step to the end: the record sums to 3 of ${SMALL.total}.`,
+    `Open the second scene at ${SENDS_DEFAULT} transfers each: with FIFO the total is conserved in ${integer(fifoSmall.states)} states, and without it a counterexample of ${looseSmall.violation?.steps.length} steps loads in the trace player. Step to the end: the record sums to ${SMALL_RECORDED} of ${SMALL.total}.`,
+    `Open the third scene (the bug is on and the seed is ${BUG_MARKERS_SEED}): with markers C dropped ${bugged.lostInCut} tokens inside the cut and the record reads ${bugged.total} of ${TOTAL_TOKENS}, a shortfall that is real. Switch to the naive cut (the seed moves to ${BUG_NAIVE_SEED}): the total reads ${bugNaive.total} of ${TOTAL_TOKENS}, and the page can no longer say how much of the shortfall is the bug.`,
   ],
   keyIdeas: [
     'A snapshot is a consistent cut, not a moment: recording everywhere at one time misses the tokens in flight, or counts a token twice when a receive is inside the cut and its send is outside.',
     'A marker separates what was sent before the sender recorded from what was sent after, so each process records its state at the first marker and records a channel until that channel\'s marker arrives.',
     'The algorithm needs FIFO channels in this model: a marker that overtakes a token sent before it closes the channel before the token arrives, and the token appears in nobody\'s record.',
-    `A snapshot that passes the closure check has a total that can be trusted: when it reads 297 the missing 3 tokens are really missing. The checks ran on seeded runs and on ${integer(fifoSmall.states)} explored states of a small model, and neither covers other sizes.`,
+    `On FIFO channels, a snapshot that passes the closure check has a total that can be trusted: when it reads 297 the missing 3 tokens are really missing. Without FIFO that fails: seed ${BROKEN_SEED} passes the closure check, reads ${loose.total}, and the missing tokens are still in a channel. The checks ran on seeded runs and on ${integer(fifoSmall.states)} explored states of a small model, and neither covers other sizes.`,
   ],
   quiz: [
     {
@@ -81,7 +87,7 @@ const lesson: LessonModule = {
       why: 'If the marker arrives first, the receiver records its state and closes the channel without the earlier token, which then appears in nobody\'s record. The search finds this in 4 steps. Variants for non-FIFO channels exist but are not built here.',
     },
     {
-      q: 'A consistent snapshot of the token system totals 297. What can you conclude?',
+      q: 'A snapshot of the token system on FIFO channels passes the closure check and totals 297. What can you conclude?',
       options: [
         'The recording was inconsistent, so you should simply take another',
         'Three tokens are still in flight and will arrive a little later',
@@ -89,7 +95,7 @@ const lesson: LessonModule = {
         'Three tokens are really missing from the system in this run',
       ],
       answer: 3,
-      why: 'Tokens in flight are in the recorded channel contents, so they are already inside the 297. A cut that passes the closure check leaves no recording artefact to blame, so the shortfall is a real loss, such as a process that drops what it receives.',
+      why: 'On FIFO channels tokens in flight are in the recorded channel contents, so they are already inside the 297. A cut that passes the closure check leaves no recording artefact to blame, so the shortfall is a real loss, such as a process that drops what it receives. Without FIFO this inference fails, as the non-FIFO seed shows.',
     },
     {
       q: 'A sends 30 to B. A records after sending (70), B records before receiving (100), and C records 100. What is the naive total?',

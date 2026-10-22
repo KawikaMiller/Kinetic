@@ -218,6 +218,8 @@ export function auditChannels(trace: readonly TraceRow<SnapMsg>[], cut: readonly
 }
 
 export interface Result {
+  /** How the snapshot was taken: the captions word a naive cut and a marker cut differently. */
+  method: Method;
   /** The snapshot finished: every process recorded (and, for markers, every channel closed). */
   finished: boolean;
   states: number;
@@ -241,6 +243,7 @@ export function resultOf(views: readonly NodeView[], trace: readonly TraceRow<Sn
   const cut = views.map((v) => v.cut ?? v.events);
   const cView = views[NAMES.indexOf('C')];
   return {
+    method,
     finished,
     states: totals.states,
     channels: method === 'markers' ? totals.channels : 0,

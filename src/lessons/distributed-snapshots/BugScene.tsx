@@ -4,6 +4,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { bugCaption, verdictWords } from './captions';
+import { bugSeedFor, followSeed } from './demoSeeds';
 import { DEFAULT_OPTIONS, DROP_SHARE, SEED_RANGE, SEEDS_TOTAL, runSeed, type Method } from './sim';
 import { TOTAL_TOKENS } from './snapshot';
 
@@ -15,7 +16,11 @@ const METHODS = [
 export function BugScene({ picker }: { picker: ReactNode }) {
   const [bug, setBug] = useState(true);
   const [method, setMethod] = useState<Method>('markers');
-  const [seed, setSeed] = useState(1);
+  const [seed, setSeed] = useState(bugSeedFor('markers'));
+  const changeMethod = (next: Method) => {
+    setSeed(followSeed(seed, method, next, bugSeedFor));
+    setMethod(next);
+  };
   const options = useMemo(() => ({ ...DEFAULT_OPTIONS, method, bug }), [method, bug]);
   const { result } = useMemo(() => runSeed(options, seed), [options, seed]);
   const across = useMemo(() => {
@@ -46,7 +51,7 @@ export function BugScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <Toggle label={`C silently drops ${Math.round(DROP_SHARE * 100)}% of the transfers it receives`} value={bug} onChange={setBug} />
-          <Segmented label="Method" options={METHODS} value={method} onChange={setMethod} />
+          <Segmented label="Method" options={METHODS} value={method} onChange={changeMethod} />
           <SeedField seed={seed} onSeed={setSeed} />
         </>,
       ]}
