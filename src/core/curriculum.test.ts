@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import rolloutPlan from '../../docs/rollout-plan.md?raw';
 import { FAMILIES, TOPICS, TRACKS } from './curriculum';
-import { BUILT_TOPICS } from './lessons';
+import { PLANNED_COLLAPSE_AT } from '../pages/home/TierSection';
+import { BUILT_TOPICS, isBuilt } from './lessons';
 import { tier3PlanRows } from './testing/tier3Plan';
+import { tier4PlanRows } from './testing/tier4Plan';
 import { ALL, filterToParams, matchesFilter, parseFilter, tracksInFamily } from './topicFilter';
 
 /** The Tier 3 lessons that existed before the kickoff registered the planned ones (plan §5). */
@@ -13,6 +15,15 @@ const EXISTING_TIER3 = new Set([
 /** Plan headline table: new Tier 3 topics per track. */
 const TIER3_NEW_PER_TRACK = {
   hw: 4, os: 9, lang: 12, math: 15, dsa: 18, net: 9, arch: 16, data: 21, sec: 12, ops: 10, craft: 5, web: 5, ml: 11, lead: 7,
+};
+/** The nine Tier 4 lessons that existed before the Tier 4 kickoff registered the planned ones. */
+const EXISTING_TIER4 = new Set([
+  'raft', 'distributed-transactions', 'backpressure', 'multi-region', 'lsm-trees', 'crdts', 'probabilistic-structures',
+  'slos-error-budgets', 'zero-trust',
+]);
+/** Plan §2 headline: new Tier 4 topics per track (41). */
+const TIER4_NEW_PER_TRACK = {
+  hw: 1, os: 2, lang: 2, math: 2, dsa: 6, arch: 8, data: 1, sec: 5, ops: 2, craft: 2, ml: 3, lead: 7,
 };
 const byId = new Map(TOPICS.map((t) => [t.id, t]));
 
@@ -103,6 +114,52 @@ describe('curriculum', () => {
       for (const p of tier3PlanRows) {
         const t = byId.get(p.id);
         expect({ tier: t?.tier, track: t?.track, title: t?.title }, p.id).toEqual({ tier: 3, track: p.track, title: p.title });
+      }
+    });
+  });
+
+  describe('Tier 4 roadmap (docs/tier4-plan.md §2)', () => {
+    const tier4 = TOPICS.filter((t) => t.tier === 4);
+    const newTier4 = tier4.filter((t) => !EXISTING_TIER4.has(t.id));
+
+    it('registers the 9 existing lessons plus the 41 planned topics, 50 in all', () => {
+      expect(tier4.filter((t) => EXISTING_TIER4.has(t.id))).toHaveLength(9);
+      expect(newTier4).toHaveLength(41);
+      expect(tier4).toHaveLength(50);
+    });
+
+    it('counts the new topics per track as the plan does', () => {
+      const counts: Record<string, number> = {};
+      for (const t of newTier4) counts[t.track] = (counts[t.track] ?? 0) + 1;
+      expect(counts).toEqual(TIER4_NEW_PER_TRACK);
+    });
+
+    it('counts all Tier 4 topics per track (new plus the nine existing)', () => {
+      const counts: Record<string, number> = {};
+      for (const t of tier4) counts[t.track] = (counts[t.track] ?? 0) + 1;
+      expect(counts).toEqual({ hw: 1, os: 2, lang: 2, math: 2, dsa: 7, arch: 12, data: 3, sec: 6, ops: 3, craft: 2, ml: 3, lead: 7 });
+    });
+
+    it('keeps leases-fencing in Tier 3', () => {
+      expect(byId.get('leases-fencing')?.tier).toBe(3);
+    });
+
+    it('shows 50 Tier 4 cards on the home page: the built ones, then the rest behind "Show N planned"', () => {
+      const built = tier4.filter((t) => isBuilt(t.id));
+      const planned = tier4.filter((t) => !isBuilt(t.id));
+      expect(built.length + planned.length).toBe(50);
+      for (const id of EXISTING_TIER4) expect(isBuilt(id), id).toBe(true);
+      // The nine existing lessons are built; every other Tier 4 topic is planned until its batch merges.
+      expect(planned.every((t) => !EXISTING_TIER4.has(t.id))).toBe(true);
+      expect(planned.length, 'collapsed behind the toggle while it exceeds the threshold').toBeGreaterThan(0);
+      if (planned.length > PLANNED_COLLAPSE_AT) expect(`Show ${planned.length} planned topics`).toMatch(/^Show \d+ planned topics$/);
+    });
+
+    it.skipIf(!tier4PlanRows.length)('matches the plan table row for row (id, track, title)', () => {
+      expect(tier4PlanRows).toHaveLength(41);
+      for (const p of tier4PlanRows) {
+        const t = byId.get(p.id);
+        expect({ tier: t?.tier, track: t?.track, title: t?.title }, p.id).toEqual({ tier: 4, track: p.track, title: p.title });
       }
     });
   });
