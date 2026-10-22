@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ABORT_SHARE, ABORT_W, BROKEN_SEED, DEFAULT_FALLBACKS, EDGES, ERROR_SHARES, EXPOSURES, FAULT_FROM, FAULT_TICKS, GAME_ABORT, HYPOTHESIS, INSTANCES, REQUESTS_PER_TICK,
-  RUN_TICKS, SERVICES, SWEEP_SEEDS, checkoutWorks, defaultCard, downSet, evaluate, gameDay, longestBadRun, onJourney, radiusOf, runExperiment, successProbability,
+  RUN_TICKS, SERVICES, SWEEP_SEEDS, checkoutWorks, defaultCard, downSet, drawCard, evaluate, gameDay, longestBadRun, onJourney, radiusOf, runExperiment, successProbability,
   sweepGameDays, violatesRule, withFallbacks, workingFaultSets, type Card, type Fallbacks, type Service,
 } from './model';
 
@@ -120,13 +120,40 @@ describe('the experiment card', () => {
 describe('rule 0: success is never below the abort share for more than w + 1 consecutive ticks', () => {
   const abort = GAME_ABORT;
 
-  it('broken mode (abort = none): the lowest failing seed is pinned, and 40% to 75% of 200 seeds break the rule, never all', () => {
+  it('broken mode (abort = none): the lowest failing seed is pinned, and 30% to 90% of 200 seeds break the rule, never all', () => {
     const sweep = sweepGameDays(DEFAULT_FALLBACKS);
     expect(sweep.withoutAbort[0]).toBe(BROKEN_SEED);
-    expect(sweep.withoutAbort.length).toBeGreaterThan(0.4 * SWEEP_SEEDS);
-    expect(sweep.withoutAbort.length).toBeLessThan(0.75 * SWEEP_SEEDS);
+    expect(sweep.withoutAbort.length).toBeGreaterThan(0.3 * SWEEP_SEEDS);
+    expect(sweep.withoutAbort.length).toBeLessThanOrEqual(0.9 * SWEEP_SEEDS);
     const g = gameDay(BROKEN_SEED, DEFAULT_FALLBACKS);
     expect(longestBadRun(g.withoutAbort.ticks, abort.belowShare)).toBeGreaterThan(abort.w + 1);
+  });
+
+  it('every broken seed is a real breach (expected success below the abort line, by hand: 1 - exposure x impact), and the old pin, seed 1, is a knife-edge tie that no longer counts', () => {
+    const sweep = sweepGameDays(DEFAULT_FALLBACKS);
+    const hand = (seed: number): number => {
+      const c = drawCard(seed, { ...defaultCard(), fallbacks: DEFAULT_FALLBACKS });
+      const impact = c.fault.kind === 'kill' ? c.fault.k / INSTANCES : c.fault.p;
+      return onJourney(c.fault.target, DEFAULT_FALLBACKS) ? 1 - c.exposure * impact : 1;
+    };
+    for (const seed of sweep.withoutAbort) expect(hand(seed), `seed ${seed}`).toBeLessThan(abort.belowShare - 1e-9);
+    // Seed 1 draws db errors on 20% at 25% exposure: 1 - 0.25 x 0.2 = 0.95, exactly the abort line.
+    expect(hand(1)).toBeCloseTo(0.95, 12);
+    expect(sweep.withoutAbort).not.toContain(1);
+    // Seed 2: catalog, errors on 100% at 25% exposure, expected success 0.75, a clean counterexample.
+    const two = drawCard(2, { ...defaultCard(), fallbacks: DEFAULT_FALLBACKS });
+    expect([two.fault.target, two.fault.kind, two.fault.p, two.exposure]).toEqual(['catalog', 'errors', 1, 0.25]);
+    expect(hand(2)).toBeCloseTo(0.75, 12);
+    // How many seeds the old rule (bad run alone) counted that were ties: the tie seeds are all excluded now.
+    let ties = 0;
+    for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
+      const g = gameDay(seed, DEFAULT_FALLBACKS);
+      if (Math.abs(hand(seed) - abort.belowShare) < 1e-9 && violatesRule(g.withoutAbort.ticks, abort)) {
+        ties += 1;
+        expect(g.brokenWithout).toBe(false);
+      }
+    }
+    expect(ties).toBeGreaterThan(5);
   });
 
   it('fixed mode (abort on) passes all 200 seeds, and on every seed where the unaborted run broke the rule the aborted run has an abort tick', () => {

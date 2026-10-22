@@ -60,8 +60,8 @@ export const checkoutWorks = (down: ReadonlySet<Service>): boolean => !down.has(
 /** Blast radius of killing one service: how many services end up down. */
 export const radiusOf = (s: Service, fallbacks: Fallbacks): number => downSet([s], fallbacks).size;
 
-/** BROKEN_SEED: the lowest seed (from 1) on which the game day breaks rule 0 with no abort condition; pinned by the test. */
-export const BROKEN_SEED = 1;
+/** BROKEN_SEED: the lowest seed (from 1) on which the game day breaks rule 0 with no abort condition; pinned by the test. Seed 1 was a knife-edge tie (expected success exactly at the abort line), so it no longer counts. */
+export const BROKEN_SEED = 2;
 
 /** Is the service on the journey: does losing it take checkout down? */
 export const onJourney = (s: Service, fallbacks: Fallbacks): boolean => !checkoutWorks(downSet([s], fallbacks));
@@ -185,7 +185,7 @@ export function evaluate(card: Card): Experiment {
   return { ticks, meanSuccess, failedTotal, outcome };
 }
 
-/** Rule 0 (bounded experiment): success is never below the abort share for more than w + 1 consecutive ticks (w to decide, one to remove the fault). */
+/** Rule 0 (bounded experiment): success is never below the abort share for more than w + 1 consecutive ticks (w to decide, one to remove the fault); a game-day seed counts as broken only when its expected success is also below the line. */
 export function longestBadRun(ticks: readonly TickResult[], belowShare: number): number {
   let best = 0;
   let run = 0;
@@ -197,6 +197,12 @@ export function longestBadRun(ticks: readonly TickResult[], belowShare: number):
 }
 
 export const violatesRule = (ticks: readonly TickResult[], abort: Abort): boolean => longestBadRun(ticks, abort.belowShare) > abort.w + 1;
+
+/** Expected success sitting exactly on the abort line (a tie on the percent lattice) is not a breach: it is a coin flip, not a sustained one. */
+const TIE_EPS = 1e-9;
+
+/** A real breach: the experiment's expected success is below the abort line, so a bad run is the fault's doing and not Poisson luck. */
+export const breaches = (card: Pick<Card, 'fault' | 'exposure' | 'fallbacks'>, abort: Abort): boolean => successProbability(card) < abort.belowShare - TIE_EPS;
 
 /* ---------- scene 3: a seeded game day ---------- */
 
@@ -225,7 +231,7 @@ export function gameDay(seed: number, fallbacks: Fallbacks, abort: Abort = GAME_
   const card = drawCard(seed, { ...defaultCard(), fallbacks, abort });
   const withAbort = evaluate({ ...card, abort });
   const withoutAbort = evaluate({ ...card, abort: null });
-  return { card, withAbort, withoutAbort, brokenWithout: violatesRule(withoutAbort.ticks, abort), brokenWith: violatesRule(withAbort.ticks, abort) };
+  return { card, withAbort, withoutAbort, brokenWithout: breaches(card, abort) && violatesRule(withoutAbort.ticks, abort), brokenWith: breaches(card, abort) && violatesRule(withAbort.ticks, abort) };
 }
 
 export interface GameSweep {

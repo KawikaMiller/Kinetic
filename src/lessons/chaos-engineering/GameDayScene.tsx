@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { integer, pctText } from '../../core/format';
 import { faultText, gameFallbacks, initialGame, outcomeText, successFloor, type GameState } from './init';
-import { BROKEN_SEED, FAULT_FROM, FAULT_TO, GAME_ABORT, RUN_TICKS, SWEEP_SEEDS, gameDay, longestBadRun, sweepGameDays, type Experiment } from './model';
+import { FAULT_FROM, FAULT_TO, GAME_ABORT, RUN_TICKS, SWEEP_SEEDS, gameDay, longestBadRun, sweepGameDays, type Experiment } from './model';
 
 const legend = (
   <Legend
@@ -38,6 +38,7 @@ export function GameDayScene({ picker }: { picker: ReactNode }) {
   const fallbacks = useMemo(() => gameFallbacks({ seed, recsFallback }), [seed, recsFallback]);
   const day = useMemo(() => gameDay(seed, fallbacks), [seed, fallbacks]);
   const sweep = useMemo(() => sweepGameDays(fallbacks), [fallbacks]);
+  const lowest = sweep.withoutAbort[0];
   const floor = Math.min(successFloor(day.withoutAbort, GAME_ABORT.belowShare), successFloor(day.withAbort, GAME_ABORT.belowShare));
   const rule = `success never below ${pctText(GAME_ABORT.belowShare, 0)} for more than ${GAME_ABORT.w + 1} ticks in a row`;
 
@@ -61,7 +62,7 @@ export function GameDayScene({ picker }: { picker: ReactNode }) {
         </>,
         <>
           <SeedField seed={g.seed} onSeed={(seed) => setG((x) => ({ ...x, seed }))} />
-          <ChipButton tone="bad" onClick={() => setG((x) => ({ ...x, seed: BROKEN_SEED }))}>Load the lowest failing seed ({BROKEN_SEED})</ChipButton>
+          {lowest !== undefined && <ChipButton tone="bad" onClick={() => setG((x) => ({ ...x, seed: lowest }))}>Load the lowest failing seed ({lowest})</ChipButton>}
           <Button onClick={() => setG(initialGame())}>Reset</Button>
         </>,
       ]}
@@ -80,7 +81,7 @@ export function GameDayScene({ picker }: { picker: ReactNode }) {
         <ProvenanceRow>
           <Provenance kind="simulated" seed={g.seed}>the experiment, its target, its size and its exposure are all drawn from the seed</Provenance>
           <Provenance kind="illustrative">thresholds and instance counts are made up</Provenance>
-          <Provenance kind="from-memory">the practice was popularised by a streaming company's chaos tooling and published principles; verify before attributing it</Provenance>
+          <Provenance kind="from-memory">the practice was popularised by a streaming company's chaos tooling and published principles; verify against the published Principles of Chaos Engineering page before attributing it</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

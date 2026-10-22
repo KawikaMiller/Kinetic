@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
-import { experimentCaption, faultText, initialExperiment, initialGame, initialMap, mapCaption, noAbortWarning, outcomeText, radiusRows, runnable, setsText } from './init';
+import { experimentCaption, faultText, hypothesisAbortNote, initialExperiment, initialGame, initialMap, knifeEdgeNote, mapCaption, noAbortWarning, outcomeText, radiusRows, runnable, setsText } from './init';
 import lesson from './index';
-import { DEFAULT_FALLBACKS, SWEEP_SEEDS, defaultCard, downSet, evaluate, sweepGameDays, withFallbacks } from './model';
+import { BROKEN_SEED, DEFAULT_FALLBACKS, SWEEP_SEEDS, defaultCard, downSet, evaluate, sweepGameDays, withFallbacks } from './model';
 
 describe('try-this entries, from each scene\'s opening state, as written', () => {
   it('try-this 1: killing recs takes {recs, api, web}; with its fallback only recs', () => {
@@ -66,6 +66,43 @@ describe('texts come from the model', () => {
     expect(outcomeText(e, defaultCard())).toContain('for this fault, this exposure and these 100 ticks');
     expect(setsText(DEFAULT_FALLBACKS)).toBe('2 of 128');
     expect(setsText(withFallbacks(true, true))).toBe('4 of 128');
+  });
+});
+
+describe('on-screen claims come from the model (review fixes)', () => {
+  it('the pinned game-day seed is the first seed of the flaw sweep and the default of the game scene', () => {
+    expect(BROKEN_SEED).toBe(2);
+    expect(sweepGameDays(DEFAULT_FALLBACKS).withoutAbort[0]).toBe(initialGame().seed);
+  });
+
+  it('the "aborts before it can refute" note only says it aborted when the run aborted, and the old always-on wording is gone', () => {
+    const base = { ...runnable(initialExperiment()), hypothesis: 0.9, abort: { belowShare: 0.95, w: 2 } };
+    const held = evaluate({ ...base, fault: { target: 'api' as const, kind: 'kill' as const, k: 4, p: 1 }, exposure: 0.01 });
+    expect(held.outcome.kind).toBe('held');
+    const note = hypothesisAbortNote({ ...base, fault: { target: 'api', kind: 'kill', k: 4, p: 1 }, exposure: 0.01 }, held)!;
+    expect(note).not.toContain('This experiment will abort');
+    expect(note).not.toContain('aborted before');
+    expect(note).toContain('It did not drop here');
+    const apiAll = { ...base, fault: { target: 'api' as const, kind: 'kill' as const, k: 4, p: 1 }, exposure: 1 };
+    const aborted = evaluate(apiAll);
+    expect(aborted.outcome.kind).toBe('aborted');
+    expect(hypothesisAbortNote(apiAll, aborted)).toContain('This experiment aborted before it could refute the hypothesis');
+    expect(hypothesisAbortNote({ ...base, hypothesis: 0.99 }, held)).toBeNull();
+  });
+
+  it('an aborted outcome says what success averaged; a knife-edge abort line gets the coin-flip note and a clear one does not', () => {
+    const apiAll = { ...runnable(initialExperiment()), fault: { target: 'api' as const, kind: 'kill' as const, k: 4, p: 1 }, exposure: 1 };
+    const aborted = evaluate(apiAll);
+    expect(outcomeText(aborted, apiAll)).toContain('aborted at tick 21 (success averaged');
+    // db kill 4 at 1% exposure: expected success 99.00%; abort line 99%: the review's coin flip.
+    const edge = { ...runnable(initialExperiment()), fault: { target: 'db' as const, kind: 'kill' as const, k: 4, p: 1 }, exposure: 0.01, abort: { belowShare: 0.99, w: 1 } };
+    expect(knifeEdgeNote(edge)).toContain('coin flip');
+    expect(knifeEdgeNote(runnable(initialExperiment()))).toBeNull();
+    expect(knifeEdgeNote({ ...edge, abort: null })).toBeNull();
+  });
+
+  it('no try-this prints "null" or "undefined"', () => {
+    for (const t of lesson.tryThis) expect(t).not.toMatch(/\bnull\b|undefined/);
   });
 });
 

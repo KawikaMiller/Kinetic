@@ -85,7 +85,7 @@ const lesson: LessonModule = {
         'Abort thresholds are set by the customer contract, not by the team',
       ],
       answer: 0,
-      why: 'Missing the hypothesis at 98.75% against 99% is a finding worth having and costs little. The abort line is where customers start to pay, so it is set lower; a looser threshold fires later, not more often.',
+      why: 'Missing the hypothesis at 98.75% against 99% is a finding worth having and costs little. The abort line is where the damage stops being worth the information, so it is set lower; a looser threshold fires later, not more often.',
     },
     {
       q: 'Kill 1 of 4 db instances with 5% of traffic exposed. What is the expected checkout success?',

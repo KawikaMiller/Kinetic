@@ -3,9 +3,10 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { Band, Curve, HLine, Plot2D } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
+import { Link } from 'react-router-dom';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { integer, pctText } from '../../core/format';
-import { experimentCaption, hypothesisBelowAbort, initialExperiment, noAbortWarning, outcomeText, runnable, successFloor, type ExperimentState } from './init';
+import { experimentCaption, hypothesisAbortNote, initialExperiment, knifeEdgeNote, noAbortWarning, outcomeText, runnable, successFloor, type ExperimentState } from './init';
 import {
   ABORT_SHARE, ABORT_W, ERROR_SHARES, EXPOSURES, FAULT_FROM, FAULT_TO, HYPOTHESIS, INSTANCES, RUN_TICKS, SERVICES, evaluate, successProbability,
   type FaultKind, type Service,
@@ -24,7 +25,7 @@ const legend = (
     items={[
       { color: 'var(--info)', label: 'observed checkout success', shape: 'line' },
       { color: 'var(--ok)', label: 'the hypothesis', shape: 'line' },
-      { color: 'var(--bad)', label: 'the abort threshold', shape: 'line' },
+      { color: 'var(--bad)', label: 'the abort threshold (grey when the abort is off)', shape: 'line' },
       { color: 'var(--violet)', label: 'the fault window' },
     ]}
   />
@@ -88,13 +89,14 @@ export function ExperimentScene({ picker }: { picker: ReactNode }) {
           <Plot2D x={{ domain: [1, RUN_TICKS], label: 'tick' }} y={{ domain: [floor, 1], label: 'checkout success' }} ariaLabel="Observed checkout success per tick, with the hypothesis and the abort threshold">
             <Band lo={floor} hi={1} from={FAULT_FROM} to={FAULT_TO} tone="violet" />
             <HLine at={card.hypothesis} tone="ok" dashed={false} />
-            <HLine at={card.abort.belowShare} tone="bad" />
+            <HLine at={card.abort.belowShare} tone={s.abortOn ? 'bad' : 'dim'} label={s.abortOn ? undefined : 'abort: not armed'} />
             <Curve points={points} tone="info" />
           </Plot2D>
         </Box>
         {warning !== null && <Hint tone="bad" block>{warning}</Hint>}
-        {hypothesisBelowAbort(run) && <Hint tone="muted" block>This experiment will abort before it can refute the hypothesis: the abort threshold sits above it.</Hint>}
-        <Hint tone="muted" block>A held hypothesis says only that: held for this fault, this exposure and these 100 ticks. It does not say the system is resilient. An error budget would set the abort number in practice; here it is a slider.</Hint>
+        {hypothesisAbortNote(run, e) !== null && <Hint tone="muted" block>{hypothesisAbortNote(run, e)}</Hint>}
+        {knifeEdgeNote(run) !== null && <Hint tone="muted" block>{knifeEdgeNote(run)}</Hint>}
+        <Hint tone="muted" block>A held hypothesis says only that: held for this fault, this exposure and these 100 ticks. It does not say the system is resilient. An <Link to="/lesson/slos-error-budgets">error budget</Link> would set the abort number in practice; here it is a slider. The experiment builds on <Link to="/lesson/circuit-breakers">circuit breakers</Link>, <Link to="/lesson/health-checks">health checks</Link>, <Link to="/lesson/observability">observability</Link> and <Link to="/lesson/graceful-degradation">graceful degradation</Link>.</Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={card.seed}>200 requests a tick, each a seeded draw; the fault changes the chance a request on the journey fails</Provenance>
           <Provenance kind="illustrative">four instances, 200 requests a tick and every threshold are made up</Provenance>
