@@ -1515,6 +1515,7 @@
 `live.snap  live.setPaused  live.reset  live.world().sim   // useSimulation's result; world() only from handlers/effects
 ````
 `- Wall-clock time only decides *how many* ticks run, never what they do, so a test, a frame and the live view see one trace. Once `check` fails the sim stops advancing so the counterexample stays on screen. The history is kept in memory (one state per tick): a lesson running millions of ticks should snapshot, not store. `ticksDue(carry, frameDt, dt, max)` is the pure frame-to-ticks arithmetic.
+`- **Fixed-tick note (Tier 4, llm-serving-style sims):** a tick is whatever the model says it is, and `createTickSim` never rescales it. A scheduler-style simulation (continuous batching, an LLM serving loop) uses ONE tick per scheduler iteration, not one per millisecond, and shows the iteration index as its time axis; if a figure needs wall time, convert from iterations with a named constant, never by changing the tick length mid-run.
 `
 `### `Stat` multi-line `sub` (K3-3) — queueing-theory, percentiles-statistics, hypothesis-testing-ab, capacity-planning, tail-latency, back-of-envelope, benchmarking-methodology
 ``sub` takes a node (as before) or an array of nodes, drawn one line each (each wraps at 390 px): `<Stat label="p" value="0.031" sub={['95% interval 0.01 to 0.05', 'n = 400 per arm']} />`. A single node renders exactly as it always did.
@@ -2254,6 +2255,55 @@ isVertexCover(edges, set)   uncoveredEdges(edges, set)   // edge indices left un
 - **Exact:** branch and bound on the highest-degree vertex (ties to the lowest index): take it, or take all its neighbours; pruned by a maximal-matching lower bound. The first optimum reached is returned, taking the vertex first, so K3,3 gives {0, 1, 2} and the star gives its centre. Throws `RangeError` above `MAX_EXACT_VERTICES` (30), on a loop, or on an out-of-range endpoint. np-reductions' gadget graph for 4 variables and 5 clauses has 23 vertices.
 - **2-approximation:** `maximalMatching(edges).vertices` (both endpoints of every matching edge) is a cover of at most twice the optimum. It is not the learner's click order: for a learner-built matching use `canAddToMatching` per click and `isMaximalMatching` before "Done", then `matchedVertices(edges, chosen)`.
 - **Tests (`vertexCover.test.ts`)**: against a separately written bitmask brute force on EVERY graph with up to 6 vertices (each labelled edge subset: 1 + 1 + 2 + 8 + 64 + 1,024 + 32,768) and 500 seeded graphs of 7 to 11 vertices; the bound `|matching vertices| <= 2 * OPT` on both, reached exactly (ratio 2) on a 1,000-graph seeded set; the spec fixtures (K3,3, path, triangle, star); and the reduction's own property, minimum cover at most K = n + 2m exactly when `core/sat` brute force says the formula is satisfiable, on 100 seeded gadget graphs.
+
+### `core/explore.ts`, `core/pureProtocol.ts`, `components/TracePlayer.tsx`, `core/traceFrames.ts` (K4-2) — paxos, deterministic-simulation-testing, byzantine-faults, flp-impossibility, distributed-snapshots, memory-ordering-atomics, lock-free-cas, formal-methods
+
+```ts
+import { explore, type ActionLabel, type Transition } from '../../core/explore';
+import { networkExplorer, asDistNodes, type PureProtocol } from '../../core/pureProtocol';
+import { TracePlayer } from '../../components/TracePlayer';
+import { explorePathSteps, traceRowSteps } from '../../core/traceFrames';
+
+const r = explore<S, ActionLabel>({
+  init,                                   // the start state
+  actions: (s) => [{ label: { actor: 'T1', text: 'load head' }, next }],   // deterministic order; the label says WHO acted and what
+  key: (s) => string,                     // canonical form: two states with one key are one state
+  invariant: (s) => (bad(s) ? 'message' : null),   // checked on every state, the initial one included
+  maxStates: 250_000,                     // default; maxDepth optional
+  onVisit: ({ state, index, depth }) => {},        // optional, once per state in discovery order
+  graph: true,                            // optional: also return { states, edges[i] = [{ to, label }] } for valency-style analyses
+});
+// -> { states, depth, truncated, violation: { message, path: [{ label, state }] } | null, graph? }
+```
+
+- **BFS, so the violation path is the SHORTEST.** `truncated` is true when a budget (`maxStates`, `maxDepth`) stopped the search with unexplored successors; it is false only if the whole reachable space was visited. Say "holds in all N states" only when `truncated` is false; otherwise "no violation in the first N states, not exhaustive" (AC-0/T4 #27, #28). The result's `depth` is the deepest level reached.
+- **Action labels** are generic `A`; the convention for several threads or nodes is `ActionLabel { actor, text }` (what `TracePlayer` shows as "T1: load head"). A lesson with its own label type passes it through a small adapter to `TraceStep`.
+- **`PureProtocol<S, M>`** `{ nodes, init(id), onMessage(id, s, { from, payload }) -> { state, send: [{ to, payload }] }, onTimeout?(id, s) -> result | null, stateKey?, describe? }`: pure functions, no mutation, no clock, no randomness. `onTimeout` is the spontaneous step (start a round, retry); null means nothing to do.
+- **`networkExplorer(protocol, { network, fifo, maxCrashed, clientInputs })`** returns `{ init, actions, key, nodeState, nodeStates }`, spread straight into `explore({ ...net, invariant: (s) => safe(net.nodeStates(s)) })`. `network: 'set'` (default): sent messages are never consumed, so ANY sent message may be delivered any number of times, in any order, or never: loss, duplication and reordering are subsumed. `'multiset'`: a delivery consumes the message (use it when counts matter, e.g. 2PC votes). `fifo: true` (multiset only, a set throws): each sender-to-receiver channel is a queue and only its head is deliverable (Chandy-Lamport). `maxCrashed` lets that many nodes crash-stop (a crashed node handles nothing; messages to it stay undelivered). `clientInputs` put messages on the wire at the start. Action labels are `{ actor, kind: 'deliver' | 'timeout' | 'crash', text, message? }`. Keys are JSON of node states, so keep property order consistent in a protocol's states.
+- **`asDistNodes(protocol)`** gives the SAME functions as `core/distSim` nodes for `forSeeds` (a spontaneous step runs on a 1 ms timer after init and after every state change; node state is durable across restarts; build a fresh set per run). Node `snapshot()` is the protocol state, so one predicate over `Record<string, S>` serves both legs.
+- **`TracePlayer`** `{ initial, steps, renderState?, startText?, stateKey?, label?, keyboard? }`: steps come from `explorePathSteps(violation.path)` (an `ActionLabel` path) or `traceRowSteps(verdict.trace)` (a distSim violation, rows in words with times). It renders Transport, the list of steps (click to jump; the Transport and arrow keys are the keyboard path) and `renderState(state, frame)` for the current step. **It memoises its frames internally, keyed on the trace's value**: rebuilding `steps` every render does not restart the player and cannot loop (AC-0/T4 #37). Pure frame builders (`traceFrames`, `traceSignature`) live in `core/traceFrames.ts`.
+- **Fixture and gate (`core/fixtures/paxosProtocol.ts`):** single-decree Paxos, `acceptBelowPromise` and `ignorePromised` planted bugs, `chosenValues`, `atMostOneChosen`. **Spike result, measured:** 3 acceptors, 2 proposers, ballots 1 and 2, values v1 and v2 over the `'set'` network is **2,905 reachable states in about 0.1 s, exhaustive, no violation, no scope cut applied** (fixture sends no `Accepted` messages: chosen is read from the acceptors' vote histories; the part-2 prototype's 7,224 and 614,208 came from a different, larger model). A third ballot (P1 ballots 1 and 3) is 119,865 states, depth 27, about 5.3 s: inside the state budget, marginal on time, so offer 2 ballots as "Exhaustive". Shortest path to any chosen value: 7 steps. See `tier4-kickoff-decisions.md` §7.
+- **Tests:** `explore.test.ts` (planted violation at its shortest depth by closed form, honest `truncated`, graph/visit), `pureProtocol.test.ts` (a planted violation found by BOTH explore and `forSeeds` over `asDistNodes`, the broken copy caught by both and the fixed copy passing both, set/multiset/FIFO semantics, the Paxos gate with a subset-brute-force oracle for "chosen"), `traceFrames.test.ts`.
+
+### `core/distSim` v2 (K4-1) — failure-detectors (one-way partition), distributed-snapshots (fifo), paxos (per-type loss), chaos and deterministic-simulation-testing
+
+All additive and default-off; the Tier 3 distSim tests and the pinned `electionExample` traces pass unchanged with every option unset.
+
+```ts
+createCluster({ seed, nodes, fifo: true,                              // per-link arrival order = send order
+  loss: (msg, now) => (msg.payload.type === 'heartbeat' ? 0.3 : 0),   // or a number; drawn once per send, so unrelated latencies never shift
+});
+cluster.dropWhere((m) => m.payload.type === 'accept', 20, 60);        // EVERY matching message SENT in [20, 60) (dropNext fires once)
+cluster.partition('a', 'b', 20, 60, { oneWay: true });                // only a-to-b is cut; b still reaches a. Rows carry detail: 'one-way'
+cluster.inject(10, 'b', payload, { from: 'a' });                      // a send by node a at t=10: latency, loss, partition and dropWhere apply
+cluster.inject(10, 'b', payload, { durable: true });                  // an environment input that waits for a crashed target's restart
+cluster.inject(10, 'b', payload, 'client');                           // legacy: straight to the node, network faults do not apply
+```
+
+- **`inject` gotchas (found by the Tier 3 sync lessons):** the legacy form (string `from`, or none) bypasses the network and is dropped with reason `down` when the target is crashed at arrival. The `{ from: nodeId }` form requires `from` to be a node (it throws a RangeError otherwise), is recorded as that node's `send`, and can be dropped by a partition, loss or `dropWhere`. For an input that must not vanish while a node is down (a client request in a crash test), pass `{ durable: true }`: it is held and delivered at the node's next restart (after `init`).
+- **fifo:** per link (sender to receiver); a lost message does not hold up the ones behind it; a network duplicate is an extra copy that arrives no earlier than the previous one on the link, so it can still land after later sends.
+- **New drop reason** `dropWhere`; `payloadLabel(payload)` (the `type` field, else JSON) is now exported from `distSim/trace`.
+- **Tests (`clusterV2.test.ts`):** with `fifo`, arrival order equals send order over 500 random-latency seeds and without it at least one seed reorders; a loss function drops exactly the picked messages, receives the send time, and leaves every surviving latency untouched; one-way partition drops only the crossing direction; a network inject is dropped by a partition and an unconstrained one is not; legacy inject to a crashed node is dropped while a durable one arrives at the restart.
 
 ## Not built (deliberately)
 `

@@ -25,7 +25,7 @@ export type TraceKind =
   | 'heal';
 
 /** Why a message was dropped. */
-export type DropReason = 'loss' | 'partition' | 'dropNext' | 'down';
+export type DropReason = 'loss' | 'partition' | 'dropNext' | 'dropWhere' | 'down';
 
 export interface TraceRow<M = unknown> {
   /**
@@ -64,7 +64,8 @@ export interface ToSequenceOptions<M> {
   times?: boolean;
 }
 
-const defaultLabel = (payload: unknown): string => {
+/** The arrow text for a payload: its `type` field when it has one, else its JSON. */
+export const payloadLabel = (payload: unknown): string => {
   if (payload && typeof payload === 'object' && 'type' in payload && typeof payload.type === 'string') return payload.type;
   const text = JSON.stringify(payload);
   return text === undefined ? String(payload) : text;
@@ -80,7 +81,7 @@ const SELF_EVENT_LABEL: Partial<Record<TraceKind, string>> = { crash: 'crash', r
  * Pass `trace.slice(0, n)` to replay the diagram up to row n.
  */
 export function toSequence<M>(trace: readonly TraceRow<M>[], o: ToSequenceOptions<M> = {}): { actors: SeqActor[]; messages: SeqMessage[] } {
-  const label = (p: M) => (o.label ?? defaultLabel)(p);
+  const label = (p: M) => (o.label ?? payloadLabel)(p);
   const events = o.events ?? true;
   const messages: SeqMessage[] = [];
   const byMsg = new Map<number, SeqMessage>();

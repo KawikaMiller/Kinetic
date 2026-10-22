@@ -50,3 +50,16 @@ The part-2 specs for B1 were written as if wave 1. B1 now runs in wave 2, so its
 - The retrofit audit of the nine existing lessons was static (no tests or servers were run); the first gate of each retrofit batch includes `npm run sweep`.
 - Every real-world fact in the specs (papers, authors, years, products, constants, ML-KEM sizes) is from memory and must be chipped on screen; none was checked against a source.
 - Specs run 9 to 18 KB each against a 5 to 8 KB target; builders may skim the quiz seeds first.
+
+## 7. K4-2 spike result (agent D, 2026-10-22)
+
+The Paxos exhaustive search ran first, over `core/pureProtocol` `networkExplorer` with the non-consuming `'set'` network (a sent message may be delivered any number of times, in any order, or never), `core/explore` BFS, fixture `src/core/fixtures/paxosProtocol.ts`. Safety: no two different values chosen (a value is chosen when a majority of acceptors voted the same ballot and value).
+
+| Scope | States | Depth | Time | Result |
+|---|---|---|---|---|
+| 3 acceptors, 2 proposers, ballots 1 and 2 (P1 ballot 1 with v1, P2 ballot 2 with v2) | **2,905** | 18 | **94 ms** | exhaustive, no violation |
+| same with a third ballot (P1 ballots 1 and 3, P2 ballot 2) | 119,865 | 27 | 5.3 s | exhaustive, no violation (state budget fits; the time gate is marginal) |
+
+**Gate (5 s, 250,000 states) is met at 2 ballots with the full scope: NO scope cut was applied** (no symmetry reduction, no "both propose v1", no "one proposer plus a late ballot"). The 3-ballot run fits the state budget but is about 5 s on this machine, so a lesson should offer 2 ballots as the "Exhaustive" label and either cap the 3-ballot search with `maxStates` (then it must say "Truncated") or run it only on a button press.
+
+Why 2,905 and not the part-2 prototype's 7,224: the fixture sends no `Accepted` announcement (chosen is read from the acceptors' vote histories), a proposer stops recording promises once it has sent Accept, and acceptors ignore a rejected Prepare or Accept silently. The shortest path to any chosen value is therefore 7 steps (the prototype's 8 includes an Accepted delivery). The part-2 numbers (7,224, 614,208) describe a different, larger model: a lesson that quotes a count quotes the one its own model produces. Planted bugs (accept below the promise; proposer ignores promised values) are each caught by the explorer with a shortest path of at most 20 steps and by `forSeeds` over `asDistNodes`.
