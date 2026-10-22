@@ -1,20 +1,27 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Hint, Legend, PauseButton, Slider, Stat, Stats } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
+import {
+  Button, ClaimLabel, Controls, Hint, Legend, PauseButton, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats,
+} from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { times } from '../../core/format';
 import { useLoop } from '../../core/hooks';
 import { cssVar, type TokenName } from '../../core/palette';
 import { useSimulation } from '../../core/useSimulation';
-import { N, nodeName, Raft, type RaftEvent, type Role } from './sim';
+import { SCHEDULE_SEEDS } from './check';
+import { DEFAULT_SEED, LiveRaft } from './live';
+import { SafetyPanel } from './SafetyPanel';
+import { HEARTBEAT, LATENCY, MAJORITY, N, nodeName, TIMEOUT_MAX, TIMEOUT_MIN, type Raft, type RaftEvent, type RaftVariant, type Role } from './sim';
 import {
   clusterView, CX, CY, deg, motionView, NODE_R, pos, RING, TIMER_R, VIEW_H, VIEW_W,
   type ClusterView, type MotionView, type NodeView,
 } from './view';
 import './styles.css';
 
-const STAGE_HEIGHT = 470;
+const WIDE_MIN_PX = 420; // the narrowest width where the cluster ring and the log table still read
 const SNAPSHOT_EVERY_S = 0.1; // roles, terms and logs; the moving parts update every frame
 const BEAT_MS = 500; // how long a leader's heartbeat pulse lasts
 const LOG_COLS = 12;
@@ -41,10 +48,36 @@ const EVENT_STYLE: Record<RaftEvent['kind'], { cls: string; label: string }> = {
 const roleColor = (n: { role: Role; alive: boolean }) => (n.alive ? ROLE_COLOR[n.role] : ROLE_COLOR.dead);
 const NO_MOTION: MotionView = { msgs: [], rings: [] };
 
+const VARIANT_OPTIONS: { value: RaftVariant; label: string }[] = [
+  { value: 'raft', label: 'Real rules' },
+  { value: 'commit-without-majority', label: 'Commit without a majority' },
+  { value: 'vote-without-log-check', label: 'Vote without a log check' },
+];
+
+/** What the partition caption says about the cut-off pair and about the rest, from the cluster's actual state. */
+function partitionCaption(raft: Raft) {
+  const rest = raft.nodes.filter((n) => n.alive && !raft.minority?.has(n.id)).length;
+  const cut = [...(raft.minority ?? [])].map(nodeName).join(' + ');
+  const commits =
+    raft.variant === 'commit-without-majority'
+      ? 'The bug lets it commit on 2 of 5 servers, short of a majority.'
+      : `It can take commands but cannot reach ${MAJORITY} of ${N} to commit them.`;
+  const others =
+    rest >= MAJORITY
+      ? `The other ${rest} live servers are a majority and can elect a new leader.`
+      : `Only ${rest} live servers are on the other side: not a majority, so nobody there can win an election.`;
+  return (
+    <>
+      <span className="hl bad">Partition!</span> {cut} are cut off. {commits} {others}
+    </>
+  );
+}
+
 export function Stage() {
   const setCaption = useSetCaption();
   const [speed, setSpeed] = useState(1);
-  const [partitioned, setPartitioned] = useState(false);
+  const [seed, setSeed] = useState(DEFAULT_SEED);
+  const [variant, setVariant] = useState<RaftVariant>('raft');
 
   useIntroCaption(
     <>
@@ -53,10 +86,10 @@ export function Stage() {
     </>,
   );
 
-  const { world, snap: view, paused, togglePause, refresh } = useSimulation({
+  const { world, snap: view, paused, togglePause, refresh, reset } = useSimulation({
     create: () => {
-      const r = new Raft();
-      r.onEvent = (e) => {
+      const live = new LiveRaft(seed, variant);
+      live.raft.onEvent = (e) => {
         const s = EVENT_STYLE[e.kind];
         setCaption(
           <>
@@ -64,46 +97,56 @@ export function Stage() {
           </>,
         );
       };
-      return r;
+      return live;
     },
-    step: (r, dt) => r.step(dt * 1000 * speed),
-    snapshot: clusterView,
+    step: (live, dt) => live.advance(dt * 1000 * speed),
+    snapshot: (live) => clusterView(live.raft, live.monitor),
     snapshotEvery: SNAPSHOT_EVERY_S,
   });
+  const raftOf = useCallback(() => world().raft, [world]);
+
+  // A new seed or rule set starts a new run; the first render already built the right one.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!started.current) {
+      started.current = true;
+      return;
+    }
+    reset();
+    setCaption(
+      <>
+        New run: seed {seed}, {VARIANT_OPTIONS.find((o) => o.value === variant)?.label.toLowerCase()}. Five servers, no leader yet.
+      </>,
+    );
+  }, [seed, variant, reset, setCaption]);
 
   const send = () => {
-    if (!world().clientCommand()) setCaption(<>No leader right now, so the client has nobody to talk to. Wait for an election to finish.</>);
+    if (!raftOf().clientCommand()) setCaption(<>No leader right now, so the client has nobody to talk to. Wait for an election to finish.</>);
     refresh();
   };
 
   const togglePartition = () => {
-    world().setPartition(!partitioned);
-    setPartitioned(!partitioned);
-    if (!partitioned) {
-      setCaption(
-        <>
-          <span className="hl bad">Partition!</span> The leader is stuck with only 1 friend. It can take commands but
-          never reach <b>3/5</b> to commit them. The other 3 will elect a new leader.
-        </>,
-      );
-    }
+    const raft = raftOf();
+    const cutting = !raft.minority;
+    raft.setPartition(cutting);
+    if (cutting) setCaption(partitionCaption(raft));
     refresh();
   };
 
   const toggleNode = (i: number) => {
-    world().toggleNode(i);
+    raftOf().toggleNode(i);
     refresh();
   };
 
   if (!view) return null;
+  const partitioned = view.minority !== null;
   const leader = view.nodes.filter((n) => n.alive && n.role === 'leader').sort((a, b) => b.term - a.term)[0];
   const maxTerm = Math.max(...view.nodes.map((n) => n.term));
   const committed = Math.max(...view.nodes.map((n) => n.commit));
 
   return (
     <StageFrame
-      minWidth={420}
-      height={STAGE_HEIGHT}
+      height={0}
       stats={
         <Stats>
           <Stat label="Term" value={maxTerm} color={termColor(maxTerm)} />
@@ -133,14 +176,17 @@ export function Stage() {
           </Button>
           <Slider label="Sim speed" value={speed} min={0.25} max={2} step={0.25} onChange={setSpeed} format={times} />
           <PauseButton paused={paused} onToggle={togglePause} />
-          <Hint>click a server to crash / restart it</Hint>
+          <Segmented label="Rules" value={variant} onChange={setVariant} options={VARIANT_OPTIONS} />
+          <SeedField seed={seed} onSeed={setSeed} />
+          <Hint>click a server (or focus it and press Enter) to crash / restart it</Hint>
         </Controls>
       }
     >
+      <WideRegion minWidth={WIDE_MIN_PX}>
       <div className="rf">
         <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="rf-svg">
           <circle cx={CX} cy={CY} r={RING} className="rf-orbit" />
-          <MotionLayer world={world} running={!paused} view={view} />
+          <MotionLayer world={raftOf} running={!paused} view={view} />
           <PartitionWall minority={view.minority} />
           {view.nodes.map((n) => (
             <NodeBody key={n.id} n={n} onClick={() => toggleNode(n.id)} />
@@ -151,6 +197,20 @@ export function Stage() {
           <EventLog events={view.events} />
         </div>
       </div>
+      </WideRegion>
+      <SafetyPanel safety={view.safety} variant={variant} />
+      <ProvenanceRow>
+        <Provenance kind="simulated" seed={seed}>
+          a model of Raft, slowed so you can watch: latency about {LATENCY} ms, heartbeat {HEARTBEAT} ms, election timeouts {TIMEOUT_MIN / 1000} to {TIMEOUT_MAX / 1000} s. Same seed, same timeouts; your clicks change the rest
+        </Provenance>
+        <Provenance kind="simulated">
+          safety is sampled over {SCHEDULE_SEEDS} seeded schedules by the Check button, not searched exhaustively
+        </Provenance>
+        <Provenance kind="from-memory">
+          etcd, Consul, CockroachDB and TiKV as Raft users: verify against each project's docs
+        </Provenance>
+        <ClaimLabel kind="research">the current-term commit rule is from the Raft paper (Ongaro and Ousterhout, 2014, from memory): verify against the paper</ClaimLabel>
+      </ProvenanceRow>
     </StageFrame>
   );
 }
@@ -228,7 +288,19 @@ function NodeBody({ n, onClick }: { n: NodeView; onClick: () => void }) {
   const p = pos(n.id);
   const color = roleColor(n);
   return (
-    <g className="rf-node" onClick={onClick} style={{ '--c': color } as CSSProperties}>
+    <g
+      className="rf-node"
+      role="button"
+      tabIndex={0}
+      aria-label={`${nodeName(n.id)}, ${n.alive ? `${n.role}, term ${n.term}. Press Enter to crash it` : 'crashed. Press Enter to restart it'}`}
+      onClick={onClick}
+      onKeyDown={(e: KeyboardEvent<SVGGElement>) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        onClick();
+      }}
+      style={{ '--c': color } as CSSProperties}
+    >
       <circle cx={p.x} cy={p.y} r={NODE_R} className={`rf-body ${n.alive ? '' : 'dead'}`} />
       <text x={p.x} y={p.y - 2} textAnchor="middle" className="rf-name">
         {n.alive ? nodeName(n.id) : '✕'}
@@ -252,6 +324,7 @@ function EventLog({ events }: { events: RaftEvent[] }) {
           {events.map((e) => (
             <motion.li key={e.id} layout initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <i className={`rf-ev-dot rf-ev-${e.kind}`} />
+              <span className="rf-ev-time">{(e.t / 1000).toFixed(1)} s</span>
               {e.text}
             </motion.li>
           ))}

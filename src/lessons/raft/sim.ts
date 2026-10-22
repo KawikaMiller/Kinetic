@@ -1,5 +1,7 @@
-// A small but faithful Raft: leader election + log replication.
-// Time is in simulated milliseconds, slowed right down so humans can watch.
+// A small Raft model: leader election + log replication, no snapshots, no membership change.
+// Time is in simulated milliseconds, slowed right down so humans can watch. Every random draw
+// (timeouts, latency jitter, loss, duplication) comes from the injected `Rnd`, so a seed fixes them.
+import type { Rnd } from '../../core/random';
 
 export const N = 5;
 export const MAJORITY = Math.floor(N / 2) + 1;
@@ -14,8 +16,29 @@ export const TIMEOUT_MAX = 4500;
 export type Role = 'follower' | 'candidate' | 'leader';
 
 export interface Entry {
+  /** Unique per command in a run, so two entries compare by identity, not by their text. */
+  id: number;
   term: number;
   cmd: string;
+}
+
+/**
+ * The real rules, plus two planted bugs the safety monitor catches (each is one rule removed):
+ * - 'commit-without-majority': a leader commits an entry once 2 servers store it, not 3 of 5;
+ * - 'vote-without-log-check': a server grants its vote without checking the candidate's log is up to date.
+ */
+export type RaftVariant = 'raft' | 'commit-without-majority' | 'vote-without-log-check';
+
+/** Replica count at which the 'commit-without-majority' variant commits (the leader plus one follower). */
+export const WEAK_QUORUM = 2;
+
+export interface RaftOptions {
+  rnd: Rnd;
+  variant?: RaftVariant;
+  /** Chance each message is dropped on the wire (a partition drops its crossing messages on top). */
+  loss?: number;
+  /** Chance each message is also delivered a second time, at its own jittered delay. */
+  duplicate?: number;
 }
 
 export interface RaftNode {
@@ -67,12 +90,22 @@ export class Raft {
   events: RaftEvent[] = [];
   /** Nodes cut off from the rest (null = no partition). */
   minority: Set<number> | null = null;
+  readonly variant: RaftVariant;
+  private readonly rnd: Rnd;
+  private readonly loss: number;
+  private readonly duplicate: number;
   private nextMsg = 1;
   private nextEvent = 1;
   private cmdN = 0;
   onEvent: (e: RaftEvent) => void = () => {};
+  /** Called after every state change (a delivery, a timer firing, a click), so a monitor sees every event. */
+  observer: ((r: Raft) => void) | null = null;
 
-  constructor() {
+  constructor({ rnd, variant = 'raft', loss = 0, duplicate = 0 }: RaftOptions) {
+    this.rnd = rnd;
+    this.variant = variant;
+    this.loss = loss;
+    this.duplicate = duplicate;
     this.nodes = Array.from({ length: N }, (_, id) => {
       const n: RaftNode = {
         id, role: 'follower', term: 0, votedFor: null, log: [], commit: 0, alive: true,
@@ -95,8 +128,12 @@ export class Raft {
     this.onEvent(e);
   }
 
+  private changed() {
+    this.observer?.(this);
+  }
+
   private resetTimer(n: RaftNode) {
-    n.timeoutDur = TIMEOUT_MIN + Math.random() * (TIMEOUT_MAX - TIMEOUT_MIN);
+    n.timeoutDur = TIMEOUT_MIN + this.rnd() * (TIMEOUT_MAX - TIMEOUT_MIN);
     n.timeoutAt = this.now + n.timeoutDur;
   }
 
@@ -106,11 +143,15 @@ export class Raft {
   }
 
   private send(from: number, to: number, term: number, body: Body) {
-    this.msgs.push({
-      ...body, id: this.nextMsg++, from, to, term, sentAt: this.now,
-      arriveAt: this.now + LATENCY * (0.85 + Math.random() * 0.3),
-      lost: !this.reachable(from, to),
-    } as Msg);
+    const lost = !this.reachable(from, to) || (this.loss > 0 && this.rnd() < this.loss);
+    const make = () =>
+      ({
+        ...body, id: this.nextMsg++, from, to, term, sentAt: this.now,
+        arriveAt: this.now + LATENCY * (0.85 + this.rnd() * 0.3),
+        lost,
+      }) as Msg;
+    this.msgs.push(make());
+    if (this.duplicate > 0 && this.rnd() < this.duplicate) this.msgs.push(make());
   }
 
   private lastTerm(n: RaftNode) {
@@ -165,16 +206,22 @@ export class Raft {
     }
   }
 
-  private advanceCommit(n: RaftNode) {
+  /**
+   * The current-term commit rule: a leader counts replicas only for an entry written in its own
+   * term. An older-term entry on a majority is not yet safe (a server missing it can still win a
+   * later election and overwrite it), so it commits indirectly, when a newer entry above it does.
+   */
+  advanceCommit(n: RaftNode) {
+    const needed = this.variant === 'commit-without-majority' ? WEAK_QUORUM : MAJORITY;
     for (let idx = n.log.length; idx > n.commit; idx--) {
-      // only entries from the leader's own term are committed by counting replicas
       if (n.log[idx - 1].term !== n.term) break;
       const replicas = n.matchIndex.filter((m, i) => (i === n.id ? n.log.length : m) >= idx).length;
-      if (replicas >= MAJORITY) {
+      if (replicas >= needed) {
         const from = n.commit;
         n.commit = idx;
         const cmds = n.log.slice(from, idx).map((e) => e.cmd).join(', ');
-        this.emit('commit', `${cmds} on a majority (${replicas}/${N}) → committed`);
+        const where = replicas >= MAJORITY ? `on a majority (${replicas}/${N})` : `on only ${replicas}/${N}, short of a majority`;
+        this.emit('commit', `${cmds} ${where} → committed`);
         break;
       }
     }
@@ -187,7 +234,10 @@ export class Raft {
 
     switch (m.type) {
       case 'vote': {
-        const upToDate = m.lastLogTerm > this.lastTerm(n) || (m.lastLogTerm === this.lastTerm(n) && m.lastLogIndex >= n.log.length);
+        const upToDate =
+          this.variant === 'vote-without-log-check' ||
+          m.lastLogTerm > this.lastTerm(n) ||
+          (m.lastLogTerm === this.lastTerm(n) && m.lastLogIndex >= n.log.length);
         const granted = m.term === n.term && (n.votedFor === null || n.votedFor === m.from) && upToDate;
         if (granted) {
           n.votedFor = m.from;
@@ -245,14 +295,22 @@ export class Raft {
     this.now += dtMs;
     const due = this.msgs.filter((m) => m.arriveAt <= this.now);
     this.msgs = this.msgs.filter((m) => m.arriveAt > this.now);
-    for (const m of due) if (!m.lost) this.deliver(m);
+    for (const m of due) {
+      if (m.lost) continue;
+      this.deliver(m);
+      this.changed();
+    }
 
     for (const n of this.nodes) {
       if (!n.alive) continue;
       if (n.role === 'leader') {
-        if (this.now >= n.nextHeartbeat) this.broadcastAppend(n);
+        if (this.now >= n.nextHeartbeat) {
+          this.broadcastAppend(n);
+          this.changed();
+        }
       } else if (this.now >= n.timeoutAt) {
         this.startElection(n);
+        this.changed();
       }
     }
   }
@@ -261,43 +319,49 @@ export class Raft {
     const n = this.nodes[i];
     n.alive = !n.alive;
     if (n.alive) {
-      // term, vote and log are persisted to disk; role and timers are not
+      // term, vote and log are persisted to disk; role, commit index and timers are not
       n.role = 'follower';
+      n.commit = 0;
       n.votes.clear();
       this.resetTimer(n);
       this.emit('crash', `${nodeName(i)} restarted as a follower (term ${n.term}, ${n.log.length} entries on disk)`);
     } else {
       this.emit('crash', `${nodeName(i)} crashed${n.role === 'leader' ? ': the cluster has no leader' : ''}`);
     }
+    this.changed();
   }
 
   /**
    * A client sends a command to every node that currently believes it is
    * leader. Normally that's one node; during a partition the stale leader on
-   * the minority side gets one too, and can never commit it.
+   * the minority side gets one too, and (in real Raft) can never commit it.
    */
   clientCommand(): number {
     const leaders = this.nodes.filter((n) => n.alive && n.role === 'leader');
     for (const l of leaders) {
       const cmd = `${'xyzw'[this.cmdN % 4]}←${(this.cmdN * 7 + 3) % 10}`;
+      l.log.push({ id: this.cmdN, term: l.term, cmd });
       this.cmdN++;
-      l.log.push({ term: l.term, cmd });
       l.matchIndex[l.id] = l.log.length;
       this.emit('client', `client → ${nodeName(l.id)}: append "${cmd}" (not committed yet)`);
       this.broadcastAppend(l);
     }
+    this.changed();
     return leaders.length;
   }
 
-  setPartition(on: boolean) {
+  /** Cut `minority` (default: the leader and the next server) off from the rest; messages already crossing the cut are lost. */
+  setPartition(on: boolean, minority?: readonly number[]) {
     if (!on) {
       this.minority = null;
       this.emit('partition', 'Network healed: everyone can talk again');
-      return;
+    } else {
+      const a = this.leader?.id ?? 0;
+      this.minority = new Set(minority ?? [a, (a + 1) % N]);
+      for (const m of this.msgs) if (!this.reachable(m.from, m.to)) m.lost = true;
+      const rest = N - this.minority.size;
+      this.emit('partition', `Partition! ${[...this.minority].map(nodeName).join(' + ')} cut off from the other ${rest}`);
     }
-    const l = this.leader;
-    const a = l ? l.id : 0;
-    this.minority = new Set([a, (a + 1) % N]);
-    this.emit('partition', `Partition! ${[...this.minority].map(nodeName).join(' + ')} cut off from the other 3`);
+    this.changed();
   }
 }

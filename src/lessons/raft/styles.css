@@ -3,7 +3,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   padding: 14px 18px;
-  min-height: inherit;
+  min-height: 440px;
   align-items: center;
 }
 
@@ -173,6 +173,73 @@
 .rf-ev-crash,
 .rf-ev-partition { background: var(--bad); }
 .rf-ev-client { background: var(--info); }
+
+.rf-ev-time {
+  flex: none;
+  font: 10.5px var(--mono);
+  color: var(--faint);
+}
+
+.rf-node:focus-visible .rf-body {
+  stroke-width: 6;
+}
+
+.rf-safety {
+  padding: 0 18px 12px;
+  font-size: 13px;
+}
+.rf-safety h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.rf-safety h4 span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--faint);
+  margin-left: 6px;
+}
+.rf-verdict {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+.rf-verdict.ok {
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+.rf-verdict.bad {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent);
+}
+.rf-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.rf-check-faults {
+  color: var(--faint);
+}
+.rf-check-result {
+  margin: 8px 0 0;
+}
+.rf-path,
+.rf-rules {
+  margin-top: 8px;
+  color: var(--muted);
+}
+.rf-path ol,
+.rf-rules ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  max-height: 180px;
+  overflow: auto;
+}
 
 .rf-hint {
   font-size: 13px;

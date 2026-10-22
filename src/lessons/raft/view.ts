@@ -4,6 +4,7 @@
 // - motionView: message dots, election-timer rings and heartbeat pulses. Every
 //   frame, but only the small layer that draws them re-renders.
 import { clamp01 } from '../../core/math';
+import type { SafetyMonitor, SafetyViolation } from './safety';
 import { HEARTBEAT, N, type Entry, type Msg, type Raft, type RaftEvent, type Role } from './sim';
 
 /* ─── Cluster geometry (SVG units) ─── */
@@ -43,9 +44,10 @@ export interface ClusterView {
   msgCount: number;
   events: RaftEvent[]; // newest first
   minority: number[] | null;
+  safety: { violation: SafetyViolation | null; events: number; committed: number };
 }
 
-export function clusterView(r: Raft): ClusterView {
+export function clusterView(r: Raft, monitor: SafetyMonitor): ClusterView {
   return {
     nodes: r.nodes.map((n) => ({
       id: n.id, role: n.role, term: n.term, alive: n.alive, log: n.log.slice(), commit: n.commit, votes: n.votes.size,
@@ -53,6 +55,7 @@ export function clusterView(r: Raft): ClusterView {
     msgCount: r.msgs.length,
     events: r.events.slice(-EVENTS_SHOWN).reverse(),
     minority: r.minority ? [...r.minority] : null,
+    safety: { violation: monitor.violation, events: monitor.events, committed: monitor.committedCount },
   };
 }
 
