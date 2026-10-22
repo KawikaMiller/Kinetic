@@ -10,7 +10,10 @@ const TOP_PAD = 90;
 const NODE_RADIUS = 15;
 const TREE_MIN_WIDTH = 480;
 
-/** The rooted tree, tidy layout, nodes labelled by number; a click on a node reports its number. */
+/**
+ * The rooted tree, tidy layout, nodes labelled by number; a click on a node reports its number. It remounts when the tree changes:
+ * TreeSvg fades removed nodes out, and for that moment a node that is already gone could still be focused.
+ */
 export function TreeView({
   parents, nodeMark, onNodeClick, ariaLabel,
 }: {
@@ -27,6 +30,7 @@ export function TreeView({
   return (
     <WideRegion minWidth={TREE_MIN_WIDTH} label="The tree: scroll sideways to see all of it">
       <TreeSvg
+        key={parents.join()}
         shape={shape}
         layout="tidy"
         width={TREE_WIDTH}
