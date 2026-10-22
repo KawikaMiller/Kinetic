@@ -2,7 +2,7 @@
 import { decimal, integer, pct, plural } from '../../core/format';
 import { circlesOf, shapeError, shapeSamples, SAMPLES as SHAPE_SAMPLES, type ShapeId } from './epicycles';
 import { HARMONICS, TARGETS, rmsError, snapToDft, targetSamples, type HarmonicsState } from './harmonics';
-import { removedBins, type SpectrumState, type Work } from './spectrum';
+import { removedBins, scientific, type SpectrumState, type Work } from './spectrum';
 import { aliasHz, analyse, binWidth, cyclesInWindow, isWholeCycles, nyquist, type SamplingState } from './sampling';
 
 const n2 = (v: number) => decimal(v, 2);
@@ -62,7 +62,7 @@ export function spectrumCaption(s: SpectrumState, imagMax: number): string {
   const named = bins.map((k) => (k === 0 || k === s.n / 2 ? `${k}` : `${k} and ${s.n - k}`));
   const list = named.length > MAX_LISTED ? `${named.slice(0, MAX_LISTED).join(', ')}, and ${named.length - MAX_LISTED} more` : named.join(', ');
   const total = bins.reduce((sum, k) => sum + (k === 0 || k === s.n / 2 ? 1 : 2), 0);
-  return `Removed ${plural(total, 'bin')} (${list}): a real signal's bin ${s.n} minus k is the complex conjugate of bin k, so both go together; bins 0 and ${s.n / 2} are their own mirror. The largest imaginary part left in the filtered signal is ${imagMax.toExponential(1)}, rounding only, so it stays real.`;
+  return `Removed ${plural(total, 'bin')} (${list}): a real signal's bin ${s.n} minus k is the complex conjugate of bin k, so both go together; bins 0 and ${s.n / 2} are their own mirror. The largest imaginary part left in the filtered signal is ${scientific(imagMax)}, rounding only, so it stays real.`;
 }
 
 export function workCaption(w: Work): string {

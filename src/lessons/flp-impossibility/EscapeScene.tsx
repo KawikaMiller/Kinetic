@@ -8,7 +8,7 @@ import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggl
 import { explorePathSteps } from '../../core/traceFrames';
 import { decimal, integer } from '../../core/format';
 import { escapeCaption, escapeStartText } from './captions';
-import { livenessText, sampledText } from './checkText';
+import { livenessText, sampledText } from '../../core/checkPhrases';
 import {
   AND_TABLE, BROKEN_SEED, PROCS, SEED_RANGE, SEEDS_TOTAL, deliveriesIn, oneExplorer, runSeed, runSeeds, shortestDisagreement, symmetric, type Inputs, type OneState,
 } from './onePhase';

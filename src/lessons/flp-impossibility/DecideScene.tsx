@@ -6,7 +6,7 @@ import { plainTone, toneVar } from '../../core/tone';
 import { integer } from '../../core/format';
 import { refocusAfterRemove } from '../../core/refocus';
 import { configurationView, decideCaption } from './captions';
-import { livenessText, sampledText } from './checkText';
+import { livenessText, sampledText } from '../../core/checkPhrases';
 import {
   AND_TABLE, CELL_LABELS, INPUT_VECTORS, PROCS, SCENARIOS, SEED_RANGE, SEEDS_TOTAL, runSeeds, patternRows, scenarioCounts, symmetric, tryPerProcessRules, trySymmetricRules,
   type Inputs, type RuleTable,

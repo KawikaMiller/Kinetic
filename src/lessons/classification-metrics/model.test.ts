@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { parseBoundedInt } from '../../core/parse';
 import { mulberry32, randInt } from '../../core/random';
+import { aucPairs, aucTrapezoid } from '../../core/rocAuc';
 import { classificationMetrics } from '../../core/stats';
 import { captionText as text } from '../../core/testing/captions';
 import { imbalanceCaption, metric, thresholdCaption } from './frames';
 import lesson from './index';
 import {
-  COST_FIELD, COST_PRESETS, NEGATIVE_WEIGHTS, NONE, aucPairs, aucTrapezoid, candidates, cheapest, curve, dataset, positiveRate, prSteps,
+  COST_FIELD, COST_PRESETS, NEGATIVE_WEIGHTS, NONE, candidates, cheapest, curve, dataset, positiveRate, prSteps,
   stepThreshold, weighted, type Example,
 } from './model';
 
@@ -100,10 +101,6 @@ describe('ROC, PR and AUC', () => {
     for (let i = 0; i < steps.length; i += 2) expect(steps[i][1]).toBe(steps[i + 1][1]);
   });
 
-  it('AUC 0.5 for identical score clouds is a coin flip; separation 3 is near 1', () => {
-    expect(aucPairs([{ score: 0.5, label: 1 }, { score: 0.5, label: 0 }])).toBe(0.5);
-    expect(aucPairs(dataset(1, 3))).toBeGreaterThan(0.9);
-  });
 });
 
 describe('thresholds and costs', () => {

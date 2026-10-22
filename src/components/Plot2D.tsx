@@ -1,7 +1,7 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { alpha, TOKENS } from '../core/palette';
 import {
-  axisTickValues, clampPoint, type DragSource, equalAspectHeight, fitLabel, nudgePoint, PLOT_FONT, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+  axisTickValues, clampPoint, type DragSource, equalAspectHeight, fitLabel, nudgePoint, PLOT_FONT, plotFrame, plotMargin, plotTextBoost, rovingPointTarget, sampleCurve, sampleHeat, tickText,
   type AxisSpec, type Point,
 } from '../core/plot';
 import type { Tone } from '../core/tone';
@@ -13,6 +13,28 @@ export type { AxisSpec, Point } from '../core/plot';
 export { Area, Band, Steps } from './PlotAreas';
 
 const FONT = PLOT_FONT;
+
+/**
+ * The text growth factor that keeps every plot label at or above the 8px floor however far the SVG is
+ * shrunk (`max-width: 100%` scales the whole drawing, text included). Published as `--plot-text-boost`
+ * for the plot font rules in kit.css; 1 (no style at all) whenever the text is already large enough.
+ */
+function usePlotTextBoost(ref: RefObject<SVGSVGElement | null>, viewBoxWidth: number): number {
+  const [boost, setBoost] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const rendered = el.getBoundingClientRect().width;
+      if (rendered > 0) setBoost(plotTextBoost(rendered / viewBoxWidth));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, viewBoxWidth]);
+  return boost;
+}
 
 /**
  * A 2-D plot on core/scale axes (linear or log), with tick labels, axis titles and a grid.
@@ -39,6 +61,7 @@ export function Plot2D({
 }) {
   const svg = useRef<SVGSVGElement>(null);
   const clip = useId();
+  const boost = usePlotTextBoost(svg, width);
   const xTickLabels = axisTicks(x);
   const yTickLabels = axisTicks(y);
   const height = aspect === 'equal' ? equalAspectHeight(width, x, y) : fixedHeight;
@@ -59,6 +82,7 @@ export function Plot2D({
       ref={svg}
       viewBox={`0 0 ${width} ${height}`}
       width={width}
+      style={boost > 1 ? ({ '--plot-text-boost': boost } as CSSProperties) : undefined}
       className={`plot2d ${className}`}
       role="group"
       aria-label={ariaLabel}

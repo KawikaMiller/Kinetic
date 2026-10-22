@@ -1,5 +1,5 @@
 /** The four fixed phrasings of what a check covered (AC-0/T4 #27, #28), made from a result and never typed. */
-import { integer } from '../../core/format';
+import { integer } from './format';
 
 /** An exhaustive search finished: it may say "holds in all N". */
 export const exhaustiveText = (states: number, bounds: string): string => `holds in all ${integer(states)} reachable states of this model (${bounds})`;

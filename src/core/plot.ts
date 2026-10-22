@@ -49,6 +49,20 @@ export function plotFrame(width: number, height: number, margin: Margin, x: Axis
 
 /** Tick label size and the approximate advance of one tick glyph (10px mono), in drawing units. */
 export const PLOT_FONT = 10;
+
+/** The smallest text a plot may render, in screen pixels (the phone smoke's scene-text floor). */
+export const MIN_PLOT_TEXT_PX = 8;
+
+/**
+ * How much to grow plot text (in viewBox units) so it never renders below MIN_PLOT_TEXT_PX when the
+ * SVG is shrunk to `scale` screen pixels per viewBox unit. 1 while the smallest text (PLOT_FONT) is
+ * already large enough, so plots drawn at a readable width look exactly as before.
+ */
+export function plotTextBoost(scale: number): number {
+  if (!(scale > 0)) return 1;
+  const boost = MIN_PLOT_TEXT_PX / (PLOT_FONT * scale);
+  return boost > 1 ? Math.ceil(boost * 1000) / 1000 : 1;
+}
 const TICK_CHAR_W = 6;
 
 /** A tick's label text: the axis's own `format`, else formatTick. */

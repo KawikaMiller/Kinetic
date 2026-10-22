@@ -4,7 +4,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { decimal } from '../../core/format';
 import { duelCaption, duelHint } from './captions';
-import { livenessText } from './checkText';
+import { livenessText } from '../../core/checkPhrases';
 import { DUEL_BALLOTS, drainAccepts, replayDuel } from './duel';
 import { ACCEPTORS, chosenPairs, isAcceptor } from './protocol';
 import { BACKOFF_MAX_MS, DEFAULT_OPTIONS, LOSS_PERCENT, RETRY_TIMEOUT_MS, SEED_RANGE, SEEDS_TOTAL, cachedSweep } from './search';
