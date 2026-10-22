@@ -5,7 +5,7 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'Shamir secret sharing hides a secret as a point of a random polynomial, so that any k of n shares rebuild it and k - 1 shares leave every possible secret of the same length equally likely.',
+    tldr: 'Shamir secret sharing hides a secret as a point of a random polynomial, so that any k of n shares rebuild it and k - 1 shares leave each possible secret of the same length equally likely.',
     what: `The secret is the constant term of a random polynomial of degree k - 1 over a small prime field, and each share is a point (x, y) on it. k points fix the polynomial, and Lagrange interpolation at 0 reads off the secret; fewer points fit one polynomial for each candidate secret. The page counts those polynomials in fields of 3 and 4 bits, shares a byte over a 9-bit field, and shows what goes wrong: a mistyped share rebuilds a wrong secret without any warning, and coefficients drawn from a tiny set leak. The fields are toys and nothing here splits a real key.`,
     analogy: 'A vault with five keyholes where any three keys open it: two keys on their own leave the lock exactly as undecided as none, because each pair of keys fits each possible combination.',
     useCases: [
