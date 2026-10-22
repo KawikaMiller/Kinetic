@@ -1,0 +1,9 @@
+.ts-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.ts-h { margin: 0 0 4px; font: 600 12.5px var(--font); color: var(--text); }
+.ts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ts-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 8px; }
+.ts-row.is-removed { border-style: dashed; opacity: 0.7; }
+.ts-row b { font: 700 13px var(--mono); color: var(--text); min-width: 24px; }
+.ts-text { flex: 1 1 220px; font: 500 12.5px var(--font); color: var(--text); }
+.ts-state { font: 500 12px var(--font); color: var(--muted); }
+.ts-note { margin: 4px 0 0; font: 500 12.5px var(--font); color: var(--muted); }
