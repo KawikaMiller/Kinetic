@@ -2289,8 +2289,12 @@ npm run sweep -- <ids...> [--mobile] [--fast] [--shard=2/4] [--all-tier=4] [--id
 npm run sweep -- --selftest        # fixture pages: each detector fires, the clean page stays clean
 ```
 
-One line per lesson, findings indented under it, then `SWEEP_SUMMARY {json}`; exit 1 on any finding. `--fast` keeps extremes and one
-click per control with a 1 s idle. `npm test` runs the same fixtures in a real browser (`scripts/lib/sweep/selftest.test.mjs`,
+One line per lesson, findings indented under it, then `SWEEP_SUMMARY {json}`; exit 1 on any finding. Budgets: 400 actions per scene
+(`--max-actions`) and 300 s per lesson (`--budget=<s>`); a spent budget prints a `BUDGET REACHED` line and lands in the summary's
+`budgetReached`, never a silent cut. `--fast` (the per-batch gate profile) keeps extremes and one click per control with a 1 s idle and
+no reverse pass or key presses. Measured on this machine, dev server warm: the full profile took 22 to 142 s per lesson, 12 lessons in
+three parallel shards in about 7 minutes wall; `--fast` over a 5-lesson batch in two shards took 118 s. Run shards as separate
+processes (`--shard=1/3` ...) against one dev server. `npm test` runs the same fixtures in a real browser (`scripts/lib/sweep/selftest.test.mjs`,
 skipped when no Chromium browser is installed) beside unit tests of the pure detectors (`scan.mjs`), plans (`actions.mjs`) and
 report. A lesson that needs a new detector adds a fixture to `scripts/lib/sweep/fixtures.mjs`.
 
