@@ -36,7 +36,7 @@ describe('try-this entries, from the default state, as written', () => {
     const cons = constraintsOf(rows);
     expect(cons[3]).toEqual({ a: -1, b: -1, c: -5 });
     expect(solutionText(cons, solve(cons, 1, 1))).toBe(
-      'Infeasible: no point satisfies all constraints. The clash is x + y <= 4 against -x - y <= -5 (together they need x + y at most 4 and at least 5).',
+      'Infeasible: no point satisfies all constraints. A clash is x + y <= 4 against -x - y <= -5 (together they need x + y at most 4 and at least 5). Others can exist; the one named favours the older constraints.',
     );
     expect(lesson.tryThis[3]).toContain('x + y <= 4 against -x - y <= -5');
   });

@@ -142,17 +142,18 @@ export function antiparallel(p: Constraint, q: Constraint): number | null {
 export function infeasibleText(constraints: readonly Constraint[], core: readonly number[]): string {
   const named = core.map((i) => constraintText(constraints[i]));
   const head = 'Infeasible: no point satisfies all constraints.';
+  const favours = ' Others can exist; the one named favours the older constraints.';
   if (core.length === 1) return `${head} ${named[0]} cannot hold together with x >= 0 and y >= 0.`;
   if (core.length === 2) {
     const [p, q] = [constraints[core[0]], constraints[core[1]]];
     const k = antiparallel(p, q);
     if (k !== null) {
       const lower = round(-q.c / k);
-      return `${head} The clash is ${named[0]} against ${named[1]} (together they need ${expression(p.a, p.b)} at most ${round(p.c)} and at least ${lower}).`;
+      return `${head} A clash is ${named[0]} against ${named[1]} (together they need ${expression(p.a, p.b)} at most ${round(p.c)} and at least ${lower}).${favours}`;
     }
-    return `${head} The clash is ${named[0]} against ${named[1]} (no point of the quadrant satisfies both).`;
+    return `${head} A clash is ${named[0]} against ${named[1]} (no point of the quadrant satisfies both).${favours}`;
   }
-  return `${head} The clash is ${named.slice(0, -1).join(', ')} and ${named[named.length - 1]} (no point satisfies all three).`;
+  return `${head} A clash is ${named.slice(0, -1).join(', ')} and ${named[named.length - 1]} (no point satisfies all three).${favours}`;
 }
 
 export const UNBOUNDED_TEXT = `Unbounded: the best point sits on the artificial wall at ${BOX.toLocaleString('en-US')}. Nothing in the constraints stops the objective growing.`;

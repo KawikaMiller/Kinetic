@@ -157,8 +157,18 @@ describe('the default region, by hand', () => {
     expect(fmFeasible(cons)).toBe(false);
     expect(clashCore(cons)).toEqual([0, 3]);
     expect(solutionText(cons, solve(cons, 3, 2))).toBe(
-      'Infeasible: no point satisfies all constraints. The clash is x + y <= 4 against -x - y <= -5 (together they need x + y at most 4 and at least 5).',
+      'Infeasible: no point satisfies all constraints. A clash is x + y <= 4 against -x - y <= -5 (together they need x + y at most 4 and at least 5). Others can exist; the one named favours the older constraints.',
     );
+  });
+
+  it('the same system has a second minimal clash (x + 3y <= 7, x <= 3, -x - y <= -5), which is why the page says "a clash" and favours the older constraints', () => {
+    const cons = [...D, { a: -1, b: -1, c: -5 }];
+    const [older, newer] = [[0, 3], [1, 2, 3]].map((ids) => ids.map((i) => cons[i]));
+    for (const set of [older, newer]) {
+      expect(fmFeasible(set)).toBe(false);
+      for (let drop = 0; drop < set.length; drop++) expect(fmFeasible(set.filter((_, i) => i !== drop))).toBe(true);
+    }
+    expect(clashCore(cons)).toEqual([0, 3]);
   });
 
   it('a single constraint -x - y <= -1 with the objective x + y is unbounded: the optimum sits on the wall at (1000, 1000), value 2000', () => {
@@ -187,7 +197,7 @@ describe('the default region, by hand', () => {
     const cons = [...D, { a: -1, b: -1, c: -5 }];
     const core = clashCore(cons)!;
     expect(core.map((i) => constraintText(cons[i]))).toEqual(['x + y <= 4', '-x - y <= -5']);
-    expect(infeasibleText(cons, core)).toContain('The clash is x + y <= 4 against -x - y <= -5');
+    expect(infeasibleText(cons, core)).toContain('A clash is x + y <= 4 against -x - y <= -5');
     expect(clashCore(D)).toBeNull();
   });
 
