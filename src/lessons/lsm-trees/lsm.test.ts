@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32, pick } from '../../core/random';
 import { compactFrames, readFrames, writeFrames } from './frames';
 import {
-  DEFAULT_SEED, KEYS, L0_TRIGGER, MEM_CAP, MISSING, lastDeletedKey, actionKey, actionRnd, compactAll, flushMem, diskEntries, emptyLsm, liveKeys, lookup,
+  DEFAULT_SEED, KEYS, L0_TRIGGER, MEM_CAP, MISSING, lastDeletedKey, lastWrittenKey, spaceAmp, storedEntries, actionKey, actionRnd, compactAll, flushMem, diskEntries, emptyLsm, liveKeys, lookup,
   readPath, seeded, write, type Lsm,
 } from './lsm';
 
@@ -244,6 +244,65 @@ describe('default state', () => {
 
   it('every missing key reads as absent, whatever the filters say', () => {
     for (const k of MISSING) expect(lookup(s, k)).toBeUndefined();
+  });
+});
+
+describe('space amplification', () => {
+  const ACTIONS = ['put', 'overwrite', 'delete'] as const;
+  /** Runs the stage's write buttons from the default state: action n of seed draws its key from the seed's n-th stream. */
+  const run = (seed: number, ops: number, visit: (s: Lsm) => void) => {
+    let s = seeded();
+    visit(s);
+    for (let step = 0; step < ops; step++) {
+      const action = ACTIONS[Math.floor(actionRnd(seed + 1000, step)() * ACTIONS.length)];
+      s = write(s, actionKey(action, liveKeys(s), actionRnd(seed, step)), action === 'delete');
+      visit(s);
+    }
+  };
+
+  it('never prints below 1x over 200 seeds of mixed writes (every live key has a stored entry)', () => {
+    let min = Infinity;
+    for (let seed = 1; seed <= 200; seed++) {
+      run(seed, 40, (s) => {
+        if (liveKeys(s).length) min = Math.min(min, spaceAmp(s));
+      });
+    }
+    expect(min).toBeGreaterThanOrEqual(1);
+  });
+
+  it('the old figure (disk entries only) did read below 1x: seed 6 after 9 PUTs from the fresh page', () => {
+    let s = seeded();
+    for (let step = 0; step < 9; step++) s = write(s, actionKey('put', liveKeys(s), actionRnd(6, step)), false);
+    const old = diskEntries(s) / liveKeys(s).length;
+    // Disk entries counted alone miss live keys that exist only in the memtable.
+    expect(old).toBeLessThan(1);
+    expect(spaceAmp(s)).toBeGreaterThanOrEqual(1);
+    expect(spaceAmp(s)).toBe(storedEntries(s) / liveKeys(s).length);
+  });
+
+  it('is exactly 1x for a tree with no dead copies and rises when a key is overwritten', () => {
+    const one = write(emptyLsm(), 'a', false);
+    expect(spaceAmp(one)).toBe(1);
+    const two = write(flushMem(one).s, 'a', false);
+    expect(spaceAmp(two)).toBe(2);
+    expect(spaceAmp(emptyLsm())).toBe(0);
+  });
+});
+
+describe('GET last written key', () => {
+  it('try-this 2 from the default state: overwrite, then GET last written key reads the overwritten key and its newest value', () => {
+    const s = seeded();
+    const k = press(s, 'overwrite', 0);
+    const { next } = writeFrames(s, k, false);
+    expect(lastWrittenKey(next)).toBe(k);
+    expect(lookup(next, k)).toBe(s.seq + 1);
+    expect(readPath(next, k).found?.v).toBe(s.seq + 1);
+  });
+
+  it('skips a deleted key and is undefined when nothing is live', () => {
+    const s = write(write(emptyLsm(), 'a', false), 'b', false);
+    expect(lastWrittenKey(write(s, 'b', true))).toBe('a');
+    expect(lastWrittenKey(emptyLsm())).toBeUndefined();
   });
 });
 

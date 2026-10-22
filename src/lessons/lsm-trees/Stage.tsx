@@ -2,12 +2,12 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, Controls, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
+import { Button, Controls, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats } from '../../components/ui';
 import { NA } from '../../core/format';
 import { usePlayer } from '../../core/usePlayer';
 import { blankState, compactFrames, readFrames, writeFrames, type LsmFrame } from './frames';
 import {
-  BLOOM_BITS, DEFAULT_SEED, L0_TRIGGER, L1_FILE, MEM_CAP, actionKey, actionRnd, diskEntries, lastDeletedKey, liveKeys, seeded,
+  BLOOM_BITS, DEFAULT_SEED, L0_TRIGGER, L1_FILE, MEM_CAP, actionKey, actionRnd, lastDeletedKey, lastWrittenKey, liveKeys, seeded, spaceAmp,
   type Action, type Entry, type Lsm, type SST,
 } from './lsm';
 import './styles.css';
@@ -40,6 +40,7 @@ export function Stage() {
   // Live keys of the tree the next action starts from, and of the frame on screen.
   const runLive = useMemo(() => liveKeys(run.s), [run.s]);
   const runDeleted = useMemo(() => lastDeletedKey(run.s), [run.s]);
+  const runLast = useMemo(() => lastWrittenKey(run.s), [run.s]);
   const live = useMemo(() => liveKeys(s).length, [s]);
 
   const keyFor = (action: Action) => actionKey(action, runLive, actionRnd(seed, run.step));
@@ -54,14 +55,22 @@ export function Stage() {
     if (runDeleted === undefined) return;
     setRun({ s: run.s, frames: readFrames(run.s, runDeleted), step: run.step + 1 });
   };
+  const readLast = () => {
+    if (runLast === undefined) return;
+    setRun({ s: run.s, frames: readFrames(run.s, runLast), step: run.step + 1 });
+  };
   const compact = () => {
     if (!run.s.l0.length) return;
     const { frames, next } = compactFrames(run.s);
     setRun({ s: next, frames, step: run.step });
   };
 
+  // Why a button is greyed out, shown as its tooltip and in the hint under the controls.
+  const deletedWhy = runDeleted === undefined ? 'GET deleted key is off: no tombstone is stored (compaction drops tombstones)' : undefined;
+  const compactWhy = run.s.l0.length ? undefined : 'Compact now is off: L0 has no files to merge';
+
   const wa = s.userWrites ? s.diskWrites / s.userWrites : 0;
-  const sa = live ? diskEntries(s) / live : 0;
+  const sa = spaceAmp(s);
 
   return (
     <StageFrame
@@ -71,7 +80,7 @@ export function Stage() {
         <Stats>
           <Stat label="User writes" value={s.userWrites} />
           <Stat label="Write amp" value={s.userWrites ? `${wa.toFixed(2)}×` : NA} color="var(--bad)" sub="disk writes ÷ user writes" />
-          <Stat label="Space amp" value={live ? `${sa.toFixed(2)}×` : NA} color="var(--hi)" sub="entries on disk ÷ live keys" />
+          <Stat label="Space amp" value={live ? `${sa.toFixed(2)}×` : NA} color="var(--hi)" sub="entries stored (RAM + disk) ÷ live keys" />
           <Stat
             label="Last read"
             value={f.lastRead ? `${f.lastRead.read} read` : NA}
@@ -97,10 +106,16 @@ export function Stage() {
           <Button onClick={() => write('overwrite')}>Overwrite a key</Button>
           <Button variant="danger" onClick={() => write('delete')} softDisabled={!runLive.length}>DELETE a key</Button>
           <Button onClick={() => read('get-existing')}>GET existing key</Button>
-          <Button onClick={readDeleted} softDisabled={runDeleted === undefined}>GET deleted key</Button>
+          <Button onClick={readLast} softDisabled={runLast === undefined}>GET last written key</Button>
+          <Button onClick={readDeleted} softDisabled={runDeleted === undefined} title={deletedWhy}>GET deleted key</Button>
           <Button onClick={() => read('get-missing')}>GET missing key</Button>
-          <Button onClick={compact} softDisabled={!run.s.l0.length}>Compact now</Button>
+          <Button onClick={compact} softDisabled={!run.s.l0.length} title={compactWhy}>Compact now</Button>
           <SeedField seed={seed} onSeed={setSeed} />
+          <Hint block>
+            Buttons act on the tree as it stands when the animation ends.
+            {deletedWhy && ` ${deletedWhy}.`}
+            {compactWhy && ` ${compactWhy}.`}
+          </Hint>
         </Controls>
       }
     >

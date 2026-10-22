@@ -18,7 +18,7 @@ const lesson: LessonModule = {
   },
   tryThis: [
     'PUT random keys until the memtable fills and flushes (it holds 4). Keep going until L0 reaches 3 files and compaction kicks in.',
-    'Overwrite a key, then GET existing keys: the newest version wins, and older copies wait for compaction to drop them.',
+    'Press Overwrite a key, then GET last written key: the newest version wins, and the older copies wait for compaction to drop them (Space amp rises above 1× while they wait).',
     'DELETE a key, then press GET deleted key: the tombstone answers "deleted" even though older values may still sit below it.',
     'Press GET missing key a few times: watch bloom filters skip files, and spot a false positive (a red file that was read for nothing).',
   ],

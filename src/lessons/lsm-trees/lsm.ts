@@ -50,6 +50,9 @@ const sortEntries = (es: Entry[]) => es.slice().sort((a, b) => (a.k < b.k ? -1 :
 
 export const diskEntries = (s: Lsm) => [...s.l0, ...s.l1].reduce((n, t) => n + t.entries.length, 0);
 
+/** Entries held anywhere: the memtable plus every file. Each live key has at least one, so this is never below the live-key count. */
+export const storedEntries = (s: Lsm) => s.mem.length + diskEntries(s);
+
 /** The newest entry of every key in `entries`. */
 function newestByKey(entries: Entry[]): Map<string, Entry> {
   const newest = new Map<string, Entry>();
@@ -70,6 +73,19 @@ export function lastDeletedKey(s: Lsm): string | undefined {
   const all = [...s.mem, ...s.l0.flatMap((t) => t.entries), ...s.l1.flatMap((t) => t.entries)];
   const tombs = [...newestByKey(all).values()].filter((e) => e.v === null);
   return tombs.sort((a, b) => b.seq - a.seq)[0]?.k;
+}
+
+/** The live key written most recently (the one an overwrite just touched), or undefined when nothing is live. */
+export function lastWrittenKey(s: Lsm): string | undefined {
+  const all = [...s.mem, ...s.l0.flatMap((t) => t.entries), ...s.l1.flatMap((t) => t.entries)];
+  const live = [...newestByKey(all).values()].filter((e) => e.v !== null);
+  return live.sort((a, b) => b.seq - a.seq)[0]?.k;
+}
+
+/** Space amplification: entries stored (memtable + files) per live key; 1x means no dead copies. 0 when nothing is live. */
+export function spaceAmp(s: Lsm): number {
+  const live = liveKeys(s).length;
+  return live ? storedEntries(s) / live : 0;
 }
 
 export function emptyLsm(): Lsm {
