@@ -2198,6 +2198,23 @@ christofidesTour(dist)   // { tour, length, mst, odd, matching: { pairs, weight 
 - **Limits:** `heldKarp` 12 points (2^11 subsets); `minWeightPerfectMatching(dist, vertices)` an even count of at most 12 (a map of at most 12 points never exceeds that). Both throw `RangeError` naming the limit.
 - **The guarantees need the triangle inequality.** The bounds are asserted on 1,000 seeded Euclidean maps (doubling at most 2x the optimum, Christofides at most 1.5x, tree at most the optimum) as "a bound on those maps, not a proof", and a planted non-metric star at M = 100 gives ratio 31.31 so that test can fail. Held-Karp equals brute force for n up to 8, Prim equals Kruskal (`core/disjointSet`), the matching equals the best of all pairings, and after `twoOpt` no segment reversal shortens the tour (recomputed tour by tour).
 
+### `core/vertexCover.ts` (kickoff decisions §4) — np-reductions, approximation-algorithms (T4-B3)
+```ts
+import { minVertexCover, maximalMatching, canAddToMatching, isMaximalMatching, matchedVertices, isVertexCover, uncoveredEdges,
+  type Edge } from '../../core/vertexCover';
+
+const K33: Edge[] = [[0,3],[0,4],[0,5],[1,3],[1,4],[1,5],[2,3],[2,4],[2,5]];      // n vertices 0..n-1, an edge is named by its index
+minVertexCover(6, K33)                  // { size: 3, cover: [0, 1, 2] }: exact, ascending, deterministic
+maximalMatching(K33)                    // { edges: [0, 4, 8] (indices), vertices: [0..5] }: scan edges smallest index first
+maximalMatching(edges, [1, 0, 2])       // same greedy in another order: the result depends on it (maximal, not maximum)
+canAddToMatching(K33, [0], 1)           // { ok: false, vertex: 0 } for "vertex 0 is already matched", or { ok: true }
+isMaximalMatching(K33, [0, 4])          // false: edge 8 could still be added
+isVertexCover(edges, set)   uncoveredEdges(edges, set)   // edge indices left uncovered (the broken one-endpoint witness)
+```
+- **Exact:** branch and bound on the highest-degree vertex (ties to the lowest index): take it, or take all its neighbours; pruned by a maximal-matching lower bound. The first optimum reached is returned, taking the vertex first, so K3,3 gives {0, 1, 2} and the star gives its centre. Throws `RangeError` above `MAX_EXACT_VERTICES` (30), on a loop, or on an out-of-range endpoint. np-reductions' gadget graph for 4 variables and 5 clauses has 23 vertices.
+- **2-approximation:** `maximalMatching(edges).vertices` (both endpoints of every matching edge) is a cover of at most twice the optimum. It is not the learner's click order: for a learner-built matching use `canAddToMatching` per click and `isMaximalMatching` before "Done", then `matchedVertices(edges, chosen)`.
+- **Tests (`vertexCover.test.ts`)**: against a separately written bitmask brute force on EVERY graph with up to 6 vertices (each labelled edge subset: 1 + 1 + 2 + 8 + 64 + 1,024 + 32,768) and 500 seeded graphs of 7 to 11 vertices; the bound `|matching vertices| <= 2 * OPT` on both, reached exactly (ratio 2) on a 1,000-graph seeded set; the spec fixtures (K3,3, path, triangle, star); and the reduction's own property, minimum cover at most K = n + 2m exactly when `core/sat` brute force says the formula is satisfiable, on 100 seeded gadget graphs.
+
 ## Not built (deliberately)
 `
 `- **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
