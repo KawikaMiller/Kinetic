@@ -8,11 +8,16 @@ import {
 } from './onePhase';
 import {
   CYCLE_WITNESS, DELIVERIES_PER_ROUND, MAX_REPEATS, START_INPUTS, allChoices, choicesFromGrid, cyclingChoices, exhaustive, pinnedTakeRefusal, playRound,
-  repeatRounds, sameConfiguration, searchFor, take, takes, togglePick, undecidedCounts, undecidedProbabilities, initialState, type Configuration, type Pair, type RoundChoices,
+  assistChoices, repeatRounds, sameConfiguration, searchFor, take, takes, togglePick, undecidedCounts, undecidedProbabilities, initialState, type Configuration, type Pair, type RoundChoices,
 } from './rounds';
 import { DEFAULT_SETUP, decideNow, deliverFromTo, deliverable, noNewsRefusal, replay, sessionValency, sessionVerdict, settle, startSession } from './session';
 import { propagateValency } from './valency';
-import { cycleCaption, decideCaption, escapeCaption } from './captions';
+import { configurationView, cycleCaption, decideCaption, escapeCaption, escapeStartText } from './captions';
+import captionsSource from './captions.tsx?raw';
+import cycleSource from './CycleScene.tsx?raw';
+import decideSource from './DecideScene.tsx?raw';
+import escapeSource from './EscapeScene.tsx?raw';
+import { traceFrames } from '../../core/traceFrames';
 import lesson from './index';
 
 const AND = symmetric(AND_TABLE);
@@ -459,7 +464,7 @@ describe('try-this entries, from the default state, as written', () => {
     expect(s.deliveries).toBe(2);
     expect(sessionVerdict(s).broken).toMatch(/^disagreement/);
     expect(decideNow(replay(DEFAULT_SETUP), 2).ok).toBe(false);
-    const caption = expectCaption(decideCaption({ setup: DEFAULT_SETUP, session: s, valency: sessionValency(s).valency, disagreementReachable: true, verdict: sessionVerdict(s), decisions: [null, 1, 0] }));
+    const caption = expectCaption(decideCaption({ setup: DEFAULT_SETUP, session: s, valency: sessionValency(s).valency, disagreementReachable: true, verdict: sessionVerdict(s), decisions: [null, 1, 0], terminal: false }));
     expect(caption).toContain('2 deliveries');
     expect(lesson.tryThis[0]).toContain('2 deliveries');
   });
@@ -477,7 +482,7 @@ describe('try-this entries, from the default state, as written', () => {
     const stuck = settle(startSession({ inputs: [1, 1, 0], mode: 'all', rules: AND }, 2));
     expect(stuck.deliveries).toBe(2);
     expect(lesson.tryThis[2]).toContain('within 2 deliveries');
-    const caption = expectCaption(decideCaption({ setup: { ...DEFAULT_SETUP, mode: 'all', silent: 2 }, session: stuck, valency: 'undecided', disagreementReachable: false, verdict: sessionVerdict(stuck), decisions: [null, null, null] }));
+    const caption = expectCaption(decideCaption({ setup: { ...DEFAULT_SETUP, mode: 'all', silent: 2 }, session: stuck, valency: 'undecided', disagreementReachable: false, verdict: sessionVerdict(stuck), decisions: [null, null, null], terminal: true }));
     expect(caption).toContain('did not decide within 2 deliveries');
   });
 
@@ -532,5 +537,106 @@ describe('every control at its extremes and one beyond', () => {
       const r = runSeed('one', AND, seed);
       expect(r.decisions).toHaveLength(3);
     }
+  });
+});
+
+describe('fix pass T4-B4: captions and chips are functions of the model state', () => {
+  const sources: Record<string, string> = { 'captions.tsx': captionsSource, 'CycleScene.tsx': cycleSource, 'DecideScene.tsx': decideSource, 'EscapeScene.tsx': escapeSource };
+  const read = (f: string) => sources[f];
+
+  /** Every session reachable by delivering messages, for each mode and held-back choice (breadth first, deduplicated by pick path). */
+  function* everySession(): Generator<ReturnType<typeof startSession>> {
+    for (const mode of ['one', 'all'] as const) {
+      for (const silent of [null, 0, 1, 2]) {
+        const frontier = [startSession({ inputs: [1, 1, 0], mode, rules: AND }, silent)];
+        while (frontier.length > 0) {
+          const s = frontier.pop()!;
+          yield s;
+          deliverable(s).forEach((_, k) => frontier.push(settleOne(s, k)));
+        }
+      }
+    }
+  }
+  const settleOne = (s: ReturnType<typeof startSession>, k: number) => {
+    const t = deliverable(s)[k];
+    return deliverFromTo(s, t.label.message!.from, t.label.message!.to);
+  };
+
+  it('a finished configuration is never called bivalent or "can still be decided" (reachable sessions of both protocols)', () => {
+    let finished = 0;
+    for (const s of everySession()) {
+      const v = sessionValency(s);
+      const decisions = s.net.nodes.map((n) => n.decision);
+      const view = configurationView({ valency: v.valency, terminal: deliverable(s).length === 0, decisions });
+      if (deliverable(s).length === 0 && decisions.some((d) => d !== null)) {
+        finished++;
+        expect(view.chip.startsWith('finished')).toBe(true);
+        expect(view.stat).toBe('finished');
+        expect(view.chip).not.toMatch(/valent/);
+      } else {
+        expect(view.chip).not.toMatch(/still be decided/);
+      }
+    }
+    expect(finished).toBeGreaterThan(10);
+  });
+
+  it('a finished run with a disagreement says so, and one that agreed does not', () => {
+    const done = settle(replay(DEFAULT_SETUP));
+    const decisions = done.net.nodes.map((n) => n.decision);
+    const view = configurationView({ valency: 'bivalent', terminal: true, decisions });
+    expect(new Set(decisions.filter((d) => d !== null)).size).toBe(2);
+    expect(view.chip).toContain('disagreement');
+    const agreed = configurationView({ valency: '1-valent', terminal: true, decisions: [1, 1, 1] });
+    expect(agreed.chip).not.toContain('disagreement');
+  });
+
+  it('the refusal for P2 is worked out from the session: it is gone once P2 has heard P0 and decided', () => {
+    const before = replay(DEFAULT_SETUP);
+    expect(decideNow(before, 2).text).toBe(noNewsRefusal(2));
+    const after = deliverFromTo(before, 'P0', 'P2');
+    expect(after).not.toBe(before);
+    expect(decideNow(after, 2).text).not.toContain('heard no one');
+    expect(decideNow(after, 2).text).toBe('P2 already decided 0.');
+    const source = read('DecideScene.tsx');
+    expect(source).toContain('decideNow(session, probeProc)');
+    expect(source).not.toMatch(/useState<\{ ok: boolean; text: string \}/);
+  });
+
+  it('M1: the scene-1 theorem label says guarantees both agreement and termination', () => {
+    const source = read('DecideScene.tsx');
+    expect(source).toContain('no deterministic protocol guarantees both agreement and termination');
+    expect(source).not.toContain('no deterministic protocol decides');
+  });
+
+  it('M9: the trace player opens on the scene sentence, not "start"', () => {
+    const text = escapeStartText({ inputs: [1, 1, 0], failing: 58, seeds: 200, deliveries: 2 });
+    expect(text).toContain('58 of 200 seeds');
+    expect(text).toContain('2 deliveries');
+    expect(traceFrames({}, [], text)[0].say).toBe(text);
+    expect(read('EscapeScene.tsx')).toContain('startText={escapeStartText(');
+  });
+
+  it('Assist loads a round only when one cycles: the ring from 0 0 1, nothing from 0 0 0 and 1 1 1', () => {
+    expect(JSON.stringify(assistChoices(START_INPUTS))).toBe(JSON.stringify(CYCLE_WITNESS));
+    expect(assistChoices([0, 0, 0])).toBeNull();
+    expect(assistChoices([1, 1, 1])).toBeNull();
+    for (const v of INPUT_VECTORS) {
+      const found = assistChoices(v);
+      expect(found === null).toBe(cyclingChoices(v).length === 0);
+    }
+  });
+
+  it('every highlighted caption span can wrap on a phone', () => {
+    for (const f of ['captions.tsx', 'DecideScene.tsx', 'CycleScene.tsx', 'EscapeScene.tsx']) {
+      for (const m of read(f).matchAll(/className=(?:"|\{`)(hl[^"`]*)/g)) expect(m[1], f).toContain('wrap');
+    }
+  });
+
+  it('the exhaustive-facts table scrolls inside a WideRegion', () => {
+    expect(read('CycleScene.tsx')).toMatch(/<WideRegion minWidth=\{FACTS_TABLE_MIN_WIDTH\} noun="table">/);
+  });
+
+  it('the quiz answer is option B in at most two of five questions', () => {
+    expect(lesson.quiz.filter((q) => q.answer === 1).length).toBeLessThanOrEqual(2);
   });
 });

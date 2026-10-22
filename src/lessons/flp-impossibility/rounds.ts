@@ -150,6 +150,13 @@ export function cyclingChoices(est: readonly Bit[]): RoundChoices[] {
   return allChoices().filter((c) => sameConfiguration(playRound(start, c).after, start));
 }
 
+/** The round Assist loads: the known ring when it cycles from these inputs, else the first cycling round found, else none. */
+export function assistChoices(est: readonly Bit[]): RoundChoices | null {
+  const cycling = cyclingChoices(est);
+  const ring = cycling.find((c) => JSON.stringify(c) === JSON.stringify(CYCLE_WITNESS));
+  return ring ?? cycling[0] ?? null;
+}
+
 export const pairText = (pair: Pair): string => `{${PROCS[pair[0]]}, ${PROCS[pair[1]]}}`;
 
 /** A choice grid cell: which sources a process has picked in a phase, capped at two. */

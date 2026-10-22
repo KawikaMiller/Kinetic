@@ -48,23 +48,23 @@ const lesson: LessonModule = {
     {
       q: 'What does FLP say about an asynchronous system where one process may crash?',
       options: [
-        'No consensus protocol can ever be safe on a real, lossy network of nodes',
         'No deterministic protocol guarantees both agreement and termination',
+        'No consensus protocol can ever be safe on a real, lossy network of nodes',
         'Consensus is impossible whenever more than one node fails at a time',
         'Any protocol needs a leader, so leaderless designs cannot decide',
       ],
-      answer: 1,
+      answer: 0,
       why: 'The result is about guaranteeing agreement and termination together, for deterministic protocols, under unbounded delay and a possible crash. It does not say consensus protocols are unsafe, and it is not about how many nodes fail.',
     },
     {
       q: 'Why can a process not simply wait until it has heard from all three?',
       options: [
         'It would use too much memory to keep every message it receives',
-        'The slow process might be crashed, and then it waits for ever',
         'Three messages always disagree, so there is nothing to compare',
+        'The slow process might be crashed, and then it waits for ever',
         'The network drops the third message in this model every time',
       ],
-      answer: 1,
+      answer: 2,
       why: 'In this model links are reliable, so the only risk is a process that never sends. Waiting for the third then means waiting for a crashed process, and nobody can tell a crashed process from a slow one.',
     },
     {

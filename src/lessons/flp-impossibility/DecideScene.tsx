@@ -5,35 +5,30 @@ import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow
 import { plainTone, toneVar } from '../../core/tone';
 import { integer } from '../../core/format';
 import { refocusAfterRemove } from '../../core/refocus';
-import { decideCaption } from './captions';
+import { configurationView, decideCaption } from './captions';
+import { livenessText, sampledText } from './checkText';
 import {
-  CELL_LABELS, INPUT_VECTORS, PROCS, SCENARIOS, patternRows, scenarioCounts, symmetric, tryPerProcessRules, trySymmetricRules,
+  AND_TABLE, CELL_LABELS, INPUT_VECTORS, PROCS, SCENARIOS, SEED_RANGE, SEEDS_TOTAL, runSeeds, patternRows, scenarioCounts, symmetric, tryPerProcessRules, trySymmetricRules,
   type Inputs, type RuleTable,
 } from './onePhase';
 import { DEFAULT_SETUP, decideNow, deliverable, decisionOf, replay, sessionValency, sessionVerdict, stateOf, type Setup } from './session';
-import type { Valency } from './valency';
+
+/** The sampled leg of "wait for all three": the same seeds, with and without P2 held back. */
+let waitForAllSweep: { clean: ReturnType<typeof runSeeds>; crashed: ReturnType<typeof runSeeds> } | null = null;
+const waitForAll = () => (waitForAllSweep ??= { clean: runSeeds('all', symmetric(AND_TABLE)), crashed: runSeeds('all', symmetric(AND_TABLE), 2) });
 
 const MODES = [
   { value: 'one' as const, label: 'Decide on hearing one other' },
   { value: 'all' as const, label: 'Wait for all three' },
 ];
 
-const VALENCY_TONE: Record<Valency, string> = { bivalent: 'tone-violet', '0-valent': 'tone-info', '1-valent': 'tone-info', undecided: 'tone-dim' };
-
-const VALENCY_WORDS: Record<Valency, string> = {
-  bivalent: 'bivalent: both 0 and 1 can still be decided',
-  '0-valent': '0-valent: only 0 can still be decided',
-  '1-valent': '1-valent: only 1 can still be decided',
-  undecided: 'no decision can be reached from here',
-};
-
 export function DecideScene({ picker }: { picker: ReactNode }) {
   const [setup, setSetup] = useState<Setup>(DEFAULT_SETUP);
   const [panel, setPanel] = useState<'orders' | 'rules' | null>(null);
-  const [probe, setProbe] = useState<{ ok: boolean; text: string } | null>(null);
+  const [probeProc, setProbeProc] = useState<number | null>(null);
   const change = (patch: Partial<Setup>) => {
     setSetup({ ...setup, ...patch, picks: [] });
-    setProbe(null);
+    setProbeProc(null);
   };
   const session = useMemo(() => replay(setup), [setup]);
   const pending = useMemo(() => deliverable(session), [session]);
@@ -45,11 +40,16 @@ export function DecideScene({ picker }: { picker: ReactNode }) {
   const counts = useMemo(() => (panel === 'orders' ? scenarioCounts(rules, setup.mode) : null), [panel, rules, setup.mode]);
   const search = useMemo(() => (panel === 'rules' ? { sym: trySymmetricRules(), per: tryPerProcessRules() } : null), [panel]);
   const done = setup.picks.length;
+  const wait = useMemo(() => (setup.mode === 'all' ? waitForAll() : null), [setup.mode]);
+  // Worked out from the session on every render, so the note can never outlive what it says.
+  const probe = probeProc === null ? null : decideNow(session, probeProc);
+  const terminal = pending.length === 0;
+  const view = configurationView({ valency: valency.valency, terminal, decisions });
 
-  const caption = decideCaption({ setup, session, valency: valency.valency, disagreementReachable: valency.disagreementReachable, verdict, decisions });
+  const caption = decideCaption({ setup, session, valency: valency.valency, disagreementReachable: valency.disagreementReachable, verdict, decisions, terminal });
   const stats = (
     <Stats>
-      <Stat label="Configuration" value={valency.valency === 'bivalent' ? 'bivalent' : valency.valency === 'undecided' ? 'no decision reachable' : valency.valency} color={valency.valency === 'bivalent' ? 'var(--violet)' : valency.valency === 'undecided' ? 'var(--dim)' : 'var(--info)'} sub={`valency over ${integer(valency.states)} reachable configurations`} />
+      <Stat label="Configuration" value={view.stat} color={view.color} sub={view.sub(valency.states)} />
       <Stat label="Disagreement reachable" value={valency.disagreementReachable ? 'yes' : 'no'} color={valency.disagreementReachable ? 'var(--bad)' : 'var(--ok)'} sub="from this configuration" />
       <Stat label="Deliveries" value={done} sub={`${pending.length} pending to pick from`} />
     </Stats>
@@ -116,7 +116,7 @@ export function DecideScene({ picker }: { picker: ReactNode }) {
                 <div className="flp-line">
                   {d === null ? <span className="chip tone-dim">undecided</span> : <span className="chip tone-ok">decided {d}</span>}
                 </div>
-                <Button onClick={() => setProbe(decideNow(session, i))}>Make {p} decide now</Button>
+                <Button onClick={() => setProbeProc(i)}>Make {p} decide now</Button>
               </Box>
             );
           })}
@@ -139,8 +139,13 @@ export function DecideScene({ picker }: { picker: ReactNode }) {
               </ChipButton>
             ))}
           </div>
+          {wait && (
+            <Hint block>
+              Sampled: waiting for all three {sampledText(SEEDS_TOTAL - wait.clean.failing.length, SEEDS_TOTAL, SEED_RANGE.from, SEED_RANGE.to - 1)}. With P2 held back for the whole run, {livenessText(wait.crashed.undecided, SEEDS_TOTAL, 'the end of the run')}: that is what waiting costs.
+            </Hint>
+          )}
           <div className="flp-verdict">
-            <span className={`chip ${valency.valency === 'bivalent' ? VALENCY_TONE.bivalent : VALENCY_TONE[valency.valency]}`}>{VALENCY_WORDS[valency.valency]}</span>
+            <span className={`chip ${view.tone}`}>{view.chip}</span>
             {verdict.broken && <span className="chip tone-bad">{verdict.broken}</span>}
           </div>
         </Box>
@@ -180,7 +185,8 @@ export function DecideScene({ picker }: { picker: ReactNode }) {
         )}
         <ProvenanceRow>
           <Provenance kind="toy">three processes, binary inputs, one round of news</Provenance>
-          <ClaimLabel kind="theorem">FLP: no deterministic protocol decides under one crash and unbounded delay</ClaimLabel>
+          <Provenance kind="from-memory">Fischer, Lynch and Paterson, 1985; check the paper for the exact statement</Provenance>
+          <ClaimLabel kind="theorem">FLP: no deterministic protocol guarantees both agreement and termination when delays are unbounded and one process may crash (argued, not run here)</ClaimLabel>
         </ProvenanceRow>
       </div>
     </StageFrame>

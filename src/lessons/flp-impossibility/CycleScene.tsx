@@ -1,19 +1,22 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
+import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { integer } from '../../core/format';
 import { cycleCaption } from './captions';
 import { exhaustiveText } from './checkText';
 import { INPUT_VECTORS, PROCS, type Inputs } from './onePhase';
 import {
-  CYCLE_WITNESS, DELIVERIES_PER_ROUND, EXHAUSTIVE_ROUNDS, MAX_REPEATS, PROCESS_COUNT, START_INPUTS, choicesFromGrid, cyclingChoices, repeatRounds, sameConfiguration,
+  DELIVERIES_PER_ROUND, EXHAUSTIVE_ROUNDS, MAX_REPEATS, PROCESS_COUNT, START_INPUTS, choicesFromGrid, assistChoices, cyclingChoices, repeatRounds, sameConfiguration,
   searchFor, togglePick, type Configuration, type Picks, type Prop,
 } from './rounds';
 
 const EMPTY_GRID: Picks = [[], [], []];
 const gridOf = (pairs: readonly (readonly number[])[]): Picks => pairs.map((p) => [...p]);
 const EXHAUSTIVE_FACTS = [1, EXHAUSTIVE_ROUNDS];
+/** Narrowest width, px, at which the exhaustive-facts table reads (its last header is the point of it). */
+const FACTS_TABLE_MIN_WIDTH = 460;
 const propText = (p: Prop) => (p === null ? '⊥' : String(p));
 
 export function CycleScene({ picker }: { picker: ReactNode }) {
@@ -47,8 +50,10 @@ export function CycleScene({ picker }: { picker: ReactNode }) {
     (phase === 1 ? setPhase1 : setPhase2)(next);
   };
   const assist = () => {
-    setPhase1(gridOf(CYCLE_WITNESS.phase1));
-    setPhase2(gridOf(CYCLE_WITNESS.phase2));
+    const found = assistChoices(inputs);
+    if (!found) return;
+    setPhase1(gridOf(found.phase1));
+    setPhase2(gridOf(found.phase2));
     setRefusal(null);
     setPlayed(null);
   };
@@ -92,7 +97,7 @@ export function CycleScene({ picker }: { picker: ReactNode }) {
           ))}
         </>,
         <>
-          <Button onClick={assist}>Assist: load a round that cycles</Button>
+          <Button onClick={assist} softDisabled={cycling === 0}>Assist: load a round that cycles</Button>
           <Button onClick={() => setPlayed(1)} softDisabled={choices === null}>Play round</Button>
           <Slider label="Repeat the round" value={repeats} min={1} max={MAX_REPEATS} format={(v) => `${v} times`} onChange={(v) => { setRepeats(v); }} />
           <Button onClick={() => setPlayed(repeats)} softDisabled={choices === null}>Repeat</Button>
@@ -138,6 +143,7 @@ export function CycleScene({ picker }: { picker: ReactNode }) {
         {facts && valencies && (
           <Box>
             <SectionTitle hint={`every schedule of takes, ${PROCESS_COUNT} processes, inputs ${START_INPUTS.join(' ')}`}>Exhaustive facts (R rounds)</SectionTitle>
+            <WideRegion minWidth={FACTS_TABLE_MIN_WIDTH} noun="table">
             <table className="data-table">
               <thead><tr><th>R</th><th>reachable configurations</th><th>two different decisions</th><th>undecided at the horizon</th></tr></thead>
               <tbody>
@@ -151,20 +157,21 @@ export function CycleScene({ picker }: { picker: ReactNode }) {
                 ))}
               </tbody>
             </table>
+            </WideRegion>
             <Hint block>Agreement {facts[facts.length - 1].truncated ? 'was not found broken in the states explored' : exhaustiveText(facts[facts.length - 1].states, `3 processes, binary inputs, ${EXHAUSTIVE_ROUNDS} rounds, any two messages per phase`)}. Valency of each input vector within a horizon of {EXHAUSTIVE_ROUNDS} rounds:</Hint>
             <div className="flp-valencies">
               {valencies.map((v) => (
                 <span key={v.inputs.join('')} className="chip tone-info">{v.inputs.join(' ')}: {v.result.valency}</span>
               ))}
             </div>
-            <Hint block>None is bivalent. FLP&apos;s bivalent configuration belongs to a protocol that survives a crash and always decides; this protocol survives a crash by not deciding, so no such configuration exists here.</Hint>
+            <Hint block>None is bivalent. FLP&apos;s bivalent configuration belongs to a protocol that survives a crash and always decides; this protocol survives a crash by not deciding, so no such configuration shows up within R = {EXHAUSTIVE_ROUNDS} rounds here.</Hint>
           </Box>
         )}
-        <Hint block>A finite search found one repeating schedule for this protocol. FLP is the claim that every deterministic protocol has such a schedule; the bivalence argument behind it is outlined in the lesson and not run.</Hint>
+        <Hint block>A finite search found one repeating schedule for this protocol. FLP is the claim that every deterministic consensus protocol that keeps agreement and survives one crash has such a schedule; the bivalence argument behind it is outlined in the lesson and not run.</Hint>
         <ProvenanceRow>
           <Provenance kind="toy">a Ben-Or-style round without its coin, n = 3, f = 1</Provenance>
           <Provenance kind="from-memory">Ben-Or 1983 is the coin-flipping original; check the paper before relying on its details</Provenance>
-          <ClaimLabel kind="theorem">FLP: every deterministic protocol has such a schedule</ClaimLabel>
+          <ClaimLabel kind="theorem">FLP: every deterministic consensus protocol that stays safe and survives one crash has such a schedule</ClaimLabel>
         </ProvenanceRow>
       </div>
     </StageFrame>

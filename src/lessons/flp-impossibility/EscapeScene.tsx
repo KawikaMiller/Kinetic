@@ -6,7 +6,7 @@ import { TracePlayer } from '../../components/TracePlayer';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { explorePathSteps } from '../../core/traceFrames';
 import { decimal, integer } from '../../core/format';
-import { escapeCaption } from './captions';
+import { escapeCaption, escapeStartText } from './captions';
 import { livenessText, sampledText } from './checkText';
 import {
   AND_TABLE, BROKEN_SEED, PROCS, SEED_RANGE, SEEDS_TOTAL, deliveriesIn, oneExplorer, runSeed, runSeeds, shortestDisagreement, symmetric, type Inputs, type OneState,
@@ -66,7 +66,7 @@ export function EscapeScene({ picker }: { picker: ReactNode }) {
     >
       <div className="flp-stage stage-pad">
         <Box>
-          <SectionTitle hint="(a) a timeout: it always decides, and that costs agreement">Decide on the first message heard</SectionTitle>
+          <SectionTitle hint="(a) a timeout: it decides on every seed here, and that costs agreement">Decide on the first message heard</SectionTitle>
           <div className="flp-line">
             seed {seed} drew inputs <b className="mono">{run.inputs.join(' ')}</b> and the network latencies chose who hears whom first:{' '}
             <b className="mono">{run.decisions.map((d, i) => `${PROCS[i]} ${d ?? 'undecided'}`).join(', ')}</b>.
@@ -81,6 +81,7 @@ export function EscapeScene({ picker }: { picker: ReactNode }) {
           <TracePlayer
             initial={start}
             steps={steps}
+            startText={escapeStartText({ inputs: TIMEOUT_INPUTS, failing: sweep.failing.length, seeds: SEEDS_TOTAL, deliveries: deliveriesIn(shortest.violation?.path ?? []) })}
             label="Steps of the shortest schedule that breaks agreement"
             renderState={(state) => (
               <ul className="flp-trace">
@@ -118,6 +119,7 @@ export function EscapeScene({ picker }: { picker: ReactNode }) {
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>seeded runs on distSim; the shortest schedule is an exhaustive search</Provenance>
+          <Provenance kind="simulated" seed={`1 to ${COIN_SEEDS}`}>the coin table counts seeds 1 to {integer(COIN_SEEDS)}, whatever seed the field holds</Provenance>
           <Provenance kind="toy">three processes, binary inputs</Provenance>
           <Provenance kind="from-memory">Chandra and Toueg, 1996, for failure detectors; check the paper</Provenance>
         </ProvenanceRow>
