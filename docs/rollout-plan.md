@@ -6662,9 +6662,53 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 2 | T2-B32 Engineering responsibly | 3 | 10 | t2/b32 | done | merged 28a855f, 5 MAJOR fixed (invented history labelled, contested licence verdicts, chip order) |
 | 2 | Tier 2 close-out kit round | — | 10→QA | kit owner | done | merged 9647649: <sup> rule, miss colour, core/lineDiff + core/testing/tsc + segmentHitsBox extracted, shot.mjs fixes, 45 lint warnings cleared; smoke 255/255 desktop + 390px |
 | 2 | **Tier 2 sign-off** | 172 | — | | done | Sentry QA: sign-off with conditions C1-C3, all closed (docs/qa-tier2-report.md); 172 lessons, 7,951 tests; push after sign-off |
-| 3 | Kickoff | — | pre | | not started | |
-| 3 | Batches T3-B1 … T3-B31 | 155 | ~9-10 | | not started | `wifi-shared-medium` added at the T2 kickoff |
-| 3 | **Tier 3 sign-off** | 167 | — | | not started | |
+| 3 | Kickoff: specs (docs/tier3-specs/part1-6.md), batch and wave plan (docs/tier3-plan.md) | — | pre | | done | 154 new + 12 existing = 166; 31 batches + 2 retrofit; 10 waves; `wifi-shared-medium` added at the T2 kickoff |
+| 3 | Kit A-C (kickoff kit: distSim, simTick, ScenarioStory prerequisites, content lint T3) | — | pre | kit A, B, C | done | merged 40ff7ca9, df1d36f7, 90f3060c |
+| 3 | T3-R1 retrofit, part 1 | — | 1 | t3/r1 | done | merged 6d0fb55b; the 12 existing Tier 3 lessons are retrofitted across R1 and R2 |
+| 3 | T3-B1 Statistics & estimation | 5 | 1 | t3/b1 | done | merged 7f7dc5a1 |
+| 3 | T3-B2 Engineering practice | 5 | 1 | t3/b2 | done | merged 8d27daed |
+| 3 | T3-B3 Evolving systems | 5 | 1 | t3/b3 | done | merged a09d280b |
+| 3 | Kit D | — | 1→2 | kit owner | done | merged 5345728b |
+| 3 | T3-B4 Time & consistency | 5 | 2 | t3/b4 | done | merged 95bb457e |
+| 3 | T3-B5 Performance & capacity | 5 | 2 | t3/b5 | done | merged abd2620c |
+| 3 | T3-B6 Operations | 5 | 2 | t3/b6 | done | merged 228c85e0 |
+| 3 | T3-R2 retrofit, part 2 | — | 2 | t3/r2 | done | merged fce6f728; all 12 retrofitted, PENDING_RETROFIT empty |
+| 3 | Kit E, F | — | 2→3 | kit owner | done | merged 32093f6f, 24655ed4 |
+| 3 | T3-B7 Database internals | 5 | 3 | t3/b7 | done | merged e404a2fa |
+| 3 | T3-B8 Computation | 5 | 3 | t3/b8 | done | merged 9b40757b |
+| 3 | T3-B9 Graph algorithms | 5 | 3 | t3/b9 | done | merged 5a4b2783 |
+| 3 | Kit G | — | 3→4 | kit owner | done | merged f746a393 |
+| 3 | T3-B10 Information & linear algebra | 5 | 4 | t3/b10 | done | merged 9d40870b |
+| 3 | T3-B11 Streams & search | 5 | 4 | t3/b11 | done | merged a895a8af |
+| 3 | T3-B12 Advanced trees | 5 | 4 | t3/b12 | done | merged 138a42f2 |
+| 3 | Kit H | — | 4→5 | kit owner | done | merged a54e6878 |
+| 3 | T3-B13 Neural networks to transformers | 5 | 5 | t3/b13 | done | merged 9d0932de |
+| 3 | T3-B14 Analytics storage | 5 | 5 | t3/b14 | done | merged 93088e89 |
+| 3 | T3-B15 Geometry & strings | 5 | 5 | t3/b15 | done | merged 8984da20 |
+| 3 | T3-B16 Kernel & I/O | 4 | 5 | t3/b16 | done | merged 603ecd45 |
+| 3 | Kit I | — | 5→6 | kit owner | done | merged 634c0197: SeedField resync, convexHull, LogStream onRowClick, bytes IEC, introKey hardening, `smoke --scenes` |
+| 3 | T3-B17 Durability & recovery | 5 | 6 | t3/b17 | done | merged f4b74b63 |
+| 3 | T3-B18 Applied AI | 5 | 6 | t3/b18 | done | merged 462bc8be |
+| 3 | T3-B19 Algorithmic techniques | 5 | 6 | t3/b19 | done | merged 0db49bc5 |
+| 3 | T3-B20 Distributed coordination | 5 | 7 | t3/b20 | done | merged 0959a7a1 |
+| 3 | T3-B21 Parallelism | 5 | 7 | t3/b21 | done | merged 7d543f60 |
+| 3 | Kit J | — | 7 | kit owner | done | merged 0ba039c9: parseKit, longestPrefixMatch, KS test, bootstrap/Gini, bitLength, tfidf, freedTone |
+| 3 | T3-B22 Compilers & memory semantics | 4 | 7 | t3/b22 | done | merged 8fcc1a48 |
+| 3 | T3-B23 CPU & memory | 5 | 7 | t3/b23 | done | merged fb175ea0 |
+| 3 | Kit K | — | 7→8 | kit owner | done | merged ce2dd82c: shared ClassifyBoard |
+| 3 | T3-B24 Languages & parsing | 5 | 8 | t3/b24 | done | merged 4a850d00 |
+| 3 | T3-B25 Security design | 5 | 8 | t3/b25 | done | merged 42a74e43 |
+| 3 | T3-B26 Networking | 5 | 8 | t3/b26 | done | merged 5f2d01fe |
+| 3 | Kit L | — | 8→9 | kit owner | done | merged 6d39a833: core/raster3d, raster, raytrace, signal, dct, forbiddenCalls |
+| 3 | Kit M | — | 8→9 | kit owner | done | merged 106d263f: core/semver, editDistance, regex, countMin, automata and Turing tables |
+| 3 | T3-B27 Graphics & signals | 5 | 9 | t3/b27 | done | merged 321031a6; shared dct quality rule fixed to libjpeg integer division |
+| 3 | T3-B28 Security engineering | 5 | 9 | t3/b28 | done | merged fe050a09; payload-free audit passed |
+| 3 | T3-B29 Resilience & multi-tenancy | 5 | 10 | t3/b29 | done | merged 1ca08100 |
+| 3 | T3-B30 Networking, part 2 | 5 | 10 | t3/b30 | done | merged c571aa22 |
+| 3 | T3-B31 Judgement & people | 6 | 10 | t3/b31 | done | merged da4587e3 |
+| 3 | Tier 3 close-out kit round (kit N) | — | 10→QA | kit owner | done | merged ea18992e: joinList/dollars, paintPixels, Hint tone bad, boolean Segmented, SequenceDiagram note width, GanttLanes clip, forbidden clock/timer kinds |
+| 3 | Tier 3 sign-off fixes A, B, C | — | QA | fixers | done | merged e982789e (A, B) and 261f3114 (C): count-min crash, four crashes found by the sweep, focus drops, Transport aria-disabled, ChipButton softDisabled, caption fixes, sha256 extraction |
+| 3 | **Tier 3 sign-off** | 166 | — | | done | Sentry QA: sign-off, conditions closed or recorded (docs/qa-tier3-report.md, 2026-10-22); 409 lessons registered, smoke desktop 409/409, mobile 408/409 (one unreproduced 7.6px label, see report), scene scan 1,328 scenes clean; push after sign-off |
 | 4 | Kickoff | — | pre | | not started | |
 | 4 | Batches T4-B1 … T4-B8 | 41 | 1-3 | | not started | |
 | 4 | **Tier 4 sign-off** | 50 | — | | not started | |
