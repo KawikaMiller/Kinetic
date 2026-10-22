@@ -19,13 +19,13 @@ const TIER4 = 'Tier 4 kickoff: existing Tier 4 lessons are retrofitted then';
 /**
  * Existing Tier 2 lessons not yet held to the Tier 2 standard (docs/rollout-plan.md §3.1.6).
  * They don't count towards the tier-wide share until their retrofit batch merges; existing
- * Tier 3 and 4 lessons likewise wait for their tier's kickoff. Shrinks as R1 and R2 merge.
+ * Tier 4 lessons wait for their tier's kickoff.
  */
 const PENDING_RETROFIT = new Set<string>([
   // none: T2-R1 and T2-R2 have both landed
 ]);
-/** Tiers whose existing lessons are all still awaiting their kickoff retrofit. */
-const TIERS_AWAITING_KICKOFF = new Set([3, 4]);
+/** Tiers whose lessons are not yet held to the per-tier quiz-longest cap (Tier 4 awaits its kickoff). */
+const TIERS_AWAITING_KICKOFF = new Set([4]);
 
 const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 1: none. Every Tier 1 lesson passes every rule.
@@ -45,7 +45,7 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
 
 /**
  * The 12 Tier 3 lessons that predate AC-0/T3 (docs/tier3-plan.md §5). They are exempt from the
- * AC-0/T3 rules until T3-R1 and T3-R2 retrofit them; remove each id as its retrofit merges.
+ * AC-0/T3 rules until retrofitted; the list is empty now that T3-R1 and T3-R2 have merged.
  * Every other Tier 3 lesson is held to the rules from its first commit.
  */
 const TIER3_AWAITING_RETROFIT = new Set<string>();
@@ -246,7 +246,7 @@ describe('every built lesson', () => {
     expect(unexpected).toEqual([]);
   });
 
-  it('passes the AC-0/T3 rules if it is a Tier 3 lesson, apart from the 12 awaiting T3-R1/T3-R2', async () => {
+  it('passes the AC-0/T3 rules if it is a Tier 3 lesson, apart from any still on the retrofit allowlist', async () => {
     const unexpected: string[] = [];
     for (const { id, lesson } of lessons) {
       if (tierOf.get(id) !== 3 || TIER3_AWAITING_RETROFIT.has(id)) continue;

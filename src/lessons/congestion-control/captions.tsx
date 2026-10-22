@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { pct } from '../../core/format';
-import { timeFrames, type TimedFrame } from '../../core/frames';
+import { timeFrames, type TimedFrame, type TimeMilestone } from '../../core/frames';
 import { RULE_LABEL, RULE_TEXT, type FairnessReading, type Rule } from './fairness';
 import {
   CUBIC_BETA, CUBIC_C, INITIAL_WINDOW, bdpOf, bufferOf, thresholdOf, summarise, type Algo, type LinkSetup, type RoundRec, type Summary,
@@ -37,17 +37,46 @@ export function lossCaption(r: RoundRec, link: LinkSetup): ReactNode {
   );
 }
 
+/** Rounds after the last shown loss before the "window regrows" caption is worth a frame of its own. */
+const REGROW_MIN_ROUNDS = 4;
+/** Evenly spaced "window regrows" captions between the last shown loss and the next one (or the end). */
+const REGROW_CAPTIONS = 4;
+/** How many loss events get a caption of their own. */
+const SHOWN_LOSSES = 4;
+
+/** A caption for the quiet stretch after the last shown loss: the window climbing back, read from the model. */
+function regrowMilestone(recs: readonly RoundRec[], shown: readonly RoundRec[]): TimeMilestone[] {
+  const last = shown[shown.length - 1];
+  if (!last) return [];
+  const next = recs.find((r) => r.round > last.round && r.event !== null)?.round ?? recs.length - 1;
+  const rounds = Array.from({ length: REGROW_CAPTIONS }, (_, k) => Math.floor(last.round + ((next - last.round) * (k + 1)) / (REGROW_CAPTIONS + 1)));
+  return rounds
+    .filter((round, k) => round - (k === 0 ? last.round : rounds[k - 1]) >= REGROW_MIN_ROUNDS)
+    .map((round) => {
+      const now = recs[round];
+      return {
+        t: round,
+        say: (
+          <>
+            Round {round}: the window has regrown to {seg(now.sent)} segments since the loss at round {last.round}, <span className="hl ok">{now.phase === 'slow-start' ? 'back in slow start' : 'in congestion avoidance'}</span>, probing for the limit again.
+          </>
+        ),
+      };
+    });
+}
+
 /** The frames of Reno's story: `now` is the round. */
 export function renoFrames(recs: readonly RoundRec[], link: LinkSetup): TimedFrame[] {
   const end = recs.length - 1;
   const events = recs.filter((r) => r.event !== null);
+  const shown = events.slice(0, SHOWN_LOSSES);
   const s = summarise(recs);
   const bdp = bdpOf(link);
   return timeFrames({
     end,
     steps: end,
     hold: 2.2,
-    milestones: events.slice(0, 4).map((r) => ({ t: r.round, say: lossCaption(r, link) })),
+    milestones: [...shown.map((r) => ({ t: r.round, say: lossCaption(r, link) })), ...regrowMilestone(recs, shown)],
     intro: (
       <>
         Slow start: the window begins at {INITIAL_WINDOW} segments and doubles every round trip. The pipe holds BDP = {seg(bdp)} segments and the buffer {seg(bufferOf(link))} more, so a window above {seg(thresholdOf(link))} overflows it.

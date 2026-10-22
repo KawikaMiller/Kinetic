@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField, Toggle } from '../../components/ui';
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { parseBoundedDecimal, parseBoundedInt } from '../../core/parse';
 import { namesOf } from './ir';
 import { aliasView, floatRow, reassocView, show } from './model';
@@ -10,7 +10,6 @@ import { algebra } from './passes';
 import { ALIAS_PROGRAM, timesZero } from './programs';
 import { IrCode } from './IrCode';
 
-const andList = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 const CASES: { value: RefusalCase; label: string }[] = [
   { value: 'alias', label: 'Aliasing' },
@@ -153,7 +152,7 @@ function FloatCase({ chooser }: { chooser: ReactNode }) {
         rewritten ? (
           <>For 32-bit integers the compiler folds <code>x * 0</code> to 0: the product is 0 for every x, so nothing is lost ({chips.map(show).join(', ')} all give 0).</>
         ) : (
-          <>For floats the compiler refuses to fold <code>x * 0</code> to 0. With x = {show(row.x)} the real result is {show(row.actual)}{row.agree ? ', which happens to be 0' : `, not 0, so folding would change the answer`}.{counter.length ? ` Among the chips, ${andList(counter.map(show))} would break.` : ''}</>
+          <>For floats the compiler refuses to fold <code>x * 0</code> to 0. With x = {show(row.x)} the real result is {show(row.actual)}{row.agree ? ', which happens to be 0' : `, not 0, so folding would change the answer`}.{counter.length ? ` Among the chips, ${joinList(counter.map(show))} would break.` : ''}</>
         )
       }
       introKey={`${ty}-${x}`}

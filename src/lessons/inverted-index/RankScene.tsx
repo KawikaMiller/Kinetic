@@ -25,9 +25,9 @@ export function RankScene({ picker, corpus }: { picker: ReactNode; corpus: Corpu
   const docs = useMemo(() => (repeater ? [...corpus.docs, REPEATER] : corpus.docs), [corpus.docs, repeater]);
   const index = useMemo(() => buildIndex(docs, corpus.steps), [docs, corpus.steps]);
   const q = useMemo(() => parseQuery(text, corpus.steps), [text, corpus.steps]);
-  const terms = [...new Set(q.units.flat())];
+  const terms = useMemo(() => [...new Set(q.units.flat())], [q]);
   const matches = useMemo(() => evaluate(index, q, 'or', 'as-typed').docs, [index, q]);
-  const ranked = useMemo(() => rankDocs(index, matches, terms, ranker, { k1, b }), [index, matches, terms.join(' '), ranker, k1, b]);
+  const ranked = useMemo(() => rankDocs(index, matches, terms, ranker, { k1, b }), [index, matches, terms, ranker, k1, b]);
   const top = ranked[0] ?? null;
   const shown = shownRows(ranked, repeater ? docs.length : null);
   const best = Math.max(top?.score ?? 0, 1e-9);
@@ -75,7 +75,7 @@ export function RankScene({ picker, corpus }: { picker: ReactNode; corpus: Corpu
             <Slider label="b" value={b} {...B_RANGE} format={(v) => decimal(v, 2)} onChange={setB} />
           </>
         ) : (
-          <span className="hint">TF-IDF has no k1 or b: it is tf times ln(N / n).</span>
+          <span key="no-k1-b" className="hint">TF-IDF has no k1 or b: it is tf times ln(N / n).</span>
         ),
       ]}
     >

@@ -7,6 +7,7 @@ import { runTm, type Tm } from '../../core/tm';
 import { EVIDENCE, evidenceFor, witness } from './evidence';
 import { CARDS, KEY, RINGS, cardById, decide, ringIndex, type CardId, type RingId } from './languages';
 import { cannotWin, cfCount, chooseString, decompositions, loopIn, playGame, pump, pumpLanguage, regularCount } from './pumping';
+import { forbiddenCalls, NO_REGEXP_OR_FUNCTION } from '../../core/testing/forbidden';
 
 function strings(alphabet: readonly string[], max: number): string[] {
   const out = [''];
@@ -201,9 +202,6 @@ describe('no learner text reaches RegExp, eval or Function', () => {
   it('the lesson sources contain no new RegExp, RegExp( call, eval( or new Function', () => {
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
     expect(files.map(([name]) => name)).toContain('./pumping.ts');
-    for (const [name, text] of files) {
-      const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-      expect(code, name).not.toMatch(/new\s+RegExp|RegExp\s*\(|\beval\s*\(|new\s+Function|\bFunction\s*\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(files), { also: NO_REGEXP_OR_FUNCTION, ignoreComments: true })).toEqual([]);
   });
 });

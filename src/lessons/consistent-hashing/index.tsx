@@ -23,7 +23,7 @@ const lesson: LessonModule = {
     'Hover a key, or move the Inspect key slider, to trace its clockwise walk to its owner.',
   ],
   keyIdeas: [
-    'hash % N changes a key\'s owner whenever N changes it: adding one server to N moves about N/(N+1) of the keys, a cache stampede waiting to happen.',
+    'Changing N changes the owner of a large share of keys under hash % N: adding one server to N servers moves about N/(N+1) of the keys, a cache stampede waiting to happen.',
     'On a hash ring a join moves about 1/(N+1) of the keys on average, each onto the new server; with few points per server one join can move far more or far fewer.',
     'A key belongs to the first server point clockwise from its hash, so a change stays local to the arcs next to the points that come or go.',
     'Virtual nodes give each server many small arcs, which evens out the load.',

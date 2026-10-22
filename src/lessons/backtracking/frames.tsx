@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { superscript } from '../../core/format';
+import { joinList, superscript } from '../../core/format';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import {
@@ -59,7 +59,6 @@ export interface Run {
 export const rowName = (r: number) => `row ${r + 1}`;
 export const colName = (c: number) => `column ${c + 1}`;
 const fmt = (v: number) => v.toLocaleString('en-US');
-const listOf = (xs: readonly number[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** Largest whole number of sibling groups of `size`, plus the root, that fits under TREE_CAP. */
 export const drawnCount = (nodes: readonly SearchNode[], size: number) => Math.min(nodes.length, 1 + size * Math.floor((TREE_CAP - 1) / size));
@@ -100,7 +99,7 @@ function tryCaption(prune: boolean, n: number, board: readonly number[], outcome
     if (outcome === 'dead') {
       const by = conflicts.map(([a]) => a);
       const how = by.every((a) => board[a] === c) ? 'same column' : by.every((a) => board[a] !== c) ? 'diagonal' : 'column and diagonal';
-      const who = by.length === 1 ? `The queen in row ${by[0] + 1} attacks` : `The queens in rows ${listOf(by.map((a) => a + 1))} attack`;
+      const who = by.length === 1 ? `The queen in row ${by[0] + 1} attacks` : `The queens in rows ${joinList(by.map((a) => String(a + 1)))} attack`;
       return <>{where} {who} it ({how}): dead branch. Lift it and never look below it.</>;
     }
     return <>{where} It's safe, and that's all {n} queens: solution {solutions}.</>;

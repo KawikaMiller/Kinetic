@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { buildNfa, runNfa } from '../../core/regex';
 import { BANK, SUBJECTS, construct, parse } from '../../core/regex/regexBank';
 import { STEP_BUDGET, growthTable, whichAnswer, workSeries } from './engines';
+import { forbiddenCalls, NO_REGEXP_OR_FUNCTION } from '../../core/testing/forbidden';
 
 describe('growth table', () => {
   it('the NFA grows by 2 states per added [ab] while the DFA states beyond the start set double', () => {
@@ -71,9 +72,6 @@ describe('no lesson source reaches RegExp, eval or Function', () => {
   const lessonSources = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
   it('contain no new RegExp, RegExp( call, eval( or new Function', () => {
     expect(lessonSources.map(([name]) => name)).toContain('./engines.ts');
-    for (const [name, text] of lessonSources) {
-      const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-      expect(code, name).not.toMatch(/new\s+RegExp|RegExp\s*\(|\beval\s*\(|new\s+Function|\bFunction\s*\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(lessonSources), { also: NO_REGEXP_OR_FUNCTION, ignoreComments: true })).toEqual([]);
   });
 });

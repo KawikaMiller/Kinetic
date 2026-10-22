@@ -1,5 +1,5 @@
 /**
- * Merkle trees over real SHA-256 (sha256.ts), in the domain-separated form of the Certificate
+ * Merkle trees over real SHA-256 (core/sha256.ts), in the domain-separated form of the Certificate
  * Transparency tree: a leaf is `H(0x00 || data)`, an inner node is `H(0x01 || left || right)`,
  * and the empty tree is `H("")`. Two ways to treat a leaf count that is not a power of two:
  * `rfc` splits at the largest power of two below n, `duplicate` pairs a lone last node with a copy
@@ -7,7 +7,7 @@
  * why width matters.
  */
 import { hexToBytes, toHex } from '../../core/crypto';
-import { sha256 } from './sha256';
+import { sha256 } from '../../core/sha256';
 
 export type HashKind = 'sha256' | 'toy8';
 export type OddRule = 'rfc' | 'duplicate';

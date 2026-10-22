@@ -17,7 +17,7 @@ const lesson: LessonModule = {
       'Picking a bounded random integer without favouring some values',
       'Deciding when a reproducible seeded generator is the right tool instead',
     ],
-    why: 'Predictable tokens turn into account takeovers, and the bug never shows in a test because the output looks random. Knowing what each generator guarantees, and what a seed and a remainder can quietly give away, is how you pick the right call in the first place.',
+    why: 'Predictable tokens turn into account takeovers, and the bug usually does not show in a test because the output looks random. Knowing what each generator guarantees, and what a seed and a remainder can quietly give away, is how you pick the right call in the first place.',
     watch: 'Points of a toy generator are red (--bad) where its structure shows, and a generator whose lines are too fine to see is blue (--info); the real crypto.getRandomValues cloud is green (--ok). In the recovery scene the states still consistent with what was seen are blue and shrink to the one true state, yellow (--hi). A correct sort is green and a wrong one red. In the bias scene the outcomes that come up more often are orange (--orange) and the unbiased ones green.',
   },
   tryThis: [

@@ -27,7 +27,7 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect([p.slot, p.rounds]).toEqual([4, 2]);
     expect(lesson.tryThis[0]).toContain('"Pairs out of due order" reads 1');
     const caption = text(wheelFrames(w.jobs).find((f) => f.tick === 5 && f.say)!.say, { strict: true });
-    expect(caption).toContain('fires job 2 (due 5 s), then job 3 (due 4.5 s)');
+    expect(caption).toContain('fired job 2 (due 5 s), then job 3 (due 4.5 s)');
     expect(caption).toContain('heap would have run job 3 first');
   });
 

@@ -21,7 +21,7 @@ const lesson: LessonModule = {
       'Understanding dropped packets when a receive ring fills faster than the driver drains it',
       'Debugging a stale read after a device wrote a buffer on a platform without coherent DMA',
     ],
-    why: 'Every disk, network card and GPU talks to the CPU through these three ideas. Knowing that DMA moves the copy and not the responsibility explains driver cost, ring sizing, interrupt moderation and a family of stale-data bugs.',
+    why: 'Disks, network cards and GPUs talk to the CPU through these three ideas, in most designs. Knowing that DMA moves the copy and not the responsibility explains driver cost, ring sizing, interrupt moderation and a family of stale-data bugs.',
     watch:
       'Transfer: the CPU lane shows copying, polling and setup in yellow, the interrupt in pink, the useful job in green and the job stalled on the bus in orange (dashed); the bus lane shows the device holding the bus in blue (hatched when it only takes alternate cycles); a grey bar is the CPU copying over the bus in programmed I/O, a dim dashed bar is the device getting its block ready, and diamonds are the register write (violet) and the interrupt (pink). Address map: violet is the device register window, blue RAM, amber ROM, a dim outline nothing mapped, a yellow ring the address you picked, orange a read served from the cache instead of the device, red a bus error or a stale answer. Ring: each descriptor row has a rail in dim (free), blue (device-owned), yellow (filled) or green (handled), pink is interrupts, orange a dropped packet, red an overwritten one. Cache panel: red steps are where the CPU or the machine goes wrong, green is correct. Chips say what is illustrative, a toy, simulated or from memory.',
   },

@@ -25,7 +25,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'Metrics tell you that something is wrong; traces tell you where; logs tell you why.',
     'A trace ID passed along with each call and written into the logs links metrics, traces and logs together.',
-    'Watch percentiles (p99), not just averages: a minority of very slow requests barely moves the mean but sets the p99.',
+    'Watch percentiles (p99), not just averages: a slow tail of more than 1% of requests barely moves the mean but sets the p99.',
     'Each unique label combination is a separate metric series, so IDs make poor metric labels.',
   ],
   quiz: [

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { plural } from '../../core/format';
+import { joinList, plural } from '../../core/format';
 import { BLOCKS, PAGES, WA_WARN, writeAmplification, type RunResult, type Workload } from './ftl';
 
 export interface BatchSummary {
@@ -34,11 +34,10 @@ export const waTooHigh = (wa: number) => Number(waText(wa)) > WA_WARN;
 /** "block 5", "blocks 5 and 6": each block once, in order. */
 const blockList = (blocks: readonly number[]) => {
   const u = [...new Set(blocks)].sort((a, b) => a - b);
-  return `${u.length === 1 ? 'block' : 'blocks'} ${listText(u)}`;
+  return `${u.length === 1 ? 'block' : 'blocks'} ${joinList(u.map(String))}`;
 };
 
 /** "5", "5 and 6", "3, 5 and 6". */
-export const listText = (xs: readonly number[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 export function ssdIntro(workload: Workload, trim: boolean, spare: number): ReactNode {
   return (

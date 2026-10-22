@@ -1,4 +1,4 @@
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { costOf } from './cost';
 import { mismatchText, makeContract, verify, type MatcherType } from './contract';
 import { coverage, matcherFits, readsOf, renderCheckout, type ConsumerOptions, type Field } from './consumer';
@@ -7,18 +7,17 @@ import { CHANGES, FULL_SCHEMA, handle, type Changes } from './provider';
 
 /** Captions as plain text, computed from the same runs the screen shows. */
 
-const list = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 export function consumerCaption(o: ConsumerOptions, chosen: Partial<Record<Field, MatcherType>>): string {
   const named = Object.keys(chosen) as Field[];
   const { missing, extra } = coverage(named, o);
   const loose = named.filter((f) => !matcherFits(f, chosen[f]!, o).fits);
   const parts: string[] = [];
-  if (missing.length) parts.push(`the page also reads ${list(missing)}, so a provider could remove ${missing.length === 1 ? 'it' : 'them'} unnoticed`);
-  if (extra.length) parts.push(`${list(extra)} ${extra.length === 1 ? 'is' : 'are'} named but never read, which would block a removal nobody needs`);
-  if (loose.length) parts.push(`the matcher for ${list(loose)} lets through a value that breaks the page`);
+  if (missing.length) parts.push(`the page also reads ${joinList(missing)}, so a provider could remove ${missing.length === 1 ? 'it' : 'them'} unnoticed`);
+  if (extra.length) parts.push(`${joinList(extra)} ${extra.length === 1 ? 'is' : 'are'} named but never read, which would block a removal nobody needs`);
+  if (loose.length) parts.push(`the matcher for ${joinList(loose)} lets through a value that breaks the page`);
   const verdict = parts.length ? parts.join('; ') : 'it names exactly what the page reads, each with a matcher the page survives';
-  return `The page reads ${list(readsOf(o))}. Your contract: ${verdict}.`;
+  return `The page reads ${joinList(readsOf(o))}. Your contract: ${verdict}.`;
 }
 
 export function providerCaption(o: ConsumerOptions, changes: Changes): string {

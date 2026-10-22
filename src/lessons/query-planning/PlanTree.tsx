@@ -1,5 +1,5 @@
 import { TreeSvg, type TreeShape } from '../../components/TreeSvg';
-import { misestimate, planNodes, type NodeKind, type PlanNode } from './model';
+import { misestimate, money, planNodes, type NodeKind, type PlanNode } from './model';
 import type { Tone } from '../../core/tone';
 
 const NODE_W = 300;
@@ -12,7 +12,6 @@ const TREE_PAD = 20;
 /** Sort is a costly step (orange, not an error); an index in use is secondary (info); the rest are plain. */
 const KIND_TONE: Record<NodeKind, Tone | null> = { Limit: null, Sort: 'orange', 'Seq Scan': null, 'Index Scan': 'info' };
 
-const money = (x: number): string => x.toFixed(2);
 
 /** The node's three text lines: what it is, where it reads, and the numbers. */
 function nodeLines(node: PlanNode, analyze: boolean): [string, string, string] {

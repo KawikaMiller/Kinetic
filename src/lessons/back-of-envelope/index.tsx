@@ -13,7 +13,7 @@ const lesson: LessonModule = {
       'Deciding whether one machine, one database or one network link can carry a workload',
       'Spotting a unit slip in a dashboard: bits against bytes, per second against per minute',
     ],
-    why: 'Most early design decisions are made with numbers nobody has measured yet. A quick, unit-checked estimate shows whether an idea is feasible, which resource will run out first and which assumptions matter, long before any benchmark exists. It also gives you a sanity check on every later number.',
+    why: 'Early design decisions are often made with numbers nobody has measured yet. A quick, unit-checked estimate shows whether an idea is feasible, which resource will run out first and which assumptions matter, long before any benchmark exists. It also gives you a sanity check on every later number.',
     watch: 'Blue numbers are inputs you set and yellow ones are quantities derived from them; in the unit strip a grey struck-through unit is one that cancels. A red line is a refusal of text that is not a plain number; the grey worked example under the unit strip shows the unit algebra refusing to add bytes to bits. In the latency scene the stacked bar has one colour per kind of step and the target is marked green while the path is inside the budget and red once it is over. In the server scene yellow squares are the servers the peak needs and violet ones are redundancy. In the guess scene the error is green within a factor of ten and red beyond it.',
   },
   tryThis: [

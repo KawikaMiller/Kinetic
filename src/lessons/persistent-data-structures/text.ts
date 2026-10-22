@@ -1,10 +1,10 @@
-import { plural } from '../../core/format';
+import { joinList, plural } from '../../core/format';
 
 const n = (v: number) => v.toLocaleString('en-US');
 
 /** "cell 0", "cells 0 and 2", "cells 0, 2 and 5". */
 const cellList = (cells: readonly number[]): string =>
-  cells.length === 1 ? `cell ${cells[0]}` : `cells ${cells.slice(0, -1).join(', ')} and ${cells[cells.length - 1]}`;
+  `${cells.length === 1 ? 'cell' : 'cells'} ${joinList(cells.map(String))}`;
 
 /** Scenes 1 and 2: what the latest version is and what it cost. */
 export function pathCaption(f: {

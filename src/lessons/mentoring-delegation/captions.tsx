@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { plural } from '../../core/format';
+import { plural, joinList } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import { CAPACITY_HOURS, QUEUE_WARN, TASKS, TEAM, WEEKS, type Hours, type Payback, type Run } from './model';
 import { METER } from './scenario';
 
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 export interface PaybackRow {
   taskId: string;
@@ -43,7 +42,7 @@ export function feedbackCaption(s: Scenario, w: Walk): ReactNode {
     <>
       {ending ? <>{ending.title}. </> : null}
       Clarity {w.meters[METER.clarity]}, their trust {w.meters[METER.trust]}, their ownership {w.meters[METER.ownership]} (each of 10), your hours spent {w.meters[METER.hours]}, delivered this week {w.meters[METER.delivery]}.
-      {red.length ? <> In the red: {joinNames(red)}.</> : <> Nothing is in the red.</>}
+      {red.length ? <> In the red: {joinList(red)}.</> : <> Nothing is in the red.</>}
     </>
   );
 }

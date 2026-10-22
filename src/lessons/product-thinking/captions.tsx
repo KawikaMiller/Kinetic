@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import { plural, sig } from '../../core/format';
+import { plural, sig, joinList } from '../../core/format';
 import { measured, type Check, type Design, type Person } from './folklore';
 import { LONG_WINDOW_DAYS, RUNS, type PowerSpec } from './power';
 import { KIND_WORD, METRICS, RELEASE_WEEK, change, type Breach, type Guardrails, type MetricId, type Series } from './series';
 import { BEHAVIOUR_NEEDS, LEVELS, SOLUTIONS, behaviourCoverage, cheapestFull, optionsAt, type Solution } from './tree';
 
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 const pctOf = (share: number) => `${share >= 0 ? '+' : '-'}${Math.round(Math.abs(share) * 100)}%`;
 
 const partsOf = (s: Solution) => BEHAVIOUR_NEEDS.filter((n) => s.covers.includes(n)).length;
@@ -20,7 +19,7 @@ export function treeCaption(level: number): ReactNode {
     <>
       You are at "{here.label}": {here.text}. {here.id === 'metric' || here.id === 'goal'
         ? <>Every solution is a bet on this level, so the comparison is easier a step or two lower. </>
-        : <>Options that serve it: {joinNames(options.map((s) => `${s.label} (${s.effort} days)`))}. </>}
+        : <>Options that serve it: {joinList(options.map((s) => `${s.label} (${s.effort} days)`))}. </>}
       The cheapest option that covers the whole behaviour is the {best.label.toLowerCase()} at {plural(best.effort, 'day')}; the request, {request.label}, takes {plural(request.effort, 'day')} and covers {partsOf(request)} of {BEHAVIOUR_NEEDS.length} parts of it.
     </>
   );

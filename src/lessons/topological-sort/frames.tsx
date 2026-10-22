@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { createRecorder } from '../../core/recorder';
 import type { Frame } from '../../core/types';
 import { countOrders, cycleEdges, dfsTopo, findCycle, isValidOrder, kahn, type Dag } from './model';
+import { joinList } from '../../core/format';
 
 export type Algo = 'kahn' | 'dfs';
 
@@ -21,7 +22,6 @@ export interface TsFrame extends Frame {
 export const ALGO_NAMES: Record<Algo, string> = { kahn: "Kahn's queue", dfs: 'DFS post-order' };
 
 const chain = (cycle: readonly string[]) => [...cycle, cycle[0]].join(' → ');
-const list = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** The closing line for a finished run: computed from the order itself and the graph. */
 export function verdict(g: Dag, order: readonly string[], other: readonly string[]): ReactNode {
@@ -49,7 +49,7 @@ export function topoFrames(g: Dag, algo: Algo): TsFrame[] {
       if (e.kind === 'start') {
         rec.snap(
           e.queue.length
-            ? <>Count each node's incoming arrows (the violet badges). {list(e.queue)} {e.queue.length === 1 ? 'has' : 'have'} none, so {e.queue.length === 1 ? 'it starts' : 'they start'} in the queue.</>
+            ? <>Count each node's incoming arrows (the violet badges). {joinList(e.queue)} {e.queue.length === 1 ? 'has' : 'have'} none, so {e.queue.length === 1 ? 'it starts' : 'they start'} in the queue.</>
             : <>Count each node's incoming arrows (the violet badges). Every node has at least one, so nothing can go first: the queue starts empty.</>,
           undefined,
           { indeg: e.indeg, queue: e.queue },
@@ -66,7 +66,7 @@ export function topoFrames(g: Dag, algo: Algo): TsFrame[] {
         rec.snap(
           targets.length === 0
             ? <>{e.node} has no outgoing arrows, so no badge changes.</>
-            : <>Cross off {e.node}'s arrows: {list(drops)}.{e.freed.length > 0 && <> {list(e.freed)} {e.freed.length === 1 ? 'hits' : 'hit'} 0 and {e.freed.length === 1 ? 'joins' : 'join'} the queue.</>}</>,
+            : <>Cross off {e.node}'s arrows: {joinList(drops)}.{e.freed.length > 0 && <> {joinList(e.freed)} {e.freed.length === 1 ? 'hits' : 'hit'} 0 and {e.freed.length === 1 ? 'joins' : 'join'} the queue.</>}</>,
           undefined,
           { current: null, indeg: e.indeg, queue: e.queue, consumed: [...rec.get().consumed, ...e.edges] },
         );

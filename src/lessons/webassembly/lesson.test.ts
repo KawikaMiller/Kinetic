@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { mulberry32, randInt } from '../../core/random';
 import { bytesCaption, importsCaption, memoryCaption } from './captions';
 import { CARDS } from './cards';
@@ -320,8 +321,8 @@ describe('only fixed bytes reach the engine', () => {
     const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
     expect(files.length).toBeGreaterThan(10);
+    expect(forbiddenCalls(Object.fromEntries(files))).toEqual([]);
     for (const [name, source] of files) {
-      expect(source, name).not.toMatch(/\beval\s*\(|new Function/);
       if (!name.endsWith('engine.ts')) expect(source, name).not.toMatch(/new WebAssembly\.(Module|Instance)|WebAssembly\.instantiate/);
     }
     const engine = files.find(([name]) => name.endsWith('engine.ts'))![1];

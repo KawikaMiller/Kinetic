@@ -19,6 +19,9 @@ export interface ShFrame extends Frame {
   phase: 'intro' | 'write' | 'query' | 'rebalance' | 'done';
 }
 
+/** The order (0-based) at which a run that still uses one shard says so; later orders in that run keep this caption. */
+const TODAY_CAPTION_ORDER = 5;
+
 const times = (x: number) => `${x.toFixed(2)}×`;
 
 const STRATEGY_WORD: Record<Strategy, string> = { range: 'range', hash: 'hash', directory: 'directory' };
@@ -68,7 +71,7 @@ export function buildFrames(strategy: Strategy, key: ShardKey, addShard: boolean
             The router looks up which range <code>{col}</code> falls in: shard <b>S{s + 1}</b>.
           </>
         );
-    if (i === 5)
+    if (i > 0 && (i === TODAY_CAPTION_ORDER || used > 1))
       say =
         used === 1 ? (
           <>

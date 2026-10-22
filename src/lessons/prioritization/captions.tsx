@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import { plural, sig } from '../../core/format';
+import { plural, sig, joinList } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import { CLOSE_CALL, ITEMS, RULES, orderBy, valueBy, type Dependency, type Item, type Line, type RankStats, type Rule, type Swap } from './model';
 import { METER } from './scenario';
 
 const label = (id: string, items: readonly Item[] = ITEMS) => items.find((i) => i.id === id)!.label;
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 export type Quadrant = 'quick' | 'big' | 'fill' | 'pit';
 export const QUADRANT_WORD: Record<Quadrant, string> = { quick: 'quick win', big: 'big bet', fill: 'fill-in', pit: 'money pit' };
@@ -75,7 +74,7 @@ export function storyCaption(s: Scenario, w: Walk): ReactNode {
     <>
       {ending ? <>{ending.title}. </> : null}
       Value delivered {w.meters[METER.value]}, trust {w.meters[METER.trust]} of 10, {w.meters[METER.load]} weeks committed, {plural(w.meters[METER.changed], 'committed item')} moved or dropped.
-      {red.length ? <> In the red: {joinNames(red)}.</> : <> Nothing is in the red.</>}
+      {red.length ? <> In the red: {joinList(red)}.</> : <> Nothing is in the red.</>}
     </>
   );
 }

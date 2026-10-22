@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { plural, sig } from '../../core/format';
+import { plural, sig, joinList } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import {
   CONE_PHASES, RUNS, bandRatio, chanceBy, outsideCone, type CalibrationScore, type OutcomePoint, type Statistic, type SumFacts, type SumRun, type SumSpec,
@@ -63,7 +63,6 @@ export function calibrationCaption(score: CalibrationScore, scored: boolean, row
   return <>{score.hits} of {score.answered} ranges contained the true value; 90% ranges would contain about {sig(score.expected, 2)} of {score.answered}.</>;
 }
 
-const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** Scene 5: where the conversation stands, from the walk's own meters. */
 export function talkCaption(s: Scenario, w: Walk): ReactNode {
@@ -73,7 +72,7 @@ export function talkCaption(s: Scenario, w: Walk): ReactNode {
     <>
       {ending ? <>{ending.title}. </> : null}
       Trust {w.meters[METER.trust]} of 10, a {w.meters[METER.risk]}% chance of missing the planned day, {w.meters[METER.slack]} days of slack against the median plan.
-      {red.length ? <> In the red: {joinNames(red)}.</> : <> Nothing is in the red.</>}
+      {red.length ? <> In the red: {joinList(red)}.</> : <> Nothing is in the red.</>}
     </>
   );
 }

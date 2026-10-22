@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { timeFrames, type TimedFrame } from '../../core/frames';
-import { OUTCOME_WORD, outcomeOf, unpublishedOrders, type Design, type Fault, type OutboxRun, type Outcome, type RelayMode } from './outbox';
+import { OUTCOME_WORD, SVC, outcomeOf, unpublishedOrders, type Design, type Fault, type OutboxRun, type Outcome, type RelayMode } from './outbox';
 
 export const ms = (t: number) => `${Math.round(t)} ms`;
 
@@ -18,6 +18,12 @@ export const FAULT_WORD: Record<Fault, string> = {
   'publish-fails': 'The publish is lost on its way to the broker.',
   'after-commit': 'The service crashes right after the commit.',
   'relay-mid': 'The relay crashes after it published and before it marked the row sent.',
+};
+
+/** Orders already in the database by `t` whose event never reached the broker in this run. */
+const strandedOrders = (run: OutboxRun, t: number): number[] => {
+  const lost = new Set(unpublishedOrders(run));
+  return run.orders.filter((o) => o.at <= t && lost.has(o.order)).map((o) => o.order);
 };
 
 /** The moments of a run worth a caption, from the records the model keeps. */
@@ -66,7 +72,17 @@ export function outboxMilestones(run: OutboxRun): { t: number; say: ReactNode }[
   }
   for (const r of run.cluster.trace) {
     if (r.kind === 'crash') out.push({ t: r.t, say: <>At {ms(r.t)} the {r.node} <span className="hl bad">crashes</span>; whatever it was holding in memory is gone.</> });
-    if (r.kind === 'restart') out.push({ t: r.t, say: <>At {ms(r.t)} the {r.node} restarts.</> });
+    if (r.kind === 'restart') {
+      const stranded = run.setup.design === 'dbfirst' && r.node === SVC ? strandedOrders(run, r.t) : [];
+      out.push({
+        t: r.t,
+        say: stranded.length > 0 ? (
+          <>At {ms(r.t)} the {r.node} restarts, but with no outbox it has <span className="hl bad">nothing to send</span>: the event for order {stranded.join(' and ')} was never published and nothing remembers it.</>
+        ) : (
+          <>At {ms(r.t)} the {r.node} restarts.</>
+        ),
+      });
+    }
   }
   for (const r of run.outbox) {
     if (r.sentAt !== null) out.push({ t: r.sentAt, say: <>At {ms(r.sentAt)} the relay marks outbox row {r.id} <span className="hl ok">sent</span>.</> });

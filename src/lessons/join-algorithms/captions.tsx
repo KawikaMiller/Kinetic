@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { plural, ratioText } from '../../core/format';
+import { joinList, plural, ratioText } from '../../core/format';
 import { SHORT_LABEL, type Cond, type Tables, type VerdictRow } from './join';
 
 const names = (rows: readonly VerdictRow[], verdict: VerdictRow['verdict']): string => {
   const list = rows.filter((r) => r.verdict === verdict).map((r) => SHORT_LABEL[r.id]);
-  return list.length <= 1 ? (list[0] ?? '') : `${list.slice(0, -1).join(', ')} and ${list.at(-1)}`;
+  return joinList(list);
 };
 
 /** Scene 4's caption: the verdicts in the table, in the table's own numbers. */

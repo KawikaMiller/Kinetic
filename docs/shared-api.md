@@ -386,7 +386,7 @@
 `emitJs(src)                          // tsc.ts: what TypeScript emits for a snippet (types erased)
 `forbiddenCalls(sources, { also?, allow?, ignoreComments? })  // forbidden.ts: ['file: call', ...] for network / eval calls in raw sources ([] = clean)
 ````
-``forbiddenCalls` is the "this lesson stays inside the page" check: the default set is `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `eval(`, `new Function`; `also: ['localStorage', 'sessionStorage', 'indexedDB', 'newUrl']` adds opt-in shapes and `allow` lifts a default. The lesson keeps its own `import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true })` (it also reads individual sources for its chip assertions) and asserts `expect(forbiddenCalls(sources)).toEqual([])`. Migrated: authz-models, threat-modeling, ssrf-access-control, envelope-encryption-kms, randomness-csprng. `also: NO_CLOCK_OR_TIMER` adds `clock` (`performance.now`, `Date.now`, `new Date`) and `timer` (`setTimeout`, `setInterval`, `requestAnimationFrame`); `ignoreComments: true` drops block and whole-line `//` comments first (`stripComments(source)` is exported for a lesson's own extra scan). Clock-free lessons migrated: branch-prediction, cache-coherence, memory-allocators (keeps its own `Uint8Array|ArrayBuffer` scan), page-tables-tlb, timing-side-channels.
+``forbiddenCalls` is the "this lesson stays inside the page" check: the default set is `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `eval(`, `new Function`; `also: ['localStorage', 'sessionStorage', 'indexedDB', 'newUrl']` adds opt-in shapes and `allow` lifts a default. The lesson keeps its own `import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true })` (it also reads individual sources for its chip assertions) and asserts `expect(forbiddenCalls(sources)).toEqual([])`. Migrated: authz-models, threat-modeling, ssrf-access-control, envelope-encryption-kms, randomness-csprng. `also: NO_CLOCK_OR_TIMER` adds `clock` (`performance.now`, `Date.now`, `new Date`) and `timer` (`setTimeout`, `setInterval`, `requestAnimationFrame`); `ignoreComments: true` drops block and whole-line `//` comments first (`stripComments(source)` is exported for a lesson's own extra scan). Clock-free lessons migrated: branch-prediction, cache-coherence, memory-allocators (keeps its own `Uint8Array|ArrayBuffer` scan), page-tables-tlb, timing-side-channels. `also: NO_REGEXP_OR_FUNCTION` adds `regExp` (`new RegExp`, `RegExp(`) and `functionCall` (a bare `Function(`) for a lesson that writes its own matcher or evaluator (regex-engines, pushdown-automata, chomsky-hierarchy, parsing-algorithms, metaprogramming-macros; bytecode-vms, lambda-calculus and webassembly use the default set plus `functionCall` where needed).
 `- A glued sentence is what a JSX line break next to `{…}` produces: JSX drops a line break that
 `  touches an expression, so text ending a line in `…the port.` with `{n} s later` starting the next
 `  comes out as "port.60 s later" (fix: `{' '}` at the line end). The
@@ -601,7 +601,7 @@
 `- Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
 `  row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 `
-`### `ConsolePanel.tsx` — value-vs-reference, closures-scope; debugger-tools next
+`### `ConsolePanel.tsx` — value-vs-reference, closures-scope; debugger-tools (migrated)
 ````tsx
 `<ConsolePanel lines={mem.out} error={mem.error} />                      // error prints last as "Uncaught …" in red
 `<ConsolePanel lines={['ok', { text: 'deprecated', tone: 'orange' }]} title="output" empty="(silent)" />
@@ -1473,7 +1473,7 @@
 `  - `core/seed` + `components/SeedField`: `parseSeed(text)` (whole number 0..SEED_MAX with refusal messages), `nextSeed`, and `<SeedField seed onSeed />` (a fragment: text field, "New seed" button, refusal line that keeps the old seed) for any lesson with a seeded run. The text follows `seed` when the lesson changes it (preset, find-a-seed) with no remount, so never pass `key={seed}` or a counter key: a key remounts on every keystroke and drops focus. A typed text that still means the current seed (`042`) is kept. `resyncSeedText(text, seed)` is the pure rule; `label` renames the field.
 `  - `core/queueing`: `erlangC(c, a)`, the chance an arrival waits in an M/M/c queue. `core/stats`: `nearestRank(sorted, pct)` and `nearestRankIndex(n, pct)` (the ⌈p·n⌉-th smallest, immune to the 7.000000000000001 trap).
 `  - `core/testing/nodeCrypto` (tests only): `nodeDigest(alg, data, encoding?)`, `nodeHmac(alg, key, data, encoding?)`, `nodeRandomBytes(n)`, `nodeRandomBase64url(n)`; use it as the independent oracle for any hashing code, never `import('node:crypto')` by hand.
-`  - A **synchronous SHA-256 in core was not added**: oauth-flows' `pkce.ts` is its only user (core/crypto's `sha256Hex` is async, and every other lesson awaits it). Extract on a second user that needs a sync hash.
+`  - `core/sha256`: `sha256(data: Uint8Array): Uint8Array`, a synchronous SHA-256 (core/crypto's `sha256Hex` is async), tested against the NIST vectors, node:crypto and crypto.subtle. Used by merkle-trees and oauth-flows (PKCE S256).
 `
 `### `core/simTick.ts`, `core/useTickSim.ts` (K3-2) — queueing-theory, wifi-shared-medium, autoscaling, capacity-planning, thread-pools-work-stealing, graceful-degradation, cache-stampede, fanout-feeds, simd-gpu-parallelism, benchmarking-methodology
 ````ts
@@ -2066,7 +2066,7 @@
 ````
 `Without `freedTone` nothing changes. (The existing `tone` prop is ignored for a freed block, and callers pass it there today, so it could not become the override.) The freed tag now takes the box colour instead of a hard-coded --bad. Migration for after t3/b22 merges: ownership-refcounting drops its local `.heap-obj.rc-ok` class and passes `freedTone="ok"`.
 `
-`### `ClassifyBoard` + `core/classify` — undefined-behavior (migrated); chomsky-hierarchy, randomness-csprng next
+`### `ClassifyBoard` + `core/classify` — undefined-behavior (migrated); chomsky-hierarchy, randomness-csprng (migrated)
 ````tsx
 `const ITEMS: ClassifyItem[] = [{ id, label: ReactNode, text?: string, explanation?: ReactNode }];   // explanation => a "Why?" button
 `const CATEGORIES: ClassifyCategory[] = [{ id, label }];                                              // 2 to 5 reads well; 5 wraps
@@ -2105,13 +2105,13 @@
 `
 `## Tier 3 kit (wave 8 to 9 extraction round: kit-M)
 `
-`### `core/semver.ts` — dependency-management (origin), monorepo-polyrepo (test); supply-chain-security next
+`### `core/semver.ts` — dependency-management (origin), monorepo-polyrepo (test); supply-chain-security (migrated)
 ````ts
 `import { parseVersion, formatVersion, compare, parseRange, satisfies, satisfiesParsed, explainMatch, maxSatisfying, explainRange } from '../../core/semver';
 ````
 `npm's version and range rules (node-semver defaults): `^`, `~`, X-ranges, hyphen ranges, `||`, pre-releases excluded unless the range opts in, build metadata ignored. `satisfies(version, range)` / `maxSatisfying(versions, range)` take strings and return false / null for text that does not parse; `explainMatch` says `'match' | 'outside' | 'prerelease' | 'invalid'`; `explainRange` is the plain-words reading. Moved from `lessons/dependency-management/semver.ts` unchanged, with its tests (`core/semver.test.ts`).
 `
-`### `core/editDistance.ts` — edit-distance (origin); supply-chain-security (Levenshtein) next
+`### `core/editDistance.ts` — edit-distance (origin); supply-chain-security (Levenshtein, migrated)
 ````ts
 `import { editTable, pick, LEVENSHTEIN, INDEL, type Costs, type Table, type Candidates, type Source } from '../../core/editDistance';
 `const t = editTable('kitten', 'sitting');   // { a, b (code points), d[i][j], cands[i][j] (left/up/diag/match/win) }
@@ -2119,7 +2119,7 @@
 ````
 `Weighted Levenshtein DP over code points. `Costs` is `{ ins, del, sub }`; `LEVENSHTEIN` is 1/1/1 and `INDEL` prices a substitution as delete plus insert (the distance an LCS diff minimises). Ties in a cell go to a match, then (when `sub >= ins + del`) to delete/insert, else to the substitution, then delete before insert (`pick`). The traceback, replay and line diff stay in `lessons/edit-distance/model.ts`; they take a `Table`.
 `
-`### `core/regex/` — regex-engines (origin); redos next
+`### `core/regex/` — regex-engines (origin); redos (migrated)
 ````ts
 `import { parsePattern, parseSubject, matchAt, searchLeftmost, buildNfa, runNfa, subsetSizes, candidateMatches } from '../../core/regex';
 `// or the single modules: ./parse, ./backtrack, ./thompson, ./automaton (index.ts re-exports all four)

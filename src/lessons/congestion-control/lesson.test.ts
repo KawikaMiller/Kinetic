@@ -105,7 +105,12 @@ describe('scene 1: the whole control cross product at the slider extremes', () =
               expect(frames[frames.length - 1].now).toBe(RENO_ROUNDS - 1);
               const events = recs.filter((r) => r.event !== null);
               const milestones = frames.filter((f) => f.say !== undefined).map((f) => clean(f.say));
-              expect(milestones.length).toBe(2 + Math.min(4, events.length));
+              const lastShown = events[Math.min(4, events.length) - 1];
+              const nextEvent = lastShown ? (events[4]?.round ?? RENO_ROUNDS - 1) : 0;
+              const regrowRound = (k: number) => (lastShown ? Math.floor(lastShown.round + ((nextEvent - lastShown.round) * k) / 5) : 0);
+              const regrows = lastShown ? [1, 2, 3, 4].filter((k) => regrowRound(k) - (k === 1 ? lastShown.round : regrowRound(k - 1)) >= 4).length : 0;
+              expect(milestones.filter((m) => m.includes('has regrown')).length).toBe(regrows);
+              expect(milestones.length).toBe(2 + Math.min(4, events.length) + regrows);
               if (events[0]) expect(milestones.some((m) => m.startsWith(`Round ${events[0].round}:`))).toBe(true);
             }
           }

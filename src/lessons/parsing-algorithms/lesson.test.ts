@@ -10,6 +10,7 @@ import { OPENING } from './opening';
 import { CONFLICTS, TOKEN_PRESETS, choiceId, playGame, usualChoices, type Choices } from './precedence';
 import { PRESETS, presetGrammar } from './presets';
 import { derivationFromTree, longestExpansionRun, runBottomUp, runTopDown } from './runs';
+import { forbiddenCalls, NO_REGEXP_OR_FUNCTION } from '../../core/testing/forbidden';
 
 const words = (s: string) => s.split(' ').filter(Boolean);
 const clean = (node: Parameters<typeof expectCaption>[0]) => expect(expectCaption(node)).not.toMatch(/NaN|undefined|\[object|null/);
@@ -141,9 +142,6 @@ describe('no learner text reaches RegExp, eval or Function', () => {
   it('the lesson sources contain no new RegExp, RegExp( call, eval( or new Function', () => {
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
     expect(files.map(([name]) => name)).toContain('./grammar.ts');
-    for (const [name, text] of files) {
-      const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-      expect(code, name).not.toMatch(/new\s+RegExp|RegExp\s*\(|\beval\s*\(|new\s+Function|\bFunction\s*\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(files), { also: NO_REGEXP_OR_FUNCTION, ignoreComments: true })).toEqual([]);
   });
 });

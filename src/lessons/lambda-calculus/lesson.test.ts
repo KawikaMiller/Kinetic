@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { mulberry32, randInt, type Rnd } from '../../core/random';
 import { PAIRINGS } from './pairings';
 import { alphaEqual, alphaKey, dbKey, normalStep, oracleNormalise, toDB } from './debruijn';
@@ -460,10 +461,7 @@ describe('no eval anywhere', () => {
     const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
     expect(files.length).toBeGreaterThan(8);
-    for (const [name, source] of files) {
-      expect(source, name).not.toMatch(/\beval\s*\(/);
-      expect(source, name).not.toMatch(/new Function|\bFunction\s*\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(files), { also: ['functionCall'] })).toEqual([]);
   });
 });
 describe('try-this entries, from the default state', () => {

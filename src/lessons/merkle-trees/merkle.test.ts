@@ -5,9 +5,7 @@ import { nodeDigest } from '../../core/testing/nodeCrypto';
 import {
   MAX_LEAF_BYTES, auditPath, auditPathLength, buildTree, checkLeafText, emptyHash, flatten, leafHash, leafHashOfBytes, nodeHash, pathIds, rootHash, utf8, verifyInclusion, type OddRule,
 } from './merkle';
-import { sha256 } from './sha256';
 
-const bytesHex = (b: Uint8Array) => toHex(b);
 /** Independent: node:crypto SHA-256 over the same bytes, hex. */
 const nodeSha = (data: Uint8Array) => nodeDigest('sha256', data);
 const cat = (...parts: number[][]) => Uint8Array.from(parts.flat());
@@ -16,27 +14,6 @@ const text = (seed: number, n: number): string[] => {
   return Array.from({ length: n }, () => Array.from({ length: Math.floor(rnd() * 20) }, () => String.fromCharCode(97 + Math.floor(rnd() * 26))).join(''));
 };
 
-describe('SHA-256 in the lesson against node:crypto and the published vectors', () => {
-  it('the empty string and "abc" give the FIPS 180 vectors', () => {
-    expect(bytesHex(sha256(new Uint8Array(0)))).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
-    expect(bytesHex(sha256(utf8('abc')))).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
-  });
-
-  it('matches node:crypto on 200 seeded inputs of lengths 0 to 300, block boundaries included', () => {
-    const rnd = mulberry32(5);
-    for (let i = 0; i < 200; i++) {
-      const len = i < 140 ? i : Math.floor(rnd() * 301);
-      const data = Uint8Array.from({ length: len }, () => Math.floor(rnd() * 256));
-      expect(bytesHex(sha256(data)), `length ${len}`).toBe(nodeSha(data));
-    }
-  });
-
-  it('matches the platform\'s crypto.subtle too', async () => {
-    const data = utf8('merkle');
-    const subtle = toHex(await crypto.subtle.digest('SHA-256', data));
-    expect(bytesHex(sha256(data))).toBe(subtle);
-  });
-});
 
 describe('leaf and node hashes against node:crypto, for every node of 200 seeded trees', () => {
   /** An independent tree hash: the RFC 6962 recursion written with node:crypto and raw byte prefixes. */
