@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { revealScrollLeft } from './wideReveal';
+import { revealScrollLeft, wideRegionWords } from './wideReveal';
+
+describe('wideRegionWords', () => {
+  it('defaults to the wording every existing WideRegion already shows', () => {
+    expect(wideRegionWords()).toEqual({ label: 'Diagram: scroll sideways to see all of it', hint: 'swipe to see the whole diagram' });
+  });
+
+  it('names whatever the lesson scrolls', () => {
+    expect(wideRegionWords('table')).toEqual({ label: 'Table: scroll sideways to see all of it', hint: 'swipe to see the whole table' });
+  });
+});
 
 const view = (scrollLeft: number) => ({ scrollLeft, clientWidth: 300, scrollWidth: 900 });
 
