@@ -131,7 +131,7 @@ describe('extremes', () => {
     expect(() => dayCost(WEB, -1)).toThrow(RangeError);
     expect(() => dayCost(WEB, 1.5)).toThrow(RangeError);
     const typed = parseLength('9', 'committed instances', 0, 8);
-    expect(typed.ok ? '' : typed.error).toContain('stop at 8');
+    expect(typed.ok ? '' : typed.error).toContain('the largest allowed value is 8');
     expect(parseLength('0', 'committed instances', 0, 8).ok).toBe(true);
     expect(parseLength('-1', 'committed instances', 0, 8).ok).toBe(false);
   });

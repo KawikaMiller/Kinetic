@@ -1,10 +1,13 @@
 import { bytes, pctText } from '../../core/format';
 import { adapterParams, adapterShare, crossoverRank, fullParams, memoryLines } from './memory';
-import { TOLERANCE, TRAIN_STEPS, optimumRelative, type TrainRun } from './lora';
+import { FLOOR_NOISE, TOLERANCE, TRAIN_STEPS, belowFloor, optimumRelative, type TrainRun } from './lora';
 import { BITS_CHOICES, type OutputError, type Scheme } from './quant';
 
 const n = (x: number) => x.toLocaleString('en-US');
 const gb = (x: number) => bytes(x, { base: 1000, dp: 2 });
+
+/** The gap to the floor as the stat shows it: signed, with float noise printed as zero. */
+export const gapText = (run: TrainRun): string => pctText(Math.abs(run.gap) <= FLOOR_NOISE ? 0 : run.gap, 3);
 
 export const adapterCaption = (dIn: number, dOut: number, r: number): string => {
   const adapter = adapterParams(dIn, dOut, r);
@@ -12,9 +15,9 @@ export const adapterCaption = (dIn: number, dOut: number, r: number): string => 
   const share = adapterShare(dIn, dOut, r);
   const bigger = adapter > full;
   const base = `A ${n(dOut)} x ${n(dIn)} matrix has ${n(full)} parameters; a rank-${n(r)} adapter has ${n(adapter)}, ${pctText(share, share < 0.001 ? 3 : 2)} of them.`;
-  return bigger
-    ? `${base} Past rank ${crossoverRank(dIn, dOut).toLocaleString('en-US', { maximumFractionDigits: 1 })} the adapter is bigger than the matrix.`
-    : base;
+  if (!bigger) return base;
+  if (adapterParams(dIn, dOut, 1) > full) return `${base} At every rank the adapter is bigger than the matrix.`;
+  return `${base} Past rank ${crossoverRank(dIn, dOut).toLocaleString('en-US', { maximumFractionDigits: 1 })} the adapter is bigger than the matrix.`;
 };
 
 export const memoryCaption = (params: number, fraction: number): string => {
@@ -24,8 +27,11 @@ export const memoryCaption = (params: number, fraction: number): string => {
 
 export const floorCaption = (r: number, run: TrainRun): string => {
   const floor = `The best rank-${r} update leaves ${pctText(optimumRelative(r), 3)} of the target's energy (the truncated SVD, a floor).`;
+  if (belowFloor(run)) {
+    return `${floor} Gradient descent reached ${pctText(run.final, 3)} after ${n(TRAIN_STEPS)} steps, BELOW the floor by ${pctText(-run.gap, 3)}: no rank-${r} update can do that, so this run is a bug.`;
+  }
   const trained = run.withinTolerance
-    ? `Gradient descent reaches ${pctText(run.final, 3)} after ${n(TRAIN_STEPS)} steps, within ${pctText(TOLERANCE, 1)} of the floor and not below it.`
+    ? `Gradient descent reaches ${pctText(run.final, 3)} after ${n(TRAIN_STEPS)} steps, within ${TOLERANCE} of the floor (as a share of the target's energy) and not below it (checked to ${FLOOR_NOISE.toExponential(0)}).`
     : `Still above the optimum after ${n(TRAIN_STEPS)} steps: gradient descent is at ${pctText(run.final, 3)} against a floor of ${pctText(run.optimum, 3)}.`;
   return `${floor} ${trained}`;
 };

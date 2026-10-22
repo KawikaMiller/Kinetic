@@ -80,7 +80,7 @@ export function QuantScene({ picker }: { picker: ReactNode }) {
           <Segmented label="Scheme" value={schemeKey} onChange={setSchemeKey} options={SCHEME_OPTIONS} />
         </>,
         <>
-          <Toggle label="Outlier" value={outlier} onChange={setOutlier} off="none" on="one weight x 20" />
+          <Toggle label="Outlier" value={outlier} onChange={setOutlier} off="none" on="one large weight" />
           <SeedField seed={seed} onSeed={setSeed} />
         </>,
       ]}
@@ -140,7 +140,7 @@ export function QuantScene({ picker }: { picker: ReactNode }) {
         </Hint>
         <ProvenanceRow>
           <Provenance kind="toy" seed={seed}>one 8 x 8 toy layer: this page measures no real model</Provenance>
-          <Provenance kind="illustrative">the 7 billion in the memory table is a slider value from the first scene, not any model&apos;s</Provenance>
+          <Provenance kind="illustrative">the 7 billion in the memory table is a fixed constant here, the first scene&apos;s default, not any model&apos;s</Provenance>
           <Provenance kind="from-memory">GPTQ and AWQ (post-training methods), quantisation-aware training, quantised KV caches, outliers in real transformer activations and LoRA&apos;s alpha / r scaling are named, not modelled; verify against the papers</Provenance>
         </ProvenanceRow>
       </div>

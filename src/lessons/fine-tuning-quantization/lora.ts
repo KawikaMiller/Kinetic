@@ -18,6 +18,8 @@ export const LEARNING_RATE = 3;
 export const MOMENTUM = 0.9;
 /** The tolerance the page states: trained relative error within this of the optimum's after TRAIN_STEPS. */
 export const TOLERANCE = 0.005;
+/** A gap below this is float noise; below it by more, the trained error would be under the optimum, which only a bug can do. */
+export const FLOOR_NOISE = 1e-9;
 
 type Mat = number[][];
 
@@ -46,7 +48,7 @@ export interface TrainRun {
   curve: number[];
   final: number;
   optimum: number;
-  /** Final minus optimum: never below -1e-9. */
+  /** Final minus optimum: the sign is kept, so a trained error under the floor shows as negative. */
   gap: number;
   withinTolerance: boolean;
 }
@@ -54,6 +56,9 @@ export interface TrainRun {
 const ratingsOf = (target: Mat): Rating[] => target.flatMap((row, user) => row.map((rating, item) => ({ user, item, rating })));
 
 /** Fit B A (an N x r by r x N product) to the target by gradient descent through core/nn's factorisation, over all 64 entries as observations. */
+/** True when the trained error is under the optimum by more than float noise, which the Eckart-Young theorem rules out. */
+export const belowFloor = (run: TrainRun): boolean => run.gap < -FLOOR_NOISE;
+
 export const train = (target: Mat, r: number, seed: number, steps = TRAIN_STEPS): TrainRun => trainWith(target, r, seed, steps, LEARNING_RATE);
 
 export function trainWith(target: Mat, r: number, seed: number, steps: number, learningRate: number): TrainRun {

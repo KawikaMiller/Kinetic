@@ -46,9 +46,9 @@ describe('parameter counts', () => {
 
   it('a typed rank past the smaller dimension, and a typed dimension past 16,384, are refused with the bound', () => {
     const r = parseLength('4097', 'rank r', 1, maxRank(4096, 4096));
-    expect(r.ok ? '' : r.error).toContain('stop at 4,096');
+    expect(r.ok ? '' : r.error).toContain('the largest allowed value is 4,096');
     const d = parseLength('16385', 'd_in', DIM_LIMITS.min, DIM_LIMITS.max);
-    expect(d.ok ? '' : d.error).toContain('stop at 16,384');
+    expect(d.ok ? '' : d.error).toContain('the largest allowed value is 16,384');
     expect(parseLength('16384', 'd_in', DIM_LIMITS.min, DIM_LIMITS.max).ok).toBe(true);
     expect(parseLength('1', 'd_in', DIM_LIMITS.min, DIM_LIMITS.max).ok).toBe(true);
     for (const bad of ['0', '-1', '2.5', '1e3', '']) expect(parseLength(bad, 'd_in', DIM_LIMITS.min, DIM_LIMITS.max).ok, bad).toBe(false);

@@ -4,9 +4,11 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { pctText } from '../../core/format';
-import { floorCaption } from './captions';
-import { DEFAULT_LORA_SEED, N, RANK_LIMITS, SPECTRUM, TRAIN_STEPS, makeTarget, optimumRelative, train } from './lora';
+import { floorCaption, gapText } from './captions';
+import { DEFAULT_LORA_SEED, FLOOR_NOISE, N, RANK_LIMITS, SPECTRUM, TRAIN_STEPS, belowFloor, makeTarget, optimumRelative, train } from './lora';
 
+/** The curve is drawn on a log step axis, so every early step is a point and later ones thin out to this stride. */
+const DENSE_STEPS = 50;
 const CURVE_STRIDE = 10;
 const BAR_PX = 90;
 
@@ -16,7 +18,7 @@ export function FloorScene({ picker }: { picker: ReactNode }) {
   const [seed, setSeed] = useState(DEFAULT_LORA_SEED);
   const run = useMemo(() => train(makeTarget(seed), rank, seed), [seed, rank]);
   const optimum = optimumRelative(rank);
-  const points = useMemo(() => run.curve.map((v, k) => [k, v] as [number, number]).filter(([k]) => k % CURVE_STRIDE === 0), [run]);
+  const points = useMemo(() => run.curve.map((v, k) => [k, v] as [number, number]).filter(([k]) => k >= 1 && (k <= DENSE_STEPS || k % CURVE_STRIDE === 0)), [run]);
 
   return (
     <StageFrame
@@ -28,7 +30,7 @@ export function FloorScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Floor at this rank" value={pctText(optimum, 3)} color="var(--ok)" sub="energy left by the truncated SVD (Eckart-Young)" />
           <Stat label="Trained adapter" value={pctText(run.final, 3)} color="var(--info)" sub={`after ${TRAIN_STEPS.toLocaleString('en-US')} gradient steps`} />
-          <Stat label="Gap to the floor" value={pctText(Math.max(0, run.gap), 3)} sub="never below it" />
+          <Stat label="Gap to the floor" value={gapText(run)} color={belowFloor(run) ? 'var(--bad)' : undefined} sub={belowFloor(run) ? 'BELOW the floor: a bug' : `not below it (checked to ${FLOOR_NOISE.toExponential(0)})`} />
         </Stats>
       }
       legend={
@@ -63,15 +65,15 @@ export function FloorScene({ picker }: { picker: ReactNode }) {
             </div>
           </figure>
           <figure className="ftq-figure">
-            <figcaption>Squared error of B A against the target, as a share of the target&apos;s energy, against gradient steps</figcaption>
-            <Plot2D x={{ domain: [0, TRAIN_STEPS], label: 'steps', ticks: 4 }} y={{ domain: [0, 1], label: 'error share', ticks: 4 }} width={330} height={200} ariaLabel={`Training error falls to ${pctText(run.final, 2)}; the floor is ${pctText(optimum, 2)}`}>
+            <figcaption>Squared error of B A against the target, as a share of the target&apos;s energy, against gradient steps (log axis, so the first steps show)</figcaption>
+            <Plot2D x={{ domain: [1, TRAIN_STEPS], log: true, label: 'steps', ticks: 4 }} y={{ domain: [0, 1], label: 'error share', ticks: 4 }} width={330} height={200} ariaLabel={`Training error falls to ${pctText(run.final, 2)}; the floor is ${pctText(optimum, 2)}`}>
               <HLine at={optimum} tone="ok" label="optimum" />
               <Curve points={points} tone="info" />
             </Plot2D>
           </figure>
         </div>
         <Hint tone="muted" className="ftq-note">
-          LoRA adapters are trained by gradient, not by SVD. The SVD only supplies the best possible answer at each rank, so the trained curve can approach the floor and cannot cross it.
+          LoRA adapters are trained by gradient, not by SVD. The SVD only supplies the best possible answer at each rank, so the trained curve can approach the floor; the page checks it against the floor and says so if it ever dips below.
           If the adapter is still above the floor after the steps shown, this page says so rather than choosing a kinder seed.
         </Hint>
         <ProvenanceRow>

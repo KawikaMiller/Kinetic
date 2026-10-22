@@ -9,6 +9,8 @@ import { mulberry32 } from '../../core/random';
 export const SIZE = 8;
 export const OUTLIER_AT = { row: 3, col: 5 } as const;
 export const OUTLIER_FACTOR = 20;
+/** The outlier is at least this many times the largest of the other weights, so it is definitionally the largest in the matrix. */
+export const OUTLIER_MIN_RATIO = 3;
 export const INPUTS = 200;
 export const MIN_BITS = 2;
 export const MAX_BITS = 16;
@@ -67,11 +69,20 @@ export function quantise(w: readonly (readonly number[])[], bits: number, scheme
   return { codes, dequantised, scales };
 }
 
-/** A seeded SIZE x SIZE matrix of standard-normal entries, with the outlier entry multiplied when asked. */
+/**
+ * A seeded SIZE x SIZE matrix of standard-normal entries. With `outlier`, the entry at OUTLIER_AT is multiplied by
+ * OUTLIER_FACTOR, and raised to OUTLIER_MIN_RATIO times the largest other weight when that multiple falls short
+ * (a draw near zero would otherwise leave a "outlier" smaller than its neighbours), keeping its sign.
+ */
 export function makeWeights(seed: number, outlier: boolean): number[][] {
   const rnd = mulberry32(seed);
   const w = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => normal(rnd)));
-  if (outlier) w[OUTLIER_AT.row][OUTLIER_AT.col] *= OUTLIER_FACTOR;
+  if (outlier) {
+    const { row, col } = OUTLIER_AT;
+    const others = Math.max(...w.flatMap((r, i) => r.filter((_, j) => i !== row || j !== col).map(Math.abs)));
+    const drawn = w[row][col];
+    w[row][col] = (drawn < 0 ? -1 : 1) * Math.max(Math.abs(drawn) * OUTLIER_FACTOR, OUTLIER_MIN_RATIO * others);
+  }
   return w;
 }
 

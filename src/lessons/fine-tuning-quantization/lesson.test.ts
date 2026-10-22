@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { adapterCaption, floorCaption, memoryCaption, quantCaption } from './captions';
+import { adapterCaption, floorCaption, gapText, memoryCaption, quantCaption } from './captions';
 import lesson from './index';
-import { DEFAULT_LORA_SEED, TOLERANCE, TRAIN_STEPS, makeTarget, train, type TrainRun } from './lora';
+import { DEFAULT_LORA_SEED, TOLERANCE, TRAIN_STEPS, belowFloor, makeTarget, train, type TrainRun } from './lora';
 import { DEFAULT_DIM, DEFAULT_RANK, FRACTION_HUNDREDTHS, PARAMS_DEFAULT, adapterParams, fullParams, memoryLines, weightBytes } from './memory';
-import { DEFAULT_QUANT_SEED, OUTLIER_AT, TENSOR, makeInputs, makeWeights, outputError, quantise, type Scheme } from './quant';
+import { DEFAULT_QUANT_SEED, OUTLIER_AT, OUTLIER_MIN_RATIO, SIZE, TENSOR, makeInputs, makeWeights, outputError, quantise, type Scheme } from './quant';
 
 describe('scenes', () => {
   it('every scene component carries its own key and no component is shared between scenes', () => {
@@ -119,5 +119,54 @@ describe('the lesson text agrees with the model', () => {
     expect(memoryCaption(7e9, 0.005)).toContain('112.00 GB');
     expect(memoryCaption(7e9, 0.005)).toContain('14.56 GB');
     expect(memoryCaption(7e9, 0.005)).toContain('4.06 GB');
+  });
+});
+
+describe('the outlier is the largest weight, by construction', () => {
+  it('on 1,000 seeds the flagged entry is the largest magnitude in the matrix, by at least the stated ratio, with its sign kept', () => {
+    for (let seed = 1; seed <= 1000; seed += 1) {
+      const w = makeWeights(seed, true);
+      const plain = makeWeights(seed, false);
+      const flat = w.flatMap((row, r) => row.map((v, c) => ({ v, r, c })));
+      const others = Math.max(...flat.filter(({ r, c }) => r !== OUTLIER_AT.row || c !== OUTLIER_AT.col).map(({ v }) => Math.abs(v)));
+      const mine = w[OUTLIER_AT.row][OUTLIER_AT.col];
+      expect(Math.abs(mine), `seed ${seed}`).toBeGreaterThanOrEqual(OUTLIER_MIN_RATIO * others - 1e-12);
+      expect(Math.sign(mine), `seed ${seed}`).toBe(Math.sign(plain[OUTLIER_AT.row][OUTLIER_AT.col]));
+      expect(w.length * w[0].length).toBe(SIZE * SIZE);
+    }
+  });
+
+  it('seed 10, which used to draw an outlier of 0.27 under a larger ordinary weight, now has the violet weight as the peak', () => {
+    const w = makeWeights(10, true);
+    const peak = Math.max(...w.flat().map(Math.abs));
+    expect(Math.abs(w[OUTLIER_AT.row][OUTLIER_AT.col])).toBe(peak);
+  });
+});
+
+describe('the floor statement is computed, not typed', () => {
+  const base: TrainRun = { curve: [1, 0.03], final: 0.0375, optimum: 0.0375, gap: 0, withinTolerance: true };
+
+  it('a trained error under the optimum is called a bug, with the true signed gap, never "not below it"', () => {
+    const under: TrainRun = { ...base, final: 0.03, gap: -0.0075 };
+    expect(belowFloor(under)).toBe(true);
+    expect(floorCaption(2, under)).toContain('BELOW the floor by 0.750%');
+    expect(floorCaption(2, under)).not.toContain('not below it');
+    expect(gapText(under)).toBe('-0.750%');
+  });
+
+  it('on or above the floor says not below it and states the tolerance it checked; float noise prints as zero', () => {
+    expect(belowFloor({ ...base, gap: -2.8e-16 })).toBe(false);
+    expect(gapText({ ...base, gap: -2.8e-16 })).toBe('0.000%');
+    expect(floorCaption(2, base)).toContain('not below it (checked to 1e-9)');
+    expect(floorCaption(2, base)).toContain("within 0.005 of the floor (as a share of the target's energy)");
+  });
+});
+
+describe('the adapter caption at rank 1', () => {
+  it('says "at every rank" when rank 1 is already bigger than the matrix, and "past rank" only when a crossover lies above 1', () => {
+    expect(adapterCaption(1, 1, 1)).not.toContain('Past rank');
+    expect(adapterParams(1, 1, 1)).toBeGreaterThan(fullParams(1, 1));
+    expect(adapterCaption(1, 1, 1)).toContain('At every rank the adapter is bigger');
+    expect(adapterCaption(2, 2, 2)).toContain('Past rank 1 the adapter is bigger');
   });
 });
