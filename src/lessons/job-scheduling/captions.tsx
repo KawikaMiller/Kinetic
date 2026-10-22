@@ -17,6 +17,13 @@ export interface WheelFrame extends Frame {
   tick: number;
 }
 
+/** What follows a firing: the ticks until the next one are quiet, so the caption stays true while the clock moves on. */
+function quietAfter(firings: readonly { tick: number }[], t: number): string {
+  const next = firings.find((f) => f.tick > t)?.tick;
+  if (next === undefined) return 'Nothing else is due after this.';
+  return next === t + 1 ? '' : `Nothing else is due until tick ${next}.`;
+}
+
 /** One frame per tick; a caption at the ticks where something fires, and a closing summary. */
 export function wheelFrames(jobs: readonly WheelJob[]): WheelFrame[] {
   const { firings, ticks } = runWheel(jobs);
@@ -41,7 +48,7 @@ export function wheelFrames(jobs: readonly WheelJob[]): WheelFrame[] {
       tick: t,
       say: (
         <>
-          Tick {t}: the pointer reaches slot {t % WHEEL_SLOTS} and fires {names}.
+          At tick {t} the pointer reached slot {t % WHEEL_SLOTS} and fired {names}. {quietAfter(firings, t)}
           {wrongOrder.length > 0 ? (
             <>
               {' '}

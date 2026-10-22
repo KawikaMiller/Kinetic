@@ -15,9 +15,9 @@ export type LeaseEvent =
   | { t: number; kind: 'write'; entry: StoreEntry }
   | { t: number; kind: 'abandon'; node: string; why: Abandon['why'] };
 
-const ORDER: Record<LeaseEvent['kind'], number> = { grant: 0, expiry: 1, pause: 2, resume: 3, abandon: 4, write: 5 };
+const ORDER: Record<LeaseEvent['kind'], number> = { expiry: 0, grant: 1, pause: 2, resume: 3, abandon: 4, write: 5 };
 
-/** The moments of a run in time order (ties: grant, expiry, pause, resume, abandon, write). */
+/** The moments of a run in time order (ties: expiry, grant, pause, resume, abandon, write). */
 export function leaseEvents(run: LeaseRun): LeaseEvent[] {
   const events: LeaseEvent[] = [];
   for (const g of run.grants) {

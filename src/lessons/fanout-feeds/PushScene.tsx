@@ -18,12 +18,15 @@ export function PushScene({ picker }: { picker: ReactNode }) {
   const drain = useMemo(() => makeDrain(followers, s.workers, s.insertMs), [followers, s.workers, s.insertMs]);
   const frames = useMemo(() => {
     const halfDone = doneAt(drain, drain.totalMs / 2);
+    const threeQuartersAt = (drain.totalMs * 3) / 4;
+    const threeQuartersDone = doneAt(drain, threeQuartersAt);
     return timeFrames({
       end: drain.totalMs,
       steps: 30,
       milestones: [
         { t: Math.min(drain.totalMs, s.insertMs), say: <>After the first insert the first followers can see the post; the rest see it as the workers drain the queue, and until then their feeds are <span className="hl orange">stale</span>.</> },
-        { t: drain.totalMs / 2, say: <>Halfway through the drain: {sig(halfDone)} of {sig(followers)} inboxes hold the post, and the other {sig(followers - halfDone)} followers still see a <span className="hl orange">stale feed</span>.</> },
+        { t: drain.totalMs / 2, say: <>Halfway through the drain, at {msText(drain.totalMs / 2)}: {sig(halfDone)} of {sig(followers)} inboxes hold the post, and the other {sig(followers - halfDone)} followers still see a <span className="hl orange">stale feed</span>.</> },
+        { t: threeQuartersAt, say: <>Three quarters through, at {msText(threeQuartersAt)}: {sig(threeQuartersDone)} of {sig(followers)} inboxes hold the post and {sig(followers - threeQuartersDone)} {followers - threeQuartersDone === 1 ? 'feed is' : 'feeds are'} still <span className="hl orange">stale</span>.</> },
       ],
       intro: (
         <>
