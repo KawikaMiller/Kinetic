@@ -1,0 +1,15 @@
+.pe-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.pe-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow-x: auto; }
+.pe-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.pe-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pe-card { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 2px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--text) 3%, transparent); }
+.pe-badge { font: 700 11px var(--mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.pe-sub { font-size: 12.5px; color: var(--muted); }
+.pe-table-scroll { max-height: 340px; overflow: auto; }
+.pe-table th, .pe-table td { white-space: nowrap; }
+.pe-gone td { color: var(--dim); text-decoration: line-through; }
+.pe-unique td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+.pe-fields { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pe-field { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.pe-field-head { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; font-size: 13px; }
+.pe-stage ~ .provenance-row { margin: 8px 16px 12px; }

@@ -1,0 +1,13 @@
+.rd-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.rd-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow-x: auto; }
+.rd-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.rd-two > * { flex: 1 1 300px; min-width: 0; }
+.rd-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.rd-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--muted); }
+.rd-error { color: var(--bad); }
+.rd-status { display: block; min-height: 1.2em; }
+.rd-table th, .rd-table td { text-align: right; }
+.rd-table th:first-child, .rd-table td:first-child { text-align: left; }
+.rd-table .rd-picked { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.rd-table .rd-gave-up { color: var(--orange); }
+.rd-stage ~ .provenance-row { margin: 8px 16px 12px; }

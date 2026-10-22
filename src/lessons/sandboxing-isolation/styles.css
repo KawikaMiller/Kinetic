@@ -1,0 +1,14 @@
+.sb-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 0; }
+.sb-block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sb-two { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.sb-two > * { flex: 1 1 300px; min-width: 0; }
+.sb-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.sb-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--muted); }
+.sb-scroll { overflow-x: auto; }
+.sb-picked td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
+.sb-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px 10px; }
+.sb-check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; }
+.sb-check.is-risky code { color: var(--orange); }
+.sb-rings { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; }
+.sb-ring-label { font-family: var(--mono); }
+.sb-stage ~ .provenance-row { margin: 8px 16px 12px; }
