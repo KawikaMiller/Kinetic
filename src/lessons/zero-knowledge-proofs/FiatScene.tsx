@@ -3,7 +3,7 @@ import { ConsolePanel } from '../../components/ConsolePanel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { parseBoundedInt } from '../../core/parse';
-import { DEFAULT_R, DEFAULT_X, GROUPS, challengeText, proveFiatShamir, verifyFiatShamir, type Group } from './schnorr';
+import { DEFAULT_R, DEFAULT_X, GROUPS, challengeText, editsThatPass, proveFiatShamir, verifyFiatShamir, type Group } from './schnorr';
 
 const GROUP_OPTIONS = [
   { value: 'A' as const, label: 'Group A (5 bits)' },
@@ -22,9 +22,12 @@ export function FiatScene({ picker }: { picker: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const proof = proveFiatShamir(G, x, r);
-  const shownT = edit !== null && /^\d+$/.test(edit) ? BigInt(edit) : proof.t;
+  const typed = edit !== null && /^\d+$/.test(edit) ? BigInt(edit) : null;
+  const tooBig = typed !== null && typed >= G.p;
+  const shownT = typed !== null && !tooBig ? typed : proof.t;
   const check = verifyFiatShamir(G, proof.y, shownT, proof.s);
   const edited = shownT !== proof.t;
+  const slip = editsThatPass(G, x, r);
 
   const read = (text: string, label: string, max: bigint, min: bigint) => parseBoundedInt(text, { min: Number(min), max: Number(max), messages: { tooBig: () => `Keep ${label} between ${min} and ${max}.`, tooSmall: () => `Keep ${label} between ${min} and ${max}.` } });
   const typeX = (text: string) => {
@@ -57,11 +60,11 @@ export function FiatScene({ picker }: { picker: ReactNode }) {
   };
 
   const lines = [
-    `hash input   ${challengeText(G, proof.y, shownT)}`,
-    `challenge    c = SHA-256(input) mod ${G.q} = ${check.c}`,
-    `answer       s = ${proof.s}  (computed once, from the original t)`,
-    `left side    g^s = ${G.g}^${proof.s} mod ${G.p} = ${check.lhs}`,
-    `right side   t y^c = ${shownT} x ${proof.y}^${check.c} mod ${G.p} = ${check.rhs}`,
+    `hash input: ${challengeText(G, proof.y, shownT)}`,
+    `challenge: c = SHA-256(input) mod ${G.q} = ${check.c}`,
+    `answer: s = ${proof.s} (computed once, from the original t)`,
+    `left side: g^s = ${G.g}^${proof.s} mod ${G.p} = ${check.lhs}`,
+    `right side: t y^c = ${shownT} x ${proof.y}^${check.c} mod ${G.p} = ${check.rhs}`,
     check.ok ? 'both sides equal: accept' : 'the sides differ: reject',
   ];
 
@@ -71,7 +74,7 @@ export function FiatScene({ picker }: { picker: ReactNode }) {
       intro={
         edited
           ? check.ok
-            ? `The edited t = ${shownT} still passed: in a group with only ${String(G.q)} challenges about 1 in ${String(G.q)} edits slip through. That is the toy, not the method.`
+            ? `The edited t = ${shownT} still passed: in this group ${slip.passing} of the ${slip.tried} other values of t (1 to ${G.p - 1n}) slip through, because only ${String(G.q)} challenges exist and only elements of the subgroup can satisfy the equation. That is the toy, not the method.`
             : `Changing t after the fact changed the recomputed challenge to ${check.c}, and the check fails: the proof was bound to the t it was made with.`
           : `One message (t = ${proof.t}, s = ${proof.s}): anyone recomputes c = ${check.c} from the statement and t and checks the equation, with no interaction.`
       }
@@ -97,18 +100,20 @@ export function FiatScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="Edit t after the fact" value={edit ?? String(proof.t)} onChange={(v) => setEdit(v === String(proof.t) ? null : v.replace(/\D/g, '').slice(0, 5))} width={100} spellCheck={false} />
           <Button onClick={() => setEdit(null)}>Restore t</Button>
+          {tooBig && <Hint tone="bad">t is a number mod {String(G.p)}: keep it below {String(G.p)}. Showing the original t.</Hint>}
         </>,
       ]}
     >
       <div className="stage-pad zk-stage">
-        <ConsolePanel title="the verifier, alone" lines={lines} preserveWhitespace />
+        <ConsolePanel title="the verifier, alone" lines={lines} />
         <div className="zk-cheat">
-          <b>Where SNARKs fit.</b> zk-SNARKs and zk-STARKs are proof systems for arbitrary statements, with proofs that are short and quick to verify. Nothing here runs one or demonstrates one. The Fiat-Shamir step above is the idea they build on, and a hash that leaves out the statement is a known way to get it wrong (named, not shown).
+          <b>Where SNARKs fit.</b> zk-SNARKs and zk-STARKs are proof systems for arbitrary statements, with proofs that are meant to be short and quick to verify (from memory, see the chip below). Nothing here runs one or demonstrates one. The Fiat-Shamir step above is the idea they build on, and a hash that leaves out the statement is a known way to get it wrong (named, not shown).
         </div>
       </div>
       <ProvenanceRow>
         <Provenance kind="toy">{G.bits}-bit group: a toy; the SHA-256 is real but the group around it proves nothing. Never copy this code</Provenance>
         <Provenance kind="not-run">zk-SNARKs and zk-STARKs are named and not run: nothing on this page is one</Provenance>
+        <Provenance kind="from-memory">zk-SNARKs and zk-STARKs have short, fast-to-verify proofs: a general claim from memory; verify against a current survey or the original papers</Provenance>
         <Provenance kind="from-memory">the Fiat-Shamir heuristic dates from 1986 and turns an interactive proof into one message (verify the citation)</Provenance>
       </ProvenanceRow>
     </StageFrame>

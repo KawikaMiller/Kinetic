@@ -45,6 +45,7 @@ export function verify(G: Group, y: bigint, t: bigint, c: bigint, s: bigint): Ch
 
 /** From two accepting answers to one commitment with different challenges: x = (s - s') / (c - c') mod q. */
 export function extract(G: Group, c1: bigint, s1: bigint, c2: bigint, s2: bigint): bigint | null {
+  if (!known(G)) throw new RangeError(SEARCH_REFUSAL);
   const dc = mod(c1 - c2, G.q);
   const inv = modInverse(dc, G.q);
   return inv === null ? null : mod((s1 - s2) * inv, G.q);
@@ -84,8 +85,10 @@ export function simulatedTriples(G: Group, y: bigint, broken = false): Triple[] 
 
 export interface Comparison {
   count: number;
-  /** Triples in the first list that are missing from the second (as a multiset). */
+  /** Simulated triples that are not a real triple (as a multiset): 110 for the broken simulator in group A. */
   missing: number;
+  /** Real triples the simulated list does not make. */
+  unmatched: number;
   identical: boolean;
   /** The first simulated triple that fails the verifier's equation, if any. */
   firstFailing: Triple | null;
@@ -103,7 +106,20 @@ export function compareTriples(G: Group, y: bigint, real: readonly Triple[], sim
   }
   const unmatched = [...counts.values()].reduce((a, b) => a + b, 0);
   const firstFailing = simulated.find((x) => !verify(G, y, x.t, x.c, x.s).ok) ?? null;
-  return { count: real.length, missing: missing + unmatched, identical: real.length === simulated.length && missing === 0 && unmatched === 0, firstFailing };
+  return { count: real.length, missing, unmatched, identical: real.length === simulated.length && missing === 0 && unmatched === 0, firstFailing };
+}
+
+/** Edits of the one-message proof's commitment t (every t in 1..p-1 other than the real one, the answer s kept) and how many still pass the recomputed-challenge check. */
+export function editsThatPass(G: Group, x: bigint, r: bigint): { tried: number; passing: number } {
+  const { y, t, s } = proveFiatShamir(G, x, r);
+  let tried = 0;
+  let passing = 0;
+  for (let e = 1n; e < G.p; e++) {
+    if (e === t) continue;
+    tried++;
+    if (verifyFiatShamir(G, y, e, s).ok) passing++;
+  }
+  return { tried, passing };
 }
 
 /** The cheat of guessing the challenge: fix c', pick s, send t = g^s y^(-c'). It passes exactly when the verifier's c equals c'. */

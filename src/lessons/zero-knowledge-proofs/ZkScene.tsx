@@ -60,8 +60,8 @@ export function ZkScene({ picker }: { picker: ReactNode }) {
   const extracted = c1 === c2 ? null : extract(G, BigInt(c1), s1, BigInt(c2), s2);
 
   const intro = cmp.identical
-    ? `The ${cmp.count} real triples and the ${sim.length} simulated triples are the same set, each triple exactly once: a transcript tells the verifier nothing it could not have made without x.`
-    : `The simulated list differs from the real one in ${cmp.missing} triples; the first it fails to make valid is ${cmp.firstFailing ? fmtTriple(cmp.firstFailing) : 'none'}.`;
+    ? `The ${cmp.count} real triples and the ${sim.length} simulated triples are the same set, each triple exactly once: for an honest verifier who picks c at random, a transcript tells it nothing it could not have made without x.`
+    : `${cmp.missing} of the ${sim.length} simulated triples are not real triples (and ${cmp.unmatched} real ones are never simulated); the first it fails to make valid is ${cmp.firstFailing ? fmtTriple(cmp.firstFailing) : 'none'}.`;
 
   return (
     <StageFrame
@@ -72,7 +72,7 @@ export function ZkScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Real triples" value={real.length} color="var(--sky)" sub="each r with each c" />
           <Stat label="Simulated triples" value={sim.length} color="var(--amber)" sub="each s with each c, no secret" />
-          <Stat label="Same set" value={cmp.identical ? 'yes' : 'no'} color={cmp.identical ? 'var(--ok)' : 'var(--bad)'} sub={cmp.identical ? 'each triple exactly once' : `${cmp.missing} differ`} />
+          <Stat label="Same set" value={cmp.identical ? 'yes' : 'no'} color={cmp.identical ? 'var(--ok)' : 'var(--bad)'} sub={cmp.identical ? 'each triple exactly once' : `${cmp.missing} simulated are not real`} />
         </Stats>
       }
       legend={<Legend items={[{ color: 'var(--sky)', label: 'a real transcript', shape: 'square' }, { color: 'var(--amber)', label: 'a simulated transcript', shape: 'square' }, { color: 'var(--ok)', label: 'identical sets', shape: 'square' }, { color: 'var(--bad)', label: 'a broken simulator', shape: 'square' }]} />}

@@ -20,6 +20,8 @@ describe('try-this entries, in written order from the default state', () => {
     const calls: Side[] = [0, 1, 2, 3, 4].map((i) => verifierCall(7, i));
     const rounds = answers('knows', 7, calls, 'manual');
     expect(meter(rounds).value).toBe(0.96875);
+    // the Random button must not strike out its own meter (the old detector flagged R L R L R)
+    expect(meter(rounds).struck).toBe(false);
     expect(lesson.tryThis[0]).toContain('reads 0.96875');
     expect(verdict('knows', true).correct).toBe(true);
   });
@@ -43,13 +45,15 @@ describe('try-this entries, in written order from the default state', () => {
     expect(cheaterGame(7, sides).caughtAt).toBeNull();
   });
 
-  it('try-this 4: group A, x = 7, r = 5, c = 4 gives s = 0 and both sides 1; the same t with c = 3 is accepted', () => {
+  it('try-this 4: group A, x = 7, r = 5, c = 3 gives s = 4 (not 0) and both sides 16; the same t with c = 4 is accepted (s = 0)', () => {
     const y = publicKey(GROUP_A, DEFAULT_X);
     const t = commit(GROUP_A, DEFAULT_R);
-    expect(respond(GROUP_A, DEFAULT_R, 4n, DEFAULT_X)).toBe(0n);
-    expect(verify(GROUP_A, y, t, 4n, 0n)).toMatchObject({ lhs: 1n, rhs: 1n, ok: true });
-    expect(verify(GROUP_A, y, t, 3n, respond(GROUP_A, DEFAULT_R, 3n, DEFAULT_X)).ok).toBe(true);
-    expect(lesson.tryThis[3]).toContain('s = 0 and both sides equal 1');
+    // by hand: s = 5 + 3 x 7 = 26 = 4 mod 11; g^4 = 16; t = 2^5 = 32 = 9, y = 2^7 = 128 = 13, y^3 = 2197 = 12 mod 23, 9 x 12 = 108 = 16 mod 23
+    expect(respond(GROUP_A, DEFAULT_R, 3n, DEFAULT_X)).toBe(4n);
+    expect(verify(GROUP_A, y, t, 3n, 4n)).toMatchObject({ lhs: 16n, rhs: 16n, ok: true });
+    expect(verify(GROUP_A, y, t, 4n, respond(GROUP_A, DEFAULT_R, 4n, DEFAULT_X)).ok).toBe(true);
+    expect(lesson.tryThis[3]).toContain('s = 4 and both sides equal 16');
+    expect(lesson.tryThis[3]).toContain('with s = 0');
   });
 
   it('try-this 5: rewinding with c = 4 and c\' = 3 gives x = 7, and the 121 real and 121 simulated triples are the same set', () => {

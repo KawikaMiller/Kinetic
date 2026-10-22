@@ -27,21 +27,24 @@ export function policyCall(policy: Policy, index: number, seed: number): Side {
   return coin(seed, VERIFIER_SALT, index);
 }
 
-/** The side a cheating prover guesses the verifier will call: left with no history, else the habit it can see. */
+/** The side a cheating prover guesses the verifier will call: left with no history, else the side called last (a habit it can see). It never looks ahead. */
 export function predictNext(history: readonly Side[]): Side {
-  const n = history.length;
-  if (n === 0) return 'L';
-  if (n >= 3 && history[n - 1] !== history[n - 2] && history[n - 2] !== history[n - 3]) return flip(history[n - 1]);
-  return history[n - 1];
+  return history.length === 0 ? 'L' : history[history.length - 1];
 }
 
-/** Whether a call sequence is a simple pattern a predictor can follow: one side throughout, or strictly alternating, over at least 3 calls. */
+/** The shortest run of identical or strictly alternating calls the page flags as a pattern. */
+export const PATTERN_MIN = 6;
+
+/** Whether a call sequence is a run the cheater's habit-follower can ride: one side throughout, or strictly alternating, over at least PATTERN_MIN calls. */
 export function isPattern(calls: readonly Side[]): boolean {
-  if (calls.length < 3) return false;
+  if (calls.length < PATTERN_MIN) return false;
   const constant = calls.every((c) => c === calls[0]);
   const alternating = calls.every((c, i) => i === 0 || c !== calls[i - 1]);
   return constant || alternating;
 }
+
+/** The chance that n fair random calls are flagged: 4 of the 2^n sequences (two constant, two alternating) for n >= 2, so 2^-(n-2). */
+export const patternFalseAlarm = (n: number): number => (n < PATTERN_MIN ? 0 : 2 ** -(n - 2));
 
 export interface Round {
   call: Side;
@@ -50,17 +53,19 @@ export interface Round {
   passed: boolean;
 }
 
-/** The prover's answers to the verifier's calls. A cheater's side is a causal guess from the policy or the history, never from the future. */
+/** The prover's answers to the verifier's calls. A cheater's side is a causal guess from the history (or a seeded coin for the random policy), never from the future or from the declared policy. */
 export function answers(kind: ProverKind, seed: number, calls: readonly Side[], policy: Policy): Round[] {
   return calls.map((call, i) => {
     if (kind === 'knows') return { call, entered: null, passed: true };
-    const entered =
-      policy === 'always-left' ? 'L'
-      : policy === 'alternate' ? policyCall('alternate', i, seed)
-      : policy === 'manual' ? predictNext(calls.slice(0, i))
-      : coin(seed, CHEATER_SALT, i);
+    const entered = policy === 'random' ? coin(seed, CHEATER_SALT, i) : predictNext(calls.slice(0, i));
     return { call, entered, passed: entered === call };
   });
+}
+
+/** The calls after the verifier presses a call button: nothing is appended once ten rounds are played, a verdict is in, or the prover has been caught (calls stop at the failure; reset starts a new run). */
+export function appendCall(kind: ProverKind, seed: number, policy: Policy, calls: readonly Side[], side: Side, decided: boolean): readonly Side[] {
+  if (decided || calls.length >= MAX_ROUNDS || meter(answers(kind, seed, calls, policy)).failedAt !== null) return calls;
+  return [...calls, side];
 }
 
 export interface Meter {
@@ -76,6 +81,27 @@ export function meter(rounds: readonly Round[]): Meter {
   const failed = rounds.findIndex((r) => !r.passed);
   const passed = failed < 0 ? rounds.length : failed;
   return { passed, failedAt: failed < 0 ? null : failed + 1, value: confidence(passed), struck: isPattern(rounds.map((r) => r.call)) };
+}
+
+/** The verifier-side caption, derived from the whole state: the failure round wins over the last round, and the meter is quoted only while the prover is still passing. */
+export function verifierCaption(kind: ProverKind, rounds: readonly Round[], accepted: boolean | null): string {
+  const m = meter(rounds);
+  const n = rounds.length;
+  const caught = m.failedAt === null ? null : rounds[m.failedAt - 1];
+  if (accepted !== null) {
+    const v = verdict(kind, accepted);
+    const tail =
+      caught ? ` It was caught in round ${m.failedAt}.`
+      : kind === 'cheater' && m.struck ? ` The meter assumes your challenges are unpredictable; yours were not, and this prover cheated and passed ${m.passed} of ${n}.`
+      : '';
+    return `${accepted ? 'You accepted' : 'You rejected'}: the prover ${kind === 'knows' ? 'knew the passphrase' : 'was a cheater'}, so you were ${v.correct ? 'right' : 'wrong'}.${tail}`;
+  }
+  if (n === 0) return 'Call a side each round; a prover who knows the passphrase can always come out of it. Then accept or reject.';
+  if (caught) return `Round ${m.failedAt}: the prover could not come out of the ${SIDE_NAME[caught.call]} path, so it does not know the passphrase. Calls stop at the catch (Reset starts a new run); you can still accept or reject.`;
+  const base = `${n} round${n === 1 ? '' : 's'} passed: the meter reads ${m.value}`;
+  return m.struck
+    ? `${base}, but your ${n} calls are one side or strictly alternating, so the meter does not apply: a cheater who follows that habit passes them all.`
+    : `${base}, assuming your calls were unpredictable.`;
 }
 
 export interface Verdict {

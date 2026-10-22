@@ -16,10 +16,10 @@ const GROUP_OPTIONS = [
 ];
 const DEFAULT_SEED = 7;
 const GUESS_ROUNDS = 1000;
-const DEFAULT_C = 4n;
+const DEFAULT_C = 3n;
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-/** Scene 2: a real proof of knowledge of a discrete logarithm (Schnorr identification) in a toy group, with the cheats against it. */
+/** Scene 2: a working proof of knowledge of a discrete logarithm (Schnorr identification) in a toy group, with the cheats against it. */
 export function SchnorrScene({ picker }: { picker: ReactNode }) {
   const [id, setId] = useState<Group['id']>('A');
   const G = GROUPS[id];
@@ -59,6 +59,7 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
     setError(null);
     setX(BigInt(parsed.value));
     setSearched(null);
+    setGuess(null);
   };
   const drawR = () => setR(BigInt(Math.floor(mulberry32(seed)() * Number(G.q))));
 
@@ -99,11 +100,11 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
           {error && <Hint tone="bad">{error} Keeping x = {String(x)}.</Hint>}
         </>,
         <>
-          <SeedField seed={seed} onSeed={setSeed} />
+          <SeedField seed={seed} onSeed={(n) => { setSeed(n); setGuess(null); }} />
           <Button onClick={drawR}>Draw r from the seed</Button>
           <ControlGroup label="Try">
-            <ChipButton on={id === 'A' && x === 7n && r === 5n && c === 4n} onClick={() => { switchGroup('A'); setX(7n); setXText('7'); setR(5n); setC(4n); }}>x 7, r 5, c 4</ChipButton>
-            <ChipButton on={id === 'A' && x === 7n && r === 5n && c === 3n} onClick={() => { switchGroup('A'); setX(7n); setXText('7'); setR(5n); setC(3n); }}>same t, c 3</ChipButton>
+            <ChipButton on={id === 'A' && x === 7n && r === 5n && c === 3n} onClick={() => { switchGroup('A'); setX(7n); setXText('7'); setR(5n); setC(3n); }}>x 7, r 5, c 3</ChipButton>
+            <ChipButton on={id === 'A' && x === 7n && r === 5n && c === 4n} onClick={() => { switchGroup('A'); setX(7n); setXText('7'); setR(5n); setC(4n); }}>same t, c 4</ChipButton>
           </ControlGroup>
         </>,
       ]}
@@ -114,12 +115,12 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
           <div className="zk-cheat">
             <b>Cheat (a): guess the challenge.</b> Without x, fix a guessed c', pick s at random, and send t = g^s y^(-c'); it passes exactly when the verifier's c equals c'.{' '}
             <Button onClick={() => setGuess(guessRun(G, y, seed, GUESS_ROUNDS))}>Run {fmt(GUESS_ROUNDS)} seeded rounds</Button>{' '}
-            {guess && <span>{guess.passed} of {fmt(GUESS_ROUNDS)} passed; the formula 1/q = 1/{String(G.q)} predicts about {guess.expected.toFixed(1)} (sigma {guess.sigma.toFixed(1)}).</span>}
+            {guess && <span>{guess.passed} of {fmt(GUESS_ROUNDS)} passed (seed {seed}); the formula 1/q = 1/{String(G.q)} predicts about {guess.expected.toFixed(1)} (sigma {guess.sigma.toFixed(1)}).</span>}
           </div>
           <div className="zk-cheat is-bad">
             <b>Cheat (b): a predictable verifier.</b> If the verifier always picks c = 0, any t = g^s passes.{' '}
             <Button onClick={() => setShowZero(!showZero)}>{showZero ? 'Hide' : 'Show'} the check</Button>{' '}
-            {showZero && <span>s = 3, t = {String(commit(G, 3n))}: g^3 = {String(zeroCheck.lhs)} and t y^0 = {String(zeroCheck.rhs)}: {zeroCheck.ok ? 'accepted' : 'rejected'}, with no knowledge of x. The soundness bar drops to no protection.</span>}
+            {showZero && <span>s = 3, t = {String(commit(G, 3n))}: g^3 = {String(zeroCheck.lhs)} and t y^0 = {String(zeroCheck.rhs)}: {zeroCheck.ok ? 'accepted' : 'rejected'}, with no knowledge of x. A verifier that always asks c = 0 asks nothing of the prover.</span>}
           </div>
           <div className="zk-cheat">
             <b>Cheat (c): search.</b> In a toy group the discrete logarithm takes at most {String(G.q)} tries.{' '}
@@ -129,7 +130,7 @@ export function SchnorrScene({ picker }: { picker: ReactNode }) {
         </div>
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy" seed={seed}>{G.bits}-bit and 11-bit groups, seeded randomness, not constant-time: proves nothing about any real system. Never copy this code</Provenance>
+        <Provenance kind="toy" seed={seed}>a {G.bits}-bit toy group (group A is 5 bits, group B is 11 bits), seeded randomness, not constant-time: proves nothing about any real system. Never copy this code</Provenance>
         <Provenance kind="illustrative">the {fmt(ILLUSTRATIVE_RATE)} steps per second is a made-up rate for the real-size cost line</Provenance>
         <Provenance kind="from-memory">Schnorr identification is the protocol shape (Schnorr, around 1989 to 1991: verify the citation)</Provenance>
         <ClaimLabel kind="theorem">a prover who answers two challenges for one commitment must know x: argued here, shown on the next scene by the extractor</ClaimLabel>

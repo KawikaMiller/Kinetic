@@ -8,7 +8,7 @@ import './styles.css';
 type Scene = 'cave' | 'proof' | 'zk' | 'fiat';
 const SCENES: { value: Scene; label: string }[] = [
   { value: 'cave', label: 'The cave' },
-  { value: 'proof', label: 'A real proof' },
+  { value: 'proof', label: 'A working proof' },
   { value: 'zk', label: 'Zero knowledge, by exhaustion' },
   { value: 'fiat', label: 'One message' },
 ];

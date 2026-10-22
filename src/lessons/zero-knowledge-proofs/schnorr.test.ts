@@ -3,7 +3,7 @@ import { isProbablePrime } from '../../core/numberTheory';
 import { mulberry32 } from '../../core/random';
 import { nodeDigest } from '../../core/testing/nodeCrypto';
 import {
-  DEFAULT_R, DEFAULT_X, GROUP_A, GROUP_B, REAL_COST, SEARCH_REFUSAL, challengeText, commit, compareTriples, extract, fiatShamirChallenge, guessAttempt, proveFiatShamir, publicKey,
+  DEFAULT_R, DEFAULT_X, GROUP_A, GROUP_B, REAL_COST, SEARCH_REFUSAL, challengeText, commit, compareTriples, editsThatPass, extract, fiatShamirChallenge, guessAttempt, proveFiatShamir, publicKey,
   realTriples, realYears, respond, searchSecret, simulate, simulatedTriples, verify, verifyFiatShamir, type Group,
 } from './schnorr';
 
@@ -154,6 +154,8 @@ describe('zero knowledge, by exhaustion', () => {
     const cmp = compareTriples(GROUP_A, y, realTriples(GROUP_A, DEFAULT_X), simulatedTriples(GROUP_A, y, true));
     expect(cmp.identical).toBe(false);
     expect(cmp.firstFailing).not.toBeNull();
+    // 121 triples a side; the page says 110 simulated triples are not real (11 coincide, those with c x = 0), not 220
+    expect([cmp.missing, cmp.unmatched]).toEqual([110, 110]);
     // by hand: c = 1, s = 0 gives t = 2^0 = 1 and 2^0 = 1 against 1 x 13^1 = 13: the equation fails
     expect(verify(GROUP_A, y, 1n, 1n, 0n).ok).toBe(false);
     // the correct simulator gives t = 13^-1 = 16 (13 x 16 = 208 = 9 x 23 + 1), and 16 x 13 = 208 = 1 = g^0
@@ -205,6 +207,34 @@ describe('Fiat-Shamir', () => {
     // about 1 in q = 11 edited commitments slips through: that is the toy, and the page says so
     expect(slipped).toBeLessThanOrEqual(5);
     expect(slipped).toBeGreaterThanOrEqual(0);
+  });
+
+  it('the page counts the edits that slip through from the model: an independent count (node SHA-256, repeated multiplication) agrees in both groups, and the old "1 in 11" claim fails', () => {
+    for (const [G, x, r] of [[GROUP_A, 7n, 5n], [GROUP_B, 100n, 77n]] as const) {
+      const y = powSlow(G.g, x, G.p);
+      const t = powSlow(G.g, r, G.p);
+      const hashC = (tt: bigint) => BigInt(`0x${nodeDigest('sha256', `kinetic-zk|${G.p}|${G.g}|${y}|${tt}`, 'hex')}`) % G.q;
+      const s = (r + hashC(t) * x) % G.q;
+      let tried = 0;
+      let passing = 0;
+      for (let e = 1n; e < G.p; e++) {
+        if (e === t) continue;
+        tried++;
+        const c = hashC(e);
+        if (powSlow(G.g, s, G.p) === (e * powSlow(y, c, G.p)) % G.p) passing++;
+      }
+      expect(editsThatPass(G, x, r)).toEqual({ tried, passing });
+    }
+    // group A, x = 7, r = 5: 21 other values, 1 in 11 would be 2; the count is higher because only subgroup elements can pass
+    const a = editsThatPass(GROUP_A, 7n, 5n);
+    expect(a.tried).toBe(21);
+    expect(a.passing).not.toBe(Math.round(21 / 11));
+  });
+
+  it('the toy guard: extract refuses a group that is not one of the two toys, like searchSecret', () => {
+    const real: Group = { id: 'A', p: 1000003n, q: 500001n, g: 2n, bits: 20 };
+    expect(() => extract(real, 4n, 0n, 3n, 4n)).toThrow(SEARCH_REFUSAL);
+    expect(extract(GROUP_A, 4n, 0n, 3n, 4n)).toBe(7n);
   });
 
 });

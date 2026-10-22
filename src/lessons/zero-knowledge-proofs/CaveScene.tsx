@@ -4,7 +4,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import {
-  MAX_ROUNDS, SIDE_NAME, answers, cheaterGame, confidence, isPattern, meter, policyCall, proverKind, survival, verdict, verifierCall, type Policy, type Side,
+  MAX_ROUNDS, PATTERN_MIN, SIDE_NAME, answers, appendCall, cheaterGame, meter, patternFalseAlarm, policyCall, proverKind, survival, verifierCaption, verifierCall, type Policy, type Side,
 } from './cave';
 
 type Role = 'verifier' | 'cheater';
@@ -51,21 +51,20 @@ export function CaveScene({ picker }: { picker: ReactNode }) {
   const m = meter(rounds);
   const game = cheaterGame(seed, entered);
   const decided = accepted !== null;
-  const v = decided ? verdict(kind, accepted) : null;
   const full = calls.length >= MAX_ROUNDS;
-  const patterned = isPattern(calls);
+  const caught = m.failedAt !== null;
+  const callsClosed = full || decided || caught;
+  const enterClosed = game.caughtAt !== null || entered.length >= MAX_ROUNDS;
 
   const reset = () => {
     setCalls(NO_SIDES);
     setEntered(NO_SIDES);
     setAccepted(null);
+    setSim(null);
   };
-  const call = (side: Side) => {
-    if (full || decided) return;
-    setCalls([...calls, side]);
-  };
+  const call = (side: Side) => setCalls(appendCall(kind, seed, policy, calls, side, decided));
   const enter = (side: Side) => {
-    if (game.caughtAt !== null || entered.length >= MAX_ROUNDS) return;
+    if (enterClosed) return;
     setEntered([...entered, side]);
   };
 
@@ -77,13 +76,7 @@ export function CaveScene({ picker }: { picker: ReactNode }) {
         : entered.length === 0
           ? 'You do not know the passphrase. Choose a side to enter each round; the verifier calls a random side, and the first mismatch ends the game.'
           : `Survived ${game.survived} round${game.survived === 1 ? '' : 's'} by luck: the chance of surviving that many was 1/${2 ** game.survived}.`
-      : v
-        ? `${accepted ? 'You accepted' : 'You rejected'}: the prover ${kind === 'knows' ? 'knew the passphrase' : 'was a cheater'}, so you were ${v.correct ? 'right' : 'wrong'}.${kind === 'cheater' && m.passed === calls.length && patterned ? ` The meter assumes your challenges are unpredictable; yours were not, and this prover cheated and passed ${m.passed} of ${calls.length}.` : ''}`
-        : calls.length === 0
-          ? 'Call a side each round; a prover who knows the passphrase can always come out of it. Then accept or reject.'
-          : lastRound && !lastRound.passed
-            ? `Round ${calls.length}: the prover could not come out of the ${SIDE_NAME[lastRound.call]} path: that prover does not know the passphrase.`
-            : `${calls.length} round${calls.length === 1 ? '' : 's'} passed: the meter reads ${confidence(calls.length)}, assuming your calls were unpredictable.`;
+      : verifierCaption(kind, rounds, accepted);
 
   return (
     <StageFrame
@@ -126,26 +119,28 @@ export function CaveScene({ picker }: { picker: ReactNode }) {
             <Segmented<Policy> label="How you call" options={POLICY_OPTIONS} value={policy} onChange={(p) => { setPolicy(p); reset(); }} />
             {policy === 'manual' ? (
               <ControlGroup label="Call a side">
-                <Button onClick={() => call('L')} softDisabled={full || decided}>Left</Button>
-                <Button onClick={() => call('R')} softDisabled={full || decided}>Right</Button>
-                <Button onClick={() => call(verifierCall(seed, calls.length))} softDisabled={full || decided}>Random</Button>
+                <Button onClick={() => call('L')} softDisabled={callsClosed}>Left</Button>
+                <Button onClick={() => call('R')} softDisabled={callsClosed}>Right</Button>
+                <Button onClick={() => call(verifierCall(seed, calls.length))} softDisabled={callsClosed}>Random</Button>
               </ControlGroup>
             ) : (
-              <Button onClick={() => call(policyCall(policy, calls.length, seed))} softDisabled={full || decided}>Call the next round</Button>
+              <Button onClick={() => call(policyCall(policy, calls.length, seed))} softDisabled={callsClosed}>Call the next round</Button>
             )}
             <Button variant="primary" onClick={() => setAccepted(true)} softDisabled={calls.length === 0 || decided}>Accept</Button>
             <Button onClick={() => setAccepted(false)} softDisabled={calls.length === 0 || decided}>Reject</Button>
             <Button onClick={reset}>Reset</Button>
-            {full && <Hint tone="muted">That is {MAX_ROUNDS} rounds, the most this page plays.</Hint>}
+            {full && <Hint tone="muted">That is {MAX_ROUNDS} rounds, the most this page plays: Accept, Reject or Reset.</Hint>}
+            {caught && !decided && <Hint tone="muted">The prover was caught in round {m.failedAt}, so the calls stop: Accept, Reject or Reset.</Hint>}
           </>
         ) : (
           <>
             <ControlGroup label="Enter the cave by the">
-              <Button onClick={() => enter('L')} softDisabled={game.caughtAt !== null}>Left path</Button>
-              <Button onClick={() => enter('R')} softDisabled={game.caughtAt !== null}>Right path</Button>
+              <Button onClick={() => enter('L')} softDisabled={enterClosed}>Left path</Button>
+              <Button onClick={() => enter('R')} softDisabled={enterClosed}>Right path</Button>
             </ControlGroup>
             <Button onClick={() => setSim(survival(seed, GAME_ROUNDS, GAMES))}>Simulate {GAMES.toLocaleString('en-US')} seeded games of {GAME_ROUNDS} rounds</Button>
             <Button onClick={reset}>Reset</Button>
+            {entered.length >= MAX_ROUNDS && game.caughtAt === null && <Hint tone="muted">That is {MAX_ROUNDS} rounds, the most this page plays: Reset to start again.</Hint>}
           </>
         ),
       ]}
@@ -166,7 +161,7 @@ export function CaveScene({ picker }: { picker: ReactNode }) {
                 </span>
               ))}
             </div>
-            <p className="zk-note">The prover is seeded (seed {seed}) and does not say whether it knows the passphrase until you decide. A cheating prover knows how you call: it can follow a simple habit (one side throughout, or strictly alternating, as chosen above), which is why the meter assumes unpredictable calls.</p>
+            <p className="zk-note">The prover is seeded (seed {seed}) and does not say whether it knows the passphrase until you decide. In this model a cheating prover guesses from your earlier calls: it repeats the side you called last (left in round 1), so it passes every round of a one-sided run and is caught at the first change, including strict alternation. A cleverer cheater could ride more patterns; this model only shows why the meter needs unpredictable calls. A run of {PATTERN_MIN} or more calls on one side or strictly alternating is flagged as struck; for fair random calls that false alarm has probability 2^-(n-2): {patternFalseAlarm(PATTERN_MIN) * 100}% at {PATTERN_MIN} calls, {(patternFalseAlarm(MAX_ROUNDS) * 100).toFixed(1)}% at {MAX_ROUNDS}.</p>
           </>
         ) : (
           <>
@@ -179,7 +174,7 @@ export function CaveScene({ picker }: { picker: ReactNode }) {
             </div>
             {sim && (
               <p className="zk-note">
-                {sim.survived} of {sim.games.toLocaleString('en-US')} seeded games survived {sim.rounds} rounds, against {sim.expected} expected (2^-{sim.rounds} x {sim.games}); sigma is {sim.sigma.toFixed(1)}, so within 3 sigma means between {(sim.expected - 3 * sim.sigma).toFixed(1)} and {(sim.expected + 3 * sim.sigma).toFixed(1)}: {sim.withinThreeSigma ? 'inside' : 'outside'}.
+                {sim.survived} of {sim.games.toLocaleString('en-US')} seeded games survived {sim.rounds} rounds, against {sim.expected} expected (2^-{sim.rounds} x {sim.games}); sigma is {sim.sigma.toFixed(1)} (seed {seed}), so within 3 sigma means between {(sim.expected - 3 * sim.sigma).toFixed(1)} and {(sim.expected + 3 * sim.sigma).toFixed(1)}: {sim.withinThreeSigma ? 'inside' : 'outside'}.
               </p>
             )}
           </>
