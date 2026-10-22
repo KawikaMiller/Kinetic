@@ -10,7 +10,7 @@ import {
   BENEFIT, GROWTH, HORIZON, MAINTENANCE, REFERENCE, crossoverYear, defaultAssumptions, componentOf, placementOf, type Assumptions, type ComponentId, type StageId,
 } from './model';
 import { OPENING } from './opening';
-import { METER, METERS, PRICE_RISE } from './scenario';
+import { METER, METERS, PRICE_RISE, TRAP_NOTE } from './scenario';
 
 const NO_JUNK = /NaN|undefined|\[object|Infinity/;
 const email = componentOf('email');
@@ -48,8 +48,9 @@ describe('try-this entries, in written order from the default state', () => {
     expect(lesson.tryThis[0]).toContain('buy 238.35, open source 260 and build 576');
   });
 
-  it('try-this 2: at 9 years build reads 1,008 against buy 1,037.15 and the crossover is year 9', () => {
+  it('try-this 2: at 9 years build reads 1,008 against buy 1,037.15, build against buy crosses at year 9 and the lowest net cost moved from buy to open source at year 4', () => {
     expect([FACTS.email9Build, FACTS.email9Buy, FACTS.crossover]).toEqual(['1,008', '1,037.15', 9]);
+    expect([FACTS.flipYear, FACTS.flipFrom, FACTS.flipTo]).toEqual([4, 'buy', 'open source']);
     expect(HORIZON.max).toBeGreaterThanOrEqual(9);
     expect(lesson.tryThis[1]).toContain('build reads 1,008 against buy 1,037.15');
   });
@@ -121,11 +122,21 @@ describe('captions across the controls', () => {
 describe('the price-rise story', () => {
   const ledgers = () => enumeratePaths(PRICE_RISE);
 
-  it('has the structure of the fixture the kit was proven against', () => {
+  it('has the graph and meters of the fixture the kit was proven against (renegotiate is retuned by 1 so it is not tied with accept)', () => {
     expect(PRICE_RISE.start).toBe(BUILD_VS_BUY.start);
     expect(PRICE_RISE.meters.map((m) => [m.id, m.start, m.min, m.max, m.bad])).toEqual(BUILD_VS_BUY.meters.map((m) => [m.id, m.start, m.min, m.max, m.bad]));
-    for (const [i, node] of PRICE_RISE.nodes.entries()) expect(node.choices.map((c) => [c.id, c.to, c.effects])).toEqual(BUILD_VS_BUY.nodes[i].choices.map((c) => [c.id, c.to, c.effects]));
+    for (const [i, node] of PRICE_RISE.nodes.entries()) expect(node.choices.map((c) => [c.id, c.to])).toEqual(BUILD_VS_BUY.nodes[i].choices.map((c) => [c.id, c.to]));
     expect(PRICE_RISE.endings.map((e) => e.id)).toEqual(BUILD_VS_BUY.endings.map((e) => e.id));
+  });
+
+  it('has whole-path dominance only on the labelled build-it-in-house trap: every beaten path starts with build, and the on-screen note says so', () => {
+    // start 0 / 0 / 6 plus the two picked effects; lower is better on all three meters.
+    const paths = enumeratePaths(PRICE_RISE).map((p) => ({ id: p.choices.join('-'), v: [p.meters[METER.extra], p.meters[METER.weeks], p.meters[METER.lockin]] }));
+    const beats = (q: number[], p: number[]) => q.every((x, i) => x <= p[i]) && q.some((x, i) => x !== p[i]);
+    const beaten = paths.filter((p) => paths.some((q) => beats(q.v, p.v))).map((p) => p.id);
+    expect(beaten.length).toBeGreaterThan(0);
+    for (const id of beaten) expect(id, id).toMatch(/^build-/);
+    expect(TRAP_NOTE).toMatch(/labelled trap/);
   });
 
   it('passes every trade-off check under all three readings, with 12 paths', () => {

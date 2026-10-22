@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ScenarioStory } from '../../components/ScenarioStory';
 import { StageFrame } from '../../components/StageFrame';
-import { ClaimLabel, Legend, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Hint, Legend, Stat, Stats } from '../../components/ui';
 import { useSetCaption } from '../../core/caption';
 import { redMeters, startWalk, validateScenario } from '../../core/scenario';
 import { storyCaption } from './captions';
-import { CLAIM_OF, METER, PRICE_RISE, PROVENANCE_NOTE } from './scenario';
+import { CLAIM_OF, METER, PRICE_RISE, PROVENANCE_NOTE, TRAP_NOTE } from './scenario';
 
 /** Said only because the validator, run here, finds nothing wrong. */
-const ENDING_HINT = validateScenario(PRICE_RISE, { tradeoffs: true }).length === 0 ? 'every ending is reachable and no choice is a straw man' : undefined;
+const ENDING_HINT = validateScenario(PRICE_RISE, { tradeoffs: true }).length === 0 ? 'every ending is reachable and no single choice is beaten on every meter by its siblings' : undefined;
 
 /** Scene 3: the vendor raises the price. Every option shows its price before it is picked; no ending is marked correct. */
 export function StoryScene({ picker }: { picker: ReactNode }) {
@@ -40,7 +40,12 @@ export function StoryScene({ picker }: { picker: ReactNode }) {
           onWalk={setWalk}
           provenance={PROVENANCE_NOTE}
           claimOf={(id) => CLAIM_OF[id]}
-          notes={<ClaimLabel kind="view">no option here is marked correct: each one shows what it costs before you pick it</ClaimLabel>}
+          notes={
+            <>
+              <ClaimLabel kind="view">no option here is marked correct: each one shows what it costs before you pick it</ClaimLabel>
+              <Hint tone="muted" block>{TRAP_NOTE}</Hint>
+            </>
+          }
           endingHint={ENDING_HINT}
         />
       </div>

@@ -24,8 +24,8 @@ const nodes: Node[] = [
     id: 'price',
     prompt: `Your email vendor announces a ${PRICE_RISE_PERCENT}% price rise from next year. What do you do?`,
     choices: [
-      { id: 'accept', label: 'Accept the rise and stay', to: 'ready', effects: fx(32, 0, 1), because: 'If email is a commodity for you and switching costs more than the rise, staying is the cheapest move; it deepens the dependency.' },
-      { id: 'renegotiate', label: 'Renegotiate a two-year price lock', to: 'ready', effects: fx(14, 3, 2), because: 'If the vendor values the account, a longer commitment can cap the rise; you are bound to them for longer.' },
+      { id: 'accept', label: 'Accept the rise and stay', to: 'ready', effects: fx(32, 0, 1), because: 'If email is a commodity for you and switching costs more than the rise, staying costs no weeks; it deepens the dependency.' },
+      { id: 'renegotiate', label: 'Renegotiate a two-year price lock', to: 'ready', effects: fx(13, 3, 2), because: 'If the vendor values the account, a longer commitment can cap the rise; you are bound to them for longer.' },
       { id: 'opensource', label: 'Move to open source and self-host', to: 'ready', effects: fx(48, 16, -3), because: 'If the team can run it and volume is high, operating costs can undercut the licence; someone now owns operations and upgrades.' },
       { id: 'build', label: 'Build it in house', to: 'ready', effects: fx(180, 40, -4), because: 'If email were part of what customers buy from you, owning it could be worth the cost; for a commodity the extra cost buys no customer-visible benefit.' },
     ],
@@ -56,3 +56,6 @@ export const CLAIM_OF: Readonly<Record<string, ClaimKind>> = {
 };
 
 export const PROVENANCE_NOTE = 'an invented price rise: the vendor, the figures and every effect are made up, in thousands of an invented currency';
+
+/** Said on screen: the story's build option is a deliberate trap for a commodity, and its figures are separate from Scene 2's cost model. */
+export const TRAP_NOTE = 'Build it in house is kept as a labelled trap: for a commodity like email this story counts no benefit from owning it, so two of its three full paths are beaten by an open source path on every meter, and only its lock-in is lower. The engine in Three-year cost is where a build can win. The figures in this story are invented separately and are not derived from that cost model.';

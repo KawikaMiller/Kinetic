@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  BENEFIT, COMPONENTS, CROSSOVER_SCAN, GROWTH, HORIZON, MAINTENANCE, OPTIONS, PAIRS, STAGES, amount, benefitCounts, bestOnAllColumns, breakEven, componentOf, crossoverYear,
+  BENEFIT, COMPONENTS, CROSSOVER_SCAN, GROWTH, HORIZON, MAINTENANCE, OPTIONS, PAIRS, STAGES, amount, benefitCounts, bestOnAllColumns, breakEven, cheapest, cheapestFlip, componentOf, crossoverYear,
   cumulativeCost, defaultAssumptions, dominatesOption, rows, series, type Assumptions, type ComponentId, type OptionId, type StageId,
 } from './model';
 
@@ -163,6 +163,30 @@ describe('the benefit term', () => {
     const off = rows(engine, 'custom', a);
     const on = rows(engine, 'custom', { ...a, includeReversal: true });
     for (const [i, o] of OPTIONS.entries()) expect(on[i].net - off[i].net).toBe(engine.reversal[o.id]);
+  });
+});
+
+describe('the lowest-net flip', () => {
+  // Independent oracle: the closed forms for email at 15% growth, 20% maintenance, no benefit (email's B is 0).
+  const buy = (n: number) => 30 + Array.from({ length: n }, (_, y) => 60 * 1.15 ** y).reduce((s, x) => s + x, 0);
+  const oss = (n: number) => 80 + 60 * n;
+  const build = (n: number) => 360 + 0.2 * 360 * n;
+  it('email: buy is lowest through year 3 (238.35 against 260) and open source from year 4 (320 against 329.6), build never', () => {
+    const a = defaultAssumptions();
+    expect(buy(3)).toBeCloseTo(238.35, 2);
+    expect(buy(4)).toBeGreaterThan(oss(4));
+    for (let n = 1; n <= 30; n += 1) expect(build(n) < Math.min(buy(n), oss(n)), `year ${n}`).toBe(false);
+    expect(cheapestFlip(email, 'commodity', a)).toEqual({ year: 4, from: ['buy'], to: ['oss'] });
+  });
+
+  it('agrees with a closed-form scan for all three components and placements at the defaults', () => {
+    const a = defaultAssumptions();
+    for (const c of COMPONENTS) for (const stage of STAGES) {
+      const lowest = (n: number) => cheapest(rows(c, stage.id, { ...a, horizon: n }));
+      let want: ReturnType<typeof cheapestFlip> = null;
+      for (let n = 2; n <= CROSSOVER_SCAN && want === null; n += 1) if (lowest(n).join() !== lowest(1).join()) want = { year: n, from: lowest(1), to: lowest(n) };
+      expect(cheapestFlip(c, stage.id, a), `${c.id} ${stage.id}`).toEqual(want);
+    }
   });
 });
 

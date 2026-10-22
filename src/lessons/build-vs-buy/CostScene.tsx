@@ -2,9 +2,9 @@ import { Plot2D, Steps, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { breakEvenLines, cheapest, costCaption, stageLabel } from './captions';
+import { breakEvenLines, costCaption, flipChange, stageLabel } from './captions';
 import {
-  BENEFIT, COMPONENTS, CROSSOVER_SCAN, GROWTH, HORIZON, MAINTENANCE, OPTIONS, amount, benefitCounts, bestOnAllColumns, breakEven, componentOf, crossoverYear, placementOf, rows, series,
+  BENEFIT, COMPONENTS, CROSSOVER_SCAN, GROWTH, HORIZON, MAINTENANCE, OPTIONS, amount, benefitCounts, bestOnAllColumns, breakEven, cheapest, cheapestFlip, componentOf, crossoverYear, placementOf, rows, series,
   type ComponentId, type OptionId,
 } from './model';
 import type { SceneProps } from './opening';
@@ -25,6 +25,7 @@ export function CostScene({ picker, board, component, onComponent, assumptions: 
   const cross = crossoverYear(c, a.growth, a.maintenance);
   const top = Math.ceil(Math.max(...OPTIONS.flatMap((o) => series(c, o.id, a).map(([, y]) => y))) / COST_STEP) * COST_STEP;
   const best = cheapest(rs);
+  const flip = cheapestFlip(c, stage, a);
   const buildVsBuy = breakEven(c, 'build', 'buy', a);
   const none = bestOnAllColumns(c, rs).length === 0;
   const set = (change: Partial<typeof a>) => onAssumptions({ ...a, ...change });
@@ -38,7 +39,8 @@ export function CostScene({ picker, board, component, onComponent, assumptions: 
       stats={
         <Stats>
           <Stat label="Lowest net cost" value={best.map((o) => OPTIONS.find((x) => x.id === o)!.label.split(',')[0]).join(' / ')} color="var(--ok)" sub={`${amount(Math.min(...rs.map((r) => r.net)))} over ${a.horizon} years`} />
-          <Stat label="Crossover year" value={cross === null ? 'none' : cross} sub={cross === null ? `buying has not cost more than building by year ${CROSSOVER_SCAN}` : `buying has cost more than building from year ${cross}${cross > a.horizon ? ' (beyond the horizon)' : ''}`} />
+          <Stat label="Lowest net cost changes" value={flip === null ? 'never' : `year ${flip.year}`} sub={flip === null ? `one option stays lowest up to ${CROSSOVER_SCAN} years` : flipChange(flip)} />
+          <Stat label="Build against buy" value={cross === null ? 'none' : cross} sub={cross === null ? `buying has not cost more than building by year ${CROSSOVER_SCAN}` : `buying has cost more than building from year ${cross}${cross > a.horizon ? ' (beyond the horizon)' : ''}`} />
           <Stat label="Break-even benefit" value={buildVsBuy === null ? '–' : amount(buildVsBuy)} sub="a year, where build and buy swap places" />
           <Stat label="Benefit counted" value={benefitCounts(stage) ? `${amount(a.benefit[component])} a year` : '0'} color={benefitCounts(stage) ? 'var(--hi)' : undefined} sub={`placed ${stageLabel(stage)}`} />
         </Stats>
@@ -60,7 +62,7 @@ export function CostScene({ picker, board, component, onComponent, assumptions: 
       <div className="bb-stage stage-pad">
         <Plot2D x={{ domain: [0, a.horizon], label: 'year', tickValues: years }} y={{ domain: [0, top], label: 'cumulative cost', ticks: 5 }} width={PLOT.width} height={PLOT.height} ariaLabel={`Cumulative cost of building, self-hosting open source and buying ${c.label} by year`}>
           {OPTIONS.map((o) => <Steps key={o.id} data={series(c, o.id, a)} tone={TONE[o.id]} />)}
-          {cross !== null && cross <= a.horizon && <VLine at={cross} label="crossover" />}
+          {cross !== null && cross <= a.horizon && <VLine at={cross} label="buy > build" />}
         </Plot2D>
         <WideRegion minWidth={TABLE_MIN_WIDTH}><table className="data-table bb-table">
           <caption>{c.label[0].toUpperCase() + c.label.slice(1)} over {a.horizon} years, in thousands of an invented currency</caption>

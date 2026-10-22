@@ -132,6 +132,33 @@ export function crossoverYear(c: Component, growth: number, maintenance: number)
   return null;
 }
 
+/** The options with the lowest net cost (a tie lists both). */
+export function cheapest(rs: readonly Row[]): OptionId[] {
+  const low = Math.min(...rs.map((r) => r.net));
+  return rs.filter((r) => r.net === low).map((r) => r.option);
+}
+
+export interface CheapestFlip {
+  /** The first horizon, in years, at which the lowest-net option differs from the one-year answer. */
+  year: number;
+  from: OptionId[];
+  to: OptionId[];
+}
+
+/**
+ * The first horizon (1 to CROSSOVER_SCAN years) at which the lowest-net option changes from what it is at one year, with the
+ * placement and assumptions as given and only the horizon varied; null when it never changes.
+ */
+export function cheapestFlip(c: Component, stage: StageId, a: Assumptions): CheapestFlip | null {
+  const at = (horizon: number) => cheapest(rows(c, stage, { ...a, horizon }));
+  const from = at(1);
+  for (let year = 2; year <= CROSSOVER_SCAN; year += 1) {
+    const to = at(year);
+    if (to.join() !== from.join()) return { year, from, to };
+  }
+  return null;
+}
+
 /**
  * The yearly benefit at which options `a` and `b` have the same net cost (with the same horizon, reversal setting
  * and the benefit counted); null when they capture the same share, so no benefit separates them.

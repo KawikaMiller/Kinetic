@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { joinList, plural } from '../../core/format';
 import { findEnding, redMeters, type Scenario, type Walk } from '../../core/scenario';
 import {
-  CROSSOVER_SCAN, OPTIONS, PAIRS, STAGES, amount, benefitCounts, breakEven, crossoverYear, rows, type Assumptions, type Component, type ComponentId, type OptionId, type StageId,
+  CROSSOVER_SCAN, OPTIONS, PAIRS, STAGES, amount, benefitCounts, breakEven, cheapest, cheapestFlip, crossoverYear, rows, type Assumptions, type Component, type ComponentId, type OptionId, type StageId,
 } from './model';
 import { METER } from './scenario';
 
@@ -20,10 +20,15 @@ export function placeCaption(items: readonly { id: ComponentId; label: string; s
   );
 }
 
-/** The names of the options with the lowest net cost (a tie lists both). */
-export function cheapest(rs: ReturnType<typeof rows>): OptionId[] {
-  const low = Math.min(...rs.map((r) => r.net));
-  return rs.filter((r) => r.net === low).map((r) => r.option);
+/** The sentence that names where the lowest-net option changes as the horizon grows. */
+export function flipText(flip: ReturnType<typeof cheapestFlip>): string {
+  if (flip === null) return `The lowest-net option does not change with the horizon up to ${CROSSOVER_SCAN} years.`;
+  return `The lowest-net option changes at a horizon of ${flip.year} years, ${flipChange(flip)}.`;
+}
+
+/** The short form of a flip, for a stat: from the old lowest option to the new one. */
+export function flipChange(flip: NonNullable<ReturnType<typeof cheapestFlip>>): string {
+  return `from ${joinList(flip.from.map(optionLabel))} to ${joinList(flip.to.map(optionLabel))}`;
 }
 
 /** Scene 2: the costs, the crossover and the break-even for one component. */
@@ -31,11 +36,12 @@ export function costCaption(c: Component, stage: StageId, a: Assumptions): React
   const rs = rows(c, stage, a);
   const cross = crossoverYear(c, a.growth, a.maintenance);
   const build = breakEven(c, 'build', 'buy', a);
+  const flip = cheapestFlip(c, stage, a);
   return (
     <>
       {c.label[0].toUpperCase() + c.label.slice(1)} over {plural(a.horizon, 'year')}, net cost: {rs.map((r) => `${optionLabel(r.option)} ${amount(r.net)}`).join(', ')}. The lowest is {joinList(cheapest(rs).map(optionLabel))}.{' '}
       {benefitCounts(stage) ? <>It is placed {stageLabel(stage)}, so a benefit of {amount(a.benefit[c.id])} a year counts in proportion to the control each option gives.</> : <>It is placed {stageLabel(stage)}, so no benefit counts: net cost is cost.</>}{' '}
-      {cross === null ? <>Buying has not cost more than building by year {CROSSOVER_SCAN}.</> : <>Buying has cost more than building from year {cross}{cross > a.horizon ? `, beyond your ${a.horizon}-year horizon` : ''}.</>}{' '}
+      {flipText(flip)}{' '}{cross === null ? <>Buying has not cost more than building by year {CROSSOVER_SCAN}.</> : <>Buying has cost more than building from year {cross}{cross > a.horizon ? `, beyond your ${a.horizon}-year horizon` : ''}.</>}{' '}
       {build === null ? null : <>Build and buy swap places at a yearly benefit of {amount(build)}.</>}
     </>
   );
