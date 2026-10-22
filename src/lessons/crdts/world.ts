@@ -32,7 +32,10 @@ export interface World {
   syncsDone: number;
   /** How many syncs have started: the next one uses the next order for the seed. */
   syncCount: number;
+  /** The states the last sync started from, for replaying it; null once anything has been edited since (a replay would overwrite those edits). */
   preSync: Record<Rid, Rep> | null;
+  /** True from an edit until the next sync finishes: the replicas have not merged it yet. */
+  dirty: boolean;
   lastEdit: LocalEdit | null;
 }
 
@@ -45,7 +48,7 @@ export const TRY_INCREMENTS = { a: 3, b: 2 } as const;
 export const freshWorld = (): World => ({
   reps: { A: emptyRep(), B: emptyRep(), C: emptyRep() },
   online: { A: true, B: true, C: true },
-  msgs: [], nextMsg: 1, made: 0, syncing: false, syncsDone: 0, syncCount: 0, preSync: null, lastEdit: null,
+  msgs: [], nextMsg: 1, made: 0, syncing: false, syncsDone: 0, syncCount: 0, preSync: null, dirty: false, lastEdit: null,
 });
 
 /** Seconds between the six messages of a sync. */
@@ -77,6 +80,8 @@ export function localEdit(prev: World, r: Rid, fn: (s: Rep) => Rep, what: string
     msgs: [...prev.msgs, ...msgs],
     nextMsg: prev.nextMsg + msgs.length,
     made: prev.made + (counts ? 1 : 0),
+    preSync: null,
+    dirty: true,
     lastEdit: { seq: (prev.lastEdit?.seq ?? 0) + 1, r, wasOnline, what },
   };
 }
@@ -101,7 +106,7 @@ export function landMessage(prev: World, m: Msg, kind: Kind, mode: Mode): World 
   const reps = { ...prev.reps, [m.to]: merge(prev.reps[m.to], m.snap, kind, mode) };
   const msgs = prev.msgs.filter((x) => x.id !== m.id);
   const finished = prev.syncing && msgs.length === 0;
-  return { ...prev, reps, msgs, syncing: finished ? false : prev.syncing, syncsDone: prev.syncsDone + (finished ? 1 : 0) };
+  return { ...prev, reps, msgs, syncing: finished ? false : prev.syncing, syncsDone: prev.syncsDone + (finished ? 1 : 0), dirty: finished ? false : prev.dirty };
 }
 
 /** Land every message in the order they would fly (by delay, then by id): what the stage does as the animation plays. */
@@ -114,8 +119,35 @@ export function landAll(world: World, kind: Kind, mode: Mode): World {
 export const valuesOf = (w: World, kind: Kind, mode: Mode) => RIDS.map((r) => valueKey(w.reps[r], kind, mode));
 export const agree = (w: World, kind: Kind, mode: Mode) => w.msgs.length === 0 && valuesOf(w, kind, mode).every((v, _, all) => v === all[0]);
 
-/** Increments made minus the smallest counter value across replicas, never below 0: the stat "Lost increments". */
-export function lostIncrements(w: World, mode: Mode): number {
-  const value = (s: Rep) => (mode === 'crdt' ? s.vec.A + s.vec.B + s.vec.C : s.n);
-  return Math.max(0, w.made - Math.min(...RIDS.map((r) => value(w.reps[r]))));
+/**
+ * The stat "Lost increments": increments made minus what the replicas read. It is only a verdict once the replicas have merged
+ * (nothing in flight, no edit since the last sync finished) and agree; until then the increments are merely not merged yet, so
+ * it is null and the stage says so instead of printing a number.
+ */
+export function lostIncrements(w: World, mode: Mode): number | null {
+  if (w.msgs.length > 0 || w.dirty || !agree(w, 'counter', mode)) return null;
+  return Math.max(0, w.made - Number(valuesOf(w, 'counter', mode)[0]));
+}
+
+export type SyncOutcome =
+  | { kind: 'nothing' }
+  | { kind: 'converged' }
+  | { kind: 'still-apart'; values: string[] }
+  | { kind: 'diverged'; values: string[] }
+  | { kind: 'agree-lost'; lost: number }
+  | { kind: 'agree-none-lost' }
+  | { kind: 'agree-by-order' };
+
+/** What a finished sync left behind, read from the replicas: the sentence under the stage is chosen from this. */
+export function syncOutcome(w: World, kind: Kind, mode: Mode): SyncOutcome {
+  const values = valuesOf(w, kind, mode);
+  const same = agree(w, kind, mode);
+  if (same && w.made === 0) return { kind: 'nothing' };
+  if (mode === 'crdt') return same ? { kind: 'converged' } : { kind: 'still-apart', values };
+  if (!same) return { kind: 'diverged', values };
+  if (kind === 'counter') {
+    const lost = lostIncrements(w, mode) ?? 0;
+    return lost > 0 ? { kind: 'agree-lost', lost } : { kind: 'agree-none-lost' };
+  }
+  return { kind: 'agree-by-order' };
 }

@@ -10,8 +10,16 @@ import { freshWorld, landAll, localEdit, setOnline, startSync, syncOrder, type W
 
 export const SCHEDULE_SEEDS = 200;
 
-/** The lowest seed on which the naive overwrite loses an update or leaves the replicas disagreeing, for each data type (re-derived by brute force in schedule.test.ts). */
-export const NAIVE_LOWEST_SEED: Record<Kind, number> = { counter: 1, set: 1, register: 1 };
+/**
+ * The shortest failing schedule of the naive overwrite for each data type: the lowest seed among those with the fewest actions,
+ * and the exact reason it fails. (The lowest failing seed itself says little: seeds 1 to 12 all fail for the counter.)
+ * crdt.test.ts re-derives all three by brute force over the checked seeds.
+ */
+export const NAIVE_WITNESS: Record<Kind, { seed: number; actions: number; problem: string }> = {
+  counter: { seed: 11, actions: 6, problem: 'an update was lost: the replicas read 4 but the edits add up to 6 (increments)' },
+  set: { seed: 26, actions: 6, problem: 'an update was lost: the replicas read 🍎,🥝 but the edits add up to 🍇,🍎,🥝 (elements)' },
+  register: { seed: 11, actions: 6, problem: 'the replicas disagree: #3ddc97 | #3ddc97 | #ff5d8f' },
+};
 const ACTIONS = { min: 6, max: 14 } as const;
 /** Chance that the messages in flight land right after an action; otherwise they hang and land with a later one. */
 const LAND_NOW = 0.8;
@@ -146,6 +154,9 @@ export function runSchedule(seed: number, kind: Kind, mode: Mode): Run {
   return { seed, kind, mode, open, world: w, actions, expected, values, problem };
 }
 
+/** The world the stage shows for a loaded run: its end state, without the last edit's narration (which would replace the run's verdict). */
+export const loadedWorld = (run: Run): World => ({ ...run.world, lastEdit: null });
+
 export interface ScheduleCheck {
   kind: Kind;
   mode: Mode;
@@ -153,19 +164,23 @@ export interface ScheduleCheck {
   failures: number;
   /** The lowest seed that failed, with its run; null when every seed passed. */
   lowest: Run | null;
+  /** The failing run with the fewest actions (the lowest seed among ties): the one worth reading. */
+  shortest: Run | null;
 }
 
 /** Seeds 1..count: how many end with replicas disagreeing or an update lost, and the lowest that does. */
 export function checkSchedules(kind: Kind, mode: Mode, count = SCHEDULE_SEEDS): ScheduleCheck {
   let failures = 0;
   let lowest: Run | null = null;
+  let shortest: Run | null = null;
   for (let seed = 1; seed <= count; seed += 1) {
     const run = runSchedule(seed, kind, mode);
     if (!run.problem) continue;
     failures += 1;
     lowest ??= run;
+    if (!shortest || run.actions.length < shortest.actions.length) shortest = run;
   }
-  return { kind, mode, seeds: count, failures, lowest };
+  return { kind, mode, seeds: count, failures, lowest, shortest };
 }
 
 /** The part of a replica's state a merge is about, as text: equal text means equal state (the Lamport clock included). */
@@ -210,6 +225,6 @@ export function describeSchedules(check: ScheduleCheck, laws: LawCheck): string 
   if (!check.lowest) {
     return `Sampled, not exhaustive: in none of ${check.seeds} seeded schedules did the replicas end up disagreeing or an update get lost. ${lawText}`;
   }
-  return `The replicas ended up disagreeing or lost an update on ${check.failures} of ${check.seeds} seeds. Lowest failing seed ${check.lowest.seed}: ${check.lowest.problem}. ${lawText}`;
+  return `The replicas ended up disagreeing or lost an update on ${check.failures} of ${check.seeds} seeds. Shortest failing schedule: seed ${check.shortest!.seed}, ${check.shortest!.actions.length} actions: ${check.shortest!.problem}. ${lawText}`;
 }
 

@@ -1,5 +1,5 @@
 import type { LessonModule } from '../../core/types';
-import { NAIVE_LOWEST_SEED, SCHEDULE_SEEDS } from './schedule';
+import { NAIVE_WITNESS, SCHEDULE_SEEDS } from './schedule';
 import { Stage } from './Stage';
 import { DEFAULT_SEED, TRY_INCREMENTS } from './world';
 
@@ -9,7 +9,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'A CRDT (conflict-free replicated data type) is a data structure that replicas can edit independently, even offline, and merge into the same result without coordination.',
-    what: 'Normally, two replicas that change the same data while disconnected leave you with a conflict to resolve. A CRDT designs the data and its merge function so the conflict is resolved by construction: the merge is commutative, associative and idempotent, so replicas that have seen the same updates reach the same state in any order, even with duplicate messages. A G-Counter gives each replica its own slot and merges by taking the maximum per slot. An OR-Set tags each add uniquely, so a remove cancels the adds it saw and not a concurrent one. An LWW-Register keeps the write with the highest timestamp and discards the other.',
+    what: 'Normally, two replicas that change the same data while disconnected leave you with a conflict to resolve. A CRDT designs the data and its merge function so the conflict is resolved by construction: the merge is commutative, associative and idempotent, so replicas that have seen the same updates reach the same state in any order, even with duplicate messages. A G-Counter gives each replica its own slot and merges by taking the maximum per slot. An OR-Set tags each add uniquely, so a remove cancels the adds it saw and not a concurrent one. An LWW-Register keeps the write with the highest timestamp (here a logical Lamport counter bumped on each edit and merge, not a wall clock, so a write made after seeing another cannot lose to it) and discards the other.',
     analogy: "Several people keep tally marks on their own copy of a sheet, each in their own column. To combine sheets you take the larger tally in each column, so no one's marks are double-counted or lost.",
     useCases: [
       'Collaborative editors and local-first apps (Automerge and Yjs are CRDT libraries)',
@@ -26,7 +26,7 @@ const lesson: LessonModule = {
     `Same edits with Naive overwrite: each replica keeps whichever state landed last, so Lost increments reads at least ${TRY_TOTAL - TRY_INCREMENTS.a} (the best any replica can keep is A's ${TRY_INCREMENTS.a} of ${TRY_TOTAL}).`,
     'OR-Set: add 🍎 on A, take B offline, remove 🍎 on B while A adds 🍎 again, then Reconnect & sync. The add wins: every replica holds 🍎.',
     `After any sync, press "Replay sync, new order" a few times (seed ${DEFAULT_SEED}): the CRDT lands on the same answer each time, whatever order the six messages take.`,
-    `Press "Check ${SCHEDULE_SEEDS} seeds": with CRDT merge no seed fails and the merge laws hold. Switch to Naive overwrite and press it again: it breaks on many seeds, the lowest failing seed is ${NAIVE_LOWEST_SEED.counter}, and "Random edits for this seed" loads that run.`,
+    `Press "Check ${SCHEDULE_SEEDS} seeds": with CRDT merge no seed fails and the merge laws hold. Switch to Naive overwrite and press it again: it breaks on many seeds and names the shortest failing schedule (for the counter, seed ${NAIVE_WITNESS.counter.seed} with ${NAIVE_WITNESS.counter.actions} actions). Type that seed into Seed and press "Random edits for this seed" to load that run and read why it fails.`,
   ],
   keyIdeas: [
     'CRDT merges are commutative, associative and idempotent, so the order of messages and duplicates do not change the result; the check tests the three laws on 200 seeded schedules.',
@@ -38,7 +38,7 @@ const lesson: LessonModule = {
     {
       q: 'Why does a G-Counter merge with max per replica slot instead of adding the counts?',
       options: [
-        'Taking the maximum is faster than adding up the slots',
+        'Taking the maximum is faster than adding up all the slots',
         'Adding would double-count a state that is merged twice',
         'A G-Counter value can only ever go down over time',
         'The maximum needs less memory than keeping the sum',
@@ -80,7 +80,7 @@ const lesson: LessonModule = {
       why: 'A CRDT resolves the conflict by construction. For a register the rule picks a winner by timestamp (ties by replica id), so the other write is lost: convergence is not the same as keeping both.',
     },
     {
-      q: 'Why can a replica safely receive the same state message twice?',
+      q: 'A state-based CRDT keeps no log of the messages it received. Why can a replica still safely receive the same state twice?',
       options: [
         'Because the merge is idempotent, so a repeat changes nothing',
         'Because replicas ignore any message that they have already seen',

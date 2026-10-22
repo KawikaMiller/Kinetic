@@ -1,20 +1,21 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { AnimatedValue } from '../../components/AnimatedValue';
 import { Flyer } from '../../components/scene';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { useIntroCaption, useSetCaption } from '../../core/caption';
-import { plural } from '../../core/format';
+import { NA, plural } from '../../core/format';
 import { TOKENS } from '../../core/palette';
 import {
   COLORS, ITEMS, RIDS, add, inc, remove, setReg, setValue,
   type Kind, type Mode, type Rep, type Rid,
 } from './crdt';
-import { checkLaws, checkSchedules, describeSchedules, runSchedule, SCHEDULE_SEEDS } from './schedule';
+import { checkLaws, checkSchedules, describeSchedules, loadedWorld, runSchedule, SCHEDULE_SEEDS } from './schedule';
 import {
-  agree, DEFAULT_SEED, freshWorld, landMessage, lostIncrements, partitionAll, setOnline, startSync, syncOrder, valuesOf, localEdit,
+  agree, DEFAULT_SEED, freshWorld, landMessage, lostIncrements, partitionAll, setOnline, startSync, syncOrder, syncOutcome, localEdit,
+  type SyncOutcome,
   type Msg, type World,
 } from './world';
 import './styles.css';
@@ -30,6 +31,42 @@ const MSG_ARC = 22;
 const WIRE_STYLE = { '--cr-wire-left': `${X.A * 100}%`, '--cr-wire-right': `${(1 - X.C) * 100}%` } as CSSProperties;
 const KIND_NAME: Record<Kind, string> = { counter: 'G-Counter', set: 'OR-Set', register: 'LWW-Register' };
 
+const shown = (values: string[]) => values.map((v) => v || 'empty').join(' | ');
+
+/** The sentence under the stage when a sync finishes, chosen from what the replicas actually hold. */
+function syncCaption(o: SyncOutcome, made: number): ReactNode {
+  switch (o.kind) {
+    case 'nothing':
+      return <>Nothing to merge: no edits have been made, so every replica already agrees.</>;
+    case 'converged':
+      return (
+        <><span className="hl ok">Converged</span>: each replica merged the others' states and landed on the same
+          answer, in whatever order the messages arrived.</>
+      );
+    case 'still-apart':
+      return (
+        <><span className="hl bad">Not converged yet</span>: the sync finished but the replicas still read {shown(o.values)}. A replica was
+          offline while updates were in flight, so it missed them. Reconnect it and sync again.</>
+      );
+    case 'diverged':
+      return (
+        <><span className="hl bad">Diverged!</span> Each replica kept whichever state happened to arrive last, so they now read {shown(o.values)}.
+          Another sync might make them agree by luck, but the lost edits never come back.</>
+      );
+    case 'agree-lost':
+      return (
+        <>They agree, but only by luck of arrival order, and <span className="hl bad">{plural(o.lost, 'increment')} of the {made} made {o.lost === 1 ? 'was' : 'were'} lost</span>.</>
+      );
+    case 'agree-none-lost':
+      return <>They agree, and this time nothing was lost: naive overwrite only loses an update when two replicas have edits the other is missing.</>;
+    case 'agree-by-order':
+      return (
+        <>They agree this time, but only because of the order the messages arrived in: naive overwrite keeps whichever state landed last and
+          drops every other replica's edits.</>
+      );
+  }
+}
+
 export function Stage() {
   const [kind, setKind] = useState<Kind>('counter');
   const [mode, setMode] = useState<Mode>('crdt');
@@ -40,6 +77,7 @@ export function Stage() {
   const setCaption = useSetCaption();
 
   const converged = agree(w, kind, mode);
+  const lost = lostIncrements(w, mode);
 
   useIntroCaption(
     <>Three replicas of the same G-Counter. Take a replica offline, make edits on both sides of the partition, then
@@ -64,22 +102,7 @@ export function Stage() {
   useEffect(() => {
     if (!w.syncsDone || reported.current === w.syncsDone) return;
     reported.current = w.syncsDone;
-    const same = valuesOf(w, kind, mode).every((v, _, all) => v === all[0]);
-    if (mode === 'crdt') {
-      setCaption(
-        <><span className="hl ok">Converged</span>: each replica merged the others' states and landed on the same
-          answer, in whatever order the messages arrived.</>,
-      );
-    } else if (!same) {
-      setCaption(
-        <><span className="hl bad">Diverged!</span> Each replica kept whichever state happened to arrive last, so they
-          now disagree. Another sync might make them agree by luck, but the lost edits never come back.</>,
-      );
-    } else {
-      setCaption(
-        <>They agree, but only by luck of arrival order. {kind === 'counter' ? <>Check the counter against the updates made: <span className="hl bad">updates were lost</span>.</> : <>Some edits were silently overwritten.</>}</>,
-      );
-    }
+    setCaption(syncCaption(syncOutcome(w, kind, mode), w.made));
   }, [w, kind, mode, setCaption]);
 
   const reset = (k = kind, m = mode) => {
@@ -116,7 +139,7 @@ export function Stage() {
   /** Load the end state of this seed's random schedule, so the stage shows what the check counted. */
   const loadSchedule = () => {
     const run = runSchedule(seed, kind, mode);
-    setW(run.world);
+    setW(loadedWorld(run));
     reported.current = run.world.syncsDone;
     setCaption(
       <>Seed {seed}: {run.actions.length} random actions (edits, partitions, syncs, late messages), then two full syncs.{' '}
@@ -148,9 +171,9 @@ export function Stage() {
           {kind === 'counter' && (
             <Stat
               label="Lost increments"
-              value={w.msgs.length ? '…' : lostIncrements(w, mode)}
-              color="var(--bad)"
-              sub="once synced"
+              value={lost === null ? NA : lost}
+              color={lost ? 'var(--bad)' : lost === 0 ? 'var(--ok)' : 'var(--muted)'}
+              sub={lost === null ? (w.msgs.length ? 'merging…' : w.dirty ? 'not merged yet' : 'replicas disagree') : 'after the last sync'}
             />
           )}
           <Stat label="In flight" value={w.msgs.length} color="var(--info)" sub="messages" />
@@ -210,7 +233,7 @@ export function Stage() {
           <Button onClick={() => reset()}>Reset</Button>
           {kind === 'register' && mode === 'crdt' && (
             <Hint tone="muted" block>
-              Higher timestamp wins. On a tie, the higher replica id wins (C &gt; B &gt; A), so the replicas pick the same
+              Higher timestamp (a logical Lamport counter, not a wall clock) wins. On a tie, the higher replica id wins (C &gt; B &gt; A), so the replicas pick the same
               value: deterministic, but the other write is lost.
             </Hint>
           )}
@@ -267,7 +290,7 @@ export function Stage() {
             />
           ))}
         </div>
-        {shownReport && <p className="cr-report">{shownReport}</p>}
+        {shownReport && <p className="cr-report" role="status">{shownReport}</p>}
         <ProvenanceRow>
           <Provenance kind="simulated" seed={seed}>
             three replicas in this page; the order of each sync's six messages comes from the seed (the next sync uses the next order)

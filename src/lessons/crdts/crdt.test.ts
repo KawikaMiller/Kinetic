@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { SEED_MAX } from '../../core/seed';
 import { add, emptyRep, inc, merge, remove, setReg, setValue, valueKey, type Kind, type Mode } from './crdt';
 import {
-  buildSchedule, canonical, checkLaws, checkSchedules, describeSchedules, NAIVE_LOWEST_SEED, runSchedule, SCHEDULE_SEEDS,
+  buildSchedule, canonical, checkLaws, checkSchedules, describeSchedules, loadedWorld, NAIVE_WITNESS, runSchedule, SCHEDULE_SEEDS,
 } from './schedule';
-import { agree, freshWorld, landAll, localEdit, lostIncrements, setOnline, startSync, syncOrder, TRY_INCREMENTS, valuesOf, DEFAULT_SEED } from './world';
+import { agree, freshWorld, landAll, localEdit, lostIncrements, setOnline, startSync, syncOrder, syncOutcome, TRY_INCREMENTS, valuesOf, DEFAULT_SEED } from './world';
 import lesson from './index';
 
 const KINDS: Kind[] = ['counter', 'set', 'register'];
@@ -70,10 +70,16 @@ describe.each(KINDS)('the %s CRDT over seeded random schedules', (kind) => {
 describe.each(KINDS)('the naive overwrite of the %s', (kind) => {
   const check = checkSchedules(kind, 'naive');
 
-  it('loses an update or leaves the replicas disagreeing on the pinned lowest failing seed', () => {
-    expect(check.lowest?.seed).toBe(NAIVE_LOWEST_SEED[kind]);
-    expect(NAIVE_LOWEST_SEED[kind]).toBeGreaterThan(0);
-    expect(check.lowest?.problem).toMatch(/^(an update was lost|the replicas disagree)/);
+  it('pins the shortest failing schedule with the exact reason it fails: a witness, not just the first seed that happens to fail', () => {
+    const witness = NAIVE_WITNESS[kind];
+    expect(check.shortest?.seed).toBe(witness.seed);
+    expect(check.shortest?.actions).toHaveLength(witness.actions);
+    expect(check.shortest?.problem).toBe(witness.problem);
+    // No failing seed has fewer actions than the witness.
+    for (let seed = 1; seed <= SCHEDULE_SEEDS; seed += 1) {
+      const run = runSchedule(seed, kind, 'naive');
+      if (run.problem) expect(run.actions.length, `seed ${seed}`).toBeGreaterThanOrEqual(witness.actions);
+    }
   });
 
   it('is not failing everywhere: some seeds, at most 90% of them, and the CRDT passes the same seeds', () => {
@@ -85,7 +91,8 @@ describe.each(KINDS)('the naive overwrite of the %s', (kind) => {
   it('prints the numbers the check produced', () => {
     const text = describeSchedules(check, checkLaws(kind, 'naive'));
     expect(text).toContain(`${check.failures} of ${SCHEDULE_SEEDS} seeds`);
-    expect(text).toContain(`Lowest failing seed ${NAIVE_LOWEST_SEED[kind]}`);
+    const w = NAIVE_WITNESS[kind];
+    expect(text).toContain(`Shortest failing schedule: seed ${w.seed}, ${w.actions} actions: ${w.problem}`);
   });
 });
 
@@ -163,13 +170,14 @@ describe("try-this entries, from the default state, as written", () => {
     expect(seen.size, 'the replays really used different orders').toBeGreaterThan(1);
   });
 
-  it(`try-this 5: the CRDT check finds no failing seed, the naive one breaks and the lowest failing seed is ${NAIVE_LOWEST_SEED.counter}`, () => {
+  it(`try-this 5: the CRDT check finds no failing seed, the naive one breaks and the shortest failing schedule is seed ${NAIVE_WITNESS.counter.seed}`, () => {
     expect(checkSchedules('counter', 'crdt').failures).toBe(0);
     const naive = checkSchedules('counter', 'naive');
     expect(naive.failures).toBeGreaterThan(0);
-    expect(naive.lowest?.seed).toBe(NAIVE_LOWEST_SEED.counter);
-    const loaded = runSchedule(NAIVE_LOWEST_SEED.counter, 'counter', 'naive');
-    expect(loaded.problem).toContain('an update was lost');
+    expect(naive.shortest?.seed).toBe(NAIVE_WITNESS.counter.seed);
+    const loaded = runSchedule(NAIVE_WITNESS.counter.seed, 'counter', 'naive');
+    expect(loaded.problem).toBe(NAIVE_WITNESS.counter.problem);
+    expect(loadedWorld(loaded).lastEdit, 'the last edit narration must not replace the verdict').toBeNull();
   });
 });
 
