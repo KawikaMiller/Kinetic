@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
@@ -112,7 +113,7 @@ export function EscapeScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Box>
           <SectionTitle hint="(c) add a timing assumption">Failure detectors and partial synchrony</SectionTitle>
-          <div className="flp-line">Add a timing assumption and a leader can be elected: that is what Raft and Paxos lean on for progress, while their safety does not wait for any clock. Failure detectors (Chandra and Toueg) are the standard way to write such an assumption down.</div>
+          <div className="flp-line">Add a timing assumption and a leader can be elected: that is what Raft and Paxos lean on for progress, while their safety does not wait for any clock. Failure detectors (Chandra and Toueg; see <Link to="/lesson/failure-detectors">failure detectors</Link>) are the standard way to write such an assumption down.</div>
           <ProvenanceRow>
             <ClaimLabel kind="standard">Raft and Paxos stay safe under asynchrony and rely on timing for liveness</ClaimLabel>
           </ProvenanceRow>
