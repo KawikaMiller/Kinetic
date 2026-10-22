@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
-import { gridShape, initialMember, initialSpread, initialTheory, membershipCaption, spreadCaption } from './init';
+import {
+  MATRIX_MAX_NODES, MEMBER_START_ROUND, falsePairsSub, gridShape, initialMember, initialSpread, initialTheory, matrixCapText, memberSafetyText, membershipCaption, offsetNote,
+  spreadCaption, spreadSafetyText, sweepSub, undrawnSuspicions,
+} from './init';
 import lesson from './index';
 import {
-  BROKEN_MEMBER, BROKEN_MEMBER_SEED, BROKEN_SPREAD, BROKEN_SPREAD_SEED, SWEEP_SEEDS, defaultMember, defaultSpread, failingSeeds, leftOut, pushReference,
+  ACCURACY_ROUNDS, BROKEN_MEMBER, BROKEN_MEMBER_SEED, BROKEN_SPREAD, BROKEN_SPREAD_SEED, MEMBER_SAFETY_CHECK, SPREAD_SAFETY_CHECK, SWEEP_SEEDS, defaultMember, meanRounds, defaultSpread, failingSeeds, leftOut, pushReference,
   readMembership, roundsBelow, runMembership, runSpread, sweepSpread,
 } from './model';
 
@@ -27,19 +30,20 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     expect(mean('push-pull')).toBeLessThan(mean('pull'));
     for (const m of ['push', 'pull', 'push-pull'] as const) expect(lesson.tryThis[1]).toContain(mean(m).toFixed(1));
     expect(lesson.tryThis[1]).toContain('says 7, 6 and 4');
-    const seed1 = (['push', 'pull', 'push-pull'] as const).map((mode) => runSpread({ ...base, mode }).completeAt);
-    expect(lesson.tryThis[1]).toContain(`seed 1 needs ${seed1[0]}, ${seed1[1]} and ${seed1[2]} rounds`);
+    expect(lesson.tryThis[1]).not.toContain('seed 1 needs');
   });
 
-  it('try-this 3: n = 256 takes about twice the rounds of n = 16, and the measured mean beats the reference by a constant', () => {
-    const small = runSpread(defaultSpread()).completeAt!;
-    const big = runSpread({ ...defaultSpread(), n: 256 }).completeAt!;
-    expect(big).toBeLessThan(3 * small);
-    expect(lesson.tryThis[2]).toContain(`after round ${big}, against ${small} at n = 16`);
-    expect(lesson.tryThis[2]).toContain(`${pushReference(256).toFixed(1)}`);
-    const sweep = sweepSpread({ ...defaultSpread(), n: 256 });
-    expect(sweep.failed).toBe(0);
-    expect(sweep.meanRounds!).toBeGreaterThan(pushReference(256) - 0.5);
+  it('try-this 3: the 200-seed means (not single seeds) take about twice the rounds at n = 256 as at n = 16, and the text points at the scene that shows the reference', () => {
+    const small = sweepSpread(defaultSpread()).meanRounds!;
+    const big = sweepSpread({ ...defaultSpread(), n: 256 });
+    expect(big.failed).toBe(0);
+    expect(big.meanRounds! / small).toBeGreaterThan(1.7);
+    expect(big.meanRounds! / small).toBeLessThan(2.1);
+    expect(lesson.tryThis[2]).toContain(`${big.meanRounds!.toFixed(1)} rounds against ${small.toFixed(1)} at n = 16`);
+    expect(lesson.tryThis[2]).toContain(`(${pushReference(256).toFixed(1)} at n = 256)`);
+    expect(lesson.tryThis[2]).toContain('"Push, pull and log n"');
+    expect(lesson.tryThis[2]).not.toContain('Run to the end');
+    expect(big.meanRounds!).toBeGreaterThan(pushReference(256) - 0.5);
   });
 
   it('try-this 4: the broken seed leaves nodes out and the setting fails on the share of seeds the text names', () => {
@@ -64,7 +68,13 @@ describe('try-this entries, from each scene\'s opening state, as written', () =>
     const dShort = readMembership(runMembership({ ...d, f: 1, crash: true })).detection;
     const dLong = readMembership(runMembership({ ...d, f: 1, tFail: 20, crash: true })).detection;
     expect(dLong!).toBeGreaterThan(dShort!);
-    expect(lesson.tryThis[4]).toContain(`${short.falsePairs} observer-node pairs`);
+    expect(short.falsePairs).toBe(1);
+    expect(lesson.tryThis[4]).toContain('1 observer-node pair suspects a live node');
+    expect(short.firstFalseRound).toBeGreaterThan(MEMBER_START_ROUND);
+    expect(lesson.tryThis[4]).toContain(`the first at round ${short.firstFalseRound}; the matrix opens at round ${MEMBER_START_ROUND}`);
+    const run = runMembership({ ...d, f: 1 });
+    expect(run.suspectsByRound[short.firstFalseRound!].some((l) => l.length > 0)).toBe(true);
+    expect(run.suspectsByRound[MEMBER_START_ROUND].every((l) => l.length === 0)).toBe(true);
     expect(lesson.tryThis[4]).toContain(`Raise T_fail to 20: ${long.falsePairs}.`);
     expect(lesson.tryThis[4]).toContain(`${dLong} rounds at T_fail 20 against ${dShort} at 12`);
     expect(BROKEN_MEMBER.tFail).toBe(12);
@@ -93,6 +103,68 @@ describe('scenes open from pure states', () => {
     expect(captionText(spreadCaption(broken, 99))).toContain('never heard it by the horizon of 30 rounds');
     const m = defaultMember();
     expect(captionText(membershipCaption(m, readMembership(runMembership(m))))).toContain('No up node suspects an up node');
+  });
+});
+
+describe('on-screen claims come from the model (review fixes)', () => {
+  it('the measured-mean sub says the mean is over the seeds that covered everyone, from the sweep counts', () => {
+    const sweep = sweepSpread(BROKEN_SPREAD);
+    expect(sweep.failed).toBeGreaterThan(0);
+    const [first, second] = sweepSub(sweep);
+    expect(first).toContain(`over the ${sweep.completed} seeds that covered everyone`);
+    expect(second).toContain(`on ${sweep.failed} of ${SWEEP_SEEDS} seeds`);
+    expect(sweep.completed + sweep.failed).toBe(SWEEP_SEEDS);
+  });
+
+  it('membership caption and stat sub follow the false pairs: a cut that causes none says so, and a crash run still reports false suspicions', () => {
+    const d = { ...defaultMember(), ...BROKEN_MEMBER, seed: BROKEN_MEMBER_SEED };
+    const cutOnly = { ...d, f: 2, cut: true, cutRounds: 5 };
+    const calm = readMembership(runMembership(cutOnly));
+    expect(calm.falsePairs).toBe(0);
+    expect(falsePairsSub(cutOnly, calm.falsePairs)).toContain('the cut caused none');
+    expect(captionText(membershipCaption(cutOnly, calm))).not.toContain('cut may account');
+    const crashBroken = { ...d, crash: true };
+    const r = readMembership(runMembership(crashBroken));
+    expect(r.falsePairs).toBeGreaterThan(0);
+    expect(captionText(membershipCaption(crashBroken, r))).toContain('suspected a node that is up');
+    const one = readMembership(runMembership(d));
+    expect(one.falsePairs).toBe(1);
+    expect(captionText(membershipCaption(d, one))).toContain('1 (observer, node) pair suspected');
+  });
+
+  it('the matrix is capped at 32 nodes a side and counts what it does not draw, checked against a direct count', () => {
+    const setup = { ...defaultMember(), n: 64, f: 1, tFail: 4, seed: 3 };
+    const run = runMembership(setup, 80);
+    let hidden = 0;
+    let drawn = 0;
+    run.suspectsByRound[80].forEach((list, i) => list.forEach((j) => { if (i < MATRIX_MAX_NODES && j < MATRIX_MAX_NODES) drawn += 1; else hidden += 1; }));
+    expect(hidden).toBeGreaterThan(0);
+    expect(drawn).toBeGreaterThan(0);
+    expect(undrawnSuspicions(run, 80)).toBe(hidden);
+    expect(matrixCapText(64, hidden)).toContain('first 32 of 64 nodes');
+  });
+
+  it('the offset note gives the measured range, says another 200 seeds move it, and does not call the offset a constant', () => {
+    const measured = [8, 16, 64, 256].map((n) => ({ n, mean: meanRounds({ ...defaultSpread(), n }) }));
+    const note = offsetNote(measured, pushReference);
+    expect(note).not.toContain('is a constant');
+    expect(note).toContain('bounded, not exactly constant');
+    expect(note).toContain('seeds 1 to 200');
+    const offsets = measured.map((m) => m.mean - pushReference(m.n));
+    expect(Math.max(...offsets)).toBeLessThan(1.3);
+    expect(Math.min(...offsets)).toBeGreaterThan(0.2);
+  });
+
+  it('safety lines state the sampled check and match the constants the tests use', () => {
+    expect(memberSafetyText()).toContain(`${MEMBER_SAFETY_CHECK.runs} seeded runs of ${MEMBER_SAFETY_CHECK.n} nodes`);
+    expect(memberSafetyText()).toContain('not exhaustive');
+    expect(spreadSafetyText()).toContain(`${SPREAD_SAFETY_CHECK.runs} seeded runs`);
+    expect(spreadSafetyText()).toContain('not exhaustive');
+    expect(ACCURACY_ROUNDS).toBe(100);
+  });
+
+  it('no try-this prints "null" or "undefined"', () => {
+    for (const t of lesson.tryThis) expect(t).not.toMatch(/\bnull\b|undefined/);
   });
 });
 

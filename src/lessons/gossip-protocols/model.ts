@@ -260,6 +260,9 @@ export const MEMBER_ROUNDS = 140;
 /** Where accuracy and safety are checked: fault-free runs of this many rounds. */
 export const ACCURACY_ROUNDS = 100;
 /** The lowest seed (from 1) on which T_fail = 12 at f = 1, n = 16 suspects a live node: pinned by the test. */
+/** The always-on safety checks, as the tests run them and the screens say they ran: seeded runs with these faults, every event checked. */
+export const MEMBER_SAFETY_CHECK = { runs: 200, n: 8, loss: 0.1, duplicate: 0.15, rounds: 60 } as const;
+export const SPREAD_SAFETY_CHECK = { runs: 200, n: 8, f: 2, duplicate: 0.15, horizonMs: 1_500, untilMs: 2_500, combinations: 6 } as const;
 export const BROKEN_MEMBER_SEED = 1;
 export const BROKEN_MEMBER = { n: 16, f: 1, tFail: 12 } as const;
 export const FIXED_MEMBER = { n: 16, f: 1, tFail: 20 } as const;
@@ -393,6 +396,8 @@ export interface MembershipReadout {
   detection: number | null;
   /** Distinct (observer, live node) pairs that were ever suspected while the target was up. */
   falsePairs: number;
+  /** The first round at which some observer suspected a node that was up; null if none ever did. */
+  firstFalseRound: number | null;
   /** Rounds after the cut healed until no up node suspects an up node; null if not by the end or no cut. */
   convergence: number | null;
 }
@@ -402,9 +407,14 @@ export function readMembership(run: MembershipRun): MembershipReadout {
   const rounds = run.suspectsByRound.length - 1;
   const up = (j: number, r: number) => !(crash && j === 0 && r >= CRASH_ROUND);
   const falsePairs = new Set<string>();
+  let firstFalseRound: number | null = null;
   for (let r = 1; r <= rounds; r++) {
     run.suspectsByRound[r].forEach((list, i) => {
-      for (const j of list) if (up(j, r)) falsePairs.add(`${i}>${j}`);
+      for (const j of list) {
+        if (!up(j, r)) continue;
+        falsePairs.add(`${i}>${j}`);
+        firstFalseRound ??= r;
+      }
     });
   }
   let firstSuspicion: number | null = null;
@@ -424,7 +434,7 @@ export function readMembership(run: MembershipRun): MembershipReadout {
       if (clean) convergence = r - healed;
     }
   }
-  return { firstSuspicion, detection, falsePairs: falsePairs.size, convergence };
+  return { firstSuspicion, detection, falsePairs: falsePairs.size, firstFalseRound, convergence };
 }
 
 /** Per round: suspicions of nodes that are up (false) and of the crashed node (true), counted over the up observers. */

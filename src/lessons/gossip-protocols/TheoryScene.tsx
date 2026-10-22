@@ -4,8 +4,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, Plot2D, Points } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
-import { decimal } from '../../core/format';
-import { MEASURE_SIZES, THEORY_SIZES, initialTheory, type TheoryState } from './init';
+import { MEASURE_SIZES, THEORY_SIZES, initialTheory, offsetNote, type TheoryState } from './init';
 import { MODES, SWEEP_SEEDS, defaultSpread, expectedCurve, meanRounds, pushReference, roundsBelow, type Mode } from './model';
 
 const CURVE_ROUNDS = 20;
@@ -79,7 +78,7 @@ export function TheoryScene({ picker }: { picker: ReactNode }) {
           </table>
         </Box>
         <Box>
-          <SectionTitle hint="push, fanout 1: measured mean rounds to cover everyone against the reference">Why log n</SectionTitle>
+          <SectionTitle hint={`push, fanout 1: mean rounds to cover everyone over seeds 1 to ${SWEEP_SEEDS}, against the reference`}>Why log n</SectionTitle>
           <Plot2D x={{ domain: [8, 256], log: true, label: 'nodes n' }} y={{ domain: [0, 18], label: 'rounds' }} ariaLabel="Measured mean rounds against the number of nodes, with the reference log2 n plus ln n">
             <Curve fn={(n) => pushReference(n)} tone="dim" />
             <Points data={dots} />
@@ -87,7 +86,7 @@ export function TheoryScene({ picker }: { picker: ReactNode }) {
           <p className="gp-note">
             {s.measured === null
               ? 'Press Measure to run the seeded simulation at each size.'
-              : `Measured minus reference: ${s.measured.map((m) => `${decimal(m.mean - pushReference(m.n), 2)} at n = ${m.n}`).join(', ')}. The offset is a constant, shown and not hidden.`}
+              : offsetNote(s.measured, pushReference)}
           </p>
           <ClaimLabel kind="research">the log2 n + ln n form for push gossip is a known result (Pittel, 1987), quoted from memory; verify before relying on it</ClaimLabel>
           <p className="gp-note">

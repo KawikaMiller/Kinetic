@@ -4,9 +4,9 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { Curve, Plot2D, Points } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
-import { Button, ChipButton, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
+import { Button, ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { integer, pctText } from '../../core/format';
-import { gridShape, initialSpread, meanText, spreadCaption, type SpreadState } from './init';
+import { gridShape, initialSpread, meanText, spreadCaption, spreadSafetyText, sweepSub, type SpreadState } from './init';
 import {
   BROKEN_SPREAD, BROKEN_SPREAD_SEED, CLUSTER_SIZES, FANOUT, HORIZON_ROUNDS, LOSS, MODES, SWEEP_SEEDS, dieApplies, expectedCurve, leftOut, runSpread, sweepSpread,
   type Mode, type SpreadSetup,
@@ -57,7 +57,7 @@ export function SpreadScene({ picker }: { picker: ReactNode }) {
           <Stat label="Know the rumour" value={`${run.counts[at]} of ${setup.n}`} color={missing ? 'var(--bad)' : undefined} sub={`after round ${at}`} />
           <Stat label="Messages sent" value={integer(run.messages[at])} sub="the cost of getting there" />
           <Stat label="Rounds to cover everyone" value={run.completeAt === null ? (finished ? `not by round ${HORIZON_ROUNDS}` : 'not yet') : run.completeAt} color={missing ? 'var(--bad)' : undefined} sub={`this seed (${setup.seed})`} />
-          <Stat label={`Measured over ${SWEEP_SEEDS} seeds`} value={meanText(sweep.meanRounds)} color={sweep.failed > 0 ? 'var(--bad)' : undefined} sub={[`mean rounds, sampled over seeds 1 to ${SWEEP_SEEDS}`, `fails to cover everyone by round ${HORIZON_ROUNDS} on ${sweep.failed} of ${SWEEP_SEEDS} seeds`]} />
+          <Stat label={`Measured over ${SWEEP_SEEDS} seeds`} value={meanText(sweep.meanRounds)} color={sweep.failed > 0 ? 'var(--bad)' : undefined} sub={sweepSub(sweep)} />
         </Stats>
       }
       controls={[
@@ -105,6 +105,7 @@ export function SpreadScene({ picker }: { picker: ReactNode }) {
             <Points data={actual} />
           </Plot2D>
         </Box>
+        <Hint tone="muted" block>{spreadSafetyText()}</Hint>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={setup.seed}>nodes on the distSim harness, one round every 100 ms, every message landing within the round</Provenance>
           <Provenance kind="illustrative">the round length and cluster sizes are made up; the expectation curve is an exact recursion (a model), the mean is sampled over {SWEEP_SEEDS} seeds</Provenance>

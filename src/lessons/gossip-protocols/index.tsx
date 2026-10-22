@@ -1,5 +1,6 @@
 import { decimal } from '../../core/format';
 import type { LessonModule } from '../../core/types';
+import { MEMBER_START_ROUND } from './init';
 import { Stage } from './Stage';
 import {
   BROKEN_MEMBER, BROKEN_SPREAD, BROKEN_SPREAD_SEED, SWEEP_SEEDS, defaultMember, defaultSpread, expectedUninformedNext, failingSeeds, leftOut,
@@ -8,15 +9,15 @@ import {
 
 const rounds = (over: Partial<ReturnType<typeof defaultSpread>>) => runSpread({ ...defaultSpread(), ...over }).completeAt;
 const base = rounds({});
-const pull = rounds({ mode: 'pull' });
-const pushPull = rounds({ mode: 'push-pull' });
-const big = rounds({ n: 256 });
 const meanOf = (mode: 'push' | 'pull' | 'push-pull') => sweepSpread({ ...defaultSpread(), mode }).meanRounds ?? 0;
 const expectedRounds = (mode: 'push' | 'pull' | 'push-pull') => roundsBelow({ ...defaultSpread(), mode });
+const mean16 = meanOf('push');
+const mean256 = sweepSpread({ ...defaultSpread(), n: 256 }).meanRounds ?? 0;
 const brokenRun = runSpread({ ...BROKEN_SPREAD, seed: BROKEN_SPREAD_SEED });
 const brokenFails = failingSeeds(BROKEN_SPREAD).length;
 const member = (over: Partial<ReturnType<typeof defaultMember>>) => readMembership(runMembership({ ...defaultMember(), ...BROKEN_MEMBER, ...over }));
 const shortFalse = member({}).falsePairs;
+const firstFalse = member({}).firstFalseRound;
 const longFalse = member({ tFail: 20 }).falsePairs;
 const shortDetect = member({ tFail: 12, crash: true }).detection;
 const longDetect = member({ tFail: 20, crash: true }).detection;
@@ -24,7 +25,7 @@ const longDetect = member({ tFail: 20, crash: true }).detection;
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'In gossip, each node tells a few random others each round, and a rumour reaches a whole cluster in a number of rounds that grows like log n, with no leader and no tree to maintain.',
+    tldr: 'In gossip, each node tells a few random others each round, and in this model a rumour reaches a whole cluster in a number of rounds that grows about like log n (a known result, quoted from memory), with no leader and no tree to maintain.',
     what: 'Gossip spreads a fact the way a rumour spreads: in each round a node that knows it tells f random peers (push), or an uninformed node asks f random peers (pull), or both. Early on the informed set about doubles each round; at the end push slows (few holders, many targets) while pull speeds up. A node that tells just once (infect and die) can leave others out. The same idea carries membership: nodes gossip heartbeat counters and suspect a peer whose counter has stopped growing for T_fail rounds.',
     analogy: 'Office news. One person tells two colleagues over coffee, each of them tells two more the next day, and within a handful of days the whole floor knows, with nobody in charge of the announcement. The last person to hear is usually someone nobody happened to talk to.',
     useCases: [
@@ -39,10 +40,10 @@ const lesson: LessonModule = {
   },
   tryThis: [
     `At the defaults (16 nodes, push, fanout 1, seed 1) press Run to the end: everyone knows after round ${base}, and the dashed expectation curve sits close to the run (the exact recursion falls below half a node at round ${expectedRounds('push')}).`,
-    `From the defaults pick pull, then push-pull, and read "Measured over ${SWEEP_SEEDS} seeds": the mean falls from ${decimal(meanOf('push'), 1)} rounds for push to ${decimal(meanOf('pull'), 1)} for pull and ${decimal(meanOf('push-pull'), 1)} for push-pull (the expectation table says ${expectedRounds('push')}, ${expectedRounds('pull')} and ${expectedRounds('push-pull')}). One seed can differ: seed 1 needs ${base}, ${pull} and ${pushPull} rounds.`,
-    `From the defaults pick n = 256 and Run to the end: everyone knows after round ${big}, against ${base} at n = 16, so sixteen times the nodes costs about ${decimal((big ?? 0) / (base ?? 1), 1)} times the rounds; the reference log2 n + ln n is ${decimal(pushReference(256), 1)} and the readout shows the measured mean next to it.`,
-    `Press "Load the lowest failing seed (${BROKEN_SPREAD_SEED})" (infect and die, n = 16, fanout 3) and Run to the end: ${leftOut(brokenRun).length} node${leftOut(brokenRun).length === 1 ? '' : 's'} stay red, and the readout says the setting fails to cover everyone on ${brokenFails} of ${SWEEP_SEEDS} seeds.`,
-    `In "Membership by rumour" at the defaults (n = 16, fanout 2, T_fail 12) no live node is suspected. Drop fanout to 1: ${shortFalse} observer-node pairs suspect a live node. Raise T_fail to 20: ${longFalse}. Then turn on "Node 0 crashes": detection takes ${longDetect} rounds at T_fail 20 against ${shortDetect} at 12.`,
+    `From the defaults pick pull, then push-pull, and read "Measured over ${SWEEP_SEEDS} seeds": the mean falls from ${decimal(meanOf('push'), 1)} rounds for push to ${decimal(meanOf('pull'), 1)} for pull and ${decimal(meanOf('push-pull'), 1)} for push-pull (the expectation table says ${expectedRounds('push')}, ${expectedRounds('pull')} and ${expectedRounds('push-pull')}). Single seeds scatter around these means; the means are what to compare.`,
+    `From the defaults pick n = 256 and read "Measured over ${SWEEP_SEEDS} seeds": ${decimal(mean256, 1)} rounds against ${decimal(mean16, 1)} at n = 16, so sixteen times the nodes costs about ${decimal(mean256 / mean16, 1)} times the rounds. The scene "Push, pull and log n" shows the reference log2 n + ln n (${decimal(pushReference(256), 1)} at n = 256) next to measured dots.`,
+    `Press "Load the lowest failing seed (${BROKEN_SPREAD_SEED})" (infect and die, n = 16, fanout 3) and Run to the end: ${leftOut(brokenRun).length} node${leftOut(brokenRun).length === 1 ? ' stays' : 's stay'} red, and the readout says the setting fails to cover everyone on ${brokenFails} of ${SWEEP_SEEDS} seeds.`,
+    `In "Membership by rumour" at the defaults (n = 16, fanout 2, T_fail 12) no live node is suspected. Drop fanout to 1: ${shortFalse} observer-node pair${shortFalse === 1 ? '' : 's'} suspect${shortFalse === 1 ? 's' : ''} a live node (the first at round ${firstFalse}; the matrix opens at round ${MEMBER_START_ROUND}, so move Show round to ${firstFalse}, or press "Load the lowest failing seed"). Raise T_fail to 20: ${longFalse}. Then turn on "Node 0 crashes": detection takes ${longDetect} rounds at T_fail 20 against ${shortDetect} at 12.`,
   ],
   keyIdeas: [
     'In this model push gossip with fanout 1 informs 256 nodes in about 15 rounds, not 256: early on each informed node adds one more, so the informed set about doubles each round.',

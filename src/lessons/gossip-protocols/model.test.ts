@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { checkInvariants } from '../../core/distSim';
 import { mulberry32 } from '../../core/random';
 import {
-  ACCURACY_ROUNDS, BROKEN_MEMBER, BROKEN_MEMBER_SEED, BROKEN_SPREAD, BROKEN_SPREAD_SEED, CRASH_ROUND, FANOUT, HORIZON_ROUNDS, LOSS, MEMBER, MODES, ROUND_MS,
+  ACCURACY_ROUNDS, BROKEN_MEMBER, BROKEN_MEMBER_SEED, BROKEN_SPREAD, BROKEN_SPREAD_SEED, CRASH_ROUND, FANOUT, HORIZON_ROUNDS, LOSS, MEMBER, MEMBER_SAFETY_CHECK, MODES, ROUND_MS,
+  SPREAD_SAFETY_CHECK,
   SWEEP_SEEDS, accuracyFailures, accuracyRule, buildMembership, buildSpread, defaultMember, defaultSpread, expectedCurve, expectedUninformedNext,
   failingSeeds, finalUninformedFraction, leftOut, memberSafety, meanRounds, pushReference, readMembership, roundsBelow, runMembership, runSpread, spreadSafety,
   type MemberSetup, type Mode, type SpreadSetup,
@@ -139,12 +140,14 @@ describe('rule 0: by round 30 every node holds the rumour (bounded liveness)', (
 
 describe('safety (always on) over 200 seeds with loss, duplication, a crash and a partition', () => {
   it('a node only holds a version somebody wrote and never a lower one, in every mode, broken and fixed', () => {
+    const c = SPREAD_SAFETY_CHECK;
+    expect(MODES.length * 2).toBe(c.combinations);
     for (const mode of MODES) {
       for (const die of [true, false]) {
-        for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
-          const s = buildSpread(spread({ n: 8, mode, die, seed, f: 2 }), { duplicate: 0.15 });
-          s.cluster.randomFaults({ horizonMs: 1_500, partitions: 1, crashes: 1 });
-          const verdict = checkInvariants(s.cluster, [spreadSafety()], { until: 2_500 });
+        for (let seed = 1; seed <= c.runs; seed++) {
+          const s = buildSpread(spread({ n: c.n, mode, die, seed, f: c.f }), { duplicate: c.duplicate });
+          s.cluster.randomFaults({ horizonMs: c.horizonMs, partitions: 1, crashes: 1 });
+          const verdict = checkInvariants(s.cluster, [spreadSafety()], { until: c.untilMs });
           expect(verdict.ok, `${mode} die ${die} seed ${seed}`).toBe(true);
         }
       }
@@ -182,9 +185,10 @@ describe('membership by heartbeat counters (scene 3)', () => {
   });
 
   it('safety (always on) holds over 200 seeds with loss, duplication, a crash and a cut, and the checker can fail', () => {
-    for (let seed = 1; seed <= SWEEP_SEEDS; seed++) {
-      const m = buildMembership(member({ n: 8, seed, crash: true, cut: true }), { loss: 0.1, duplicate: 0.15 });
-      const verdict = checkInvariants(m.cluster, [memberSafety()], { until: 60 * ROUND_MS });
+    const c = MEMBER_SAFETY_CHECK;
+    for (let seed = 1; seed <= c.runs; seed++) {
+      const m = buildMembership(member({ n: c.n, seed, crash: true, cut: true }), { loss: c.loss, duplicate: c.duplicate });
+      const verdict = checkInvariants(m.cluster, [memberSafety()], { until: c.rounds * ROUND_MS });
       expect(verdict.ok, `seed ${seed}`).toBe(true);
     }
     const node = (counters: number[]) => ({ up: true, paused: false, state: { round: 1, suspects: [], counters } });
