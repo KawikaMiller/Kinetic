@@ -25,8 +25,9 @@ export function sceneOptions(kase: TwoPcCase, seed: number, variant: TwoPcVarian
   if (kase !== 'crash-before' && kase !== 'crash-after') return o;
   const clean = twoPcCluster(o);
   clean.run({ until: CHECK_HORIZON_MS });
-  const lastVote = clean.trace.findLast((r) => r.kind === 'deliver' && r.to === 'coord' && r.payload?.type === 'vote');
-  const decidedAt = lastVote?.t ?? 0;
+  // The vote that makes the coordinator decide: the last one for the real rule, the second YES for early-commit.
+  const votes = clean.trace.filter((r) => r.kind === 'deliver' && r.to === 'coord' && r.payload?.type === 'vote' && !r.dup);
+  const decidedAt = (variant === 'real' ? votes.at(-1) : (votes[1] ?? votes.at(-1)))?.t ?? 0;
   const at = kase === 'crash-before' ? decidedAt - CRASH_BEFORE_MS : decidedAt + CRASH_AFTER_MS;
   return { ...o, crash: { node: 'coord', at, restartAt: at + SCENE_DOWN_MS }, client2At: at + CLIENT2_AFTER_MS };
 }
@@ -163,9 +164,12 @@ export function twoPcSteps(o: TwoPcOptions): Step[] {
   const cluster = twoPcCluster(o);
   const preparedSince = new Map<Participant, number>();
   let restarted = false;
-  return walk(cluster, SCENE_HORIZON_MS, ({ snap, rows, row, sent }) => {
+  /** What the coordinator's log held when it crashed: the decision it will find again on restart, or none. */
+  let loggedAtCrash: string | null = null;
+  const steps = walk(cluster, SCENE_HORIZON_MS, ({ snap, rows, row, sent }) => {
     const now = row?.t ?? 0;
     if (row?.kind === 'restart' && row.node === 'coord') restarted = true;
+    if (row?.kind === 'crash' && row.node === 'coord') loggedAtCrash = coordState(snap).decision;
     for (const p of PARTICIPANTS) {
       if (part(snap, p).phase === 'prepared') {
         if (!preparedSince.has(p)) preparedSince.set(p, now);
@@ -195,8 +199,18 @@ export function twoPcSteps(o: TwoPcOptions): Step[] {
       consistency: consistencyOf(snap),
       stallMs: longest >= STALL_SHOW_MS ? longest : 0,
       violation: atomicity(snap),
-      facts: { ...coordFacts(snap), participants: PARTICIPANTS.length },
+      facts: { ...coordFacts(snap), participants: PARTICIPANTS.length, loggedAtCrash },
     };
+  });
+  return foldRetries(steps);
+}
+
+/** The coordinator resends an unacked decision every second for the whole horizon: keep the first of a run of identical retry frames. */
+function foldRetries(steps: Step[]): Step[] {
+  const isRetry = (s: Step) => s.row?.kind === 'timer' && s.row.detail === 'retry';
+  return steps.filter((s, i) => {
+    const prev = steps[i - 1];
+    return !(prev && isRetry(s) && isRetry(prev) && prev.violation === s.violation && prev.stallMs === s.stallMs && JSON.stringify(prev.nodes) === JSON.stringify(s.nodes));
   });
 }
 

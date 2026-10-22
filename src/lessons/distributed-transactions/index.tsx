@@ -19,7 +19,7 @@ const lesson: LessonModule = {
     ],
     why: 'Splitting a monolith into services quietly removes the database transaction that used to keep your data consistent. Engineers are expected to recognise when an operation spans services, choose between blocking atomicity and eventual consistency, and design compensations and idempotency up front.',
     watch:
-      'Each box is a service and its border is its state: blue is working or a request, yellow is prepared and holding a lock (a padlock), green is committed, red is failed, aborted or crashed (a dashed outline and an explosion mark), violet is compensated, grey is idle. The pills are messages in flight, coloured the same way, with grey for acks. The red pill in the middle, blocked for some time, is how long a participant has held its lock waiting for a decision, read from the simulated clock. The Consistency stat is computed from the services\' state after every event, and a red bar appears when the safety rule breaks. Customer #2, with a red line to Inventory, appears when it asks for the locked item. The chips say what is simulated, illustrative or from memory.',
+      'Each box is a service and its border is its state: blue is working or a request, yellow is prepared and holding a lock (a padlock), green is committed, red is a NO vote, a failure or a crash (a dashed outline and an explosion mark; an ABORT decision is red too), violet is compensated, grey is idle or a participant that rolled back after an abort. The pills are messages in flight, coloured the same way, with grey for acks. The red pill in the middle, blocked for some time, is how long a participant has held its lock waiting for a decision, read from the simulated clock. The Consistency stat is computed from the services\' state after every event, and a red bar appears when the safety rule breaks. Customer #2, with a red line to Inventory, appears when it asks for the locked item. The chips say what is simulated, illustrative or from memory.',
   },
   tryThis: [
     'In Two-phase commit, "Everyone votes yes" (clean network, seed 1), step through: three PREPARE messages, three YES votes, the coordinator logs COMMIT, three COMMIT messages and three acks. The Locks stat climbs to 3 and falls back to 0.',
@@ -38,7 +38,7 @@ const lesson: LessonModule = {
     {
       q: 'In 2PC, all participants voted YES and then the coordinator crashed before sending the decision. What can the participants do on their own?',
       options: [
-        'Commit at once, because all three of them voted yes',
+        'Commit right away, because all three of the participants voted yes',
         'Abort after a timeout, which releases the locks safely',
         'Nothing safe: wait with locks held until the decision is known',
         'Elect a new coordinator among themselves and roll back',
@@ -82,7 +82,7 @@ const lesson: LessonModule = {
     {
       q: 'A participant voted YES and the coordinator has gone quiet. Why can it not simply abort by itself?',
       options: [
-        'The coordinator may already have decided COMMIT and told the others',
+        'The coordinator may already have committed and told the others',
         'Its vote was signed, so changing course would break the signature',
         'Aborting would double the number of messages the coordinator sends',
         'Its database cannot roll back once a lock has been taken on a row',

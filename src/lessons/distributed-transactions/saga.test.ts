@@ -27,7 +27,7 @@ describe('the saga verdict, from the services\' state', () => {
     ['before anything', none, 'nothing yet', true],
     ['order created', { ...none, orders: 'pending' }, 'partial: 1 of 3 steps applied', false],
     ['order and charge', { ...none, orders: 'pending', charges: 1 }, 'partial: 2 of 3 steps applied', false],
-    ['order, charge and reservation, not yet confirmed', { ...none, orders: 'pending', charges: 1, reserved: true }, 'partial: 3 of 3 steps applied', false],
+    ['order, charge and reservation, not yet confirmed', { ...none, orders: 'pending', charges: 1, reserved: true }, 'partial: 3 of 3 steps applied, order not confirmed', false],
     ['all applied and confirmed', { ...none, orders: 'confirmed', charges: 1, reserved: true }, 'consistent ✓ all steps applied', true],
     ['step 3 failed after the charge', { ...none, orders: 'pending', charges: 1, failed: true }, "inconsistent: charged, can't ship", false],
     ['refunded but the order is still open', { ...none, orders: 'pending', charges: 1, refunds: 1, failed: true }, 'inconsistent: order still open', false],

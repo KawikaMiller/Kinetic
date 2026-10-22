@@ -257,7 +257,7 @@ export function verdictOf(snap: Snap): Verdict {
   if (l.stockFailed && l.netDollars > 0) return { label: "inconsistent: charged, can't ship", tone: 'bad', consistent: false };
   if (l.stockFailed) return { label: 'inconsistent: order still open', tone: 'hi', consistent: false };
   const applied = Number(l.orders !== 'none') + Number(l.netDollars > 0) + Number(l.reserved);
-  return { label: `partial: ${applied} of 3 steps applied`, tone: 'hi', consistent: false };
+  return { label: applied === 3 ? 'partial: 3 of 3 steps applied, order not confirmed' : `partial: ${applied} of 3 steps applied`, tone: 'hi', consistent: false };
 }
 
 /** Safety rule 1: the customer is never charged more than once for the order. */

@@ -46,14 +46,15 @@ function twoPcSay(step: Step, o: TwoPcOptions): ReactNode {
     );
   }
   if (row.kind === 'restart') {
-    const decision = facts.decision as string | null;
+    // What the log held when it crashed, not what the restarted coordinator decides (it decides ABORT at once when the log has nothing).
+    const decision = facts.loggedAtCrash as string | null;
     return decision ? (
       <>
         The coordinator restarts and reads its log: <b>{upper(decision)}</b> was decided. It sends it again to everyone, so the participants can finish.
       </>
     ) : (
       <>
-        The coordinator restarts and reads its log. No decision was ever written, so nobody can have committed: the safe choice is <span className="hl bad">ABORT</span>.
+        The coordinator restarts and reads its log. No decision was ever written, so nobody can have committed: the safe choice is <span className="hl bad">ABORT</span>, and it sends that to everyone.
       </>
     );
   }
@@ -64,7 +65,7 @@ function twoPcSay(step: Step, o: TwoPcOptions): ReactNode {
   }
   switch (m?.type) {
     case 'place':
-      return <>The customer places the order. The Order service acts as the <span className="hl">coordinator</span>: it logs the start and asks every participant "can you commit T1?" Nobody commits yet.</>;
+      return <>The customer places the order with the <span className="hl">coordinator</span>, which logs the start and asks every participant "can you commit T1?" Nobody commits yet.</>;
     case 'prepare':
       return step.nodes[at as 'orders'].tone === 'bad' ? (
         <>{who} is out of stock: it votes <span className="hl bad">NO</span> and aborts its own part at once.</>
@@ -108,7 +109,30 @@ function twoPcSay(step: Step, o: TwoPcOptions): ReactNode {
   }
 }
 
-function sagaSay(step: Step, o: SagaOptions): ReactNode {
+/** Who 'hears back' in a saga caption: the orchestrator is not the 2PC coordinator. */
+const sagaWho = (at: NodeId) => (at === 'coord' ? 'The orchestrator' : NODE_TITLE[at]);
+
+function stuckNote(step: Step): ReactNode {
+  const net = Number(step.facts.netDollars);
+  return (
+    <>
+      {' '}<b>Nothing more arrives in this run</b>, so it ends {step.consistency.label}.
+      {net > 0 && <> The customer stays charged ${net}: nothing in this model resends a lost message or refunds again.</>}
+    </>
+  );
+}
+
+function sagaSay(step: Step, o: SagaOptions, last: boolean): ReactNode {
+  const caption = sagaEvent(step, o);
+  if (!last) return caption;
+  if (!step.facts.settled) return <>{caption}{stuckNote(step)}</>;
+  const resultFrame = (step.row?.payload as SagaMsg | undefined)?.type === 'result';
+  const window = Number(step.facts.inconsistentMs);
+  // The result frame states the window itself; a run that ends on another event states it here.
+  return resultFrame || window === 0 ? caption : <>{caption} The services were out of step with each other for {stallText(window)} of simulated time.</>;
+}
+
+function sagaEvent(step: Step, o: SagaOptions): ReactNode {
   const { row } = step;
   if (!row) {
     return o.style === 'orch' ? (
@@ -131,6 +155,13 @@ function sagaSay(step: Step, o: SagaOptions): ReactNode {
     case 'OrderCreated':
       return <>Orders committed and published <span className="hl info">OrderCreated</span>; Payments reacts to it. Now {verdict}.</>;
     case 'charge':
+      if (row.dup) {
+        return o.variant === 'idempotent' ? (
+          <>The network delivers a <b>duplicate copy</b> of the charge request. Payments sees key #42 again and does not charge a second time. Now {verdict}.</>
+        ) : (
+          <>The network delivers a <b>duplicate copy</b> of the charge request. With no key, Payments cannot tell it is a repeat and charges the card again. Now {verdict}.</>
+        );
+      }
       return <>Step 2: Payments charges the card{o.variant === 'idempotent' ? ', with an idempotency key so a repeated request cannot charge twice' : ' (this variant has no key)'}. Now {verdict}.</>;
     case 'PaymentCharged':
       return <>Payments charged the card and published <span className="hl info">PaymentCharged</span>; Inventory reacts to it. Now {verdict}.</>;
@@ -159,17 +190,39 @@ function sagaSay(step: Step, o: SagaOptions): ReactNode {
     case 'refunded':
     case 'created':
     case 'charged':
-      return <>{NODE_TITLE[at]} hears back: {m.type}. Now {verdict}.</>;
-    case 'result':
+      return <>{sagaWho(at)} hears back: {m.type}. Now {verdict}.</>;
+    case 'result': {
+      const window = stallText(Number(step.facts.inconsistentMs));
+      if (!step.facts.settled) {
+        return m.placed ? (
+          <>The customer is told the order is placed, but the services have not all settled yet: <b>{step.consistency.label}</b>.</>
+        ) : (
+          <>The customer is told the order failed, but the services have not all caught up: <b>{step.consistency.label}</b>.</>
+        );
+      }
       return m.placed ? (
-        <>Done. No service waited on a lock held by another; between the steps the system was partially applied, for {stallText(Number(step.facts.inconsistentMs))} of simulated time, and anyone looking saw that.</>
+        <>Done. No service waited on a lock held by another; between the steps the system was partially applied, for {window} of simulated time, and anyone looking saw that.</>
       ) : (
-        <><b>Eventually consistent</b>: every service agrees again, but the data was "wrong" for {stallText(Number(step.facts.inconsistentMs))} of simulated time.</>
+        <><b>Eventually consistent</b>: every service agrees again, but the data was "wrong" for {window} of simulated time.</>
       );
+    }
     default:
       return <>{NODE_TITLE[at]} handles a message. Now {verdict}.</>;
   }
 }
 
-export const twoPcFrames = (o: TwoPcOptions): DtFrame[] => twoPcSteps(o).map((s) => ({ ...s, say: twoPcSay(s, o), hold: s.violation ? 2 : undefined }));
-export const sagaFrames = (o: SagaOptions): DtFrame[] => sagaSteps(o).map((s) => ({ ...s, say: sagaSay(s, o), hold: s.violation ? 2 : undefined }));
+export const twoPcFrames = (o: TwoPcOptions): DtFrame[] => {
+  const steps = twoPcSteps(o);
+  return steps.map((s) => ({ ...s, say: steps.length === 1 ? lostRequest(twoPcSay(s, o)) : twoPcSay(s, o), hold: s.violation ? 2 : undefined }));
+};
+/** A run whose very first request was dropped has one frame; say why nothing happens. */
+const lostRequest = (say: ReactNode): ReactNode => (
+  <>
+    {say} <b>The customer's request was lost on the network and nothing retries it, so nothing else happens in this run.</b> Try another seed.
+  </>
+);
+
+export const sagaFrames = (o: SagaOptions): DtFrame[] => {
+  const steps = sagaSteps(o);
+  return steps.map((s, i) => ({ ...s, say: steps.length === 1 ? lostRequest(sagaSay(s, o, false)) : sagaSay(s, o, i === steps.length - 1), hold: s.violation ? 2 : undefined }));
+};

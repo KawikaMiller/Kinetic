@@ -2,7 +2,7 @@
 import { checkInvariants, type TraceRow } from '../../core/distSim';
 import { integer } from '../../core/format';
 import {
-  CHECK_DOWN_MS, CHECK_DUPLICATE, CHECK_HORIZON_MS, CHECK_LOSS, NODE_IDS, TWO_PC_SAFETY, twoPcCluster, type NodeId, type TwoPcMsg, type TwoPcOptions, type TwoPcVariant,
+  CHECK_DOWN_MS, CHECK_DUPLICATE, CHECK_HORIZON_MS, CHECK_LOSS, NODE_IDS, PARTICIPANTS, TWO_PC_SAFETY, twoPcCluster, type NodeId, type TwoPcMsg, type TwoPcOptions, type TwoPcVariant,
 } from './twoPc';
 
 export const CHECK_SEEDS = 200;
@@ -39,16 +39,35 @@ export interface CheckSummary {
   failedSeeds: number;
   /** Events the invariant was asserted after. */
   events: number;
+  /** Liveness, a separate claim: runs that ended with a participant still prepared, holding its lock with no decision applied. */
+  blockedRuns: number;
   lowest: Failure | null;
 }
 
-function runOnce(o: TwoPcOptions): { events: number; failure: Failure | null } {
-  const verdict = checkInvariants(twoPcCluster(o), TWO_PC_SAFETY, { until: CHECK_HORIZON_MS });
-  if (verdict.ok) return { events: verdict.steps, failure: null };
-  return { events: verdict.step, failure: { seed: o.seed, message: verdict.message, crash: o.crash, trace: verdict.trace } };
+interface Row {
+  seed: number;
+  events: number;
+  failure: Failure | null;
+  blocked: boolean;
 }
 
-function summarise(variant: TwoPcVariant, seeds: number, rows: { events: number; failure: Failure | null; seed: number }[]): CheckSummary {
+/** True when some participant ended the run prepared: it voted YES, holds its lock and never heard the decision. */
+function endsBlocked(cluster: ReturnType<typeof twoPcCluster>): boolean {
+  const snap = cluster.snapshot();
+  return PARTICIPANTS.some((p) => {
+    const s = snap.nodes[p].state;
+    return s?.role === 'participant' && s.phase === 'prepared';
+  });
+}
+
+function runOnce(o: TwoPcOptions): Omit<Row, 'seed'> {
+  const cluster = twoPcCluster(o);
+  const verdict = checkInvariants(cluster, TWO_PC_SAFETY, { until: CHECK_HORIZON_MS });
+  if (verdict.ok) return { events: verdict.steps, failure: null, blocked: endsBlocked(cluster) };
+  return { events: verdict.step, failure: { seed: o.seed, message: verdict.message, crash: o.crash, trace: verdict.trace }, blocked: false };
+}
+
+function summarise(variant: TwoPcVariant, seeds: number, rows: Row[]): CheckSummary {
   const failing = rows.filter((r) => r.failure);
   return {
     variant,
@@ -57,6 +76,7 @@ function summarise(variant: TwoPcVariant, seeds: number, rows: { events: number;
     failedRuns: failing.length,
     failedSeeds: new Set(failing.map((r) => r.seed)).size,
     events: rows.reduce((n, r) => n + r.events, 0),
+    blockedRuns: rows.filter((r) => r.blocked).length,
     lowest: failing.length ? failing.reduce((a, b) => (b.seed < a.seed ? b : a)).failure : null,
   };
 }
@@ -64,9 +84,10 @@ function summarise(variant: TwoPcVariant, seeds: number, rows: { events: number;
 /** The sentence under the 2PC check button: what ran, what broke, and the lowest failing seed. */
 export function describeTwoPcCheck(seeds: CheckSummary, crashes: CheckSummary): string {
   const ran = `${integer(seeds.seeds)} seeds with ${CHECK_LOSS * 100}% loss and ${CHECK_DUPLICATE * 100}% duplication, and on each seed every node crashed after every step, restarting or staying down (${integer(crashes.runs)} runs, ${integer(seeds.events + crashes.events)} events checked)`;
-  if (!seeds.lowest && !crashes.lowest) return `Atomicity held after every event of ${ran}. That is a sample of fault schedules, not a proof for all of them.`;
+  const liveness = `Liveness is a separate claim: ${integer(crashes.blockedRuns)} of ${integer(crashes.runs)} crash runs (${integer(seeds.blockedRuns)} of ${integer(seeds.runs)} without a crash) ended with a participant still prepared and holding its lock, waiting for a decision: that is the blocking cost of 2PC.`;
+  if (!seeds.lowest && !crashes.lowest) return `Atomicity held after every event of ${ran}. That is a sample of fault schedules, not a proof for all of them. ${liveness}`;
   const first = seeds.lowest ?? crashes.lowest!;
-  return `Atomicity broke on ${seeds.failedSeeds} of ${seeds.seeds} seeds, and in ${integer(crashes.failedRuns)} of ${integer(crashes.runs)} crash runs (${ran}). Lowest failing seed ${first.seed}: ${first.message}.`;
+  return `Atomicity broke on ${seeds.failedSeeds} of ${seeds.seeds} seeds, and in ${integer(crashes.failedRuns)} of ${integer(crashes.runs)} crash runs (${ran}). Lowest failing seed ${first.seed}: ${first.message}. ${liveness}`;
 }
 
 /** Seeds 1..count with loss, duplication and no crash. */
@@ -80,7 +101,7 @@ export function checkSeeds(variant: TwoPcVariant, count = CHECK_SEEDS): CheckSum
  * after CHECK_DOWN_MS and once staying down; atomicity asserted after every event of each run.
  */
 export function crashEveryStep(variant: TwoPcVariant, count = CHECK_SEEDS, nodes: readonly NodeId[] = NODE_IDS): CheckSummary {
-  const rows: { seed: number; events: number; failure: Failure | null }[] = [];
+  const rows: Row[] = [];
   for (let seed = 1; seed <= count; seed += 1) {
     const o = base(seed, variant);
     const clean = twoPcCluster(o);

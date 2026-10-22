@@ -147,7 +147,7 @@ export function sagaSteps(o: SagaOptions): Step[] {
       consistency: { label: verdict.label, tone: verdict.tone },
       stallMs: 0,
       violation: chargedAtMostOnce(snap) ?? confirmedMeansComplete(snap),
-      facts: { inconsistentMs: Math.round(inconsistentMs), netDollars: ledgerOf(snap).netDollars },
+      facts: { inconsistentMs: Math.round(inconsistentMs), netDollars: ledgerOf(snap).netDollars, settled: verdict.consistent ? 1 : 0 },
     };
   });
 }

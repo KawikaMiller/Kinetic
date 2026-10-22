@@ -69,6 +69,8 @@ export function Stage() {
   }, [protocol, twoPc, sagaCase, style, broken, seed, faults]);
   const player = usePlayer(frames, { interval: 1800 });
   const f = player.frame;
+  /** The first frame where the safety rule broke: the banner reports when it broke, not the time of the frame being viewed. */
+  const firstBreak = useMemo(() => frames.find((fr) => fr.violation) ?? null, [frames]);
   const chor = protocol === 'saga' && style === 'chor';
   const titles: Record<NodeId, string> = { ...NODE_TITLE, coord: protocol === '2pc' ? 'Coordinator' : 'Saga orchestrator' };
 
@@ -128,7 +130,8 @@ export function Stage() {
             { color: 'var(--info)', label: 'working / request' },
             { color: 'var(--hi)', label: 'prepared, holding locks' },
             { color: 'var(--ok)', label: 'committed' },
-            { color: 'var(--bad)', label: 'failed / abort / crashed' },
+            { color: 'var(--bad)', label: 'NO vote / failed / crashed' },
+            { color: 'var(--dim)', label: 'idle / rolled back' },
             { color: 'var(--violet)', label: 'compensated' },
           ]}
         />
@@ -269,7 +272,7 @@ export function Stage() {
       <div className="dt-check">
         {f.violation && (
           <p className="dt-verdict" role="status">
-            <b>Safety broken</b> at t = {Math.round(f.time).toLocaleString('en-US')} ms: {f.violation}.
+            <b>Safety broken</b> at t = {Math.round((firstBreak ?? f).time).toLocaleString('en-US')} ms: {f.violation}.
           </p>
         )}
         <p className="dt-rules">
@@ -278,7 +281,7 @@ export function Stage() {
             : 'Real protocol: the orchestrator retries a step until it is answered, and Payments deduplicates a charge by its key.'}
           {broken ? ` Planted bug: ${protocol === '2pc' ? 'the coordinator decides COMMIT as soon as 2 of 3 have voted YES' : 'Payments charges again for every copy of the request, and the network duplicates 15% of messages'}.` : ''}
         </p>
-        {shownReport && <p className="dt-report">{shownReport}</p>}
+        {shownReport && <p className="dt-report" role="status">{shownReport}</p>}
       </div>
       <ProvenanceRow>
         <Provenance kind="simulated" seed={seed}>
