@@ -8,7 +8,7 @@ import { integer } from '../../core/format';
 import { refocusAfterRemove } from '../../core/refocus';
 import { toneVar } from '../../core/tone';
 import { counterexampleStart, poolCaption } from './captions';
-import { exhaustiveText, sampledText, truncatedText } from './checkText';
+import { exhaustiveText, sampledText, truncatedText } from '../../core/checkPhrases';
 import type { NetState } from '../../core/pureProtocol';
 import { ACCEPTORS, BUGS, PROPOSERS, RETRY_BALLOTS, chosenText, configFor, describeMessage, isAcceptor, isProposer, type Bug, type PaxosMsg, type PaxosState } from './protocol';
 import {

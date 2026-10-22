@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   fitLabel,
-  axisTickValues, barsFromHistogram, clampPoint, equalAspectHeight, formatTick, nudgePoint, snapDragged, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
+  MIN_PLOT_TEXT_PX, PLOT_FONT, plotTextBoost, axisTickValues, barsFromHistogram, clampPoint, equalAspectHeight, formatTick, nudgePoint, snapDragged, plotFrame, plotMargin, rovingPointTarget, sampleCurve, sampleHeat, tickText,
 } from './plot';
 import { linearScale, logScale } from './scale';
 import { histogram } from './stats';
@@ -206,6 +206,20 @@ describe('snapDragged', () => {
   it('keeps the snapped value when it already changed, and when nothing moved', () => {
     expect(snapDragged(3, 5.1, whole, 1, 'key')).toBe(5);
     expect(snapDragged(3, 3, whole, 1, 'key')).toBe(3);
+  });
+
+  it('plotTextBoost keeps the smallest plot text at 8px rendered and leaves readable plots alone', () => {
+    expect(plotTextBoost(1)).toBe(1);
+    expect(plotTextBoost(0.8)).toBe(1); // 10px * 0.8 = 8px exactly: no change
+    expect(plotTextBoost(0)).toBe(1);
+    expect(plotTextBoost(Number.NaN)).toBe(1);
+    for (const scale of [0.79, 0.76, 0.6, 0.5, 0.3]) {
+      const boost = plotTextBoost(scale);
+      expect(boost).toBeGreaterThan(1);
+      expect(PLOT_FONT * boost * scale).toBeGreaterThanOrEqual(MIN_PLOT_TEXT_PX);
+    }
+    // The fourier-transform case: 7.6px rendered means scale 0.76, so the boost is 8 / 7.6.
+    expect(plotTextBoost(0.76)).toBeCloseTo(8 / 7.6, 3);
   });
 
   it('stays inside a clamped grid at the edge', () => {

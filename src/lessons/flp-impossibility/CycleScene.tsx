@@ -5,7 +5,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { integer } from '../../core/format';
 import { cycleCaption } from './captions';
-import { exhaustiveText } from './checkText';
+import { exhaustiveText } from '../../core/checkPhrases';
 import { INPUT_VECTORS, PROCS, type Inputs } from './onePhase';
 import {
   DELIVERIES_PER_ROUND, EXHAUSTIVE_ROUNDS, MAX_REPEATS, PROCESS_COUNT, START_INPUTS, choicesFromGrid, assistChoices, cyclingChoices, repeatRounds, sameConfiguration,

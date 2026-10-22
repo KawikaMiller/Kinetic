@@ -7,10 +7,11 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, Slider, Stat, Stats, Te
 import { useIntroCaption, useSetCaption } from '../../core/caption';
 import { pct } from '../../core/format';
 import { parseBoundedInt } from '../../core/parse';
+import { aucTrapezoid } from '../../core/rocAuc';
 import { classificationMetrics } from '../../core/stats';
 import { costCaption, imbalanceCaption, metric, thresholdCaption, thresholdText } from './frames';
 import {
-  COST_FIELD, COST_PRESETS, NEGATIVE_WEIGHTS, NONE, aucTrapezoid, cheapest, curve, dataset, positiveRate, prSteps, stepThreshold, totalCost,
+  COST_FIELD, COST_PRESETS, NEGATIVE_WEIGHTS, NONE, cheapest, curve, dataset, positiveRate, prSteps, stepThreshold, totalCost,
   weighted, drawnAt, type CostPreset, type Costs,
 } from './model';
 import './styles.css';

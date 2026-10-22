@@ -6,7 +6,7 @@ import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '..
 import { integer } from '../../core/format';
 import type { NetState } from '../../core/pureProtocol';
 import { fifoCaption } from './captions';
-import { exhaustiveText, sampledText, truncatedText } from './checkText';
+import { exhaustiveText, sampledText, truncatedText } from '../../core/checkPhrases';
 import { DEFAULT_OPTIONS, SEED_RANGE, SEEDS_TOTAL, sweepSeeds } from './sim';
 import { SENDS, SMALL, searchSmall, type Proc, type SnapMsg } from './snapshot';
 

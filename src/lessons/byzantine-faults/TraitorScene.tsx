@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Toggle } from '../../components/ui';
 import { integer } from '../../core/format';
 import { holdsText, traitorCaption } from './captions';
-import { sampledText } from './checkText';
+import { sampledText } from '../../core/checkPhrases';
 import { ATTACK, COMMANDER, RETREAT, generalName, judge, majorityRuleNumber, orderName, runOm, setupOfState, tryEveryBehaviour, tryEveryRule, behaviourOfState, chooseTraitor, DEFAULT_TRAITOR_STATE, type Bit, type TraitorState } from './om';
 import { SEED_RANGE, SEEDS_TOTAL, sweepOm } from './omNodes';
 
