@@ -18,7 +18,7 @@ const lesson: LessonModule = {
     watch: 'On the record cards a copy that still holds the data is red (--bad), a deleted copy green (--ok), a copy made unreadable by destroying its key violet (--violet) and a copy kept under a legal hold orange (--orange). In the table the groups wear plain amber, pink and sky tones and a unique, re-identifiable row is marked red. The noise histogram is blue (--info) with the true count and the mean as lines, and the budget bar is yellow (--hi) until it is spent, then red. In the log scene a field that identifies or can be guessed is red, a partly masked one orange, a linkable pseudonym violet and a dropped field green.',
   },
   tryThis: [
-    `Where a record lives, on the defaults (delete from the primary only, day 0): ${F.primaryDay0Readable} of ${F.copies} copies still hold the data. Move the day to 90: ${F.primaryDay90Readable} still do (${F.primaryDay90Names.join(' and ')}). Pick Fan-out deletion queue: ${F.queueBeforeDone} copy remains on day ${F.queueDoneDay - 1} and none on day ${F.queueDoneDay}. Then pick Crypto-shredding at day 0: ${F.shredUnreadable} copies are unreadable and ${F.shredReadable} still readable.`,
+    `Where a record lives, on the defaults (delete from the primary only, day 0): ${F.primaryDay0Readable} of ${F.copies} copies still hold the data. Move the day to 90: ${F.primaryDay90Readable} still do (${F.primaryDay90Names.join(' and ')}). Pick Fan-out deletion queue and set the day to ${F.queueDoneDay - 1}: ${F.queueBeforeDone} copy remains; set it to ${F.queueDoneDay}: none. Then pick Crypto-shredding at day 0: ${F.shredUnreadable} copies are unreadable and ${F.shredReadable} still readable.`,
     `k-anonymity, on the defaults (nothing generalised): k is ${F.openingK}, ${F.openingUnique} rows are unique and ${F.openingLinked} link to a name on the public list. Set ZIP to 3 digits and birth year to a 25-year range: k is ${F.generalisedK}, ${F.generalisedUnique} rows are unique and ${F.generalisedLinked} link, at an information loss of ${F.generalisedLoss}%, but l is ${F.generalisedL}: one group of ${F.leakSize} all have condition ${F.leakCondition}.`,
     `A noisy count, on the defaults (epsilon 1, true count ${F.trueCount}): press Ask 10 times. The ${F.tenAnswers} answers have noise of scale ${F.tenScale}, their mean is ${F.tenMean} and the budget of ${F.budget} is spent. Press Reset, set epsilon to 0.1 and press Ask 100 times: noise of scale ${F.hundredScale}, mean ${F.hundredMean}, the same budget spent.`,
     `Pseudonymous is not anonymous, on the defaults (every field kept): ${F.openingIdentifying} of ${F.personalFields} personal fields identify. Set user email to Hash: trying the five addresses reproduces the logged value and recovers mara@example.test. Set it to Keyed hash (HMAC): it is not recovered, though the value still links the same person's lines. Set it to Drop: it is gone.`,
@@ -35,7 +35,7 @@ const lesson: LessonModule = {
       options: [
         'Nothing more, because the primary database is the source of truth and the rest follows',
         'Only the backups, since every other copy is rebuilt from the primary overnight anyway',
-        'The other copies: here the search index and ML training set stay readable at day 90',
+        `The other copies: here the ${F.primaryDay90Labels.join(' and ')} stay readable at day 90`,
         'The cache alone, because it is the only store that keeps data once the row is gone',
       ],
       answer: 2,
@@ -64,7 +64,7 @@ const lesson: LessonModule = {
       why: 'Five invented addresses were enough to reproduce the logged value for the plain hash. A keyed hash resists that guess, but it still gives one person one stable value, so lines can still be linked.',
     },
     {
-      q: 'A table is 4-anonymous but one group of 4 people all have the same condition. What leaks?',
+      q: `A table is ${F.generalisedK}-anonymous but one group of ${F.leakSize} people all have the same condition. What leaks?`,
       options: [
         'That condition, for anyone known to be in that group: k is 4 but l-diversity is 1',
         'Nothing, because 4-anonymity means no group can reveal anything about its members',

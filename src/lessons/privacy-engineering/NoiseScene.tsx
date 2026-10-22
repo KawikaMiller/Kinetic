@@ -5,8 +5,10 @@ import { Bars, Plot2D, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { noiseCaption } from './captions';
-import { BUDGET, EPSILON_STEP, MAX_EPSILON, MIN_EPSILON, NOISE_SEED, TRUE_COUNT, answersFor, ask, histogram, mean, noiseScale } from './noise';
+import { BUDGET, EPSILON_STEP, MAX_EPSILON, MIN_EPSILON, NOISE_SEED, QUERY_CONDITION, TRUE_COUNT, answersFor, ask, histogram, mean, noiseScale } from './noise';
+import { TABLE_SIZE } from './kanon';
 import { initialNoise } from './opening';
+import { NotLegalAdviceChip } from './NotLegalAdviceChip';
 
 const HALF_WIDTH = 40;
 const LO = TRUE_COUNT - HALF_WIDTH;
@@ -32,7 +34,7 @@ export function NoiseScene({ picker }: { picker: ReactNode }) {
       introKey={[state.epsilon, state.asked.length]}
       stats={
         <Stats>
-          <Stat label="Answers" value={answers.values.length} color="var(--info)" sub={`noise scale ${noiseScale(state.epsilon).toFixed(1)} at epsilon ${state.epsilon.toFixed(1)}`} />
+          <Stat label="Answers" value={answers.values.length} color="var(--info)" sub={`next question: noise scale ${noiseScale(state.epsilon).toFixed(1)} at epsilon ${state.epsilon.toFixed(1)}`} />
           <Stat label="Mean of the answers" value={answers.values.length ? m.toFixed(1) : '-'} color="var(--ok)" sub={`true count ${TRUE_COUNT}`} />
           <Stat label="Budget left" value={`${left.toFixed(1)} of ${BUDGET}`} color={left <= 0.05 ? 'var(--bad)' : 'var(--hi)'} sub="each answer spends its epsilon" />
         </Stats>
@@ -63,7 +65,7 @@ export function NoiseScene({ picker }: { picker: ReactNode }) {
       ]}
     >
       <div className="pe-stage stage-pad">
-        <SectionTitle>The query: how many of the 48 invented people have condition C? (the true answer is {TRUE_COUNT})</SectionTitle>
+        <SectionTitle>The query: how many of the {TABLE_SIZE} invented people have condition {QUERY_CONDITION}? (the true answer is {TRUE_COUNT})</SectionTitle>
         <Plot2D
           x={{ domain: [LO - 0.5, HI + 0.5], label: 'answer' }}
           y={{ domain: [0, tallest + 1], label: 'times given', ticks: 4 }}
@@ -76,9 +78,10 @@ export function NoiseScene({ picker }: { picker: ReactNode }) {
           {answers.values.length > 0 && <VLine at={m} label="mean" tone="hi" dashed />}
         </Plot2D>
         <Bar value={left} max={BUDGET} color={left <= 0.05 ? 'var(--bad)' : 'var(--hi)'} label={`privacy budget left: ${left.toFixed(1)} of ${BUDGET}`} />
-        <p className="pe-note">Answers outside the plotted range are counted in its end bars. The smallest epsilon is {MIN_EPSILON}, so the noise scale never goes infinite.</p>
+        <p className="pe-note">Answers outside the plotted range are counted in its end bars, and a noisy count can come out negative: nothing clamps it. The smallest epsilon is {MIN_EPSILON}, so the noise scale never goes infinite.</p>
       </div>
       <ProvenanceRow>
+        <NotLegalAdviceChip />
         <Provenance kind="simulated" seed={NOISE_SEED}>seeded Laplace noise on an invented count</Provenance>
         <Provenance kind="illustrative">a budget of {BUDGET} epsilon is a made-up round number, and the table is synthetic</Provenance>
       </ProvenanceRow>

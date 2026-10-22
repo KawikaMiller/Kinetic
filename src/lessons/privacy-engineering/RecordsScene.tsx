@@ -25,7 +25,7 @@ export function RecordsScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Still readable" value={`${readable} of ${states.length - countStatus(states, 'absent')}`} color={readable > 0 ? 'var(--bad)' : 'var(--ok)'} sub={`day ${state.day} after the request`} />
           <Stat label="Deleted or unreadable" value={countStatus(states, 'deleted') + countStatus(states, 'unreadable')} color="var(--ok)" sub={`${countStatus(states, 'unreadable')} unreadable (key destroyed)`} />
-          <Stat label="Legal hold" value={countStatus(states, 'held')} color={countStatus(states, 'held') > 0 ? 'var(--orange)' : 'var(--muted)'} sub="copies that must be kept" />
+          <Stat label="Legal hold" value={countStatus(states, 'held')} color={countStatus(states, 'held') > 0 ? 'var(--orange)' : 'var(--muted)'} sub="copies a hold keeps (a legal duty to keep them, illustrative)" />
         </Stats>
       }
       legend={
@@ -52,7 +52,7 @@ export function RecordsScene({ picker }: { picker: ReactNode }) {
     >
       <div className="pe-stage stage-pad">
         <p className="pe-note">
-          <b>{STRATEGY_LABEL[state.strategy]}</b>: {STRATEGY_ABOUT[state.strategy]}. The record is an invented person (mara@example.test); backup retention is {BACKUP_RETENTION_DAYS} days, illustrative.
+          <b>{STRATEGY_LABEL[state.strategy]}</b>: {STRATEGY_ABOUT[state.strategy]}. The record is an invented person (mara@example.test); backup retention is {BACKUP_RETENTION_DAYS} days, illustrative. A legal hold is a legal duty to keep certain records: here the primary database and the backups, as an illustration.
         </p>
         <SectionTitle>Where the record lives</SectionTitle>
         <ul className="pe-cards">

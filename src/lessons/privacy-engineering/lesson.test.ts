@@ -7,7 +7,7 @@ import { MAX_DAY, STRATEGY_ORDER, stateOf } from './copies';
 import { FACTS } from './facts';
 import lesson from './index';
 import { AGE_LEVELS, ZIP_LEVELS, makePublicList, makeTable, viewOf } from './kanon';
-import { CANDIDATE_EMAILS, FIELD_ORDER, TREATMENT_ORDER, recover, treat, type FieldId, type Treatment } from './logline';
+import { CANDIDATE_EMAILS, SAMPLE_LINES, FIELD_ORDER, TREATMENT_ORDER, recover, treat, type FieldId, type Treatment } from './logline';
 import { BUDGET, MAX_EPSILON, MIN_EPSILON, NOISE_SEED, answersFor, ask, mean } from './noise';
 import { SUPPRESS_RANGE, initialKanon, initialLogs, initialNoise, initialRecords } from './opening';
 
@@ -39,7 +39,7 @@ describe('try-this entries, each from the default state', () => {
     expect([FACTS.primaryDay0Readable, FACTS.primaryDay90Readable, FACTS.primaryDay90Names]).toEqual([7, 2, ['search index', 'ml training set']]);
     expect([FACTS.queueDoneDay, FACTS.queueBeforeDone, FACTS.shredUnreadable, FACTS.shredReadable]).toEqual([35, 1, 4, 4]);
     expect(expectCaption(recordsCaption(initialRecords()))).toContain('7 of 8 copies still hold readable data');
-    expect(lesson.tryThis[0]).toContain('1 copy remains on day 34 and none on day 35');
+    expect(lesson.tryThis[0]).toContain('set the day to 34: 1 copy remains; set it to 35: none');
   });
 
   it('try-this 2: k 1, 48 unique, 46 linked; then 3 digits and a 25-year range give k 4, l 1, 0 unique, 0 linked at 75% loss, with one leaking group', () => {
@@ -52,14 +52,19 @@ describe('try-this entries, each from the default state', () => {
     expect(lesson.tryThis[1]).toContain('information loss of 75%');
   });
 
-  it('try-this 3: ten answers at epsilon 1 spend the budget; a hundred at 0.1 spend it too and average closer to 37', () => {
+  it('try-this 3: ten answers at epsilon 1 spend the budget; a hundred at 0.1 spend it too and average closer to the true count, which is the own count of condition C in the table', () => {
+    // The review counted the 48 invented rows by hand: A 20, B 19, C 9. The scene-2 table and this query describe the same people.
+    const byCondition = { A: 0, B: 0, C: 0 };
+    for (const person of makeTable()) byCondition[person.condition]++;
+    expect(byCondition).toEqual({ A: 20, B: 19, C: 9 });
+    expect(FACTS.trueCount).toBe(byCondition.C);
     expect([FACTS.tenAnswers, FACTS.tenSpent, FACTS.hundredAnswers]).toEqual([10, 10, 100]);
     expect([FACTS.tenScale, FACTS.hundredScale]).toEqual(['1.0', '10.0']);
     const ten = answersFor(NOISE_SEED, ask([], 1, 10).map((epsilon) => ({ epsilon })));
     const hundred = answersFor(NOISE_SEED, ask([], 0.1, 100).map((epsilon) => ({ epsilon })));
     expect([ten.exhausted, hundred.exhausted]).toEqual([false, false]);
-    expect(Math.abs(mean(ten.values) - 37)).toBeLessThan(2);
-    expect(Math.abs(mean(hundred.values) - 37)).toBeLessThan(5);
+    expect(Math.abs(mean(ten.values) - byCondition.C)).toBeLessThan(2);
+    expect(Math.abs(mean(hundred.values) - byCondition.C)).toBeLessThan(5);
     expect(expectCaption(noiseCaption(1, ten))).toContain(`their mean is ${FACTS.tenMean}`);
     expect(lesson.tryThis[2]).toContain(`mean ${FACTS.hundredMean}`);
   });
@@ -151,6 +156,19 @@ describe('the lesson stays inside the simulation', () => {
     expect(sources['./RecordsScene.tsx']).toContain('not legal advice');
     expect(sources['./KanonScene.tsx']).toContain('Sweeney, 2000');
     expect(sources['./LogsScene.tsx']).toContain('<Provenance kind="real">');
+  });
+
+  it('carries the standing not-legal-advice chip on every scene', () => {
+    for (const file of ['./RecordsScene.tsx', './KanonScene.tsx', './NoiseScene.tsx', './LogsScene.tsx']) expect(sources[file], file).toMatch(/NotLegalAdviceChip|not legal advice/);
+    expect(sources['./NotLegalAdviceChip.tsx']).toContain('not legal advice');
+  });
+
+  it('the session ids a plain hash is shown for are long (at least 64 bits), so "a guess does not reproduce it" holds for the sample itself', () => {
+    for (const line of SAMPLE_LINES) {
+      const hex = line.session.replace(/^s-/, '');
+      expect(hex).toMatch(/^[0-9a-f]+$/);
+      expect(hex.length * 4).toBeGreaterThanOrEqual(64);
+    }
   });
 
   it('builds its one key from parts and names no real person, address or domain beyond example.test and the documentation ranges', () => {

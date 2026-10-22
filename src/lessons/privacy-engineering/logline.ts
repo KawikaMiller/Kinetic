@@ -32,16 +32,19 @@ export const FIELDS: Record<FieldId, Field> = {
   latency: { id: 'latency', label: 'latency', pii: false, note: 'a number about the request', guessable: false },
 };
 
+/** Session ids are long random-looking values (80 bits here), so a plain hash of one is not reproduced by guessing; a short id would fall to enumeration. */
+export const SESSION_MARA = 's-4f9a21c07be35d8e1a62';
+export const SESSION_NOOR = 's-7c03be91d4a8625f0e3b';
+
 /** Three invented log lines: the people, addresses (documentation ranges) and ids are all made up. */
 export const SAMPLE_LINES: readonly Record<FieldId, string>[] = [
-  { time: '09:14:02', email: 'mara@example.test', ip: '192.0.2.17', session: 's-4f9a21', latency: '41 ms' },
-  { time: '09:14:09', email: 'noor@example.test', ip: '192.0.2.44', session: 's-7c03be', latency: '38 ms' },
-  { time: '09:14:15', email: 'mara@example.test', ip: '192.0.2.17', session: 's-4f9a21', latency: '52 ms' },
+  { time: '09:14:02', email: 'mara@example.test', ip: '192.0.2.17', session: SESSION_MARA, latency: '41 ms' },
+  { time: '09:14:09', email: 'noor@example.test', ip: '192.0.2.44', session: SESSION_NOOR, latency: '38 ms' },
+  { time: '09:14:15', email: 'mara@example.test', ip: '192.0.2.17', session: SESSION_MARA, latency: '52 ms' },
 ];
 
 /** The five invented addresses a hash is tried against (the learner is shown them). */
 export const CANDIDATE_EMAILS: readonly string[] = ['ines@example.test', 'mara@example.test', 'noor@example.test', 'omar@example.test', 'tess@example.test'];
-export const CANDIDATE_IPS: readonly string[] = ['192.0.2.9', '192.0.2.17', '192.0.2.44', '192.0.2.61', '192.0.2.120'];
 
 /** The demo key for the keyed hash, joined from parts: a fake. */
 const DEMO_KEY = fakeSecret('demo-', 'log-', 'hmac-', 'key');

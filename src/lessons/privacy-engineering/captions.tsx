@@ -26,7 +26,7 @@ export function kanonCaption(v: View): ReactNode {
   if (r.k === null) return <>Every row is suppressed, so there is no table left to attack: the information loss is {Math.round(v.loss * 100)}%.</>;
   return (
     <>
-      k = {r.k}, l = {r.l}, {plural(r.unique, 'unique row')}, information loss {Math.round(v.loss * 100)}%. A join with the invented public list ties {plural(v.linkedNow, 'row')} to one named person, against {v.linkedExact} before anything was generalised.
+      k = {r.k}, l = {r.l}, {plural(r.unique, 'unique row')}, information loss {Math.round(v.loss * 100)}%. A join with the invented public list ties {plural(v.linkedNow, 'row')} to one named person{v.linkedNow === v.linkedExact ? '' : <>, against {v.linkedExact} before anything was generalised</>}.
       {v.leak ? <> The group {v.leak.key.replaceAll('|', ', ')} has {v.leak.members.length} people who all have condition {v.leak.members[0].condition}: k is {r.k}, yet that value leaks (l = {r.l}).</> : null}
     </>
   );
@@ -56,7 +56,7 @@ export function logsCaption(choice: Record<FieldId, Treatment>, recovery: Recove
   return (
     <>
       {still.length === 0 ? 'No field points at a person on its own.' : `${plural(still.length, 'field')} still point${still.length === 1 ? 's' : ''} at a person: ${still.map((f) => FIELDS[f].label).join(', ')}.`}
-      {linkable.length ? ` ${linkable.map((f) => FIELDS[f].label).join(', ')} stay linkable: ${EXPOSURE_TEXT.linkable}.` : ''}
+      {linkable.length ? ` ${linkable.map((f) => FIELDS[f].label).join(', ')} ${linkable.length === 1 ? 'stays' : 'stay'} linkable (${EXPOSURE_TEXT.linkable}).` : ''}
       {recovery === null ? '' : recovery.recovered ? ` Trying five addresses against the hashed email reproduces it: it was ${recovery.recovered}.` : ' None of the five addresses reproduces the logged email value.'}
     </>
   );

@@ -11,6 +11,7 @@ import {
   type Exposure, type FieldId, type Recovery, type Treatment,
 } from './logline';
 import { initialLogs } from './opening';
+import { NotLegalAdviceChip } from './NotLegalAdviceChip';
 
 const EXPOSURE_COLOUR: Record<Exposure, string> = {
   identifies: 'var(--bad)', partly: 'var(--orange)', guessable: 'var(--bad)', linkable: 'var(--violet)', gone: 'var(--ok)', 'not-personal': 'var(--dim)',
@@ -99,6 +100,7 @@ export function LogsScene({ picker }: { picker: ReactNode }) {
         )}
       </div>
       <ProvenanceRow>
+        <NotLegalAdviceChip />
         <Provenance kind="real">SHA-256 and HMAC are computed in your browser by crypto.subtle</Provenance>
         <Provenance kind="simulated">invented people, addresses (documentation ranges) and a fake demo key; no real log is read</Provenance>
         <Provenance kind="from-memory">pseudonymisation, anonymisation and personal data are defined differently in law: check with counsel and the text</Provenance>

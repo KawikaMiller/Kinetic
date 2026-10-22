@@ -5,9 +5,12 @@
  */
 import { exponential } from '../../core/distributions';
 import { mulberry32, type Rnd } from '../../core/random';
+import { makeTable, type Condition } from './kanon';
 
-/** The true count the query protects (of the 48 people in the table: invented). */
-export const TRUE_COUNT = 37;
+/** The condition the counting query asks about: the same invented table as the k-anonymity scene. */
+export const QUERY_CONDITION: Condition = 'C';
+/** The true count the query protects: how many of the invented table's people have `QUERY_CONDITION`, computed from the table, never typed. */
+export const TRUE_COUNT = makeTable().filter((p) => p.condition === QUERY_CONDITION).length;
 /** The smallest epsilon the slider offers, so the noise scale 1/epsilon stays finite. */
 export const MIN_EPSILON = 0.1;
 export const MAX_EPSILON = 2;

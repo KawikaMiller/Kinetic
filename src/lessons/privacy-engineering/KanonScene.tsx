@@ -7,6 +7,7 @@ import { plainTone } from '../../core/tone';
 import { kanonCaption } from './captions';
 import { AGE_LEVELS, ZIP_LEVELS, generaliseYear, generaliseZip, keyOf, makePublicList, makeTable, viewOf, type AgeLevel, type ZipLevel } from './kanon';
 import { SUPPRESS_RANGE, initialKanon } from './opening';
+import { NotLegalAdviceChip } from './NotLegalAdviceChip';
 
 const ZIP_LABEL: Record<ZipLevel, string> = { 5: '5 digits', 3: '3 digits', 0: 'none' };
 const AGE_LABEL: Record<AgeLevel, string> = { exact: 'Exact year', decade: 'Decade', range: '25-year range' };
@@ -99,9 +100,10 @@ export function KanonScene({ picker }: { picker: ReactNode }) {
         </div>
       </div>
       <ProvenanceRow>
+        <NotLegalAdviceChip />
         <Provenance kind="simulated">synthetic people, invented attributes and an invented public list; nothing describes a real population</Provenance>
         <Provenance kind="illustrative">the information-loss score is this lesson's own simple formula</Provenance>
-        <Provenance kind="from-memory">a well-known study found that a large share of the US population is unique on ZIP, birth date and sex (Sweeney, 2000; the often-quoted figure is about 87%): verify</Provenance>
+        <Provenance kind="from-memory">a well-known study found that a large share of the US population is unique on ZIP, birth date and sex (Sweeney, 2000; the often-quoted figure is about 87%): verify. That study used the full birth date; this table uses the birth year only</Provenance>
       </ProvenanceRow>
     </StageFrame>
   );

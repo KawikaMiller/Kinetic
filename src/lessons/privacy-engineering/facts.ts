@@ -28,6 +28,7 @@ export const FACTS = {
   backupDays: BACKUP_RETENTION_DAYS,
   primaryDay0Readable: countStatus(at({}), 'readable'),
   primaryDay90Readable: countStatus(at({ day: 90 }), 'readable'),
+  primaryDay90Labels: at({ day: 90 }).filter((x) => x.status === 'readable').map((x) => x.copy.label),
   primaryDay90Names: names(at({ day: 90 }), 'readable'),
   queueDoneDay: queueDone,
   queueBeforeDone: readableOnDay('queue', queueDone - 1),
