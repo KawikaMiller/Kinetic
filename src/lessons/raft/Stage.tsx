@@ -106,12 +106,11 @@ export function Stage() {
   const raftOf = useCallback(() => world().raft, [world]);
 
   // A new seed or rule set starts a new run; the first render already built the right one.
-  const started = useRef(false);
+  const runKey = useRef(`${seed}/${variant}`);
   useEffect(() => {
-    if (!started.current) {
-      started.current = true;
-      return;
-    }
+    const key = `${seed}/${variant}`;
+    if (runKey.current === key) return;
+    runKey.current = key;
     reset();
     setCaption(
       <>

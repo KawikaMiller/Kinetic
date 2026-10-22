@@ -19,7 +19,6 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const T4_R1 = 'T4-R1 retrofit (docs/tier4-technical.md §5)';
 const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
 
 /**
@@ -28,7 +27,6 @@ const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
  * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
 const TIER4_AWAITING_RETROFIT = new Set<string>([
-  'backpressure', // T4-R1
   'lsm-trees', 'probabilistic-structures', 'slos-error-budgets', 'zero-trust', // T4-R2
 ]);
 /** The nine existing Tier 4 lessons, fixed: the D-row cross-check needs them after each one leaves the allowlist above. */
@@ -56,7 +54,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   // Tier 4
-  'backpressure': { ticket: T4_R1, rules: ['quiz-length', 'quiz-longest'] },
   'lsm-trees': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
   'probabilistic-structures': { ticket: T4_R2, rules: ['quiz-length'] },
   'slos-error-budgets': { ticket: T4_R2, rules: ['quiz-length'] },
