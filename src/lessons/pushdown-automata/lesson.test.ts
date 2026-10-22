@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { buildCaption, duelCaption } from './captions';
-import { MAX_K, MIN_K, MAX_N, boundedCounter, duel } from './duel';
+import { MAX_K, MIN_K, MAX_N, boundedCounter, duel } from '../../core/automataDuel';
 import { FACTS } from './facts';
 import { playFrames } from './frames';
 import lesson from './index';
 import { checkTable, parseTable } from './learner';
-import { PRESETS, build, checkSubject, presetById } from './machines';
+import { PRESETS, build, checkSubject, presetById } from '../../core/pdaPresets';
 import { ANBN_TABLE, BUG_TABLE, OPENING, SOLUTION_TABLE } from './opening';
-import { stepRun } from './stepper';
+import { stepRun } from '../../core/pdaStepper';
 
 const clean = (node: Parameters<typeof expectCaption>[0]) => expect(expectCaption(node)).not.toMatch(/NaN|undefined|\[object|null/);
 const table = (text: string) => {

@@ -2,10 +2,10 @@
  * The DFA duel: a finite automaton for {aⁿbⁿ : n <= k}. It counts a's up to k in the states a0..ak, counts the
  * b's back down in b(k-1)..b0, and every other move falls into the dead state: 2k + 2 states in all.
  */
-import { dfaRun, type Dfa, type State } from '../../core/automata';
-import type { Pt } from '../../core/geometry';
-import { build, presetById } from './machines';
-import { stepRun } from './stepper';
+import { dfaRun, type Dfa, type State } from './automata';
+import type { Pt } from './geometry';
+import { build, presetById } from './pdaPresets';
+import { stepRun } from './pdaStepper';
 
 export const MIN_K = 1;
 export const MAX_K = 8;

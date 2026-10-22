@@ -6,7 +6,7 @@ import { evidenceFor } from './evidence';
 import { FACTS } from './facts';
 import lesson from './index';
 import { CARDS, RINGS, cardById, decide, inputError } from './languages';
-import { EXAMPLES, distinguishing, refine } from './minimize';
+import { EXAMPLES, distinguishing, refine } from '../../core/automataMinimize';
 import { OPENING } from './opening';
 import { PUMP_LANGUAGES, MAX_P, MIN_P, chooseString, playGame, type PumpMode } from './pumping';
 

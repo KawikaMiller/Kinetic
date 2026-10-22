@@ -1,12 +1,41 @@
 /**
- * The Turing machines behind the three context-sensitive cards. Each is built as data for core/tm (the tables
- * are longer than a learner may type, so they are generated here, never parsed from learner text).
- * A machine accepts by halting in `accept`; stuck (no rule) and `reject` both mean rejected.
+ * Turing machine tables shared across lessons, as data for core/tm: the author's reference tables for binary
+ * increment and palindrome check (written in the table text a learner types, parsed by `mustParseTm`), and the
+ * three context-sensitive machines a^n b^n c^n, ww and a^n with n prime. The long tables are generated here,
+ * never parsed from learner text. A machine accepts by halting in `accept`; stuck (no rule) and `reject` both
+ * mean rejected.
  */
-import { TM_BLANK, type Tm, type TmMove, type TmRule } from '../../core/tm';
+import { TM_BLANK, type Tm, type TmMove, type TmRule } from './tm';
 
-/** Steps a card's machine may take before the tester says it did not finish. */
-export const TM_STEP_BUDGET = 20_000;
+export const INCREMENT_REFERENCE = `# Right end first, then carry leftwards
+q0 0 -> 0 R q0
+q0 1 -> 1 R q0
+q0 _ -> _ L q1
+q1 1 -> 0 L q1
+q1 0 -> 1 S halt
+q1 _ -> 1 S halt`;
+
+
+export const PALINDROME_REFERENCE = `# Erase the first letter, match the last
+q0 a -> _ R qA
+q0 b -> _ R qB
+q0 _ -> _ S accept
+qA a -> a R qA
+qA b -> b R qA
+qA _ -> _ L cA
+cA a -> _ L back
+cA b -> b S reject
+cA _ -> _ S accept
+qB a -> a R qB
+qB b -> b R qB
+qB _ -> _ L cB
+cB b -> _ L back
+cB a -> a S reject
+cB _ -> _ S accept
+back a -> a L back
+back b -> b L back
+back _ -> _ R q0`;
+
 
 /** One rule for each symbol in `read`, copying the symbol unless `write` is given. */
 function on(state: string, read: readonly string[], move: TmMove, next: string, write?: string): TmRule[] {
