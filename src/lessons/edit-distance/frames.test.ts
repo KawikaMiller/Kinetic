@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { captionText } from '../../core/testing/captions';
 import { diffCaption, isFilled, tableFrames } from './frames';
-import { applyDiff, CONFIG_V1, CONFIG_V2, diffLines, editTable, hamming, INDEL, LEVENSHTEIN, traceback, WORD_PRESETS } from './model';
+import { applyDiff, CONFIG_V1, CONFIG_V2, diffLines, hamming, traceback, WORD_PRESETS } from './model';
+import { editTable, INDEL, LEVENSHTEIN } from '../../core/editDistance';
 
 const text = (f: { say?: unknown }) => captionText(f.say as never);
 

@@ -2104,6 +2104,14 @@ import { parseVersion, formatVersion, compare, parseRange, satisfies, satisfiesP
 ```
 npm's version and range rules (node-semver defaults): `^`, `~`, X-ranges, hyphen ranges, `||`, pre-releases excluded unless the range opts in, build metadata ignored. `satisfies(version, range)` / `maxSatisfying(versions, range)` take strings and return false / null for text that does not parse; `explainMatch` says `'match' | 'outside' | 'prerelease' | 'invalid'`; `explainRange` is the plain-words reading. Moved from `lessons/dependency-management/semver.ts` unchanged, with its tests (`core/semver.test.ts`).
 
+### `core/editDistance.ts` — edit-distance (origin); supply-chain-security (Levenshtein) next
+```ts
+import { editTable, pick, LEVENSHTEIN, INDEL, type Costs, type Table, type Candidates, type Source } from '../../core/editDistance';
+const t = editTable('kitten', 'sitting');   // { a, b (code points), d[i][j], cands[i][j] (left/up/diag/match/win) }
+t.d[t.a.length][t.b.length];                 // 3
+```
+Weighted Levenshtein DP over code points. `Costs` is `{ ins, del, sub }`; `LEVENSHTEIN` is 1/1/1 and `INDEL` prices a substitution as delete plus insert (the distance an LCS diff minimises). Ties in a cell go to a match, then (when `sub >= ins + del`) to delete/insert, else to the substitution, then delete before insert (`pick`). The traceback, replay and line diff stay in `lessons/edit-distance/model.ts`; they take a `Table`.
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)

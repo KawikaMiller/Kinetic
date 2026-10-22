@@ -7,7 +7,8 @@ import { Button, ChipButton, ControlGroup, Hint, Legend, Segmented, Stat, Stats,
 import { WideRegion } from '../../components/WideRegion';
 import { usePlayer } from '../../core/usePlayer';
 import { isFilled, tableFrames } from './frames';
-import { editTable, hamming, INDEL, LEVENSHTEIN, MAX_WORD, parseWord, WORD_PRESETS, type Source, type Tinted } from './model';
+import { hamming, MAX_WORD, parseWord, WORD_PRESETS, type Tinted } from './model';
+import { editTable, INDEL, LEVENSHTEIN, type Source } from '../../core/editDistance';
 
 const STEP_MS = 650;
 const GRID_SIZE = { cell: 34, font: 13 };
