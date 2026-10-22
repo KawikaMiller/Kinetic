@@ -152,6 +152,37 @@ describe('hostile input', () => {
   });
 });
 
+describe('caption wording the model drives', () => {
+  it('names the run of zeros as a number, never as arithmetic, and guards one save', () => {
+    for (const quality of [1, 10, 50, 100]) {
+      const r = quantiseBlock({ source: 'checker', quality });
+      const text = clean(expectCaption(quantCaption({ source: 'checker', quality })));
+      expect(text).not.toContain(' minus ');
+      if (r.lastNonZero + 1 === 64) expect(text).toContain('no run of zeros follows it');
+      else if (r.lastNonZero >= 0) expect(text).toContain(`the ${64 - (r.lastNonZero + 1)} after it are a run of zeros`);
+    }
+    const g = generations(syntheticImage(), 50, 1, 0);
+    const one = clean(expectCaption(generationCaption(50, 0, g)));
+    expect(one).not.toContain('and save 1');
+    const painted = chooseSource(initialBlock(), 'painted');
+    expect(clean(expectCaption(blockCaption(painted)))).toContain('Your painted block');
+  });
+});
+
+describe('checker versus gradient: the explanation matches the numbers', () => {
+  it('the checker loses far more than the gradient at quality 50, and its energy sits in a high-frequency corner with large steps', () => {
+    const g = quantiseBlock({ source: 'gradient', quality: 50 });
+    const c = quantiseBlock({ source: 'checker', quality: 50 });
+    expect(c.mse).toBeGreaterThan(10 * g.mse);
+    const checkerCoeffs = analyseBlock(chooseSource(initialBlock(), 'checker')).coeffs;
+    const flat = checkerCoeffs.flat().map((v, i) => ({ v: Math.abs(v), i }));
+    flat.sort((a, b) => b.v - a.v);
+    expect(flat[0].i).toBe(63); // (7,7), the highest-frequency corner
+    const text = [...lesson.keyIdeas, ...lesson.quiz.map((q) => q.why)].join(' ');
+    expect(text).not.toMatch(/spread over high/);
+  });
+});
+
 describe('content', () => {
   it('no more than half of the quiz questions have the correct option strictly longest', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));

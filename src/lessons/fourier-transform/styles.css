@@ -10,8 +10,3 @@
 .ft-circle { fill: none; stroke: currentColor; stroke-width: 0.8; opacity: 0.55; }
 .ft-arm { stroke: currentColor; stroke-width: 1.2; }
 .ft-pen { fill: var(--hi); stroke: var(--bg); stroke-width: 1.5; }
-
-/* Drawn-curve target: the curves, residuals and points sit above the click layer, so they must not eat clicks. */
-.ft-drawn-plot .plot-curve,
-.ft-drawn-plot .plot-segments,
-.ft-drawn-plot .plot-points { pointer-events: none; }

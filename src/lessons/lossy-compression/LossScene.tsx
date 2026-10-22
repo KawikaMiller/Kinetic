@@ -76,7 +76,7 @@ export function LossScene({ picker }: { picker: ReactNode }) {
           </Plot2D>
         </Box>
         <ProvenanceRow>
-          <Provenance kind="real">each save is the lesson's own encode and decode; the changes are counted, not claimed</Provenance>
+          <Provenance kind="real">each save is the lesson's own encode and decode; the changes are counted, not claimed (the last digits of the counts depend on this engine's floating-point rounding)</Provenance>
           <Provenance kind="illustrative">the shift wraps around the edges and stands for a crop or an edit that moves the 8 by 8 grid</Provenance>
         </ProvenanceRow>
       </div>

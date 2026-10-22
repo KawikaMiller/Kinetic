@@ -74,13 +74,16 @@ export function HarmonicsScene({ picker }: { picker: ReactNode }) {
           <div className="ft-col">
             <Box>
               <SectionTitle hint={drawn ? `click to add a point (at most ${MAX_DRAWN})` : 'one period, 64 samples'}>The target and your sum</SectionTitle>
-              <Plot2D className={drawn ? 'ft-drawn-plot' : ''} x={{ domain: [0, 1], label: 'time (one period)' }} y={{ domain: [-Y_LIMIT, Y_LIMIT] }} ariaLabel="The target waveform, the sum of the harmonics and the error at each sample">
+              <Plot2D x={{ domain: [0, 1], label: 'time (one period)' }} y={{ domain: [-Y_LIMIT, Y_LIMIT] }} ariaLabel="The target waveform, the sum of the harmonics and the error at each sample">
                 {drawn && <PointerLayer onDown={(p) => add(p)} />}
-                <Curve points={targetLine} tone="dim" width={2} />
-                <Segments segments={residuals} tone="bad" />
-                {ROWS.map((k) => (h.amps[k] > 0 ? <Curve key={k} fn={(t) => harmonicAt(h, k, t)} tone={plainTone(k)} width={1} /> : null))}
-                <Curve fn={(t) => builtAt(h, t)} tone="hi" width={2.5} />
-                {drawn && <Points data={h.drawn.map((p) => ({ x: p.x, y: p.y, tone: 'dim' as const, r: 3 }))} />}
+                {/* The click layer is underneath: nothing drawn above it may take the pointer. */}
+                <g pointerEvents="none">
+                  <Curve points={targetLine} tone="dim" width={2} />
+                  <Segments segments={residuals} tone="bad" />
+                  {ROWS.map((k) => (h.amps[k] > 0 ? <Curve key={k} fn={(t) => harmonicAt(h, k, t)} tone={plainTone(k)} width={1} /> : null))}
+                  <Curve fn={(t) => builtAt(h, t)} tone="hi" width={2.5} />
+                  {drawn && <Points data={h.drawn.map((p) => ({ x: p.x, y: p.y, tone: 'dim' as const, r: 3 }))} />}
+                </g>
                 {drawn && <PlotCursor at={cursor} onMove={(p) => setCursor([p[0], p[1]])} label="Cursor for adding a point to the drawn curve" />}
               </Plot2D>
             </Box>

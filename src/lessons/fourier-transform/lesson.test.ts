@@ -12,9 +12,6 @@ import { FS_CHOICES, F_RANGE, SAMPLES, WINDOWS, analyse, binWidth, initialSampli
 import { SIGNAL_SIZES, WORK_SIZES, amplitudes, filtered, initialSpectrum, lowPass, spectrumOf, toggleBin, toneBins, twoToneSignal, workCounts } from './spectrum';
 
 const sources = import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-const styles = readFileSync(fileURLToPath(new URL('./styles.css', import.meta.url)), 'utf8').split('\r').join('');
 const clean = (s: string) => {
   expect(s).not.toMatch(/NaN|undefined|Infinity|\[object|null/);
   return s;
@@ -216,9 +213,12 @@ describe('harmonics caption cause', () => {
 
 describe('drawn-curve click layer', () => {
   it('the curves, residuals and points above the click layer do not take pointer events', () => {
-    const rule = /\.ft-drawn-plot \.plot-curve,\s*\.ft-drawn-plot \.plot-segments,\s*\.ft-drawn-plot \.plot-points \{ pointer-events: none; \}/;
-    expect(styles).toMatch(rule);
-    expect(sources['./HarmonicsScene.tsx']).toContain("className={drawn ? 'ft-drawn-plot' : ''}");
+    const src = sources['./HarmonicsScene.tsx'];
+    const layer = src.indexOf('<PointerLayer');
+    const wrap = src.indexOf('<g pointerEvents="none">');
+    expect(layer).toBeGreaterThan(-1);
+    expect(wrap).toBeGreaterThan(layer);
+    for (const part of ['<Curve points={targetLine}', '<Segments segments={residuals}', '<Points data={h.drawn']) expect(src.indexOf(part)).toBeGreaterThan(wrap);
   });
 });
 

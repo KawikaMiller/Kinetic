@@ -1,4 +1,5 @@
 import { decimal, integer, pct } from '../../core/format';
+import { JPEG_LUMA_TABLE, scaleQuantTable } from '../../core/dct';
 import type { LessonModule } from '../../core/types';
 import { analyseBlock, chooseSource, initialBlock, initialQuant, quantiseBlock, toggleCoefficient } from './blocks';
 import { dB } from './captions';
@@ -19,6 +20,9 @@ const q50 = quantiseBlock(Q0);
 const q10 = quantiseBlock({ ...Q0, quality: 10 });
 const q1 = quantiseBlock({ ...Q0, quality: 1 });
 const q100 = quantiseBlock({ ...Q0, quality: 100 });
+const gradientQ50 = quantiseBlock({ source: 'gradient', quality: Q0.quality });
+const checkerQ50 = quantiseBlock({ source: 'checker', quality: Q0.quality });
+const table50 = scaleQuantTable(JPEG_LUMA_TABLE, Q0.quality);
 
 const image = syntheticImage();
 const m50 = measure(image, 50).point;
@@ -32,7 +36,7 @@ const lesson: LessonModule = {
   Stage,
   summary: {
     tldr: 'JPEG-style compression turns each 8 by 8 block into frequency coefficients with a DCT, divides them by a table and rounds; the rounding throws away what the eye notices least, and quality only scales that table.',
-    what: 'A grey block is shifted by 128 and transformed by the 2D DCT into 64 coefficients: a DC term for the average and 63 for patterns of rising frequency. Dividing each coefficient by an entry of a table and rounding to a whole number is the only step that loses information; most high-frequency entries round to zero and cost almost nothing. The quality setting scales the table by a published rule, so it is a knob on step sizes, not a share of the data. Because the blocks are coded independently, a low quality shows the 8 by 8 grid, and re-saving a picture whose grid has moved changes it again. This lesson is baseline grey only, with a size estimated from symbol entropy.',
+    what: 'A grey block is shifted by 128 and transformed by the 2D DCT into 64 coefficients: a DC term for the average and 63 for patterns of rising frequency. Dividing each coefficient by an entry of a table and rounding to a whole number is the only lossy step in the transform and quantise stages (the reconstruction then rounds to whole grey levels); most high-frequency entries round to zero and cost almost nothing. The quality setting scales the table by a published rule, so it is a knob on step sizes, not a share of the data. Because the blocks are coded independently, a low quality shows the 8 by 8 grid, and re-saving a picture whose grid has moved changes it again. This lesson is baseline grey only, with a size estimated from symbol entropy.',
     analogy: 'Rounding prices in a shop. Rounding to the nearest ten pounds is cheap to write down and loses little on a 300 pound item, but it flattens a 4 pound item to nothing. The table decides how coarsely each frequency is rounded, and the eye cares least about the finest ones.',
     useCases: [
       'Choosing a JPEG quality for photos on a website, and reading why the same setting gives different file sizes',
@@ -52,8 +56,8 @@ const lesson: LessonModule = {
   keyIdeas: [
     'Lossy compression does not delete pixels: it moves each 8 by 8 block into frequency coefficients, rounds them with a table and keeps what survives, and each pixel is rebuilt from those.',
     `Quality is not a share of the data: it scales a table of step sizes, and the size follows from the symbols left after rounding, so in the lesson quality 50 costs ${pct(m50.bytes / m100.bytes)} of quality 100.`,
-    'The transform keeps energy, so a block whose energy sits in a few low-frequency coefficients, such as a smooth gradient, survives coarse rounding, and a checker spread over high frequencies does not.',
-    'Re-saving is not free: in this model the loss mostly settles while the 8 by 8 grid stays aligned and keeps growing when an edit moves the grid between saves.',
+    'The transform keeps energy, and rounding with the table removes real energy where the steps are large: a smooth gradient keeps its energy in low-frequency coefficients, where the steps are small, while a checker keeps its energy in the highest-frequency coefficients, where the steps are large.',
+    `Re-saving is not free once the grid moves: in this model at quality 50 an aligned re-save changes ${integer(aligned.changed[1])} pixels after the first save, while with the grid shifted by 3 the PSNR against the original falls from ${dB(shifted.psnr[0])} to ${dB(shifted.psnr[9])} over ten saves.`,
   ],
   quiz: [
     {
@@ -87,7 +91,7 @@ const lesson: LessonModule = {
         'A checker contains values the DCT cannot represent exactly',
       ],
       answer: 0,
-      why: `The transform keeps energy, and a gradient puts it in few coefficients: ${gradient.holding90} hold 90% of it, against ${checker.holding90} for the checker. Coarse rounding then removes little from the gradient.`,
+      why: `The table's steps grow toward the high frequencies (${table50[0][0]} at the DC corner, ${table50[7][7]} at the opposite corner), so rounding removes little from a gradient and a lot from a checker, whose energy sits at the highest frequencies. At quality ${Q0.quality} the MSE is ${n2(gradientQ50.mse)} for the gradient and ${n2(checkerQ50.mse)} for the checker.`,
     },
     {
       q: 'A picture is saved ten times at the same quality. When does it keep getting worse?',
