@@ -23,7 +23,7 @@ const lesson: LessonModule = {
     'In Storage tier and the bill (4 committed instances, 3 zones, standard tier, 1.2 reads) the day costs $227.33, or $11.28 per million requests. Choose the colder tier and slide the reads to 0.0: storage falls from $3.33 to $1.33 per day; slide to 3.0 and it rises to $6.33.',
   ],
   keyIdeas: [
-    'Committing capacity trades a lower price for paying whether or not it is used: in this toy the cheapest level is the highest one the profile reaches for more than 60% of the day, 4 instances here, and committing the 8-instance peak costs $115.20 against $112.00 for committing nothing.',
+    'Committing capacity trades a lower price for paying whether or not it is used: in this toy, with burst paid on demand, the cheapest level is the highest one the profile reaches for more than 60% of the day, 4 instances here, and committing the 8-instance peak costs $115.20 against $112.00 for committing nothing.',
     'Cost per request is the day\'s cost over its requests, so it moves with utilisation: the same day costs $5.56 per million requests with nothing committed and $4.44 at the cheapest commitment, with 87.5% of the paid capacity used.',
     'Bytes between zones are a line item of their own: in this toy at 3 zones with no zone-local routing they cost $134.40 per day against $89.60 of compute, and keeping 90% of calls in-zone brings them to $13.44.',
     'A colder storage tier trades a lower monthly price for a read charge, so it wins below a break-even rate of reads: 1.20 full reads per GB-month on the page\'s ratios. The prices on this page are invented round numbers.',

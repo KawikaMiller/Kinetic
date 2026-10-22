@@ -1,6 +1,6 @@
 import { dollars, pctText } from '../../core/format';
 import {
-  BREAK_EVEN_READS, HOURS, PRESETS, bill, dayCost, optimumByScan, peakNeed, requestsPerDay, spotAllowed, transfer, type Profile, type Tier, type Work, type Zones,
+  BREAK_EVEN_READS, HOURS, P_C, PRESETS, bill, burstPrice, dayCost, optimumByScan, peakNeed, requestsPerDay, spotAllowed, transfer, type Profile, type Tier, type Work, type Zones,
 } from './cost';
 
 export const OPENING = { preset: 'web', committed: 0, work: 'user', spot: false, hour: 0, rps: 100 } as const;
@@ -39,6 +39,19 @@ export function billCaption(committed: number, zones: Zones, sameZone: number, t
   const gap = fullReads - BREAK_EVEN_READS;
   const side = Math.abs(gap) < 1e-9 ? 'two tiers cost the same' : gap < 0 ? 'colder tier is cheaper' : 'standard tier is cheaper';
   return `Compute ${money(b.compute)} + transfer ${money(b.transfer)} + storage ${money(b.storage)} = ${money(b.total)} per day, ${b.perMillion === null ? 'no traffic' : `${money(b.perMillion)} per million requests`}. At ${fullReads.toFixed(1)} full reads per GB-month the ${side} (they tie at ${BREAK_EVEN_READS.toFixed(2)}).`;
+}
+
+/** Hours of the day a level must be needed for a commitment at it to pay: committed price over the burst price, times the day. */
+export const breakEvenHours = (spot: boolean): number => (HOURS * P_C) / burstPrice(spot);
+
+/** The rule of thumb under the cost curve, derived from the burst price: it says so when no level can reach the break-even. */
+export function commitRule(spot: boolean): string {
+  const hours = breakEvenHours(spot);
+  const price = dollars(burstPrice(spot));
+  if (hours >= HOURS) {
+    return `Interruptible capacity costs ${price} per useful hour against ${dollars(P_C)} for a committed one, so a commitment would have to be used for ${hours.toFixed(1)} hours to pay, more than the ${HOURS} in a day: committing does not pay, and the cheapest level is 0.`;
+  }
+  return `Commit up to the level the profile reaches for more than ${hours.toFixed(1)} of the ${HOURS} hours (${pctText(hours / HOURS, 0)} of the day): that is where a committed hour at ${dollars(P_C)} costs less than a burst hour at ${price}.`;
 }
 
 export const spotReason = (work: Work): string | null => {

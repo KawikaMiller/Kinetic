@@ -9,7 +9,7 @@ import { pctText } from '../../core/format';
 import { DAYS, FIRST_ASOF_DAY, LAST_ASOF_DAY, USERS, USERS_MIN, WINDOW_DAYS, dayLabel } from './events';
 import { LengthField } from './LengthField';
 import { NO_SOURCES, SOURCES, SOURCE_LABEL, type Source, type SourceSet } from './feature';
-import { PIPELINE_OPENING, pipelineCaption, pipelineView } from './view';
+import { PIPELINE_OPENING, dotTone, pipelineCaption, pipelineView } from './view';
 
 const ROW_LIMIT = 12;
 
@@ -33,7 +33,6 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={720}
-      minWidth={380}
       intro={pipelineCaption(view, sources, shared)}
       introKey={`pipelines|${seed}|${users}|${windowDays}|${latePercent}|${SOURCES.map((s) => (sources[s] ? 1 : 0)).join('')}|${shared}`}
       stats={
@@ -52,7 +51,7 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
             { color: 'var(--sky)', label: 'offline (batch)', shape: 'square' },
             { color: 'var(--amber)', label: 'online (streaming)', shape: 'square' },
             { color: 'var(--violet)', label: 'a late event', shape: 'dot' },
-            { color: 'var(--hi)', label: 'an event exactly on the window start', shape: 'dot' },
+            { color: 'var(--hi)', label: 'an event exactly on the window start (even if it was also late)', shape: 'dot' },
           ]}
         />
       }
@@ -83,8 +82,8 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
               <span>{dayLabel(r.asOf)} UTC</span>
               <span className="fss-offline">orders_7d {r.offline.orders7d} offline</span>
               <span className="fss-online">{r.online.orders7d} online</span>
-              <span className="fss-offline">today {r.offline.ordersToday}</span>
-              <span className="fss-online">{r.online.ordersToday}</span>
+              <span className="fss-offline">today {r.offline.ordersToday} offline</span>
+              <span className="fss-online">{r.online.ordersToday} online</span>
             </div>
           ))}
           <Hint tone="muted">{view.count > 0 ? `The first ${Math.min(ROW_LIMIT, view.count)} of ${view.count} differing rows.` : `The first ${Math.min(ROW_LIMIT, total)} of ${total} rows: none differ.`}</Hint>
@@ -102,7 +101,7 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
                 <Polygon points={[[start, 0], [focus.asOf, 0], [focus.asOf, 1], [start, 1]]} tone="info" />
                 <VLine at={focus.asOf} tone="hi" dashed />
                 <Points
-                  data={focusEvents.map((e) => ({ x: e.at, y: 0.5, tone: e.arrived > e.at ? ('violet' as const) : e.at === start ? ('hi' as const) : ('sky' as const) }))}
+                  data={focusEvents.map((e) => ({ x: e.at, y: 0.5, tone: dotTone(e, start) }))}
                   r={4}
                 />
               </Plot2D>

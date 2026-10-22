@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
-import { PRESETS, bill, dayCost, requestsPerDay, storagePerDay, transfer } from './cost';
+import { PRESETS, bill, dayCost, optimumByRule, optimumByScan, requestsPerDay, storagePerDay, transfer } from './cost';
 import lesson from './index';
-import { BILL_OPENING, BYTES_OPENING, OPENING, WEB, WEB_OPTIMUM, billCaption, bytesCaption, dayCaption, spotReason } from './view';
+import { BILL_OPENING, BYTES_OPENING, OPENING, WEB, WEB_OPTIMUM, billCaption, breakEvenHours, bytesCaption, commitRule, dayCaption, spotReason } from './view';
 
 describe('scenes', () => {
   it('every scene component carries its own key and no component is shared between scenes', () => {
@@ -102,5 +102,28 @@ describe('the lesson text agrees with the model', () => {
     expect(lesson.keyIdeas[3]).toContain('1.20 full reads');
     expect([0, 2, 3, 4, 6, 8].map((c) => dayCost(WEB, c).total.toFixed(2))).toEqual(['112.00', '92.80', '91.20', '89.60', '102.40', '115.20']);
     expect(lesson.quiz[1].why).toContain('$112.00, $92.80, $91.20, $89.60, $102.40 and $115.20');
+  });
+});
+
+describe('the commit rule under the cost curve is derived from the burst price', () => {
+  it('with interruptible burst the break-even exceeds the day, so the rule says committing does not pay and the cheapest level really is 0 on every preset', () => {
+    expect(breakEvenHours(true)).toBeGreaterThan(24);
+    expect(breakEvenHours(false)).toBeCloseTo(14.4, 12);
+    for (const id of Object.keys(PRESETS) as (keyof typeof PRESETS)[]) {
+      const profile = PRESETS[id].profile;
+      expect(optimumByScan(profile, true), id).toBe(0);
+      expect(optimumByRule(profile, true), id).toBe(0);
+    }
+    const spotRule = commitRule(true);
+    expect(spotRule).toContain('committing does not pay, and the cheapest level is 0');
+    expect(spotRule).not.toContain('60%');
+    expect(dayCaption(WEB, 4, true)).toContain('The cheapest level for this profile is 0');
+  });
+
+  it('on demand the rule states the 14.4-hour (60%) break-even, and it names the level the scan finds on the web profile', () => {
+    const rule = commitRule(false);
+    expect(rule).toContain('more than 14.4 of the 24 hours (60% of the day)');
+    expect(optimumByScan(WEB, false)).toBe(4);
+    expect(optimumByRule(WEB, false)).toBe(4);
   });
 });

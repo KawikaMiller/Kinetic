@@ -23,7 +23,6 @@ export function FloorScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={560}
-      minWidth={380}
       intro={floorCaption(rank, run)}
       introKey={`floor|${rank}|${seed}`}
       stats={
