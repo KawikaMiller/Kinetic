@@ -235,12 +235,21 @@ export function runGap(seed: number, gap: number, over: Partial<BookingSetup> = 
   return { gap, failed: run.failed, delayMs: linkDelay(seed, earlier === 'A' ? 'r1' : 'r2'), earlier };
 }
 
-/** Read from the trace: how long the first replicate message of the run took to arrive, or null when it never arrived (lost, dropped, or never sent). */
+/**
+ * The delay the harness gave the first replicate message in the run's trace: read from the trace's first replicate send (so it names the
+ * replica that really sent it) and the seed's link delay for that sender, or null when no replicate was sent. A run cut at the violation never
+ * delivers it, so the delivery time cannot be read back; for runs that do deliver it, the two agree (tested).
+ */
 export function replicateDelay(run: BookingRun): number | null {
-  const trace = run.cluster.trace;
-  const sent = trace.find((r) => r.kind === 'send' && (r.payload as BookMsg).type === 'replicate');
-  const arrived = sent && trace.find((r) => r.kind === 'deliver' && r.msgId === sent.msgId);
-  return sent && arrived ? arrived.t - sent.t : null;
+  const sent = run.cluster.trace.find((r) => r.kind === 'send' && (r.payload as BookMsg).type === 'replicate');
+  if (sent === undefined || sent.from === undefined) return null;
+  return run.setup.delayMs ?? linkDelay(run.setup.seed, sent.from);
+}
+
+/** True when the first replicate message of the run was dropped (a fault, or the network's loss) instead of delivered. */
+export function replicateDropped(run: BookingRun): boolean {
+  const sent = run.cluster.trace.find((r) => r.kind === 'send' && (r.payload as BookMsg).type === 'replicate');
+  return sent !== undefined && run.cluster.trace.some((r) => r.kind === 'drop' && r.msgId === sent.msgId && !r.dup);
 }
 
 /** The boundary the page prints: the gap (in magnitude) below which this seed oversells, which is the earlier request's replicate delay. */

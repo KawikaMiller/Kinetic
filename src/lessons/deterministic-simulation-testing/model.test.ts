@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BROKEN_SEED, BROKEN_TRACE_HASH, GAP, HUNT_N, LEAK_PERIOD, LOSS, REPLAYS, SCENE2_T1, WINDOW,
   bisectBoundary, boundaryOf, buildBooking, defaultBooking, expectedTries, exploreBooking, failureProbability, hunt, linkDelay, liveHunt, liveReplays, replayAgreement,
-  replicateDelay, resetAmbient, runBooking, runGap, seededLeg, type BookingSetup,
+  replicateDelay, replicateDropped, resetAmbient, runBooking, runGap, seededLeg, type BookingSetup,
 } from './model';
 
 const setup = (over: Partial<BookingSetup> = {}): BookingSetup => ({ ...defaultBooking(), ...over });
@@ -122,12 +122,23 @@ describe('scene 2: the boundary is computed from the trace and found by bisectio
     }
   });
 
-  it('the delay read from the trace equals the link delay of the seed, and is null when the replicate is dropped or never sent', () => {
+  it('the replicate delay equals the delivered-minus-sent time in a passing run, equals the bisected boundary in a FAILING run (where the trace is cut before delivery), and flags a drop or no replicate', () => {
     for (const seed of [1, 5, 8, 13]) {
       const run = runBooking(setup({ seed, t1: 100, t2: 190, windowMs: 200 }));
+      const sent = run.cluster.trace.find((r) => r.kind === 'send' && (r.payload as { type: string }).type === 'replicate')!;
+      const arrived = run.cluster.trace.find((r) => r.kind === 'deliver' && r.msgId === sent.msgId)!;
+      expect(replicateDelay(run)!).toBeCloseTo(arrived.t - sent.t, 9);
       expect(replicateDelay(run)!).toBeCloseTo(linkDelay(seed, 'r1'), 9);
     }
-    expect(replicateDelay(runBooking(setup({ t1: 100, t2: 190, windowMs: 200, dropReplicate: true })))).toBeNull();
+    for (const seed of [8, 13, 21]) {
+      const failing = runBooking(setup({ seed, t1: 100, t2: 100 }));
+      expect(failing.failed, `seed ${seed}`).toBe(true);
+      expect(replicateDelay(failing), `seed ${seed}`).not.toBeNull();
+      expect(Math.abs(replicateDelay(failing)! - bisectBoundary(seed, 1))).toBeLessThan(0.01);
+    }
+    const dropped = runBooking(setup({ t1: 100, t2: 190, windowMs: 200, dropReplicate: true }));
+    expect(replicateDropped(dropped)).toBe(true);
+    expect(replicateDropped(runBooking(setup({ seed: 5, t1: 100, t2: 190, windowMs: 200 })))).toBe(false);
     expect(replicateDelay(runBooking(setup({ requestA: false, requestB: false })))).toBeNull();
   });
 

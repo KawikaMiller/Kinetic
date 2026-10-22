@@ -1,10 +1,10 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, Toggle } from '../../components/ui';
 import { BookingDiagram } from './BookingDiagram';
-import { FIX_HUNT_N, initialLeak, randomText, type LeakState } from './init';
+import { FIX_HUNT_N, initialLeak, leakIntro, randomText, type LeakState } from './init';
 import { REPLAYS, defaultBooking, hunt, liveHunt, liveReplays, replayAgreement, resetAmbient, runBooking, type BookingSetup } from './model';
 
 const SHOWN_REPLAYS = 6;
@@ -22,6 +22,8 @@ const legend = (
 
 export function LeakScene({ picker }: { picker: ReactNode }) {
   const [s, setS] = useState<LeakState>(initialLeak);
+  // The ambient counter is module state: leave it fresh when the scene goes, so coming back starts from zero.
+  useEffect(() => resetAmbient, []);
   const setup = useMemo<BookingSetup>(() => ({ ...defaultBooking(s.seed), mode: s.fix ? 'single-writer' : 'async', leak: s.leak }), [s.seed, s.fix, s.leak]);
   const patch = (p: Partial<LeakState>) => setS((x) => ({ ...x, ...p, replays: [], twenty: null, compare: null, fixHunt: null }));
   const view = useMemo(() => runBooking({ ...setup, leak: false }), [setup]);
@@ -49,8 +51,8 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
   return (
     <StageFrame
       height={600}
-      intro={`Seed ${s.seed} is a failing schedule. ${s.leak ? 'With ambient randomness on, a node reads a counter that outlives the run, so each replay is a different run.' : 'The seed is the whole input, so a replay is the same run.'} ${s.fix ? 'All bookings go through r1, which alone grants.' : ''}`.trim()}
-      introKey={`${s.seed}|${s.leak}|${s.fix}`}
+      intro={leakIntro(s.seed, view.failed, s.leak, s.fix)}
+      introKey={`${s.seed}|${s.leak}|${s.fix}|${view.failed}`}
       legend={legend}
       stats={
         <Stats>
@@ -94,7 +96,7 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
           ) : (
             <table className="data-table dst-table">
               <thead>
-                <tr><th>How the schedule is chosen</th><th>Tried until first failure</th><th>Failure replays</th></tr>
+                <tr><th>How the schedule is chosen</th><th>Tried until first failure</th><th>Failed when the same experiment ran 20 more times</th></tr>
               </thead>
               <tbody>
                 <tr><th scope="row" className="keep-case">seeded hunt</th><td>{s.compare.seeded.tries ?? 'none'}</td><td>{s.compare.seeded.replayed} of {REPLAYS}</td></tr>
@@ -102,10 +104,10 @@ export function LeakScene({ picker }: { picker: ReactNode }) {
               </tbody>
             </table>
           )}
-          <p className="dst-note">The live row draws each run's schedule from {randomText}. A failure found that way cannot be asked for again; a seed can.</p>
+          <p className="dst-note">The live row draws each run's schedule from {randomText}. A failure found that way cannot be asked for again; a seed can. The stand-in's counter restarts from zero on each press, so the live row repeats exactly: it is a fixed sequence standing in for chaos, not real chaos.</p>
         </Box>
         <Box>
-          <SectionTitle hint={`the schedule of seed ${s.seed}, with the leak off`}>The failing run</SectionTitle>
+          <SectionTitle hint={`the schedule of seed ${s.seed}, with the leak off`}>{view.failed ? 'The failing run' : 'The run'}</SectionTitle>
           <BookingDiagram run={view} />
         </Box>
         <ProvenanceRow>

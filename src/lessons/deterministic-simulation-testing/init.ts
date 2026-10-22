@@ -26,9 +26,11 @@ export interface MoveState {
   requestA: boolean;
   requestB: boolean;
   dropReplicate: boolean;
+  /** The traced boundary stays hidden until the learner asks, so finding where the verdict flips is a task and not a read-out. */
+  reveal: boolean;
 }
 export const DEFAULT_GAP = 0;
-export const initialMove = (): MoveState => ({ seed: BROKEN_SEED, gap: DEFAULT_GAP, requestA: true, requestB: true, dropReplicate: false });
+export const initialMove = (): MoveState => ({ seed: BROKEN_SEED, gap: DEFAULT_GAP, requestA: true, requestB: true, dropReplicate: false, reveal: false });
 
 export interface LeakState {
   leak: boolean;
@@ -49,6 +51,13 @@ export const initialLeak = (): LeakState => ({ leak: false, fix: false, seed: BR
 export type ExhaustiveState = { mode: 'async' | 'single-writer' };
 export const initialExhaustive = (): ExhaustiveState => ({ mode: 'async' });
 
+/** The leak scene's opening sentence: whether the seed oversells comes from the run, and the replay claim is scoped to "almost every". */
+export function leakIntro(seed: number, failed: boolean, leak: boolean, fix: boolean): string {
+  const verdict = failed ? `Seed ${seed} oversells with independent grants.` : fix ? `Seed ${seed} passes, because all bookings go through r1, which alone grants.` : `Seed ${seed} passes with independent grants (${pctText(1 - failureProbability(WINDOW.default, 0), 0)} of seeds pass at a window of ${WINDOW.default} ms).`;
+  const replay = leak ? 'With ambient randomness on, a node reads a counter that outlives the run, so almost every replay is a different run.' : 'The seed is the whole input, so a replay is the same run.';
+  return `${verdict} ${replay}`;
+}
+
 export const randomText = 'a stand-in for ambient nondeterminism: a module-level counter that is not reset between runs (lesson source may not call the clock or an unseeded random generator, so this is the labelled stand-in)';
 
 export function selectedSeed(s: HuntState, h: Hunt | null): number | null {
@@ -62,10 +71,25 @@ export function huntCaption(s: HuntState, h: Hunt | null): string {
   return `Seed ${h.failures[0]} is the first to oversell, after ${h.triesToFirst} tried (the exact mean wait is ${expectedTries(s.windowMs, s.loss).toFixed(2)}). ${h.failures.length} of ${integer(h.count)} seeds fail, sampled, against the exact ${exact}.`;
 }
 
-export function moveCaption(m: MoveState, failed: boolean, delayMs: number | null): string {
-  const rule = delayMs === null ? 'No replicate message was delivered in this run, so nothing tells the second replica about the first booking.' : `This seed oversells when the later request arrives before the earlier one's replicate does: that replicate took ${delayMs.toFixed(2)} ms, so any gap under ${delayMs.toFixed(2)} ms oversells.`;
-  return `At a gap of ${m.gap} ms: ${failed ? 'both clients are granted the seat' : 'only one client is granted the seat'}. ${rule}`;
+/** What editing the fault list did: the unedited schedule's verdict against the edited one. */
+export function editedLabel(baselineFailed: boolean, failed: boolean): string {
+  if (baselineFailed) return failed ? 'still fails' : 'now passes';
+  return failed ? 'now fails' : 'still passes';
 }
+
+export function moveCaption(m: MoveState, failed: boolean, baselineFailed: boolean, replicate: { delayMs: number | null; dropped: boolean }): string {
+  const verdict = `At a gap of ${m.gap} ms: ${failed ? 'both clients are granted the seat' : 'only one client is granted the seat'}.`;
+  if (!m.requestA || !m.requestB) return `${verdict} Only one booking is in the schedule, so there is no race: one grant is all there can be, whatever the gap.`;
+  const edit = m.dropReplicate ? ` Every replicate from r1 is dropped in this schedule, which ${failed && !baselineFailed ? 'is what makes it fail: the edit caused the failure' : failed ? 'is not needed for this failure' : 'does not matter here because B is first'}.` : '';
+  if (!m.reveal) return `${verdict}${edit} Move the gap to find where the verdict flips; the traced boundary is hidden until you press Show the boundary.`;
+  if (replicate.dropped) return `${verdict}${edit} The replicate was dropped, so no delay applies to it.`;
+  if (replicate.delayMs === null) return `${verdict}${edit} No replicate message was sent in this run.`;
+  const d = replicate.delayMs.toFixed(2);
+  return `${verdict}${edit} The earlier request's replicate takes ${d} ms (read from this run's trace), so any gap under ${d} ms oversells, in a failing run and a passing one alike.`;
+}
+
+/** Sub-line of the replicate-delay stat: the two boundaries only once the learner has asked to see them. */
+export const delaySub = (m: Pick<MoveState, 'reveal' | 'seed'>): string => (m.reveal ? `this seed: ${boundaryText(m.seed)}` : 'hidden: find where the verdict flips, then press Show the boundary');
 
 export const boundaryText = (seed: number): string => `${boundaryOf(seed, 1).toFixed(2)} ms when A is first, ${boundaryOf(seed, -1).toFixed(2)} ms when B is first`;
 
@@ -79,5 +103,5 @@ export function exhaustiveText(ex: Exhaustive): string {
 export function seededText(r: SeedsResult<BookMsg>, seeds = 200): string {
   return r.ok
     ? `${integer(r.seeds)} schedules passed (seeds 1 to ${seeds}, with 10% loss and 15% duplication); sampled, not exhaustive.`
-    : `Fails on seed ${r.seed}: ${r.message} (the lowest failing seed of the ${seeds} tried, sampled).`;
+    : `Fails on seed ${r.seed}: ${r.message} (the lowest failing seed of the ${seeds} tried, with 10% loss and 15% duplication, so it can differ from the Hunt scene's lowest seed; sampled).`;
 }

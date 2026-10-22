@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
@@ -87,6 +88,9 @@ export function HuntScene({ picker }: { picker: ReactNode }) {
             </div>
           </Box>
         )}
+        <p className="dst-note">
+          Related: a failing seed plays the part of a property-based test's counterexample, for a whole schedule (<Link to="/lesson/property-based-testing">property-based testing</Link>), and a replayable failure is the cure for <Link to="/lesson/flaky-tests">flaky tests</Link>.
+        </p>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={s.start}>two replicas on the distSim harness; the seed sets the request times, the link delays and the loss</Provenance>
           <Provenance kind="toy">a deliberately small bug, not a real booking system</Provenance>

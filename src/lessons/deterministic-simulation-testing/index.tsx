@@ -35,7 +35,7 @@ const lesson: LessonModule = {
   tryThis: [
     `At the defaults (window ${WINDOW.default} ms, no loss, 200 seeds from seed 1) press Hunt: seed ${hunted.failures[0]} is the first to oversell after ${hunted.triesToFirst} seeds, and ${hunted.failures.length} of 200 fail, next to the exact ${pctText(exact, 1)}.`,
     `After the hunt the first failing seed is selected: press Replay seed, then Replay again. The three trace hashes (${failing.hash} each) are identical.`,
-    `In "Move the fault" (seed ${BROKEN_SEED}, gap 0) both clients are granted the seat, and the traced replicate delay is ${decimal(boundary, 2)} ms. Drag the gap to +4 ms and the failure disappears; drag it back under ${decimal(boundary, 2)} ms and it returns.`,
+    `In "Move the fault" (seed ${BROKEN_SEED}, gap 0) both clients are granted the seat, and the traced boundary is hidden. Drag the gap to +4 ms and the failure disappears; drag it back toward 0 to find where it returns, then press "Show the boundary": the traced replicate delay is ${decimal(boundary, 2)} ms and any gap under it oversells.`,
     `In "A leak, and live chaos" switch ambient randomness on and press Replay seed three times: the trace hashes differ. Then press Replay 20 times: replay agreement reads ${leaked.agree} of ${REPLAYS}, against ${REPLAYS} of ${REPLAYS} with the leak off.`,
     `In "A leak, and live chaos" turn the leak off, pick "All through r1 (single writer)" and press Hunt 200 seeds: ${fixedHunt.failures.length} failed. In "Every schedule" the explorer agrees: the single writer holds in all ${writerStates} states of its model.`,
   ],
@@ -88,7 +88,7 @@ const lesson: LessonModule = {
         'A hundred more seeds would be wasted effort, so the search can stop',
       ],
       answer: 0,
-      why: 'A sample of schedules passing is a statement about those schedules. With a failure chance of 1 in 300 per seed, 200 clean seeds are the likely outcome, so the result cannot rule such a bug out.',
+      why: 'A sample of schedules passing is a statement about those schedules. With a failure chance of 1 in 300 per seed, 200 clean seeds happen about half the time ((1 - 1/300)^200 is about 51%), so the result cannot rule such a bug out.',
     },
     {
       q: 'The closed form says 32.6% of seeds fail at W = 30. About how many seeds do you try before the first failure, on average?',
