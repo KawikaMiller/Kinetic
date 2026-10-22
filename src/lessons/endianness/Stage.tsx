@@ -63,7 +63,7 @@ function useHexField(width: Width, onValue: (v: bigint) => void) {
     <>
       <TextField label="Value (hex)" value={draft} onChange={setDraft} onEnter={submit} placeholder={hexValue(DEFAULT_VALUE[width], width)} width={190} maxLength={MAX_TYPED} spellCheck={false} />
       <Button onClick={submit} disabled={!draft.trim()}>Set</Button>
-      {error && <Hint tone="muted" className="en-error">{error}</Hint>}
+      {error && <Hint tone="bad">{error}</Hint>}
     </>
   );
   return { field, clearError: () => setError(null) };
@@ -392,7 +392,7 @@ function NetworkScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="Port (decimal)" value={draft} onChange={setDraft} onEnter={submit} placeholder="443" width={120} maxLength={MAX_TYPED} spellCheck={false} />
           <Button onClick={submit} disabled={!draft.trim()}>Set port</Button>
-          {error && <Hint tone="muted" className="en-error">{error}</Hint>}
+          {error && <Hint tone="bad">{error}</Hint>}
         </>,
       ]}
     >

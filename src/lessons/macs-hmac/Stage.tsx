@@ -138,7 +138,7 @@ export function Stage() {
         <div className="mac-cols">
           <Box className="mac-col">
             <TextArea label="The order (JSON)" value={draft} onChange={edit} rows={3} />
-            {!parsed.ok && <Hint className="mac-error">{parsed.error} Still sending the last valid order.</Hint>}
+            {!parsed.ok && <Hint tone="bad">{parsed.error} Still sending the last valid order.</Hint>}
             {d && (
               <>
                 <SectionTitle>Arrives as</SectionTitle>

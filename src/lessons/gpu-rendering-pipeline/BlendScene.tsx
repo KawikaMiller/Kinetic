@@ -6,7 +6,7 @@ import { Button, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Sta
 import { decimal } from '../../core/format';
 import { blendCaption, regionLabel } from './captions';
 import { ALPHA_RANGE, BACKGROUND, BLEND_GRID, COLOUR_A, COLOUR_B, blend, initialBlend, probePixel, type BlendOrder, type BlendState, type Region } from './blend';
-import { paintPixels, rgbText } from './paint';
+import { paintPixels, rgbText } from '../../components/canvasImage';
 
 const IMAGE_SCALE = 10;
 const TABLE_MIN_WIDTH = 340;

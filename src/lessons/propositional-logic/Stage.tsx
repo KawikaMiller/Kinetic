@@ -134,7 +134,7 @@ export function Stage() {
                 placeholder={slot === 0 ? 'p → q' : 'compare with…'}
                 className={active === slot ? 'pl-field is-active' : 'pl-field'}
               />
-              {errors[slot] && <Hint className="pl-error">{errors[slot]}</Hint>}
+              {errors[slot] && <Hint tone="bad" className="pl-error">{errors[slot]}</Hint>}
             </div>
           ))}
         </>,

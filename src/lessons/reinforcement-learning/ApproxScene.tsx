@@ -8,7 +8,7 @@ import { liveStates } from './mdp';
 import { RlGrid } from './RlGrid';
 import { APPROX_DEFAULT } from './settings';
 
-const WORLDS = [{ value: 'open', label: 'Open grid' }, { value: 'maze', label: 'Walled maze' }];
+const WORLDS = [{ value: false, label: 'Open grid' }, { value: true, label: 'Walled maze' }];
 
 export function ApproxScene({ picker }: { picker: ReactNode }) {
   const [maze, setMaze] = useState<boolean>(APPROX_DEFAULT.maze);
@@ -40,7 +40,7 @@ export function ApproxScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="World" value={maze ? 'maze' : 'open'} onChange={(v) => setMaze(v === 'maze')} options={WORLDS} />
+          <Segmented label="World" value={maze} onChange={setMaze} options={WORLDS} />
           <Slider label="TD updates" value={updates} min={0} max={TD_UPDATES_MAX} step={1000} onChange={setUpdates} format={(v) => v.toLocaleString('en-US')} />
         </>,
       ]}

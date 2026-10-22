@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { joinList } from '../../core/format';
 import { expectCaption } from '../../core/testing/captions';
-import { billCaption, capitalise, cheapestClean, clockText, joinList, minuteCaption, policyCaption } from './frames';
+import { billCaption, capitalise, cheapestClean, clockText, minuteCaption, policyCaption } from './frames';
 import lesson from './index';
 import {
   CONTROLLER_DEFAULT, FLASH, FOCUS_MINUTE, INSTANCE_RPS, MAX_INSTANCES, MINUTES_PER_DAY, POLICIES, PRESETS, SCENE_DEFAULT, bill, ceilDiv, createFleetSim, desiredCount, loadCurve,

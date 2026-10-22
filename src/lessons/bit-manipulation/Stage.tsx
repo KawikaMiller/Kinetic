@@ -180,8 +180,8 @@ function OpsScene({ picker }: { picker: ReactNode }) {
               <Button onClick={() => submit('b')} disabled={!drafts.b.trim()}>Set B</Button>
             </>
           )}
-          {errors.a && <Hint tone="muted" className="bm-error">A: {errors.a}</Hint>}
-          {errors.b && usesB(op) && <Hint tone="muted" className="bm-error">B: {errors.b}</Hint>}
+          {errors.a && <Hint tone="bad">A: {errors.a}</Hint>}
+          {errors.b && usesB(op) && <Hint tone="bad">B: {errors.b}</Hint>}
         </>,
         <>
           <ControlGroup label="Real uses">
@@ -427,7 +427,7 @@ function TricksScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="Type x" value={draft} onChange={setDraft} onEnter={submit} placeholder={TYPE_HINT} width={170} maxLength={MAX_TYPED} spellCheck={false} />
           <Button onClick={submit} disabled={!draft.trim()}>Set x</Button>
-          {error && <Hint tone="muted" className="bm-error">{error}</Hint>}
+          {error && <Hint tone="bad">{error}</Hint>}
         </>,
       ]}
     >

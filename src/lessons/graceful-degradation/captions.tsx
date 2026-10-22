@@ -1,14 +1,10 @@
 import type { ReactNode } from 'react';
-import { plural, sig } from '../../core/format';
+import { dollars, joinList, plural, sig } from '../../core/format';
 import {
   BASE_PAGE_MS, QUEUE_BOUND, SIM_SECONDS, SERVICES, SERVICE_NAME, TIERS, WIDGETS, WIDGET_NAME, firstMinute, journey, pageMs, staleAgeMin, stateWord, widgetStates,
   type BrownoutPoint, type CacheConfig, type Checkout, type HealthMap, type MinuteServed, type Options, type Policies, type QueueRun,
 } from './model';
 
-/** "a", "a and b", "a, b and c". */
-export const listWords = (items: readonly string[]): string => (items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
-
-export const money = (x: number): string => `$${x.toFixed(2)}`;
 export const msText = (ms: number): string => (ms >= 1000 ? `${sig(ms / 1000)} s` : `${sig(ms)} ms`);
 
 /** What the page does under the current failures, computed from the same functions that fill the stats. */
@@ -24,7 +20,7 @@ export function widgetCaption(health: HealthMap, policies: Policies, options: Op
   const what = (w: (typeof WIDGETS)[number]) => `${WIDGET_NAME[w]} is ${stateWord(states[w])}${states[w] === 'stale' ? ` (${staleAgeMin(outageMin)} min old)` : ''}`;
   return (
     <>
-      {listWords(failed.map((s) => `${SERVICE_NAME[s]} is ${health[s]}`))}. {changed.length === 0 ? 'No widget changes' : `${listWords(changed.map(what))}`}. The page takes {msText(pageMs(health, policies, options))}.{' '}
+      {joinList(failed.map((s) => `${SERVICE_NAME[s]} is ${health[s]}`))}. {changed.length === 0 ? 'No widget changes' : `${joinList(changed.map(what))}`}. The page takes {msText(pageMs(health, policies, options))}.{' '}
       {blocked ? (
         <>
           <span className="hl bad wrap">core journey blocked at {blocked.label}</span> because {blocked.reason}.
@@ -39,7 +35,7 @@ export function widgetCaption(health: HealthMap, policies: Policies, options: Op
 /** What a load and a threshold do to the page and to the queue, from the model's point and run. */
 export function brownoutCaption(lambda: number, threshold: number, degrade: boolean, point: BrownoutPoint, run: QueueRun, seed: number): ReactNode {
   const off = TIERS.filter((_, i) => !point.on[i]);
-  const offText = off.length === 0 ? (degrade ? 'No tier is off yet' : 'Degradation is off, so every tier stays on') : `${listWords(off.map((t) => `${t.id} ${t.name}`))} ${off.length === 1 ? 'is' : 'are'} off`;
+  const offText = off.length === 0 ? (degrade ? 'No tier is off yet' : 'Degradation is off, so every tier stays on') : `${joinList(off.map((t) => `${t.id} ${t.name}`))} ${off.length === 1 ? 'is' : 'are'} off`;
   const saturated = point.rho >= 1;
   return (
     <>
@@ -96,10 +92,10 @@ export function staleSummary(c: CacheConfig, rows: readonly MinuteServed[], rule
       {rule === 'fail-closed'
         ? ch.outcome === 'refused'
           ? 'refused rather than charge a price it could not confirm: degrade what is shown, never what moves money.'
-          : `charged the live ${money(ch.livePrice)}.`
+          : `charged the live ${dollars(ch.livePrice)}.`
         : ch.outcome === 'charged-stale'
-          ? `charged the cached ${money(ch.cachedPrice)} while the live price was ${money(ch.livePrice)}${ch.cachedPrice === ch.livePrice ? ', which happens to match' : ''}.`
-          : `charged ${money(ch.charged ?? 0)}.`}
+          ? `charged the cached ${dollars(ch.cachedPrice)} while the live price was ${dollars(ch.livePrice)}${ch.cachedPrice === ch.livePrice ? ', which happens to match' : ''}.`
+          : `charged ${dollars(ch.charged ?? 0)}.`}
     </>
   );
 }

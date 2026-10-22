@@ -69,12 +69,14 @@ export interface SeqLayout {
   /** Lifelines run from head bottom to here. */
   lifelineEnd: number;
   rows: SeqRow[];
-  /** Container width below which the label text would render under MIN_TEXT_PX (core/scale). */
+  /** Container width below which the smallest text drawn (the notes at NOTE_FONT when any message has one, else the labels at FONT) would render under MIN_TEXT_PX (core/scale). */
   minWidth: number;
 }
 
 export const SEQ = {
   FONT: 12,
+  /** The note font size in kit.css (`.seq-note`), smaller than FONT: with notes it sets the narrowest readable width. */
+  NOTE_FONT: 11,
   /** Approximate advance of one character of the 12px UI font. */
   CHAR_W: 6.6,
   LINE_H: 15,
@@ -262,7 +264,7 @@ export function sequenceLayout(actors: readonly SeqActor[], messages: readonly S
     head,
     lifelineEnd,
     rows,
-    minWidth: minWidthForText(W, SEQ.FONT),
+    minWidth: minWidthForText(W, messages.some((m) => m.note) ? SEQ.NOTE_FONT : SEQ.FONT),
   };
 }
 

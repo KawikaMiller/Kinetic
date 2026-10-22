@@ -73,8 +73,8 @@ export function EncryptScene({ picker, rsaKey }: { picker: ReactNode; rsaKey: Rs
           <Toggle label="Message" value={input.mode === 'word'} onChange={(w) => setInput({ mode: w ? 'word' : 'number', text: input.text })} off="Number" on="Word" />
           <TextField label={input.mode === 'word' ? 'Word' : 'm'} value={input.text} onChange={(t) => setInput({ ...input, text: t })} onEnter={() => apply()} width={140} spellCheck={false} />
           <Button variant="primary" onClick={() => apply()} disabled={!typed.ok}>Encrypt</Button>
-          {!typed.ok && <Hint className="rsa-error">{typed.error}</Hint>}
-          {!parsedApplied.ok && <Hint className="rsa-error">The last message doesn't fit this key ({parsedApplied.error}) Showing m = 2.</Hint>}
+          {!typed.ok && <Hint tone="bad">{typed.error}</Hint>}
+          {!parsedApplied.ok && <Hint tone="bad">The last message doesn't fit this key ({parsedApplied.error}) Showing m = 2.</Hint>}
         </>,
         <ControlGroup key="p" label="Try">
           {PRESETS.map((p) => (

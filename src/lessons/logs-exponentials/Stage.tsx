@@ -208,7 +208,7 @@ function CountField({ n, setN, label }: { n: number; setN: (v: number) => void; 
     <>
       <TextField label={label} value={text} onChange={setText} onEnter={apply} width={170} spellCheck={false} />
       <Button onClick={apply} disabled={parsed === null || parsed === n}>Use it</Button>
-      {parsed === null && <Hint className="le-error">A whole number from 1 to {group(pow2(40))} (commas or 1e6 are fine).</Hint>}
+      {parsed === null && <Hint tone="bad">A whole number from 1 to {group(pow2(40))} (commas or 1e6 are fine).</Hint>}
     </>
   );
 }

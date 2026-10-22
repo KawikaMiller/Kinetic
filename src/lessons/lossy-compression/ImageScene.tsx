@@ -8,7 +8,8 @@ import { lerp } from '../../core/math';
 import { DEFAULT_QUALITY, QUALITY } from './blocks';
 import { dB, imageCaption } from './captions';
 import { RAW_BYTES, SIDE, measure, rateDistortion, syntheticImage } from './image';
-import { grey, paintPixels, tokenRgb } from './paint';
+import { grey } from './paint';
+import { paintPixels, tokenRgb } from '../../components/canvasImage';
 
 const SCALE = 3;
 const ERROR_FULL = 64;

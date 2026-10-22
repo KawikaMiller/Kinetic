@@ -159,7 +159,7 @@ export function Stage() {
           <TextField label="Type a number" value={draft} onChange={setDraft} onEnter={submit} placeholder={INPUT_EXAMPLES} width={200} spellCheck={false} />
           <Segmented label="No prefix? Read as" value={readAs} onChange={setReadAs} options={([10, 16, 8, 2] as Base[]).map((b) => ({ value: b, label: BASE_NAMES[b] }))} />
           <Button onClick={submit} disabled={!draft.trim()}>Show bits</Button>
-          {inputError && <Hint className="bh-error">{inputError}</Hint>}
+          {inputError && <Hint tone="bad">{inputError}</Hint>}
         </>,
         <ControlGroup key="presets" label="Where you meet other bases">
           {PRESETS.map((p) => (

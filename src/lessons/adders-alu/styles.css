@@ -3,7 +3,6 @@
 .aa-board { flex: 1 1 420px; min-width: 0; }
 .aa-table { flex: 0 0 auto; align-self: center; }
 .aa-svg { display: block; width: 100%; height: auto; }
-.aa-error { color: var(--bad); }
 
 /* Gate circuit (components/scene Gates): high wires glow here. */
 .aa-svg .gate-wire.is-high { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hi) 70%, transparent)); }

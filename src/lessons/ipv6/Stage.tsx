@@ -118,7 +118,7 @@ function AddressScene({ picker }: { picker: ReactNode }) {
         <>
           <TextField label="IPv6 address" value={draft} onChange={setDraft} onEnter={submit} width={330} maxLength={60} spellCheck={false} />
           <Button onClick={submit} disabled={!draft.trim()}>Set</Button>
-          {error && <Hint tone="muted" className="v6-error">{error}</Hint>}
+          {error && <Hint tone="bad">{error}</Hint>}
         </>,
         <ControlGroup key="presets" label="Presets">
           {PRESETS.map((p) => (

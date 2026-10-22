@@ -1,10 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { dollars } from '../../core/format';
 import { Link } from 'react-router-dom';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
-import { billCaption, money, priceNote } from './frames';
+import { billCaption, priceNote } from './frames';
 import {
   CONTROLLER_DEFAULT, POLICIES, POLICY_NAME, PRESETS, PRESET_NAME, SCENE_DEFAULT, WARMUP_RANGE, bill, cost, runFleet, type Policy, type Preset,
 } from './model';
@@ -68,8 +69,8 @@ export function BillScene({ picker }: { picker: ReactNode }) {
                 {bills.map(({ preset, bill: b }) => (
                   <tr key={preset} className={preset === focus ? 'as-picked' : ''}>
                     <th scope="row" className="keep-case">{PRESET_NAME[preset]}</th>
-                    <td>{money(cost(b.autoHours))}</td>
-                    <td>{money(cost(b.staticHours))} <span className="as-dim">({b.staticInstances} instances)</span></td>
+                    <td>{dollars(cost(b.autoHours))}</td>
+                    <td>{dollars(cost(b.staticHours))} <span className="as-dim">({b.staticInstances} instances)</span></td>
                     <td>{b.saving === null ? '–' : pctText(b.saving, 0)}</td>
                     <td className={b.violationMinutes > 0 ? 'as-bad' : 'as-good'}>{sig(b.violationMinutes)}</td>
                   </tr>

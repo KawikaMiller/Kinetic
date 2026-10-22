@@ -88,7 +88,7 @@ export function LiveScene({ picker, mode }: { picker: ReactNode; mode: Mode }) {
         ...(mode === 'trap'
           ? [
               <>
-                <Segmented label="Traffic" value={spike ? 'spike' : 'normal'} onChange={(v) => setSpike(v === 'spike')} options={[{ value: 'normal', label: 'Normal' }, { value: 'spike', label: 'Spike' }]} />
+                <Segmented label="Traffic" value={spike} onChange={setSpike} options={[{ value: false, label: 'Normal' }, { value: true, label: 'Spike' }]} />
                 <Button onClick={() => handScale('web', SCALE_BY_HAND)}>Scale web to {SCALE_BY_HAND} by hand</Button>
                 <Button onClick={() => setW((x) => commit(x, withReplicas(x.desired, 'web', SCALE_BY_HAND)))}>Commit web = {SCALE_BY_HAND} to git</Button>
                 <Button onClick={() => setW((x) => setPaused(x, !x.paused))}>{w.paused ? 'Resume sync' : 'Pause sync (logged override)'}</Button>

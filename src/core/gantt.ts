@@ -23,13 +23,17 @@ export interface BarGeometry {
 
 /**
  * A bar from `start` to `end` on a track spanning `domain`. `progress` (0..1, default 1)
- * draws only that share of it, for a job still running.
+ * draws only that share of it, for a job still running. A bar that begins before the domain
+ * is clipped at its left edge (it never paints over the lane labels), and `progress` still
+ * counts from the bar's real start: half done is half of the whole bar, minus what is cut off.
  */
 export function barGeometry(start: number, end: number, [d0, d1]: Domain, progress = 1): BarGeometry {
   const span = d1 - d0;
   const left = ((start - d0) / span) * 100;
   const full = ((end - start) / span) * 100;
-  return { left, full, shown: full * progress };
+  if (left >= 0) return { left, full, shown: full * progress };
+  const cut = -left;
+  return { left: 0, full: Math.max(0, full - cut), shown: Math.max(0, full * progress - cut) };
 }
 
 /** Axis tick positions: nice values inside the domain and where they sit, in % of the track. */

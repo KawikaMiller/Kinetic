@@ -8,7 +8,6 @@
 .bm-sign { color: var(--orange); font-weight: 700; }
 .bm-note { margin: 0; color: var(--text); font-size: 13px; }
 .bm-honest { color: var(--muted); }
-.bm-error { color: var(--bad); }
 .bm-flagnames { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .bm-flagnames .chip.tone-dim { color: var(--muted); }
 .bm-flagnames .chip.is-mask { outline: 2px solid var(--violet); outline-offset: 1px; }

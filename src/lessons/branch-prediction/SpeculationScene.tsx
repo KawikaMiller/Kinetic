@@ -13,8 +13,8 @@ const STEP_MS = 650;
 const STRIP_CELL = { cell: 30, gap: 3, font: 11 } as const;
 const STRIP_MIN_WIDTH = 440;
 const GUESSES = [
-  { value: 'right' as const, label: 'Right' },
-  { value: 'wrong' as const, label: 'Wrong' },
+  { value: true, label: 'Right' },
+  { value: false, label: 'Wrong' },
 ];
 
 const slotCell = (kind: SlotKind, age: number | null): GridCellSpec => {
@@ -66,7 +66,7 @@ export function SpeculationScene({ picker }: { picker: ReactNode }) {
         <>
           {picker}
           <Slider label="Branch resolves at stage" value={depth} min={DEPTH_RANGE.min} max={DEPTH_RANGE.max} onChange={setDepth} />
-          <Segmented label="The predictor guessed" value={guessRight ? 'right' : 'wrong'} onChange={(v) => setGuessRight(v === 'right')} options={GUESSES} />
+          <Segmented label="The predictor guessed" value={guessRight} onChange={setGuessRight} options={GUESSES} />
         </>,
       ]}
     >

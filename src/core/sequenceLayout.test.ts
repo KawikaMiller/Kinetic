@@ -98,8 +98,42 @@ describe('sequenceLayout', () => {
   });
 
   it('reports the narrowest container that keeps text at 8px or more', () => {
-    expect(L.minWidth).toBe(Math.ceil((L.width * 8) / 12));
-    expect((SEQ.FONT * L.minWidth) / L.width).toBeGreaterThanOrEqual(MIN_TEXT_PX);
+    const smallest = DORA.some((m) => m.note) ? SEQ.NOTE_FONT : SEQ.FONT;
+    expect(L.minWidth).toBe(Math.ceil((L.width * MIN_TEXT_PX) / smallest));
+    expect((smallest * L.minWidth) / L.width).toBeGreaterThanOrEqual(MIN_TEXT_PX);
+  });
+
+  describe('with notes (11px, under the 12px labels)', () => {
+    const actors: SeqActor[] = [{ id: 'a', label: 'Client' }, { id: 'b', label: 'Server' }, { id: 'c', label: 'Peer' }];
+    const msgs = (note: string): SeqMessage[] => [
+      { id: '1', from: 'a', to: 'b', label: 'request with a fairly long label', note },
+      { id: '2', from: 'b', to: 'c', label: 'forward it', note },
+      { id: '3', from: 'c', to: 'a', label: 'reply', note: 'a short note' },
+    ];
+    const NOTES = ['fits', "over 1440 with don't-fragment", 'after a timeout, the same size again, and again, and once more after that'];
+
+    it('minWidth keeps the notes at 8px or more in whichever layout SequenceDiagram picks, roomy or compact', () => {
+      for (const note of NOTES) {
+        const m = msgs(note);
+        const roomy = sequenceLayout(actors, m, undefined, { wrapNotes: false });
+        const compact = sequenceLayout(actors, m);
+        for (const room of [null, 300, 390, 768, roomy.width * ROOMY_MIN_SCALE, roomy.width * 2]) {
+          const picked = pickLayout(roomy, compact, room);
+          expect((picked.minWidth / picked.width) * SEQ.NOTE_FONT, `${note} at ${room}`).toBeGreaterThanOrEqual(MIN_TEXT_PX - 1e-9);
+        }
+      }
+    });
+
+    it('sizing from the 12px labels alone would have left a wide note under 8px', () => {
+      const roomy = sequenceLayout(actors, msgs(NOTES[1]), undefined, { wrapNotes: false });
+      expect((Math.ceil((roomy.width * MIN_TEXT_PX) / SEQ.FONT) / roomy.width) * SEQ.NOTE_FONT).toBeLessThan(MIN_TEXT_PX);
+    });
+
+    it('without a note it is sized from the labels, as before', () => {
+      const m = msgs('x').map(({ note: _note, ...rest }) => rest);
+      const L2 = sequenceLayout(actors, m);
+      expect(L2.minWidth).toBe(Math.ceil((L2.width * MIN_TEXT_PX) / SEQ.FONT));
+    });
   });
 
   it('a three-actor ladder with short labels fits a phone without scrolling', () => {

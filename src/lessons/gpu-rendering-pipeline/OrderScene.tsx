@@ -5,7 +5,7 @@ import { Button, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, Togg
 import type { TokenName } from '../../core/palette';
 import { overdrawCaption } from './captions';
 import { OVERDRAW_GRID, ORDERS, initialOverdraw, overdraw, type OverdrawState } from './overdraw';
-import { paintPixels, tokenRgb } from './paint';
+import { paintPixels, tokenRgb } from '../../components/canvasImage';
 
 const IMAGE_SCALE = 8;
 /** Triangles from the farthest to the nearest take four plain tones, so none of them reads as pass or fail. */

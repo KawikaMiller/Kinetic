@@ -388,7 +388,7 @@ function PrimalityScene({ picker }: { picker: ReactNode }) {
           {picker}
           <TextField label="Number" value={text} onChange={setText} onEnter={apply} width={220} spellCheck={false} />
           <Button variant="primary" onClick={apply} disabled={!('value' in parsed)}>Check</Button>
-          {'error' in parsed && <Hint className="pf-error">{parsed.error} Still showing {n.toString().length > 14 ? `the ${digitsOf(n)}-digit number` : group(n)}.</Hint>}
+          {'error' in parsed && <Hint tone="bad">{parsed.error} Still showing {n.toString().length > 14 ? `the ${digitsOf(n)}-digit number` : group(n)}.</Hint>}
         </>,
         <ControlGroup key="c" label="Try">
           {CANDIDATES.map((c) => (

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
+import type { ButtonHTMLAttributes, MouseEvent, ReactNode, Ref } from 'react';
 import { CLAIM_LABEL, PROVENANCE_LABEL, type ClaimKind, type ProvenanceKind } from '../core/provenance';
 import type { Tone } from '../core/tone';
 import type { Option } from './options';
@@ -56,7 +56,7 @@ export function Slider({
 
 
 /** Pill-style single choice. Good for picking an algorithm, a mode, or a small number. */
-export function Segmented<T extends string | number>({
+export function Segmented<T extends string | number | boolean>({
   options, value, onChange, label, ariaLabel, ref,
 }: {
   options: Option<T>[];
@@ -79,7 +79,7 @@ export function Segmented<T extends string | number>({
       <div className="segmented-track">
         {options.map((o, i) => (
           <button
-            key={o.value}
+            key={String(o.value)}
             type="button"
             {...radio.itemProps(i)}
             className={o.value === value ? 'on' : ''}
@@ -232,17 +232,17 @@ export function ControlGroup({
 
 /**
  * Explanatory text inside a controls row: faint by default, `muted` when it matters
- * more; `block` gives it a line of its own.
+ * more, `bad` for a refusal or error message (a rejected input: say why and what it keeps); `block` gives it a line of its own.
  */
 export function Hint({
   tone = 'faint', block = false, className = '', children,
 }: {
-  tone?: 'faint' | 'muted';
+  tone?: 'faint' | 'muted' | 'bad';
   block?: boolean;
   className?: string;
   children: ReactNode;
 }) {
-  const classes = ['hint', tone === 'muted' && 'is-muted', block && 'is-block', className].filter(Boolean).join(' ');
+  const classes = ['hint', tone === 'muted' && 'is-muted', tone === 'bad' && 'is-bad', block && 'is-block', className].filter(Boolean).join(' ');
   return <span className={classes}>{children}</span>;
 }
 
@@ -270,7 +270,8 @@ export function ChipButton({
   /** Greyed out and not pressable (a sandbox that's full until Reset). */
   disabled?: boolean;
   className?: string;
-  onClick: () => void;
+  /** Receives the click: `e.currentTarget` is the chip, for a handler that hands focus on when the press removes it. */
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
 }) {
   const classes = [

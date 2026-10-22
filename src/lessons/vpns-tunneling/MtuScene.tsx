@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
-import { PhoneLadder } from '../../components/PhoneLadder';
+import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { ChipButton, ControlGroup, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
@@ -103,7 +103,7 @@ export function MtuScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Box>
           <SectionTitle hint="one TCP download through the tunnel">What the transfer sees</SectionTitle>
-          <PhoneLadder actors={ACTORS} messages={messages} step={Math.min(player.frame.index, messages.length - 1)} fit="shown" ariaLabel="The ping, handshake, request and large segment crossing the tunnel, with lost packets marked" />
+          <SequenceDiagram actors={ACTORS} messages={messages} step={Math.min(player.frame.index, messages.length - 1)} fit="shown" ariaLabel="The ping, handshake, request and large segment crossing the tunnel, with lost packets marked" />
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated">a model of one TCP download; nothing is sent</Provenance>

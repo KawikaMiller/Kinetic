@@ -7,7 +7,8 @@ import { integer } from '../../core/format';
 import { DEFAULT_QUALITY, QUALITY } from './blocks';
 import { dB, generationCaption } from './captions';
 import { SAVES, SHIFT, SIDE, generations, syntheticImage } from './image';
-import { grey, paintPixels } from './paint';
+import { grey } from './paint';
+import { paintPixels } from '../../components/canvasImage';
 
 const SCALE = 3;
 interface LossState {

@@ -272,7 +272,7 @@ function Permissions({ picker }: { picker: ReactNode }) {
           {picker}
           <TextField label="chmod" value={arg} onChange={setArg} onEnter={apply} width={140} spellCheck={false} className={error ? 'cl-bad' : ''} />
           <Button variant="primary" onClick={apply}>Apply</Button>
-          {error && <Hint className="cl-error">{error}</Hint>}
+          {error && <Hint tone="bad">{error}</Hint>}
         </>,
         <ControlGroup key="presets" label="Presets">
           {PERMISSION_PRESETS.map((p) => (

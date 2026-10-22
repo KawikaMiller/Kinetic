@@ -109,7 +109,7 @@ function ClockScene({ picker, n, setN }: SceneProps) {
           <Button variant="primary" onClick={() => run('plus')} disabled={!('value' in parsed)}>+ a</Button>
           <Button onClick={() => run('times')} disabled={!('value' in parsed)}>× a</Button>
           <Button onClick={reset}>Reset to 0</Button>
-          {'error' in parsed && <Hint className="ma-error">{parsed.error} The clock keeps its last value.</Hint>}
+          {'error' in parsed && <Hint tone="bad">{parsed.error} The clock keeps its last value.</Hint>}
         </>,
       ]}
     >
@@ -322,8 +322,8 @@ function NegativesScene({ picker }: { picker: ReactNode }) {
           {picker}
           <TextField label="a" value={aText} onChange={typeA} width={110} spellCheck={false} />
           <TextField label="n" value={nText} onChange={typeN} width={110} spellCheck={false} />
-          {'error' in pa && <Hint className="ma-error">a: {pa.error} Showing {fmt(a)}.</Hint>}
-          {'error' in pn && <Hint className="ma-error">n: {pn.error} Showing {fmt(n)}.</Hint>}
+          {'error' in pa && <Hint tone="bad">a: {pa.error} Showing {fmt(a)}.</Hint>}
+          {'error' in pn && <Hint tone="bad">n: {pn.error} Showing {fmt(n)}.</Hint>}
         </>,
         <>
           <Button onClick={back}>← Step back</Button>

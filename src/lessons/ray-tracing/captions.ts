@@ -1,7 +1,7 @@
 /** Captions for every scene, built from the model so each number is the one on screen. Plain strings. */
 import { decimal, integer, pct, plural } from '../../core/format';
 import type { Vec3 } from '../../core/raster3d';
-import { rgbText } from './paint';
+import { rgbText } from '../../components/canvasImage';
 import { BIAS_CHOICES, CLEAN_BIAS, MIRROR_INDEX, PIXELS, SPHERES, type BvhComparison, type Render, type TraceState, type Trail } from './scene';
 
 const n2 = (v: number) => decimal(v, 2);

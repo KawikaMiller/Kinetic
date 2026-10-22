@@ -23,11 +23,10 @@ const LANES = [
 ];
 
 function gapBars(g: GapView, releaseEarly: boolean): GanttBar[] {
-  const from = g.doneMs - ZOOM_MARGIN_MS;
   const bars: GanttBar[] = [
-    { id: 'q1', lane: 'r1', start: Math.max(g.startMs, from), end: g.doneMs, tone: 'bad', label: 'query' },
+    { id: 'q1', lane: 'r1', start: g.startMs, end: g.doneMs, tone: 'bad', label: 'query' },
     { id: 'q1w', lane: 'r1', start: g.doneMs, end: g.writeMs, tone: 'hi', label: 'writing' },
-    { id: 'm', lane: 'marker', start: Math.max(g.startMs, from), end: releaseEarly ? g.doneMs : g.writeMs, tone: 'info', label: 'held' },
+    { id: 'm', lane: 'marker', start: g.startMs, end: releaseEarly ? g.doneMs : g.writeMs, tone: 'info', label: 'held' },
   ];
   if (g.secondMs !== null) bars.push({ id: 'q2', lane: 'r2', start: g.secondMs, end: g.writeMs + ZOOM_MARGIN_MS, tone: 'bad', label: 'a second one' });
   return bars;

@@ -51,7 +51,7 @@ export function RobustScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <Segmented label="Case" value={integers ? 'int' : 'lattice'} onChange={(v) => { setIntegers(v === 'int'); setRan(false); }} options={[{ value: 'lattice', label: 'Doubles near 0.5' }, { value: 'int', label: 'Whole numbers' }]} />
+          <Segmented label="Case" value={integers} onChange={(v) => { setIntegers(v); setRan(false); }} options={[{ value: false, label: 'Doubles near 0.5' }, { value: true, label: 'Whole numbers' }]} />
           {!integers && (
             <Segmented label="Mismatch" value={which} onChange={(v) => { setWhich(v); setRan(false); }} options={found.map((_, i) => ({ value: i, label: `#${i + 1}` }))} />
           )}

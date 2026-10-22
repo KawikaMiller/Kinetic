@@ -1,6 +1,6 @@
 import { decimal, integer } from '../../core/format';
 import type { LessonModule } from '../../core/types';
-import { rgbText } from './paint';
+import { rgbText } from '../../components/canvasImage';
 import {
   BIAS_CHOICES, CLEAN_BIAS, DEFAULT_PIXEL, IMAGE, MANY, PIXELS, PRESETS, compareBvh, differsFromClean, initialTrace, manySpheres, pixelTrail, render, sceneOf, settingsOf,
 } from './scene';

@@ -2,7 +2,7 @@ import { decimal } from '../../core/format';
 import type { LessonModule } from '../../core/types';
 import { blend, initialBlend, probePixel } from './blend';
 import { overdraw } from './overdraw';
-import { rgbText } from './paint';
+import { rgbText } from '../../components/canvasImage';
 import { meshOf } from './mesh';
 import { IMAGE, matrices, shadeImage } from './render';
 import { SHADER_PRESETS, compileChannels } from './shader';

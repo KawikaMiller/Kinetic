@@ -1,8 +1,7 @@
 import { Box, SectionTitle } from '../../components/Panel';
-import { plural } from '../../core/format';
+import { dollars, plural } from '../../core/format';
 import { HORIZON, PRICE_PER_BILLED_SECOND, PRICE_PER_PROVISIONED_SECOND, PRICE_PER_REQUEST, PRICE_VM_PER_SECOND, VM_SLOTS, type Costs, type Run } from './model';
 
-const money = (dollars: number) => `$${dollars.toFixed(2)}`;
 const micro = (dollars: number) => `$${(dollars * 1e6).toFixed(2)} per million`;
 
 /** Pay-per-request plus provisioned against an always-on VM fleet, over the whole run, scaled to a month. */
@@ -27,14 +26,14 @@ export function CostPanel({ run, costs }: { run: Run; costs: Costs }) {
               {plural(costs.served, 'served request')}, {run.billedSeconds.toFixed(1)} billed s (handler plus init), {run.provisionedInstances} provisioned
               {run.provisionedInstances === 1 ? ' instance' : ' instances'} × {HORIZON} s
             </td>
-            <td>{money(costs.functions)}</td>
+            <td>{dollars(costs.functions)}</td>
           </tr>
           <tr className={cheaper === 'vm' ? 'sc-cheaper' : ''}>
             <td>Always-on VM</td>
             <td>
               {plural(costs.vms, 'VM')} running all month, sized for the peak of requests in flight, ignoring cold-start time ({VM_SLOTS} requests at once each)
             </td>
-            <td>{money(costs.vm)}</td>
+            <td>{dollars(costs.vm)}</td>
           </tr>
         </tbody>
       </table>

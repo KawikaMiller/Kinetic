@@ -168,7 +168,7 @@ function OperandInput({ ops }: { ops: ReturnType<typeof useOperands> }) {
     <>
       <TextField label="A, B (0-15)" value={ops.draft} onChange={ops.setDraft} onEnter={ops.submit} placeholder="7, 1" width={110} maxLength={24} spellCheck={false} />
       <Button onClick={ops.submit} disabled={!ops.draft.trim()}>Set</Button>
-      {ops.error && <Hint tone="muted" className="aa-error">{ops.error}</Hint>}
+      {ops.error && <Hint tone="bad">{ops.error}</Hint>}
     </>
   );
 }

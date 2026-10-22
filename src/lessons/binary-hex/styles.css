@@ -2,7 +2,6 @@
 .bh-bin .stat-value { font-size: 15px; }
 .bh-sum { margin: 0; font: 13px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
 .bh-sum b { color: var(--hi); }
-.bh-error { color: var(--bad); }
 .bh-colour { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .bh-swatch { width: 56px; height: 56px; border-radius: 12px; border: 1px solid var(--line-2); flex: none; }
 .bh-colour-bytes { margin: 6px 0 0; font-size: 13.5px; }

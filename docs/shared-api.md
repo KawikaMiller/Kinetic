@@ -132,6 +132,8 @@
 `plural(3, 'step')     // '3 steps'; plural(2, 'entry', 'entries')
 `integer(23414)        // '23,414' — an exact whole count with separators (sig() rounds to 3 figures)
 `pad2(7), clock(605)   // '07', '10:05'
+`joinList(['a', 'b', 'c'])  // 'a, b and c' ('a and b' for two, the item alone for one): the list-in-a-caption sentence
+`dollars(12.5)         // '$12.50' — a dollar amount to the cent (autoscaling, graceful-degradation, object-storage, serverless-cold-starts)
 `latency(50_000)       // '50 µs' — a time in ns, in ns / µs / ms / s (memory-hierarchy)
 `humanDuration(50_000) // '14 hours' — seconds in s / min / hours / days / years; singular at exactly 1 ('1 day')
 `                      // past a million years a power of ten, never a raw float: '3.2 × 10²⁹² years' (no-break spaces round ×)
@@ -382,9 +384,9 @@
 `nodePath                             // the Node binary running the tests
 `tscErrors({ 'a.ts': src })           // tsc.ts: real `tsc --strict` over in-memory files -> [{ file, line, code, message }] (generics-polymorphism, null-option-adts)
 `emitJs(src)                          // tsc.ts: what TypeScript emits for a snippet (types erased)
-`forbiddenCalls(sources, { also?, allow? })  // forbidden.ts: ['file: call', ...] for network / eval calls in raw sources ([] = clean)
+`forbiddenCalls(sources, { also?, allow?, ignoreComments? })  // forbidden.ts: ['file: call', ...] for network / eval calls in raw sources ([] = clean)
 ````
-``forbiddenCalls` is the "this lesson stays inside the page" check: the default set is `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `eval(`, `new Function`; `also: ['localStorage', 'sessionStorage', 'indexedDB', 'newUrl']` adds opt-in shapes and `allow` lifts a default. The lesson keeps its own `import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true })` (it also reads individual sources for its chip assertions) and asserts `expect(forbiddenCalls(sources)).toEqual([])`. Migrated: authz-models, threat-modeling, ssrf-access-control, envelope-encryption-kms, randomness-csprng. Lessons whose check is about clocks and timers (branch-prediction, cache-coherence, memory-allocators, page-tables-tlb, timing-side-channels) strip comments first and test different calls: left alone.
+``forbiddenCalls` is the "this lesson stays inside the page" check: the default set is `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `eval(`, `new Function`; `also: ['localStorage', 'sessionStorage', 'indexedDB', 'newUrl']` adds opt-in shapes and `allow` lifts a default. The lesson keeps its own `import.meta.glob(['./*.ts', './*.tsx', '!./*.test.ts'], { query: '?raw', import: 'default', eager: true })` (it also reads individual sources for its chip assertions) and asserts `expect(forbiddenCalls(sources)).toEqual([])`. Migrated: authz-models, threat-modeling, ssrf-access-control, envelope-encryption-kms, randomness-csprng. `also: NO_CLOCK_OR_TIMER` adds `clock` (`performance.now`, `Date.now`, `new Date`) and `timer` (`setTimeout`, `setInterval`, `requestAnimationFrame`); `ignoreComments: true` drops block and whole-line `//` comments first (`stripComments(source)` is exported for a lesson's own extra scan). Clock-free lessons migrated: branch-prediction, cache-coherence, memory-allocators (keeps its own `Uint8Array|ArrayBuffer` scan), page-tables-tlb, timing-side-channels.
 `- A glued sentence is what a JSX line break next to `{…}` produces: JSX drops a line break that
 `  touches an expression, so text ending a line in `…the port.` with `{n} s later` starting the next
 `  comes out as "port.60 s later" (fix: `{' '}` at the line end). The
@@ -469,12 +471,14 @@
 ````tsx
 `<Segmented label="n" value={n} onChange={setN} options={[{ value: 8, label: '8' }]} />  // numbers now allowed
 `<Segmented ariaLabel="Input size n" value={n} onChange={setN} options={…} />  // no visible label: names the radiogroup itself
+`<Segmented label="World" value={maze} onChange={setMaze} options={[{ value: false, label: 'Open grid' }, { value: true, label: 'Walled maze' }]} />  // booleans allowed: no 'open'/'maze' string mapping (Toggle is the same with the off option first)
 `toOptions(MODES)                                         // [{id,label}] → options (import from components/options)
 `<Toggle label="DNS" value={cached} onChange={setCached} off="Cold lookup" on="Cached" />  // off option always first
 `<TextField label="Key" value={k} onChange={setK} onEnter={insert} onBlur={normalise}
 `           sanitize={(s) => s.replace(/\W/g, '')} width={120} spellCheck={false} className="xx-field" disabled={off} />
 `<ControlGroup label="Presets" inline className="xx-presets">{buttons}</ControlGroup>   // inline: label left of the group
 `<Hint>…or click a number</Hint>                          // tone="muted", block (its own line), className
+`<Hint tone="bad">{error} Still showing 12.</Hint>       // a refused input: red, same size as any Hint (18 lessons; a lesson-local `xx-error` class is no longer needed for the colour)
 `<Stat label="Load" value={…} className="xx-stat">{<Bar …/>}</Stat>   // children render under the value
 `<Stat label={<>Tail <span className="keep-case">μ</span></>} value={3} />   // labels are uppercased by CSS: μ would show as Μ ("M")
 `<PauseButton paused={paused} onToggle={togglePause} />
@@ -484,6 +488,7 @@
 `<ChipButton tone="info" on={flags.includes(f)} onStyle="solid" onClick={toggle}>{f}</ChipButton>  // solid fill when on (a flag, an answer)
 `<ChipButton tone="bad" ariaLabel={`Remove watch ${w}`} onClick={remove}>×</ChipButton>          // an action: no `on`, no aria-pressed
 `<ChipButton tone="info" disabled={full} onClick={() => fire(s)}>{s}</ChipButton>        // greyed out, not pressable (interrupts' full sandbox)
+`<ChipButton tone="bad" onClick={(e) => { refocusAfter(e.currentTarget); remove(); }}>×</ChipButton>  // onClick receives the click event: hand focus on from e.currentTarget, never document.activeElement (cloud-networking-vpc, offline-first-sync)
 `const [scene, picker, setScene] = useScenePicker({ label: 'Lane', options: LANES, initial: 'hash' });  // setScene: one scene hands off to another
 `<StageFrame controls={[rowOne, rowTwo]}>   // array → each wrapped in <Controls>, stacked with a dashed divider
 `<StageFrame minWidth={880}>                // phones: the visual keeps 880px and scrolls sideways inside the stage
@@ -1052,6 +1057,7 @@
 `  use them, and its depth probe moves with `gridKeyTarget`, so it now also takes Home/End and Page Up/Down.
 `- `Arrow dashed` dashes the shaft. `VLine onDrag` is a slider (`role="slider"`, a grip, pointer drag anywhere in the box; arrows call `onStep(±1)`, or nudge 4 units through `onDrag` without one): classification-metrics' threshold.
 `- `paintImage(w, h, draw)` (`components/canvasImage.ts`) is the shared paint-to-data-URL step behind Heat and CellGrid's canvas mode.
+`- Per-pixel images from the same file: `paintPixels(w, h, colourAt, scale)` (row-major, `colourAt(i)` returns an `Rgb` in 0..1), `tokenRgb(token)` (a palette token as `Rgb`), `rgbText(c)` ('(255, 128, 0)' for on-screen numbers) and the `Rgb` type / `CHANNEL_MAX`. Used by ray-tracing, gpu-rendering-pipeline and lossy-compression; their `paint.ts` keep only what is theirs (`paintRings`, `mixRgb`, `grey`).
 `
 `### `core/graphLayout.ts`, `GraphView.tsx` — topological-sort, union-find, minimum-spanning-trees, relations-orders, cycle-detection, dfa-nfa, lexing-tokens, deadlocks, garbage-collection, memory-leaks, build-systems, bundlers-code-splitting, coupling-cohesion, test-doubles, dependency-injection, behavioral-patterns, mobile-app-lifecycle, sockets-api, software-licensing; graph-representations, ci-pipelines
 ````tsx
@@ -1142,6 +1148,7 @@
 ````
 `- **work vs wait vs blocked:** `work` (solid) is running. `wait` (hatched) is *ready*: it could run right now and is waiting its turn, e.g. in a ready queue. `blocked` (dashed outline) *can't* run until something else happens: I/O, a lock, a timer. A thread waiting for a disk read is `blocked`, not `wait`.
 `- Marker labels that would overlap (dhcp's T2 and end on a narrow clock) are nudged apart, measured in the browser; labels that fit don't move.
+`- A bar that begins before the domain is clipped at the left edge of the track (`barGeometry` clamps `left` to 0 and cuts the width and `progress` share by what is outside); one that ends before the domain draws nothing. Pass the real start and end: no hand clamp to `domain[0]` (cache-stampede and autoscaling had one).
 `- `labelMinPx`: a bar drawn narrower than this drops its label (it stays the tooltip and accessible name) instead of showing a clipped one.
 `- Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
 `- The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
@@ -1176,7 +1183,7 @@
 ````
 `- Labels wrap to two lines before the lanes widen. Notes stay on one line (widening the lanes) while that drawing renders at `ROOMY_MIN_SCALE` (85%) or more of its size in its container; narrower than that (a phone) they wrap to two lines too. SequenceDiagram measures its container and picks; desktop drawings look as they always did.
 `- A self-message on the last lifeline gets extra right margin for its label (wrapped to two balanced lines) instead of running off the drawing.
-`- The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its 12px text still renders at 8px or more. Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
+`- The diagram sits in a `WideRegion` at `layout.minWidth`, the narrowest container where its smallest text still renders at 8px or more: the 12px labels, or the 11px notes (`SEQ.NOTE_FONT`) when any message has a `note`, so a diagram with notes is never under 8px and needs no wrapper (the old `PhoneLadder` / `core/ladderWidth` are gone). Three actors with short labels fit a 390 phone, and five scroll (see the DNS demo).
 `- Under the SVG, a screen-reader-only list of the messages shown so far ("Laptop to everyone: DHCPDISCOVER", "Laptop to Relay (broadcast): …").
 `- Example addresses in network demos come from the documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32) or RFC 1918 ranges.
 `

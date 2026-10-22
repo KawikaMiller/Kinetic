@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { CellGrid } from '../../components/CellGrid';
 import { Box, SectionTitle } from '../../components/Panel';
-import { PhoneLadder } from '../../components/PhoneLadder';
+import { SequenceDiagram } from '../../components/SequenceDiagram';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
@@ -67,7 +67,7 @@ export function PunchScene({ picker }: { picker: ReactNode }) {
       <div className="nat-stage stage-pad">
         <Box>
           <SectionTitle hint="A probes first in every tick; each side probes for six ticks, aiming at what it learned">Swap addresses, then punch</SectionTitle>
-          <PhoneLadder actors={ACTORS} messages={messages} step={Math.min(player.frame.index, messages.length - 1)} fit="shown" ariaLabel="The signalling exchange and the probes between the two NATs, with dropped probes marked" />
+          <SequenceDiagram actors={ACTORS} messages={messages} step={Math.min(player.frame.index, messages.length - 1)} fit="shown" ariaLabel="The signalling exchange and the probes between the two NATs, with dropped probes marked" />
         </Box>
         <Box>
           <SectionTitle hint="rows: peer A's NAT, columns: peer B's NAT. Press a cell to try that pair">Which pairs punch</SectionTitle>

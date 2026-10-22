@@ -92,7 +92,7 @@ export function KeygenScene({ picker, params, rsaKey, onParams }: {
           {field('q')}
           {field('e')}
           <Button variant="primary" onClick={() => generate()}>Generate</Button>
-          {errors.length > 0 && <Hint className="rsa-error">{errors.join(' ')} Still showing p = {group(params.p)}, q = {group(params.q)}, e = {group(params.e)}.</Hint>}
+          {errors.length > 0 && <Hint tone="bad">{errors.join(' ')} Still showing p = {group(params.p)}, q = {group(params.q)}, e = {group(params.e)}.</Hint>}
         </>,
         <ControlGroup key="presets" label="Try">
           {PRESETS.map((pr) => (

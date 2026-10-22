@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { dollars } from '../../core/format';
 import { GanttLanes, type GanttBar } from '../../components/GanttLanes';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -7,7 +8,7 @@ import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, St
 import { timeFrames } from '../../core/frames';
 import { barsAt } from '../../core/gantt';
 import { usePlayer } from '../../core/usePlayer';
-import { money, staleIntro, staleMilestones, staleSummary } from './captions';
+import { staleIntro, staleMilestones, staleSummary } from './captions';
 import { initialStale, type StaleState } from './init';
 import {
   CACHE_RANGES, PRICE, TIMELINE_END_MIN, bugProbeMinute, checkout, livePriceAt, originUpAt, runTimeline, segments, type CacheConfig, type MinuteServed, type Served,
@@ -64,12 +65,12 @@ export function StaleScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label={`The user sees at minute ${minute}`} value={seen(row)} color={`var(--${SERVED_TONE[row.served]})`} sub={[originUpAt(c, minute) ? 'the origin is up' : 'the origin is down']} />
-          <Stat label="Price shown" value={shownPrice === null ? 'none' : money(shownPrice)} sub={[shownPrice === null ? 'no copy is safe to show' : row.served === 'stale' ? `from a copy ${row.age} min old` : 'from the cache']} />
+          <Stat label="Price shown" value={shownPrice === null ? 'none' : dollars(shownPrice)} sub={[shownPrice === null ? 'no copy is safe to show' : row.served === 'stale' ? `from a copy ${row.age} min old` : 'from the cache']} />
           <Stat
             label="Checkout charges"
-            value={ch.charged === null ? 'refused' : money(ch.charged)}
+            value={ch.charged === null ? 'refused' : dollars(ch.charged)}
             color={ch.outcome === 'charged-stale' && ch.cachedPrice !== ch.livePrice ? 'var(--bad)' : ch.outcome === 'refused' ? 'var(--hi)' : 'var(--ok)'}
-            sub={[`the live price is ${money(ch.livePrice)}`, s.rule === 'fail-closed' ? 'it reads the live price or refuses' : 'it trusts the cached price']}
+            sub={[`the live price is ${dollars(ch.livePrice)}`, s.rule === 'fail-closed' ? 'it reads the live price or refuses' : 'it trusts the cached price']}
           />
         </Stats>
       }
@@ -116,7 +117,7 @@ export function StaleScene({ picker }: { picker: ReactNode }) {
         <Box className="gd-money">
           <SectionTitle hint="degrade what is shown, never what moves money">The price, shown and charged</SectionTitle>
           <p className="gd-note">
-            The price changes from {money(PRICE.before)} to {money(PRICE.after)} at minute {PRICE.changeAtMin}. A page may show the cached price with its age. A checkout that cannot read the live price should refuse; one that trusts the cache charges the old price.
+            The price changes from {dollars(PRICE.before)} to {dollars(PRICE.after)} at minute {PRICE.changeAtMin}. A page may show the cached price with its age. A checkout that cannot read the live price should refuse; one that trusts the cache charges the old price.
           </p>
           <ProvenanceRow>
             <ClaimLabel kind="practice">many shops refuse a charge they cannot confirm; some treat the price shown as binding, so this is one common rule, not the only one</ClaimLabel>

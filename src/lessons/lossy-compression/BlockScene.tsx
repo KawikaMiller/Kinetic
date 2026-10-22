@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { CellGrid, type GridCellSpec } from '../../components/CellGrid';
-import { paintPixels } from './paint';
+import { paintPixels } from '../../components/canvasImage';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';

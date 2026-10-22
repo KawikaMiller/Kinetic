@@ -255,6 +255,7 @@ function Instant({ bar: b, domain, onClick, place }: { bar: GanttBar; domain: Do
 
 function Bar({ bar: b, domain, onClick, showLabel, place }: { bar: GanttBar; domain: Domain; onClick?: (id: string) => void; showLabel: boolean; place?: InstantLabelPlace }) {
   if (drawsAsInstant(b)) return <Instant bar={b} domain={domain} onClick={onClick} place={place} />;
+  if (b.start < domain[0] && b.end <= domain[0]) return null; // wholly before the domain: nothing to draw, and nothing may spill into the label column
   const g = barGeometry(b.start, b.end, domain, b.progress ?? 1);
   const classes = ['gantt-bar', b.tone && `tone-${b.tone}`, `is-${b.kind ?? 'work'}`, b.ring && 'is-ring'].filter(Boolean).join(' ');
   const style = {

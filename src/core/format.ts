@@ -174,6 +174,12 @@ export const integer = (n: number): string => (Number.isFinite(n) ? n.toLocaleSt
 /** A ratio to two decimals: 0.9987 → "1.00", so a ratio near 1 never reads as a bare "1". */
 export const ratioText = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : NA);
 
+/** A list as prose: "a", "a and b", "a, b and c". */
+export const joinList = (items: readonly string[]): string => (items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
+
+/** A dollar amount to the cent: 12.5 → "$12.50". */
+export const dollars = (x: number): string => `$${x.toFixed(2)}`;
+
 /** Minutes since midnight as 'HH:MM' (wraps at 24h). */
 export function clock(totalMinutes: number): string {
   const m = ((Math.floor(totalMinutes) % 1440) + 1440) % 1440;
