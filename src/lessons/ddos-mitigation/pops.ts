@@ -4,6 +4,7 @@
  * Every capacity and rate is a named constant and illustrative.
  */
 import { normal } from '../../core/distributions';
+import { clamp01 } from '../../core/math';
 import { mulberry32 } from '../../core/random';
 import { confusionAt, type Confusion } from '../../core/stats';
 import { createTickSim, type TickSim } from '../../core/simTick';
@@ -124,7 +125,6 @@ export interface Scored {
   label: 0 | 1;
 }
 
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 /** Scores for each flow: the unwanted ones tend high, the legitimate ones low, and the two overlap. */
 export function scoreSet(seed: number, n = FLOWS_PER_CLASS): Scored[] {
