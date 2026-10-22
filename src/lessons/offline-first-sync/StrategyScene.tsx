@@ -131,7 +131,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
               <>
                 <p className="ofs-note">
                   {violation === null ? `The invariant holds on seed ${st.seed}. ` : <b className="ofs-violation">Violated on seed {st.seed}: {violation}. </b>}
-                  Seed {BROKEN_SEEDS[broken]} is the lowest failing seed of {SEED_COUNT}, and it is pinned only because every smaller seed passes: nearly every seed fails, so the number is not special. {brokenCause(broken)}
+                  Seed {BROKEN_SEEDS[broken]} is the lowest failing seed of {SEED_COUNT}, and that means little: nearly every seed fails. {brokenCause(broken)}
                 </p>
                 {ladderMessages.length > 0 && (
                   <SequenceDiagram actors={ladder.actors} messages={ladderMessages} fit="all" ariaLabel="The first pushes, acknowledgements and rejections of this run, lost ones marked" />
