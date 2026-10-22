@@ -2,6 +2,7 @@
 .px-stage { gap: 12px; min-width: 0; }
 .px-nodes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .px-node { border-top: 3px solid var(--c); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.px-title { text-transform: none; }
 .px-line { font-size: 12.5px; line-height: 1.45; color: var(--muted); overflow-wrap: anywhere; }
 .px-line b { color: var(--text); }
 .px-pool { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 240px; overflow-y: auto; }

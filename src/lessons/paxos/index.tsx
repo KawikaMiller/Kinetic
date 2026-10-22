@@ -18,7 +18,7 @@ const FIVE = 5;
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'Paxos lets several proposers compete for one value: in this model any two majorities of acceptors share a member, so once a value is chosen a later proposer finds it and re-proposes it, whatever the schedule. Progress, not safety, needs a stable proposer.',
+    tldr: 'Paxos lets several proposers compete for one value: in this model any two majorities of acceptors share a member, so once a value is chosen a later proposer finds it and re-proposes it, on every schedule this lesson checks. Progress, not safety, needs a stable proposer.',
     what: 'Acceptors promise a ballot number and vote. A proposer runs two phases: it collects promises from a majority, adopts the value of the highest vote they report, then asks the acceptors to vote for it. You play the network on a pool of messages, search each schedule of a small model, sample 200 more, and replay a scripted duel in which two proposers keep pre-empting each other.',
     analogy: 'Several people try to book one meeting room by shouting numbered proposals at a committee. A member backs a number just when it is higher than any it has promised, and a proposer who collects backing from a majority has to repeat whatever earlier decision a member reports.',
     useCases: [
@@ -42,7 +42,7 @@ const lesson: LessonModule = {
     'Paxos separates safety from who is proposing: any number of proposers may run ballots at once and, in this model, at most one value is chosen on each schedule checked. Progress is what needs a stable proposer.',
     'A proposer that gathers promises from a majority proposes the value of the highest-numbered vote it hears about. Any two majorities share an acceptor, so a later proposer learns of a value that a majority already voted for.',
     `Safety is checked twice and the screen says which ran: an exhaustive search of ${integer(correct.states)} states for 3 acceptors, 2 proposers and 2 ballots, and 200 seeded schedules. Neither replaces the intersection argument that holds for any number of ballots.`,
-    `Duelling proposers can pre-empt each other: a scripted schedule of ${DUEL_BALLOTS.default} ballots casts no vote in ${duel.steps} steps, which shows that termination is not promised. A stable proposer skips phase 1: ${stableProposerMessages(FIVE, null)} messages against ${singleDecreeMessages(FIVE)} for ${FIVE} values in the counting model.`,
+    `Duelling proposers can pre-empt each other: a scripted schedule of ${DUEL_BALLOTS.default} ballots casts no vote in ${duel.steps} steps, which illustrates that termination is not promised (FLP is the reason; a scripted schedule is not a proof). A stable proposer skips phase 1: ${stableProposerMessages(FIVE, null)} messages against ${singleDecreeMessages(FIVE)} for ${FIVE} values in the counting model.`,
   ],
   quiz: [
     {
@@ -62,13 +62,13 @@ const lesson: LessonModule = {
         'Acceptors vote in a fixed order, so only one proposer can succeed',
         'Any two majorities share an acceptor that reports its vote',
         'Ballot numbers are unique, so only the highest ballot is accepted',
-        'A leader is elected first, so a single proposer is ever active',
+        'A leader is elected first, so one proposer is active at a time',
       ],
       answer: 1,
-      why: 'The acceptor in the overlap reports its vote in its promise, so a later proposer learns of the earlier choice and repeats it. Several proposers can be active at once; Raft, not Paxos, relies on a leader for this.',
+      why: 'The acceptor in the overlap reports its vote in its promise, so a later proposer learns of the earlier choice and repeats it. Several proposers can be active at once. Raft routes writes through one leader, but its safety also rests on overlapping majorities.',
     },
     {
-      q: 'In the duel schedule every Accept is refused. What does that show?',
+      q: 'In the duel schedule no Accept reaches a1 or a2 before a higher Prepare does. What does that show?',
       options: [
         'Safety is broken, because no value gets chosen in the whole run',
         'The acceptors have crashed and need to restart before they vote',
@@ -76,7 +76,7 @@ const lesson: LessonModule = {
         'The proposers should each pick a larger value so that they win',
       ],
       answer: 2,
-      why: 'No value is chosen, so no two values are chosen: safety holds. The schedule shows that pre-emption can keep the protocol from deciding, which is why liveness needs a stable proposer. Values do not decide pre-emption; ballot numbers do.',
+      why: 'No value is chosen in the scripted run, so no two values are chosen: safety holds. The schedule illustrates that pre-emption can keep the protocol from deciding, which is why liveness needs a stable proposer. Values do not decide pre-emption; ballot numbers do.',
     },
     {
       q: `The search says "holds in all ${integer(correct.states)} reachable states". What does that cover?`,

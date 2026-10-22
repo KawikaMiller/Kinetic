@@ -7,7 +7,7 @@ import { Button, ChipButton, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow
 import { integer } from '../../core/format';
 import { refocusAfterRemove } from '../../core/refocus';
 import { toneVar } from '../../core/tone';
-import { poolCaption } from './captions';
+import { counterexampleStart, poolCaption } from './captions';
 import { exhaustiveText, sampledText, truncatedText } from './checkText';
 import type { NetState } from '../../core/pureProtocol';
 import { ACCEPTORS, BUGS, PROPOSERS, RETRY_BALLOTS, chosenText, configFor, describeMessage, isAcceptor, isProposer, type Bug, type PaxosMsg, type PaxosState } from './protocol';
@@ -133,7 +133,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
             const s = session.nodes[a];
             return (
               <Box key={a} className="px-node" style={{ '--c': 'var(--sky)' } as CSSProperties}>
-                <SectionTitle>{a}</SectionTitle>
+                <SectionTitle className="px-title">{a}</SectionTitle>
                 <div className="px-line">{isAcceptor(s) ? `promised ${s.promised}` : ''}</div>
                 <div className="px-line">{isAcceptor(s) && s.votes.length > 0 ? s.votes.map(([b, v]) => `vote ${b} ${v}`).join(', ') : 'no vote yet'}</div>
               </Box>
@@ -143,7 +143,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
             const s = session.nodes[p];
             return (
               <Box key={p} className="px-node px-start" style={{ '--c': toneVar(TONE[p]) } as CSSProperties}>
-                <SectionTitle hint={p === 'P1' ? 'wants A' : 'wants B'}>{p}</SectionTitle>
+                <SectionTitle className="px-title" hint={p === 'P1' ? 'wants A' : 'wants B'}>{p}</SectionTitle>
                 <div className="px-line">{isProposer(s) ? `ballot ${s.ballot === 0 ? 'none' : s.ballot}, ${s.phase}` : ''}</div>
                 <div className="px-line">{isProposer(s) ? `promises ${s.promises.length} of ${ACCEPTORS.length}${s.proposed ? `, proposes ${s.proposed}` : ''}` : ''}</div>
                 <Button onClick={() => act({ kind: 'start', proposer: p })}>{isProposer(s) && s.started > 0 ? `${p} retry with a higher ballot` : `${p} start`}</Button>
@@ -176,7 +176,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
           </div>
         </Box>
         <Hint block>
-          Seeded schedule {seed}{bug === 'none' ? '' : ' with the planted bug'}: {run.violation ? <span className="hl bad">{run.violation}</span> : run.decidedAt === null ? 'no value chosen by the end of the run' : `${run.value} chosen at ${Math.round(run.decidedAt)} ms, and at most one value chosen after every event`}.
+          Seeded schedule {seed}{bug === 'none' ? '' : ' with the planted bug'}: {run.violation ? <span className="hl bad wrap">{run.violation}</span> : run.decidedAt === null ? 'no value chosen by the end of the run' : `${run.value} chosen at ${Math.round(run.decidedAt)} ms, and at most one value chosen after every event`}.
         </Hint>
         {exhaustive && sweep && searched && (
           <Box>
@@ -209,6 +209,7 @@ export function PoolScene({ picker }: { picker: ReactNode }) {
               <TracePlayer
                 initial={exhaustive.init}
                 steps={traceSteps}
+                startText={counterexampleStart({ bugLabel: BUGS.find((b) => b.value === searched.bug)?.label ?? null, steps: exhaustive.violation.path.length, message: exhaustive.violation.message })}
                 label="Steps of the shortest counterexample"
                 renderState={traceState}
               />

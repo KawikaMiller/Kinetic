@@ -5,7 +5,11 @@ import { forSeeds } from '../../core/distSim';
 import { networkExplorer, type NetState } from '../../core/pureProtocol';
 import { choose } from '../../core/stats';
 import { SEED_MAX } from '../../core/seed';
-import { duelCaption, multiCaption, poolCaption } from './captions';
+import { counterexampleStart, duelCaption, duelHint, multiCaption, poolCaption } from './captions';
+import captionsSource from './captions.tsx?raw';
+import duelSource from './DuelScene.tsx?raw';
+import multiSource from './MultiScene.tsx?raw';
+import poolSource from './PoolScene.tsx?raw';
 import { DEFAULT_CRASH_AFTER, MESSAGES_PER_PHASE, intersections, singleDecreeMessages, stableProposerMessages } from './counting';
 import { DUEL_BALLOTS, drainAccepts, duelSteps, replayDuel } from './duel';
 import lesson from './index';
@@ -72,9 +76,21 @@ describe('the exhaustive leg, 3 acceptors, 2 proposers, ballots 1 and 2', () => 
     expect(lesson.tryThis[0]).toContain('7 steps');
   });
 
-  it('three ballots hit the 20,000-state cap: truncated, never claimed to hold', () => {
+  it('a search stopped at 20,000 states is truncated and never claimed to hold', () => {
+    const three = exhaustiveSearch(THREE_BALLOTS, 'none', 20_000);
+    expect(three).toMatchObject({ states: 20_000, truncated: true, violation: null });
+  });
+
+  it('three ballots finish within the budget: the whole space is 119,865 states (an independent count) and the protocol holds in all of them', () => {
     const three = exhaustiveSearch(THREE_BALLOTS, 'none', THREE_BALLOT_STATE_CAP);
-    expect(three).toMatchObject({ states: THREE_BALLOT_STATE_CAP, truncated: true, violation: null });
+    expect(three).toMatchObject({ states: 119_865, truncated: false, violation: null });
+    expect(THREE_BALLOT_STATE_CAP).toBeGreaterThan(three.states);
+  });
+
+  it('with a planted bug the three-ballot search finds the counterexample instead of stopping short of it', () => {
+    const three = exhaustiveSearch(THREE_BALLOTS, 'acceptBelowPromise', THREE_BALLOT_STATE_CAP);
+    expect(three.truncated).toBe(false);
+    expect(three.violation?.path).toHaveLength(14);
   });
 });
 
@@ -261,7 +277,7 @@ describe('scene 2: the duel', () => {
   it('the duel caption says what the schedule does and does not show', () => {
     const d = replayDuel(6);
     const text = expectCaption(duelCaption({ ballots: 6, steps: d.steps, votes: 0, stopped: false, value: null, decided: 200, seeds: 200, median: 17.5 }));
-    expect(text).toContain('30 steps and 0 votes cast');
+    expect(text).toContain('30 steps cast 0 votes');
     expect(text).toContain('says nothing about what happens after the adversary stops');
     expect(text).toContain('a measurement, not a guarantee');
   });
@@ -317,5 +333,64 @@ describe('try-this 3 and 4: the search results the lesson quotes', () => {
   it('try-this 4: the below-promise bug has a 14-step counterexample ending in two chosen values', () => {
     expect(lesson.tryThis[3]).toContain('14 steps');
     expect(replayOps(configFor(TWO_BALLOTS, 'acceptBelowPromise'), []).pool).toHaveLength(0);
+  });
+});
+
+describe('fix pass T4-B4: duel and counting captions are functions of the state', () => {
+  it('the duel hint never says an Accept was refused before one was delivered, at any ballot count', () => {
+    for (let ballots = DUEL_BALLOTS.min; ballots <= DUEL_BALLOTS.max; ballots++) {
+      const d = replayDuel(ballots);
+      const accepts = d.session.pool.filter((m) => m.payload.type === 'accept').length;
+      const hint = duelHint({ stopped: false, refused: 0, chosen: [], pendingAccepts: accepts, votes: d.votesCast, steps: d.steps });
+      expect(hint).not.toContain('every Accept is refused');
+      expect(hint).toContain('none delivered');
+      expect(hint).toContain(`${accepts} Accepts are waiting`);
+    }
+    expect(lesson.quiz[2].q).not.toContain('every Accept is refused');
+  });
+
+  it('after Stop duelling the caption agrees with the stat: votes are cast and the value is chosen, at every ballot count', () => {
+    for (let ballots = DUEL_BALLOTS.min; ballots <= DUEL_BALLOTS.max; ballots++) {
+      const d = replayDuel(ballots);
+      const after = drainAccepts(d.stopped);
+      const chosen = chosenPairs(after.session.nodes);
+      expect(chosen).toHaveLength(1);
+      const text = expectCaption(duelCaption({ ballots, steps: d.steps, votes: after.votes, stopped: true, value: chosen[0].value, decided: 200, seeds: 200, median: 17.5 }));
+      expect(text).not.toContain('so no value is chosen');
+      expect(text).toContain(`${chosen[0].value} is chosen`);
+      expect(text).toContain(`${after.votes} votes are cast`);
+    }
+  });
+
+  it('the hint after Stop duelling names the refused deliveries and the value', () => {
+    const d = replayDuel(6);
+    expect(duelHint({ stopped: true, refused: 10, chosen: ['B'], pendingAccepts: 0, votes: 2, steps: d.steps })).toContain('B is chosen');
+  });
+
+  it('the counting caption does not invent a crash after a value that does not exist', () => {
+    for (const values of [1, 2]) {
+      const text = expectCaption(multiCaption({ values, single: 12 * values, stable: 6 + 6 * values, crashAfter: DEFAULT_CRASH_AFTER, rerun: false }));
+      expect(text).not.toContain('costs nothing here');
+      expect(text).toContain('No crash happens here');
+    }
+    expect(expectCaption(multiCaption({ values: 1, single: 6, stable: 6, crashAfter: null, rerun: false }))).toContain('the same');
+  });
+
+  it('the trace player opens on a sentence about the counterexample, never "start"', () => {
+    const text = counterexampleStart({ bugLabel: 'Acceptor accepts below its promise', steps: 14, message: 'two values chosen: A, B' });
+    expect(text).toContain('14 steps');
+    expect(text).not.toBe('start');
+    expect(poolSource).toContain('startText={counterexampleStart(');
+  });
+
+  it('every highlighted caption span can wrap and the intersection table scrolls in a WideRegion', () => {
+    for (const [name, source] of [['captions', captionsSource], ['PoolScene', poolSource], ['DuelScene', duelSource], ['MultiScene', multiSource]] as const) {
+      for (const m of source.matchAll(/className=(?:"|{`)(hl[^"`]*)/g)) expect(m[1], name).toContain('wrap');
+    }
+    expect(multiSource).toMatch(/<WideRegion minWidth={INTERSECTION_TABLE_MIN_WIDTH} noun="table">/);
+  });
+
+  it('the duel stat states steps per ballot from the model', () => {
+    for (let ballots = DUEL_BALLOTS.min; ballots <= DUEL_BALLOTS.max; ballots++) expect(replayDuel(ballots).steps / ballots).toBe(5);
   });
 });

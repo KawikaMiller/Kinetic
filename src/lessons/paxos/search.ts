@@ -16,7 +16,8 @@ import {
 
 // ---------- the exhaustive leg ----------
 
-export const THREE_BALLOT_STATE_CAP = 20_000;
+/** The explorer's budget for three ballots: above the full space (119,865 states), so the search finishes. */
+export const THREE_BALLOT_STATE_CAP = 150_000;
 
 export interface Exhaustive {
   states: number;

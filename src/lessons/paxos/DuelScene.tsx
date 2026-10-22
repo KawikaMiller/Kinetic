@@ -3,7 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { decimal } from '../../core/format';
-import { duelCaption } from './captions';
+import { duelCaption, duelHint } from './captions';
 import { livenessText } from './checkText';
 import { DUEL_BALLOTS, drainAccepts, replayDuel } from './duel';
 import { ACCEPTORS, chosenPairs, isAcceptor } from './protocol';
@@ -19,6 +19,7 @@ export function DuelScene({ picker }: { picker: ReactNode }) {
   const after = useMemo(() => drainAccepts(duel.stopped), [duel]);
   const plain = useMemo(() => cachedSweep({ ...DEFAULT_OPTIONS, lossPercent: loss, backoff: false }), [loss]);
   const backoff = useMemo(() => cachedSweep({ ...DEFAULT_OPTIONS, lossPercent: loss, backoff: true }), [loss]);
+  const sameRows = plain.decided === backoff.decided && plain.median === backoff.median && plain.p95 === backoff.p95;
   const shown = stopped ? after.session : duel.session;
   const chosen = chosenPairs(shown.nodes);
   const pendingAccepts = shown.pool.filter((m) => m.payload.type === 'accept').length;
@@ -30,7 +31,7 @@ export function DuelScene({ picker }: { picker: ReactNode }) {
       introKey={`${ballots}|${stopped}|${loss}`}
       stats={
         <Stats>
-          <Stat label="Steps replayed" value={duel.steps} sub={`${ballots} ballots, 5 steps each`} />
+          <Stat label="Steps replayed" value={duel.steps} sub={`${ballots} ballots, ${duel.steps / ballots} steps each`} />
           <Stat label="Votes cast" value={stopped ? after.votes : duel.votesCast} color={stopped ? 'var(--ok)' : 'var(--dim)'} sub={stopped ? 'after the last Accept lands' : 'in the scripted duel'} />
           <Stat label="Chosen" value={chosen.length === 0 ? 'none' : chosen.map((c) => `${c.value} at ballot ${c.ballot}`).join(', ')} color={chosen.length === 0 ? 'var(--dim)' : 'var(--ok)'} />
         </Stats>
@@ -69,9 +70,7 @@ export function DuelScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
           <Hint block>
-            {stopped
-              ? `Stopped: ${after.refused} earlier Accept deliveries to a1 and a2 are refused because they promised a higher ballot, and the last ballot's Accept lands: ${chosen.map((c) => c.value).join(', ')} is chosen.`
-              : `Each Prepare(b + 1) lands before any Accept(b), so every Accept is refused: ${pendingAccepts} are waiting in the pool and ${duel.votesCast} votes have been cast in ${duel.steps} steps.`}
+            {duelHint({ stopped, refused: after.refused, chosen: chosen.map((c) => c.value), pendingAccepts, votes: duel.votesCast, steps: duel.steps })}
           </Hint>
         </Box>
         <Box>
@@ -84,7 +83,7 @@ export function DuelScene({ picker }: { picker: ReactNode }) {
             </tbody>
           </table>
           <Hint block>
-            {livenessText(plain.seeds - plain.decided, plain.seeds, 'the end of the run')} with a fixed timeout and {livenessText(backoff.seeds - backoff.decided, backoff.seeds, 'the end of the run')} with backoff, at {loss}% loss. Random schedules usually decide; the duel above is why Paxos alone does not promise to terminate.
+            {livenessText(plain.seeds - plain.decided, plain.seeds, 'the end of the run')} with a fixed timeout and {livenessText(backoff.seeds - backoff.decided, backoff.seeds, 'the end of the run')} with backoff, at {loss}% loss. {sameRows ? 'The two rows are identical: backoff only changes a retry, and this setting needs none (raise the loss to see them differ). ' : ''}Random schedules usually decide; the duel above illustrates why Paxos alone does not promise to terminate.
           </Hint>
         </Box>
         <ProvenanceRow>
