@@ -1,0 +1,32 @@
+.moa-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.moa-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.moa-list { margin: 8px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+.moa-witness { margin-top: 8px; padding: 10px 12px; border: 1px dashed var(--violet); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.moa-threads { display: flex; flex-flow: row wrap; gap: 10px; }
+.moa-card { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--cell-line); border-radius: 8px; }
+.moa-name { font-size: 13px; }
+.moa-code, .moa-rows { margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.moa-code li { padding: 2px 6px; border-radius: 6px; border: 1px solid transparent; }
+.moa-code li.is-next { border-color: var(--hi); color: var(--hi); }
+.moa-code li.is-done { opacity: 0.6; }
+.moa-ordered { color: var(--violet); }
+.moa-row { display: flex; flex-flow: row wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 2px 0; }
+.moa-gap { display: flex; padding: 2px 0 4px 8px; }
+.moa-buffer, .moa-memory { display: flex; flex-flow: row wrap; gap: 6px; align-items: center; font-size: 12px; }
+.moa-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.moa-empty { color: var(--dim); }
+.moa-cell { padding: 1px 6px; border: 1px solid var(--info); border-radius: 6px; color: var(--info); }
+.moa-mem { padding: 1px 6px; border: 1px solid var(--cell-line); border-radius: 6px; color: var(--muted); }
+.moa-regs { display: flex; flex-flow: row wrap; gap: 10px; font-size: 12px; }
+.moa-view { font-size: 11px; color: var(--muted); }
+.moa-machine { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+.moa-moves { display: flex; flex-flow: row wrap; gap: 8px; margin-top: 8px; }
+.moa-log { margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: var(--muted); }
+.moa-outcomes { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-flow: row wrap; gap: 8px; }
+.moa-outcome { flex: 1 1 200px; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border: 1px solid var(--cell-line); border-radius: 8px; }
+.moa-outcome.is-relaxed { border-color: var(--bad); }
+.moa-outcome.is-plain { color: var(--muted); }
+.moa-outcome.is-no { color: var(--dim); border-style: dashed; }
+.moa-out-head { display: flex; flex-flow: row wrap; gap: 8px; align-items: center; }
+.moa-out-note { font-size: 12px; line-height: 1.5; }
+.moa-target { font-size: 11px; }

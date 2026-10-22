@@ -1,0 +1,39 @@
+.lfc-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.lfc-note { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.lfc-list { margin: 8px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+.lfc-witness { margin: 8px 0; padding: 10px 12px; border: 1px dashed var(--violet); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.lfc-threads { display: flex; flex-flow: row wrap; gap: 10px; }
+.lfc-card { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--cell-line); border-radius: 8px; font-size: 13px; }
+.lfc-card.is-now { border-color: var(--hi); }
+.lfc-seen { font-size: 12px; color: var(--info); }
+.lfc-chips { display: flex; flex-flow: row wrap; gap: 6px; }
+.lfc-ops { margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.lfc-ops li { padding: 2px 6px; border: 1px solid transparent; border-radius: 6px; }
+.lfc-ops li.is-next { border-color: var(--hi); color: var(--hi); }
+.lfc-ops li.is-done { opacity: 0.6; }
+.lfc-regs { display: flex; flex-flow: row wrap; gap: 10px; font-size: 12px; }
+.lfc-heap { display: flex; flex-direction: column; gap: 8px; }
+.lfc-row { display: flex; flex-flow: row wrap; gap: 8px; align-items: center; font-size: 13px; }
+.lfc-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.lfc-empty { color: var(--dim); }
+.lfc-ptr { padding: 1px 6px; border: 1px solid var(--cell-line); border-radius: 6px; }
+.lfc-link { display: inline-flex; gap: 4px; align-items: center; }
+.lfc-next { font-size: 11px; color: var(--muted); }
+.lfc-node { display: inline-block; min-width: 22px; padding: 1px 6px; text-align: center; border: 1px solid var(--cell-line); border-radius: 6px; font-weight: 700; }
+.lfc-node.is-free { border-color: var(--violet); color: var(--violet); }
+.lfc-node.is-held { border-color: var(--info); color: var(--info); }
+.lfc-node.is-bad { border-color: var(--bad); color: var(--bad); }
+.lfc-broken { padding: 8px 10px; border: 1px solid var(--bad); border-radius: 8px; color: var(--bad); font-size: 13px; }
+.lfc-log { margin: 8px 0 0; padding-left: 24px; font-size: 12px; color: var(--muted); max-height: 180px; overflow-y: auto; }
+.lfc-log li.is-fail { color: var(--bad); }
+.lfc-log li.is-ok { color: var(--ok); }
+.lfc-table { border-collapse: collapse; font-size: 13px; width: 100%; margin-top: 8px; }
+.lfc-table th, .lfc-table td { padding: 4px 8px; border-bottom: 1px solid var(--cell-line); text-align: left; }
+.lfc-lanes { display: flex; flex-flow: row wrap; gap: 3px; margin-top: 8px; }
+.lfc-col { display: flex; flex-direction: column; gap: 2px; }
+.lfc-cell { display: block; width: 24px; height: 20px; line-height: 20px; text-align: center; font-size: 10px; border-radius: 4px; }
+.lfc-cell.is-none { background: transparent; }
+.lfc-cell.is-ok { background: color-mix(in srgb, var(--ok) 30%, transparent); border: 1px solid var(--ok); }
+.lfc-cell.is-fail { background: color-mix(in srgb, var(--bad) 30%, transparent); border: 1px solid var(--bad); }
+.lfc-cell.is-wait { border: 1px dashed var(--dim); color: var(--dim); }
+.lfc-cell.is-work { background: color-mix(in srgb, var(--info) 22%, transparent); border: 1px solid var(--info); }
