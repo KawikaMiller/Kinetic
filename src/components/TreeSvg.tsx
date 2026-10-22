@@ -1,8 +1,8 @@
-import { AnimatePresence, motion, type Transition } from 'motion/react';
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { AnimatePresence, motion, useIsPresent, type Transition } from 'motion/react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ComponentProps, type KeyboardEvent, type ReactNode } from 'react';
 import { SPRING } from '../core/motion';
 import type { Tone } from '../core/tone';
-import { layoutTree, treeKeyTarget, treeX, type TreeKey, type TreeLayoutMode, type TreeShape } from '../core/treeLayout';
+import { layoutTree, treeExitFocus, treeKeyTarget, treeX, type TreeKey, type TreeLayoutMode, type TreeShape } from '../core/treeLayout';
 
 export type { TreeShape } from '../core/treeLayout';
 
@@ -43,6 +43,8 @@ export interface TreeGeometry<K extends TreeKey> {
  * - `nodeSize(id)` (tidy) gives a node a wider footprint than one column (the tries' radix pills).
  * - Forest mode: give `shape.roots` (and no `root`) to draw several trees side by side
  *   (union-find sets, a Huffman merge); `forestGap` is the empty columns between trees.
+ * - A node that is fading out is inert at once (out of the tab order, not focusable); if focus was on it,
+ *   focus moves to its nearest remaining ancestor, else to the tree itself.
  * - With `onNodeClick` the nodes are buttons and the tree is one tab stop (starting at the
  *   first node in reading order): arrow keys follow the tree (Up = parent, Down = leftmost
  *   child, Left/Right = neighbour on the same level), Home/End jump to the first and last
@@ -123,6 +125,16 @@ export function TreeSvg<K extends TreeKey>({
     svgRef.current?.querySelector<SVGGElement>(`[data-node="${CSS.escape(String(to))}"]`)?.focus();
   };
 
+  // The node that is leaving can't keep focus: hand it to the nearest ancestor still on screen, else the tree.
+  const moveFocusOffExiting = (el: SVGGElement, id: K) => {
+    const svg = svgRef.current;
+    if (!svg || !el.contains(document.activeElement)) return;
+    const live = (n: K) => svg.querySelector(`[data-node="${CSS.escape(String(n))}"]:not([inert])`) !== null;
+    const to = treeExitFocus(id, shape, place, live);
+    setFocusId(to);
+    (to === null ? svg : svg.querySelector<SVGGElement>(`[data-node="${CSS.escape(String(to))}"]`))?.focus();
+  };
+
   const style = markedEdgeWidth === undefined && !natural
     ? undefined
     : ({ ...(markedEdgeWidth !== undefined && { '--tree-marked-w': markedEdgeWidth }), ...(natural && { maxWidth: width }) } as CSSProperties);
@@ -137,6 +149,7 @@ export function TreeSvg<K extends TreeKey>({
       // A drawing of buttons is a group (an img would hide them from assistive tech).
       role={onNodeClick ? 'group' : ariaLabel ? 'img' : undefined}
       aria-label={ariaLabel}
+      tabIndex={onNodeClick ? -1 : undefined}
     >
       <AnimatePresence>
         {shown.flatMap((id) =>
@@ -167,8 +180,9 @@ export function TreeSvg<K extends TreeKey>({
           const markClass = mark ? `is-${mark.fill} tone-${mark.tone}` : '';
           const tintStyle = mark?.tint === undefined ? undefined : ({ '--tree-tint': `${mark.tint}%` } as CSSProperties);
           return (
-            <motion.g
+            <TreeNodeGroup
               key={id}
+              onExit={(el) => moveFocusOffExiting(el, id)}
               className={`tree-node ${markClass} ${onNodeClick ? 'is-clickable' : ''} ${nodeClass?.(id) ?? ''}`}
               style={tintStyle}
               initial={{ opacity: 0, scale: enterScale, x, y }}
@@ -195,11 +209,28 @@ export function TreeSvg<K extends TreeKey>({
                   </text>
                 </>
               )}
-            </motion.g>
+            </TreeNodeGroup>
           );
         })}
       </AnimatePresence>
     </svg>
+  );
+}
+
+/**
+ * A node's motion group. While AnimatePresence fades it out it is inert (no focus, out of the tab
+ * order, hidden from assistive tech) and `onExit` fires once so focus can move off it.
+ */
+function TreeNodeGroup({ onExit, children, ...props }: ComponentProps<typeof motion.g> & { onExit: (el: SVGGElement) => void }) {
+  const present = useIsPresent();
+  const ref = useRef<SVGGElement>(null);
+  useLayoutEffect(() => {
+    if (!present && ref.current) onExit(ref.current);
+  }, [present, onExit]);
+  return (
+    <motion.g ref={ref} {...props} {...(!present && { inert: true, tabIndex: -1, 'aria-hidden': true })}>
+      {children}
+    </motion.g>
   );
 }
 

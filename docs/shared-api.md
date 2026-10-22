@@ -426,7 +426,10 @@
 `### Focus
 `Every keyboard-focused control gets the shared accent ring from a global `:focus-visible` rule
 `(sliders and the scrubber included). Don't set `outline: none` without a replacement focus style.
-`Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape.
+`Clickable `TreeSvg` nodes draw their focus as an accent ring on the node's shape. A node that is fading out is `inert`
+`(`tabindex=-1`, `aria-hidden`) from the first frame of its exit; if it held focus, focus moves to its nearest remaining
+`ancestor (`treeExitFocus` in `core/treeLayout`), else to the `svg` itself (`tabindex=-1` when nodes are clickable). A lesson no longer
+`needs to remount a tree to keep focus off vanishing nodes (lca-binary-lifting's `key` workaround is gone).
 `
 `### Radio groups (`useRadioGroup.ts`, `core/radio.ts`)
 ``Segmented` (so `Toggle` and `useScenePicker`) and the player's speed buttons follow the WAI-ARIA radio
@@ -507,6 +510,9 @@
 `- `Slider` announces `format(value)` as `aria-valuetext`, so give it a `format` whenever the label
 `  shows something other than the raw number ("no limit", "1.2/day").
 `- `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
+`  `noun="table"` renames what it scrolls in the default label and hint ("Table: scroll sideways to see all of it", "swipe to see the whole table"); the default stays "diagram", so
+`  existing output is unchanged. `label` / `hint` still override the whole sentence. No lesson passes `noun` yet: a lesson that wraps a table, timeline or listing should (`wideRegionWords` in `components/wideReveal.ts` builds both).
+`  A straight clickable `GraphView` edge's hit area is now a 14-unit quad (`edgeHitArea`, `EDGE_HIT_WIDTH` in `core/graphLayout`) instead of a bare line, so a horizontal or vertical edge has area to click (automation could not press it before); the drawing and the pointer region are unchanged.
 `  `reveal={{ from, to, within? }}` keeps a stretch on screen while it overflows: whenever it changes,
 `  the region scrolls sideways just enough to show it (plus a 24px margin), smoothly, or instantly under
 `  prefers-reduced-motion. `from`/`to` are fractions (0..1) of the content's width, or of the first
@@ -1815,6 +1821,8 @@
 `    the narrow reading), `equal-or-better` (the default and what `tradeoffs` uses: the same destination, or one that reaches every ending X's destination reaches at no greater cost on any meter; two different endings
 `    are never equal, because the meters cannot say whether "hire" beats "no hire"), and `ignore` (strictest). Exported for tests that want the strict reading.
 `  - `free-path` (`freePaths(s)`): a path from the start to an ending on which no meter is ever in the red and none ends worse than it started.
+`  - `dominated-path` (`dominatedPaths(s, { trapPaths, crossEndings })`, part of `tradeoffs`): over every complete path (looping ones cut at the first revisit), a path whose final meters are no worse on every meter and strictly worse on one than another path **to the same ending**; one problem per beaten path, naming both (`the path B > B2 is dominated by A > A2: ...`; path id = `pathId(choices)`, the choice ids joined with ' > '). `crossEndings: true` also compares paths to different endings (strictest; off because the meters cannot say whether one ending beats another, as for `dominated-choice`). `trapPaths: string[]` exempts labelled trap paths (they may still dominate others). Catches what the per-node check cannot: a route that is only a worse order of the same steps, or a detour. `duplicate-path` (`duplicatePaths(s)`; through `validateScenario` only with `duplicatePaths: true`) is informational: two paths with identical final meters.
+`  - Lead fixtures need `trapPaths` only for influence-without-authority (`push > concede > pilot`, `push > concede > fullrollout`) and hiring-interviewing (`evidence > still_followup > hire_after`): `LEAD_TRAP_PATHS` in `core/testing/leadScenarios.ts`. Under `crossEndings` the part1 scenarios have 3 (strangler-fig-migrations, none beaten by a path to the same ending), build-vs-buy's two labelled traps, technical-strategy 2. Tier 3 scenarios under the default reading: incident-response (all three causes) and threat-modeling's sprint fail, because many steps commute (see docs/tier4-kickoff-decisions.md §8); the option is opt-in and those lessons are untouched.
 `  - Off by default (a technical scenario may have one right answer); loops are cut at the first revisit so it never hangs. Passing is necessary, not sufficient: a reviewer still asks whether one path looks obviously right.
 `  - Fixtures: `core/testing/leadScenarios.ts` encodes the six spec scenarios (strangler-fig-migrations, build-vs-buy, technical-strategy, reversible-decisions, influence-without-authority, hiring-interviewing); all pass, with their path counts and hand-worked ledgers pinned in `core/scenarioTradeoffs.test.ts`, as does the Tier 3 `design-docs-rfcs` scenario (not exempt).
 `    Under `ignore` only hiring-interviewing's `veto` is flagged (worse than `avg` on all three meters, but "no hire" is a different ending); that is why the default does not compare different endings.
