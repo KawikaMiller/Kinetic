@@ -82,6 +82,7 @@ export function FacadeScene({ picker }: { picker: ReactNode }) {
           <Provenance kind="invented">Acme Retail, its routes, defect rates and writes are made up</Provenance>
           <Provenance kind="illustrative">the route table</Provenance>
           <Provenance kind="simulated" seed={f.seed}>one tick a minute for {o.minutes} minutes</Provenance>
+          <ClaimLabel kind="practice">dual-writing during a migration is a common way to keep a rollback possible, and it has a maintenance cost that this page does not price</ClaimLabel>
           <ClaimLabel kind="practice">routing through a facade and shadowing traffic are common ways to compare a new route with the old one</ClaimLabel>
           <Provenance kind="from-memory">the name &quot;strangler fig&quot; is credited to Martin Fowler&apos;s 2004 write-up; verify against his bliki entry on the strangler fig application</Provenance>
         </ProvenanceRow>

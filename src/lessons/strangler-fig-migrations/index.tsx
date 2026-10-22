@@ -5,7 +5,7 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'A routing facade lets a monolith be replaced one route at a time, each with its own way back; shadow traffic shows the new answers without serving them, and the step that has no way back is the data cutover.',
+    tldr: 'A routing facade lets a monolith be replaced one route at a time, each with a way back that is safe while the old store still has the writes; shadow traffic shows the new answers without serving them, and the data cutover is where that way back can vanish.',
     what: `You run an invented monolith with eight routes behind a facade. Each route can be Off, Shadow (mirrored, users still see the monolith) or Serve at a share of its traffic, and the page shows the expected user-visible error rate beside a seeded ${F.simMinutes}-minute run, the shadow mismatches, and the writes a rollback would lose. Then you choose what to peel off first in a three-decision story with invented effects, and read the ledger of the ${F.paths} paths. The routes, the defect rule and the effects are invented.`,
     analogy: 'Rebuilding a bridge one lane at a time while the traffic keeps crossing: each lane opens once it carries load, the old lane stays open as the way back, and the last awkward lane is the one that decides whether the old bridge ever comes down.',
     useCases: [
@@ -36,7 +36,7 @@ const lesson: LessonModule = {
       options: [
         'Always the highest-traffic route, because it proves the most about the new stack and so cuts the risk',
         'It depends: low risk favours a read-only route, early learning favours the riskiest one',
-        'Always the smallest route, because small steps are the safest way to start any large migration',
+        'The smallest route, because a small route teaches the team the most about moving written data',
         'The route the monolith team dislikes most, so that their pain is the first thing to be retired',
       ],
       answer: 1,
@@ -81,7 +81,7 @@ const lesson: LessonModule = {
         'Because the new system turns out to be slower for the last slices of traffic that move over',
         'Rarely used routes tend to have the weakest tests and owners, so the last slices cost a lot',
         'Because the facade stops working correctly once more than 90 percent of traffic is routed',
-        "Because the team's first slices were picked at random, which leaves the hardest ones for last",
+        'Because the last routes carry the heaviest traffic, which makes each of them the riskiest to move',
       ],
       answer: 1,
       why: `One view, not a measurement: in this lesson's story the tail (${F.tailTraffic}% of traffic, the weakest tests) adds ${F.c1Weeks} weeks to finish, or ${F.c2Weeks} weeks and a strain that rises by ${F.c2Strain} if it stays on the monolith.`,
