@@ -22,7 +22,7 @@ export function TrieScene({ picker }: { picker: ReactNode }) {
       height={420}
       intro={
         <>
-          The trie of {plural(patterns.length, 'pattern')} has {plural(states.length, 'state')}: the root plus one per distinct prefix.{patterns.length === 0 && ' Add a pattern to grow it.'}
+          The trie of {plural(patterns.length, 'pattern')} has {plural(states.length, 'state')}: the root plus one per distinct prefix.{patterns.length === 0 ? ' Add a pattern to grow it. ' : ' '}
           States are numbered in the order the patterns insert them, and a double outline marks the end of a pattern.
         </>
       }
