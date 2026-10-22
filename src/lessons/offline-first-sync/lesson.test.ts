@@ -380,7 +380,7 @@ describe('an edit that names an item the device does not hold yet is not turned 
     let skippedRuns = 0;
     let rolledRuns = 0;
     for (const delay of [10, 500, 1500]) for (const reorder of [0, 750, 1500]) for (const lossPct of [0, 20, 60]) for (const seed of [1, 3, 7, 11]) {
-      const r = runConfig(faultConfig({ ...initialFaults(), delay, reorder, lossPct, blank: true, seed }, seed), FAULTS_UNTIL_MS);
+      const r = runConfig(faultConfig({ ...initialFaults(), delay, reorder, lossPct, blank: true }, seed), FAULTS_UNTIL_MS);
       const accountedFor = r.laptop.notices.length + r.laptop.skipped.length;
       expect(accountedFor, `delay ${delay} reorder ${reorder} loss ${lossPct} seed ${seed}`).toBe(1);
       skippedRuns += r.laptop.skipped.length;
@@ -392,7 +392,7 @@ describe('an edit that names an item the device does not hold yet is not turned 
   });
 
   it('the not-made case says what happened in words and the card shows it', () => {
-    const r = runConfig(faultConfig({ ...initialFaults(), delay: 10, reorder: 1500, lossPct: 20, blank: true, seed: 3 }, 3), FAULTS_UNTIL_MS);
+    const r = runConfig(faultConfig({ ...initialFaults(), delay: 10, reorder: 1500, lossPct: 20, blank: true }, 3), FAULTS_UNTIL_MS);
     const note = r.laptop.skipped[0] ?? r.laptop.notices[0];
     expect(note).toMatch(/no item to rename yet|rolled back/);
   });

@@ -56,8 +56,7 @@ export function StrategyScene({ picker }: { picker: ReactNode }) {
   const script = preset === null ? randomScript(st.seed) : presetById(preset).script;
   const lostCount = lostEdits(run.lost);
   const broken = st.strategy === 'arrival' || st.strategy === 'lww' ? st.strategy : null;
-  const snap = { time: run.snap.time, nodes: run.snap.nodes };
-  const violation = !random || broken === null ? null : broken === 'arrival' ? convergence('arrival')(snap) : noSilentLoss('lww')(snap);
+  const violation = !random || broken === null ? null : broken === 'arrival' ? convergence('arrival')(run.snap) : noSilentLoss('lww')(run.snap);
   const ladder = useMemo(() => toSequence(run.trace.filter((r) => r.payload && ['push', 'ack', 'reject'].includes(r.payload.type)), { label: messageLabel }), [run]);
   const ladderMessages = ladder.messages.slice(0, TRACE_CAP);
 
