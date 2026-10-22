@@ -1,0 +1,21 @@
+/* byzantine-faults */
+.bz-stage { gap: 12px; min-width: 0; }
+.bz-generals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.bz-general { border-top: 3px solid var(--c); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bz-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bz-line { font-size: 13px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
+.bz-line b { color: var(--text); }
+.bz-line .chip { margin-right: 6px; }
+.bz-verdict { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.bz-nodes { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.bz-node {
+  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%;
+  font: 700 13px var(--mono); border: 2px solid var(--line-2); color: var(--muted);
+}
+.bz-node.is-a { border-color: var(--info); color: var(--info); }
+.bz-node.is-b { border-color: var(--violet); color: var(--violet); }
+.bz-node.is-shared { border-color: var(--hi); color: var(--hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--hi) 35%, transparent); }
+
+@media (max-width: 600px) {
+  .bz-pair { grid-template-columns: minmax(0, 1fr); }
+}
