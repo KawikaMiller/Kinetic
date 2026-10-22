@@ -1415,12 +1415,17 @@
 `<ClaimLabel kind="research">named study, from memory</ClaimLabel>
 `<ClaimLabel kind="view" />
 ````
-`- `kind`: `standard | research | practice | view`, printed as "standard", "research finding", "common practice",
-`  "one view". Separates opinion from evidence on screen (AC-0/T3 #24): label every claim in a non-technical lesson.
-`- Same muted chip as `Provenance` (never `--bad`/`--ok`); the border style (solid, double, dashed, dotted) is a
+`- `kind`: `standard | research | practice | view | theorem`, printed as "standard", "research finding", "common practice",
+`  "one view", "theorem (argued, not run here)". Separates opinion from evidence on screen (AC-0/T3 #24): label every claim in a non-technical lesson.
+`- Same muted chip as `Provenance` (never `--bad`/`--ok`); the border style (solid, double, dashed, dotted, groove) is a
 `  second cue next to the printed label. `role="note"` with `aria-label="research finding: <text>"` (the
 `  visible pieces are `aria-hidden` so it isn't read twice); a note that isn't a plain string is read as the kind alone.
 `- Tests: `core/provenance.test.ts` pins the kinds, distinct labels, the data hooks and the aria text.
+`- **`kind="theorem"` (K4-8, AC-0/T4 #27)**: a theorem-shaped statement the lesson argues but does not run (FLP, 3f + 1, the
+`  2-approximation, perfect secrecy, soundness). `children` names the result: `<ClaimLabel kind="theorem">FLP: no deterministic protocol decides under one crash</ClaimLabel>`.
+`  Use it only where no exhaustive or seeded check of the statement ran on the page; a checked statement says what was checked and its bound instead.
+`  Existing kinds are unchanged; the new one only adds a `.claim-label.is-theorem` rule (groove border) and a map entry. Users: flp-impossibility, byzantine-faults, np-reductions,
+`  approximation-algorithms, secret-sharing, zero-knowledge-proofs, plus linear-programming, online-algorithms, game-theory. Showcase: `#/dev/kit`, the ClaimLabel row of "Tier 3 kit · kickoff".
 `
 `### `core/lessonContentT3.ts` — the Tier 3 content lint (K3-T2)
 ````ts
@@ -1430,6 +1435,22 @@
 `- Runs from `lessonContent.test.ts` on Tier 3 lessons only (the 12 pre-AC-0/T3 lessons are in
 `  `TIER3_AWAITING_RETROFIT` there until T3-R1/R2 remove them; the 255 earlier lessons are untouched).
 `  `source` is the lesson folder's non-test source, `tryThisTests` the `try-this N:` numbers from its tests.
+`  `unscopedAbsolutes(text, extraScope?)` takes an optional second scope regex (Tier 4's theorem wording); without it nothing changed. `isAllowed` and `withoutComments` are exported for Tier 4.
+`
+`### `core/lessonContentT4.ts` — the Tier 4 content lint (T4-T2, AC-0/T4)
+````ts
+`lintTier4Lesson(lesson, { id, domainReview, source, tryThisTests, testSource })  // → { rule, detail }[]; wraps lintTier3Lesson
+`DOMAIN_REVIEW_IDS_T4 (38 = the 29 D rows of tier4-plan §2 + the 9 retrofits); PROOF_SHAPED_IDS (8); LEAD_IDS (7); REQUIRED_CHIPS; THEOREM_SCOPE; manipulationTestNumbers(testSource)
+````
+`- Rules, each failing on a planted fixture in `lessonContent.test.ts`: the Tier 3 three (`absolutes` now also scans `summary.tldr/what/why/analogy` and accepts theorem wording such as "assuming", "theorem", "within the horizon"; `provenance`;
+`  `try-this-tests`) plus `chip-required` (the kinds `REQUIRED_CHIPS[id]` names, and a `kind="real"` chip wherever the source uses `crypto.subtle` or `core/crypto`), `claim-label` (lead lessons: a `<ClaimLabel`, and a `<ScenarioStory`
+`  needs `claimOf=` or `notes=`), `no-clock-or-random` (`Math.random`, `Date.now`, `performance.now`, `new Date` in non-test source; `// allow-random: <reason>` on the line), `fresh-array-hook` (`usePlayer(...)` or `introKey={...}`
+`  given an array literal, a `?? []` fallback or a direct call other than `useMemo`/`String`/`JSON.stringify`/`.join`; `// allow-fresh: <reason>`), `pinned-seed-zero` (a `BROKEN_SEED`, `FAILING_SEED`, `LOWEST_*SEED*` or
+`  `COUNTEREXAMPLE_*SEED*` constant equal to 0 in source or tests, unless the line says `allow-seed-zero: <reason with the fail count>` or the lesson declares a `*_WITNESS*` constant: decisions §3 witness clause),
+`  `seed-visible` (`createCluster`, `createTickSim` or `mulberry32` with no `seed=` prop and no `<SeedField`; `// allow-no-seed: <reason>`) and `manipulation-tests` (a `PROOF_SHAPED_IDS` lesson needs two distinct `manipulation N:` tests).
+`- Wiring in `lessonContent.test.ts`: a `TIER_LINT` table loops tiers 3 and 4 over one evidence builder. The nine retrofits sit on `TIER4_AWAITING_RETROFIT` (also in `PENDING_RETROFIT`, so the tier-wide quiz-longest share does not count them);
+`  `TIERS_AWAITING_KICKOFF` is empty and the tier share test waits for `MIN_QUESTIONS_FOR_SHARE` = 30 counted questions (the per-lesson `quiz-longest` rule applies from the first commit). A retrofit batch removes its lessons from BASELINE,
+`  `TIER4_AWAITING_RETROFIT` and `PENDING_RETROFIT` together. `core/testing/tier4Plan.ts` parses the plan's §2 table (test-only) and pins `DOMAIN_REVIEW_IDS_T4` and the 41 registered topics to it.
 `- **absolutes**: "never, always, every, all, only, must, guaranteed, most, typical(ly)" in a `keyIdeas` entry or
 `  a quiz `why`, in a sentence with no scope phrase ("in this model", "by default", "unless", "except",
 `  "in current …"). Exempt a string by putting `// allow-absolute: <reason>` on the source line where the
@@ -1783,10 +1804,19 @@
 `- **Engine** (`core/scenario.ts`): `Scenario { start, nodes: { id, prompt, choices: { id, label, to, effects?, because }[] }[], meters, endings }`; a `Meter` is `{ id, label, start, min, max, bad: { below } | { above }, unit? }`
 `  (in the red beyond the edge, `isBad`). `Walk { at, path, meters }`: `startWalk`, `choose(s, walk, choiceId)` (a choice not at this node changes nothing), `undo` (replays the rest of the path from the start, so
 `  the meters can never drift from the choices), `ledger`, `redMeters`, `findNode`/`findEnding`/`isEnding`. Effects are summed as written, never clamped.
-`- **`validateScenario(s, { allowCycles })`** returns `Problem { kind, detail }[]` (empty means fine): `start` (not a node), `duplicate-id`, `missing-target`, `unknown-meter` (an effect on something that is
+`- **`validateScenario(s, { allowCycles, tradeoffs })`** returns `Problem { kind, detail }[]` (empty means fine): `start` (not a node), `duplicate-id`, `missing-target`, `unknown-meter` (an effect on something that is
 `  not a meter), `unreachable-node`, `unreachable-ending`, `dead-end` (a node with no choices), `cycle` (a loop, or a path past `MAX_DEPTH` = 40 steps; `allowCycles: true` for a retry or review round that is meant to
 `  loop, then paths are explored only until they first revisit a node), and `out-of-bounds` (a meter that starts outside its bounds, or **any path that takes a meter outside `min`..`max` at any step**, named
 `  with the path and the sum). Run it in the lesson's test **and** let the lesson say what it proved (`endingHint`) only when it returns nothing.
+`- **`tradeoffs: true` (K4-9, AC-0/T4 #35)** adds two opt-in kinds for opinion lessons, where a scenario that recommends one answer by construction is a defect (the lead lessons call it and expect `[]`):
+`  - `dominated-choice`: at one node, choice X is dominated by a sibling Y when Y is no worse than X on every meter and strictly better on at least one (the good direction of a meter is read from its
+`    `bad` edge: `below` means higher is better, `above` means lower), and Y leads somewhere as good. "As good" is the `destinations` rule of `dominatedChoices(s, { destinations })`: `same` (same destination only,
+`    the narrow reading), `equal-or-better` (the default and what `tradeoffs` uses: the same destination, or one that reaches every ending X's destination reaches at no greater cost on any meter; two different endings
+`    are never equal, because the meters cannot say whether "hire" beats "no hire"), and `ignore` (strictest). Exported for tests that want the strict reading.
+`  - `free-path` (`freePaths(s)`): a path from the start to an ending on which no meter is ever in the red and none ends worse than it started.
+`  - Off by default (a technical scenario may have one right answer); loops are cut at the first revisit so it never hangs. Passing is necessary, not sufficient: a reviewer still asks whether one path looks obviously right.
+`  - Fixtures: `core/testing/leadScenarios.ts` encodes the six spec scenarios (strangler-fig-migrations, build-vs-buy, technical-strategy, reversible-decisions, influence-without-authority, hiring-interviewing); all pass, with their path counts and hand-worked ledgers pinned in `core/scenarioTradeoffs.test.ts`, as does the Tier 3 `design-docs-rfcs` scenario (not exempt).
+`    Under `ignore` only hiring-interviewing's `veto` is flagged (worse than `avg` on all three meters, but "no hire" is a different ending); that is why the default does not compare different endings.
 `  `enumeratePaths(s)` lists every path to an ending with its meters (needs a scenario without cycles; the number of paths is the lesson's to assert).
 `- **Component**: meters (a `Bar` each, with the red edge marked and, once a choice is picked, a "+n if chosen" preview), the prompt, the choices as a **keyboard radio group** (one tab stop, arrows move the pick;
 `  the reason shows under the picked choice only), Continue / Undo, the ending (title, text, Undo, Replay), and the ledger of what was chosen, what it moved and why.

@@ -11,6 +11,10 @@ describe('the review scenario: every ending reachable, every path in bounds', ()
     expect(validateScenario(PROPOSAL)).toEqual([]);
   });
 
+  it('passes the trade-off checks too (K4-9): no straw-man choice, no free path', () => {
+    expect(validateScenario(PROPOSAL, { tradeoffs: true })).toEqual([]);
+  });
+
   it('has 12 paths of three decisions, reaching every one of the six endings', () => {
     expect(paths).toHaveLength(12);
     for (const p of paths) expect(p.choices).toHaveLength(3);
