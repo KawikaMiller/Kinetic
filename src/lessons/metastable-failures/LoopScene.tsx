@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { decimal, pctText } from '../../core/format';
 import { Charts } from './Charts';
-import { STEP_TICKS, initialLoop, loopCaption, phaseText, sustainText, type LoopState } from './init';
+import { STEP_TICKS, initialLoop, loopCaption, phaseText, sustainText, sweepDrainNote, type LoopState } from './init';
 import { CAPACITY, LOAD, RETRIES, RUN_TICKS, SWEEP_SEEDS, TIMEOUT, TRIGGER, collapseShare, crossoverLoad, phaseOf, runMeta, type MetaParams } from './model';
 
 const SWEEP_LOADS: readonly number[] = [10, 15, 20, 22, 24, 26, 28, 30, 40, 60, 80, 95];
@@ -78,16 +78,16 @@ export function LoopScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint="the test the loop has to pass to keep itself alive">Can the loop sustain itself?</SectionTitle>
           <p className="mf-note">{sustainText(params)}</p>
-          <Hint tone="muted" block>An exact test of this model: while everything times out, each request offers 1 + R arrivals. The queueing formula for waiting, 1/(μ − λ), does not apply here because it assumes work nobody abandons and nobody retries.</Hint>
+          <Hint tone="muted" block>A test on average, not an exact one: while everything times out, each request offers 1 + R arrivals, and Poisson noise blurs the verdict near capacity. The queueing formula for waiting, 1/(μ − λ), does not apply here because it assumes work nobody abandons and nobody retries.</Hint>
         </Box>
         <Box>
-          <SectionTitle hint={`trigger ${SWEEP_TRIGGER} ticks, R = ${params.retries}, Tc = ${params.timeout}; dots sampled over ${SWEEP_SEEDS} seeds, the line is exact`}>Where the loop starts to hold</SectionTitle>
-          <Plot2D x={{ domain: [0, LOAD.max], label: 'load λ' }} y={{ domain: [0, 1], label: 'share not recovered' }} ariaLabel="Share of seeds that do not recover against the load, with the closed-form crossover">
+          <SectionTitle hint={`trigger ${SWEEP_TRIGGER} ticks, R = ${params.retries}, Tc = ${params.timeout}; dots sampled over ${SWEEP_SEEDS} seeds, the line is the average-case threshold`}>Where the loop starts to hold</SectionTitle>
+          <Plot2D x={{ domain: [0, LOAD.max], label: 'load λ' }} y={{ domain: [0, 1], label: 'not recovered in 60 ticks' }} ariaLabel="Share of seeds not recovered within 60 ticks of the trigger, against the load, with the crossover where it falls in range">
             <Points data={dots} />
-            <VLine at={crossoverLoad(params.retries)} label={`μ / (1 + R) = ${decimal(crossoverLoad(params.retries), 1)}`} tone="dim" />
+            {crossoverLoad(params.retries) <= LOAD.max && <VLine at={crossoverLoad(params.retries)} label={`μ / (1 + R) = ${decimal(crossoverLoad(params.retries), 1)}`} tone="dim" />}
           </Plot2D>
           <Button onClick={measure}>Measure {SWEEP_SEEDS} seeds at each load (about 3 s)</Button>
-          {sweep !== null && <Hint tone="muted" block>{sweep.map((p) => `λ ${p.lambda}: ${pctText(p.share, 0)}`).join(' · ')}. Near the crossover the share rises over a few units of load rather than at a point: slow drains and Poisson noise blur it.</Hint>}
+          {sweep !== null && <Hint tone="muted" block>{sweep.map((p) => `λ ${p.lambda}: ${pctText(p.share, 0)}`).join(' · ')}. Near the crossover the share rises over a few units of load rather than at a point: slow drains and Poisson noise blur it. {sweepDrainNote(sweep, params.retries, SWEEP_TRIGGER)}</Hint>}
         </Box>
         <ProvenanceRow>
           <Provenance kind="simulated" seed={params.seed}>one queue on the tick simulator, capacity {CAPACITY} per tick, arrivals Poisson</Provenance>

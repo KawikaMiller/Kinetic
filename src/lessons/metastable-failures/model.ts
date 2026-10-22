@@ -329,3 +329,43 @@ export const budgetedLoad = (lambda: number, ratio: number, tokenCap: number = T
 
 /** Ticks a backlog takes to drain once the effective load is below capacity. */
 export const drainTime = (backlog: number, lambdaEff: number): number | null => (lambdaEff < CAPACITY ? backlog / (CAPACITY - lambdaEff) : null);
+
+/** Within this share of capacity either side of the crossover, Poisson noise decides which runs keep the loop going. */
+export const NEAR_CROSSOVER = 0.1;
+
+export type SustainVerdict = 'drains' | 'near' | 'sustains';
+
+/** The sustaining test as a three-way verdict: clearly below capacity, within the noise band around it, clearly above. */
+export function sustainVerdict(lambda: number, retries: number): SustainVerdict {
+  const eff = effectiveLoad(lambda, retries);
+  if (eff < CAPACITY * (1 - NEAR_CROSSOVER)) return 'drains';
+  return eff <= CAPACITY * (1 + NEAR_CROSSOVER) ? 'near' : 'sustains';
+}
+
+/** First-order ticks a backlog from a trigger of `trigger` ticks takes to drain with no retries in play, or null at or above capacity. */
+export const slowDrainTicks = (lambda: number, trigger: number): number | null => drainTime(backlogAfter(lambda, trigger), lambda);
+
+/** The shed-limit search grid: Qmax is searched in steps of this many items. */
+const SHED_STEP = 5;
+let shedCache: number | null = null;
+
+/**
+ * The smallest Qmax (on a grid of 5) at which shedding stops preventing the collapse: the share of 100 seeds that do not recover from the
+ * default trigger reaches 50%. Bisection from the slider's default to its maximum; the naive guess is capacity x timeout.
+ */
+export function shedCrossover(): number {
+  if (shedCache !== null) return shedCache;
+  const collapses = (q: number) => collapseShare({ ...defaultParams(), shed: q }, defaultParams().trigger, 100) >= 0.5;
+  let lo = QMAX.default / SHED_STEP;
+  let hi = QMAX.max / SHED_STEP;
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (collapses(mid * SHED_STEP)) hi = mid;
+    else lo = mid;
+  }
+  shedCache = hi * SHED_STEP;
+  return shedCache;
+}
+
+/** The trigger length at which a sweep first reaches a 50% share not recovered, or null if it never does. */
+export const measuredTipping = (points: readonly { trigger: number; none: number }[]): number | null => points.find((p) => p.none >= 0.5)?.trigger ?? null;

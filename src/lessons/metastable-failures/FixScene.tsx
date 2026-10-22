@@ -1,14 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, SectionTitle } from '../../components/Panel';
-import { Curve, Plot2D, Points } from '../../components/Plot2D';
+import { Curve, Plot2D, Points, VLine } from '../../components/Plot2D';
 import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
 import { pctText } from '../../core/format';
 import { Charts } from './Charts';
-import { anyMitigation, backlogAtTriggerEnd, effectiveFor, fixCaption, fixParams, initialFix, noMitigation, phaseText, type FixState } from './init';
-import { FIX_RUN_TICKS, JITTER, QMAX, RATIO, SWEEP_SEEDS, TOKEN_CAP, collapseShare, phaseOf, runMeta } from './model';
+import { anyMitigation, backlogAtTriggerEnd, effectiveFor, fixCaption, fixParams, initialFix, noMitigation, phaseText, shedText, tippingText, type FixState } from './init';
+import { FIX_RUN_TICKS, JITTER, QMAX, RATIO, SWEEP_SEEDS, TOKEN_CAP, collapseShare, defaultParams, firstOrderTipping, phaseOf, runMeta } from './model';
 
 const SWEEP_TRIGGERS: readonly number[] = [0, 2, 4, 5, 6, 7, 8, 10, 12, 14];
 const SWEEP_TOP = 14;
@@ -63,7 +63,7 @@ export function FixScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Phase" value={phaseText(phase, recoveredAt, FIX_RUN_TICKS)} color={phase === 'collapsed' ? 'var(--bad)' : phase === 'recovered' ? 'var(--ok)' : undefined} sub={`this seed, ${FIX_RUN_TICKS} ticks`} />
           <Stat label="Backlog at the end of the trigger" value={backlogAtTriggerEnd(run)} sub="items queued, abandoned or live" />
-          <Stat label="Effective load while collapsed" value={eff === null ? 'bounded by shedding' : `${Math.round(eff)} per tick`} color={eff !== null && eff >= 100 ? 'var(--bad)' : undefined} sub="against a capacity of 100" />
+          <Stat label="Effective load if everything times out" value={eff === null ? 'bounded by shedding' : `${Math.round(eff)} per tick`} color={eff !== null && eff >= 100 ? 'var(--bad)' : undefined} sub="against a capacity of 100" />
         </Stats>
       }
       controls={[
@@ -94,10 +94,13 @@ export function FixScene({ picker }: { picker: ReactNode }) {
             <Curve points={none} tone="dim" dashed />
             <Curve points={chosen} tone="info" />
             <Points data={dots} />
+            <VLine at={firstOrderTipping(defaultParams().lambda, defaultParams().timeout)} label="estimate" tone="dim" />
           </Plot2D>
           <Button onClick={measure}>Measure {SWEEP_SEEDS} seeds per trigger length (about 4 s)</Button>
           {!anyMitigation(f) && <Hint tone="muted" block>No mitigation is on, so the two curves are the same. Switch one on and measure.</Hint>}
           {sweep !== null && <Hint tone="muted" block>{f.sweep?.points.map((p) => `d ${p.trigger}: ${pctText(p.none, 0)} to ${pctText(p.chosen, 0)}`).join(' · ')}. A curve that shifts right moved the tipping point; one that stays at zero removed the loop.</Hint>}
+          <Hint tone="muted" block>{tippingText(sweep === null ? null : sweep)}</Hint>
+          <Hint tone="muted" block>{shedText()}</Hint>
           <Hint tone="muted" block>The retry budget's bucket holds {TOKEN_CAP} tokens, so at most {TOKEN_CAP} retries leave a tick whatever the ratio: here the cap, not the ratio, bounds the amplification. Shedding rejects the arrival and does not retry it.</Hint>
         </Box>
         <p className="mf-note">
