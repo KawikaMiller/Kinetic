@@ -1,0 +1,8 @@
+.oa-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.oa-plots { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.oa-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.oa-claim { display: flex; flex-direction: column; gap: 8px; }
+.oa-witness { margin: 0; padding: 10px 12px; border: 1px dashed var(--bad); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.oa-array { display: flex; flex-direction: column; gap: 4px; }
+.oa-rowlabel { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.oa-stage ~ .provenance-row { margin: 8px 16px 12px; }

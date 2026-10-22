@@ -1,0 +1,10 @@
+.gt-stage { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.gt-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.gt-list { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+.gt-witness { padding: 10px 12px; border: 1px dashed var(--bad); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.gt-bars { display: flex; flex-direction: column; gap: 8px; }
+.gt-plots { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.gt-fields { display: flex; flex-direction: column; gap: 6px; }
+.gt-field-row { display: flex; flex-flow: row wrap; gap: 10px; }
+.gt-field-cell { display: inline-flex; gap: 4px; padding: 3px 6px; border: 1px solid var(--cell-line); border-radius: 8px; }
+.gt-stage ~ .provenance-row { margin: 8px 16px 12px; }
