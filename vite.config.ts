@@ -1,6 +1,8 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+import { watchIgnoreGlobs } from './scripts/lib/watch-ignore.ts'
 
 // Bind IPv4 explicitly: plain "localhost" can end up IPv6-only on Windows,
 // letting another app on 127.0.0.1 answer the same port instead of us.
@@ -31,6 +33,9 @@ export default defineConfig({
     host: HOST,
     port: PORT,
     strictPort: true,
+    // Added to Vite's own ignores (.git, node_modules), not replacing them. Anchored to this config's
+    // folder so a dev server rooted inside a worktree still watches its own files.
+    watch: { ignored: watchIgnoreGlobs(fileURLToPath(new URL('.', import.meta.url))) },
   },
   preview: {
     host: HOST,

@@ -4,11 +4,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
 import { ROOT_ENDPOINT, rootMismatch, SKIP_ENV } from './root.mjs';
+import { retryOnce } from './retry.mjs';
 import { recoverRoute } from './route.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const BASE_URL = process.env.KINETIC_URL ?? 'http://127.0.0.1:5317';
 export const OUT_DIR = path.join(ROOT, '.smoke');
+/** A cold Vite server transforms and pre-bundles on the first request; Puppeteer's 30 s default can be too short. */
+const NAVIGATION_TIMEOUT_MS = 90_000;
 
 const BROWSER_CANDIDATES = [
   process.env.KINETIC_BROWSER,
@@ -79,6 +82,28 @@ async function assertServesThisCheckout() {
   }
 }
 
+/** A page of `browser` with the navigation timeout, viewport, reduced motion and seeded Math.random openPage describes. */
+export async function newPage(browser, { width = 1440, height = 1000, seed, reducedMotion = false } = {}) {
+  const page = await browser.newPage();
+  page.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
+  await page.setViewport({ width, height });
+  if (reducedMotion) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  if (seed != null) {
+    await page.evaluateOnNewDocument((s) => {
+      let state = s >>> 0;
+      Math.random = () => {
+        // mulberry32
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }, seed);
+  }
+  return page;
+}
+
 /**
  * Launch a headless browser with one page that records console errors.
  * `seed` replaces Math.random with a seeded generator before any app code runs,
@@ -98,26 +123,24 @@ export async function openPage({ width = 1440, height = 1000, seed, reducedMotio
     headless: true,
     args: ['--no-sandbox', '--hide-scrollbars'],
   });
-  const page = await browser.newPage();
-  await page.setViewport({ width, height });
-  if (reducedMotion) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
-  if (seed != null) {
-    await page.evaluateOnNewDocument((s) => {
-      let state = s >>> 0;
-      Math.random = () => {
-        // mulberry32
-        state = (state + 0x6d2b79f5) >>> 0;
-        let t = state;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }, seed);
-  }
+  const page = await newPage(browser, { width, height, seed, reducedMotion });
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text().slice(0, 200)));
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 200)}`));
+  // Warm the server up before the first measured navigation, so its cold start is not charged to a lesson.
+  await gotoUrl(page, BASE_URL);
   return { browser, page, errors };
+}
+
+/** page.goto that retries once (with a log line) on a cold-server timeout or a Vite reload mid-navigation. */
+export const gotoUrl = (page, url, options = { waitUntil: 'networkidle0' }) =>
+  retryOnce(() => page.goto(url, options), `navigating to ${url}`);
+
+/** Load a lesson from a blank document, so seeded Math.random restarts and no state carries over. */
+export async function loadFresh(page, route, settleMs) {
+  await page.goto('about:blank');
+  await gotoUrl(page, `${BASE_URL}/#${route}`);
+  await sleep(settleMs);
 }
 
 /** Navigate to a hash route and let animations settle. */
@@ -129,7 +152,7 @@ export async function visit(page, route, settleMs = 1000) {
         'Set MSYS_NO_PATHCONV=1 (or run from PowerShell) so routes pass through untouched.',
     );
   }
-  await page.goto(`${BASE_URL}/#${target}`, { waitUntil: 'networkidle0' });
+  await gotoUrl(page, `${BASE_URL}/#${target}`);
   await sleep(settleMs);
 }
 
