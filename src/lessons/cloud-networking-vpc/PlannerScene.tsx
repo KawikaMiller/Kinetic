@@ -3,6 +3,7 @@ import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, TextField } from '../../components/ui';
 import { blockSize } from '../../core/ipv4';
+import { refocusAfterRemove } from '../../core/refocus';
 import { carveCaption } from './captions';
 import { addRow, initialPlanner, removeRow, setRowText } from './init';
 import { AWS_RESERVED_PER_SUBNET, BLOCK_PREFIX_RANGE, DEFAULT_VPC, MAX_SUBNET_ROWS, carve, firstFit, overlapOf, parseBlock, spanOf, spanText, usableAddresses } from './planner';
@@ -92,7 +93,10 @@ export function PlannerScene({ picker }: { picker: ReactNode }) {
               <div key={i} className="vpc-row">
                 <span className="vpc-row-name" style={{ color: ROW_TONES[i % ROW_TONES.length] }}>Row {i + 1}</span>
                 <TextField ariaLabel={`Subnet ${i + 1} CIDR`} value={row.text} onChange={(t) => setSt((s) => setRowText(s, i, t))} width={150} maxLength={20} placeholder="10.0.4.0/24" spellCheck={false} />
-                <ChipButton tone="bad" ariaLabel={`Remove row ${i + 1}`} onClick={() => setSt((s) => removeRow(s, i))}>×</ChipButton>
+                <ChipButton tone="bad" ariaLabel={`Remove row ${i + 1}`} onClick={(e) => {
+                  refocusAfterRemove(e.currentTarget, { group: '.box', items: 'button[aria-label^="Remove row"]', root: '.box', fallback: '.vpc-controls button' });
+                  setSt((s) => removeRow(s, i));
+                }}>×</ChipButton>
                 <span className={`vpc-row-status ${status.ok ? 'is-ok' : 'is-bad'}`} role={status.ok ? undefined : 'status'}>
                   {status.ok ? `${cidrText(status.cidr)}: ${status.usable.toLocaleString('en-US')} usable of ${blockSize(status.cidr.prefix).toLocaleString('en-US')}` : status.error}
                 </span>

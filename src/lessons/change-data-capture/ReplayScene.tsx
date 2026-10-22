@@ -101,7 +101,7 @@ export function ReplayScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint={`a seeded fault schedule: ${Math.round(LOSS * 100)}% loss and ${Math.round(DUPLICATE * 100)}% duplication when the network is noisy, crashes of the connector and a consumer`}>Seeded run, seed {seed}</SectionTitle>
           <div className="cdc-seed">
             <SeedField seed={seed} onSeed={setSeed} />
-            {seed !== naiveSeed && <Button onClick={() => setSeed(naiveSeed ?? 0)}>Load seed {naiveSeed}</Button>}
+            <Button softDisabled={seed === naiveSeed} onClick={() => setSeed(naiveSeed ?? 0)}>Load seed {naiveSeed}</Button>
             <Button onClick={() => setSeed(ackSeed ?? 0)}>Load seed {ackSeed}</Button>
             <Toggle label="Network" value={network === 'noisy'} onChange={(v) => setNetwork(v ? 'noisy' : 'clean')} off="Clean" on="Noisy" />
           </div>

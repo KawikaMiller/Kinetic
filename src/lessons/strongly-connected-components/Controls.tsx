@@ -18,7 +18,7 @@ export function PresetChips({ ed }: { ed: SccEditor }) {
 export function EditRow({ ed }: { ed: SccEditor }) {
   return (
     <>
-      <Button onClick={ed.addNode} disabled={ed.graph.names.length >= MAX_NODES}>
+      <Button onClick={ed.addNode} softDisabled={ed.graph.names.length >= MAX_NODES}>
         Add node
       </Button>
       <Button onClick={ed.undo} softDisabled={ed.added === 0}>

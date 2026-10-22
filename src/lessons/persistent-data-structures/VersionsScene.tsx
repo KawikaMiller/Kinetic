@@ -5,6 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { TreeSvg, type TreeShape } from '../../components/TreeSvg';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Stat, Stats, TextField } from '../../components/ui';
 import { useIntroCaption } from '../../core/caption';
+import { refocusAfterRemove } from '../../core/refocus';
 import { Dag } from './Dag';
 import { parseIndex, parseValue, refuseVersion } from './keys';
 import { capacity, childrenOf, memorySlots, pathOf, reachable, setValue, valuesOf } from './model';
@@ -81,7 +82,10 @@ export function VersionsScene({ picker }: { picker: ReactNode }) {
           <ControlGroup label="Drop a version" inline>
             {droppable.length === 0 ? <Hint>nothing else is alive</Hint> : null}
             {droppable.map((v) => (
-              <ChipButton key={v} tone="bad" ariaLabel={`Drop version ${v}`} onClick={() => drop(v)}>
+              <ChipButton key={v} tone="bad" ariaLabel={`Drop version ${v}`} onClick={(e) => {
+                refocusAfterRemove(e.currentTarget);
+                drop(v);
+              }}>
                 {`v${v}`}
               </ChipButton>
             ))}
