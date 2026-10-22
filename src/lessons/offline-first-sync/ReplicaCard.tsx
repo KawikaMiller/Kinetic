@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ItemView, View } from './ops';
+import { rowKeys, type ItemView, type View } from './ops';
 import type { Mark } from './status';
 
 const MARK_WORD: Record<Mark, string> = { pending: 'pending', inflight: 'in flight', confirmed: 'confirmed' };
@@ -20,6 +20,7 @@ export function ReplicaCard({
   actions?: (item: ItemView, position: number) => ReactNode;
   children?: ReactNode;
 }) {
+  const keys = rowKeys(view.items);
   const positions = view.items.map((_, i) => view.items.slice(0, i).filter((x) => !x.deleted).length);
   return (
     <section className={`ofs-card${offline ? ' is-offline' : ''}`} aria-label={`${name}${offline ? ', offline' : ''}`}>
@@ -34,7 +35,7 @@ export function ReplicaCard({
           const live = !item.deleted;
           const m = mark?.(item.id);
           return (
-            <li key={item.id} className={`ofs-item${item.deleted ? ' is-deleted' : ''}${item.conflicted ? ' is-conflict' : ''}`}>
+            <li key={keys[i]} className={`ofs-item${item.deleted ? ' is-deleted' : ''}${item.conflicted ? ' is-conflict' : ''}`}>
               <span className="ofs-title">
                 {item.deleted ? 'deleted: ' : ''}
                 {item.title === null ? 'undecided' : item.title}

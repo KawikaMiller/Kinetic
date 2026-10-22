@@ -186,6 +186,16 @@ export function applyNaive(s: NaiveState, op: Op): NaiveState {
 }
 export const naiveView = (s: NaiveState): View => ({ items: s.items.map((i) => ({ id: i.id, title: i.title, done: i.done, deleted: false, conflicted: false })), counter: s.counter, conflicts: [] });
 
+/** One React key per row: an item id, with a counter on a repeat, because arrival order can list the same id twice. */
+export const rowKeys = (items: readonly { id: string }[]): string[] => {
+  const seen = new Map<string, number>();
+  return items.map((i) => {
+    const n = seen.get(i.id) ?? 0;
+    seen.set(i.id, n + 1);
+    return n === 0 ? i.id : `${i.id}#${n}`;
+  });
+};
+
 /** The one string two replicas must share to show the same list. */
 export const viewKey = (v: View): string => JSON.stringify({ i: v.items.map((x) => [x.id, x.title, x.done, x.deleted]), c: v.counter, k: v.conflicts.map((c) => c.text).sort() });
 
