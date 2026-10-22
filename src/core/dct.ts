@@ -74,13 +74,17 @@ export const QUALITY_MAX = 100;
 const Q_ENTRY_MIN = 1;
 const Q_ENTRY_MAX = 255;
 
-/** The libjpeg quality rule's percentage: 5000/q below 50, 200-2q from 50 up. Quality is clamped to 1..100 and rounded. */
+/**
+ * The libjpeg quality rule's percentage (jpeg_quality_scaling): integer 5000/q below 50, 200-2q from 50 up. Quality is
+ * clamped to 1..100 and rounded. libjpeg works in integers, so 5000/q truncates (q 13 gives 384, not 384.6).
+ * From memory of jcparam.c, verify against the libjpeg source.
+ */
 export function qualityScale(quality: number): number {
   const q = Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, Math.round(quality)));
-  return q < 50 ? 5000 / q : 200 - 2 * q;
+  return q < 50 ? Math.floor(5000 / q) : 200 - 2 * q;
 }
 
-/** The table scaled for a quality: clamp(floor((T·scale + 50)/100), 1, 255) per entry. Quality 50 is the table itself. */
+/** The table scaled for a quality (jpeg_add_quant_table, baseline): clamp(floor((T·scale + 50)/100), 1, 255) per entry, with the integer scale above. Quality 50 is the table itself. From memory, verify against libjpeg. */
 export function scaleQuantTable(table: readonly (readonly number[])[], quality: number): Grid {
   const s = qualityScale(quality);
   return table.map((row) => row.map((t) => Math.min(Q_ENTRY_MAX, Math.max(Q_ENTRY_MIN, Math.floor((t * s + 50) / 100)))));

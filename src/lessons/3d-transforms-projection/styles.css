@@ -1,0 +1,30 @@
+/* 3d-transforms-projection */
+.td-stage { gap: 12px; min-width: 0; }
+.td-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.td-col { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.td-view { width: 100%; max-width: 400px; height: auto; display: block; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.td-edge { fill: none; stroke-width: 1.5; stroke-linecap: round; }
+.td-edge.is-plain { stroke: var(--muted); }
+.td-edge.is-dim { stroke: var(--dim); }
+.td-mark { fill: none; stroke: var(--hi); stroke-width: 2; }
+.td-mark-dot { fill: var(--hi); }
+.td-poly { stroke-width: 1.5; stroke-linejoin: round; }
+.td-poly.is-plain { stroke: var(--muted); fill: color-mix(in srgb, var(--muted) 18%, transparent); }
+.td-poly.is-bad { stroke: var(--bad); fill: color-mix(in srgb, var(--bad) 18%, transparent); }
+.td-new { fill: var(--ok); stroke: var(--bg); stroke-width: 1; }
+.td-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.td-step { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--panel); }
+.td-step.is-gone { opacity: 0.55; }
+.td-step-title { font-weight: 700; font-size: 13px; }
+.td-step-rule { color: var(--muted); font-size: 12.5px; margin: 2px 0 6px; }
+.td-eq { display: flex; align-items: center; gap: 8px; font: 500 12px var(--mono); }
+.td-matrix { display: grid; grid-template-columns: repeat(4, minmax(46px, auto)); gap: 2px 8px; padding: 4px 10px; border-left: 2px solid var(--line-2); border-right: 2px solid var(--line-2); border-radius: 6px; }
+.td-matrix span { text-align: right; }
+.td-vector { grid-template-columns: minmax(46px, auto); }
+.td-op { color: var(--muted); }
+.td-lines { display: flex; flex-direction: column; gap: 2px; font: 500 12px var(--mono); }
+.td-note { margin: 0; font-size: 13px; color: var(--orange); }
+.td-table td, .td-table th { white-space: nowrap; }
+.td-row-new td { color: var(--ok); }
+.td-row-bad td { color: var(--bad); }
+.td-img { width: 100%; max-width: 400px; height: auto; display: block; image-rendering: pixelated; border: 1px solid var(--line); border-radius: 8px; }

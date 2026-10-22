@@ -126,6 +126,22 @@ describe('quantisation', () => {
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 90)[0][0]).toBe(3);
   });
 
+  it('uses libjpeg integer division below quality 50: q=13 scales by 384 (not 384.6), so the first entry is 61, not 62', () => {
+    expect(qualityScale(13)).toBe(384);
+    expect(scaleQuantTable(JPEG_LUMA_TABLE, 13)[0][0]).toBe(61);
+  });
+
+  it('matches an independent all-integer oracle for every quality and entry', () => {
+    for (let q = 1; q <= 100; q++) {
+      const scale = q < 50 ? Math.trunc(5000 / q) : 200 - q * 2;
+      const got = scaleQuantTable(JPEG_LUMA_TABLE, q);
+      for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+        const want = Math.min(255, Math.max(1, Math.trunc((JPEG_LUMA_TABLE[i][j] * scale + 50) / 100)));
+        expect(got[i][j]).toBe(want);
+      }
+    }
+  });
+
   it('q=100 makes every entry 1; q=1 clamps every entry to 255; out-of-range quality is clamped', () => {
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 100).flat().every((v) => v === 1)).toBe(true);
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 1).flat().every((v) => v === 255)).toBe(true);
