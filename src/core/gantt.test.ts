@@ -18,6 +18,22 @@ describe('gantt geometry', () => {
     }
   });
 
+  it('clips a bar that begins before the domain at the left edge, without moving its end', () => {
+    // domain 10..30 (20 wide); the bar runs 0..20, so half of it (50%) is cut off
+    expect(barGeometry(0, 20, [10, 30])).toEqual({ left: 0, full: 50, shown: 50 });
+    // 60% done is 12 of 20 units, from 0..12; the part inside the domain is 10..12 = 10%
+    const g = barGeometry(0, 20, [10, 30], 0.6);
+    expect(g.left).toBe(0);
+    expect(g.full).toBe(50);
+    expect(g.shown).toBeCloseTo(10, 10);
+    // a bar still progressing but whose progress has not reached the domain shows nothing yet
+    expect(barGeometry(0, 20, [10, 30], 0.4).shown).toBe(0);
+  });
+
+  it('a bar wholly before the domain has no width and does not go negative', () => {
+    expect(barGeometry(0, 5, [10, 30])).toEqual({ left: 0, full: 0, shown: 0 });
+  });
+
   it('clamps the cursor fraction into the domain', () => {
     expect(domainFraction(37, [0, 211])).toBe(37 / 211);
     expect(domainFraction(-5, [0, 10])).toBe(0);

@@ -58,8 +58,7 @@ export function InstanceLanes({ run, now }: { run: FleetRun; now: number }) {
     const bars: GanttBar[] = [];
     if (W > 0 && life.launchedAt > 0) bars.push({ id: `w${i}`, lane: `s${life.slot}`, start: (life.launchedAt + 1) / 60, end: life.readyAt / 60, tone: 'violet', kind: 'wait', minPx: MIN_WARM_PX, label: 'warming' });
     bars.push({ id: `r${i}`, lane: `s${life.slot}`, start: life.readyAt / 60, end, tone: 'ok', label: 'serving' });
-    // A bar that began before the window starts at its left edge, so it never paints over the lane labels.
-    return bars.filter((b) => b.end > domain[0]).map((b) => ({ ...b, start: Math.max(b.start, domain[0]) }));
+    return bars;
   });
   return (
     <Box className="as-lanes">

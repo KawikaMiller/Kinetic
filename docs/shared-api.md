@@ -1148,6 +1148,7 @@
 ````
 `- **work vs wait vs blocked:** `work` (solid) is running. `wait` (hatched) is *ready*: it could run right now and is waiting its turn, e.g. in a ready queue. `blocked` (dashed outline) *can't* run until something else happens: I/O, a lock, a timer. A thread waiting for a disk read is `blocked`, not `wait`.
 `- Marker labels that would overlap (dhcp's T2 and end on a narrow clock) are nudged apart, measured in the browser; labels that fit don't move.
+`- A bar that begins before the domain is clipped at the left edge of the track (`barGeometry` clamps `left` to 0 and cuts the width and `progress` share by what is outside); one that ends before the domain draws nothing. Pass the real start and end: no hand clamp to `domain[0]` (cache-stampede and autoscaling had one).
 `- `labelMinPx`: a bar drawn narrower than this drops its label (it stays the tooltip and accessible name) instead of showing a clipped one.
 `- Positions are percentages, so it stretches to its container. When bars get too thin on a phone, wrap it in a `WideRegion` (cpu-scheduling uses `minWidth={480}`). `size="sm"` is 12px tracks (dense, no labels) and `md` is 20px with room for bar labels. A bar with no `tone` draws nothing, which is how a job that hasn't started looks (pair it with `progress` to show its dashed plan).
 `- The `now` cursor and markers span only the lanes, never the marker or axis label rows, and clicks pass through them to the bars. Bars are `<button>`s when `onBarClick` is set.
