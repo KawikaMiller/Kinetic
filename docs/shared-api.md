@@ -601,7 +601,7 @@
 `- Not adopted, deliberately: propositional-logic's short-circuit `TraceLine` (a label + code + result
 `  row, not a panel line) and code-review's diff (file headers, a sign column and severity tags) stay local.
 `
-`### `ConsolePanel.tsx` — value-vs-reference, closures-scope; debugger-tools next
+`### `ConsolePanel.tsx` — value-vs-reference, closures-scope; debugger-tools (migrated)
 ````tsx
 `<ConsolePanel lines={mem.out} error={mem.error} />                      // error prints last as "Uncaught …" in red
 `<ConsolePanel lines={['ok', { text: 'deprecated', tone: 'orange' }]} title="output" empty="(silent)" />
@@ -2066,7 +2066,7 @@
 ````
 `Without `freedTone` nothing changes. (The existing `tone` prop is ignored for a freed block, and callers pass it there today, so it could not become the override.) The freed tag now takes the box colour instead of a hard-coded --bad. Migration for after t3/b22 merges: ownership-refcounting drops its local `.heap-obj.rc-ok` class and passes `freedTone="ok"`.
 `
-`### `ClassifyBoard` + `core/classify` — undefined-behavior (migrated); chomsky-hierarchy, randomness-csprng next
+`### `ClassifyBoard` + `core/classify` — undefined-behavior (migrated); chomsky-hierarchy, randomness-csprng (migrated)
 ````tsx
 `const ITEMS: ClassifyItem[] = [{ id, label: ReactNode, text?: string, explanation?: ReactNode }];   // explanation => a "Why?" button
 `const CATEGORIES: ClassifyCategory[] = [{ id, label }];                                              // 2 to 5 reads well; 5 wraps
@@ -2105,13 +2105,13 @@
 `
 `## Tier 3 kit (wave 8 to 9 extraction round: kit-M)
 `
-`### `core/semver.ts` — dependency-management (origin), monorepo-polyrepo (test); supply-chain-security next
+`### `core/semver.ts` — dependency-management (origin), monorepo-polyrepo (test); supply-chain-security (migrated)
 ````ts
 `import { parseVersion, formatVersion, compare, parseRange, satisfies, satisfiesParsed, explainMatch, maxSatisfying, explainRange } from '../../core/semver';
 ````
 `npm's version and range rules (node-semver defaults): `^`, `~`, X-ranges, hyphen ranges, `||`, pre-releases excluded unless the range opts in, build metadata ignored. `satisfies(version, range)` / `maxSatisfying(versions, range)` take strings and return false / null for text that does not parse; `explainMatch` says `'match' | 'outside' | 'prerelease' | 'invalid'`; `explainRange` is the plain-words reading. Moved from `lessons/dependency-management/semver.ts` unchanged, with its tests (`core/semver.test.ts`).
 `
-`### `core/editDistance.ts` — edit-distance (origin); supply-chain-security (Levenshtein) next
+`### `core/editDistance.ts` — edit-distance (origin); supply-chain-security (Levenshtein, migrated)
 ````ts
 `import { editTable, pick, LEVENSHTEIN, INDEL, type Costs, type Table, type Candidates, type Source } from '../../core/editDistance';
 `const t = editTable('kitten', 'sitting');   // { a, b (code points), d[i][j], cands[i][j] (left/up/diag/match/win) }
@@ -2119,7 +2119,7 @@
 ````
 `Weighted Levenshtein DP over code points. `Costs` is `{ ins, del, sub }`; `LEVENSHTEIN` is 1/1/1 and `INDEL` prices a substitution as delete plus insert (the distance an LCS diff minimises). Ties in a cell go to a match, then (when `sub >= ins + del`) to delete/insert, else to the substitution, then delete before insert (`pick`). The traceback, replay and line diff stay in `lessons/edit-distance/model.ts`; they take a `Table`.
 `
-`### `core/regex/` — regex-engines (origin); redos next
+`### `core/regex/` — regex-engines (origin); redos (migrated)
 ````ts
 `import { parsePattern, parseSubject, matchAt, searchLeftmost, buildNfa, runNfa, subsetSizes, candidateMatches } from '../../core/regex';
 `// or the single modules: ./parse, ./backtrack, ./thompson, ./automaton (index.ts re-exports all four)
