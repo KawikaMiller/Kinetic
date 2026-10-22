@@ -49,6 +49,7 @@ describe('the transform behind the lesson', () => {
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 50)).toEqual(JPEG_LUMA_TABLE.map((r) => [...r]));
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 10)[0][0]).toBe(80);
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 90)[0][0]).toBe(3);
+    expect(scaleQuantTable(JPEG_LUMA_TABLE, 13)[0][0]).toBe(61); // integer 5000/13 = 384, hand-worked: (16*384+50)/100 = 61
     expect(scaleQuantTable(JPEG_LUMA_TABLE, 100).flat().every((v) => v === 1)).toBe(true);
   });
 });

@@ -98,7 +98,7 @@ export function QuantScene({ picker }: { picker: ReactNode }) {
         </div>
         <ProvenanceRow>
           <Provenance kind="real">the transform, the division and the rounding are computed here</Provenance>
-          <Provenance kind="from-memory">the table values (the T.81 Annex K example) and the quality rule (libjpeg's) are as recalled; check them against the standard and libjpeg</Provenance>
+          <Provenance kind="from-memory">the table values (the T.81 Annex K example) and the quality rule (libjpeg's, including its integer division of 5000 by the quality) are as recalled from memory of its source; check them against the standard and the libjpeg source</Provenance>
           <Provenance kind="illustrative">baseline grey only: no chroma, no entropy coding of the levels</Provenance>
         </ProvenanceRow>
       </div>
