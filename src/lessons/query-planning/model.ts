@@ -185,7 +185,11 @@ export interface PlanResult {
   chosen: number;
 }
 
-const money = (x: number): string => x.toFixed(2);
+/** A cost to two decimals, as the plan nodes print it. */
+export const money = (x: number): string => x.toFixed(2);
+
+/** A cost to two decimals with thousands separators, as the stats and try-this lines print it. */
+export const moneyGrouped = (x: number): string => x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const compact = (x: number): string => x.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 /** What the cost formulas are fed: row counts the optimiser believes, or the true ones. */

@@ -5,7 +5,7 @@ import { ChipButton, ClaimLabel, Legend, Provenance, ProvenanceRow, Slider, Stat
 import { useIntroCaption } from '../../core/caption';
 import { pctText } from '../../core/format';
 import { crossoverCaption } from './captions';
-import { DEFAULT_COSTS, FAST_STORAGE_RANDOM_PAGE_COST, crossoverRows, indexScanCost, seqScanCost, type Costs } from './model';
+import { DEFAULT_COSTS, FAST_STORAGE_RANDOM_PAGE_COST, crossoverRows, indexScanCost, moneyGrouped, seqScanCost, type Costs } from './model';
 import { ORDERS } from './table';
 
 /** Slider positions per decade of the log row-count axis. */
@@ -19,7 +19,6 @@ const STEP_FACTOR = 1.15;
 const rowsAt = (position: number): number => Math.min(ORDERS.rows, Math.max(1, Math.round(10 ** (position / STEPS_PER_DECADE))));
 const positionOf = (m: number): number => Math.round(Math.log10(m) * STEPS_PER_DECADE);
 const rows = (x: number): string => x.toLocaleString('en-US');
-const money = (x: number): string => x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function CrossoverScene({ picker }: { picker: ReactNode }) {
   const [rpc, setRpc] = useState(DEFAULT_COSTS.randomPage);
@@ -41,8 +40,8 @@ export function CrossoverScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Crossover" value={cross === null ? 'none' : `${rows(cross)} rows`} color="var(--violet)" sub={cross === null ? 'the index never loses' : `${pctText(cross / ORDERS.rows, 2)} of the table`} />
-          <Stat label="Seq scan" value={money(seq)} sub="the same at any row count" />
-          <Stat label={`Index scan at ${rows(m)} rows`} value={money(index)} color={indexWins ? 'var(--ok)' : 'var(--bad)'} sub={indexWins ? 'cheaper than the seq scan' : 'dearer than the seq scan'} />
+          <Stat label="Seq scan" value={moneyGrouped(seq)} sub="the same at any row count" />
+          <Stat label={`Index scan at ${rows(m)} rows`} value={moneyGrouped(index)} color={indexWins ? 'var(--ok)' : 'var(--bad)'} sub={indexWins ? 'cheaper than the seq scan' : 'dearer than the seq scan'} />
         </Stats>
       }
       legend={

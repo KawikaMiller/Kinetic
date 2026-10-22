@@ -1,9 +1,9 @@
 /**
- * SHA-256 (FIPS 180-4) written out in plain TypeScript, so the trees below can hash
- * synchronously while the learner types. `crypto.subtle` is asynchronous and would make every
- * node of every tree a pending promise. sha256.test.ts checks this against Node's own
- * implementation (and the platform's `crypto.subtle`) on 200 seeded inputs and the published
- * "abc" and empty-string vectors, so what the screen shows is real SHA-256.
+ * SHA-256 (FIPS 180-4) written out in plain TypeScript, so a lesson can hash synchronously
+ * while the learner types or inside a frame builder. `crypto.subtle` is asynchronous and would
+ * make every hash a pending promise. sha256.test.ts checks this against Node's own implementation
+ * (and the platform's `crypto.subtle`) and the published NIST vectors, so what the screen shows
+ * is real SHA-256. Used by merkle-trees and oauth-flows (the PKCE S256 transform).
  */
 
 const K = new Uint32Array([

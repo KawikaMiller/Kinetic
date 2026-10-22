@@ -1,12 +1,10 @@
 import type { LessonModule } from '../../core/types';
 import { pctText, sig } from '../../core/format';
-import { DEFAULT_COSTS, FAST_STORAGE_RANDOM_PAGE_COST, crossoverRows, indexScanCost, seqScanCost } from './model';
+import { DEFAULT_COSTS, FAST_STORAGE_RANDOM_PAGE_COST, crossoverRows, indexScanCost, moneyGrouped, seqScanCost } from './model';
 import { initialControls, scenePlan } from './scenes';
 import { ORDERS } from './table';
 import { Stage } from './Stage';
 
-const COST_FORMAT = { minimumFractionDigits: 2, maximumFractionDigits: 2 } as const;
-const money = (x: number): string => x.toLocaleString('en-US', COST_FORMAT);
 const seq = seqScanCost(ORDERS, DEFAULT_COSTS);
 const indexTen = indexScanCost(ORDERS, 10, DEFAULT_COSTS);
 const crossSlow = crossoverRows(ORDERS, DEFAULT_COSTS)!;
@@ -32,11 +30,11 @@ const lesson: LessonModule = {
       'A plan is a column of boxes, the step that runs last at the top. A blue outline is an index scan and an orange one a Sort (a costly step, not an error); with EXPLAIN ANALYZE a red outline means the estimated rows are far from the actual rows, with the ratio written. A yellow ring marks the node whose cost is being worked out (click a node); a dashed grey box is a candidate the planner rejected. In the candidate table the green row is the chosen plan and the dim rows lost. In the crossover plot the blue curve is the index scan, the flat grey line the seq scan, the violet line where they cross and the yellow line is yours to drag; a green dot is the cheaper plan there and a red dot the dearer. The chips say what is a toy, what is shown without being run and what is from memory.',
   },
   tryThis: [
-    `In "SQL becomes a tree" (customer 4242, an index on customer_id), switch EXPLAIN to ANALYZE: the Index Scan reads 10 rows against an estimate of 10, and costs ${money(indexTen)}.`,
-    `In "Indexes and statistics" (the customer query, no index) switch on the customer_id index: the Seq Scan at ${money(seq)} loses to an Index Scan at ${money(indexTen)}, ${sig(seq / indexTen, 3)} times cheaper.`,
+    `In "SQL becomes a tree" (customer 4242, an index on customer_id), switch EXPLAIN to ANALYZE: the Index Scan reads 10 rows against an estimate of 10, and costs ${moneyGrouped(indexTen)}.`,
+    `In "Indexes and statistics" (the customer query, no index) switch on the customer_id index: the Seq Scan at ${moneyGrouped(seq)} loses to an Index Scan at ${moneyGrouped(indexTen)}, ${sig(seq / indexTen, 3)} times cheaper.`,
     `In "The crossover" the lines cross at ${crossSlow.toLocaleString('en-US')} rows (${pctText(crossSlow / ORDERS.rows, 2)} of the table). Press "1.1 (fast storage)" and they cross at ${crossFast.toLocaleString('en-US')} rows (${pctText(crossFast / ORDERS.rows, 2)}).`,
     'In "Misestimates" (status refunded, an index on status) the planner uses the index. Switch the statistics to stale: it now thinks 25,000 rows match against 500 in the data, off by 50 times, and picks the seq scan.',
-    `In "Sort elimination" (customer 4242, newest 10, no index) the plan is Limit, Sort, Seq Scan at ${money(SORT_TEN_ROWS)}. Switch on the (customer_id, created_at) index: the Sort disappears and the cost falls to ${money(indexTen)}.`,
+    `In "Sort elimination" (customer 4242, newest 10, no index) the plan is Limit, Sort, Seq Scan at ${moneyGrouped(SORT_TEN_ROWS)}. Switch on the (customer_id, created_at) index: the Sort disappears and the cost falls to ${moneyGrouped(indexTen)}.`,
   ],
   keyIdeas: [
     'In this model the planner costs every candidate plan and runs the cheapest, so an index is a candidate and never an instruction.',
