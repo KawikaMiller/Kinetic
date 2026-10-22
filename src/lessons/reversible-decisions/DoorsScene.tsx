@@ -52,6 +52,7 @@ export function DoorsScene({ picker }: SceneProps) {
       }
       legend={<Legend items={[
         { color: 'var(--info)', label: 'cost to undo over the months', shape: 'line' },
+        { color: 'var(--ok)', label: 'the same door with the picked technique applied (set-up hours not shown)', shape: 'line' },
         { color: 'var(--dim)', label: 'the crossover', shape: 'line' },
         { color: 'var(--ok)', label: 'a technique that pays', shape: 'square' },
         { color: 'var(--orange)', label: 'one that does not', shape: 'square' },
@@ -77,10 +78,11 @@ export function DoorsScene({ picker }: SceneProps) {
         <Plot2D x={{ domain: [0, DOORS.month.max], label: 'months of adoption' }} y={{ domain: [0, top], label: 'hours to undo', ticks: 5 }} width={PLOT.width} height={PLOT.height} ariaLabel="Cost to undo over twelve months against the crossover cost">
           <Curve fn={(t) => undoAt(c0, growth, t)} tone="info" />
           <HLine at={crossover} label={`crossover ${hoursText(crossover)}`} tone="dim" />
+          {picked && <Curve fn={(t) => undoAt(c0, growth, t) * picked.technique.factor} tone="ok" />}
           {closing.kind === 'month' && closing.month <= DOORS.month.max && <VLine at={closing.month} label="one-way" tone="dim" />}
         </Plot2D>
         <Hint tone="muted" block>
-          {`The first plot uses a chance of being wrong of ${DOORS_P0} and the tau and w below it; the techniques use the chosen decision's own chance. A technique multiplies the cost to undo by its factor, and costs its set-up hours first.`}
+          {`The first plot uses a chance of being wrong of ${DOORS_P0} and the tau and w below it; the techniques use the chosen decision's own chance. A technique multiplies the cost to undo by its factor, and costs its set-up hours first; pick one to draw the same door with it applied. Each technique suits different decisions, and the table does not say whether one can be applied to a given decision at all: in these invented figures the feature flag has a lower factor and fewer set-up hours than the adapter layer, the expand-then-contract change and the time-boxed contract, so it beats all three on both, and the four decisions share the same verdicts because the saving does not depend on their size.`}
         </Hint>
         <WideRegion minWidth={TABLE_MIN_WIDTH} noun="table">
           <table className="data-table rd-table">

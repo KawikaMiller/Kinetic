@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Pricing a technique that makes a decision cheaper to undo against its set-up cost',
       'Noticing the month a decision stops being easy to take back',
     ],
-    why: 'Teams spend the same careful review on a function name as on a database engine, or none on both. Writing the cost to undo, the chance of being wrong and the price of an hour of review as inputs shows which of them the answer hangs on, and where the crossover sits.',
+    why: 'In this model, the same review time has very different value for a function name and a database engine. Writing the cost to undo, the chance of being wrong and the price of an hour of review as inputs shows which of them the answer hangs on, and where the crossover sits.',
     watch: 'On Place ten decisions the learner puts each in one of four cells and, once all are placed, a table gives the model numbers. On The rigour curve the blue line is the expected cost against hours of rigour, with a red dot at no rigour, a green dot at the best rigour and a highlighted dot at your hours; a second plot shows the best rigour against the cost to undo with a grey dashed line at the crossover. On Doors that close the blue line is the cost to undo over the months and the grey line the crossover; in the table a technique that pays is green and one that does not is orange. On the queue service a meter is blue while fine and red past its edge.',
   },
   tryThis: [
@@ -28,7 +28,7 @@ const lesson: LessonModule = {
     `Rigour has a price and so does a mistake: in this model the database engine (${F.dbUndo} hours to undo, ${F.dbChance}% chance wrong) is best decided after ${F.dbBest} hours of rigour, at ${F.dbBestTotal} expected hours against ${F.dbNone} with none, while a ${F.week}-hour review of the one-hour rename costs ${F.weekCost} against ${F.renameNone} to decide now (matching rigour to how hard a decision is to undo is common practice).`,
     `It depends on the cost to undo against a crossover of tau times w over p0: the database engine's crossover is ${F.dbCrossover} hours, and a rename stays decide-now even at a 90% chance of being wrong (crossover ${F.renameSureCrossover} hours against 1 to undo), so in this model doubt alone does not buy review (the one-way and two-way door framing is one view).`,
     `A door can close: with ${F.doorCrossover} hours as the crossover and a cost to undo of 20 growing 10% a month, a two-way door turns one-way at month ${F.doorMonth} (one view: reversibility can change over time).`,
-    `A technique can cost more than it saves: in this model its saving is tau times w times ln(1 / factor), ${F.adapterClosed} hours for a factor of 0.5, whatever the size of the decision while it stays past the crossover, so the adapter layer's ${F.adapterSetup} set-up hours lose and the pilot's ${F.pilotSetup} win by a narrow margin (the figures are invented).`,
+    `A technique can cost more than it saves: in this model its saving is tau times w times ln(1 / factor), ${F.adapterClosed} hours for a factor of 0.5, whatever the size of the decision, as long as the cost to undo after the technique is still above the crossover, so the adapter layer's ${F.adapterSetup} set-up hours lose and the pilot's ${F.pilotSetup} win by a narrow margin (the figures are invented).`,
   ],
   quiz: [
     {

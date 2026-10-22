@@ -1,3 +1,5 @@
+import doorsSource from './DoorsScene.tsx?raw';
+import placeSource from './PlaceScene.tsx?raw';
 import { describe, expect, it } from 'vitest';
 import { allSorted } from '../../core/classify';
 import { choose, dominatedChoices, enumeratePaths, redMeters, startWalk, validateScenario } from '../../core/scenario';
@@ -8,7 +10,7 @@ import { curveCaption, doorsCaption, placeCaption, storyCaption, techniqueCaptio
 import { FACTS } from './facts';
 import lesson from './index';
 import {
-  DECISIONS, DOORS, RIGOUR_BOUNDS, TECHNIQUES, crossoverCost, decisionOf, rigourOf, techniqueRow, techniqueOf, totalCost, undoAt, type Rigour,
+  DECISIONS, DEFAULT_TAU, DEFAULT_W, DOORS, RIGOUR_BOUNDS, TECHNIQUES, crossoverCost, decisionOf, rigourOf, techniqueRow, techniqueOf, totalCost, undoAt, type Rigour,
 } from './model';
 import { OPENING, curveFor } from './opening';
 import { METER, METERS, QUEUE_SERVICE } from './scenario';
@@ -226,5 +228,47 @@ describe('the text quotes what the model computes', () => {
     expect(crossoverCost(0.4, 10, 1)).toBe(25);
     expect(undoAt(20, 10, 3)).toBeCloseTo(26.62, 9);
     expect(lesson.quiz[2].why).toContain('reaches 25 hours at month 2.3');
+  });
+});
+
+describe('the technique claims (walked on the model)', () => {
+  const rowsFor = (id: string) => TECHNIQUES.map((t) => techniqueRow(rigourOf(decisionOf(id), DEFAULT_TAU, DEFAULT_W), t));
+
+  it('the closed-form saving tau x w x ln(1 / factor) holds while the cost after the technique is above the crossover, and fails once it is below', () => {
+    const above: Rigour = { undo: 800, p0: 0.35, tau: 10, w: 1 };
+    for (const t of TECHNIQUES) {
+      expect(above.undo * t.factor).toBeGreaterThan(crossoverCost(above.p0, above.tau, above.w));
+      expect(techniqueRow(above, t).saving).toBeCloseTo(above.tau * above.w * Math.log(1 / t.factor), 9);
+    }
+    const below: Rigour = { undo: 40, p0: 0.35, tau: 10, w: 1 };
+    const flag = techniqueOf('flag');
+    expect(below.undo * flag.factor).toBeLessThan(crossoverCost(below.p0, below.tau, below.w));
+    expect(techniqueRow(below, flag).saving).not.toBeCloseTo(below.tau * below.w * Math.log(1 / flag.factor), 3);
+    expect(lesson.keyIdeas[3]).toContain('the cost to undo after the technique is still above the crossover');
+  });
+
+  it('the feature flag has a lower factor and fewer set-up hours than the adapter, expand and time-box, so it beats them on both axes (the page says so)', () => {
+    const flag = techniqueOf('flag');
+    for (const id of ['adapter', 'expand', 'timebox']) {
+      expect(flag.factor).toBeLessThan(techniqueOf(id).factor);
+      expect(flag.setup).toBeLessThan(techniqueOf(id).setup);
+    }
+    expect(doorsSource).toContain('beats all three on both');
+  });
+
+  it('the four pickable decisions share the same verdict for every technique, as the page says', () => {
+    const verdicts = (id: string) => rowsFor(id).map((r) => r.pays);
+    for (const id of ['contract', 'schema', 'fields']) expect(verdicts(id), id).toEqual(verdicts('database'));
+    expect(doorsSource).toContain('share the same verdicts');
+  });
+
+  it('the queue-service prompt agrees with the slack meter (ten days), and the migrated ending does not say it was small next to six teams using it', () => {
+    expect(QUEUE_SERVICE.nodes[0].prompt).toContain('ten days of slack');
+    expect(METERS[0].start).toBe(10);
+    expect(QUEUE_SERVICE.endings.find((e) => e.id === 'E_migrated')!.text).not.toContain('still small');
+  });
+
+  it('names no company for the one-way and two-way door framing', () => {
+    expect(placeSource).not.toContain('Amazon');
   });
 });

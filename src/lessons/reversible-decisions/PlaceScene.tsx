@@ -72,7 +72,7 @@ export function PlaceScene({ picker, board, onBoard }: SceneProps & { board: Cla
           <Provenance kind="invented">the ten decisions, their hours to undo and their chances of being wrong are made up</Provenance>
           <ClaimLabel kind="view">sorting decisions by how costly they are to undo, and how unsure you are, is one way to decide how much care to spend</ClaimLabel>
           <ClaimLabel kind="practice">matching the rigour of a decision to how hard it is to undo is a common rule of thumb</ClaimLabel>
-          <Provenance kind="from-memory">a one-way door against a two-way door is a framing often credited to Amazon&apos;s leadership; verify against Amazon&apos;s published shareholder letters</Provenance>
+          <Provenance kind="from-memory">a one-way door against a two-way door is a framing in common use in engineering management, recalled from memory; verify against a published source</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

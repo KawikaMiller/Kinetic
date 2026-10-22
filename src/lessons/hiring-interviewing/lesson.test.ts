@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import storySource from './StoryScene.tsx?raw';
 import { describe, expect, it } from 'vitest';
 import { choose, dominatedChoices, enumeratePaths, redMeters, startWalk, validateScenario } from '../../core/scenario';
 import { expectCaption } from '../../core/testing/captions';
@@ -195,7 +195,7 @@ describe('the debrief story', () => {
     const because = (id: string) => DEBRIEF.nodes.flatMap((n) => n.choices).find((c) => c.id === id)!.because;
     expect(because('veto')).toContain('invented');
     expect(because('still_followup')).toContain('invented');
-    expect(fs.readFileSync(new URL('./StoryScene.tsx', import.meta.url), 'utf8')).toContain('authored');
+    expect(storySource).toContain('authored');
   });
 
   it('has no ending marked correct, states every reason as a condition, and the fast ending is defensible with its cost visible', () => {

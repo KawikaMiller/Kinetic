@@ -1,5 +1,5 @@
 /**
- * Scene 4: pick the queue service for an internal tool, review in two days. Invented: every effect is a made-up number,
+ * Scene 4: pick the queue service for an internal tool, ten days of slack before the review. Invented: every effect is a made-up number,
  * shown with its price before the choice is made. The structure (ids, effects, destinations) is pinned to the fixture in
  * core/testing/leadScenarios.ts.
  */
@@ -22,7 +22,7 @@ const fx = (slack: number, regret: number, undo: number, upkeep: number): Choice
 const nodes: Node[] = [
   {
     id: 'n1',
-    prompt: 'Pick the queue service for an internal tool; review is in two days.',
+    prompt: 'Pick the queue service for an internal tool; you have ten days of slack before the review.',
     choices: [
       { id: 'r1', label: 'Decide now, take the managed default', to: 'n2', effects: fx(-1, 10, 5, 0), because: 'If the tool stays internal and small, the default is cheap to change; if others start to depend on it, it is not.' },
       { id: 'r2', label: 'Decide now, behind a thin interface', to: 'n3', effects: fx(-2, 5, -3, 4), because: 'If a second vendor may ever be needed, the interface lowers the cost of switching, and costs hours every week to keep.' },
@@ -57,7 +57,7 @@ const nodes: Node[] = [
 
 const READ_THE_LEDGER = 'Read the ledger: every path here costs something.';
 const endings: Ending[] = [
-  { id: 'E_migrated', title: 'Migrated early', text: `The other teams moved while it was still small, and the slack went into the move. ${READ_THE_LEDGER}` },
+  { id: 'E_migrated', title: 'Migrated early', text: `The other teams moved before more of them came to depend on it, and the slack went into the move. ${READ_THE_LEDGER}` },
   { id: 'E_frozen', title: 'Frozen as it is', text: `Nothing more was spent, and the price of changing later went up. ${READ_THE_LEDGER}` },
   { id: 'E_wrapped', title: 'Two vendors behind one interface', text: `Switching is real now, and somebody keeps two adapters alive every week. ${READ_THE_LEDGER}` },
   { id: 'E_shipfast', title: 'Shipped behind a thin interface', text: `Fast this month, with the interface as the only cover. ${READ_THE_LEDGER}` },
