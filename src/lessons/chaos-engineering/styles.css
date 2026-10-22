@@ -1,0 +1,7 @@
+/* chaos-engineering */
+.ce-stage { gap: 12px; min-width: 0; }
+.ce-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.ce-table td, .ce-table th { font-size: 12.5px; }
+.ce-table tr.is-picked th, .ce-table tr.is-picked td { color: var(--orange); }
+.ce-pair { display: flex; flex-wrap: wrap; gap: 14px; }
+.ce-plot { min-width: 0; }
