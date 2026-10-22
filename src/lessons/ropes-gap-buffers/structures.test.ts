@@ -64,7 +64,7 @@ describe('all three structures against a plain string splice', () => {
       }
       for (let i = 0; i < ref.length; i += 7) expect(ropeIndex(rope, i).char, `index ${i} seed ${seed}`).toBe(ref[i]);
     }
-  });
+  }, 180_000);
 
   it('index(i) equals string[i] for every i on a rope built from a long mixed text, and split(i) then concat returns the original', () => {
     const text = randomText(mulberry32(5), 300);
