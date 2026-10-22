@@ -7,7 +7,7 @@ import { useIntroCaption } from '../../core/caption';
 import { forecastCaption, growthNote, rps } from './frames';
 import {
   FORECAST_MONTHS, GROWTH_RANGE, HEADROOM_RANGE, INSTANCES_RANGE, KNEE_PER_INSTANCE, LEAD_WEEKS_RANGE, PLAN_DEFAULT, REDUNDANCY, REDUNDANCY_NAME, SPIKE_FACTOR_RANGE,
-  SPIKE_MONTH_RANGE, firstCrossing, forecastPeak, orderByMonth, parsePeak, planCapacity, trendPeak, type Plan, type Redundancy,
+  SPIKE_MONTH_RANGE, firstCrossing, forecastPeak, orderByMonth, parsePeak, planCapacity, roomBeforeCapacity, trendPeak, type Plan, type Redundancy,
 } from './model';
 import { pctText, sig } from '../../core/format';
 
@@ -21,6 +21,7 @@ export function ForecastScene({ picker }: { picker: ReactNode }) {
   const set = (patch: Partial<Plan>) => setPlan((p) => ({ ...p, ...patch }));
 
   const cap = planCapacity(plan);
+  const room = roomBeforeCapacity(plan);
   const crossing = firstCrossing(plan);
   const order = orderByMonth(crossing, plan.leadWeeks);
   const top = Math.max(cap / (1 - plan.headroom), ...Array.from({ length: FORECAST_MONTHS + 1 }, (_, m) => forecastPeak(plan, m))) * PLOT_HEADROOM;
@@ -105,9 +106,9 @@ export function ForecastScene({ picker }: { picker: ReactNode }) {
         </Plot2D>
         <MetricMeter
           label="Room before the plan's capacity"
-          value={(cap - plan.peak) / cap}
+          value={room ?? -1}
           max={1}
-          format={(v) => pctText(v, 0)}
+          format={(v) => (room === null ? 'no usable capacity' : pctText(v, 0))}
           bands={[
             { upTo: 0, tone: 'bad', label: 'already over capacity' },
             { upTo: 0.2, tone: 'orange', label: 'thin' },

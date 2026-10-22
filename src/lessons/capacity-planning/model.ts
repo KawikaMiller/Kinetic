@@ -241,6 +241,12 @@ export function usableInstances(plan: Plan): number {
 /** Requests per second the plan can take: the knees of the usable instances, less the headroom kept free. */
 export const planCapacity = (plan: Plan): number => plan.kneePerInstance * usableInstances(plan) * (1 - plan.headroom);
 
+/** The share of the plan's capacity left over at today's peak (negative once over it), or null when the plan has no usable capacity at all: the share is then undefined, not minus infinity. */
+export function roomBeforeCapacity(plan: Plan): number | null {
+  const cap = planCapacity(plan);
+  return cap > 0 ? (cap - plan.peak) / cap : null;
+}
+
 /** The trend's peak in month m (0 is now): compound (1 + g)^m or linear 1 + g·m. */
 export const trendPeak = (plan: Plan, month: number): number =>
   plan.peak * (plan.growthKind === 'compound' ? (1 + plan.growth) ** month : Math.max(0, 1 + plan.growth * month));
