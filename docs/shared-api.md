@@ -471,6 +471,7 @@
 ````tsx
 `<Segmented label="n" value={n} onChange={setN} options={[{ value: 8, label: '8' }]} />  // numbers now allowed
 `<Segmented ariaLabel="Input size n" value={n} onChange={setN} options={…} />  // no visible label: names the radiogroup itself
+`<Segmented label="World" value={maze} onChange={setMaze} options={[{ value: false, label: 'Open grid' }, { value: true, label: 'Walled maze' }]} />  // booleans allowed: no 'open'/'maze' string mapping (Toggle is the same with the off option first)
 `toOptions(MODES)                                         // [{id,label}] → options (import from components/options)
 `<Toggle label="DNS" value={cached} onChange={setCached} off="Cold lookup" on="Cached" />  // off option always first
 `<TextField label="Key" value={k} onChange={setK} onEnter={insert} onBlur={normalise}

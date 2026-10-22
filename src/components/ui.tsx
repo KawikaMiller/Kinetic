@@ -56,7 +56,7 @@ export function Slider({
 
 
 /** Pill-style single choice. Good for picking an algorithm, a mode, or a small number. */
-export function Segmented<T extends string | number>({
+export function Segmented<T extends string | number | boolean>({
   options, value, onChange, label, ariaLabel, ref,
 }: {
   options: Option<T>[];
@@ -79,7 +79,7 @@ export function Segmented<T extends string | number>({
       <div className="segmented-track">
         {options.map((o, i) => (
           <button
-            key={o.value}
+            key={String(o.value)}
             type="button"
             {...radio.itemProps(i)}
             className={o.value === value ? 'on' : ''}
