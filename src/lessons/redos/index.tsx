@@ -20,13 +20,13 @@ const lesson: LessonModule = {
   tryThis: [
     `The step counter, on the defaults (${F.counterPattern} on ${F.counterLetters} letters and a !): backtracking makes ${F.counterVisits.toLocaleString('en-US')} visits against ${F.counterNfa} for the linear-time engine, and one more letter multiplies the first by ${F.counterRatio}. Move the slider to ${F.gaveUpAt} letters: the stage says it gave up at the step budget of ${F.budget}, and the linear-time engine still finishes in ${F.gaveUpNfa}.`,
     `Which shapes grow, on the defaults (${F.ownLength - 1} letters and a ! in "your text"): the growth readout calls ^a+$ ${F.kinds.linear}, ^a*a*b$ ${F.kinds.quadratic}, ^(a|aa)+$ ${F.kinds.fibonacci} (about ${F.fibRatio} per letter) and ^(a+)+$ ${F.kinds.exponential} (${F.expRatio} per letter). On your text the last pattern takes ${F.own.exponential.toLocaleString('en-US')} visits and the first ${F.own.linear}.`,
-    `Fixes, on the defaults (${F.fixesLetters} letters, backtracking, budget ${F.budget}): the service cuts the request off at the budget. Turn Rewrite on (${F.rewriteShown}): answered after ${F.rewriteVisits} visits. Turn it off again and pick Linear-time NFA: ${F.nfaVisits} visits. Turn it off, switch the engine back to Backtracking and turn the cap on (${F.cap} characters): the input is refused with 0 visits.`,
+    `Fixes, on the defaults (${F.fixesLetters} letters, backtracking, budget ${F.budget}): the service cuts the request off at the budget. Turn Rewrite on (${F.rewriteShown}): answered after ${F.rewriteVisits} visits. Turn it off again and pick Linear-time NFA: ${F.nfaVisits} visits. Pick Backtracking again and turn the cap on (${F.cap} characters): the input is refused with 0 visits.`,
   ],
   keyIdeas: [
     `Work can grow with the number of ways to split the text, not with its length: ${F.counterPattern} on ${F.counterLetters} letters costs ${F.counterVisits.toLocaleString('en-US')} visits in this model, and each extra letter multiplies it by ${F.counterRatio}.`,
     `Overlap is the cause, not nesting alone: in this model ^(a|aa)+$ is ${F.kinds.fibonacci} (${F.fibRatio} per letter) with no nested +, and ^a*a*b$ is ${F.kinds.quadratic}.`,
     `A rewrite that leaves no overlap changes the growth: ${F.rewriteShown} accepts the same strings as the original in this lesson and answers after ${F.rewriteVisits} visits where the original is cut off at the budget.`,
-    `A cap or a budget limits the damage but leaves the pattern as it was, so in this model the cap refuses a ${F.fixesLetters + 1}-character input while a pattern that still overlaps stays exponential for inputs under the cap.`,
+    `A cap or a budget limits the damage but leaves the pattern as it was, so in this model the cap refuses a ${F.fixesLetters + 1}-character input while a pattern that still overlaps stays exponential for inputs within the cap.`,
   ],
   quiz: [
     {
@@ -71,7 +71,7 @@ const lesson: LessonModule = {
         'It bounds the cost of inputs it accepts, but the pattern is still exponential under the cap',
       ],
       answer: 3,
-      why: `The cap refuses the ${F.fixesLetters + 1}-character input with 0 visits, but a 15-letter input under the cap still costs ${F.capUnderVisits.toLocaleString('en-US')} visits. The rewrite ${F.rewriteShown} or a linear-time engine changes the growth.`,
+      why: `The cap refuses the ${F.fixesLetters + 1}-character input with 0 visits, but a 15-letter input within the cap still costs ${F.capUnderVisits.toLocaleString('en-US')} visits. The rewrite ${F.rewriteShown} or a linear-time engine changes the growth.`,
     },
   ],
 };

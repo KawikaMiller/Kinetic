@@ -11,6 +11,10 @@ export const num = (v: number) => v.toLocaleString('en-US');
 /** What "visit" means, said once on screen. */
 export const VISIT_DEFINITION = 'A visit is one (part of the pattern, position in the text) pair examined, repeats counted. Counted, never timed.';
 
+/** The lazy DFA counts differently from the other two engines, so its definition is shown beside its numbers. */
+export const LAZY_DFA_VISIT_DEFINITION =
+  'For the lazy DFA a visit is one table lookup per character, plus the number of NFA states inside each DFA state the first time that state is built. That is a different quantity from the pattern-and-position visits above, so comparing it with backtracking is only illustrative.';
+
 /** Visits of the counter pattern at n letters, and the growth from n - 1 when both finished. */
 export function counterNumbers(n: number) {
   const bt = backtrackVisits(COUNTER_PATTERN, letters(n));

@@ -4,7 +4,7 @@ import { ConsolePanel } from '../../components/ConsolePanel';
 import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { VISIT_DEFINITION, fixesCaption, num } from './captions';
+import { LAZY_DFA_VISIT_DEFINITION, VISIT_DEFINITION, fixesCaption, num } from './captions';
 import { MAX_LETTERS, type Engine } from './engines';
 import { BUDGETS, CAP_MAX, CAP_MIN, fixesOutcome, type RiskyId } from './fixes';
 import { initialFixes } from './opening';
@@ -33,7 +33,7 @@ export function FixesScene({ picker }: { picker: ReactNode }) {
       introKey={[state.pattern, state.letters, state.engine, state.rewrite, state.capOn, state.cap, state.budget]}
       stats={
         <Stats>
-          <Stat label="Visits" value={num(outcome.visits)} color={outcome.verdict === 'cut-off' ? 'var(--orange)' : 'var(--info)'} sub={outcome.verdict === 'refused' ? 'nothing was matched' : 'in this engine, same unit as the other scenes'} />
+          <Stat label="Visits" value={num(outcome.visits)} color={outcome.verdict === 'cut-off' ? 'var(--orange)' : 'var(--info)'} sub={outcome.verdict === 'refused' ? 'nothing was matched' : state.engine === 'lazy-dfa' ? 'lookups plus first-build state sizes: see below' : 'in this engine, same unit as the other scenes'} />
           <Stat label="The service" value={VERDICT_TEXT[outcome.verdict]} color={VERDICT_COLOUR[outcome.verdict]} sub={`${outcome.length} characters in`} />
         </Stats>
       }
@@ -78,6 +78,7 @@ export function FixesScene({ picker }: { picker: ReactNode }) {
           <Bar value={outcome.visits} max={Math.max(...BUDGETS)} color={outcome.verdict === 'cut-off' ? 'var(--orange)' : 'var(--info)'} />
         </div>
         <p className="rd-note">{VISIT_DEFINITION}</p>
+        {state.engine === 'lazy-dfa' && <p className="rd-note">{LAZY_DFA_VISIT_DEFINITION}</p>}
         <div className="rd-block">
           <SectionTitle>The rest of the defender's list (not modelled here)</SectionTitle>
           <ul className="rd-list">
