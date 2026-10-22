@@ -1,19 +1,18 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { Box } from '../../components/Panel';
 import { Packet, Pulse, SceneNode } from '../../components/scene';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
 import { pointAlong } from '../../core/geometry';
-import type { Frame } from '../../core/types';
 import { usePlayer } from '../../core/usePlayer';
+import { buildFrames, type Msg } from './frames';
+import type { Model } from './policy';
+import { breachedSystems, SERVICES, type NodeId, type PillKind } from './replay';
 import './styles.css';
 
-type Mode = 'moat' | 'zt';
-type NodeId = 'attacker' | 'bob' | 'alice' | 'gate' | 'wiki' | 'hr' | 'pay' | 'db' | 'wall';
-type Kind = 'user' | 'svc' | 'bad' | 'ok';
-
-const COLOR: Record<Kind, string> = { user: 'var(--info)', svc: 'var(--violet)', bad: 'var(--bad)', ok: 'var(--ok)' };
+const COLOR: Record<PillKind, string> = { user: 'var(--info)', svc: 'var(--violet)', bad: 'var(--bad)' };
 const POS: Record<NodeId, { x: number; y: number }> = {
   attacker: { x: 80, y: 70 },
   bob: { x: 300, y: 120 },
@@ -25,7 +24,6 @@ const POS: Record<NodeId, { x: number; y: number }> = {
   db: { x: 880, y: 280 },
   wall: { x: 200, y: 70 },
 };
-const SERVICES: NodeId[] = ['wiki', 'hr', 'pay', 'db'];
 const NAME: Partial<Record<NodeId, [string, string]>> = {
   attacker: ['🕵 Attacker', 'on the internet'],
   bob: ['💻 Bob’s laptop', 'engineering'],
@@ -35,104 +33,27 @@ const NAME: Partial<Record<NodeId, [string, string]>> = {
   pay: ['💳 Payments', 'service'],
   db: ['🗄 Customer DB', 'crown jewels'],
 };
-
-interface Msg {
-  path: NodeId[];
-  label: string;
-  kind: Kind;
-  denied?: boolean;
-}
-
-interface Decision {
-  allow: boolean;
-  who: string;
-  what: string;
-  why: string;
-}
-
-interface ZFrame extends Frame {
-  msgs: Msg[];
-  bobPwned: boolean;
-  owned: NodeId[];
-  creds: boolean;
-  exfil: boolean;
-  log: Decision[];
-  denials: number;
-}
-
-function build(mode: Mode): ZFrame[] {
-  const out: ZFrame[] = [];
-  let cur: ZFrame = { msgs: [], bobPwned: false, owned: [], creds: false, exfil: false, log: [], denials: 0 };
-  const push = (p: Partial<ZFrame> & { say: ReactNode }, decision?: Decision) => {
-    cur = { ...cur, msgs: [], ...p };
-    if (decision) cur = { ...cur, log: [decision, ...cur.log].slice(0, 6), denials: cur.denials + (decision.allow ? 0 : 1) };
-    out.push(cur);
-  };
-
-  if (mode === 'moat') {
-    push({ say: <><b>Castle and moat.</b> A firewall and VPN guard the edge. Once you're <b>inside</b>, the network trusts you.</> });
-    push({ msgs: [{ path: ['attacker', 'wall'], label: 'connect to wiki', kind: 'bad', denied: true }],
-      say: <>The attacker tries to reach the wiki straight from the internet. <span className="hl ok">Blocked by the firewall.</span> The wall works against the front door.</> });
-    push({ msgs: [{ path: ['attacker', 'bob'], label: '✉ Invoice.pdf.exe', kind: 'bad' }], bobPwned: true, owned: ['bob'],
-      say: <>So they phish Bob instead. He opens the attachment. <span className="hl bad">Bob's laptop is compromised</span>, and it's already on the VPN.</> });
-    push({ msgs: SERVICES.map((s) => ({ path: ['bob', s] as NodeId[], label: 'scan', kind: 'bad' as Kind })), owned: ['bob'],
-      say: <>From inside, the network is <b>flat</b>: the attacker scans and can reach <span className="hl bad">every system</span>. Nothing asks who they are.</> });
-    push({ msgs: [{ path: ['bob', 'wiki'], label: 'GET /runbooks', kind: 'bad' }], owned: ['bob', 'wiki'], creds: true,
-      say: <>The wiki trusts anything inside the network. A runbook contains the <span className="hl bad">payments admin password</span>.</> });
-    push({ msgs: [{ path: ['bob', 'pay'], label: 'login as admin', kind: 'bad' }], owned: ['bob', 'wiki', 'pay'], creds: true,
-      say: <>Lateral movement: the stolen password opens the <b>payments service</b>, which accepts internal traffic by IP address.</> });
-    push({ msgs: [{ path: ['pay', 'db'], label: 'SELECT * FROM customers', kind: 'bad' }], owned: ['bob', 'wiki', 'pay', 'db'], creds: true,
-      say: <>Payments has full access to the customer database, so now the attacker does too.</> });
-    push({ msgs: [{ path: ['db', 'attacker'], label: '2.1M rows ⟶', kind: 'bad' }], owned: ['bob', 'wiki', 'pay', 'db'], creds: true, exfil: true, hold: 1.5,
-      say: <><span className="hl bad">Data exfiltrated.</span> One phished laptop became the whole company. The wall was never the problem; <b>trusting the inside</b> was.</> });
-    push({ owned: ['bob', 'wiki', 'pay', 'db'], exfil: true, creds: true, hold: 2,
-      say: <>Switch to <span className="hl ok">Zero trust</span> and replay the exact same attack.</> });
-    return out;
-  }
-
-  push({ say: <><b>Zero trust:</b> there is no trusted inside. Every request goes through an <span className="hl">access proxy + policy engine</span> that checks <b>who</b>, <b>which device</b>, and <b>context</b>, every time.</> });
-  push({ msgs: [{ path: ['bob', 'gate', 'wiki'], label: 'GET /wiki', kind: 'user' }],
-    say: <>A normal Monday. Bob: SSO + MFA <span className="hl ok">✓</span>, managed and patched laptop <span className="hl ok">✓</span>, engineers may read the wiki <span className="hl ok">✓</span>. Allowed, to the wiki only.</> },
-    { allow: true, who: 'bob@corp', what: 'wiki', why: 'MFA ✓ · device healthy ✓ · role engineering' });
-  push({ msgs: [{ path: ['attacker', 'bob'], label: '✉ Invoice.pdf.exe', kind: 'bad' }], bobPwned: true, owned: ['bob'],
-    say: <>Same phish. Bob still clicks. <b>Zero trust doesn't stop the phish</b>; it limits what happens next.</> });
-  push({ msgs: [{ path: ['bob', 'gate', 'wiki'], label: 'GET /runbooks', kind: 'bad', denied: true }], bobPwned: true, owned: ['bob'],
-    say: <>The laptop's security agent flagged the malware, so the device fails its posture check. <span className="hl ok">Denied</span>, even with Bob's valid login. Access is <b>re-checked on every request</b>.</> },
-    { allow: false, who: 'bob@corp', what: 'wiki', why: 'device posture: EDR alert' });
-  push({ msgs: [{ path: ['attacker', 'gate', 'hr'], label: 'Bob’s stolen token → HR', kind: 'bad', denied: true }], bobPwned: true, owned: ['bob'],
-    say: <>The attacker replays Bob's stolen session from their own machine, aiming at HR. Unknown device <span className="hl bad">✗</span>, and engineers can't see HR anyway: <span className="hl ok">least privilege</span>.</> },
-    { allow: false, who: 'bob@corp', what: 'hr', why: 'unenrolled device · role not permitted' });
-  push({ msgs: [{ path: ['pay', 'db'], label: 'mTLS · spiffe://corp/payments', kind: 'svc' }], bobPwned: true, owned: ['bob'],
-    say: <>Services authenticate each other too. Payments talks to the DB over <span className="hl violet">mutual TLS</span>, proving a <b>workload identity</b>. Policy: only payments may read customers.</> },
-    { allow: true, who: 'spiffe://corp/payments', what: 'customer-db', why: 'valid workload cert · policy allows' });
-  push({ msgs: [{ path: ['attacker', 'db'], label: 'connect to DB', kind: 'bad', denied: true }], bobPwned: true, owned: ['bob'],
-    say: <>Trying the database directly? No workload certificate, so the <span className="hl ok">TLS handshake fails</span>. There's no network path in on trust alone.</> },
-    { allow: false, who: 'unknown', what: 'customer-db', why: 'no client certificate' });
-  push({ bobPwned: true, owned: ['bob'], hold: 1.3,
-    say: <>Every decision is logged. A burst of denials fires an alert: security <b>revokes Bob's sessions</b> and quarantines the laptop.</> },
-    { allow: false, who: 'bob@corp', what: '*', why: 'sessions revoked · device quarantined' });
-  push({ bobPwned: true, owned: ['bob'], hold: 2,
-    say: <>Blast radius: <span className="hl ok">one laptop, zero systems</span>. Never trust the network, verify explicitly, grant least privilege, and assume breach.</> });
-  return out;
-}
+/** The narrowest width at which the 960-unit network diagram keeps its text legible. */
+const SCENE_MIN_WIDTH = 900;
 
 export function Stage() {
-  const [mode, setMode] = useState<Mode>('moat');
-  const frames = useMemo(() => build(mode), [mode]);
+  const [mode, setMode] = useState<Model>('moat');
+  const frames = useMemo(() => buildFrames(mode), [mode]);
   const player = usePlayer(frames, { interval: 2300 });
   const f = player.frame;
   const zt = mode === 'zt';
-  const reached = f.owned.filter((n) => SERVICES.includes(n)).length;
+  const { state } = f;
+  const reached = breachedSystems(state).length;
 
   return (
-    <StageFrame minWidth={900}
+    <StageFrame
       player={player}
       height={520}
       stats={
         <Stats>
-          <Stat label="Systems breached" value={`${reached}/4`} color={reached ? 'var(--bad)' : 'var(--ok)'} />
-          <Stat label="Requests denied" value={f.denials} color="var(--ok)" />
-          <Stat label="Data exfiltrated" value={f.exfil ? 'yes' : 'no'} color={f.exfil ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Systems breached" value={`${reached}/${SERVICES.length}`} color={reached ? 'var(--bad)' : 'var(--ok)'} />
+          <Stat label="Requests denied" value={state.denials} color="var(--ok)" />
+          <Stat label="Data exfiltrated" value={state.exfil ? 'yes' : 'no'} color={state.exfil ? 'var(--bad)' : 'var(--ok)'} />
         </Stats>
       }
       legend={
@@ -140,8 +61,8 @@ export function Stage() {
           items={[
             { color: COLOR.user, label: 'user request', shape: 'dot' },
             { color: COLOR.svc, label: 'service-to-service (mTLS)', shape: 'dot' },
-            { color: COLOR.bad, label: 'attacker / compromised', shape: 'dot' },
-            { color: COLOR.ok, label: 'allowed / blocked correctly', shape: 'dot' },
+            { color: COLOR.bad, label: 'attacker request / compromised', shape: 'dot' },
+            { color: 'var(--ok)', label: 'denied (green ✕)', shape: 'dot' },
           ]}
         />
       }
@@ -160,6 +81,7 @@ export function Stage() {
       }
     >
       <div className="zt">
+        <WideRegion minWidth={SCENE_MIN_WIDTH} label="Network diagram: scroll sideways to see all of it">
         <svg className="zt-scene" viewBox="0 0 960 350" role="img" aria-label="Network diagram of an attack">
           {!zt && (
             <>
@@ -189,22 +111,23 @@ export function Stage() {
           )}
 
           {(Object.keys(NAME) as NodeId[]).map((n) => (
-            <Node key={n} id={n} owned={f.owned.includes(n)} zt={zt} creds={n === 'bob' && f.creds} />
+            <Node key={n} id={n} owned={state.owned.includes(n)} zt={zt} creds={n === 'bob' && state.creds} />
           ))}
 
           {f.msgs.map((m, i) => (
             <MessagePill key={`${player.index}-${i}`} msg={m} delay={i * 0.12} />
           ))}
         </svg>
+        </WideRegion>
 
         <Box className="zt-log">
           <span className="zt-log-title">{zt ? 'Policy decision log' : 'Access log'}</span>
           {!zt && <span className="empty-note">(nothing checks internal requests, so there's nothing to log)</span>}
           <AnimatePresence initial={false}>
             {zt &&
-              f.log.map((d, i) => (
+              state.log.map((d, i) => (
                 <motion.div
-                  key={`${d.who}-${d.what}-${d.why}`}
+                  key={d.seq}
                   layout
                   className={`zt-row ${d.allow ? 'allow' : 'deny'}`}
                   initial={{ opacity: 0, x: -14 }}
@@ -218,8 +141,20 @@ export function Stage() {
                 </motion.div>
               ))}
           </AnimatePresence>
-          {zt && !f.log.length && <span className="empty-note">no requests yet</span>}
+          {zt && !state.log.length && <span className="empty-note">no requests yet</span>}
         </Box>
+        <ProvenanceRow>
+          <Provenance kind="scripted">
+            the attack opens the same way in both models, then the attacker follows one stated rule (stolen session from their own machine if the laptop is denied; the admin
+            password only if the runbooks were readable), so the attempts differ by model. Two facts are the author's: the infected laptop is flagged by the endpoint agent (EDR alert) and
+            the attacker's own machine is unenrolled. Each outcome, what the attacker owns and the counts above are computed by one decision function from the request's identity,
+            device, role, certificate and where it came from
+          </Provenance>
+          <Provenance kind="invented">the people, the systems and the access table (who may reach what) are made up for this lesson</Provenance>
+          <Provenance kind="from-memory">
+            BeyondCorp, Cloudflare Access, Zscaler, Google IAP, Istio, Linkerd and SPIFFE/SPIRE are named from memory: verify against each project's documentation
+          </Provenance>
+        </ProvenanceRow>
       </div>
     </StageFrame>
   );
@@ -230,7 +165,7 @@ const NODE = { w: 152, h: 50, rx: 11 } as const;
 function Node({ id, owned, zt, creds }: { id: NodeId; owned: boolean; zt: boolean; creds: boolean }) {
   const { x, y } = POS[id];
   const [title, sub] = NAME[id]!;
-  const isService = SERVICES.includes(id);
+  const isService = (SERVICES as readonly string[]).includes(id);
   return (
     <SceneNode
       at={POS[id]}

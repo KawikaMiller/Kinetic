@@ -19,16 +19,13 @@ import type { LessonModule, QuizQuestion } from './types';
  * the rules it currently breaks, so anything new still fails. It must only shrink: remove
  * an entry as its ticket merges (a stale entry prints a warning below).
  */
-const T4_R2 = 'T4-R2 retrofit (docs/tier4-technical.md §5)';
 
 /**
  * The nine existing Tier 4 lessons (docs/tier4-technical.md §5). They are exempt from the AC-0/T4
  * rules until their retrofit batch (T4-R1, T4-R2) merges; each leaves this list, BASELINE and
  * PENDING_RETROFIT together. Every other Tier 4 lesson is held to the rules from its first commit.
  */
-const TIER4_AWAITING_RETROFIT = new Set<string>([
-  'lsm-trees', 'probabilistic-structures', 'slos-error-budgets', 'zero-trust', // T4-R2
-]);
+const TIER4_AWAITING_RETROFIT = new Set<string>();
 /** The nine existing Tier 4 lessons, fixed: the D-row cross-check needs them after each one leaves the allowlist above. */
 const TIER4_RETROFIT_IDS: ReadonlySet<string> = new Set([
   'raft', 'distributed-transactions', 'crdts', 'multi-region', 'backpressure', 'lsm-trees', 'probabilistic-structures',
@@ -39,9 +36,8 @@ const TIER4_EXISTING_COUNT = 9;
 
 /**
  * Existing lessons not yet held to their tier's standard. They don't count towards the tier-wide
- * quiz-longest share until their retrofit batch merges. The Tier 4 set must hold every Tier 4
- * lesson that is not on BASELINE for quiz-longest: probabilistic-structures and slos-error-budgets
- * only have quiz-length there, so counting them would put the tier at 2 of 6 (33%), over the cap.
+ * quiz-longest share until their retrofit batch merges. It is empty now that every retrofit has merged, so
+ * the real Tier 4 lessons all count; the trap test below keeps it that way and checks the share they make.
  */
 const PENDING_RETROFIT = new Set<string>(TIER4_AWAITING_RETROFIT);
 /** Tiers whose lessons are not yet held to the per-tier quiz-longest cap (none: Tier 4 counts now). */
@@ -54,10 +50,6 @@ const BASELINE: Record<string, { ticket: string; rules: ContentRule[] }> = {
   // Tier 2: none. The T2-R1 and T2-R2 retrofits cleared every existing lesson.
   // Tier 3
   // Tier 4
-  'lsm-trees': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
-  'probabilistic-structures': { ticket: T4_R2, rules: ['quiz-length'] },
-  'slos-error-budgets': { ticket: T4_R2, rules: ['quiz-length'] },
-  'zero-trust': { ticket: T4_R2, rules: ['quiz-length', 'quiz-longest'] },
 };
 
 /**
@@ -98,6 +90,12 @@ const modules = import.meta.glob<{ default: LessonModule }>('../lessons/*/index.
 const lessons = Object.entries(modules).map(([path, mod]) => ({ id: path.split('/')[2], lesson: mod.default }));
 const topicIds = new Set(TOPICS.map((t) => t.id));
 const tierOf = new Map(TOPICS.map((t) => [t.id, t.tier]));
+
+/** The lessons the tier-wide quiz-longest share counts (not awaiting a retrofit, not baselined for quiz-longest), and their tally. */
+const tierTally = (tier: number) => {
+  const counted = lessons.filter(({ id }) => tierOf.get(id) === tier && !PENDING_RETROFIT.has(id) && !BASELINE[id]?.rules.includes('quiz-longest'));
+  return { ids: counted.map(({ id }) => id), ...longestTally(counted.map(({ lesson }) => lesson)) };
+};
 
 // ── Each rule fails on a planted bad fixture ─────────────────────────────
 
@@ -440,17 +438,26 @@ describe('every built lesson', () => {
     });
   }
 
-  it('keeps every retrofit allowlist entry in PENDING_RETROFIT, so a half-retrofitted tier never skews the share', () => {
-    for (const id of TIER4_AWAITING_RETROFIT) expect(PENDING_RETROFIT.has(id), id).toBe(true);
-  });
+  // No "every allowlist entry is in PENDING_RETROFIT" test: PENDING_RETROFIT is built from TIER4_AWAITING_RETROFIT, so with both empty it
+  // could not fail. The trap test below checks the real consequence instead: every real Tier 4 lesson is counted, under the cap, with the gate active.
 
-  it('guards the Tier 4 quiz-share trap twice (technical doc §6.2): the pending set and the minimum question count', () => {
-    // Trap one: these two are baselined for quiz-length only, so without PENDING_RETROFIT they would be counted, and they alone break the cap.
-    const trap = lessons.filter(({ id }) => id === 'probabilistic-structures' || id === 'slos-error-budgets').map(({ lesson }) => lesson);
+  it('guards the Tier 4 quiz-share trap (technical doc §6.2): the real share is under the cap with the gate active, and the fixtures would trip it', () => {
+    // The real gate: every real Tier 4 lesson counts (the pending set is empty), enough questions are counted for the aggregate to apply,
+    // the tier is not parked, and the share is under the cap.
+    expect(TIERS_AWAITING_KICKOFF.has(4)).toBe(false);
+    expect(PENDING_RETROFIT.size).toBe(0);
+    const real = tierTally(4);
+    for (const id of TIER4_RETROFIT_IDS) expect(real.ids, id).toContain(id);
+    expect(real.total, 'the tier-wide gate would be skipped below this').toBeGreaterThanOrEqual(MIN_QUESTIONS_FOR_SHARE);
+    expect(real.longest / real.total, `tier 4: ${real.longest}/${real.total}`).toBeLessThanOrEqual(TIER_LONGEST_SHARE);
+
+    // Trap one: a lesson baselined for quiz-length only would be counted without PENDING_RETROFIT, and two such lessons alone can break the cap.
+    // (Fixtures: the real lessons that once stood here left the allowlist in T4-R2.)
+    const longer = (n: number) => ({ ...GOOD, quiz: Array.from({ length: 3 }, (_, i) => (i < n ? q(['Short', 'Brief', 'A noticeably longer correct option'], 2) : GOOD.quiz[1])) });
+    const trap = [longer(2), longer(2)];
     const { longest, total } = longestTally(trap);
     expect(trap).toHaveLength(2);
     expect(longest / total, `${longest}/${total}`).toBeGreaterThan(TIER_LONGEST_SHARE);
-    expect(BASELINE['probabilistic-structures'].rules).not.toContain('quiz-longest');
     // Trap two: a handful of questions is noise; the aggregate waits for MIN_QUESTIONS_FOR_SHARE.
     expect(total).toBeLessThan(MIN_QUESTIONS_FOR_SHARE);
     // The shortest real case: one new lesson, three questions, one strictly-longest correct option (33%).
@@ -485,12 +492,8 @@ describe('every built lesson', () => {
   it(`keeps the correct option strictly longest in at most ${TIER_LONGEST_SHARE * 100}% of each tier's questions`, () => {
     for (const tier of [1, 2, 3, 4]) {
       if (TIERS_AWAITING_KICKOFF.has(tier)) continue;
-      // Measured once their ticket lands: lessons awaiting a retrofit, and ones baselined for quiz-longest.
-      const counted = lessons
-        .filter(({ id }) => tierOf.get(id) === tier && !PENDING_RETROFIT.has(id) && !BASELINE[id]?.rules.includes('quiz-longest'))
-        .map(({ lesson }) => lesson);
-      if (!counted.length) continue;
-      const { longest, total } = longestTally(counted);
+      const { longest, total, ids } = tierTally(tier);
+      if (!ids.length) continue;
       if (total < MIN_QUESTIONS_FOR_SHARE) continue; // the per-lesson quiz-longest rule still applies from the first commit
       expect(longest / total, `tier ${tier}: ${longest}/${total}`).toBeLessThanOrEqual(TIER_LONGEST_SHARE);
     }

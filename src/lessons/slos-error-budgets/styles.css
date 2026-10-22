@@ -15,7 +15,7 @@
 .slo-grid.zero { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .slo-axis { fill: var(--faint); font: 12px var(--mono); }
 .slo-ideal { stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 6 6; }
-.slo-ideal-label { fill: var(--muted); font: 12px var(--font); }
+.slo-ideal-label { fill: var(--muted); font: 12px var(--font); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 .slo-line { fill: none; stroke: var(--info); stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--info) 50%, transparent)); }
 .slo-dot { fill: var(--text); stroke: var(--info); stroke-width: 3; }
 
@@ -46,8 +46,10 @@
 .slo-bar { position: absolute; left: 0; top: 4px; bottom: 4px; background: color-mix(in srgb, var(--info) 14%, transparent); border-radius: 3px; z-index: -1; }
 .slo-nines tr.on td { color: var(--hi); font-weight: 700; }
 .slo-nines tr.on .slo-bar { background: color-mix(in srgb, var(--hi) 22%, transparent); }
+.slo-pick { all: unset; cursor: pointer; border-radius: 3px; }
+.slo-pick:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 .slo-sli { margin: 0; font-size: 12.5px; color: var(--muted); }
 
 @media (max-width: 900px) {
-  .slo { grid-template-columns: 1fr; }
+  .slo { grid-template-columns: minmax(0, 1fr); }
 }

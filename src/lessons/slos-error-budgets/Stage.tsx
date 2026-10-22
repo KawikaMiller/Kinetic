@@ -1,12 +1,13 @@
 import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { StageFrame } from '../../components/StageFrame';
-import { Controls, Legend, Segmented, Stat, Stats } from '../../components/ui';
+import { WideRegion } from '../../components/WideRegion';
+import { Controls, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats } from '../../components/ui';
 import { usePlayer } from '../../core/usePlayer';
 import { buildFrames } from './frames';
 import {
-  alertFor, backgroundBurn, badMinutes, budgetMinutes, fmtMinutes, INCIDENTS, MIN_PER_DAY, policyFor, SLOS, TICKET_WINDOW_DAYS,
-  WINDOW_DAYS, type Policy, type Slo,
+  ALERT_RULES, alertCounts, alertFor, badMinutes, budgetMinutes, budgetShare, fmtMinutes, INCIDENTS, MIN_PER_DAY, policyFor, SLOS, WINDOW_DAYS,
+  type Policy, type Slo,
 } from './model';
 import './styles.css';
 
@@ -14,7 +15,7 @@ import './styles.css';
 const W = 600;
 const H = 270;
 const X0 = 50;
-const X1 = W - 14;
+const X1 = W - 28;
 const Y_TOP = 18;
 const Y_BOT = H - 26;
 const MIN_PCT = -100;
@@ -23,6 +24,8 @@ const LINE_STEP_DAYS = 0.02;
 const EPSILON = 1e-9;
 /** Incident bars never get thinner than this, so short outages stay visible. */
 const MIN_BAR_W = 5;
+/** The narrowest width at which the chart's 11.5px labels stay legible. */
+const CHART_MIN_WIDTH = 490;
 const x = (day: number) => X0 + (day / WINDOW_DAYS) * (X1 - X0);
 const y = (pct: number) => Y_TOP + ((100 - Math.max(MIN_PCT, pct)) / (100 - MIN_PCT)) * (Y_BOT - Y_TOP);
 
@@ -50,12 +53,10 @@ export function Stage() {
   }, [t, budget, remainingPct]);
 
   const alerts = INCIDENTS.map((inc) => ({ inc, a: alertFor(inc, slo) }));
-  const fired = alerts.filter(({ inc }) => inc.start <= t);
-  const pages = fired.filter(({ a }) => a.kind === 'page').length;
-  const tickets = fired.filter(({ a }) => a.kind === 'ticket').length + (backgroundBurn(slo) >= 1 && t > TICKET_WINDOW_DAYS ? 1 : 0);
+  const { pages, tickets } = alertCounts(slo, t);
 
   return (
-    <StageFrame minWidth={490}
+    <StageFrame
       player={player}
       height={440}
       stats={
@@ -84,7 +85,7 @@ export function Stage() {
       }
     >
       <div className="slo">
-        <div className="slo-chart-wrap">
+        <WideRegion minWidth={CHART_MIN_WIDTH} label="Error budget chart: scroll sideways to see all of it">
           <svg className="slo-chart" viewBox={`0 0 ${W} ${H + 92}`}>
             {/* policy bands */}
             <rect x={X0} y={y(100)} width={X1 - X0} height={y(50) - y(100)} className="slo-band ok" />
@@ -104,7 +105,7 @@ export function Stage() {
               </text>
             ))}
             <line x1={x(0)} y1={y(100)} x2={x(30)} y2={y(0)} className="slo-ideal" />
-            <text x={x(30)} y={y(0) - 8} textAnchor="end" className="slo-ideal-label">
+            <text x={x(30) - 6} y={y(-70)} textAnchor="end" className="slo-ideal-label">
               1× burn: budget lasts exactly 30 days
             </text>
             <path d={path} className="slo-line" />
@@ -138,7 +139,7 @@ export function Stage() {
               })}
             </g>
           </svg>
-        </div>
+        </WideRegion>
 
         <aside className="slo-side">
           <div className={`slo-policy ${policy.tone}`}>
@@ -158,7 +159,9 @@ export function Stage() {
             <tbody>
               {SLOS.map((s) => (
                 <tr key={s} className={s === slo ? 'on' : ''} onClick={() => setSlo(s)}>
-                  <td>{s}%</td>
+                  <td>
+                    <button type="button" className="slo-pick" aria-pressed={s === slo}>{s}%</button>
+                  </td>
                   <td>
                     <span className="slo-bar" style={{ width: `${Math.max(2, (budgetMinutes(s) / budgetMinutes(99)) * 100)}%` }} />
                     {fmtMinutes(budgetMinutes(s))}
@@ -172,6 +175,15 @@ export function Stage() {
           </p>
         </aside>
       </div>
+      <ProvenanceRow>
+        <Provenance kind="invented">the four incidents, their sizes and the 0.01% background error rate are made up for this month</Provenance>
+        <Provenance kind="illustrative">traffic is uniform, so a failing share of requests counts as the same share of minutes</Provenance>
+        <Provenance kind="from-memory">
+          the page and ticket thresholds ({ALERT_RULES.map((r) => `${r.burn}× over ${r.label} = ${+(budgetShare(r) * 100).toFixed(0)}% of budget`).join(', ')})
+          are from the Google SRE Workbook as recalled; simplified here to the long window only, where the published rules pair each with a short window
+          so the alert clears soon after recovery: verify against the SRE Workbook chapter on alerting on SLOs
+        </Provenance>
+      </ProvenanceRow>
     </StageFrame>
   );
 }
