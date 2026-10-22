@@ -135,7 +135,7 @@ export const INFLUENCE: Scenario = {
     { id: 'm1', prompt: 'Dana objects live: "we are not ready".', choices: [
       iw('push', 'm2', [-2, -2, 0, 0, 0]), iw('ask', 'm3', [1, 1, 2, -10, 0]), iw('defer', 'm4', [0, 0, 3, 0, 0]), iw('escalate', 'E_escalated', [3, -4, 1, 0, 15]),
     ] },
-    { id: 'm2', prompt: 'The data did not land.', choices: [iw('hold', 'E_lost', [-3, -1, 1, 0, 0]), iw('concede', 'm3', [3, 1, 2, -20, 0])] },
+    { id: 'm2', prompt: 'The data did not land.', choices: [iw('hold', 'E_lost', [-3, -1, 1, 0, 0]), iw('concede', 'm3', [3, 1, 1, -20, 0])] },
     { id: 'm3', prompt: 'She names her concern.', choices: [iw('pilot', 'E_pilot', [4, 1, 1, -25, 0]), iw('fullrollout', 'E_passed_thin', [5, -2, 0, 0, 45])] },
     { id: 'm4', prompt: 'A one-to-one is on offer.', choices: [iw('oneonone', 'E_deferred', [3, 1, 1, -15, 10]), iw('wait', 'E_stall', [-2, 0, 3, 0, 5])] },
   ],
@@ -147,7 +147,7 @@ export const INFLUENCE: Scenario = {
 const HIRING_METERS: readonly Meter[] = [
   { id: 'regret', label: 'Regret (k$, invented)', start: 15, min: 0, max: 60, bad: { above: 35 } },
   { id: 'days', label: 'Days to a decision', start: 0, min: 0, max: 30, bad: { above: 10 } },
-  { id: 'goodwill', label: 'Panel goodwill', start: 7, min: 0, max: 10, bad: { below: 3 } },
+  { id: 'goodwill', label: 'Panel goodwill', start: 7, min: 0, max: 10, bad: { below: 4 } },
 ];
 const hi = chooser(HIRING_METERS);
 
@@ -156,10 +156,10 @@ export const HIRING: Scenario = {
   meters: HIRING_METERS,
   nodes: [
     { id: 'h1', prompt: 'One strong no, two lukewarm yes, one enthusiastic yes.', choices: [
-      hi('avg', 'E_hire_now', [10, 0, 0]), hi('veto', 'E_nohire_now', [12, 1, -2]), hi('evidence', 'h2', [-2, 1, -3]),
+      hi('avg', 'E_hire_now', [10, 0, 0]), hi('veto', 'E_nohire_now', [8, 1, -2]), hi('evidence', 'h2', [-2, 1, -3]),
       hi('followup', 'h3', [-3, 6, 0]), hi('senior', 'E_seniority', [6, 0, -3]),
     ] },
-    { id: 'h2', prompt: 'The dissenter gives evidence.', choices: [hi('decide_evidence', 'E_evidence', [-1, 0, -1]), hi('still_followup', 'h3', [-1, 5, 0])] },
+    { id: 'h2', prompt: 'The dissenter gives evidence.', choices: [hi('decide_evidence', 'E_evidence', [-1, 0, -1]), hi('still_followup', 'h3', [-2, 5, 0])] },
     { id: 'h3', prompt: 'A structured follow-up interview.', choices: [hi('hire_after', 'E_followup', [-3, 2, 0])] },
   ],
   endings: ['E_hire_now', 'E_nohire_now', 'E_evidence', 'E_followup', 'E_seniority'].map(ending),
@@ -177,13 +177,10 @@ export const LEAD_SCENARIOS: Readonly<Record<string, Scenario>> = {
 
 /**
  * Paths that are deliberately beaten on every meter by another path to the same ending, handed to `validateScenario`
- * as `trapPaths` (on screen each must be a labelled, defensible-looking mistake, not an accident):
- * influence-without-authority: pushing first and then conceding costs trust and scope that asking first would not have;
- * hiring-interviewing: a second dissenter round before the follow-up is slower and no better than going to the follow-up directly.
- * The part1 scenarios need none: no path of theirs is beaten by a path to the same ending (build-vs-buy's two trap paths,
+ * as `trapPaths` (on screen each must be a labelled, defensible-looking mistake, not an accident). None of the lead
+ * scenarios needs one now: the influence fixture takes one week for conceding after pushing (not two) and the hiring fixture
+ * has veto regret 8 (not 12) and still_followup regret -2 (not -1), the retunes the T4-B9 lessons carry, so the two
+ * would-be trap paths of those specs are real trade-offs. The part1 scenarios need none too: no path of theirs is beaten by a path to the same ending (build-vs-buy's two trap paths,
  * build then plan or nothing, are beaten only by a path to a different ending, which `crossEndings: true` compares too).
  */
-export const LEAD_TRAP_PATHS: Readonly<Record<string, readonly string[]>> = {
-  'influence-without-authority': ['push > concede > pilot', 'push > concede > fullrollout'],
-  'hiring-interviewing': ['evidence > still_followup > hire_after'],
-};
+export const LEAD_TRAP_PATHS: Readonly<Record<string, readonly string[]>> = {};
