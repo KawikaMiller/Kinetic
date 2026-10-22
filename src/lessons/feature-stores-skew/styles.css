@@ -1,0 +1,22 @@
+.fss-stage { gap: 12px; align-items: center; }
+.fss-panel { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.fss-panel .section-title { margin: 0; text-align: center; }
+.fss-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.fss-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 380px; }
+.fss-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
+.fss-field { display: flex; flex-direction: column; gap: 4px; }
+.fss-refusal { font: 500 12px var(--font); color: var(--bad); max-width: 260px; }
+.fss-list { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 4px; }
+.fss-card { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); font: 500 12px var(--mono); color: var(--muted); }
+.fss-card b { color: var(--text); }
+.fss-card.is-same { border-left: 3px solid var(--ok); }
+.fss-card.is-diff { border-left: 3px solid var(--bad); }
+.fss-offline { color: var(--sky); }
+.fss-online { color: var(--amber); }
+.fss-causes { margin: 0; padding-left: 18px; max-width: 640px; font: 500 13px var(--font); color: var(--text); }
+.fss-table { border-collapse: collapse; font: 500 12px var(--mono); }
+.fss-table th, .fss-table td { padding: 3px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.fss-table th { color: var(--muted); font-weight: 600; }
+.fss-table tr.is-diff td { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.fss-table td.fss-bad { color: var(--bad); }
+.fss-table td.fss-ok { color: var(--ok); }
