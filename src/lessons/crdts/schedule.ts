@@ -18,7 +18,7 @@ export const SCHEDULE_SEEDS = 200;
 export const NAIVE_WITNESS: Record<Kind, { seed: number; actions: number; problem: string }> = {
   counter: { seed: 11, actions: 6, problem: 'an update was lost: the replicas read 4 but the edits add up to 6 (increments)' },
   set: { seed: 26, actions: 6, problem: 'an update was lost: the replicas read 🍎,🥝 but the edits add up to 🍇,🍎,🥝 (elements)' },
-  register: { seed: 11, actions: 6, problem: 'the replicas disagree: #3ddc97 | #3ddc97 | #ff5d8f' },
+  register: { seed: 11, actions: 6, problem: 'the replicas disagree: #3ddc97 | #3ddc97 | #ff5d8f' }, // allow-color: the exact problem text the run prints, which names register values
 };
 const ACTIONS = { min: 6, max: 14 } as const;
 /** Chance that the messages in flight land right after an action; otherwise they hang and land with a later one. */

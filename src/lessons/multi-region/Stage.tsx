@@ -47,7 +47,7 @@ const minSec = (s: number) => `${Math.floor(s / 60)}:${pad2(Math.floor(s % 60))}
 const ORDERS_LOST = Math.round(ASYNC_LAG_S * WRITES_PER_S);
 
 /** What a failure lost, from the replicas that were alive just before it (the RPO stat describes the exposure from now on). */
-function lossNote(loss: FailureLoss): ReactNode {
+function lossSentence(loss: FailureLoss): ReactNode {
   switch (loss.kind) {
     case 'backup':
       return <>Anything since the last backup is at risk, and there's nowhere to fail over to.</>;
@@ -158,7 +158,7 @@ export function Stage() {
     const { state, event } = applyToggle(mode, replication, { dead, clock }, r);
     setDead(state.dead);
     setClock(state.clock);
-    setLossNote(event.kind === 'failed' ? lossNote(event.loss) : null);
+    setLossNote(event.kind === 'failed' ? lossSentence(event.loss) : null);
     const caption = toggleCaption(mode, r, event);
     if (caption) setCaption(caption);
   };

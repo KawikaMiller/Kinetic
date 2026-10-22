@@ -4,7 +4,7 @@ import { add, emptyRep, inc, merge, remove, setReg, setValue, valueKey, type Kin
 import {
   buildSchedule, canonical, checkLaws, checkSchedules, describeSchedules, loadedWorld, NAIVE_WITNESS, runSchedule, SCHEDULE_SEEDS,
 } from './schedule';
-import { agree, freshWorld, landAll, localEdit, lostIncrements, setOnline, startSync, syncOrder, syncOutcome, TRY_INCREMENTS, valuesOf, DEFAULT_SEED } from './world';
+import { agree, freshWorld, landAll, localEdit, lostIncrements, setOnline, startSync, syncOrder, TRY_INCREMENTS, valuesOf, DEFAULT_SEED } from './world';
 import lesson from './index';
 
 const KINDS: Kind[] = ['counter', 'set', 'register'];

@@ -180,10 +180,11 @@ describe('the live run', () => {
 describe('a message cut by a partition while in flight', () => {
   it('keeps its position when it was already past halfway, instead of jumping back', () => {
     const raft = fresh();
-    raft.nodes[0].role = 'leader';
-    raft.nodes[0].term = 1;
-    raft.broadcastAppend(raft.nodes[0]);
-    raft.step(480); // most of the 550 ms flight
+    // Run until some message is well past halfway on a link the partition will cut.
+    const cutLink = (m: (typeof raft.msgs)[number]) => [1, 2].includes(m.from) !== [1, 2].includes(m.to);
+    const pastHalf = () => raft.msgs.some((m) => cutLink(m) && (raft.now - m.sentAt) / (m.arriveAt - m.sentAt) > 0.6);
+    for (let t = 0; t < 30_000 && !pastHalf(); t += 20) raft.step(20);
+    expect(pastHalf(), 'a message crossing the future cut is past halfway').toBe(true);
     const before = motionView(raft).msgs.map((m) => ({ id: m.id, x: m.x, y: m.y }));
     raft.setPartition(true, [1, 2]);
     const after = motionView(raft).msgs;
