@@ -160,6 +160,7 @@ export function parseKitRows<T>(text: string, o: KitRowOptions<T>): KitRows<T> {
     maxRows: o.maxRows,
     maxLineChars: o.maxLineChars,
     comment: o.comment,
+    trailingComments: o.trailingComments,
     noun: o.noun,
     row: (lineText, line, indent): KitRead<T> => {
       const cut = tokenize(lineText, o.tokens, indent + 1);

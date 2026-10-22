@@ -81,6 +81,17 @@ has at least one (#21). `lessonContentT3.ts` lints the mechanical rules (unscope
 ideas and quiz `why`, exempted per line with `allow-absolute: <reason>`; a missing chip; fewer
 `try-this N:` tests than try-this entries) on Tier 3 lessons only.
 
+**Tier 4 lessons carry more: read AC-0/T4 in `docs/tier4-technical.md` §3 and `docs/tier4-kickoff-decisions.md`
+(it wins where they disagree) before writing one.** Five to know by heart. A theorem is labelled
+(`ClaimLabel kind="theorem"`) or checked, and a bounded check never says "impossible" or "always". Every safety
+claim says which check ran: exhaustive over a stated bound, or sampled over N seeds. Toy crypto is honest: bit sizes
+shown, a `Provenance kind="toy"` chip, never "secure" about a toy, no key or secret literals. Lesson source never calls
+`Math.random`, `Date.now`, `performance.now` or `new Date` (seeded `mulberry32` only, seed shown). And `npm run sweep`
+is clean for the batch's lessons. `lessonContentT4.ts` lints the mechanical rules (chips, claim labels on the seven lead
+lessons, the clock and random ban, fresh arrays into `usePlayer`/`introKey`, a pinned failing seed of 0,
+a visible seed, `manipulation N:` tests for proof-shaped lessons) from a lesson's first commit. Domain-reviewed
+lessons are reviewed per `docs/tier4-review-protocol.md`.
+
 ## Shared kit
 
 `docs/shared-api.md` lists every shared piece with usage. The durable rules:

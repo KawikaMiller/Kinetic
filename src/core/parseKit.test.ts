@@ -144,6 +144,15 @@ describe('parseKitRows', () => {
     });
   });
 
+  it('reads a trailing comment only when asked to, and then the comment is not counted toward the line limit', () => {
+    const text = 'q0 a Z -> q1 # then push nothing at all here';
+    expect(parseKitRows(text, limits)).toMatchObject({ ok: false, line: 1 });
+    expect(parseKitRows(text, { ...limits, trailingComments: true })).toEqual({
+      ok: true,
+      rows: [{ line: 1, value: { from: 'q0', read: 'a', pop: 'Z', to: 'q1', push: '' } }],
+    });
+  });
+
   it('accepts CRLF line endings', () => {
     const r = parseKitRows('q0 a Z -> q1\r\nq1 b A -> q0\r\n', limits);
     expect(r.ok && r.rows.map((x) => x.line)).toEqual([1, 2]);

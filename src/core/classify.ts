@@ -26,3 +26,21 @@ export function classifyScore(items: Ids, answerKey: Record<string, string>, ans
 export function pickCategory(state: ClassifyState, itemId: string, categoryId: string): ClassifyState {
   return { answers: { ...state.answers, [itemId]: categoryId }, checked: false };
 }
+
+/** True once every item has a category: the moment an explore board may reveal its reference. */
+export function allSorted(items: Ids, answers: ClassifyState['answers']): boolean {
+  return sortedCount(items, answers) === items.length;
+}
+
+/**
+ * The placements grouped by category, items in the order given (explore mode feeds this to the lesson's model).
+ * Every category appears, empty ones as []; unsorted items appear nowhere.
+ */
+export function placementsByCategory(items: Ids, categories: Ids, answers: ClassifyState['answers']): Record<string, string[]> {
+  const grouped: Record<string, string[]> = Object.fromEntries(categories.map((c) => [c.id, []]));
+  for (const item of items) {
+    const category = answers[item.id];
+    if (category != null && category in grouped) grouped[category].push(item.id);
+  }
+  return grouped;
+}

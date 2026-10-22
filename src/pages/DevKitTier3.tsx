@@ -9,6 +9,8 @@ const CLAIM_DEMO: { kind: ClaimKind; note?: string }[] = [
   { kind: 'practice', note: 'many teams write an ADR per decision' },
   { kind: 'view', note: 'estimates are mostly guesses' },
   { kind: 'view' },
+  { kind: 'theorem', note: 'FLP: no deterministic protocol decides under one crash' },
+  { kind: 'theorem' },
 ];
 
 const PROVENANCE_DEMO: { kind: ProvenanceKind; note?: string; seed?: number }[] = [
@@ -35,7 +37,7 @@ export function DevKitTier3() {
           ))}
         </div>
       </Section>
-      <Section title="ClaimLabel · standard, research finding, common practice, one view">
+      <Section title="ClaimLabel · standard, research finding, common practice, one view, theorem">
         <div className="devkit-row">
           {CLAIM_DEMO.map((c) => (
             <ClaimLabel key={c.kind + (c.note ?? '')} kind={c.kind}>{c.note}</ClaimLabel>
