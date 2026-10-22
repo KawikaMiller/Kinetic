@@ -26,6 +26,7 @@
  */
 import type { ActionLabel, Transition } from './explore';
 import type { DistNode, NodeCtx } from './distSim/cluster';
+import { payloadLabel } from './distSim/trace';
 
 export interface Outbound<M> {
   to: string;
@@ -45,7 +46,7 @@ export interface PureProtocol<S, M> {
   onTimeout?: (id: string, s: S) => StepResult<S, M> | null;
   /** Canonical key of a node state (default JSON.stringify: keep property order consistent). */
   stateKey?: (s: S) => string;
-  /** Words for a message in an action label (default: its JSON). */
+  /** Words for a message in an action label (default: its `type` field, else its JSON). */
   describe?: (payload: M) => string;
 }
 
@@ -110,7 +111,7 @@ export function networkExplorer<S, M>(protocol: PureProtocol<S, M>, options: Net
   if (fifo && network === 'set') throw new RangeError('networkExplorer: fifo needs the multiset network (a set never consumes, so there is no queue)');
   const maxCrashed = options.maxCrashed ?? 0;
   const nodeKey = protocol.stateKey ?? jsonKey;
-  const describe = protocol.describe ?? jsonKey;
+  const describe = protocol.describe ?? payloadLabel;
   const index = new Map(protocol.nodes.map((id, i) => [id, i]));
   const at = (id: string): number => {
     const i = index.get(id);

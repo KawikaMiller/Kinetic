@@ -1,29 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createCluster, forSeeds, type Safety } from './distSim';
 import { explore } from './explore';
-import { asDistNodes, networkExplorer, type PureProtocol } from './pureProtocol';
+import { asDistNodes, networkExplorer, type NetworkOptions, type PureProtocol } from './pureProtocol';
 import { atMostOneChosen, chosenValues, majority, paxosProtocol, SPIKE_CONFIG, type PaxosConfig, type PaxosState } from './fixtures/paxosProtocol';
-
-/* ---------- a lock server: the planted-violation system both harnesses must agree on ---------- */
-
-type LockMsg = { type: 'request' } | { type: 'grant' };
-type LockState = { holder: string | null; held: boolean; asked: boolean };
-
-/** The broken server grants every request; the fixed one grants only to the current holder or when free. */
-const lockProtocol = (broken: boolean): PureProtocol<LockState, LockMsg> => ({
-  nodes: ['server', 'c1', 'c2'],
-  init: () => ({ holder: null, held: false, asked: false }),
-  onTimeout: (id, s) => (id === 'server' || s.asked ? null : { state: { ...s, asked: true }, send: [{ to: 'server', payload: { type: 'request' } }] }),
-  onMessage: (id, s, { from, payload }) => {
-    if (id === 'server' && payload.type === 'request') {
-      if (broken || s.holder === null || s.holder === from) return { state: { ...s, holder: s.holder ?? from }, send: [{ to: from, payload: { type: 'grant' } }] };
-      return { state: s, send: [] };
-    }
-    return payload.type === 'grant' ? { state: { ...s, held: true }, send: [] } : { state: s, send: [] };
-  },
-});
-
-const twoHolders = (states: Record<string, LockState>) => (states.c1.held && states.c2.held ? 'both clients hold the lock' : null);
+import { lockProtocol, twoHolders, type LockMsg, type LockState } from './fixtures/lockProtocol';
 
 const exploreLock = (broken: boolean) => {
   const net = networkExplorer(lockProtocol(broken));
@@ -79,7 +59,7 @@ const sender: PureProtocol<{ got: number }, Count> = {
 };
 
 describe('networkExplorer', () => {
-  const reachable = (opts: Parameters<typeof networkExplorer<{ got: number }, Count>>[1]) => {
+  const reachable = (opts: NetworkOptions<Count>) => {
     const net = networkExplorer(sender, opts);
     const counts = new Set<number>();
     explore({ ...net, maxStates: 50, onVisit: (v) => counts.add(net.nodeState(v.state, 'b').got) });
@@ -116,7 +96,8 @@ describe('networkExplorer', () => {
   });
 
   it('client inputs are on the wire from the start', () => {
-    const net = networkExplorer(sender, { network: 'multiset', clientInputs: [{ to: 'b', payload: { type: 'n' } }] });
+    const input: Count = { type: 'n' };
+    const net = networkExplorer(sender, { network: 'multiset', clientInputs: [{ to: 'b', payload: input }] });
     expect(net.init.net.map((m) => m.from)).toEqual(['client']);
     expect(net.actions(net.init).map((t) => t.label.kind)).toContain('deliver');
   });

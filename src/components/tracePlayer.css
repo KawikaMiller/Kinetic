@@ -1,0 +1,13 @@
+.trace-player { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.trace-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+.trace-step button {
+  display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 4px 8px; text-align: left;
+  border: 1px solid transparent; border-radius: 6px; background: none; color: inherit; font: 13px var(--mono); cursor: pointer;
+}
+.trace-step.is-now button { border-color: var(--hi); background: color-mix(in srgb, var(--hi) 14%, transparent); }
+.trace-step.is-later button { color: var(--dim); }
+.trace-n { min-width: 2ch; color: var(--muted); }
+.trace-actor { --c: var(--info); flex: none; }
+.trace-text { overflow-wrap: anywhere; min-width: 0; }
+.trace-view { min-width: 0; overflow-x: auto; }
+.trace-state { margin: 0; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
