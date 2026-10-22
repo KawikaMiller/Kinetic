@@ -91,6 +91,19 @@ function choose(n: number, r: number, from = 1): number[][] {
 export const SECRECY_WORK_LIMIT = 2_000_000;
 export const secrecyWork = (p: number, k: number): number => choose(p - 1, k - 1).length * p ** (k - 1) * p ** k;
 
+/** The one case the button is off for although the exhaustive check holds: the cost, not a failure (the tests run it). */
+export const BEYOND_BUTTON: Readonly<Record<string, { cases: number; checks: number }>> = { '11|3': { cases: 5445, checks: 59_895 } };
+
+/** The theorem label's second half: says what the button does for this field and threshold, from the same work limit the button uses. */
+export function secrecyButtonText(p: number, k: number): string {
+  if (secrecyWork(p, k) <= SECRECY_WORK_LIMIT) return `the button checks GF(${p}) with threshold ${k} exhaustively`;
+  const beyond = BEYOND_BUTTON[`${p}|${k}`];
+  return `the button is off for GF(${p}) with threshold ${k} only because the check costs too much for one press, not because it fails${beyond ? ` (the tests run all ${beyond.cases.toLocaleString('en-US')} cases and ${beyond.checks.toLocaleString('en-US')} checks, and each secret has exactly one polynomial there too)` : ''}`;
+}
+
+/** "1 share leaves ..." / "2 shares leave ...": k - 1 shares and the secrets they leave possible. */
+export const sharesLeaveText = (k: number): string => `${k - 1} share${k - 1 === 1 ? ' leaves' : 's leave'} every secret possible`;
+
 /** Exhaustive perfect secrecy over GF(p) for threshold k: every k-1 x-values from 1..p-1 and every y-tuple. */
 export function exhaustiveSecrecy(p: number, k: number): Secrecy {
   let cases = 0;

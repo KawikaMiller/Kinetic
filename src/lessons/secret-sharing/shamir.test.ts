@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../core/random';
 import {
-  BAD_SOURCE_CASE, BYTE_PRIME, HAND_COEFFS, HAND_SECRET, SOURCE_SUPPORT, bytesText, consistentCounts, coefficientsFor, exhaustiveSecrecy, interpolateAnyway, makeShares, parseWord, possibleSecrets, rebuild,
+  BAD_SOURCE_CASE, BYTE_PRIME, HAND_COEFFS, HAND_SECRET, SOURCE_SUPPORT, bytesText, SECRECY_WORK_LIMIT, consistentCounts, coefficientsFor, exhaustiveSecrecy, secrecyButtonText, secrecyWork, sharesLeaveText, interpolateAnyway, makeShares, parseWord, possibleSecrets, rebuild,
   reconstruct, reconstructByElimination, reconstructChecked, refusalFor, shareBytes, signed, drawCoeffs, DEFAULT_WORD,
   type Share,
 } from './shamir';
@@ -192,5 +192,32 @@ describe('where it goes wrong', () => {
 
   it('the field constants: 257 is a 9-bit prime and 7 is 3 bits', () => {
     expect(BYTE_PRIME.toString(2)).toHaveLength(9);
+  });
+});
+
+describe('the theorem label and the stat grammar come from the model', () => {
+  it('GF(11) with k = 3 holds exhaustively (5,445 cases, 59,895 checks, one polynomial per secret): the button is off for cost only', () => {
+    expect(secrecyWork(11, 3)).toBeGreaterThan(SECRECY_WORK_LIMIT);
+    expect(exhaustiveSecrecy(11, 3)).toEqual({ cases: 5445, checks: 59_895, exactlyOne: true });
+  }, 120_000);
+
+  it('walking every field and threshold of the first scene: the label says the button checks exactly where it is offered, and names cost where it is off', () => {
+    for (const p of [5, 7, 11]) {
+      for (const k of [2, 3]) {
+        const text = secrecyButtonText(p, k);
+        if (secrecyWork(p, k) <= SECRECY_WORK_LIMIT) expect(text, `${p} ${k}`).toBe(`the button checks GF(${p}) with threshold ${k} exhaustively`);
+        else {
+          expect(text, `${p} ${k}`).toContain('only because the check costs too much');
+          expect(text).not.toContain('checks GF(');
+          expect(text).toContain('5,445 cases and 59,895 checks');
+        }
+      }
+    }
+  });
+
+  it('k - 1 shares read "1 share leaves" and "2 shares leave"', () => {
+    expect(sharesLeaveText(2)).toBe('1 share leaves every secret possible');
+    expect(sharesLeaveText(3)).toBe('2 shares leave every secret possible');
+    for (const k of [2, 3]) expect(sharesLeaveText(k)).not.toMatch(/\b1 shares\b/);
   });
 });

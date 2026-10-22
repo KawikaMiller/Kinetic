@@ -133,7 +133,7 @@ export function ByteScene({ picker }: { picker: ReactNode }) {
             </div>
           ))}
         </div>
-        <p className="ss-note">Each share is one point (x, y) of the polynomial; a word has one polynomial per byte, all at the same x-values. The coefficients come from seed {seed} so the page is reproducible; a real system uses a CSPRNG.</p>
+        <p className="ss-note">Each share is one point (x, y) of the polynomial; a word has one polynomial per byte, all at the same x-values. The coefficients come from seed {seed} so the page is reproducible; a real system uses a CSPRNG. A share y can be 256, which does not fit in a byte (the field has 257 elements, 9 bits); real sharing over GF(2^8) keeps every share one byte.</p>
         {result && (
           <ConsolePanel
             title="Lagrange interpolation at 0"

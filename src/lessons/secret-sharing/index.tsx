@@ -5,12 +5,12 @@ import { Stage } from './Stage';
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'Shamir secret sharing hides a secret as a point of a random polynomial, so that any k of n shares rebuild it and k - 1 shares leave each possible secret equally likely.',
-    what: `The secret is the constant term of a random polynomial of degree k - 1 over a small prime field, and each share is a point (x, y) on it. k points fix the polynomial, and Lagrange interpolation at 0 reads off the secret; fewer points fit one polynomial for each candidate secret. The page counts those polynomials in a 3-bit field, shares a byte over a 9-bit field, and shows what goes wrong: a mistyped share rebuilds a wrong secret without any warning, and coefficients drawn from a tiny set leak. The fields are toys and nothing here splits a real key.`,
+    tldr: 'Shamir secret sharing hides a secret as a point of a random polynomial, so that any k of n shares rebuild it and k - 1 shares leave every possible secret of the same length equally likely.',
+    what: `The secret is the constant term of a random polynomial of degree k - 1 over a small prime field, and each share is a point (x, y) on it. k points fix the polynomial, and Lagrange interpolation at 0 reads off the secret; fewer points fit one polynomial for each candidate secret. The page counts those polynomials in fields of 3 and 4 bits, shares a byte over a 9-bit field, and shows what goes wrong: a mistyped share rebuilds a wrong secret without any warning, and coefficients drawn from a tiny set leak. The fields are toys and nothing here splits a real key.`,
     analogy: 'A vault with five keyholes where any three keys open it: two keys on their own leave the lock exactly as undecided as none, because each pair of keys fits each possible combination.',
     useCases: [
       'Splitting a vault unseal key or a backup key among several custodians so that no single person can open it',
-      'Threshold schemes in hardware modules and wallet backups, where a quorum of holders is needed',
+      'Threshold schemes where a quorum of holders has to agree, such as splitting a backup key among custodians',
       'Recovering a lost secret from a subset of surviving shares without trusting any one holder',
       'Understanding why a corrupted share needs a separate integrity check, such as verifiable secret sharing',
     ],
@@ -31,15 +31,15 @@ const lesson: LessonModule = {
   ],
   quiz: [
     {
-      q: 'In a 3-of-5 scheme an adversary holds two shares. What do they learn about the secret?',
+      q: 'In a 3-of-5 scheme with uniformly random coefficients an adversary holds two shares. What do they learn about the secret\'s value?',
       options: [
-        'Nothing: every possible secret is equally consistent with the two shares they hold',
-        'Its size, because the shares reveal how many bits the secret has once two are known',
+        'Nothing about its value: every possible secret is equally consistent with the two shares they hold',
+        'Its leading digit, because two points rule out half of the field\'s values for the secret',
         'Whether it is even or odd, since one bit of each share leaks the parity of the secret',
         'About a third of it, since two of the three shares needed to rebuild it are in hand',
       ],
       answer: 0,
-      why: `Two points fit one polynomial for each of the possible secrets, so the adversary cannot prefer any of them: the page counts exactly one polynomial per candidate, in the ${F.pairs} share pairs of the small field.`,
+      why: `Two points fit one polynomial for each of the possible secrets, so the adversary cannot prefer any of them: the page counts exactly one polynomial per candidate, in the ${F.pairs} share pairs of the small field. What the shares do not hide is the scheme and the secret's length: the byte scene shows one y per secret byte.`,
     },
     {
       q: 'Which three shares of a 3-of-5 scheme rebuild the secret?',

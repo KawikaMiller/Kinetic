@@ -5,7 +5,7 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ChipButton, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { Fp } from '../../core/field';
-import { bits, consistentCounts, drawCoeffs, exhaustiveSecrecy, MAX_SMALL_SHARES, SECRECY_WORK_LIMIT, SMALL_PRIMES, secrecyWork, type Secrecy, type Share } from './shamir';
+import { bits, consistentCounts, drawCoeffs, exhaustiveSecrecy, MAX_SMALL_SHARES, SECRECY_WORK_LIMIT, SMALL_PRIMES, secrecyButtonText, secrecyWork, sharesLeaveText, type Secrecy, type Share } from './shamir';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 const PRIME_OPTIONS = SMALL_PRIMES.map((p) => ({ value: p, label: `GF(${p})` }));
@@ -58,7 +58,7 @@ export function PolyScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Field" value={`GF(${p})`} sub={`a ${bits(p)}-bit field: a toy`} />
-          <Stat label="Shares held" value={`${heldShares.length} of ${k}`} color={heldShares.length >= k ? 'var(--bad)' : 'var(--info)'} sub={`${k - 1} shares leave every secret possible`} />
+          <Stat label="Shares held" value={`${heldShares.length} of ${k}`} color={heldShares.length >= k ? 'var(--bad)' : 'var(--info)'} sub={sharesLeaveText(k)} />
           <Stat label="Secrets still possible" value={`${possible} of ${p}`} color={possible === 1 ? 'var(--ok)' : undefined} sub="by counting every polynomial" />
         </Stats>
       }
@@ -128,8 +128,8 @@ export function PolyScene({ picker }: { picker: ReactNode }) {
         )}
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy" seed={seed}>GF({p}) is {bits(p)} bits: a toy field; a real vault uses a large field or bytes over GF(2^8), a CSPRNG, and authenticated shares. Nothing here splits a real key</Provenance>
-        <ClaimLabel kind="theorem">with uniformly random coefficients, any k - 1 shares are independent of the secret: argued, not run here for large fields; the button checks GF({p}) with threshold {k} exhaustively</ClaimLabel>
+        <Provenance kind="toy" seed={seed}>GF({p}) is {bits(p)} bits: a toy field; a real system would use a much larger field, a CSPRNG, and authenticated shares. Nothing here splits a real key</Provenance>
+        <ClaimLabel kind="theorem">with uniformly random coefficients, any k - 1 shares are independent of the secret: argued, not run here for large fields; {secrecyButtonText(p, k)}</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
   );

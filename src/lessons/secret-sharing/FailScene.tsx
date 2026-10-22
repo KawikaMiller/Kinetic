@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { Button, ClaimLabel, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Segmented, Stat, Stats, TextField } from '../../components/ui';
 import { parseBoundedInt } from '../../core/parse';
+import { FACTS } from './facts';
 import { BAD_SOURCE_CASE, BYTE_PRIME, HAND_COEFFS, HAND_SECRET, SOURCE_SUPPORT, makeShares, possibleSecrets, reconstructChecked, type Share, type Source } from './shamir';
 
 const SOURCE_OPTIONS = [{ value: 'uniform' as const, label: 'Uniform coefficients' }, { value: 'zero-or-one' as const, label: 'Only 0 or 1 (broken)' }];
@@ -73,7 +74,7 @@ export function FailScene({ picker }: { picker: ReactNode }) {
     >
       <div className="stage-pad ss-stage">
         <p className="ss-note">
-          (a) Change share 3 from 84 to 85 and rebuild from shares 1, 2 and 3: the error of 1 is multiplied by the Lagrange coefficient of share 3 and the answer is off by the same amount, with no warning. Verifiable secret sharing, which adds a check, is named here and not shown. (b) Give two shares the same x, or use x = 0: both are refused.
+          (a) Change share 3 from 84 to 85 and rebuild from shares 1, 2 and 3: the error of 1 is multiplied by the Lagrange coefficient of share 3 (here {FACTS.basis.split(', ')[2]}), so the rebuilt secret is off by {FACTS.basis.split(', ')[2]} times 1 ({FACTS.corrupted} instead of {FACTS.secret}), with no warning. Verifiable secret sharing, which adds a check, is named here and not shown. (b) Give two shares the same x, or use x = 0: both are refused.
         </p>
         <div className="ss-case">
           <b>(c) A bad coefficient source, in GF({bad.p}) with threshold 3.</b>{' '}
@@ -83,7 +84,7 @@ export function FailScene({ picker }: { picker: ReactNode }) {
         <p className="ss-note">The guess chance from k - 1 shares is 1/7 per guess in GF(7) and 1/257 for a byte in GF(257).</p>
       </div>
       <ProvenanceRow>
-        <Provenance kind="toy">GF(257) is 9 bits and GF(7) is 3 bits: toy fields; a real vault uses a large field or bytes over GF(2^8), a CSPRNG and authenticated shares. Nothing here splits a real key</Provenance>
+        <Provenance kind="toy">GF(257) is 9 bits and GF(7) is 3 bits: toy fields; a real system would use a much larger field, a CSPRNG and authenticated shares. Nothing here splits a real key</Provenance>
         <ClaimLabel kind="theorem">secrecy of k - 1 shares needs uniformly random coefficients: argued, not run here for large fields; this scene shows what a tiny coefficient support does to the hand case</ClaimLabel>
       </ProvenanceRow>
     </StageFrame>
