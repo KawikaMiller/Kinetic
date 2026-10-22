@@ -1,0 +1,42 @@
+/* cloud-networking-vpc */
+.vpc-stage { gap: 12px; min-width: 0; }
+.vpc-split { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.vpc-graph { display: block; }
+.vpc-box { fill: color-mix(in srgb, var(--dim) 8%, transparent); stroke: var(--dim); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.vpc-box-label { fill: var(--muted); font: 600 11px var(--mono); }
+.vpc-subnet { stroke-width: 1.5; }
+.vpc-subnet.is-sky { fill: color-mix(in srgb, var(--sky) 10%, transparent); stroke: color-mix(in srgb, var(--sky) 55%, transparent); }
+.vpc-subnet.is-amber { fill: color-mix(in srgb, var(--amber) 10%, transparent); stroke: color-mix(in srgb, var(--amber) 55%, transparent); }
+.vpc-subnet.is-pink { fill: color-mix(in srgb, var(--pink) 10%, transparent); stroke: color-mix(in srgb, var(--pink) 55%, transparent); }
+.vpc-subnet.is-active { stroke: var(--hi); stroke-width: 3; }
+.vpc-subnet.is-drop { stroke: var(--bad); stroke-width: 3; }
+.vpc-subnet-name { fill: var(--text); font: 600 11px var(--mono); }
+.vpc-subnet-note { fill: var(--muted); font-size: 10px; }
+.vpc-addr { fill: var(--muted); font: 10px var(--mono); }
+.vpc-addr.is-public { fill: var(--info); }
+.vpc-packet { fill: color-mix(in srgb, var(--info) 22%, var(--bg)); stroke: var(--info); stroke-width: 1.5; }
+.vpc-packet-text { fill: var(--info); font: 600 10px var(--mono); }
+.vpc-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.vpc-hops { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.vpc-hop { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; font-size: 12.5px; line-height: 1.4; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); }
+.vpc-hop-word { font: 600 11px var(--mono); text-transform: uppercase; color: var(--muted); }
+.vpc-hop-body { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.vpc-hop.is-pass .vpc-hop-word { color: var(--ok); }
+.vpc-hop.is-drop { border-color: var(--bad); }
+.vpc-hop.is-drop .vpc-hop-word { color: var(--bad); }
+.vpc-hop.is-current { background: color-mix(in srgb, var(--hi) 12%, transparent); }
+.vpc-scroll { overflow-x: auto; }
+.vpc-rules td, .vpc-rules th, .vpc-flows td, .vpc-flows th { font-size: 12.5px; vertical-align: top; white-space: normal; padding: 6px 4px; }
+.vpc-flow-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted; }
+.vpc-flow-row.is-ok td:last-child { color: var(--ok); }
+.vpc-flow-row.is-bad td:last-child { color: var(--bad); }
+.vpc-flow-row.is-selected td:first-child { box-shadow: inset 3px 0 0 var(--hi); }
+.vpc-editor { display: grid; gap: 8px; }
+.vpc-editor-pick, .vpc-form, .vpc-controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: flex-end; }
+.vpc-slots { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 2px; max-width: 420px; }
+.vpc-slot { display: block; aspect-ratio: 1; border-radius: 2px; border: 1px solid var(--line); }
+.vpc-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; }
+.vpc-row-name { font: 600 12px var(--mono); min-width: 48px; }
+.vpc-row-status { font-size: 12.5px; color: var(--muted); flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.vpc-row-status.is-bad { color: var(--bad); }
+.vpc-row-status.is-ok { color: var(--ok); }
