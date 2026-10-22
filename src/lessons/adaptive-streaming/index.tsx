@@ -80,7 +80,7 @@ const lesson: LessonModule = {
       why: 'The player downloads each segment as an ordinary file over HTTP, which is why caches and CDNs work for video: nothing about a segment is special to the network.',
     },
     {
-      q: `A viewer\'s network averages 4 Mbit/s and the player always asks for the 5 Mbit/s rendition, in ${SEGMENT.initial} s segments. What happens?`,
+      q: `A viewer's network averages 4 Mbit/s and the player always asks for the 5 Mbit/s rendition, in ${SEGMENT.initial} s segments. What happens?`,
       options: [
         'Each segment takes longer to download than it plays, so the buffer drains and the video stalls',
         'The player switches itself down after the first segment, so the picture only gets blurrier',

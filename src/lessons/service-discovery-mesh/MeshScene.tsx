@@ -49,7 +49,7 @@ export function MeshScene({ picker }: { picker: ReactNode }) {
             <Toggle label="Mesh retries" value={u.retries} onChange={(retries) => set({ retries })} />
           </>
         ) : (
-          <Hint tone="muted">Turn the mesh on to get mTLS, traffic splitting and mesh retries.</Hint>
+          <Hint key="mesh-off" tone="muted">Turn the mesh on to get mTLS, traffic splitting and mesh retries.</Hint>
         ),
         <>
           {active.mtls && <Slider label="Certificate lifetime" value={u.lifetimeMin} {...LIFETIME_RANGE} format={minText} onChange={(lifetimeMin) => set({ lifetimeMin })} />}

@@ -124,7 +124,7 @@ export function LsScene({ picker }: { picker: ReactNode }) {
             <SeedField seed={s.seed} onSeed={(seed) => patch({ seed })} />
           </>
         ) : (
-          <Hint tone="muted">
+          <Hint key="scripted-delivery" tone="muted">
             {slow
               ? `Scripted: the first message on the ${slow[0]} to ${slow[1]} link takes ${SCRIPTED_SLOW_MS} ms and every other message ${SCRIPTED_FAST_MS} ms, so the old LSA from ${slow[0]} arrives after the new one. Delay, loss and seed do not apply.`
               : `Scripted: every message takes ${SCRIPTED_FAST_MS} ms. This network has no second link at the cut link's first router, so nothing is reordered here; pick the ring.`}
