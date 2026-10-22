@@ -21,6 +21,8 @@ const ICONS = {
 /** Play / pause / step / scrub / speed controls for a usePlayer() instance. */
 export function Transport<F extends Frame>({ player }: { player: Player<F> }) {
   const { index, count, playing, speed } = player;
+  // Soft-disabled at the ends (aria-disabled, clicks ignored): a native `disabled` button drops keyboard focus to the page body.
+  const atStart = index === 0;
   const pct = count > 1 ? (index / (count - 1)) * 100 : 0;
   const speedRadio = useRadioGroup(SPEEDS.length, SPEEDS.indexOf(speed), (i) => player.setSpeed(SPEEDS[i]));
 
@@ -30,7 +32,7 @@ export function Transport<F extends Frame>({ player }: { player: Player<F> }) {
         <button type="button" className="tbtn" title="Restart (R)" onClick={player.restart}>
           <Icon d={ICONS.restart} />
         </button>
-        <button type="button" className="tbtn" title="Step back (←)" onClick={() => player.step(-1)} disabled={index === 0}>
+        <button type="button" className="tbtn" title="Step back (←)" onClick={() => { if (!atStart) player.step(-1); }} aria-disabled={atStart || undefined}>
           <Icon d={ICONS.back} />
         </button>
         <button
@@ -41,7 +43,7 @@ export function Transport<F extends Frame>({ player }: { player: Player<F> }) {
         >
           <Icon d={playing ? ICONS.pause : ICONS.play} />
         </button>
-        <button type="button" className="tbtn" title="Step forward (→)" onClick={() => player.step(1)} disabled={player.atEnd}>
+        <button type="button" className="tbtn" title="Step forward (→)" onClick={() => { if (!player.atEnd) player.step(1); }} aria-disabled={player.atEnd || undefined}>
           <Icon d={ICONS.fwd} />
         </button>
       </div>

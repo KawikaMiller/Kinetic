@@ -10,7 +10,6 @@ td.fb-amber, td.fb-sky { font-weight: 700; }
 .fb-name { color: var(--muted); font-weight: 400; }
 .fb-yes { color: var(--ok); }
 .fb-no { color: var(--bad); }
-.fb-scroll { overflow-x: auto; max-width: 100%; }
 .fb-options { min-width: 640px; }
 .fb-picked td { background: color-mix(in srgb, var(--hi) 10%, transparent); }
 .fb-who { display: flex; flex-direction: column; gap: 4px; font: 500 13px/1.5 var(--font); color: var(--text); }

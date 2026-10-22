@@ -35,3 +35,5 @@
 .dl-pick { all: unset; cursor: pointer; font: inherit; }
 .dl-pick:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 .dl-recrow { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font: 500 12px var(--mono); justify-content: space-between; }
+
+.dl-check { white-space: normal; align-self: flex-start; }

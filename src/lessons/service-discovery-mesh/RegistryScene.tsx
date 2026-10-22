@@ -15,6 +15,8 @@ import { BROKEN_SEED, CRASH_AT_MS, HEARTBEAT_MS, HORIZON_MS, INSTANCE_MAX, LOSS_
 import { runRegistry, staleViolation } from './run';
 
 const GANTT_MIN_WIDTH = 520;
+/** Bars narrower than this drop their label (it stays the tooltip) instead of showing it clipped. */
+const GANTT_LABEL_MIN_PX = 72;
 const LADDER_MESSAGES = 10;
 const LADDER_WINDOW_MS = { before: 1200, after: 2600 };
 
@@ -112,7 +114,7 @@ export function RegistryScene({ picker }: { picker: ReactNode }) {
                 unit=" ms"
                 axis
                 size="md"
-                labelWidth={110}
+                labelWidth={110} labelMinPx={GANTT_LABEL_MIN_PX}
                 ariaLabel="When the instance stopped, when the registry dropped it and when clients stopped sending to it"
               />
             </WideRegion>

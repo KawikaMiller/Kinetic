@@ -13,6 +13,8 @@ import { BROKEN_SEED, HORIZON_MS, READY_AGAIN_MS, UNREADY_AT_MS, VICTIM } from '
 import { notReadyViolation, runRegistry } from './run';
 
 const GANTT_MIN_WIDTH = 520;
+/** Bars narrower than this drop their label (it stays the tooltip) instead of showing it clipped. */
+const GANTT_LABEL_MIN_PX = 72;
 
 export function HealthScene({ picker }: { picker: ReactNode }) {
   const [u, setU] = useState<HealthUi>(initialHealth);
@@ -64,7 +66,7 @@ export function HealthScene({ picker }: { picker: ReactNode }) {
         <Box>
           <SectionTitle hint={`${VICTIM} fails readiness at ${secText(UNREADY_AT_MS)}`}>Readiness feeds the registry</SectionTitle>
           <WideRegion minWidth={GANTT_MIN_WIDTH} label="Readiness timeline: scroll sideways to see all of it">
-            <GanttLanes lanes={[{ id: 'ready', label: VICTIM }, { id: 'route', label: 'requests to it' }]} bars={bars} domain={[0, HORIZON_MS]} unit=" ms" axis size="md" labelWidth={110} ariaLabel="When the instance was ready and when requests still reached it while it was not" />
+            <GanttLanes lanes={[{ id: 'ready', label: VICTIM }, { id: 'route', label: 'requests to it' }]} bars={bars} domain={[0, HORIZON_MS]} unit=" ms" axis size="md" labelWidth={110} labelMinPx={GANTT_LABEL_MIN_PX} ariaLabel="When the instance was ready and when requests still reached it while it was not" />
           </WideRegion>
         </Box>
         <Hint tone="muted" block>

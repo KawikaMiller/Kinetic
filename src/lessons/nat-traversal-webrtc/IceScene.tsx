@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -13,6 +14,9 @@ import {
 import { initialIce } from './init';
 import { NatPair } from './NatPair';
 import { epText } from './nat';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const LEGEND = (
   <Legend
@@ -84,7 +88,7 @@ export function IceScene({ picker }: { picker: ReactNode }) {
       <div className="nat-stage stage-pad">
         <Box>
           <SectionTitle hint="peer A's candidates, from the formula in the next column">Gathering candidates</SectionTitle>
-          <div className="nat-table-wrap" role="region" aria-label="Peer A's candidates and their priorities" tabIndex={0}>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="Peer A's candidates and their priorities: scroll sideways to see all of it" hint="swipe to see the whole table">
             <table className="data-table nat-table">
               <thead>
                 <tr>
@@ -107,7 +111,7 @@ export function IceScene({ picker }: { picker: ReactNode }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
         </Box>
         <Box>
           <SectionTitle hint={`pair priority = ${power(32)} x min(G, D) + 2 x max(G, D) + (1 if G > D); A is the controlling agent`}>Candidate pairs, checked from the top</SectionTitle>

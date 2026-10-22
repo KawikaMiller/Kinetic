@@ -10,6 +10,9 @@ import { INSTALL_DAY, initialSpread } from './opening';
 import { ALL_NODES, COMPROMISED_PACKAGE, COMPROMISED_VERSION, PACKAGE_NAMES, SERVICE_NAMES, edges } from './registry';
 import { adjacency, type Policy } from './resolve';
 
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
+
 const GRAPH_MIN_WIDTH = 640;
 const BOX = { w: 88, h: 28 } as const;
 const SPACING = { direction: 'right', layerGap: 104, nodeGap: 38, padMain: 54, padCross: 26 } as const;
@@ -84,7 +87,7 @@ export function SpreadScene({ picker }: { picker: ReactNode }) {
         </div>
         <div className="sc-block">
           <SectionTitle>What each service installs for {COMPROMISED_PACKAGE}</SectionTitle>
-          <div className="sc-scroll">
+          <WideRegion minWidth={TABLE_MIN_WIDTH} hint="swipe to see the whole table">
             <table className="data-table">
               <thead>
                 <tr>
@@ -107,7 +110,7 @@ export function SpreadScene({ picker }: { picker: ReactNode }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
           <p className="sc-note">No package here contains anything: the compromise is a flag on one version number in the model.</p>
         </div>
       </div>

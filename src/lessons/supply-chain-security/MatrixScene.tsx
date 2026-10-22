@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useState, type ReactNode } from 'react';
 import { SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -10,6 +11,9 @@ import {
 } from './matrix';
 import { MAX_NAME_CHARS, WARN_DISTANCE, checkName, nearest, parseName } from './names';
 import { initialMatrix } from './opening';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 /** A made-up publishing credential, joined from parts at run time: a fake, for the "leaked CI credentials" card. */
 const FAKE_CI_TOKEN = fakeSecret('ci-', 'publish-', 'EXAMPLE0000', '-FAKE');
@@ -80,7 +84,7 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
       <div className="sc-stage stage-pad">
         <div className="sc-block">
           <SectionTitle>Which defence stops which class (computed from the rules)</SectionTitle>
-          <div className="sc-scroll" role="region" aria-label="Defence matrix, scrolls sideways" tabIndex={0}>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="Defence matrix, scrolls sideways: scroll sideways to see all of it" hint="swipe to see the whole table">
             <table className="data-table sc-matrix">
               <thead>
                 <tr>
@@ -117,7 +121,7 @@ export function MatrixScene({ picker }: { picker: ReactNode }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
           {limitNotes.length > 0 && (
             <>
               <SectionTitle>What the limits that are on do</SectionTitle>

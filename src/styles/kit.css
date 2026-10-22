@@ -115,6 +115,8 @@
   border-radius: 10px;
   padding: 8px 10px;
 }
+/* A label that flows inline with short content (empty-note, a chip) needs a gap, or the two run together. */
+.tray:not(.is-stacked) > .section-title { margin-right: 8px; }
 .tray.is-stacked { display: flex; flex-direction: column; gap: 8px; }
 .section-title {
   font-size: 11px;
@@ -137,7 +139,8 @@
 .hint { font-size: 13px; color: var(--faint); align-self: center; }
 .hint.is-muted { color: var(--muted); }
 .hint.is-bad { color: var(--bad); }
-.hint.is-block { flex-basis: 100%; }
+/* display:block so it also breaks the line in a plain block parent, where flex-basis does nothing. */
+.hint.is-block { display: block; flex-basis: 100%; }
 .focus-ring { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--hi)) 20%, transparent); }
 
 /* Layout helpers */

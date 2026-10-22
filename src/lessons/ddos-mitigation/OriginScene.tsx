@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -7,6 +8,9 @@ import { useIntroCaption } from '../../core/caption';
 import { integer, pct, sig } from '../../core/format';
 import { originCaption } from './captions';
 import { initialOrigin } from './init';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 import {
   CLASS_NAME, DEFENCES, DEFENCE_NAME, HELPS, LEGIT_RATE, LOAD_CLASSES, PRESETS, RATE_RANGE, RESOURCE, RESOURCES, SOURCE_COUNTS, TARGET, UNIT_NAME, defaultInput, origin,
   type LoadClass, type OriginInput,
@@ -26,7 +30,7 @@ export function OriginScene({ picker }: { picker: ReactNode }) {
       stats={
         <Stats>
           <Stat label="Legitimate requests served" value={`${sig(r.goodput)}/s`} color={r.saturated.length ? 'var(--bad)' : 'var(--ok)'} sub={[`${pct(r.goodputShare, 0)} of ${LEGIT_RATE}/s`]} />
-          <Stat label="Unwanted load getting through" value={`${integer(Math.round(r.admittedRate))}`} color="var(--orange)" sub={[`${UNIT_NAME[input.cls]}, of ${integer(input.rate)} sent`]} />
+          <Stat label="Unwanted load past the defences" value={`${integer(Math.round(r.admittedRate))}`} color="var(--orange)" sub={[`${UNIT_NAME[input.cls]}, of ${integer(input.rate)} sent`]} />
           <Stat label="Saturated" value={r.saturated.length ? r.saturated.map((id) => RESOURCE[id].name).join(', ') : 'nothing'} color={r.saturated.length ? 'var(--bad)' : 'var(--ok)'} sub={['the resource that drops in proportion']} />
         </Stats>
       }
@@ -87,7 +91,7 @@ export function OriginScene({ picker }: { picker: ReactNode }) {
         </div>
         <Box>
           <SectionTitle hint="what each defence does for each kind of load">What helps what</SectionTitle>
-          <div className="dd-table-wrap">
+          <WideRegion minWidth={TABLE_MIN_WIDTH} hint="swipe to see the whole table">
             <table className="data-table dd-table">
               <thead>
                 <tr><th>Defence</th>{LOAD_CLASSES.map((c) => <th key={c} className={c === input.cls ? 'is-current' : ''}>{CLASS_NAME[c]}</th>)}</tr>
@@ -101,7 +105,7 @@ export function OriginScene({ picker }: { picker: ReactNode }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
         </Box>
         <Hint tone="muted" block>
           A simulated origin with a bandwidth bar, a half-open connection table and a CPU and database budget. A saturated resource drops in proportion, so every legitimate user loses the same share. The unwanted stream is only a rate: nothing here sends, builds or measures traffic.

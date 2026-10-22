@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Curve, HLine, Plot2D } from '../../components/Plot2D';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -9,6 +10,9 @@ import { algoLabel, compareCaption } from './captions';
 import { stepsOf, timeDomain, useChartWidth } from './chartMath';
 import { initialCompare } from './init';
 import { TraceControls } from './TraceControls';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 /** One tone per player, plain categories (not verdicts). */
 const ALGO_TONE: Record<AlgoId, Tone> = { naive: 'pink', rate: 'amber', buffer: 'sky' };
@@ -72,7 +76,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Box>
           <SectionTitle hint="the score uses the weights below: they are yours">How each player did</SectionTitle>
-          <div className="abr-scroll" role="region" aria-label="Quality of experience of the three players" tabIndex={0}>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="Quality of experience of the three players: scroll sideways to see all of it" hint="swipe to see the whole table">
             <table className="data-table abr-table">
               <thead>
                 <tr>
@@ -103,7 +107,7 @@ export function CompareScene({ picker }: { picker: ReactNode }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </WideRegion>
           <p className="abr-note">The default weights ({Object.entries(DEFAULT_WEIGHTS).map(([k, v]) => `${k} ${v}`).join(', ')}) are one person's taste. A viewer who hates waiting and one who hates blur would pick different weights, and then a different player.</p>
         </Box>
         <ProvenanceRow>

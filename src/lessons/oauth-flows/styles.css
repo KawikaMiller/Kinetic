@@ -76,7 +76,6 @@
 .hl.oa-redirect { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
 .hl.oa-token { background: color-mix(in srgb, var(--trk-web) 14%, transparent); color: var(--trk-web); }
 
-.oa-matrix-wrap { overflow-x: auto; }
 .oa-matrix { min-width: 640px; }
 
 .oa-unused { font-size: 12px; color: var(--muted); align-self: center; max-width: 34ch; }

@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { StageFrame } from '../../components/StageFrame';
@@ -7,6 +8,9 @@ import { natLine, stunFrames, tableText } from './captions';
 import { initialStun } from './init';
 import { NAT_NAME, NAT_TYPES, epText, stunTable, type NatType, type Peer } from './nat';
 import { Topology } from './Topology';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const LEGEND = (
   <Legend
@@ -21,7 +25,7 @@ const NAT_OPTIONS = NAT_TYPES.map((t) => ({ value: t, label: NAT_NAME[t] }));
 function NatTable({ peer, type, rows }: { peer: Peer; type: NatType; rows: number }) {
   const t = tableText(peer, type);
   return (
-    <div className="nat-table-wrap" role="region" aria-label={`The NAT table of NAT ${peer}`} tabIndex={0}>
+    <WideRegion minWidth={TABLE_MIN_WIDTH} label={`The NAT table of NAT ${peer}`} hint="swipe to see the whole table">
       <table className="data-table nat-table">
         <caption>NAT {peer}: {natLine(type)}</caption>
         <thead>
@@ -47,7 +51,7 @@ function NatTable({ peer, type, rows }: { peer: Peer; type: NatType; rows: numbe
           )}
         </tbody>
       </table>
-    </div>
+    </WideRegion>
   );
 }
 

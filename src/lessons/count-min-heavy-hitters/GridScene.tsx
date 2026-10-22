@@ -8,7 +8,7 @@ import { Button, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, T
 import { useIntroCaption } from '../../core/caption';
 import { minWidthForText } from '../../core/scale';
 import { gridCaption } from './captions';
-import { GRID_D, GRID_W, MAX_ITEMS, MAX_ITEM_LENGTH, STREAM_BURST, buildGrid, cellRole, cleanItem, inspect, itemsByCount, undercounted, wordStream } from './grid';
+import { GRID_D, GRID_W, MAX_ITEMS, MAX_ITEM_LENGTH, STREAM_BURST, buildGrid, cellRole, cleanItem, inspect, itemsByCount, shownRange, undercounted, wordStream } from './grid';
 
 const CELL_SIZE = 'sm';
 const CELL_FONT = 10;
@@ -80,7 +80,7 @@ export function GridScene({ picker }: { picker: ReactNode }) {
           <Button onClick={() => { setItems([]); setShown(0); setPicked(null); setNote(''); }} softDisabled={items.length === 0}>Reset</Button>
         </>,
         <>
-          <Slider label="Items shown" value={shown} min={0} max={Math.max(items.length, 1)} onChange={setShown} />
+          <Slider label="Items shown" value={shown} {...shownRange(items.length)} onChange={setShown} />
           <Hint>drag back to watch the grid fill; click an item in the table to follow it</Hint>
         </>,
       ]}

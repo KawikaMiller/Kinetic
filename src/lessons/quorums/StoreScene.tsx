@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { Box, SectionTitle } from '../../components/Panel';
 import { SequenceDiagram } from '../../components/SequenceDiagram';
@@ -10,6 +11,9 @@ import { storeCaption } from './captions';
 import { STAND_INS, homesOf, type StoreMsg } from './store';
 import { DEFAULT_STORE, HORIZON_MS, SCHEDULES, SEARCH_SEEDS, STORE_N, cutUpAt, drawnActors, effectiveControls, lowestBrokenSeed, pinnedSeed, replicaRow, runStore, setupFor, sloppyApplies, type Schedule, type StoreControls } from './storeView';
 import { SeedField } from '../../components/SeedField';
+
+/** Narrowest width where the operations table still reads; below it the table scrolls sideways. */
+const OPS_TABLE_MIN_WIDTH = 440;
 
 const SCHEDULE_OPTIONS = SCHEDULES.map((s) => ({ value: s.id, label: s.label }));
 const DOMAIN_NOTE: Record<Schedule, string> = {
@@ -129,6 +133,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
         </div>
         <Box>
           <SectionTitle>The operations</SectionTitle>
+          <WideRegion minWidth={OPS_TABLE_MIN_WIDTH} label="The operations: scroll sideways to see all of it" hint="swipe to see the whole table">
           <table className="data-table qr-ops">
             <thead>
               <tr><th scope="col">Operation</th><th scope="col">Sent</th><th scope="col">Answered</th><th scope="col">Result</th></tr>
@@ -147,6 +152,7 @@ export function StoreScene({ picker }: { picker: ReactNode }) {
               })}
             </tbody>
           </table>
+          </WideRegion>
         </Box>
         <Box>
           <SectionTitle hint="every message so far">The messages</SectionTitle>

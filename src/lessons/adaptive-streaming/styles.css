@@ -1,7 +1,6 @@
 /* adaptive-streaming */
 .abr-stage { gap: 12px; min-width: 0; }
 .abr-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
-.abr-scroll { overflow-x: auto; }
 .abr-table td, .abr-table th { font-size: 12.5px; vertical-align: top; white-space: normal; padding: 6px 4px; }
 .abr-table tr.is-best td { background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .abr-table td.is-stall { color: var(--bad); }

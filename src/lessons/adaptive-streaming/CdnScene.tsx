@@ -1,3 +1,4 @@
+import { WideRegion } from '../../components/WideRegion';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Bar } from '../../components/Bar';
 import { Box, SectionTitle } from '../../components/Panel';
@@ -8,6 +9,9 @@ import { SEGMENT } from './abr';
 import { cdnCaption } from './captions';
 import { CACHE, CATALOGUE, LIVE, LONG_TAIL_FROM, POPULAR_RANK, REQUESTS, SEGMENTS_PER_TITLE, TAIL_RANK, ZIPF, liveLatency, rankBucket, replay, requestStream, titleRatio } from './cdn';
 import { initialCdn } from './init';
+
+/** Narrowest width where this table still reads; below it the table scrolls sideways inside its box. */
+const TABLE_MIN_WIDTH = 480;
 
 const LEGEND = (
   <Legend
@@ -78,7 +82,7 @@ export function CdnScene({ picker }: { picker: ReactNode }) {
         </Box>
         <Box>
           <SectionTitle hint={`a live player holds back about ${LIVE.segmentsBuffered} segments (from memory)`}>Live against on demand</SectionTitle>
-          <div className="abr-scroll" role="region" aria-label="Live and on-demand delay" tabIndex={0}>
+          <WideRegion minWidth={TABLE_MIN_WIDTH} label="Live and on-demand delay: scroll sideways to see all of it" hint="swipe to see the whole table">
             <table className="data-table abr-table">
               <thead>
                 <tr>
@@ -100,7 +104,7 @@ export function CdnScene({ picker }: { picker: ReactNode }) {
                 </tr>
               </tbody>
             </table>
-          </div>
+          </WideRegion>
           <p className="abr-note">Low-latency variants of HLS and DASH use partial segments to cut that delay: named only, verify against the specifications.</p>
         </Box>
         <ProvenanceRow>

@@ -4,7 +4,6 @@
 .sc-two > * { flex: 1 1 300px; min-width: 0; }
 .sc-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); overflow-wrap: anywhere; }
 .sc-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: var(--muted); }
-.sc-scroll { overflow-x: auto; }
 .sc-matrix th.sc-on { color: var(--violet); }
 .sc-warn { margin: 0; font-size: 13px; color: var(--orange); }
 .sc-error { color: var(--bad); }
