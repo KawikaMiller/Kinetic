@@ -81,7 +81,7 @@ describe('the exact Metropolis chain', () => {
     }
     const flat = occupancy(3, 50, 200_000);
     expect(Math.max(...flat) - Math.min(...flat)).toBeLessThan(0.05);
-  }, 60_000);
+  }, 180_000);
 });
 
 describe('one chain and the 1,000-seed batch', () => {

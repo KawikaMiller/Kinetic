@@ -1,0 +1,23 @@
+.ftq-stage { gap: 12px; align-items: center; }
+.ftq-row { display: flex; flex-wrap: wrap; gap: 14px 22px; justify-content: center; align-items: flex-start; width: 100%; }
+.ftq-panel { flex: 1 1 300px; max-width: 480px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: color-mix(in srgb, var(--bg) 72%, transparent); }
+.ftq-panel .section-title { margin: 0; text-align: center; }
+.ftq-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.ftq-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 340px; }
+.ftq-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
+.ftq-bar-label { font: 500 12px var(--font); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.ftq-bar-label b { font-family: var(--mono); color: var(--text); }
+.ftq-field { display: flex; flex-direction: column; gap: 4px; }
+.ftq-refusal { font: 500 12px var(--font); color: var(--bad); max-width: 260px; }
+.ftq-sv { display: flex; align-items: flex-end; gap: 8px; height: 120px; }
+.ftq-sv-col { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 500 11px var(--mono); color: var(--muted); }
+.ftq-sv-bar { width: 22px; border-radius: 3px 3px 0 0; }
+.ftq-sv-bar.is-kept { background: var(--hi); }
+.ftq-sv-bar.is-dropped { background: var(--dim); }
+.ftq-wide { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 4px; }
+.ftq-rowbar { display: grid; grid-template-columns: 48px 1fr 56px; gap: 8px; align-items: center; font: 500 12px var(--mono); color: var(--muted); }
+.ftq-rowbar b { color: var(--text); text-align: right; font-weight: 600; }
+.ftq-table { border-collapse: collapse; font: 500 12px var(--mono); }
+.ftq-table th, .ftq-table td { padding: 3px 8px; border-bottom: 1px solid var(--line); }
+.ftq-table th { text-align: left; color: var(--muted); font-weight: 600; }
+.ftq-table td { text-align: right; }

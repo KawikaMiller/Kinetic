@@ -1,0 +1,9 @@
+.fin-stage { gap: 12px; align-items: center; }
+.fin-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
+.fin-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 380px; }
+.fin-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
+.fin-wide { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; }
+.fin-bar-label { font: 500 12px var(--font); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fin-bar-label b { font-family: var(--mono); color: var(--text); }
+.fin-field { display: flex; flex-direction: column; gap: 4px; }
+.fin-refusal { font: 500 12px var(--font); color: var(--bad); max-width: 260px; }

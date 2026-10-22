@@ -296,7 +296,7 @@ describe('what the stage claims about the scheduler rules', () => {
     const kills = killSchedule(lowest!, clean + 2);
     const hist = simulate({ plan: p, speeds: evenSpeeds(), speculate: false, kills: [] }).history;
     expect(kills.some((k) => k.tick < hist.length && hist[k.tick].attempts.some((a) => a.kind === 'map' && a.status === 'done' && a.worker === k.worker))).toBe(true);
-  }, 60_000);
+  }, 180_000);
 
   it('a finished reduce task is not run again after its worker dies', () => {
     const p = plan({ job: 'wordcount', combiner: 'off', words: EVEN_WORDS, mappers: 4, reducers: 3 });
@@ -372,7 +372,7 @@ describe('a map function with a side effect (the broken mode)', () => {
       if (wrong && lowest === null) lowest = seed;
     }
     expect(lowest).toBe(BROKEN_SEED);
-  }, 60_000);
+  }, 180_000);
 
   it('by trace and counterfactual at the pinned seed: the counter exceeds the input by the words of the re-run map task, and without that kill it matches', () => {
     const run = counterRun(BROKEN_SEED);

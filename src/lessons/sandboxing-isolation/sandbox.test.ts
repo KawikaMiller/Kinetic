@@ -130,7 +130,7 @@ describe('the seccomp replay', () => {
     expect(winners).toEqual([need]);
     expect(smallest).toBe(NEEDED.length);
     expect(SYSCALL_NAMES.filter((n) => (need & bit.get(n)!) !== 0).sort()).toEqual([...NEEDED].sort());
-  }, 60_000);
+  }, 180_000);
 
   it('checkMinimal says minimal for exactly that list, and names what is missing or extra otherwise', () => {
     expect(checkMinimal(new Set(NEEDED))).toEqual({ runs: true, missing: [], extra: [], minimal: true });

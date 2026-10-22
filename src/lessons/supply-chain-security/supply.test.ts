@@ -151,7 +151,7 @@ describe('integrity with the real SHA-256', () => {
     expect(flipByte(flipByte(genuine, 17), 17)).toEqual(genuine);
     expect(installOutcome(recorded!, recorded!, true)).toEqual({ result: 'installed', changedInstalled: false });
     expect(bytesText(genuine)).toHaveLength(TARBALL_BYTES);
-  }, 60_000);
+  }, 180_000);
 });
 
 describe('the defence matrix', () => {

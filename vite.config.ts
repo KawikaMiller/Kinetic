@@ -49,5 +49,8 @@ export default defineConfig({
     // Exhaustive lesson tests run a few seconds each; with 300+ lessons and several
     // checkouts testing at once, a heavy seeded-schedule check can pass 15 s under load.
     testTimeout: 45_000,
+    // Browser-driven suites (the sweep self-test) start and stop Chromium in hooks, which the 10 s default
+    // cuts off when other agents are testing on the same machine.
+    hookTimeout: 120_000,
   },
 })
