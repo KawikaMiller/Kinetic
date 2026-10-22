@@ -156,3 +156,11 @@ Phase 2 requests from spec writers and builders, applied in the kit round named 
 | `core/bits.bitLength` | dp-patterns, modular-exponentiation, chinese-remainder (three copies) | on a fourth user or now | |
 | A bounded-list parser returning refusal messages (`parseIntegers` returns null only) | dp-patterns, randomized-algorithms (each ~6 lines of reasons) | wave 6 to 7 round (with K3-22 parseKit) | |
 | `svdSmall` limit 8x8 (oracle ran on 6x8) | recommender-systems | note only | |
+
+## From kit round wave 8 to 9, agent L (K3-20, K3-21)
+| Request | Users | Round | Notes |
+|---|---|---|---|
+| Move routing-algorithms' test-only Floyd-Warshall oracle and `randomTopo` to `core/testing` | none yet (one user, typed to the lesson's own `Topo`; bgp's oracle works on AS graphs and differs) | on a second user | Queued, not moved: a generic version would need its own graph type for a single caller. |
+| Share a bandwidth / RTT / buffer / loss / seed control group | congestion-control (`LinkControls`), quic (`NetControls`) | not built | The two are different controls (bandwidth, buffer, loss and seed vs RTT, think time and presets) each used inside one lesson only; bgp and wifi-shared-medium have no such group. Nothing to extract. |
+| `forbiddenCalls` clock/timer kinds (`performance.now`, `Date.now`, `setTimeout`...) with comment stripping | branch-prediction, cache-coherence, memory-allocators, page-tables-tlb, timing-side-channels (each carries the regex) | next kit round | Network/eval copies migrated in K3-20/21 round; these five differ (comment stripping, extra tokens), so they were left. |
+| Migrate `rasterization`'s 2D-only coverage helpers further (`coverage`, `boundingBox`) into `core/raster` | gpu-rendering-pipeline if it wants n-sample coverage | on second user | Only the edge function, winding, top-left rule and barycentrics moved (pixel-identical). |

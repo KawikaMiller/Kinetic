@@ -1,6 +1,7 @@
 // A software rasterizer for one 24 × 16 pixel grid: edge functions, the top-left fill rule,
 // supersampled coverage and a z-buffer. Screen space, y pointing down, pixel (x, y) covers the
 // square [x, x + 1) × [y, y + 1) and is tested at its centre (x + 0.5, y + 0.5).
+import { EDGE_VERTICES as EDGES, area2, barycentric, edgeFunction as edge, isTopLeft, wind } from '../../core/raster';
 
 export const GRID_W = 24;
 export const GRID_H = 16;
@@ -23,32 +24,8 @@ export const clampVertex = (v: Vertex): Vertex => ({
   y: snap(Math.min(GRID_H, Math.max(0, v.y))),
 });
 
-/** The edge function: twice the signed area of (a, b, p). Positive on the inside of a → b for a triangle in our winding. */
-export const edge = (a: Vertex, b: Vertex, px: number, py: number) => (b.x - a.x) * (py - a.y) - (b.y - a.y) * (px - a.x);
-
-/** Twice the triangle's signed area, in this module's winding (positive = the order we rasterize). */
-export const area2 = (t: Tri) => edge(t[0], t[1], t[2].x, t[2].y);
-
-/** The same triangle in the winding we rasterize (area2 > 0); null when it has no area. */
-export function wind(t: Tri): Tri | null {
-  const a = area2(t);
-  if (a === 0) return null;
-  return a > 0 ? t : [t[0], t[2], t[1]];
-}
-
-/**
- * Top or left edge, for a triangle already in our winding (inside = edge function > 0).
- * Top: exactly horizontal with the inside below it (dy = 0, dx > 0). Left: the inside is to its
- * right, which in this winding means the edge runs upwards (dy < 0).
- */
-export function isTopLeft(a: Vertex, b: Vertex): boolean {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  return (dy === 0 && dx > 0) || dy < 0;
-}
-
-/** Edge i is the one opposite vertex i: w0 uses v1 → v2, w1 uses v2 → v0, w2 uses v0 → v1. */
-const EDGES = [[1, 2], [2, 0], [0, 1]] as const;
+// The edge function, winding, top-left rule and barycentric weights live in core/raster (shared with gpu-rendering-pipeline).
+export { area2, barycentric, edge, isTopLeft, wind };
 
 export interface EdgeTest {
   /** w0, w1, w2 at the point (twice the signed areas). */
@@ -67,12 +44,6 @@ export function testPoint(t: Tri, px: number, py: number, rule: FillRule): EdgeT
     return rule === 'inclusive' || (rule === 'topLeft' && isTopLeft(t[i], t[j]));
   }) as [boolean, boolean, boolean];
   return { w, pass, inside: pass[0] && pass[1] && pass[2] };
-}
-
-/** Barycentric weights at a point: w / area, summing to 1. */
-export function barycentric(t: Tri, px: number, py: number): [number, number, number] {
-  const a = area2(t);
-  return EDGES.map(([i, j]) => edge(t[i], t[j], px, py) / a) as [number, number, number];
 }
 
 /** Depth at a point, interpolated linearly in screen space from the vertices' z. */

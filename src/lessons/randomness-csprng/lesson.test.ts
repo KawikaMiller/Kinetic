@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { classifyScore, emptyClassify, sortedCount } from '../../core/classify';
 import { expectCaption } from '../../core/testing/captions';
+import { forbiddenCalls } from '../../core/testing/forbidden';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { RANGE } from './bias';
 import { biasCaption, distinctLines, pairsCaption, planesCaption, recoverCaption, seedCaption } from './captions';
@@ -104,11 +105,9 @@ describe('the control cross product', () => {
 });
 
 describe('the lesson stays inside the page and operates on nothing real', () => {
-  const FORBIDDEN = /\bfetch\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\(|new Function|localStorage|sessionStorage/;
-
   it('makes no network call, no eval and stores nothing', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(10);
-    for (const [file, text] of Object.entries(sources)) expect(text, file).not.toMatch(FORBIDDEN);
+    expect(forbiddenCalls(sources, { also: ['localStorage', 'sessionStorage'] })).toEqual([]);
   });
 
   it('never reads Math.random output: the only random source in the source is crypto.getRandomValues', () => {
