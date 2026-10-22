@@ -1,0 +1,4 @@
+/* metastable-failures */
+.mf-stage { gap: 12px; min-width: 0; }
+.mf-note { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.mf-charts { display: flex; flex-wrap: wrap; gap: 14px; }
