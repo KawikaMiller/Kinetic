@@ -1,6 +1,6 @@
 // Pure maths for classification-metrics: weighted confusion counts at a threshold, ROC and
-// precision-recall points over every distinct threshold (ties grouped), AUC two ways, and
-// the cost-minimising threshold. A score ≥ threshold is predicted positive.
+// precision-recall points over every distinct threshold (ties grouped), and the cost-minimising
+// threshold (AUC lives in core/rocAuc). A score ≥ threshold is predicted positive.
 import { twoClassScores } from '../../core/fixtures/datasets';
 import { confusionAt, type Confusion } from '../../core/stats';
 
@@ -63,22 +63,6 @@ export function curve(examples: readonly Example[], k: number): CurvePoint[] {
     const predicted = c.tp + c.fp * k;
     return { threshold, fpr: N ? c.fp / N : NaN, tpr: P ? c.tp / P : NaN, precision: predicted ? c.tp / predicted : NaN };
   });
-}
-
-/** Area under the ROC points by the trapezoid rule. */
-export function aucTrapezoid(points: readonly CurvePoint[]): number {
-  let area = 0;
-  for (let i = 1; i < points.length; i++) area += ((points[i].fpr - points[i - 1].fpr) * (points[i].tpr + points[i - 1].tpr)) / 2;
-  return area;
-}
-
-/** AUC as the Mann-Whitney count: P(random positive outscores random negative), ties ½. */
-export function aucPairs(examples: readonly Example[]): number {
-  const pos = examples.filter((e) => e.label === 1);
-  const neg = examples.filter((e) => e.label === 0);
-  let wins = 0;
-  for (const p of pos) for (const n of neg) wins += p.score > n.score ? 1 : p.score === n.score ? 0.5 : 0;
-  return wins / (pos.length * neg.length);
 }
 
 /**

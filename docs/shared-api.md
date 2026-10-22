@@ -2310,6 +2310,17 @@ regsKeys(r);                                      // sorted distinct register ou
 - **Honesty:** outcome tables are "allowed by the model", never "observed"; the pinned SB/MP/CoRR/Dekker tables were typed from memory of the published litmus results (Sewell et al. x86-TSO; ARM/POWER catalogues) and need a reviewer's check.
 - **Tests (`memModel.test.ts`):** SC outcomes equal an all-interleavings recursion and TSO outcomes equal BOTH a separately written event-order replay and the spec's store-swap oracle (fixtures in the swap fragment) on the fixtures and 200 seeded random 2-thread programs of 3 to 4 instructions; SC ⊆ TSO ⊆ relaxed holds on those 200 programs (untagged, fences allowed; verified, no counterexample); SC ⊆ relaxed also holds with every tag, while TSO ⊆ relaxed does NOT hold once `@sc` tags are present (they fence in relaxed and TSO ignores them); counterfactuals; budget truncation; parser refusals and size limits.
 
+### `core/rocAuc.ts` (K4-11) — classification-metrics (migrated), feature-stores-skew (T4-B7)
+
+```ts
+import { aucPairs, aucTrapezoid, rocPoints, type ScoredExample } from '../../core/rocAuc';
+const ex: ScoredExample[] = [{ score: 0.9, label: 1 }, { score: 0.8, label: 0 }, { score: 0.7, label: 1 }, { score: 0.2, label: 0 }];
+aucPairs(ex);                    // 0.75: Mann-Whitney, P(random positive outscores random negative), ties count half
+aucTrapezoid(rocPoints(ex));     // 0.75: area under the ROC points; any { fpr, tpr }[] ascending in fpr works (classification-metrics passes its own curve)
+```
+
+A score >= threshold is predicted positive; `rocPoints` groups equal scores into one step, from (0, 0) to (1, 1). The two AUCs agree to 1e-12 on 200 seeded datasets with ties (`rocAuc.test.ts`).
+
 ### `core/distSim` v2 (K4-1) — failure-detectors (one-way partition), distributed-snapshots (fifo), paxos (per-type loss), chaos and deterministic-simulation-testing
 
 All additive and default-off; the Tier 3 distSim tests and the pinned `electionExample` traces pass unchanged with every option unset.
