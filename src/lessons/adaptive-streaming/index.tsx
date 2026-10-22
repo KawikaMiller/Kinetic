@@ -1,6 +1,6 @@
 import type { LessonModule } from '../../core/types';
 import { DEFAULT_WEIGHTS, LADDER, SEGMENT, score, simulate, traceOf, type AlgoId, type TraceId, type Weights } from './abr';
-import { CACHE, DEFAULT_SEED, LIVE, POPULAR_RANK, TAIL_RANK, ZIPF, liveLatency, replay, requestStream, titleRatio } from './cdn';
+import { CACHE, CATALOGUE, DEFAULT_SEED, LIVE, LONG_TAIL_FROM, POPULAR_RANK, TAIL_RANK, ZIPF, liveLatency, rankBucket, replay, requestStream, titleRatio } from './cdn';
 import { initialCompare, initialLadder, initialPlayer } from './init';
 import { LADDER_SIZES, POPULATION_SEED, evaluate, population } from './ladder';
 import { Stage } from './Stage';
@@ -15,6 +15,9 @@ const rateDrop = run(p0.trace, p0.algo);
 const bufferDrop = run(p0.trace, 'buffer');
 const naiveDrop = run(p0.trace, 'naive');
 const naiveSteady = run('steady', 'naive');
+const TOP = LADDER[LADDER.length - 1];
+const STEADY_RATE = traceOf('steady', 1)[0];
+const LIVE_QUIZ_SEGMENT = 6;
 
 const c0 = initialCompare();
 const compareRuns = (['naive', 'rate', 'buffer'] as const).map((a) => ({ a, r: run(c0.trace, a, c0.S) }));
@@ -29,6 +32,7 @@ const cdn0 = replay(stream, CACHE.initial);
 const cdnFull = replay(stream, CACHE.max);
 const pop0 = titleRatio(cdn0, POPULAR_RANK);
 const tail0 = titleRatio(cdn0, TAIL_RANK);
+const longTail0 = rankBucket(cdn0, LONG_TAIL_FROM, CATALOGUE);
 
 const l0 = initialLadder();
 const ladders = LADDER_SIZES.map((n) => evaluate(n, population(POPULATION_SEED, l0.slow)));
@@ -37,7 +41,7 @@ const laddersSlow = LADDER_SIZES.map((n) => evaluate(n, population(POPULATION_SE
 const lesson: LessonModule = {
   Stage,
   summary: {
-    tldr: 'Streaming video is not a special protocol: it is small files over HTTP, and the player picks a quality for each file from what it measures. The buffer is its safety margin, and a stall costs more than a lower quality.',
+    tldr: 'Streaming video is not a special protocol: it is small files over HTTP, and the player picks a quality for each file from what it measures. The buffer is its safety margin, and with the default weights a stall costs more than a lower quality.',
     what: 'The server cuts the video into segments of a few seconds and keeps each at several bitrates (the ladder). The player downloads one segment at a time and chooses the rendition for the next one, either from the throughput it just measured or from how much video it already holds. The buffer fills when a segment lands faster than it plays and empties while it plays; if it empties, the picture freezes. Because segments are ordinary files, a CDN cache serves popular ones from the edge.',
     analogy: 'Filling a bath while the water runs out of the drain at a fixed rate. The tap (the network) changes all the time; you choose how big a bucket (the rendition) to fetch next so the bath never runs dry, without always settling for the smallest bucket.',
     useCases: [
@@ -51,7 +55,7 @@ const lesson: LessonModule = {
       'The grey staircase is the network throughput. Yellow lines show the bitrate each segment was fetched at, and the yellow ring on a download bar marks the segment that just landed. The blue curve is the buffer in seconds, red on the floor of it is a stall, and in the timeline a red bar is a stall and a grey bar is playback. Each rendition has a plain tint and its number r1 to r5 in the bar, since five rungs reuse four tints. In the comparison the three players have their own tints (pink, amber, sky) and a green row is the highest score by your weights. In the cache scene green is a hit and red a miss; in the ladder scene green is viewers who can play, blue the bitrate they get and red the storage cost. The chips say what is simulated, illustrative or from memory.',
   },
   tryThis: [
-    `In "The player" (a network that drops, the rate-based player, ${SEGMENT.initial} s segments) press play: the buffer is filled at the start, then the throughput falls to 0.5 Mbit/s and the player stalls ${rateDrop.stallCount} time for ${f1(rateDrop.stallTime)} s. Pick the buffer-based player: ${f1(bufferDrop.stallTime)} s stalled, at an average bitrate of ${f2(bufferDrop.avgBitrate)} Mbit/s against ${f2(rateDrop.avgBitrate)}.`,
+    `In "The player" (a network that drops, the rate-based player, ${SEGMENT.initial} s segments) watch the run (press restart to see it again): the buffer is filled at the start, then the throughput falls to 0.5 Mbit/s and the player stalls ${rateDrop.stallCount} time for ${f1(rateDrop.stallTime)} s. Pick the buffer-based player: ${f1(bufferDrop.stallTime)} s stalled, at an average bitrate of ${f2(bufferDrop.avgBitrate)} Mbit/s against ${f2(rateDrop.avgBitrate)}.`,
     `Pick the naive player (always the top rendition, ${LADDER[LADDER.length - 1]} Mbit/s) and the network "steady" (4 Mbit/s): ${naiveSteady.stallCount} of its ${naiveSteady.count} segments stall, ${f1(naiveSteady.stallTime)} s in all, because each takes longer to download than it plays. On "a drop" it stalls ${f1(naiveDrop.stallTime)} s.`,
     `In "Three algorithms" (a drop) the stalled time is ${compareRuns.map((x) => `${NAME[x.a]} ${f1(x.r.stallTime)} s`).join(', ')}, and the ${NAME[winnerDefault]} player scores highest by the default weights. Set "Reward per Mbit/s of bitrate" to 5 and "Penalty per second stalled" to 0: the ${NAME[winnerPicky]} player wins.`,
     `In "Why it scales" (skew ${ZIPF.initial.toFixed(1)}, a cache of ${CACHE.initial.toLocaleString('en-US')} segments) the most popular title hits ${pct(pop0.ratio)} of ${pop0.requests.toLocaleString('en-US')} requests and title ${TAIL_RANK} hits ${pct(tail0.ratio)} of ${tail0.requests}. Set the cache to ${CACHE.max.toLocaleString('en-US')} segments (the whole catalogue): the overall hit ratio goes from ${pct(cdn0.hitRatio)} to ${pct(cdnFull.hitRatio)}. Then set the segment length to ${SEGMENT.min} s: the live delay falls from ${liveLatency(SEGMENT.initial)} s to ${liveLatency(SEGMENT.min)} s.`,
@@ -61,7 +65,7 @@ const lesson: LessonModule = {
     'Streaming is small files over plain HTTP: the video is cut into segments, each kept at several bitrates, and the player picks one per segment from its own measurements.',
     `The highest bitrate is not the best experience: on a steady 4 Mbit/s network a player that asks for the top rendition for each segment stalls on ${naiveSteady.stallCount} of ${naiveSteady.count} segments, because a segment that takes longer to download than to play drains the buffer.`,
     `Rate-based players follow the throughput they measured and buffer-based players follow how much video is queued. In this model, on the drop trace, the buffer-based one stalled ${f1(bufferDrop.stallTime)} s against ${f1(rateDrop.stallTime)} s, and paid for it in bitrate.`,
-    'Because segments are ordinary cacheable files, a CDN serves popular titles from the edge and the origin sees mostly the long tail; more renditions serve better quality at a storage cost.',
+    `Because segments are ordinary cacheable files, a CDN serves popular titles from the edge: in the default cache scene the titles ranked ${LONG_TAIL_FROM} to ${CATALOGUE} are ${pct(longTail0.requests / cdn0.requests)} of the requests but ${pct(longTail0.originShare)} of the ones that reach the origin. More renditions serve better quality at a storage cost.`,
   ],
   quiz: [
     {
@@ -76,7 +80,7 @@ const lesson: LessonModule = {
       why: 'The player downloads each segment as an ordinary file over HTTP, which is why caches and CDNs work for video: nothing about a segment is special to the network.',
     },
     {
-      q: 'A viewer\'s network averages 4 Mbit/s and the player always asks for the 5 Mbit/s rendition. What happens?',
+      q: `A viewer\'s network averages 4 Mbit/s and the player always asks for the 5 Mbit/s rendition, in ${SEGMENT.initial} s segments. What happens?`,
       options: [
         'Each segment takes longer to download than it plays, so the buffer drains and the video stalls',
         'The player switches itself down after the first segment, so the picture only gets blurrier',
@@ -84,7 +88,7 @@ const lesson: LessonModule = {
         'The CDN converts the segments to a lower bitrate on the way to the viewer',
       ],
       answer: 0,
-      why: 'A 4 s segment of 5 Mbit/s is 20 megabits, which takes 5 s at 4 Mbit/s: one second longer than it plays. A fixed top rendition cannot adapt, so the shortfall repeats.',
+      why: `A ${SEGMENT.initial} s segment of ${TOP} Mbit/s is ${TOP * SEGMENT.initial} megabits, which takes ${(TOP * SEGMENT.initial) / STEADY_RATE} s at ${STEADY_RATE} Mbit/s: ${(TOP * SEGMENT.initial) / STEADY_RATE - SEGMENT.initial} s longer than it plays. A fixed top rendition cannot adapt, so the shortfall repeats.`,
     },
     {
       q: 'What does a buffer-based player look at to choose the next rendition?',
@@ -109,10 +113,10 @@ const lesson: LessonModule = {
       why: 'A cache needs repeatable requests for the same bytes, and segments are exactly that. Popular titles hit on the great bulk of their requests; long-tail titles still reach the origin.',
     },
     {
-      q: `A live stream has 6 s segments, the player holds back ${LIVE.segmentsBuffered} of them, and it takes ${LIVE.pipelineSeconds} s to encode and deliver a segment. About how far behind real time is the viewer?`,
-      options: ['22 s', '18 s', '10 s', '6 s'],
+      q: `A live stream has ${LIVE_QUIZ_SEGMENT} s segments, the player holds back ${LIVE.segmentsBuffered} of them, and it takes ${LIVE.pipelineSeconds} s to encode and deliver a segment. About how far behind real time is the viewer?`,
+      options: [`${liveLatency(LIVE_QUIZ_SEGMENT)} s`, `${LIVE.segmentsBuffered * LIVE_QUIZ_SEGMENT} s`, `${LIVE_QUIZ_SEGMENT + LIVE.pipelineSeconds} s`, `${LIVE_QUIZ_SEGMENT} s`],
       answer: 0,
-      why: `${LIVE.segmentsBuffered} segments x 6 s = 18 s held back, plus ${LIVE.pipelineSeconds} s of encoding and delivery makes 22 s. Shorter segments, or partial segments, cut this.`,
+      why: `${LIVE.segmentsBuffered} segments x ${LIVE_QUIZ_SEGMENT} s = ${LIVE.segmentsBuffered * LIVE_QUIZ_SEGMENT} s held back, plus ${LIVE.pipelineSeconds} s of encoding and delivery makes ${liveLatency(LIVE_QUIZ_SEGMENT)} s. Shorter segments, or partial segments, cut this.`,
     },
   ],
 };

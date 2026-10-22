@@ -105,6 +105,7 @@ export function PlayerScene({ picker }: { picker: ReactNode }) {
         <ProvenanceRow>
           <Provenance kind="simulated">the player, the buffer and the downloads are computed event by event from the trace</Provenance>
           <Provenance kind="illustrative">the five-rung ladder (0.4 to 5 Mbit/s), the traces and the 30 s buffer cap are made up; HLS segment lengths and ladders vary by service, and this is a model</Provenance>
+          {st.algo === 'buffer' && <Provenance kind="from-memory">the buffer-based rule follows the idea of Huang and others (2014), simplified: verify against the paper</Provenance>}
           {st.trace === 'random' && <Provenance kind="simulated" seed={st.seed}>random-walk trace</Provenance>}
         </ProvenanceRow>
       </div>

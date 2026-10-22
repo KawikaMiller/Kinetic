@@ -6,7 +6,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { SEGMENT } from './abr';
 import { cdnCaption } from './captions';
-import { CACHE, CATALOGUE, LIVE, POPULAR_RANK, REQUESTS, TAIL_RANK, ZIPF, liveLatency, replay, requestStream, titleRatio, type Replay } from './cdn';
+import { CACHE, CATALOGUE, LIVE, LONG_TAIL_FROM, POPULAR_RANK, REQUESTS, SEGMENTS_PER_TITLE, TAIL_RANK, ZIPF, liveLatency, rankBucket, replay, requestStream, titleRatio } from './cdn';
 import { initialCdn } from './init';
 
 const LEGEND = (
@@ -22,21 +22,8 @@ const LEGEND = (
 const BUCKETS: { label: string; from: number; to: number }[] = [
   { label: `ranks ${POPULAR_RANK} to 10`, from: 1, to: 10 },
   { label: 'ranks 11 to 50', from: 11, to: 50 },
-  { label: `ranks 51 to ${CATALOGUE}`, from: 51, to: CATALOGUE },
+  { label: `ranks ${LONG_TAIL_FROM} to ${CATALOGUE}`, from: LONG_TAIL_FROM, to: CATALOGUE },
 ];
-
-function bucketRatio(r: Replay, from: number, to: number): { requests: number; ratio: number | null } {
-  let requests = 0;
-  let hits = 0;
-  for (let rank = from; rank <= to; rank++) {
-    const s = r.byTitle.get(rank);
-    if (s) {
-      requests += s.requests;
-      hits += s.hits;
-    }
-  }
-  return { requests, ratio: requests > 0 ? hits / requests : null };
-}
 
 export function CdnScene({ picker }: { picker: ReactNode }) {
   const [st, setSt] = useState(initialCdn);
@@ -75,15 +62,15 @@ export function CdnScene({ picker }: { picker: ReactNode }) {
     >
       <div className="abr-stage stage-pad">
         <Box>
-          <SectionTitle hint={`${CATALOGUE} titles of 30 segments; segments are plain HTTP files, so a cache can hold them`}>Hit ratio by how popular the title is</SectionTitle>
+          <SectionTitle hint={`${CATALOGUE} titles, each modelled as ${SEGMENTS_PER_TITLE} segments whatever the segment length below; segments are plain HTTP files, so a cache can hold them`}>Hit ratio by how popular the title is</SectionTitle>
           <div className="abr-bars">
             {BUCKETS.map((b) => {
-              const x = bucketRatio(r, b.from, b.to);
+              const x = rankBucket(r, b.from, b.to);
               return (
                 <div key={b.label} className="abr-bar-row">
                   <span className="abr-bar-name">{b.label}</span>
                   <Bar value={x.ratio ?? 0} max={1} tone="ok" ariaLabel={`${b.label}: ${pctText(x.ratio)} of ${x.requests} requests were hits`} />
-                  <span className="abr-bar-text">{pctText(x.ratio)} of {x.requests.toLocaleString('en-US')} requests</span>
+                  <span className="abr-bar-text">{pctText(x.ratio)} of {x.requests.toLocaleString('en-US')} requests hit; {Math.round(x.originShare * 100)}% of the origin's requests</span>
                 </div>
               );
             })}

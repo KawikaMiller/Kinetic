@@ -20,7 +20,7 @@ const LEGEND = (
   <Legend
     items={[
       { color: 'var(--ok)', label: 'viewers who can play at all' },
-      { color: 'var(--info)', label: 'average bitrate they get' },
+      { color: 'var(--info)', label: 'average bitrate, among those who can play' },
       { color: 'var(--bad)', label: 'storage per title: the cost of more renditions' },
       { color: 'var(--violet)', label: 'the bandwidth a rung needs, on the chart' },
     ]}
@@ -79,7 +79,7 @@ export function LadderScene({ picker }: { picker: ReactNode }) {
                 <div className="abr-bar-row">
                   <span className="abr-bar-name">average bitrate</span>
                   <Bar value={r.avgBitrate} max={MAX_BITRATE} tone="info" ariaLabel={`average bitrate ${r.avgBitrate.toFixed(2)} Mbit/s`} />
-                  <span className="abr-bar-text">{r.avgBitrate.toFixed(2)} Mbit/s</span>
+                  <span className="abr-bar-text">{r.avgBitrate.toFixed(2)} Mbit/s among those who can play</span>
                 </div>
                 <div className="abr-bar-row">
                   <span className="abr-bar-name">storage</span>

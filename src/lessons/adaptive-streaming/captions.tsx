@@ -104,9 +104,13 @@ export function compareCaption(runs: { algo: AlgoId; run: Run }[], w: Weights): 
   if (runs.every((r) => r.run.wall === null)) return <><span className="hl bad">Stalled, no data arriving</span>: every player waits at the first segment, so there is nothing to compare.</>;
   const scored = runs.map((r) => ({ ...r, score: score(r.run, w) }));
   const best = scored.reduce((m, x) => (x.score > m.score ? x : m));
+  const switches = (a: AlgoId) => scored.find((x) => x.algo === a)?.run.switches ?? 0;
+  const switchNote =
+    switches('buffer') > switches('rate') ? <> The buffer-based player switched {switches('buffer')} times against {switches('rate')}: its rule steps through the ladder as the buffer level moves between the reservoir and the cushion.</> : null;
   return (
     <>
       By your weights the <span className="hl ok">{algoLabel(best.algo)}</span> player scores highest ({f2(best.score)}). Stalled time: {scored.map((x) => `${algoLabel(x.algo)} ${f1(x.run.stallTime)} s`).join(', ')}. Change a weight and the winner can change: there is no correct set.
+      {switchNote}
     </>
   );
 }
@@ -126,7 +130,7 @@ export function ladderCaption(results: readonly LadderResult[], slow: number): R
   const by = (n: number) => results.find((r) => r.size === n)!;
   return (
     <>
-      With {slow}% slow viewers, a one-rendition ladder lets {pct(by(1).share)} of all viewers play, three renditions {pct(by(3).share)} and five renditions {pct(by(5).share)}, at average bitrates {f2(by(1).avgBitrate)}, {f2(by(3).avgBitrate)} and {f2(by(5).avgBitrate)} Mbit/s. The storage per title grows {f1(by(1).storageGb)}, {f1(by(3).storageGb)}, {f1(by(5).storageGb)} GB.
+      With {slow}% slow viewers, a one-rendition ladder lets {pct(by(1).share)} of all viewers play, three renditions {pct(by(3).share)} and five renditions {pct(by(5).share)}, at average bitrates, among the viewers who can play, of {f2(by(1).avgBitrate)}, {f2(by(3).avgBitrate)} and {f2(by(5).avgBitrate)} Mbit/s. The storage per title grows {f1(by(1).storageGb)}, {f1(by(3).storageGb)}, {f1(by(5).storageGb)} GB.
     </>
   );
 }

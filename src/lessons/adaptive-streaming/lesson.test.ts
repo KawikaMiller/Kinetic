@@ -3,7 +3,7 @@ import { captionText } from '../../core/testing/captions';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { ALGOS, DEFAULT_WEIGHTS, SEGMENT, TRACES, score, simulate, traceOf, type AlgoId, type Weights } from './abr';
 import { cdnCaption, compareCaption, ladderCaption, playFrames } from './captions';
-import { CACHE, DEFAULT_SEED, ZIPF, liveLatency, replay, requestStream, titleRatio } from './cdn';
+import { CACHE, CATALOGUE, DEFAULT_SEED, LONG_TAIL_FROM, ZIPF, liveLatency, rankBucket, replay, requestStream, titleRatio } from './cdn';
 import { initialCdn, initialCompare, initialLadder, initialPlayer } from './init';
 import lesson from './index';
 import { LADDER_SIZES, POPULATION_SEED, evaluate, population } from './ladder';
@@ -204,28 +204,56 @@ describe('quiz facts come from the model', () => {
   });
 });
 
-describe('the scenes open in their own state', () => {
-  it('each opening state is a fresh object with its own values', () => {
-    expect(initialPlayer()).not.toBe(initialPlayer());
-    expect(initialCompare().weights).toEqual(DEFAULT_WEIGHTS);
-    expect(initialCompare().weights).not.toBe(DEFAULT_WEIGHTS);
-    expect(initialCdn().cache).toBe(1000);
-    expect(initialLadder().size).toBe(5);
+describe('claims about the origin and the traces come from the model', () => {
+  it('key idea 4: the long-tail share of the origin requests is recounted request by request, and the three buckets add up to the origin load', () => {
+    const stream = requestStream(DEFAULT_SEED, ZIPF.initial);
+    const r = replay(stream, CACHE.initial);
+    // brute force: an independent LRU over an array, counting a miss for each request not in it
+    const cache: number[] = [];
+    let originTail = 0;
+    let origin = 0;
+    let tailRequests = 0;
+    for (const q of stream) {
+      const k = q.title * 30 + q.segment;
+      const at = cache.indexOf(k);
+      if (q.title >= LONG_TAIL_FROM) tailRequests++;
+      if (at >= 0) cache.splice(at, 1);
+      else {
+        origin++;
+        if (q.title >= LONG_TAIL_FROM) originTail++;
+        if (cache.length >= CACHE.initial) cache.shift();
+      }
+      cache.push(k);
+    }
+    const bucket = rankBucket(r, LONG_TAIL_FROM, CATALOGUE);
+    expect(r.misses).toBe(origin);
+    expect(bucket.originShare).toBeCloseTo(originTail / origin, 12);
+    expect(bucket.requests).toBe(tailRequests);
+    const shares = [rankBucket(r, 1, 10), rankBucket(r, 11, LONG_TAIL_FROM - 1), bucket].map((b) => b.originShare);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
+    const idea = lesson.keyIdeas[3];
+    expect(idea).toContain(`${Math.round((tailRequests / stream.length) * 100)}% of the requests but ${Math.round((originTail / origin) * 100)}% of the ones that reach the origin`);
+    expect(idea).not.toContain('mostly');
   });
-});
-
-describe('quiz facts come from the model', () => {
-  it('the 5 Mbit/s over 4 Mbit/s question: a 4 s segment of 20 megabits takes 5 s, one second more than it plays', () => {
-    const r = run('steady', 'naive');
-    expect(r.segs[0].end - r.segs[0].start).toBeCloseTo(5, 9);
-    expect(r.segs[1].stall).toBeCloseTo(1, 9);
+  it('the sawtooth note names its true peak, and the repeating claim is scoped to the trace length', () => {
+    const peak = Math.max(...traceOf('sawtooth', 1));
+    expect(peak).toBe(5.25);
+    const note = TRACES.find((t) => t.id === 'sawtooth')!.note;
+    expect(note).toContain('to 5.25 Mbit/s');
+    expect(note).not.toContain('over and over');
+    expect(note).toContain('150 s');
+    expect(traceOf('commute', 1)).toHaveLength(150);
   });
-  it('the live delay answer is 3 x 6 + 4 = 22 s', () => {
-    const q = lesson.quiz[4];
-    expect(q.options[q.answer]).toBe(`${liveLatency(6)} s`);
-    expect(q.options).toContain(`${3 * 6} s`);
+  it('the ladder caption says the averages are among the viewers who can play, and they are', () => {
+    const bws = population(POPULATION_SEED, 100);
+    const results = LADDER_SIZES.map((n) => evaluate(n, bws));
+    expect(captionText(ladderCaption(results, 100) as never, { strict: true })).toContain('among the viewers who can play');
+    const one = results[0];
+    expect(one.canPlay).toBeLessThan(bws.length);
   });
-  it('no more than half of the quiz questions have the correct option strictly longest', () => {
-    expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  it('the quiz numbers are the model numbers', () => {
+    expect(lesson.quiz[1].why).toContain('20 megabits, which takes 5 s at 4 Mbit/s: 1 s longer');
+    expect(lesson.quiz[4].q).toContain('6 s segments');
+    expect(lesson.quiz[4].options).toEqual([`${liveLatency(6)} s`, '18 s', '10 s', '6 s']);
   });
 });

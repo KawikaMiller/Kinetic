@@ -24,6 +24,9 @@ export const VIDEO_SECONDS = 120;
 export const MAX_BUFFER = 30;
 export const SEGMENT = { min: 2, max: 10, initial: 4 } as const;
 export const TRACE_SECONDS = 150;
+const SAWTOOTH = { low: 0.5, rise: 5, period: 20 };
+/** The highest sample of the sawtooth: it climbs to the last second before it falls, one short of the full rise. */
+export const SAWTOOTH_PEAK = SAWTOOTH.low + (SAWTOOTH.rise * (SAWTOOTH.period - 1)) / SAWTOOTH.period;
 /** A download that finishes this close to the instant the buffer empties is on time, not a stall (floating-point noise). */
 const EPS = 1e-9;
 
@@ -31,8 +34,8 @@ export type TraceId = 'steady' | 'drop' | 'sawtooth' | 'commute' | 'random' | 'd
 export const TRACES: { id: TraceId; label: string; note: string }[] = [
   { id: 'steady', label: 'steady', note: '4 Mbit/s throughout.' },
   { id: 'drop', label: 'a drop', note: '6 Mbit/s, then 0.5 Mbit/s from 40 s to 80 s, then 6 again.' },
-  { id: 'sawtooth', label: 'sawtooth', note: 'Climbs from 0.5 to 5.5 Mbit/s over 20 s, then falls back, over and over.' },
-  { id: 'commute', label: 'a commute', note: 'A hand-made trace with tunnels and a station: it dips and recovers.' },
+  { id: 'sawtooth', label: 'sawtooth', note: `Climbs from 0.5 to ${SAWTOOTH_PEAK} Mbit/s over 20 s, then falls back, for the ${TRACE_SECONDS} s of the trace (its last sample repeats after that).` },
+  { id: 'commute', label: 'a commute', note: `A hand-made trace with tunnels and a station: it dips and recovers over ${TRACE_SECONDS} s, and its last sample repeats after that.` },
   { id: 'random', label: 'random walk', note: 'A seeded random walk between 0.2 and 6 Mbit/s.' },
   { id: 'dead', label: 'no data', note: 'Zero throughput: nothing ever arrives.' },
 ];
@@ -45,7 +48,7 @@ export function traceOf(id: TraceId, seed = 1): number[] {
   const at = (f: (t: number) => number) => Array.from({ length: TRACE_SECONDS }, (_, t) => f(t));
   if (id === 'steady') return at(() => 4);
   if (id === 'drop') return at((t) => (t >= 40 && t < 80 ? 0.5 : 6));
-  if (id === 'sawtooth') return at((t) => 0.5 + 5 * ((t % 20) / 20));
+  if (id === 'sawtooth') return at((t) => SAWTOOTH.low + SAWTOOTH.rise * ((t % SAWTOOTH.period) / SAWTOOTH.period));
   if (id === 'commute') return at((t) => COMMUTE[Math.floor(t / 5) % COMMUTE.length]);
   if (id === 'dead') return at(() => 0);
   const rnd = mulberry32(seed);

@@ -11,6 +11,8 @@ export const SEGMENTS_PER_TITLE = 30;
 export const REQUESTS = 20_000;
 /** The two titles the scene compares: the most popular one and one deep in the long tail. */
 export const POPULAR_RANK = 1;
+/** Where the scene's long-tail bucket starts. */
+export const LONG_TAIL_FROM = 51;
 export const TAIL_RANK = 150;
 export const CACHE = { min: 100, max: 6000, step: 100, initial: 1000 } as const;
 export const ZIPF = { min: 0.6, max: 1.4, step: 0.1, initial: 1.0 } as const;
@@ -67,6 +69,20 @@ export const titleRatio = (r: Replay, rank: number): { requests: number; ratio: 
   const s = r.byTitle.get(rank);
   return { requests: s?.requests ?? 0, ratio: s && s.requests > 0 ? s.hits / s.requests : null };
 };
+
+/** What a stretch of ranks (from to to, inclusive) asks of the cache: its requests and hits, and its share of the origin's requests. */
+export function rankBucket(r: Replay, from: number, to: number): { requests: number; hits: number; ratio: number | null; originShare: number } {
+  let requests = 0;
+  let hits = 0;
+  for (let rank = from; rank <= to; rank++) {
+    const s = r.byTitle.get(rank);
+    if (s) {
+      requests += s.requests;
+      hits += s.hits;
+    }
+  }
+  return { requests, hits, ratio: requests > 0 ? hits / requests : null, originShare: r.misses > 0 ? (requests - hits) / r.misses : 0 };
+}
 
 /** The share of requests the Zipf law gives a title, for the caption's "expected" figure. */
 export const expectedShare = (rank: number, alpha: number): number => rank ** -alpha / harmonic(CATALOGUE, alpha);
