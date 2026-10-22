@@ -120,21 +120,24 @@ function readAtom(c: TokenCursor, depth: number): KitRead<Node> {
     if (c.peek()?.kind === 'lp') return readCall(c, t, depth);
     if (isInput(t.text)) return { ok: true, value: { t: 'var', name: t.text } };
     if (isFunction(t.text)) return c.failAt(t, `${t.text} is a function: call it as ${t.text}(...).`);
-    return c.failAt(t, `unknown name "${t.text}": the inputs are ${LIST_INPUTS}.`);
+    return c.failAt(t, `unknown name "${echo(t.text)}": the inputs are ${LIST_INPUTS}.`);
   }
-  return c.failAt(t, `unexpected "${t.text}": a value was expected here.`);
+  return c.failAt(t, `unexpected "${echo(t.text)}": a value was expected here.`);
 }
+
+/** A long typed word is echoed shortened, so a refusal never runs off a narrow card. */
+export const echo = (text: string, max = 24): string => (text.length > max ? `${text.slice(0, max)}...` : text);
 
 /** A token left over after a whole expression was read: say what it is. */
 function readAtomOrFail(c: TokenCursor, extra: { text: string; kind: string; column: number }): KitRead<Program> {
   if (extra.kind === 'assign') return c.failAt(extra, 'assignments are not part of this language: type an expression, not a statement.');
   if (extra.kind === 'quote') return c.failAt(extra, 'strings are not part of this language: every value is a number.');
-  return c.failAt(extra, `unexpected "${extra.text}": nothing can follow a complete expression here.`);
+  return c.failAt(extra, `unexpected "${echo(extra.text)}": nothing can follow a complete expression here.`);
 }
 
 function readCall(c: TokenCursor, name: { text: string; column: number; kind: string }, depth: number): KitRead<Node> {
   if (isInput(name.text)) return c.failAt(name, `${name.text} is an input, not a function.`);
-  if (!isFunction(name.text)) return c.failAt(name, `unknown function "${name.text}": the functions are ${Object.keys(FUNCTIONS).join(', ')}.`);
+  if (!isFunction(name.text)) return c.failAt(name, `unknown function "${echo(name.text)}": the functions are ${Object.keys(FUNCTIONS).join(', ')}.`);
   const open = c.next();
   if (open && depth >= MAX_DEPTH) return c.failAt(open, `nested more than ${MAX_DEPTH} levels deep.`);
   const args: Node[] = [];

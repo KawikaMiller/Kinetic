@@ -422,3 +422,11 @@ describe('blending', () => {
     expect(r.pixels).toHaveLength(BLEND_GRID.w * BLEND_GRID.h);
   });
 });
+
+describe('long typed words are echoed shortened (390px overflow)', () => {
+  it('a 115-character identifier is refused with a short message', () => {
+    const res = compileChannels(['a'.repeat(115), '0', '0']);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect((res.errors[0] ?? '').length).toBeLessThan(160);
+  });
+});

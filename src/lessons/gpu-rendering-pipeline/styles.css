@@ -23,4 +23,4 @@
 .gp-field-row { display: flex; flex-direction: column; gap: 4px; }
 .gp-field { width: 100%; }
 .gp-field input { width: 100%; min-width: 0; }
-.gp-error { margin: 0; font-size: 13px; color: var(--bad); }
+.gp-error { margin: 0; overflow-wrap: anywhere; font-size: 13px; color: var(--bad); }

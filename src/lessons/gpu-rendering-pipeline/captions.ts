@@ -2,6 +2,7 @@
 import { decimal, plural } from '../../core/format';
 import { blend, probePixel, type BlendState, type Region } from './blend';
 import { rgbText } from './paint';
+import { echo } from './shader';
 import { overdraw, type OverdrawState } from './overdraw';
 import { GRID, type Fragment } from './render';
 import { STAGES, type Analysis, type PipelineState } from './stages';
@@ -33,7 +34,7 @@ export function pipelineCaption(s: PipelineState, a: Analysis): string {
         ? `Rasterisation: triangle ${t} covers no pixel centre of the ${GRID.w} by ${GRID.h} grid, so it produces no fragments (it may be edge-on, off screen or very small).`
         : `Rasterisation: triangle ${t} covers ${plural(total, 'pixel centre')} of the ${GRID.w} by ${GRID.h} grid, so it produces ${plural(total, 'fragment')}. A fragment is a candidate for a pixel, not a pixel.`;
     case 'fragment':
-      return `Fragment shader: runs once per fragment, ${total} times for triangle ${t}. This scene's shader is a fixed Lambert term N·L, from ${nlRange(a.fragments)} here; the shader scene lets you write your own.`;
+      return `Fragment shader: in this teaching order it runs once per fragment, ${total} times for triangle ${t}, before the depth test (the "Order and early depth" scene shows when hardware can test first). This scene's shader is a fixed Lambert term N·L, from ${nlRange(a.fragments)} here; the shader scene lets you write your own.`;
     case 'depth':
       return `Depth test: ${a.passed} of ${plural(total, 'fragment')} ${a.passed === 1 ? 'is' : 'are'} nearer than what triangles 1 to ${s.triangle} left in the depth buffer and pass; ${total - a.passed} fail and are discarded.`;
     case 'blend':
@@ -71,7 +72,7 @@ const CHANNELS = ['red', 'green', 'blue'] as const;
 
 export function shaderCaption(i: ShaderCaptionInput): string {
   const refused = i.errors.findIndex((e) => e !== null);
-  const lead = `Shader: red = ${i.fields[0]}, green = ${i.fields[1]}, blue = ${i.fields[2]}.`;
+  const lead = `Shader: red = ${echo(i.fields[0], 40)}, green = ${echo(i.fields[1], 40)}, blue = ${echo(i.fields[2], 40)}.`;
   if (refused >= 0) {
     return `${lead} Not applied: the ${CHANNELS[refused]} field says "${i.errors[refused]}" The image still shows the last shader that worked.`;
   }
