@@ -1,0 +1,27 @@
+.ec-stage { gap: 12px; }
+.ec-note { margin: 0; font: 500 12.5px var(--font); line-height: 1.6; color: var(--muted); }
+.ec-equation { margin: 0; font: 600 13px var(--mono); color: var(--text); }
+.ec-bits { color: var(--muted); font-weight: 500; }
+.ec-refusal {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--bad) 60%, transparent);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  font: 600 13px var(--font);
+  line-height: 1.5;
+  color: var(--text);
+}
+.ec-grid { display: flex; flex-flow: row wrap; gap: 14px; align-items: flex-start; }
+.ec-working { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ec-o { margin: 0; font: 600 12.5px var(--font); color: var(--hi); }
+.ec-check { margin: 0; padding: 8px 10px; border-radius: 8px; font: 600 12.5px var(--font); line-height: 1.5; border: 1px solid var(--line-2); }
+.ec-check.is-ok { border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+.ec-check.is-bad { border-color: color-mix(in srgb, var(--bad) 60%, transparent); }
+.ec-costs { display: flex; flex-direction: column; gap: 8px; }
+.ec-cost { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 13px var(--font); line-height: 1.6; }
+.ec-cost.is-ok { border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
+.ec-cost.is-bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.ec-known ul { margin: 6px 0; padding-left: 20px; font: 500 13px var(--font); line-height: 1.7; }
+.ec-known code, .ec-note code { font-family: var(--mono); }
+.ec-stage ~ .provenance-row { margin: 8px 16px 12px; }

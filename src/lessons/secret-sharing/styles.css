@@ -1,0 +1,13 @@
+.ss-stage { gap: 12px; }
+.ss-note { margin: 0; font: 500 12.5px var(--font); line-height: 1.6; color: var(--muted); }
+.ss-note code, .ss-case code { font-family: var(--mono); }
+.ss-equation { margin: 0; font: 600 13px var(--mono); color: var(--text); }
+.ss-bars { display: flex; flex-direction: column; gap: 6px; }
+.ss-proof { margin: 0; padding: 8px 10px; border-radius: 8px; font: 600 12.5px var(--font); line-height: 1.5; border: 1px solid var(--line-2); }
+.ss-proof.is-ok { border-color: color-mix(in srgb, var(--ok) 60%, transparent); }
+.ss-proof.is-bad { border-color: color-mix(in srgb, var(--bad) 60%, transparent); }
+.ss-shares { display: flex; flex-flow: row wrap; gap: 8px; }
+.ss-share { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 12px var(--mono); color: var(--muted); }
+.ss-share b { color: var(--text); }
+.ss-share.is-on { border-color: color-mix(in srgb, var(--info) 70%, transparent); background: color-mix(in srgb, var(--info) 10%, transparent); }
+.ss-case { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 13px var(--font); line-height: 1.7; }
