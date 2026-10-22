@@ -6709,9 +6709,27 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 3 | Tier 3 close-out kit round (kit N) | — | 10→QA | kit owner | done | merged ea18992e: joinList/dollars, paintPixels, Hint tone bad, boolean Segmented, SequenceDiagram note width, GanttLanes clip, forbidden clock/timer kinds |
 | 3 | Tier 3 sign-off fixes A, B, C | — | QA | fixers | done | merged e982789e (A, B) and 261f3114 (C): count-min crash, four crashes found by the sweep, focus drops, Transport aria-disabled, ChipButton softDisabled, caption fixes, sha256 extraction |
 | 3 | **Tier 3 sign-off** | 166 | — | | done | Sentry QA: sign-off, conditions closed or recorded (docs/qa-tier3-report.md, 2026-10-22); 409 lessons registered, smoke desktop 409/409, mobile 408/409 (one unreproduced 7.6px label, see report), scene scan 1,328 scenes clean; push after sign-off |
-| 4 | Kickoff | — | pre | | not started | |
-| 4 | Batches T4-B1 … T4-B8 | 41 | 1-3 | | not started | |
-| 4 | **Tier 4 sign-off** | 50 | — | | not started | |
+| 4 | Kickoff: validation, final list, batch and wave plan (docs/tier4-plan.md, docs/tier4-technical.md, docs/tier4-specs/part1-3.md, docs/tier4-kickoff-decisions.md) | — | pre | Atlas, Vector | done | 2026-10-22: 41 new + 9 existing = 50; 9 batches + 2 retrofit (R1 5, R2 4); 3 waves of 4, 4, 3 builders, ordered by kit readiness; leases-fencing was the one row moved out (42 to 41); committed 7fee38c6 |
+| 4 | Kickoff kit (P0): T4-T1 register the 41, T4-T2 content lint T4, T4-T3, T4-T7, T4-T8, K4-8 theorem label, K4-9 scenario trade-off checks | — | pre | kit A | done | merged ba8b2278 |
+| 4 | Kickoff kit (P0): K4-4 core/sat, K4-5 core/tsp, core/vertexCover, K4-10 ClassifyBoard explore | — | pre | kit C | done | merged 63485cf2 |
+| 4 | Kickoff kit (P0): T4-T6 parallel-agent robustness, T4-T4 `npm run sweep`, T4-T5 captions skip list | — | pre | kit B | done | merged a822884e; 12-lesson sweep clean (2,821 actions) |
+| 4 | K4-1 distSim v2 and K4-2 core/explore + pureProtocol + TracePlayer | — | built during 1 | kit D | done | merged 1ac170d1; Paxos spike 2,905 states in 94 ms at 2 ballots (exhaustive), 119,865 states in 5.3 s at 3 ballots; no scope cut |
+| 4 | T4-R1 Retrofit, part 1 (raft, distributed-transactions, crdts, multi-region, backpressure) | 5 | 1 | t4/r1 | in progress | domain review: all 5; two reviewers; merges before wave 2 |
+| 4 | T4-B3 Hardness & optimisation | 5 | 1 | t4/b3 | in progress | domain review: 3 of 5; proof-toy pilot (np-reductions first) |
+| 4 | T4-B5 Strings, trees & strategy | 5 | 1 | t4/b5 | in progress | domain review: online-algorithms, game-theory; no new kit |
+| 4 | T4-B8 Leading change & strategy | 4 | 1 | t4/b8 | in progress | opinion labelled (AC-0/T3 #24); ScenarioStory where the spec branches |
+| 4 | P-follow-up after wave 1 (link patch, wave-end gates) | — | 1→2 | kit owner | not started | wave-end gates: whole-app smoke desktop + 390px, sweep of the wave's lessons |
+| 4 | T4-B1 Failure & membership | 5 | 2 | t4/b1 | not started | domain review: 4 of 5; two reviewers; metastable-failures links backpressure |
+| 4 | T4-B4 Consensus & global time | 6 | 2 | t4/b4 | not started | all domain review; two reviewers (3 lessons each); hardest batch; build flp-impossibility first |
+| 4 | T4-R2 Retrofit, part 2 (lsm-trees, probabilistic-structures, slos-error-budgets, zero-trust) | 4 | 2 | t4/r2 | not started | domain review: all 4; one reviewer |
+| 4 | T4-B9 People & judgement | 3 | 2 | t4/b9 | not started | domain review: hiring-interviewing |
+| 4 | K4-3 memModel, K4-6 field + ecc (interpolate-at-zero), K4-7 crypto additions, K4-11 rocAuc | — | built during 2 | kit agents | not started | block wave 3 |
+| 4 | P-follow-up after wave 2 (merge K4-3, K4-6, K4-7, K4-11; link chaos-engineering to slos-error-budgets) | — | 2→3 | kit owner | not started | wave-end gates as above |
+| 4 | T4-B2 Concurrency, cores & proofs | 4 | 3 | t4/b2 | not started | all domain review; two reviewers; simulated memory model |
+| 4 | T4-B6 Advanced cryptography | 5 | 3 | t4/b6 | not started | all domain review; payload-free review; two reviewers |
+| 4 | T4-B7 ML serving & cloud cost | 4 | 3 | t4/b7 | not started | all domain review; two reviewers |
+| 4 | Tier 4 close-out kit round | — | 3→QA | kit owner | not started | last kit round of the curriculum |
+| 4 | **Tier 4 sign-off** | 50 | — | | not started | 41 new + 9 existing; whole-curriculum DoD (450 lessons); push only when the tier is finished |
 
 ### 4.2 Definition of done for a tier
 A tier is done, and the next tier's kickoff may start, only when **all** of these hold on the merged main branch:
