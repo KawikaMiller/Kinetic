@@ -2096,6 +2096,14 @@ import { makeScene, makeCamera, renderImage, traceRay, nearestHit, intersectSphe
 - **`raytrace`**: `intersectSphere / Plane / Triangle` return the normal facing against the ray (`inside` for a ray starting in a sphere; tangent rays hit once); `lambert`, `phong`; `makeScene(objects, light, { bvh })` (spheres go in a median-split `buildBvh`, planes are always tested), `nearestHit`, `occluded` (shadow rays, early exit), `makeCamera` (null when degenerate), `cameraRay`, `traceRay(scene, ray, { lighting, shadows, maxBounces, bias })` and `renderImage(scene, camera, w, h, settings, stats?)` → `{ pixels (0..1), testsPerPixel }`. `TraceStats` counts `objectTests` and `boxTests` where they run. Bias 0 gives shadow acne (a test pins it); the BVH matches brute force pixel for pixel. Bound for a default render: at most `2 · pixels · objects · (1 + maxBounces)` object tests (each camera or mirror ray is followed by at most one shadow ray).
 - Paint images with `paintImage` (`components/canvasImage`); canvas lessons render on demand, not in a loop. Demo blocks in `#/dev/kit` (`DevKitTier3l`).
 
+## Tier 3 kit (wave 8 to 9 extraction round: kit-M)
+
+### `core/semver.ts` — dependency-management (origin), monorepo-polyrepo (test); supply-chain-security next
+```ts
+import { parseVersion, formatVersion, compare, parseRange, satisfies, satisfiesParsed, explainMatch, maxSatisfying, explainRange } from '../../core/semver';
+```
+npm's version and range rules (node-semver defaults): `^`, `~`, X-ranges, hyphen ranges, `||`, pre-releases excluded unless the range opts in, build metadata ignored. `satisfies(version, range)` / `maxSatisfying(versions, range)` take strings and return false / null for text that does not parse; `explainMatch` says `'match' | 'outside' | 'prerelease' | 'invalid'`; `explainRange` is the plain-words reading. Moved from `lessons/dependency-management/semver.ts` unchanged, with its tests (`core/semver.test.ts`).
+
 ## Not built (deliberately)
 
 - **heaps on `TreeSvg`:** see above; its complete-binary, index-keyed layout stays local. (`SlotStrip` shipped as `ArrayStrip`.)
