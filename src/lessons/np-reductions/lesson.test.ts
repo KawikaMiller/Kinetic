@@ -60,6 +60,7 @@ describe('what the stage prints', () => {
     const s = sweep(twoVariableFormulas(), { variableEdges: false });
     const line = sweepLine('Without them', s, EXHAUSTIVE_SCOPE);
     expect(line).toContain(`wrong on ${s.failures} of 793`);
+    expect(line).toContain(`${s.unsatisfiable} of them unsatisfiable`);
     expect(line).toContain('exhaustive over all 793 formulas of 2 variables and 1 to 4 clauses');
     expect(line).toContain('(x1 or x1 or x1) and (not x1 or not x1 or not x1)');
     expect(sweepLine('With them', sweep(twoVariableFormulas()), EXHAUSTIVE_SCOPE)).toContain('wrong on 0 of 793');

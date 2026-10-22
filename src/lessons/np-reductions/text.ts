@@ -10,7 +10,7 @@ export const buildCaption = (g: Gadget, placed: number): string =>
 
 export function sweepLine(label: string, s: Sweep, scope: string): string {
   const first = s.first ? ` The first of them is ${formulaText(s.first)}.` : '';
-  return `${label}: the verdict is wrong on ${s.failures} of ${s.total} formulas (${scope}).${first}`;
+  return `${label}: the verdict is wrong on ${s.failures} of ${s.total} formulas (${scope}; ${s.unsatisfiable} of them unsatisfiable).${first}`;
 }
 
 export function verdictCaption(v: Verdict, variableEdges: boolean): string {

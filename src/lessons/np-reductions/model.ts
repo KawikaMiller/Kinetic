@@ -91,10 +91,9 @@ export function judgeEdge(g: Gadget, placed: ReadonlySet<number>, a: number, b: 
     const named = g.formula.clauses[c.clause][c.slot];
     if (literalVertex(-named) === otherEnd) {
       const picked = vertexName(g.n, otherEnd);
-      const instead = named < 0 ? `not ${picked}` : `not the vertex ${picked}`;
       return {
         ok: false,
-        text: `Clause ${c.clause + 1} has the literal ${literalName(named)} here, so ${vertexName(g.n, clauseEnd)} joins the vertex ${literalName(named)}, ${instead}: that would encode the opposite clause.`,
+        text: `Clause ${c.clause + 1} has the literal ${literalName(named)} here, so ${vertexName(g.n, clauseEnd)} joins the vertex ${literalName(named)}, not the vertex ${picked}: that would encode the opposite clause.`,
       };
     }
   }
@@ -340,20 +339,25 @@ export function verdictOf(f: Formula, { variableEdges = true }: { variableEdges?
 export interface Sweep {
   total: number;
   failures: number;
+  /** How many of the formulas no assignment satisfies, so a sample's "no cover of size K" direction is read at its real size. */
+  unsatisfiable: number;
   /** The first formula (in the order given) with a wrong verdict. */
   first: Formula | null;
 }
 
 export function sweep(formulas: readonly Formula[], options: { variableEdges?: boolean } = {}): Sweep {
   let failures = 0;
+  let unsatisfiable = 0;
   let first: Formula | null = null;
   for (const f of formulas) {
-    if (!verdictOf(f, options).agrees) {
+    const v = verdictOf(f, options);
+    if (!v.satisfiable) unsatisfiable++;
+    if (!v.agrees) {
       failures++;
       first ??= f;
     }
   }
-  return { total: formulas.length, failures, first };
+  return { total: formulas.length, failures, unsatisfiable, first };
 }
 
 // The formula editor

@@ -37,7 +37,7 @@ const lesson: LessonModule = {
   keyIdeas: [
     'A reduction translates instances of one problem into instances of another in polynomial time, so a fast solver for the target would solve the source: it shows the target is at least as hard, and says little about easy cases.',
     `The 3-SAT to vertex-cover gadget has a pair of literal vertices per variable and a triangle per clause: ${G1.vertexCount} vertices, ${G1.edges.length} edges and K = n + 2m = ${G1.K} for the default formula.`,
-    `The graph has a cover of size K exactly when the formula is satisfiable: a theorem argued from the two directions shown, and checked here on all ${EXHAUSTIVE_COUNT} two-variable formulas of up to 4 clauses (exhaustive over that bound) and ${SAMPLE_COUNT} seeded three-variable formulas (sampled).`,
+    `The graph has a cover of size K exactly when the formula is satisfiable: a theorem whose outline is in the chip below the scene, and checked here on all ${EXHAUSTIVE_COUNT} two-variable formulas of up to 4 clauses (exhaustive over that bound) and ${SAMPLE_COUNT} seeded three-variable formulas (sampled).`,
     `Each part of the gadget carries weight: with the variable edges dropped the verdict is wrong on ${BROKEN_FAILURES} of ${EXHAUSTIVE_COUNT} formulas, because a cover can then take both x and not x.`,
   ],
   quiz: [

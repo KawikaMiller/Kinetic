@@ -166,7 +166,7 @@ describe('manipulation: the wrong moves are refused with the spec text', () => {
   it('manipulation 2: joining c1.2 (which holds not x2) to x2 is refused as the opposite clause', () => {
     expect(vertexName(3, c12)).toBe('c1.2');
     const r = judgeEdge(g, new Set(), c12, x2);
-    expect(r).toEqual({ ok: false, text: 'Clause 1 has the literal not x2 here, so c1.2 joins the vertex not x2, not x2: that would encode the opposite clause.' });
+    expect(r).toEqual({ ok: false, text: 'Clause 1 has the literal not x2 here, so c1.2 joins the vertex not x2, not the vertex x2: that would encode the opposite clause.' });
     expect(judgeEdge(g, new Set(), x2, c12)).toEqual(r);
     expect(judgeEdge(g, new Set(), c12, literalVertex(-2))).toMatchObject({ ok: true });
   });
@@ -256,7 +256,7 @@ describe('the reduction on every small formula', () => {
     expect(assignmentFromCover(g, cover).values[0]).toBe('both');
   });
 
-  it('200 seeded three-variable formulas agree with the independent oracle, and a quarter or more of them are unsatisfiable', () => {
+  it('200 seeded three-variable formulas agree with the independent oracle, and the sweep counts the unsatisfiable ones the way the oracle does', () => {
     const sample = seededFormulas(SAMPLE_SEED, SAMPLE_COUNT);
     expect(sample.length).toBe(200);
     let unsat = 0;
@@ -268,6 +268,7 @@ describe('the reduction on every small formula', () => {
       expect(bruteMin(g.vertexCount, g.edges as readonly Pair[]) <= g.K, JSON.stringify(f)).toBe(sat);
     }
     expect(unsat).toBeGreaterThanOrEqual(1);
+    expect(sweep(sample).unsatisfiable).toBe(unsat);
     expect(sweep(sample).failures).toBe(0);
   }, 120_000);
 
