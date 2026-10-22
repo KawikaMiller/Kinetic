@@ -69,6 +69,8 @@ describe('try-this entries, each from the default state', () => {
     const u = simulateProject(PRESET, OPENING.risk.sigma, OPENING.risk.seed);
     expect([u.meanLength.toFixed(1), Math.round(u.criticality.api * 100), Math.round(u.criticality.schema * 100)]).toEqual(['17.8', 72, 3]);
     expect(lesson.tryThis[4]).toContain('simulated average is 17.8');
+    expect(lesson.keyIdeas[3]).toContain('critical chain alone averages 17.3');
+    expect(lesson.keyIdeas[3]).toContain('about 1.3 days of skew');
   });
 });
 

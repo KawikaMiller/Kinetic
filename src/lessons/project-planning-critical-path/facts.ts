@@ -5,7 +5,7 @@ import { BASE, crashOf } from './crash';
 import { PRESET, addEdge, cpm, setDays } from './cpm';
 import { OPENING } from './opening';
 import { listSchedule, lowerBounds, optimalMakespan } from './schedule';
-import { MERGE_DEMO, expectedMaxClosedForm, simulateProject } from './uncertainty';
+import { MERGE_DEMO, expectedMaxClosedForm, gapSplit, simulateProject } from './uncertainty';
 
 const cycle = addEdge(PRESET, OPENING.path.from, OPENING.path.to);
 const uiSlip = cpm(setDays(PRESET, 'ui', 6));
@@ -14,6 +14,7 @@ const uiSlipThree = cpm(setDays(PRESET, 'ui', PRESET.tasks.find((t) => t.id === 
 const n = OPENING.people.engineers;
 const brooks = readBrooks(BROOKS_DEFAULT);
 const risk = simulateProject(PRESET, OPENING.risk.sigma, OPENING.risk.seed);
+const split = gapSplit(PRESET, BASE.length, risk.meanLength, OPENING.risk.sigma);
 const label = (id: string) => PRESET.tasks.find((t) => t.id === id)!.label;
 
 export const FACTS = {
@@ -41,6 +42,9 @@ export const FACTS = {
   brooksBestDays: sig(brooks.days[brooks.best - 1], 4),
   brooksLaterAt: brooks.laterAt,
   riskMean: sig(risk.meanLength, 3),
+  riskChain: (BASE.length + split.skew).toFixed(1),
+  riskSkew: split.skew.toFixed(1),
+  riskMerge: split.merge.toFixed(1),
   apiCriticality: Math.round(risk.criticality.api * 100),
   schemaCriticality: Math.round(risk.criticality.schema * 100),
   mergeClosed: sig(expectedMaxClosedForm(MERGE_DEMO.mean, MERGE_DEMO.sd), 4),

@@ -10,7 +10,7 @@ import { histogram } from '../../core/stats';
 import { riskCaption } from './captions';
 import { PRESET, cpm } from './cpm';
 import { OPENING } from './opening';
-import { MERGE_DEMO, RUNS, SPREAD, expectedMaxClosedForm, maxOfTwoPaths, simulateProject } from './uncertainty';
+import { MERGE_DEMO, RUNS, SPREAD, criticalChainMean, expectedMaxClosedForm, maxOfTwoPaths, simulateProject } from './uncertainty';
 
 const PLOT_WIDTH = 520;
 const BINS = 36;
@@ -40,6 +40,7 @@ export function RiskScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Planned length" value={`${PLANNED} days`} color="var(--ok)" sub={`met in ${Math.round(onTime * 100)}% of runs`} />
           <Stat label="Average simulated length" value={`${sig(u.meanLength, 3)} days`} sub={`spread ${sigma} on every task`} />
+          <Stat label="Critical chain alone, average" value={`${sig(criticalChainMean(PRESET, sigma), 3)} days`} sub={`closed form: planned ${PLANNED} x e^(${sigma}²/2); the rest is merge bias`} />
           <Stat label="Merge into Integrate" value={`day ${sig(u.meanEs.integrate, 3)}`} sub={[`API finishes by day ${sig(u.meanEf.api, 3)} on average`, `Schema by day ${sig(u.meanEf.schema, 3)}`]} />
         </Stats>
       }

@@ -3,7 +3,7 @@ import { plural, sig } from '../../core/format';
 import { type BrooksParams, type BrooksReading } from './brooks';
 import { type Plan, type Schedule } from './cpm';
 import { type Placement } from './schedule';
-import { type Uncertainty } from './uncertainty';
+import { gapSplit, type Uncertainty } from './uncertainty';
 
 const labelOf = (plan: Plan, id: string) => plan.tasks.find((t) => t.id === id)!.label;
 const joinNames = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
@@ -38,7 +38,7 @@ export function crashCaption(plan: Plan, c: Crash): ReactNode {
   const name = labelOf(plan, c.taskId);
   const slack = c.before.slack[c.taskId];
   const moved = c.after.length - c.before.length;
-  if (c.delta === 0) return <>No change yet: {name} takes {days(plan.tasks.find((t) => t.id === c.taskId)!.days)} and the project takes {days(c.before.length)}. Change its duration to see what moves.</>;
+  if (c.delta === 0) return <>No change applied: {name} takes {days(plan.tasks.find((t) => t.id === c.taskId)!.days)} and the project takes {days(c.before.length)}. Move the slider to change its duration (a task keeps at least one day).</>;
   const lead = c.delta < 0 ? <>Cutting {name} by {days(-c.delta)}</> : <>Slipping {name} by {days(c.delta)}</>;
   if (moved === 0) {
     return (
@@ -90,10 +90,11 @@ export function brooksCaption(p: BrooksParams, r: BrooksReading): ReactNode {
 export function riskCaption(plan: Plan, planned: number, planSlack: Record<string, number>, u: Uncertainty, sigma: number): ReactNode {
   const withSlack = plan.tasks.filter((t) => planSlack[t.id] > 0).sort((a, b) => u.criticality[b.id] - u.criticality[a.id])[0];
   const p90 = u.lengths[Math.floor(0.9 * u.lengths.length)];
+  const gap = gapSplit(plan, planned, u.meanLength, sigma);
   return (
     <>
       The plan says {days(planned)}; with each duration spread by {sigma} (log-normal around the plan), the simulated project averages {sig(u.meanLength, 3)} days and 9 runs in 10 finish by day {sig(p90, 3)}.{' '}
-      {withSlack ? <>{withSlack.label} has {days(planSlack[withSlack.id])} of slack in the plan yet is on a longest chain in {Math.round(u.criticality[withSlack.id] * 100)}% of runs. </> : null}Where two chains merge, the merge finishes later on average than either chain alone.
+      {withSlack ? <>{withSlack.label} has {days(planSlack[withSlack.id])} of slack in the plan yet is on a longest chain in {Math.round(u.criticality[withSlack.id] * 100)}% of runs. </> : null}The gap to the plan has two parts: about {gap.skew.toFixed(1)} days of skew (each duration&apos;s mean sits above its median, so the critical chain alone averages {(planned + gap.skew).toFixed(1)}) and about {gap.merge.toFixed(1)} days of merge bias, where two chains meet and the later one counts.
     </>
   );
 }

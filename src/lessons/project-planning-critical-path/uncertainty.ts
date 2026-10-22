@@ -1,7 +1,7 @@
 /** Scene 5: the preset's durations as ranges. A seeded Monte Carlo of the project length, criticality indices and merge bias. */
 import { normal } from '../../core/distributions';
 import { mulberry32 } from '../../core/random';
-import { topoOrder, type Plan } from './cpm';
+import { cpm, topoOrder, type Plan } from './cpm';
 
 export const RUNS = 10_000;
 export const SPREAD = { min: 0.1, max: 0.8, step: 0.1 };
@@ -79,3 +79,20 @@ export function maxOfTwoPaths(mean: number, sd: number, seed: number, runs = RUN
 export const MERGE_DEMO = { mean: 10, sd: 2, seed: 4 };
 /** The closed form for two equal independent normals: the mean of the maximum is mean + sd / sqrt(pi). */
 export const expectedMaxClosedForm = (mean: number, sd: number) => mean + sd / Math.sqrt(Math.PI);
+
+/**
+ * The mean length of the plan's critical chain on its own, in closed form. Each duration is log-normal with the plan as its
+ * median, so its mean is the plan times e^(sigma^2 / 2); the chain's mean is the sum. This is the skew part of the gap between
+ * the plan and the simulated average. Valid when the critical tasks form one chain (they do in the preset).
+ */
+export function criticalChainMean(plan: Plan, sigma: number): number {
+  const critical = new Set(cpm(plan).critical);
+  const planned = plan.tasks.filter((t) => critical.has(t.id)).reduce((s, t) => s + t.days, 0);
+  return planned * Math.exp((sigma * sigma) / 2);
+}
+
+/** Split the simulated average's excess over the plan into skew (the chain's own mean above its median) and merge bias. */
+export function gapSplit(plan: Plan, planned: number, meanLength: number, sigma: number): { skew: number; merge: number } {
+  const chain = criticalChainMean(plan, sigma);
+  return { skew: chain - planned, merge: Math.max(0, meanLength - chain) };
+}

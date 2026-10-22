@@ -22,13 +22,13 @@ const lesson: LessonModule = {
     `Crashing tasks, from a fresh load (API, change 0): drag the change to -3. Cutting API from 5 to 2 days moves the end to day ${F.apiCutLength}, not ${F.apiCutNaive}, and ${F.newlyCritical} turn orange: a second chain took over.`,
     `People, from a fresh load (${F.engineers} engineers): the list schedule finishes on day ${F.listMakespan}, the lower bounds are ${F.criticalPath} and ${F.workShare}, and brute force finds ${F.optimum}. Drag to 1 engineer: it takes ${F.oneEngineer} days, the sum of all the work.`,
     `Adding people late, from a fresh load: one person finishes in ${F.brooksOne} days, the earliest finish is ${F.brooksBestDays} days with ${F.brooksBest} people, and from ${F.brooksLaterAt} people the date is later than with one.`,
-    `Uncertainty, from a fresh load: the plan says ${F.length} days but the simulated average is ${F.riskMean}. API is on a longest chain in ${F.apiCriticality}% of runs and Schema in ${F.schemaCriticality}%.`,
+    `Uncertainty, from a fresh load: the plan says ${F.length} days but the simulated average is ${F.riskMean}. The critical chain alone averages ${F.riskChain}, so ${F.riskSkew} days of the gap are skew and ${F.riskMerge} are merge bias. API is on a longest chain in ${F.apiCriticality}% of runs and Schema in ${F.schemaCriticality}%.`,
   ],
   keyIdeas: [
     `The critical path is the longest chain by duration, not the hardest tasks: in the preset ${F.critical} of ${F.tasks} tasks have zero slack, and a task with slack can start late by that much, shared along its chain (UI and Polish share ${F.uiSlack} days).`,
     `Cutting a critical task moves the date only until a second chain becomes critical: cutting API by 3 days saves ${F.apiSaved} in this model, ending at day ${F.apiCutLength}, because ${F.newlyCritical} is as long.`,
     `More engineers cannot beat the critical path (${F.criticalPath} days) or the work shared evenly, and a simple list rule can trail the best schedule (day ${F.listMakespan} against ${F.optimum} on ${F.engineers} engineers). In the invented toy for adding people late, the best team is ${F.brooksBest}, and ${F.brooksLaterAt} people finish later than one: Brooks's rule of thumb is one view, not a law.`,
-    `Durations are ranges: the plan says ${F.length} days and the simulated average is ${F.riskMean}, because where chains merge the later one counts, so the merge finishes later on average than either chain alone.`,
+    `Durations are ranges: the plan says ${F.length} days and the simulated average is ${F.riskMean}, and the gap has two causes: about ${F.riskSkew} days of skew (each duration's mean sits above its median, so the critical chain alone averages ${F.riskChain}) and about ${F.riskMerge} days of merge bias, where the later chain counts.`,
   ],
   quiz: [
     {

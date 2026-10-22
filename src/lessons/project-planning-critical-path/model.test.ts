@@ -5,7 +5,7 @@ import {
   MAX_TASKS, PRESET, addEdge, addTask, calendarDay, cpm, endHours, parseDays, setDays, startHours, topoOrder, totalWork, type Plan,
 } from './cpm';
 import { BRUTE_FORCE_LIMIT, listSchedule, lowerBounds, optimalMakespan } from './schedule';
-import { MERGE_DEMO, UNCERTAINTY_DEFAULT, expectedMaxClosedForm, maxOfTwoPaths, simulateProject } from './uncertainty';
+import { MERGE_DEMO, UNCERTAINTY_DEFAULT, criticalChainMean, expectedMaxClosedForm, gapSplit, maxOfTwoPaths, simulateProject } from './uncertainty';
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => i + 1);
 
@@ -264,6 +264,25 @@ describe('uncertainty on the path', () => {
     const u = simulateProject(PRESET, UNCERTAINTY_DEFAULT.sigma, UNCERTAINTY_DEFAULT.seed);
     expect(u.meanEs.integrate).toBeGreaterThan(Math.max(u.meanEf.api, u.meanEf.schema));
     expect(u.meanLength).toBeGreaterThan(cpm(PRESET).length);
+  });
+
+  it('the gap between plan and average is mostly skew: the critical chain alone averages 16 x e^0.08 = 17.33 (hand), checked by simulating that chain on its own', () => {
+    const u = simulateProject(PRESET, 0.4, UNCERTAINTY_DEFAULT.seed);
+    expect(criticalChainMean(PRESET, 0.4)).toBeCloseTo(16 * Math.exp(0.08), 10);
+    expect(criticalChainMean(PRESET, 0.4)).toBeCloseTo(17.333, 3);
+    // independent check: the critical tasks in a line, simulated on their own (standard deviation of a sum of 4 log-normals is well under 8, so 4 standard errors < 0.35)
+    const critical = new Set(cpm(PRESET).critical);
+    const tasks = PRESET.tasks.filter((t) => critical.has(t.id));
+    const line: Plan = { tasks, edges: tasks.slice(1).map((t, k) => [tasks[k].id, t.id] as const) };
+    expect(simulateProject(line, 0.4, 5).meanLength).toBeGreaterThan(criticalChainMean(PRESET, 0.4) - 0.35);
+    expect(simulateProject(line, 0.4, 5).meanLength).toBeLessThan(criticalChainMean(PRESET, 0.4) + 0.35);
+    const split = gapSplit(PRESET, 16, u.meanLength, 0.4);
+    expect(split.skew).toBeCloseTo(1.333, 3);
+    expect(split.merge).toBeGreaterThan(0.2);
+    expect(split.merge).toBeLessThan(split.skew);
+    expect(split.skew + split.merge).toBeCloseTo(u.meanLength - 16, 9);
+    // at a tiny spread the whole gap is skew
+    expect(gapSplit(PRESET, 16, simulateProject(PRESET, 0.1, 2).meanLength, 0.1).skew).toBeCloseTo(16 * (Math.exp(0.005) - 1), 10);
   });
 
   it('criticality: at least one task is critical in every run, a single chain scores 1 each, and the sum is at least 1', () => {
