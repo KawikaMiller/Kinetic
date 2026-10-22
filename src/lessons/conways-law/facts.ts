@@ -1,5 +1,5 @@
 /** Every number the lesson text quotes, computed from the model at the states the try-this entries walk through. */
-import { CAP, PRESETS, SERVICES, metrics, minFeasibleCap, moveService, reference } from './model';
+import { CAP, PRESETS, SERVICES, dominatingLayouts, groupingCount, metrics, minFeasibleCap, moveService, reference } from './model';
 
 const at = (key: keyof typeof PRESETS) => metrics(PRESETS[key].layout, CAP.default);
 const one = at('one');
@@ -20,6 +20,9 @@ export const FACTS = {
   layerInterfaces: layer.interfaces,
   layerLoadB: layer.cognitive.B,
   layerPeers: layer.peers,
+  layerBeaten: dominatingLayouts(PRESETS.layer.layout).length,
+  layerBeatenInCap: dominatingLayouts(PRESETS.layer.layout, CAP.default).length,
+  groupings: groupingCount(),
   journeyHandoffs: journey.handoffs,
   journeyInterfaces: journey.interfaces,
   journeyLoad: journey.maxCognitive,

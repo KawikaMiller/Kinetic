@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { StageFrame } from '../../components/StageFrame';
 import { WideRegion } from '../../components/WideRegion';
-import { Hint, Stat, Stats } from '../../components/ui';
+import { ClaimLabel, Hint, Stat, Stats } from '../../components/ui';
 import { layoutCaption, placeAll } from './captions';
-import { CHANGES, PRESETS, SERVICES, TEAMS, isPlaced, layoutFrom, metrics, type Metrics } from './model';
+import { CHANGES, PRESETS, SERVICES, TEAMS, dominatingLayouts, groupingCount, isPlaced, layoutFrom, metrics, type Metrics } from './model';
 import type { SceneProps } from './opening';
 import { CapSlider, ConwayChips, PresetChips } from './parts';
 
@@ -16,6 +16,9 @@ export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps)
   const layout = useMemo(() => layoutFrom(board.answers), [board]);
   const m = isPlaced(layout) ? metrics(layout, cap) : null;
   const presetMetrics: Record<string, Metrics> = Object.fromEntries(PRESET_KEYS.map((k) => [k, metrics(PRESETS[k].layout, cap)]));
+  const layerOver = presetMetrics.layer.over.length > 0;
+  const beaten = dominatingLayouts(PRESETS.layer.layout).length;
+  const beatenInCap = dominatingLayouts(PRESETS.layer.layout, cap).length;
   const pick = (key: keyof typeof PRESETS) => onBoard({ answers: { ...PRESETS[key].layout }, checked: false });
 
   return (
@@ -27,6 +30,7 @@ export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps)
         <Stats>
           <Stat label="Handoffs" value={m ? m.handoffs : '–'} />
           <Stat label="Interfaces" value={m ? m.interfaces : '–'} color={m && m.interfaces > 0 ? 'var(--bad)' : undefined} />
+          <Stat label="Skill peers" value={m ? m.peers : '–'} sub="of 8 services" />
           <Stat label="Largest cognitive load" value={m ? m.maxCognitive : '–'} color={m ? (m.over.length ? 'var(--bad)' : 'var(--ok)') : undefined} sub={`cap ${cap}`} />
         </Stats>
       }
@@ -70,8 +74,8 @@ export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps)
           </tbody>
         </table>
         <WideRegion minWidth={PRESET_TABLE_MIN_WIDTH}>
-        <table className="data-table cw-table">
-          <caption>The three presets on four axes: none is best on all of them</caption>
+        <p className="cw-note">The three presets on four axes: none is best on all of them</p>
+        <table className="data-table cw-table" aria-label="The three presets on four axes">
           <thead><tr><th>Layout</th><th>Handoffs</th><th>Interfaces</th><th>Largest load</th><th>Skill peers</th></tr></thead>
           <tbody>
             {PRESET_KEYS.map((k) => (
@@ -92,7 +96,8 @@ export function NumbersScene({ picker, board, onBoard, cap, onCap }: SceneProps)
         </table>
         </WideRegion>
         <p className="cw-note">
-          Skill peers are the fourth axis on purpose: a layered split keeps people with the same skill together, which is why teams are often drawn that way, so it is not a straw man here. It costs handoffs and interfaces instead.
+          Skill peers are the fourth axis on purpose: a layered split keeps people with the same skill together. By layer is shown because it is a common way to draw teams, not because this model favours it: at a cap of {cap} it is {layerOver ? 'over the cap' : 'inside the cap'}, and {beaten} of the {groupingCount()} groupings beat it on all four axes, {beatenInCap} of them inside the cap.
+          <ClaimLabel kind="view">that teams are drawn by layer so people with the same skill sit together is a common practice and one view of what to protect; the model only prices it</ClaimLabel>
         </p>
         <ConwayChips />
       </div>

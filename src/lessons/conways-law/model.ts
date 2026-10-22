@@ -132,6 +132,7 @@ interface Candidate {
   handoffs: number;
   interfaces: number;
   maxCognitive: number;
+  peers: number;
 }
 
 let candidates: readonly Candidate[] | null = null;
@@ -143,7 +144,7 @@ function allCandidates(): readonly Candidate[] {
   for (let n = 0; n < ASSIGNMENT_COUNT; n += 1) {
     const layout = Object.fromEntries(SERVICE_IDS.map((id, i) => [id, TEAMS[Math.floor(n / TEAMS.length ** i) % TEAMS.length]])) as PlacedLayout;
     const m = metrics(layout, Infinity);
-    built.push({ layout, handoffs: m.handoffs, interfaces: m.interfaces, maxCognitive: m.maxCognitive });
+    built.push({ layout, handoffs: m.handoffs, interfaces: m.interfaces, maxCognitive: m.maxCognitive, peers: m.peers });
   }
   candidates = built;
   return built;
@@ -194,7 +195,22 @@ export const teamsOf = (layout: PlacedLayout): { team: TeamId; services: Service
   TEAMS.map((team) => ({ team, services: SERVICE_IDS.filter((id) => layout[id] === team) })).filter((t) => t.services.length > 0);
 
 /** Does a dominate b on (handoffs, interfaces, maximum cognitive load: lower is better; skill peers: higher is better)? */
-export function dominates(a: Metrics, b: Metrics): boolean {
+type Axes = Pick<Metrics, 'handoffs' | 'interfaces' | 'maxCognitive' | 'peers'>;
+export function dominates(a: Axes, b: Axes): boolean {
   const axes = [b.handoffs - a.handoffs, b.interfaces - a.interfaces, b.maxCognitive - a.maxCognitive, a.peers - b.peers];
   return axes.every((d) => d >= 0) && axes.some((d) => d > 0);
 }
+
+/**
+ * The distinct groupings (team names ignored) among all 3^8 assignments that dominate `layout` on the four axes and keep
+ * every team's load at most `cap` (no cap by default).
+ */
+export function dominatingLayouts(layout: PlacedLayout, cap = Infinity): readonly PlacedLayout[] {
+  const mine = metrics(layout, cap);
+  const groups = new Map<string, PlacedLayout>();
+  for (const c of allCandidates()) if (c.maxCognitive <= cap && dominates(c, mine)) groups.set(layoutKey(canonical(c.layout)), canonical(c.layout));
+  return [...groups.values()];
+}
+
+/** How many distinct groupings of the services there are (set partitions into at most three teams), team names ignored. */
+export const groupingCount = (): number => new Set(allCandidates().map((c) => layoutKey(canonical(c.layout)))).size;

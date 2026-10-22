@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyClassify, pickCategory } from '../../core/classify';
 import {
-  ASSIGNMENT_COUNT, CAP, CHANGES, EDGES, PRESETS, SERVICES, SERVICE_IDS, WEIGHT, canonical, dominates, isPlaced, layoutFrom, layoutKey, metrics, minFeasibleCap, moveService,
+  ASSIGNMENT_COUNT, CAP, CHANGES, EDGES, PRESETS, SERVICES, SERVICE_IDS, WEIGHT, canonical, dominates, dominatingLayouts, groupingCount, isPlaced, layoutFrom, layoutKey, metrics, minFeasibleCap, moveService,
   placedCount, reference, type PlacedLayout, type ServiceId, type TeamId,
 } from './model';
 
@@ -89,6 +89,29 @@ describe('all assignments against the independent oracle', () => {
     const canonKeys = new Set(parts.map(layoutKey));
     expect(canonKeys.size).toBe(1094);
     expect(reference(26, 0).tied.length).toBeGreaterThan(0);
+  });
+});
+
+describe('by layer is beaten, and the text says so', () => {
+  // By the oracle's formulas over its own enumeration of the 1,094 groupings.
+  const beats = (a: ReturnType<typeof oracle>, b: ReturnType<typeof oracle>) =>
+    a.handoffs <= b.handoffs && a.interfaces <= b.interfaces && a.max <= b.max && a.peers >= b.peers &&
+    (a.handoffs < b.handoffs || a.interfaces < b.interfaces || a.max < b.max || a.peers > b.peers);
+  const layer = oracle(PRESETS.layer.layout, CAP.default);
+  const beaters = partitions().map((l) => ({ l, o: oracle(l, CAP.default) })).filter(({ o }) => beats(o, layer));
+
+  it('50 of the 1,094 groupings beat by layer on all four axes, 5 of them inside the cap of 16, and the model counts the same', () => {
+    expect(beaters).toHaveLength(50);
+    expect(beaters.filter(({ o }) => o.max <= CAP.default)).toHaveLength(5);
+    expect(dominatingLayouts(PRESETS.layer.layout)).toHaveLength(50);
+    expect(dominatingLayouts(PRESETS.layer.layout, CAP.default)).toHaveLength(5);
+    expect(groupingCount()).toBe(1094);
+    expect(new Set(dominatingLayouts(PRESETS.layer.layout).map(layoutKey))).toEqual(new Set(beaters.map(({ l }) => layoutKey(l))));
+  });
+
+  it('by journey is not beaten by a preset, and by layer is over the cap of 16 (23)', () => {
+    expect(dominatingLayouts(PRESETS.journey.layout, CAP.default).map(layoutKey)).not.toContain(layoutKey(canonical(PRESETS.layer.layout)));
+    expect(layer.max).toBe(23);
   });
 });
 

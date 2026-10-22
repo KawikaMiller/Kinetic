@@ -14,7 +14,7 @@ const lesson: LessonModule = {
       'Checking that a team boundary leaves each team a load it can hold in its head',
       'Weighing teams by layer against teams by user journey',
     ],
-    why: 'Team boundaries are a design decision made once and paid for in each change that crosses them. Seeing handoffs, interfaces and load move together shows why the usual answers, one team or one team per layer, each cost something.',
+    why: 'Team boundaries are a design decision made once and paid for in each change that crosses them. Seeing handoffs, interfaces and load move together shows what one team and one team per layer each cost.',
     watch: 'Each service is a box coloured by its team (the same three team colours as the key); a grey line is a call inside one team and a red line is a call across teams, an interface. In the tables a red number is a team over the cap or a change touching three teams, and a bold row is your own layout. The reference lists the best layouts for the cap you set, under a one-view label.',
   },
   tryThis: [
@@ -28,7 +28,7 @@ const lesson: LessonModule = {
     `In this model team lines are interface lines: by layer the services make ${F.layerInterfaces} interfaces and ${F.layerHandoffs} handoffs, by journey ${F.journeyInterfaces} and ${F.journeyHandoffs} (Conway's observation is one view, a tendency and not a law).`,
     `Fewer handoffs can cost load: one team has ${F.oneHandoffs} handoffs and a load of ${F.oneLoad}, over the assumed cap of ${F.cap}, while by journey stays inside it at ${F.journeyLoad} with ${F.journeyHandoffs} handoffs; whether splitting pays depends on how often changes cross the new lines.`,
     `There is no single answer even here: at a cap of ${F.cap} ${F.refTied} layouts tie at ${F.refScore}, and the cap is an assumption, because at ${F.tightCap} the best score is ${F.tightScore} and at ${F.wideCap} it is ${F.wideScore}.`,
-    `In this model no layout is best on every axis: by layer keeps ${F.layerPeers} skill peers together against ${F.journeyPeers} by journey, which is why layered teams exist, and it costs ${F.layerHandoffs} handoffs (the inverse Conway manoeuvre, shaping teams for the design you want, is a practice with the same trade-offs).`,
+    `In this model no layout is best on every axis: by layer keeps ${F.layerPeers} skill peers together against ${F.journeyPeers} by journey and pays ${F.layerHandoffs} handoffs for it, over the cap of ${F.cap}; ${F.layerBeaten} of the ${F.groupings} groupings beat it on all four axes (${F.layerBeatenInCap} of them inside the cap), so it is a common layout this model prices and does not recommend (the inverse Conway manoeuvre, shaping teams for the design you want, is a practice with the same trade-offs).`,
   ],
   quiz: [
     {
@@ -84,7 +84,7 @@ const lesson: LessonModule = {
         'The law applies to companies with more than one hundred people on staff and to no others',
       ],
       answer: 1,
-      why: 'It is an observation, not a theorem (one view): an interface agreed between two teams, a shared tool or a contract changes how far the org chart shapes the design, as the move scene shows with its interface count.',
+      why: 'It is an observation, not a theorem (one view): an interface agreed between two teams, a shared tool or a contract changes how far the org chart shapes the design (common practice: this model has no tooling or contract term, only the interface count).',
     },
   ],
 };

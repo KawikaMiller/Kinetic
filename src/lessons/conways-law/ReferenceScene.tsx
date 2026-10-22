@@ -42,16 +42,19 @@ export function ReferenceScene({ picker, board, cap, onCap }: SceneProps) {
           <section className="cw-reference">
             <ClaimLabel kind="view">one view, not the answer</ClaimLabel>
             {ref.score === null ? <p>No layout fits a cap of {cap}.</p> : (
+              <>
+              <p>Tied on handoffs + {weight} x interfaces only: they can differ on skill peers.</p>
               <ul>
                 {ref.tied.slice(0, MAX_TIED_SHOWN).map((l) => {
                   const m = metrics(l, cap);
                   return (
                     <li key={teamsOf(l).map((t) => t.services.join('+')).join('|')}>
-                      {teamsOf(l).map((t) => `team ${t.team}: ${t.services.join(', ')}`).join('; ')} ({m.handoffs} handoffs, {m.interfaces} interfaces, largest load {m.maxCognitive})
+                      {teamsOf(l).map((t) => `team ${t.team}: ${t.services.join(', ')}`).join('; ')} ({m.handoffs} handoffs, {m.interfaces} interfaces, largest load {m.maxCognitive}, {m.peers} skill peers)
                     </li>
                   );
                 })}
               </ul>
+              </>
             )}
           </section>
         )}
