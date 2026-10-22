@@ -71,6 +71,8 @@ export type Msg = Body & {
   sentAt: number;
   arriveAt: number;
   lost: boolean;
+  /** Fraction of the flight at which a partition cut this message once it was past halfway: the dot freezes there. */
+  stopAt?: number;
 };
 
 export interface RaftEvent {
@@ -358,7 +360,11 @@ export class Raft {
     } else {
       const a = this.leader?.id ?? 0;
       this.minority = new Set(minority ?? [a, (a + 1) % N]);
-      for (const m of this.msgs) if (!this.reachable(m.from, m.to)) m.lost = true;
+      for (const m of this.msgs) {
+        if (this.reachable(m.from, m.to)) continue;
+        m.lost = true;
+        m.stopAt = Math.max(0.5, (this.now - m.sentAt) / (m.arriveAt - m.sentAt));
+      }
       const rest = N - this.minority.size;
       this.emit('partition', `Partition! ${[...this.minority].map(nodeName).join(' + ')} cut off from the other ${rest}`);
     }

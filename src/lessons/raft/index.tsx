@@ -23,14 +23,14 @@ const lesson: LessonModule = {
     `From a fresh load (seed ${DEFAULT_SEED}, real rules) watch the first election: the rings drain, the server whose timer runs out first becomes a candidate and asks for votes, and a majority of votes makes it leader.`,
     'Once there is a leader, press Send command a few times. Each entry is dashed (pending) until a majority of servers stores it, then solid (committed).',
     "Crash the leader (click it, or focus it and press Enter) and read the times in the event log: the cluster has no leader from the crash line until the next 'leader' line.",
-    'Press Partition network, wait a few seconds for the other three to elect a leader, then press Send command. The new leader commits it; the cut-off leader appends it too but it stays dashed. Heal the network and watch the stale entries get overwritten while the safety monitor stays green.',
+    'Press Partition network, wait a few seconds for the other three to elect a leader, then press Send command. The new leader commits it; the cut-off leader appends it too but it stays dashed. Heal the network and watch the stale entries get overwritten (a new-leader entry replaces them) while the safety monitor stays green. If you skip the Send command on the new side, nothing replaces them: the stale entries stay on the cut-off servers, uncommitted.',
     `Pick "Commit without a majority", wait for a leader, press Partition network and then Send command: the cut-off leader commits on 2 of 5 servers and the monitor turns red with ${BROKEN_RULE['commit-without-majority']}. Then press Check ${SCHEDULE_SEEDS} schedules: this bug breaks a property on many seeds, and the lowest failing seed is ${BROKEN_SEED['commit-without-majority']}.`,
   ],
   keyIdeas: [
     'Randomised election timeouts make it likely that one server times out first and wins cleanly; when two time out together the vote can split and a new term retries.',
     'A leader needs a majority (3 of 5) of votes to win and of replicas to commit, and a voter also checks that the candidate\'s log is at least as up to date as its own.',
     'Terms work like a logical clock: seeing a higher term makes any server step down to follower.',
-    "A minority partition can't commit anything under the real rules, so what it accepted is overwritten after the heal; the monitor checks this over 200 seeded schedules, which is a sample and not a proof.",
+    "A minority partition can't commit anything under the real rules, so what it accepted stays uncommitted, and the new leader overwrites it as soon as it writes an entry at that index (if it never does, the stale entry just sits there uncommitted); the monitor checks safety over 200 seeded schedules, which is a sample and not a proof.",
   ],
   quiz: [
     {
@@ -54,12 +54,12 @@ const lesson: LessonModule = {
       q: 'An old leader in a 2-server partition accepts a write. What happens to it under the real rules?',
       options: [
         'It commits, because the leader that accepted it counts as a majority',
-        'It stays uncommitted and is overwritten after the heal',
+        'It stays uncommitted, and a new leader entry at that index replaces it',
         'Both sides merge their logs together once the partition heals',
         'The whole cluster stops until an operator picks a new leader',
       ],
       answer: 1,
-      why: "In this model it can't reach a majority, so it stays uncommitted; the new leader's log wins after the heal.",
+      why: "In this model it can't reach a majority, so it stays uncommitted. In this model, after the heal it is overwritten once the new leader writes an entry at that index; if the majority side got no command, it just sits there uncommitted.",
     },
     {
       q: 'A new leader finds an entry from an earlier term stored on 3 of 5 servers. Is it committed by counting those 3?',

@@ -57,7 +57,7 @@ export function SafetyPanel({ safety, variant }: { safety: ClusterView['safety']
         </details>
       )}
       <details className="rf-rules">
-        <summary>The five properties, and the commit rule</summary>
+        <summary>This lesson's five checks (not the paper's full list), and the commit rule</summary>
         <ul>
           {SAFETY_RULES.map((r) => (
             <li key={r.rule}>

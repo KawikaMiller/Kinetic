@@ -86,6 +86,26 @@ describe("try-this entries, from the default state, as written", () => {
     expect(live.monitor.violation).toBeNull();
   });
 
+  it('try-this 4, no command on the new side: the stale entry is NOT overwritten after the heal, it stays uncommitted on the cut-off servers', () => {
+    const live = withLeader();
+    const stale = live.raft.leader!;
+    live.raft.setPartition(true);
+    live.raft.clientCommand();
+    until(live, () => live.raft.nodes.some((n) => !live.raft.minority!.has(n.id) && n.role === 'leader'));
+    live.advance(12_000);
+    const holders = () => live.raft.nodes.filter((n) => n.log.length === 1).map((n) => n.id);
+    expect(holders().sort(), 'only the two cut-off servers hold it').toEqual([...live.raft.minority!].sort());
+    live.raft.setPartition(false);
+    live.advance(20_000);
+    expect(stale.log, 'nothing replaced it: the new leader never wrote at that index').toHaveLength(1);
+    expect(holders()).toHaveLength(2);
+    expect(live.raft.nodes.every((n) => n.commit === 0), 'and it is not committed').toBe(true);
+    live.raft.clientCommand();
+    live.advance(10_000);
+    expect(live.raft.nodes.some((n) => n.log.length === 1 && n.commit === 0), 'a command on the new side replaces it').toBe(false);
+    expect(live.monitor.violation).toBeNull();
+  });
+
   it(`try-this 5: without a majority rule the cut-off leader commits on 2 of 5 and the monitor reads ${BROKEN_RULE['commit-without-majority']}; the check breaks on the pinned seed`, () => {
     const live = withLeader('commit-without-majority');
     expect(live.monitor.violation).toBeNull();
@@ -107,6 +127,12 @@ describe("try-this entries, from the default state, as written", () => {
 });
 
 describe('the lesson text', () => {
+  it('says the stale entry is replaced only once the new leader writes at that index, in key idea 4, try-this 4 and quiz Q3', () => {
+    const texts = [lesson.keyIdeas[3], lesson.tryThis[3], lesson.quiz[2].options[1], lesson.quiz[2].why];
+    for (const t of texts) expect(t).not.toMatch(/overwritten after the heal|wins after the heal/);
+    expect(lesson.keyIdeas[3]).toContain('as soon as it writes');
+  });
+
   it('has five try-this entries and five quiz questions', () => {
     expect(lesson.tryThis).toHaveLength(5);
     expect(lesson.quiz).toHaveLength(5);

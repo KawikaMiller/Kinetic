@@ -10,7 +10,7 @@ export type SafetyRule =
   | 'leader-completeness'
   | 'committed-on-majority';
 
-/** The five properties, in words, in the order the monitor checks them. */
+/** The lesson's five checks (the paper lists others, e.g. leader append-only, which are not checked here), in words, in the order the monitor checks them. */
 export const SAFETY_RULES: readonly { rule: SafetyRule; says: string }[] = [
   { rule: 'one-leader-per-term', says: 'at most one server leads any one term' },
   { rule: 'log-matching', says: 'two logs that share an index and term agree on every entry up to it' },
@@ -19,7 +19,7 @@ export const SAFETY_RULES: readonly { rule: SafetyRule; says: string }[] = [
   { rule: 'committed-on-majority', says: 'a committed entry stays stored on a majority of servers' },
 ];
 
-/** The commit rule the lesson states on screen; `advanceCommit` in sim.ts implements it and sim.test.ts replays the case that needs it. */
+/** The commit rule the lesson states on screen; `advanceCommit` in sim.ts implements it and sim.test.ts asserts its output on a hand-built state of the case that needs it (no test removes the rule to show the violation). */
 export const COMMIT_RULE =
   'A leader counts replicas only for entries written in its own term. An older entry on a majority is committed along with the first newer entry above it.';
 

@@ -3,6 +3,7 @@ import { mulberry32 } from '../../core/random';
 import { SEED_MAX } from '../../core/seed';
 import { TICK_MS } from './check';
 import { LiveRaft } from './live';
+import { motionView } from './view';
 import { SafetyMonitor } from './safety';
 import { MAJORITY, N, Raft, TIMEOUT_MAX, type Entry, type RaftVariant } from './sim';
 
@@ -173,5 +174,24 @@ describe('the live run', () => {
     const live = new LiveRaft(7, 'raft');
     live.advance(TIMEOUT_MAX * 3);
     expect(leaderNames(live).length).toBeGreaterThan(0);
+  });
+});
+
+describe('a message cut by a partition while in flight', () => {
+  it('keeps its position when it was already past halfway, instead of jumping back', () => {
+    const raft = fresh();
+    raft.nodes[0].role = 'leader';
+    raft.nodes[0].term = 1;
+    raft.broadcastAppend(raft.nodes[0]);
+    raft.step(480); // most of the 550 ms flight
+    const before = motionView(raft).msgs.map((m) => ({ id: m.id, x: m.x, y: m.y }));
+    raft.setPartition(true, [1, 2]);
+    const after = motionView(raft).msgs;
+    for (const b of before) {
+      const a = after.find((m) => m.id === b.id)!;
+      expect(a.x).toBeCloseTo(b.x, 6);
+      expect(a.y).toBeCloseTo(b.y, 6);
+    }
+    expect(raft.msgs.some((m) => m.lost && m.stopAt! > 0.5)).toBe(true);
   });
 });

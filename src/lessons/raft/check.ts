@@ -163,5 +163,6 @@ export function checkSeeds(variant: RaftVariant, count = SCHEDULE_SEEDS): CheckS
 export function describeCheck(s: CheckSummary): string {
   const ran = `${integer(s.seeds)} seeded schedules, ${integer(s.events)} events checked`;
   if (!s.lowest?.violation) return `Sampled, not exhaustive: none of ${ran}, broke a property. That is evidence for the real rules, not a proof.`;
-  return `Broke a property on ${s.failures} of ${s.seeds} seeds (${ran}). Lowest failing seed ${s.lowest.seed}: ${s.lowest.violation.rule}.`;
+  const restated = s.variant === 'commit-without-majority' ? ' This bug is the quorum rule restated, so it trips the moment an entry commits on 2 of 5; the lost-entry consequence (leader-completeness) is a separate, rarer failure.' : '';
+  return `Broke a property on ${s.failures} of ${s.seeds} seeds (${ran}). Lowest failing seed ${s.lowest.seed}: ${s.lowest.violation.rule}.${restated}`;
 }
