@@ -5,7 +5,7 @@ import { StageFrame } from '../../components/StageFrame';
 import { ClaimLabel, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
 import { bytes, pctText } from '../../core/format';
 import { adapterCaption, memoryCaption } from './captions';
-import { LengthField } from './LengthField';
+import { BoundedIntField } from '../../components/BoundedIntField';
 import {
   DEFAULT_DIM, DEFAULT_RANK, DIM_LIMITS, FRACTION_HUNDREDTHS, PARAMS_BILLIONS, PARAMS_DEFAULT, TRAIN_BYTES_PER_PARAM, adapterParams, adapterShare, crossoverRank, fullParams, maxRank,
   memoryLines,
@@ -78,9 +78,9 @@ export function AdapterScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <LengthField label="d_in" value={dIn} min={DIM_LIMITS.min} max={DIM_LIMITS.max} onValue={(v) => { setDIn(v); clampRankTo(v, dOut); }} />
-          <LengthField label="d_out" value={dOut} min={DIM_LIMITS.min} max={DIM_LIMITS.max} onValue={(v) => { setDOut(v); clampRankTo(dIn, v); }} />
-          <LengthField label="rank r" value={rank} min={1} max={top} onValue={setRank} />
+          <BoundedIntField label="d_in" value={dIn} min={DIM_LIMITS.min} max={DIM_LIMITS.max} onValue={(v) => { setDIn(v); clampRankTo(v, dOut); }} />
+          <BoundedIntField label="d_out" value={dOut} min={DIM_LIMITS.min} max={DIM_LIMITS.max} onValue={(v) => { setDOut(v); clampRankTo(dIn, v); }} />
+          <BoundedIntField label="rank r" value={rank} min={1} max={top} onValue={setRank} />
         </>,
         <>
           <Slider label="Rank r" value={rank} min={1} max={top} onChange={setRank} />

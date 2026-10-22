@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { svdSmall } from '../../core/linalg';
 import { mulberry32 } from '../../core/random';
-import { parseLength } from './length';
+import { parseBoundedIntField as parseLength } from '../../components/boundedIntParse';
 import {
   N, SPECTRUM, TOLERANCE, TOTAL_ENERGY, frobenius2, makeTarget, optimumEnergy, optimumRelative, randomCompetitor, relativeError, train, truncated,
 } from './lora';

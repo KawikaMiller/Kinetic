@@ -7,7 +7,7 @@ import { dollars, pctText } from '../../core/format';
 import {
   CAPACITY_RPS, HOURS, P_C, P_OD, PRESETS, RPS_LIMITS, dayCost, neededPerHour, optimumByScan, peakNeed, type PresetId, type Profile, type Work,
 } from './cost';
-import { LengthField } from './LengthField';
+import { BoundedIntField } from '../../components/BoundedIntField';
 import { OPENING, commitRule, dayCaption, spotReason } from './view';
 
 const CHART_W = 500;
@@ -121,7 +121,7 @@ export function DayScene({ picker }: { picker: ReactNode }) {
           <Slider label="Requests/s that hour" value={profile[hour]} min={RPS_LIMITS.min} max={RPS_LIMITS.max} step={50} format={(v) => `${v}/s`} onChange={setRps} />
         </>,
         <>
-          <LengthField label="Committed instances" value={committed} min={0} max={peak} onValue={setCommitted} />
+          <BoundedIntField label="Committed instances" value={committed} min={0} max={peak} onValue={setCommitted} />
           <Slider label="Committed" value={committed} min={0} max={peak} onChange={setCommitted} />
           <Segmented label="Burst work" value={work} onChange={chooseWork} options={WORKS} />
           <ChipButton tone="violet" on={spot} onStyle="solid" softDisabled={reason !== null} title={reason ?? undefined} onClick={() => { if (reason === null) setSpot(!spot); }}>run the burst on interruptible capacity</ChipButton>

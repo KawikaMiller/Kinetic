@@ -7,7 +7,7 @@ import { dollars } from '../../core/format';
 import {
   BREAK_EVEN_READS, COLD_READ_RATIO, COLD_STORAGE_RATIO, STORED_GB, bill, peakNeed, tierPerGbMonth, type Tier, type Zones,
 } from './cost';
-import { LengthField } from './LengthField';
+import { BoundedIntField } from '../../components/BoundedIntField';
 import { BILL_OPENING, WEB, billCaption } from './view';
 
 const ZONES: { value: Zones; label: string }[] = [{ value: 2, label: '2 zones' }, { value: 3, label: '3 zones' }];
@@ -58,7 +58,7 @@ export function BillScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <LengthField label="Committed instances" value={committed} min={0} max={peak} onValue={setCommitted} />
+          <BoundedIntField label="Committed instances" value={committed} min={0} max={peak} onValue={setCommitted} />
           <Segmented label="Zones" value={zones} onChange={setZones} options={ZONES} />
           <Slider label="Calls kept in the same zone" value={sameZone} min={0} max={100} step={5} format={(v) => `${v}%`} onChange={setSameZone} />
         </>,

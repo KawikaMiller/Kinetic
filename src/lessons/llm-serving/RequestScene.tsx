@@ -3,7 +3,7 @@ import { Bar } from '../../components/Bar';
 import { Curve, Plot2D, Points, VLine } from '../../components/Plot2D';
 import { StageFrame } from '../../components/StageFrame';
 import { Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats } from '../../components/ui';
-import { LengthField } from './LengthField';
+import { BoundedIntField } from '../../components/BoundedIntField';
 import {
   BANDWIDTH, FLOPS, RIDGE_INTENSITY, RIDGE_TOKENS, WEIGHT_BYTES, decodeTiming, prefillTiming, runRequest, type Regime,
 } from './cost';
@@ -53,8 +53,8 @@ export function RequestScene({ picker }: { picker: ReactNode }) {
       controls={[
         <>
           {picker}
-          <LengthField label="Prompt tokens" value={n} min={PROMPT_LIMITS.min} max={PROMPT_LIMITS.max} onValue={setN} />
-          <LengthField label="Output tokens" value={m} min={OUTPUT_LIMITS.min} max={OUTPUT_LIMITS.max} onValue={setM} />
+          <BoundedIntField label="Prompt tokens" value={n} min={PROMPT_LIMITS.min} max={PROMPT_LIMITS.max} onValue={setN} />
+          <BoundedIntField label="Output tokens" value={m} min={OUTPUT_LIMITS.min} max={OUTPUT_LIMITS.max} onValue={setM} />
         </>,
         <>
           <Slider label="Prompt" value={n} min={PROMPT_LIMITS.min} max={PROMPT_LIMITS.max} format={(v) => `${v.toLocaleString('en-US')} tokens`} onChange={setN} />

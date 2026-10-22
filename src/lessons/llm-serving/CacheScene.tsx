@@ -11,7 +11,7 @@ import {
   BATCH_LIMITS, BYTE_CHOICES, CACHE_OPENING, HEAD_DIM_LIMITS, KV_HEAD_LIMITS, LAYER_LIMITS, PRESETS, SEQUENCE_LIMITS, equalityCaption, equalityRun,
   memoryCaption, presetOf,
 } from './cache';
-import { LengthField } from './LengthField';
+import { BoundedIntField } from '../../components/BoundedIntField';
 import { decimalBytes } from './text';
 
 const GRID_COLS = 40;
@@ -81,8 +81,8 @@ export function CacheScene({ picker }: { picker: ReactNode }) {
           <Slider label="Head dimension" value={config.headDim} min={HEAD_DIM_LIMITS.min} max={HEAD_DIM_LIMITS.max} step={16} onChange={(headDim) => set({ headDim })} />
         </>,
         <>
-          <LengthField label="Sequence tokens" value={sequence} min={SEQUENCE_LIMITS.min} max={SEQUENCE_LIMITS.max} onValue={setSequence} />
-          <LengthField label="Batch (requests)" value={batch} min={BATCH_LIMITS.min} max={BATCH_LIMITS.max} onValue={setBatch} />
+          <BoundedIntField label="Sequence tokens" value={sequence} min={SEQUENCE_LIMITS.min} max={SEQUENCE_LIMITS.max} onValue={setSequence} />
+          <BoundedIntField label="Batch (requests)" value={batch} min={BATCH_LIMITS.min} max={BATCH_LIMITS.max} onValue={setBatch} />
           <Segmented label="Allocation" value={allocation} onChange={setAllocation} options={ALLOCATIONS} />
         </>,
         <>

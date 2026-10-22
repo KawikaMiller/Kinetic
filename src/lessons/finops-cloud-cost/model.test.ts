@@ -5,7 +5,7 @@ import {
   needed, neededPerHour, optimumByRule, optimumByScan, overCommitted, peakNeed, requestsPerDay, spotAllowed, storagePerDay, tierPerGbMonth, transfer,
   type Profile,
 } from './cost';
-import { parseLength } from './length';
+import { parseBoundedIntField as parseLength } from '../../components/boundedIntParse';
 
 // The seeded sweeps are exact but slow when the whole suite runs in parallel.
 vi.setConfig({ testTimeout: 120_000 });

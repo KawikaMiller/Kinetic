@@ -7,7 +7,7 @@ import { WideRegion } from '../../components/WideRegion';
 import { ChipButton, Hint, Legend, Provenance, ProvenanceRow, Segmented, Slider, Stat, Stats } from '../../components/ui';
 import { pctText } from '../../core/format';
 import { DAYS, FIRST_ASOF_DAY, LAST_ASOF_DAY, USERS, USERS_MIN, WINDOW_DAYS, dayLabel } from './events';
-import { LengthField } from './LengthField';
+import { BoundedIntField } from '../../components/BoundedIntField';
 import { NO_SOURCES, SOURCES, SOURCE_LABEL, type Source, type SourceSet } from './feature';
 import { PIPELINE_OPENING, dotTone, pipelineCaption, pipelineView } from './view';
 
@@ -67,8 +67,8 @@ export function PipelineScene({ picker }: { picker: ReactNode }) {
           <ChipButton onClick={() => setSources(NO_SOURCES)}>all off</ChipButton>
         </>,
         <>
-          <LengthField label="Users" value={users} min={USERS_MIN} max={USERS} onValue={setUsers} />
-          <LengthField label="Window (days)" value={windowDays} min={WINDOW_DAYS.min} max={WINDOW_DAYS.max} onValue={setWindowDays} />
+          <BoundedIntField label="Users" value={users} min={USERS_MIN} max={USERS} onValue={setUsers} />
+          <BoundedIntField label="Window (days)" value={windowDays} min={WINDOW_DAYS.min} max={WINDOW_DAYS.max} onValue={setWindowDays} />
           <Slider label="Late events" value={latePercent} min={0} max={100} step={5} format={(v) => `${v}%`} onChange={setLatePercent} />
           <SeedField seed={seed} onSeed={setSeed} />
         </>,

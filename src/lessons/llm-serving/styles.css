@@ -8,8 +8,6 @@
 .llm-wide { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 8px; }
 .llm-bar-label { font: 500 12px var(--font); color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .llm-bar-label b { font-family: var(--mono); color: var(--text); }
-.llm-field { display: flex; flex-direction: column; gap: 4px; }
-.llm-refusal { font: 500 12px var(--font); color: var(--bad); max-width: 260px; }
 .llm-table { border-collapse: collapse; font: 500 12px var(--mono); }
 .llm-table th, .llm-table td { padding: 3px 8px; text-align: right; border-bottom: 1px solid var(--line); }
 .llm-table th { color: var(--muted); font-weight: 600; }

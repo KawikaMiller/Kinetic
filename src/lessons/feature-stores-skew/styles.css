@@ -4,8 +4,6 @@
 .fss-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 100%; }
 .fss-figure figcaption { font: 500 12px var(--font); color: var(--muted); text-align: center; max-width: 380px; }
 .fss-note { margin: 0; font: 500 13px var(--font); color: var(--text); max-width: 640px; text-align: center; }
-.fss-field { display: flex; flex-direction: column; gap: 4px; }
-.fss-refusal { font: 500 12px var(--font); color: var(--bad); max-width: 260px; }
 .fss-list { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 4px; }
 .fss-card { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); font: 500 12px var(--mono); color: var(--muted); }
 .fss-card b { color: var(--text); }

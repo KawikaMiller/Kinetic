@@ -4,7 +4,7 @@ import {
   AVG_SEQ, BANDWIDTH, DEVICE_MEM, FLOPS, FLOPS_PER_TOKEN, KV_HEADS_FULL, MAX_SEQ, PARAMS, RIDGE_TOKENS, TOY_KV, WEIGHT_BYTES, decodeTiming,
   decodeTokensPerSecond, heldTokens, kvBytes, kvBytesPerToken, ordinal, planMemory, prefillTiming, runRequest, weightBytes, type Allocation,
 } from './cost';
-import { parseLength } from './length';
+import { parseBoundedIntField as parseLength } from '../../components/boundedIntParse';
 import {
   DEFAULT_SETTINGS, HORIZON_SECONDS, MAX_ITERATIONS, STATIC_WAIT_SECONDS, blockedAt, clampRate, clampSettings, createSim, createSimOn, lockstepUtilisation,
   makeWorkload, reservedBytes, runToEnd, statsOf, type Request, type Settings,

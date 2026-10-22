@@ -170,6 +170,14 @@
 `own wording goes in `messages`. Fields that parse lists (adders-alu) or other bases (binary-hex's octal
 `and `#`) keep their own parsers.
 `
+`### `BoundedIntField` (components/) and `parseBoundedIntField` (components/boundedIntParse) — llm-serving, fine-tuning-quantization, feature-stores-skew, finops-cloud-cost, attention-transformers
+````tsx
+`<BoundedIntField label="Prompt tokens" value={n} min={1} max={8192} onValue={setN} />
+`<BoundedIntField label="heads" value={heads} min={1} max={16} onValue={setHeads} messages={costFieldMessages} className="at-field" />   // own wording / own spacing
+`parseBoundedIntField('8,192', 'Prompt tokens', 1, 8192)   // { ok: true, value: 8192 }; the pure half, for a test or a form that is not a TextField
+````
+`A typed whole number (thousands commas accepted, shown grouped) over `parseBoundedInt`. A refused entry keeps the old value and shows the sentence plus `Keeping <old>.` in a `role="status"` line under the field (`.int-field-refusal` in kit.css); the text follows `value` when a slider or chip changes it (no remount key needed for that); leaving the field puts the value back; `onValue` fires only for a valid entry that changes the value. Default wording is `standardIntMessages` (`Label: the largest allowed value is 8,192.`); a lesson with its own sentences passes `messages: (label, min, max) => ({ empty, invalid, tooSmall, tooBig })`. Pins in `boundedIntParse.test.ts`: the four copies' refusals byte for byte, plus attention-transformers' `costFieldMessages`.
+`
 ````ts
 `parseBoundedDecimal(text, { min: 0, max: 1e6, typographicMinus: true, messages: { tooSmall: () => "a weight can't be negative" } })
 ````
