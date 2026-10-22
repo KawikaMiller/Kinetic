@@ -67,7 +67,7 @@ const lesson: LessonModule = {
     {
       q: `Two items rank first in ${F.wideTopPct}% and ${F.wideSecondPct}% of simulated runs. What is a sensible reading?`,
       options: [
-        'The first is clearly better, because a higher percentage always means a better item and so should simply be done first',
+        'The first is clearly better, because a higher percentage always means a better item, so do it first',
         'The simulation is broken, because two items cannot both rank first so often',
         'The two are a close call, so the order between them is not worth much debate',
         'Both items should be dropped, because uncertain items cost more than they deliver',
