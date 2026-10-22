@@ -154,3 +154,113 @@ export async function ecdsaVerify(publicKey: CryptoKey, signature: BufferSource,
   if (!hasSubtle()) return null;
   return crypto.subtle.verify(ECDSA_ALG, publicKey, signature, data);
 }
+
+// ---- ECDH (P-256), HKDF and AES-GCM: the primitives of the advanced-crypto lessons. ----
+
+/** A P-256 public point as two big integers (affine x and y). */
+export interface PublicPoint {
+  x: bigint;
+  y: bigint;
+}
+
+const ECDH_ALG = { name: 'ECDH', namedCurve: 'P-256' } as const;
+/** A P-256 coordinate or scalar is 32 bytes. */
+const P256_BYTES = 32;
+/** The uncompressed point encoding: 0x04, then x, then y. */
+const UNCOMPRESSED_TAG = 0x04;
+
+const bigintOfBytes = (bytes: Uint8Array) => BigInt(`0x${toHex(bytes) || '0'}`);
+const bytesOfBigint = (n: bigint, size: number) => hexToBytes(n.toString(16).padStart(2 * size, '0'));
+const b64urlToBigint = (text: string) => bigintOfBytes(Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)));
+
+/**
+ * A fresh ECDH P-256 key pair. The private key is not extractable unless `extractable` is true
+ * (only the elliptic-curves cross-check needs that, to read the scalar). Null without Web Crypto.
+ */
+export async function ecdhKeyPair(o: { extractable?: boolean } = {}): Promise<CryptoKeyPair | null> {
+  if (!hasSubtle()) return null;
+  return crypto.subtle.generateKey(ECDH_ALG, o.extractable ?? false, ['deriveBits']);
+}
+
+/** The ECDH shared secret (the x-coordinate of the shared point, 32 bytes). Null without Web Crypto. */
+export async function ecdhDerive(privateKey: CryptoKey, publicKey: CryptoKey): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (!hasSubtle()) return null;
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: publicKey }, privateKey, 8 * P256_BYTES));
+}
+
+/** A key pair's public point, for cross-checks against core/ecc. Null without Web Crypto. */
+export async function exportPublicPoint(publicKey: CryptoKey): Promise<PublicPoint | null> {
+  if (!hasSubtle()) return null;
+  const raw = new Uint8Array(await crypto.subtle.exportKey('raw', publicKey));
+  if (raw.length !== 1 + 2 * P256_BYTES || raw[0] !== UNCOMPRESSED_TAG) throw new RangeError('exportPublicPoint: expected a 65-byte uncompressed P-256 point');
+  return { x: bigintOfBytes(raw.slice(1, 1 + P256_BYTES)), y: bigintOfBytes(raw.slice(1 + P256_BYTES)) };
+}
+
+/** The private scalar d of an extractable ECDH key (rejects for a non-extractable one). Null without Web Crypto. */
+export async function exportPrivateScalar(privateKey: CryptoKey): Promise<bigint | null> {
+  if (!hasSubtle()) return null;
+  const jwk = await crypto.subtle.exportKey('jwk', privateKey);
+  if (!jwk.d) throw new RangeError('exportPrivateScalar: the key has no private part');
+  return b64urlToBigint(jwk.d);
+}
+
+/** A public key from a point (x, y). Null without Web Crypto; rejects a point that is not on P-256. */
+export async function ecdhImportPublicPoint(point: PublicPoint): Promise<CryptoKey | null> {
+  if (!hasSubtle()) return null;
+  const raw = new Uint8Array(1 + 2 * P256_BYTES);
+  raw[0] = UNCOMPRESSED_TAG;
+  raw.set(bytesOfBigint(point.x, P256_BYTES), 1);
+  raw.set(bytesOfBigint(point.y, P256_BYTES), 1 + P256_BYTES);
+  return crypto.subtle.importKey('raw', raw, ECDH_ALG, true, []);
+}
+
+/** A private key from a scalar and its public point (WebCrypto wants both). Null without Web Crypto. */
+export async function ecdhImportPrivate(scalar: bigint, point: PublicPoint): Promise<CryptoKey | null> {
+  if (!hasSubtle()) return null;
+  const jwk = {
+    kty: 'EC',
+    crv: 'P-256',
+    x: b64url(bytesOfBigint(point.x, P256_BYTES)),
+    y: b64url(bytesOfBigint(point.y, P256_BYTES)),
+    d: b64url(bytesOfBigint(scalar, P256_BYTES)),
+  };
+  return crypto.subtle.importKey('jwk', jwk, ECDH_ALG, true, ['deriveBits']);
+}
+
+/** RFC 5869 caps the output at 255 hash blocks. */
+export const HKDF_MAX_BYTES = 255 * 32;
+
+/** HKDF-SHA256 (RFC 5869): `length` bytes from the input keying material, salt and info. Null without Web Crypto. */
+export async function hkdf(ikm: BufferSource, salt: BufferSource, info: BufferSource, length: number): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (!Number.isInteger(length) || length < 1 || length > HKDF_MAX_BYTES) throw new RangeError(`hkdf: length ${length} is outside 1..${HKDF_MAX_BYTES}`);
+  if (!hasSubtle()) return null;
+  const base = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, base, 8 * length));
+}
+
+/** The AES-GCM nonce length these helpers accept (the standard 96 bits). */
+export const GCM_IV_BYTES = 12;
+const GCM_KEY_BYTES = [16, 24, 32];
+
+async function importGcm(key: BufferSource, iv: BufferSource, op: string) {
+  if (!GCM_KEY_BYTES.includes(key.byteLength)) throw new RangeError(`${op}: key is ${key.byteLength} bytes, expected 16, 24 or 32`);
+  if (iv.byteLength !== GCM_IV_BYTES) throw new RangeError(`${op}: nonce is ${iv.byteLength} bytes, expected ${GCM_IV_BYTES}`);
+  return crypto.subtle.importKey('raw', key, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+/** AES-GCM seal: ciphertext followed by the 16-byte tag. `aad` is authenticated, not encrypted. Null without Web Crypto. */
+export async function aesGcmEncrypt(key: BufferSource, iv: BufferSource, plaintext: BufferSource, aad?: BufferSource): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (!hasSubtle()) return null;
+  const k = await importGcm(key, iv, 'aesGcmEncrypt');
+  return new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: aad }, k, plaintext));
+}
+
+/**
+ * AES-GCM open. Null means only "no Web Crypto". A wrong key, or a flipped bit in the ciphertext,
+ * tag or aad, REJECTS with the browser's real OperationError (no plaintext is released): catch it.
+ */
+export async function aesGcmDecrypt(key: BufferSource, iv: BufferSource, sealed: BufferSource, aad?: BufferSource): Promise<Uint8Array<ArrayBuffer> | null> {
+  if (!hasSubtle()) return null;
+  const k = await importGcm(key, iv, 'aesGcmDecrypt');
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: aad }, k, sealed));
+}
