@@ -30,10 +30,10 @@ export function MoveScene({ picker }: { picker: ReactNode }) {
   const delayMs = useMemo(() => replicateDelay(run), [run]);
   const dropped = useMemo(() => replicateDropped(run), [run]);
   const edited = !m.requestA || !m.requestB || m.dropReplicate;
-  const rows: { label: string; present: boolean; action: string; toggle: () => void }[] = [
-    { label: `request A at ${SCENE2_T1} ms`, present: m.requestA, action: m.requestA ? 'Remove' : 'Add back', toggle: () => set({ requestA: !m.requestA }) },
-    { label: `request B at ${Math.max(0, SCENE2_T1 + m.gap)} ms`, present: m.requestB, action: m.requestB ? 'Remove' : 'Add back', toggle: () => set({ requestB: !m.requestB }) },
-    { label: m.dropReplicate ? 'drop every replicate from r1 (added by you)' : 'drop every replicate from r1 (not in this schedule)', present: m.dropReplicate, action: m.dropReplicate ? 'Remove' : 'Add a drop', toggle: () => set({ dropReplicate: !m.dropReplicate }) },
+  const rows: { id: string; label: string; present: boolean; action: string; toggle: () => void }[] = [
+    { id: 'a', label: `request A at ${SCENE2_T1} ms`, present: m.requestA, action: m.requestA ? 'Remove' : 'Add back', toggle: () => set({ requestA: !m.requestA }) },
+    { id: 'b', label: `request B at ${Math.max(0, SCENE2_T1 + m.gap)} ms`, present: m.requestB, action: m.requestB ? 'Remove' : 'Add back', toggle: () => set({ requestB: !m.requestB }) },
+    { id: 'drop', label: m.dropReplicate ? 'drop every replicate from r1 (added by you)' : 'drop every replicate from r1 (not in this schedule)', present: m.dropReplicate, action: m.dropReplicate ? 'Remove' : 'Add a drop', toggle: () => set({ dropReplicate: !m.dropReplicate }) },
   ];
 
   return (
@@ -64,7 +64,7 @@ export function MoveScene({ picker }: { picker: ReactNode }) {
           <SectionTitle hint="edit the schedule and re-run; a struck-through line is not in the schedule; automatic minimising is another lesson's job">The fault list</SectionTitle>
           <ul className="dst-faults">
             {rows.map((r) => (
-              <li key={r.label} className={r.present ? '' : 'is-off'}>
+              <li key={r.id} className={r.present ? '' : 'is-off'}>
                 <span>{r.label}</span>
                 <Button onClick={r.toggle}>{r.action}</Button>
               </li>
