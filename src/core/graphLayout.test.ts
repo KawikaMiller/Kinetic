@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DETOUR_MARGIN, circlePositions, crossings, curveHits, detourBend, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type LayoutEdge,
+  DETOUR_MARGIN, EDGE_HIT_WIDTH, circlePositions, crossings, curveHits, detourBend, edgeHitArea, layeredLayout, layeredPositions, outlineDistance, routeEdge, spatialNext, type LayoutEdge,
 } from './graphLayout';
 import { mulberry32 } from './random';
 
@@ -234,5 +234,34 @@ describe('detours round nodes', () => {
   it('stays straight when no bend within reach clears (a wall of nodes)', () => {
     const wall = Array.from({ length: 21 }, (_, i) => ({ at: { x: 100 + (i - 10) * 30, y: 150 }, box }));
     expect(detourBend(a, b, wall)).toBeNull();
+  });
+});
+
+describe('edgeHitArea', () => {
+  const corners = (points: string) => points.split(' ').map((p) => p.split(',').map(Number));
+  /** Shoelace area of the quad. */
+  const area = (points: string) => {
+    const q = corners(points);
+    return Math.abs(q.reduce((sum, [x, y], i) => sum + x * q[(i + 1) % q.length][1] - q[(i + 1) % q.length][0] * y, 0)) / 2;
+  };
+
+  it('gives a horizontal edge a box EDGE_HIT_WIDTH tall, centred on the edge', () => {
+    expect(corners(edgeHitArea({ x: 10, y: 50 }, { x: 110, y: 50 }))).toEqual([[10, 57], [110, 57], [110, 43], [10, 43]]);
+  });
+
+  it('gives a vertical edge a box EDGE_HIT_WIDTH wide', () => {
+    const xs = corners(edgeHitArea({ x: 40, y: 10 }, { x: 40, y: 90 })).map(([x]) => x);
+    expect(Math.max(...xs) - Math.min(...xs)).toBe(EDGE_HIT_WIDTH);
+  });
+
+  it('has the same area, length x width, at any angle, and honours a custom width', () => {
+    for (const [dx, dy] of [[100, 0], [0, 80], [60, 80], [-30, 40]]) {
+      expect(area(edgeHitArea({ x: 5, y: 5 }, { x: 5 + dx, y: 5 + dy }))).toBeCloseTo(Math.hypot(dx, dy) * EDGE_HIT_WIDTH, 6);
+    }
+    expect(area(edgeHitArea({ x: 0, y: 0 }, { x: 50, y: 0 }, 20))).toBe(1000);
+  });
+
+  it('is an area, not a line, for a zero-length edge (a width square)', () => {
+    expect(area(edgeHitArea({ x: 30, y: 30 }, { x: 30, y: 30 }))).toBe(EDGE_HIT_WIDTH ** 2);
   });
 });

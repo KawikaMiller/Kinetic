@@ -510,6 +510,9 @@
 `- `Slider` announces `format(value)` as `aria-valuetext`, so give it a `format` whenever the label
 `  shows something other than the raw number ("no limit", "1.2/day").
 `- `WideRegion` is the scroller behind `StageFrame minWidth` (same edge fades, focus and swipe hint).
+`  `noun="table"` renames what it scrolls in the default label and hint ("Table: scroll sideways to see all of it", "swipe to see the whole table"); the default stays "diagram", so
+`  existing output is unchanged. `label` / `hint` still override the whole sentence. No lesson passes `noun` yet: a lesson that wraps a table, timeline or listing should (`wideRegionWords` in `components/wideReveal.ts` builds both).
+`  A straight clickable `GraphView` edge's hit area is now a 14-unit quad (`edgeHitArea`, `EDGE_HIT_WIDTH` in `core/graphLayout`) instead of a bare line, so a horizontal or vertical edge has area to click (automation could not press it before); the drawing and the pointer region are unchanged.
 `  `reveal={{ from, to, within? }}` keeps a stretch on screen while it overflows: whenever it changes,
 `  the region scrolls sideways just enough to show it (plus a 24px margin), smoothly, or instantly under
 `  prefers-reduced-motion. `from`/`to` are fractions (0..1) of the content's width, or of the first

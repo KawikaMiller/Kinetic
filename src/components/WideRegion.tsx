@@ -30,8 +30,8 @@ export interface Gutter {
  * points at is still gliding there. Smooth, or instant under prefers-reduced-motion.
  */
 export function WideRegion({
-  children, minWidth, gutter, className = '', style, label = 'Diagram: scroll sideways to see all of it',
-  hint = 'swipe to see the whole diagram', reveal,
+  children, minWidth, gutter, className = '', style, noun, label = wideRegionWords(noun).label,
+  hint = wideRegionWords(noun).hint, reveal,
 }: {
   children: ReactNode;
   minWidth: number;
@@ -39,9 +39,11 @@ export function WideRegion({
   /** Extra classes on the scroller, e.g. `stage` when this is the stage itself. */
   className?: string;
   style?: CSSProperties;
-  /** Accessible name while it overflows. */
+  /** What the content is called in the default label and hint: "table" gives "Table: scroll sideways..." and "swipe to see the whole table" (default "diagram"). */
+  noun?: string;
+  /** Accessible name while it overflows (default built from `noun`). */
   label?: string;
-  /** The one-time hint's wording, for content that isn't a diagram (a table, a code listing). */
+  /** The one-time hint's wording in full, when `noun` is not enough (default built from `noun`). */
   hint?: string;
   /** Scroll this stretch into view when it changes: `{ from, to }` in 0..1, `within` a selector to measure against. */
   reveal?: (RevealSpan & { within?: string }) | null;
