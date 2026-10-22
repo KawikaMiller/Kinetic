@@ -136,6 +136,22 @@ function parentsOf<K extends TreeKey>(shape: TreeShape<K>, place: ReadonlyMap<K,
 }
 
 /**
+ * Where keyboard focus goes when the focused node `from` leaves the tree: its nearest ancestor that
+ * passes `live` (the parent, else the grandparent, ...). null = no ancestor is left (a root, or a
+ * whole branch going), so the caller falls back to the container.
+ */
+export function treeExitFocus<K extends TreeKey>(
+  from: K,
+  shape: TreeShape<K>,
+  place: ReadonlyMap<K, TreeNodePlace>,
+  live: (id: K) => boolean,
+): K | null {
+  const parent = parentsOf(shape, place);
+  for (let up = parent.get(from); up != null; up = parent.get(up)) if (live(up)) return up;
+  return null;
+}
+
+/**
  * Where an arrow key moves keyboard focus in a drawn tree, following its structure:
  * ArrowUp goes to the parent, ArrowDown to the leftmost child, ArrowLeft/Right to the
  * neighbour on the same level (across subtrees, and across trees in a forest), Home/End to

@@ -239,7 +239,7 @@ Vector owns the tickets (`docs/tier4-technical.md` §4.1); this table says which
 |---|---|---|---|
 | K4-4 `core/sat` | `np-reductions`, `sat-solvers` (B3); `formal-methods` (B2) | kickoff round (P0) | wave 1 |
 | K4-5 `core/tsp` | `approximation-algorithms`, `local-search-annealing` (B3) | kickoff round (P0) | wave 1 |
-| K4-8 `ClaimLabel kind="theorem"` | `np-reductions`, `approximation-algorithms` (B3); `flp-impossibility`, `byzantine-faults` (B4); `secret-sharing`, `zero-knowledge-proofs` (B6) | kickoff round (P0) | wave 1 |
+| K4-8 `ClaimLabel kind="theorem"` | `np-reductions`, `approximation-algorithms` (B3); `flp-impossibility`, `byzantine-faults` (B4); `secret-sharing`, `zero-knowledge-proofs` (B6); `online-algorithms`, `game-theory`, `linear-programming` | kickoff round (P0) | wave 1 |
 | K4-9 `validateScenario` trade-off checks | B8 and B9 (the branching lead lessons) | kickoff round (P0) | wave 1 |
 | K4-10 `ClassifyBoard` explore mode | `build-vs-buy`, `conways-law` (B8); `reversible-decisions` (B9) | kickoff round (P0) | wave 1 |
 | T4-T1 to T4-T8 (register the 41, content lint T4, CLAUDE.md, sweep, captions, parallel-agent robustness, review protocol, audit) | every batch | kickoff round (P0) | wave 1 |

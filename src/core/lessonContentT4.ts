@@ -47,7 +47,7 @@ export const DOMAIN_REVIEW_IDS_T4: ReadonlySet<string> = new Set([
 /** Lessons whose point is a proof or an impossibility: each needs two `manipulation N:` tests (AC-0/T4 #30). */
 export const PROOF_SHAPED_IDS: ReadonlySet<string> = new Set([
   'flp-impossibility', 'np-reductions', 'zero-knowledge-proofs', 'approximation-algorithms', 'sat-solvers',
-  'byzantine-faults', 'secret-sharing', 'online-algorithms',
+  'byzantine-faults', 'secret-sharing', 'online-algorithms', 'game-theory',
 ]);
 
 /** The seven lead lessons: every practice or research claim wears a `ClaimLabel` (AC-0/T4 #35). */

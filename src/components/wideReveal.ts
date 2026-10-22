@@ -31,3 +31,11 @@ export function revealScrollLeft(
   const clamped = Math.min(max, Math.max(0, next));
   return Math.abs(clamped - view.scrollLeft) < 1 ? null : clamped;
 }
+
+/** What a WideRegion calls its content, unless a lesson passes `noun`. */
+export const DEFAULT_WIDE_NOUN = 'diagram';
+
+/** The default accessible name and swipe hint for content called `noun` ("diagram", "table", "timeline"). */
+export function wideRegionWords(noun: string = DEFAULT_WIDE_NOUN): { label: string; hint: string } {
+  return { label: `${noun.charAt(0).toUpperCase()}${noun.slice(1)}: scroll sideways to see all of it`, hint: `swipe to see the whole ${noun}` };
+}

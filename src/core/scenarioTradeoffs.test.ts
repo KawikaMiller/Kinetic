@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { PRICE_RISE } from '../lessons/build-vs-buy/scenario';
 import { PROPOSAL } from '../lessons/design-docs-rfcs/proposal';
 import {
-  choose, dominatedChoices, enumeratePaths, freePaths, redMeters, startWalk, validateScenario,
+  choose, dominatedChoices, dominatedPaths, duplicatePaths, enumeratePaths, freePaths, pathId, redMeters, startWalk, validateScenario,
   type DestinationRule, type Meter, type Problem, type ProblemKind, type Scenario, type Walk,
 } from './scenario';
 import {
-  BUILD_VS_BUY, HIRING, INFLUENCE, LEAD_SCENARIOS, REVERSIBLE_DECISIONS, STRANGLER, TECHNICAL_STRATEGY,
+  BUILD_VS_BUY, HIRING, INFLUENCE, LEAD_SCENARIOS, LEAD_TRAP_PATHS, REVERSIBLE_DECISIONS, STRANGLER, TECHNICAL_STRATEGY,
 } from './testing/leadScenarios';
 
 /** K4-9: `validateScenario(s, { tradeoffs: true })` adds dominated-choice and free-path (docs/tier4-technical.md §4.1, decisions §4). */
@@ -35,7 +36,7 @@ describe('the lead-lesson scenarios of the specs pass every trade-off check', ()
   it('return no problem with tradeoffs: true, under every reading of "equally good destination" that the specs claim', () => {
     for (const [id, s] of Object.entries(LEAD_SCENARIOS)) {
       expect(validateScenario(s), id).toEqual([]);
-      expect(validateScenario(s, { tradeoffs: true }), id).toEqual([]);
+      expect(validateScenario(s, { tradeoffs: true, trapPaths: LEAD_TRAP_PATHS[id] }), id).toEqual([]);
       expect(dominatedChoices(s, { destinations: 'same' }), `${id} (same destination only)`).toEqual([]);
     }
   });
@@ -230,6 +231,87 @@ describe('free-path', () => {
     const s = strawMan([meterUp], { m: -1 }, { m: 3 });
     expect(validateScenario(s)).toEqual([]);
     expect(validateScenario(s, { tradeoffs: false })).toEqual([]);
-    expect(validateScenario(s, { tradeoffs: true }).map((p) => p.kind).sort()).toEqual(['dominated-choice', 'free-path']);
+    expect(validateScenario(s, { tradeoffs: true }).map((p) => p.kind).sort()).toEqual(['dominated-choice', 'dominated-path', 'free-path']);
+  });
+});
+
+describe('dominated-path', () => {
+  const choice = (id: string, to: string, effects: Record<string, number>) => ({ id, label: id, to, effects, because: 'x' });
+  /** Every choice is a real trade-off at its node, yet the path B > B2 ends worse than A > A2 on both meters (m: lower is better, q: higher). */
+  const wholePathOnly = (bEnding = 'done', b2: Record<string, number> = { m: 3, q: 1 }, meters: Meter[] = [meterUp, meterDown]): Scenario => ({
+    start: 'a',
+    meters,
+    nodes: [
+      { id: 'a', prompt: '?', choices: [choice('A', 'b', { m: 2, q: 2 }), choice('B', 'c', { m: 0, q: 0 })] },
+      { id: 'b', prompt: '?', choices: [choice('A2', 'done', { m: 0, q: 0 })] },
+      { id: 'c', prompt: '?', choices: [choice('B2', bEnding, b2)] },
+    ],
+    endings: [end('done'), end('other')],
+  });
+  const dominated = (s: Scenario, options = {}) => validateScenario(s, { tradeoffs: true, ...options }).filter((p) => p.kind === 'dominated-path');
+
+  it('flags a planted whole-path-dominated scenario with the right kind, naming both paths', () => {
+    const s = wholePathOnly();
+    expect(dominatedChoices(s)).toEqual([]);
+    expect(dominated(s)).toEqual([{ kind: 'dominated-path', detail: 'the path B > B2 is dominated by A > A2: its final meters are no better on any meter, worse on at least one' }]);
+  });
+
+  it('passes a scenario whose paths all trade one meter for another', () => {
+    const good = wholePathOnly('done', { m: 3, q: 4 }); // B > B2 ends m 3, q 4: better on q
+    expect(dominated(good)).toEqual([]);
+    expect(validateScenario(good, { tradeoffs: true }).map((p) => p.kind)).not.toContain('dominated-path');
+  });
+
+  it('needs a strict difference: equal final meters are not dominated (they are duplicates)', () => {
+    const tie = wholePathOnly('done', { m: 2, q: 2 });
+    expect(dominated(tie)).toEqual([]);
+    expect(duplicatePaths(tie).map((p) => p.kind)).toEqual(['duplicate-path']);
+    expect(duplicatePaths(tie)[0].detail).toBe('the paths A > A2 and B > B2 end on identical meters');
+  });
+
+  it('reports duplicates through validateScenario only when asked', () => {
+    const tie = wholePathOnly('done', { m: 2, q: 2 });
+    expect(kinds(tie)).not.toContain('duplicate-path');
+    expect(validateScenario(tie, { tradeoffs: true, duplicatePaths: true }).map((p) => p.kind)).toContain('duplicate-path');
+  });
+
+  it('exempts a labelled trap path (and only that path)', () => {
+    const s = wholePathOnly();
+    expect(dominated(s, { trapPaths: [pathId(['B', 'B2'])] })).toEqual([]);
+    expect(dominated(s, { trapPaths: ['A > A2'] })).toHaveLength(1);
+  });
+
+  it('compares only paths to the same ending, unless crossEndings says otherwise', () => {
+    const different = wholePathOnly('other'); // B > B2 now reaches another ending: the meters cannot say it is worse
+    expect(dominated(different)).toEqual([]);
+    expect(dominated(different, { crossEndings: true })).toHaveLength(1);
+    expect(dominatedPaths(different, { crossEndings: true })).toHaveLength(1);
+  });
+
+  it('honours the good direction of each meter (m higher-is-better: B > B2 at m 3, q 1 beats A > A2 at m 2, q 2 on m)', () => {
+    const s = wholePathOnly('done', { m: 3, q: 1 }, [{ ...meterUp, bad: { below: 2 } }, meterDown]);
+    expect(dominated(s)).toEqual([]);
+  });
+
+  it('does not hang on a looping scenario and ignores the looping path', () => {
+    const loop: Scenario = {
+      start: 'a', meters: [meterUp],
+      nodes: [{ id: 'a', prompt: '?', choices: [choice('again', 'a', { m: 1 }), choice('go', 'done', { m: 1 })] }],
+      endings: [end('done')],
+    };
+    expect(dominated(loop, { allowCycles: true })).toEqual([]);
+  });
+
+  it('keeps part1 and the shipped lead scenarios clean, and finds exactly the labelled traps in build-vs-buy under crossEndings', () => {
+    for (const [id, s] of Object.entries(LEAD_SCENARIOS)) expect(dominated(s, { trapPaths: LEAD_TRAP_PATHS[id] }), id).toEqual([]);
+    expect(dominated(PRICE_RISE, { crossEndings: true }).map((p) => p.detail.split(' is dominated')[0])).toEqual(['the path build > plan', 'the path build > nothing']);
+    expect(dominated(PRICE_RISE, { crossEndings: true, trapPaths: ['build > plan', 'build > nothing'] })).toEqual([]);
+  });
+
+  it('finds the three cross-ending pairs of strangler-fig-migrations, none beaten by a path to the same ending', () => {
+    expect(dominated(STRANGLER)).toEqual([]);
+    expect(dominated(STRANGLER, { crossEndings: true }).map((p) => p.detail.split(' is dominated')[0])).toEqual([
+      'the path a2 > b2 > c3', 'the path a3 > b1 > c2', 'the path a3 > b1 > c3',
+    ]);
   });
 });

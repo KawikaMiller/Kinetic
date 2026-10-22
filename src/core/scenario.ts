@@ -110,7 +110,9 @@ export type ProblemKind =
   | 'start' | 'duplicate-id' | 'missing-target' | 'unreachable-node' | 'unreachable-ending' | 'dead-end' | 'cycle'
   | 'out-of-bounds' | 'unknown-meter'
   /** Trade-off checks (`tradeoffs: true`): a straw-man choice, and a path that costs nothing. */
-  | 'dominated-choice' | 'free-path';
+  | 'dominated-choice' | 'free-path'
+  /** Whole-path checks (`tradeoffs: true`): a complete path another path beats on every meter; and (`duplicatePaths: true`) two paths that end identically. */
+  | 'dominated-path' | 'duplicate-path';
 
 export interface Problem {
   kind: ProblemKind;
@@ -132,6 +134,15 @@ export interface ValidateOptions {
    * recommends one answer by construction is a defect. Off by default: a technical scenario may well have one right answer.
    */
   tradeoffs?: boolean;
+  /**
+   * With `tradeoffs`: path ids (`pathId`: the choice ids joined with ' > ') that are deliberately a trap, a labelled
+   * bad option the lesson wants on offer. They are not reported as `dominated-path` (they may still dominate others).
+   */
+  trapPaths?: readonly string[];
+  /** With `tradeoffs`: `dominatedPaths`' `crossEndings` (compare paths that end differently too; default false). */
+  crossEndings?: boolean;
+  /** With `tradeoffs`: also report `duplicate-path` (informational), two complete paths whose final meters are identical. Off by default. */
+  duplicatePaths?: boolean;
 }
 
 /**
@@ -139,9 +150,9 @@ export interface ValidateOptions {
  * ending is reachable from the start, no node is a dead end, there are no cycles (so the paths
  * can be enumerated, unless `allowCycles` says a looping scenario is meant), and on every path from the start to an ending the meters stay inside their
  * bounds at every step with the effects applied as written, with no clamping. With `tradeoffs` it also
- * runs `dominatedChoices` and `freePaths`.
+ * runs `dominatedChoices`, `freePaths` and `dominatedPaths`.
  */
-export function validateScenario(s: Scenario, { allowCycles = false, tradeoffs = false }: ValidateOptions = {}): Problem[] {
+export function validateScenario(s: Scenario, { allowCycles = false, tradeoffs = false, trapPaths = [], crossEndings = false, duplicatePaths: reportDuplicates = false }: ValidateOptions = {}): Problem[] {
   const problems: Problem[] = [];
   const add = (kind: ProblemKind, detail: string) => problems.push({ kind, detail });
 
@@ -187,7 +198,10 @@ export function validateScenario(s: Scenario, { allowCycles = false, tradeoffs =
     }
   };
   walk(s.start, startValues(s), []);
-  if (tradeoffs) problems.push(...dominatedChoices(s), ...freePaths(s));
+  if (tradeoffs) {
+    problems.push(...dominatedChoices(s), ...freePaths(s), ...dominatedPaths(s, { trapPaths, crossEndings }));
+    if (reportDuplicates) problems.push(...duplicatePaths(s));
+  }
   return problems;
 }
 
@@ -290,6 +304,70 @@ export function freePaths(s: Scenario): Problem[] {
     }
   };
   go(s.start, begin, redMeters(s, begin).length > 0, [], []);
+  return problems;
+}
+
+/** A path's id: its choice ids joined with ' > ' (what `trapPaths` and the `dominated-path` detail name). */
+export const pathId = (choices: readonly string[]): string => choices.join(' > ');
+
+/** Every complete path from the start to an ending, with its final meters; a looping path is cut where it revisits a node. */
+function completePaths(s: Scenario): { id: string; ending: string; meters: Values }[] {
+  const out: { id: string; ending: string; meters: Values }[] = [];
+  const go = (id: string, values: Values, trail: readonly string[], choices: readonly string[]) => {
+    if (isEnding(s, id)) {
+      out.push({ id: pathId(choices), ending: id, meters: values });
+      return;
+    }
+    const node = findNode(s, id);
+    if (!node || trail.includes(id) || trail.length >= MAX_DEPTH) return;
+    for (const c of node.choices) go(c.to, applyEffects(values, c.effects), [...trail, id], [...choices, c.id]);
+  };
+  go(s.start, startValues(s), [], []);
+  return out;
+}
+
+export interface DominatedPathOptions {
+  /** Path ids (`pathId`) of deliberate trap paths: never reported as the dominated one. */
+  trapPaths?: readonly string[];
+  /**
+   * Also compare paths that reach different endings (the strictest reading). Default false: two different endings are
+   * never equally good, because the meters cannot say whether "hire" beats "no hire" (the same rule as `dominatedChoices`),
+   * so a path is only dominated by a path to the same ending.
+   */
+  crossEndings?: boolean;
+}
+
+/**
+ * Whole-path straw men. A complete path is dominated when another path's final meters are no worse on every meter
+ * (the good direction comes from each meter's `bad` edge) and strictly better on at least one, and reaches the same
+ * ending (or any ending, with `crossEndings`): nothing about the outcome is a reason to take it. Each dominated path
+ * is reported once, naming the first path that beats it. `trapPaths` exempts labelled traps.
+ */
+export function dominatedPaths(s: Scenario, { trapPaths = [], crossEndings = false }: DominatedPathOptions = {}): Problem[] {
+  const paths = completePaths(s);
+  const traps = new Set(trapPaths);
+  const problems: Problem[] = [];
+  for (const x of paths) {
+    if (traps.has(x.id)) continue;
+    const y = paths.find((other) => {
+      if (!crossEndings && other.ending !== x.ending) return false;
+      const gains = s.meters.map((m) => gain(m, other.meters[m.id] ?? 0, x.meters[m.id] ?? 0));
+      return gains.every((g) => g >= 0) && gains.some((g) => g > 0);
+    });
+    if (y) problems.push({ kind: 'dominated-path', detail: `the path ${x.id} is dominated by ${y.id}: its final meters are no better on any meter, worse on at least one` });
+  }
+  return problems;
+}
+
+/** Informational: pairs of complete paths whose final meters are identical (two routes to the same outcome). */
+export function duplicatePaths(s: Scenario): Problem[] {
+  const paths = completePaths(s);
+  const problems: Problem[] = [];
+  paths.forEach((x, i) => {
+    for (const y of paths.slice(i + 1)) {
+      if (s.meters.every((m) => (x.meters[m.id] ?? 0) === (y.meters[m.id] ?? 0))) problems.push({ kind: 'duplicate-path', detail: `the paths ${x.id} and ${y.id} end on identical meters` });
+    }
+  });
   return problems;
 }
 
