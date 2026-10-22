@@ -70,7 +70,7 @@ export function AcneScene({ picker }: { picker: ReactNode }) {
           </div>
         </div>
         <ProvenanceRow>
-          <Provenance kind="simulated">the clean render is the same scene at bias 0.001; a pixel counts when a channel differs by more than 0.02</Provenance>
+          <Provenance kind="simulated">the clean render is the same scene at bias 0.001, which is not an exact render (its own bias can shift a shadow edge by a pixel); a pixel counts when a channel differs by more than 0.02. The exact speckle pattern at bias 0 depends on this tracer's floating-point rounding</Provenance>
         </ProvenanceRow>
       </div>
     </StageFrame>

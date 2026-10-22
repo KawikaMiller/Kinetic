@@ -139,9 +139,18 @@ describe('every control combination gives a clean caption that matches the model
       const text = clean(expectCaption(acneCaption(s, n)));
       expect(text).toContain(`Bias ${BIAS_CHOICES[biasIndex]}`);
       if (biasIndex === 0) expect(text).toContain('shadow acne');
-      if (BIAS_CHOICES[biasIndex] > CLEAN_BIAS) expect(text).toContain('creep away');
+      if (BIAS_CHOICES[biasIndex] > CLEAN_BIAS) expect(text.includes('shadows creep away')).toBe(n > 0);
+      expect(text).not.toContain('rounding');
       if (BIAS_CHOICES[biasIndex] < CLEAN_BIAS && biasIndex > 0) expect(text.includes('no pixel changes')).toBe(n === 0);
     }
+  });
+
+  it('scene 3: a large bias with zero differing pixels does not claim shadows crept away', () => {
+    const s = { ...initialTrace(), biasIndex: BIAS_CHOICES.length - 1 };
+    const text = clean(expectCaption(acneCaption(s, 0)));
+    expect(text).toContain('0 pixels differ');
+    expect(text).not.toContain('shadows creep away');
+    expect(text).toContain('No pixel changes');
   });
 
   it('scene 4: both toggle positions state the same counted totals', () => {
@@ -172,6 +181,16 @@ describe('hidden controls', () => {
 describe('content', () => {
   it('no more than half of the quiz questions have the correct option strictly longest', () => {
     expect(correctStrictlyLongest(lesson.quiz)).toBeLessThanOrEqual(Math.floor(lesson.quiz.length / 2));
+  });
+
+  it('quiz option lengths stay within 0.75-1.35x of the mean', () => {
+    for (const q of lesson.quiz) {
+      const mean = q.options.reduce((a, o) => a + o.length, 0) / q.options.length;
+      for (const o of q.options) {
+        expect(o.length / mean).toBeGreaterThanOrEqual(0.75);
+        expect(o.length / mean).toBeLessThanOrEqual(1.35);
+      }
+    }
   });
 
   it('the picture is 96 by 72', () => {

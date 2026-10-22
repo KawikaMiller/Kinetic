@@ -2,7 +2,7 @@ import { decimal, integer } from '../../core/format';
 import type { LessonModule } from '../../core/types';
 import { rgbText } from './paint';
 import {
-  BIAS_CHOICES, CLEAN_BIAS, DEFAULT_PIXEL, MANY, PRESETS, compareBvh, differsFromClean, initialTrace, manySpheres, pixelTrail, render, sceneOf, settingsOf,
+  BIAS_CHOICES, CLEAN_BIAS, DEFAULT_PIXEL, IMAGE, MANY, PIXELS, PRESETS, compareBvh, differsFromClean, initialTrace, manySpheres, pixelTrail, render, sceneOf, settingsOf,
 } from './scene';
 import { Stage } from './Stage';
 
@@ -58,7 +58,7 @@ const lesson: LessonModule = {
         'At the centre of the scene, because every pixel then needs only one shared ray',
       ],
       answer: 1,
-      why: `A sliver of the light leaving a lamp reaches the eye, so a tracer works backwards: one camera ray per pixel finds what that pixel sees. Here that is ${integer(96 * 72)} camera rays for a 96 by 72 picture.`,
+      why: `A sliver of the light leaving a lamp reaches the eye, so a tracer works backwards: one camera ray per pixel finds what that pixel sees. Here that is ${integer(PIXELS)} camera rays for a ${IMAGE.w} by ${IMAGE.h} picture.`,
     },
     {
       q: 'How does a ray tracer draw a mirror?',
@@ -97,9 +97,9 @@ const lesson: LessonModule = {
       q: 'The bounce depth is set to 0 and the mirror ball is fully reflective. What does the ball look like?',
       options: [
         'A perfect mirror, because reflectivity alone decides how it is shaded',
-        'Black, since a mirror with no bounces has no colour of its own to show',
+        'Black, since a mirror with no bounces has no colour of its own to show in the picture',
         'Shaded like an ordinary surface: no mirror ray is shot, so nothing is reflected in it',
-        'Transparent, because a ray that does not bounce passes straight through it',
+        'Transparent, because a ray that does not bounce simply passes straight through the ball',
       ],
       answer: 2,
       why: `The bounce limit is what lets mirror rays be shot. With depth 0 the ball gets just its own ambient, diffuse and highlight terms, and the test count drops from ${integer(withShadows)} to ${integer(flat)} for this scene.`,

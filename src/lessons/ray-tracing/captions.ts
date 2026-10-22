@@ -40,11 +40,13 @@ export function acneCaption(s: TraceState, differing: number): string {
   if (bias === 0) return `${lead} A shadow ray starts exactly on its own surface and can hit it again, so lit pixels come out dark: shadow acne.`;
   if (bias < CLEAN_BIAS) {
     return differing > 0
-      ? `${lead} The start point is only just off the surface, still close enough for rounding to put some of them on the wrong side.`
+      ? `${lead} The start point is already off the surface, so these are not speckles: the clean render has its own bias, which moves a shadow edge by a pixel, and that edge is what is being counted.`
       : `${lead} The start point is only just off the surface, but already far enough that no pixel changes.`;
   }
   if (bias === CLEAN_BIAS) return `${lead} Secondary rays start just off the surface, so they miss it and the speckles are gone.`;
-  return `${lead} A large bias moves the start of a shadow ray so far from the surface that shadows creep away from where objects touch the floor.`;
+  return differing > 0
+    ? `${lead} A large bias moves the start of a shadow ray so far from the surface that shadows creep away from where objects touch the floor.`
+    : `${lead} No pixel changes in this arrangement. A large bias moves the start of a shadow ray off the surface, and the creep shows up where a shadow edge sits near an object's contact point.`;
 }
 
 export function bvhCaption(c: BvhComparison, on: boolean): string {
