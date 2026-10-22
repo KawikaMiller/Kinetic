@@ -2413,7 +2413,7 @@ await aesGcmEncrypt(key, iv12, plaintext, aad?)   // ciphertext || 16-byte tag; 
 await aesGcmDecrypt(key, iv12, sealed, aad?)      // plaintext, or REJECTS with the real OperationError
 ```
 - Every helper resolves to `null` without `crypto.subtle`, like the rest of `crypto.ts`. For `aesGcmDecrypt` null means only that: a wrong key, a flipped bit in ciphertext, tag or aad, or a wrong nonce rejects (`catch` it and show "the tag does not match: the message is refused"). Length validation (`hkdf` length, key and nonce sizes) throws a positioned RangeError.
-- Test oracles in `core/testing/nodeCrypto`: `nodeEcdhPublic(curve, scalar)` (uncompressed `04||x||y` hex), `nodeEcdhSecret(curve, scalar, peerPublicHex)`, `nodeHkdf(ikm, salt, info, length)`, `nodeAesGcmSeal(key, iv, plaintext, aad?)`. `curve` is `'prime256v1' | 'secp256k1'`.
+- Test oracles in `core/testing/nodeCrypto`: `nodeEcdhPublic(curve, scalar)` (uncompressed `04||x||y` hex), `nodeEcdhSecret(curve, scalar, peerPublicHex)`, `nodeHkdf(ikm, salt, info, length)`, `nodeAesGcmSeal(key, iv, plaintext, aad?)`, `nodeAesGcmOpen(key, iv, sealed, aad?)` (the plaintext, or null when the tag does not authenticate: use it to ask "does this key open it?" instead of re-sealing and comparing bytes; e2ee-forward-secrecy's clone-readable check). `curve` is `'prime256v1' | 'secp256k1'`.
 - Tests (`cryptoAdvanced.test.ts`): RFC 5869 test case 1 (typed from memory, verified against node `hkdfSync` in the same test), HKDF equal to node on 100 seeded inputs, AES-GCM equal to node's seal for 16/24/32-byte keys, 200 seeded bit flips and a wrong key, nonce and aad all rejected with `OperationError`, ECDH agreeing both ways and with node on imported seeded scalars, and every null path.
 
 ## Dev tooling (`scripts/`)

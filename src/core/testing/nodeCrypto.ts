@@ -28,6 +28,13 @@ interface NodeGcm {
   getAuthTag: () => Uint8Array;
 }
 
+interface NodeGcmOpen {
+  setAAD: (aad: Uint8Array) => void;
+  setAuthTag: (tag: Uint8Array) => void;
+  update: (data: Uint8Array) => Uint8Array;
+  final: () => Uint8Array;
+}
+
 interface NodeCrypto {
   createHash: (algorithm: NodeHashAlgorithm) => NodeHash;
   createHmac: (algorithm: NodeHashAlgorithm, key: Uint8Array | string) => NodeHash;
@@ -35,7 +42,10 @@ interface NodeCrypto {
   createECDH: (curve: NodeCurve) => NodeEcdh;
   hkdfSync: (digest: 'sha256', ikm: Uint8Array, salt: Uint8Array, info: Uint8Array, length: number) => ArrayBuffer;
   createCipheriv: (algorithm: string, key: Uint8Array, iv: Uint8Array) => NodeGcm;
+  createDecipheriv: (algorithm: string, key: Uint8Array, iv: Uint8Array) => NodeGcmOpen;
 }
+
+const GCM_TAG_BYTES = 16;
 
 // A variable specifier keeps both TypeScript and Vite from resolving it at build time.
 const NODE_CRYPTO = 'node:crypto';
@@ -83,6 +93,21 @@ export const nodeAesGcmSeal = (key: Uint8Array, iv: Uint8Array, plaintext: Uint8
   if (aad) cipher.setAAD(aad);
   const body = Uint8Array.from([...cipher.update(plaintext), ...cipher.final()]);
   return Uint8Array.from([...body, ...cipher.getAuthTag()]);
+};
+
+/**
+ * AES-GCM open from Node: the plaintext when `sealed` (ciphertext then the 16-byte tag) authenticates under this key, iv and aad, else null.
+ * The oracle for "is this key right?" without re-sealing and comparing bytes.
+ */
+export const nodeAesGcmOpen = (key: Uint8Array, iv: Uint8Array, sealed: Uint8Array, aad?: Uint8Array): Uint8Array | null => {
+  const decipher = raw.createDecipheriv(`aes-${8 * key.length}-gcm`, key, iv);
+  if (aad) decipher.setAAD(aad);
+  decipher.setAuthTag(sealed.slice(sealed.length - GCM_TAG_BYTES));
+  try {
+    return Uint8Array.from([...decipher.update(sealed.slice(0, sealed.length - GCM_TAG_BYTES)), ...decipher.final()]);
+  } catch {
+    return null;
+  }
 };
 
 /** `size` random bytes as base64url text (a PKCE-style verifier). */

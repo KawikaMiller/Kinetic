@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { aesGcmDecrypt, aesGcmEncrypt, hexToBytes, hkdf, toHex } from '../../core/crypto';
 import { mulberry32 } from '../../core/random';
-import { nodeAesGcmSeal, nodeDigest, nodeEcdhPublic, nodeEcdhSecret, nodeHkdf, nodeHmac } from '../../core/testing/nodeCrypto';
+import { nodeAesGcmOpen, nodeAesGcmSeal, nodeDigest, nodeEcdhPublic, nodeEcdhSecret, nodeHkdf, nodeHmac } from '../../core/testing/nodeCrypto';
 import { CLONE_SALT, analyse, buildRun, compareModes, DEFAULT_SEED, parsePattern } from './model';
 import { chainStep, demoChainKey, headerBytes, openWith, realAlgebra, type Bytes } from './realAlg';
 import { runConversation, type Party, type RatchetMode } from './ratchet';
@@ -141,9 +141,9 @@ function nodeCloneReadable(run: ReturnType<typeof nodeRun>, party: Party, k: num
       s = got.state;
       mk = got.mk;
     }
-    // with the right key the seal of the known plaintext reproduces the real ciphertext, which is what a successful open means
-    const resealed = sealNode(mk, m.header, m.text);
-    return resealed.length === m.sealed.length && resealed.every((b, j) => b === m.sealed[j]);
+    const { key, nonce } = msgKeysNode(mk);
+    const opened = nodeAesGcmOpen(key, nonce, m.sealed, m.header);
+    return opened !== null && new TextDecoder().decode(opened) === m.text;
   });
 }
 
