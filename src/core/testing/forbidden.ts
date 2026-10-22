@@ -1,6 +1,6 @@
 /**
  * "This lesson stays inside the page": a source-text check that no file makes a network call, evaluates
- * text, or (when asked) touches browser storage. Lessons used to carry the same regex each; they pass
+ * text, or (when asked) touches browser storage or the clock. Lessons used to carry the same regex each; they pass
  * their own raw sources (`import.meta.glob(..., { query: '?raw', import: 'default', eager: true })`).
  * Test-only: never import this from app code.
  */
@@ -17,6 +17,10 @@ export const FORBIDDEN_PATTERNS = {
   sessionStorage: /sessionStorage/,
   indexedDB: /indexedDB/,
   newUrl: /new URL\(/,
+  /** Reading the wall clock: a model that does is not deterministic. */
+  clock: /performance\.now|Date\.now|new Date/,
+  /** Starting a timer or a frame loop: a model advances by its own steps, never by time passing. */
+  timer: /setTimeout|setInterval|requestAnimationFrame/,
 } as const;
 
 export type ForbiddenCall = keyof typeof FORBIDDEN_PATTERNS;
@@ -24,15 +28,27 @@ export type ForbiddenCall = keyof typeof FORBIDDEN_PATTERNS;
 /** No network, no code from text: what every simulated lesson promises. */
 export const NETWORK_AND_EVAL: readonly ForbiddenCall[] = ['fetch', 'xhr', 'webSocket', 'beacon', 'eval', 'newFunction'];
 
+/** The `also` set of a lesson that must be deterministic: no clock, no timer (on top of the default network and eval ban). */
+export const NO_CLOCK_OR_TIMER: readonly ForbiddenCall[] = ['clock', 'timer'];
+
 export interface ForbiddenOptions {
-  /** Further calls to forbid on top of the default set (browser storage, `new URL(`). */
+  /** Further calls to forbid on top of the default set (browser storage, `new URL(`, `NO_CLOCK_OR_TIMER`). */
   also?: readonly ForbiddenCall[];
   /** Calls to permit although they are in the default set (a lesson that really does call `eval` on fixed text). */
   allow?: readonly ForbiddenCall[];
+  /** Look only at code: block comments and whole-line `//` comments are dropped first, so prose may name a forbidden call. */
+  ignoreComments?: boolean;
 }
 
+/** Source without block comments and whole-line `//` comments (a trailing `// note` after code stays). */
+export const stripComments = (source: string): string =>
+  source.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((line) => !line.trimStart().startsWith('//')).join('\n');
+
 /** One line per violation, `file: call`; an empty list means the sources are clean. */
-export function forbiddenCalls(sources: Readonly<Record<string, string>>, { also = [], allow = [] }: ForbiddenOptions = {}): string[] {
+export function forbiddenCalls(sources: Readonly<Record<string, string>>, { also = [], allow = [], ignoreComments = false }: ForbiddenOptions = {}): string[] {
   const kinds = [...NETWORK_AND_EVAL, ...also].filter((k) => !allow.includes(k));
-  return Object.entries(sources).flatMap(([file, text]) => kinds.filter((k) => FORBIDDEN_PATTERNS[k].test(text)).map((k) => `${file}: ${k}`));
+  return Object.entries(sources).flatMap(([file, source]) => {
+    const text = ignoreComments ? stripComments(source) : source;
+    return kinds.filter((k) => FORBIDDEN_PATTERNS[k].test(text)).map((k) => `${file}: ${k}`);
+  });
 }

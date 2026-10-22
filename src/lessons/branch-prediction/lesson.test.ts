@@ -11,6 +11,7 @@ import {
   DEPTH_RANGE, LAB_LENGTH, PATTERN_PRESETS, PENALTY_RANGE, branchOutcomes, dataValues, labOpening, labOutcomes, loopConfig, loopCost, sortedOpening,
   speculation, speculationOpening,
 } from './scenarios';
+import { forbiddenCalls, NO_CLOCK_OR_TIMER } from '../../core/testing/forbidden';
 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
 const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
@@ -178,10 +179,7 @@ describe('honesty and quiz', () => {
   it('no model file reads a clock, starts a timer or touches the network', () => {
     const files = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts') && !name.endsWith('.tsx'));
     expect(files.length).toBeGreaterThan(4);
-    for (const [name, source] of files) {
-      const code = source.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !l.trimStart().startsWith('//')).join('\n');
-      expect(code, name).not.toMatch(/performance\.now|Date\.now|new Date|setTimeout|setInterval|requestAnimationFrame|fetch\(/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(files), { also: NO_CLOCK_OR_TIMER, ignoreComments: true })).toEqual([]);
   });
 
   it('the correct quiz option is the strictly longest in at most half the questions', () => {

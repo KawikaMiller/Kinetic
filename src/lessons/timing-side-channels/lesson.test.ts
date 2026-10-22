@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { expectCaption } from '../../core/testing/captions';
 import { runNode } from '../../core/testing/node';
+import { forbiddenCalls, NO_CLOCK_OR_TIMER } from '../../core/testing/forbidden';
 import { correctStrictlyLongest } from '../../core/testing/quiz';
 import { sceneElements, sharedSceneComponents } from '../../core/testing/sceneKeys';
 import { byteStepCaption, compareSummary, lengthMismatchCaption, mitigationCaption, n, noiseCaption, verdictCaption } from './captions';
@@ -15,7 +16,6 @@ import { PAIR_PRESETS, PROGRAMS, programOf, secretBytes, tracesOpening, verdict 
 const text = (node: Parameters<typeof expectCaption>[0]) => expectCaption(node);
 const sources = import.meta.glob<string>('./*.{ts,tsx}', { query: '?raw', import: 'default', eager: true });
 const lessonFiles = Object.entries(sources).filter(([name]) => !name.endsWith('.test.ts'));
-const codeOf = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !l.trimStart().startsWith('//')).join('\n');
 
 describe('scene switches', () => {
   it('every scene is its own component and carries its own key, so no scene opens on another scene\'s state', () => {
@@ -154,9 +154,7 @@ describe('captions say what the model did', () => {
 describe('payload-free and clock-free', () => {
   it('no file reads a clock, starts a timer, touches the network or evaluates text', () => {
     expect(lessonFiles.length).toBeGreaterThan(10);
-    for (const [name, source] of lessonFiles) {
-      expect(codeOf(source), name).not.toMatch(/performance\.now|Date\.now|new Date|setTimeout|setInterval|requestAnimationFrame|\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|\beval\s*\(|new Function/);
-    }
+    expect(forbiddenCalls(Object.fromEntries(lessonFiles), { also: NO_CLOCK_OR_TIMER, ignoreComments: true })).toEqual([]);
   });
 
   it('the token is assembled from parts, so no source line holds it whole', () => {
