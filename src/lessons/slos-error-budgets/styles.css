@@ -46,8 +46,10 @@
 .slo-bar { position: absolute; left: 0; top: 4px; bottom: 4px; background: color-mix(in srgb, var(--info) 14%, transparent); border-radius: 3px; z-index: -1; }
 .slo-nines tr.on td { color: var(--hi); font-weight: 700; }
 .slo-nines tr.on .slo-bar { background: color-mix(in srgb, var(--hi) 22%, transparent); }
+.slo-pick { all: unset; cursor: pointer; border-radius: 3px; }
+.slo-pick:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
 .slo-sli { margin: 0; font-size: 12.5px; color: var(--muted); }
 
 @media (max-width: 900px) {
-  .slo { grid-template-columns: 1fr; }
+  .slo { grid-template-columns: minmax(0, 1fr); }
 }
