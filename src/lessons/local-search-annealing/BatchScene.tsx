@@ -8,7 +8,7 @@ import type { Tone } from '../../core/tone';
 import {
   CELLS, DEFAULT_SCHEDULE, GLOBAL_CELL, LIMITS, LOCAL_CELL, QUENCH_SCHEDULE, SEED_WINDOW, exactHillClimbing, runBatch, wilsonInterval, type Batch, type Schedule,
 } from './landscape';
-import { batchCaption } from './text';
+import { INVARIANT_SHARE, batchCaption } from './text';
 
 const PHONE_WIDTH = 356;
 const DESKTOP_WIDTH = 560;
@@ -29,6 +29,7 @@ export function BatchScene({ picker }: { picker: ReactNode }) {
   const [s, setS] = useState<Setup>(START);
   const r = s.result;
   const caption = r ? batchCaption(r, HILL.successes, HILL.total) : `Press Run 1,000 seeds to try this schedule from 1,000 random starts. For comparison, hill climbing reaches the global minimum from ${HILL.successes} of ${HILL.total} starts exactly (${pct(HILL.successes / HILL.total)}).`;
+  const checkFails = r !== null && r.successes / r.runs < INVARIANT_SHARE;
   const interval = r ? wilsonInterval(r.successes, r.runs) : null;
   const change = (patch: Partial<Schedule>) => setS((q) => ({ ...q, schedule: { ...q.schedule, ...patch }, result: null }));
 
@@ -41,7 +42,9 @@ export function BatchScene({ picker }: { picker: ReactNode }) {
         <Stats>
           <Stat label="Reached the minimum" value={r ? `${r.successes} of ${r.runs}` : '?'} color={r ? 'var(--ok)' : undefined} sub={r && interval ? `${pct(r.successes / r.runs)}, 95% interval ${pct(interval.low)} to ${pct(interval.high)}` : 'press Run'} />
           <Stat label="Hill climbing, exact" value={`${HILL.successes} of ${HILL.total}`} sub={pct(HILL.successes / HILL.total)} />
-          {r && r.successes < r.runs && r.firstFailure && <Stat label="Lowest failing seed" value={r.firstFailure.seed} color="var(--bad)" sub={`start cell ${r.firstFailure.start}, ends at ${r.firstFailure.end}`} />}
+          {r && r.successes < r.runs && r.firstFailure && (checkFails
+            ? <Stat label="Lowest failing seed" value={r.firstFailure.seed} color="var(--bad)" sub={`start cell ${r.firstFailure.start}, ends at ${r.firstFailure.end}`} />
+            : <Stat label="First seed that missed" value={r.firstFailure.seed} sub={`start cell ${r.firstFailure.start}, ends at ${r.firstFailure.end}; the check allows misses`} />)}
         </Stats>
       }
       legend={

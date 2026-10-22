@@ -4,9 +4,10 @@ import { SeedField } from '../../components/SeedField';
 import { StageFrame } from '../../components/StageFrame';
 import { PHONE_QUERY, useMediaQuery } from '../../components/useMediaQuery';
 import { Button, ChipButton, ControlGroup, Hint, Legend, Provenance, ProvenanceRow, Slider, Stat, Stats, Toggle } from '../../components/ui';
-import { heldKarp, tourLength, twoOptStep, type TwoOptMove } from '../../core/tsp';
-import { ANNEAL, CROSSED_TOUR, DEFAULT_MAP_SEED, MAP_BATCH, MAP_POINTS, PLANE, annealedTwoOpt, compareOnMaps, crossedSquareMap, seededMap, type Annealed, type MapBatch, type TourMap } from './tour';
+import { heldKarp, tourLength, twoOptStep } from '../../core/tsp';
+import { ANNEAL, CROSSED_TOUR, DEFAULT_MAP_SEED, MAP_BATCH, MAP_POINTS, PLANE, annealedTwoOpt, compareOnMaps, crossedSquareMap, seededMap, type MapBatch } from './tour';
 import { tourCaption } from './text';
+import { freshWork, freshWorks, workOf, workStat, type Method, type Work, type Works } from './work';
 
 const PHONE_WIDTH = 356;
 const DESKTOP_WIDTH = 480;
@@ -14,15 +15,6 @@ const SQUARE_DOMAIN: [number, number] = [-0.5, 2.5];
 const PLANE_DOMAIN: [number, number] = [0, PLANE];
 
 type Source = 'square' | 'random';
-interface Work {
-  /** Identifies the map this work belongs to; another map starts the work again. */
-  key: string;
-  tour: number[];
-  moves: TwoOptMove[];
-  annealed: Annealed | null;
-}
-
-const fresh = (key: string, map: TourMap): Work => ({ key, tour: [...map.start], moves: [], annealed: null });
 const closedPath = (points: readonly { x: number; y: number }[], tour: readonly number[]): [number, number][] =>
   [...tour, tour[0]].map((v) => [points[v].x, points[v].y]);
 
@@ -37,8 +29,11 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
   const mapKey = source === 'square' ? 'square' : `random:${n}:${seed}`;
   const map = useMemo(() => (source === 'square' ? crossedSquareMap() : seededMap(seed, n)), [source, n, seed]);
   const best = useMemo(() => heldKarp(map.dist), [map]);
-  const [raw, setRaw] = useState<Work>(() => fresh(mapKey, map));
-  const work = raw.key === mapKey ? raw : fresh(mapKey, map);
+  const method: Method = annealing ? 'annealed' : 'plain';
+  const [works, setWorks] = useState<Works>(() => freshWorks(mapKey, map));
+  const work = workOf(works, method, mapKey, map);
+  const setWork = (next: Work) => setWorks((w) => ({ ...w, [method]: next }));
+  const stat = workStat(method, work);
   const length = tourLength(map.dist, work.tour);
   const startLength = tourLength(map.dist, map.start);
   const lastMove = work.moves.length > 0 ? work.moves[work.moves.length - 1] : null;
@@ -52,7 +47,7 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
 
   const step = () => {
     const move = twoOptStep(map.dist, work.tour);
-    if (move) setRaw({ ...work, tour: move.tour, moves: [...work.moves, move], annealed: null });
+    if (move) setWork({ ...work, tour: move.tour, moves: [...work.moves, move], annealed: null });
   };
   const finish = () => {
     let tour = work.tour;
@@ -61,11 +56,11 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
       moves.push(move);
       tour = move.tour;
     }
-    setRaw({ ...work, tour, moves, annealed: null });
+    setWork({ ...work, tour, moves, annealed: null });
   };
   const anneal = () => {
     const a = annealedTwoOpt(map.dist, map.start, seed);
-    setRaw({ ...fresh(mapKey, map), tour: a.tour, annealed: a });
+    setWork({ ...freshWork(mapKey, map), tour: a.tour, annealed: a });
   };
 
   return (
@@ -75,7 +70,7 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
       introKey={caption}
       stats={
         <Stats>
-          <Stat label={annealing ? 'Reversals accepted' : '2-opt moves'} value={work.annealed ? work.annealed.accepted : work.moves.length} sub={work.annealed ? `${work.annealed.uphill} made the tour longer` : 'each one shortens the tour'} />
+          <Stat label={stat.label} value={stat.value} sub={stat.sub} />
           <Stat label="Tour length" value={length.toFixed(2)} sub={`start ${startLength.toFixed(2)}`} />
           <Stat label="Optimum" value={best.length.toFixed(2)} color="var(--ok)" sub="exact, Held-Karp" />
           <Stat label="Ratio" value={(length / best.length).toFixed(3)} sub={atLocalOptimum ? 'no improving move left' : 'still improvable'} />
@@ -98,10 +93,12 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
           </ControlGroup>
           <Toggle label="Method" value={annealing} off="2-opt" on="annealed 2-opt" onChange={setAnnealing} />
         </>,
-        <>
-          <Slider label="Points" value={n} min={MAP_POINTS.min} max={MAP_POINTS.max} onChange={(v) => { setN(v); setBatch(null); }} />
-          <SeedField label="Map seed" seed={seed} onSeed={(v) => { setSeed(v); setBatch(null); }} />
-        </>,
+        source === 'random' ? (
+          <>
+            <Slider label="Points" value={n} min={MAP_POINTS.min} max={MAP_POINTS.max} onChange={(v) => { setN(v); setBatch(null); }} />
+            <SeedField label="Map seed" seed={seed} onSeed={(v) => { setSeed(v); setBatch(null); }} />
+          </>
+        ) : null,
         <>
           {annealing ? (
             <Button variant="primary" onClick={anneal}>Run annealed 2-opt ({ANNEAL.steps} reversals tried)</Button>
@@ -111,10 +108,10 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
               <Button softDisabled={atLocalOptimum} onClick={finish}>Run to a local optimum</Button>
             </>
           )}
-          <Button softDisabled={work.moves.length === 0 && !work.annealed} onClick={() => setRaw(fresh(mapKey, map))}>Reset</Button>
-          <Button onClick={() => setBatch(compareOnMaps(n))}>Run {MAP_BATCH} maps of {n} points</Button>
+          <Button softDisabled={work.moves.length === 0 && !work.annealed} onClick={() => setWork(freshWork(mapKey, map))}>Reset</Button>
+          {source === 'random' && <Button onClick={() => setBatch(compareOnMaps(n))}>Run {MAP_BATCH} maps of {n} points</Button>}
         </>,
-      ]}
+      ].filter((row) => row !== null)}
     >
       <div className="stage-pad ls-stage">
         <Plot2D
@@ -128,7 +125,7 @@ export function TwoOptScene({ picker }: { picker: ReactNode }) {
           <Curve points={closedPath(map.points, work.tour)} tone="info" />
           <Points data={map.points.map((p) => ({ x: p.x, y: p.y, tone: 'hi' as const }))} r={6} labels={(i) => String(i)} />
         </Plot2D>
-        {batch && (
+        {batch && source === 'random' && (
           <Hint tone="muted" block>
             Over {batch.maps} seeded maps of {n} points, from a random starting tour: plain 2-opt averages {batch.meanRatioPlain.toFixed(3)} times the optimum and reaches it on {batch.optimalPlain} maps; annealed 2-opt averages {batch.meanRatioAnnealed.toFixed(3)} and reaches it on {batch.optimalAnnealed}.
           </Hint>
