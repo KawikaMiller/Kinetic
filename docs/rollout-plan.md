@@ -6729,7 +6729,7 @@ Status is one of: `not started` · `in progress` · `in review` · `done` · `bl
 | 4 | T4-B6 Advanced cryptography | 5 | 3 | t4/b6 | done | merged c83751ec; all domain review; payload-free review; two reviewers |
 | 4 | T4-B7 ML serving & cloud cost | 4 | 3 | t4/b7 | done | merged 83ce2707 + fee08192; all domain review; two reviewers |
 | 4 | Tier 4 close-out kit round | — | 3→QA | kit owner | done | merged 16f5d41f; last kit round of the curriculum |
-| 4 | **Tier 4 sign-off** | 50 | — | | not started | 41 new + 9 existing; whole-curriculum DoD (450 lessons); push only when the tier is finished |
+| 4 | **Tier 4 sign-off** | 50 | — | | done 2026-10-22 | 41 new + 9 existing; whole-curriculum DoD (450 lessons); push only when the tier is finished |
 
 ### 4.2 Definition of done for a tier
 A tier is done, and the next tier's kickoff may start, only when **all** of these hold on the merged main branch:
